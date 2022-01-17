@@ -214,8 +214,8 @@ void MlxlinkAmBerCollector::init()
             updateField("local_port", _localPort);
             genBuffSendRegister(ACCESS_REG_PMLP, MACCESS_REG_METHOD_GET);
 
-            _moduleIndex = getFieldValue("lane0_module_mapping.module");
-            _slotIndex = getFieldValue("lane0_module_mapping.slot_index");
+            _moduleIndex = getFieldValue("module_0");
+            _slotIndex = getFieldValue("slot_index_0");
         } else {
             resetParser(ACCESS_REG_MPEIN);
             updateField("pcie_index", _pcieIndex);
