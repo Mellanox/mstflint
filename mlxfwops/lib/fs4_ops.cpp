@@ -512,6 +512,20 @@ void Fs4Operations::RemoveCRCsFromMainSection(vector<u_int8_t>& img) {
     img = tmp_img;
 }
 
+/*
+    This function responsible on removing boot-record last 4B of CRC
+*/
+bool Fs4Operations::RemoveCRCFromBootRecord(vector<u_int8_t>& img) {
+    u_int32_t boot_record_size_without_crc = 0;
+    if (!getBootRecordSize(boot_record_size_without_crc)) {
+        return errmsg("Failed to get boot_record size\n");
+    }
+    u_int32_t boot_record_crc_addr = _boot_record_ptr + boot_record_size_without_crc;
+    img.erase(img.begin() + boot_record_crc_addr, img.begin() + boot_record_crc_addr + 4); // Pop 4B of CRC
+
+    return true;
+}
+
 bool Fs4Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_t>& img) {
     if (!Fs3Operations::GetImageDataForSign(shaType, img)) {
         return false;
@@ -519,7 +533,15 @@ bool Fs4Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_
 
     //* In case of security version 2 (Carmel onwards) we'll ignore MAIN CRCs for fw-update signature
     if (getSecureBootSignVersion() == VERSION_2) {
+        // Removal order is critical, we must remove from the end of the image to its start (first MAIN then boot-record)
+        // since lower addresses won't be affected by erasing data from higher addresses
         RemoveCRCsFromMainSection(img);
+        //* In case of devices after Carmel we'll ignore boot-record CRC for fw-update signature same as secure-boot signature
+        if (getChipType(_fwImgInfo.supportedHwId[0]) != CT_CONNECTX7) {
+            if (!RemoveCRCFromBootRecord(img)) {
+                return false;
+            }
+        }
     }
 
     return true;

@@ -270,6 +270,7 @@ private:
     bool updateHwPointer(u_int32_t addr, u_int32_t val);
     bool SetImageIVHwPointer();
     void RemoveCRCsFromMainSection(vector<u_int8_t>& img);
+    bool RemoveCRCFromBootRecord(vector<u_int8_t>& img);
 
     // Members
     Fs4ImgInfo _fs4ImgInfo;
