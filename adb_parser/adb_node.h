@@ -63,6 +63,7 @@ public:
     // Members
     string name;
     u_int32_t size; // in bits
+    u_int32_t _maxLeafSize; // in bits
     bool isUnion;
     string desc;
     FieldsList fields;

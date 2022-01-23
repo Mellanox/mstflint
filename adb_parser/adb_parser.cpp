@@ -61,7 +61,7 @@ public:
     // METHODS
     AdbParser(string fileName, Adb *adbCtxt, bool addReserved = false,
             bool strict = true,
-            string includePath = "", bool enforceExtraChecks = false);
+            string includePath = "", bool enforceExtraChecks = false, bool checkDsAlign = false);
     ~AdbParser();
     bool load();
     bool loadFromString(const char *adbString);
@@ -117,6 +117,7 @@ private:
     bool _addReserved;
     int _progressCnt;
     bool _strict;
+    bool _checkDsAlign;
     bool skipNode;
     string _includePath;
     string _currentTagValue;
@@ -168,8 +169,8 @@ const string AdbParser::TAG_ATTR_INCLUDE_PATH = "include_path";
  **/
 AdbParser::AdbParser(string fileName, Adb *adbCtxt, bool addReserved,
                      bool strict, string includePath,
-                     bool enforceExtraChecks) : _adbCtxt(adbCtxt), _fileName(fileName), _addReserved(addReserved),
-                                                _progressCnt(0), _strict(strict),
+                     bool enforceExtraChecks, bool _checkDsAlign) : _adbCtxt(adbCtxt), _fileName(fileName), _addReserved(addReserved),
+                                                _progressCnt(0), _strict(strict), _checkDsAlign(_checkDsAlign),
                                                 skipNode(false),_includePath(includePath), _currentNode(0), _currentField(0),
                                                 _currentConfig(0)
 {
@@ -1349,6 +1350,12 @@ void AdbParser::startFieldElement(const XML_Char **atts, AdbParser *adbParser, c
             adbParser->_currentField->offset = ((offset >> 5) << 5) + ((MIN(32, adbParser->_currentNode->size) - ((offset + size) % 32)) % 32);
         }
 
+        // For DS alignment check
+        u_int32_t esize = adbParser->_currentField->eSize();
+        if ((adbParser->_currentField->isLeaf() || adbParser->_currentField->subNode == "uint64") && (esize == 16 || esize == 32 || esize == 64) && esize > adbParser->_currentNode->_maxLeafSize) {
+            adbParser->_currentNode->_maxLeafSize =  esize;
+        }
+
         if (!expFound && adbParser->_strict && adbParser->_currentNode->isUnion && adbParser->_currentField->isLeaf())
         {
             expFound = raiseException(allowMultipleExceptions,
@@ -1380,6 +1387,17 @@ void AdbParser::startFieldElement(const XML_Char **atts, AdbParser *adbParser, c
                                       ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
                                       ExceptionHolder::FATAL_EXCEPTION);
         }
+
+        if (!expFound && adbParser->_checkDsAlign) {
+            u_int32_t esize = adbParser->_currentField->eSize();
+            if ((adbParser->_currentField->isLeaf() || adbParser->_currentField->subNode == "uint64") && (esize == 16 || esize == 32 || esize ==64) && adbParser->_currentField->offset % esize != 0) {
+                expFound = raiseException(allowMultipleExceptions,
+                                      "Field: " + adbParser->_currentField->name + " in Node: " + adbParser->_currentNode->name + " offset(" + boost::lexical_cast<string>(adbParser->_currentField->offset) + ") is not aligned to size(" + boost::lexical_cast<string>(esize) + ")",
+                                      ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                      ExceptionHolder::ERROR_EXCEPTION);
+            }
+        }
+
         // Add all field attributes
         if (!expFound)
         {
@@ -1387,7 +1405,7 @@ void AdbParser::startFieldElement(const XML_Char **atts, AdbParser *adbParser, c
             {
                 adbParser->_currentField->attrs[attrName(atts, i)] = attrValue(
                     atts, i);
-        }
+            }
         }
     }
 }
@@ -1666,6 +1684,15 @@ void AdbParser::endElement(void *_adbParser, const XML_Char *name)
                     reserveds.end());
             }
 
+            if (adbParser->_checkDsAlign && adbParser->_currentNode->_maxLeafSize != 0 && adbParser->_currentNode->_maxLeafSize != 0 && adbParser->_currentNode->size % adbParser->_currentNode->_maxLeafSize != 0) {
+
+
+                raiseException(allowMultipleExceptions,
+                    "Node: " + adbParser->_currentNode->name + " size(" + boost::lexical_cast<string>(adbParser->_currentNode->size) + ") is not aligned with largest leaf(" + boost::lexical_cast<string>(adbParser->_currentNode->_maxLeafSize) + ")",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                      ExceptionHolder::ERROR_EXCEPTION);
+            }
+
             // Re-fix fields offset
             if (adbParser->_adbCtxt->bigEndianArr)
             {
@@ -1905,7 +1932,7 @@ int main()
 
 
 
-Adb::Adb() : bigEndianArr(false), singleEntryArrSupp(false)
+Adb::Adb() : bigEndianArr(false), singleEntryArrSupp(false), _checkDsAlign(false)
 {
     _logFile = new LogFile;
 }
@@ -2004,7 +2031,7 @@ string Adb::printAdbExceptionMap()
  **/
 bool Adb::load(string fname, bool addReserved,
                bool strict, string includePath, string includeDir,
-               bool enforceExtraChecks, bool allowMultipleExceptions, string logFileStr)
+               bool enforceExtraChecks, bool allowMultipleExceptions, string logFileStr, bool checkDsAlign)
 {
     try
     {
@@ -2015,9 +2042,9 @@ bool Adb::load(string fname, bool addReserved,
             AdbParser::setAllowMultipleExceptionsTrue();
         }
         _logFile->init(logFileStr, allowMultipleExceptions);
-
         AdbParser p(fname, this, addReserved, strict, includePath,
-                    enforceExtraChecks);
+                    enforceExtraChecks, checkDsAlign);
+        _checkDsAlign=checkDsAlign;
         if (!p.load())
         {
             _lastError = p.getError();
@@ -2658,8 +2685,17 @@ vector<AdbInstance *> Adb::createInstance(AdbField *field,
                                                                 ignoreMissingNodes, allowMultipleExceptions);
                 inst->subItems.insert(inst->subItems.end(), subItems.begin(),
                                       subItems.end());
+                if (subItems[0]->maxLeafSize > inst->maxLeafSize) {
+                    inst->maxLeafSize = subItems[0]->maxLeafSize;
+                }
             }
             inst->nodeDesc->inLayout = false;
+
+            if (_checkDsAlign && inst->maxLeafSize != 0 && inst->size % inst->maxLeafSize != 0) {
+                raiseException(allowMultipleExceptions,
+                            "Node: " + inst->nodeDesc->name + " size(" + boost::lexical_cast<string>(inst->size) + ") is not aligned with largest leaf(" + boost::lexical_cast<string>(inst->maxLeafSize) + ")",
+                            ExceptionHolder::ERROR_EXCEPTION);
+            }
 
             if (!inst->isUnion())
             {
@@ -2681,6 +2717,11 @@ vector<AdbInstance *> Adb::createInstance(AdbField *field,
             }
         }
 
+        u_int32_t esize = inst->fieldDesc->size;
+        if ((field->isLeaf() || field->subNode == "uint64") && (esize == 16 || esize == 32 || esize == 64))//A leaf
+        {
+            inst->maxLeafSize = esize;
+        }
         instList.push_back(inst);
     }
 

@@ -53,7 +53,7 @@ using namespace boost;
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 
-AdbNode::AdbNode() : size(0), isUnion(false), inLayout(false), lineNumber(-1), userData(0)
+AdbNode::AdbNode() : size(0), _maxLeafSize(0), isUnion(false), inLayout(false), lineNumber(-1), userData(0)
 {
 }
 

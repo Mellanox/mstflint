@@ -137,7 +137,7 @@ public:
             bool strict = true,
             string includePath = "", string includeDir = "",
             bool enforceExtraChecks = false, bool getAllExceptions = false,
-            string logFile = "");
+            string logFile = "", bool checkDsAlign = false);
     string toXml(vector<string> nodeNames = vector<string> (),
             bool addRootNode = false, string rootName = "MainNode",
             string addPrefix = "");
@@ -190,6 +190,7 @@ private:
 private:
     string _lastError;
     AdbExpr _adbExpr;
+    bool _checkDsAlign;
     list<AdbInstance*> _unionSelectorEvalDeffered;
     void checkInstanceOffsetValidity(AdbInstance *inst, AdbInstance *parent, bool allowMultipleExceptions);
     void throwExeption(bool allowMultipleExceptions, string exceptionTxt, string addedMsgMultiExp);
