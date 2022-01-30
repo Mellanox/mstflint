@@ -352,12 +352,12 @@ range index will lead to BAD_PARAM status of the register. */
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 609, 
-"slot_info Register Layout," on page 750
-For devices on slot query_type data - see Table 611, 
-"device_info Register Layout," on page 751
-For slot name query_type data - see Table 613, "slot_name 
-Register Layout," on page 752 */
+For slot information query_type data - see Table 539, 
+"slot_info Register Layout," on page 753
+For devices on slot query_type data - see Table 541, 
+"device_info Register Layout," on page 754
+For slot name query_type data - see Table 543, "slot_name 
+Register Layout," on page 755 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_switch_mddq_data_auto_ext data;
 };
@@ -389,12 +389,12 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload- See Table 601, "PRM 
-Register Payload Layout," on page 747
-For Command type payload - See Table 603, "Com
-mand Payload Layout," on page 747
-For CrSpace type payload - See Table 605, "CrSpace 
-access Payload Layout," on page 748 */
+For PRM Register type payload- See Table 531, "PRM 
+Register Payload Layout," on page 750
+For Command type payload - See Table 533, "Com
+mand Payload Layout," on page 750
+For CrSpace type payload - See Table 535, "CrSpace 
+access Payload Layout," on page 751 */
 	/* 0xc.0 - 0x10c.31 */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
 };
@@ -406,8 +406,14 @@ struct reg_access_switch_mdsr_reg_ext {
 	/* Description - 0: The debug session ended successfully
 1: Failed to execute the operation. See additional_info for 
 more details.
-2: Debug session active
-3-15: Reserved
+2: Debug session active. See type_of_token for more details.
+3: No token applied
+4: Challenge provided, no token installed yet, see type_of_to
+ken for details.
+5: Timeout before token installed, see type_of_token for 
+details
+6: Timeout of active token.
+7-15: Reserved
 
 Note: Status might be '0' even when debug query is not 
 allowed and additional_info field will expose the reason. */
@@ -422,11 +428,28 @@ allowed and additional_info field will expose the reason. */
 5: Debug session active */
 	/* 0x0.8 - 0x0.13 */
 	u_int8_t additional_info;
+	/* Description - 0: Debug FW token 1: CS token 
+2: FRC token 
+3: RMCS token
+4: RMDS token 
+5: CRCS token 
+6: CRDT token */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t type_of_token;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Set to '1' to end debug session.
 Setting to '0' will not trigger any operation. */
 	/* 0x4.31 - 0x4.31 */
 	u_int8_t end;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Time left in seconds.
+In case that status is 2 (debug session active) - time left for 
+token operation
+In case that status is 4 (challenge provided, no token 
+installed yet) - time left for token installation
+For any other status, field should be zero */
+	/* 0x8.0 - 0x8.31 */
+	u_int32_t time_left;
 };
 
 /* Description -   */
@@ -462,8 +485,27 @@ sequence number of each keep-alive session. */
 /* Size in bytes - 112 */
 struct reg_access_switch_mtcq_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Device number.
+For gearboxes, the index represents the gearbox die.
+For cables, the index represents the module index 
+starting at index 1 while index 0 indicates the host 
+device. */
+	/* 0x0.0 - 0x0.11 */
+	u_int16_t device_index;
+	/* Description - Indicates the status of the desired token we are gener
+ating the challenge for.
+0x0 - OK
+0x1 - TOKEN_ALREADY_APPLIED
+0x2 - TOKEN_NOT_SUPPORTED
+0x3 - NO_KEY_CONFIGURED (there is no public_key 
+that can be used for this token) 
+0x4 - INTERFACE_NOT_ALLOWED (asking for local 
+token from remote interface, or remote token from 
+local interface) */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t status;
 	/* Description - The token which a challenge is generated for.
-0: RMSC
+0: RMCS
 1: RMDT
 
 Other: Reserved */

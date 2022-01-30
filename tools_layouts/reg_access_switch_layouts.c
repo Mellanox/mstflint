@@ -889,8 +889,12 @@ void reg_access_switch_mdsr_reg_ext_pack(const struct reg_access_switch_mdsr_reg
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->status);
 	offset = 18;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 6, (u_int32_t)ptr_struct->additional_info);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->type_of_token);
 	offset = 32;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->end);
+	offset = 64;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->time_left);
 }
 
 void reg_access_switch_mdsr_reg_ext_unpack(struct reg_access_switch_mdsr_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
@@ -901,8 +905,12 @@ void reg_access_switch_mdsr_reg_ext_unpack(struct reg_access_switch_mdsr_reg_ext
 	ptr_struct->status = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 18;
 	ptr_struct->additional_info = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 6);
+	offset = 0;
+	ptr_struct->type_of_token = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 32;
 	ptr_struct->end = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 64;
+	ptr_struct->time_left = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
 
 void reg_access_switch_mdsr_reg_ext_print(const struct reg_access_switch_mdsr_reg_ext *ptr_struct, FILE *fd, int indent_level)
@@ -915,7 +923,11 @@ void reg_access_switch_mdsr_reg_ext_print(const struct reg_access_switch_mdsr_re
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "additional_info      : " UH_FMT "\n", ptr_struct->additional_info);
 	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "type_of_token        : " UH_FMT "\n", ptr_struct->type_of_token);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "end                  : " UH_FMT "\n", ptr_struct->end);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "time_left            : " U32H_FMT "\n", ptr_struct->time_left);
 }
 
 unsigned int reg_access_switch_mdsr_reg_ext_size(void)
@@ -986,6 +998,10 @@ void reg_access_switch_mtcq_reg_ext_pack(const struct reg_access_switch_mtcq_reg
 	u_int32_t offset;
 	int i;
 
+	offset = 20;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->device_index);
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->status);
 	offset = 0;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->token_opcode);
 	for (i = 0; i < 4; ++i) {
@@ -1021,6 +1037,10 @@ void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext
 	u_int32_t offset;
 	int i;
 
+	offset = 20;
+	ptr_struct->device_index = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
+	offset = 8;
+	ptr_struct->status = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 0;
 	ptr_struct->token_opcode = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	for (i = 0; i < 4; ++i) {
@@ -1058,6 +1078,10 @@ void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_re
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== reg_access_switch_mtcq_reg_ext ========\n");
 
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "device_index         : " UH_FMT "\n", ptr_struct->device_index);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "status               : " UH_FMT "\n", ptr_struct->status);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "token_opcode         : " UH_FMT "\n", ptr_struct->token_opcode);
 	for (i = 0; i < 4; ++i) {
