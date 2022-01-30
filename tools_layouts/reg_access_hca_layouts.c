@@ -2148,7 +2148,7 @@ void reg_access_hca_mcc_reg_print(const struct reg_access_hca_mcc_reg *ptr_struc
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "component_size       : " U32H_FMT "\n", ptr_struct->component_size);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "device_type          : " UH_FMT "\n", ptr_struct->device_type);
+	fprintf(fd, "device_type          : %s (" UH_FMT ")\n", (ptr_struct->device_type == 0 ? ("Switch_or_NIC") : ((ptr_struct->device_type == 1 ? ("Gearbox") : ("unknown")))), ptr_struct->device_type);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "device_index         : " UH_FMT "\n", ptr_struct->device_index);
 	adb2c_add_indentation(fd, indent_level);
