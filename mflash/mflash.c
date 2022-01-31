@@ -1497,7 +1497,7 @@ int check_cache_replacement_guard(mflash *mfl, u_int8_t *needs_cache_replacement
             cmd = EXTRACT(data, 16, 8);
         }
         else { // switches
-            if (devid_t == DeviceQuantum2) {
+            if (devid_t == DeviceQuantum2 || devid_t == DeviceSpectrum4) {
                 MREAD4(CACHE_REP_OFF_BLACKBIRD, &data);
                 off = data;
                 MREAD4(CACHE_REP_CMD_BLACKBIRD, &data);

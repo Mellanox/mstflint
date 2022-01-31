@@ -2228,6 +2228,9 @@ void FwCompsMgr::setLastRegisterAccessStatus(reg_access_status_t err)
 
 fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
 {
+    if (err != ME_REG_ACCESS_OK) {
+        DPRINTF(("%s error - %d\n",__FUNCTION__, err));
+    }
     switch (err) {
     case ME_REG_ACCESS_OK:
         return FWCOMPS_REG_ACCESS_OK;
