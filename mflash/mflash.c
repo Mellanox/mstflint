@@ -1558,7 +1558,7 @@ int release_semaphore(mflash *mfl, int ignore_writer_lock)
     return MFE_OK;
 }
 
-int gen6_flash_init_com(mflash *mfl, flash_params_t *flash_params, u_int8_t init_cs_support)
+int gen6_flash_init_com(mflash *mfl, flash_params_t *flash_params)
 {
     int rc = 0;
     FLASH_ACCESS_DPRINTF(("gen6_flash_init_com(): Flash init to use direct-access\n"));
@@ -1584,11 +1584,6 @@ int gen6_flash_init_com(mflash *mfl, flash_params_t *flash_params, u_int8_t init
     mfl->f_sst_spi_block_write_ex = new_gw_sst_spi_block_write_ex;
     mfl->f_st_spi_block_read_ex = new_gw_st_spi_block_read_ex;
     mfl->f_spi_write_status_reg = new_gw_spi_write_status_reg;
-    if (init_cs_support) {
-        // Update the chip_select_support according to the banks number of cs.
-        rc = sx_init_cs_support(mfl);
-        CHECK_RC(rc);
-    }
 
     mfl->f_spi_status = cntx_st_spi_get_status;//need fix
     mfl->supp_sr_mod = 1;
@@ -1706,7 +1701,7 @@ int sixth_gen_init_direct_access(mflash *mfl, flash_params_t *flash_params)
     mfl->gcm_en_addr = HCR_NEW_GW_GCM_EN_ADDR;
 
     mfl->f_lock = sixth_gen_flash_lock;
-    return gen6_flash_init_com(mfl, flash_params, 0);
+    return gen6_flash_init_com(mfl, flash_params);
 }
 
 int fifth_gen_init_direct_access(mflash *mfl, flash_params_t *flash_params)
@@ -2241,6 +2236,195 @@ int get_dev_info(mflash *mfl)
     return MFE_OK;
 
 }
+
+void set_gpio_toggle_conf_cx6(gpio_toggle_conf_cx6* conf) {
+    conf->lock_addr = 0xf1004;
+    conf->functional_enable0_addr = 0xfc028;
+    conf->functional_enable1_addr = 0xfc024;
+    conf->mode1_set_addr = 0xfc04c;
+    conf->mode0_set_addr = 0xfc054;
+    conf->dataset_addr = 0xfc014;
+}
+
+void set_gpio_toggle_conf_bf2(gpio_toggle_conf_cx6* conf) {
+    conf->lock_addr = 0xf1084;
+    conf->functional_enable0_addr = 0xfa028;
+    conf->functional_enable1_addr = 0xfa024;
+    conf->mode1_set_addr = 0xfa04c;
+    conf->mode0_set_addr = 0xfa054;
+    conf->dataset_addr = 0xfa014;
+}
+
+void set_gpio_toggle_conf_cx7(gpio_toggle_conf_cx7* conf) {
+    conf->select_synced_data_out_addr = 0xf1078;
+    conf->fw_control_set_addr = 0xf1100;
+    conf->hw_data_in_addr = 0xf1078;
+    conf->fw_output_enable_set_addr = 0xf1104;
+    conf->fw_data_out_set_addr = 0xf1108;
+}
+
+bool toggle_flash_io3_gpio_cx6(mfile* mf, gpio_toggle_conf_cx6 conf) {
+    FLASH_DPRINTF(("toggle_flash_io3_gpio_cx6\n"));
+    // Enable lock
+    if (mwrite4(mf, conf.lock_addr, 0xd42f) != 4) {
+        printf("-E- failed to enable GPIO lock\n");
+        return MFE_CR_ERROR;
+    }
+
+    //* Make sure GPIO 29 is controlled by FW (for our usage) instead of HW
+    // Enable functional_enable0
+    u_int32_t functional_enable0 = 0;
+    if (mread4(mf, conf.functional_enable0_addr, &functional_enable0) != 4) {
+        printf("-E- failed to read functional_enable0\n");
+        return MFE_CR_ERROR;
+    }
+    functional_enable0 = functional_enable0 & 0xdfffffff;
+    if (mwrite4(mf, conf.functional_enable0_addr, functional_enable0) != 4) {
+        printf("-E- failed to enable GPIO functional_enable0\n");
+        return MFE_CR_ERROR;
+    }
+    // Enable functional_enable1
+    u_int32_t functional_enable1 = 0;
+    if (mread4(mf, conf.functional_enable1_addr, &functional_enable1) != 4) {
+        printf("-E- failed to read functional_enable1\n");
+        return MFE_CR_ERROR;
+    }
+    functional_enable1 = functional_enable1 & 0xdfffffff;
+    if (mwrite4(mf, conf.functional_enable1_addr, functional_enable1) != 4) {
+        printf("-E- failed to enable GPIO functional_enable1\n");
+        return MFE_CR_ERROR;
+    }
+
+    // Write to mode1_set
+    u_int32_t mode1_set = 0;
+    if (mread4(mf, conf.mode1_set_addr, &mode1_set) != 4) {
+        printf("-E- failed to read mode1_set\n");
+        return MFE_CR_ERROR;
+    }
+    mode1_set = mode1_set | 0x20000000;
+    if (mwrite4(mf, conf.mode1_set_addr, mode1_set) != 4) {
+        printf("-E- failed to write to mode1_set\n");
+        return MFE_CR_ERROR;
+    }
+
+    //* Write to GPIO 29
+    // Write to mode0_set
+    u_int32_t mode0_set = 0;
+    if (mread4(mf, conf.mode0_set_addr, &mode0_set) != 4) {
+        printf("-E- failed to read mode0_set\n");
+        return MFE_CR_ERROR;
+    }
+    mode0_set = mode0_set | 0x20000000;
+    if (mwrite4(mf, conf.mode0_set_addr, mode0_set) != 4) {
+        printf("-E- failed to write to mode0_set\n");
+        return MFE_CR_ERROR;
+    }
+
+    // Write to dataset
+    if (mwrite4(mf, conf.dataset_addr, 0x20000000) != 4) {
+        printf("-E- failed to write to dataset\n");
+        return MFE_CR_ERROR;
+    }
+
+    return true;
+}
+
+bool toggle_flash_io3_gpio_cx7(mfile* mf, gpio_toggle_conf_cx7 conf) {
+    FLASH_DPRINTF(("toggle_flash_io3_gpio_cx7\n"));
+    // write 0x0 to select_synced_data_out.16:1
+    u_int32_t select_synced_data_out = 0;
+    if (mread4(mf, conf.select_synced_data_out_addr, &select_synced_data_out) != 4) {
+        printf("-E- failed to read select_synced_data_out\n");
+        return MFE_CR_ERROR;
+    }
+    select_synced_data_out = select_synced_data_out & 0xfffeffff;
+    if (mwrite4(mf, conf.select_synced_data_out_addr, select_synced_data_out) != 4) {
+        printf("-E- failed to write 0x0 to select_synced_data_out.16:1\n");
+        return MFE_CR_ERROR;
+    }
+
+    // write 0x3 to fw_control_set.28:2
+    u_int32_t fw_control_set = 0;
+    if (mread4(mf, conf.fw_control_set_addr, &fw_control_set) != 4) {
+        printf("-E- failed to read fw_control_set\n");
+        return MFE_CR_ERROR;
+    }
+    fw_control_set = fw_control_set | 0x30000000;
+    if (mwrite4(mf, conf.fw_control_set_addr, fw_control_set) != 4) {
+        printf("-E- failed to write 0x3 to fw_control_set.28:2\n");
+        return MFE_CR_ERROR;
+    }
+
+    // write 0x3 to hw_data_in.4:2
+    u_int32_t hw_data_in = 0;
+    if (mread4(mf, conf.hw_data_in_addr, &hw_data_in) != 4) {
+        printf("-E- failed to read hw_data_in\n");
+        return MFE_CR_ERROR;
+    }
+    hw_data_in = hw_data_in | 0x00000030;
+    if (mwrite4(mf, conf.hw_data_in_addr, hw_data_in) != 4) {
+        printf("-E- failed to write 0x3 to hw_data_in.4:2\n");
+        return MFE_CR_ERROR;
+    }
+
+    // write 0x3 to fw_output_enable_set.28:2
+    u_int32_t fw_output_enable_set = 0;
+    if (mread4(mf, conf.fw_output_enable_set_addr, &fw_output_enable_set) != 4) {
+        printf("-E- failed to read fw_output_enable_set\n");
+        return MFE_CR_ERROR;
+    }
+    fw_output_enable_set = fw_output_enable_set | 0x30000000;
+    if (mwrite4(mf, conf.fw_output_enable_set_addr, fw_output_enable_set) != 4) {
+        printf("-E- failed to write 0x3 to fw_output_enable_set.28:2\n");
+        return MFE_CR_ERROR;
+    }
+
+    // write 0x3 to fw_data_out_set.28:2
+    u_int32_t fw_data_out_set = 0;
+    if (mread4(mf, conf.fw_data_out_set_addr, &fw_data_out_set) != 4) {
+        printf("-E- failed to read fw_data_out_set\n");
+        return MFE_CR_ERROR;
+    }
+    fw_data_out_set = fw_data_out_set | 0x30000000;
+    if (mwrite4(mf, conf.fw_data_out_set_addr, fw_data_out_set) != 4) {
+        printf("-E- failed to write 0x3 to fw_data_out_set.28:2\n");
+        return MFE_CR_ERROR;
+    }
+
+    return true;
+}
+
+bool force_flash_out_of_hold_state(mflash *mfl) {
+    bool res = true;
+    if (dm_is_livefish_mode(mfl->mf)) { // TODO - consider moving this after checking if device type should support second source flash
+        switch (mfl->dm_dev_id) {
+            case DeviceConnectX6:
+            case DeviceConnectX6DX: {
+                gpio_toggle_conf_cx6 gpio_toggle_conf;
+                set_gpio_toggle_conf_cx6(&gpio_toggle_conf);
+                res = toggle_flash_io3_gpio_cx6(mfl->mf, gpio_toggle_conf);
+                break;
+            }
+            case DeviceBlueField2: {
+                gpio_toggle_conf_cx6 gpio_toggle_conf;
+                set_gpio_toggle_conf_bf2(&gpio_toggle_conf);
+                res = toggle_flash_io3_gpio_cx6(mfl->mf, gpio_toggle_conf);
+                break;
+            }
+            case DeviceConnectX7: {
+                gpio_toggle_conf_cx7 gpio_toggle_conf;
+                set_gpio_toggle_conf_cx7(&gpio_toggle_conf);
+                res = toggle_flash_io3_gpio_cx7(mfl->mf, gpio_toggle_conf);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    return res;
+}
+
 //Caller must zero the mflash struct before calling this func.
 int mf_open_fw(mflash *mfl, flash_params_t *flash_params, int num_of_banks)
 {
@@ -2272,6 +2456,11 @@ int mf_open_fw(mflash *mfl, flash_params_t *flash_params, int num_of_banks)
         mfl->opts[MFO_NUM_OF_BANKS] = spi_get_num_of_flashes(num_of_banks);
         rc = spi_update_num_of_banks(mfl, num_of_banks);
         CHECK_RC(rc);
+
+        //* Before initializing flash methods (which including accessing the flash)
+        //* we need to toggle GPIO to get flash out of HOLD state (relevant to second source flash Winbond W25Q256JV)
+        rc = force_flash_out_of_hold_state(mfl);
+
         int is7NmSuppported = 0;
         MfError status;
         int icmdif_supported = is_icmdif_supported(mfl, &status, &is7NmSuppported);
