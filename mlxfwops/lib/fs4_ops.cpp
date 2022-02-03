@@ -3635,7 +3635,13 @@ bool Fs4Operations::getBootRecordSize(u_int32_t& boot_record_size) {
         // For devices after Carmel we need to ignore the last 4B (CRC/auth-tag)
         case CT_BLUEFIELD3:
             boot_record_size = 0x4d0; // Actual size is 0x4d4
-            return true;        
+            return true;
+        case CT_SPECTRUM4:
+            boot_record_size = 0x4f0; // Actual size is 0x4f4
+            return true;
+        case CT_ABIR_GEARBOX:
+            boot_record_size = 0x3fc; // Actual size is 0x400
+            return true;
 
         default:
             return false;
