@@ -1374,6 +1374,12 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
         if reset_level == CmdRegMfrl.PCI_RESET:
             # reset PCI
             resetPciAddr(device,devicesSD,driverObj, cmdLineArgs)
+        elif reset_level == CmdRegMfrl.WARM_REBOOT:
+            if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
+                stopDriver(driverObj)
+            else:
+                stopDriverSync(driverObj)
+            rebootMachine()
 
         # Wait for FW to be ready to get ICMD
         try:
@@ -1440,16 +1446,12 @@ def execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, cmdLineAr
 
     if reset_level == mfrl.LIVE_PATCH:
         send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
-    elif reset_level == mfrl.PCI_RESET:
+    elif reset_level in [mfrl.PCI_RESET, mfrl.WARM_REBOOT]:
         if reset_sync == SyncOwner.DRIVER:
             send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync)
         else:
             resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl)
-    elif reset_level == mfrl.WARM_REBOOT:
-        send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
-        rebootMachine()
     elif reset_level == mfrl.COLD_REBOOT:
-        send_reset_cmd_to_fw(mfrl, mfrl.WARM_REBOOT, reset_type)
         print("-I- Cold reboot required. please power cycle machine to load new FW.")
     else:
         raise RuntimeError("Unknown reset level")
@@ -1762,12 +1764,10 @@ def main():
         print("{0} reset level for device, {1}:\n".format(minimal_or_requested , device))
         print("{0}: {1}".format(reset_level,mfrl.reset_level_description(reset_level)))
 
-        if (reset_level == 4):
-            print("\n-W- Note that reset in this level (4) is not supported on multi-host setups and Bluefield devices\n")
 
         AskUser("Continue with reset", yes)
         execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, args, mfrl)
-        if reset_level != CmdRegMfrl.COLD_REBOOT and reset_level != CmdRegMfrl.WARM_REBOOT:
+        if reset_level != CmdRegMfrl.COLD_REBOOT:
             if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
                 reset_fsm_register()
                 print("-E- Firmware reset failed, retry operation or reboot machine.")
