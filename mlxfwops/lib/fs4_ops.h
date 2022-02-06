@@ -115,6 +115,7 @@ public:
     bool IsLifeCycleAccessible(chip_type_t chip_type);
     bool IsSecurityVersionViolated(u_int32_t image_security_version);
     bool GetImageInfo(u_int8_t *buff);
+    bool getImageSize(u_int32_t* image_size);
 
 protected:
     struct fs4_toc_info {

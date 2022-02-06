@@ -2521,6 +2521,10 @@ bool FwOperations::IsSecurityVersionViolated(u_int32_t)
     return false;
 }
 
+bool FwOperations::getImageSize(u_int32_t*){
+    return errmsg("GetImageSize is not supported");
+}
+
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
 bool FwOperations::CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize)
 {

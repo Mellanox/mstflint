@@ -3500,6 +3500,27 @@ u_int32_t Fs4Operations::getImageSize()
     return _fwImgInfo.lastImageAddr - _fwImgInfo.imgStart;
 }
 
+bool Fs4Operations::getImageSize(u_int32_t* image_size){
+    
+    bool is_encrypted;
+    if (!isEncrypted(is_encrypted)){
+        return false;
+    }
+
+    if (is_encrypted) {
+
+        if (!getEncryptedImageSize(image_size)){
+            return false;
+        }
+    } else {
+        *image_size = getImageSize();
+
+    }
+
+    return true;
+}
+
+
 void Fs4Operations::MaskItocSectionAndEntry(u_int32_t itocType, vector<u_int8_t>& img)
 {
     for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++) {
