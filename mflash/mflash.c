@@ -2396,7 +2396,7 @@ bool toggle_flash_io3_gpio_cx7(mfile* mf, gpio_toggle_conf_cx7 conf) {
 
 bool force_flash_out_of_hold_state(mflash *mfl) {
     bool res = true;
-    if (dm_is_livefish_mode(mfl->mf)) { // TODO - consider moving this after checking if device type should support second source flash
+    if (getenv("FORCE_GPIO_TOGGLE") != NULL || dm_is_livefish_mode(mfl->mf)) {
         switch (mfl->dm_dev_id) {
             case DeviceConnectX6:
             case DeviceConnectX6DX: {
