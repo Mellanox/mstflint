@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2021 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -31,51 +31,48 @@
  * SOFTWARE.
  */
 
-#ifndef MLXSIGN_ERRORS_H_
-#define MLXSIGN_ERRORS_H_
+#ifndef USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_
+#define USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_
 
-namespace MlxSign
-{
 
-enum SHAType
-{
-    SHA256,
-    SHA512
+#include "mlxsign_lib.h"
+
+using namespace std;
+
+/*
+ * Class Signer: interface for various types of signers
+ */
+
+class Signer {
+public:
+    virtual ~Signer() {};
+    virtual MlxSign::ErrorCode Init() = 0;
+    virtual MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature) = 0;
 };
 
-enum ErrorCode
-{
-    MLX_SIGN_SUCCESS = 0,
-    MLX_SIGN_SHA_INIT_ERROR,
-    MLX_SIGN_SHA_CALCULATION_ERROR,
-    MLX_SIGN_ERROR,
+class MlxSignRSAViaOpenssl : public Signer {
+public:
+    MlxSignRSAViaOpenssl(string privPemFileStr);
 
-    MLX_SIGN_RSA_PEM_FILE_ERROR = 0x100,
-    MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR,
-    MLX_SIGN_RSA_FILE_OPEN_ERROR,
-    MLX_SIGN_RSA_FILE_READ_ERROR,
-    MLX_SIGN_RSA_INIT_CTX_ERROR,
-    MLX_SIGN_RSA_CALCULATION_ERROR,
-    MLX_SIGN_RSA_NO_PRIV_KEY_ERROR,
-    MLX_SIGN_RSA_NO_PUB_KEY_ERROR,
-    MLX_SIGN_RSA_KEY_BIO_ERROR,
-    MLX_SIGN_UNSUPPORTED_SHA_TYPE,
-    MLX_SIGN_RSA_KEY_ILLEGAL_OPENSSL_URI,
-    MLX_SIGN_RSA_KEY_ILLEGAL_OPENSSL_ENGINE,
-    MLX_SIGN_RSA_KEY_NOT_FOUND_OPENSSL_ENGINE,
-    MLX_SIGN_RSA_KEY_INIT_ENGINE_OPENSSL_ERROR,
-    MLX_SIGN_RSA_KEY_DIGEST_INIT_OPENSSL_ERROR,
-    MLX_SIGN_RSA_KEY_DIGEST_UPDATE_OPENSSL_ERROR,
-    MLX_SIGN_RSA_KEY_DIGEST_FINAL_OPENSSL_ERROR,
-    MLX_SIGN_RSA_KEY_MEMORY_ALLOC_OPENSSL_ERROR,
-    MLX_SIGN_HMAC_ERROR,
+    MlxSign::ErrorCode Init();
+    MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature);
 
-    MLX_SIGN_AWS_INIT_ERROR = 0x200,
-    MLX_SIGN_AWS_SIGN_ERROR,
-    MLX_SIGN_AWS_GET_KEY_ERROR
-
+private:
+    string _privPemFileStr;
+    MlxSign::SHAType _shaType;
+    MlxSignRSA _rsa;
 };
 
-} // namespace MlxSign
+class MlxSignRSAViaHSM : public Signer {
+public:
+    MlxSignRSAViaHSM(string opensslEngine, string opensslKeyID);
 
-#endif // MLXSIGN_ERRORS_H_
+    MlxSign::ErrorCode Init();
+    MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature);
+
+private:
+    MlxSign::OpensslEngineSigner _engineSigner;
+    string _opensslEngine;
+};
+
+#endif /* USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_ */
