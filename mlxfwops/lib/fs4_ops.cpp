@@ -3341,8 +3341,10 @@ bool Fs4Operations::UpdateSection(void *new_info, fs3_section_t sect_type, bool,
         }
     }
 
-    if (!UpdateSectionHashInHashesTable(newSectionAddr, curr_toc->toc_entry.size * 4, sect_type)) {
-        return false;
+    if (!isDtoc) {
+        if (!UpdateSectionHashInHashesTable(newSectionAddr, curr_toc->toc_entry.size * 4, sect_type)) {
+            return false;
+        }
     }
 
     
