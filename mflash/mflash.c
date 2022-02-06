@@ -2904,6 +2904,8 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
     case DeviceQuantum2:
     case DeviceConnectX7:
     case DeviceBlueField3:
+    case DeviceSpectrum4:
+    case DeviceAbirGearBox:
         return MFE_OK;
     case DeviceSpectrum:
     case DeviceConnectX4:
@@ -2919,16 +2921,15 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
     case DeviceBlueField2:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
-    case DeviceSpectrum4:
     case DeviceGearBox:
     case DeviceGearBoxManager:
-    case DeviceAbirGearBox:
         set_reset_bit_dword_addr = 0xf0c28;
         set_reset_bit_offset = 2;
         break;
     default:
         return MFE_UNSUPPORTED_DEVICE;
     }
+    FLASH_DPRINTF(("mflash::mf_set_reset_flash_on_warm_reboot setting power_boot_partial_reset at addr 0x%x.%d\n", set_reset_bit_dword_addr, set_reset_bit_offset));
     rc = mf_cr_read(mfl, set_reset_bit_dword_addr, &set_reset_bit_dword);
     CHECK_RC(rc);
     set_reset_bit_dword = MERGE(set_reset_bit_dword, 1, set_reset_bit_offset, 1);
@@ -2969,8 +2970,11 @@ int mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr)
     case DeviceSpectrum3:
     case DeviceGearBox:
     case DeviceGearBoxManager:
-    case DeviceAbirGearBox:
         boot_cr_space_address = 0xf0080;
+        offset_in_address = 0;
+        break;
+    case DeviceAbirGearBox:
+        boot_cr_space_address = 0xf1400;
         offset_in_address = 0;
         break;
     case DeviceSpectrum4:
@@ -2989,6 +2993,7 @@ int mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr)
 
     if (mfl->access_type != MFAT_UEFI && mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] != ATBM_MLNXOS_CMDIF) {
         // the boot addr will be updated directly via cr-space
+        FLASH_DPRINTF(("mflash::mf_update_boot_addr setting boot_start_address at addr 0x%x to 0x%x\n", boot_cr_space_address, boot_addr << offset_in_address));
         rc = mf_cr_write(mfl, boot_cr_space_address, boot_addr << offset_in_address);
         CHECK_RC(rc);
         return mf_set_reset_flash_on_warm_reboot(mfl);

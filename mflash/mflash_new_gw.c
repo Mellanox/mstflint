@@ -172,13 +172,13 @@ static int new_gw_exec_cmd_get(mflash *mfl, u_int32_t gw_cmd, u_int32_t *buff, i
 /*
  * Set input in: data0...data3 from the flash interface and execute a flash GW command
  *
- * mfl - pointer to an initilized mflash obj
+ * mfl - pointer to an initialized mflash obj
  * gw_cmd - the flash gateway command to execute
  * buff - if != NULL pointer to a buffer to the input data for the flash GW.
  * buff_dword_sz - size for buff in dwords
  * addr - if != NULL *addr will be written to the addr bits of the flash GW. (for commands that write from flash)
  * msg - optional string that describes the action for debug purposes, not used ATM however its recommended to put usefull
- *        data for future dubugabillity.
+ *        data for future debugability.
  * return : MFE_OK (0) upon success or a value != 0 upon error accroding to mlfash error code.
  */
 static int new_gw_exec_cmd_set(mflash *mfl, u_int32_t gw_cmd, u_int32_t *buff, int buff_dword_sz,
@@ -364,7 +364,7 @@ int new_gw_st_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_
         word = MERGE(word, data[offs + 3], 0, 8);
         //MWRITE4(HCR_FLASH_DATA + offs, word );
         buff[offs / 4] = word;
-        DPRINTF(("-D- word = %#x, %d\n", word, HBS_CMD));
+        DPRINTF(("-D- word = 0x%08x, %d\n", word, HBS_CMD));
     }
 
     rc = new_gw_exec_cmd_set(mfl, gw_cmd, buff, (blk_size >> 2), &gw_addr, "PP command");

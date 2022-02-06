@@ -3631,6 +3631,7 @@ bool Fs3Operations::invalidateOldFWImages(const u_int32_t magic_pattern[], Flash
     u_int32_t zeroes = 0;
     u_int32_t image_start_addrs[CNTX_START_POS_SIZE] = {0};
     u_int32_t num_of_images_found;
+    DPRINTF(("Fs3Operations::invalidateOldFWImages new_image_start=0x%08x\n", new_image_start));
 
     FindAllImageStart(flash_access, image_start_addrs, &num_of_images_found, magic_pattern);
     // Address convertor is disabled after FindAllImageStart() - use phys addresses
@@ -3685,6 +3686,7 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[], Fs3Operatio
             } else {
                 flash_access->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, is_curr_image_in_odd_chunks);
             }
+            DPRINTF(("Fs3Operations::DoAfterBurnJobs - Invalidating old fw signature\n"));
             if (!flash_access->write(0, &zeroes, sizeof(zeroes), true)) {
                 return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", flash_access->err());
             }
