@@ -286,7 +286,7 @@ private:
     u_int32_t _authentication_end_ptr;
     u_int32_t _digest_mdk_ptr;
     u_int32_t _digest_recovery_key_ptr;
-    u_int32_t _hmac_start_ptr;
+    u_int32_t _image_info_section_ptr;
     u_int32_t _public_key_ptr;
     u_int32_t _security_version;
     u_int32_t _gcm_image_iv;

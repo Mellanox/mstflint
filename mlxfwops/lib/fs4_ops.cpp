@@ -287,7 +287,7 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FB
     _security_version = hw_pointers.fw_security_version_pointer.ptr;
     _gcm_image_iv = hw_pointers.gcm_iv_delta_pointer.ptr;
     _hashes_table_ptr = hw_pointers.hashes_table_pointer.ptr;
-    _hmac_start_ptr = hw_pointers.hmac_start_pointer.ptr; // In case of encrypted device points to IMAGE_INFO section
+    _image_info_section_ptr = hw_pointers.image_info_section_pointer.ptr;
 
     _is_hw_ptrs_initialized = true;
     return true;
@@ -982,7 +982,7 @@ bool Fs4Operations::GetImageInfo(u_int8_t *buff)
 
 bool Fs4Operations::encryptedFwReadImageInfoSection() {
     //* Read IMAGE_INFO section
-    u_int32_t image_info_section_addr = _hmac_start_ptr + _fwImgInfo.imgStart;
+    u_int32_t image_info_section_addr = _image_info_section_ptr + _fwImgInfo.imgStart;
     DPRINTF(("Fs4Operations::encryptedFwReadImageInfoSection image_info_section_addr = 0x%x\n", image_info_section_addr));
     vector<u_int8_t> image_info_data;
     image_info_data.resize(IMAGE_LAYOUT_IMAGE_INFO_SIZE);
