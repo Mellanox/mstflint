@@ -2521,7 +2521,7 @@ bool FwOperations::IsSecurityVersionViolated(u_int32_t)
     return false;
 }
 
-bool FwOperations::getImageSize(u_int32_t*){
+bool FwOperations::GetImageSize(u_int32_t*){
     return errmsg("GetImageSize is not supported");
 }
 

@@ -3500,7 +3500,7 @@ u_int32_t Fs4Operations::getImageSize()
     return _fwImgInfo.lastImageAddr - _fwImgInfo.imgStart;
 }
 
-bool Fs4Operations::getImageSize(u_int32_t* image_size){
+bool Fs4Operations::GetImageSize(u_int32_t* image_size){
     
     bool is_encrypted;
     if (!isEncrypted(is_encrypted)){
