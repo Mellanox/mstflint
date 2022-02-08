@@ -1451,8 +1451,6 @@ def execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, cmdLineAr
             send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync)
         else:
             resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl)
-    elif reset_level == mfrl.COLD_REBOOT:
-        print("-I- Cold reboot required. please power cycle machine to load new FW.")
     else:
         raise RuntimeError("Unknown reset level")
 
@@ -1767,13 +1765,12 @@ def main():
 
         AskUser("Continue with reset", yes)
         execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, args, mfrl)
-        if reset_level != CmdRegMfrl.COLD_REBOOT:
-            if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
-                reset_fsm_register()
-                print("-E- Firmware reset failed, retry operation or reboot machine.")
-                return 1
-            else:
-                print("-I- FW was loaded successfully.")
+        if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
+            reset_fsm_register()
+            print("-E- Firmware reset failed, retry operation or reboot machine.")
+            return 1
+        else:
+            print("-I- FW was loaded successfully.")
     elif command == "reset_fsm_register":
         reset_fsm_register()
         print("-I- FSM register was reset successfully.")
