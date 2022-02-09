@@ -186,6 +186,7 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
 #ifndef NO_OPEN_SSL
     cmdMap[SC_Export_Public_Key] = new ExportPublicSubCommand();
 #endif
+    cmdMap[SC_RSA_Inject_New_Key] = new RSAInjectNewKey();
     return cmdMap;
 }
 
@@ -256,7 +257,7 @@ FlintStatus Flint::run(int argc, char *argv[])
     //Step 4 execute command from the correct subcommand class
     if (_subcommands.count(_flintParams.cmd) == 0) {
         // should not be reached
-        printf("-E- FATAL: command object not found.");
+        printf("-E- FATAL: command object not found.\n");
         return FLINT_FAILED;
     }
     _subcommands[_flintParams.cmd]->setParams(_flintParams);

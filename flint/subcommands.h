@@ -321,6 +321,14 @@ public:
     bool verifyParams();
 };
 
+class RSAInjectNewKey : public SignRSASubCommand
+{
+public:
+    RSAInjectNewKey();
+    ~RSAInjectNewKey();
+    FlintStatus executeCommand();
+};
+
 class SetPublicKeysSubCommand : public SubCommand
 {
 private:

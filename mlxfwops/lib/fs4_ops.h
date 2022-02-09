@@ -42,6 +42,7 @@
 #include "fw_ops.h"
 #include "fs3_ops.h"
 #include "aux_tlv_ops.h"
+#include "mlxsign_signer_interface.h"
 
 #define FS4_MAX_BIN_VER_MAJOR 1
 #define FS4_MIN_BIN_VER_MAJOR 1
@@ -85,6 +86,8 @@ public:
     bool signForSecureBoot(const char *private_key_file, const char *public_key_file, const char *guid_key_file);
     bool signForSecureBootUsingHSM(const char *public_key_file, const char *uuid, MlxSign::OpensslEngineSigner& engineSigner);
     bool signForFwUpdateUsingHSM(const char *uuid, MlxSign::OpensslEngineSigner& engineSigner, PrintCallBack printFunc);
+    virtual bool InjectNewPublicKeyAndSignaturesUsingOpenSSL(const char *private_key_file, const char *public_key_file, const char *guid_key_file);
+    virtual bool InjectNewPublicKeyAndSignaturesUsingHSM(const string& opensslEngine, const string& opensslKeyId, const char *public_key_file, const char *guid_key_file);
     virtual bool PreparePublicKeyData(const char *public_key_file, vector <u_int8_t>& publicKeyData, unsigned int& pem_offset);
     virtual bool storePublicKeyInSection(const char *public_key_file, const char *uuid);
     virtual bool storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature, vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
@@ -274,6 +277,11 @@ private:
     bool SetImageIVHwPointer();
     void RemoveCRCsFromMainSection(vector<u_int8_t>& img);
     bool RemoveCRCFromBootRecord(vector<u_int8_t>& img);
+
+    virtual bool GetPublicKeyDataFromFile(const char *public_key_file, const char *uuid, struct image_layout_public_keys_3* public_key);
+    virtual bool GetSecureBootSignatures(MlxSign::Signer& signer, struct image_layout_secure_boot_signatures* signatures);
+    virtual bool GetFWUpdateSignature(MlxSign::Signer& signer, const char *uuid, struct image_layout_image_signature_2* signature);
+    virtual bool InjectNewPublicKeyAndSignatures(MlxSign::Signer& signer, const char *public_key_file, const char *guid_key_file);
 
     // Members
     Fs4ImgInfo _fs4ImgInfo;

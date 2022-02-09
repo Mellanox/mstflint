@@ -123,6 +123,7 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("", "rsa_sign", SC_RSA_Sign));
     _sCmds.push_back(new SubCmd("", "import_hsm_key", SC_Import_Hsm_Key));
     _sCmds.push_back(new SubCmd("", "export_public_key", SC_Export_Public_Key));
+    _sCmds.push_back(new SubCmd("", "rsa_inject_new_key", SC_RSA_Inject_New_Key));
 }
 
 SubCmdMetaData::~SubCmdMetaData()
