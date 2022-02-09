@@ -182,7 +182,7 @@ protected:
     bool GetImgSigInfo512(u_int8_t *buff);
     bool invalidateOldFWImages(const u_int32_t magic_pattern[], Flash *f, u_int32_t new_image_start);
     bool bootAddrUpdate(Flash *flash_access, u_int32_t new_image_start, ExtBurnParams& burnParams);
-    virtual bool DoAfterBurnJobs(const u_int32_t magic_patter[], Fs3Operations &imageOps,
+    bool DoAfterBurnJobs(const u_int32_t magic_patter[], Fs3Operations &imageOps,
                          ExtBurnParams& burnParams, Flash *flash_access,
                          u_int32_t new_image_start, u_int8_t is_curr_image_in_odd_chunks);
     bool CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr,
