@@ -2845,7 +2845,6 @@ bool Fs4Operations::IsSectionShouldBeHashed(fs3_section_t section_type) {
     switch (section_type) {
         case FS3_PUBLIC_KEYS_2048:
         case FS3_PUBLIC_KEYS_4096:
-        case FS4_RSA_PUBLIC_KEY:
         case FS3_IMAGE_SIGNATURE_256:
         case FS3_IMAGE_SIGNATURE_512:
         case FS4_RSA_4096_SIGNATURES:
