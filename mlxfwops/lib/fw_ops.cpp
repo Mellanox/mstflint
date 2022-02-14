@@ -2452,7 +2452,8 @@ bool FwOperations::CreateSignatureManager()
         return true;
     }
     else {//BIN file
-        _signatureMngr = SignatureManagerFactory::GetInstance()->CreateSignatureManager(_fwImgInfo.ext_info.chip_type);
+        // For images we get the AbstractSignatureManager (base class) since we don't know the chip type in this stage
+        _signatureMngr = SignatureManagerFactory::GetInstance()->CreateSignatureManager(CT_UNKNOWN);
         return true;
     }
     return false;
