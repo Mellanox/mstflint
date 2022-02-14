@@ -3670,7 +3670,7 @@ bool Fs4Operations::getBootRecordSize(u_int32_t& boot_record_size) {
             boot_record_size = 0x4f0; // Actual size is 0x4f4
             return true;
         case CT_ABIR_GEARBOX:
-            boot_record_size = 0x3fc; // Actual size is 0x400
+            boot_record_size = 0x260; // Actual size is 0x264
             return true;
 
         default:
