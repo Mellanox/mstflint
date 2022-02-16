@@ -156,9 +156,11 @@ private:
     public:
         struct image_layout_htoc_header header;
         struct image_layout_htoc_entry entries[MAX_HTOC_ENTRIES_NUM];
+        u_int32_t htoc_start_addr;
 
         HTOC(vector<u_int8_t> img, u_int32_t hashes_table_start_addr);
-        bool getEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
+        bool GetEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
+        bool AddNewEntry(FBase* ioAccess, fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
     };
 
     struct Fs4ImgInfo {

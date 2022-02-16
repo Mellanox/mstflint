@@ -2886,10 +2886,14 @@ bool Fs4Operations::UpdateHashInHashesTable(fs3_section_t section_type, vector<u
     const u_int32_t htoc_address = _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE;
     HTOC* htoc = new HTOC(img, htoc_address);
 
+    // TODO - move below logic to HTOC
     //* Get hash addr in hashes_table
     struct image_layout_htoc_entry htoc_entry;
-    if (!htoc->getEntryBySectionType(section_type, htoc_entry)) {
-        return errmsg("Can't find section type 0x%x in htoc", section_type);
+    if (!htoc->GetEntryBySectionType(section_type, htoc_entry)) {
+        DPRINTF(("Fs4Operations::UpdateHashInHashesTable Can't find section type 0x%x in htoc\n", section_type));
+        if (!htoc->AddNewEntry(_ioAccess, section_type, htoc_entry)) {
+            return errmsg("Failed to add new entry of section type 0x%x to htoc", section_type);
+        }
     }
     u_int32_t hash_addr = htoc_address + htoc_entry.hash_offset;
     u_int32_t hash_size = htoc->header.hash_size;
@@ -4648,13 +4652,14 @@ Fs4Operations::TocArray::TocArray()
     memset(&tocHeader, 0, sizeof(tocHeader));
 }
 
-Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t hashes_table_start_addr) {
+Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr) {
+    this->htoc_start_addr = htoc_start_addr;
     //* Parse header
-    vector<u_int8_t> header_data(img.begin() + hashes_table_start_addr, img.begin() + hashes_table_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE);
+    vector<u_int8_t> header_data(img.begin() + htoc_start_addr, img.begin() + htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE);
     image_layout_htoc_header_unpack(&header, header_data.data());
     // image_layout_htoc_header_dump(&header, stdout);
     //* Parse entries
-    u_int32_t entries_start_addr = hashes_table_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE;
+    u_int32_t entries_start_addr = htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE;
     for (int ii = 0; ii < header.num_of_entries; ii++) {
         u_int32_t entry_addr = entries_start_addr + ii * IMAGE_LAYOUT_HTOC_ENTRY_SIZE;
         vector<u_int8_t> entry_data(img.begin() + entry_addr, img.begin() + entry_addr + IMAGE_LAYOUT_HTOC_ENTRY_SIZE);
@@ -4663,7 +4668,42 @@ Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t hashes_table_start_add
     }
 }
 
-bool Fs4Operations::HTOC::getEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry) {
+bool Fs4Operations::HTOC::AddNewEntry(FBase* ioAccess, fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry) {
+    DPRINTF(("Fs4Operations::HTOC::AddNewEntry htoc num_of_entries = %d\n", header.num_of_entries));
+    if (header.num_of_entries == MAX_HTOC_ENTRIES_NUM) {
+        return false;
+    }
+
+    //* Preparing new htoc entry struct
+    u_int32_t htoc_size = IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * IMAGE_LAYOUT_HTOC_ENTRY_SIZE;
+    u_int32_t htoc_entry_index = header.num_of_entries;
+    htoc_entry.hash_offset = htoc_size + (htoc_entry_index * header.hash_size);
+    htoc_entry.section_type = section_type;
+
+    //* Writing new htoc entry
+    u_int32_t htoc_entry_addr = htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE + htoc_entry_index * IMAGE_LAYOUT_HTOC_ENTRY_SIZE;
+    vector<u_int8_t> htoc_entry_data;
+    htoc_entry_data.resize(IMAGE_LAYOUT_HTOC_ENTRY_SIZE);
+    image_layout_htoc_entry_pack(&htoc_entry, htoc_entry_data.data());
+    DPRINTF(("Fs4Operations::HTOC::AddNewEntry Writing new htoc entry at addr 0x%x\n", htoc_entry_addr));
+    if (!ioAccess->write(htoc_entry_addr, htoc_entry_data.data(), IMAGE_LAYOUT_HTOC_ENTRY_SIZE)) {
+        return false;
+    }
+
+    //* Updating and writing htoc header
+    header.num_of_entries++;
+    vector<u_int8_t> htoc_header_data;
+    htoc_header_data.resize(IMAGE_LAYOUT_HTOC_HEADER_SIZE);
+    image_layout_htoc_header_pack(&header, htoc_header_data.data());
+    DPRINTF(("Fs4Operations::HTOC::AddNewEntry Writing updated htoc header at addr 0x%x\n", htoc_start_addr));
+    if (!ioAccess->write(htoc_start_addr, htoc_header_data.data(), IMAGE_LAYOUT_HTOC_HEADER_SIZE)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Fs4Operations::HTOC::GetEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry) {
     bool res = false;
     for (int ii = 0; ii < header.num_of_entries; ii++) {
         if (entries[ii].section_type == section_type) {
