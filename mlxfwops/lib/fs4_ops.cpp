@@ -474,7 +474,7 @@ void Fs4Operations::RemoveCRCsFromMainSection(vector<u_int8_t>& img) {
     struct fs4_toc_info* main_itoc_entry = NULL;
     fs4_toc_info *itoc_entries = _fs4ImgInfo.itocArr.tocArr;
     for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++) {
-        if (itoc_entries[i].toc_entry.type == FS3_MAIN_CODE) {
+        if (itoc_entries[i].toc_entry.cache_line_crc) {
             main_itoc_entry = &(itoc_entries[i]);
             break;
         }
@@ -495,9 +495,9 @@ void Fs4Operations::RemoveCRCsFromMainSection(vector<u_int8_t>& img) {
     //* Copying MAIN section without CRCs
     const u_int32_t MAIN_LINE_SIZE = 68; // Line in MAIN is 64B data + 4B crc
     const u_int32_t MAIN_LINE_DATA_ONLY_SIZE = MAIN_LINE_SIZE - 4;
-    for (u_int32_t ii = 0; ii < main_size; ii += MAIN_LINE_SIZE) {
-        u_int32_t line_start_addr = main_addr + ii;
-        if (ii + MAIN_LINE_SIZE > main_size) {
+    for (u_int32_t offset = 0; offset < main_size; offset += MAIN_LINE_SIZE) {
+        u_int32_t line_start_addr = main_addr + offset;
+        if (offset + MAIN_LINE_SIZE > main_size) {
             // In case last line isn't a full line there will be no CRC
             tmp_img.insert(tmp_img.end(), img.begin() + line_start_addr, img.begin() + main_addr + main_size);
         }
