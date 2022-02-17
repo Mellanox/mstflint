@@ -590,6 +590,15 @@ int cntx_get_flash_info(mflash *mfl, flash_info_t *f_info, int *log2size, u_int8
     if (rc == MFE_OK && *no_flash == 0) {
         memcpy(f_info, &g_flash_info_arr[type_index], sizeof(flash_info_t));
     }
+    //* Check if device supports 4-bytes addr, otherwise override its erase command to 3-bytes addr
+    MfError status = MFE_OK;
+    int four_byte_address_needed = is_four_byte_address_needed(mfl, &status);
+    if (status != MFE_OK) {
+        return status;
+    }
+    if (!four_byte_address_needed) {
+        f_info->erase_command = SFC_SSE;
+    }
     return rc;
 }
 
