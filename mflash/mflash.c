@@ -413,7 +413,7 @@ flash_info_t g_flash_info_arr[] = { {"M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY, 
                                     //added by edwardg 06/09/2020
                                     {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
                                     {GIGA_3V_NAME,     FV_GD25QXXX,  FVT_GD25QXXX,  1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
-                                    {GIGA_3V_NAME,     FV_GD25QXXX,  FVT_GD25QXXX,  1 << FD_128, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0}
+                                    {GIGA_3V_NAME,     FV_GD25QXXX,  FVT_GD25QXXX,  1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0}
 };
 
 int cntx_sst_get_log2size(u_int8_t density, int *log2spi_size)
