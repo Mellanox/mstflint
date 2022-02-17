@@ -2749,9 +2749,6 @@ bool Fs4Operations::UpdateCertChainSection(struct fs4_toc_info *curr_toc, char *
     if (!ReadBinFile(certChainFile, cert_chain_buff, cert_chain_buff_size)) {
         return false;
     }
-    if (cert_chain_buff_size % 4) {
-        return errmsg("Size of attestation certificate chain file: 0x%x is not 4-byte aligned!", cert_chain_buff_size);
-    }
 
     //* Assert given certificate chain doesn't exceed its allocated size
     u_int32_t cert_chain_0_section_size = curr_toc->toc_entry.size << 2;
