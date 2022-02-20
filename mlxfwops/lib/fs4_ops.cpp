@@ -1080,10 +1080,8 @@ bool Fs4Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
     _fs3ImgInfo.ext_info.image_security_version = _security_version;
     _fs3ImgInfo.ext_info.device_security_version_access_method = NOT_VALID;
 
-    if (dm_is_livefish_mode(getMfileObj()) == 1) {
-        if (!QuerySecurityFeatures()) {
-            return false;
-        }
+    if (!QuerySecurityFeatures()) {
+        return false;
     }
 
     memcpy(&(fwInfo->fw_info),  &(_fwImgInfo.ext_info),  sizeof(fw_info_com_t));
