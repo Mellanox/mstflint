@@ -969,7 +969,7 @@ bool Fs4Operations::GetImageInfo(u_int8_t *buff)
                 io = _encrypted_image_io_access; // If encrypted image was given we'll read from it
             }
 
-            READALLOCBUF((*io), ENCRYPTED_IMAGE_LAST_ADDR_LOCATION_IN_BYTES, buff, 4, "IMAGE_LAST_ADDR"); // Reading DWORD from addr 16MB
+            READALLOCBUF((*io), ENCRYPTED_BURN_IMAGE_SIZE_LOCATION_IN_BYTES, buff, 4, "IMAGE_LAST_ADDR"); // Reading DWORD from addr 16MB
             burn_image_size = ((u_int32_t*)buff)[0];
             TOCPU1(burn_image_size);
             free(buff);
