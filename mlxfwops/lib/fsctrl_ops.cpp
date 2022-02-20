@@ -618,12 +618,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &bur
 
 bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
-    std::vector<u_int8_t> imgBuff;
-    if (!imageOps->FwExtractEncryptedImage(imgBuff, true))
-    {
-        return errmsg("Failed to extract encrypted image (%s)", imageOps->err());
-    }
-    return FwBurnAdvanced(imgBuff, burnParams);
+    return FwBurnAdvanced(imageOps, burnParams);
 }
 
 bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
