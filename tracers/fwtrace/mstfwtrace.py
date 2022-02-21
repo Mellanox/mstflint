@@ -349,9 +349,13 @@ def check_secure_fw_args(devInfo):
 
 
 def get_device_info(dev):
+    #check if livefish mode before continue to work with the device
+    CMDIFDEV.getFwInfo()
+
     devIdChipRev = dev.read4(0xf0014)
     devId = devIdChipRev & 0xffff
     chipRev = (devIdChipRev >> 16) & 0xf
+
 
     for devInfo in DEV_INFO_DB:
         if devId in devInfo["dev_id"] and \
@@ -436,8 +440,8 @@ def start_tracer():
         global MST_DEVICE
         global CMDIFDEV
         MST_DEVICE = mtcr.MstDevice(DEV_NAME)
-        devInfo = get_device_info(MST_DEVICE)
         CMDIFDEV = cmdif.CmdIf(MST_DEVICE)
+        devInfo = get_device_info(MST_DEVICE)
        
         if FwTraceUtilities.is_driver_mem_mode_supported():
             try:
