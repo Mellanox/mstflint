@@ -3907,6 +3907,12 @@ bool Fs4Operations::signForSecureBootUsingHSM(const char *public_key_file, const
 
     SecureBootSignVersion secure_boot_version = getSecureBootSignVersion();
 
+    if (secure_boot_version == VERSION_2) {
+        if (!SetImageIVHwPointer()) {
+            return errmsg("signForSecureBoot failed - Error: %s\n", err());
+        }
+    }
+
     if (!storePublicKeyInSection(public_key_file, uuid)) {
         return errmsg("signForSecureBootUsingHSM failed - Error: storePublicKeyInSection failed");
     }
