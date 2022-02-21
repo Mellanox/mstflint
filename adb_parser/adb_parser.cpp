@@ -130,8 +130,12 @@ private:
     bool _enforceGuiChecks;
     string _nname_pattern;
     string _fname_pattern;
+    string _enum_pattern;
     std::map<string, string> defines_map;
     std::set<string> field_attr_names_set;
+    std::set<string> field_spec_attr;
+    std::vector<string> field_mand_attr;
+    std::map<string, string> attr_pattern;
 
     static const string TAG_NODES_DEFINITION;
     static const string TAG_RCS_HEADERS;
@@ -183,6 +187,20 @@ AdbParser::AdbParser(string fileName, Adb *adbCtxt, bool addReserved,
                                                  _enforceGuiChecks(_enforceGuiChecks), _nname_pattern(".*"), _fname_pattern(".*")
 {
     _enforceExtraChecks = enforceExtraChecks;
+
+    // add default patterns
+    _nname_pattern = ".*";
+    _fname_pattern = ".*";
+    _enum_pattern = "(\\s*\\w+\\s*=\\s*(0x)?[0-9a-fA-f]+\\s*(,)?)+";
+
+    // add special attr names
+    field_spec_attr.insert("name");
+    field_spec_attr.insert("offset");
+    field_spec_attr.insert("size");
+    field_spec_attr.insert("descr");
+    field_spec_attr.insert("low_bound");
+    field_spec_attr.insert("high_bound");
+
     if (includePath != "")
     {
         addIncludePaths(adbCtxt, includePath);
@@ -913,12 +931,19 @@ void AdbParser::startConfigElement(const XML_Char **atts, AdbParser *adbParser, 
         string aValue = attrValue(atts, i);
         adbParser->_currentConfig->attrs.insert(
             pair<string, string>(aName, aValue));
-        
+
         // checks that was imported from the gui-parser
         if(adbParser->_enforceGuiChecks)
         {
+            // check if the attribute is mandatory
+            if(!aName.compare("field_mand"))
+            {
+                aValue = regex_replace(aValue, regex("\\s+"), "");
+                boost::split(adbParser->field_mand_attr, aValue, boost::is_any_of(","));
+            }
+
             // check the define statement is according to format
-            if(!aName.compare("define"))
+            else if(!aName.compare("define"))
             {
                 smatch result;
                 regex pattern(TAG_ATTR_DEFINE_PATTERN);
@@ -1002,7 +1027,9 @@ void AdbParser::startConfigElement(const XML_Char **atts, AdbParser *adbParser, 
                     // check if the given pattern is a valid reg expression.
                     try
                     {
-                        regex r(attrValue(atts, "pattern"));
+                        string pattern_value = attrValue(atts, "pattern");
+                        regex r(pattern_value);
+                        adbParser->attr_pattern.insert(pair<string, string>(aValue, pattern_value));
                     }
                     catch(...)
                     {
@@ -1231,6 +1258,18 @@ void AdbParser::startNodeElement(const XML_Char **atts, AdbParser *adbParser, co
         boost::algorithm::trim(nodeName);
         string size = attrValue(atts, "size");
 
+        if(adbParser->_enforceGuiChecks)
+        {
+            // check the node name is compatible with the nname_pattern
+            if(!regex_match(nodeName, regex(adbParser->_nname_pattern)))
+            {
+                raiseException(allowMultipleExceptions,
+                               "Illegal node name: \"" + nodeName + "\" doesn't match the given node name pattern: \"",
+                               adbParser->_nname_pattern + "\", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                               ExceptionHolder::WARN_EXCEPTION);
+            }
+        }
+
         if (adbParser->_enforceExtraChecks)
         {
             if (!AdbParser::checkSpecialChars(nodeName))
@@ -1417,6 +1456,14 @@ void AdbParser::startFieldElement(const XML_Char **atts, AdbParser *adbParser, c
                                           ExceptionHolder::ERROR_EXCEPTION);
             }
         }
+        else if(adbParser->_enforceGuiChecks && !(lowBound == "" && highBound == ""))
+        {
+            expFound = raiseException(allowMultipleExceptions,
+                                          "Field: \"" + adbParser->_currentField->name + "\": both low_bound or high_bound must be specified",
+                                          ", in file: \"" + adbParser->_fileName +
+                                           "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                          ExceptionHolder::WARN_EXCEPTION);
+        }
 
         string subNode = attrValue(atts, "subnode");
 
@@ -1566,11 +1613,79 @@ void AdbParser::startFieldElement(const XML_Char **atts, AdbParser *adbParser, c
             }
         }
 
+        if(adbParser->_enforceGuiChecks)
+        {
+            // check if all mandatory attributes were supplied
+            for(unsigned int i = 0; i < adbParser->field_mand_attr.size(); i++)
+            {
+                if(attrValue(atts, adbParser->field_mand_attr[i].c_str()) == "")
+                {
+                    expFound = raiseException(allowMultipleExceptions,
+                                      "Atrribute: \"" + adbParser->field_mand_attr[i] + "\" for field must be specified.",
+                                      " in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                      ExceptionHolder::ERROR_EXCEPTION);
+                }
+            }
+
+            // check if the field name is compatible with the fname pattern
+            if(!regex_match(adbParser->_currentField->name, regex(adbParser->_fname_pattern)))
+            {
+                expFound = raiseException(allowMultipleExceptions,
+                                          "Illegal field name: \"" + adbParser->_currentField->name +
+                                          "\" doesn't match the given field name pattern",
+                                          ", in file: \"" + adbParser->_fileName +
+                                           "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                          ExceptionHolder::WARN_EXCEPTION);
+            }
+        }
+
         // Add all field attributes
         if (!expFound)
         {
             for (int i = 0; i < attrCount(atts); i++)
             {
+                if(adbParser->_enforceGuiChecks)
+                {
+                    string aName = attrName(atts, i);
+                    string aValue = attrValue(atts, i);
+
+                    // check if the field contains illegal attribute
+                    if(!aName.compare("inst_if") && !aName.compare("inst_ifdef") && !aName.compare("subnode") &&
+                        adbParser->field_attr_names_set.find(aName) != adbParser->field_attr_names_set.end() &&
+                        adbParser->field_spec_attr.find(aName) != adbParser->field_spec_attr.end())
+                    {
+                        expFound = raiseException(allowMultipleExceptions,
+                                      "Unknown attribute: " + aName + " at field: " + adbParser->_currentField->name,
+                                      ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                      ExceptionHolder::ERROR_EXCEPTION);
+                    }
+
+                    if(!aName.compare("enum"))
+                    {
+                        // check the enum attribute is compatible with the enum pattern
+                        if(!regex_match(aValue, regex(adbParser->_enum_pattern)))
+                        {
+                            expFound = raiseException(allowMultipleExceptions,
+                                          "Illegal value: \"" + aValue + "\" for attribute: \"" + aName + "\" ",
+                                          "doesn't match the given attribute pattern, in file: \"" + adbParser->_fileName +
+                                           "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                          ExceptionHolder::WARN_EXCEPTION);
+                        }
+                    }
+                    else
+                    {
+                        // check the attribute name is compatible with the attribute pattern
+                        if(adbParser->attr_pattern.find(aName) != adbParser->attr_pattern.end() &&
+                             !regex_match(aValue, regex(adbParser->attr_pattern[aName])))
+                        {
+                            expFound = raiseException(allowMultipleExceptions,
+                                          "Illegal value: \"" + aValue + "\" for attribute: \"" + aName + "\" ",
+                                          "doesn't match the given attribute pattern, in file: \"" + adbParser->_fileName +
+                                           "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                          ExceptionHolder::WARN_EXCEPTION);
+                        }
+                    }
+                }
                 adbParser->_currentField->attrs[attrName(atts, i)] = attrValue(
                     atts, i);
             }
