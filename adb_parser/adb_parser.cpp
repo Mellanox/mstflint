@@ -1950,6 +1950,8 @@ Adb::~Adb()
     NodesMap::iterator iter;
     for (iter = nodesMap.begin(); iter != nodesMap.end(); iter++)
         delete iter->second;
+
+    delete _logFile;
 }
 
 /**
