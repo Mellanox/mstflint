@@ -315,6 +315,10 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     _fwImgInfo.ext_info.fw_rel_date[1] = (u_int16_t)image_info.FW_VERSION.Month;
     _fwImgInfo.ext_info.fw_rel_date[2] = (u_int16_t)image_info.FW_VERSION.Year;
 
+    _fwImgInfo.ext_info.fw_rel_time[0] = (u_int16_t)image_info.FW_VERSION.Hour;
+    _fwImgInfo.ext_info.fw_rel_time[1] = (u_int16_t)image_info.FW_VERSION.Minutes;
+    _fwImgInfo.ext_info.fw_rel_time[2] = (u_int16_t)image_info.FW_VERSION.Seconds;
+
     _fwImgInfo.ext_info.burn_image_size = image_info.burn_image_size;
 
     // assuming number of supported_hw_id < MAX_NUM_SUPP_HW_IDS

@@ -3972,6 +3972,12 @@ bool Fs4Operations::signForSecureBoot(const char *private_key_file, const char *
 
     SecureBootSignVersion secure_boot_version = getSecureBootSignVersion();
 
+    if (secure_boot_version == VERSION_2) {
+        if (!SetImageIVHwPointer()) {
+            return errmsg("signForSecureBoot failed - Error: %s\n", err());
+        }
+    }
+
     if (!storePublicKeyInSection(public_key_file, uuid)) {
         return errmsg("signForSecureBoot failed - Error: %s\n", err());
     }
@@ -4101,6 +4107,64 @@ bool Fs4Operations::FwSignWithHmac(const char *keyFile)
     (void)keyFile;
     return errmsg("FwSignWithHmac is not suppported.");
 #endif
+}
+
+bool Fs4Operations::updateHwPointer(u_int32_t addr, u_int32_t val) {
+    struct image_layout_hw_pointer_entry hw_pointer;
+    hw_pointer.ptr = TOCPU1(val);
+
+    //* Calculate CRC
+    vector<u_int8_t> hw_pointer_data(IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE, 0x0);
+    image_layout_hw_pointer_entry_pack(&hw_pointer, hw_pointer_data.data());
+    hw_pointer.crc = calc_hw_crc(hw_pointer_data.data(), IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE - 2);
+
+    //* Write HW pointer and its CRC to image
+    image_layout_hw_pointer_entry_pack(&hw_pointer, hw_pointer_data.data());
+    if (!_ioAccess->write(addr, hw_pointer_data.data(), IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE)) {
+        return errmsg("updateHwPointer writing to hw pointer in addr 0x%08x failed\n", addr);
+    }
+
+    return true;
+}
+
+bool Fs4Operations::SetImageIVHwPointer() {
+    if (_ioAccess->is_flash()) {
+        return errmsg("SetImageIVHwPointer is not applicable for devices\n");
+    }
+    fw_info_t fwInfo;
+    if (!FwQuery(&fwInfo, false, false, false, true)) {
+        return false; // implicit set to errmsg
+    }
+    //* Assuming query already done so image info section is parsed and following members initialized accordingly
+    struct image_layout_FW_VERSION fw_version;
+    fw_version.MAJOR    = _fwImgInfo.ext_info.fw_ver[0];
+    fw_version.MINOR    = _fwImgInfo.ext_info.fw_ver[1];
+    fw_version.SUBMINOR = _fwImgInfo.ext_info.fw_ver[2];
+    fw_version.Hour     = _fwImgInfo.ext_info.fw_rel_time[0];
+    fw_version.Minutes  = _fwImgInfo.ext_info.fw_rel_time[1];
+    fw_version.Seconds  = _fwImgInfo.ext_info.fw_rel_time[2];
+    fw_version.Day      = _fwImgInfo.ext_info.fw_rel_date[0];
+    fw_version.Month    = _fwImgInfo.ext_info.fw_rel_date[1];
+    fw_version.Year     = _fwImgInfo.ext_info.fw_rel_date[2];
+
+    vector<u_int8_t> fw_version_data(IMAGE_LAYOUT_FW_VERSION_SIZE, 0x0);
+    image_layout_FW_VERSION_pack(&fw_version, fw_version_data.data());
+    DPRINTF(("Fs4Operations::SetImageIVHwPointer FW version and date for hash256:\n"));
+    for (u_int32_t i = 0; i < (u_int32_t)fw_version_data.size(); i += 4) {
+        DPRINTF(("Fs4Operations::SetImageIVHwPointer 0x%02x%02x%02x%02x\n",
+                fw_version_data[i], fw_version_data[i+1], fw_version_data[i+2], fw_version_data[i+3]));
+    }
+
+    //* Calculate SHA256 on FW version and date
+    MlxSignSHA256 mlxSignSHA;
+    mlxSignSHA << fw_version_data;
+    vector<u_int8_t> sha;
+    mlxSignSHA.getDigest(sha);
+
+    u_int32_t image_iv = ((u_int32_t*)sha.data())[0];
+    DPRINTF(("Fs4Operations::SetImageIVHwPointer image_iv = 0x%08x", image_iv));
+
+    return updateHwPointer(DELTA_IV_HW_POINTER_ADDR, image_iv);
 }
 
 bool Fs4Operations::PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)

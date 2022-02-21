@@ -49,6 +49,7 @@
 #define HMAC_SIGNATURE_LENGTH 64
 #define MAX_HTOC_ENTRIES_NUM 28
 #define ENCRYPTED_IMAGE_LAST_ADDR_LOCATION_IN_BYTES 0x1000000 // 16MB
+#define DELTA_IV_HW_POINTER_ADDR 0x88
 enum SecureBootSignVersion {VERSION_1 = 1, VERSION_2};
 
 class Fs4Operations : public Fs3Operations {
@@ -266,6 +267,8 @@ private:
     bool QuerySecurityFeatures();
     bool IsEncryptedDevice(bool& is_encrypted);
     bool IsEncryptedImage(bool& is_encrypted);
+    bool updateHwPointer(u_int32_t addr, u_int32_t val);
+    bool SetImageIVHwPointer();
     void RemoveCRCsFromMainSection(vector<u_int8_t>& img);
 
     // Members

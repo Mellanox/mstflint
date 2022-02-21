@@ -454,6 +454,7 @@ typedef struct fw_info_com {
     char product_ver[PRODUCT_VER_LEN + 1];
     u_int16_t fw_ver[3];
     u_int16_t fw_rel_date[3];
+    u_int8_t fw_rel_time[3];
     u_int16_t min_fit_ver[4];
     u_int16_t mic_ver[3];
     u_int32_t image_size;
