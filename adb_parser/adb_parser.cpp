@@ -61,7 +61,7 @@ public:
     // METHODS
     AdbParser(string fileName, Adb *adbCtxt, bool addReserved = false,
             bool strict = true,
-            string includePath = "", bool enforceExtraChecks = false, bool checkDsAlign = false);
+            string includePath = "", bool enforceExtraChecks = false, bool checkDsAlign = false, bool enforceGuiChecks = false);
     ~AdbParser();
     bool load();
     bool loadFromString(const char *adbString);
@@ -74,6 +74,7 @@ public:
     static bool checkSpecialChars(string tagName);
     static bool checkBigger32(string num);
     static bool checkHEXFormat(string addr);
+    static bool checkAttrExist(const XML_Char **atts, const XML_Char *name);
     static void setAllowMultipleExceptionsTrue();
 
 public:
@@ -126,6 +127,11 @@ private:
     AdbConfig *_currentConfig;
     bool _instanceOps;
     bool _enforceExtraChecks;
+    bool _enforceGuiChecks;
+    string _nname_pattern;
+    string _fname_pattern;
+    std::map<string, string> defines_map;
+    std::set<string> field_attr_names_set;
 
     static const string TAG_NODES_DEFINITION;
     static const string TAG_RCS_HEADERS;
@@ -141,6 +147,7 @@ private:
     static const string TAG_ATTR_BIG_ENDIAN;
     static const string TAG_ATTR_SINGLE_ENTRY_ARR;
     static const string TAG_ATTR_INCLUDE_PATH;
+    static const string TAG_ATTR_DEFINE_PATTERN;
 };
 
 bool AdbParser::allowMultipleExceptions = false;
@@ -158,6 +165,7 @@ const string AdbParser::TAG_ATTR_ENUM = "enum";
 const string AdbParser::TAG_ATTR_BIG_ENDIAN = "big_endian_arr";
 const string AdbParser::TAG_ATTR_SINGLE_ENTRY_ARR = "single_entry_arr";
 const string AdbParser::TAG_ATTR_INCLUDE_PATH = "include_path";
+const string AdbParser::TAG_ATTR_DEFINE_PATTERN = "([A-Za-z_]\\w*)=(\\w+)";
 
 /**
  * Function: AdbParser::compareFieldsPtr
@@ -169,10 +177,10 @@ const string AdbParser::TAG_ATTR_INCLUDE_PATH = "include_path";
  **/
 AdbParser::AdbParser(string fileName, Adb *adbCtxt, bool addReserved,
                      bool strict, string includePath,
-                     bool enforceExtraChecks, bool _checkDsAlign) : _adbCtxt(adbCtxt), _fileName(fileName), _addReserved(addReserved),
+                     bool enforceExtraChecks, bool _checkDsAlign, bool _enforceGuiChecks) : _adbCtxt(adbCtxt), _fileName(fileName), _addReserved(addReserved),
                                                 _progressCnt(0), _strict(strict), _checkDsAlign(_checkDsAlign),
-                                                skipNode(false),_includePath(includePath), _currentNode(0), _currentField(0),
-                                                _currentConfig(0)
+                                                 skipNode(false),_includePath(includePath), _currentNode(0), _currentField(0), _currentConfig(0), 
+                                                 _enforceGuiChecks(_enforceGuiChecks), _nname_pattern(".*"), _fname_pattern(".*")
 {
     _enforceExtraChecks = enforceExtraChecks;
     if (includePath != "")
@@ -477,6 +485,23 @@ string AdbParser::attrValue(const XML_Char **atts, const XML_Char *attrName)
     }
 
     return string();
+}
+
+/**
+ * Function: AdbParser::checkAttrExist
+ */
+bool AdbParser::checkAttrExist(const XML_Char **atts, const XML_Char *attrName)
+{
+    int i = 0;
+    while(atts[i])
+    {
+        if (!strcmp(atts[i], attrName))
+        {
+            return true;
+        }
+        i += 2;
+    }
+    return false;
 }
 
 /**
@@ -888,6 +913,149 @@ void AdbParser::startConfigElement(const XML_Char **atts, AdbParser *adbParser, 
         string aValue = attrValue(atts, i);
         adbParser->_currentConfig->attrs.insert(
             pair<string, string>(aName, aValue));
+        
+        // checks that was imported from the gui-parser
+        if(adbParser->_enforceGuiChecks)
+        {
+            // check the define statement is according to format
+            if(!aName.compare("define"))
+            {
+                smatch result;
+                regex pattern(TAG_ATTR_DEFINE_PATTERN);
+                if(!regex_match(aValue, result, pattern))
+                {
+                    expFound = raiseException(allowMultipleExceptions,
+                                            string("Bad define format: \"") + aName + "\" attribute value: \"" + aValue + "\"",
+                                            ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                            ExceptionHolder::ERROR_EXCEPTION);
+                }
+                else
+                {
+                    // check for define duplication
+                    string define_key = result[1], define_value = result[2];
+
+                    if(adbParser->defines_map.find(define_key) != adbParser->defines_map.end())
+                    {
+                        expFound = raiseException(allowMultipleExceptions,
+                                            string("Multiple definition of preprocessor variable: \"") + define_key + "\" attribute name: \"" + aName + "\"",
+                                            ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                            ExceptionHolder::ERROR_EXCEPTION);
+                    }
+                    else
+                    {
+                        adbParser->defines_map.insert(pair<string, string>(define_key, define_value));
+                    }
+                }
+            }
+
+            else if(!expFound && !aName.compare("field_attr"))
+            {
+                // check that the field_attr is unique
+                if(adbParser->field_attr_names_set.find(aValue) != adbParser->field_attr_names_set.end())
+                {
+                    expFound = raiseException(allowMultipleExceptions,
+                                            string("Redefinition of field_attr: \"") + aName + "\" attribute name: \"" + aValue + "\"",
+                                            ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                            ExceptionHolder::ERROR_EXCEPTION);
+                }
+                else
+                {
+                    adbParser->field_attr_names_set.insert(aValue);
+                }
+
+                string attr_type = attrValue(atts, "type");
+
+                // check that attr 'type' was provided and not empty
+                if(attr_type.empty())
+                {
+                    expFound = raiseException(allowMultipleExceptions,
+                                            string("field_attr type must be specified: \"") + aName + "\" attribute value: \"" + aValue + "\"",
+                                            ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                            ExceptionHolder::ERROR_EXCEPTION);
+                }
+                else
+                {
+                    // check that type 'multival' has a 'fw_label' value
+                    if(!attr_type.compare("multival") && aValue.compare("fw_label"))
+                    {
+                        expFound = raiseException(allowMultipleExceptions,
+                                            string("Type \"multival\" is supported only for \"fw_label\" not for: \"") + aName + "\" attribute value: \"" + aValue + "\"",
+                                            ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                            ExceptionHolder::ERROR_EXCEPTION);
+                    }
+                }
+
+                string attr_used_for = attrValue(atts, "used_for");
+
+                // check that attr 'used_for' was not provided empty
+                if(checkAttrExist(atts, "used_for") && attr_used_for.empty())
+                {
+                    expFound = raiseException(allowMultipleExceptions,
+                                            string("used_for is invalid: \"") + aName + "\" attribute value: \"" + aValue + "\"",
+                                            ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                            ExceptionHolder::ERROR_EXCEPTION);
+                }
+
+                // check if 'pattern' was provided
+                if(checkAttrExist(atts, "pattern"))
+                {
+                    // check if the given pattern is a valid reg expression.
+                    try
+                    {
+                        regex r(attrValue(atts, "pattern"));
+                    }
+                    catch(...)
+                    {
+                        expFound = raiseException(
+                          allowMultipleExceptions,
+                          string("Bad attribute pattern: \"") + aValue + "\" name Pattern: \"" + attrValue(atts, "pattern") + "\"",
+                          ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                          ExceptionHolder::ERROR_EXCEPTION);
+                    }
+                }
+            }
+
+            // check if nname_pattern was provided
+            else if(!expFound && checkAttrExist(atts, "nname_pattern"))
+            {
+                // check if the given pattern is a valid reg expression.
+                try
+                {
+                    string nname_pattern = attrValue(atts, "nname_pattern");
+                    regex r(nname_pattern);
+                    adbParser->_nname_pattern = nname_pattern;
+                }
+                catch(...)
+                {
+                    expFound = raiseException(
+                      allowMultipleExceptions,
+                      string("Bad node name pattern: \"") + aValue + "\" pattern: \"" + attrValue(atts, "nname_pattern") + "\"",
+                      ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                      ExceptionHolder::ERROR_EXCEPTION);
+                }
+            }
+
+            // check if fname_pattern was provided and the name of the field is compatible with that pattern
+            else if(!expFound && checkAttrExist(atts, "fname_pattern"))
+            {
+                // check if the given pattern is a valid reg expression.
+                try
+                {
+                    string fname_pattern = attrValue(atts, "fname_pattern");
+                    regex r(fname_pattern);
+                    adbParser->_fname_pattern = fname_pattern;
+                }
+                catch(...)
+                {
+                    expFound = raiseException(
+                      allowMultipleExceptions,
+                      string("Bad field name pattern: \"") + aValue + "\" pattern: \"" + attrValue(atts, "fname_pattern") +
+                        "\"",
+                      ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                      ExceptionHolder::ERROR_EXCEPTION);
+                }
+            }
+        }
 
         // Parse attrs that affect the parser itself
         if (!TAG_ATTR_BIG_ENDIAN.compare(aName))
@@ -1932,7 +2100,7 @@ int main()
 
 
 
-Adb::Adb() : bigEndianArr(false), singleEntryArrSupp(false), _checkDsAlign(false)
+Adb::Adb() : bigEndianArr(false), singleEntryArrSupp(false), _checkDsAlign(false), _enforceGuiChecks(false)
 {
     _logFile = new LogFile;
 }
@@ -2033,7 +2201,7 @@ string Adb::printAdbExceptionMap()
  **/
 bool Adb::load(string fname, bool addReserved,
                bool strict, string includePath, string includeDir,
-               bool enforceExtraChecks, bool allowMultipleExceptions, string logFileStr, bool checkDsAlign)
+               bool enforceExtraChecks, bool allowMultipleExceptions, string logFileStr, bool checkDsAlign, bool enforceGuiChecks)
 {
     try
     {
@@ -2045,8 +2213,9 @@ bool Adb::load(string fname, bool addReserved,
         }
         _logFile->init(logFileStr, allowMultipleExceptions);
         AdbParser p(fname, this, addReserved, strict, includePath,
-                    enforceExtraChecks, checkDsAlign);
+                    enforceExtraChecks, checkDsAlign, enforceGuiChecks);
         _checkDsAlign=checkDsAlign;
+        _enforceGuiChecks = enforceGuiChecks;
         if (!p.load())
         {
             _lastError = p.getError();
