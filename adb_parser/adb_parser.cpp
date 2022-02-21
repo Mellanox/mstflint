@@ -2372,6 +2372,7 @@ AdbInstance *Adb::createLayout(string rootNodeName, bool isExprEval,
         for (list<AdbInstance *>::iterator it = _unionSelectorEvalDeffered.begin();
              it != _unionSelectorEvalDeffered.end(); it++)
         {
+            bool foundSelector = true;
             vector<string> path;
             AdbInstance *inst = *it;
             AdbInstance *curInst = inst;
@@ -2382,6 +2383,17 @@ AdbInstance *Adb::createLayout(string rootNodeName, bool isExprEval,
                 if (path[i] == "#(parent)" || path[i] == "$(parent)")
                 {
                     curInst = curInst->parent;
+                    if  (curInst == NULL || i == path.size()-1) {
+                        foundSelector = false;
+                        if (rootNodeName == rootNode)
+                        { // give this warning only if this root instantiation
+                            if (allowMultipleExceptions) cout << "allow multiple";
+                            raiseException(allowMultipleExceptions,
+                                           "Invalid union selector (" + inst->fullName() + "), must be a leaf field, cannot be a parent of root",
+                                           ExceptionHolder::ERROR_EXCEPTION);
+                        }
+                        break;
+                    }
                 }
                 else
                 {
@@ -2399,62 +2411,79 @@ AdbInstance *Adb::createLayout(string rootNodeName, bool isExprEval,
 
                     if (j == curInst->subItems.size() && !inPath)
                     {
+                        foundSelector = false;
                         if (rootNodeName == rootNode)
                         { // give this warning only if this root instantiation
                             raiseException(allowMultipleExceptions,
                                            "Failed to find union selector for union (" + inst->fullName() + ") Can't find field (" + path[i] + ") under (" + curInst->fullName() + ")",
                                            ExceptionHolder::ERROR_EXCEPTION);
                         }
+                        break;
                     }
                 }
             }
 
-            inst->unionSelector = curInst;
-            for (size_t i = 0; i < inst->subItems.size(); i++)
-            {
-                //printf("Field %s, isResered=%d\n", inst->subItems[i]->fullName().c_str(), inst->subItems[i]->isReserved());
-                if (inst->subItems[i]->isReserved())
+            if (foundSelector) {
+                inst->unionSelector = curInst;
+                for (size_t i = 0; i < inst->subItems.size(); i++)
                 {
-                    continue;
-                }
-
-                // make sure all union subnodes define "selected_by" attribute
-                bool found = false;
-                AttrsMap::iterator selectorValIt = inst->subItems[i]->getInstanceAttrIterator("selected_by", found);
-                if (!found)
-                {
-                    raiseException(allowMultipleExceptions,
-                                   "In union (" + inst->fullName() + ") the union subnode (" + inst->subItems[i]->name + ") doesn't define selection value",
-                                   ExceptionHolder::ERROR_EXCEPTION);
-                }
-
-                // make sure that all union subnodes selector values are defined in the selector field enum
-                if (selectorValIt->second == "")
-                {
-                    continue;
-                }
-
-                map<string, u_int64_t>::iterator it;
-                map<string, u_int64_t> selectorValMap = inst->unionSelector->getEnumMap();
-                for (it = selectorValMap.begin(); it != selectorValMap.end(); it++)
-                {
-                    if (it->first == selectorValIt->second)
+                    //printf("Field %s, isResered=%d\n", inst->subItems[i]->fullName().c_str(), inst->subItems[i]->isReserved());
+                    if (inst->subItems[i]->isReserved())
                     {
+                        continue;
+                    }
+
+                    // make sure all union subnodes define "selected_by" attribute
+                    bool found = false;
+                    AttrsMap::iterator selectorValIt = inst->subItems[i]->getInstanceAttrIterator("selected_by", found);
+                    if (!found)
+                    {
+                        raiseException(allowMultipleExceptions,
+                                    "In union (" + inst->fullName() + ") the union subnode (" + inst->subItems[i]->name + ") doesn't define selection value",
+                                    ExceptionHolder::ERROR_EXCEPTION);
+                    }
+
+                    // make sure that all union subnodes selector values are defined in the selector field enum
+                    if (selectorValIt->second == "")
+                    {
+                        continue;
+                    }
+
+                    if (!inst->unionSelector->isEnumExists()) {
+                        string exceptionTxt = "In union (" + inst->fullName() + ") the union selector (" + inst->unionSelector->fullName() + ") is not an enum";
+                        raiseException(allowMultipleExceptions,
+                                    exceptionTxt,
+                                    ExceptionHolder::ERROR_EXCEPTION);
                         break;
                     }
-                }
 
-                //if not found in map throw exeption
-                if (it == selectorValMap.end())
-                {
-                    string exceptionTxt = "In union (" + inst->fullName() + ") the union subnode (" + inst->subItems[i]->name + ") uses a selector value (" + selectorValIt->second + ") which isn't defined in the selector field (" + inst->unionSelector->fullName() + ")";
-                    raiseException(allowMultipleExceptions,
-                                   exceptionTxt,
-                                   ExceptionHolder::ERROR_EXCEPTION);
+                    map<string, u_int64_t>::iterator it;
+                    map<string, u_int64_t> selectorValMap = inst->unionSelector->getEnumMap();
+                    for (it = selectorValMap.begin(); it != selectorValMap.end(); it++)
+                    {
+                        if (it->first == selectorValIt->second)
+                        {
+                            break;
+                        }
+                    }
+
+                    //if not found in map throw exeption
+                    if (it == selectorValMap.end())
+                    {
+                        string exceptionTxt = "In union (" + inst->fullName() + ") the union subnode (" + inst->subItems[i]->name + ") uses a selector value (" + selectorValIt->second + ") which isn't defined in the selector field (" + inst->unionSelector->fullName() + ")";
+                        raiseException(allowMultipleExceptions,
+                                    exceptionTxt,
+                                    ExceptionHolder::ERROR_EXCEPTION);
+                    }
                 }
             }
         }
 
+        if (allowMultipleExceptions && ExceptionHolder::getNumberOfExceptions() > 0)
+        {
+            fetchAdbExceptionsMap(ExceptionHolder::getAdbExceptionsMap());
+            rootItem = NULL;
+        }
         return rootItem;
     }
     catch (AdbException &exp)
