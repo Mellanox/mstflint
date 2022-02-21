@@ -2756,7 +2756,7 @@ bool Fs4Operations::UpdateCertChainSection(struct fs4_toc_info *curr_toc, char *
     //* Assert given certificate chain doesn't exceed its allocated size
     u_int32_t cert_chain_0_section_size = curr_toc->toc_entry.size << 2;
     if ((u_int32_t)cert_chain_buff_size > cert_chain_0_section_size) {
-        return errmsg("Attestation certificate chain data exceeds its allocated size of 0x%xB", cert_chain_0_section_size);
+        return errmsg("Attestation certificate chain data exceeds its allocated size of 0x%x bytes", cert_chain_0_section_size);
     }
 
     newSectionData.resize(cert_chain_0_section_size, 0); // Init section data with 0x0
@@ -2793,8 +2793,9 @@ bool Fs4Operations::Fs4UpdateVpdSection(struct fs4_toc_info *curr_toc, char *vpd
     return true;
 }
 
-bool Fs4Operations::Fs4ReburnSection(u_int32_t newSectionAddr,
-                                     u_int32_t newSectionSize, std::vector<u_int8_t>  newSectionData, const char *msg, PrintCallBack callBackFunc)
+bool Fs4Operations::Fs4ReburnSection(u_int32_t newSectionAddr, u_int32_t newSectionSize,
+                                     std::vector<u_int8_t>  newSectionData, const char *msg,
+                                     PrintCallBack callBackFunc)
 {
     char message[127];
 
@@ -2822,17 +2823,15 @@ bool Fs4Operations::Fs4ReburnSection(u_int32_t newSectionAddr,
     return true;
 }
 
-bool Fs4Operations::calcHashOnItoc(vector<u_int8_t>& hash, u_int32_t itoc_addr) {
-    //* Get ITOC data as vector of bytes
+bool Fs4Operations::CalcHashOnSection(u_int32_t addr, u_int32_t size, vector<u_int8_t>& hash) {
 #if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE) //mlxSignSHA is only available with OPEN_SSL
-    vector<u_int8_t> itoc_data;
-    u_int32_t itoc_size = _fs4ImgInfo.itocArr.numOfTocs * TOC_ENTRY_SIZE + TOC_HEADER_SIZE; 
-    itoc_data.resize(itoc_size);
-    READBUF((*_ioAccess), itoc_addr, (u_int32_t*)&itoc_data[0], itoc_size, "Reading ITOC data");
+    vector<u_int8_t> data;
+    data.resize(size);
+    READBUF((*_ioAccess), addr, (u_int32_t*)&data[0], size, "Reading section data for hash calculation");
 
     //* Calculate SHA
     MlxSignSHA512 mlxSignSHA;
-    mlxSignSHA << itoc_data;
+    mlxSignSHA << data;
     mlxSignSHA.getDigest(hash);
     return true;
 #else
@@ -2841,7 +2840,42 @@ bool Fs4Operations::calcHashOnItoc(vector<u_int8_t>& hash, u_int32_t itoc_addr) 
 #endif
 }
 
-bool Fs4Operations::updateHashInHashesTable(fs3_section_t section_type, vector<u_int8_t> hash) {
+bool Fs4Operations::IsSectionShouldBeHashed(fs3_section_t section_type) {
+    bool res;
+    switch (section_type) {
+        case FS3_PUBLIC_KEYS_2048:
+        case FS3_PUBLIC_KEYS_4096:
+        case FS4_RSA_PUBLIC_KEY:
+        case FS3_IMAGE_SIGNATURE_256:
+        case FS3_IMAGE_SIGNATURE_512:
+        case FS4_RSA_4096_SIGNATURES:
+            res = false;
+            break;
+        default:
+            res = true;
+    }
+
+    return res;
+}
+
+bool Fs4Operations::UpdateSectionHashInHashesTable(u_int32_t addr, u_int32_t size, fs3_section_t type) {
+    if (getSecureBootSignVersion() == VERSION_2 && IsSectionShouldBeHashed(type)) {
+        DPRINTF(("Fs4Operations::UpdateSectionHashInHashesTable type=0x%x\n", type));
+
+        vector<u_int8_t> hash;
+        if (!CalcHashOnSection(addr, size, hash)) {
+            return errmsg("Failed to calculate section hash");
+        }
+
+        if (!UpdateHashInHashesTable(type, hash)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool Fs4Operations::UpdateHashInHashesTable(fs3_section_t section_type, vector<u_int8_t> hash) {
     //* Init HTOC
     vector<u_int8_t> img;
     FwInit();
@@ -2969,12 +3003,14 @@ bool Fs4Operations::reburnITocSection(PrintCallBack callBackFunc, bool isFailSaf
     }
 
     if (getSecureBootSignVersion() == VERSION_2) {
-        //* Calculate SHA-512 on ITOC
+
         vector<u_int8_t> hash;
-        if (!calcHashOnItoc(hash, newITocAddr)) {
+        u_int32_t itocSize = _fs4ImgInfo.itocArr.numOfTocs * TOC_ENTRY_SIZE + TOC_HEADER_SIZE; 
+        if (!CalcHashOnSection(newITocAddr, itocSize, hash)) {
             return errmsg("Failed to calculate ITOC hash");
         }
-        if (!updateHashInHashesTable(FS3_ITOC, hash)) {
+
+        if (!UpdateHashInHashesTable(FS3_ITOC, hash)) {
             return false;
         }
     }
@@ -3304,6 +3340,12 @@ bool Fs4Operations::UpdateSection(void *new_info, fs3_section_t sect_type, bool,
             }
         }
     }
+
+    if (!UpdateSectionHashInHashesTable(newSectionAddr, curr_toc->toc_entry.size * 4, sect_type)) {
+        return false;
+    }
+
+    
 
     // TODO - in case hashes_table (HTOC) exists recalculate modified section SHA and store it in hashes_table.
     // TODO - Currently it's not implemented since there is no use-case where we need to update hashes_table,

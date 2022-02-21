@@ -197,9 +197,9 @@ private:
     bool UpdateCertChainSection(struct fs4_toc_info *curr_toc, char *certChainFile,
                                 std::vector<u_int8_t>  &newSectionData);
     bool FwSetCertChain(char *certFileStr, PrintCallBack callBackFunc);
-    bool Fs4ReburnSection(u_int32_t newSectionAddr,
-                          u_int32_t newSectionSize, std::vector<u_int8_t>  newSectionData,
-                          const char *msg, PrintCallBack callBackFunc);
+    bool Fs4ReburnSection(u_int32_t newSectionAddr, u_int32_t newSectionSize,
+                          std::vector<u_int8_t>  newSectionData, const char *msg,
+                          PrintCallBack callBackFunc);
     bool Fs4ReburnTocSection(bool isDtoc, PrintCallBack callBackFunc);
     bool reburnDTocSection(PrintCallBack callBackFunc);
     bool reburnITocSection(PrintCallBack callBackFunc, bool isFailSafe);
@@ -262,8 +262,10 @@ private:
 
     bool GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& size, u_int32_t& offset);
     SecureBootSignVersion getSecureBootSignVersion();
-    bool calcHashOnItoc(vector<u_int8_t>& hash, u_int32_t itoc_addr);
-    bool updateHashInHashesTable(fs3_section_t section_type, vector<u_int8_t> hash);
+    bool CalcHashOnSection(u_int32_t addr, u_int32_t size, vector<u_int8_t>& hash);
+    bool UpdateHashInHashesTable(fs3_section_t section_type, vector<u_int8_t> hash);
+    bool UpdateSectionHashInHashesTable(u_int32_t addr, u_int32_t size, fs3_section_t type);
+    bool IsSectionShouldBeHashed(fs3_section_t section_type);
     bool QuerySecurityFeatures();
     bool IsEncryptedDevice(bool& is_encrypted);
     bool IsEncryptedImage(bool& is_encrypted);
