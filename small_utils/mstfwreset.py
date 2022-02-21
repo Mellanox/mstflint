@@ -1261,7 +1261,7 @@ def stopDriverSync(driverObj):
         if print_waiting_msg and diffTime > 2:
             print("Waiting for %s to run on all other hosts, press 'ctrl+c' to abort" % PROG)
             print_waiting_msg = False
-        time.sleep(0.5)
+        time.sleep(0.01)
 
     logger.debug('[Timing Test] MH SYNC state is GO')
     if status.fsm_state != SYNC_STATE_GO or status.fsm_sync_type != SYNC_TYPE_FW_RESET:
@@ -1293,7 +1293,7 @@ def stopDriverSync(driverObj):
         if print_waiting_msg and diffTime > 2:
             print("Synchronizing with other hosts...")
             print_waiting_msg = False
-        time.sleep(0.5)
+        time.sleep(0.01)
 
     logger.debug('[Timing Test] MH SYNC done')
 
