@@ -661,6 +661,7 @@ ware version. */
 	/* Description - When set, string-TLV is supported. */
 	/* 0x0.28 - 0x0.28 */
 	u_int8_t string_tlv;
+	u_int8_t dev_sc;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Firmware Build ID. Optional. . */
 	/* 0x4.0 - 0x4.31 */
