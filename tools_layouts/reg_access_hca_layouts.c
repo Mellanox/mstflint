@@ -1205,6 +1205,8 @@ void reg_access_hca_mgir_fw_info_pack(const struct reg_access_hca_mgir_fw_info *
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->dev);
 	offset = 3;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->string_tlv);
+	offset = 1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->dev_sc);
 	offset = 32;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->build_id);
 	offset = 80;
@@ -1260,6 +1262,8 @@ void reg_access_hca_mgir_fw_info_unpack(struct reg_access_hca_mgir_fw_info *ptr_
 	ptr_struct->dev = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 3;
 	ptr_struct->string_tlv = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 1;
+	ptr_struct->dev_sc = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 32;
 	ptr_struct->build_id = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	offset = 80;
@@ -1317,6 +1321,8 @@ void reg_access_hca_mgir_fw_info_print(const struct reg_access_hca_mgir_fw_info 
 	fprintf(fd, "dev                  : " UH_FMT "\n", ptr_struct->dev);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "string_tlv           : " UH_FMT "\n", ptr_struct->string_tlv);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "dev_sc               : " UH_FMT "\n", ptr_struct->dev_sc);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "build_id             : " U32H_FMT "\n", ptr_struct->build_id);
 	adb2c_add_indentation(fd, indent_level);
