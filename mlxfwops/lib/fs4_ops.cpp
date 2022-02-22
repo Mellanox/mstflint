@@ -691,7 +691,17 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                     }
 
                     if (tocEntry.type != FS3_DEV_INFO || CheckDevInfoSignature((u_int32_t *)buff)) {
-                        bool is_encrypted_cache_line_crc_section = tocEntry.cache_line_crc == 1 && tocEntry.encrypted_section == 1;
+
+                        // Check if a cache_line_crc section (Ex. MAIN_CODE) is encrypted (has 4B AUTH-TAG) or not (has 2B CRC)
+                        bool is_encrypted_cache_line_crc_section = false;
+                        if (tocEntry.cache_line_crc == 1) {
+                            u_int32_t first_line_crc_or_authtag = ((u_int32_t *)buff)[16]; // DWORD 16 is CRC or AUTH-TAG
+                            TOCPU1(first_line_crc_or_authtag)
+                            bool is_authtag = (first_line_crc_or_authtag & 0xffff0000) != 0x0;
+                            is_encrypted_cache_line_crc_section = is_authtag; // if encrypted section will have auth-tag 
+                        }
+
+
                         bool ignore_crc = (tocEntry.crc == NOCRC) || is_encrypted_cache_line_crc_section; // In case of encrypted MAIN_CODE section we'll ignore CRC
                         if (!_encrypted_image_io_access && // In case of encrypted image we don't want to check section CRC
                             !DumpFs3CRCCheck(tocEntry.type,
