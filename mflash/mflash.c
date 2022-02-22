@@ -590,15 +590,16 @@ int cntx_get_flash_info(mflash *mfl, flash_info_t *f_info, int *log2size, u_int8
     if (rc == MFE_OK && *no_flash == 0) {
         memcpy(f_info, &g_flash_info_arr[type_index], sizeof(flash_info_t));
     }
-    //* Check if device supports 4-bytes addr, otherwise override its erase command to 3-bytes addr
-    MfError status = MFE_OK;
-    int four_byte_address_needed = is_four_byte_address_needed(mfl, &status);
-    if (status != MFE_OK) {
-        return status;
+
+    // FR #2742089 - we are requested to support Gigadevice GD25B256DFIGR flash of 32MB on CX4LX and CX5
+    // This new flash type is 32MB and these devices support 16MB flash types only, meaning they work in
+    // 3-bytes addr mode. So in that case we override the erase command matching 4-bytes addr (32MB) to
+    // erase command of 3-bytes addr
+    if ((mfl->dm_dev_id == DeviceConnectX4LX || mfl->dm_dev_id == DeviceConnectX5) &&
+        f_info->vendor == FV_GD25QXXX) {
+            f_info->erase_command = SFC_SSE;
     }
-    if (!four_byte_address_needed) {
-        f_info->erase_command = SFC_SSE;
-    }
+
     return rc;
 }
 
