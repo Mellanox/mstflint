@@ -1472,8 +1472,8 @@ int sx_init_cs_support(mflash *mfl)
 
 #define CACHE_REP_OFF_RAVEN     0xf0440
 #define CACHE_REP_CMD_RAVEN     0xf0448
-#define CACHE_REP_OFF_BLACKBIRD 0xf0484
-#define CACHE_REP_CMD_BLACKBIRD 0xf0488
+#define CACHE_REP_OFF_NEW_GW_ADDR 0xf0484
+#define CACHE_REP_CMD_NEW_GW_ADDR 0xf0488
 int check_cache_replacement_guard(mflash *mfl, u_int8_t *needs_cache_replacement)
 {
 
@@ -1494,33 +1494,33 @@ int check_cache_replacement_guard(mflash *mfl, u_int8_t *needs_cache_replacement
         dm_dev_id_t devid_t = DeviceUnknown;
         u_int32_t devid = 0;
         u_int32_t revid = 0;
+
         int rc = dm_get_device_id(mfl->mf, &devid_t, &devid, &revid);
         if (rc) {
             return rc;
         }
-        // Read the Cache replacement offset
-        if (!dm_dev_is_raven_family_switch(devid_t)) {
+
+        // Read the Cache replacement offset and cmd fields
+        if (devid_t == DeviceQuantum2 || devid_t == DeviceSpectrum4 || devid_t == DeviceConnectX7) {
+            MREAD4(CACHE_REP_OFF_NEW_GW_ADDR, &data);
+            off = data;
+            MREAD4(CACHE_REP_CMD_NEW_GW_ADDR, &data);
+            cmd = EXTRACT(data, 24, 8);
+        }
+        else if (!dm_dev_is_raven_family_switch(devid_t)) {
             MREAD4(mfl->cache_rep_offset, &data);
             off = EXTRACT(data, 0, 26);
-            // Read the Cache replacement cmd
             MREAD4(mfl->cache_rep_cmd, &data);
             cmd = EXTRACT(data, 16, 8);
         }
         else { // switches
-            if (devid_t == DeviceQuantum2 || devid_t == DeviceSpectrum4) {
-                MREAD4(CACHE_REP_OFF_BLACKBIRD, &data);
-                off = data;
-                MREAD4(CACHE_REP_CMD_BLACKBIRD, &data);
-                cmd = EXTRACT(data, 24, 8);
-            }
-            else {
-                MREAD4(CACHE_REP_OFF_RAVEN, &data);
-                off = EXTRACT(data, 0, 26);
-                MREAD4(CACHE_REP_CMD_RAVEN, &data);
-                cmd = EXTRACT(data, 16, 8);
-            }
+            MREAD4(CACHE_REP_OFF_RAVEN, &data);
+            off = EXTRACT(data, 0, 26);
+            MREAD4(CACHE_REP_CMD_RAVEN, &data);
+            cmd = EXTRACT(data, 16, 8);
         }
         FLASH_ACCESS_DPRINTF(("check_cache_replacement_guard(): off=%d, cmd=%d\n", off, cmd));
+
         // Check if the offset and cmd are zero in order to continue burning.
         if (cmd != 0 || off != 0) {
             *needs_cache_replacement = 1;
