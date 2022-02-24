@@ -133,6 +133,7 @@ private:
     void vccFlagsMapping();
     void dataPathStateMapping();
     void errorCodeResMapping();
+    void modulePrbsMapping();
     void rxPowerTypeMapping();
     void phyHstFsmHdrStateMapping();
     void maxReadReqSizeMapping();
@@ -170,8 +171,11 @@ public:
     std::map<u_int32_t, std::string> _modulePrbsSwapAdmin;
     std::map<u_int32_t, std::string> _modulePrbsInvAdmin;
     std::map<u_int32_t, std::string> _modulePrbsModulation;
-    std::map<u_int32_t, std::string> _modulePrbsRateCap;
+    std::map<u_int32_t, std::string> _modulePrbsRateCapToStr;
+    std::map<std::string, u_int32_t> _modulePrbsRateStrToCap;
     std::map<u_int32_t, std::string> _modulePMPDStatus;
+    std::map<u_int32_t, std::string> _modulePrbsModeCapToStr;
+    std::map<std::string, u_int32_t> _modulePrbsModeStrToCap;
     std::map<u_int32_t, std::string> _pepcStatus;
     std::map<u_int32_t, string>      _IBSpeed2Str;
     std::map<u_int32_t, string>      _EthExtSpeed2Str;
