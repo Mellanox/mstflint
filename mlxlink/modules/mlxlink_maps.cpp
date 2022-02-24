@@ -865,6 +865,88 @@ void MlxlinkMaps::qsfpFarEndCableBreakoutMapping()
             "2 far-ends with 1 channel implemented in each (i.e. 2x1 break out)";
 }
 
+void MlxlinkMaps::modulePrbsMapping()
+{
+    _modulePrbsSt[PMPT_STATUS_NORMAL_MODE] = "Normal mission mode";
+    _modulePrbsSt[PMPT_STATUS_NOT_SUPPORTED] = "Module is disabled/not connected";
+    _modulePrbsSt[PMPT_STATUS_CONFIG_ERROR] = "unsupported configuration setting";
+    _modulePrbsSt[PMPT_STATUS_GEN_ONLY] = "PRBS Generator only";
+    _modulePrbsSt[PMPT_STATUS_CH_ONLY] = "PRBS Checker only";
+    _modulePrbsSt[PMPT_STATUS_BOTH] = "PRBS traffic both Checker and Generator";
+
+    _modulePrbsSwapAdmin[0]  = "NO MSB <-> LSB swapping";
+    _modulePrbsSwapAdmin[1]  = "MSB <-> LSB swapping";
+
+    _modulePrbsInvAdmin[0] = "NO PRBS inversion";
+    _modulePrbsInvAdmin[1] = "PRBS inversion";
+
+    _modulePrbsModulation[0] = "NRZ test pattern";
+    _modulePrbsModulation[1] = "PAM4 encoding";
+
+    _modulePrbsRateCapToStr[0] = "Non Selected";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_1G] = "1.25 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_SDR] = "2.5 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_40G_40G] = "10.3125 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_FDR] = "14.0625 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_EDR] = "25.78125 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_HDR] = "53.125 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_NDR] = "106.25 Gb/s";
+
+    _modulePrbsRateStrToCap["1G"] = MODULE_PRBS_LANE_RATE_1G;
+    _modulePrbsRateStrToCap["1.25G"] = MODULE_PRBS_LANE_RATE_1G;
+
+    _modulePrbsRateStrToCap["IB-SDR"] = MODULE_PRBS_LANE_RATE_SDR;
+    _modulePrbsRateStrToCap["SDR"] = MODULE_PRBS_LANE_RATE_SDR;
+    _modulePrbsRateStrToCap["2.5G"] = MODULE_PRBS_LANE_RATE_SDR;
+
+    _modulePrbsRateStrToCap["10G"] = MODULE_PRBS_LANE_RATE_40G_40G;
+    _modulePrbsRateStrToCap["40G"] = MODULE_PRBS_LANE_RATE_40G_40G;
+    _modulePrbsRateStrToCap["10.3125G"] = MODULE_PRBS_LANE_RATE_40G_40G;
+
+    _modulePrbsRateStrToCap["IB-FDR"] = MODULE_PRBS_LANE_RATE_FDR;
+    _modulePrbsRateStrToCap["FDR"] = MODULE_PRBS_LANE_RATE_FDR;
+    _modulePrbsRateStrToCap["14G"] = MODULE_PRBS_LANE_RATE_FDR;
+    _modulePrbsRateStrToCap["14.0625G"] = MODULE_PRBS_LANE_RATE_FDR;
+
+    _modulePrbsRateStrToCap["IB-EDR"] = MODULE_PRBS_LANE_RATE_EDR;
+    _modulePrbsRateStrToCap["EDR"] = MODULE_PRBS_LANE_RATE_EDR;
+    _modulePrbsRateStrToCap["25G"] = MODULE_PRBS_LANE_RATE_EDR;
+    _modulePrbsRateStrToCap["25.78125G"] = MODULE_PRBS_LANE_RATE_EDR;
+
+    _modulePrbsRateStrToCap["IB-HDR"] = MODULE_PRBS_LANE_RATE_HDR;
+    _modulePrbsRateStrToCap["HDR"] = MODULE_PRBS_LANE_RATE_HDR;
+    _modulePrbsRateStrToCap["50G"] = MODULE_PRBS_LANE_RATE_HDR;
+    _modulePrbsRateStrToCap["53.125G"] = MODULE_PRBS_LANE_RATE_HDR;
+
+    _modulePrbsRateStrToCap["IB-NDR"] = MODULE_PRBS_LANE_RATE_NDR;
+    _modulePrbsRateStrToCap["NDR"] = MODULE_PRBS_LANE_RATE_NDR;
+    _modulePrbsRateStrToCap["100G"] = MODULE_PRBS_LANE_RATE_NDR;
+    _modulePrbsRateStrToCap["106.25G"] = MODULE_PRBS_LANE_RATE_NDR;
+
+    _modulePrbsModeCapToStr[PRBS31_CAP] = "PRBS31";
+    _modulePrbsModeCapToStr[PRBS23A_CAP] = "PRBS23";
+    _modulePrbsModeCapToStr[PRBS7_CAP] = "PRBS7";
+    _modulePrbsModeCapToStr[PRBS11_CAP] = "PRBS11";
+    _modulePrbsModeCapToStr[PRBS9_CAP] = "PRBS9";
+    _modulePrbsModeCapToStr[PRBS13A_CAP] = "PRBS13";
+    _modulePrbsModeCapToStr[SSPR_CAP] = "SSPR";
+    _modulePrbsModeCapToStr[SSPRQ_CAP] = "SSPRQ";
+
+    _modulePrbsModeStrToCap["PRBS31"] = PRBS31_CAP;
+    _modulePrbsModeStrToCap["PRBS23"] = PRBS23A_CAP;
+    _modulePrbsModeStrToCap["PRBS7"] = PRBS7_CAP;
+    _modulePrbsModeStrToCap["PRBS11"] = PRBS11_CAP;
+    _modulePrbsModeStrToCap["PRBS9"] = PRBS9_CAP;
+    _modulePrbsModeStrToCap["PRBS13"] = PRBS13A_CAP;
+    _modulePrbsModeStrToCap["SSPR"] = SSPR_CAP;
+    _modulePrbsModeStrToCap["SSPRQ"] = SSPRQ_CAP;
+
+    _modulePMPDStatus[PMPD_STATUS_NOT_SUPPORTED] = "Not Supported";
+    _modulePMPDStatus[PMPD_STATUS_NORMAL_MODE] = "Normal Mode";
+    _modulePMPDStatus[PMPD_STATUS_NOT_LOCKED] = "Not Locked";
+    _modulePMPDStatus[PMPD_STATUS_LOCKED] = "Locked";
+}
+
 void MlxlinkMaps::qsfpComlianceMapping()
 {
     _cableComplianceQsfp[QSFP_ETHERNET_COMPLIANCE_CODE_Unspecified] =
@@ -1162,6 +1244,7 @@ void MlxlinkMaps::initCableComplianceMapping()
     dataPathStateMapping();
     errorCodeResMapping();
     techMapping();
+    modulePrbsMapping();
 }
 
 void MlxlinkMaps::initCableTechnologyMapping()

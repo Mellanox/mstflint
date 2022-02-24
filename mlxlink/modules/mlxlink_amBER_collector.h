@@ -110,6 +110,8 @@ private:
     void  initCableIdentifier(u_int32_t cableIdentifier);
     void getModuleLatchedFlagInfoPage(vector<AmberField> &fields);
     void groupValidIf(bool condition);
+    void getTestModeModulePMPT(vector<AmberField> &fields, string moduleSide, ModuleAccess_t mode);
+    void getTestModeModulePMPD(vector<AmberField> &fields, string moduleSide);
 
     bool _isQsfpCable;
     bool _isSfpCable;
@@ -154,6 +156,8 @@ protected:
     bool _isValidSensorMvcap;
     bool _isValidSensorMtcap;
     bool _inPRBSMode;
+    u_int32_t _moduleHostSt;
+    u_int32_t _moduleMediaSt;
 
     Json::Value &_jsonRoot;
     vector<MlxlinkCmdPrint> _amBerCollectorOutput;
@@ -164,6 +168,7 @@ protected:
     u_int32_t _numOfLanes;
     u_int32_t _moduleIndex;
     u_int32_t _slotIndex;
+    u_int32_t _maxLanes;
 };
 
 #endif /* MLXLINK_AMBER_COLLECTOR_H */

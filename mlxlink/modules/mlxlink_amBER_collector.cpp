@@ -41,6 +41,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value &jsonRoot): _jsonRoot(j
     _splitPort = 0;
     _secondSplit = 0;
     _numOfLanes = 0;
+    _maxLanes = MAX_NETWORK_LANES;
     _csvFileName = "";
     _mstDevName = "";
     _iteration = 0;
@@ -154,6 +155,8 @@ void MlxlinkAmBerCollector::startCollector()
 void MlxlinkAmBerCollector::init()
 {
     try {
+        _isPortPCIE =  (_pnat == PNAT_PCIE);
+
         if (!_isPortPCIE) {
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
@@ -166,7 +169,7 @@ void MlxlinkAmBerCollector::init()
 
             _isPortIB = (_protoActive  == IB) && (_pnat != PNAT_PCIE);
             _isPortETH = (_protoActive  == ETH) && (_pnat != PNAT_PCIE);
-            _isPortPCIE =  (_pnat == PNAT_PCIE);
+            _maxLanes = MAX_NETWORK_LANES;
 
             if (_protoActive == IB) {
                 _activeSpeed = getFieldValue("link_speed_active");
@@ -216,6 +219,26 @@ void MlxlinkAmBerCollector::init()
 
             _moduleIndex = getFieldValue("module_0");
             _slotIndex = getFieldValue("slot_index_0");
+
+            resetLocalParser(ACCESS_REG_PMPT);
+            updateField("module", _moduleIndex);
+            updateField("slot_index", _slotIndex);
+            updateField("host_media", 1);
+            updateField("lane_mask", 0x1);
+            sendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+
+            _moduleHostSt = getFieldValue("status");
+
+            resetLocalParser(ACCESS_REG_PMPT);
+            updateField("module", _moduleIndex);
+            updateField("slot_index", _slotIndex);
+            updateField("host_media", 0);
+            updateField("lane_mask", 0x1);
+            sendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+
+            _moduleMediaSt = getFieldValue("status");
+
+            _inPRBSMode |= (_moduleHostSt >= PMPT_STATUS_GEN_ONLY || _moduleMediaSt >= PMPT_STATUS_GEN_ONLY);
         } else {
             resetParser(ACCESS_REG_MPEIN);
             updateField("pcie_index", _pcieIndex);
@@ -224,6 +247,7 @@ void MlxlinkAmBerCollector::init()
             genBuffSendRegister(ACCESS_REG_MPEIN, MACCESS_REG_METHOD_GET);
 
             _numOfLanes = getFieldValue("link_width_active");
+            _maxLanes = MAX_PCIE_LANES;
         }
 
         _sheetsList[AMBER_SHEET_GENERAL] = FIELDS_COUNT{4, 4, 4};
@@ -686,7 +710,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             updateField("grp", PPCNT_STATISTICAL_GROUP);
             sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
             u_int64_t rawError = 0;
-            for (u_int32_t lane = 0; lane < LANES_NUM; lane++) {
+            for (u_int32_t lane = 0; lane < _maxLanes; lane++) {
                 val = "N/A";
                 if (lane < _numOfLanes) {
                     rawError = add32BitTo64(
@@ -733,7 +757,7 @@ void MlxlinkAmBerCollector::fillParamsToFields(const string &title,
                                                const vector<string> &values,
                                                vector<AmberField> &fields, bool laneLimit)
 {
-    u_int32_t limit = laneLimit ? LANES_NUM : values.size();
+    u_int32_t limit = laneLimit ? _maxLanes : values.size();
     string val = "";
     string fieldName = "";
     for (u_int32_t idx = 0; idx < limit; idx++) {
@@ -991,7 +1015,7 @@ string MlxlinkAmBerCollector::getCableBreakoutStr(u_int32_t cableBreakout, u_int
 
 void MlxlinkAmBerCollector::calcRxTxPowerLane(vector<AmberField> &fields, string str)
 {
-    for (u_int32_t lane = 0; lane < LANES_NUM; lane++) {
+    for (u_int32_t lane = 0; lane < _maxLanes; lane++) {
         string laneStr = to_string(lane);
         fields.push_back(AmberField(str + laneStr,  to_string(getPower(getFieldValue(str + laneStr)))));
     }
@@ -999,7 +1023,7 @@ void MlxlinkAmBerCollector::calcRxTxPowerLane(vector<AmberField> &fields, string
 
 void MlxlinkAmBerCollector::getTxBiasLane(vector<AmberField> &fields)
 {
-    for (u_int32_t lane = 0; lane < LANES_NUM; lane++) {
+    for (u_int32_t lane = 0; lane < _maxLanes; lane++) {
         string laneStr = to_string(lane);
         fields.push_back(AmberField("tx_bias_lane" + laneStr,  to_string(getFieldValue("tx_bias_lane" + laneStr) / 500.0)));
     }
@@ -1012,7 +1036,7 @@ void MlxlinkAmBerCollector::loopAllLanesStr(vector<AmberField> &fields, const st
 
     fieldName = toLowerCase(fieldName);
 
-    for (u_int32_t lane = 0; lane < LANES_NUM; lane++) {
+    for (u_int32_t lane = 0; lane < _maxLanes; lane++) {
         string laneStr = to_string(lane);
         dpStateStr = getStrByMask(getFieldValue(fieldName + laneStr),_mlxlinkMaps->_dataPathSt);
         fields.push_back(AmberField(str + laneStr, dpStateStr));
@@ -1140,8 +1164,8 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField> &fields)
                                                                     _mlxlinkMaps->_txInputFreq)));
     fields.push_back(AmberField("rx_cdr_cap", _mlxlinkMaps->_rxTxCdrCap[getFieldValue("rx_cdr_cap")]));
     fields.push_back(AmberField("tx_cdr_cap", _mlxlinkMaps->_rxTxCdrCap[getFieldValue("tx_cdr_cap")]));
-    fields.push_back(AmberField("rx_cdr_state", getRxTxCDRState(getFieldValue("rx_cdr_state"),LANES_NUM)));
-    fields.push_back(AmberField("tx_cdr_state", getRxTxCDRState(getFieldValue("tx_cdr_state"),LANES_NUM)));
+    fields.push_back(AmberField("rx_cdr_state", getRxTxCDRState(getFieldValue("rx_cdr_state"),_maxLanes)));
+    fields.push_back(AmberField("tx_cdr_state", getRxTxCDRState(getFieldValue("tx_cdr_state"),_maxLanes)));
     fields.push_back(AmberField("vendor_name", getAscii("vendor_name", 16)));
     fields.push_back(AmberField("vendor_rev", getVendorRev(getFieldValue("vendor_rev"))));
     fields.push_back(AmberField("module_fw_version", getFwVersion(passive,getFieldValue("fw_version"))));
@@ -1210,7 +1234,7 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField> &fields)
 string MlxlinkAmBerCollector::getBitmaskPerLaneStr(u_int32_t bitmask)
 {
     string bitMaskStr = "";
-    for (u_int32_t lane = 0 ; lane < LANES_NUM; lane++){
+    for (u_int32_t lane = 0 ; lane < _maxLanes; lane++){
         bitMaskStr +=  getBitvalue(bitmask, lane + 1) ? "1" : "0";
         if (lane != 7 ) {
             bitMaskStr += ",";
@@ -1643,11 +1667,77 @@ vector<AmberField> MlxlinkAmBerCollector::getTestModeInfo()
     return fields;
 }
 
+
+void MlxlinkAmBerCollector::getTestModeModulePMPT(vector<AmberField> &fields, string moduleSide,
+                                                          ModuleAccess_t mode)
+{
+    resetLocalParser(ACCESS_REG_PMPT);
+    updateField("module", _moduleIndex);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", moduleSide == "host");
+    updateField("ch_ge", (u_int32_t)mode);
+    sendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+
+    string modeStr = mode == MODULE_PRBS_ACCESS_GEN? "generator" : "checker";
+
+    fields.push_back(AmberField("prbs_" + modeStr + "_pattern_cap_" + moduleSide,
+                                getPrbsModeCap(PRBS_RX, getFieldValue("prbs_modes_cap"))));
+    fields.push_back(AmberField("prbs_" + modeStr + "_pattern_admin_" + moduleSide,
+                                getStrByValue(getFieldValue("prbs_mode_admin"), _mlxlinkMaps->_prbsModesList)));
+    fields.push_back(AmberField("prbs_" + modeStr + "_msb_lsb_swap_" + moduleSide,
+                                getStrByValue(getFieldValue("swap_admin"), _mlxlinkMaps->_modulePrbsSwapAdmin)));
+    fields.push_back(AmberField("prbs_" + modeStr + "_polarity_" + moduleSide,
+                                getStrByValue(getFieldValue("invt_admin"), _mlxlinkMaps->_modulePrbsInvAdmin)));
+    fields.push_back(AmberField("prbs_" + modeStr + "_modulation_" + moduleSide,
+                                getStrByValue(getFieldValue("modulation"), _mlxlinkMaps->_modulePrbsModulation)));
+    fields.push_back(AmberField("prbs_" + modeStr + "_lane_rate_cap_" + moduleSide,
+                                getStrByMask(getFieldValue("lane_rate_cap"), _mlxlinkMaps->_modulePrbsRateCapToStr)));
+    fields.push_back(AmberField("prbs_" + modeStr + "_lane_rate_admin_" + moduleSide,
+                                getStrByValue(getFieldValue("lane_rate_admin"), _mlxlinkMaps->_modulePrbsRateCapToStr)));
+}
+
+void MlxlinkAmBerCollector::getTestModeModulePMPD(vector<AmberField> &fields, string moduleSide)
+{
+    vector<vector<string>> pmpdParams(PMPD_PARAM_LAST, vector<string>(_numOfLanes, ""));
+
+    for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
+        resetLocalParser(ACCESS_REG_PMPD);
+        updateField("module", _moduleIndex);
+        updateField("slot_index", _slotIndex);
+        updateField("host_media", moduleSide == "host");
+        updateField("lane", lane);
+        sendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);;
+
+        pmpdParams[PMPD_PARAM_STATUS][lane] = getStrByValue(getFieldValue("status"), _mlxlinkMaps->_modulePMPDStatus);
+        pmpdParams[PMPD_PARAM_PRBS_BITS][lane] = to_string(add32BitTo64(getFieldValue("prbs_bits_high"),
+                                                                        getFieldValue("prbs_bits_low")));
+        pmpdParams[PMPD_PARAM_PRBS_ERRORS][lane] = to_string(add32BitTo64(getFieldValue("prbs_errors_high"),
+                                                                          getFieldValue("prbs_errors_low")));
+        pmpdParams[PMPD_PARAM_SNR][lane] = getFieldStr("measured_snr") + "dB";
+        pmpdParams[PMPD_PARAM_BER][lane] = getFieldStr("ber_coef") + "E-" + getFieldStr("ber_magnitude");
+    }
+
+    fillParamsToFields("prbs_checker_status_" + moduleSide, pmpdParams[PMPD_PARAM_STATUS], fields);
+    fillParamsToFields("prbs_checker_bit_" + moduleSide, pmpdParams[PMPD_PARAM_PRBS_BITS], fields);
+    fillParamsToFields("prbs_checker_error_" + moduleSide, pmpdParams[PMPD_PARAM_PRBS_ERRORS], fields);
+    fillParamsToFields("prbs_checker_snr_" + moduleSide, pmpdParams[PMPD_PARAM_SNR], fields);
+    fillParamsToFields("prbs_checker_ber_" + moduleSide, pmpdParams[PMPD_PARAM_BER], fields);
+}
+
 vector<AmberField> MlxlinkAmBerCollector::getTestModeModuleInfo()
 {
     vector<AmberField> fields;
 
     try {
+        fields.push_back(AmberField("prbs_status_host", getStrByValue(_moduleHostSt, _mlxlinkMaps->_modulePrbsSt)));
+        getTestModeModulePMPT(fields, "host", MODULE_PRBS_ACCESS_CH);
+        getTestModeModulePMPT(fields, "host", MODULE_PRBS_ACCESS_GEN);
+        getTestModeModulePMPD(fields, "host");
+
+        fields.push_back(AmberField("prbs_status_media", getStrByValue(_moduleMediaSt, _mlxlinkMaps->_modulePrbsSt)));
+        getTestModeModulePMPT(fields, "media", MODULE_PRBS_ACCESS_CH);
+        getTestModeModulePMPT(fields, "media", MODULE_PRBS_ACCESS_GEN);
+        getTestModeModulePMPD(fields, "media");
     } catch (const std::exception &exc) {
         throw MlxRegException(
                 "Failed to get Test Mode Module information: %s", exc.what());
