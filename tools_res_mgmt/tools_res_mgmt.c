@@ -206,6 +206,11 @@ static struct device_sem_info g_dev_sem_info_db[] = {
         {0xa68f8},               // hw_sem_addr
         1,                       // vsec_sem_supported
     },
+    {
+        DeviceAbirGearBox,       // dev_id
+        {0xe74e0},               // hw_sem_addr
+        1,                       // vsec_sem_supported
+    },
 };
 
 #define MAX_SEMAPHORE_ADDRES 8

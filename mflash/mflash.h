@@ -108,6 +108,24 @@ EXTERN_C_START
 #define FLASH_ACCESS_DPRINTF(...)
 #endif
 
+typedef struct gpio_toggle_conf_cx6 {
+    u_int32_t lock_addr;
+    u_int32_t lock_val;
+    u_int32_t functional_enable0_addr;
+    u_int32_t functional_enable1_addr;
+    u_int32_t mode1_set_addr;
+    u_int32_t mode0_set_addr;
+    u_int32_t dataset_addr;
+} gpio_toggle_conf_cx6;
+
+typedef struct gpio_toggle_conf_cx7 {
+    u_int32_t select_synced_data_out_addr;
+    u_int32_t fw_control_set_addr;
+    u_int32_t hw_data_in_addr;
+    u_int32_t fw_output_enable_set_addr;
+    u_int32_t fw_data_out_set_addr;
+} gpio_toggle_conf_cx7;
+
 typedef enum MfCommandSet {
     CS_INTEL   = 1,
     CS_AMD     = 2,

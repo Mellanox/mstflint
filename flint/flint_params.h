@@ -61,6 +61,7 @@ typedef enum {
     SC_Sg,
     SC_Smg,
     SC_Set_Vpd,
+    SC_Set_Cert_Chain,
     SC_Sv,
     SC_Ri,
     SC_Dc,

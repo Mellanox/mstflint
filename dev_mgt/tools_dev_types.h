@@ -105,6 +105,7 @@ enum dm_dev_id
     DeviceQuantum2, // Blackbird
     DeviceGearBox,
     DeviceGearBoxManager,
+    DeviceAbirGearBox,
     DeviceCableCMIS,
     DeviceCableCMISPaging,
     DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating
@@ -148,7 +149,8 @@ enum hw_dev_id
         DeviceSpectrum3_HwId = 0x250,
         DeviceSpectrum4_HwId = 0x254,
         DeviceGearBox_HwId = 0x252,
-        DeviceGearBoxManager_HwId = 0x253
+        DeviceGearBoxManager_HwId = 0x253,
+        DeviceAbirGearBox_HwId = 0x256
 };
 typedef enum dm_dev_id dm_dev_id_t;
 

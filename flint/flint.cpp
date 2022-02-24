@@ -153,6 +153,7 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
 #ifndef EXTERNAL
     cmdMap[SC_Smg] = new SmgSubCommand();
     cmdMap[SC_Set_Vpd] = new SetVpdSubCommand();
+    cmdMap[SC_Set_Cert_Chain] = new SetCertChainSubCommand();
     cmdMap[SC_Fix_Img] = new FiSubCommand();
     cmdMap[SC_Extract_4MB_Image] = new Extract4MBImageSubCommand();
 #endif

@@ -1189,6 +1189,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "Spectrum4",        SPECTRUM4_HW_ID,  CT_SPECTRUM4,    CFT_SWITCH,  0, {53120, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Gearbox",          GEARBOX_HW_ID,    CT_GEARBOX,      CFT_GEARBOX, 0, {0, 0},     {{UNKNOWN_BIN, {0}}}},
     { "GearboxManager",   GB_MANAGER_HW_ID, CT_GEARBOX_MGR,  CFT_GEARBOX, 0, {0, 0},     {{UNKNOWN_BIN, {0}}}},
+    { "AbirGearbox",      ABIR_GB_HW_ID,    CT_ABIR_GEARBOX, CFT_GEARBOX, 0, {0, 0},     {{UNKNOWN_BIN, {0}}}},
     { (char*)NULL,       0,                 CT_UNKNOWN,      CFT_UNKNOWN, 0, {0}, {{UNKNOWN_BIN, {0}}}},// zero devid terminator
 };
 
@@ -1802,7 +1803,7 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
     return true;
 }
 
-bool FwOperations::ReadImageFile(const char *fimage, u_int8_t*&file_data, int &file_size)
+bool FwOperations::ReadBinFile(const char *fimage, u_int8_t*&file_data, int &file_size)
 {
 #ifndef UEFI_BUILD
     FILE *fh;
@@ -2062,6 +2063,11 @@ const char* FwOperations::expRomType2Str(u_int16_t type)
     return (const char*)NULL;
 }
 
+bool FwOperations::FwSetCertChain(char *, PrintCallBack)
+{
+    return errmsg("Operation not supported.");
+}
+
 bool FwOperations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer)
 {
     (void)timestamp;
@@ -2109,7 +2115,7 @@ bool FwOperations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector
     return errmsg("Operation not supported.");
 }
 
-bool FwOperations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, 
+bool FwOperations::UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, 
     CommandType cmd_type, PrintCallBack callBackFunc)
 {
     (void)new_info;
@@ -2291,7 +2297,8 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
                hwDevId == SPECTRUM2_HW_ID ||
                hwDevId == SPECTRUM3_HW_ID ||
                hwDevId == GEARBOX_HW_ID ||
-               hwDevId == GB_MANAGER_HW_ID) {
+               hwDevId == GB_MANAGER_HW_ID ||
+               hwDevId == ABIR_GB_HW_ID) {
         return FS_FS4_GEN;
     }
     return FS_UNKNOWN_IMG;
@@ -2514,6 +2521,10 @@ bool FwOperations::IsSecurityVersionViolated(u_int32_t)
     return false;
 }
 
+bool FwOperations::GetImageSize(u_int32_t*){
+    return errmsg("GetImageSize is not supported");
+}
+
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
 bool FwOperations::CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize)
 {
@@ -2590,6 +2601,7 @@ int CRSpaceRegisters::getGlobalImageStatus()
         case CT_CONNECTX6LX:
         case CT_CONNECTX7:
         case CT_BLUEFIELD2:
+        case CT_BLUEFIELD3:
             global_image_status_address = 0xE3044;
             break;
         case CT_QUANTUM2:

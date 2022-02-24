@@ -124,6 +124,7 @@ typedef enum {
 #define FLINT_MFG_ERROR                       "Failed to set manufacture guids: %s\n"
 #define FLINT_VSD_ERROR                       "Failed to set the VSD: %s\n"
 #define FLINT_VPD_ERROR                       "Failed to set VPD: %s\n"
+#define FLINT_CERT_CHAIN_ERROR                "Failed to set attestation certificate chain: %s\n"
 #define FLINT_SET_KEY_ERROR                   "Failed to set the HW access key: %s\n"
 #define FLINT_RESET_CFG_ERROR                 "Failed to reset Configuration: %s\n"
 #define FLINT_FIX_IMG_ERROR                   "Failed to fix device image: %s\n"

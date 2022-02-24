@@ -75,6 +75,7 @@ int is_four_byte_address_needed(mflash *mfl, MfError *status)
     case DeviceBlueField3:
     case DeviceGearBox:
     case DeviceGearBoxManager:
+    case DeviceAbirGearBox:
         return 1;
     default:
         *status = MFE_UNSUPPORTED_DEVICE;
@@ -117,6 +118,7 @@ int is_flash_enable_needed(mflash *mfl, MfError *status)
     case DeviceSecureHost:
     case DeviceGearBox:
     case DeviceGearBoxManager:
+    case DeviceAbirGearBox:
         return 0;
     default:
         *status = MFE_UNSUPPORTED_DEVICE;
@@ -161,6 +163,7 @@ int is_icmdif_supported(mflash *mfl, MfError *status, int *is7NmSuppported)
     case DeviceSpectrum4:
     case DeviceConnectX7:
     case DeviceBlueField3:
+    case DeviceAbirGearBox:
         *is7NmSuppported = 1;
         return 1;
     default:

@@ -72,6 +72,12 @@
      chip_type == CT_CONNECTX7 || \
      chip_type == CT_BLUEFIELD || chip_type == CT_BLUEFIELD2 || chip_type == CT_BLUEFIELD3)
 
+#define FAIL_NO_OCR(str) do { \
+        if (_ioAccess->is_flash() && _fwParams.ignoreCacheRep == 0) { \
+            return errmsg(MLXFW_OCR_ERR, "-ocr flag must be specified for %s operation.", str); \
+        } \
+} while (0)
+
 class Fs3Operations : public FwOperations {
 public:
 
@@ -138,7 +144,7 @@ public:
     bool CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& digest);
     virtual bool GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& size, u_int32_t& offset);
     MlargeBuffer GetImageCache() { return  _imageCache; }
-    virtual bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type = FS3_DEV_INFO, bool is_sect_failsafe = true, CommandType cmd_type = CMD_UNKNOWN, PrintCallBack callBackFunc = (PrintCallBack)NULL);
+    virtual bool UpdateSection(void *new_info, fs3_section_t sect_type = FS3_DEV_INFO, bool is_sect_failsafe = true, CommandType cmd_type = CMD_UNKNOWN, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t devid_t, const cx4fw_uid_entry& base_guid, const cx4fw_uid_entry& base_mac);
     bool IsCriticalSection(u_int8_t sect_type);
