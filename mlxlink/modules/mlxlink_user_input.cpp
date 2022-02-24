@@ -119,4 +119,12 @@ UserInput::UserInput()
     enableFecHistogram = false;
     showFecHistogram = false;
     clearFecHistogram = false;
+
+    isPrbsSelProvided = false;
+    isPrbsModeProvided = false;
+    isPrbsChProvided = false;
+    isPrbsGenProvided = false;
+    isPrbsShowDiagProvided = false;
+    isPrbsClearDiagProvided = false;
+    prbsModuleAccess = MODULE_PRBS_ACCESS_BOTH;
 }

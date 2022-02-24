@@ -221,6 +221,9 @@ string EthSupportedSpeeds2Str(u_int32_t int_mask)
     if (int_mask & ETH_LINK_SPEED_100_BaseTx) {
         maskStr += "100M,";
     }
+    if (int_mask & ETH_LINK_SPEED_10M) {
+        maskStr += "10M,";
+    }
 
     return deleteLastChar(maskStr);
 }
@@ -278,6 +281,9 @@ string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
     }
     if (int_mask & ETH_LINK_SPEED_EXT_SGMII_100M) {
         maskStr += "100M,";
+    }
+    if (int_mask & ETH_LINK_SPEED_EXT_SGMII_10M) {
+        maskStr += "10M,";
     }
 
     return deleteLastChar(maskStr);
@@ -358,6 +364,9 @@ string getPowerClass(MlxlinkMaps *mlxlinkMaps, u_int32_t cableIdentifier, u_int3
 
 int ptysSpeedToExtMaskETH(const string & speed)
 {
+    if (speed == "10M") {
+        return (ETH_LINK_SPEED_EXT_SGMII_10M);
+    }
     if (speed == "100M") {
         return (ETH_LINK_SPEED_EXT_SGMII_100M);
     }
@@ -440,8 +449,11 @@ int ptysSpeedToMaskETH(const string &speed)
         return (ETH_LINK_SPEED_100G_CR4 | ETH_LINK_SPEED_100G_KR4
                 | ETH_LINK_SPEED_100G_LR4 | ETH_LINK_SPEED_100G_SR4);
     }
-    if (speed == "100") {
+    if (speed == "100M") {
         return ETH_LINK_SPEED_100_BaseTx;
+    }
+    if (speed == "10M") {
+        return ETH_LINK_SPEED_10M;
     }
     if (speed == "25G") {
         return (ETH_LINK_SPEED_25G_CR | ETH_LINK_SPEED_25G_KR

@@ -179,6 +179,34 @@
 #define WRITE_OFFSET_FLAG_SHORT             ' '
 #define READ_LEN_FLAG                       "length"
 #define READ_LEN_FLAG_SHORT                 ' '
+#define CABLE_PRBS_SELECT                   "prbs_select"
+#define CABLE_PRBS_SELECT_SHORT             ' '
+#define CABLE_PRBS_MODE                     "prbs_mode"
+#define CABLE_PRBS_MODE_SHORT               ' '
+#define CABLE_PRBS_GEN_RATE                 "generator_rate"
+#define CABLE_PRBS_GEN_RATE_SHORT           ' '
+#define CABLE_PRBS_GEN_PAT                  "generator_pattern"
+#define CABLE_PRBS_GEN_PAT_SHORT            ' '
+#define CABLE_PRBS_GEN_SWAP                 "swap_generator"
+#define CABLE_PRBS_GEN_SWAP_SHORT           ' '
+#define CABLE_PRBS_GEN_INV                  "invert_generator"
+#define CABLE_PRBS_GEN_INV_SHORT            ' '
+#define CABLE_PRBS_GEN_LANES                "generator_lanes"
+#define CABLE_PRBS_GEN_LANES_SHORT          ' '
+#define CABLE_PRBS_CH_RATE                  "checker_rate"
+#define CABLE_PRBS_CH_RATE_SHORT            ' '
+#define CABLE_PRBS_CH_PAT                   "checker_pattern"
+#define CABLE_PRBS_CH_PAT_SHORT             ' '
+#define CABLE_PRBS_CH_SWAP                  "swap_checker"
+#define CABLE_PRBS_CH_SWAP_SHORT            ' '
+#define CABLE_PRBS_CH_INV                   "invert_checker"
+#define CABLE_PRBS_CH_INV_SHORT             ' '
+#define CABLE_PRBS_CH_LANES                 "checker_lanes"
+#define CABLE_PRBS_CH_LANES_SHORT           ' '
+#define CABLE_PRBS_SHOW_DIAG                "show_diagnostic_info"
+#define CABLE_PRBS_SHOW_DIAG_SHORT          ' '
+#define CABLE_PRBS_CLEAR_DIAG               "clear_diagnostic_info"
+#define CABLE_PRBS_CLEAR_DIAG_SHORT         ' '
 #define SHOW_TX_GROUP_MAP_FLAG              "show_tx_group_map"
 #define SHOW_TX_GROUP_MAP_FLAG_SHORT        ' '
 #define SET_TX_GROUP_MAP_FLAG               "tx_group_map"
@@ -252,6 +280,7 @@ enum OPTION_TYPE {
     CABLE_SHOW_DDM,
     CABLE_EEPROM_WRITE,
     CABLE_EEPROM_READ,
+    CABLE_PRBS_CMDS,
     SEND_BER_COLLECT,
     SEND_AMBER_COLLECT,
     SEND_PAOS,
@@ -266,7 +295,7 @@ enum OPTION_TYPE {
     SET_TX_GROUP_MAP,
     GRADE_SCAN_ENABLE,
     ERR_INJ_ENABLE,
-    RS_FEC_HISTOGRAM = 33,
+    RS_FEC_HISTOGRAM,
     SLRG_TEST,
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
@@ -460,6 +489,7 @@ public:
     vector<u_int8_t> validateBytes(const vector<string> &strBytes);
     void writeCableEEPROM();
     void readCableEEPROM();
+    void performModulePrbsCommands();;
 
     MlxlinkCmdPrint _toolInfoCmd;
     MlxlinkCmdPrint _operatingInfoCmd;
