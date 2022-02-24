@@ -4104,7 +4104,7 @@ bool SwResetSubCommand::IsDeviceSupported(dm_dev_id_t dev_id)
         case DeviceGearBox:
         case DeviceGearBoxManager:
         case DeviceAbirGearBox:
-            reportErr(true, "The device type %d is not supported.\n", dev_id);
+            reportErr(true, "Device %s doesn't support swreset command.\n", dm_dev_type2str(dev_id));
             return false;
         default:
             reportErr(true, "Unknown device type - %d.\n", dev_id);
