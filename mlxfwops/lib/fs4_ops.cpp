@@ -725,14 +725,16 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                             }
                             if (!isDevInfoSection || isDevInfoValid) {
                                 if (IsGetInfoSupported(tocEntry.type)) {
-                                    u_int8_t **section_buff = &buff;
+                                    u_int8_t *section_buff;
+                                    section_buff = buff;
                                     if (_encrypted_image_io_access) {
                                         // In case of encrypted image, parsing info section from the non-encrypted image
-                                        u_int8_t *non_encrypted_buff = (u_int8_t *)(buffv.size() ? (&(buffv[0])) : NULL);
-                                        READBUF((*_ioAccess), flash_addr, non_encrypted_buff, entrySizeInBytes, "Section");
-                                        section_buff = &non_encrypted_buff;
+                                        vector<u_int8_t> non_encrypted_buff;
+                                        non_encrypted_buff.resize(tocEntry.size * 4);
+                                        READBUF((*_ioAccess), flash_addr, non_encrypted_buff.data(), entrySizeInBytes, "Section");
+                                        section_buff = non_encrypted_buff.data();
                                     }
-                                    if (!GetImageInfoFromSection(*section_buff, tocEntry.type, tocEntry.size * 4)) {
+                                    if (!GetImageInfoFromSection(section_buff, tocEntry.type, tocEntry.size * 4)) {
                                         retVal = false;
                                         errmsg("Failed to get info from section %d, check the supported_hw_id section in MLX file!\n", tocEntry.type);
                                     }
