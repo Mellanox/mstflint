@@ -583,6 +583,7 @@ FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes, bool ignoreDToc)
         _imgOps = FwOperations::FwOperationsCreate((void*)_flintParams.image.c_str(), NULL, NULL, \
                                                    FHT_FW_FILE, errBuff, 1024);
     }
+
     if (_flintParams.image_specified && _imgOps == NULL) {
         reportErr(true, FLINT_OPEN_FWOPS_IMAGE_ERROR, _flintParams.image.c_str(), strlen(errBuff) != 0 ? errBuff : "");
         return FLINT_FAILED;
@@ -595,8 +596,6 @@ FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes, bool ignoreDToc)
     }
     return FLINT_SUCCESS;
 }
-
-
 
 FlintStatus SubCommand::openIo()
 {
@@ -6027,12 +6026,33 @@ bool RbSubCommand::readBlock(u_int32_t addr, std::vector<u_int8_t>& buff, bool i
     return true;
 }
 
-bool RbSubCommand::printToScreen(const std::vector<u_int8_t>& buff)
+bool RbSubCommand::printToScreen(const std::vector<u_int8_t>& buff, bool hexdump_format)
 {
-    for (u_int32_t i = 0; i < buff.size(); i += 4) {
-        u_int32_t word = *((u_int32_t*)(&buff[0] + i));
-        word = __be32_to_cpu(word);
-        printf("0x%08x ", word);
+    if (hexdump_format) {
+        for (u_int32_t i = 0; i < buff.size(); i += 16) {
+        
+            // Print addr
+            printf("%08x  ", i);
+            // Print bytes
+            for (u_int32_t j = 0; j < 16; j++) {
+                printf("%02x ", buff[i + j]);
+                if (j == 7) printf(" ");
+            }
+            // Print ASCII
+            printf(" |");
+            for (u_int32_t j = 0; j < 16; j++) {
+                printf("%c", isprint(buff[i + j]) ? buff[i + j] : '.');
+            }
+            // Print new line
+            printf("|\n");
+        }
+    }
+    else {
+        for (u_int32_t i = 0; i < buff.size(); i += 4) {
+            u_int32_t word = *((u_int32_t*)(&buff[0] + i));
+            word = __be32_to_cpu(word);
+            printf("0x%08x ", word);
+        }
     }
     printf("\n");
     return true;
@@ -6075,7 +6095,7 @@ FlintStatus RbSubCommand::executeCommand()
     if (wTF) {
         rc = writeToFile(_flintParams.cmd_params[2], data) == true ? FLINT_SUCCESS : FLINT_FAILED;
     } else {
-        rc = printToScreen(data) == true ? FLINT_SUCCESS : FLINT_FAILED;
+        rc = printToScreen(data, _flintParams.hexdump_format) == true ? FLINT_SUCCESS : FLINT_FAILED;
     }
     return rc;
 }

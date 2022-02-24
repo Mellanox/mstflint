@@ -597,7 +597,7 @@ public:
 class RbSubCommand : public SubCommand
 {
 private:
-    bool printToScreen(const std::vector<u_int8_t>& buff);
+    bool printToScreen(const std::vector<u_int8_t>& buff, bool hexdump_format);
     bool readBlock(u_int32_t addr, std::vector<u_int8_t>& buff, bool isFlash);
 public:
     RbSubCommand();

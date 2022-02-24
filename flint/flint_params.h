@@ -152,6 +152,7 @@ public:
     string fullCmd;
     bool use_dev_img_info;
     bool ignore_crc_check;
+    bool hexdump_format;
     bool skip_ci_req;
     bool use_dev_rom;
     bool privkey_specified;
