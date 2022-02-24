@@ -4234,7 +4234,7 @@ void MlxlinkCommander::checkPplrCap()
                     supportedLoopbacks.c_str());
         }
     }
-    if (loopBackVal == PHY_REMOTE_LOOPBACK) {
+    if (loopBackVal == PHY_REMOTE_LOOPBACK && _productTechnology < PRODUCT_7NM) {
         string warMsg = "Remote loopback mode pre-request (all should be satisfied):\n";
         warMsg += "1. Remote loopback is supported only in force mode.\n";
         warMsg += "   please use the --link_mode_force flag if force mode not configured\n";
