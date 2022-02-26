@@ -1638,7 +1638,7 @@ def main():
     global DevDBDF
     global FWResetStatusChecker
 
-    if is_uefi_secureboot():                                                # The tool is using sysfs to access PCI config and it's
+    if args.reset_sync == SyncOwner.TOOL and is_uefi_secureboot():        # The tool is using sysfs to access PCI config and it's
         raise RuntimeError("The tool is not supported on UEFI Secure Boot") # restricted on UEFI secure boot
 
     if platform.system() == "Linux": # Convert ib-device , net-device to mst-device(mst started) or pci-device
