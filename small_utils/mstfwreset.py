@@ -1641,6 +1641,18 @@ def main():
     if args.reset_sync == SyncOwner.TOOL and is_uefi_secureboot():        # The tool is using sysfs to access PCI config and it's
         raise RuntimeError("The tool is not supported on UEFI Secure Boot") # restricted on UEFI secure boot
 
+    # Exit in case of virtual-machine (not implemented for FreeBSD and Windows)
+    if command == "reset" and platform.system() == "Linux" and "ppc64" not in platform.machine():
+        rc, out, _ = cmdExec('lscpu')
+        if rc == 0:
+            if "Hypervisor vendor" in out:
+                raise RuntimeError("The tool is not supported on virtual machines")
+        else:
+            logger.debug("Failed to execute 'lscpu' command rc = {0}".format(rc))
+
+
+
+
     if platform.system() == "Linux": # Convert ib-device , net-device to mst-device(mst started) or pci-device
         if IS_MSTFLINT:
             if device.startswith('mlx'):
