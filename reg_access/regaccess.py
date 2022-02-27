@@ -58,7 +58,10 @@ REG_ACCESS = None
 try:
     from ctypes import *
     if platform.system() == "Windows" or os.name == "nt":
-        REG_ACCESS = CDLL("libreg_access-1.dll")
+        try:
+            REG_ACCESS = CDLL("libreg_access-1.dll")
+        except:
+            REG_ACCESS = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libreg_access-1.dll"))
     else:
         try:
             REG_ACCESS = CDLL("rreg_access.so")
@@ -168,6 +171,7 @@ if REG_ACCESS:
         _fields_ = [("device_id", c_uint16),
                     ("device_hw_revision", c_uint16),
                     ("pvs", c_uint8),
+                    ("technology", c_uint8),
                     ("num_ports",c_uint8),
                     ("hw_dev_id", c_uint16),
                     ("manufacturing_base_mac_47_32", c_uint16),
@@ -181,6 +185,7 @@ if REG_ACCESS:
                     ("debug_fw", c_uint8),
                     ("dev_fw", c_uint8),
                     ("string_tlv", c_uint8),
+                    ("dev_sc", c_uint8),
                     ("build_id", c_uint32),
                     ("year", c_uint16),
                     ("day", c_uint8),
@@ -192,6 +197,10 @@ if REG_ACCESS:
                     ("extended_minor", c_uint32),
                     ("extended_sub_minor", c_uint32),
                     ("isfu_major", c_uint16),
+                    ("disabled_tiles_bitmap", c_uint16),
+                    ("life_cycle", c_uint8),
+                    ("sec_boot", c_uint8),
+                    ("encryption", c_uint8),
                     ("fw_subminor", c_uint8),
                     ("fw_minor", c_uint8),
                     ("fw_major", c_uint8),
@@ -230,8 +239,8 @@ if REG_ACCESS:
                     ("fw_minor", c_uint16)]
 
     class MDDQ_DATA_UN(Union):
-        _fields_ = [("mddq_slot_info", MDDQ_SLOT_INFO),
-                    ("mddq_device_info", MDDQ_DEVICE_INFO)]
+        _fields_ = [("mddq_slot_info_ext", MDDQ_SLOT_INFO),
+                    ("mddq_device_info_ext", MDDQ_DEVICE_INFO)]
 
     class MDDQ_ST(Structure):
         _fields_ = [("slot_index", c_uint8),
@@ -527,23 +536,23 @@ if REG_ACCESS:
             data = {}
             if query_type == 1:
                 data.update({
-                    "active": mddqRegisterP.contents.data.mddq_slot_info.active,
-                    "lc_ready": mddqRegisterP.contents.data.mddq_slot_info.lc_ready,
-                    "sr_valid": mddqRegisterP.contents.data.mddq_slot_info.sr_valid,
-                    "provisioned": mddqRegisterP.contents.data.mddq_slot_info.provisioned,
-                    "minor_ini_file_version": mddqRegisterP.contents.data.mddq_slot_info.minor_ini_file_version,
-                    "major_ini_file_version": mddqRegisterP.contents.data.mddq_slot_info.major_ini_file_version
+                    "active": mddqRegisterP.contents.data.mddq_slot_info_ext.active,
+                    "lc_ready": mddqRegisterP.contents.data.mddq_slot_info_ext.lc_ready,
+                    "sr_valid": mddqRegisterP.contents.data.mddq_slot_info_ext.sr_valid,
+                    "provisioned": mddqRegisterP.contents.data.mddq_slot_info_ext.provisioned,
+                    "minor_ini_file_version": mddqRegisterP.contents.data.mddq_slot_info_ext.minor_ini_file_version,
+                    "major_ini_file_version": mddqRegisterP.contents.data.mddq_slot_info_ext.major_ini_file_version
                 })
             elif query_type == 2:
                 data.update({
-                    "device_index": mddqRegisterP.contents.data.mddq_device_info.device_index,
-                    "flash_id": mddqRegisterP.contents.data.mddq_device_info.flash_id,
-                    "flash_owner": mddqRegisterP.contents.data.mddq_device_info.flash_owner,
-                    "uses_flash": mddqRegisterP.contents.data.mddq_device_info.uses_flash,
-                    "device_type": mddqRegisterP.contents.data.mddq_device_info.device_type,
-                    "fw_major": mddqRegisterP.contents.data.mddq_device_info.fw_major,
-                    "fw_sub_minor": mddqRegisterP.contents.data.mddq_device_info.fw_sub_minor,
-                    "fw_minor": mddqRegisterP.contents.data.mddq_device_info.fw_minor
+                    "device_index": mddqRegisterP.contents.data.mddq_device_info_ext.device_index,
+                    "flash_id": mddqRegisterP.contents.data.mddq_device_info_ext.flash_id,
+                    "flash_owner": mddqRegisterP.contents.data.mddq_device_info_ext.flash_owner,
+                    "uses_flash": mddqRegisterP.contents.data.mddq_device_info_ext.uses_flash,
+                    "device_type": mddqRegisterP.contents.data.mddq_device_info_ext.device_type,
+                    "fw_major": mddqRegisterP.contents.data.mddq_device_info_ext.fw_major,
+                    "fw_sub_minor": mddqRegisterP.contents.data.mddq_device_info_ext.fw_sub_minor,
+                    "fw_minor": mddqRegisterP.contents.data.mddq_device_info_ext.fw_minor
                 })
             return ({"slot_index": mddqRegisterP.contents.slot_index,
                      "query_type": mddqRegisterP.contents.query_type,
