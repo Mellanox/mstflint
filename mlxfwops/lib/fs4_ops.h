@@ -48,7 +48,7 @@
 #define FS4_MIN_BIN_VER_MINOR 0
 #define HMAC_SIGNATURE_LENGTH 64
 #define MAX_HTOC_ENTRIES_NUM 28
-#define ENCRYPTED_IMAGE_LAST_ADDR_LOCATION_IN_BYTES 0x1000000 // 16MB
+#define ENCRYPTED_BURN_IMAGE_SIZE_LOCATION_IN_BYTES 0x1000000 // 16MB
 #define DELTA_IV_HW_POINTER_ADDR 0x88
 enum SecureBootSignVersion {VERSION_1 = 1, VERSION_2};
 
@@ -153,9 +153,11 @@ private:
     public:
         struct image_layout_htoc_header header;
         struct image_layout_htoc_entry entries[MAX_HTOC_ENTRIES_NUM];
+        u_int32_t htoc_start_addr;
 
         HTOC(vector<u_int8_t> img, u_int32_t hashes_table_start_addr);
-        bool getEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
+        bool GetEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
+        bool AddNewEntry(FBase* ioAccess, fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
     };
 
     struct Fs4ImgInfo {

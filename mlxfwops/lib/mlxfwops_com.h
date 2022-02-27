@@ -404,6 +404,7 @@ typedef struct fs3_info_ext {
     bool sec_boot;
     life_cycle_t life_cycle;
     bool encryption;
+    bool dev_sec_boot;
 
     // security version (for fs4)
     u_int32_t                               image_security_version;       

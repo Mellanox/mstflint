@@ -358,6 +358,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
         }
     }
     _fwImgInfo.ext_info.encrypted_fw = image_info.encrypted_fw;
+    _fs3ImgInfo.ext_info.dev_sec_boot = image_info.secure_boot; // This field is set to '1' only for DK (dev keys) IPNs
     return true;
 }
 

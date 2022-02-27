@@ -474,7 +474,7 @@ void Fs4Operations::RemoveCRCsFromMainSection(vector<u_int8_t>& img) {
     struct fs4_toc_info* main_itoc_entry = NULL;
     fs4_toc_info *itoc_entries = _fs4ImgInfo.itocArr.tocArr;
     for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++) {
-        if (itoc_entries[i].toc_entry.type == FS3_MAIN_CODE) {
+        if (itoc_entries[i].toc_entry.cache_line_crc) {
             main_itoc_entry = &(itoc_entries[i]);
             break;
         }
@@ -495,9 +495,9 @@ void Fs4Operations::RemoveCRCsFromMainSection(vector<u_int8_t>& img) {
     //* Copying MAIN section without CRCs
     const u_int32_t MAIN_LINE_SIZE = 68; // Line in MAIN is 64B data + 4B crc
     const u_int32_t MAIN_LINE_DATA_ONLY_SIZE = MAIN_LINE_SIZE - 4;
-    for (u_int32_t ii = 0; ii < main_size; ii += MAIN_LINE_SIZE) {
-        u_int32_t line_start_addr = main_addr + ii;
-        if (ii + MAIN_LINE_SIZE > main_size) {
+    for (u_int32_t offset = 0; offset < main_size; offset += MAIN_LINE_SIZE) {
+        u_int32_t line_start_addr = main_addr + offset;
+        if (offset + MAIN_LINE_SIZE > main_size) {
             // In case last line isn't a full line there will be no CRC
             tmp_img.insert(tmp_img.end(), img.begin() + line_start_addr, img.begin() + main_addr + main_size);
         }
@@ -691,7 +691,17 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                     }
 
                     if (tocEntry.type != FS3_DEV_INFO || CheckDevInfoSignature((u_int32_t *)buff)) {
-                        bool is_encrypted_cache_line_crc_section = tocEntry.cache_line_crc == 1 && tocEntry.encrypted_section == 1;
+
+                        // Check if a cache_line_crc section (Ex. MAIN_CODE) is encrypted (has 4B AUTH-TAG) or not (has 2B CRC)
+                        bool is_encrypted_cache_line_crc_section = false;
+                        if (tocEntry.cache_line_crc == 1) {
+                            u_int32_t first_line_crc_or_authtag = ((u_int32_t *)buff)[16]; // DWORD 16 is CRC or AUTH-TAG
+                            TOCPU1(first_line_crc_or_authtag)
+                            bool is_authtag = (first_line_crc_or_authtag & 0xffff0000) != 0x0;
+                            is_encrypted_cache_line_crc_section = is_authtag; // if encrypted section will have auth-tag 
+                        }
+
+
                         bool ignore_crc = (tocEntry.crc == NOCRC) || is_encrypted_cache_line_crc_section; // In case of encrypted MAIN_CODE section we'll ignore CRC
                         if (!_encrypted_image_io_access && // In case of encrypted image we don't want to check section CRC
                             !DumpFs3CRCCheck(tocEntry.type,
@@ -969,7 +979,7 @@ bool Fs4Operations::GetImageInfo(u_int8_t *buff)
                 io = _encrypted_image_io_access; // If encrypted image was given we'll read from it
             }
 
-            READALLOCBUF((*io), ENCRYPTED_IMAGE_LAST_ADDR_LOCATION_IN_BYTES, buff, 4, "IMAGE_LAST_ADDR"); // Reading DWORD from addr 16MB
+            READALLOCBUF((*io), ENCRYPTED_BURN_IMAGE_SIZE_LOCATION_IN_BYTES, buff, 4, "IMAGE_LAST_ADDR"); // Reading DWORD from addr 16MB
             burn_image_size = ((u_int32_t*)buff)[0];
             TOCPU1(burn_image_size);
             free(buff);
@@ -1080,10 +1090,8 @@ bool Fs4Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
     _fs3ImgInfo.ext_info.image_security_version = _security_version;
     _fs3ImgInfo.ext_info.device_security_version_access_method = NOT_VALID;
 
-    if (dm_is_livefish_mode(getMfileObj()) == 1) {
-        if (!QuerySecurityFeatures()) {
-            return false;
-        }
+    if (!QuerySecurityFeatures()) {
+        return false;
     }
 
     memcpy(&(fwInfo->fw_info),  &(_fwImgInfo.ext_info),  sizeof(fw_info_com_t));
@@ -2749,9 +2757,6 @@ bool Fs4Operations::UpdateCertChainSection(struct fs4_toc_info *curr_toc, char *
     if (!ReadBinFile(certChainFile, cert_chain_buff, cert_chain_buff_size)) {
         return false;
     }
-    if (cert_chain_buff_size % 4) {
-        return errmsg("Size of attestation certificate chain file: 0x%x is not 4-byte aligned!", cert_chain_buff_size);
-    }
 
     //* Assert given certificate chain doesn't exceed its allocated size
     u_int32_t cert_chain_0_section_size = curr_toc->toc_entry.size << 2;
@@ -2845,7 +2850,6 @@ bool Fs4Operations::IsSectionShouldBeHashed(fs3_section_t section_type) {
     switch (section_type) {
         case FS3_PUBLIC_KEYS_2048:
         case FS3_PUBLIC_KEYS_4096:
-        case FS4_RSA_PUBLIC_KEY:
         case FS3_IMAGE_SIGNATURE_256:
         case FS3_IMAGE_SIGNATURE_512:
         case FS4_RSA_4096_SIGNATURES:
@@ -2886,10 +2890,14 @@ bool Fs4Operations::UpdateHashInHashesTable(fs3_section_t section_type, vector<u
     const u_int32_t htoc_address = _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE;
     HTOC* htoc = new HTOC(img, htoc_address);
 
+    // TODO - move below logic to HTOC
     //* Get hash addr in hashes_table
     struct image_layout_htoc_entry htoc_entry;
-    if (!htoc->getEntryBySectionType(section_type, htoc_entry)) {
-        return errmsg("Can't find section type 0x%x in htoc", section_type);
+    if (!htoc->GetEntryBySectionType(section_type, htoc_entry)) {
+        DPRINTF(("Fs4Operations::UpdateHashInHashesTable Can't find section type 0x%x in htoc\n", section_type));
+        if (!htoc->AddNewEntry(_ioAccess, section_type, htoc_entry)) {
+            return errmsg("Failed to add new entry of section type 0x%x to htoc", section_type);
+        }
     }
     u_int32_t hash_addr = htoc_address + htoc_entry.hash_offset;
     u_int32_t hash_size = htoc->header.hash_size;
@@ -3663,7 +3671,7 @@ bool Fs4Operations::getBootRecordSize(u_int32_t& boot_record_size) {
             boot_record_size = 0x4f0; // Actual size is 0x4f4
             return true;
         case CT_ABIR_GEARBOX:
-            boot_record_size = 0x3fc; // Actual size is 0x400
+            boot_record_size = 0x260; // Actual size is 0x264
             return true;
 
         default:
@@ -4465,13 +4473,14 @@ Fs4Operations::TocArray::TocArray()
     memset(&tocHeader, 0, sizeof(tocHeader));
 }
 
-Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t hashes_table_start_addr) {
+Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr) {
+    this->htoc_start_addr = htoc_start_addr;
     //* Parse header
-    vector<u_int8_t> header_data(img.begin() + hashes_table_start_addr, img.begin() + hashes_table_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE);
+    vector<u_int8_t> header_data(img.begin() + htoc_start_addr, img.begin() + htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE);
     image_layout_htoc_header_unpack(&header, header_data.data());
     // image_layout_htoc_header_dump(&header, stdout);
     //* Parse entries
-    u_int32_t entries_start_addr = hashes_table_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE;
+    u_int32_t entries_start_addr = htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE;
     for (int ii = 0; ii < header.num_of_entries; ii++) {
         u_int32_t entry_addr = entries_start_addr + ii * IMAGE_LAYOUT_HTOC_ENTRY_SIZE;
         vector<u_int8_t> entry_data(img.begin() + entry_addr, img.begin() + entry_addr + IMAGE_LAYOUT_HTOC_ENTRY_SIZE);
@@ -4480,7 +4489,42 @@ Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t hashes_table_start_add
     }
 }
 
-bool Fs4Operations::HTOC::getEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry) {
+bool Fs4Operations::HTOC::AddNewEntry(FBase* ioAccess, fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry) {
+    DPRINTF(("Fs4Operations::HTOC::AddNewEntry htoc num_of_entries = %d\n", header.num_of_entries));
+    if (header.num_of_entries == MAX_HTOC_ENTRIES_NUM) {
+        return false;
+    }
+
+    //* Preparing new htoc entry struct
+    u_int32_t htoc_size = IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * IMAGE_LAYOUT_HTOC_ENTRY_SIZE;
+    u_int32_t htoc_entry_index = header.num_of_entries;
+    htoc_entry.hash_offset = htoc_size + (htoc_entry_index * header.hash_size);
+    htoc_entry.section_type = section_type;
+
+    //* Writing new htoc entry
+    u_int32_t htoc_entry_addr = htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE + htoc_entry_index * IMAGE_LAYOUT_HTOC_ENTRY_SIZE;
+    vector<u_int8_t> htoc_entry_data;
+    htoc_entry_data.resize(IMAGE_LAYOUT_HTOC_ENTRY_SIZE);
+    image_layout_htoc_entry_pack(&htoc_entry, htoc_entry_data.data());
+    DPRINTF(("Fs4Operations::HTOC::AddNewEntry Writing new htoc entry at addr 0x%x\n", htoc_entry_addr));
+    if (!ioAccess->write(htoc_entry_addr, htoc_entry_data.data(), IMAGE_LAYOUT_HTOC_ENTRY_SIZE)) {
+        return false;
+    }
+
+    //* Updating and writing htoc header
+    header.num_of_entries++;
+    vector<u_int8_t> htoc_header_data;
+    htoc_header_data.resize(IMAGE_LAYOUT_HTOC_HEADER_SIZE);
+    image_layout_htoc_header_pack(&header, htoc_header_data.data());
+    DPRINTF(("Fs4Operations::HTOC::AddNewEntry Writing updated htoc header at addr 0x%x\n", htoc_start_addr));
+    if (!ioAccess->write(htoc_start_addr, htoc_header_data.data(), IMAGE_LAYOUT_HTOC_HEADER_SIZE)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Fs4Operations::HTOC::GetEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry) {
     bool res = false;
     for (int ii = 0; ii < header.num_of_entries; ii++) {
         if (entries[ii].section_type == section_type) {

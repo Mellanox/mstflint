@@ -413,7 +413,7 @@ flash_info_t g_flash_info_arr[] = { {"M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY, 
                                     //added by edwardg 06/09/2020
                                     {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
                                     {GIGA_3V_NAME,     FV_GD25QXXX,  FVT_GD25QXXX,  1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
-                                    {GIGA_3V_NAME,     FV_GD25QXXX,  FVT_GD25QXXX,  1 << FD_128, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0}
+                                    {GIGA_3V_NAME,     FV_GD25QXXX,  FVT_GD25QXXX,  1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0}
 };
 
 int cntx_sst_get_log2size(u_int8_t density, int *log2spi_size)
@@ -590,6 +590,16 @@ int cntx_get_flash_info(mflash *mfl, flash_info_t *f_info, int *log2size, u_int8
     if (rc == MFE_OK && *no_flash == 0) {
         memcpy(f_info, &g_flash_info_arr[type_index], sizeof(flash_info_t));
     }
+
+    // FR #2742089 - we are requested to support Gigadevice GD25B256DFIGR flash of 32MB on CX4LX and CX5
+    // This new flash type is 32MB and these devices support 16MB flash types only, meaning they work in
+    // 3-bytes addr mode. So in that case we override the erase command matching 4-bytes addr (32MB) to
+    // erase command of 3-bytes addr
+    if ((mfl->dm_dev_id == DeviceConnectX4LX || mfl->dm_dev_id == DeviceConnectX5) &&
+        f_info->vendor == FV_GD25QXXX) {
+            f_info->erase_command = SFC_SSE;
+    }
+
     return rc;
 }
 
@@ -1462,8 +1472,8 @@ int sx_init_cs_support(mflash *mfl)
 
 #define CACHE_REP_OFF_RAVEN     0xf0440
 #define CACHE_REP_CMD_RAVEN     0xf0448
-#define CACHE_REP_OFF_BLACKBIRD 0xf0484
-#define CACHE_REP_CMD_BLACKBIRD 0xf0488
+#define CACHE_REP_OFF_NEW_GW_ADDR 0xf0484
+#define CACHE_REP_CMD_NEW_GW_ADDR 0xf0488
 int check_cache_replacement_guard(mflash *mfl, u_int8_t *needs_cache_replacement)
 {
 
@@ -1484,33 +1494,33 @@ int check_cache_replacement_guard(mflash *mfl, u_int8_t *needs_cache_replacement
         dm_dev_id_t devid_t = DeviceUnknown;
         u_int32_t devid = 0;
         u_int32_t revid = 0;
+
         int rc = dm_get_device_id(mfl->mf, &devid_t, &devid, &revid);
         if (rc) {
             return rc;
         }
-        // Read the Cache replacement offset
-        if (!dm_dev_is_raven_family_switch(devid_t)) {
+
+        // Read the Cache replacement offset and cmd fields
+        if (devid_t == DeviceQuantum2 || devid_t == DeviceSpectrum4 || devid_t == DeviceConnectX7) {
+            MREAD4(CACHE_REP_OFF_NEW_GW_ADDR, &data);
+            off = data;
+            MREAD4(CACHE_REP_CMD_NEW_GW_ADDR, &data);
+            cmd = EXTRACT(data, 24, 8);
+        }
+        else if (!dm_dev_is_raven_family_switch(devid_t)) {
             MREAD4(mfl->cache_rep_offset, &data);
             off = EXTRACT(data, 0, 26);
-            // Read the Cache replacement cmd
             MREAD4(mfl->cache_rep_cmd, &data);
             cmd = EXTRACT(data, 16, 8);
         }
         else { // switches
-            if (devid_t == DeviceQuantum2 || devid_t == DeviceSpectrum4) {
-                MREAD4(CACHE_REP_OFF_BLACKBIRD, &data);
-                off = data;
-                MREAD4(CACHE_REP_CMD_BLACKBIRD, &data);
-                cmd = EXTRACT(data, 24, 8);
-            }
-            else {
-                MREAD4(CACHE_REP_OFF_RAVEN, &data);
-                off = EXTRACT(data, 0, 26);
-                MREAD4(CACHE_REP_CMD_RAVEN, &data);
-                cmd = EXTRACT(data, 16, 8);
-            }
+            MREAD4(CACHE_REP_OFF_RAVEN, &data);
+            off = EXTRACT(data, 0, 26);
+            MREAD4(CACHE_REP_CMD_RAVEN, &data);
+            cmd = EXTRACT(data, 16, 8);
         }
         FLASH_ACCESS_DPRINTF(("check_cache_replacement_guard(): off=%d, cmd=%d\n", off, cmd));
+
         // Check if the offset and cmd are zero in order to continue burning.
         if (cmd != 0 || off != 0) {
             *needs_cache_replacement = 1;
