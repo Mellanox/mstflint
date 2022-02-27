@@ -3859,7 +3859,7 @@ bool Fs4Operations::PreparePublicKeyData(const char *public_key_file, vector <u_
         if (sectionType == FS3_PUBLIC_KEYS_4096) {
             if (Fs3UpdatePublicKeysSection((IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE >> 2), public_key_file, publicKeyData, true)) {
                 PublicKeyIsSet = true;
-                pem_offset = IMAGE_LAYOUT_FILE_PUBLIC_KEYS_3_SIZE - PublicKeySize;//first 32 bytes in the PEM file are auxilary data
+                pem_offset = IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE - PublicKeySize;//first 32 bytes in the PEM file are auxilary data
             }
         }
     }
