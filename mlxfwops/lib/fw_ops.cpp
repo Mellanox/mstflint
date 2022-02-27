@@ -2466,14 +2466,6 @@ bool FwOperations::InsertSecureFWSignature(vector<u_int8_t>, const char*, PrintC
 {
     return errmsg("InsertSecureFWSignature not supported");
 }
-bool FwOperations::InjectNewPublicKeyAndSignaturesUsingOpenSSL(const char *, const char *, const char *)
-{
-    return errmsg("InjectNewPublicKeyAndSignatures not supported");
-}
-bool FwOperations::InjectNewPublicKeyAndSignaturesUsingHSM(const string&, const string&, const char *, const char *)
-{
-    return errmsg("InjectNewPublicKeyAndSignaturesUsingHSM not supported");
-}
 bool FwOperations::PreparePublicKeyData(const char *, vector <u_int8_t>&, unsigned int&)
 {
     return errmsg("PreparePublicKeyData not supported");

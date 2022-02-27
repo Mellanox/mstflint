@@ -146,8 +146,6 @@ public:
     {
         return errmsg("Operation not supported.");
     }
-    virtual bool InjectNewPublicKeyAndSignaturesUsingOpenSSL(const char *private_key_file, const char *public_key_file, const char *guid_key_file);
-    virtual bool InjectNewPublicKeyAndSignaturesUsingHSM(const string& opensslEngine, const string& opensslKeyId, const char *public_key_file, const char *guid_key_file);
     virtual bool PreparePublicKeyData(const char *public_key_file, vector <u_int8_t>& publicKeyData, unsigned int& pem_offset);
     virtual bool storePublicKeyInSection(const char *public_key_file, const char *uuid);
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);

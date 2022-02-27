@@ -39,8 +39,6 @@
 
 using namespace std;
 
-namespace MlxSign {
-
 /*
  * Class Signer: interface for various types of signers
  */
@@ -77,5 +75,4 @@ private:
     string _opensslEngine;
 };
 
-} // namespace MlxSign
 #endif /* USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_ */

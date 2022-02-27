@@ -89,7 +89,6 @@ typedef enum {
     SC_Set_Forbidden_Versions,
     SC_Image_Reactivation,
     SC_RSA_Sign,
-    SC_RSA_Inject_New_Key,
     SC_Binary_Compare,
     SC_Import_Hsm_Key,
     SC_Export_Public_Key
