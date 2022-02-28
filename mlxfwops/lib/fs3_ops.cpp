@@ -261,12 +261,6 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
 
 }
 
-#define GET_IMAGE_INFO_VERSION(imageInfoBuff, major, minor) \
-    u_int32_t _IIVerDw = __be32_to_cpu(*(u_int32_t *)imageInfoBuff); \
-    minor = ((_IIVerDw) >> 16) & 0xff; \
-    major = ((_IIVerDw) >> 24) & 0xff;
-#define CHECK_IMAGE_INFO_VERSION(major) \
-    ((major) == 0)
 
 #define RESIGN_MSG "-W- The image requires to be signed by a valid key, run sign command before applying.\n"
 
@@ -288,15 +282,11 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
 {
     DPRINTF(("Fs3Operations::GetImageInfo\n"));
     struct image_layout_image_info image_info;
-    int IIMajor, IIMinor;
-    // TODO: adrianc: use the version fields once they are available in tools layouts
-    GET_IMAGE_INFO_VERSION(buff, IIMajor, IIMinor);
-    (void)IIMinor;
-    if (!CHECK_IMAGE_INFO_VERSION(IIMajor)) {
-        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown IMAGE_INFO format version (%d.%d).", IIMajor, IIMinor);
-    }
     image_layout_image_info_unpack(&image_info, buff);
-    //image_layout_image_info_dump(&image_info, stdout);
+    // image_layout_image_info_dump(&image_info, stdout);
+    if (image_info.major_version != 0) {
+        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown IMAGE_INFO format version (%d.%d).", image_info.major_version, image_info.minor_version);
+    }
 
     _fwImgInfo.ext_info.image_info_minor_version = image_info.minor_version;
     _fwImgInfo.ext_info.image_info_major_version = image_info.major_version;
@@ -330,7 +320,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     strcpy(_fs3ImgInfo.ext_info.image_vsd, image_info.vsd);
     strcpy(_fwImgInfo.ext_info.psid, image_info.psid);
     strcpy(_fwImgInfo.ext_info.product_ver, image_info.prod_ver);
-    if (IIMinor == 2) {
+    if (image_info.minor_version == 2) {
         // get name, prs name and description
         struct tools_open_image_info tools_image_info;
         memset(&tools_image_info, 0, sizeof(tools_image_info));
@@ -348,6 +338,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
 
     _fs3ImgInfo.runFromAny = image_info.image_size.run_from_any;
     const u_int32_t *swId = (u_int32_t*)NULL;
+    DPRINTF(("Fs3Operations::GetImageInfo _fwImgInfo.supportedHwId[0]=0x%x\n", _fwImgInfo.supportedHwId[0]));
     if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId)) {
         return false;
     }

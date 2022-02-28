@@ -726,6 +726,7 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_p
     fw_info_t imgQuery;
     memset(&imgQuery, 0, sizeof(fw_info_t));
     if (!(*imgFwOps)->FwQuery(&imgQuery, true, false, true, ignoreDToc)) {
+        *imgFwOps = NULL;
         return false;
     }
     if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false) {
