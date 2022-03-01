@@ -2842,6 +2842,8 @@ bool Fs4Operations::CalcHashOnSection(u_int32_t addr, u_int32_t size, vector<u_i
     mlxSignSHA.getDigest(hash);
     return true;
 #else
+    (void)addr;
+    (void)size;
     (void)hash;
     return false;
 #endif
@@ -4243,6 +4245,7 @@ bool Fs4Operations::updateHwPointer(u_int32_t addr, u_int32_t val) {
 }
 
 bool Fs4Operations::SetImageIVHwPointer() {
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     if (_ioAccess->is_flash()) {
         return errmsg("SetImageIVHwPointer is not applicable for devices\n");
     }
@@ -4280,6 +4283,9 @@ bool Fs4Operations::SetImageIVHwPointer() {
     DPRINTF(("Fs4Operations::SetImageIVHwPointer image_iv = 0x%08x", image_iv));
 
     return updateHwPointer(DELTA_IV_HW_POINTER_ADDR, image_iv);
+#else
+    return errmsg("SetImageIVHwPointer is not suppported");
+#endif
 }
 
 bool Fs4Operations::PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
