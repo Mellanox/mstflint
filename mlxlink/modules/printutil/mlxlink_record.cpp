@@ -34,8 +34,9 @@
 
 #include "mlxlink_record.h"
 
-#define MAX_LEN_OF_GRADE            6
-#define MAX_LEN_OF_DDM_FIELD        14
+#define MAX_LEN_OF_GRADE             6
+#define MAX_LEN_OF_DDM_FIELD         14
+#define MAX_LEN_OF_MODULE_PRBS_FIELD 15
 
 bool MlxlinkRecord::jsonFormat = false;
 std::ostream* MlxlinkRecord::cOut = &std::cout;
@@ -210,6 +211,11 @@ std::string MlxlinkRecord::addSpaceForSlrg(const std::string &str)
 std::string MlxlinkRecord::addSpaceForDDM(const std::string &str)
 {
     return MlxlinkRecord::addSpace(str, MAX_LEN_OF_DDM_FIELD, false);
+}
+
+std::string MlxlinkRecord::addSpaceForModulePrbs(const std::string &str)
+{
+    return MlxlinkRecord::addSpace(str, MAX_LEN_OF_MODULE_PRBS_FIELD, false);
 }
 
 void MlxlinkRecord::printErrorsSection(const std::string &title, const std::string &lines)

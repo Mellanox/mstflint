@@ -198,6 +198,51 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT2);
         MlxlinkRecord::printFlagLine(WRITE_OFFSET_FLAG_SHORT, WRITE_OFFSET_FLAG, "offset",
             "Specific page offset to read/write");
+
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_SELECT_SHORT, CABLE_PRBS_SELECT, "side",
+                                 "Module PRBS test mode side selector [MEDIA, HOST]");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_MODE_SHORT, CABLE_PRBS_MODE, "cmd",
+                                 "Perform PRBS test mode on the Module [EN(Enable),DS(Disable)]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_RATE_SHORT, CABLE_PRBS_GEN_RATE, "rate",
+                                 "Set PRBS generator lane rate [HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_PAT_SHORT, CABLE_PRBS_GEN_PAT, "pattern",
+                                 "Set PRBS generator pattern [PRBS31(default),PRBS23,PRBS7,PRBS11,PRBS9,PRBS13,SSPR,SSPRQ]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_SWAP_SHORT, CABLE_PRBS_GEN_SWAP, "",
+                                 "Enable PAM4 MSB <-> LSB generator swapping (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_INV_SHORT, CABLE_PRBS_GEN_INV, "rate",
+                                 "Enable PRBS generator inversion (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_LANES_SHORT, CABLE_PRBS_GEN_LANES, "lanes",
+                                 "PRBS generator lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
+
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_RATE_SHORT, CABLE_PRBS_CH_RATE, "rate",
+                                 "Set PRBS checker lane rate [HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_PAT_SHORT, CABLE_PRBS_CH_PAT, "pattern",
+                                 "Set PRBS checker pattern [PRBS31(default),PRBS23,PRBS7,PRBS11,PRBS9,PRBS13,SSPR,SSPRQ]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_SWAP_SHORT, CABLE_PRBS_CH_SWAP, "",
+                                 "Enable PAM4 MSB <-> LSB checker swapping (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_INV_SHORT, CABLE_PRBS_CH_INV, "",
+                                 "Enable PRBS checker inversion (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_LANES_SHORT, CABLE_PRBS_CH_LANES, "lanes",
+                                 "PRBS checker lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_SHOW_DIAG_SHORT, CABLE_PRBS_SHOW_DIAG, "",
+                                 "Show PRBS diagnostic counters information");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CLEAR_DIAG_SHORT, CABLE_PRBS_CLEAR_DIAG, "",
+                                 "Clear PRBS diagnostic counters");
+
     MlxlinkRecord::printFlagLine(MARGIN_SCAN_FLAG_SHORT, MARGIN_SCAN_FLAG, "",
             "Read the SerDes eye margins per lane");
     printf(IDENT);
@@ -209,7 +254,6 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index",
             "Run eye for specific lane index (Optional - Default all lanes)");
-
 
     MlxlinkRecord::printFlagLine(PREI_RX_ERR_INJ_FLAG_SHORT, PREI_RX_ERR_INJ_FLAG, "",
             "Enable the RX link deterioration");
@@ -393,8 +437,32 @@ void MlxlinkUi::validatePRBSParams()
             }
         }
     } else if (prbsFlags) { // add check for lanes flag to work with PRBS and eye scan only
-        throw MlxRegException(
-                  "PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
+        throw MlxRegException("PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
+    }
+}
+
+void MlxlinkUi::validateModulePRBSParams()
+{
+    if (!_mlxlinkCommander->_userInput.isPrbsSelProvided && (_mlxlinkCommander->_userInput.isPrbsModeProvided ||
+                                                             _mlxlinkCommander->_userInput.isPrbsChProvided ||
+                                                             _mlxlinkCommander->_userInput.isPrbsGenProvided ||
+                                                             _mlxlinkCommander->_userInput.isPrbsShowDiagProvided ||
+                                                             _mlxlinkCommander->_userInput.isPrbsClearDiagProvided)) {
+        throw MlxRegException("Please select PRBS module side using --" CABLE_PRBS_SELECT " [MEDIA|HOST] flag!");
+    }
+
+    if (!_mlxlinkCommander->_userInput.isPrbsModeProvided && (_mlxlinkCommander->_userInput.isPrbsChProvided ||
+                                                              _mlxlinkCommander->_userInput.isPrbsGenProvided)) {
+        throw MlxRegException("--" CABLE_PRBS_MODE " flag should be provided!");
+    }
+
+    if (_mlxlinkCommander->_userInput.isPrbsModeProvided && (_mlxlinkCommander->_userInput.isPrbsShowDiagProvided ||
+                                                             _mlxlinkCommander->_userInput.isPrbsClearDiagProvided)) {
+        throw MlxRegException("PRBS Module Diagnostic info flags are not working while configuring the PRBS test mode!");
+    }
+
+    if (_mlxlinkCommander->_userInput.isPrbsShowDiagProvided && _mlxlinkCommander->_userInput.isPrbsClearDiagProvided) {
+        throw MlxRegException("are mutually exclusive, please select one command only");
     }
 }
 
@@ -445,10 +513,14 @@ void MlxlinkUi::validateCableParams()
     bool readWriteFlags = _mlxlinkCommander->_userInput._page >= 0 ||
                       _mlxlinkCommander->_userInput._offset >= 0 ||
                       _mlxlinkCommander->_userInput._len >= 0 ;
-    bool cableCommandProvided = (_mlxlinkCommander->_userInput._dump ||
+    bool prbsParamProvided = _mlxlinkCommander->_userInput.modulePrbsParams.size();
+    bool cablePrbsParamProvided = _mlxlinkCommander->_userInput.isPrbsSelProvided || prbsParamProvided;
+    bool cableCommandProvided = _mlxlinkCommander->_userInput._dump ||
                                 _mlxlinkCommander->_userInput._write ||
                                 _mlxlinkCommander->_userInput._read ||
-                                _mlxlinkCommander->_userInput._ddm);
+                                _mlxlinkCommander->_userInput._ddm ||
+                                cablePrbsParamProvided;
+
     if(!_mlxlinkCommander->_userInput._cable && (cableCommandProvided || readWriteFlags)){
         throw MlxRegException("\"--" CABLE_FLAG "\" flag should be specified!");
     } else if (_mlxlinkCommander->_userInput._cable) {
@@ -570,6 +642,7 @@ void MlxlinkUi::paramValidate()
     validatePRBSParams();
     validateSpeedAndCSVBerParams();
     validateCableParams();
+    validateModulePRBSParams();
     validateTxGroupParams();
     validateGradeScanParams();
     validateErrInjParams();
@@ -638,6 +711,21 @@ void MlxlinkUi::initCmdParser()
     AddOptions(WRITE_PAGE_FLAG, WRITE_PAGE_FLAG_SHORT, "pageNum", "Specify page number");
     AddOptions(WRITE_OFFSET_FLAG, WRITE_OFFSET_FLAG_SHORT, "offset", "Specify page offset");
     AddOptions(READ_LEN_FLAG, READ_LEN_FLAG_SHORT, "length", "Length of data to read in bytes");
+
+    AddOptions(CABLE_PRBS_SELECT, CABLE_PRBS_SELECT_SHORT, "side", "");
+    AddOptions(CABLE_PRBS_MODE, CABLE_PRBS_MODE_SHORT, "cmd", "");
+    AddOptions(CABLE_PRBS_GEN_RATE, CABLE_PRBS_GEN_RATE_SHORT, "rate", "");
+    AddOptions(CABLE_PRBS_GEN_PAT, CABLE_PRBS_GEN_PAT_SHORT,"pattern", "");
+    AddOptions(CABLE_PRBS_GEN_SWAP, CABLE_PRBS_GEN_SWAP_SHORT, "", "");
+    AddOptions(CABLE_PRBS_GEN_INV, CABLE_PRBS_GEN_INV_SHORT, "rate", "");
+    AddOptions(CABLE_PRBS_GEN_LANES, CABLE_PRBS_GEN_LANES_SHORT, "lanes", "");
+    AddOptions(CABLE_PRBS_CH_RATE, CABLE_PRBS_CH_RATE_SHORT, "rate", "");
+    AddOptions(CABLE_PRBS_CH_PAT, CABLE_PRBS_CH_PAT_SHORT, "pattern","");
+    AddOptions(CABLE_PRBS_CH_SWAP, CABLE_PRBS_CH_SWAP_SHORT, "","");
+    AddOptions(CABLE_PRBS_CH_INV, CABLE_PRBS_CH_INV_SHORT, "", "");
+    AddOptions(CABLE_PRBS_CH_LANES, CABLE_PRBS_CH_LANES_SHORT, "lanes", "");
+    AddOptions(CABLE_PRBS_SHOW_DIAG, CABLE_PRBS_SHOW_DIAG_SHORT, "", "");
+    AddOptions(CABLE_PRBS_CLEAR_DIAG, CABLE_PRBS_CLEAR_DIAG_SHORT, "", "");
 
     AddOptions(SHOW_TX_GROUP_MAP_FLAG, SHOW_TX_GROUP_MAP_FLAG_SHORT, "group_num", "Display all label ports mapped to group <group_num>");
     AddOptions(SET_TX_GROUP_MAP_FLAG, SET_TX_GROUP_MAP_FLAG_SHORT, "group_num", "Map ports to group <group_num>");
@@ -794,7 +882,11 @@ void MlxlinkUi::commandsCaller()
             break;
         case RS_FEC_HISTOGRAM:
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> FEC histogram info");
-            _mlxlinkCommander-> initPortInfo();
+            _mlxlinkCommander->initPortInfo();
+            break;
+        case CABLE_PRBS_CMDS:
+            PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> Cable PRBS Commands");
+            _mlxlinkCommander->performModulePrbsCommands();
             break;
         default:
             break;
@@ -1087,6 +1179,74 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     } else if (name == PPHCR_CLEAR_HISTOGRAM_FLAG) {
         _mlxlinkCommander->_userInput.clearFecHistogram = true;
         return PARSE_OK;
+    } else if (name == CABLE_PRBS_SELECT) {
+        addCmd(CABLE_PRBS_CMDS);
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_SELECT] = toUpperCase(value);
+        _mlxlinkCommander->_userInput.isPrbsSelProvided = true;
+        _mlxlinkCommander->_uniqueCableCmds++;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_MODE) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_MODE] = toUpperCase(value);
+        _mlxlinkCommander->_userInput.isPrbsModeProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_GEN_RATE) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_RATE] = toUpperCase(value);
+        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_GEN_PAT) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_PAT] = toUpperCase(value);
+        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_GEN_SWAP) {
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_SWAP] = "SWAP";
+        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_GEN_INV) {
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_INV] = "INV";
+        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_GEN_LANES) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES] = value;
+        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_CH_RATE) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_RATE] = toUpperCase(value);
+        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_CH_PAT) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_PAT] = toUpperCase(value);
+        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_CH_SWAP) {
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_SWAP] = "SWAP";
+        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_CH_INV) {
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_INV] = "INV";
+        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_CH_LANES) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_LANES] = value;
+        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_SHOW_DIAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_SHOW_DIAG] = value;
+        _mlxlinkCommander->_userInput.isPrbsShowDiagProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_CLEAR_DIAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CLEAR_DIAG] = value;
+        _mlxlinkCommander->_userInput.isPrbsClearDiagProvided = true;
+        return PARSE_OK;
     }
     return PARSE_ERROR;
 }
@@ -1097,6 +1257,7 @@ int MlxlinkUi::run(int argc, char **argv)
     createMlxlinkCommander();
     initCmdParser();
     ParseStatus rc = _cmdParser.ParseOptions(argc, argv);
+
     if (rc == PARSE_OK_WITH_EXIT) {
         return exit_code;
     } else if ((rc == PARSE_ERROR) || (rc == PARSE_ERROR_SHOW_USAGE)) {
@@ -1123,6 +1284,7 @@ int MlxlinkUi::run(int argc, char **argv)
         MlxlinkRecord::printWar("Warning: AccessRegisterGMP Get() method is not supported.\n"
                  "         mlxlink has limited functionality", _mlxlinkCommander->_jsonRoot);
     }
+
     _mlxlinkCommander->_gvmiAddress = _mlxlinkCommander->_userInput._gvmiAddress;
     _mlxlinkCommander->_devID = _mlxlinkCommander->_regLib->getDevId();
     _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
@@ -1141,8 +1303,7 @@ int MlxlinkUi::run(int argc, char **argv)
     }
 
     if (_mlxlinkCommander->_userInput._logFilePath != "") {
-        _mlxlinkCommander->_mlxlinkLogger = new MlxlinkLogger(
-                _mlxlinkCommander->_userInput._logFilePath);
+        _mlxlinkCommander->_mlxlinkLogger = new MlxlinkLogger(_mlxlinkCommander->_userInput._logFilePath);
     }
     commandsCaller();
     if (_mlxlinkCommander->_allUnhandledErrors != "") {

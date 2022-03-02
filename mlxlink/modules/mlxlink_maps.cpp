@@ -212,6 +212,7 @@ void MlxlinkMaps::ethSpeedMapping()
 
     _ETHSpeed2Str[ETH_LINK_SPEED_100_BaseTx] = "BaseTx100M";
     _ETHSpeed2Str[ETH_LINK_SPEED_1000_BaseT] = "BaseT1000M";
+    _ETHSpeed2Str[ETH_LINK_SPEED_10M] = "BaseT10M";
     _ETHSpeed2Str[ETH_LINK_SPEED_1000_SGMII] = "CX";
     _ETHSpeed2Str[ETH_LINK_SPEED_1000_KX] = "KX";
     _ETHSpeed2Str[ETH_LINK_SPEED_10G_CX4] = "CX4";
@@ -275,6 +276,7 @@ void MlxlinkMaps::extEthSpeedMapping()
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_8] = "400G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_4] = "400G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_800GAUI_8] = "800G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_SGMII_10M] = "10M";
 }
 
 void MlxlinkMaps::ibSpeedMapping()
@@ -304,6 +306,7 @@ void MlxlinkMaps::speedToLanesMapping()
     _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_BaseT] = 1;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_SGMII] = 1;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_KX] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_10M] = 1;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_CX4] = 4;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_KX4] = 4;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_BaseT] = 1;
@@ -329,6 +332,7 @@ void MlxlinkMaps::speedToLanesMapping()
     _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_LR4] = 4;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_SR4] = 4;
 
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_SGMII_10M] = 1;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_SGMII_100M] = 1;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_1000BASE_X] = 1;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_2_5GBASE_X] = 1;

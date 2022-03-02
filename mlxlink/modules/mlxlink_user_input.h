@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include <mlxreg/mlxreg_lib.h>
 #include <mlxreg/mlxreg_parser.h>
+#include "mlxlink_enums.h"
 
 using namespace std;
 
@@ -135,6 +136,15 @@ public:
     bool enableFecHistogram;
     bool showFecHistogram;
     bool clearFecHistogram;
+
+    map<ModulePrbs_t, string> modulePrbsParams;
+    bool isPrbsSelProvided;
+    bool isPrbsModeProvided;
+    bool isPrbsChProvided;
+    bool isPrbsGenProvided;
+    bool isPrbsShowDiagProvided;
+    bool isPrbsClearDiagProvided;
+    ModuleAccess_t prbsModuleAccess;
 };
 
 #endif /* MLXLINK_USER_INPUT_H */

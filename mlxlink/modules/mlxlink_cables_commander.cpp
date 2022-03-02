@@ -1028,3 +1028,406 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page , u_int16_t
     free(pageH);
     return bytesOutput;
 }
+
+u_int32_t MlxlinkCablesCommander::getModeAdminFromStr(u_int32_t cap, const string &rateStr)
+{
+    int modeAdmin = _prbsMode;
+    if (!rateStr.empty()) {
+        modeAdmin = _mlxlinkMaps->_modulePrbsModeStrToCap[rateStr];
+        if (!modeAdmin) {
+            string validRates = "[";
+            for (auto it = _mlxlinkMaps->_modulePrbsModeCapToStr.begin();
+                 it != _mlxlinkMaps->_modulePrbsModeCapToStr.end(); it++) {
+                if (it->first & cap) {
+                    validRates += it->second + ",";
+                }
+            }
+            validRates = deleteLastChar(validRates);
+            validRates = "]";
+            throw MlxRegException("Invalid PRBS pattern value [%s] \nValid values are: %s\n",
+                                  rateStr.c_str(), validRates.c_str());
+        }
+        modeAdmin = (int)log2((float) modeAdmin);
+    }
+    return modeAdmin;
+}
+
+u_int32_t MlxlinkCablesCommander::getRateAdminFromStr(u_int32_t cap, const string &rateStr)
+{
+    int rateAdmin = _prbsRate;
+    if (!rateStr.empty()) {
+        rateAdmin = _mlxlinkMaps->_modulePrbsRateStrToCap[rateStr];
+        if (!rateAdmin) {
+            if (!_modulePrbsParams[MODULE_PRBS_CH_RATE].empty() &&
+                !_modulePrbsParams[MODULE_PRBS_GEN_RATE].empty()) {
+                if (_modulePrbsParams[MODULE_PRBS_CH_RATE] != _modulePrbsParams[MODULE_PRBS_GEN_RATE]) {
+                    throw MlxRegException("Checker and Generator must be running in the same lane rate\n");
+                }
+            }
+            string validRates = "[";
+            for (auto it = _mlxlinkMaps->_modulePrbsRateStrToCap.begin();
+                 it != _mlxlinkMaps->_modulePrbsRateStrToCap.end(); it++) {
+                if (it->second & cap) {
+                    validRates += it->first + ",";
+                }
+            }
+            validRates = deleteLastChar(validRates);
+            validRates += "]";
+            throw MlxRegException("Invalid PRBS lane rate configuration [%s] \nValid configurations are: %s\n",
+                                  rateStr.c_str(), validRates.c_str());
+        }
+    }
+    return rateAdmin;
+}
+
+bool MlxlinkCablesCommander::getInvAdminFromStr(u_int32_t cap, const string &invStr)
+{
+    bool invAdmin = false;
+    if (!invStr.empty()) {
+         invAdmin = true;
+         if (!cap) {
+             throw MlxRegException("PRBS inversion is not supported by the module\n");
+         }
+     }
+    return invAdmin;
+}
+
+bool MlxlinkCablesCommander::getSwapAdminFromStr(u_int32_t cap, const string &swapStr)
+{
+    bool swapAdmin = false;
+    if (!swapStr.empty()) {
+        swapAdmin = true;
+         if (!cap) {
+             throw MlxRegException("PAM4 MSB <-> LSB swapping is not supported by the module");
+         }
+     }
+    return swapAdmin;
+}
+
+u_int32_t MlxlinkCablesCommander::getLanesFromStr(u_int32_t cap, const string &lanesStr)
+{
+    u_int32_t laneMask = 0;
+    string temp = lanesStr;
+    if (!lanesStr.empty()) {
+        if (!cap) {
+            throw MlxRegException("No support of per lane configuration by the module");
+        }
+        auto lanesVec = MlxlinkRecord::split(temp, ",");
+        u_int32_t val = 0;
+        for (auto it = lanesVec.begin(); it != lanesVec.end(); it++) {
+            strToUint32((char*)(*it).c_str(), val);
+            if (val > (_numOfLanes - 1)) {
+                throw MlxRegException("Invalid lane index [%d], valid lanes range is [0 to %d]", val, (_numOfLanes - 1));
+            }
+            laneMask |= (u_int32_t)pow(2.0, (double) val);
+        }
+    }
+    return laneMask;
+}
+
+void MlxlinkCablesCommander::getNumOfModuleLanes()
+{
+    try {
+        // As a WA, use module_width for MEDIA and HOST lanes
+        // TODO: use module_media_width once it be supported
+        //if (_modulePrbsParams[MODULE_PRBS_SELECT] == "HOST") {
+            resetParser(ACCESS_REG_PMTM);
+            updateField("module", _moduleNumber);
+            updateField("slot_index", _slotIndex);
+            genBuffSendRegister(ACCESS_REG_PMTM, MACCESS_REG_METHOD_GET);
+
+            _numOfLanes = getFieldValue("module_width");
+        //} else {
+            //_numOfLanes = getFieldValue("module_media_width");
+        //}
+    } catch (MlxRegException &exc) {
+    }
+}
+
+void MlxlinkCablesCommander::checkAndParsePMPTCap(ModuleAccess_t moduleAccess)
+{
+    bool regFaild = false;
+    try {
+        resetParser(ACCESS_REG_PMPT);
+        updateField("module", _moduleNumber);
+        updateField("slot_index", _slotIndex);
+        updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+        updateField("ch_ge", (u_int32_t)moduleAccess);
+        updateField("lane_mask", 0x1);
+        genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+    } catch (MlxRegException &exc) {
+        regFaild = true;
+    }
+
+    if (regFaild || getFieldValue("status") == PMPT_STATUS_NOT_SUPPORTED) {
+        throw MlxRegException("Module doesn't support PRBS and diagnostics data");
+    }
+
+    u_int32_t chAccessShift = moduleAccess == MODULE_PRBS_ACCESS_CH? MODULE_PRBS_GEN_INV : 0;
+
+    _prbsRate = getRateAdminFromStr(getFieldValue("lane_rate_cap"),
+                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_RATE + chAccessShift)]);
+    _prbsMode = getModeAdminFromStr(getFieldValue("prbs_modes_cap"),
+                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_PAT + chAccessShift)]);
+    _prbsInv = getInvAdminFromStr(getFieldValue("invt_cap"),
+                                   _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_INV + chAccessShift)]);
+    _prbsSwap = getSwapAdminFromStr(getFieldValue("swap_cap"),
+                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_SWAP + chAccessShift)]);
+    _prbsLanes = getLanesFromStr(getFieldValue("ls"),
+                                 _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_LANES + chAccessShift)]);
+}
+
+void MlxlinkCablesCommander::preparePrbsParam(ModuleAccess_t moduleAccess)
+{
+    if (moduleAccess != MODULE_PRBS_ACCESS_BOTH &&
+        (_modulePrbsParams[MODULE_PRBS_GEN_RATE] != _modulePrbsParams[MODULE_PRBS_CH_RATE])) {
+        throw MlxRegException("PRBS Checker and Generator lane rate must be provided with the same rate");
+    }
+
+    switch (moduleAccess) {
+        case MODULE_PRBS_ACCESS_CH:
+        case MODULE_PRBS_ACCESS_GEN:
+            checkAndParsePMPTCap(moduleAccess);
+            break;
+        case MODULE_PRBS_ACCESS_CH_GEN:
+            checkAndParsePMPTCap(MODULE_PRBS_ACCESS_CH);
+            checkAndParsePMPTCap(MODULE_PRBS_ACCESS_GEN);
+            break;
+        default:
+            checkAndParsePMPTCap(MODULE_PRBS_ACCESS_BOTH);
+    }
+}
+
+u_int32_t MlxlinkCablesCommander::getPMPTStatus(ModuleAccess_t moduleAccess)
+{
+    resetParser(ACCESS_REG_PMPT);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("ch_ge", (u_int32_t)moduleAccess);
+    updateField("lane_mask", 0x1);
+    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+
+    return getFieldValue("status");
+}
+
+void MlxlinkCablesCommander::sendPMPT(ModuleAccess_t moduleAccess)
+{
+    resetParser(ACCESS_REG_PMPT);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("ch_ge", (u_int32_t)moduleAccess);
+    updateField("e", 1);
+    updateField("prbs_mode_admin", _prbsMode);
+    updateField("lane_rate_admin", _prbsRate);
+    updateField("invt_admin", _prbsInv);
+    updateField("swap_admin", _prbsSwap);
+    updateField("lane_mask", _prbsLanes? _prbsLanes : 0xff);
+    updateField("le", _prbsLanes != 0);
+    updateField("modulation", _prbsRate >= MODULE_PRBS_LANE_RATE_HDR);
+    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_SET);
+
+    if (getPMPTStatus(moduleAccess) == PMPT_STATUS_CONFIG_ERROR) {
+        throw MlxRegException("Unsupported configuration setting");
+    }
+}
+
+void MlxlinkCablesCommander::enablePMPT(ModuleAccess_t moduleAccess)
+{
+    try {
+        switch (moduleAccess) {
+            case MODULE_PRBS_ACCESS_CH:
+            case MODULE_PRBS_ACCESS_GEN:
+                sendPMPT(moduleAccess);
+                break;
+            case MODULE_PRBS_ACCESS_CH_GEN:
+                sendPMPT(MODULE_PRBS_ACCESS_CH);
+                sendPMPT(MODULE_PRBS_ACCESS_GEN);
+                break;
+            default:
+                sendPMPT(MODULE_PRBS_ACCESS_BOTH);
+        }
+    } catch (MlxRegException &exc) {
+        throw MlxRegException("Module doesn't support PRBS and diagnostics data");
+    }
+}
+
+void MlxlinkCablesCommander::disablePMPT()
+{
+    resetParser(ACCESS_REG_PMPT);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("ch_ge", 0);
+    updateField("e", 0);
+    updateField("prbs_mode_admin", _prbsMode);
+    updateField("lane_rate_admin", _prbsRate);
+    updateField("modulation", 1);
+    updateField("lane_mask", 0xff);
+    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_SET);
+}
+
+void MlxlinkCablesCommander::handlePrbsTestMode(const string &ctrl, ModuleAccess_t moduleAccess)
+{
+    if (ctrl == "EN") {
+        MlxlinkRecord::printCmdLine("Enabling Module PRBS Test Mode", _jsonRoot);
+        getNumOfModuleLanes();
+        preparePrbsParam(moduleAccess);
+        enablePMPT(moduleAccess);
+    } else if (ctrl == "DS") {
+        MlxlinkRecord::printCmdLine("Disabling Module PRBS Test Mode", _jsonRoot);
+        disablePMPT();
+    } else {
+        throw MlxRegException("Invalid PRBS Module mode, please check the help menu");
+    }
+}
+
+void MlxlinkCablesCommander::getPMPTConfiguration(ModuleAccess_t moduleAccess, vector<string> &prbsPattern,
+                                                  vector<string> &prbsRate, vector<string> &prbsInv,
+                                                  vector<string> &prbsSwap)
+{
+    resetParser(ACCESS_REG_PMPT);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("ch_ge", (u_int32_t)moduleAccess);
+    updateField("lane_mask", 0x1);
+    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+
+    u_int32_t index = (u_int32_t)pow(2.0, (double)getFieldValue("prbs_mode_admin"));
+    prbsPattern.push_back(MlxlinkRecord::addSpaceForModulePrbs(_mlxlinkMaps->_modulePrbsModeCapToStr[index]));
+
+    index = getFieldValue("lane_rate_admin");
+    prbsRate.push_back(MlxlinkRecord::addSpaceForModulePrbs(_mlxlinkMaps->_modulePrbsRateCapToStr[index]));
+
+    string capStr = getFieldValue("invt_cap")? "" : "Not Supported";
+    string adminStr = getFieldValue("invt_admin")? "Yes" : "No";
+    prbsInv.push_back(MlxlinkRecord::addSpaceForModulePrbs(!capStr.empty()?capStr:adminStr));
+
+    capStr = getFieldValue("swap_cap")? "" : "Not Supported";
+    adminStr = getFieldValue("swap_admin")? "Yes" : "No";
+    prbsSwap.push_back(MlxlinkRecord::addSpaceForModulePrbs(!capStr.empty()?capStr:adminStr));
+}
+
+string MlxlinkCablesCommander::getPMPDLockStatus()
+{
+    string lockStatusStr = "";
+
+    for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
+        resetParser(ACCESS_REG_PMPD);
+        updateField("module", _moduleNumber);
+        updateField("slot_index", _slotIndex);
+        updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+        updateField("lane", lane);
+        genBuffSendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);
+
+        lockStatusStr += MlxlinkRecord::addSpaceForModulePrbs(_mlxlinkMaps->_modulePMPDStatus[getFieldValue("status")]);
+        lockStatusStr += ",";
+    }
+
+    if (!lockStatusStr.empty()) {
+        lockStatusStr = deleteLastChar(lockStatusStr);
+    }
+
+    return lockStatusStr;
+}
+
+void MlxlinkCablesCommander::showPrbsTestMode()
+{
+    MlxlinkCmdPrint prbsOutput = MlxlinkCmdPrint();
+    setPrintTitle(prbsOutput, "Module PRBS Test Mode", MODULE_PMPT_INFO_LAST);
+
+    getNumOfModuleLanes();
+
+    try {
+        resetParser(ACCESS_REG_PMPT);
+        updateField("module", _moduleNumber);
+        updateField("slot_index", _slotIndex);
+        updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+        updateField("ch_ge", 0);
+        updateField("lane_mask", 0x1);
+        genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+    } catch (MlxRegException &exc) {
+        throw MlxRegException("Device doesn't support Module PRBS and diagnostics data");
+    }
+
+    setPrintVal(prbsOutput, "Status", _mlxlinkMaps->_modulePrbsSt[getFieldValue("status")]);
+    setPrintVal(prbsOutput, "Lock Status [per lane]", getPMPDLockStatus(), ANSI_COLOR_RESET, true, true, true);
+
+    vector<string> prbsAcces, prbsPattern, prbsRate, prbsInv, prbsSwap;
+    prbsAcces.push_back(MlxlinkRecord::addSpaceForModulePrbs("Checker"));
+    prbsAcces.push_back(MlxlinkRecord::addSpaceForModulePrbs("Generator"));
+
+    getPMPTConfiguration(MODULE_PRBS_ACCESS_GEN, prbsPattern, prbsRate, prbsInv, prbsSwap);
+    getPMPTConfiguration(MODULE_PRBS_ACCESS_CH, prbsPattern, prbsRate, prbsInv, prbsSwap);
+
+    setPrintVal(prbsOutput, "PRBS Access", getStringFromVector(prbsAcces), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(prbsOutput, "PRBS Pattern", getStringFromVector(prbsPattern), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(prbsOutput, "PRBS Lane Rate ", getStringFromVector(prbsRate), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(prbsOutput, "PRBS Inversion", getStringFromVector(prbsInv), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(prbsOutput, "PRBS MSB<->LSB Swap", getStringFromVector(prbsSwap), ANSI_COLOR_RESET, true, true, true);
+
+    prbsOutput.toJsonFormat(_jsonRoot);
+
+    cout << prbsOutput;
+
+}
+
+void MlxlinkCablesCommander::getPMPDInfo(vector<string> &traffic, vector<string> &errors, vector<string> &ber,
+                                         vector<string> &snr)
+{
+    string traficStr, errorsStr, berStr, snrStr;
+    for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
+        resetParser(ACCESS_REG_PMPD);
+        updateField("module", _moduleNumber);
+        updateField("slot_index", _slotIndex);
+        updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+        updateField("lane", lane);
+        genBuffSendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);
+
+        traficStr = to_string(add32BitTo64(getFieldValue("prbs_bits_high"),
+                                           getFieldValue("prbs_bits_low")));
+        errorsStr = to_string(add32BitTo64(getFieldValue("prbs_errors_high"), getFieldValue("prbs_errors_low")));
+        berStr = to_string(getFieldValue("ber_coef")) + "E-" + to_string(getFieldValue("ber_magnitude"));
+        snrStr = to_string(getFieldValue("measured_snr")) +" dB";
+
+        traffic.push_back(MlxlinkRecord::addSpaceForModulePrbs(traficStr));
+        errors.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("errors_cap")? errorsStr : "Not Supported"));
+        ber.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("ber_cap")? berStr : "Not Supported"));
+        snr.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("snr_cap")? snrStr : "Not Supported"));
+    }
+}
+
+void MlxlinkCablesCommander::showPrpsDiagInfo()
+{
+    vector<string> traffic, errors, ber, snr;
+    MlxlinkCmdPrint diagOutput = MlxlinkCmdPrint();
+
+    getNumOfModuleLanes();
+
+    setPrintTitle(diagOutput, "Module PRBS Diagnostic Counters", MODULE_PMPD_INFO_LAST);
+
+    getPMPDInfo(traffic, errors, ber, snr);
+
+    setPrintVal(diagOutput, "PRBS Traffic (bits) [per lane]", getStringFromVector(traffic), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(diagOutput, "PRBS Errors [per lane]", getStringFromVector(errors), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(diagOutput, "PRBS BER [per lane]", getStringFromVector(ber), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(diagOutput, "Measured SNR [per lane]", getStringFromVector(snr), ANSI_COLOR_RESET, true, true, true);
+
+    diagOutput.toJsonFormat(_jsonRoot);
+
+    cout << diagOutput;
+}
+
+void MlxlinkCablesCommander::clearPrbsDiagInfo()
+{
+    MlxlinkRecord::printCmdLine("Clearing PRBS Diagnostic Counters", _jsonRoot);
+
+    resetParser(ACCESS_REG_PMPD);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("cl", 1);
+    genBuffSendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);
+}

@@ -58,6 +58,7 @@ protected:
     virtual void validatePCIeParams();
     virtual void validateGeneralCmdsParams();
     virtual void validatePRBSParams();
+    virtual void validateModulePRBSParams();
     virtual void validateSpeedAndCSVBerParams();
     virtual void validateCableParams();
     virtual void validateTxGroupParams();

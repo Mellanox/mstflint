@@ -253,7 +253,7 @@ void MlxlinkCommander::checkValidFW()
 void MlxlinkCommander::getProductTechnology()
 {
     try {
-        if (_devID == DeviceConnectX7) { //TODO: remove after supporting SLRG for Carmel
+        if (_devID == DeviceConnectX7 || _devID == DeviceQuantum2) {
             resetParser(ACCESS_REG_MGIR);
 
             genBuffSendRegister(ACCESS_REG_MGIR, MACCESS_REG_METHOD_GET);
@@ -1615,7 +1615,7 @@ void MlxlinkCommander::operatingInfoPage()
         _fecActive = getFieldValue("fec_mode_active");
         u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
         int loopbackMode = (phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode") : -1;
-        _linkUP = (phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP || phyMngrFsmState == PHY_MNGR_PHYSICAL_LINKUP);
+        _linkUP = (phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
         _portPolling = phyMngrFsmState == PHY_MNGR_POLLING;
         _protoCapability = getFieldValue("cable_ext_eth_proto_cap");
         if(_protoActive == IB) {
@@ -4427,10 +4427,11 @@ void MlxlinkCommander::initCablesCommander()
         _cablesCommander->_localPort = _localPort;
         _cablesCommander->_numOfLanes = _numOfLanes;
         _cablesCommander->_cableIdentifier = _cableIdentifier;
+        _cablesCommander->_mlxlinkMaps = _mlxlinkMaps;
         _cablesCommander->_sfp51Paging = isSFP51Paging();
         _cablesCommander->_passiveQsfp = isPassiveQSFP();
     } else {
-        throw MlxRegException(string("No plugged cable detected"));
+        throw MlxRegException("No plugged cable detected");
     }
 }
 
@@ -4461,8 +4462,9 @@ void MlxlinkCommander::showCableDDM()
             }
         }
     } catch(MlxRegException &exc) {
-        _allUnhandledErrors += string( "Showing DDM info raised the following"\
-                " exception: ") + string(exc.what()) + string("\n");
+        _allUnhandledErrors += "Showing DDM info raised the following exception: ";
+        _allUnhandledErrors += exc.what_s();
+        _allUnhandledErrors += "\n";
     }
 }
 
@@ -4490,8 +4492,9 @@ void MlxlinkCommander::writeCableEEPROM()
              _cablesCommander->writeToEEPROM(_userInput._page , _userInput._offset, bytesToWrite);
         }
     } catch(MlxRegException &exc) {
-        _allUnhandledErrors += string("Writing cable EEPROM raised the "\
-                "following exception: ") + string(exc.what()) + string("\n");
+        _allUnhandledErrors += "Writing cable EEPROM raised the following exception: ";
+        _allUnhandledErrors += exc.what_s();
+        _allUnhandledErrors += "\n";
     }
 }
 
@@ -4505,8 +4508,61 @@ void MlxlinkCommander::readCableEEPROM()
             cout << bytesOutput;
         }
     } catch(MlxRegException &exc) {
-        _allUnhandledErrors += string("Reading cable EEPROM raised the following"\
-                " exception: ") + string(exc.what()) + string("\n");
+        _allUnhandledErrors += "Reading cable EEPROM raised the following exception: ";
+        _allUnhandledErrors += exc.what_s();
+        _allUnhandledErrors += "\n";
+    }
+}
+
+void MlxlinkCommander::performModulePrbsCommands()
+{
+    try {
+        initCablesCommander();
+        if (_cmisCable) {
+            if (_cableMediaType == ACTIVE || _cableMediaType == OPTICAL_MODULE) {
+                if (_userInput.modulePrbsParams[MODULE_PRBS_SELECT] != "HOST" &&
+                    _userInput.modulePrbsParams[MODULE_PRBS_SELECT] != "MEDIA") {
+                    throw MlxRegException("Invalid module side PRBS select, please check the help menu");
+                }
+                _cablesCommander->_modulePrbsParams = _userInput.modulePrbsParams;
+                if (_userInput.isPrbsModeProvided) {
+                    ModuleAccess_t prbsModuleAccess = MODULE_PRBS_ACCESS_BOTH;
+                    if (_userInput.isPrbsChProvided && !_userInput.isPrbsGenProvided) {
+                        prbsModuleAccess = MODULE_PRBS_ACCESS_CH;
+                    } else if (!_userInput.isPrbsChProvided && _userInput.isPrbsGenProvided) {
+                        prbsModuleAccess = MODULE_PRBS_ACCESS_GEN;
+                    } else if (_userInput.isPrbsChProvided && _userInput.isPrbsGenProvided) {
+                        prbsModuleAccess = MODULE_PRBS_ACCESS_CH_GEN;
+                    }
+                    if (_userInput.modulePrbsParams[MODULE_PRBS_GEN_RATE] == _userInput.modulePrbsParams[MODULE_PRBS_CH_RATE] &&
+                        _userInput.modulePrbsParams[MODULE_PRBS_GEN_PAT] == _userInput.modulePrbsParams[MODULE_PRBS_CH_PAT] &&
+                        _userInput.modulePrbsParams[MODULE_PRBS_GEN_SWAP] == _userInput.modulePrbsParams[MODULE_PRBS_CH_SWAP] &&
+                        _userInput.modulePrbsParams[MODULE_PRBS_GEN_INV] == _userInput.modulePrbsParams[MODULE_PRBS_CH_INV] &&
+                        _userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES] == _userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES]) {
+                        prbsModuleAccess = MODULE_PRBS_ACCESS_BOTH;
+                    }
+                    _cablesCommander->handlePrbsTestMode(_userInput.modulePrbsParams[MODULE_PRBS_MODE], prbsModuleAccess);
+                } else {
+                    _cablesCommander->showPrbsTestMode();
+                }
+
+                if (_userInput.isPrbsShowDiagProvided) {
+                    _cablesCommander->showPrpsDiagInfo();
+                }
+
+                if (_userInput.isPrbsClearDiagProvided) {
+                    _cablesCommander->clearPrbsDiagInfo();
+                }
+            } else {
+                throw MlxRegException("The PRBS test mode supported over Active/Optical modules only");
+            }
+        } else {
+            throw MlxRegException("The PRBS test mode supported for CMIS modules only");
+        }
+    } catch(MlxRegException &exc) {
+        _allUnhandledErrors += "Module PRBS test mode raised the following exception: ";
+        _allUnhandledErrors += exc.what_s();
+        _allUnhandledErrors += "\n";
     }
 }
 
