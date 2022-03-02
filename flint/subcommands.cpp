@@ -6034,13 +6034,13 @@ bool RbSubCommand::printToScreen(const std::vector<u_int8_t>& buff, bool hexdump
             // Print addr
             printf("%08x  ", i);
             // Print bytes
-            for (u_int32_t j = 0; j < 16; j++) {
+            for (u_int32_t j = 0; (j < 16) && (i + j < buff.size()); j++) {
                 printf("%02x ", buff[i + j]);
                 if (j == 7) printf(" ");
             }
             // Print ASCII
             printf(" |");
-            for (u_int32_t j = 0; j < 16; j++) {
+            for (u_int32_t j = 0; (j < 16) && (i + j < buff.size()); j++) {
                 printf("%c", isprint(buff[i + j]) ? buff[i + j] : '.');
             }
             // Print new line
