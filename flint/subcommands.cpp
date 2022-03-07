@@ -1528,7 +1528,7 @@ FlintStatus SignSubCommand::executeCommand()
         MlxSign::OpensslEngineSigner engineSigner(_flintParams.openssl_engine, _flintParams.openssl_key_id);
         int rc = engineSigner.init();
         if (rc) {
-            reportErr(true, "Failed to initialze %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
+            reportErr(true, "Failed to initialize %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
             return FLINT_FAILED;
         }
 
