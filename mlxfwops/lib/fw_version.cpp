@@ -119,14 +119,14 @@ bool FwVersion::operator !=(const FwVersion& rhs) const {
 // 27/29 is Spectrum2
 // 30 is Spectrum3
 // 31 is quantum2
-// 32 is Spectrum4, I guess (kostiantynm)
+// 34 is Spectrum4
 bool FwVersion::is_Switch() const
 {
     if (_major == 0 && _minor == 0 && _subminor == 0 && !_devBranchTag.empty()) {
         return true;
     }
     if (_major == 11 || _major == 13 || _major == 15 || _major == 27
-        || _major == 29 || _major == 30 || _major == 31 || _major == 32) {
+        || _major == 29 || _major == 30 || _major == 31 || _major == 34) {
         return true;
     }
     return false;
