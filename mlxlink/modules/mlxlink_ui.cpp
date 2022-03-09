@@ -199,50 +199,6 @@ void MlxlinkUi::printSynopsisCommands()
         MlxlinkRecord::printFlagLine(WRITE_OFFSET_FLAG_SHORT, WRITE_OFFSET_FLAG, "offset",
             "Specific page offset to read/write");
 
-    printf(IDENT);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_SELECT_SHORT, CABLE_PRBS_SELECT, "side",
-                                 "Module PRBS test mode side selector [MEDIA, HOST]");
-    printf(IDENT2);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_MODE_SHORT, CABLE_PRBS_MODE, "cmd",
-                                 "Perform PRBS test mode on the Module [EN(Enable),DS(Disable)]");
-    printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_RATE_SHORT, CABLE_PRBS_GEN_RATE, "rate",
-                                 "Set PRBS generator lane rate [HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
-    printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_PAT_SHORT, CABLE_PRBS_GEN_PAT, "pattern",
-                                 "Set PRBS generator pattern [PRBS31(default),PRBS23,PRBS7,PRBS11,PRBS9,PRBS13,SSPR,SSPRQ]");
-    printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_SWAP_SHORT, CABLE_PRBS_GEN_SWAP, "",
-                                 "Enable PAM4 MSB <-> LSB generator swapping (Optional)");
-    printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_INV_SHORT, CABLE_PRBS_GEN_INV, "rate",
-                                 "Enable PRBS generator inversion (Optional)");
-    printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_LANES_SHORT, CABLE_PRBS_GEN_LANES, "lanes",
-                                 "PRBS generator lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
-
-    printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_RATE_SHORT, CABLE_PRBS_CH_RATE, "rate",
-                                 "Set PRBS checker lane rate [HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
-    printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_PAT_SHORT, CABLE_PRBS_CH_PAT, "pattern",
-                                 "Set PRBS checker pattern [PRBS31(default),PRBS23,PRBS7,PRBS11,PRBS9,PRBS13,SSPR,SSPRQ]");
-    printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_SWAP_SHORT, CABLE_PRBS_CH_SWAP, "",
-                                 "Enable PAM4 MSB <-> LSB checker swapping (Optional)");
-    printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_INV_SHORT, CABLE_PRBS_CH_INV, "",
-                                 "Enable PRBS checker inversion (Optional)");
-    printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_LANES_SHORT, CABLE_PRBS_CH_LANES, "lanes",
-                                 "PRBS checker lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
-    printf(IDENT2);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_SHOW_DIAG_SHORT, CABLE_PRBS_SHOW_DIAG, "",
-                                 "Show PRBS diagnostic counters information");
-    printf(IDENT2);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_CLEAR_DIAG_SHORT, CABLE_PRBS_CLEAR_DIAG, "",
-                                 "Clear PRBS diagnostic counters");
-
     MlxlinkRecord::printFlagLine(MARGIN_SCAN_FLAG_SHORT, MARGIN_SCAN_FLAG, "",
             "Read the SerDes eye margins per lane");
     printf(IDENT);
