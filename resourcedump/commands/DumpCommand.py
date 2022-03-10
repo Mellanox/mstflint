@@ -64,6 +64,7 @@ class DumpCommand(ResDumpCommand):
         self.numOfObj2 = kwargs[cs.UI_ARG_NUMOFOBJ2]
         self.depth = kwargs[cs.UI_ARG_DEPTH]
         self.bin = kwargs[cs.UI_ARG_BIN]
+        self.mem = kwargs[cs.UI_ARG_MEM]
         self.data = None
 
     def get_data(self):
@@ -77,7 +78,8 @@ class DumpCommand(ResDumpCommand):
                                       numOfObj1=self.numOfObj1,
                                       numOfObj2=self.numOfObj2,
                                       depth=self.depth,
-                                      bin=self.bin)
+                                      bin=self.bin,
+                                      mem=self.mem)
 
     def print_data(self):
         """call the data printer with the right configuration for print the dump data to

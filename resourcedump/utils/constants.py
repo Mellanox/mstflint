@@ -69,6 +69,7 @@ UI_ARG_NUMOFOBJ1 = "num_of_obj1"
 UI_ARG_NUMOFOBJ2 = "num_of_obj2"
 UI_ARG_DEPTH = "depth"
 UI_ARG_BIN = "bin"
+UI_ARG_MEM = "mem"
 
 # segment start/end specify where the 'type' attr starts and ends in the raw_data of each segment.
 # should be 0-16 bits
@@ -115,3 +116,5 @@ MENU_SEGMENT_TABLE_NA = "N/A"
 MENU_SEGMENT_TABLE_DASH = "-"
 MENU_SEGMENT_TABLE_AND = ","
 MENU_SEGMENT_TABLE_WRAP = "_"
+
+MKEY_BUF_SIZE = 262144 # 2^18 bytes

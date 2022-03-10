@@ -169,12 +169,16 @@ class MlxResDump:
         dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_BIN,
                                  help='The output to a binary file that replaces the default print in hexadecimal,'
                                       ' a readable format')
+        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_MEM.replace("_", "-"), default=None,
+                                 help='Perform the dump through memory (ofed with rdma-core dependency). accepts: [rdma device (for example "mlx5_4")]')
 
         # query sub parser
         query_parser = commands.add_parser(cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY)
         query_parser.set_defaults(parser=cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY)
         query_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_VHCAID.replace("_", "-"),
                                   help='The virtual HCA (host channel adapter, NIC) ID')
+        query_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_MEM.replace("_", "-"), default=None,
+                                 help='Perform the dump through memory (ofed with rdma-core dependency). accepts: [rdma device (for example "mlx5_4")]')
 
         # required arguments by query sub parser
         query_required_args = query_parser.add_argument_group('required arguments')

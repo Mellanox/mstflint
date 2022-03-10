@@ -50,13 +50,13 @@ class QueryData:
     """
 
     @classmethod
-    def get_query(cls, device_name, vhca_id):
+    def get_query(cls, device_name, vhca_id, mem = None):
         """this method is getting the query segments by using the CoreDumpFetcher and
         filter it by removing the none menu segments.
         """
         try:
             query_kwargs = {'segment': constants.RESOURCE_DUMP_SEGMENT_TYPE_MENU,
-                            'vHCAid': vhca_id, 'index1': 0, 'index2': 0, 'numOfObj1': 0, 'numOfObj2': 0, 'depth': 0}
+                            'vHCAid': vhca_id, 'index1': 0, 'index2': 0, 'numOfObj1': 0, 'numOfObj2': 0, 'depth': 0, 'mem' : mem}
             query_segments = ResourceDumpFetcher(device_name).fetch_data(**query_kwargs)
             res = SegmentsFilter.get_segments(query_segments, constants.RESOURCE_DUMP_SEGMENT_TYPE_MENU)
             try:
