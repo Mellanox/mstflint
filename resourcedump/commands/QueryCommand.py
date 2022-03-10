@@ -59,12 +59,13 @@ class QueryCommand(ResDumpCommand):
         """
         self.device_name = kwargs[cs.UI_ARG_DEVICE]
         self.vHCAid = kwargs[cs.UI_ARG_VHCAID]
+        self.mem = kwargs[cs.UI_ARG_MEM]
         self.data = None
 
     def get_data(self):
         """call the QueryData for getting the menu data.
         """
-        self.data = QueryData.get_query(self.device_name, self.vHCAid)
+        self.data = QueryData.get_query(self.device_name, self.vHCAid, self.mem)
 
     def print_data(self):
         """call the data printer with the right configuration for print the menu to screen.
