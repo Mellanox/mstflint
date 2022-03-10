@@ -460,8 +460,8 @@ class ResourceDumpFetcher:
             self.mkey_obj = Mlx5DevxObj(self.ctx, mkey_in, len(CreateMkeyOut()))
             mkey_out = CreateMkeyOut(self.mkey_obj.out_view)
             if mkey_out.status:
-                raise PyverbsRDMAError('Failed to create mkey with syndrome '
-                                    f'({mkey_out.syndrome}')
+                raise PyverbsRDMAError("Failed to create mkey with syndrome {0}".format(mkey_out.syndrome))
+
             mkey_index = mkey_out.mkey_index
             self.lkey = mkey_index << 8
     except Exception as _ :
