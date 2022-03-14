@@ -515,13 +515,13 @@ void Fs4Operations::RemoveCRCsFromMainSection(vector<u_int8_t>& img) {
 /*
     This function responsible on removing boot-record last 4B of CRC
 */
-bool Fs4Operations::RemoveCRCFromBootRecord(vector<u_int8_t>& img) {
+bool Fs4Operations::MaskBootRecordCRC(vector<u_int8_t>& img) {
     u_int32_t boot_record_size_without_crc = 0;
     if (!getBootRecordSize(boot_record_size_without_crc)) {
         return errmsg("Failed to get boot_record size\n");
     }
     u_int32_t boot_record_crc_addr = _boot_record_ptr + boot_record_size_without_crc;
-    img.erase(img.begin() + boot_record_crc_addr, img.begin() + boot_record_crc_addr + 4); // Pop 4B of CRC
+    fill(img.begin() + boot_record_crc_addr, img.begin() + boot_record_crc_addr + 4, 0xff); // Mask 4B of CRC/auth-tag
 
     return true;
 }
@@ -538,7 +538,7 @@ bool Fs4Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_
         RemoveCRCsFromMainSection(img);
         //* In case of devices after Carmel we'll ignore boot-record CRC for fw-update signature same as secure-boot signature
         if (getChipType(_fwImgInfo.supportedHwId[0]) != CT_CONNECTX7) {
-            if (!RemoveCRCFromBootRecord(img)) {
+            if (!MaskBootRecordCRC(img)) {
                 return false;
             }
         }
