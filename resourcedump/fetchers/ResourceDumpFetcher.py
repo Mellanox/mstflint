@@ -383,6 +383,10 @@ class ResourceDumpFetcher:
             except Exception as _:
                 if SCAPY_SUPPORT == False:
                     raise Exception("Missing 'scapy' package, please install scapy")
+                elif PYVERVBS_SUPPORT == False:
+                    raise Exception("Missing 'pyverbs' package, please install pyverbs")
+                elif _.args[0] != '':
+                    raise Exception(_.args[0] + " Check the driver is up and the device's rdma name is correct.")
                 else:
                     raise Exception("mem mode is not supported, make sure rdma-core with devx package installed (part of ofed driver)")
             inline_dump = 0
