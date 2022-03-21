@@ -2853,12 +2853,10 @@ FlintStatus BurnSubCommand::executeCommand()
 
     // query both image and device (deviceQuery can fail but we save rc)
     _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
-    if (_imgOps) {
-        if (!_imgOps->FwQuery(&_imgInfo)) {
-            UnlockDevice(_fwOps);
-            reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
-            return FLINT_FAILED;
-        }
+    if (!_imgOps->FwQuery(&_imgInfo)) {
+        UnlockDevice(_fwOps);
+        reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
+        return FLINT_FAILED;
     }
 
     // Abort if the image is restricted according to the Security-Version
