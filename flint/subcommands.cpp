@@ -654,7 +654,7 @@ bool SubCommand::basicVerifyParams()
     } else if (_maxCmdParamNum != -1 && (int)_flintParams.cmd_params.size() > _maxCmdParamNum) {
         // _maxCmdParamNum == -1 means ignore this check
         if (_maxCmdParamNum) {
-            reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), _maxCmdParamNum, _flintParams.cmd_params.size());
+            reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), _maxCmdParamNum, (int)_flintParams.cmd_params.size());
         } else {
             reportErr(true, FLINT_CMD_ARGS_ERROR5, _name.c_str());
         }
@@ -4531,7 +4531,7 @@ FlintStatus SgSubCommand::sgFs2()
     //different behaviours for fs2 device with blank guids and fs2 device with guids or image
     //different behaviour if isfailesafe or not
     if (_flintParams.cmd_params.size() > 1) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), 1, _flintParams.cmd_params.size());
+        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
     }
 
     if (_flintParams.device_specified && !_info.fs2_info.blank_guids) {
@@ -4694,7 +4694,7 @@ bool SmgSubCommand::verifyParams()
     }
 
     if (_flintParams.cmd_params.size() != 0 && _flintParams.cmd_params.size() != 2) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR4, _name.c_str(), 0, 2, _flintParams.cmd_params.size());
+        reportErr(true, FLINT_CMD_ARGS_ERROR4, _name.c_str(), 0, 2, (int)_flintParams.cmd_params.size());
         return false;
     }
 
