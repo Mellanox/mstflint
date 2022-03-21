@@ -436,9 +436,9 @@ bool FwOperations::FindAllImageStart(FBase *ioAccess,
                 (*found_images)++;
             }
         }
+        DPRINTF(("FwOperations::FindAllImageStart found %d image(s)\n", *found_images));
     }
 
-    DPRINTF(("FwOperations::FindAllImageStart found %d image(s)\n", *found_images));
     return true;
 }
 // CAN BE IN ANOTHER MODULE
