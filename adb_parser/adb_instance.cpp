@@ -63,7 +63,7 @@ string addPathSuffixForArraySupport(string path) {
 }
 
 AdbInstance::AdbInstance() :
-    fieldDesc(NULL), nodeDesc(NULL), parent(NULL), offset(0xffffffff), size(0),
+    fieldDesc(NULL), nodeDesc(NULL), parent(NULL), offset(0xffffffff), size(0), maxLeafSize(0),
             arrIdx(0), isNameBeenExtended(false), unionSelector(NULL), isDiff(false), userData(NULL)
 
 {

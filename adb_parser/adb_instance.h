@@ -102,6 +102,7 @@ public:
     vector<AdbInstance*> subItems;
     u_int32_t offset; // Global offset in bits (Relative to 0)
     u_int32_t size; // in bits
+    u_int32_t maxLeafSize; // in bits for DS alignment check
     u_int32_t arrIdx;
     bool      isNameBeenExtended;
     AdbInstance *unionSelector; // For union instances only
