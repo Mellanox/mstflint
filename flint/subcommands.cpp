@@ -1528,7 +1528,7 @@ FlintStatus SignSubCommand::executeCommand()
         MlxSign::OpensslEngineSigner engineSigner(_flintParams.openssl_engine, _flintParams.openssl_key_id);
         int rc = engineSigner.init();
         if (rc) {
-            reportErr(true, "Failed to initialze %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
+            reportErr(true, "Failed to initialize %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
             return FLINT_FAILED;
         }
 
@@ -6034,13 +6034,13 @@ bool RbSubCommand::printToScreen(const std::vector<u_int8_t>& buff, bool hexdump
             // Print addr
             printf("%08x  ", i);
             // Print bytes
-            for (u_int32_t j = 0; j < 16; j++) {
+            for (u_int32_t j = 0; (j < 16) && (i + j < buff.size()); j++) {
                 printf("%02x ", buff[i + j]);
                 if (j == 7) printf(" ");
             }
             // Print ASCII
             printf(" |");
-            for (u_int32_t j = 0; j < 16; j++) {
+            for (u_int32_t j = 0; (j < 16) && (i + j < buff.size()); j++) {
                 printf("%c", isprint(buff[i + j]) ? buff[i + j] : '.');
             }
             // Print new line
