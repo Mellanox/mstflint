@@ -137,7 +137,7 @@ class LinuxRshimUserSpaceDriver:
 
 class MlnxDriverLinux(MlnxDriver):
 
-    # blacklist_file_path = '/etc/modprobe.d/mlxfwreset.conf'
+    # blocklist_file_path = '/etc/modprobe.d/mlxfwreset.conf'
     PCI_DRIVERS_PATH = '/sys/bus/pci/drivers'
     mlnx_drivers = ['mlx5_core','rshim_pcie','nvme']
 
