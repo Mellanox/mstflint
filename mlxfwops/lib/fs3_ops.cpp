@@ -320,8 +320,9 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     strcpy(_fs3ImgInfo.ext_info.image_vsd, image_info.vsd);
     strcpy(_fwImgInfo.ext_info.psid, image_info.psid);
     strcpy(_fwImgInfo.ext_info.product_ver, image_info.prod_ver);
+
+    // get name, prs name and description
     if (image_info.minor_version == 2) {
-        // get name, prs name and description
         struct tools_open_image_info tools_image_info;
         memset(&tools_image_info, 0, sizeof(tools_image_info));
         tools_open_image_info_unpack(&tools_image_info, buff);
@@ -329,6 +330,12 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
         strncpy(_fs3ImgInfo.ext_info.description, tools_image_info.description, DESCRIPTION_LEN);
         strncpy(_fs3ImgInfo.ext_info.prs_name, tools_image_info.prs_name, FS3_PRS_NAME_LEN);
     }
+    else if (image_info.minor_version == 3) {
+        strncpy(_fs3ImgInfo.ext_info.name, image_info.name, NAME_LEN);
+        strncpy(_fs3ImgInfo.ext_info.description, image_info.description, DESCRIPTION_LEN);
+        strncpy(_fs3ImgInfo.ext_info.prs_name, image_info.prs_name, FS3_PRS_NAME_LEN);
+    }
+
     _fs3ImgInfo.ext_info.mcc_en = image_info.mcc_en;
     _fs3ImgInfo.ext_info.security_mode = (_fs3ImgInfo.ext_info.security_mode          |
                                           ((image_info.mcc_en    == 1) ? SMM_MCC_EN    : 0) |
