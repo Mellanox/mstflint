@@ -3514,7 +3514,7 @@ u_int32_t Fs4Operations::getImageSize()
 
 bool Fs4Operations::GetImageSize(u_int32_t* image_size){
     
-    bool is_encrypted;
+    bool is_encrypted = false;
     if (!isEncrypted(is_encrypted)){
         return false;
     }
