@@ -111,7 +111,7 @@ SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField
                 "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
-IS_MSTFLINT = True
+IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
 # TODO latter remove mcra to the new class
 MCRA = 'mcra'
 if IS_MSTFLINT:
@@ -1524,45 +1524,45 @@ def main():
     options_group.add_argument('--device',
                         '-d',
                         required=True,
-                        help='Device to work with')
+                        help=':  Device to work with')
     options_group.add_argument('--level',
                         '-l',
                         type=int,
                         choices=CmdRegMfrl.reset_levels(),
                         dest='reset_level',
-                        help='Run reset with the specified reset-level')
+                        help=':  Run reset with the specified reset-level')
     options_group.add_argument('--type',
                         '-t',
                         type=int,
                         choices=CmdRegMfrl.reset_types(),
                         dest='reset_type',
-                        help='Run reset with the specified reset-type')
+                        help=':  Run reset with the specified reset-type')
     options_group.add_argument('--sync',
                         type=int,
                         choices=[SyncOwner.TOOL, SyncOwner.DRIVER],
                         default=SyncOwner.TOOL,
                         dest='reset_sync',
-                        help='Run reset with the specified reset-sync')
+                        help=':  Run reset with the specified reset-sync')
     options_group.add_argument('--yes',
                         '-y',
-                        help='answer "yes" on prompt',
+                        help=':  answer "yes" on prompt',
                         action="store_true")
     options_group.add_argument('--skip_driver',
                         '-s',
-                        help="Skip driver start/stop stage (driver must be stopped manually)",
+                        help=":  Skip driver start/stop stage (driver must be stopped manually)",
                         action="store_true")
     options_group.add_argument('--mst_flags',
                         '-m',
-                        help="Provide mst flags to be used when invoking mst restart step. For example: --mst_flags=\"--with_fpga\""
+                        help=":  Provide mst flags to be used when invoking mst restart step. For example: --mst_flags=\"--with_fpga\""
                         if platform.system() == "Linux" and not IS_MSTFLINT else argparse.SUPPRESS)
     options_group.add_argument('--version',
                         '-v',
-                        help='Print tool version',
+                        help=':  Print tool version',
                         action="version",
                         version=tools_version.GetVersionString(PROG, TOOL_VERSION))
     options_group.add_argument('--help',
                         '-h',
-                        help='show this help message and exit',
+                        help=':  show this help message and exit',
                         action="help")
 
     # hidden flag for skipping mst restart when performing pci reset
@@ -1607,7 +1607,7 @@ def main():
     command_group.add_argument('command',
                         nargs=1,
                         choices=["q", "query", "r", "reset", "reset_fsm_register"],
-                        help='query: Query reset Level.\n reset: Execute reset.\n reset_fsm_register: Reset the fsm register.')
+                        help=':  query: Query reset Level.\n reset: Execute reset.\n reset_fsm_register: Reset the fsm register.')
     args = parser.parse_args()
 
     device = args.device
