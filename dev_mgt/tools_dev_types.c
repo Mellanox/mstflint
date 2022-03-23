@@ -446,7 +446,7 @@ static struct device_info g_devs_info[] = {
         0x252,                  //hw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
-        "Amose GearBox",        //name
+        "AmosGearBox",          //name
         128,                    //port_num NEED_CHECK
         DM_GEARBOX              //dev_type
     },
@@ -455,7 +455,7 @@ static struct device_info g_devs_info[] = {
         0x253,                  //hw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
-        "Amos GearBox Managaer",//name
+        "AmosGearBoxManager",   //name
         -1,                     //port_num NEED_CHECK
         DM_GEARBOX              //dev_type
     },
@@ -464,7 +464,7 @@ static struct device_info g_devs_info[] = {
         0x256,                  //hw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
-        "Abir GearBox Managaer",//name
+        "AbirGearBox",          //name
         -1,                     //port_num NEED_CHECK
         DM_GEARBOX              //dev_type
     },

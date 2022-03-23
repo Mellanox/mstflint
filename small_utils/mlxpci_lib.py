@@ -124,7 +124,9 @@ class PCIDeviceBase(object):
 
         # read and save PCI header 0x0-0x3f
         self.logger.debug("Reading and saving pci header [0x0-0x3f] ...")
-        self._pci_conf_space["pci_header"] = self.read(0x0, 0x40)
+        self._pci_conf_space["pci_header_start"] = self.read(0x0, 16)
+        self._pci_conf_space["pci_header_bars"] = self.read(0x10, 24)
+        self._pci_conf_space["pci_header_end"] = self.read(0x28, 24)
         
         self.logger.debug("Reading and saving legacy list ...")
         pci_legacy_ptr =  self.read_byte(CONFIG_SPACE_PTR_OFFSET)
@@ -178,7 +180,10 @@ class PCIDeviceBase(object):
         cached_data = self.read(offset=0x0, size=MAX_PCI_OFFSET, skip_offset_list=MELLANOX_PCI_SKIP_LIST)
         # write pci header 0x0-0x3f
         self.logger.debug("Writing PCI header [0x0-0x3f] ...")
-        self.write(0x0, 0x40,  self._pci_conf_space["pci_header"])
+        self.write(0x10, 24, self._pci_conf_space["pci_header_bars"]) # Restore the BAR 
+        self.write(0x0, 16, self._pci_conf_space["pci_header_start"]) # and then restore bar_enable (part of the "start")
+        self.write(0x28, 24, self._pci_conf_space["pci_header_end"])
+
 
         # Write Legacy list
         self.logger.debug("Writing back Legacy list ...")

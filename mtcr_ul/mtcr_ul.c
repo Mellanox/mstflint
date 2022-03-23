@@ -294,3 +294,14 @@ int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4])
     return ME_UNSUPPORTED_OPERATION;
 }
 
+int is_pci_device(mfile* mf)
+{
+    return (mf->flags & MDEVS_I2CM)
+        || (mf->flags & (MDEVS_CABLE | MDEVS_LINKX_CHIP))
+        || (mf->flags & MDEVS_SOFTWARE);
+}
+
+int is_livefish_device(mfile *mf)
+{
+    return is_livefish_device_ul(mf);
+}

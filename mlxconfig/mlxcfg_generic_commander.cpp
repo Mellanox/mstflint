@@ -1365,6 +1365,10 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs,
     bool csCompFound = false;
     bool foundApplicableTLV = false;
     bool idMlnxCompFound = false;
+    compsId = FwComponent::COMPID_UNKNOWN;
+    u_int32_t type = 0;
+    mget_mdevs_type(_mf, &type);
+
     CONST_VECTOR_ITERATOR(TLVConf*, tlvs, it) {
         const TLVConf *tlv = *it;
         if (tlv->_tlvClass == NVFile &&
@@ -1394,7 +1398,13 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs,
         } else if (tlv->_name == "file_applicable_to") {
             foundApplicableTLV = true;
         }
+
+        if ( (type & (MST_USB | MST_USB_DIMAX)) &&
+             (compsId == FwComponent::COMPID_UNKNOWN)) { //MST_USB tlv's must have component
+            throw MlxcfgException("MTUSB device is not supported.");
+        }
     }
+
 
     if (!dbgCompFound && !csCompFound && !idMlnxCompFound) {
         throw MlxcfgException("Unsupported device: No debug tokens or CS tokens or MLNX ID Components were found for this device");

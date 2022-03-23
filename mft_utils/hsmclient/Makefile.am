@@ -34,7 +34,7 @@
 USER_DIR = $(top_srcdir)
 AM_CPPFLAGS = -I$(USER_DIR)/common -Iinc -Iinc/rsa $(COMPILER_FPIC) -DUNIX -DOS_UNIX -DOS_LINUX
 
-AM_CFLAGS = -MD -pipe -Wall -W $(COMPILER_FPIC)
+AM_CFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
 noinst_HEADERS = 
 

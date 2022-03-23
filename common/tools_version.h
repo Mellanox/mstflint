@@ -42,24 +42,23 @@
 #include <string.h>
 #include <stdlib.h>
 
+// To be replaced by an external script:
+#ifdef MST_UL
+#include "gitversion.h"
+#endif
+#ifndef TOOLS_GIT_SHA
+    #define TOOLS_GIT_SHA "6469M"
+#endif
+
 #ifdef HAVE_CONFIG_H
     #include <config.h>
     #ifndef MSTFLINT_VERSION_STR
         #define MSTFLINT_VERSION_STR PACKAGE_STRING
     #endif
-#else
-	// To be replaced by an external script:
-	#ifdef MST_UL
-		#include "gitversion.h"
-	#endif
 #endif
 
-#ifndef TOOLS_GIT_SHA
-    #define TOOLS_GIT_SHA "6469M"
-#endif
-
-#ifndef MSTFLINT_VERSION_STR
-    #define MSTFLINT_VERSION_STR "mstflint V.V.V-R"
+#ifndef MFT_VERSION_STR
+    #define MFT_VERSION_STR "mft V.V.V-R"
 #endif
 
 static inline
@@ -86,7 +85,7 @@ int get_version_string(char *buf, int buf_size, const char *exe_name, const char
 static inline
 void print_version_string(const char *exe_name, const char *tool_version)
 {
-    char buf[1024];
+    char buf[1024] = {0};
     get_version_string(buf, sizeof(buf), exe_name, tool_version);
     printf("%s\n", buf);
 }

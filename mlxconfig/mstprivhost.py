@@ -308,8 +308,9 @@ class PrivilegeMgr(object):
         cmd = self.CONFIG_CMD_LINE % (self._device, self._file_name)
         exit_code, stdout, stderr = self._exec_cmd(cmd)
         if exit_code != 0:
+            current_conf = self.queryConf(host_number, True)
             self.printCmd("Failed")
-            if self.isHwAccessDisabled():
+            if current_conf is None and self.isHwAccessDisabled():
                 error("Secure host enabled on the device", hide=self._disable_out)
             else:
                 error("Host is already restricted", hide=self._disable_out)

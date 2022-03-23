@@ -63,7 +63,7 @@ common_INCLUDES =  -I$(USER_DIR)/common\
             -I$(USER_DIR)/mft_utils\
             -I$(USER_DIR)/dev_mgt
 
-AM_CXXFLAGS = -g -MP -MD -Wall -W $(BOOST_CXX_IGNORES)
+AM_CXXFLAGS = -g -MP -MD -Wall -W -Werror $(BOOST_CXX_IGNORES)
 
 
 common_SOURCEES =  mlxfwmanager_common.cpp mlxfwmanager_common.h\

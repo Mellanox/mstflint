@@ -38,7 +38,6 @@
 #include "icmd_cif_open.h"
 #include "icmd_cif_macros.h"
 
-
 #define MH_SYNC_OPCODE        0x8402
 #define MH_SYNC_STATUS_OPCODE 0x8403
 

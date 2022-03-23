@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2006-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2006 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -319,8 +320,10 @@ inline
 
 typedef struct _stat Stat;
 
+#ifndef PRIx64
     #define PRIx64 "I64x"
     #define PRIu64 "I64u"
+#endif
 /*
  #ifdef __cplusplus
    static inline int pread(int fd, void *buf, int count, u_int64_t offset) {return -1;}
