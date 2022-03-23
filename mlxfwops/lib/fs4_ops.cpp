@@ -727,9 +727,9 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                                 if (IsGetInfoSupported(tocEntry.type)) {
                                     u_int8_t *section_buff;
                                     section_buff = buff;
+                                    vector<u_int8_t> non_encrypted_buff;
                                     if (_encrypted_image_io_access) {
                                         // In case of encrypted image, parsing info section from the non-encrypted image
-                                        vector<u_int8_t> non_encrypted_buff;
                                         non_encrypted_buff.resize(tocEntry.size * 4);
                                         READBUF((*_ioAccess), flash_addr, non_encrypted_buff.data(), entrySizeInBytes, "Section");
                                         section_buff = non_encrypted_buff.data();
@@ -4044,7 +4044,7 @@ bool Fs4Operations::signForSecureBootUsingHSM(const char *public_key_file, const
     vector<u_int8_t> critical_signature, non_critical_signature;
     if (secure_boot_version == VERSION_1) {
         if (!getCriticalNonCriticalSections(critical_sections_data, non_critical_sections_data)) {
-            return errmsg("signForSecureBootUsingHSM failed - Error: getCriticalNonCriticalSections failed");
+            return errmsg("signForSecureBootUsingHSM failed - Error: getCriticalNonCriticalSections failed (%s)\n", err());
         }
         rc = engineSigner.sign(critical_sections_data, critical_signature);
         if (rc) {
@@ -4065,7 +4065,7 @@ bool Fs4Operations::signForSecureBootUsingHSM(const char *public_key_file, const
         res = storeSecureBootSignaturesInSection(boot_signature);
     }
     if (!res) {
-        return errmsg("signForSecureBootUsingHSM: Failed to insert secure boot signatures");
+        return errmsg("signForSecureBootUsingHSM: Failed to insert secure boot signatures (%s)\n", err());
     }
 
     return true;
@@ -4105,7 +4105,7 @@ bool Fs4Operations::signForSecureBoot(const char *private_key_file, const char *
     vector<u_int8_t> boot_data;
     vector<u_int8_t> boot_signature;
     if (!getBootDataForSign(boot_data)) {
-        return errmsg("signForSecureBoot failed - Error: getBootDataForSign failed (%s)\n",err());
+        return errmsg("signForSecureBoot failed - Error: getBootDataForSign failed (%s)\n", err());
     }
     if (!FwSignSection(boot_data, privPemFileStr, boot_signature)) {
         return false;
@@ -4116,7 +4116,7 @@ bool Fs4Operations::signForSecureBoot(const char *private_key_file, const char *
     vector<u_int8_t> critical_signature, non_critical_signature;
     if (secure_boot_version == VERSION_1) {
         if (!getCriticalNonCriticalSections(critical_sections_data, non_critical_sections_data)) {
-            return errmsg("signForSecureBoot failed - Error: getCriticalNonCriticalSections failed.\n");
+            return errmsg("signForSecureBoot failed - Error: getCriticalNonCriticalSections failed (%s)\n", err());
         }
         if (!FwSignSection(critical_sections_data, privPemFileStr, critical_signature)) {
             return false;
@@ -4135,7 +4135,7 @@ bool Fs4Operations::signForSecureBoot(const char *private_key_file, const char *
         res = storeSecureBootSignaturesInSection(boot_signature);
     }
     if (!res) {
-        return errmsg("signForSecureBoot failed - Error: failed to insert secure boot signatures");
+        return errmsg("signForSecureBoot failed - Error: failed to insert secure boot signatures (%s)\n", err());
     }
 
     return true;

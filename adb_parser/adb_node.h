@@ -63,11 +63,13 @@ public:
     // Members
     string name;
     u_int32_t size; // in bits
+    u_int32_t _maxLeafSize; // in bits
     bool isUnion;
     string desc;
     FieldsList fields;
     FieldsList condFields; // Field that weren't instantiated due to not satisfied condition
     AttrsMap attrs;
+    bool inLayout;
 
     // defined in
     string fileName;
