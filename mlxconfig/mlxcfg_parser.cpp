@@ -55,8 +55,7 @@ using namespace std;
 #define IDENT2 IDENT IDENT
 #define IDENT3 "\t\t"
 #define IDENT4 IDENT2 IDENT
-
-#define MAX_SESSION_TIME_IN_MINUTES 10080 // 1 week = 7 * 24 hours * 60 minutes
+#define MAX_SESSION_TIME_IN_MINUTES 10080 // 1 week = 7 * 24 hours * 60 minutes 
 
 
 static void printFlagLine(string flag_s, string flag_l, string param, string desc)
@@ -146,8 +145,8 @@ void MlxCfg::printHelp()
     printf(IDENT "Supported devices:\n");
     printf(IDENT2 "4th Generation devices: ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
     printf(IDENT2 "5th Generation devices: ConnectIB, ConnectX4, ConnectX4-LX, ConnectX5, connectX5-Ex.\n");
-    printf(IDENT2 "6th Generation devices: BlueField, COnnectX6, ConnectX6-DX\n");
-    printf(IDENT2 "Switches: Switch-IB, Switch-IB2,Spectrum, Spectrum2, Quantum\n");
+    printf(IDENT2 "6th Generation devices: BlueField, BlueField2, ConnectX6, ConnectX6-DX, ConnectX6-LX\n");
+    printf(IDENT2 "Switches: Switch-IB, Switch-IB2,Spectrum, Spectrum2, Spectrum3, Quantum, Quantum2\n");
 
     printf("\n");
     printf(IDENT "Note: query device to view supported configurations by Firmware.\n");
@@ -579,6 +578,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
     if (i != argc && (_mlxParams.cmd == Mc_Reset)) {
         return err(true, "%s command expects no argument but %d argument received", "reset", argc - i);
     }
+
     if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Backup
          || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply || _mlxParams.cmd == Mc_RemoteTokenKeepAlive
          || _mlxParams.cmd == Mc_ChallengeRequest || _mlxParams.cmd == Mc_TokenSupported || _mlxParams.cmd == Mc_QueryTokenSession

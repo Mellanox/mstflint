@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -39,10 +40,14 @@
 #include <winsock2.h>
 #include <windows.h>
 
+#ifdef __AARCH64EL__
+#define MTCR_API
+#else
 #ifdef MTCR_EXPORTS
 #define MTCR_API __declspec(dllexport)
 #else
 #define MTCR_API __declspec(dllimport)
+#endif
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
@@ -459,7 +464,14 @@ typedef void (*f_mpci_change)        (mfile *mf);
 #define GEARBOX_SLAVE_ADDR 0x48
 #define GB_MNGR_SLAVE_ADDR 0x33
 
+typedef enum {
+    GB_UNKNOWN = 0,
+    GB_AMOS,
+    GB_ABIR
+} gearbox_type;
+
 typedef struct gearbox_info_t {
+    gearbox_type gb_type;
     u_int8_t is_gearbox;
     u_int8_t is_gb_mngr;
     int gearbox_index;

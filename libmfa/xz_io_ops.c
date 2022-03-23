@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2006-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2006 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -183,6 +184,8 @@ ssize_t xz_stream_len(u_int8_t *buffer, ssize_t len)
         total_unpadded += unpadded;
         total_uncompressed += uncompressed;
     }
+    (void)total_unpadded; 
+    (void)total_uncompressed;
     //printf("Totals:     Unpadded: %8u  Uncompressed: %8u\n", total_unpadded, total_uncompressed);
 
     return total_uncompressed;

@@ -47,7 +47,7 @@
 using namespace std;
 
 
-Commander* Commander::create(std::string device, std::string dbName)
+Commander* Commander::create(std::string device, std::string dbName, bool forceCreate)
 {
     mfile *mf;
     int rc;
@@ -61,8 +61,10 @@ Commander* Commander::create(std::string device, std::string dbName)
     if (rc) {
         throw MlxcfgException("Failed to get device type");
     }
-    if (type & (MST_USB | MST_USB_DIMAX)) {
-        throw MlxcfgException("MTUSB device is not supported.");
+    if(!forceCreate) {
+        if (type & (MST_USB | MST_USB_DIMAX)) {
+            throw MlxcfgException("MTUSB device is not supported.");
+        }
     }
 
     Commander *cmdr = NULL;

@@ -63,8 +63,10 @@ libmstarchive_a_SOURCES = \
               mlxarchive_mfa2_package_gen.h mlxarchive_mfa2_package_gen.cpp\
               mfa2_buff.h mfa2_buff.cpp
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(INCLUDES) $(COMPILER_FPIC)
-bin_PROGRAMS = mstarchive
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(INCLUDES) -pthread $(COMPILER_FPIE)
+AM_LDFLAGS = $(COMPILER_PIE_LINK)
+
+bin_PROGRAMS = mlxarchive
 
 mstarchive_SOURCES = mlxarchive.cpp mlxarchive.h
 mstarchive_LDADD = libmstarchive.a\

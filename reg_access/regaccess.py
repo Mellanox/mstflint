@@ -175,7 +175,9 @@ if REG_ACCESS:
                     ("num_ports",c_uint8),
                     ("hw_dev_id", c_uint16),
                     ("manufacturing_base_mac_47_32", c_uint16),
+                    ("module_base",c_uint8),
                     ("manufacturing_base_mac_31_0", c_uint32),
+                    ("associated_module_id_31_0", c_uint32),
                     ("uptime", c_uint32),
                     ("sub_minor", c_uint8),
                     ("minor", c_uint8),
@@ -185,6 +187,7 @@ if REG_ACCESS:
                     ("debug_fw", c_uint8),
                     ("dev_fw", c_uint8),
                     ("string_tlv", c_uint8),
+
                     ("dev_sc", c_uint8),
                     ("build_id", c_uint32),
                     ("year", c_uint16),

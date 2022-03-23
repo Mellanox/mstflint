@@ -29,9 +29,11 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #--
+
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CXXFLAGS = -W -Wno-error -g -MP -MD ${COMPILER_FPIC} -Wno-deprecated-declarations
+AM_CFLAGS = -w -g -MP -MD ${COMPILER_FPIC}
+AM_CXXFLAGS = -w -g -MP -MD ${COMPILER_FPIC}
 
 noinst_LIBRARIES = libmuparser.a
 noinst_HEADERS = muParser.h muParserBase.h muParserBytecode.h muParserCallback.h muParserDef.h muParserError.h muParserFixes.h muParserStack.h muParserToken.h muParserTokenReader.h muParserTemplateMagic.h

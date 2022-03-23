@@ -53,7 +53,7 @@ AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I
            -I$(LAYOUTS_DIR) -I$(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) -I$(TOOLS_RES_MGMT_DIR) $(MUPARSER_CFLAGS) $(SQLITE_CFLAGS) $(COMPILER_FPIC)
 
 
-AM_CXXFLAGS = -pthread -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
+AM_CXXFLAGS = -pthread -Wall -W -g -MP -MD -pipe -Werror -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 bin_PROGRAMS = mstconfig
 MLXPRIVHOST_PYTHON_WRAPPER=mstprivhost
 bin_SCRIPTS = ${MLXPRIVHOST_PYTHON_WRAPPER}

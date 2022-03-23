@@ -111,7 +111,7 @@ SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField
                 "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
-IS_MSTFLINT = True
+IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
 # TODO latter remove mcra to the new class
 MCRA = 'mcra'
 if IS_MSTFLINT:

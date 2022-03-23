@@ -240,6 +240,6 @@ public:
     explicit PSIDExtension(string psid) :
         StringExtension(ELEMENT_VERSION, PSIDExtensionType, psid) {};
 };
-
 }
 #endif
+

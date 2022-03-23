@@ -172,4 +172,3 @@ int is_icmdif_supported(mflash *mfl, MfError *status, int *is7NmSuppported)
         return 1;
     }
 }
-

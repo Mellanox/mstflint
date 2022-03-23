@@ -199,7 +199,7 @@ void MlxCfg::printErr()
 bool MlxCfg::askUser(const char *question, bool add_prefix, bool add_suffix)
 {
     const char * prefix = "";
-    if(add_prefix){
+    if(add_prefix) {
         prefix = "\n ";
     }
 
@@ -670,7 +670,7 @@ mlxCfgStatus MlxCfg::setDevCfg()
     //for mlx_config_name
     VECTOR_ITERATOR(ParamView, _mlxParams.setParams, p) {
         const char * warning_msg = getConfigWarning(p->mlxconfigName, p->setVal);
-        if(warning_msg){
+        if(warning_msg) {
             if(!askUser(warning_msg, false, false)) {
                 delete commander;
                 printErr();
@@ -1340,7 +1340,7 @@ mlxCfgStatus MlxCfg::apply()
     copyDwVectorToBytesVector(buff, bytesBuff);
 
     try {
-        commander = Commander::create(_mlxParams.device, _mlxParams.dbName);
+        commander = Commander::create(_mlxParams.device, _mlxParams.dbName, true);
         printf("Applying...\n");
         ((GenericCommander*)commander)->apply(bytesBuff);
     } catch (MlxcfgException& e) {
@@ -1371,7 +1371,7 @@ mlxCfgStatus MlxCfg::remoteTokenKeepAlive()
         return MLX_CFG_ERROR;
     }
 
-    if ((mf->flags & MDEVS_IB) == 0) { //not IB device
+    if ((mf->flags & (MDEVS_IB)) == 0) { //not IB device
         return err(true, "specified device is not an IB device.\n");
     }
 
@@ -1397,7 +1397,7 @@ mlxCfgStatus MlxCfg::remoteTokenKeepAlive()
     return status;
 }
 
-bool MlxCfg::runMTCQ(mfile* mf, struct reg_access_switch_mtcq_reg_ext* mtcq_reg)
+void MlxCfg::runMTCQ(mfile* mf, struct reg_access_switch_mtcq_reg_ext* mtcq_reg)
 {
     reg_access_status_t rc = ME_REG_ACCESS_OK;
 
@@ -1405,10 +1405,8 @@ bool MlxCfg::runMTCQ(mfile* mf, struct reg_access_switch_mtcq_reg_ext* mtcq_reg)
     rc = reg_access_mtcq(mf, REG_ACCESS_METHOD_GET, mtcq_reg);
     dealWithSignal();
     if (rc) {
-        return err(true, "failed getting response from the device, error %d.", rc);        
+        throw MlxcfgException("Failed getting response from the device.\n");
     }
-
-    return true;
 }
 
 void MlxCfg::printArray(const u_int32_t arr[], int len)
@@ -1425,18 +1423,17 @@ void MlxCfg::printArray(const u_int32_t arr[], int len)
     printf("\n");
 }
 
-void MlxCfg::printHexArrayAsAscii(const u_int32_t arr[], int len) 
+void MlxCfg::printHexArrayAsAscii(const u_int32_t arr[], int len)
 {
-    u_int8_t byteArray[4];    
+    u_int8_t byteArray[4];
     int i = 0, j = 0;
 
     if (len < 0) {
         throw MlxcfgException("Invalid array length was given.\n");
-    }    
+    }
 
     for (i = 0; i < len; ++i) {
-        
-        memcpy(byteArray, &arr[i], 4);        
+        memcpy(byteArray, &arr[i], 4);
         for (j = 3; j >= 0; --j) {
             printf("%c", byteArray[j]);
         }
@@ -1447,23 +1444,19 @@ void MlxCfg::printHexArrayAsAscii(const u_int32_t arr[], int len)
 mlxCfgStatus MlxCfg::getChallenge()
 {
     u_int32_t base_mac[2];
-
     mfile *mf = mopen(_mlxParams.device.c_str());
     if (!mf) {
-        printf("-E- failed to open the device.\n");
-        return MLX_CFG_ERROR;
+        throw MlxcfgException("-E- failed to open the device.\n");
     }
 
-    if ((mf->flags & MDEVS_IB) == 0) { //not IB device
-        return err(true, "specified device is not an IB device.\n");
+    if ((mf->flags & (MDEVS_IB)) == 0) { //not IB device
+        throw MlxcfgException("Specified device is not an IB device.\n");
     }
 
     struct reg_access_switch_mtcq_reg_ext mtcq_reg;
     memset(&mtcq_reg, 0, sizeof(mtcq_reg));
     mtcq_reg.token_opcode = _mlxParams.tokenID;
-    if (!runMTCQ(mf, &mtcq_reg)) {
-        return MLX_CFG_ERROR;
-    }
+    runMTCQ(mf, &mtcq_reg);
     base_mac[0] = mtcq_reg.base_mac & 0xffffffff;
     base_mac[1] = (mtcq_reg.base_mac >> 32) & 0xffffffff;
 
@@ -1488,8 +1481,7 @@ mlxCfgStatus MlxCfg::queryTokenSupport()
 {
     mfile *mf = mopen(_mlxParams.device.c_str());
     if (!mf) {
-        printf("-E- failed opening the device.\n");
-        return MLX_CFG_ERROR;
+        throw MlxcfgException("-E- failed to open the device.\n");
     }
 
     tools_open_mcam mcam;
@@ -1497,7 +1489,7 @@ mlxCfgStatus MlxCfg::queryTokenSupport()
     reg_access_status_t rc = ME_REG_ACCESS_OK;
     rc = reg_access_mcam(mf, REG_ACCESS_METHOD_GET, &mcam);
     if (rc) {
-        return err(true, "failed getting response from the device, error %d.", rc);
+        throw MlxcfgException("Failed getting response from the device.\n");
     }
     
     printf("CS tokens supported:       %d\n", EXTRACT(mcam.mng_feature_cap_mask[2], 6, 1));
@@ -1506,33 +1498,29 @@ mlxCfgStatus MlxCfg::queryTokenSupport()
     return MLX_CFG_OK;
 }
 
-bool MlxCfg::runMDSR(mfile* mf, struct reg_access_switch_mdsr_reg_ext* mdsr_reg, reg_access_method_t method)
+void MlxCfg::runMDSR(mfile* mf, struct reg_access_switch_mdsr_reg_ext* mdsr_reg, reg_access_method_t method)
 {
     reg_access_status_t rc = ME_REG_ACCESS_OK;
 
     mft_signal_set_handling(1);
     rc = reg_access_mdsr(mf, method, mdsr_reg);
     dealWithSignal();
-    
-    if (rc) {
-        return err(true, "failed getting response from the device, error %d.", rc);
-    }
 
-    return true;
+    if (rc) {
+        throw MlxcfgException("Failed getting response from the device.\n");
+    }
 }
 
 mlxCfgStatus MlxCfg::queryTokenSession()
 {
     mfile *mf = mopen(_mlxParams.device.c_str());
     if (!mf) {
-        return err(true, "failed opening the device.");
+        throw MlxcfgException("Failed opening the device.\n");
     }
 
     struct reg_access_switch_mdsr_reg_ext mdsr_reg;
     memset(&mdsr_reg, 0, sizeof(mdsr_reg));
-    if (!runMDSR(mf, &mdsr_reg, REG_ACCESS_METHOD_GET)) {
-        return MLX_CFG_ERROR;
-    }
+    runMDSR(mf, &mdsr_reg, REG_ACCESS_METHOD_GET);
     processMDSRData(mdsr_reg, true);
 
     return MLX_CFG_OK;
@@ -1569,16 +1557,13 @@ mlxCfgStatus MlxCfg::endTokenSession()
 {
     mfile *mf = mopen(_mlxParams.device.c_str());
     if (!mf) {
-        return err(true, "failed opening the device.");
+        throw MlxcfgException("-E- failed to open the device.\n");
     }
 
     struct reg_access_switch_mdsr_reg_ext mdsr_reg;
     memset(&mdsr_reg, 0, sizeof(mdsr_reg));
     mdsr_reg.end = 1;
-    if (!runMDSR(mf, &mdsr_reg, REG_ACCESS_METHOD_SET)) {
-        return MLX_CFG_ERROR;
-    }
-
+    runMDSR(mf, &mdsr_reg, REG_ACCESS_METHOD_SET);
     processMDSRData(mdsr_reg, false);
     
     return MLX_CFG_OK;
@@ -1670,6 +1655,7 @@ mlxCfgStatus MlxCfg::execute(int argc, char *argv[])
     case Mc_EndTokenSession:
         ret = endTokenSession();
         break;
+
     default:
         // should not reach here.
         return err(true, "invalid command.");
@@ -1692,14 +1678,14 @@ int main(int argc, char *argv[])
     }
 }
 
-const char* KeepAliveSession::_mkdcErrorToString[5] = {"OK", "BAD_SESSION_ID", "BAD_KEEP_ALIVE_COUNTER",
+const char* KeepAliveSession::_mkdcErrorToString[5] = {"OK", "BAD_SESSION_ID", "BAD_KEEP_ALIVE_COUNTER", 
                                                        "BAD_SOURCE_ADDRESS", "SESSION_TIMEOUT"};
 
-const u_int32_t KeepAliveSession::_keepAliveTimestampInSec = 600;
+const u_int32_t KeepAliveSession::_keepAliveTimestampInSec = 600;                                                       
 
 KeepAliveSession::KeepAliveSession(mfile *mf, u_int16_t sessionId, u_int32_t sessionTimeInSec):
-    _mf(mf),
-    _sessionId(sessionId),
+    _mf(mf), 
+    _sessionId(sessionId), 
     _sessionTimeLeftInSec(sessionTimeInSec),
     _SleepTimeOnCommandTO(1),
     _SleepTimeBetweenCommands(300)
@@ -1758,26 +1744,25 @@ keepAliveStatus KeepAliveSession::runMKDC(mfile* mf, reg_access_switch_mkdc_reg_
 {
     reg_access_status_t rc = ME_REG_ACCESS_OK;
     time_t start = 0;
-    int status = 0;
 
     start = time(NULL);
     mft_signal_set_handling(1);
     rc = reg_access_mkdc(mf, REG_ACCESS_METHOD_GET, mkdc_reg);
     dealWithSignal();
     timer = time(NULL) - start;
-
+    
     while ((rc == ME_ICMD_STATUS_EXECUTE_TO) && ((u_int32_t)timer < _keepAliveTimestampInSec)) {
         u_int32_t sleep_time_in_sec = _SleepTimeOnCommandTO;
-
+        
         msleep(sleep_time_in_sec * 1000);
-
+        
         mft_signal_set_handling(1);
-        rc = reg_access_mkdc(mf, REG_ACCESS_METHOD_GET, mkdc_reg);
+        rc = reg_access_mkdc(mf, REG_ACCESS_METHOD_GET, mkdc_reg);        
         dealWithSignal();
-
+        
         timer = time(NULL) - start;
     }
-
+    
     if (rc == ME_REG_ACCESS_REG_NOT_SUPP) {
         return err(true, "MKDC access register is not supported.");
     }

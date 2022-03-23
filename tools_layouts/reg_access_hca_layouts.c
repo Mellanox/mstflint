@@ -1385,8 +1385,12 @@ void reg_access_hca_mgir_hardware_info_pack(const struct reg_access_hca_mgir_har
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->hw_dev_id);
 	offset = 144;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->manufacturing_base_mac_47_32);
+	offset = 128;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->module_base);
 	offset = 160;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->manufacturing_base_mac_31_0);
+	offset = 192;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->associated_module_id_31_0);
 	offset = 224;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->uptime);
 }
@@ -1409,8 +1413,12 @@ void reg_access_hca_mgir_hardware_info_unpack(struct reg_access_hca_mgir_hardwar
 	ptr_struct->hw_dev_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 144;
 	ptr_struct->manufacturing_base_mac_47_32 = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 128;
+	ptr_struct->module_base = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 160;
 	ptr_struct->manufacturing_base_mac_31_0 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 192;
+	ptr_struct->associated_module_id_31_0 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	offset = 224;
 	ptr_struct->uptime = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
@@ -1435,7 +1443,11 @@ void reg_access_hca_mgir_hardware_info_print(const struct reg_access_hca_mgir_ha
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "manufacturing_base_mac_47_32 : " UH_FMT "\n", ptr_struct->manufacturing_base_mac_47_32);
 	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module_base          : " UH_FMT "\n", ptr_struct->module_base);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "manufacturing_base_mac_31_0 : " U32H_FMT "\n", ptr_struct->manufacturing_base_mac_31_0);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "associated_module_id_31_0 : " U32H_FMT "\n", ptr_struct->associated_module_id_31_0);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "uptime               : " U32H_FMT "\n", ptr_struct->uptime);
 }

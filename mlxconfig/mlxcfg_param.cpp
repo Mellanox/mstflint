@@ -566,8 +566,9 @@ u_int32_t UnsignedParamValue::getIntVal()
 void UnsignedParamValue::parseValueAux(string strToParse, u_int32_t& value, string& strValue, int base)
 {
     if (strToNum(strToParse, value, base)) {
-        if ((_size == 32 && value == MLXCFG_UNKNOWN) ||
-            ((_size != 32) && value > (unsigned)((1 << _size) - 1))) {
+        if ( (_size == 32) && (value == MLXCFG_UNKNOWN)){
+            throw MlxcfgException("The value %s is reserved and cannot be used" ,strToParse.c_str(), _size);
+        }else if( (_size != 32) && (value > (unsigned)((1 << _size) - 1)) ) {
             throw MlxcfgException("The value %s is not valid,  as its size is %d bits",
                                   strToParse.c_str(), _size);
         }

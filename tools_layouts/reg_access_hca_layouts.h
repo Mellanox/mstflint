@@ -793,6 +793,7 @@ manufacturing_base_mac of value 0 means field is not
 supported. */
 	/* 0x10.0 - 0x10.15 */
 	u_int16_t manufacturing_base_mac_47_32;
+	u_int8_t module_base;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description - LSB of the "base" MAC address of the NIC that was 
 allocate during manufacturing. The NIC derives the 
@@ -803,6 +804,7 @@ manufacturing_base_mac of value 0 means field is not
 supported. */
 	/* 0x14.0 - 0x14.31 */
 	u_int32_t manufacturing_base_mac_31_0;
+	u_int32_t associated_module_id_31_0;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description - Time (in secs.) since last reset0 */
 	/* 0x1c.0 - 0x1c.31 */

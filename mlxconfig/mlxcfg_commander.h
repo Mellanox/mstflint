@@ -46,7 +46,7 @@
 class Commander {
 
 public:
-    static Commander* create(std::string device, std::string dbName);
+    static Commander* create(std::string device, std::string dbName, bool forceCreate = false); //clients can force create skiping any support check, and move the responsebility to the client.
     static Commander* create(mfile *mf, std::string device, std::string dbName);
     virtual void printLongDesc(FILE*) = 0;
     virtual bool isDefaultSupported() = 0;

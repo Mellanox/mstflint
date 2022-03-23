@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
         case 's':
             i2c_slave  = strtoul(optarg, &endp, 0);
             if (*endp || i2c_slave == 0 || i2c_slave > 0x7f) {
-                fprintf(stderr, "-E- Bad slave address given (%s). Expecting a number [0x1 .. 0x7f]\n", optarg);
+                fprintf(stderr, "-E- Bad slave address given (%s).Expecting a non-negative number\n", optarg);
                 exit(1);
             }
             break;
@@ -278,6 +278,7 @@ int main(int argc, char *argv[])
         adb_dump = getenv(ADB_DUMP_VAR);
     }
     strncpy(device, dev, MAX_DEV_LEN - 1);
+
     // Do the job
     mf = mopen_adv((const char*)device, (MType)(MST_DEFAULT | MST_CABLE | MST_LINKX_CHIP));
     if (!mf) {
@@ -373,7 +374,7 @@ int main(int argc, char *argv[])
             addr = (addr >> 2) << 2;
 
             rc = (mread4_block(mf, addr, data, dowrd_size * 4) != dowrd_size * 4);
-      
+
             if (rc) {
                 free(data);
                 goto access_error;
@@ -386,7 +387,7 @@ int main(int argc, char *argv[])
             free(data);
         } else {
             rc = (mread4(mf, addr, &val) != 4);
-           
+
             if (rc) {
                 goto access_error;
             }
@@ -403,18 +404,18 @@ int main(int argc, char *argv[])
         if (bit_offs != 0 || bit_size != 32) {
             // read-modify-write
             u_int32_t tmp_val;
-            
+
             rc = (mread4(mf, addr, &tmp_val) != 4);
-         
+
             if (rc) {
                 goto access_error;
             }
 
             val = MERGE(tmp_val, val, bit_offs, bit_size);
         }
-        
+
         rc = (mwrite4(mf, addr, val) != 4);
-        
+
         if (rc) {
             goto access_error;
         }

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -140,6 +141,8 @@ int maccess_reg(mfile     *mf,
                                         // if you dont know what you are doing then r_size_reg = w_size_reg = your_register_size
                 int       *reg_status);
 
+int is_livefish_device(mfile *mf);
+
 int icmd_send_command(mfile *mf, int opcode, void *data, int data_size, int skip_write);
 
 int icmd_clear_semaphore(mfile *mf);
@@ -172,6 +175,8 @@ int mclear_pci_semaphore(const char *name);
 int mvpd_read4(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
 int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4]);
+
+int is_pci_device(mfile* mf);
 
 MTCR_API int MWRITE4_SEMAPHORE(mfile* mf, int offset, int value);
 

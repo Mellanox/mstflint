@@ -88,10 +88,12 @@ OpensslEngineSigner::~OpensslEngineSigner()
         ENGINE_finish(engine);
         ENGINE_free(engine);
     }
-    ENGINE_cleanup();
     CONF_modules_unload(1);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    ENGINE_cleanup();
     EVP_cleanup();
     ERR_free_strings();
+#endif
     CRYPTO_cleanup_all_ex_data();
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
     OPENSSL_thread_stop();

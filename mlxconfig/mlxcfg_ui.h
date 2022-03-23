@@ -85,7 +85,7 @@ typedef enum {
 } Device_Type;
 
 typedef enum {
-    KEEP_ALIVE_OK,
+    KEEP_ALIVE_OK,        
     KEEP_ALIVE_ERROR
 } keepAliveStatus;
 
@@ -113,7 +113,7 @@ public:
         isSessionIDGiven(false), sessionTimeInSec(600), isSessionTimeGiven(false), 
         keepAliveSleepTimeBetweenCommands(0), isSleepTimeBetweenCommandsInput(false), 
         keepAliveSleepTimeOnCommandTO(0), isSleepTimeOnCommandTOInput(false) {}
-
+        
     ~MlxCfgParams() {}
 
     std::string device;
@@ -153,14 +153,16 @@ public:
     void setSleepTimeBetweenCommands(u_int32_t sleepTime);
 
 private:
+
     keepAliveStatus runMKDC(mfile* mf, reg_access_switch_mkdc_reg_ext* mkdc_reg, time_t& timer);
     keepAliveStatus processMKDCData(reg_access_switch_mkdc_reg_ext* mkdc_reg);
     keepAliveStatus err(bool report, const char *fmt, ...);
 
+
     static const char* _mkdcErrorToString[5];
 
     static const u_int32_t _keepAliveTimestampInSec;
-
+    
     mfile* _mf;
     u_int16_t _sessionId;
     u_int32_t _sessionTimeLeftInSec;
@@ -244,8 +246,8 @@ private:
     mlxCfgStatus queryTokenSession();
     mlxCfgStatus endTokenSession();
     void processMDSRData(const struct reg_access_switch_mdsr_reg_ext& mdsr_reg, bool isQuery);
-    bool runMDSR(mfile* mf, struct reg_access_switch_mdsr_reg_ext* mdsr_reg, reg_access_method_t method);
-    bool runMTCQ(mfile* mf, struct reg_access_switch_mtcq_reg_ext* mtcq_reg);
+    void runMDSR(mfile* mf, struct reg_access_switch_mdsr_reg_ext* mdsr_reg, reg_access_method_t method);
+    void runMTCQ(mfile* mf, struct reg_access_switch_mtcq_reg_ext* mtcq_reg);
     void printArray(const u_int32_t arr[], int len);
     void printHexArrayAsAscii(const u_int32_t arr[], int len);
     mlxCfgToken getTokenType(const char* tokenStr);
@@ -261,6 +263,7 @@ private:
     mlxCfgStatus err(bool report, const char *errMsg, ...);
     void printErr();
     // data members
+
     MlxCfgParams _mlxParams;
     std::string _errStr;
     MlxCfgAllInfo _allInfo;

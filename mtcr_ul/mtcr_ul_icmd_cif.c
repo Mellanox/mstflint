@@ -56,7 +56,7 @@
 
 // _DEBUG_MODE   // un-comment this to enable debug prints
 
-
+#define ICMD_DEFAULT_TIMEOUT        5120
 #define STAT_CFG_NOT_DONE_ADDR_CIB   0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_CX4   0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_SW_IB   0x80010
@@ -330,6 +330,24 @@ static int set_sleep()
     return icmd_sleep;
 }
 
+static int set_icmd_timeout()
+{
+    char* icmd_timeout_env;
+    int icmd_timeout = ICMD_DEFAULT_TIMEOUT;
+
+    icmd_timeout_env = getenv("MFT_ICMD_TIMEOUT");
+
+    if (icmd_timeout_env) {
+        char* endptr;
+        icmd_timeout = strtol(icmd_timeout_env, &endptr, 10);
+        if (endptr != NULL && *endptr != '\0') {
+            icmd_timeout = ICMD_DEFAULT_TIMEOUT;
+        }
+    }
+
+    return icmd_timeout;
+}
+
 /*
  * get_status
  */
@@ -402,22 +420,27 @@ static int set_and_poll_on_busy_bit(mfile *mf, int enhanced, int busy_bit_offset
 
     // set go bit
     rc = set_busy_bit(mf, reg, busy_bit_offset);
-    CHECK_RC(rc);    
+    CHECK_RC(rc);
     DBG_PRINTF("Busy-bit raised. Waiting for command to exec...\n");
 
     // set sleep time if needed
     int icmd_sleep = set_sleep();
 
+    int icmd_timeout = set_icmd_timeout();
+
     // wait for command to execute
     i = 0; wait = 1;
     do {
-        if (++i > 5120) {
+        if (++i > icmd_timeout) {
             // this number of iterations should take ~~30sec, which is the defined command t/o
             DBG_PRINTF("Execution timed-out\n");
             return ME_ICMD_STATUS_EXECUTE_TO;
         }
 
-        DBG_PRINTF("Waiting for busy-bit to clear (iteration #%d)...\n", i);
+        if ((i < 100) || (i % 100 == 0)) {
+            DBG_PRINTF("Waiting for busy-bit to clear (iteration #%d)...\n", i);
+        }
+
         if (icmd_sleep > 0) {
             if (i == 3) {
                 msleep(icmd_sleep);
@@ -902,7 +925,6 @@ static int icmd_init_cr(mfile *mf)
     case (QUANTUM_HW_ID):
     case (SPECTRUM2_HW_ID):
     case (SPECTRUM3_HW_ID):
-    case (SPECTRUM4_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM;
@@ -911,6 +933,7 @@ static int icmd_init_cr(mfile *mf)
         break;
 
     case (QUANTUM2_HW_ID):
+    case (SPECTRUM4_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM2;
@@ -922,7 +945,6 @@ static int icmd_init_cr(mfile *mf)
     case (CX6DX_HW_ID):
     case (CX6LX_HW_ID):
     case (BF2_HW_ID):
-    case (BF3_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX5;
         hcr_address = HCR_ADDR_CX5;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX5;
@@ -931,6 +953,7 @@ static int icmd_init_cr(mfile *mf)
         break;
 
     case (CX7_HW_ID):
+    case (BF3_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX7;
         hcr_address = HCR_ADDR_CX7;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX7;
