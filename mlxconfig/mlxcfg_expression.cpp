@@ -159,7 +159,7 @@ double Expression::evaluate()
             p.SetExpr(expression);
             return p.Eval();
         } else {
-            double x;
+            double x = 0.0;
             const string varXTempName = "x";
             size_t pos = expression.find(varXName);
             if (pos == string::npos) {

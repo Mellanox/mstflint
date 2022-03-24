@@ -74,7 +74,8 @@ enum TLVClass {
 typedef struct ParamView {
     ParamView() : mlxconfigName(""), description(""),
         type(BOOLEAN_TYPE), val(MLXCFG_UNKNOWN),
-        port(0), strVal(""), setVal("") {};
+        port(0), strVal(""), setVal(""),
+        rule(""), supportedFromVersion(0) {};
     std::string mlxconfigName;
     std::string description;
     enum ParamType type;

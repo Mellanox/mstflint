@@ -38,7 +38,7 @@ DIST_SUBDIRS = .
 
 USER_DIR = ..
 INCLUDES = -I$(USER_DIR) -I$(USER_DIR)/common
-AM_CXXFLAGS = -Wall -W -g -MP -MD -Werror -pipe $(COMPILER_FPIC)
+AM_CXXFLAGS = -Wall -W -g -MP -MD  -pipe $(COMPILER_FPIC)
 
 lib_LTLIBRARIES = libadb_parser.a
 

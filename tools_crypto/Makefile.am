@@ -33,7 +33,7 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 USER_DIR = $(top_srcdir)
 AM_CPPFLAGS = -I$(USER_DIR) -I$(USER_DIR)/common $(COMPILER_FPIC)
-AM_CFLAGS =  -MD -pipe -Wall -Werror -W -DMST_UL -g $(COMPILER_FPIC)
+AM_CFLAGS =  -MD -pipe -Wall  -W -DMST_UL -g $(COMPILER_FPIC)
 
 noinst_LIBRARIES = libtools_crypto.a
 libtools_crypto_a_SOURCES = tools_md5.c tools_md5.h
