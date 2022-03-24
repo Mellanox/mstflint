@@ -1478,7 +1478,7 @@ void GenericCommander::apply(const vector<u_int8_t>& buff)
     vector<u_int32_t> dwBuff;
     FwCompsMgr fwCompsAccess(_mf);
     vector<FwComponent> compsToBurn;
-    FwComponent::comps_ids_t compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;;
+    FwComponent::comps_ids_t compsId = FwComponent::COMPID_UNKNOWN;;
 
     size_t fingerPrintLength = strlen(BIN_FILE_FINGERPRINT);
 
