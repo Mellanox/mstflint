@@ -288,16 +288,15 @@ class AdbParser:
         """
         hex_size = 0
         bit_size = 0
+        size_parts = size_str.split(".")
 
-        if "." in size_str:
-            # hex size is in bytes, multiply by 8 to convert to bits
-            hex_size = size_str[:size_str.index(".")]
-            bit_size = size_str[size_str.index(".")+1:]
+        if len(size_parts) == 1:
+            size_parts = size_parts[0], "0"
+        if size_parts[0] == "":
+            size_parts[0] = "0"
 
-            hex_size = 0 if len(hex_size) == 0 else int(hex_size, 16) * 8
-            bit_size = 0 if len(size_str[size_str.index("."):]) == 0 else int(bit_size, 10)
-        else:
-            bit_size = int(size_str, 10)
+        hex_size = int(size_parts[0], 16) * 8
+        bit_size = int(size_parts[1], 10)
 
         return hex_size+bit_size
 
