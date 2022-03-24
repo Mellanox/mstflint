@@ -59,7 +59,6 @@ class LogFile;
 #include "adb_exceptionHolder.h"
 #include "adb_logfile.h"
 #include "adb_config.h"
-#include "adb_progress.h"
 #include "adb_instance.h"
 #include <stdio.h>
 #include <stdlib.h>
