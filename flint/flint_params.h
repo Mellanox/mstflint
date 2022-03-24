@@ -202,7 +202,6 @@ public:
     string openssl_engine;
     string openssl_key_id;
     bool openssl_engine_usage_specified;
-    int i2cSecondaryAddr;
 };
 
 #endif

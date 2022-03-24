@@ -259,9 +259,6 @@ FlintStatus Flint::run(int argc, char *argv[])
         printf("-E- FATAL: command object not found.");
         return FLINT_FAILED;
     }
-    if (_flintParams.i2cSecondaryAddr != -1) {
-        set_force_i2c_address(_flintParams.i2cSecondaryAddr);
-    }
     _subcommands[_flintParams.cmd]->setParams(_flintParams);
     return _subcommands[_flintParams.cmd]->executeCommand();
 }
