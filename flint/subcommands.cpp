@@ -781,12 +781,13 @@ SubCommand::~SubCommand()
 
 }
 
+// matanel - TODO: duplicated, use same function from fw_ops.cpp
 bool SubCommand::getRomsInfo(FBase *io, roms_info_t& romsInfo)
 {
     std::vector<u_int8_t> romSector;
     romSector.clear();
-    romSector.resize(io->get_size());
-    if (!io->read(0, &romSector[0], io->get_size())) {
+    romSector.resize(io->get_effective_size());
+    if (!io->read(0, &romSector[0], io->get_effective_size())) {
         reportErr(true, FLINT_READ_ERROR, _flintParams.image.c_str(), io->err());
         return false;
     }
@@ -5927,9 +5928,9 @@ bool WbneSubCommand::writeBlock(u_int32_t addr, std::vector<u_int32_t> dataVec)
 {
     //we should work only on flash.
     //check if flash is big enough
-    if (addr + (dataVec.size() * 4) > ((Flash*)_io)->get_size()) {
+    if (addr + (dataVec.size() * 4) > ((Flash*)_io)->get_effective_size()) {
         reportErr(true, "Writing %#x bytes from address %#x is out of flash limits (%#x bytes)\n",
-                  (unsigned int)(dataVec.size() * 4), (unsigned int)addr, (unsigned int)_io->get_size());
+                  (unsigned int)(dataVec.size() * 4), (unsigned int)addr, (unsigned int)_io->get_effective_size());
         return false;
     }
     if (!((Flash*)_io)->write(addr, &dataVec[0], (dataVec.size() * 4), true)) {

@@ -928,7 +928,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     is_image_in_odd_chunks = _ioAccess->get_is_image_in_odd_chunks();
     _ioAccess->set_address_convertor(0, 0);
     //-Verify DToC Header:
-    dtocPtr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
+    dtocPtr = _ioAccess->get_effective_size() - FS4_DEFAULT_SECTOR_SIZE;
     DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocHeader() DTOC\n"));
     if (!verifyTocHeader(dtocPtr, true, verifyCallBackFunc)) {
         return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
@@ -1208,7 +1208,7 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
 
     //check if minimal dtoc is not overwriting the preceding chunk
     if (useImageDevData) {
-        u_int32_t devAreaStartAddress = _ioAccess->get_size() - (1 << imageOps._maxImgLog2Size);
+        u_int32_t devAreaStartAddress = _ioAccess->get_effective_size() - (1 << imageOps._maxImgLog2Size);
         if (imageOps._fs4ImgInfo.smallestDTocAddr < devAreaStartAddress) {
             return errmsg(MLXFW_DTOC_OVERWRITE_CHUNK,
                           "First DTOC address (0x%x) is less than device area start address (0x%x)",

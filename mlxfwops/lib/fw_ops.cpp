@@ -381,7 +381,7 @@ const u_int32_t FwOperations::_cntx_image_start_pos[FwOperations::CNTX_START_POS
 bool FwOperations::FindMagicPattern(FBase *ioAccess, u_int32_t addr,
                                     u_int32_t const cntx_magic_pattern[])
 {
-    if (addr + 16 > ioAccess->get_size()) {
+    if (addr + 16 > ioAccess->get_effective_size()) {
         return false;
     }
     for (int i = 0; i < 4; i++) {
@@ -1921,9 +1921,9 @@ bool FwOperations::FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, P
     }
 
     //check if flash is big enough
-    if ((addr + dataVec.size()) > _ioAccess->get_size()) {
+    if ((addr + dataVec.size()) > _ioAccess->get_effective_size()) {
         return errmsg("Writing %#x bytes from address %#x is out of flash limits (%#x bytes)\n",
-                      (unsigned int)(dataVec.size()), (unsigned int)addr, (unsigned int)_ioAccess->get_size());
+                      (unsigned int)(dataVec.size()), (unsigned int)addr, (unsigned int)_ioAccess->get_effective_size());
     }
 
     if (!writeImage(progressFunc, addr, &dataVec[0], (int)dataVec.size())) {
@@ -2011,8 +2011,8 @@ bool FwOperations::getRomsInfo(FBase *io, roms_info_t& romsInfo)
 {
     std::vector<u_int8_t> romSector;
     romSector.clear();
-    romSector.resize(io->get_size());
-    if (!io->read(0, &romSector[0], io->get_size())) {
+    romSector.resize(io->get_effective_size());
+    if (!io->read(0, &romSector[0], io->get_effective_size())) {
         return false;
     }
     RomInfo info(romSector, false);
@@ -2263,9 +2263,9 @@ bool FwOperations::FwSetForbiddenVersions(char *fname, PrintCallBack callBackFun
 
 bool FwOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec)
 {
-    if (addr + size > _ioAccess->get_size()) {
+    if (addr + size > _ioAccess->get_effective_size()) {
         return errmsg(MLXFW_BAD_PARAM_ERR, "Reading %#x bytes from address %#x is out of flash limits (%#x bytes)\n",
-                      size, (unsigned int)addr, (unsigned int)_ioAccess->get_size());
+                      size, (unsigned int)addr, (unsigned int)_ioAccess->get_effective_size());
     }
     //read from flash/image
     if (!_ioAccess->read(addr, &dataVec[0], size)) {

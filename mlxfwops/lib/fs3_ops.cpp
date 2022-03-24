@@ -705,7 +705,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     // adrianc: need to have the sector size hardcoded in the FW binary (since its determined in the image generation process)
     u_int32_t sector_size = FS3_DEFAULT_SECTOR_SIZE;
     offset = (offset % sector_size == 0) ? offset : (offset + sector_size - offset % 0x1000);
-    while (offset < _ioAccess->get_size()) {
+    while (offset < _ioAccess->get_effective_size()) {
 
         if (VerifyTOC(offset, bad_signature, verifyCallBackFunc, show_itoc, queryOptions, ignoreDToc, verbose)) {
             return true;
@@ -1310,7 +1310,7 @@ bool Fs3Operations::ReBurnCurrentImage(ProgressCallBack progressFunc)
         return false;
     }
 
-    const unsigned int size = (_ioAccess->get_size());
+    const unsigned int size = (_ioAccess->get_effective_size());
     vector<u_int8_t> newImageData(size);
     _imageCache.get(newImageData, 0x0, size);
 
@@ -2077,9 +2077,9 @@ bool Fs3Operations::Fs3UpdateVpdSection(struct toc_info *curr_toc, char *vpd,
         return errmsg("Size of VPD file: %d is not 4-byte aligned!", vpd_size);
     }
     // assuming VPD section is the last piece of Data on the flash
-    if ((_ioAccess)->is_flash() && (getAbsAddr(curr_toc) + vpd_size > (_ioAccess)->get_size())) {
+    if ((_ioAccess)->is_flash() && (getAbsAddr(curr_toc) + vpd_size > (_ioAccess)->get_effective_size())) {
         delete[] vpd_data;
-        return errmsg("VPD data exceeds flash size, max VPD size: 0x%x bytes", (_ioAccess)->get_size() - getAbsAddr(curr_toc));
+        return errmsg("VPD data exceeds flash size, max VPD size: 0x%x bytes", (_ioAccess)->get_effective_size() - getAbsAddr(curr_toc));
     }
     GetSectData(newSectionData, (u_int32_t *)vpd_data, vpd_size);
     curr_toc->toc_entry.size = vpd_size / 4;
@@ -3194,7 +3194,7 @@ bool Fs3Operations::FwShiftDevData(PrintCallBack progressFunc)
         return errmsg("Failed to get MFG_INFO ITOC information.");
     }
 
-    if (getAbsAddr(mfgToc) < _ioAccess->get_size() - (((Flash *)(_ioAccess))->get_sector_size())) {
+    if (getAbsAddr(mfgToc) < _ioAccess->get_effective_size() - (((Flash *)(_ioAccess))->get_sector_size())) {
         return errmsg("Device data sections already shifted.");
     }
 
