@@ -34,9 +34,9 @@
 USER_DIR = $(top_srcdir)
 AM_CPPFLAGS = -I. -I$(USER_DIR)/common $(COMPILER_FPIC)
 
-AM_CFLAGS = -MD -pipe -Wall -W -Werror $(COMPILER_FPIC)
+AM_CFLAGS = -MD -pipe -Wall -W  $(COMPILER_FPIC)
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC)
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  $(COMPILER_FPIC)
 
 noinst_HEADERS = mft_sig_handler.h errmsg.h
 

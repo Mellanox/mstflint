@@ -148,8 +148,6 @@ int mvpd_read4_ul(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
 int space_to_cap_offset(int space);
 
-int is_livefish_device_ul(mfile *mf);
-
 int get_dma_pages(mfile *mf, struct mtcr_page_info* page_info,
                   int page_amount);
 

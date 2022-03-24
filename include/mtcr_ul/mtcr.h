@@ -141,8 +141,6 @@ int maccess_reg(mfile     *mf,
                                         // if you dont know what you are doing then r_size_reg = w_size_reg = your_register_size
                 int       *reg_status);
 
-int is_livefish_device(mfile *mf);
-
 int icmd_send_command(mfile *mf, int opcode, void *data, int data_size, int skip_write);
 
 int icmd_clear_semaphore(mfile *mf);
@@ -175,8 +173,6 @@ int mclear_pci_semaphore(const char *name);
 int mvpd_read4(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
 int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4]);
-
-int is_pci_device(mfile* mf);
 
 MTCR_API int MWRITE4_SEMAPHORE(mfile* mf, int offset, int value);
 
