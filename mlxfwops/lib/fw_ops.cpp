@@ -1178,6 +1178,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "ConnectX-6DX",     CX6DX_HW_ID,      CT_CONNECTX6DX,  CFT_HCA,     0, {4125, 0}, {{UNKNOWN_BIN, {0}}}},
     { "ConnectX-6LX",     CX6LX_HW_ID,      CT_CONNECTX6LX,  CFT_HCA,     0, {4127, 0}, {{UNKNOWN_BIN, {0}}}},
     { "ConnectX-7",       CX7_HW_ID,        CT_CONNECTX7,    CFT_HCA,     0, {4129, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "ConnectX-8",       CX8_HW_ID,        CT_CONNECTX8,    CFT_HCA,     0, {4131, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField",        BF_HW_ID,         CT_BLUEFIELD,    CFT_HCA,     0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField2",       BF2_HW_ID,        CT_BLUEFIELD2,   CFT_HCA,     0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField3",       BF3_HW_ID,        CT_BLUEFIELD3,   CFT_HCA,     0, {41690, 41691, 41692, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1207,6 +1208,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"ConnectX-6DX",      CX6DX_HW_ID,      0x00},
     {"ConnectX-6LX",      CX6LX_HW_ID,      0x00},
     {"ConnectX-7",        CX7_HW_ID,        0x00},
+    {"ConnectX-8",        CX8_HW_ID,        0x00},
     {"BlueField",         BF_HW_ID,         0x00},
     {"BlueField2",        BF2_HW_ID,        0x00},
     {"BlueField3",        BF3_HW_ID,        0x00},
@@ -1262,6 +1264,8 @@ chip_type FwOperations::GetChipType(string chip)
         return CT_CONNECTX6LX;
     else if (chip == "CT_CONNECTX7")
         return CT_CONNECTX7;
+    else if (chip == "CT_CONNECTX8")
+        return CT_CONNECTX8;
     else if (chip == "CT_SPECTRUM3")
         return CT_SPECTRUM3;
     else if (chip == "CT_BLUEFIELD2")
@@ -1857,7 +1861,8 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
                  (chipType == CT_CONNECTX6) || (chipType == CT_CONNECTX6DX) || (chipType == CT_CONNECTX6LX) || \
                  (chipType == CT_SPECTRUM) || (chipType == CT_SPECTRUM2) || (chipType == CT_SPECTRUM3) || \
                  (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) || (chipType == CT_SPECTRUM4) || \
-                 (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3);
+                 (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3) || \
+                 (chipType == CT_CONNECTX8);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
@@ -2289,6 +2294,7 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
                hwDevId == CX6DX_HW_ID ||
                hwDevId == CX6LX_HW_ID ||
                hwDevId == CX7_HW_ID ||
+               hwDevId == CX8_HW_ID ||
                hwDevId == BF_HW_ID      ||
                hwDevId == BF2_HW_ID      ||
                hwDevId == BF3_HW_ID      ||
