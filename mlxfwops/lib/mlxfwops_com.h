@@ -389,7 +389,7 @@ typedef struct uids {
     };
 } uids_t;
 
-typedef enum {NOT_VALID, GW, MFSV} device_security_version_access_method_t;
+typedef enum {NOT_VALID, DIRECT_ACCESS, MFSV} device_security_version_access_method_t;
 
 typedef struct fs3_info_ext {
     u_int8_t guids_override_en;

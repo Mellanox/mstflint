@@ -1088,10 +1088,6 @@ bool Fs4Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
         return false;
     }
 
-    //* Security version
-    _fs3ImgInfo.ext_info.image_security_version = _security_version;
-    _fs3ImgInfo.ext_info.device_security_version_access_method = NOT_VALID;
-
     if (!QuerySecurityFeatures()) {
         return false;
     }
@@ -1129,9 +1125,38 @@ bool Fs4Operations::IsLifeCycleAccessible(chip_type_t chip_type)
     return res;
 }
 
+bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
+{
+    DPRINTF(("Fs4Operations::IsSecurityVersionAccessible\n"));
+    bool res = true;
+    // Security version feature depends on life-cycle
+    if (IsLifeCycleSupported())
+    {
+        switch (chip_type)
+        {
+            case CT_BLUEFIELD2:
+            case CT_CONNECTX6DX:
+            case CT_CONNECTX6LX:
+                res = false;
+                break;
+            default:
+                break;
+        }
+    }
+    else
+    {
+        res = false;
+    }
+
+    DPRINTF(("Fs4Operations::IsSecurityVersionAccessible res = %s\n", res ? "TRUE" : "FALSE"));
+    return res;
+}
+
 bool Fs4Operations::QuerySecurityFeatures()
 {
     DPRINTF(("Fs4Operations::QuerySecurityFeatures _fwImgInfo.ext_info.chip_type = %d\n", _fwImgInfo.ext_info.chip_type));
+    _fs3ImgInfo.ext_info.image_security_version = _security_version;
+    _fs3ImgInfo.ext_info.device_security_version_access_method = NOT_VALID;
     try {
         if (IsLifeCycleAccessible(_fwImgInfo.ext_info.chip_type)) {
             CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
@@ -1140,16 +1165,14 @@ bool Fs4Operations::QuerySecurityFeatures()
             if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED) {
                 _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
 
-                _fs3ImgInfo.ext_info.device_security_version_access_method = GW;
-                _fs3ImgInfo.ext_info.device_security_version_gw = crSpaceReg.getSecurityVersion();
+                if (IsSecurityVersionAccessible(_fwImgInfo.ext_info.chip_type)) {
+                    _fs3ImgInfo.ext_info.device_security_version_gw = crSpaceReg.getSecurityVersion();
+                    _fs3ImgInfo.ext_info.device_security_version_access_method = DIRECT_ACCESS;
+                }
             }
         }
     }
-    catch(logic_error e) {
-        printf("%s\n", e.what());
-        return false;
-    }
-    catch(exception e) {
+    catch(exception& e) {
         printf("%s\n", e.what());
         return false;
     }
@@ -4418,7 +4441,7 @@ bool Fs4Operations::IsSecurityVersionViolated(u_int32_t image_security_version)
     // Set device security-version (from EFUSEs)
     if (_fs3ImgInfo.ext_info.device_security_version_access_method == MFSV) {
         deviceEfuseSecurityVersion = _fs3ImgInfo.ext_info.device_security_version_mfsv.efuses_sec_ver;
-    } else if (_fs3ImgInfo.ext_info.device_security_version_access_method == GW) {
+    } else if (_fs3ImgInfo.ext_info.device_security_version_access_method == DIRECT_ACCESS) {
         deviceEfuseSecurityVersion = _fs3ImgInfo.ext_info.device_security_version_gw;
     } else {
         deviceEfuseSecurityVersion = 0;

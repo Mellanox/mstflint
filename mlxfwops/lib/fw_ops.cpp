@@ -2630,7 +2630,7 @@ u_int32_t CRSpaceRegisters::getSecurityVersion()
     u_int32_t rollbackMSB = 0, rollbackLSB = 0;
     u_int32_t minimalSecurityVersion = 0;
 
-     switch (_chip_type) {
+    switch (_chip_type) {
         case CT_QUANTUM2:
             rollbackMSB = getRegister(0xf3248);
             rollbackLSB = getRegister(0xf324c);
@@ -2647,7 +2647,7 @@ u_int32_t CRSpaceRegisters::getSecurityVersion()
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf4538), 4, 8);
             break;
         default:
-            throw logic_error("-E- security version query is not implemented for the current device.");
+            throw logic_error("-E- Security version query is not implemented for the current device.");
             break;
     }
 
@@ -2682,7 +2682,7 @@ u_int32_t CRSpaceRegisters::getRegister(u_int32_t address)
     u_int32_t crSpaceReg;
     int rc = mread4(_mf, address, &crSpaceReg);
     if (rc != 4){
-        throw logic_error("-E- Failed to read from CRSpace.");
+        throw runtime_error("-E- Failed to read from CRSpace.");
     }
 
     return crSpaceReg;

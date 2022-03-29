@@ -3708,9 +3708,9 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                     else {
                         printf("Life cycle:            %s\n", life_cycle_strings[index]);
                     }
-                    if (fwInfo.fs3_info.life_cycle == GA_SECURED) {
+                    if (fwInfo.fs3_info.life_cycle == GA_SECURED && fwInfo.fs3_info.device_security_version_access_method == DIRECT_ACCESS) {
                         printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
-                    }   
+                    }
                 }
             }
         }
