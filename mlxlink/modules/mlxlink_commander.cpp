@@ -3973,7 +3973,7 @@ void MlxlinkCommander::checkPplmCap()
         string supportedFec = fecMaskToUserInputStr(fecCap);
         string validFecs = fecMaskToUserInputStr(BIT_MASK_ALL_DWORD);
         string errorMsg = _userInput._pplmFec + " FEC is not supported in " + uiSpeed + " speed, ";
-        if (validFecs.find(_userInput._pplmFec) == string::npos) {
+        if (validFecs.find(_userInput._pplmFec) == string::npos || _userInput._pplmFec.size() <= 1) {
             errorMsg = _userInput._pplmFec + " FEC configuration is not valid, ";
         }
         if (supportedFec.empty()) {
