@@ -251,12 +251,12 @@ void MlxlinkAmBerCollector::init()
         }
 
         _sheetsList[AMBER_SHEET_GENERAL] = FIELDS_COUNT{4, 4, 4};
-        _sheetsList[AMBER_SHEET_INDEXES] = FIELDS_COUNT{2, 2, 3};
+        _sheetsList[AMBER_SHEET_INDEXES] = FIELDS_COUNT{2, 2, 4};
         _sheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{48, 72, 6};
         _sheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{111, 111, 0};
         _sheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{16, 19, 11};
         _sheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{736, 736, 0};
-        _sheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{283, 283, 57};
+        _sheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{323, 323, 65};
         _sheetsList[AMBER_SHEET_PORT_COUNTERS] = FIELDS_COUNT{35, 0, 35};
         _sheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT{2, 2, 0};
         _sheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{18, 18, 15};
@@ -264,6 +264,7 @@ void MlxlinkAmBerCollector::init()
         _sheetsList[AMBER_SHEET_LINK_DOWN_INFO] = FIELDS_COUNT{5, 5, 0};
         _sheetsList[AMBER_SHEET_TEST_MODE_INFO] = FIELDS_COUNT{144, 144, 0};
         _sheetsList[AMBER_SHEET_TEST_MODE_MODULE_INFO] = FIELDS_COUNT{110, 110, 0};
+        _sheetsList[AMBER_SHEET_PHY_DEBUG_INFO] = FIELDS_COUNT{4, 4, 0};
     } catch (...) {
     }
 }
@@ -347,7 +348,7 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
 {
     vector<AmberField> fields;
 
-    if (_isPortIB) {
+    if (_isPortIB || _isPortPCIE) {
         fields.push_back(AmberField("Node_GUID", getNodeGUID()));
     }
 
@@ -545,7 +546,6 @@ vector<AmberField> MlxlinkAmBerCollector::getPhyOperationInfo()
             fields.push_back(AmberField("pci_power",getFieldStr("pci_power") + 'W'));
             fields.push_back(AmberField("device_status",pcieDeviceStatusStr(getFieldValue("device_status"))));
         }
-
     } catch (const std::exception &exc) {
         throw MlxRegException(
                 "Failed to get Phy Operation status: %s", exc.what());
@@ -1746,6 +1746,19 @@ vector<AmberField> MlxlinkAmBerCollector::getTestModeModuleInfo()
     return fields;
 }
 
+vector<AmberField> MlxlinkAmBerCollector::getPhyDebugInfo()
+{
+    vector<AmberField> fields;
+
+    try {
+    } catch (const std::exception &exc) {
+        throw MlxRegException(
+                "Failed to get Phy Debug information: %s", exc.what());
+    }
+
+    return fields;
+}
+
 void MlxlinkAmBerCollector::groupValidIf(bool condition)
 {
     if (condition) {
@@ -1819,6 +1832,11 @@ vector<AmberField> MlxlinkAmBerCollector::collectSheet(AMBER_SHEET sheet)
     case AMBER_SHEET_TEST_MODE_MODULE_INFO:
         if (_inPRBSMode) {
             fields = getTestModeModuleInfo();
+        }
+        break;
+    case AMBER_SHEET_PHY_DEBUG_INFO:
+        if (!_inPRBSMode) {
+            fields = getPhyDebugInfo();
         }
         break;
     }

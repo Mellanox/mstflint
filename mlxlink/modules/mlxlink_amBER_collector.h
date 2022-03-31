@@ -68,6 +68,7 @@ public:
     virtual vector<AmberField> getLinkDownInfo();
     virtual vector<AmberField> getTestModeInfo();
     virtual vector<AmberField> getTestModeModuleInfo();
+    virtual vector<AmberField> getPhyDebugInfo();
 
     void getPpcntBer(u_int32_t portType, vector<AmberField> &fields);
     bool isGBValid();
