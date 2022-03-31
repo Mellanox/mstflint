@@ -127,4 +127,6 @@ UserInput::UserInput()
     isPrbsShowDiagProvided = false;
     isPrbsClearDiagProvided = false;
     prbsModuleAccess = MODULE_PRBS_ACCESS_BOTH;
+
+    isModuleConfigParamsProvided = false;
 }

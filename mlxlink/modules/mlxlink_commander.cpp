@@ -4439,13 +4439,10 @@ void MlxlinkCommander::showCableDump()
 {
     try {
         initCablesCommander();
-        if (_plugged && !_mngCableUnplugged) {
-            vector<MlxlinkCmdPrint> dumpOutput = _cablesCommander->getPagesToDump();
-            printOuptputVector(dumpOutput);
-        }
+        vector<MlxlinkCmdPrint> dumpOutput = _cablesCommander->getPagesToDump();
+        printOuptputVector(dumpOutput);
     } catch(MlxRegException &exc) {
-        _allUnhandledErrors += string("Dumping EEPROM pages raised the "\
-              "following exception: ") + string(exc.what()) + string("\n");
+        _allUnhandledErrors += "Dumping EEPROM pages raised the following exception: " + exc.what_s() + "\n";
     }
 }
 
@@ -4453,13 +4450,11 @@ void MlxlinkCommander::showCableDDM()
 {
     try {
         initCablesCommander();
-        if (_plugged && !_mngCableUnplugged) {
-            if (_ddmSupported) {
-                vector<MlxlinkCmdPrint> ddmOutput = _cablesCommander->getCableDDM();
-                printOuptputVector(ddmOutput);
-            } else {
-                throw MlxRegException(string("Cable does not support DDM"));
-            }
+        if (_ddmSupported) {
+            vector<MlxlinkCmdPrint> ddmOutput = _cablesCommander->getCableDDM();
+            printOuptputVector(ddmOutput);
+        } else {
+            throw MlxRegException("Cable does not support DDM");
         }
     } catch(MlxRegException &exc) {
         _allUnhandledErrors += "Showing DDM info raised the following exception: ";
@@ -4502,10 +4497,31 @@ void MlxlinkCommander::readCableEEPROM()
 {
     try {
         initCablesCommander();
-        if (_plugged && !_mngCableUnplugged) {
-            MlxlinkCmdPrint bytesOutput =
-                    _cablesCommander->readFromEEPRM(_userInput._page , _userInput._offset, _userInput._len);
-            cout << bytesOutput;
+        MlxlinkCmdPrint bytesOutput = _cablesCommander->readFromEEPRM(_userInput._page , _userInput._offset,
+                                                                      _userInput._len);
+        cout << bytesOutput;
+    } catch(MlxRegException &exc) {
+        _allUnhandledErrors += "Reading cable EEPROM raised the following exception: " + exc.what_s() + "\n";
+    }
+}
+
+void MlxlinkCommander::performControlParams()
+{
+    try {
+        initCablesCommander();
+        if (_cableMediaType == ACTIVE || _cableMediaType == OPTICAL_MODULE) {
+
+            if (_userInput.configParamsToSet.empty()) {
+                _cablesCommander->showControlParams();
+            } else {
+                if (_linkUP) {
+                    throw MlxRegException("Control parameters can be configured when the port is Disabled only\n");
+                } else {
+                    _cablesCommander->setControlParams(_userInput.configParamsToSet);
+                }
+            }
+        } else {
+            throw MlxRegException("Control parameters are valid over Active/Optical modules only");
         }
     } catch(MlxRegException &exc) {
         _allUnhandledErrors += "Reading cable EEPROM raised the following exception: ";
@@ -4562,7 +4578,6 @@ void MlxlinkCommander::performModulePrbsCommands()
     } catch(MlxRegException &exc) {
         _allUnhandledErrors += "Module PRBS test mode raised the following exception: ";
         _allUnhandledErrors += exc.what_s();
-        _allUnhandledErrors += "\n";
     }
 }
 

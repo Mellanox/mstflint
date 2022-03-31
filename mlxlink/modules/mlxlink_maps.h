@@ -176,6 +176,8 @@ public:
     std::map<u_int32_t, std::string> _modulePMPDStatus;
     std::map<u_int32_t, std::string> _modulePrbsModeCapToStr;
     std::map<std::string, u_int32_t> _modulePrbsModeStrToCap;
+    std::map<u_int32_t, std::string> _moduleRxAmp;
+    std::map<u_int32_t, std::string> _moduleRxAmpCap;
     std::map<u_int32_t, std::string> _pepcStatus;
     std::map<u_int32_t, string>      _IBSpeed2Str;
     std::map<u_int32_t, string>      _EthExtSpeed2Str;

@@ -199,6 +199,65 @@ void MlxlinkUi::printSynopsisCommands()
         MlxlinkRecord::printFlagLine(WRITE_OFFSET_FLAG_SHORT, WRITE_OFFSET_FLAG, "offset",
             "Specific page offset to read/write");
 
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_SELECT_SHORT, CABLE_PRBS_SELECT, "side",
+                                 "Module PRBS test mode side selector [MEDIA, HOST]");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_MODE_SHORT, CABLE_PRBS_MODE, "cmd",
+                                 "Perform PRBS test mode on the Module [EN(Enable),DS(Disable)]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_RATE_SHORT, CABLE_PRBS_GEN_RATE, "rate",
+                                 "Set PRBS generator lane rate [HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_PAT_SHORT, CABLE_PRBS_GEN_PAT, "pattern",
+                                 "Set PRBS generator pattern [PRBS31(default),PRBS23,PRBS7,PRBS11,PRBS9,PRBS13,SSPR,SSPRQ]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_SWAP_SHORT, CABLE_PRBS_GEN_SWAP, "",
+                                 "Enable PAM4 MSB <-> LSB generator swapping (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_INV_SHORT, CABLE_PRBS_GEN_INV, "rate",
+                                 "Enable PRBS generator inversion (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_LANES_SHORT, CABLE_PRBS_GEN_LANES, "lanes",
+                                 "PRBS generator lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
+
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_RATE_SHORT, CABLE_PRBS_CH_RATE, "rate",
+                                 "Set PRBS checker lane rate [HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_PAT_SHORT, CABLE_PRBS_CH_PAT, "pattern",
+                                 "Set PRBS checker pattern [PRBS31(default),PRBS23,PRBS7,PRBS11,PRBS9,PRBS13,SSPR,SSPRQ]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_SWAP_SHORT, CABLE_PRBS_CH_SWAP, "",
+                                 "Enable PAM4 MSB <-> LSB checker swapping (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_INV_SHORT, CABLE_PRBS_CH_INV, "",
+                                 "Enable PRBS checker inversion (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_LANES_SHORT, CABLE_PRBS_CH_LANES, "lanes",
+                                 "PRBS checker lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_SHOW_DIAG_SHORT, CABLE_PRBS_SHOW_DIAG, "",
+                                 "Show PRBS diagnostic counters information");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CLEAR_DIAG_SHORT, CABLE_PRBS_CLEAR_DIAG, "",
+                                 "Clear PRBS diagnostic counters");
+
+    MlxlinkRecord::printFlagLine(CABLE_DDM_FLAG_SHORT, CTRL_PARAM_FLAG, "", "Show Module Control Parameters");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CTRL_PARAM_TX_EQ_FLAG_SHORT, CTRL_PARAM_TX_EQ_FLAG, "value",
+                                 "Set Module Tx Input Equalization in dB [NE(No Equalization),1,2,3,4,5,6,7,9,10,11,12]");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CTRL_PARAM_RX_EMPH_FLAG_SHORT, CTRL_PARAM_RX_EMPH_FLAG, "value",
+                                 "Set Module RX Output Emphasis in dB. for CMIS, pre-emphasis value will be set "\
+                                 "[NE(No Equalization),0.5,1,1.5,2,2.5,3,3.5,4,5,6,7]");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CTRL_PARAM_RX_POST_EMPH_FLAG_SHORT, CTRL_PARAM_RX_POST_EMPH_FLAG, "value",
+                                 "Set Module Rx Post Emphasis in dB [NE(No Equalization),1,2,3,4,5,6,7]");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CTRL_PARAM_RX_AMP_FLAG_SHORT, CTRL_PARAM_RX_AMP_FLAG, "value",
+                                 "Set Module Rx Output Amplitude [0(100-400mV),1(300-600mV),2(400-800mV),3(600-1200mV)]");
+
     MlxlinkRecord::printFlagLine(MARGIN_SCAN_FLAG_SHORT, MARGIN_SCAN_FLAG, "",
             "Read the SerDes eye margins per lane");
     printf(IDENT);
@@ -471,11 +530,13 @@ void MlxlinkUi::validateCableParams()
                       _mlxlinkCommander->_userInput._len >= 0 ;
     bool prbsParamProvided = _mlxlinkCommander->_userInput.modulePrbsParams.size();
     bool cablePrbsParamProvided = _mlxlinkCommander->_userInput.isPrbsSelProvided || prbsParamProvided;
+    bool cableConfigParamProvided =  _mlxlinkCommander->_userInput.isModuleConfigParamsProvided;
+    bool paramSetProvided = _mlxlinkCommander->_userInput.configParamsToSet.size();
     bool cableCommandProvided = _mlxlinkCommander->_userInput._dump ||
                                 _mlxlinkCommander->_userInput._write ||
                                 _mlxlinkCommander->_userInput._read ||
                                 _mlxlinkCommander->_userInput._ddm ||
-                                cablePrbsParamProvided;
+                                cablePrbsParamProvided || cableConfigParamProvided;
 
     if(!_mlxlinkCommander->_userInput._cable && (cableCommandProvided || readWriteFlags)){
         throw MlxRegException("\"--" CABLE_FLAG "\" flag should be specified!");
@@ -489,6 +550,10 @@ void MlxlinkUi::validateCableParams()
                         _mlxlinkCommander->_userInput._offset == -1)) {
             throw MlxRegException("\"--" WRITE_PAGE_FLAG "\" and \"--" WRITE_OFFSET_FLAG "\" flags should be specified!");
         }
+        if (!cableConfigParamProvided && paramSetProvided) {
+            throw MlxRegException("--" CTRL_PARAM_FLAG " should be specified!");
+        }
+
         if (readWriteFlags) {
             if (!_mlxlinkCommander->_userInput._write && !_mlxlinkCommander->_userInput._read) {
                 throw MlxRegException("Read or Write flag should be specified!");
@@ -683,6 +748,12 @@ void MlxlinkUi::initCmdParser()
     AddOptions(CABLE_PRBS_SHOW_DIAG, CABLE_PRBS_SHOW_DIAG_SHORT, "", "");
     AddOptions(CABLE_PRBS_CLEAR_DIAG, CABLE_PRBS_CLEAR_DIAG_SHORT, "", "");
 
+    AddOptions(CTRL_PARAM_FLAG, CTRL_PARAM_FLAG_SHORT, "", "Cable Control Params");
+    AddOptions(CTRL_PARAM_TX_EQ_FLAG, CTRL_PARAM_TX_EQ_FLAG_SHORT, "value", "TX Eq override");
+    AddOptions(CTRL_PARAM_RX_EMPH_FLAG, CTRL_PARAM_RX_EMPH_FLAG_SHORT, "value", "RX Emp override");
+    AddOptions(CTRL_PARAM_RX_POST_EMPH_FLAG, CTRL_PARAM_RX_POST_EMPH_FLAG_SHORT, "value", "RX post emp");
+    AddOptions(CTRL_PARAM_RX_AMP_FLAG, CTRL_PARAM_RX_AMP_FLAG_SHORT, "value", "RX Amp");
+
     AddOptions(SHOW_TX_GROUP_MAP_FLAG, SHOW_TX_GROUP_MAP_FLAG_SHORT, "group_num", "Display all label ports mapped to group <group_num>");
     AddOptions(SET_TX_GROUP_MAP_FLAG, SET_TX_GROUP_MAP_FLAG_SHORT, "group_num", "Map ports to group <group_num>");
     AddOptions(TX_GROUP_PORTS_FLAG, TX_GROUP_PORTS_FLAG_SHORT, "ports", "Ports to be mapped [1,2,3,4,..,128]");
@@ -843,6 +914,10 @@ void MlxlinkUi::commandsCaller()
         case CABLE_PRBS_CMDS:
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> Cable PRBS Commands");
             _mlxlinkCommander->performModulePrbsCommands();
+            break;
+        case CABLE_CTRL_PARM:
+            PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> Cable Control Parameter");
+            _mlxlinkCommander-> performControlParams();
             break;
         default:
             break;
@@ -1166,7 +1241,6 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
         return PARSE_OK;
     } else if (name == CABLE_PRBS_GEN_LANES) {
-        _mlxlinkCommander->checkStrLength(value);
         _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES] = value;
         _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
         return PARSE_OK;
@@ -1189,7 +1263,6 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput.isPrbsChProvided = true;
         return PARSE_OK;
     } else if (name == CABLE_PRBS_CH_LANES) {
-        _mlxlinkCommander->checkStrLength(value);
         _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_LANES] = value;
         _mlxlinkCommander->_userInput.isPrbsChProvided = true;
         return PARSE_OK;
@@ -1202,6 +1275,25 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->checkStrLength(value);
         _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CLEAR_DIAG] = value;
         _mlxlinkCommander->_userInput.isPrbsClearDiagProvided = true;
+    } else if (name == CTRL_PARAM_FLAG) {
+        addCmd(CABLE_CTRL_PARM);
+        _mlxlinkCommander->_userInput.isModuleConfigParamsProvided = true;
+        return PARSE_OK;
+    } else if (name == CTRL_PARAM_TX_EQ_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_TX_EQ, value));
+        return PARSE_OK;
+    } else if (name == CTRL_PARAM_RX_EMPH_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_EMPH, value));
+        return PARSE_OK;
+    } else if (name == CTRL_PARAM_RX_POST_EMPH_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH, value));
+        return PARSE_OK;
+    } else if (name == CTRL_PARAM_RX_AMP_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_AMP, value));
         return PARSE_OK;
     }
     return PARSE_ERROR;

@@ -691,6 +691,40 @@ void MlxlinkMaps::rxTxCdrCapMapping()
     _rxTxCdrCap[RX_TX_CDR_CAP_NO_CDR]                              = "No CDR";
     _rxTxCdrCap[RX_TX_CDR_CAP_BUILD_IN_CDR_WITH_ON_OFF_CONTROL]    = "Build-in CDR with on/off control";
     _rxTxCdrCap[RX_TX_CDR_CAP_BUILD_IN_CDR_WITHOUT_ON_OFF_CONTROL] = "Build-in CDR without on/off control";
+
+    _moduleRxAmp[0] = "100-400 mV (P-P)";
+    _moduleRxAmp[1] = "300-600 mV (P-P)";
+    _moduleRxAmp[2] = "400-800 mV (P-P)";
+    _moduleRxAmp[3] = "600-1200 mV (P-P)";
+    _moduleRxAmp[4] = "Custom";
+    _moduleRxAmp[5] = "Custom";
+    _moduleRxAmp[6] = "Custom";
+    _moduleRxAmp[7] = "Custom";
+    _moduleRxAmp[8] = "Custom";
+    _moduleRxAmp[9] = "Custom";
+    _moduleRxAmp[10] = "Custom";
+    _moduleRxAmp[11] = "Custom";
+    _moduleRxAmp[12] = "Custom";
+    _moduleRxAmp[13] = "Custom";
+    _moduleRxAmp[14] = "Custom";
+    _moduleRxAmp[15] = "Custom";
+
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT0] = "0 (" + _moduleRxAmp[0] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT1] = "1 (" + _moduleRxAmp[1] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT2] = "2 (" + _moduleRxAmp[2] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT3] = "3 (" + _moduleRxAmp[3] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT4] = "4 (" + _moduleRxAmp[4] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT5] = "5 (" + _moduleRxAmp[5] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT6] = "6 (" + _moduleRxAmp[6] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT7] = "7 (" + _moduleRxAmp[7] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT8] = "8 (" + _moduleRxAmp[8] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT9] = "9 (" + _moduleRxAmp[9] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT10] = "10 (" + _moduleRxAmp[10] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT11] = "11 (" + _moduleRxAmp[11] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT12] = "12 (" + _moduleRxAmp[12] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT13] = "13 (" + _moduleRxAmp[13] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT14] = "14 (" + _moduleRxAmp[14] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT15] = "15 (" + _moduleRxAmp[15] + ")";
 }
 
 void MlxlinkMaps::rxPowerTypeMapping()

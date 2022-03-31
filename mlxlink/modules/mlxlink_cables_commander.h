@@ -71,6 +71,7 @@ typedef struct {
 #define DDM_THRES_B_SZ              2
 #define CMIS_CHANNELS               8
 #define CMIS_MODULE_CHANNEL         1
+#define MAX_SFF_CODE_VALUE          15
 
 #define EXTENDED_PAGES_1_2_10_11_ADDR   2
 #define EXTENDED_PAGES_1_2_10_11_MASK   0x80
@@ -120,6 +121,8 @@ public:
     void showPrbsTestMode();
     void showPrpsDiagInfo();
     void clearPrbsDiagInfo();
+    void showControlParams();
+    void setControlParams(vector<pair<ControlParam, string>> &params);
 
     u_int32_t _moduleNumber;
     u_int32_t _slotIndex;
@@ -169,12 +172,10 @@ private:
     bool getInvAdminFromStr(u_int32_t cap, const string &invStr);
     bool getSwapAdminFromStr(u_int32_t cap, const string &swapStr);
     u_int32_t getLanesFromStr(u_int32_t cap, const string &lanesStr);
-
     void getPMPTConfiguration(ModuleAccess_t moduleAccess, vector<string> &prbsPattern, vector<string> &prbsRate,
                               vector<string> &prbsInv, vector<string> &prbsSwap);
     void getPMPDInfo(vector<string> &traffic, vector<string> &errors, vector<string> &ber, vector<string> &snr);
     string getPMPDLockStatus();
-
     void checkAndParsePMPTCap(ModuleAccess_t moduleAccess);
     void preparePrbsParam(ModuleAccess_t moduleAccess);
     u_int32_t getPMPTStatus(ModuleAccess_t moduleAccess);
@@ -182,17 +183,22 @@ private:
     void enablePMPT(ModuleAccess_t moduleAccess);
     void disablePMPT();
 
+    u_int32_t getPMCRValue(ControlParam paramId, const string &value);
+    string getPMCRCapValueStr(u_int32_t valueCap, ControlParam paramId);
+    void checkPMCRFieldsCap(vector<pair<ControlParam, string>> &params);
+    void buildPMCRRequest(ControlParam paramId, const string &value);
+
     Json::Value &_jsonRoot;
     vector<page_t> _validPages;
     vector<MlxlinkCmdPrint> _pagesToDump;
     vector<MlxlinkCmdPrint> _cableDDMOutput;
     cable_ddm_q_t _cableDdm;
-
     u_int32_t _prbsRate;
     u_int32_t _prbsMode;
     bool _prbsInv;
     bool _prbsSwap;
     u_int32_t _prbsLanes;
+    map<ControlParam, pair<string, string>> _modulePMCRParams;
 };
 
 #endif /* MLXLINK_CABLES_COMMANDER_H */
