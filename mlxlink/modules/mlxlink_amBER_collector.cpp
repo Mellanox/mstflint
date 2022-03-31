@@ -544,7 +544,7 @@ vector<AmberField> MlxlinkAmBerCollector::getPhyOperationInfo()
             fields.push_back(AmberField("port_type",_mlxlinkMaps->_portType[getFieldValue("port_type")]));
             fields.push_back(AmberField("link_peer_max_speed",_mlxlinkMaps->_linkPeerMaxSpeed[getFieldValue("link_peer_max_speed")]));
             fields.push_back(AmberField("pci_power",getFieldStr("pci_power") + 'W'));
-            fields.push_back(AmberField("device_status",pcieDeviceStatusStr(getFieldValue("device_status"))));
+            fields.push_back(AmberField("device_status",getStrByMask(getFieldValue("device_status"), _mlxlinkMaps->_pcieDevStatus)));
         }
     } catch (const std::exception &exc) {
         throw MlxRegException(

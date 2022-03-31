@@ -1142,41 +1142,6 @@ string getRxTxCDRState(u_int32_t state, u_int32_t numOfLanes)
     return deleteLastChar(stateMask);
 }
 
-string pcieDeviceStatusStr(u_int32_t deviceStatus)
-{
-    string deviceStatusStr, comma;
-    if (!deviceStatus) {
-        return "N/A";
-    }
-    if ((deviceStatus >> 0) & 0x1) {
-        deviceStatusStr += "Correctable Error detected";
-        comma=", ";
-    }
-    if ((deviceStatus >> 1) & 0x1) {
-        deviceStatusStr += comma + "Non-Fatal Error detected";
-        comma=", ";
-    }
-    if ((deviceStatus >> 2) & 0x1) {
-        deviceStatusStr  += comma + "Fatal Error detected" + comma;
-        comma=", ";
-    }
-    if ((deviceStatus >> 3) & 0x1) {
-        deviceStatusStr += comma + "Unsupported Request detected";
-        comma=", ";
-    }
-    if ((deviceStatus >> 4) & 0x1) {
-        deviceStatusStr += comma + "AUX power";
-        comma=", ";
-    }
-    if ((deviceStatus >> 5) & 0x1) {
-        deviceStatusStr += comma + "Transaction Pending";
-    }
-    if ("" != deviceStatusStr) {
-        deviceStatusStr += ".";
-    }
-    return deviceStatusStr;
-}
-
 double mw_to_dbm(double x)
 {
     return 10 * log10(x);

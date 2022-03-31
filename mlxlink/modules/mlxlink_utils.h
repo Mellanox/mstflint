@@ -126,7 +126,6 @@ string toUpperCase(string &str);
 string toLowerCase(string &str);
 string getCableMedia(u_int32_t cableType);
 string pcieSpeedStr(u_int32_t linkSpeedActive);
-string pcieDeviceStatusStr(u_int32_t deviceStatus);
 double mw_to_dbm(double x);
 int readSigned(u_int32_t value, u_int32_t fieldSize);
 int readSignedByte(u_int32_t value);
