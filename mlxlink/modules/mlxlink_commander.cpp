@@ -2681,8 +2681,6 @@ void MlxlinkCommander::showPcieState(DPN& dpn)
             pcieSpeedStr(getFieldValue("link_speed_active"))+ linkSpeedEnabled);
     setPrintVal(_pcieInfoCmd, "Link Width Active (Enabled)",
             to_string(_numOfLanesPcie) + "X" + linkWidthEnabled);
-    setPrintVal(_pcieInfoCmd, "Device Status",
-            getFieldValue("device_status") ? pcieDeviceStatusStr(getFieldValue("device_status")):"N/A");
 
     cout << _pcieInfoCmd;
 }

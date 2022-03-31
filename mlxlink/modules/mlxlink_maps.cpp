@@ -108,6 +108,13 @@ void MlxlinkMaps::initPortStateMapping()
     _networkPorts["GEARBOX_HOST"] = NETWORK_PORT_TYPE_NEAR;
     _networkPorts["INTERNAL_IC_LR"] = NETWORK_PORT_TYPE_IC_LR;
     _networkPorts["GEARBOX_LINE"] = NETWORK_PORT_TYPE_FAR;
+
+    _pcieDevStatus[PCIE_DEVICE_STATUS_CORRECTABLE_ERROR] = "Correctable Error detected";
+    _pcieDevStatus[PCIE_DEVICE_STATUS_NON_FATAL_ERROR] = "Non-Fatal Error detected";
+    _pcieDevStatus[PCIE_DEVICE_STATUS_FATAL_ERROR] = "Fatal Error detected";
+    _pcieDevStatus[PCIE_DEVICE_STATUS_UNSUP_REQ] = "Unsupported Request detected";
+    _pcieDevStatus[PCIE_DEVICE_STATUS_AUX] = "AUX power";
+    _pcieDevStatus[PCIE_DEVICE_STATUS_TRANSACTION_PEN] = "Transaction Pending";
 }
 
 void MlxlinkMaps::phyHstFsmHdrStateMapping()
