@@ -40,6 +40,19 @@ MlxlinkCablesCommander::MlxlinkCablesCommander(Json::Value &jsonRoot): _jsonRoot
     _passiveQsfp = false;
     _localPort = 0;
     _numOfLanes = 0;
+
+    _prbsRate = MODULE_PRBS_LANE_RATE_HDR;
+    _prbsMode = PRBS31;
+    _prbsInv = false;
+    _prbsSwap = false;
+    _prbsLanes = 0;
+
+    // PMCR control fields names
+    // pair(UI name, PMCR field name)
+   _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_TX_EQ] = make_pair("TX Equalization", "tx_equ_override");
+   _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_EMPH] = make_pair("RX Emphasis", "rx_emp_override");
+   _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH] = make_pair("RX Post Emphasis", "rx_post_emp_override");
+   _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_AMP] = make_pair("RX Amplitude", "rx_amp_override");
 }
 
 MlxlinkCablesCommander::~MlxlinkCablesCommander()
@@ -1430,4 +1443,183 @@ void MlxlinkCablesCommander::clearPrbsDiagInfo()
     updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
     updateField("cl", 1);
     genBuffSendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);
+}
+
+void MlxlinkCablesCommander::showControlParams()
+{
+    MlxlinkCmdPrint controlParamsOutput = MlxlinkCmdPrint();
+    setPrintTitle(controlParamsOutput, "Module Control Parameters", CABLE_CONTROL_PARAMETERS_SET_RX_AMP);
+
+    resetParser(ACCESS_REG_PDDR);
+    updateField("local_port", _localPort);
+    updateField("page_select", PDDR_MODULE_INFO_PAGE);
+    genBuffSendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
+
+    u_int32_t txEq = getFieldValue("cable_tx_equalization");
+    float rxEmph = (double)getFieldValue("cable_rx_emphasis");
+    u_int32_t rxPostEmph = getFieldValue("cable_rx_post_emphasis");
+    u_int32_t rxAmp = getFieldValue("cable_rx_amp");
+    bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
+
+    if (isCmis) {
+        _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_EMPH].first += " (pre)";
+        rxEmph /= 2;
+    }
+    char rxEmphStr[64];
+    sprintf(rxEmphStr, "%.1f", rxEmph);
+
+    string strFmt = txEq? to_string(txEq) + " dB" : "No Equalization";
+    setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_TX_EQ].first, strFmt);
+
+    strFmt = (isCmis? rxEmphStr : to_string((u_int32_t) rxEmph)) + " dB";
+    strFmt = (rxEmph > 0)? strFmt: "No Equalization";
+    setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_EMPH].first, strFmt);
+
+    strFmt = rxPostEmph? to_string(rxPostEmph) + " dB" : "No Equalization";
+    setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH].first, strFmt);
+
+    strFmt = _mlxlinkMaps->_moduleRxAmp[rxAmp];
+    setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_AMP].first, strFmt);
+
+    controlParamsOutput.toJsonFormat(_jsonRoot);
+    cout << controlParamsOutput;
+}
+
+u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const string &value)
+{
+    double valueToSet = 0;
+    bool invalidConfiguration = false;
+    bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
+    bool isDecemal = false;
+
+    try {
+        valueToSet = value == "NE"? 0 : stod(value);
+        isDecemal = (valueToSet - (int) valueToSet) > 0;
+    } catch (exception &exc) {
+        invalidConfiguration = true;
+    }
+
+    if (isDecemal && !isCmis && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH) {
+        throw MlxRegException("The requested RX Emphasis configuration value is valid for "\
+                              "CMIS modules only (pre-emphasis): %s", value.c_str());
+    }
+
+    if (isCmis && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH) {
+        _modulePMCRParams[paramId].first += " (Pre)";
+        valueToSet *= 2;
+        if ((valueToSet - (int) valueToSet) > 0) {
+            invalidConfiguration = true;
+        }
+    }
+
+    if (valueToSet > MAX_SFF_CODE_VALUE || (isDecemal && paramId != CABLE_CONTROL_PARAMETERS_SET_RX_EMPH)) {
+        invalidConfiguration = true;
+    }
+
+    if (invalidConfiguration) {
+        throw MlxRegException("Invalid %s configuration: %s", _modulePMCRParams[paramId].first.c_str(), value.c_str());
+    }
+
+    return (u_int32_t) valueToSet;
+}
+
+string MlxlinkCablesCommander::getPMCRCapValueStr(u_int32_t valueCap, ControlParam paramId)
+{
+    string capStr = "";
+
+    if (paramId == CABLE_CONTROL_PARAMETERS_SET_RX_AMP) {
+        capStr = getStrByMask(valueCap, _mlxlinkMaps->_moduleRxAmpCap);
+    } else {
+        char tmpFmt[64];
+        for (u_int32_t val = 0 ; val <= valueCap; val++) {
+            if (_cableIdentifier >= IDENTIFIER_SFP_DD && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH) {
+                sprintf(tmpFmt, "%.1f,", ((float)val/2.0));
+                capStr += string(tmpFmt);
+            } else {
+                sprintf(tmpFmt, "%d,", val);
+                capStr += string(tmpFmt);
+            }
+        }
+        capStr = deleteLastChar(capStr);
+    }
+
+    return capStr;
+}
+
+void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string>> &params)
+{
+    resetParser(ACCESS_REG_PMCR);
+    updateField("local_port", _localPort);
+    genBuffSendRegister(ACCESS_REG_PMCR, MACCESS_REG_METHOD_GET);
+
+    // Check provided params exestance capability
+    string fieldName = "";
+    for (auto it = params.begin(); it != params.end(); it++) {
+        fieldName =  _modulePMCRParams[it->first].first;
+        if (it->first == CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH && _cableIdentifier < IDENTIFIER_SFP_DD) {
+            throw MlxRegException("%s configuration is valid for CMIS only", fieldName.c_str());
+        }
+        if (!getFieldValue( _modulePMCRParams[it->first].second + "_cap")) {
+            throw MlxRegException("%s configuration is not supported for the current module", fieldName.c_str());
+        }
+    }
+
+    // Check provided params value capability
+    bool invalidVal = false;
+    u_int32_t valueToSet = 0;
+    u_int32_t valueCap = 0;
+    string validCapStr = "";
+    for (auto it = params.begin(); it != params.end(); it++) {
+        fieldName = _modulePMCRParams[it->first].second;
+        valueToSet = getPMCRValue(it->first, it->second);
+        valueCap = getFieldValue(fieldName + "_value_cap");;//
+        if (it->first == CABLE_CONTROL_PARAMETERS_SET_RX_AMP) {
+            valueToSet = (u_int32_t)pow(2.0, (double)valueToSet);
+            if (!(valueCap & valueToSet)) {
+                invalidVal = true;
+            }
+        } else if (valueToSet > valueCap) {
+            invalidVal = true;
+        }
+        if (invalidVal) {
+            if (valueCap ) {
+                validCapStr = "\nValid configuration values are [";
+                validCapStr += getPMCRCapValueStr(valueCap, it->first);
+                validCapStr += "]";
+            }
+            throw MlxRegException("Invalid %s configuration value: %s %s",
+                                  _modulePMCRParams[it->first].first.c_str(), it->second.c_str(), validCapStr.c_str());
+        }
+    }
+}
+
+void MlxlinkCablesCommander::buildPMCRRequest(ControlParam paramId, const string &value)
+{
+    u_int32_t valueToSet = getPMCRValue(paramId, value);
+
+    updateField(_modulePMCRParams[paramId].second + "_cntl", 2);
+    updateField(_modulePMCRParams[paramId].second + "_value", (u_int32_t)valueToSet);
+}
+
+void MlxlinkCablesCommander::setControlParams(vector<pair<ControlParam, string>> &params)
+{
+    MlxlinkRecord::printCmdLine("Overriding Cable Control Parameters", _jsonRoot);
+
+    checkPMCRFieldsCap(params);
+
+    string fieldsStr = "";
+    try {
+        resetParser(ACCESS_REG_PMCR);
+        updateField("local_port", _localPort);
+
+        for (auto it = params.begin(); it != params.end(); it++) {
+            fieldsStr += _modulePMCRParams[it->first].first + ", ";
+            buildPMCRRequest(it->first, it->second);
+        }
+
+        genBuffSendRegister(ACCESS_REG_PMCR, MACCESS_REG_METHOD_SET);
+    } catch (MlxRegException &exc) {
+        fieldsStr = deleteLastChar(fieldsStr, 2);
+        throw MlxRegException("Failed to set Control Parameters [%s]:\n%s", fieldsStr.c_str(), exc.what());
+    }
 }

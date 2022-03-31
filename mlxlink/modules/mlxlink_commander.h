@@ -207,6 +207,17 @@
 #define CABLE_PRBS_SHOW_DIAG_SHORT          ' '
 #define CABLE_PRBS_CLEAR_DIAG               "clear_diagnostic_info"
 #define CABLE_PRBS_CLEAR_DIAG_SHORT         ' '
+#define CTRL_PARAM_FLAG                     "control_parameters"
+#define CTRL_PARAM_FLAG_SHORT               ' '
+#define CTRL_PARAM_TX_EQ_FLAG               "tx_equalization"
+#define CTRL_PARAM_TX_EQ_FLAG_SHORT         ' '
+#define CTRL_PARAM_RX_EMPH_FLAG             "rx_emphasis"
+#define CTRL_PARAM_RX_EMPH_FLAG_SHORT       ' '
+#define CTRL_PARAM_RX_POST_EMPH_FLAG        "rx_post_emphasis"
+#define CTRL_PARAM_RX_POST_EMPH_FLAG_SHORT  ' '
+#define CTRL_PARAM_RX_AMP_FLAG              "rx_amplitude"
+#define CTRL_PARAM_RX_AMP_FLAG_SHORT        ' '
+
 #define SHOW_TX_GROUP_MAP_FLAG              "show_tx_group_map"
 #define SHOW_TX_GROUP_MAP_FLAG_SHORT        ' '
 #define SET_TX_GROUP_MAP_FLAG               "tx_group_map"
@@ -281,6 +292,7 @@ enum OPTION_TYPE {
     CABLE_EEPROM_WRITE,
     CABLE_EEPROM_READ,
     CABLE_PRBS_CMDS,
+    CABLE_CTRL_PARM,
     SEND_BER_COLLECT,
     SEND_AMBER_COLLECT,
     SEND_PAOS,
@@ -490,6 +502,7 @@ public:
     void writeCableEEPROM();
     void readCableEEPROM();
     void performModulePrbsCommands();;
+    void performControlParams();
 
     MlxlinkCmdPrint _toolInfoCmd;
     MlxlinkCmdPrint _operatingInfoCmd;

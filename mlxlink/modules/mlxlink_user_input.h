@@ -145,6 +145,9 @@ public:
     bool isPrbsShowDiagProvided;
     bool isPrbsClearDiagProvided;
     ModuleAccess_t prbsModuleAccess;
+
+    bool isModuleConfigParamsProvided;
+    vector<pair<ControlParam, string>> configParamsToSet;
 };
 
 #endif /* MLXLINK_USER_INPUT_H */
