@@ -250,27 +250,35 @@ void MlxlinkCommander::checkValidFW()
     }
 }
 
+u_int32_t MlxlinkCommander::getTechnologyFromMGIR()
+{
+    u_int32_t technology = 0;
+
+    try {
+        resetParser(ACCESS_REG_MGIR);
+        genBuffSendRegister(ACCESS_REG_MGIR, MACCESS_REG_METHOD_GET);
+
+        technology = getFieldValue("technology");
+    } catch (MlxRegException &exc) {}
+
+    return technology;
+}
+
 void MlxlinkCommander::getProductTechnology()
 {
     try {
-        if (_devID == DeviceConnectX7 || _devID == DeviceQuantum2) {
-            resetParser(ACCESS_REG_MGIR);
+        resetParser(ACCESS_REG_SLRG);
+        updateField("local_port", _localPort);
+        updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
 
-            genBuffSendRegister(ACCESS_REG_MGIR, MACCESS_REG_METHOD_GET);
+        genBuffSendRegister(ACCESS_REG_SLRG, MACCESS_REG_METHOD_GET);
 
-            _productTechnology = getFieldValue("technology");
-        } else {
-            resetParser(ACCESS_REG_SLRG);
-            updateField("local_port", _localPort);
-            updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
-
-            genBuffSendRegister(ACCESS_REG_SLRG, MACCESS_REG_METHOD_GET);
-
-            _productTechnology = getVersion(getFieldValue("version"));
-        }
+        _productTechnology = getVersion(getFieldValue("version"));
     } catch (MlxRegException &exc) {
-        throw MlxRegException(
-                "Unable to get product technology: %s", exc.what_s().c_str());
+        _productTechnology = getTechnologyFromMGIR();
+        if (!_productTechnology) {
+            throw MlxRegException("Unable to get product technology: %s", exc.what_s().c_str());
+        }
     }
 }
 
@@ -342,8 +350,7 @@ void MlxlinkCommander::checkAllPortsStatus()
     }
     if (_devID == DeviceSpectrum) {
         string regName = "PMLP";
-        for (u_int32_t localPort = 1; localPort <= maxLocalPort();
-             localPort++) {
+        for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++) {
             resetParser(regName);
             updateField("local_port", localPort);
 
@@ -358,8 +365,7 @@ void MlxlinkCommander::checkAllPortsStatus()
         throw MlxRegException("FW Version " + _fwVersion + " is not supported. Please update FW.");
     } else if (dm_dev_is_ib_switch(_devID)) {
         string regName = "PLIB";
-        for (u_int32_t localPort = 1; localPort <= maxLocalPort();
-             localPort++) {
+        for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++) {
             resetParser(regName);
             updateField("local_port", localPort);
 
@@ -619,98 +625,33 @@ void MlxlinkCommander::labelToHCALocalPort()
 
 void MlxlinkCommander::labelToSpectLocalPort()
 {
-    string regName;
-    u_int32_t spectWithGearBox = 0;
-    if (_devID >= DeviceSpectrum2) {
-        regName = "MGPIR";
-        resetParser(regName);
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-        spectWithGearBox = getFieldValue("num_of_devices");
+    if (_userInput._secondSplitProvided) {
+        throw MlxRegException("Invalid port number!");
     }
-    regName = "PMLP";
-    string splitStr = to_string(
-            (_userInput._splitPort > 0) ?
-                    _userInput._splitPort - 1 : _userInput._splitPort);
-    int splitAdjustment = 0;
-    for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++) {
-        resetParser(regName);
-        updateField("local_port", localPort);
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-        _numOfLanes = getFieldValue("width");
-        if (_numOfLanes == 0) {
-            continue;
-        }
-        splitAdjustment = 0;
-        if ((getFieldValue("module_0") + 1)  == _userInput._labelPort) {
-            checkWidthSplit();
-            if (_userInput._splitProvided) {
-                if (_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4 ||
-                    (_devID != DeviceSpectrum && !spectWithGearBox)) {
-                    if (_devID == DeviceSpectrum2 && _numOfLanes == 4) {
-                        splitAdjustment = 2;
-                    } else if (!((_devID == DeviceSpectrum2 && _numOfLanes == 2) ||
-                            ((_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) && _numOfLanes == 4))) {
-                        splitAdjustment = -1;
-                    }
-                } else if (_devID == DeviceSpectrum2 && spectWithGearBox){
-                    if (_numOfLanes != 4) {
-                        splitAdjustment = -1;
-                    }
-                } else {
-                    splitAdjustment = -1;
-                }
-                _localPort = localPort + _userInput._splitPort + splitAdjustment;
-            } else {
-                _localPort = localPort;
-            }
-            updateField("local_port", _localPort);
-            genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-            if ((getFieldValue("module_0") + 1) == _userInput._labelPort) {
-                return;
-            }
-        }
-    }
-    throw MlxRegException(
-                "Failed to find Local Port, please provide valid Port Number");
-}
-
-void MlxlinkCommander::checkWidthSplit()
-{
     if (_userInput._splitProvided) {
-        if (_userInput._secondSplitProvided) {
-            throw MlxRegException("Invalid port number!");
-        }
-        switch (_userInput._splitPort) {
-        case 1:
+        if (_userInput._splitPort == 1) {
             throw MlxRegException("Invalid split number!");
-        case 2:
-            if (_numOfLanes < 4 ||
-                ((_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) && _numOfLanes == 4)) {
-                return;
-            }
-            break;
-        case 3:
-        case 4:
-            if (_numOfLanes == 1 ||
-                ((_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) && _numOfLanes == 2)) {
-                return;
-            }
-            break;
-        case 5:
-        case 6:
-        case 7:
-        case 8:
-            if ((_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) && _numOfLanes == 1) {
-                return;
-            }
-            break;
-        default:
-            break;
         }
-        throw MlxRegException(
-                  "Port " + to_string(_userInput._labelPort) + "/"
-                  + to_string(_userInput._splitPort)
-                  + " does not exist!");
+        if (_userInput._splitPort > MAX_ETH_SW_SPLIT) {
+            throw MlxRegException("Port %d/%d does not exist!", _userInput._labelPort, _userInput._splitPort);
+        }
+    }
+
+    for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++) {
+        try {
+            resetParser(ACCESS_REG_PLLP);
+            updateField("local_port", localPort);
+            genBuffSendRegister(ACCESS_REG_PLLP, MACCESS_REG_METHOD_GET);
+        } catch(...) {} // access register will fail if local port does not exist
+        if ((getFieldValue("label_port") == _userInput._labelPort) &&
+            (getFieldValue("split_num") == (_userInput._splitPort - 1))) {
+                _localPort = localPort;
+                break;
+        }
+    }
+
+    if (!_localPort) {
+        throw MlxRegException("Failed to find Local Port, please provide valid Port Number");
     }
 }
 
@@ -1182,7 +1123,7 @@ void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr, bool 
     bool spect2WithGb = (_devID == DeviceSpectrum2)? isSpect2WithGb() : false;
     for (vector<string>::iterator it = labelPortsStr.begin(); it != labelPortsStr.end(); ++it) {
         strToUint32((char *)(*it).c_str(), labelPort);
-        if (_devID == DeviceSpectrum2 || _devID == DeviceSpectrum3) {
+        if (_devID == DeviceSpectrum2 || _devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) {
             localPort = handleEthLocalPort(labelPort, spect2WithGb);
         } else if (_devID == DeviceQuantum || _devID == DeviceQuantum2) {
             localPort = handleIBLocalPort(labelPort, ibSplitReady);
@@ -2598,8 +2539,6 @@ void MlxlinkCommander::initValidDPNList()
                 }
             }
         }
-        //break should be removed after fixing pcie index validity from the fw (for switches only)
-        //bug 1775657
         if (!_isHCA) {
             break;
         }
