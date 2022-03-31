@@ -530,16 +530,16 @@ void MlxlinkCommander::labeltoDSlocalPort()
     }
 
     if (!isLocalPortValid) {
-        throw MlxRegException("Invalid port number");
-    }
+        resetParser(ACCESS_REG_MDDQ);
+        updateField("query_type", 1);
+        updateField("slot_index", lineCard);
+        genBuffSendRegister(ACCESS_REG_MDDQ, MACCESS_REG_METHOD_GET);
 
-    resetParser(ACCESS_REG_MDDQ);
-    updateField("query_type", 1);
-    updateField("slot_index", lineCard);
-    genBuffSendRegister(ACCESS_REG_MDDQ, MACCESS_REG_METHOD_GET);
-
-    if (getFieldValue("lc_ready") != 1) {
-        throw MlxRegException("Invalid port number, Line card %d is not ready", lineCard);
+        if (getFieldValue("lc_ready") != 1) {
+            throw MlxRegException("Invalid port number, Line card %d is not ready", lineCard);
+        } else {
+            throw MlxRegException("Invalid port number");
+        }
     }
 }
 
