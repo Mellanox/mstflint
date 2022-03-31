@@ -353,6 +353,7 @@ public:
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
+    u_int32_t getTechnologyFromMGIR();
     void getProductTechnology();
     bool checkPortStatus(u_int32_t localPort);
     void checkAllPortsStatus();
@@ -365,7 +366,6 @@ public:
     void labelToIBLocalPort();
     bool isIBSplitReady();
     u_int32_t calculatePanelPort(bool ibSplitReady);
-    void checkWidthSplit();
     u_int32_t maxLocalPort();
     void checkStrLength(const string &str);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
