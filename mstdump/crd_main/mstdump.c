@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     int i;
     mfile *mf;
     int rc;
-    int full = 0;
+    int full = 1;
     int cause_addr = -1, cause_off = -1;
     crd_ctxt_t *context;
     u_int32_t arr_size = 0;
