@@ -183,8 +183,6 @@
 #define CABLE_PRBS_SELECT_SHORT             ' '
 #define CABLE_PRBS_MODE                     "prbs_mode"
 #define CABLE_PRBS_MODE_SHORT               ' '
-#define CABLE_PRBS_GEN_RATE                 "generator_rate"
-#define CABLE_PRBS_GEN_RATE_SHORT           ' '
 #define CABLE_PRBS_GEN_PAT                  "generator_pattern"
 #define CABLE_PRBS_GEN_PAT_SHORT            ' '
 #define CABLE_PRBS_GEN_SWAP                 "swap_generator"
@@ -193,8 +191,6 @@
 #define CABLE_PRBS_GEN_INV_SHORT            ' '
 #define CABLE_PRBS_GEN_LANES                "generator_lanes"
 #define CABLE_PRBS_GEN_LANES_SHORT          ' '
-#define CABLE_PRBS_CH_RATE                  "checker_rate"
-#define CABLE_PRBS_CH_RATE_SHORT            ' '
 #define CABLE_PRBS_CH_PAT                   "checker_pattern"
 #define CABLE_PRBS_CH_PAT_SHORT             ' '
 #define CABLE_PRBS_CH_SWAP                  "swap_checker"
@@ -203,6 +199,8 @@
 #define CABLE_PRBS_CH_INV_SHORT             ' '
 #define CABLE_PRBS_CH_LANES                 "checker_lanes"
 #define CABLE_PRBS_CH_LANES_SHORT           ' '
+#define CABLE_PRBS_LANE_RATE                "lane_rate"
+#define CABLE_PRBS_LANE_RATE_SHORT          ' '
 #define CABLE_PRBS_SHOW_DIAG                "show_diagnostic_info"
 #define CABLE_PRBS_SHOW_DIAG_SHORT          ' '
 #define CABLE_PRBS_CLEAR_DIAG               "clear_diagnostic_info"

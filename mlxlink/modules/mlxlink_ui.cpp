@@ -206,24 +206,17 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(CABLE_PRBS_MODE_SHORT, CABLE_PRBS_MODE, "cmd",
                                  "Perform PRBS test mode on the Module [EN(Enable),DS(Disable)]");
     printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_RATE_SHORT, CABLE_PRBS_GEN_RATE, "rate",
-                                 "Set PRBS generator lane rate [HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
-    printf(IDENT3);
     MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_PAT_SHORT, CABLE_PRBS_GEN_PAT, "pattern",
                                  "Set PRBS generator pattern [PRBS31(default),PRBS23,PRBS7,PRBS11,PRBS9,PRBS13,SSPR,SSPRQ]");
     printf(IDENT3);
     MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_SWAP_SHORT, CABLE_PRBS_GEN_SWAP, "",
                                  "Enable PAM4 MSB <-> LSB generator swapping (Optional)");
     printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_INV_SHORT, CABLE_PRBS_GEN_INV, "rate",
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_INV_SHORT, CABLE_PRBS_GEN_INV, "",
                                  "Enable PRBS generator inversion (Optional)");
     printf(IDENT3);
     MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_LANES_SHORT, CABLE_PRBS_GEN_LANES, "lanes",
                                  "PRBS generator lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
-
-    printf(IDENT3);
-    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_RATE_SHORT, CABLE_PRBS_CH_RATE, "rate",
-                                 "Set PRBS checker lane rate [HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
     printf(IDENT3);
     MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_PAT_SHORT, CABLE_PRBS_CH_PAT, "pattern",
                                  "Set PRBS checker pattern [PRBS31(default),PRBS23,PRBS7,PRBS11,PRBS9,PRBS13,SSPR,SSPRQ]");
@@ -236,6 +229,9 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT3);
     MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_LANES_SHORT, CABLE_PRBS_CH_LANES, "lanes",
                                  "PRBS checker lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_LANE_RATE_SHORT, CABLE_PRBS_LANE_RATE, "rate",
+                                 "Set PRBS checker and generator lane rate [HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
     printf(IDENT2);
     MlxlinkRecord::printFlagLine(CABLE_PRBS_SHOW_DIAG_SHORT, CABLE_PRBS_SHOW_DIAG, "",
                                  "Show PRBS diagnostic counters information");
@@ -735,16 +731,15 @@ void MlxlinkUi::initCmdParser()
 
     AddOptions(CABLE_PRBS_SELECT, CABLE_PRBS_SELECT_SHORT, "side", "");
     AddOptions(CABLE_PRBS_MODE, CABLE_PRBS_MODE_SHORT, "cmd", "");
-    AddOptions(CABLE_PRBS_GEN_RATE, CABLE_PRBS_GEN_RATE_SHORT, "rate", "");
     AddOptions(CABLE_PRBS_GEN_PAT, CABLE_PRBS_GEN_PAT_SHORT,"pattern", "");
     AddOptions(CABLE_PRBS_GEN_SWAP, CABLE_PRBS_GEN_SWAP_SHORT, "", "");
-    AddOptions(CABLE_PRBS_GEN_INV, CABLE_PRBS_GEN_INV_SHORT, "rate", "");
+    AddOptions(CABLE_PRBS_GEN_INV, CABLE_PRBS_GEN_INV_SHORT, "", "");
     AddOptions(CABLE_PRBS_GEN_LANES, CABLE_PRBS_GEN_LANES_SHORT, "lanes", "");
-    AddOptions(CABLE_PRBS_CH_RATE, CABLE_PRBS_CH_RATE_SHORT, "rate", "");
     AddOptions(CABLE_PRBS_CH_PAT, CABLE_PRBS_CH_PAT_SHORT, "pattern","");
     AddOptions(CABLE_PRBS_CH_SWAP, CABLE_PRBS_CH_SWAP_SHORT, "","");
     AddOptions(CABLE_PRBS_CH_INV, CABLE_PRBS_CH_INV_SHORT, "", "");
     AddOptions(CABLE_PRBS_CH_LANES, CABLE_PRBS_CH_LANES_SHORT, "lanes", "");
+    AddOptions(CABLE_PRBS_LANE_RATE, CABLE_PRBS_LANE_RATE_SHORT, "rate", "");
     AddOptions(CABLE_PRBS_SHOW_DIAG, CABLE_PRBS_SHOW_DIAG_SHORT, "", "");
     AddOptions(CABLE_PRBS_CLEAR_DIAG, CABLE_PRBS_CLEAR_DIAG_SHORT, "", "");
 
@@ -1222,11 +1217,6 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_MODE] = toUpperCase(value);
         _mlxlinkCommander->_userInput.isPrbsModeProvided = true;
         return PARSE_OK;
-    } else if (name == CABLE_PRBS_GEN_RATE) {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_RATE] = toUpperCase(value);
-        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
-        return PARSE_OK;
     } else if (name == CABLE_PRBS_GEN_PAT) {
         _mlxlinkCommander->checkStrLength(value);
         _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_PAT] = toUpperCase(value);
@@ -1244,11 +1234,6 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES] = value;
         _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
         return PARSE_OK;
-    } else if (name == CABLE_PRBS_CH_RATE) {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_RATE] = toUpperCase(value);
-        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
-        return PARSE_OK;
     } else if (name == CABLE_PRBS_CH_PAT) {
         _mlxlinkCommander->checkStrLength(value);
         _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_PAT] = toUpperCase(value);
@@ -1265,6 +1250,10 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     } else if (name == CABLE_PRBS_CH_LANES) {
         _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_LANES] = value;
         _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_LANE_RATE) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_RATE] = toUpperCase(value);
         return PARSE_OK;
     } else if (name == CABLE_PRBS_SHOW_DIAG) {
         _mlxlinkCommander->checkStrLength(value);
