@@ -211,10 +211,11 @@ class PrivilegeMgr(object):
         return field_value
 
     def updateTlvFile(self, host_index, disable_info=False):
-        self.TLV_TYPE |= (host_index << 18)
+        tlv_type = self.TLV_TYPE
+        tlv_type |= (host_index << 18)
         raw_bytes = "%s\n0x%08x 0x%08x 0x%08x" % (self.TITLE,
                                                   self.TLV_HEADER,
-                                                  self.TLV_TYPE,
+                                                  tlv_type,
                                                   self.CRC)
         if not disable_info:
             info(
