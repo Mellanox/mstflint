@@ -4487,8 +4487,7 @@ void MlxlinkCommander::performModulePrbsCommands()
                     } else if (_userInput.isPrbsChProvided && _userInput.isPrbsGenProvided) {
                         prbsModuleAccess = MODULE_PRBS_ACCESS_CH_GEN;
                     }
-                    if (_userInput.modulePrbsParams[MODULE_PRBS_GEN_RATE] == _userInput.modulePrbsParams[MODULE_PRBS_CH_RATE] &&
-                        _userInput.modulePrbsParams[MODULE_PRBS_GEN_PAT] == _userInput.modulePrbsParams[MODULE_PRBS_CH_PAT] &&
+                    if (_userInput.modulePrbsParams[MODULE_PRBS_GEN_PAT] == _userInput.modulePrbsParams[MODULE_PRBS_CH_PAT] &&
                         _userInput.modulePrbsParams[MODULE_PRBS_GEN_SWAP] == _userInput.modulePrbsParams[MODULE_PRBS_CH_SWAP] &&
                         _userInput.modulePrbsParams[MODULE_PRBS_GEN_INV] == _userInput.modulePrbsParams[MODULE_PRBS_CH_INV] &&
                         _userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES] == _userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES]) {
@@ -4515,6 +4514,7 @@ void MlxlinkCommander::performModulePrbsCommands()
     } catch(MlxRegException &exc) {
         _allUnhandledErrors += "Module PRBS test mode raised the following exception: ";
         _allUnhandledErrors += exc.what_s();
+        _allUnhandledErrors += "\n";
     }
 }
 

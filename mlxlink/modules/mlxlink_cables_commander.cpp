@@ -1057,7 +1057,7 @@ u_int32_t MlxlinkCablesCommander::getModeAdminFromStr(u_int32_t cap, const strin
             }
             validRates = deleteLastChar(validRates);
             validRates = "]";
-            throw MlxRegException("Invalid PRBS pattern value [%s] \nValid values are: %s\n",
+            throw MlxRegException("Invalid PRBS pattern value [%s] \nValid values are: %s",
                                   rateStr.c_str(), validRates.c_str());
         }
         modeAdmin = (int)log2((float) modeAdmin);
@@ -1071,12 +1071,6 @@ u_int32_t MlxlinkCablesCommander::getRateAdminFromStr(u_int32_t cap, const strin
     if (!rateStr.empty()) {
         rateAdmin = _mlxlinkMaps->_modulePrbsRateStrToCap[rateStr];
         if (!rateAdmin) {
-            if (!_modulePrbsParams[MODULE_PRBS_CH_RATE].empty() &&
-                !_modulePrbsParams[MODULE_PRBS_GEN_RATE].empty()) {
-                if (_modulePrbsParams[MODULE_PRBS_CH_RATE] != _modulePrbsParams[MODULE_PRBS_GEN_RATE]) {
-                    throw MlxRegException("Checker and Generator must be running in the same lane rate\n");
-                }
-            }
             string validRates = "[";
             for (auto it = _mlxlinkMaps->_modulePrbsRateStrToCap.begin();
                  it != _mlxlinkMaps->_modulePrbsRateStrToCap.end(); it++) {
@@ -1086,7 +1080,7 @@ u_int32_t MlxlinkCablesCommander::getRateAdminFromStr(u_int32_t cap, const strin
             }
             validRates = deleteLastChar(validRates);
             validRates += "]";
-            throw MlxRegException("Invalid PRBS lane rate configuration [%s] \nValid configurations are: %s\n",
+            throw MlxRegException("Invalid PRBS lane rate configuration [%s] \nValid configurations are: %s",
                                   rateStr.c_str(), validRates.c_str());
         }
     }
@@ -1099,7 +1093,7 @@ bool MlxlinkCablesCommander::getInvAdminFromStr(u_int32_t cap, const string &inv
     if (!invStr.empty()) {
          invAdmin = true;
          if (!cap) {
-             throw MlxRegException("PRBS inversion is not supported by the module\n");
+             throw MlxRegException("PRBS inversion is not supported by the module");
          }
      }
     return invAdmin;
@@ -1178,8 +1172,7 @@ void MlxlinkCablesCommander::checkAndParsePMPTCap(ModuleAccess_t moduleAccess)
 
     u_int32_t chAccessShift = moduleAccess == MODULE_PRBS_ACCESS_CH? MODULE_PRBS_GEN_INV : 0;
 
-    _prbsRate = getRateAdminFromStr(getFieldValue("lane_rate_cap"),
-                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_RATE + chAccessShift)]);
+    _prbsRate = getRateAdminFromStr(getFieldValue("lane_rate_cap"), _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_RATE)]);
     _prbsMode = getModeAdminFromStr(getFieldValue("prbs_modes_cap"),
                                     _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_PAT + chAccessShift)]);
     _prbsInv = getInvAdminFromStr(getFieldValue("invt_cap"),
@@ -1192,11 +1185,6 @@ void MlxlinkCablesCommander::checkAndParsePMPTCap(ModuleAccess_t moduleAccess)
 
 void MlxlinkCablesCommander::preparePrbsParam(ModuleAccess_t moduleAccess)
 {
-    if (moduleAccess != MODULE_PRBS_ACCESS_BOTH &&
-        (_modulePrbsParams[MODULE_PRBS_GEN_RATE] != _modulePrbsParams[MODULE_PRBS_CH_RATE])) {
-        throw MlxRegException("PRBS Checker and Generator lane rate must be provided with the same rate");
-    }
-
     switch (moduleAccess) {
         case MODULE_PRBS_ACCESS_CH:
         case MODULE_PRBS_ACCESS_GEN:
@@ -1337,6 +1325,10 @@ string MlxlinkCablesCommander::getPMPDLockStatus()
 
         lockStatusStr += MlxlinkRecord::addSpaceForModulePrbs(_mlxlinkMaps->_modulePMPDStatus[getFieldValue("status")]);
         lockStatusStr += ",";
+        // Print only one indecation for each cap if it's not supported
+        if (getFieldValue("status") == PMPD_STATUS_NOT_SUPPORTED) {
+            break;
+        }
     }
 
     if (!lockStatusStr.empty()) {
@@ -1391,6 +1383,9 @@ void MlxlinkCablesCommander::getPMPDInfo(vector<string> &traffic, vector<string>
                                          vector<string> &snr)
 {
     string traficStr, errorsStr, berStr, snrStr;
+    bool skipErrorCap = false;
+    bool skipBerCap = false;
+    bool skipSnrCap = false;
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
         resetParser(ACCESS_REG_PMPD);
         updateField("module", _moduleNumber);
@@ -1399,16 +1394,32 @@ void MlxlinkCablesCommander::getPMPDInfo(vector<string> &traffic, vector<string>
         updateField("lane", lane);
         genBuffSendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);
 
-        traficStr = to_string(add32BitTo64(getFieldValue("prbs_bits_high"),
-                                           getFieldValue("prbs_bits_low")));
+        traficStr = to_string(add32BitTo64(getFieldValue("prbs_bits_high"), getFieldValue("prbs_bits_low")));
         errorsStr = to_string(add32BitTo64(getFieldValue("prbs_errors_high"), getFieldValue("prbs_errors_low")));
         berStr = to_string(getFieldValue("ber_coef")) + "E-" + to_string(getFieldValue("ber_magnitude"));
         snrStr = to_string(getFieldValue("measured_snr")) +" dB";
 
         traffic.push_back(MlxlinkRecord::addSpaceForModulePrbs(traficStr));
-        errors.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("errors_cap")? errorsStr : "Not Supported"));
-        ber.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("ber_cap")? berStr : "Not Supported"));
-        snr.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("snr_cap")? snrStr : "Not Supported"));
+
+        if (!skipErrorCap) {
+            errors.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("errors_cap")? errorsStr : "Not Supported"));
+        }
+        if (!skipBerCap) {
+            ber.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("ber_cap")? berStr : "Not Supported"));
+        }
+        if (!skipSnrCap) {
+            snr.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("snr_cap")? snrStr : "Not Supported"));
+        }
+        // Print only one indecation for each cap if it's not supported
+        if (getFieldValue("errors_cap") == 0) {
+            skipErrorCap = true;
+        }
+        if (getFieldValue("ber_cap") == 0) {
+            skipBerCap = true;
+        }
+        if (getFieldValue("snr_cap") == 0) {
+            skipSnrCap = true;
+        }
     }
 }
 
