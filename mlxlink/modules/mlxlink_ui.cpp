@@ -463,7 +463,8 @@ void MlxlinkUi::validateModulePRBSParams()
     }
 
     if (!_mlxlinkCommander->_userInput.isPrbsModeProvided && (_mlxlinkCommander->_userInput.isPrbsChProvided ||
-                                                              _mlxlinkCommander->_userInput.isPrbsGenProvided)) {
+                                                              _mlxlinkCommander->_userInput.isPrbsGenProvided ||
+                                                              !_mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_RATE].empty())) {
         throw MlxRegException("--" CABLE_PRBS_MODE " flag should be provided!");
     }
 
@@ -1264,6 +1265,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->checkStrLength(value);
         _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CLEAR_DIAG] = value;
         _mlxlinkCommander->_userInput.isPrbsClearDiagProvided = true;
+        return PARSE_OK;
     } else if (name == CTRL_PARAM_FLAG) {
         addCmd(CABLE_CTRL_PARM);
         _mlxlinkCommander->_userInput.isModuleConfigParamsProvided = true;
