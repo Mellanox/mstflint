@@ -1042,70 +1042,70 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page , u_int16_t
     return bytesOutput;
 }
 
-u_int32_t MlxlinkCablesCommander::getModeAdminFromStr(u_int32_t cap, const string &rateStr)
+u_int32_t MlxlinkCablesCommander::getModeAdminFromStr(u_int32_t cap, const string &adminStr, ModuleAccess_t moduleAccess)
 {
     int modeAdmin = _prbsMode;
-    if (!rateStr.empty()) {
-        modeAdmin = _mlxlinkMaps->_modulePrbsModeStrToCap[rateStr];
-        if (!modeAdmin) {
-            string validRates = "[";
-            for (auto it = _mlxlinkMaps->_modulePrbsModeCapToStr.begin();
-                 it != _mlxlinkMaps->_modulePrbsModeCapToStr.end(); it++) {
-                if (it->first & cap) {
-                    validRates += it->second + ",";
-                }
+    string confStr = adminStr.empty()? DEFAULT_PRBS_MODE_STR : adminStr;
+    modeAdmin = _mlxlinkMaps->_modulePrbsModeStrToCap[confStr];
+    if (!modeAdmin || !(modeAdmin & cap)) {
+        string validRates = "[";
+        for (auto it = _mlxlinkMaps->_modulePrbsModeCapToStr.begin();
+             it != _mlxlinkMaps->_modulePrbsModeCapToStr.end(); it++) {
+            if (it->first & cap) {
+                validRates += it->second + ",";
             }
-            validRates = deleteLastChar(validRates);
-            validRates = "]";
-            throw MlxRegException("Invalid PRBS pattern value [%s] \nValid values are: %s",
-                                  rateStr.c_str(), validRates.c_str());
         }
-        modeAdmin = (int)log2((float) modeAdmin);
+        validRates = deleteLastChar(validRates);
+        validRates += "]";
+        throw MlxRegException("Invalid PRBS pattern for the %s [%s]\nValid values are: %s",
+                              _mlxlinkMaps->_moduleScopeToStr[moduleAccess].c_str(), confStr.c_str(),
+                              validRates.c_str());
     }
-    return modeAdmin;
+    return (int)log2((float) modeAdmin);
 }
 
 u_int32_t MlxlinkCablesCommander::getRateAdminFromStr(u_int32_t cap, const string &rateStr)
 {
     int rateAdmin = _prbsRate;
-    if (!rateStr.empty()) {
-        rateAdmin = _mlxlinkMaps->_modulePrbsRateStrToCap[rateStr];
-        if (!rateAdmin) {
-            string validRates = "[";
-            for (auto it = _mlxlinkMaps->_modulePrbsRateStrToCap.begin();
-                 it != _mlxlinkMaps->_modulePrbsRateStrToCap.end(); it++) {
-                if (it->second & cap) {
-                    validRates += it->first + ",";
-                }
+    string confStr = rateStr.empty()? DEFAULT_PRBS_RATE_STR : rateStr;
+    rateAdmin = _mlxlinkMaps->_modulePrbsRateStrToCap[confStr];
+    if (!rateAdmin || !(rateAdmin & cap)) {
+        string validRates = "[";
+        for (auto it = _mlxlinkMaps->_modulePrbsRateStrToCap.begin();
+             it != _mlxlinkMaps->_modulePrbsRateStrToCap.end(); it++) {
+            if (it->second & cap) {
+                validRates += it->first + ",";
             }
-            validRates = deleteLastChar(validRates);
-            validRates += "]";
-            throw MlxRegException("Invalid PRBS lane rate configuration [%s] \nValid configurations are: %s",
-                                  rateStr.c_str(), validRates.c_str());
         }
+        validRates = deleteLastChar(validRates);
+        validRates += "]";
+        throw MlxRegException("Invalid PRBS lane rate configuration [%s]\nValid configurations are: %s",
+                              confStr.c_str(), validRates.c_str());
     }
     return rateAdmin;
 }
 
-bool MlxlinkCablesCommander::getInvAdminFromStr(u_int32_t cap, const string &invStr)
+bool MlxlinkCablesCommander::getInvAdminFromStr(u_int32_t cap, const string &invStr, ModuleAccess_t moduleAccess)
 {
     bool invAdmin = false;
     if (!invStr.empty()) {
          invAdmin = true;
          if (!cap) {
-             throw MlxRegException("PRBS inversion is not supported by the module");
+             throw MlxRegException("PRBS inversion is not supported by the %s",
+                                   _mlxlinkMaps->_moduleScopeToStr[moduleAccess].c_str());
          }
      }
     return invAdmin;
 }
 
-bool MlxlinkCablesCommander::getSwapAdminFromStr(u_int32_t cap, const string &swapStr)
+bool MlxlinkCablesCommander::getSwapAdminFromStr(u_int32_t cap, const string &swapStr, ModuleAccess_t moduleAccess)
 {
     bool swapAdmin = false;
     if (!swapStr.empty()) {
         swapAdmin = true;
          if (!cap) {
-             throw MlxRegException("PAM4 MSB <-> LSB swapping is not supported by the module");
+             throw MlxRegException("PAM4 MSB <-> LSB swapping is not supported by the %s",
+                                   _mlxlinkMaps->_moduleScopeToStr[moduleAccess].c_str());
          }
      }
     return swapAdmin;
@@ -1158,45 +1158,37 @@ void MlxlinkCablesCommander::checkAndParsePMPTCap(ModuleAccess_t moduleAccess)
         resetParser(ACCESS_REG_PMPT);
         updateField("module", _moduleNumber);
         updateField("slot_index", _slotIndex);
-        updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
-        updateField("ch_ge", (u_int32_t)moduleAccess);
         updateField("lane_mask", 0x1);
         genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
     } catch (MlxRegException &exc) {
         regFaild = true;
     }
-
     if (regFaild || getFieldValue("status") == PMPT_STATUS_NOT_SUPPORTED) {
         throw MlxRegException("Module doesn't support PRBS and diagnostics data");
     }
+    _prbsRate = getRateAdminFromStr(getFieldValue("lane_rate_cap"),
+                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_RATE)]);
+
+    // read the other PMPT caps according to the prbsRate
+    resetParser(ACCESS_REG_PMPT);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("ch_ge", (u_int32_t)moduleAccess);
+    updateField("modulation", _prbsRate >= MODULE_PRBS_LANE_RATE_HDR);
+    updateField("lane_mask", 0x1);
+    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
 
     u_int32_t chAccessShift = moduleAccess == MODULE_PRBS_ACCESS_CH? MODULE_PRBS_GEN_INV : 0;
 
-    _prbsRate = getRateAdminFromStr(getFieldValue("lane_rate_cap"), _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_RATE)]);
     _prbsMode = getModeAdminFromStr(getFieldValue("prbs_modes_cap"),
-                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_PAT + chAccessShift)]);
+                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_PAT + chAccessShift)], moduleAccess);
     _prbsInv = getInvAdminFromStr(getFieldValue("invt_cap"),
-                                   _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_INV + chAccessShift)]);
+                                  _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_INV + chAccessShift)], moduleAccess);
     _prbsSwap = getSwapAdminFromStr(getFieldValue("swap_cap"),
-                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_SWAP + chAccessShift)]);
+                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_SWAP + chAccessShift)], moduleAccess);
     _prbsLanes = getLanesFromStr(getFieldValue("ls"),
                                  _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_LANES + chAccessShift)]);
-}
-
-void MlxlinkCablesCommander::preparePrbsParam(ModuleAccess_t moduleAccess)
-{
-    switch (moduleAccess) {
-        case MODULE_PRBS_ACCESS_CH:
-        case MODULE_PRBS_ACCESS_GEN:
-            checkAndParsePMPTCap(moduleAccess);
-            break;
-        case MODULE_PRBS_ACCESS_CH_GEN:
-            checkAndParsePMPTCap(MODULE_PRBS_ACCESS_CH);
-            checkAndParsePMPTCap(MODULE_PRBS_ACCESS_GEN);
-            break;
-        default:
-            checkAndParsePMPTCap(MODULE_PRBS_ACCESS_BOTH);
-    }
 }
 
 u_int32_t MlxlinkCablesCommander::getPMPTStatus(ModuleAccess_t moduleAccess)
@@ -1214,6 +1206,8 @@ u_int32_t MlxlinkCablesCommander::getPMPTStatus(ModuleAccess_t moduleAccess)
 
 void MlxlinkCablesCommander::sendPMPT(ModuleAccess_t moduleAccess)
 {
+    checkAndParsePMPTCap(moduleAccess);
+
     resetParser(ACCESS_REG_PMPT);
     updateField("module", _moduleNumber);
     updateField("slot_index", _slotIndex);
@@ -1236,21 +1230,17 @@ void MlxlinkCablesCommander::sendPMPT(ModuleAccess_t moduleAccess)
 
 void MlxlinkCablesCommander::enablePMPT(ModuleAccess_t moduleAccess)
 {
-    try {
-        switch (moduleAccess) {
-            case MODULE_PRBS_ACCESS_CH:
-            case MODULE_PRBS_ACCESS_GEN:
-                sendPMPT(moduleAccess);
-                break;
-            case MODULE_PRBS_ACCESS_CH_GEN:
-                sendPMPT(MODULE_PRBS_ACCESS_CH);
-                sendPMPT(MODULE_PRBS_ACCESS_GEN);
-                break;
-            default:
-                sendPMPT(MODULE_PRBS_ACCESS_BOTH);
-        }
-    } catch (MlxRegException &exc) {
-        throw MlxRegException("Module doesn't support PRBS and diagnostics data");
+    switch (moduleAccess) {
+        case MODULE_PRBS_ACCESS_CH:
+        case MODULE_PRBS_ACCESS_GEN:
+            sendPMPT(moduleAccess);
+            break;
+        case MODULE_PRBS_ACCESS_CH_GEN:
+            sendPMPT(MODULE_PRBS_ACCESS_CH);
+            sendPMPT(MODULE_PRBS_ACCESS_GEN);
+            break;
+        default:
+            sendPMPT(MODULE_PRBS_ACCESS_BOTH);
     }
 }
 
@@ -1274,7 +1264,6 @@ void MlxlinkCablesCommander::handlePrbsTestMode(const string &ctrl, ModuleAccess
     if (ctrl == "EN") {
         MlxlinkRecord::printCmdLine("Enabling Module PRBS Test Mode", _jsonRoot);
         getNumOfModuleLanes();
-        preparePrbsParam(moduleAccess);
         enablePMPT(moduleAccess);
     } else if (ctrl == "DS") {
         MlxlinkRecord::printCmdLine("Disabling Module PRBS Test Mode", _jsonRoot);
@@ -1364,8 +1353,8 @@ void MlxlinkCablesCommander::showPrbsTestMode()
     prbsAcces.push_back(MlxlinkRecord::addSpaceForModulePrbs("Checker"));
     prbsAcces.push_back(MlxlinkRecord::addSpaceForModulePrbs("Generator"));
 
-    getPMPTConfiguration(MODULE_PRBS_ACCESS_GEN, prbsPattern, prbsRate, prbsInv, prbsSwap);
     getPMPTConfiguration(MODULE_PRBS_ACCESS_CH, prbsPattern, prbsRate, prbsInv, prbsSwap);
+    getPMPTConfiguration(MODULE_PRBS_ACCESS_GEN, prbsPattern, prbsRate, prbsInv, prbsSwap);
 
     setPrintVal(prbsOutput, "PRBS Access", getStringFromVector(prbsAcces), ANSI_COLOR_RESET, true, true, true);
     setPrintVal(prbsOutput, "PRBS Pattern", getStringFromVector(prbsPattern), ANSI_COLOR_RESET, true, true, true);
