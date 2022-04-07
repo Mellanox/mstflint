@@ -480,6 +480,7 @@ static int crd_set_tlv_blocks(IN mfile *mf, OUT crd_parsed_csv_t blocks[], IN u_
     {
         blocks[block_number].addr = current_tlv.address;
         blocks[block_number].len = current_tlv.size;
+        strcpy(blocks[block_number].enable_addr, CRD_EMPTY);
 
         block_number++;
         rc = crd_get_tlv_from_address(mf, current_tlv.address, &current_tlv);
