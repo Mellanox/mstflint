@@ -318,6 +318,9 @@ bool verifyNumOfArgs(string name, string value)
     if (name == "vsd") {
         return true;
     }
+    if (name == "output_file") {
+        return true;
+    }
 
     int expected = FlagMetaData().getNumOfArgs(name);
     if (expected < 0) {
