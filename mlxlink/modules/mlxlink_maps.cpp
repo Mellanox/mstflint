@@ -990,6 +990,12 @@ void MlxlinkMaps::modulePrbsMapping()
     _modulePMPDStatus[PMPD_STATUS_NORMAL_MODE] = "Normal Mode";
     _modulePMPDStatus[PMPD_STATUS_NOT_LOCKED] = "Not Locked";
     _modulePMPDStatus[PMPD_STATUS_LOCKED] = "Locked";
+
+    _moduleScopeToStr[MODULE_PRBS_ACCESS_CH] = "Checker";
+    _moduleScopeToStr[MODULE_PRBS_ACCESS_GEN] = "Generator";
+    _moduleScopeToStr[MODULE_PRBS_ACCESS_BOTH] = "Module";
+    _moduleScopeToStr[MODULE_PRBS_ACCESS_CH_GEN] = "Module";
+
 }
 
 void MlxlinkMaps::qsfpComlianceMapping()

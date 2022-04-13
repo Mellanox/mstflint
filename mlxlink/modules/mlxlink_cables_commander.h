@@ -83,6 +83,9 @@ typedef struct {
 #define VOLT_UNIT 1000
 #define MILLIVOLT_UNIT 10
 
+#define DEFAULT_PRBS_MODE_STR       "PRBS31"
+#define DEFAULT_PRBS_RATE_STR       "HDR"
+
 typedef struct Page{
     u_int32_t page;
     u_int16_t offset;
@@ -168,16 +171,15 @@ private:
 
     void getNumOfModuleLanes();
     u_int32_t getRateAdminFromStr(u_int32_t cap, const string &rateStr);
-    u_int32_t getModeAdminFromStr(u_int32_t cap, const string &adminStr);
-    bool getInvAdminFromStr(u_int32_t cap, const string &invStr);
-    bool getSwapAdminFromStr(u_int32_t cap, const string &swapStr);
+    u_int32_t getModeAdminFromStr(u_int32_t cap, const string &adminStr, ModuleAccess_t moduleAccess);
+    bool getInvAdminFromStr(u_int32_t cap, const string &invStr, ModuleAccess_t moduleAccess);
+    bool getSwapAdminFromStr(u_int32_t cap, const string &swapStr, ModuleAccess_t moduleAccess);
     u_int32_t getLanesFromStr(u_int32_t cap, const string &lanesStr);
     void getPMPTConfiguration(ModuleAccess_t moduleAccess, vector<string> &prbsPattern, vector<string> &prbsRate,
                               vector<string> &prbsInv, vector<string> &prbsSwap);
     void getPMPDInfo(vector<string> &traffic, vector<string> &errors, vector<string> &ber, vector<string> &snr);
     string getPMPDLockStatus();
     void checkAndParsePMPTCap(ModuleAccess_t moduleAccess);
-    void preparePrbsParam(ModuleAccess_t moduleAccess);
     u_int32_t getPMPTStatus(ModuleAccess_t moduleAccess);
     void sendPMPT(ModuleAccess_t moduleAccess);
     void enablePMPT(ModuleAccess_t moduleAccess);

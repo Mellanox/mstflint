@@ -4487,12 +4487,6 @@ void MlxlinkCommander::performModulePrbsCommands()
                     } else if (_userInput.isPrbsChProvided && _userInput.isPrbsGenProvided) {
                         prbsModuleAccess = MODULE_PRBS_ACCESS_CH_GEN;
                     }
-                    if (_userInput.modulePrbsParams[MODULE_PRBS_GEN_PAT] == _userInput.modulePrbsParams[MODULE_PRBS_CH_PAT] &&
-                        _userInput.modulePrbsParams[MODULE_PRBS_GEN_SWAP] == _userInput.modulePrbsParams[MODULE_PRBS_CH_SWAP] &&
-                        _userInput.modulePrbsParams[MODULE_PRBS_GEN_INV] == _userInput.modulePrbsParams[MODULE_PRBS_CH_INV] &&
-                        _userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES] == _userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES]) {
-                        prbsModuleAccess = MODULE_PRBS_ACCESS_BOTH;
-                    }
                     _cablesCommander->handlePrbsTestMode(_userInput.modulePrbsParams[MODULE_PRBS_MODE], prbsModuleAccess);
                 } else {
                     _cablesCommander->showPrbsTestMode();
