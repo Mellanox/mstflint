@@ -878,7 +878,7 @@ void Flint::initCmdParser()
     AddOptions("activate_delay_sec",
         ' ',
         "<timeout in seconds>",
-        "Use this flag to activate all cable devices connected to host with delay, acceptable values are between 0 and 255 (default - 0, immediately). Important: 'activate' flag must be set.  This flag is relevant only for cable components.",
+        "Use this flag to activate all cable devices connected to host with delay, acceptable values are between 0 and 255 (default - 1). Important: 'activate' flag must be set.  This flag is relevant only for cable components.",
         false,
         false,
         1);
