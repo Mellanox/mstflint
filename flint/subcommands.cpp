@@ -654,7 +654,7 @@ bool SubCommand::basicVerifyParams()
     } else if (_maxCmdParamNum != -1 && (int)_flintParams.cmd_params.size() > _maxCmdParamNum) {
         // _maxCmdParamNum == -1 means ignore this check
         if (_maxCmdParamNum) {
-            reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), _maxCmdParamNum, _flintParams.cmd_params.size());
+            reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), _maxCmdParamNum, (int)_flintParams.cmd_params.size());
         } else {
             reportErr(true, FLINT_CMD_ARGS_ERROR5, _name.c_str());
         }
@@ -781,12 +781,13 @@ SubCommand::~SubCommand()
 
 }
 
+// matanel - TODO: duplicated, use same function from fw_ops.cpp
 bool SubCommand::getRomsInfo(FBase *io, roms_info_t& romsInfo)
 {
     std::vector<u_int8_t> romSector;
     romSector.clear();
-    romSector.resize(io->get_size());
-    if (!io->read(0, &romSector[0], io->get_size())) {
+    romSector.resize(io->get_effective_size());
+    if (!io->read(0, &romSector[0], io->get_effective_size())) {
         reportErr(true, FLINT_READ_ERROR, _flintParams.image.c_str(), io->err());
         return false;
     }
@@ -2853,12 +2854,10 @@ FlintStatus BurnSubCommand::executeCommand()
 
     // query both image and device (deviceQuery can fail but we save rc)
     _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
-    if (_imgOps) {
-        if (!_imgOps->FwQuery(&_imgInfo)) {
-            UnlockDevice(_fwOps);
-            reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
-            return FLINT_FAILED;
-        }
+    if (!_imgOps->FwQuery(&_imgInfo)) {
+        UnlockDevice(_fwOps);
+        reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
+        return FLINT_FAILED;
     }
 
     // Abort if the image is restricted according to the Security-Version
@@ -3710,9 +3709,9 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                     else {
                         printf("Life cycle:            %s\n", life_cycle_strings[index]);
                     }
-                    if (fwInfo.fs3_info.life_cycle == GA_SECURED) {
+                    if (fwInfo.fs3_info.life_cycle == GA_SECURED && fwInfo.fs3_info.device_security_version_access_method == DIRECT_ACCESS) {
                         printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
-                    }   
+                    }
                 }
             }
         }
@@ -4531,7 +4530,7 @@ FlintStatus SgSubCommand::sgFs2()
     //different behaviours for fs2 device with blank guids and fs2 device with guids or image
     //different behaviour if isfailesafe or not
     if (_flintParams.cmd_params.size() > 1) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), 1, _flintParams.cmd_params.size());
+        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
     }
 
     if (_flintParams.device_specified && !_info.fs2_info.blank_guids) {
@@ -4694,7 +4693,7 @@ bool SmgSubCommand::verifyParams()
     }
 
     if (_flintParams.cmd_params.size() != 0 && _flintParams.cmd_params.size() != 2) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR4, _name.c_str(), 0, 2, _flintParams.cmd_params.size());
+        reportErr(true, FLINT_CMD_ARGS_ERROR4, _name.c_str(), 0, 2, (int)_flintParams.cmd_params.size());
         return false;
     }
 
@@ -5929,9 +5928,9 @@ bool WbneSubCommand::writeBlock(u_int32_t addr, std::vector<u_int32_t> dataVec)
 {
     //we should work only on flash.
     //check if flash is big enough
-    if (addr + (dataVec.size() * 4) > ((Flash*)_io)->get_size()) {
+    if (addr + (dataVec.size() * 4) > ((Flash*)_io)->get_effective_size()) {
         reportErr(true, "Writing %#x bytes from address %#x is out of flash limits (%#x bytes)\n",
-                  (unsigned int)(dataVec.size() * 4), (unsigned int)addr, (unsigned int)_io->get_size());
+                  (unsigned int)(dataVec.size() * 4), (unsigned int)addr, (unsigned int)_io->get_effective_size());
         return false;
     }
     if (!((Flash*)_io)->write(addr, &dataVec[0], (dataVec.size() * 4), true)) {

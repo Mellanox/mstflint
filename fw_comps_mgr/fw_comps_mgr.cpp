@@ -1157,9 +1157,7 @@ FwCompsMgr::FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra)
         _lastError = FWCOMPS_MEM_ALLOC_FAILED;
         return;
     }
-    if (uefi_extra != NULL) {
-        _hwDevId = uefi_extra->dev_info.hw_dev_id;
-    }
+    _hwDevId = uefi_extra->dev_info.hw_dev_id;
     _openedMfile = true;
     _autoUpdate = false;
     _linkXFlow = false;

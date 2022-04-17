@@ -515,13 +515,13 @@ void Fs4Operations::RemoveCRCsFromMainSection(vector<u_int8_t>& img) {
 /*
     This function responsible on removing boot-record last 4B of CRC
 */
-bool Fs4Operations::RemoveCRCFromBootRecord(vector<u_int8_t>& img) {
+bool Fs4Operations::MaskBootRecordCRC(vector<u_int8_t>& img) {
     u_int32_t boot_record_size_without_crc = 0;
     if (!getBootRecordSize(boot_record_size_without_crc)) {
         return errmsg("Failed to get boot_record size\n");
     }
     u_int32_t boot_record_crc_addr = _boot_record_ptr + boot_record_size_without_crc;
-    img.erase(img.begin() + boot_record_crc_addr, img.begin() + boot_record_crc_addr + 4); // Pop 4B of CRC
+    fill(img.begin() + boot_record_crc_addr, img.begin() + boot_record_crc_addr + 4, 0xff); // Mask 4B of CRC/auth-tag
 
     return true;
 }
@@ -538,7 +538,7 @@ bool Fs4Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_
         RemoveCRCsFromMainSection(img);
         //* In case of devices after Carmel we'll ignore boot-record CRC for fw-update signature same as secure-boot signature
         if (getChipType(_fwImgInfo.supportedHwId[0]) != CT_CONNECTX7) {
-            if (!RemoveCRCFromBootRecord(img)) {
+            if (!MaskBootRecordCRC(img)) {
                 return false;
             }
         }
@@ -928,7 +928,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     is_image_in_odd_chunks = _ioAccess->get_is_image_in_odd_chunks();
     _ioAccess->set_address_convertor(0, 0);
     //-Verify DToC Header:
-    dtocPtr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
+    dtocPtr = _ioAccess->get_effective_size() - FS4_DEFAULT_SECTOR_SIZE;
     DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocHeader() DTOC\n"));
     if (!verifyTocHeader(dtocPtr, true, verifyCallBackFunc)) {
         return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
@@ -1058,10 +1058,8 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t *fwInfo, bool readRom, bool quick
     memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
     fwInfo->fw_type = FwType();
 
-    if (_ioAccess->is_flash()) {
-        if (!QuerySecurityFeatures()) {
-            return false;
-        }
+    if (!QuerySecurityFeatures()) {
+        return false;
     }
 
     _fwImgInfo.ext_info.is_failsafe = true;
@@ -1087,10 +1085,6 @@ bool Fs4Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
     if (!Fs3Operations::FwQuery(fwInfo, readRom, isStripedImage, quickQuery, ignoreDToc, verbose)) {
         return false;
     }
-
-    //* Security version
-    _fs3ImgInfo.ext_info.image_security_version = _security_version;
-    _fs3ImgInfo.ext_info.device_security_version_access_method = NOT_VALID;
 
     if (!QuerySecurityFeatures()) {
         return false;
@@ -1129,29 +1123,58 @@ bool Fs4Operations::IsLifeCycleAccessible(chip_type_t chip_type)
     return res;
 }
 
+bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
+{
+    DPRINTF(("Fs4Operations::IsSecurityVersionAccessible\n"));
+    bool res = true;
+    // Security version feature depends on life-cycle
+    if (IsLifeCycleSupported())
+    {
+        switch (chip_type)
+        {
+            case CT_BLUEFIELD2:
+            case CT_CONNECTX6DX:
+            case CT_CONNECTX6LX:
+                res = false;
+                break;
+            default:
+                break;
+        }
+    }
+    else
+    {
+        res = false;
+    }
+
+    DPRINTF(("Fs4Operations::IsSecurityVersionAccessible res = %s\n", res ? "TRUE" : "FALSE"));
+    return res;
+}
+
 bool Fs4Operations::QuerySecurityFeatures()
 {
     DPRINTF(("Fs4Operations::QuerySecurityFeatures _fwImgInfo.ext_info.chip_type = %d\n", _fwImgInfo.ext_info.chip_type));
-    try {
-        if (IsLifeCycleAccessible(_fwImgInfo.ext_info.chip_type)) {
-            CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
-            _fs3ImgInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
+    _fs3ImgInfo.ext_info.image_security_version = _security_version;
+    _fs3ImgInfo.ext_info.device_security_version_access_method = NOT_VALID;
+    if (_ioAccess->is_flash()) {
+        try {
+            if (IsLifeCycleAccessible(_fwImgInfo.ext_info.chip_type)) {
+                CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
+                _fs3ImgInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
 
-            if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED) {
-                _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
+                if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED) {
+                    _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
 
-                _fs3ImgInfo.ext_info.device_security_version_access_method = GW;
-                _fs3ImgInfo.ext_info.device_security_version_gw = crSpaceReg.getSecurityVersion();
+                    if (IsSecurityVersionAccessible(_fwImgInfo.ext_info.chip_type)) {
+                        _fs3ImgInfo.ext_info.device_security_version_gw = crSpaceReg.getSecurityVersion();
+                        _fs3ImgInfo.ext_info.device_security_version_access_method = DIRECT_ACCESS;
+                    }
+                }
             }
         }
-    }
-    catch(logic_error e) {
-        printf("%s\n", e.what());
-        return false;
-    }
-    catch(exception e) {
-        printf("%s\n", e.what());
-        return false;
+        catch(exception& e) {
+            printf("%s\n", e.what());
+            return false;
+        }
     }
 
     return true;
@@ -1185,7 +1208,7 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
 
     //check if minimal dtoc is not overwriting the preceding chunk
     if (useImageDevData) {
-        u_int32_t devAreaStartAddress = _ioAccess->get_size() - (1 << imageOps._maxImgLog2Size);
+        u_int32_t devAreaStartAddress = _ioAccess->get_effective_size() - (1 << imageOps._maxImgLog2Size);
         if (imageOps._fs4ImgInfo.smallestDTocAddr < devAreaStartAddress) {
             return errmsg(MLXFW_DTOC_OVERWRITE_CHUNK,
                           "First DTOC address (0x%x) is less than device area start address (0x%x)",
@@ -3514,7 +3537,7 @@ u_int32_t Fs4Operations::getImageSize()
 
 bool Fs4Operations::GetImageSize(u_int32_t* image_size){
     
-    bool is_encrypted;
+    bool is_encrypted = false;
     if (!isEncrypted(is_encrypted)){
         return false;
     }
@@ -3672,10 +3695,13 @@ bool Fs4Operations::getBootRecordSize(u_int32_t& boot_record_size) {
             boot_record_size = 0x4d0; // Actual size is 0x4d4
             return true;
         case CT_SPECTRUM4:
-            boot_record_size = 0x4f0; // Actual size is 0x4f4
+            boot_record_size = 0x660; // Actual size is 0x664
             return true;
         case CT_ABIR_GEARBOX:
             boot_record_size = 0x260; // Actual size is 0x264
+            return true;
+        case CT_CONNECTX8:
+            boot_record_size = 0x2a0; // Actual size is 0x2a4
             return true;
 
         default:
@@ -4415,7 +4441,7 @@ bool Fs4Operations::IsSecurityVersionViolated(u_int32_t image_security_version)
     // Set device security-version (from EFUSEs)
     if (_fs3ImgInfo.ext_info.device_security_version_access_method == MFSV) {
         deviceEfuseSecurityVersion = _fs3ImgInfo.ext_info.device_security_version_mfsv.efuses_sec_ver;
-    } else if (_fs3ImgInfo.ext_info.device_security_version_access_method == GW) {
+    } else if (_fs3ImgInfo.ext_info.device_security_version_access_method == DIRECT_ACCESS) {
         deviceEfuseSecurityVersion = _fs3ImgInfo.ext_info.device_security_version_gw;
     } else {
         deviceEfuseSecurityVersion = 0;

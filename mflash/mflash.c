@@ -50,11 +50,10 @@
 #ifndef UEFI_BUILD
 #include <tools_cif.h>
 #endif
-
 #include "mflash_pack_layer.h"
 #include "mflash_access_layer.h"
 #include "mflash.h"
-#include "flash_int_defs.h"
+
 #include "mflash_dev_capability.h"
 #include "mflash_common_structs.h"
 #include "mflash_gw.h"
@@ -2067,16 +2066,27 @@ int cntx_flash_init(mflash *mfl, flash_params_t *flash_params)
 
 int mf_read(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool verbose)
 {
-    // printf("mfl->attr.size = %#x, addr = %#x, len = %d\n", mfl->attr.size, addr, len);
-
-    CHECK_OUT_OF_RANGE(addr, len, mfl->attr.size);
+    u_int32_t size = mfl->attr.size;
+    if ((mfl->dm_dev_id == DeviceConnectX4LX || mfl->dm_dev_id == DeviceConnectX5) &&
+        mfl->attr.vendor == FV_GD25QXXX)
+    {
+        size = 1 << FD_128; // 16MB
+    }
+    // printf("size = %#x, addr = %#x, len = %d\n", size, addr, len);
+    CHECK_OUT_OF_RANGE(addr, len, size);
     //printf("-D- mf_read:  addr: %#x, len: %d\n", addr, len);
     return mfl->f_read(mfl, addr, len, data, verbose);
 }
 
 int mf_write(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)
 {
-    CHECK_OUT_OF_RANGE(addr, len, mfl->attr.size);
+    u_int32_t size = mfl->attr.size;
+    if ((mfl->dm_dev_id == DeviceConnectX4LX || mfl->dm_dev_id == DeviceConnectX5) &&
+        mfl->attr.vendor == FV_GD25QXXX)
+    {
+        size = 1 << FD_128; // 16MB
+    }
+    CHECK_OUT_OF_RANGE(addr, len, size);
     // Locking semaphore for the entire existence of the mflash obj for write and erase only.
     int rc = mfl_com_lock(mfl);
     CHECK_RC(rc);
@@ -3500,6 +3510,11 @@ int mf_disable_hw_access_with_key(mflash *mfl, u_int64_t key)
 mfile* mf_get_mfile(mflash *mfl)
 {
     return mfl->mf;
+}
+
+dm_dev_id_t mf_get_dm_dev_id(mflash *mfl)
+{
+    return mfl->dm_dev_id;
 }
 
 int mf_get_jedec_id(mflash *mfl, u_int32_t *jedec_id)

@@ -539,9 +539,10 @@ reg_access_status_t reg_access_nvda(mfile *mf, reg_access_method_t method, struc
 /************************************
 * Function: reg_access_mgir
 ************************************/
-reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method,
-        struct reg_access_hca_mgir *mgir) {
-    if (mf->tp == MST_MLNXOS) {
+reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method, struct reg_access_hca_mgir *mgir) {
+    if (!mf) {
+        return ME_UNSUPPORTED_DEVICE;
+    } else if (mf->tp == MST_MLNXOS) {
         REG_ACCCESS_VAR(mf, method, REG_ID_MGIR, mgir, mgir, MGIR_REG_SIZE,
                 MGIR_REG_SIZE, MGIR_REG_SIZE, reg_access_hca);
     } else {

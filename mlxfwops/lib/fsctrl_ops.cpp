@@ -989,7 +989,7 @@ bool FsCtrlOperations::IsSecurityVersionViolated(u_int32_t image_security_versio
     // Set device security-version (from EFUSEs)
     if (_fsCtrlImgInfo.device_security_version_access_method == MFSV) {
         deviceEfuseSecurityVersion = _fsCtrlImgInfo.device_security_version_mfsv.efuses_sec_ver;
-    } else if (_fsCtrlImgInfo.device_security_version_access_method == GW) {
+    } else if (_fsCtrlImgInfo.device_security_version_access_method == DIRECT_ACCESS) { // matanel - this case is relevant to fsctrl?
         deviceEfuseSecurityVersion = _fsCtrlImgInfo.device_security_version_gw;
     } else {
         deviceEfuseSecurityVersion = 0;

@@ -79,6 +79,7 @@
 #define CX6DX_HW_ID         530
 #define CX6LX_HW_ID         534
 #define CX7_HW_ID           536
+#define CX8_HW_ID           542
 #define BF_HW_ID            529
 #define BF2_HW_ID           532
 #define BF3_HW_ID           540
@@ -87,6 +88,7 @@
 #define CX3_PRO_HW_ID       503
 #define IS4_HW_ID           435
 #define CONNECT_IB_HW_ID    511
+
 #define INBAND_MAX_REG_SIZE 44
 #define MCDA_REG_HEADER     16
 
@@ -291,6 +293,7 @@ typedef enum chip_type {
     CT_CONNECTX6DX,
     CT_CONNECTX6LX,
     CT_CONNECTX7,
+    CT_CONNECTX8,
     CT_SPECTRUM3,
     CT_BLUEFIELD2,
     CT_BLUEFIELD3,
@@ -308,7 +311,7 @@ typedef enum chip_type {
     ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX) || \
     ((chipType) == CT_CONNECTX5) || \
     ((chipType) == CT_CONNECTX6) || ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || \
-    ((chipType) == CT_CONNECTX7) || \
+    ((chipType) == CT_CONNECTX7) || ((chipType) == CT_CONNECTX8) || \
     ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_BLUEFIELD2) || ((chipType) == CT_BLUEFIELD3))
 
 
@@ -386,7 +389,7 @@ typedef struct uids {
     };
 } uids_t;
 
-typedef enum {NOT_VALID, GW, MFSV} device_security_version_access_method_t;
+typedef enum {NOT_VALID, DIRECT_ACCESS, MFSV} device_security_version_access_method_t;
 
 typedef struct fs3_info_ext {
     u_int8_t guids_override_en;
