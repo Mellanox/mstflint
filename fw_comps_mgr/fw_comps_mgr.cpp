@@ -44,6 +44,7 @@
 #include <signal.h>
 
 #include "mflash/mflash_access_layer.h"
+#include "dev_mgt/tools_dev_types.h"
 #ifndef UEFI_BUILD
 #include <mft_sig_handler.h>
 #include "mad_ifc/mad_ifc.h"
@@ -1785,6 +1786,19 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
     query->sec_boot = mgir.fw_info.sec_boot;
     query->encryption = mgir.fw_info.encryption;
     query->signed_fw = _compsQueryMap[FwComponent::COMPID_BOOT_IMG].comp_cap.signed_updates_only;
+
+    // Since in switches MGIR 'dev' field is used to indicate dev-branch instead of the original purpose for dev-secure,
+    // we now read from a new field called 'dev_sc' to determine if the switch is dev-secure
+    dm_dev_id_t dm_device_id = DeviceUnknown;
+    if (dm_get_device_id_offline(query->hw_dev_id, query->rev_id, &dm_device_id) == ME_OK) {
+        if (dm_dev_is_switch(dm_device_id)) {
+            query->security_type.dev_fw = mgir.fw_info.dev_sc;
+        }
+    }
+    else {
+        _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
+        return false;
+    }
 
     query->base_mac_orig.uid = ((u_int64_t)mgir.hw_info.manufacturing_base_mac_47_32 << 32 | mgir.hw_info.manufacturing_base_mac_31_0);
     if (!extractMacsGuids(query)) {
