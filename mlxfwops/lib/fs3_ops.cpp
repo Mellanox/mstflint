@@ -145,6 +145,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS4_TOOLS_AREA,                    "TOOLS_AREA"},
     {FS4_RSA_PUBLIC_KEY,                "RSA_PUBLIC_KEY"},
     {FS4_RSA_4096_SIGNATURES,           "RSA_4096_SIGNATURES"},
+    {FS4_EXCLKSYNC_INFO,                "EXCLKSYNC_INFO"},
     {FS4_HASHES_TABLE,                  "HASHES_TABLE"}
 };
 

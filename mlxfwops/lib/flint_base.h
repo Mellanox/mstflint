@@ -296,6 +296,7 @@ typedef enum fs3_section {
     FS3_HMAC_DIGEST         = 0xa5,
     FS4_RSA_PUBLIC_KEY      = 0xa6,
     FS4_RSA_4096_SIGNATURES = 0xa7,
+    FS4_EXCLKSYNC_INFO      = 0xb0,
     FS3_MFG_INFO            = 0xe0,
     FS3_DEV_INFO            = 0xe1,
     FS3_NV_DATA1            = 0xe2,
