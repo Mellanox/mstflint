@@ -1009,11 +1009,6 @@ reg_access_status_t FwCompsMgr::getGI(mfile *mf, mgirReg *gi)
         if (rc) {
             goto cleanup;
         }
-        if (gi->hw_info.device_id == 4129) {
-            DPRINTF(("FwCompsMgr::getGI CX7 IB device found, sending regular MGIR\n"));
-            rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, gi);
-            goto cleanup;
-        }
         rc = (reg_access_status_t)mad_ifc_general_info_fw(mf, &gi->fw_info);
         if (rc) {
             goto cleanup;
@@ -1157,9 +1152,7 @@ FwCompsMgr::FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra)
         _lastError = FWCOMPS_MEM_ALLOC_FAILED;
         return;
     }
-    if (uefi_extra != NULL) {
-        _hwDevId = uefi_extra->dev_info.hw_dev_id;
-    }
+    _hwDevId = uefi_extra->dev_info.hw_dev_id;
     _openedMfile = true;
     _autoUpdate = false;
     _linkXFlow = false;

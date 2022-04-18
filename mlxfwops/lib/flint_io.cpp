@@ -38,6 +38,7 @@
  */
 
 #include <errno.h>
+#include <tools_dev_types.h>
 #include "flint_io.h"
 
 
@@ -592,12 +593,12 @@ bool Flash::write(u_int32_t addr,
     }
 
 
-    if (cont2phys(addr + cnt) > get_size()) {
+    if (cont2phys(addr + cnt) > get_effective_size()) {
         return errmsg(
             "Trying to write %d bytes to address 0x%x, which exceeds max image size (0x%x - half of total flash size).",
             cnt,
             addr,
-            get_size() / 2);
+            get_effective_size() / 2);
     }
 
     u_int8_t         *p = (u_int8_t*)data;
@@ -1041,4 +1042,18 @@ bool Flash::set_flash_utilization(bool is_applied, int percent)
     _cputUtilizationApplied = is_applied;
     _cpuPercent = percent;
     return true;
+}
+
+u_int32_t Flash::get_effective_size()
+{
+    u_int32_t effective_size = get_size();
+
+    dm_dev_id_t dm_dev_id = mf_get_dm_dev_id(_mfl);
+    if ((dm_dev_id == DeviceConnectX4LX || dm_dev_id == DeviceConnectX5) &&
+        _attr.vendor == FV_GD25QXXX)
+    {
+        effective_size = 1 << FD_128; // 16MB
+    }
+
+    return effective_size;
 }

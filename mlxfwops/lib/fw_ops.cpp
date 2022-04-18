@@ -381,7 +381,7 @@ const u_int32_t FwOperations::_cntx_image_start_pos[FwOperations::CNTX_START_POS
 bool FwOperations::FindMagicPattern(FBase *ioAccess, u_int32_t addr,
                                     u_int32_t const cntx_magic_pattern[])
 {
-    if (addr + 16 > ioAccess->get_size()) {
+    if (addr + 16 > ioAccess->get_effective_size()) {
         return false;
     }
     for (int i = 0; i < 4; i++) {
@@ -436,9 +436,9 @@ bool FwOperations::FindAllImageStart(FBase *ioAccess,
                 (*found_images)++;
             }
         }
+        DPRINTF(("FwOperations::FindAllImageStart found %d image(s)\n", *found_images));
     }
 
-    DPRINTF(("FwOperations::FindAllImageStart found %d image(s)\n", *found_images));
     return true;
 }
 // CAN BE IN ANOTHER MODULE
@@ -1178,6 +1178,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "ConnectX-6DX",     CX6DX_HW_ID,      CT_CONNECTX6DX,  CFT_HCA,     0, {4125, 0}, {{UNKNOWN_BIN, {0}}}},
     { "ConnectX-6LX",     CX6LX_HW_ID,      CT_CONNECTX6LX,  CFT_HCA,     0, {4127, 0}, {{UNKNOWN_BIN, {0}}}},
     { "ConnectX-7",       CX7_HW_ID,        CT_CONNECTX7,    CFT_HCA,     0, {4129, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "ConnectX-8",       CX8_HW_ID,        CT_CONNECTX8,    CFT_HCA,     0, {4131, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField",        BF_HW_ID,         CT_BLUEFIELD,    CFT_HCA,     0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField2",       BF2_HW_ID,        CT_BLUEFIELD2,   CFT_HCA,     0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField3",       BF3_HW_ID,        CT_BLUEFIELD3,   CFT_HCA,     0, {41690, 41691, 41692, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1207,6 +1208,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"ConnectX-6DX",      CX6DX_HW_ID,      0x00},
     {"ConnectX-6LX",      CX6LX_HW_ID,      0x00},
     {"ConnectX-7",        CX7_HW_ID,        0x00},
+    {"ConnectX-8",        CX8_HW_ID,        0x00},
     {"BlueField",         BF_HW_ID,         0x00},
     {"BlueField2",        BF2_HW_ID,        0x00},
     {"BlueField3",        BF3_HW_ID,        0x00},
@@ -1262,6 +1264,8 @@ chip_type FwOperations::GetChipType(string chip)
         return CT_CONNECTX6LX;
     else if (chip == "CT_CONNECTX7")
         return CT_CONNECTX7;
+    else if (chip == "CT_CONNECTX8")
+        return CT_CONNECTX8;
     else if (chip == "CT_SPECTRUM3")
         return CT_SPECTRUM3;
     else if (chip == "CT_BLUEFIELD2")
@@ -1857,7 +1861,8 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
                  (chipType == CT_CONNECTX6) || (chipType == CT_CONNECTX6DX) || (chipType == CT_CONNECTX6LX) || \
                  (chipType == CT_SPECTRUM) || (chipType == CT_SPECTRUM2) || (chipType == CT_SPECTRUM3) || \
                  (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) || (chipType == CT_SPECTRUM4) || \
-                 (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3);
+                 (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3) || \
+                 (chipType == CT_CONNECTX8);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
@@ -1916,9 +1921,9 @@ bool FwOperations::FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, P
     }
 
     //check if flash is big enough
-    if ((addr + dataVec.size()) > _ioAccess->get_size()) {
+    if ((addr + dataVec.size()) > _ioAccess->get_effective_size()) {
         return errmsg("Writing %#x bytes from address %#x is out of flash limits (%#x bytes)\n",
-                      (unsigned int)(dataVec.size()), (unsigned int)addr, (unsigned int)_ioAccess->get_size());
+                      (unsigned int)(dataVec.size()), (unsigned int)addr, (unsigned int)_ioAccess->get_effective_size());
     }
 
     if (!writeImage(progressFunc, addr, &dataVec[0], (int)dataVec.size())) {
@@ -2006,8 +2011,8 @@ bool FwOperations::getRomsInfo(FBase *io, roms_info_t& romsInfo)
 {
     std::vector<u_int8_t> romSector;
     romSector.clear();
-    romSector.resize(io->get_size());
-    if (!io->read(0, &romSector[0], io->get_size())) {
+    romSector.resize(io->get_effective_size());
+    if (!io->read(0, &romSector[0], io->get_effective_size())) {
         return false;
     }
     RomInfo info(romSector, false);
@@ -2258,9 +2263,9 @@ bool FwOperations::FwSetForbiddenVersions(char *fname, PrintCallBack callBackFun
 
 bool FwOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec)
 {
-    if (addr + size > _ioAccess->get_size()) {
+    if (addr + size > _ioAccess->get_effective_size()) {
         return errmsg(MLXFW_BAD_PARAM_ERR, "Reading %#x bytes from address %#x is out of flash limits (%#x bytes)\n",
-                      size, (unsigned int)addr, (unsigned int)_ioAccess->get_size());
+                      size, (unsigned int)addr, (unsigned int)_ioAccess->get_effective_size());
     }
     //read from flash/image
     if (!_ioAccess->read(addr, &dataVec[0], size)) {
@@ -2289,6 +2294,7 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
                hwDevId == CX6DX_HW_ID ||
                hwDevId == CX6LX_HW_ID ||
                hwDevId == CX7_HW_ID ||
+               hwDevId == CX8_HW_ID ||
                hwDevId == BF_HW_ID      ||
                hwDevId == BF2_HW_ID      ||
                hwDevId == BF3_HW_ID      ||
@@ -2624,7 +2630,7 @@ u_int32_t CRSpaceRegisters::getSecurityVersion()
     u_int32_t rollbackMSB = 0, rollbackLSB = 0;
     u_int32_t minimalSecurityVersion = 0;
 
-     switch (_chip_type) {
+    switch (_chip_type) {
         case CT_QUANTUM2:
             rollbackMSB = getRegister(0xf3248);
             rollbackLSB = getRegister(0xf324c);
@@ -2641,7 +2647,7 @@ u_int32_t CRSpaceRegisters::getSecurityVersion()
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf4538), 4, 8);
             break;
         default:
-            throw logic_error("-E- security version query is not implemented for the current device.");
+            throw logic_error("-E- Security version query is not implemented for the current device.");
             break;
     }
 
@@ -2676,7 +2682,7 @@ u_int32_t CRSpaceRegisters::getRegister(u_int32_t address)
     u_int32_t crSpaceReg;
     int rc = mread4(_mf, address, &crSpaceReg);
     if (rc != 4){
-        throw logic_error("-E- Failed to read from CRSpace.");
+        throw runtime_error("-E- Failed to read from CRSpace.");
     }
 
     return crSpaceReg;

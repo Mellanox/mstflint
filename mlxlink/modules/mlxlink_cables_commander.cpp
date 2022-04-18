@@ -1461,6 +1461,10 @@ void MlxlinkCablesCommander::showControlParams()
     u_int32_t rxAmp = getFieldValue("cable_rx_amp");
     bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
 
+    resetParser(ACCESS_REG_PMCR);
+    updateField("local_port", _localPort);
+    genBuffSendRegister(ACCESS_REG_PMCR, MACCESS_REG_METHOD_GET);
+
     if (isCmis) {
         _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_EMPH].first += " (pre)";
         rxEmph /= 2;
@@ -1469,16 +1473,21 @@ void MlxlinkCablesCommander::showControlParams()
     sprintf(rxEmphStr, "%.1f", rxEmph);
 
     string strFmt = txEq? to_string(txEq) + " dB" : "No Equalization";
+    strFmt = getFieldValue("tx_equ_override_cap")? strFmt : "Not Supported";
     setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_TX_EQ].first, strFmt);
 
     strFmt = (isCmis? rxEmphStr : to_string((u_int32_t) rxEmph)) + " dB";
     strFmt = (rxEmph > 0)? strFmt: "No Equalization";
+    strFmt = getFieldValue("rx_emp_override_cap")? strFmt : "Not Supported";
     setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_EMPH].first, strFmt);
 
     strFmt = rxPostEmph? to_string(rxPostEmph) + " dB" : "No Equalization";
-    setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH].first, strFmt);
+    strFmt = getFieldValue("rx_post_emp_override_cap")? strFmt : "Not Supported";
+    setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH].first, strFmt,
+                ANSI_COLOR_RESET, isCmis);
 
     strFmt = _mlxlinkMaps->_moduleRxAmp[rxAmp];
+    strFmt = getFieldValue("rx_amp_override_cap")? strFmt : "Not Supported";
     setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_AMP].first, strFmt);
 
     controlParamsOutput.toJsonFormat(_jsonRoot);
@@ -1491,9 +1500,11 @@ u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const strin
     bool invalidConfiguration = false;
     bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
     bool isDecemal = false;
+    string valueStr = value;
 
     try {
-        valueToSet = value == "NE"? 0 : stod(value);
+        toUpperCase(valueStr);
+        valueToSet = valueStr == "NE"? 0 : stod(value);
         isDecemal = (valueToSet - (int) valueToSet) > 0;
     } catch (exception &exc) {
         invalidConfiguration = true;
@@ -1565,6 +1576,8 @@ void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string
     }
 
     // Check provided params value capability
+    /*
+     * ignore cap check due to firmware issue
     bool invalidVal = false;
     u_int32_t valueToSet = 0;
     u_int32_t valueCap = 0;
@@ -1591,6 +1604,7 @@ void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string
                                   _modulePMCRParams[it->first].first.c_str(), it->second.c_str(), validCapStr.c_str());
         }
     }
+    */
 }
 
 void MlxlinkCablesCommander::buildPMCRRequest(ControlParam paramId, const string &value)

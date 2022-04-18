@@ -113,6 +113,7 @@ public:
                          u_int32_t new_image_start, u_int32_t log2_chunk_size);
     virtual void FwCleanUp();
     bool IsLifeCycleAccessible(chip_type_t chip_type);
+    bool IsSecurityVersionAccessible(chip_type_t chip_type);
     bool IsSecurityVersionViolated(u_int32_t image_security_version);
     bool GetImageInfo(u_int8_t *buff);
     bool GetImageSize(u_int32_t* image_size);
@@ -275,7 +276,7 @@ private:
     bool updateHwPointer(u_int32_t addr, u_int32_t val);
     bool SetImageIVHwPointer();
     void RemoveCRCsFromMainSection(vector<u_int8_t>& img);
-    bool RemoveCRCFromBootRecord(vector<u_int8_t>& img);
+    bool MaskBootRecordCRC(vector<u_int8_t>& img);
 
     // Members
     Fs4ImgInfo _fs4ImgInfo;

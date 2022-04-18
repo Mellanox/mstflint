@@ -147,6 +147,7 @@ public:
 
     virtual u_int32_t get_sector_size() = 0;
     virtual u_int32_t get_size() = 0;
+    virtual u_int32_t get_effective_size() = 0;
 
     virtual u_int32_t get_dev_id() = 0;
     virtual u_int32_t get_rev_id() = 0;
@@ -337,6 +338,7 @@ public:
     }
     virtual u_int32_t get_sector_size();
     virtual u_int32_t get_size() { return getBufLength(); }
+    virtual u_int32_t get_effective_size() { return get_size(); }
     virtual u_int32_t get_dev_id() { return 0; }
     virtual u_int32_t get_rev_id() { return 0; }
     virtual mfile* getMfileObj()
@@ -439,6 +441,7 @@ public:
     u_int32_t get_current_sector_size() { return _curr_sector_size; }
     u_int32_t get_sector_size() { return _attr.sector_size; }
     virtual u_int32_t get_size() { return _attr.size; }
+    virtual u_int32_t get_effective_size();
 
     virtual u_int32_t get_dev_id() { return _attr.hw_dev_id; }
     u_int32_t get_rev_id() { return _attr.rev_id; }

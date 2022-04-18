@@ -43,7 +43,9 @@
 
 #include <compatibility.h>
 #include <mtcr.h>
+#include "dev_mgt/tools_dev_types.h"
 #include "mflash_types.h"
+#include "flash_int_defs.h"
 #include "mflash_common_structs.h"
 
 #include <mlxfwops/uefi_c/mft_uefi_common.h>
@@ -236,6 +238,8 @@ int     mf_release_semaphore(mflash *mfl);
 
 // get mfile object
 mfile* mf_get_mfile(mflash *mfl);
+
+dm_dev_id_t mf_get_dm_dev_id(mflash *mfl);
 
 //
 // err code to string translation for printing.
