@@ -58,7 +58,10 @@ try:
     from ctypes import *
     ctypes.CDLL._func_restype_ = ctypes.c_ulonglong
     if platform.system() == "Windows" or os.name == "nt":
-        CMTCR = CDLL(".\\libmtcr-1.dll", use_errno=True)
+        try:
+            CMTCR = CDLL("libmtcr-1.dll", use_errno=True)
+        except:
+            CMTCR = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libmtcr-1.dll"), use_errno=True)
     else:
         try:
             CMTCR = CDLL("cmtcr.so", use_errno=True)
