@@ -339,10 +339,15 @@ void GenericCommander::printParamViews(FILE *f, vector<ParamView>& v)
             break;
         }
         size_t len = (*pIt).mlxconfigName.length();
+        //dont print description for parms _P2 - _P8
         if ((*pIt).mlxconfigName.rfind("_P1") == std::string::npos) {
-            if ((*pIt).mlxconfigName.rfind("_P") == len - 3) {
-                fprintf(f, "%20s%-40s\n", " ", s.c_str());
-                continue;
+            size_t posP = (*pIt).mlxconfigName.rfind("_P");
+            if (posP == len - 3) {
+                char charP = (*pIt).mlxconfigName[posP+2];
+                if (charP >= '2' && charP <='8'){
+                    fprintf(f, "%20s%-40s\n", " ", s.c_str());
+                    continue;
+                }
             }
         }
         size_t prevPos = 0;
@@ -1598,7 +1603,7 @@ std::vector<u_int32_t> RawCfgParams5thGen::getRawData()
         *it = __be32_to_cpu(*it);
     }
     // Truncate to the correct data size
-    tlvBuff.resize(_nvdaTlv.nv_hdr.length);
+    tlvBuff.resize(this->_tlvBuff.size());
     return tlvBuff;
 }
 

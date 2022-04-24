@@ -82,9 +82,6 @@ reg_access_status_t reg_access_debug_cap(mfile *mf, reg_access_method_t method, 
 
 reg_access_status_t reg_access_pcnr(mfile *mf, reg_access_method_t method, struct reg_access_hca_pcnr_reg *pcnr);
 
-reg_access_status_t reg_access_fpga_cap(mfile *mf, reg_access_method_t method, struct reg_access_hca_fpga_cap *fpga_cap);
-reg_access_status_t reg_access_fpga_ctrl(mfile *mf, reg_access_method_t method, struct reg_access_hca_fpga_ctrl *fpga_ctrl);
-
 reg_access_status_t reg_access_strs_stop_toggle_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_stop_toggle_reg *streg);
 reg_access_status_t reg_access_strs_fault_injector_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_fault_inject_reg *strs_fault_inject_reg);
 reg_access_status_t reg_access_strs_mini_flow_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_mini_flow_reg *strs_mini_flow_reg);

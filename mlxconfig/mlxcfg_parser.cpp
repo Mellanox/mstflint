@@ -599,7 +599,14 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
     }
     if (((_mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Get_Raw) &&
             _mlxParams.rawTlvFile.size() == 0 )) {
-        return err(true, "set_raw command expects raw TLV file to be specified.");
+        if (_mlxParams.cmd == Mc_Set_Raw)
+        {
+            return err(true, "set_raw command expects raw TLV file to be specified.");
+        }
+        else
+        {
+            return err(true, "get_raw command expects raw TLV file to be specified.");
+        }
     }
     if ((_mlxParams.cmd == Mc_Backup && _mlxParams.rawTlvFile.size() == 0 )) {
         return err(true, "backup command expects file to be specified.");
@@ -607,7 +614,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
     if ((((_mlxParams.cmd != Mc_Set_Raw && _mlxParams.cmd != Mc_Get_Raw) &&
             _mlxParams.cmd != Mc_Backup) &&
          _mlxParams.rawTlvFile.size() != 0 )) {
-        return err(true, "raw TLV file can only be specified with set_raw command.");
+        return err(true, "raw TLV file can only be specified with set_raw, get_raw and backup commands.");
     }
 
     if ((_mlxParams.cmd == Mc_ChallengeRequest && (_mlxParams.tokenID == Mc_Token_Unknown)) ||
@@ -625,6 +632,10 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
     }
     if (_mlxParams.isSessionTimeGiven && _mlxParams.cmd != Mc_RemoteTokenKeepAlive) {
         return err(true, "session time for keep alive session can only be specified with remote_token_keep_alive command");
+    }
+
+    if (_mlxParams.cmd == Mc_QueryTokenSession && _mlxParams.deviceType == UNSUPPORTED_DEVICE) {
+        return err(true, "device type must be specified with query_token_session command");
     }
 
     if (_mlxParams.cmd == Mc_GenTLVsFile) {

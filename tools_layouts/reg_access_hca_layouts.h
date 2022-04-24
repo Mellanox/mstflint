@@ -174,12 +174,12 @@ Other values are reserved */
 	u_int8_t category;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - LOCK_RESOURCE Modifier according to category field
-For GENERAL_SEMAPHORE Table  1091, "GENERAL_SEMA
-PHORE Category Layout," on page  1358
-For ICM_RESOURCE Table  1093, "ICM_RESOURCE Category 
-Layout," on page  1359
-For UAPP_RESOURCE Table  1095, "UAPP_RESOURCE Cate
-gory Layout," on page  1359 */
+For GENERAL_SEMAPHORE Table  1102, "GENERAL_SEMA
+PHORE Category Layout," on page  1388
+For ICM_RESOURCE Table  1104, "ICM_RESOURCE Category 
+Layout," on page  1389
+For UAPP_RESOURCE Table  1106, "UAPP_RESOURCE Cate
+gory Layout," on page  1389 */
 	/* 0x4.0 - 0x1c.31 */
 	union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto category_modifier;
 };
@@ -281,7 +281,7 @@ ponent update. */
 	/* 0x10.30 - 0x10.30 */
 	u_int8_t signed_updates_only;
 	/* Description - When set, this components may be read, see 
-Section 10.3.4, "Read Flow", on page 803. */
+Section 10.3.4, "Read Flow", on page 829. */
 	/* 0x10.31 - 0x10.31 */
 	u_int8_t rd_en;
 };
@@ -388,14 +388,14 @@ stamp in build_time */
 	u_int32_t version;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Time of component creation. Valid only if build_
-time_valid is set. See Table 1847, "Date-Time Lay
-out," on page 2078 */
+time_valid is set. See Table 1873, "Date-Time Lay
+out," on page 2336 */
 	/* 0x8.0 - 0xc.31 */
 	u_int64_t build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - User-defined time assigned to the component version. 
 Valid only if user_defined_time_valid is set. See 
-Table 1847, "Date-Time Layout," on page 2078 */
+Table 1873, "Date-Time Layout," on page 2336 */
 	/* 0x10.0 - 0x14.31 */
 	u_int64_t user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -543,54 +543,6 @@ Counters */
 };
 
 /* Description -   */
-/* Size in bytes - 64 */
-struct reg_access_hca_fpga_shell_caps {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Total size of shared QP buffer size in granularity of 2 KB. */
-	/* 0x0.0 - 0x0.7 */
-	u_int8_t total_rcv_credits;
-	/* Description - Maximum number of supported QPs. */
-	/* 0x0.16 - 0x0.31 */
-	u_int16_t max_num_qps;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - If set, RC transport service is supported. */
-	/* 0x4.0 - 0x4.0 */
-	u_int8_t rc;
-	/* Description - If set, UC transport service is supported. */
-	/* 0x4.1 - 0x4.1 */
-	u_int8_t uc;
-	/* Description - If set, UD transport service is supported. */
-	/* 0x4.2 - 0x4.2 */
-	u_int8_t ud;
-	/* Description - If set, DC transport service is supported. */
-	/* 0x4.3 - 0x4.3 */
-	u_int8_t dc;
-	/* Description - If set, RDMA READ operation is supported. */
-	/* 0x4.8 - 0x4.8 */
-	u_int8_t rre;
-	/* Description - If set, RDMA WRITE operation is supported. */
-	/* 0x4.9 - 0x4.9 */
-	u_int8_t rwe;
-	/* Description - If set, RDMA atomic operation is supported. */
-	/* 0x4.10 - 0x4.10 */
-	u_int8_t rae;
-	/* Description - Bit mask indicates which QP types are supported
-Bit 0: Shell_qp - Shell QP supported
-Bit 1: Sandbox_qp - Sandbox QP supported */
-	/* 0x4.16 - 0x4.17 */
-	u_int8_t qp_type;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Log (base 2) of the DDR size in granularity of GB. */
-	/* 0x8.0 - 0x8.5 */
-	u_int8_t log_ddr_size;
-/*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - The maximum size of message size supported by FPGA 
-Shell QP. */
-	/* 0xc.0 - 0xc.31 */
-	u_int32_t max_fpga_qp_msg_size;
-};
-
-/* Description -   */
 /* Size in bytes - 124 */
 union reg_access_hca_mcqi_reg_data_auto {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -654,13 +606,29 @@ token that must be loaded to the device before
 installing the debug binary. */
 	/* 0x0.26 - 0x0.26 */
 	u_int8_t debug;
-	/* Description - When set, the device is running a development firm
-ware version. */
+	/* Description - *NOTE* this field has diff meaning for Switch vs. NIC 
+
+
+NIC:
+The device is running:
+0: a regular-secure firmware version
+1: a development-secure firmware version
+
+Switch:
+The device is running:
+0: regular FW branch
+1: development branch */
 	/* 0x0.27 - 0x0.27 */
 	u_int8_t dev;
 	/* Description - When set, string-TLV is supported. */
 	/* 0x0.28 - 0x0.28 */
 	u_int8_t string_tlv;
+	/* Description - *NOTE* for NICs same as dev field
+Development-secure:
+The device is running:
+0: a regular-secure firmware version
+1: a development-secure firmware version */
+	/* 0x0.30 - 0x0.30 */
 	u_int8_t dev_sc;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Firmware Build ID. Optional. . */
@@ -747,8 +715,7 @@ struct reg_access_hca_mgir_hardware_info {
 	/* Description - PCI device ID. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t device_id;
-	/* Description - 
-SwitchX Devices:
+	/* Description - SwitchX Devices:
 0x00A0: Device step A0, FCC package
 0x00A1: Device step A1, FCC package
 0x00A2: Device step A2, FCC package
@@ -793,6 +760,9 @@ manufacturing_base_mac of value 0 means field is not
 supported. */
 	/* 0x10.0 - 0x10.15 */
 	u_int16_t manufacturing_base_mac_47_32;
+	/* Description - module base index
+assiciated_module_id[0] = 32 * module_base */
+	/* 0x10.28 - 0x10.31 */
 	u_int8_t module_base;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description - LSB of the "base" MAC address of the NIC that was 
@@ -804,6 +774,11 @@ manufacturing_base_mac of value 0 means field is not
 supported. */
 	/* 0x14.0 - 0x14.31 */
 	u_int32_t manufacturing_base_mac_31_0;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - bitmask of associated module id. For each bit:
+0: module is not managed by ASIC
+1: module is managed by ASIC */
+	/* 0x18.0 - 0x18.31 */
 	u_int32_t associated_module_id_31_0;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description - Time (in secs.) since last reset0 */
@@ -982,15 +957,15 @@ handle the resource_dump_event */
 	/* 0x0.16 - 0x0.20 */
 	u_int8_t log_min_resource_dump_eq;
 	/* Description - If set, Resource_dump register is supported.
-See Table 1115, "RESOURCE_DUMP Register Layout," on 
-page 1369 */
+See Table 1126, "RESOURCE_DUMP Register Layout," on 
+page 1399 */
 	/* 0x0.22 - 0x0.22 */
 	u_int8_t resource_dump;
 	/* Description - Log(base 2) of the size in granularity of 4KB to be allo
 cated by host in order to accommodate cr_dump.
 0 means feature is not supported.
-See Table 1113, "CORE_DUMP Register Layout," on 
-page 1367 */
+See Table 1124, "CORE_DUMP Register Layout," on 
+page 1397 */
 	/* 0x0.23 - 0x0.27 */
 	u_int8_t log_cr_dump_to_mem_size;
 	/* Description - If set, Core dump of type of specific QP is supported.
@@ -1025,211 +1000,6 @@ See Section  26.5.1, "RX Path Activity," on page  988 */
 by num_of_counters. */
 	/* 0x40.0 - 0x40.31 */
 	struct reg_access_hca_diagnostic_cntr_layout *diagnostic_counter;
-};
-
-/* Description -   */
-/* Size in bytes - 256 */
-struct reg_access_hca_fpga_cap {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - FPGA device type
-0x0: UNKNOWN_DEVICE
-0x1: KU040
-0x2: KU060
-0x3: KU060_2 */
-	/* 0x0.0 - 0x0.23 */
-	u_int32_t fpga_device;
-	/* Description - FPGA identifier.
-0x0: Newton_X
-0x1: Edison */
-	/* 0x0.24 - 0x0.31 */
-	u_int8_t fpga_id;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Shell registers space file version. */
-	/* 0x4.0 - 0x4.31 */
-	u_int32_t register_file_ver;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Indicates the MODIFY operation's permissions of FPGA_AC
-CESS_REG.
-0x0: Not_allowed - modify registers by FPGA_ACCESS_REG 
-not allowed.
-0x1: All_range_allowed- modify registers by FPGA_AC
-CESS_REG allowed for all addresses. */
-	/* 0x8.16 - 0x8.17 */
-	u_int8_t access_reg_modify_mode;
-	/* Description - Indicates the QUERY operation's permissions of FPGA_AC
-CESS_REG.
-0x0: Not_allowed - Query registers by FPGA_ACCESS_REG 
-not allowed.
-0x1: All_range_allowed- Query registers by FPGA_AC
-CESS_REG allowed for all addresses. */
-	/* 0x8.24 - 0x8.25 */
-	u_int8_t access_reg_query_mode;
-	/* Description - If set, DISCONNECT and CONNECT operations in FPGA_C
-TRL are supported. */
-	/* 0x8.29 - 0x8.29 */
-	u_int8_t disconnect_fpga;
-	/* Description - If set, Flash_GW_Lock and Flash_GW_UnLock operations in 
-FPGA_CTRL are supported. */
-	/* 0x8.30 - 0x8.30 */
-	u_int8_t flash_gw_lock;
-	/* Description - If set, SW is allowed to modify FPGA_CTRL register. See 
-Table  1073, "FPGA_CTRL Register Layout," on page  1346 */
-	/* 0x8.31 - 0x8.31 */
-	u_int8_t fpga_ctrl_modify;
-/*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - Image version. */
-	/* 0x10.0 - 0x10.31 */
-	u_int32_t image_version;
-/*---------------- DWORD[5] (Offset 0x14) ----------------*/
-	/* Description - Creation date of current running image.
-Format: DDMMYYYY.
-For example:
-0x12011995 means 12/01/1995 in DD/MM/YY. */
-	/* 0x14.0 - 0x14.31 */
-	u_int32_t image_date;
-/*---------------- DWORD[6] (Offset 0x18) ----------------*/
-	/* Description - Creation time of current running image.
-Format: 00HHMMSS.
-For example:
-0x00015324 means 01:53:24 in HH:MM:SS */
-	/* 0x18.0 - 0x18.31 */
-	u_int32_t image_time;
-/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
-	/* Description - Shell image version. */
-	/* 0x1c.0 - 0x1c.31 */
-	u_int32_t shell_version;
-/*---------------- DWORD[12] (Offset 0x30) ----------------*/
-	/* Description - Shell capabilities. */
-	/* 0x30.0 - 0x6c.31 */
-	struct reg_access_hca_fpga_shell_caps shell_caps;
-/*---------------- DWORD[28] (Offset 0x70) ----------------*/
-	/* Description - IEEE Vendor ID of sandbox user.
-0x2C9: Mellanox */
-	/* 0x70.0 - 0x70.23 */
-	u_int32_t ieee_vendor_id;
-/*---------------- DWORD[29] (Offset 0x74) ----------------*/
-	/* Description - Sandbox product ID.
-For Mellanox sandbox products
-0x0: unknown
-0x1: example
-0x2: IPsec
-0x3: TLS */
-	/* 0x74.0 - 0x74.15 */
-	u_int16_t sandbox_product_id;
-	/* Description - Sandbox version. */
-	/* 0x74.16 - 0x74.31 */
-	u_int16_t sandbox_product_version;
-/*---------------- DWORD[30] (Offset 0x78) ----------------*/
-	/* Description - Sandbox basic capabilities per sandbox product ID.
-For Mellanox sandbox products, see Table  965, "IPsec_Basic_Ca
-pabilities Structure Layout," on page  1236. */
-	/* 0x78.0 - 0x78.31 */
-	u_int32_t sandbox_basic_caps;
-/*---------------- DWORD[31] (Offset 0x7c) ----------------*/
-	/* Description - The length (in DWORDs) of sandbox extended capability 
-(equals 0 when such capability is not present). */
-	/* 0x7c.0 - 0x7c.15 */
-	u_int16_t sandbox_extended_caps_len;
-/*---------------- DWORD[32] (Offset 0x80) ----------------*/
-	/* Description - Extended capabilities address.
-For Mellanox sandbox products, see Table  967, "IPsec_Extend
-ed_Capabilities Structure Layout," on page  1236. */
-	/* 0x80.0 - 0x84.31 */
-	u_int64_t sandbox_extended_caps_addr;
-/*---------------- DWORD[34] (Offset 0x88) ----------------*/
-	/* Description - Start address of DDR */
-	/* 0x88.0 - 0x8c.31 */
-	u_int64_t fpga_ddr_start_addr;
-/*---------------- DWORD[36] (Offset 0x90) ----------------*/
-	/* Description - Start address of cr-space */
-	/* 0x90.0 - 0x94.31 */
-	u_int64_t fpga_cr_space_start_addr;
-/*---------------- DWORD[38] (Offset 0x98) ----------------*/
-	/* Description - Size of DDR in a granularity of 1KB */
-	/* 0x98.0 - 0x98.31 */
-	u_int32_t fpga_ddr_size;
-/*---------------- DWORD[39] (Offset 0x9c) ----------------*/
-	/* Description - Size of cr-space in a granularity of 1KB */
-	/* 0x9c.0 - 0x9c.31 */
-	u_int32_t fpga_cr_space_size;
-};
-
-/* Description -   */
-/* Size in bytes - 16 */
-struct reg_access_hca_fpga_ctrl {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Status of the last operation.
-0x0: Success
-0x1: Failure
-0x2: In_progress
-0x3: DISCONNECTED - FPGA is disconnect by DOSCONNECT 
-operation.
-Valid only for query operation. */
-	/* 0x0.0 - 0x0.7 */
-	u_int8_t status;
-	/* Description - Indicates the control operation to be performed. Allowed 
-only when FPGA_CAP.fpga_ctrl_modify==1. Table  1069, 
-"FPGA_CAP Register Layout," on page  1341.
-0x1: LOAD - when set, the FPGA will be forced to reload the 
-image from flash according to image_select_admin value.
-0x2: RESET - when set, the FPGA internal logic state 
-(BRAMs, FFs, etc.) will be reset to the original state at load
-ing time.
-0x3: FLASH_SELECT - when set, map the flash GW accord
-ing to flash_select_admin value.
-0x4: Sandbox_Bypass_On - If set, sandbox logic is inactive 
-until Sandbox_Bypass_Off is set. Packets will skip the sand
-box logic.
-0x5: Sandbox_Bypass_Off - If set, sandbox logic is active. 
-Packets will be processed by the sandbox logic.
-0x6: Reset_Sandbox - If set, the FPGA sandbox logic state 
-(BRAMs, FFs, etc.) will be reset to the original state at load
-ing time (no shell state is affected).
-0x7: Flash_GW_Lock - lock the flash gateway. Users must 
-take this lock before attempting to reads/writes to flash. 
-Supported only when FPGA_CAP.flash_gw_lock==1.
-0x8: Flash_GW_Unlock - Unlock flash gateway. Users must 
-release this lock after completing their reads/writes to flash. 
-Supported only when FPGA_CAP.flash_gw_lock==1.
-0x9: DISCONNECT - Disable the ConnectX to FPGA manage
-ment interface. This mode is useful when upgrading the 
-FPGA via JTAG. supported only when FPGA_CAP.discon
-nect_fpga==1. Note that on this mode no other operation can 
-be performed on the FPGA.
-0xA: CONNECT - Enable the ConnectX to FPGA management 
-interface.supported only when FPGA_CAP.disconnect_f
-pga==1. */
-	/* 0x0.16 - 0x0.23 */
-	u_int8_t operation;
-	/* Description - Error type. Valid only when status = failure(0x1)
-0x0: Error_unknown
-0x1: fpga_done_timeout
-0x2: gpio_sig_mismatch
-0x3: ddr_bist_timeout
-0x4: sadb_reset_done_timeout
-0x5: sadb_reset_success_timeout
-0x6: ips_flush_done_timeout
-0x7: flash_gw_lock_timeout
-0x8: flash_gw_unlock_error
-0x9: i2c_access_during_fpga_load
-0xA: fpga_user_img_done_timeout */
-	/* 0x0.24 - 0x0.31 */
-	u_int8_t error_type;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Current flashthat is used to loadimages to FPGA.
-0x0: User
-0x1: Factory_default
-0x2: Factory_failover - The device tried to load the user 
-image, but due to a failure loaded the factory image.
-Valid only if status is ok. */
-	/* 0x4.0 - 0x4.7 */
-	u_int8_t flash_select_oper;
-	/* Description - Used to select next flash to be usedto load the images.
-0x0: User
-0x1: Factory_default
-Valid only for FLASH_SELECT and LOAD operations. */
-	/* 0x4.16 - 0x4.23 */
-	u_int8_t flash_select_admin;
 };
 
 /* Description -   */
@@ -1275,7 +1045,7 @@ NENT instructions. Otherwise, this field is reserved. */
 	/* Description - Token representing the current flow executed by the 
 FSM.
 See Section 10.2.1, "Component Update State", on 
-page 800. */
+page 826. */
 	/* 0x8.0 - 0x8.23 */
 	u_int32_t update_handle;
 	/* Description - Auto-update to all matching downstream devices is 
@@ -1284,7 +1054,7 @@ requested. */
 	u_int8_t auto_update;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Current Update FSM state, See Section 10.3.8, "FSM 
-States", on page 804
+States", on page 830
 0x0: IDLE
 0x1: LOCKED
 0x2: INITIALIZE
@@ -1300,7 +1070,7 @@ Other values are reserved */
 	u_int8_t control_state;
 	/* Description - Indicates the successful completion of the instruction, 
 or the reason it failed. See Section 10.3.7, "Error 
-Handling", on page 803
+Handling", on page 829
 0x0: OK
 0x1: ERROR
 0x2: REJECTED_DIGEST_ERR
@@ -1391,8 +1161,8 @@ struct reg_access_hca_mcda_reg {
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Offset of accessed address relative to component start. 
 Accesses must be in accordance to log_mcda_word_
-size in Table 1843, "MCQI CAPABILITIES Info Lay
-out," on page 2075 */
+size in Table 1869, "MCQI CAPABILITIES Info Lay
+out," on page 2333 */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t offset;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -1456,14 +1226,14 @@ zero padded. */
 	u_int16_t data_size;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description - Properties set structure according to info_type.
-CAPABILITIES - See Table 1843, "MCQI CAPABILI
-TIES Info Layout," on page 2075
-VERSION - See Table 1845, "MCQI VERSION Info 
-Layout," on page 2077
-ACTIVATION_METHOD - See Table 1849, "MCQI 
-ACTIVATION_METHOD Info Layout," on page 2079
-LINKX_PREPERTIES - See Table 1851, "MCQI 
-LINKX_PROPERTIES Info Layout," on page 2080 */
+CAPABILITIES - See Table 1869, "MCQI CAPABILI
+TIES Info Layout," on page 2333
+VERSION - See Table 1871, "MCQI VERSION Info 
+Layout," on page 2335
+ACTIVATION_METHOD - See Table 1875, "MCQI 
+ACTIVATION_METHOD Info Layout," on page 2337
+LINKX_PREPERTIES - See Table 1877, "MCQI 
+LINKX_PROPERTIES Info Layout," on page 2338 */
 	/* 0x18.0 - 0x90.31 */
 	union reg_access_hca_mcqi_reg_data_auto data;
 };
@@ -1504,7 +1274,7 @@ Other values are reserved */
 	u_int16_t identifier;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Component state in update flow, see Section 10.2.1, 
-"Component Update State", on page 800:
+"Component Update State", on page 826:
 0x0: IDLE
 0x1: IN_PROGRESS
 0x2: APPLIED
@@ -1638,18 +1408,18 @@ FW_sec_ver_stat is 1, it will program the EFUSEs as needed. */
 /* Size in bytes - 160 */
 struct reg_access_hca_mgir {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see Table 1732, "Hardware Info 
-Layout," on page 1994 */
+	/* Description - Hardware Information, see Table 1758, "Hardware Info 
+Layout," on page 2250 */
 	/* 0x0.0 - 0x1c.31 */
 	struct reg_access_hca_mgir_hardware_info hw_info;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description - Firmware Information, see Table 1734, "Firmware Info 
-Layout," on page 1996 */
+	/* Description - Firmware Information, see Table 1760, "Firmware Info 
+Layout," on page 2252 */
 	/* 0x20.0 - 0x5c.31 */
 	struct reg_access_hca_mgir_fw_info fw_info;
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
-	/* Description - Software Information, see Table 1736, "Software Info Lay
-out," on page 1998
+	/* Description - Software Information, see Table 1762, "Software Info Lay
+out," on page 2255
 This field indicates the oldest software version compati
 ble with the current firmware */
 	/* 0x60.0 - 0x7c.31 */
@@ -1872,8 +1642,8 @@ struct reg_access_hca_mtrc_cap_reg {
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t num_string_db;
 	/* Description - Indicates the version of the tracing mechanism.
-See, Section 27.3.4.1, "Timestamp Event Traces", on 
-page 1283
+See, Section 24.3.4.1, "Timestamp Event Traces", on 
+page 1321
 0x0: VER_0
 0x1: VER_1
 other values are reserved */
@@ -2007,7 +1777,7 @@ formed. Used for debug. */
 /* Size in bytes - 256 */
 struct reg_access_hca_resource_dump {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - See Section 24.8, "Resource Dump", on page 1299. */
+	/* Description - See Section 24.8, "Resource Dump", on page 1329. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t segment_type;
 	/* Description - Sequence number. 0 on first call of dump and incre
@@ -2159,8 +1929,8 @@ injected. */
 	u_int16_t num_repeat;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - stressor Modifier according to type field.
-For SMBUS_FAILED,Table  1101, "SMBUS_FAILED Fault 
-Inject Modifier Layout," on page  1363 */
+For SMBUS_FAILED,Table  1112, "SMBUS_FAILED Fault 
+Inject Modifier Layout," on page  1393 */
 	/* 0x10.0 - 0x2c.31 */
 	struct reg_access_hca_smbus_failed_fault_inject_modifier per_type_modifier;
 };
@@ -2216,10 +1986,10 @@ Value 0x0 for freq indicates the Mini Flow will not be injected. */
 	u_int16_t num_repeat;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - stressor Modifier according to type field.
-For IRISC_HANG Table  1105, "IRISC_HANG Mini-Flow Modi
-fier Layout," on page  1364
-For PACKET_DROP Table  1107, "PACKET_DROP Mini-Flow 
-Modifier Layout," on page  1365 */
+For IRISC_HANG Table  1116, "IRISC_HANG Mini-Flow Modi
+fier Layout," on page  1394
+For PACKET_DROP Table  1118, "PACKET_DROP Mini-Flow 
+Modifier Layout," on page  1395 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto per_type_modifier;
 };
@@ -2328,16 +2098,16 @@ active. */
 	u_int8_t polarity;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - stressor Modifier according to type field.
-For RXB_HANG Table  1083, "RXB_HANG Stop Toggle Modi
-fier Layout," on page  1355
-For LOCK_RESOURCE Table  1089, "LOCK_RESOURCE Stop 
-Toggle Modifier Layout," on page  1357
-For SXP_HANG Table  1085, "SXP_HANG Stop Toggle Modi
-fier Layout," on page  1356
-For RXB_HOST_HANG Table  1087, "RXB_HOST_HANG Stop 
-Toggle Modifier Layout," on page  1357
-For PAUSE_TX See Table Table  1097, "PAUSE_TX Stop Tog
-gle Modifier Layout," on page  1360 */
+For RXB_HANG Table  1094, "RXB_HANG Stop Toggle Modi
+fier Layout," on page  1385
+For LOCK_RESOURCE Table  1100, "LOCK_RESOURCE Stop 
+Toggle Modifier Layout," on page  1387
+For SXP_HANG Table  1096, "SXP_HANG Stop Toggle Modi
+fier Layout," on page  1386
+For RXB_HOST_HANG Table  1098, "RXB_HOST_HANG Stop 
+Toggle Modifier Layout," on page  1387
+For PAUSE_TX See Table Table  1108, "PAUSE_TX Stop Tog
+gle Modifier Layout," on page  1390 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto per_type_modifier;
 };
@@ -2377,17 +2147,11 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* 0x0.0 - 0x8c.31 */
 	struct reg_access_hca_mcda_reg mcda_reg;
 	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	struct reg_access_hca_fpga_ctrl fpga_ctrl;
-	/* Description -  */
 	/* 0x0.0 - 0x80.31 */
 	struct reg_access_hca_mtrc_cap_reg mtrc_cap_reg;
 	/* Description -  */
 	/* 0x0.0 - 0x28.31 */
 	struct reg_access_hca_mpegc_reg mpegc_reg;
-	/* Description -  */
-	/* 0x0.0 - 0xfc.31 */
-	struct reg_access_hca_fpga_cap fpga_cap;
 	/* Description -  */
 	/* 0x0.0 - 0x4.31 */
 	struct reg_access_hca_mfrl_reg_ext mfrl_reg_ext;
@@ -2554,13 +2318,6 @@ void reg_access_hca_diagnostic_cntr_layout_print(const struct reg_access_hca_dia
 unsigned int reg_access_hca_diagnostic_cntr_layout_size(void);
 #define REG_ACCESS_HCA_DIAGNOSTIC_CNTR_LAYOUT_SIZE    (0x4)
 void reg_access_hca_diagnostic_cntr_layout_dump(const struct reg_access_hca_diagnostic_cntr_layout *ptr_struct, FILE *fd);
-/* fpga_shell_caps */
-void reg_access_hca_fpga_shell_caps_pack(const struct reg_access_hca_fpga_shell_caps *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_hca_fpga_shell_caps_unpack(struct reg_access_hca_fpga_shell_caps *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_hca_fpga_shell_caps_print(const struct reg_access_hca_fpga_shell_caps *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_hca_fpga_shell_caps_size(void);
-#define REG_ACCESS_HCA_FPGA_SHELL_CAPS_SIZE    (0x40)
-void reg_access_hca_fpga_shell_caps_dump(const struct reg_access_hca_fpga_shell_caps *ptr_struct, FILE *fd);
 /* mcqi_reg_data_auto */
 void reg_access_hca_mcqi_reg_data_auto_pack(const union reg_access_hca_mcqi_reg_data_auto *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mcqi_reg_data_auto_unpack(union reg_access_hca_mcqi_reg_data_auto *ptr_struct, const u_int8_t *ptr_buff);
@@ -2631,20 +2388,6 @@ void reg_access_hca_debug_cap_print(const struct reg_access_hca_debug_cap *ptr_s
 unsigned int reg_access_hca_debug_cap_size(void);
 #define REG_ACCESS_HCA_DEBUG_CAP_SIZE    (0x40)
 void reg_access_hca_debug_cap_dump(const struct reg_access_hca_debug_cap *ptr_struct, FILE *fd);
-/* fpga_cap */
-void reg_access_hca_fpga_cap_pack(const struct reg_access_hca_fpga_cap *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_hca_fpga_cap_unpack(struct reg_access_hca_fpga_cap *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_hca_fpga_cap_print(const struct reg_access_hca_fpga_cap *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_hca_fpga_cap_size(void);
-#define REG_ACCESS_HCA_FPGA_CAP_SIZE    (0x100)
-void reg_access_hca_fpga_cap_dump(const struct reg_access_hca_fpga_cap *ptr_struct, FILE *fd);
-/* fpga_ctrl */
-void reg_access_hca_fpga_ctrl_pack(const struct reg_access_hca_fpga_ctrl *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_hca_fpga_ctrl_unpack(struct reg_access_hca_fpga_ctrl *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_hca_fpga_ctrl_print(const struct reg_access_hca_fpga_ctrl *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_hca_fpga_ctrl_size(void);
-#define REG_ACCESS_HCA_FPGA_CTRL_SIZE    (0x10)
-void reg_access_hca_fpga_ctrl_dump(const struct reg_access_hca_fpga_ctrl *ptr_struct, FILE *fd);
 /* mcc_reg */
 void reg_access_hca_mcc_reg_pack(const struct reg_access_hca_mcc_reg *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mcc_reg_unpack(struct reg_access_hca_mcc_reg *ptr_struct, const u_int8_t *ptr_buff);
