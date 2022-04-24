@@ -114,6 +114,7 @@ class LinuxRshimUserSpaceDriver:
         for rshim_misc_file, rshim_pci_device_name, rshim_drop_mode in self._scan_rshim_drivers():
             if user_pci_device_name[5:11] in rshim_pci_device_name and rshim_drop_mode == 0:
                 self.rshim_misc_file = rshim_misc_file
+                self.pci_device_name = rshim_pci_device_name[5:]
                 break
         else:
             raise DriverNotExist("There is no running user-space rshim driver")
@@ -154,6 +155,16 @@ class MlnxDriverLinux(MlnxDriver):
             if not os.path.exists(MlnxDriverLinux.PCI_DRIVERS_PATH):
                 raise RuntimeError("path {0} doesn't exist!".format(MlnxDriverLinux.PCI_DRIVERS_PATH))
 
+            # Handle rshim user-space driver
+            #################################
+            self.rshim_driver = None
+            if len(devices) == 1: # BL devices has only one PCI device name (There is no BL socket-direct device)
+                pci_device_name = mlxfwreset_utils.getDevDBDF(devices[0], logger) # domain:bus:device.fn
+                try:
+                    self.rshim_driver = LinuxRshimUserSpaceDriver(logger, pci_device_name)
+                except DriverNotExist:
+                    pass
+
             for device in devices:
 
                 dbdf = mlxfwreset_utils.getDevDBDF(device,logger)
@@ -181,22 +192,14 @@ class MlnxDriverLinux(MlnxDriver):
                 for line in out.split('\n')[:-1]:
                     line = line.split('/')
                     driver_name,dbdf = line[-2],line[-1]
+                    if self.rshim_driver is not None and self.rshim_driver.pci_device_name == dbdf and driver_name in ["vfio-pci", "uio_pci_generic"]:
+                        logger.info("skip on vfio/uio driver (rshim user-space driver will stop it)")
+                        continue
                     if driver_name not in MlnxDriverLinux.mlnx_drivers:
                         raise RuntimeError("mlxfwreset doesn't support 3rd party driver ({0})!\nPlease, stop the driver manually and resume operation with --skip_driver".format(driver_name))
                     self.drivers_dbdf.append((dbdf,driver_name))
 
             self.drivers_dbdf.sort()
-
-            # Handle rshim user-space driver
-            #################################
-            self.rshim_driver = None
-            if len(devices) == 1: # BL devices has only one PCI device name (There is no BL socket-direct device)
-                pci_device_name = mlxfwreset_utils.getDevDBDF(devices[0], logger) # domain:bus:device.fn
-                try:
-                    self.rshim_driver = LinuxRshimUserSpaceDriver(logger, pci_device_name)
-                except DriverNotExist:
-                    pass
-
 
         logger.info('{0}'.format(self.drivers_dbdf))
 
@@ -318,8 +321,9 @@ class MlnxDriverFreeBSD(MlnxDriver):
 
 class WindowsRshimDriver:
     """
-    Rshim-driver is the "SOC managment driver" (the driver that communicates with the ARMs) in a SmartNIC device
-    This driver is located in the 'System devices' (and not in the 'Network adapters')
+    Rshim-driver is the "SOC management driver" (the driver that communicates with the ARMs) in a SmartNIC device
+    This driver is located in the 'System devices' (and not under the 'Network adapters')
+    We use the pnp-device utility to find/start/stop the management driver
     """
 
     def _powershell(self, cmd):
@@ -329,39 +333,87 @@ class WindowsRshimDriver:
         self.logger.info("rc={0}\nstdout={1}\nstderr={2}".format(*result))
         return result
 
-    def __init__(self, logger, pci_device_id):
+    def _get_pnp_device_name_for_network_adapter(self, network_adapter_name):
+        """
+        The method will convert network_adapter name e.g "Ethernet 8" to pnp_device name (instance-id) 
+        e.g "PCI\VEN_15B3&DEV_A2D6&SUBSYS_004815B3&REV_00\4&2E75E12A&0&0110"
+        """
 
-        # Network-adapter to SOC-management PCI-device-id mapping table
-        PCI_DEVICE_ID_MAPPING_TABLE = {0xA2D2: 0xC2D2, 0xA2D6: 0xC2D3, 0xA2D9: 0xC2D4, 0xA2DC: 0xC2D5}
+        cmd = "(Get-NetAdapterHardwareInfo -name '{0}').InterfaceDescription".format(network_adapter_name)
+        rc, output, _ = self._powershell(cmd)
+        if rc != 0:
+            raise RuntimeError("Failed to execute {0}".format(cmd))
+
+        interface_description = output.strip() 
+        
+        cmd = "(Get-PnpDevice -FriendlyName '{0}').InstanceId".format(interface_description)    # We use the InterfaceDescription from the previous command 
+        rc, output, _ = self._powershell(cmd)                                                   # as FriendlyName in the current command
+        if rc != 0:
+            raise RuntimeError("Failed to execute {0}".format(cmd))
+
+        pnp_device_name = output.strip()
+        self.logger.info("network_adapter_name : {} ; pnp_device_name : {}".format(network_adapter_name, pnp_device_name))
+        return pnp_device_name
+
+
+    def __init__(self, logger, network_adapters, network_adapter_pci_device_id):
 
         self.logger = logger
 
-        # Check if it's a Smart NIC. If yes, extract PCI device-id of the SOC management (PCI device)
-        network_adapter_pci_device_id = pci_device_id
+        #* Network-adapter to SOC-management PCI-device-id mapping table
+        PCI_DEVICE_ID_MAPPING_TABLE = {0xA2D2: 0xC2D2, 0xA2D6: 0xC2D3, 0xA2D9: 0xC2D4, 0xA2DC: 0xC2D5}
+
+        #* Check if it's a Smart NIC. If yes, extract  pci-device-id of the management device
         if network_adapter_pci_device_id in PCI_DEVICE_ID_MAPPING_TABLE:
             soc_management_pci_device_id = PCI_DEVICE_ID_MAPPING_TABLE[network_adapter_pci_device_id]
         else:
+            self.logger.info("Not a SmartNIC device")
             raise DriverNotExist("Not a SmartNic device")
 
-        # Get the name of the driver
-        cmd = "(Get-PnpDevice -InstanceId '*VEN_15B3&DEV_{0:x}*').InstanceId".format(soc_management_pci_device_id)
-        rc, output, _ = self._powershell(cmd)
-        if rc == 0 and output:
-            # TODO if there is more than one BL device from the same type, then will get more than one line
-            # TODO we need to filter the right driver (according to PCI address)
-            self.driver_name = output.strip()
-            self.logger.info("rshim-driver name : {0}".format(self.driver_name))
-        else:
-            raise DriverNotExist("rshim-driver doesn't exist")
+        #* Assertion
+        if len(network_adapters) == 0:
+            raise DriverNotExist("There is no management driver when there are no network adapters")
 
-        # Check if the driver is enabled
-        cmd = "(Get-PnpDevice -InstanceId '*VEN_15B3&DEV_{0:x}*').Status".format(soc_management_pci_device_id)
+        #* Check if "Get-PnpDevice" command exists
+        #! The "Get-PnpDevice" is not supported in "Windows server 2012" 
+        #! and "Windows server 2012 R2" so we can't support Bluefield in 
+        #! these OS versions
+        powershell_cmd = 'powershell.exe -c "Get-PnpDevice > $null"'
+        result = cmdExec(powershell_cmd)
+        if result[0] != 0:
+            self.logger.debug("Get-PnpDevice is not supported in this OS version")
+            raise RuntimeError("Get-PnpDevice is not supported in this OS version")
+
+        #* Create a network-adapter as pnp device
+        network_adapter_as_pnp_device = self._get_pnp_device_name_for_network_adapter(network_adapters[0])
+        self.logger.debug("Network adapter as pnp device: {0}".format(network_adapter_as_pnp_device))
+
+
+        #* Extract the "common part" from the pnp-device
+        # The "common part" is common for both the network-adapter and SOC management 
+        # Example: 
+        #   pnp-device                    : PCI\VEN_15B3&DEV_A2D6&SUBSYS_004815B3&REV_00\4&2E75E12A&0&0110
+        #   common part                   : 2E75E12A
+        pnp_device_common_part = network_adapter_as_pnp_device.split("&")[4]
+        self.logger.debug("pnp_device_common_part = {0}".format(pnp_device_common_part))
+
+        #* Set the name of the management driver
+        cmd = "(Get-PnpDevice -InstanceId '*VEN_15B3*DEV_{0:x}*{1}*').InstanceId".format(soc_management_pci_device_id, pnp_device_common_part)
+        rc, output, _ = self._powershell(cmd)
+        if rc != 0:
+            raise RuntimeError("Faild to execute {0}".format(cmd))
+        self.driver_name = output.strip()
+        self.logger.info("rshim-driver name : {0}".format(self.driver_name))
+
+        #* Check if the management driver is enabled
+        cmd = "(Get-PnpDevice -InstanceId '{0}').Status".format(self.driver_name)
         rc, output, _ = self._powershell(cmd)
         if rc == 0 and output.strip() == 'OK':
             self.logger.debug("rshim-driver name : {0} is enabled".format(self.driver_name))
         else:
             self.logger.debug("rshim-driver name : {0} is disabled".format(self.driver_name))
             raise DriverDisabled("rshim-driver is disabled")
+
 
     def start(self):
         cmd = "Enable-PnpDevice -InstanceId '{0}' -confirm:$false".format(self.driver_name)
@@ -409,7 +461,7 @@ class MlnxDriverWindows(MlnxDriver):
 
             # Filter only relevant drivers 
             #  1. Ignore drivers that are not relevant to required PCI address
-            #  2. Ignore the managment driver ('rshim bus' in the 'Network Adapters' section)
+            #  2. Ignore the management driver ('rshim bus' in the 'Network Adapters' section)
             if seg_bus_device_list_ii in seg_bus_device_list and 'Management' not in description_line:
                 drivers_names.append(name_ii)
 
@@ -430,14 +482,8 @@ class MlnxDriverWindows(MlnxDriver):
         if self._is_powershell_exists() is False:
             raise RuntimeError("PowerShell.exe is not installed. Please stop the driver manually and re-run the tool with --skip_driver ")
 
-        try:
-            self.rshim_driver = WindowsRshimDriver(logger, pci_device_id)
-        except (DriverNotExist, DriverDisabled):
-            self.rshim_driver = None            
-
-
+        # Find seg:bus:device of the device(s)
         seg_bus_device_list = []
-        # Extract bus and device from the device_name
         for device in devices:
             seg_bus_device = mlxfwreset_utils.getDevDBDF(device,logger).split('.')[0]
             seg_num = int(seg_bus_device.split(':')[0],16)
@@ -445,11 +491,19 @@ class MlnxDriverWindows(MlnxDriver):
             device_num = int(seg_bus_device.split(':')[2],16)
             seg_bus_device_list.append((seg_num, bus_num, device_num))
         
-        # Find the network adapters for the dus:device
+        # Find the relevant network adapters for the seg:bus:device
         targetedAdaptersTemp = self.get_device_drivers(logger, seg_bus_device_list)
         logger.debug(targetedAdaptersTemp)
-     
-        # Filter the network adapter thar are disabled
+
+        # Create Rshim-driver (for Bluefield devices)
+        logger.info("Create Rshim driver")
+        try:
+            self.rshim_driver = WindowsRshimDriver(logger, targetedAdaptersTemp, pci_device_id)
+        except (DriverNotExist, DriverDisabled):
+            self.rshim_driver = None     
+
+
+        # Filter the network adapters that are disabled
         self.targetedAdapters = []
         for targetedAdapter in targetedAdaptersTemp:
             cmd = 'powershell.exe -c "Get-NetAdapter \'%s\' | Format-List -Property Status' % targetedAdapter
