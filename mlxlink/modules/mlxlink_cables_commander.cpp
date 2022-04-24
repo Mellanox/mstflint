@@ -1500,11 +1500,11 @@ u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const strin
     bool invalidConfiguration = false;
     bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
     bool isDecemal = false;
-    string valueStr = value;
 
     try {
-        toUpperCase(valueStr);
-        valueToSet = valueStr == "NE"? 0 : stod(value);
+        string valueSgtr = value;
+        toUpperCase(valueSgtr);
+        valueToSet = valueSgtr == "NE"? 0 : stod(value);
         isDecemal = (valueToSet - (int) valueToSet) > 0;
     } catch (exception &exc) {
         invalidConfiguration = true;

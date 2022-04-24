@@ -33,17 +33,8 @@
 
 #include "reg_access.h"
 #include "common/compatibility.h"
-//FPGA
-#define REG_ID_FPGA_CAP                 0x4022
-#define REG_ID_FPGA_CTRL                0x4023
 
 #define REG_ID_PCNR                     0x5050
-#define REG_ID_PPTCS                    0x5801
-#define REG_ID_PGMP                     0x5802
-#define REG_ID_PPTS                     0x5803
-#define REG_ID_PLTS                     0x5804
-#define REG_ID_PLSRP                    0x5805
-#define REG_ID_PGPS                     0x5806
 #define REG_ID_PAOS                     0x5006
 #define REG_ID_PTYS                     0x5004
 #define REG_ID_PMAOS                    0x5012
@@ -83,6 +74,7 @@
 #define REG_ID_STRS_RESOURCE            0x402A
 
 #define REG_ID_MTRC_CAP                 0x9040
+#define REG_ID_MTRC_STDB                0x9042
 #define REG_ID_MCDD                     0x905C
 #define REG_ID_MCQS                     0x9060
 #define REG_ID_MCC                      0x9062
@@ -483,14 +475,6 @@ reg_access_status_t reg_access_pmdic(mfile *mf, reg_access_method_t method, stru
     REG_ACCCESS(mf, method, REG_ID_PMDIC, pmdic, pmdic, tools_open);
 }
 
-/************************************
-* Function: reg_access_fpga_cap
-************************************/
-reg_access_status_t reg_access_fpga_cap(mfile *mf, reg_access_method_t method, struct reg_access_hca_fpga_cap *fpga_cap)
-{
-    REG_ACCCESS(mf, method, REG_ID_FPGA_CAP, fpga_cap, fpga_cap, reg_access_hca);
-}
-
 
 //=================================================================================================================================
 /************************************
@@ -509,13 +493,6 @@ reg_access_status_t reg_access_debug_cap(mfile *mf, reg_access_method_t method, 
 //=================================================================================================================================
 
 
-/************************************
-* Function: reg_access_fpga_ctrl
-************************************/
-reg_access_status_t reg_access_fpga_ctrl(mfile *mf, reg_access_method_t method, struct reg_access_hca_fpga_ctrl *fpga_ctrl)
-{
-    REG_ACCCESS(mf, method, REG_ID_FPGA_CTRL, fpga_ctrl, fpga_ctrl, reg_access_hca);
-}
 
 #endif //#ifndef UEFI_BUILD
 

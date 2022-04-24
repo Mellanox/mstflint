@@ -1324,7 +1324,6 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
 
     all_devices = [device] + devicesSD
 
-
     # A temporary solution to get the pci-device-id (required for SmartNic)
     # This solution is not good when the user insert device in PCI address format (-d xx:xx.x)
     pci_device_id = None
@@ -1553,7 +1552,7 @@ def main():
                         action="store_true")
     options_group.add_argument('--mst_flags',
                         '-m',
-                        help=":  Provide mst flags to be used when invoking mst restart step. For example: --mst_flags=\"--with_fpga\""
+                        help=":  Provide mst flags to be used when invoking mst restart step. For example: --mst_flags=\"--with_i2cdev\""
                         if platform.system() == "Linux" and not IS_MSTFLINT else argparse.SUPPRESS)
     options_group.add_argument('--version',
                         '-v',

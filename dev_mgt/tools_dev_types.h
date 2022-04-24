@@ -84,7 +84,7 @@ enum dm_dev_id
     DeviceBlueField3,
     DeviceFPGA,             // UnSupported
     DeviceSwitchIB2,
-    DeviceFPGANewton,
+    DeviceFPGANewton,       // Unsupported
     DeviceCable,
     DeviceCableQSFP,
     DeviceCableQSFPaging,
@@ -245,8 +245,6 @@ int dm_is_fpp_supported(dm_dev_id_t type);
 int dm_is_4th_gen(dm_dev_id_t type);
 
 int dm_is_5th_gen_hca(dm_dev_id_t type);
-
-int dm_is_newton(dm_dev_id_t type);
 
 int dm_is_connectib(dm_dev_id_t type);
 
