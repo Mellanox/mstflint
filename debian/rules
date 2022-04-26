@@ -23,3 +23,10 @@ DEB_CONFIGURE_EXTRA_FLAGS ?= ""
 
 override_dh_auto_configure:
 	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS)
+
+override_dh_install:
+	dh_install
+	ln -s `find debian/mstflint -name libmtcr_ul.a | sed -e 's@debian/mstflint@@'` debian/mstflint/usr/lib/libmtcr_ul.a
+	mkdir -p debian/mstflint/usr/include/mtcr_ul
+	ln -s /usr/include/mstflint/mtcr.h debian/mstflint/usr/include/mtcr_ul/mtcr.h
+	ln -s /usr/include/mstflint/mtcr_com_defs.h debian/mstflint/usr/include/mtcr_ul/mtcr_com_defs.h
