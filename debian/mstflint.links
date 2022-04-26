@@ -1,1 +1,3 @@
 usr/lib/mstflint/libmtcr_ul.a usr/lib/libmtcr_ul.a
+usr/include/mstflint/mtcr.h		usr/include/mtcr_ul/mtcr.h
+usr/include/mstflint/mtcr_com_defs.h	usr/include/mtcr_ul/mtcr_com_defs.h
