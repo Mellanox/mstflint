@@ -438,7 +438,7 @@ bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& i
     int maxDataSize = sizeof(mqisRegister.info_string);
 
     memset(&mqisRegister, 0, sizeof(mqisReg));
-    if (op == Device_Name){
+    if (op == Device_Name) {
        mqisRegister.info_type = 0x1;
     } else if (op == Device_Description) {
        mqisRegister.info_type = 0x2;
@@ -485,7 +485,8 @@ bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& i
         }
     }
 
-    mclose(mf);
+    // mf is needed to be open for QueryTLV function
+    // mclose(mf);
     string str = string (infoString.data());
     if (str.length() == 0) {
         return false;

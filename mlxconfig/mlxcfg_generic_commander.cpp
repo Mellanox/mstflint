@@ -120,6 +120,8 @@ enum OP {EQUAL, NOT_EQUAL};
 const u_int8_t debugTokenId = 0x5;
 const u_int8_t csTokenId = 0x7;
 const u_int8_t btcTokenId = 0x8;
+const u_int8_t rmcsTokenId = 0x10;
+const u_int8_t rmdtTokenId = 0x11;
 const u_int32_t idMlnxId = 0x10e;
 
 void GenericCommander::supportsNVData()
@@ -337,10 +339,15 @@ void GenericCommander::printParamViews(FILE *f, vector<ParamView>& v)
             break;
         }
         size_t len = (*pIt).mlxconfigName.length();
+        //dont print description for parms _P2 - _P8
         if ((*pIt).mlxconfigName.rfind("_P1") == std::string::npos) {
-            if ((*pIt).mlxconfigName.rfind("_P") == len - 3) {
-                fprintf(f, "%20s%-40s\n", " ", s.c_str());
-                continue;
+            size_t posP = (*pIt).mlxconfigName.rfind("_P");
+            if (posP == len - 3) {
+                char charP = (*pIt).mlxconfigName[posP+2];
+                if (charP >= '2' && charP <='8'){
+                    fprintf(f, "%20s%-40s\n", " ", s.c_str());
+                    continue;
+                }
             }
         }
         size_t prevPos = 0;
@@ -1363,6 +1370,10 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs,
     bool csCompFound = false;
     bool foundApplicableTLV = false;
     bool idMlnxCompFound = false;
+    compsId = FwComponent::COMPID_UNKNOWN;
+    u_int32_t type = 0;
+    mget_mdevs_type(_mf, &type);
+
     CONST_VECTOR_ITERATOR(TLVConf*, tlvs, it) {
         const TLVConf *tlv = *it;
         if (tlv->_tlvClass == NVFile &&
@@ -1377,6 +1388,14 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs,
             tlv->_id == btcTokenId) {
             csCompFound = true;
             compsId = FwComponent::COMPID_CRYPTO_TO_COMMISSIONING;
+        } else if (tlv->_tlvClass == NVFile &&
+            tlv->_id == rmcsTokenId) {
+            csCompFound = true;
+            compsId = FwComponent::COMPID_RMCS_TOKEN;
+        } else if (tlv->_tlvClass == NVFile &&
+            tlv->_id == rmdtTokenId) {
+            csCompFound = true;
+            compsId = FwComponent::COMPID_RMDT_TOKEN;
         } else if (tlv->_tlvClass == 0x0 &&
                    tlv->_id == idMlnxId) {
             idMlnxCompFound = true;
@@ -1384,7 +1403,13 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs,
         } else if (tlv->_name == "file_applicable_to") {
             foundApplicableTLV = true;
         }
+
+        if ( (type & (MST_USB | MST_USB_DIMAX)) &&
+             (compsId == FwComponent::COMPID_UNKNOWN)) { //MST_USB tlv's must have component
+            throw MlxcfgException("MTUSB device is not supported.");
+        }
     }
+
 
     if (!dbgCompFound && !csCompFound && !idMlnxCompFound) {
         throw MlxcfgException("Unsupported device: No debug tokens or CS tokens or MLNX ID Components were found for this device");
@@ -1458,7 +1483,7 @@ void GenericCommander::apply(const vector<u_int8_t>& buff)
     vector<u_int32_t> dwBuff;
     FwCompsMgr fwCompsAccess(_mf);
     vector<FwComponent> compsToBurn;
-    FwComponent::comps_ids_t compsId;
+    FwComponent::comps_ids_t compsId = FwComponent::COMPID_UNKNOWN;;
 
     size_t fingerPrintLength = strlen(BIN_FILE_FINGERPRINT);
 
@@ -1578,7 +1603,7 @@ std::vector<u_int32_t> RawCfgParams5thGen::getRawData()
         *it = __be32_to_cpu(*it);
     }
     // Truncate to the correct data size
-    tlvBuff.resize(_nvdaTlv.nv_hdr.length);
+    tlvBuff.resize(this->_tlvBuff.size());
     return tlvBuff;
 }
 

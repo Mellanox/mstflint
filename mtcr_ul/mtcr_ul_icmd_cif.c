@@ -44,9 +44,11 @@
 #include "packets_common.h"
 #ifndef __FreeBSD__
 #include "mtcr_ib_res_mgt.h"
+#include "tools_dev_types.h"
 #endif
 
 #include "mtcr_mem_ops.h"
+
 
 #define ICMD_QUERY_CAP_CMD_ID 0x8400
 #define ICMD_QUERY_CAP_CMD_SZ 0x8
@@ -54,7 +56,7 @@
 
 // _DEBUG_MODE   // un-comment this to enable debug prints
 
-
+#define ICMD_DEFAULT_TIMEOUT        5120
 #define STAT_CFG_NOT_DONE_ADDR_CIB   0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_CX4   0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_SW_IB   0x80010
@@ -328,6 +330,24 @@ static int set_sleep()
     return icmd_sleep;
 }
 
+static int set_icmd_timeout()
+{
+    char* icmd_timeout_env;
+    int icmd_timeout = ICMD_DEFAULT_TIMEOUT;
+
+    icmd_timeout_env = getenv("MFT_ICMD_TIMEOUT");
+
+    if (icmd_timeout_env) {
+        char* endptr;
+        icmd_timeout = strtol(icmd_timeout_env, &endptr, 10);
+        if (endptr != NULL && *endptr != '\0') {
+            icmd_timeout = ICMD_DEFAULT_TIMEOUT;
+        }
+    }
+
+    return icmd_timeout;
+}
+
 /*
  * get_status
  */
@@ -400,22 +420,27 @@ static int set_and_poll_on_busy_bit(mfile *mf, int enhanced, int busy_bit_offset
 
     // set go bit
     rc = set_busy_bit(mf, reg, busy_bit_offset);
-    CHECK_RC(rc);    
+    CHECK_RC(rc);
     DBG_PRINTF("Busy-bit raised. Waiting for command to exec...\n");
 
     // set sleep time if needed
     int icmd_sleep = set_sleep();
 
+    int icmd_timeout = set_icmd_timeout();
+
     // wait for command to execute
     i = 0; wait = 1;
     do {
-        if (++i > 5120) {
+        if (++i > icmd_timeout) {
             // this number of iterations should take ~~30sec, which is the defined command t/o
             DBG_PRINTF("Execution timed-out\n");
             return ME_ICMD_STATUS_EXECUTE_TO;
         }
 
-        DBG_PRINTF("Waiting for busy-bit to clear (iteration #%d)...\n", i);
+        if ((i < 100) || (i % 100 == 0)) {
+            DBG_PRINTF("Waiting for busy-bit to clear (iteration #%d)...\n", i);
+        }
+
         if (icmd_sleep > 0) {
             if (i == 3) {
                 msleep(icmd_sleep);
@@ -900,7 +925,6 @@ static int icmd_init_cr(mfile *mf)
     case (QUANTUM_HW_ID):
     case (SPECTRUM2_HW_ID):
     case (SPECTRUM3_HW_ID):
-    case (SPECTRUM4_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM;
@@ -909,6 +933,7 @@ static int icmd_init_cr(mfile *mf)
         break;
 
     case (QUANTUM2_HW_ID):
+    case (SPECTRUM4_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM2;
@@ -920,7 +945,6 @@ static int icmd_init_cr(mfile *mf)
     case (CX6DX_HW_ID):
     case (CX6LX_HW_ID):
     case (BF2_HW_ID):
-    case (BF3_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX5;
         hcr_address = HCR_ADDR_CX5;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX5;
@@ -929,6 +953,7 @@ static int icmd_init_cr(mfile *mf)
         break;
 
     case (CX7_HW_ID):
+    case (BF3_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX7;
         hcr_address = HCR_ADDR_CX7;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX7;
@@ -1114,11 +1139,71 @@ void icmd_get_dma_support(mfile *mf)
 
 }
 
+#ifndef __FreeBSD__
+static int is_pci_device(mfile* mf)
+{
+    return (mf->flags & MDEVS_I2CM)
+        || (mf->flags & (MDEVS_CABLE | MDEVS_LINKX_CHIP))
+        || (mf->flags & MDEVS_SOFTWARE);
+}
+
+
+static int is_livefish_device(mfile *mf)
+{
+    // Make sure to update this table both in mtcr.c & mtcr_ul_com.c !
+    static u_int32_t live_fish_ids[][2] = {
+        {DeviceConnectX4_HwId, DeviceConnectX4_HwId},
+        {DeviceConnectX4LX_HwId, DeviceConnectX4LX_HwId},
+        {DeviceConnectX5_HwId, DeviceConnectX5_HwId},
+        {DeviceConnectX6_HwId, DeviceConnectX6_HwId},
+        {DeviceConnectX6DX_HwId, DeviceConnectX6DX_HwId},
+        {DeviceConnectX6LX_HwId, DeviceConnectX6LX_HwId},
+        {DeviceConnectX7_HwId, DeviceConnectX7_HwId},
+        {DeviceBlueField3_HwId, DeviceBlueField3_HwId},
+        {DeviceBlueField2_HwId, DeviceBlueField2_HwId},
+        {DeviceBlueField_HwId, DeviceBlueField_HwId},
+        {DeviceSwitchIB_HwId, DeviceSwitchIB_HwId},
+        {DeviceSpectrum_HwId, DeviceSpectrum_HwId},
+        {DeviceSwitchIB2_HwId, DeviceSwitchIB2_HwId},
+        {DeviceQuantum_HwId, DeviceQuantum_HwId},
+        {DeviceQuantum2_HwId, DeviceQuantum2_HwId},
+        {DeviceSpectrum2_HwId, DeviceSpectrum2_HwId},
+        {DeviceSpectrum3_HwId, DeviceSpectrum3_HwId},
+        {DeviceSpectrum4_HwId, DeviceSpectrum4_HwId},
+        {0, 0    }
+    };
+    int i = 0;
+    unsigned int hwdevid = 0;
+    if (mf->tp == MST_SOFTWARE) {
+        return 1;
+    }
+    int rc = mread4(mf, 0xf0014, &hwdevid);
+    hwdevid &= 0xffff;//otherwise, BF A1 will fail in the searching (0x00010211)
+    if (rc == 4) {
+        while (live_fish_ids[i][0] != 0) {
+            if (live_fish_ids[i][0] == hwdevid) {
+                return (mf->dinfo->pci.dev_id == live_fish_ids[i][1]);
+            }
+            i++;
+        }
+    }
+    return 0;
+}
+#endif
+
 int icmd_open(mfile *mf)
 {
     if (mf->icmd.icmd_opened) {
         return ME_OK;
     }
+
+#ifndef __FreeBSD__
+    // Currently livefish check is supported for PCI devices & devices that map to CR.
+    // ICMD is not supported while in livefish (GW is locked).
+    if ((is_pci_device(mf) || (mf->flags & MDEVS_TAVOR_CR)) && is_livefish_device(mf)) {
+        return ME_ICMD_NOT_SUPPORTED;
+    }
+#endif
 
     mf->icmd.took_semaphore = 0;
     mf->icmd.ib_semaphore_lock_supported = 0;

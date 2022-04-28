@@ -271,15 +271,6 @@ static struct device_info g_devs_info[] = {
         DM_HCA                  //dev_type
     },
     {
-        DeviceFPGANewton,       //dm_id
-        0xfff,                  //hw_dev_id - Dummy device ID till we have official one
-        -1,                     //hw_rev_id
-        -1,                     //sw_dev_id
-        "FPGA_NEWTON",          //name
-        2,                      //port_num
-        DM_HCA                  //dev_type
-    },
-    {
         DeviceSwitchIB2,        //dm_id
         0x24b,                  //hw_dev_id
         -1,                     //hw_rev_id
@@ -446,7 +437,7 @@ static struct device_info g_devs_info[] = {
         0x252,                  //hw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
-        "Amose GearBox",        //name
+        "AmosGearBox",          //name
         128,                    //port_num NEED_CHECK
         DM_GEARBOX              //dev_type
     },
@@ -455,7 +446,16 @@ static struct device_info g_devs_info[] = {
         0x253,                  //hw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
-        "Amos GearBox Managaer",//name
+        "AmosGearBoxManager",   //name
+        -1,                     //port_num NEED_CHECK
+        DM_GEARBOX              //dev_type
+    },
+    {
+        DeviceAbirGearBox,      //dm_id
+        0x256,                  //hw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
+        "AbirGearBox",          //name
         -1,                     //port_num NEED_CHECK
         DM_GEARBOX              //dev_type
     },
@@ -512,14 +512,6 @@ static int dm_get_device_id_inner(mfile *mf,
     int rc;
     u_int32_t dev_flags;
 
-    //Special case: FPGA device:
-#ifndef MST_UL
-    if (mf->tp == MST_FPGA_ICMD || mf->tp == MST_FPGA_DRIVER) {
-        *ptr_dm_dev_id = DeviceFPGANewton;
-        *ptr_hw_dev_id = 0xfff;
-        return GET_DEV_ID_SUCCESS;
-    }
-#endif
 #ifdef CABLES_SUPP
     if (mf->tp == MST_LINKX_CHIP){
  
@@ -779,7 +771,7 @@ int dm_is_fpp_supported(dm_dev_id_t type)
 {
     // Function per port is supported only in HCAs that arrived after CX3
     const struct device_info *dp = get_entry(type);
-    return (dm_is_5th_gen_hca(dp->dm_id) || dm_is_newton(dp->dm_id));
+    return dm_is_5th_gen_hca(dp->dm_id);
 }
 
 int dm_is_device_supported(dm_dev_id_t type)
@@ -826,11 +818,6 @@ int dm_is_5th_gen_hca(dm_dev_id_t type)
     return (dm_dev_is_hca(type) && !dm_is_4th_gen(type));
 }
 
-int dm_is_newton(dm_dev_id_t type)
-{
-    return (type == DeviceFPGANewton);
-}
-
 int dm_is_connectib(dm_dev_id_t type)
 {
     return (type == DeviceConnectIB);
@@ -848,7 +835,7 @@ int dm_is_new_gen_switch(dm_dev_id_t type)
 
 int dm_dev_is_raven_family_switch(dm_dev_id_t type)
 {
-    return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceSpectrum2 || type == DeviceSpectrum3));
+    return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceSpectrum4));
 }
 
 int dm_dev_is_ib_switch(dm_dev_id_t type)

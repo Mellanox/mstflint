@@ -32,6 +32,7 @@
 
 #include "amber_field.h"
 #include "mlxlink_utils.h"
+#include "mlxlink_reg_parser.h"
 
 u_int32_t AmberField::_lastFieldIndex = 1;
 bool AmberField::_dataValid = true;
@@ -47,21 +48,23 @@ AmberField::AmberField(const string &uiField, const string &uiValue,
     if (visible) {
         _fieldIndex = _lastFieldIndex;
         _lastFieldIndex++;
+    } else {
+        _fieldIndex = 0;
     }
     findAndReplace(_uiValue, ",", "_");
 }
 
-AmberField::AmberField(const string &uiField, const string &uiValue, u_int64_t prmValue,
-                       bool visible) : _uiField(uiField), _prmValue(prmValue), _visible(visible)
+AmberField::AmberField(const string &uiField, const string &uiValue, u_int32_t fieldIndex,
+                       bool visible) : _uiField(uiField), _visible(visible)
 {
     _prmReg = "";
     _prmField = "";
     _fieldGroup = "";
+    _prmValue = 0;
     _uiValue = AmberField::_dataValid? uiValue : "N/A";
-    if (visible) {
-        _fieldIndex = _lastFieldIndex;
-        _lastFieldIndex++;
-    }
+
+    _fieldIndex = fieldIndex;
+    _lastFieldIndex = _fieldIndex + 1;
     findAndReplace(_uiValue, ",", "_");
 }
 
@@ -70,19 +73,26 @@ AmberField::~AmberField()
 }
 
 string AmberField::getValueFromFields(const vector<AmberField> &fields,
-                                      const string &uiField, bool getPrmValue)
+                                      const string &uiField, bool matchUiField)
 {
-    string value = "N/A";
+    string value = "";
+    bool found = false;
     for (auto it = fields.begin(); it != fields.end(); it++) {
-        if (it->getUiField() == uiField) {
-            if(getPrmValue){
-                value = to_string(it->getPrmValue());
-            }else{
-                value = it->getUiValue();
+        if (it->getUiField().find(uiField) != string::npos) {
+            if (matchUiField && it->getUiField() != uiField) {
+                continue;
+            } else {
+                value += it->getUiValue() + "_";
+                found = true;
             }
-            break;
         }
     }
+    if (!found) {
+        throw MlxRegException("Requested field does not exist: %s", uiField.c_str());
+    }
+
+    value = deleteLastChar(value);
+
     return value;
 }
 
@@ -95,6 +105,11 @@ ostream& operator<<(ostream& os, const AmberField &amberField)
                << fieldName << "\t\"" << amberField._uiValue << "\"";
         }
         return os;
+}
+
+bool operator<(const AmberField &first, const AmberField &second)
+{
+    return first._fieldIndex < second._fieldIndex;
 }
 
 string AmberField::getUiField() const
@@ -118,7 +133,7 @@ bool AmberField::isVisible()
     return _visible;
 }
 
-u_int32_t AmberField::getFieldIndex()
+u_int32_t AmberField::getFieldIndex() const
 {
     return _fieldIndex;
 }

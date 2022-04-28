@@ -1,4 +1,4 @@
-# Copyright (c) Jun 2021 Mellanox Technologies LTD. All rights reserved.
+#--
 # Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
@@ -28,10 +28,12 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+#--
 
 #!/usr/bin/python
 ### imports ###
 import os
+import sys
 import subprocess
 import argparse
 
@@ -286,7 +288,12 @@ def buildMSTNodesTree(commandLine):
 def buildMFTTollNodesTree(toolName,commandLine):
     nodesTree=[]
     nodesTabs=["","","","","","","","","","","","","","","","","","",""]
-    filesList = subprocess.check_output(toolName + " -h", shell=True).decode().split("\n")
+    try:
+        filesList = subprocess.check_output(toolName + " -h", shell=True).decode().split("\n")
+    # some tools supply --help only when executed by root. at this point auto-complete can not support them
+    except subprocess.SubprocessError:
+        sys.exit(0)
+
     helpLineOnlyNodes = keepOnlyNodes(filesList)
     tabLevel=0
     tabLevelBestIndex = [0] * 8

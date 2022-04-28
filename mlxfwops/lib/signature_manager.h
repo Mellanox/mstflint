@@ -116,7 +116,8 @@ public:
     ConnectX6DXFwOperationsSignatureManager() : AbstractSignatureManager() {}
     virtual ~ConnectX6DXFwOperationsSignatureManager() {}
     virtual bool IsLifeCycleSupported()     { return true; }
-    virtual bool IsSecureBootSupported()        { return true; }
+    virtual bool IsSecureBootSupported()    { return true; }
+    virtual bool IsCableQuerySupported()    { return true; }
 };
 
 class ConnectX6LXFwOperationsSignatureManager : public ConnectX6DXFwOperationsSignatureManager

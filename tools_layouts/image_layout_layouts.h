@@ -32,7 +32,7 @@
  
 
 /***
-         *** This file was generated at "2021-10-25 13:11:03"
+         *** This file was generated at "2022-02-06 17:27:46"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/image_layout/image_layout.adb --file-prefix image_layout --prefix image_layout_ --no-adb-utils
          ***/
@@ -439,7 +439,7 @@ struct image_layout_device_info {
 };
 
 /* Description -   */
-/* Size in bytes - 2064 */
+/* Size in bytes - 2052 */
 struct image_layout_hashes_table {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
@@ -505,7 +505,7 @@ struct image_layout_hw_pointers_carmel {
 /*---------------- DWORD[20] (Offset 0x50) ----------------*/
 	/* Description -  */
 	/* 0x50.0 - 0x54.31 */
-	struct image_layout_hw_pointer_entry hmac_start_pointer;
+	struct image_layout_hw_pointer_entry image_info_section_pointer;
 /*---------------- DWORD[22] (Offset 0x58) ----------------*/
 	/* Description -  */
 	/* 0x58.0 - 0x5c.31 */
@@ -531,6 +531,10 @@ struct image_layout_hw_pointers_carmel {
 /* Description -   */
 /* Size in bytes - 1024 */
 struct image_layout_image_info {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Indicate that this binary intended for secure boot enabled devices */
+	/* 0x0.2 - 0x0.2 */
+	u_int8_t secure_boot;
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - 0x0 - not encrypted; 0x1 - encryption before signature; 0x2 - encryption after signature.  */
 	/* 0x0.3 - 0x0.4 */
@@ -642,6 +646,10 @@ For Golan A0, first entry should be 0x1ff
 	/* Description -  */
 	/* 0x128.0 - 0x128.31 */
 	u_int32_t ini_file_num;
+/*---------------- DWORD[75] (Offset 0x12c) ----------------*/
+	/* Description -  */
+	/* 0x12c.0 - 0x12c.31 */
+	u_int32_t burn_image_size;
 /*---------------- DWORD[100] (Offset 0x190) ----------------*/
 	/* Description -  */
 	/* 0x190.0 - 0x1bc.31 */
@@ -814,12 +822,9 @@ struct image_layout_tools_area {
 };
 
 /* Description -   */
-/* Size in bytes - 2064 */
+/* Size in bytes - 2052 */
 union image_layout_image_layout_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
-	struct image_layout_itoc_header itoc_header;
 	/* Description -  */
 	/* 0x0.0 - 0x3c.31 */
 	struct image_layout_tools_area tools_area;
@@ -827,7 +832,7 @@ union image_layout_image_layout_Nodes {
 	/* 0x0.0 - 0x1c.31 */
 	struct image_layout_itoc_entry itoc_entry;
 	/* Description -  */
-	/* 0x0.0 - 0x80c.31 */
+	/* 0x0.0 - 0x800.31 */
 	struct image_layout_hashes_table hashes_table;
 	/* Description -  */
 	/* 0x0.0 - 0x3fc.31 */
@@ -835,6 +840,9 @@ union image_layout_image_layout_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0x7c.31 */
 	struct image_layout_hw_pointers_carmel hw_pointers_carmel;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	struct image_layout_itoc_header itoc_header;
 	/* Description -  */
 	/* 0x0.0 - 0x1fc.31 */
 	struct image_layout_device_info device_info;
@@ -980,7 +988,7 @@ void image_layout_hashes_table_pack(const struct image_layout_hashes_table *ptr_
 void image_layout_hashes_table_unpack(struct image_layout_hashes_table *ptr_struct, const u_int8_t *ptr_buff);
 void image_layout_hashes_table_print(const struct image_layout_hashes_table *ptr_struct, FILE *fd, int indent_level);
 unsigned int image_layout_hashes_table_size(void);
-#define IMAGE_LAYOUT_HASHES_TABLE_SIZE    (0x810)
+#define IMAGE_LAYOUT_HASHES_TABLE_SIZE    (0x804)
 void image_layout_hashes_table_dump(const struct image_layout_hashes_table *ptr_struct, FILE *fd);
 /* hw_pointers_carmel */
 void image_layout_hw_pointers_carmel_pack(const struct image_layout_hw_pointers_carmel *ptr_struct, u_int8_t *ptr_buff);
@@ -1022,7 +1030,7 @@ void image_layout_image_layout_Nodes_pack(const union image_layout_image_layout_
 void image_layout_image_layout_Nodes_unpack(union image_layout_image_layout_Nodes *ptr_struct, const u_int8_t *ptr_buff);
 void image_layout_image_layout_Nodes_print(const union image_layout_image_layout_Nodes *ptr_struct, FILE *fd, int indent_level);
 unsigned int image_layout_image_layout_Nodes_size(void);
-#define IMAGE_LAYOUT_IMAGE_LAYOUT_NODES_SIZE    (0x810)
+#define IMAGE_LAYOUT_IMAGE_LAYOUT_NODES_SIZE    (0x804)
 void image_layout_image_layout_Nodes_dump(const union image_layout_image_layout_Nodes *ptr_struct, FILE *fd);
 
 

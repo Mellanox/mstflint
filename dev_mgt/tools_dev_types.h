@@ -84,7 +84,7 @@ enum dm_dev_id
     DeviceBlueField3,
     DeviceFPGA,             // UnSupported
     DeviceSwitchIB2,
-    DeviceFPGANewton,
+    DeviceFPGANewton,       // Unsupported
     DeviceCable,
     DeviceCableQSFP,
     DeviceCableQSFPaging,
@@ -105,6 +105,7 @@ enum dm_dev_id
     DeviceQuantum2, // Blackbird
     DeviceGearBox,
     DeviceGearBoxManager,
+    DeviceAbirGearBox,
     DeviceCableCMIS,
     DeviceCableCMISPaging,
     DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating
@@ -148,7 +149,8 @@ enum hw_dev_id
         DeviceSpectrum3_HwId = 0x250,
         DeviceSpectrum4_HwId = 0x254,
         DeviceGearBox_HwId = 0x252,
-        DeviceGearBoxManager_HwId = 0x253
+        DeviceGearBoxManager_HwId = 0x253,
+        DeviceAbirGearBox_HwId = 0x256
 };
 typedef enum dm_dev_id dm_dev_id_t;
 
@@ -243,8 +245,6 @@ int dm_is_fpp_supported(dm_dev_id_t type);
 int dm_is_4th_gen(dm_dev_id_t type);
 
 int dm_is_5th_gen_hca(dm_dev_id_t type);
-
-int dm_is_newton(dm_dev_id_t type);
 
 int dm_is_connectib(dm_dev_id_t type);
 

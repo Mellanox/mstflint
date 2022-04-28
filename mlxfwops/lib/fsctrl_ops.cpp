@@ -154,6 +154,12 @@ bool FsCtrlOperations::FsIntQuery()
         strcpy(_fwImgInfo.ext_info.product_ver, fwQuery.product_ver);
     }
 
+    // get chip type and device sw id
+    const u_int32_t *swId = (u_int32_t*) NULL;
+    if (!getInfoFromHwDevid(fwQuery.hw_dev_id, _fwImgInfo.ext_info.chip_type, &swId)) {
+        return false;
+    }
+
     // Copy version_string to fw version and VSD to branch ver, only for switches fw version
     if (!IS_HCA(_fwImgInfo.ext_info.chip_type)) {
         ExtractSwitchFWVersion(fwQuery);
@@ -161,10 +167,6 @@ bool FsCtrlOperations::FsIntQuery()
 
     // if nextBootFwVer, only fw version is needed and chip type, return.
     if (nextBootFwVer) {
-        const u_int32_t *swId = (u_int32_t*)NULL;
-        if (!getInfoFromHwDevid(fwQuery.hw_dev_id, _fwImgInfo.ext_info.chip_type, &swId)) {
-            return false;
-        }
         return true;
     }
 
@@ -183,11 +185,7 @@ bool FsCtrlOperations::FsIntQuery()
     _hwDevId = fwQuery.hw_dev_id;
     _fwImgInfo.ext_info.dev_rev = fwQuery.rev_id;
     _fwImgInfo.ext_info.is_failsafe = true;
-    // get chip type and device sw id, from device/image
-    const u_int32_t *swId = (u_int32_t*) NULL;
-    if (!getInfoFromHwDevid(fwQuery.hw_dev_id, _fwImgInfo.ext_info.chip_type, &swId)) {
-        return false;
-    }
+
     _fsCtrlImgInfo.security_mode = (security_mode_t)
                                    (SMM_MCC_EN |
                                     ((fwQuery.security_type.debug_fw  == 1) ? SMM_DEBUG_FW  : 0) |
@@ -213,7 +211,12 @@ bool FsCtrlOperations::FsIntQuery()
             if (it->getType() == FwComponent::COMPID_CRYPTO_TO_COMMISSIONING) {
                 _fsCtrlImgInfo.security_mode |= SMM_CRYTO_TO_COMMISSIONING;
             }
-
+            if (it->getType() == FwComponent::COMPID_RMCS_TOKEN) {
+                _fsCtrlImgInfo.security_mode |= SMM_RMCS_TOKEN;
+            }
+            if (it->getType() == FwComponent::COMPID_RMDT_TOKEN) {
+                _fsCtrlImgInfo.security_mode |= SMM_RMDT_TOKEN;
+            }
         }
     }
 
@@ -509,12 +512,6 @@ bool FsCtrlOperations::VerifyAllowedParams(ExtBurnParams &burnParams, bool isSec
 
 bool FsCtrlOperations::_createImageOps(FwOperations** imageOps)
 {
-    std::vector<FwComponent> compsMap;
-    if (!_fwCompsAccess->getFwComponents(compsMap, false)) {
-
-        return errmsg("Failed to get the FW Components MAP, err[%d]", _fwCompsAccess->getLastError());
-    }
-
     u_int32_t imageSize = 0;
     if (!ReadBootImage(NULL, &imageSize)) {
         return errmsg("Failed to get boot image size");
@@ -621,12 +618,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &bur
 
 bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
-    std::vector<u_int8_t> imgBuff;
-    if (!imageOps->FwExtractEncryptedImage(imgBuff, true))
-    {
-        return errmsg("Failed to extract encrypted image (%s)", imageOps->err());
-    }
-    return FwBurnAdvanced(imgBuff, burnParams);
+    return FwBurnAdvanced(imageOps, burnParams);
 }
 
 bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
@@ -997,7 +989,7 @@ bool FsCtrlOperations::IsSecurityVersionViolated(u_int32_t image_security_versio
     // Set device security-version (from EFUSEs)
     if (_fsCtrlImgInfo.device_security_version_access_method == MFSV) {
         deviceEfuseSecurityVersion = _fsCtrlImgInfo.device_security_version_mfsv.efuses_sec_ver;
-    } else if (_fsCtrlImgInfo.device_security_version_access_method == GW) {
+    } else if (_fsCtrlImgInfo.device_security_version_access_method == DIRECT_ACCESS) { // matanel - this case is relevant to fsctrl?
         deviceEfuseSecurityVersion = _fsCtrlImgInfo.device_security_version_gw;
     } else {
         deviceEfuseSecurityVersion = 0;

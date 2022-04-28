@@ -43,7 +43,9 @@
 
 #include <compatibility.h>
 #include <mtcr.h>
+#include "dev_mgt/tools_dev_types.h"
 #include "mflash_types.h"
+#include "flash_int_defs.h"
 #include "mflash_common_structs.h"
 
 #include <mlxfwops/uefi_c/mft_uefi_common.h>
@@ -107,6 +109,24 @@ EXTERN_C_START
 #else
 #define FLASH_ACCESS_DPRINTF(...)
 #endif
+
+typedef struct gpio_toggle_conf_cx6 {
+    u_int32_t lock_addr;
+    u_int32_t lock_val;
+    u_int32_t functional_enable0_addr;
+    u_int32_t functional_enable1_addr;
+    u_int32_t mode1_set_addr;
+    u_int32_t mode0_set_addr;
+    u_int32_t dataset_addr;
+} gpio_toggle_conf_cx6;
+
+typedef struct gpio_toggle_conf_cx7 {
+    u_int32_t select_synced_data_out_addr;
+    u_int32_t fw_control_set_addr;
+    u_int32_t hw_data_in_addr;
+    u_int32_t fw_output_enable_set_addr;
+    u_int32_t fw_data_out_set_addr;
+} gpio_toggle_conf_cx7;
 
 typedef enum MfCommandSet {
     CS_INTEL   = 1,
@@ -183,8 +203,7 @@ int     mf_cr_read(mflash *mfl, u_int32_t cr_addr, u_int32_t *data);
 int     mf_cr_write(mflash *mfl, u_int32_t cr_addr, u_int32_t data);
 
 int     mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr);
-// Software reset the target device. Currently supported for InfiniScale4 switch via IB interface only.
-int     mf_sw_reset(mflash *mfl);
+
 //
 // mf_get_attr(): Returns the flash_attr struct
 //
@@ -219,6 +238,8 @@ int     mf_release_semaphore(mflash *mfl);
 
 // get mfile object
 mfile* mf_get_mfile(mflash *mfl);
+
+dm_dev_id_t mf_get_dm_dev_id(mflash *mfl);
 
 //
 // err code to string translation for printing.

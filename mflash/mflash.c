@@ -50,11 +50,10 @@
 #ifndef UEFI_BUILD
 #include <tools_cif.h>
 #endif
-
 #include "mflash_pack_layer.h"
 #include "mflash_access_layer.h"
 #include "mflash.h"
-#include "flash_int_defs.h"
+
 #include "mflash_dev_capability.h"
 #include "mflash_common_structs.h"
 #include "mflash_gw.h"
@@ -413,7 +412,7 @@ flash_info_t g_flash_info_arr[] = { {"M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY, 
                                     //added by edwardg 06/09/2020
                                     {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
                                     {GIGA_3V_NAME,     FV_GD25QXXX,  FVT_GD25QXXX,  1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
-                                    {GIGA_3V_NAME,     FV_GD25QXXX,  FVT_GD25QXXX,  1 << FD_128, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0}
+                                    {GIGA_3V_NAME,     FV_GD25QXXX,  FVT_GD25QXXX,  1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0}
 };
 
 int cntx_sst_get_log2size(u_int8_t density, int *log2spi_size)
@@ -590,6 +589,16 @@ int cntx_get_flash_info(mflash *mfl, flash_info_t *f_info, int *log2size, u_int8
     if (rc == MFE_OK && *no_flash == 0) {
         memcpy(f_info, &g_flash_info_arr[type_index], sizeof(flash_info_t));
     }
+
+    // FR #2742089 - we are requested to support Gigadevice GD25B256DFIGR flash of 32MB on CX4LX and CX5
+    // These devices support 16MB flash types only, meaning they work in 3-bytes addr mode.
+    // So in that case we override the erase command matching 4-bytes addr (32MB) to
+    // erase command of 3-bytes addr
+    if ((mfl->dm_dev_id == DeviceConnectX4LX || mfl->dm_dev_id == DeviceConnectX5) &&
+        f_info->vendor == FV_GD25QXXX) {
+            f_info->erase_command = SFC_SSE;
+    }
+
     return rc;
 }
 
@@ -1366,6 +1375,15 @@ int is4_flash_lock(mflash *mfl, int lock_state)
     return MFE_OK;
 }
 
+int disable_gcm(mflash *mfl)
+{
+    u_int32_t data = 0;
+    MREAD4(mfl->gcm_en_addr, &data);
+    data = MERGE(data, 0, 0, 1);
+    MWRITE4(mfl->gcm_en_addr, data);
+
+    return 0;
+}
 
 int disable_cache_replacement(mflash *mfl)
 {
@@ -1383,6 +1401,27 @@ int restore_cache_replacemnt(mflash *mfl)
     MREAD4(mfl->cache_repacement_en_addr, &data);
     data = MERGE(data, 1, 0, 1); // We put 1 in the first bit of the read data
     MWRITE4(mfl->cache_repacement_en_addr, data);
+    return MFE_OK;
+}
+
+int sixth_gen_flash_lock(mflash *mfl, int lock_state)
+{
+    int rc = 0;
+    if (lock_state == 1) { // lock the flash
+        rc = is4_flash_lock(mfl, lock_state);
+        CHECK_RC(rc);
+        rc = disable_gcm(mfl);
+        CHECK_RC(rc);
+        rc = disable_cache_replacement(mfl);
+        CHECK_RC(rc);
+        rc = gw_wait_ready(mfl, "WAIT TO BUSY");
+        CHECK_RC(rc);
+    } else { // unlock the flash
+        rc = restore_cache_replacemnt(mfl);
+        CHECK_RC(rc);
+        rc = is4_flash_lock(mfl, lock_state);
+        CHECK_RC(rc);
+    }
     return MFE_OK;
 }
 
@@ -1432,8 +1471,8 @@ int sx_init_cs_support(mflash *mfl)
 
 #define CACHE_REP_OFF_RAVEN     0xf0440
 #define CACHE_REP_CMD_RAVEN     0xf0448
-#define CACHE_REP_OFF_BLACKBIRD 0xf0484
-#define CACHE_REP_CMD_BLACKBIRD 0xf0488
+#define CACHE_REP_OFF_NEW_GW_ADDR 0xf0484
+#define CACHE_REP_CMD_NEW_GW_ADDR 0xf0488
 int check_cache_replacement_guard(mflash *mfl, u_int8_t *needs_cache_replacement)
 {
 
@@ -1454,33 +1493,33 @@ int check_cache_replacement_guard(mflash *mfl, u_int8_t *needs_cache_replacement
         dm_dev_id_t devid_t = DeviceUnknown;
         u_int32_t devid = 0;
         u_int32_t revid = 0;
+
         int rc = dm_get_device_id(mfl->mf, &devid_t, &devid, &revid);
         if (rc) {
             return rc;
         }
-        // Read the Cache replacement offset
-        if (!dm_dev_is_raven_family_switch(devid_t)) {
+
+        // Read the Cache replacement offset and cmd fields
+        if (devid_t == DeviceQuantum2 || devid_t == DeviceSpectrum4 || devid_t == DeviceConnectX7) {
+            MREAD4(CACHE_REP_OFF_NEW_GW_ADDR, &data);
+            off = data;
+            MREAD4(CACHE_REP_CMD_NEW_GW_ADDR, &data);
+            cmd = EXTRACT(data, 24, 8);
+        }
+        else if (!dm_dev_is_raven_family_switch(devid_t)) {
             MREAD4(mfl->cache_rep_offset, &data);
             off = EXTRACT(data, 0, 26);
-            // Read the Cache replacement cmd
             MREAD4(mfl->cache_rep_cmd, &data);
             cmd = EXTRACT(data, 16, 8);
         }
         else { // switches
-            if (devid_t == DeviceQuantum2) {
-                MREAD4(CACHE_REP_OFF_BLACKBIRD, &data);
-                off = data;
-                MREAD4(CACHE_REP_CMD_BLACKBIRD, &data);
-                cmd = EXTRACT(data, 24, 8);
-            }
-            else {
-                MREAD4(CACHE_REP_OFF_RAVEN, &data);
-                off = EXTRACT(data, 0, 26);
-                MREAD4(CACHE_REP_CMD_RAVEN, &data);
-                cmd = EXTRACT(data, 16, 8);
-            }
+            MREAD4(CACHE_REP_OFF_RAVEN, &data);
+            off = EXTRACT(data, 0, 26);
+            MREAD4(CACHE_REP_CMD_RAVEN, &data);
+            cmd = EXTRACT(data, 16, 8);
         }
         FLASH_ACCESS_DPRINTF(("check_cache_replacement_guard(): off=%d, cmd=%d\n", off, cmd));
+
         // Check if the offset and cmd are zero in order to continue burning.
         if (cmd != 0 || off != 0) {
             *needs_cache_replacement = 1;
@@ -1528,7 +1567,7 @@ int release_semaphore(mflash *mfl, int ignore_writer_lock)
     return MFE_OK;
 }
 
-int gen6_flash_init_com(mflash *mfl, flash_params_t *flash_params, u_int8_t init_cs_support)
+int gen6_flash_init_com(mflash *mfl, flash_params_t *flash_params)
 {
     int rc = 0;
     FLASH_ACCESS_DPRINTF(("gen6_flash_init_com(): Flash init to use direct-access\n"));
@@ -1554,11 +1593,6 @@ int gen6_flash_init_com(mflash *mfl, flash_params_t *flash_params, u_int8_t init
     mfl->f_sst_spi_block_write_ex = new_gw_sst_spi_block_write_ex;
     mfl->f_st_spi_block_read_ex = new_gw_st_spi_block_read_ex;
     mfl->f_spi_write_status_reg = new_gw_spi_write_status_reg;
-    if (init_cs_support) {
-        // Update the chip_select_support according to the banks number of cs.
-        rc = sx_init_cs_support(mfl);
-        CHECK_RC(rc);
-    }
 
     mfl->f_spi_status = cntx_st_spi_get_status;//need fix
     mfl->supp_sr_mod = 1;
@@ -1673,9 +1707,10 @@ int sx_flash_init_direct_access(mflash *mfl, flash_params_t *flash_params)
 int sixth_gen_init_direct_access(mflash *mfl, flash_params_t *flash_params)
 {
     mfl->cache_repacement_en_addr = HCR_NEW_GW_CACHE_REPLACEMNT_EN_ADDR;
+    mfl->gcm_en_addr = HCR_NEW_GW_GCM_EN_ADDR;
 
-    mfl->f_lock = connectib_flash_lock;
-    return gen6_flash_init_com(mfl, flash_params, 0);
+    mfl->f_lock = sixth_gen_flash_lock;
+    return gen6_flash_init_com(mfl, flash_params);
 }
 
 int fifth_gen_init_direct_access(mflash *mfl, flash_params_t *flash_params)
@@ -2031,16 +2066,27 @@ int cntx_flash_init(mflash *mfl, flash_params_t *flash_params)
 
 int mf_read(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool verbose)
 {
-    // printf("mfl->attr.size = %#x, addr = %#x, len = %d\n", mfl->attr.size, addr, len);
-
-    CHECK_OUT_OF_RANGE(addr, len, mfl->attr.size);
+    u_int32_t size = mfl->attr.size;
+    if ((mfl->dm_dev_id == DeviceConnectX4LX || mfl->dm_dev_id == DeviceConnectX5) &&
+        mfl->attr.vendor == FV_GD25QXXX)
+    {
+        size = 1 << FD_128; // 16MB
+    }
+    // printf("size = %#x, addr = %#x, len = %d\n", size, addr, len);
+    CHECK_OUT_OF_RANGE(addr, len, size);
     //printf("-D- mf_read:  addr: %#x, len: %d\n", addr, len);
     return mfl->f_read(mfl, addr, len, data, verbose);
 }
 
 int mf_write(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)
 {
-    CHECK_OUT_OF_RANGE(addr, len, mfl->attr.size);
+    u_int32_t size = mfl->attr.size;
+    if ((mfl->dm_dev_id == DeviceConnectX4LX || mfl->dm_dev_id == DeviceConnectX5) &&
+        mfl->attr.vendor == FV_GD25QXXX)
+    {
+        size = 1 << FD_128; // 16MB
+    }
+    CHECK_OUT_OF_RANGE(addr, len, size);
     // Locking semaphore for the entire existence of the mflash obj for write and erase only.
     int rc = mfl_com_lock(mfl);
     CHECK_RC(rc);
@@ -2210,6 +2256,195 @@ int get_dev_info(mflash *mfl)
     return MFE_OK;
 
 }
+
+void set_gpio_toggle_conf_cx6(gpio_toggle_conf_cx6* conf) {
+    conf->lock_addr = 0xf1004;
+    conf->functional_enable0_addr = 0xfc028;
+    conf->functional_enable1_addr = 0xfc024;
+    conf->mode1_set_addr = 0xfc04c;
+    conf->mode0_set_addr = 0xfc054;
+    conf->dataset_addr = 0xfc014;
+}
+
+void set_gpio_toggle_conf_bf2(gpio_toggle_conf_cx6* conf) {
+    conf->lock_addr = 0xf1084;
+    conf->functional_enable0_addr = 0xfa028;
+    conf->functional_enable1_addr = 0xfa024;
+    conf->mode1_set_addr = 0xfa04c;
+    conf->mode0_set_addr = 0xfa054;
+    conf->dataset_addr = 0xfa014;
+}
+
+void set_gpio_toggle_conf_cx7(gpio_toggle_conf_cx7* conf) {
+    conf->select_synced_data_out_addr = 0xf1078;
+    conf->fw_control_set_addr = 0xf1100;
+    conf->hw_data_in_addr = 0xf1078;
+    conf->fw_output_enable_set_addr = 0xf1104;
+    conf->fw_data_out_set_addr = 0xf1108;
+}
+
+bool toggle_flash_io3_gpio_cx6(mfile* mf, gpio_toggle_conf_cx6 conf) {
+    FLASH_DPRINTF(("toggle_flash_io3_gpio_cx6\n"));
+    // Enable lock
+    if (mwrite4(mf, conf.lock_addr, 0xd42f) != 4) {
+        printf("-E- failed to enable GPIO lock\n");
+        return MFE_CR_ERROR;
+    }
+
+    //* Make sure GPIO 29 is controlled by FW (for our usage) instead of HW
+    // Enable functional_enable0
+    u_int32_t functional_enable0 = 0;
+    if (mread4(mf, conf.functional_enable0_addr, &functional_enable0) != 4) {
+        printf("-E- failed to read functional_enable0\n");
+        return MFE_CR_ERROR;
+    }
+    functional_enable0 = functional_enable0 & 0xdfffffff;
+    if (mwrite4(mf, conf.functional_enable0_addr, functional_enable0) != 4) {
+        printf("-E- failed to enable GPIO functional_enable0\n");
+        return MFE_CR_ERROR;
+    }
+    // Enable functional_enable1
+    u_int32_t functional_enable1 = 0;
+    if (mread4(mf, conf.functional_enable1_addr, &functional_enable1) != 4) {
+        printf("-E- failed to read functional_enable1\n");
+        return MFE_CR_ERROR;
+    }
+    functional_enable1 = functional_enable1 & 0xdfffffff;
+    if (mwrite4(mf, conf.functional_enable1_addr, functional_enable1) != 4) {
+        printf("-E- failed to enable GPIO functional_enable1\n");
+        return MFE_CR_ERROR;
+    }
+
+    // Write to mode1_set
+    u_int32_t mode1_set = 0;
+    if (mread4(mf, conf.mode1_set_addr, &mode1_set) != 4) {
+        printf("-E- failed to read mode1_set\n");
+        return MFE_CR_ERROR;
+    }
+    mode1_set = mode1_set | 0x20000000;
+    if (mwrite4(mf, conf.mode1_set_addr, mode1_set) != 4) {
+        printf("-E- failed to write to mode1_set\n");
+        return MFE_CR_ERROR;
+    }
+
+    //* Write to GPIO 29
+    // Write to mode0_set
+    u_int32_t mode0_set = 0;
+    if (mread4(mf, conf.mode0_set_addr, &mode0_set) != 4) {
+        printf("-E- failed to read mode0_set\n");
+        return MFE_CR_ERROR;
+    }
+    mode0_set = mode0_set | 0x20000000;
+    if (mwrite4(mf, conf.mode0_set_addr, mode0_set) != 4) {
+        printf("-E- failed to write to mode0_set\n");
+        return MFE_CR_ERROR;
+    }
+
+    // Write to dataset
+    if (mwrite4(mf, conf.dataset_addr, 0x20000000) != 4) {
+        printf("-E- failed to write to dataset\n");
+        return MFE_CR_ERROR;
+    }
+
+    return true;
+}
+
+bool toggle_flash_io3_gpio_cx7(mfile* mf, gpio_toggle_conf_cx7 conf) {
+    FLASH_DPRINTF(("toggle_flash_io3_gpio_cx7\n"));
+    // write 0x0 to select_synced_data_out.16:1
+    u_int32_t select_synced_data_out = 0;
+    if (mread4(mf, conf.select_synced_data_out_addr, &select_synced_data_out) != 4) {
+        printf("-E- failed to read select_synced_data_out\n");
+        return MFE_CR_ERROR;
+    }
+    select_synced_data_out = select_synced_data_out & 0xfffeffff;
+    if (mwrite4(mf, conf.select_synced_data_out_addr, select_synced_data_out) != 4) {
+        printf("-E- failed to write 0x0 to select_synced_data_out.16:1\n");
+        return MFE_CR_ERROR;
+    }
+
+    // write 0x3 to fw_control_set.28:2
+    u_int32_t fw_control_set = 0;
+    if (mread4(mf, conf.fw_control_set_addr, &fw_control_set) != 4) {
+        printf("-E- failed to read fw_control_set\n");
+        return MFE_CR_ERROR;
+    }
+    fw_control_set = fw_control_set | 0x30000000;
+    if (mwrite4(mf, conf.fw_control_set_addr, fw_control_set) != 4) {
+        printf("-E- failed to write 0x3 to fw_control_set.28:2\n");
+        return MFE_CR_ERROR;
+    }
+
+    // write 0x3 to hw_data_in.4:2
+    u_int32_t hw_data_in = 0;
+    if (mread4(mf, conf.hw_data_in_addr, &hw_data_in) != 4) {
+        printf("-E- failed to read hw_data_in\n");
+        return MFE_CR_ERROR;
+    }
+    hw_data_in = hw_data_in | 0x00000030;
+    if (mwrite4(mf, conf.hw_data_in_addr, hw_data_in) != 4) {
+        printf("-E- failed to write 0x3 to hw_data_in.4:2\n");
+        return MFE_CR_ERROR;
+    }
+
+    // write 0x3 to fw_output_enable_set.28:2
+    u_int32_t fw_output_enable_set = 0;
+    if (mread4(mf, conf.fw_output_enable_set_addr, &fw_output_enable_set) != 4) {
+        printf("-E- failed to read fw_output_enable_set\n");
+        return MFE_CR_ERROR;
+    }
+    fw_output_enable_set = fw_output_enable_set | 0x30000000;
+    if (mwrite4(mf, conf.fw_output_enable_set_addr, fw_output_enable_set) != 4) {
+        printf("-E- failed to write 0x3 to fw_output_enable_set.28:2\n");
+        return MFE_CR_ERROR;
+    }
+
+    // write 0x3 to fw_data_out_set.28:2
+    u_int32_t fw_data_out_set = 0;
+    if (mread4(mf, conf.fw_data_out_set_addr, &fw_data_out_set) != 4) {
+        printf("-E- failed to read fw_data_out_set\n");
+        return MFE_CR_ERROR;
+    }
+    fw_data_out_set = fw_data_out_set | 0x30000000;
+    if (mwrite4(mf, conf.fw_data_out_set_addr, fw_data_out_set) != 4) {
+        printf("-E- failed to write 0x3 to fw_data_out_set.28:2\n");
+        return MFE_CR_ERROR;
+    }
+
+    return true;
+}
+
+bool force_flash_out_of_hold_state(mflash *mfl) {
+    bool res = true;
+    if (getenv("FORCE_GPIO_TOGGLE") != NULL || dm_is_livefish_mode(mfl->mf)) {
+        switch (mfl->dm_dev_id) {
+            case DeviceConnectX6:
+            case DeviceConnectX6DX: {
+                gpio_toggle_conf_cx6 gpio_toggle_conf;
+                set_gpio_toggle_conf_cx6(&gpio_toggle_conf);
+                res = toggle_flash_io3_gpio_cx6(mfl->mf, gpio_toggle_conf);
+                break;
+            }
+            case DeviceBlueField2: {
+                gpio_toggle_conf_cx6 gpio_toggle_conf;
+                set_gpio_toggle_conf_bf2(&gpio_toggle_conf);
+                res = toggle_flash_io3_gpio_cx6(mfl->mf, gpio_toggle_conf);
+                break;
+            }
+            case DeviceConnectX7: {
+                gpio_toggle_conf_cx7 gpio_toggle_conf;
+                set_gpio_toggle_conf_cx7(&gpio_toggle_conf);
+                res = toggle_flash_io3_gpio_cx7(mfl->mf, gpio_toggle_conf);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    return res;
+}
+
 //Caller must zero the mflash struct before calling this func.
 int mf_open_fw(mflash *mfl, flash_params_t *flash_params, int num_of_banks)
 {
@@ -2223,6 +2458,7 @@ int mf_open_fw(mflash *mfl, flash_params_t *flash_params, int num_of_banks)
     mfl->gw_cmd = HCR_FLASH_CMD;
     mfl->gw_addr = HCR_FLASH_ADDR;
     mfl->cache_repacement_en_addr = HCR_CACHE_REPLACEMNT_EN_ADDR;
+    mfl->gcm_en_addr = 0xffffffff; // Relevant to devices with new flash GW only
     mfl->cache_rep_offset = HCR_FLASH_CACHE_REPLACEMENT_OFFSET;
     mfl->cache_rep_cmd = HCR_FLASH_CACHE_REPLACEMENT_CMD;
     if (mfl->access_type == MFAT_MFILE) {
@@ -2240,6 +2476,11 @@ int mf_open_fw(mflash *mfl, flash_params_t *flash_params, int num_of_banks)
         mfl->opts[MFO_NUM_OF_BANKS] = spi_get_num_of_flashes(num_of_banks);
         rc = spi_update_num_of_banks(mfl, num_of_banks);
         CHECK_RC(rc);
+
+        //* Before initializing flash methods (which including accessing the flash)
+        //* we need to toggle GPIO to get flash out of HOLD state (relevant to second source flash Winbond W25Q256JV)
+        rc = force_flash_out_of_hold_state(mfl);
+
         int is7NmSuppported = 0;
         MfError status;
         int icmdif_supported = is_icmdif_supported(mfl, &status, &is7NmSuppported);
@@ -2396,30 +2637,6 @@ void mf_close(mflash *mfl)
 int mf_get_attr(mflash *mfl, flash_attr *attr)
 {
     *attr = mfl->attr;
-    return MFE_OK;
-}
-
-int mf_sw_reset(mflash *mfl)
-{
-    MfError status;
-    int supports_sw_reset = is_supports_sw_reset(mfl, &status);
-    if (status != MFE_OK) {
-        return status;
-    }
-    if (!supports_sw_reset) {
-        return MFE_UNSUPPORTED_DEVICE;
-    }
-    if (msw_reset(mfl->mf)) {
-        if (errno == EPERM) {
-            return MFE_CMD_SUPPORTED_INBAND_ONLY;
-        } else if (errno == OP_NOT_SUPPORTED) {
-            return MFE_MANAGED_SWITCH_NOT_SUPPORTED;
-        } else {
-
-            return MFE_ERROR;
-        }
-    }
-
     return MFE_OK;
 }
 
@@ -2705,6 +2922,10 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
     case DeviceSwitchIB2:
     case DeviceQuantum:
     case DeviceQuantum2:
+    case DeviceConnectX7:
+    case DeviceBlueField3:
+    case DeviceSpectrum4:
+    case DeviceAbirGearBox:
         return MFE_OK;
     case DeviceSpectrum:
     case DeviceConnectX4:
@@ -2715,14 +2936,11 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
         set_reset_bit_offset = 1;
         break;
     case DeviceConnectX6:
-    case DeviceConnectX7:
     case DeviceConnectX6DX:
     case DeviceConnectX6LX:
     case DeviceBlueField2:
-    case DeviceBlueField3:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
-    case DeviceSpectrum4:
     case DeviceGearBox:
     case DeviceGearBoxManager:
         set_reset_bit_dword_addr = 0xf0c28;
@@ -2731,6 +2949,7 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
     default:
         return MFE_UNSUPPORTED_DEVICE;
     }
+    FLASH_DPRINTF(("mflash::mf_set_reset_flash_on_warm_reboot setting power_boot_partial_reset at addr 0x%x.%d\n", set_reset_bit_dword_addr, set_reset_bit_offset));
     rc = mf_cr_read(mfl, set_reset_bit_dword_addr, &set_reset_bit_dword);
     CHECK_RC(rc);
     set_reset_bit_dword = MERGE(set_reset_bit_dword, 1, set_reset_bit_offset, 1);
@@ -2774,20 +2993,27 @@ int mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr)
         boot_cr_space_address = 0xf0080;
         offset_in_address = 0;
         break;
+    case DeviceAbirGearBox:
+        boot_cr_space_address = 0xf1400;
+        offset_in_address = 0;
+        break;
     case DeviceSpectrum4:
     case DeviceQuantum2:
         boot_cr_space_address = 0xf1000;
         offset_in_address = 0;
+        break;
     case DeviceConnectX7:
     case DeviceBlueField3:
         boot_cr_space_address = 0xf2000;
         offset_in_address = 0;
+        break;
     default:
         return MFE_UNSUPPORTED_DEVICE;
     }
 
     if (mfl->access_type != MFAT_UEFI && mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] != ATBM_MLNXOS_CMDIF) {
         // the boot addr will be updated directly via cr-space
+        FLASH_DPRINTF(("mflash::mf_update_boot_addr setting boot_start_address at addr 0x%x to 0x%x\n", boot_cr_space_address, boot_addr << offset_in_address));
         rc = mf_cr_write(mfl, boot_cr_space_address, boot_addr << offset_in_address);
         CHECK_RC(rc);
         return mf_set_reset_flash_on_warm_reboot(mfl);
@@ -3284,6 +3510,11 @@ int mf_disable_hw_access_with_key(mflash *mfl, u_int64_t key)
 mfile* mf_get_mfile(mflash *mfl)
 {
     return mfl->mf;
+}
+
+dm_dev_id_t mf_get_dm_dev_id(mflash *mfl)
+{
+    return mfl->dm_dev_id;
 }
 
 int mf_get_jedec_id(mflash *mfl, u_int32_t *jedec_id)

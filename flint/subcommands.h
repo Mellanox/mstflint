@@ -362,7 +362,7 @@ public:
 class SwResetSubCommand : public SubCommand
 {
 private:
-
+    bool IsDeviceSupported(dm_dev_id_t dev_id);
 public:
     SwResetSubCommand();
     ~SwResetSubCommand();
@@ -445,13 +445,19 @@ public:
     inline bool verifyParams();
 };
 
+class SetCertChainSubCommand : public SubCommand
+{
+public:
+    SetCertChainSubCommand();
+    ~SetCertChainSubCommand() {};
+    FlintStatus executeCommand();
+};
+
 class SetVpdSubCommand : public SubCommand
 {
-private:
-
 public:
     SetVpdSubCommand();
-    ~SetVpdSubCommand();
+    ~SetVpdSubCommand() {};
     FlintStatus executeCommand();
 };
 
@@ -591,7 +597,7 @@ public:
 class RbSubCommand : public SubCommand
 {
 private:
-    bool printToScreen(const std::vector<u_int8_t>& buff);
+    bool printToScreen(const std::vector<u_int8_t>& buff, bool hexdump_format);
     bool readBlock(u_int32_t addr, std::vector<u_int8_t>& buff, bool isFlash);
 public:
     RbSubCommand();

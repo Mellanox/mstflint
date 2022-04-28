@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.18.0}
+%{!?version: %define version 4.20.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -215,7 +215,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
-* Sat Oct 9 2021 Konstantin Maksatov <kostiantynm@nvidia.com>
+* Thu Apr 28 2022 Tomer Tubi <ttubi@nvidia.com>
+   MFT 4.20.0 Updates
+
+* Thu Mar 24 2022 Tomer Tubi <ttubi@nvidia.com>
+   MFT 4.19.0 Updates
+
+* Thu Nov 25 2021 Tomer Tubi <ttubi@nvidia.com>
    MFT 4.18.0 Updates
 
 * Thu Jun 10 2021 Konstantin Maksatov <kostiantynm@nvidia.com>

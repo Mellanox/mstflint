@@ -52,8 +52,12 @@
 
 #ifdef MST_UL
 #define MLXLINK_EXEC "mstlink"
+#define PKG_NAME     "MSTFLINT"
+#define PKG_VER      MSTFLINT_VERSION_STR
 #else
 #define MLXLINK_EXEC "mlxlink"
+#define PKG_NAME     "MFT"
+#define PKG_VER      MFT_VERSION_STR
 #endif
 
 //------------------------------------------------------------
@@ -175,6 +179,43 @@
 #define WRITE_OFFSET_FLAG_SHORT             ' '
 #define READ_LEN_FLAG                       "length"
 #define READ_LEN_FLAG_SHORT                 ' '
+#define CABLE_PRBS_SELECT                   "prbs_select"
+#define CABLE_PRBS_SELECT_SHORT             ' '
+#define CABLE_PRBS_MODE                     "prbs_mode"
+#define CABLE_PRBS_MODE_SHORT               ' '
+#define CABLE_PRBS_GEN_PAT                  "generator_pattern"
+#define CABLE_PRBS_GEN_PAT_SHORT            ' '
+#define CABLE_PRBS_GEN_SWAP                 "swap_generator"
+#define CABLE_PRBS_GEN_SWAP_SHORT           ' '
+#define CABLE_PRBS_GEN_INV                  "invert_generator"
+#define CABLE_PRBS_GEN_INV_SHORT            ' '
+#define CABLE_PRBS_GEN_LANES                "generator_lanes"
+#define CABLE_PRBS_GEN_LANES_SHORT          ' '
+#define CABLE_PRBS_CH_PAT                   "checker_pattern"
+#define CABLE_PRBS_CH_PAT_SHORT             ' '
+#define CABLE_PRBS_CH_SWAP                  "swap_checker"
+#define CABLE_PRBS_CH_SWAP_SHORT            ' '
+#define CABLE_PRBS_CH_INV                   "invert_checker"
+#define CABLE_PRBS_CH_INV_SHORT             ' '
+#define CABLE_PRBS_CH_LANES                 "checker_lanes"
+#define CABLE_PRBS_CH_LANES_SHORT           ' '
+#define CABLE_PRBS_LANE_RATE                "lane_rate"
+#define CABLE_PRBS_LANE_RATE_SHORT          ' '
+#define CABLE_PRBS_SHOW_DIAG                "show_diagnostic_info"
+#define CABLE_PRBS_SHOW_DIAG_SHORT          ' '
+#define CABLE_PRBS_CLEAR_DIAG               "clear_diagnostic_info"
+#define CABLE_PRBS_CLEAR_DIAG_SHORT         ' '
+#define CTRL_PARAM_FLAG                     "control_parameters"
+#define CTRL_PARAM_FLAG_SHORT               ' '
+#define CTRL_PARAM_TX_EQ_FLAG               "tx_equalization"
+#define CTRL_PARAM_TX_EQ_FLAG_SHORT         ' '
+#define CTRL_PARAM_RX_EMPH_FLAG             "rx_emphasis"
+#define CTRL_PARAM_RX_EMPH_FLAG_SHORT       ' '
+#define CTRL_PARAM_RX_POST_EMPH_FLAG        "rx_post_emphasis"
+#define CTRL_PARAM_RX_POST_EMPH_FLAG_SHORT  ' '
+#define CTRL_PARAM_RX_AMP_FLAG              "rx_amplitude"
+#define CTRL_PARAM_RX_AMP_FLAG_SHORT        ' '
+
 #define SHOW_TX_GROUP_MAP_FLAG              "show_tx_group_map"
 #define SHOW_TX_GROUP_MAP_FLAG_SHORT        ' '
 #define SET_TX_GROUP_MAP_FLAG               "tx_group_map"
@@ -244,11 +285,12 @@ enum OPTION_TYPE {
     SHOW_EXTERNAL_PHY,
     SHOW_LINK_DOWN_BLAME,
     SHOW_TX_GROUP_MAP,
-    CABLE_EEPROM_INI,
     CABLE_SHOW_DUMP,
     CABLE_SHOW_DDM,
     CABLE_EEPROM_WRITE,
     CABLE_EEPROM_READ,
+    CABLE_PRBS_CMDS,
+    CABLE_CTRL_PARM,
     SEND_BER_COLLECT,
     SEND_AMBER_COLLECT,
     SEND_PAOS,
@@ -263,7 +305,7 @@ enum OPTION_TYPE {
     SET_TX_GROUP_MAP,
     GRADE_SCAN_ENABLE,
     ERR_INJ_ENABLE,
-    RS_FEC_HISTOGRAM = 33,
+    RS_FEC_HISTOGRAM,
     SLRG_TEST,
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
@@ -296,6 +338,15 @@ struct DPN {
     u_int32_t node;
 };
 
+struct MODULE_FIELD
+{
+    string uiName;
+    string amberName;
+    bool multiVal;
+    bool perLane;
+    bool requireDdm;
+};
+
 using namespace std;
 
 class MlxlinkCommander: public MlxlinkRegParser {
@@ -305,23 +356,26 @@ public:
     virtual ~MlxlinkCommander();
 
     void checkRegCmd();
-    virtual void validatePortType(const string &portTypeStr);
-    void updatePortType() {};
+    void validatePortToLC();
+    void validatePortType(const string &portTypeStr);
+    void updatePortType();
+    void gearboxBlock(const string &option);
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
+    u_int32_t getTechnologyFromMGIR();
     void getProductTechnology();
     bool checkPortStatus(u_int32_t localPort);
     void checkAllPortsStatus();
     void handlePortStr(const string &portStr);
     void labelToLocalPort();
     void labelToHCALocalPort();
+    void labeltoDSlocalPort();
+    bool isDSdevice();
     void labelToSpectLocalPort();
     void labelToIBLocalPort();
     bool isIBSplitReady();
     u_int32_t calculatePanelPort(bool ibSplitReady);
-    void checkWidthSplit(u_int32_t localPort);
-    void checkUnSplit(u_int32_t localPort);
     u_int32_t maxLocalPort();
     void checkStrLength(const string &str);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
@@ -329,9 +383,9 @@ public:
     string activeSpeed2Str(u_int32_t mask, bool extended);
     void getCableParams();
     bool inPrbsTestMode();
+    bool checkGBPpaosDown();
     bool checkPaosDown();
     bool checkPpaosTestMode();
-    u_int32_t getPtysCap();
     void getSltpParamsFromVector(std::vector<string> sltpParams);
     void getprbsLanesFromParams(std::vector<string> prbsLanesParams);
     std::vector<string> parseParamsFromLine(const string & ParamsLine);
@@ -346,25 +400,26 @@ public:
     void handleLabelPorts(std::vector<string> labelPortsStr, bool skipException = false);
     vector<string> localToPortsPerGroup(vector<u_int32_t> localPorts);
     u_int32_t getPortGroup(u_int32_t localPort);
+    string getValuesOfActiveLanes(const string &row);
 
     //Mlxlink query functions
     virtual void showModuleInfo();
     void prepareBerModuleInfoNdr(bool valid);
     virtual void runningVersion();
-    virtual void operatingInfoPage();
-    virtual void supportedInfoPage();
+    void operatingInfoPage();
+    void supportedInfoPage();
     virtual void troubInfoPage();
-    virtual void showPddr();
+    void showPddr();
     void getPtys();
     virtual void showBer();
-    virtual void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
-    virtual void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
+    void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
+    void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
     virtual void showEye();
-    virtual void showFEC();
+    void showFEC();
     virtual void showSltp();
     virtual void showDeviceData();
     void showBerMonitorInfo();
-    virtual void showExternalPhy();
+    void showExternalPhy();
     void showPcie();
     void showPcieLinks();
     void collectAMBER();
@@ -390,6 +445,9 @@ public:
             u_int32_t laneNumber);
     void initValidDPNList();
     u_int32_t readBitFromField(const string &fieldName, u_int32_t bitIndex);
+    string getSupportedFecForSpeed(const string &speed);
+    string fecMaskToUserInputStr(u_int32_t fecCapMask);
+    string fecMaskToStr(u_int32_t mask);
 
     void showTestMode();
     void showTestModeBer();
@@ -430,9 +488,9 @@ public:
     // Cable operation
     bool isPassiveQSFP();
     bool isSFP51Paging();
-    virtual void initCablesCommander();
-    virtual void initEyeOpener();
-    virtual void initErrInj();
+    void initCablesCommander();
+    void initEyeOpener();
+    void initErrInj();
     void initPortInfo();
     void setAmBerCollectorFields();
     virtual void initAmBerCollector();
@@ -441,6 +499,8 @@ public:
     vector<u_int8_t> validateBytes(const vector<string> &strBytes);
     void writeCableEEPROM();
     void readCableEEPROM();
+    void performModulePrbsCommands();;
+    void performControlParams();
 
     MlxlinkCmdPrint _toolInfoCmd;
     MlxlinkCmdPrint _operatingInfoCmd;
@@ -470,15 +530,16 @@ public:
     void sendPaos();
     void handlePrbs();
     void sendPtys();
-    void sendPplm();
-    virtual void sendSltp();
+    virtual void sendPplm();
+    void sendSltp();
     void sendPplr();
-    virtual void sendPepc();
+    void sendPepc();
     void setTxGroupMapping();
 
     // Config helper functions
     bool isForceDownSupported();
     bool isPPHCRSupported();
+    void sendGBPaosCmd(PAOS_ADMIN adminStatus, bool forceDown);
     void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
     void sendPaosDown(bool toggleCommand = false);
     void sendPaosUP();
@@ -497,6 +558,9 @@ public:
     u_int32_t ptysSpeedToMask(const string & speed);
     void validateSpeedStr();
     void checkSupportedSpeed(const string & speed, u_int32_t cap, bool extSpeed = false);
+    string speedToFecSpeedStr(const string &speed, u_int32_t numOfLanes);
+    u_int32_t fecToBit(const string &fec, const string &speedStrG);
+    u_int32_t getFecCapForCheck(const string &speedStr);
     void checkPplmCap();
     void updateSltp28_40nmFields();
     void updateSltp16nmFields();
@@ -506,7 +570,7 @@ public:
     void getSltpRegAndLeva(u_int32_t lane);
     u_int32_t getLaneSpeed(u_int32_t lane);
     void validateNumOfParamsForNDRGen();
-    virtual void checkSltpParamsSize();
+    void checkSltpParamsSize();
 
     // Mlxlink params
     UserInput _userInput;
@@ -531,10 +595,12 @@ public:
     u_int32_t _activeSpeed;
     u_int32_t _activeSpeedEx;
     u_int32_t _protoCapability;
+    u_int32_t _deviceCapability;
     u_int32_t _protoAdmin;
     u_int32_t _protoAdminEx;
     u_int32_t _productTechnology;
     u_int32_t _moduleNumber;
+    u_int32_t _slotIndex;
     u_int32_t _linkSpeed;
     string _extAdbFile;
     string _device;
@@ -559,6 +625,8 @@ public:
     bool _isPam4Speed;
     bool _ignorePortType;
     bool _ignorePortStatus;
+    bool _isGboxPort;
+    bool _ignoreIbFECCheck;
     std::vector<std::string> _ptysSpeeds;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;
@@ -573,7 +641,6 @@ public:
 
 protected:
     vector<AmberField> _ppcntFields;
-    string loopAllLanesStr(vector<AmberField> &fields, string str);
 };
 
 #endif /* MLXLINK_COMMANDER_H */

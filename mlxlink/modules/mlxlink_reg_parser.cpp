@@ -94,7 +94,18 @@ void MlxlinkRegParser::updateField(string field_name, u_int32_t value)
 {
     DEBUG_LOG(_mlxlinkLogger, "%-15s: %-30s\tVALUE: 0x%08x (%d)\n",
               "UPDATE_FIELD", (char*)field_name.c_str(),value,value);
+
     RegAccessParser::updateField(field_name, value);
+
+    if (field_name == "local_port") {
+        try {
+            // the full value for local port is 10 bits, [0:7] in local_port, and [8:9] in lp_msb
+            // this should be provided for all access registers which have local_port field index
+            updateField("lp_msb", ((value >> 8) & 0x3));
+        } catch(...) {
+            // If the lp_msb does not exists on some access register, no need to fail the command
+        }
+    }
 }
 
 string MlxlinkRegParser::getFieldStr(const string &field)

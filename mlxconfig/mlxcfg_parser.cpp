@@ -55,6 +55,7 @@ using namespace std;
 #define IDENT2 IDENT IDENT
 #define IDENT3 "\t\t"
 #define IDENT4 IDENT2 IDENT
+#define MAX_SESSION_TIME_IN_MINUTES 10080 // 1 week = 7 * 24 hours * 60 minutes 
 
 
 static void printFlagLine(string flag_s, string flag_l, string param, string desc)
@@ -97,6 +98,9 @@ void MlxCfg::printHelp()
     printFlagLine("eng", "openssl_engine", "ENGINE NAME", "OpenSSL engine name");
     printFlagLine("k", "openssl_key_id", "IDENTIFIER", "OpenSSL key identifier");
     printFlagLine("t", "device_type", "switch/hca", "Specify the device type");
+    printFlagLine("s", "session_id", "", "Specify the session id for token keep alive session.");
+    printFlagLine("st", "session_time", "", "Specify session time for token keep alive session.");
+    printFlagLine("tkn", "token_type", "", "Specify token type.");
 
     //print commands
     printf("\n");
@@ -116,6 +120,11 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-24s : %s\n", "xml2bin", "Generate binary configuration dump file from XML file. XML input file name and bin output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "create_conf", "Generate configuration file from XML file. XML input file name and bin output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "apply", "Apply a configuration file, that was created with create_conf command. bin input file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "challenge_request", "Send a token challenge request to the device. Token type must be specified.");
+    printf(IDENT2 "%-24s : %s\n", "remote_token_keep_alive", "Start a remote token session for a specified time. session id must be specified.");
+    printf(IDENT2 "%-24s : %s\n", "token_supported", "Query which tokens are supported.");
+    printf(IDENT2 "%-24s : %s\n", "query_token_session", "Query the status of a token session.");
+    printf(IDENT2 "%-24s : %s\n", "end_token_session", "End an active token session.");
 
     // print supported commands
     printf("\n");
@@ -136,8 +145,8 @@ void MlxCfg::printHelp()
     printf(IDENT "Supported devices:\n");
     printf(IDENT2 "4th Generation devices: ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
     printf(IDENT2 "5th Generation devices: ConnectIB, ConnectX4, ConnectX4-LX, ConnectX5, connectX5-Ex.\n");
-    printf(IDENT2 "6th Generation devices: BlueField, COnnectX6, ConnectX6-DX\n");
-    printf(IDENT2 "Switches: Switch-IB, Switch-IB2,Spectrum, Spectrum2, Quantum\n");
+    printf(IDENT2 "6th Generation devices: BlueField, BlueField2, ConnectX6, ConnectX6-DX, ConnectX6-LX\n");
+    printf(IDENT2 "Switches: Switch-IB, Switch-IB2,Spectrum, Spectrum2, Spectrum3, Quantum, Quantum2\n");
 
     printf("\n");
     printf(IDENT "Note: query device to view supported configurations by Firmware.\n");
@@ -359,8 +368,29 @@ Device_Type MlxCfg::getDeviceTypeFromString(string inStr){
     }
 }
 
+mlxCfgStatus MlxCfg::getNumberFromString(const char* str, u_int32_t& num)
+{
+    char* end = NULL;
+    num = strtoul(str, &end, 0);
+    if (*end != '\0') {
+        return err(true, "argument is not a number: %s", str);
+    }
+    return MLX_CFG_OK;
+}
+
+mlxCfgToken MlxCfg::getTokenType(const char* tokenStr)
+{
+    mlxCfgToken tokenType = Mc_Token_Unknown;
+
+    if (strcmp(tokenStr, "RMCS") == 0) tokenType = Mc_Token_RMCS;
+    if (strcmp(tokenStr, "RMDT") == 0) tokenType = Mc_Token_RMDT;
+
+    return tokenType;
+}
+
 mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
 {
+    mlxCfgStatus status = MLX_CFG_OK;
     int i = 1;
     for (; i < argc; i++) {
         string arg = argv[i];
@@ -422,18 +452,66 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
                 return err(true, "missing OpenSSL key identifier");
             }
             _mlxParams.opensslKeyId = argv[i];
+        } else if ((arg == "-tkn") || (arg == "--token_type")) {
+            if (++i == argc) {
+                return err(true, "missing token type");
+            }
+            _mlxParams.tokenID = getTokenType(argv[i]);
+            if (_mlxParams.tokenID == Mc_Token_Unknown) {
+                return err(true, "invalid token type");
+            }
+        } else if (arg == "--cycle_time") {
+            if (++i == argc) {
+                return err(true, "missing cycle time value");
+            }
+            status = getNumberFromString(argv[i], _mlxParams.keepAliveSleepTimeBetweenCommands);
+            if (status != MLX_CFG_OK) {
+                return status;
+            }
+            _mlxParams.isSleepTimeBetweenCommandsInput = true;
+        } else if (arg == "--resend_time") {
+            if (++i == argc) {
+                return err(true, "missing resend time value");
+            }
+            status = getNumberFromString(argv[i], _mlxParams.keepAliveSleepTimeOnCommandTO);
+            if (status != MLX_CFG_OK) {
+                return status;
+            }            
+            _mlxParams.isSleepTimeOnCommandTOInput = true;
+        } else if ((arg == "-s") || (arg == "--session_id")) {
+            if (++i == argc) {
+                return err(true, "missing session id");
+            }
+            status = getNumberFromString(argv[i], _mlxParams.sessionId);
+            _mlxParams.isSessionIDGiven = true;
+            if (status != MLX_CFG_OK) {
+                return status;
+            }
+        } else if ((arg == "-st") || (arg == "--session_time")) {
+            if (++i == argc) {
+                return err(true, "missing session time value");
+            }
+            status = getNumberFromString(argv[i], _mlxParams.sessionTimeInSec);
+            if (status != MLX_CFG_OK) {
+                return status;
+            }
+            if (_mlxParams.sessionTimeInSec > MAX_SESSION_TIME_IN_MINUTES) {
+                return err(true, "requested session time is out of bounds, max session time is 1 week (10080 minutes).");
+            }
+            _mlxParams.sessionTimeInSec *= 60;
+            _mlxParams.isSessionTimeGiven = true;
+        // hidden flag --force used to ignore parameter checks
+        } else if (arg == "--force") {
+            _mlxParams.force = true;
         } else if (arg == "set" || arg == "s") {
             _mlxParams.cmd = Mc_Set;
             break;
-
         } else if (arg == "query" || arg == "q") {
             _mlxParams.cmd = Mc_Query;
             break;
-
         } else if (arg == "reset" || arg == "r") {
             _mlxParams.cmd = Mc_Reset;
             break;
-
         } else if (arg == "clear_semaphore") {
             _mlxParams.cmd = Mc_Clr_Sem;
             break;
@@ -470,9 +548,21 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
         } else if (arg == "show_confs" || arg == "i") {
             _mlxParams.cmd = Mc_ShowConfs;
             break;
-            // hidden flag --force used to ignore parameter checks
-        } else if (arg == "--force") {
-            _mlxParams.force = true;
+        } else if (arg == "challenge_request") {
+            _mlxParams.cmd = Mc_ChallengeRequest;
+            break;
+        } else if (arg == "token_supported") {
+            _mlxParams.cmd = Mc_TokenSupported;
+            break;
+        } else if (arg == "query_token_session") {
+            _mlxParams.cmd = Mc_QueryTokenSession;
+            break;
+        } else if (arg == "end_token_session") {
+            _mlxParams.cmd = Mc_EndTokenSession;
+            break;
+        } else if (arg == "remote_token_keep_alive") {
+            _mlxParams.cmd = Mc_RemoteTokenKeepAlive;
+            break;
         } else {
             return err(true, "invalid argument: %s", arg.c_str());
         }
@@ -488,7 +578,11 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
     if (i != argc && (_mlxParams.cmd == Mc_Reset)) {
         return err(true, "%s command expects no argument but %d argument received", "reset", argc - i);
     }
-    if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply) && _mlxParams.device.length() == 0) {
+
+    if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Backup
+         || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply || _mlxParams.cmd == Mc_RemoteTokenKeepAlive
+         || _mlxParams.cmd == Mc_ChallengeRequest || _mlxParams.cmd == Mc_TokenSupported || _mlxParams.cmd == Mc_QueryTokenSession
+         || _mlxParams.cmd == Mc_EndTokenSession) && _mlxParams.device.length() == 0) {
         return err(true, "%s command expects device to be specified.",
                    _mlxParams.cmd == Mc_Set ?
                    "set" : _mlxParams.cmd == Mc_Set_Raw ?
@@ -496,11 +590,23 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
                    "get_raw" : _mlxParams.cmd == Mc_Clr_Sem ?
                    "clear_semaphore" : _mlxParams.cmd == Mc_Backup ?
                    "backup" : _mlxParams.cmd == Mc_Apply ?
-                   "apply" : "show_confs");
+                   "apply" : _mlxParams.cmd == Mc_ChallengeRequest ?
+                   "challenge_request" : _mlxParams.cmd == Mc_TokenSupported ?
+                   "token_supported" : _mlxParams.cmd == Mc_QueryTokenSession ?
+                   "query_token_session" : _mlxParams.cmd == Mc_EndTokenSession ?
+                   "end_token_session" : _mlxParams.cmd == Mc_EndTokenSession ?
+                   "remote_token_keep_alive" : "show_confs");
     }
     if (((_mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Get_Raw) &&
             _mlxParams.rawTlvFile.size() == 0 )) {
-        return err(true, "set_raw command expects raw TLV file to be specified.");
+        if (_mlxParams.cmd == Mc_Set_Raw)
+        {
+            return err(true, "set_raw command expects raw TLV file to be specified.");
+        }
+        else
+        {
+            return err(true, "get_raw command expects raw TLV file to be specified.");
+        }
     }
     if ((_mlxParams.cmd == Mc_Backup && _mlxParams.rawTlvFile.size() == 0 )) {
         return err(true, "backup command expects file to be specified.");
@@ -508,7 +614,28 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
     if ((((_mlxParams.cmd != Mc_Set_Raw && _mlxParams.cmd != Mc_Get_Raw) &&
             _mlxParams.cmd != Mc_Backup) &&
          _mlxParams.rawTlvFile.size() != 0 )) {
-        return err(true, "raw TLV file can only be specified with set_raw command.");
+        return err(true, "raw TLV file can only be specified with set_raw, get_raw and backup commands.");
+    }
+
+    if ((_mlxParams.cmd == Mc_ChallengeRequest && (_mlxParams.tokenID == Mc_Token_Unknown)) ||
+        (_mlxParams.cmd != Mc_ChallengeRequest && (_mlxParams.tokenID != Mc_Token_Unknown))) {
+        return err(true, "-tkn/--token_type must be specified with challenge_request command");
+    }
+
+    if ((_mlxParams.cmd == Mc_RemoteTokenKeepAlive && !_mlxParams.isSessionIDGiven) ||
+        (_mlxParams.cmd != Mc_RemoteTokenKeepAlive && _mlxParams.isSessionIDGiven)) {
+        return err(true, "-s/--session_id should be specified with remote_token_keep_alive command");
+    }
+    if ((_mlxParams.isSleepTimeBetweenCommandsInput || _mlxParams.isSleepTimeOnCommandTOInput)
+        && _mlxParams.cmd != Mc_RemoteTokenKeepAlive) {
+        return err(true, "sleep times for keep alive session can only be specified with remote_token_keep_alive command");
+    }
+    if (_mlxParams.isSessionTimeGiven && _mlxParams.cmd != Mc_RemoteTokenKeepAlive) {
+        return err(true, "session time for keep alive session can only be specified with remote_token_keep_alive command");
+    }
+
+    if (_mlxParams.cmd == Mc_QueryTokenSession && _mlxParams.deviceType == UNSUPPORTED_DEVICE) {
+        return err(true, "device type must be specified with query_token_session command");
     }
 
     if (_mlxParams.cmd == Mc_GenTLVsFile) {

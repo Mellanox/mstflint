@@ -293,4 +293,3 @@ int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4])
     (void)value;
     return ME_UNSUPPORTED_OPERATION;
 }
-

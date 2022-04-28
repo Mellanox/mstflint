@@ -1,5 +1,6 @@
 #--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
+# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -35,7 +36,7 @@ USER_DIR = $(top_srcdir)
 #INCLUDES = -I. -I$(USER_DIR)/ext_libs/libtar -I$(USER_DIR)/ext_libs/libtar/listhash -I$(USER_DIR)/ext_libs/minixz
 INCLUDES = -I. -I$(USER_DIR)/ext_libs/minixz -I$(USER_DIR)/common
 
-AM_CFLAGS = -MD -pipe -Wall -W -g $(COMPILER_FPIC)
+AM_CFLAGS = -MD -pipe -Wall -W -g  $(COMPILER_FPIC) 
 
 noinst_LTLIBRARIES = libmfa.a
 libmfa_a_LIBADD = -L$(USER_DIR)/ext_libs/minixz -lminixz

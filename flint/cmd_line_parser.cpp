@@ -92,6 +92,7 @@ SubCmdMetaData::SubCmdMetaData()
 #ifndef EXTERNAL
     _sCmds.push_back(new SubCmd("", "smg", SC_Smg));
     _sCmds.push_back(new SubCmd("", "set_vpd", SC_Set_Vpd));
+    _sCmds.push_back(new SubCmd("", "set_attestation_cert_chain", SC_Set_Cert_Chain));
 #endif
     _sCmds.push_back(new SubCmd("", "sv", SC_Sv));
     _sCmds.push_back(new SubCmd("", "ri", SC_Ri));
@@ -200,6 +201,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "use_fw", 0));
     _flags.push_back(new Flag("", "use_dev_img_info", 0));
     _flags.push_back(new Flag("", "ignore_crc_check", 0));
+    _flags.push_back(new Flag("", "hexdump_format", 0));
     _flags.push_back(new Flag("", "skip_ci_req", 0));
     _flags.push_back(new Flag("", "use_dev_rom", 0));
     _flags.push_back(new Flag("", "private_key", 1));
@@ -720,6 +722,12 @@ void Flint::initCmdParser()
                "Prevents flint from failing due to CRC check",
                true); // hidden
 
+    AddOptions("hexdump_format",
+               ' ',
+               "",
+               "Prints rb command output in hexdump format",
+               true); // hidden
+
     AddOptions("dual_image",
                ' ',
                "",
@@ -1106,6 +1114,8 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.use_dev_img_info = true;
     } else if (name == "ignore_crc_check") {
         _flintParams.ignore_crc_check = true;
+    } else if (name == "hexdump_format") {
+        _flintParams.hexdump_format = true;
     } else if (name == "ir") {
         _flintParams.image_reactivation = true;
     } else if (name == "banks") {

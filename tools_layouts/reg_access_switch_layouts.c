@@ -32,7 +32,7 @@
  
 
 /***
-         *** This file was generated at "2021-09-30 13:17:36"
+         *** This file was generated at "2021-11-07 16:02:35"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
          ***/
@@ -502,6 +502,41 @@ void reg_access_switch_mddt_reg_payload_auto_ext_dump(const union reg_access_swi
 	reg_access_switch_mddt_reg_payload_auto_ext_print(ptr_struct, fd, 0);
 }
 
+void reg_access_switch_uint64_pack(const u_int64_t *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 0;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 8, *ptr_struct);
+}
+
+void reg_access_switch_uint64_unpack(u_int64_t *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 0;
+	*ptr_struct = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
+}
+
+void reg_access_switch_uint64_print(const u_int64_t *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_switch_uint64 ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "uint64               : " U64H_FMT "\n", (u_int64_t) *ptr_struct);
+}
+
+unsigned int reg_access_switch_uint64_size(void)
+{
+	return REG_ACCESS_SWITCH_UINT64_SIZE;
+}
+
+void reg_access_switch_uint64_dump(const u_int64_t *ptr_struct, FILE *fd)
+{
+	reg_access_switch_uint64_print(ptr_struct, fd, 0);
+}
+
 void reg_access_switch_icam_reg_ext_pack(const struct reg_access_switch_icam_reg_ext *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -846,6 +881,247 @@ void reg_access_switch_mddt_reg_ext_dump(const struct reg_access_switch_mddt_reg
 	reg_access_switch_mddt_reg_ext_print(ptr_struct, fd, 0);
 }
 
+void reg_access_switch_mdsr_reg_ext_pack(const struct reg_access_switch_mdsr_reg_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 28;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->status);
+	offset = 18;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 6, (u_int32_t)ptr_struct->additional_info);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->type_of_token);
+	offset = 32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->end);
+	offset = 64;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->time_left);
+}
+
+void reg_access_switch_mdsr_reg_ext_unpack(struct reg_access_switch_mdsr_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 28;
+	ptr_struct->status = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 18;
+	ptr_struct->additional_info = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 6);
+	offset = 0;
+	ptr_struct->type_of_token = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 32;
+	ptr_struct->end = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 64;
+	ptr_struct->time_left = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+}
+
+void reg_access_switch_mdsr_reg_ext_print(const struct reg_access_switch_mdsr_reg_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_switch_mdsr_reg_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "status               : " UH_FMT "\n", ptr_struct->status);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "additional_info      : " UH_FMT "\n", ptr_struct->additional_info);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "type_of_token        : " UH_FMT "\n", ptr_struct->type_of_token);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "end                  : " UH_FMT "\n", ptr_struct->end);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "time_left            : " U32H_FMT "\n", ptr_struct->time_left);
+}
+
+unsigned int reg_access_switch_mdsr_reg_ext_size(void)
+{
+	return REG_ACCESS_SWITCH_MDSR_REG_EXT_SIZE;
+}
+
+void reg_access_switch_mdsr_reg_ext_dump(const struct reg_access_switch_mdsr_reg_ext *ptr_struct, FILE *fd)
+{
+	reg_access_switch_mdsr_reg_ext_print(ptr_struct, fd, 0);
+}
+
+void reg_access_switch_mkdc_reg_ext_pack(const struct reg_access_switch_mkdc_reg_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 28;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->error_code);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->session_id);
+	offset = 32;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->current_keep_alive_counter);
+	offset = 64;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->next_keep_alive_counter);
+}
+
+void reg_access_switch_mkdc_reg_ext_unpack(struct reg_access_switch_mkdc_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 28;
+	ptr_struct->error_code = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 0;
+	ptr_struct->session_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 32;
+	ptr_struct->current_keep_alive_counter = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 64;
+	ptr_struct->next_keep_alive_counter = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+}
+
+void reg_access_switch_mkdc_reg_ext_print(const struct reg_access_switch_mkdc_reg_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_switch_mkdc_reg_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "error_code           : %s (" UH_FMT ")\n", (ptr_struct->error_code == 0 ? ("OK") : ((ptr_struct->error_code == 1 ? ("BAD_SESSION_ID") : ((ptr_struct->error_code == 2 ? ("BAD_KEEP_ALIVE_COUNTER") : ((ptr_struct->error_code == 3 ? ("BAD_SOURCE_ADDRESS") : ((ptr_struct->error_code == 4 ? ("SESSION_TIMEOUT") : ("unknown")))))))))), ptr_struct->error_code);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "session_id           : " UH_FMT "\n", ptr_struct->session_id);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "current_keep_alive_counter : " U32H_FMT "\n", ptr_struct->current_keep_alive_counter);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "next_keep_alive_counter : " U32H_FMT "\n", ptr_struct->next_keep_alive_counter);
+}
+
+unsigned int reg_access_switch_mkdc_reg_ext_size(void)
+{
+	return REG_ACCESS_SWITCH_MKDC_REG_EXT_SIZE;
+}
+
+void reg_access_switch_mkdc_reg_ext_dump(const struct reg_access_switch_mkdc_reg_ext *ptr_struct, FILE *fd)
+{
+	reg_access_switch_mkdc_reg_ext_print(ptr_struct, fd, 0);
+}
+
+void reg_access_switch_mtcq_reg_ext_pack(const struct reg_access_switch_mtcq_reg_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	offset = 20;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->device_index);
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->status);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->token_opcode);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(32, 32, i, 896, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->keypair_uuid[i]);
+	}
+	offset = 160;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 8, ptr_struct->base_mac);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(224, 32, i, 896, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->psid[i]);
+	}
+	offset = 376;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->fw_version_39_32);
+	offset = 384;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->fw_version_31_0);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(416, 32, i, 896, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->source_address[i]);
+	}
+	offset = 560;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->session_id);
+	offset = 544;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->challenge_version);
+	for (i = 0; i < 8; ++i) {
+		offset = adb2c_calc_array_field_address(576, 32, i, 896, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->challenge[i]);
+	}
+}
+
+void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	offset = 20;
+	ptr_struct->device_index = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
+	offset = 8;
+	ptr_struct->status = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 0;
+	ptr_struct->token_opcode = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(32, 32, i, 896, 1);
+		ptr_struct->keypair_uuid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
+	offset = 160;
+	ptr_struct->base_mac = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(224, 32, i, 896, 1);
+		ptr_struct->psid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
+	offset = 376;
+	ptr_struct->fw_version_39_32 = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 384;
+	ptr_struct->fw_version_31_0 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(416, 32, i, 896, 1);
+		ptr_struct->source_address[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
+	offset = 560;
+	ptr_struct->session_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 544;
+	ptr_struct->challenge_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	for (i = 0; i < 8; ++i) {
+		offset = adb2c_calc_array_field_address(576, 32, i, 896, 1);
+		ptr_struct->challenge[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
+}
+
+void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_reg_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	int i;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_switch_mtcq_reg_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "device_index         : " UH_FMT "\n", ptr_struct->device_index);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "status               : " UH_FMT "\n", ptr_struct->status);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "token_opcode         : " UH_FMT "\n", ptr_struct->token_opcode);
+	for (i = 0; i < 4; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "keypair_uuid_%03d    : " U32H_FMT "\n", i, ptr_struct->keypair_uuid[i]);
+	}
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "base_mac             : " U64H_FMT "\n", ptr_struct->base_mac);
+	for (i = 0; i < 4; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "psid_%03d            : " U32H_FMT "\n", i, ptr_struct->psid[i]);
+	}
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "fw_version_39_32     : " UH_FMT "\n", ptr_struct->fw_version_39_32);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "fw_version_31_0      : " U32H_FMT "\n", ptr_struct->fw_version_31_0);
+	for (i = 0; i < 4; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "source_address_%03d  : " U32H_FMT "\n", i, ptr_struct->source_address[i]);
+	}
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "session_id           : " UH_FMT "\n", ptr_struct->session_id);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "challenge_version    : " UH_FMT "\n", ptr_struct->challenge_version);
+	for (i = 0; i < 8; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "challenge_%03d       : " U32H_FMT "\n", i, ptr_struct->challenge[i]);
+	}
+}
+
+unsigned int reg_access_switch_mtcq_reg_ext_size(void)
+{
+	return REG_ACCESS_SWITCH_MTCQ_REG_EXT_SIZE;
+}
+
+void reg_access_switch_mtcq_reg_ext_dump(const struct reg_access_switch_mtcq_reg_ext *ptr_struct, FILE *fd)
+{
+	reg_access_switch_mtcq_reg_ext_print(ptr_struct, fd, 0);
+}
+
 void reg_access_switch_reg_access_switch_Nodes_pack(const union reg_access_switch_reg_access_switch_Nodes *ptr_struct, u_int8_t *ptr_buff)
 {
 	reg_access_switch_icsr_ext_pack(&(ptr_struct->icsr_ext), ptr_buff);
@@ -868,11 +1144,20 @@ void reg_access_switch_reg_access_switch_Nodes_print(const union reg_access_swit
 	fprintf(fd, "icam_reg_ext:\n");
 	reg_access_switch_icam_reg_ext_print(&(ptr_struct->icam_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "icsr_ext:\n");
-	reg_access_switch_icsr_ext_print(&(ptr_struct->icsr_ext), fd, indent_level + 1);
+	fprintf(fd, "mdsr_reg_ext:\n");
+	reg_access_switch_mdsr_reg_ext_print(&(ptr_struct->mdsr_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mkdc_reg_ext:\n");
+	reg_access_switch_mkdc_reg_ext_print(&(ptr_struct->mkdc_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mtcq_reg_ext:\n");
+	reg_access_switch_mtcq_reg_ext_print(&(ptr_struct->mtcq_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mddq_ext:\n");
 	reg_access_switch_mddq_ext_print(&(ptr_struct->mddq_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "icsr_ext:\n");
+	reg_access_switch_icsr_ext_print(&(ptr_struct->icsr_ext), fd, indent_level + 1);
 }
 
 unsigned int reg_access_switch_reg_access_switch_Nodes_size(void)

@@ -475,4 +475,3 @@ u_int32_t SecurityVersionFuse::countSetBits(u_int32_t num){
     }
     return count;
 }
-

@@ -71,6 +71,7 @@ typedef struct {
 #define DDM_THRES_B_SZ              2
 #define CMIS_CHANNELS               8
 #define CMIS_MODULE_CHANNEL         1
+#define MAX_SFF_CODE_VALUE          15
 
 #define EXTENDED_PAGES_1_2_10_11_ADDR   2
 #define EXTENDED_PAGES_1_2_10_11_MASK   0x80
@@ -81,6 +82,9 @@ typedef struct {
 
 #define VOLT_UNIT 1000
 #define MILLIVOLT_UNIT 10
+
+#define DEFAULT_PRBS_MODE_STR       "PRBS31"
+#define DEFAULT_PRBS_RATE_STR       "HDR"
 
 typedef struct Page{
     u_int32_t page;
@@ -111,18 +115,38 @@ public:
     MlxlinkCablesCommander(Json::Value &jsonRoot);
     virtual ~MlxlinkCablesCommander();
 
-    void readMCIA(u_int32_t page, u_int32_t size, u_int32_t offset,
-            u_int8_t * data, u_int32_t i2cAddress);
-    void writeMCIA(u_int32_t page, u_int32_t size, u_int32_t numberOfZeroBytes,
-            u_int32_t offset, u_int8_t * data, u_int32_t i2cAddress);
+    vector<MlxlinkCmdPrint> getPagesToDump();
+    vector<MlxlinkCmdPrint> getCableDDM();
+    void writeToEEPROM(u_int16_t page , u_int16_t offset, vector<u_int8_t> &bytesToWrite);
+    MlxlinkCmdPrint readFromEEPRM(u_int16_t page , u_int16_t offset, u_int16_t length);
 
+    void handlePrbsTestMode(const string &ctrl, ModuleAccess_t moduleAccess);
+    void showPrbsTestMode();
+    void showPrpsDiagInfo();
+    void clearPrbsDiagInfo();
+    void showControlParams();
+    void setControlParams(vector<pair<ControlParam, string>> &params);
+
+    u_int32_t _moduleNumber;
+    u_int32_t _slotIndex;
+    u_int32_t _cableIdentifier;
+    bool _sfp51Paging;
+    bool _passiveQsfp;
+    u_int32_t _localPort;
+    u_int32_t _numOfLanes;
+    MlxlinkMaps *_mlxlinkMaps;
+    map<ModulePrbs_t, string> _modulePrbsParams;
+
+private:
+    /**** MCIA helper funcitons ****/
+    void readMCIA(u_int32_t page, u_int32_t size, u_int32_t offset, u_int8_t * data, u_int32_t i2cAddress);
+    void writeMCIA(u_int32_t page, u_int32_t size, u_int32_t numberOfZeroBytes, u_int32_t offset, u_int8_t * data,
+                   u_int32_t i2cAddress);
     void initValidPages();
-    void loadEEPRMPage(u_int32_t pageNum, u_int32_t offset, u_int8_t* data,
-            u_int32_t i2cAddress = I2C_ADDR_LOW);
+    void loadEEPRMPage(u_int32_t pageNum, u_int32_t offset, u_int8_t* data, u_int32_t i2cAddress = I2C_ADDR_LOW);
     void bytesToInt16(u_int16_t *bytes);
     void convertThreshold(ddm_threshold_t &field);
     void fixThresholdBytes();
-    vector<MlxlinkCmdPrint> getCableDDM();
     void prepareDDMOutput();
     /**** CMIS helper functions *******/
     void getCmisModuleFlags(u_int32_t moduleOffset, u_int8_t *page0L);
@@ -138,33 +162,45 @@ public:
     void prepareSFPDdmInfo();
     void prepareThresholdInfo(u_int8_t *page);
     void readCableDDMInfo();
-    void setPrintDDMFlagsSection(MlxlinkCmdPrint &cmdPrint,
-            const ddm_threshold_t &flags, const string &flagGroup);
-    string getDDMThresholdRow(u_int16_t temp, u_int16_t volt,  u_int16_t rxPower,
-            u_int16_t txPower, u_int16_t txBias);
-    vector<MlxlinkCmdPrint> getPagesToDump();
-    bool readFromPage(u_int8_t *pageBuffer, u_int32_t fieldOffset, void *data,
-            u_int32_t size = 1);
-    void addPageToOutputVector(u_int8_t *pageBuffer, u_int32_t page, u_int32_t offset,
-                u_int32_t length);
+    void setPrintDDMFlagsSection(MlxlinkCmdPrint &cmdPrint, const ddm_threshold_t &flags, const string &flagGroup);
+    string getDDMThresholdRow(u_int16_t temp, u_int16_t volt,  u_int16_t rxPower, u_int16_t txPower, u_int16_t txBias);
+    bool readFromPage(u_int8_t *pageBuffer, u_int32_t fieldOffset, void *data, u_int32_t size = 1);
+    void addPageToOutputVector(u_int8_t *pageBuffer, u_int32_t page, u_int32_t offset, u_int32_t length);
     void checkParams(u_int16_t page , u_int16_t offset, u_int16_t length);
-    void writeToEEPROM(u_int16_t page , u_int16_t offset, vector<u_int8_t> &bytesToWrite);
-    MlxlinkCmdPrint readFromEEPRM(u_int16_t page , u_int16_t offset, u_int16_t length);
     u_int16_t getStatusBit(u_int32_t channel, u_int16_t val, u_int32_t statusMask);
 
-    u_int32_t _moduleNumber;
-    u_int32_t _cableIdentifier;
-    bool _sfp51Paging;
-    bool _passiveQsfp;
-    u_int32_t _localPort;
-    u_int32_t _numOfLanes;
+    void getNumOfModuleLanes();
+    u_int32_t getRateAdminFromStr(u_int32_t cap, const string &rateStr);
+    u_int32_t getModeAdminFromStr(u_int32_t cap, const string &adminStr, ModuleAccess_t moduleAccess);
+    bool getInvAdminFromStr(u_int32_t cap, const string &invStr, ModuleAccess_t moduleAccess);
+    bool getSwapAdminFromStr(u_int32_t cap, const string &swapStr, ModuleAccess_t moduleAccess);
+    u_int32_t getLanesFromStr(u_int32_t cap, const string &lanesStr);
+    void getPMPTConfiguration(ModuleAccess_t moduleAccess, vector<string> &prbsPattern, vector<string> &prbsRate,
+                              vector<string> &prbsInv, vector<string> &prbsSwap);
+    void getPMPDInfo(vector<string> &traffic, vector<string> &errors, vector<string> &ber, vector<string> &snr);
+    string getPMPDLockStatus();
+    void checkAndParsePMPTCap(ModuleAccess_t moduleAccess);
+    u_int32_t getPMPTStatus(ModuleAccess_t moduleAccess);
+    void sendPMPT(ModuleAccess_t moduleAccess);
+    void enablePMPT(ModuleAccess_t moduleAccess);
+    void disablePMPT();
 
-private:
+    u_int32_t getPMCRValue(ControlParam paramId, const string &value);
+    string getPMCRCapValueStr(u_int32_t valueCap, ControlParam paramId);
+    void checkPMCRFieldsCap(vector<pair<ControlParam, string>> &params);
+    void buildPMCRRequest(ControlParam paramId, const string &value);
+
     Json::Value &_jsonRoot;
     vector<page_t> _validPages;
     vector<MlxlinkCmdPrint> _pagesToDump;
     vector<MlxlinkCmdPrint> _cableDDMOutput;
     cable_ddm_q_t _cableDdm;
+    u_int32_t _prbsRate;
+    u_int32_t _prbsMode;
+    bool _prbsInv;
+    bool _prbsSwap;
+    u_int32_t _prbsLanes;
+    map<ControlParam, pair<string, string>> _modulePMCRParams;
 };
 
 #endif /* MLXLINK_CABLES_COMMANDER_H */

@@ -48,7 +48,8 @@
 #define FS4_MIN_BIN_VER_MINOR 0
 #define HMAC_SIGNATURE_LENGTH 64
 #define MAX_HTOC_ENTRIES_NUM 28
-#define ENCRYPTED_IMAGE_LAST_ADDR_LOCATION_IN_BYTES 0x1000000 // 16MB
+#define ENCRYPTED_BURN_IMAGE_SIZE_LOCATION_IN_BYTES 0x1000000 // 16MB
+#define DELTA_IV_HW_POINTER_ADDR 0x88
 enum SecureBootSignVersion {VERSION_1 = 1, VERSION_2};
 
 class Fs4Operations : public Fs3Operations {
@@ -89,6 +90,7 @@ public:
     virtual bool storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature, vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
                                                     vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false, bool ignoreImageStart = false);
+    virtual bool GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_t>& img);
     virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
@@ -110,8 +112,11 @@ public:
     bool DoAfterBurnJobs(const u_int32_t magic_patter[], ExtBurnParams& burnParams, Flash *flash_access,
                          u_int32_t new_image_start, u_int32_t log2_chunk_size);
     virtual void FwCleanUp();
-    bool IsLifeCycleValidInLivefish(chip_type_t chip_type);
+    bool IsLifeCycleAccessible(chip_type_t chip_type);
+    bool IsSecurityVersionAccessible(chip_type_t chip_type);
     bool IsSecurityVersionViolated(u_int32_t image_security_version);
+    bool GetImageInfo(u_int8_t *buff);
+    bool GetImageSize(u_int32_t* image_size);
 
 protected:
     struct fs4_toc_info {
@@ -149,9 +154,11 @@ private:
     public:
         struct image_layout_htoc_header header;
         struct image_layout_htoc_entry entries[MAX_HTOC_ENTRIES_NUM];
+        u_int32_t htoc_start_addr;
 
         HTOC(vector<u_int8_t> img, u_int32_t hashes_table_start_addr);
-        bool getEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
+        bool GetEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
+        bool AddNewEntry(FBase* ioAccess, fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
     };
 
     struct Fs4ImgInfo {
@@ -180,7 +187,7 @@ private:
                         int& toc_index);
     bool Fs4GetItocInfo(struct fs4_toc_info  *tocArr, int num_of_itocs,
                         fs3_section_t sect_type, vector<struct fs4_toc_info*>& curr_toc);
-    bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type = FS3_DEV_INFO, bool is_sect_failsafe = true, CommandType cmd_type = CMD_UNKNOWN, PrintCallBack callBackFunc = (PrintCallBack)NULL );
+    bool UpdateSection(void *new_info, fs3_section_t sect_type = FS3_DEV_INFO, bool is_sect_failsafe = true, CommandType cmd_type = CMD_UNKNOWN, PrintCallBack callBackFunc = (PrintCallBack)NULL );
     bool Fs4UpdateMfgUidsSection(struct fs4_toc_info *curr_toc,
                                  std::vector<u_int8_t>  section_data, fs3_uid_t base_uid,
                                  std::vector<u_int8_t>  &newSectionData);
@@ -191,15 +198,20 @@ private:
                              std::vector<u_int8_t>  &newSectionData);
     bool Fs4UpdateVpdSection(struct fs4_toc_info *curr_toc, char *vpd,
                              std::vector<u_int8_t>  &newSectionData);
-    bool Fs4ReburnSection(u_int32_t newSectionAddr,
-                          u_int32_t newSectionSize, std::vector<u_int8_t>  newSectionData,
-                          const char *msg, PrintCallBack callBackFunc);
+    bool UpdateCertChainSection(struct fs4_toc_info *curr_toc, char *certChainFile,
+                                std::vector<u_int8_t>  &newSectionData);
+    bool FwSetCertChain(char *certFileStr, PrintCallBack callBackFunc);
+    bool Fs4ReburnSection(u_int32_t newSectionAddr, u_int32_t newSectionSize,
+                          std::vector<u_int8_t>  newSectionData, const char *msg,
+                          PrintCallBack callBackFunc);
     bool Fs4ReburnTocSection(bool isDtoc, PrintCallBack callBackFunc);
     bool reburnDTocSection(PrintCallBack callBackFunc);
     bool reburnITocSection(PrintCallBack callBackFunc, bool isFailSafe);
     bool Fs4UpdateItocInfo(struct fs4_toc_info *curr_toc, u_int32_t NewSectSize,
                            std::vector<u_int8_t>&  newSectionData);
     bool FwReadData(void *image, u_int32_t *imageSize, bool verbose = false);
+    bool getEncryptedImageSize(u_int32_t *imageSize);
+    bool FwReadEncryptedData(void *image, u_int32_t imageSize, bool verbose);
     bool CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr,
         fs3_section_t section, u_int32_t tocEntryAddr, CRCTYPE CRC);
     bool Fs4RemoveSectionAux(fs3_section_t sectionType);
@@ -242,7 +254,7 @@ private:
     bool CheckDTocArray();
     u_int32_t getImageSize();
     void maskDevToc(vector<u_int8_t>& img);
-    void maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img);
+    void MaskItocSectionAndEntry(u_int32_t itocType, vector<u_int8_t>& img);
     bool Fs4UpdateSignatureSection(vector<u_int8_t>  sha256Buff,
                                    vector<u_int8_t>  &newSectionData);
     bool isDTocSection(fs3_section_t sect_type, bool& isDtoc);
@@ -254,11 +266,17 @@ private:
 
     bool GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& size, u_int32_t& offset);
     SecureBootSignVersion getSecureBootSignVersion();
-    bool calcHashOnItoc(vector<u_int8_t>& hash);
-    bool updateHashInHashesTable(fs3_section_t section_type, vector<u_int8_t> hash);
+    bool CalcHashOnSection(u_int32_t addr, u_int32_t size, vector<u_int8_t>& hash);
+    bool UpdateHashInHashesTable(fs3_section_t section_type, vector<u_int8_t> hash);
+    bool UpdateSectionHashInHashesTable(u_int32_t addr, u_int32_t size, fs3_section_t type);
+    bool IsSectionShouldBeHashed(fs3_section_t section_type);
     bool QuerySecurityFeatures();
     bool IsEncryptedDevice(bool& is_encrypted);
     bool IsEncryptedImage(bool& is_encrypted);
+    bool updateHwPointer(u_int32_t addr, u_int32_t val);
+    bool SetImageIVHwPointer();
+    void RemoveCRCsFromMainSection(vector<u_int8_t>& img);
+    bool MaskBootRecordCRC(vector<u_int8_t>& img);
 
     // Members
     Fs4ImgInfo _fs4ImgInfo;
@@ -271,7 +289,7 @@ private:
     u_int32_t _authentication_end_ptr;
     u_int32_t _digest_mdk_ptr;
     u_int32_t _digest_recovery_key_ptr;
-    u_int32_t _hmac_start_ptr;
+    u_int32_t _image_info_section_ptr;
     u_int32_t _public_key_ptr;
     u_int32_t _security_version;
     u_int32_t _gcm_image_iv;

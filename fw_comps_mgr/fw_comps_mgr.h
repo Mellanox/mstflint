@@ -131,8 +131,8 @@ typedef struct {
 } comp_query_st;
 
 typedef enum {
-    MCDA_READ_COMP = 0x0,
-    MCDA_WRITE_COMP
+    MCC_READ_COMP = 0x0,
+    MCC_WRITE_COMP
 } access_type_t;
 
 typedef struct mac_guid {
@@ -165,6 +165,8 @@ public:
         COMPID_CONGESTION_CONTROL = 0xB,
         COMPID_LINKX = 0xC,
         COMPID_CRYPTO_TO_COMMISSIONING = 0xD,
+        COMPID_RMCS_TOKEN = 0xE,
+        COMPID_RMDT_TOKEN = 0xF,
         COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 
@@ -401,6 +403,17 @@ private:
         FSMST_NA                            = 0xFF,
     } fsm_state_t;
 
+    typedef struct control_fsm_args {
+        control_fsm_args() : command(FSM_CMD_UNDEFINED), expectedState(FSMST_NA), size(0),
+            currentState(FSMST_NA), progressFuncAdv(NULL), reg_access_timeout(0) {}
+        fsm_command_t command;
+        fsm_state_t expectedState;
+        u_int32_t size;
+        fsm_state_t currentState;
+        ProgressCallBackAdvSt *progressFuncAdv;
+        u_int32_t reg_access_timeout;
+    } control_fsm_args_t;
+
     typedef enum {
         MCC_ERRCODE_OK = 0x0,
         MCC_ERRCODE_ERROR = 0x1,
@@ -451,7 +464,8 @@ private:
                                   u_int32_t size,
                                   u_int32_t data[],
                                   access_type_t access,
-                                  ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
+                                  ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL,
+                                  control_fsm_args_t* lastFsmCommandArgs = NULL);
 
     bool           queryComponentStatus(u_int32_t componentIndex,
                                        comp_status_st *query);
@@ -461,9 +475,9 @@ private:
         component_version_st *cmpVer);
     
     bool           controlFsm(fsm_command_t command,
-                              fsm_state_t expStatus = FSMST_NA,
+                              fsm_state_t expectedState = FSMST_NA,
                               u_int32_t size = 0,
-                              fsm_state_t currState = FSMST_NA,
+                              fsm_state_t currentState = FSMST_NA,
                               ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL,
                               u_int32_t reg_access_timeout = 0);
 
@@ -498,7 +512,7 @@ private:
     bool           extractMacsGuids(fwInfoT *fwQuery);
     void           extractRomInfo(mgirReg *mgir, fwInfoT *fwQuery);
     bool           isDMAAccess();
-    bool           fallbackToDirectAccess();
+    bool           fallbackToRegisterAccess();
     
     std::vector<comp_query_st> _compsQueryMap;
     bool _refreshed;

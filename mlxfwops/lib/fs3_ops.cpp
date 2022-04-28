@@ -83,57 +83,70 @@ const u_int32_t Fs3Operations::_itocSignature[4] = {
 };
 
 const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
-    {FS3_END,           "END"},
-    {FS3_ITOC,          "ITOC_HEADER"},
-
-    {FS3_BOOT_CODE,     "BOOT_CODE"},
-    {FS3_PCI_CODE,      "PCI_CODE"},
-    {FS3_MAIN_CODE,     "MAIN_CODE"},
-    {FS3_PCIE_LINK_CODE, "PCIE_LINK_CODE"},
-    {FS3_IRON_PREP_CODE, "IRON_PREP_CODE"},
-    {FS3_POST_IRON_BOOT_CODE, "POST_IRON_BOOT_CODE"},
-    {FS3_UPGRADE_CODE,  "UPGRADE_CODE"},
-    {FS3_HW_BOOT_CFG,   "HW_BOOT_CFG"},
-    {FS3_HW_MAIN_CFG,   "HW_MAIN_CFG"},
-    {FS3_PHY_UC_CODE,   "PHY_UC_CODE"},
-    {FS3_PHY_UC_CONSTS, "PHY_UC_CONSTS"},
-    {FS3_PHY_UC_CMD,    "PHY_UC_CMD"},
-    {FS4_BOOT3_CODE,    "BOOT3_CODE"},
-    {FS3_IMAGE_INFO,    "IMAGE_INFO"},
-    {FS3_FW_BOOT_CFG,   "FW_BOOT_CFG"},
-    {FS3_FW_MAIN_CFG,   "FW_MAIN_CFG"},
-    {FS3_ROM_CODE,      "ROM_CODE"},
-    {FS3_RESET_INFO,    "FS3_RESET_INFO"},
-    {FS3_DBG_FW_INI,    "DBG_FW_INI"},
-    {FS3_DBG_FW_PARAMS, "DBG_FW_PARAMS"},
-    {FS3_FW_ADB,        "FW_ADB"},
-    {FS3_IMAGE_SIGNATURE_256, "IMAGE_SIGNATURE_256"},
-    {FS3_PUBLIC_KEYS_2048,   "PUBLIC_KEYS_2048"},
-    {FS3_PUBLIC_KEYS_4096,   "PUBLIC_KEYS_4096"},
-    {FS3_FORBIDDEN_VERSIONS, "FORBIDDEN_VERSIONS"},
-    {FS3_IMAGE_SIGNATURE_512, "IMAGE_SIGNATURE_512"},
-    {FS3_CRDUMP_MASK_DATA, "CRDUMP_MASK_DATA"},
-    {FS3_HMAC,          "HMAC"},
-    {FS3_MFG_INFO,      MFG_INFO},
-    {FS3_DEV_INFO,      "DEV_INFO"},
-    {FS3_NV_DATA1,      "NV_DATA"},
-    {FS3_VPD_R0,        "VPD_R0"},
-    {FS3_NV_DATA2,      "NV_DATA"},
-    {FS3_NV_DATA0,      "NV_DATA"},
-    {FS3_FW_NV_LOG,     "FW_NV_LOG"},
-    {FS3_NV_DATA0,      "NV_DATA"},
-    {FS4_PART_TYPE_FW_INTERNAL_USAGE ,  "PART_TYPE_FW_INTERNAL_USAGE"},
-    {FS4_PART_TYPE_PROGRAMMABLE_HW_FW1, "FS4_PART_TYPE_PROGRAMMABLE_HW_FW"},
-    {FS4_PART_TYPE_PROGRAMMABLE_HW_FW2, "FS4_PART_TYPE_PROGRAMMABLE_HW_FW"},
-    {FS4_LC_INI1_TABLE, "FS4_LC_INI1_TABLE"},
-    {FS4_LC_INI2_TABLE, "FS4_LC_INI2_TABLE"},
-    {FS4_LC_INI_NV_DATA, "FS4_LC_INI_NV_DATA"},
-    {FS3_DTOC,          "DTOC_HEADER"},
-    {FS4_HW_PTR,    "HW_POINTERS"},
-    {FS4_TOOLS_AREA,    "TOOLS_AREA"},
-    {FS4_RSA_PUBLIC_KEY, "FS4_RSA_PUBLIC_KEY"},
-    {FS4_RSA_4096_SIGNATURES, "FS4_RSA_4096_SIGNATURES"},
-    {FS4_HASHES_TABLE, "HASHES_TABLE"}
+    {FS3_END,                           "END"},
+    {FS3_ITOC,                          "ITOC_HEADER"},
+    {FS3_BOOT_CODE,                     "BOOT_CODE"},
+    {FS3_PCI_CODE,                      "PCI_CODE"},
+    {FS3_MAIN_CODE,                     "MAIN_CODE"},
+    {FS3_PCIE_LINK_CODE,                "PCIE_LINK_CODE"},
+    {FS3_IRON_PREP_CODE,                "IRON_PREP_CODE"},
+    {FS3_POST_IRON_BOOT_CODE,           "POST_IRON_BOOT_CODE"},
+    {FS3_UPGRADE_CODE,                  "UPGRADE_CODE"},
+    {FS3_HW_BOOT_CFG,                   "HW_BOOT_CFG"},
+    {FS3_HW_MAIN_CFG,                   "HW_MAIN_CFG"},
+    {FS3_PHY_UC_CODE,                   "PHY_UC_CODE"},
+    {FS3_PHY_UC_CONSTS,                 "PHY_UC_CONSTS"},
+    {FS3_PCIE_PHY_UC_CODE,              "PCIE_PHY_UC_CODE"},
+    {FS3_CCIR_INFRA_CODE,               "CCIR_INFRA_CODE"},
+    {FS3_CCIR_ALGO_CODE,                "CCIR_ALGO_CODE"},
+    {FS4_BOOT3_CODE,                    "BOOT3_CODE"},
+    {FS3_IMAGE_INFO,                    "IMAGE_INFO"},
+    {FS3_FW_BOOT_CFG,                   "FW_BOOT_CFG"},
+    {FS3_FW_MAIN_CFG,                   "FW_MAIN_CFG"},
+    {FS3_APU_KERNEL,                    "APU_KERNEL"},
+    {FS3_APU_APPS,                      "APU_APPS"},
+    {FS3_ROM_CODE,                      "ROM_CODE"},
+    {FS3_RESET_INFO,                    "RESET_INFO"},
+    {FS3_DBG_FW_INI,                    "DBG_FW_INI"},
+    {FS3_DBG_FW_PARAMS,                 "DBG_FW_PARAMS"},
+    {FS3_FW_ADB,                        "FW_ADB"},
+    {FS4_GB_FW_CODE,                    "GB_FW_CODE"},
+    {FS4_TILE_FW_CODE,                  "TILE_FW_CODE"},
+    {FS4_FW_TILE_INI,                   "FW_TILE_INI"},
+    {FS4_HW_TILE_INI,                   "HW_TILE_INI"},
+    {FS3_IMAGE_SIGNATURE_256,           "IMAGE_SIGNATURE_256"},
+    {FS3_PUBLIC_KEYS_2048,              "PUBLIC_KEYS_2048"},
+    {FS3_PUBLIC_KEYS_4096,              "PUBLIC_KEYS_4096"},
+    {FS3_FORBIDDEN_VERSIONS,            "FORBIDDEN_VERSIONS"},
+    {FS3_IMAGE_SIGNATURE_512,           "IMAGE_SIGNATURE_512"},
+    {FS3_CRDUMP_MASK_DATA,              "CRDUMP_MASK_DATA"},
+    {FS3_HMAC_DIGEST,                   "HMAC_DIGEST"},
+    {FS3_MFG_INFO,                      MFG_INFO},
+    {FS3_DEV_INFO,                      DEV_INFO},
+    {FS3_NV_DATA1,                      "NV_DATA"},
+    {FS3_VPD_R0,                        "VPD_R0"},
+    {FS3_NV_DATA2,                      "NV_DATA"},
+    {FS3_FW_NV_LOG,                     "FW_NV_LOG"},
+    {FS3_NV_DATA0,                      "NV_DATA"},
+    {FS4_DEV_INFO1,                     "DEV_INFO1"},
+    {FS4_DEV_INFO2,                     "DEV_INFO2"},
+    {FS4_FW_INTERNAL_USAGE,             "FW_INTERNAL_USAGE"},
+    {FS4_PROGRAMMABLE_HW_FW1,           "PROGRAMMABLE_HW_FW"},
+    {FS4_PROGRAMMABLE_HW_FW2,           "PROGRAMMABLE_HW_FW"},
+    {FS4_DIGITAL_CERT_PTR,              "DIGITAL_CERT_PTR"},
+    {FS4_DIGITAL_CERT_RW,               "DIGITAL_CERT_RW"},
+    {FS4_LC_INI1_TABLE,                 "LC_INI1_TABLE"},
+    {FS4_LC_INI2_TABLE,                 "LC_INI2_TABLE"},
+    {FS4_LC_INI_NV_DATA,                "LC_INI_NV_DATA"},
+    {FS4_CERT_CHAIN_0,                  "CERT_CHAIN_0"},
+    {FS4_DIGITAL_CACERT_RW,             "DIGITAL_CACERT_RW"},
+    {FS3_DTOC,                          "DTOC_HEADER"},
+    {FS4_HW_PTR,                        "HW_POINTERS"},
+    {FS4_TOOLS_AREA,                    "TOOLS_AREA"},
+    {FS4_RSA_PUBLIC_KEY,                "RSA_PUBLIC_KEY"},
+    {FS4_RSA_4096_SIGNATURES,           "RSA_4096_SIGNATURES"},
+    {FS4_EXCLKSYNC_INFO,                "EXCLKSYNC_INFO"},
+    {FS4_HASHES_TABLE,                  "HASHES_TABLE"}
 };
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size)
@@ -249,18 +262,6 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
 
 }
 
-#define GET_IMAGE_INFO_VERSION(imageInfoBuff, major, minor) \
-    u_int32_t _IIVerDw = __be32_to_cpu(*(u_int32_t *)imageInfoBuff); \
-    minor = ((_IIVerDw) >> 16) & 0xff; \
-    major = ((_IIVerDw) >> 24) & 0xff;
-#define CHECK_IMAGE_INFO_VERSION(major) \
-    ((major) == 0)
-
-#define FAIL_NO_OCR(str) do { \
-        if (_ioAccess->is_flash() && _fwParams.ignoreCacheRep == 0) { \
-            return errmsg(MLXFW_OCR_ERR, "-ocr flag must be specified for %s operation.", str); \
-        } \
-} while (0)
 
 #define RESIGN_MSG "-W- The image requires to be signed by a valid key, run sign command before applying.\n"
 
@@ -281,16 +282,12 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
 bool Fs3Operations::GetImageInfo(u_int8_t *buff)
 {
     DPRINTF(("Fs3Operations::GetImageInfo\n"));
-    struct cibfw_image_info image_info;
-    int IIMajor, IIMinor;
-    // TODO: adrianc: use the version fields once they are available in tools layouts
-    GET_IMAGE_INFO_VERSION(buff, IIMajor, IIMinor);
-    (void)IIMinor;
-    if (!CHECK_IMAGE_INFO_VERSION(IIMajor)) {
-        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown IMAGE_INFO format version (%d.%d).", IIMajor, IIMinor);
+    struct image_layout_image_info image_info;
+    image_layout_image_info_unpack(&image_info, buff);
+    // image_layout_image_info_dump(&image_info, stdout);
+    if (image_info.major_version != 0) {
+        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown IMAGE_INFO format version (%d.%d).", image_info.major_version, image_info.minor_version);
     }
-    cibfw_image_info_unpack(&image_info, buff);
-    // cibfw_image_info_dump(&image_info, stdout);
 
     _fwImgInfo.ext_info.image_info_minor_version = image_info.minor_version;
     _fwImgInfo.ext_info.image_info_major_version = image_info.major_version;
@@ -299,7 +296,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     _fwImgInfo.ext_info.fw_ver[1] = image_info.FW_VERSION.MINOR;
     _fwImgInfo.ext_info.fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
 
-    _fwImgInfo.ext_info.isfu_major = image_info.isfu.major;
+    _fwImgInfo.ext_info.isfu_major = image_info.module_versions.mad.major;
 
     _fwImgInfo.ext_info.mic_ver[0] = image_info.mic_version.MAJOR;
     _fwImgInfo.ext_info.mic_ver[1] = image_info.mic_version.MINOR;
@@ -308,6 +305,12 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     _fwImgInfo.ext_info.fw_rel_date[0] = (u_int16_t)image_info.FW_VERSION.Day;
     _fwImgInfo.ext_info.fw_rel_date[1] = (u_int16_t)image_info.FW_VERSION.Month;
     _fwImgInfo.ext_info.fw_rel_date[2] = (u_int16_t)image_info.FW_VERSION.Year;
+
+    _fwImgInfo.ext_info.fw_rel_time[0] = (u_int16_t)image_info.FW_VERSION.Hour;
+    _fwImgInfo.ext_info.fw_rel_time[1] = (u_int16_t)image_info.FW_VERSION.Minutes;
+    _fwImgInfo.ext_info.fw_rel_time[2] = (u_int16_t)image_info.FW_VERSION.Seconds;
+
+    _fwImgInfo.ext_info.burn_image_size = image_info.burn_image_size;
 
     // assuming number of supported_hw_id < MAX_NUM_SUPP_HW_IDS
     memcpy(_fwImgInfo.supportedHwId, image_info.supported_hw_id, sizeof(image_info.supported_hw_id));
@@ -318,8 +321,9 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     strcpy(_fs3ImgInfo.ext_info.image_vsd, image_info.vsd);
     strcpy(_fwImgInfo.ext_info.psid, image_info.psid);
     strcpy(_fwImgInfo.ext_info.product_ver, image_info.prod_ver);
-    if (IIMinor == 2) {
-        // get name, prs name and description
+
+    // get name, prs name and description
+    if (image_info.minor_version == 2) {
         struct tools_open_image_info tools_image_info;
         memset(&tools_image_info, 0, sizeof(tools_image_info));
         tools_open_image_info_unpack(&tools_image_info, buff);
@@ -327,6 +331,12 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
         strncpy(_fs3ImgInfo.ext_info.description, tools_image_info.description, DESCRIPTION_LEN);
         strncpy(_fs3ImgInfo.ext_info.prs_name, tools_image_info.prs_name, FS3_PRS_NAME_LEN);
     }
+    else if (image_info.minor_version == 3) {
+        strncpy(_fs3ImgInfo.ext_info.name, image_info.name, NAME_LEN);
+        strncpy(_fs3ImgInfo.ext_info.description, image_info.description, DESCRIPTION_LEN);
+        strncpy(_fs3ImgInfo.ext_info.prs_name, image_info.prs_name, FS3_PRS_NAME_LEN);
+    }
+
     _fs3ImgInfo.ext_info.mcc_en = image_info.mcc_en;
     _fs3ImgInfo.ext_info.security_mode = (_fs3ImgInfo.ext_info.security_mode          |
                                           ((image_info.mcc_en    == 1) ? SMM_MCC_EN    : 0) |
@@ -336,6 +346,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
 
     _fs3ImgInfo.runFromAny = image_info.image_size.run_from_any;
     const u_int32_t *swId = (u_int32_t*)NULL;
+    DPRINTF(("Fs3Operations::GetImageInfo _fwImgInfo.supportedHwId[0]=0x%x\n", _fwImgInfo.supportedHwId[0]));
     if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId)) {
         return false;
     }
@@ -346,6 +357,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
         }
     }
     _fwImgInfo.ext_info.encrypted_fw = image_info.encrypted_fw;
+    _fs3ImgInfo.ext_info.dev_sec_boot = image_info.secure_boot; // This field is set to '1' only for DK (dev keys) IPNs
     return true;
 }
 
@@ -693,7 +705,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     // adrianc: need to have the sector size hardcoded in the FW binary (since its determined in the image generation process)
     u_int32_t sector_size = FS3_DEFAULT_SECTOR_SIZE;
     offset = (offset % sector_size == 0) ? offset : (offset + sector_size - offset % 0x1000);
-    while (offset < _ioAccess->get_size()) {
+    while (offset < _ioAccess->get_effective_size()) {
 
         if (VerifyTOC(offset, bad_signature, verifyCallBackFunc, show_itoc, queryOptions, ignoreDToc, verbose)) {
             return true;
@@ -1252,12 +1264,12 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
             }
             // modify it:
             std::vector<u_int8_t> imageInfoSect = imageInfoToc->section_data;
-            struct cibfw_image_info image_info;
-            cibfw_image_info_unpack(&image_info, &imageInfoSect[0]);
+            struct image_layout_image_info image_info;
+            image_layout_image_info_unpack(&image_info, &imageInfoSect[0]);
             if (burnParams.vsdSpecified) {
                 strncpy(image_info.vsd, burnParams.userVsd, VSD_LEN);
             }
-            cibfw_image_info_pack(&image_info, &imageInfoSect[0]);
+            image_layout_image_info_pack(&image_info, &imageInfoSect[0]);
             if (burnParams.useDevImgInfo) {
                 // update PSID, name and description in image info
                 struct tools_open_image_info tools_image_info;
@@ -1298,7 +1310,7 @@ bool Fs3Operations::ReBurnCurrentImage(ProgressCallBack progressFunc)
         return false;
     }
 
-    const unsigned int size = (_ioAccess->get_size());
+    const unsigned int size = (_ioAccess->get_effective_size());
     vector<u_int8_t> newImageData(size);
     _imageCache.get(newImageData, 0x0, size);
 
@@ -1443,13 +1455,14 @@ bool Fs3Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
     if (FwType() == FIT_FS3) {
         FAIL_NO_OCR("set manufacture GUIDs/MACs");
     }
-    if (!Fs3UpdateSection(&baseGuid, FS3_MFG_INFO, false, CMD_SET_MFG_GUIDS, callBackFunc)) {
+    if (!UpdateSection(&baseGuid, FS3_MFG_INFO, false, CMD_SET_MFG_GUIDS, callBackFunc)) {
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
     if (!_ioAccess->is_flash() && !VerifyImageAfterModifications()) {
         return false;
     }
+
     return true;
 }
 
@@ -1512,7 +1525,7 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
     if (FwType() == FIT_FS3) {
         FAIL_NO_OCR("set GUIDs/MACs");
     }
-    if (!Fs3UpdateSection(&usrGuid, FS3_DEV_INFO, false, CMD_SET_GUIDS, callBackFunc)) {
+    if (!UpdateSection(&usrGuid, FS3_DEV_INFO, false, CMD_SET_GUIDS, callBackFunc)) {
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
@@ -1592,7 +1605,7 @@ bool Fs3Operations::FwSetVPD(char *vpdFileStr, PrintCallBack callBackFunc)
     }
     FAIL_NO_OCR("set VPD");
 
-    if (!Fs3UpdateSection(vpdFileStr, FS3_VPD_R0, false, CMD_BURN_VPD, callBackFunc)) {
+    if (!UpdateSection(vpdFileStr, FS3_VPD_R0, false, CMD_BURN_VPD, callBackFunc)) {
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
@@ -2056,7 +2069,7 @@ bool Fs3Operations::Fs3UpdateVpdSection(struct toc_info *curr_toc, char *vpd,
     int vpd_size = 0;
     u_int8_t *vpd_data = (u_int8_t *)NULL;
 
-    if (!ReadImageFile(vpd, vpd_data, vpd_size)) {
+    if (!ReadBinFile(vpd, vpd_data, vpd_size)) {
         return false;
     }
     if (vpd_size % 4) {
@@ -2064,9 +2077,9 @@ bool Fs3Operations::Fs3UpdateVpdSection(struct toc_info *curr_toc, char *vpd,
         return errmsg("Size of VPD file: %d is not 4-byte aligned!", vpd_size);
     }
     // assuming VPD section is the last piece of Data on the flash
-    if ((_ioAccess)->is_flash() && (getAbsAddr(curr_toc) + vpd_size > (_ioAccess)->get_size())) {
+    if ((_ioAccess)->is_flash() && (getAbsAddr(curr_toc) + vpd_size > (_ioAccess)->get_effective_size())) {
         delete[] vpd_data;
-        return errmsg("VPD data exceeds flash size, max VPD size: 0x%x bytes", (_ioAccess)->get_size() - getAbsAddr(curr_toc));
+        return errmsg("VPD data exceeds flash size, max VPD size: 0x%x bytes", (_ioAccess)->get_effective_size() - getAbsAddr(curr_toc));
     }
     GetSectData(newSectionData, (u_int32_t *)vpd_data, vpd_size);
     curr_toc->toc_entry.size = vpd_size / 4;
@@ -2080,7 +2093,7 @@ bool Fs3Operations::Fs3UpdatePublicKeysSection(unsigned int currSectionSize, con
     int publicKeysSize = 0, publicKeysSizeInDW = 0;
     u_int8_t *publicKeysData = (u_int8_t *)NULL;
 
-    if (!ReadImageFile(publicKeys, publicKeysData, publicKeysSize)) {
+    if (!ReadBinFile(publicKeys, publicKeysData, publicKeysSize)) {
         return false;
     }
 
@@ -2211,7 +2224,7 @@ bool Fs3Operations::Fs3UpdateForbiddenVersionsSection(unsigned int currSectionSi
     int size = 0, sizeInDW = 0;
     u_int8_t *data = (u_int8_t *)NULL;
 
-    if (!ReadImageFile(fileName, data, size)) {
+    if (!ReadBinFile(fileName, data, size)) {
         return false;
     }
 
@@ -2228,7 +2241,7 @@ bool Fs3Operations::Fs3UpdateForbiddenVersionsSection(unsigned int currSectionSi
 }
 
 //add callback if we want info during section update
-bool Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
+bool Fs3Operations::UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
 {
     struct toc_info *curr_toc = (struct toc_info *)NULL;
     std::vector<u_int8_t> newSection;
@@ -2340,7 +2353,7 @@ bool Fs3Operations::FwSetVSD(char *vsdStr, ProgressCallBack progressFunc, PrintC
         return errmsg("VSD string is too long(%d), max allowed length: %d", (int)strlen(vsdStr), (int)VSD_LEN);
     }
     FAIL_NO_OCR("set VSD");
-    if (!Fs3UpdateSection(vsdStr, FS3_DEV_INFO, false, CMD_SET_VSD, printFunc)) {
+    if (!UpdateSection(vsdStr, FS3_DEV_INFO, false, CMD_SET_VSD, printFunc)) {
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
@@ -2594,7 +2607,7 @@ bool Fs3Operations::Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, P
         return true;
     }
     buff.resize(size, 0x0);
-    if (!Fs3UpdateSection(buff.data(), sectType, false, CMD_SET_SIGNATURE, printFunc)) {
+    if (!UpdateSection(buff.data(), sectType, false, CMD_SET_SIGNATURE, printFunc)) {
         return false;
     }
     return true;
@@ -2686,7 +2699,7 @@ bool Fs3Operations::FwInsertEncSHA(MlxSign::SHAType shaType, const char *privPem
         sig.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0x0);
         cx4fw_image_signature_256_pack(&image_signature_256, sig.data());
 
-        if (!Fs3UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256,
+        if (!UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256,
                               false, CMD_SET_SIGNATURE, printFunc)) {
             return false;
         }
@@ -2698,7 +2711,7 @@ bool Fs3Operations::FwInsertEncSHA(MlxSign::SHAType shaType, const char *privPem
         sig.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
         cx4fw_image_signature_512_pack(&image_signature_512, sig.data());
 
-        if (!Fs3UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_512,
+        if (!UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_512,
                               false, CMD_SET_SIGNATURE, printFunc)) {
             return false;
         }
@@ -2739,7 +2752,7 @@ bool Fs3Operations::FwInsertSHA256(PrintCallBack printFunc)
     sig.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE);
     cx4fw_image_signature_256_pack(&image_signature_256, sig.data());
 
-    if (!Fs3UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256,
+    if (!UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256,
                           false, CMD_SET_SIGNATURE, printFunc)) {
         return false;
     }
@@ -2755,7 +2768,7 @@ bool Fs3Operations::CheckPublicKeysFile(const char *fname, fs3_section_t& sectio
 {
     int publicKeysSize = 0;
     u_int8_t *publicKeysData = (u_int8_t *)NULL;
-    if (!ReadImageFile(fname, publicKeysData, publicKeysSize)) {
+    if (!ReadBinFile(fname, publicKeysData, publicKeysSize)) {
         return false;
     }
 
@@ -2807,7 +2820,7 @@ bool Fs3Operations::FwSetPublicKeys(char *fname, PrintCallBack callBackFunc)
         return false;
     }
 
-    if (!Fs3UpdateSection(fname, sectionType, false, CMD_SET_PUBLIC_KEYS, callBackFunc)) {
+    if (!UpdateSection(fname, sectionType, false, CMD_SET_PUBLIC_KEYS, callBackFunc)) {
         return false;
     }
 
@@ -2830,7 +2843,7 @@ bool Fs3Operations::FwSetForbiddenVersions(char *fname, PrintCallBack callBackFu
         return errmsg("Setting Forbidden Versions is not applicable for devices.");
     }
 
-    if (!Fs3UpdateSection(fname, FS3_FORBIDDEN_VERSIONS, false, CMD_SET_FORBIDDEN_VERSIONS, callBackFunc)) {
+    if (!UpdateSection(fname, FS3_FORBIDDEN_VERSIONS, false, CMD_SET_FORBIDDEN_VERSIONS, callBackFunc)) {
         return false;
     }
 
@@ -2845,6 +2858,24 @@ bool Fs3Operations::FwSetForbiddenVersions(char *fname, PrintCallBack callBackFu
 u_int32_t Fs3Operations::getImageSize()
 {
     return _fs3ImgInfo.sizeOfImgData - _fwImgInfo.imgStart;
+}
+
+bool Fs3Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_t>& img)
+{
+    if (!FwExtract4MBImage(img, true)) {
+        return false;
+    }
+
+    if (shaType == MlxSign::SHA256) {
+        MaskItocSectionAndEntry(FS3_IMAGE_SIGNATURE_256, img);
+    } else if (shaType == MlxSign::SHA512) {
+        MaskItocSectionAndEntry(FS3_IMAGE_SIGNATURE_256, img);
+        MaskItocSectionAndEntry(FS3_IMAGE_SIGNATURE_512, img);
+    } else {
+        return errmsg("Unexpected type of SHA");
+    }
+
+    return true;
 }
 
 bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc,
@@ -2871,7 +2902,7 @@ bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatte
     return true;
 }
 
-void Fs3Operations::maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img)
+void Fs3Operations::MaskItocSectionAndEntry(u_int32_t itocType, vector<u_int8_t>& img)
 {
     for (int i = 0; i < _fs3ImgInfo.numOfItocs; i++) {
         if (_fs3ImgInfo.tocArr[i].toc_entry.type == itocType) {
@@ -3072,16 +3103,13 @@ bool Fs3Operations::FwCalcSHA(MlxSign::SHAType shaType, vector<u_int8_t>& sha, v
     MlxSignSHA *mlxSignSHA = NULL;
     FwInit();
     _imageCache.clear();
-    if (!FwExtract4MBImage(img, true)) {
+    if (!GetImageDataForSign(shaType, img)) {
         return false;
     }
 
     if (shaType == MlxSign::SHA256) {
-        maskIToCSection(FS3_IMAGE_SIGNATURE_256, img);
         mlxSignSHA = new MlxSignSHA256();
     } else if (shaType == MlxSign::SHA512) {
-        maskIToCSection(FS3_IMAGE_SIGNATURE_256, img);
-        maskIToCSection(FS3_IMAGE_SIGNATURE_512, img);
         mlxSignSHA = new MlxSignSHA512();
     } else {
         return errmsg("Unexpected type of SHA");
@@ -3166,7 +3194,7 @@ bool Fs3Operations::FwShiftDevData(PrintCallBack progressFunc)
         return errmsg("Failed to get MFG_INFO ITOC information.");
     }
 
-    if (getAbsAddr(mfgToc) < _ioAccess->get_size() - (((Flash *)(_ioAccess))->get_sector_size())) {
+    if (getAbsAddr(mfgToc) < _ioAccess->get_effective_size() - (((Flash *)(_ioAccess))->get_sector_size())) {
         return errmsg("Device data sections already shifted.");
     }
 
@@ -3253,7 +3281,7 @@ bool Fs3Operations::CheckItocArray()
 
 bool Fs3Operations::IsCriticalSection(u_int8_t sect_type)
 {
-    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PHY_UC_CMD && sect_type != FS3_HW_BOOT_CFG)
+    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PCIE_PHY_UC_CODE && sect_type != FS3_HW_BOOT_CFG)
         return false;
     return true;
 }
@@ -3563,7 +3591,7 @@ bool Fs3Operations::CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& dige
     }
 
     //mask hmac itoc entry and section
-    maskIToCSection(FS3_HMAC, data);
+    MaskItocSectionAndEntry(FS3_HMAC_DIGEST, data);
 
     //mask magic pattern (First 16 bytes):
     for (unsigned int i = 0; i < 16; i++) {
@@ -3573,7 +3601,7 @@ bool Fs3Operations::CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& dige
     //Remove the HMAC section from the end of the buffer
     u_int32_t hmacSectionSize = 0x0;
     u_int32_t hmacSectionOffset = 0x0;
-    if (!GetSectionSizeAndOffset(FS3_HMAC, hmacSectionSize, hmacSectionOffset)) {
+    if (!GetSectionSizeAndOffset(FS3_HMAC_DIGEST, hmacSectionSize, hmacSectionOffset)) {
         return errmsg("HMAC section is not found\n");
     }
 
@@ -3603,6 +3631,7 @@ bool Fs3Operations::invalidateOldFWImages(const u_int32_t magic_pattern[], Flash
     u_int32_t zeroes = 0;
     u_int32_t image_start_addrs[CNTX_START_POS_SIZE] = {0};
     u_int32_t num_of_images_found;
+    DPRINTF(("Fs3Operations::invalidateOldFWImages new_image_start=0x%08x\n", new_image_start));
 
     FindAllImageStart(flash_access, image_start_addrs, &num_of_images_found, magic_pattern);
     // Address convertor is disabled after FindAllImageStart() - use phys addresses
@@ -3657,6 +3686,7 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[], Fs3Operatio
             } else {
                 flash_access->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, is_curr_image_in_odd_chunks);
             }
+            DPRINTF(("Fs3Operations::DoAfterBurnJobs - Invalidating old fw signature\n"));
             if (!flash_access->write(0, &zeroes, sizeof(zeroes), true)) {
                 return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", flash_access->err());
             }
@@ -3686,7 +3716,7 @@ bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature, const ch
     memcpy(image_signature_512.keypair_uuid, uuidData.data(), uuidData.size() << 2);
     signature.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
     cx4fw_image_signature_512_pack(&image_signature_512, signature.data());
-    if (!Fs3UpdateSection(signature.data(), FS3_IMAGE_SIGNATURE_512,
+    if (!UpdateSection(signature.data(), FS3_IMAGE_SIGNATURE_512,
         false, CMD_SET_SIGNATURE, printFunc)) {
         return false;
     }

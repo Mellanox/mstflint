@@ -60,7 +60,7 @@ class DumpData:
 
         # get the query data
         # need to call query data
-        res = QueryData.get_query(kwargs["device_name"], kwargs["vHCAid"])
+        res = QueryData.get_query(kwargs["device_name"], kwargs["vHCAid"], kwargs["mem"])
 
         # validate that the dump supported by calling ArgToMenuVerifier
         rc = ArgToMenuVerifier.verify(res, **kwargs)

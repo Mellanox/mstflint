@@ -47,7 +47,7 @@
 using namespace std;
 
 
-Commander* Commander::create(std::string device, std::string dbName)
+Commander* Commander::create(std::string device, std::string dbName, bool forceCreate)
 {
     mfile *mf;
     int rc;
@@ -55,14 +55,19 @@ Commander* Commander::create(std::string device, std::string dbName)
 
     mf = mopen(device.c_str());
     if (mf == NULL) {
-        throw MlxcfgException("Failed to open the device");
+        mf = mopen_adv(device.c_str(), MST_CABLE);
+        if (mf == NULL) {
+            throw MlxcfgException("Failed to open the device");
+        }
     }
     rc = mget_mdevs_type(mf, &type);
     if (rc) {
         throw MlxcfgException("Failed to get device type");
     }
-    if (type & (MST_USB | MST_USB_DIMAX)) {
-        throw MlxcfgException("MTUSB device is not supported.");
+    if(!forceCreate) {
+        if (type & (MST_USB | MST_USB_DIMAX)) {
+            throw MlxcfgException("MTUSB device is not supported.");
+        }
     }
 
     Commander *cmdr = NULL;
@@ -90,9 +95,13 @@ Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
         throw MlxcfgException("Device in Livefish mode is not supported");
     }
 
-    if (dm_is_new_gen_switch(deviceId) || dm_is_5th_gen_hca(deviceId)) {
+    if (dm_is_new_gen_switch(deviceId) || dm_is_5th_gen_hca(deviceId) || dm_dev_is_cable(deviceId)) {
         if (dbName.empty()) {//take internal db file
-            dbName = getDefaultDBName(dm_dev_is_switch(deviceId));
+            if (dm_dev_is_cable(deviceId)) {
+                dbName = getDefaultDBName(true); // linkx cables use the switch PRM
+            } else {
+                dbName = getDefaultDBName(dm_dev_is_switch(deviceId));
+            }
         }
         commander = new GenericCommander(mf, dbName);
     } else if (dm_is_4th_gen(deviceId)) {

@@ -143,11 +143,11 @@ public:
     virtual bool set_flash_utilization(bool, int) = 0;
     virtual int get_flash_working_mode() = 0;
 
-    virtual bool sw_reset() = 0;
     virtual bool set_no_flash_verify(bool) = 0;
 
     virtual u_int32_t get_sector_size() = 0;
     virtual u_int32_t get_size() = 0;
+    virtual u_int32_t get_effective_size() = 0;
 
     virtual u_int32_t get_dev_id() = 0;
     virtual u_int32_t get_rev_id() = 0;
@@ -326,11 +326,6 @@ public:
         check_uefi_build();
         return false;
     }
-    virtual bool sw_reset()
-    {
-        check_uefi_build();
-        return false;
-    }
     virtual bool set_no_flash_verify(bool)
     {
         check_uefi_build();
@@ -343,6 +338,7 @@ public:
     }
     virtual u_int32_t get_sector_size();
     virtual u_int32_t get_size() { return getBufLength(); }
+    virtual u_int32_t get_effective_size() { return get_size(); }
     virtual u_int32_t get_dev_id() { return 0; }
     virtual u_int32_t get_rev_id() { return 0; }
     virtual mfile* getMfileObj()
@@ -445,6 +441,7 @@ public:
     u_int32_t get_current_sector_size() { return _curr_sector_size; }
     u_int32_t get_sector_size() { return _attr.sector_size; }
     virtual u_int32_t get_size() { return _attr.size; }
+    virtual u_int32_t get_effective_size();
 
     virtual u_int32_t get_dev_id() { return _attr.hw_dev_id; }
     u_int32_t get_rev_id() { return _attr.rev_id; }
@@ -452,8 +449,6 @@ public:
     u_int32_t get_port_num() { return _port_num; }
     u_int8_t  get_cr_space_locked() { return _cr_space_locked; }
     bool  get_ignore_cache_replacment() { return _ignore_cache_replacement; }
-
-    virtual bool sw_reset();
 
     virtual bool set_no_flash_verify(bool val);
     static void get_flash_list(char *flash_list, int buffer_size) { return mf_flash_list(flash_list, buffer_size); }

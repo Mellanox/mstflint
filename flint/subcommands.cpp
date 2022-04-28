@@ -583,6 +583,7 @@ FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes, bool ignoreDToc)
         _imgOps = FwOperations::FwOperationsCreate((void*)_flintParams.image.c_str(), NULL, NULL, \
                                                    FHT_FW_FILE, errBuff, 1024);
     }
+
     if (_flintParams.image_specified && _imgOps == NULL) {
         reportErr(true, FLINT_OPEN_FWOPS_IMAGE_ERROR, _flintParams.image.c_str(), strlen(errBuff) != 0 ? errBuff : "");
         return FLINT_FAILED;
@@ -595,8 +596,6 @@ FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes, bool ignoreDToc)
     }
     return FLINT_SUCCESS;
 }
-
-
 
 FlintStatus SubCommand::openIo()
 {
@@ -655,7 +654,7 @@ bool SubCommand::basicVerifyParams()
     } else if (_maxCmdParamNum != -1 && (int)_flintParams.cmd_params.size() > _maxCmdParamNum) {
         // _maxCmdParamNum == -1 means ignore this check
         if (_maxCmdParamNum) {
-            reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), _maxCmdParamNum, _flintParams.cmd_params.size());
+            reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), _maxCmdParamNum, (int)_flintParams.cmd_params.size());
         } else {
             reportErr(true, FLINT_CMD_ARGS_ERROR5, _name.c_str());
         }
@@ -782,12 +781,13 @@ SubCommand::~SubCommand()
 
 }
 
+// matanel - TODO: duplicated, use same function from fw_ops.cpp
 bool SubCommand::getRomsInfo(FBase *io, roms_info_t& romsInfo)
 {
     std::vector<u_int8_t> romSector;
     romSector.clear();
-    romSector.resize(io->get_size());
-    if (!io->read(0, &romSector[0], io->get_size())) {
+    romSector.resize(io->get_effective_size());
+    if (!io->read(0, &romSector[0], io->get_effective_size())) {
         reportErr(true, FLINT_READ_ERROR, _flintParams.image.c_str(), io->err());
         return false;
     }
@@ -1529,7 +1529,7 @@ FlintStatus SignSubCommand::executeCommand()
         MlxSign::OpensslEngineSigner engineSigner(_flintParams.openssl_engine, _flintParams.openssl_key_id);
         int rc = engineSigner.init();
         if (rc) {
-            reportErr(true, "Failed to initialze %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
+            reportErr(true, "Failed to initialize %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
             return FLINT_FAILED;
         }
 
@@ -1609,7 +1609,14 @@ bool SignSubCommand::verifyParams()
             reportErr(true, "To Sign the image with OpenSSL you must provide the engine and the key identifier.\n");
             return false;
         }
-        return true;
+        if (_flintParams.openssl_key_id.find("type=public", 0) != std::string::npos) {
+            reportErr(true, "The Sign command with --openssl_key_id flag does not accept public keys\n");
+                return false;
+        }
+        if (_flintParams.privkey_specified) {
+            reportErr(true, "The Sign command does not accept --private_key flag with the following flags: --openssl_engine, --openssl_key_id\n");
+            return false;
+        }
     }
     else if (_flintParams.hsm_specified) {
         if (_flintParams.uuid_specified == false) {
@@ -1624,7 +1631,6 @@ bool SignSubCommand::verifyParams()
             reportErr(true, HSM_PASSWORD_MISSING);
             return false;
         }
-        return true;
     }
     else {
         if (_flintParams.privkey_specified ^ _flintParams.uuid_specified) {
@@ -1649,8 +1655,8 @@ bool SignSubCommand::verifyParams()
                 (int)_flintParams.cmd_params.size());
             return false;
         }
-        return true;
     }
+    return true;
 }
 
 /***********************
@@ -1875,6 +1881,7 @@ FlintStatus SignRSASubCommand::executeCommand()
         reportErr(true, IMAGE_SIGN_TYPE_ERROR);
         return FLINT_FAILED;
     }
+
     if (_flintParams.openssl_engine_usage_specified) {
 #if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
         //* Init openssl engine for signing
@@ -1904,7 +1911,7 @@ FlintStatus SignRSASubCommand::executeCommand()
 
         //* Fill image_signature section with 0xff
         vector <u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
-        _imgOps->Fs3UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
+        _imgOps->UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
         return FLINT_SUCCESS;
 #else
         reportErr(true, "Open SSL functionality is not supported.\n");
@@ -1946,7 +1953,7 @@ FlintStatus SignRSASubCommand::executeCommand()
 
         //* Fill image_signature section with 0xff
         vector <u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
-        _imgOps->Fs3UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
+        _imgOps->UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
         return FLINT_SUCCESS;
     }
 }
@@ -1962,8 +1969,16 @@ bool SignRSASubCommand::verifyParams()
             reportErr(true, "To create secure boot signature with OpenSSL you must provide uuid string.\n");
             return false;
         }
-        if (_flintParams.openssl_engine.empty()) {
-            reportErr(true, "To create secure boot signature with OpenSSL you must provide the URI string.\n");
+        if (_flintParams.openssl_engine.empty() || _flintParams.openssl_key_id.empty()) {
+            reportErr(true, "To Sign the image with OpenSSL you must provide the engine and the key identifier.\n");
+            return false;
+        }
+        if (_flintParams.openssl_key_id.find("type=public", 0) != std::string::npos) {
+            reportErr(true, "The rsa_sign command with --openssl_key_id flag does not accept public keys\n");
+                return false;
+        }
+        if (_flintParams.privkey_specified) {
+            reportErr(true, "The Sign command does not accept --private_key flag with the following flags: --openssl_engine, --openssl_key_id\n");
             return false;
         }
         return true;
@@ -2838,12 +2853,10 @@ FlintStatus BurnSubCommand::executeCommand()
 
     // query both image and device (deviceQuery can fail but we save rc)
     _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
-    if (_imgOps) {
-        if (!_imgOps->FwQuery(&_imgInfo)) {
-            UnlockDevice(_fwOps);
-            reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
-            return FLINT_FAILED;
-        }
+    if (!_imgOps->FwQuery(&_imgInfo)) {
+        UnlockDevice(_fwOps);
+        reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
+        return FLINT_FAILED;
     }
 
     // Abort if the image is restricted according to the Security-Version
@@ -3391,6 +3404,12 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
     if (m & SMM_CRYTO_TO_COMMISSIONING) {
         attr += ", crypto-to-commissioning";
     }
+    if (m & SMM_RMCS_TOKEN) {
+        attr += ", rmcs-token";
+    }
+    if (m & SMM_RMDT_TOKEN) {
+        attr += ", rmdt-token";
+    }
 
     return attr;
 }
@@ -3677,8 +3696,8 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
             }            
         }
         else { // No fw control            
-            if (ops->IsSecureBootSupported()) {
-                if (ops->IsLifeCycleValidInLivefish(fwInfo.fw_info.chip_type)) {
+            if (ops->IsSecureBootSupported()) { // CX6DX onwards
+                if (ops->IsLifeCycleAccessible(fwInfo.fw_info.chip_type)) {
 
                     printf("Image Boot Status:     %d\n", fwInfo.fs3_info.global_image_status);                    
                     
@@ -3689,9 +3708,9 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                     else {
                         printf("Life cycle:            %s\n", life_cycle_strings[index]);
                     }
-                    if (fwInfo.fs3_info.life_cycle == GA_SECURED) {
+                    if (fwInfo.fs3_info.life_cycle == GA_SECURED && fwInfo.fs3_info.device_security_version_access_method == DIRECT_ACCESS) {
                         printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
-                    }   
+                    }
                 }
             }
         }
@@ -3821,6 +3840,7 @@ FlintStatus QuerySubCommand::executeCommand()
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
+
     fw_info_t fwInfo;
     FwOperations *ops;
     bool fullQuery = false;
@@ -3946,6 +3966,7 @@ FlintStatus VerifySubCommand::executeCommand()
         reportErr(true, FLINT_CMD_VERIFY_ERROR_1);
         return FLINT_FAILED;
     }
+
     FwOperations *ops;
     bool showItoc = (_flintParams.cmd_params.size() == 1) ? true : false;
     //check on what we are wroking
@@ -4017,16 +4038,75 @@ bool SwResetSubCommand::verifyParams()
 
 FlintStatus SwResetSubCommand::executeCommand()
 {
+    mfile* mf = NULL;
+    dm_dev_id_t devid_type;
+    u_int32_t devid, revid;
+
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
+
+    mf = _fwOps->getMfileObj();
+    int rc = dm_get_device_id(mf, &devid_type, &devid, &revid);
+    if (rc != 0) {
+        reportErr(true, "can't get device Id.\n");
+        return FLINT_FAILED;
+    }
+    (void)devid;
+    (void)revid;
+
+    if (!IsDeviceSupported(devid_type)) {
+        return FLINT_FAILED;
+    }
+
     printf("-I- Sending reset command to device %s ...\n", _flintParams.device.c_str());
     if (!_fwOps->FwSwReset()) {
         reportErr(true, FLINT_SWRESET_ERROR, _fwOps->err());
         return FLINT_FAILED;
     }
     printf("-I- Reset command accepted by the device.\n");
+
     return FLINT_SUCCESS;
+}
+
+bool SwResetSubCommand::IsDeviceSupported(dm_dev_id_t dev_id)
+{
+    switch (dev_id) {
+        case DeviceInfiniScaleIV:
+        case DeviceSwitchX:
+        case DeviceSwitchIB:
+        case DeviceSwitchIB2:
+        case DeviceQuantum:
+        case DeviceQuantum2:
+            return true;
+        case DeviceConnectX2:
+        case DeviceConnectX3:
+        case DeviceConnectX3Pro:
+        case DeviceConnectIB:
+        case DeviceSpectrum:
+        case DeviceConnectX4:
+        case DeviceConnectX4LX:
+        case DeviceConnectX5:
+        case DeviceBlueField:
+        case DeviceBlueField2:
+        case DeviceBlueField3:
+        case DeviceConnectX6:
+        case DeviceConnectX6DX:
+        case DeviceConnectX6LX:
+        case DeviceConnectX7:
+        case DeviceSpectrum2:
+        case DeviceSpectrum3:
+        case DeviceSpectrum4:
+        case DeviceSecureHost:
+        case DeviceGearBox:
+        case DeviceGearBoxManager:
+        case DeviceAbirGearBox:
+            reportErr(true, "Device %s doesn't support swreset command.\n", dm_dev_type2str(dev_id));
+            return false;
+        default:
+            reportErr(true, "Unknown device type - %d.\n", dev_id);
+            return false;
+    }
 }
 
 /***********************
@@ -4449,7 +4529,7 @@ FlintStatus SgSubCommand::sgFs2()
     //different behaviours for fs2 device with blank guids and fs2 device with guids or image
     //different behaviour if isfailesafe or not
     if (_flintParams.cmd_params.size() > 1) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), 1, _flintParams.cmd_params.size());
+        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
     }
 
     if (_flintParams.device_specified && !_info.fs2_info.blank_guids) {
@@ -4567,7 +4647,7 @@ SmgSubCommand::SmgSubCommand()
                     "Use -uid flag to set the desired GUIDs, intended for production use only.";
     _flagLong = "smg";
     _flagShort = "";
-    _param = "[guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2>]";
+    _param = "guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2>";
     _paramExp = "guids_num: (optional) number of GUIDs to be allocated per physical port\n"
                 "step_size: (optional) step size between GUIDs\n"
                 "Note: guids_num/step_size values can be specified per port or for both ports";
@@ -4612,7 +4692,7 @@ bool SmgSubCommand::verifyParams()
     }
 
     if (_flintParams.cmd_params.size() != 0 && _flintParams.cmd_params.size() != 2) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR4, _name.c_str(), 0, 2, _flintParams.cmd_params.size());
+        reportErr(true, FLINT_CMD_ARGS_ERROR4, _name.c_str(), 0, 2, (int)_flintParams.cmd_params.size());
         return false;
     }
 
@@ -4676,6 +4756,42 @@ FlintStatus SmgSubCommand::executeCommand()
 }
 
 /***********************
+ * Class: Set Attestation Cert Chain Subcommand
+ **********************/
+SetCertChainSubCommand::SetCertChainSubCommand()
+{
+    _name = "set attestation certificate chain";
+    _desc = "Set read-only attestation certificate chain (For FS4 image only).";
+    _extendedDesc = "Set Read-only attestation certificate chain, Set attestation certificate chain in the given FS4 image, intended for production use only.";
+    _flagLong = "set_attestation_cert_chain";
+    _flagShort = "";
+    _param = "<Certificate chain file>";
+    _paramExp = "Certificate chain file: bin file containing the certificate chain data";
+    _example = FLINT_NAME " -i fw_image.bin set_attestation_cert_chain cert_chain.bin"
+#ifndef __WIN__
+               "\n" FLINT_NAME " -d " MST_DEV_EXAMPLE3 " -override_cache_replacement set_attestation_cert_chain cert_chain.bin (should be used when device is idle)"
+#endif
+        ;
+    _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 1;
+    _minCmdParamNum = 1;
+    _cmdType = SC_Set_Cert_Chain;
+}
+
+FlintStatus SetCertChainSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED) {
+        return FLINT_FAILED;
+    }
+    FwOperations *ops = _flintParams.device_specified ? _fwOps : _imgOps;
+    if (!ops->FwSetCertChain((char*)_flintParams.cmd_params[0].c_str(), &verifyCbFunc)) {
+        reportErr(true, FLINT_CERT_CHAIN_ERROR, ops->err());
+        return FLINT_FAILED;
+    }
+    return FLINT_SUCCESS;
+}
+
+/***********************
  * Class: Set Vpd Subcommand
  **********************/
 SetVpdSubCommand::SetVpdSubCommand()
@@ -4685,7 +4801,7 @@ SetVpdSubCommand::SetVpdSubCommand()
     _extendedDesc = "Set Read-only VPD, Set VPD in the given FS3/FS4 image, intended for production use only.";
     _flagLong = "set_vpd";
     _flagShort = "";
-    _param = "[vpd file]";
+    _param = "<vpd file>";
     _paramExp = "vpd file: bin file containing the vpd data";
     _example = FLINT_NAME " -i fw_image.bin set_vpd vpd.bin"
 #ifndef __WIN__
@@ -4696,11 +4812,6 @@ SetVpdSubCommand::SetVpdSubCommand()
     _maxCmdParamNum = 1;
     _minCmdParamNum = 1;
     _cmdType = SC_Set_Vpd;
-}
-
-SetVpdSubCommand:: ~SetVpdSubCommand()
-{
-
 }
 
 FlintStatus SetVpdSubCommand::executeCommand()
@@ -4726,7 +4837,7 @@ SetPublicKeysSubCommand::SetPublicKeysSubCommand()
     _extendedDesc = "Set Public Keys in the given FS3/FS4 image.";
     _flagLong = "set_public_keys";
     _flagShort = "";
-    _param = "[public keys binary file]";
+    _param = "<public keys binary file>";
     _paramExp = "public keys file: bin file containing the public keys data";
     _example = FLINT_NAME " -i fw_image.bin set_public_keys publickeys.bin";
     _v = Wtv_Img;
@@ -4914,7 +5025,7 @@ DcSubCommand::DcSubCommand()
                     " Existence of this section depends on the version of the image generation tool.";
     _flagLong = "dc";
     _flagShort = "";
-    _param = "[out-file]";
+    _param = "<out-file>";
     _paramExp = "file: (optional) filename to write the dumped configuration to. If not given,"
                 " the data is printed to screen";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " dc";
@@ -4968,7 +5079,7 @@ DhSubCommand::DhSubCommand()
                     "This command would fail if the image does not contain a Hash file.";
     _flagLong = "dh";
     _flagShort = "";
-    _param = "[out-file]";
+    _param = "<out-file>";
     _paramExp = "file - (optional) filename to write the dumped tracer hash file to. If not given,"
                 " the data is printed to screen";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " dh hash.csv";
@@ -5023,7 +5134,7 @@ SetKeySubCommand::SetKeySubCommand()
     _extendedDesc = "Set/Update the HW access key which is used to enable/disable access to HW.";
     _flagLong = "set_key";
     _flagShort = "";
-    _param = "[key]";
+    _param = "<key>";
     _paramExp = "key: (optional) The new key you intend to set (in hex).";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " set_key 1234deaf5678";
     _v = Wtv_Dev;
@@ -5133,7 +5244,7 @@ HwAccessSubCommand::HwAccessSubCommand()
     _extendedDesc = "Enable/disable the access to the HW.";
     _flagLong = "hw_access";
     _flagShort = "";
-    _param = "<enable|disable> [key]";
+    _param = "[enable/disable] <key>";
     _paramExp = "<enable/disable>: Specify if you intend to disable or enable the HW access.\n"
                 "You will be asked to type a key when you try to enable HW access.\n"
                 "key: The key you intend to use for enabling the HW access, or disabling it in 5th Gen devices.\n"
@@ -5247,7 +5358,7 @@ HwSubCommand::HwSubCommand()
     _extendedDesc = "Access HW info and flash attributes.";
     _flagLong = "hw";
     _flagShort = "";
-    _param = "<query|set> [ATTR=VAL]";
+    _param = "[query/set] <ATTR=VAL>";
     _paramExp = "query: query HW info\n"
                 "set [ATTR=VAL]: set flash attribure\n"
                 "Supported attributes:\n"
@@ -5283,13 +5394,12 @@ HwSubCommand:: ~HwSubCommand()
 bool HwSubCommand::verifyParams()
 {
 #ifdef EXTERNAL
-    if (_flintParams.cmd_params.size() != 1) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
-        return false;
-    }
-
     if (_flintParams.cmd_params[0] != "query") {
         reportErr(true, FLINT_INVALID_OPTION_ERROR, _flintParams.cmd_params[0].c_str(), _name.c_str(), "query");
+        return false;
+    }
+    if (_flintParams.cmd_params.size() != 1) {
+        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
         return false;
     }
 #else
@@ -5597,7 +5707,7 @@ WwSubCommand::WwSubCommand()
     _paramExp = "addr - address of word\n"
                 "data - value of word";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " ww 0x10008 0x5a445a44";
-    _v = Wtv_Dev;
+    _v = Wtv_Dev_Or_Img;
     _maxCmdParamNum = 2;
     _minCmdParamNum = 2;
     _cmdType = SC_Ww;
@@ -5636,9 +5746,18 @@ FlintStatus WwSubCommand::executeCommand()
     delete[] addrStr;
     delete[] dataStr;
     data = __cpu_to_be32(data);
-    if (!((Flash*)_io)->write(addr, data)) {
-        reportErr(true, FLINT_FLASH_WRITE_ERROR, _io->err());
-        return FLINT_FAILED;
+    // TODO - align below write function for Flash and FImage classes
+    if (_io->is_flash()) {
+        if (!((Flash*)_io)->write(addr, data)) {
+            reportErr(true, FLINT_FLASH_WRITE_ERROR, _io->err());
+            return FLINT_FAILED;
+        }
+    }
+    else {
+        if (!_io->write(addr, &data, 0x4)) {
+            reportErr(true, FLINT_FLASH_WRITE_ERROR, _io->err());
+            return FLINT_FAILED;
+        }
     }
     return FLINT_SUCCESS;
 }
@@ -5808,9 +5927,9 @@ bool WbneSubCommand::writeBlock(u_int32_t addr, std::vector<u_int32_t> dataVec)
 {
     //we should work only on flash.
     //check if flash is big enough
-    if (addr + (dataVec.size() * 4) > ((Flash*)_io)->get_size()) {
+    if (addr + (dataVec.size() * 4) > ((Flash*)_io)->get_effective_size()) {
         reportErr(true, "Writing %#x bytes from address %#x is out of flash limits (%#x bytes)\n",
-                  (unsigned int)(dataVec.size() * 4), (unsigned int)addr, (unsigned int)_io->get_size());
+                  (unsigned int)(dataVec.size() * 4), (unsigned int)addr, (unsigned int)_io->get_effective_size());
         return false;
     }
     if (!((Flash*)_io)->write(addr, &dataVec[0], (dataVec.size() * 4), true)) {
@@ -5879,7 +5998,7 @@ RbSubCommand::RbSubCommand()
     _extendedDesc = "Read a data block from the flash and write it to a file or to screen.";
     _flagLong = "rb";
     _flagShort = "";
-    _param = "<addr> <size> [out-file]";
+    _param = "<addr> <size> <out-file>";
     _paramExp = "addr - address of block\n"
                 "size - size of data to read in bytes\n"
                 "file - filename to write the block (raw binary). If not given, the data is printed to screen";
@@ -5905,12 +6024,33 @@ bool RbSubCommand::readBlock(u_int32_t addr, std::vector<u_int8_t>& buff, bool i
     return true;
 }
 
-bool RbSubCommand::printToScreen(const std::vector<u_int8_t>& buff)
+bool RbSubCommand::printToScreen(const std::vector<u_int8_t>& buff, bool hexdump_format)
 {
-    for (u_int32_t i = 0; i < buff.size(); i += 4) {
-        u_int32_t word = *((u_int32_t*)(&buff[0] + i));
-        word = __be32_to_cpu(word);
-        printf("0x%08x ", word);
+    if (hexdump_format) {
+        for (u_int32_t i = 0; i < buff.size(); i += 16) {
+        
+            // Print addr
+            printf("%08x  ", i);
+            // Print bytes
+            for (u_int32_t j = 0; (j < 16) && (i + j < buff.size()); j++) {
+                printf("%02x ", buff[i + j]);
+                if (j == 7) printf(" ");
+            }
+            // Print ASCII
+            printf(" |");
+            for (u_int32_t j = 0; (j < 16) && (i + j < buff.size()); j++) {
+                printf("%c", isprint(buff[i + j]) ? buff[i + j] : '.');
+            }
+            // Print new line
+            printf("|\n");
+        }
+    }
+    else {
+        for (u_int32_t i = 0; i < buff.size(); i += 4) {
+            u_int32_t word = *((u_int32_t*)(&buff[0] + i));
+            word = __be32_to_cpu(word);
+            printf("0x%08x ", word);
+        }
     }
     printf("\n");
     return true;
@@ -5953,7 +6093,7 @@ FlintStatus RbSubCommand::executeCommand()
     if (wTF) {
         rc = writeToFile(_flintParams.cmd_params[2], data) == true ? FLINT_SUCCESS : FLINT_FAILED;
     } else {
-        rc = printToScreen(data) == true ? FLINT_SUCCESS : FLINT_FAILED;
+        rc = printToScreen(data, _flintParams.hexdump_format) == true ? FLINT_SUCCESS : FLINT_FAILED;
     }
     return rc;
 }

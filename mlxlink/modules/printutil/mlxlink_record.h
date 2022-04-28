@@ -72,7 +72,7 @@
 
 #define IDENT "    "
 #define IDENT2 IDENT IDENT
-#define IDENT3 "\t\t"
+#define IDENT3 IDENT IDENT2
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -108,11 +108,13 @@ enum STATUS_DDM_FLAGS_TYPE {
 #define MPCNT_PERFORMANCE_INFO_LAST     4
 #define MPCNT_TIMER_INFO_LAST           1
 #define EYE_OPENING_INFO_LAST           9
-#define FEC_CAP_INFO_LASE               5
+#define FEC_CAP_INFO_LAST               6
 #define DEVICE_INFO_LAST                5
 #define BER_MONITOR_INFO_LAST           2
 #define EXT_PHY_INFO_INFO_LAST          1
 #define LINK_DOWN_BLAME_INFO_LAST       2
+#define MODULE_PMPT_INFO_LAST           8
+#define MODULE_PMPD_INFO_LAST           6
 
 class MlxlinkRecord {
 
@@ -131,6 +133,7 @@ public:
     static std::string addSpace(const std::string &str, u_int32_t size, bool right = true);
     static std::string addSpaceForDDM(const std::string &str);
     static std::string addSpaceForSlrg(const std::string &str);
+    static std::string addSpaceForModulePrbs(const std::string &str);
     static void printErrorsSection(const std::string &title, const std::string &lines);
     static void printCmdLine(const std::string &line, Json::Value &jsonRoot);
     static void printErr(const std::string &err);
@@ -145,7 +148,6 @@ public:
     bool arrayValue;
     bool colorKey;
     static bool jsonFormat;
-    static std::string gboxTitle;
     static std::ostream* cOut;
     static FILE* stdOut;
 };

@@ -31,12 +31,12 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.18.0, eranj@mellanox.co.il)
+AC_INIT(mstflint, 4.20.0, eranj@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.18.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.20.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -52,13 +52,13 @@ AC_PROG_LIBTOOL
 AC_CONFIG_HEADERS( config.h )
 
 # OPENSSL_VERSION_NUMBER < 0x100020bf
-#0x100020bfL = OpenSSL 1.0.2k-fips  26 Jan 2017
-MIN_OPENSSL_VER="1.0.2k-fips"
+#0x100020bfL = OpenSSL 1.0.2k - 26 Jan 2017
+MIN_OPENSSL_VER="1.0.2k"
 AC_COMPILE_IFELSE(
       [AC_LANG_PROGRAM([[
 #include <openssl/ssl.h>
 #if OPENSSL_VERSION_NUMBER < 0x100020bf
-  ERROR: OPENSSL_VERSION_NUMBER version must be >= 0x100020bf ("OpenSSL 1.0.2k-fips  26 Jan 2017")
+  ERROR: OPENSSL_VERSION_NUMBER version must be >= 0x100020bf ("OpenSSL 1.0.2k - 26 Jan 2017")
 #endif
 ]])], [OPENSSL_VERSION_VALID=yes], [OPENSSL_VERSION_VALID=no])
 OS=$(uname -s)

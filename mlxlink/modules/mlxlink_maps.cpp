@@ -108,6 +108,13 @@ void MlxlinkMaps::initPortStateMapping()
     _networkPorts["GEARBOX_HOST"] = NETWORK_PORT_TYPE_NEAR;
     _networkPorts["INTERNAL_IC_LR"] = NETWORK_PORT_TYPE_IC_LR;
     _networkPorts["GEARBOX_LINE"] = NETWORK_PORT_TYPE_FAR;
+
+    _pcieDevStatus[PCIE_DEVICE_STATUS_CORRECTABLE_ERROR] = "Correctable Error detected";
+    _pcieDevStatus[PCIE_DEVICE_STATUS_NON_FATAL_ERROR] = "Non-Fatal Error detected";
+    _pcieDevStatus[PCIE_DEVICE_STATUS_FATAL_ERROR] = "Fatal Error detected";
+    _pcieDevStatus[PCIE_DEVICE_STATUS_UNSUP_REQ] = "Unsupported Request detected";
+    _pcieDevStatus[PCIE_DEVICE_STATUS_AUX] = "AUX power";
+    _pcieDevStatus[PCIE_DEVICE_STATUS_TRANSACTION_PEN] = "Transaction Pending";
 }
 
 void MlxlinkMaps::phyHstFsmHdrStateMapping()
@@ -150,6 +157,34 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
     _fecModeActive[FEC_MODE_RS_FEC_PLR_272_257] =
          "Ethernet_Consortium_LL_50G_RS_FEC_PLR -(272,257+1)";
 
+    _fecModeMask[FEC_MODE_MASK_AU] = make_pair("Auto-FEC", "AU");
+    _fecModeMask[FEC_MODE_MASK_NF] = make_pair("No-FEC", "NF");
+    _fecModeMask[FEC_MODE_MASK_FC] = make_pair("Firecode_FEC", "FC");
+    _fecModeMask[FEC_MODE_MASK_RS_528] = make_pair("RS-FEC (528,514)", "RS");
+    _fecModeMask[FEC_MODE_MASK_LL_271] = make_pair("LL_RS-FEC (271,257)", "LL");
+    _fecModeMask[FEC_MODE_MASK_DF_RS] = make_pair("Interleaved_RS-FEC (544,514)", "DF-RS");
+    _fecModeMask[FEC_MODE_MASK_RS_544] = make_pair("RS-FEC (544,514)", "RS-544");
+    _fecModeMask[FEC_MODE_MASK_LL_272] = make_pair("LL_RS-FEC (272,257+1)", "LL-272");
+    _fecModeMask[FEC_MODE_MASK_DF_LL_272] = make_pair("Interleaved_LL_RS-FEC (272,257+1)", "DF-LL");
+
+    _fecPerSpeed.push_back(make_pair("800G_8X", ""));
+    _fecPerSpeed.push_back(make_pair("400G_4X", ""));
+    _fecPerSpeed.push_back(make_pair("200G_2X", ""));
+    _fecPerSpeed.push_back(make_pair("100G_1X", ""));
+
+    _fecPerSpeed.push_back(make_pair("400G_8X", ""));
+    _fecPerSpeed.push_back(make_pair("200G_4X", ""));
+    _fecPerSpeed.push_back(make_pair("100G_2X", ""));
+    _fecPerSpeed.push_back(make_pair("50G_1X", ""));
+    _fecPerSpeed.push_back(make_pair("50G_2X", ""));
+    _fecPerSpeed.push_back(make_pair("100G_4X", ""));
+
+    _fecPerSpeed.push_back(make_pair("100G", ""));
+    _fecPerSpeed.push_back(make_pair("56G", ""));
+    _fecPerSpeed.push_back(make_pair("50G", ""));
+    _fecPerSpeed.push_back(make_pair("40G", ""));
+    _fecPerSpeed.push_back(make_pair("25G", ""));
+    _fecPerSpeed.push_back(make_pair("10G", ""));
 
     _loopbackModeList[PHY_NO_LOOPBACK] = "No Loopback";
     _loopbackModeList[PHY_REMOTE_LOOPBACK] = "PHY Remote Loopback";
@@ -184,6 +219,7 @@ void MlxlinkMaps::ethSpeedMapping()
 
     _ETHSpeed2Str[ETH_LINK_SPEED_100_BaseTx] = "BaseTx100M";
     _ETHSpeed2Str[ETH_LINK_SPEED_1000_BaseT] = "BaseT1000M";
+    _ETHSpeed2Str[ETH_LINK_SPEED_10M] = "BaseT10M";
     _ETHSpeed2Str[ETH_LINK_SPEED_1000_SGMII] = "CX";
     _ETHSpeed2Str[ETH_LINK_SPEED_1000_KX] = "KX";
     _ETHSpeed2Str[ETH_LINK_SPEED_10G_CX4] = "CX4";
@@ -228,6 +264,7 @@ void MlxlinkMaps::extEthSpeedMapping()
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_200GAUI_2] = 200;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_400GAUI_8] = 400;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_400GAUI_4] = 400;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_800GAUI_8] = 800;
 
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_SGMII_100M] = "100M";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_1000BASE_X] = "1G";
@@ -245,6 +282,8 @@ void MlxlinkMaps::extEthSpeedMapping()
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_200GAUI_2] = "200G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_8] = "400G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_4] = "400G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_800GAUI_8] = "800G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_SGMII_10M] = "10M";
 }
 
 void MlxlinkMaps::ibSpeedMapping()
@@ -274,6 +313,7 @@ void MlxlinkMaps::speedToLanesMapping()
     _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_BaseT] = 1;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_SGMII] = 1;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_KX] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_10M] = 1;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_CX4] = 4;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_KX4] = 4;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_BaseT] = 1;
@@ -299,6 +339,7 @@ void MlxlinkMaps::speedToLanesMapping()
     _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_LR4] = 4;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_SR4] = 4;
 
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_SGMII_10M] = 1;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_SGMII_100M] = 1;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_1000BASE_X] = 1;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_2_5GBASE_X] = 1;
@@ -315,6 +356,7 @@ void MlxlinkMaps::speedToLanesMapping()
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_200GAUI_2] = 2;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_8] = 8;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_4] = 4;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_800GAUI_8] = 8;
 }
 
 void MlxlinkMaps::initPortSpeedMapping()
@@ -420,6 +462,38 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsLaneRate["200G_2X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
     _prbsLaneRate["400G_4X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
     _prbsLaneRate["800G_8X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
+
+    _prbsRxTuningStatus[0] = "PRBS mode tuning was not performed.";
+    _prbsRxTuningStatus[1] = "Performing PRBS mode tuning.";
+    _prbsRxTuningStatus[2] = "PRBS mode tuning completed.";
+    _prbsRxTuningStatus[3] = "Signal Detect in progress.";
+
+    _prbsLaneRateCap[0x1] = "1G (1.25 Gb/s)";
+    _prbsLaneRateCap[0x2] = "SDR (2.5 Gb/s)";
+    _prbsLaneRateCap[0x4] = "XAUI/2.5G (3.125 Gb/s)";
+    _prbsLaneRateCap[0x8] = "DDR/5G (5 Gb/s)";
+    _prbsLaneRateCap[0x10] = "QDR (10 Gb/s)";
+    _prbsLaneRateCap[0x20] = "FDR10/10G/40G (10.3125 Gb/s)";
+    _prbsLaneRateCap[0x40] = "FDR/14G (14.0625 Gb/s)";
+    _prbsLaneRateCap[0x80] = "EDR/25G/50G/100G (25.78125 Gb/s)";
+    _prbsLaneRateCap[0x100] = "50GE-KR4/12.89G (12.89 Gb/s)";
+    _prbsLaneRateCap[0x200] = "HDR/50G/100G/200G/400G (26.5625Gbd/53.125Gb/s)";
+    _prbsLaneRateCap[0x400] = "NDR/100G/200G/400G/800G (53.125Gbd/106.25Gb/s)";
+
+    _prbsLockStatus[0] = "Not locked";
+    _prbsLockStatus[1] = "Locked";
+
+    _prbsEStatus[0] = "PRBS RX is disabled";
+    _prbsEStatus[1] = "PRBS RX is enabled";
+
+    _prbsPStatus[0] = "No polarity inversion";
+    _prbsPStatus[1] = "PRBS RX polarity inversion.";
+
+    _prbsModulation[0] = "NRZ test pattern";
+    _prbsModulation[1] = "PAM4 encoding";
+    _prbsModulation[2] = "PAM4 with precoding";
+    _prbsModulation[3] = "PAM4 without gray no precoding";
+    _prbsModulation[4] = "PAM4 without gray with precoding";
 }
 
 void MlxlinkMaps::initPpbmcAndPepcMapping()
@@ -594,31 +668,70 @@ void MlxlinkMaps::cimsCableBreakoutMapping()
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_UNSPECIFIED] =
             "Unspecified";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_QSFPDD] =
-            "QSFP-DD to QSFP-DD";
+            "X to X";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_2QSFP_or_2QSFPDD] =
-            "QSFP-DD to 2xQSFP or 2xQSFP-DD (depopulated / 4 lanes)";
+            "X to 2xQSFP or 2xX (depopulated / 4 lanes)";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_4SFPDD_or_4QSFP] =
-            "QSFP-DD to 4xSFP-DD or 4xQSFP (depopulated / 2 lanes)";
+            "X to 4xSFP-DD or 4xX (depopulated / 2 lanes)";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_8SFP] =
-            "QSFP-DD to 8xSFP";
+            "X to 8xSFP";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_QSFP_or_QSFPDD] =
-            "QSFP-DD (depopulated / 4 lanes) to QSFP or QSFP-DD (depopulated / 4 lanes)";
+            "X (depopulated / 4 lanes) to QSFP or X (depopulated / 4 lanes)";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_2QSFP] =
-            "QSFP-DD (depopulated / 4 lanes) to 2xQSFP(depopulated / 2 lanes) or 2xSFP-DD";
+            "X (depopulated / 4 lanes) to 2xX(depopulated / 2 lanes) or 2xSFP-DD";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_4SFP] =
-            "QSFP-DD (depopulated / 4 lanes) to 4xSFP";
+            "X (depopulated / 4 lanes) to 4xSFP";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_SFPDD_to_SFPDD] =
-            "SFP-DD(/ 2 lane module) to SFP-DD";
+            "X(/ 2 lane module) to X";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_SFPDD_to_2SFPDD] =
-            "SFP-DD(/ 2 lane module) to 2xSFP";
+            "X(/ 2 lane module) to 2xSFP";
 
 }
 
 void MlxlinkMaps::rxTxCdrCapMapping()
 {
+    _txInputFreq[0] = "Tx_input_lanes_1_8";
+    _txInputFreq[1] = "Tx_input_lanes_1_4_and_5-8";
+    _txInputFreq[2] = "Tx_input_lanes_1_2_and_3_4_and_5_6_and_7_8";
+    _txInputFreq[3] = "Lanes_may_be_asynchronous_in_frequency";
+
     _rxTxCdrCap[RX_TX_CDR_CAP_NO_CDR]                              = "No CDR";
     _rxTxCdrCap[RX_TX_CDR_CAP_BUILD_IN_CDR_WITH_ON_OFF_CONTROL]    = "Build-in CDR with on/off control";
     _rxTxCdrCap[RX_TX_CDR_CAP_BUILD_IN_CDR_WITHOUT_ON_OFF_CONTROL] = "Build-in CDR without on/off control";
+
+    _moduleRxAmp[0] = "100-400 mV (P-P)";
+    _moduleRxAmp[1] = "300-600 mV (P-P)";
+    _moduleRxAmp[2] = "400-800 mV (P-P)";
+    _moduleRxAmp[3] = "600-1200 mV (P-P)";
+    _moduleRxAmp[4] = "Custom";
+    _moduleRxAmp[5] = "Custom";
+    _moduleRxAmp[6] = "Custom";
+    _moduleRxAmp[7] = "Custom";
+    _moduleRxAmp[8] = "Custom";
+    _moduleRxAmp[9] = "Custom";
+    _moduleRxAmp[10] = "Custom";
+    _moduleRxAmp[11] = "Custom";
+    _moduleRxAmp[12] = "Custom";
+    _moduleRxAmp[13] = "Custom";
+    _moduleRxAmp[14] = "Custom";
+    _moduleRxAmp[15] = "Custom";
+
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT0] = "0 (" + _moduleRxAmp[0] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT1] = "1 (" + _moduleRxAmp[1] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT2] = "2 (" + _moduleRxAmp[2] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT3] = "3 (" + _moduleRxAmp[3] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT4] = "4 (" + _moduleRxAmp[4] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT5] = "5 (" + _moduleRxAmp[5] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT6] = "6 (" + _moduleRxAmp[6] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT7] = "7 (" + _moduleRxAmp[7] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT8] = "8 (" + _moduleRxAmp[8] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT9] = "9 (" + _moduleRxAmp[9] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT10] = "10 (" + _moduleRxAmp[10] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT11] = "11 (" + _moduleRxAmp[11] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT12] = "12 (" + _moduleRxAmp[12] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT13] = "13 (" + _moduleRxAmp[13] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT14] = "14 (" + _moduleRxAmp[14] + ")";
+    _moduleRxAmpCap[PMCR_RX_AMP_BIT15] = "15 (" + _moduleRxAmp[15] + ")";
 }
 
 void MlxlinkMaps::rxPowerTypeMapping()
@@ -722,26 +835,26 @@ void MlxlinkMaps::cmisModuleStMapping()
 
 void MlxlinkMaps::tempFlagsMapping()
 {
-    _tempFLags[TEMP_FLAGS_NO_ALARM_WARN]   = "0";
-    _tempFLags[TEMP_FLAGS_HI_TEMP_ALARM]   = "high_temp_alarm";
-    _tempFLags[TEMP_FLAGS_LO_TEMP_ALARM]   = "low_temp_alarm";
-    _tempFLags[TEMP_FLAGS_HI_TEMP_WARNING] = "high_temp_warning";
-    _tempFLags[TEMP_FLAGS_LO_TEMP_WARNING] = "low_temp_warning";
+    _tempFlags[TEMP_FLAGS_NO_ALARM_WARN]   = "N/A";
+    _tempFlags[TEMP_FLAGS_HI_TEMP_ALARM]   = "high_temp_alarm";
+    _tempFlags[TEMP_FLAGS_LO_TEMP_ALARM]   = "low_temp_alarm";
+    _tempFlags[TEMP_FLAGS_HI_TEMP_WARNING] = "high_temp_warning";
+    _tempFlags[TEMP_FLAGS_LO_TEMP_WARNING] = "low_temp_warning";
 }
 
 void MlxlinkMaps::vccFlagsMapping()
 {
-    _vccFLags[VCC_FLAGS_NO_ALARM_WARN]   = "0";
-    _vccFLags[VCC_FLAGS_HI_VCC_ALARM]   = "high_vcc_alarm";
-    _vccFLags[VCC_FLAGS_LO_VCC_ALARM]   = "low_vcc_alarm";
-    _vccFLags[VCC_FLAGS_HI_VCC_WARNING] = "high_vcc_warning";
-    _vccFLags[VCC_FLAGS_LO_VCC_WARNING] = "low_vcc_warning";
+    _vccFlags[VCC_FLAGS_NO_ALARM_WARN]   = "N/A";
+    _vccFlags[VCC_FLAGS_HI_VCC_ALARM]   = "high_vcc_alarm";
+    _vccFlags[VCC_FLAGS_LO_VCC_ALARM]   = "low_vcc_alarm";
+    _vccFlags[VCC_FLAGS_HI_VCC_WARNING] = "high_vcc_warning";
+    _vccFlags[VCC_FLAGS_LO_VCC_WARNING] = "low_vcc_warning";
 }
 
 void MlxlinkMaps::dataPathStateMapping()
 {
     _dataPathSt[DATA_PATH_STATE_RES]           = "N/A";
-    _dataPathSt[DATA_PATH_STATE_DEACTIVATED]   = "DPDeactivated (or unused lane)";
+    _dataPathSt[DATA_PATH_STATE_DEACTIVATED]   = "DPDeactivated";
     _dataPathSt[DATA_PATH_STATE_INIT]          = "DPInit";
     _dataPathSt[DATA_PATH_STATE_DEINIT]        = "DPDeinit";
     _dataPathSt[DATA_PATH_STATE_ACTIVATED]     = "DPActivated";
@@ -752,17 +865,31 @@ void MlxlinkMaps::dataPathStateMapping()
 
 void MlxlinkMaps::errorCodeResMapping()
 {
-    _errorCodeRes[ERROR_CODE_RES_CONFIG_UNDEF] = "No status information available (initial register value)";
-    _errorCodeRes[ERROR_CODE_RES_CONFIG_SUCC] = "The last accepted configuration command has been completed successfully";
-    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ] = "Configuration rejected: unspecific validation failure";
-    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_INV_APP_SEI] = "Configuration rejected: invalid AppSel Code";
-    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_INV_DATA_PTH] = "Configuration rejected: invalid set of lanes for AppSel";
-    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_INV_SI] = "Configuration rejected: invalid SI control settingd";
-    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_LANES_IN_USE] = "Configuration rejected: some lanes not in DPDeactivated";
-    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_PART_DATA_PTH] = "Configuration rejected: lanes are only subset of DataPath";
-    _errorCodeRes[ERROR_CODE_RES_CONFIG_IN_PROG] = "A configuration command is still bening processed by the module"
-                                                   " a new configuration command is ignored for this lane while ConfigInProgress";
-    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_CUST] = "Configuration rejected for custom reasons";
+    _moduleOperSt[MODULE_OPER_STATUS_INIT] = "initializing";
+    _moduleOperSt[MODULE_OPER_STATUS_PLUGGED_EN] = "plugged_enable";
+    _moduleOperSt[MODULE_OPER_STATUS_UNPLUGGED] = "unplugged";
+    _moduleOperSt[MODULE_OPER_STATUS_PLUGGED_WITH_ERROR] = "module_plugged_with_error";
+
+    _moduleErrType[MODULE_ERROR_TYPE_POWER] = "Power_Budget_Exceeded";
+    _moduleErrType[MODULE_ERROR_TYPE_LONG_RANGE] = "Long_Range_for_non_MLNX_cable_or_module";
+    _moduleErrType[MODULE_ERROR_TYPE_BUS_STUCK] = "Bus_stuck - (I2C Data or clock shorted)";
+    _moduleErrType[MODULE_ERROR_TYPE_BAD] = "bad_or_unsupported_EEPROM";
+    _moduleErrType[MODULE_ERROR_TYPE_ENF] = "Enforce_part_number_list";
+    _moduleErrType[MODULE_ERROR_TYPE_UNSUPPORTED] = "unsupported_cable";
+    _moduleErrType[MODULE_ERROR_TYPE_HIGH_TEMP] = "unsupported_cable";
+    _moduleErrType[MODULE_ERROR_TYPE_BAD_CBL] = "bad_cable - (Module/Cable is shorted)";
+    _moduleErrType[MODULE_ERROR_TYPE_PMD] = "PMD_type_is_not_enabled";
+    _moduleErrType[MODULE_ERROR_TYPE_PCIE] = "pcie_system_power_slot_Exceeded";
+
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_UNDEF] = "ConfigUndefined";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_SUCC] = "ConfigSuccess";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ] = "ConfigRejected";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_INV_APP_SEI] = "ConfigRejectedInvalidAppSel";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_INV_DATA_PTH] = "ConfigRejectedInvalidDataPath";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_INV_SI] = "ConfigRejectedInvalidSI";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_LANES_IN_USE] = "ConfigRejectedLanesInUse";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_PART_DATA_PTH] = "ConfigRejectedPartialDataPath";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_IN_PROG] = "ConfigInProgress";
 }
 
 void MlxlinkMaps::qsfpFarEndCableBreakoutMapping()
@@ -781,6 +908,94 @@ void MlxlinkMaps::qsfpFarEndCableBreakoutMapping()
             "2 far-ends with 2 channels implemented in each (i.e. 2x2 break out)";
     _qsfpFarEndCableBreakout[QSFP_CABLE_BREAKOUT_2_FAR_ENDS_1_CHANNELS_IMPLEM_IN_EACH] =
             "2 far-ends with 1 channel implemented in each (i.e. 2x1 break out)";
+}
+
+void MlxlinkMaps::modulePrbsMapping()
+{
+    _modulePrbsSt[PMPT_STATUS_NORMAL_MODE] = "Normal mission mode";
+    _modulePrbsSt[PMPT_STATUS_NOT_SUPPORTED] = "Module is disabled/not connected";
+    _modulePrbsSt[PMPT_STATUS_CONFIG_ERROR] = "unsupported configuration setting";
+    _modulePrbsSt[PMPT_STATUS_GEN_ONLY] = "PRBS Generator only";
+    _modulePrbsSt[PMPT_STATUS_CH_ONLY] = "PRBS Checker only";
+    _modulePrbsSt[PMPT_STATUS_BOTH] = "PRBS traffic both Checker and Generator";
+
+    _modulePrbsSwapAdmin[0]  = "NO MSB <-> LSB swapping";
+    _modulePrbsSwapAdmin[1]  = "MSB <-> LSB swapping";
+
+    _modulePrbsInvAdmin[0] = "NO PRBS inversion";
+    _modulePrbsInvAdmin[1] = "PRBS inversion";
+
+    _modulePrbsModulation[0] = "NRZ test pattern";
+    _modulePrbsModulation[1] = "PAM4 encoding";
+
+    _modulePrbsRateCapToStr[0] = "Non Selected";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_1G] = "1.25 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_SDR] = "2.5 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_40G_40G] = "10.3125 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_FDR] = "14.0625 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_EDR] = "25.78125 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_HDR] = "53.125 Gb/s";
+    _modulePrbsRateCapToStr[MODULE_PRBS_LANE_RATE_NDR] = "106.25 Gb/s";
+
+    _modulePrbsRateStrToCap["1G"] = MODULE_PRBS_LANE_RATE_1G;
+    _modulePrbsRateStrToCap["1.25G"] = MODULE_PRBS_LANE_RATE_1G;
+
+    _modulePrbsRateStrToCap["IB-SDR"] = MODULE_PRBS_LANE_RATE_SDR;
+    _modulePrbsRateStrToCap["SDR"] = MODULE_PRBS_LANE_RATE_SDR;
+    _modulePrbsRateStrToCap["2.5G"] = MODULE_PRBS_LANE_RATE_SDR;
+
+    _modulePrbsRateStrToCap["10G"] = MODULE_PRBS_LANE_RATE_40G_40G;
+    _modulePrbsRateStrToCap["40G"] = MODULE_PRBS_LANE_RATE_40G_40G;
+    _modulePrbsRateStrToCap["10.3125G"] = MODULE_PRBS_LANE_RATE_40G_40G;
+
+    _modulePrbsRateStrToCap["IB-FDR"] = MODULE_PRBS_LANE_RATE_FDR;
+    _modulePrbsRateStrToCap["FDR"] = MODULE_PRBS_LANE_RATE_FDR;
+    _modulePrbsRateStrToCap["14G"] = MODULE_PRBS_LANE_RATE_FDR;
+    _modulePrbsRateStrToCap["14.0625G"] = MODULE_PRBS_LANE_RATE_FDR;
+
+    _modulePrbsRateStrToCap["IB-EDR"] = MODULE_PRBS_LANE_RATE_EDR;
+    _modulePrbsRateStrToCap["EDR"] = MODULE_PRBS_LANE_RATE_EDR;
+    _modulePrbsRateStrToCap["25G"] = MODULE_PRBS_LANE_RATE_EDR;
+    _modulePrbsRateStrToCap["25.78125G"] = MODULE_PRBS_LANE_RATE_EDR;
+
+    _modulePrbsRateStrToCap["IB-HDR"] = MODULE_PRBS_LANE_RATE_HDR;
+    _modulePrbsRateStrToCap["HDR"] = MODULE_PRBS_LANE_RATE_HDR;
+    _modulePrbsRateStrToCap["50G"] = MODULE_PRBS_LANE_RATE_HDR;
+    _modulePrbsRateStrToCap["53.125G"] = MODULE_PRBS_LANE_RATE_HDR;
+
+    _modulePrbsRateStrToCap["IB-NDR"] = MODULE_PRBS_LANE_RATE_NDR;
+    _modulePrbsRateStrToCap["NDR"] = MODULE_PRBS_LANE_RATE_NDR;
+    _modulePrbsRateStrToCap["100G"] = MODULE_PRBS_LANE_RATE_NDR;
+    _modulePrbsRateStrToCap["106.25G"] = MODULE_PRBS_LANE_RATE_NDR;
+
+    _modulePrbsModeCapToStr[PRBS31_CAP] = "PRBS31";
+    _modulePrbsModeCapToStr[PRBS23A_CAP] = "PRBS23";
+    _modulePrbsModeCapToStr[PRBS7_CAP] = "PRBS7";
+    _modulePrbsModeCapToStr[PRBS11_CAP] = "PRBS11";
+    _modulePrbsModeCapToStr[PRBS9_CAP] = "PRBS9";
+    _modulePrbsModeCapToStr[PRBS13A_CAP] = "PRBS13";
+    _modulePrbsModeCapToStr[SSPR_CAP] = "SSPR";
+    _modulePrbsModeCapToStr[SSPRQ_CAP] = "SSPRQ";
+
+    _modulePrbsModeStrToCap["PRBS31"] = PRBS31_CAP;
+    _modulePrbsModeStrToCap["PRBS23"] = PRBS23A_CAP;
+    _modulePrbsModeStrToCap["PRBS7"] = PRBS7_CAP;
+    _modulePrbsModeStrToCap["PRBS11"] = PRBS11_CAP;
+    _modulePrbsModeStrToCap["PRBS9"] = PRBS9_CAP;
+    _modulePrbsModeStrToCap["PRBS13"] = PRBS13A_CAP;
+    _modulePrbsModeStrToCap["SSPR"] = SSPR_CAP;
+    _modulePrbsModeStrToCap["SSPRQ"] = SSPRQ_CAP;
+
+    _modulePMPDStatus[PMPD_STATUS_NOT_SUPPORTED] = "Not Supported";
+    _modulePMPDStatus[PMPD_STATUS_NORMAL_MODE] = "Normal Mode";
+    _modulePMPDStatus[PMPD_STATUS_NOT_LOCKED] = "Not Locked";
+    _modulePMPDStatus[PMPD_STATUS_LOCKED] = "Locked";
+
+    _moduleScopeToStr[MODULE_PRBS_ACCESS_CH] = "Checker";
+    _moduleScopeToStr[MODULE_PRBS_ACCESS_GEN] = "Generator";
+    _moduleScopeToStr[MODULE_PRBS_ACCESS_BOTH] = "Module";
+    _moduleScopeToStr[MODULE_PRBS_ACCESS_CH_GEN] = "Module";
+
 }
 
 void MlxlinkMaps::qsfpComlianceMapping()
@@ -1080,6 +1295,7 @@ void MlxlinkMaps::initCableComplianceMapping()
     dataPathStateMapping();
     errorCodeResMapping();
     techMapping();
+    modulePrbsMapping();
 }
 
 void MlxlinkMaps::initCableTechnologyMapping()

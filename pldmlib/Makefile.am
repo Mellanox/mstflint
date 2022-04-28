@@ -34,7 +34,7 @@
 USER_DIR = $(top_srcdir)
 INCLUDES = -I. -I$(USER_DIR)/common
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC) -DPLDMLIB_EXPORT
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  $(COMPILER_FPIC) -DPLDMLIB_EXPORT
 
 noinst_LTLIBRARIES = libpldm.a
 

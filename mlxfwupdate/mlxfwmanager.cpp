@@ -2256,17 +2256,16 @@ int handleDownloadRequest(ServerRequest *srq, CmdLineParams &cmd_params, config_
             currentMenu->generateMenu(cmd_params, filterOPtions);
             if (currentMenu->isValid(cmd_params, filterOPtions)) {
                 std::istringstream iss(getline());
-                iss >> choice >> std::ws;
+                iss.clear();
+                iss >> choice;
                 if (!iss.eof()) {
                     sleep(1);
                     invalid = true;
                 }
-                #if !defined(__FreeBSD__) && !(defined(_MSC_VER) && defined(_ARM64_))
                 if (iss.fail()) {
                     sleep(1);
                     invalid = true;
                 }
-                #endif
                 print_out("\n");
             } else {
                 aNewmenu = currentMenu->getNextMenu(cmd_params, filterOPtions);

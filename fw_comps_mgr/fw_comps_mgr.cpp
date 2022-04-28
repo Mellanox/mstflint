@@ -660,9 +660,28 @@ bool FwCompsMgr::accessComponent(u_int32_t offset,
     u_int32_t size,
     u_int32_t data[],
     access_type_t access,
-    ProgressCallBackAdvSt *progressFuncAdv)
+    ProgressCallBackAdvSt *progressFuncAdv,
+    control_fsm_args_t* lastFsmCommandArgs)
 {
     bool bRes = _accessObj->accessComponent(_updateHandle, offset, size, data, access, _currComponentStr, progressFuncAdv);
+    if (!bRes && lastFsmCommandArgs != NULL && isDMAAccess()) {
+        printf("\nBurning with DMA has failed, switching to Register-Access burn.\n");
+        bRes = fallbackToRegisterAccess();
+
+        if (bRes) {
+            if (!controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED)) {
+                DPRINTF(("Cancel instruction to FW component has failed!\n"));
+                return false;
+            }
+            if (!controlFsm(lastFsmCommandArgs->command, lastFsmCommandArgs->expectedState, lastFsmCommandArgs->size,
+                            lastFsmCommandArgs->currentState, lastFsmCommandArgs->progressFuncAdv, lastFsmCommandArgs->reg_access_timeout)) {
+                DPRINTF(("FSM reinitialize for fallback has failed!\n"));
+                return false;
+            }
+
+            bRes = _accessObj->accessComponent(_updateHandle, offset, size, data, access, _currComponentStr, progressFuncAdv);
+        }
+    }
 
     setLastFirmwareError(_accessObj->getLastFirmwareError());
     setLastRegisterAccessStatus(_accessObj->getLastRegisterAccessStatus());
@@ -674,7 +693,7 @@ bool FwCompsMgr::isDMAAccess()
     return (dynamic_cast<DMAComponentAccess*>(_accessObj) != NULL);
 }
 
-bool FwCompsMgr::fallbackToDirectAccess() 
+bool FwCompsMgr::fallbackToRegisterAccess() 
 {
     bool bRes = false;
     AbstractComponentAccess* newAccessObj = NULL;
@@ -1133,9 +1152,7 @@ FwCompsMgr::FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra)
         _lastError = FWCOMPS_MEM_ALLOC_FAILED;
         return;
     }
-    if (uefi_extra != NULL) {
-        _hwDevId = uefi_extra->dev_info.hw_dev_id;
-    }
+    _hwDevId = uefi_extra->dev_info.hw_dev_id;
     _openedMfile = true;
     _autoUpdate = false;
     _linkXFlow = false;
@@ -1191,7 +1208,7 @@ void FwCompsMgr::GenerateHandle()
     _updateHandle = _lastFsmCtrl.update_handle & 0xffffff;
 }
 
-const char* CompNames[] =  {
+const char* CompNames[] = {
     "NO_COMPONENT 1",
     "COMPID_BOOT_IMG",
     "COMPID_RUNTIME_IMG",
@@ -1205,8 +1222,10 @@ const char* CompNames[] =  {
     "COMPID_GEARBOX",
     "COMPID_CONGESTION_CONTROL",
     "COMPID_LINKX_PROPERTIES",
-    "COMPID_CRYPTO_TO_COMMISSIONING"
-} ;
+    "COMPID_CRYPTO_TO_COMMISSIONING",
+    "COMPID_RMCS_TOKEN",
+    "COMPID_RMDT_TOKEN"
+};
 
 bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
 {
@@ -1288,8 +1307,10 @@ bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType, FwComponent& f
             return false;
         }
         _currComponentStr = FwComponent::getCompIdStr(compType);
-        if (!accessComponent(0, compSize, (u_int32_t *)(data.data()), MCDA_READ_COMP, progressFuncAdv)) {
-            //_lastError = FWCOMPS_READ_COMP_FAILED;
+        control_fsm_args_t fsmReadCommand;
+        fsmReadCommand.command = readPending ? FSM_CMD_READ_PENDING_COMPONENT : FSM_CMD_READ_COMPONENT;
+        fsmReadCommand.expectedState = FSMST_UPLOAD;
+        if (!accessComponent(0, compSize, (u_int32_t *)(data.data()), MCC_READ_COMP, progressFuncAdv, &fsmReadCommand)) {
             return false;
         }
         if (!controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE)) {
@@ -1372,7 +1393,7 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
             _currCompQuery = &(_compsQueryMap[component]);
             if (!_currCompQuery->valid) {
                 _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
-                DPRINTF(("MCC/MCDA flow for component %x is not supported!\n", component));
+                DPRINTF(("MCC flow for component %d is not supported!\n", component));
                 return false;
             }
             _componentIndex = _currCompQuery->comp_status.component_index;
@@ -1381,29 +1402,15 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
                 return false;
             }
             _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
-            if (!accessComponent(0, comps[i].getSize(), (u_int32_t *)(comps[i].getData().data()), MCDA_WRITE_COMP, progressFuncAdv)) {
-                bool bRes = false;
-                if (isDMAAccess()) {
-                    printf("\nBurning with DMA has failed, switching to Direct Access burn.\n");
-                    bRes = fallbackToDirectAccess();
-
-                    if (bRes) {
-                        if (!controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED)) {
-                            DPRINTF(("Cancel instruction to FW component has failed!\n"));
-                            return false;
-                        }
-                        if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comps[i].getSize(), FSMST_INITIALIZE, progressFuncAdv)) {
-                            DPRINTF(("Initializing downloading FW component has failed!\n"));
-                            return false;
-                        }
-
-                        bRes = accessComponent(0, comps[i].getSize(), (u_int32_t *)(comps[i].getData().data()), MCDA_WRITE_COMP, progressFuncAdv);
-                    }
-                }
-                if (!bRes) {
-                    DPRINTF(("Downloading FW component has failed!\n"));
-                    return false;
-                }
+            control_fsm_args_t fsmUpdateCommand;
+            fsmUpdateCommand.command = FSM_CMD_UPDATE_COMPONENT;
+            fsmUpdateCommand.expectedState = FSMST_DOWNLOAD;
+            fsmUpdateCommand.size = comps[i].getSize();
+            fsmUpdateCommand.currentState = FSMST_INITIALIZE;
+            fsmUpdateCommand.progressFuncAdv = progressFuncAdv;
+            if (!accessComponent(0, comps[i].getSize(), (u_int32_t *)(comps[i].getData().data()), MCC_WRITE_COMP, progressFuncAdv, &fsmUpdateCommand)) {
+                DPRINTF(("Downloading FW component has failed!\n"));
+                return false;
             }
             if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
                 DPRINTF(("Verifying FW component has failed!\n"));
@@ -1512,6 +1519,12 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 
     case COMPID_CRYPTO_TO_COMMISSIONING:
         return "COMPID_CRYPTO_TO_COMMISSIONING";
+
+    case COMPID_RMCS_TOKEN:
+        return "COMPID_RMCS_TOKEN";
+
+    case COMPID_RMDT_TOKEN:
+        return "COMPID_RMDT_TOKEN";
 
     default:
         return "UNKNOWN_COMPONENT";
@@ -1909,6 +1922,7 @@ unsigned char*  FwCompsMgr::getLastErrMsg()
             return (unsigned char*)"LinkX activation failed";
         }
     }
+
     case FWCOMPS_MCC_REJECTED_INCOMPATIBLE_FLASH:
         return (unsigned char*)"The image does not support the device's flash type";
 
@@ -2094,13 +2108,17 @@ bool FwCompsMgr::readBlockFromComponent(FwComponent::comps_ids_t compId,
         if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
             return false;
         }
+        control_fsm_args_t fsmReadCommand;
+        fsmReadCommand.command = FSM_CMD_READ_PENDING_COMPONENT;
+        fsmReadCommand.expectedState = FSMST_UPLOAD;
         if (!controlFsm(FSM_CMD_READ_PENDING_COMPONENT, FSMST_UPLOAD)) {
+            fsmReadCommand.command = FSM_CMD_READ_COMPONENT;
             if (!controlFsm(FSM_CMD_READ_COMPONENT, FSMST_UPLOAD)) {
                 _lastError = FWCOMPS_READ_COMP_FAILED;
                 return false;
             }
         }
-        if (!accessComponent(offset, size, (u_int32_t *)(data.data()), MCDA_READ_COMP)) {
+        if (!accessComponent(offset, size, (u_int32_t *)(data.data()), MCC_READ_COMP, NULL, &fsmReadCommand)) {
             return false;
         }
         if (!controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE)) {
@@ -2108,9 +2126,9 @@ bool FwCompsMgr::readBlockFromComponent(FwComponent::comps_ids_t compId,
         }
     }
     else {
-    _lastError = FWCOMPS_READ_COMP_NOT_SUPPORTED;
-    DPRINTF(("readBlockFromComponent : RD EN is 0 for component index %u compId %s \n", _componentIndex, FwComponent::getCompIdStr(compId)));
-    return false;
+        _lastError = FWCOMPS_READ_COMP_NOT_SUPPORTED;
+        DPRINTF(("readBlockFromComponent : RD EN is 0 for component index %u compId %s \n", _componentIndex, FwComponent::getCompIdStr(compId)));
+        return false;
     }
     return true;
 }
@@ -2208,6 +2226,9 @@ void FwCompsMgr::setLastRegisterAccessStatus(reg_access_status_t err)
 
 fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
 {
+    if (err != ME_REG_ACCESS_OK) {
+        DPRINTF(("%s error - %d\n",__FUNCTION__, err));
+    }
     switch (err) {
     case ME_REG_ACCESS_OK:
         return FWCOMPS_REG_ACCESS_OK;

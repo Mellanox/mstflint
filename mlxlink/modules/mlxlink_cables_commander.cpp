@@ -35,10 +35,24 @@
 MlxlinkCablesCommander::MlxlinkCablesCommander(Json::Value &jsonRoot): _jsonRoot(jsonRoot)
 {
     _moduleNumber = 0;
+    _slotIndex = 0;
     _sfp51Paging = false;
     _passiveQsfp = false;
     _localPort = 0;
     _numOfLanes = 0;
+
+    _prbsRate = MODULE_PRBS_LANE_RATE_HDR;
+    _prbsMode = PRBS31;
+    _prbsInv = false;
+    _prbsSwap = false;
+    _prbsLanes = 0;
+
+    // PMCR control fields names
+    // pair(UI name, PMCR field name)
+   _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_TX_EQ] = make_pair("TX Equalization", "tx_equ_override");
+   _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_EMPH] = make_pair("RX Emphasis", "rx_emp_override");
+   _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH] = make_pair("RX Post Emphasis", "rx_post_emp_override");
+   _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_AMP] = make_pair("RX Amplitude", "rx_amp_override");
 }
 
 MlxlinkCablesCommander::~MlxlinkCablesCommander()
@@ -52,6 +66,7 @@ void MlxlinkCablesCommander::readMCIA(u_int32_t page, u_int32_t size,
     string regName = "MCIA";
     resetParser(regName);
     updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
     updateField("size", size);
     updateField("page_number", page);
     updateField("device_address", offset);
@@ -81,6 +96,7 @@ void MlxlinkCablesCommander::writeMCIA(u_int32_t page, u_int32_t size,
     string regName = "MCIA";
     resetParser(regName);
     updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
     updateField("size", dataSize);
     updateField("page_number", page);
     updateField("device_address", offset);
@@ -851,28 +867,20 @@ void MlxlinkCablesCommander::initValidPages()
         readFromPage(page0L, EXTENDED_PAGES_1_2_10_11_ADDR, &extendedPages);
         free(page0L);
         if (!(extendedPages & EXTENDED_PAGES_1_2_10_11_MASK)) {
-            p = (page_t){PAGE_01, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
-            _validPages.push_back(p);
             p = (page_t){PAGE_01, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
             _validPages.push_back(p);
             if (_cableIdentifier != IDENTIFIER_SFP_DD) {
-                p = (page_t){PAGE_02, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
-                _validPages.push_back(p);
                 p = (page_t){PAGE_02, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                 _validPages.push_back(p);
-                p = (page_t){PAGE_10, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
-                _validPages.push_back(p);
                 p = (page_t){PAGE_10, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
-                _validPages.push_back(p);
-                p = (page_t){PAGE_11, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
                 _validPages.push_back(p);
                 p = (page_t){PAGE_11, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                 _validPages.push_back(p);
 
-                // if p 1, B155:6=1, dump page 0x4 (L&H)
-                //                   dump page 0x12 (L&H)
-                //         B142:5=1, dump page 0x13 (L&H)
-                //                   dump page 0x14 (L&H)
+                // if p 1, B155:6=1, dump page 0x4 (H)
+                //                   dump page 0x12 (H)
+                //         B142:5=1, dump page 0x13 (H)
+                //                   dump page 0x14 (H)
                 u_int8_t *page1H = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
                 loadEEPRMPage(PAGE_01, UPPER_PAGE_OFFSET, page1H);;
                 u_int8_t extendedQsfpPages = 0;
@@ -880,11 +888,7 @@ void MlxlinkCablesCommander::initValidPages()
                         (EXTENDED_PAGES_4_12_ADDR - UPPER_PAGE_OFFSET),
                         &extendedQsfpPages);
                 if (extendedQsfpPages & EXTENDED_PAGES_4_12_MASK) {
-                    p = (page_t){PAGE_04, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
-                    _validPages.push_back(p);
                     p = (page_t){PAGE_04, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
-                    _validPages.push_back(p);
-                    p = (page_t){PAGE_12, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
                     p = (page_t){PAGE_12, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
@@ -894,11 +898,7 @@ void MlxlinkCablesCommander::initValidPages()
                         (EXTENDED_PAGES_13_14_ADDR - UPPER_PAGE_OFFSET),
                         &extendedQsfpPages);
                 if (extendedQsfpPages & EXTENDED_PAGES_13_14_MASK) {
-                    p = (page_t){PAGE_13, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
-                    _validPages.push_back(p);
                     p = (page_t){PAGE_13, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
-                    _validPages.push_back(p);
-                    p = (page_t){PAGE_14, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
                     p = (page_t){PAGE_14, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
@@ -1040,4 +1040,600 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page , u_int16_t
     free(pageL);
     free(pageH);
     return bytesOutput;
+}
+
+u_int32_t MlxlinkCablesCommander::getModeAdminFromStr(u_int32_t cap, const string &adminStr, ModuleAccess_t moduleAccess)
+{
+    int modeAdmin = _prbsMode;
+    string confStr = adminStr.empty()? DEFAULT_PRBS_MODE_STR : adminStr;
+    modeAdmin = _mlxlinkMaps->_modulePrbsModeStrToCap[confStr];
+    if (!modeAdmin || !(modeAdmin & cap)) {
+        string validRates = "[";
+        for (auto it = _mlxlinkMaps->_modulePrbsModeCapToStr.begin();
+             it != _mlxlinkMaps->_modulePrbsModeCapToStr.end(); it++) {
+            if (it->first & cap) {
+                validRates += it->second + ",";
+            }
+        }
+        validRates = deleteLastChar(validRates);
+        validRates += "]";
+        throw MlxRegException("Invalid PRBS pattern for the %s [%s]\nValid values are: %s",
+                              _mlxlinkMaps->_moduleScopeToStr[moduleAccess].c_str(), confStr.c_str(),
+                              validRates.c_str());
+    }
+    return (int)log2((float) modeAdmin);
+}
+
+u_int32_t MlxlinkCablesCommander::getRateAdminFromStr(u_int32_t cap, const string &rateStr)
+{
+    int rateAdmin = _prbsRate;
+    string confStr = rateStr.empty()? DEFAULT_PRBS_RATE_STR : rateStr;
+    rateAdmin = _mlxlinkMaps->_modulePrbsRateStrToCap[confStr];
+    if (!rateAdmin || !(rateAdmin & cap)) {
+        string validRates = "[";
+        for (auto it = _mlxlinkMaps->_modulePrbsRateStrToCap.begin();
+             it != _mlxlinkMaps->_modulePrbsRateStrToCap.end(); it++) {
+            if (it->second & cap) {
+                validRates += it->first + ",";
+            }
+        }
+        validRates = deleteLastChar(validRates);
+        validRates += "]";
+        throw MlxRegException("Invalid PRBS lane rate configuration [%s]\nValid configurations are: %s",
+                              confStr.c_str(), validRates.c_str());
+    }
+    return rateAdmin;
+}
+
+bool MlxlinkCablesCommander::getInvAdminFromStr(u_int32_t cap, const string &invStr, ModuleAccess_t moduleAccess)
+{
+    bool invAdmin = false;
+    if (!invStr.empty()) {
+         invAdmin = true;
+         if (!cap) {
+             throw MlxRegException("PRBS inversion is not supported by the %s",
+                                   _mlxlinkMaps->_moduleScopeToStr[moduleAccess].c_str());
+         }
+     }
+    return invAdmin;
+}
+
+bool MlxlinkCablesCommander::getSwapAdminFromStr(u_int32_t cap, const string &swapStr, ModuleAccess_t moduleAccess)
+{
+    bool swapAdmin = false;
+    if (!swapStr.empty()) {
+        swapAdmin = true;
+         if (!cap) {
+             throw MlxRegException("PAM4 MSB <-> LSB swapping is not supported by the %s",
+                                   _mlxlinkMaps->_moduleScopeToStr[moduleAccess].c_str());
+         }
+     }
+    return swapAdmin;
+}
+
+u_int32_t MlxlinkCablesCommander::getLanesFromStr(u_int32_t cap, const string &lanesStr)
+{
+    u_int32_t laneMask = 0;
+    string temp = lanesStr;
+    if (!lanesStr.empty()) {
+        if (!cap) {
+            throw MlxRegException("No support of per lane configuration by the module");
+        }
+        auto lanesVec = MlxlinkRecord::split(temp, ",");
+        u_int32_t val = 0;
+        for (auto it = lanesVec.begin(); it != lanesVec.end(); it++) {
+            strToUint32((char*)(*it).c_str(), val);
+            if (val > (_numOfLanes - 1)) {
+                throw MlxRegException("Invalid lane index [%d], valid lanes range is [0 to %d]", val, (_numOfLanes - 1));
+            }
+            laneMask |= (u_int32_t)pow(2.0, (double) val);
+        }
+    }
+    return laneMask;
+}
+
+void MlxlinkCablesCommander::getNumOfModuleLanes()
+{
+    try {
+        // As a WA, use module_width for MEDIA and HOST lanes
+        // TODO: use module_media_width once it be supported
+        //if (_modulePrbsParams[MODULE_PRBS_SELECT] == "HOST") {
+            resetParser(ACCESS_REG_PMTM);
+            updateField("module", _moduleNumber);
+            updateField("slot_index", _slotIndex);
+            genBuffSendRegister(ACCESS_REG_PMTM, MACCESS_REG_METHOD_GET);
+
+            _numOfLanes = getFieldValue("module_width");
+        //} else {
+            //_numOfLanes = getFieldValue("module_media_width");
+        //}
+    } catch (MlxRegException &exc) {
+    }
+}
+
+void MlxlinkCablesCommander::checkAndParsePMPTCap(ModuleAccess_t moduleAccess)
+{
+    bool regFaild = false;
+    try {
+        resetParser(ACCESS_REG_PMPT);
+        updateField("module", _moduleNumber);
+        updateField("slot_index", _slotIndex);
+        updateField("lane_mask", 0x1);
+        genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+    } catch (MlxRegException &exc) {
+        regFaild = true;
+    }
+    if (regFaild || getFieldValue("status") == PMPT_STATUS_NOT_SUPPORTED) {
+        throw MlxRegException("Module doesn't support PRBS and diagnostics data");
+    }
+    _prbsRate = getRateAdminFromStr(getFieldValue("lane_rate_cap"),
+                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_RATE)]);
+
+    // read the other PMPT caps according to the prbsRate
+    resetParser(ACCESS_REG_PMPT);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("ch_ge", (u_int32_t)moduleAccess);
+    updateField("modulation", _prbsRate >= MODULE_PRBS_LANE_RATE_HDR);
+    updateField("lane_mask", 0x1);
+    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+
+    u_int32_t chAccessShift = moduleAccess == MODULE_PRBS_ACCESS_CH? MODULE_PRBS_GEN_INV : 0;
+
+    _prbsMode = getModeAdminFromStr(getFieldValue("prbs_modes_cap"),
+                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_PAT + chAccessShift)], moduleAccess);
+    _prbsInv = getInvAdminFromStr(getFieldValue("invt_cap"),
+                                  _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_INV + chAccessShift)], moduleAccess);
+    _prbsSwap = getSwapAdminFromStr(getFieldValue("swap_cap"),
+                                    _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_SWAP + chAccessShift)], moduleAccess);
+    _prbsLanes = getLanesFromStr(getFieldValue("ls"),
+                                 _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_GEN_LANES + chAccessShift)]);
+}
+
+u_int32_t MlxlinkCablesCommander::getPMPTStatus(ModuleAccess_t moduleAccess)
+{
+    resetParser(ACCESS_REG_PMPT);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("ch_ge", (u_int32_t)moduleAccess);
+    updateField("lane_mask", 0x1);
+    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+
+    return getFieldValue("status");
+}
+
+void MlxlinkCablesCommander::sendPMPT(ModuleAccess_t moduleAccess)
+{
+    checkAndParsePMPTCap(moduleAccess);
+
+    resetParser(ACCESS_REG_PMPT);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("ch_ge", (u_int32_t)moduleAccess);
+    updateField("e", 1);
+    updateField("prbs_mode_admin", _prbsMode);
+    updateField("lane_rate_admin", _prbsRate);
+    updateField("invt_admin", _prbsInv);
+    updateField("swap_admin", _prbsSwap);
+    updateField("lane_mask", _prbsLanes? _prbsLanes : 0xff);
+    updateField("le", _prbsLanes != 0);
+    updateField("modulation", _prbsRate >= MODULE_PRBS_LANE_RATE_HDR);
+    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_SET);
+
+    if (getPMPTStatus(moduleAccess) == PMPT_STATUS_CONFIG_ERROR) {
+        throw MlxRegException("Unsupported configuration setting");
+    }
+}
+
+void MlxlinkCablesCommander::enablePMPT(ModuleAccess_t moduleAccess)
+{
+    switch (moduleAccess) {
+        case MODULE_PRBS_ACCESS_CH:
+        case MODULE_PRBS_ACCESS_GEN:
+            sendPMPT(moduleAccess);
+            break;
+        case MODULE_PRBS_ACCESS_CH_GEN:
+            sendPMPT(MODULE_PRBS_ACCESS_CH);
+            sendPMPT(MODULE_PRBS_ACCESS_GEN);
+            break;
+        default:
+            sendPMPT(MODULE_PRBS_ACCESS_BOTH);
+    }
+}
+
+void MlxlinkCablesCommander::disablePMPT()
+{
+    resetParser(ACCESS_REG_PMPT);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("ch_ge", 0);
+    updateField("e", 0);
+    updateField("prbs_mode_admin", _prbsMode);
+    updateField("lane_rate_admin", _prbsRate);
+    updateField("modulation", 1);
+    updateField("lane_mask", 0xff);
+    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_SET);
+}
+
+void MlxlinkCablesCommander::handlePrbsTestMode(const string &ctrl, ModuleAccess_t moduleAccess)
+{
+    if (ctrl == "EN") {
+        MlxlinkRecord::printCmdLine("Enabling Module PRBS Test Mode", _jsonRoot);
+        getNumOfModuleLanes();
+        enablePMPT(moduleAccess);
+    } else if (ctrl == "DS") {
+        MlxlinkRecord::printCmdLine("Disabling Module PRBS Test Mode", _jsonRoot);
+        disablePMPT();
+    } else {
+        throw MlxRegException("Invalid PRBS Module mode, please check the help menu");
+    }
+}
+
+void MlxlinkCablesCommander::getPMPTConfiguration(ModuleAccess_t moduleAccess, vector<string> &prbsPattern,
+                                                  vector<string> &prbsRate, vector<string> &prbsInv,
+                                                  vector<string> &prbsSwap)
+{
+    resetParser(ACCESS_REG_PMPT);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("ch_ge", (u_int32_t)moduleAccess);
+    updateField("lane_mask", 0x1);
+    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+
+    u_int32_t index = (u_int32_t)pow(2.0, (double)getFieldValue("prbs_mode_admin"));
+    prbsPattern.push_back(MlxlinkRecord::addSpaceForModulePrbs(_mlxlinkMaps->_modulePrbsModeCapToStr[index]));
+
+    index = getFieldValue("lane_rate_admin");
+    prbsRate.push_back(MlxlinkRecord::addSpaceForModulePrbs(_mlxlinkMaps->_modulePrbsRateCapToStr[index]));
+
+    string capStr = getFieldValue("invt_cap")? "" : "Not Supported";
+    string adminStr = getFieldValue("invt_admin")? "Yes" : "No";
+    prbsInv.push_back(MlxlinkRecord::addSpaceForModulePrbs(!capStr.empty()?capStr:adminStr));
+
+    capStr = getFieldValue("swap_cap")? "" : "Not Supported";
+    adminStr = getFieldValue("swap_admin")? "Yes" : "No";
+    prbsSwap.push_back(MlxlinkRecord::addSpaceForModulePrbs(!capStr.empty()?capStr:adminStr));
+}
+
+string MlxlinkCablesCommander::getPMPDLockStatus()
+{
+    string lockStatusStr = "";
+
+    for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
+        resetParser(ACCESS_REG_PMPD);
+        updateField("module", _moduleNumber);
+        updateField("slot_index", _slotIndex);
+        updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+        updateField("lane", lane);
+        genBuffSendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);
+
+        lockStatusStr += MlxlinkRecord::addSpaceForModulePrbs(_mlxlinkMaps->_modulePMPDStatus[getFieldValue("status")]);
+        lockStatusStr += ",";
+        // Print only one indecation for each cap if it's not supported
+        if (getFieldValue("status") == PMPD_STATUS_NOT_SUPPORTED) {
+            break;
+        }
+    }
+
+    if (!lockStatusStr.empty()) {
+        lockStatusStr = deleteLastChar(lockStatusStr);
+    }
+
+    return lockStatusStr;
+}
+
+void MlxlinkCablesCommander::showPrbsTestMode()
+{
+    MlxlinkCmdPrint prbsOutput = MlxlinkCmdPrint();
+    setPrintTitle(prbsOutput, "Module PRBS Test Mode", MODULE_PMPT_INFO_LAST);
+
+    getNumOfModuleLanes();
+
+    try {
+        resetParser(ACCESS_REG_PMPT);
+        updateField("module", _moduleNumber);
+        updateField("slot_index", _slotIndex);
+        updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+        updateField("ch_ge", 0);
+        updateField("lane_mask", 0x1);
+        genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+    } catch (MlxRegException &exc) {
+        throw MlxRegException("Device doesn't support Module PRBS and diagnostics data");
+    }
+
+    setPrintVal(prbsOutput, "Status", _mlxlinkMaps->_modulePrbsSt[getFieldValue("status")]);
+    setPrintVal(prbsOutput, "Lock Status [per lane]", getPMPDLockStatus(), ANSI_COLOR_RESET, true, true, true);
+
+    vector<string> prbsAcces, prbsPattern, prbsRate, prbsInv, prbsSwap;
+    prbsAcces.push_back(MlxlinkRecord::addSpaceForModulePrbs("Checker"));
+    prbsAcces.push_back(MlxlinkRecord::addSpaceForModulePrbs("Generator"));
+
+    getPMPTConfiguration(MODULE_PRBS_ACCESS_CH, prbsPattern, prbsRate, prbsInv, prbsSwap);
+    getPMPTConfiguration(MODULE_PRBS_ACCESS_GEN, prbsPattern, prbsRate, prbsInv, prbsSwap);
+
+    setPrintVal(prbsOutput, "PRBS Access", getStringFromVector(prbsAcces), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(prbsOutput, "PRBS Pattern", getStringFromVector(prbsPattern), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(prbsOutput, "PRBS Lane Rate ", getStringFromVector(prbsRate), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(prbsOutput, "PRBS Inversion", getStringFromVector(prbsInv), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(prbsOutput, "PRBS MSB<->LSB Swap", getStringFromVector(prbsSwap), ANSI_COLOR_RESET, true, true, true);
+
+    prbsOutput.toJsonFormat(_jsonRoot);
+
+    cout << prbsOutput;
+
+}
+
+void MlxlinkCablesCommander::getPMPDInfo(vector<string> &traffic, vector<string> &errors, vector<string> &ber,
+                                         vector<string> &snr)
+{
+    string traficStr, errorsStr, berStr, snrStr;
+    bool skipErrorCap = false;
+    bool skipBerCap = false;
+    bool skipSnrCap = false;
+    for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
+        resetParser(ACCESS_REG_PMPD);
+        updateField("module", _moduleNumber);
+        updateField("slot_index", _slotIndex);
+        updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+        updateField("lane", lane);
+        genBuffSendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);
+
+        traficStr = to_string(add32BitTo64(getFieldValue("prbs_bits_high"), getFieldValue("prbs_bits_low")));
+        errorsStr = to_string(add32BitTo64(getFieldValue("prbs_errors_high"), getFieldValue("prbs_errors_low")));
+        berStr = to_string(getFieldValue("ber_coef")) + "E-" + to_string(getFieldValue("ber_magnitude"));
+        snrStr = to_string(getFieldValue("measured_snr")) +" dB";
+
+        traffic.push_back(MlxlinkRecord::addSpaceForModulePrbs(traficStr));
+
+        if (!skipErrorCap) {
+            errors.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("errors_cap")? errorsStr : "Not Supported"));
+        }
+        if (!skipBerCap) {
+            ber.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("ber_cap")? berStr : "Not Supported"));
+        }
+        if (!skipSnrCap) {
+            snr.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("snr_cap")? snrStr : "Not Supported"));
+        }
+        // Print only one indecation for each cap if it's not supported
+        if (getFieldValue("errors_cap") == 0) {
+            skipErrorCap = true;
+        }
+        if (getFieldValue("ber_cap") == 0) {
+            skipBerCap = true;
+        }
+        if (getFieldValue("snr_cap") == 0) {
+            skipSnrCap = true;
+        }
+    }
+}
+
+void MlxlinkCablesCommander::showPrpsDiagInfo()
+{
+    vector<string> traffic, errors, ber, snr;
+    MlxlinkCmdPrint diagOutput = MlxlinkCmdPrint();
+
+    getNumOfModuleLanes();
+
+    setPrintTitle(diagOutput, "Module PRBS Diagnostic Counters", MODULE_PMPD_INFO_LAST);
+
+    getPMPDInfo(traffic, errors, ber, snr);
+
+    setPrintVal(diagOutput, "PRBS Traffic (bits) [per lane]", getStringFromVector(traffic), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(diagOutput, "PRBS Errors [per lane]", getStringFromVector(errors), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(diagOutput, "PRBS BER [per lane]", getStringFromVector(ber), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(diagOutput, "Measured SNR [per lane]", getStringFromVector(snr), ANSI_COLOR_RESET, true, true, true);
+
+    diagOutput.toJsonFormat(_jsonRoot);
+
+    cout << diagOutput;
+}
+
+void MlxlinkCablesCommander::clearPrbsDiagInfo()
+{
+    MlxlinkRecord::printCmdLine("Clearing PRBS Diagnostic Counters", _jsonRoot);
+
+    resetParser(ACCESS_REG_PMPD);
+    updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
+    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
+    updateField("cl", 1);
+    genBuffSendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);
+}
+
+void MlxlinkCablesCommander::showControlParams()
+{
+    MlxlinkCmdPrint controlParamsOutput = MlxlinkCmdPrint();
+    setPrintTitle(controlParamsOutput, "Module Control Parameters", CABLE_CONTROL_PARAMETERS_SET_RX_AMP);
+
+    resetParser(ACCESS_REG_PDDR);
+    updateField("local_port", _localPort);
+    updateField("page_select", PDDR_MODULE_INFO_PAGE);
+    genBuffSendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
+
+    u_int32_t txEq = getFieldValue("cable_tx_equalization");
+    float rxEmph = (double)getFieldValue("cable_rx_emphasis");
+    u_int32_t rxPostEmph = getFieldValue("cable_rx_post_emphasis");
+    u_int32_t rxAmp = getFieldValue("cable_rx_amp");
+    bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
+
+    resetParser(ACCESS_REG_PMCR);
+    updateField("local_port", _localPort);
+    genBuffSendRegister(ACCESS_REG_PMCR, MACCESS_REG_METHOD_GET);
+
+    if (isCmis) {
+        _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_EMPH].first += " (pre)";
+        rxEmph /= 2;
+    }
+    char rxEmphStr[64];
+    sprintf(rxEmphStr, "%.1f", rxEmph);
+
+    string strFmt = txEq? to_string(txEq) + " dB" : "No Equalization";
+    strFmt = getFieldValue("tx_equ_override_cap")? strFmt : "Not Supported";
+    setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_TX_EQ].first, strFmt);
+
+    strFmt = (isCmis? rxEmphStr : to_string((u_int32_t) rxEmph)) + " dB";
+    strFmt = (rxEmph > 0)? strFmt: "No Equalization";
+    strFmt = getFieldValue("rx_emp_override_cap")? strFmt : "Not Supported";
+    setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_EMPH].first, strFmt);
+
+    strFmt = rxPostEmph? to_string(rxPostEmph) + " dB" : "No Equalization";
+    strFmt = getFieldValue("rx_post_emp_override_cap")? strFmt : "Not Supported";
+    setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH].first, strFmt,
+                ANSI_COLOR_RESET, isCmis);
+
+    strFmt = _mlxlinkMaps->_moduleRxAmp[rxAmp];
+    strFmt = getFieldValue("rx_amp_override_cap")? strFmt : "Not Supported";
+    setPrintVal(controlParamsOutput, _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_RX_AMP].first, strFmt);
+
+    controlParamsOutput.toJsonFormat(_jsonRoot);
+    cout << controlParamsOutput;
+}
+
+u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const string &value)
+{
+    double valueToSet = 0;
+    bool invalidConfiguration = false;
+    bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
+    bool isDecemal = false;
+
+    try {
+        string valueSgtr = value;
+        toUpperCase(valueSgtr);
+        valueToSet = valueSgtr == "NE"? 0 : stod(value);
+        isDecemal = (valueToSet - (int) valueToSet) > 0;
+    } catch (exception &exc) {
+        invalidConfiguration = true;
+    }
+
+    if (isDecemal && !isCmis && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH) {
+        throw MlxRegException("The requested RX Emphasis configuration value is valid for "\
+                              "CMIS modules only (pre-emphasis): %s", value.c_str());
+    }
+
+    if (isCmis && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH) {
+        _modulePMCRParams[paramId].first += " (Pre)";
+        valueToSet *= 2;
+        if ((valueToSet - (int) valueToSet) > 0) {
+            invalidConfiguration = true;
+        }
+    }
+
+    if (valueToSet > MAX_SFF_CODE_VALUE || (isDecemal && paramId != CABLE_CONTROL_PARAMETERS_SET_RX_EMPH)) {
+        invalidConfiguration = true;
+    }
+
+    if (invalidConfiguration) {
+        throw MlxRegException("Invalid %s configuration: %s", _modulePMCRParams[paramId].first.c_str(), value.c_str());
+    }
+
+    return (u_int32_t) valueToSet;
+}
+
+string MlxlinkCablesCommander::getPMCRCapValueStr(u_int32_t valueCap, ControlParam paramId)
+{
+    string capStr = "";
+
+    if (paramId == CABLE_CONTROL_PARAMETERS_SET_RX_AMP) {
+        capStr = getStrByMask(valueCap, _mlxlinkMaps->_moduleRxAmpCap);
+    } else {
+        char tmpFmt[64];
+        for (u_int32_t val = 0 ; val <= valueCap; val++) {
+            if (_cableIdentifier >= IDENTIFIER_SFP_DD && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH) {
+                sprintf(tmpFmt, "%.1f,", ((float)val/2.0));
+                capStr += string(tmpFmt);
+            } else {
+                sprintf(tmpFmt, "%d,", val);
+                capStr += string(tmpFmt);
+            }
+        }
+        capStr = deleteLastChar(capStr);
+    }
+
+    return capStr;
+}
+
+void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string>> &params)
+{
+    resetParser(ACCESS_REG_PMCR);
+    updateField("local_port", _localPort);
+    genBuffSendRegister(ACCESS_REG_PMCR, MACCESS_REG_METHOD_GET);
+
+    // Check provided params exestance capability
+    string fieldName = "";
+    for (auto it = params.begin(); it != params.end(); it++) {
+        fieldName =  _modulePMCRParams[it->first].first;
+        if (it->first == CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH && _cableIdentifier < IDENTIFIER_SFP_DD) {
+            throw MlxRegException("%s configuration is valid for CMIS only", fieldName.c_str());
+        }
+        if (!getFieldValue( _modulePMCRParams[it->first].second + "_cap")) {
+            throw MlxRegException("%s configuration is not supported for the current module", fieldName.c_str());
+        }
+    }
+
+    // Check provided params value capability
+    /*
+     * ignore cap check due to firmware issue
+    bool invalidVal = false;
+    u_int32_t valueToSet = 0;
+    u_int32_t valueCap = 0;
+    string validCapStr = "";
+    for (auto it = params.begin(); it != params.end(); it++) {
+        fieldName = _modulePMCRParams[it->first].second;
+        valueToSet = getPMCRValue(it->first, it->second);
+        valueCap = getFieldValue(fieldName + "_value_cap");;//
+        if (it->first == CABLE_CONTROL_PARAMETERS_SET_RX_AMP) {
+            valueToSet = (u_int32_t)pow(2.0, (double)valueToSet);
+            if (!(valueCap & valueToSet)) {
+                invalidVal = true;
+            }
+        } else if (valueToSet > valueCap) {
+            invalidVal = true;
+        }
+        if (invalidVal) {
+            if (valueCap ) {
+                validCapStr = "\nValid configuration values are [";
+                validCapStr += getPMCRCapValueStr(valueCap, it->first);
+                validCapStr += "]";
+            }
+            throw MlxRegException("Invalid %s configuration value: %s %s",
+                                  _modulePMCRParams[it->first].first.c_str(), it->second.c_str(), validCapStr.c_str());
+        }
+    }
+    */
+}
+
+void MlxlinkCablesCommander::buildPMCRRequest(ControlParam paramId, const string &value)
+{
+    u_int32_t valueToSet = getPMCRValue(paramId, value);
+
+    updateField(_modulePMCRParams[paramId].second + "_cntl", 2);
+    updateField(_modulePMCRParams[paramId].second + "_value", (u_int32_t)valueToSet);
+}
+
+void MlxlinkCablesCommander::setControlParams(vector<pair<ControlParam, string>> &params)
+{
+    MlxlinkRecord::printCmdLine("Overriding Cable Control Parameters", _jsonRoot);
+
+    checkPMCRFieldsCap(params);
+
+    string fieldsStr = "";
+    try {
+        resetParser(ACCESS_REG_PMCR);
+        updateField("local_port", _localPort);
+
+        for (auto it = params.begin(); it != params.end(); it++) {
+            fieldsStr += _modulePMCRParams[it->first].first + ", ";
+            buildPMCRRequest(it->first, it->second);
+        }
+
+        genBuffSendRegister(ACCESS_REG_PMCR, MACCESS_REG_METHOD_SET);
+    } catch (MlxRegException &exc) {
+        fieldsStr = deleteLastChar(fieldsStr, 2);
+        throw MlxRegException("Failed to set Control Parameters [%s]:\n%s", fieldsStr.c_str(), exc.what());
+    }
 }

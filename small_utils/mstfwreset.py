@@ -95,12 +95,14 @@ MLNX_DEVICES = [
                dict(name="ConnectX4LX", devid=0x20b, status_config_not_done=(0xb0004, 31)),
                dict(name="ConnectX5", devid=0x20d, status_config_not_done=(0xb5e04, 31)),
                dict(name="BlueField", devid=0x211, status_config_not_done=(0xb5e04, 31)),
-               dict(name="BlueField2", devid=0x214, status_config_not_done=(0xb5e04, 31)),
-               dict(name="BlueField3", devid=0x21c, status_config_not_done=(0xb5e04, 31)),
+               dict(name="BlueField2", devid=0x214, status_config_not_done=(0xb5f04, 31)),
+               dict(name="BlueField3", devid=0x21c, status_config_not_done=(0xb5f04, 31)),
+               dict(name="BlueField4", devid=0x220, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX6", devid=0x20f, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX6DX", devid=0x212, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX7", devid=0x218, status_config_not_done=(0xb5f04, 31)),
+               dict(name="ConnectX8", devid=0x21e, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX3", devid=0x1f5),
                dict(name="SwitchX", devid=0x245),
                dict(name="IS4", devid=0x1b3),
@@ -108,10 +110,10 @@ MLNX_DEVICES = [
 
 # Supported devices.
 SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
-                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3"]
+                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "BlueField4"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
-IS_MSTFLINT = True
+IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
 # TODO latter remove mcra to the new class
 MCRA = 'mcra'
 if IS_MSTFLINT:
@@ -938,30 +940,38 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
     # Determine the pci-device to poll (first Mellanox device in the pci tree)
     if isWindows is False:
 
+        pci_devices_to_poll_devid = []
+        root_pci_devices = []
+
         if is_in_internal_host(): # Bluefied (NIC only reset)
             pci_device_bridge1 = PciOpsObj.getPciBridgeAddr(DevDBDF)
             pci_device_bridge2 = PciOpsObj.getPciBridgeAddr(pci_device_bridge1)
             pci_device_bridge3 = PciOpsObj.getPciBridgeAddr(pci_device_bridge2)
 
-            pci_device_to_poll_devid = pci_device_bridge3
-            root_pci_device = PCIDeviceFactory().get(pci_device_bridge3, "debug")
+            pci_devices_to_poll_devid.append(pci_device_bridge3)
+            root_pci_devices.append(PCIDeviceFactory().get(pci_device_bridge3, "debug"))
         elif is_pci_bridge_is_mellanox_device(DevDBDF): # Innova (FPGA)
             pci_device_bridge1 = PciOpsObj.getPciBridgeAddr(DevDBDF)
             pci_device_bridge2 = PciOpsObj.getPciBridgeAddr(pci_device_bridge1)
             pci_device_bridge3 = PciOpsObj.getPciBridgeAddr(pci_device_bridge2)
 
-            pci_device_to_poll_devid = pci_device_bridge2
-            root_pci_device = PCIDeviceFactory().get(pci_device_bridge3, "debug")
-        elif isPPC: # PPC can run on VM (no PCI bridge device)
-            pci_device_to_poll_devid = DevDBDF
+            pci_devices_to_poll_devid.append(pci_device_bridge2)
+            root_pci_devices.append(PCIDeviceFactory().get(pci_device_bridge3, "debug"))
         else:
-            pci_device_to_poll_devid = DevDBDF
-            pci_device_bridge = PciOpsObj.getPciBridgeAddr(DevDBDF)
-            root_pci_device = PCIDeviceFactory().get(pci_device_bridge, "debug")
 
-        logger.debug('pci_device_to_poll_devid={0}'.format(pci_device_to_poll_devid))
+            for dev in [device] + devicesSD:
+                dbdf = mlxfwreset_utils.getDevDBDF(dev, logger)
+                pci_devices_to_poll_devid.append(dbdf)
+
+                if not isPPC: # PPC can run on VM (no PCI bridge device)
+                    pci_device_bridge = PciOpsObj.getPciBridgeAddr(dbdf)
+                    root_pci_devices.append(PCIDeviceFactory().get(pci_device_bridge, "debug"))
+
+        for pci_device_to_poll_devid in pci_devices_to_poll_devid:
+            logger.info('pci_device_to_poll_devid={0}'.format(pci_device_to_poll_devid))
         if not isPPC:
-            logger.debug('root_pci_device={0}'.format(root_pci_device))
+            for root_pci_device in root_pci_devices:
+                logger.info('root_pci_device={0}'.format(root_pci_device.dbdf))
 
 
     if isWindows is False: # relevant for ppc(p7) TODO check power8/9 shouldn't use mst-save/load
@@ -1087,29 +1097,31 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
                 PciOpsObj.waitForDevice(pciDev)
 
         # Poll DLL Link Active (required to support AMD - RM #1599465)
-        if not isPPC and not is_in_internal_host() and root_pci_device.dll_link_active_reporting_capable:   # in BlueField's internal host (ARM) the root-port will 
-            MAX_WAIT_TIME = 2  # sec                                                                        # return a valid response (blocking) or 0xffff0001 when  
-            poll_start_time = time.time()                                                                   # it's not ready (depending on its configuration)
-            for _ in range(1000*MAX_WAIT_TIME):
-                if root_pci_device.dll_link_active == 1:
-                    poll_end_time = (time.time() - poll_start_time) * 1000
-                    logger.debug('DLL link active is ready after {0} msec'.format(poll_end_time))
-                    break
-                time.sleep(0.001)
-            else:
-                print("\n-W- DLL link is not active (PCI device {0})".format(root_pci_device.dbdf))
+        for root_pci_device in root_pci_devices:
+            if not isPPC and not is_in_internal_host() and root_pci_device.dll_link_active_reporting_capable:   # in BlueField's internal host (ARM) the root-port will 
+                MAX_WAIT_TIME = 2  # sec                                                                        # return a valid response (blocking) or 0xffff0001 when  
+                poll_start_time = time.time()                                                                   # it's not ready (depending on its configuration)
+                for _ in range(1000*MAX_WAIT_TIME):
+                    if root_pci_device.dll_link_active == 1:
+                        poll_end_time = (time.time() - poll_start_time) * 1000
+                        logger.debug('DLL link active is ready after {0} msec'.format(poll_end_time))
+                        break
+                    time.sleep(0.001)
+                else:
+                    print("\n-W- DLL link is not active (PCI device {0})".format(root_pci_device.dbdf))
 
         # Wait for FW (Iron) - Read devid
         MAX_WAIT_TIME = 2 # sec
         poll_start_time = time.time()
-        for _ in range(1000*MAX_WAIT_TIME):
-            if PciOpsObj.read(pci_device_to_poll_devid, 0)>>16 != 0xffff: # device-id (0x2.W)
-                iron_end_time = (time.time() - poll_start_time) * 1000
-                logger.debug('IRON is ready after {0} msec'.format(iron_end_time))
-                break
-            time.sleep(0.001)
-        else:
-            print("\n-W- FW is not ready")
+        for pci_device_to_poll_devid in pci_devices_to_poll_devid:
+            for _ in range(1000*MAX_WAIT_TIME):
+                if PciOpsObj.read(pci_device_to_poll_devid, 0)>>16 != 0xffff: # device-id (0x2.W)
+                    iron_end_time = (time.time() - poll_start_time) * 1000
+                    logger.debug('IRON is ready after {0} msec'.format(iron_end_time))
+                    break
+                time.sleep(0.001)
+            else:
+                print("\n-W- FW is not ready")
 
         # Restore PCI configuration
         #############################
@@ -1126,9 +1138,9 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
                     PciOpsObj.loadPCIConfigurationSpace(pciDev, pci_device_object, full=False)
         else:
             logger.debug('Indication for re-enumeration is by HotPlug on bridge')
-            to_restore_pci_conf = not (root_pci_device.hotplug_capable and root_pci_device.hotplug_interrupt_enable)
-            logger.debug('hotplug_capable={0}'.format(root_pci_device.hotplug_capable))
-            logger.debug('hotplug_interrupt_enable={0}'.format(root_pci_device.hotplug_interrupt_enable))
+            to_restore_pci_conf = not (root_pci_devices[0].hotplug_capable and root_pci_devices[0].hotplug_interrupt_enable)
+            logger.debug('hotplug_capable={0}'.format(root_pci_devices[0].hotplug_capable))
+            logger.debug('hotplug_interrupt_enable={0}'.format(root_pci_devices[0].hotplug_interrupt_enable))
             logger.debug('to_restore_pci_conf={0}'.format(to_restore_pci_conf))
             for pciDev in devList+devListsSD:
                 pci_device_object = pci_device_dict[pciDev]
@@ -1261,7 +1273,7 @@ def stopDriverSync(driverObj):
         if print_waiting_msg and diffTime > 2:
             print("Waiting for %s to run on all other hosts, press 'ctrl+c' to abort" % PROG)
             print_waiting_msg = False
-        time.sleep(0.5)
+        time.sleep(0.01)
 
     logger.debug('[Timing Test] MH SYNC state is GO')
     if status.fsm_state != SYNC_STATE_GO or status.fsm_sync_type != SYNC_TYPE_FW_RESET:
@@ -1293,7 +1305,7 @@ def stopDriverSync(driverObj):
         if print_waiting_msg and diffTime > 2:
             print("Synchronizing with other hosts...")
             print_waiting_msg = False
-        time.sleep(0.5)
+        time.sleep(0.01)
 
     logger.debug('[Timing Test] MH SYNC done')
 
@@ -1323,7 +1335,6 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
     logger.info('resetFlow() called')
 
     all_devices = [device] + devicesSD
-
 
     # A temporary solution to get the pci-device-id (required for SmartNic)
     # This solution is not good when the user insert device in PCI address format (-d xx:xx.x)
@@ -1374,6 +1385,12 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
         if reset_level == CmdRegMfrl.PCI_RESET:
             # reset PCI
             resetPciAddr(device,devicesSD,driverObj, cmdLineArgs)
+        elif reset_level == CmdRegMfrl.WARM_REBOOT:
+            if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
+                stopDriver(driverObj)
+            else:
+                stopDriverSync(driverObj)
+            rebootMachine()
 
         # Wait for FW to be ready to get ICMD
         try:
@@ -1440,17 +1457,11 @@ def execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, cmdLineAr
 
     if reset_level == mfrl.LIVE_PATCH:
         send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
-    elif reset_level == mfrl.PCI_RESET:
+    elif reset_level in [mfrl.PCI_RESET, mfrl.WARM_REBOOT]:
         if reset_sync == SyncOwner.DRIVER:
             send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync)
         else:
             resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl)
-    elif reset_level == mfrl.WARM_REBOOT:
-        send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
-        rebootMachine()
-    elif reset_level == mfrl.COLD_REBOOT:
-        send_reset_cmd_to_fw(mfrl, mfrl.WARM_REBOOT, reset_type)
-        print("-I- Cold reboot required. please power cycle machine to load new FW.")
     else:
         raise RuntimeError("Unknown reset level")
 
@@ -1524,45 +1535,45 @@ def main():
     options_group.add_argument('--device',
                         '-d',
                         required=True,
-                        help='Device to work with')
+                        help=':  Device to work with')
     options_group.add_argument('--level',
                         '-l',
                         type=int,
                         choices=CmdRegMfrl.reset_levels(),
                         dest='reset_level',
-                        help='Run reset with the specified reset-level')
+                        help=':  Run reset with the specified reset-level')
     options_group.add_argument('--type',
                         '-t',
                         type=int,
                         choices=CmdRegMfrl.reset_types(),
                         dest='reset_type',
-                        help='Run reset with the specified reset-type')
+                        help=':  Run reset with the specified reset-type')
     options_group.add_argument('--sync',
                         type=int,
                         choices=[SyncOwner.TOOL, SyncOwner.DRIVER],
                         default=SyncOwner.TOOL,
                         dest='reset_sync',
-                        help='Run reset with the specified reset-sync')
+                        help=':  Run reset with the specified reset-sync')
     options_group.add_argument('--yes',
                         '-y',
-                        help='answer "yes" on prompt',
+                        help=':  answer "yes" on prompt',
                         action="store_true")
     options_group.add_argument('--skip_driver',
                         '-s',
-                        help="Skip driver start/stop stage (driver must be stopped manually)",
+                        help=":  Skip driver start/stop stage (driver must be stopped manually)",
                         action="store_true")
     options_group.add_argument('--mst_flags',
                         '-m',
-                        help="Provide mst flags to be used when invoking mst restart step. For example: --mst_flags=\"--with_fpga\""
+                        help=":  Provide mst flags to be used when invoking mst restart step. For example: --mst_flags=\"--with_i2cdev\""
                         if platform.system() == "Linux" and not IS_MSTFLINT else argparse.SUPPRESS)
     options_group.add_argument('--version',
                         '-v',
-                        help='Print tool version',
+                        help=':  Print tool version',
                         action="version",
                         version=tools_version.GetVersionString(PROG, TOOL_VERSION))
     options_group.add_argument('--help',
                         '-h',
-                        help='show this help message and exit',
+                        help=':  show this help message and exit',
                         action="help")
 
     # hidden flag for skipping mst restart when performing pci reset
@@ -1607,7 +1618,7 @@ def main():
     command_group.add_argument('command',
                         nargs=1,
                         choices=["q", "query", "r", "reset", "reset_fsm_register"],
-                        help='query: Query reset Level.\n reset: Execute reset.\n reset_fsm_register: Reset the fsm register.')
+                        help=':  query: Query reset Level.\n reset: Execute reset.\n reset_fsm_register: Reset the fsm register.')
     args = parser.parse_args()
 
     device = args.device
@@ -1638,8 +1649,20 @@ def main():
     global DevDBDF
     global FWResetStatusChecker
 
-    if is_uefi_secureboot():                                                # The tool is using sysfs to access PCI config and it's
+    if args.reset_sync == SyncOwner.TOOL and is_uefi_secureboot():        # The tool is using sysfs to access PCI config and it's
         raise RuntimeError("The tool is not supported on UEFI Secure Boot") # restricted on UEFI secure boot
+
+    # Exit in case of virtual-machine (not implemented for FreeBSD and Windows)
+    if command == "reset" and platform.system() == "Linux" and "ppc64" not in platform.machine():
+        rc, out, _ = cmdExec('lscpu')
+        if rc == 0:
+            if "Hypervisor vendor" in out:
+                raise RuntimeError("The tool is not supported on virtual machines")
+        else:
+            logger.debug("Failed to execute 'lscpu' command rc = {0}".format(rc))
+
+
+
 
     if platform.system() == "Linux": # Convert ib-device , net-device to mst-device(mst started) or pci-device
         if IS_MSTFLINT:
@@ -1762,18 +1785,15 @@ def main():
         print("{0} reset level for device, {1}:\n".format(minimal_or_requested , device))
         print("{0}: {1}".format(reset_level,mfrl.reset_level_description(reset_level)))
 
-        if (reset_level == 4):
-            print("\n-W- Note that reset in this level (4) is not supported on multi-host setups and Bluefield devices\n")
 
         AskUser("Continue with reset", yes)
         execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, args, mfrl)
-        if reset_level != CmdRegMfrl.COLD_REBOOT and reset_level != CmdRegMfrl.WARM_REBOOT:
-            if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
-                reset_fsm_register()
-                print("-E- Firmware reset failed, retry operation or reboot machine.")
-                return 1
-            else:
-                print("-I- FW was loaded successfully.")
+        if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
+            reset_fsm_register()
+            print("-E- Firmware reset failed, retry operation or reboot machine.")
+            return 1
+        else:
+            print("-I- FW was loaded successfully.")
     elif command == "reset_fsm_register":
         reset_fsm_register()
         print("-I- FSM register was reset successfully.")

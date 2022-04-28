@@ -304,11 +304,15 @@ static int verbose = 0;
 
 void set_mkey_for_smp_mad(ibvs_mad *vsmad)
 {
+#ifdef __linux__
     if (vsmad->mkey) {
         vsmad->smp_mkey_set(vsmad->srcport, vsmad->mkey);
     } else {
         vsmad->smp_mkey_set(vsmad->srcport, 0);
     }
+#else
+    (void)vsmad;
+#endif
 }
 
 // Attribute modifier for mode 0:

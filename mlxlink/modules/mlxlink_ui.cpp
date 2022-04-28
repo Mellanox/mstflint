@@ -60,7 +60,7 @@ void MlxlinkUi::printSynopsisHeader()
         IDENT "SYNOPSIS:\n"
         IDENT2 MLXLINK_EXEC " [OPTIONS]\n\n"
         IDENT "DESCRIPTION:\n"
-        IDENT2 "The mstlink tool is used to check and debug link status and issues related to them.\n"
+        IDENT2 "The " MLXLINK_EXEC " tool is used to check and debug link status and issues related to them.\n"
         IDENT2 "The tool can be used on different links and cables (passive, active, transceiver and backplane).\n");
     printf("\n");
     printf(IDENT "OPTIONS:\n");
@@ -71,7 +71,8 @@ void MlxlinkUi::printSynopsisHeader()
                   "Perform operation for a specified mst device");
     MlxlinkRecord::printFlagLine(LABEL_PORT_FLAG_SHORT, LABEL_PORT_FLAG, "port_number",
                   "Port Number");
-    MlxlinkRecord::printFlagLine(PORT_TYPE_FLAG_SHORT, PORT_TYPE_FLAG, "port_type", "Port Type [NETWORK(Default)/PCIE]");
+    MlxlinkRecord::printFlagLine(PORT_TYPE_FLAG_SHORT, PORT_TYPE_FLAG, "port_type",
+                                 "Port Type [NETWORK(Default)/PCIE]");
     MlxlinkRecord::printFlagLine(DEPTH_FLAG_SHORT, DEPTH_FLAG, "depth", "depth level of the DUT of some hierarchy (PCIE only)");
     MlxlinkRecord::printFlagLine(PCIE_INDEX_FLAG_SHORT, PCIE_INDEX_FLAG, "pcie_index", "PCIe index number (Internal domain index) (PCIE only)");
     MlxlinkRecord::printFlagLine(NODE_FLAG_SHORT, NODE_FLAG, "node", "the node within each depth (PCIE only)");
@@ -104,17 +105,17 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PAOS_FLAG_SHORT, PAOS_FLAG, "port_state",
                   "Configure Port State [UP(up)/DN(down)/TG(toggle)]");
     MlxlinkRecord::printFlagLine(PTYS_FLAG_SHORT, PTYS_FLAG, "speeds",
-                  "Configure Speeds [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]");
+                  "Configure Speeds [NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
                   "Configure Link Mode Force (Disable AN)");
     MlxlinkRecord::printFlagLine(PPLR_FLAG_SHORT, PPLR_FLAG, "loopback",
                   "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(internal phy Tx-to-Rx loopback)/EX(external loopback connector needed)/EX(external Tx-to-Rx loopback)]");
     MlxlinkRecord::printFlagLine(PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
-                  "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode FEC)/RS(RS-FEC)]");
+                  "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode FEC)/RS(RS-FEC)/LL(LL-RS-FEC)/DF-RS(Interleaved_RS-FEC)/DF-LL(Interleaved_LL_RS-FEC)]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(FEC_SPEED_FLAG_SHORT, FEC_SPEED_FLAG, "fec_speed",
-                  "Speed to Configure FEC [100G,56G,50G,40G,25G,10G] (Default is Active Speed)");
+                  "Speed to Configure FEC [100G,56G,50G,40G,25G,10G,800G_8X,400G_4x,400G_8X,200G_2X,200G_4X,100G_2X,50G_1X,100G_4X] (Default is Active Speed)");
     MlxlinkRecord::printFlagLine(SLTP_SET_FLAG_SHORT, SLTP_SET_FLAG, "params",
                   "Configure Transmitter Parameters For 16nm devices: [pre2Tap,preTap,mainTap,postTap,m2lp,amp] For 28nm devices: [Pol,tap0,tap1,tap2,bias,preemp_mode]");
     printf(IDENT);
@@ -197,6 +198,62 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT2);
         MlxlinkRecord::printFlagLine(WRITE_OFFSET_FLAG_SHORT, WRITE_OFFSET_FLAG, "offset",
             "Specific page offset to read/write");
+
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_SELECT_SHORT, CABLE_PRBS_SELECT, "side",
+                                 "Module PRBS test mode side selector [MEDIA, HOST]");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_MODE_SHORT, CABLE_PRBS_MODE, "cmd",
+                                 "Perform PRBS test mode on the Module [EN(Enable),DS(Disable)]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_PAT_SHORT, CABLE_PRBS_GEN_PAT, "pattern",
+                                 "Set PRBS generator pattern [PRBS31(default),PRBS23,PRBS7,PRBS11,PRBS9,PRBS13,SSPR,SSPRQ]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_SWAP_SHORT, CABLE_PRBS_GEN_SWAP, "",
+                                 "Enable PAM4 MSB <-> LSB generator swapping (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_INV_SHORT, CABLE_PRBS_GEN_INV, "",
+                                 "Enable PRBS generator inversion (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_LANES_SHORT, CABLE_PRBS_GEN_LANES, "lanes",
+                                 "PRBS generator lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_PAT_SHORT, CABLE_PRBS_CH_PAT, "pattern",
+                                 "Set PRBS checker pattern [PRBS31(default),PRBS23,PRBS7,PRBS11,PRBS9,PRBS13,SSPR,SSPRQ]");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_SWAP_SHORT, CABLE_PRBS_CH_SWAP, "",
+                                 "Enable PAM4 MSB <-> LSB checker swapping (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_INV_SHORT, CABLE_PRBS_CH_INV, "",
+                                 "Enable PRBS checker inversion (Optional)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_LANES_SHORT, CABLE_PRBS_CH_LANES, "lanes",
+                                 "PRBS checker lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
+    printf(IDENT3);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_LANE_RATE_SHORT, CABLE_PRBS_LANE_RATE, "rate",
+                                 "Set PRBS checker and generator lane rate [HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_SHOW_DIAG_SHORT, CABLE_PRBS_SHOW_DIAG, "",
+                                 "Show PRBS diagnostic counters information");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CLEAR_DIAG_SHORT, CABLE_PRBS_CLEAR_DIAG, "",
+                                 "Clear PRBS diagnostic counters");
+
+    MlxlinkRecord::printFlagLine(CABLE_DDM_FLAG_SHORT, CTRL_PARAM_FLAG, "", "Show Module Control Parameters");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CTRL_PARAM_TX_EQ_FLAG_SHORT, CTRL_PARAM_TX_EQ_FLAG, "value",
+                                 "Set Module Tx Input Equalization in dB [NE(No Equalization),1,2,3,4,5,6,7,9,10,11,12]");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CTRL_PARAM_RX_EMPH_FLAG_SHORT, CTRL_PARAM_RX_EMPH_FLAG, "value",
+                                 "Set Module RX Output Emphasis in dB. for CMIS, pre-emphasis value will be set "\
+                                 "[NE(No Equalization),0.5,1,1.5,2,2.5,3,3.5,4,5,6,7]");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CTRL_PARAM_RX_POST_EMPH_FLAG_SHORT, CTRL_PARAM_RX_POST_EMPH_FLAG, "value",
+                                 "Set Module Rx Post Emphasis in dB [NE(No Equalization),1,2,3,4,5,6,7]");
+    printf(IDENT2);
+    MlxlinkRecord::printFlagLine(CTRL_PARAM_RX_AMP_FLAG_SHORT, CTRL_PARAM_RX_AMP_FLAG, "value",
+                                 "Set Module Rx Output Amplitude [0(100-400mV),1(300-600mV),2(400-800mV),3(600-1200mV)]");
+
     MlxlinkRecord::printFlagLine(MARGIN_SCAN_FLAG_SHORT, MARGIN_SCAN_FLAG, "",
             "Read the SerDes eye margins per lane");
     printf(IDENT);
@@ -208,7 +265,6 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index",
             "Run eye for specific lane index (Optional - Default all lanes)");
-
 
     MlxlinkRecord::printFlagLine(PREI_RX_ERR_INJ_FLAG_SHORT, PREI_RX_ERR_INJ_FLAG, "",
             "Enable the RX link deterioration");
@@ -354,24 +410,9 @@ void MlxlinkUi::validateGeneralCmdsParams()
         throw MlxRegException(
                   "Please provide a valid paos command [UP(up)/DN(down)/TG(toggle)]");
     }
-    if (isIn(SEND_PPLM, _sendRegFuncMap) && !checkPplmCmd(_mlxlinkCommander->_userInput._pplmFec)) {
-        throw MlxRegException(
-                  "Please provide a valid FEC [AU(Auto)/NF(No-Fec)/FC(FireCode FEC)/RS(RS FEC)]");
-    }
     if (!isIn(SEND_PPLM, _sendRegFuncMap) && _mlxlinkCommander->_userInput._speedFec != "") {
         throw MlxRegException(
                   "The --fec_speed flag is valid only with --fec flag");
-    }
-    if (isIn(SEND_PPLM, _sendRegFuncMap)) {
-        if (_mlxlinkCommander->_userInput._speedFec != "" &&
-                _mlxlinkCommander->_userInput._speedFec != "100G" &&
-                _mlxlinkCommander->_userInput._speedFec != "56G" &&
-                _mlxlinkCommander->_userInput._speedFec != "50G" &&
-                _mlxlinkCommander->_userInput._speedFec != "40G" &&
-                _mlxlinkCommander->_userInput._speedFec != "25G" &&
-                _mlxlinkCommander->_userInput._speedFec != "10G") {
-            throw MlxRegException("Please Provide a Valid Speed to Configure FEC (100G/56G/50G/40G/25G/10G)");
-        }
     }
     if (isIn(SEND_SLTP, _sendRegFuncMap)) {
         if (_mlxlinkCommander->_userInput._sltpLane && _mlxlinkCommander->_userInput._db) {
@@ -407,8 +448,33 @@ void MlxlinkUi::validatePRBSParams()
             }
         }
     } else if (prbsFlags) { // add check for lanes flag to work with PRBS and eye scan only
-        throw MlxRegException(
-                  "PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
+        throw MlxRegException("PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
+    }
+}
+
+void MlxlinkUi::validateModulePRBSParams()
+{
+    if (!_mlxlinkCommander->_userInput.isPrbsSelProvided && (_mlxlinkCommander->_userInput.isPrbsModeProvided ||
+                                                             _mlxlinkCommander->_userInput.isPrbsChProvided ||
+                                                             _mlxlinkCommander->_userInput.isPrbsGenProvided ||
+                                                             _mlxlinkCommander->_userInput.isPrbsShowDiagProvided ||
+                                                             _mlxlinkCommander->_userInput.isPrbsClearDiagProvided)) {
+        throw MlxRegException("Please select PRBS module side using --" CABLE_PRBS_SELECT " [MEDIA|HOST] flag!");
+    }
+
+    if (!_mlxlinkCommander->_userInput.isPrbsModeProvided && (_mlxlinkCommander->_userInput.isPrbsChProvided ||
+                                                              _mlxlinkCommander->_userInput.isPrbsGenProvided ||
+                                                              !_mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_RATE].empty())) {
+        throw MlxRegException("--" CABLE_PRBS_MODE " flag should be provided!");
+    }
+
+    if (_mlxlinkCommander->_userInput.isPrbsModeProvided && (_mlxlinkCommander->_userInput.isPrbsShowDiagProvided ||
+                                                             _mlxlinkCommander->_userInput.isPrbsClearDiagProvided)) {
+        throw MlxRegException("PRBS Module Diagnostic info flags are not working while configuring the PRBS test mode!");
+    }
+
+    if (_mlxlinkCommander->_userInput.isPrbsShowDiagProvided && _mlxlinkCommander->_userInput.isPrbsClearDiagProvided) {
+        throw MlxRegException("are mutually exclusive, please select one command only");
     }
 }
 
@@ -459,10 +525,16 @@ void MlxlinkUi::validateCableParams()
     bool readWriteFlags = _mlxlinkCommander->_userInput._page >= 0 ||
                       _mlxlinkCommander->_userInput._offset >= 0 ||
                       _mlxlinkCommander->_userInput._len >= 0 ;
-    bool cableCommandProvided = (_mlxlinkCommander->_userInput._dump ||
+    bool prbsParamProvided = _mlxlinkCommander->_userInput.modulePrbsParams.size();
+    bool cablePrbsParamProvided = _mlxlinkCommander->_userInput.isPrbsSelProvided || prbsParamProvided;
+    bool cableConfigParamProvided =  _mlxlinkCommander->_userInput.isModuleConfigParamsProvided;
+    bool paramSetProvided = _mlxlinkCommander->_userInput.configParamsToSet.size();
+    bool cableCommandProvided = _mlxlinkCommander->_userInput._dump ||
                                 _mlxlinkCommander->_userInput._write ||
                                 _mlxlinkCommander->_userInput._read ||
-                                _mlxlinkCommander->_userInput._ddm);
+                                _mlxlinkCommander->_userInput._ddm ||
+                                cablePrbsParamProvided || cableConfigParamProvided;
+
     if(!_mlxlinkCommander->_userInput._cable && (cableCommandProvided || readWriteFlags)){
         throw MlxRegException("\"--" CABLE_FLAG "\" flag should be specified!");
     } else if (_mlxlinkCommander->_userInput._cable) {
@@ -475,6 +547,10 @@ void MlxlinkUi::validateCableParams()
                         _mlxlinkCommander->_userInput._offset == -1)) {
             throw MlxRegException("\"--" WRITE_PAGE_FLAG "\" and \"--" WRITE_OFFSET_FLAG "\" flags should be specified!");
         }
+        if (!cableConfigParamProvided && paramSetProvided) {
+            throw MlxRegException("--" CTRL_PARAM_FLAG " should be specified!");
+        }
+
         if (readWriteFlags) {
             if (!_mlxlinkCommander->_userInput._write && !_mlxlinkCommander->_userInput._read) {
                 throw MlxRegException("Read or Write flag should be specified!");
@@ -584,6 +660,7 @@ void MlxlinkUi::paramValidate()
     validatePRBSParams();
     validateSpeedAndCSVBerParams();
     validateCableParams();
+    validateModulePRBSParams();
     validateTxGroupParams();
     validateGradeScanParams();
     validateErrInjParams();
@@ -592,10 +669,6 @@ void MlxlinkUi::paramValidate()
 
 void MlxlinkUi::initCmdParser()
 {
-/*
-    for (u_int32_t it = SHOW_PDDR; it < FUNCTION_LAST; it++) {
-        _sendRegFuncMap.push_back(0);
-    }*/
     AddOptions(DEVICE_FLAG, DEVICE_FLAG_SHORT, "MstDevice",
                "Mellanox mst device name");
     AddOptions(HELP_FLAG, HELP_FLAG_SHORT, "", "Show help message and exit");
@@ -656,6 +729,26 @@ void MlxlinkUi::initCmdParser()
     AddOptions(WRITE_PAGE_FLAG, WRITE_PAGE_FLAG_SHORT, "pageNum", "Specify page number");
     AddOptions(WRITE_OFFSET_FLAG, WRITE_OFFSET_FLAG_SHORT, "offset", "Specify page offset");
     AddOptions(READ_LEN_FLAG, READ_LEN_FLAG_SHORT, "length", "Length of data to read in bytes");
+
+    AddOptions(CABLE_PRBS_SELECT, CABLE_PRBS_SELECT_SHORT, "side", "");
+    AddOptions(CABLE_PRBS_MODE, CABLE_PRBS_MODE_SHORT, "cmd", "");
+    AddOptions(CABLE_PRBS_GEN_PAT, CABLE_PRBS_GEN_PAT_SHORT,"pattern", "");
+    AddOptions(CABLE_PRBS_GEN_SWAP, CABLE_PRBS_GEN_SWAP_SHORT, "", "");
+    AddOptions(CABLE_PRBS_GEN_INV, CABLE_PRBS_GEN_INV_SHORT, "", "");
+    AddOptions(CABLE_PRBS_GEN_LANES, CABLE_PRBS_GEN_LANES_SHORT, "lanes", "");
+    AddOptions(CABLE_PRBS_CH_PAT, CABLE_PRBS_CH_PAT_SHORT, "pattern","");
+    AddOptions(CABLE_PRBS_CH_SWAP, CABLE_PRBS_CH_SWAP_SHORT, "","");
+    AddOptions(CABLE_PRBS_CH_INV, CABLE_PRBS_CH_INV_SHORT, "", "");
+    AddOptions(CABLE_PRBS_CH_LANES, CABLE_PRBS_CH_LANES_SHORT, "lanes", "");
+    AddOptions(CABLE_PRBS_LANE_RATE, CABLE_PRBS_LANE_RATE_SHORT, "rate", "");
+    AddOptions(CABLE_PRBS_SHOW_DIAG, CABLE_PRBS_SHOW_DIAG_SHORT, "", "");
+    AddOptions(CABLE_PRBS_CLEAR_DIAG, CABLE_PRBS_CLEAR_DIAG_SHORT, "", "");
+
+    AddOptions(CTRL_PARAM_FLAG, CTRL_PARAM_FLAG_SHORT, "", "Cable Control Params");
+    AddOptions(CTRL_PARAM_TX_EQ_FLAG, CTRL_PARAM_TX_EQ_FLAG_SHORT, "value", "TX Eq override");
+    AddOptions(CTRL_PARAM_RX_EMPH_FLAG, CTRL_PARAM_RX_EMPH_FLAG_SHORT, "value", "RX Emp override");
+    AddOptions(CTRL_PARAM_RX_POST_EMPH_FLAG, CTRL_PARAM_RX_POST_EMPH_FLAG_SHORT, "value", "RX post emp");
+    AddOptions(CTRL_PARAM_RX_AMP_FLAG, CTRL_PARAM_RX_AMP_FLAG_SHORT, "value", "RX Amp");
 
     AddOptions(SHOW_TX_GROUP_MAP_FLAG, SHOW_TX_GROUP_MAP_FLAG_SHORT, "group_num", "Display all label ports mapped to group <group_num>");
     AddOptions(SET_TX_GROUP_MAP_FLAG, SET_TX_GROUP_MAP_FLAG_SHORT, "group_num", "Map ports to group <group_num>");
@@ -778,10 +871,6 @@ void MlxlinkUi::commandsCaller()
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> \"Set External PHY\"");
             _mlxlinkCommander->sendPepc();
             break;
-        case CABLE_EEPROM_INI:
-            PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> Initializing cable EEPROM pages");
-            _mlxlinkCommander->initCablesCommander();
-            break;
         case CABLE_SHOW_DUMP:
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> \"Dump cable pages\"");
             _mlxlinkCommander->showCableDump();
@@ -816,7 +905,15 @@ void MlxlinkUi::commandsCaller()
             break;
         case RS_FEC_HISTOGRAM:
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> FEC histogram info");
-            _mlxlinkCommander-> initPortInfo();
+            _mlxlinkCommander->initPortInfo();
+            break;
+        case CABLE_PRBS_CMDS:
+            PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> Cable PRBS Commands");
+            _mlxlinkCommander->performModulePrbsCommands();
+            break;
+        case CABLE_CTRL_PARM:
+            PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> Cable Control Parameter");
+            _mlxlinkCommander-> performControlParams();
             break;
         default:
             break;
@@ -937,7 +1034,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == FEC_SPEED_FLAG) {
-        _mlxlinkCommander->_userInput._speedFec = toUpperCase(value);
+        _mlxlinkCommander->_userInput._speedFec = toLowerCase(value);
         return PARSE_OK;
     } else if (name == PPLR_FLAG) {
         addCmd(SEND_PPLR);
@@ -1013,7 +1110,6 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == CABLE_FLAG) {
         _mlxlinkCommander->_userInput._cable = true;
-        addCmd(CABLE_EEPROM_INI);
         return PARSE_OK;
     } else if (name == CABLE_DUMP_FLAG) {
         _mlxlinkCommander->_userInput._dump = true;
@@ -1110,6 +1206,86 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     } else if (name == PPHCR_CLEAR_HISTOGRAM_FLAG) {
         _mlxlinkCommander->_userInput.clearFecHistogram = true;
         return PARSE_OK;
+    } else if (name == CABLE_PRBS_SELECT) {
+        addCmd(CABLE_PRBS_CMDS);
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_SELECT] = toUpperCase(value);
+        _mlxlinkCommander->_userInput.isPrbsSelProvided = true;
+        _mlxlinkCommander->_uniqueCableCmds++;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_MODE) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_MODE] = toUpperCase(value);
+        _mlxlinkCommander->_userInput.isPrbsModeProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_GEN_PAT) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_PAT] = toUpperCase(value);
+        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_GEN_SWAP) {
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_SWAP] = "SWAP";
+        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_GEN_INV) {
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_INV] = "INV";
+        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_GEN_LANES) {
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES] = value;
+        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_CH_PAT) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_PAT] = toUpperCase(value);
+        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_CH_SWAP) {
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_SWAP] = "SWAP";
+        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_CH_INV) {
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_INV] = "INV";
+        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_CH_LANES) {
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_LANES] = value;
+        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_LANE_RATE) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_RATE] = toUpperCase(value);
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_SHOW_DIAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_SHOW_DIAG] = value;
+        _mlxlinkCommander->_userInput.isPrbsShowDiagProvided = true;
+        return PARSE_OK;
+    } else if (name == CABLE_PRBS_CLEAR_DIAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CLEAR_DIAG] = value;
+        _mlxlinkCommander->_userInput.isPrbsClearDiagProvided = true;
+        return PARSE_OK;
+    } else if (name == CTRL_PARAM_FLAG) {
+        addCmd(CABLE_CTRL_PARM);
+        _mlxlinkCommander->_userInput.isModuleConfigParamsProvided = true;
+        return PARSE_OK;
+    } else if (name == CTRL_PARAM_TX_EQ_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_TX_EQ, value));
+        return PARSE_OK;
+    } else if (name == CTRL_PARAM_RX_EMPH_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_EMPH, value));
+        return PARSE_OK;
+    } else if (name == CTRL_PARAM_RX_POST_EMPH_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH, value));
+        return PARSE_OK;
+    } else if (name == CTRL_PARAM_RX_AMP_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
+        _mlxlinkCommander->_userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_AMP, value));
+        return PARSE_OK;
     }
     return PARSE_ERROR;
 }
@@ -1120,6 +1296,7 @@ int MlxlinkUi::run(int argc, char **argv)
     createMlxlinkCommander();
     initCmdParser();
     ParseStatus rc = _cmdParser.ParseOptions(argc, argv);
+
     if (rc == PARSE_OK_WITH_EXIT) {
         return exit_code;
     } else if ((rc == PARSE_ERROR) || (rc == PARSE_ERROR_SHOW_USAGE)) {
@@ -1146,11 +1323,12 @@ int MlxlinkUi::run(int argc, char **argv)
         MlxlinkRecord::printWar("Warning: AccessRegisterGMP Get() method is not supported.\n"
                  "         mlxlink has limited functionality", _mlxlinkCommander->_jsonRoot);
     }
+
     _mlxlinkCommander->_gvmiAddress = _mlxlinkCommander->_userInput._gvmiAddress;
     _mlxlinkCommander->_devID = _mlxlinkCommander->_regLib->getDevId();
     _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
-    _mlxlinkCommander->validatePortType(_mlxlinkCommander->_userInput._portType);
     _mlxlinkCommander->labelToLocalPort();
+    _mlxlinkCommander->validatePortType(_mlxlinkCommander->_userInput._portType);
     if (!_mlxlinkCommander->_userInput._pcie) {
         _mlxlinkCommander->checkValidFW();
     }
@@ -1164,8 +1342,7 @@ int MlxlinkUi::run(int argc, char **argv)
     }
 
     if (_mlxlinkCommander->_userInput._logFilePath != "") {
-        _mlxlinkCommander->_mlxlinkLogger = new MlxlinkLogger(
-                _mlxlinkCommander->_userInput._logFilePath);
+        _mlxlinkCommander->_mlxlinkLogger = new MlxlinkLogger(_mlxlinkCommander->_userInput._logFilePath);
     }
     commandsCaller();
     if (_mlxlinkCommander->_allUnhandledErrors != "") {

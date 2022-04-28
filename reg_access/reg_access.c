@@ -33,17 +33,8 @@
 
 #include "reg_access.h"
 #include "common/compatibility.h"
-//FPGA
-#define REG_ID_FPGA_CAP                 0x4022
-#define REG_ID_FPGA_CTRL                0x4023
 
 #define REG_ID_PCNR                     0x5050
-#define REG_ID_PPTCS                    0x5801
-#define REG_ID_PGMP                     0x5802
-#define REG_ID_PPTS                     0x5803
-#define REG_ID_PLTS                     0x5804
-#define REG_ID_PLSRP                    0x5805
-#define REG_ID_PGPS                     0x5806
 #define REG_ID_PAOS                     0x5006
 #define REG_ID_PTYS                     0x5004
 #define REG_ID_PMAOS                    0x5012
@@ -83,12 +74,15 @@
 #define REG_ID_STRS_RESOURCE            0x402A
 
 #define REG_ID_MTRC_CAP                 0x9040
+#define REG_ID_MTRC_STDB                0x9042
 #define REG_ID_MCDD                     0x905C
 #define REG_ID_MCQS                     0x9060
 #define REG_ID_MCC                      0x9062
 #define REG_ID_MCQI                     0x9061
 #define REG_ID_MCDA                     0x9063
 #define REG_ID_MQIS                     0x9064
+#define REG_ID_MTCQ                     0x9065
+#define REG_ID_MKDC                     0x9066
 #define REG_ID_MCAM                     0x907f
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL                     0x9028
@@ -98,6 +92,7 @@
 #define REG_ID_MGPIR                    0x9100
 #define REG_ID_MDFCR                    0x9101
 #define REG_ID_MDRCR                    0x9102
+#define REG_ID_MDSR                     0x9110
 #define REG_ID_MFSV                     0x9115
 
 #define REG_ID_MDDT                     0x9160
@@ -480,14 +475,6 @@ reg_access_status_t reg_access_pmdic(mfile *mf, reg_access_method_t method, stru
     REG_ACCCESS(mf, method, REG_ID_PMDIC, pmdic, pmdic, tools_open);
 }
 
-/************************************
-* Function: reg_access_fpga_cap
-************************************/
-reg_access_status_t reg_access_fpga_cap(mfile *mf, reg_access_method_t method, struct reg_access_hca_fpga_cap *fpga_cap)
-{
-    REG_ACCCESS(mf, method, REG_ID_FPGA_CAP, fpga_cap, fpga_cap, reg_access_hca);
-}
-
 
 //=================================================================================================================================
 /************************************
@@ -506,13 +493,6 @@ reg_access_status_t reg_access_debug_cap(mfile *mf, reg_access_method_t method, 
 //=================================================================================================================================
 
 
-/************************************
-* Function: reg_access_fpga_ctrl
-************************************/
-reg_access_status_t reg_access_fpga_ctrl(mfile *mf, reg_access_method_t method, struct reg_access_hca_fpga_ctrl *fpga_ctrl)
-{
-    REG_ACCCESS(mf, method, REG_ID_FPGA_CTRL, fpga_ctrl, fpga_ctrl, reg_access_hca);
-}
 
 #endif //#ifndef UEFI_BUILD
 
@@ -536,9 +516,10 @@ reg_access_status_t reg_access_nvda(mfile *mf, reg_access_method_t method, struc
 /************************************
 * Function: reg_access_mgir
 ************************************/
-reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method,
-        struct reg_access_hca_mgir *mgir) {
-    if (mf->tp == MST_MLNXOS) {
+reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method, struct reg_access_hca_mgir *mgir) {
+    if (!mf) {
+        return ME_UNSUPPORTED_DEVICE;
+    } else if (mf->tp == MST_MLNXOS) {
         REG_ACCCESS_VAR(mf, method, REG_ID_MGIR, mgir, mgir, MGIR_REG_SIZE,
                 MGIR_REG_SIZE, MGIR_REG_SIZE, reg_access_hca);
     } else {
@@ -752,7 +733,27 @@ const char* reg_access_err2str(reg_access_status_t status)
 {
     return m_err2str(status);
 }
-
+/************************************
+* Function: reg_access_mtcq
+************************************/
+reg_access_status_t reg_access_mtcq(mfile *mf, reg_access_method_t method, struct reg_access_switch_mtcq_reg_ext *mtcq)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTCQ, mtcq, mtcq_reg_ext, reg_access_switch);
+}
+/************************************
+* Function: reg_access_mdsr
+************************************/
+reg_access_status_t reg_access_mdsr(mfile *mf, reg_access_method_t method, struct reg_access_switch_mdsr_reg_ext *mdsr)
+{
+    REG_ACCCESS(mf, method, REG_ID_MDSR, mdsr, mdsr_reg_ext, reg_access_switch);
+}
+/************************************
+* Function: reg_access_mkdc
+************************************/
+reg_access_status_t reg_access_mkdc(mfile *mf, reg_access_method_t method, struct reg_access_switch_mkdc_reg_ext *mkdc)
+{
+    REG_ACCCESS(mf, method, REG_ID_MKDC, mkdc, mkdc_reg_ext, reg_access_switch);
+}
 /************************************
 * Function: reg_access_mpegc
 ************************************/

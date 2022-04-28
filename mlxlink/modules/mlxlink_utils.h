@@ -105,8 +105,7 @@ string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse);
 bool checkPrbsCmd(const string &prbsCmd);
 bool checkTestMode(const string &testMode);
 string FEC2Str(const string &fecShort, const string &speedStrG);
-int fecToBit(const string &fec, const string &speedStrG);
-string speedToStr(const string &speed, u_int32_t numOfLanes);
+string speedToFecSpeedStr(const string &speed, u_int32_t numOfLanes);
 PAOS_CMD paos_to_int(const string &cmd);
 int pepc_force_mode_to_int(const string &forceMode);
 int pepc_an_mode_to_int(const string &anMode);
@@ -127,7 +126,6 @@ string toUpperCase(string &str);
 string toLowerCase(string &str);
 string getCableMedia(u_int32_t cableType);
 string pcieSpeedStr(u_int32_t linkSpeedActive);
-string pcieDeviceStatusStr(u_int32_t deviceStatus);
 double mw_to_dbm(double x);
 int readSigned(u_int32_t value, u_int32_t fieldSize);
 int readSignedByte(u_int32_t value);
@@ -143,9 +141,10 @@ bool isSpeed100GPerLane(u_int32_t speed, u_int32_t protocol);
 bool askUser(const char *question, bool force = false);
 string getCableLengthStr(u_int32_t cableLength, bool cmisCable);
 string getRxTxCDRState(u_int32_t state, u_int32_t numOfLanes);
-string getStringByActiveLanes(string allLanes, int numOfActiveLanes);
 string getFwVersion(bool passive, u_int32_t moduleFWVer);
 string getVendorRev(u_int32_t rev);
-string getFieldsByMap(u_int32_t bitmask,  std::map<u_int32_t, std::string> map);
-
+string getStrByValue(u_int32_t flags, map<u_int32_t, string> map);
+string getStrByMask(u_int32_t bitmask, map<u_int32_t, string> maskMap, const string &fieldSeparator = ",");
+string getStrByMaskFromPair(u_int32_t bitmask, map<u_int32_t, pair<string, string>> maskMap,
+                            const string &fieldSeparator = ",", u_int32_t pairIndex = 0);
 #endif

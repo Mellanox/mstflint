@@ -40,7 +40,9 @@
 #include <stdarg.h>
 #include "flint_base.h"
 
-
+#define DPRINTF(args)        do { char *reacDebug = getenv("MLXFWOPS_ERRMSG_DEBUG"); \
+                                  if (reacDebug != NULL) {  printf("\33[2K\r"); \
+                                      printf("%s:%d: ",__FILE__, __LINE__); printf args; fflush(stdout);} } while (0)
 
 void FlintErrMsg::err_clear()
 {
@@ -169,6 +171,7 @@ bool FlintErrMsg::errmsg(const char *format, ...)
 
     va_start(args, format);
     _err = vprint(format, args);
+    DPRINTF(("Setting errmsg to: %s", _err));
     va_end(args);
 
     delete[] prev_err;
@@ -184,6 +187,7 @@ bool FlintErrMsg::errmsg(int errorCode, const char *format, ...)
 
     va_start(args, format);
     _err = vprint(format, args);
+    DPRINTF(("Setting errmsg to: %s", _err));
     va_end(args);
 
     delete[] prev_err;
