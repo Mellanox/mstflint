@@ -206,11 +206,6 @@ FlintStatus QuerySubCommand::QueryLinkX(string deviceName, string outputFile, st
         reportErr(true, LINKX_QUERY_DEVICE_NOT_SUPPORTED, deviceName.c_str());
         return FLINT_FAILED;
     }
-    mfile * mfile = mopen_adv((const char *)deviceName.c_str(), (MType)(MST_DEFAULT));
-    if (!mfile) {
-        reportErr(true, "-E- Failed to open device.\n");
-        return FLINT_FAILED;
-    }
     FwComponent bootImageComponent;
     std::vector<FwComponent> compsToBurn;
     for (unsigned int i = 0; i < deviceIds.size(); i++) {
@@ -218,6 +213,11 @@ FlintStatus QuerySubCommand::QueryLinkX(string deviceName, string outputFile, st
             printf("-E- Downstream device id's must be non-negative integers.\n");
             return FLINT_FAILED;
         }
+    }
+    mfile * mfile = mopen_adv((const char *)deviceName.c_str(), (MType)(MST_DEFAULT));
+    if (!mfile) {
+        reportErr(true, "-E- Failed to open device.\n");
+        return FLINT_FAILED;
     }
 
     string outPutString;
@@ -230,10 +230,10 @@ FlintStatus QuerySubCommand::QueryLinkX(string deviceName, string outputFile, st
         AddTableHeaderForCSVFormat(outPutString);
     }
 
+    FwCompsMgr fwCompsAccess(mfile, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
     for (unsigned int i = 0; i < deviceIds.size(); i++)
     {
         int deviceIndex = deviceIds[i] + 1;
-        FwCompsMgr fwCompsAccess(mfile, FwCompsMgr::DEVICE_HCA_SWITCH, deviceIndex);
         fwCompsAccess.SetIndexAndSize(deviceIndex, 1);
         comp_status_st ComponentStatus;
         if (!fwCompsAccess.RefreshComponentsStatus(&ComponentStatus)) {
@@ -295,16 +295,17 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName, int deviceIndex, int de
     }
     if (linkx_auto_update && activationNeeded && activate_delay_sec == 0 && (mfile->flags & MDEVS_IB) != 0) {//IB device
         if (!askUser("The autoupdate activation process may cause a disconnection from the InBand connection, do you want to continue?")) {
+            mclose(mfile);
             return FLINT_FAILED;
         }
     }
     FwComponent bootImageComponent;
     std::vector<FwComponent> compsToBurn;
-    fwCompsAccess = new FwCompsMgr(mfile, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
-    fwCompsAccess->GenerateHandle();
-    fwCompsAccess->SetIndexAndSize(deviceIndex + 1, deviceSize, linkx_auto_update, activationNeeded, downloadTransferNeeded, activate_delay_sec);
-    if (!fwCompsAccess->RefreshComponentsStatus()) {
-        printf("-E- Refresh components failed, error is %s.\n", fwCompsAccess->getLastErrMsg());
+    FwCompsMgr fwCompsAccess(mfile, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
+    fwCompsAccess.GenerateHandle();
+    fwCompsAccess.SetIndexAndSize(deviceIndex + 1, deviceSize, linkx_auto_update, activationNeeded, downloadTransferNeeded, activate_delay_sec);
+    if (!fwCompsAccess.RefreshComponentsStatus()) {
+        printf("-E- Refresh components failed, error is %s.\n", fwCompsAccess.getLastErrMsg());
         return FLINT_FAILED;
     }
     
@@ -312,24 +313,24 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName, int deviceIndex, int de
     compsToBurn.push_back(bootImageComponent);
     if (downloadTransferNeeded) {
         printf("-I- Downloading FW ...\n");
-        if (fwCompsAccess->isMCDDSupported()) {
+        if (fwCompsAccess.isMCDDSupported()) {
             // Checking if BME is disabled to print indication to user
-            bool isBmeSet = DMAComponentAccess::isBMESet(fwCompsAccess->getMfileObj());
+            bool isBmeSet = DMAComponentAccess::isBMESet(fwCompsAccess.getMfileObj());
             if (!isBmeSet) {
                 printf("-W- DMA burning is not supported due to BME is unset (Bus Master Enable).\n");
             }
         }
     }
-    if (!fwCompsAccess->burnComponents(compsToBurn, funcAdv)) {
-        char* err_msg = (char*)fwCompsAccess->getLastErrMsg();
+    if (!fwCompsAccess.burnComponents(compsToBurn, funcAdv)) {
+        char* err_msg = (char*)fwCompsAccess.getLastErrMsg();
         bool IbError = (strcmp("Unknown MAD error", err_msg) == 0);
         if (linkx_auto_update && activationNeeded && activate_delay_sec == 0 && ((mfile->flags & MDEVS_IB) != 0) && IbError) {//IB device
             
-            printf("-W- The activation process caused a disconnection from the InBand connection for a few minutes, please wait for reconnection. The error is %s \n", fwCompsAccess->getLastErrMsg());
+            printf("-W- The activation process caused a disconnection from the InBand connection for a few minutes, please wait for reconnection. The error is %s \n", fwCompsAccess.getLastErrMsg());
             return FLINT_SUCCESS;
         }
         else {
-            printf("-E- Cable burn failed, error is %s.\n", fwCompsAccess->getLastErrMsg());
+            printf("-E- Cable burn failed, error is %s.\n", fwCompsAccess.getLastErrMsg());
             return FLINT_FAILED;
         }
     }
