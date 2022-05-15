@@ -4041,8 +4041,8 @@ void MlxlinkCommander::updateSltp7nmFields()
         updateField("fir_pre2", _userInput._sltpParams[FIR_PRE2]);
     } else if (isSpeed50GPerLane(
             _protoActive == IB? _activeSpeed : _activeSpeedEx, _protoActive)) {
-        updateField("fir_pre2", _userInput._sltpParams[FIR_PRE2]);
         indexCorrection = 1;
+        updateField("fir_pre2", _userInput._sltpParams[FIR_PRE2 - indexCorrection]);
     } else {
         indexCorrection = 2;
     }
