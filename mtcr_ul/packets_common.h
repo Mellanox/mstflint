@@ -171,7 +171,7 @@
 /* define macros for print fields */
 //#if defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__)
 /*
- #if !defined(UEFI_BUILD) && (defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__) || defined(ARCH_riscv))
+ #if !defined(UEFI_BUILD) && (defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__) || defined(ARCH_riscv) || defined(ARCH_loongarch64))
  #   define U64H_FMT "0x%016lx"
  #   define U64D_FMT "%lu"
  #   define U32H_FMT "0x%08x"
