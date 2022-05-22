@@ -114,26 +114,29 @@ bool FwVersion::operator !=(const FwVersion& rhs) const {
 }
 
 // 13 is Spectrum1
-// 15 is switchIb2
-// 27 is quantum
-// 27/29 is Spectrum2
+// 15 is SwitchIB2
+// 19 is Amos-GB
+// 21 is Abir-GB
+// 27 is Quantum
+// 29 is Spectrum2
 // 30 is Spectrum3
-// 31 is quantum2
+// 31 is Quantum2
 // 34 is Spectrum4
-bool FwVersion::is_Switch() const
+bool FwVersion::is_switch_or_gb() const
 {
     if (_major == 0 && _minor == 0 && _subminor == 0 && !_devBranchTag.empty()) {
         return true;
     }
     if (_major == 11 || _major == 13 || _major == 15 || _major == 27
-        || _major == 29 || _major == 30 || _major == 31 || _major == 34) {
+        || _major == 29 || _major == 30 || _major == 31 || _major == 34
+        || _major == 19 || _major == 21) {
         return true;
     }
     return false;
 }
 
 bool FwVersion::is_master_branch() const {
-    if (!is_Switch()) {
+    if (!is_switch_or_gb()) {
         return true;
     }
     return _devBranchTag.empty();
