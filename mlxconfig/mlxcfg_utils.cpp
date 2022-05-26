@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -66,56 +67,63 @@ void dealWithSignal()
 {
     int sig;
     sig = mft_signal_is_fired();
-    if (sig) {
+    if (sig)
+    {
         // reset received signal
         mft_signal_set_fired(0);
         // retore prev handler
         mft_signal_set_handling(0);
-        //raise signal to let the previous handle deal with it.
+        // raise signal to let the previous handle deal with it.
         raise(sig);
     }
     mft_signal_set_handling(0);
     return;
 }
 
-MError mnvaCom5thGen(mfile *mf, u_int8_t *buff, u_int16_t len, u_int32_t tlvType,
-                     reg_access_method_t method, QueryType qT)
+MError
+  mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, QueryType qT)
 {
     struct tools_open_nvda mnvaTlv;
     memset(&mnvaTlv, 0, sizeof(struct tools_open_nvda));
 
-    if (method == REG_ACCESS_METHOD_GET && mf->tp != MST_IB) {
+    if (method == REG_ACCESS_METHOD_GET && mf->tp != MST_IB)
+    {
         mnvaTlv.nv_hdr.length = sizeof(mnvaTlv.data);
-    } else {
+    }
+    else
+    {
         mnvaTlv.nv_hdr.length = len;
     }
     mnvaTlv.nv_hdr.rd_en = 0;
     mnvaTlv.nv_hdr.over_en = 1;
     mnvaTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG;
-    if (qT == QueryDefault) {
+    if (qT == QueryDefault)
+    {
         mnvaTlv.nv_hdr.default_ = 1;
-    } else if (qT == QueryCurrent) {
+    }
+    else if (qT == QueryCurrent)
+    {
         mnvaTlv.nv_hdr.read_current = 1;
     }
     // tlvType should be in the correct endianess
-    mnvaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw =  __be32_to_cpu(tlvType);
+    mnvaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(tlvType);
     memcpy(mnvaTlv.data, buff, len);
     MError rc;
     // "suspend" signals as we are going to take semaphores
     mft_signal_set_handling(1);
-    //DEBUG_PRINT_SEND(&mnvaTlv, nvda);
+    // DEBUG_PRINT_SEND(&mnvaTlv, nvda);
     rc = reg_access_nvda(mf, method, &mnvaTlv);
-    //DEBUG_PRINT_RECEIVE(&mnvaTlv, nvda);
+    // DEBUG_PRINT_RECEIVE(&mnvaTlv, nvda);
     dealWithSignal();
-    if (rc) {
+    if (rc)
+    {
         return rc;
     }
     memcpy(buff, mnvaTlv.data, len);
     return ME_OK;
 }
 
-MError nvqcCom5thGen(mfile *mf, u_int32_t tlvType, bool& suppRead,
-                     bool& suppWrite, u_int32_t& version)
+MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite, u_int32_t& version)
 {
     struct tools_open_nvqc nvqcTlv;
     memset(&nvqcTlv, 0, sizeof(struct tools_open_nvqc));
@@ -127,17 +135,18 @@ MError nvqcCom5thGen(mfile *mf, u_int32_t tlvType, bool& suppRead,
     mft_signal_set_handling(1);
     rc = reg_access_nvqc(mf, REG_ACCESS_METHOD_GET, &nvqcTlv);
     dealWithSignal();
-    if (rc) {
+    if (rc)
+    {
         return rc;
     }
     suppRead = nvqcTlv.support_rd;
     suppWrite = nvqcTlv.support_wr;
     version = nvqcTlv.version;
-    //printf("-D- nvqcTlv.support_rd=%d nvqcTlv.support_wr=%d\n", nvqcTlv.support_rd, nvqcTlv.support_wr);
+    // printf("-D- nvqcTlv.support_rd=%d nvqcTlv.support_wr=%d\n", nvqcTlv.support_rd, nvqcTlv.support_wr);
     return ME_OK;
 }
 
-MError nvdiCom5thGen(mfile *mf, u_int32_t tlvType)
+MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
 {
     struct tools_open_nvdi nvdiTlv;
     memset(&nvdiTlv, 0, sizeof(struct tools_open_nvdi));
@@ -147,7 +156,7 @@ MError nvdiCom5thGen(mfile *mf, u_int32_t tlvType)
     nvdiTlv.nv_hdr.over_en = 1;
 
     // tlvType should be in the correct endianess
-    nvdiTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw =  __be32_to_cpu(tlvType);
+    nvdiTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(tlvType);
 
     MError rc;
     // "suspend" signals as we are going to take semaphores
@@ -156,7 +165,8 @@ MError nvdiCom5thGen(mfile *mf, u_int32_t tlvType)
     rc = reg_access_nvdi(mf, REG_ACCESS_METHOD_SET, &nvdiTlv);
     // DEBUG_PRINT_RECEIVE(&nvdiTlv, nvdi);
     dealWithSignal();
-    if (rc) {
+    if (rc)
+    {
         return rc;
     }
     return ME_OK;
@@ -164,16 +174,18 @@ MError nvdiCom5thGen(mfile *mf, u_int32_t tlvType)
 
 bool strToNum(string str, u_int32_t& num, int base)
 {
-    char *endp;
-    char *numStr = strcpy(new char[str.size() + 1], str.c_str());
+    char* endp;
+    char* numStr = strcpy(new char[str.size() + 1], str.c_str());
     num = strtoul(numStr, &endp, base);
-    if (*endp) {
+    if (*endp)
+    {
         delete[] numStr;
         return false;
     }
     delete[] numStr;
     // check errno
-    if (errno == ERANGE) {
+    if (errno == ERANGE)
+    {
         return false;
     }
     return true;
@@ -183,7 +195,8 @@ string numToStr(u_int32_t num, bool isHex)
 {
     stringstream ss;
 
-    if (isHex) {
+    if (isHex)
+    {
         ss << std::uppercase << "0x" << std::hex;
     }
 
@@ -197,7 +210,8 @@ vector<string> splitStr(const string s, char d)
     stringstream ss(s);
     string to;
 
-    while (std::getline(ss, to, d)) {
+    while (std::getline(ss, to, d))
+    {
         v.push_back(to);
     }
 
@@ -206,8 +220,9 @@ vector<string> splitStr(const string s, char d)
 
 string mlxcfg_ltrim(string s)
 {
-    const char *cs = s.c_str();
-    while (isspace(*cs)) {
+    const char* cs = s.c_str();
+    while (isspace(*cs))
+    {
         cs++;
     }
     return string(cs);
@@ -215,15 +230,18 @@ string mlxcfg_ltrim(string s)
 
 string mlxcfg_rtrim(string s)
 {
-    //todo rewrite it
+    // todo rewrite it
     unsigned int i = s.size();
-    if (i == 0) {
+    if (i == 0)
+    {
         return s;
     }
-    while (--i > 0 && isspace(s[i])) {
+    while (--i > 0 && isspace(s[i]))
+    {
         ;
     }
-    if (i == 0 && isspace(s[i])) {
+    if (i == 0 && isspace(s[i]))
+    {
         return "";
     }
     return s.substr(0, i + 1);
@@ -236,54 +254,54 @@ string mlxcfg_trim(string s)
 
 string writerIdToStr(WriterId writerId)
 {
-    switch (writerId) {
-    case WRITER_ID_UNSPECIFIED:
-        return "Unspecified";
+    switch (writerId)
+    {
+        case WRITER_ID_UNSPECIFIED:
+            return "Unspecified";
 
-    case WRITER_ID_CHASSIS_BMC:
-        return "Chassis BMC";
+        case WRITER_ID_CHASSIS_BMC:
+            return "Chassis BMC";
 
-    case WRITER_ID_MAD:
-        return "MAD";
+        case WRITER_ID_MAD:
+            return "MAD";
 
-    case WRITER_ID_BMC:
-        return "BMC";
+        case WRITER_ID_BMC:
+            return "BMC";
 
-    case WRITER_ID_CMD_IF:
-        return "CMD IF";
+        case WRITER_ID_CMD_IF:
+            return "CMD IF";
 
-    case WRITER_ID_ICMD:
-        return "ICMD";
+        case WRITER_ID_ICMD:
+            return "ICMD";
 
-    case WRITER_ID_ICMD_UEFI_HII:
-        return "ICMD UEFI HII";
+        case WRITER_ID_ICMD_UEFI_HII:
+            return "ICMD UEFI HII";
 
-    case WRITER_ID_ICMD_UEFI_CLP:
-        return "ICMD UEFI CLP";
+        case WRITER_ID_ICMD_UEFI_CLP:
+            return "ICMD UEFI CLP";
 
-    case WRITER_ID_ICMD_FLEXBOOT:
-        return "ICMD FLEXBOOT";
+        case WRITER_ID_ICMD_FLEXBOOT:
+            return "ICMD FLEXBOOT";
 
-    case WRITER_ID_ICMD_MLXCONFIG:
-        return "ICMD MLXCONFIG";
+        case WRITER_ID_ICMD_MLXCONFIG:
+            return "ICMD MLXCONFIG";
 
-    case WRITER_ID_ICMD_USER1:
-        return "ICMD USER1";
+        case WRITER_ID_ICMD_USER1:
+            return "ICMD USER1";
 
-    case WRITER_ID_ICMD_USER2:
-        return "ICMD USER2";
+        case WRITER_ID_ICMD_USER2:
+            return "ICMD USER2";
 
-    case WRITER_ID_ICMD_MLXCONFIG_SET_RAW:
-        return "ICMD MLXCONFIG SET RAW";
+        case WRITER_ID_ICMD_MLXCONFIG_SET_RAW:
+            return "ICMD MLXCONFIG SET RAW";
 
-    case WRITER_ID_OTHER:
-        return "OTHER";
+        case WRITER_ID_OTHER:
+            return "OTHER";
 
-    default:
-        return "Unknown";
+        default:
+            return "Unknown";
     }
 };
-
 
 void copyDwVectorToBytesVector(const vector<u_int32_t>& dwV, vector<u_int8_t>& bV)
 {
@@ -301,23 +319,26 @@ string parseIndexStr(const string& indexedMlxconfigName)
 {
     size_t pl = indexedMlxconfigName.find('[');
     size_t pr = indexedMlxconfigName.find(']');
-    if (pl == std::string::npos || pr == std::string::npos) {
+    if (pl == std::string::npos || pr == std::string::npos)
+    {
         throw MlxcfgException("Expected a parameter with index");
     }
-    return indexedMlxconfigName.substr(pl + 1,
-                                       pr - pl - 1);
+    return indexedMlxconfigName.substr(pl + 1, pr - pl - 1);
 }
 
 string increaseIndexIfNeeded(const string& name)
 {
     string increasedName = name;
 
-    if (isIndexedMlxconfigName(name)) {
+    if (isIndexedMlxconfigName(name))
+    {
         size_t pl = name.find('[');
         size_t pr = name.find(']');
-        if (isIndexedStartFromOneSupported(name.substr(0,pl))) {
+        if (isIndexedStartFromOneSupported(name.substr(0, pl)))
+        {
             u_int32_t increasedIndex = 0;
-            if (strToNum(name.substr(pl + 1, pr - pl - 1), increasedIndex)) {
+            if (strToNum(name.substr(pl + 1, pr - pl - 1), increasedIndex))
+            {
                 increasedIndex++;
                 increasedName = name.substr(0, pl) + "[" + numToStr(increasedIndex) + "]";
             }
@@ -341,12 +362,14 @@ void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxco
 {
     string indexStr = parseIndexStr(indexedMlxconfigName);
 
-    if (!strToNum(indexStr, index)) {
+    if (!strToNum(indexStr, index))
+    {
         throw MlxcfgException("Can not parse the index of %s\n", indexedMlxconfigName.c_str());
     }
 
     size_t p = indexedMlxconfigName.find('[');
-    if (p == std::string::npos) {
+    if (p == std::string::npos)
+    {
         throw MlxcfgException("Expected a parameter with index");
     }
     mlxconfigName = indexedMlxconfigName.substr(0, p);
@@ -355,32 +378,38 @@ void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxco
 void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes)
 {
     size_t p = indexesStr.find("..");
-    if (p != string::npos) {
+    if (p != string::npos)
+    {
         unsigned int leftIndex = 0, rightIndex = 0;
         string leftIndexStr = indexesStr.substr(0, p);
         string rightIndexStr = indexesStr.substr(p + 2);
-        if (!strToNum(leftIndexStr, leftIndex)) {
+        if (!strToNum(leftIndexStr, leftIndex))
+        {
             throw MlxcfgException("Can not parse the index %s", leftIndexStr.c_str());
         }
-        if (!strToNum(rightIndexStr, rightIndex)) {
+        if (!strToNum(rightIndexStr, rightIndex))
+        {
             throw MlxcfgException("Can not parse the index %s", rightIndexStr.c_str());
         }
-        if (leftIndex > rightIndex) {
-            throw MlxcfgException("Left index %d can not be greater than right index %d",
-                                  leftIndex, rightIndex);
+        if (leftIndex > rightIndex)
+        {
+            throw MlxcfgException("Left index %d can not be greater than right index %d", leftIndex, rightIndex);
         }
-        while (rightIndex >= leftIndex) {
+        while (rightIndex >= leftIndex)
+        {
             indexes.push_back(leftIndex);
             leftIndex++;
         }
-    } else {
+    }
+    else
+    {
         u_int32_t index = 0;
-        if (!strToNum(indexesStr, index)) {
+        if (!strToNum(indexesStr, index))
+        {
             throw MlxcfgException("Can not parse the index %s", indexesStr.c_str());
         }
         indexes.push_back(index);
     }
-
 }
 
 bool isIndexedMlxconfigName(const string& mlxconfigName)
@@ -398,10 +427,11 @@ string getArraySuffix(const string& mlxconfigName)
     string suffix = "";
     smatch match;
 
-    if (regex_search(mlxconfigName, match, EXP_PATTERN)) {
+    if (regex_search(mlxconfigName, match, EXP_PATTERN))
+    {
         suffix = match.str();
     }
-    
+
     return suffix;
 #endif
 }
@@ -418,32 +448,29 @@ string getArraySuffixByInterval(u_int32_t interval)
     string suffix = "_";
     u_int32_t low_bound = ((interval / MAX_ARRAY_SIZE) * MAX_ARRAY_SIZE) + 1;
     u_int32_t upper_bound = low_bound + MAX_ARRAY_SIZE - 1;
-    
+
     suffix += numToStr(upper_bound) + "_" + numToStr(low_bound);
 
     return suffix;
 }
 
-
-
-bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& infoString)
+bool getDeviceInformationString(mfile* mf, info_type_t op, vector<char>& infoString)
 {
     mqisReg mqisRegister;
-    mfile* mf;
-    mf = mopen(dev);
-    if (!mf) {
-       return false;
-    }
     reg_access_status_t rc;
     int maxDataSize = sizeof(mqisRegister.info_string);
 
     memset(&mqisRegister, 0, sizeof(mqisReg));
-    if (op == Device_Name) {
-       mqisRegister.info_type = 0x1;
-    } else if (op == Device_Description) {
-       mqisRegister.info_type = 0x2;
-    } else {
-        mclose(mf);
+    if (op == Device_Name)
+    {
+        mqisRegister.info_type = 0x1;
+    }
+    else if (op == Device_Description)
+    {
+        mqisRegister.info_type = 0x2;
+    }
+    else
+    {
         return false;
     }
     mqisRegister.read_length = maxDataSize;
@@ -451,50 +478,51 @@ bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& i
 
     rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
     dealWithSignal();
-    if (rc) {
-       mclose(mf);
-       return false;
-    }
-    //reg_access_hca_mqis_reg_print(&mqisRegister, stdout, 4);
-    int infoSize = mqisRegister.info_length;
-    if (infoSize == 0) {
+    if (rc)
+    {
         return false;
     }
-    infoString.resize(infoSize+1, 0);
+    // reg_access_hca_mqis_reg_print(&mqisRegister, stdout, 4);
+    int infoSize = mqisRegister.info_length;
+    if (infoSize == 0)
+    {
+        return false;
+    }
+    infoString.resize(infoSize + 1, 0);
 
     // copy the output
-    memcpy(infoString.data(), mqisRegister.info_string,
-            mqisRegister.read_length);
+    memcpy(infoString.data(), mqisRegister.info_string, mqisRegister.read_length);
 
-    if (infoSize > mqisRegister.read_length) {
+    if (infoSize > mqisRegister.read_length)
+    {
         int leftSize = infoSize - mqisRegister.read_length;
-        while (leftSize > 0) {
+        while (leftSize > 0)
+        {
             mqisRegister.read_offset = infoSize - leftSize;
             mqisRegister.read_length = leftSize > maxDataSize ? maxDataSize : leftSize;
             mft_signal_set_handling(1);
 
             rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
             dealWithSignal();
-            if (rc) {
+            if (rc)
+            {
                 return false;
             }
-            //reg_access_hca_mqis_reg_print(&mqisRegister, stdout, 4);
-            memcpy(infoString.data() + mqisRegister.read_offset,
-                   (mqisRegister.info_string), mqisRegister.read_length);
+            // reg_access_hca_mqis_reg_print(&mqisRegister, stdout, 4);
+            memcpy(infoString.data() + mqisRegister.read_offset, (mqisRegister.info_string), mqisRegister.read_length);
             leftSize -= mqisRegister.read_length;
         }
     }
 
-    // mf is needed to be open for QueryTLV function
-    // mclose(mf);
-    string str = string (infoString.data());
-    if (str.length() == 0) {
+    string str = string(infoString.data());
+    if (str.length() == 0)
+    {
         return false;
     }
     return true;
 }
 
-MlxcfgException::MlxcfgException(const char *fmt, ...)
+MlxcfgException::MlxcfgException(const char* fmt, ...)
 {
     const unsigned int max = 1024;
     char tmp[max];
@@ -507,6 +535,6 @@ MlxcfgException::MlxcfgException(const char *fmt, ...)
 }
 
 MlxcfgTLVNotFoundException::MlxcfgTLVNotFoundException(const char* cTLVName) :
-    MlxcfgException("The TLV configuration %s was not found",cTLVName){}
-
-
+    MlxcfgException("The TLV configuration %s was not found", cTLVName)
+{
+}

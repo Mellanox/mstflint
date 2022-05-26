@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -45,10 +46,13 @@ using namespace DB;
 ByteBitString::ByteBitString(const string& str)
 {
     size_t pos = str.find('.');
-    if (pos == string::npos) { //No bits part in this case (e.g. 0x0)
+    if (pos == string::npos)
+    { // No bits part in this case (e.g. 0x0)
         _bitsPart = 0x0;
         _bytesPart = strtol(str.c_str(), NULL, 0);
-    } else {
+    }
+    else
+    {
         _bitsPart = atoi(str.substr(pos + 1).c_str());
         _bytesPart = strtol(str.substr(0, pos).c_str(), NULL, 0);
     }
@@ -56,10 +60,11 @@ ByteBitString::ByteBitString(const string& str)
 
 u_int32_t Offset::toBigEndian(u_int32_t sizeInBits, u_int32_t withBitsPart) const
 {
-    if (!withBitsPart) {
+    if (!withBitsPart)
+    {
         return 8 * _bytesPart;
     }
 
-    u_int32_t offsetLE  = 8 * _bytesPart + _bitsPart;
+    u_int32_t offsetLE = 8 * _bytesPart + _bitsPart;
     return 32 - (offsetLE % 32) - sizeInBits + ((offsetLE >> 5) << 5);
 }

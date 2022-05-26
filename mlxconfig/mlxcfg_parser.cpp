@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -41,6 +42,7 @@
 #include <common/tools_version.h>
 
 #include "mlxcfg_ui.h"
+#include "mlxcfg_ui_tokens.h"
 
 #include "mlxcfg_generic_commander.h"
 #include "mlxcfg_commander.h"
@@ -50,17 +52,15 @@
 
 using namespace std;
 
-
 #define IDENT "    "
 #define IDENT2 IDENT IDENT
 #define IDENT3 "\t\t"
 #define IDENT4 IDENT2 IDENT
-#define MAX_SESSION_TIME_IN_MINUTES 10080 // 1 week = 7 * 24 hours * 60 minutes 
-
+#define MAX_SESSION_TIME_IN_MINUTES 10080 // 1 week = 7 * 24 hours * 60 minutes
 
 static void printFlagLine(string flag_s, string flag_l, string param, string desc)
 {
-    string flags = "-" + flag_s + "|--" + flag_l + (param.length() ?  " <" + param + ">" : "");
+    string flags = "-" + flag_s + "|--" + flag_l + (param.length() ? " <" + param + ">" : "");
     printf(IDENT2 "%-16s", flags.c_str());
     printf(IDENT3 ": %s\n", desc.c_str());
 }
@@ -74,14 +74,11 @@ static void printFlagLine(string flag_s, string flag_l, string param, string des
 void MlxCfg::printHelp()
 {
     // print opening
-    printf(IDENT "NAME:\n"
-           IDENT2 MLXCFG_NAME "\n"
-           IDENT "SYNOPSIS:\n"
-           IDENT2 MLXCFG_NAME " [Options] <Commands> [Parameters]\n");
+    printf(IDENT "NAME:\n" IDENT2 MLXCFG_NAME "\n" IDENT "SYNOPSIS:\n" IDENT2 MLXCFG_NAME
+                 " [Options] <Commands> [Parameters]\n");
 
-    printf(IDENT "DESCRIPTION:\n"
-          IDENT2 "Allows the user to change some of the device configurations without having to\n"
-          IDENT2 "create and burn a new firmware.");
+    printf(IDENT "DESCRIPTION:\n" IDENT2 "Allows the user to change some of the device configurations without having "
+                 "to\n" IDENT2 "create and burn a new firmware.");
     // print options
     printf("\n");
     printf(IDENT "OPTIONS:\n");
@@ -102,7 +99,7 @@ void MlxCfg::printHelp()
     printFlagLine("st", "session_time", "", "Specify session time for token keep alive session.");
     printFlagLine("tkn", "token_type", "", "Specify token type.");
 
-    //print commands
+    // print commands
     printf("\n");
     printf(IDENT "COMMANDS SUMMARY\n");
     printf(IDENT2 "%-24s : %s\n", "clear_semaphore", "clear the tool semaphore.");
@@ -112,16 +109,29 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-24s : %s\n", "s|set", "set configurations to a specific device.");
     printf(IDENT2 "%-24s : %s\n", "set_raw", "set raw configuration file(5th Generation and above).");
     printf(IDENT2 "%-24s : %s\n", "get_raw", "get raw configuration (5th Generation and above).");
-    printf(IDENT2 "%-24s : %s\n", "backup", "backup configurations to a file. Use set_raw command to restore file (5th Generation and above).");
-    printf(IDENT2 "%-24s : %s\n", "gen_tlvs_file", "Generate List of all TLVs. TLVs output file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "g <en_xml_template>", "Generate XML template. TLVs input file name and XML output file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "xml2raw", "Generate Raw file from XML file. XML input file name and raw output file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "raw2xml", "Generate XML file from Raw file. raw input file name and XML output file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "xml2bin", "Generate binary configuration dump file from XML file. XML input file name and bin output file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "create_conf", "Generate configuration file from XML file. XML input file name and bin output file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "apply", "Apply a configuration file, that was created with create_conf command. bin input file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "challenge_request", "Send a token challenge request to the device. Token type must be specified.");
-    printf(IDENT2 "%-24s : %s\n", "remote_token_keep_alive", "Start a remote token session for a specified time. session id must be specified.");
+    printf(IDENT2 "%-24s : %s\n", "backup",
+           "backup configurations to a file. Use set_raw command to restore file (5th Generation and above).");
+    printf(IDENT2 "%-24s : %s\n", "gen_tlvs_file",
+           "Generate List of all TLVs. TLVs output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "g <en_xml_template>",
+           "Generate XML template. TLVs input file name and XML output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "xml2raw",
+           "Generate Raw file from XML file. XML input file name and raw output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "raw2xml",
+           "Generate XML file from Raw file. raw input file name and XML output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "xml2bin",
+           "Generate binary configuration dump file from XML file. XML input file name and bin output file name must "
+           "be specified. (*)");
+    printf(
+      IDENT2 "%-24s : %s\n", "create_conf",
+      "Generate configuration file from XML file. XML input file name and bin output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "apply",
+           "Apply a configuration file, that was created with create_conf command. bin input file name must be "
+           "specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "challenge_request",
+           "Send a token challenge request to the device. Token type must be specified.");
+    printf(IDENT2 "%-24s : %s\n", "remote_token_keep_alive",
+           "Start a remote token session for a specified time. session id must be specified.");
     printf(IDENT2 "%-24s : %s\n", "token_supported", "Query which tokens are supported.");
     printf(IDENT2 "%-24s : %s\n", "query_token_session", "Query the status of a token session.");
     printf(IDENT2 "%-24s : %s\n", "end_token_session", "End an active token session.");
@@ -132,14 +142,14 @@ void MlxCfg::printHelp()
     printf(IDENT "To show supported configurations by device type, run show_confs command\n");
     printf("\n");
 
-
-
     // print usage examples
     printf("\n");
     printf(IDENT "Examples:\n");
     printf(IDENT2 "%-35s: %s\n", "To query configurations", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " query");
-    printf(IDENT2 "%-35s: %s\n", "To set configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " set SRIOV_EN=1 NUM_OF_VFS=16 WOL_MAGIC_EN_P1=1");
-    printf(IDENT2 "%-35s: %s\n", "To set raw configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE2 " -f conf_file set_raw");
+    printf(IDENT2 "%-35s: %s\n", "To set configuration",
+           MLXCFG_NAME " -d " MST_DEV_EXAMPLE " set SRIOV_EN=1 NUM_OF_VFS=16 WOL_MAGIC_EN_P1=1");
+    printf(IDENT2 "%-35s: %s\n", "To set raw configuration",
+           MLXCFG_NAME " -d " MST_DEV_EXAMPLE2 " -f conf_file set_raw");
     printf(IDENT2 "%-35s: %s\n", "To reset configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " reset");
     printf("\n");
     printf(IDENT "Supported devices:\n");
@@ -165,81 +175,90 @@ void MlxCfg::printUsage()
 
 bool MlxCfg::tagExsists(string tag)
 {
-    VECTOR_ITERATOR(ParamView, _mlxParams.setParams, it) {
-        if (it->mlxconfigName == tag) {
+    VECTOR_ITERATOR(ParamView, _mlxParams.setParams, it)
+    {
+        if (it->mlxconfigName == tag)
+        {
             return true;
         }
     }
     return false;
 }
 
-inline const char* cmdNVInputFileTag(mlxCfgCmd cmd, const char *def)
+inline const char* cmdNVInputFileTag(mlxCfgCmd cmd, const char* def)
 {
     return (cmd == Mc_XML2Raw || cmd == Mc_XML2Bin || cmd == Mc_CreateConf) ?
-           "XML" : (cmd == Mc_Raw2XML) ?
-           "Raw" : (cmd == Mc_GenXMLTemplate) ?
-           "TLVs" : (cmd == Mc_Apply) ?
-           "Configuration" : def;
+             "XML" :
+             (cmd == Mc_Raw2XML) ? "Raw" :
+                                   (cmd == Mc_GenXMLTemplate) ? "TLVs" : (cmd == Mc_Apply) ? "Configuration" : def;
 }
 
-inline const char* cmdNVOutputFileTag(mlxCfgCmd cmd, const char *def)
+inline const char* cmdNVOutputFileTag(mlxCfgCmd cmd, const char* def)
 {
     return (cmd == Mc_XML2Raw) ?
-           "Raw" : (cmd == Mc_Raw2XML) ?
-           "XML" : (cmd == Mc_GenXMLTemplate) ?
-           "XML" : (cmd == Mc_XML2Bin) ?
-           "Bin" : (cmd == Mc_CreateConf) ?
-           "Configuration" : def;
+             "Raw" :
+             (cmd == Mc_Raw2XML) ?
+             "XML" :
+             (cmd == Mc_GenXMLTemplate) ? "XML" :
+                                          (cmd == Mc_XML2Bin) ? "Bin" : (cmd == Mc_CreateConf) ? "Configuration" : def;
 }
 
-mlxCfgStatus MlxCfg::extractNVInputFile(int argc, char *argv[])
+mlxCfgStatus MlxCfg::extractNVInputFile(int argc, char* argv[])
 {
-    if (argc < 1) {
-        return err(true, "%s input file is missing",
-                   cmdNVInputFileTag(_mlxParams.cmd, ""));
+    if (argc < 1)
+    {
+        return err(true, "%s input file is missing", cmdNVInputFileTag(_mlxParams.cmd, ""));
     }
     _mlxParams.NVInputFile = argv[0];
     return MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::extractNVOutputFile(int argc, char *argv[])
+mlxCfgStatus MlxCfg::extractNVOutputFile(int argc, char* argv[])
 {
-    if (argc < 1) {
-        return err(true, "%s output file is missing",
-                   cmdNVOutputFileTag(_mlxParams.cmd, ""));
+    if (argc < 1)
+    {
+        return err(true, "%s output file is missing", cmdNVOutputFileTag(_mlxParams.cmd, ""));
     }
     _mlxParams.NVOutputFile = argv[0];
     return MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char *argv[])
+mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char* argv[])
 {
     int i = 0;
 
-    for (; i < argc; i++) {
+    for (; i < argc; i++)
+    {
         ParamView pv;
         string mlxconfigName = argv[i];
-        if (isIndexedMlxconfigName(mlxconfigName)) {
+        if (isIndexedMlxconfigName(mlxconfigName))
+        {
             string indexStr = parseIndexStr(mlxconfigName);
             vector<u_int32_t> indexes;
             bool isStartFromOneSupported = false;
             extractIndexes(indexStr, indexes);
-            if (indexes.size() > 1) {
+            if (indexes.size() > 1)
+            {
                 size_t p = mlxconfigName.find('[');
-                if (p == std::string::npos) {
+                if (p == std::string::npos)
+                {
                     return err(true, "Expected a parameter with index");
                 }
                 mlxconfigName = mlxconfigName.substr(0, p);
                 isStartFromOneSupported = isIndexedStartFromOneSupported(mlxconfigName);
 
-                VECTOR_ITERATOR(u_int32_t, indexes, it) {
+                VECTOR_ITERATOR(u_int32_t, indexes, it)
+                {
                     ParamView paramView;
-                    if (isStartFromOneSupported) {
-                        if ((int32_t)*it <= 0) {
+                    if (isStartFromOneSupported)
+                    {
+                        if ((int32_t)*it <= 0)
+                        {
                             printf("-E- Index is out of range.Minimal index is 1\n");
                             return MLX_CFG_ERROR_NO_USAGE;
                         }
-                        else {
+                        else
+                        {
                             (*it)--;
                         }
                     }
@@ -247,23 +266,28 @@ mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char *argv[])
                     _mlxParams.setParams.push_back(paramView);
                 }
                 continue;
-            } else {
-
+            }
+            else
+            {
                 size_t p = mlxconfigName.find('[');
                 string subStr = mlxconfigName.substr(0, p);
-                if (isIndexedStartFromOneSupported(subStr)) {
-                    if ((int32_t)indexes[0] <= 0) {
+                if (isIndexedStartFromOneSupported(subStr))
+                {
+                    if ((int32_t)indexes[0] <= 0)
+                    {
                         printf("-E- Index is out of range.Minimal index is 1\n");
                         return MLX_CFG_ERROR_NO_USAGE;
                     }
                     pv.mlxconfigName = subStr + "[" + numToStr(indexes[0] - 1) + "]";
-
                 }
-                else {
+                else
+                {
                     pv.mlxconfigName = mlxconfigName;
                 }
             }
-        } else {
+        }
+        else
+        {
             pv.mlxconfigName = mlxconfigName;
         }
         _mlxParams.setParams.push_back(pv);
@@ -272,57 +296,69 @@ mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char *argv[])
     return MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char *argv[])
+mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char* argv[])
 {
     int i = 0;
     string tag, strVal;
 
-    for (; i < argc; i++) {
-        char *ptr;
+    for (; i < argc; i++)
+    {
+        char* ptr;
         // get the tag
         ptr = strtok(argv[i], "=");
-        if (!ptr) {
+        if (!ptr)
+        {
             return err(true, "Invalid Configuration argument %s", argv[i]);
         }
         tag = ptr; // hopefully its calling copy function.
         // get the val
         ptr = strtok(NULL, "=");
-        if (!ptr) {
+        if (!ptr)
+        {
             return err(true, "Invalid Configuration argument %s", argv[i]);
         }
         strVal = ptr;
-        if (strtok(NULL, "=")) {
+        if (strtok(NULL, "="))
+        {
             return err(true, "Invalid Configuration argument %s", argv[i]);
         }
 
-        if (tagExsists(tag)) {
+        if (tagExsists(tag))
+        {
             return err(true, "Duplicate parameter, %s.", tag.c_str());
         }
 
         ParamView pv;
 
-        if (isIndexedMlxconfigName(tag)) {
+        if (isIndexedMlxconfigName(tag))
+        {
             string indexStr = parseIndexStr(tag);
             vector<u_int32_t> indexes;
             extractIndexes(indexStr, indexes);
             bool isStartFromOneSupported = false;
-            if (indexes.size() > 1) {
+            if (indexes.size() > 1)
+            {
                 size_t p = tag.find('[');
-                if (p == std::string::npos) {
+                if (p == std::string::npos)
+                {
                     return err(true, "Expected a parameter with index");
                 }
                 string mlxconfigName = tag.substr(0, p);
                 isStartFromOneSupported = isIndexedStartFromOneSupported(mlxconfigName);
-                VECTOR_ITERATOR(u_int32_t, indexes, it) {
+                VECTOR_ITERATOR(u_int32_t, indexes, it)
+                {
                     ParamView paramView;
                     paramView.setVal = strVal;
 
-                    if (isStartFromOneSupported) {
-                        if (*it == 0) {
+                    if (isStartFromOneSupported)
+                    {
+                        if (*it == 0)
+                        {
                             printf("-E- Index 0 is out of range.Minimal index is 1\n");
                             return MLX_CFG_ERROR_NO_USAGE;
                         }
-                        else {
+                        else
+                        {
                             (*it)--;
                         }
                     }
@@ -331,40 +367,55 @@ mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char *argv[])
                     _mlxParams.setParams.push_back(paramView);
                 }
                 continue;
-            } else {
+            }
+            else
+            {
                 size_t p = tag.find('[');
                 string subStr = tag.substr(0, p);
-                if (isIndexedStartFromOneSupported(subStr)) {
-                    if (indexes[0] == 0) {
+                if (isIndexedStartFromOneSupported(subStr))
+                {
+                    if (indexes[0] == 0)
+                    {
                         printf("-E- Index 0 is out of range.Minimal index is 1\n");
                         return MLX_CFG_ERROR_NO_USAGE;
                     }
                     pv.mlxconfigName = subStr + "[" + numToStr(indexes[0] - 1) + "]";
-
                 }
-                else {
+                else
+                {
                     pv.mlxconfigName = tag;
                 }
             }
-        } else {
+        }
+        else
+        {
             pv.mlxconfigName = tag;
         }
 
         pv.setVal = strVal;
         _mlxParams.setParams.push_back(pv);
-
     }
     return MLX_CFG_OK;
 }
 
-Device_Type MlxCfg::getDeviceTypeFromString(string inStr){
+Device_Type MlxCfg::getDeviceTypeFromString(string inStr)
+{
     mft_utils::to_lowercase(inStr);
-    if (inStr == "switch") {
-        return Switch;
-    }else if (inStr == "hca") {
-        return HCA;
-    }else{
-        return UNSUPPORTED_DEVICE;
+    if (inStr == "switch")
+    {
+        return Device_Type::Switch;
+    }
+    else if (inStr == "hca")
+    {
+        return Device_Type::HCA;
+    }
+    else if (inStr == "linkx")
+    {
+        return Device_Type::LinkX;
+    }
+    else
+    {
+        return Device_Type::UNSUPPORTED_DEVICE;
     }
 }
 
@@ -372,233 +423,344 @@ mlxCfgStatus MlxCfg::getNumberFromString(const char* str, u_int32_t& num)
 {
     char* end = NULL;
     num = strtoul(str, &end, 0);
-    if (*end != '\0') {
+    if (*end != '\0')
+    {
         return err(true, "argument is not a number: %s", str);
     }
     return MLX_CFG_OK;
 }
 
-mlxCfgToken MlxCfg::getTokenType(const char* tokenStr)
-{
-    mlxCfgToken tokenType = Mc_Token_Unknown;
-
-    if (strcmp(tokenStr, "RMCS") == 0) tokenType = Mc_Token_RMCS;
-    if (strcmp(tokenStr, "RMDT") == 0) tokenType = Mc_Token_RMDT;
-
-    return tokenType;
-}
-
-mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
+mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
 {
     mlxCfgStatus status = MLX_CFG_OK;
     int i = 1;
-    for (; i < argc; i++) {
+    for (; i < argc; i++)
+    {
         string arg = argv[i];
-        if (arg == "-v" || arg == "--version") {
+        if (arg == "-v" || arg == "--version")
+        {
             printVersion();
             return MLX_CFG_OK_EXIT;
-        } else if (arg == "-h" || arg == "--help") {
+        }
+        else if (arg == "-h" || arg == "--help")
+        {
             printHelp();
             return MLX_CFG_OK_EXIT;
-        } else if (arg == "-d" || arg == "--dev") {
-            if (++i == argc) {
+        }
+        else if (arg == "-d" || arg == "--dev")
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing device name");
             }
             _mlxParams.device = argv[i];
-        } else if (arg == "-t" || arg == "--device_type") {
-            if (++i == argc) {
+        }
+        else if (arg == "-t" || arg == "--device_type")
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing device type");
             }
             Device_Type dType = getDeviceTypeFromString(argv[i]);
-            if (dType == UNSUPPORTED_DEVICE) {
-                return err(true, "Unsupported device name given, please specify \"switch\" or \"hca\" device type");
+            if (dType == Device_Type::UNSUPPORTED_DEVICE)
+            {
+                return err(
+                  true, "Unsupported device name given, please specify \"switch\", \"hca\" of \"linkx\" device type");
+            }
+            if (dType == Device_Type::LinkX)
+            {
+                _mlxParams.isLinkXDevice = true;
+                dType = Device_Type::Switch;
             }
             _mlxParams.deviceType = dType;
-        } else if (arg == "-b" || arg == "--db") {
-            if (++i == argc) {
+        }
+        else if (arg == "-b" || arg == "--db")
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing database file name");
             }
             _mlxParams.dbName = argv[i];
-        } else if (arg == "-y" || arg == "--yes") {
+        }
+        else if (arg == "-y" || arg == "--yes")
+        {
             _mlxParams.yes = true;
-        } else if (arg == "-f" || arg == "--file") {
-            if (++i == argc) {
+        }
+        else if (arg == "-f" || arg == "--file")
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing file name");
             }
             _mlxParams.rawTlvFile = argv[i];
-        } else if (arg == "-e" || arg == "--enable_verbosity") {
+        }
+        else if (arg == "-e" || arg == "--enable_verbosity")
+        {
             _mlxParams.enableVerbosity = true;
-        } else if (arg == "-a" || arg == "--all_attrs") {
+        }
+        else if (arg == "-a" || arg == "--all_attrs")
+        {
             _mlxParams.allAttrs = true;
-        } else if (arg == "-p" || arg == "--private_key") {
-            if (++i == argc) {
+        }
+        else if (arg == "-p" || arg == "--private_key")
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing file name");
             }
             _mlxParams.privPemFile = argv[i];
-        } else if (arg == "-u" || arg == "--key_uuid") {
-            if (++i == argc) {
+        }
+        else if (arg == "-u" || arg == "--key_uuid")
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing file name");
             }
             _mlxParams.keyPairUUID = argv[i];
         }
-        else if (arg == "-eng" || arg == "--openssl_engine") {
-            if (++i == argc) {
+        else if (arg == "-eng" || arg == "--openssl_engine")
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing OpenSSL engine");
             }
             _mlxParams.opensslEngine = argv[i];
         }
-        else if (arg == "-k" || arg == "--openssl_key_id") {
-            if (++i == argc) {
+        else if (arg == "-k" || arg == "--openssl_key_id")
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing OpenSSL key identifier");
             }
             _mlxParams.opensslKeyId = argv[i];
-        } else if ((arg == "-tkn") || (arg == "--token_type")) {
-            if (++i == argc) {
+        }
+        else if ((arg == "-tkn") || (arg == "--token_type"))
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing token type");
             }
             _mlxParams.tokenID = getTokenType(argv[i]);
-            if (_mlxParams.tokenID == Mc_Token_Unknown) {
+            if (_mlxParams.tokenID == Mc_Token_Unknown)
+            {
                 return err(true, "invalid token type");
             }
-        } else if (arg == "--cycle_time") {
-            if (++i == argc) {
+        }
+        else if (arg == "--cycle_time")
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing cycle time value");
             }
             status = getNumberFromString(argv[i], _mlxParams.keepAliveSleepTimeBetweenCommands);
-            if (status != MLX_CFG_OK) {
+            if (status != MLX_CFG_OK)
+            {
                 return status;
             }
             _mlxParams.isSleepTimeBetweenCommandsInput = true;
-        } else if (arg == "--resend_time") {
-            if (++i == argc) {
+        }
+        else if (arg == "--resend_time")
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing resend time value");
             }
             status = getNumberFromString(argv[i], _mlxParams.keepAliveSleepTimeOnCommandTO);
-            if (status != MLX_CFG_OK) {
+            if (status != MLX_CFG_OK)
+            {
                 return status;
-            }            
+            }
             _mlxParams.isSleepTimeOnCommandTOInput = true;
-        } else if ((arg == "-s") || (arg == "--session_id")) {
-            if (++i == argc) {
+        }
+        else if ((arg == "-s") || (arg == "--session_id"))
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing session id");
             }
             status = getNumberFromString(argv[i], _mlxParams.sessionId);
             _mlxParams.isSessionIDGiven = true;
-            if (status != MLX_CFG_OK) {
+            if (status != MLX_CFG_OK)
+            {
                 return status;
             }
-        } else if ((arg == "-st") || (arg == "--session_time")) {
-            if (++i == argc) {
+        }
+        else if ((arg == "-st") || (arg == "--session_time"))
+        {
+            if (++i == argc)
+            {
                 return err(true, "missing session time value");
             }
             status = getNumberFromString(argv[i], _mlxParams.sessionTimeInSec);
-            if (status != MLX_CFG_OK) {
+            if (status != MLX_CFG_OK)
+            {
                 return status;
             }
-            if (_mlxParams.sessionTimeInSec > MAX_SESSION_TIME_IN_MINUTES) {
-                return err(true, "requested session time is out of bounds, max session time is 1 week (10080 minutes).");
+            if (_mlxParams.sessionTimeInSec > MAX_SESSION_TIME_IN_MINUTES)
+            {
+                return err(true,
+                           "requested session time is out of bounds, max session time is 1 week (10080 minutes).");
             }
             _mlxParams.sessionTimeInSec *= 60;
             _mlxParams.isSessionTimeGiven = true;
-        // hidden flag --force used to ignore parameter checks
-        } else if (arg == "--force") {
+            // hidden flag --force used to ignore parameter checks
+        }
+        else if (arg == "--force")
+        {
             _mlxParams.force = true;
-        } else if (arg == "set" || arg == "s") {
+        }
+        else if (arg == "set" || arg == "s")
+        {
             _mlxParams.cmd = Mc_Set;
             break;
-        } else if (arg == "query" || arg == "q") {
+        }
+        else if (arg == "query" || arg == "q")
+        {
             _mlxParams.cmd = Mc_Query;
             break;
-        } else if (arg == "reset" || arg == "r") {
+        }
+        else if (arg == "reset" || arg == "r")
+        {
             _mlxParams.cmd = Mc_Reset;
             break;
-        } else if (arg == "clear_semaphore") {
+        }
+        else if (arg == "clear_semaphore")
+        {
             _mlxParams.cmd = Mc_Clr_Sem;
             break;
-        } else if (arg == "set_raw") {
+        }
+        else if (arg == "set_raw")
+        {
             _mlxParams.cmd = Mc_Set_Raw;
             break;
-        } else if (arg == "get_raw") {
+        }
+        else if (arg == "get_raw")
+        {
             _mlxParams.cmd = Mc_Get_Raw;
             break;
-        } else if (arg == "backup") {
+        }
+        else if (arg == "backup")
+        {
             _mlxParams.cmd = Mc_Backup;
             break;
-        } else if (arg == "gen_tlvs_file" || arg == "t") {
+        }
+        else if (arg == "gen_tlvs_file" || arg == "t")
+        {
             _mlxParams.cmd = Mc_GenTLVsFile;
             break;
-        } else if (arg == "gen_xml_template" || arg == "g") {
+        }
+        else if (arg == "gen_xml_template" || arg == "g")
+        {
             _mlxParams.cmd = Mc_GenXMLTemplate;
             break;
-        } else if (arg == "raw2xml" || arg == "r") {
+        }
+        else if (arg == "raw2xml" || arg == "r")
+        {
             _mlxParams.cmd = Mc_Raw2XML;
             break;
-        } else if (arg == "xml2raw" || arg == "x") {
+        }
+        else if (arg == "xml2raw" || arg == "x")
+        {
             _mlxParams.cmd = Mc_XML2Raw;
             break;
-        } else if (arg == "xml2bin") {
+        }
+        else if (arg == "xml2bin")
+        {
             _mlxParams.cmd = Mc_XML2Bin;
             break;
-        } else if (arg == "create_conf") {
+        }
+        else if (arg == "create_conf")
+        {
             _mlxParams.cmd = Mc_CreateConf;
             break;
-        } else if (arg == "apply") {
+        }
+        else if (arg == "apply")
+        {
             _mlxParams.cmd = Mc_Apply;
             break;
-        } else if (arg == "show_confs" || arg == "i") {
+        }
+        else if (arg == "show_confs" || arg == "i")
+        {
             _mlxParams.cmd = Mc_ShowConfs;
             break;
-        } else if (arg == "challenge_request") {
+        }
+        else if (arg == "challenge_request")
+        {
             _mlxParams.cmd = Mc_ChallengeRequest;
             break;
-        } else if (arg == "token_supported") {
+        }
+        else if (arg == "token_supported")
+        {
             _mlxParams.cmd = Mc_TokenSupported;
             break;
-        } else if (arg == "query_token_session") {
+        }
+        else if (arg == "query_token_session")
+        {
             _mlxParams.cmd = Mc_QueryTokenSession;
             break;
-        } else if (arg == "end_token_session") {
+        }
+        else if (arg == "end_token_session")
+        {
             _mlxParams.cmd = Mc_EndTokenSession;
             break;
-        } else if (arg == "remote_token_keep_alive") {
+        }
+        else if (arg == "remote_token_keep_alive")
+        {
             _mlxParams.cmd = Mc_RemoteTokenKeepAlive;
             break;
-        } else {
+        }
+        else
+        {
             return err(true, "invalid argument: %s", arg.c_str());
         }
     }
     i++;
-    if (_mlxParams.cmd == Mc_UnknownCmd) {
+    if (_mlxParams.cmd == Mc_UnknownCmd)
+    {
         return err(true, "No command found. For more information please read the help message:");
     }
     // we parsed input until the set/query/reset cmd
-    if (i == argc && _mlxParams.cmd == Mc_Set) {
+    if (i == argc && _mlxParams.cmd == Mc_Set)
+    {
         return err(true, "missing configuration arguments. For more information please run " MLXCFG_NAME " -h|--help.");
     }
-    if (i != argc && (_mlxParams.cmd == Mc_Reset)) {
+    if (i != argc && (_mlxParams.cmd == Mc_Reset))
+    {
         return err(true, "%s command expects no argument but %d argument received", "reset", argc - i);
     }
 
-    if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Backup
-         || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply || _mlxParams.cmd == Mc_RemoteTokenKeepAlive
-         || _mlxParams.cmd == Mc_ChallengeRequest || _mlxParams.cmd == Mc_TokenSupported || _mlxParams.cmd == Mc_QueryTokenSession
-         || _mlxParams.cmd == Mc_EndTokenSession) && _mlxParams.device.length() == 0) {
+    if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw ||
+         _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply ||
+         _mlxParams.cmd == Mc_RemoteTokenKeepAlive || _mlxParams.cmd == Mc_ChallengeRequest ||
+         _mlxParams.cmd == Mc_TokenSupported || _mlxParams.cmd == Mc_QueryTokenSession ||
+         _mlxParams.cmd == Mc_EndTokenSession) &&
+        _mlxParams.device.length() == 0)
+    {
         return err(true, "%s command expects device to be specified.",
                    _mlxParams.cmd == Mc_Set ?
-                   "set" : _mlxParams.cmd == Mc_Set_Raw ?
-                   "set_raw" : _mlxParams.cmd == Mc_Get_Raw ?
-                   "get_raw" : _mlxParams.cmd == Mc_Clr_Sem ?
-                   "clear_semaphore" : _mlxParams.cmd == Mc_Backup ?
-                   "backup" : _mlxParams.cmd == Mc_Apply ?
-                   "apply" : _mlxParams.cmd == Mc_ChallengeRequest ?
-                   "challenge_request" : _mlxParams.cmd == Mc_TokenSupported ?
-                   "token_supported" : _mlxParams.cmd == Mc_QueryTokenSession ?
-                   "query_token_session" : _mlxParams.cmd == Mc_EndTokenSession ?
-                   "end_token_session" : _mlxParams.cmd == Mc_EndTokenSession ?
-                   "remote_token_keep_alive" : "show_confs");
+                     "set" :
+                     _mlxParams.cmd == Mc_Set_Raw ?
+                     "set_raw" :
+                     _mlxParams.cmd == Mc_Get_Raw ?
+                     "get_raw" :
+                     _mlxParams.cmd == Mc_Clr_Sem ?
+                     "clear_semaphore" :
+                     _mlxParams.cmd == Mc_Backup ?
+                     "backup" :
+                     _mlxParams.cmd == Mc_Apply ?
+                     "apply" :
+                     _mlxParams.cmd == Mc_ChallengeRequest ?
+                     "challenge_request" :
+                     _mlxParams.cmd == Mc_TokenSupported ?
+                     "token_supported" :
+                     _mlxParams.cmd == Mc_QueryTokenSession ?
+                     "query_token_session" :
+                     _mlxParams.cmd == Mc_EndTokenSession ?
+                     "end_token_session" :
+                     _mlxParams.cmd == Mc_EndTokenSession ? "remote_token_keep_alive" : "show_confs");
     }
-    if (((_mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Get_Raw) &&
-            _mlxParams.rawTlvFile.size() == 0 )) {
+    if (((_mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Get_Raw) && _mlxParams.rawTlvFile.size() == 0))
+    {
         if (_mlxParams.cmd == Mc_Set_Raw)
         {
             return err(true, "set_raw command expects raw TLV file to be specified.");
@@ -608,83 +770,109 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
             return err(true, "get_raw command expects raw TLV file to be specified.");
         }
     }
-    if ((_mlxParams.cmd == Mc_Backup && _mlxParams.rawTlvFile.size() == 0 )) {
+    if ((_mlxParams.cmd == Mc_Backup && _mlxParams.rawTlvFile.size() == 0))
+    {
         return err(true, "backup command expects file to be specified.");
     }
-    if ((((_mlxParams.cmd != Mc_Set_Raw && _mlxParams.cmd != Mc_Get_Raw) &&
-            _mlxParams.cmd != Mc_Backup) &&
-         _mlxParams.rawTlvFile.size() != 0 )) {
+    if ((((_mlxParams.cmd != Mc_Set_Raw && _mlxParams.cmd != Mc_Get_Raw) && _mlxParams.cmd != Mc_Backup) &&
+         _mlxParams.rawTlvFile.size() != 0))
+    {
         return err(true, "raw TLV file can only be specified with set_raw, get_raw and backup commands.");
     }
 
     if ((_mlxParams.cmd == Mc_ChallengeRequest && (_mlxParams.tokenID == Mc_Token_Unknown)) ||
-        (_mlxParams.cmd != Mc_ChallengeRequest && (_mlxParams.tokenID != Mc_Token_Unknown))) {
+        (_mlxParams.cmd != Mc_ChallengeRequest && (_mlxParams.tokenID != Mc_Token_Unknown)))
+    {
         return err(true, "-tkn/--token_type must be specified with challenge_request command");
     }
 
     if ((_mlxParams.cmd == Mc_RemoteTokenKeepAlive && !_mlxParams.isSessionIDGiven) ||
-        (_mlxParams.cmd != Mc_RemoteTokenKeepAlive && _mlxParams.isSessionIDGiven)) {
+        (_mlxParams.cmd != Mc_RemoteTokenKeepAlive && _mlxParams.isSessionIDGiven))
+    {
         return err(true, "-s/--session_id should be specified with remote_token_keep_alive command");
     }
-    if ((_mlxParams.isSleepTimeBetweenCommandsInput || _mlxParams.isSleepTimeOnCommandTOInput)
-        && _mlxParams.cmd != Mc_RemoteTokenKeepAlive) {
-        return err(true, "sleep times for keep alive session can only be specified with remote_token_keep_alive command");
+    if ((_mlxParams.isSleepTimeBetweenCommandsInput || _mlxParams.isSleepTimeOnCommandTOInput) &&
+        _mlxParams.cmd != Mc_RemoteTokenKeepAlive)
+    {
+        return err(true,
+                   "sleep times for keep alive session can only be specified with remote_token_keep_alive command");
     }
-    if (_mlxParams.isSessionTimeGiven && _mlxParams.cmd != Mc_RemoteTokenKeepAlive) {
-        return err(true, "session time for keep alive session can only be specified with remote_token_keep_alive command");
+    if (_mlxParams.isSessionTimeGiven && _mlxParams.cmd != Mc_RemoteTokenKeepAlive)
+    {
+        return err(true,
+                   "session time for keep alive session can only be specified with remote_token_keep_alive command");
     }
 
-    if (_mlxParams.cmd == Mc_QueryTokenSession && _mlxParams.deviceType == UNSUPPORTED_DEVICE) {
+    if (_mlxParams.cmd == Mc_QueryTokenSession && _mlxParams.deviceType == UNSUPPORTED_DEVICE)
+    {
         return err(true, "device type must be specified with query_token_session command");
     }
 
-    if (_mlxParams.cmd == Mc_GenTLVsFile) {
+    if (_mlxParams.cmd == Mc_GenTLVsFile)
+    {
         return extractNVOutputFile(argc - i, &(argv[i]));
     }
 
-    if (_mlxParams.cmd == Mc_Apply) {
+    if (_mlxParams.cmd == Mc_Apply)
+    {
         return extractNVInputFile(argc - i, &(argv[i]));
     }
 
-    if (_mlxParams.cmd == Mc_CreateConf) {
-
-        if (!_mlxParams.privPemFile.empty() && (!_mlxParams.opensslEngine.empty() || !_mlxParams.opensslKeyId.empty())) {
-            return err(true,
-                       "Please provide either private pem file or OpenSSL engine and key identifier "
-                       "but not both of them");
+    if (_mlxParams.cmd == Mc_CreateConf)
+    {
+        if (_mlxParams.isLinkXDevice)
+        {
+            if (_mlxParams.keyPairUUID.empty())
+            {
+                return err(true, "Please provide key pair UUID");
+            }
         }
+        else
+        {
+            if (!_mlxParams.privPemFile.empty() &&
+                (!_mlxParams.opensslEngine.empty() || !_mlxParams.opensslKeyId.empty()))
+            {
+                return err(true,
+                           "Please provide either private pem file or OpenSSL engine and key identifier "
+                           "but not both of them");
+            }
 
-        if (!_mlxParams.keyPairUUID.empty() ^
-            (!_mlxParams.privPemFile.empty() || (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty()))) {
-            return err(true,
-                       "if you want to sign the configuration file you have to "
-                       "provide key pair UUID file with either private pem file "
-                       "or OpenSSL engine and key identifier"
-            );
+            if (!_mlxParams.keyPairUUID.empty() ^
+                (!_mlxParams.privPemFile.empty() ||
+                 (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty())))
+            {
+                return err(true,
+                           "if you want to sign the configuration file you have to "
+                           "provide key pair UUID file with either private pem file "
+                           "or OpenSSL engine and key identifier");
+            }
         }
     }
 
-    if (_mlxParams.cmd == Mc_GenXMLTemplate
-        || _mlxParams.cmd == Mc_XML2Raw
-        || _mlxParams.cmd == Mc_Raw2XML
-        || _mlxParams.cmd == Mc_XML2Bin
-        || _mlxParams.cmd == Mc_CreateConf) {
+    if (_mlxParams.cmd == Mc_GenXMLTemplate || _mlxParams.cmd == Mc_XML2Raw || _mlxParams.cmd == Mc_Raw2XML ||
+        _mlxParams.cmd == Mc_XML2Bin || _mlxParams.cmd == Mc_CreateConf)
+    {
         mlxCfgStatus rc = extractNVInputFile(argc - i, &(argv[i]));
-        if (rc != MLX_CFG_OK) {
+        if (rc != MLX_CFG_OK)
+        {
             return rc;
         }
         return extractNVOutputFile(argc - i - 1, &(argv[i + 1]));
     }
 
-
-    try {
-        if (_mlxParams.cmd == Mc_Query) {
+    try
+    {
+        if (_mlxParams.cmd == Mc_Query)
+        {
             return extractQueryCfgArgs(argc - i, &(argv[i]));
-        } else {
+        }
+        else
+        {
             return extractSetCfgArgs(argc - i, &(argv[i]));
         }
-    } catch (MlxcfgException& e) {
+    }
+    catch (MlxcfgException& e)
+    {
         return err(true, "%s", e._err.c_str());
     }
 }
-

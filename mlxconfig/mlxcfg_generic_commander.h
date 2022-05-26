@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -47,23 +48,26 @@
 #include "mlxcfg_commander.h"
 #include "mlxcfg_db_manager.h"
 
-class GenericCommander : public Commander {
+class GenericCommander : public Commander
+{
 private:
-    MlxcfgDBManager *_dbManager;
+    MlxcfgDBManager* _dbManager;
 
     void supportsNVData();
     void printEnums(const ParamView& p, string& s);
-    bool checkDependency(TLVConf *cTLV, string dStr);
-    void filterByDependency(TLVConf *cTLV, const vector<pair<ParamView, string> >& dependencyTable, vector<ParamView>& result);
-    void queryTLV(TLVConf *conf, std::vector<ParamView>& paramsConf, QueryType qt);
+    bool checkDependency(TLVConf* cTLV, string dStr);
+    void filterByDependency(TLVConf* cTLV,
+                            const vector<pair<ParamView, string> >& dependencyTable,
+                            vector<ParamView>& result);
+    void queryTLV(TLVConf* conf, std::vector<ParamView>& paramsConf, QueryType qt);
     void getAllConfigurations(std::vector<TLVConfView>& confs);
     void excludeDuplicatedTLVs(vector<TLVConfView>& s, vector<TLVConfView>& d);
-    void printTLVConfViews(FILE *f, vector<TLVConfView>& v);
-    void printParamViews(FILE *f, vector<ParamView>& v);
-    void genXMLTemplateAux(vector<string> tlvs, string& xmlTemplate,
-                           bool allAttrs, bool withVal, bool defaultAttrVal);
+    void printTLVConfViews(FILE* f, vector<TLVConfView>& v);
+    void printParamViews(FILE* f, vector<ParamView>& v);
+    void genXMLTemplateAux(vector<string> tlvs, string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal);
+
 public:
-    GenericCommander(mfile *mf, string dbName, bool isSwitch=false);
+    GenericCommander(mfile* mf, string dbName, bool isSwitch = false);
     ~GenericCommander();
     void printLongDesc(FILE*);
     void queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt = QueryNext);
@@ -74,15 +78,15 @@ public:
     bool isCurrentSupported();
     void clearSemaphore();
     void invalidateCfgs();
-    void invalidateCfg(const std::string & configName);
+    void invalidateCfg(const std::string& configName);
     const char* loadConfigurationGetStr();
     void setRawCfg(std::vector<u_int32_t> rawTlvVec);
     std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec);
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump);
     void backupCfgs(vector<BackupView>& view);
     void updateParamViewValue(ParamView&, std::string);
-    void queryConfigViews(std::vector<TLVConfView> & confs, const std::string & configName = "", QueryType qt = QueryNext);
-    void getConfigViews(std::vector<TLVConfView> & confs, const std::string & configName = "");
+    void queryConfigViews(std::vector<TLVConfView>& confs, const std::string& configName = "", QueryType qt = QueryNext);
+    void getConfigViews(std::vector<TLVConfView>& confs, const std::string& configName = "");
 
     void genTLVsList(vector<string>& tlvs);
     void genXMLTemplate(vector<string> tlvs, string& xml, bool allAttrs);
@@ -97,8 +101,12 @@ public:
     void checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::comps_ids_t& compsId);
     void orderConfTlvs(vector<TLVConf*>& tlvs);
     void createConf(const string& xml, vector<u_int32_t>& buff);
-    void sign(vector<u_int32_t>& buff, const string& privateKeyFile = "",
-              const string& keyPairUUid = "", const string& openssl_engine = "", const string& openssl_key_identifier = "");
+    void sign(vector<u_int32_t>& buff,
+              const string& privateKeyFile = "",
+              const string& keyPairUUid = "",
+              const string& openssl_engine = "",
+              const string& openssl_key_identifier = "");
+    void signECDSA(vector<u_int32_t>& buff, const string& privateKeyFile = "", const string& keyPairUUid = "");
     void apply(const vector<u_int8_t>& buff);
 };
 
@@ -109,7 +117,7 @@ public:
     ~RawCfgParams5thGen() {}
     int setRawData(const std::vector<u_int32_t>& tlvBuff);
     std::vector<u_int32_t> getRawData();
-    int setOnDev(mfile *mf, RawTlvMode mode);
+    int setOnDev(mfile* mf, RawTlvMode mode);
     std::string dumpTlv();
 
 private:

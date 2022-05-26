@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -43,7 +44,8 @@
  * Enum for handling error messages
  */
 
-typedef enum {
+typedef enum
+{
     MCE_SUCCESS = 0,
     MCE_FAILED,
     MCE_TLV_NOT_FOUND,
@@ -74,6 +76,5 @@ typedef enum {
     MCE_GET_DEFAULT_PARAMS,
     MCE_UNKNOWN_ERR
 } McStatus;
-
 
 #endif /* MLXCFG_STATUS_H_ */
