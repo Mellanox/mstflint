@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -39,14 +40,31 @@
 #include <compatibility.h>
 #include <mtcr.h>
 
+#ifdef CABLES_SUPP
+#include <cable_access/cdb_cable_commander.h>
+#endif
+
 #include "mlxcfg_4thgen_commander.h"
 //#include "mlxcfg_lib.h"
 #include "mlxcfg_commander.h"
 #include "mlxcfg_view.h"
+#include "mlxcfg_ui_tokens.h"
+
+#define MAX_ERR_STR_LEN 1024
+#define MAX_BUF_SIZE 1024
+#define PRE_ERR_MSG "-E-"
+#define MLNX_RAW_TLV_FILE_SIG "MLNX_RAW_TLV_FILE"
+
+#ifdef MST_UL
+#define NO_DEV_ERR "No devices found."
+#else
+#define NO_DEV_ERR "No devices found, mst might be stopped. You may need to run 'mst start' to load MST modules. "
+#endif
 
 #define DB_NAME ""
 
-typedef enum {
+typedef enum
+{
     Mc_Set,
     Mc_Query,
     Mc_Reset,
@@ -70,26 +88,16 @@ typedef enum {
     Mc_UnknownCmd
 } mlxCfgCmd;
 
-typedef enum {
-    Mc_Token_RMCS = 0,
-    Mc_Token_RMDT,
-    Mc_Token_CRCS,
-    Mc_Token_CRDT,
-    Mc_Token_Unknown
-} mlxCfgToken;
-
-typedef enum {
+typedef enum
+{
     UNSUPPORTED_DEVICE = -1,
     HCA = 0,
-    Switch = 1
+    Switch = 1,
+    LinkX = 2
 } Device_Type;
 
-typedef enum {
-    KEEP_ALIVE_OK,        
-    KEEP_ALIVE_ERROR
-} keepAliveStatus;
-
-typedef struct QueryOutputItem {
+typedef struct QueryOutputItem
+{
     string mlxconfigName;
     u_int32_t nextVal;
     string strNextVal;
@@ -106,14 +114,35 @@ using namespace std;
 class MlxCfgParams
 {
 public:
-    MlxCfgParams() : device(), rawTlvFile(), NVInputFile(), NVOutputFile(),
-        dbName(DB_NAME), privPemFile(), keyPairUUID(), opensslEngine(),
-        opensslKeyId(), allAttrs(false), cmd(Mc_UnknownCmd), yes(false),
-        force(false), enableVerbosity(false), tokenID(Mc_Token_Unknown), sessionId(0), 
-        isSessionIDGiven(false), sessionTimeInSec(600), isSessionTimeGiven(false), 
-        keepAliveSleepTimeBetweenCommands(0), isSleepTimeBetweenCommandsInput(false), 
-        keepAliveSleepTimeOnCommandTO(0), isSleepTimeOnCommandTOInput(false) {}
-        
+    MlxCfgParams() :
+        device(),
+        deviceType(UNSUPPORTED_DEVICE),
+        rawTlvFile(),
+        NVInputFile(),
+        NVOutputFile(),
+        dbName(DB_NAME),
+        privPemFile(),
+        keyPairUUID(),
+        opensslEngine(),
+        opensslKeyId(),
+        allAttrs(false),
+        cmd(Mc_UnknownCmd),
+        yes(false),
+        force(false),
+        enableVerbosity(false),
+        tokenID(Mc_Token_Unknown),
+        sessionId(0),
+        isSessionIDGiven(false),
+        sessionTimeInSec(600),
+        isSessionTimeGiven(false),
+        keepAliveSleepTimeBetweenCommands(0),
+        isSleepTimeBetweenCommandsInput(false),
+        keepAliveSleepTimeOnCommandTO(0),
+        isSleepTimeOnCommandTOInput(false),
+        isLinkXDevice(false)
+    {
+    }
+
     ~MlxCfgParams() {}
 
     std::string device;
@@ -130,7 +159,7 @@ public:
     mlxCfgCmd cmd;
     bool yes;
     std::vector<ParamView> setParams;
-    bool force;// ignore parameter checks
+    bool force; // ignore parameter checks
     bool enableVerbosity;
     mlxCfgToken tokenID;
     u_int32_t sessionId;
@@ -141,79 +170,58 @@ public:
     bool isSleepTimeBetweenCommandsInput;
     u_int32_t keepAliveSleepTimeOnCommandTO;
     bool isSleepTimeOnCommandTOInput;
-};
-
-class KeepAliveSession
-{
-public:
-    KeepAliveSession(mfile *mf, u_int16_t sessionId, u_int32_t sessionTimeInSec);
-
-    keepAliveStatus runSession();
-    void setSleepTimeOnCommandTO(u_int32_t sleepTime);
-    void setSleepTimeBetweenCommands(u_int32_t sleepTime);
-
-private:
-
-    keepAliveStatus runMKDC(mfile* mf, reg_access_switch_mkdc_reg_ext* mkdc_reg, time_t& timer);
-    keepAliveStatus processMKDCData(reg_access_switch_mkdc_reg_ext* mkdc_reg);
-    keepAliveStatus err(bool report, const char *fmt, ...);
-
-
-    static const char* _mkdcErrorToString[5];
-
-    static const u_int32_t _keepAliveTimestampInSec;
-    
-    mfile* _mf;
-    u_int16_t _sessionId;
-    u_int32_t _sessionTimeLeftInSec;
-    reg_access_switch_mkdc_reg_ext _mkdc_reg;
-    u_int32_t _SleepTimeOnCommandTO;
-    u_int32_t _SleepTimeBetweenCommands;
+    bool isLinkXDevice;
 };
 
 class MlxCfg
 {
 public:
     MlxCfg() : _mlxParams(), _errStr(), _allInfo(), _devType(DeviceUnknown) {}
-    ~MlxCfg() {};
-    mlxCfgStatus execute(int argc, char *argv[]);
-private:
+    ~MlxCfg(){};
+    mlxCfgStatus execute(int argc, char* argv[]);
 
+private:
     // User interface and parsing methods
     void printHelp();
     mlxCfgStatus showDevConfs();
     void printVersion();
     void printUsage();
-    void printOpening(const char *dev, int devIndex);
+    void printOpening(mfile* mf, const char* dev, int devIndex);
     void printConfHeader(bool showDefualt, bool showNew, bool showCurrent);
     Device_Type getDeviceTypeFromString(string inStr);
     mlxCfgStatus getNumberFromString(const char* str, u_int32_t& num);
-    mlxCfgStatus parseArgs(int argc, char *argv[]);
-    //Helper functions for parse args
-    mlxCfgStatus extractNVInputFile(int argc, char *argv[]);
-    mlxCfgStatus extractNVOutputFile(int argc, char *argv[]);
-    mlxCfgStatus extractSetCfgArgs(int argc, char *argv[]);
-    mlxCfgStatus extractQueryCfgArgs(int argc, char *argv[]);
+    mlxCfgStatus parseArgs(int argc, char* argv[]);
+    // Helper functions for parse args
+    mlxCfgStatus extractNVInputFile(int argc, char* argv[]);
+    mlxCfgStatus extractNVOutputFile(int argc, char* argv[]);
+    mlxCfgStatus extractSetCfgArgs(int argc, char* argv[]);
+    mlxCfgStatus extractQueryCfgArgs(int argc, char* argv[]);
 
-    void removeContinuanceArray(std::vector<QueryOutputItem>& OutputItemOut, std::vector<QueryOutputItem>& OutputItemIn);
-    void editAndPushItem(std::vector<QueryOutputItem>& queryOutputItemVector, QueryOutputItem& item, u_int32_t arrayIndex);
+    void removeContinuanceArray(std::vector<QueryOutputItem>& OutputItemOut,
+                                std::vector<QueryOutputItem>& OutputItemIn);
+    void
+      editAndPushItem(std::vector<QueryOutputItem>& queryOutputItemVector, QueryOutputItem& item, u_int32_t arrayIndex);
 
-    const char * getConfigWarning(const string & mlx_config_name,
-            const string & set_val);
+    const char* getConfigWarning(const string& mlx_config_name, const string& set_val);
 
     bool tagExsists(string tag);
-    const char* getDeviceName(const char *dev);
+    const char* getDeviceName(mfile* mf);
 
     // Query cmd
     mlxCfgStatus queryDevsCfg();
-    mlxCfgStatus queryDevCfg(const char *dev, const char *pci = (const char*)NULL, int devIndex = 1, bool printNewCfg = false);
-    mlxCfgStatus queryDevCfg(Commander *commander, const char *dev, const char *pci = (const char*)NULL, int devIndex = 1, bool printNewCfg = false);
+    mlxCfgStatus
+      queryDevCfg(const char* dev, const char* pci = (const char*)NULL, int devIndex = 1, bool printNewCfg = false);
+    mlxCfgStatus queryDevCfg(Commander* commander,
+                             const char* dev,
+                             const char* pci = (const char*)NULL,
+                             int devIndex = 1,
+                             bool printNewCfg = false);
 
     // Set cmd
     mlxCfgStatus setDevCfg();
     // reset Cmd
     mlxCfgStatus resetDevsCfg();
-    mlxCfgStatus resetDevCfg(const char *dev);
+    mlxCfgStatus resetDevCfg(const char* dev);
     // Set\Get Raw TLV file
     mlxCfgStatus devRawCfg(RawTlvMode mode);
     mlxCfgStatus backupCfg();
@@ -242,6 +250,8 @@ private:
 
     mlxCfgStatus remoteTokenKeepAlive();
     mlxCfgStatus getChallenge();
+    void getChallengeFromSwitchOrHCA(mfile* mf);
+    void getChallengeFromLinkX();
     mlxCfgStatus queryTokenSupport();
     mlxCfgStatus queryTokenSession();
     mlxCfgStatus endTokenSession();
@@ -251,16 +261,19 @@ private:
     void printArray(const u_int32_t arr[], int len);
     void printHexArrayAsAscii(const u_int32_t arr[], int len);
     mlxCfgToken getTokenType(const char* tokenStr);
+    string getTokenString(mlxCfgToken token);
+
+#ifdef CABLES_SUPP
+    void processLinkXTokenStatus(const TokenStatusReply& tokenStatus);
+#endif
 
     // static print functions
     static int printParam(string param, u_int32_t val);
     static int printValue(string strVal, u_int32_t val);
-    static void printSingleParam(const char *name,
-            QueryOutputItem & queryOutItem, u_int8_t verbose, bool printNewCfg);
+    static void printSingleParam(const char* name, QueryOutputItem& queryOutItem, u_int8_t verbose, bool printNewCfg);
 
-
-    bool askUser(const char *question, bool add_prefix=true, bool add_suffix=true);
-    mlxCfgStatus err(bool report, const char *errMsg, ...);
+    bool askUser(const char* question, bool add_prefix = true, bool add_suffix = true);
+    mlxCfgStatus err(bool report, const char* errMsg, ...);
     void printErr();
     // data members
 
@@ -268,7 +281,6 @@ private:
     std::string _errStr;
     MlxCfgAllInfo _allInfo;
     dm_dev_id_t _devType;
-
 };
 
 #endif /* MLXCFG_UI_H_ */

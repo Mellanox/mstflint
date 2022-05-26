@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -46,29 +47,32 @@
 
 using namespace std;
 
-namespace DB {
-
-class ByteBitString {
+namespace DB
+{
+class ByteBitString
+{
 public:
     explicit ByteBitString(const string& str);
-    u_int32_t getBytesPart() const { return _bytesPart;}
+    u_int32_t getBytesPart() const { return _bytesPart; }
+
 protected:
-    u_int32_t _bytesPart;     //describes the bytes part of the offset string ("0x51.3", the bytes part is 0x51)
-    u_int32_t _bitsPart;     //describes the bits part of the offset string ("0x51.3", the bits part is 3)
+    u_int32_t _bytesPart; // describes the bytes part of the offset string ("0x51.3", the bytes part is 0x51)
+    u_int32_t _bitsPart;  // describes the bits part of the offset string ("0x51.3", the bits part is 3)
 };
 
-class Offset : public ByteBitString {
+class Offset : public ByteBitString
+{
 public:
-    explicit Offset(const string& offset) : ByteBitString(offset) {};
-    u_int32_t toBigEndian(u_int32_t sizeInBits,
-                            u_int32_t withBitsPart = true) const;
+    explicit Offset(const string& offset) : ByteBitString(offset){};
+    u_int32_t toBigEndian(u_int32_t sizeInBits, u_int32_t withBitsPart = true) const;
 };
 
-class Size : public ByteBitString {
+class Size : public ByteBitString
+{
 public:
-    explicit Size(const string& size) : ByteBitString(size) {};
-    unsigned int toBits() const { return _bytesPart * 8 + _bitsPart;};
+    explicit Size(const string& size) : ByteBitString(size){};
+    unsigned int toBits() const { return _bytesPart * 8 + _bitsPart; };
 };
 
-};
+}; // namespace DB
 #endif

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -46,41 +47,48 @@
 #include "mlxcfg_param.h"
 #include <ext_libs/sqlite/sqlite3.h>
 
-class MlxcfgDBManager {
+enum SPLITBY {PORT, MODULE};
 
+class MlxcfgDBManager
+{
 private:
     std::string _dbName;
-    sqlite3 *_db;
+    sqlite3* _db;
     const unsigned int _supportedVersion;
 
-    static int selectAndCreateNewTLVCallBack(void *object, int argc, char **argv, char **azColName);
+    static int selectAndCreateNewTLVCallBack(void* object, int argc, char** argv, char** azColName);
     static int selectTLVCallBack(void*, int, char**, char**);
-    static int selectAndCreateParamCallBack(void *object, int argc, char **argv, char **azColName);
+    static int selectAndCreateParamCallBack(void* object, int argc, char** argv, char** azColName);
     static int selectParamCallBack(void*, int, char**, char**);
     static int selectParamByMlxconfigNameCallBack(void*, int, char**, char**);
     void openDB();
     void checkDBVersion();
     inline bool isDBFileExists(const std::string& name);
-    TLVConf* fetchTLVByName(std::string n, u_int8_t port);
+    TLVConf* fetchTLVByName(std::string tlvName, u_int32_t port, int32_t module);
     TLVConf* fetchTLVByIndexAndClass(u_int32_t id, TLVClass c);
+
 public:
     MlxcfgDBManager(std::string dbName);
     ~MlxcfgDBManager();
     std::string _callBackErr;
     bool _isAllFetched;
-    bool isParamMlxconfigNameExist(std::string n);
-    Param *_paramSqlResult;
+    bool isParamMlxconfigNameExist(std::string mlxconfigName);
+    std::shared_ptr<Param> _paramSqlResult;
     std::vector<TLVConf*> fetchedTLVs;
-    std::vector<Param*> fetchedParams;
+    std::vector<std::shared_ptr<Param>> fetchedParams;
     void getAllTLVs();
-    TLVConf* getTLVByNameAux(std::string n, u_int8_t port);
+    TLVConf* getTLVByNameAux(std::string tlvName, u_int32_t port, int32_t module);
+    TLVConf* getAndSetTLVByNameAuxNotInitialized(string tlv_name, u_int32_t port, int32_t module);
     TLVConf* getTLVByIndexAndClassAux(u_int32_t id, TLVClass c);
-    TLVConf* getTLVByName(std::string n, u_int8_t port);
-    TLVConf* getAndCreateTLVByName(std::string n, u_int8_t port);
-    TLVConf* getTLVByParamMlxconfigName(std::string n, u_int32_t index);
+    TLVConf* getTLVByName(std::string tlvName, u_int32_t port);
+    TLVConf* getAndCreateTLVByName(std::string tlvName);
+    TLVConf* getTLVByParamMlxconfigName(std::string mlxconfigName, u_int32_t index);
+    TLVConf* findTLVInExisting(std::string mlxconfigName, std::string noPortMlxcfgName,std::string noModuleMlxcfgName, u_int32_t port, u_int32_t index, int32_t module);
+    void findTLVInDB(std::string mlxconfigName, u_int32_t index);
     TLVConf* getTLVByIndexAndClass(u_int32_t id, TLVClass c);
-    void execSQL(sqlite3_callback f, void *obj, const char *stat, ...);
-
+    void fillInRelevantParamsOfTlv(TLVConf* tlv, u_int32_t port, int32_t module);
+    tuple<string, int> splitMlxcfgNameAndPortOrModule(std::string mlxconfigName, SPLITBY splitBy);
+    void execSQL(sqlite3_callback f, void* obj, const char* stat, ...);
 };
 
 #endif
