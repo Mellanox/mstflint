@@ -39,8 +39,7 @@ PYTHON_WRAPPER_SCRIPT=$(USER_DIR)/common/python_wrapper
 ${PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
 	cp $(PYTHON_WRAPPER_SCRIPT) $@
 pythonlibdir=$(libdir)/mstflint/python_tools/mstresourcedump
-dist_pythonlib_SCRIPTS = mstresourcedump.py
-dist_pythonlib_DATA = __init__.py
+dist_pythonlib_DATA = __init__.py mstresourcedump.py
 validationpythonlibdir=$(libdir)/mstflint/python_tools/mstresourcedump/validation
 dist_validationpythonlib_DATA = validation/*.py
 utilspythonlibdir=$(libdir)/mstflint/python_tools/mstresourcedump/utils
