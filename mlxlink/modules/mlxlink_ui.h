@@ -38,11 +38,12 @@
 #include "mlxlink_commander.h"
 #include "printutil/mlxlink_record.h"
 
-class MlxlinkUi : public CommandLineRequester {
+class MlxlinkUi : public CommandLineRequester
+{
 public:
     MlxlinkUi();
     virtual ~MlxlinkUi();
-    int run(int argc, char **argv);
+    int run(int argc, char** argv);
 
 protected:
     virtual void addCmd(OPTION_TYPE option);
@@ -70,6 +71,6 @@ protected:
 
     CommandLineParser _cmdParser;
     std::vector<OPTION_TYPE> _sendRegFuncMap;
-    MlxlinkCommander *_mlxlinkCommander;
+    MlxlinkCommander* _mlxlinkCommander;
 };
 #endif /* MLXLINK_UI_H */

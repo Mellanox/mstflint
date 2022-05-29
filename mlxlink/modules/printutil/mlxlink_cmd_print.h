@@ -39,12 +39,12 @@
 #include "mlxlink_record.h"
 #include <json/json.h>
 
-class MlxlinkCmdPrint{
-
+class MlxlinkCmdPrint
+{
 public:
     MlxlinkCmdPrint();
     virtual ~MlxlinkCmdPrint();
-    friend std::ostream & operator << (std::ostream &out, const MlxlinkCmdPrint &cmdPrint);
+    friend std::ostream& operator<<(std::ostream& out, const MlxlinkCmdPrint& cmdPrint);
     void initRecords(int size);
     void toJsonFormat(Json::Value& jsonRoot);
     u_int32_t getCurrRow();

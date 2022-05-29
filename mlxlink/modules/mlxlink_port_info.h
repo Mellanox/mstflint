@@ -37,25 +37,28 @@
 
 #include "mlxlink_reg_parser.h"
 
-#define PPHCR_REG               "PPHCR"
-#define PPCNT_REG               "PPCNT"
+#define PPHCR_REG "PPHCR"
+#define PPCNT_REG "PPCNT"
 
-enum HISTOGRAM_TYPE {
+enum HISTOGRAM_TYPE
+{
     HIST_TYPE_AUTO,
     HIST_TYPE_KP4,
     HIST_TYPE_LL,
     HIST_TYPE_KR4
 };
 
-struct HISTOGRAM_BIN {
-    HISTOGRAM_BIN () {
+struct HISTOGRAM_BIN
+{
+    HISTOGRAM_BIN()
+    {
         bin = 0;
         minRange = 0;
         maxRange = 0;
         numOfErrors = 0;
     }
-    HISTOGRAM_BIN (u_int32_t _bin, u_int32_t _minRange, u_int32_t _maxRange,
-            u_int64_t _numOfErrors) {
+    HISTOGRAM_BIN(u_int32_t _bin, u_int32_t _minRange, u_int32_t _maxRange, u_int64_t _numOfErrors)
+    {
         bin = _bin;
         minRange = _minRange;
         maxRange = _maxRange;
@@ -69,10 +72,10 @@ struct HISTOGRAM_BIN {
 
 using namespace std;
 
-class MlxlinkPortInfo :public MlxlinkRegParser{
-
+class MlxlinkPortInfo : public MlxlinkRegParser
+{
 public:
-    MlxlinkPortInfo(Json::Value &jsonRoot);
+    MlxlinkPortInfo(Json::Value& jsonRoot);
     virtual ~MlxlinkPortInfo();
 
     void init();
@@ -91,7 +94,7 @@ private:
     void updateBinsRange();
     void updateBinsErrorsCount();
 
-    Json::Value &_jsonRoot;
+    Json::Value& _jsonRoot;
     HISTOGRAM_TYPE _histType;
     u_int32_t _numOfBins;
     vector<HISTOGRAM_BIN> _binsList;

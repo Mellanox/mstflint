@@ -32,7 +32,7 @@
 
 #include "mlxlink_eye_opener.h"
 
-MlxlinkEyeOpener::MlxlinkEyeOpener(Json::Value &jsonRoot): _jsonRoot(jsonRoot)
+MlxlinkEyeOpener::MlxlinkEyeOpener(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
 {
     _pageDataSel = 0;
     _errResBase = 0;
@@ -47,9 +47,7 @@ MlxlinkEyeOpener::MlxlinkEyeOpener(Json::Value &jsonRoot): _jsonRoot(jsonRoot)
     initSlredMaps();
 }
 
-MlxlinkEyeOpener::~MlxlinkEyeOpener()
-{
-}
+MlxlinkEyeOpener::~MlxlinkEyeOpener() {}
 
 void MlxlinkEyeOpener::initSlredMaps()
 {
@@ -80,7 +78,6 @@ void MlxlinkEyeOpener::initSlredMaps()
     _laneSpeedMap[SLRED_LANE_SPEED_FDR] = "FDR (56GE) (14.0625 Gb/s) / Gen4 (PCIe)";
     _laneSpeedMap[SLRED_LANE_SPEED_EDR] = "EDR (25GE / 50GE / 100GE) (25.78125 Gb/s) / Gen5 (PCIe)";
     _laneSpeedMap[SLRED_LANE_SPEED_HDR] = "HDR (50GE / 200GE / 400GE) (26.5625Gbd / 53.125Gb/s)";
-
 }
 
 void MlxlinkEyeOpener::setPageDataSel(u_int32_t pageDataSel)
@@ -102,52 +99,64 @@ void MlxlinkEyeOpener::setMeasureTime(u_int32_t measureTime)
 {
     string timesStr = "";
 
-    for (map<u_int32_t, u_int32_t>::iterator it = _measureTimeMap.begin();
-            it != _measureTimeMap.end(); it++) {
-        if (it->second == measureTime) {
+    for (map<u_int32_t, u_int32_t>::iterator it = _measureTimeMap.begin(); it != _measureTimeMap.end(); it++)
+    {
+        if (it->second == measureTime)
+        {
             _measureTime = it->first;
             break;
-        } else {
+        }
+        else
+        {
             timesStr += to_string(it->second) + ",";
         }
     }
 
-    if (_measureTime < 0) {
+    if (_measureTime < 0)
+    {
         string errorMsg = "Invalid measure time : " + to_string(measureTime);
         errorMsg += "\nValid measure times are [" + deleteLastChar(timesStr) + "]";
         throw MlxRegException(errorMsg);
     }
 }
 
-void MlxlinkEyeOpener::setEyeSel(const string &eyeSel)
+void MlxlinkEyeOpener::setEyeSel(const string& eyeSel)
 {
-    if (pciePort) {
+    if (pciePort)
+    {
         return;
     }
     string defaultEye = eyeSel;
-    if (!eyeSel.empty()) {
-        if (!isPam4Speed) {
+    if (!eyeSel.empty())
+    {
+        if (!isPam4Speed)
+        {
             throw MlxRegException("Eye selection valid for PAM4 only");
         }
-    } else {
+    }
+    else
+    {
         defaultEye = "ALL";
     }
     string eyeList = "";
-    for (map<u_int32_t, string>::iterator it = _eyeSelctorMap.begin();
-            it != _eyeSelctorMap.end(); it++) {
-        if (it->second == defaultEye) {
+    for (map<u_int32_t, string>::iterator it = _eyeSelctorMap.begin(); it != _eyeSelctorMap.end(); it++)
+    {
+        if (it->second == defaultEye)
+        {
             _eyeSel = it->first;
             break;
-        } else {
+        }
+        else
+        {
             eyeList += it->second + ",";
         }
     }
-    if (_eyeSel < 0) {
+    if (_eyeSel < 0)
+    {
         string errorMsg = "Invalid eye : " + eyeSel;
         errorMsg += "\nValid eyes selection are [" + deleteLastChar(eyeList) + "]";
         throw MlxRegException(errorMsg);
     }
-
 }
 
 void MlxlinkEyeOpener::setNonInteractiveMode(bool force)
@@ -159,26 +168,31 @@ void MlxlinkEyeOpener::initWarMsgs()
 {
     MlxlinkRecord::printCmdLine("Reading the SerDes receive eye grades", _jsonRoot);
     MlxlinkRecord::printWar("Link measurement or configuration change using Eye Opening may"
-            " cause the link to fail and renegotiate.\nOn the PCI express port,"
-            " this may lead to link speed degradation or a system hang.", _jsonRoot);
+                            " cause the link to fail and renegotiate.\nOn the PCI express port,"
+                            " this may lead to link speed degradation or a system hang.",
+                            _jsonRoot);
     MlxlinkRecord::printWar("Eye Opening is a tool to quickly obtain link quality evaluation.\n"
-            "It is not intended to replace extensive BER testing. the two evaluation mechanisms\n"
-            "should be used in conjunction to guarantee the desired link quality.", _jsonRoot);
+                            "It is not intended to replace extensive BER testing. the two evaluation mechanisms\n"
+                            "should be used in conjunction to guarantee the desired link quality.",
+                            _jsonRoot);
 
     u_int32_t eyeSelectTime = _measureTimeMap[_measureTime];
-    u_int32_t totalEysScanTime =
-            eyeSelectTime * (_eyeSel != MAX_NUMBER_OF_EYES? 1 : MAX_NUMBER_OF_EYES);
-    if (lane >= 0){
+    u_int32_t totalEysScanTime = eyeSelectTime * (_eyeSel != MAX_NUMBER_OF_EYES ? 1 : MAX_NUMBER_OF_EYES);
+    if (lane >= 0)
+    {
         numOfLanes = 1;
     }
-    scanIterations = pciePort? MAX_ITERATION_SCAN_PCIE : MAX_ITERATION_SCAN_PORT;
+    scanIterations = pciePort ? MAX_ITERATION_SCAN_PCIE : MAX_ITERATION_SCAN_PORT;
     u_int32_t totalScan = totalEysScanTime * numOfLanes * scanIterations;
-    char scanTitle [64];
-    u_int32_t min = (u_int32_t)totalScan/60;
-    u_int32_t sec = (u_int32_t)totalScan%60;
-    if (min) {
+    char scanTitle[64];
+    u_int32_t min = (u_int32_t)totalScan / 60;
+    u_int32_t sec = (u_int32_t)totalScan % 60;
+    if (min)
+    {
         sprintf(scanTitle, "Estimated total scan time %02d minute\\s and %02d seconds", min, sec);
-    } else {
+    }
+    else
+    {
         sprintf(scanTitle, "Estimated total scan time %02d seconds", sec);
     }
     MlxlinkRecord::printWar(scanTitle, _jsonRoot);
@@ -186,7 +200,8 @@ void MlxlinkEyeOpener::initWarMsgs()
 
 void MlxlinkEyeOpener::updatePortType()
 {
-    if (portType) {
+    if (portType)
+    {
         updateField("port_type", portType);
     }
 }
@@ -231,7 +246,8 @@ void MlxlinkEyeOpener::prepareSlred(u_int32_t lane, u_int32_t eye)
     updateField("err_res_scale", DFLT_ERR_RES_SCALE);
     updateField("err_res_base", DFLT_ERR_RES_BASE);
     updateField("eye_diag_dim", pciePort ? DFLT_EYE_DIAG_DIM_PCIE : DFLT_EYE_DIAG_DIM_PORT);
-    if (!pciePort && isPam4Speed) {
+    if (!pciePort && isPam4Speed)
+    {
         updateField("eye_sel", eye);
     }
 }
@@ -239,7 +255,8 @@ void MlxlinkEyeOpener::prepareSlred(u_int32_t lane, u_int32_t eye)
 void MlxlinkEyeOpener::enableSlredGradeScan(u_int32_t lane, u_int32_t eye)
 {
     prepareSlred(lane, eye);
-    if ((_numOfEyes == EYE_ALL && eye == EYE_DOWN) || (_numOfEyes != EYE_ALL)) {
+    if ((_numOfEyes == EYE_ALL && eye == EYE_DOWN) || (_numOfEyes != EYE_ALL))
+    {
         updateField("last_scan", 1);
     }
     updateField("en", 1);
@@ -248,7 +265,8 @@ void MlxlinkEyeOpener::enableSlredGradeScan(u_int32_t lane, u_int32_t eye)
 
 void MlxlinkEyeOpener::slredStopSignalHandler()
 {
-    if (mft_signal_is_fired()) {
+    if (mft_signal_is_fired())
+    {
         prepareSlred(0, 0);
         updateField("abort", 1);
         genBuffSendRegister(SLRED_REG, MACCESS_REG_METHOD_SET);
@@ -264,9 +282,8 @@ void MlxlinkEyeOpener::getSlredMargin(u_int32_t iteration, u_int32_t lane, u_int
     updateField("page_data_sel", 0);
     genBuffSendRegister(SLRED_REG, MACCESS_REG_METHOD_GET);
     // put all margins in one vector for later calculations
-    _measuredMargins.push_back(MarginInfo(lane,
-            (!pciePort && isPam4Speed)? eye : 0, getFieldValue("margin"),
-            getFieldValue("status"), getFieldValue("margin_version"), iteration));
+    _measuredMargins.push_back(MarginInfo(lane, (!pciePort && isPam4Speed) ? eye : 0, getFieldValue("margin"),
+                                          getFieldValue("status"), getFieldValue("margin_version"), iteration));
 }
 
 // Get the status of scan for specific lane\eye
@@ -293,26 +310,31 @@ void MlxlinkEyeOpener::gradeEyeScanner(u_int32_t iteration, u_int32_t lane, u_in
     u_int32_t currTime = 0;
     enableSlredGradeScan(lane, eye);
     // Throw error if the current speed not supported
-    if (getSlredStatus(lane, eye) == UNSUPPORTED_SCAN_FOR_CURRENT_SPEED) {
+    if (getSlredStatus(lane, eye) == UNSUPPORTED_SCAN_FOR_CURRENT_SPEED)
+    {
         string errMsg = getSlredLaneSpeedStr(lane, eye).c_str();
         errMsg = errMsg.empty() ? activeSpeedStr : errMsg;
         errMsg = _scanStatusMap[UNSUPPORTED_SCAN_FOR_CURRENT_SPEED] + ": " + errMsg;
         throw MlxRegException(errMsg);
     }
     u_int32_t status = getSlredStatus(lane, eye);
-    if (status != EYE_SCAN_COMPLETED) {
-        while ((status == SYSTEM_BUSY || status == PERFORMING_EYE_SCAN)
-                && (currTime < measureTime)) {
+    if (status != EYE_SCAN_COMPLETED)
+    {
+        while ((status == SYSTEM_BUSY || status == PERFORMING_EYE_SCAN) && (currTime < measureTime))
+        {
             fprintf(MlxlinkRecord::stdOut, "\r");
             printField("Scanning status", "", false);
             msleep(1000);
-            try {
+            try
+            {
                 status = getSlredStatus(lane, eye);
-            } catch (MlxRegException& exp) {
+            }
+            catch (MlxRegException& exp)
+            {
                 continue;
             }
             currTime++;
-            fprintf(MlxlinkRecord::stdOut,"In progress %c", _symWaiter.at(currTime%(_symWaiter.length())));
+            fprintf(MlxlinkRecord::stdOut, "In progress %c", _symWaiter.at(currTime % (_symWaiter.length())));
             fflush(MlxlinkRecord::stdOut);
             slredStopSignalHandler();
         }
@@ -323,31 +345,37 @@ void MlxlinkEyeOpener::gradeEyeScanner(u_int32_t iteration, u_int32_t lane, u_in
 // scan all grades per lane
 void MlxlinkEyeOpener::laneEyesScanner(u_int32_t iteration, u_int32_t lane)
 {
-    if (isPam4Speed && _eyeSel == MAX_NUMBER_OF_EYES && !pciePort) {
+    if (isPam4Speed && _eyeSel == MAX_NUMBER_OF_EYES && !pciePort)
+    {
         // scan all eyes
-        for (u_int32_t i = 0 ; i < MAX_NUMBER_OF_EYES; i++) {
+        for (u_int32_t i = 0; i < MAX_NUMBER_OF_EYES; i++)
+        {
             gradeEyeScanner(iteration, lane, i);
             slredStopSignalHandler();
         }
-    } else {
+    }
+    else
+    {
         // scan: specified eye, pcie margin, or NRZ scan
         gradeEyeScanner(iteration, lane, _eyeSel);
     }
 }
 
-void MlxlinkEyeOpener::printField(const string &key, const string &val, bool newLine)
+void MlxlinkEyeOpener::printField(const string& key, const string& val, bool newLine)
 {
     // for JSON format
-    if (MlxlinkRecord::jsonFormat && newLine) {
+    if (MlxlinkRecord::jsonFormat && newLine)
+    {
         setPrintVal(_cmdOut, key, val, ANSI_COLOR_RESET, true, true, true);
     }
     *MlxlinkRecord::cOut << key << std::setw(PDDR_LINE_LEN - key.length()) << ": ";
-    if (newLine) {
+    if (newLine)
+    {
         *MlxlinkRecord::cOut << val << std::endl;
     }
 }
 
-void MlxlinkEyeOpener::printTitle(const string &title)
+void MlxlinkEyeOpener::printTitle(const string& title)
 {
     *MlxlinkRecord::cOut << std::endl << title << std::endl;
     *MlxlinkRecord::cOut << std::string(title.length(), '-') << std::endl;
@@ -356,41 +384,53 @@ void MlxlinkEyeOpener::printTitle(const string &title)
 // eye scan is working for 16 nm devices only, and Gen4 pcie speeds
 void MlxlinkEyeOpener::preChecks()
 {
-    if (MlxlinkRecord::jsonFormat && !_force) {
+    if (MlxlinkRecord::jsonFormat && !_force)
+    {
         throw MlxRegException("Interactive mode is not available with JSON format, "
-                "use --yes flag to force the execution");
+                              "use --yes flag to force the execution");
     }
 
-    if (getDeviceVersion() != PRODUCT_16NM) {
+    if (getDeviceVersion() != PRODUCT_16NM)
+    {
         throw MlxRegException("Device not supported!");
     }
-    if (pciePort) {
-        if (!isActiveGenSupported()) {
+    if (pciePort)
+    {
+        if (!isActiveGenSupported())
+        {
             throw MlxRegException("The current link speed not supported (supports only Gen4)!");
         }
-    } else {
-        if (!isPam4Speed) {
+    }
+    else
+    {
+        if (!isPam4Speed)
+        {
             _eyeSel = -1;
         }
     }
-    if (lane != -1) {
-        if ((u_int16_t)lane > (numOfLanes-1)) {
+    if (lane != -1)
+    {
+        if ((u_int16_t)lane > (numOfLanes - 1))
+        {
             throw MlxRegException("Invalid lane index!");
         }
     }
 }
 
-MarginInfo MlxlinkEyeOpener::getMarginInfoFromVector(
-        vector<MarginInfo> &margins, u_int32_t iteration, u_int32_t lane,
-        u_int32_t eye)
+MarginInfo MlxlinkEyeOpener::getMarginInfoFromVector(vector<MarginInfo>& margins,
+                                                     u_int32_t iteration,
+                                                     u_int32_t lane,
+                                                     u_int32_t eye)
 {
     MarginInfo found;
     vector<MarginInfo>::iterator it = margins.begin();
-    for (;it != margins.end(); it++) {
-        if (it->iteration == iteration && it->lane == lane && it->eye == eye) {
+    for (; it != margins.end(); it++)
+    {
+        if (it->iteration == iteration && it->lane == lane && it->eye == eye)
+        {
             found = *it;
         }
-   }
+    }
     return found;
 }
 
@@ -405,32 +445,40 @@ vector<MarginInfo> MlxlinkEyeOpener::calculateAvgMargins()
      * else go over all lanes
      * Execute the loop over the selected eye(perEye) if _eyeSel >= 0,
      * else go over all lanes */
-    u_int32_t perLane = _oneLaneScan? (u_int32_t)this->lane : 0;
-    u_int32_t perEye = _oneEyeScan? (u_int32_t)_eyeSel:0;
-    for (u_int32_t lane = perLane; lane < numOfLanes || _oneLaneScan; lane++) {
-        for (u_int32_t eye = perEye; eye < _numOfEyes || _oneEyeScan; eye++) {
+    u_int32_t perLane = _oneLaneScan ? (u_int32_t)this->lane : 0;
+    u_int32_t perEye = _oneEyeScan ? (u_int32_t)_eyeSel : 0;
+    for (u_int32_t lane = perLane; lane < numOfLanes || _oneLaneScan; lane++)
+    {
+        for (u_int32_t eye = perEye; eye < _numOfEyes || _oneEyeScan; eye++)
+        {
             value = 0;
             count = 0;
             status = EYE_SCAN_COMPLETED;
             version = 1;
-            for (u_int32_t i = 0; i < scanIterations; i++) {
+            for (u_int32_t i = 0; i < scanIterations; i++)
+            {
                 margin = getMarginInfoFromVector(_measuredMargins, i, lane, eye);
-                if (margin.value != 0) {
+                if (margin.value != 0)
+                {
                     value += margin.value;
                     count++;
-                } else {
+                }
+                else
+                {
                     status = margin.status;
                     version = margin.version;
                 }
             }
-            _avgMargins.push_back(MarginInfo(lane, eye, count? value/count : 0,
-                    count? (u_int32_t)EYE_SCAN_COMPLETED : status,
-                    count? (u_int32_t)FIGURE_OF_MERIT: version, 0));
-            if (_oneEyeScan){
+            _avgMargins.push_back(MarginInfo(lane, eye, count ? value / count : 0,
+                                             count ? (u_int32_t)EYE_SCAN_COMPLETED : status,
+                                             count ? (u_int32_t)FIGURE_OF_MERIT : version, 0));
+            if (_oneEyeScan)
+            {
                 break;
             }
         }
-        if (_oneLaneScan) {
+        if (_oneLaneScan)
+        {
             break;
         }
     }
@@ -446,20 +494,24 @@ void MlxlinkEyeOpener::printAvgMargins()
      * else go over all lanes
      * Execute the loop over the selected eye(perEye) if _eyeSel >= 0,
      * else go over all lanes */
-    u_int32_t perLane = _oneLaneScan? (u_int32_t)this->lane : 0;
-    u_int32_t perEye = _oneEyeScan? (u_int32_t)_eyeSel:0;
-    for (u_int32_t lane = perLane; lane < numOfLanes || _oneLaneScan; lane++) {
+    u_int32_t perLane = _oneLaneScan ? (u_int32_t)this->lane : 0;
+    u_int32_t perEye = _oneEyeScan ? (u_int32_t)_eyeSel : 0;
+    for (u_int32_t lane = perLane; lane < numOfLanes || _oneLaneScan; lane++)
+    {
         val = "";
-        for (u_int32_t eye = perEye; eye < _numOfEyes || _oneEyeScan; eye++) {
+        for (u_int32_t eye = perEye; eye < _numOfEyes || _oneEyeScan; eye++)
+        {
             margin = getMarginInfoFromVector(_avgMargins, 0, lane, eye);
             valid = (margin.version != 0);
-            val += (valid? to_string(margin.value): "err") + string("\t,");
-            if (_oneEyeScan) {
+            val += (valid ? to_string(margin.value) : "err") + string("\t,");
+            if (_oneEyeScan)
+            {
                 break;
             }
         }
-        printField("Lane " + to_string(lane) + " margin", val.substr(0, val.length()-1));
-        if (_oneLaneScan) {
+        printField("Lane " + to_string(lane) + " margin", val.substr(0, val.length() - 1));
+        if (_oneLaneScan)
+        {
             break;
         }
     }
@@ -472,43 +524,50 @@ void MlxlinkEyeOpener::printMarginsSummary()
     char laneIdxStr[64];
     vector<MarginInfo>::iterator it = _avgMargins.begin();
     MarginInfo finalMargin = *it;
-    for (;it != _avgMargins.end(); it++) {
+    for (; it != _avgMargins.end(); it++)
+    {
         status = it->status;
-        if (status != EYE_SCAN_COMPLETED ||
-                (status == EYE_SCAN_COMPLETED && it->version == NO_MARGIN)) {
+        if (status != EYE_SCAN_COMPLETED || (status == EYE_SCAN_COMPLETED && it->version == NO_MARGIN))
+        {
             sprintf(laneIdxStr, "Failure of lane %d", it->lane);
-            if (!pciePort && isPam4Speed) {
+            if (!pciePort && isPam4Speed)
+            {
                 sprintf(failureStr, "%s, %s eye", laneIdxStr, _eyeSelctorMap[it->eye].c_str());
-            } else {
+            }
+            else
+            {
                 sprintf(failureStr, "%s", laneIdxStr);
             }
             printField(string(failureStr),
-                    (status == EYE_SCAN_COMPLETED &&
-                            it->version == NO_MARGIN)? "Margin not available" : _scanStatusMap[status]);
-        } else {
+                       (status == EYE_SCAN_COMPLETED && it->version == NO_MARGIN) ? "Margin not available" :
+                                                                                    _scanStatusMap[status]);
+        }
+        else
+        {
             // find the minimum valid margin
-            if ((it->value < finalMargin.value) || finalMargin.value == 0) {
+            if ((it->value < finalMargin.value) || finalMargin.value == 0)
+            {
                 finalMargin = *it;
             }
         }
     }
     fprintf(MlxlinkRecord::stdOut, "\n");
-    string finalMarginValue = (finalMargin.value == 0 && finalMargin.version == 0)?
-                         "N/A" : to_string(finalMargin.value);
+    string finalMarginValue =
+      (finalMargin.value == 0 && finalMargin.version == 0) ? "N/A" : to_string(finalMargin.value);
     printField("Final margin", finalMarginValue);
 }
 
 // print the final grades and failure information if exists
 void MlxlinkEyeOpener::printFinalResults()
 {
-
     calculateAvgMargins();
 
     printAvgMargins();
 
     printMarginsSummary();
 
-    if (MlxlinkRecord::jsonFormat) {
+    if (MlxlinkRecord::jsonFormat)
+    {
         _cmdOut.toJsonFormat(_jsonRoot);
         cout << _cmdOut;
     }
@@ -523,28 +582,33 @@ void MlxlinkEyeOpener::enableGradeScan()
 
     setPrintTitle(_cmdOut, CMD_TITLE, numOfLanes + 10);
 
-    if (askUser("Do you want to continue", _force)) {
+    if (askUser("Do you want to continue", _force))
+    {
         printTitle(CMD_TITLE);
-        _numOfEyes = (_eyeSel != MAX_NUMBER_OF_EYES)? 1 : MAX_NUMBER_OF_EYES;
+        _numOfEyes = (_eyeSel != MAX_NUMBER_OF_EYES) ? 1 : MAX_NUMBER_OF_EYES;
         u_int32_t timePerLane = (_measureTimeMap[_measureTime]) * _numOfEyes * scanIterations;
         char timePerLaneStr[64];
         char totalTimeStr[64];
-        sprintf(timePerLaneStr, "%02d:%02d",
-                (u_int32_t)timePerLane/60, (u_int32_t)timePerLane%60);
-        sprintf(totalTimeStr, "%02d:%02d",
-                  (u_int32_t)(timePerLane*numOfLanes)/60,
-                  (u_int32_t)(timePerLane*numOfLanes)%60);
+        sprintf(timePerLaneStr, "%02d:%02d", (u_int32_t)timePerLane / 60, (u_int32_t)timePerLane % 60);
+        sprintf(totalTimeStr, "%02d:%02d", (u_int32_t)(timePerLane * numOfLanes) / 60,
+                (u_int32_t)(timePerLane * numOfLanes) % 60);
 
         printField("Estimated Total Time [min:sec]", string(totalTimeStr));
 
-        if (lane >= 0) {
+        if (lane >= 0)
+        {
             _oneLaneScan = true;
-            for (u_int32_t i = 0; i< scanIterations; i++) {
+            for (u_int32_t i = 0; i < scanIterations; i++)
+            {
                 laneEyesScanner(i, lane);
             }
-        } else {
-            for (u_int32_t i = 0; i< scanIterations; i++) {
-                for ( u_int32_t lane = 0; lane < numOfLanes; lane++) {
+        }
+        else
+        {
+            for (u_int32_t i = 0; i < scanIterations; i++)
+            {
+                for (u_int32_t lane = 0; lane < numOfLanes; lane++)
+                {
                     laneEyesScanner(i, lane);
                     slredStopSignalHandler();
                 }
@@ -555,20 +619,25 @@ void MlxlinkEyeOpener::enableGradeScan()
         printField("Scanning status", "Completed    ", true);
         fflush(MlxlinkRecord::stdOut);
 
-        if (!pciePort && isPam4Speed) {
+        if (!pciePort && isPam4Speed)
+        {
             char gradeTitle[64];
-            if (_eyeSel != EYE_ALL) {
+            if (_eyeSel != EYE_ALL)
+            {
                 sprintf(gradeTitle, "%-8s", _eyeSelctorMap[_eyeSel].c_str());
                 _oneEyeScan = true;
-            } else {
+            }
+            else
+            {
                 sprintf(gradeTitle, "%-8s,%-8s,%-8s", "UP", "MID", "DOWN");
                 _oneEyeScan = false;
             }
             printField("Eye grade", string(gradeTitle));
         }
         printFinalResults();
-    } else {
+    }
+    else
+    {
         MlxlinkRecord::printCmdLine("Operation canceled", _jsonRoot);
     }
 }
-
