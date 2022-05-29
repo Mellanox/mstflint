@@ -34,371 +34,372 @@
 #define MLXLINK_ENUMS_H
 
 // Common definitions
-#define AMBER_VERSION       "2.00"
+#define AMBER_VERSION "2.00"
 
-#define ACCESS_REG_PGUID    "PGUID"
-#define ACCESS_REG_SPZR     "SPZR"
-#define ACCESS_REG_SPAD     "SPAD"
-#define ACCESS_REG_PPCNT    "PPCNT"
-#define ACCESS_REG_PPHCR    "PPHCR"
-#define ACCESS_REG_PPLM     "PPLM"
-#define ACCESS_REG_PDDR     "PDDR"
-#define ACCESS_REG_PTYS     "PTYS"
-#define ACCESS_REG_MPCNT    "MPCNT"
-#define ACCESS_REG_MPEIN    "MPEIN"
-#define ACCESS_REG_PMDR     "PMDR"
-#define ACCESS_REG_PMCR     "PMCR"
-#define ACCESS_REG_PLLP     "PLLP"
-#define ACCESS_REG_MDDQ     "MDDQ"
-#define ACCESS_REG_SLRG     "SLRG"
-#define ACCESS_REG_SLTP     "SLTP"
-#define ACCESS_REG_SLRIP    "SLRIP"
-#define ACCESS_REG_SLRP     "SLRP"
-#define ACCESS_REG_PPLL     "PPLL"
-#define ACCESS_REG_SLSIR    "SLSIR"
-#define ACCESS_REG_SLLM     "SLLM"
-#define ACCESS_REG_MGIR     "MGIR"
-#define ACCESS_REG_PMLP     "PMLP"
-#define ACCESS_REG_MSGI     "MSGI"
-#define ACCESS_REG_MDIR     "MDIR"
-#define ACCESS_REG_MVCR     "MVCR"
-#define ACCESS_REG_MTMP     "MTMP"
-#define ACCESS_REG_MVCAP    "MVCAP"
-#define ACCESS_REG_MTCAP    "MTCAP"
-#define ACCESS_REG_SLRED    "SLRED"
-#define ACCESS_REG_PLIB     "PLIB"
-#define ACCESS_REG_PMLP     "PMLP"
-#define ACCESS_REG_PMAOS    "PMAOS"
-#define ACCESS_REG_PPAOS    "PPAOS"
-#define ACCESS_REG_PPTT     "PPTT"
-#define ACCESS_REG_PPRT     "PPRT"
-#define ACCESS_REG_PMPT     "PMPT"
-#define ACCESS_REG_PMPD     "PMPD"
-#define ACCESS_REG_PMTM     "PMTM"
-//define all used regs above this line
+#define ACCESS_REG_PGUID "PGUID"
+#define ACCESS_REG_SPZR "SPZR"
+#define ACCESS_REG_SPAD "SPAD"
+#define ACCESS_REG_PPCNT "PPCNT"
+#define ACCESS_REG_PPHCR "PPHCR"
+#define ACCESS_REG_PPLM "PPLM"
+#define ACCESS_REG_PDDR "PDDR"
+#define ACCESS_REG_PTYS "PTYS"
+#define ACCESS_REG_MPCNT "MPCNT"
+#define ACCESS_REG_MPEIN "MPEIN"
+#define ACCESS_REG_PMDR "PMDR"
+#define ACCESS_REG_PMCR "PMCR"
+#define ACCESS_REG_PLLP "PLLP"
+#define ACCESS_REG_MDDQ "MDDQ"
+#define ACCESS_REG_SLRG "SLRG"
+#define ACCESS_REG_SLTP "SLTP"
+#define ACCESS_REG_SLRIP "SLRIP"
+#define ACCESS_REG_SLRP "SLRP"
+#define ACCESS_REG_PPLL "PPLL"
+#define ACCESS_REG_SLSIR "SLSIR"
+#define ACCESS_REG_SLLM "SLLM"
+#define ACCESS_REG_MGIR "MGIR"
+#define ACCESS_REG_PMLP "PMLP"
+#define ACCESS_REG_MSGI "MSGI"
+#define ACCESS_REG_MDIR "MDIR"
+#define ACCESS_REG_MVCR "MVCR"
+#define ACCESS_REG_MTMP "MTMP"
+#define ACCESS_REG_MVCAP "MVCAP"
+#define ACCESS_REG_MTCAP "MTCAP"
+#define ACCESS_REG_SLRED "SLRED"
+#define ACCESS_REG_PLIB "PLIB"
+#define ACCESS_REG_PMLP "PMLP"
+#define ACCESS_REG_PMAOS "PMAOS"
+#define ACCESS_REG_PPAOS "PPAOS"
+#define ACCESS_REG_PPTT "PPTT"
+#define ACCESS_REG_PPRT "PPRT"
+#define ACCESS_REG_PMPT "PMPT"
+#define ACCESS_REG_PMPD "PMPD"
+#define ACCESS_REG_PMTM "PMTM"
+// define all used regs above this line
 
-#define QSFP_CHANNELS       4
-#define LANES_NUM           8
-#define NUM_OF_BINS         16
+#define QSFP_CHANNELS 4
+#define LANES_NUM 8
+#define NUM_OF_BINS 16
 #define MTMP_GEARBOX_SENSOR_OFFSET 256
-#define MAX_NETWORK_LANES   8
-#define MAX_PCIE_LANES      16
+#define MAX_NETWORK_LANES 8
+#define MAX_PCIE_LANES 16
 
 // cables parse definition
 
-#define SHIFT_0                       0
-#define SHIFT_1                       1
-#define SHIFT_2                       2
-#define SHIFT_3                       3
-#define SHIFT_4                       4
-#define SHIFT_5                       5
-#define SHIFT_6                       6
-#define SHIFT_7                       7
-#define SHIFT_8                       8
-#define SHIFT_9                       9
-#define SHIFT_10                      10
-#define SHIFT_11                      11
-#define SHIFT_12                      12
-#define SHIFT_13                      13
-#define SHIFT_14                      14
-#define SHIFT_15                      15
+#define SHIFT_0 0
+#define SHIFT_1 1
+#define SHIFT_2 2
+#define SHIFT_3 3
+#define SHIFT_4 4
+#define SHIFT_5 5
+#define SHIFT_6 6
+#define SHIFT_7 7
+#define SHIFT_8 8
+#define SHIFT_9 9
+#define SHIFT_10 10
+#define SHIFT_11 11
+#define SHIFT_12 12
+#define SHIFT_13 13
+#define SHIFT_14 14
+#define SHIFT_15 15
 /*
  * QSFP Paging, Page 0 Low
  */
 
 /* Module Monitor Interrupt Flags - 6-8 */
-#define QSFP_TEMP_AW_OFFSET         0x06
-#define QSFP_TEMP_HALARM_STATUS     (1 << SHIFT_7)
-#define QSFP_TEMP_LALARM_STATUS     (1 << SHIFT_6)
-#define QSFP_TEMP_HWARN_STATUS      (1 << SHIFT_5)
-#define QSFP_TEMP_LWARN_STATUS      (1 << SHIFT_4)
+#define QSFP_TEMP_AW_OFFSET 0x06
+#define QSFP_TEMP_HALARM_STATUS (1 << SHIFT_7)
+#define QSFP_TEMP_LALARM_STATUS (1 << SHIFT_6)
+#define QSFP_TEMP_HWARN_STATUS (1 << SHIFT_5)
+#define QSFP_TEMP_LWARN_STATUS (1 << SHIFT_4)
 
-#define QSFP_VCC_AW_OFFSET          0x07
-#define QSFP_VCC_HALARM_STATUS      (1 << SHIFT_7)
-#define QSFP_VCC_LALARM_STATUS      (1 << SHIFT_6)
-#define QSFP_VCC_HWARN_STATUS       (1 << SHIFT_5)
-#define QSFP_VCC_LWARN_STATUS       (1 << SHIFT_4)
+#define QSFP_VCC_AW_OFFSET 0x07
+#define QSFP_VCC_HALARM_STATUS (1 << SHIFT_7)
+#define QSFP_VCC_LALARM_STATUS (1 << SHIFT_6)
+#define QSFP_VCC_HWARN_STATUS (1 << SHIFT_5)
+#define QSFP_VCC_LWARN_STATUS (1 << SHIFT_4)
 
 /* Channel Monitor Interrupt Flags - 9-21 */
-#define QSFP_RX_PWR_12_AW_OFFSET    0x09
-#define QSFP_RX_PWR_1_HALARM        (1 << SHIFT_7)
-#define QSFP_RX_PWR_1_LALARM        (1 << SHIFT_6)
-#define QSFP_RX_PWR_1_HWARN         (1 << SHIFT_5)
-#define QSFP_RX_PWR_1_LWARN         (1 << SHIFT_4)
-#define QSFP_RX_PWR_2_HALARM        (1 << SHIFT_3)
-#define QSFP_RX_PWR_2_LALARM        (1 << SHIFT_2)
-#define QSFP_RX_PWR_2_HWARN         (1 << SHIFT_1)
-#define QSFP_RX_PWR_2_LWARN         (1 << SHIFT_0)
+#define QSFP_RX_PWR_12_AW_OFFSET 0x09
+#define QSFP_RX_PWR_1_HALARM (1 << SHIFT_7)
+#define QSFP_RX_PWR_1_LALARM (1 << SHIFT_6)
+#define QSFP_RX_PWR_1_HWARN (1 << SHIFT_5)
+#define QSFP_RX_PWR_1_LWARN (1 << SHIFT_4)
+#define QSFP_RX_PWR_2_HALARM (1 << SHIFT_3)
+#define QSFP_RX_PWR_2_LALARM (1 << SHIFT_2)
+#define QSFP_RX_PWR_2_HWARN (1 << SHIFT_1)
+#define QSFP_RX_PWR_2_LWARN (1 << SHIFT_0)
 
-#define QSFP_RX_PWR_34_AW_OFFSET    0x0A
-#define QSFP_RX_PWR_3_HALARM        (1 << SHIFT_7)
-#define QSFP_RX_PWR_3_LALARM        (1 << SHIFT_6)
-#define QSFP_RX_PWR_3_HWARN         (1 << SHIFT_5)
-#define QSFP_RX_PWR_3_LWARN         (1 << SHIFT_4)
-#define QSFP_RX_PWR_4_HALARM        (1 << SHIFT_3)
-#define QSFP_RX_PWR_4_LALARM        (1 << SHIFT_2)
-#define QSFP_RX_PWR_4_HWARN         (1 << SHIFT_1)
-#define QSFP_RX_PWR_4_LWARN         (1 << SHIFT_0)
+#define QSFP_RX_PWR_34_AW_OFFSET 0x0A
+#define QSFP_RX_PWR_3_HALARM (1 << SHIFT_7)
+#define QSFP_RX_PWR_3_LALARM (1 << SHIFT_6)
+#define QSFP_RX_PWR_3_HWARN (1 << SHIFT_5)
+#define QSFP_RX_PWR_3_LWARN (1 << SHIFT_4)
+#define QSFP_RX_PWR_4_HALARM (1 << SHIFT_3)
+#define QSFP_RX_PWR_4_LALARM (1 << SHIFT_2)
+#define QSFP_RX_PWR_4_HWARN (1 << SHIFT_1)
+#define QSFP_RX_PWR_4_LWARN (1 << SHIFT_0)
 
-#define QSFP_TX_BIAS_12_AW_OFFSET    0x0B
-#define QSFP_TX_BIAS_1_HALARM       (1 << SHIFT_7)
-#define QSFP_TX_BIAS_1_LALARM       (1 << SHIFT_6)
-#define QSFP_TX_BIAS_1_HWARN        (1 << SHIFT_5)
-#define QSFP_TX_BIAS_1_LWARN        (1 << SHIFT_4)
-#define QSFP_TX_BIAS_2_HALARM       (1 << SHIFT_3)
-#define QSFP_TX_BIAS_2_LALARM       (1 << SHIFT_2)
-#define QSFP_TX_BIAS_2_HWARN        (1 << SHIFT_1)
-#define QSFP_TX_BIAS_2_LWARN        (1 << SHIFT_0)
+#define QSFP_TX_BIAS_12_AW_OFFSET 0x0B
+#define QSFP_TX_BIAS_1_HALARM (1 << SHIFT_7)
+#define QSFP_TX_BIAS_1_LALARM (1 << SHIFT_6)
+#define QSFP_TX_BIAS_1_HWARN (1 << SHIFT_5)
+#define QSFP_TX_BIAS_1_LWARN (1 << SHIFT_4)
+#define QSFP_TX_BIAS_2_HALARM (1 << SHIFT_3)
+#define QSFP_TX_BIAS_2_LALARM (1 << SHIFT_2)
+#define QSFP_TX_BIAS_2_HWARN (1 << SHIFT_1)
+#define QSFP_TX_BIAS_2_LWARN (1 << SHIFT_0)
 
-#define QSFP_TX_BIAS_34_AW_OFFSET   0x0C
-#define QSFP_TX_BIAS_3_HALARM       (1 << SHIFT_7)
-#define QSFP_TX_BIAS_3_LALARM       (1 << SHIFT_6)
-#define QSFP_TX_BIAS_3_HWARN        (1 << SHIFT_5)
-#define QSFP_TX_BIAS_3_LWARN        (1 << SHIFT_4)
-#define QSFP_TX_BIAS_4_HALARM       (1 << SHIFT_3)
-#define QSFP_TX_BIAS_4_LALARM       (1 << SHIFT_2)
-#define QSFP_TX_BIAS_4_HWARN        (1 << SHIFT_1)
-#define QSFP_TX_BIAS_4_LWARN        (1 << SHIFT_0)
+#define QSFP_TX_BIAS_34_AW_OFFSET 0x0C
+#define QSFP_TX_BIAS_3_HALARM (1 << SHIFT_7)
+#define QSFP_TX_BIAS_3_LALARM (1 << SHIFT_6)
+#define QSFP_TX_BIAS_3_HWARN (1 << SHIFT_5)
+#define QSFP_TX_BIAS_3_LWARN (1 << SHIFT_4)
+#define QSFP_TX_BIAS_4_HALARM (1 << SHIFT_3)
+#define QSFP_TX_BIAS_4_LALARM (1 << SHIFT_2)
+#define QSFP_TX_BIAS_4_HWARN (1 << SHIFT_1)
+#define QSFP_TX_BIAS_4_LWARN (1 << SHIFT_0)
 
-#define QSFP_TX_PWR_12_AW_OFFSET    0x0D
-#define QSFP_TX_PWR_1_HALARM        (1 << SHIFT_7)
-#define QSFP_TX_PWR_1_LALARM        (1 << SHIFT_6)
-#define QSFP_TX_PWR_1_HWARN         (1 << SHIFT_5)
-#define QSFP_TX_PWR_1_LWARN         (1 << SHIFT_4)
-#define QSFP_TX_PWR_2_HALARM        (1 << SHIFT_3)
-#define QSFP_TX_PWR_2_LALARM        (1 << SHIFT_2)
-#define QSFP_TX_PWR_2_HWARN         (1 << SHIFT_1)
-#define QSFP_TX_PWR_2_LWARN         (1 << SHIFT_0)
+#define QSFP_TX_PWR_12_AW_OFFSET 0x0D
+#define QSFP_TX_PWR_1_HALARM (1 << SHIFT_7)
+#define QSFP_TX_PWR_1_LALARM (1 << SHIFT_6)
+#define QSFP_TX_PWR_1_HWARN (1 << SHIFT_5)
+#define QSFP_TX_PWR_1_LWARN (1 << SHIFT_4)
+#define QSFP_TX_PWR_2_HALARM (1 << SHIFT_3)
+#define QSFP_TX_PWR_2_LALARM (1 << SHIFT_2)
+#define QSFP_TX_PWR_2_HWARN (1 << SHIFT_1)
+#define QSFP_TX_PWR_2_LWARN (1 << SHIFT_0)
 
-#define QSFP_TX_PWR_34_AW_OFFSET    0x0E
-#define QSFP_TX_PWR_3_HALARM        (1 << SHIFT_7)
-#define QSFP_TX_PWR_3_LALARM        (1 << SHIFT_6)
-#define QSFP_TX_PWR_3_HWARN         (1 << SHIFT_5)
-#define QSFP_TX_PWR_3_LWARN         (1 << SHIFT_4)
-#define QSFP_TX_PWR_4_HALARM        (1 << SHIFT_3)
-#define QSFP_TX_PWR_4_LALARM        (1 << SHIFT_2)
-#define QSFP_TX_PWR_4_HWARN         (1 << SHIFT_1)
-#define QSFP_TX_PWR_4_LWARN         (1 << SHIFT_0)
+#define QSFP_TX_PWR_34_AW_OFFSET 0x0E
+#define QSFP_TX_PWR_3_HALARM (1 << SHIFT_7)
+#define QSFP_TX_PWR_3_LALARM (1 << SHIFT_6)
+#define QSFP_TX_PWR_3_HWARN (1 << SHIFT_5)
+#define QSFP_TX_PWR_3_LWARN (1 << SHIFT_4)
+#define QSFP_TX_PWR_4_HALARM (1 << SHIFT_3)
+#define QSFP_TX_PWR_4_LALARM (1 << SHIFT_2)
+#define QSFP_TX_PWR_4_HWARN (1 << SHIFT_1)
+#define QSFP_TX_PWR_4_LWARN (1 << SHIFT_0)
 
 /* Module Monitoring Values - 22-33 */
-#define QSFP_TEMP_CURR          0x16
-#define QSFP_TEMP_MSB_OFFSET     0x16
-#define QSFP_TEMP_LSB_OFFSET     0x17
+#define QSFP_TEMP_CURR 0x16
+#define QSFP_TEMP_MSB_OFFSET 0x16
+#define QSFP_TEMP_LSB_OFFSET 0x17
 
-#define QSFP_VCC_CURR           0x1A
-#define QSFP_VCC_MSB_OFFSET      0x1A
-#define QSFP_VCC_LSB_OFFSET      0x1B
+#define QSFP_VCC_CURR 0x1A
+#define QSFP_VCC_MSB_OFFSET 0x1A
+#define QSFP_VCC_LSB_OFFSET 0x1B
 
 /* Channel Monitoring Values - 34-81 */
-#define QSFP_RX_PWR_1_OFFSET     0x22
-#define QSFP_RX_PWR_2_OFFSET     0x24
-#define QSFP_RX_PWR_3_OFFSET     0x26
-#define QSFP_RX_PWR_4_OFFSET     0x28
+#define QSFP_RX_PWR_1_OFFSET 0x22
+#define QSFP_RX_PWR_2_OFFSET 0x24
+#define QSFP_RX_PWR_3_OFFSET 0x26
+#define QSFP_RX_PWR_4_OFFSET 0x28
 
-#define QSFP_TX_BIAS_1_OFFSET    0x2A
-#define QSFP_TX_BIAS_2_OFFSET    0x2C
-#define QSFP_TX_BIAS_3_OFFSET    0x2E
-#define QSFP_TX_BIAS_4_OFFSET    0x30
+#define QSFP_TX_BIAS_1_OFFSET 0x2A
+#define QSFP_TX_BIAS_2_OFFSET 0x2C
+#define QSFP_TX_BIAS_3_OFFSET 0x2E
+#define QSFP_TX_BIAS_4_OFFSET 0x30
 
-#define QSFP_TX_PWR_1_OFFSET     0x32
-#define QSFP_TX_PWR_2_OFFSET     0x34
-#define QSFP_TX_PWR_3_OFFSET     0x36
-#define QSFP_TX_PWR_4_OFFSET     0x38
+#define QSFP_TX_PWR_1_OFFSET 0x32
+#define QSFP_TX_PWR_2_OFFSET 0x34
+#define QSFP_TX_PWR_3_OFFSET 0x36
+#define QSFP_TX_PWR_4_OFFSET 0x38
 
 // Page 3 High
-#define QSFP_TEMP_HALRM          0x00
-#define QSFP_TEMP_LALRM          0x02
-#define QSFP_TEMP_HWARN          0x04
-#define QSFP_TEMP_LWARN          0x06
+#define QSFP_TEMP_HALRM 0x00
+#define QSFP_TEMP_LALRM 0x02
+#define QSFP_TEMP_HWARN 0x04
+#define QSFP_TEMP_LWARN 0x06
 
-#define QSFP_VCC_HALRM           0x10
-#define QSFP_VCC_LALRM           0x12
-#define QSFP_VCC_HWARN           0x14
-#define QSFP_VCC_LWARN           0x16
+#define QSFP_VCC_HALRM 0x10
+#define QSFP_VCC_LALRM 0x12
+#define QSFP_VCC_HWARN 0x14
+#define QSFP_VCC_LWARN 0x16
 
-#define QSFP_RX_PWR_HALRM        0x30
-#define QSFP_RX_PWR_LALRM        0x32
-#define QSFP_RX_PWR_HWARN        0x34
-#define QSFP_RX_PWR_LWARN        0x36
+#define QSFP_RX_PWR_HALRM 0x30
+#define QSFP_RX_PWR_LALRM 0x32
+#define QSFP_RX_PWR_HWARN 0x34
+#define QSFP_RX_PWR_LWARN 0x36
 
-#define QSFP_TX_BIAS_HALRM       0x38
-#define QSFP_TX_BIAS_LALRM       0x3A
-#define QSFP_TX_BIAS_HWARN       0x3C
-#define QSFP_TX_BIAS_LWARN       0x3E
+#define QSFP_TX_BIAS_HALRM 0x38
+#define QSFP_TX_BIAS_LALRM 0x3A
+#define QSFP_TX_BIAS_HWARN 0x3C
+#define QSFP_TX_BIAS_LWARN 0x3E
 
-#define QSFP_TX_PWR_HALRM        0x40
-#define QSFP_TX_PWR_LALRM        0x42
-#define QSFP_TX_PWR_HWARN        0x44
-#define QSFP_TX_PWR_LWARN        0x46
+#define QSFP_TX_PWR_HALRM 0x40
+#define QSFP_TX_PWR_LALRM 0x42
+#define QSFP_TX_PWR_HWARN 0x44
+#define QSFP_TX_PWR_LWARN 0x46
 
 // SFP 51 Paging, Page 0x1 Low
-#define SFP51_BASE               0x100
+#define SFP51_BASE 0x100
 
 /* A2-based offsets for DOM */
 
-#define SFP51_TEMP_HALRM         0
-#define SFP51_TEMP_LALRM         2
-#define SFP51_TEMP_HWARN         4
-#define SFP51_TEMP_LWARN         6
+#define SFP51_TEMP_HALRM 0
+#define SFP51_TEMP_LALRM 2
+#define SFP51_TEMP_HWARN 4
+#define SFP51_TEMP_LWARN 6
 
-#define SFP51_VCC_HALRM          8
-#define SFP51_VCC_LALRM          10
-#define SFP51_VCC_HWARN          12
-#define SFP51_VCC_LWARN          14
+#define SFP51_VCC_HALRM 8
+#define SFP51_VCC_LALRM 10
+#define SFP51_VCC_HWARN 12
+#define SFP51_VCC_LWARN 14
 
-#define SFP51_BIAS_HALRM         16
-#define SFP51_BIAS_LALRM         18
-#define SFP51_BIAS_HWARN         20
-#define SFP51_BIAS_LWARN         22
+#define SFP51_BIAS_HALRM 16
+#define SFP51_BIAS_LALRM 18
+#define SFP51_BIAS_HWARN 20
+#define SFP51_BIAS_LWARN 22
 
-#define SFP51_TX_PWR_HALRM       24
-#define SFP51_TX_PWR_LALRM       26
-#define SFP51_TX_PWR_HWARN       28
-#define SFP51_TX_PWR_LWARN       30
+#define SFP51_TX_PWR_HALRM 24
+#define SFP51_TX_PWR_LALRM 26
+#define SFP51_TX_PWR_HWARN 28
+#define SFP51_TX_PWR_LWARN 30
 
-#define SFP51_RX_PWR_HALRM       32
-#define SFP51_RX_PWR_LALRM       34
-#define SFP51_RX_PWR_HWARN       36
-#define SFP51_RX_PWR_LWARN       38
+#define SFP51_RX_PWR_HALRM 32
+#define SFP51_RX_PWR_LALRM 34
+#define SFP51_RX_PWR_HWARN 36
+#define SFP51_RX_PWR_LWARN 38
 
-#define SFP51_TEMP               96
-#define SFP51_VCC                98
-#define SFP51_BIAS               100
-#define SFP51_TX_PWR             102
-#define SFP51_RX_PWR             104
+#define SFP51_TEMP 96
+#define SFP51_VCC 98
+#define SFP51_BIAS 100
+#define SFP51_TX_PWR 102
+#define SFP51_RX_PWR 104
 
-#define SFP51_ALRM_FLG              112
-#define SFP51_TX_PWR_LALRM_FLG      (1 << SHIFT_0)
-#define SFP51_TX_PWR_HALRM_FLG      (1 << SHIFT_1)
-#define SFP51_BIAS_LALRM_FLG        (1 << SHIFT_2)
-#define SFP51_BIAS_HALRM_FLG        (1 << SHIFT_3)
-#define SFP51_VCC_LALRM_FLG         (1 << SHIFT_4)
-#define SFP51_VCC_HALRM_FLG         (1 << SHIFT_5)
-#define SFP51_TEMP_LALRM_FLG        (1 << SHIFT_6)
-#define SFP51_TEMP_HALRM_FLG        (1 << SHIFT_7)
-#define SFP51_RX_PWR_LALRM_FLG      (1 << SHIFT_14)
-#define SFP51_RX_PWR_HALRM_FLG      (1 << SHIFT_15)
+#define SFP51_ALRM_FLG 112
+#define SFP51_TX_PWR_LALRM_FLG (1 << SHIFT_0)
+#define SFP51_TX_PWR_HALRM_FLG (1 << SHIFT_1)
+#define SFP51_BIAS_LALRM_FLG (1 << SHIFT_2)
+#define SFP51_BIAS_HALRM_FLG (1 << SHIFT_3)
+#define SFP51_VCC_LALRM_FLG (1 << SHIFT_4)
+#define SFP51_VCC_HALRM_FLG (1 << SHIFT_5)
+#define SFP51_TEMP_LALRM_FLG (1 << SHIFT_6)
+#define SFP51_TEMP_HALRM_FLG (1 << SHIFT_7)
+#define SFP51_RX_PWR_LALRM_FLG (1 << SHIFT_14)
+#define SFP51_RX_PWR_HALRM_FLG (1 << SHIFT_15)
 
-#define SFP51_WARN_FLG              116
-#define SFP51_TX_PWR_LWARN_FLG      (1 << SHIFT_0)
-#define SFP51_TX_PWR_HWARN_FLG      (1 << SHIFT_1)
-#define SFP51_BIAS_LWARN_FLG        (1 << SHIFT_2)
-#define SFP51_BIAS_HWARN_FLG        (1 << SHIFT_3)
-#define SFP51_VCC_LWARN_FLG         (1 << SHIFT_4)
-#define SFP51_VCC_HWARN_FLG         (1 << SHIFT_5)
-#define SFP51_TEMP_LWARN_FLG        (1 << SHIFT_6)
-#define SFP51_TEMP_HWARN_FLG        (1 << SHIFT_7)
-#define SFP51_RX_PWR_LWARN_FLG      (1 << SHIFT_14)
-#define SFP51_RX_PWR_HWARN_FLG      (1 << SHIFT_15)
+#define SFP51_WARN_FLG 116
+#define SFP51_TX_PWR_LWARN_FLG (1 << SHIFT_0)
+#define SFP51_TX_PWR_HWARN_FLG (1 << SHIFT_1)
+#define SFP51_BIAS_LWARN_FLG (1 << SHIFT_2)
+#define SFP51_BIAS_HWARN_FLG (1 << SHIFT_3)
+#define SFP51_VCC_LWARN_FLG (1 << SHIFT_4)
+#define SFP51_VCC_HWARN_FLG (1 << SHIFT_5)
+#define SFP51_TEMP_LWARN_FLG (1 << SHIFT_6)
+#define SFP51_TEMP_HWARN_FLG (1 << SHIFT_7)
+#define SFP51_RX_PWR_LWARN_FLG (1 << SHIFT_14)
+#define SFP51_RX_PWR_HWARN_FLG (1 << SHIFT_15)
 
 /*
  * QSFP-DD Paging, Page 0 Low
  */
 
 /* Module Monitor Interrupt Flags */
-#define QSFP_DD_MODULE_INFO_OFFSET     0x09
-#define CMIS_TEMP_HALARM_STATUS     (1 << SHIFT_3)
-#define CMIS_TEMP_LALARM_STATUS     (1 << SHIFT_2)
-#define CMIS_TEMP_HWARN_STATUS      (1 << SHIFT_1)
-#define CMIS_TEMP_LWARN_STATUS      (1 << SHIFT_0)
-#define CMIS_VCC_HALARM_STATUS      (1 << SHIFT_7)
-#define CMIS_VCC_LALARM_STATUS      (1 << SHIFT_6)
-#define CMIS_VCC_HWARN_STATUS       (1 << SHIFT_5)
-#define CMIS_VCC_LWARN_STATUS       (1 << SHIFT_4)
+#define QSFP_DD_MODULE_INFO_OFFSET 0x09
+#define CMIS_TEMP_HALARM_STATUS (1 << SHIFT_3)
+#define CMIS_TEMP_LALARM_STATUS (1 << SHIFT_2)
+#define CMIS_TEMP_HWARN_STATUS (1 << SHIFT_1)
+#define CMIS_TEMP_LWARN_STATUS (1 << SHIFT_0)
+#define CMIS_VCC_HALARM_STATUS (1 << SHIFT_7)
+#define CMIS_VCC_LALARM_STATUS (1 << SHIFT_6)
+#define CMIS_VCC_HWARN_STATUS (1 << SHIFT_5)
+#define CMIS_VCC_LWARN_STATUS (1 << SHIFT_4)
 
 /* Channels Monitor Interrupt Flags */
 // QSFP-DD from upper page 0x11
-#define QSFP_DD_TX_POWER_HALARM_OFFSET  0x8b // 0:7 for 8 channels
-#define QSFP_DD_TX_POWER_LALARM_OFFSET  0x8c // 0:7 for 8 channels
-#define QSFP_DD_TX_POWER_HWARN_OFFSET   0x8d // 0:7 for 8 channels
-#define QSFP_DD_TX_POWER_LWARN_OFFSET   0x8e // 0:7 for 8 channels
+#define QSFP_DD_TX_POWER_HALARM_OFFSET 0x8b // 0:7 for 8 channels
+#define QSFP_DD_TX_POWER_LALARM_OFFSET 0x8c // 0:7 for 8 channels
+#define QSFP_DD_TX_POWER_HWARN_OFFSET 0x8d  // 0:7 for 8 channels
+#define QSFP_DD_TX_POWER_LWARN_OFFSET 0x8e  // 0:7 for 8 channels
 
-#define QSFP_DD_TX_BIAS_HALARM_OFFSET   0x8f // 0:7 for 8 channels
-#define QSFP_DD_TX_BIAS_LALARM_OFFSET   0x90 // 0:7 for 8 channels
-#define QSFP_DD_TX_BIAS_HWARN_OFFSET    0x91 // 0:7 for 8 channels
-#define QSFP_DD_TX_BIAS_LWARN_OFFSET    0x92 // 0:7 for 8 channels
+#define QSFP_DD_TX_BIAS_HALARM_OFFSET 0x8f // 0:7 for 8 channels
+#define QSFP_DD_TX_BIAS_LALARM_OFFSET 0x90 // 0:7 for 8 channels
+#define QSFP_DD_TX_BIAS_HWARN_OFFSET 0x91  // 0:7 for 8 channels
+#define QSFP_DD_TX_BIAS_LWARN_OFFSET 0x92  // 0:7 for 8 channels
 
-#define QSFP_DD_RX_POWER_HALARM_OFFSET  0x95 // 0:7 for 8 channels
-#define QSFP_DD_RX_POWER_LALARM_OFFSET  0x96 // 0:7 for 8 channels
-#define QSFP_DD_RX_POWER_HWARN_OFFSET   0x97 // 0:7 for 8 channels
-#define QSFP_DD_RX_POWER_LWARN_OFFSET   0x98 // 0:7 for 8 channels
+#define QSFP_DD_RX_POWER_HALARM_OFFSET 0x95 // 0:7 for 8 channels
+#define QSFP_DD_RX_POWER_LALARM_OFFSET 0x96 // 0:7 for 8 channels
+#define QSFP_DD_RX_POWER_HWARN_OFFSET 0x97  // 0:7 for 8 channels
+#define QSFP_DD_RX_POWER_LWARN_OFFSET 0x98  // 0:7 for 8 channels
 
 // Thresholds from upper page 0x2
-#define QSFP_DD_TEMP_THR_OFFSET         0x80 // halarm 80, lalarm 82, hwarn 84, lwarn 86
-#define QSFP_DD_VCC_THR_OFFSET          0x88 // halarm 88, lalarm 90, hwarn 92, lwarn 94
-#define QSFP_DD_TX_POWER_THR_OFFSET     0xb0 // halarm b0, lalarm b2, hwarn b4, lwarn b6
-#define QSFP_DD_TX_BIAS_THR_OFFSET      0xb8 // halarm b8, lalarm ba, hwarn bc, lwarn be
-#define QSFP_DD_RX_POWER_THR_OFFSET     0xc0 // halarm c0, lalarm c2, hwar9n c4, lwarn c6
+#define QSFP_DD_TEMP_THR_OFFSET 0x80     // halarm 80, lalarm 82, hwarn 84, lwarn 86
+#define QSFP_DD_VCC_THR_OFFSET 0x88      // halarm 88, lalarm 90, hwarn 92, lwarn 94
+#define QSFP_DD_TX_POWER_THR_OFFSET 0xb0 // halarm b0, lalarm b2, hwarn b4, lwarn b6
+#define QSFP_DD_TX_BIAS_THR_OFFSET 0xb8  // halarm b8, lalarm ba, hwarn bc, lwarn be
+#define QSFP_DD_RX_POWER_THR_OFFSET 0xc0 // halarm c0, lalarm c2, hwar9n c4, lwarn c6
 
 // SFP-DD from lower page 0
 /* Module Monitor Interrupt Flags */
-#define SFP_DD_MODULE_INFO_OFFSET      0x11
+#define SFP_DD_MODULE_INFO_OFFSET 0x11
 // See QSFP-DD module section for mask info
 
-#define SFP_DD_VCC_AW_OFFSET           0x11
-#define SFP_DD_VCC_HALARM_STATUS      (1 << SHIFT_7)
-#define SFP_DD_VCC_LALARM_STATUS      (1 << SHIFT_6)
-#define SFP_DD_VCC_HWARN_STATUS       (1 << SHIFT_5)
-#define SFP_DD_VCC_LWARN_STATUS       (1 << SHIFT_4)
+#define SFP_DD_VCC_AW_OFFSET 0x11
+#define SFP_DD_VCC_HALARM_STATUS (1 << SHIFT_7)
+#define SFP_DD_VCC_LALARM_STATUS (1 << SHIFT_6)
+#define SFP_DD_VCC_HWARN_STATUS (1 << SHIFT_5)
+#define SFP_DD_VCC_LWARN_STATUS (1 << SHIFT_4)
 
 // Channels monitor interrupt flags from lower page 0x0
-#define SFP_DD_TX_POWER_INT_OFFSET      0x8
-#define SFP_DD_TX_BIAS_INT_OFFSET       0x9
-#define SFP_DD_RX_POWER_INT_OFFSET      0x7
-#define SFP_DD_HALARM_STATUS            SHIFT_0 // 0:1 for 2 channels
-#define SFP_DD_LALARM_STATUS            SHIFT_2 // 2:3 for 2 channels
-#define SFP_DD_HWARN_STATUS             SHIFT_4 // 4:5 for 2 channels
-#define SFP_DD_LWARN_STATUS             SHIFT_6 // 6:7 for 2 channels
+#define SFP_DD_TX_POWER_INT_OFFSET 0x8
+#define SFP_DD_TX_BIAS_INT_OFFSET 0x9
+#define SFP_DD_RX_POWER_INT_OFFSET 0x7
+#define SFP_DD_HALARM_STATUS SHIFT_0 // 0:1 for 2 channels
+#define SFP_DD_LALARM_STATUS SHIFT_2 // 2:3 for 2 channels
+#define SFP_DD_HWARN_STATUS SHIFT_4  // 4:5 for 2 channels
+#define SFP_DD_LWARN_STATUS SHIFT_6  // 6:7 for 2 channels
 
 // Thresholds from upper page 0x2
-#define SFP_DD_TEMP_THR_OFFSET          0xb1 // halarm b1, lalarm b3, hwarn b5, lwarn b7
-#define SFP_DD_VCC_THR_OFFSET           0xb9 // halarm b9, lalarm bb, hwarn bd, lwarn bf
-#define SFP_DD_TX_POWER_THR_OFFSET      0xd1 // halarm d1, lalarm d3, hwarn d5, lwarn d7
-#define SFP_DD_TX_BIAS_THR_OFFSET       0xd9 // halarm d9, lalarm db, hwarn dd, lwarn df
-#define SFP_DD_RX_POWER_THR_OFFSET      0xe1 // halarm e1, lalarm e3, hwarn e5, lwarn e7
+#define SFP_DD_TEMP_THR_OFFSET 0xb1     // halarm b1, lalarm b3, hwarn b5, lwarn b7
+#define SFP_DD_VCC_THR_OFFSET 0xb9      // halarm b9, lalarm bb, hwarn bd, lwarn bf
+#define SFP_DD_TX_POWER_THR_OFFSET 0xd1 // halarm d1, lalarm d3, hwarn d5, lwarn d7
+#define SFP_DD_TX_BIAS_THR_OFFSET 0xd9  // halarm d9, lalarm db, hwarn dd, lwarn df
+#define SFP_DD_RX_POWER_THR_OFFSET 0xe1 // halarm e1, lalarm e3, hwarn e5, lwarn e7
 
 // Mlxlink Values definition
-#define SWID                        0
-#define PPRT_PPTT_ENABLE            1
-#define PPRT_PPTT_START_TUNING      1
-#define PHY_TEST_MODE_STATUS        1
+#define SWID 0
+#define PPRT_PPTT_ENABLE 1
+#define PPRT_PPTT_START_TUNING 1
+#define PHY_TEST_MODE_STATUS 1
 
-#define BIT_MASK_ALL_DWORD          0xffffffff
+#define BIT_MASK_ALL_DWORD 0xffffffff
 
-#define OB_TAP_SUM                  120
-#define OB_TAP_DIFF                 10
-#define OB_BIAS_LOW_THRESHOLD       15
-#define OB_BIAS_MID_1_THRESHOLD     31
-#define OB_BIAS_MID_2_THRESHOLD     48
-#define OB_BIAS_HIGH_THRESHOLD      63
+#define OB_TAP_SUM 120
+#define OB_TAP_DIFF 10
+#define OB_BIAS_LOW_THRESHOLD 15
+#define OB_BIAS_MID_1_THRESHOLD 31
+#define OB_BIAS_MID_2_THRESHOLD 48
+#define OB_BIAS_HIGH_THRESHOLD 63
 
-#define MAX_LOCAL_PORT_ETH          64
-#define MAX_LOCAL_PORT_IB           36
-#define MAX_LOCAL_PORT_QUANTUM      82
-#define MAX_LOCAL_PORT_QUANTUM2     130
-#define MAX_LOCAL_PORT_SPECTRUM2    128
-#define MAX_LOCAL_PORT_SPECTRUM4    258
+#define MAX_LOCAL_PORT_ETH 64
+#define MAX_LOCAL_PORT_IB 36
+#define MAX_LOCAL_PORT_QUANTUM 82
+#define MAX_LOCAL_PORT_QUANTUM2 130
+#define MAX_LOCAL_PORT_SPECTRUM2 128
+#define MAX_LOCAL_PORT_SPECTRUM4 258
 
-#define MAX_ETH_SW_SPLIT            8
+#define MAX_ETH_SW_SPLIT 8
 
-#define DBN_TO_LOCAL_PORT_BASE      60
+#define DBN_TO_LOCAL_PORT_BASE 60
 
-#define MAX_LANES_NUMBER            4
-#define MAX_DWORD_BLOCK_SIZE        32
-#define MAX_TX_GROUP_COUNT          10
+#define MAX_LANES_NUMBER 4
+#define MAX_DWORD_BLOCK_SIZE 32
+#define MAX_TX_GROUP_COUNT 10
 
-#define PCAM_FORCE_DOWN_CAP_MASK    0x2000
+#define PCAM_FORCE_DOWN_CAP_MASK 0x2000
 
-#define OPERATIONAL_ERROR_STR       "ME_ICMD_OPERATIONAL_ERROR"
+#define OPERATIONAL_ERROR_STR "ME_ICMD_OPERATIONAL_ERROR"
 
-#define MAX_SBYTE                   127
-#define MIN_SBYTE                   -128
-#define MAX_INPUT_LENGTH            7
-#define SECOND_LEVEL_PORT_ACCESS    2
-#define THIRD_LEVEL_PORT_ACCESS     3
+#define MAX_SBYTE 127
+#define MIN_SBYTE -128
+#define MAX_INPUT_LENGTH 7
+#define SECOND_LEVEL_PORT_ACCESS 2
+#define THIRD_LEVEL_PORT_ACCESS 3
 
 // mlxlink commander enums
-enum PPAOS_ADMIN {
+enum PPAOS_ADMIN
+{
     PPAOS_REGULAR_OPERATION = 0,
     PPAOS_PHY_TEST_MODE = 1
 };
@@ -409,7 +410,8 @@ enum TX_INDEX_SELECTOR
     TX_GROUP
 };
 
-enum BER_LIMIT {
+enum BER_LIMIT
+{
     NOMINAL_25G_NO_FEC = -15,
     NOMINAL_25G_LOW_ATTN = -13,
     NOMINAL_25G_HIGH_ATTN = -9,
@@ -424,51 +426,59 @@ enum BER_LIMIT {
     CORNER_DEFAULT = -14
 };
 
-enum PAOS_ADMIN {
+enum PAOS_ADMIN
+{
     PAOS_UP = 1,
     PAOS_DOWN = 2
 };
 
-enum PCIE_PORT_TYPE {
+enum PCIE_PORT_TYPE
+{
     PORT_TYPE_EP = 0,
     PORT_TYPE_US = 5,
     PORT_TYPE_DS = 6
 };
 
-enum MODULE_ID {
-    MODULE_ID_SFP       = 0x3,
-    MODULE_ID_QSFP      = 0xC,
+enum MODULE_ID
+{
+    MODULE_ID_SFP = 0x3,
+    MODULE_ID_QSFP = 0xC,
     MODULE_ID_QSFP_PLUS = 0xD,
-    MODULE_ID_QSFP28    = 0x11,
+    MODULE_ID_QSFP28 = 0x11,
 };
 
 // common enums
-typedef enum {
+typedef enum
+{
     NO,
     UP,
     DN,
     TG
 } PAOS_CMD;
 
-enum MPCNT_GROUPS {
+enum MPCNT_GROUPS
+{
     MPCNT_PERFORMANCE_GROUP = 0,
     MPCNT_LANE_GROUP = 1,
     MPCNT_TIMERS_GROUPS = 2
 };
 
-enum PDDR_PAGES {
+enum PDDR_PAGES
+{
     PDDR_OPERATIONAL_INFO_PAGE = 0,
     PDDR_TROUBLESHOOTING_INFO_PAGE = 1,
     PDDR_MODULE_INFO_PAGE = 3,
     PDDR_MODULE_LATCHED_FLAG_INFO_PAGE = 9,
 };
 
-enum GROUP_OPCODE {
+enum GROUP_OPCODE
+{
     MONITOR_OPCODE = 0,
     ADVANCED_OPCODE = 1
 };
 
-enum PPCNT_GROUPS {
+enum PPCNT_GROUPS
+{
     PPCNT_RFC_2863_GROUP = 0x1,
     PPCNT_DISC_COUNTERS_GROUP = 0x6,
     PPCNT_PHY_GROUP = 0x12,
@@ -481,7 +491,8 @@ enum PPCNT_GROUPS {
     PPCNT_ALL_GROUPS = 63,
 };
 
-enum NETWORK_PORT_TYPE {
+enum NETWORK_PORT_TYPE
+{
     NETWORK_PORT_TYPE = 0,
     NETWORK_PORT_TYPE_NEAR,
     NETWORK_PORT_TYPE_IC_LR,
@@ -489,10 +500,11 @@ enum NETWORK_PORT_TYPE {
     NETWORK_PORT_TYPE_MAIN_USR,
     NETWORK_PORT_TYPE_TILE_USR,
 
-    NETWORK_PORT_TYPE_LAST //PCIE always last enum
+    NETWORK_PORT_TYPE_LAST // PCIE always last enum
 };
 
-enum CABLE_TYPE {
+enum CABLE_TYPE
+{
     UNIDENTIFIED,
     ACTIVE,
     OPTICAL_MODULE,
@@ -500,7 +512,8 @@ enum CABLE_TYPE {
     UNPLUGGED
 };
 
-enum PCIE_LINK_SPEED {
+enum PCIE_LINK_SPEED
+{
     GEN1 = 1,
     GEN2 = 2,
     GEN3 = 4,
@@ -508,7 +521,8 @@ enum PCIE_LINK_SPEED {
     GEN5 = 32
 };
 
-enum POWER_CLASS {
+enum POWER_CLASS
+{
     POWER_CLASS0,
     POWER_CLASS1,
     POWER_CLASS2,
@@ -520,22 +534,26 @@ enum POWER_CLASS {
     POWER_CLASS8
 };
 
-enum PRBS_MODES {
+enum PRBS_MODES
+{
     PRBS_TX,
     PRBS_RX
 };
-enum PRBS_TX_MODE {
+enum PRBS_TX_MODE
+{
     SQUARE_WAVEA = 13,
     SQUARE_WAVEB,
     SQUARE_WAVEC,
     SQUARE_WAVED
 };
 
-enum PRBS_RX_MODE {
+enum PRBS_RX_MODE
+{
     SQUARE_WAVE = 13
 };
 
-enum PRBS_RX_TX_MODE {
+enum PRBS_RX_TX_MODE
+{
     PRBS31,
     PRBS23A,
     PRBS23B,
@@ -563,7 +581,8 @@ enum PRBS_RX_TX_MODE {
     SQUARE_WAVE30
 };
 
-enum PRBS_CAP {
+enum PRBS_CAP
+{
     PRBS31_CAP = 0x1,
     PRBS23A_CAP = 0x2,
     PRBS23B_CAP = 0x4,
@@ -589,21 +608,23 @@ enum PRBS_CAP {
     SSPRQ_CAP = 0x400000
 };
 
-enum LANE_RATE_CAP {
-    LANE_RATE_1G_CAP    = 0x1,
-    LANE_RATE_SDR_CAP   = 0x2,
-    LANE_RATE_XAUI_CAP  = 0x4,
-    LANE_RATE_DDR_CAP   = 0x8,
-    LANE_RATE_QDR_CAP   = 0x10,
+enum LANE_RATE_CAP
+{
+    LANE_RATE_1G_CAP = 0x1,
+    LANE_RATE_SDR_CAP = 0x2,
+    LANE_RATE_XAUI_CAP = 0x4,
+    LANE_RATE_DDR_CAP = 0x8,
+    LANE_RATE_QDR_CAP = 0x10,
     LANE_RATE_FDR10_CAP = 0x20,
-    LANE_RATE_FDR_CAP   = 0x40,
-    LANE_RATE_EDR_CAP   = 0x80,
-    LANE_RATE_50G_CAP   = 0x100,
-    LANE_RATE_HDR_CAP   = 0x200,
-    LANE_RATE_NDR_CAP   = 0x400,
+    LANE_RATE_FDR_CAP = 0x40,
+    LANE_RATE_EDR_CAP = 0x80,
+    LANE_RATE_50G_CAP = 0x100,
+    LANE_RATE_HDR_CAP = 0x200,
+    LANE_RATE_NDR_CAP = 0x400,
 };
 
-enum PRBS_LANE_RATE {
+enum PRBS_LANE_RATE
+{
     PRBS_SDR,
     PRBS_DDR,
     PRBS_QDR,
@@ -617,14 +638,16 @@ enum PRBS_LANE_RATE {
     PRBS_50G = 12
 };
 
-enum PRBS_TUNING_STATUS {
+enum PRBS_TUNING_STATUS
+{
     PRBS_TUNING_NOT_PERFORMED,
     PRBS_TUNING_PERFORMING,
     PRBS_TUNING_COMPLETE,
     PRBS_SIGNAL_DETECT
 };
 
-enum SLRG_PARAMS {
+enum SLRG_PARAMS
+{
     SLRG_PARAMS_INITIAL_FOM,
     SLRG_PARAMS_FOM_MODE,
     SLRG_PARAMS_UPPER_EYE,
@@ -634,7 +657,8 @@ enum SLRG_PARAMS {
     SLRG_PARAMS_LAST
 };
 
-enum SLTP_40_28NM_PARAMS {
+enum SLTP_40_28NM_PARAMS
+{
     POLARITY,
     OB_TAP0,
     OB_TAP1,
@@ -646,7 +670,8 @@ enum SLTP_40_28NM_PARAMS {
     PARAMS_40NM_LAST
 };
 
-enum SLTP_16NM_PARAMS {
+enum SLTP_16NM_PARAMS
+{
     PRE_2_TAP,
     PRE_TAP,
     MAIN_TAP,
@@ -657,7 +682,8 @@ enum SLTP_16NM_PARAMS {
     PARAMS_16NM_LAST
 };
 
-enum SLTP_7NM_PARAMS {
+enum SLTP_7NM_PARAMS
+{
     FIR_PRE3,
     FIR_PRE2,
     FIR_PRE1,
@@ -666,13 +692,15 @@ enum SLTP_7NM_PARAMS {
     PARAMS_7NM_LAST
 };
 
-enum FEC_MODE {
+enum FEC_MODE
+{
     NO_FEC = 1,
     FC_FEC = 2,
     RS_FEC = 4
 };
 
-enum FEC_REQUSET {
+enum FEC_REQUSET
+{
     FEC_REQUSET_NF = 0x1,
     FEC_REQUSET_FC = 0x2,
     FEC_REQUSET_RS528 = 0x4,
@@ -682,7 +710,8 @@ enum FEC_REQUSET {
     FEC_REQUSET_ZLF = 0x40,
 };
 
-enum FEC_MODE_ACTIVE {
+enum FEC_MODE_ACTIVE
+{
     FEC_MODE_NO_FEC = 0,
     FEC_MODE_FIRECODE_FEC = 1,
     FEC_MODE_STANDARD_RS_FEC_528_514 = 2,
@@ -696,7 +725,8 @@ enum FEC_MODE_ACTIVE {
     FEC_MODE_RS_FEC_PLR_272_257 = 14,
 };
 
-enum FEC_MODE_MASK {
+enum FEC_MODE_MASK
+{
     FEC_MODE_MASK_AU = 0,
     FEC_MODE_MASK_NF = 0x1,
     FEC_MODE_MASK_FC = 0x2,
@@ -713,18 +743,20 @@ enum FEC_MODE_MASK {
     FEC_MODE_MASK_DF_LL_272_PLR = 0x8000
 };
 
-enum DATA_PATH_STATE {
-    DATA_PATH_STATE_RES         = 0,
+enum DATA_PATH_STATE
+{
+    DATA_PATH_STATE_RES = 0,
     DATA_PATH_STATE_DEACTIVATED = 0x1,
-    DATA_PATH_STATE_INIT        = 0x2 ,
-    DATA_PATH_STATE_DEINIT      = 0x3,
-    DATA_PATH_STATE_ACTIVATED   = 0x4,
-    DATA_PATH_STATE_TX_TURN_ON  = 0x5,
+    DATA_PATH_STATE_INIT = 0x2,
+    DATA_PATH_STATE_DEINIT = 0x3,
+    DATA_PATH_STATE_ACTIVATED = 0x4,
+    DATA_PATH_STATE_TX_TURN_ON = 0x5,
     DATA_PATH_STATE_TX_TURN_OFF = 0x6,
-    DATA_PATH_STATE_INITALIZED  = 0x7,
+    DATA_PATH_STATE_INITALIZED = 0x7,
 };
 
-enum MODULE_OPER_STATUS {
+enum MODULE_OPER_STATUS
+{
     MODULE_OPER_STATUS_INIT = 0,
     MODULE_OPER_STATUS_PLUGGED_EN,
     MODULE_OPER_STATUS_UNPLUGGED,
@@ -732,7 +764,8 @@ enum MODULE_OPER_STATUS {
     MODULE_OPER_STATUS_PLUGGED_DS
 };
 
-enum MODULE_ERROR_TYPE {
+enum MODULE_ERROR_TYPE
+{
     MODULE_ERROR_TYPE_POWER = 0,
     MODULE_ERROR_TYPE_LONG_RANGE,
     MODULE_ERROR_TYPE_BUS_STUCK,
@@ -750,19 +783,21 @@ enum MODULE_ERROR_TYPE {
     MODULE_ERROR_TYPE_ST_FAULT
 };
 
-enum ERROR_CODE_RES{
-    ERROR_CODE_RES_CONFIG_UNDEF             = 0,
-    ERROR_CODE_RES_CONFIG_SUCC              = 0x1,
-    ERROR_CODE_RES_CONFIG_REJ               = 0x2,
-    ERROR_CODE_RES_CONFIG_REJ_INV_APP_SEI   = 0x3,
-    ERROR_CODE_RES_CONFIG_REJ_INV_DATA_PTH  = 0x4,
-    ERROR_CODE_RES_CONFIG_REJ_INV_SI        = 0x5,
-    ERROR_CODE_RES_CONFIG_REJ_LANES_IN_USE  = 0x6,
+enum ERROR_CODE_RES
+{
+    ERROR_CODE_RES_CONFIG_UNDEF = 0,
+    ERROR_CODE_RES_CONFIG_SUCC = 0x1,
+    ERROR_CODE_RES_CONFIG_REJ = 0x2,
+    ERROR_CODE_RES_CONFIG_REJ_INV_APP_SEI = 0x3,
+    ERROR_CODE_RES_CONFIG_REJ_INV_DATA_PTH = 0x4,
+    ERROR_CODE_RES_CONFIG_REJ_INV_SI = 0x5,
+    ERROR_CODE_RES_CONFIG_REJ_LANES_IN_USE = 0x6,
     ERROR_CODE_RES_CONFIG_REJ_PART_DATA_PTH = 0x7,
-    ERROR_CODE_RES_CONFIG_IN_PROG           = 0xc
+    ERROR_CODE_RES_CONFIG_IN_PROG = 0xc
 };
 
-enum CABLE_IDENTIFIER {
+enum CABLE_IDENTIFIER
+{
     IDENTIFIER_QSFP28,
     IDENTIFIER_QSFP_PLUS,
     IDENTIFIER_SFP,
@@ -777,7 +812,8 @@ enum CABLE_IDENTIFIER {
     IDENTIFIER_QSFP_SPLIT_CABLE
 };
 
-enum CABLE_TECHNOLOGY {
+enum CABLE_TECHNOLOGY
+{
     TECHNOLOGY_850NM_VCSEL = 0x0,
     TECHNOLOGY_1310NM_VCSEL,
     TECHNOLOGY_1550NM_VCSEL,
@@ -796,25 +832,29 @@ enum CABLE_TECHNOLOGY {
     TECHNOLOGY_COP_LINEAR
 };
 
-enum OUI {
+enum OUI
+{
     OTHER,
     MELLANOX,
     KNOWN_OUI,
     NVIDIA
 };
 
-enum ProtoActive {
+enum ProtoActive
+{
     IB = 1,
     ETH = 4
 };
-enum BAD_SET_STATUS_40_28NM {
+enum BAD_SET_STATUS_40_28NM
+{
     SET_STATUS_INVALID_PARM = 0,
     SET_STATUS_ILLEGAL_OB_BAIS = 0x1,
     SET_STATUS_ILLEGAL_OB_TAPS_POLARITY = 0x2,
     SET_STATUS_UNKNOWN
 };
 
-enum BAD_SET_STATUS_16NM {
+enum BAD_SET_STATUS_16NM
+{
     SET_STATUS16_INVALID_PARM = 0x1,
     SET_STATUS16_ILLEGAL_M2LP_AMP = 0x800,
     SET_STATUS16_ILLEGAL_M2LP = 0x1000,
@@ -824,7 +864,8 @@ enum BAD_SET_STATUS_16NM {
     SET_STATUS16_UNKNOWN
 };
 
-enum BAD_STAT_7NM {
+enum BAD_STAT_7NM
+{
     BAD_STAT_7NM_INVALID_PRE3 = 0x1,
     BAD_STAT_7NM_INVALID_PRE2 = 0x2,
     BAD_STAT_7NM_INVALID_PRE1 = 0x4,
@@ -834,7 +875,8 @@ enum BAD_STAT_7NM {
     BAD_STAT_7NM_TAP_SPEED_MISMATCH = 0x40
 };
 
-enum EXT_ETHERNET_COMPLIANCE_CODE {
+enum EXT_ETHERNET_COMPLIANCE_CODE
+{
     EXT_ETHERNET_COMPLIANCE_CODE_Unspecified = 0,
     EXT_ETHERNET_COMPLIANCE_CODE_100G_AOC_FEC = 0x1,
     EXT_ETHERNET_COMPLIANCE_CODE_100GBASE_SR4 = 0x2,
@@ -877,14 +919,15 @@ enum EXT_ETHERNET_COMPLIANCE_CODE {
     EXT_ETHERNET_COMPLIABCE_CODE_AOC_10_4 = 0X33,
     EXT_ETHERNET_COMPLIABCE_CODE_50GBASE_CR = 0X40,
     EXT_ETHERNET_COMPLIABCE_CODE_50GBASE_SR = 0X41,
-    EXT_ETHERNET_COMPLIABCE_CODE_50GBASE_FR  = 0X42,
+    EXT_ETHERNET_COMPLIABCE_CODE_50GBASE_FR = 0X42,
     EXT_ETHERNET_COMPLIABCE_CODE_200GBASE_FR4 = 0X43,
     EXT_ETHERNET_COMPLIABCE_CODE_200GBASE_1550NM_PSM4 = 0X44,
     EXT_ETHERNET_COMPLIABCE_CODE_50GBASE_LR = 0X45,
     EXT_ETHERNET_COMPLIABCE_CODE_200GBASE_LR4 = 0X46,
 };
 
-enum CMIS_IB_COMPLIANCE_CODE{
+enum CMIS_IB_COMPLIANCE_CODE
+{
     CMIS_IB_COMPLIANCE_CODE_SDR = 0,
     CMIS_IB_COMPLIANCE_CODE_DDR = 0x2,
     CMIS_IB_COMPLIANCE_CODE_QDR = 0x4,
@@ -894,74 +937,83 @@ enum CMIS_IB_COMPLIANCE_CODE{
     CMIS_IB_COMPLIANCE_CODE_NDR = 0x40
 };
 
-enum QSFP_CABLE_BREAKOUT_NEAR_END{
+enum QSFP_CABLE_BREAKOUT_NEAR_END
+{
     QSFP_CABLE_BREAKOUT_CHANNEL_1_STATUS = 0,
     QSFP_CABLE_BREAKOUT_CHANNEL_2_STATUS = 0x2,
     QSFP_CABLE_BREAKOUT_CHANNEL_3_STATUS = 0x4,
     QSFP_CABLE_BREAKOUT_CHANNEL_4_STATUS = 0x8,
 };
 
-enum RX_TX_CDR_CAP {
+enum RX_TX_CDR_CAP
+{
     RX_TX_CDR_CAP_NO_CDR = 0,
     RX_TX_CDR_CAP_BUILD_IN_CDR_WITH_ON_OFF_CONTROL = 0x1,
     RX_TX_CDR_CAP_BUILD_IN_CDR_WITHOUT_ON_OFF_CONTROL = 0x2,
 };
 
-enum RX_POWER_TYPE {
+enum RX_POWER_TYPE
+{
     RX_POWER_TYPE_OMA = 0,
     RX_POWER_TYPE_AVERAGE_POWER = 0x1,
 };
 
-enum CIMS_MODULE_ST {
-    CIMS_MODULE_ST_RESERVED     = 0,
+enum CIMS_MODULE_ST
+{
+    CIMS_MODULE_ST_RESERVED = 0,
     CIMS_MODULE_ST_LOWPWR_STATE = 0x1,
-    CIMS_MODULE_ST_PWRUP_STATE  = 0x2,
-    CIMS_MODULE_ST_READY_STATE  = 0x3,
-    CIMS_MODULE_ST_PWRDN_STATE  = 0x4,
-    CIMS_MODULE_ST_FAULT_STATE  = 0x5,
+    CIMS_MODULE_ST_PWRUP_STATE = 0x2,
+    CIMS_MODULE_ST_READY_STATE = 0x3,
+    CIMS_MODULE_ST_PWRDN_STATE = 0x4,
+    CIMS_MODULE_ST_FAULT_STATE = 0x5,
 
 };
 
-enum TEMP_FLAGS{
-    TEMP_FLAGS_NO_ALARM_WARN   = 0,
-    TEMP_FLAGS_HI_TEMP_ALARM   = 0x1,
-    TEMP_FLAGS_LO_TEMP_ALARM   = 0x2,
+enum TEMP_FLAGS
+{
+    TEMP_FLAGS_NO_ALARM_WARN = 0,
+    TEMP_FLAGS_HI_TEMP_ALARM = 0x1,
+    TEMP_FLAGS_LO_TEMP_ALARM = 0x2,
     TEMP_FLAGS_HI_TEMP_WARNING = 0x4,
     TEMP_FLAGS_LO_TEMP_WARNING = 0x8,
 };
 
-enum VCC_FLAGS{
-    VCC_FLAGS_NO_ALARM_WARN  = 0,
-    VCC_FLAGS_HI_VCC_ALARM   = 0x1,
-    VCC_FLAGS_LO_VCC_ALARM   = 0x2,
+enum VCC_FLAGS
+{
+    VCC_FLAGS_NO_ALARM_WARN = 0,
+    VCC_FLAGS_HI_VCC_ALARM = 0x1,
+    VCC_FLAGS_LO_VCC_ALARM = 0x2,
     VCC_FLAGS_HI_VCC_WARNING = 0x4,
     VCC_FLAGS_LO_VCC_WARNING = 0x8,
 };
 
-enum QSFP_CABLE_BREAKOUT_FAR_END{
-    QSFP_CABLE_BREAKOUT_CABLE_FAR_END_IS_UNSPECIFIED                                        = 0,
-    QSFP_CABLE_BREAKOUT_CABLE_SINGLE_FAR_END_4_CHANNELS_IMPLEM_OR_SEPAR_MOD_4_CHANNEL_CONN  = 0x1,
-    QSFP_CABLE_BREAKOUT_CABLE_SINGLE_FAR_END_2_CHANNELS_IMPLEM_OR_SEPAR_MOD_2_CHANNEL_CONN  = 0x2,
-    QSFP_CABLE_BREAKOUT_CABLE_SINGLE_FAR_END_1_CHANNELS_IMPLEM_OR_SEPAR_MOD_1_CHANNEL_CONN  = 0x3,
-    QSFP_CABLE_BREAKOUT_4_FAR_ENDS_1_CHANNELS_IMPLEM_IN_EACH                                = 0x4,
-    QSFP_CABLE_BREAKOUT_2_FAR_ENDS_2_CHANNELS_IMPLEM_IN_EACH                                = 0x5,
-    QSFP_CABLE_BREAKOUT_2_FAR_ENDS_1_CHANNELS_IMPLEM_IN_EACH                                = 0x6,
+enum QSFP_CABLE_BREAKOUT_FAR_END
+{
+    QSFP_CABLE_BREAKOUT_CABLE_FAR_END_IS_UNSPECIFIED = 0,
+    QSFP_CABLE_BREAKOUT_CABLE_SINGLE_FAR_END_4_CHANNELS_IMPLEM_OR_SEPAR_MOD_4_CHANNEL_CONN = 0x1,
+    QSFP_CABLE_BREAKOUT_CABLE_SINGLE_FAR_END_2_CHANNELS_IMPLEM_OR_SEPAR_MOD_2_CHANNEL_CONN = 0x2,
+    QSFP_CABLE_BREAKOUT_CABLE_SINGLE_FAR_END_1_CHANNELS_IMPLEM_OR_SEPAR_MOD_1_CHANNEL_CONN = 0x3,
+    QSFP_CABLE_BREAKOUT_4_FAR_ENDS_1_CHANNELS_IMPLEM_IN_EACH = 0x4,
+    QSFP_CABLE_BREAKOUT_2_FAR_ENDS_2_CHANNELS_IMPLEM_IN_EACH = 0x5,
+    QSFP_CABLE_BREAKOUT_2_FAR_ENDS_1_CHANNELS_IMPLEM_IN_EACH = 0x6,
 };
 
-enum CMIS_CABLE_BREAKOUT{
-    CMIS_CABLE_BREAKOUT_UNSPECIFIED                 = 0,
-    CMIS_CABLE_BREAKOUT_QSFPDD_to_QSFPDD            = 0x1,
-    CMIS_CABLE_BREAKOUT_QSFPDD_to_2QSFP_or_2QSFPDD  = 0x2,
-    CMIS_CABLE_BREAKOUT_QSFPDD_to_4SFPDD_or_4QSFP   = 0x3,
-    CMIS_CABLE_BREAKOUT_QSFPDD_to_8SFP              = 0x4,
-    CMIS_CABLE_BREAKOUT_QSFPDD_to_QSFP_or_QSFPDD    = 0x5,
-    CMIS_CABLE_BREAKOUT_QSFPDD_to_2QSFP             = 0x6,
-    CMIS_CABLE_BREAKOUT_QSFPDD_to_4SFP              = 0x7,
-    CMIS_CABLE_BREAKOUT_SFPDD_to_SFPDD              = 0x8,
-    CMIS_CABLE_BREAKOUT_SFPDD_to_2SFPDD             = 0x9,
+enum CMIS_CABLE_BREAKOUT
+{
+    CMIS_CABLE_BREAKOUT_UNSPECIFIED = 0,
+    CMIS_CABLE_BREAKOUT_QSFPDD_to_QSFPDD = 0x1,
+    CMIS_CABLE_BREAKOUT_QSFPDD_to_2QSFP_or_2QSFPDD = 0x2,
+    CMIS_CABLE_BREAKOUT_QSFPDD_to_4SFPDD_or_4QSFP = 0x3,
+    CMIS_CABLE_BREAKOUT_QSFPDD_to_8SFP = 0x4,
+    CMIS_CABLE_BREAKOUT_QSFPDD_to_QSFP_or_QSFPDD = 0x5,
+    CMIS_CABLE_BREAKOUT_QSFPDD_to_2QSFP = 0x6,
+    CMIS_CABLE_BREAKOUT_QSFPDD_to_4SFP = 0x7,
+    CMIS_CABLE_BREAKOUT_SFPDD_to_SFPDD = 0x8,
+    CMIS_CABLE_BREAKOUT_SFPDD_to_2SFPDD = 0x9,
 };
 
-enum QSFP_ETHERNET_COMPLIANCE_CODE {
+enum QSFP_ETHERNET_COMPLIANCE_CODE
+{
     QSFP_ETHERNET_COMPLIANCE_CODE_Unspecified = 0,
     QSFP_ETHERNET_COMPLIANCE_CODE_40G_ACTIVE_CABLE_XLPPI = 0x1,
     QSFP_ETHERNET_COMPLIANCE_CODE_40GBASE_LR4 = 0x2,
@@ -969,11 +1021,12 @@ enum QSFP_ETHERNET_COMPLIANCE_CODE {
     QSFP_ETHERNET_COMPLIANCE_CODE_40GBASE_CR4 = 0x8,
     QSFP_ETHERNET_COMPLIANCE_CODE_10GBASE_SR = 0x10,
     QSFP_ETHERNET_COMPLIANCE_CODE_10GBASE_LR = 0x20,
-    QSFP_ETHERNET_COMPLIANCE_CODE_10GBASE_LRM= 0x40,
+    QSFP_ETHERNET_COMPLIANCE_CODE_10GBASE_LRM = 0x40,
     QSFP_ETHERNET_COMPLIANCE_CODE_EXT = 0x80,
 };
 
-enum SFP_ETHERNET_COMPLIANCE_CODE {
+enum SFP_ETHERNET_COMPLIANCE_CODE
+{
     SFP_ETHERNET_COMPLIANCE_CODE_Unspecified = 0,
     SFP_ETHERNET_COMPLIANCE_CODE_10G_BASE_SR = 0x10,
     SFP_ETHERNET_COMPLIANCE_CODE_10G_BASE_LR = 0x20,
@@ -981,16 +1034,17 @@ enum SFP_ETHERNET_COMPLIANCE_CODE {
     SFP_ETHERNET_COMPLIANCE_CODE_10G_BASE_ER = 0x80,
 };
 
-enum CMIS_PASSIVE_COPPER_COMPLIANCE {
+enum CMIS_PASSIVE_COPPER_COMPLIANCE
+{
     CMIS_COMPLIANCE_UNSPECIFIED = 0x0,
-    CMIS_COMPLIANCE_1000_BASE_CX= 0x1,
+    CMIS_COMPLIANCE_1000_BASE_CX = 0x1,
     CMIS_COMPLIANCE_XAUI = 0x2,
-    CMIS_COMPLIANCE_XFI= 0x3,
+    CMIS_COMPLIANCE_XFI = 0x3,
     CMIS_COMPLIANCE_SFI = 0x4,
     CMIS_COMPLIANCE_25G_AUI = 0x5,
     CMIS_COMPLIANCE_XL_AUI = 0x6,
     CMIS_COMPLIANCE_XL_PPI = 0x7,
-    CMIS_COMPLIANCE_L_AUI2= 0x8,
+    CMIS_COMPLIANCE_L_AUI2 = 0x8,
     CMIS_COMPLIANCE_50G_AUI2 = 0x9,
     CMIS_COMPLIANCE_50G_AUI1 = 0xa,
     CMIS_COMPLIANCE_C_AUI4 = 0xb,
@@ -1027,7 +1081,8 @@ enum CMIS_PASSIVE_COPPER_COMPLIANCE {
     CMIS_COMPLIANCE_NDR = 0x32
 };
 
-enum CMIS_MM_COMPLIANCE_CODE {
+enum CMIS_MM_COMPLIANCE_CODE
+{
     CMIS_COMPLIANCE_10G_BASE_SW = 0x1,
     CMIS_COMPLIANCE_10G_BASE_SR = 0x2,
     CMIS_COMPLIANCE_25G_BASE_SR = 0x3,
@@ -1049,7 +1104,8 @@ enum CMIS_MM_COMPLIANCE_CODE {
     CMIS_COMPLIANCE_400G_BIDI = 0x1a
 };
 
-enum CMIS_SM_COMPLIANCE_CODE {
+enum CMIS_SM_COMPLIANCE_CODE
+{
     CMIS_COMPLIANCE_10G_BASE_LW = 0x1,
     CMIS_COMPLIANCE_10G_BASE_EW = 0x2,
     CMIS_COMPLIANCE_10G_ZW = 0x3,
@@ -1089,7 +1145,8 @@ enum CMIS_SM_COMPLIANCE_CODE {
     CMIS_COMPLIANCE_25G_LR_BIDI = 0x3d
 };
 
-enum PHY_MNGR_FSM_STATE {
+enum PHY_MNGR_FSM_STATE
+{
     PHY_MNGR_DISABLED = 0,
     PHY_MNGR_OPEN_PORT = 1,
     PHY_MNGR_POLLING = 2,
@@ -1099,7 +1156,8 @@ enum PHY_MNGR_FSM_STATE {
     PHY_MNGR_RX_DISABLE = 7
 };
 
-enum IB_PHY_FSM_STATE {
+enum IB_PHY_FSM_STATE
+{
     IB_AN_FSM_DISABLED = 0,
     IB_AN_FSM_INITIALY = 1,
     IB_AN_FSM_RCVR_CFG = 2,
@@ -1110,7 +1168,8 @@ enum IB_PHY_FSM_STATE {
     IB_AN_FSM_LINK_UP = 7
 };
 
-enum TECH {
+enum TECH
+{
     TECH_NA = 0,
     TECH_40 = 1,
     TECH_28 = 2,
@@ -1119,53 +1178,59 @@ enum TECH {
     TECH_5 = 5
 };
 
-enum PHY_HST_FSM_HDR_STATE {
-   PHY_HST_FSM_HDR_DISABLED               = 0,
-   PHY_HST_FSM_HDR_ADAPTATION             = 0x1,
-   PHY_HST_FSM_HDR_DESKEW_FIX_REVERSALS   = 0x2,
-   PHY_HST_FSM_HDR_WAIT_TS2               = 0x3,
-   PHY_HST_FSM_HDR_WAIT_MCB               = 0x4,
-   PHY_HST_FSM_HDR_MCB_AN                 = 0x5,
-   PHY_HST_FSM_HDR_RECEIVER_READY         = 0x6,
-   PHY_HST_FSM_HDR_LINKUP                 = 0x7,
-   PHY_HST_FSM_HDR_SUBFSM_FAIL            = 0x8,
-   PHY_HST_FSM_HDR_BASIC_DETECT           = 0x9,
-   PHY_HST_FSM_HDR_BASIC_STABILITY        = 0xa,
-   PHY_HST_FSM_HDR_CONFIG                 = 0xb,
-   PHY_HST_HDR_ERROR                      = 0xff,
+enum PHY_HST_FSM_HDR_STATE
+{
+    PHY_HST_FSM_HDR_DISABLED = 0,
+    PHY_HST_FSM_HDR_ADAPTATION = 0x1,
+    PHY_HST_FSM_HDR_DESKEW_FIX_REVERSALS = 0x2,
+    PHY_HST_FSM_HDR_WAIT_TS2 = 0x3,
+    PHY_HST_FSM_HDR_WAIT_MCB = 0x4,
+    PHY_HST_FSM_HDR_MCB_AN = 0x5,
+    PHY_HST_FSM_HDR_RECEIVER_READY = 0x6,
+    PHY_HST_FSM_HDR_LINKUP = 0x7,
+    PHY_HST_FSM_HDR_SUBFSM_FAIL = 0x8,
+    PHY_HST_FSM_HDR_BASIC_DETECT = 0x9,
+    PHY_HST_FSM_HDR_BASIC_STABILITY = 0xa,
+    PHY_HST_FSM_HDR_CONFIG = 0xb,
+    PHY_HST_HDR_ERROR = 0xff,
 };
 
-enum MAX_READ_REQUEST_SIZE{
-    MAX_READ_REQUEST_SIZE_128B  = 0,
-    MAX_READ_REQUEST_SIZE_256B  = 0x1,
-    MAX_READ_REQUEST_SIZE_512B  = 0x2,
+enum MAX_READ_REQUEST_SIZE
+{
+    MAX_READ_REQUEST_SIZE_128B = 0,
+    MAX_READ_REQUEST_SIZE_256B = 0x1,
+    MAX_READ_REQUEST_SIZE_512B = 0x2,
     MAX_READ_REQUEST_SIZE_1024B = 0x3,
     MAX_READ_REQUEST_SIZE_2048B = 0x4,
     MAX_READ_REQUEST_SIZE_4096B = 0x5,
 };
 
-enum PWR_STATUS{
+enum PWR_STATUS
+{
     PWR_STATUS_0 = 0,
     PWR_STATUS_1 = 0x1,
     PWR_STATUS_2 = 0x2,
 };
 
-enum PORT_TYPE_MPEIN{
+enum PORT_TYPE_MPEIN
+{
     PORT_TYPE_EP_MPEIN = 0,
     PORT_TYPE_RC_MPEIN = 0x4,
     PORT_TYPE_UP_MPEIN = 0x5,
     PORT_TYPE_DP_MPEIN = 0x6,
 };
 
-enum LINK_PEER_MAX_SPEED{
+enum LINK_PEER_MAX_SPEED
+{
     LINK_PEER_MAX_SPEED_2_5G = 0x1,
-    LINK_PEER_MAX_SPEED_5G   = 0x2,
-    LINK_PEER_MAX_SPEED_8G   = 0x4,
-    LINK_PEER_MAX_SPEED_16G  = 0x16,
-    LINK_PEER_MAX_SPEED_32G  = 0x32,
+    LINK_PEER_MAX_SPEED_5G = 0x2,
+    LINK_PEER_MAX_SPEED_8G = 0x4,
+    LINK_PEER_MAX_SPEED_16G = 0x16,
+    LINK_PEER_MAX_SPEED_32G = 0x32,
 };
 
-enum PORT_STATE{
+enum PORT_STATE
+{
     PORT_STATE_0 = 0x0,
     PORT_STATE_1 = 0x1,
     PORT_STATE_2 = 0x2,
@@ -1213,19 +1278,22 @@ enum PORT_STATE{
     PORT_STATE_44 = 0xf0,
 };
 
-enum LOOPBACK_MODE{
+enum LOOPBACK_MODE
+{
     PHY_NO_LOOPBACK = 0,
     PHY_REMOTE_LOOPBACK = 1,
     PHY_LOCAL_LOOPBACK = 2,
     EXTERNAL_LOCAL_LOOPBACK = 4
 };
 
-enum AN_DISABLE {
+enum AN_DISABLE
+{
     AN_DISABLE_NORMAL = 0,
-    AN_DISABLE_FORCE  = 1
+    AN_DISABLE_FORCE = 1
 };
 
-enum ETH_LINK_SPEED {
+enum ETH_LINK_SPEED
+{
     ETH_LINK_SPEED_UNKNOWN = 0x0,
     ETH_LINK_SPEED_1000_SGMII = 0x1,
     ETH_LINK_SPEED_1000_KX = 0x2,
@@ -1260,7 +1328,8 @@ enum ETH_LINK_SPEED {
     ETH_LINK_SPEED_50G_KR2 = 0x80000000,
 };
 
-enum ETH_LINK_SPEED_EXT {
+enum ETH_LINK_SPEED_EXT
+{
     ETH_LINK_SPEED_EXT_UNKNOWN = 0x0,
     ETH_LINK_SPEED_EXT_SGMII_100M = 0x1,
     ETH_LINK_SPEED_EXT_1000BASE_X = 0x2,
@@ -1275,7 +1344,7 @@ enum ETH_LINK_SPEED_EXT {
     ETH_LINK_SPEED_EXT_100GAUI_2 = 0x400,
     ETH_LINK_SPEED_EXT_100GAUI_1 = 0x800,
     ETH_LINK_SPEED_EXT_200GAUI_4 = 0x1000,
-    ETH_LINK_SPEED_EXT_200GAUI_2  = 0x2000,
+    ETH_LINK_SPEED_EXT_200GAUI_2 = 0x2000,
     ETH_LINK_SPEED_EXT_Reserved_14 = 0x4000,
     ETH_LINK_SPEED_EXT_400GAUI_8 = 0x8000,
     ETH_LINK_SPEED_EXT_400GAUI_4 = 0x10000,
@@ -1283,47 +1352,54 @@ enum ETH_LINK_SPEED_EXT {
     ETH_LINK_SPEED_EXT_SGMII_10M = 0x8000000
 };
 
-enum IB_LINK_SPEED {
-    IB_LINK_SPEED_SDR   = 0x1,
-    IB_LINK_SPEED_DDR   = 0x2,
-    IB_LINK_SPEED_QDR   = 0x4,
+enum IB_LINK_SPEED
+{
+    IB_LINK_SPEED_SDR = 0x1,
+    IB_LINK_SPEED_DDR = 0x2,
+    IB_LINK_SPEED_QDR = 0x4,
     IB_LINK_SPEED_FDR10 = 0x8,
-    IB_LINK_SPEED_FDR   = 0x10,
-    IB_LINK_SPEED_EDR   = 0x20,
-    IB_LINK_SPEED_HDR   = 0x40,
-    IB_LINK_SPEED_NDR   = 0x80
+    IB_LINK_SPEED_FDR = 0x10,
+    IB_LINK_SPEED_EDR = 0x20,
+    IB_LINK_SPEED_HDR = 0x40,
+    IB_LINK_SPEED_NDR = 0x80
 };
 
-enum PRBS_MODULATION {
+enum PRBS_MODULATION
+{
     PRBS_NRZ = 0,
     PRBS_PAM4_ENCODING = 1
 };
 
-enum PNAT_ACCESS {
+enum PNAT_ACCESS
+{
     PNAT_LOCAL = 0,
     PNAT_LABEL = 1,
     PNAT_PCIE = 3
 };
 
-enum PRODUCT_TECHNOLOGY {
+enum PRODUCT_TECHNOLOGY
+{
     PRODUCT_40NM = 0,
     PRODUCT_28NM = 1,
     PRODUCT_16NM = 3,
     PRODUCT_7NM = 4
 };
 
-enum STATUS_OPCODE {
+enum STATUS_OPCODE
+{
     CABLE_IS_UNPLUGGED = 1024
 };
 
-enum EOM_MEASURMENT {
+enum EOM_MEASURMENT
+{
     SLRG_UPPER_EYE = 0x1,
     SLRG_MIDDLE_EYE = 0x2,
     SLRG_LOWER_EYE = 0x4,
     SLRG_COMPOSITE_EYE = 0x8
 };
 
-enum SLRG_FOM_MODE {
+enum SLRG_FOM_MODE
+{
     SLRG_FOM_MODE_EYEC,
     SLRG_FOM_MODE_EYEO,
     SLRG_FOM_MODE_EYEM,
@@ -1334,7 +1410,8 @@ enum SLRG_FOM_MODE {
     SLRG_FOM_MODE_EYEM_VP
 };
 
-enum PRBS_PARAMS {
+enum PRBS_PARAMS
+{
     PRBS_PARAMS_RX_TUNING_STATUS,
     PRBS_PARAMS_LOCK_STATUS,
     PRBS_PARAMS_E,
@@ -1348,7 +1425,8 @@ enum PRBS_PARAMS {
     PRBS_PARAMS_LAST
 };
 
-enum AMBER_SHEET {
+enum AMBER_SHEET
+{
     AMBER_SHEET_GENERAL = 1,
     AMBER_SHEET_INDEXES = 2,
     AMBER_SHEET_LINK_STATUS = 3,
@@ -1366,7 +1444,8 @@ enum AMBER_SHEET {
     AMBER_SHEET_PHY_DEBUG_INFO = 15
 };
 
-enum PCIE_DEVICE_STATUS {
+enum PCIE_DEVICE_STATUS
+{
     PCIE_DEVICE_STATUS_CORRECTABLE_ERROR = 0x1,
     PCIE_DEVICE_STATUS_NON_FATAL_ERROR = 0x2,
     PCIE_DEVICE_STATUS_FATAL_ERROR = 0x4,
@@ -1375,7 +1454,8 @@ enum PCIE_DEVICE_STATUS {
     PCIE_DEVICE_STATUS_TRANSACTION_PEN = 0x20
 };
 
-typedef enum MODULE_PRBS {
+typedef enum MODULE_PRBS
+{
     MODULE_PRBS_SELECT,
     MODULE_PRBS_MODE,
     MODULE_PRBS_GEN_PAT,
@@ -1391,40 +1471,45 @@ typedef enum MODULE_PRBS {
     MODULE_PRBS_CLEAR_DIAG
 } ModulePrbs_t;
 
-typedef enum MODULE_PRBS_ACCESS {
+typedef enum MODULE_PRBS_ACCESS
+{
     MODULE_PRBS_ACCESS_BOTH,
     MODULE_PRBS_ACCESS_GEN,
     MODULE_PRBS_ACCESS_CH,
     MODULE_PRBS_ACCESS_CH_GEN
 } ModuleAccess_t;
 
-enum MODULE_PRBS_LANE_RATE {
-    MODULE_PRBS_LANE_RATE_1G        = 0x1,
-    MODULE_PRBS_LANE_RATE_SDR       = 0x2,
-    MODULE_PRBS_LANE_RATE_40G_40G   = 0x8,
-    MODULE_PRBS_LANE_RATE_FDR       = 0x10,
-    MODULE_PRBS_LANE_RATE_EDR       = 0x20,
-    MODULE_PRBS_LANE_RATE_HDR       = 0x80,
-    MODULE_PRBS_LANE_RATE_NDR       = 0x100
+enum MODULE_PRBS_LANE_RATE
+{
+    MODULE_PRBS_LANE_RATE_1G = 0x1,
+    MODULE_PRBS_LANE_RATE_SDR = 0x2,
+    MODULE_PRBS_LANE_RATE_40G_40G = 0x8,
+    MODULE_PRBS_LANE_RATE_FDR = 0x10,
+    MODULE_PRBS_LANE_RATE_EDR = 0x20,
+    MODULE_PRBS_LANE_RATE_HDR = 0x80,
+    MODULE_PRBS_LANE_RATE_NDR = 0x100
 };
 
-enum PMPT_STATUS {
-    PMPT_STATUS_NORMAL_MODE     = 0,
-    PMPT_STATUS_NOT_SUPPORTED   = 1,
-    PMPT_STATUS_CONFIG_ERROR    = 2,
-    PMPT_STATUS_GEN_ONLY        = 3,
-    PMPT_STATUS_CH_ONLY         = 4,
-    PMPT_STATUS_BOTH            = 5
+enum PMPT_STATUS
+{
+    PMPT_STATUS_NORMAL_MODE = 0,
+    PMPT_STATUS_NOT_SUPPORTED = 1,
+    PMPT_STATUS_CONFIG_ERROR = 2,
+    PMPT_STATUS_GEN_ONLY = 3,
+    PMPT_STATUS_CH_ONLY = 4,
+    PMPT_STATUS_BOTH = 5
 };
 
-enum PMPD_STATUS {
-    PMPD_STATUS_NOT_SUPPORTED   = 0,
-    PMPD_STATUS_NORMAL_MODE     = 1,
-    PMPD_STATUS_NOT_LOCKED      = 2,
-    PMPD_STATUS_LOCKED          = 3
+enum PMPD_STATUS
+{
+    PMPD_STATUS_NOT_SUPPORTED = 0,
+    PMPD_STATUS_NORMAL_MODE = 1,
+    PMPD_STATUS_NOT_LOCKED = 2,
+    PMPD_STATUS_LOCKED = 3
 };
 
-enum PMPD_PARAM {
+enum PMPD_PARAM
+{
     PMPD_PARAM_STATUS,
     PMPD_PARAM_PRBS_BITS,
     PMPD_PARAM_PRBS_ERRORS,
@@ -1433,26 +1518,28 @@ enum PMPD_PARAM {
     PMPD_PARAM_LAST
 };
 
-enum PMCR_RX_AMP {
-    PMCR_RX_AMP_BIT0    = 0x1,
-    PMCR_RX_AMP_BIT1    = 0x2,
-    PMCR_RX_AMP_BIT2    = 0x4,
-    PMCR_RX_AMP_BIT3    = 0x8,
-    PMCR_RX_AMP_BIT4    = 0x10,
-    PMCR_RX_AMP_BIT5    = 0x20,
-    PMCR_RX_AMP_BIT6    = 0x40,
-    PMCR_RX_AMP_BIT7    = 0x80,
-    PMCR_RX_AMP_BIT8    = 0x100,
-    PMCR_RX_AMP_BIT9    = 0x200,
-    PMCR_RX_AMP_BIT10   = 0x400,
-    PMCR_RX_AMP_BIT11   = 0x800,
-    PMCR_RX_AMP_BIT12   = 0x1000,
-    PMCR_RX_AMP_BIT13   = 0x2000,
-    PMCR_RX_AMP_BIT14   = 0x4000,
-    PMCR_RX_AMP_BIT15   = 0x8000
+enum PMCR_RX_AMP
+{
+    PMCR_RX_AMP_BIT0 = 0x1,
+    PMCR_RX_AMP_BIT1 = 0x2,
+    PMCR_RX_AMP_BIT2 = 0x4,
+    PMCR_RX_AMP_BIT3 = 0x8,
+    PMCR_RX_AMP_BIT4 = 0x10,
+    PMCR_RX_AMP_BIT5 = 0x20,
+    PMCR_RX_AMP_BIT6 = 0x40,
+    PMCR_RX_AMP_BIT7 = 0x80,
+    PMCR_RX_AMP_BIT8 = 0x100,
+    PMCR_RX_AMP_BIT9 = 0x200,
+    PMCR_RX_AMP_BIT10 = 0x400,
+    PMCR_RX_AMP_BIT11 = 0x800,
+    PMCR_RX_AMP_BIT12 = 0x1000,
+    PMCR_RX_AMP_BIT13 = 0x2000,
+    PMCR_RX_AMP_BIT14 = 0x4000,
+    PMCR_RX_AMP_BIT15 = 0x8000
 };
 
-typedef enum {
+typedef enum
+{
     CABLE_CONTROL_PARAMETERS_QUERY,
     CABLE_CONTROL_PARAMETERS_SET_TX_EQ,
     CABLE_CONTROL_PARAMETERS_SET_RX_EMPH,

@@ -44,13 +44,11 @@
 
 using namespace std;
 
-class UserInput {
+class UserInput
+{
 public:
     UserInput();
-    virtual ~UserInput()
-    {
-    }
-    ;
+    virtual ~UserInput(){};
     u_int32_t _labelPort;
     u_int32_t _splitPort;
     u_int32_t _secondSplitPort;

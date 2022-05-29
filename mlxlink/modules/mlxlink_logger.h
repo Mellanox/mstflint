@@ -47,22 +47,24 @@
 
 using namespace std;
 
-enum LOG_LEVEL {
+enum LOG_LEVEL
+{
     LEVEL_ERROR,
     LEVEL_WORNING,
     LEVEL_INFO,
     LEVEL_DEBUG
 };
 
-class MlxlinkLogger {
-
+class MlxlinkLogger
+{
 public:
-    MlxlinkLogger(const string &filePath, LOG_LEVEL logLevel = LEVEL_DEBUG);
+    MlxlinkLogger(const string& filePath, LOG_LEVEL logLevel = LEVEL_DEBUG);
     virtual ~MlxlinkLogger();
     void debugLog(const char* format, ...);
     void printHeaderWithUnderLine(const char* title);
     void printHeader(const char* title);
     void printLine(const char* line);
+
 private:
     void printTimeStamp();
     LOG_LEVEL _logLevel;

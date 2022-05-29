@@ -39,9 +39,7 @@ MlxlinkCmdPrint::MlxlinkCmdPrint()
     lastInsertedRow = 0;
 }
 
-MlxlinkCmdPrint::~MlxlinkCmdPrint()
-{
-}
+MlxlinkCmdPrint::~MlxlinkCmdPrint() {}
 
 void MlxlinkCmdPrint::initRecords(int size)
 {
@@ -50,69 +48,85 @@ void MlxlinkCmdPrint::initRecords(int size)
 
 u_int32_t MlxlinkCmdPrint::getCurrRow()
 {
-    if(!lastInsertedRow) {
+    if (!lastInsertedRow)
+    {
         return lastInsertedRow;
-    } else {
+    }
+    else
+    {
         return lastInsertedRow + 1;
     }
 }
 
 void MlxlinkCmdPrint::toJsonFormat(Json::Value& jsonRoot)
 {
-    if (!visible) {
+    if (!visible)
+    {
         return;
     }
     Json::Value outputGroup;
     MlxlinkRecord record;
-    for (u_int32_t i = 0; i < mlxlinkRecords.size(); i++) {
+    for (u_int32_t i = 0; i < mlxlinkRecords.size(); i++)
+    {
         record = mlxlinkRecords[i];
         MlxlinkRecord::trim(record.key);
         MlxlinkRecord::trim(record.val);
-        if (record.visible && record.key != "") {
-            if (record.arrayValue) {
+        if (record.visible && record.key != "")
+        {
+            if (record.arrayValue)
+            {
                 Json::Value subObject;
                 subObject[JSON_VALUES_TITLE] = Json::Value(Json::arrayValue);
                 std::string val = record.val;
-                if (title == HEADER_SUPPORTED_INFO ||
-                        title == HEADER_FEC_INFO) {
-                    std::string mask = val.substr(0, val.find("(")-1);
-                    val = val.substr(
-                            val.find("(")+1, val.find_last_of(")")-mask.length()-2);
+                if (title == HEADER_SUPPORTED_INFO || title == HEADER_FEC_INFO)
+                {
+                    std::string mask = val.substr(0, val.find("(") - 1);
+                    val = val.substr(val.find("(") + 1, val.find_last_of(")") - mask.length() - 2);
                     subObject[JSON_MASK_TITLE] = mask;
                 }
-                if (!val.empty()) {
+                if (!val.empty())
+                {
                     std::vector<std::string> vals;
-                    if (title == HEADER_FEC_INFO) {
+                    if (title == HEADER_FEC_INFO)
+                    {
                         vals = MlxlinkRecord::split(val, ", ");
-                    } else {
-                      vals = MlxlinkRecord::split(val, ",");
                     }
-                    for (std::vector<std::string>::iterator it = vals.begin() ;
-                            it != vals.end(); ++it) {
+                    else
+                    {
+                        vals = MlxlinkRecord::split(val, ",");
+                    }
+                    for (std::vector<std::string>::iterator it = vals.begin(); it != vals.end(); ++it)
+                    {
                         subObject[JSON_VALUES_TITLE].append(*it);
                     }
                 }
                 outputGroup[record.key] = subObject;
-            } else {
+            }
+            else
+            {
                 outputGroup[record.key] = record.val;
             }
         }
     }
-    if (!outputGroup.isNull()) {
+    if (!outputGroup.isNull())
+    {
         jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION][title] = outputGroup;
     }
 }
 
-std::ostream & operator << (std::ostream &out, const MlxlinkCmdPrint &cmdPrint)
+std::ostream& operator<<(std::ostream& out, const MlxlinkCmdPrint& cmdPrint)
 {
-    if (!MlxlinkRecord::jsonFormat) {
-        if (!cmdPrint.visible) {
+    if (!MlxlinkRecord::jsonFormat)
+    {
+        if (!cmdPrint.visible)
+        {
             return out;
         }
         out << std::endl << cmdPrint.title << std::endl;
         out << std::string(cmdPrint.title.length(), '-') << std::endl;
-        for (u_int32_t i = 0; i < cmdPrint.mlxlinkRecords.size(); i++) {
-            out <<  cmdPrint.mlxlinkRecords[i];
+        for (u_int32_t i = 0; i < cmdPrint.mlxlinkRecords.size(); i++)
+        {
+            out << cmdPrint.mlxlinkRecords[i];
         }
     }
     return out;

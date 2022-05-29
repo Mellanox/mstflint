@@ -36,20 +36,22 @@
 #include "mlxlink_reg_parser.h"
 #include "amber_field.h"
 
-//Un-comment to see access register failures
+// Un-comment to see access register failures
 //#define VALIDATE_REG_REQUEST
 
 using namespace std;
 
-struct FIELDS_COUNT {
+struct FIELDS_COUNT
+{
     u_int32_t numOfIbFields;
     u_int32_t numOfEthFields;
     u_int32_t numOfPcieFields;
 };
 
-class MlxlinkAmBerCollector :public MlxlinkRegParser {
+class MlxlinkAmBerCollector : public MlxlinkRegParser
+{
 public:
-    MlxlinkAmBerCollector(Json::Value &jsonRoot);
+    MlxlinkAmBerCollector(Json::Value& jsonRoot);
     virtual ~MlxlinkAmBerCollector();
 
     virtual void init();
@@ -70,7 +72,7 @@ public:
     virtual vector<AmberField> getTestModeModuleInfo();
     virtual vector<AmberField> getPhyDebugInfo();
 
-    void getPpcntBer(u_int32_t portType, vector<AmberField> &fields);
+    void getPpcntBer(u_int32_t portType, vector<AmberField>& fields);
     bool isGBValid();
     bool isMCMValid();
 
@@ -87,7 +89,7 @@ public:
     string _mstDevName;
     u_int32_t _iteration;
     string _testMode;
-    MlxlinkMaps *_mlxlinkMaps;
+    MlxlinkMaps* _mlxlinkMaps;
     vector<PortGroup> _localPorts; // will be valid for switches
     bool _isHca;
 
@@ -96,23 +98,31 @@ private:
     string getNodeGUID();
     string getMACAddress();
     string getCurrentTimeStamp();
-    void getEthComplianceCodes(u_int32_t cableTechnology , string &ethComplianceStr , string &extComplianceStr, u_int32_t cableMediaType);
-    void getIbComplianceCodes(string &ibComplianceCodeStr);
+    void getEthComplianceCodes(u_int32_t cableTechnology,
+                               string& ethComplianceStr,
+                               string& extComplianceStr,
+                               u_int32_t cableMediaType);
+    void getIbComplianceCodes(string& ibComplianceCodeStr);
     string getCableTechnologyStr(u_int32_t cableTechnology);
     string getCableBreakoutStr(u_int32_t cableBreakout, u_int32_t cableIdentifier);
-    void calcRxTxPowerLane(vector<AmberField> &fields ,string str);
-    void getModuleInfoPage(vector<AmberField> &fields);
+    void calcRxTxPowerLane(vector<AmberField>& fields, string str);
+    void getModuleInfoPage(vector<AmberField>& fields);
     string getSmfLength(const u_int32_t smfLength, const u_int32_t cableTechnology, const bool optical);
     string getDateCode(u_int64_t dateCode);
-    void loopAllLanesStr(vector<AmberField> &fields ,const string str);
-    void getTxBiasLane(vector<AmberField> &fields);
-    string getByMap(u_int32_t flags,  std::map<u_int32_t, std::string> map);
-    void getCmisComplianceCode(u_int32_t ethComplianceCode, u_int32_t extEthComplianceCode, string &ethComplianceStr , string &extComplianceStr, u_int32_t cableMediaType, u_int32_t cableTechnology);
-    void  initCableIdentifier(u_int32_t cableIdentifier);
-    void getModuleLatchedFlagInfoPage(vector<AmberField> &fields);
+    void loopAllLanesStr(vector<AmberField>& fields, const string str);
+    void getTxBiasLane(vector<AmberField>& fields);
+    string getByMap(u_int32_t flags, std::map<u_int32_t, std::string> map);
+    void getCmisComplianceCode(u_int32_t ethComplianceCode,
+                               u_int32_t extEthComplianceCode,
+                               string& ethComplianceStr,
+                               string& extComplianceStr,
+                               u_int32_t cableMediaType,
+                               u_int32_t cableTechnology);
+    void initCableIdentifier(u_int32_t cableIdentifier);
+    void getModuleLatchedFlagInfoPage(vector<AmberField>& fields);
     void groupValidIf(bool condition);
-    void getTestModeModulePMPT(vector<AmberField> &fields, string moduleSide, ModuleAccess_t mode);
-    void getTestModeModulePMPD(vector<AmberField> &fields, string moduleSide);
+    void getTestModeModulePMPT(vector<AmberField>& fields, string moduleSide, ModuleAccess_t mode);
+    void getTestModeModulePMPD(vector<AmberField>& fields, string moduleSide);
 
     bool _isQsfpCable;
     bool _isSfpCable;
@@ -125,16 +135,18 @@ private:
 
 protected:
     string getBitmaskPerLaneStr(u_int32_t bitmask);
-    void resetLocalParser(const string &regName);
-    string getLocalFieldStr(const string &fieldName);
-    u_int32_t getLocalFieldValue(const string &fieldName);
-    void sendRegister(const string &regName, maccess_reg_method_t method);
+    void resetLocalParser(const string& regName);
+    string getLocalFieldStr(const string& fieldName);
+    u_int32_t getLocalFieldValue(const string& fieldName);
+    void sendRegister(const string& regName, maccess_reg_method_t method);
 
-    void fillParamsToFields(const string &title, const vector<string> &values,
-                            vector<AmberField> &fields, bool laneLimit = true);
+    void fillParamsToFields(const string& title,
+                            const vector<string>& values,
+                            vector<AmberField>& fields,
+                            bool laneLimit = true);
     string getPrbsModeCap(u_int32_t modeSelector, u_int32_t capsMask);
     string getPrpsRateCap(u_int32_t capsMask);
-    virtual void getTestModePrpsInfo(const string &prbsReg, vector<vector<string>> &params);
+    virtual void getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params);
 
     // Helper functions
     virtual string getBerAndErrorTitle(u_int32_t portType);
@@ -160,7 +172,7 @@ protected:
     u_int32_t _moduleHostSt;
     u_int32_t _moduleMediaSt;
 
-    Json::Value &_jsonRoot;
+    Json::Value& _jsonRoot;
     vector<MlxlinkCmdPrint> _amBerCollectorOutput;
     map<AMBER_SHEET, FIELDS_COUNT> _sheetsList;
 

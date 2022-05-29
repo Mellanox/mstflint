@@ -48,22 +48,26 @@
 #include "printutil/mlxlink_cmd_print.h"
 #include "mlxlink_enums.h"
 
-struct PortGroup {
-    PortGroup() {
+struct PortGroup
+{
+    PortGroup()
+    {
         localPort = 0;
         labelPort = 0;
         groupId = 0;
         split = 0;
         secondSplit = 0;
     }
-    PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split) {
+    PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split)
+    {
         localPort = _localPort;
         labelPort = _labelPort;
         groupId = _groupId;
         split = _split;
         secondSplit = 0;
     }
-    PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split, u_int32_t _secondSplit) {
+    PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split, u_int32_t _secondSplit)
+    {
         localPort = _localPort;
         labelPort = _labelPort;
         groupId = _groupId;
@@ -77,18 +81,22 @@ struct PortGroup {
     u_int32_t secondSplit;
 };
 
-struct CAP_VALUE {
-    CAP_VALUE() {
+struct CAP_VALUE
+{
+    CAP_VALUE()
+    {
         capMask = 0;
         value = 0;
         name = "";
     }
-    CAP_VALUE(u_int32_t _cap, u_int32_t _val) {
+    CAP_VALUE(u_int32_t _cap, u_int32_t _val)
+    {
         capMask = _cap;
         value = _val;
         name = "";
     }
-    CAP_VALUE(string _name, u_int32_t _cap, u_int32_t _val) {
+    CAP_VALUE(string _name, u_int32_t _cap, u_int32_t _val)
+    {
         capMask = _cap;
         value = _val;
         name = _name;
@@ -98,7 +106,8 @@ struct CAP_VALUE {
     string name;
 };
 
-class MlxlinkMaps{
+class MlxlinkMaps
+{
 private:
     MlxlinkMaps();
     static MlxlinkMaps* instance;
@@ -149,8 +158,8 @@ public:
 
     std::map<u_int32_t, std::string> _pmFsmState;
     std::map<u_int32_t, std::string> _proFileFecInUse;
-    std::map<u_int32_t, u_int32_t>   _ETHSpeed2gRate;
-    std::map<u_int32_t, u_int32_t>   _IBSpeed2gRate;
+    std::map<u_int32_t, u_int32_t> _ETHSpeed2gRate;
+    std::map<u_int32_t, u_int32_t> _IBSpeed2gRate;
     std::map<u_int32_t, std::string> _ibPhyFsmState;
     std::map<u_int32_t, std::string> _phyHstFsmNdrState;
     std::map<u_int32_t, std::string> _phyHstFsmHdrState;
@@ -180,17 +189,17 @@ public:
     std::map<u_int32_t, std::string> _moduleRxAmp;
     std::map<u_int32_t, std::string> _moduleRxAmpCap;
     std::map<u_int32_t, std::string> _pepcStatus;
-    std::map<u_int32_t, string>      _IBSpeed2Str;
-    std::map<u_int32_t, string>      _EthExtSpeed2Str;
-    std::map<u_int32_t, u_int32_t>   _IBSpeed2gNum;
-    std::map<u_int32_t, u_int32_t>   _ETHSpeed2gNum;
-    std::map<u_int32_t, string>      _ETHSpeed2Str;
-    std::map<u_int32_t, u_int32_t>   _EthExtSpeed2gNum;
-    std::map<u_int32_t, u_int32_t>   _ETHSpeed2Lanes;
-    std::map<u_int32_t, u_int32_t>   _ExtETHSpeed2Lanes;
-    std::map<u_int32_t, string>      _SLTPBadSetStatus2Str;
-    std::map<u_int32_t, string>      _SLTP16BadSetStatus2Str;
-    std::map<u_int32_t, string>      _SLTP7BadSetStatus2Str;
+    std::map<u_int32_t, string> _IBSpeed2Str;
+    std::map<u_int32_t, string> _EthExtSpeed2Str;
+    std::map<u_int32_t, u_int32_t> _IBSpeed2gNum;
+    std::map<u_int32_t, u_int32_t> _ETHSpeed2gNum;
+    std::map<u_int32_t, string> _ETHSpeed2Str;
+    std::map<u_int32_t, u_int32_t> _EthExtSpeed2gNum;
+    std::map<u_int32_t, u_int32_t> _ETHSpeed2Lanes;
+    std::map<u_int32_t, u_int32_t> _ExtETHSpeed2Lanes;
+    std::map<u_int32_t, string> _SLTPBadSetStatus2Str;
+    std::map<u_int32_t, string> _SLTP16BadSetStatus2Str;
+    std::map<u_int32_t, string> _SLTP7BadSetStatus2Str;
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
@@ -236,8 +245,8 @@ public:
     std::map<u_int32_t, std::string> _sfpQsfpPowerClass;
     std::map<u_int32_t, std::string> _sfpddPowerClass;
     std::map<u_int32_t, std::string> _qsfpddOsfpPowerClass;
-    std::map<u_int32_t, float>       _qsfpddPowerClassToValue;
-    std::map<u_int32_t, float>       _sfpddPowerClassToValue;
+    std::map<u_int32_t, float> _qsfpddPowerClassToValue;
+    std::map<u_int32_t, float> _sfpddPowerClassToValue;
     std::map<u_int32_t, std::string> _cableTechnologyQsfp;
     std::map<u_int32_t, std::string> _cableTechnologySfp;
     std::map<u_int32_t, std::string> _ppbmcBerMonitorState;
@@ -254,7 +263,7 @@ public:
     std::map<u_int32_t, std::string> _rxUglState;
     std::map<u_int32_t, std::string> _txUglState;
     std::map<u_int32_t, std::string> _aeState;
-    std::map<u_int32_t, std::string>  _pllUglState;
+    std::map<u_int32_t, std::string> _pllUglState;
     std::map<u_int32_t, std::string> _slrgFomMode;
     std::map<u_int32_t, std::string> _pcieDevStatus;
 

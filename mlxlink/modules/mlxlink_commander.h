@@ -52,218 +52,218 @@
 
 #ifdef MST_UL
 #define MLXLINK_EXEC "mstlink"
-#define PKG_NAME     "MSTFLINT"
-#define PKG_VER      MSTFLINT_VERSION_STR
+#define PKG_NAME "MSTFLINT"
+#define PKG_VER MSTFLINT_VERSION_STR
 #else
 #define MLXLINK_EXEC "mlxlink"
-#define PKG_NAME     "MFT"
-#define PKG_VER      MFT_VERSION_STR
+#define PKG_NAME "MFT"
+#define PKG_VER MFT_VERSION_STR
 #endif
 
 //------------------------------------------------------------
 //        Mlxlink OPTIONS Flags
 
-#define HELP_FLAG                    "help"
-#define HELP_FLAG_SHORT              'h'
-#define VERSION_FLAG                 "version"
-#define VERSION_FLAG_SHORT           'v'
-#define DEVICE_FLAG                  "device"
-#define DEVICE_FLAG_SHORT            'd'
-#define LABEL_PORT_FLAG              "port"
-#define LABEL_PORT_FLAG_SHORT        'p'
-#define PORT_TYPE_FLAG               "port_type"
-#define PORT_TYPE_FLAG_SHORT         ' '
-#define DEPTH_FLAG                   "depth"
-#define DEPTH_FLAG_SHORT             ' '
-#define PCIE_INDEX_FLAG              "pcie_index"
-#define PCIE_INDEX_FLAG_SHORT        ' '
-#define NODE_FLAG                    "node"
-#define NODE_FLAG_SHORT              ' '
-#define PRINT_JSON_OUTPUT_FLAG       "json"
+#define HELP_FLAG "help"
+#define HELP_FLAG_SHORT 'h'
+#define VERSION_FLAG "version"
+#define VERSION_FLAG_SHORT 'v'
+#define DEVICE_FLAG "device"
+#define DEVICE_FLAG_SHORT 'd'
+#define LABEL_PORT_FLAG "port"
+#define LABEL_PORT_FLAG_SHORT 'p'
+#define PORT_TYPE_FLAG "port_type"
+#define PORT_TYPE_FLAG_SHORT ' '
+#define DEPTH_FLAG "depth"
+#define DEPTH_FLAG_SHORT ' '
+#define PCIE_INDEX_FLAG "pcie_index"
+#define PCIE_INDEX_FLAG_SHORT ' '
+#define NODE_FLAG "node"
+#define NODE_FLAG_SHORT ' '
+#define PRINT_JSON_OUTPUT_FLAG "json"
 #define PRINT_JSON_OUTPUT_FLAG_SHORT ' '
 //------------------------------------------------------------
 //        Mlxlink QUERIES Flags
 
-#define PCIE_LINKS_FLAG                 "show_links"
-#define PCIE_LINKS_FLAG_SHORT            ' '
-#define MODULE_INFO_FLAG                "show_module"
-#define MODULE_INFO_FLAG_SHORT          'm'
-#define BER_FLAG                        "show_counters"
-#define BER_FLAG_SHORT                  'c'
-#define EYE_OPENING_FLAG                "show_eye"
-#define EYE_OPENING_FLAG_SHORT          'e'
-#define FEC_DATA_FLAG                   "show_fec"
-#define FEC_DATA_FLAG_SHORT             ' '
-#define SLTP_SHOW_FLAG                  "show_serdes_tx"
-#define SLTP_SHOW_FLAG_SHORT            ' '
-#define DEVICE_DATA_FLAG                "show_device"
-#define DEVICE_DATA_FLAG_SHORT          ' '
-#define BER_MONITOR_INFO_FLAG           "show_ber_monitor"
-#define BER_MONITOR_INFO_FLAG_SHORT     ' '
-#define PEPC_SHOW_FLAG                  "show_external_phy"
-#define PEPC_SHOW_FLAG_SHORT            ' '
+#define PCIE_LINKS_FLAG "show_links"
+#define PCIE_LINKS_FLAG_SHORT ' '
+#define MODULE_INFO_FLAG "show_module"
+#define MODULE_INFO_FLAG_SHORT 'm'
+#define BER_FLAG "show_counters"
+#define BER_FLAG_SHORT 'c'
+#define EYE_OPENING_FLAG "show_eye"
+#define EYE_OPENING_FLAG_SHORT 'e'
+#define FEC_DATA_FLAG "show_fec"
+#define FEC_DATA_FLAG_SHORT ' '
+#define SLTP_SHOW_FLAG "show_serdes_tx"
+#define SLTP_SHOW_FLAG_SHORT ' '
+#define DEVICE_DATA_FLAG "show_device"
+#define DEVICE_DATA_FLAG_SHORT ' '
+#define BER_MONITOR_INFO_FLAG "show_ber_monitor"
+#define BER_MONITOR_INFO_FLAG_SHORT ' '
+#define PEPC_SHOW_FLAG "show_external_phy"
+#define PEPC_SHOW_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink COMMANDS Flags
 
-#define PAOS_FLAG                          "port_state"
-#define PAOS_FLAG_SHORT                    'a'
-#define PTYS_FLAG                          "speeds"
-#define PTYS_FLAG_SHORT                    's'
-#define PPLR_FLAG                          "loopback"
-#define PPLR_FLAG_SHORT                    'l'
-#define PPLM_FLAG                          "fec"
-#define PPLM_FLAG_SHORT                    'k'
-#define FEC_SPEED_FLAG                     "fec_speed"
-#define FEC_SPEED_FLAG_SHORT               ' '
-#define SLTP_SET_FLAG                      "serdes_tx"
-#define SLTP_SET_FLAG_SHORT                ' '
-#define LANE_FLAG                          "serdes_tx_lane"
-#define LANE_FLAG_SHORT                    ' '
-#define SLTP_TX_POLICY_FLAG                "tx_params_override"
-#define SLTP_TX_POLICY_FLAG_SHORT          ' '
-#define DATABASE_FLAG                      "database"
-#define DATABASE_FLAG_SHORT                ' '
-#define PRBS_MODE_FLAG                     "test_mode"
-#define PRBS_MODE_FLAG_SHORT               ' '
-#define PPRT_PRBS_FLAG                     "rx_prbs"
-#define PPRT_PRBS_FLAG_SHORT               ' '
-#define PPTT_PRBS_FLAG                     "tx_prbs"
-#define PPTT_PRBS_FLAG_SHORT               ' '
-#define PPRT_RATE_FLAG                     "rx_rate"
-#define PPRT_RATE_FLAG_SHORT               ' '
-#define PPTT_RATE_FLAG                     "tx_rate"
-#define PPTT_RATE_FLAG_SHORT               ' '
-#define PRBS_LANES_FLAG                    "lanes"
-#define PRBS_LANES_FLAG_SHORT              ' '
-#define PRBS_INVERT_TX_POL_FLAG            "invert_tx_polarity"
-#define PRBS_INVERT_TX_POL_FLAG_SHORT      ' '
-#define PRBS_INVERT_RX_POL_FLAG            "invert_rx_polarity"
-#define PRBS_INVERT_RX_POL_FLAG_SHORT      ' '
-#define PPRT_TUNING_TYPE_FLAG              "tuning_type"
-#define PPRT_TUNING_TYPE_FLAG_SHORT        ' '
-#define BER_COLLECT_FLAG                   "ber_collect"
-#define BER_COLLECT_FLAG_SHORT             'b'
-#define BER_LIMIT_FLAG                     "ber_limit"
-#define BER_LIMIT_FLAG_SHORT               ' '
-#define ITERATION_FLAG                     "iteration"
-#define ITERATION_FLAG_SHORT               ' '
-#define AMBER_COLLECT_FLAG                 "amber_collect"
-#define AMBER_COLLECT_FLAG_SHORT           ' '
-#define PPCNT_CLEAR_FLAG                   "pc"
-#define PPCNT_CLEAR_FLAG_SHORT             ' '
-#define PEPC_SET_FLAG                      "set_external_phy"
-#define PEPC_SET_FLAG_SHORT                ' '
-#define PEPC_FORCE_MODE_FLAG               "twisted_pair_force_mode"
-#define PEPC_FORCE_MODE_FLAG_SHORT         ' '
-#define PEPC_AN_MODE_FLAG                  "twisted_pair_an_mode"
-#define PEPC_AN_MODE_FLAG_SHORT            ' '
-#define PTYS_LINK_MODE_FORCE_FLAG          "link_mode_force"
-#define PTYS_LINK_MODE_FORCE_FLAG_SHORT    ' '
+#define PAOS_FLAG "port_state"
+#define PAOS_FLAG_SHORT 'a'
+#define PTYS_FLAG "speeds"
+#define PTYS_FLAG_SHORT 's'
+#define PPLR_FLAG "loopback"
+#define PPLR_FLAG_SHORT 'l'
+#define PPLM_FLAG "fec"
+#define PPLM_FLAG_SHORT 'k'
+#define FEC_SPEED_FLAG "fec_speed"
+#define FEC_SPEED_FLAG_SHORT ' '
+#define SLTP_SET_FLAG "serdes_tx"
+#define SLTP_SET_FLAG_SHORT ' '
+#define LANE_FLAG "serdes_tx_lane"
+#define LANE_FLAG_SHORT ' '
+#define SLTP_TX_POLICY_FLAG "tx_params_override"
+#define SLTP_TX_POLICY_FLAG_SHORT ' '
+#define DATABASE_FLAG "database"
+#define DATABASE_FLAG_SHORT ' '
+#define PRBS_MODE_FLAG "test_mode"
+#define PRBS_MODE_FLAG_SHORT ' '
+#define PPRT_PRBS_FLAG "rx_prbs"
+#define PPRT_PRBS_FLAG_SHORT ' '
+#define PPTT_PRBS_FLAG "tx_prbs"
+#define PPTT_PRBS_FLAG_SHORT ' '
+#define PPRT_RATE_FLAG "rx_rate"
+#define PPRT_RATE_FLAG_SHORT ' '
+#define PPTT_RATE_FLAG "tx_rate"
+#define PPTT_RATE_FLAG_SHORT ' '
+#define PRBS_LANES_FLAG "lanes"
+#define PRBS_LANES_FLAG_SHORT ' '
+#define PRBS_INVERT_TX_POL_FLAG "invert_tx_polarity"
+#define PRBS_INVERT_TX_POL_FLAG_SHORT ' '
+#define PRBS_INVERT_RX_POL_FLAG "invert_rx_polarity"
+#define PRBS_INVERT_RX_POL_FLAG_SHORT ' '
+#define PPRT_TUNING_TYPE_FLAG "tuning_type"
+#define PPRT_TUNING_TYPE_FLAG_SHORT ' '
+#define BER_COLLECT_FLAG "ber_collect"
+#define BER_COLLECT_FLAG_SHORT 'b'
+#define BER_LIMIT_FLAG "ber_limit"
+#define BER_LIMIT_FLAG_SHORT ' '
+#define ITERATION_FLAG "iteration"
+#define ITERATION_FLAG_SHORT ' '
+#define AMBER_COLLECT_FLAG "amber_collect"
+#define AMBER_COLLECT_FLAG_SHORT ' '
+#define PPCNT_CLEAR_FLAG "pc"
+#define PPCNT_CLEAR_FLAG_SHORT ' '
+#define PEPC_SET_FLAG "set_external_phy"
+#define PEPC_SET_FLAG_SHORT ' '
+#define PEPC_FORCE_MODE_FLAG "twisted_pair_force_mode"
+#define PEPC_FORCE_MODE_FLAG_SHORT ' '
+#define PEPC_AN_MODE_FLAG "twisted_pair_an_mode"
+#define PEPC_AN_MODE_FLAG_SHORT ' '
+#define PTYS_LINK_MODE_FORCE_FLAG "link_mode_force"
+#define PTYS_LINK_MODE_FORCE_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink Cable info flags
-#define CABLE_FLAG                          "cable"
-#define CABLE_FLAG_SHORT                    ' '
-#define CABLE_DUMP_FLAG                     "dump"
-#define CABLE_DUMP_FLAG_SHORT               ' '
-#define CABLE_DDM_FLAG                      "ddm"
-#define CABLE_DDM_FLAG_SHORT                ' '
-#define CABLE_WRITE_FLAG                    "write"
-#define CABLE_WRITE_FLAG_SHORT              ' '
-#define CABLE_READ_FLAG                     "read"
-#define CABLE_READ_FLAG_SHORT               ' '
-#define WRITE_PAGE_FLAG                     "page"
-#define WRITE_PAGE_FLAG_SHORT               ' '
-#define WRITE_OFFSET_FLAG                   "offset"
-#define WRITE_OFFSET_FLAG_SHORT             ' '
-#define READ_LEN_FLAG                       "length"
-#define READ_LEN_FLAG_SHORT                 ' '
-#define CABLE_PRBS_SELECT                   "prbs_select"
-#define CABLE_PRBS_SELECT_SHORT             ' '
-#define CABLE_PRBS_MODE                     "prbs_mode"
-#define CABLE_PRBS_MODE_SHORT               ' '
-#define CABLE_PRBS_GEN_PAT                  "generator_pattern"
-#define CABLE_PRBS_GEN_PAT_SHORT            ' '
-#define CABLE_PRBS_GEN_SWAP                 "swap_generator"
-#define CABLE_PRBS_GEN_SWAP_SHORT           ' '
-#define CABLE_PRBS_GEN_INV                  "invert_generator"
-#define CABLE_PRBS_GEN_INV_SHORT            ' '
-#define CABLE_PRBS_GEN_LANES                "generator_lanes"
-#define CABLE_PRBS_GEN_LANES_SHORT          ' '
-#define CABLE_PRBS_CH_PAT                   "checker_pattern"
-#define CABLE_PRBS_CH_PAT_SHORT             ' '
-#define CABLE_PRBS_CH_SWAP                  "swap_checker"
-#define CABLE_PRBS_CH_SWAP_SHORT            ' '
-#define CABLE_PRBS_CH_INV                   "invert_checker"
-#define CABLE_PRBS_CH_INV_SHORT             ' '
-#define CABLE_PRBS_CH_LANES                 "checker_lanes"
-#define CABLE_PRBS_CH_LANES_SHORT           ' '
-#define CABLE_PRBS_LANE_RATE                "lane_rate"
-#define CABLE_PRBS_LANE_RATE_SHORT          ' '
-#define CABLE_PRBS_SHOW_DIAG                "show_diagnostic_info"
-#define CABLE_PRBS_SHOW_DIAG_SHORT          ' '
-#define CABLE_PRBS_CLEAR_DIAG               "clear_diagnostic_info"
-#define CABLE_PRBS_CLEAR_DIAG_SHORT         ' '
-#define CTRL_PARAM_FLAG                     "control_parameters"
-#define CTRL_PARAM_FLAG_SHORT               ' '
-#define CTRL_PARAM_TX_EQ_FLAG               "tx_equalization"
-#define CTRL_PARAM_TX_EQ_FLAG_SHORT         ' '
-#define CTRL_PARAM_RX_EMPH_FLAG             "rx_emphasis"
-#define CTRL_PARAM_RX_EMPH_FLAG_SHORT       ' '
-#define CTRL_PARAM_RX_POST_EMPH_FLAG        "rx_post_emphasis"
-#define CTRL_PARAM_RX_POST_EMPH_FLAG_SHORT  ' '
-#define CTRL_PARAM_RX_AMP_FLAG              "rx_amplitude"
-#define CTRL_PARAM_RX_AMP_FLAG_SHORT        ' '
+#define CABLE_FLAG "cable"
+#define CABLE_FLAG_SHORT ' '
+#define CABLE_DUMP_FLAG "dump"
+#define CABLE_DUMP_FLAG_SHORT ' '
+#define CABLE_DDM_FLAG "ddm"
+#define CABLE_DDM_FLAG_SHORT ' '
+#define CABLE_WRITE_FLAG "write"
+#define CABLE_WRITE_FLAG_SHORT ' '
+#define CABLE_READ_FLAG "read"
+#define CABLE_READ_FLAG_SHORT ' '
+#define WRITE_PAGE_FLAG "page"
+#define WRITE_PAGE_FLAG_SHORT ' '
+#define WRITE_OFFSET_FLAG "offset"
+#define WRITE_OFFSET_FLAG_SHORT ' '
+#define READ_LEN_FLAG "length"
+#define READ_LEN_FLAG_SHORT ' '
+#define CABLE_PRBS_SELECT "prbs_select"
+#define CABLE_PRBS_SELECT_SHORT ' '
+#define CABLE_PRBS_MODE "prbs_mode"
+#define CABLE_PRBS_MODE_SHORT ' '
+#define CABLE_PRBS_GEN_PAT "generator_pattern"
+#define CABLE_PRBS_GEN_PAT_SHORT ' '
+#define CABLE_PRBS_GEN_SWAP "swap_generator"
+#define CABLE_PRBS_GEN_SWAP_SHORT ' '
+#define CABLE_PRBS_GEN_INV "invert_generator"
+#define CABLE_PRBS_GEN_INV_SHORT ' '
+#define CABLE_PRBS_GEN_LANES "generator_lanes"
+#define CABLE_PRBS_GEN_LANES_SHORT ' '
+#define CABLE_PRBS_CH_PAT "checker_pattern"
+#define CABLE_PRBS_CH_PAT_SHORT ' '
+#define CABLE_PRBS_CH_SWAP "swap_checker"
+#define CABLE_PRBS_CH_SWAP_SHORT ' '
+#define CABLE_PRBS_CH_INV "invert_checker"
+#define CABLE_PRBS_CH_INV_SHORT ' '
+#define CABLE_PRBS_CH_LANES "checker_lanes"
+#define CABLE_PRBS_CH_LANES_SHORT ' '
+#define CABLE_PRBS_LANE_RATE "lane_rate"
+#define CABLE_PRBS_LANE_RATE_SHORT ' '
+#define CABLE_PRBS_SHOW_DIAG "show_diagnostic_info"
+#define CABLE_PRBS_SHOW_DIAG_SHORT ' '
+#define CABLE_PRBS_CLEAR_DIAG "clear_diagnostic_info"
+#define CABLE_PRBS_CLEAR_DIAG_SHORT ' '
+#define CTRL_PARAM_FLAG "control_parameters"
+#define CTRL_PARAM_FLAG_SHORT ' '
+#define CTRL_PARAM_TX_EQ_FLAG "tx_equalization"
+#define CTRL_PARAM_TX_EQ_FLAG_SHORT ' '
+#define CTRL_PARAM_RX_EMPH_FLAG "rx_emphasis"
+#define CTRL_PARAM_RX_EMPH_FLAG_SHORT ' '
+#define CTRL_PARAM_RX_POST_EMPH_FLAG "rx_post_emphasis"
+#define CTRL_PARAM_RX_POST_EMPH_FLAG_SHORT ' '
+#define CTRL_PARAM_RX_AMP_FLAG "rx_amplitude"
+#define CTRL_PARAM_RX_AMP_FLAG_SHORT ' '
 
-#define SHOW_TX_GROUP_MAP_FLAG              "show_tx_group_map"
-#define SHOW_TX_GROUP_MAP_FLAG_SHORT        ' '
-#define SET_TX_GROUP_MAP_FLAG               "tx_group_map"
-#define SET_TX_GROUP_MAP_FLAG_SHORT         ' '
-#define TX_GROUP_PORTS_FLAG                 "ports"
-#define TX_GROUP_PORTS_FLAG_SHORT           ' '
+#define SHOW_TX_GROUP_MAP_FLAG "show_tx_group_map"
+#define SHOW_TX_GROUP_MAP_FLAG_SHORT ' '
+#define SET_TX_GROUP_MAP_FLAG "tx_group_map"
+#define SET_TX_GROUP_MAP_FLAG_SHORT ' '
+#define TX_GROUP_PORTS_FLAG "ports"
+#define TX_GROUP_PORTS_FLAG_SHORT ' '
 //------------------------------------------------------------
 //        Mlxlink Eye Opener Flags
-#define MARGIN_SCAN_FLAG                    "margin"
-#define MARGIN_SCAN_FLAG_SHORT              ' '
-#define EYE_SEL_FLAG                        "eye_select"
-#define EYE_SEL_FLAG_SHORT                  ' '
-#define EYE_MEASURE_TIME_FLAG               "measure_time"
-#define EYE_MEASURE_TIME_FLAG_SHORT         ' '
-#define LANE_INDEX_FLAG                     "lane"
-#define LANE_INDEX_FLAG_SHORT               ' '
-#define FORCE_YES_FLAG                      "yes"
-#define FORCE_YES_FLAG_SHORT                ' '
+#define MARGIN_SCAN_FLAG "margin"
+#define MARGIN_SCAN_FLAG_SHORT ' '
+#define EYE_SEL_FLAG "eye_select"
+#define EYE_SEL_FLAG_SHORT ' '
+#define EYE_MEASURE_TIME_FLAG "measure_time"
+#define EYE_MEASURE_TIME_FLAG_SHORT ' '
+#define LANE_INDEX_FLAG "lane"
+#define LANE_INDEX_FLAG_SHORT ' '
+#define FORCE_YES_FLAG "yes"
+#define FORCE_YES_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink Error Injection Flags
-#define PREI_RX_ERR_INJ_FLAG                "rx_error_injection"
-#define PREI_RX_ERR_INJ_FLAG_SHORT          ' '
-#define PREI_MIXER_OFFSET_0                 "mixer_offset0"
-#define PREI_MIXER_OFFSET_0_SHORT           ' '
-#define PREI_MIXER_OFFSET_1                 "mixer_offset1"
-#define PREI_MIXER_OFFSET_1_SHORT           ' '
-#define PREI_SHOW_MIXERS_FLAG               "show_mixers_offset"
-#define PREI_SHOW_MIXERS_FLAG_SHORT         ' '
+#define PREI_RX_ERR_INJ_FLAG "rx_error_injection"
+#define PREI_RX_ERR_INJ_FLAG_SHORT ' '
+#define PREI_MIXER_OFFSET_0 "mixer_offset0"
+#define PREI_MIXER_OFFSET_0_SHORT ' '
+#define PREI_MIXER_OFFSET_1 "mixer_offset1"
+#define PREI_MIXER_OFFSET_1_SHORT ' '
+#define PREI_SHOW_MIXERS_FLAG "show_mixers_offset"
+#define PREI_SHOW_MIXERS_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Histogram Counters Flags
-#define PPHCR_FEC_HIST_FLAG                 "rx_fec_histogram"
-#define PPHCR_FEC_HIST_FLAG_SHORT           ' '
-#define PPHCR_SHOW_FEC_HIST_FLAG            "show_histogram"
-#define PPHCR_SHOW_FEC_HIST_FLAG_SHORT      ' '
-#define PPHCR_CLEAR_HISTOGRAM_FLAG          "clear_histogram"
-#define PPHCR_CLEAR_HISTOGRAM_FLAG_SHORT    ' '
+#define PPHCR_FEC_HIST_FLAG "rx_fec_histogram"
+#define PPHCR_FEC_HIST_FLAG_SHORT ' '
+#define PPHCR_SHOW_FEC_HIST_FLAG "show_histogram"
+#define PPHCR_SHOW_FEC_HIST_FLAG_SHORT ' '
+#define PPHCR_CLEAR_HISTOGRAM_FLAG "clear_histogram"
+#define PPHCR_CLEAR_HISTOGRAM_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink HIDDEN Flags
 
-#define SLTP_SET_ADVANCED_FLAG              "advanced"
-#define SLTP_SET_ADVANCED_FLAG_SHORT        ' '
-#define GVMI_ADDRESS_FLAG                   "gvmi_address"
-#define GVMI_ADDRESS_FLAG_SHORT             ' '
-#define LOG_FLAG                            "log"
-#define LOG_FLAG_SHORT                      ' '
+#define SLTP_SET_ADVANCED_FLAG "advanced"
+#define SLTP_SET_ADVANCED_FLAG_SHORT ' '
+#define GVMI_ADDRESS_FLAG "gvmi_address"
+#define GVMI_ADDRESS_FLAG_SHORT ' '
+#define LOG_FLAG "log"
+#define LOG_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 
@@ -271,7 +271,8 @@
 
 //------------------------------------------------------------
 //        Mlxlink commands enumerations
-enum OPTION_TYPE {
+enum OPTION_TYPE
+{
     SHOW_PDDR = 1,
     SHOW_PCIE,
     SHOW_BER,
@@ -311,14 +312,14 @@ enum OPTION_TYPE {
     FUNCTION_LAST
 };
 
-
 ///////////
-struct DPN {
+struct DPN
+{
     DPN()
     {
-        depth =0;
-        pcieIndex=0;
-        node=0;
+        depth = 0;
+        pcieIndex = 0;
+        node = 0;
     }
 
     DPN(u_int32_t d, u_int32_t p, u_int32_t n)
@@ -328,10 +329,7 @@ struct DPN {
         node = n;
     }
 
-    bool operator==(DPN dpn) {
-       return (dpn.depth == depth && dpn.pcieIndex == pcieIndex &&
-               dpn.node == node);
-    }
+    bool operator==(DPN dpn) { return (dpn.depth == depth && dpn.pcieIndex == pcieIndex && dpn.node == node); }
 
     u_int32_t depth;
     u_int32_t pcieIndex;
@@ -349,17 +347,17 @@ struct MODULE_FIELD
 
 using namespace std;
 
-class MlxlinkCommander: public MlxlinkRegParser {
-
+class MlxlinkCommander : public MlxlinkRegParser
+{
 public:
     MlxlinkCommander();
     virtual ~MlxlinkCommander();
 
     void checkRegCmd();
     void validatePortToLC();
-    void validatePortType(const string &portTypeStr);
+    void validatePortType(const string& portTypeStr);
     void updatePortType();
-    void gearboxBlock(const string &option);
+    void gearboxBlock(const string& option);
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
@@ -367,7 +365,7 @@ public:
     void getProductTechnology();
     bool checkPortStatus(u_int32_t localPort);
     void checkAllPortsStatus();
-    void handlePortStr(const string &portStr);
+    void handlePortStr(const string& portStr);
     void labelToLocalPort();
     void labelToHCALocalPort();
     void labeltoDSlocalPort();
@@ -377,7 +375,7 @@ public:
     bool isIBSplitReady();
     u_int32_t calculatePanelPort(bool ibSplitReady);
     u_int32_t maxLocalPort();
-    void checkStrLength(const string &str);
+    void checkStrLength(const string& str);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
     u_int32_t activeSpeed2gNum(u_int32_t mask, bool extended);
     string activeSpeed2Str(u_int32_t mask, bool extended);
@@ -388,21 +386,20 @@ public:
     bool checkPpaosTestMode();
     void getSltpParamsFromVector(std::vector<string> sltpParams);
     void getprbsLanesFromParams(std::vector<string> prbsLanesParams);
-    std::vector<string> parseParamsFromLine(const string & ParamsLine);
+    std::vector<string> parseParamsFromLine(const string& ParamsLine);
     bool isSpect2WithGb();
     bool isIbLocalPortValid(u_int32_t localPort);
-    void fillIbPortGroupMap(u_int32_t localPort,u_int32_t labelPort, u_int32_t group,
-            bool splitReady);
-    void fillEthPortGroupMap(u_int32_t localPort,u_int32_t labelPort, u_int32_t group,
-            u_int32_t width, bool spect2WithGb);
+    void fillIbPortGroupMap(u_int32_t localPort, u_int32_t labelPort, u_int32_t group, bool splitReady);
+    void
+      fillEthPortGroupMap(u_int32_t localPort, u_int32_t labelPort, u_int32_t group, u_int32_t width, bool spect2WithGb);
     int handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady);
     int handleEthLocalPort(u_int32_t labelPort, bool spect2WithGb);
     void handleLabelPorts(std::vector<string> labelPortsStr, bool skipException = false);
     vector<string> localToPortsPerGroup(vector<u_int32_t> localPorts);
     u_int32_t getPortGroup(u_int32_t localPort);
-    string getValuesOfActiveLanes(const string &row);
+    string getValuesOfActiveLanes(const string& row);
 
-    //Mlxlink query functions
+    // Mlxlink query functions
     virtual void showModuleInfo();
     void prepareBerModuleInfoNdr(bool valid);
     virtual void runningVersion();
@@ -429,23 +426,21 @@ public:
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
     string getCompliaceLabelForCIMIS(u_int32_t hostCompliance, u_int32_t mediaCompliance);
-    string getComplianceLabel(u_int32_t compliance,  u_int32_t extCompliance, bool ignoreExtBitChk = false);
+    string getComplianceLabel(u_int32_t compliance, u_int32_t extCompliance, bool ignoreExtBitChk = false);
     string getCableTypeStr(u_int32_t cableType);
     void prepareStaticInfoSection(bool valid);
     void prepareAttenuationAndFwSection(bool valid);
     void preparePowerAndCdrSection(bool valid);
     void prepareDDMSection(bool valid);
-    void strToInt32(char *str, u_int32_t &value);
-    template<typename T, typename Q> string getValueAndThresholdsStr(T value, Q lowTH, Q highTH);
-    void prepareSltp28_40nm(std::vector<std::vector<string> > &sltpLanes,
-            u_int32_t laneNumber);
-    void prepareSltp16nm(std::vector<std::vector<string> > &sltpLanes,
-            u_int32_t laneNumber);
-    void prepareSltp7nm(std::vector<std::vector<string> > &sltpLanes,
-            u_int32_t laneNumber);
+    void strToInt32(char* str, u_int32_t& value);
+    template<typename T, typename Q>
+    string getValueAndThresholdsStr(T value, Q lowTH, Q highTH);
+    void prepareSltp28_40nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber);
+    void prepareSltp16nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber);
+    void prepareSltp7nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber);
     void initValidDPNList();
-    u_int32_t readBitFromField(const string &fieldName, u_int32_t bitIndex);
-    string getSupportedFecForSpeed(const string &speed);
+    u_int32_t readBitFromField(const string& fieldName, u_int32_t bitIndex);
+    string getSupportedFecForSpeed(const string& speed);
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
 
@@ -460,29 +455,28 @@ public:
     virtual void prepareBerInfoEDR();
     virtual void getPcieNdrCounters();
 
-    std::map<std::string, std::string>  getPprt();
-    std::map<std::string, std::string>  getPptt();
+    std::map<std::string, std::string> getPprt();
+    std::map<std::string, std::string> getPptt();
 
-    std::map<std::string, float>  getRawEffectiveErrors();
-    std::map<std::string, float>  getRawEffectiveErrorsinTestMode();
-    int prbsModeToMask(const string &mode);
+    std::map<std::string, float> getRawEffectiveErrors();
+    std::map<std::string, float> getRawEffectiveErrorsinTestMode();
+    int prbsModeToMask(const string& mode);
     string prbsMaskToMode(u_int32_t mask, u_int32_t modeSelector);
     string getPrbsModeRX();
     u_int32_t getPrbsRateRX();
     string getSupportedPrbsRates(u_int32_t modeSelector);
     string getSupportedPrbsModes(u_int32_t modeSelector);
-    u_int32_t getLoopbackMode(const string &lb);
+    u_int32_t getLoopbackMode(const string& lb);
     string getLoopbackStr(u_int32_t loopbackCapMask);
     int getLinkDown();
     float getRawBERLimit();
-    bool getResult(std::map<std::string, float>  errors_vector,
-                   float raw_ber_limit, int link_down);
+    bool getResult(std::map<std::string, float> errors_vector, float raw_ber_limit, int link_down);
     string getDevicePN(bool queryMSGI = false);
     string getDeviceSN(bool queryMSGI = false);
     string getDeviceProductName(bool queryMSGI = false);
     string getDeviceRev(bool queryMSGI = false);
     string getDeviceFW();
-    void printOuptputVector(vector<MlxlinkCmdPrint> &cmdOut);
+    void printOuptputVector(vector<MlxlinkCmdPrint>& cmdOut);
     virtual void prepareJsonOut();
 
     // Cable operation
@@ -496,10 +490,11 @@ public:
     virtual void initAmBerCollector();
     void showCableDump();
     void showCableDDM();
-    vector<u_int8_t> validateBytes(const vector<string> &strBytes);
+    vector<u_int8_t> validateBytes(const vector<string>& strBytes);
     void writeCableEEPROM();
     void readCableEEPROM();
-    void performModulePrbsCommands();;
+    void performModulePrbsCommands();
+    ;
     void performControlParams();
 
     MlxlinkCmdPrint _toolInfoCmd;
@@ -545,22 +540,26 @@ public:
     void sendPaosUP();
     void sendPaosToggle();
     void checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMask);
-    void checkPrbsRegsCap(const string &prbsReg, const string &laneRate);
-    void checkPrbsPolCap(const string &prbsReg);
+    void checkPrbsRegsCap(const string& prbsReg, const string& laneRate);
+    void checkPrbsPolCap(const string& prbsReg);
     void checkPprtPptt();
     void checkPplrCap();
     void sendPrbsPpaos(bool);
     void startTuning();
-    void prbsConfiguration(const string &prbsReg, bool enable, u_int32_t laneRate,
-            u_int32_t prbsMode, bool perLaneConfig, bool prbsPolInv);
+    void prbsConfiguration(const string& prbsReg,
+                           bool enable,
+                           u_int32_t laneRate,
+                           u_int32_t prbsMode,
+                           bool perLaneConfig,
+                           bool prbsPolInv);
     void sendPprtPptt();
     void resetPprtPptt();
-    u_int32_t ptysSpeedToMask(const string & speed);
+    u_int32_t ptysSpeedToMask(const string& speed);
     void validateSpeedStr();
-    void checkSupportedSpeed(const string & speed, u_int32_t cap, bool extSpeed = false);
-    string speedToFecSpeedStr(const string &speed, u_int32_t numOfLanes);
-    u_int32_t fecToBit(const string &fec, const string &speedStrG);
-    u_int32_t getFecCapForCheck(const string &speedStr);
+    void checkSupportedSpeed(const string& speed, u_int32_t cap, bool extSpeed = false);
+    string speedToFecSpeedStr(const string& speed, u_int32_t numOfLanes);
+    u_int32_t fecToBit(const string& fec, const string& speedStrG);
+    u_int32_t getFecCapForCheck(const string& speedStr);
     void checkPplmCap();
     void updateSltp28_40nmFields();
     void updateSltp16nmFields();

@@ -37,57 +37,63 @@
 u_int32_t AmberField::_lastFieldIndex = 1;
 bool AmberField::_dataValid = true;
 
-AmberField::AmberField(const string &uiField, const string &uiValue,
-                       bool visible) : _uiField(uiField), _visible(visible)
+AmberField::AmberField(const string& uiField, const string& uiValue, bool visible) :
+    _uiField(uiField), _visible(visible)
 {
     _prmReg = "";
     _prmField = "";
     _prmValue = 0;
     _fieldGroup = "";
-    _uiValue = AmberField::_dataValid? uiValue : "N/A";
-    if (visible) {
+    _uiValue = AmberField::_dataValid ? uiValue : "N/A";
+    if (visible)
+    {
         _fieldIndex = _lastFieldIndex;
         _lastFieldIndex++;
-    } else {
+    }
+    else
+    {
         _fieldIndex = 0;
     }
     findAndReplace(_uiValue, ",", "_");
 }
 
-AmberField::AmberField(const string &uiField, const string &uiValue, u_int32_t fieldIndex,
-                       bool visible) : _uiField(uiField), _visible(visible)
+AmberField::AmberField(const string& uiField, const string& uiValue, u_int32_t fieldIndex, bool visible) :
+    _uiField(uiField), _visible(visible)
 {
     _prmReg = "";
     _prmField = "";
     _fieldGroup = "";
     _prmValue = 0;
-    _uiValue = AmberField::_dataValid? uiValue : "N/A";
+    _uiValue = AmberField::_dataValid ? uiValue : "N/A";
 
     _fieldIndex = fieldIndex;
     _lastFieldIndex = _fieldIndex + 1;
     findAndReplace(_uiValue, ",", "_");
 }
 
-AmberField::~AmberField()
-{
-}
+AmberField::~AmberField() {}
 
-string AmberField::getValueFromFields(const vector<AmberField> &fields,
-                                      const string &uiField, bool matchUiField)
+string AmberField::getValueFromFields(const vector<AmberField>& fields, const string& uiField, bool matchUiField)
 {
     string value = "";
     bool found = false;
-    for (auto it = fields.begin(); it != fields.end(); it++) {
-        if (it->getUiField().find(uiField) != string::npos) {
-            if (matchUiField && it->getUiField() != uiField) {
+    for (auto it = fields.begin(); it != fields.end(); it++)
+    {
+        if (it->getUiField().find(uiField) != string::npos)
+        {
+            if (matchUiField && it->getUiField() != uiField)
+            {
                 continue;
-            } else {
+            }
+            else
+            {
                 value += it->getUiValue() + "_";
                 found = true;
             }
         }
     }
-    if (!found) {
+    if (!found)
+    {
         throw MlxRegException("Requested field does not exist: %s", uiField.c_str());
     }
 
@@ -96,18 +102,18 @@ string AmberField::getValueFromFields(const vector<AmberField> &fields,
     return value;
 }
 
-ostream& operator<<(ostream& os, const AmberField &amberField)
+ostream& operator<<(ostream& os, const AmberField& amberField)
 {
-        if (amberField._visible) {
-            char fieldName[128];
-            sprintf(fieldName, "%-40s", amberField._uiField.c_str());
-            os << amberField._fieldIndex << "\t"
-               << fieldName << "\t\"" << amberField._uiValue << "\"";
-        }
-        return os;
+    if (amberField._visible)
+    {
+        char fieldName[128];
+        sprintf(fieldName, "%-40s", amberField._uiField.c_str());
+        os << amberField._fieldIndex << "\t" << fieldName << "\t\"" << amberField._uiValue << "\"";
+    }
+    return os;
 }
 
-bool operator<(const AmberField &first, const AmberField &second)
+bool operator<(const AmberField& first, const AmberField& second)
 {
     return first._fieldIndex < second._fieldIndex;
 }
@@ -126,7 +132,6 @@ u_int64_t AmberField::getPrmValue() const
 {
     return _prmValue;
 }
-
 
 bool AmberField::isVisible()
 {
