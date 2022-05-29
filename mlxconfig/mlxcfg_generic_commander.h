@@ -106,7 +106,6 @@ public:
               const string& keyPairUUid = "",
               const string& openssl_engine = "",
               const string& openssl_key_identifier = "");
-    void signECDSA(vector<u_int32_t>& buff, const string& privateKeyFile = "", const string& keyPairUUid = "");
     void apply(const vector<u_int8_t>& buff);
 };
 

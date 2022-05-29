@@ -42,7 +42,6 @@
 #include <common/tools_version.h>
 
 #include "mlxcfg_ui.h"
-#include "mlxcfg_ui_tokens.h"
 
 #include "mlxcfg_generic_commander.h"
 #include "mlxcfg_commander.h"
@@ -95,9 +94,6 @@ void MlxCfg::printHelp()
     printFlagLine("eng", "openssl_engine", "ENGINE NAME", "OpenSSL engine name");
     printFlagLine("k", "openssl_key_id", "IDENTIFIER", "OpenSSL key identifier");
     printFlagLine("t", "device_type", "switch/hca", "Specify the device type");
-    printFlagLine("s", "session_id", "", "Specify the session id for token keep alive session.");
-    printFlagLine("st", "session_time", "", "Specify session time for token keep alive session.");
-    printFlagLine("tkn", "token_type", "", "Specify token type.");
 
     // print commands
     printf("\n");
@@ -128,13 +124,6 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-24s : %s\n", "apply",
            "Apply a configuration file, that was created with create_conf command. bin input file name must be "
            "specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "challenge_request",
-           "Send a token challenge request to the device. Token type must be specified.");
-    printf(IDENT2 "%-24s : %s\n", "remote_token_keep_alive",
-           "Start a remote token session for a specified time. session id must be specified.");
-    printf(IDENT2 "%-24s : %s\n", "token_supported", "Query which tokens are supported.");
-    printf(IDENT2 "%-24s : %s\n", "query_token_session", "Query the status of a token session.");
-    printf(IDENT2 "%-24s : %s\n", "end_token_session", "End an active token session.");
 
     // print supported commands
     printf("\n");
@@ -409,10 +398,6 @@ Device_Type MlxCfg::getDeviceTypeFromString(string inStr)
     {
         return Device_Type::HCA;
     }
-    else if (inStr == "linkx")
-    {
-        return Device_Type::LinkX;
-    }
     else
     {
         return Device_Type::UNSUPPORTED_DEVICE;
@@ -465,12 +450,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
             if (dType == Device_Type::UNSUPPORTED_DEVICE)
             {
                 return err(
-                  true, "Unsupported device name given, please specify \"switch\", \"hca\" of \"linkx\" device type");
-            }
-            if (dType == Device_Type::LinkX)
-            {
-                _mlxParams.isLinkXDevice = true;
-                dType = Device_Type::Switch;
+                  true, "Unsupported device name given, please specify \"switch\" or \"hca\"device type");
             }
             _mlxParams.deviceType = dType;
         }
@@ -534,77 +514,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
             }
             _mlxParams.opensslKeyId = argv[i];
         }
-        else if ((arg == "-tkn") || (arg == "--token_type"))
-        {
-            if (++i == argc)
-            {
-                return err(true, "missing token type");
-            }
-            _mlxParams.tokenID = getTokenType(argv[i]);
-            if (_mlxParams.tokenID == Mc_Token_Unknown)
-            {
-                return err(true, "invalid token type");
-            }
-        }
-        else if (arg == "--cycle_time")
-        {
-            if (++i == argc)
-            {
-                return err(true, "missing cycle time value");
-            }
-            status = getNumberFromString(argv[i], _mlxParams.keepAliveSleepTimeBetweenCommands);
-            if (status != MLX_CFG_OK)
-            {
-                return status;
-            }
-            _mlxParams.isSleepTimeBetweenCommandsInput = true;
-        }
-        else if (arg == "--resend_time")
-        {
-            if (++i == argc)
-            {
-                return err(true, "missing resend time value");
-            }
-            status = getNumberFromString(argv[i], _mlxParams.keepAliveSleepTimeOnCommandTO);
-            if (status != MLX_CFG_OK)
-            {
-                return status;
-            }
-            _mlxParams.isSleepTimeOnCommandTOInput = true;
-        }
-        else if ((arg == "-s") || (arg == "--session_id"))
-        {
-            if (++i == argc)
-            {
-                return err(true, "missing session id");
-            }
-            status = getNumberFromString(argv[i], _mlxParams.sessionId);
-            _mlxParams.isSessionIDGiven = true;
-            if (status != MLX_CFG_OK)
-            {
-                return status;
-            }
-        }
-        else if ((arg == "-st") || (arg == "--session_time"))
-        {
-            if (++i == argc)
-            {
-                return err(true, "missing session time value");
-            }
-            status = getNumberFromString(argv[i], _mlxParams.sessionTimeInSec);
-            if (status != MLX_CFG_OK)
-            {
-                return status;
-            }
-            if (_mlxParams.sessionTimeInSec > MAX_SESSION_TIME_IN_MINUTES)
-            {
-                return err(true,
-                           "requested session time is out of bounds, max session time is 1 week (10080 minutes).");
-            }
-            _mlxParams.sessionTimeInSec *= 60;
-            _mlxParams.isSessionTimeGiven = true;
-            // hidden flag --force used to ignore parameter checks
-        }
+        // hidden flag --force used to ignore parameter checks
         else if (arg == "--force")
         {
             _mlxParams.force = true;
@@ -684,31 +594,6 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
             _mlxParams.cmd = Mc_ShowConfs;
             break;
         }
-        else if (arg == "challenge_request")
-        {
-            _mlxParams.cmd = Mc_ChallengeRequest;
-            break;
-        }
-        else if (arg == "token_supported")
-        {
-            _mlxParams.cmd = Mc_TokenSupported;
-            break;
-        }
-        else if (arg == "query_token_session")
-        {
-            _mlxParams.cmd = Mc_QueryTokenSession;
-            break;
-        }
-        else if (arg == "end_token_session")
-        {
-            _mlxParams.cmd = Mc_EndTokenSession;
-            break;
-        }
-        else if (arg == "remote_token_keep_alive")
-        {
-            _mlxParams.cmd = Mc_RemoteTokenKeepAlive;
-            break;
-        }
         else
         {
             return err(true, "invalid argument: %s", arg.c_str());
@@ -730,11 +615,8 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     }
 
     if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw ||
-         _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply ||
-         _mlxParams.cmd == Mc_RemoteTokenKeepAlive || _mlxParams.cmd == Mc_ChallengeRequest ||
-         _mlxParams.cmd == Mc_TokenSupported || _mlxParams.cmd == Mc_QueryTokenSession ||
-         _mlxParams.cmd == Mc_EndTokenSession) &&
-        _mlxParams.device.length() == 0)
+         _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply)
+         && _mlxParams.device.length() == 0)
     {
         return err(true, "%s command expects device to be specified.",
                    _mlxParams.cmd == Mc_Set ?
@@ -748,16 +630,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
                      _mlxParams.cmd == Mc_Backup ?
                      "backup" :
                      _mlxParams.cmd == Mc_Apply ?
-                     "apply" :
-                     _mlxParams.cmd == Mc_ChallengeRequest ?
-                     "challenge_request" :
-                     _mlxParams.cmd == Mc_TokenSupported ?
-                     "token_supported" :
-                     _mlxParams.cmd == Mc_QueryTokenSession ?
-                     "query_token_session" :
-                     _mlxParams.cmd == Mc_EndTokenSession ?
-                     "end_token_session" :
-                     _mlxParams.cmd == Mc_EndTokenSession ? "remote_token_keep_alive" : "show_confs");
+                     "apply" : "show_confs");
     }
     if (((_mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Get_Raw) && _mlxParams.rawTlvFile.size() == 0))
     {
@@ -780,34 +653,6 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         return err(true, "raw TLV file can only be specified with set_raw, get_raw and backup commands.");
     }
 
-    if ((_mlxParams.cmd == Mc_ChallengeRequest && (_mlxParams.tokenID == Mc_Token_Unknown)) ||
-        (_mlxParams.cmd != Mc_ChallengeRequest && (_mlxParams.tokenID != Mc_Token_Unknown)))
-    {
-        return err(true, "-tkn/--token_type must be specified with challenge_request command");
-    }
-
-    if ((_mlxParams.cmd == Mc_RemoteTokenKeepAlive && !_mlxParams.isSessionIDGiven) ||
-        (_mlxParams.cmd != Mc_RemoteTokenKeepAlive && _mlxParams.isSessionIDGiven))
-    {
-        return err(true, "-s/--session_id should be specified with remote_token_keep_alive command");
-    }
-    if ((_mlxParams.isSleepTimeBetweenCommandsInput || _mlxParams.isSleepTimeOnCommandTOInput) &&
-        _mlxParams.cmd != Mc_RemoteTokenKeepAlive)
-    {
-        return err(true,
-                   "sleep times for keep alive session can only be specified with remote_token_keep_alive command");
-    }
-    if (_mlxParams.isSessionTimeGiven && _mlxParams.cmd != Mc_RemoteTokenKeepAlive)
-    {
-        return err(true,
-                   "session time for keep alive session can only be specified with remote_token_keep_alive command");
-    }
-
-    if (_mlxParams.cmd == Mc_QueryTokenSession && _mlxParams.deviceType == UNSUPPORTED_DEVICE)
-    {
-        return err(true, "device type must be specified with query_token_session command");
-    }
-
     if (_mlxParams.cmd == Mc_GenTLVsFile)
     {
         return extractNVOutputFile(argc - i, &(argv[i]));
@@ -820,32 +665,22 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
 
     if (_mlxParams.cmd == Mc_CreateConf)
     {
-        if (_mlxParams.isLinkXDevice)
+        if (!_mlxParams.privPemFile.empty() &&
+            (!_mlxParams.opensslEngine.empty() || !_mlxParams.opensslKeyId.empty()))
         {
-            if (_mlxParams.keyPairUUID.empty())
-            {
-                return err(true, "Please provide key pair UUID");
-            }
+            return err(true,
+                        "Please provide either private pem file or OpenSSL engine and key identifier "
+                        "but not both of them");
         }
-        else
-        {
-            if (!_mlxParams.privPemFile.empty() &&
-                (!_mlxParams.opensslEngine.empty() || !_mlxParams.opensslKeyId.empty()))
-            {
-                return err(true,
-                           "Please provide either private pem file or OpenSSL engine and key identifier "
-                           "but not both of them");
-            }
 
-            if (!_mlxParams.keyPairUUID.empty() ^
-                (!_mlxParams.privPemFile.empty() ||
-                 (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty())))
-            {
-                return err(true,
-                           "if you want to sign the configuration file you have to "
-                           "provide key pair UUID file with either private pem file "
-                           "or OpenSSL engine and key identifier");
-            }
+        if (!_mlxParams.keyPairUUID.empty() ^
+            (!_mlxParams.privPemFile.empty() ||
+                (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty())))
+        {
+            return err(true,
+                        "if you want to sign the configuration file you have to "
+                        "provide key pair UUID file with either private pem file "
+                        "or OpenSSL engine and key identifier");
         }
     }
 

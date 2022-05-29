@@ -40,15 +40,10 @@
 #include <compatibility.h>
 #include <mtcr.h>
 
-#ifdef CABLES_SUPP
-#include <cable_access/cdb_cable_commander.h>
-#endif
-
 #include "mlxcfg_4thgen_commander.h"
 //#include "mlxcfg_lib.h"
 #include "mlxcfg_commander.h"
 #include "mlxcfg_view.h"
-#include "mlxcfg_ui_tokens.h"
 
 #define MAX_ERR_STR_LEN 1024
 #define MAX_BUF_SIZE 1024
@@ -80,11 +75,6 @@ typedef enum
     Mc_XML2Bin,
     Mc_CreateConf,
     Mc_Apply,
-    Mc_RemoteTokenKeepAlive,
-    Mc_ChallengeRequest,
-    Mc_TokenSupported,
-    Mc_QueryTokenSession,
-    Mc_EndTokenSession,
     Mc_UnknownCmd
 } mlxCfgCmd;
 
@@ -93,7 +83,6 @@ typedef enum
     UNSUPPORTED_DEVICE = -1,
     HCA = 0,
     Switch = 1,
-    LinkX = 2
 } Device_Type;
 
 typedef struct QueryOutputItem
@@ -129,17 +118,7 @@ public:
         cmd(Mc_UnknownCmd),
         yes(false),
         force(false),
-        enableVerbosity(false),
-        tokenID(Mc_Token_Unknown),
-        sessionId(0),
-        isSessionIDGiven(false),
-        sessionTimeInSec(600),
-        isSessionTimeGiven(false),
-        keepAliveSleepTimeBetweenCommands(0),
-        isSleepTimeBetweenCommandsInput(false),
-        keepAliveSleepTimeOnCommandTO(0),
-        isSleepTimeOnCommandTOInput(false),
-        isLinkXDevice(false)
+        enableVerbosity(false)
     {
     }
 
@@ -161,16 +140,6 @@ public:
     std::vector<ParamView> setParams;
     bool force; // ignore parameter checks
     bool enableVerbosity;
-    mlxCfgToken tokenID;
-    u_int32_t sessionId;
-    bool isSessionIDGiven;
-    u_int32_t sessionTimeInSec;
-    bool isSessionTimeGiven;
-    u_int32_t keepAliveSleepTimeBetweenCommands;
-    bool isSleepTimeBetweenCommandsInput;
-    u_int32_t keepAliveSleepTimeOnCommandTO;
-    bool isSleepTimeOnCommandTOInput;
-    bool isLinkXDevice;
 };
 
 class MlxCfg
@@ -247,25 +216,6 @@ private:
     mlxCfgStatus XML2Bin();
     mlxCfgStatus createConf();
     mlxCfgStatus apply();
-
-    mlxCfgStatus remoteTokenKeepAlive();
-    mlxCfgStatus getChallenge();
-    void getChallengeFromSwitchOrHCA(mfile* mf);
-    void getChallengeFromLinkX();
-    mlxCfgStatus queryTokenSupport();
-    mlxCfgStatus queryTokenSession();
-    mlxCfgStatus endTokenSession();
-    void processMDSRData(const struct reg_access_switch_mdsr_reg_ext& mdsr_reg, bool isQuery);
-    void runMDSR(mfile* mf, struct reg_access_switch_mdsr_reg_ext* mdsr_reg, reg_access_method_t method);
-    void runMTCQ(mfile* mf, struct reg_access_switch_mtcq_reg_ext* mtcq_reg);
-    void printArray(const u_int32_t arr[], int len);
-    void printHexArrayAsAscii(const u_int32_t arr[], int len);
-    mlxCfgToken getTokenType(const char* tokenStr);
-    string getTokenString(mlxCfgToken token);
-
-#ifdef CABLES_SUPP
-    void processLinkXTokenStatus(const TokenStatusReply& tokenStatus);
-#endif
 
     // static print functions
     static int printParam(string param, u_int32_t val);

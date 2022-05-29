@@ -55,11 +55,7 @@ Commander* Commander::create(std::string device, std::string dbName, bool forceC
     mf = mopen(device.c_str());
     if (mf == NULL)
     {
-        mf = mopen_adv(device.c_str(), MST_CABLE);
-        if (mf == NULL)
-        {
-            throw MlxcfgException("Failed to open the device");
-        }
+        throw MlxcfgException("Failed to open the device");
     }
     rc = mget_mdevs_type(mf, &type);
     if (rc)
@@ -103,18 +99,11 @@ Commander* Commander::create(mfile* mf, std::string device, std::string dbName)
         throw MlxcfgException("Device in Livefish mode is not supported");
     }
 
-    if (dm_is_new_gen_switch(deviceId) || dm_is_5th_gen_hca(deviceId) || dm_dev_is_cable(deviceId))
+    if (dm_is_new_gen_switch(deviceId) || dm_is_5th_gen_hca(deviceId))
     {
         if (dbName.empty())
         { // take internal db file
-            if (dm_dev_is_cable(deviceId))
-            {
-                dbName = getDefaultDBName(true); // linkx cables use the switch PRM
-            }
-            else
-            {
-                dbName = getDefaultDBName(dm_dev_is_switch(deviceId));
-            }
+            dbName = getDefaultDBName(dm_dev_is_switch(deviceId));
         }
         commander = new GenericCommander(mf, dbName);
     }

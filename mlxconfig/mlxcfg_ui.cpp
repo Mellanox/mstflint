@@ -1465,30 +1465,20 @@ mlxCfgStatus MlxCfg::createConf()
         GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Switch);
         commander.createConf(xml, buff);
 
-        if (_mlxParams.isLinkXDevice)
+        if (!_mlxParams.privPemFile.empty() && !_mlxParams.keyPairUUID.empty())
         {
-#ifdef CABLES_SUPP
-            commander.signECDSA(buff, _mlxParams.privPemFile, _mlxParams.keyPairUUID);
-#else
-            throw MlxcfgException("Cables are not supported.\n");
-#endif
+            commander.sign(buff, _mlxParams.privPemFile, _mlxParams.keyPairUUID, "", "");
+        }
+        else if (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty() &&
+                    !_mlxParams.keyPairUUID.empty())
+        {
+            commander.sign(buff, "", _mlxParams.keyPairUUID, _mlxParams.opensslEngine, _mlxParams.opensslKeyId);
         }
         else
         {
-            if (!_mlxParams.privPemFile.empty() && !_mlxParams.keyPairUUID.empty())
-            {
-                commander.sign(buff, _mlxParams.privPemFile, _mlxParams.keyPairUUID, "", "");
-            }
-            else if (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty() &&
-                     !_mlxParams.keyPairUUID.empty())
-            {
-                commander.sign(buff, "", _mlxParams.keyPairUUID, _mlxParams.opensslEngine, _mlxParams.opensslKeyId);
-            }
-            else
-            {
-                commander.sign(buff);
-            }
+            commander.sign(buff);
         }
+
     }
     catch (MlxcfgException& e)
     {
@@ -1622,21 +1612,6 @@ mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
             break;
         case Mc_Apply:
             ret = apply();
-            break;
-        case Mc_RemoteTokenKeepAlive:
-            ret = remoteTokenKeepAlive();
-            break;
-        case Mc_ChallengeRequest:
-            ret = getChallenge();
-            break;
-        case Mc_TokenSupported:
-            ret = queryTokenSupport();
-            break;
-        case Mc_QueryTokenSession:
-            ret = queryTokenSession();
-            break;
-        case Mc_EndTokenSession:
-            ret = endTokenSession();
             break;
 
         default:
