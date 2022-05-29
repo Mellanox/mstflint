@@ -126,18 +126,28 @@ struct tools_open_per_host_type {
 	u_int8_t param_class;
 };
 
-/* Description -   */
-/* Size in bytes - 4 */
-struct tools_open_per_port_type {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.0 - 0x0.15 */
-	u_int16_t param_idx;
-	/* Description -  */
-	/* 0x0.16 - 0x0.23 */
-	u_int8_t port;
-	/* Description -  */
-	/* 0x0.24 - 0x0.31 */
+    /* Description -   */
+    /* Size in bytes - 4 */
+    struct tools_open_per_port_type
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description -  */
+        /* 0x0.0 - 0x0.15 */
+        u_int16_t param_idx;
+        /* Description -  */
+        /* 0x0.16 - 0x0.23 */
+        u_int8_t port;
+        /* Description -  */
+        /* 0x0.24 - 0x0.31 */
+        u_int8_t param_class;
+    };
+
+    /* Description -   */
+    /* Size in bytes - 4 */
+    struct tools_open_per_module_type
+    {
+        u_int16_t param_idx;
+        u_int16_t module;
 	u_int8_t param_class;
 };
 
@@ -166,32 +176,36 @@ struct tools_open_fw_version {
 	u_int16_t fw_ver_minor;
 };
 
-/* Description -   */
-/* Size in bytes - 4 */
-union tools_open_tlv_type {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	struct tools_open_global_type global;
-	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	struct tools_open_eswitch_type eswitch;
-	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	struct tools_open_per_host_type per_host;
-	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	struct tools_open_bmc_type bmc;
-	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	struct tools_open_per_port_type per_port;
-	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	struct tools_open_host_type host;
-	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	struct tools_open_tlv_type_dw tlv_type_dw;
-};
+    /* Description -   */
+    /* Size in bytes - 4 */
+    union tools_open_tlv_type
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        struct tools_open_global_type global;
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        struct tools_open_eswitch_type eswitch;
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        struct tools_open_per_host_type per_host;
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        struct tools_open_bmc_type bmc;
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        struct tools_open_per_port_type per_port;
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        struct tools_open_per_module_type per_module;
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        struct tools_open_host_type host;
+        /* Description -  */
+        /* 0x0.0 - 0x0.31 */
+        struct tools_open_tlv_type_dw tlv_type_dw;
+    };
 
 /* Description -   */
 /* Size in bytes - 8 */
@@ -2990,6 +3004,13 @@ void tools_open_per_port_type_print(const struct tools_open_per_port_type *ptr_s
 unsigned int tools_open_per_port_type_size(void);
 #define TOOLS_OPEN_PER_PORT_TYPE_SIZE    (0x4)
 void tools_open_per_port_type_dump(const struct tools_open_per_port_type *ptr_struct, FILE *fd);
+    /* per_module_type */
+    void tools_open_per_module_type_pack(const struct tools_open_per_module_type* ptr_struct, u_int8_t* ptr_buff);
+    void tools_open_per_module_type_unpack(struct tools_open_per_module_type* ptr_struct, const u_int8_t* ptr_buff);
+    void tools_open_per_module_type_print(const struct tools_open_per_module_type* ptr_struct, FILE* fd, int indent_level);
+    unsigned int tools_open_per_module_type_size(void);
+#define TOOLS_OPEN_PER_MODULE_TYPE_SIZE (0x4)
+    void tools_open_per_module_type_dump(const struct tools_open_per_module_type* ptr_struct, FILE* fd);
 /* tlv_type_dw */
 void tools_open_tlv_type_dw_pack(const struct tools_open_tlv_type_dw *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_tlv_type_dw_unpack(struct tools_open_tlv_type_dw *ptr_struct, const u_int8_t *ptr_buff);

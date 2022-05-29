@@ -47,13 +47,10 @@
 
 #if !defined(NO_OPEN_SSL)
 #include <mlxsign_lib/mlxsign_lib.h>
-#include <mlxsign_lib/mlxsign_ecdsa_via_openssl.h>
 #if !defined(NO_DYNAMIC_ENGINE)
 #include <mlxsign_lib/mlxsign_openssl_engine.h>
-#include <mlxsign_lib/mlxsign_ecdsa_via_hsm.h>
 #endif
 #endif
-#include <cable_access/cdb_cable_commander.h>
 #include "mlxcfg_generic_commander.h"
 #include "mlxcfg_utils.h"
 #include "mlxcfg_tlv.h"
@@ -165,7 +162,7 @@ void GenericCommander::supportsNVData()
 
 GenericCommander::GenericCommander(mfile* mf, string dbName, bool isSwitch) : Commander(mf), _dbManager(NULL)
 {
-    if (_mf != NULL && _mf->tp != MST_CABLE)
+    if (_mf != NULL)
     {
         supportsNVData();
     }
@@ -887,68 +884,20 @@ const char* GenericCommander::loadConfigurationGetStr()
     int rc;
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId, hwRevId;
-    struct reg_access_hca_mfrl_reg_ext mfrlQuery;
     struct reg_access_hca_mfrl_reg_ext mfrl;
 
-    if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId))
+    if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId) )
     {
         throw MlxcfgException("Failed to identify the device");
     }
 
     memset(&mfrl, 0, sizeof(mfrl));
-    memset(&mfrlQuery, 0, sizeof(mfrlQuery));
 
     if (dm_is_5th_gen_hca(deviceId))
     {
+        // send warm boot (bit 6)
+        mfrl.reset_trigger = 1 << 6;
         mft_signal_set_handling(1);
-        try
-        {
-            rc = reg_access_mfrl(_mf, REG_ACCESS_METHOD_GET, &mfrlQuery);
-            if (rc)
-            {
-                throw MlxcfgException("Failed to get reset data");
-            }
-
-            // check reset_type and set single bit to the least intrusive reset option supported
-            if ((mfrlQuery.reset_type) & 2)
-            { // check bit 1
-                mfrl.rst_type_sel = 1;
-            }
-            else if ((mfrlQuery.reset_type) & 4)
-            { // check bit 2
-                mfrl.rst_type_sel = 2;
-            }
-            else if ((mfrlQuery.reset_type) & 1)
-            { // check bit 0
-                mfrl.rst_type_sel = 0;
-            }
-            else
-            {
-                throw MlxcfgException("Failed to identify reset_type");
-            }
-
-            // check reset_trigger and set single bit to the least intrusive reset option supported
-            if ((mfrlQuery.reset_trigger) & 8)
-            { // check bit 3
-                mfrl.reset_trigger = 8;
-            }
-            else if ((mfrlQuery.reset_trigger) & 64)
-            { // check bit 6
-                mfrl.reset_trigger = 64;
-            }
-            else
-            {
-                throw MlxcfgException("Failed to identify reset_trigger");
-            }
-        }
-        catch (MlxcfgException& e)
-        {
-            printf("%s, fallback to full reset\n", e._err.c_str());
-            memset(&mfrl, 0, sizeof(mfrl));
-            mfrl.reset_trigger = 1 << 6;
-        }
-
-        // send mfrl with queried values.
         rc = reg_access_mfrl(_mf, REG_ACCESS_METHOD_SET, &mfrl);
         dealWithSignal();
         if (rc)
@@ -1607,73 +1556,7 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
 #endif
 }
 
-void GenericCommander::signECDSA(vector<u_int32_t>& buff, const string& privateKeyFile, const string& keyPairUUid)
-{
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
-    vector<u_int32_t> encDigestDW;
-    vector<u_int8_t> digest, encDigest, bytesBuff;
 
-    copyDwVectorToBytesVector(buff, bytesBuff);
-
-    if (!privateKeyFile.empty())
-    {
-        MlxSign::MlxSignEcdsaViaOpenssl signer;
-
-        if (signer.Init(privateKeyFile) != MlxSign::ErrorCode::MLX_SIGN_SUCCESS)
-        {
-            throw MlxcfgException("ECDSA signer initialization failed.\n");
-        }
-
-        if (signer.Sign(bytesBuff, encDigest) != MlxSign::ErrorCode::MLX_SIGN_SUCCESS)
-        {
-            throw MlxcfgException("ECDSA signature generation failed.\n");
-        }
-    }
-    else
-    {
-#if defined(__linux__) && defined(__x86_64__)
-        MlxSign::MlxSignEcdsaViaHsm signer;
-
-        if (signer.Init() != MlxSign::ErrorCode::MLX_SIGN_SUCCESS)
-        {
-            throw MlxcfgException("ECDSA signer initialization failed.\n");
-        }
-
-        if (signer.Sign(bytesBuff, encDigest) != MlxSign::ErrorCode::MLX_SIGN_SUCCESS)
-        {
-            throw MlxcfgException("ECDSA signature generation failed.\n");
-        }
-#else
-        throw MlxcfgException("LinkX sign via HSM is supported only on linux x86_64.");
-#endif
-    }
-
-    // fetch the signature tlv from the database and fill in the data
-    vector<u_int32_t> signTlvBin;
-    TLVConf* signTLV = _dbManager->getTLVByName("file_signature", 0);
-
-    std::shared_ptr<Param> keyPairUUidParam = signTLV->findParamByName("keypair_uuid");
-    ((BytesParamValue*)keyPairUUidParam->_value)->setVal(keyPairUUid);
-
-    std::shared_ptr<Param> signatureParam = signTLV->findParamByName("signature");
-    if (NULL == signatureParam)
-    {
-        throw MlxcfgException("The signature parameter was not found\n");
-    }
-    copyBytesVectorToDwVector(encDigest, encDigestDW);
-    VECTOR_BE32_TO_CPU(encDigestDW)
-    ((BytesParamValue*)signatureParam->_value)->setVal(encDigestDW);
-
-    signTLV->genBin(signTlvBin);
-
-    buff.insert(buff.end(), signTlvBin.begin(), signTlvBin.end());
-#else
-    (void)buff;
-    (void)privateKeyFile;
-    (void)keyPairUUid;
-    throw MlxcfgException("Sign command is not implemented\n");
-#endif
-}
 
 void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::comps_ids_t& compsId)
 {
@@ -1829,29 +1712,18 @@ void GenericCommander::apply(const vector<u_int8_t>& buff)
 
     checkConfTlvs(tlvs, compsId);
 
-    if (_mf->tp == MST_CABLE)
+    if (!fwCompsAccess.getFwSupport())
     {
-#ifdef CABLES_SUPP
-        LinkXCdbCommander cableCommander(_mf->dinfo->dev_name);
-        cableCommander.InstallToken(buff);
-#else
-        throw MlxcfgException("Cables are not supported.\n");
-#endif
+        throw MlxcfgException("Firmware does not support applying configurations files");
     }
-    else
-    {
-        if (!fwCompsAccess.getFwSupport())
-        {
-            throw MlxcfgException("Firmware does not support applying configurations files");
-        }
 
-        comp.init(buff, buff.size(), compsId);
-        compsToBurn.push_back(comp);
-        if (!fwCompsAccess.burnComponents(compsToBurn))
-        {
-            throw MlxcfgException("Error applying the component: %s", fwCompsAccess.getLastErrMsg());
-        }
+    comp.init(buff, buff.size(), compsId);
+    compsToBurn.push_back(comp);
+    if (!fwCompsAccess.burnComponents(compsToBurn))
+    {
+        throw MlxcfgException("Error applying the component: %s", fwCompsAccess.getLastErrMsg());
     }
+
 }
 
 void GenericCommander::raw2XML(const vector<string>& lines, string& xmlTemplate)
