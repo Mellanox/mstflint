@@ -140,10 +140,7 @@ protected:
     u_int32_t getLocalFieldValue(const string& fieldName);
     void sendRegister(const string& regName, maccess_reg_method_t method);
 
-    void fillParamsToFields(const string& title,
-                            const vector<string>& values,
-                            vector<AmberField>& fields,
-                            bool laneLimit = true);
+    void fillParamsToFields(const string& title, const vector<string>& values, vector<AmberField>& fields);
     string getPrbsModeCap(u_int32_t modeSelector, u_int32_t capsMask);
     string getPrpsRateCap(u_int32_t capsMask);
     virtual void getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params);
