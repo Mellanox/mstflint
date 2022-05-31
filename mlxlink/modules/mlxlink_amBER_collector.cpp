@@ -2079,18 +2079,12 @@ void MlxlinkAmBerCollector::exportToCSV()
 {
     const char* fileName = _csvFileName.c_str();
     ifstream ifile(fileName);
-    ofstream berFile;
-    bool skipHeader = false;
-
-    berFile.open(fileName, std::ofstream::app);
-    if (ifile)
-    {
-        skipHeader = true;
-    }
+    ofstream berFile(fileName, std::ofstream::app);
 
     u_int32_t totalNumOfFields = fixFieldsData();
+
     // Preparing CSV header line
-    if (!skipHeader)
+    if (!ifile.good())
     {
         // Going over all groups inside _amberCollection and getting the field name for each one
         for (auto it = _amberCollection.begin(); it != _amberCollection.end(); it++)

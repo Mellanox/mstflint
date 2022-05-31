@@ -3099,16 +3099,11 @@ void MlxlinkCommander::collectBER()
 
         const char* fileName = _userInput._csvBer.c_str();
         ifstream ifile(fileName);
-        ofstream berFile;
+        ofstream berFile(fileName, std::ofstream::app);
 
-        if (!ifile)
+        if (!ifile.good())
         {
-            berFile.open(fileName, std::ofstream::app);
             berFile << _mlxlinkMaps->_berCollectTitle << endl;
-        }
-        else
-        {
-            berFile.open(fileName, std::ofstream::app);
         }
 
         MlxlinkRecord::printCmdLine("Collecting BER and producing report to " + _userInput._csvBer, _jsonRoot);
