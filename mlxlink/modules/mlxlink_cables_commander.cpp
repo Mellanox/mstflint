@@ -420,52 +420,54 @@ void MlxlinkCablesCommander::prepareQSFPDdmInfo()
 {
     u_int32_t tempVal = 0;
     u_int8_t* page0L = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
-
-    loadEEPRMPage(PAGE_0, LOWER_PAGE_OFFSET, page0L);
-
-    readFromPage(page0L, QSFP_TEMP_AW_OFFSET, &tempVal);
-    _cableDdm.temperature.high_warn_flag = (tempVal & QSFP_TEMP_HWARN_STATUS);
-    _cableDdm.temperature.low_warn_flag = (tempVal & QSFP_TEMP_LWARN_STATUS);
-    _cableDdm.temperature.high_alarm_flag = (tempVal & QSFP_TEMP_HALARM_STATUS);
-    _cableDdm.temperature.low_alarm_flag = (tempVal & QSFP_TEMP_LALARM_STATUS);
-
-    tempVal = 0;
-    readFromPage(page0L, QSFP_VCC_AW_OFFSET, &tempVal);
-    _cableDdm.voltage.high_warn_flag = (tempVal & QSFP_VCC_HWARN_STATUS);
-    _cableDdm.voltage.low_warn_flag = (tempVal & QSFP_VCC_LWARN_STATUS);
-    _cableDdm.voltage.high_alarm_flag = (tempVal & QSFP_VCC_HALARM_STATUS);
-    _cableDdm.voltage.low_alarm_flag = (tempVal & QSFP_VCC_LALARM_STATUS);
-
-    getDdmValuesFromPddr();
-
-    u_int8_t nextTwoChannels = 0;
-    for (u_int32_t i = 1; i <= QSFP_CHANNELS; i++)
+    if (page0L != NULL)
     {
-        nextTwoChannels = (i > QSFP_CHANNELS / 2) ? 1 : 0;
-        tempVal = 0;
-        readFromPage(page0L, QSFP_RX_PWR_12_AW_OFFSET + nextTwoChannels, &tempVal);
+        loadEEPRMPage(PAGE_0, LOWER_PAGE_OFFSET, page0L);
 
-        _cableDdm.rx_power[i - 1].low_warn_flag = getStatusBit(i, tempVal, QSFP_RX_PWR_1_LWARN);
-        _cableDdm.rx_power[i - 1].high_warn_flag = getStatusBit(i, tempVal, QSFP_RX_PWR_1_HWARN);
-        _cableDdm.rx_power[i - 1].low_alarm_flag = getStatusBit(i, tempVal, QSFP_RX_PWR_1_LALARM);
-        _cableDdm.rx_power[i - 1].high_alarm_flag = getStatusBit(i, tempVal, QSFP_RX_PWR_1_HALARM);
-
-        tempVal = 0;
-        readFromPage(page0L, QSFP_TX_PWR_12_AW_OFFSET + nextTwoChannels, &tempVal);
-        _cableDdm.tx_power[i - 1].low_warn_flag = getStatusBit(i, tempVal, QSFP_TX_PWR_1_LWARN);
-        _cableDdm.tx_power[i - 1].high_warn_flag = getStatusBit(i, tempVal, QSFP_TX_PWR_1_HWARN);
-        _cableDdm.tx_power[i - 1].low_alarm_flag = getStatusBit(i, tempVal, QSFP_TX_PWR_1_LALARM);
-        _cableDdm.tx_power[i - 1].high_alarm_flag = getStatusBit(i, tempVal, QSFP_TX_PWR_1_HALARM);
+        readFromPage(page0L, QSFP_TEMP_AW_OFFSET, &tempVal);
+        _cableDdm.temperature.high_warn_flag = (tempVal & QSFP_TEMP_HWARN_STATUS);
+        _cableDdm.temperature.low_warn_flag = (tempVal & QSFP_TEMP_LWARN_STATUS);
+        _cableDdm.temperature.high_alarm_flag = (tempVal & QSFP_TEMP_HALARM_STATUS);
+        _cableDdm.temperature.low_alarm_flag = (tempVal & QSFP_TEMP_LALARM_STATUS);
 
         tempVal = 0;
-        readFromPage(page0L, QSFP_TX_BIAS_12_AW_OFFSET + nextTwoChannels, &tempVal);
-        _cableDdm.tx_bias[i - 1].low_warn_flag = getStatusBit(i, tempVal, QSFP_TX_BIAS_1_LWARN);
-        _cableDdm.tx_bias[i - 1].high_warn_flag = getStatusBit(i, tempVal, QSFP_TX_BIAS_1_HWARN);
-        _cableDdm.tx_bias[i - 1].low_alarm_flag = getStatusBit(i, tempVal, QSFP_TX_BIAS_1_LALARM);
-        _cableDdm.tx_bias[i - 1].high_alarm_flag = getStatusBit(i, tempVal, QSFP_TX_BIAS_1_HALARM);
+        readFromPage(page0L, QSFP_VCC_AW_OFFSET, &tempVal);
+        _cableDdm.voltage.high_warn_flag = (tempVal & QSFP_VCC_HWARN_STATUS);
+        _cableDdm.voltage.low_warn_flag = (tempVal & QSFP_VCC_LWARN_STATUS);
+        _cableDdm.voltage.high_alarm_flag = (tempVal & QSFP_VCC_HALARM_STATUS);
+        _cableDdm.voltage.low_alarm_flag = (tempVal & QSFP_VCC_LALARM_STATUS);
+
+        getDdmValuesFromPddr();
+
+        u_int8_t nextTwoChannels = 0;
+        for (u_int32_t i = 1; i <= QSFP_CHANNELS; i++)
+        {
+            nextTwoChannels = (i > QSFP_CHANNELS / 2) ? 1 : 0;
+            tempVal = 0;
+            readFromPage(page0L, QSFP_RX_PWR_12_AW_OFFSET + nextTwoChannels, &tempVal);
+
+            _cableDdm.rx_power[i - 1].low_warn_flag = getStatusBit(i, tempVal, QSFP_RX_PWR_1_LWARN);
+            _cableDdm.rx_power[i - 1].high_warn_flag = getStatusBit(i, tempVal, QSFP_RX_PWR_1_HWARN);
+            _cableDdm.rx_power[i - 1].low_alarm_flag = getStatusBit(i, tempVal, QSFP_RX_PWR_1_LALARM);
+            _cableDdm.rx_power[i - 1].high_alarm_flag = getStatusBit(i, tempVal, QSFP_RX_PWR_1_HALARM);
+
+            tempVal = 0;
+            readFromPage(page0L, QSFP_TX_PWR_12_AW_OFFSET + nextTwoChannels, &tempVal);
+            _cableDdm.tx_power[i - 1].low_warn_flag = getStatusBit(i, tempVal, QSFP_TX_PWR_1_LWARN);
+            _cableDdm.tx_power[i - 1].high_warn_flag = getStatusBit(i, tempVal, QSFP_TX_PWR_1_HWARN);
+            _cableDdm.tx_power[i - 1].low_alarm_flag = getStatusBit(i, tempVal, QSFP_TX_PWR_1_LALARM);
+            _cableDdm.tx_power[i - 1].high_alarm_flag = getStatusBit(i, tempVal, QSFP_TX_PWR_1_HALARM);
+
+            tempVal = 0;
+            readFromPage(page0L, QSFP_TX_BIAS_12_AW_OFFSET + nextTwoChannels, &tempVal);
+            _cableDdm.tx_bias[i - 1].low_warn_flag = getStatusBit(i, tempVal, QSFP_TX_BIAS_1_LWARN);
+            _cableDdm.tx_bias[i - 1].high_warn_flag = getStatusBit(i, tempVal, QSFP_TX_BIAS_1_HWARN);
+            _cableDdm.tx_bias[i - 1].low_alarm_flag = getStatusBit(i, tempVal, QSFP_TX_BIAS_1_LALARM);
+            _cableDdm.tx_bias[i - 1].high_alarm_flag = getStatusBit(i, tempVal, QSFP_TX_BIAS_1_HALARM);
+        }
+
+        free(page0L);
     }
-
-    free(page0L);
 }
 
 // Preparing SFP DDM information
@@ -775,8 +777,7 @@ void MlxlinkCablesCommander::addPageToOutputVector(u_int8_t* pageBuffer,
 // Fetching supported pages from cable EEPROM
 void MlxlinkCablesCommander::initValidPages()
 {
-    page_t p;
-    p = (page_t){PAGE_0, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
+    page_t p = page_t{PAGE_0, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
     _validPages.push_back(p);
     bool qsfpCable = (_cableIdentifier == IDENTIFIER_QSFP28 || _cableIdentifier == IDENTIFIER_QSFP_PLUS);
     bool cmisCable = (_cableIdentifier == IDENTIFIER_SFP_DD || _cableIdentifier == IDENTIFIER_QSFP_DD ||
@@ -784,12 +785,12 @@ void MlxlinkCablesCommander::initValidPages()
                       _cableIdentifier == IDENTIFIER_QSFP_CMIS);
     if (cmisCable || qsfpCable || _sfp51Paging)
     {
-        p = (page_t){PAGE_0, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+        p = page_t{PAGE_0, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
         _validPages.push_back(p);
     }
     if (_sfp51Paging)
     {
-        p = (page_t){PAGE_01, LOWER_PAGE_OFFSET, I2C_ADDR_HIGH};
+        p = page_t{PAGE_01, LOWER_PAGE_OFFSET, I2C_ADDR_HIGH};
         _validPages.push_back(p);
     }
     if (qsfpCable && !_passiveQsfp)
@@ -801,21 +802,21 @@ void MlxlinkCablesCommander::initValidPages()
         free(page0H);
         if (optionsValue & 0x40)
         { // check bit 6 for support page_01
-            p = (page_t){PAGE_01, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+            p = page_t{PAGE_01, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
             _validPages.push_back(p);
         }
         if (optionsValue & 0x80)
         { // check bit 7 for support page_02
-            p = (page_t){PAGE_02, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+            p = page_t{PAGE_02, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
             _validPages.push_back(p);
         }
-        p = (page_t){PAGE_03, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+        p = page_t{PAGE_03, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
         _validPages.push_back(p);
         if (optionsValue & 0x01)
         { // check bit 0 for support page_20 and page_21
-            p = (page_t){PAGE_20, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+            p = page_t{PAGE_20, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
             _validPages.push_back(p);
-            p = (page_t){PAGE_21, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+            p = page_t{PAGE_21, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
             _validPages.push_back(p);
         }
     }
@@ -836,15 +837,15 @@ void MlxlinkCablesCommander::initValidPages()
         free(page0L);
         if (!(extendedPages & EXTENDED_PAGES_1_2_10_11_MASK))
         {
-            p = (page_t){PAGE_01, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+            p = page_t{PAGE_01, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
             _validPages.push_back(p);
             if (_cableIdentifier != IDENTIFIER_SFP_DD)
             {
-                p = (page_t){PAGE_02, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+                p = page_t{PAGE_02, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                 _validPages.push_back(p);
-                p = (page_t){PAGE_10, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+                p = page_t{PAGE_10, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                 _validPages.push_back(p);
-                p = (page_t){PAGE_11, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+                p = page_t{PAGE_11, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                 _validPages.push_back(p);
 
                 // if p 1, B155:6=1, dump page 0x4 (H)
@@ -858,18 +859,18 @@ void MlxlinkCablesCommander::initValidPages()
                 readFromPage(page1H, (EXTENDED_PAGES_4_12_ADDR - UPPER_PAGE_OFFSET), &extendedQsfpPages);
                 if (extendedQsfpPages & EXTENDED_PAGES_4_12_MASK)
                 {
-                    p = (page_t){PAGE_04, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+                    p = page_t{PAGE_04, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
-                    p = (page_t){PAGE_12, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+                    p = page_t{PAGE_12, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
                 }
                 extendedQsfpPages = 0;
                 readFromPage(page1H, (EXTENDED_PAGES_13_14_ADDR - UPPER_PAGE_OFFSET), &extendedQsfpPages);
                 if (extendedQsfpPages & EXTENDED_PAGES_13_14_MASK)
                 {
-                    p = (page_t){PAGE_13, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+                    p = page_t{PAGE_13, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
-                    p = (page_t){PAGE_14, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+                    p = page_t{PAGE_14, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
                 }
                 free(page1H);
@@ -885,10 +886,13 @@ vector<MlxlinkCmdPrint> MlxlinkCablesCommander::getPagesToDump()
     for (u_int32_t i = 0; i < _validPages.size(); i++)
     {
         u_int8_t* pageP = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
-        loadEEPRMPage(_validPages[i].page, _validPages[i].offset, pageP, _validPages[i].i2cAddress);
-        ;
-        addPageToOutputVector(pageP, _validPages[i].page, _validPages[i].offset, CABLE_PAGE_SIZE);
-        free(pageP);
+        if (pageP != NULL)
+        {
+            loadEEPRMPage(_validPages[i].page, _validPages[i].offset, pageP, _validPages[i].i2cAddress);
+            ;
+            addPageToOutputVector(pageP, _validPages[i].page, _validPages[i].offset, CABLE_PAGE_SIZE);
+            free(pageP);
+        }
     }
     return _pagesToDump;
 }
@@ -986,7 +990,7 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page, u_int16_t 
 {
     checkParams(page, offset, length);
 
-    u_int8_t* pageL = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+    u_int8_t* pageL = NULL;
     u_int8_t* pageH = NULL;
     u_int32_t i2cAddress = I2C_ADDR_LOW;
     // if SFP51 paging is supported, then we use i2c 0x51 to Access page 1
@@ -994,6 +998,7 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page, u_int16_t 
     {
         i2cAddress = I2C_ADDR_HIGH;
     }
+    pageL = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
     loadEEPRMPage(page, LOWER_PAGE_OFFSET, pageL, i2cAddress);
     if ((length + offset) > CABLE_PAGE_SIZE)
     {
@@ -1003,7 +1008,7 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page, u_int16_t 
     char label[32];
     char val[32];
     u_int8_t byteVal = 0;
-    u_int32_t i;
+    u_int32_t i = 0;
     MlxlinkCmdPrint bytesOutput = MlxlinkCmdPrint();
     setPrintTitle(bytesOutput, "Cable Read Output", length + 1);
 
@@ -1536,12 +1541,12 @@ u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const strin
     bool invalidConfiguration = false;
     bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
     bool isDecemal = false;
+    string valueStr = value;
 
     try
     {
-        string valueSgtr = value;
-        toUpperCase(valueSgtr);
-        valueToSet = valueSgtr == "NE" ? 0 : stod(value);
+        toUpperCase(valueStr);
+        valueToSet = valueStr == "NE" ? 0 : stod(value);
         isDecemal = (valueToSet - (int)valueToSet) > 0;
     }
     catch (exception& exc)
@@ -1566,7 +1571,8 @@ u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const strin
         }
     }
 
-    if (valueToSet > MAX_SFF_CODE_VALUE || (isDecemal && paramId != CABLE_CONTROL_PARAMETERS_SET_RX_EMPH))
+    if (valueStr == "0" || valueToSet > MAX_SFF_CODE_VALUE ||
+        (isDecemal && paramId != CABLE_CONTROL_PARAMETERS_SET_RX_EMPH))
     {
         invalidConfiguration = true;
     }
@@ -1631,35 +1637,40 @@ void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string
     }
 
     // Check provided params value capability
-    /*
-     * ignore cap check due to firmware issue
     bool invalidVal = false;
     u_int32_t valueToSet = 0;
     u_int32_t valueCap = 0;
     string validCapStr = "";
-    for (auto it = params.begin(); it != params.end(); it++) {
+    for (auto it = params.begin(); it != params.end(); it++)
+    {
         fieldName = _modulePMCRParams[it->first].second;
         valueToSet = getPMCRValue(it->first, it->second);
-        valueCap = getFieldValue(fieldName + "_value_cap");;//
-        if (it->first == CABLE_CONTROL_PARAMETERS_SET_RX_AMP) {
+        valueCap = getFieldValue(fieldName + "_value_cap");
+        ; //
+        if (it->first == CABLE_CONTROL_PARAMETERS_SET_RX_AMP)
+        {
             valueToSet = (u_int32_t)pow(2.0, (double)valueToSet);
-            if (!(valueCap & valueToSet)) {
+            if (!(valueCap & valueToSet))
+            {
                 invalidVal = true;
             }
-        } else if (valueToSet > valueCap) {
+        }
+        else if (valueToSet > valueCap)
+        {
             invalidVal = true;
         }
-        if (invalidVal) {
-            if (valueCap ) {
+        if (invalidVal)
+        {
+            if (valueCap)
+            {
                 validCapStr = "\nValid configuration values are [";
                 validCapStr += getPMCRCapValueStr(valueCap, it->first);
                 validCapStr += "]";
             }
-            throw MlxRegException("Invalid %s configuration value: %s %s",
-                                  _modulePMCRParams[it->first].first.c_str(), it->second.c_str(), validCapStr.c_str());
+            throw MlxRegException("Invalid %s configuration value: %s %s", _modulePMCRParams[it->first].first.c_str(),
+                                  it->second.c_str(), validCapStr.c_str());
         }
     }
-    */
 }
 
 void MlxlinkCablesCommander::buildPMCRRequest(ControlParam paramId, const string& value)
