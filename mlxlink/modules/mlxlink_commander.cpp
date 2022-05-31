@@ -2422,53 +2422,91 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
                 true, true, true);
 }
 
+void MlxlinkCommander::startSlrgPciScan(u_int32_t numOfLanesToUse)
+{
+    // Start EOM measurements per lane
+    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    {
+        resetParser(ACCESS_REG_SLRG);
+        updateField("local_port", _localPort);
+        updateField("pnat", PNAT_PCIE);
+        updateField("lane", lane);
+        updateField("fom_measurment", SLRG_EOM_COMPOSITE);
+        genBuffSendRegister(ACCESS_REG_SLRG, MACCESS_REG_METHOD_GET);
+    }
+    // For each lane, wait until process finish
+    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    {
+        u_int32_t it = 0;
+        while (it < SLRG_PCIE_7NM_TIMEOUT)
+        {
+            resetParser(ACCESS_REG_SLRG);
+            updateField("local_port", _localPort);
+            updateField("pnat", PNAT_PCIE);
+            updateField("lane", lane);
+            genBuffSendRegister(ACCESS_REG_SLRG, MACCESS_REG_METHOD_GET);
+            if (getFieldValue("status"))
+            {
+                break;
+            }
+            it++;
+            msleep(SLRG_PCIE_7NM_SLEEP);
+        }
+    }
+}
+
 void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
 {
-    string regName = "SLRG";
     std::vector<string> legand, initialFom, lastFom, upperFom, midFom, lowerFom;
+    u_int32_t status = 0;
+    u_int32_t fomMeasurement = SLRG_EOM_NONE;
 
-    u_int32_t fomMeasurement = SLRG_COMPOSITE_EYE;
-    if (!isSpeed25GPerLane(_activeSpeed, _protoActive))
+    if (!_userInput._pcie)
     {
-        fomMeasurement |= (SLRG_UPPER_EYE | SLRG_MIDDLE_EYE | SLRG_LOWER_EYE);
+        fomMeasurement = SLRG_EOM_COMPOSITE;
+        if (!isSpeed25GPerLane(_activeSpeed, _protoActive))
+        {
+            fomMeasurement |= (SLRG_EOM_UPPER | SLRG_EOM_MIDDLE | SLRG_EOM_LOWER);
+        }
+    }
+    else
+    {
+        startSlrgPciScan(numOfLanesToUse);
     }
 
     for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
     {
-        resetParser(regName);
+        status = 0;
+        resetParser(ACCESS_REG_SLRG);
         updatePortType();
         updateField("local_port", _localPort);
         updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
         updateField("lane", lane);
         updateField("fom_measurment", fomMeasurement);
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+        genBuffSendRegister(ACCESS_REG_SLRG, MACCESS_REG_METHOD_GET);
 
-        initialFom.push_back(
-          MlxlinkRecord::addSpaceForSlrg(getFieldValue("status") ? to_string(getFieldValue("initial_fom")) : "N/A"));
-        lastFom.push_back(
-          MlxlinkRecord::addSpaceForSlrg((fomMeasurement & SLRG_COMPOSITE_EYE) ? getFieldStr("last_fom") : "N/A"));
-        upperFom.push_back(
-          MlxlinkRecord::addSpaceForSlrg((fomMeasurement & SLRG_UPPER_EYE) ? getFieldStr("upper_eye") : "N/A"));
-        midFom.push_back(
-          MlxlinkRecord::addSpaceForSlrg((fomMeasurement & SLRG_MIDDLE_EYE) ? getFieldStr("mid_eye") : "N/A"));
-        lowerFom.push_back(
-          MlxlinkRecord::addSpaceForSlrg((fomMeasurement & SLRG_LOWER_EYE) ? getFieldStr("lower_eye") : "N/A"));
+        status = getFieldValue("status");
+        initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom") : "N/A"));
+        lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom") : "N/A"));
+        upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye") : "N/A"));
+        midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye") : "N/A"));
+        lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("lower_eye") : "N/A"));
+
         legand.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(lane)));
     }
 
     string fomMode = _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode")];
-    setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, !fomMode.empty(), true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Lane", getStringFromVector(legand), ANSI_COLOR_RESET, !legand.empty(), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lane", getStringFromVector(legand), ANSI_COLOR_RESET, true, true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", getStringFromVector(initialFom), ANSI_COLOR_RESET,
                 !initialFom.empty(), true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", getStringFromVector(lastFom), ANSI_COLOR_RESET, !lastFom.empty(),
-                (fomMeasurement & SLRG_COMPOSITE_EYE), true);
-    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET, !upperFom.empty(),
-                (fomMeasurement & SLRG_UPPER_EYE), true);
-    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET, !midFom.empty(),
-                (fomMeasurement & SLRG_MIDDLE_EYE), true);
-    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET, !lowerFom.empty(),
-                (fomMeasurement & SLRG_LOWER_EYE), true);
+    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", getStringFromVector(lastFom), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET, true,
+                (fomMeasurement & SLRG_EOM_UPPER), true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET, true,
+                (fomMeasurement & SLRG_EOM_MIDDLE), true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET, true,
+                (fomMeasurement & SLRG_EOM_LOWER), true);
 }
 
 void MlxlinkCommander::showEye()
@@ -3730,8 +3768,8 @@ void MlxlinkCommander::sendPaosDown(bool toggleCommand)
                 message +=
                   "1- The link is configured to be up, run this command if KEEP_" + protocol + "_LINK_UP_Px is True:\n";
                 message += "   mlxconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0\n";
-                message +=
-                  "2- Port management is enabled (management protocol requiring the link to remain up, PAOS won't manage to disable the port)\n";
+                message += "2- Port management is enabled (management protocol requiring the link to remain up, PAOS "
+                           "won't manage to disable the port)\n";
                 message += "3- In case of multi-host please verify all hosts are not holding the port up";
                 throw MlxRegException(message);
             }
@@ -4259,8 +4297,8 @@ void MlxlinkCommander::sendPplm()
         }
         if (!_linkUP && _userInput._speedFec == "")
         {
-            throw MlxRegException(
-              "When Port is Not Active, You Must Specify the Speed to Configure FEC (--fec_speed <speed>)");
+            throw MlxRegException("When Port is Not Active, You Must Specify the Speed to Configure FEC (--fec_speed "
+                                  "<speed>)");
         }
 
         checkPplmCap(); // after calling checkPplmCap, _userInput._speedFec will be changed to the correct fec speed

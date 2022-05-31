@@ -438,6 +438,7 @@ public:
     void prepareSltp28_40nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber);
     void prepareSltp16nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber);
     void prepareSltp7nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber);
+    void startSlrgPciScan(u_int32_t numOfLanesToUse);
     void initValidDPNList();
     u_int32_t readBitFromField(const string& fieldName, u_int32_t bitIndex);
     string getSupportedFecForSpeed(const string& speed);
