@@ -47,12 +47,9 @@
 #include "mlxcfg_db_manager.h"
 #include "mlxcfg_utils.h"
 #include <memory>
-#if __cplusplus >= 201402L
 #include <regex>
-#else
-#include <boost/regex.hpp>
-using namespace boost;
-#endif
+
+
 // clang-format off
 #define SQL_SELECT_ALL_TLVS \
     "SELECT * FROM tlvs"

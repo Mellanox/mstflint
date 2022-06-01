@@ -50,13 +50,8 @@
 
 #include "../tools_layouts/tools_open_layouts.h"
 #include "mlxcfg_utils.h"
-
-#if __cplusplus >= 201402L || defined(_MSC_VER)
 #include <regex>
-#elif !defined(MST_UL)
-#include <boost/regex.hpp>
-using namespace boost;
-#endif
+
 
 using namespace std;
 
