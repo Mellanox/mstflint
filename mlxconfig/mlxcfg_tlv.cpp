@@ -48,12 +48,7 @@
 #include "mlxcfg_tlv.h"
 
 #include <muParser.h>
-#if __cplusplus >= 201402L
 #include <regex>
-#else
-#include <boost/regex.hpp>
-using namespace boost;
-#endif
 
 using namespace mu;
 
