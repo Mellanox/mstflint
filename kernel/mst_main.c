@@ -86,6 +86,7 @@ static struct pci_device_id mst_livefish_pci_table[] = {
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 0x021e) }, /* CX8 Family [ConnectX-8 Secure Flash Recovery] */
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 0x0220) }, /* BF4 Family Flash Recovery [BlueField-4 SoC Flash Recovery] */
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 0x021e) }, /* BF4 Family Secure Flash Recovery [BlueField-4 Secure Flash Recovery] */
+		{ 0, }
 	}; 
 
 static struct pci_device_id mst_bar_pci_table[] = { 
