@@ -34,7 +34,7 @@
 
 #include "mlxlink_err_inj_commander.h"
 
-MlxlinkErrInjCommander::MlxlinkErrInjCommander(Json::Value &jsonRoot): _jsonRoot(jsonRoot)
+MlxlinkErrInjCommander::MlxlinkErrInjCommander(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
 {
     _localPort = 0;
     _pnat = 0;
@@ -43,15 +43,14 @@ MlxlinkErrInjCommander::MlxlinkErrInjCommander(Json::Value &jsonRoot): _jsonRoot
     _force = false;
 }
 
-MlxlinkErrInjCommander::~MlxlinkErrInjCommander()
-{
-}
+MlxlinkErrInjCommander::~MlxlinkErrInjCommander() {}
 
 bool MlxlinkErrInjCommander::getUserConfirm()
 {
     MlxlinkRecord::printWar("Using this feature may result degradation of "
-            "the link or even link failure.\nFor the link to return to normal "
-            "operation, link needs to be toggled.", _jsonRoot);
+                            "the link or even link failure.\nFor the link to return to normal "
+                            "operation, link needs to be toggled.",
+                            _jsonRoot);
     return askUser("Do you want to continue", _force);
 }
 
@@ -72,15 +71,19 @@ void MlxlinkErrInjCommander::setMixersOffset()
     string regName = "PREI";
     resetParser(regName);
     updateField("local_port", _localPort);
-    if (_mixerOffset0 >= 0) {
+    if (_mixerOffset0 >= 0)
+    {
         updateField("mixer_offset0", (u_int16_t)_mixerOffset0);
-        if (_mixerOffset1 == -1) {
+        if (_mixerOffset1 == -1)
+        {
             updateField("mixer_offset1", oldMixer1);
         }
     }
-    if (_mixerOffset1 >= 0) {
+    if (_mixerOffset1 >= 0)
+    {
         updateField("mixer_offset1", (u_int16_t)_mixerOffset1);
-        if (_mixerOffset0 == -1) {
+        if (_mixerOffset0 == -1)
+        {
             updateField("mixer_offset0", oldMixer0);
         }
     }
@@ -90,11 +93,13 @@ void MlxlinkErrInjCommander::setMixersOffset()
 void MlxlinkErrInjCommander::updateMixerOffsets()
 {
     MlxlinkRecord::printCmdLine("Configuring Eye Center", _jsonRoot);
-    if (MlxlinkRecord::jsonFormat && !_force) {
+    if (MlxlinkRecord::jsonFormat && !_force)
+    {
         throw MlxRegException("Interactive mode is not available with JSON format, "
-                "use --yes flag to force the execution");
+                              "use --yes flag to force the execution");
     }
-    if (getUserConfirm()) {
+    if (getUserConfirm())
+    {
         setMixersOffset();
     }
 }
@@ -111,4 +116,3 @@ void MlxlinkErrInjCommander::showMixersOffset()
     cmdOut.toJsonFormat(_jsonRoot);
     cout << cmdOut;
 }
-

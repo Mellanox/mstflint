@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -36,7 +37,6 @@
  *      Author: ahmads
  */
 
-
 #include <set>
 #include <mtcr.h>
 #include "mlxcfg_4thgen_commander.h"
@@ -46,34 +46,37 @@
 
 using namespace std;
 
-
 Commander* Commander::create(std::string device, std::string dbName, bool forceCreate)
 {
-    mfile *mf;
+    mfile* mf;
     int rc;
     u_int32_t type = 0;
 
     mf = mopen(device.c_str());
-    if (mf == NULL) {
-        mf = mopen_adv(device.c_str(), MST_CABLE);
-        if (mf == NULL) {
-            throw MlxcfgException("Failed to open the device");
-        }
+    if (mf == NULL)
+    {
+        throw MlxcfgException("Failed to open the device");
     }
     rc = mget_mdevs_type(mf, &type);
-    if (rc) {
+    if (rc)
+    {
         throw MlxcfgException("Failed to get device type");
     }
-    if(!forceCreate) {
-        if (type & (MST_USB | MST_USB_DIMAX)) {
+    if (!forceCreate)
+    {
+        if (type & (MST_USB | MST_USB_DIMAX))
+        {
             throw MlxcfgException("MTUSB device is not supported.");
         }
     }
 
-    Commander *cmdr = NULL;
-    try {
+    Commander* cmdr = NULL;
+    try
+    {
         cmdr = create(mf, device, dbName);
-    } catch (MlxcfgException& exp) {
+    }
+    catch (MlxcfgException& exp)
+    {
         mclose(mf);
         throw exp;
     }
@@ -81,32 +84,35 @@ Commander* Commander::create(std::string device, std::string dbName, bool forceC
     return cmdr;
 }
 
-Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
+Commander* Commander::create(mfile* mf, std::string device, std::string dbName)
 {
-
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId, hwRevId;
-    Commander *commander = NULL;
-    if (dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId) ) {
+    Commander* commander = NULL;
+    if (dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId))
+    {
         throw MlxcfgException("Failed to identify the device");
     }
 
-    if (dm_is_livefish_mode(mf)) {
+    if (dm_is_livefish_mode(mf))
+    {
         throw MlxcfgException("Device in Livefish mode is not supported");
     }
 
-    if (dm_is_new_gen_switch(deviceId) || dm_is_5th_gen_hca(deviceId) || dm_dev_is_cable(deviceId)) {
-        if (dbName.empty()) {//take internal db file
-            if (dm_dev_is_cable(deviceId)) {
-                dbName = getDefaultDBName(true); // linkx cables use the switch PRM
-            } else {
-                dbName = getDefaultDBName(dm_dev_is_switch(deviceId));
-            }
+    if (dm_is_new_gen_switch(deviceId) || dm_is_5th_gen_hca(deviceId))
+    {
+        if (dbName.empty())
+        { // take internal db file
+            dbName = getDefaultDBName(dm_dev_is_switch(deviceId));
         }
         commander = new GenericCommander(mf, dbName);
-    } else if (dm_is_4th_gen(deviceId)) {
+    }
+    else if (dm_is_4th_gen(deviceId))
+    {
         commander = new FourthGenCommander(mf, device);
-    } else {
+    }
+    else
+    {
         throw MlxcfgException("Unsupported device");
     }
 
@@ -115,7 +121,8 @@ Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
 
 Commander::~Commander()
 {
-    if (!_extResource && _mf) {
+    if (!_extResource && _mf)
+    {
         mclose(_mf);
     }
 }
@@ -138,32 +145,39 @@ string Commander::getDefaultDBName(bool isSwitch)
 #else
     char line[1024] = {0};
     string confFile = string(ROOT_PATH) + string("etc/mft/mft.conf");
-    FILE *fd = fopen(confFile.c_str(), "r");
-    if (!fd) {
+    FILE* fd = fopen(confFile.c_str(), "r");
+    if (!fd)
+    {
         throw MlxcfgException("Failed to open conf file : %s\n", confFile.c_str());
     }
     string prefix = "", dataPath = "";
-    while ((fgets(line, 1024, fd))) {
+    while ((fgets(line, 1024, fd)))
+    {
         string l = line;
-        if (l.find(dbDirName) != string::npos) {
+        if (l.find(dbDirName) != string::npos)
+        {
             size_t eqPos = l.find("=");
-            if (eqPos != string::npos) {
+            if (eqPos != string::npos)
+            {
                 dataPath = l.substr(eqPos + 1);
                 dataPath = mlxcfg_trim(dataPath);
             }
-        } else if (l.find("mft_prefix_location") != string::npos) {
+        }
+        else if (l.find("mft_prefix_location") != string::npos)
+        {
             size_t eqPos = l.find("=");
-            if (eqPos != string::npos) {
+            if (eqPos != string::npos)
+            {
                 prefix = l.substr(eqPos + 1);
                 prefix = mlxcfg_trim(prefix);
             }
         }
     }
-    if (!prefix.empty() && !dataPath.empty()) {
+    if (!prefix.empty() && !dataPath.empty())
+    {
         dbPathName = prefix + dataPath + "/" + dbFileName;
     }
     fclose(fd);
 #endif
     return dbPathName;
 }
-

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -43,18 +44,19 @@
 #include "mlxcfg_view.h"
 #include "mlxcfg_utils.h"
 
-class Commander {
-
+class Commander
+{
 public:
-    static Commander* create(std::string device, std::string dbName, bool forceCreate = false); //clients can force create skiping any support check, and move the responsebility to the client.
-    static Commander* create(mfile *mf, std::string device, std::string dbName);
+    static Commander* create(std::string device,
+                             std::string dbName,
+                             bool forceCreate = false); // clients can force create skiping any support check, and move
+                                                        // the responsebility to the client.
+    static Commander* create(mfile* mf, std::string device, std::string dbName);
     virtual void printLongDesc(FILE*) = 0;
     virtual bool isDefaultSupported() = 0;
     virtual bool isCurrentSupported() = 0;
-    virtual void queryParamViews(std::vector<ParamView>& paramsToQuery,
-                                 QueryType qt = QueryNext) = 0;
-    virtual void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs,
-                          QueryType qt = QueryNext) = 0;
+    virtual void queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt = QueryNext) = 0;
+    virtual void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt = QueryNext) = 0;
     virtual void getCfg(ParamView& cfgParam, QueryType qt = QueryNext) = 0;
     virtual void setCfg(std::vector<ParamView>&, bool) = 0;
     virtual void clearSemaphore() = 0;
@@ -62,18 +64,17 @@ public:
     virtual const char* loadConfigurationGetStr() = 0;
     virtual void setRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
     virtual std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
-    virtual void dumpRawCfg(std::vector<u_int32_t> rawTlvVec,
-                            std::string& tlvDump) = 0;
+    virtual void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) = 0;
     virtual void backupCfgs(vector<BackupView>& views) = 0;
     virtual void updateParamViewValue(ParamView&, std::string val) = 0;
     void setExtResourceType(bool extT) { _extResource = extT; }
     static string getDefaultDBName(bool isSwitch);
-    mfile* mf() { return _mf;}
-    Commander(mfile *mf) : _mf(mf), _extResource(true), _isSwitch(false) {};
+    mfile* mf() { return _mf; }
+    Commander(mfile* mf) : _mf(mf), _extResource(true), _isSwitch(false){};
     virtual ~Commander();
 
 protected:
-    mfile *_mf;
+    mfile* _mf;
     bool _extResource;
     bool _isSwitch;
 };

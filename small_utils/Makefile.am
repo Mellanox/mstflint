@@ -80,5 +80,5 @@ mstfwresetlibdir=$(libdir)/mstflint/python_tools/$(MSTFWRESET_PYTHON_WRAPPER)
 mlxpcilibdir=$(libdir)/mstflint/python_tools/mlxpci
 mlxpcilib_DATA = binary_file.py mlxpci_lib.py
 
-mstfwresetlib_SCRIPTS = $(MSTFWRESET_PYTHON_WRAPPER).py
+mstfwresetlib_DATA = $(MSTFWRESET_PYTHON_WRAPPER).py
 

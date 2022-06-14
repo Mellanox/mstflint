@@ -34,16 +34,17 @@
 
 #include "mlxlink_logger.h"
 
-MlxlinkLogger::MlxlinkLogger(const string &filePath, LOG_LEVEL logLevel)
+MlxlinkLogger::MlxlinkLogger(const string& filePath, LOG_LEVEL logLevel)
 {
     _logLevel = logLevel;
-    _logFile = fopen (filePath.c_str(),"w");
+    _logFile = fopen(filePath.c_str(), "w");
     memset(_underLine, LINE_PATTERN, LINE_WIDTH);
 }
 
 MlxlinkLogger::~MlxlinkLogger()
 {
-    if (_logFile) {
+    if (_logFile)
+    {
         fclose(_logFile);
     }
 }
@@ -56,26 +57,27 @@ void MlxlinkLogger::printTimeStamp()
     gettimeofday(&tv, NULL);
     curtime = tv.tv_sec;
     strftime(buf, sizeof(buf), "%x %H:%M:%S", localtime(&curtime));
-    fprintf(_logFile, "[%s.%03ld]  ", buf, tv.tv_usec/1000);
-
+    fprintf(_logFile, "[%s.%03ld]  ", buf, tv.tv_usec / 1000);
 }
 
 void MlxlinkLogger::debugLog(const char* format, ...)
 {
-    if (_logFile) {
+    if (_logFile)
+    {
         printTimeStamp();
         fprintf(_logFile, "-D- ");
         va_list args;
-        va_start (args, format);
-        vfprintf (_logFile, format, args);
-        va_end (args);
+        va_start(args, format);
+        vfprintf(_logFile, format, args);
+        va_end(args);
         fflush(_logFile);
     }
 }
 
 void MlxlinkLogger::printHeaderWithUnderLine(const char* title)
 {
-    if (_logFile) {
+    if (_logFile)
+    {
         fprintf(_logFile, "%s", _underLine);
         fprintf(_logFile, "\n");
         fprintf(_logFile, "FUNCTION\t\t");

@@ -42,45 +42,48 @@ MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", NULL, 0)
     _mlxlinkLogger = NULL;
 }
 
-MlxlinkRegParser::~MlxlinkRegParser()
-{
-}
+MlxlinkRegParser::~MlxlinkRegParser() {}
 
-void MlxlinkRegParser::resetParser(const string &regName)
+void MlxlinkRegParser::resetParser(const string& regName)
 {
-    DEBUG_LOG(_mlxlinkLogger, "%s: %-30s\n","OPERATION ON REGISTER",
-                (char*)regName.c_str());
+    DEBUG_LOG(_mlxlinkLogger, "%s: %-30s\n", "OPERATION ON REGISTER", (char*)regName.c_str());
     _regNode = (_regLib)->findAdbNode(regName);
     _data = "";
     _indexes = "";
     _len = 0;
-    if (!_regNode) {
-        if (_len > MAX_REG_SIZE) {
+    if (!_regNode)
+    {
+        if (_len > MAX_REG_SIZE)
+        {
             throw MlxRegException("Register length: 0x%08x is too large", _len);
         }
         _parseMode = Pm_Unknown;
         _len = (_len + 3) / 4;
-    } else {
+    }
+    else
+    {
         _parseMode = Pm_Known;
         _len = (_regNode->size) >> 5;
     }
     _buffer.resize(_len);
-    for (std::vector<u_int32_t>::size_type j = 0; j < _len; j++) {
+    for (std::vector<u_int32_t>::size_type j = 0; j < _len; j++)
+    {
         _buffer[j] = 0;
     }
 }
 
-void MlxlinkRegParser::genBuffSendRegister(const string &regName, maccess_reg_method_t method)
+void MlxlinkRegParser::genBuffSendRegister(const string& regName, maccess_reg_method_t method)
 {
-    DEBUG_LOG(_mlxlinkLogger, "%-15s: %s\n", "ACCESS_METHOD",
-                method == MACCESS_REG_METHOD_GET ? "GET": "SET");
-    if (_gvmiAddress) {
+    DEBUG_LOG(_mlxlinkLogger, "%-15s: %s\n", "ACCESS_METHOD", method == MACCESS_REG_METHOD_GET ? "GET" : "SET");
+    if (_gvmiAddress)
+    {
         writeGvmi(1);
     }
     _buffer = genBuffUnknown();
     (_regLib)->sendRegister(regName, method, _buffer);
 
-    if (_gvmiAddress) {
+    if (_gvmiAddress)
+    {
         writeGvmi(0);
     }
 }
@@ -92,23 +95,27 @@ void MlxlinkRegParser::writeGvmi(u_int32_t data)
 
 void MlxlinkRegParser::updateField(string field_name, u_int32_t value)
 {
-    DEBUG_LOG(_mlxlinkLogger, "%-15s: %-30s\tVALUE: 0x%08x (%d)\n",
-              "UPDATE_FIELD", (char*)field_name.c_str(),value,value);
+    DEBUG_LOG(_mlxlinkLogger, "%-15s: %-30s\tVALUE: 0x%08x (%d)\n", "UPDATE_FIELD", (char*)field_name.c_str(), value,
+              value);
 
     RegAccessParser::updateField(field_name, value);
 
-    if (field_name == "local_port") {
-        try {
+    if (field_name == "local_port")
+    {
+        try
+        {
             // the full value for local port is 10 bits, [0:7] in local_port, and [8:9] in lp_msb
             // this should be provided for all access registers which have local_port field index
             updateField("lp_msb", ((value >> 8) & 0x3));
-        } catch(...) {
+        }
+        catch (...)
+        {
             // If the lp_msb does not exists on some access register, no need to fail the command
         }
     }
 }
 
-string MlxlinkRegParser::getFieldStr(const string &field)
+string MlxlinkRegParser::getFieldStr(const string& field)
 {
     return to_string(getFieldValue(field));
 }
@@ -119,17 +126,22 @@ string MlxlinkRegParser::getRawFieldValueStr(const string fieldName)
     char hexFormat[32];
     u_int32_t fieldBuf = 0;
 
-    for (int i = 0; ; i++) {
+    for (int i = 0;; i++)
+    {
         string path = fieldName;
         path.append("[");
         path.append(to_string(i));
         path.append("]");
-        try {
+        try
+        {
             fieldBuf = getFieldValue(path);
-        } catch (...) {
+        }
+        catch (...)
+        {
             break;
         }
-        if (fieldBuf) {
+        if (fieldBuf)
+        {
             sprintf(hexFormat, "%08x", fieldBuf);
             fullStr.append(string(hexFormat));
         }
@@ -141,8 +153,8 @@ string MlxlinkRegParser::getRawFieldValueStr(const string fieldName)
 u_int32_t MlxlinkRegParser::getFieldValue(string field_name)
 {
     u_int32_t field_Val = RegAccessParser::getFieldValue(field_name, _buffer);
-    DEBUG_LOG(_mlxlinkLogger,"%-15s: %-30s\tVALUE: 0x%08x (%d)\n","GET_FIELD",
-            (char*)field_name.c_str(),field_Val,field_Val) ;
+    DEBUG_LOG(_mlxlinkLogger, "%-15s: %-30s\tVALUE: 0x%08x (%d)\n", "GET_FIELD", (char*)field_name.c_str(), field_Val,
+              field_Val);
     return field_Val;
 }
 
@@ -151,21 +163,23 @@ u_int32_t MlxlinkRegParser::getFieldSize(string field_name)
     return RegAccessParser::getField(field_name)->size;
 }
 
-string MlxlinkRegParser::getAscii(const string & name, u_int32_t size)
+string MlxlinkRegParser::getAscii(const string& name, u_int32_t size)
 {
     string value = "";
     char c;
     u_int32_t name_tmp;
 
-    for (u_int32_t i = 0; i < size / 4; i++) {
+    for (u_int32_t i = 0; i < size / 4; i++)
+    {
         name_tmp = getFieldValue(name + "[" + to_string(i) + "]");
-        for (int k = 24; k > -1; k -= 8) {
+        for (int k = 24; k > -1; k -= 8)
+        {
             c = (char)(name_tmp >> k);
-            if ((int)c != 0 && (int)c != 32) {
+            if ((int)c != 0 && (int)c != 32)
+            {
                 value.push_back(c);
             }
         }
     }
     return (value != "") ? value : "N/A";
 }
-

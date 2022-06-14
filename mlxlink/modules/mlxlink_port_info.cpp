@@ -35,7 +35,7 @@
 #include "mlxlink_port_info.h"
 #include "mlxlink_maps.h"
 
-MlxlinkPortInfo::MlxlinkPortInfo(Json::Value &jsonRoot): _jsonRoot(jsonRoot)
+MlxlinkPortInfo::MlxlinkPortInfo(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
 {
     _localPort = 0;
     _pnat = 0;
@@ -46,9 +46,7 @@ MlxlinkPortInfo::MlxlinkPortInfo(Json::Value &jsonRoot): _jsonRoot(jsonRoot)
     _fieldSep = " \t";
 }
 
-MlxlinkPortInfo::~MlxlinkPortInfo()
-{
-}
+MlxlinkPortInfo::~MlxlinkPortInfo() {}
 
 void MlxlinkPortInfo::resetPPHCR()
 {
@@ -79,11 +77,13 @@ void MlxlinkPortInfo::init()
     resetPPHCR();
     genBuffSendRegister(PPHCR_REG, MACCESS_REG_METHOD_GET);
 
-    if (!getFieldValue("active_hist_type")) {
+    if (!getFieldValue("active_hist_type"))
+    {
         throw MlxRegException("No histogram info available for the current active FEC");
     }
 
-    if (MlxlinkRecord::jsonFormat) {
+    if (MlxlinkRecord::jsonFormat)
+    {
         _fieldSep = ",";
     }
 
@@ -95,10 +95,10 @@ void MlxlinkPortInfo::updateBinsRange()
     resetPPHCR();
     genBuffSendRegister(PPHCR_REG, MACCESS_REG_METHOD_GET);
 
-    for (u_int32_t binIdx = 0; binIdx < _numOfBins; ++binIdx) {
-        HISTOGRAM_BIN histBin = HISTOGRAM_BIN(binIdx,
-                getFieldValue("low_val_" + to_string(binIdx)),
-                getFieldValue("high_val_" + to_string(binIdx)) , 0);
+    for (u_int32_t binIdx = 0; binIdx < _numOfBins; ++binIdx)
+    {
+        HISTOGRAM_BIN histBin = HISTOGRAM_BIN(binIdx, getFieldValue("low_val_" + to_string(binIdx)),
+                                              getFieldValue("high_val_" + to_string(binIdx)), 0);
         _binsList.insert(_binsList.begin() + binIdx, histBin);
     }
 }
@@ -108,10 +108,10 @@ void MlxlinkPortInfo::updateBinsErrorsCount()
     resetPPCNT();
     genBuffSendRegister(PPCNT_REG, MACCESS_REG_METHOD_GET);
 
-    for (u_int32_t binIdx = 0; binIdx < _numOfBins; ++binIdx) {
-        _binsList[binIdx].numOfErrors  = add32BitTo64(
-                                    getFieldValue("hist[" +  to_string(binIdx) +"]_hi"),
-                                    getFieldValue("hist[" +  to_string(binIdx) +"]_lo"));
+    for (u_int32_t binIdx = 0; binIdx < _numOfBins; ++binIdx)
+    {
+        _binsList[binIdx].numOfErrors = add32BitTo64(getFieldValue("hist[" + to_string(binIdx) + "]_hi"),
+                                                     getFieldValue("hist[" + to_string(binIdx) + "]_lo"));
     }
 }
 
@@ -122,20 +122,20 @@ void MlxlinkPortInfo::showHistogram()
 
     MlxlinkCmdPrint cmdOut = MlxlinkCmdPrint();
     setPrintTitle(cmdOut, "Histogram of FEC Errors", _numOfBins + 2);
-    setPrintVal(cmdOut, "Header", "Range" + _fieldSep + "Occurrences",
-                ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(cmdOut, "Header", "Range" + _fieldSep + "Occurrences", ANSI_COLOR_RESET, true, true, true);
     char infoRow[64];
-    for (vector<HISTOGRAM_BIN>::iterator it = _binsList.begin();
-         it != _binsList.end(); ++it) {
-        if (it->minRange == it->maxRange) {
-            sprintf(infoRow, "[%d]  %s%lld", it->maxRange,  _fieldSep.c_str(),
-                    (unsigned long long int)it->numOfErrors);
-        } else {
-            sprintf(infoRow, "[%d:%d]%s%lld" , it->minRange, it->maxRange,
-                    _fieldSep.c_str(), (unsigned long long int)it->numOfErrors);
+    for (vector<HISTOGRAM_BIN>::iterator it = _binsList.begin(); it != _binsList.end(); ++it)
+    {
+        if (it->minRange == it->maxRange)
+        {
+            sprintf(infoRow, "[%d]  %s%lld", it->maxRange, _fieldSep.c_str(), (unsigned long long int)it->numOfErrors);
         }
-        setPrintVal(cmdOut, "Bin " + to_string(it->bin), string(infoRow),
-                ANSI_COLOR_RESET, true, true, true);
+        else
+        {
+            sprintf(infoRow, "[%d:%d]%s%lld", it->minRange, it->maxRange, _fieldSep.c_str(),
+                    (unsigned long long int)it->numOfErrors);
+        }
+        setPrintVal(cmdOut, "Bin " + to_string(it->bin), string(infoRow), ANSI_COLOR_RESET, true, true, true);
     }
 
     cmdOut.toJsonFormat(_jsonRoot);
@@ -150,4 +150,3 @@ void MlxlinkPortInfo::clearHistogram()
     updateField("clr", 1);
     genBuffSendRegister(PPCNT_REG, MACCESS_REG_METHOD_SET);
 }
-

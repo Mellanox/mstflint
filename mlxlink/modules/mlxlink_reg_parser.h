@@ -38,40 +38,42 @@
 #include <mtcr.h>
 
 using namespace mlxreg;
-#define PRINT_LOG(mlxlinklogger, title)\
-    if (mlxlinklogger) {\
-        mlxlinklogger->printHeaderWithUnderLine(title);\
-    }\
+#define PRINT_LOG(mlxlinklogger, title)                 \
+    if (mlxlinklogger)                                  \
+    {                                                   \
+        mlxlinklogger->printHeaderWithUnderLine(title); \
+    }
 
-#define DEBUG_LOG(mlxlinklogger, format, ...)\
-    if (mlxlinklogger) {\
-        mlxlinklogger->debugLog(format, __VA_ARGS__);\
-    }\
+#define DEBUG_LOG(mlxlinklogger, format, ...)         \
+    if (mlxlinklogger)                                \
+    {                                                 \
+        mlxlinklogger->debugLog(format, __VA_ARGS__); \
+    }
 
-#define PDDR_STATUS_MESSAGE_LENGTH_HCA  236
+#define PDDR_STATUS_MESSAGE_LENGTH_HCA 236
 #define PDDR_STATUS_MESSAGE_LENGTH_SWITCH 59
 
-class MlxlinkRegParser :public RegAccessParser{
+class MlxlinkRegParser : public RegAccessParser
+{
 public:
     MlxlinkRegParser();
     virtual ~MlxlinkRegParser();
 
-    void resetParser(const string &regName);
-    void readMCIA(u_int32_t page, u_int32_t size, u_int32_t offset,
-            u_int8_t * data, u_int32_t i2cAddress);
-    void genBuffSendRegister(const string &regName, maccess_reg_method_t method);
+    void resetParser(const string& regName);
+    void readMCIA(u_int32_t page, u_int32_t size, u_int32_t offset, u_int8_t* data, u_int32_t i2cAddress);
+    void genBuffSendRegister(const string& regName, maccess_reg_method_t method);
     void writeGvmi(u_int32_t data);
     void updateField(string field_name, u_int32_t value);
     u_int32_t getFieldValue(string field_name);
-    string getFieldStr(const string &field);
+    string getFieldStr(const string& field);
     string getRawFieldValueStr(const string fieldName);
     u_int32_t getFieldSize(string field_name);
-    string getAscii(const string & name, u_int32_t size = 4);
+    string getAscii(const string& name, u_int32_t size = 4);
 
     u_int32_t _gvmiAddress;
-    MlxRegLib *_regLib;
-    mfile *_mf;
-    MlxlinkLogger *_mlxlinkLogger;
+    MlxRegLib* _regLib;
+    mfile* _mf;
+    MlxlinkLogger* _mlxlinkLogger;
 };
 
 #endif /* MLXLINK_REG_PARSER_H */

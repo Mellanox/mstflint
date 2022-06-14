@@ -332,6 +332,46 @@ void tools_open_per_port_type_dump(const struct tools_open_per_port_type *ptr_st
 	tools_open_per_port_type_print(ptr_struct, fd, 0);
 }
 
+void tools_open_per_module_type_pack(const struct tools_open_per_module_type* ptr_struct, u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    offset = 18;
+    adb2c_push_bits_to_buff(ptr_buff, offset, 14, (u_int32_t)ptr_struct->param_idx);
+    offset = 8;
+    adb2c_push_bits_to_buff(ptr_buff, offset, 10, (u_int32_t)ptr_struct->module);
+    offset = 0;
+    adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->param_class);
+}
+
+void tools_open_per_module_type_unpack(struct tools_open_per_module_type* ptr_struct, const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    offset = 18;
+    ptr_struct->param_idx = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 14);
+    offset = 8;
+    ptr_struct->module = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 10);
+    offset = 0;
+    ptr_struct->param_class = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+}
+void tools_open_per_module_type_print(const struct tools_open_per_module_type* ptr_struct, FILE* fd, int indent_level)
+{
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== tools_open_per_module_type ========\n");
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "param_idx            : " UH_FMT "\n", ptr_struct->param_idx);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "module               : " UH_FMT "\n", ptr_struct->module);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "param_class          : " UH_FMT "\n", ptr_struct->param_class);
+}
+unsigned int tools_open_per_module_type_size(void)
+{
+    return TOOLS_OPEN_PER_MODULE_TYPE_SIZE;
+}
+void tools_open_per_module_type_dump(const struct tools_open_per_module_type* ptr_struct, FILE* fd)
+{
+    tools_open_per_module_type_print(ptr_struct, fd, 0);
+}
 void tools_open_tlv_type_dw_pack(const struct tools_open_tlv_type_dw *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -445,6 +485,9 @@ void tools_open_tlv_type_print(const union tools_open_tlv_type *ptr_struct, FILE
 	fprintf(fd, "per_port:\n");
 	tools_open_per_port_type_print(&(ptr_struct->per_port), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "per_module:\n");
+    tools_open_per_module_type_print(&(ptr_struct->per_module), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "host:\n");
 	tools_open_host_type_print(&(ptr_struct->host), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);

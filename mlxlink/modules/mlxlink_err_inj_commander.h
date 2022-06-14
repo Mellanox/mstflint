@@ -42,10 +42,10 @@
 
 using namespace std;
 
-class MlxlinkErrInjCommander :public MlxlinkRegParser{
-
+class MlxlinkErrInjCommander : public MlxlinkRegParser
+{
 public:
-    MlxlinkErrInjCommander(Json::Value &jsonRoot);
+    MlxlinkErrInjCommander(Json::Value& jsonRoot);
     virtual ~MlxlinkErrInjCommander();
 
     void showMixersOffset();
@@ -62,7 +62,7 @@ private:
     u_int16_t getMixerOffset(u_int32_t id);
     void setMixersOffset();
 
-    Json::Value &_jsonRoot;
+    Json::Value& _jsonRoot;
     MlxlinkCmdPrint _errInjOutput;
 };
 

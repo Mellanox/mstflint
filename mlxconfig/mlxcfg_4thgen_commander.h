@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -53,7 +54,8 @@
 
 using namespace std;
 
-typedef enum {
+typedef enum
+{
     MLX_CFG_OK,
     MLX_CFG_OK_EXIT,
     MLX_CFG_ABORTED,
@@ -65,38 +67,40 @@ typedef enum {
 class MlxCfgParamParser
 {
 public:
-    MlxCfgParamParser() : _param(Mcp_Last), _name(), _desc(){}
-    MlxCfgParamParser(mlxCfgParam param, string name, string desc, map<string, u_int32_t> strMap)
-        : _param(param), _name(name), _desc(desc), _strMap(strMap){}
-    MlxCfgParamParser(mlxCfgParam param, string name, string desc, string allowedValues) : _param(param),
-        _name(name), _desc(desc), _allowedValues(allowedValues){}
+    MlxCfgParamParser() : _param(Mcp_Last), _name(), _desc() {}
+    MlxCfgParamParser(mlxCfgParam param, string name, string desc, map<string, u_int32_t> strMap) :
+        _param(param), _name(name), _desc(desc), _strMap(strMap)
+    {
+    }
+    MlxCfgParamParser(mlxCfgParam param, string name, string desc, string allowedValues) :
+        _param(param), _name(name), _desc(desc), _allowedValues(allowedValues)
+    {
+    }
 
     ~MlxCfgParamParser() {}
 
     mlxCfgStatus parseUserInput(string input, u_int32_t& val);
 
     void printShortDesc();
-    void printLongDesc(FILE *f);
+    void printLongDesc(FILE* f);
 
-    string getName() {return _name;}
-    mlxCfgParam getParam() {return _param;}
+    string getName() { return _name; }
+    mlxCfgParam getParam() { return _param; }
 
     string getStrVal(u_int32_t val);
 
-    map<string, u_int32_t> getStrMap(){return _strMap;}
+    map<string, u_int32_t> getStrMap() { return _strMap; }
 
 private:
     mlxCfgParam _param;
-    string _name; //param name for example: LINK_TYPE_P1
-    string _desc; //for example: 4th generation devices only
+    string _name; // param name for example: LINK_TYPE_P1
+    string _desc; // for example: 4th generation devices only
     string _allowedValues;
-    map<string, u_int32_t> _strMap; //map strings to values, for example: {{'InfiniBand',1},{'Ethernet',2},{'VPI',3}}
-
+    map<string, u_int32_t> _strMap; // map strings to values, for example: {{'InfiniBand',1},{'Ethernet',2},{'VPI',3}}
 
     void printShortDescAux();
     string getShortDescStrAux();
-    void splitAndPrintDesc(FILE *f, string desc);
-
+    void splitAndPrintDesc(FILE* f, string desc);
 };
 
 class MlxCfgInfo
@@ -108,16 +112,16 @@ public:
     ~MlxCfgInfo() {}
 
     void printShortDesc();
-    void printLongDesc(FILE *f);
+    void printLongDesc(FILE* f);
 
     mlxCfgStatus getParamParser(mlxCfgParam, MlxCfgParamParser&);
     mlxCfgStatus getParamParser(string, MlxCfgParamParser&);
     string getName() { return _name; }
 
 private:
-    string _name; //for example: VPI Settings
-    string _title; //for example: Control network link type
-    map<mlxCfgParam, MlxCfgParamParser> _params; //for example: {{LINK_TYPE_P1,*},{LINK_TYPE_P2,*}}
+    string _name;                                // for example: VPI Settings
+    string _title;                               // for example: Control network link type
+    map<mlxCfgParam, MlxCfgParamParser> _params; // for example: {{LINK_TYPE_P1,*},{LINK_TYPE_P2,*}}
     vector<MlxCfgParamParser> getParamsMapValues();
 };
 
@@ -129,7 +133,7 @@ public:
     ~MlxCfgAllInfo() {}
 
     void printShortDesc();
-    void printLongDesc(FILE *f);
+    void printLongDesc(FILE* f);
 
     mlxCfgStatus parseParam(string tag, string strval, u_int32_t& val, mlxCfgParam& param);
     mlxCfgStatus getParamParser(mlxCfgParam p, MlxCfgParamParser& paramParser);
@@ -154,7 +158,8 @@ private:
     MlxCfgInfo createLLDPNBDCBX();
 };
 
-class FourthGenCommander : public Commander,  public ErrMsg {
+class FourthGenCommander : public Commander, public ErrMsg
+{
 private:
     std::string _dev;
     u_int64_t _suppVec;
@@ -168,12 +173,13 @@ private:
     int openComChk();
     mlxCfgType cfgParam2Type(mlxCfgParam param);
     void freeCfgList();
+
 public:
-    FourthGenCommander(mfile *mf, std::string dev);
+    FourthGenCommander(mfile* mf, std::string dev);
     ~FourthGenCommander();
-    void printLongDesc(FILE *f) {_allInfo.printLongDesc(f);}
-    bool isDefaultSupported() {return true;}
-    bool isCurrentSupported() {return false;}
+    void printLongDesc(FILE* f) { _allInfo.printLongDesc(f); }
+    bool isDefaultSupported() { return true; }
+    bool isCurrentSupported() { return false; }
     void queryAux(std::vector<ParamView>&, QueryType, bool);
     void queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt = QueryNext);
     void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt = QueryNext);
@@ -181,7 +187,7 @@ public:
     void invalidateCfgs();
     const char* loadConfigurationGetStr();
     void setRawCfg(std::vector<u_int32_t> rawTlvVec);
-    std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) ;
+    std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec);
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump);
     void backupCfgs(vector<BackupView>& views);
     bool supportsCfg(mlxCfgType cfg);
