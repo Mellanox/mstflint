@@ -35,6 +35,7 @@
 
 
 #include "mlxsign_lib.h"
+#include "mlxsign_openssl_engine.h"
 
 using namespace std;
 
