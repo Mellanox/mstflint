@@ -47,7 +47,6 @@
 #include "mlxcfg_db_manager.h"
 #include "mlxcfg_utils.h"
 #include <memory>
-#include <regex>
 
 
 // clang-format off
@@ -443,32 +442,49 @@ bool MlxcfgDBManager::isParamMlxconfigNameExist(std::string mlxconfigName)
 
 tuple<string, int> MlxcfgDBManager::splitMlxcfgNameAndPortOrModule(std::string mlxconfigName, SPLITBY splitBy)
 {
-    smatch m;
-    const static regex portEnding("_P[0-9]+$");
-    const static regex moduleEnding("_M[0-9]+$");
+    char* ending = (char*)" ";
     int maxNum = 0;
-    int minNum =0;
-    bool regexSearch = false;
+    int minNum = 0;
+    char* ending_position = nullptr;
+    char* last_ending_position = nullptr;
     if (splitBy == PORT)
     {
-        regexSearch = regex_search(mlxconfigName,m, portEnding);
-        maxNum = TLVConf::getMaxPort();
+        ending = (char*)"_P";
+        maxNum = TLVConf::getMaxPort(mf);
         minNum = 0;
     }
     else
     {
-        regexSearch = regex_search(mlxconfigName,m, moduleEnding);
+        ending = (char*)"_M";
         maxNum = TLVConf::getMaxModule();
         minNum = -1;
     }
-    if(regexSearch)
+    int port_num = minNum;
+    char* mlxconfigName_char = (char*)mlxconfigName.c_str();
+    ending_position = strstr(mlxconfigName_char, ending);
+    while (ending_position != nullptr)
     {
-        int index = m.position();
-        string endingStr = mlxconfigName.substr(index + 2, mlxconfigName.length());
+        last_ending_position = ending_position;
+        ending_position = strstr(last_ending_position + strlen(ending), ending);
+    }
+    if (last_ending_position != nullptr)
+    {
+        int index = last_ending_position - mlxconfigName_char;
+        string endingStr = mlxconfigName.substr(index + strlen(ending), mlxconfigName.length() - index);
         string newMlxconfigName = mlxconfigName;
         newMlxconfigName.resize(index);
-        int ending = std::stoi(endingStr);
-        if(minNum < ending && ending <= maxNum) return make_tuple(newMlxconfigName, ending);
+        try
+        {
+            port_num = std::stoi(endingStr);
+        }
+        catch (const std::exception& e)
+        {
+            return make_tuple(mlxconfigName, minNum);
+        }
+        if (minNum < port_num && port_num <= maxNum)
+        {
+            return make_tuple(newMlxconfigName, port_num);
+        }
         return make_tuple(mlxconfigName, minNum);
     }
     return make_tuple(mlxconfigName, minNum);

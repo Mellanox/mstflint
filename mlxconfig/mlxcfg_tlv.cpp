@@ -48,7 +48,6 @@
 #include "mlxcfg_tlv.h"
 
 #include <muParser.h>
-#include <regex>
 
 using namespace mu;
 
@@ -524,30 +523,27 @@ vector<pair<ParamView, string> > TLVConf::query(mfile* mf, QueryType qT)
 
     unpack(_buff.data());
 
-    smatch m;
-    const static regex portEnding("_P[0-9]+$");
-    const static regex moduleEnding("_M[0-9]+$");
     VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
     {
         ParamView paramView;
         std::shared_ptr<Param> p = *(it);
         p->_port = this->_port;
         p->_module = this->_module;
-        if (this->isPortTargetClass())
+        if (this->isPortTargetClass() && p->_mlxconfigName != "")
         {
-            if (regex_search(p->_mlxconfigName, m, portEnding))
+            auto namePortTuple = MlxcfgDBManager::splitMlxcfgNameAndPortOrModule(p->_mlxconfigName, PORT, mf);
+            if (get<1>(namePortTuple) != 0)
             {
-                int index = m.position();
-                p->_mlxconfigName.resize(index);
+                p->_mlxconfigName = get<0>(namePortTuple);
             }
             p->_mlxconfigName += "_P" + to_string(p->_port);
         }
-        else if (this->isModuleTargetClass())
+        else if (this->isModuleTargetClass() && p->_mlxconfigName != "")
         {
-            if (regex_search(p->_mlxconfigName, m, moduleEnding))
+            auto nameModuleTuple = MlxcfgDBManager::splitMlxcfgNameAndPortOrModule(p->_mlxconfigName, MODULE, mf);
+            if (get<1>(nameModuleTuple) != -1)
             {
-                int index = m.position();
-                p->_mlxconfigName.resize(index);
+                p->_mlxconfigName = get<0>(nameModuleTuple);
             }
             p->_mlxconfigName += "_M" + to_string(p->_module);
         }

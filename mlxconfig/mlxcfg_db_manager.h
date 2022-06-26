@@ -87,7 +87,7 @@ public:
     void findTLVInDB(std::string mlxconfigName, u_int32_t index);
     TLVConf* getTLVByIndexAndClass(u_int32_t id, TLVClass c);
     void fillInRelevantParamsOfTlv(TLVConf* tlv, u_int32_t port, int32_t module);
-    tuple<string, int> splitMlxcfgNameAndPortOrModule(std::string mlxconfigName, SPLITBY splitBy);
+    static tuple<string, int> splitMlxcfgNameAndPortOrModule(std::string mlxconfigName, SPLITBY splitBy);
     void execSQL(sqlite3_callback f, void* obj, const char* stat, ...);
 };
 
