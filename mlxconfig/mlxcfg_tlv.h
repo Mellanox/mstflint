@@ -51,6 +51,7 @@
 #include "mlxcfg_utils.h"
 
 #define PORT_ATTR "port"
+#define MODULE_ATTR "module"
 #define OVR_EN_ATTR "ovr_en"
 #define RD_EN_ATTR "rd_en"
 #define WRITER_ID_ATTR "writer_id"
@@ -110,7 +111,7 @@ public:
     TLVConf(int columnsCount, char** dataRow, char** headerRow);
     ~TLVConf();
     bool isMlxconfigSupported();
-    void getView(TLVConfView& tlvConfView);
+    void getView(TLVConfView& tlvConfView, mfile* mf);
     bool isFWSupported(mfile* mf, bool read_write);
     std::shared_ptr<Param> getValidBitParam(std::string n);
     bool checkParamValidBit(std::shared_ptr<Param> p);
@@ -141,7 +142,7 @@ public:
     bool isAStringParam(string paramName);
     bool isPortTargetClass();
     bool isModuleTargetClass();
-    static int getMaxPort();
+    static int getMaxPort(mfile* mf);
     static int getMaxModule();
     void setAttr(string attr, string val);
     void invalidate(mfile* mf);

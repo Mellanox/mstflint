@@ -145,7 +145,8 @@ void GenericCommander::supportsNVData()
     dealWithSignal();
     if (rc == ME_REG_ACCESS_BAD_PARAM || rc == ME_REG_ACCESS_INTERNAL_ERROR)
     {
-        throw MlxcfgException("Cannot access NV register. Either FW does not support NV access register, "
+        throw MlxcfgException("Cannot access NV register. Either FW does not "
+                              "support NV access register, "
                               "or HW access is disabled.");
     }
     if (rc == ME_REG_ACCESS_REG_NOT_SUPP)
@@ -216,7 +217,7 @@ void GenericCommander::getAllConfigurations(vector<TLVConfView>& confs)
         TLVConfView tlvConfView;
         if (tlv->_cap == 0 && tlv->isMlxconfigSupported() == true)
         {
-            tlv->getView(tlvConfView);
+            tlv->getView(tlvConfView, _mf);
             confs.push_back(tlvConfView);
         }
     }
@@ -246,7 +247,30 @@ void GenericCommander::queryConfigViews(std::vector<TLVConfView>& confs, const s
             }
         }
         vector<ParamView> result;
-        queryTLV(tlv, result, qt);
+        if (tlv->isPortTargetClass())
+        {
+            for (int i = 1; i <= (*it)->getMaxPort(_mf); i++)
+            {
+                (*it)->_port = i;
+                (*it)->_module = -1;
+                queryTLV((*it), result, qt);
+            }
+        }
+        else if (tlv->isModuleTargetClass())
+        {
+            for (int i = 0; i <= (*it)->getMaxModule(); i++)
+            {
+                (*it)->_port = 0;
+                (*it)->_module = i;
+                queryTLV((*it), result, qt);
+            }
+        }
+        else
+        {
+            (*it)->_port = 0;
+            (*it)->_module = -1;
+            queryTLV((*it), result, qt);
+        }
         std::map<std::string, size_t>::iterator map_it = tlvViewMap.find(tlv->_mlxconfigName);
         if (map_it != tlvViewMap.end())
         {
@@ -257,7 +281,7 @@ void GenericCommander::queryConfigViews(std::vector<TLVConfView>& confs, const s
         {
             config_found = true;
             TLVConfView tlvConfView;
-            tlv->getView(tlvConfView);
+            tlv->getView(tlvConfView, _mf);
             tlvConfView.params.clear();
             VECTOR_ITERATOR(ParamView, result, p) { tlvConfView.params.push_back(*p); }
             if (tlvConfView.params.size() > 0)
@@ -310,14 +334,14 @@ void GenericCommander::getConfigViews(std::vector<TLVConfView>& confs, const std
         {
             size_t index = (*map_it).second;
             TLVConfView tlvConfView;
-            tlv->getView(tlvConfView);
+            tlv->getView(tlvConfView, _mf);
 
             VECTOR_ITERATOR(ParamView, tlvConfView.params, p) { confs[index].params.push_back(*p); }
         }
         else
         {
             TLVConfView tlvConfView;
-            tlv->getView(tlvConfView);
+            tlv->getView(tlvConfView, _mf);
             confs.push_back(tlvConfView);
             tlvViewMap[tlv->_mlxconfigName] = confs.size() - 1;
         }
@@ -512,15 +536,22 @@ bool GenericCommander::checkDependency(TLVConf* cTLV, string dStr)
         {
             string dTLVName = (*it).substr(0, dotPos).replace(0, 1, "");
             string dParamName = (*it).substr(dotPos + 1);
-            // to allow cross class/port dependency we need to check dependency for port 0 and for port 1 (higher port
-            // numbers will act the same)
+            // to allow cross class/port dependency we need to check dependency for
+            // port 0 and for port 1 (higher port numbers will act the same)
             int lookForPorts[] = {int(cTLV->_port), (int(cTLV->_port) == 0) ? 1 : 0};
             TLVConf* dTLV = NULL;
             for (int ports = 0; ports < 2; ports++)
             {
                 try
                 {
-                    dTLV = _dbManager->getTLVByName(dTLVName, lookForPorts[ports]);
+                    if (lookForPorts[ports] == 0)
+                    {
+                        dTLV = _dbManager->getTLVByName(dTLVName, lookForPorts[ports], cTLV->_module);
+                    }
+                    else
+                    {
+                        dTLV = _dbManager->getTLVByName(dTLVName, lookForPorts[ports], -1);
+                    }
                     if (dTLV != NULL)
                     {
                         break;
@@ -548,7 +579,7 @@ bool GenericCommander::checkDependency(TLVConf* cTLV, string dStr)
 }
 
 void GenericCommander::filterByDependency(TLVConf* cTLV,
-                                          const vector<pair<ParamView, string> >& dependencyTable,
+                                          const vector<pair<ParamView, string>>& dependencyTable,
                                           vector<ParamView>& result)
 {
     for (size_t i = 0; i < dependencyTable.size(); i++)
@@ -567,7 +598,7 @@ void GenericCommander::queryTLV(TLVConf* tlv, vector<ParamView>& paramsConf, Que
 {
     if (!tlv->_cap && tlv->isMlxconfigSupported() && tlv->isFWSupported(_mf, true))
     {
-        vector<pair<ParamView, string> > dependencyTable = tlv->query(_mf, qt);
+        vector<pair<ParamView, string>> dependencyTable = tlv->query(_mf, qt);
         filterByDependency(tlv, dependencyTable, paramsConf);
     }
     return;
@@ -591,10 +622,10 @@ void GenericCommander::queryParamViews(vector<ParamView>& params, QueryType qt)
             isIndexed = true;
         }
         isStartFromOneSupported = isIndexedStartFromOneSupported(mlxconfigName);
-        TLVConf* tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index);
+        TLVConf* tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index, _mf);
         uniqueTLVs.insert(tlv);
-        // if not indexed and has suffix (its continuance array) need to get next tlv and change the array length (for
-        // query)
+        // if not indexed and has suffix (its continuance array) need to get next
+        // tlv and change the array length (for query)
         if (!isIndexed && getArraySuffix(tlv->_name).size() > 0 && getArraySuffix(mlxconfigName).size() == 0)
         {
             while (_dbManager->isParamMlxconfigNameExist(mlxconfigName +
@@ -638,7 +669,8 @@ void GenericCommander::queryParamViews(vector<ParamView>& params, QueryType qt)
                     if (iIndex >= j->arrayVal.size() &&
                         (mlxconfigNameI + getArraySuffixByInterval(iIndex)) != mlxconfigNameJ)
                     {
-                        throw MlxcfgException("Index %d of the parameter %s is out of range. Maximal index is %d",
+                        throw MlxcfgException("Index %d of the parameter %s is out of "
+                                              "range. Maximal index is %d",
                                               iIndex, mlxconfigNameI.c_str(), int(j->arrayVal.size()) - 1);
                     }
                     i->val = j->arrayVal[iIndex % MAX_ARRAY_SIZE];
@@ -674,16 +706,16 @@ void GenericCommander::queryAll(vector<ParamView>& params, vector<string>& faile
             vector<ParamView> result;
             if ((*it)->isPortTargetClass())
             {
-                for (int i = 1; i <= (*it)->getMaxPort(); i++)
+                for (int i = 1; i <= (*it)->getMaxPort(_mf); i++)
                 {
                     (*it)->_port = i;
                     (*it)->_module = -1;
                     queryTLV((*it), result, qt);
                 }
             }
-            else if((*it)->isModuleTargetClass())
+            else if ((*it)->isModuleTargetClass())
             {
-               for (int i = 0; i <= (*it)->getMaxModule(); i++)
+                for (int i = 0; i <= (*it)->getMaxModule(); i++)
                 {
                     (*it)->_port = 0;
                     (*it)->_module = i;
@@ -709,7 +741,7 @@ void GenericCommander::getCfg(ParamView& pv, QueryType qt)
 {
     vector<ParamView> pc;
 
-    TLVConf* tlv = _dbManager->getTLVByParamMlxconfigName(pv.mlxconfigName, 0);
+    TLVConf* tlv = _dbManager->getTLVByParamMlxconfigName(pv.mlxconfigName, 0, _mf);
     queryTLV(tlv, pc, qt);
 
     VECTOR_ITERATOR(ParamView, pc, j)
@@ -739,7 +771,7 @@ void GenericCommander::setCfg(vector<ParamView>& params, bool force)
             parseIndexedMlxconfigName(mlxconfigName, mlxconfigName, index);
             isIndexed = true;
         }
-        TLVConf* tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index);
+        TLVConf* tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index, _mf);
         tlvMap[mlxconfigName] = tlv;
         uniqueTLVs.insert(tlv);
 
@@ -766,7 +798,7 @@ void GenericCommander::setCfg(vector<ParamView>& params, bool force)
             SET_ITERATOR(string, strRuleTLVs, j)
             {
                 string strRuleTLV = *j;
-                TLVConf* ruleTLV = _dbManager->getTLVByName(strRuleTLV, tlv->_port);
+                TLVConf* ruleTLV = _dbManager->getTLVByName(strRuleTLV, tlv->_port, tlv->_module);
                 if (!ruleTLV->isFWSupported(_mf, false))
                 {
                     throw MlxcfgException("The Rule TLV configuration %s is not supported by FW", strRuleTLV.c_str());
@@ -807,7 +839,8 @@ bool GenericCommander::isDefaultSupported()
     {
         return nvqgcTlv.read_factory_settings_support;
     }
-    throw MlxcfgException("Error when checked if Firmware supports querying default configurations or not: %s.",
+    throw MlxcfgException("Error when checked if Firmware supports querying "
+                          "default configurations or not: %s.",
                           m_err2str((MError)rc));
 }
 
@@ -1011,15 +1044,15 @@ void GenericCommander::updateParamViewValue(ParamView& p, string v)
     {
         parseIndexedMlxconfigName(mlxconfigName, mlxconfigName, index);
     }
-    TLVConf* tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index);
+    TLVConf* tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index, _mf);
     if (tlv->_port != 0)
     {
-        auto res = _dbManager->splitMlxcfgNameAndPortOrModule(mlxconfigName, PORT);
+        auto res = _dbManager->splitMlxcfgNameAndPortOrModule(mlxconfigName, PORT, _mf);
         mlxconfigName = get<0>(res);
     }
     else if (tlv->_module != -1)
     {
-        auto res = _dbManager->splitMlxcfgNameAndPortOrModule(mlxconfigName, MODULE);
+        auto res = _dbManager->splitMlxcfgNameAndPortOrModule(mlxconfigName, MODULE, _mf);
         mlxconfigName = get<0>(res);
     }
     p.port = tlv->_port;
@@ -1051,15 +1084,16 @@ void GenericCommander::genXMLTemplateAux(vector<string> tlvs,
     {
         string tlvTemplate;
         TLVConf* tlv = NULL;
-        try
-        { // user didn't tell us if it is a per port tlv
-            // so try port==0
-            tlv = _dbManager->getTLVByName(*it, 0);
-        }
-        catch (MlxcfgException&)
+        // user didn't tell us if it is a per port tlv
+        // so try port==0
+        tlv = _dbManager->getTLVByName(*it, 0, -1);
+        if (tlv && tlv->isPortTargetClass())
         {
-            // or port==1
-            tlv = _dbManager->getTLVByName(*it, 1);
+            tlv->_port = 1;
+        }
+        else if (tlv && tlv->isModuleTargetClass())
+        {
+            tlv->_module = 0;
         }
         tlv->genXMLTemplate(tlvTemplate, allAttrs, withVal, defaultAttrVal);
         xmlTemplate += "\n" + tlvTemplate + "\n";
@@ -1183,8 +1217,8 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
 #if !defined(DISABLE_XML2)
     xmlDocPtr doc;
     xmlNodePtr root, currTlv, currParam;
-    xmlChar *portAttr = NULL, *hostAttr = NULL, *funcAttr = NULL, *rdEnAttr = NULL, *ovrEnAttr = NULL, *xmlVal = NULL,
-            *indexAttr = NULL, *writerIdAttr = NULL;
+    xmlChar *portAttr = NULL, *moduleAttr = NULL, *hostAttr = NULL, *funcAttr = NULL, *rdEnAttr = NULL,
+            *ovrEnAttr = NULL, *xmlVal = NULL, *indexAttr = NULL, *writerIdAttr = NULL;
 
     doc = xmlReadMemory(xmlContent.c_str(), xmlContent.size(), "noname.xml", NULL, 0);
     if (!doc)
@@ -1211,11 +1245,15 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
         {
             IGNORE_UNUSEFUL_NODE(currTlv)
             u_int32_t port;
-            TLVConf* tlvConf;
+            u_int32_t u_module;
+            int32_t module;
+            TLVConf* tlvConf = nullptr;
             bool isAllPorts = false;
+            bool isAllModules = false;
 
             // printf("-D- tlv name=%s\n", (char*)currTlv->name);
             portAttr = xmlGetProp(currTlv, (const xmlChar*)PORT_ATTR);
+            moduleAttr = xmlGetProp(currTlv, (const xmlChar*)MODULE_ATTR);
 
             if (!portAttr)
             {
@@ -1226,17 +1264,39 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
                 isAllPorts = true;
                 port = 1;
             }
-            else if (!strToNum((const char*)portAttr, port) || (port != 1 && port != 2))
+            else if (!strToNum((const char*)portAttr, port) || (1 <= port && (int32_t)port <= tlvConf->getMaxPort(_mf)))
             {
                 throw MlxcfgException("Illegal value of port attribute %s", (const char*)portAttr);
             }
 
-            tlvConf = _dbManager->getAndCreateTLVByName((char*)currTlv->name);
+            if (!moduleAttr)
+            {
+                module = -1;
+            }
+            else if (!xmlStrcasecmp(moduleAttr, (const xmlChar*)ALL_ATTR_VAL))
+            {
+                isAllModules = true;
+                module = 0;
+            }
+            else if (!strToNum((const char*)moduleAttr, u_module) || ((int32_t)u_module <= tlvConf->getMaxModule()))
+            {
+                throw MlxcfgException("Illegal value of module attribute %s", (const char*)portAttr);
+            }
+            else
+            {
+                module = u_module;
+            }
+
+            tlvConf = _dbManager->getAndCreateTLVByName((char*)currTlv->name, port, module);
             try
             {
                 if (isAllPorts)
                 {
                     tlvConf->setAttr(PORT_ATTR, ALL_ATTR_VAL);
+                }
+                if (isAllModules)
+                {
+                    tlvConf->setAttr(MODULE_ATTR, ALL_ATTR_VAL);
                 }
                 GET_AND_SET_ATTR(writerIdAttr, currTlv, WRITER_ID_ATTR)
                 GET_AND_SET_ATTR(ovrEnAttr, currTlv, OVR_EN_ATTR)
@@ -1247,7 +1307,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
                 // loop over the parameters list
                 vector<string> collectedParams;
                 currParam = currTlv->xmlChildrenNode;
-                map<string, map<u_int32_t, string> > arrayValues;
+                map<string, map<u_int32_t, string>> arrayValues;
                 while (currParam)
                 {
                     IGNORE_UNUSEFUL_NODE(currParam)
@@ -1284,7 +1344,8 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
                         }
                         else
                         {
-                            throw MlxcfgException("The Parameter %s of the configuration %s does not have value",
+                            throw MlxcfgException("The Parameter %s of the configuration %s "
+                                                  "does not have value",
                                                   (char*)currParam->name,
                                                   tlvConf->_name.c_str());
                         }
@@ -1294,8 +1355,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
                     currParam = currParam->next;
                 }
                 // process arrayValues
-                for (map<string, map<u_int32_t, string> >::iterator p = arrayValues.begin(); p != arrayValues.end();
-                     ++p)
+                for (map<string, map<u_int32_t, string>>::iterator p = arrayValues.begin(); p != arrayValues.end(); ++p)
                 {
                     // TODO check validity of indices
                     string paramName = p->first;
@@ -1324,6 +1384,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
     {
         XMLFREE_AND_SET_NULL(writerIdAttr)
         XMLFREE_AND_SET_NULL(portAttr)
+        XMLFREE_AND_SET_NULL(moduleAttr)
         XMLFREE_AND_SET_NULL(ovrEnAttr)
         XMLFREE_AND_SET_NULL(rdEnAttr)
         XMLFREE_AND_SET_NULL(hostAttr)
@@ -1336,6 +1397,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
     }
     XMLFREE_AND_SET_NULL(writerIdAttr)
     XMLFREE_AND_SET_NULL(portAttr)
+    XMLFREE_AND_SET_NULL(moduleAttr)
     XMLFREE_AND_SET_NULL(ovrEnAttr)
     XMLFREE_AND_SET_NULL(rdEnAttr)
     XMLFREE_AND_SET_NULL(hostAttr)
@@ -1356,12 +1418,38 @@ void GenericCommander::XML2Raw(const string& xmlContent, string& raw)
     XML2TLVConf(xmlContent, tlvs);
 
     raw = RAW_FILE_FINGERPRINT;
+    int i = 0;
 
     VECTOR_ITERATOR(TLVConf*, tlvs, tlvConf)
     {
-        string rawTLV;
-        (*tlvConf)->genRaw(rawTLV);
-        raw += '\n' + rawTLV + '\n';
+        if ((*tlvConf)->_attrs[PORT_ATTR] == ALL_ATTR_VAL)
+        {
+            for (i = 1; i <= (*tlvConf)->getMaxPort(_mf); i++)
+            {
+                (*tlvConf)->_attrs[PORT_ATTR] = i;
+                (*tlvConf)->_port = i;
+                string rawTLV;
+                (*tlvConf)->genRaw(rawTLV);
+                raw += '\n' + rawTLV + '\n';
+            }
+        }
+        else if ((*tlvConf)->_attrs[MODULE_ATTR] == ALL_ATTR_VAL)
+        {
+            for (i = 0; i <= (*tlvConf)->getMaxModule(); i++)
+            {
+                (*tlvConf)->_attrs[MODULE_ATTR] = i;
+                (*tlvConf)->_module = i;
+                string rawTLV;
+                (*tlvConf)->genRaw(rawTLV);
+                raw += '\n' + rawTLV + '\n';
+            }
+        }
+        else
+        {
+            string rawTLV;
+            (*tlvConf)->genRaw(rawTLV);
+            raw += '\n' + rawTLV + '\n';
+        }
     }
 
     VECTOR_ITERATOR(TLVConf*, tlvs, tlvConf) { delete *tlvConf; }
@@ -1414,15 +1502,17 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
             int keySize = engineSigner.getPrivateKeySize();
             if ((keySize != KEY_SIZE_256) && (keySize != KEY_SIZE_512))
             {
-                throw MlxcfgException(
-                  "Invalid length of private key(%d bytes). It is recommanded to use 4096 bit key.\n", keySize);
+                throw MlxcfgException("Invalid length of private key(%d bytes). It is "
+                                      "recommanded to use 4096 bit key.\n",
+                                      keySize);
             }
             // Init successfuly with valid key -> can continue to sign the massage
             rc = engineSigner.sign(bytesBuff, encDigest);
         }
         if (rc)
         {
-            throw MlxcfgException("Failed to set private key and sign with %s OpenSSL engine (rc = 0x%x)\n",
+            throw MlxcfgException("Failed to set private key and sign with %s "
+                                  "OpenSSL engine (rc = 0x%x)\n",
                                   openssl_engine.c_str(), rc);
         }
     }
@@ -1480,7 +1570,7 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
     if (shaType == MlxSign::SHA256)
     {
         vector<u_int32_t> signTlvBin;
-        TLVConf* signTLV = _dbManager->getTLVByName("file_signature", 0);
+        TLVConf* signTLV = _dbManager->getTLVByName("file_signature", 0, -1);
 
         std::shared_ptr<Param> keyPairUUidParam = signTLV->findParamByName("keypair_uuid");
         ((BytesParamValue*)keyPairUUidParam->_value)->setVal(keyPairUUid);
@@ -1500,8 +1590,8 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
     }
     else
     {
-        TLVConf* signTLV1 = _dbManager->getTLVByName("file_signature_4096_a", 0);
-        TLVConf* signTLV2 = _dbManager->getTLVByName("file_signature_4096_b", 0);
+        TLVConf* signTLV1 = _dbManager->getTLVByName("file_signature_4096_a", 0, -1);
+        TLVConf* signTLV2 = _dbManager->getTLVByName("file_signature_4096_b", 0, -1);
 
         std::shared_ptr<Param> keyPairUUidParam1 = signTLV1->findParamByName("keypair_uuid");
         ((BytesParamValue*)keyPairUUidParam1->_value)->setVal(keyPairUUid);
@@ -1614,7 +1704,8 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
 
     if (!dbgCompFound && !csCompFound && !idMlnxCompFound)
     {
-        throw MlxcfgException("Unsupported device: No debug tokens or CS tokens or MLNX ID Components were found for "
+        throw MlxcfgException("Unsupported device: No debug tokens or CS tokens or "
+                              "MLNX ID Components were found for "
                               "this device");
     }
 
@@ -1626,7 +1717,8 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
     // At least one TLV must be file_applicable_to
     if (!foundApplicableTLV)
     {
-        throw MlxcfgException("At least one file_applicable_to tlv must be in the configuration file");
+        throw MlxcfgException("At least one file_applicable_to tlv must be in the "
+                              "configuration file");
     }
 }
 
@@ -1795,7 +1887,8 @@ int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff)
     if (tlvBuff.size() * 4 > TOOLS_OPEN_NVDA_SIZE)
     {
         return errmsg(MCE_BAD_PARAM_VAL,
-                      "TLV size exceeds maximal limit. Maximum size is 0x%x bytes, actual length is 0x%x bytes",
+                      "TLV size exceeds maximal limit. Maximum size is 0x%x bytes, "
+                      "actual length is 0x%x bytes",
                       TOOLS_OPEN_NVDA_SIZE, (u_int32_t)(tlvBuff.size() * 4));
     }
     _tlvBuff = tlvBuff;
@@ -1864,7 +1957,9 @@ int RawCfgParams5thGen::verifyTlv()
     int tlvLength = (_tlvBuff.size() - 3) << 2;
     if (tlvLength != _nvdaTlv.nv_hdr.length)
     {
-        return errmsg(MCE_BAD_PARAM_VAL, "TLV size mismatch. reported length in TLV header: 0x%x. actual length: 0x%x",
+        return errmsg(MCE_BAD_PARAM_VAL,
+                      "TLV size mismatch. reported length in TLV header: 0x%x. "
+                      "actual length: 0x%x",
                       _nvdaTlv.nv_hdr.length, tlvLength);
     }
     return MCE_SUCCESS;
