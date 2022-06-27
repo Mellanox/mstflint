@@ -3857,7 +3857,8 @@ void MlxlinkCommander::checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMas
         modeToCheck += "A";
     }
 
-    switch (modeToCheck[-1])
+    char squareWaveId = modeToCheck.back();
+    switch (squareWaveId)
     {
         case '8':
             findAndReplace(modeToCheck, "8", "A");
