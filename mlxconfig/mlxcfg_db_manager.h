@@ -47,8 +47,11 @@
 #include "mlxcfg_param.h"
 #include <ext_libs/sqlite/sqlite3.h>
 
-enum SPLITBY {PORT, MODULE};
-
+enum SPLITBY
+{
+    PORT,
+    MODULE,
+};
 class MlxcfgDBManager
 {
 private:
@@ -80,14 +83,19 @@ public:
     TLVConf* getTLVByNameAux(std::string tlvName, u_int32_t port, int32_t module);
     TLVConf* getAndSetTLVByNameAuxNotInitialized(string tlv_name, u_int32_t port, int32_t module);
     TLVConf* getTLVByIndexAndClassAux(u_int32_t id, TLVClass c);
-    TLVConf* getTLVByName(std::string tlvName, u_int32_t port);
-    TLVConf* getAndCreateTLVByName(std::string tlvName);
-    TLVConf* getTLVByParamMlxconfigName(std::string mlxconfigName, u_int32_t index);
-    TLVConf* findTLVInExisting(std::string mlxconfigName, std::string noPortMlxcfgName,std::string noModuleMlxcfgName, u_int32_t port, u_int32_t index, int32_t module);
+      TLVConf* getTLVByName(std::string tlvName, u_int32_t port, int32_t module);
+    TLVConf* getAndCreateTLVByName(std::string tlvName, u_int32_t port, int32_t module);
+    TLVConf* getTLVByParamMlxconfigName(std::string mlxconfigName, u_int32_t index, mfile* mf);
+    TLVConf* findTLVInExisting(std::string mlxconfigName,
+                               std::string noPortMlxcfgName,
+                               std::string noModuleMlxcfgName,
+                               u_int32_t port,
+                               u_int32_t index,
+                               int32_t module);
     void findTLVInDB(std::string mlxconfigName, u_int32_t index);
     TLVConf* getTLVByIndexAndClass(u_int32_t id, TLVClass c);
     void fillInRelevantParamsOfTlv(TLVConf* tlv, u_int32_t port, int32_t module);
-    static tuple<string, int> splitMlxcfgNameAndPortOrModule(std::string mlxconfigName, SPLITBY splitBy);
+    static tuple<string, int> splitMlxcfgNameAndPortOrModule(std::string mlxconfigName, SPLITBY splitBy, mfile* mf);
     void execSQL(sqlite3_callback f, void* obj, const char* stat, ...);
 };
 

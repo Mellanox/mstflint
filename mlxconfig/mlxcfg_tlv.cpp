@@ -43,6 +43,7 @@
 #include <iomanip>
 
 #include <compatibility.h>
+#include <mlxcfg_db_manager.h>
 
 #include "../tools_layouts/tools_open_layouts.h"
 #include "mlxcfg_tlv.h"
@@ -155,7 +156,11 @@ TLVConf::TLVConf(int columnsCount, char** dataRow, char** headerRow) :
     _alreadyQueried = false;
     if (_tlvClass == Physical_Port)
     {
-        _attrs[PORT_ATTR] = (_port == 1) ? "1" : "2";
+        _attrs[PORT_ATTR] = "1";
+    }
+    if (_tlvClass == Module)
+    {
+        _attrs[MODULE_ATTR] = "0";
     }
     else if (_tlvClass == Per_Host_Per_Function)
     {
@@ -174,42 +179,55 @@ TLVConf::~TLVConf()
     VECTOR_ITERATOR(std::shared_ptr<Param>, this->_params, param) { param->reset(); }
 }
 
-int TLVConf::getMaxPort()
+int TLVConf::getMaxPort(mfile* mf)
 {
-    return 8;
+    reg_access_status_t rc;
+    struct reg_access_hca_mgir mgir;
+    memset(&mgir, 0, sizeof(mgir));
+    rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
+    if (rc == ME_OK)
+    {
+        return mgir.hw_info.num_ports;
+    }
+    else
+    {
+        /*TODO adding implementation of mst device class*/
+        return 8;
+    }
 }
 
 int TLVConf::getMaxModule()
 {
-    return 2;
+    /*TODO adding implementation of mst device class*/
+    return 1;
 }
 
 void TLVConf::CheckModuleAndPortMatchClass(int32_t module, u_int32_t port, string mlxconfigName)
 {
-    if(module!=-1 && !this->isModuleTargetClass())
+    if (module != -1 && !this->isModuleTargetClass())
     {
-        string error =  mlxconfigName + " doesn't have a module";
+        string error = mlxconfigName + " doesn't have a module";
         throw MlxcfgException(error.c_str());
     }
-    else if(module==-1 && this->isModuleTargetClass())
+    else if (module == -1 && this->isModuleTargetClass())
     {
-        string error =  mlxconfigName + " with no module does not exist";
+        string error = mlxconfigName + " with no module does not exist";
         throw MlxcfgException(error.c_str());
     }
 
-     if(port!=0 && !this->isPortTargetClass())
+    if (port != 0 && !this->isPortTargetClass())
     {
-        string error =  mlxconfigName + " doesn't have a physical port";
+        string error = mlxconfigName + " doesn't have a physical port";
         throw MlxcfgException(error.c_str());
     }
-    else if(port==0 && this->isPortTargetClass())
+    else if (port == 0 && this->isPortTargetClass())
     {
-        string error =  mlxconfigName + " with no port does not exist";
+        string error = mlxconfigName + " with no port does not exist";
         throw MlxcfgException(error.c_str());
     }
 }
 
-void TLVConf::getView(TLVConfView& tlvConfView)
+void TLVConf::getView(TLVConfView& tlvConfView, mfile* mf)
 {
     tlvConfView.name = _mlxconfigName;
     tlvConfView.description = _description;
@@ -220,7 +238,7 @@ void TLVConf::getView(TLVConfView& tlvConfView)
         {
             if (this->isPortTargetClass())
             {
-                for (int i = 1; i <= getMaxPort(); i++)
+                for (int i = 1; i <= getMaxPort(mf); i++)
                 {
                     ParamView paramView;
                     _params[j]->getView(paramView);
@@ -350,7 +368,7 @@ u_int32_t TLVConf::getModuleTypeBe()
     type.param_class = Module;
     type.module = _module;
     type.param_idx = _id;
-    tools_open_per_module_type_pack(&type, (u_int8_t*) &tlvType);
+    tools_open_per_module_type_pack(&type, (u_int8_t*)&tlvType);
     return tlvType;
 }
 
@@ -697,7 +715,7 @@ TLVClass TLVConf::str2TLVClass(char* s)
 
         case 8:
             return Switch_Global;
-        
+
         case 9:
             return Module;
     }
@@ -733,7 +751,7 @@ std::shared_ptr<Param> TLVConf::findParamByMlxconfigNamePortModule(string mlxcon
 {
     VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
     {
-        if (mlxconfigname == (*it)->_mlxconfigName && port == (*it)->_port && module ==(*it)->_module)
+        if (mlxconfigname == (*it)->_mlxconfigName && port == (*it)->_port && module == (*it)->_module)
         {
             return *it;
         }
@@ -1000,9 +1018,13 @@ void TLVConf::genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, b
 {
     map<string, string> attrs;
 
-    if (_tlvClass == Physical_Port)
+    if (this->isPortTargetClass())
     {
         attrs[PORT_ATTR] = defaultAttrVal ? ALL_ATTR_VAL : _attrs[PORT_ATTR];
+    }
+    else if (this->isModuleTargetClass())
+    {
+        attrs[MODULE_ATTR] = defaultAttrVal ? ALL_ATTR_VAL : _attrs[MODULE_ATTR];
     }
     else if (_tlvClass == Per_Host_Per_Function && allAttrs)
     {
