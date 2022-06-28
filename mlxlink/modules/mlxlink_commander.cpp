@@ -3857,23 +3857,6 @@ void MlxlinkCommander::checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMas
         modeToCheck += "A";
     }
 
-    char squareWaveId = modeToCheck.back();
-    switch (squareWaveId)
-    {
-        case '8':
-            findAndReplace(modeToCheck, "8", "A");
-            break;
-        case '4':
-            findAndReplace(modeToCheck, "4", "B");
-            break;
-        case '2':
-            findAndReplace(modeToCheck, "2", "C");
-            break;
-        case '1':
-            findAndReplace(modeToCheck, "1", "D");
-            break;
-    }
-
     // Fetching mode capability from mode list
     u_int32_t modeCap = 0;
 
