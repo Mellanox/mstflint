@@ -1535,7 +1535,7 @@ void MlxlinkCablesCommander::showControlParams()
     cout << controlParamsOutput;
 }
 
-u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const string& value)
+u_int32_t MlxlinkCablesCommander::pmcrStrToValue(ControlParam paramId, const string& value)
 {
     double valueToSet = 0;
     bool invalidConfiguration = false;
@@ -1556,9 +1556,7 @@ u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const strin
 
     if (isDecemal && !isCmis && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH)
     {
-        throw MlxRegException("The requested RX Emphasis configuration value is valid for "
-                              "CMIS modules only (pre-emphasis): %s",
-                              value.c_str());
+        invalidConfiguration = true;
     }
 
     if (isCmis && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH)
@@ -1571,15 +1569,24 @@ u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const strin
         }
     }
 
-    if (valueStr == "0" || valueToSet > MAX_SFF_CODE_VALUE ||
-        (isDecemal && paramId != CABLE_CONTROL_PARAMETERS_SET_RX_EMPH))
+    if ((valueToSet < 0) || (valueStr == "0" && paramId != CABLE_CONTROL_PARAMETERS_SET_RX_AMP) ||
+        (valueToSet > MAX_SFF_CODE_VALUE) || (isDecemal && paramId != CABLE_CONTROL_PARAMETERS_SET_RX_EMPH))
     {
         invalidConfiguration = true;
     }
 
     if (invalidConfiguration)
     {
-        throw MlxRegException("Invalid %s configuration: %s", _modulePMCRParams[paramId].first.c_str(), value.c_str());
+        u_int32_t capVal = getFieldValue(_modulePMCRParams[paramId].second + "_value_cap");
+        string capStr = "";
+        if (capVal)
+        {
+            capStr = "\nSupported configuration values are [";
+            capStr += getPMCRCapValueStr(capVal, paramId);
+            capStr += "]";
+        }
+        throw MlxRegException("Invalid %s configuration: %s %s", _modulePMCRParams[paramId].first.c_str(),
+                              value.c_str(), capStr.c_str());
     }
 
     return (u_int32_t)valueToSet;
@@ -1598,7 +1605,11 @@ string MlxlinkCablesCommander::getPMCRCapValueStr(u_int32_t valueCap, ControlPar
         char tmpFmt[64];
         for (u_int32_t val = 0; val <= valueCap; val++)
         {
-            if (_cableIdentifier >= IDENTIFIER_SFP_DD && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH)
+            if (val == 0)
+            {
+                capStr += "NE,";
+            }
+            else if (_cableIdentifier >= IDENTIFIER_SFP_DD && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH)
             {
                 sprintf(tmpFmt, "%.1f,", ((float)val / 2.0));
                 capStr += string(tmpFmt);
@@ -1644,9 +1655,8 @@ void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string
     for (auto it = params.begin(); it != params.end(); it++)
     {
         fieldName = _modulePMCRParams[it->first].second;
-        valueToSet = getPMCRValue(it->first, it->second);
+        valueToSet = pmcrStrToValue(it->first, it->second);
         valueCap = getFieldValue(fieldName + "_value_cap");
-        ; //
         if (it->first == CABLE_CONTROL_PARAMETERS_SET_RX_AMP)
         {
             valueToSet = (u_int32_t)pow(2.0, (double)valueToSet);
@@ -1663,19 +1673,19 @@ void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string
         {
             if (valueCap)
             {
-                validCapStr = "\nValid configuration values are [";
+                validCapStr = "\nSupported configuration values are [";
                 validCapStr += getPMCRCapValueStr(valueCap, it->first);
                 validCapStr += "]";
             }
-            throw MlxRegException("Invalid %s configuration value: %s %s", _modulePMCRParams[it->first].first.c_str(),
-                                  it->second.c_str(), validCapStr.c_str());
+            throw MlxRegException("Not supported %s configuration value: %s %s",
+                                  _modulePMCRParams[it->first].first.c_str(), it->second.c_str(), validCapStr.c_str());
         }
     }
 }
 
 void MlxlinkCablesCommander::buildPMCRRequest(ControlParam paramId, const string& value)
 {
-    u_int32_t valueToSet = getPMCRValue(paramId, value);
+    u_int32_t valueToSet = pmcrStrToValue(paramId, value);
 
     updateField(_modulePMCRParams[paramId].second + "_cntl", 2);
     updateField(_modulePMCRParams[paramId].second + "_value", (u_int32_t)valueToSet);
