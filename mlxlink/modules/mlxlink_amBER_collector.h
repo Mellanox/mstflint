@@ -92,6 +92,7 @@ public:
     MlxlinkMaps* _mlxlinkMaps;
     vector<PortGroup> _localPorts; // will be valid for switches
     bool _isHca;
+    vector<AMBER_SHEET> _sheetsToDump;
 
 private:
     string getRawFieldValue(const string fieldName);
@@ -123,6 +124,7 @@ private:
     void groupValidIf(bool condition);
     void getTestModeModulePMPT(vector<AmberField>& fields, string moduleSide, ModuleAccess_t mode);
     void getTestModeModulePMPD(vector<AmberField>& fields, string moduleSide);
+    u_int32_t getSheetIndex(AMBER_SHEET sheet);
 
     bool _isQsfpCable;
     bool _isSfpCable;
@@ -132,6 +134,7 @@ private:
     u_int32_t _splitPort;
     u_int32_t _secondSplit;
     map<AMBER_SHEET, vector<AmberField>> _amberCollection;
+    map<AMBER_SHEET, FIELDS_COUNT> _baseSheetsList;
 
 protected:
     string getBitmaskPerLaneStr(u_int32_t bitmask);
@@ -150,6 +153,7 @@ protected:
     string getClRawBer();
 
     // Callers
+    void initAmberSheetsToDump();
     vector<AmberField> collectSheet(AMBER_SHEET sheet);
     void collect();
 
@@ -171,7 +175,7 @@ protected:
 
     Json::Value& _jsonRoot;
     vector<MlxlinkCmdPrint> _amBerCollectorOutput;
-    map<AMBER_SHEET, FIELDS_COUNT> _sheetsList;
+    vector<pair<AMBER_SHEET, FIELDS_COUNT>> _sheetsList;
 
     u_int32_t _activeSpeed;
     u_int32_t _protoActive;

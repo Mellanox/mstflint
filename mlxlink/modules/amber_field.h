@@ -52,7 +52,7 @@ public:
     string getUiField() const;
     string getUiValue() const;
     u_int64_t getPrmValue() const;
-    bool isVisible();
+    bool isVisible() const;
     u_int32_t getFieldIndex() const;
     static void reset();
     static string getValueFromFields(const vector<AmberField>& fields, const string& uiField, bool matchUiField = true);
