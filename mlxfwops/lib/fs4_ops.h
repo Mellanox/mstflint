@@ -81,6 +81,7 @@ public:
     bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
                           struct tools_open_fw_version& fwVer, bool queryRunning = false);
     bool FwResetTimeStamp();
+    virtual bool FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage = false);
     bool FwSignWithHmac(const char *key_file);
     bool signForSecureBoot(const char *private_key_file, const char *public_key_file, const char *guid_key_file);
     bool signForSecureBootUsingHSM(const char *public_key_file, const char *uuid, MlxSign::OpensslEngineSigner& engineSigner);

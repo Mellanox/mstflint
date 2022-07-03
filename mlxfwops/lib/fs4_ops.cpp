@@ -958,6 +958,21 @@ bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     return Fs3Operations::FwVerify(verifyCallBackFunc, isStripedImage, showItoc, ignoreDToc);
 }
 
+bool Fs4Operations::FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool)
+{
+    bool image_encrypted = false;
+    if (!isEncrypted(image_encrypted))
+    {
+        return errmsg(getErrorCode(), "%s", err());
+    }
+    if (image_encrypted)
+    {
+        return errmsg("Operation not supported on an encrypted %s", _ioAccess->is_flash() ? "flash" : "image");
+    }
+
+    return Fs3Operations::FwGetSection(sectType, sectInfo);
+}
+
 bool Fs4Operations::GetImageInfo(u_int8_t *buff)
 {
     DPRINTF(("Fs4Operations::GetImageInfo call Fs3Operations::GetImageInfo\n"));
