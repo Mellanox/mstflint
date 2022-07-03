@@ -1418,7 +1418,7 @@ void MlxlinkCablesCommander::getPMPDInfo(vector<string>& traffic,
         traficStr = to_string(add32BitTo64(getFieldValue("prbs_bits_high"), getFieldValue("prbs_bits_low")));
         errorsStr = to_string(add32BitTo64(getFieldValue("prbs_errors_high"), getFieldValue("prbs_errors_low")));
         berStr = to_string(getFieldValue("ber_coef")) + "E-" + to_string(getFieldValue("ber_magnitude"));
-        snrStr = to_string(getFieldValue("measured_snr")) + " dB";
+        snrStr = getFieldValue("measured_snr") ? (to_string(getFieldValue("measured_snr")) + " dB") : "N/A";
 
         traffic.push_back(MlxlinkRecord::addSpaceForModulePrbs(traficStr));
 
@@ -1435,7 +1435,7 @@ void MlxlinkCablesCommander::getPMPDInfo(vector<string>& traffic,
         {
             snr.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("snr_cap") ? snrStr : "Not Supported"));
         }
-        // Print only one indecation for each cap if it's not supported
+        // Print only one indication for each cap if it's not supported
         if (getFieldValue("errors_cap") == 0)
         {
             skipErrorCap = true;
