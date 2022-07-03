@@ -124,6 +124,7 @@ private:
     void groupValidIf(bool condition);
     void getTestModeModulePMPT(vector<AmberField>& fields, string moduleSide, ModuleAccess_t mode);
     void getTestModeModulePMPD(vector<AmberField>& fields, string moduleSide);
+    u_int32_t getFomMeasurement();
     u_int32_t getSheetIndex(AMBER_SHEET sheet);
 
     bool _isQsfpCable;

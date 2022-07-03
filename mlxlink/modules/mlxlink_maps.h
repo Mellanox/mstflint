@@ -106,6 +106,14 @@ struct CAP_VALUE
     string name;
 };
 
+struct PRM_FIELD
+{
+    string prmField;
+    string uiField;
+    u_int32_t fieldAccess;
+    bool isSigned;
+};
+
 class MlxlinkMaps
 {
 private:
@@ -200,6 +208,9 @@ public:
     std::map<u_int32_t, string> _SLTPBadSetStatus2Str;
     std::map<u_int32_t, string> _SLTP16BadSetStatus2Str;
     std::map<u_int32_t, string> _SLTP7BadSetStatus2Str;
+    std::map<u_int32_t, PRM_FIELD> _SltpEdrParams;
+    std::map<u_int32_t, PRM_FIELD> _SltpHdrParams;
+    std::map<u_int32_t, PRM_FIELD> _SltpNdrParams;
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;

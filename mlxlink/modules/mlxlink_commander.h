@@ -435,9 +435,10 @@ public:
     void strToInt32(char* str, u_int32_t& value);
     template<typename T, typename Q>
     string getValueAndThresholdsStr(T value, Q lowTH, Q highTH);
-    void prepareSltp28_40nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber);
-    void prepareSltp16nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber);
-    void prepareSltp7nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber);
+    string getSltpFieldStr(const PRM_FIELD& field);
+    void prepareSltpEdrHdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
+    virtual void prepareSltpNdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
+    virtual string getSltpHeader();
     void startSlrgPciScan(u_int32_t numOfLanesToUse);
     void initValidDPNList();
     u_int32_t readBitFromField(const string& fieldName, u_int32_t bitIndex);
@@ -562,9 +563,8 @@ public:
     u_int32_t fecToBit(const string& fec, const string& speedStrG);
     u_int32_t getFecCapForCheck(const string& speedStr);
     void checkPplmCap();
-    void updateSltp28_40nmFields();
-    void updateSltp16nmFields();
-    void updateSltp7nmFields();
+    void updateSltpEdrHdrFields();
+    void updateSltpNdrFields();
     string getSltpStatus();
     void getSltpAlevOut(u_int32_t lane);
     void getSltpRegAndLeva(u_int32_t lane);

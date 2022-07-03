@@ -861,7 +861,7 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesHDR()
         if (!_isPortPCIE)
         {
             vector<vector<string>> slrgParams(SLRG_PARAMS_LAST, vector<string>(_maxLanes, ""));
-            vector<vector<string>> sltpParams(PARAMS_16NM_LAST, vector<string>(_maxLanes, ""));
+            vector<vector<string>> sltpParams(SLTP_HDR_LAST, vector<string>(_maxLanes, ""));
             vector<string> sltpStatus;
             u_int32_t lane = 0;
             // Getting 16nm SLRG information for all lanes
@@ -891,24 +891,24 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesHDR()
                 updateField("lane", lane);
                 sendRegister(ACCESS_REG_SLTP, MACCESS_REG_METHOD_GET);
 
-                sltpParams[PRE_2_TAP][lane] = getFieldStr("pre_2_tap");
-                sltpParams[PRE_TAP][lane] = getFieldStr("pre_tap");
-                sltpParams[MAIN_TAP][lane] = getFieldStr("main_tap");
-                sltpParams[POST_TAP][lane] = getFieldStr("post_tap");
-                sltpParams[OB_M2LP][lane] = getFieldStr("ob_m2lp");
-                sltpParams[OB_AMP][lane] = getFieldStr("ob_amp");
-                sltpParams[OB_ALEV_OUT][lane] = getFieldStr("ob_alev_out");
+                sltpParams[SLTP_HDR_PRE_2_TAP][lane] = getFieldStr("pre_2_tap");
+                sltpParams[SLTP_HDR_PRE_TAP][lane] = getFieldStr("pre_tap");
+                sltpParams[SLTP_HDR_MAIN_TAP][lane] = getFieldStr("main_tap");
+                sltpParams[SLTP_HDR_POST_TAP][lane] = getFieldStr("post_tap");
+                sltpParams[SLTP_HDR_OB_M2LP][lane] = getFieldStr("ob_m2lp");
+                sltpParams[SLTP_HDR_OB_AMP][lane] = getFieldStr("ob_amp");
+                sltpParams[SLTP_HDR_OB_ALEV_OUT][lane] = getFieldStr("ob_alev_out");
                 sltpStatus.push_back(getFieldValue("status") ? "Valid" : "Invalid");
             }
 
             fillParamsToFields("tx_status", sltpStatus, fields);
-            fillParamsToFields("pre_2_tap", sltpParams[PRE_2_TAP], fields);
-            fillParamsToFields("pre_tap", sltpParams[PRE_TAP], fields);
-            fillParamsToFields("main_tap", sltpParams[MAIN_TAP], fields);
-            fillParamsToFields("post_tap", sltpParams[POST_TAP], fields);
-            fillParamsToFields("ob_m2lp", sltpParams[OB_M2LP], fields);
-            fillParamsToFields("ob_amp", sltpParams[OB_AMP], fields);
-            fillParamsToFields("ob_alev_out", sltpParams[OB_ALEV_OUT], fields);
+            fillParamsToFields("pre_2_tap", sltpParams[SLTP_HDR_PRE_2_TAP], fields);
+            fillParamsToFields("pre_tap", sltpParams[SLTP_HDR_PRE_TAP], fields);
+            fillParamsToFields("main_tap", sltpParams[SLTP_HDR_MAIN_TAP], fields);
+            fillParamsToFields("post_tap", sltpParams[SLTP_HDR_POST_TAP], fields);
+            fillParamsToFields("ob_m2lp", sltpParams[SLTP_HDR_OB_M2LP], fields);
+            fillParamsToFields("ob_amp", sltpParams[SLTP_HDR_OB_AMP], fields);
+            fillParamsToFields("ob_alev_out", sltpParams[SLTP_HDR_OB_ALEV_OUT], fields);
         }
     }
     catch (const std::exception& exc)
@@ -917,6 +917,46 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesHDR()
     }
 
     return fields;
+}
+
+u_int32_t MlxlinkAmBerCollector::getFomMeasurement()
+{
+    u_int32_t fomMeasurement = SLRG_EOM_NONE;
+    if (!_isPortPCIE)
+    {
+        fomMeasurement = SLRG_EOM_COMPOSITE;
+        if (!isSpeed25GPerLane(_activeSpeed, _protoActive))
+        {
+            fomMeasurement |= (SLRG_EOM_UPPER | SLRG_EOM_MIDDLE | SLRG_EOM_LOWER);
+        }
+    }
+    else
+    {
+        for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
+        {
+            resetParser(ACCESS_REG_SLRG);
+            updateField("local_port", _localPort);
+            updateField("pnat", PNAT_PCIE);
+            updateField("lane", lane);
+            updateField("fom_measurment", SLRG_EOM_COMPOSITE);
+            genBuffSendRegister(ACCESS_REG_SLRG, MACCESS_REG_METHOD_GET);
+        }
+        u_int32_t it = 0;
+        while (it < SLRG_PCIE_7NM_TIMEOUT)
+        {
+            resetParser(ACCESS_REG_SLRG);
+            updateField("local_port", _localPort);
+            updateField("pnat", PNAT_PCIE);
+            genBuffSendRegister(ACCESS_REG_SLRG, MACCESS_REG_METHOD_GET);
+            if (getFieldValue("status"))
+            {
+                break;
+            }
+            it++;
+            msleep(SLRG_PCIE_7NM_SLEEP);
+        }
+    }
+    return fomMeasurement;
 }
 
 vector<AmberField> MlxlinkAmBerCollector::getSerdesNDR()
@@ -929,8 +969,10 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesNDR()
         fields.push_back(AmberField("BKV_version", "N/A"));
 
         vector<vector<string>> slrgParams(SLRG_PARAMS_LAST, vector<string>(_maxLanes, ""));
-        vector<vector<string>> sltpParams(PARAMS_7NM_LAST + 1, vector<string>(_maxLanes, ""));
+        vector<vector<string>> sltpParams(SLTP_NDR_LAST + 1, vector<string>(_maxLanes, ""));
+        u_int32_t fomMeasurement = getFomMeasurement();
         u_int32_t lane = 0;
+
         // Getting 7nm SLRG information for all lanes
         for (; lane < _numOfLanes; lane++)
         {
@@ -938,6 +980,7 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesNDR()
             updateField("local_port", _localPort);
             updateField("lane", lane);
             updateField("pnat", _pnat);
+            updateField("fom_measurment", fomMeasurement);
             sendRegister(ACCESS_REG_SLRG, MACCESS_REG_METHOD_GET);
 
             slrgParams[SLRG_PARAMS_INITIAL_FOM][lane] = getFieldStr("initial_fom");
@@ -969,17 +1012,17 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesNDR()
                 updateField("pnat", _pnat);
                 sendRegister(ACCESS_REG_SLTP, MACCESS_REG_METHOD_GET);
 
-                sltpParams[FIR_PRE3][lane] = getFieldStr("fir_pre3");
-                sltpParams[FIR_PRE2][lane] = getFieldStr("fir_pre2");
-                sltpParams[FIR_PRE1][lane] = getFieldStr("fir_pre1");
-                sltpParams[FIR_MAIN][lane] = getFieldStr("fir_main");
-                sltpParams[FIR_POST1][lane] = getFieldStr("fir_post1");
+                sltpParams[SLTP_NDR_FIR_PRE3][lane] = getFieldStr("fir_pre3");
+                sltpParams[SLTP_NDR_FIR_PRE2][lane] = getFieldStr("fir_pre2");
+                sltpParams[SLTP_NDR_FIR_PRE1][lane] = getFieldStr("fir_pre1");
+                sltpParams[SLTP_NDR_FIR_MAIN][lane] = getFieldStr("fir_main");
+                sltpParams[SLTP_NDR_FIR_POST1][lane] = getFieldStr("fir_post1");
             }
-            fillParamsToFields("pre_3_tap", sltpParams[FIR_PRE3], fields);
-            fillParamsToFields("pre_2_tap", sltpParams[FIR_PRE2], fields);
-            fillParamsToFields("pre_1_tap", sltpParams[FIR_PRE1], fields);
-            fillParamsToFields("main_tap", sltpParams[FIR_MAIN], fields);
-            fillParamsToFields("post_1_tap", sltpParams[FIR_POST1], fields);
+            fillParamsToFields("pre_3_tap", sltpParams[SLTP_NDR_FIR_PRE3], fields);
+            fillParamsToFields("pre_2_tap", sltpParams[SLTP_NDR_FIR_PRE2], fields);
+            fillParamsToFields("pre_1_tap", sltpParams[SLTP_NDR_FIR_PRE1], fields);
+            fillParamsToFields("main_tap", sltpParams[SLTP_NDR_FIR_MAIN], fields);
+            fillParamsToFields("post_1_tap", sltpParams[SLTP_NDR_FIR_POST1], fields);
         }
     }
     catch (const std::exception& exc)
