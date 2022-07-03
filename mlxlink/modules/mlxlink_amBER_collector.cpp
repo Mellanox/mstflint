@@ -559,7 +559,7 @@ vector<AmberField> MlxlinkAmBerCollector::getPhyOperationInfo()
         fields.push_back(AmberField("cable_proto_cap", cableProtoCapStr));
         u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
         string loopbackMode = (phyMngrFsmState != PHY_MNGR_DISABLED) ?
-                                _mlxlinkMaps->_loopbackModeList[getFieldValue("loopback_mode")] :
+                                _mlxlinkMaps->_loopbackModeList[getFieldValue("loopback_mode")].second :
                                 "-1";
         u_int32_t fecModeRequest = (u_int32_t)log2((float)getFieldValue("fec_mode_request"));
         fields.push_back(AmberField("loopback_mode", loopbackMode));

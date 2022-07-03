@@ -1848,7 +1848,7 @@ void MlxlinkCommander::operatingInfoPage()
         setPrintVal(_operatingInfoCmd, "FEC", fec_mode_str == "" ? "N/A" : fec_mode_str,
                     fec_mode_str == "" ? MlxlinkRecord::state2Color(0) : color, !_prbsTestMode, _linkUP);
 
-        setPrintVal(_operatingInfoCmd, "Loopback Mode", _mlxlinkMaps->_loopbackModeList[loopbackMode],
+        setPrintVal(_operatingInfoCmd, "Loopback Mode", _mlxlinkMaps->_loopbackModeList[loopbackMode].second,
                     getLoopbackColor(loopbackMode), true, !_prbsTestMode && loopbackMode != -1);
         setPrintVal(_operatingInfoCmd, "Auto Negotiation", _mlxlinkMaps->_anDisableList[_anDisable] + _speedForce,
                     getAnDisableColor(_anDisable), true, !_prbsTestMode);
@@ -4769,14 +4769,13 @@ void MlxlinkCommander::sendSltp()
 
 string MlxlinkCommander::getLoopbackStr(u_int32_t loopbackCapMask)
 {
-    string loopbackStr = "";
-    for (map<u_int32_t, string>::iterator it = _mlxlinkMaps->_loopbackModeList.begin();
-         it != _mlxlinkMaps->_loopbackModeList.end();
-         it++)
+    string loopbackStr = _mlxlinkMaps->_loopbackModeList[LOOPBACK_MODE_NO].first + "(" +
+                         _mlxlinkMaps->_loopbackModeList[LOOPBACK_MODE_NO].second + ")/";
+    for (const auto& lbConf : _mlxlinkMaps->_loopbackModeList)
     {
-        if ((it->first != PHY_REMOTE_LOOPBACK) && (it->first & loopbackCapMask) && !it->second.empty())
+        if ((lbConf.first & loopbackCapMask) && !lbConf.second.second.empty())
         {
-            loopbackStr += it->second + ",";
+            loopbackStr += lbConf.second.first + "(" + lbConf.second.second + ")/";
         }
     }
     return deleteLastChar(loopbackStr);
@@ -4792,17 +4791,17 @@ void MlxlinkCommander::checkPplrCap()
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
     u_int32_t loopBackCap = getFieldValue("lb_cap");
     u_int32_t loopBackVal = getLoopbackMode(_userInput._pplrLB);
-    if (loopBackVal != PHY_NO_LOOPBACK)
+    if (loopBackVal != LOOPBACK_MODE_NO)
     {
         if (!(loopBackCap & getLoopbackMode(_userInput._pplrLB)))
         {
             string supportedLoopbacks = getLoopbackStr(loopBackCap);
-            throw MlxRegException("selected loopback not supported\n"
-                                  "Supported Loopback modes for the device: [%s]",
-                                  supportedLoopbacks.c_str());
+            throw MlxRegException(
+              "\n%s Loopback configuration is not supported, supported Loopback configurations are [%s]",
+              _userInput._pplrLB.c_str(), supportedLoopbacks.c_str());
         }
     }
-    if (loopBackVal == PHY_REMOTE_LOOPBACK && _productTechnology < PRODUCT_7NM)
+    if (loopBackVal == LOOPBACK_MODE_REMOTE && _productTechnology < PRODUCT_7NM)
     {
         string warMsg = "Remote loopback mode pre-request (all should be satisfied):\n";
         warMsg += "1. Remote loopback is supported only in force mode.\n";
@@ -4820,14 +4819,13 @@ void MlxlinkCommander::sendPplr()
         MlxlinkRecord::printCmdLine("Configuring Port Loopback", _jsonRoot);
 
         checkPplrCap();
-        string regName = "PPLR";
-        resetParser(regName);
+        resetParser(ACCESS_REG_PPLR);
         updatePortType();
 
         updateField("local_port", _localPort);
         updateField("lb_en", getLoopbackMode(_userInput._pplrLB));
 
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
+        genBuffSendRegister(ACCESS_REG_PPLR, MACCESS_REG_METHOD_SET);
     }
     catch (const std::exception& exc)
     {
@@ -4838,23 +4836,15 @@ void MlxlinkCommander::sendPplr()
 
 u_int32_t MlxlinkCommander::getLoopbackMode(const string& lb)
 {
-    if (lb == "NO")
+    auto it = find_if(_mlxlinkMaps->_loopbackModeList.begin(), _mlxlinkMaps->_loopbackModeList.end(),
+                      [lb](pair<u_int32_t, pair<string, string>> lpConf) { return lb == lpConf.second.first; });
+
+    if (it == _mlxlinkMaps->_loopbackModeList.end())
     {
-        return PHY_NO_LOOPBACK;
+        throw MlxRegException("Invalid loopback option: %s, see tool usage \"%s --help\"", lb.c_str(), MLXLINK_EXEC);
     }
-    if (lb == "RM")
-    {
-        return PHY_REMOTE_LOOPBACK;
-    }
-    if (lb == "PH")
-    {
-        return PHY_LOCAL_LOOPBACK;
-    }
-    if (lb == "EX")
-    {
-        return EXTERNAL_LOCAL_LOOPBACK;
-    }
-    throw MlxRegException("Invalid loopback option: %s, see tool usage \"%s --help\"", lb.c_str(), MLXLINK_EXEC);
+
+    return it->first;
 }
 
 void MlxlinkCommander::sendPepc()
