@@ -1688,8 +1688,9 @@ int is4_flash_init(mflash *mfl, flash_params_t *flash_params)
     return gen4_flash_init_com(mfl, flash_params, 0);
 }
 
-static void flash_update_gearbox_gw(mflash *mfl)
+static void flash_update_amos_gearbox_gw(mflash *mfl)
 {
+    FLASH_ACCESS_DPRINTF(("flash_update_amos_gearbox_gw()\n"));
     mfl->gw_data = HCR_FLASH_GEARBOX_DATA;
     mfl->gw_cmd = HCR_FLASH_GEARBOX_CMD;
     mfl->gw_addr = HCR_FLASH_GEARBOX_ADDR;
@@ -2004,7 +2005,12 @@ int fifth_gen_flash_init(mflash *mfl, flash_params_t *flash_params)
     int rc = 0;
     u_int8_t needs_cache_replacement = 0;
     if (mfl->mf->gb_info.is_gb_mngr) {
-        flash_update_gearbox_gw(mfl);//need to update GW offsets before calling to the check_cache_replacement_guard
+        // need to update GW offsets before calling to the check_cache_replacement_guard
+        flash_update_amos_gearbox_gw(mfl);
+    }
+    else if (mfl->mf->gb_info.is_gearbox)
+    {
+        return MFE_OCR_NOT_SUPPORTED; // Accessing flash GW of GB that's not manager is not possible
     }
     rc = check_cache_replacement_guard(mfl, &needs_cache_replacement);
     CHECK_RC(rc);
