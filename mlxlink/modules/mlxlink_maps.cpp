@@ -48,10 +48,12 @@ MlxlinkMaps* MlxlinkMaps::getInstance()
 void MlxlinkMaps::initPublicStrings()
 {
     _berCollectTitle =
-      "Test Mode (Nominal/Corner/Drift),Protocol,Speed [Gb/s],Active FEC,Iteration Number,Device PN,FW Version,Device ID,Port Number,Media,Cable PN,Length [m],Attenuation [dB],"
-      "Test time [Min],Raw Errors Lane 0,Raw Errors Lane 1,Raw Errors Lane 2,Raw Errors Lane 3,Raw Errors Lane 4,Raw Errors Lane 5,Raw Errors Lane 6,Raw Errors Lane 7,Link Down,Total Raw BER,Raw BER limit,"
-      "Effective Errors,Effective BER,Result,System Voltage,Chip Start Temp,Chip End Temp,Module Start Temp,Module End Temp,Active RTN,Device SN,Cable SN,RX End BW [Gb/s]";
-    _sltpHeader = "";
+      "Test Mode (Nominal/Corner/Drift),Protocol,Speed [Gb/s],Active FEC,Iteration Number,Device PN,FW Version,Device "
+      "ID,Port Number,Media,Cable PN,Length [m],Attenuation [dB],"
+      "Test time [Min],Raw Errors Lane 0,Raw Errors Lane 1,Raw Errors Lane 2,Raw Errors Lane 3,Raw Errors Lane 4,Raw "
+      "Errors Lane 5,Raw Errors Lane 6,Raw Errors Lane 7,Link Down,Total Raw BER,Raw BER limit,"
+      "Effective Errors,Effective BER,Result,System Voltage,Chip Start Temp,Chip End Temp,Module Start Temp,Module End "
+      "Temp,Active RTN,Device SN,Cable SN,RX End BW [Gb/s]";
     _showErrorsTitle = "Errors";
 }
 
@@ -177,10 +179,11 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
     _fecPerSpeed.push_back(make_pair("25G", ""));
     _fecPerSpeed.push_back(make_pair("10G", ""));
 
-    _loopbackModeList[PHY_NO_LOOPBACK] = "No Loopback";
-    _loopbackModeList[PHY_REMOTE_LOOPBACK] = "PHY Remote Loopback";
-    _loopbackModeList[PHY_LOCAL_LOOPBACK] = "PHY Local Loopback";
-    _loopbackModeList[EXTERNAL_LOCAL_LOOPBACK] = "External Local Loopback";
+    _loopbackModeList[LOOPBACK_MODE_NO] = make_pair("NO", "No Loopback");
+    _loopbackModeList[LOOPBACK_MODE_REMOTE] = make_pair("RM", "PHY Remote Loopback");
+    _loopbackModeList[LOOPBACK_MODE_LOCAL] = make_pair("PH", "PHY Local Loopback");
+    _loopbackModeList[LOOPBACK_MODE_EXTERNAL] = make_pair("EX", "External Local Loopback");
+    _loopbackModeList[LOOPBACK_MODE_LL] = make_pair("LL", "Link Layer Local Loopback");
 }
 
 void MlxlinkMaps::ethSpeedMapping()
