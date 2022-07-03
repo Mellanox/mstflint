@@ -419,7 +419,7 @@ void MlxlinkCablesCommander::prepareSfpddDdmInfo()
 void MlxlinkCablesCommander::prepareQSFPDdmInfo()
 {
     u_int32_t tempVal = 0;
-    u_int8_t* page0L = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+    u_int8_t* page0L = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
     if (page0L != NULL)
     {
         loadEEPRMPage(PAGE_0, LOWER_PAGE_OFFSET, page0L);
@@ -552,7 +552,7 @@ void MlxlinkCablesCommander::prepareThresholdInfo(u_int8_t* thresholdPage)
 // Reading cable DDM information
 void MlxlinkCablesCommander::readCableDDMInfo()
 {
-    u_int8_t* thresholdPage = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+    u_int8_t* thresholdPage = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
 
     switch (_cableIdentifier)
     {
@@ -795,7 +795,7 @@ void MlxlinkCablesCommander::initValidPages()
     }
     if (qsfpCable && !_passiveQsfp)
     {
-        u_int8_t* page0H = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+        u_int8_t* page0H = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
         loadEEPRMPage(PAGE_0, UPPER_PAGE_OFFSET, page0H);
         u_int8_t optionsValue = 0;
         readFromPage(page0H, 195 - 0x80, &optionsValue);
@@ -830,7 +830,7 @@ void MlxlinkCablesCommander::initValidPages()
         // (SFP-DD)
         // if 2:7=0, dump page 0x1
         u_int8_t extendedPages = 0;
-        u_int8_t* page0L = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+        u_int8_t* page0L = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
         loadEEPRMPage(PAGE_0, LOWER_PAGE_OFFSET, page0L);
         ;
         readFromPage(page0L, EXTENDED_PAGES_1_2_10_11_ADDR, &extendedPages);
@@ -852,7 +852,7 @@ void MlxlinkCablesCommander::initValidPages()
                 //                   dump page 0x12 (H)
                 //         B142:5=1, dump page 0x13 (H)
                 //                   dump page 0x14 (H)
-                u_int8_t* page1H = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+                u_int8_t* page1H = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
                 loadEEPRMPage(PAGE_01, UPPER_PAGE_OFFSET, page1H);
                 ;
                 u_int8_t extendedQsfpPages = 0;
@@ -885,7 +885,7 @@ vector<MlxlinkCmdPrint> MlxlinkCablesCommander::getPagesToDump()
     initValidPages();
     for (u_int32_t i = 0; i < _validPages.size(); i++)
     {
-        u_int8_t* pageP = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+        u_int8_t* pageP = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
         if (pageP != NULL)
         {
             loadEEPRMPage(_validPages[i].page, _validPages[i].offset, pageP, _validPages[i].i2cAddress);
@@ -998,11 +998,11 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page, u_int16_t 
     {
         i2cAddress = I2C_ADDR_HIGH;
     }
-    pageL = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+    pageL = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
     loadEEPRMPage(page, LOWER_PAGE_OFFSET, pageL, i2cAddress);
     if ((length + offset) > CABLE_PAGE_SIZE)
     {
-        pageH = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+        pageH = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
         loadEEPRMPage(page, UPPER_PAGE_OFFSET, pageH);
     }
     char label[32];
