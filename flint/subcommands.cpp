@@ -4785,7 +4785,7 @@ FlintStatus SetCertChainSubCommand::executeCommand()
         return FLINT_FAILED;
     }
     FwOperations *ops = _flintParams.device_specified ? _fwOps : _imgOps;
-    if (!ops->FwSetCertChain((char*)_flintParams.cmd_params[0].c_str(), &verifyCbFunc)) {
+    if (!ops->FwSetCertChain((char*)_flintParams.cmd_params[0].c_str(), _flintParams.cert_chain_index, &verifyCbFunc)) {
         reportErr(true, FLINT_CERT_CHAIN_ERROR, ops->err());
         return FLINT_FAILED;
     }

@@ -2069,7 +2069,7 @@ const char* FwOperations::expRomType2Str(u_int16_t type)
     return (const char*)NULL;
 }
 
-bool FwOperations::FwSetCertChain(char *, PrintCallBack)
+bool FwOperations::FwSetCertChain(char *, u_int32_t, PrintCallBack)
 {
     return errmsg("Operation not supported.");
 }

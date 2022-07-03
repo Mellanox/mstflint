@@ -177,6 +177,7 @@ private:
     bool encryptedFwQuery(fw_info_t *fwInfo, bool readRom = true, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
     virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
     bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc = false, bool verbose = false);
+    bool Init();
     bool CheckTocSignature(struct image_layout_itoc_header *itoc_header, u_int32_t first_signature);
     bool CheckDevInfoSignature(u_int32_t *buff);
     bool FsBurnAux(FwOperations *imageOps, ExtBurnParams& burnParams);
@@ -189,6 +190,14 @@ private:
     bool Fs4GetItocInfo(struct fs4_toc_info  *tocArr, int num_of_itocs,
                         fs3_section_t sect_type, vector<struct fs4_toc_info*>& curr_toc);
     bool UpdateSection(void *new_info, fs3_section_t sect_type = FS3_DEV_INFO, bool is_sect_failsafe = true, CommandType cmd_type = CMD_UNKNOWN, PrintCallBack callBackFunc = (PrintCallBack)NULL );
+    bool UpdateSection(fs3_section_t sectionType,
+                       std::vector<u_int8_t>& newSectionData,
+                       const char* msg,
+                       PrintCallBack callBackFunc = (PrintCallBack)NULL);
+    bool WriteSection(struct fs4_toc_info* sectionToc,
+                      std::vector<u_int8_t>& newSectionData,
+                      const char* msg,
+                      PrintCallBack callBackFunc);
     bool Fs4UpdateMfgUidsSection(struct fs4_toc_info *curr_toc,
                                  std::vector<u_int8_t>  section_data, fs3_uid_t base_uid,
                                  std::vector<u_int8_t>  &newSectionData);
@@ -201,7 +210,9 @@ private:
                              std::vector<u_int8_t>  &newSectionData);
     bool UpdateCertChainSection(struct fs4_toc_info *curr_toc, char *certChainFile,
                                 std::vector<u_int8_t>  &newSectionData);
-    bool FwSetCertChain(char *certFileStr, PrintCallBack callBackFunc);
+    bool
+      UpdateDigitalCertRWSection(char* certChainFile, u_int32_t certChainIndex, std::vector<u_int8_t>& newSectionData);
+    bool FwSetCertChain(char *certFileStr, u_int32_t certIndex, PrintCallBack callBackFunc);
     bool Fs4ReburnSection(u_int32_t newSectionAddr, u_int32_t newSectionSize,
                           std::vector<u_int8_t>  newSectionData, const char *msg,
                           PrintCallBack callBackFunc);

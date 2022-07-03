@@ -2788,6 +2788,74 @@ bool Fs4Operations::Fs4UpdateVsdSection(std::vector<u_int8_t>  section_data, cha
     return true;
 }
 
+bool Fs4Operations::Init()
+{
+    fw_info_t fwInfo;
+    if (!FwQuery(&fwInfo, false, false, false))
+    {
+        return false;
+    }
+    return true;
+}
+
+bool Fs4Operations::UpdateDigitalCertRWSection(char* certChainFile,
+                                               u_int32_t certChainIndex,
+                                               std::vector<u_int8_t>& newSectionData)
+{
+    if (!Init())
+    {
+        return false;
+    }
+    struct fs4_toc_info* tocArr = _fs4ImgInfo.dtocArr.tocArr;
+    u_int32_t numOfTocs = _fs4ImgInfo.dtocArr.numOfTocs;
+
+    // Get DIGITAL_CERT_RW entry
+    struct fs4_toc_info* digitalCertRWSectionToc = (fs4_toc_info*)NULL;
+    if (!Fs4GetItocInfo(tocArr, numOfTocs, FS4_DIGITAL_CERT_RW, digitalCertRWSectionToc))
+    {
+        return false;
+    }
+
+    // Get CERT_CHAIN_0 entry
+    struct fs4_toc_info* certChain0SectionToc = (fs4_toc_info*)NULL;
+    if (!Fs4GetItocInfo(tocArr, numOfTocs, FS4_CERT_CHAIN_0, certChain0SectionToc))
+    {
+        return false;
+    }
+    u_int32_t certChain0SectionSize = certChain0SectionToc->toc_entry.size << 2;
+
+    int certChainBuffSize = 0;
+    u_int8_t* certChainBuffData = (u_int8_t*)NULL;
+    if (!ReadBinFile(certChainFile, certChainBuffData, certChainBuffSize))
+    {
+        return false;
+    }
+    DPRINTF(("Fs4Operations::UpdateDigitalCertRWSection new cert file size = 0x%x\n", certChainBuffSize));
+
+    //* Assert given certificate chain doesn't exceed its allocated size (compared to CERT_CHAIN_0 with same size)
+    if ((u_int32_t)certChainBuffSize > certChain0SectionSize)
+    {
+        return errmsg("Certificate chain data exceeds its allocated size of 0x%x bytes", certChain0SectionSize);
+    }
+
+    std::vector<u_int8_t> certChainBuff(certChainBuffData, certChainBuffData + certChainBuffSize);
+    certChainBuff.resize(certChain0SectionSize); // Padding the cert chain if needed to match cert chain size
+
+    newSectionData = digitalCertRWSectionToc->section_data;
+    u_int32_t newCertChainOffsetInSection =
+      certChain0SectionSize * (certChainIndex - 1); // index 0 belongs to CERT_CHAIN_0
+    DPRINTF(
+      ("Fs4Operations::UpdateDigitalCertRWSection copy new cert to DIGITAL_CERT_RW at offset = 0x%x, size = 0x%x\n",
+       newCertChainOffsetInSection, (u_int32_t)certChainBuff.size()));
+    if ((newCertChainOffsetInSection + certChainBuff.size()) > (digitalCertRWSectionToc->toc_entry.size << 2))
+    {
+        return errmsg("Certificate chain data exceeds its allocation");
+    }
+    std::copy(certChainBuff.begin(), certChainBuff.end(), newSectionData.begin() + newCertChainOffsetInSection);
+
+    return true;
+}
+
 bool Fs4Operations::UpdateCertChainSection(struct fs4_toc_info *curr_toc, char *certChainFile,
                                            std::vector<u_int8_t>  &newSectionData)
 {
@@ -3102,6 +3170,7 @@ bool Fs4Operations::isDTocSection(fs3_section_t sect_type, bool& isDtoc)
     case FS3_MFG_INFO:
     case FS3_DEV_INFO:
     case FS3_VPD_R0:
+    case FS4_DIGITAL_CERT_RW:
     case FS4_CERT_CHAIN_0:
         isDtoc = true;
         break;
@@ -3167,14 +3236,30 @@ bool Fs4Operations::VerifyImageAfterModifications() {
     return true;
 }
 
-bool Fs4Operations::FwSetCertChain(char *certFileStr, PrintCallBack callBackFunc) {
+bool Fs4Operations::FwSetCertChain(char *certFileStr, u_int32_t certIndex, PrintCallBack callBackFunc) {
     if (!certFileStr) {
         return errmsg("Please specify a valid certificate chain file.");
     }
     FAIL_NO_OCR("set attestation certificate chain");
 
-    if (!UpdateSection(certFileStr, FS4_CERT_CHAIN_0, false, CMD_UNKNOWN, callBackFunc)) {
-        return false;
+    if (certIndex == 0)
+    {
+        if (!UpdateSection(certFileStr, FS4_CERT_CHAIN_0, false, CMD_UNKNOWN, callBackFunc))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        std::vector<u_int8_t> newSectionData;
+        if (!UpdateDigitalCertRWSection(certFileStr, certIndex, newSectionData))
+        {
+            return false;
+        }
+        if (!UpdateSection(FS4_DIGITAL_CERT_RW, newSectionData, "DIGITAL_CERT_RW", callBackFunc))
+        {
+            return false;
+        }
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
     if (!_ioAccess->is_flash() && !VerifyImageAfterModifications()) {
@@ -3371,37 +3456,10 @@ bool Fs4Operations::UpdateSection(void *new_info, fs3_section_t sect_type, bool,
         return errmsg("Section type %s is not supported\n", GetSectionNameByType(sect_type));
     }
 
-    newSectionAddr = curr_toc->toc_entry.flash_addr << 2;
-
-    if (!_encrypted_image_io_access) { // In case of BB secure-boot sign flow we don't update ITOC since it's already encrypted
-        if (!Fs4UpdateItocInfo(curr_toc, curr_toc->toc_entry.size, newSection)) {
-            return false;
-        }
-    }
-
-    if (!Fs4ReburnSection(newSectionAddr, curr_toc->toc_entry.size * 4, newSection, type_msg, callBackFunc)) {
+    if (!WriteSection(curr_toc, newSection, type_msg, callBackFunc))
+    {
         return false;
     }
-
-    if (!_encrypted_image_io_access) { // In case of BB secure-boot sign flow we don't update ITOC since it's already encrypted
-        if (sect_type != FS3_DEV_INFO) {
-            if (!Fs4ReburnTocSection(isDtoc, callBackFunc)) {
-                return false;
-            }
-        }
-    }
-
-    if (!isDtoc) {
-        if (!UpdateSectionHashInHashesTable(newSectionAddr, curr_toc->toc_entry.size * 4, sect_type)) {
-            return false;
-        }
-    }
-
-    
-
-    // TODO - in case hashes_table (HTOC) exists recalculate modified section SHA and store it in hashes_table.
-    // TODO - Currently it's not implemented since there is no use-case where we need to update hashes_table,
-    // TODO - so we prefer to ignore it for now instead of inserting a potential bug.
 
     if (is_sect_failsafe) {
         u_int32_t flash_addr = old_toc->toc_entry.flash_addr << 2;
@@ -3420,6 +3478,134 @@ bool Fs4Operations::UpdateSection(void *new_info, fs3_section_t sect_type, bool,
                 return false;
             }
         }
+    }
+
+    return true;
+}
+
+bool Fs4Operations::WriteSection(struct fs4_toc_info* sectionToc,
+                                 std::vector<u_int8_t>& newSectionData,
+                                 const char* msg,
+                                 PrintCallBack callBackFunc)
+{
+    DPRINTF(
+      ("Fs4Operations::WriteSection section type=%s, msg=%s", GetSectionNameByType(sectionToc->toc_entry.type), msg));
+    bool isDtoc;
+    fs3_section_t sectionType = static_cast<fs3_section_t>(sectionToc->toc_entry.type);
+    if (!isDTocSection(sectionType, isDtoc))
+    {
+        return false;
+    }
+    u_int32_t newSectionAddr = sectionToc->toc_entry.flash_addr << 2;
+
+    if (!_encrypted_image_io_access)
+    { // In case of BB secure-boot sign flow we don't update ITOC since it's already encrypted
+        if (!Fs4UpdateItocInfo(sectionToc, sectionToc->toc_entry.size, newSectionData))
+        {
+            return false;
+        }
+    }
+
+    if (!Fs4ReburnSection(newSectionAddr, sectionToc->toc_entry.size * 4, newSectionData, msg, callBackFunc))
+    {
+        return false;
+    }
+
+    if (!_encrypted_image_io_access)
+    { // In case of BB secure-boot sign flow we don't update ITOC since it's already encrypted
+        if (sectionType != FS3_DEV_INFO)
+        {
+            if (!Fs4ReburnTocSection(isDtoc, callBackFunc))
+            {
+                return false;
+            }
+        }
+    }
+
+    if (!isDtoc)
+    {
+        if (!UpdateSectionHashInHashesTable(newSectionAddr, sectionToc->toc_entry.size * 4, sectionType))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Fs4Operations::UpdateSection(fs3_section_t sectionType,
+                                  std::vector<u_int8_t>& newSectionData,
+                                  const char* msg,
+                                  PrintCallBack callBackFunc)
+{
+    if (sectionType == FS3_DEV_INFO)
+    {
+        return errmsg("Fs4Operations::UpdateSection doesn't support updating DEV_INFO section\n");
+    }
+
+    // Query
+    bool isDtoc;
+    if (!isDTocSection(sectionType, isDtoc))
+    {
+        return false;
+    }
+    bool image_encrypted = false;
+    if (!isEncrypted(image_encrypted))
+    {
+        return errmsg(getErrorCode(), "%s", err());
+    }
+
+    if (image_encrypted)
+    {
+        if (!isDtoc)
+        {
+            return errmsg("Can't update ITOC section in case of encrypted image");
+        }
+        fw_info_t fwInfo;
+        if (!encryptedFwQuery(&fwInfo))
+        {
+            return errmsg("%s", err());
+        }
+    }
+    else
+    {
+        // init sector to read
+        _readSectList.push_back(sectionType);
+        if (!FsIntQueryAux())
+        {
+            _readSectList.pop_back();
+            return false;
+        }
+        _readSectList.pop_back();
+    }
+
+    // Get relevant TOC
+    struct fs4_toc_info* tocArr;
+    u_int32_t numOfTocs;
+    if (isDtoc)
+    {
+        tocArr = _fs4ImgInfo.dtocArr.tocArr;
+        numOfTocs = _fs4ImgInfo.dtocArr.numOfTocs;
+    }
+    else
+    {
+        tocArr = _fs4ImgInfo.itocArr.tocArr;
+        numOfTocs = _fs4ImgInfo.itocArr.numOfTocs;
+    }
+    // Find TOC entry
+    int tocIndex = 0;
+    struct fs4_toc_info* sectionToc = (fs4_toc_info*)NULL;
+    if (!Fs4GetItocInfo(tocArr, numOfTocs, sectionType, sectionToc, tocIndex))
+    {
+        return false;
+    }
+    if (sectionType == FS3_VPD_R0 && ((u_int32_t)tocIndex) != numOfTocs - 1)
+    {
+        return errmsg("VPD Section is not the last device section");
+    }
+
+    if (!WriteSection(sectionToc, newSectionData, msg, callBackFunc))
+    {
+        return false;
     }
 
     return true;

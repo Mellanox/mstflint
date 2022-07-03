@@ -202,6 +202,7 @@ public:
     string openssl_engine;
     string openssl_key_id;
     bool openssl_engine_usage_specified;
+    u_int32_t cert_chain_index;
 };
 
 #endif
