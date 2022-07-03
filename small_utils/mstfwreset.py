@@ -752,7 +752,7 @@ def mstRestart(busId):
         raise RuntimeError("The device is not appearing in lspci output!")
 
     ignore_signals()
-    cmd = "/etc/init.d/mst restart %s" % MstFlags
+    cmd = "/etc/systemd/system/mst.service restart %s" % MstFlags
     logger.debug('Execute {0}'.format(cmd))
     (rc, stdout, stderr) = cmdExec(cmd)
     if rc != 0:
