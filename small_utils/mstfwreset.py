@@ -752,7 +752,7 @@ def mstRestart(busId):
         raise RuntimeError("The device is not appearing in lspci output!")
 
     ignore_signals()
-    cmd = "/etc/init.d/mst restart %s" % MstFlags
+    cmd = "/etc/systemd/system/mst.service restart %s" % MstFlags
     logger.debug('Execute {0}'.format(cmd))
     (rc, stdout, stderr) = cmdExec(cmd)
     if rc != 0:
@@ -1649,8 +1649,8 @@ def main():
     global DevDBDF
     global FWResetStatusChecker
 
-    if args.reset_sync == SyncOwner.TOOL and is_uefi_secureboot():        # The tool is using sysfs to access PCI config and it's
-        raise RuntimeError("The tool is not supported on UEFI Secure Boot") # restricted on UEFI secure boot
+    if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot():   # The tool is using sysfs to access PCI config
+        raise RuntimeError("The tool is not supported on UEFI Secure Boot")                 # and it's restricted on UEFI secure boot
 
     # Exit in case of virtual-machine (not implemented for FreeBSD and Windows)
     if command == "reset" and platform.system() == "Linux" and "ppc64" not in platform.machine():

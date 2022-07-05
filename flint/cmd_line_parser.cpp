@@ -235,6 +235,7 @@ FlagMetaData::FlagMetaData()
 #endif
     _flags.push_back(new Flag("", "output_file", 1));
     _flags.push_back(new Flag("", "user_password", 1));
+    _flags.push_back(new Flag("", "cert_chain_index", 1));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -316,6 +317,9 @@ bool verifyNumOfArgs(string name, string value)
     }
     // Hack : VSD can be empty or contain "," so we shouldnt count its args
     if (name == "vsd") {
+        return true;
+    }
+    if (name == "output_file") {
         return true;
     }
 
@@ -875,7 +879,7 @@ void Flint::initCmdParser()
     AddOptions("activate_delay_sec",
         ' ',
         "<timeout in seconds>",
-        "Use this flag to activate all cable devices connected to host with delay, acceptable values are between 0 and 255 (default - 0, immediately). Important: 'activate' flag must be set.  This flag is relevant only for cable components.",
+        "Use this flag to activate all cable devices connected to host with delay, acceptable values are between 0 and 255 (default - 1). Important: 'activate' flag must be set.  This flag is relevant only for cable components.",
         false,
         false,
         1);
@@ -929,6 +933,14 @@ void Flint::initCmdParser()
 		"<CPU_UTIL>",
 		"Use this flag to reduce CPU utilization while burning, Windows only. Legal values are from 1 (lowest CPU) to 5 (highest CPU)");
 #endif
+    AddOptions(
+      "cert_chain_index",
+      ' ',
+      "<index>",
+      "Use this flag to specify the certificate location, acceptable values are between 0 and 7 (default - 0). "
+      "In case index=0 certificate chain will be stored at CERT_CHAIN_0 section, otherwise at DIGITAL_CERT_RW "
+      "section according to given index.\n"
+      "This flag is relevant only for set_attestation_cert_chain command.");
 
     for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++) {
         if (it->first == SC_ResetCfg) {
@@ -1251,6 +1263,20 @@ ParseStatus Flint::HandleOption(string name, string value)
         }
         _flintParams.cableDeviceSize = cableDeviceSize;
         _flintParams.cable_device_size_specified = true;
+    }
+    else if (name == "cert_chain_index")
+    {
+        int cert_chain_index = 0;
+        if (!strToInt(value, cert_chain_index))
+        {
+            return PARSE_ERROR;
+        }
+        if (cert_chain_index < 0 || cert_chain_index > 7)
+        {
+            printf("certificate chain index should be between 0 and 7.\n");
+            return PARSE_ERROR;
+        }
+        _flintParams.cert_chain_index = cert_chain_index;
     }
     else {
         cout << "Unknown Flag: " << name;

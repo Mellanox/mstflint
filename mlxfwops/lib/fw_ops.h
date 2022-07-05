@@ -192,7 +192,7 @@ public:
     // use progressFunc when dealing with FS2 image and printFunc when dealing with FS3 image.
     virtual bool FwSetVSD(char *vsdStr, ProgressCallBack progressFunc = (ProgressCallBack)NULL, PrintCallBack printFunc = (PrintCallBack)NULL) = 0;
     virtual bool FwSetVPD(char *vpdFileStr, PrintCallBack callBackFunc = (PrintCallBack)NULL) = 0;
-    virtual bool FwSetCertChain(char *certFileStr, PrintCallBack callBackFunc = (PrintCallBack)NULL);
+    virtual bool FwSetCertChain(char *certFileStr,  u_int32_t certIndex, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0;
     virtual bool FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage = false) = 0;
     virtual bool FwResetNvData() = 0;

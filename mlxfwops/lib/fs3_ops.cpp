@@ -1411,9 +1411,8 @@ bool Fs3Operations::FwReadRom(std::vector<u_int8_t>& romSect)
     return true;
 }
 
-bool Fs3Operations::FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage)
+bool Fs3Operations::FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool)
 {
-    (void) stripedImage; // unused for FS3
     //FwGetSection only supports retrieving FS3_DBG_FW_INI section atm.
     if (sectType != FS3_DBG_FW_INI) {
         return errmsg("Unsupported section type.");

@@ -71,10 +71,10 @@ public:
         else if (deviceId == DeviceConnectX6LX) {
             return new ConnectX6LXFwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceSpectrum || deviceId == DeviceSpectrum2 || deviceId == DeviceSpectrum3 || deviceId == DeviceSpectrum4 || deviceId == DeviceQuantum) {
+        else if (deviceId == DeviceSpectrum || deviceId == DeviceSpectrum2 || deviceId == DeviceSpectrum3 || deviceId == DeviceQuantum) {
             return new RavenSwitchSignatureManager();
         }
-        else if (deviceId == DeviceQuantum2) {
+        else if (deviceId == DeviceQuantum2 || deviceId == DeviceSpectrum4) {
             return new SecuredSwitchSignatureManager();
         }
         else {
@@ -107,10 +107,10 @@ public:
         else if (chip == CT_GEARBOX) {
             return new GearBoxSignatureManager();
         }
-        else if(chip == CT_QUANTUM || chip == CT_SPECTRUM || chip == CT_SPECTRUM2 || chip == CT_SPECTRUM3 || chip == CT_SPECTRUM4) {
+        else if(chip == CT_QUANTUM || chip == CT_SPECTRUM || chip == CT_SPECTRUM2 || chip == CT_SPECTRUM3) {
             return new RavenSwitchSignatureManager();
         }
-        else if (chip == CT_QUANTUM2) {
+        else if (chip == CT_QUANTUM2 || chip == CT_SPECTRUM4) {
             return new SecuredSwitchSignatureManager();
         }
         else {

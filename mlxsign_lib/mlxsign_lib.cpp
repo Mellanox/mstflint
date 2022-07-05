@@ -237,63 +237,6 @@ int MlxSignRSA::verify(MlxSign::SHAType shaType, const std::vector<u_int8_t>& di
     return MlxSign::MLX_SIGN_SUCCESS;
 }
 
-int MlxSignRSA::encrypt(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg)
-{
-    int maxMsgSize;
-
-    if (!_privCtx) {
-        return MlxSign::MLX_SIGN_RSA_NO_PRIV_KEY_ERROR;
-    }
-    // size check
-    maxMsgSize = RSA_size((RSA*)_privCtx);
-    if (static_cast<int>(msg.size()) > maxMsgSize) {
-        return MlxSign::MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
-    }
-    // do the job
-    encryptedMsg.resize(maxMsgSize, 0);
-    if (RSA_private_encrypt((int)msg.size(), &msg[0], &encryptedMsg[0], (RSA*)_privCtx, RSA_PKCS1_PADDING ) != maxMsgSize) {
-        return MlxSign::MLX_SIGN_RSA_CALCULATION_ERROR;
-    }
-    return MlxSign::MLX_SIGN_SUCCESS;
-}
-
-int MlxSignRSA::decrypt(const std::vector<u_int8_t>& encryptedMsg, std::vector<u_int8_t>& originalMsg)
-{
-    int maxMsgSize;
-    int origMsgSize;
-    if (!_pubCtx) {
-        return MlxSign::MLX_SIGN_RSA_NO_PUB_KEY_ERROR;
-    }
-    // size check
-    maxMsgSize = RSA_size((RSA*)_pubCtx);
-    if (static_cast<int>(encryptedMsg.size()) > maxMsgSize) {
-        return MlxSign::MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
-    }
-    // do the job
-    originalMsg.resize(maxMsgSize, 0);
-    if ((origMsgSize = RSA_public_decrypt((int)encryptedMsg.size(), &encryptedMsg[0], &originalMsg[0], (RSA*)_pubCtx, RSA_PKCS1_PADDING )) == -1) {
-        return MlxSign::MLX_SIGN_RSA_CALCULATION_ERROR;
-    }
-    originalMsg.resize(origMsgSize);
-    return MlxSign::MLX_SIGN_SUCCESS;
-}
-
-int MlxSignRSA::getEncryptMaxMsgSize()
-{
-    if (_privCtx) {
-        return RSA_size((RSA*)_privCtx);
-    }
-    return 0;
-}
-
-int MlxSignRSA::getDecryptMaxMsgSize()
-{
-    if (_pubCtx) {
-        return RSA_size((RSA*)_pubCtx);
-    }
-    return 0;
-}
-
 std::string MlxSignRSA::str(const std::vector<u_int8_t>& msg)
 {
     char *digestStr = NULL;

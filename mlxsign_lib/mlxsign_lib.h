@@ -115,12 +115,6 @@ public:
     int setPubKeyFromFile(const std::string& pemKeyFilePath);
     int setPubKey(const std::string& pemKey);
 
-    int getEncryptMaxMsgSize();
-    int getDecryptMaxMsgSize();
-
-    int encrypt(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg);     // encrypt with private
-    int decrypt(const std::vector<u_int8_t>& encryptedMsg, std::vector<u_int8_t>& originalMsg);    // decrypt with public (used for testing for now)
-
     int sign(MlxSign::SHAType shaType, const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg);
     int verify(MlxSign::SHAType shaType, const std::vector<u_int8_t>& sha256Dgst, const std::vector<u_int8_t>& sig, bool& result);
 

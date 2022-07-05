@@ -319,6 +319,7 @@ void FsCtrlOperations::ExtractSwitchFWVersion(const fwInfoT& fwQuery)
         (_fwImgInfo.ext_info.fw_ver[1] == _fwImgInfo.ext_info.running_fw_ver[1]) &&
         (_fwImgInfo.ext_info.fw_ver[2] == _fwImgInfo.ext_info.running_fw_ver[2])) {
         strncpy(_fwImgInfo.ext_info.branch_ver, fwQuery.imageVsd, BRANCH_LEN);
+        _fwImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
     }
 }
 
@@ -640,7 +641,7 @@ bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParam
         // Checking if BME is disabled to print indication to user
         bool isBmeSet = DMAComponentAccess::isBMESet(_fwCompsAccess->getMfileObj());
         if (!isBmeSet) {
-            printf("-W- DMA burning is not supported due to BME is unset (Bus Master Enable).\n");
+            DPRINTF(("-W- DMA burning is not supported due to BME is unset (Bus primary Enable).\n"));
         }
     }
     if (!_fwCompsAccess->burnComponents(compsToBurn, &burnParams.ProgressFuncAdv)) {
