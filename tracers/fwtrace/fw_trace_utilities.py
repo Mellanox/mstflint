@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 from __future__ import print_function
 import sys
@@ -41,9 +41,9 @@ import regaccess
 import time
 
 
-class FwTraceUtilities(object):    
+class FwTraceUtilities(object):
 
-    @classmethod    
+    @classmethod
     def _cmd_exec(self, cmd):
         """
         Execute a command line and return the state and the output
@@ -69,7 +69,7 @@ class FwTraceUtilities(object):
         if re.match(pat, dev):
             return True
         return False
-    
+
     @classmethod
     def _is_dev_bdf_format(self, dev):
         """
@@ -80,21 +80,21 @@ class FwTraceUtilities(object):
         if re.match(pat, dev):
             return True
         return False
-    
+
     @classmethod
     def _add_domain_to_address(self, dev_addr):
         """
         Add the domain "0000:" to the given address
-        """  
-        if len(dev_addr.split(":")) == 2 :
+        """
+        if len(dev_addr.split(":")) == 2:
             return "0000:" + dev_addr
         return dev_addr
 
-    @staticmethod 
+    @staticmethod
     def get_dev_dbdf(device_name):
         """
         retrieve the BDF according to the device name
-        """ 
+        """
         if FwTraceUtilities._is_dev_dbdf_format(device_name):
             return device_name
         if FwTraceUtilities._is_dev_bdf_format(device_name):
@@ -109,7 +109,7 @@ class FwTraceUtilities(object):
         elif operatingSys == "Linux":
             cmd = "mdevices_info -vv"
             (rc, out, _) = FwTraceUtilities._cmd_exec(cmd)
-            if rc != 0 :
+            if rc != 0:
                 raise RuntimeError("Failed to get device PCI address")
             # extract bdf
             bdf = None
@@ -123,7 +123,7 @@ class FwTraceUtilities(object):
         elif operatingSys == "Windows":
             cmd = "mdevices status -vv"
             (rc, out, _) = FwTraceUtilities._cmd_exec(cmd)
-            if rc != 0 :
+            if rc != 0:
                 raise RuntimeError("Failed to get device PCI address")
             # extract bdf
             bdf = None
@@ -135,16 +135,16 @@ class FwTraceUtilities(object):
                 raise RuntimeError("Failed to get device PCI Address")
             return bdf
         else:
-            raise RuntimeError("Unsupported OS")       
-    
-    @staticmethod 
-    def is_driver_mem_mode_supported(): 
+            raise RuntimeError("Unsupported OS")
+
+    @staticmethod
+    def is_driver_mem_mode_supported():
         """
         Check if driver mem mode is suported
         If supported return True, otherwise return False
-        """   
+        """
         is_supported = False
-    
+
         if os.name == "nt":
             # future capability - windows
             pass
@@ -154,7 +154,7 @@ class FwTraceUtilities(object):
                 is_supported = True
 
         return is_supported
-    
+
     @staticmethod
     def is_secure_fw(mst_device):
         """
@@ -163,26 +163,26 @@ class FwTraceUtilities(object):
         """
         is_secure = False
         if mst_device is None:
-            return  is_secure
+            return is_secure
 
         # in case that reg access fail, we cant determain a secure fw and return false
         try:
             reg_access_obj = regaccess.RegAccess(mst_device)
             is_secure = reg_access_obj.getSecureFWStatus()
-        except:
+        except BaseException:
             is_secure = False
 
         return is_secure
-    
+
     @staticmethod
     def ts_to_real_ts(ts, freq):
         """
         The method calculate a real time stamp
         and return is as [hh:mm:ss:nsec] format
-        """ 
+        """
         if freq <= 0:
             raise RuntimeError("device frequency is not above Zero - can't calc real time stamp")
-        
+
         nano_seconds = int(1000 / freq) * ts
         # calc hours
         time_in_seconds = int(nano_seconds / 1000000000)
@@ -192,33 +192,33 @@ class FwTraceUtilities(object):
         minutes = int(time_in_seconds / 60)
         # calc seconds
         time_in_seconds = time_in_seconds - (minutes * 60)
-        seconds = time_in_seconds        
+        seconds = time_in_seconds
         # calc the reminder in nano seconds
         nsecs = nano_seconds - int(nano_seconds / 1000000000) * 1000000000
-        
+
         return "{:02d}:{:02d}:{:02d}:{:09d}".format(hours, minutes, seconds, nsecs)
 
     @staticmethod
     def get_device_frequency(device):
         """
-        The method call mlxuptime, parse 
+        The method call mlxuptime, parse
         the device frequency and return it as integer
         (mlxuptime can take 1 sec)
-        """ 
+        """
         cmd = "mlxuptime -d" + device
         (rc, out, _) = FwTraceUtilities._cmd_exec(cmd)
         freq_num = 0
-        if rc != 0 :
+        if rc != 0:
             raise RuntimeError("Failed to get device frequency (necessary for real ts calculation)")
         else:
             for line in out.split('\n'):
                 if "Measured core frequency" in line:
                     freq_str = line.split(": ")[1].split(" ")[0]
-                    freq_num = int(round(float(freq_str))) 
+                    freq_num = int(round(float(freq_str)))
                     break
-               
+
         return freq_num
-        
+
 ##########################################
 
 

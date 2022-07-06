@@ -49,20 +49,18 @@
 #define MLXFWOP_API
 #endif
 
-const std::string DIFFERENT_BRANCHES_EXCEPTION =
-        "Trying to compare different branches is invalid";
+const std::string DIFFERENT_BRANCHES_EXCEPTION = "Trying to compare different branches is invalid";
 const std::string NOT_SET_VERSION = "";
 const unsigned short MAX_VERSION_LENGTH = 28;
 
-class FwVersionException: public std::runtime_error {
+class FwVersionException : public std::runtime_error
+{
 public:
-    FwVersionException() :
-            std::runtime_error(DIFFERENT_BRANCHES_EXCEPTION) {
-    }
+    FwVersionException() : std::runtime_error(DIFFERENT_BRANCHES_EXCEPTION) {}
 };
 
-
-class MLXFWOP_API FwVersion {
+class MLXFWOP_API FwVersion
+{
     /*
      * Using MGIR command, when a given FW binary has non-zero value in
      * DEVELOPMENT_INFO, it shall be treated as a development branch file.
@@ -72,34 +70,34 @@ class MLXFWOP_API FwVersion {
      */
 public:
     FwVersion();
-    FwVersion(unsigned short int, unsigned short int, unsigned short int,
-            const std::string& = "");
+    FwVersion(unsigned short int, unsigned short int, unsigned short int, const std::string& = "");
     virtual ~FwVersion();
     FwVersion(const FwVersion&);
     FwVersion& operator=(const FwVersion&);
     bool operator==(const FwVersion&) const;
     bool operator!=(const FwVersion&) const;
-    bool operator>(const FwVersion &) const;
-    bool operator<(const FwVersion &) const;
-    bool operator>=(const FwVersion &) const;
-    bool operator<=(const FwVersion &) const;
+    bool operator>(const FwVersion&) const;
+    bool operator<(const FwVersion&) const;
+    bool operator>=(const FwVersion&) const;
+    bool operator<=(const FwVersion&) const;
     std::string get() const;
     friend std::ostream& operator<<(std::ostream&, const FwVersion&);
     std::string get_fw_version(const std::string& master_format = "%d.%d.%d",
-            bool even_subminor = false,
-            const std::string& not_set = NOT_SET_VERSION) const;
+                               bool even_subminor = false,
+                               const std::string& not_set = NOT_SET_VERSION) const;
     bool is_set() const;
     bool are_same_branch(const FwVersion&) const;
     int compare_master_version(const FwVersion&) const;
     int compare(const FwVersion&) const;
     virtual FwVersion* clone() const;
+
 protected:
     unsigned short int _major;
     unsigned short int _minor;
     unsigned short int _subminor;
     std::string _devBranchTag;
-    virtual std::string get_master_version(const std::string& format,
-            bool even_subminor = false) const;
+    virtual std::string get_master_version(const std::string& format, bool even_subminor = false) const;
+
 private:
     bool is_master_branch() const;
     bool is_switch_or_gb() const;

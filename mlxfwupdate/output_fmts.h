@@ -48,14 +48,23 @@ using namespace std;
 class OutputFmts
 {
 public:
-    int createInventoryXML(vector<MlnxDev*> &devs, PsidLookupDB &psidLookupDB, int result, string msg, string &buffer, int buf_is_file);
-    int createBurnXML(vector<MlnxDev*> &devs, map<string, PsidQueryItem> &psidUpdateInfo, PsidLookupDB &psidLookupDB, string &buffer, int buf_is_file, int CompareFFV);
-    int createFailXML(int result, int update_query_, string &buffer, int buf_is_file);
+    int createInventoryXML(vector<MlnxDev*>& devs,
+                           PsidLookupDB& psidLookupDB,
+                           int result,
+                           string msg,
+                           string& buffer,
+                           int buf_is_file);
+    int createBurnXML(vector<MlnxDev*>& devs,
+                      map<string, PsidQueryItem>& psidUpdateInfo,
+                      PsidLookupDB& psidLookupDB,
+                      string& buffer,
+                      int buf_is_file,
+                      int CompareFFV);
+    int createFailXML(int result, int update_query_, string& buffer, int buf_is_file);
     void setForceModeParam(bool force_mode);
 
 private:
     bool _force_mode;
 };
-
 
 #endif

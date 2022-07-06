@@ -48,12 +48,14 @@ int HsmTest(int argc, char* argv[])
     (void)argc;
     (void)argv;
     HSMLunaClient m_HSMLunaClient;
-    if (m_HSMLunaClient.Init() == CK_FALSE) {
+    if (m_HSMLunaClient.Init() == CK_FALSE)
+    {
         cout << "Initialization  error" << endl;
         return -1;
     }
 #if PEM_TEST
-    if (argc == 2) {
+    if (argc == 2)
+    {
         vector<unsigned char> outputBuffer;
         Hex64Manipulations hex64;
         hex64.ParsePemFile(argv[1], outputBuffer);
@@ -65,8 +67,9 @@ int HsmTest(int argc, char* argv[])
     m_HSMLunaClient.BurnPrivateKey(pPrivateKeyLabel, pbPublicKeyLabel);
 #endif
 #if SIGN_TEST
-    vector<CK_BYTE> data(64,0);
-    for (int i = 0; i < 64; i++) {
+    vector<CK_BYTE> data(64, 0);
+    for (int i = 0; i < 64; i++)
+    {
         data[i] = i + 1;
     }
 

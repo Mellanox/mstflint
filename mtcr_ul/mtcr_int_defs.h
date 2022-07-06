@@ -36,18 +36,19 @@
 
 #include "mtcr_com_defs.h"
 
-typedef int (*f_mread4)        (mfile *mf, unsigned int offset, u_int32_t *value);
-typedef int (*f_mwrite4)       (mfile *mf, unsigned int offset, u_int32_t value);
-typedef int (*f_mread4_block)  (mfile *mf, unsigned int offset, u_int32_t *data, int byte_len);
-typedef int (*f_mwrite4_block) (mfile *mf, unsigned int offset, u_int32_t *data, int byte_len);
-typedef int (*f_maccess_reg)   (mfile *mf, u_int8_t *data);
-typedef int (*f_mclose)        (mfile *mf);
+typedef int (*f_mread4)(mfile* mf, unsigned int offset, u_int32_t* value);
+typedef int (*f_mwrite4)(mfile* mf, unsigned int offset, u_int32_t value);
+typedef int (*f_mread4_block)(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len);
+typedef int (*f_mwrite4_block)(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len);
+typedef int (*f_maccess_reg)(mfile* mf, u_int8_t* data);
+typedef int (*f_mclose)(mfile* mf);
 
-typedef struct ul_ctx {
+typedef struct ul_ctx
+{
     int fdlock;
     /* Hermon WA */
-    int connectx_flush;              /* For ConnectX A0 */
-    int need_flush;              /* For ConnectX A0 */
+    int connectx_flush; /* For ConnectX A0 */
+    int need_flush;     /* For ConnectX A0 */
 
     f_mread4 mread4;
     f_mwrite4 mwrite4;
@@ -55,7 +56,7 @@ typedef struct ul_ctx {
     f_mwrite4_block mwrite4_block;
     f_maccess_reg maccess_reg;
     f_mclose mclose;
-    int wo_addr;              /* Is write Only Addr GW */
+    int wo_addr; /* Is write Only Addr GW */
     /******** RESERVED FIELDS FOR SWITCHING METHOD IF NEEDED ******/
     int res_access_type;
     int res_fdlock;
@@ -67,6 +68,3 @@ typedef struct ul_ctx {
     int via_driver;
 } ul_ctx_t;
 #endif
-
-
-

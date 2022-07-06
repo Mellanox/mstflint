@@ -52,7 +52,6 @@
 #include "mlxcfg_utils.h"
 #include <regex>
 
-
 using namespace std;
 
 typedef struct reg_access_hca_mqis_reg mqisReg;

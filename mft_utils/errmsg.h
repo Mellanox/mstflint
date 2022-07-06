@@ -48,79 +48,82 @@
  *  ErrMsg Class Provides API for returning both error codes and error messages to the user app.
  */
 
-class ErrMsg {
+class ErrMsg
+{
 public:
     ErrMsg();
     ErrMsg(std::map<int, std::string>& errCodeMap);
 
     virtual ~ErrMsg();
 
-    const char* err() const { return _err;}
-    void updateErrCodes(std::map<int, std::string>& errCodeMap) {_errMap = errCodeMap; return;}
+    const char* err() const { return _err; }
+    void updateErrCodes(std::map<int, std::string>& errCodeMap)
+    {
+        _errMap = errCodeMap;
+        return;
+    }
 
-    const char* getFormatErr(const char *prefix, ...)
+    const char* getFormatErr(const char* prefix, ...)
 #ifdef __GNUC__
-    __attribute__ ((format(printf, 2, 3)))
+      __attribute__((format(printf, 2, 3)))
 #endif
-    ;
+      ;
 
     void err_clear();
 
-    int getLastErrCode() const {return _lastErrCode;}
+    int getLastErrCode() const { return _lastErrCode; }
 
     const char* err2Str(int errCode) const;
 
 protected:
-    char* vprint(const char *format, va_list args);
+    char* vprint(const char* format, va_list args);
 
-    int errmsg(const char *format, ...)
+    int errmsg(const char* format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format(printf, 2, 3)))
+      __attribute__((format(printf, 2, 3)))
 #endif
-    ;
+      ;
 
-    int errmsg(int errCode, const char *format, ...)
+    int errmsg(int errCode, const char* format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format(printf, 3, 4)))
+      __attribute__((format(printf, 3, 4)))
 #endif
-    ;
+      ;
 
     int errmsg(int errCode);
 
-
-    int errmsgConcatMsg(int errCode, const ErrMsg& errMsgObj, const char *format, ...)
+    int errmsgConcatMsg(int errCode, const ErrMsg& errMsgObj, const char* format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format(printf, 4, 5)))
+      __attribute__((format(printf, 4, 5)))
 #endif
-    ;
+      ;
 
-    int errmsgConcatMsg(const ErrMsg& errMsgObj, const char *format, ...)
+    int errmsgConcatMsg(const ErrMsg& errMsgObj, const char* format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format(printf, 3, 4)))
+      __attribute__((format(printf, 3, 4)))
 #endif
-    ;
+      ;
 
     int errmsgConcatMsg(int errCode, const ErrMsg& errMsgObj);
 
     int errmsgConcatMsg(const ErrMsg& errMsgObj);
 
-
-    int errmsgConcatErrCd(int errCode, const ErrMsg& errMsgObj, const char *format, ...)
+    int errmsgConcatErrCd(int errCode, const ErrMsg& errMsgObj, const char* format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format(printf, 4, 5)))
+      __attribute__((format(printf, 4, 5)))
 #endif
-    ;
+      ;
 
     int errmsgConcatErrCd(int errCode, const ErrMsg& errMsgObj);
 
     int errmsgConcatErrCd(const ErrMsg& errMsgObj);
 
 private:
-    void errmsgConcatCom(const char *format, va_list args, const char *suffix);
+    void errmsgConcatCom(const char* format, va_list args, const char* suffix);
 
     std::map<int, std::string> _errMap;
-    char *_err;
-    char *_formatErr;
+    char* _err;
+    char* _formatErr;
     int _lastErrCode;
 };
 

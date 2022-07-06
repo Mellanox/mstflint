@@ -52,43 +52,43 @@
 using namespace std;
 #define FINGERPRINT_MFA2 "#BIN.COMPONENT!#"
 
-
-namespace mfa2 {
-
-class Component {
-
+namespace mfa2
+{
+class Component
+{
 private:
-    FingerPrint         _fingerPrint;
+    FingerPrint _fingerPrint;
     ComponentDescriptor _descriptor;
 
 public:
-
-    explicit Component(ComponentDescriptor descriptor) :
-        _fingerPrint(FINGERPRINT_MFA2),
-        _descriptor(descriptor) {};
+    explicit Component(ComponentDescriptor descriptor) : _fingerPrint(FINGERPRINT_MFA2), _descriptor(descriptor){};
 
     void packDescriptor(vector<u_int8_t>& buff) const { _descriptor.pack(buff); };
-    void packData(vector<u_int8_t>& buff) {
+    void packData(vector<u_int8_t>& buff)
+    {
         _fingerPrint.pack(buff);
         _descriptor.packData(buff);
     };
     u_int32_t getComponentBinarySize() const;
     u_int64_t getBinaryComponentOffset();
     void setComponentBinaryOffset(u_int64_t offset);
-    const ComponentDescriptor & getComponentDescriptor() const { return _descriptor;}
+    const ComponentDescriptor& getComponentDescriptor() const { return _descriptor; }
 };
 
-inline u_int32_t Component::getComponentBinarySize() const {
+inline u_int32_t Component::getComponentBinarySize() const
+{
     return _fingerPrint.getSize() + _descriptor.getBinarySize();
 }
 
-inline void Component::setComponentBinaryOffset(u_int64_t offset) {
+inline void Component::setComponentBinaryOffset(u_int64_t offset)
+{
     _descriptor.setComponentBinaryOffset(offset);
 }
 
-inline u_int64_t Component::getBinaryComponentOffset() {
+inline u_int64_t Component::getBinaryComponentOffset()
+{
     return _descriptor.getComponentBinaryOffset();
 }
 
-}
+} // namespace mfa2
 #endif

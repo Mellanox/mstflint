@@ -45,9 +45,9 @@
 class CmdLineParser : public CommandLineRequester
 {
 public:
-    CmdLineParser(CmdLineParams *params, char **argv, int argc);
+    CmdLineParser(CmdLineParams* params, char** argv, int argc);
     ~CmdLineParser();
-    bool parse(char **argv, int argc);
+    bool parse(char** argv, int argc);
     ParseStatus HandleOption(string name, string value);
 
 private:
@@ -55,5 +55,5 @@ private:
 
 private:
     CommandLineParser _cmdParser;
-    CmdLineParams *_cmdLineParams;
+    CmdLineParams* _cmdLineParams;
 };

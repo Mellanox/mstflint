@@ -56,47 +56,51 @@
 
 using namespace std;
 
-enum {
+enum
+{
     ERR_SRVREQ_ACCESS_INIT = 1,
 };
 
-#define URL_TAG       "url"
+#define URL_TAG "url"
 #define FILE_NAME_TAG "name"
-#define ERR_MSG_TAG   "err_msg"
-#define ERR_NUM_TAG   "err_num"
+#define ERR_MSG_TAG "err_msg"
+#define ERR_NUM_TAG "err_num"
 
-int    progress_func(void *ptr, double TotalToDownload,
-                     double NowDownloaded, double TotalToUpload,
-                     double NowUploaded);
+int progress_func(void* ptr, double TotalToDownload, double NowDownloaded, double TotalToUpload, double NowUploaded);
 
-class ServerRequest {
+class ServerRequest
+{
 public:
-    ServerRequest(const char *url, const char *proxy,
-                  int compare_ffv, bool show_progress, string key,
+    ServerRequest(const char* url,
+                  const char* proxy,
+                  int compare_ffv,
+                  bool show_progress,
+                  string key,
                   string certificate,
                   unsigned int numberOfRetrials);
     ~ServerRequest();
-    int updateMFAsRequest(vector<string> &psid_list,
-                          vector<dm_dev_id_t> &dev_types_list,
-                          vector<string> &fw_version_list,
-                          vector<PsidQueryItem> &results);
-//        int queryAllMFAs(vector<string> &mfa_list);
-    int DownloadFilesRequest(vector <DownloadedFileProperties> &files,
-                             string os, string devs, string type);
+    int updateMFAsRequest(vector<string>& psid_list,
+                          vector<dm_dev_id_t>& dev_types_list,
+                          vector<string>& fw_version_list,
+                          vector<PsidQueryItem>& results);
+    //        int queryAllMFAs(vector<string> &mfa_list);
+    int DownloadFilesRequest(vector<DownloadedFileProperties>& files, string os, string devs, string type);
 
-    int queryPsids(string psids, vector<PsidQueryItem> &results);
+    int queryPsids(string psids, vector<PsidQueryItem>& results);
     int download(string url, string dest_path);
-    void getError(int &error, string &error_msg);
-    inline void setNumberOfTrials(unsigned int num) {_numberOfRetrials = num;};
+    void getError(int& error, string& error_msg);
+    inline void setNumberOfTrials(unsigned int num) { _numberOfRetrials = num; };
+
 private:
     void setError(int error, string error_msg);
-    int  parseQueryResponse(string jsonTxt, vector<PsidQueryItem> &results, bool ignoreNotFound = true);
-//        int  parseQueryAllMFAsRespone(string jsonTxt, vector <string>&result);
-    int  parseDownloadFilesResponse(string jsonTxt, vector <DownloadedFileProperties> &files);
+    int parseQueryResponse(string jsonTxt, vector<PsidQueryItem>& results, bool ignoreNotFound = true);
+    //        int  parseQueryAllMFAsRespone(string jsonTxt, vector <string>&result);
+    int parseDownloadFilesResponse(string jsonTxt, vector<DownloadedFileProperties>& files);
 
-    int curl_request(const char *url, const char *data, const char *dest_file, int numOfRet);
-    int curl_request_str(const char *url, const char *data, string& response);
+    int curl_request(const char* url, const char* data, const char* dest_file, int numOfRet);
+    int curl_request_str(const char* url, const char* data, string& response);
     string genertDownloadUrl(string file_url);
+
 private:
     string _Url;
     string _WebService;
@@ -110,10 +114,10 @@ private:
     string _key;
     string _ceritifcate;
     unsigned int _numberOfRetrials;
-    #ifdef USE_CURL
-    static CURL *_curl;
-    struct curl_slist *_headers;
-    #endif
+#ifdef USE_CURL
+    static CURL* _curl;
+    struct curl_slist* _headers;
+#endif
 };
 
 #endif

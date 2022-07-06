@@ -38,14 +38,13 @@
 #include "icmd_cif_open.h"
 #include "icmd_cif_macros.h"
 
-#define MH_SYNC_OPCODE        0x8402
+#define MH_SYNC_OPCODE 0x8402
 #define MH_SYNC_STATUS_OPCODE 0x8403
 
 /*
  * gcif_get_fw_info
  */
-int gcif_get_fw_info(mfile *mf,
-                     OUT struct connectib_icmd_get_fw_info *fw_info)
+int gcif_get_fw_info(mfile* mf, OUT struct connectib_icmd_get_fw_info* fw_info)
 {
     SEND_ICMD_FLOW(mf, GET_FW_INFO, connectib_icmd_get_fw_info, fw_info, 0, 1);
 }
@@ -53,29 +52,28 @@ int gcif_get_fw_info(mfile *mf,
 /*
  * get_icmd_query_cap
  */
-int get_icmd_query_cap(mfile *mf, struct icmd_hca_icmd_query_cap_general *icmd_query_caps)
+int get_icmd_query_cap(mfile* mf, struct icmd_hca_icmd_query_cap_general* icmd_query_caps)
 {
-    SEND_ICMD_FLOW(mf, GET_ICMD_QUERY_CAP, icmd_hca_icmd_query_cap_general,
-                   icmd_query_caps, 1, 0);
+    SEND_ICMD_FLOW(mf, GET_ICMD_QUERY_CAP, icmd_hca_icmd_query_cap_general, icmd_query_caps, 1, 0);
 }
 
-int gcif_mh_sync(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync)
+int gcif_mh_sync(mfile* mf, struct connectx4_icmd_mh_sync* mh_sync)
 {
     SEND_ICMD_FLOW(mf, MH_SYNC_OPCODE, connectx4_icmd_mh_sync, mh_sync, 1, 0);
 }
 
-int gcif_mh_sync_status(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync_out)
+int gcif_mh_sync_status(mfile* mf, struct connectx4_icmd_mh_sync* mh_sync_out)
 {
     memset(mh_sync_out, 0x0, sizeof(*mh_sync_out));
     SEND_ICMD_FLOW(mf, MH_SYNC_STATUS_OPCODE, connectx4_icmd_mh_sync, mh_sync_out, 1, 0);
 }
 
-int gcif_set_itrace(mfile *mf, struct connectib_itrace *itrace)
+int gcif_set_itrace(mfile* mf, struct connectib_itrace* itrace)
 {
     SEND_ICMD_FLOW(mf, SET_ITRACE, connectib_itrace, itrace, 1, 0);
 }
 
-int gcif_set_port_sniffer(mfile *mf, struct connectib_icmd_set_port_sniffer *set_port_sniffer)
+int gcif_set_port_sniffer(mfile* mf, struct connectib_icmd_set_port_sniffer* set_port_sniffer)
 {
     SEND_ICMD_FLOW(mf, SET_PORT_SNIFFER, connectib_icmd_set_port_sniffer, set_port_sniffer, 1, 0);
 }

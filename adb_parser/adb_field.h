@@ -57,10 +57,10 @@ public:
     u_int32_t arrayLen();
     bool isUnlimitedArr();
     u_int32_t eSize();
-    string toXml(const string &addPrefix);
+    string toXml(const string& addPrefix);
 
     // Operator overloading - useful for sorting
-    bool operator<(AdbField &other);
+    bool operator<(AdbField& other);
 
     // FOR DEBUG
     void print(int indent = 0);
@@ -81,7 +81,7 @@ public:
     string condition; // field's visibility dynamic condition
 
     // FOR USER USAGE
-    void *userData;
+    void* userData;
 };
 
 #endif

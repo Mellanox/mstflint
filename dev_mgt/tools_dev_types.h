@@ -44,75 +44,76 @@
 #define TOOLS_DEV_TYPE_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <common/bit_slice.h>
 #include <common/compatibility.h>
 #include <mtcr.h>
 
-enum dm_dev_id
-{
-    DeviceUnknown = -1,       //Dummy Device - Marker for indicating error.
-    DeviceStartMarker = 0,    // Dummy Device - Marker for first device
-                              // to let user iterate from DeviceStartMarker to DeviceEndMarker
-                              // Note: Call dm_is_device_supported() to see if a device is supported by the lib.
+    enum dm_dev_id
+    {
+        DeviceUnknown = -1,    // Dummy Device - Marker for indicating error.
+        DeviceStartMarker = 0, // Dummy Device - Marker for first device
+                               // to let user iterate from DeviceStartMarker to DeviceEndMarker
+                               // Note: Call dm_is_device_supported() to see if a device is supported by the lib.
 
-    DeviceInfiniScale = 0,  // UnSupported
-    DeviceInfiniHost,       // UnSupported
-    DeviceInfiniHostIIIEx,  // UnSupported
-    DeviceInfiniHostIIIEx_MF,// UnSupported
-    DeviceInfiniScaleIII,   // UnSupported
-    DeviceInfiniHostIIILx,  // UnSupported
-    DeviceConnectX,         // UnSupported
-    DeviceConnectX2,
-    DeviceInfiniScaleIV,
-    DeviceBridgeX,          // UnSupported
-    DeviceSwitchX,
-    DeviceConnectX3,
-    DeviceConnectIB,
-    DeviceConnectX3Pro,
-    DeviceSwitchIB,
-    DeviceSpectrum,
-    DeviceQuantum,
-    DeviceConnectX4,
-    DeviceConnectX4LX,
-    DeviceConnectX5,
-    DeviceConnectX6,
-    DeviceBlueField,
-    DeviceBlueField2,
-    DeviceBlueField3,
-    DeviceFPGA,             // UnSupported
-    DeviceSwitchIB2,
-    DeviceFPGANewton,       // Unsupported
-    DeviceCable,
-    DeviceCableQSFP,
-    DeviceCableQSFPaging,
-    DeviceCableSFP,
-    DeviceCableSFP51,
-    DeviceCableSFP51Paging,
-    DeviceArdbeg,
-    DeviceBaritone,
-    DeviceMenhit,
-    DeviceSpectrum2,
-    DeviceDummy,
-    DeviceSecureHost,
-    DeviceConnectX6DX,
-    DeviceConnectX6LX,
-    DeviceConnectX7,
-    DeviceSpectrum3, // Firebird
-    DeviceSpectrum4, // Albatross
-    DeviceQuantum2, // Blackbird
-    DeviceGearBox,
-    DeviceGearBoxManager,
-    DeviceAbirGearBox,
-    DeviceCableCMIS,
-    DeviceCableCMISPaging,
-    DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating
-};
+        DeviceInfiniScale = 0,    // UnSupported
+        DeviceInfiniHost,         // UnSupported
+        DeviceInfiniHostIIIEx,    // UnSupported
+        DeviceInfiniHostIIIEx_MF, // UnSupported
+        DeviceInfiniScaleIII,     // UnSupported
+        DeviceInfiniHostIIILx,    // UnSupported
+        DeviceConnectX,           // UnSupported
+        DeviceConnectX2,
+        DeviceInfiniScaleIV,
+        DeviceBridgeX, // UnSupported
+        DeviceSwitchX,
+        DeviceConnectX3,
+        DeviceConnectIB,
+        DeviceConnectX3Pro,
+        DeviceSwitchIB,
+        DeviceSpectrum,
+        DeviceQuantum,
+        DeviceConnectX4,
+        DeviceConnectX4LX,
+        DeviceConnectX5,
+        DeviceConnectX6,
+        DeviceBlueField,
+        DeviceBlueField2,
+        DeviceBlueField3,
+        DeviceFPGA, // UnSupported
+        DeviceSwitchIB2,
+        DeviceFPGANewton, // Unsupported
+        DeviceCable,
+        DeviceCableQSFP,
+        DeviceCableQSFPaging,
+        DeviceCableSFP,
+        DeviceCableSFP51,
+        DeviceCableSFP51Paging,
+        DeviceArdbeg,
+        DeviceBaritone,
+        DeviceMenhit,
+        DeviceSpectrum2,
+        DeviceDummy,
+        DeviceSecureHost,
+        DeviceConnectX6DX,
+        DeviceConnectX6LX,
+        DeviceConnectX7,
+        DeviceSpectrum3, // Firebird
+        DeviceSpectrum4, // Albatross
+        DeviceQuantum2,  // Blackbird
+        DeviceGearBox,
+        DeviceGearBoxManager,
+        DeviceAbirGearBox,
+        DeviceCableCMIS,
+        DeviceCableCMISPaging,
+        DeviceEndMarker // Dummy Device - Marker for indicating end of devices when iterating
+    };
 
-enum hw_dev_id
-{
+    enum hw_dev_id
+    {
         DeviceInfiniScale_HwId = 0x01b3,
         DeviceSwitchX_HwId = 0x0245,
         DeviceConnectX2_HwId = 0x190,
@@ -138,7 +139,7 @@ enum hw_dev_id
         DeviceCableCMISPaging_HwId = 0x19,
         DeviceCableSFP_HwId = 0x03,
         DeviceCableSFP51_HwId = 0x03,
-        DeviceCableSFP51Paging_HwId =0x03,
+        DeviceCableSFP51Paging_HwId = 0x03,
         DeviceSpectrum2_HwId = 0x24e,
         DeviceQuantum_HwId = 0x24d,
         DeviceQuantum2_HwId = 0x257,
@@ -151,117 +152,110 @@ enum hw_dev_id
         DeviceGearBox_HwId = 0x252,
         DeviceGearBoxManager_HwId = 0x253,
         DeviceAbirGearBox_HwId = 0x256
-};
-typedef enum dm_dev_id dm_dev_id_t;
+    };
+    typedef enum dm_dev_id dm_dev_id_t;
 
-/**
- * Returns 0 on success and 1 on failure.
- */
-int dm_get_device_id(mfile *mf,
-                     dm_dev_id_t *ptr_dev_type,
-                     u_int32_t *ptr_dev_id,
-                     u_int32_t *ptr_chip_rev);
+    /**
+     * Returns 0 on success and 1 on failure.
+     */
+    int dm_get_device_id(mfile* mf, dm_dev_id_t* ptr_dev_type, u_int32_t* ptr_dev_id, u_int32_t* ptr_chip_rev);
 
-int dm_get_device_id_without_prints(mfile *mf,
-                                    dm_dev_id_t *ptr_dm_dev_id,
-                                    u_int32_t *ptr_hw_dev_id,
-                                    u_int32_t *ptr_hw_rev);
+    int dm_get_device_id_without_prints(mfile* mf,
+                                        dm_dev_id_t* ptr_dm_dev_id,
+                                        u_int32_t* ptr_hw_dev_id,
+                                        u_int32_t* ptr_hw_rev);
 
-/**
- * Returns 0 on success and 1 on failure.
- */
-int dm_get_device_id_offline(u_int32_t devid,
-                             u_int32_t chip_rev,
-                             dm_dev_id_t *ptr_dev_type);
+    /**
+     * Returns 0 on success and 1 on failure.
+     */
+    int dm_get_device_id_offline(u_int32_t devid, u_int32_t chip_rev, dm_dev_id_t* ptr_dev_type);
 
+    /**
+     * Returns 1 if device is supported and 0 otherwise (library dependant)
+     */
+    int dm_is_device_supported(dm_dev_id_t type);
 
-/**
- * Returns 1 if device is supported and 0 otherwise (library dependant)
- */
-int dm_is_device_supported(dm_dev_id_t type);
+    /**
+     * Returns the device name as a "const char*"
+     */
+    const char* dm_dev_type2str(dm_dev_id_t type);
 
+    /**
+     * Returns the device id
+     */
+    dm_dev_id_t dm_dev_str2type(const char* str);
 
-/**
- * Returns the device name as a "const char*"
- */
-const char* dm_dev_type2str(dm_dev_id_t type);
+    /**
+     * A predicate returning if the device is an hca
+     */
+    int dm_dev_is_hca(dm_dev_id_t type);
 
-/**
- * Returns the device id
- */
-dm_dev_id_t dm_dev_str2type(const char *str);
+    /**
+     * A predicate returning if the hca supports 200G speed and above
+     */
+    int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type);
 
-/**
- * A predicate returning if the device is an hca
- */
-int dm_dev_is_hca(dm_dev_id_t type);
+    /**
+     * A predicate returning if the device is a switch
+     */
+    int dm_dev_is_switch(dm_dev_id_t type);
 
-/**
- * A predicate returning if the hca supports 200G speed and above
- */
-int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type);
+    /**
+     * A predicate returning if the switch supports 200G speed and above
+     */
+    int dm_dev_is_200g_speed_supported_switch(dm_dev_id_t type);
 
-/**
- * A predicate returning if the device is a switch
- */
-int dm_dev_is_switch(dm_dev_id_t type);
+    /**
+     * A predicate returning if the device is a bridge
+     */
+    int dm_dev_is_bridge(dm_dev_id_t type);
 
-/**
- * A predicate returning if the switch supports 200G speed and above
- */
-int dm_dev_is_200g_speed_supported_switch(dm_dev_id_t type);
+    /**
+     * A predicate returning if the device is a Cable
+     */
+    int dm_dev_is_cable(dm_dev_id_t type);
 
-/**
- * A predicate returning if the device is a bridge
- */
-int dm_dev_is_bridge(dm_dev_id_t type);
+    /**
+     * Returns the max num of ports or -1 on error
+     */
+    int dm_get_hw_ports_num(dm_dev_id_t type);
 
-/**
- * A predicate returning if the device is a Cable
- */
-int dm_dev_is_cable(dm_dev_id_t type);
+    /**
+     * Returns the HW device id of the givn device type or zero on failure.
+     */
+    u_int32_t dm_get_hw_dev_id(dm_dev_id_t type);
 
-/**
- * Returns the max num of ports or -1 on error
- */
-int dm_get_hw_ports_num(dm_dev_id_t type);
+    /**
+     * Returns the HW chip revision of the given device type or zero on failures,
+     * This is useful to distinguish between ConnectX2 and ConnectX.
+     */
+    u_int32_t dm_get_hw_rev_id(dm_dev_id_t type);
 
-/**
- * Returns the HW device id of the givn device type or zero on failure.
- */
-u_int32_t dm_get_hw_dev_id(dm_dev_id_t type);
+    /**
+     * A predicate returning if the device supports Function Per Port
+     */
+    int dm_is_fpp_supported(dm_dev_id_t type);
 
-/**
- * Returns the HW chip revision of the given device type or zero on failures,
- * This is useful to distinguish between ConnectX2 and ConnectX.
- */
-u_int32_t dm_get_hw_rev_id(dm_dev_id_t type);
+    int dm_is_4th_gen(dm_dev_id_t type);
 
-/**
- * A predicate returning if the device supports Function Per Port
- */
-int dm_is_fpp_supported(dm_dev_id_t type);
+    int dm_is_5th_gen_hca(dm_dev_id_t type);
 
-int dm_is_4th_gen(dm_dev_id_t type);
+    int dm_is_connectib(dm_dev_id_t type);
 
-int dm_is_5th_gen_hca(dm_dev_id_t type);
+    int dm_is_switchx(dm_dev_id_t type);
 
-int dm_is_connectib(dm_dev_id_t type);
+    int dm_is_new_gen_switch(dm_dev_id_t type);
 
-int dm_is_switchx(dm_dev_id_t type);
+    int dm_dev_is_raven_family_switch(dm_dev_id_t type);
 
-int dm_is_new_gen_switch(dm_dev_id_t type);
-
-int dm_dev_is_raven_family_switch(dm_dev_id_t type);
-
-int dm_dev_is_ib_switch(dm_dev_id_t type);
-/*
- * A predicate returning if the device is in LiveFish mode
- */
-int dm_is_livefish_mode(mfile *mf);
+    int dm_dev_is_ib_switch(dm_dev_id_t type);
+    /*
+     * A predicate returning if the device is in LiveFish mode
+     */
+    int dm_is_livefish_mode(mfile* mf);
 
 #ifdef __cplusplus
-}       /* end of 'extern "C"' */
+} /* end of 'extern "C"' */
 #endif
 
 #endif // TOOLS_DEV_TYPE_H

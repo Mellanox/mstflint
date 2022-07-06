@@ -50,21 +50,24 @@
 
 void packString(const string& str, vector<u_int8_t>& buff)
 {
-    for(unsigned int i = 0; i < str.length(); i++) {
+    for (unsigned int i = 0; i < str.length(); i++)
+    {
         buff.push_back((u_int8_t)str[i]);
     }
 }
 
 void packBytesArray(const u_int8_t* arr, unsigned int len, vector<u_int8_t>& buff)
 {
-    for(unsigned int i = 0; i < len; i++) {
+    for (unsigned int i = 0; i < len; i++)
+    {
         buff.push_back(arr[i]);
     }
 }
 
 void unpackBytesArray(u_int8_t* arr, unsigned int len, vector<u_int8_t>& buff)
 {
-    for (unsigned int i = 0; i < len; i++) {
+    for (unsigned int i = 0; i < len; i++)
+    {
         arr[i] = buff[i];
     }
 }
@@ -73,10 +76,11 @@ void packBinFile(const string& file, vector<u_int8_t>& buff)
     vector<u_int8_t> fileBuff;
     streampos size;
 
-    std::ifstream ifs(file.c_str(), ios::in|ios::binary|ios::ate);
+    std::ifstream ifs(file.c_str(), ios::in | ios::binary | ios::ate);
 
-    if (ifs.fail()) {
-        //TODO throw PLDMException("Failed to open file: %s", file.c_str());
+    if (ifs.fail())
+    {
+        // TODO throw PLDMException("Failed to open file: %s", file.c_str());
         return;
     }
     size = ifs.tellg();
@@ -94,18 +98,19 @@ unsigned int getFileSize(const string& file)
 
     int rc = stat(file.c_str(), &stat_buf);
 
-    if (!rc) {
-        //printf("stat_buf.st_size=%d\n", stat_buf.st_size);
+    if (!rc)
+    {
+        // printf("stat_buf.st_size=%d\n", stat_buf.st_size);
         return stat_buf.st_size;
     }
 
-    return 0; //TODO throw exception
+    return 0; // TODO throw exception
 }
 
 bool fexists(const std::string& filename)
 {
     struct stat buffer;
-    return (stat (filename.c_str(), &buffer) == 0);
+    return (stat(filename.c_str(), &buffer) == 0);
 }
 
 // check if filename points to regular file:
@@ -113,7 +118,7 @@ bool isFile(const std::string& filename)
 {
     struct stat buffer;
     stat(filename.c_str(), &buffer);
-    return S_ISREG(buffer.st_mode); 
+    return S_ISREG(buffer.st_mode);
 }
 
 bool endsWith(const std::string& str, const std::string& suffix)
@@ -121,27 +126,33 @@ bool endsWith(const std::string& str, const std::string& suffix)
     return (str.size() >= suffix.size()) && (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0);
 }
 
-void listDir(const char *path, vector<string>& files)
+void listDir(const char* path, vector<string>& files)
 {
-    struct dirent *entry;
-    DIR *dir = opendir(path);
-    if (dir == NULL) {
+    struct dirent* entry;
+    DIR* dir = opendir(path);
+    if (dir == NULL)
+    {
         fprintf(stderr, "Failed to open directory: %s\n", path);
         exit(1);
     }
 
-    while ((entry = readdir(dir)) != NULL) {
-        if(endsWith(entry->d_name, ".bin")) {
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (endsWith(entry->d_name, ".bin"))
+        {
             files.push_back(entry->d_name);
         }
-        else {
+        else
+        {
             // skipping hidden files
-            if(entry->d_name[0] != '.') {
+            if (entry->d_name[0] != '.')
+            {
                 fprintf(stderr, "Skipping file: %s, not a binary...\n", entry->d_name);
             }
         }
     }
-    if(files.empty()) {
+    if (files.empty())
+    {
         fprintf(stderr, "No binray files found in the given directory: %s\n", path);
         exit(1);
     }

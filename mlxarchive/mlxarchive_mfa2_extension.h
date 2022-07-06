@@ -53,32 +53,27 @@
 
 using namespace std;
 
-namespace mfa2 {
-
+namespace mfa2
+{
 class Version
 {
-
 public:
-    Version() 
+    Version()
     {
         major = -1;
         minor = -1;
         subminor = -1;
     }
 
-
-    Version(std::string version)
-    {
-        sscanf(version.c_str(), "%d.%d.%d", &major, &minor, &subminor);
-    }
+    Version(std::string version) { sscanf(version.c_str(), "%d.%d.%d", &major, &minor, &subminor); }
 
 private:
-    int major; 
+    int major;
     int minor;
     int subminor;
 
 public:
-     bool operator > (const Version& other)
+    bool operator>(const Version& other)
     {
         if (major > other.major)
             return true;
@@ -88,7 +83,7 @@ public:
             return true;
         return false;
     }
-    friend std::ostream& operator << (std::ostream& stream, const Version& ver)
+    friend std::ostream& operator<<(std::ostream& stream, const Version& ver)
     {
         stream << ver.major;
         stream << '.';
@@ -99,9 +94,11 @@ public:
     }
 };
 
-class Extension : protected Element{
+class Extension : protected Element
+{
 protected:
-    enum ExtensionType {
+    enum ExtensionType
+    {
         VersionExtensionType,
         SecurityInfoExtensionType,
         ComponentPointerExtensionType,
@@ -119,12 +116,13 @@ public:
     Extension(u_int8_t vesrion, ExtensionType type, u_int32_t length);
 
     virtual void pack(vector<u_int8_t>& buff) const = 0;
-    virtual bool unpack(Mfa2Buffer & buff) = 0;
+    virtual bool unpack(Mfa2Buffer& buff) = 0;
 
-    virtual ~Extension  () {};
+    virtual ~Extension(){};
 };
 
-class VersionExtension : Extension {
+class VersionExtension : Extension
+{
 private:
     u_int8_t _major;
     u_int16_t _subMinor;
@@ -135,61 +133,61 @@ private:
     u_int8_t _day;
     u_int8_t _month;
     u_int16_t _year;
+
 public:
-    const static u_int8_t  ELEMENT_VERSION = 0x0;
-    const static u_int32_t LENGTH  = TOOLS_OPEN_VERSION_SIZE;
+    const static u_int8_t ELEMENT_VERSION = 0x0;
+    const static u_int32_t LENGTH = TOOLS_OPEN_VERSION_SIZE;
     void fillTimeAndDate();
     VersionExtension(const string& version);
     VersionExtension(const u_int16_t* version, const u_int16_t* fw_rel_date);
     void pack(vector<u_int8_t>& buff) const;
-    bool unpack(Mfa2Buffer & buff);
+    bool unpack(Mfa2Buffer& buff);
     string getVersion(bool pad_sub_minor) const;
     string getDateAndTime() const;
-    void   getDateAndTime(char* buffer) const;
-    u_int8_t getMajor() const {
-        return _major;
-    }
-    u_int8_t getMinor() const {
-        return _minor;
-    }
-    u_int16_t getSubMinor() const {
-        return _subMinor;
-    }
+    void getDateAndTime(char* buffer) const;
+    u_int8_t getMajor() const { return _major; }
+    u_int8_t getMinor() const { return _minor; }
+    u_int16_t getSubMinor() const { return _subMinor; }
 };
 
-class ComponentPointerExtension : Extension {
+class ComponentPointerExtension : Extension
+{
 private:
     u_int16_t _componentIndex;
-    u_int8_t  _storageId; //TODO: use enums
+    u_int8_t _storageId; // TODO: use enums
     u_int32_t _storageAddress;
+
 public:
-    const static u_int8_t  ELEMENT_VERSION = 0x0;
-    const static u_int32_t LENGTH  = TOOLS_OPEN_COMPONENT_PTR_SIZE;
+    const static u_int8_t ELEMENT_VERSION = 0x0;
+    const static u_int32_t LENGTH = TOOLS_OPEN_COMPONENT_PTR_SIZE;
 
     explicit ComponentPointerExtension(u_int16_t componentIndex) :
-                Extension(ELEMENT_VERSION, ComponentPointerExtensionType, LENGTH),
-                _componentIndex(componentIndex),
-                _storageId(0x1),
-                _storageAddress(0x0){};
+        Extension(ELEMENT_VERSION, ComponentPointerExtensionType, LENGTH),
+        _componentIndex(componentIndex),
+        _storageId(0x1),
+        _storageAddress(0x0){};
 
     void pack(vector<u_int8_t>& buff) const;
-    bool unpack(Mfa2Buffer & buff);
-    u_int16_t getComponentIndex() const { return _componentIndex;}
+    bool unpack(Mfa2Buffer& buff);
+    u_int16_t getComponentIndex() const { return _componentIndex; }
 };
 
-class SHA256Extension : Extension {
+class SHA256Extension : Extension
+{
 public:
-    enum SHA256Scope {
+    enum SHA256Scope
+    {
         SHA256Scope_Descriptors,
         SHA256Scope_All
     };
-    const static u_int8_t  ELEMENT_VERSION = 0x0;
-    const static u_int32_t LENGTH  = 0x20;
+    const static u_int8_t ELEMENT_VERSION = 0x0;
+    const static u_int32_t LENGTH = 0x20;
 
     explicit SHA256Extension(enum SHA256Scope scope);
     void setDigest(vector<u_int8_t> digest);
     void pack(vector<u_int8_t>& buff) const;
-    bool unpack(Mfa2Buffer & buff);
+    bool unpack(Mfa2Buffer& buff);
+
 private:
     vector<u_int8_t> _digest;
 
@@ -206,18 +204,19 @@ public:
     void pack(vector<u_int8_t>& buff) const;
 };*/
 
-class StringExtension : public Extension {
+class StringExtension : public Extension
+{
 private:
     string _str;
+
 public:
     StringExtension(u_int8_t vesrion, ExtensionType type, string str) :
-        Extension(vesrion, type, str.length()),
-        _str(str) {};
+        Extension(vesrion, type, str.length()), _str(str){};
     u_int32_t length() const;
     void pack(vector<u_int8_t>& buff) const;
-    bool unpack(Mfa2Buffer & buff);
+    bool unpack(Mfa2Buffer& buff);
 
-    const string & getString() const { return _str;}
+    const string& getString() const { return _str; }
 };
 
 inline u_int32_t StringExtension::length() const
@@ -225,21 +224,22 @@ inline u_int32_t StringExtension::length() const
     return _str.length();
 }
 
-class CommentExtension : public StringExtension {
+class CommentExtension : public StringExtension
+{
 private:
-    const static u_int8_t  ELEMENT_VERSION = 0x0;
+    const static u_int8_t ELEMENT_VERSION = 0x0;
+
 public:
-    explicit CommentExtension(string comment) :
-        StringExtension(ELEMENT_VERSION, CommentExtensionType, comment) {};
+    explicit CommentExtension(string comment) : StringExtension(ELEMENT_VERSION, CommentExtensionType, comment){};
 };
 
-class PSIDExtension : public StringExtension {
+class PSIDExtension : public StringExtension
+{
 private:
-    const static u_int8_t  ELEMENT_VERSION = 0x0;
+    const static u_int8_t ELEMENT_VERSION = 0x0;
+
 public:
-    explicit PSIDExtension(string psid) :
-        StringExtension(ELEMENT_VERSION, PSIDExtensionType, psid) {};
+    explicit PSIDExtension(string psid) : StringExtension(ELEMENT_VERSION, PSIDExtensionType, psid){};
 };
-}
+} // namespace mfa2
 #endif
-

@@ -47,14 +47,14 @@ using namespace xmlCreator;
 class AdbField;
 
 typedef map<string, string> AttrsMap;
-typedef vector<AdbField *> FieldsList;
+typedef vector<AdbField*> FieldsList;
 class AdbNode
 {
 public:
     // Methods
     AdbNode();
     ~AdbNode();
-    string toXml(const string &addPrefix);
+    string toXml(const string& addPrefix);
 
     // FOR DEBUG
     void print(int indent = 0);
@@ -62,7 +62,7 @@ public:
 public:
     // Members
     string name;
-    u_int32_t size; // in bits
+    u_int32_t size;         // in bits
     u_int32_t _maxLeafSize; // in bits
     bool isUnion;
     string desc;
@@ -76,7 +76,7 @@ public:
     int lineNumber;
 
     // FOR USER USAGE
-    void *userData;
+    void* userData;
 };
 
 #endif

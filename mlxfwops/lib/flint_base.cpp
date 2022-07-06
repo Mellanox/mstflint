@@ -40,50 +40,56 @@
 #include <stdarg.h>
 #include "flint_base.h"
 
-#define DPRINTF(args)        do { char *reacDebug = getenv("MLXFWOPS_ERRMSG_DEBUG"); \
-                                  if (reacDebug != NULL) {  printf("\33[2K\r"); \
-                                      printf("%s:%d: ",__FILE__, __LINE__); printf args; fflush(stdout);} } while (0)
+#define DPRINTF(args)                                      \
+    do                                                     \
+    {                                                      \
+        char* reacDebug = getenv("MLXFWOPS_ERRMSG_DEBUG"); \
+        if (reacDebug != NULL)                             \
+        {                                                  \
+            printf("\33[2K\r");                            \
+            printf("%s:%d: ", __FILE__, __LINE__);         \
+            printf args;                                   \
+            fflush(stdout);                                \
+        }                                                  \
+    } while (0)
 
 void FlintErrMsg::err_clear()
 {
-    delete [] _err;
+    delete[] _err;
     _err = 0;
 }
 
+bool _print_crc = false;
+bool _silent = false;
+bool _assume_yes = false;
+bool _assume_no = false;
 
-bool _print_crc     = false;
-bool _silent        = false;
-bool _assume_yes    = false;
-bool _assume_no     = false;
-
-bool _no_erase      = false;
-bool _no_burn       = false;
+bool _no_erase = false;
+bool _no_burn = false;
 
 bool _unlock_bypass = false;
-bool _byte_write    = false;
+bool _byte_write = false;
 
-const char *g_sectNames[] = {
-    "UNKNOWN (0 - Reserved)",
-    "DDR",
-    "Configuration",
-    "Jump addresses",
-    "EMT Service",
-    "ROM",
-    "GUID",
-    "BOARD ID",
-    "User Data",
-    "FW Configuration",
-    "Image Info",
-    "DDRZ",
-    "Hash File"
-};
+const char* g_sectNames[] = {"UNKNOWN (0 - Reserved)",
+                             "DDR",
+                             "Configuration",
+                             "Jump addresses",
+                             "EMT Service",
+                             "ROM",
+                             "GUID",
+                             "BOARD ID",
+                             "User Data",
+                             "FW Configuration",
+                             "Image Info",
+                             "DDRZ",
+                             "Hash File"};
 
-void report(const char *format, ...)
+void report(const char* format, ...)
 #ifdef __GNUC__
-__attribute__ ((format(printf, 1, 2)))
+  __attribute__((format(printf, 1, 2)))
 #endif
-;
-void report(const char *format, ...)
+  ;
+void report(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -92,7 +98,7 @@ void report(const char *format, ...)
 } // report
 
 #define MAX_STRING_LEN 512
-void report_callback(f_prog_func_str func_str, const char *format, ...)
+void report_callback(f_prog_func_str func_str, const char* format, ...)
 {
     va_list args;
     char buff[MAX_STRING_LEN];
@@ -101,12 +107,12 @@ void report_callback(f_prog_func_str func_str, const char *format, ...)
     vsnprintf(buff, MAX_STRING_LEN, format, args);
     va_end(args);
     // printf("%s\n", buff);
-    if (func_str != NULL) {
+    if (func_str != NULL)
+    {
         func_str(buff);
     }
 
 } // report
-
 
 /*
    void report_erase(const char *format, ...)
@@ -128,20 +134,21 @@ void report_callback(f_prog_func_str func_str, const char *format, ...)
         printf("\b");
    } // report_erase
  */
-void report_repair_msg(const char *common_msg)
+void report_repair_msg(const char* common_msg)
 {
     printf("\r%s OK         ", common_msg);
 }
 
 #define MAX_ERR_STR_LEN 1024
 #define PRE_ERR_MSG "-E-"
-void report_err(char err_buff[MAX_ERR_STR_LEN], const char *format, ...)
+void report_err(char err_buff[MAX_ERR_STR_LEN], const char* format, ...)
 {
     va_list args;
 
     va_start(args, format);
 
-    if (vsnprintf(err_buff, MAX_ERR_STR_LEN, format, args) >= MAX_ERR_STR_LEN) {
+    if (vsnprintf(err_buff, MAX_ERR_STR_LEN, format, args) >= MAX_ERR_STR_LEN)
+    {
         strcpy(&err_buff[MAX_ERR_STR_LEN - 5], "...\n");
     }
     fprintf(stderr, PRE_ERR_MSG " %s", err_buff);
@@ -151,7 +158,7 @@ void report_err(char err_buff[MAX_ERR_STR_LEN], const char *format, ...)
     return;
 }
 
-void report_warn(const char *format, ...)
+void report_warn(const char* format, ...)
 {
 #ifndef UEFI_BUILD
     va_list args;
@@ -163,11 +170,11 @@ void report_warn(const char *format, ...)
 #endif
 }
 
-bool FlintErrMsg::errmsg(const char *format, ...)
+bool FlintErrMsg::errmsg(const char* format, ...)
 {
     va_list args;
 
-    char *prev_err = _err;
+    char* prev_err = _err;
 
     va_start(args, format);
     _err = vprint(format, args);
@@ -179,11 +186,11 @@ bool FlintErrMsg::errmsg(const char *format, ...)
     return false;
 }
 
-bool FlintErrMsg::errmsg(int errorCode, const char *format, ...)
+bool FlintErrMsg::errmsg(int errorCode, const char* format, ...)
 {
     va_list args;
 
-    char *prev_err = _err;
+    char* prev_err = _err;
 
     va_start(args, format);
     _err = vprint(format, args);
@@ -195,22 +202,25 @@ bool FlintErrMsg::errmsg(int errorCode, const char *format, ...)
     return false;
 }
 
-bool FlintErrMsg::errmsgAdv(bool showAdv, const char *normalFmt, const char *AdvFmt, ...)
+bool FlintErrMsg::errmsgAdv(bool showAdv, const char* normalFmt, const char* AdvFmt, ...)
 {
     // args should only apply to advanced format (i.e normalFmt does not contain %<char>)
     va_list args;
     char errFmt[1024];
 
-    char *prev_err = _err;
+    char* prev_err = _err;
 
     va_start(args, AdvFmt);
 
-    if (showAdv) {
+    if (showAdv)
+    {
         snprintf(errFmt, 1024, "%s %s", normalFmt, AdvFmt);
         _err = vprint(errFmt, args);
-    } else {
-        //For functions where the arguments are not available to be checked (such as vprintf),
-        //specify the third parameter as zero. In this case the compiler only checks the format string for consistency
+    }
+    else
+    {
+        // For functions where the arguments are not available to be checked (such as vprintf),
+        // specify the third parameter as zero. In this case the compiler only checks the format string for consistency
         errmsg(normalFmt, 0);
     }
     va_end(args);
@@ -220,11 +230,11 @@ bool FlintErrMsg::errmsgAdv(bool showAdv, const char *normalFmt, const char *Adv
     return false;
 }
 
-int FlintErrMsg::errmsgWCode(int errorCode, const char *format, ...)
+int FlintErrMsg::errmsgWCode(int errorCode, const char* format, ...)
 {
     va_list args;
 
-    char *prev_err = _err;
+    char* prev_err = _err;
 
     va_start(args, format);
     _err = vprint(format, args);
@@ -238,27 +248,35 @@ int FlintErrMsg::errmsgWCode(int errorCode, const char *format, ...)
 ////////////////////////////////////////////////////////////////////////
 void Crc16::add(u_int32_t o)
 {
-    if (_debug) {
+    if (_debug)
+    {
         printf("Crc16::add(%08x)\n", o);
     }
-    for (int i = 0; i < 32; i++) {
-        if (_crc & 0x8000) {
-            _crc = (u_int16_t) ((((_crc << 1) | (o >> 31)) ^  0x100b) & 0xffff);
-        } else {
-            _crc = (u_int16_t) (((_crc << 1) | (o >> 31)) & 0xffff);
+    for (int i = 0; i < 32; i++)
+    {
+        if (_crc & 0x8000)
+        {
+            _crc = (u_int16_t)((((_crc << 1) | (o >> 31)) ^ 0x100b) & 0xffff);
+        }
+        else
+        {
+            _crc = (u_int16_t)(((_crc << 1) | (o >> 31)) & 0xffff);
         }
         o = (o << 1) & 0xffffffff;
     }
 } // Crc16::add
 
-
 ////////////////////////////////////////////////////////////////////////
 void Crc16::finish()
 {
-    for (int i = 0; i < 16; i++) {
-        if (_crc & 0x8000) {
-            _crc = ((_crc << 1)  ^  0x100b) & 0xffff;
-        } else {
+    for (int i = 0; i < 16; i++)
+    {
+        if (_crc & 0x8000)
+        {
+            _crc = ((_crc << 1) ^ 0x100b) & 0xffff;
+        }
+        else
+        {
             _crc = (_crc << 1) & 0xffff;
         }
     }
@@ -268,36 +286,35 @@ void Crc16::finish()
 
 } // Crc16::finish
 
-
 #ifdef UEFI_BUILD
 
 void* operator new(size_t size)
 {
-    void *p;
-    p =  malloc(size);
+    void* p;
+    p = malloc(size);
     return p;
 }
 
 void* operator new[](size_t size)
 {
-    void *p;
-    p =  malloc(size);
+    void* p;
+    p = malloc(size);
     return p;
 }
 
 // delete operator overloaded
-void operator delete(void *p)
+void operator delete(void* p)
 {
     free(p);
 }
 
-void operator delete[](void *p)
+void operator delete[](void* p)
 {
     free(p);
 }
 
-
-namespace std {
+namespace std
+{
 void __throw_bad_alloc(void)
 {
     // TODO: Check what happens when there is no mem or replace this exit with goto
@@ -321,7 +338,7 @@ void __throw_out_of_range(const char*)
 hell:
     goto hell;
 }
-}
+} // namespace std
 
 int goto_function()
 {
@@ -329,7 +346,6 @@ int goto_function()
 hell:
     return 0;
 }
-extern "C" void __cxa_pure_virtual(void) {};
+extern "C" void __cxa_pure_virtual(void){};
 
 #endif
-

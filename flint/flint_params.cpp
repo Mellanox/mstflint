@@ -53,7 +53,7 @@ FlintParams::FlintParams()
     device_specified = false;
     blank_guids = false;
     clear_semaphore = false;
-    quick_query = true;  //should now be true by default
+    quick_query = true; // should now be true by default
     next_boot_fw_ver = false;
     low_cpu = false;
     skip_rom_query = false;
@@ -118,11 +118,8 @@ FlintParams::FlintParams()
     downstream_device_ids_specified = false;
     download_transfer = false;
     // if no delay specified, use minimal delay to avoid disconnection in case of activating the connect port
-    activate_delay_sec = 1; 
+    activate_delay_sec = 1;
     openssl_engine_usage_specified = false;
 }
 
-FlintParams::~FlintParams()
-{
-
-}
+FlintParams::~FlintParams() {}

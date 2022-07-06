@@ -44,8 +44,9 @@ using namespace std;
 
 string PrmAdbDB::prm_adb_db_ltrim(const string& s)
 {
-    const char *cs = s.c_str();
-    while (isspace(*cs)) {
+    const char* cs = s.c_str();
+    while (isspace(*cs))
+    {
         cs++;
     }
     return string(cs);
@@ -53,15 +54,18 @@ string PrmAdbDB::prm_adb_db_ltrim(const string& s)
 
 string PrmAdbDB::prm_adb_db_rtrim(const string& s)
 {
-    //todo rewrite it
+    // todo rewrite it
     unsigned int i = s.size();
-    if (i == 0) {
+    if (i == 0)
+    {
         return s;
     }
-    while (--i > 0 && isspace(s[i])) {
+    while (--i > 0 && isspace(s[i]))
+    {
         ;
     }
-    if (i == 0 && isspace(s[i])) {
+    if (i == 0 && isspace(s[i]))
+    {
         return "";
     }
     return s.substr(0, i + 1);
@@ -89,28 +93,36 @@ string PrmAdbDB::getDefaultDBName(bool isSwitch)
 #else
     char line[1024] = {0};
     string confFile = string(ROOT_PATH) + string("etc/mft/mft.conf");
-    FILE *fd = fopen(confFile.c_str(), "r");
-    if (!fd) {
+    FILE* fd = fopen(confFile.c_str(), "r");
+    if (!fd)
+    {
         throw PrmDBException("Failed to open conf file : %s\n", confFile.c_str());
     }
     string prefix = "", dataPath = "";
-    while ((fgets(line, 1024, fd))) {
+    while ((fgets(line, 1024, fd)))
+    {
         string l = line;
-        if (l.find(dbDirName) != string::npos) {
+        if (l.find(dbDirName) != string::npos)
+        {
             size_t eqPos = l.find("=");
-            if (eqPos != string::npos) {
+            if (eqPos != string::npos)
+            {
                 dataPath = l.substr(eqPos + 1);
                 dataPath = prm_adb_db_trim(dataPath);
             }
-        } else if (l.find("mft_prefix_location") != string::npos) {
+        }
+        else if (l.find("mft_prefix_location") != string::npos)
+        {
             size_t eqPos = l.find("=");
-            if (eqPos != string::npos) {
+            if (eqPos != string::npos)
+            {
                 prefix = l.substr(eqPos + 1);
                 prefix = prm_adb_db_trim(prefix);
             }
         }
     }
-    if (!prefix.empty() && !dataPath.empty()) {
+    if (!prefix.empty() && !dataPath.empty())
+    {
         dbPathName = prefix + dataPath + "/" + hcaOrSwitch + "/ext/" + dbFileName;
     }
     fclose(fd);
@@ -120,13 +132,13 @@ string PrmAdbDB::getDefaultDBName(bool isSwitch)
 
 /*************************** PrmDBException Implementation ***************************/
 
-PrmDBException::PrmDBException() {
-}
+PrmDBException::PrmDBException() {}
 
 /**
  * Function: PrmDBException::PrmDBException
  **/
-PrmDBException::PrmDBException(const char *fmt, ...) {
+PrmDBException::PrmDBException(const char* fmt, ...)
+{
     char tmp[1024];
     va_list args;
     va_start(args, fmt);
@@ -138,26 +150,25 @@ PrmDBException::PrmDBException(const char *fmt, ...) {
 /**
  * Function: PrmDBException::PrmDBException
  **/
-PrmDBException::PrmDBException(string msg) :
-    _msg(msg) {
-}
+PrmDBException::PrmDBException(string msg) : _msg(msg) {}
 
 /**
  * Function: PrmDBException::~PrmDBException
  **/
-PrmDBException::~PrmDBException() throw () {
-}
+PrmDBException::~PrmDBException() throw() {}
 
 /**
  * Function: PrmDBException::what
  **/
-const char* PrmDBException::what() const throw () {
+const char* PrmDBException::what() const throw()
+{
     return _msg.c_str();
 }
 
 /**
  * Function: PrmDBException::what_s
  **/
-string PrmDBException::what_s() const {
+string PrmDBException::what_s() const
+{
     return _msg;
 }

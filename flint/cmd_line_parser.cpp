@@ -45,31 +45,34 @@
 #include "mlxfwops/lib/flint_io.h"
 
 #ifndef FLINT_NAME
-    #ifdef __GNUC__
-        #define FLINT_NAME "flint"
-    #else
-        #define FLINT_NAME "flint"
-    #endif
+#ifdef __GNUC__
+#define FLINT_NAME "flint"
+#else
+#define FLINT_NAME "flint"
+#endif
 #endif
 
 using namespace std;
 
 /******************************
-* Data structures containing
-* Meta data about subcommands
-* and flags
-******************************/
-class SubCmdMetaData {
+ * Data structures containing
+ * Meta data about subcommands
+ * and flags
+ ******************************/
+class SubCmdMetaData
+{
 private:
-    class SubCmd {
-public:
-        SubCmd(string s, string l, sub_cmd_t n) :  shortf(s), longf(l), cmdNum(n) {}
-        ~SubCmd(){}
+    class SubCmd
+    {
+    public:
+        SubCmd(string s, string l, sub_cmd_t n) : shortf(s), longf(l), cmdNum(n) {}
+        ~SubCmd() {}
         string shortf;
         string longf;
         sub_cmd_t cmdNum;
     };
     vector<class SubCmd*> _sCmds;
+
 public:
     SubCmdMetaData();
     ~SubCmdMetaData();
@@ -127,33 +130,38 @@ SubCmdMetaData::SubCmdMetaData()
 
 SubCmdMetaData::~SubCmdMetaData()
 {
-    for (vector<class SubCmd*>::iterator it = _sCmds.begin(); it != _sCmds.end(); ++it) {
+    for (vector<class SubCmd*>::iterator it = _sCmds.begin(); it != _sCmds.end(); ++it)
+    {
         delete *it;
     }
 }
 
 sub_cmd_t SubCmdMetaData::getCmdNum(string flag)
 {
-    for (vector<class SubCmd*>::iterator it = _sCmds.begin(); it != _sCmds.end(); ++it) {
-        if (((*it)->shortf == flag) || ((*it)->longf == flag)) {
+    for (vector<class SubCmd*>::iterator it = _sCmds.begin(); it != _sCmds.end(); ++it)
+    {
+        if (((*it)->shortf == flag) || ((*it)->longf == flag))
+        {
             return (*it)->cmdNum;
         }
     }
     return SC_No_Cmd;
 }
 
-
-class FlagMetaData {
+class FlagMetaData
+{
 private:
-    class Flag {
-public:
-        Flag(string s, string l, int n) :  shortf(s), longf(l), argNum(n) {}
-        ~Flag(){}
+    class Flag
+    {
+    public:
+        Flag(string s, string l, int n) : shortf(s), longf(l), argNum(n) {}
+        ~Flag() {}
         string shortf;
         string longf;
         int argNum;
     };
     vector<class Flag*> _flags;
+
 public:
     FlagMetaData();
     ~FlagMetaData();
@@ -195,7 +203,8 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "striped_image", 0));
     _flags.push_back(new Flag("", "banks", 1));
     _flags.push_back(new Flag("", "log", 1));
-    _flags.push_back(new Flag("", "flash_params", 1)); //its actually 3 but separated by comma so we refer to them as one
+    _flags.push_back(new Flag("", "flash_params", 1)); // its actually 3 but separated by comma so we refer to them as
+                                                       // one
     _flags.push_back(new Flag("v", "version", 0));
     _flags.push_back(new Flag("", "no_devid_check", 0));
     _flags.push_back(new Flag("", "use_fw", 0));
@@ -228,10 +237,10 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "public_key_label", 1));
     _flags.push_back(new Flag("", "hsm", 0));
 #endif
-   _flags.push_back(new Flag("", "openssl_engine", 1));
-   _flags.push_back(new Flag("", "openssl_key_id", 1));
+    _flags.push_back(new Flag("", "openssl_engine", 1));
+    _flags.push_back(new Flag("", "openssl_key_id", 1));
 #ifdef __WIN__
-	_flags.push_back(new Flag("", "cpu_util", 1));
+    _flags.push_back(new Flag("", "cpu_util", 1));
 #endif
     _flags.push_back(new Flag("", "output_file", 1));
     _flags.push_back(new Flag("", "user_password", 1));
@@ -240,15 +249,18 @@ FlagMetaData::FlagMetaData()
 
 FlagMetaData::~FlagMetaData()
 {
-    for (vector<class Flag*>::iterator it = _flags.begin(); it != _flags.end(); ++it) {
+    for (vector<class Flag*>::iterator it = _flags.begin(); it != _flags.end(); ++it)
+    {
         delete *it;
     }
 }
 
 int FlagMetaData::getNumOfArgs(string flag)
 {
-    for (vector<class Flag*>::iterator it = _flags.begin(); it != _flags.end(); ++it) {
-        if (((*it)->shortf == flag) || ((*it)->longf == flag)) {
+    for (vector<class Flag*>::iterator it = _flags.begin(); it != _flags.end(); ++it)
+    {
+        if (((*it)->shortf == flag) || ((*it)->longf == flag))
+        {
             return (*it)->argNum;
         }
     }
@@ -260,16 +272,18 @@ int FlagMetaData::getNumOfArgs(string flag)
  *******************/
 
 // NOTE : number of parameters extracted in the container should be checked.
-static void splitByDelimiters(std::vector<string>& container, string str, const char *delimiters )
+static void splitByDelimiters(std::vector<string>& container, string str, const char* delimiters)
 {
-    if (str.size() == 0) {
+    if (str.size() == 0)
+    {
         return;
     }
-    char *cStr = strcpy(new char[str.size() + 1], str.c_str());
-    char *ptr;
+    char* cStr = strcpy(new char[str.size() + 1], str.c_str());
+    char* ptr;
     ptr = strtok(cStr, delimiters);
 
-    while (ptr != NULL) {
+    while (ptr != NULL)
+    {
         container.push_back(ptr);
         ptr = strtok(NULL, delimiters);
     }
@@ -277,16 +291,19 @@ static void splitByDelimiters(std::vector<string>& container, string str, const 
     return;
 }
 
-char* stripFlag(char *flag)
+char* stripFlag(char* flag)
 {
-    char *strippedFlagStart = NULL;
-    if (flag[0] != '-') { // not a flag
+    char* strippedFlagStart = NULL;
+    if (flag[0] != '-')
+    { // not a flag
         return flag;
-    }
-    ;
-    if ((flag[0] == '-') && (flag[1] == '-')) {
+    };
+    if ((flag[0] == '-') && (flag[1] == '-'))
+    {
         strippedFlagStart = &flag[2];
-    } else {
+    }
+    else
+    {
         strippedFlagStart = &flag[1];
     }
     return strippedFlagStart;
@@ -294,12 +311,15 @@ char* stripFlag(char *flag)
 
 int countArgs(string args)
 {
-    if (args.size() == 0) {
+    if (args.size() == 0)
+    {
         return 0;
     }
     int count = 1;
-    for (string::iterator it = args.begin(); it < args.end(); ++it) {
-        if (*it == ',') {
+    for (string::iterator it = args.begin(); it < args.end(); ++it)
+    {
+        if (*it == ',')
+        {
             count++;
         }
     }
@@ -308,45 +328,56 @@ int countArgs(string args)
 
 bool verifyNumOfArgs(string name, string value)
 {
-    //HACK : we don't check device numOfArgs because image device format might contain ","
-    if ((name == "device") || (name == "d") ) {
+    // HACK : we don't check device numOfArgs because image device format might contain ","
+    if ((name == "device") || (name == "d"))
+    {
         return true;
     }
-    if ((name == "image") || (name == "i") ) {
+    if ((name == "image") || (name == "i"))
+    {
         return true;
     }
     // Hack : VSD can be empty or contain "," so we shouldnt count its args
-    if (name == "vsd") {
+    if (name == "vsd")
+    {
         return true;
     }
-    if (name == "output_file") {
+    if (name == "output_file")
+    {
         return true;
     }
 
     int expected = FlagMetaData().getNumOfArgs(name);
-    if (expected < 0) {
+    if (expected < 0)
+    {
         printf(FLINT_INVALID_FLAG_ERROR, name.c_str());
         return false;
     }
-    //HACK : flash_params is 3 argument but given with comma separated instead of spaces like the rest
+    // HACK : flash_params is 3 argument but given with comma separated instead of spaces like the rest
     // so flag_arg_num gives a wrong value
 
-    if (name == "flash_params") {
+    if (name == "flash_params")
+    {
         expected = 3;
     }
 
     int actual = countArgs(value);
-    if (name == "downstream_device_ids") {
-        if (actual < 1) {
+    if (name == "downstream_device_ids")
+    {
+        if (actual < 1)
+        {
             printf(FLINT_TOO_FEW_MINIMUM_ARGS_ERROR, 1, actual);
             return false;
         }
         return true;
     }
-    if (actual < expected) {
+    if (actual < expected)
+    {
         printf(FLINT_TOO_FEW_ARGS_ERROR, expected, actual);
         return false;
-    } else if (actual > expected) {
+    }
+    else if (actual > expected)
+    {
         printf(FLINT_TOO_MANY_ARGS_ERROR, expected, actual);
         return false;
     }
@@ -355,24 +386,25 @@ bool verifyNumOfArgs(string name, string value)
 
 bool strToInt(string str, int& num, int base = 0)
 {
-    char *endp;
-    char *numStr = strcpy(new char[str.size() + 1], str.c_str());
+    char* endp;
+    char* numStr = strcpy(new char[str.size() + 1], str.c_str());
     num = strtol(numStr, &endp, base);
-    if (*endp) {
+    if (*endp)
+    {
         delete[] numStr;
         return false;
     }
     delete[] numStr;
     return true;
 }
-
 
 bool strToNum(string str, u_int64_t& num, int base = 0)
 {
-    char *endp;
-    char *numStr = strcpy(new char[str.size() + 1], str.c_str());
+    char* endp;
+    char* numStr = strcpy(new char[str.size() + 1], str.c_str());
     num = strtoul(numStr, &endp, base);
-    if (*endp) {
+    if (*endp)
+    {
         delete[] numStr;
         return false;
     }
@@ -380,16 +412,20 @@ bool strToNum(string str, u_int64_t& num, int base = 0)
     return true;
 }
 
-//this function is used in extracting both guids and macs from user
+// this function is used in extracting both guids and macs from user
 bool getGUIDFromStr(string str, guid_t& guid, string prefixErr = "")
 {
-    char *endp;
+    char* endp;
     u_int64_t g;
     g = strtoull(str.c_str(), &endp, 16);
-    if (*endp || (g == 0xffffffffffffffffULL && errno == ERANGE)) {
-        if (prefixErr.size() == 0) {
-            printf("-E- Invalid Guid/Mac/Uid syntax (%s) %s \n", str.c_str(), errno ? strerror(errno) : "" );
-        } else {
+    if (*endp || (g == 0xffffffffffffffffULL && errno == ERANGE))
+    {
+        if (prefixErr.size() == 0)
+        {
+            printf("-E- Invalid Guid/Mac/Uid syntax (%s) %s \n", str.c_str(), errno ? strerror(errno) : "");
+        }
+        else
+        {
             printf("%s\n", prefixErr.c_str());
         }
         return false;
@@ -401,37 +437,46 @@ bool getGUIDFromStr(string str, guid_t& guid, string prefixErr = "")
 
 bool isElementPresent(vector<string> strv, string str) //* should be renamed to isStrPresent, since it's not generic
 {
-    for (vector<string>::iterator it = strv.begin(); it < strv.end(); it++) {
-        if (*it == str) {
+    for (vector<string>::iterator it = strv.begin(); it < strv.end(); it++)
+    {
+        if (*it == str)
+        {
             return true;
         }
     }
     return false;
 }
 
-bool stringsCommaSplit(string str, std::vector<int> &deviceIds) //* Should be renamed to something like
+bool stringsCommaSplit(string str, std::vector<int>& deviceIds) //* Should be renamed to something like
 {                                                               //* getIntsFromCommaSplitString
     size_t pos;
     std::vector<string> strv;
     bool res = true;
-    while ((pos = str.find(',')) != string::npos) {
+    while ((pos = str.find(',')) != string::npos)
+    {
         string tmp = str.substr(0, pos);
-        if (!isElementPresent(strv, tmp)) { //* Can be changed to: std::find(strv.begin(), strv.end(), tmp) != strv.end()
-            strv.push_back((string)tmp);    //* So we can remove isElementPresent function
+        if (!isElementPresent(strv, tmp))
+        {                                //* Can be changed to: std::find(strv.begin(), strv.end(), tmp) != strv.end()
+            strv.push_back((string)tmp); //* So we can remove isElementPresent function
         }
         str = str.substr(pos + 1);
     }
-    if (str != "") {
-        if (!isElementPresent(strv, str)) { //* Same as above
+    if (str != "")
+    {
+        if (!isElementPresent(strv, str))
+        { //* Same as above
             strv.push_back((string)str);
         }
     }
-    for (std::vector<string>::iterator it = strv.begin(); it < strv.end(); it++) {
+    for (std::vector<string>::iterator it = strv.begin(); it < strv.end(); it++)
+    {
         int num;
-        if (false == strToInt((*it).c_str(), num)) {
+        if (false == strToInt((*it).c_str(), num))
+        {
             return false;
         }
-        if (num < 0 || num > 255) {
+        if (num < 0 || num > 255)
+        {
             printf("Index value should be between 0 and 255.\n");
             return false;
         }
@@ -439,7 +484,6 @@ bool stringsCommaSplit(string str, std::vector<int> &deviceIds) //* Should be re
     }
     return res;
 }
-
 
 guid_t incrGuid(guid_t baseGuid, unsigned int incrVal)
 {
@@ -465,7 +509,8 @@ bool parseFlashParams(string params, flash_params_t& fp)
     // Step 1 split by ","
     std::vector<std::string> paramVec;
     splitByDelimiters(paramVec, params, ",");
-    if (paramVec.size() != 3) {
+    if (paramVec.size() != 3)
+    {
         return false;
     }
     // Step 2 extract params
@@ -474,11 +519,13 @@ bool parseFlashParams(string params, flash_params_t& fp)
     memset(fp.type_name, 0, MAX_FLASH_NAME);
     strncpy(fp.type_name, paramStr, length);
     u_int64_t tmp;
-    if (!strToNum(paramVec[1], tmp)) {
+    if (!strToNum(paramVec[1], tmp))
+    {
         return false;
     }
     fp.log2size = (int)tmp;
-    if (!strToNum(paramVec[2], tmp)) {
+    if (!strToNum(paramVec[2], tmp))
+    {
         return false;
     }
     fp.num_of_flashes = (int)tmp;
@@ -486,9 +533,9 @@ bool parseFlashParams(string params, flash_params_t& fp)
 }
 
 /************************************
-* Implementation of the Command line
-* Parsing part of the Flint class
-************************************/
+ * Implementation of the Command line
+ * Parsing part of the Flint class
+ ************************************/
 
 #define FLASH_LIST_SZ 256
 
@@ -513,25 +560,13 @@ void Flint::initCmdParser()
                "Binary image file.\n"
                "Commands affected: burn, verify");
 
-    AddOptions("latest_fw",
-        ' ',
-        "",
-        "Commands affected: burn");
+    AddOptions("latest_fw", ' ', "", "Commands affected: burn");
 
-    AddOptions("ir",
-        ' ',
-        "",
-        "Commands affected: burn");
+    AddOptions("ir", ' ', "", "Commands affected: burn");
 
-    AddOptions("help",
-               'h',
-               "",
-               "Prints this message and exits");
+    AddOptions("help", 'h', "", "Prints this message and exits");
 
-    AddOptions("hh",
-               ' ',
-               "",
-               "Prints extended command help");
+    AddOptions("hh", ' ', "", "Prints extended command help");
 
     AddOptions("yes",
                'y',
@@ -631,16 +666,12 @@ void Flint::initCmdParser()
                "When specified, only flashed fw version is fetched\n"
                "Commands affected: query");
 
-    AddOptions("nofs",
-               ' ',
-               "",
-               "Burn image in a non failsafe manner.");
+    AddOptions("nofs", ' ', "", "Burn image in a non failsafe manner.");
 
-    AddOptions("allow_psid_change",
-               ' ',
-               "",
+    AddOptions("allow_psid_change", ' ', "",
                "Allow burning a FW image with a different PSID (Parameter Set ID)than the one currently on flash. Note"
-               " that changing a PSID may cause the device to malfunction. Use only if you know what you are doing", isExternal);
+               " that changing a PSID may cause the device to malfunction. Use only if you know what you are doing",
+               isExternal);
 
     AddOptions("allow_rom_change",
                ' ',
@@ -656,15 +687,9 @@ void Flint::initCmdParser()
                "NOTE: This flag is intended for advanced users only.\n"
                "Running in this mode may cause the firmware to hang.\n");
 
-    AddOptions("no_flash_verify",
-               ' ',
-               "",
-               "Do not verify each write on the flash.");
+    AddOptions("no_flash_verify", ' ', "", "Do not verify each write on the flash.");
 
-    AddOptions("use_fw",
-               ' ',
-               "",
-               "Flash access will be done using FW (ConnectX-3/ConnectX-3Pro only).");
+    AddOptions("use_fw", ' ', "", "Flash access will be done using FW (ConnectX-3/ConnectX-3Pro only).");
 
     AddOptions("silent",
                's',
@@ -672,10 +697,7 @@ void Flint::initCmdParser()
                "Do not print burn progress flyer.\n"
                "Commands affected: burn");
 
-    AddOptions("vsd",
-               ' ',
-               "<string>",
-               "Write this string, of up to 208 characters, to VSD when burn.");
+    AddOptions("vsd", ' ', "<string>", "Write this string, of up to 208 characters, to VSD when burn.");
 
     AddOptions("use_image_ps",
                ' ',
@@ -708,28 +730,19 @@ void Flint::initCmdParser()
                " Only).\n"
                "Commands affected: burn");
 
-    AddOptions("no_fw_ctrl",
-               ' ',
-               "",
-               "Do not attempt to work with the FW Ctrl update commands");
+    AddOptions("no_fw_ctrl", ' ', "", "Do not attempt to work with the FW Ctrl update commands");
 
     AddOptions("use_dev_img_info",
                ' ',
                "",
                "preserve select image info fields from the device upon FW update (FS3 Only).\n"
                "Commands affected: burn",
-                true);
+               true);
 
-    AddOptions("ignore_crc_check",
-               ' ',
-               "",
-               "Prevents flint from failing due to CRC check",
+    AddOptions("ignore_crc_check", ' ', "", "Prevents flint from failing due to CRC check",
                true); // hidden
 
-    AddOptions("hexdump_format",
-               ' ',
-               "",
-               "Prints rb command output in hexdump format",
+    AddOptions("hexdump_format", ' ', "", "Prints rb command output in hexdump format",
                true); // hidden
 
     AddOptions("dual_image",
@@ -745,193 +758,128 @@ void Flint::initCmdParser()
                "Use this flag to indicate that the given image file is in a \"striped image\" format.\n"
                "Commands affected: query verify");
 
-    AddOptions("banks",
-               ' ',
-               "<bank>",
-               "Set the number of attached flash devices (banks)");
+    AddOptions("banks", ' ', "<bank>", "Set the number of attached flash devices (banks)");
 
-    AddOptions("log",
-               ' ',
-               "<log_file>",
-               "Print the burning status to the specified log file");
-    
-    
+    AddOptions("log", ' ', "<log_file>", "Print the burning status to the specified log file");
 
     char flashList[FLASH_LIST_SZ] = {0};
     char flashParDesc[FLASH_LIST_SZ * 2];
     Flash::get_flash_list(flashList, FLASH_LIST_SZ);
-    snprintf(flashParDesc, FLASH_LIST_SZ * 2, "Use the given parameters to access the flash instead of reading them from "
-             "the flash.\n" \
-             "Supported parameters:\n" \
-             "Type: The type of the flash, such as:%s.\n" \
-             "log2size: The log2 of the flash size." \
+    snprintf(flashParDesc, FLASH_LIST_SZ * 2,
+             "Use the given parameters to access the flash instead of reading them from "
+             "the flash.\n"
+             "Supported parameters:\n"
+             "Type: The type of the flash, such as:%s.\n"
+             "log2size: The log2 of the flash size."
              "num_of_flashes: the number of the flashes connected to the device.",
              flashList);
 
+    AddOptions("flash_params", ' ', "<type, log2size, num_of_flashes>", flashParDesc);
 
-    AddOptions("flash_params",
-               ' ',
-               "<type, log2size, num_of_flashes>", flashParDesc);
+    AddOptions("version", 'v', "", "Version info.");
 
-    AddOptions("version",
-               'v',
-               "",
-               "Version info.");
+    AddOptions("no_devid_check", ' ', "", "ignore device_id checks", true);
 
-    AddOptions("no_devid_check",
-               ' ',
-               "",
-               "ignore device_id checks",
-                true);
+    AddOptions("skip_ci_req", ' ', "", "skip sending cache image request to driver(windows)", true);
 
-    AddOptions("skip_ci_req",
-               ' ',
-               "",
-               "skip sending cache image request to driver(windows)",
-                true);
+    AddOptions("ocr", ' ', "", "another flag for override cache replacement", true);
 
-    AddOptions("ocr",
-               ' ',
-               "",
-               "another flag for override cache replacement",
-                true);
+    AddOptions("hsm", ' ', "", "flag for the sign command", true);
 
-    AddOptions("hsm",
-        ' ',
-        "",
-        "flag for the sign command",
-        true);
+    AddOptions("private_key", ' ', "<key_file>", "path to PEM formatted private key to be used by the sign command");
 
-    AddOptions("private_key",
-               ' ',
-               "<key_file>",
-               "path to PEM formatted private key to be used by the sign command");
+    AddOptions("public_key", ' ', "<key_file>", "path to PEM formatted public key to be used by the sign command");
+    AddOptions("key_uuid", ' ', "<uuid_file>", "UUID matching the given private key to be used by the sign command");
+    AddOptions("private_key2", ' ', "<key_file>", "path to PEM formatted private key to be used by the sign command");
+    AddOptions("hmac_key", ' ', "<hmac_key>", "path to file containing key (For FS4 image only).");
 
-    AddOptions("public_key",
-        ' ',
-        "<key_file>",
-        "path to PEM formatted public key to be used by the sign command");
-    AddOptions("key_uuid",
-               ' ',
-               "<uuid_file>",
-               "UUID matching the given private key to be used by the sign command");
-    AddOptions("private_key2",
-               ' ',
-               "<key_file>",
-               "path to PEM formatted private key to be used by the sign command");
-    AddOptions("hmac_key",
-               ' ',
-               "<hmac_key>",
-               "path to file containing key (For FS4 image only).");
+    AddOptions("key_uuid2", ' ', "<uuid_file>", "UUID matching the given private key to be used by the sign command");
 
-    AddOptions("key_uuid2",
-               ' ',
-               "<uuid_file>",
-               "UUID matching the given private key to be used by the sign command");
+    AddOptions("psid", ' ', "<PSID>", "Use this PSID while burning livefish device using MFA2 archive");
 
-    AddOptions("psid",
-        ' ',
-        "<PSID>",
-        "Use this PSID while burning livefish device using MFA2 archive");
+    AddOptions("cc", ' ', "<Congestion_Control>",
+               "Use this flag while burning to device a Congestion Control Component");
 
-    AddOptions("cc",
-        ' ',
-        "<Congestion_Control>",
-        "Use this flag while burning to device a Congestion Control Component");
-
-    AddOptions("linkx",
-        ' ',
-        "",
-        "Use this flag while burning to device a LinkX Component");
+    AddOptions("linkx", ' ', "", "Use this flag while burning to device a LinkX Component");
 
     AddOptions("downstream_device_id_start_index",
-        ' ',
-        "<downstream_device_id_start_index>",
-        "Use this flag while burning to device a LinkX Component. Begin from 0",
-        false,
-        false,
-        1);
+               ' ',
+               "<downstream_device_id_start_index>",
+               "Use this flag while burning to device a LinkX Component. Begin from 0",
+               false,
+               false,
+               1);
 
     AddOptions("num_of_downstream_devices",
-        ' ',
-        "<num_of_downstream_devices>",
-        "Use this flag while burning to device a LinkX Component to specify the number of devices to burn",
-        false,
-        false,
-        1);
+               ' ',
+               "<num_of_downstream_devices>",
+               "Use this flag while burning to device a LinkX Component to specify the number of devices to burn",
+               false,
+               false,
+               1);
 
-    AddOptions("linkx_auto_update",
-        ' ',
-        "",
-        "Use this flag while burning all cable devices connected to host.",
-        false,
-        false,
-        1);
+    AddOptions("linkx_auto_update", ' ', "", "Use this flag while burning all cable devices connected to host.", false,
+               false, 1);
 
-    AddOptions("activate",
-        ' ',
-        "",
-        "Use this flag to apply the activation of all cable devices connected to host. By default, the activation is not performed.",
-        false,
-        false,
-        1);
+    AddOptions(
+      "activate",
+      ' ',
+      "",
+      "Use this flag to apply the activation of all cable devices connected to host. By default, the activation is not performed.",
+      false,
+      false,
+      1);
 
-    AddOptions("activate_delay_sec",
-        ' ',
-        "<timeout in seconds>",
-        "Use this flag to activate all cable devices connected to host with delay, acceptable values are between 0 and 255 (default - 1). Important: 'activate' flag must be set.  This flag is relevant only for cable components.",
-        false,
-        false,
-        1);
+    AddOptions(
+      "activate_delay_sec",
+      ' ',
+      "<timeout in seconds>",
+      "Use this flag to activate all cable devices connected to host with delay, acceptable values are between 0 and 255 (default - 1). Important: 'activate' flag must be set.  This flag is relevant only for cable components.",
+      false,
+      false,
+      1);
 
-    AddOptions("download_transfer",
-        ' ',
-        "",
-        "Use this flag to perform the download and transfer of all cable data for cables. By default, the download and transfer are not performed . This flag is relevant only for cable components.",
-        false,
-        false,
-        1);
+    AddOptions(
+      "download_transfer",
+      ' ',
+      "",
+      "Use this flag to perform the download and transfer of all cable data for cables. By default, the download and transfer are not performed . This flag is relevant only for cable components.",
+      false,
+      false,
+      1);
 
-    AddOptions("downstream_device_ids",
-        ' ',
-        "<list of ports>",
-        "Use this flag to specify the LNKX ports to perform query. List must be only comma-separated numbers, without spaces.",
-        false,
-        false,
-        1);
+    AddOptions(
+      "downstream_device_ids",
+      ' ',
+      "<list of ports>",
+      "Use this flag to specify the LNKX ports to perform query. List must be only comma-separated numbers, without spaces.",
+      false,
+      false,
+      1);
 
 #ifndef __WIN__
-    AddOptions("public_key_label",
-        ' ',
-        "<string>",
-        "public key label to be used by the sign --hsm command");
+    AddOptions("public_key_label", ' ', "<string>", "public key label to be used by the sign --hsm command");
 
-    AddOptions("private_key_label",
-        ' ',
-        "<string>",
-        "private key label to be used by the sign --hsm command");
+    AddOptions("private_key_label", ' ', "<string>", "private key label to be used by the sign --hsm command");
 #endif
-   AddOptions("openssl_engine",
-        ' ',
-        "<string>",
-        "Name of the OpenSSL engine to used by the sign/rsa_sign commands to work with the HSM hardware via OpenSSL API");
-   AddOptions("openssl_key_id",
-        ' ',
-        "<string>",
-        "Key identification string to be used by the sign/rsa_sign commands to work with the HSM hardware via OpenSSL API");
-   AddOptions("output_file",
-        ' ',
-        "<string>",
-        "output file name for exporting the public key from PEM/BIN");
-    AddOptions("user_password",
-        ' ',
-        "<string>",
-        "the HSM user password string in order to work with HSM device");
+    AddOptions(
+      "openssl_engine",
+      ' ',
+      "<string>",
+      "Name of the OpenSSL engine to used by the sign/rsa_sign commands to work with the HSM hardware via OpenSSL API");
+    AddOptions(
+      "openssl_key_id",
+      ' ',
+      "<string>",
+      "Key identification string to be used by the sign/rsa_sign commands to work with the HSM hardware via OpenSSL API");
+    AddOptions("output_file", ' ', "<string>", "output file name for exporting the public key from PEM/BIN");
+    AddOptions("user_password", ' ', "<string>", "the HSM user password string in order to work with HSM device");
 #ifdef __WIN__
-	AddOptions("cpu_util",
-        ' ',
-		"<CPU_UTIL>",
-		"Use this flag to reduce CPU utilization while burning, Windows only. Legal values are from 1 (lowest CPU) to 5 (highest CPU)");
+    AddOptions(
+      "cpu_util",
+      ' ',
+      "<CPU_UTIL>",
+      "Use this flag to reduce CPU utilization while burning, Windows only. Legal values are from 1 (lowest CPU) to 5 (highest CPU)");
 #endif
     AddOptions(
       "cert_chain_index",
@@ -942,14 +890,15 @@ void Flint::initCmdParser()
       "section according to given index.\n"
       "This flag is relevant only for set_attestation_cert_chain command.");
 
-    for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++) {
-        if (it->first == SC_ResetCfg) {
+    for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++)
+    {
+        if (it->first == SC_ResetCfg)
+        {
             // hidden command so "forget" mentioning it
             continue;
         }
-        string str1 = it->second->getFlagL() + ((it->second->getFlagS() == "") ? ("  ") :
-                                                                                 ("|")) + it->second->getFlagS() \
-                      + " " + it->second->getParam();
+        string str1 = it->second->getFlagL() + ((it->second->getFlagS() == "") ? ("  ") : ("|")) +
+                      it->second->getFlagS() + " " + it->second->getParam();
         string str2 = it->second->getDesc();
 
         AddOptionalSectionData("COMMANDS SUMMARY", str1, str2);
@@ -957,307 +906,467 @@ void Flint::initCmdParser()
 
     AddOptionalSectionData("RETURN VALUES", "0", "Successful completion.");
     AddOptionalSectionData("RETURN VALUES", "1", "An error has occurred.");
-    AddOptionalSectionData("RETURN VALUES", "7", "For burn command - burning new firmware option was not chosen by the user when prompted, thus the firmware burning process was aborted.");
+    AddOptionalSectionData(
+      "RETURN VALUES", "7",
+      "For burn command - burning new firmware option was not chosen by the user when prompted, thus the firmware burning process was aborted.");
 
-
-    for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++) {
-        if (it->first == SC_ResetCfg) {
+    for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++)
+    {
+        if (it->first == SC_ResetCfg)
+        {
             // hidden command so "forget" mentioning it
             continue;
         }
-        string str =   "Name:\n"
-                     "\t" + it->second->getName() + "\n"
-                     + "Description:\n"
-                     "\t" + it->second->getExtDesc() + "\n"
-                     + "Command:\n"
-                     "\t" + it->second->getFlagL() +
-                     ((it->second->getFlagS() == "") ? ("  ") : ("|")) + it->second->getFlagS()
-                     + " " + it->second->getParam() + "\n"
-                     + "Parameters:\n"
-                     "\t" + it->second->getParamExp() + "\n"
-                     + "Examples:\n"
-                     "\t" + it->second->getExample() + "\n\n\n";
+        string str = "Name:\n"
+                     "\t" +
+                     it->second->getName() + "\n" +
+                     "Description:\n"
+                     "\t" +
+                     it->second->getExtDesc() + "\n" +
+                     "Command:\n"
+                     "\t" +
+                     it->second->getFlagL() + ((it->second->getFlagS() == "") ? ("  ") : ("|")) +
+                     it->second->getFlagS() + " " + it->second->getParam() + "\n" +
+                     "Parameters:\n"
+                     "\t" +
+                     it->second->getParamExp() + "\n" +
+                     "Examples:\n"
+                     "\t" +
+                     it->second->getExample() + "\n\n\n";
         AddOptionalSectionData("COMMANDS DESCRIPTION", str);
     }
-
 
     _cmdParser.AddRequester(this);
 }
 
 ParseStatus Flint::HandleOption(string name, string value)
 {
-    //TODO: consider verifying num of args inside each if statements that needs its arg num verified
+    // TODO: consider verifying num of args inside each if statements that needs its arg num verified
     //      thus we will be able to get rid of the hacks inside the function in the expense of a longer code.
-    if (!(verifyNumOfArgs(name, value))) {
+    if (!(verifyNumOfArgs(name, value)))
+    {
         return PARSE_ERROR;
     }
     int delta = 1;
-    if (name == "device" || name == "d") {
+    if (name == "device" || name == "d")
+    {
         _flintParams.device_specified = true;
         _flintParams.device = value;
-    } else if (name == "help" || name == "h") {
+    }
+    else if (name == "help" || name == "h")
+    {
         vector<string> excluded_sections;
         excluded_sections.push_back("COMMANDS DESCRIPTION");
         cout << _cmdParser.GetUsage(false, excluded_sections);
         return PARSE_OK_WITH_EXIT;
-    } else if (name == "version" || name == "v") {
+    }
+    else if (name == "version" || name == "v")
+    {
 #ifdef EXTERNAL
         print_version_string(FLINT_NAME, "");
 #else
         print_version_string(FLINT_NAME "(oem)", "");
 #endif
         return PARSE_OK_WITH_EXIT;
-    } else if (name == "hh") {
+    }
+    else if (name == "hh")
+    {
         cout << _cmdParser.GetUsage();
         return PARSE_OK_WITH_EXIT;
-    } else if (name == "no_devid_check") {
+    }
+    else if (name == "no_devid_check")
+    {
         _flintParams.no_devid_check = true;
-    } else if (name == "skip_ci_req") {
+    }
+    else if (name == "skip_ci_req")
+    {
         _flintParams.skip_ci_req = true;
-    } else if (name == "guid") {
+    }
+    else if (name == "guid")
+    {
         _flintParams.guid_specified = true;
         guid_t g;
-        if (!getGUIDFromStr(value, g)) {
+        if (!getGUIDFromStr(value, g))
+        {
             return PARSE_ERROR;
         }
-        for (int i = 0; i < GUIDS; i++) {
+        for (int i = 0; i < GUIDS; i++)
+        {
             _flintParams.user_guids.push_back(incrGuid(g, i));
         }
-        // for (std::vector<guid_t>::iterator it=_flintParams.user_guids.begin();it != _flintParams.user_guids.end(); it++){
+        // for (std::vector<guid_t>::iterator it=_flintParams.user_guids.begin();it != _flintParams.user_guids.end();
+        // it++){
         //     printf("%8.8x%8.8x\n",it->h,it->l);
         // }
-    } else if (name == "guids") {
+    }
+    else if (name == "guids")
+    {
         _flintParams.guids_specified = true;
         std::vector<std::string> strs;
         splitByDelimiters(strs, value, ",");
-        if (strs.size() != GUIDS) {
+        if (strs.size() != GUIDS)
+        {
             return PARSE_ERROR;
         }
-        for (int i = 0; i < GUIDS; i++) {
+        for (int i = 0; i < GUIDS; i++)
+        {
             guid_t g;
-            if (!getGUIDFromStr(strs[i], g)) {
+            if (!getGUIDFromStr(strs[i], g))
+            {
                 return PARSE_ERROR;
-            } else {
+            }
+            else
+            {
                 _flintParams.user_guids.push_back(g);
             }
         }
-    } else if (name == "mac") {
+    }
+    else if (name == "mac")
+    {
         _flintParams.mac_specified = true;
         guid_t m;
-        if (!getGUIDFromStr(value, m)) {
+        if (!getGUIDFromStr(value, m))
+        {
             return PARSE_ERROR;
         }
-        for (int i = 0; i < MACS; i++) {
+        for (int i = 0; i < MACS; i++)
+        {
             _flintParams.user_macs.push_back(incrGuid(m, i));
         }
-    } else if (name == "macs") {
+    }
+    else if (name == "macs")
+    {
         _flintParams.macs_specified = true;
         std::vector<std::string> strs;
         splitByDelimiters(strs, value, ",");
-        if (strs.size() != MACS) {
+        if (strs.size() != MACS)
+        {
             return PARSE_ERROR;
         }
-        for (int i = 0; i < MACS; i++) {
+        for (int i = 0; i < MACS; i++)
+        {
             guid_t m;
-            if (!getGUIDFromStr(strs[i], m)) {
+            if (!getGUIDFromStr(strs[i], m))
+            {
                 return PARSE_ERROR;
-            } else {
+            }
+            else
+            {
                 _flintParams.user_macs.push_back(m);
             }
         }
-    } else if (name == "uid") {
+    }
+    else if (name == "uid")
+    {
         _flintParams.uid_specified = true;
-        if (!getGUIDFromStr(value, _flintParams.baseUid)) {
+        if (!getGUIDFromStr(value, _flintParams.baseUid))
+        {
             return PARSE_ERROR;
         }
-    } else if (name == "blank_guids") {
+    }
+    else if (name == "blank_guids")
+    {
         _flintParams.blank_guids = true;
-    } else if (name == "clear_semaphore") {
+    }
+    else if (name == "clear_semaphore")
+    {
         _flintParams.clear_semaphore = true;
-    } else if (name == "image" || name == "i") {
+    }
+    else if (name == "image" || name == "i")
+    {
         _flintParams.image_specified = true;
         _flintParams.image = value;
-    } else if (name == "qq") {
+    }
+    else if (name == "qq")
+    {
         _flintParams.quick_query = true;
         _flintParams.skip_rom_query = true;
         delta = 2;
-    } else if (name == "low_cpu") {
+    }
+    else if (name == "low_cpu")
+    {
         _flintParams.low_cpu = true;
-    } else if (name == "next_boot_fw_ver" || name == "flashed_version") {
+    }
+    else if (name == "next_boot_fw_ver" || name == "flashed_version")
+    {
         _flintParams.next_boot_fw_ver = true;
-    } else if (name == "nofs") {
+    }
+    else if (name == "nofs")
+    {
         _flintParams.nofs = true;
-    } else if (name == "allow_psid_change") {
+    }
+    else if (name == "allow_psid_change")
+    {
         _flintParams.allow_psid_change = true;
-    } else if (name == "allow_rom_change") {
+    }
+    else if (name == "allow_rom_change")
+    {
         _flintParams.allow_rom_change = true;
-    } else if (name == "override_cache_replacement" || name == "ocr") {
+    }
+    else if (name == "override_cache_replacement" || name == "ocr")
+    {
         _flintParams.override_cache_replacement = true;
-    } else if (name == "use_fw") {
+    }
+    else if (name == "use_fw")
+    {
         _flintParams.use_fw = true;
-    } else if (name == "no_flash_verify") {
+    }
+    else if (name == "no_flash_verify")
+    {
         _flintParams.no_flash_verify = true;
-    } else if (name == "silent" || name == "s") {
+    }
+    else if (name == "silent" || name == "s")
+    {
         _flintParams.silent = true;
-    } else if (name == "yes" || name == "y") {
+    }
+    else if (name == "yes" || name == "y")
+    {
         _flintParams.yes = true;
-    } else if (name == "no") {
+    }
+    else if (name == "no")
+    {
         _flintParams.no = true;
-    } else if (name == "vsd") {
+    }
+    else if (name == "vsd")
+    {
         _flintParams.vsd_specified = true;
         _flintParams.vsd = value;
-    } else if (name == "use_image_ps") {
+    }
+    else if (name == "use_image_ps")
+    {
         _flintParams.use_image_ps = true;
-    } else if (name == "use_image_guids") {
+    }
+    else if (name == "use_image_guids")
+    {
         _flintParams.use_image_guids = true;
-    } else if (name == "use_image_rom") {
+    }
+    else if (name == "use_image_rom")
+    {
         _flintParams.use_image_rom = true;
-    } else if (name == "use_dev_rom") {
+    }
+    else if (name == "use_dev_rom")
+    {
         _flintParams.use_dev_rom = true;
-    } else if (name == "ignore_dev_data") {
+    }
+    else if (name == "ignore_dev_data")
+    {
         _flintParams.ignore_dev_data = true;
-    } else if (name == "no_fw_ctrl") {
+    }
+    else if (name == "no_fw_ctrl")
+    {
         _flintParams.no_fw_ctrl = true;
-    } else if (name == "dual_image") {
+    }
+    else if (name == "dual_image")
+    {
         _flintParams.dual_image = true;
-    } else if (name == "striped_image") {
+    }
+    else if (name == "striped_image")
+    {
         _flintParams.striped_image = true;
-    } else if (name == "use_dev_img_info") {
+    }
+    else if (name == "use_dev_img_info")
+    {
         _flintParams.use_dev_img_info = true;
-    } else if (name == "ignore_crc_check") {
+    }
+    else if (name == "ignore_crc_check")
+    {
         _flintParams.ignore_crc_check = true;
-    } else if (name == "hexdump_format") {
+    }
+    else if (name == "hexdump_format")
+    {
         _flintParams.hexdump_format = true;
-    } else if (name == "ir") {
+    }
+    else if (name == "ir")
+    {
         _flintParams.image_reactivation = true;
-    } else if (name == "banks") {
+    }
+    else if (name == "banks")
+    {
         _flintParams.banks_specified = true;
         u_int64_t banksNum;
-        if (!strToNum(value, banksNum)) {
+        if (!strToNum(value, banksNum))
+        {
             return PARSE_ERROR;
         }
         _flintParams.banks = (int)banksNum;
-    } else if (name == "log") {
+    }
+    else if (name == "log")
+    {
         _flintParams.log_specified = true;
         _flintParams.log = value;
-    } else if (name == "flash_params") {
+    }
+    else if (name == "flash_params")
+    {
         _flintParams.flash_params_specified = true;
-        if (!parseFlashParams(value, _flintParams.flash_params)) {
+        if (!parseFlashParams(value, _flintParams.flash_params))
+        {
             return PARSE_ERROR;
         }
-        //printf("-D- flashType=%s , log2size = %d , numOfBanks = %d\n", _flintParams.flash_params.type_name, _flintParams.flash_params.log2size, _flintParams.flash_params.num_of_flashes);
-    } else if (name == "private_key") {
+        // printf("-D- flashType=%s , log2size = %d , numOfBanks = %d\n", _flintParams.flash_params.type_name,
+        // _flintParams.flash_params.log2size, _flintParams.flash_params.num_of_flashes);
+    }
+    else if (name == "private_key")
+    {
         _flintParams.privkey_specified = true;
         _flintParams.privkey_file = value;
-    } else if (name == "public_key") {
+    }
+    else if (name == "public_key")
+    {
         _flintParams.pubkey_specified = true;
         _flintParams.pubkey_file = value;
-    } else if (name == "key_uuid") {
+    }
+    else if (name == "key_uuid")
+    {
         _flintParams.uuid_specified = true;
         _flintParams.privkey_uuid = value;
-    } else if (name == "hmac_key") {
+    }
+    else if (name == "hmac_key")
+    {
         _flintParams.key_specified = true;
         _flintParams.key = value;
-    } else if (name == "private_key2") {
+    }
+    else if (name == "private_key2")
+    {
         _flintParams.privkey2_specified = true;
         _flintParams.privkey2_file = value;
-    } else if (name == "key_uuid2") {
+    }
+    else if (name == "key_uuid2")
+    {
         _flintParams.uuid2_specified = true;
         _flintParams.privkey2_uuid = value;
-    } else if (name == "latest_fw") {
+    }
+    else if (name == "latest_fw")
+    {
         _flintParams.use_latest_fw_version = true;
-    } else if (name == "psid") {
+    }
+    else if (name == "psid")
+    {
         _flintParams.use_psid = true;
         _flintParams.psid = value;
     }
-    else if (name == "cc") {
+    else if (name == "cc")
+    {
         _flintParams.congestion_control = true;
         _flintParams.congestion_control_param = value;
     }
-    else if (name == "linkx") {
+    else if (name == "linkx")
+    {
         _flintParams.linkx_control = true;
     }
-    else if (name == "cpu_util") {
-		_flintParams.use_cpu_utilization = true;
-		u_int64_t cpu_percent = 0;
-		if (!strToNum(value, cpu_percent)) {
-			return PARSE_ERROR;
-		}
-		_flintParams.cpu_percent = (int)cpu_percent;
-    } else if (name == "hsm") {
-        _flintParams.hsm_specified = true;
-    } else if (name == "openssl_engine") {
-       _flintParams.openssl_engine_usage_specified = true;
-       _flintParams.openssl_engine = value;
-    } else if (name == "openssl_key_id") {
-       _flintParams.openssl_engine_usage_specified = true;
-       _flintParams.openssl_key_id = value;
-    } else if (name == "private_key_label") {
-        _flintParams.private_key_label_specified = true;
-        _flintParams.private_key_label = value;
-    } else if (name == "public_key_label") {
-        _flintParams.public_key_label_specified = true;
-        _flintParams.public_key_label = value;
-    } else if (name == "output_file") {
-        _flintParams.output_file_specified = true;
-        _flintParams.output_file = value;
-    } else if (name == "user_password") {
-        _flintParams.hsm_password_specified = true;
-        _flintParams.hsm_password = value;
-    } else if (name == "downstream_device_id_start_index") {
-        _flintParams.cable_device_index_specified = true;
-        int device_index = 0;
-        if (!strToInt(value, device_index)) {
+    else if (name == "cpu_util")
+    {
+        _flintParams.use_cpu_utilization = true;
+        u_int64_t cpu_percent = 0;
+        if (!strToNum(value, cpu_percent))
+        {
             return PARSE_ERROR;
         }
-        if (device_index < 0) {
+        _flintParams.cpu_percent = (int)cpu_percent;
+    }
+    else if (name == "hsm")
+    {
+        _flintParams.hsm_specified = true;
+    }
+    else if (name == "openssl_engine")
+    {
+        _flintParams.openssl_engine_usage_specified = true;
+        _flintParams.openssl_engine = value;
+    }
+    else if (name == "openssl_key_id")
+    {
+        _flintParams.openssl_engine_usage_specified = true;
+        _flintParams.openssl_key_id = value;
+    }
+    else if (name == "private_key_label")
+    {
+        _flintParams.private_key_label_specified = true;
+        _flintParams.private_key_label = value;
+    }
+    else if (name == "public_key_label")
+    {
+        _flintParams.public_key_label_specified = true;
+        _flintParams.public_key_label = value;
+    }
+    else if (name == "output_file")
+    {
+        _flintParams.output_file_specified = true;
+        _flintParams.output_file = value;
+    }
+    else if (name == "user_password")
+    {
+        _flintParams.hsm_password_specified = true;
+        _flintParams.hsm_password = value;
+    }
+    else if (name == "downstream_device_id_start_index")
+    {
+        _flintParams.cable_device_index_specified = true;
+        int device_index = 0;
+        if (!strToInt(value, device_index))
+        {
+            return PARSE_ERROR;
+        }
+        if (device_index < 0)
+        {
             return PARSE_ERROR;
         }
         _flintParams.cableDeviceIndex = device_index;
-    } 
-    
-    else if (name == "activate") {
-    _flintParams.activate = true;
     }
 
-    else if (name == "activate_delay_sec") {
+    else if (name == "activate")
+    {
+        _flintParams.activate = true;
+    }
+
+    else if (name == "activate_delay_sec")
+    {
         u_int64_t activate_delay_sec = 0;
-        if (!strToNum(value, activate_delay_sec)) {
+        if (!strToNum(value, activate_delay_sec))
+        {
             return PARSE_ERROR;
         }
-        if (activate_delay_sec > 255) {
+        if (activate_delay_sec > 255)
+        {
             printf("Activation_delay_sec should be between 0 and 255.\n");
             return PARSE_ERROR;
         }
         _flintParams.activate_delay_sec = activate_delay_sec;
     }
-    else if (name == "linkx_auto_update") {
+    else if (name == "linkx_auto_update")
+    {
         _flintParams.linkx_auto_update = true;
-    } 
-
-    else if (name == "download_transfer") {
-    _flintParams.download_transfer = true;
     }
-    
-    else if (name == "downstream_device_ids") {
-        if (value == "all") {
+
+    else if (name == "download_transfer")
+    {
+        _flintParams.download_transfer = true;
+    }
+
+    else if (name == "downstream_device_ids")
+    {
+        if (value == "all")
+        {
             _flintParams.linkx_auto_update = true;
         }
-        else {
+        else
+        {
             _flintParams.downstream_device_ids_specified = true;
             std::vector<int> deviceIds;
-            if (!stringsCommaSplit(value, deviceIds)) {
+            if (!stringsCommaSplit(value, deviceIds))
+            {
                 return PARSE_ERROR;
             }
             _flintParams.downstream_device_ids = deviceIds;
         }
     }
-    else if (name == "num_of_downstream_devices") {
+    else if (name == "num_of_downstream_devices")
+    {
         int cableDeviceSize = 0;
-        if (!strToInt(value, cableDeviceSize)) {
+        if (!strToInt(value, cableDeviceSize))
+        {
             return PARSE_ERROR;
         }
-        if (cableDeviceSize <= 0 || cableDeviceSize > 255) {
+        if (cableDeviceSize <= 0 || cableDeviceSize > 255)
+        {
             printf("Cable size should be between 1 and 255.\n");
             return PARSE_ERROR;
         }
@@ -1278,7 +1387,8 @@ ParseStatus Flint::HandleOption(string name, string value)
         }
         _flintParams.cert_chain_index = cert_chain_index;
     }
-    else {
+    else
+    {
         cout << "Unknown Flag: " << name;
         cout << _cmdParser.GetSynopsis();
         return PARSE_ERROR;
@@ -1289,23 +1399,26 @@ ParseStatus Flint::HandleOption(string name, string value)
 
 #define IS_NUM(cha) (((cha) >= '0') && ((cha) <= '9'))
 
-ParseStatus Flint::parseCmdLine(int argc, char *argv[])
+ParseStatus Flint::parseCmdLine(int argc, char* argv[])
 {
-    //Step1 separate between option section and cmd section
+    // Step1 separate between option section and cmd section
     SubCmdMetaData subCmds;
     FlagMetaData flags;
-    char **argvCmd = NULL;
-    char **argvOpt = NULL;
+    char** argvCmd = NULL;
+    char** argvOpt = NULL;
     int argcCmd = 0, argcOpt = 0;
     bool foundOptionWhenLookingForCmd = false;
     ParseStatus rc;
-    char **newArgv = NULL;
+    char** newArgv = NULL;
     int newArgc = 0;
     int i = 1, j = 1, argStart = 1, argEnd = 1;
 
-    for (int k = (argc - 1); k > 0; k--) { // Parsing command line from end to start
-        if ((subCmds.getCmdNum(argv[k])) != SC_No_Cmd) { // i.e we found a subcommand
-            if (foundOptionWhenLookingForCmd) {
+    for (int k = (argc - 1); k > 0; k--)
+    { // Parsing command line from end to start
+        if ((subCmds.getCmdNum(argv[k])) != SC_No_Cmd)
+        { // i.e we found a subcommand
+            if (foundOptionWhenLookingForCmd)
+            {
                 cout << "Specifying options flags after command is not allowed.\n\n";
                 rc = PARSE_ERROR_SHOW_USAGE;
                 goto clean_up;
@@ -1314,45 +1427,56 @@ ParseStatus Flint::parseCmdLine(int argc, char *argv[])
             argvOpt = argv;
             argcCmd = argc - k;
             argvCmd = &argv[k];
-        } else if (argv[k][0] == '-' && !IS_NUM(argv[k][1])) {
+        }
+        else if (argv[k][0] == '-' && !IS_NUM(argv[k][1]))
+        {
             foundOptionWhenLookingForCmd = true;
         }
     }
-    if (argcCmd == 0) {
-        //no subcommand found
+    if (argcCmd == 0)
+    {
+        // no subcommand found
         argcOpt = argc;
         argvOpt = argv;
     }
-    //printf("-D- argcOpt:%d argvOpt:%s argcCmd:%d argvCmd:%s\n", argcOpt, argvOpt[0], argcCmd, argvCmd[0]);
+    // printf("-D- argcOpt:%d argvOpt:%s argcCmd:%d argvCmd:%s\n", argcOpt, argvOpt[0], argcCmd, argvCmd[0]);
     //_cmdparser should deal with the case of no arguments in argv except the program.
-    //Step2 unite with comma multiple args in the options section
+    // Step2 unite with comma multiple args in the options section
     newArgv = new char*[argcOpt];
-    //first arg is the flint command we can copy as is
+    // first arg is the flint command we can copy as is
     newArgv[0] = strcpy(new char[strlen(argvOpt[0]) + 1], argvOpt[0]);
-    while (i < argcOpt) {
-        if (argvOpt[i][0] == '-' && !IS_NUM(argvOpt[i][1])) { //its a flag (and not a number) so we copy to new_argv as is
-            newArgv[j] = strcpy(new char[strlen(argvOpt[i]) + 1],
-                                argvOpt[i]);
+    while (i < argcOpt)
+    {
+        if (argvOpt[i][0] == '-' && !IS_NUM(argvOpt[i][1]))
+        { // its a flag (and not a number) so we copy to new_argv as is
+            newArgv[j] = strcpy(new char[strlen(argvOpt[i]) + 1], argvOpt[i]);
             i++;
             j++;
-        } else { //its an argument
-            //find next flag if exsists
+        }
+        else
+        { // its an argument
+            // find next flag if exsists
             argStart = i;
             argEnd = i;
             int argsSize = 0;
-            while (argEnd < argcOpt && (argvOpt[argEnd][0] != '-' || IS_NUM(argvOpt[argEnd][1]))) {
-                argsSize += strlen(argvOpt[argEnd]) + 1; //for the comma
+            while (argEnd < argcOpt && (argvOpt[argEnd][0] != '-' || IS_NUM(argvOpt[argEnd][1])))
+            {
+                argsSize += strlen(argvOpt[argEnd]) + 1; // for the comma
                 argEnd++;
             }
             i = argEnd;
-            //concatenate all the args with comma between them to a single string
+            // concatenate all the args with comma between them to a single string
             newArgv[j] = new char[argsSize + 1];
             newArgv[j][0] = '\0';
-            while (argStart < argEnd) {
-                if (argStart == argEnd - 1) {
-                    //no need to add comma to the last arg
+            while (argStart < argEnd)
+            {
+                if (argStart == argEnd - 1)
+                {
+                    // no need to add comma to the last arg
                     strcat(newArgv[j], argvOpt[argStart]);
-                } else {
+                }
+                else
+                {
                     strcat(newArgv[j], argvOpt[argStart]);
                     strcat(newArgv[j], ",");
                 }
@@ -1363,44 +1487,55 @@ ParseStatus Flint::parseCmdLine(int argc, char *argv[])
     }
     newArgc = j;
 
-    //Step3 set the command and its args in the FlintParams struct if present
-    if (argcCmd > 0) {
+    // Step3 set the command and its args in the FlintParams struct if present
+    if (argcCmd > 0)
+    {
         this->_flintParams.cmd = subCmds.getCmdNum(argvCmd[0]);
-        for (int i = 1; i < argcCmd; ++i) {
+        for (int i = 1; i < argcCmd; ++i)
+        {
             this->_flintParams.cmd_params.push_back(string(argvCmd[i]));
         }
-    } else { //no command found deal with either missing/invalid command
-        //find last flag
+    }
+    else
+    { // no command found deal with either missing/invalid command
+        // find last flag
         int lastFlagPos;
-        char *strippedFlag;
-        for (lastFlagPos = argc - 1; lastFlagPos > 0; lastFlagPos--) {
-            if (argv[lastFlagPos][0] == '-' && !IS_NUM(argv[lastFlagPos][1])) {
+        char* strippedFlag;
+        for (lastFlagPos = argc - 1; lastFlagPos > 0; lastFlagPos--)
+        {
+            if (argv[lastFlagPos][0] == '-' && !IS_NUM(argv[lastFlagPos][1]))
+            {
                 break;
             }
         }
-        if (lastFlagPos == 0) {
+        if (lastFlagPos == 0)
+        {
             cout << FLINT_NO_OPTIONS_FOUND_ERROR << endl;
             rc = PARSE_ERROR;
             goto clean_up;
         }
         strippedFlag = stripFlag(argv[lastFlagPos]);
-        //check how many args it needs
+        // check how many args it needs
         int numOfArgs = flags.getNumOfArgs(strippedFlag);
-        //if too many args return arg in pos num_of_args+1 as the invalid command.
-        if ((argc - 1 - lastFlagPos) > numOfArgs) {
+        // if too many args return arg in pos num_of_args+1 as the invalid command.
+        if ((argc - 1 - lastFlagPos) > numOfArgs)
+        {
             printf(FLINT_INVALID_COMMAD_ERROR, argv[argc - 1]);
             rc = PARSE_ERROR_SHOW_USAGE;
             goto clean_up;
         }
     }
-    //Step5 parse option section using _cmdParser
+    // Step5 parse option section using _cmdParser
     rc = this->_cmdParser.ParseOptions(newArgc, newArgv);
     // Step 6 Delete allocated memory
-clean_up: for (int i = 0; i < newArgc; i++) {
+clean_up:
+    for (int i = 0; i < newArgc; i++)
+    {
         delete[] newArgv[i];
     }
     delete[] newArgv;
-    if (rc == PARSE_ERROR_SHOW_USAGE) {
+    if (rc == PARSE_ERROR_SHOW_USAGE)
+    {
         cout << _cmdParser.GetSynopsis();
     }
     return rc;

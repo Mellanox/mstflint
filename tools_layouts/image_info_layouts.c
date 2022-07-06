@@ -29,17 +29,16 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
 
 /***
-         *** This file was generated at "2018-06-25 13:22:56"
-         *** by:
-         ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/connectx4/connectx4.adb --file-prefix connectx4 --prefix connectx4_
-         ***/
+ *** This file was generated at "2018-06-25 13:22:56"
+ *** by:
+ ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/connectx4/connectx4.adb
+ *--file-prefix connectx4 --prefix connectx4_
+ ***/
 #include "image_info_layouts.h"
 
-
-void connectx4_FW_VERSION_pack(const struct connectx4_FW_VERSION *ptr_struct, u_int8_t *ptr_buff)
+void connectx4_FW_VERSION_pack(const struct connectx4_FW_VERSION* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -63,7 +62,7 @@ void connectx4_FW_VERSION_pack(const struct connectx4_FW_VERSION *ptr_struct, u_
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->Year);
 }
 
-void connectx4_FW_VERSION_unpack(struct connectx4_FW_VERSION *ptr_struct, const u_int8_t *ptr_buff)
+void connectx4_FW_VERSION_unpack(struct connectx4_FW_VERSION* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -87,7 +86,7 @@ void connectx4_FW_VERSION_unpack(struct connectx4_FW_VERSION *ptr_struct, const 
     ptr_struct->Year = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 }
 
-void connectx4_FW_VERSION_print(const struct connectx4_FW_VERSION *ptr_struct, FILE *fd, int indent_level)
+void connectx4_FW_VERSION_print(const struct connectx4_FW_VERSION* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== connectx4_FW_VERSION ========\n");
@@ -117,12 +116,12 @@ unsigned int connectx4_FW_VERSION_size(void)
     return CONNECTX4_FW_VERSION_SIZE;
 }
 
-void connectx4_FW_VERSION_dump(const struct connectx4_FW_VERSION *ptr_struct, FILE *fd)
+void connectx4_FW_VERSION_dump(const struct connectx4_FW_VERSION* ptr_struct, FILE* fd)
 {
     connectx4_FW_VERSION_print(ptr_struct, fd, 0);
 }
 
-void connectx4_module_version_pack(const struct connectx4_module_version *ptr_struct, u_int8_t *ptr_buff)
+void connectx4_module_version_pack(const struct connectx4_module_version* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -134,7 +133,7 @@ void connectx4_module_version_pack(const struct connectx4_module_version *ptr_st
     adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->major);
 }
 
-void connectx4_module_version_unpack(struct connectx4_module_version *ptr_struct, const u_int8_t *ptr_buff)
+void connectx4_module_version_unpack(struct connectx4_module_version* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -146,7 +145,7 @@ void connectx4_module_version_unpack(struct connectx4_module_version *ptr_struct
     ptr_struct->major = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
 }
 
-void connectx4_module_version_print(const struct connectx4_module_version *ptr_struct, FILE *fd, int indent_level)
+void connectx4_module_version_print(const struct connectx4_module_version* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== connectx4_module_version ========\n");
@@ -164,12 +163,12 @@ unsigned int connectx4_module_version_size(void)
     return CONNECTX4_MODULE_VERSION_SIZE;
 }
 
-void connectx4_module_version_dump(const struct connectx4_module_version *ptr_struct, FILE *fd)
+void connectx4_module_version_dump(const struct connectx4_module_version* ptr_struct, FILE* fd)
 {
     connectx4_module_version_print(ptr_struct, fd, 0);
 }
 
-void connectx4_TRIPPLE_VERSION_pack(const struct connectx4_TRIPPLE_VERSION *ptr_struct, u_int8_t *ptr_buff)
+void connectx4_TRIPPLE_VERSION_pack(const struct connectx4_TRIPPLE_VERSION* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -181,7 +180,7 @@ void connectx4_TRIPPLE_VERSION_pack(const struct connectx4_TRIPPLE_VERSION *ptr_
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->MINOR);
 }
 
-void connectx4_TRIPPLE_VERSION_unpack(struct connectx4_TRIPPLE_VERSION *ptr_struct, const u_int8_t *ptr_buff)
+void connectx4_TRIPPLE_VERSION_unpack(struct connectx4_TRIPPLE_VERSION* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -193,7 +192,7 @@ void connectx4_TRIPPLE_VERSION_unpack(struct connectx4_TRIPPLE_VERSION *ptr_stru
     ptr_struct->MINOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 }
 
-void connectx4_TRIPPLE_VERSION_print(const struct connectx4_TRIPPLE_VERSION *ptr_struct, FILE *fd, int indent_level)
+void connectx4_TRIPPLE_VERSION_print(const struct connectx4_TRIPPLE_VERSION* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== connectx4_TRIPPLE_VERSION ========\n");
@@ -211,12 +210,12 @@ unsigned int connectx4_TRIPPLE_VERSION_size(void)
     return CONNECTX4_TRIPPLE_VERSION_SIZE;
 }
 
-void connectx4_TRIPPLE_VERSION_dump(const struct connectx4_TRIPPLE_VERSION *ptr_struct, FILE *fd)
+void connectx4_TRIPPLE_VERSION_dump(const struct connectx4_TRIPPLE_VERSION* ptr_struct, FILE* fd)
 {
     connectx4_TRIPPLE_VERSION_print(ptr_struct, fd, 0);
 }
 
-void connectx4_image_size_pack(const struct connectx4_image_size *ptr_struct, u_int8_t *ptr_buff)
+void connectx4_image_size_pack(const struct connectx4_image_size* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -228,7 +227,7 @@ void connectx4_image_size_pack(const struct connectx4_image_size *ptr_struct, u_
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->max_size);
 }
 
-void connectx4_image_size_unpack(struct connectx4_image_size *ptr_struct, const u_int8_t *ptr_buff)
+void connectx4_image_size_unpack(struct connectx4_image_size* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -240,7 +239,7 @@ void connectx4_image_size_unpack(struct connectx4_image_size *ptr_struct, const 
     ptr_struct->max_size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
 
-void connectx4_image_size_print(const struct connectx4_image_size *ptr_struct, FILE *fd, int indent_level)
+void connectx4_image_size_print(const struct connectx4_image_size* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== connectx4_image_size ========\n");
@@ -258,12 +257,12 @@ unsigned int connectx4_image_size_size(void)
     return CONNECTX4_IMAGE_SIZE_SIZE;
 }
 
-void connectx4_image_size_dump(const struct connectx4_image_size *ptr_struct, FILE *fd)
+void connectx4_image_size_dump(const struct connectx4_image_size* ptr_struct, FILE* fd)
 {
     connectx4_image_size_print(ptr_struct, fd, 0);
 }
 
-void connectx4_module_versions_pack(const struct connectx4_module_versions *ptr_struct, u_int8_t *ptr_buff)
+void connectx4_module_versions_pack(const struct connectx4_module_versions* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -281,7 +280,7 @@ void connectx4_module_versions_pack(const struct connectx4_module_versions *ptr_
     connectx4_module_version_pack(&(ptr_struct->mad), ptr_buff + offset / 8);
 }
 
-void connectx4_module_versions_unpack(struct connectx4_module_versions *ptr_struct, const u_int8_t *ptr_buff)
+void connectx4_module_versions_unpack(struct connectx4_module_versions* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -299,7 +298,7 @@ void connectx4_module_versions_unpack(struct connectx4_module_versions *ptr_stru
     connectx4_module_version_unpack(&(ptr_struct->mad), ptr_buff + offset / 8);
 }
 
-void connectx4_module_versions_print(const struct connectx4_module_versions *ptr_struct, FILE *fd, int indent_level)
+void connectx4_module_versions_print(const struct connectx4_module_versions* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== connectx4_module_versions ========\n");
@@ -329,12 +328,12 @@ unsigned int connectx4_module_versions_size(void)
     return CONNECTX4_MODULE_VERSIONS_SIZE;
 }
 
-void connectx4_module_versions_dump(const struct connectx4_module_versions *ptr_struct, FILE *fd)
+void connectx4_module_versions_dump(const struct connectx4_module_versions* ptr_struct, FILE* fd)
 {
     connectx4_module_versions_print(ptr_struct, fd, 0);
 }
 
-void connectx4_image_info_pack(const struct connectx4_image_info *ptr_struct, u_int8_t *ptr_buff)
+void connectx4_image_info_pack(const struct connectx4_image_info* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -375,45 +374,52 @@ void connectx4_image_info_pack(const struct connectx4_image_info *ptr_struct, u_
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->pci_sub_vendor_id);
     offset = 256;
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->pci_subsystem_id);
-    for (i = 0; i < 16; ++i) {
+    for (i = 0; i < 16; ++i)
+    {
         offset = adb2c_calc_array_field_address(312, 8, i, 8192, 1);
         adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->psid[i]);
     }
     offset = 432;
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->vsd_vendor_id);
-    for (i = 0; i < 208; ++i) {
+    for (i = 0; i < 208; ++i)
+    {
         offset = adb2c_calc_array_field_address(472, 8, i, 8192, 1);
         adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->vsd[i]);
     }
     offset = 2112;
     connectx4_image_size_pack(&(ptr_struct->image_size), ptr_buff + offset / 8);
-    for (i = 0; i < 4; ++i) {
+    for (i = 0; i < 4; ++i)
+    {
         offset = adb2c_calc_array_field_address(2240, 32, i, 8192, 1);
         adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->supported_hw_id[i]);
     }
     offset = 2368;
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->ini_file_num);
-    for (i = 0; i < 16; ++i) {
+    for (i = 0; i < 16; ++i)
+    {
         offset = adb2c_calc_array_field_address(3608, 8, i, 8192, 1);
         adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->prod_ver[i]);
     }
-    for (i = 0; i < 256; ++i) {
+    for (i = 0; i < 256; ++i)
+    {
         offset = adb2c_calc_array_field_address(3736, 8, i, 8192, 1);
         adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->description[i]);
     }
     offset = 6144;
     connectx4_module_versions_pack(&(ptr_struct->module_versions), ptr_buff + offset / 8);
-    for (i = 0; i < 64; ++i) {
+    for (i = 0; i < 64; ++i)
+    {
         offset = adb2c_calc_array_field_address(6680, 8, i, 8192, 1);
         adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->name[i]);
     }
-    for (i = 0; i < 128; ++i) {
+    for (i = 0; i < 128; ++i)
+    {
         offset = adb2c_calc_array_field_address(7192, 8, i, 8192, 1);
         adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->prs_name[i]);
     }
 }
 
-void connectx4_image_info_unpack(struct connectx4_image_info *ptr_struct, const u_int8_t *ptr_buff)
+void connectx4_image_info_unpack(struct connectx4_image_info* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -454,51 +460,58 @@ void connectx4_image_info_unpack(struct connectx4_image_info *ptr_struct, const 
     ptr_struct->pci_sub_vendor_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
     offset = 256;
     ptr_struct->pci_subsystem_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-    for (i = 0; i < 16; ++i) {
+    for (i = 0; i < 16; ++i)
+    {
         offset = adb2c_calc_array_field_address(312, 8, i, 8192, 1);
         ptr_struct->psid[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
     }
-        ptr_struct->psid[16] = '\0';
+    ptr_struct->psid[16] = '\0';
     offset = 432;
     ptr_struct->vsd_vendor_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-    for (i = 0; i < 208; ++i) {
+    for (i = 0; i < 208; ++i)
+    {
         offset = adb2c_calc_array_field_address(472, 8, i, 8192, 1);
         ptr_struct->vsd[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
     }
-        ptr_struct->vsd[208] = '\0';
+    ptr_struct->vsd[208] = '\0';
     offset = 2112;
     connectx4_image_size_unpack(&(ptr_struct->image_size), ptr_buff + offset / 8);
-    for (i = 0; i < 4; ++i) {
+    for (i = 0; i < 4; ++i)
+    {
         offset = adb2c_calc_array_field_address(2240, 32, i, 8192, 1);
         ptr_struct->supported_hw_id[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     }
     offset = 2368;
     ptr_struct->ini_file_num = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-    for (i = 0; i < 16; ++i) {
+    for (i = 0; i < 16; ++i)
+    {
         offset = adb2c_calc_array_field_address(3608, 8, i, 8192, 1);
         ptr_struct->prod_ver[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
     }
-        ptr_struct->prod_ver[16] = '\0';
-    for (i = 0; i < 256; ++i) {
+    ptr_struct->prod_ver[16] = '\0';
+    for (i = 0; i < 256; ++i)
+    {
         offset = adb2c_calc_array_field_address(3736, 8, i, 8192, 1);
         ptr_struct->description[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
     }
-        ptr_struct->description[256] = '\0';
+    ptr_struct->description[256] = '\0';
     offset = 6144;
     connectx4_module_versions_unpack(&(ptr_struct->module_versions), ptr_buff + offset / 8);
-    for (i = 0; i < 64; ++i) {
+    for (i = 0; i < 64; ++i)
+    {
         offset = adb2c_calc_array_field_address(6680, 8, i, 8192, 1);
         ptr_struct->name[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
     }
-        ptr_struct->name[64] = '\0';
-    for (i = 0; i < 128; ++i) {
+    ptr_struct->name[64] = '\0';
+    for (i = 0; i < 128; ++i)
+    {
         offset = adb2c_calc_array_field_address(7192, 8, i, 8192, 1);
         ptr_struct->prs_name[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
     }
-        ptr_struct->prs_name[128] = '\0';
+    ptr_struct->prs_name[128] = '\0';
 }
 
-void connectx4_image_info_print(const struct connectx4_image_info *ptr_struct, FILE *fd, int indent_level)
+void connectx4_image_info_print(const struct connectx4_image_info* ptr_struct, FILE* fd, int indent_level)
 {
     int i;
 
@@ -543,26 +556,27 @@ void connectx4_image_info_print(const struct connectx4_image_info *ptr_struct, F
     fprintf(fd, "pci_sub_vendor_id    : " UH_FMT "\n", ptr_struct->pci_sub_vendor_id);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "pci_subsystem_id     : " UH_FMT "\n", ptr_struct->pci_subsystem_id);
-        fprintf(fd, "psid                 : \"%s\"\n", ptr_struct->psid);
+    fprintf(fd, "psid                 : \"%s\"\n", ptr_struct->psid);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "vsd_vendor_id        : " UH_FMT "\n", ptr_struct->vsd_vendor_id);
-        fprintf(fd, "vsd                  : \"%s\"\n", ptr_struct->vsd);
+    fprintf(fd, "vsd                  : \"%s\"\n", ptr_struct->vsd);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "image_size:\n");
     connectx4_image_size_print(&(ptr_struct->image_size), fd, indent_level + 1);
-    for (i = 0; i < 4; ++i) {
+    for (i = 0; i < 4; ++i)
+    {
         adb2c_add_indentation(fd, indent_level);
         fprintf(fd, "supported_hw_id_%03d : " U32H_FMT "\n", i, ptr_struct->supported_hw_id[i]);
     }
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "ini_file_num         : " U32H_FMT "\n", ptr_struct->ini_file_num);
-        fprintf(fd, "prod_ver             : \"%s\"\n", ptr_struct->prod_ver);
-        fprintf(fd, "description          : \"%s\"\n", ptr_struct->description);
+    fprintf(fd, "prod_ver             : \"%s\"\n", ptr_struct->prod_ver);
+    fprintf(fd, "description          : \"%s\"\n", ptr_struct->description);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "module_versions:\n");
     connectx4_module_versions_print(&(ptr_struct->module_versions), fd, indent_level + 1);
-        fprintf(fd, "name                 : \"%s\"\n", ptr_struct->name);
-        fprintf(fd, "prs_name             : \"%s\"\n", ptr_struct->prs_name);
+    fprintf(fd, "name                 : \"%s\"\n", ptr_struct->name);
+    fprintf(fd, "prs_name             : \"%s\"\n", ptr_struct->prs_name);
 }
 
 unsigned int connectx4_image_info_size(void)
@@ -570,12 +584,12 @@ unsigned int connectx4_image_info_size(void)
     return CONNECTX4_IMAGE_INFO_SIZE;
 }
 
-void connectx4_image_info_dump(const struct connectx4_image_info *ptr_struct, FILE *fd)
+void connectx4_image_info_dump(const struct connectx4_image_info* ptr_struct, FILE* fd)
 {
     connectx4_image_info_print(ptr_struct, fd, 0);
 }
 
-void connectx4_itoc_entry_pack(const struct connectx4_itoc_entry *ptr_struct, u_int8_t *ptr_buff)
+void connectx4_itoc_entry_pack(const struct connectx4_itoc_entry* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -605,7 +619,7 @@ void connectx4_itoc_entry_pack(const struct connectx4_itoc_entry *ptr_struct, u_
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->itoc_entry_crc);
 }
 
-void connectx4_itoc_entry_unpack(struct connectx4_itoc_entry *ptr_struct, const u_int8_t *ptr_buff)
+void connectx4_itoc_entry_unpack(struct connectx4_itoc_entry* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -635,7 +649,7 @@ void connectx4_itoc_entry_unpack(struct connectx4_itoc_entry *ptr_struct, const 
     ptr_struct->itoc_entry_crc = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 }
 
-void connectx4_itoc_entry_print(const struct connectx4_itoc_entry *ptr_struct, FILE *fd, int indent_level)
+void connectx4_itoc_entry_print(const struct connectx4_itoc_entry* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== connectx4_itoc_entry ========\n");
@@ -671,12 +685,12 @@ unsigned int connectx4_itoc_entry_size(void)
     return CONNECTX4_ITOC_ENTRY_SIZE;
 }
 
-void connectx4_itoc_entry_dump(const struct connectx4_itoc_entry *ptr_struct, FILE *fd)
+void connectx4_itoc_entry_dump(const struct connectx4_itoc_entry* ptr_struct, FILE* fd)
 {
     connectx4_itoc_entry_print(ptr_struct, fd, 0);
 }
 
-void connectx4_itoc_header_pack(const struct connectx4_itoc_header *ptr_struct, u_int8_t *ptr_buff)
+void connectx4_itoc_header_pack(const struct connectx4_itoc_header* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -696,7 +710,7 @@ void connectx4_itoc_header_pack(const struct connectx4_itoc_header *ptr_struct, 
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->itoc_entry_crc);
 }
 
-void connectx4_itoc_header_unpack(struct connectx4_itoc_header *ptr_struct, const u_int8_t *ptr_buff)
+void connectx4_itoc_header_unpack(struct connectx4_itoc_header* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -716,7 +730,7 @@ void connectx4_itoc_header_unpack(struct connectx4_itoc_header *ptr_struct, cons
     ptr_struct->itoc_entry_crc = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 }
 
-void connectx4_itoc_header_print(const struct connectx4_itoc_header *ptr_struct, FILE *fd, int indent_level)
+void connectx4_itoc_header_print(const struct connectx4_itoc_header* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== connectx4_itoc_header ========\n");
@@ -742,7 +756,7 @@ unsigned int connectx4_itoc_header_size(void)
     return CONNECTX4_ITOC_HEADER_SIZE;
 }
 
-void connectx4_itoc_header_dump(const struct connectx4_itoc_header *ptr_struct, FILE *fd)
+void connectx4_itoc_header_dump(const struct connectx4_itoc_header* ptr_struct, FILE* fd)
 {
     connectx4_itoc_header_print(ptr_struct, fd, 0);
 }

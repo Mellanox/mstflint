@@ -41,7 +41,8 @@
 #include <string>
 #include <exception>
 
-class PrmAdbDB {
+class PrmAdbDB
+{
 public:
     static std::string prm_adb_db_trim(const std::string& s);
     static std::string prm_adb_db_rtrim(const std::string& s);
@@ -49,14 +50,15 @@ public:
     static std::string getDefaultDBName(bool isSwitch);
 };
 
-class PrmDBException: public std::exception {
+class PrmDBException : public std::exception
+{
 public:
     // Methods
     PrmDBException();
-    PrmDBException(const char *msg, ...) __attribute__((format(__printf__, 2, 3)));
+    PrmDBException(const char* msg, ...) __attribute__((format(__printf__, 2, 3)));
     PrmDBException(std::string msg);
-    virtual ~PrmDBException() throw ();
-    virtual const char* what() const throw ();
+    virtual ~PrmDBException() throw();
+    virtual const char* what() const throw();
     virtual std::string what_s() const;
 
 private:

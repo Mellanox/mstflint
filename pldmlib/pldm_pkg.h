@@ -48,27 +48,23 @@
 class PldmDevIdRecord;
 class PldmComponenetImage;
 
-class PldmPkg {
+class PldmPkg
+{
 public:
     PldmPkg();
     virtual ~PldmPkg();
 
-    bool unpack(PldmBuffer & buff);
-    void print(FILE * fp);
+    bool unpack(PldmBuffer& buff);
+    void print(FILE* fp);
 
-    const PldmComponenetImage * getImageByPsid(const std::string & psid) const;
+    const PldmComponenetImage* getImageByPsid(const std::string& psid) const;
 
     static const u_int8_t UUID[];
 
     u_int8_t getDeviceIDRecordCount() const { return deviceIDRecordCount; }
-    PldmDevIdRecord * getDeviceIDRecord(u_int8_t index) const {
-        return deviceIDRecords[index];
-    }
-    PldmComponenetImage * getComponentImage(u_int16_t index) const {
-        return componentImages[index];
-    }
-    void getDeviceComponentImages(u_int8_t dev_index,
-            std::vector<PldmComponenetImage *> images_list) const;
+    PldmDevIdRecord* getDeviceIDRecord(u_int8_t index) const { return deviceIDRecords[index]; }
+    PldmComponenetImage* getComponentImage(u_int16_t index) const { return componentImages[index]; }
+    void getDeviceComponentImages(u_int8_t dev_index, std::vector<PldmComponenetImage*> images_list) const;
 
 private:
     typedef std::map<std::string, int> PsidImageMap;
@@ -76,11 +72,10 @@ private:
 
     PldmPkgHdr packageHeader;
     u_int8_t deviceIDRecordCount;
-    std::vector<PldmDevIdRecord *> deviceIDRecords;
+    std::vector<PldmDevIdRecord*> deviceIDRecords;
     u_int16_t componentImageCount;
-    std::vector<PldmComponenetImage *> componentImages;
+    std::vector<PldmComponenetImage*> componentImages;
     u_int32_t packageHeaderChecksum;
 };
 
 #endif /* _PLDM_PKG_H_ */
-

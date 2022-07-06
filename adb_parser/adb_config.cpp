@@ -39,38 +39,42 @@
 #include "adb_config.h"
 #include <iostream>
 
-void AdbConfig::print(int indent) {
+void AdbConfig::print(int indent)
+{
     cout << indentString(indent) << "Attributes:" << endl;
     AttrsMap::iterator iter;
     for (iter = attrs.begin(); iter != attrs.end(); iter++)
-        cout << indentString(indent + 1) << iter->first << " - "
-                << iter->second << endl;
+        cout << indentString(indent + 1) << iter->first << " - " << iter->second << endl;
 
     cout << indentString(indent) << "Enums:" << endl;
     for (iter = enums.begin(); iter != enums.end(); iter++)
-        cout << indentString(indent + 1) << iter->first << " - "
-                << iter->second << endl;
+        cout << indentString(indent + 1) << iter->first << " - " << iter->second << endl;
 }
 
 /**
  * Function: AdbConfig::toXml
  **/
-string AdbConfig::toXml() {
+string AdbConfig::toXml()
+{
     string xml = "<config ";
 
-    for (AttrsMap::iterator it = attrs.begin(); it != attrs.end(); it++) {
+    for (AttrsMap::iterator it = attrs.begin(); it != attrs.end(); it++)
+    {
         xml += " " + it->first + "=\"" + encodeXml(it->second) + "\"";
     }
 
-    if (!enums.empty()) {
+    if (!enums.empty())
+    {
         xml += " >\n";
 
-        for (AttrsMap::iterator it = enums.begin(); it != enums.end(); it++) {
-            xml += "\t<enum  name=\"" + encodeXml(it->first) + "\" value=\""
-                    + encodeXml(it->second) + "\" />\n";
+        for (AttrsMap::iterator it = enums.begin(); it != enums.end(); it++)
+        {
+            xml += "\t<enum  name=\"" + encodeXml(it->first) + "\" value=\"" + encodeXml(it->second) + "\" />\n";
         }
         xml += "</config>";
-    } else {
+    }
+    else
+    {
         xml += " />";
     }
 

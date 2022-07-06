@@ -30,11 +30,12 @@
  * SOFTWARE.
  */
 
-#ifndef _ICMD_OPEN_LIB     /* guard */
+#ifndef _ICMD_OPEN_LIB /* guard */
 #define _ICMD_OPEN_LIB
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <mtcr.h>
@@ -55,31 +56,31 @@ extern "C" {
 #define INOUT
 #endif
 
-enum {
-    GET_FW_INFO = 0x8007,
-    FLASH_REG_ACCESS = 0x9001,
-};
+    enum
+    {
+        GET_FW_INFO = 0x8007,
+        FLASH_REG_ACCESS = 0x9001,
+    };
 
 #ifdef MST_UL
-// instead of cib_cif.h in mstflint
-enum {
-    GET_ICMD_QUERY_CAP = 0x8400,
-    SET_ITRACE = 0xf003,
-    SET_PORT_SNIFFER = 0xc002,
-};
+    // instead of cib_cif.h in mstflint
+    enum
+    {
+        GET_ICMD_QUERY_CAP = 0x8400,
+        SET_ITRACE = 0xf003,
+        SET_PORT_SNIFFER = 0xc002,
+    };
 #endif
 
-int gcif_get_fw_info(mfile *mf,
-                     OUT struct connectib_icmd_get_fw_info *fw_info);
+    int gcif_get_fw_info(mfile* mf, OUT struct connectib_icmd_get_fw_info* fw_info);
 
-int get_icmd_query_cap(mfile *mf,
-                       struct icmd_hca_icmd_query_cap_general *icmd_query_caps);
+    int get_icmd_query_cap(mfile* mf, struct icmd_hca_icmd_query_cap_general* icmd_query_caps);
 
-int gcif_mh_sync(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync);
+    int gcif_mh_sync(mfile* mf, struct connectx4_icmd_mh_sync* mh_sync);
 
-int gcif_mh_sync_status(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync);
+    int gcif_mh_sync_status(mfile* mf, struct connectx4_icmd_mh_sync* mh_sync);
 
-int gcif_set_port_sniffer(mfile *mf, struct connectib_icmd_set_port_sniffer *set_port_sniffer);
+    int gcif_set_port_sniffer(mfile* mf, struct connectib_icmd_set_port_sniffer* set_port_sniffer);
 
 #ifdef __cplusplus
 }

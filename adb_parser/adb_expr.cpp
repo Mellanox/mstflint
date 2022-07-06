@@ -38,23 +38,17 @@
 /**
  * Function: AdbExpr::AdbExpr
  **/
-AdbExpr::AdbExpr() : _varsMap(0)
-{
-
-}
+AdbExpr::AdbExpr() : _varsMap(0) {}
 
 /**
  * Function: AdbExpr::~AdbExpr
  **/
-AdbExpr::~AdbExpr()
-{
-
-}
+AdbExpr::~AdbExpr() {}
 
 /**
  * Function: AdbExpr::setVars
  **/
-void AdbExpr::setVars(map<string, string> *varsMap)
+void AdbExpr::setVars(map<string, string>* varsMap)
 {
     _varsMap = varsMap;
 }
@@ -66,35 +60,44 @@ const char* AdbExpr::statusStr(int status)
 {
     switch (status)
     {
-    case Expr::ERR_RPAR_EXP: return "Right parentheses expected";
+        case Expr::ERR_RPAR_EXP:
+            return "Right parentheses expected";
 
-    case Expr::ERR_VALUE_EXP: return "Value expected";
+        case Expr::ERR_VALUE_EXP:
+            return "Value expected";
 
-    case Expr::ERR_BIN_EXP: return "Binary operation expected ";
+        case Expr::ERR_BIN_EXP:
+            return "Binary operation expected ";
 
-    case Expr::ERR_DIV_ZERO: return "Divide zero attempt";
+        case Expr::ERR_DIV_ZERO:
+            return "Divide zero attempt";
 
-    case Expr::ERR_BAD_NUMBER: return "Bad constant syntax";
+        case Expr::ERR_BAD_NUMBER:
+            return "Bad constant syntax";
 
-    case Expr::ERR_BAD_NAME: return "Variable Name not resolved";
+        case Expr::ERR_BAD_NAME:
+            return "Variable Name not resolved";
 
-    default:                    return "Unknown error";
+        default:
+            return "Unknown error";
     }
 }
 
 /**
  * Function: AdbExpr::ResolveName
  **/
-int AdbExpr::ResolveName(char *name, u_int64_t *val)
+int AdbExpr::ResolveName(char* name, u_int64_t* val)
 {
     map<string, string>::iterator it = _varsMap->find(name);
-    if (it == _varsMap->end()) {
+    if (it == _varsMap->end())
+    {
         return ERR_BAD_NAME;
     }
 
-    char *end;
+    char* end;
     *val = strtoul(it->second.c_str(), &end, 0);
-    if (*end != '\0') {
+    if (*end != '\0')
+    {
         return ERR_BAD_NUMBER;
     }
 

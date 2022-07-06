@@ -38,7 +38,8 @@
 #include <tools_layouts/tools_open_layouts.h>
 #include <tools_layouts/register_access_open_layouts.h>
 
-typedef enum {
+typedef enum
+{
     TS_OK = 0,
     TS_GENERAL_ERROR,
     // device related errors
@@ -59,26 +60,39 @@ typedef enum {
     TS_UNKNOWN_TLV_VERSION,
 } Tlv_Status_t;
 
-typedef struct aux_tlv {
+typedef struct aux_tlv
+{
     struct tools_open_aux_tlv_header hdr;
-    std::vector<u_int8_t> data;  // data in big endian
+    std::vector<u_int8_t> data; // data in big endian
 } aux_tlv_t;
-
 
 class ImageTlvOps : public FlintErrMsg
 {
 public:
-    ImageTlvOps(const char *fname, bool readOnly = false) : FlintErrMsg(), _fname(fname), _tlvSectionFound(false),
-        _tlvSectionFilePos(0), _initialized(false),
-        _readOnly(readOnly){}
-    ImageTlvOps(u_int8_t *buf, unsigned int size) : FlintErrMsg(), _fname((const char*)NULL),
-        _tlvSectionFound(false), _tlvSectionFilePos(0),
-        _initialized(false), _readOnly(true)
+    ImageTlvOps(const char* fname, bool readOnly = false) :
+        FlintErrMsg(),
+        _fname(fname),
+        _tlvSectionFound(false),
+        _tlvSectionFilePos(0),
+        _initialized(false),
+        _readOnly(readOnly)
     {
-        if (!buf) {
+    }
+    ImageTlvOps(u_int8_t* buf, unsigned int size) :
+        FlintErrMsg(),
+        _fname((const char*)NULL),
+        _tlvSectionFound(false),
+        _tlvSectionFilePos(0),
+        _initialized(false),
+        _readOnly(true)
+    {
+        if (!buf)
+        {
             // Adrianc: should not be reached, consider using exceptions
             _rawFileBuff.resize(0);
-        } else {
+        }
+        else
+        {
             _rawFileBuff.resize(size);
             memcpy(&_rawFileBuff[0], buf, size);
         }
@@ -95,13 +109,13 @@ public:
     bool test(); // test method
 private:
     void pushTlvsToRawBuffer();
-    Tlv_Status_t getFileSize(FILE *fd, long int& fileSize);
+    Tlv_Status_t getFileSize(FILE* fd, long int& fileSize);
     Tlv_Status_t writeBufferAsFile();
     Tlv_Status_t parseTlvs();
     u_int16_t calcTlvCrc(aux_tlv& tlv);
     bool checkSig(std::vector<u_int8_t>& signature);
 
-    const char *_fname;
+    const char* _fname;
     bool _tlvSectionFound;
     u_int32_t _tlvSectionFilePos;
     bool _initialized;
@@ -110,35 +124,41 @@ private:
     std::vector<u_int8_t> _rawFileBuff;
 };
 
-
 class TimeStampIFC : public FlintErrMsg
 {
 public:
-    TimeStampIFC() : FlintErrMsg() {};
+    TimeStampIFC() : FlintErrMsg(){};
     virtual ~TimeStampIFC(){};
-    static TimeStampIFC* getIFC(mfile *mf);
-    static TimeStampIFC* getIFC(const char *fname, u_int32_t lastFWAddr = 0);
-    static TimeStampIFC* getIFC(u_int8_t *buff, unsigned int size, u_int32_t lastFwAddr = 0);
-    virtual Tlv_Status_t init() {return TS_OK;};
+    static TimeStampIFC* getIFC(mfile* mf);
+    static TimeStampIFC* getIFC(const char* fname, u_int32_t lastFWAddr = 0);
+    static TimeStampIFC* getIFC(u_int8_t* buff, unsigned int size, u_int32_t lastFwAddr = 0);
+    virtual Tlv_Status_t init() { return TS_OK; };
     virtual Tlv_Status_t setTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer) = 0;
-    virtual Tlv_Status_t queryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning = false) = 0;
+    virtual Tlv_Status_t queryTimeStamp(struct tools_open_ts_entry& timestamp,
+                                        struct tools_open_fw_version& fwVer,
+                                        bool queryRunning = false) = 0;
     virtual Tlv_Status_t resetTimeStamp() = 0;
 };
-
 
 class ImageTimeStamp : public TimeStampIFC
 {
 public:
-    ImageTimeStamp(const char *fname, u_int32_t lastFwAddr) : TimeStampIFC(), _lastFwAddr(lastFwAddr), _imgTlvOps(fname) {};
-    ImageTimeStamp(u_int8_t *buf, unsigned int size, u_int32_t lastFwAddr) : TimeStampIFC(), _lastFwAddr(lastFwAddr), _imgTlvOps(buf, size) {};
-    ~ImageTimeStamp() {};
+    ImageTimeStamp(const char* fname, u_int32_t lastFwAddr) :
+        TimeStampIFC(), _lastFwAddr(lastFwAddr), _imgTlvOps(fname){};
+    ImageTimeStamp(u_int8_t* buf, unsigned int size, u_int32_t lastFwAddr) :
+        TimeStampIFC(), _lastFwAddr(lastFwAddr), _imgTlvOps(buf, size){};
+    ~ImageTimeStamp(){};
     virtual Tlv_Status_t init();
 
     virtual Tlv_Status_t setTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer);
-    virtual Tlv_Status_t queryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning = false);
+    virtual Tlv_Status_t queryTimeStamp(struct tools_open_ts_entry& timestamp,
+                                        struct tools_open_fw_version& fwVer,
+                                        bool queryRunning = false);
     virtual Tlv_Status_t resetTimeStamp();
+
 private:
-    enum {
+    enum
+    {
         TS_Header_Type = 0x0,
         TS_Tlv_Type = 0x1,
     };
@@ -146,21 +166,22 @@ private:
     ImageTlvOps _imgTlvOps;
 };
 
-
 class DeviceTimeStamp : public TimeStampIFC
 {
 public:
-    DeviceTimeStamp(mfile *mf) : TimeStampIFC(), _mf(mf) {};
-    ~DeviceTimeStamp() {};
+    DeviceTimeStamp(mfile* mf) : TimeStampIFC(), _mf(mf){};
+    ~DeviceTimeStamp(){};
     virtual Tlv_Status_t init();
 
     virtual Tlv_Status_t setTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer);
-    virtual Tlv_Status_t queryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning = false);
+    virtual Tlv_Status_t queryTimeStamp(struct tools_open_ts_entry& timestamp,
+                                        struct tools_open_fw_version& fwVer,
+                                        bool queryRunning = false);
     virtual Tlv_Status_t resetTimeStamp();
-private:
-    inline Tlv_Status_t convertRc(MError rc, int regMethod );
-    mfile *_mf;
-};
 
+private:
+    inline Tlv_Status_t convertRc(MError rc, int regMethod);
+    mfile* _mf;
+};
 
 #endif

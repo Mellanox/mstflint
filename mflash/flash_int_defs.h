@@ -34,23 +34,24 @@
 #ifndef USER_MFLASH_FLASH_INT_DEFS_H_
 #define USER_MFLASH_FLASH_INT_DEFS_H_
 
-#define SST_FLASH_NAME   "SST25VFxx"
-#define WINBOND_NAME     "W25QxxBV"
-#define WINBOND_W25X     "W25Xxx"
-#define WINBOND_3V_NAME  "W25Qxxx"
-#define ATMEL_NAME       "AT25DFxxx"
-#define S25FLXXXP_NAME   "S25FLXXXP"
-#define S25FL116K_NAME   "S25FL11xx"
-#define MACRONIX_NAME    "MX25L16xxx"
+#define SST_FLASH_NAME "SST25VFxx"
+#define WINBOND_NAME "W25QxxBV"
+#define WINBOND_W25X "W25Xxx"
+#define WINBOND_3V_NAME "W25Qxxx"
+#define ATMEL_NAME "AT25DFxxx"
+#define S25FLXXXP_NAME "S25FLXXXP"
+#define S25FL116K_NAME "S25FL11xx"
+#define MACRONIX_NAME "MX25L16xxx"
 #define MACRONIX_3V_NAME "MX25Lxxx"
-#define CYPRESS_3V_NAME  "S25FLxxx"
-#define ISSI_3V_NAME     "IS25LPxxx"
-#define MICRON_3V_NAME   "MT25QLxxx"
+#define CYPRESS_3V_NAME "S25FLxxx"
+#define ISSI_3V_NAME "IS25LPxxx"
+#define MICRON_3V_NAME "MT25QLxxx"
 #define MACRONIX_1V8_NAME "MX25Uxxx"
-#define GIGA_3V_NAME      "GD25LBxxx"
-#define ISSI_HUAWEY_NAME  "IS25WPxxx"
+#define GIGA_3V_NAME "GD25LBxxx"
+#define ISSI_HUAWEY_NAME "IS25WPxxx"
 
-typedef enum flash_vendor {
+typedef enum flash_vendor
+{
     FV_ST = 0x20,
     FV_SST = 0xbf,
     FV_WINBOND = 0xef,
@@ -62,7 +63,8 @@ typedef enum flash_vendor {
 
 } flash_vendor_t;
 
-typedef enum flash_memory_type {
+typedef enum flash_memory_type
+{
     FMT_ST_M25P = 0x20,
     FMT_MX25K16XXX = 0x20,
     FMT_ST_M25PX = 0x71,
@@ -81,8 +83,15 @@ typedef enum flash_memory_type {
 
 } flash_memory_type_t;
 
-typedef enum flash_densities {
-    FD_8 = 0x14, FD_16 = 0x15, FD_32 = 0x16, FD_64 = 0x17, FD_128 = 0x18, FD_256 = 0x19, FD_512 = 0x1a
+typedef enum flash_densities
+{
+    FD_8 = 0x14,
+    FD_16 = 0x15,
+    FD_32 = 0x16,
+    FD_64 = 0x17,
+    FD_128 = 0x18,
+    FD_256 = 0x19,
+    FD_512 = 0x1a
 } flash_densities_t;
 
 #endif /* USER_MFLASH_FLASH_INT_DEFS_H_ */

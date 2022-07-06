@@ -31,31 +31,36 @@
  * SOFTWARE.
  *
  */
- 
+
 #include "fw_comps_mgr_abstract_access.h"
 #include "fw_comps_mgr_direct_access.h"
 #include "fw_comps_mgr_dma_access.h"
 
-AbstractComponentAccess* ComponentAccessFactory::createDataAccessObject(FwCompsMgr* manager, mfile *mf, bool isMCDDRegisterSupported)
+AbstractComponentAccess*
+  ComponentAccessFactory::createDataAccessObject(FwCompsMgr* manager, mfile* mf, bool isMCDDRegisterSupported)
 {
 #ifndef UEFI_BUILD
-    
-    if (getenv("DISABLE_DMA_ACCESS") != NULL) {
+
+    if (getenv("DISABLE_DMA_ACCESS") != NULL)
+    {
         return new DirectComponentAccess(manager, mf);
     }
 #endif
 
     // DMA is supported only when COMMAND[BME] is set in PCI configuration
     bool isBmeSet = false;
-    if (isMCDDRegisterSupported) {
+    if (isMCDDRegisterSupported)
+    {
         isBmeSet = DMAComponentAccess::isBMESet(mf);
     }
 
     AbstractComponentAccess* component_access = NULL;
-    if (isMCDDRegisterSupported && isBmeSet) {
+    if (isMCDDRegisterSupported && isBmeSet)
+    {
         component_access = new DMAComponentAccess(manager, mf);
     }
-    else {
+    else
+    {
         component_access = new DirectComponentAccess(manager, mf);
     }
 

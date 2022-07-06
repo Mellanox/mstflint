@@ -42,7 +42,6 @@
 #include <vector>
 #include <string>
 
-
 using namespace std;
 #ifndef USE_CURL
 #define USE_CURL
@@ -50,21 +49,27 @@ using namespace std;
 
 extern int abort_request;
 
-ServerRequest::ServerRequest(const char *url, const char *proxy,
-                             int compare_ffv, bool show_progress,
-                             string key, string certificate,
-                             unsigned int numberOfRetrials) : _LastErrorNo(0)
+ServerRequest::ServerRequest(const char* url,
+                             const char* proxy,
+                             int compare_ffv,
+                             bool show_progress,
+                             string key,
+                             string certificate,
+                             unsigned int numberOfRetrials) :
+    _LastErrorNo(0)
 {
-    _UseProxy      = 0;
-    _Url           = url;
-    _WebService    = _Url + "/downloads/firmware/mlx_fw_online_query.php";
-    _compare_ffv   = compare_ffv;
+    _UseProxy = 0;
+    _Url = url;
+    _WebService = _Url + "/downloads/firmware/mlx_fw_online_query.php";
+    _compare_ffv = compare_ffv;
     _show_progress = show_progress;
-    _ceritifcate   = certificate;
+    _ceritifcate = certificate;
     _numberOfRetrials = numberOfRetrials;
-    _headers       = NULL;
-    if (proxy != NULL) {
-        if (proxy[0] != 0) {
+    _headers = NULL;
+    if (proxy != NULL)
+    {
+        if (proxy[0] != 0)
+        {
             _UseProxy = 1;
             _Proxy = proxy;
         }
@@ -72,27 +77,23 @@ ServerRequest::ServerRequest(const char *url, const char *proxy,
     _key = key;
 }
 
+ServerRequest::~ServerRequest() {}
 
-ServerRequest::~ServerRequest()
-{
-
-}
-
-int ServerRequest::parseQueryResponse(string jsonTxt,
-                                      vector<PsidQueryItem> &result,
-                                      bool ignoreNotFound)
+int ServerRequest::parseQueryResponse(string jsonTxt, vector<PsidQueryItem>& result, bool ignoreNotFound)
 {
 #ifdef USE_CURL
     string fileTag;
     Json::Value root;
     Json::Reader reader;
     bool rc = reader.parse(jsonTxt, root);
-    if (!rc) {
+    if (!rc)
+    {
         setError(rc, "-E- Failed To parse server response\n");
         return -1;
     }
     result.clear();
-    for (unsigned j = 0; j < root.size(); j++) {
+    for (unsigned j = 0; j < root.size(); j++)
+    {
         PsidQueryItem ri;
         ri.found = 0;
         ri.type = -1;
@@ -100,54 +101,82 @@ int ServerRequest::parseQueryResponse(string jsonTxt,
         ri.pns = "";
         ri.isFailSafe = true; // will be used for future!
         ri.release_note = "";
-        if (!root[j].isObject()) {
+        if (!root[j].isObject())
+        {
             setError(-1, "-E- Failed To parse server response\n");
             return -1;
         }
-        if (root[j].isMember("Found")) {
-            if (ignoreNotFound && !root[j].get("Found", Json::nullValue).asInt()) {
+        if (root[j].isMember("Found"))
+        {
+            if (ignoreNotFound && !root[j].get("Found", Json::nullValue).asInt())
+            {
                 continue;
             }
-        } else {
+        }
+        else
+        {
             continue;
         }
-        try {
+        try
+        {
             Json::Value::Members profileNames = root[j].getMemberNames();
-            for (unsigned i = 0; i < profileNames.size(); i++) {
-                if (!profileNames[i].compare("PSID")) {
-                    ri.psid  = root[j].get("PSID", Json::nullValue).asString();
-                } else if (!profileNames[i].compare("Found")) {
+            for (unsigned i = 0; i < profileNames.size(); i++)
+            {
+                if (!profileNames[i].compare("PSID"))
+                {
+                    ri.psid = root[j].get("PSID", Json::nullValue).asString();
+                }
+                else if (!profileNames[i].compare("Found"))
+                {
                     ri.found = root[j].get(profileNames[i], Json::nullValue).asInt();
-                } else if (!profileNames[i].compare("Type")) {
+                }
+                else if (!profileNames[i].compare("Type"))
+                {
                     ri.type = root[j].get(profileNames[i], Json::nullValue).asString();
-                } else if (!profileNames[i].compare("Found")) {
+                }
+                else if (!profileNames[i].compare("Found"))
+                {
                     ri.found = root[j].get(profileNames[i], Json::nullValue).asInt();
-                } else if (!profileNames[i].compare("PN")) {
+                }
+                else if (!profileNames[i].compare("PN"))
+                {
                     ri.pns = root[j].get(profileNames[i], Json::nullValue).asString();
-                } else if (!profileNames[i].compare("Name")) {
+                }
+                else if (!profileNames[i].compare("Name"))
+                {
                     ri.name = root[j].get(profileNames[i], Json::nullValue).asString();
-                } else if (!profileNames[i].compare("Release_note")) {
+                }
+                else if (!profileNames[i].compare("Release_note"))
+                {
                     ri.release_note = root[j].get(profileNames[i], Json::nullValue).asString();
-                } else if (!profileNames[i].compare("Ver")) {
+                }
+                else if (!profileNames[i].compare("Ver"))
+                {
                     const Json::Value versions = root[j]["Ver"];
-                    if (versions.empty()) {
+                    if (versions.empty())
+                    {
                         continue;
                     }
                     Json::Value::Members ROMS = versions.getMemberNames();
 
-                    for (unsigned x = 0; x < ROMS.size(); x++) {
+                    for (unsigned x = 0; x < ROMS.size(); x++)
+                    {
                         string rom_type = ROMS[x];
                         string rom_ver = versions.get(ROMS[x], Json::nullValue).asString();
                         int m, n, s;
                         u_int16_t fwVer[4];
                         int len;
-                        if (sscanf(rom_ver.c_str(), "%d.%d.%d", &m, &n, &s)) {
-                            if (!_compare_ffv || rom_type != "FW") {
+                        if (sscanf(rom_ver.c_str(), "%d.%d.%d", &m, &n, &s))
+                        {
+                            if (!_compare_ffv || rom_type != "FW")
+                            {
                                 fwVer[0] = m;
                                 fwVer[1] = n;
                                 fwVer[2] = s;
                                 len = 3;
-                            } else {
+                            }
+                            else
+                            {
                                 fwVer[0] = m;
                                 fwVer[1] = n;
                                 fwVer[2] = s / 100;
@@ -159,17 +188,22 @@ int ServerRequest::parseQueryResponse(string jsonTxt,
                             ri.imgVers.push_back(imgv);
                         }
                     }
-                } else if (!profileNames[i].compare("URL")) {
+                }
+                else if (!profileNames[i].compare("URL"))
+                {
                     ri.url = root[j].get(profileNames[i], Json::nullValue).asString();
                     ri.url = genertDownloadUrl(ri.url);
                 }
             }
-        } catch (runtime_error &e) {
-            setError(-1, (string)"-E-" + e.what() + "\n");
+        }
+        catch (runtime_error& e)
+        {
+            setError(-1, (string) "-E-" + e.what() + "\n");
             return -1;
         }
         result.push_back(ri);
-        if (!ri.found) {
+        if (!ri.found)
+        {
             setError(0, "-W- No online newer fw found for psid : " + ri.psid + "\n");
         }
     }
@@ -180,38 +214,38 @@ int ServerRequest::parseQueryResponse(string jsonTxt,
 void ServerRequest::setError(int error_num, string error_msg)
 {
     _LastErrorStr += error_msg;
-    _LastErrorNo  = error_num;
+    _LastErrorNo = error_num;
 }
 
-void ServerRequest::getError(int &error_num, string &error_msg)
+void ServerRequest::getError(int& error_num, string& error_msg)
 {
-    error_num     = _LastErrorNo;
-    error_msg     = _LastErrorStr;
+    error_num = _LastErrorNo;
+    error_msg = _LastErrorStr;
 }
 
-int ServerRequest::DownloadFilesRequest(vector <DownloadedFileProperties> &files,
-                                        string os, string devs, string type)
+int ServerRequest::DownloadFilesRequest(vector<DownloadedFileProperties>& files, string os, string devs, string type)
 {
-
-    int res          = 0;
+    int res = 0;
 #ifdef USE_CURL
     string response;
     Json::Value root;
     Json::StyledWriter writer;
 
-    root["mode"]     = 2;
-    root["psids"]    = "";
-    root["os"]       = (os.length())   ? os   : "all";
-    root["type"]     = (type.length()) ? type : "all";
-    root["devs"]     = (devs.length()) ? devs : "all";
-    root["key"]      = _key;
-    string data = writer.write( root );
+    root["mode"] = 2;
+    root["psids"] = "";
+    root["os"] = (os.length()) ? os : "all";
+    root["type"] = (type.length()) ? type : "all";
+    root["devs"] = (devs.length()) ? devs : "all";
+    root["key"] = _key;
+    string data = writer.write(root);
     res = curl_request_str(_WebService.c_str(), data.c_str(), response);
-    if (res) {
+    if (res)
+    {
         return res;
     }
     res = parseDownloadFilesResponse(response, files);
-    if (res) {
+    if (res)
+    {
         return res;
     }
 
@@ -219,95 +253,116 @@ int ServerRequest::DownloadFilesRequest(vector <DownloadedFileProperties> &files
     return res;
 }
 
-int ServerRequest::parseDownloadFilesResponse(string jsonTxt, vector <DownloadedFileProperties> &files)
+int ServerRequest::parseDownloadFilesResponse(string jsonTxt, vector<DownloadedFileProperties>& files)
 {
-
 #ifdef USE_CURL
     Json::Value root;
     Json::Reader reader;
     string url;
-    //printf("response = %s\n", jsonTxt.c_str());
+    // printf("response = %s\n", jsonTxt.c_str());
     bool rc = reader.parse(jsonTxt, root);
-    if (!rc) {
+    if (!rc)
+    {
         setError(rc, "-E- Failed To parse server response\n");
         return -1;
     }
-    for (unsigned j = 0; j < root.size(); j++) {
-        if (!root[j].isObject()) {
+    for (unsigned j = 0; j < root.size(); j++)
+    {
+        if (!root[j].isObject())
+        {
             setError(-1, "-E- Failed To parse server response\n");
             return -1;
         }
-        string name         = "";
-        string url          = "";
-        string descr        = "";
+        string name = "";
+        string url = "";
+        string descr = "";
         string release_note = "";
-        string family       = "";
-        string file_type    = "";
-        string os           = "";
-        try {
+        string family = "";
+        string file_type = "";
+        string os = "";
+        try
+        {
             Json::Value::Members profileNames = root[j].getMemberNames();
-            for (unsigned i = 0; i < profileNames.size(); i++) {
-                if (!profileNames[i].compare("URL")) {
+            for (unsigned i = 0; i < profileNames.size(); i++)
+            {
+                if (!profileNames[i].compare("URL"))
+                {
                     url = root[j].get(profileNames[i], Json::nullValue).asString();
                     url = genertDownloadUrl(url);
-                } else if (!profileNames[i].compare("Name")) {
+                }
+                else if (!profileNames[i].compare("Name"))
+                {
                     name = root[j].get(profileNames[i], Json::nullValue).asString();
-                } else if (!profileNames[i].compare("Family")) {
+                }
+                else if (!profileNames[i].compare("Family"))
+                {
                     family = root[j].get(profileNames[i], Json::nullValue).asString();
-                } else if (!profileNames[i].compare("Type")) {
+                }
+                else if (!profileNames[i].compare("Type"))
+                {
                     file_type = root[j].get(profileNames[i], Json::nullValue).asString();
-                } else if (!profileNames[i].compare("Descr")) {
+                }
+                else if (!profileNames[i].compare("Descr"))
+                {
                     descr = root[j].get(profileNames[i], Json::nullValue).asString();
-                } else if (!profileNames[i].compare("OS")) {
+                }
+                else if (!profileNames[i].compare("OS"))
+                {
                     os = root[j].get(profileNames[i], Json::nullValue).asString();
-                } else if (!profileNames[i].compare("Release_note")) {
+                }
+                else if (!profileNames[i].compare("Release_note"))
+                {
                     release_note = root[j].get(profileNames[i], Json::nullValue).asString();
                 }
             }
-        } catch (runtime_error &e) {
-            setError(-1, (string)"-E-" + e.what() + "\n");
+        }
+        catch (runtime_error& e)
+        {
+            setError(-1, (string) "-E-" + e.what() + "\n");
             return -1;
         }
         DownloadedFileProperties file;
-        file.url  = url;
+        file.url = url;
         file.name = name;
         file.family = family;
         file.file_type = file_type;
-        file.descr  = descr;
-        file.os     = os;
+        file.descr = descr;
+        file.os = os;
         file.release_note = release_note;
         files.push_back(file);
     }
-    if (!files.size()) {
+    if (!files.size())
+    {
         return -1;
     }
 #endif
     return 0;
 }
 
-int ServerRequest::queryPsids(string psids, vector<PsidQueryItem> &results)
+int ServerRequest::queryPsids(string psids, vector<PsidQueryItem>& results)
 {
-
     int res = 0;
 
- #ifdef USE_CURL
+#ifdef USE_CURL
 
     Json::Value root;
     Json::StyledWriter writer;
-    string response  = "";
-    root["psids"]    = psids;
-    root["mode"]     = 3;   // 0 query
-    root["key"]      = _key;
-    string data = writer.write( root );
-    //printf("request : %s\n", data.c_str());
+    string response = "";
+    root["psids"] = psids;
+    root["mode"] = 3; // 0 query
+    root["key"] = _key;
+    string data = writer.write(root);
+    // printf("request : %s\n", data.c_str());
     res = curl_request_str(_WebService.c_str(), data.c_str(), response);
-    if (res) {
+    if (res)
+    {
         return res;
     }
 
-    //printf("Response : %s\n", response.c_str());
+    // printf("Response : %s\n", response.c_str());
     res = parseQueryResponse(response, results, false);
-    if (res) {
+    if (res)
+    {
         return res;
     }
 
@@ -315,47 +370,51 @@ int ServerRequest::queryPsids(string psids, vector<PsidQueryItem> &results)
     return res;
 }
 
-int ServerRequest::updateMFAsRequest(vector<string> &psid_list,
-                                     vector<dm_dev_id_t> &dev_types_list,
-                                     vector<string> &fw_version_list,
-                                     vector<PsidQueryItem> &results)
+int ServerRequest::updateMFAsRequest(vector<string>& psid_list,
+                                     vector<dm_dev_id_t>& dev_types_list,
+                                     vector<string>& fw_version_list,
+                                     vector<PsidQueryItem>& results)
 {
     int res = 0;
-    (void) dev_types_list;
- #ifdef USE_CURL
+    (void)dev_types_list;
+#ifdef USE_CURL
 
     Json::Value root;
     Json::StyledWriter writer;
-    string psids     = "";
-    string devices   = "";
-    string response  = "";
-    string versions  = "";
+    string psids = "";
+    string devices = "";
+    string response = "";
+    string versions = "";
     string tmp;
-    for (unsigned i = 0; i < psid_list.size(); i++) {
-        if (i > 0) {
-            psids   += ",";
+    for (unsigned i = 0; i < psid_list.size(); i++)
+    {
+        if (i > 0)
+        {
+            psids += ",";
             devices += ",";
             versions += ",";
         }
-        psids    += psid_list[i];
+        psids += psid_list[i];
         versions += fw_version_list[i];
     }
 
-    root["psids"]    = psids;
-    root["devs"]     = devices;
-    root["mode"]     = 0;   // 0 update
+    root["psids"] = psids;
+    root["devs"] = devices;
+    root["mode"] = 0; // 0 update
     root["versions"] = versions;
-    root["key"]      = _key;
-    string data = writer.write( root );
-    //printf("request : %s\n", data.c_str());
+    root["key"] = _key;
+    string data = writer.write(root);
+    // printf("request : %s\n", data.c_str());
     res = curl_request_str(_WebService.c_str(), data.c_str(), response);
-    if (res) {
+    if (res)
+    {
         return res;
     }
 
-    //printf("Response : %s\n", response.c_str());
+    // printf("Response : %s\n", response.c_str());
     res = parseQueryResponse(response, results);
-    if (res) {
+    if (res)
+    {
         return res;
     }
 
@@ -367,7 +426,6 @@ string ServerRequest::genertDownloadUrl(string file_url)
 {
     return _Url + "/" + file_url;
 }
-
 
 #if 0
 int ServerRequest::queryAllMFAs(vector<string> &mfa_list)
@@ -425,9 +483,11 @@ int ServerRequest::download(string url, string dest_path)
     ssize_t pos = url.rfind('/');
     string name = dest_path;
     name += "/";
-    if (pos > 0) {
+    if (pos > 0)
+    {
         string tmp = url.substr(pos);
-        if (tmp.length() > 0) {
+        if (tmp.length() > 0)
+        {
             name += tmp;
             res = curl_request(url.c_str(), NULL, name.c_str(), _numberOfRetrials);
         }
@@ -436,39 +496,37 @@ int ServerRequest::download(string url, string dest_path)
     return res;
 }
 
-
 #ifdef USE_CURL
-static size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
+static size_t write_data(void* ptr, size_t size, size_t nmemb, FILE* stream)
 {
     size_t written = fwrite(ptr, size, nmemb, stream);
     return written;
 }
 #endif
 
-
-int ServerRequest::curl_request(const char *url,
-                                const char *data,
-                                const char *dest_file,
-                                int numOfRet)
+int ServerRequest::curl_request(const char* url, const char* data, const char* dest_file, int numOfRet)
 {
     int res = 0;
 #ifdef USE_CURL
     CURLcode rc;
-    FILE *fp;
-    CURL *_curl = curl_easy_init();
-    if (_curl == NULL) {
+    FILE* fp;
+    CURL* _curl = curl_easy_init();
+    if (_curl == NULL)
+    {
         _LastErrorNo = ERR_SRVREQ_ACCESS_INIT;
         setError(-1, "-E- Server access error\n");
         return -1;
     }
     _LastErrorStr = "";
     fp = fopen(dest_file, "wb");
-    if (fp == NULL && errno == EACCES) {
+    if (fp == NULL && errno == EACCES)
+    {
         unlink(dest_file);
         fp = fopen(dest_file, "wb");
     }
-    if (fp == NULL) {
-        setError(-1, "Failed to Open file for writing " + (string) strerror(errno) + "\n");
+    if (fp == NULL)
+    {
+        setError(-1, "Failed to Open file for writing " + (string)strerror(errno) + "\n");
         return -1;
     }
     curl_easy_setopt(_curl, CURLOPT_TIMEOUT, 360); // 6 minute operation timeout
@@ -478,16 +536,19 @@ int ServerRequest::curl_request(const char *url,
     curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, write_data);
     curl_easy_setopt(_curl, CURLOPT_WRITEDATA, fp);
     curl_easy_setopt(_curl, CURLOPT_CAINFO, _ceritifcate.c_str());
-    if (_show_progress) {
+    if (_show_progress)
+    {
         // Internal CURL progressmeter must be disabled if we provide our own callback
         curl_easy_setopt(_curl, CURLOPT_NOPROGRESS, false);
         // Install the callback function
         curl_easy_setopt(_curl, CURLOPT_PROGRESSFUNCTION, progress_func);
     }
-    if (_Proxy.size() > 0) {
+    if (_Proxy.size() > 0)
+    {
         curl_easy_setopt(_curl, CURLOPT_PROXY, _Proxy.c_str());
     }
-    if (data != NULL) {
+    if (data != NULL)
+    {
         curl_easy_setopt(_curl, CURLOPT_POST, 1);
         curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, data);
     }
@@ -496,14 +557,17 @@ int ServerRequest::curl_request(const char *url,
     // Perform the request, res will get the return code
     rc = curl_easy_perform(_curl);
     // Check for errors
-    if (rc == CURLE_OPERATION_TIMEDOUT && numOfRet > 0) {
-        if (curl_request(url, data, dest_file, numOfRet - 1) == 0) {
+    if (rc == CURLE_OPERATION_TIMEDOUT && numOfRet > 0)
+    {
+        if (curl_request(url, data, dest_file, numOfRet - 1) == 0)
+        {
             rc = CURLE_OK;
         }
     }
-    if (rc != CURLE_OK) {
-        if ((rc == CURLE_OPERATION_TIMEDOUT && numOfRet == 0) ||
-            (rc != CURLE_OPERATION_TIMEDOUT)) {
+    if (rc != CURLE_OK)
+    {
+        if ((rc == CURLE_OPERATION_TIMEDOUT && numOfRet == 0) || (rc != CURLE_OPERATION_TIMEDOUT))
+        {
             setError(-1, (string)curl_easy_strerror(rc));
         }
         res = -1;
@@ -516,29 +580,32 @@ clean_up:
     curl_easy_cleanup(_curl);
     curl_global_cleanup();
     fclose(fp);
-    if (res) {
+    if (res)
+    {
         unlink(dest_file);
-    } else {
-        #if !defined(__WIN__)
+    }
+    else
+    {
+#if !defined(__WIN__)
         string tmp = (string)dest_file;
-        if (tmp.find(".mfa") == std::string::npos && tmp.find(".exe") == std::string::npos) {
+        if (tmp.find(".mfa") == std::string::npos && tmp.find(".exe") == std::string::npos)
+        {
             int retVal = my_chmod(dest_file, EXECUTABLE_MODE);
-            (void) retVal;
+            (void)retVal;
         }
-        #endif
+#endif
     }
 #endif
     return res;
 }
 
-
 #ifdef USE_CURL
-static
-size_t writebuf_data(void *ptr, size_t size, size_t nmemb, string *strm)
+static size_t writebuf_data(void* ptr, size_t size, size_t nmemb, string* strm)
 {
     size_t written = size * nmemb;
-    char *str = new char[written + 1];
-    if (str == NULL) {
+    char* str = new char[written + 1];
+    if (str == NULL)
+    {
         return 0;
     }
     strncpy(str, (char*)ptr, written);
@@ -549,14 +616,14 @@ size_t writebuf_data(void *ptr, size_t size, size_t nmemb, string *strm)
 }
 #endif
 
-
-int ServerRequest::curl_request_str(const char *url, const char *data, string& response)
+int ServerRequest::curl_request_str(const char* url, const char* data, string& response)
 {
     int res = 0;
 #ifdef USE_CURL
 
-    CURL *_curl = curl_easy_init();
-    if (_curl == NULL) {
+    CURL* _curl = curl_easy_init();
+    if (_curl == NULL)
+    {
         _LastErrorNo = ERR_SRVREQ_ACCESS_INIT;
         setError(-1, "-E- Server access error\n");
         return -1;
@@ -570,19 +637,20 @@ int ServerRequest::curl_request_str(const char *url, const char *data, string& r
 
     _headers = curl_slist_append(_headers, "Accept: application/json");
     _headers = curl_slist_append(_headers, "Content-Type: application/json");
-    curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, _headers );
+    curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, _headers);
     curl_easy_setopt(_curl, CURLOPT_POST, 1);
     curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, data);
     curl_easy_setopt(_curl, CURLOPT_POSTFIELDSIZE, strlen(data));
     curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER, true);
-    //curl_easy_setopt(curl, CURLOPT_VERBOSE,1);
-    //curl_easy_setopt(curl, CURLOPT_HEADER,1);
+    // curl_easy_setopt(curl, CURLOPT_VERBOSE,1);
+    // curl_easy_setopt(curl, CURLOPT_HEADER,1);
 
     // Perform the request, res will get the return code
     rc = curl_easy_perform(_curl);
-    //fprintf(stderr, "Response : %s\n", response.c_str());
+    // fprintf(stderr, "Response : %s\n", response.c_str());
     // Check for errors
-    if (rc != CURLE_OK) {
+    if (rc != CURLE_OK)
+    {
         setError(-1, "-E- " + (string)curl_easy_strerror(rc) + "\n");
         res = -1;
         goto clean_up;
@@ -597,13 +665,11 @@ clean_up:
     return res;
 }
 
-
-int progress_func(void *ptr, double totalToDownload, double nowDownloaded,
-                  double totalToUpload, double nowUploaded)
+int progress_func(void* ptr, double totalToDownload, double nowDownloaded, double totalToUpload, double nowUploaded)
 {
-    (void) ptr;
-    (void) totalToUpload;
-    (void) nowUploaded;
+    (void)ptr;
+    (void)totalToUpload;
+    (void)nowUploaded;
 
     double fractionDownloaded = (nowDownloaded / totalToDownload) * 100;
     fractionDownloaded = fractionDownloaded > 0 ? fractionDownloaded : 0;
