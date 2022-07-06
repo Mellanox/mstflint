@@ -1,0 +1,77 @@
+---
+# BasedOnStyle:  Google
+AccessModifierOffset: -4
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+ConstructorInitializerIndentWidth: 4
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+AlignEscapedNewlinesLeft: true
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: true
+AlwaysBreakBeforeMultilineStrings: false
+BreakBeforeBinaryOperators: false
+BreakBeforeTernaryOperators: false
+BreakConstructorInitializers: AfterColon
+BreakConstructorInitializersBeforeComma: false
+BinPackParameters: false
+Standard:        Auto
+IndentWidth:     4
+TabWidth:        8
+UseTab:          Never
+BraceWrapping:   
+  AfterClass:      false
+  AfterControlStatement: true
+  AfterEnum:      true
+  AfterFunction:  true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct:   true
+  AfterUnion:     true
+  AfterExternBlock: true
+  BeforeCatch:      true
+  BeforeElse:       true
+  IndentBraces:     true
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+CommentPragmas:  '^ ignore_styling:'
+ColumnLimit: 120
+DerivePointerBinding: true
+DerivePointerAlignment: false
+ExperimentalAutoDetectBinPacking: true
+IndentCaseLabels: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: None
+ObjCSpaceBeforeProtocolList: false
+PenaltyBreakBeforeFirstCallParameter: 1
+PenaltyBreakComment: 60
+PenaltyBreakString: 60
+PenaltyBreakFirstLessLess: 60
+PenaltyExcessCharacter: 60
+PenaltyReturnTypeOnItsOwnLine: 60
+PointerBindsToType: true
+PointerAlignment: Left
+SpacesBeforeTrailingComments: 1
+Cpp11BracedListStyle: true
+BreakBeforeBraces: Allman
+IndentFunctionDeclarationAfterType: true
+SpacesInParentheses: false
+SpacesInAngles:  false
+SpaceInEmptyParentheses: false
+SpacesInCStyleCastParentheses: false
+SpaceAfterControlStatementKeyword: true
+SpaceBeforeAssignmentOperators: true
+ContinuationIndentWidth: 2
+ReflowComments: true
+SortIncludes: false
+SortUsingDeclarations: false
+SpaceAfterTemplateKeyword: false
+SpacesInContainerLiterals: false
+AllowShortFunctionsOnASingleLine: Inline
+BreakStringLiterals: false
+...
+
