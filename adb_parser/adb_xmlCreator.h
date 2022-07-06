@@ -32,7 +32,6 @@
  *
  */
 
-
 #ifndef xmlCreator_H
 #define xmlCreator_H
 
@@ -43,20 +42,19 @@ using namespace std;
 
 namespace xmlCreator
 {
+template<class T>
+bool compareFieldsPtr(T* f1, T* f2);
+string indentString(int i);
+int dword(int bits);
+int startBit(int bits);
+string formatAddr(u_int32_t offs, u_int32_t size);
+string encodeXml(const string& data);
+string descNativeToXml(const string& desc);
 
-  template <class T>
-  bool compareFieldsPtr(T *f1, T *f2);
-  string indentString(int i);
-  int dword(int bits);
-  int startBit(int bits);
-  string formatAddr(u_int32_t offs, u_int32_t size);
-  string encodeXml(const string &data);
-  string descNativeToXml(const string &desc);
+} // namespace xmlCreator
 
-}
-
-template <class T>
-bool xmlCreator::compareFieldsPtr(T *f1, T *f2)
+template<class T>
+bool xmlCreator::compareFieldsPtr(T* f1, T* f2)
 {
     return (*f1) < (*f2);
 }

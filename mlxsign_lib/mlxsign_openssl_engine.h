@@ -49,14 +49,13 @@ using namespace std;
 
 namespace MlxSign
 {
-
 class OpensslEngineException : public exception
 {
 public:
-    OpensslEngineException(const string &exceptionMsg, ErrorCode errorCode);
-    OpensslEngineException(const char *exceptionMsg, ErrorCode errorCode);
+    OpensslEngineException(const string& exceptionMsg, ErrorCode errorCode);
+    OpensslEngineException(const char* exceptionMsg, ErrorCode errorCode);
     virtual const string getErrorString() const throw();
-    virtual const char *what() const throw();
+    virtual const char* what() const throw();
     virtual ~OpensslEngineException() throw(){};
     ErrorCode getErrorCode();
 
@@ -69,24 +68,24 @@ private:
 class OpensslEngineSigner
 {
 public:
-    OpensslEngineSigner(const string &engineName, const string &keyIdentifier);
+    OpensslEngineSigner(const string& engineName, const string& keyIdentifier);
     virtual ~OpensslEngineSigner();
     ErrorCode init();
-    ErrorCode sign(const vector<u_int8_t> &msg, vector<u_int8_t> &signed_msg);
+    ErrorCode sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg);
     int getPrivateKeySize();
 
 private:
-    EVP_MD_CTX *mdCtx;
-    EVP_PKEY *key;
+    EVP_MD_CTX* mdCtx;
+    EVP_PKEY* key;
     int privateKeySize;
-    ENGINE *engine;
+    ENGINE* engine;
     string engineName;
     string keyIdentifier;
     string getOpenSSLError();
     void initOpenSSLEngine();
     void loadPrivateKey();
     void createContext();
-    void digest(const vector<u_int8_t> &msg, vector<u_int8_t> &signed_msg);
+    void digest(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg);
 };
 
 } // namespace MlxSign

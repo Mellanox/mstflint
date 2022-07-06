@@ -43,16 +43,13 @@
 
 using namespace mfa2;
 
-CommonHeader Element::buildCommonHeader(u_int8_t version, MFA2Type type,
-        u_int32_t length)
+CommonHeader Element::buildCommonHeader(u_int8_t version, MFA2Type type, u_int32_t length)
 {
     CommonHeader commonHeader(version, type, length);
     return commonHeader;
 }
 
 Element::Element(u_int8_t version, MFA2Type type, u_int32_t length) :
-        _commonHeader(buildCommonHeader(version, type, length))
+    _commonHeader(buildCommonHeader(version, type, length))
 {
-
 }
-

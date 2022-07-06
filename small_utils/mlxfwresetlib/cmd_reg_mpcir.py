@@ -28,21 +28,24 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 import time
+
+
 class CmdRegMpcir():
 
     def __init__(self, reg_access):
         self._reg_access = reg_access
 
     def _wait_for_fw_idle(self):
-        DELAY_BETWEEN_SAMPLES = 0.01 # [sec]
+        DELAY_BETWEEN_SAMPLES = 0.01  # [sec]
         NUM_OF_SAMPLES = 10
         MPCIR_STATUS_IDLE = 0
 
         for _ in range(NUM_OF_SAMPLES):
-            if self._reg_access.sendMpcir(command="status") == MPCIR_STATUS_IDLE : break
+            if self._reg_access.sendMpcir(command="status") == MPCIR_STATUS_IDLE:
+                break
             time.sleep(DELAY_BETWEEN_SAMPLES)
         else:
             raise RuntimeError("FW is not ready to start ISSU flow (MPCIR)")
@@ -51,12 +54,13 @@ class CmdRegMpcir():
         self._reg_access.sendMpcir(command="start")
 
     def _wait_for_completion(self):
-        DELAY_BETWEEN_SAMPLES = 0.01 # [sec]
+        DELAY_BETWEEN_SAMPLES = 0.01  # [sec]
         NUM_OF_SAMPLES = 10
-        MPCIR_STATUS_DONE = 1  
+        MPCIR_STATUS_DONE = 1
 
         for _ in range(NUM_OF_SAMPLES):
-            if self._reg_access.sendMpcir(command="status") == MPCIR_STATUS_DONE : break
+            if self._reg_access.sendMpcir(command="status") == MPCIR_STATUS_DONE:
+                break
             time.sleep(DELAY_BETWEEN_SAMPLES)
         else:
             raise RuntimeError("FW didn't finish preperations for FW upgrade on time (MPCIR)")
@@ -64,6 +68,6 @@ class CmdRegMpcir():
     def prepare_for_phyless_fw_upgrade(self):
         'send FW an indication to perpare to PHY-less FW upgrade and wait for completion'
         # self._wait_for_fw_idle()  # Removed since it caused failure on MH setup.
-                                    # The first host will pass this wait, but others won't and raise exception.
+        # The first host will pass this wait, but others won't and raise exception.
         self._start_preperations()
         self._wait_for_completion()

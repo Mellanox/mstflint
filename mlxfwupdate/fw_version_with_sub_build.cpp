@@ -35,29 +35,27 @@
 #include "fw_version_with_sub_build.h"
 #include <stdio.h>
 
-FwVersionWithSubBuild::FwVersionWithSubBuild() :
-        FwVersion() {
-}
+FwVersionWithSubBuild::FwVersionWithSubBuild() : FwVersion() {}
 
 FwVersionWithSubBuild::FwVersionWithSubBuild(unsigned short int major,
-        unsigned short int minor, unsigned short int subminor,
-        const std::string& devBranchTag) :
-        FwVersion(major, minor, subminor, devBranchTag) {
-
+                                             unsigned short int minor,
+                                             unsigned short int subminor,
+                                             const std::string& devBranchTag) :
+    FwVersion(major, minor, subminor, devBranchTag)
+{
 }
 
-FwVersionWithSubBuild::~FwVersionWithSubBuild() {
-}
+FwVersionWithSubBuild::~FwVersionWithSubBuild() {}
 
-std::string FwVersionWithSubBuild::get_master_version(const std::string& format,
-        bool even_subminor) const {
-    char buff[MAX_VERSION_LENGTH + 1] = { 0 };
-    snprintf(buff, sizeof(buff), format.c_str(), _major, _minor,
-            _subminor / 100,
-            _subminor % 100 - (even_subminor ? _subminor % 2 : 0));
+std::string FwVersionWithSubBuild::get_master_version(const std::string& format, bool even_subminor) const
+{
+    char buff[MAX_VERSION_LENGTH + 1] = {0};
+    snprintf(buff, sizeof(buff), format.c_str(), _major, _minor, _subminor / 100,
+             _subminor % 100 - (even_subminor ? _subminor % 2 : 0));
     return buff;
 }
 
-FwVersionWithSubBuild* FwVersionWithSubBuild::clone() const {
+FwVersionWithSubBuild* FwVersionWithSubBuild::clone() const
+{
     return new FwVersionWithSubBuild(*this);
 }

@@ -52,32 +52,38 @@ static void mft_signal_set_handling(int isOn)
 
 typedef struct reg_access_hca_mcda_reg mcdaReg;
 
-bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offset,
-    u_int32_t size,
-    u_int32_t* data,
-    access_type_t access,
-    const char* currComponentStr,
-    ProgressCallBackAdvSt *progressFuncAdv)
+bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
+                                            u_int32_t offset,
+                                            u_int32_t size,
+                                            u_int32_t* data,
+                                            access_type_t access,
+                                            const char* currComponentStr,
+                                            ProgressCallBackAdvSt* progressFuncAdv)
 {
-
     int leftSize = (int)size;
     u_int32_t i = 0;
     mcdaReg accessData;
-    char stage[MAX_MSG_SIZE] = { 0 };
+    char stage[MAX_MSG_SIZE] = {0};
     int progressPercentage = -1;
-    if (progressFuncAdv && progressFuncAdv->func) {
-        snprintf(stage, MAX_MSG_SIZE, "%s %s component", (access == MCC_READ_COMP) ? "Reading" : "Writing", currComponentStr);
+    if (progressFuncAdv && progressFuncAdv->func)
+    {
+        snprintf(stage, MAX_MSG_SIZE, "%s %s component", (access == MCC_READ_COMP) ? "Reading" : "Writing",
+                 currComponentStr);
     }
-    int maxDataSize = mget_max_reg_size(_mf, (access == MCC_READ_COMP) ? MACCESS_REG_METHOD_GET : MACCESS_REG_METHOD_SET)
-        - sizeof(accessData);
-    if (maxDataSize > MAX_REG_DATA) {
-            maxDataSize = MAX_REG_DATA;
+    int maxDataSize =
+      mget_max_reg_size(_mf, (access == MCC_READ_COMP) ? MACCESS_REG_METHOD_GET : MACCESS_REG_METHOD_SET) -
+      sizeof(accessData);
+    if (maxDataSize > MAX_REG_DATA)
+    {
+        maxDataSize = MAX_REG_DATA;
     }
-    if (_mf->flags & MDEVS_IB && _mf->tp == MST_IB && maxDataSize > INBAND_MAX_REG_SIZE) {
+    if (_mf->flags & MDEVS_IB && _mf->tp == MST_IB && maxDataSize > INBAND_MAX_REG_SIZE)
+    {
         maxDataSize = INBAND_MAX_REG_SIZE - MCDA_REG_HEADER;
     }
     std::vector<u_int32_t> dataToRW(maxDataSize, 0);
-    while (leftSize > 0) {
+    while (leftSize > 0)
+    {
         DPRINTF(("0x%x bytes left to %s\n", leftSize, access == MCC_READ_COMP ? "read" : "burn"));
         memset(&accessData, 0, sizeof(mcdaReg));
 
@@ -87,26 +93,32 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
         accessData.size = leftSize > maxDataSize ? maxDataSize : leftSize;
         mft_signal_set_handling(1);
 
-        if (access == MCC_READ_COMP) {
+        if (access == MCC_READ_COMP)
+        {
             reg_access_status_t rc = reg_access_mcda(_mf, REG_ACCESS_METHOD_GET, &accessData);
             _manager->deal_with_signal();
-            if (rc) {
+            if (rc)
+            {
                 setLastFwError(_manager->regErrTrans(rc));
                 _lastRegisterAccessStatus = rc;
                 return false;
             }
-            for (i = 0; i < accessData.size / 4; i++) {
+            for (i = 0; i < accessData.size / 4; i++)
+            {
                 data[(size - leftSize) / 4 + i] = __le32_to_cpu(accessData.data[i]);
             }
-            //printf("data[%#02x]: %#08x\n", (i-1)*4, data[(size - leftSize)/4 + i-1]);
+            // printf("data[%#02x]: %#08x\n", (i-1)*4, data[(size - leftSize)/4 + i-1]);
         }
-        else {
-            for (i = 0; i < accessData.size / 4; i++) {
+        else
+        {
+            for (i = 0; i < accessData.size / 4; i++)
+            {
                 accessData.data[i] = __cpu_to_le32(data[(size - leftSize) / 4 + i]);
             }
             reg_access_status_t rc = reg_access_mcda(_mf, REG_ACCESS_METHOD_SET, &accessData);
             _manager->deal_with_signal();
-            if (rc) {
+            if (rc)
+            {
                 setLastFwError(_manager->regErrTrans(rc));
                 _lastRegisterAccessStatus = rc;
                 return false;
@@ -114,20 +126,21 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
         }
         int newPercentage = (((size - leftSize) * 100) / size);
 #ifdef UEFI_BUILD
-        if (newPercentage > progressPercentage &&
-            progressFuncAdv && progressFuncAdv->uefi_func) {
-                progressPercentage = newPercentage;
-                if (progressFuncAdv->uefi_func((int)newPercentage)) {
-                     setLastFwError(FWCOMPS_ABORTED);
-                     return false;
-                }
+        if (newPercentage > progressPercentage && progressFuncAdv && progressFuncAdv->uefi_func)
+        {
+            progressPercentage = newPercentage;
+            if (progressFuncAdv->uefi_func((int)newPercentage))
+            {
+                setLastFwError(FWCOMPS_ABORTED);
+                return false;
+            }
         }
 #else
-        if (newPercentage > progressPercentage &&
-            progressFuncAdv && progressFuncAdv->func) {
+        if (newPercentage > progressPercentage && progressFuncAdv && progressFuncAdv->func)
+        {
             progressPercentage = newPercentage;
-            if (progressFuncAdv->func(progressPercentage, stage,
-                PROG_WITH_PRECENTAGE, progressFuncAdv->opaque)) {
+            if (progressFuncAdv->func(progressPercentage, stage, PROG_WITH_PRECENTAGE, progressFuncAdv->opaque))
+            {
                 setLastFwError(FWCOMPS_ABORTED);
                 return false;
             }
@@ -135,11 +148,12 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
 #endif
         leftSize -= maxDataSize;
     }
-    if (progressFuncAdv && progressFuncAdv->func) {
-        if (progressFuncAdv->func(0, stage,
-            PROG_OK, progressFuncAdv->opaque)) {
-                setLastFwError(FWCOMPS_ABORTED);
-                return false;
+    if (progressFuncAdv && progressFuncAdv->func)
+    {
+        if (progressFuncAdv->func(0, stage, PROG_OK, progressFuncAdv->opaque))
+        {
+            setLastFwError(FWCOMPS_ABORTED);
+            return false;
         }
     }
     return true;

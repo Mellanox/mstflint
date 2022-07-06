@@ -47,19 +47,20 @@
 class DirectComponentAccess : public AbstractComponentAccess
 {
 public:
-    DirectComponentAccess(FwCompsMgr* Manager, mfile * Mf) : AbstractComponentAccess(Manager, Mf) {}
+    DirectComponentAccess(FwCompsMgr* Manager, mfile* Mf) : AbstractComponentAccess(Manager, Mf) {}
     virtual ~DirectComponentAccess() {}
-    virtual bool accessComponent(u_int32_t updateHandle, u_int32_t offset,
-        u_int32_t size,
-        u_int32_t data[],
-        access_type_t access,
-        const char* currComponentStr,
-        ProgressCallBackAdvSt *progressFuncAdv);
+    virtual bool accessComponent(u_int32_t updateHandle,
+                                 u_int32_t offset,
+                                 u_int32_t size,
+                                 u_int32_t data[],
+                                 access_type_t access,
+                                 const char* currComponentStr,
+                                 ProgressCallBackAdvSt* progressFuncAdv);
 
-    virtual fw_comps_error_t  getLastFirmwareError() {return _lastFwError;}
-    virtual reg_access_status_t  getLastRegisterAccessStatus() { return _lastRegisterAccessStatus; }
+    virtual fw_comps_error_t getLastFirmwareError() { return _lastFwError; }
+    virtual reg_access_status_t getLastRegisterAccessStatus() { return _lastRegisterAccessStatus; }
 
-    private:
-        void setLastFwError(fw_comps_error_t error) {_lastFwError = error;}
+private:
+    void setLastFwError(fw_comps_error_t error) { _lastFwError = error; }
 };
 #endif

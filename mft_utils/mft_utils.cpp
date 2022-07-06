@@ -50,7 +50,6 @@ using namespace std;
 
 namespace mft_utils
 {
-
 string numToStr(u_int32_t num)
 {
     stringstream ss;
@@ -60,30 +59,34 @@ string numToStr(u_int32_t num)
 
 bool strToNum(const string& str, u_int32_t& num, int base)
 {
-    char *endp;
-    char *numStr = strcpy(new char[str.size() + 1], str.c_str());
+    char* endp;
+    char* numStr = strcpy(new char[str.size() + 1], str.c_str());
     num = strtoul(numStr, &endp, base);
-    if (*endp) {
+    if (*endp)
+    {
         delete[] numStr;
         return false;
     }
     delete[] numStr;
     // check errno
-    if (errno == ERANGE) {
+    if (errno == ERANGE)
+    {
         return false;
     }
     return true;
 }
 
-void splitCommaSperatedString(string str, vector<string> &strv)
+void splitCommaSperatedString(string str, vector<string>& strv)
 {
     size_t pos;
-    while ((pos = str.find(',')) != string::npos) {
+    while ((pos = str.find(',')) != string::npos)
+    {
         string tmp = str.substr(0, pos);
         strv.push_back((string)tmp);
         str = str.substr(pos + 1);
     }
-    if (str != "") {
+    if (str != "")
+    {
         strv.push_back((string)str);
     }
 }
@@ -92,12 +95,12 @@ void ltrim(string& str, const string& chars)
 {
     str.erase(0, str.find_first_not_of(chars));
 }
- 
+
 void rtrim(string& str, const string& chars)
 {
     str.erase(str.find_last_not_of(chars) + 1);
 }
- 
+
 void trim(string& str, const string& chars)
 {
     rtrim(str, chars);
@@ -109,13 +112,13 @@ string ltrim_copy(string str, const string& chars)
     ltrim(str, chars);
     return str;
 }
- 
+
 string rtrim_copy(string str, const string& chars)
 {
     rtrim(str, chars);
     return str;
 }
- 
+
 string trim_copy(string str, const string& chars)
 {
     trim(str, chars);
@@ -124,14 +127,16 @@ string trim_copy(string str, const string& chars)
 
 void to_lowercase(string& str)
 {
-    for (string::size_type i=0; i < str.length(); ++i) {
+    for (string::size_type i = 0; i < str.length(); ++i)
+    {
         str[i] = std::tolower(str[i]);
     }
 }
 
 void to_uppercase(string& str)
 {
-    for (string::size_type i=0; i < str.length(); ++i) {
+    for (string::size_type i = 0; i < str.length(); ++i)
+    {
         str[i] = std::toupper(str[i]);
     }
 }
@@ -150,7 +155,8 @@ string to_uppercase_copy(string str)
 
 u_int32_t greatest_common_divisor(u_int32_t a, u_int32_t b)
 {
-    if (b == 0) return a;
+    if (b == 0)
+        return a;
     return greatest_common_divisor(b, a % b);
 }
 
@@ -159,4 +165,4 @@ u_int32_t least_common_multiple(u_int32_t a, u_int32_t b)
     return (a * b) / greatest_common_divisor(a, b);
 }
 
-}
+} // namespace mft_utils

@@ -1470,7 +1470,7 @@ mlxCfgStatus MlxCfg::createConf()
             commander.sign(buff, _mlxParams.privPemFile, _mlxParams.keyPairUUID, "", "");
         }
         else if (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty() &&
-                    !_mlxParams.keyPairUUID.empty())
+                 !_mlxParams.keyPairUUID.empty())
         {
             commander.sign(buff, "", _mlxParams.keyPairUUID, _mlxParams.opensslEngine, _mlxParams.opensslKeyId);
         }
@@ -1478,7 +1478,6 @@ mlxCfgStatus MlxCfg::createConf()
         {
             commander.sign(buff);
         }
-
     }
     catch (MlxcfgException& e)
     {

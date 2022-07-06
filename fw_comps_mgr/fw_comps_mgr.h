@@ -31,13 +31,13 @@
  * SOFTWARE.
  *
  */
- /*
-  * fw_comps_mgr.h
-  *
-  *
-  *  Created on: Jul 31, 2016
-  *      Author: adham
-  */
+/*
+ * fw_comps_mgr.h
+ *
+ *
+ *  Created on: Jul 31, 2016
+ *      Author: adham
+ */
 #ifndef USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_
 #define USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_
 
@@ -58,9 +58,18 @@ using namespace std;
 #define MAX_REG_DATA 128
 
 #ifndef UEFI_BUILD
-#define DPRINTF(args)        do { char *reacDebug = getenv("FW_COMPS_DEBUG"); \
-                                  if (reacDebug != NULL) {  printf("\33[2K\r"); \
-                                      printf("%s:%d: ",__FILE__, __LINE__); printf args; fflush(stdout);} } while (0)
+#define DPRINTF(args)                               \
+    do                                              \
+    {                                               \
+        char* reacDebug = getenv("FW_COMPS_DEBUG"); \
+        if (reacDebug != NULL)                      \
+        {                                           \
+            printf("\33[2K\r");                     \
+            printf("%s:%d: ", __FILE__, __LINE__);  \
+            printf args;                            \
+            fflush(stdout);                         \
+        }                                           \
+    } while (0)
 #else
 #define DPRINTF(...)
 #endif
@@ -74,29 +83,33 @@ typedef struct reg_access_hca_mgir mgirReg;
 typedef struct reg_access_hca_mcqi_version component_version_st;
 typedef struct reg_access_hca_mcqi_linkx_properties component_linkx_st;
 
-typedef int(*ProgressFunc) (int completion);
+typedef int (*ProgressFunc)(int completion);
 
 typedef f_prog_func_adv_st ProgressCallBackAdvSt;
 
-struct uid_entry {
+struct uid_entry
+{
     u_int8_t num_allocated;
     u_int64_t uid;
 };
 
-typedef struct {
+typedef struct
+{
     u_int8_t type;
     u_int8_t arch;
     reg_access_hca_rom_version version;
 } mgirRomInfo;
 
-typedef struct {
+typedef struct
+{
     u_int8_t secure_fw;
     u_int8_t signed_fw;
     u_int8_t debug_fw;
     u_int8_t dev_fw;
 } security_fw_t;
 
-typedef struct {
+typedef struct
+{
     component_version_st pending_fw_version;
     component_version_st running_fw_version;
     component_linkx_st linkx_data;
@@ -124,23 +137,27 @@ typedef struct {
 
 } fwInfoT;
 
-typedef struct {
+typedef struct
+{
     comp_status_st comp_status;
     comp_cap_st comp_cap;
     int valid;
 } comp_query_st;
 
-typedef enum {
+typedef enum
+{
     MCC_READ_COMP = 0x0,
     MCC_WRITE_COMP
 } access_type_t;
 
-typedef struct mac_guid {
+typedef struct mac_guid
+{
     guid_t mac;
     guid_t guid;
 } mac_guid_t;
 
-typedef enum {
+typedef enum
+{
     COMPINFO_CAPABILITIES = 0,
     COMPINFO_VERSIONS = 1,
     COMPINFO_PUBLIC_KEYS = 2,
@@ -149,10 +166,11 @@ typedef enum {
     COMPINFO_LINKX_PROPERTIES = 6
 } comp_info_t;
 
-class FwComponent {
+class FwComponent
+{
 public:
-
-    typedef enum {
+    typedef enum
+    {
         COMPID_BOOT_IMG = 0x1,
         COMPID_RUNTIME_IMG = 0x2,
         COMPID_USER_NVCONFIG = 0x3,
@@ -170,48 +188,46 @@ public:
         COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 
-    typedef enum {
-        COMPSTAT_NOT_PRESENT   = 0x0,
-        COMPSTAT_PRESENT       = 0x1,
-        COMPSTAT_IN_USE        = 0x2,
-        COMPSTAT_UNKNOWN       = 0xff
+    typedef enum
+    {
+        COMPSTAT_NOT_PRESENT = 0x0,
+        COMPSTAT_PRESENT = 0x1,
+        COMPSTAT_IN_USE = 0x2,
+        COMPSTAT_UNKNOWN = 0xff
     } comps_status_t;
 
-    FwComponent() : _size(0), _type(COMPID_UNKNOWN), _componentIndex(0xffffffff), _initialized(false),
-        _status(COMPSTAT_UNKNOWN) {};
-    FwComponent(comps_ids_t compId) : _size(0), _type(compId), _componentIndex(0xffffffff),
-        _initialized(false), _status(COMPSTAT_UNKNOWN) {};
-    FwComponent(comps_ids_t compId, comps_status_t compStat) : _size(0), _type(compId), _componentIndex(0xffffffff),
-        _initialized(false), _status(compStat) {};
-    ~FwComponent() {};
+    FwComponent() :
+        _size(0), _type(COMPID_UNKNOWN), _componentIndex(0xffffffff), _initialized(false), _status(COMPSTAT_UNKNOWN){};
+    FwComponent(comps_ids_t compId) :
+        _size(0), _type(compId), _componentIndex(0xffffffff), _initialized(false), _status(COMPSTAT_UNKNOWN){};
+    FwComponent(comps_ids_t compId, comps_status_t compStat) :
+        _size(0), _type(compId), _componentIndex(0xffffffff), _initialized(false), _status(compStat){};
+    ~FwComponent(){};
 
-    bool        init(const std::vector<u_int8_t>&  buff,
-                     u_int32_t size,
-                     comps_ids_t type,
-                     u_int32_t idx = 0xffffffff);
-    std::vector<u_int8_t>&   getData()   { return _data; };
-    u_int32_t                getSize()   { return _size; };
-    comps_ids_t              getType()   { return _type; };
-    comps_status_t           getStatus() { return _status; };
+    bool init(const std::vector<u_int8_t>& buff, u_int32_t size, comps_ids_t type, u_int32_t idx = 0xffffffff);
+    std::vector<u_int8_t>& getData() { return _data; };
+    u_int32_t getSize() { return _size; };
+    comps_ids_t getType() { return _type; };
+    comps_status_t getStatus() { return _status; };
 
-    void                    setData(const std::vector<u_int8_t>&  buff) { _data = buff; };
-    void                    setSize(u_int32_t size) { _size = size; };
-    void                    setType(comps_ids_t compId) { _type = compId; };
-    void                    setStatus(comps_status_t compStat) { _status = compStat; };
+    void setData(const std::vector<u_int8_t>& buff) { _data = buff; };
+    void setSize(u_int32_t size) { _size = size; };
+    void setType(comps_ids_t compId) { _type = compId; };
+    void setStatus(comps_status_t compStat) { _status = compStat; };
 
-    static const char*       getCompIdStr(comps_ids_t compId);
+    static const char* getCompIdStr(comps_ids_t compId);
 
 private:
-    std::vector<u_int8_t>   _data;
+    std::vector<u_int8_t> _data;
     u_int32_t _size;
     comps_ids_t _type;
     u_int32_t _componentIndex;
     bool _initialized;
     comps_status_t _status;
-
 };
 
-typedef enum {
+typedef enum
+{
     FWCOMPS_SUCCESS = 0x0,
     FWCOMPS_INFO_TYPE_NOT_SUPPORTED,
     FWCOMPS_COMP_NOT_SUPPORTED,
@@ -233,7 +249,7 @@ typedef enum {
     FWCOMPS_FAIL_TO_LOCK_FLASH_SEMAPHORE,
     FWCOMPS_VERIFY_FAILED,
 
-    //MCC Return codes
+    // MCC Return codes
     FWCOMPS_MCC_ERR_CODES = 0x100,
     FWCOMPS_MCC_ERR_ERROR = 0x101,
     FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR = 0x102,
@@ -296,22 +312,22 @@ typedef enum {
     FWCOMPS_IMAGE_REACTIVATION_WAITING_TIME_EXPIRED
 } fw_comps_error_t;
 
-
-typedef enum {
+typedef enum
+{
     FSM_QUERY = 0,
-    FSM_CMD_LOCK_UPDATE_HANDLE          = 0x1,
-    FSM_CMD_RELEASE_UPDATE_HANDLE       = 0x2,
-    FSM_CMD_UPDATE_COMPONENT            = 0x3,
-    FSM_CMD_VERIFY_COMPONENT            = 0x4,
-    FSM_CMD_ACTIVATE_COMPONENET         = 0x5,
-    FSM_CMD_ACTIVATE_ALL                = 0x6,
-    FSM_CMD_READ_COMPONENT              = 0x7,
-    FSM_CMD_CANCEL                      = 0x8,
-    FSM_CMD_CHECK_UPDATE_HANDLE         = 0x9,
-    FSM_CMD_FORCE_HANDLE_RELEASE        = 0xA,
-    FSM_CMD_READ_PENDING_COMPONENT      = 0xB,
-    FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER  = 0xC,
-    FSM_CMD_UNDEFINED                   = 0xFF,
+    FSM_CMD_LOCK_UPDATE_HANDLE = 0x1,
+    FSM_CMD_RELEASE_UPDATE_HANDLE = 0x2,
+    FSM_CMD_UPDATE_COMPONENT = 0x3,
+    FSM_CMD_VERIFY_COMPONENT = 0x4,
+    FSM_CMD_ACTIVATE_COMPONENET = 0x5,
+    FSM_CMD_ACTIVATE_ALL = 0x6,
+    FSM_CMD_READ_COMPONENT = 0x7,
+    FSM_CMD_CANCEL = 0x8,
+    FSM_CMD_CHECK_UPDATE_HANDLE = 0x9,
+    FSM_CMD_FORCE_HANDLE_RELEASE = 0xA,
+    FSM_CMD_READ_PENDING_COMPONENT = 0xB,
+    FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER = 0xC,
+    FSM_CMD_UNDEFINED = 0xFF,
 } fsm_command_t;
 
 typedef enum
@@ -320,7 +336,7 @@ typedef enum
     FMPT_SECOND_PAGE,
     FMPT_MAILBOX_PAGE,
     FMPT_ALLOCATED_LIST_LENGTH
-}fsm_memory_page_index_t;
+} fsm_memory_page_index_t;
 
 typedef enum
 {
@@ -328,13 +344,14 @@ typedef enum
     FFS_FW_BUSY = 1,
     FFS_FW_OK,
     FFS_FW_ERROR
-}fsm_fw_status_t;
+} fsm_fw_status_t;
 
 class AbstractComponentAccess;
-class FwCompsMgr {
+class FwCompsMgr
+{
 public:
-
-    typedef enum {
+    typedef enum
+    {
         MQIS_REGISTER_FIRST_VALUE = 1,
         MQIS_REGISTER_DEVICE_NAME = MQIS_REGISTER_FIRST_VALUE,
         MQIS_REGISTER_DEVICE_DESCRIPTION_INFO = 2,
@@ -344,77 +361,92 @@ public:
         MQIS_REGISTER_LAST_VALUE = MQIS_REGISTER_ROM_INFO
     } MQISDeviceDescriptionT;
 
-    typedef enum {
+    typedef enum
+    {
         DEVICE_HCA_SWITCH = 0,
         DEVICE_GEARBOX = 1
     } DeviceTypeT;
 
-    FwCompsMgr(const char *devname, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
-    FwCompsMgr(mfile *mf, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
-    FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra);
+    FwCompsMgr(const char* devname, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
+    FwCompsMgr(mfile* mf, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
+    FwCompsMgr(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra);
     virtual ~FwCompsMgr();
 
-    u_int32_t        getFwSupport();
-    mfile*           getMfileObj() { return _mf; };
-    bool    fwReactivateImage();
-    bool    burnComponents(std::vector<FwComponent>& comps,
-                           ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
-    bool    getFwComponents(std::vector<FwComponent>& comps, bool readEn = false);
-    bool    readComponent(FwComponent::comps_ids_t compType,
-                          FwComponent& fwComp,
-                          bool readPending = false,
-                          ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
-    bool    queryFwInfo(fwInfoT *query, bool next_boot_fw_ver = false);
-    bool    forceRelease();
+    u_int32_t getFwSupport();
+    mfile* getMfileObj() { return _mf; };
+    bool fwReactivateImage();
+    bool burnComponents(std::vector<FwComponent>& comps,
+                        ProgressCallBackAdvSt* progressFuncAdv = (ProgressCallBackAdvSt*)NULL);
+    bool getFwComponents(std::vector<FwComponent>& comps, bool readEn = false);
+    bool readComponent(FwComponent::comps_ids_t compType,
+                       FwComponent& fwComp,
+                       bool readPending = false,
+                       ProgressCallBackAdvSt* progressFuncAdv = (ProgressCallBackAdvSt*)NULL);
+    bool queryFwInfo(fwInfoT* query, bool next_boot_fw_ver = false);
+    bool forceRelease();
     fw_comps_error_t getLastError() { return _lastError; };
-    unsigned char*      getLastErrMsg();
-    bool    readBlockFromComponent(FwComponent::comps_ids_t compId,
-                                   u_int32_t offset,
-                                   u_int32_t size,
-                                   std::vector<u_int8_t>& data);
-    bool    setMacsGuids(mac_guid_t macGuid);
-    bool    getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op,
-                            vector<u_int8_t>& infoString);
-    void    deal_with_signal();
-    void   setLastFirmwareError(fw_comps_error_t fw_error);
-    void   setLastRegisterAccessStatus(reg_access_status_t err);
+    unsigned char* getLastErrMsg();
+    bool readBlockFromComponent(FwComponent::comps_ids_t compId,
+                                u_int32_t offset,
+                                u_int32_t size,
+                                std::vector<u_int8_t>& data);
+    bool setMacsGuids(mac_guid_t macGuid);
+    bool getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op, vector<u_int8_t>& infoString);
+    void deal_with_signal();
+    void setLastFirmwareError(fw_comps_error_t fw_error);
+    void setLastRegisterAccessStatus(reg_access_status_t err);
     fw_comps_error_t mccErrTrans(u_int8_t err);
     fw_comps_error_t regErrTrans(reg_access_status_t err);
     bool lock_flash_semaphore();
     void unlock_flash_semaphore();
-    void SetIndexAndSize(int deviceIndex, int deviceSize, bool autoUpdate = false, bool activationNeeded = true, bool downloadTransferNeeded = true, int activate_delay_sec = 0);
+    void SetIndexAndSize(int deviceIndex,
+                         int deviceSize,
+                         bool autoUpdate = false,
+                         bool activationNeeded = true,
+                         bool downloadTransferNeeded = true,
+                         int activate_delay_sec = 0);
     bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL);
-    bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st *cmpLinkX);
+    bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st* cmpLinkX);
     void GenerateHandle();
     bool isMCDDSupported() { return isDmaSupported; };
-private:
 
-    typedef enum {
-        FSMST_IDLE                          = 0x0,
-        FSMST_LOCKED                        = 0x1,
-        FSMST_INITIALIZE                    = 0x2,
-        FSMST_DOWNLOAD                      = 0x3,
-        FSMST_VERIFY                        = 0x4,
-        FSMST_APPLY                         = 0x5,
-        FSMST_ACTIVATE                      = 0x6,
-        FSMST_UPLOAD                        = 0x7,
-        FSMST_UPLOAD_PENDING                = 0x8,
-        FSMST_DOWNSTREAM_DEVICE_TRANSFER    = 0x9,
-        FSMST_NA                            = 0xFF,
+private:
+    typedef enum
+    {
+        FSMST_IDLE = 0x0,
+        FSMST_LOCKED = 0x1,
+        FSMST_INITIALIZE = 0x2,
+        FSMST_DOWNLOAD = 0x3,
+        FSMST_VERIFY = 0x4,
+        FSMST_APPLY = 0x5,
+        FSMST_ACTIVATE = 0x6,
+        FSMST_UPLOAD = 0x7,
+        FSMST_UPLOAD_PENDING = 0x8,
+        FSMST_DOWNSTREAM_DEVICE_TRANSFER = 0x9,
+        FSMST_NA = 0xFF,
     } fsm_state_t;
 
-    typedef struct control_fsm_args {
-        control_fsm_args() : command(FSM_CMD_UNDEFINED), expectedState(FSMST_NA), size(0),
-            currentState(FSMST_NA), progressFuncAdv(NULL), reg_access_timeout(0) {}
+    typedef struct control_fsm_args
+    {
+        control_fsm_args() :
+            command(FSM_CMD_UNDEFINED),
+            expectedState(FSMST_NA),
+            size(0),
+            currentState(FSMST_NA),
+            progressFuncAdv(NULL),
+            reg_access_timeout(0)
+        {
+        }
         fsm_command_t command;
         fsm_state_t expectedState;
         u_int32_t size;
         fsm_state_t currentState;
-        ProgressCallBackAdvSt *progressFuncAdv;
+        ProgressCallBackAdvSt* progressFuncAdv;
         u_int32_t reg_access_timeout;
     } control_fsm_args_t;
 
-    typedef enum {
+    typedef enum
+    {
         MCC_ERRCODE_OK = 0x0,
         MCC_ERRCODE_ERROR = 0x1,
         MCC_ERRCODE_REJECTED_DIGEST_ERR = 0x2,
@@ -440,7 +472,8 @@ private:
         MCC_ERRCODE_REJECTED_INCOMPATIBLE_FLASH = 0x16
     } mcc_command_error_t;
 
-    typedef enum {
+    typedef enum
+    {
         IMAGE_REACTIVATION_SUCCESS = 0,
         IMAGE_REACTIVATION_BUSY = 1,
         IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR = 2,
@@ -451,74 +484,68 @@ private:
         IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED = 7,
         IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED = 8,
         IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED = 9
-    }image_reactivation_command_error_t;
+    } image_reactivation_command_error_t;
 
     const char* stateToStr(fsm_state_t);
     const char* commandToStr(fsm_command_t cmd);
 
-    void          initialize(mfile *mf);
+    void initialize(mfile* mf);
 
+    bool accessComponent(u_int32_t offset,
+                         u_int32_t size,
+                         u_int32_t data[],
+                         access_type_t access,
+                         ProgressCallBackAdvSt* progressFuncAdv = (ProgressCallBackAdvSt*)NULL,
+                         control_fsm_args_t* lastFsmCommandArgs = NULL);
 
+    bool queryComponentStatus(u_int32_t componentIndex, comp_status_st* query);
 
-    bool          accessComponent(u_int32_t offset,
-                                  u_int32_t size,
-                                  u_int32_t data[],
-                                  access_type_t access,
-                                  ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL,
-                                  control_fsm_args_t* lastFsmCommandArgs = NULL);
+    bool getComponentVersion(FwComponent::comps_ids_t compType, bool pending, component_version_st* cmpVer);
 
-    bool           queryComponentStatus(u_int32_t componentIndex,
-                                       comp_status_st *query);
+    bool controlFsm(fsm_command_t command,
+                    fsm_state_t expectedState = FSMST_NA,
+                    u_int32_t size = 0,
+                    fsm_state_t currentState = FSMST_NA,
+                    ProgressCallBackAdvSt* progressFuncAdv = (ProgressCallBackAdvSt*)NULL,
+                    u_int32_t reg_access_timeout = 0);
 
-    bool    getComponentVersion(FwComponent::comps_ids_t compType,
-        bool pending,
-        component_version_st *cmpVer);
-    
-    bool           controlFsm(fsm_command_t command,
-                              fsm_state_t expectedState = FSMST_NA,
-                              u_int32_t size = 0,
-                              fsm_state_t currentState = FSMST_NA,
-                              ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL,
-                              u_int32_t reg_access_timeout = 0);
+    bool queryComponentInfo(u_int32_t componentIndex,
+                            u_int8_t readPending,
+                            u_int32_t infoType,
+                            u_int32_t dataSize,
+                            u_int32_t* data);
 
-    bool           queryComponentInfo(u_int32_t componentIndex,
-                                      u_int8_t readPending,
-                                      u_int32_t infoType,
-                                      u_int32_t dataSize,
-                                      u_int32_t *data);
+    bool runMCQI(u_int32_t componentIndex,
+                 u_int8_t readPending,
+                 u_int32_t infoType,
+                 u_int32_t dataSize,
+                 u_int32_t offset,
+                 u_int32_t* data);
 
-    bool           runMCQI(u_int32_t componentIndex,
-                           u_int8_t readPending,
-                           u_int32_t infoType,
-                           u_int32_t dataSize,
-                           u_int32_t offset,
-                           u_int32_t *data);
+    bool runNVDA(std::vector<u_int8_t>& buff,
+                 u_int16_t len,
+                 u_int32_t tlvType,
+                 reg_access_method_t method,
+                 bool queryDefault);
 
-    bool          runNVDA(std::vector<u_int8_t>& buff,
-                          u_int16_t len,
-                          u_int32_t tlvType,
-                          reg_access_method_t method,
-                          bool queryDefault);
+    bool readComponentInfo(FwComponent::comps_ids_t compType,
+                           comp_info_t infoType,
+                           std::vector<u_int32_t>& retData,
+                           bool readPending = false);
 
-    bool           readComponentInfo(FwComponent::comps_ids_t compType,
-                                     comp_info_t infoType,
-                                     std::vector<u_int32_t>& retData,
-                                     bool readPending = false);
+    void getInfoAsVersion(std::vector<u_int32_t>& infoData, component_version_st* cmpVer);
 
-    void           getInfoAsVersion(std::vector<u_int32_t>& infoData,
-                                    component_version_st *cmpVer);
+    reg_access_status_t getGI(mfile* mf, mgirReg* gi);
+    bool extractMacsGuids(fwInfoT* fwQuery);
+    void extractRomInfo(mgirReg* mgir, fwInfoT* fwQuery);
+    bool isDMAAccess();
+    bool fallbackToRegisterAccess();
 
-    reg_access_status_t getGI(mfile *mf, mgirReg *gi);
-    bool           extractMacsGuids(fwInfoT *fwQuery);
-    void           extractRomInfo(mgirReg *mgir, fwInfoT *fwQuery);
-    bool           isDMAAccess();
-    bool           fallbackToRegisterAccess();
-    
     std::vector<comp_query_st> _compsQueryMap;
     bool _refreshed;
     bool _clearSetEnv;
     bool _openedMfile;
-    comp_query_st *_currCompQuery;
+    comp_query_st* _currCompQuery;
     comp_info_st _currCompInfo;
     u_int32_t _updateHandle;
     fsm_control_st _lastFsmCtrl;
@@ -529,8 +556,8 @@ private:
     fw_comps_error_t _lastError;
     reg_access_status_t _lastRegAccessStatus;
     u_int32_t _hwDevId;
-    mfile *_mf;
-    const char *_currComponentStr;
+    mfile* _mf;
+    const char* _currComponentStr;
     std::vector<u_int8_t> _productVerStr;
     bool isDmaSupported;
     AbstractComponentAccess* _accessObj;

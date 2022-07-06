@@ -34,9 +34,9 @@
 #ifndef MTCR_H
 #define MTCR_H
 
-
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <sys/types.h>
@@ -49,143 +49,151 @@ extern "C" {
 
 #define SLV_ADDRS_NUM 128
 
-typedef enum mtcr_access_method {
-    MTCR_ACCESS_ERROR  = MST_ERROR,
-    MTCR_ACCESS_MEMORY = MST_PCI,
-    MTCR_ACCESS_CONFIG = MST_PCICONF,
-    MTCR_ACCESS_INBAND = MST_IB
-} mtcr_access_method_t;
-/*
- * Read 4 bytes, return number of succ. read bytes or -1 on failure
- */
-int mread4(mfile *mf, unsigned int offset, u_int32_t *value);
+    typedef enum mtcr_access_method
+    {
+        MTCR_ACCESS_ERROR = MST_ERROR,
+        MTCR_ACCESS_MEMORY = MST_PCI,
+        MTCR_ACCESS_CONFIG = MST_PCICONF,
+        MTCR_ACCESS_INBAND = MST_IB
+    } mtcr_access_method_t;
+    /*
+     * Read 4 bytes, return number of succ. read bytes or -1 on failure
+     */
+    int mread4(mfile* mf, unsigned int offset, u_int32_t* value);
 
-/*
- * Write 4 bytes, return number of succ. written bytes or -1 on failure
- */
-int mwrite4(mfile *mf, unsigned int offset, u_int32_t value);
+    /*
+     * Write 4 bytes, return number of succ. written bytes or -1 on failure
+     */
+    int mwrite4(mfile* mf, unsigned int offset, u_int32_t value);
 
+    int mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len);
+    int mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len);
 
-int mread4_block(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len);
-int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len);
+    int msw_reset(mfile* mf);
+    int mhca_reset(mfile* mf);
 
-int msw_reset(mfile *mf);
-int mhca_reset(mfile *mf);
+    /*
+     * Get list of MST (Mellanox Software Tools) devices.
+     * Put all device names as null-terminated strings to buf.
+     *
+     * Return number of devices found or -1 if buf overflow
+     */
+    int mdevices(char* buf, int len, int mask);
 
-/*
- * Get list of MST (Mellanox Software Tools) devices.
- * Put all device names as null-terminated strings to buf.
- *
- * Return number of devices found or -1 if buf overflow
- */
-int mdevices(char *buf, int len, int mask);
+    /*
+     * Get list of MST (Mellanox Software Tools) devices info records.
+     * Return a dynamic allocated array of dev_info records.
+     * len will be updated to hold the array length
+     *
+     */
+    dev_info* mdevices_info(int mask, int* len);
 
+    /*
+     *  * Get list of MST (Mellanox Software Tools) devices info records.
+     *  * Return a dynamic allocated array of dev_info records.
+     *  * len will be updated to hold the array length
+     *  * Verbosity will decide whether to get all the Physical functions or not.
+     */
 
-/*
- * Get list of MST (Mellanox Software Tools) devices info records.
- * Return a dynamic allocated array of dev_info records.
- * len will be updated to hold the array length
- *
- */
-dev_info* mdevices_info(int mask, int *len);
+    dev_info* mdevices_info_v(int mask, int* len, int verbosity);
 
-/*
- *  * Get list of MST (Mellanox Software Tools) devices info records.
- *  * Return a dynamic allocated array of dev_info records.
- *  * len will be updated to hold the array length
- *  * Verbosity will decide whether to get all the Physical functions or not.
- */
+    void mdevice_info_destroy(dev_info* dev_info, int len);
+    void mdevices_info_destroy(dev_info* dev_info, int len);
 
-dev_info* mdevices_info_v(int mask, int *len, int verbosity);
+    int mget_mdevs_type(mfile* mf, u_int32_t* mtype);
 
-void mdevice_info_destroy(dev_info *dev_info, int len);
-void mdevices_info_destroy(dev_info *dev_info, int len);
+    /*
+     * Open Mellanox Software tools (mst) driver. Device type==INFINIHOST
+     * Return valid mfile ptr or 0 on failure
+     */
+    mfile* mopen(const char* name);
 
-int mget_mdevs_type(mfile *mf, u_int32_t *mtype);
+    mfile* mopend(const char* name, DType dtype);
 
-/*
- * Open Mellanox Software tools (mst) driver. Device type==INFINIHOST
- * Return valid mfile ptr or 0 on failure
- */
-mfile* mopen(const char *name);
+    // mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *extra_data);
 
-mfile* mopend(const char *name, DType dtype);
+    mfile* mopen_adv(const char* name, MType mtype);
 
-//mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *extra_data);
+    /*
+     * Close Mellanox driver
+     * req. descriptor
+     */
+    int mclose(mfile* mf);
 
-mfile* mopen_adv(const char *name, MType mtype);
+    unsigned char mset_i2c_slave(mfile* mf, unsigned char new_i2c_slave);
 
-/*
- * Close Mellanox driver
- * req. descriptor
- */
-int mclose(mfile *mf);
+    int mget_mdevs_flags(mfile* mf, u_int32_t* devs_flags);
 
-unsigned char mset_i2c_slave(mfile *mf, unsigned char new_i2c_slave);
+    int maccess_reg_mad(mfile* mf, u_int8_t* data);
 
-int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags);
+    int mos_reg_access(mfile* mf, int reg_access, void* reg_data, u_int32_t cmd_type);
 
-int maccess_reg_mad(mfile *mf, u_int8_t *data);
+    int maccess_reg_cmdif(mfile* mf, reg_access_t reg_access, void* reg_data, u_int32_t cmd_type);
 
-int mos_reg_access(mfile *mf, int reg_access, void *reg_data, u_int32_t cmd_type);
+    int maccess_reg(mfile* mf,
+                    u_int16_t reg_id,
+                    maccess_reg_method_t reg_method,
+                    void* reg_data,
+                    u_int32_t reg_size,
+                    u_int32_t r_size_reg, // used when sending via icmd interface (how much data should be read back to
+                                          // the user)
+                    u_int32_t w_size_reg, // used when sending via icmd interface (how much data should be written to
+                                          // the scratchpad) if you dont know what you are doing then r_size_reg =
+                                          // w_size_reg = your_register_size
+                    int* reg_status);
 
-int maccess_reg_cmdif(mfile *mf, reg_access_t reg_access, void *reg_data, u_int32_t cmd_type);
+    int icmd_send_command(mfile* mf, int opcode, void* data, int data_size, int skip_write);
 
-int maccess_reg(mfile     *mf,
-                u_int16_t reg_id,
-                maccess_reg_method_t reg_method,
-                void *reg_data,
-                u_int32_t reg_size,
-                u_int32_t r_size_reg,   // used when sending via icmd interface (how much data should be read back to the user)
-                u_int32_t w_size_reg,   // used when sending via icmd interface (how much data should be written to the scratchpad)
-                                        // if you dont know what you are doing then r_size_reg = w_size_reg = your_register_size
-                int       *reg_status);
+    int icmd_clear_semaphore(mfile* mf);
 
-int icmd_send_command(mfile *mf, int opcode, void *data, int data_size, int skip_write);
+    int tools_cmdif_send_inline_cmd(mfile* mf,
+                                    u_int64_t in_param,
+                                    u_int64_t* out_param,
+                                    u_int32_t input_modifier,
+                                    u_int16_t opcode,
+                                    u_int8_t opcode_modifier);
 
-int icmd_clear_semaphore(mfile *mf);
+    int tools_cmdif_send_mbox_command(mfile* mf,
+                                      u_int32_t input_modifier,
+                                      u_int16_t opcode,
+                                      u_int8_t opcode_modifier,
+                                      int data_offs_in_mbox,
+                                      void* data,
+                                      int data_size,
+                                      int skip_write);
 
+    int tools_cmdif_unlock_semaphore(mfile* mf);
 
-int tools_cmdif_send_inline_cmd(mfile *mf, u_int64_t in_param, u_int64_t *out_param,
-                                u_int32_t input_modifier, u_int16_t opcode, u_int8_t opcode_modifier);
+    int mget_max_reg_size(mfile* mf, maccess_reg_method_t reg_method);
+    int supports_reg_access_gmp(mfile* mf, maccess_reg_method_t reg_method);
 
-int tools_cmdif_send_mbox_command(mfile *mf, u_int32_t input_modifier, u_int16_t opcode, u_int8_t opcode_modifier,
-                                  int data_offs_in_mbox, void *data, int data_size, int skip_write);
+    const char* m_err2str(MError status);
 
-int tools_cmdif_unlock_semaphore(mfile *mf);
+    int mread_buffer(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len);
+    int mwrite_buffer(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len);
 
+    int mget_vsec_supp(mfile* mf);
 
-int mget_max_reg_size(mfile *mf, maccess_reg_method_t reg_method);
-int supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method);
+    int mget_addr_space(mfile* mf);
+    int mset_addr_space(mfile* mf, int space);
 
-const char* m_err2str(MError status);
+    int mclear_pci_semaphore(const char* name);
 
-int mread_buffer(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len);
-int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len);
+    int mvpd_read4(mfile* mf, unsigned int offset, u_int8_t value[4]);
 
-int mget_vsec_supp(mfile *mf);
+    int mvpd_write4(mfile* mf, unsigned int offset, u_int8_t value[4]);
 
-int mget_addr_space(mfile *mf);
-int mset_addr_space(mfile *mf, int space);
+    MTCR_API int MWRITE4_SEMAPHORE(mfile* mf, int offset, int value);
 
-int mclear_pci_semaphore(const char *name);
+    MTCR_API int MREAD4_SEMAPHORE(mfile* mf, int offset, u_int32_t* ptr);
 
-int mvpd_read4(mfile *mf, unsigned int offset, u_int8_t value[4]);
+    void set_increase_poll_time(int new_value);
 
-int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4]);
+    int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info, int page_amount);
 
-MTCR_API int MWRITE4_SEMAPHORE(mfile* mf, int offset, int value);
+    int release_dma_pages(mfile* mf, int page_amount);
 
-MTCR_API int MREAD4_SEMAPHORE(mfile* mf, int offset, u_int32_t* ptr);
-
-void set_increase_poll_time(int new_value);
-
-int get_dma_pages(mfile *mf, struct mtcr_page_info* page_info,
-                  int page_amount);
-
-int release_dma_pages(mfile *mf, int page_amount);
-
-int read_dword_from_conf_space(mfile *mf, u_int32_t offset, u_int32_t* data);
+    int read_dword_from_conf_space(mfile* mf, u_int32_t offset, u_int32_t* data);
 
 #ifdef __cplusplus
 }

@@ -47,15 +47,13 @@ using namespace std;
 
 namespace mft_utils
 {
-
 string numToStr(u_int32_t num);
 
 bool strToNum(const string& str, u_int32_t& num, int base);
 
-void splitCommaSperatedString(string str, vector<string> &strv);
+void splitCommaSperatedString(string str, vector<string>& strv);
 
-
-void ltrim(string& str, const string& chars = "\t\n\v\f\r "); 
+void ltrim(string& str, const string& chars = "\t\n\v\f\r ");
 void rtrim(string& str, const string& chars = "\t\n\v\f\r ");
 void trim(string& str, const string& chars = "\t\n\v\f\r ");
 string ltrim_copy(string str, const string& chars = "\t\n\v\f\r ");
@@ -70,5 +68,5 @@ string to_uppercase_copy(string str);
 u_int32_t greatest_common_divisor(u_int32_t a, u_int32_t b);
 u_int32_t least_common_multiple(u_int32_t a, u_int32_t b);
 
-}
+} // namespace mft_utils
 #endif /* MFT_UTILS_H_ */

@@ -38,17 +38,17 @@
 #ifdef __FreeBSD__
 #include <sys/pciio.h>
 #endif
- 
 
-struct mft_core_wrapper {
+struct mft_core_wrapper
+{
     void* config_space_access;
     void* reg_access;
     void* reset_access;
 };
 
-
 #ifdef __FreeBSD__
-struct page_list_fbsd {
+struct page_list_fbsd
+{
     // User space buffer page aligned.
     char* page_list[MAX_PAGES_SIZE];
     int page_amount;
@@ -58,42 +58,44 @@ struct page_list_fbsd {
 /*  All fields in follow structure are not supposed to be used */
 /*  or modified by user programs. Except i2c_slave that may be */
 /*  modified before each access to target I2C slave address */
-struct mfile_t {
-    MType tp;     /*  type of driver */
+struct mfile_t
+{
+    MType tp; /*  type of driver */
     MType orig_tp;
-    MType res_tp;     /*  Will be used with HCR if need */
-    DType dtype;     /*  target device to access to */
-    DType itype;     /*  interface device to access via */
-    int is_i2cm;     /*  use device as I2C master */
-    int is_vm;     /*  if the machine is VM    */
-    int cr_access;     /* If cr access is allowed in MLNXOS devices */
+    MType res_tp;         /*  Will be used with HCR if need */
+    DType dtype;          /*  target device to access to */
+    DType itype;          /*  interface device to access via */
+    int is_i2cm;          /*  use device as I2C master */
+    int is_vm;            /*  if the machine is VM    */
+    int cr_access;        /* If cr access is allowed in MLNXOS devices */
     cables_info ext_info; /*keeps info for calculate the correct slave address (0x50 + offset) */
     unsigned char i2c_slave;
     int gpio_en;
-    io_region *iorw_regions;     /* For LPC devices */
+    io_region* iorw_regions; /* For LPC devices */
     int regions_num;
-    char *dev_name;
+    char* dev_name;
     int fd;
-    int res_fd;     /*  Will be used with HCR if need*/
-    int sock;     /*  in not -1 - remote interface */
-    int is_mtserver_req;    // request came from mtServer - means came from remote client 
-    void *bar_virtual_addr;
+    int res_fd;          /*  Will be used with HCR if need*/
+    int sock;            /*  in not -1 - remote interface */
+    int is_mtserver_req; // request came from mtServer - means came from remote client
+    void* bar_virtual_addr;
     unsigned int map_size;
-    unsigned int bar0_gw_offset;//for MST_BAR0_GW_PCI devices, offset from BAR0 - gateway - for R/W operations
-    int file_lock_descriptor;//file descriptor to the lock file aka semaphore in order to protect parallel read/write GW operations
+    unsigned int bar0_gw_offset; // for MST_BAR0_GW_PCI devices, offset from BAR0 - gateway - for R/W operations
+    int file_lock_descriptor; // file descriptor to the lock file aka semaphore in order to protect parallel read/write
+                              // GW operations
     unsigned long long start_idx;
     /************************ FPGA DDR3 *********************************/
-    void *ddr3_ptr;
+    void* ddr3_ptr;
     unsigned long long ddr3_start_idx;
     unsigned int ddr3_map_size;
     /********************************************************************/
-    MIB_Private mib;     /*  Data for IB interface (if relevant) */
-    void *ctx;
+    MIB_Private mib; /*  Data for IB interface (if relevant) */
+    void* ctx;
     void* fallback_mf;
-    unsigned int i2c_RESERVED;     /*  Reserved for internal usage (i2c internal) */
+    unsigned int i2c_RESERVED; /*  Reserved for internal usage (i2c internal) */
     int i2c_smbus;
     enum Mdevs_t flags;
-    u_int32_t connectx_wa_slot;     /* apply connectx cr write workaround */
+    u_int32_t connectx_wa_slot; /* apply connectx cr write workaround */
     int connectx_wa_last_op_write;
     u_int32_t connectx_wa_stat;
     u_int64_t connectx_wa_max_retries;
@@ -102,9 +104,9 @@ struct mfile_t {
     int server_ver_major;
     int server_ver_minor;
     unsigned int proto_type;
-    dev_info *dinfo;
+    dev_info* dinfo;
 
-    //for ICMD access
+    // for ICMD access
     icmd_params icmd;
     // for UEFI
     ctx_params context;
@@ -123,14 +125,14 @@ struct mfile_t {
     // for sending access registers
     access_reg_params acc_reg_params;
     // UL
-    void *ul_ctx;
+    void* ul_ctx;
     // Dynamic libs Ctx
-    void *dl_context;
+    void* dl_context;
     // Cables CTX
     int is_cable;
-    void *cable_ctx;
-	unsigned int linkx_chip_devid;
-    void *cable_chip_ctx; // TODO change the name
+    void* cable_ctx;
+    unsigned int linkx_chip_devid;
+    void* cable_chip_ctx; // TODO change the name
     f_mpci_change mpci_change;
     // Amos gear-box
     gearbox_info gb_info;
@@ -141,7 +143,7 @@ struct mfile_t {
     int connectx_flush;
     int fdlock;
     struct page_list_fbsd user_page_list;
-    void *ptr;
+    void* ptr;
 #else
     struct page_list user_page_list;
 #endif

@@ -39,7 +39,8 @@
 typedef struct mflash mflash;
 #define MAX_FLASH_NAME 256
 
-typedef enum MfOpt {
+typedef enum MfOpt
+{
     MFO_NO_VERIFY = 0,
     MFO_AMD_UNLOCK_BYPASS,
     MFO_AMD_BYTE_MODE,
@@ -55,25 +56,32 @@ typedef enum MfOpt {
     MFO_LAST
 } MfOpt;
 
-enum MfAccessType {
-    MFAT_MFILE = 0, MFAT_UEFI,
+enum MfAccessType
+{
+    MFAT_MFILE = 0,
+    MFAT_UEFI,
 };
 
-typedef enum {
-    UNKNOWN_BIN = 0x0, CX5_LOW_BIN = 0x1, CX5_HIGH_BIN = 0x2,
+typedef enum
+{
+    UNKNOWN_BIN = 0x0,
+    CX5_LOW_BIN = 0x1,
+    CX5_HIGH_BIN = 0x2,
 
 } BinIdT;
 
-typedef struct flash_params {
+typedef struct flash_params
+{
     char type_name[MAX_FLASH_NAME];
     int log2size;
     int num_of_flashes;
 } flash_params_t;
 
-typedef struct write_protect_info {
+typedef struct write_protect_info
+{
     u_int8_t is_subsector;
     u_int8_t is_bottom;
-    u_int8_t sectors_num;  // if zero: is_subsector and is_bottom are invalid.
+    u_int8_t sectors_num; // if zero: is_subsector and is_bottom are invalid.
 } write_protect_info_t;
 
 ////////////////////////////////////////
@@ -81,35 +89,37 @@ typedef struct write_protect_info {
 // ST SPI functions - common for InfiniHostIIILx and ConnectX
 //
 ////////////////////////////////////////
-typedef enum StFlashCommand {
-    SFC_SE = 0xD8,              // Sector erase
-    SFC_4SE = 0xDC,             // Sector erase 4B addr
-    SFC_SSE = 0x20,             // Subsector erase
-    SFC_4SSE = 0x21,            // Subsector erase 4B addr
-    SFC_PP = 0x02,              // Page program
-    SFC_4PP = 0x12,             // Page program 4B addr
-    SFC_READ = 0x03,            // Read data
-    SFC_4READ = 0x13,           // Read data 4B addr
-    SFC_FAST_READ = 0x3B,       // Fast read dual output
-    SFC_4FAST_READ = 0x3C,      // Fast read dual output 4B addr
-    SFC_RES = 0xAB,             // Release power-down
-    SFC_JEDEC = 0x9F,           // Read JEDEC ID
-    SFC_RDSR = 0x05,            // Read status register
-    SFC_WRSR2 = 0x31,           // Write status register 2
-    SFC_RDSR2 = 0x35,           // Read status register 2
-    SFC_WRSR3_WINBOND = 0x11,   // Write status register 3 (WINBOND)
-    SFC_RDSR3_WINBOND = 0x15,   // Read status register 3 (WINBOND)
-    SFC_WREN = 0x06,            // Write enable
+typedef enum StFlashCommand
+{
+    SFC_SE = 0xD8,            // Sector erase
+    SFC_4SE = 0xDC,           // Sector erase 4B addr
+    SFC_SSE = 0x20,           // Subsector erase
+    SFC_4SSE = 0x21,          // Subsector erase 4B addr
+    SFC_PP = 0x02,            // Page program
+    SFC_4PP = 0x12,           // Page program 4B addr
+    SFC_READ = 0x03,          // Read data
+    SFC_4READ = 0x13,         // Read data 4B addr
+    SFC_FAST_READ = 0x3B,     // Fast read dual output
+    SFC_4FAST_READ = 0x3C,    // Fast read dual output 4B addr
+    SFC_RES = 0xAB,           // Release power-down
+    SFC_JEDEC = 0x9F,         // Read JEDEC ID
+    SFC_RDSR = 0x05,          // Read status register
+    SFC_WRSR2 = 0x31,         // Write status register 2
+    SFC_RDSR2 = 0x35,         // Read status register 2
+    SFC_WRSR3_WINBOND = 0x11, // Write status register 3 (WINBOND)
+    SFC_RDSR3_WINBOND = 0x15, // Read status register 3 (WINBOND)
+    SFC_WREN = 0x06,          // Write enable
     SFC_RDNVR = 0xB5,
-    SFC_RDCR = 0x15,            // Read configuration register
+    SFC_RDCR = 0x15, // Read configuration register
     SFC_WRNVR = 0xB1,
-    SFC_WRSR = 0x01,            // Write status register
-    SFC_WRSR_GIGA = 0x31,       // Write status register (GIGA)
+    SFC_WRSR = 0x01,      // Write status register
+    SFC_WRSR_GIGA = 0x31, // Write status register (GIGA)
     SFC_RDFR = 0x48,
     SFC_WRFR = 0x42
 } StFlashCommand_t;
 
-typedef struct access_commands {
+typedef struct access_commands
+{
     StFlashCommand_t sfc_sector_erase;
     StFlashCommand_t sfc_subsector_erase;
     StFlashCommand_t sfc_page_program;
@@ -122,8 +132,9 @@ typedef struct access_commands {
 // Flash attributes struct
 //
 /////////////////////////////////////////////
-typedef struct flash_attr {
-    const char *type_str;
+typedef struct flash_attr
+{
+    const char* type_str;
     //
     // hw_dev_id    hw dev id of the HCA.
     //
@@ -143,7 +154,7 @@ typedef struct flash_attr {
     //
     u_int32_t sector_size;
 
-    int num_erase_blocks;         // Number of sector defs.
+    int num_erase_blocks; // Number of sector defs.
 
     //
     // bank_size:   Different bank means a different chip sellect or gpio settings is needed when crossing
@@ -191,8 +202,9 @@ typedef struct flash_attr {
 // Support for density X is represented by setting the log(X) bit of flash_info.densities.
 // That is, a flash related to flash_info supports density X iff ((flash_info.densities & (1 << FD_X)) != 0).
 // FD_X is the density value as it appears in the flash JEDEC ID. For example, FD_128 == 0x18 (128Mb flash).
-typedef struct flash_info {
-    const char *name;
+typedef struct flash_info
+{
+    const char* name;
     u_int8_t vendor;
     u_int8_t type;
     u_int32_t densities;
@@ -210,16 +222,18 @@ typedef struct flash_info {
 /*
  * Common Macros:
  */
-#define WRITE_PROTECT_CHECKS(mfl, bank_num) { \
-        if (!mfl->attr.write_protect_support) { \
+#define WRITE_PROTECT_CHECKS(mfl, bank_num)     \
+    {                                           \
+        if (!mfl->attr.write_protect_support)   \
+        {                                       \
             return MFE_NOT_SUPPORTED_OPERATION; \
-        } \
-        if (bank_num >= mfl->attr.banks_num) { \
-            return MFE_FLASH_NOT_EXIST; \
-        } \
-}
+        }                                       \
+        if (bank_num >= mfl->attr.banks_num)    \
+        {                                       \
+            return MFE_FLASH_NOT_EXIST;         \
+        }                                       \
+    }
 #define MAX_SUBSECTOR_NUM 8
-#define MAX_SECTORS_NUM   64
+#define MAX_SECTORS_NUM 64
 
 #endif // MFLASH_COMMON_STRUCTS_H
-

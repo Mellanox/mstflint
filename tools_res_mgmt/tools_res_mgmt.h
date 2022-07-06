@@ -36,81 +36,82 @@
 
 #include <mtcr.h>
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-typedef enum {
-    TRM_STS_OK = 0,
-    TRM_STS_RES_BUSY,
-    TRM_STS_IFC_NA,
-    TRM_STS_DEV_NOT_SUPPORTED,
-    TRM_STS_RES_NOT_SUPPORTED,
-    TRM_STS_CR_ACCESS_ERR,
-    TRM_STS_MEM_ERROR
-} trm_sts;
+    typedef enum
+    {
+        TRM_STS_OK = 0,
+        TRM_STS_RES_BUSY,
+        TRM_STS_IFC_NA,
+        TRM_STS_DEV_NOT_SUPPORTED,
+        TRM_STS_RES_NOT_SUPPORTED,
+        TRM_STS_CR_ACCESS_ERR,
+        TRM_STS_MEM_ERROR
+    } trm_sts;
 
-typedef enum {
-    // vsec semaphores
-    TRM_RES_ICMD = 0x0,
-    TRM_RES_FLASH_PROGRAMING     = 0x1,
-    // hw semaphores
-    TRM_RES_MAIN_SEM             = 0x10,
-    TRM_RES_HW_TRACER            = TRM_RES_MAIN_SEM,
-    TRM_RES_TOOLS_HCR            = TRM_RES_MAIN_SEM,
-    TRM_RES_HCR_FLASH_PROGRAMING = 0x11,
-    TRM_RES_ALL                  = 0xffff,
-} trm_resourse;
+    typedef enum
+    {
+        // vsec semaphores
+        TRM_RES_ICMD = 0x0,
+        TRM_RES_FLASH_PROGRAMING = 0x1,
+        // hw semaphores
+        TRM_RES_MAIN_SEM = 0x10,
+        TRM_RES_HW_TRACER = TRM_RES_MAIN_SEM,
+        TRM_RES_TOOLS_HCR = TRM_RES_MAIN_SEM,
+        TRM_RES_HCR_FLASH_PROGRAMING = 0x11,
+        TRM_RES_ALL = 0xffff,
+    } trm_resourse;
 
-typedef struct trm_t*trm_ctx;
+    typedef struct trm_t* trm_ctx;
 
+    /*
+     * Create tools resource context
+     * trm_p: trm_ctx pointer to be allocated
+     * Parameter (mf)  - an opened mst device handler
+     * Return TOOLS_STS_OK on success of creating the context, otherwise any other error code.
+     */
+    trm_sts trm_create(trm_ctx* trm_p, mfile* mf);
 
-/*
- * Create tools resource context
- * trm_p: trm_ctx pointer to be allocated
- * Parameter (mf)  - an opened mst device handler
- * Return TOOLS_STS_OK on success of creating the context, otherwise any other error code.
- */
-trm_sts trm_create(trm_ctx *trm_p, mfile *mf);
+    /*
+     * Destroy the context
+     * trm: trm_ctx to be destroyed
+     * Return TOOLS_STS_OK on success of destroying the context, otherwise any other error code.
+     */
+    trm_sts trm_destroy(trm_ctx trm);
 
+    /*
+     * Lock tools resource
+     * Parameter (mf)  - an opened mst device handler
+     * Parameter (res) - resource to acquire.
+     * Parameter (max_retry) - max retry count before declaring resource busy.
+     * Return TOOLS_STS_OK on success of locking all the desired resources, otherwise any other error code.
+     */
+    trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retry);
 
-/*
- * Destroy the context
- * trm: trm_ctx to be destroyed
- * Return TOOLS_STS_OK on success of destroying the context, otherwise any other error code.
- */
-trm_sts trm_destroy(trm_ctx trm);
+    /*
+     * Try to lock tools resource (returns immediately if resource busy)
+     * Parameter (mf)  - an opened mst device handler
+     * Parameter (res) - resource to acquire.
+     * Return TOOLS_STS_OK on success of locking all the desired resources, otherwise any other error code.
+     */
+    trm_sts trm_try_lock(trm_ctx trm, trm_resourse res);
 
-/*
- * Lock tools resource
- * Parameter (mf)  - an opened mst device handler
- * Parameter (res) - resource to acquire.
- * Parameter (max_retry) - max retry count before declaring resource busy.
- * Return TOOLS_STS_OK on success of locking all the desired resources, otherwise any other error code.
- */
-trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retry);
+    /*
+     * Unlock tools resource
+     * Parameter (mf)  - an opened mst device handler
+     * Parameter (res) - resource to release.
+     * Return TOOLS_STS_OK if all given resources were unlocked successfully.
+     */
+    trm_sts trm_unlock(trm_ctx trm, trm_resourse res);
 
-/*
- * Try to lock tools resource (returns immediately if resource busy)
- * Parameter (mf)  - an opened mst device handler
- * Parameter (res) - resource to acquire.
- * Return TOOLS_STS_OK on success of locking all the desired resources, otherwise any other error code.
- */
-trm_sts trm_try_lock(trm_ctx trm, trm_resourse res);
-
-/*
- * Unlock tools resource
- * Parameter (mf)  - an opened mst device handler
- * Parameter (res) - resource to release.
- * Return TOOLS_STS_OK if all given resources were unlocked successfully.
- */
-trm_sts trm_unlock(trm_ctx trm, trm_resourse res);
-
-/*
- * Translate tools_sem_mgmt_sts status code to a human readable string.
- * Parameter (status) - status code to translate.
- * Return descriptive string.
- */
-const char* trm_sts2str(trm_sts status);
+    /*
+     * Translate tools_sem_mgmt_sts status code to a human readable string.
+     * Parameter (status) - status code to translate.
+     * Return descriptive string.
+     */
+    const char* trm_sts2str(trm_sts status);
 
 #ifdef __cplusplus
 }

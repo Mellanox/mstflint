@@ -45,17 +45,16 @@
 using namespace mfa2;
 
 CommonHeader::CommonHeader(u_int8_t version, MFA2Type type, u_int16_t length) :
-    _version(version), _type(type), _length(length)
-{
-};
+    _version(version), _type(type), _length(length){};
 
 void CommonHeader::pack(vector<u_int8_t>& buff) const
 {
     vector<u_int8_t> tmpBuff;
     struct tools_open_common_header commonHeader;
 
-    //padding buff if it is not DW aligned:
-    for (unsigned int i = 0; i < (buff.size() % 4); i++) {
+    // padding buff if it is not DW aligned:
+    for (unsigned int i = 0; i < (buff.size() % 4); i++)
+    {
         buff.push_back(0x0);
     }
     /*switch () {
@@ -73,22 +72,24 @@ void CommonHeader::pack(vector<u_int8_t>& buff) const
     tmpBuff.resize(tools_open_common_header_size(), 0x0);
 
     memset(&commonHeader, 0x0, sizeof(commonHeader));
-    commonHeader.version    = _version;
-    commonHeader.type       = (u_int8_t) _type;
-    commonHeader.length     = _length;
+    commonHeader.version = _version;
+    commonHeader.type = (u_int8_t)_type;
+    commonHeader.length = _length;
 
     tools_open_common_header_pack(&commonHeader, tmpBuff.data());
     packBytesArray(tmpBuff.data(), tmpBuff.size(), buff);
 }
 
-bool CommonHeader::unpack(Mfa2Buffer & buff) {
-    //align header
+bool CommonHeader::unpack(Mfa2Buffer& buff)
+{
+    // align header
     long pos = buff.tell();
-    if(pos % 4 != 0) {
-        buff.seek(4-(pos%4), SEEK_CUR);
+    if (pos % 4 != 0)
+    {
+        buff.seek(4 - (pos % 4), SEEK_CUR);
     }
     int arr_size = tools_open_common_header_size();
-    u_int8_t * arr = new u_int8_t[arr_size];
+    u_int8_t* arr = new u_int8_t[arr_size];
     buff.read(arr, arr_size);
     struct tools_open_common_header commonHeader;
     memset(&commonHeader, 0x0, sizeof(commonHeader));

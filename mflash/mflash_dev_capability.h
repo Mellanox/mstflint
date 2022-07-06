@@ -30,7 +30,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
-*/
+ */
 
 /*
  * mflash_dev_capabillity.h
@@ -45,18 +45,25 @@
 #include "mflash_pack_layer.h"
 
 #ifndef UEFI_BUILD
-#define FLASH_DPRINTF(args)        do { char *reacDebug = getenv("MFT_FLASH_DEBUG"); \
-                                  if (reacDebug != NULL) {  printf("\33[2K\r"); \
-                                      printf("[MFT_FLASH_DEBUG]: -D- "); printf args; fflush(stdout);} } while (0)
+#define FLASH_DPRINTF(args)                          \
+    do                                               \
+    {                                                \
+        char* reacDebug = getenv("MFT_FLASH_DEBUG"); \
+        if (reacDebug != NULL)                       \
+        {                                            \
+            printf("\33[2K\r");                      \
+            printf("[MFT_FLASH_DEBUG]: -D- ");       \
+            printf args;                             \
+            fflush(stdout);                          \
+        }                                            \
+    } while (0)
 #else
 #define FLASH_DPRINTF(...)
 #endif
 
-
-//When (*status != MFE_OK) return value is undefined
-int is_four_byte_address_needed(mflash *mfl, MfError *status);
-int is_flash_enable_needed(mflash *mfl, MfError *status);
-int is_icmdif_supported(mflash *mfl, MfError *status, int* is7NmSuppported);
-
+// When (*status != MFE_OK) return value is undefined
+int is_four_byte_address_needed(mflash* mfl, MfError* status);
+int is_flash_enable_needed(mflash* mfl, MfError* status);
+int is_icmdif_supported(mflash* mfl, MfError* status, int* is7NmSuppported);
 
 #endif /* USER_MFLASH_MFLASH_DEV_CAPABILITY_H_ */

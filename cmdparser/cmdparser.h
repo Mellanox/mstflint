@@ -30,10 +30,8 @@
  * SOFTWARE.
  */
 
-
 #ifndef _OPT_PARSER_H_
 #define _OPT_PARSER_H_
-
 
 #include <stdlib.h>
 #include <list>
@@ -42,39 +40,41 @@
 #include <string>
 using namespace std;
 
-
 /******************************************************/
 typedef enum
 {
-    //Returns: 0 - OK / 1 - parsing error / 2 - OK but need to exit / 3 - some other error
+    // Returns: 0 - OK / 1 - parsing error / 2 - OK but need to exit / 3 - some other error
     PARSE_OK = 0,
     PARSE_ERROR = 1,
     PARSE_OK_WITH_EXIT = 3,
     PARSE_ERROR_SHOW_USAGE = 4
 } ParseStatus;
 
-typedef struct option_ifc {
-    string option_name;             //must be valid
-    char option_short_name;         //can be used as short option, if space than no short flag
-    string option_value;            //if "" has no argument
-    string description;             //will be display in usage
-    int  numOfSpaces;
-    bool hidden;                    //if hidden than will not be diaplayed in regular usage
+typedef struct option_ifc
+{
+    string option_name;     // must be valid
+    char option_short_name; // can be used as short option, if space than no short flag
+    string option_value;    // if "" has no argument
+    string description;     // will be display in usage
+    int numOfSpaces;
+    bool hidden; // if hidden than will not be diaplayed in regular usage
     bool is_mandatory;
 } option_ifc_t;
 
-typedef struct optional_help_section_data {
+typedef struct optional_help_section_data
+{
     // format is:
     // <str1>: <str2> (with alignments)
-    string name;                    //section's name
-    string str1;                    //left string
-    string str2;                    //right string
+    string name; // section's name
+    string str1; // left string
+    string str2; // right string
 } optional_sec_data_t;
 
-typedef vector < struct option_ifc > vec_option_t;
-typedef vector < pair < string, vector < struct optional_help_section_data > > > optional_sections_t;
+typedef vector<struct option_ifc> vec_option_t;
+typedef vector<pair<string, vector<struct optional_help_section_data> > > optional_sections_t;
 
-class CommandLineRequester {
+class CommandLineRequester
+{
 protected:
     // members
     vec_option_t options;
@@ -83,7 +83,7 @@ protected:
     optional_sections_t optional_sections_vec;
 
     // methods
-    string BuildOptStr(option_ifc_t &opt);
+    string BuildOptStr(option_ifc_t& opt);
     string FormatUsageStr(string str, int str_type_len, int ident_size, int is_not_description, bool is_left_side);
     string GetUsageOptionalSection(vector<struct optional_help_section_data> section_vec);
     string GetUsageOptional1Str(vector<struct optional_help_section_data>::iterator it);
@@ -93,10 +93,7 @@ public:
     // methods
     CommandLineRequester(string req_name) : name(req_name) {}
     virtual ~CommandLineRequester() {}
-    inline void setToolName(string req_name)
-    {
-        name = req_name;
-    }
+    inline void setToolName(string req_name) { name = req_name; }
     inline void AddOptions(option_ifc_t options[], int arr_size)
     {
         for (int i = 0; i < arr_size; ++i)
@@ -108,7 +105,7 @@ public:
                            string description,
                            bool hidden = false,
                            bool is_mandatory = false,
-                           int  numOfSpaces = 0)
+                           int numOfSpaces = 0)
     {
         option_ifc_t opt;
         opt.option_name = option_name;
@@ -120,10 +117,7 @@ public:
         opt.is_mandatory = is_mandatory;
         this->options.push_back(opt);
     }
-    inline void AddDescription(string desc)
-    {
-        this->description = desc;
-    }
+    inline void AddDescription(string desc) { this->description = desc; }
 
     inline vec_option_t& GetOptions() { return this->options; }
     inline string& GetName() { return this->name; }
@@ -140,14 +134,13 @@ public:
     virtual ParseStatus HandleOption(string name, string value) = 0;
 };
 
-
 /******************************************************/
-typedef list < CommandLineRequester* > list_p_command_line_req;
-typedef map < char, string > map_char_str;
-typedef map < string, CommandLineRequester* > map_str_p_command_line_req;
+typedef list<CommandLineRequester*> list_p_command_line_req;
+typedef map<char, string> map_char_str;
+typedef map<string, CommandLineRequester*> map_str_p_command_line_req;
 
-
-class CommandLineParser {
+class CommandLineParser
+{
 private:
     // members
     list_p_command_line_req p_requesters_list;
@@ -159,30 +152,25 @@ private:
     string last_unknown_options;
 
     // methods
-    void SetLastError(const char *fmt, ...);
+    void SetLastError(const char* fmt, ...);
+
 public:
     // methods
-    CommandLineParser(string parser_name) :
-        name(parser_name), last_error(""), last_unknown_options("") {}
+    CommandLineParser(string parser_name) : name(parser_name), last_error(""), last_unknown_options("") {}
     ~CommandLineParser() {}
 
     inline const char* GetErrDesc() { return this->last_error.c_str(); }
     inline const char* GetUnknownOptions() { return this->last_unknown_options.c_str(); }
-    inline void setParserName(string parser_name)
-    {
-        name = parser_name;
-    }
-    int AddRequester(CommandLineRequester *p_req);      //if multiple option than fail
+    inline void setParserName(string parser_name) { name = parser_name; }
+    int AddRequester(CommandLineRequester* p_req); // if multiple option than fail
 
-    ParseStatus ParseOptions(int argc, char **argv,
+    ParseStatus ParseOptions(int argc,
+                             char** argv,
                              bool to_ignore_unknown_options = false,
-                             list_p_command_line_req *p_ignored_requesters_list = NULL);
+                             list_p_command_line_req* p_ignored_requesters_list = NULL);
 
     string GetSynopsis(bool hidden_options = false);
     string GetUsage(bool hidden_options = false, vector<string> excluded_sections = vector<string>());
 };
 
-
-#endif          /* not defined _OPT_PARSER_H_ */
-
-
+#endif /* not defined _OPT_PARSER_H_ */

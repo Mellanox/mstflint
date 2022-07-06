@@ -37,11 +37,11 @@
 #include <mtcr.h>
 #include "flint_base.h"
 
-class SecurityVersionGW {
-
+class SecurityVersionGW
+{
 public:
-    SecurityVersionGW(mfile* mf, chip_type_t chip_type):_mf(mf),_chip_type(chip_type){};
-    ~SecurityVersionGW() {};
+    SecurityVersionGW(mfile* mf, chip_type_t chip_type) : _mf(mf), _chip_type(chip_type){};
+    ~SecurityVersionGW(){};
 
     bool isAccessibleInLiveFish();
     bool getSecurityVersion(u_int32_t* result);
@@ -50,9 +50,13 @@ private:
     mfile* _mf;
     chip_type_t _chip_type;
     u_int32_t static const GW_NOT_SUPPORTED = 0x0;
-    typedef enum {ROLLBACK_PROTECTION, MINIMAL_VERSION} gw_type_t;
+    typedef enum
+    {
+        ROLLBACK_PROTECTION,
+        MINIMAL_VERSION
+    } gw_type_t;
 
-    u_int32_t _ctrl_address; 
+    u_int32_t _ctrl_address;
     u_int32_t _result1_address;
     u_int32_t _result2_address;
 
@@ -60,7 +64,6 @@ private:
     u_int32_t static const CTRL_RW = 0x40000000;
     u_int32_t static const CTRL_READ = CTRL_RW & 0xffffffff;
     u_int32_t static const CTRL_BUSY = 0x20000000;
-
 
     void getRollbackProtection(u_int32_t* result);
     void getMinimalSecurityVersion(u_int32_t* result);
@@ -74,7 +77,6 @@ private:
     void unlock();
 
     u_int32_t countSetBits(u_int32_t num);
-
 };
 
 #endif /*SECURITY_VERSION_GW_*/

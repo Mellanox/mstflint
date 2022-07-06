@@ -35,20 +35,21 @@
 
 #include "psid_query_item.h"
 
-
 const ImgVersion* PsidQueryItem::findImageVersion(string type)
 {
     int idx = -1;
 
-    for (unsigned int i = 0; i < imgVers.size(); i++) {
-        if (!imgVers[i].getTypeStr().compare(type)) {
+    for (unsigned int i = 0; i < imgVers.size(); i++)
+    {
+        if (!imgVers[i].getTypeStr().compare(type))
+        {
             idx = i;
         }
     }
 
-    if (idx == -1) {
+    if (idx == -1)
+    {
         return NULL;
     }
     return &imgVers[idx];
 }
-

@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 """
 * $Id           : mcra.py 2017-11-28
@@ -39,20 +39,21 @@ from __future__ import print_function
 import platform
 from .mlxfwreset_utils import cmdExec
 
+
 class Mcra(object):
 
     def __init__(self):
 
-        self.mcra_cmd = self.pick_mcra_cmd() # mcra or mstmcra (in mstflint)
+        self.mcra_cmd = self.pick_mcra_cmd()  # mcra or mstmcra (in mstflint)
 
     def pick_mcra_cmd(self):
 
         SUCCESS = 0
 
         os = platform.system()
-        if os in ['Linux','FreeBSD']:
+        if os in ['Linux', 'FreeBSD']:
             identify_location_cmd = 'which'
-        elif os ==   'Windows':
+        elif os == 'Windows':
             identify_location_cmd = 'where'
         else:
             raise RuntimeError("Unsupported OS")
@@ -72,7 +73,7 @@ class Mcra(object):
         cmd = "%s %s %s.%s:%s" % (self.mcra_cmd, device, addr, offset, length)
         (rc, stdout, stderr) = cmdExec(cmd)
         if rc:
-            raise RuntimeError (str(stderr))
+            raise RuntimeError(str(stderr))
         return int(stdout, 16)
 
     def write(self, device, addr, offset, length, value):
@@ -80,4 +81,4 @@ class Mcra(object):
         cmd = "%s %s %s.%s:%s %s" % (self.mcra_cmd, device, addr, offset, length, value)
         (rc, _, stderr) = cmdExec(cmd)
         if rc:
-            raise RuntimeError (str(stderr))
+            raise RuntimeError(str(stderr))

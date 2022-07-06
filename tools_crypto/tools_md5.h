@@ -35,11 +35,12 @@
 #define TOOLS_MD5_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <common/compatibility.h>
-u_int8_t* tools_md5(const u_int8_t *src, u_int32_t src_len, u_int8_t dst[16]);
+    u_int8_t* tools_md5(const u_int8_t* src, u_int32_t src_len, u_int8_t dst[16]);
 
 #ifdef __cplusplus
 }

@@ -40,34 +40,34 @@
 
 string xmlCreator::indentString(int i)
 {
-  string s;
-  while (i--)
-  {
-    s += "\t";
-  }
-  return s;
+    string s;
+    while (i--)
+    {
+        s += "\t";
+    }
+    return s;
 }
 
 int xmlCreator::dword(int bits)
 {
-  if (bits < 0)
-  {
-    bits -= 31;
-  }
+    if (bits < 0)
+    {
+        bits -= 31;
+    }
 
-  return (bits / 32) * 4;
+    return (bits / 32) * 4;
 }
 
 int xmlCreator::startBit(int bits)
 {
-  return bits % 32;
+    return bits % 32;
 }
 
 string xmlCreator::formatAddr(u_int32_t offs, u_int32_t size)
 {
-  char str[64];
-  sprintf(str, "0x%x.%u:%u", dword(offs), startBit(offs), size);
-  return str;
+    char str[64];
+    sprintf(str, "0x%x.%u:%u", dword(offs), startBit(offs), size);
+    return str;
 }
 
 /*template <class AdbInstance>
@@ -76,44 +76,44 @@ bool xmlCreator::compareFieldsPtr(AdbInstance *f1, AdbInstance *f2)
   return (*f1) < (*f2);
 }*/
 
-string xmlCreator::encodeXml(const string &data)
+string xmlCreator::encodeXml(const string& data)
 {
-  std::string buffer;
-  buffer.reserve(data.size());
-  for (size_t pos = 0; pos != data.size(); ++pos)
-  {
-    switch (data[pos])
+    std::string buffer;
+    buffer.reserve(data.size());
+    for (size_t pos = 0; pos != data.size(); ++pos)
     {
-    case '&':
-      buffer.append("&amp;");
-      break;
+        switch (data[pos])
+        {
+            case '&':
+                buffer.append("&amp;");
+                break;
 
-    case '\"':
-      buffer.append("&quot;");
-      break;
+            case '\"':
+                buffer.append("&quot;");
+                break;
 
-    case '\'':
-      buffer.append("&apos;");
-      break;
+            case '\'':
+                buffer.append("&apos;");
+                break;
 
-    case '<':
-      buffer.append("&lt;");
-      break;
+            case '<':
+                buffer.append("&lt;");
+                break;
 
-    case '>':
-      buffer.append("&gt;");
-      break;
+            case '>':
+                buffer.append("&gt;");
+                break;
 
-    default:
-      buffer.append(1, data.at(pos));
-      break;
+            default:
+                buffer.append(1, data.at(pos));
+                break;
+        }
     }
-  }
 
-  return buffer;
+    return buffer;
 }
 
-string xmlCreator::descNativeToXml(const string &desc)
+string xmlCreator::descNativeToXml(const string& desc)
 {
-  return boost::replace_all_copy(desc, "\n", "\\;");
+    return boost::replace_all_copy(desc, "\n", "\\;");
 }

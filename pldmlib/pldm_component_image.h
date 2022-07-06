@@ -38,17 +38,18 @@
 #ifndef _PLDM_COMPONENET_IMAGE_
 #define _PLDM_COMPONENET_IMAGE_
 
-class PldmComponenetImage {
+class PldmComponenetImage
+{
 public:
     PldmComponenetImage();
     virtual ~PldmComponenetImage();
-    bool unpack(PldmBuffer & buff);
-    void print(FILE * fp);
+    bool unpack(PldmBuffer& buff);
+    void print(FILE* fp);
     u_int32_t getComponentSize() const { return componentSize; }
-    const u_int8_t * getComponentData() const { return componentData; }
+    const u_int8_t* getComponentData() const { return componentData; }
 
 private:
-    bool readComponentData(PldmBuffer & buff);
+    bool readComponentData(PldmBuffer& buff);
 
     u_int16_t componentClassification;
     u_int16_t componentIdentifier;
@@ -61,8 +62,7 @@ private:
     u_int8_t componentVersionStringLength;
     std::string componentVersionString;
 
-    u_int8_t * componentData;
+    u_int8_t* componentData;
 };
 
 #endif /* _PLDM_COMPONENET_IMAGE_ */
-

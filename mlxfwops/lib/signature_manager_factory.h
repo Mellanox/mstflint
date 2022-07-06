@@ -39,81 +39,108 @@
 class SignatureManagerFactory
 {
 public:
-    static SignatureManagerFactory* GetInstance() {
+    static SignatureManagerFactory* GetInstance()
+    {
         static SignatureManagerFactory obj;
         return &obj;
     }
 
-    ISignatureManager* CreateSignatureManager(u_int32_t hwDevId, u_int32_t hwRevId) {
+    ISignatureManager* CreateSignatureManager(u_int32_t hwDevId, u_int32_t hwRevId)
+    {
         dm_dev_id_t deviceId = DeviceUnknown;
-        if (dm_get_device_id_offline(hwDevId, hwRevId, &deviceId)) {
+        if (dm_get_device_id_offline(hwDevId, hwRevId, &deviceId))
+        {
             printf("Failed to identify the device - Can not create SignatureManager!\n");
             return (ISignatureManager*)NULL;
         }
-        if (deviceId == DeviceBlueField) {
+        if (deviceId == DeviceBlueField)
+        {
             return new BluefieldFwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceConnectX6) {
+        else if (deviceId == DeviceConnectX6)
+        {
             return new ConnectX6FwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceConnectX6DX) {
+        else if (deviceId == DeviceConnectX6DX)
+        {
             return new ConnectX6DXFwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceConnectX7) {
+        else if (deviceId == DeviceConnectX7)
+        {
             return new ConnectX7FwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceBlueField2) {
+        else if (deviceId == DeviceBlueField2)
+        {
             return new Bluefield2FwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceBlueField3) {
+        else if (deviceId == DeviceBlueField3)
+        {
             return new Bluefield3FwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceConnectX6LX) {
+        else if (deviceId == DeviceConnectX6LX)
+        {
             return new ConnectX6LXFwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceSpectrum || deviceId == DeviceSpectrum2 || deviceId == DeviceSpectrum3 || deviceId == DeviceSpectrum4 || deviceId == DeviceQuantum) {
+        else if (deviceId == DeviceSpectrum || deviceId == DeviceSpectrum2 || deviceId == DeviceSpectrum3 ||
+                 deviceId == DeviceSpectrum4 || deviceId == DeviceQuantum)
+        {
             return new RavenSwitchSignatureManager();
         }
-        else if (deviceId == DeviceQuantum2) {
+        else if (deviceId == DeviceQuantum2)
+        {
             return new SecuredSwitchSignatureManager();
         }
-        else {
+        else
+        {
             return new FwOperationsSignatureManager();
         }
     }
 
-    ISignatureManager* CreateSignatureManager(chip_type_t chip) {
-        if (chip == CT_BLUEFIELD) {
+    ISignatureManager* CreateSignatureManager(chip_type_t chip)
+    {
+        if (chip == CT_BLUEFIELD)
+        {
             return new BluefieldFwOperationsSignatureManager();
         }
-        else if (chip == CT_CONNECTX6) {
+        else if (chip == CT_CONNECTX6)
+        {
             return new ConnectX6FwOperationsSignatureManager();
         }
-        else if (chip == CT_CONNECTX6DX) {
+        else if (chip == CT_CONNECTX6DX)
+        {
             return new ConnectX6DXFwOperationsSignatureManager();
         }
-        else if (chip == CT_CONNECTX7) {
+        else if (chip == CT_CONNECTX7)
+        {
             return new ConnectX7FwOperationsSignatureManager();
         }
-        else if (chip == CT_BLUEFIELD2) {
+        else if (chip == CT_BLUEFIELD2)
+        {
             return new Bluefield2FwOperationsSignatureManager();
         }
-        else if (chip == CT_BLUEFIELD3) {
+        else if (chip == CT_BLUEFIELD3)
+        {
             return new Bluefield3FwOperationsSignatureManager();
         }
-        else if (chip == CT_CONNECTX6LX) {
+        else if (chip == CT_CONNECTX6LX)
+        {
             return new ConnectX6LXFwOperationsSignatureManager();
         }
-        else if (chip == CT_GEARBOX) {
+        else if (chip == CT_GEARBOX)
+        {
             return new GearBoxSignatureManager();
         }
-        else if(chip == CT_QUANTUM || chip == CT_SPECTRUM || chip == CT_SPECTRUM2 || chip == CT_SPECTRUM3 || chip == CT_SPECTRUM4) {
+        else if (chip == CT_QUANTUM || chip == CT_SPECTRUM || chip == CT_SPECTRUM2 || chip == CT_SPECTRUM3 ||
+                 chip == CT_SPECTRUM4)
+        {
             return new RavenSwitchSignatureManager();
         }
-        else if (chip == CT_QUANTUM2) {
+        else if (chip == CT_QUANTUM2)
+        {
             return new SecuredSwitchSignatureManager();
         }
-        else {
+        else
+        {
             return new FwOperationsSignatureManager();
         }
     }

@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 import sys
 try:
@@ -37,12 +37,12 @@ except Exception as e:
     print("-E- could not import : %s" % str(e))
     sys.exit(1)
 
+
 class CmdRegMcam():
 
     def __init__(self, reg_access):
 
         self._reg_access = reg_access
-
 
     def is_reset_by_fw_driver_sync_supported(self):
         """

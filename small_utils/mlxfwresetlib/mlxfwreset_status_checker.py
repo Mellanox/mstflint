@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 """
 * $Id           : fwreset_status_checker.py 2017-11-28
@@ -75,11 +75,11 @@ class FirmwareResetStatusChecker(object):
 
     def GetStatus(self):
         if self._UptimeBeforeStatus == FirmwareResetStatusChecker.FirmwareUptimeStatusBeforeDone and\
-                        self._UptimeAfterStatus == FirmwareResetStatusChecker.FirmwareUptimeStatusAfterDone:
+                self._UptimeAfterStatus == FirmwareResetStatusChecker.FirmwareUptimeStatusAfterDone:
             if self._UptimeAfterReset < self._UptimeBeforeReset:
                 return FirmwareResetStatusChecker.FirmwareResetStatusDone
             else:
-                if self._UptimeBeforeReset > 5: #5 seconds
+                if self._UptimeBeforeReset > 5:  # 5 seconds
                     return FirmwareResetStatusChecker.FirmwareResetStatusFailed
                 else:
                     return FirmwareResetStatusChecker.FirmwareResetStatusUnknown

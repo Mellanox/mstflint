@@ -38,28 +38,30 @@
 #ifndef _PLDM_RECORD_DESCRIPTOR_HDR_
 #define _PLDM_RECORD_DESCRIPTOR_HDR_
 
-class PldmRecordDescriptor {
+class PldmRecordDescriptor
+{
 public:
     PldmRecordDescriptor();
     virtual ~PldmRecordDescriptor();
 
-    bool unpack(PldmBuffer & buff);
-    void print(FILE * fp);
+    bool unpack(PldmBuffer& buff);
+    void print(FILE* fp);
 
-    const std::string & getPsid() const { return psid; }
+    const std::string& getPsid() const { return psid; }
     u_int16_t getDescriptorLength() const { return descriptorLength; }
-    const u_int8_t * getDescriptorData() const { return descriptorData; }
+    const u_int8_t* getDescriptorData() const { return descriptorData; }
     std::string getDescription() const;
 
 private:
     u_int16_t descriptorType;
     u_int16_t descriptorLength;
-    u_int8_t * descriptorData;
+    u_int8_t* descriptorData;
 
     std::string psid;
 
     void extractPsid();
-    enum {
+    enum
+    {
         PCI_Vendor_ID = 0x0000,
         IANA_Enterprise_ID = 0x0001,
         FD_UUID = 0x0002,
@@ -76,4 +78,3 @@ private:
 };
 
 #endif /* _PLDM_RECORD_DESCRIPTOR_HDR_ */
-

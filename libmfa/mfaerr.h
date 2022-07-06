@@ -34,8 +34,9 @@
 #ifndef _MFA_ERR_H_
 #define _MFA_ERR_H_
 
-enum {
-    MFA_OK =  0,
+enum
+{
+    MFA_OK = 0,
     MFA_ERR_GENERIC,
     MFA_ERR_MEM_ALLOC,
     MFA_ERR_ARCHV_SIGNATURE,

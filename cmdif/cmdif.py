@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 from __future__ import print_function
 import os
@@ -37,17 +37,22 @@ import platform
 import ctypes
 import mtcr
 
+
 def ones(n):
     return (1 << n) - 1
 
+
 def extractField(val, start, size):
-    return (val & (ones(size)<<start)) >> start
+    return (val & (ones(size) << start)) >> start
+
 
 def insertField(val1, start1, val2, start2, size):
-    return val1 & ~(ones(size)<<start1) | (extractField(val2, start2, size) << start1)
+    return val1 & ~(ones(size) << start1) | (extractField(val2, start2, size) << start1)
+
 
 class CmdIfException(Exception):
     pass
+
 
 ##########################
 CMDIF = None
@@ -56,12 +61,12 @@ try:
     if platform.system() == "Windows" or os.name == "nt":
         try:
             CMDIF = CDLL("libcmdif-1.dll")
-        except:
+        except BaseException:
             CMDIF = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libcmdif-1.dll"))
     else:
         try:
             CMDIF = CDLL("ccmdif.so")
-        except:
+        except BaseException:
             CMDIF = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "ccmdif.so"))
 except Exception as exp:
     raise CmdIfException("Failed to load shared library ccmdif.so/libcmdif-1.dll: %s" % exp)
@@ -96,17 +101,17 @@ if CMDIF:
         ##########################
         def sendCmd(self, opcode, data, skipWrite):
             self.mstDev.icmdSendCmd(opcode, data, skipWrite)
-        
+
         ##########################
         def setItrace(self, mask, level, log_delay=0):
             class ITRACE_ST(Structure):
                 _fields_ = [("unit_mask", c_uint32), ("log_level", c_uint8), ("log_delay", c_uint16)]
-                
+
             setItraceStruct = pointer(ITRACE_ST(mask, level, log_delay))
             rc = self.setItraceFunc(self.mstDev.mf, setItraceStruct)
             if rc:
                 raise CmdIfException("Failed to set itrace mask: %s (%d)" % (self.errStrFunc(rc), rc))
-            
+
         ##########################
         def getFwInfo(self):
             class FW_INFO_ST(Structure):
@@ -125,17 +130,17 @@ if CMDIF:
 
         ##########################
         class MH_SYNC_ST(Structure):
-            _fields_ = [("input_state",                 c_uint8),
-                        ("input_sync_type",             c_uint8),
-                        ("input_ignore_inactive_host",  c_uint8),
-                        ("fsm_state",                   c_uint8),
-                        ("fsm_sync_type",               c_uint8),
-                        ("fsm_ignore_inactive_host",    c_uint8),
-                        ("fsm_host_ready",              c_uint8),
-                        ("fsm_start_uptime",            c_uint32)]
+            _fields_ = [("input_state", c_uint8),
+                        ("input_sync_type", c_uint8),
+                        ("input_ignore_inactive_host", c_uint8),
+                        ("fsm_state", c_uint8),
+                        ("fsm_sync_type", c_uint8),
+                        ("fsm_ignore_inactive_host", c_uint8),
+                        ("fsm_host_ready", c_uint8),
+                        ("fsm_start_uptime", c_uint32)]
 
         ##########################
-        def multiHostSync(self, state, syncType, ignoreInactiveHost = 0x0):
+        def multiHostSync(self, state, syncType, ignoreInactiveHost=0x0):
             multiHostSyncOutStruct = self.MH_SYNC_ST()
             multiHostSyncOutStructPtr = pointer(multiHostSyncOutStruct)
             multiHostSyncOutStructPtr.contents.input_ignore_inactive_host = c_uint8(ignoreInactiveHost)
@@ -157,30 +162,30 @@ if CMDIF:
 
         ##########################
         class QUERY_CAP_ST(Structure):
-            _fields_ = [("golden_tlv_version",                     c_uint8),
-                        ("cwcam_reg",                              c_uint8),
-                        ("capability_groups",                      c_uint8),
-                        ("virtual_link_down",                      c_uint8),
-                        ("icmd_exmb",                              c_uint8),
-                        ("capi",                                   c_uint8),
-                        ("qcam_reg",                               c_uint8),
-                        ("mcam_reg",                               c_uint8),
-                        ("pcam_reg",                               c_uint8),
-                        ("mh_sync",                                c_uint8),
+            _fields_ = [("golden_tlv_version", c_uint8),
+                        ("cwcam_reg", c_uint8),
+                        ("capability_groups", c_uint8),
+                        ("virtual_link_down", c_uint8),
+                        ("icmd_exmb", c_uint8),
+                        ("capi", c_uint8),
+                        ("qcam_reg", c_uint8),
+                        ("mcam_reg", c_uint8),
+                        ("pcam_reg", c_uint8),
+                        ("mh_sync", c_uint8),
                         ("allow_icmd_access_reg_on_all_registers", c_uint8),
-                        ("fw_info_psid",                           c_uint8),
-                        ("nv_access",                              c_uint8),
-                        ("wol_p",                                  c_uint8),
-                        ("wol_u",                                  c_uint8),
-                        ("wol_m",                                  c_uint8),
-                        ("wol_b",                                  c_uint8),
-                        ("wol_a",                                  c_uint8),
-                        ("wol_g",                                  c_uint8),
-                        ("wol_s",                                  c_uint8),
-                        ("rol_g",                                  c_uint8),
-                        ("rol_s",                                  c_uint8),
-                        ("fpga",                                   c_uint8),
-                        ("num_of_diagnostic_counters",             c_uint16)]
+                        ("fw_info_psid", c_uint8),
+                        ("nv_access", c_uint8),
+                        ("wol_p", c_uint8),
+                        ("wol_u", c_uint8),
+                        ("wol_m", c_uint8),
+                        ("wol_b", c_uint8),
+                        ("wol_a", c_uint8),
+                        ("wol_g", c_uint8),
+                        ("wol_s", c_uint8),
+                        ("rol_g", c_uint8),
+                        ("rol_s", c_uint8),
+                        ("fpga", c_uint8),
+                        ("num_of_diagnostic_counters", c_uint16)]
 
         ##########################
         def isMultiHostSyncSupported(self):
@@ -198,5 +203,5 @@ else:
 if __name__ == "__main__":
     mstdev = mtcr.MstDevice("/dev/mst/mt4113_pciconf0")
     cmdif = CmdIf(mstdev)
-    
+
     cmdif.setItrace(0x1001, 8)

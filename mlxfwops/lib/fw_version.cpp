@@ -43,30 +43,32 @@ const unsigned short FORMAT0_SIB_MAJOR = 11;
 const unsigned short FORMAT0_MAX_MINOR_SIB = 1;
 const unsigned short FORMAT1_MIN_MINOR = 100;
 
-FwVersion::FwVersion() :
-        _major(0), _minor(0), _subminor(0), _devBranchTag("") {
+FwVersion::FwVersion() : _major(0), _minor(0), _subminor(0), _devBranchTag("") {}
+
+FwVersion::FwVersion(unsigned short int major,
+                     unsigned short int minor,
+                     unsigned short int subminor,
+                     const std::string& devBranchTag) :
+    _major(major), _minor(minor), _subminor(subminor), _devBranchTag(devBranchTag)
+{
 }
 
-FwVersion::FwVersion(unsigned short int major, unsigned short int minor,
-        unsigned short int subminor, const std::string& devBranchTag) :
-        _major(major), _minor(minor), _subminor(subminor),
-        _devBranchTag(devBranchTag) {
-}
-
-FwVersion::~FwVersion() {
-}
+FwVersion::~FwVersion() {}
 
 FwVersion::FwVersion(const FwVersion& rhs) :
-        _major(rhs._major), _minor(rhs._minor), _subminor(rhs._subminor),
-        _devBranchTag(rhs._devBranchTag) {
+    _major(rhs._major), _minor(rhs._minor), _subminor(rhs._subminor), _devBranchTag(rhs._devBranchTag)
+{
 }
 
-std::string FwVersion::get() const {
+std::string FwVersion::get() const
+{
     return get_fw_version();
 }
 
-FwVersion& FwVersion::operator =(const FwVersion& rhs) {
-    if (this != &rhs) {
+FwVersion& FwVersion::operator=(const FwVersion& rhs)
+{
+    if (this != &rhs)
+    {
         _major = rhs._major;
         _minor = rhs._minor;
         _subminor = rhs._subminor;
@@ -75,42 +77,46 @@ FwVersion& FwVersion::operator =(const FwVersion& rhs) {
     return *this;
 }
 
-bool FwVersion::operator ==(const FwVersion& rhs) const {
-    return _major == rhs._major &&
-           _minor == rhs._minor &&
-           _subminor == rhs._subminor &&
+bool FwVersion::operator==(const FwVersion& rhs) const
+{
+    return _major == rhs._major && _minor == rhs._minor && _subminor == rhs._subminor &&
            _devBranchTag == rhs._devBranchTag;
 }
 
-std::ostream& operator <<(std::ostream& os, const FwVersion& fw_ver) {
+std::ostream& operator<<(std::ostream& os, const FwVersion& fw_ver)
+{
     return os << fw_ver.get_fw_version();
 }
 
-std::string FwVersion::get_fw_version(const std::string& master_format,
-        bool even_subminor, const std::string& not_set) const {
-    if (!is_set()) {
+std::string
+  FwVersion::get_fw_version(const std::string& master_format, bool even_subminor, const std::string& not_set) const
+{
+    if (!is_set())
+    {
         return not_set;
     }
-    if (!is_master_branch()) {
+    if (!is_master_branch())
+    {
         return _devBranchTag;
     }
     return get_master_version(master_format, even_subminor);
 }
 
-std::string FwVersion::get_master_version(const std::string& format,
-        bool even_subminor) const {
+std::string FwVersion::get_master_version(const std::string& format, bool even_subminor) const
+{
     char buff[MAX_VERSION_LENGTH + 1];
-    snprintf(buff, sizeof(buff), format.c_str(), _major, _minor,
-            _subminor - (even_subminor ? _subminor % 2 : 0));
+    snprintf(buff, sizeof(buff), format.c_str(), _major, _minor, _subminor - (even_subminor ? _subminor % 2 : 0));
     return buff;
 }
 
-bool FwVersion::is_set() const {
+bool FwVersion::is_set() const
+{
     return _major || _minor || _subminor || !_devBranchTag.empty();
 }
 
-bool FwVersion::operator !=(const FwVersion& rhs) const {
-    return !(this->operator ==(rhs));
+bool FwVersion::operator!=(const FwVersion& rhs) const
+{
+    return !(this->operator==(rhs));
 }
 
 // 13 is Spectrum1
@@ -124,25 +130,29 @@ bool FwVersion::operator !=(const FwVersion& rhs) const {
 // 34 is Spectrum4
 bool FwVersion::is_switch_or_gb() const
 {
-    if (_major == 0 && _minor == 0 && _subminor == 0 && !_devBranchTag.empty()) {
+    if (_major == 0 && _minor == 0 && _subminor == 0 && !_devBranchTag.empty())
+    {
         return true;
     }
-    if (_major == 11 || _major == 13 || _major == 15 || _major == 27
-        || _major == 29 || _major == 30 || _major == 31 || _major == 34
-        || _major == 19 || _major == 21) {
+    if (_major == 11 || _major == 13 || _major == 15 || _major == 27 || _major == 29 || _major == 30 || _major == 31 ||
+        _major == 34 || _major == 19 || _major == 21)
+    {
         return true;
     }
     return false;
 }
 
-bool FwVersion::is_master_branch() const {
-    if (!is_switch_or_gb()) {
+bool FwVersion::is_master_branch() const
+{
+    if (!is_switch_or_gb())
+    {
         return true;
     }
     return _devBranchTag.empty();
 }
 
-bool FwVersion::are_same_branch(const FwVersion& rhs) const {
+bool FwVersion::are_same_branch(const FwVersion& rhs) const
+{
     // one is master other is dev
     if (is_master_branch() != rhs.is_master_branch())
         return false;
@@ -150,71 +160,80 @@ bool FwVersion::are_same_branch(const FwVersion& rhs) const {
     if (is_master_branch())
         return true;
     // check if prefix for string is the same
-    return _devBranchTag.substr(0, _devBranchTag.size() - MAX_MINOR_LENGETH)
-            == rhs._devBranchTag.substr(0,
-                    rhs._devBranchTag.size() - MAX_MINOR_LENGETH);
+    return _devBranchTag.substr(0, _devBranchTag.size() - MAX_MINOR_LENGETH) ==
+           rhs._devBranchTag.substr(0, rhs._devBranchTag.size() - MAX_MINOR_LENGETH);
 }
 
-int FwVersion::compare_master_version(const FwVersion& rhs) const {
-    if (get_master_format() != rhs.get_master_format()) {
+int FwVersion::compare_master_version(const FwVersion& rhs) const
+{
+    if (get_master_format() != rhs.get_master_format())
+    {
         // check for old formats
         return get_master_format() - rhs.get_master_format();
     }
-    unsigned short int lhs_master_version[] = { _major, _minor, _subminor };
-    unsigned short int rhs_master_version[] = { rhs._major, rhs._minor, rhs._subminor };
-    for (unsigned short i = 0; i < sizeof(lhs_master_version)/sizeof(lhs_master_version[0]); i++) {
-        if (lhs_master_version[i] != rhs_master_version[i]) {
+    unsigned short int lhs_master_version[] = {_major, _minor, _subminor};
+    unsigned short int rhs_master_version[] = {rhs._major, rhs._minor, rhs._subminor};
+    for (unsigned short i = 0; i < sizeof(lhs_master_version) / sizeof(lhs_master_version[0]); i++)
+    {
+        if (lhs_master_version[i] != rhs_master_version[i])
+        {
             return lhs_master_version[i] - rhs_master_version[i];
         }
     }
     return 0;
 }
 
-int FwVersion::compare(const FwVersion& rhs) const {
-    if (!are_same_branch(rhs)) {
+int FwVersion::compare(const FwVersion& rhs) const
+{
+    if (!are_same_branch(rhs))
+    {
         throw FwVersionException();
     }
-    if (is_master_branch()) {
-        //master branch
+    if (is_master_branch())
+    {
+        // master branch
         return compare_master_version(rhs);
     }
     // branch version
-    return atoi(
-            _devBranchTag.substr(_devBranchTag.size() - MAX_MINOR_LENGETH,
-                    MAX_MINOR_LENGETH).c_str())
-            - atoi(
-                    rhs._devBranchTag.substr(
-                            rhs._devBranchTag.size() - MAX_MINOR_LENGETH,
-                            MAX_MINOR_LENGETH).c_str());
+    return atoi(_devBranchTag.substr(_devBranchTag.size() - MAX_MINOR_LENGETH, MAX_MINOR_LENGETH).c_str()) -
+           atoi(rhs._devBranchTag.substr(rhs._devBranchTag.size() - MAX_MINOR_LENGETH, MAX_MINOR_LENGETH).c_str());
 }
 
-int FwVersion::get_master_format() const {
-    if (_minor >= FORMAT1_MIN_MINOR) {
+int FwVersion::get_master_format() const
+{
+    if (_minor >= FORMAT1_MIN_MINOR)
+    {
         return 1;
     }
-    if ((_major == FORMAT0_CIB_MAJOR && _minor <= FORMAT0_MAX_MINOR_CIB)
-            || (_major == FORMAT0_SIB_MAJOR && _minor <= FORMAT0_MAX_MINOR_SIB)) {
+    if ((_major == FORMAT0_CIB_MAJOR && _minor <= FORMAT0_MAX_MINOR_CIB) ||
+        (_major == FORMAT0_SIB_MAJOR && _minor <= FORMAT0_MAX_MINOR_SIB))
+    {
         return 0;
     }
     return 2;
 }
 
-bool FwVersion::operator <(const FwVersion& rhs) const {
+bool FwVersion::operator<(const FwVersion& rhs) const
+{
     return compare(rhs) < 0;
 }
 
-bool FwVersion::operator <=(const FwVersion& rhs) const {
+bool FwVersion::operator<=(const FwVersion& rhs) const
+{
     return compare(rhs) <= 0;
 }
 
-bool FwVersion::operator >(const FwVersion& rhs) const {
+bool FwVersion::operator>(const FwVersion& rhs) const
+{
     return compare(rhs) > 0;
 }
 
-bool FwVersion::operator >=(const FwVersion& rhs) const {
+bool FwVersion::operator>=(const FwVersion& rhs) const
+{
     return compare(rhs) >= 0;
 }
 
-FwVersion* FwVersion::clone() const {
+FwVersion* FwVersion::clone() const
+{
     return new FwVersion(*this);
 }

@@ -40,7 +40,7 @@
 #include <lzma.h>
 #include "xz_utils.h"
 
-static int32_t init_encoder(lzma_stream *strm, u_int32_t preset, lzma_check check)
+static int32_t init_encoder(lzma_stream* strm, u_int32_t preset, lzma_check check)
 {
     // Initialize the encoder using a preset. Set the integrity to check
     // to CRC64, which is the default in the xz command line tool. If
@@ -49,7 +49,8 @@ static int32_t init_encoder(lzma_stream *strm, u_int32_t preset, lzma_check chec
     lzma_ret ret = lzma_easy_encoder(strm, preset, check);
 
     // Return successfully if the initialization went fine.
-    if (ret == LZMA_OK) {
+    if (ret == LZMA_OK)
+    {
         return 0;
     }
 
@@ -58,57 +59,57 @@ static int32_t init_encoder(lzma_stream *strm, u_int32_t preset, lzma_check chec
     // package or e.g. /usr/include/lzma/container.h depending on the
     // install prefix).
     // const char *msg;
-    switch (ret) {
-    case LZMA_MEM_ERROR:
-        return XZ_ERR_INTERNAL_MEM;
+    switch (ret)
+    {
+        case LZMA_MEM_ERROR:
+            return XZ_ERR_INTERNAL_MEM;
 
-    case LZMA_OPTIONS_ERROR:
-        return XZ_ERR_PRESET_NO_SUPP;
-        break;
+        case LZMA_OPTIONS_ERROR:
+            return XZ_ERR_PRESET_NO_SUPP;
+            break;
 
-    case LZMA_UNSUPPORTED_CHECK:
-        return XZ_ERR_INTEGRITY_NOT_SUPP;
+        case LZMA_UNSUPPORTED_CHECK:
+            return XZ_ERR_INTEGRITY_NOT_SUPP;
 
-    default:
-        // This is most likely LZMA_PROG_ERROR indicating a bug in
-        // this program or in liblzma. It is inconvenient to have a
-        // separate error message for errors that should be impossible
-        // to occur, but knowing the error code is important for
-        // debugging. That's why it is good to print the error code
-        // at least when there is no good error message to show.
-        return XZ_ERR_UNKNOWN;
+        default:
+            // This is most likely LZMA_PROG_ERROR indicating a bug in
+            // this program or in liblzma. It is inconvenient to have a
+            // separate error message for errors that should be impossible
+            // to occur, but knowing the error code is important for
+            // debugging. That's why it is good to print the error code
+            // at least when there is no good error message to show.
+            return XZ_ERR_UNKNOWN;
     }
 }
 
-
-static int32_t init_decoder(lzma_stream *strm)
+static int32_t init_decoder(lzma_stream* strm)
 {
-    lzma_ret ret = lzma_stream_decoder(
-        strm, UINT64_MAX, LZMA_CONCATENATED);
+    lzma_ret ret = lzma_stream_decoder(strm, UINT64_MAX, LZMA_CONCATENATED);
 
     // Return successfully if the initialization went fine.
-    if (ret == LZMA_OK) {
+    if (ret == LZMA_OK)
+    {
         return 0;
     }
 
     // const char *msg;
-    switch (ret) {
-    case LZMA_MEM_ERROR:
-        return XZ_ERR_INTERNAL_MEM;
+    switch (ret)
+    {
+        case LZMA_MEM_ERROR:
+            return XZ_ERR_INTERNAL_MEM;
 
-    default:
-        // This is most likely LZMA_PROG_ERROR indicating a bug in
-        // this program or in liblzma. It is inconvenient to have a
-        // separate error message for errors that should be impossible
-        // to occur, but knowing the error code is important for
-        // debugging. That's why it is good to print the error code
-        // at least when there is no good error message to show.
-        return XZ_ERR_UNKNOWN;
+        default:
+            // This is most likely LZMA_PROG_ERROR indicating a bug in
+            // this program or in liblzma. It is inconvenient to have a
+            // separate error message for errors that should be impossible
+            // to occur, but knowing the error code is important for
+            // debugging. That's why it is good to print the error code
+            // at least when there is no good error message to show.
+            return XZ_ERR_UNKNOWN;
     }
 }
 
-
-static int32_t xcompress(lzma_stream *strm, u_int8_t *inbuf, u_int32_t insz, u_int8_t *outbuf, u_int32_t outsz)
+static int32_t xcompress(lzma_stream* strm, u_int8_t* inbuf, u_int32_t insz, u_int8_t* outbuf, u_int32_t outsz)
 {
     // This will be LZMA_RUN until the end of the input file is reached.
     // This tells lzma_code() when there will be no more input.
@@ -128,14 +129,17 @@ static int32_t xcompress(lzma_stream *strm, u_int8_t *inbuf, u_int32_t insz, u_i
 
     // Loop until the file has been successfully compressed or until
     // an error occurs.
-    while (1) {
+    while (1)
+    {
         // Fill the input buffer if it is empty.
-        if (strm->avail_in == 0 && (rpos < insz)) {
+        if (strm->avail_in == 0 && (rpos < insz))
+        {
             strm->next_in = &inbuf[rpos];
             chunk_sz = insz - rpos;
             strm->avail_in = chunk_sz;
         }
-        if (rpos >= insz) {
+        if (rpos >= insz)
+        {
             action = LZMA_FINISH;
         }
 
@@ -144,11 +148,14 @@ static int32_t xcompress(lzma_stream *strm, u_int8_t *inbuf, u_int32_t insz, u_i
         // If the output buffer is full or if the compression finished
         // successfully, write the data from the output bufffer to
         // the output file.
-        if (((strm->avail_out == 0) && (ret == LZMA_OK)) || (ret == LZMA_STREAM_END)) {
+        if (((strm->avail_out == 0) && (ret == LZMA_OK)) || (ret == LZMA_STREAM_END))
+        {
             u_int32_t write_size = sizeof(obuf) - strm->avail_out;
 
-            if (outbuf) {
-                if (wpos + write_size > outsz) {
+            if (outbuf)
+            {
+                if (wpos + write_size > outsz)
+                {
                     return XZ_ERR_MEM_EXCEEDED;
                 }
 
@@ -162,14 +169,16 @@ static int32_t xcompress(lzma_stream *strm, u_int8_t *inbuf, u_int32_t insz, u_i
 
         // Normally the return value of lzma_code() will be LZMA_OK
         // until everything has been encoded.
-        if (ret != LZMA_OK) {
+        if (ret != LZMA_OK)
+        {
             // Once everything has been encoded successfully, the
             // return value of lzma_code() will be LZMA_STREAM_END.
             //
             // It is important to check for LZMA_STREAM_END. Do not
             // assume that getting ret != LZMA_OK would mean that
             // everything has gone well.
-            if (ret == LZMA_STREAM_END) {
+            if (ret == LZMA_STREAM_END)
+            {
                 break;
             }
 
@@ -181,38 +190,39 @@ static int32_t xcompress(lzma_stream *strm, u_int8_t *inbuf, u_int32_t insz, u_i
             // possible values. Most values listen in lzma_ret
             // enumeration aren't possible in this example.
             // const char *msg;
-            switch (ret) {
-            case LZMA_MEM_ERROR:
-                return XZ_ERR_INTERNAL_MEM;
+            switch (ret)
+            {
+                case LZMA_MEM_ERROR:
+                    return XZ_ERR_INTERNAL_MEM;
 
-            case LZMA_DATA_ERROR:
-                // This error is returned if the compressed
-                // or uncompressed size get near 8 EiB
-                // (2^63 bytes) because that's where the .xz
-                // file format size limits currently are.
-                // That is, the possibility of this error
-                // is mostly theoretical unless you are doing
-                // something very unusual.
-                //
-                // Note that strm->total_in and strm->total_out
-                // have nothing to do with this error. Changing
-                // those variables won't increase or decrease
-                // the chance of getting this error.
-                return XZ_ERR_MEM_EXCEEDED;
+                case LZMA_DATA_ERROR:
+                    // This error is returned if the compressed
+                    // or uncompressed size get near 8 EiB
+                    // (2^63 bytes) because that's where the .xz
+                    // file format size limits currently are.
+                    // That is, the possibility of this error
+                    // is mostly theoretical unless you are doing
+                    // something very unusual.
+                    //
+                    // Note that strm->total_in and strm->total_out
+                    // have nothing to do with this error. Changing
+                    // those variables won't increase or decrease
+                    // the chance of getting this error.
+                    return XZ_ERR_MEM_EXCEEDED;
 
-            default:
-                // This is most likely LZMA_PROG_ERROR, but
-                // if this program is buggy (or liblzma has
-                // a bug), it may be e.g. LZMA_BUF_ERROR or
-                // LZMA_OPTIONS_ERROR too.
-                //
-                // It is inconvenient to have a separate
-                // error message for errors that should be
-                // impossible to occur, but knowing the error
-                // code is important for debugging. That's why
-                // it is good to print the error code at least
-                // when there is no good error message to show.
-                return XZ_ERR_UNKNOWN;
+                default:
+                    // This is most likely LZMA_PROG_ERROR, but
+                    // if this program is buggy (or liblzma has
+                    // a bug), it may be e.g. LZMA_BUF_ERROR or
+                    // LZMA_OPTIONS_ERROR too.
+                    //
+                    // It is inconvenient to have a separate
+                    // error message for errors that should be
+                    // impossible to occur, but knowing the error
+                    // code is important for debugging. That's why
+                    // it is good to print the error code at least
+                    // when there is no good error message to show.
+                    return XZ_ERR_UNKNOWN;
             }
 
             return XZ_ERR_ENCODE_FAULT;
@@ -223,7 +233,8 @@ static int32_t xcompress(lzma_stream *strm, u_int8_t *inbuf, u_int32_t insz, u_i
     }
 
     // In case wpos is zero (for any lzma unknown reason, LZMA_STREAM_END reached immediately) perform clean up.
-    if (wpos == 0) {
+    if (wpos == 0)
+    {
         return XZ_ERR_ENCODE_FAULT;
     }
 
@@ -231,9 +242,13 @@ static int32_t xcompress(lzma_stream *strm, u_int8_t *inbuf, u_int32_t insz, u_i
     return wpos;
 }
 
-
-static int32_t xpress(int comp_decomp_, u_int32_t preset, u_int8_t *inbuf,
-                      u_int32_t insz, u_int8_t *outbuf, u_int32_t outsz, lzma_check check)
+static int32_t xpress(int comp_decomp_,
+                      u_int32_t preset,
+                      u_int8_t* inbuf,
+                      u_int32_t insz,
+                      u_int8_t* outbuf,
+                      u_int32_t outsz,
+                      lzma_check check)
 {
     int32_t rc;
     u_int32_t sz;
@@ -241,13 +256,17 @@ static int32_t xpress(int comp_decomp_, u_int32_t preset, u_int8_t *inbuf,
     lzma_stream init_strm = LZMA_STREAM_INIT;
 
     strm = init_strm;
-    if (comp_decomp_) {
+    if (comp_decomp_)
+    {
         rc = init_decoder(&strm);
-    } else {
+    }
+    else
+    {
         rc = init_encoder(&strm, preset, check);
     }
 
-    if (rc) {
+    if (rc)
+    {
         return rc;
     }
 
@@ -261,39 +280,44 @@ int32_t xz_compress_crc32(u_int32_t preset, u_int8_t* inbuf, u_int32_t insz, u_i
     return xpress(0, preset, inbuf, insz, outbuf, outsz, LZMA_CHECK_CRC32);
 }
 
-int32_t xz_compress(u_int32_t preset, u_int8_t *inbuf, u_int32_t insz, u_int8_t *outbuf, u_int32_t outsz)
+int32_t xz_compress(u_int32_t preset, u_int8_t* inbuf, u_int32_t insz, u_int8_t* outbuf, u_int32_t outsz)
 {
     return xpress(0, preset, inbuf, insz, outbuf, outsz, LZMA_CHECK_CRC64);
 }
 
-
-int32_t xz_decompress(u_int8_t *inbuf, u_int32_t insz, u_int8_t *outbuf, u_int32_t outsz)
+int32_t xz_decompress(u_int8_t* inbuf, u_int32_t insz, u_int8_t* outbuf, u_int32_t outsz)
 {
     return xpress(1, 0, inbuf, insz, outbuf, outsz, LZMA_CHECK_CRC64);
 }
 
-int32_t xz_decompress_crc32(u_int8_t *inbuf, u_int32_t insz, u_int8_t *outbuf, u_int32_t outsz)
+int32_t xz_decompress_crc32(u_int8_t* inbuf, u_int32_t insz, u_int8_t* outbuf, u_int32_t outsz)
 {
     return xpress(1, 0, inbuf, insz, outbuf, outsz, LZMA_CHECK_CRC32);
 }
 const char* xz_get_error(int32_t error)
 {
-    if (error == XZ_ERR_MEM_EXCEEDED) {
+    if (error == XZ_ERR_MEM_EXCEEDED)
+    {
         return "XZ_ERR_MEM_EXCEEDED";
     }
-    else if (error == XZ_ERR_INTERNAL_MEM) {
+    else if (error == XZ_ERR_INTERNAL_MEM)
+    {
         return "XZ_ERR_INTERNAL_MEM";
     }
-    else if (error == XZ_ERR_PRESET_NO_SUPP) {
+    else if (error == XZ_ERR_PRESET_NO_SUPP)
+    {
         return "XZ_ERR_PRESET_NO_SUPP";
     }
-    else if (error == XZ_ERR_INTEGRITY_NOT_SUPP) {
+    else if (error == XZ_ERR_INTEGRITY_NOT_SUPP)
+    {
         return "XZ_ERR_INTEGRITY_NOT_SUPP";
     }
-    else if (error == XZ_ERR_ENCODE_FAULT) {
+    else if (error == XZ_ERR_ENCODE_FAULT)
+    {
         return "XZ_ERR_ENCODE_FAULT";
     }
-    else {
+    else
+    {
         return "UNKNOWN ERROR";
     }
 }

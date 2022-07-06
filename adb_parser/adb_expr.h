@@ -49,12 +49,12 @@ public:
     ~AdbExpr();
 
     static const char* statusStr(int status);
-    int  ResolveName(char *name, u_int64_t *val);
+    int ResolveName(char* name, u_int64_t* val);
     void Error(const std::string& message);
-    void setVars(map<string, string> *varsMap);
+    void setVars(map<string, string>* varsMap);
 
 private:
-    map<string, string> *_varsMap;
+    map<string, string>* _varsMap;
 };
 
 #endif // ADB_EXPR_H

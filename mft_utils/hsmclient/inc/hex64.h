@@ -33,7 +33,6 @@
 #ifndef HEX_64
 #define HEX_64
 
-
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -50,7 +49,11 @@ private:
     bool PrintHexData(const std::string& data);
     std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len);
     std::size_t pos_of_char(const unsigned char chr);
-    bool ReadInputPemFile(const char* fileName, std::vector<unsigned char> &outputBuffer, unsigned int& inputSize, bool& IsPem8Format);
+    bool ReadInputPemFile(const char* fileName,
+                          std::vector<unsigned char>& outputBuffer,
+                          unsigned int& inputSize,
+                          bool& IsPem8Format);
+
 public:
     Hex64Manipulations() {}
     virtual ~Hex64Manipulations() {}

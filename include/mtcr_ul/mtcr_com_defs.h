@@ -51,7 +51,7 @@
 #endif
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
-    #include <stdint.h>
+#include <stdint.h>
 #else
 typedef __int8 int8_t;
 typedef __int16 int16_t;
@@ -85,7 +85,7 @@ typedef long long int64_t;
 #define bswap_32(x) ntohl(x)
 #define MTCR_API
 
-#else  /* UNIX */
+#else /* UNIX */
 
 #include <sys/types.h>
 #define MTCR_API
@@ -107,27 +107,30 @@ typedef long long int64_t;
 #define MST_META_DATA_MINOR 0
 #define MTCR_SUPP_MST_API_MAJOR_VERSION 1
 
-
-//Service name.
+// Service name.
 #define MST_PREFIX_64_BIT "mst64_"
 #define MST_PREFIX_32_BIT "mst32_"
 #define MST_SUFFIX_MAXLEN 11
-#define MST_SERVICE_NAME_SIZE (sizeof(MST_PREFIX_64_BIT) + sizeof(MFT_VERSION_STR) + MST_SUFFIX_MAXLEN + 9)  // 9 is just in case reserve
+#define MST_SERVICE_NAME_SIZE \
+    (sizeof(MST_PREFIX_64_BIT) + sizeof(MFT_VERSION_STR) + MST_SUFFIX_MAXLEN + 9) // 9 is just in case reserve
 
 //#ifndef USE_IB_MGT
-typedef struct mib_private_t {
+typedef struct mib_private_t
+{
     int dummy;
 } MIB_Private;
 //#else
 //#include "mtcr_ib_private.h"
 //#endif
 
-typedef enum {
+typedef enum
+{
     SEM_LOCK_GET = 0x0,
     SEM_LOCK_SET = 0x1
 } sem_lock_method_t;
 
-typedef enum MError {
+typedef enum MError
+{
     ME_OK = 0,
     ME_ERROR,
     ME_BAD_PARAMS,
@@ -174,7 +177,7 @@ typedef enum MError {
     ME_REG_ACCESS_INTERNAL_ERROR,
 
     // errors regarding ICMD
-    ME_ICMD_STATUS_CR_FAIL = 0x200,       // cr-space access failure
+    ME_ICMD_STATUS_CR_FAIL = 0x200, // cr-space access failure
     ME_ICMD_INVALID_OPCODE,
     ME_ICMD_INVALID_CMD,
     ME_ICMD_OPERATIONAL_ERROR,
@@ -182,8 +185,8 @@ typedef enum MError {
     ME_ICMD_BUSY,
     ME_ICMD_INIT_FAILED,
     ME_ICMD_NOT_SUPPORTED,
-    ME_ICMD_STATUS_SEMAPHORE_TO,          // timed out while trying to take semaphore
-    ME_ICMD_STATUS_EXECUTE_TO,            // timed out while waiting for command to execute
+    ME_ICMD_STATUS_SEMAPHORE_TO, // timed out while trying to take semaphore
+    ME_ICMD_STATUS_EXECUTE_TO,   // timed out while waiting for command to execute
     ME_ICMD_STATUS_IFC_BUSY,
     ME_ICMD_STATUS_ICMD_NOT_READY,
     ME_ICMD_UNSUPPORTED_ICMD_VERSION,
@@ -192,7 +195,7 @@ typedef enum MError {
     ME_ICMD_WRITE_PROTECT,
     ME_ICMD_SIZE_EXCEEDS_LIMIT,
 
-    //errors regarding Tools CMDIF
+    // errors regarding Tools CMDIF
     ME_CMDIF_BUSY = 0x300,
     ME_CMDIF_TOUT,
     ME_CMDIF_BAD_STATUS,
@@ -203,7 +206,7 @@ typedef enum MError {
     ME_CMDIF_RES_STATE,
     ME_CMDIF_UNKN_STATUS,
 
-    //errors regarding MAD IF
+    // errors regarding MAD IF
     ME_MAD_BUSY = 0x400,
     ME_MAD_REDIRECT,
     ME_MAD_BAD_VER,
@@ -212,7 +215,7 @@ typedef enum MError {
     ME_MAD_BAD_DATA,
     ME_MAD_GENERAL_ERR,
 
-    //errors regarding gearbox icmd new interface gateway
+    // errors regarding gearbox icmd new interface gateway
     ME_GB_ICMD_OK = 0x500,
     ME_GB_ICMD_FAILED,
     ME_GB_ICMD_FAILED_ACCESS,
@@ -228,9 +231,10 @@ typedef enum MError {
 #ifdef UEFI_BUILD
 #include <mft_uefi_common.h>
 #endif
-typedef enum MType_t {
+typedef enum MType_t
+{
     MST_ERROR = 0x0,
-    MST_FPGA = 0x1,     // Unsupported
+    MST_FPGA = 0x1, // Unsupported
     MST_MLNXOS = 0x2,
     MST_LPC = 0x4,
     MST_PCI = 0x8,
@@ -259,42 +263,50 @@ typedef enum MType_t {
     MST_DEFAULT = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER & ~MST_LINKX_CHIP
 } MType;
 
-typedef enum DType_t {
-    MST_GAMLA, MST_TAVOR, MST_DIMM, MST_NOADDR
+typedef enum DType_t
+{
+    MST_GAMLA,
+    MST_TAVOR,
+    MST_DIMM,
+    MST_NOADDR
 } DType;
 #define MST_ANAFA2 MST_TAVOR
 #define MST_EEPROM MST_GAMLA
-typedef enum Mdevs_t {
-    MDEVS_GAMLA = 0x01, /*  Each device that actually is a Gamla */
-    MDEVS_I2CM = 0x02, /*  Each device that can work as I2C master */
-    MDEVS_MEM = 0x04, /*  Each device that is a memory driver (vtop) */
-    MDEVS_TAVOR_DDR = 0x08, /*  Each device that maps to DDR */
-    MDEVS_TAVOR_UAR = 0x10, /*  Each device that maps to UAR */
-    MDEVS_TAVOR_CR = 0x20, /*  Each device that maps to CR */
-    MDEVS_IF = 0x40, /*  Standard device  interface */
-    MDEVS_REM = 0x80, /*  Remote devices */
-    MDEVS_PPC = 0x100, /*  PPC devices */
-    MDEVS_DEV_I2C = 0x200, /* Generic linux kernel i2c device */
-    MDEVS_IB = 0x400, /* Cr access over IB Mads */
-    MDEVS_MLNX_OS = 0x800, /* access by CmdIf in MlnxOS */
-    MDEVS_FWCTX = 0x900, /* access by func/context (like UEFI) */
-    MDEVS_LPC = 0x1000,/* Access LPC region */
-    MDEVS_FPGA = 0x2000,/* Access LPC region */
-    MDEVS_FPGA_NEWTON = 0x4000,/* Access LPC region */
+typedef enum Mdevs_t
+{
+    MDEVS_GAMLA = 0x01,         /*  Each device that actually is a Gamla */
+    MDEVS_I2CM = 0x02,          /*  Each device that can work as I2C master */
+    MDEVS_MEM = 0x04,           /*  Each device that is a memory driver (vtop) */
+    MDEVS_TAVOR_DDR = 0x08,     /*  Each device that maps to DDR */
+    MDEVS_TAVOR_UAR = 0x10,     /*  Each device that maps to UAR */
+    MDEVS_TAVOR_CR = 0x20,      /*  Each device that maps to CR */
+    MDEVS_IF = 0x40,            /*  Standard device  interface */
+    MDEVS_REM = 0x80,           /*  Remote devices */
+    MDEVS_PPC = 0x100,          /*  PPC devices */
+    MDEVS_DEV_I2C = 0x200,      /* Generic linux kernel i2c device */
+    MDEVS_IB = 0x400,           /* Cr access over IB Mads */
+    MDEVS_MLNX_OS = 0x800,      /* access by CmdIf in MlnxOS */
+    MDEVS_FWCTX = 0x900,        /* access by func/context (like UEFI) */
+    MDEVS_LPC = 0x1000,         /* Access LPC region */
+    MDEVS_FPGA = 0x2000,        /* Access LPC region */
+    MDEVS_FPGA_NEWTON = 0x4000, /* Access LPC region */
     MDEVS_CABLE = 0x8000,
     MDEVS_SOFTWARE = 0x10000, /* Software system char dev */
     MDEVS_LINKX_CHIP = 0x200000,
     MDEVS_GBOX = 0x400000,
-    MDEVS_TAVOR = (MDEVS_TAVOR_DDR | MDEVS_TAVOR_UAR | MDEVS_TAVOR_CR), MDEVS_ALL = 0xffffffff
+    MDEVS_TAVOR = (MDEVS_TAVOR_DDR | MDEVS_TAVOR_UAR | MDEVS_TAVOR_CR),
+    MDEVS_ALL = 0xffffffff
 } Mdevs;
 
-typedef enum {
+typedef enum
+{
     MACCESS_REG_METHOD_GET = 1,
     MACCESS_REG_METHOD_SET = 2,
     MACCESS_LAST_REG_METHOD = 3
 } maccess_reg_method_t;
 
-typedef enum {
+typedef enum
+{
     VCC_INITIALIZED = 0x0,
     VCC_ICMD_EXT_SPACE_SUPPORTED = 0x1,
     VCC_CRSPACE_SPACE_SUPPORTED = 0x2,
@@ -307,7 +319,8 @@ typedef enum {
     VCC_MAC_SPACE_SUPPORTED = 0x9,
 } VSCCapCom;
 
-typedef enum {
+typedef enum
+{
     AS_ICMD_EXT = 0x1,
     AS_CR_SPACE = 0x2,
     AS_ICMD = 0x3,
@@ -320,24 +333,27 @@ typedef enum {
     AS_END
 } address_space_t;
 
-
-typedef struct vf_info_t {
+typedef struct vf_info_t
+{
     char dev_name[512];
     u_int16_t domain;
     u_int8_t bus;
     u_int8_t dev;
     u_int8_t func;
-    char **net_devs;      // Null terminated array
-    char **ib_devs;       // Null terminated array
+    char** net_devs; // Null terminated array
+    char** ib_devs;  // Null terminated array
 } vf_info;
 
-typedef struct dev_info_t {
+typedef struct dev_info_t
+{
     Mdevs type;
     char dev_name[512];
     int ul_mode;
 
-    union {
-        struct {
+    union
+    {
+        struct
+        {
             u_int16_t domain;
             u_int8_t bus;
             u_int8_t dev;
@@ -351,49 +367,55 @@ typedef struct dev_info_t {
 
             char cr_dev[512];
             char conf_dev[512];
-            char **net_devs;                  // Null terminated array
-            char **ib_devs;                   // Null terminated array
-            char numa_node[4096];                 //
-            vf_info *virtfn_arr;
+            char** net_devs;      // Null terminated array
+            char** ib_devs;       // Null terminated array
+            char numa_node[4096]; //
+            vf_info* virtfn_arr;
             u_int16_t virtfn_count;
         } pci;
 
-        struct {
+        struct
+        {
             u_int32_t mtusb_serial;
             u_int32_t TBD;
         } usb;
 
-        struct {
+        struct
+        {
             u_int32_t TBD;
         } ib;
 
-        struct {
+        struct
+        {
             char remote_device_name[512];
         } remote;
     };
 } dev_info;
 
-
-typedef enum {
+typedef enum
+{
     RA_MFPA = 0x9010,
     RA_MFBA = 0x9011,
     RA_MFBE = 0x9012,
 } reg_access_t;
 typedef struct dma_lib_hdl_t dma_lib_hdl;
 
-typedef enum {
-    GEARBPX_OVER_MTUSB          = 1,
-    GEARBPX_OVER_I2C            = 2,
-    GEARBPX_OVER_SWITCH         = 3,
+typedef enum
+{
+    GEARBPX_OVER_MTUSB = 1,
+    GEARBPX_OVER_I2C = 2,
+    GEARBPX_OVER_SWITCH = 3,
     GEARBPXO_UNKNOWN_CONNECTION = 0
 } gearbox_connection_t;
-typedef enum {
+typedef enum
+{
     MTCR_STATUS_UNKNOWN,
     MTCR_STATUS_TRUE,
     MTCR_STATUS_FALSE,
 } mtcr_status_e;
 
-typedef struct icmd_params_t {
+typedef struct icmd_params_t
+{
     int icmd_opened;
     int took_semaphore;
     int ctrl_addr;
@@ -410,75 +432,83 @@ typedef struct icmd_params_t {
     mtcr_status_e icmd_ready;
 } icmd_params;
 
-typedef struct ctx_params_t {
-    void *fw_cmd_context;
-    void *fw_cmd_func;
-    void *fw_cmd_dma;
+typedef struct ctx_params_t
+{
+    void* fw_cmd_context;
+    void* fw_cmd_func;
+    void* fw_cmd_dma;
 } ctx_params;
 
-typedef struct io_region_t {
+typedef struct io_region_t
+{
     unsigned int start;
     unsigned int end;
 } io_region;
 
-typedef struct tools_hcr_params_t {
-    int supp_cr_mbox;     // 1: mbox supported , -1: mbox not supported
+typedef struct tools_hcr_params_t
+{
+    int supp_cr_mbox; // 1: mbox supported , -1: mbox not supported
 } tools_hcr_params;
 
 // max_reg_size depends on the desired method operated on the register.
 // max_reg_size[<method_enum_value>] will give the relevant max_reg_size.
 // For example max_reg_size[MACCESS_REG_METHOD_GET] will give max_reg_size for Get() method.
-typedef struct access_reg_params_t {
+typedef struct access_reg_params_t
+{
     int max_reg_size[MACCESS_LAST_REG_METHOD];
 } access_reg_params;
 
 typedef struct mfile_t mfile;
 
-struct mtcr_page_addresses {
+struct mtcr_page_addresses
+{
     u_int64_t dma_address;
     u_int64_t virtual_address;
 };
 
-
-struct page_list {
+struct page_list
+{
     // User space buffer page aligned.
     char* page_list;
     int page_amount;
 };
 
-struct mtcr_page_info {
+struct mtcr_page_info
+{
     unsigned int page_amount;
-    unsigned long page_pointer_start;    
+    unsigned long page_pointer_start;
     struct mtcr_page_addresses page_addresses_array[MAX_PAGES_SIZE];
 };
 
-
-struct mtcr_read_dword_from_config_space {
+struct mtcr_read_dword_from_config_space
+{
     unsigned int offset;
     unsigned int data;
 };
 
-typedef void (*f_mpci_change)        (mfile *mf);
+typedef void (*f_mpci_change)(mfile* mf);
 
 #define GEARBOX_ADDR_WIDTH 4
 #define GEARBOX_SLAVE_ADDR 0x48
 #define GB_MNGR_SLAVE_ADDR 0x33
 
-typedef enum {
+typedef enum
+{
     GB_UNKNOWN = 0,
     GB_AMOS,
     GB_ABIR
 } gearbox_type;
 
-typedef struct gearbox_info_t {
+typedef struct gearbox_info_t
+{
     gearbox_type gb_type;
     u_int8_t is_gearbox;
     u_int8_t is_gb_mngr;
     int gearbox_index;
     int ilne_card_id;
     gearbox_connection_t gb_conn_type;
-    char gb_mngr_full_name[DEV_NAME_SZ];     
-    char gearbox_full_name[DEV_NAME_SZ];  
+    char gb_mngr_full_name[DEV_NAME_SZ];
+    char gearbox_full_name[DEV_NAME_SZ];
     unsigned char i2c_slave;
     u_int8_t addr_width;
     char device_orig_name[DEV_NAME_SZ];
@@ -487,14 +517,15 @@ typedef struct gearbox_info_t {
     u_int32_t data_res_addr;
 } gearbox_info;
 
-typedef struct cables_info_t {
+typedef struct cables_info_t
+{
     int slave_addr_additional_offset;
 } cables_info;
 
-#define VSEC_MIN_SUPPORT_UL(mf) (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) && \
-                                 ((mf)->vsec_cap_mask & (1 << VCC_CRSPACE_SPACE_SUPPORTED)) && \
-                                 ((mf)->vsec_cap_mask & (1 << VCC_ICMD_EXT_SPACE_SUPPORTED)) && \
-                                 ((mf)->vsec_cap_mask & (1 << VCC_SEMAPHORE_SPACE_SUPPORTED)))
+#define VSEC_MIN_SUPPORT_UL(mf)                                                                                      \
+    (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) && ((mf)->vsec_cap_mask & (1 << VCC_CRSPACE_SPACE_SUPPORTED)) && \
+     ((mf)->vsec_cap_mask & (1 << VCC_ICMD_EXT_SPACE_SUPPORTED)) &&                                                  \
+     ((mf)->vsec_cap_mask & (1 << VCC_SEMAPHORE_SPACE_SUPPORTED)))
 
 // VSEC supported macro
 #define VSEC_SUPPORTED_UL(mf) ((mf)->vsec_supp && VSEC_MIN_SUPPORT_UL(mf))
