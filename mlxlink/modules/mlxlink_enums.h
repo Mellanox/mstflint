@@ -34,7 +34,7 @@
 #define MLXLINK_ENUMS_H
 
 // Common definitions
-#define AMBER_VERSION "2.02"
+#define AMBER_VERSION "2.05"
 
 #define ACCESS_REG_PGUID "PGUID"
 #define ACCESS_REG_SPZR "SPZR"

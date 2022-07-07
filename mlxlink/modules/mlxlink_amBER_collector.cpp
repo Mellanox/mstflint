@@ -76,11 +76,11 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
 
     _baseSheetsList[AMBER_SHEET_GENERAL] = FIELDS_COUNT{4, 4, 4};
     _baseSheetsList[AMBER_SHEET_INDEXES] = FIELDS_COUNT{2, 2, 4};
-    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{48, 139, 6};
+    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{48, 141, 6};
     _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{111, 111, 0};
     _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{16, 21, 11};
     _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{376, 736, 0};
-    _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{203, 323, 499};
+    _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{206, 326, 499};
     _baseSheetsList[AMBER_SHEET_PORT_COUNTERS] = FIELDS_COUNT{35, 0, 35};
     _baseSheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT{2, 2, 0};
     _baseSheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{18, 18, 15};
@@ -653,6 +653,16 @@ void MlxlinkAmBerCollector::getPpcntBer(u_int32_t portType, vector<AmberField>& 
     berStr =
       to_string(getFieldValue("effective_ber_coef")) + "E-" + to_string(getFieldValue("effective_ber_magnitude"));
     fields.push_back(AmberField(preTitle + "Effective_BER", berStr));
+
+    if (_isPortETH)
+    {
+        string effErrorsStr = (portType == NETWORK_PORT_TYPE_NEAR || portType == NETWORK_PORT_TYPE_FAR) ?
+                                to_string(add32BitTo64(getFieldValue("phy_effective_errors_high"),
+                                                       getFieldValue("phy_effective_errors__low"))) :
+                                "N/A";
+
+        fields.push_back(AmberField(preTitle + "Effective_Errors", effErrorsStr));
+    }
 
     if (portType != NETWORK_PORT_TYPE || (portType == NETWORK_PORT_TYPE && _isPortIB))
     {
