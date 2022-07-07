@@ -41,7 +41,8 @@
 
 using namespace std;
 
-class CmdLineParams {
+class CmdLineParams
+{
 public:
     CmdLineParams();
     ~CmdLineParams();

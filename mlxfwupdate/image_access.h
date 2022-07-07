@@ -36,7 +36,6 @@
 #ifndef __IMAGE_ACCESS_H__
 #define __IMAGE_ACCESS_H__
 
-
 #include <mlxfwops_com.h>
 #include <fw_ops.h>
 #include <compatibility.h>
@@ -46,48 +45,50 @@
 
 using namespace std;
 #define MLNX_ERR_BUFF_SIZE 1024
-enum {
+enum
+{
     IMG_SIG_TYPE_UNKNOWN = 0,
     IMG_SIG_TYPE_BIN = 1,
     IMG_SIG_TYPE_MFA = 2,
     IMG_SIG_TYPE_PLDM = 3
 };
 
-class ImageAccess {
+class ImageAccess
+{
 public:
     ImageAccess(int compareFFV);
     ~ImageAccess();
-    int queryDirPsid(string &path, string &psid, string &selector_tag, int image_type, vector<PsidQueryItem> &riv);
-    int queryPsid(const string &fname, const string &psid, string &selector_tag, int image_type, PsidQueryItem &ri);
-    int getImage(const string &fname, u_int8_t **filebuf);
-    int getImage(const string &fname, const string &psid, string &selector_tag, int image_type, u_int8_t **filebuf);
-    int get_file_content(const string & fname, vector<PsidQueryItem> &riv);
-    static int getFileSignature(const string & fname);
+    int queryDirPsid(string& path, string& psid, string& selector_tag, int image_type, vector<PsidQueryItem>& riv);
+    int queryPsid(const string& fname, const string& psid, string& selector_tag, int image_type, PsidQueryItem& ri);
+    int getImage(const string& fname, u_int8_t** filebuf);
+    int getImage(const string& fname, const string& psid, string& selector_tag, int image_type, u_int8_t** filebuf);
+    int get_file_content(const string& fname, vector<PsidQueryItem>& riv);
+    static int getFileSignature(const string& fname);
     static bool hasMFAs(string dir);
     string getLastErrMsg();
     string getlastWarning();
     string getLog();
 
 private:
-    int queryPsidMfa(const string &fname, const string &psid, string &selector_tag, int image_type, PsidQueryItem &ri);
-    int queryPsidBin(const string &fname, const string &psid, PsidQueryItem &ri);
-    int getImageBin(const string &fname, u_int8_t **filebuf);
-    int getImageMfa(const string &fname, const string &psid, string &selector_tag, int image_type, u_int8_t **filebuf);
-    int checkImgSignature(const char *fname);
+    int queryPsidMfa(const string& fname, const string& psid, string& selector_tag, int image_type, PsidQueryItem& ri);
+    int queryPsidBin(const string& fname, const string& psid, PsidQueryItem& ri);
+    int getImageBin(const string& fname, u_int8_t** filebuf);
+    int getImageMfa(const string& fname, const string& psid, string& selector_tag, int image_type, u_int8_t** filebuf);
+    int checkImgSignature(const char* fname);
 
-    int get_mfa_content(const string & fname, vector<PsidQueryItem> &riv);
-    int get_pldm_content(const string & fname, vector<PsidQueryItem> &riv);
-    int get_bin_content(const string & fname, vector<PsidQueryItem> &riv);
-    bool extract_pldm_image_info(const u_int8_t * buff, u_int32_t size, PsidQueryItem &ri);
-    static int getBufferSignature(u_int8_t *buf, u_int32_t size);
-    bool openImg(fw_hndl_type_t hndlType, char *psid, char *fileHndl);
+    int get_mfa_content(const string& fname, vector<PsidQueryItem>& riv);
+    int get_pldm_content(const string& fname, vector<PsidQueryItem>& riv);
+    int get_bin_content(const string& fname, vector<PsidQueryItem>& riv);
+    bool extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, PsidQueryItem& ri);
+    static int getBufferSignature(u_int8_t* buf, u_int32_t size);
+    bool openImg(fw_hndl_type_t hndlType, char* psid, char* fileHndl);
     char _errBuff[MLNX_ERR_BUFF_SIZE];
     int _compareFFV;
     string _log;
     string _errMsg;
     string _warning;
     FwOperations::fw_ops_params_t _imgFwParams;
-    FwOperations *_imgFwOps;
+    FwOperations* _imgFwOps;
 };
 
 #endif

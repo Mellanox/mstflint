@@ -37,24 +37,25 @@
 #include <common/compatibility.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-enum
-{
-    XZ_ERR_UNKNOWN              = -1,
-    XZ_ERR_MEM_EXCEEDED         = -2,
-    XZ_ERR_INTERNAL_MEM         = -3,
-    XZ_ERR_PRESET_NO_SUPP       = -4,
-    XZ_ERR_INTEGRITY_NOT_SUPP   = -5,
-    XZ_ERR_ENCODE_FAULT         = -6
-};
+    enum
+    {
+        XZ_ERR_UNKNOWN = -1,
+        XZ_ERR_MEM_EXCEEDED = -2,
+        XZ_ERR_INTERNAL_MEM = -3,
+        XZ_ERR_PRESET_NO_SUPP = -4,
+        XZ_ERR_INTEGRITY_NOT_SUPP = -5,
+        XZ_ERR_ENCODE_FAULT = -6
+    };
 
-int32_t   xz_compress(u_int32_t preset, u_int8_t *inbuf, u_int32_t insz, u_int8_t *outbuf, u_int32_t outsz);
-int32_t   xz_decompress(u_int8_t *inbuf, u_int32_t insz, u_int8_t *outbuf, u_int32_t outsz);
-int32_t   xz_compress_crc32(u_int32_t preset, u_int8_t* inbuf, u_int32_t insz, u_int8_t* outbuf, u_int32_t outsz);
-int32_t   xz_decompress_crc32(u_int8_t *inbuf, u_int32_t insz, u_int8_t *outbuf, u_int32_t outsz);
-const char* xz_get_error(int32_t error);
+    int32_t xz_compress(u_int32_t preset, u_int8_t* inbuf, u_int32_t insz, u_int8_t* outbuf, u_int32_t outsz);
+    int32_t xz_decompress(u_int8_t* inbuf, u_int32_t insz, u_int8_t* outbuf, u_int32_t outsz);
+    int32_t xz_compress_crc32(u_int32_t preset, u_int8_t* inbuf, u_int32_t insz, u_int8_t* outbuf, u_int32_t outsz);
+    int32_t xz_decompress_crc32(u_int8_t* inbuf, u_int32_t insz, u_int8_t* outbuf, u_int32_t outsz);
+    const char* xz_get_error(int32_t error);
 #ifdef __cplusplus
 }
 #endif

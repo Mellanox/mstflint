@@ -39,11 +39,10 @@
 class Fs3Operations;
 class Flash;
 
-
 class ISignatureManager : public FlintErrMsg
 {
 public:
-    virtual bool AddSignature(mfile* mf, Fs3Operations* imageOps, Flash *f, u_int32_t imageOffset) = 0;
+    virtual bool AddSignature(mfile* mf, Fs3Operations* imageOps, Flash* f, u_int32_t imageOffset) = 0;
     virtual bool IsSecureBootSupported() = 0;
     virtual bool IsLifeCycleSupported() = 0;
     virtual bool IsCableQuerySupported() = 0;
@@ -51,18 +50,16 @@ public:
     virtual ~ISignatureManager() {}
 };
 
-class AbstractSignatureManager : public ISignatureManager {
+class AbstractSignatureManager : public ISignatureManager
+{
 public:
     AbstractSignatureManager() {}
     virtual ~AbstractSignatureManager() {}
-    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t)
-    {
-        return true;
-    }
-    virtual bool IsSecureBootSupported()        { return false; }
-    virtual bool IsCableQuerySupported()    { return false; }
-    virtual bool IsLifeCycleSupported()     { return false; }
-    virtual bool IsEncryptionSupported()    { return false; }
+    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t) { return true; }
+    virtual bool IsSecureBootSupported() { return false; }
+    virtual bool IsCableQuerySupported() { return false; }
+    virtual bool IsLifeCycleSupported() { return false; }
+    virtual bool IsEncryptionSupported() { return false; }
 };
 
 class FwOperationsSignatureManager : public AbstractSignatureManager
@@ -77,18 +74,17 @@ class BluefieldFwOperationsSignatureManager : public AbstractSignatureManager
 public:
     BluefieldFwOperationsSignatureManager() : AbstractSignatureManager() {}
     virtual ~BluefieldFwOperationsSignatureManager() {}
-    virtual bool AddSignature(mfile* mf, Fs3Operations* imageOps, Flash *f, u_int32_t imageOffset);
+    virtual bool AddSignature(mfile* mf, Fs3Operations* imageOps, Flash* f, u_int32_t imageOffset);
 };
-
 
 class ConnectX6FwOperationsSignatureManager : public AbstractSignatureManager
 {
 public:
     ConnectX6FwOperationsSignatureManager() : AbstractSignatureManager() {}
     virtual ~ConnectX6FwOperationsSignatureManager() {}
-    virtual bool AddSignature(mfile* mf, Fs3Operations* imageOps, Flash *f, u_int32_t imageOffset);
-    virtual bool IsLifeCycleSupported()     { return true; }
-    virtual bool IsCableQuerySupported()    { return true; }
+    virtual bool AddSignature(mfile* mf, Fs3Operations* imageOps, Flash* f, u_int32_t imageOffset);
+    virtual bool IsLifeCycleSupported() { return true; }
+    virtual bool IsCableQuerySupported() { return true; }
 };
 
 class RavenSwitchSignatureManager : public AbstractSignatureManager
@@ -96,7 +92,7 @@ class RavenSwitchSignatureManager : public AbstractSignatureManager
 public:
     RavenSwitchSignatureManager() : AbstractSignatureManager() {}
     virtual ~RavenSwitchSignatureManager() {}
-    virtual bool IsCableQuerySupported()    { return true; }
+    virtual bool IsCableQuerySupported() { return true; }
 };
 
 class SecuredSwitchSignatureManager : public AbstractSignatureManager
@@ -104,10 +100,10 @@ class SecuredSwitchSignatureManager : public AbstractSignatureManager
 public:
     SecuredSwitchSignatureManager() : AbstractSignatureManager() {}
     virtual ~SecuredSwitchSignatureManager() {}
-    virtual bool IsCableQuerySupported()    { return true; }
-    virtual bool IsLifeCycleSupported()     { return true; }
-    virtual bool IsSecureBootSupported()        { return true; }
-    virtual bool IsEncryptionSupported()    { return true; }
+    virtual bool IsCableQuerySupported() { return true; }
+    virtual bool IsLifeCycleSupported() { return true; }
+    virtual bool IsSecureBootSupported() { return true; }
+    virtual bool IsEncryptionSupported() { return true; }
 };
 
 class ConnectX6DXFwOperationsSignatureManager : public AbstractSignatureManager
@@ -115,9 +111,9 @@ class ConnectX6DXFwOperationsSignatureManager : public AbstractSignatureManager
 public:
     ConnectX6DXFwOperationsSignatureManager() : AbstractSignatureManager() {}
     virtual ~ConnectX6DXFwOperationsSignatureManager() {}
-    virtual bool IsLifeCycleSupported()     { return true; }
-    virtual bool IsSecureBootSupported()    { return true; }
-    virtual bool IsCableQuerySupported()    { return true; }
+    virtual bool IsLifeCycleSupported() { return true; }
+    virtual bool IsSecureBootSupported() { return true; }
+    virtual bool IsCableQuerySupported() { return true; }
 };
 
 class ConnectX6LXFwOperationsSignatureManager : public ConnectX6DXFwOperationsSignatureManager
@@ -132,7 +128,7 @@ class ConnectX7FwOperationsSignatureManager : public ConnectX6DXFwOperationsSign
 public:
     ConnectX7FwOperationsSignatureManager() : ConnectX6DXFwOperationsSignatureManager() {}
     virtual ~ConnectX7FwOperationsSignatureManager() {}
-    virtual bool IsEncryptionSupported()    { return true; }
+    virtual bool IsEncryptionSupported() { return true; }
 };
 
 class Bluefield2FwOperationsSignatureManager : public ConnectX6DXFwOperationsSignatureManager
@@ -156,6 +152,3 @@ public:
     virtual ~GearBoxSignatureManager() {}
     virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t) { return false; }
 };
-
-
-

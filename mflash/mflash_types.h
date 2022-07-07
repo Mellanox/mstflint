@@ -34,11 +34,14 @@
 #ifndef MFLASH_TYPES_H
 #define MFLASH_TYPES_H
 
-typedef enum {
-    FSS_4KB = 0x1000, FSS_64KB = 0x10000
+typedef enum
+{
+    FSS_4KB = 0x1000,
+    FSS_64KB = 0x10000
 } Flash_Sector_Size_t;
 
-typedef enum MfError {
+typedef enum MfError
+{
     MFE_OK = 0,
     MFE_ERROR,
     MFE_BAD_PARAMS,
@@ -115,4 +118,3 @@ typedef enum MfError {
 } MfError;
 
 #endif // MFLASH_TYPES_H
-

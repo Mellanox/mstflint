@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 from __future__ import print_function
 import os
@@ -36,6 +36,7 @@ import sys
 import platform
 import ctypes
 import mtcr
+
 
 class DevMgtException(Exception):
     pass
@@ -48,13 +49,13 @@ try:
     if platform.system() == "Windows" or os.name == "nt":
         try:
             DEV_MGT = CDLL("c_dev_mgt.dll")
-        except:
+        except BaseException:
             DEV_MGT = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "c_dev_mgt.dll"))
     else:
         try:
-            #c_dev_mgt.so must be specified explicitly for pyinstaller collection
+            # c_dev_mgt.so must be specified explicitly for pyinstaller collection
             DEV_MGT = CDLL("c_dev_mgt.so")
-        except:
+        except BaseException:
             DEV_MGT = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "c_dev_mgt.so"))
 except Exception as exp:
     raise DevMgtException("Failed to load shared library c_dev_mgt: %s" % exp)
@@ -64,18 +65,17 @@ if DEV_MGT:
         ##########################
         def __init__(self, dev):
             self.mf = 0
-            self._isLivefishModeFunc = DEV_MGT.dm_is_livefish_mode  # dm_is_livefish_mode(mfile* mf)   
-            if isinstance(dev,(mtcr.MstDevice)):
-              self._mstdev = dev
+            self._isLivefishModeFunc = DEV_MGT.dm_is_livefish_mode  # dm_is_livefish_mode(mfile* mf)
+            if isinstance(dev, (mtcr.MstDevice)):
+                self._mstdev = dev
             else:
-                self._mstdev  =  mtcr.MstDevice(dev) 
+                self._mstdev = mtcr.MstDevice(dev)
                 if not self._mstdev:
                     raise DevMgtException("Failed to open device (%s): %s" % (dev, os.strerror(ctypes.get_errno())))
 
-        
         ##########################
         def isLivefishMode(self):
             rc = self._isLivefishModeFunc(self._mstdev.mf)
             return not (rc == 0)
 else:
-    raise DevMgtException("Failed to load c_dev_mgt.so/libdev_mgt.dll") 
+    raise DevMgtException("Failed to load c_dev_mgt.so/libdev_mgt.dll")

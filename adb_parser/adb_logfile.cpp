@@ -34,36 +34,46 @@
 
 #include "adb_logfile.h"
 
-#define WRITE   "w"
+#define WRITE "w"
 
-LogFile::LogFile() : _logFile(NULL) {
-}
+LogFile::LogFile() : _logFile(NULL) {}
 
-void LogFile::init(string logFileName, bool allowMultipleExceptions) {
-    if (logFileName.compare("") != 0) {
+void LogFile::init(string logFileName, bool allowMultipleExceptions)
+{
+    if (logFileName.compare("") != 0)
+    {
         _logFile = fopen(logFileName.c_str(), WRITE);
-        if (!_logFile) {
-            string  _lastError = "Can't open file (" + logFileName + ") for writing: "
-                    + strerror(errno);
-            if (allowMultipleExceptions) {
+        if (!_logFile)
+        {
+            string _lastError = "Can't open file (" + logFileName + ") for writing: " + strerror(errno);
+            if (allowMultipleExceptions)
+            {
                 ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
-            } else {
+            }
+            else
+            {
                 throw AdbException(_lastError);
             }
         }
-    } else {
+    }
+    else
+    {
         _logFile = NULL;
     }
 }
 
-LogFile::~LogFile() {
-    if (_logFile) {
-        fclose (_logFile);
+LogFile::~LogFile()
+{
+    if (_logFile)
+    {
+        fclose(_logFile);
     }
 }
 
-void LogFile::appendLogFile(string str) {
-    if (_logFile) {
+void LogFile::appendLogFile(string str)
+{
+    if (_logFile)
+    {
         fprintf(_logFile, "%s", str.c_str());
     }
 }

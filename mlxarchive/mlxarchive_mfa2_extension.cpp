@@ -60,7 +60,8 @@ void VersionExtension::fillTimeAndDate()
 
 MFA2Type Extension::extensionTypeToMFA2Type(ExtensionType type)
 {
-    switch(type) {
+    switch (type)
+    {
         case VersionExtensionType:
             return MFA2Type_VERSION;
         case SecurityInfoExtensionType:
@@ -74,17 +75,16 @@ MFA2Type Extension::extensionTypeToMFA2Type(ExtensionType type)
         case SourceFileNameExtensionType:
             return MFA2Type_SOURCE_FILENAME;
         default:
-            //TODO throw exception
+            // TODO throw exception
             return MFA2Type_SOURCE_FILENAME;
     }
 }
 Extension::Extension(u_int8_t version, ExtensionType type, u_int32_t length) :
-        Element(version, extensionTypeToMFA2Type(type), length)
+    Element(version, extensionTypeToMFA2Type(type), length)
 {
 }
 
-VersionExtension::VersionExtension(const string& version) :
-        Extension(ELEMENT_VERSION, VersionExtensionType, LENGTH)
+VersionExtension::VersionExtension(const string& version) : Extension(ELEMENT_VERSION, VersionExtensionType, LENGTH)
 {
     int a, b, c;
     sscanf(version.c_str(), "%d.%d.%d", &a, &b, &c);
@@ -94,7 +94,7 @@ VersionExtension::VersionExtension(const string& version) :
     fillTimeAndDate();
 }
 
-VersionExtension::VersionExtension(const u_int16_t* version, const u_int16_t* fw_rel_date):
+VersionExtension::VersionExtension(const u_int16_t* version, const u_int16_t* fw_rel_date) :
     Extension(ELEMENT_VERSION, VersionExtensionType, LENGTH)
 {
     _major = version[0];
@@ -113,10 +113,10 @@ void VersionExtension::pack(vector<u_int8_t>& buff) const
     vector<u_int8_t> tmpBuff;
     struct tools_open_version version;
 
-    //pack common header
+    // pack common header
     _commonHeader.pack(buff);
 
-    //pack version info
+    // pack version info
     tmpBuff.resize(tools_open_version_size());
     memset(&version, 0x0, sizeof(version));
     version.version_major = _major;
@@ -128,25 +128,25 @@ void VersionExtension::pack(vector<u_int8_t>& buff) const
     version.seconds = _seconds;
     version.minutes = _minutes;
     version.hour = _hours;
- 
+
     tools_open_version_pack(&version, tmpBuff.data());
     buff.insert(buff.end(), tmpBuff.begin(), tmpBuff.end());
 }
 
-bool VersionExtension::unpack(Mfa2Buffer & buff)
+bool VersionExtension::unpack(Mfa2Buffer& buff)
 {
-    //unpack common header
+    // unpack common header
     _commonHeader.unpack(buff);
 
     struct tools_open_version version;
     int arr_size = tools_open_version_size();
-    u_int8_t * arr = new u_int8_t[arr_size];
+    u_int8_t* arr = new u_int8_t[arr_size];
     buff.read(arr, arr_size);
     memset(&version, 0x0, arr_size);
     tools_open_version_unpack(&version, arr);
     delete[] arr;
     arr = NULL;
-    //unpack version info
+    // unpack version info
     _major = version.version_major;
     _subMinor = version.version_sub_minor;
     _minor = version.version_minor;
@@ -159,23 +159,28 @@ bool VersionExtension::unpack(Mfa2Buffer & buff)
     return true;
 }
 
-string VersionExtension::getVersion(bool pad_sub_minor) const {
+string VersionExtension::getVersion(bool pad_sub_minor) const
+{
     stringstream ss;
     string res;
-    if (pad_sub_minor){
+    if (pad_sub_minor)
+    {
         char _sub_minor_str[5] = {0};
-        snprintf(_sub_minor_str, sizeof(_sub_minor_str), "%04d", (int)_subMinor % 10000);   // "% 10000" since subminor can be represented by 4 digits
-        ss << (int)_major << '.' << (int)_minor << '.' << _sub_minor_str;                   // and it helps the compiler to understand there are only 4 characters
-        }                                                                                   // so it can fit into _sub_minor_str variable
-    else{
+        snprintf(_sub_minor_str, sizeof(_sub_minor_str), "%04d",
+                 (int)_subMinor % 10000); // "% 10000" since subminor can be represented by 4 digits
+        ss << (int)_major << '.' << (int)_minor << '.'
+           << _sub_minor_str; // and it helps the compiler to understand there are only 4 characters
+    }                         // so it can fit into _sub_minor_str variable
+    else
+    {
         ss << (int)_major << '.' << (int)_minor << '.' << (int)_subMinor;
     }
-    ss>>res;
+    ss >> res;
     return res;
 }
 
-
-string VersionExtension::getDateAndTime() const {
+string VersionExtension::getDateAndTime() const
+{
     tm tm_obj;
     tm_obj.tm_sec = _seconds;
     tm_obj.tm_min = _minutes;
@@ -183,12 +188,13 @@ string VersionExtension::getDateAndTime() const {
     tm_obj.tm_mday = _day;
     tm_obj.tm_mon = _month;
     tm_obj.tm_year = _year - 1900;
-    char buffer [64];
-    strftime(buffer,64,"%Y-%m-%d %H:%M:%S", &tm_obj);
+    char buffer[64];
+    strftime(buffer, 64, "%Y-%m-%d %H:%M:%S", &tm_obj);
     return string(buffer);
 }
 
-void VersionExtension::getDateAndTime(char* buffer) const {
+void VersionExtension::getDateAndTime(char* buffer) const
+{
     sprintf(buffer, "%x.%x.%x", _day, _month, _year);
 }
 
@@ -197,7 +203,7 @@ void ComponentPointerExtension::pack(vector<u_int8_t>& buff) const
     vector<u_int8_t> tmpBuff;
     struct tools_open_component_ptr componentPointer;
 
-    //pack common header
+    // pack common header
     _commonHeader.pack(buff);
 
     tmpBuff.resize(tools_open_component_ptr_size());
@@ -207,23 +213,22 @@ void ComponentPointerExtension::pack(vector<u_int8_t>& buff) const
     componentPointer.storage_address = _storageAddress;
     tools_open_component_ptr_pack(&componentPointer, tmpBuff.data());
     buff.insert(buff.end(), tmpBuff.begin(), tmpBuff.end());
-
 }
 
-bool ComponentPointerExtension::unpack(Mfa2Buffer & buff)
+bool ComponentPointerExtension::unpack(Mfa2Buffer& buff)
 {
-    //unpack common header
+    // unpack common header
     _commonHeader.unpack(buff);
 
     struct tools_open_component_ptr componentPointer;
     int arr_size = tools_open_component_ptr_size();
-    u_int8_t * arr = new u_int8_t[arr_size];
+    u_int8_t* arr = new u_int8_t[arr_size];
     buff.read(arr, arr_size);
     memset(&componentPointer, 0x0, arr_size);
     tools_open_component_ptr_unpack(&componentPointer, arr);
     delete[] arr;
     arr = NULL;
-    //unpack version info
+    // unpack version info
     _componentIndex = componentPointer.component_index;
     _storageId = componentPointer.storage_id;
     _storageAddress = componentPointer.storage_address;
@@ -231,21 +236,22 @@ bool ComponentPointerExtension::unpack(Mfa2Buffer & buff)
 }
 
 SHA256Extension::SHA256Extension(enum SHA256Scope scope) :
-        Extension(ELEMENT_VERSION, scopeToExtensionType(scope), LENGTH)
+    Extension(ELEMENT_VERSION, scopeToExtensionType(scope), LENGTH)
 {
     _digest.resize(LENGTH);
 };
 
 Extension::ExtensionType SHA256Extension::scopeToExtensionType(enum SHA256Scope scope)
 {
-    switch(scope) {
-    case SHA256Scope_Descriptors:
-        return DescriptorsSHA256ExtensionType;
-    case SHA256Scope_All:
-        return SHA256ExtensionType;
-    default:
-        //throw exception TODO
-        return SHA256ExtensionType;
+    switch (scope)
+    {
+        case SHA256Scope_Descriptors:
+            return DescriptorsSHA256ExtensionType;
+        case SHA256Scope_All:
+            return SHA256ExtensionType;
+        default:
+            // throw exception TODO
+            return SHA256ExtensionType;
     }
 }
 
@@ -256,22 +262,23 @@ void SHA256Extension::setDigest(vector<u_int8_t> digest)
 
 void SHA256Extension::pack(vector<u_int8_t>& buff) const
 {
-    //pack common header
+    // pack common header
     _commonHeader.pack(buff);
 
     packBytesArray(_digest.data(), _digest.size(), buff);
 }
 
-bool SHA256Extension::unpack(Mfa2Buffer & buff)
+bool SHA256Extension::unpack(Mfa2Buffer& buff)
 {
-    //unpack common header
+    // unpack common header
     _commonHeader.unpack(buff);
 
     u_int16_t length = _commonHeader.getLength();
-    u_int8_t * arr = new u_int8_t[length];
+    u_int8_t* arr = new u_int8_t[length];
     buff.read(arr, length);
     _digest.resize(length);
-    for(u_int16_t i = 0; i < length; i++) {
+    for (u_int16_t i = 0; i < length; i++)
+    {
         _digest.push_back(arr[i]);
     }
     delete[] arr;
@@ -292,15 +299,15 @@ bool SHA256Extension::unpack(Mfa2Buffer & buff)
 
 void StringExtension::pack(vector<u_int8_t>& buff) const
 {
-    //pack common header
+    // pack common header
     _commonHeader.pack(buff);
 
     packString(_str, buff);
 }
 
-bool StringExtension::unpack(Mfa2Buffer & buff)
+bool StringExtension::unpack(Mfa2Buffer& buff)
 {
-    //unpack common header
+    // unpack common header
     _commonHeader.unpack(buff);
 
     u_int16_t length = _commonHeader.getLength();

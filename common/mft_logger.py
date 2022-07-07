@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 import logging
 
@@ -48,7 +48,6 @@ class LoggerFactory(object):
             log_level = logging.CRITICAL
         else:
             log_level = self._levels[level]
-
 
         logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - {%(pathname)s:%(lineno)d} - %(message)s')
         logger = logging.getLogger(name)

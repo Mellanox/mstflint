@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 """
 * $Id           : mlxfwreset_utils.py 2017-11-28
@@ -62,11 +62,13 @@ def cmdExec(cmd):
 # Description:  Run cmd in loops
 # OS Support :  N/A
 ######################################################################
-def cmdExecLoop( cmd, sleep_time, max_retries):
+
+
+def cmdExecLoop(cmd, sleep_time, max_retries):
     retries_num = 0
     rc = 1
-    while rc and retries_num <  max_retries:
-        (rc, stdout , stderr ) = cmdExec(cmd)
+    while rc and retries_num < max_retries:
+        (rc, stdout, stderr) = cmdExec(cmd)
         retries_num += 1
         time.sleep(sleep_time)
     return (rc, stdout, stderr)
@@ -76,30 +78,35 @@ def cmdExecLoop( cmd, sleep_time, max_retries):
 # OS Support :  N/A
 ######################################################################
 
+
 def getDomain(devAddr):
     devAddr = devAddr.split(":")
-    if len(devAddr) == 3 :
+    if len(devAddr) == 3:
         return devAddr[0]
     return None
 
+
 def addDomainToAddress(devAddr):
-    if len(devAddr.split(":")) == 2 :
+    if len(devAddr.split(":")) == 2:
         return "0000:" + devAddr
     return devAddr
 
+
 def removeDomainFromAddress(devAddr):
-    if len(devAddr.split(":")) == 3 :
+    if len(devAddr.split(":")) == 3:
         return devAddr[5:]
     return devAddr
 
+
 def isDevDBDFFormat(dev):
-    pat=r"[0-9,A-F,a-f]{4}:[0-9,A-F,a-f]{2}:[0-9,A-F,a-f]{2}\.[0-9,A-F,a-f]{1,2}"
+    pat = r"[0-9,A-F,a-f]{4}:[0-9,A-F,a-f]{2}:[0-9,A-F,a-f]{2}\.[0-9,A-F,a-f]{1,2}"
     if re.match(pat, dev):
         return True
     return False
 
+
 def isDevBDFFormat(dev):
-    pat=r"[0-9,A-F,a-f]{2}:[0-9,A-F,a-f]{2}\.[0-9,A-F,a-f]{1,2}"
+    pat = r"[0-9,A-F,a-f]{2}:[0-9,A-F,a-f]{2}\.[0-9,A-F,a-f]{1,2}"
     if re.match(pat, dev):
         return True
     return False
@@ -109,21 +116,22 @@ def isDevBDFFormat(dev):
 # OS Support :  Linux/Windows.
 ######################################################################
 
-def getDevDBDF(device,logger=None):
+
+def getDevDBDF(device, logger=None):
     if isDevDBDFFormat(device):
         return device
     if isDevBDFFormat(device):
         return addDomainToAddress(device)
 
     operatingSys = platform.system()
-    if (operatingSys == "FreeBSD") :
+    if (operatingSys == "FreeBSD"):
         if not(device.startswith("pci")):
             raise RuntimeError("Unexpected device name format")
         return device[3:]
     elif (operatingSys == "Linux"):
         cmd = "mdevices_info -vv"
         (rc, out, _) = cmdExec(cmd)
-        if rc != 0 :
+        if rc != 0:
             raise RuntimeError("Failed to get device PCI address")
         # extract bdf
         bdf = None
@@ -137,7 +145,7 @@ def getDevDBDF(device,logger=None):
     elif (operatingSys == "Windows"):
         cmd = "mdevices status -vv"
         (rc, out, _) = cmdExec(cmd)
-        if rc != 0 :
+        if rc != 0:
             raise RuntimeError("Failed to get device PCI address")
         # extract bdf
         bdf = None
@@ -152,8 +160,8 @@ def getDevDBDF(device,logger=None):
         raise RuntimeError("Unsupported OS")
 
 
-def is_in_internal_host(): 
-    ''' 
+def is_in_internal_host():
+    '''
     The function checks if the tool is running on the BlueField's internal host (ARM)
     The function will return true is the OS is Linux and PCIe root-port 00:00.0 is Mellanox
     '''
@@ -174,8 +182,9 @@ def is_in_internal_host():
 
     return is_in_internal_host.result
 
+
 def is_uefi_secureboot():
-    
+
     if platform.system() == "Linux":
         cmd = "mokutil --sb-state"
         rc, out, _ = cmdExec(cmd)

@@ -31,11 +31,12 @@
  *
  */
 
-#ifndef _MTCR_ICMD_CIF     /* guard */
+#ifndef _MTCR_ICMD_CIF /* guard */
 #define _MTCR_ICMD_CIF
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <compatibility.h>
@@ -45,8 +46,7 @@ extern "C" {
 #include <mtcr_int_defs.h>
 #endif
 
-
-/* --------- Typedefs & Constants ---------------------------------- */
+    /* --------- Typedefs & Constants ---------------------------------- */
 
 #ifndef IN
 #define IN
@@ -54,62 +54,61 @@ extern "C" {
 #define INOUT
 #endif
 
-#define FLASH_REG_ACCESS    0x9001
-#define ICMD_MAX_CMD_SIZE   0x340 // max mailbox size
+#define FLASH_REG_ACCESS 0x9001
+#define ICMD_MAX_CMD_SIZE 0x340 // max mailbox size
 
-MTCR_API extern int increase_poll_time;
+    MTCR_API extern int increase_poll_time;
 
+    /* --------- Functional API ---------------------------------------- */
+    /**
+     * Create a device-context for the command-interface of a ConnectIB device.
+     * @param[in] mf    Open mfile to the desired device.
+     * @return          zero value on success, non zero value on failure.
+     **/
+    int icmd_open(mfile* mf);
 
-/* --------- Functional API ---------------------------------------- */
-/**
- * Create a device-context for the command-interface of a ConnectIB device.
- * @param[in] mf    Open mfile to the desired device.
- * @return          zero value on success, non zero value on failure.
- **/
-int icmd_open(mfile *mf);
+    /**
+     * Close an open device-context for the command-interface of a
+     * ConnectIB device.
+     * @param[in] dev   A pointer to a device context, previously
+     *                  obtained by a call to <tt>gcif_open</tt>.
+     **/
+    void icmd_close(mfile* mf);
 
-/**
- * Close an open device-context for the command-interface of a
- * ConnectIB device.
- * @param[in] dev   A pointer to a device context, previously
- *                  obtained by a call to <tt>gcif_open</tt>.
- **/
-void icmd_close(mfile *mf);
+    /**
+     * Handles the send command procedure.
+     * for completeness, but calling it is strongly advised against.
+     * @param[in] dev   A pointer to a device context, previously
+     *                  obtained by a call to <tt>gcif_open</tt>.
+     * @return          One of the GCIF_STATUS_* values, or a raw
+     *                  status value (as indicated in cr-space).
+     **/
+    int icmd_send_command_int(mfile* mf,
+                              IN int opcode,
+                              INOUT void* data,
+                              IN int write_data_size,
+                              IN int read_data_size,
+                              IN int skip_write);
 
-/**
- * Handles the send command procedure.
- * for completeness, but calling it is strongly advised against.
- * @param[in] dev   A pointer to a device context, previously
- *                  obtained by a call to <tt>gcif_open</tt>.
- * @return          One of the GCIF_STATUS_* values, or a raw
- *                  status value (as indicated in cr-space).
- **/
-int icmd_send_command_int(mfile     *mf,
-                          IN int opcode,
-                          INOUT void *data,
-                          IN int write_data_size,
-                          IN int read_data_size,
-                          IN int skip_write);
+    int icmd_send_command_enhanced(mfile* mf,
+                                   IN int opcode,
+                                   INOUT void* data,
+                                   IN int write_data_size,
+                                   IN int read_data_size,
+                                   IN int skip_write);
 
-int icmd_send_command_enhanced(mfile     *mf,
-                               IN int opcode,
-                               INOUT void *data,
-                               IN int write_data_size,
-                               IN int read_data_size,
-                               IN int skip_write);
-
-/**
- * Take the Tools-HCR semaphore. This functionality is provided
- * for completeness, but calling it is strongly advised against.
- * @param[in] dev   A pointer to a device context, previously
- *                  obtained by a call to <tt>gcif_open</tt>.
- * @return          One of the GCIF_STATUS_* values, or a raw
- *                  status value (as indicated in cr-space).
- **/
-int icmd_take_semaphore(mfile *mf);
+    /**
+     * Take the Tools-HCR semaphore. This functionality is provided
+     * for completeness, but calling it is strongly advised against.
+     * @param[in] dev   A pointer to a device context, previously
+     *                  obtained by a call to <tt>gcif_open</tt>.
+     * @return          One of the GCIF_STATUS_* values, or a raw
+     *                  status value (as indicated in cr-space).
+     **/
+    int icmd_take_semaphore(mfile* mf);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _MTCR_ICMD_CIF guard */
+#endif /* _MTCR_ICMD_CIF guard */

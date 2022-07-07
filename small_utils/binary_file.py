@@ -39,7 +39,7 @@ class BinaryFile(object):
     """
     def __init__(self, file_path):
         self._file_path = file_path
-    
+
     def read_byte(self, offset):
         """
         Read 1B from the pci configuration
@@ -85,13 +85,13 @@ class BinaryFile(object):
                     zero_binary = binascii.unhexlify("00")  # Initialization
                     offset_interval = self._get_read_intervals(skip_offset_list, offset, size)
                     for interval_start, interval_size in offset_interval:
-                        if interval_size: # read interval
+                        if interval_size:  # read interval
                             f.seek(interval_start)
                             data += f.read(interval_size)
                         else:  # add '00' to data
                             data += zero_binary
                 else:
-                    f.seek(offset)        
+                    f.seek(offset)
                     data = f.read(size)
         except Exception as err:
             raise RuntimeError("Failed to parse file: {0} for reading. ERROR: {1}".format(self._file_path, err))
@@ -120,7 +120,7 @@ class BinaryFile(object):
                 skip_offset_list.remove(skip_offset)
         read_interval_set = set(skip_offset_list)
         # Add offset, offset+size to skip_list
-        read_interval_set.add(offset-1)
+        read_interval_set.add(offset - 1)
         read_interval_set.add(offset + size)
 
         read_interval_list = sorted(list(read_interval_set))
@@ -134,7 +134,7 @@ class BinaryFile(object):
 
         result = result[:-1]                               # remove the last tuple (offset+size, 0)
         return sorted(set(result))
-    
+
     def write(self, bytes_list, size, offset=0):
         """
         A method  to write data to a binary file
@@ -145,16 +145,16 @@ class BinaryFile(object):
             data_to_write += "{0:x}".format(byte).zfill(2)
         if len(data_to_write) > size * 2:
             raise RuntimeError("Failed to write data {0} invalid size".format(data_to_write))
-        bin_data = binascii.unhexlify(data_to_write) # Return the binary data represented by the hexadecimal string
+        bin_data = binascii.unhexlify(data_to_write)  # Return the binary data represented by the hexadecimal string
         try:
             with open(self._file_path, "wb") as f:
                 f.seek(offset)
                 f.write(bin_data)
         except Exception as e:
             raise RuntimeError("Failed writing to a file: {0}. ERROR: {1}".format(self._file_path, e))
-    
+
     def chunkstring(self, string, length):
         """
         Chunks the string to list of strings in the given length
         """
-        return (string[0+i:length+i] for i in range(0, len(string), length))
+        return (string[0 + i:length + i] for i in range(0, len(string), length))

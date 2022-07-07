@@ -52,12 +52,11 @@
 using namespace std;
 using namespace mfa2;
 
-class MFA2PackageGen {
-
+class MFA2PackageGen
+{
 private:
-
 public:
-    MFA2PackageGen() {};
+    MFA2PackageGen(){};
     void generateBinFromFWDirectory(const string& directory, const string& version, vector<u_int8_t>& buff) const;
 };
 

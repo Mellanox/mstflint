@@ -919,7 +919,7 @@ const char* GenericCommander::loadConfigurationGetStr()
     u_int32_t hwDevId, hwRevId;
     struct reg_access_hca_mfrl_reg_ext mfrl;
 
-    if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId) )
+    if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId))
     {
         throw MlxcfgException("Failed to identify the device");
     }
@@ -1646,8 +1646,6 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
 #endif
 }
 
-
-
 void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::comps_ids_t& compsId)
 {
     bool dbgCompFound = false;
@@ -1815,7 +1813,6 @@ void GenericCommander::apply(const vector<u_int8_t>& buff)
     {
         throw MlxcfgException("Error applying the component: %s", fwCompsAccess.getLastErrMsg());
     }
-
 }
 
 void GenericCommander::raw2XML(const vector<string>& lines, string& xmlTemplate)

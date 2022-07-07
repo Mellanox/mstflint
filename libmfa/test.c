@@ -34,26 +34,30 @@
 #include <stdio.h>
 #include "mfa.h"
 
-
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-    mfa_desc *md;
-    u_int8_t *buf = NULL;
+    mfa_desc* md;
+    u_int8_t* buf = NULL;
 
     mfa_init();
     int rc = mfa_open_file(&md, argv[1]);
-    if (rc) {
+    if (rc)
+    {
         printf("Error!\n");
     }
     ssize_t res = mfa_get_image(md, argv[2], 1, "", &buf);
     printf("RES=%d\n", res);
-    if (res < 0) {
+    if (res < 0)
+    {
         printf("ERR = %s\n", mfa_get_last_error(md));
-    } else {
+    }
+    else
+    {
         printf("DATA: %s\n", buf);
     }
 
-    if (res > 0) {
+    if (res > 0)
+    {
         free(buf);
     }
     mfa_close(md);

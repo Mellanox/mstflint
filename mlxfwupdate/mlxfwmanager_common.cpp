@@ -40,11 +40,12 @@
 #endif
 
 #if defined(__WIN__)
-const char* SafeGetEnv(const char *var)
+const char* SafeGetEnv(const char* var)
 {
-    char *val = getenv(var);
-    if (val == NULL) {
-        return ".";                 //Local dir
+    char* val = getenv(var);
+    if (val == NULL)
+    {
+        return "."; // Local dir
     }
     return val;
 }
@@ -57,37 +58,46 @@ int mapRetValue(int rc, mlxFWMSetupType::T setupType)
 
     map<int, int> dl;
     dl[ERR_CODE_NO_DEVICES_FOUND] = 0;
-    switch (setupType) {
-    case mlxFWMSetupType::lvim:
-        if (lvim.find(rc) != lvim.end() ) {
-            return lvim[rc];
-        }
-        break;
+    switch (setupType)
+    {
+        case mlxFWMSetupType::lvim:
+            if (lvim.find(rc) != lvim.end())
+            {
+                return lvim[rc];
+            }
+            break;
 
-    case mlxFWMSetupType::dl:
-        if (dl.find(rc) != dl.end() ) {
-            return dl[rc];
-        }
-        break;
+        case mlxFWMSetupType::dl:
+            if (dl.find(rc) != dl.end())
+            {
+                return dl[rc];
+            }
+            break;
 
-    default:
-        return rc;
+        default:
+            return rc;
     }
     return rc;
 }
 string beautify_device_name(string family)
 {
-    if (family == "connectx") {
+    if (family == "connectx")
+    {
         return "ConnectX";
-    } else if (family == "connect-ib") {
+    }
+    else if (family == "connect-ib")
+    {
         return "Connect-IB";
-    } else if (family == "connectx-4") {
+    }
+    else if (family == "connectx-4")
+    {
         return "ConnectX-4";
-    } else {
+    }
+    else
+    {
         return family;
     }
 }
-
 
 int CreateTempDir(string tempDir, string& tempBaseDir)
 {
@@ -96,14 +106,14 @@ int CreateTempDir(string tempDir, string& tempBaseDir)
     const int len = 512;
     char tmpstr[len] = {0};
 
-
-    #ifdef __WIN__
+#ifdef __WIN__
     int size;
     int pid;
     templ = tempDir;
 
     size = sizeof(tmpstr);
-    if (!GetUserName((LPTSTR)tmpstr, (LPDWORD)&size)) {
+    if (!GetUserName((LPTSTR)tmpstr, (LPDWORD)&size))
+    {
         fprintf(stderr, "-E- Failed to get username\n");
         return -1;
     }
@@ -115,53 +125,57 @@ int CreateTempDir(string tempDir, string& tempBaseDir)
 
     FixPath(templ);
     rc = ForceMkDir(templ);
-    if (rc != 0) {
+    if (rc != 0)
+    {
         fprintf(stderr, "-E- Failed to create temporary directory %s: %s\n", templ.c_str(), strerror(rc));
         return -1;
     }
-    #else
-    char *temp;
+#else
+    char* temp;
     tempDir += "XXXXXX";
     strncpy(tmpstr, tempDir.c_str(), len - 1);
     temp = mkdtemp(tmpstr);
-    if (temp == NULL) {
+    if (temp == NULL)
+    {
         fprintf(stderr, "-E- Failed to create temporary directory\n");
         return -1;
     }
     templ = tmpstr;
-    #endif
+#endif
 
     tempBaseDir = templ;
     return rc;
 }
 
-int RemoveDir(const string &dir)
+int RemoveDir(const string& dir)
 {
     string rmdirCmd;
 
-    #ifdef __WIN__
+#ifdef __WIN__
     rmdirCmd = "rd /s /q \"";
     rmdirCmd += dir;
     rmdirCmd += "\"";
-    #else
-    if ((dir == "/") || (dir == "")) {
+#else
+    if ((dir == "/") || (dir == ""))
+    {
         return 0;
     }
     rmdirCmd = "rm -rf ";
     rmdirCmd += dir;
-    #endif
+#endif
     return system(rmdirCmd.c_str());
 }
 
 int MkDir(const string dir)
 {
     int rc;
-    #ifdef __WIN__
+#ifdef __WIN__
     rc = mkdir(dir.c_str());
-    #else
+#else
     rc = mkdir(dir.c_str(), 0777);
-    #endif
-    if (rc) {
+#endif
+    if (rc)
+    {
         rc = errno;
     }
     return rc;
@@ -169,38 +183,44 @@ int MkDir(const string dir)
 
 #ifdef __WIN__
 
-void FixPath(string &s)
+void FixPath(string& s)
 {
-    #ifdef __WIN__
+#ifdef __WIN__
     size_t pos;
-    while ((pos = s.find('/')) != string::npos) {
-        s.replace( pos, 1, "\\");
+    while ((pos = s.find('/')) != string::npos)
+    {
+        s.replace(pos, 1, "\\");
     }
-    #else
+#else
     (void)s;
-    #endif
+#endif
 }
 
 int ForceMkDir(const string dir)
 {
     int rc = MkDir(dir);
-    if (rc != 0) {
-        if (rc == EEXIST) {
+    if (rc != 0)
+    {
+        if (rc == EEXIST)
+        {
             RemoveDir(dir);
             rc = MkDir(dir);
-        } else {
+        }
+        else
+        {
             return rc;
         }
     }
     return rc;
 }
 
-int mlxfw_replace(char *st, char *orig, char *repl)
+int mlxfw_replace(char* st, char* orig, char* repl)
 {
     char buffer[1024];
-    char *ch;
+    char* ch;
 
-    if (!(ch = strstr(st, orig))) {
+    if (!(ch = strstr(st, orig)))
+    {
         return 0;
     }
     strncpy(buffer, st, ch - st);
@@ -211,13 +231,14 @@ int mlxfw_replace(char *st, char *orig, char *repl)
     return 0;
 }
 
-int mlxfw_get_exec_name_from_path(char *str, char *exec_name)
+int mlxfw_get_exec_name_from_path(char* str, char* exec_name)
 {
-    char *tmp_str = new char[strlen(str) + 1];
-    char *pch;
+    char* tmp_str = new char[strlen(str) + 1];
+    char* pch;
     strcpy(tmp_str, str);
     pch = strtok(tmp_str, "\\");
-    while (pch != NULL) {
+    while (pch != NULL)
+    {
         strcpy(exec_name, pch);
         pch = strtok(NULL, "\\");
     }
@@ -227,13 +248,12 @@ int mlxfw_get_exec_name_from_path(char *str, char *exec_name)
 
 #endif
 
-bool unzipDataFile(std::vector<u_int8_t> data,
-                   std::vector<u_int8_t> &newData,
-                   const char *sectionName)
+bool unzipDataFile(std::vector<u_int8_t> data, std::vector<u_int8_t>& newData, const char* sectionName)
 {
 #ifndef NO_ZLIB
     int rc;
-    if (data.empty()) {
+    if (data.empty())
+    {
         return false;
     }
     // restore endianess.
@@ -244,17 +264,19 @@ bool unzipDataFile(std::vector<u_int8_t> data,
     destLen *= 40; // Assuming this is the best compression ratio
     vector<u_int8_t> dest(destLen);
 
-    for (int i = 0; i < 32; i++) {
-        rc = uncompress((Bytef*)&(dest[0]), &destLen,
-                        (const Bytef*)&(data[0]), data.size());
-        if (rc != Z_BUF_ERROR) {
+    for (int i = 0; i < 32; i++)
+    {
+        rc = uncompress((Bytef*)&(dest[0]), &destLen, (const Bytef*)&(data[0]), data.size());
+        if (rc != Z_BUF_ERROR)
+        {
             break;
         }
         destLen *= 2;
         dest.resize(destLen);
     }
 
-    if (rc != Z_OK) {
+    if (rc != Z_OK)
+    {
         return false;
     }
     // printf("%s", (char*)&(dest[0]));
@@ -262,34 +284,35 @@ bool unzipDataFile(std::vector<u_int8_t> data,
     newData = dest;
     newData[destLen] = 0; // Terminating NULL
     newData.resize(destLen + 1);
-    (void) sectionName;
+    (void)sectionName;
     return true;
 #else
     // avoid warnings
-    (void) data;
-    (void) newData;
-    (void) sectionName;
+    (void)data;
+    (void)newData;
+    (void)sectionName;
     return false;
 #endif
 }
 
 #ifdef __WIN__
-int my_chmod(const char *path, mode_t mode)
+int my_chmod(const char* path, mode_t mode)
 {
-
     int result = _chmod(path, (mode & MS_MODE_MASK));
 
-    if (result != 0) {
+    if (result != 0)
+    {
         result = errno;
     }
     return (result);
 }
 #else
-int my_chmod(const char *path, mode_t mode)
+int my_chmod(const char* path, mode_t mode)
 {
     int result = chmod(path, mode);
 
-    if (result != 0) {
+    if (result != 0)
+    {
         result = errno;
     }
     return (result);
@@ -299,7 +322,7 @@ int my_chmod(const char *path, mode_t mode)
 string getErrStr(int rc)
 {
     map<int, string> err_msg;
-    err_msg[MLX_FWM_SUCCESS] =  "";
+    err_msg[MLX_FWM_SUCCESS] = "";
     err_msg[ERR_CODE_QUERY_FAILED] = ERR_MSG_QUERY_FAILED;
     err_msg[ERR_CODE_PROG_FAILED] = ERR_MSG_PROG_FAILED;
     err_msg[ERR_CODE_BAD_CMD_ARGS] = ERR_MSG_BAD_CMD_ARGS;
@@ -329,7 +352,8 @@ string getErrStr(int rc)
     err_msg[ERR_CODE_INVALID_CHOICE] = ERR_MSG_IVALID_CHOICE;
     err_msg[ERR_CODE_NONE_FAIL_SAFE] = ERR_MSG_NONE_FAIL_SAFE;
     err_msg[ERR_CODE_SERVER_QUERY_FAILED] = ERR_MSG_SERVER_QUERY;
-    if (err_msg.find(rc) != err_msg.end()) {
+    if (err_msg.find(rc) != err_msg.end())
+    {
         return err_msg[rc];
     }
     return "Unknown error";

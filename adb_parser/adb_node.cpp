@@ -53,9 +53,7 @@ using namespace boost;
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 
-AdbNode::AdbNode() : size(0), _maxLeafSize(0), isUnion(false), inLayout(false), lineNumber(-1), userData(0)
-{
-}
+AdbNode::AdbNode() : size(0), _maxLeafSize(0), isUnion(false), inLayout(false), lineNumber(-1), userData(0) {}
 
 /**
  *  * Function: AdbNode::~AdbNode
@@ -77,7 +75,7 @@ AdbNode::~AdbNode()
 /**
  *  * Function: AdbNode::toXml
  *   **/
-string AdbNode::toXml(const string &addPrefix)
+string AdbNode::toXml(const string& addPrefix)
 {
     string xml = "<node name=\"" + addPrefix + name + "\" descr=\"" + encodeXml(descNativeToXml(desc)) + "\"";
     for (AttrsMap::iterator it = attrs.begin(); it != attrs.end(); it++)
@@ -115,9 +113,8 @@ string AdbNode::toXml(const string &addPrefix)
 void AdbNode::print(int indent)
 {
     cout << indentString(indent);
-    cout << "+ Node Name: " << name << " size: 0x" << hex << size / 32 * 4
-         << "." << dec << size % 32 << " isUnion: " << isUnion
-         << " Description: " << desc << endl;
+    cout << "+ Node Name: " << name << " size: 0x" << hex << size / 32 * 4 << "." << dec << size % 32
+         << " isUnion: " << isUnion << " Description: " << desc << endl;
 
     cout << indentString(indent) << "Fields:" << endl;
     for (size_t i = 0; i < fields.size(); i++)

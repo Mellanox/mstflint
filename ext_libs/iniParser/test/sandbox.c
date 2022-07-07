@@ -35,10 +35,11 @@
 #include <stdio.h>
 #include "../src/iniparser.h"
 
-char *ini_file = "../example.ini";
+char* ini_file = "../example.ini";
 
-int main() {
-  dictionary* d = iniparser_load(ini_file);
-  iniparser_dump_ini(d, stdout);
-  iniparser_freedict(d);
+int main()
+{
+    dictionary* d = iniparser_load(ini_file);
+    iniparser_dump_ini(d, stdout);
+    iniparser_freedict(d);
 }

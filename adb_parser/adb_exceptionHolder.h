@@ -45,18 +45,17 @@
 
 using namespace std;
 
-
 typedef vector<string> StringVector;
 typedef map<string, StringVector> ExceptionsMap;
 
-
-
-class ExceptionHolder {
+class ExceptionHolder
+{
 public:
     // METHODS
     static void insertNewException(const string exceptionType, string exceptionTxt);
     static ExceptionsMap getAdbExceptionsMap();
     static int getNumberOfExceptions();
+
 public:
     // VARIABLES
     static ExceptionsMap adbExceptionMap;
@@ -67,20 +66,20 @@ public:
 };
 
 /*************************** AdbException ***************************/
-class AdbException: public std::exception {
+class AdbException : public std::exception
+{
 public:
     // Methods
     AdbException();
-    AdbException(const char *msg, ...) __attribute__((format(__printf__, 2, 3)));
+    AdbException(const char* msg, ...) __attribute__((format(__printf__, 2, 3)));
     AdbException(string msg);
-    virtual ~AdbException() throw (); 
-    virtual const char* what() const throw (); 
+    virtual ~AdbException() throw();
+    virtual const char* what() const throw();
     virtual string what_s() const;
 
 private:
     string _msg;
 };
-
 
 /**
  * Function: ExceptionHolder::getNumberOfExceptions

@@ -41,12 +41,12 @@
 
 using namespace std;
 
-class FuseGW 
+class FuseGW
 {
 public:
     FuseGW(mfile* mf);
-    ~FuseGW() {};
-        
+    ~FuseGW(){};
+
     void getData(u_int32_t& data);
     void setGWAddress(u_int32_t address);
     void setDataAddress(u_int32_t address);
@@ -56,14 +56,14 @@ public:
 private:
     mfile* _mf;
     u_int32_t _gw_address;
-    u_int32_t _data_address; 
-    size_t _data_bit_offset; 
+    u_int32_t _data_address;
+    size_t _data_bit_offset;
     size_t _data_bit_len;
 
     u_int32_t static const CTRL_LOCK_BIT_OFFSET = 31;
-    u_int32_t static const CTRL_RW   = 0x40000000;
+    u_int32_t static const CTRL_RW = 0x40000000;
     u_int32_t static const CTRL_READ = CTRL_RW & 0xffffffff;
-    u_int32_t static const CTRL_BUSY = 0x20000000;        
+    u_int32_t static const CTRL_BUSY = 0x20000000;
 
     void lock();
     void waitForGWLockState(u_int32_t address, u_int32_t requiredState);
@@ -76,12 +76,11 @@ private:
     void alignBits(u_int8_t* src, size_t byte_len, size_t bit_offset);
 };
 
-
 class LifeCycleFuse
 {
 public:
     LifeCycleFuse(mfile* mf, chip_type_t chip_type);
-    ~LifeCycleFuse() {};
+    ~LifeCycleFuse(){};
 
     bool isAccessibleInLiveFish();
     int getStatus(life_cycle_t& life_cycle);
@@ -92,16 +91,15 @@ private:
 
     FuseGW _gw;
     chip_type_t _chip_type;
-    
+
     bool _is_supported_in_live_fish;
 };
-
 
 class SecureBootFuse
 {
 public:
     SecureBootFuse(mfile* mf, chip_type_t chip_type);
-    ~SecureBootFuse() {};
+    ~SecureBootFuse(){};
 
     bool isAccessibleInLiveFish();
     int isSecureBoot(bool& is_secure_boot);
@@ -112,19 +110,22 @@ private:
     bool _is_supported_in_live_fish;
 };
 
-
 class SecurityVersionFuse
 {
 public:
     SecurityVersionFuse(mfile* mf, chip_type_t chip_type);
-    ~SecurityVersionFuse() {};
+    ~SecurityVersionFuse(){};
 
     bool isAccessibleInLiveFish();
     bool getSecurityVersion(u_int32_t& result);
 
-private:   
-    typedef enum {ROLLBACK_PROTECTION, MINIMAL_VERSION} gw_type_t;
-    
+private:
+    typedef enum
+    {
+        ROLLBACK_PROTECTION,
+        MINIMAL_VERSION
+    } gw_type_t;
+
     void getRollbackProtection(u_int32_t* result);
     void getMinimalSecurityVersion(u_int32_t* result);
     void setGWAddress(gw_type_t gw_type);

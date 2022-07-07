@@ -55,26 +55,28 @@
 
 using namespace std;
 
-namespace mfa2 {
-
-class Descriptor : protected Element {
+namespace mfa2
+{
+class Descriptor : protected Element
+{
 protected:
-    enum DescriptorType {
+    enum DescriptorType
+    {
         PackageDescriptorType,
         DeviceDescriptorType,
         ComponentDescriptorType
     };
     MFA2Type descriptorTypeToMFA2Type(DescriptorType type);
-    vector<Extension*>  _extensions;
+    vector<Extension*> _extensions;
+
 public:
     Descriptor(u_int8_t vesrion, DescriptorType type, u_int32_t length);
     virtual ~Descriptor();
     void addExtension(Extension* extension);
-    void packMultiPart(u_int8_t extensionsCount, u_int16_t totalLength,
-            vector<u_int8_t>& buff) const;
-    bool unpackMultiPart(u_int8_t &extensionsCount, u_int16_t &totalLength, Mfa2Buffer & buff);
+    void packMultiPart(u_int8_t extensionsCount, u_int16_t totalLength, vector<u_int8_t>& buff) const;
+    bool unpackMultiPart(u_int8_t& extensionsCount, u_int16_t& totalLength, Mfa2Buffer& buff);
     virtual void pack(vector<u_int8_t>& buff) const = 0;
-    virtual bool unpack(Mfa2Buffer & buff) = 0;
+    virtual bool unpack(Mfa2Buffer& buff) = 0;
 };
 
 inline void Descriptor::addExtension(Extension* extension)
@@ -82,23 +84,23 @@ inline void Descriptor::addExtension(Extension* extension)
     _extensions.push_back(extension);
 }
 
-class PackageDescriptor : public Descriptor {
+class PackageDescriptor : public Descriptor
+{
 private:
-    u_int16_t                   _deviceDescriptorsCount;
-    u_int16_t                   _componentsCount;
-    VersionExtension            _version;
-    u_int32_t                   _componentsBlockOffset;
-    u_int32_t                   _componentsBlockArchiveSize;
-    u_int64_t                   _componentsBlockSize;
-    SHA256Extension             _SHA256Extension;
-    SHA256Extension             _descriptorsSHA256Extension;
-public:
-    const static u_int8_t  ELEMENT_VERSION = 0x0;
-    const static u_int32_t LENGTH  = TOOLS_OPEN_PACKAGE_DESCRIPTOR_SIZE;
+    u_int16_t _deviceDescriptorsCount;
+    u_int16_t _componentsCount;
+    VersionExtension _version;
+    u_int32_t _componentsBlockOffset;
+    u_int32_t _componentsBlockArchiveSize;
+    u_int64_t _componentsBlockSize;
+    SHA256Extension _SHA256Extension;
+    SHA256Extension _descriptorsSHA256Extension;
 
-    PackageDescriptor(u_int16_t deviceDescriptorsCount,
-                      u_int16_t componentsCount,
-                      VersionExtension version);
+public:
+    const static u_int8_t ELEMENT_VERSION = 0x0;
+    const static u_int32_t LENGTH = TOOLS_OPEN_PACKAGE_DESCRIPTOR_SIZE;
+
+    PackageDescriptor(u_int16_t deviceDescriptorsCount, u_int16_t componentsCount, VersionExtension version);
 
     void setComponentsBlockOffset(u_int64_t offset);
     void setComponentsBlockArchiveSize(u_int32_t size);
@@ -106,12 +108,12 @@ public:
     void setDescriptorsSHA256(const vector<u_int8_t>& digest);
     void setSHA256(const vector<u_int8_t>& digest);
     void pack(vector<u_int8_t>& buff) const;
-    virtual bool unpack(Mfa2Buffer & buff);
-    u_int16_t getDeviceDescriptorsCount() const { return _deviceDescriptorsCount;}
-    u_int16_t getComponentsCount() const { return _componentsCount;}
-    const VersionExtension & getVersionExtension() const {return _version;}
-    u_int64_t getComponentsBlockSize  ();
-    u_int32_t getComponentsBlockOffset  ();
+    virtual bool unpack(Mfa2Buffer& buff);
+    u_int16_t getDeviceDescriptorsCount() const { return _deviceDescriptorsCount; }
+    u_int16_t getComponentsCount() const { return _componentsCount; }
+    const VersionExtension& getVersionExtension() const { return _version; }
+    u_int64_t getComponentsBlockSize();
+    u_int32_t getComponentsBlockOffset();
 };
 
 inline void PackageDescriptor::setComponentsBlockOffset(u_int64_t offset)
@@ -133,60 +135,63 @@ inline void PackageDescriptor::setComponentsBlockSize(u_int64_t size)
 {
     _componentsBlockSize = size;
 }
-inline u_int64_t PackageDescriptor::getComponentsBlockSize() 
+inline u_int64_t PackageDescriptor::getComponentsBlockSize()
 {
     return _componentsBlockSize;
 }
 
-class DeviceDescriptor : public Descriptor {
+class DeviceDescriptor : public Descriptor
+{
 private:
-    vector<ComponentPointerExtension>   _componentPointers;
-    PSIDExtension                       _PSID;
+    vector<ComponentPointerExtension> _componentPointers;
+    PSIDExtension _PSID;
+
 public:
-    const static u_int8_t  ELEMENT_VERSION = 0x0;
-    const static u_int32_t LENGTH  = 0x0;
+    const static u_int8_t ELEMENT_VERSION = 0x0;
+    const static u_int32_t LENGTH = 0x0;
 
-    DeviceDescriptor(vector<ComponentPointerExtension> componentPointers,
-            PSIDExtension PSID);
+    DeviceDescriptor(vector<ComponentPointerExtension> componentPointers, PSIDExtension PSID);
     void pack(vector<u_int8_t>& buff) const;
-    virtual bool unpack(Mfa2Buffer & buff);
+    virtual bool unpack(Mfa2Buffer& buff);
 
-    const PSIDExtension & getPSIDExtension() const { return _PSID;}
+    const PSIDExtension& getPSIDExtension() const { return _PSID; }
     u_int8_t getComponentPointerExtensionsCount() const { return _componentPointers.size(); }
-    const ComponentPointerExtension & getComponentPointerExtension(int index) { return _componentPointers[index]; }
+    const ComponentPointerExtension& getComponentPointerExtension(int index) { return _componentPointers[index]; }
 };
 
-
-class ComponentDescriptor : public Descriptor {
+class ComponentDescriptor : public Descriptor
+{
 private:
-    VersionExtension    _version;
-    //string              _source;
-    u_int64_t           _componentBlockOffset;
-    u_int64_t           _binarySize;
-    vector<u_int8_t>    _data;
+    VersionExtension _version;
+    // string              _source;
+    u_int64_t _componentBlockOffset;
+    u_int64_t _binarySize;
+    vector<u_int8_t> _data;
+
 public:
-    const static u_int8_t  ELEMENT_VERSION = 0x0;
-    const static u_int32_t LENGTH  = TOOLS_OPEN_COMPONENT_DESCIPTOR_SIZE;
+    const static u_int8_t ELEMENT_VERSION = 0x0;
+    const static u_int32_t LENGTH = TOOLS_OPEN_COMPONENT_DESCIPTOR_SIZE;
     ComponentDescriptor(VersionExtension version, string source);
     ComponentDescriptor(VersionExtension version, vector<u_int8_t> data);
 
-    virtual bool unpack(Mfa2Buffer & buff);
-    const VersionExtension & getVersionExtension() const {return _version;}
+    virtual bool unpack(Mfa2Buffer& buff);
+    const VersionExtension& getVersionExtension() const { return _version; }
 
-    //string      getSource               ()                          const;
-    void        setComponentBinaryOffset(u_int64_t offset);
-    u_int64_t   getComponentBinaryOffset() const; 
-    void        pack                    (vector<u_int8_t>& buff)    const;
-    u_int32_t   getBinarySize           ()                          const;
-    void        packData                (vector<u_int8_t>& buff)    const;
-    void        unpackData(vector<u_int8_t>& buff);
+    // string      getSource               ()                          const;
+    void setComponentBinaryOffset(u_int64_t offset);
+    u_int64_t getComponentBinaryOffset() const;
+    void pack(vector<u_int8_t>& buff) const;
+    u_int32_t getBinarySize() const;
+    void packData(vector<u_int8_t>& buff) const;
+    void unpackData(vector<u_int8_t>& buff);
 };
 
 /*inline string ComponentDescriptor::getSource() const
 {
     return _source;
 };*/
-inline u_int64_t ComponentDescriptor::getComponentBinaryOffset() const{
+inline u_int64_t ComponentDescriptor::getComponentBinaryOffset() const
+{
     return _componentBlockOffset;
 }
 
@@ -209,5 +214,5 @@ inline void ComponentDescriptor::packData(vector<u_int8_t>& buff) const
     packBytesArray(_data.data(), _data.size(), buff);
 }
 
-}
+} // namespace mfa2
 #endif

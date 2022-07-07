@@ -42,10 +42,10 @@
 
 #include "flint.h"
 
-//Globals:
-Flint *gFlint = NULL;
-extern FILE *flint_log_fh;
-//signal handler section
+// Globals:
+Flint* gFlint = NULL;
+extern FILE* flint_log_fh;
+// signal handler section
 
 #define BURN_INTERRUPTED 0x1234
 
@@ -54,44 +54,45 @@ void TerminationHandler(int signum);
 #ifdef __WIN__
 #include <windows.h>
 
-static BOOL CtrlHandler( DWORD fdwCtrlType )
+static BOOL CtrlHandler(DWORD fdwCtrlType)
 {
     switch (fdwCtrlType)
     {
-    // Handle the CTRL-C signal.
-    case CTRL_C_EVENT:
-    // CTRL-CLOSE: confirm that the user wants to exit.
-    case CTRL_CLOSE_EVENT:
-    // Pass other signals to the next handler.
-    case CTRL_BREAK_EVENT:
-    case CTRL_LOGOFF_EVENT:
-    case CTRL_SHUTDOWN_EVENT:
-        TerminationHandler(SIGINT);
-        return TRUE;
+        // Handle the CTRL-C signal.
+        case CTRL_C_EVENT:
+        // CTRL-CLOSE: confirm that the user wants to exit.
+        case CTRL_CLOSE_EVENT:
+        // Pass other signals to the next handler.
+        case CTRL_BREAK_EVENT:
+        case CTRL_LOGOFF_EVENT:
+        case CTRL_SHUTDOWN_EVENT:
+            TerminationHandler(SIGINT);
+            return TRUE;
 
-    default:
-        return FALSE;
+        default:
+            return FALSE;
     }
 }
 
 #endif
 
-
 void TerminationHandler(int signum)
 {
     static volatile sig_atomic_t fatal_error_in_progress = 0;
 
-    if (fatal_error_in_progress) {
+    if (fatal_error_in_progress)
+    {
         raise(signum);
     }
     fatal_error_in_progress = 1;
 
     write_result_to_log(BURN_INTERRUPTED, "");
     close_log();
-    if (gFlint != NULL) {
+    if (gFlint != NULL)
+    {
         printf("\n Received signal %d. Cleaning up ...\n", signum);
         fflush(stdout);
-        //sleep(1); // Legacy from the Old Flint
+        // sleep(1); // Legacy from the Old Flint
         gFlint->GetSubCommands()[gFlint->GetFlintParams().cmd]->cleanInterruptedCommand();
         delete gFlint;
         gFlint = NULL;
@@ -111,30 +112,32 @@ static int signalList[SIGNAL_NUM] = {SIGINT, SIGTERM, SIGPIPE, SIGHUP};
 
 void initHandler()
 {
-
 #ifdef __WIN__
-    SetConsoleCtrlHandler( (PHANDLER_ROUTINE) CtrlHandler, true );
+    SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, true);
 #endif
 
-    //set the signal handler
-    for (int i = 0; i < SIGNAL_NUM; i++) {
+    // set the signal handler
+    for (int i = 0; i < SIGNAL_NUM; i++)
+    {
         void (*prevFunc)(int);
         prevFunc = signal(signalList[i], TerminationHandler);
-        if (prevFunc == SIG_ERR) {
+        if (prevFunc == SIG_ERR)
+        {
             printf("-E- failed to set signal Handler.");
             exit(FLINT_FAILED);
         }
     }
 }
 
-void ignoreSignals() {
-    for (int i = 0; i < SIGNAL_NUM; i++) {
+void ignoreSignals()
+{
+    for (int i = 0; i < SIGNAL_NUM; i++)
+    {
         signal(signalList[i], SIG_IGN);
     }
 }
 
-//End of signal handler section.
-
+// End of signal handler section.
 
 map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
 {
@@ -181,8 +184,8 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Set_Forbidden_Versions] = new SetForbiddenVersionsSubCommand();
     cmdMap[SC_Image_Reactivation] = new ImageReactivationSubCommand();
     cmdMap[SC_RSA_Sign] = new SignRSASubCommand();
-    cmdMap[SC_Binary_Compare] = new  BinaryCompareSubCommand();
-    cmdMap[SC_Import_Hsm_Key] = new  ImportHsmKeySubCommand();
+    cmdMap[SC_Binary_Compare] = new BinaryCompareSubCommand();
+    cmdMap[SC_Import_Hsm_Key] = new ImportHsmKeySubCommand();
 #ifndef NO_OPEN_SSL
     cmdMap[SC_Export_Public_Key] = new ExportPublicSubCommand();
 #endif
@@ -194,7 +197,6 @@ void Flint::deInitSubcommandMap(map_sub_cmd_t_to_subcommand cmdMap)
     for (map_sub_cmd_t_to_subcommand::iterator it = cmdMap.begin(); it != cmdMap.end(); ++it)
         delete it->second;
 }
-
 
 Flint::Flint() :
     CommandLineRequester(FLINT_DISPLAY_NAME " [OPTIONS] <command> [Parameters]"),
@@ -210,51 +212,64 @@ Flint::~Flint()
     deInitSubcommandMap(_subcommands);
 }
 
-FlintStatus Flint::run(int argc, char *argv[])
+FlintStatus Flint::run(int argc, char* argv[])
 {
-    //Step1 parse input
-    //There are some memory allocations parseCmdLine
+    // Step1 parse input
+    // There are some memory allocations parseCmdLine
     ParseStatus status;
-    try {
+    try
+    {
         status = this->parseCmdLine(argc, argv);
-    } catch (exception& e) {
+    }
+    catch (exception& e)
+    {
         cout << "-E- " << e.what() << endl;
         return FLINT_FAILED;
     }
-    if (status == PARSE_OK_WITH_EXIT) {
+    if (status == PARSE_OK_WITH_EXIT)
+    {
         return FLINT_SUCCESS;
-    } else if (status == PARSE_ERROR || status == PARSE_ERROR_SHOW_USAGE) {
-        if (string(_cmdParser.GetErrDesc()).length() > 0) {
+    }
+    else if (status == PARSE_ERROR || status == PARSE_ERROR_SHOW_USAGE)
+    {
+        if (string(_cmdParser.GetErrDesc()).length() > 0)
+        {
             cout << "-E- " << this->_cmdParser.GetErrDesc() << endl;
         }
         return FLINT_FAILED;
     }
 
-    if (_flintParams.cmd == SC_No_Cmd && !_flintParams.clear_semaphore) {
+    if (_flintParams.cmd == SC_No_Cmd && !_flintParams.clear_semaphore)
+    {
         cout << FLINT_NO_COMMAND_ERROR << endl;
         return FLINT_FAILED;
     }
-    if (_flintParams.clear_semaphore) {
-        if (_flintParams.cmd != SC_No_Cmd) {
+    if (_flintParams.clear_semaphore)
+    {
+        if (_flintParams.cmd != SC_No_Cmd)
+        {
             printf(FLINT_CLEAR_SEM_CMD_ERROR);
             return FLINT_FAILED;
         }
         _flintParams.cmd = SC_Clear_Sem;
     }
 
-    //TODO: adrianc: remove use_fw flag and this condition before MFT-4.1.0
-    if (_flintParams.use_fw && _flintParams.override_cache_replacement) {
+    // TODO: adrianc: remove use_fw flag and this condition before MFT-4.1.0
+    if (_flintParams.use_fw && _flintParams.override_cache_replacement)
+    {
         printf("-E- flags --use_fw and --override_cache_replacement/-ocr cannot be specified simultaneously");
         return FLINT_FAILED;
     }
 
     // Step 2 save argv as a single cmd string in flint params for the log functionality
-    for (int i = 0; i < argc; i++) {
+    for (int i = 0; i < argc; i++)
+    {
         _flintParams.fullCmd = _flintParams.fullCmd + argv[i] + " ";
     }
-    //TODO: Step 3 check flintParams for contradictions?
-    //Step 4 execute command from the correct subcommand class
-    if (_subcommands.count(_flintParams.cmd) == 0) {
+    // TODO: Step 3 check flintParams for contradictions?
+    // Step 4 execute command from the correct subcommand class
+    if (_subcommands.count(_flintParams.cmd) == 0)
+    {
         // should not be reached
         printf("-E- FATAL: command object not found.");
         return FLINT_FAILED;
@@ -263,15 +278,15 @@ FlintStatus Flint::run(int argc, char *argv[])
     return _subcommands[_flintParams.cmd]->executeCommand();
 }
 
-
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     initHandler();
     try
     {
         gFlint = new Flint();
         FlintStatus rc = gFlint->run(argc, argv);
-        if (gFlint) {
+        if (gFlint)
+        {
             ignoreSignals(); // clean-up should be signal free, prevent possible clean-up re-entry
             delete gFlint;
             gFlint = NULL;

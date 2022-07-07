@@ -37,17 +37,17 @@
 
 ExceptionsMap ExceptionHolder::adbExceptionMap;
 const string ExceptionHolder::FATAL_EXCEPTION = "FATAL";
-const string ExceptionHolder::ERROR_EXCEPTION = "ERROR"; 
-const string ExceptionHolder::WARN_EXCEPTION = "WARNING"; 
+const string ExceptionHolder::ERROR_EXCEPTION = "ERROR";
+const string ExceptionHolder::WARN_EXCEPTION = "WARNING";
 int ExceptionHolder::exceptionCounter = 0;
 
-AdbException::AdbException() {
-}
+AdbException::AdbException() {}
 
 /**
  * Function: AdbException::AdbException
  **/
-AdbException::AdbException(const char *fmt, ...) {
+AdbException::AdbException(const char* fmt, ...)
+{
     char tmp[1024];
     va_list args;
     va_start(args, fmt);
@@ -59,31 +59,31 @@ AdbException::AdbException(const char *fmt, ...) {
 /**
  * Function: AdbException::AdbException
  **/
-AdbException::AdbException(string msg) :
-    _msg(msg) {
-}
+AdbException::AdbException(string msg) : _msg(msg) {}
 
 /**
  * Function: AdbException::~AdbException
  **/
-AdbException::~AdbException() throw () {
-}
+AdbException::~AdbException() throw() {}
 
 /**
  * Function: AdbException::what
  **/
-const char* AdbException::what() const throw () {
+const char* AdbException::what() const throw()
+{
     return _msg.c_str();
 }
 
 /**
  * Function: AdbException::what_s
  **/
-string AdbException::what_s() const {
+string AdbException::what_s() const
+{
     return _msg;
 }
 
-int ExceptionHolder::getNumberOfExceptions() {
+int ExceptionHolder::getNumberOfExceptions()
+{
     return ExceptionHolder::exceptionCounter;
 }
 
@@ -92,7 +92,8 @@ int ExceptionHolder::getNumberOfExceptions() {
  *   * This function return the adb exception map
  *    **/
 
-ExceptionsMap ExceptionHolder::getAdbExceptionsMap() {
+ExceptionsMap ExceptionHolder::getAdbExceptionsMap()
+{
     return ExceptionHolder::adbExceptionMap;
 }
 
@@ -101,7 +102,8 @@ ExceptionsMap ExceptionHolder::getAdbExceptionsMap() {
  *   * This function take the excpetion type [FATAL:0, ERROR:1, WARNING:2] and the exception string
  *    * Then it insert it to the adb exception map
  *     **/
-void ExceptionHolder::insertNewException(const string exceptionType, string exceptionTxt) {
+void ExceptionHolder::insertNewException(const string exceptionType, string exceptionTxt)
+{
     ExceptionHolder::adbExceptionMap[exceptionType].push_back(exceptionTxt);
     ExceptionHolder::exceptionCounter += 1;
 }

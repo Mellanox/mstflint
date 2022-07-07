@@ -37,20 +37,22 @@
 #include <stdio.h>
 #include <iostream>
 
-
-int PsidLookupDB::csv2vector(string str, vector<string> &explode)
+int PsidLookupDB::csv2vector(string str, vector<string>& explode)
 {
     size_t pos;
     int cnt = 0;
 
-    if (str.size() == 0) {
+    if (str.size() == 0)
+    {
         return 0;
     }
 
-    do {
+    do
+    {
         cnt++;
         pos = str.find(',');
-        if (pos == string::npos) {
+        if (pos == string::npos)
+        {
             explode.push_back(str);
             break;
         }
@@ -61,25 +63,28 @@ int PsidLookupDB::csv2vector(string str, vector<string> &explode)
     return cnt;
 }
 
-
 void PsidLookupDB::readFile(string fName)
 {
-    FILE *fin;
+    FILE* fin;
     char tmpb[256];
 
-    if ((fin = fopen(fName.c_str(), "r")) == NULL) {
+    if ((fin = fopen(fName.c_str(), "r")) == NULL)
+    {
         return;
     }
 
-    while (fgets(tmpb, sizeof(tmpb), fin)) {
+    while (fgets(tmpb, sizeof(tmpb), fin))
+    {
         PsidLookupInfo pi;
         vector<string> expld;
         string str = tmpb;
-        if (str.find('\n')) {
-            str = str.substr(0, str.size() - 1); //remove newline character
+        if (str.find('\n'))
+        {
+            str = str.substr(0, str.size() - 1); // remove newline character
         }
 
-        if (csv2vector(str, expld) < 4) {
+        if (csv2vector(str, expld) < 4)
+        {
             continue;
         }
 
@@ -92,28 +97,28 @@ void PsidLookupDB::readFile(string fName)
     fclose(fin);
 }
 
-
 string PsidLookupDB::getPN(string id)
 {
-    if (_keyLookupMap.find(id) == _keyLookupMap.end()) {
+    if (_keyLookupMap.find(id) == _keyLookupMap.end())
+    {
         return "";
     }
     return _keyLookupMap[id].pn;
 }
 
-
 string PsidLookupDB::getProdDesc(string id)
 {
-    if (_keyLookupMap.find(id) == _keyLookupMap.end()) {
+    if (_keyLookupMap.find(id) == _keyLookupMap.end())
+    {
         return "";
     }
     return _keyLookupMap[id].prodDesc;
 }
 
-
 string PsidLookupDB::getPsid(string id)
 {
-    if (_keyLookupMap.find(id) == _keyLookupMap.end()) {
+    if (_keyLookupMap.find(id) == _keyLookupMap.end())
+    {
         return "";
     }
     return _keyLookupMap[id].psid;
@@ -121,7 +126,8 @@ string PsidLookupDB::getPsid(string id)
 
 bool PsidLookupDB::isPsidExist(string psid)
 {
-    if (_keyLookupMap.find(psid) == _keyLookupMap.end()) {
+    if (_keyLookupMap.find(psid) == _keyLookupMap.end())
+    {
         return false;
     }
     return true;

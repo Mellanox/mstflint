@@ -40,26 +40,33 @@
 #include <errno.h>
 #include <string>
 
-
 #include "pldm_buff.h"
 #include "pldm_component_image.h"
 
-
-PldmComponenetImage::PldmComponenetImage(): componentClassification(0),
-    componentIdentifier(0), componentComparisonStamp(0), componentOptions(0),
-    requestedComponentActivationMethod(0), componentLocationOffset(0),
-    componentSize(0), componentVersionStringType(0),
-    componentVersionStringLength(0), componentData(NULL) {
+PldmComponenetImage::PldmComponenetImage() :
+    componentClassification(0),
+    componentIdentifier(0),
+    componentComparisonStamp(0),
+    componentOptions(0),
+    requestedComponentActivationMethod(0),
+    componentLocationOffset(0),
+    componentSize(0),
+    componentVersionStringType(0),
+    componentVersionStringLength(0),
+    componentData(NULL)
+{
 }
 
-PldmComponenetImage::~PldmComponenetImage() {
-    if(componentData) {
-        delete [] componentData;
+PldmComponenetImage::~PldmComponenetImage()
+{
+    if (componentData)
+    {
+        delete[] componentData;
     }
 }
 
-bool PldmComponenetImage::unpack(PldmBuffer & buff) {
-
+bool PldmComponenetImage::unpack(PldmBuffer& buff)
+{
     buff.read(componentClassification);
     buff.read(componentIdentifier);
     buff.read(componentComparisonStamp);
@@ -74,7 +81,8 @@ bool PldmComponenetImage::unpack(PldmBuffer & buff) {
     return readComponentData(buff);
 }
 
-bool PldmComponenetImage::readComponentData(PldmBuffer & buff) {
+bool PldmComponenetImage::readComponentData(PldmBuffer& buff)
+{
     componentData = new u_int8_t[componentSize];
     // restore previous position
     long pos = buff.tell();
@@ -85,7 +93,8 @@ bool PldmComponenetImage::readComponentData(PldmBuffer & buff) {
     return true;
 }
 
-void PldmComponenetImage::print(FILE * fp) {
+void PldmComponenetImage::print(FILE* fp)
+{
     fprintf(fp, "componentClassification: 0x%X\n", componentClassification);
     fprintf(fp, "componentIdentifier: 0x%X\n", componentIdentifier);
     fprintf(fp, "componentComparisonStamp: 0x%X\n", componentComparisonStamp);

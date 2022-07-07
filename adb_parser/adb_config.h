@@ -46,7 +46,8 @@ using namespace std;
 
 typedef map<string, string> AttrsMap;
 
-class AdbConfig {
+class AdbConfig
+{
 public:
     // FOR DEBUG
     void print(int indent = 0);

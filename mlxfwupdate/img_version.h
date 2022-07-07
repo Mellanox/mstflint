@@ -42,23 +42,24 @@
 
 using namespace std;
 
-class ImgVersion {
-    class SetVersionException: public std::runtime_error {
+class ImgVersion
+{
+    class SetVersionException : public std::runtime_error
+    {
     public:
-        SetVersionException(const std::string error) :
-                runtime_error(error) {
-        }
+        SetVersionException(const std::string error) : runtime_error(error) {}
     };
+
 public:
     ImgVersion();
     ImgVersion(const ImgVersion&);
     virtual ~ImgVersion();
     ImgVersion& operator=(const ImgVersion&);
-    void setVersion(const string& imgType, u_int8_t verSz, const u_int16_t* ver,
-            const string& verBranch = "");
+    void setVersion(const string& imgType, u_int8_t verSz, const u_int16_t* ver, const string& verBranch = "");
     string getPrintableVersion(int ffv, bool show_type = true);
     string getTypeStr();
-    int compareFw(const ImgVersion &imv) const;
+    int compareFw(const ImgVersion& imv) const;
+
 private:
     string _type;
     FwVersion* _fwVer;
@@ -68,4 +69,3 @@ private:
 };
 
 #endif
-

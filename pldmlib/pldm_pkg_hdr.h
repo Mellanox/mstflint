@@ -38,38 +38,23 @@
 #ifndef _PLDM_PKG_HDR_
 #define _PLDM_PKG_HDR_
 
-class PldmPkgHdr {
+class PldmPkgHdr
+{
 public:
     PldmPkgHdr();
     virtual ~PldmPkgHdr();
 
-    bool unpack(PldmBuffer & buff);
-    void print(FILE * fp);
+    bool unpack(PldmBuffer& buff);
+    void print(FILE* fp);
 
-    const u_int32_t * getPackageHeaderIdentifier() const {
-        return packageHeaderIdentifier;
-    }
-    u_int8_t getPackageHeaderFormatRevision() const {
-        return packageHeaderFormatRevision;
-    }
-    u_int16_t getPackageHeaderSize() const {
-        return packageHeaderSize;
-    }
-    const u_int8_t * getPackageReleaseDateTime() const {
-        return packageReleaseDateTime;
-    }
-    u_int16_t getComponentBitmapBitLength() const {
-        return componentBitmapBitLength;
-    }
-    u_int8_t getPackageVersionStringType() const {
-        return packageVersionStringType;
-    }
-    u_int8_t getPackageVersionStringLength() const {
-        return packageVersionStringLength;
-    }
-    const std::string & getPackageVersionString() const {
-        return packageVersionString;
-    }
+    const u_int32_t* getPackageHeaderIdentifier() const { return packageHeaderIdentifier; }
+    u_int8_t getPackageHeaderFormatRevision() const { return packageHeaderFormatRevision; }
+    u_int16_t getPackageHeaderSize() const { return packageHeaderSize; }
+    const u_int8_t* getPackageReleaseDateTime() const { return packageReleaseDateTime; }
+    u_int16_t getComponentBitmapBitLength() const { return componentBitmapBitLength; }
+    u_int8_t getPackageVersionStringType() const { return packageVersionStringType; }
+    u_int8_t getPackageVersionStringLength() const { return packageVersionStringLength; }
+    const std::string& getPackageVersionString() const { return packageVersionString; }
 
 private:
     static const int ID_COUNT = 4;
@@ -85,4 +70,3 @@ private:
 };
 
 #endif /* _PLDM_PKG_HDR_ */
-

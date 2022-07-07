@@ -47,16 +47,17 @@
 #include "tools_version.h"
 #include <reg_access/reg_access.h>
 
-#define ONES32(size)                    ((size) ? (0xffffffff >> (32 - (size))) : 0)
-#define MASK32(offset, size)             (ONES32(size) << (offset))
+#define ONES32(size) ((size) ? (0xffffffff >> (32 - (size))) : 0)
+#define MASK32(offset, size) (ONES32(size) << (offset))
 
-#define EXTRACT_C(source, offset, size)   ((((unsigned)(source)) >> (offset)) & ONES32(size))
-#define EXTRACT(src, start, len)          (((len) == 32) ? (src) : EXTRACT_C(src, start, len))
+#define EXTRACT_C(source, offset, size) ((((unsigned)(source)) >> (offset)) & ONES32(size))
+#define EXTRACT(src, start, len) (((len) == 32) ? (src) : EXTRACT_C(src, start, len))
 
-#define MERGE_C(rsrc1, rsrc2, start, len)  ((((rsrc2) << (start)) & (MASK32((start), (len)))) | ((rsrc1) & (~MASK32((start), (len)))))
-#define MERGE(rsrc1, rsrc2, start, len)    (((len) == 32) ? (rsrc2) : MERGE_C(rsrc1, rsrc2, start, len))
+#define MERGE_C(rsrc1, rsrc2, start, len) \
+    ((((rsrc2) << (start)) & (MASK32((start), (len)))) | ((rsrc1) & (~MASK32((start), (len)))))
+#define MERGE(rsrc1, rsrc2, start, len) (((len) == 32) ? (rsrc2) : MERGE_C(rsrc1, rsrc2, start, len))
 
-#define ADB_DUMP_VAR   "ADB_DUMP"
+#define ADB_DUMP_VAR "ADB_DUMP"
 #define MAX_DEV_LEN 512
 
 void usage(int with_exit)
@@ -81,34 +82,35 @@ void usage(int with_exit)
     printf("\n");
     printf("Environment Variables:\n");
     printf("   ADB_DUMP      : Holds the path to adb dump, used for access by path (can be overridden by \"-a\").\n");
-    if (with_exit) {
+    if (with_exit)
+    {
         exit(1);
     }
 }
 #define MCRA_TOOL_NAME "mcra"
 #define MCRA_TOOL_VERSON "1.0.0"
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-    char *endp;
-    char *dev = NULL;
+    char* endp;
+    char* dev = NULL;
     char device[MAX_DEV_LEN] = {0};
-    char *adb_dump = NULL;
-    char *path = NULL;
+    char* adb_dump = NULL;
+    char* path = NULL;
     int rc = 0;
     unsigned int addr = 0, val = 0;
     // Temp variable for using strtoul and then check if it's greater than UINT_MAX before assigning it to addr
     unsigned long int parsed_addr = 0;
-    mfile         *mf;
+    mfile* mf;
     unsigned int i2c_slave = 0;
     int c;
     int read_op = 0;
     int bit_offs = 0;
     int bit_size = 32;
     int byte_size = 0;
-    int read_block = 0;                 /* if 0 then read field according to "addr.bit:size", else read block of size "byte_size" */
+    int read_block = 0; /* if 0 then read field according to "addr.bit:size", else read block of size "byte_size" */
     int clear_semaphore = 0;
-    const char *op_name = "cr write";
+    const char* op_name = "cr write";
 
 #if 0
     int i, rc1;
@@ -122,58 +124,67 @@ int main(int argc, char *argv[])
 #endif
     (void)rc; // avoid warnings (we dont use it just assign)
     // Parse cmd line:
-    if (argc < 2) {
+    if (argc < 2)
+    {
         usage(1);
     }
 
-    while ((c = getopt(argc, argv, "s:a:hvc")) != -1) {
-        switch (c)  {
-        case 's':
-            i2c_slave  = strtoul(optarg, &endp, 0);
-            if (*endp || i2c_slave == 0 || i2c_slave > 0x7f) {
-                fprintf(stderr, "-E- Bad slave address given (%s).Expecting a non-negative number\n", optarg);
+    while ((c = getopt(argc, argv, "s:a:hvc")) != -1)
+    {
+        switch (c)
+        {
+            case 's':
+                i2c_slave = strtoul(optarg, &endp, 0);
+                if (*endp || i2c_slave == 0 || i2c_slave > 0x7f)
+                {
+                    fprintf(stderr, "-E- Bad slave address given (%s).Expecting a non-negative number\n", optarg);
+                    exit(1);
+                }
+                break;
+
+            case 'a':
+                adb_dump = optarg;
+                break;
+
+            case 'v':
+                print_version_string(MCRA_TOOL_NAME, MCRA_TOOL_VERSON);
+                exit(0);
+
+            case 'h':
+                usage(0);
+                exit(0);
+
+            case 'c':
+                clear_semaphore = 1;
+                break;
+
+            case '?':
+                usage(0);
                 exit(1);
-            }
-            break;
 
-        case 'a':
-            adb_dump = optarg;
-            break;
-
-        case 'v':
-            print_version_string(MCRA_TOOL_NAME, MCRA_TOOL_VERSON);
-            exit(0);
-
-        case 'h':
-            usage(0);
-            exit(0);
-
-        case 'c':
-            clear_semaphore = 1;
-            break;
-
-        case '?':
-            usage(0);
-            exit(1);
-
-        default:
-            fprintf(stderr, "-E- Unknown flag \"%c\"\n", c);
-            usage(0);
-            exit(1);
+            default:
+                fprintf(stderr, "-E- Unknown flag \"%c\"\n", c);
+                usage(0);
+                exit(1);
         }
     }
 
     // parse non-optons argv elements
-    if (optind >= argc) {
+    if (optind >= argc)
+    {
         fprintf(stderr, "-E- Missing device argument\n");
         exit(1);
-    } else {
+    }
+    else
+    {
         dev = argv[optind];
         optind++;
     }
 
-    if (clear_semaphore) {
-        if ((rc = mclear_pci_semaphore(dev))) {
+    if (clear_semaphore)
+    {
+        if ((rc = mclear_pci_semaphore(dev)))
+        {
             fprintf(stderr, "-E- Failed to clear PCI semaphore for device: %s. %s\n", dev, m_err2str((MError)rc));
             exit(1);
         }
@@ -181,161 +192,198 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    if (optind >= argc) {
+    if (optind >= argc)
+    {
         fprintf(stderr, "-E- Missing address argument\n");
         exit(1);
-    } else {
+    }
+    else
+    {
         parsed_addr = strtoul(argv[optind], &endp, 0);
-        if (parsed_addr > UINT_MAX) {
+        if (parsed_addr > UINT_MAX)
+        {
             fprintf(stderr, "-E- Address is out of the range\n");
             exit(1);
         }
         addr = (unsigned int)parsed_addr;
-        if (*endp != '\0' && *endp != '.' && *endp != ',') {
-            //fprintf(stderr, "-E- Bad address given (%s). Unparsed string: \"%s\"\n", av[ap] ,endp);
-            //exit(1);
+        if (*endp != '\0' && *endp != '.' && *endp != ',')
+        {
+            // fprintf(stderr, "-E- Bad address given (%s). Unparsed string: \"%s\"\n", av[ap] ,endp);
+            // exit(1);
             path = argv[optind];
         }
 
-        if (*endp == ',') {
-            if (path) {
+        if (*endp == ',')
+        {
+            if (path)
+            {
                 fprintf(stderr, "-E- Can't read block with full path\n");
                 exit(1);
             }
             read_block = 1;
             byte_size = strtoul(endp + 1, &endp, 0);
 
-            if (*endp != '\0' || byte_size == 0) {
-                fprintf(stderr, "-E- Bad byte size in given address (%s). Unparsed string: \"%s\"\n", argv[optind], endp);
+            if (*endp != '\0' || byte_size == 0)
+            {
+                fprintf(
+                  stderr, "-E- Bad byte size in given address (%s). Unparsed string: \"%s\"\n", argv[optind], endp);
                 exit(1);
             }
         }
 
-        if (*endp == '.') {
-            if (path) {
+        if (*endp == '.')
+        {
+            if (path)
+            {
                 fprintf(stderr, "-E- Full path with bit address notation is illegal\n");
                 exit(1);
             }
 
             bit_offs = strtoul(endp + 1, &endp, 0);
-            if ((*endp != '\0' && *endp != ':') || bit_offs >= 32) {
-                fprintf(stderr, "-E- Bad bit offset in given address (%s). Unparsed string: \"%s\"\n", argv[optind], endp);
+            if ((*endp != '\0' && *endp != ':') || bit_offs >= 32)
+            {
+                fprintf(
+                  stderr, "-E- Bad bit offset in given address (%s). Unparsed string: \"%s\"\n", argv[optind], endp);
                 exit(1);
             }
         }
 
-        if (*endp == ':') {
-            if (path) {
+        if (*endp == ':')
+        {
+            if (path)
+            {
                 fprintf(stderr, "-E- Full path with bit size notation is illegal\n");
                 exit(1);
             }
 
             bit_size = strtoul(endp + 1, &endp, 0);
-            if (*endp != '\0') {
-                fprintf(stderr, "-E- Bad bit size in given address (%s). Unparsed string: \"%s\"\n", argv[optind], endp);
+            if (*endp != '\0')
+            {
+                fprintf(
+                  stderr, "-E- Bad bit size in given address (%s). Unparsed string: \"%s\"\n", argv[optind], endp);
                 exit(1);
             }
 
-            if (bit_size + bit_offs > 32) {
+            if (bit_size + bit_offs > 32)
+            {
                 fprintf(stderr, "-E- Bad bit offset/size in given address (%s) - exceeds 32 bits\n", argv[optind]);
 
                 exit(1);
             }
         }
 
-        if (!path && *endp) {
+        if (!path && *endp)
+        {
             fprintf(stderr, "-E- Bad address given (%s). Unparsed string: \"%s\"\n", argv[optind], endp);
             exit(1);
         }
 
         // Allow the bit_size to be ommited
-        if (bit_size + bit_offs > 32) {
+        if (bit_size + bit_offs > 32)
+        {
             bit_size = 32 - bit_offs;
         }
 
         optind++;
     }
 
-
-    if (optind >= argc) {
+    if (optind >= argc)
+    {
         read_op = 1;
         op_name = "cr read";
-    } else {
+    }
+    else
+    {
         val = strtoul(argv[optind], &endp, 0);
-        if (*endp) {
+        if (*endp)
+        {
             fprintf(stderr, "-E- Bad data given (%s)\n", argv[optind]);
             exit(1);
         }
         optind++;
     }
 
-    if (optind < argc) {
+    if (optind < argc)
+    {
         fprintf(stderr, "-E- Extra argument given (%s)\n", argv[optind]);
         exit(1);
     }
 
-    if (!adb_dump) {
+    if (!adb_dump)
+    {
         adb_dump = getenv(ADB_DUMP_VAR);
     }
     strncpy(device, dev, MAX_DEV_LEN - 1);
 
     // Do the job
     mf = mopen_adv((const char*)device, (MType)(MST_DEFAULT | MST_CABLE | MST_LINKX_CHIP));
-    if (!mf) {
+    if (!mf)
+    {
         perror("mopen");
         return 1;
     }
-    if (i2c_slave) {
+    if (i2c_slave)
+    {
         mset_i2c_slave(mf, (u_int8_t)i2c_slave);
     }
 
-    if (path) {
-        FILE *fp;
-        char *fpath;
+    if (path)
+    {
+        FILE* fp;
+        char* fpath;
         char line[1024];
         char *offset, *size;
         int path_found = 0;
 
-        if (!adb_dump) {
+        if (!adb_dump)
+        {
             fprintf(stderr, "-E- Can't access by path without providing adb dump file path\n");
             goto error;
         }
 
         fp = fopen(adb_dump, "r");
-        if (!fp) {
+        if (!fp)
+        {
             fprintf(stderr, "-E- Can't open adb dump (%s) file: %s\n", adb_dump, strerror(errno));
             goto error;
         }
 
-        while (fgets(line, sizeof(line), fp) != NULL) {
-            if (!strstr(line, path)) {
+        while (fgets(line, sizeof(line), fp) != NULL)
+        {
+            if (!strstr(line, path))
+            {
                 continue;
             }
 
             fpath = strtok(line, " ");
 
-            if (!fpath) {
+            if (!fpath)
+            {
                 fprintf(stderr, "-E- Bad register map file format (%s), Can't find path\n", line);
                 fclose(fp);
                 goto error;
             }
 
-            if (strcmp(fpath, path)) {
+            if (strcmp(fpath, path))
+            {
                 continue;
             }
 
             offset = strtok(NULL, " ");
             size = strtok(NULL, " ");
 
-            if (!offset || !size) {
+            if (!offset || !size)
+            {
                 fprintf(stderr, "-E- Bad register map file format (%s), Can't find offset/size\n", line);
                 fclose(fp);
                 goto error;
             }
             path_found = 1;
 
-            if (sscanf(offset, "0x%x.%d", &addr, &bit_offs) != 2) {
-                if (sscanf(offset, "0x%x", &addr) != 1) {
+            if (sscanf(offset, "0x%x.%d", &addr, &bit_offs) != 2)
+            {
+                if (sscanf(offset, "0x%x", &addr) != 1)
+                {
                     fprintf(stderr, "-E- Bad offset format in adb dump file, offset=%s\n", offset);
                     fclose(fp);
                     goto error;
@@ -344,7 +392,8 @@ int main(int argc, char *argv[])
                 bit_offs = 0;
             }
 
-            if (sscanf(size, "%d", &bit_size) != 1) {
+            if (sscanf(size, "%d", &bit_size) != 1)
+            {
                 fprintf(stderr, "-E- Bad size format in adb dump file, size=%s\n", size);
                 fclose(fp);
                 goto error;
@@ -354,19 +403,23 @@ int main(int argc, char *argv[])
         }
 
         fclose(fp);
-        if (!path_found) {
+        if (!path_found)
+        {
             fprintf(stderr, "-E- Can't find path (%s)\n", path);
             goto error;
         }
     }
 
-    if (read_op) {
-        if (read_block) {
+    if (read_op)
+    {
+        if (read_block)
+        {
             int i;
             int dowrd_size = ((byte_size - 1) / 4) + 1;
-            u_int32_t *data = malloc(sizeof(u_int32_t) * dowrd_size);
+            u_int32_t* data = malloc(sizeof(u_int32_t) * dowrd_size);
 
-            if (!data) {
+            if (!data)
+            {
                 fprintf(stderr, "-E- Failed to allocate memmory for read block buffer\n");
                 goto error;
             }
@@ -375,39 +428,49 @@ int main(int argc, char *argv[])
 
             rc = (mread4_block(mf, addr, data, dowrd_size * 4) != dowrd_size * 4);
 
-            if (rc) {
+            if (rc)
+            {
                 free(data);
                 goto access_error;
             }
 
             // print the dowrds
-            for (i = 0; i < dowrd_size; i++) {
+            for (i = 0; i < dowrd_size; i++)
+            {
                 printf("0x%08x 0x%08x\n", addr + i * 4, data[i]);
             }
             free(data);
-        } else {
+        }
+        else
+        {
             rc = (mread4(mf, addr, &val) != 4);
 
-            if (rc) {
+            if (rc)
+            {
                 goto access_error;
             }
 
             val = EXTRACT(val, bit_offs, bit_size);
             printf("0x%08x\n", val);
         }
-    } else {
-        if (read_block) {
+    }
+    else
+    {
+        if (read_block)
+        {
             fprintf(stderr, "-E- Writing blocks is not supported yet\n");
             exit(1);
         }
 
-        if (bit_offs != 0 || bit_size != 32) {
+        if (bit_offs != 0 || bit_size != 32)
+        {
             // read-modify-write
             u_int32_t tmp_val;
 
             rc = (mread4(mf, addr, &tmp_val) != 4);
 
-            if (rc) {
+            if (rc)
+            {
                 goto access_error;
             }
 
@@ -416,7 +479,8 @@ int main(int argc, char *argv[])
 
         rc = (mwrite4(mf, addr, val) != 4);
 
-        if (rc) {
+        if (rc)
+        {
             goto access_error;
         }
     }
@@ -433,4 +497,3 @@ success:
     mclose(mf);
     return 0;
 }
-

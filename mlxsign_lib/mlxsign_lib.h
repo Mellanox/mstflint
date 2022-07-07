@@ -40,9 +40,7 @@
 #include <compatibility.h>
 #include "mlxsign_com_def.h"
 
-
 using namespace std;
-
 
 /*
  * Class MlxSignSHA: used for calculating SHA digest on a data buffer.
@@ -58,10 +56,11 @@ using namespace std;
  *      sha256.getDigest(result);
  *      cout << result;
  */
-class MlxSignSHA {
+class MlxSignSHA
+{
 public:
     MlxSignSHA(u_int32_t);
-    virtual ~MlxSignSHA() {};
+    virtual ~MlxSignSHA(){};
     friend MlxSignSHA& operator<<(MlxSignSHA& lhs, u_int8_t data);
     friend MlxSignSHA& operator<<(MlxSignSHA& lhs, const std::vector<u_int8_t>& buff);
 
@@ -74,13 +73,15 @@ protected:
     std::vector<u_int8_t> _buff;
 };
 
-class MlxSignSHA256 : public MlxSignSHA {
+class MlxSignSHA256 : public MlxSignSHA
+{
 public:
     MlxSignSHA256();
     int getDigest(std::vector<u_int8_t>& digest);
 };
 
-class MlxSignSHA512 : public MlxSignSHA {
+class MlxSignSHA512 : public MlxSignSHA
+{
 public:
     MlxSignSHA512();
     int getDigest(std::vector<u_int8_t>& digest);
@@ -104,7 +105,8 @@ public:
  *      rsa.setPubKeyFromFile(filePathPub);
  *      rsa.decrypt(encryptedMsg, originalMsg);
  */
-class MlxSignRSA {
+class MlxSignRSA
+{
 public:
     ~MlxSignRSA();
     MlxSignRSA();
@@ -116,30 +118,33 @@ public:
     int setPubKey(const std::string& pemKey);
 
     int sign(MlxSign::SHAType shaType, const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg);
-    int verify(MlxSign::SHAType shaType, const std::vector<u_int8_t>& sha256Dgst, const std::vector<u_int8_t>& sig, bool& result);
+    int verify(MlxSign::SHAType shaType,
+               const std::vector<u_int8_t>& sha256Dgst,
+               const std::vector<u_int8_t>& sig,
+               bool& result);
 
     std::string str(const std::vector<u_int8_t>& msg);
+
 private:
     int createRSAFromPEMFileName(const std::string& fname, bool isPrivateKey);
-    int createRSAFromPEMKeyString(const std::string& pemKey,  bool isPrivateKey);
-    void *_privCtx;
-    void *_pubCtx;
+    int createRSAFromPEMKeyString(const std::string& pemKey, bool isPrivateKey);
+    void* _privCtx;
+    void* _pubCtx;
 };
 
-
-class MlxSignHMAC {
+class MlxSignHMAC
+{
 public:
     MlxSignHMAC();
     int setKey(const std::vector<u_int8_t>& key);
-    //int update(const std::vector<u_int8_t>& buff);
+    // int update(const std::vector<u_int8_t>& buff);
     friend MlxSignHMAC& operator<<(MlxSignHMAC& lhs, const std::vector<u_int8_t>& buff);
     int getDigest(std::vector<u_int8_t>& digest);
     ~MlxSignHMAC();
 
 private:
-    void *ctx;
+    void* ctx;
     std::vector<u_int8_t> data;
-
 };
 
 #endif /* USER_MLXSIGN_LIB_MLXSIGN_LIB_H_ */

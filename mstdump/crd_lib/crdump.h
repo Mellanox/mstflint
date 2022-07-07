@@ -40,40 +40,38 @@
 #include <errno.h>
 #include <mtcr.h>
 
-
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
+    enum crd_return_code
+    {
+        CRD_OK = 0,
+        CRD_MEM_ALLOCATION_ERR,
+        CRD_CR_READ_ERR,
+        CRD_INVALID_PARM,
+        CRD_UNKOWN_DEVICE,
+        CRD_CSV_BAD_FORMAT,
+        CRD_CONF_BAD_FORMAT,
+        CRD_OPEN_FILE_ERROR,
+        CRD_SKIP,
+        CRD_NOT_SUPPORTED,
+        CRD_EXCEED_VALUE,
+        CRD_CAUSE_BIT,
+        CRD_TLV_SIGNATURE_INVALID,
+        CRD_TLV_ADDRESS_INVALID,
+    };
 
-enum crd_return_code {
-    CRD_OK = 0,
-    CRD_MEM_ALLOCATION_ERR,
-    CRD_CR_READ_ERR,
-    CRD_INVALID_PARM,
-    CRD_UNKOWN_DEVICE,
-    CRD_CSV_BAD_FORMAT,
-    CRD_CONF_BAD_FORMAT,
-    CRD_OPEN_FILE_ERROR,
-    CRD_SKIP,
-    CRD_NOT_SUPPORTED,
-    CRD_EXCEED_VALUE,
-    CRD_CAUSE_BIT,
-    CRD_TLV_SIGNATURE_INVALID,
-    CRD_TLV_ADDRESS_INVALID,
-};
+    typedef struct crd_ctxt crd_ctxt_t;
 
+    typedef struct crd_dword
+    {
+        u_int32_t addr;
+        u_int32_t data;
+    } crd_dword_t;
 
-typedef struct crd_ctxt crd_ctxt_t;
-
-typedef struct crd_dword {
-    u_int32_t addr;
-    u_int32_t data;
-} crd_dword_t;
-
-
-typedef void (*crd_callback_t) (crd_dword_t*);  // call back
-
+    typedef void (*crd_callback_t)(crd_dword_t*); // call back
 
 #ifndef IN
 #define IN
@@ -93,38 +91,47 @@ typedef void (*crd_callback_t) (crd_dword_t*);  // call back
 #define CRD_DLL_EXPORT
 #endif
 
-/*
+    /*
 
-   Must be called before others methods to allocate memory and store all needed configuration
+       Must be called before others methods to allocate memory and store all needed configuration
 
- */
-CRD_DLL_EXPORT int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int cause, IN int cause_off, IN const char *db_path);  // fill device type, and number of dewords according to the is_full
+     */
+    CRD_DLL_EXPORT int crd_init(OUT crd_ctxt_t** context,
+                                IN mfile* mf,
+                                IN int is_full,
+                                IN int cause,
+                                IN int cause_off,
+                                IN const char* db_path); // fill device type, and number of dewords according to the
+                                                         // is_full
 
-/*
-   Store cr space length at arr_size
- */
-CRD_DLL_EXPORT int crd_get_dword_num(IN crd_ctxt_t *context, OUT u_int32_t *arr_size);
+    /*
+       Store cr space length at arr_size
+     */
+    CRD_DLL_EXPORT int crd_get_dword_num(IN crd_ctxt_t* context, OUT u_int32_t* arr_size);
 
+    /*
+       Store all addresses are dword_arr array
+     */
+    CRD_DLL_EXPORT int crd_get_addr_list(IN crd_ctxt_t* context,
+                                         OUT crd_dword_t* dword_arr); // caller well allocate the array and addresses
+                                                                      // will be filled.
 
-/*
-   Store all addresses are dword_arr array
- */
-CRD_DLL_EXPORT int crd_get_addr_list(IN crd_ctxt_t *context, OUT crd_dword_t *dword_arr); // caller well allocate the array and addresses will be filled.
+    /*
+       Store all addresses and data in dword_arr, if func is not null, it will be called on each dword
+     */
+    CRD_DLL_EXPORT int crd_dump_data(IN crd_ctxt_t* context,
+                                     OUT crd_dword_t* dword_arr,
+                                     IN crd_callback_t func); // values will be filled.
 
-/*
-   Store all addresses and data in dword_arr, if func is not null, it will be called on each dword
- */
-CRD_DLL_EXPORT int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t *dword_arr, IN crd_callback_t func);// values will be filled.
+    /*
+       Return string representation of the error code
+     */
+    CRD_DLL_EXPORT const char* crd_err_str(int rc);
 
-/*
-   Return string representation of the error code
- */
-CRD_DLL_EXPORT const char* crd_err_str(int rc);
-
-/*
-   Free context
- */
-CRD_DLL_EXPORT void crd_free(IN crd_ctxt_t *context);
+    /*
+       Free context
+     */
+    CRD_DLL_EXPORT void crd_free(IN crd_ctxt_t* context);
 
 #ifdef __cplusplus
 }

@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 """
 * $Id           : mlnx_peripheral_components.py 2017-11-28
@@ -42,9 +42,10 @@ import re
 from .pci_device import PciDevice
 from .mlxfwreset_utils import cmdExec
 
+
 class MlnxPeripheralComponents(object):
 
-    SD_SUPPORTED_DID = [0x21e,0x218,0x216,0x212,0x20f,0x20d,0x209,0x20b]  # Connectx8,Connectx7,Connectx6LX,Connectx6DX,Connectx6,Connectx5 (SD device) ,Connectx4/Connectx4Lx (MH device connected as SD)
+    SD_SUPPORTED_DID = [0x21e, 0x218, 0x216, 0x212, 0x20f, 0x20d, 0x209, 0x20b]  # Connectx8,Connectx7,Connectx6LX,Connectx6DX,Connectx6,Connectx5 (SD device) ,Connectx4/Connectx4Lx (MH device connected as SD)
 
     def __init__(self):
         self.pci_devices = []
@@ -81,7 +82,7 @@ class MlnxPeripheralComponents(object):
                         aliases.append(result.group(2))
                         if result.group(3) is None:
                             domain = 0
-                            aliases.append('0000:'+result.group(2))
+                            aliases.append('0000:' + result.group(2))
                         else:
                             domain = int(result.group(3), 16)
                         bus = int(result.group(4), 16)
@@ -94,11 +95,11 @@ class MlnxPeripheralComponents(object):
                         dev = int(result.group(4))
                         fn = int(result.group(5))
                     elif self.os == 'Windows':
-                        aliases.append(result.group(1)) # mt<id>_pciconf<N>
-                        aliases.append(result.group(2)) # dbdf
+                        aliases.append(result.group(1))  # mt<id>_pciconf<N>
+                        aliases.append(result.group(2))  # dbdf
                         if result.group(3) is None:     # no domain
                             domain = 0
-                            aliases.append('0000:'+result.group(2))
+                            aliases.append('0000:' + result.group(2))
                         else:
                             domain = int(result.group(3), 16)
                         bus = int(result.group(4), 16)
@@ -109,13 +110,13 @@ class MlnxPeripheralComponents(object):
 
                     pci_device = PciDevice(aliases, domain, bus, dev, fn)
                     self.pci_devices.append(pci_device)
-            except:
-                raise RuntimeError("Failed to get device PCI Address") # Why it's required??? You don't do anything in the excpetion
+            except BaseException:
+                raise RuntimeError("Failed to get device PCI Address")  # Why it's required??? You don't do anything in the excpetion
 
     def get_pci_device(self, alias):
         for pci_device in self.pci_devices:
             if pci_device.has_alias(alias):
-                return pci_device # TODO think if you need to copy
+                return pci_device  # TODO think if you need to copy
         else:
             raise RuntimeError("Failed to find {0} in pci-devices".format(alias))
 
@@ -147,7 +148,8 @@ class MlnxPeripheralComponents(object):
                         continue
 
                     # Skip if device in livefish mode
-                    if pci_device.is_livefish_mode(): continue
+                    if pci_device.is_livefish_mode():
+                        continue
 
                     if usr_manufacturing_base_mac == pci_device.get_manufacturing_base_mac():
                         sd_pci_devices.append(pci_device)
@@ -162,7 +164,7 @@ if __name__ == '__main__':
     device = sys.argv[1]
 
     peripherals = MlnxPeripheralComponents()
-    for pci_device in  peripherals.pci_devices:
+    for pci_device in peripherals.pci_devices:
         print(pci_device)
 
     user_pci_device = peripherals.get_pci_device(device)

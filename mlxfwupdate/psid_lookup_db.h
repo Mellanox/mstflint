@@ -42,18 +42,21 @@
 
 using namespace std;
 
-class PsidLookupDB {
+class PsidLookupDB
+{
 public:
-    void   readFile(string fName);
+    void readFile(string fName);
     string getPN(string id);
     string getProdDesc(string id);
     string getPsid(string id);
-    bool   isPsidExist(string psid);
-private:
-    int csv2vector(string str, vector<string> &explode);
+    bool isPsidExist(string psid);
 
-    class PsidLookupInfo {
-public:
+private:
+    int csv2vector(string str, vector<string>& explode);
+
+    class PsidLookupInfo
+    {
+    public:
         string pn;
         string prodDesc;
         string psid;

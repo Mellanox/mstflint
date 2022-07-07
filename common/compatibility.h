@@ -42,182 +42,177 @@
 #include <stdio.h>
 
 #if defined(__ia64__) || defined(__x86_64__) || defined(__PPC64__) || defined(__arm__)
-    #define U64L       "l"
+#define U64L "l"
 #else
-    #define U64L       "ll"
+#define U64L "ll"
 #endif
-
 
 /* define macros to the architecture of the CPU */
 #if defined(__linux__) || defined(__FreeBSD__)
-#   if defined(__i386__)
-#       define ARCH_x86
-#   elif defined(__x86_64__)
-#       define ARCH_x86_64
-#   elif defined(__ia64__)
-#       define ARCH_ia64
-#   elif defined(__m68k__)
-#       define ARCH_m68k
-#   elif defined(__hppa__)
-#       define ARCH_hppa
-#   elif defined(__PPC64__) || defined(__s390x__)
-#       define ARCH_ppc64
-#   elif defined(__PPC__)
-#       define ARCH_ppc
-#   elif defined(__aarch64__)
-#       define ARCH_arm64
-#   elif defined(__arm__)
-#       define ARCH_arm6l
-#   elif defined(__riscv)
-#       define ARCH_riscv
-#   else
-#       error Unknown CPU architecture using the linux OS
-#   endif
-#elif defined(__MINGW32__) || defined(__MINGW64__)              /* Windows MINGW */
-#   if defined(__MINGW32__)
-#       define ARCH_x86
-#   elif defined(__MINGW64__)
-#       define ARCH_x86_64
-#   else
-#       error Unknown CPU architecture using the windows-mingw OS
-#   endif
-#elif defined(_WIN32) || defined(_WIN64)                /* Windows */
-#   if defined(_WIN32)
-#       define ARCH_x86
-#   elif defined(_WIN64)
-#       define ARCH_x86_64
-#   else
-#       error Unknown CPU architecture using the windows OS
-#   endif
-#else                                                   /* Unknown */
-#   error Unknown OS
+#if defined(__i386__)
+#define ARCH_x86
+#elif defined(__x86_64__)
+#define ARCH_x86_64
+#elif defined(__ia64__)
+#define ARCH_ia64
+#elif defined(__m68k__)
+#define ARCH_m68k
+#elif defined(__hppa__)
+#define ARCH_hppa
+#elif defined(__PPC64__) || defined(__s390x__)
+#define ARCH_ppc64
+#elif defined(__PPC__)
+#define ARCH_ppc
+#elif defined(__aarch64__)
+#define ARCH_arm64
+#elif defined(__arm__)
+#define ARCH_arm6l
+#elif defined(__riscv)
+#define ARCH_riscv
+#else
+#error Unknown CPU architecture using the linux OS
+#endif
+#elif defined(__MINGW32__) || defined(__MINGW64__) /* Windows MINGW */
+#if defined(__MINGW32__)
+#define ARCH_x86
+#elif defined(__MINGW64__)
+#define ARCH_x86_64
+#else
+#error Unknown CPU architecture using the windows-mingw OS
+#endif
+#elif defined(_WIN32) || defined(_WIN64) /* Windows */
+#if defined(_WIN32)
+#define ARCH_x86
+#elif defined(_WIN64)
+#define ARCH_x86_64
+#else
+#error Unknown CPU architecture using the windows OS
+#endif
+#else /* Unknown */
+#error Unknown OS
 #endif
 
 /* define macros for print fields */
-#define U32D_FMT    "%u"
-#define U32H_FMT    "0x%08x"
-#define UH_FMT          "0x%x"
-#define STR_FMT     "%s"
-#define U16H_FMT    "0x%04x"
-#define U8H_FMT     "0x%02x"
+#define U32D_FMT "%u"
+#define U32H_FMT "0x%08x"
+#define UH_FMT "0x%x"
+#define STR_FMT "%s"
+#define U16H_FMT "0x%04x"
+#define U8H_FMT "0x%02x"
 
-#if defined(ARCH_x86) || defined(ARCH_ppc) || defined(UEFI_BUILD) || defined(ARCH_arm6l) || defined(ARCH_m68k) || defined(ARCH_hppa)
-#   if defined(__MINGW32__) || defined(__MINGW64__)
-#       include <inttypes.h>
-#       define U64D_FMT    "0x%" PRId64
-#       define U64H_FMT    "0x%" PRIx64
-#       define U64H_FMT_GEN "" PRIx64
-#       define U48H_FMT    "0x%" PRIx64
-#       define U64D_FMT_GEN "" PRId64
-#   else
-#       define U64D_FMT     "%llu"
-#       define U64H_FMT     "0x%016llx"
-#       define U64H_FMT_GEN "llx"
-#       define U48H_FMT     "0x%012llx"
-#       define U64D_FMT_GEN "llu"
-#   endif
-#elif defined(ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(ARCH_arm64) || defined(ARCH_riscv)
-#    define U64D_FMT     "%lu"
-#    define U64H_FMT     "0x%016lx"
-#    define U48H_FMT     "0x%012lx"
-#    define U64H_FMT_GEN "lx"
-#    define U64D_FMT_GEN "lu"
+#if defined(ARCH_x86) || defined(ARCH_ppc) || defined(UEFI_BUILD) || defined(ARCH_arm6l) || defined(ARCH_m68k) || \
+  defined(ARCH_hppa)
+#if defined(__MINGW32__) || defined(__MINGW64__)
+#include <inttypes.h>
+#define U64D_FMT "0x%" PRId64
+#define U64H_FMT "0x%" PRIx64
+#define U64H_FMT_GEN "" PRIx64
+#define U48H_FMT "0x%" PRIx64
+#define U64D_FMT_GEN "" PRId64
 #else
-#   error Unknown architecture
-#endif  /* ARCH */
+#define U64D_FMT "%llu"
+#define U64H_FMT "0x%016llx"
+#define U64H_FMT_GEN "llx"
+#define U48H_FMT "0x%012llx"
+#define U64D_FMT_GEN "llu"
+#endif
+#elif defined(ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(ARCH_arm64) || defined(ARCH_riscv)
+#define U64D_FMT "%lu"
+#define U64H_FMT "0x%016lx"
+#define U48H_FMT "0x%012lx"
+#define U64H_FMT_GEN "lx"
+#define U64D_FMT_GEN "lu"
+#else
+#error Unknown architecture
+#endif /* ARCH */
 
 /*
  * Only for architectures which can't do swab by themselves
  */
 #define ___my_swab16(x) \
-    ((u_int16_t)( \
-         (((u_int16_t)(x) & (u_int16_t)0x00ffU) << 8) | \
-         (((u_int16_t)(x) & (u_int16_t)0xff00U) >> 8) ))
-#define ___my_swab32(x) \
-    ((u_int32_t)( \
-         (((u_int32_t)(x) & (u_int32_t)0x000000ffUL) << 24) | \
-         (((u_int32_t)(x) & (u_int32_t)0x0000ff00UL) <<  8) | \
-         (((u_int32_t)(x) & (u_int32_t)0x00ff0000UL) >>  8) | \
-         (((u_int32_t)(x) & (u_int32_t)0xff000000UL) >> 24) ))
-#define ___my_swab64(x) \
-    ((u_int64_t)( \
-         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000000000ffULL) << 56) | \
-         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000000000ff00ULL) << 40) | \
-         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000000000ff0000ULL) << 24) | \
-         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000ff000000ULL) <<  8) | \
-         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000ff00000000ULL) >>  8) | \
-         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000ff0000000000ULL) >> 24) | \
-         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00ff000000000000ULL) >> 40) | \
-         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0xff00000000000000ULL) >> 56) ))
+    ((u_int16_t)((((u_int16_t)(x) & (u_int16_t)0x00ffU) << 8) | (((u_int16_t)(x) & (u_int16_t)0xff00U) >> 8)))
+#define ___my_swab32(x)                                                                                        \
+    ((u_int32_t)(                                                                                              \
+      (((u_int32_t)(x) & (u_int32_t)0x000000ffUL) << 24) | (((u_int32_t)(x) & (u_int32_t)0x0000ff00UL) << 8) | \
+      (((u_int32_t)(x) & (u_int32_t)0x00ff0000UL) >> 8) | (((u_int32_t)(x) & (u_int32_t)0xff000000UL) >> 24)))
+#define ___my_swab64(x)                                                                   \
+    ((u_int64_t)((u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000000000ffULL) << 56) | \
+                 (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000000000ff00ULL) << 40) | \
+                 (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000000000ff0000ULL) << 24) | \
+                 (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000ff000000ULL) << 8) |  \
+                 (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000ff00000000ULL) >> 8) |  \
+                 (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000ff0000000000ULL) >> 24) | \
+                 (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00ff000000000000ULL) >> 40) | \
+                 (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0xff00000000000000ULL) >> 56)))
 
 /*
  * Linux
  */
 #if defined(__linux__) || defined(__FreeBSD__)
 // #include <asm/byteorder.h>
-    #include <unistd.h>
-    #include <sys/types.h>
+#include <unistd.h>
+#include <sys/types.h>
 
-    #if defined(__FreeBSD__)
-    #include <sys/endian.h>
+#if defined(__FreeBSD__)
+#include <sys/endian.h>
 // WA: on FBSD the BYTE ORDER AND ENDIANESS names are different
-    #ifndef __BYTE_ORDER
-        #define __BYTE_ORDER _BYTE_ORDER
-    #endif
-    #ifndef __LITTLE_ENDIAN
-        #define __LITTLE_ENDIAN _LITTLE_ENDIAN
-    #endif
-    #ifndef __BIG_ENDIAN
-        #define __BIG_ENDIAN _BIG_ENDIAN
-    #endif
-    #else
-    #include <endian.h>
-    #endif
+#ifndef __BYTE_ORDER
+#define __BYTE_ORDER _BYTE_ORDER
+#endif
+#ifndef __LITTLE_ENDIAN
+#define __LITTLE_ENDIAN _LITTLE_ENDIAN
+#endif
+#ifndef __BIG_ENDIAN
+#define __BIG_ENDIAN _BIG_ENDIAN
+#endif
+#else
+#include <endian.h>
+#endif
 
-    #undef __be64_to_cpu
-    #undef __be32_to_cpu
-    #undef __be16_to_cpu
-    #undef __cpu_to_be64
-    #undef __cpu_to_be32
-    #undef __cpu_to_be16
-    #undef __le64_to_cpu
-    #undef __le32_to_cpu
-    #undef __le16_to_cpu
-    #undef __cpu_to_le64
-    #undef __cpu_to_le32
-    #undef __cpu_to_le16
+#undef __be64_to_cpu
+#undef __be32_to_cpu
+#undef __be16_to_cpu
+#undef __cpu_to_be64
+#undef __cpu_to_be32
+#undef __cpu_to_be16
+#undef __le64_to_cpu
+#undef __le32_to_cpu
+#undef __le16_to_cpu
+#undef __cpu_to_le64
+#undef __cpu_to_le32
+#undef __cpu_to_le16
 
-    #if __BYTE_ORDER == __LITTLE_ENDIAN
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 
-        #define __be64_to_cpu(x) ___my_swab64(x)
-        #define __be32_to_cpu(x) ___my_swab32(x)
-        #define __be16_to_cpu(x) ___my_swab16(x)
-        #define __cpu_to_be64(x) ___my_swab64(x)
-        #define __cpu_to_be32(x) ___my_swab32(x)
-        #define __cpu_to_be16(x) ___my_swab16(x)
-        #define __le64_to_cpu(x) (x)
-        #define __le32_to_cpu(x) (x)
-        #define __le16_to_cpu(x) (x)
-        #define __cpu_to_le64(x) (x)
-        #define __cpu_to_le32(x) (x)
-        #define __cpu_to_le16(x) (x)
+#define __be64_to_cpu(x) ___my_swab64(x)
+#define __be32_to_cpu(x) ___my_swab32(x)
+#define __be16_to_cpu(x) ___my_swab16(x)
+#define __cpu_to_be64(x) ___my_swab64(x)
+#define __cpu_to_be32(x) ___my_swab32(x)
+#define __cpu_to_be16(x) ___my_swab16(x)
+#define __le64_to_cpu(x) (x)
+#define __le32_to_cpu(x) (x)
+#define __le16_to_cpu(x) (x)
+#define __cpu_to_le64(x) (x)
+#define __cpu_to_le32(x) (x)
+#define __cpu_to_le16(x) (x)
 
-    #elif __BYTE_ORDER == __BIG_ENDIAN
+#elif __BYTE_ORDER == __BIG_ENDIAN
 
-        #define __be64_to_cpu(x) (x)
-        #define __be32_to_cpu(x) (x)
-        #define __be16_to_cpu(x) (x)
-        #define __cpu_to_be64(x) (x)
-        #define __cpu_to_be32(x) (x)
-        #define __cpu_to_be16(x) (x)
-        #define __le64_to_cpu(x) ___my_swab64(x)
-        #define __le32_to_cpu(x) ___my_swab32(x)
-        #define __le16_to_cpu(x) ___my_swab16(x)
-        #define __cpu_to_le64(x) ___my_swab64(x)
-        #define __cpu_to_le32(x) ___my_swab32(x)
-        #define __cpu_to_le16(x) ___my_swab16(x)
+#define __be64_to_cpu(x) (x)
+#define __be32_to_cpu(x) (x)
+#define __be16_to_cpu(x) (x)
+#define __cpu_to_be64(x) (x)
+#define __cpu_to_be32(x) (x)
+#define __cpu_to_be16(x) (x)
+#define __le64_to_cpu(x) ___my_swab64(x)
+#define __le32_to_cpu(x) ___my_swab32(x)
+#define __le16_to_cpu(x) ___my_swab16(x)
+#define __cpu_to_le64(x) ___my_swab64(x)
+#define __cpu_to_le32(x) ___my_swab32(x)
+#define __cpu_to_le16(x) ___my_swab16(x)
 
-    #endif // __BYTE_ORDER
+#endif // __BYTE_ORDER
 
 #endif
 
@@ -225,21 +220,21 @@
  * Windows (CYGWIN)
  */
 #if defined(__CYGWIN32__)
-    #include <asm/byteorder.h>
-    #include <unistd.h>
+#include <asm/byteorder.h>
+#include <unistd.h>
 
-    #define __be64_to_cpu(x) ___my_swab64(x)
-    #define __be32_to_cpu(x) ___my_swab32(x)
-    #define __be16_to_cpu(x) ___my_swab16(x)
-    #define __cpu_to_be64(x) ___my_swab64(x)
-    #define __cpu_to_be32(x) ___my_swab32(x)
-    #define __cpu_to_be16(x) ___my_swab16(x)
-    #define __le64_to_cpu(x) (x)
-    #define __le32_to_cpu(x) (x)
-    #define __le16_to_cpu(x) (x)
-    #define __cpu_to_le64(x) (x)
-    #define __cpu_to_le32(x) (x)
-    #define __cpu_to_le16(x) (x)
+#define __be64_to_cpu(x) ___my_swab64(x)
+#define __be32_to_cpu(x) ___my_swab32(x)
+#define __be16_to_cpu(x) ___my_swab16(x)
+#define __cpu_to_be64(x) ___my_swab64(x)
+#define __cpu_to_be32(x) ___my_swab32(x)
+#define __cpu_to_be16(x) ___my_swab16(x)
+#define __le64_to_cpu(x) (x)
+#define __le32_to_cpu(x) (x)
+#define __le16_to_cpu(x) (x)
+#define __cpu_to_le64(x) (x)
+#define __cpu_to_le32(x) (x)
+#define __cpu_to_le16(x) (x)
 
 #endif
 
@@ -247,47 +242,45 @@
  * Windows (DDK)
  */
 #if defined(__WIN__)
-    #include <winsock2.h>
-    #include <windows.h>
-    #include <io.h>
+#include <winsock2.h>
+#include <windows.h>
+#include <io.h>
 
+#define __LITTLE_ENDIAN 1234
+#define __BIG_ENDIAN 4321
+#define __BYTE_ORDER __LITTLE_ENDIAN
 
-    #define __LITTLE_ENDIAN 1234
-    #define __BIG_ENDIAN 4321
-    #define __BYTE_ORDER __LITTLE_ENDIAN
+#define __be64_to_cpu(x) ___my_swab64(x)
+#define __be32_to_cpu(x) ___my_swab32(x)
+#define __be16_to_cpu(x) ___my_swab16(x)
+#define __cpu_to_be64(x) ___my_swab64(x)
+#define __cpu_to_be32(x) ___my_swab32(x)
+#define __cpu_to_be16(x) ___my_swab16(x)
+#define __le64_to_cpu(x) (x)
+#define __le32_to_cpu(x) (x)
+#define __le16_to_cpu(x) (x)
+#define __cpu_to_le64(x) (x)
+#define __cpu_to_le32(x) (x)
+#define __cpu_to_le16(x) (x)
 
-    #define __be64_to_cpu(x) ___my_swab64(x)
-    #define __be32_to_cpu(x) ___my_swab32(x)
-    #define __be16_to_cpu(x) ___my_swab16(x)
-    #define __cpu_to_be64(x) ___my_swab64(x)
-    #define __cpu_to_be32(x) ___my_swab32(x)
-    #define __cpu_to_be16(x) ___my_swab16(x)
-    #define __le64_to_cpu(x) (x)
-    #define __le32_to_cpu(x) (x)
-    #define __le16_to_cpu(x) (x)
-    #define __cpu_to_le64(x) (x)
-    #define __cpu_to_le32(x) (x)
-    #define __cpu_to_le16(x) (x)
-
-
-    #if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
-        #include <stdint.h>
-        #ifndef   MFT_TOOLS_VARS
-            #define MFT_TOOLS_VARS
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
+#include <stdint.h>
+#ifndef MFT_TOOLS_VARS
+#define MFT_TOOLS_VARS
 typedef uint8_t u_int8_t;
 typedef uint16_t u_int16_t;
 typedef uint32_t u_int32_t;
 typedef uint64_t u_int64_t;
-        #endif
-        #include <string.h>      // Get a define for strcasecmp
-        #if defined(_MSC_VER)
+#endif
+#include <string.h> // Get a define for strcasecmp
+#if defined(_MSC_VER)
 typedef size_t ssize_t;
 
-            #define strcasecmp  _stricmp
-            #define strncasecmp _strnicmp
-        #endif
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#endif
 
-    #else
+#else
 typedef unsigned __int8 u_int8_t;
 typedef __int8 int8_t;
 typedef unsigned __int16 u_int16_t;
@@ -297,32 +290,32 @@ typedef __int32 int32_t;
 typedef unsigned __int64 u_int64_t;
 typedef __int64 int64_t;
 
-        #define strcasecmp    _stricmp
-        #define strtoll       _strtoi64
-        #define strtoull      _strtoui64
-        #define strdup        _strdup
+#define strcasecmp _stricmp
+#define strtoll _strtoi64
+#define strtoull _strtoui64
+#define strdup _strdup
 
-    #endif
+#endif
 
-    #ifndef __WIN__ // TBD : investigate crash on win
+#ifndef __WIN__ // TBD : investigate crash on win
 inline
-    #endif
+#endif
 
-    #define COMP_CDECL    __cdecl
-    #define COMP_OPEN     ::_open
-    #define COMP_CLOSE    ::_close
-    #define COMP_READ     ::_read
-    #define COMP_FSTAT    ::_fstat
+#define COMP_CDECL __cdecl
+#define COMP_OPEN ::_open
+#define COMP_CLOSE ::_close
+#define COMP_READ ::_read
+#define COMP_FSTAT ::_fstat
 
-    #ifndef __cplusplus
-        #define close _close
-    #endif
+#ifndef __cplusplus
+#define close _close
+#endif
 
-typedef struct _stat Stat;
+  typedef struct _stat Stat;
 
 #ifndef PRIx64
-    #define PRIx64 "I64x"
-    #define PRIu64 "I64u"
+#define PRIx64 "I64x"
+#define PRIu64 "I64u"
 #endif
 /*
  #ifdef __cplusplus
@@ -335,47 +328,45 @@ typedef struct _stat Stat;
  */
 #else
 
-    #define COMP_CDECL
-    #define COMP_OPEN     ::open
-    #define COMP_CLOSE    ::close
-    #define COMP_READ     ::read
-    #define COMP_FSTAT    ::fstat
+#define COMP_CDECL
+#define COMP_OPEN ::open
+#define COMP_CLOSE ::close
+#define COMP_READ ::read
+#define COMP_FSTAT ::fstat
 
 typedef struct stat Stat;
 
-    #include <sys/time.h>
-    #include <strings.h>
+#include <sys/time.h>
+#include <strings.h>
 
 #endif
-
-
 
 /*
  * MAC (Darwin)
  */
 #if defined(__APPLE_CC__)
-    #include <architecture/byte_order.h>
+#include <architecture/byte_order.h>
 
-    #define __swab64(x)      NXSwapLongLong(x)
-    #define __swab32(x)      NXSwapLong(x)
-    #define __swab16(x)      NXSwapShort(x)
-    #define __be64_to_cpu(x) NXSwapBigLongLongToHost(x)
-    #define __be32_to_cpu(x) NXSwapBigLongToHost(x)
-    #define __be16_to_cpu(x) NXSwapBigShortToHost(x)
-    #define __le64_to_cpu(x) NXSwapLittleLongLongToHost(x)
-    #define __le32_to_cpu(x) NXSwapLittleLongToHost(x)
-    #define __le16_to_cpu(x) NXSwapLittleShortToHost(x)
-    #define __cpu_to_be64(x) NXSwapHostLongLongToBig(x)
-    #define __cpu_to_be32(x) NXSwapHostLongToBig(x)
-    #define __cpu_to_be16(x) NXSwapHostShortToBig(x)
-    #define __cpu_to_le64(x) NXSwapHostLongLongToLittle(x)
-    #define __cpu_to_le32(x) NXSwapHostLongToLittle(x)
-    #define __cpu_to_le16(x) NXSwapHostShortToLittle(x)
+#define __swab64(x) NXSwapLongLong(x)
+#define __swab32(x) NXSwapLong(x)
+#define __swab16(x) NXSwapShort(x)
+#define __be64_to_cpu(x) NXSwapBigLongLongToHost(x)
+#define __be32_to_cpu(x) NXSwapBigLongToHost(x)
+#define __be16_to_cpu(x) NXSwapBigShortToHost(x)
+#define __le64_to_cpu(x) NXSwapLittleLongLongToHost(x)
+#define __le32_to_cpu(x) NXSwapLittleLongToHost(x)
+#define __le16_to_cpu(x) NXSwapLittleShortToHost(x)
+#define __cpu_to_be64(x) NXSwapHostLongLongToBig(x)
+#define __cpu_to_be32(x) NXSwapHostLongToBig(x)
+#define __cpu_to_be16(x) NXSwapHostShortToBig(x)
+#define __cpu_to_le64(x) NXSwapHostLongLongToLittle(x)
+#define __cpu_to_le32(x) NXSwapHostLongToLittle(x)
+#define __cpu_to_le16(x) NXSwapHostShortToLittle(x)
 
-    #define __LITTLE_ENDIAN 1234
-    #define __BIG_ENDIAN    4321
-    #define __PDP_ENDIAN    3412
-    #define __BYTE_ORDER    __BIG_ENDIAN
+#define __LITTLE_ENDIAN 1234
+#define __BIG_ENDIAN 4321
+#define __PDP_ENDIAN 3412
+#define __BYTE_ORDER __BIG_ENDIAN
 #endif
 
 /*
@@ -383,22 +374,22 @@ typedef struct stat Stat;
  * -------
  */
 #if defined(__sparc__)
-    #include <sys/byteorder.h>
-    #include <sys/types.h>
-    #include <unistd.h>
+#include <sys/byteorder.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-    #define __be64_to_cpu(x) (x)
-    #define __be32_to_cpu(x) (x)
-    #define __be16_to_cpu(x) (x)
-    #define __cpu_to_be64(x) (x)
-    #define __cpu_to_be32(x) (x)
-    #define __cpu_to_be16(x) (x)
-    #define __le64_to_cpu(x) ___my_swab64(x)
-    #define __le32_to_cpu(x) ___my_swab32(x)
-    #define __le16_to_cpu(x) ___my_swab16(x)
-    #define __cpu_to_le64(x) ___my_swab64(x)
-    #define __cpu_to_le32(x) ___my_swab32(x)
-    #define __cpu_to_le16(x) ___my_swab16(x)
+#define __be64_to_cpu(x) (x)
+#define __be32_to_cpu(x) (x)
+#define __be16_to_cpu(x) (x)
+#define __cpu_to_be64(x) (x)
+#define __cpu_to_be32(x) (x)
+#define __cpu_to_be16(x) (x)
+#define __le64_to_cpu(x) ___my_swab64(x)
+#define __le32_to_cpu(x) ___my_swab32(x)
+#define __le16_to_cpu(x) ___my_swab16(x)
+#define __cpu_to_le64(x) ___my_swab64(x)
+#define __cpu_to_le32(x) ___my_swab32(x)
+#define __cpu_to_le16(x) ___my_swab16(x)
 
 typedef uint64_t u_int64_t;
 typedef uint32_t u_int32_t;
@@ -409,39 +400,45 @@ typedef uint8_t u_int8_t;
 
 /* define msleep(x) - sleeps for x milliseconds */
 #if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
-    #define msleep(x)   Sleep(x)
+#define msleep(x) Sleep(x)
 #else
-    #define msleep(x)   usleep(((unsigned long)x) * 1000)
+#define msleep(x) usleep(((unsigned long)x) * 1000)
 #endif
 
 // Convert BYTES - DWORDS with MEMCPY BE
-#define BYTES_TO_DWORD_BE(dw_dest, byte_src) do {   u_int32_t tmp; \
-                                                    memcpy(&tmp, byte_src, 4); \
-                                                    *(dw_dest) = __be32_to_cpu(tmp); \
-} while (0)
+#define BYTES_TO_DWORD_BE(dw_dest, byte_src) \
+    do                                       \
+    {                                        \
+        u_int32_t tmp;                       \
+        memcpy(&tmp, byte_src, 4);           \
+        *(dw_dest) = __be32_to_cpu(tmp);     \
+    } while (0)
 
-#define DWORD_TO_BYTES_BE(bytes_dest, dw_src) do { u_int32_t tmp; \
-                                                   tmp = __cpu_to_be32(*(dw_src)); \
-                                                   memcpy(bytes_dest, &tmp, 4); \
-} while (0)
+#define DWORD_TO_BYTES_BE(bytes_dest, dw_src) \
+    do                                        \
+    {                                         \
+        u_int32_t tmp;                        \
+        tmp = __cpu_to_be32(*(dw_src));       \
+        memcpy(bytes_dest, &tmp, 4);          \
+    } while (0)
 
 /*
  * Old GCC
  * -------
  */
 #if !defined(__WIN__) && defined(__cplusplus) && __GNUG__ < 3
-    #include <algo.h>
+#include <algo.h>
 #endif
 
 #define __STDC_FORMAT_MACROS
 #if !defined(__WIN__) && !defined(UEFI_BUILD)
-    #include <inttypes.h>
+#include <inttypes.h>
 #endif
 
 #if defined(__VMKERNEL_UW_NATIVE__)
-    #define ROOT_PATH "/opt/mellanox/"
+#define ROOT_PATH "/opt/mellanox/"
 #else
-    #define ROOT_PATH "/"
+#define ROOT_PATH "/"
 #endif
 
 #ifndef IN
@@ -460,4 +457,3 @@ typedef uint8_t u_int8_t;
 #endif
 
 #endif
-

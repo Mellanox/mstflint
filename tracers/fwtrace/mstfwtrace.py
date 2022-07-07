@@ -1,24 +1,24 @@
 # Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# 
+#
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
 # General Public License (GPL) Version 2, available from the file
 # COPYING in the main directory of this source tree, or the
 # OpenIB.org BSD license below:
-# 
+#
 #     Redistribution and use in source and binary forms, with or
 #     without modification, are permitted provided that the following
 #     conditions are met:
-# 
+#
 #      - Redistributions of source code must retain the above
 #        copyright notice, this list of conditions and the following
 #        disclaimer.
-# 
+#
 #      - Redistributions in binary form must reproduce the above
 #        copyright notice, this list of conditions and the following
 #        disclaimer in the documentation and/or other materials
 #        provided with the distribution.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -54,16 +54,16 @@ import cmdif  # noqa
 
 
 class UnbufferedStream(object):
-   def __init__(self, stream):
-       self.stream = stream
-   def write(self, data):
-       self.stream.write(data)
-       self.stream.flush()
-   def writelines(self, datas):
-       self.stream.writelines(datas)
-       self.stream.flush()
-   def __getattr__(self, attr):
-       return getattr(self.stream, attr)
+    def __init__(self, stream):
+        self.stream = stream
+    def write(self, data):
+        self.stream.write(data)
+        self.stream.flush()
+    def writelines(self, datas):
+        self.stream.writelines(datas)
+        self.stream.flush()
+    def __getattr__(self, attr):
+        return getattr(self.stream, attr)
 
 
 sys.stdout = UnbufferedStream(sys.stdout)
@@ -98,7 +98,7 @@ DEV_INFO_DB = [
     {
         "name": "ConnectIB",
         "dev_id": [0x1ff],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -107,7 +107,7 @@ DEV_INFO_DB = [
     {
         "name": "SwitchIB",
         "dev_id": [0x247],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -116,7 +116,7 @@ DEV_INFO_DB = [
     {
         "name": "ConnectX4",
         "dev_id": [0x209],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -125,7 +125,7 @@ DEV_INFO_DB = [
     {
         "name": "ConnectX5",
         "dev_id": [0x20d],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -134,7 +134,7 @@ DEV_INFO_DB = [
     {
         "name": "BlueField",
         "dev_id": [0x211],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -163,7 +163,7 @@ DEV_INFO_DB = [
     {
         "name": "ConnectX6",
         "dev_id": [0x20f],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -172,7 +172,7 @@ DEV_INFO_DB = [
     {
         "name": "ConnectX6DX",
         "dev_id": [0x212],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -181,7 +181,7 @@ DEV_INFO_DB = [
     {
         "name": "Spectrum",
         "dev_id": [0x249],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -190,7 +190,7 @@ DEV_INFO_DB = [
     {
         "name": "ConnectX4LX",
         "dev_id": [0x20b],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -199,7 +199,7 @@ DEV_INFO_DB = [
     {
         "name": "SwitchIB2",
         "dev_id": [0x24B],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -208,7 +208,7 @@ DEV_INFO_DB = [
     {
         "name": "Quantum",
         "dev_id": [0x24D],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -217,7 +217,7 @@ DEV_INFO_DB = [
     {
         "name": "Spectrum2",
         "dev_id": [0x24E],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -226,7 +226,7 @@ DEV_INFO_DB = [
     {
         "name": "Spectrum3",
         "dev_id": [0x250],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -235,7 +235,7 @@ DEV_INFO_DB = [
     {
         "name": "Spectrum4",
         "dev_id": [0x254],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -244,7 +244,7 @@ DEV_INFO_DB = [
     {
         "name": "ConnectX6LX",
         "dev_id": [0x216],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -253,7 +253,7 @@ DEV_INFO_DB = [
     {
         "name": "ConnectX7",
         "dev_id": [0x218],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -262,7 +262,7 @@ DEV_INFO_DB = [
     {
         "name": "Quantum2",
         "dev_id": [0x257],
-        "chip_rev":-1,
+        "chip_rev": -1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
@@ -298,11 +298,11 @@ def add_args():
     format_group = parser.add_argument_group('Format')
     format_group.add_argument("-i", "--irisc", dest="irisc", help="Irisc name [all]", default="all")
     format_group.add_argument("-s", "--stream", action="store_true", dest="stream", help="Run in streaming mode", default=False)
-    format_group.add_argument("-m", "--mask", dest="mask", help="Trace class mask, use \"+\" to enable multiple classes or use integer format, e.g: -m " \
-                                                          "class1+class2+... or 0xff00ff00", default=None)
+    format_group.add_argument("-m", "--mask", dest="mask", help="Trace class mask, use \"+\" to enable multiple classes or use integer format, e.g: -m "
+                              "class1+class2+... or 0xff00ff00", default=None)
     format_group.add_argument("-l", "--level", dest="level", help="Trace level", default=None)
     return parser
-    
+
 
 def parse_cmd_line_args():
     args = add_args().parse_args()
@@ -349,13 +349,12 @@ def check_secure_fw_args(devInfo):
 
 
 def get_device_info(dev):
-    #check if livefish mode before continue to work with the device
+    # check if livefish mode before continue to work with the device
     CMDIFDEV.getFwInfo()
 
     devIdChipRev = dev.read4(0xf0014)
     devId = devIdChipRev & 0xffff
     chipRev = (devIdChipRev >> 16) & 0xf
-
 
     for devInfo in DEV_INFO_DB:
         if devId in devInfo["dev_id"] and \
@@ -387,7 +386,7 @@ def is_numaric(str):
     if str.startswith("0x") or str.startswith("0X") or str.isdigit():
         try:
             eval(str)
-        except:
+        except BaseException:
             return False
         return True
     return False
@@ -442,18 +441,18 @@ def start_tracer():
         MST_DEVICE = mtcr.MstDevice(DEV_NAME)
         CMDIFDEV = cmdif.CmdIf(MST_DEVICE)
         devInfo = get_device_info(MST_DEVICE)
-       
+
         if FwTraceUtilities.is_driver_mem_mode_supported():
             try:
-                check_secure_fw_args(devInfo)                
-                secure_fw_tracer = SecureFwTrace(MST_DEVICE, DEV_NAME, IGNORE_OLD_EVENTS, REAL_TS)               
-                open_mst_dev()           
+                check_secure_fw_args(devInfo)
+                secure_fw_tracer = SecureFwTrace(MST_DEVICE, DEV_NAME, IGNORE_OLD_EVENTS, REAL_TS)
+                open_mst_dev()
                 apply_mask(devInfo, MST_DEVICE, CMDIFDEV)
                 secure_fw_tracer.parse_driver_mem()
             except Exception as exp:
                 print("-E- %s" % exp)
         else:
-            raise TracerException("Driver mem mode is not supported")                   
+            raise TracerException("Driver mem mode is not supported")
 
     except Exception as exp:
         print("-E- %s" % exp)
@@ -479,7 +478,7 @@ if __name__ == "__main__":
     except Exception as exp:
         try:
             print("-E- %s" % str(exp))
-        except:
+        except BaseException:
             pass
         rc = 1
     sys.exit(rc)

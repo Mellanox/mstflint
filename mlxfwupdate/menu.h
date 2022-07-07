@@ -41,15 +41,16 @@
 #include "mlxfwmanager_common.h"
 #include "cmd_line_params.h"
 
-struct filesOPtions {
+struct filesOPtions
+{
     string file_type;
     string family;
     string os;
-    vector <string> names;
-    vector <string> urls;
-    vector <string> osDirName;
-    vector <DownloadedFileProperties> files;
-    vector <DownloadedFileProperties> filtered;
+    vector<string> names;
+    vector<string> urls;
+    vector<string> osDirName;
+    vector<DownloadedFileProperties> files;
+    vector<DownloadedFileProperties> filtered;
 };
 
 class BaseMenu
@@ -57,16 +58,14 @@ class BaseMenu
 public:
     BaseMenu();
     virtual ~BaseMenu();
-    virtual BaseMenu* getNextMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) = 0;
-    virtual BaseMenu* getPrevMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) = 0;
-    virtual bool parseChoice(int choice, bool &isExit, bool &isPrev, filesOPtions &filterOPtions)  = 0;
-    virtual void generateMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) = 0;
-    virtual bool isValid(CmdLineParams &cmd_params, filesOPtions &filterOPtions)      = 0;
-    virtual bool isPrevious(CmdLineParams &cmd_params, filesOPtions &filterOPtions)    = 0;
-    void printText()
-    {
-        std::cout << _menuText;
-    }
+    virtual BaseMenu* getNextMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions) = 0;
+    virtual BaseMenu* getPrevMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions) = 0;
+    virtual bool parseChoice(int choice, bool& isExit, bool& isPrev, filesOPtions& filterOPtions) = 0;
+    virtual void generateMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions) = 0;
+    virtual bool isValid(CmdLineParams& cmd_params, filesOPtions& filterOPtions) = 0;
+    virtual bool isPrevious(CmdLineParams& cmd_params, filesOPtions& filterOPtions) = 0;
+    void printText() { std::cout << _menuText; }
+
 protected:
     int _maxChoice;
     bool _valid;
@@ -77,49 +76,54 @@ protected:
     std::string _menuText; // This string will be shared by all children (i.e. derived) classes
 };
 
-class FileTypeMenu : public BaseMenu {
+class FileTypeMenu : public BaseMenu
+{
 public:
     FileTypeMenu();
     ~FileTypeMenu();
-    BaseMenu* getNextMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    BaseMenu* getPrevMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    bool parseChoice(int choice, bool &isExit, bool &isPrev, filesOPtions &filterOPtions);
-    void generateMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    bool isValid(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    bool isPrevious(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    static void setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
+    BaseMenu* getNextMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    BaseMenu* getPrevMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    bool parseChoice(int choice, bool& isExit, bool& isPrev, filesOPtions& filterOPtions);
+    void generateMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    bool isValid(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    bool isPrevious(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    static void setValuesDirectly(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
 };
 
-class DevFamilyMenu : public BaseMenu {
+class DevFamilyMenu : public BaseMenu
+{
 public:
     DevFamilyMenu();
     ~DevFamilyMenu();
-    BaseMenu* getNextMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    BaseMenu* getPrevMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    bool parseChoice(int choice, bool &isExit, bool &isPrev, filesOPtions &filterOPtions);
-    void generateMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    bool isValid(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    bool isPrevious(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    static void setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
+    BaseMenu* getNextMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    BaseMenu* getPrevMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    bool parseChoice(int choice, bool& isExit, bool& isPrev, filesOPtions& filterOPtions);
+    void generateMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    bool isValid(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    bool isPrevious(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    static void setValuesDirectly(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+
 private:
     string beautify(string family);
-    vector <string> availableFamilies;
+    vector<string> availableFamilies;
 };
 
-class OSMenu : public BaseMenu {
+class OSMenu : public BaseMenu
+{
 public:
     OSMenu();
     ~OSMenu();
-    BaseMenu* getNextMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    BaseMenu* getPrevMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    bool parseChoice(int choice, bool &isExit, bool &isPrev, filesOPtions &filterOPtions);
-    void generateMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    bool isValid(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    bool isPrevious(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
-    static void setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &filterOPtions);
+    BaseMenu* getNextMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    BaseMenu* getPrevMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    bool parseChoice(int choice, bool& isExit, bool& isPrev, filesOPtions& filterOPtions);
+    void generateMenu(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    bool isValid(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    bool isPrevious(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+    static void setValuesDirectly(CmdLineParams& cmd_params, filesOPtions& filterOPtions);
+
 private:
     string beautify(string os);
-    vector <string> availableOs;
+    vector<string> availableOs;
 };
 
 #endif /* MENU_H_ */

@@ -30,7 +30,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
-*/
+ */
 
 /*
  * mflash_gw.h
@@ -39,15 +39,26 @@
  *      Author: edwardg
  */
 
-
 #ifndef _MFLASH_GW_H_
 #define _MFLASH_GW_H_
 #include "mflash_pack_layer.h"
 // ConnectX SPI interface:
-int cntx_st_spi_erase_sect(mflash *mfl, u_int32_t addr);
-int cntx_int_spi_get_status_data(mflash *mfl, u_int8_t op_type, u_int32_t *status, u_int8_t data_num);
-int cntx_st_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, u_int8_t is_first, u_int8_t is_last, u_int32_t total_size);
-int cntx_sst_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data);
-int cntx_st_spi_block_read_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, u_int8_t is_first, u_int8_t is_last, bool verbose);
-int cntx_spi_write_status_reg(mflash *mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num);
+int cntx_st_spi_erase_sect(mflash* mfl, u_int32_t addr);
+int cntx_int_spi_get_status_data(mflash* mfl, u_int8_t op_type, u_int32_t* status, u_int8_t data_num);
+int cntx_st_spi_block_write_ex(mflash* mfl,
+                               u_int32_t blk_addr,
+                               u_int32_t blk_size,
+                               u_int8_t* data,
+                               u_int8_t is_first,
+                               u_int8_t is_last,
+                               u_int32_t total_size);
+int cntx_sst_spi_block_write_ex(mflash* mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t* data);
+int cntx_st_spi_block_read_ex(mflash* mfl,
+                              u_int32_t blk_addr,
+                              u_int32_t blk_size,
+                              u_int8_t* data,
+                              u_int8_t is_first,
+                              u_int8_t is_last,
+                              bool verbose);
+int cntx_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num);
 #endif
