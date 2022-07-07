@@ -113,7 +113,7 @@ typedef struct toc_entry
     u_int8_t reserved0;
     u_int8_t num_ver_fields;
     u_int16_t version[4];
-    u_int16_t reserved1;
+    u_int16_t data_offset_msb;
     u_int16_t metadata_size;
 } toc_entry;
 
@@ -137,7 +137,7 @@ ssize_t mfasec_get_map(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf);
 ssize_t mfasec_get_toc(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf);
 int mfasec_get_data_chunk(u_int8_t* data_sec_ptr,
                           size_t data_sec_len,
-                          size_t chunk_offset,
+                          u_int64_t chunk_offset,
                           size_t length,
                           u_int8_t* outbuf);
 char* mfasec_get_sub_image_type_str(int t);

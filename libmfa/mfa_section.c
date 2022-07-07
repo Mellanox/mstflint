@@ -195,6 +195,7 @@ ssize_t mfasec_get_toc(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
         {
             toc_e->version[i] = __be16_to_cpu(toc_e->version[i]);
         }
+        toc_e->data_offset_msb = __be16_to_cpu(toc_e->data_offset_msb);
         toc_e->metadata_size = __be16_to_cpu(toc_e->metadata_size);
         pos += sizeof(toc_entry);
         pos += toc_e->metadata_size;
@@ -213,7 +214,7 @@ enum read_states
 
 int mfasec_get_data_chunk(u_int8_t* data_sec_ptr,
                           size_t data_sec_len,
-                          size_t chunk_offset,
+                          u_int64_t chunk_offset,
                           size_t length,
                           u_int8_t* outbuf)
 {
