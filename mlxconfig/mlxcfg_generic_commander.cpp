@@ -1642,6 +1642,8 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
 #else
     (void)buff;
     (void)privateKeyFile;
+    (void)openssl_engine;
+    (void)openssl_key_identifier;
     throw MlxcfgException("Sign command is not implemented\n");
 #endif
 }
