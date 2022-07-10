@@ -96,10 +96,10 @@ MLNX_DEVICES = [
     dict(name="ConnectX4", devid=0x209, status_config_not_done=(0xb0004, 31)),
     dict(name="ConnectX4LX", devid=0x20b, status_config_not_done=(0xb0004, 31)),
     dict(name="ConnectX5", devid=0x20d, status_config_not_done=(0xb5e04, 31)),
-    dict(name="BlueField", devid=0x211, status_config_not_done=(0xb5e04, 31)),
-    dict(name="BlueField2", devid=0x214, status_config_not_done=(0xb5f04, 31)),
-    dict(name="BlueField3", devid=0x21c, status_config_not_done=(0xb5f04, 31)),
-    dict(name="BlueField4", devid=0x220, status_config_not_done=(0xb5f04, 31)),
+    dict(name="BlueField", devid=0x211, status_config_not_done=(0xb5e04, 31), is_dpu=True),
+    dict(name="BlueField2", devid=0x214, status_config_not_done=(0xb5f04, 31), is_dpu=True),
+    dict(name="BlueField3", devid=0x21c, status_config_not_done=(0xb5f04, 31), is_dpu=True),
+    dict(name="BlueField4", devid=0x220, status_config_not_done=(0xb5f04, 31), is_dpu=True),
     dict(name="ConnectX6", devid=0x20f, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX6DX", devid=0x212, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
@@ -114,7 +114,7 @@ SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
 IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
-# TODO latter remove mcra to the new class
+# TODO later remove mcra to the new class
 MCRA = 'mcra'
 if IS_MSTFLINT:
     MCRA = "mstmcra"
@@ -220,9 +220,8 @@ def is_fw_ready(device):
 
         devid = getDevidFromDevice(device)
 
-        for mlnx_device in MLNX_DEVICES:
-            if mlnx_device['devid'] == devid:
-                address, offset = mlnx_device['status_config_not_done']
+        devDict = getDeviceDict(devid)
+        address, offset = devDict['status_config_not_done']
 
         status_config_not_done = mcraRead(device, address, offset, 1)
         return False if status_config_not_done == 1 else True
@@ -792,24 +791,55 @@ def getDevidFromDevice(device):
 
 
 ######################################################################
-# Description:  Check if device is supported
-# OS Support :  Linux/Windows.
+# Description:  Check if device is DPU
 ######################################################################
 
-def isDevSupp(device):
-    logger.info('isDevSupp() called. Inputs : device = {0}'.format(device))
+def isDPU(device):
+    logger.info('isDPU() called. Inputs : device = {0}'.format(device))
+    res = False
+
     try:
         devid = getDevidFromDevice(device)
         logger.debug('devid = {0:x}'.format(devid))
     except Exception as e:
         raise RuntimeError("Failed to Identify Device: %s, %s" % (device, str(e)))
+
+    devDict = getDeviceDict(devid)
+    if devDict.get("is_dpu") is True:
+        res = True
+    return res
+
+######################################################################
+# Description:  Get device dictionary from MLNX_DEVICES
+######################################################################
+
+
+def getDeviceDict(devid):
+    logger.info('getDeviceDict() called. Inputs : devid = {0}'.format(devid))
     for devDict in MLNX_DEVICES:
         if devDict["devid"] == devid:
-            if devDict["name"] in SUPP_DEVICES:
-                return
-            else:
-                raise RuntimeError("Unsupported Device: %s (%s)" % (device, devDict["name"]))
-    raise RuntimeError("Failed to Identify Device: %s" % (device))
+            return devDict
+    else:
+        raise RuntimeError("Failed to Identify devid: %s" % (devid))
+
+######################################################################
+# Description:  Check if device is supported
+# OS Support :  Linux/Windows.
+######################################################################
+
+
+def assertDevSupp(device):
+    logger.info('assertDevSupp() called. Inputs : device = {0}'.format(device))
+    try:
+        devid = getDevidFromDevice(device)
+        logger.debug('devid = {0:x}'.format(devid))
+    except Exception as e:
+        raise RuntimeError("Failed to Identify Device: %s, %s" % (device, str(e)))
+    devDict = getDeviceDict(devid)
+    if devDict["name"] in SUPP_DEVICES:
+        return
+    else:
+        raise RuntimeError("Unsupported Device: %s (%s)" % (device, devDict["name"]))
 
 ######################################################################
 # Description: Get All PCI Module Paths
@@ -1532,10 +1562,18 @@ def map2DevPath(device):
             return d
     raise RuntimeError("Can not find path of the provided mst device: " + device)
 
+######################################################################
+# Description: Returns default value for reset sync
+######################################################################
+
+
+def get_default_reset_sync(device, mcam):
+    return SyncOwner.DRIVER if isDPU(device) and mcam.is_reset_by_fw_driver_sync_supported() else SyncOwner.TOOL
 
 ######################################################################
 # Description: Main
 ######################################################################
+
 
 def main():
     global logger
@@ -1577,7 +1615,6 @@ def main():
     options_group.add_argument('--sync',
                                type=int,
                                choices=[SyncOwner.TOOL, SyncOwner.DRIVER],
-                               default=SyncOwner.TOOL,
                                dest='reset_sync',
                                help=':  Run reset with the specified reset-sync')
     options_group.add_argument('--yes',
@@ -1648,7 +1685,7 @@ def main():
 
     device = args.device
     global device_global
-    device_global = args.device  # required for reset_fsm_register when exiting with ctrl+c/exception (latter think how to move the global)
+    device_global = args.device  # required for reset_fsm_register when exiting with ctrl+c/exception (later think how to move the global)
     yes = args.yes
 
     command = args.command[0]
@@ -1674,10 +1711,6 @@ def main():
     global DevDBDF
     global FWResetStatusChecker
 
-    if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
-            and args.reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
-        raise RuntimeError("The tool supports only reset-level 4 on UEFI Secure Boot")  # and it's restricted on UEFI secure boot
-
     # Exit in case of virtual-machine (not implemented for FreeBSD and Windows)
     if command == "reset" and platform.system() == "Linux" and "ppc64" not in platform.machine():
         rc, out, _ = cmdExec('lscpu')
@@ -1699,7 +1732,7 @@ def main():
             device = map2DevPath(device)
 
     # Insert Flow here
-    isDevSupp(device)  # function takes ~330msec - TODO remove it if you need performace
+    assertDevSupp(device)  # function takes ~330msec - TODO remove it if you need performace
 
     DevDBDF = mlxfwreset_utils.getDevDBDF(device, logger)
     logger.info('device domain:bus:dev.fn (DBDF) is {0}'.format(DevDBDF))
@@ -1720,12 +1753,17 @@ def main():
     if DevMgtObj.isLivefishMode() == 1:
         raise RuntimeError("%s is not supported for device in Flash Recovery mode" % PROG)
 
+    reset_sync = args.reset_sync if args.reset_sync is not None else get_default_reset_sync(device, mcam)
+    if reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
+            and args.reset_level != CmdRegMfrl.WARM_REBOOT:                             # The tool is using sysfs to access PCI config
+        raise RuntimeError("The tool supports only reset-level 4 on UEFI Secure Boot")  # and it's restricted on UEFI secure boot
+
     # Check if other process is accessing the device (burning the device)
-    # Supportted on Windows OS only
+    # Supported on Windows OS only
     if platform.system() == "Windows":
         from tools_sync import ToolsSync
         if ToolsSync(MstDevObj.mf).lock() == False:
-            raise RuntimeError("Other tool is accessing the device! Please try again latter")
+            raise RuntimeError("Other tool is accessing the device! Please try again later")
 
     # Socket Direct - Create a list of command i/f for all "other" devices
     global CmdifObjsSD
@@ -1792,7 +1830,6 @@ def main():
         if args.reset_type and mfrl.is_reset_level_support_reset_type(reset_level) is False:
             raise RuntimeError("Reset-level '{0}' is not supported with reset-type '{1}'".format(reset_level, reset_type))
 
-        reset_sync = args.reset_sync
         if reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
             raise RuntimeError("Synchronization by driver is not supported in the current state of this device")
         if reset_sync != SyncOwner.TOOL and reset_level != CmdRegMfrl.PCI_RESET:
