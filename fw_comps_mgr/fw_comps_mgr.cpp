@@ -1874,7 +1874,6 @@ unsigned char* FwCompsMgr::getLastErrMsg()
 
         case FWCOMPS_READ_COMP_NOT_SUPPORTED:
             return (unsigned char*)"Reading component is not supported";
-            break;
 
         case FWCOMPS_COMP_NOT_SUPPORTED:
             return (unsigned char*)"Component not supported";
@@ -1957,6 +1956,9 @@ unsigned char* FwCompsMgr::getLastErrMsg()
 
         case FWCOMPS_MCC_REJECTED_INCOMPATIBLE_FLASH:
             return (unsigned char*)"The image does not support the device's flash type";
+
+        case FWCOMPS_MCC_REJECTED_TOKEN_ALREADY_APPLIED:
+            return (unsigned char*)"Token already applied";
 
         case FWCOMPS_UNSUPPORTED_DEVICE:
             return (unsigned char*)"Unsupported device";
@@ -2443,6 +2445,9 @@ fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
 
         case MCC_ERRCODE_REJECTED_INCOMPATIBLE_FLASH:
             return FWCOMPS_MCC_REJECTED_INCOMPATIBLE_FLASH;
+
+        case MCC_ERRCODE_REJECTED_TOKEN_ALREADY_APPLIED:
+            return FWCOMPS_MCC_REJECTED_TOKEN_ALREADY_APPLIED;
 
         default:
             return FWCOMPS_GENERAL_ERR;
