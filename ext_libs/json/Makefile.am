@@ -35,11 +35,11 @@
 
 USER_DIR = ../
 INCLUDES =
-AM_CPPFLAGS = -W  -g -MP -MD ${COMPILER_FPIC}
-noinst_LTLIBRARIES = libjson.a
-libjson_a_SOURCES = json_reader.cpp  json_value.cpp  json_batchallocator.h  json_writer.cpp  json/*.h
+AM_CPPFLAGS = -W -Werror -g -MP -MD ${COMPILER_FPIC} -Wno-missing-field-initializers -Wno-unused-parameter
+noinst_LTLIBRARIES = libjson.la
+libjson_la_SOURCES = json_reader.cpp  json_value.cpp  json_tool.h  json_writer.cpp  json/*.h
 
-libjson_a_DEPENDENCIES =
-libjson_a_LIBADD =
+libjson_la_DEPENDENCIES =
+libjson_la_LIBADD =
 
 EXTRA_DIST = *.inl
