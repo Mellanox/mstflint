@@ -242,7 +242,6 @@ typedef enum MType_t
     /*MST_CALBR,*/
     MST_USB = 0x20,
     MST_IB = 0x40,
-    MST_IF = 0x80,
     MST_PPC = 0x100,
     MST_USB_DIMAX = 0x200,
     MST_FWCTX = 0x400,
@@ -280,7 +279,6 @@ typedef enum Mdevs_t
     MDEVS_TAVOR_DDR = 0x08,     /*  Each device that maps to DDR */
     MDEVS_TAVOR_UAR = 0x10,     /*  Each device that maps to UAR */
     MDEVS_TAVOR_CR = 0x20,      /*  Each device that maps to CR */
-    MDEVS_IF = 0x40,            /*  Standard device  interface */
     MDEVS_REM = 0x80,           /*  Remote devices */
     MDEVS_PPC = 0x100,          /*  PPC devices */
     MDEVS_DEV_I2C = 0x200,      /* Generic linux kernel i2c device */
