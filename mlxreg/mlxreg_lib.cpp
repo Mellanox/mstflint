@@ -141,8 +141,7 @@ dm_dev_id_t MlxRegLib::getDevId(mfile* mf)
 bool MlxRegLib::isDeviceSupported(mfile* mf)
 {
     dm_dev_id_t devID = getDevId(mf);
-    return devID != DeviceConnectX2 && devID != DeviceConnectX3 && devID != DeviceConnectX3Pro &&
-           devID != DeviceSwitchX;
+    return devID != DeviceConnectX3 && devID != DeviceConnectX3Pro;
 }
 
 void MlxRegLib::initAdb(string extAdbFile)

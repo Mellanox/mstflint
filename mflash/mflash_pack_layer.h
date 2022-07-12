@@ -83,7 +83,6 @@ typedef void* trm_ctx;
 #endif
 
 #define IS4_HW_ID 0x1b3
-#define SWITCHX_HW_ID 0x245
 #define CONNECTX_HW_ID 0x190
 #define CX3_PRO_HW_ID 0x1F7
 #define CX3_HW_ID 0x1F5
@@ -113,7 +112,6 @@ typedef void* trm_ctx;
 #define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) \
     (((dev_id) == CONNECTX_HW_ID) || ((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
 #define IS_IS4_FAMILY(dev_id) (((dev_id) == IS4_HW_ID))
-#define IS_SX(dev_id) ((dev_id) == SWITCHX_HW_ID)
 #define IS_SIB(dev_id) ((dev_id) == SWITCH_IB_HW_ID)
 #define IS_SIB2(dev_id) ((dev_id) == SWITCH_IB2_HW_ID)
 #define IS_SEN(dev_id) ((dev_id) == SPECTRUM_HW_ID)

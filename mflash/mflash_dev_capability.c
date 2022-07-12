@@ -48,9 +48,6 @@ int is_four_byte_address_needed(mflash* mfl, MfError* status)
 
     switch (mfl->dm_dev_id)
     {
-        case DeviceConnectX2:
-        case DeviceInfiniScaleIV:
-        case DeviceSwitchX:
         case DeviceConnectX3:
         case DeviceConnectX3Pro:
         case DeviceConnectIB:
@@ -92,11 +89,8 @@ int is_flash_enable_needed(mflash* mfl, MfError* status)
 
     switch (mfl->dm_dev_id)
     {
-        case DeviceConnectX2:
-        case DeviceInfiniScaleIV:
         case DeviceConnectX3:
         case DeviceConnectX3Pro:
-        case DeviceSwitchX:
             return 1;
         case DeviceConnectIB:
         case DeviceSwitchIB:
@@ -136,11 +130,8 @@ int is_icmdif_supported(mflash* mfl, MfError* status, int* is7NmSuppported)
 
     switch (mfl->dm_dev_id)
     {
-        case DeviceConnectX2:
-        case DeviceInfiniScaleIV:
         case DeviceConnectX3:
         case DeviceConnectX3Pro:
-        case DeviceSwitchX:
         case DeviceSecureHost:
             return 0;
         case DeviceConnectIB:

@@ -91,7 +91,6 @@ class SyncOwner():
 
 
 MLNX_DEVICES = [
-    dict(name="ConnectX2", devid=0x190),
     dict(name="ConnectX3Pro", devid=0x1f7),
     dict(name="ConnectIB", devid=0x1ff, status_config_not_done=(0xb0004, 31)),
     dict(name="ConnectX4", devid=0x209, status_config_not_done=(0xb0004, 31)),
@@ -107,7 +106,6 @@ MLNX_DEVICES = [
     dict(name="ConnectX7", devid=0x218, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX8", devid=0x21e, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX3", devid=0x1f5),
-    dict(name="SwitchX", devid=0x245),
     dict(name="IS4", devid=0x1b3),
 ]
 

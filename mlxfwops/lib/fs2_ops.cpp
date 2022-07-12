@@ -933,10 +933,6 @@ bool Fs2Operations::getRunningFwVer()
             fwVerBaseAddr = CX3_FW_VER_CR_ADDR;
             break;
 
-        case CT_SWITCHX:
-            fwVerBaseAddr = SX_FW_VER_CR_ADDR;
-            break;
-
         default:
             return errmsg("Unsupported chip type.");
     }

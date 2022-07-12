@@ -110,33 +110,6 @@ enum dm_dev_type getCableType(u_int8_t id)
 #endif
 
 static struct device_info g_devs_info[] = {{
-                                             DeviceInfiniScaleIV, // dm_id
-                                             0x01b3,              // hw_dev_id
-                                             -1,                  // hw_rev_id
-                                             -1,                  // sw_dev_id
-                                             "InfiniScaleIV",     // name
-                                             36,                  // port_num
-                                             DM_SWITCH            // dev_type
-                                           },
-                                           {
-                                             DeviceSwitchX, // dm_id
-                                             0x0245,        // hw_dev_id
-                                             -1,            // hw_rev_id
-                                             -1,            // sw_dev_id
-                                             "SwitchX",     // name
-                                             64,            // port_num
-                                             DM_SWITCH      // dev_type
-                                           },
-                                           {
-                                             DeviceConnectX2, // dm_id
-                                             0x190,           // hw_dev_id
-                                             0xb0,            // hw_rev_id
-                                             -1,              // sw_dev_id
-                                             "ConnectX2",     // name
-                                             2,               // port_num
-                                             DM_HCA           // dev_type
-                                           },
-                                           {
                                              DeviceConnectX3, // dm_id
                                              0x1f5,           // hw_dev_id
                                              -1,              // hw_rev_id
@@ -631,17 +604,17 @@ static int dm_get_device_id_inner(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32
         // mgir.HWInfo.DEVID, mgir.HWInfo.hw_dev_id);
         if (rc)
         {
-            dword = get_entry(DeviceSwitchX)->hw_dev_id;
+            dword = get_entry(DeviceSwitchIB)->hw_dev_id;
             *ptr_hw_rev = 0;
-            *ptr_hw_dev_id = get_entry(DeviceSwitchX)->hw_dev_id;
+            *ptr_hw_dev_id = get_entry(DeviceSwitchIB)->hw_dev_id;
         }
         else
         {
             dword = mgir.hw_info.hw_dev_id;
             if (dword == 0)
             {
-                dword = get_entry(DeviceSwitchX)->hw_dev_id;
-                *ptr_hw_dev_id = get_entry(DeviceSwitchX)->hw_dev_id;
+                dword = get_entry(DeviceSwitchIB)->hw_dev_id;
+                *ptr_hw_dev_id = get_entry(DeviceSwitchIB)->hw_dev_id;
                 *ptr_hw_rev = mgir.hw_info.device_hw_revision & 0xf;
             }
             else
@@ -838,7 +811,7 @@ int dm_is_livefish_mode(mfile* mf)
     }
     u_int32_t swid = mf->dinfo->pci.dev_id;
     // printf("-D- swid: %#x, devid: %#x\n", swid, devid);
-    if (dm_is_4th_gen(devid_t) || dm_is_switchx(devid_t))
+    if (dm_is_4th_gen(devid_t))
     {
         return (devid == swid - 1);
     }
@@ -852,7 +825,7 @@ int dm_is_livefish_mode(mfile* mf)
 
 int dm_is_4th_gen(dm_dev_id_t type)
 {
-    return (type == DeviceConnectX2 || type == DeviceConnectX3 || type == DeviceConnectX3Pro);
+    return (type == DeviceConnectX3 || type == DeviceConnectX3Pro);
 }
 
 int dm_is_5th_gen_hca(dm_dev_id_t type)
@@ -865,14 +838,9 @@ int dm_is_connectib(dm_dev_id_t type)
     return (type == DeviceConnectIB);
 }
 
-int dm_is_switchx(dm_dev_id_t type)
-{
-    return (type == DeviceSwitchX);
-}
-
 int dm_is_new_gen_switch(dm_dev_id_t type)
 {
-    return (dm_dev_is_switch(type) && !dm_is_switchx(type));
+    return (dm_dev_is_switch(type));
 }
 
 int dm_dev_is_raven_family_switch(dm_dev_id_t type)

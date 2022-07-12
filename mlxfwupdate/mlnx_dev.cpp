@@ -391,7 +391,6 @@ void MlnxDev::setDeviceType(void)
             portTwoType = PORT_IB;
             break;
 
-        case DeviceConnectX2:
         case DeviceConnectX3:
         case DeviceConnectX3Pro:
             u_int32_t mac;
