@@ -4778,40 +4778,13 @@ FlintStatus SwResetSubCommand::executeCommand()
 
 bool SwResetSubCommand::IsDeviceSupported(dm_dev_id_t dev_id)
 {
-    switch (dev_id)
+    if (dm_dev_is_ib_switch(dev_id))
     {
-        case DeviceSwitchIB:
-        case DeviceSwitchIB2:
-        case DeviceQuantum:
-        case DeviceQuantum2:
-            return true;
-        case DeviceConnectX3:
-        case DeviceConnectX3Pro:
-        case DeviceConnectIB:
-        case DeviceSpectrum:
-        case DeviceConnectX4:
-        case DeviceConnectX4LX:
-        case DeviceConnectX5:
-        case DeviceBlueField:
-        case DeviceBlueField2:
-        case DeviceBlueField3:
-        case DeviceConnectX6:
-        case DeviceConnectX6DX:
-        case DeviceConnectX6LX:
-        case DeviceConnectX7:
-        case DeviceSpectrum2:
-        case DeviceSpectrum3:
-        case DeviceSpectrum4:
-        case DeviceSecureHost:
-        case DeviceGearBox:
-        case DeviceGearBoxManager:
-        case DeviceAbirGearBox:
-            reportErr(true, "Device %s doesn't support swreset command.\n", dm_dev_type2str(dev_id));
-            return false;
-        default:
-            reportErr(true, "Unknown device type - %d.\n", dev_id);
-            return false;
+        return true;
     }
+
+    reportErr(true, "Device %s doesn't support swreset command.\n", dm_dev_type2str(dev_id));
+    return false;
 }
 
 /***********************

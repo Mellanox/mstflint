@@ -237,6 +237,11 @@ extern "C"
      */
     int dm_is_livefish_mode(mfile* mf);
 
+    /**
+     * A predicate returning if the device is gearbox
+     */
+    int dm_dev_is_gearbox(dm_dev_id_t type);
+
 #ifdef __cplusplus
 } /* end of 'extern "C"' */
 #endif

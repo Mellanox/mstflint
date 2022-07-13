@@ -87,39 +87,20 @@ int is_flash_enable_needed(mflash* mfl, MfError* status)
 {
     *status = MFE_OK;
 
-    switch (mfl->dm_dev_id)
+    if (dm_is_4th_gen(mfl->dm_dev_id))
     {
-        case DeviceConnectX3:
-        case DeviceConnectX3Pro:
-            return 1;
-        case DeviceConnectIB:
-        case DeviceSwitchIB:
-        case DeviceSwitchIB2:
-        case DeviceSpectrum:
-        case DeviceConnectX4:
-        case DeviceConnectX4LX:
-        case DeviceConnectX5:
-        case DeviceBlueField:
-        case DeviceBlueField2:
-        case DeviceBlueField3:
-        case DeviceQuantum:
-        case DeviceConnectX6:
-        case DeviceConnectX7:
-        case DeviceConnectX6DX:
-        case DeviceConnectX6LX:
-        case DeviceSpectrum2:
-        case DeviceSpectrum3:
-        case DeviceQuantum2:
-        case DeviceSpectrum4:
-        case DeviceSecureHost:
-        case DeviceGearBox:
-        case DeviceGearBoxManager:
-        case DeviceAbirGearBox:
-            return 0;
-        default:
-            *status = MFE_UNSUPPORTED_DEVICE;
-            fprintf(stderr, "The device type %d is not supported.\n", mfl->dm_dev_id);
-            return 0;
+        return 1;
+    }
+    else if ((mfl->dm_dev_id == DeviceSecureHost) || (dm_is_5th_gen_hca(mfl->dm_dev_id)) ||
+             (dm_dev_is_gearbox(mfl->dm_dev_id)) || (dm_is_new_gen_switch(mfl->dm_dev_id)))
+    {
+        return 0;
+    }
+    else
+    {
+        *status = MFE_UNSUPPORTED_DEVICE;
+        fprintf(stderr, "The device type %d is not supported.\n", mfl->dm_dev_id);
+        return 0;
     }
 }
 
