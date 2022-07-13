@@ -120,6 +120,8 @@ FlintParams::FlintParams()
     // if no delay specified, use minimal delay to avoid disconnection in case of activating the connect port
     activate_delay_sec = 1;
     openssl_engine_usage_specified = false;
+    bunny_eyes_expression_specified = false;
+    bunny_eyes_expression = BUNNY_EYES_INVALID;
 }
 
 FlintParams::~FlintParams() {}
