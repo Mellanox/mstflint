@@ -1,35 +1,13 @@
 /*
- * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ * This software product is a proprietary product of Nvidia Corporation and its affiliates
+ * (the "Company") and all right, title, and interest in and to the software
+ * product, including all associated intellectual property rights, are and
+ * shall remain exclusively with the Company.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
-
- *
+ * This software product is governed by the End User License Agreement
+ * provided with the software product.
  */
 
 #ifndef MLXREG_PARSER_H
@@ -55,18 +33,25 @@ class RegAccessParser
 public:
     RegAccessParser(string data,
                     string indexes,
+                    string ops,
                     AdbInstance* regNode,
                     std::vector<u_int32_t> buffer,
                     bool ignore_ro = false);
-    RegAccessParser(string data, string indexes, AdbInstance* regNode, u_int32_t len, bool ignore_ro = false);
+    RegAccessParser(string data, string indexes, string ops, AdbInstance* regNode, u_int32_t len, bool ignore_ro = false);
     std::vector<u_int32_t> genBuff();
     u_int32_t getDataLen() { return _len; };
     static void strToUint32(char* str, u_int32_t& uint);
     static string getAccess(const AdbInstance* field);
+    enum access_type_t
+    {
+        INDEX,
+        OP
+    };
 
 protected:
     string _data;
     string _indexes;
+    string _ops;
     u_int32_t _len;
     AdbInstance* _regNode;
     parseMode _parseMode;
@@ -75,7 +60,9 @@ protected:
     bool _ignore_ro;
     std::vector<u_int32_t> genBuffUnknown();
     std::vector<u_int32_t> genBuffKnown();
+    void parseAccessType(std::vector<string> tokens, std::vector<string> validTokens, access_type_t accessType);
     void parseIndexes();
+    void parseOps();
     void parseData();
     void parseUnknown();
     bool checkFieldWithPath(AdbInstance* field, u_int32_t idx, std::vector<string>& fieldsChain);
@@ -87,7 +74,10 @@ protected:
     u_int32_t getFieldValue(string field_name, std::vector<u_int32_t>& buff);
     bool isRO(AdbInstance* field);
     bool isIndex(AdbInstance* field);
+    bool isOP(AdbInstance* field);
     std::vector<string> getAllIndexes(AdbInstance* node);
+    std::vector<string> getAllOps(AdbInstance* node);
+    const std::string accessTypeToString(access_type_t accessType);
 
 private:
     bool checkAccess(const AdbInstance* field, const string accessStr);

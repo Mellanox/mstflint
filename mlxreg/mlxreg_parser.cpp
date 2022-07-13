@@ -1,42 +1,19 @@
 /*
- * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ * This software product is a proprietary product of Nvidia Corporation and its affiliates
+ * (the "Company") and all right, title, and interest in and to the software
+ * product, including all associated intellectual property rights, are and
+ * shall remain exclusively with the Company.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
-
- *
+ * This software product is governed by the End User License Agreement
+ * provided with the software product.
  */
 
 #include <sstream>
 #include <common/bit_slice.h>
 #include <common/tools_utils.h>
 #include "mlxreg_parser.h"
-#include <errno.h>
 
 using namespace mlxreg;
 
@@ -45,12 +22,14 @@ using namespace mlxreg;
  ************************************/
 RegAccessParser::RegAccessParser(string data,
                                  string indexes,
+                                 string ops,
                                  AdbInstance* regNode,
                                  std::vector<u_int32_t> buffer,
                                  bool ignore_ro)
 {
     _data = data;
     _indexes = indexes;
+    _ops = ops;
     _regNode = regNode;
     _ignore_ro = ignore_ro;
     output_file = "";
@@ -77,10 +56,16 @@ RegAccessParser::RegAccessParser(string data,
 /************************************
  * Function: RegParser
  ************************************/
-RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance* regNode, u_int32_t len, bool ignore_ro)
+RegAccessParser::RegAccessParser(string data,
+                                 string indexes,
+                                 string ops,
+                                 AdbInstance* regNode,
+                                 u_int32_t len,
+                                 bool ignore_ro)
 {
     _data = data;
     _indexes = indexes;
+    _ops = ops;
     _regNode = regNode;
     _ignore_ro = ignore_ro;
     output_file = "";
@@ -125,6 +110,8 @@ std::vector<u_int32_t> RegAccessParser::genBuff()
 std::vector<u_int32_t> RegAccessParser::genBuffKnown()
 {
     parseIndexes();
+    parseOps();
+
     // Update buffer with data values
     if (_data != "")
     {
@@ -157,47 +144,91 @@ std::vector<u_int32_t> RegAccessParser::genBuffUnknown()
  ************************************/
 void RegAccessParser::parseIndexes()
 {
-    std::vector<string> idxTokens = strSplit(_indexes, ',', false);
-    std::vector<string> expectedIdxs = getAllIndexes(_regNode);
-    std::vector<string> foundIdxs;
-    // Update buffer with indexes values
-    for (std::vector<std::string>::size_type i = 0; i != idxTokens.size(); i++)
+    std::vector<string> tokens = strSplit(_indexes, ',', false);
+    std::vector<string> valid_tokens = getAllIndexes(_regNode);
+    parseAccessType(tokens, valid_tokens, INDEX);
+}
+
+/************************************
+ * Function: parseOps
+ ************************************/
+void RegAccessParser::parseOps()
+{
+    std::vector<string> tokens = strSplit(_ops, ',', false);
+    std::vector<string> valid_tokens = getAllOps(_regNode);
+    parseAccessType(tokens, valid_tokens, OP);
+}
+
+/************************************
+ * Function: accessTypeToString
+ ************************************/
+const string RegAccessParser::accessTypeToString(access_type_t accessType)
+{
+    static map<access_type_t, string> access_type_map;
+    if (access_type_map.size() == 0)
     {
-        std::vector<std::string> idx = strSplit(idxTokens[i], '=', true);
-        string idxName = idx[0];
-        string idxVal = idx[1];
+        access_type_map.insert(pair<access_type_t, string>(INDEX, "INDEX"));
+        access_type_map.insert(pair<access_type_t, string>(OP, "OP"));
+    }
+    map<access_type_t, string>::iterator itr = access_type_map.find(accessType);
+    if (itr != access_type_map.end())
+    {
+        return itr->second;
+    }
+    return string("Unknown"); // should not get here
+}
+
+/************************************
+ * Function: parseAccessType
+ ************************************/
+void RegAccessParser::parseAccessType(std::vector<string> tokens,
+                                      std::vector<string> validTokens,
+                                      access_type_t accessType)
+{
+    std::vector<string> foundTokens;
+
+    // Update buffer with values (indexes/ops)
+    for (std::vector<std::string>::size_type i = 0; i != tokens.size(); i++)
+    {
+        std::vector<std::string> tokenPair = strSplit(tokens[i], '=', true);
+        string name = tokenPair[0];
+        string val = tokenPair[1];
         u_int32_t uintVal;
-        strToUint32((char*)idxVal.c_str(), uintVal);
-        AdbInstance* field = getField(idxName);
-        // Make sure that the field is INDEX
-        if (std::find(expectedIdxs.begin(), expectedIdxs.end(), idxName) != expectedIdxs.end())
+        strToUint32((char*)val.c_str(), uintVal);
+        AdbInstance* field = getField(name);
+        // Make sure that the given field name is valid
+        if (std::find(validTokens.begin(), validTokens.end(), name) != validTokens.end())
         {
-            if (std::find(foundIdxs.begin(), foundIdxs.end(), idxName) != foundIdxs.end())
+            if (std::find(foundTokens.begin(), foundTokens.end(), name) != foundTokens.end())
             {
-                throw MlxRegException("You wrote field: %s twice", idxName.c_str());
+                throw MlxRegException("Field: %s appears twice.", name.c_str());
             }
-            foundIdxs.push_back(idxName);
+            foundTokens.push_back(name);
         }
         else
         {
-            throw MlxRegException("Field: %s is not an index.", idxName.c_str());
+            throw MlxRegException("Field: %s is not a %s.", name.c_str(), this->accessTypeToString(accessType).c_str());
         }
         updateBuffer(field->offset, field->size, uintVal);
     }
-    // Make sure that all the indexes are set
-    for (std::vector<std::string>::size_type i = 0; i != expectedIdxs.size(); i++)
+
+    if (accessType == INDEX)
     {
-        bool idxFound = false;
-        for (std::vector<std::string>::size_type j = 0; j != foundIdxs.size(); j++)
+        // Make sure that all the indexes are set
+        for (std::vector<std::string>::size_type i = 0; i != validTokens.size(); i++)
         {
-            if (expectedIdxs[i] == foundIdxs[j])
+            bool idxFound = false;
+            for (std::vector<std::string>::size_type j = 0; j != foundTokens.size(); j++)
             {
-                idxFound = true;
+                if (validTokens[i] == foundTokens[j])
+                {
+                    idxFound = true;
+                }
             }
-        }
-        if (!idxFound)
-        {
-            throw MlxRegException("Index: %s was not provided", expectedIdxs[i].c_str());
+            if (!idxFound)
+            {
+                throw MlxRegException("Index: %s was not provided", validTokens[i].c_str());
+            }
         }
     }
 }
@@ -433,6 +464,11 @@ bool RegAccessParser::isIndex(AdbInstance* field)
     return checkAccess(field, "INDEX");
 }
 
+bool RegAccessParser::isOP(AdbInstance* field)
+{
+    return checkAccess(field, "OP");
+}
+
 /************************************
  * Function: getAllIndexes
  ************************************/
@@ -448,6 +484,20 @@ std::vector<string> RegAccessParser::getAllIndexes(AdbInstance* node)
         }
     }
     return indexes;
+}
+
+std::vector<string> RegAccessParser::getAllOps(AdbInstance* node)
+{
+    std::vector<string> ops;
+    std::vector<AdbInstance*> subItems = node->getLeafFields(true);
+    for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++)
+    {
+        if (isOP(subItems[i]))
+        {
+            ops.push_back(subItems[i]->name);
+        }
+    }
+    return ops;
 }
 
 void RegAccessParser::updateField(string field_name, u_int32_t value)
