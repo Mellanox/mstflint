@@ -1841,7 +1841,6 @@ static long supported_dev_ids[] = {
   0x101d, // Connect-X6DX
   0x101f, // Connect-X6LX
   0x1021, // Connect-X7
-  0xc738, // SwitchX
   0xcb20, // Switch-IB
   0xcb84, // Spectrum
   0xcf08, // Switch-IB2
@@ -3440,10 +3439,7 @@ static int mreg_send_raw(mfile* mf,
 
 // needed device HW IDs
 #define CONNECTX3_PRO_HW_ID 0x1f7
-#define CONNECTX2_HW_ID 0x190
 #define CONNECTX3_HW_ID 0x1f5
-#define SWITCHX_HW_ID 0x245
-#define INFINISCALE4_HW_ID 0x1b3
 
 #define HW_ID_ADDR 0xf0014
 
@@ -3457,11 +3453,8 @@ static int supports_icmd(mfile* mf)
     }
     switch (dev_id & 0xffff)
     { // that the hw device id
-        case CONNECTX2_HW_ID:
         case CONNECTX3_HW_ID:
         case CONNECTX3_PRO_HW_ID:
-        case INFINISCALE4_HW_ID:
-        case SWITCHX_HW_ID:
             return 0;
 
         default:

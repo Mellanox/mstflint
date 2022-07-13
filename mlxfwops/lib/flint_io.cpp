@@ -421,7 +421,7 @@ bool Flash::open_com_checks(const char* device, int rc, bool force_lock)
         return errmsg("Failed setting no flash verify on device: %s", mf_err2str(rc));
     }
 
-    if (_attr.hw_dev_id == IS4_HW_ID || _attr.hw_dev_id == SWITCHX_HW_ID)
+    if (_attr.hw_dev_id == IS4_HW_ID)
     {
         _port_num = 0;
     }

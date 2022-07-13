@@ -1172,7 +1172,7 @@ int spi_update_num_of_banks(mflash* mfl, int prev_num_of_flashes)
     num_of_banks = spi_get_num_of_flashes(prev_num_of_flashes);
     if (num_of_banks == -1)
     {
-        if (IS_SX(mfl->attr.hw_dev_id) || IS_SIB(mfl->attr.hw_dev_id) || IS_SEN(mfl->attr.hw_dev_id) ||
+        if (IS_SIB(mfl->attr.hw_dev_id) || IS_SEN(mfl->attr.hw_dev_id) ||
             IS_SIB2(mfl->attr.hw_dev_id))
         {
             mfl->opts[MFO_NUM_OF_BANKS] = 2;
@@ -1578,24 +1578,8 @@ int connectib_flash_lock(mflash* mfl, int lock_state)
 
 int sx_init_cs_support(mflash* mfl)
 {
-    if (IS_SX(mfl->attr.hw_dev_id))
-    {
-        u_int8_t cs_support_mask = 0;
-        u_int32_t data = 0;
-        if (mfl->opts[MFO_USER_BANKS_NUM] == 0)
-        {
-            // We assume we have only 2 flashes on SX
-            mfl->opts[MFO_NUM_OF_BANKS] = 2;
-        }
-        // Prepare the bit mask of the banks number
-        cs_support_mask = (1 << mfl->opts[MFO_NUM_OF_BANKS]) - 1;
-
-        // Read Modify write the cs support field
-        MREAD4(SX_CS_SUPPORT_ADDR, &data);
-        data = MERGE(data, cs_support_mask, 0, 4);
-        MWRITE4(SX_CS_SUPPORT_ADDR, data);
-    }
-    return 0;
+    (void)mfl;
+    return MFE_NOT_IMPLEMENTED;
 }
 
 #define HW_DEV_ID 0xf0014
@@ -2397,17 +2381,17 @@ int get_dev_info(mflash* mfl)
         // mgir.HWInfo.DEVID, mgir.HWInfo.hw_dev_id);
         if (rc)
         {
-            dev_id = SWITCHX_HW_ID;
+            dev_id = SWITCH_IB_HW_ID;
             mfl->attr.rev_id = 0;
-            mfl->attr.hw_dev_id = SWITCHX_HW_ID;
+            mfl->attr.hw_dev_id = SWITCH_IB_HW_ID;
         }
         else
         {
             dev_id = mgir.hw_info.hw_dev_id;
             if (dev_id == 0)
             {
-                dev_id = SWITCHX_HW_ID;
-                mfl->attr.hw_dev_id = SWITCHX_HW_ID;
+                dev_id = SWITCH_IB_HW_ID;
+                mfl->attr.hw_dev_id = SWITCH_IB_HW_ID;
                 mfl->attr.rev_id = mgir.hw_info.device_hw_revision & 0xf;
             }
             else
@@ -2743,10 +2727,6 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
         else if (IS_IS4_FAMILY(mfl->attr.hw_dev_id))
         {
             rc = is4_flash_init(mfl, flash_params);
-        }
-        else if (IS_SX(mfl->attr.hw_dev_id))
-        {
-            rc = sx_flash_init(mfl, flash_params);
         }
         else if (icmdif_supported)
         {
@@ -3215,8 +3195,6 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
     u_int32_t set_reset_bit_dword;
     switch (mfl->dm_dev_id)
     {
-        case DeviceConnectX2:
-        case DeviceSwitchX:
         case DeviceConnectX3:
         case DeviceConnectX3Pro:
         case DeviceConnectIB:
@@ -3267,8 +3245,6 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
 
     switch (mfl->dm_dev_id)
     {
-        case DeviceConnectX2:
-        case DeviceSwitchX:
         case DeviceConnectX3:
         case DeviceConnectX3Pro:
         case DeviceConnectIB:

@@ -58,18 +58,6 @@ extern "C"
         DeviceStartMarker = 0, // Dummy Device - Marker for first device
                                // to let user iterate from DeviceStartMarker to DeviceEndMarker
                                // Note: Call dm_is_device_supported() to see if a device is supported by the lib.
-
-        DeviceInfiniScale = 0,    // UnSupported
-        DeviceInfiniHost,         // UnSupported
-        DeviceInfiniHostIIIEx,    // UnSupported
-        DeviceInfiniHostIIIEx_MF, // UnSupported
-        DeviceInfiniScaleIII,     // UnSupported
-        DeviceInfiniHostIIILx,    // UnSupported
-        DeviceConnectX,           // UnSupported
-        DeviceConnectX2,
-        DeviceInfiniScaleIV,
-        DeviceBridgeX, // UnSupported
-        DeviceSwitchX,
         DeviceConnectX3,
         DeviceConnectIB,
         DeviceConnectX3Pro,
@@ -114,9 +102,6 @@ extern "C"
 
     enum hw_dev_id
     {
-        DeviceInfiniScale_HwId = 0x01b3,
-        DeviceSwitchX_HwId = 0x0245,
-        DeviceConnectX2_HwId = 0x190,
         DeviceConnectX3_HwId = 0x1f5,
         DeviceConnectIB_HwId = 0x1ff,
         DeviceConnectX3Pro_HwId = 0x1f7,
@@ -241,8 +226,6 @@ extern "C"
     int dm_is_5th_gen_hca(dm_dev_id_t type);
 
     int dm_is_connectib(dm_dev_id_t type);
-
-    int dm_is_switchx(dm_dev_id_t type);
 
     int dm_is_new_gen_switch(dm_dev_id_t type);
 

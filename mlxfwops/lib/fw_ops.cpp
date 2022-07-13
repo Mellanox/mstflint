@@ -1357,13 +1357,6 @@ FwOperations::HwDevData FwOperations::getInfoFromChipType(chip_type_t chipT) con
 // TODO:combine both databases(hwDevData and hwDev2Str) and remove old unsupporded devices i.e infinihost
 // infinihost_iii_ex infinihost_iii_lx
 const FwOperations::HwDevData FwOperations::hwDevData[] = {
-  {"ConnectX",
-   CX2_HW_ID,
-   CT_CONNECTX,
-   CFT_HCA,
-   2,
-   {25408, 25418, 26418, 26438, 26428, 25448, 26448, 26468, 25458, 26458, 26478, 26488, 4097, 4098, 0},
-   {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-3",
    CX3_HW_ID,
    CT_CONNECTX,
@@ -1379,8 +1372,6 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
    2,
    {CONNECT_IB_SW_ID, 4114, 4115, 4116, 4117, 4118, 4119, 4120, 4121, 4122, 4123, 4124, 0},
    {{UNKNOWN_BIN, {0}}}},
-  {"InfiniScale IV", IS4_HW_ID, CT_IS4, CFT_SWITCH, 0, {48436, 48437, 48438, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"SwitchX", SWITCHX_HW_ID, CT_SWITCHX, CFT_SWITCH, 0, {51000, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Switch_IB", SWITCH_IB_HW_ID, CT_SWITCH_IB, CFT_SWITCH, 0, {52000, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-4", CX4_HW_ID, CT_CONNECTX4, CFT_HCA, 0, {4115, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-4LX", CX4LX_HW_ID, CT_CONNECTX4_LX, CFT_HCA, 0, {4117, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1413,7 +1404,6 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
 };
 
 const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
-  {"ConnectX-2", CX2_HW_ID, 0xB0},          {"ConnectIB", CONNECT_IB_HW_ID, 0x00},
   {"ConnectX-3 A0", CX3_HW_ID, 0x00},       {"ConnectX-3 A1", CX3_HW_ID, 0x01},
   {"ConnectX-3Pro", CX3_PRO_HW_ID, 0x00},   {"ConnectX-4", CX4_HW_ID, 0x00},
   {"ConnectX-4LX", CX4LX_HW_ID, 0x00},      {"ConnectX-5", CX5_HW_ID, 0x00},
@@ -1421,8 +1411,6 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
   {"ConnectX-6LX", CX6LX_HW_ID, 0x00},      {"ConnectX-7", CX7_HW_ID, 0x00},
   {"ConnectX-8", CX8_HW_ID, 0x00},          {"BlueField", BF_HW_ID, 0x00},
   {"BlueField2", BF2_HW_ID, 0x00},          {"BlueField3", BF3_HW_ID, 0x00},
-  {"SwitchX A0", SWITCHX_HW_ID, 0x00},      {"SwitchX A1", SWITCHX_HW_ID, 0x01},
-  {"InfiniScale IV A0", IS4_HW_ID, 0xA0},   {"InfiniScale IV A1", IS4_HW_ID, 0xA1},
   {"SwitchIB A0", SWITCH_IB_HW_ID, 0x00},   {"Spectrum A0", SPECTRUM_HW_ID, 0x00},
   {"SwitchIB2 A0", SWITCH_IB2_HW_ID, 0x00}, {"Quantum A0", QUANTUM_HW_ID, 0x00},
   {"Spectrum A1", SPECTRUM_HW_ID, 0x01},    {"Spectrum2 A0", SPECTRUM2_HW_ID, 0x00},
@@ -1434,8 +1422,6 @@ chip_type FwOperations::GetChipType(string chip)
 {
     if (chip == "CT_CONNECTX")
         return CT_CONNECTX;
-    else if (chip == "CT_SWITCHX")
-        return CT_SWITCHX;
     else if (chip == "CT_IS4")
         return CT_IS4;
     else if (chip == "CT_CONNECT_IB")
@@ -2127,11 +2113,6 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
         ibDev = true;
         ethDev = false;
     }
-    else if (chipType == CT_SWITCHX)
-    {
-        ibDev = true;
-        ethDev = true;
-    }
     else
     {
         ibDev = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
@@ -2577,8 +2558,7 @@ bool FwOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int
 
 u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
 {
-    if ((hwDevId == CX2_HW_ID) || (hwDevId == CX3_HW_ID) || (hwDevId == IS4_HW_ID) || (hwDevId == SWITCHX_HW_ID) ||
-        (hwDevId == CX3_PRO_HW_ID))
+    if ((hwDevId == CX3_HW_ID) || (hwDevId == CX3_PRO_HW_ID))
     {
         return FS_FS2_GEN;
     }

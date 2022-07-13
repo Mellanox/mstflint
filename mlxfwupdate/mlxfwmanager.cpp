@@ -2882,19 +2882,8 @@ int generateProductionName(string& targetFile, PsidQueryItem ri)
     }
     else
     {
-        switch (devType)
-        {
-            case DeviceInfiniScaleIV:
-                IC_code_name = "IS4";
-                break;
-
-            case DeviceSwitchX:
-                IC_code_name = "SX";
-                break;
-
-            default:
-                IC_code_name = dm_dev_type2str(devType);
-        }
+        
+        IC_code_name = dm_dev_type2str(devType);
     }
 
     ImgVersion* fwImgVer = (ImgVersion*)ri.findImageVersion("FW");

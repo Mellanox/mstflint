@@ -2339,8 +2339,6 @@ static int mreg_send_raw(mfile* mf,
 
 #define CONNECTX3_HW_ID 0x1f5
 #define CONNECTX3_PRO_HW_ID 0x1f7
-#define SWITCHX_HW_ID 0x245
-#define INFINISCALE4_HW_ID 0x1b3
 
 static int supports_icmd(mfile* mf)
 {
@@ -2353,10 +2351,8 @@ static int supports_icmd(mfile* mf)
     }
     switch (dev_id & 0xffff)
     { // that the hw device id
-        case INFINISCALE4_HW_ID:
         case CONNECTX3_HW_ID:
         case CONNECTX3_PRO_HW_ID:
-        case SWITCHX_HW_ID:
             return 0;
 
         default:

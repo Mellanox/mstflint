@@ -3793,7 +3793,7 @@ bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
                               ethDev);
     // setDevFlags(fwInfo, ibDev, ethDev);
     int numPorts = 2;
-    if ((fwInfo.fw_info.chip_type == CT_IS4 || fwInfo.fw_info.chip_type == CT_SWITCHX))
+    if (fwInfo.fw_info.chip_type == CT_IS4)
     {
         numPorts = 0;
     }
@@ -3836,10 +3836,6 @@ bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
             if (!ibDev)
             {
                 printf("Description:  %s    Port1            Port2\n", mac_indent);
-            }
-            else if (fwInfo.fw_info.chip_type == CT_SWITCHX)
-            {
-                printf("\nDescription:           Base             Switch\n");
             }
             else
             {
@@ -4784,14 +4780,11 @@ bool SwResetSubCommand::IsDeviceSupported(dm_dev_id_t dev_id)
 {
     switch (dev_id)
     {
-        case DeviceInfiniScaleIV:
-        case DeviceSwitchX:
         case DeviceSwitchIB:
         case DeviceSwitchIB2:
         case DeviceQuantum:
         case DeviceQuantum2:
             return true;
-        case DeviceConnectX2:
         case DeviceConnectX3:
         case DeviceConnectX3Pro:
         case DeviceConnectIB:

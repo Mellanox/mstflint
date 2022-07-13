@@ -60,7 +60,6 @@
 #endif
 
 #define CONNECTX_HW_ID 400
-#define SWITCHX_HW_ID 581
 #define SWITCH_IB_HW_ID 583
 #define SPECTRUM_HW_ID 585
 #define SWITCH_IB2_HW_ID 587
@@ -287,7 +286,6 @@ typedef enum chip_type
 {
     CT_UNKNOWN = 0,
     CT_CONNECTX,
-    CT_SWITCHX,
     CT_IS4,
     CT_CONNECT_IB,
     CT_SWITCH_IB,
