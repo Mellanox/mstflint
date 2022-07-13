@@ -854,3 +854,8 @@ int dm_dev_is_ib_switch(dm_dev_id_t type)
     return (dm_dev_is_switch(type) &&
             (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceSwitchIB || type == DeviceSwitchIB2));
 }
+
+int dm_dev_is_gearbox(dm_dev_id_t type)
+{
+    return (get_entry(type)->dev_type == DM_GEARBOX);
+}
