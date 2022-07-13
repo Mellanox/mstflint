@@ -216,6 +216,15 @@ public:
     inline string& getExample() { return this->_example; }
 };
 
+class DrawBunnySubCommand : public SubCommand
+{
+public:
+    DrawBunnySubCommand() {}
+    ~DrawBunnySubCommand() {}
+    bool verifyParams() override;
+    FlintStatus executeCommand() override;
+};
+
 class BurnSubCommand : public SubCommand
 {
 private:
