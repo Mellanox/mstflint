@@ -92,12 +92,20 @@ typedef enum
     SC_RSA_Sign,
     SC_Binary_Compare,
     SC_Import_Hsm_Key,
-    SC_Export_Public_Key
+    SC_Export_Public_Key,
+    SC_Draw_Bunny
 } sub_cmd_t;
 
 class FlintParams
 {
 public:
+    enum {
+        BUNNY_EYES_INVALID = -1,
+        BUNNY_EYES_LEFT,
+        BUNNY_EYES_RIGHT,
+        BUNNY_EYES_OUT,
+        BUNNY_EYES_UNKNOWN,
+    };
     // add more params
     FlintParams();
     ~FlintParams();
@@ -205,6 +213,8 @@ public:
     string openssl_key_id;
     bool openssl_engine_usage_specified;
     u_int32_t cert_chain_index;
+    bool bunny_eyes_impression_specified;
+    u_int32_t bunny_eyes_impression;
 };
 
 #endif

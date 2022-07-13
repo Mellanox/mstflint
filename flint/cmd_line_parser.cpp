@@ -126,6 +126,7 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("", "rsa_sign", SC_RSA_Sign));
     _sCmds.push_back(new SubCmd("", "import_hsm_key", SC_Import_Hsm_Key));
     _sCmds.push_back(new SubCmd("", "export_public_key", SC_Export_Public_Key));
+    _sCmds.push_back(new SubCmd("w", "draw_bunny", SC_Draw_Bunny));
 }
 
 SubCmdMetaData::~SubCmdMetaData()
@@ -245,6 +246,8 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "output_file", 1));
     _flags.push_back(new Flag("", "user_password", 1));
     _flags.push_back(new Flag("", "cert_chain_index", 1));
+    _flags.push_back(new Flag("w", "draw_bunny", 0)); // BLAGO
+    _flags.push_back(new Flag("e", "bunny_eyes", 1)); // BLAGO
 }
 
 FlagMetaData::~FlagMetaData()
@@ -553,6 +556,12 @@ void Flint::initCmdParser()
                "<device>",
                "Device flash is connected to.\n"
                "Commands affected: all");
+
+    AddOptions("bunny_eyes",
+               'w',
+               "<eyes>",
+               "Bunny eyes impresion.\n"
+               "Commands affected: draw_bunny");
 
     AddOptions("image",
                'i',
@@ -1386,6 +1395,20 @@ ParseStatus Flint::HandleOption(string name, string value)
             return PARSE_ERROR;
         }
         _flintParams.cert_chain_index = cert_chain_index;
+    }
+    else if (name == "bunny_eyes") {
+        int bunny_eyes_impression = -1;
+        if (!strToInt(value, bunny_eyes_impression))
+        {
+            return PARSE_ERROR;
+        }
+        if (bunny_eyes_impression <= FlintParams::BUNNY_EYES_INVALID || bunny_eyes_impression >= FlintParams::BUNNY_EYES_UNKNOWN)
+        {
+            printf("bunny eyes impression should be between 0 and 2.\n");
+            return PARSE_ERROR;
+        }
+        _flintParams.bunny_eyes_impression_specified = true;
+        _flintParams.bunny_eyes_impression = bunny_eyes_impression;
     }
     else
     {
