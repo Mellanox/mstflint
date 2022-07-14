@@ -96,7 +96,7 @@ class CmdRegMfrl():
     def is_reset_level_trigger_is_pci_link(cls, reset_level):
         for reset_level_ii in cls.reset_levels_db:
             if reset_level_ii['level'] == reset_level:
-                return True if (reset_level_ii['mask'] & 0x8) == 1 else False
+                return True if (reset_level_ii['mask'] & 0x8) else False
         else:
             raise RuntimeError("Reset-level {0} doesn't exist in reset-levels !".format(reset_level))
 
