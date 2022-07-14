@@ -2646,6 +2646,7 @@ bool force_flash_out_of_hold_state(mflash* mfl)
                 break;
             }
             case DeviceConnectX7:
+            case DeviceBlueField3:
             {
                 gpio_toggle_conf_cx7 gpio_toggle_conf = {0};
                 set_gpio_toggle_conf_cx7(&gpio_toggle_conf);
