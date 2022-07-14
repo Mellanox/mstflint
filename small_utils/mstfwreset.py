@@ -1803,6 +1803,9 @@ def main():
         print("{0} reset level for device, {1}:\n".format(minimal_or_requested, device))
         print("{0}: {1}".format(reset_level, mfrl.reset_level_description(reset_level)))
 
+        if CmdRegMfrl.is_reset_level_trigger_is_pci_link(reset_level) and mcam.is_pci_rescan_required_supported() and mfrl.is_pci_rescan_required():
+            print("-W- PCI rescan is required after device reset.")
+
         AskUser("Continue with reset", yes)
         execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, args, mfrl)
         if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
