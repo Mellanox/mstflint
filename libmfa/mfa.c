@@ -565,8 +565,13 @@ ssize_t mfa_get_image(mfa_desc* mfa_d, char* board_type_id, u_int8_t type, char*
         {
             continue;
         }
-        int rc = mfasec_get_data_chunk(mfa_d->data_ptr, (mfa_d->buffer + mfa_d->bufsz) - mfa_d->data_ptr,
-                                       toce_ar[i]->data_offset, toce_ar[i]->data_size, &((*buffer)[accum_size]));
+        // Since toce_ar[i]->data_offset is only 32bits we can't reach images on larger offsets so we
+        // make use of another 16bits from toce_ar[i]->data_offset_msb field
+        u_int64_t data_offset = toce_ar[i]->data_offset_msb;
+        data_offset = data_offset << 32;
+        data_offset += toce_ar[i]->data_offset;
+        int rc = mfasec_get_data_chunk(mfa_d->data_ptr, (mfa_d->buffer + mfa_d->bufsz) - mfa_d->data_ptr, data_offset,
+                                       toce_ar[i]->data_size, &((*buffer)[accum_size]));
         if (rc < 0)
         {
             res = _ERR_STR(mfa_d, -rc, "Failed to get image");

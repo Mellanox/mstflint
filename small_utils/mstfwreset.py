@@ -1675,8 +1675,9 @@ def main():
     global DevDBDF
     global FWResetStatusChecker
 
-    if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot():   # The tool is using sysfs to access PCI config
-        raise RuntimeError("The tool is not supported on UEFI Secure Boot")                 # and it's restricted on UEFI secure boot
+    if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
+            and args.reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
+        raise RuntimeError("The tool supports only reset-level 4 on UEFI Secure Boot")  # and it's restricted on UEFI secure boot
 
     # Exit in case of virtual-machine (not implemented for FreeBSD and Windows)
     if command == "reset" and platform.system() == "Linux" and "ppc64" not in platform.machine():
@@ -1801,6 +1802,9 @@ def main():
         minimal_or_requested = 'Minimal' if args.reset_level is None else 'Requested'
         print("{0} reset level for device, {1}:\n".format(minimal_or_requested, device))
         print("{0}: {1}".format(reset_level, mfrl.reset_level_description(reset_level)))
+
+        if CmdRegMfrl.is_reset_level_trigger_is_pci_link(reset_level) and mcam.is_pci_rescan_required_supported() and mfrl.is_pci_rescan_required():
+            print("-W- PCI rescan is required after device reset.")
 
         AskUser("Continue with reset", yes)
         execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, args, mfrl)

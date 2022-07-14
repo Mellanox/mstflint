@@ -92,6 +92,14 @@ class CmdRegMfrl():
     def is_phy_less_reset(cls, reset_type):
         return reset_type == cls.PHY_LESS
 
+    @classmethod
+    def is_reset_level_trigger_is_pci_link(cls, reset_level):
+        for reset_level_ii in cls.reset_levels_db:
+            if reset_level_ii['level'] == reset_level:
+                return True if (reset_level_ii['mask'] & 0x8) else False
+        else:
+            raise RuntimeError("Reset-level {0} doesn't exist in reset-levels !".format(reset_level))
+
     def __init__(self, reg_access):
 
         self._reg_access = reg_access
@@ -101,6 +109,9 @@ class CmdRegMfrl():
 
         # Read register ('get' command) from device
         reg = self._read_reg()
+
+        # Update 'pci_rescan_required' field
+        self._pci_rescan_required = reg['pci_rescan_required']
 
         # Update 'supported' field in reset_levels
         reset_level = reg['reset_level']
@@ -114,14 +125,18 @@ class CmdRegMfrl():
                 reset_type_ii['supported'] = (reset_type & reset_type_ii['mask']) != 0
 
     def _read_reg(self):
-        reset_level, reset_type = self._reg_access.sendMFRL(self._reg_access.GET)
+        reset_level, reset_type, pci_rescan_required = self._reg_access.sendMFRL(self._reg_access.GET)
         return {
             'reset_level': reset_level,
-            'reset_type': reset_type
+            'reset_type': reset_type,
+            'pci_rescan_required': pci_rescan_required
         }
 
     def _write_reg(self, reset_level, reset_type, reset_sync):
         self._reg_access.sendMFRL(self._reg_access.SET, reset_level, reset_type, reset_sync)
+
+    def is_pci_rescan_required(self):
+        return True if self._pci_rescan_required == 1 else False
 
     def query_text(self):
         'return the text for the query operation in mlxfwreset'

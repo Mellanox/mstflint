@@ -975,8 +975,10 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                     fwCompsAccess->forceRelease();
                 }
 
-                if (fwParams.mccUnsupported && fwCompsAccess->queryFwInfo(&fwInfo) == true &&
-                    fwInfo.security_type.secure_fw == 0)
+                // In case MCC is not preferable (e.g verify command) but the device is secured or GB via switch
+                // We'll stay with MCC flow because we can't use MFBA/Direct-Access
+                if (fwParams.mccUnsupported && !fwCompsAccess->getMfileObj()->gb_info.is_gearbox &&
+                    fwCompsAccess->queryFwInfo(&fwInfo) == true && fwInfo.security_type.secure_fw == 0)
                 {
                     delete fwCompsAccess;
                     fwCompsAccess = (FwCompsMgr*)NULL;

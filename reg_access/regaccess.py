@@ -425,7 +425,7 @@ if REG_ACCESS:
                 raise RegAccException("Failed to send Register MFRL: %s (%d)" % (self._err2str(rc), rc))
 
             if method == REG_ACCESS_METHOD_GET:
-                return mfrlRegisterP.contents.reset_trigger, mfrlRegisterP.contents.reset_type
+                return mfrlRegisterP.contents.reset_trigger, mfrlRegisterP.contents.reset_type, mfrlRegisterP.contents.pci_rescan_required
 
         ##########################
         def getMCAM(self):
