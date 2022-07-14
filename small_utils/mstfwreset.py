@@ -1675,8 +1675,9 @@ def main():
     global DevDBDF
     global FWResetStatusChecker
 
-    if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot():   # The tool is using sysfs to access PCI config
-        raise RuntimeError("The tool is not supported on UEFI Secure Boot")                 # and it's restricted on UEFI secure boot
+    if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
+            and args.reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
+        raise RuntimeError("The tool supports only reset-level 4 on UEFI Secure Boot")  # and it's restricted on UEFI secure boot
 
     # Exit in case of virtual-machine (not implemented for FreeBSD and Windows)
     if command == "reset" and platform.system() == "Linux" and "ppc64" not in platform.machine():
