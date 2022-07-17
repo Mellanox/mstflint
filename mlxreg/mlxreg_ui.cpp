@@ -85,33 +85,35 @@
     printf("\n");
 
 /************************************
- * FLAGS Constants
- ************************************/
-#define DEVICE_FLAG "device"
-#define DEVICE_FLAG_SHORT 'd'
-#define HELP_FLAG "help"
-#define HELP_FLAG_SHORT 'h'
-#define VERSION_FLAG "version"
-#define VERSION_FLAG_SHORT 'v'
-#define ADB_FILE_FLAG "adb_file"
-#define ADB_FILE_FLAG_SHORT 'a'
-#define REG_NAME_FLAG "reg_name"
-#define REG_NAME_FLAG_SHORT ' '
-#define REG_ID_FLAG "reg_id"
-#define REG_ID_FLAG_SHORT ' '
-#define IDXES_FLAG "indexes"
-#define IDXES_FLAG_SHORT 'i'
-#define REG_LEN_FLAG "reg_len"
-#define REG_LEN_FLAG_SHORT ' '
-#define OP_GET_FLAG "get"
-#define OP_GET_FLAG_SHORT 'g'
-#define OP_SET_FLAG "set"
-#define OP_SET_FLAG_SHORT 's'
-#define OP_SHOW_REG_FLAG "show_reg"
-#define OP_SHOW_REG_FLAG_SHORT ' '
-#define OP_SHOW_REGS_FLAG "show_regs"
-#define OP_SHOW_REGS_FLAG_SHORT ' '
-#define OP_SHOW_ALL_REGS_FLAG "show_all_regs"
+* FLAGS Constants
+************************************/
+#define DEVICE_FLAG                 "device"
+#define DEVICE_FLAG_SHORT           'd'
+#define HELP_FLAG                   "help"
+#define HELP_FLAG_SHORT             'h'
+#define VERSION_FLAG                "version"
+#define VERSION_FLAG_SHORT          'v'
+#define ADB_FILE_FLAG               "adb_file"
+#define ADB_FILE_FLAG_SHORT         'a'
+#define REG_NAME_FLAG               "reg_name"
+#define REG_NAME_FLAG_SHORT         ' '
+#define REG_ID_FLAG                 "reg_id"
+#define REG_ID_FLAG_SHORT           ' '
+#define IDXES_FLAG                  "indexes"
+#define IDXES_FLAG_SHORT            'i'
+#define OPS_FLAG                    "op"
+#define OPS_FLAG_SHORT              'o'
+#define REG_LEN_FLAG                "reg_len"
+#define REG_LEN_FLAG_SHORT          ' '
+#define OP_GET_FLAG                 "get"
+#define OP_GET_FLAG_SHORT           'g'
+#define OP_SET_FLAG                 "set"
+#define OP_SET_FLAG_SHORT           's'
+#define OP_SHOW_REG_FLAG            "show_reg"
+#define OP_SHOW_REG_FLAG_SHORT      ' '
+#define OP_SHOW_REGS_FLAG           "show_regs"
+#define OP_SHOW_REGS_FLAG_SHORT     ' '
+#define OP_SHOW_ALL_REGS_FLAG       "show_all_regs"
 #define OP_SHOW_ALL_REGS_FLAG_SHORT ' '
 #define IGNORE_CAP_CHECK_FLAG "ignore_cap_check"
 #define IGNORE_CAP_CHECK_FLAG_SHORT ' '
@@ -177,14 +179,15 @@ MlxRegUi::~MlxRegUi()
  ************************************/
 void MlxRegUi::initCmdParser()
 {
-    AddOptions(DEVICE_FLAG, DEVICE_FLAG_SHORT, "MstDevice", "Mellanox mst device name");
-    AddOptions(HELP_FLAG, HELP_FLAG_SHORT, "", "Show help message and exit");
-    AddOptions(VERSION_FLAG, VERSION_FLAG_SHORT, "", "Show version and exit");
-    AddOptions(ADB_FILE_FLAG, ADB_FILE_FLAG_SHORT, "AdbFile", "External ADB file");
-    AddOptions(REG_NAME_FLAG, REG_NAME_FLAG_SHORT, "RegisterName", "Access register name");
-    AddOptions(REG_ID_FLAG, REG_ID_FLAG_SHORT, "RegisterID", "Access register ID");
-    AddOptions(IDXES_FLAG, IDXES_FLAG_SHORT, "RegisterData", "Register data");
-    AddOptions(REG_LEN_FLAG, REG_LEN_FLAG_SHORT, "RegisterDataLen", "Register data length");
+    AddOptions(DEVICE_FLAG,       DEVICE_FLAG_SHORT, "MstDevice", "Mellanox mst device name");
+    AddOptions(HELP_FLAG,         HELP_FLAG_SHORT, "", "Show help message and exit");
+    AddOptions(VERSION_FLAG,      VERSION_FLAG_SHORT, "", "Show version and exit");
+    AddOptions(ADB_FILE_FLAG,     ADB_FILE_FLAG_SHORT, "AdbFile", "External ADB file");
+    AddOptions(REG_NAME_FLAG,     REG_NAME_FLAG_SHORT, "RegisterName", "Access register name");
+    AddOptions(REG_ID_FLAG,       REG_ID_FLAG_SHORT, "RegisterID", "Access register ID");
+    AddOptions(IDXES_FLAG,        IDXES_FLAG_SHORT, "RegisterData", "Register data");
+    AddOptions(OPS_FLAG,          OPS_FLAG_SHORT, "RegisterData", "Register data");
+    AddOptions(REG_LEN_FLAG,      REG_LEN_FLAG_SHORT, "RegisterDataLen", "Register data length");
     AddOptions(IGNORE_CAP_CHECK_FLAG, IGNORE_CAP_CHECK_FLAG_SHORT, "", "");
     AddOptions(IGNORE_REG_CHECK_FLAG, IGNORE_REG_CHECK_FLAG_SHORT, "", "");
     AddOptions(OP_GET_FLAG, OP_GET_FLAG_SHORT, "", "Register access GET");
@@ -240,20 +243,20 @@ void MlxRegUi::printHelp()
     // print options
     printf("\n");
     printf(IDENT "OPTIONS:\n");
-    printFlagLine(HELP_FLAG_SHORT, HELP_FLAG, "", "Display help message.");
-    printFlagLine(VERSION_FLAG_SHORT, VERSION_FLAG, "", "Display version info.");
-    printFlagLine(DEVICE_FLAG_SHORT, DEVICE_FLAG, "device", "Perform operation for a specified mst device.");
-    printFlagLine(ADB_FILE_FLAG_SHORT, ADB_FILE_FLAG, "adb_file", "An external ADB file");
-    printFlagLine(REG_NAME_FLAG_SHORT, REG_NAME_FLAG, "reg_name", "Known access register name");
-    printFlagLine(REG_ID_FLAG_SHORT, REG_ID_FLAG, "reg_ID", "Access register ID");
-    printFlagLine(REG_LEN_FLAG_SHORT, REG_LEN_FLAG, "reg_length", "Access register layout length (bytes)");
-    printFlagLine(IDXES_FLAG_SHORT, IDXES_FLAG, "idxs_vals", "Register indexes");
-    printFlagLine(OP_GET_FLAG_SHORT, OP_GET_FLAG, "", "Register access GET");
-    printFlagLine(OP_SET_FLAG_SHORT, OP_SET_FLAG, "reg_dataStr", "Register access SET");
-    printFlagLine(OP_SHOW_REG_FLAG_SHORT, OP_SHOW_REG_FLAG, "reg_name",
-                  "Print the fields of a given reg access (must have reg_name)");
-    printFlagLine(OP_SHOW_REGS_FLAG_SHORT, OP_SHOW_REGS_FLAG, "", "Print all available reg access'");
-    printFlagLine(FORCE_FLAG_SHORT, FORCE_FLAG, "", "Non-interactive mode, answer yes to all questions");
+    printFlagLine(HELP_FLAG_SHORT,          HELP_FLAG,         "", "Display help message.");
+    printFlagLine(VERSION_FLAG_SHORT,       VERSION_FLAG,      "", "Display version info.");
+    printFlagLine(DEVICE_FLAG_SHORT,        DEVICE_FLAG,       "device", "Perform operation for a specified mst device.");
+    printFlagLine(ADB_FILE_FLAG_SHORT,      ADB_FILE_FLAG,     "adb_file", "An external ADB file");
+    printFlagLine(REG_NAME_FLAG_SHORT,      REG_NAME_FLAG,     "reg_name", "Known access register name");
+    printFlagLine(REG_ID_FLAG_SHORT,        REG_ID_FLAG,       "reg_ID", "Access register ID");
+    printFlagLine(REG_LEN_FLAG_SHORT,       REG_LEN_FLAG,      "reg_length", "Access register layout length (bytes)");
+    printFlagLine(IDXES_FLAG_SHORT,         IDXES_FLAG,        "idxs_vals", "Register indexes");
+    printFlagLine(OPS_FLAG_SHORT,           OPS_FLAG,          "ops_vals", "Register optional fields");
+    printFlagLine(OP_GET_FLAG_SHORT,        OP_GET_FLAG,       "", "Register access GET");
+    printFlagLine(OP_SET_FLAG_SHORT,        OP_SET_FLAG,       "reg_dataStr", "Register access SET");
+    printFlagLine(OP_SHOW_REG_FLAG_SHORT,   OP_SHOW_REG_FLAG,  "reg_name", "Print the fields of a given reg access (must have reg_name)");
+    printFlagLine(OP_SHOW_REGS_FLAG_SHORT,  OP_SHOW_REGS_FLAG, "", "Print all available reg access'");
+    printFlagLine(FORCE_FLAG_SHORT,         FORCE_FLAG,        "", "Non-interactive mode, answer yes to all questions");
 
     // print usage examples
     printf("\n");
@@ -412,9 +415,11 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
     {
         _indexesStr = value;
         return PARSE_OK;
+    } else if (name == OPS_FLAG) {
+        _opsStr = value;
+        return PARSE_OK;
     }
-    else if (name == REG_NAME_FLAG)
-    {
+    else if (name == REG_NAME_FLAG) {
         CHECK_UNIQUE_UINT(_regID);
         CHECK_UNIQUE_UINT(_dataLen);
         _regName = value;
@@ -551,8 +556,7 @@ void MlxRegUi::paramValidate()
 
 void MlxRegUi::readFromFile(string file_name, vector<u_int32_t>& buff, int len)
 {
-    ifstream file;
-    file.open(file_name.c_str(), ios::binary);
+    ifstream file(file_name.c_str(), ios::binary);
 
     for (int idx = 0; idx < (len / 4); idx++)
     {
@@ -570,8 +574,7 @@ void MlxRegUi::readFromFile(string file_name, vector<u_int32_t>& buff, int len)
 
 void MlxRegUi::writeToFile(string file_name, vector<u_int32_t> buff)
 {
-    ofstream file;
-    file.open(file_name.c_str(), ios::binary | ios::in | ios::out); // Overwrite the file (in/out)
+    ofstream file(file_name.c_str(), ios::binary | ios::in | ios::out);// Overwrite the file (in/out)
     for (unsigned int idx = 0; idx < buff.size(); idx++)
     {
         u_int32_t data = __cpu_to_be32(buff[idx]);
@@ -684,7 +687,7 @@ void MlxRegUi::run(int argc, char** argv)
             {
                 regNode = _mlxRegLib->findAdbNode(_regName);
             }
-            RegAccessParser parser(_dataStr, _indexesStr, regNode, _dataLen);
+            RegAccessParser parser(_dataStr, _indexesStr, _opsStr, regNode, _dataLen);
             buff = parser.genBuff();
             printf("Sending access register...\n\n");
             if (_regName != "")
@@ -714,7 +717,7 @@ void MlxRegUi::run(int argc, char** argv)
                 regNode = _mlxRegLib->findAdbNode(_regName);
             }
             // Read current register data into buffer
-            RegAccessParser parserGet(_dataStr, _indexesStr, regNode, _dataLen, _ignore_ro);
+            RegAccessParser parserGet(_dataStr, _indexesStr, _opsStr, regNode, _dataLen, _ignore_ro);
             buff = parserGet.genBuff();
             if (_regName != "")
             { // Known mode
@@ -725,7 +728,7 @@ void MlxRegUi::run(int argc, char** argv)
                 _mlxRegLib->sendRegister(_regID, MACCESS_REG_METHOD_GET, buff);
             }
             // Update the register buffer with user inputs
-            RegAccessParser parser(_dataStr, _indexesStr, regNode, buff, _ignore_ro);
+            RegAccessParser parser(_dataStr, _indexesStr, _opsStr, regNode, buff, _ignore_ro);
             buff = parser.genBuff();
             if (_output_file != "")
             {

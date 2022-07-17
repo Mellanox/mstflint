@@ -88,6 +88,7 @@ private:
     u_int32_t _regID;
     string _dataStr;
     string _indexesStr;
+    string _opsStr;
     u_int32_t _dataLen;
     bool _ignoreCapCheck;
     MlxRegOper _op;
