@@ -73,7 +73,6 @@ if DEV_MGT:
                 self._mstdev = mtcr.MstDevice(dev, i2c_secondary)
                 if not self._mstdev:
                     raise DevMgtException("Failed to open device (%s): %s" % (dev, os.strerror(ctypes.get_errno())))
-            DEV_MGT.mft_core_init_device_dev_mgt(self._mstdev.mdev)
 
         ##########################
         def isLivefishMode(self):

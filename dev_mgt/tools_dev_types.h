@@ -267,8 +267,6 @@ extern "C"
      */
     int dm_is_livefish_mode(mfile* mf);
 
-    void mft_core_init_device_dev_mgt(char* dev_name);
-
 #ifdef __cplusplus
 } /* end of 'extern "C"' */
 #endif
