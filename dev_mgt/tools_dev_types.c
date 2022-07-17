@@ -702,7 +702,7 @@ static int dm_get_device_id_inner(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32
     }
     else
     {
-        if (read_device_id(mf, &dword) != 4)
+        if (mread4(mf, DEVID_ADDR, &dword) != 4)
         {
             return CRSPACE_READ_ERROR;
         }
@@ -1024,9 +1024,4 @@ int dm_dev_is_fs4(dm_dev_id_t type)
            type == DeviceBlueField2 || type == DeviceBlueField3 || type == DeviceQuantum || type == DeviceQuantum2 ||
            type == DeviceSpectrum4 || type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceGearBox ||
            type == DeviceGearBoxManager;
-}
-
-void mft_core_init_device_dev_mgt(char* dev_name)
-{
-    mft_core_init_device(dev_name);
 }
