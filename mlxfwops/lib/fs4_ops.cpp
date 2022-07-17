@@ -580,8 +580,7 @@ bool Fs4Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_
         RemoveCRCsFromMainSection(img);
         //* In case of devices after Carmel we'll ignore boot-record CRC for fw-update signature same as secure-boot
         // signature
-        if (getChipType(_fwImgInfo.supportedHwId[0]) != CT_CONNECTX7 &&
-            getChipType(_fwImgInfo.supportedHwId[0]) != CT_CONNECTX8)
+        if (getChipType(_fwImgInfo.supportedHwId[0]) != CT_CONNECTX7)
         {
             if (!MaskBootRecordCRC(img))
             {
