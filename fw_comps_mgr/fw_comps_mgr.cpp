@@ -1100,6 +1100,11 @@ FwCompsMgr::FwCompsMgr(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra)
     _activation_delay_sec = 0;
     _rejectedIndex = -1;
     _isDelayedActivationCommandSent = false;
+    _deviceType = FwCompsMgr::DEVICE_UNKNOWN;
+    _deviceIndex = 0;
+#ifndef UEFI_BUILD
+    _trm = NULL;
+#endif
     initialize(mf);
 }
 FwCompsMgr::~FwCompsMgr()
@@ -2099,6 +2104,7 @@ bool FwCompsMgr::GetComponentLinkxProperties(FwComponent::comps_ids_t compType, 
     comp_query_st* currCompQuery = &(_compsQueryMap[compType]);
     u_int32_t componentIndex = currCompQuery->comp_status.component_index;
     comp_status_st query;
+    memset(&query, 0, sizeof(query));
     if (!queryComponentStatus(componentIndex, &query))
     {
         return false;
@@ -2203,7 +2209,8 @@ bool FwCompsMgr::fwReactivateImage()
         return false;
     }
 
-    reg_access_status_t rc;
+    reg_access_status_t rc = ME_OK;
+    memset(&mirc, 0, sizeof(mirc));
     rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_SET, &mirc); // send trigger to FW
     deal_with_signal();
     if (rc)

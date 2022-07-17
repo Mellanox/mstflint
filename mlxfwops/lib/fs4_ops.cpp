@@ -3148,6 +3148,7 @@ bool Fs4Operations::UpdateDigitalCertRWSection(char* certChainFile,
 
     std::vector<u_int8_t> certChainBuff(certChainBuffData, certChainBuffData + certChainBuffSize);
     certChainBuff.resize(certChain0SectionSize); // Padding the cert chain if needed to match cert chain size
+    delete[] certChainBuffData;
 
     newSectionData = digitalCertRWSectionToc->section_data;
     u_int32_t newCertChainOffsetInSection =
@@ -3180,6 +3181,7 @@ bool Fs4Operations::UpdateCertChainSection(struct fs4_toc_info* curr_toc,
     u_int32_t cert_chain_0_section_size = curr_toc->toc_entry.size << 2;
     if ((u_int32_t)cert_chain_buff_size > cert_chain_0_section_size)
     {
+        delete[] cert_chain_buff;
         return errmsg("Attestation certificate chain data exceeds its allocated size of 0x%x bytes",
                       cert_chain_0_section_size);
     }
@@ -3405,7 +3407,7 @@ bool Fs4Operations::reburnDTocSection(PrintCallBack callBackFunc)
                curr_itoc->data,
                IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
     }
-    memset(&p[tocSize] - IMAGE_LAYOUT_ITOC_ENTRY_SIZE, FS3_END, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
+    memset(&p[tocSize - IMAGE_LAYOUT_ITOC_ENTRY_SIZE], FS3_END, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 
     PRINT_PROGRESS(callBackFunc, (char*)"Updating DTOC section - ");
     bool rc = writeImage((ProgressCallBack)NULL, tocAddr, p, tocSize, true, true);
@@ -3443,7 +3445,7 @@ bool Fs4Operations::reburnITocSection(PrintCallBack callBackFunc, bool isFailSaf
                curr_itoc->data,
                IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
     }
-    memset(&p[tocSize] - IMAGE_LAYOUT_ITOC_ENTRY_SIZE, FS3_END, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
+    memset(&p[tocSize - IMAGE_LAYOUT_ITOC_ENTRY_SIZE], FS3_END, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 
     PRINT_PROGRESS(callBackFunc, (char*)"Updating ITOC section - ");
     bool rc = writeImage((ProgressCallBack)NULL, newITocAddr, p, tocSize, true, true);

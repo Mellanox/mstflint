@@ -351,6 +351,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
     else if (image_info.minor_version == 3)
     {
         strncpy(_fs3ImgInfo.ext_info.name, image_info.name, NAME_LEN);
+        _fs3ImgInfo.ext_info.name[NAME_LEN - 1] = '\0';
         strncpy(_fs3ImgInfo.ext_info.description, image_info.description, DESCRIPTION_LEN);
         _fs3ImgInfo.ext_info.description[DESCRIPTION_LEN - 1] = '\0';
         strncpy(_fs3ImgInfo.ext_info.prs_name, image_info.prs_name, FS3_PRS_NAME_LEN);
@@ -375,7 +376,8 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
     {
         if (VerifyBranchFormat(image_info.vsd))
         {
-            (strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN));
+            strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
+            _fwImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
         }
     }
     _fwImgInfo.ext_info.encrypted_fw = image_info.encrypted_fw;
@@ -2943,7 +2945,7 @@ bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc, bool burnFails
             memcpy(p + CIBFW_ITOC_HEADER_SIZE + i * CIBFW_ITOC_ENTRY_SIZE, curr_itoc->data, CIBFW_ITOC_ENTRY_SIZE);
         }
     }
-    memset(&p[itocSize] - CIBFW_ITOC_ENTRY_SIZE, FS3_END, CIBFW_ITOC_ENTRY_SIZE);
+    memset(&p[itocSize - CIBFW_ITOC_ENTRY_SIZE], FS3_END, CIBFW_ITOC_ENTRY_SIZE);
 
     PRINT_PROGRESS(callBackFunc, (char*)"Updating ITOC section - ");
     bool rc = writeImage((ProgressCallBack)NULL, newItocAddr, p, itocSize, false, true);

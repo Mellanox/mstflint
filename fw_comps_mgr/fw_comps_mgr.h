@@ -365,7 +365,8 @@ public:
     typedef enum
     {
         DEVICE_HCA_SWITCH = 0,
-        DEVICE_GEARBOX = 1
+        DEVICE_GEARBOX = 1,
+        DEVICE_UNKNOWN
     } DeviceTypeT;
 
     FwCompsMgr(const char* devname, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);

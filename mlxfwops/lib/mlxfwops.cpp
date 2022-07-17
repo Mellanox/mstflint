@@ -93,6 +93,7 @@ FwOperations::ExtBurnParams initBurnParams(u_int8_t force_version, f_prog_func p
     burnParams.progressFunc = prog_func;
     burnParams.allowPsidChange = allow_psid_change ? true : false;
     burnParams.shift8MBIfNeeded = true;
+    burnParams.ProgressFuncAdv = {nullptr, nullptr, nullptr};
     return burnParams;
 }
 

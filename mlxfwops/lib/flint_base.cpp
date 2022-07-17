@@ -216,6 +216,7 @@ bool FlintErrMsg::errmsgAdv(bool showAdv, const char* normalFmt, const char* Adv
     {
         snprintf(errFmt, 1024, "%s %s", normalFmt, AdvFmt);
         _err = vprint(errFmt, args);
+        delete[] prev_err;
     }
     else
     {
@@ -224,8 +225,6 @@ bool FlintErrMsg::errmsgAdv(bool showAdv, const char* normalFmt, const char* Adv
         errmsg(normalFmt, 0);
     }
     va_end(args);
-
-    delete[] prev_err;
 
     return false;
 }
