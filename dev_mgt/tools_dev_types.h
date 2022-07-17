@@ -58,6 +58,7 @@ extern "C"
         DeviceStartMarker = 0, // Dummy Device - Marker for first device
                                // to let user iterate from DeviceStartMarker to DeviceEndMarker
                                // Note: Call dm_is_device_supported() to see if a device is supported by the lib.
+
         DeviceConnectX3,
         DeviceConnectIB,
         DeviceConnectX3Pro,
@@ -71,9 +72,8 @@ extern "C"
         DeviceBlueField,
         DeviceBlueField2,
         DeviceBlueField3,
-        DeviceFPGA, // UnSupported
+        DeviceBlueField4,
         DeviceSwitchIB2,
-        DeviceFPGANewton, // Unsupported
         DeviceCable,
         DeviceCableQSFP,
         DeviceCableQSFPaging,
@@ -89,14 +89,20 @@ extern "C"
         DeviceConnectX6DX,
         DeviceConnectX6LX,
         DeviceConnectX7,
+        DeviceConnectX8,
         DeviceSpectrum3, // Firebird
         DeviceSpectrum4, // Albatross
         DeviceQuantum2,  // Blackbird
+        DeviceQuantum3,  // Sunbird
         DeviceGearBox,
         DeviceGearBoxManager,
         DeviceAbirGearBox,
         DeviceCableCMIS,
         DeviceCableCMISPaging,
+        DeviceGB100,    // Blackwell
+        DeviceArcusPTC, // ArcusP Test Chip
+        DeviceArcusP,
+        DeviceArcusE,
         DeviceEndMarker // Dummy Device - Marker for indicating end of devices when iterating
     };
 
@@ -114,9 +120,11 @@ extern "C"
         DeviceConnectX6DX_HwId = 0x212,
         DeviceConnectX6LX_HwId = 0x216,
         DeviceConnectX7_HwId = 0x218,
+        DeviceConnectX8_HwId = 0x21e,
         DeviceBlueField_HwId = 0x211,
         DeviceBlueField2_HwId = 0x214,
         DeviceBlueField3_HwId = 0x21c,
+        DeviceBlueField4_HwId = 0x220,
         DeviceSwitchIB2_HwId = 0x24b,
         DeviceCableQSFP_HwId = 0x0d,
         DeviceCableQSFPaging_HwId = 0x11,
@@ -128,6 +136,8 @@ extern "C"
         DeviceSpectrum2_HwId = 0x24e,
         DeviceQuantum_HwId = 0x24d,
         DeviceQuantum2_HwId = 0x257,
+        DeviceQuantum3_HwId = 0x25b,
+        DeviceGB100_HwId = 0x2900,
         DeviceArdbeg_HwId = 0x6e,
         DeviceBaritone_HwId = 0x6b,
         DeviceMenhit_HwId = 0x72,
@@ -136,7 +146,10 @@ extern "C"
         DeviceSpectrum4_HwId = 0x254,
         DeviceGearBox_HwId = 0x252,
         DeviceGearBoxManager_HwId = 0x253,
-        DeviceAbirGearBox_HwId = 0x256
+        DeviceAbirGearBox_HwId = 0x256,
+        DeviceArcusPTC_HwId = 0x7f, // ArcusP Test Chip
+        DeviceArcusP_HwId = 0x80,
+        DeviceArcusE_HwId = 0x81,
     };
     typedef enum dm_dev_id dm_dev_id_t;
 
@@ -174,6 +187,21 @@ extern "C"
      * A predicate returning if the device is an hca
      */
     int dm_dev_is_hca(dm_dev_id_t type);
+
+    /**
+     * A predicate returning if the device is gearbox
+     */
+    int dm_dev_is_gearbox(dm_dev_id_t type);
+
+    /**
+     * A predicate returning if the device is menhit
+     */
+    int dm_is_menhit(dm_dev_id_t type);
+
+    /**
+     * A predicate returning if the device is dummy
+     */
+    int dm_dev_is_dummy(dm_dev_id_t type);
 
     /**
      * A predicate returning if the hca supports 200G speed and above
@@ -232,15 +260,14 @@ extern "C"
     int dm_dev_is_raven_family_switch(dm_dev_id_t type);
 
     int dm_dev_is_ib_switch(dm_dev_id_t type);
+
+    int dm_dev_is_eth_switch(dm_dev_id_t type);
     /*
      * A predicate returning if the device is in LiveFish mode
      */
     int dm_is_livefish_mode(mfile* mf);
 
-    /**
-     * A predicate returning if the device is gearbox
-     */
-    int dm_dev_is_gearbox(dm_dev_id_t type);
+    void mft_core_init_device_dev_mgt(char* dev_name);
 
 #ifdef __cplusplus
 } /* end of 'extern "C"' */

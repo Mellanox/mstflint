@@ -629,11 +629,8 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
     {
         reg_access_timeout = MAX_TOUT;
     }
-    if (currentState != FSMST_NA || expectedState != FSMST_NA)
-    {
-        DPRINTF(("controlFsm : command %s current state %s expected state %s\n", CommandsName[command],
-                 StateNames[currentState], StateNames[expectedState]));
-    }
+    DPRINTF(("controlFsm : command %s current state %s expected state %s\n", CommandsName[command],
+             StateNames[currentState], StateNames[expectedState]));
     unsigned int count = 0;
     do
     {
