@@ -41,14 +41,19 @@
 using namespace mlxreg;
 
 /************************************
-* Function: RegParser
-************************************/
-RegAccessParser::RegAccessParser(string data, string indexes, string ops, AdbInstance *regNode, std::vector<u_int32_t> buffer, bool ignore_ro)
+ * Function: RegParser
+ ************************************/
+RegAccessParser::RegAccessParser(string data,
+                                 string indexes,
+                                 string ops,
+                                 AdbInstance* regNode,
+                                 std::vector<u_int32_t> buffer,
+                                 bool ignore_ro)
 {
-    _data      = data;
-    _indexes   = indexes;
+    _data = data;
+    _indexes = indexes;
     _ops = ops;
-    _regNode   = regNode;
+    _regNode = regNode;
     _ignore_ro = ignore_ro;
     output_file = "";
     if (!regNode)
@@ -72,14 +77,19 @@ RegAccessParser::RegAccessParser(string data, string indexes, string ops, AdbIns
     }
 }
 /************************************
-* Function: RegParser
-************************************/
-RegAccessParser::RegAccessParser(string data, string indexes, string ops, AdbInstance *regNode, u_int32_t len, bool ignore_ro)
+ * Function: RegParser
+ ************************************/
+RegAccessParser::RegAccessParser(string data,
+                                 string indexes,
+                                 string ops,
+                                 AdbInstance* regNode,
+                                 u_int32_t len,
+                                 bool ignore_ro)
 {
-    _data      = data;
-    _indexes   = indexes;
+    _data = data;
+    _indexes = indexes;
     _ops = ops;
-    _regNode   = regNode;
+    _regNode = regNode;
     _ignore_ro = ignore_ro;
     output_file = "";
     _len = len;
@@ -163,8 +173,8 @@ void RegAccessParser::parseIndexes()
 }
 
 /************************************
-* Function: parseOps
-************************************/
+ * Function: parseOps
+ ************************************/
 void RegAccessParser::parseOps()
 {
     std::vector<string> tokens = strSplit(_ops, ',', false);
@@ -173,60 +183,73 @@ void RegAccessParser::parseOps()
 }
 
 /************************************
-* Helper function: to_string
-************************************/
-const string& RegAccessParser::access_type_to_string(access_type_t accessType)
+ * Function: accessTypeToString
+ ************************************/
+const string RegAccessParser::accessTypeToString(access_type_t accessType)
 {
     static map<access_type_t, string> access_type_map;
-    if (access_type_map.size() == 0) {
+    if (access_type_map.size() == 0)
+    {
         access_type_map.insert(pair<access_type_t, string>(INDEX, "INDEX"));
         access_type_map.insert(pair<access_type_t, string>(OP, "OP"));
     }
     map<access_type_t, string>::iterator itr = access_type_map.find(accessType);
-    if (itr != access_type_map.end()) {
+    if (itr != access_type_map.end())
+    {
         return itr->second;
     }
-    return NULL; //should not get here
+    return string("Unknown"); // should not get here
 }
 
 /************************************
-* Function: parseAccessType
-************************************/
-void RegAccessParser::parseAccessType(std::vector<string> tokens, std::vector<string> validTokens, access_type_t accessType)
+ * Function: parseAccessType
+ ************************************/
+void RegAccessParser::parseAccessType(std::vector<string> tokens,
+                                      std::vector<string> validTokens,
+                                      access_type_t accessType)
 {
     std::vector<string> foundTokens;
 
     // Update buffer with values (indexes/ops)
-    for (std::vector<std::string>::size_type i = 0; i != tokens.size(); i++) {
+    for (std::vector<std::string>::size_type i = 0; i != tokens.size(); i++)
+    {
         std::vector<std::string> tokenPair = strSplit(tokens[i], '=', true);
         string name = tokenPair[0];
-        string val  = tokenPair[1];
+        string val = tokenPair[1];
         u_int32_t uintVal;
         strToUint32((char*)val.c_str(), uintVal);
-        AdbInstance *field = getField(name);
+        AdbInstance* field = getField(name);
         // Make sure that the given field name is valid
-        if (std::find(validTokens.begin(), validTokens.end(), name) != validTokens.end()) {
-            if (std::find(foundTokens.begin(), foundTokens.end(), name) != foundTokens.end()) {
+        if (std::find(validTokens.begin(), validTokens.end(), name) != validTokens.end())
+        {
+            if (std::find(foundTokens.begin(), foundTokens.end(), name) != foundTokens.end())
+            {
                 throw MlxRegException("Field: %s appears twice.", name.c_str());
             }
             foundTokens.push_back(name);
         }
-        else {
-            throw MlxRegException("Field: %s is not a %s.", name.c_str(), this->access_type_to_string(accessType).c_str());
+        else
+        {
+            throw MlxRegException("Field: %s is not a %s.", name.c_str(), this->accessTypeToString(accessType).c_str());
         }
         updateBuffer(field->offset, field->size, uintVal);
     }
 
-    if (accessType == INDEX) {
+    if (accessType == INDEX)
+    {
         // Make sure that all the indexes are set
-        for (std::vector<std::string>::size_type i = 0; i != validTokens.size(); i++) {
+        for (std::vector<std::string>::size_type i = 0; i != validTokens.size(); i++)
+        {
             bool idxFound = false;
-            for (std::vector<std::string>::size_type j = 0; j != foundTokens.size(); j++) {
-                if (validTokens[i] == foundTokens[j]) {
+            for (std::vector<std::string>::size_type j = 0; j != foundTokens.size(); j++)
+            {
+                if (validTokens[i] == foundTokens[j])
+                {
                     idxFound = true;
                 }
             }
-            if (!idxFound) {
+            if (!idxFound)
+            {
                 throw MlxRegException("Index: %s was not provided", validTokens[i].c_str());
             }
         }
@@ -465,7 +488,7 @@ bool RegAccessParser::isIndex(AdbInstance* field)
     return checkAccess(field, "INDEX");
 }
 
-bool RegAccessParser::isOP(AdbInstance *field)
+bool RegAccessParser::isOP(AdbInstance* field)
 {
     return checkAccess(field, "OP");
 }
@@ -487,13 +510,14 @@ std::vector<string> RegAccessParser::getAllIndexes(AdbInstance* node)
     return indexes;
 }
 
-
-std::vector<string> RegAccessParser::getAllOps(AdbInstance *node)
+std::vector<string> RegAccessParser::getAllOps(AdbInstance* node)
 {
     std::vector<string> ops;
     std::vector<AdbInstance*> subItems = node->getLeafFields(true);
-    for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++) {
-        if (isOP(subItems[i])) {
+    for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++)
+    {
+        if (isOP(subItems[i]))
+        {
             ops.push_back(subItems[i]->name);
         }
     }

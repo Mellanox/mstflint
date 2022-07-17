@@ -556,8 +556,7 @@ void MlxRegUi::paramValidate()
 
 void MlxRegUi::readFromFile(string file_name, vector<u_int32_t>& buff, int len)
 {
-    ifstream file;
-    file.open(file_name.c_str(), ios::binary);
+    ifstream file(file_name.c_str(), ios::binary);
 
     for (int idx = 0; idx < (len / 4); idx++)
     {
@@ -575,8 +574,7 @@ void MlxRegUi::readFromFile(string file_name, vector<u_int32_t>& buff, int len)
 
 void MlxRegUi::writeToFile(string file_name, vector<u_int32_t> buff)
 {
-    ofstream file;
-    file.open(file_name.c_str(), ios::binary | ios::in | ios::out); // Overwrite the file (in/out)
+    ofstream file(file_name.c_str(), ios::binary | ios::in | ios::out);// Overwrite the file (in/out)
     for (unsigned int idx = 0; idx < buff.size(); idx++)
     {
         u_int32_t data = __cpu_to_be32(buff[idx]);

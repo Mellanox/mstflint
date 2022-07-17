@@ -53,13 +53,23 @@ typedef enum
 class RegAccessParser
 {
 public:
-    RegAccessParser(string data, string indexes, string ops, AdbInstance *regNode, std::vector<u_int32_t> buffer, bool ignore_ro = false);
-    RegAccessParser(string data, string indexes, string ops, AdbInstance *regNode, u_int32_t len, bool ignore_ro = false);
+    RegAccessParser(string data,
+                    string indexes,
+                    string ops,
+                    AdbInstance* regNode,
+                    std::vector<u_int32_t> buffer,
+                    bool ignore_ro = false);
+    RegAccessParser(string data, string indexes, string ops, AdbInstance* regNode, u_int32_t len, bool ignore_ro = false);
     std::vector<u_int32_t> genBuff();
-    u_int32_t getDataLen() {return _len;};
-    static void strToUint32(char *str, u_int32_t &uint);
-    static string getAccess(const AdbInstance *field);
-    enum access_type_t {INDEX, OP};
+    u_int32_t getDataLen() { return _len; };
+    static void strToUint32(char* str, u_int32_t& uint);
+    static string getAccess(const AdbInstance* field);
+    enum access_type_t
+    {
+        INDEX,
+        OP
+    };
+
 protected:
     string _data;
     string _indexes;
@@ -84,12 +94,13 @@ protected:
     void updateBufferUnknwon(std::vector<string> fieldTokens);
     void updateField(string field_name, u_int32_t value);
     u_int32_t getFieldValue(string field_name, std::vector<u_int32_t>& buff);
-    bool isRO(AdbInstance *field);
-    bool isIndex(AdbInstance *field);
-    bool isOP(AdbInstance *field);
-    std::vector<string> getAllIndexes(AdbInstance *node);
-    std::vector<string> getAllOps(AdbInstance *node);
-    const std::string& access_type_to_string(access_type_t accessType);
+    bool isRO(AdbInstance* field);
+    bool isIndex(AdbInstance* field);
+    bool isOP(AdbInstance* field);
+    std::vector<string> getAllIndexes(AdbInstance* node);
+    std::vector<string> getAllOps(AdbInstance* node);
+    const std::string accessTypeToString(access_type_t accessType);
+
 private:
     bool checkAccess(const AdbInstance* field, const string accessStr);
 };
