@@ -37,3 +37,5 @@ libtool
 /small_utils/mstvpd
 /stamp-h1
 /tracers/fwtrace/mstfwtrace
+
+.ngci*
