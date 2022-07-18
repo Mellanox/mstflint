@@ -40,6 +40,7 @@
 #
 #######################################################
 import xml.etree.ElementTree as ET
+import utils.constants as CONST
 
 
 class AdbParser:
@@ -56,8 +57,71 @@ class AdbParser:
             self._build_nodes_with_seg_id()
             # fix the offset since subnode should contain the offset with the addition of his parent.
             self._fix_nodes_offset(self.segment_id_nodes_dict)
+            # update the union dict in the layout item if it has union_selector attribute
+            self._update_union_dict()
         except Exception as _:
-            raise Exception("Fail to parse the ADB file")
+            raise Exception("Failed to parse the ADB file")
+
+    def _update_union(self, layout_item):
+        """This method go over all the subitems and perform union dict updating
+            to all items recursively.
+        """
+        if layout_item.uSelector and layout_item.uSelector.selector_full_path:
+            selector_field, full_path, offset = self._get_explicit_field_path_and_offset(layout_item.parent, layout_item.uSelector.selector_full_path)
+            self.set_union_properties(self._get_enum_dict_from_field(selector_field), full_path, offset)
+        for item in layout_item.subItems:
+            self._update_union(item)
+
+    def _update_union_dict(self):
+        """This method go over all the segments in the dictionary and
+        send them to union dict update.
+        """
+        for seg in self.segment_id_nodes_dict.values():
+            self._update_union(seg)
+
+    def _get_enum_dict_from_field(self, selector_field: ET.Element):
+        """This method gets field that contains enums for union_selector and build a dictionary with
+        it's values and enums.
+        """
+        selector_dict = {}
+        enum_lst = selector_field.attrs['enum'].split(',')
+        if len(enum_lst) == 0:
+            raise Exception("Error - enum attribute for field {0} is empty!".format(selector_field['name']))
+
+        for enum in enum_lst:
+            enum = enum.split('=')
+            if len(enum) != 2:
+                raise Exception("Error - Failed to parse enum attribute {0} for field {1}".format(str(enum), selector_field['name']))
+            selector_dict[int(enum[1], 0)] = enum[0]
+
+        return selector_dict
+
+    def _get_explicit_field_path_and_offset(self, layout_item, relative_path: str):
+        """This method gets a node's name and a relative path and returns the full path to the field, the
+        explicit field to the enum related to the union selector and it's offset.
+        """
+        path = relative_path.split('.')
+        if len(path) == 0:
+            raise Exception("Error - wrong relative path {0} for node {1}".format(layout_item.name, relative_path))
+        full_path = path
+        if path[0] in CONST.PARENT_LST:
+            current_node = layout_item
+            full_path[0] = layout_item.name
+        else:
+            current_node = self._retrieve_layout_item_by_name(path[0])
+        try:
+            if current_node is None:
+                raise Exception("Failed to find node: {0}".format(current_node.name))
+            for child in path[1:]:
+                for item in current_node.subItems:
+                    if item.name == child:
+                        current_node = item
+                        break
+                if current_node is None:
+                    raise Exception("Error - Failed to find field {0} in node {1}, wrong path {2}".format(child, current_node.name, relative_path))
+            return current_node, full_path, current_node.offset
+        except Exception as _:
+            raise Exception("Failed to get the explicit field")
 
     def _build_xml_elements_dict(self):
         self._node_xml_elements = {}
@@ -170,7 +234,7 @@ class AdbParser:
                 adb_layout_item = self._node_to_AdbLayoutItem(node)
                 self.segment_id_nodes_dict[node.attrib["segment_id"]] = adb_layout_item
 
-    def _retrieve_node_by_name(self, node_name):
+    def _retrieve_node_by_name(self, node_name: str):
         """This method return the node with the
         wanted name, if not found return None.
         """
@@ -179,8 +243,21 @@ class AdbParser:
         else:  # Missing-nodes feature
             return None
 
-    def _build_subitems(self, node):
-        """This method build the subitems of the specific node
+    def _retrieve_layout_item_by_name(self, name):
+        """This method return the layout item with the wanted name,
+        if it wasn't found returns None
+        """
+        for seg in self.segment_id_nodes_dict.values():
+            if seg.name == name:
+                return seg
+            for subItem in seg.subItems:
+                if subItem.name == name:
+                    return subItem
+        return None
+
+    def _build_subitems(self, node: ET.Element, parent):
+        """This method build the subitems of the specific node.
+        :param node: always field element except from the root which is node.
         """
         sub_items = []
         counter = 0
@@ -194,16 +271,23 @@ class AdbParser:
                 if not self._check_expressions(item.attrib['inst_if']):
                     continue
             if "low_bound" in item.attrib and "high_bound" in item.attrib:
-                self._extract_array_to_list(counter, item, sub_items)
+                self._extract_array_to_list(node, counter, item, sub_items, parent)
             else:
                 adb_layout_item = self._node_to_AdbLayoutItem(item)
                 if adb_layout_item:
+                    adb_layout_item.parent = parent
+                    adb_layout_item.attrs = item.attrib
+                    if 'union_selector' in item.attrib:
+                        adb_layout_item.uSelector = AdbUnionSelector()
+                        adb_layout_item.uSelector.selector_full_path = item.attrib['union_selector']
                     sub_items.insert(counter, adb_layout_item)
                     counter += 1
         return sub_items
 
-    def _extract_array_to_list(self, index, item, subitems_list):
+    def _extract_array_to_list(self, node: ET.Element, index, item, subitems_list, parent):
         """This method build insert array items to a list form a specific index.
+        :param node: always field element except from the root which is node.
+        :param parent: layout item representing the parent of the array.
         """
         name = item.attrib["name"]
         start_index = int(item.attrib["low_bound"], 10)
@@ -220,35 +304,45 @@ class AdbParser:
 
         for i in range(start_index, end_index):
             adb_layout_item = AdbLayoutItem()
+            # adb_layout_item.attrs = node.attrib
+            adb_layout_item.parent = parent
             adb_layout_item.nodeDesc = self._node_to_node_desc(item)
             adb_layout_item.name = name + "[" + str(i) + "]"
             adb_layout_item.size = calculated_size
             adb_layout_item.offset = current_offset
-            if "subnode" in item.attrib:
-                sub_node = self._retrieve_node_by_name(item.attrib["subnode"])
-                if sub_node:
-                    if "attr_is_union" in sub_node.attrib:
-                        adb_layout_item.nodeDesc.isUnion = self._parse_union(sub_node.attrib["attr_is_union"])
-                    adb_layout_item.subItems = self._build_subitems(sub_node)  # List of the child items (for nodes only)
+            try:
+                if "subnode" in item.attrib:
+                    sub_node = self._retrieve_node_by_name(item.attrib["subnode"])
+                    if sub_node:
+                        if "attr_is_union" in sub_node.attrib:
+                            adb_layout_item.nodeDesc.isUnion = self._parse_union(sub_node.attrib["attr_is_union"])
+                        adb_layout_item.subItems = self._build_subitems(sub_node, parent)  # List of the child items (for nodes only)
+            except Exception as _:
+                raise Exception("Failed to extract array to list from node {0}".format(node['name']))
             subitems_list.insert(index, adb_layout_item)
             current_offset += calculated_size
             index += 1
 
-    def _node_to_AdbLayoutItem(self, node):
+    def _node_to_AdbLayoutItem(self, node: ET.Element):
         """This method build adb layout field from a given node.
+        :param node: always field element except from the root which is node.
         """
         adb_layout_item = AdbLayoutItem()
         # adb_layout_item.fieldDesc = None  # Reference to "AdbFieldDesc" object, always != None
         # adb_layout_item.parent = None  # Reference to parent "AdbLayoutItem" object, always != None (expect of the root)
         adb_layout_item.name = node.attrib["name"]
+        adb_layout_item.attrs = node.attrib
         adb_layout_item.nodeDesc = self._node_to_node_desc(node)  # For leafs must be None
-        if "subnode" in node.attrib:
-            sub_node = self._retrieve_node_by_name(node.attrib["subnode"])
-            if "attr_is_union" in sub_node.attrib:
-                adb_layout_item.nodeDesc.isUnion = self._parse_union(sub_node.attrib["attr_is_union"])
-            adb_layout_item.subItems = self._build_subitems(sub_node)  # List of the child items (for nodes only)
-        else:
-            adb_layout_item.subItems = self._build_subitems(node)
+        try:
+            if "subnode" in node.attrib:
+                sub_node = self._retrieve_node_by_name(node.attrib["subnode"])
+                if "attr_is_union" in sub_node.attrib:
+                    adb_layout_item.nodeDesc.isUnion = self._parse_union(sub_node.attrib["attr_is_union"])
+                adb_layout_item.subItems = self._build_subitems(sub_node, adb_layout_item)  # List of the child items (for nodes only)
+            else:
+                adb_layout_item.subItems = self._build_subitems(node, adb_layout_item)
+        except Exception as _:
+            raise Exception("Failed to create a valid layout from node {0}".format(node['name']))
 
         if "offset" in node.attrib:
             adb_layout_item.offset = self._parse_node_size(node.attrib["offset"])
@@ -259,7 +353,7 @@ class AdbParser:
         # adb_layout_item.vars = {}  # all variable relevant to this item after evaluation
         return adb_layout_item
 
-    def _node_to_node_desc(self, node):
+    def _node_to_node_desc(self, node: ET.Element):
         """This method build adb desc field from a given node.
         """
         node_description = AdbNodeDesc()
@@ -308,15 +402,16 @@ class AdbLayoutItem(object):
     ##########################
     def __init__(self):
         self.fieldDesc = None        # Reference to "AdbFieldDesc" object, always != None
-        self.nodeDesc = None        # For leafs must be None
-        self.parent = None        # Reference to parent "AdbLayoutItem" object, always != None (expect of the root)
-        self.name = ""          # The instance name
-        self.subItems = []          # List of the child items (for nodes only)
-        self.offset = 0           # Global offset (relative to the 0 address)
-        self.size = 0           # Element size in bits
-        self.attrs = {}          # Attributes after evaluations and array expanding
-        self.arrayIdx = -1          # in case of being part of an array this will hold the array index, -1 means not part of array
-        self.vars = {}          # all variable relevant to this item after evaluation
+        self.nodeDesc = None         # For leafs must be None
+        self.parent = None           # Reference to parent "AdbLayoutItem" object, always != None (expect of the root)
+        self.name = ""               # The instance name
+        self.subItems = []           # List of the child items (for nodes only)
+        self.offset = 0              # Global offset (relative to the 0 address)
+        self.size = 0                # Element size in bits
+        self.attrs = {}              # Attributes after evaluations and array expanding
+        self.arrayIdx = -1           # in case of being part of an array this will hold the array index, -1 means not part of array
+        self.vars = {}               # all variable relevant to this item after evaluation
+        self.uSelector = None        # data structure that represent the unopn-selector properties
 
 
 ####################################################################
@@ -355,3 +450,19 @@ class AdbNodeDesc(object):
         # defined in
         self.fileName = ""
         self.lineNumber = -1
+
+
+####################################################################
+class AdbUnionSelector(object):
+    """ Represents an ADABE union-selector descriptor, objects of this type are immutable """
+
+    ##########################
+    def __init__(self):
+        self.dict = None               # mapping between the value and the enum, None if empty
+        self.full_path = None          # full path to the selector field, None if empty
+        self.offset = None             # absolute offset from the begining of the segment until the selector field (by layout)
+
+    def set_union_properties(self, union_dict, full_path, offset):
+        self.dict = union_dict
+        self.full_path = full_path
+        self.offset = offset
