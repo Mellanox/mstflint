@@ -135,6 +135,8 @@ int OutputFmts::createInventoryXML(vector<MlnxDev*>& devs,
 
     xmlFreeDoc(doc);
     xmlCleanupParser();
+    xmlUnlinkNode(root_node);
+    xmlFreeNode(root_node);
 #endif
     return res;
 }
@@ -271,6 +273,8 @@ int OutputFmts::createBurnXML(vector<MlnxDev*>& devs,
     (void)node;
     xmlFreeDoc(doc);
     xmlCleanupParser();
+    xmlUnlinkNode(root_node);
+    xmlFreeNode(root_node);
 #endif
     return res;
 }
@@ -331,6 +335,8 @@ int OutputFmts::createFailXML(int result, int update_query_, string& buffer, int
     (void)node;
     xmlFreeDoc(doc);
     xmlCleanupParser();
+    xmlUnlinkNode(root_node);
+    xmlFreeNode(root_node);
 #endif
     return res;
 }
