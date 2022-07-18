@@ -44,7 +44,7 @@ import os
 import math
 import re
 
-from parsers.AdbParser import AdbParser
+from parsers.AdbParser import AdbNodeDesc, AdbParser
 from utils import constants as cs
 from resource_data.RawData import RawData
 from resource_data.DataPrinter import DataPrinter
@@ -122,7 +122,7 @@ class Parser:
             for seg in self._dumped_segment_db:
                 seg_parsed_counter += 1
                 self._parse_segment(seg)
-        except Exception as _:
+        except Exception as e:
             raise Exception("Fail to parse segments, failure occur at segment number {}".format(seg_parsed_counter))
 
         # print all segments
@@ -146,8 +146,8 @@ class Parser:
         """
         seg_for_parse = False
         if seg.get_type() in self._segment_map:
-            segment_name = self._build_union_prefix(self._segment_map[seg.get_type()].nodeDesc) + self._segment_map[
-                seg.get_type()].name
+            segment_name = self._build_union_prefix(self._segment_map[seg.get_type()].nodeDesc) \
+                + self._segment_map[seg.get_type()].name
             if not self._is_seg_size_match_adb_seg_size(len(seg.get_data()), seg.get_type()):
                 seg.add_parsed_data("Warning[{}]".format(self._get_next_warning_counter()),
                                     cs.WARNING_SIZE_DOESNT_MATCH.format(
@@ -161,9 +161,8 @@ class Parser:
             else:
                 segment_name = "UNKNOWN"
 
-        seg.add_parsed_data(20 * " " + "Segment", "{0} ({1})".format(segment_name, seg.get_type()))
+        seg.add_parsed_data(20 * " " + "Segment", "{0} ({1}){2}".format(segment_name, seg.get_type(), seg.additional_title_info()))
 
-        # in case of a resource segment the offset of the adb doesnt consider the header so we need to pass it
         if self._is_resource_segment(seg.get_type()):
             data_start_position = cs.RESOURCE_SEGMENT_START_OFFSET_IN_BYTES
         else:
@@ -176,12 +175,24 @@ class Parser:
 
         if seg_for_parse:
             for field in self._segment_map[seg.get_type()].subItems:
-                prefix = self._build_union_prefix(field.nodeDesc)
-                self._parse_seg_field(field, prefix + field.name, seg)
+                if field.nodeDesc.isUnion and field.uSelector:
+                    self._parse_union_selector_field(field, seg)
+                else:
+                    prefix = self._build_union_prefix(field.nodeDesc)
+                    self._parse_seg_field(field, prefix + field.name, seg)
             if self._raw:
                 self._build_and_add_raw_data(seg)
         else:  # if segment not for parse, need to set raw data
             self._build_and_add_raw_data(seg)
+
+    def _parse_union_selector_field(self, field, seg):
+        """This method parse union field and present only the relevant field
+        (selected by the selector)"""
+        selected_field_enum = field.uSelector.dict[int(self._current_bit_array[field.uSelector.offset:field.uSelector.offset + field.size], 2)]
+        for item in field.subItems:
+            if item.attrs['selected_by'] == selected_field_enum:
+                prefix = self._build_union_prefix(field.nodeDesc)
+                self._parse_seg_field(item, prefix + item.name, seg)
 
     def _parse_seg_field(self, field, field_str, seg):
         """This method is a recursive method that build the inner fields
@@ -247,7 +258,7 @@ class Parser:
         return RawData(dumped_file_path).to_segments()
 
     @classmethod
-    def _build_union_prefix(cls, node_desc):
+    def _build_union_prefix(cls, node_desc: AdbNodeDesc):
         """This method build the prefix for the struct in order to give the user
         information indicate if the node is a union
         """
