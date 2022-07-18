@@ -53,6 +53,11 @@ class Segment(ABC):
         self.size = 0
         self._parsed_data = OrderedDict()
 
+    def additional_title_info(self):
+        """return index1 and index2 if exists in the segment.
+        """
+        return ""
+
     def get_size(self):
         return self.size
 
