@@ -20,20 +20,23 @@
 #if JSON_USE_EXCEPTION
 
 // @todo <= add detail about condition in exception
-#define JSON_ASSERT(condition)                                                 \
-  do {                                                                         \
-    if (!(condition)) {                                                        \
-      Json::throwLogicError("assert json failed");                             \
-    }                                                                          \
-  } while (0)
+#define JSON_ASSERT(condition)                           \
+    do                                                   \
+    {                                                    \
+        if (!(condition))                                \
+        {                                                \
+            Json::throwLogicError("assert json failed"); \
+        }                                                \
+    } while (0)
 
-#define JSON_FAIL_MESSAGE(message)                                             \
-  do {                                                                         \
-    OStringStream oss;                                                         \
-    oss << message;                                                            \
-    Json::throwLogicError(oss.str());                                          \
-    abort();                                                                   \
-  } while (0)
+#define JSON_FAIL_MESSAGE(message)        \
+    do                                    \
+    {                                     \
+        OStringStream oss;                \
+        oss << message;                   \
+        Json::throwLogicError(oss.str()); \
+        abort();                          \
+    } while (0)
 
 #else // JSON_USE_EXCEPTION
 
@@ -41,21 +44,23 @@
 
 // The call to assert() will show the failure message in debug builds. In
 // release builds we abort, for a core-dump or debugger.
-#define JSON_FAIL_MESSAGE(message)                                             \
-  {                                                                            \
-    OStringStream oss;                                                         \
-    oss << message;                                                            \
-    assert(false && oss.str().c_str());                                        \
-    abort();                                                                   \
-  }
+#define JSON_FAIL_MESSAGE(message)          \
+    {                                       \
+        OStringStream oss;                  \
+        oss << message;                     \
+        assert(false && oss.str().c_str()); \
+        abort();                            \
+    }
 
 #endif
 
-#define JSON_ASSERT_MESSAGE(condition, message)                                \
-  do {                                                                         \
-    if (!(condition)) {                                                        \
-      JSON_FAIL_MESSAGE(message);                                              \
-    }                                                                          \
-  } while (0)
+#define JSON_ASSERT_MESSAGE(condition, message) \
+    do                                          \
+    {                                           \
+        if (!(condition))                       \
+        {                                       \
+            JSON_FAIL_MESSAGE(message);         \
+        }                                       \
+    } while (0)
 
 #endif // JSON_ASSERTIONS_H_INCLUDED

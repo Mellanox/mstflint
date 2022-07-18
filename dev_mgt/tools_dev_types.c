@@ -456,7 +456,7 @@ static struct device_info g_devs_info[] = {{
                                            },
                                            {
                                              DeviceQuantum3, // dm_id
-                                             0x25b,         // hw_dev_id
+                                             0x25b,          // hw_dev_id
                                              -1,             // hw_rev_id
                                              54004,          // sw_dev_id
                                              "Quantum3",     // name

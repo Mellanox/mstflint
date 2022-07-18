@@ -60,7 +60,7 @@ class RefSegment(Segment):
         self.index2 = int('{:0b}'.format(data[3]).zfill(32)[0:32], 2)
         self.num_of_obj1 = int('{:0b}'.format(data[4]).zfill(32)[0:16], 2)
         self.num_of_obj2 = int('{:0b}'.format(data[4]).zfill(32)[16:32], 2)
-    
+
     def additional_title_info(self):
         """return index1 and index2 if exists in the segment.
         """

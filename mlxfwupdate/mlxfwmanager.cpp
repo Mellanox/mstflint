@@ -2882,7 +2882,6 @@ int generateProductionName(string& targetFile, PsidQueryItem ri)
     }
     else
     {
-        
         IC_code_name = dm_dev_type2str(devType);
     }
 

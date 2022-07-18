@@ -56,7 +56,7 @@ class CommandSegment(Segment):
         self.raw_data = data
         self.index1 = self.raw_data[2]
         self.index2 = self.raw_data[3]
-    
+
     def additional_title_info(self):
         """return index1 and index2 if exists in the segment.
         """
