@@ -54,6 +54,13 @@ class CommandSegment(Segment):
         """
         super().__init__()
         self.raw_data = data
+        self.index1 = self.raw_data[2]
+        self.index2 = self.raw_data[3]
+    
+    def additional_title_info(self):
+        """return index1 and index2 if exists in the segment.
+        """
+        return " ; index1 = {0}, index2 = {1}".format(hex(self.index1), hex(self.index2))
 
     def get_data(self):
         """get the general segment data.
