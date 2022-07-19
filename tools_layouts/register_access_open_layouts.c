@@ -259,21 +259,17 @@ void register_access_mfpa_dump(const struct register_access_mfpa* ptr_struct, FI
     register_access_mfpa_print(ptr_struct, fd, 0);
 }
 
-void register_access_register_access_open_Nodes_pack(const union register_access_register_access_open_Nodes* ptr_struct,
-                                                     u_int8_t* ptr_buff)
+void register_access_register_access_open_Nodes_pack(const union register_access_register_access_open_Nodes* ptr_struct, u_int8_t* ptr_buff)
 {
     register_access_mfba_pack(&(ptr_struct->mfba), ptr_buff);
 }
 
-void register_access_register_access_open_Nodes_unpack(union register_access_register_access_open_Nodes* ptr_struct,
-                                                       const u_int8_t* ptr_buff)
+void register_access_register_access_open_Nodes_unpack(union register_access_register_access_open_Nodes* ptr_struct, const u_int8_t* ptr_buff)
 {
     register_access_mfba_unpack(&(ptr_struct->mfba), ptr_buff);
 }
 
-void register_access_register_access_open_Nodes_print(const union register_access_register_access_open_Nodes* ptr_struct,
-                                                      FILE* fd,
-                                                      int indent_level)
+void register_access_register_access_open_Nodes_print(const union register_access_register_access_open_Nodes* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== register_access_register_access_open_Nodes ========\n");
@@ -294,8 +290,7 @@ unsigned int register_access_register_access_open_Nodes_size(void)
     return REGISTER_ACCESS_REGISTER_ACCESS_OPEN_NODES_SIZE;
 }
 
-void register_access_register_access_open_Nodes_dump(const union register_access_register_access_open_Nodes* ptr_struct,
-                                                     FILE* fd)
+void register_access_register_access_open_Nodes_dump(const union register_access_register_access_open_Nodes* ptr_struct, FILE* fd)
 {
     register_access_register_access_open_Nodes_print(ptr_struct, fd, 0);
 }

@@ -38,8 +38,7 @@
  ***/
 #include "reg_access_switch_layouts.h"
 
-void reg_access_switch_command_payload_ext_pack(const struct reg_access_switch_command_payload_ext* ptr_struct,
-                                                u_int8_t* ptr_buff)
+void reg_access_switch_command_payload_ext_pack(const struct reg_access_switch_command_payload_ext* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -51,8 +50,7 @@ void reg_access_switch_command_payload_ext_pack(const struct reg_access_switch_c
     }
 }
 
-void reg_access_switch_command_payload_ext_unpack(struct reg_access_switch_command_payload_ext* ptr_struct,
-                                                  const u_int8_t* ptr_buff)
+void reg_access_switch_command_payload_ext_unpack(struct reg_access_switch_command_payload_ext* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -64,9 +62,7 @@ void reg_access_switch_command_payload_ext_unpack(struct reg_access_switch_comma
     }
 }
 
-void reg_access_switch_command_payload_ext_print(const struct reg_access_switch_command_payload_ext* ptr_struct,
-                                                 FILE* fd,
-                                                 int indent_level)
+void reg_access_switch_command_payload_ext_print(const struct reg_access_switch_command_payload_ext* ptr_struct, FILE* fd, int indent_level)
 {
     int i;
 
@@ -85,15 +81,12 @@ unsigned int reg_access_switch_command_payload_ext_size(void)
     return REG_ACCESS_SWITCH_COMMAND_PAYLOAD_EXT_SIZE;
 }
 
-void reg_access_switch_command_payload_ext_dump(const struct reg_access_switch_command_payload_ext* ptr_struct,
-                                                FILE* fd)
+void reg_access_switch_command_payload_ext_dump(const struct reg_access_switch_command_payload_ext* ptr_struct, FILE* fd)
 {
     reg_access_switch_command_payload_ext_print(ptr_struct, fd, 0);
 }
 
-void reg_access_switch_crspace_access_payload_ext_pack(
-  const struct reg_access_switch_crspace_access_payload_ext* ptr_struct,
-  u_int8_t* ptr_buff)
+void reg_access_switch_crspace_access_payload_ext_pack(const struct reg_access_switch_crspace_access_payload_ext* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -107,8 +100,7 @@ void reg_access_switch_crspace_access_payload_ext_pack(
     }
 }
 
-void reg_access_switch_crspace_access_payload_ext_unpack(struct reg_access_switch_crspace_access_payload_ext* ptr_struct,
-                                                         const u_int8_t* ptr_buff)
+void reg_access_switch_crspace_access_payload_ext_unpack(struct reg_access_switch_crspace_access_payload_ext* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -122,10 +114,7 @@ void reg_access_switch_crspace_access_payload_ext_unpack(struct reg_access_switc
     }
 }
 
-void reg_access_switch_crspace_access_payload_ext_print(
-  const struct reg_access_switch_crspace_access_payload_ext* ptr_struct,
-  FILE* fd,
-  int indent_level)
+void reg_access_switch_crspace_access_payload_ext_print(const struct reg_access_switch_crspace_access_payload_ext* ptr_struct, FILE* fd, int indent_level)
 {
     int i;
 
@@ -146,15 +135,12 @@ unsigned int reg_access_switch_crspace_access_payload_ext_size(void)
     return REG_ACCESS_SWITCH_CRSPACE_ACCESS_PAYLOAD_EXT_SIZE;
 }
 
-void reg_access_switch_crspace_access_payload_ext_dump(
-  const struct reg_access_switch_crspace_access_payload_ext* ptr_struct,
-  FILE* fd)
+void reg_access_switch_crspace_access_payload_ext_dump(const struct reg_access_switch_crspace_access_payload_ext* ptr_struct, FILE* fd)
 {
     reg_access_switch_crspace_access_payload_ext_print(ptr_struct, fd, 0);
 }
 
-void reg_access_switch_device_info_ext_pack(const struct reg_access_switch_device_info_ext* ptr_struct,
-                                            u_int8_t* ptr_buff)
+void reg_access_switch_device_info_ext_pack(const struct reg_access_switch_device_info_ext* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -190,8 +176,7 @@ void reg_access_switch_device_info_ext_pack(const struct reg_access_switch_devic
     }
 }
 
-void reg_access_switch_device_info_ext_unpack(struct reg_access_switch_device_info_ext* ptr_struct,
-                                              const u_int8_t* ptr_buff)
+void reg_access_switch_device_info_ext_unpack(struct reg_access_switch_device_info_ext* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -227,9 +212,7 @@ void reg_access_switch_device_info_ext_unpack(struct reg_access_switch_device_in
     }
 }
 
-void reg_access_switch_device_info_ext_print(const struct reg_access_switch_device_info_ext* ptr_struct,
-                                             FILE* fd,
-                                             int indent_level)
+void reg_access_switch_device_info_ext_print(const struct reg_access_switch_device_info_ext* ptr_struct, FILE* fd, int indent_level)
 {
     int i;
 
@@ -277,8 +260,7 @@ void reg_access_switch_device_info_ext_dump(const struct reg_access_switch_devic
     reg_access_switch_device_info_ext_print(ptr_struct, fd, 0);
 }
 
-void reg_access_switch_prm_register_payload_ext_pack(const struct reg_access_switch_prm_register_payload_ext* ptr_struct,
-                                                     u_int8_t* ptr_buff)
+void reg_access_switch_prm_register_payload_ext_pack(const struct reg_access_switch_prm_register_payload_ext* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -296,8 +278,7 @@ void reg_access_switch_prm_register_payload_ext_pack(const struct reg_access_swi
     }
 }
 
-void reg_access_switch_prm_register_payload_ext_unpack(struct reg_access_switch_prm_register_payload_ext* ptr_struct,
-                                                       const u_int8_t* ptr_buff)
+void reg_access_switch_prm_register_payload_ext_unpack(struct reg_access_switch_prm_register_payload_ext* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -315,10 +296,7 @@ void reg_access_switch_prm_register_payload_ext_unpack(struct reg_access_switch_
     }
 }
 
-void reg_access_switch_prm_register_payload_ext_print(
-  const struct reg_access_switch_prm_register_payload_ext* ptr_struct,
-  FILE* fd,
-  int indent_level)
+void reg_access_switch_prm_register_payload_ext_print(const struct reg_access_switch_prm_register_payload_ext* ptr_struct, FILE* fd, int indent_level)
 {
     int i;
 
@@ -343,8 +321,7 @@ unsigned int reg_access_switch_prm_register_payload_ext_size(void)
     return REG_ACCESS_SWITCH_PRM_REGISTER_PAYLOAD_EXT_SIZE;
 }
 
-void reg_access_switch_prm_register_payload_ext_dump(const struct reg_access_switch_prm_register_payload_ext* ptr_struct,
-                                                     FILE* fd)
+void reg_access_switch_prm_register_payload_ext_dump(const struct reg_access_switch_prm_register_payload_ext* ptr_struct, FILE* fd)
 {
     reg_access_switch_prm_register_payload_ext_print(ptr_struct, fd, 0);
 }
@@ -369,8 +346,7 @@ void reg_access_switch_slot_info_ext_pack(const struct reg_access_switch_slot_in
     adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->card_type);
 }
 
-void reg_access_switch_slot_info_ext_unpack(struct reg_access_switch_slot_info_ext* ptr_struct,
-                                            const u_int8_t* ptr_buff)
+void reg_access_switch_slot_info_ext_unpack(struct reg_access_switch_slot_info_ext* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -390,9 +366,7 @@ void reg_access_switch_slot_info_ext_unpack(struct reg_access_switch_slot_info_e
     ptr_struct->card_type = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 }
 
-void reg_access_switch_slot_info_ext_print(const struct reg_access_switch_slot_info_ext* ptr_struct,
-                                           FILE* fd,
-                                           int indent_level)
+void reg_access_switch_slot_info_ext_print(const struct reg_access_switch_slot_info_ext* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== reg_access_switch_slot_info_ext ========\n");
@@ -435,8 +409,7 @@ void reg_access_switch_slot_name_ext_pack(const struct reg_access_switch_slot_na
     }
 }
 
-void reg_access_switch_slot_name_ext_unpack(struct reg_access_switch_slot_name_ext* ptr_struct,
-                                            const u_int8_t* ptr_buff)
+void reg_access_switch_slot_name_ext_unpack(struct reg_access_switch_slot_name_ext* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -448,9 +421,7 @@ void reg_access_switch_slot_name_ext_unpack(struct reg_access_switch_slot_name_e
     }
 }
 
-void reg_access_switch_slot_name_ext_print(const struct reg_access_switch_slot_name_ext* ptr_struct,
-                                           FILE* fd,
-                                           int indent_level)
+void reg_access_switch_slot_name_ext_print(const struct reg_access_switch_slot_name_ext* ptr_struct, FILE* fd, int indent_level)
 {
     int i;
 
@@ -474,21 +445,17 @@ void reg_access_switch_slot_name_ext_dump(const struct reg_access_switch_slot_na
     reg_access_switch_slot_name_ext_print(ptr_struct, fd, 0);
 }
 
-void reg_access_switch_mddq_data_auto_ext_pack(const union reg_access_switch_mddq_data_auto_ext* ptr_struct,
-                                               u_int8_t* ptr_buff)
+void reg_access_switch_mddq_data_auto_ext_pack(const union reg_access_switch_mddq_data_auto_ext* ptr_struct, u_int8_t* ptr_buff)
 {
     reg_access_switch_slot_info_ext_pack(&(ptr_struct->slot_info_ext), ptr_buff);
 }
 
-void reg_access_switch_mddq_data_auto_ext_unpack(union reg_access_switch_mddq_data_auto_ext* ptr_struct,
-                                                 const u_int8_t* ptr_buff)
+void reg_access_switch_mddq_data_auto_ext_unpack(union reg_access_switch_mddq_data_auto_ext* ptr_struct, const u_int8_t* ptr_buff)
 {
     reg_access_switch_slot_info_ext_unpack(&(ptr_struct->slot_info_ext), ptr_buff);
 }
 
-void reg_access_switch_mddq_data_auto_ext_print(const union reg_access_switch_mddq_data_auto_ext* ptr_struct,
-                                                FILE* fd,
-                                                int indent_level)
+void reg_access_switch_mddq_data_auto_ext_print(const union reg_access_switch_mddq_data_auto_ext* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== reg_access_switch_mddq_data_auto_ext ========\n");
@@ -514,23 +481,17 @@ void reg_access_switch_mddq_data_auto_ext_dump(const union reg_access_switch_mdd
     reg_access_switch_mddq_data_auto_ext_print(ptr_struct, fd, 0);
 }
 
-void reg_access_switch_mddt_reg_payload_auto_ext_pack(
-  const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct,
-  u_int8_t* ptr_buff)
+void reg_access_switch_mddt_reg_payload_auto_ext_pack(const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct, u_int8_t* ptr_buff)
 {
     reg_access_switch_prm_register_payload_ext_pack(&(ptr_struct->prm_register_payload_ext), ptr_buff);
 }
 
-void reg_access_switch_mddt_reg_payload_auto_ext_unpack(union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct,
-                                                        const u_int8_t* ptr_buff)
+void reg_access_switch_mddt_reg_payload_auto_ext_unpack(union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct, const u_int8_t* ptr_buff)
 {
     reg_access_switch_prm_register_payload_ext_unpack(&(ptr_struct->prm_register_payload_ext), ptr_buff);
 }
 
-void reg_access_switch_mddt_reg_payload_auto_ext_print(
-  const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct,
-  FILE* fd,
-  int indent_level)
+void reg_access_switch_mddt_reg_payload_auto_ext_print(const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== reg_access_switch_mddt_reg_payload_auto_ext ========\n");
@@ -551,9 +512,7 @@ unsigned int reg_access_switch_mddt_reg_payload_auto_ext_size(void)
     return REG_ACCESS_SWITCH_MDDT_REG_PAYLOAD_AUTO_EXT_SIZE;
 }
 
-void reg_access_switch_mddt_reg_payload_auto_ext_dump(
-  const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct,
-  FILE* fd)
+void reg_access_switch_mddt_reg_payload_auto_ext_dump(const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct, FILE* fd)
 {
     reg_access_switch_mddt_reg_payload_auto_ext_print(ptr_struct, fd, 0);
 }
@@ -621,9 +580,7 @@ void reg_access_switch_icam_reg_ext_unpack(struct reg_access_switch_icam_reg_ext
     }
 }
 
-void reg_access_switch_icam_reg_ext_print(const struct reg_access_switch_icam_reg_ext* ptr_struct,
-                                          FILE* fd,
-                                          int indent_level)
+void reg_access_switch_icam_reg_ext_print(const struct reg_access_switch_icam_reg_ext* ptr_struct, FILE* fd, int indent_level)
 {
     int i;
 
@@ -796,10 +753,7 @@ void reg_access_switch_mddq_ext_print(const struct reg_access_switch_mddq_ext* p
     fprintf(fd, "query_type           : %s (" UH_FMT ")\n",
             (ptr_struct->query_type == 0 ?
                ("Reserved") :
-               ((ptr_struct->query_type == 1 ?
-                   ("slot_info") :
-                   ((ptr_struct->query_type == 2 ? ("device_info") :
-                                                   ((ptr_struct->query_type == 3 ? ("slot_name") : ("unknown")))))))),
+               ((ptr_struct->query_type == 1 ? ("slot_info") : ((ptr_struct->query_type == 2 ? ("device_info") : ((ptr_struct->query_type == 3 ? ("slot_name") : ("unknown")))))))),
             ptr_struct->query_type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "sie                  : " UH_FMT "\n", ptr_struct->sie);
@@ -862,18 +816,15 @@ void reg_access_switch_mddt_reg_ext_pack(const struct reg_access_switch_mddt_reg
     {
         case 0x0:
             offset = 96;
-            reg_access_switch_prm_register_payload_ext_pack(&(ptr_struct->payload.prm_register_payload_ext),
-                                                            ptr_buff + offset / 8);
+            reg_access_switch_prm_register_payload_ext_pack(&(ptr_struct->payload.prm_register_payload_ext), ptr_buff + offset / 8);
             break;
         case 0x1:
             offset = 96;
-            reg_access_switch_command_payload_ext_pack(&(ptr_struct->payload.command_payload_ext),
-                                                       ptr_buff + offset / 8);
+            reg_access_switch_command_payload_ext_pack(&(ptr_struct->payload.command_payload_ext), ptr_buff + offset / 8);
             break;
         case 0x2:
             offset = 96;
-            reg_access_switch_crspace_access_payload_ext_pack(&(ptr_struct->payload.crspace_access_payload_ext),
-                                                              ptr_buff + offset / 8);
+            reg_access_switch_crspace_access_payload_ext_pack(&(ptr_struct->payload.crspace_access_payload_ext), ptr_buff + offset / 8);
             break;
         default:
             break;
@@ -899,27 +850,22 @@ void reg_access_switch_mddt_reg_ext_unpack(struct reg_access_switch_mddt_reg_ext
     {
         case 0x0:
             offset = 96;
-            reg_access_switch_prm_register_payload_ext_unpack(&(ptr_struct->payload.prm_register_payload_ext),
-                                                              ptr_buff + offset / 8);
+            reg_access_switch_prm_register_payload_ext_unpack(&(ptr_struct->payload.prm_register_payload_ext), ptr_buff + offset / 8);
             break;
         case 0x1:
             offset = 96;
-            reg_access_switch_command_payload_ext_unpack(&(ptr_struct->payload.command_payload_ext),
-                                                         ptr_buff + offset / 8);
+            reg_access_switch_command_payload_ext_unpack(&(ptr_struct->payload.command_payload_ext), ptr_buff + offset / 8);
             break;
         case 0x2:
             offset = 96;
-            reg_access_switch_crspace_access_payload_ext_unpack(&(ptr_struct->payload.crspace_access_payload_ext),
-                                                                ptr_buff + offset / 8);
+            reg_access_switch_crspace_access_payload_ext_unpack(&(ptr_struct->payload.crspace_access_payload_ext), ptr_buff + offset / 8);
             break;
         default:
             break;
     }
 }
 
-void reg_access_switch_mddt_reg_ext_print(const struct reg_access_switch_mddt_reg_ext* ptr_struct,
-                                          FILE* fd,
-                                          int indent_level)
+void reg_access_switch_mddt_reg_ext_print(const struct reg_access_switch_mddt_reg_ext* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== reg_access_switch_mddt_reg_ext ========\n");
@@ -930,10 +876,7 @@ void reg_access_switch_mddt_reg_ext_print(const struct reg_access_switch_mddt_re
     fprintf(fd, "slot_index           : " UH_FMT "\n", ptr_struct->slot_index);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "type                 : %s (" UH_FMT ")\n",
-            (ptr_struct->type == 0 ?
-               ("PRM_Register") :
-               ((ptr_struct->type == 1 ? ("Command") : ((ptr_struct->type == 2 ? ("CrSpace_access") : ("unknown")))))),
-            ptr_struct->type);
+            (ptr_struct->type == 0 ? ("PRM_Register") : ((ptr_struct->type == 1 ? ("Command") : ((ptr_struct->type == 2 ? ("CrSpace_access") : ("unknown")))))), ptr_struct->type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "write_size           : " UH_FMT "\n", ptr_struct->write_size);
     adb2c_add_indentation(fd, indent_level);
@@ -943,20 +886,17 @@ void reg_access_switch_mddt_reg_ext_print(const struct reg_access_switch_mddt_re
         case 0x0:
             adb2c_add_indentation(fd, indent_level);
             fprintf(fd, "prm_register_payload_ext:\n");
-            reg_access_switch_prm_register_payload_ext_print(&(ptr_struct->payload.prm_register_payload_ext), fd,
-                                                             indent_level + 1);
+            reg_access_switch_prm_register_payload_ext_print(&(ptr_struct->payload.prm_register_payload_ext), fd, indent_level + 1);
             break;
         case 0x1:
             adb2c_add_indentation(fd, indent_level);
             fprintf(fd, "command_payload_ext:\n");
-            reg_access_switch_command_payload_ext_print(&(ptr_struct->payload.command_payload_ext), fd,
-                                                        indent_level + 1);
+            reg_access_switch_command_payload_ext_print(&(ptr_struct->payload.command_payload_ext), fd, indent_level + 1);
             break;
         case 0x2:
             adb2c_add_indentation(fd, indent_level);
             fprintf(fd, "crspace_access_payload_ext:\n");
-            reg_access_switch_crspace_access_payload_ext_print(&(ptr_struct->payload.crspace_access_payload_ext), fd,
-                                                               indent_level + 1);
+            reg_access_switch_crspace_access_payload_ext_print(&(ptr_struct->payload.crspace_access_payload_ext), fd, indent_level + 1);
             break;
         default:
             break;
@@ -1005,9 +945,7 @@ void reg_access_switch_mdsr_reg_ext_unpack(struct reg_access_switch_mdsr_reg_ext
     ptr_struct->time_left = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
 
-void reg_access_switch_mdsr_reg_ext_print(const struct reg_access_switch_mdsr_reg_ext* ptr_struct,
-                                          FILE* fd,
-                                          int indent_level)
+void reg_access_switch_mdsr_reg_ext_print(const struct reg_access_switch_mdsr_reg_ext* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== reg_access_switch_mdsr_reg_ext ========\n");
@@ -1062,9 +1000,7 @@ void reg_access_switch_mkdc_reg_ext_unpack(struct reg_access_switch_mkdc_reg_ext
     ptr_struct->next_keep_alive_counter = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
 
-void reg_access_switch_mkdc_reg_ext_print(const struct reg_access_switch_mkdc_reg_ext* ptr_struct,
-                                          FILE* fd,
-                                          int indent_level)
+void reg_access_switch_mkdc_reg_ext_print(const struct reg_access_switch_mkdc_reg_ext* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== reg_access_switch_mkdc_reg_ext ========\n");
@@ -1075,11 +1011,8 @@ void reg_access_switch_mkdc_reg_ext_print(const struct reg_access_switch_mkdc_re
                ("OK") :
                ((ptr_struct->error_code == 1 ?
                    ("BAD_SESSION_ID") :
-                   ((ptr_struct->error_code == 2 ?
-                       ("BAD_KEEP_ALIVE_COUNTER") :
-                       ((ptr_struct->error_code == 3 ?
-                           ("BAD_SOURCE_ADDRESS") :
-                           ((ptr_struct->error_code == 4 ? ("SESSION_TIMEOUT") : ("unknown")))))))))),
+                   ((ptr_struct->error_code == 2 ? ("BAD_KEEP_ALIVE_COUNTER") :
+                                                   ((ptr_struct->error_code == 3 ? ("BAD_SOURCE_ADDRESS") : ((ptr_struct->error_code == 4 ? ("SESSION_TIMEOUT") : ("unknown")))))))))),
             ptr_struct->error_code);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "session_id           : " UH_FMT "\n", ptr_struct->session_id);
@@ -1185,9 +1118,7 @@ void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext
     }
 }
 
-void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_reg_ext* ptr_struct,
-                                          FILE* fd,
-                                          int indent_level)
+void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_reg_ext* ptr_struct, FILE* fd, int indent_level)
 {
     int i;
 
@@ -1242,21 +1173,17 @@ void reg_access_switch_mtcq_reg_ext_dump(const struct reg_access_switch_mtcq_reg
     reg_access_switch_mtcq_reg_ext_print(ptr_struct, fd, 0);
 }
 
-void reg_access_switch_reg_access_switch_Nodes_pack(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct,
-                                                    u_int8_t* ptr_buff)
+void reg_access_switch_reg_access_switch_Nodes_pack(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct, u_int8_t* ptr_buff)
 {
     reg_access_switch_icsr_ext_pack(&(ptr_struct->icsr_ext), ptr_buff);
 }
 
-void reg_access_switch_reg_access_switch_Nodes_unpack(union reg_access_switch_reg_access_switch_Nodes* ptr_struct,
-                                                      const u_int8_t* ptr_buff)
+void reg_access_switch_reg_access_switch_Nodes_unpack(union reg_access_switch_reg_access_switch_Nodes* ptr_struct, const u_int8_t* ptr_buff)
 {
     reg_access_switch_icsr_ext_unpack(&(ptr_struct->icsr_ext), ptr_buff);
 }
 
-void reg_access_switch_reg_access_switch_Nodes_print(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct,
-                                                     FILE* fd,
-                                                     int indent_level)
+void reg_access_switch_reg_access_switch_Nodes_print(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== reg_access_switch_reg_access_switch_Nodes ========\n");
@@ -1289,8 +1216,7 @@ unsigned int reg_access_switch_reg_access_switch_Nodes_size(void)
     return REG_ACCESS_SWITCH_REG_ACCESS_SWITCH_NODES_SIZE;
 }
 
-void reg_access_switch_reg_access_switch_Nodes_dump(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct,
-                                                    FILE* fd)
+void reg_access_switch_reg_access_switch_Nodes_dump(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct, FILE* fd)
 {
     reg_access_switch_reg_access_switch_Nodes_print(ptr_struct, fd, 0);
 }

@@ -62,9 +62,7 @@ void register_access_sib_IB_PSID__unpack(struct register_access_sib_IB_PSID_* pt
     }
 }
 
-void register_access_sib_IB_PSID__print(const struct register_access_sib_IB_PSID_* ptr_struct,
-                                        FILE* fd,
-                                        int indent_level)
+void register_access_sib_IB_PSID__print(const struct register_access_sib_IB_PSID_* ptr_struct, FILE* fd, int indent_level)
 {
     int i;
 
@@ -100,8 +98,7 @@ void register_access_sib_IB_DEVInfo__pack(const struct register_access_sib_IB_DE
     }
 }
 
-void register_access_sib_IB_DEVInfo__unpack(struct register_access_sib_IB_DEVInfo_* ptr_struct,
-                                            const u_int8_t* ptr_buff)
+void register_access_sib_IB_DEVInfo__unpack(struct register_access_sib_IB_DEVInfo_* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -113,9 +110,7 @@ void register_access_sib_IB_DEVInfo__unpack(struct register_access_sib_IB_DEVInf
     }
 }
 
-void register_access_sib_IB_DEVInfo__print(const struct register_access_sib_IB_DEVInfo_* ptr_struct,
-                                           FILE* fd,
-                                           int indent_level)
+void register_access_sib_IB_DEVInfo__print(const struct register_access_sib_IB_DEVInfo_* ptr_struct, FILE* fd, int indent_level)
 {
     int i;
 
@@ -203,9 +198,7 @@ void register_access_sib_IB_FWInfo__unpack(struct register_access_sib_IB_FWInfo_
     ptr_struct->extended_subminor = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
 
-void register_access_sib_IB_FWInfo__print(const struct register_access_sib_IB_FWInfo_* ptr_struct,
-                                          FILE* fd,
-                                          int indent_level)
+void register_access_sib_IB_FWInfo__print(const struct register_access_sib_IB_FWInfo_* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== register_access_sib_IB_FWInfo_ ========\n");
@@ -281,9 +274,7 @@ void register_access_sib_IB_HWInfo__unpack(struct register_access_sib_IB_HWInfo_
     ptr_struct->UpTime = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
 
-void register_access_sib_IB_HWInfo__print(const struct register_access_sib_IB_HWInfo_* ptr_struct,
-                                          FILE* fd,
-                                          int indent_level)
+void register_access_sib_IB_HWInfo__print(const struct register_access_sib_IB_HWInfo_* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== register_access_sib_IB_HWInfo_ ========\n");
@@ -334,9 +325,7 @@ void register_access_sib_IB_SWInfo__unpack(struct register_access_sib_IB_SWInfo_
     ptr_struct->VerMajor = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 }
 
-void register_access_sib_IB_SWInfo__print(const struct register_access_sib_IB_SWInfo_* ptr_struct,
-                                          FILE* fd,
-                                          int indent_level)
+void register_access_sib_IB_SWInfo__print(const struct register_access_sib_IB_SWInfo_* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== register_access_sib_IB_SWInfo_ ========\n");
@@ -594,24 +583,17 @@ void register_access_sib_pmaos_dump(const struct register_access_sib_pmaos* ptr_
     register_access_sib_pmaos_print(ptr_struct, fd, 0);
 }
 
-void register_access_sib_register_access_sib_Nodes_pack(
-  const union register_access_sib_register_access_sib_Nodes* ptr_struct,
-  u_int8_t* ptr_buff)
+void register_access_sib_register_access_sib_Nodes_pack(const union register_access_sib_register_access_sib_Nodes* ptr_struct, u_int8_t* ptr_buff)
 {
     register_access_sib_mgir_pack(&(ptr_struct->mgir), ptr_buff);
 }
 
-void register_access_sib_register_access_sib_Nodes_unpack(
-  union register_access_sib_register_access_sib_Nodes* ptr_struct,
-  const u_int8_t* ptr_buff)
+void register_access_sib_register_access_sib_Nodes_unpack(union register_access_sib_register_access_sib_Nodes* ptr_struct, const u_int8_t* ptr_buff)
 {
     register_access_sib_mgir_unpack(&(ptr_struct->mgir), ptr_buff);
 }
 
-void register_access_sib_register_access_sib_Nodes_print(
-  const union register_access_sib_register_access_sib_Nodes* ptr_struct,
-  FILE* fd,
-  int indent_level)
+void register_access_sib_register_access_sib_Nodes_print(const union register_access_sib_register_access_sib_Nodes* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== register_access_sib_register_access_sib_Nodes ========\n");
@@ -632,9 +614,7 @@ unsigned int register_access_sib_register_access_sib_Nodes_size(void)
     return REGISTER_ACCESS_SIB_REGISTER_ACCESS_SIB_NODES_SIZE;
 }
 
-void register_access_sib_register_access_sib_Nodes_dump(
-  const union register_access_sib_register_access_sib_Nodes* ptr_struct,
-  FILE* fd)
+void register_access_sib_register_access_sib_Nodes_dump(const union register_access_sib_register_access_sib_Nodes* ptr_struct, FILE* fd)
 {
     register_access_sib_register_access_sib_Nodes_print(ptr_struct, fd, 0);
 }

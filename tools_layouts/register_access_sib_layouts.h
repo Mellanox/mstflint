@@ -297,53 +297,35 @@ updated based on admin_state field. Only relevant on Set operations */
     /* IB_PSID_ */
     void register_access_sib_IB_PSID__pack(const struct register_access_sib_IB_PSID_* ptr_struct, u_int8_t* ptr_buff);
     void register_access_sib_IB_PSID__unpack(struct register_access_sib_IB_PSID_* ptr_struct, const u_int8_t* ptr_buff);
-    void register_access_sib_IB_PSID__print(const struct register_access_sib_IB_PSID_* ptr_struct,
-                                            FILE* fd,
-                                            int indent_level);
+    void register_access_sib_IB_PSID__print(const struct register_access_sib_IB_PSID_* ptr_struct, FILE* fd, int indent_level);
     unsigned int register_access_sib_IB_PSID__size(void);
 #define REGISTER_ACCESS_SIB_IB_PSID__SIZE (0x10)
     void register_access_sib_IB_PSID__dump(const struct register_access_sib_IB_PSID_* ptr_struct, FILE* fd);
     /* IB_DEVInfo_ */
-    void register_access_sib_IB_DEVInfo__pack(const struct register_access_sib_IB_DEVInfo_* ptr_struct,
-                                              u_int8_t* ptr_buff);
-    void register_access_sib_IB_DEVInfo__unpack(struct register_access_sib_IB_DEVInfo_* ptr_struct,
-                                                const u_int8_t* ptr_buff);
-    void register_access_sib_IB_DEVInfo__print(const struct register_access_sib_IB_DEVInfo_* ptr_struct,
-                                               FILE* fd,
-                                               int indent_level);
+    void register_access_sib_IB_DEVInfo__pack(const struct register_access_sib_IB_DEVInfo_* ptr_struct, u_int8_t* ptr_buff);
+    void register_access_sib_IB_DEVInfo__unpack(struct register_access_sib_IB_DEVInfo_* ptr_struct, const u_int8_t* ptr_buff);
+    void register_access_sib_IB_DEVInfo__print(const struct register_access_sib_IB_DEVInfo_* ptr_struct, FILE* fd, int indent_level);
     unsigned int register_access_sib_IB_DEVInfo__size(void);
 #define REGISTER_ACCESS_SIB_IB_DEVINFO__SIZE (0x1c)
     void register_access_sib_IB_DEVInfo__dump(const struct register_access_sib_IB_DEVInfo_* ptr_struct, FILE* fd);
     /* IB_FWInfo_ */
-    void register_access_sib_IB_FWInfo__pack(const struct register_access_sib_IB_FWInfo_* ptr_struct,
-                                             u_int8_t* ptr_buff);
-    void register_access_sib_IB_FWInfo__unpack(struct register_access_sib_IB_FWInfo_* ptr_struct,
-                                               const u_int8_t* ptr_buff);
-    void register_access_sib_IB_FWInfo__print(const struct register_access_sib_IB_FWInfo_* ptr_struct,
-                                              FILE* fd,
-                                              int indent_level);
+    void register_access_sib_IB_FWInfo__pack(const struct register_access_sib_IB_FWInfo_* ptr_struct, u_int8_t* ptr_buff);
+    void register_access_sib_IB_FWInfo__unpack(struct register_access_sib_IB_FWInfo_* ptr_struct, const u_int8_t* ptr_buff);
+    void register_access_sib_IB_FWInfo__print(const struct register_access_sib_IB_FWInfo_* ptr_struct, FILE* fd, int indent_level);
     unsigned int register_access_sib_IB_FWInfo__size(void);
 #define REGISTER_ACCESS_SIB_IB_FWINFO__SIZE (0x40)
     void register_access_sib_IB_FWInfo__dump(const struct register_access_sib_IB_FWInfo_* ptr_struct, FILE* fd);
     /* IB_HWInfo_ */
-    void register_access_sib_IB_HWInfo__pack(const struct register_access_sib_IB_HWInfo_* ptr_struct,
-                                             u_int8_t* ptr_buff);
-    void register_access_sib_IB_HWInfo__unpack(struct register_access_sib_IB_HWInfo_* ptr_struct,
-                                               const u_int8_t* ptr_buff);
-    void register_access_sib_IB_HWInfo__print(const struct register_access_sib_IB_HWInfo_* ptr_struct,
-                                              FILE* fd,
-                                              int indent_level);
+    void register_access_sib_IB_HWInfo__pack(const struct register_access_sib_IB_HWInfo_* ptr_struct, u_int8_t* ptr_buff);
+    void register_access_sib_IB_HWInfo__unpack(struct register_access_sib_IB_HWInfo_* ptr_struct, const u_int8_t* ptr_buff);
+    void register_access_sib_IB_HWInfo__print(const struct register_access_sib_IB_HWInfo_* ptr_struct, FILE* fd, int indent_level);
     unsigned int register_access_sib_IB_HWInfo__size(void);
 #define REGISTER_ACCESS_SIB_IB_HWINFO__SIZE (0x20)
     void register_access_sib_IB_HWInfo__dump(const struct register_access_sib_IB_HWInfo_* ptr_struct, FILE* fd);
     /* IB_SWInfo_ */
-    void register_access_sib_IB_SWInfo__pack(const struct register_access_sib_IB_SWInfo_* ptr_struct,
-                                             u_int8_t* ptr_buff);
-    void register_access_sib_IB_SWInfo__unpack(struct register_access_sib_IB_SWInfo_* ptr_struct,
-                                               const u_int8_t* ptr_buff);
-    void register_access_sib_IB_SWInfo__print(const struct register_access_sib_IB_SWInfo_* ptr_struct,
-                                              FILE* fd,
-                                              int indent_level);
+    void register_access_sib_IB_SWInfo__pack(const struct register_access_sib_IB_SWInfo_* ptr_struct, u_int8_t* ptr_buff);
+    void register_access_sib_IB_SWInfo__unpack(struct register_access_sib_IB_SWInfo_* ptr_struct, const u_int8_t* ptr_buff);
+    void register_access_sib_IB_SWInfo__print(const struct register_access_sib_IB_SWInfo_* ptr_struct, FILE* fd, int indent_level);
     unsigned int register_access_sib_IB_SWInfo__size(void);
 #define REGISTER_ACCESS_SIB_IB_SWINFO__SIZE (0x20)
     void register_access_sib_IB_SWInfo__dump(const struct register_access_sib_IB_SWInfo_* ptr_struct, FILE* fd);
@@ -369,21 +351,12 @@ updated based on admin_state field. Only relevant on Set operations */
 #define REGISTER_ACCESS_SIB_PMAOS_SIZE (0xc)
     void register_access_sib_pmaos_dump(const struct register_access_sib_pmaos* ptr_struct, FILE* fd);
     /* register_access_sib_Nodes */
-    void register_access_sib_register_access_sib_Nodes_pack(
-      const union register_access_sib_register_access_sib_Nodes* ptr_struct,
-      u_int8_t* ptr_buff);
-    void register_access_sib_register_access_sib_Nodes_unpack(
-      union register_access_sib_register_access_sib_Nodes* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void register_access_sib_register_access_sib_Nodes_print(
-      const union register_access_sib_register_access_sib_Nodes* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void register_access_sib_register_access_sib_Nodes_pack(const union register_access_sib_register_access_sib_Nodes* ptr_struct, u_int8_t* ptr_buff);
+    void register_access_sib_register_access_sib_Nodes_unpack(union register_access_sib_register_access_sib_Nodes* ptr_struct, const u_int8_t* ptr_buff);
+    void register_access_sib_register_access_sib_Nodes_print(const union register_access_sib_register_access_sib_Nodes* ptr_struct, FILE* fd, int indent_level);
     unsigned int register_access_sib_register_access_sib_Nodes_size(void);
 #define REGISTER_ACCESS_SIB_REGISTER_ACCESS_SIB_NODES_SIZE (0xa0)
-    void register_access_sib_register_access_sib_Nodes_dump(
-      const union register_access_sib_register_access_sib_Nodes* ptr_struct,
-      FILE* fd);
+    void register_access_sib_register_access_sib_Nodes_dump(const union register_access_sib_register_access_sib_Nodes* ptr_struct, FILE* fd);
 
 #ifdef __cplusplus
 }
