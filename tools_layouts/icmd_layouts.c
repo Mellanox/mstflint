@@ -462,8 +462,7 @@ void connectx4_icmd_mh_sync_dump(const struct connectx4_icmd_mh_sync* ptr_struct
     connectx4_icmd_mh_sync_print(ptr_struct, file, 0);
 }
 
-void connectx4_icmd_query_cap_general_pack(const struct connectx4_icmd_query_cap_general* ptr_struct,
-                                           u_int8_t* ptr_buff)
+void connectx4_icmd_query_cap_general_pack(const struct connectx4_icmd_query_cap_general* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -509,8 +508,7 @@ void connectx4_icmd_query_cap_general_pack(const struct connectx4_icmd_query_cap
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->fpga);
 }
 
-void connectx4_icmd_query_cap_general_unpack(struct connectx4_icmd_query_cap_general* ptr_struct,
-                                             const u_int8_t* ptr_buff)
+void connectx4_icmd_query_cap_general_unpack(struct connectx4_icmd_query_cap_general* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -556,9 +554,7 @@ void connectx4_icmd_query_cap_general_unpack(struct connectx4_icmd_query_cap_gen
     ptr_struct->fpga = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 }
 
-void connectx4_icmd_query_cap_general_print(const struct connectx4_icmd_query_cap_general* ptr_struct,
-                                            FILE* fd,
-                                            int indent_level)
+void connectx4_icmd_query_cap_general_print(const struct connectx4_icmd_query_cap_general* ptr_struct, FILE* fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== connectx4_icmd_query_cap_general ========\n");
@@ -578,8 +574,7 @@ void connectx4_icmd_query_cap_general_print(const struct connectx4_icmd_query_ca
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "mh_sync              : " UH_FMT "\n", ptr_struct->mh_sync);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "allow_icmd_access_reg_on_all_registers : " UH_FMT "\n",
-            ptr_struct->allow_icmd_access_reg_on_all_registers);
+    fprintf(fd, "allow_icmd_access_reg_on_all_registers : " UH_FMT "\n", ptr_struct->allow_icmd_access_reg_on_all_registers);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "fw_info_psid         : " UH_FMT "\n", ptr_struct->fw_info_psid);
     adb2c_add_indentation(fd, indent_level);
@@ -646,8 +641,7 @@ void connectib_icmd_set_port_sniffer_pack(const struct connectib_icmd_set_port_s
     adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->sniffer_qpn);
 }
 
-void connectib_icmd_set_port_sniffer_unpack(struct connectib_icmd_set_port_sniffer* ptr_struct,
-                                            const u_int8_t* ptr_buff)
+void connectib_icmd_set_port_sniffer_unpack(struct connectib_icmd_set_port_sniffer* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i = 0;
@@ -730,8 +724,7 @@ unsigned int connectx4_secure_boot_signatures_size(void)
     return CONNECTX4_SECURE_BOOT_SIGNATURES_SIZE;
 }
 
-void connectx4_secure_boot_signatures_pack(const struct connectx4_secure_boot_signatures* ptr_struct,
-                                           u_int8_t* ptr_buff)
+void connectx4_secure_boot_signatures_pack(const struct connectx4_secure_boot_signatures* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
     int i;
@@ -753,9 +746,7 @@ void connectx4_secure_boot_signatures_pack(const struct connectx4_secure_boot_si
     }
 }
 
-void connectx4_component_authentication_configuration_pack(
-  const struct connectx4_component_authentication_configuration* ptr_struct,
-  u_int8_t* ptr_buff)
+void connectx4_component_authentication_configuration_pack(const struct connectx4_component_authentication_configuration* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -791,8 +782,7 @@ void connectx4_file_public_keys_3_pack(const struct connectx4_file_public_keys_3
         adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->key[i]);
     }
     offset = 4256;
-    connectx4_component_authentication_configuration_pack(&(ptr_struct->component_authentication_configuration),
-                                                          ptr_buff + offset / 8);
+    connectx4_component_authentication_configuration_pack(&(ptr_struct->component_authentication_configuration), ptr_buff + offset / 8);
 }
 
 void connectx4_public_keys_3_pack(const struct connectx4_public_keys_3* ptr_struct, u_int8_t* ptr_buff)
@@ -866,8 +856,7 @@ void icmd_hca_icmd_query_cap_general_pack(const struct icmd_hca_icmd_query_cap_g
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_of_diagnostic_counters);
 }
 
-void icmd_hca_icmd_query_cap_general_unpack(struct icmd_hca_icmd_query_cap_general* ptr_struct,
-                                            const u_int8_t* ptr_buff)
+void icmd_hca_icmd_query_cap_general_unpack(struct icmd_hca_icmd_query_cap_general* ptr_struct, const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 

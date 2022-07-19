@@ -610,9 +610,7 @@ NVQC */
     /* icmd_get_fw_info */
     void connectib_icmd_get_fw_info_pack(const struct connectib_icmd_get_fw_info* ptr_struct, u_int8_t* ptr_buff);
     void connectib_icmd_get_fw_info_unpack(struct connectib_icmd_get_fw_info* ptr_struct, const u_int8_t* ptr_buff);
-    void connectib_icmd_get_fw_info_print(const struct connectib_icmd_get_fw_info* ptr_struct,
-                                          FILE* file,
-                                          int indent_level);
+    void connectib_icmd_get_fw_info_print(const struct connectib_icmd_get_fw_info* ptr_struct, FILE* file, int indent_level);
     int connectib_icmd_get_fw_info_size(void);
 #define CONNECTIB_ICMD_GET_FW_INFO_SIZE (0x24)
     void connectib_icmd_get_fw_info_dump(const struct connectib_icmd_get_fw_info* ptr_struct, FILE* file);
@@ -638,19 +636,13 @@ NVQC */
 #define CONNECTX4_ICMD_MH_SYNC_SIZE (0x10)
     void connectx4_icmd_mh_sync_dump(const struct connectx4_icmd_mh_sync* ptr_struct, FILE* file);
     /* icmd_query_cap_general */
-    void connectx4_icmd_query_cap_general_pack(const struct connectx4_icmd_query_cap_general* ptr_struct,
-                                               u_int8_t* ptr_buff);
-    void connectx4_icmd_query_cap_general_unpack(struct connectx4_icmd_query_cap_general* ptr_struct,
-                                                 const u_int8_t* ptr_buff);
-    void connectx4_icmd_query_cap_general_print(const struct connectx4_icmd_query_cap_general* ptr_struct,
-                                                FILE* fd,
-                                                int indent_level);
+    void connectx4_icmd_query_cap_general_pack(const struct connectx4_icmd_query_cap_general* ptr_struct, u_int8_t* ptr_buff);
+    void connectx4_icmd_query_cap_general_unpack(struct connectx4_icmd_query_cap_general* ptr_struct, const u_int8_t* ptr_buff);
+    void connectx4_icmd_query_cap_general_print(const struct connectx4_icmd_query_cap_general* ptr_struct, FILE* fd, int indent_level);
     unsigned int connectx4_icmd_query_cap_general_size(void);
     int connectib_icmd_set_port_sniffer_size(void);
-    void connectib_icmd_set_port_sniffer_unpack(struct connectib_icmd_set_port_sniffer* ptr_struct,
-                                                const u_int8_t* ptr_buff);
-    void connectib_icmd_set_port_sniffer_pack(const struct connectib_icmd_set_port_sniffer* ptr_struct,
-                                              u_int8_t* ptr_buff);
+    void connectib_icmd_set_port_sniffer_unpack(struct connectib_icmd_set_port_sniffer* ptr_struct, const u_int8_t* ptr_buff);
+    void connectib_icmd_set_port_sniffer_pack(const struct connectib_icmd_set_port_sniffer* ptr_struct, u_int8_t* ptr_buff);
 #define CONNECTX4_ICMD_QUERY_CAP_GENERAL_SIZE (0x8)
     void connectx4_icmd_query_cap_general_dump(const struct connectx4_icmd_query_cap_general* ptr_struct, FILE* fd);
 
@@ -661,39 +653,29 @@ NVQC */
 #define CONNECTX4_PUBLIC_KEYS_3_SIZE (0x1100)
     void connectx4_public_keys_3_dump(const struct connectx4_public_keys_3* ptr_struct, FILE* fd);
     /* secure_boot_signatures */
-    void connectx4_secure_boot_signatures_pack(const struct connectx4_secure_boot_signatures* ptr_struct,
-                                               u_int8_t* ptr_buff);
-    void connectx4_secure_boot_signatures_unpack(struct connectx4_secure_boot_signatures* ptr_struct,
-                                                 const u_int8_t* ptr_buff);
-    void connectx4_secure_boot_signatures_print(const struct connectx4_secure_boot_signatures* ptr_struct,
-                                                FILE* fd,
-                                                int indent_level);
+    void connectx4_secure_boot_signatures_pack(const struct connectx4_secure_boot_signatures* ptr_struct, u_int8_t* ptr_buff);
+    void connectx4_secure_boot_signatures_unpack(struct connectx4_secure_boot_signatures* ptr_struct, const u_int8_t* ptr_buff);
+    void connectx4_secure_boot_signatures_print(const struct connectx4_secure_boot_signatures* ptr_struct, FILE* fd, int indent_level);
     unsigned int connectx4_secure_boot_signatures_size(void);
 #define CONNECTX4_SECURE_BOOT_SIGNATURES_SIZE (0x600)
     void connectx4_secure_boot_signatures_dump(const struct connectx4_secure_boot_signatures* ptr_struct, FILE* fd);
     /* file_public_keys_3 */
     void connectx4_file_public_keys_3_pack(const struct connectx4_file_public_keys_3* ptr_struct, u_int8_t* ptr_buff);
     void connectx4_file_public_keys_3_unpack(struct connectx4_file_public_keys_3* ptr_struct, const u_int8_t* ptr_buff);
-    void connectx4_file_public_keys_3_print(const struct connectx4_file_public_keys_3* ptr_struct,
-                                            FILE* fd,
-                                            int indent_level);
+    void connectx4_file_public_keys_3_print(const struct connectx4_file_public_keys_3* ptr_struct, FILE* fd, int indent_level);
     unsigned int connectx4_file_public_keys_3_size(void);
 #define CONNECTX4_FILE_PUBLIC_KEYS_3_SIZE (0x220)
     void connectx4_file_public_keys_3_dump(const struct connectx4_file_public_keys_3* ptr_struct, FILE* fd);
     void connectx4_hw_pointers_arava_pack(const struct connectx4_hw_pointers_arava* ptr_struct, u_int8_t* ptr_buff);
     void connectx4_hw_pointers_arava_unpack(struct connectx4_hw_pointers_arava* ptr_struct, const u_int8_t* ptr_buff);
-    void connectx4_hw_pointers_arava_print(const struct connectx4_hw_pointers_arava* ptr_struct,
-                                           FILE* fd,
-                                           int indent_level);
+    void connectx4_hw_pointers_arava_print(const struct connectx4_hw_pointers_arava* ptr_struct, FILE* fd, int indent_level);
     unsigned int connectx4_hw_pointers_arava_size(void);
 #define CONNECTX4_HW_POINTERS_ARAVA_SIZE (0x80)
     void connectx4_hw_pointers_arava_dump(const struct connectx4_hw_pointers_arava* ptr_struct, FILE* fd);
     unsigned int icmd_hca_icmd_query_cap_general_size(void);
 #define ICMD_HCA_ICMD_QUERY_CAP_GENERAL_SIZE (0x8)
-    void icmd_hca_icmd_query_cap_general_pack(const struct icmd_hca_icmd_query_cap_general* ptr_struct,
-                                              u_int8_t* ptr_buff);
-    void icmd_hca_icmd_query_cap_general_unpack(struct icmd_hca_icmd_query_cap_general* ptr_struct,
-                                                const u_int8_t* ptr_buff);
+    void icmd_hca_icmd_query_cap_general_pack(const struct icmd_hca_icmd_query_cap_general* ptr_struct, u_int8_t* ptr_buff);
+    void icmd_hca_icmd_query_cap_general_unpack(struct icmd_hca_icmd_query_cap_general* ptr_struct, const u_int8_t* ptr_buff);
 
 #define CONNECTX5_NV_DATA_SIZE (0x10000)
 

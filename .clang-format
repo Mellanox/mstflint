@@ -38,7 +38,7 @@ BraceWrapping:
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
 CommentPragmas:  '^ ignore_styling:'
-ColumnLimit: 120
+ColumnLimit: 200
 DerivePointerBinding: true
 DerivePointerAlignment: false
 ExperimentalAutoDetectBinPacking: true

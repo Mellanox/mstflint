@@ -2240,62 +2240,37 @@ gle Modifier Layout," on page  1390 */
 
     /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
     /* lock_source_general_semaphore */
-    void reg_access_hca_lock_source_general_semaphore_pack(
-      const struct reg_access_hca_lock_source_general_semaphore* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_lock_source_general_semaphore_unpack(
-      struct reg_access_hca_lock_source_general_semaphore* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_lock_source_general_semaphore_print(
-      const struct reg_access_hca_lock_source_general_semaphore* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_lock_source_general_semaphore_pack(const struct reg_access_hca_lock_source_general_semaphore* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_lock_source_general_semaphore_unpack(struct reg_access_hca_lock_source_general_semaphore* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_lock_source_general_semaphore_print(const struct reg_access_hca_lock_source_general_semaphore* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_lock_source_general_semaphore_size(void);
 #define REG_ACCESS_HCA_LOCK_SOURCE_GENERAL_SEMAPHORE_SIZE (0x1c)
-    void reg_access_hca_lock_source_general_semaphore_dump(
-      const struct reg_access_hca_lock_source_general_semaphore* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_lock_source_general_semaphore_dump(const struct reg_access_hca_lock_source_general_semaphore* ptr_struct, FILE* fd);
     /* lock_source_icm_resource */
-    void reg_access_hca_lock_source_icm_resource_pack(const struct reg_access_hca_lock_source_icm_resource* ptr_struct,
-                                                      u_int8_t* ptr_buff);
-    void reg_access_hca_lock_source_icm_resource_unpack(struct reg_access_hca_lock_source_icm_resource* ptr_struct,
-                                                        const u_int8_t* ptr_buff);
-    void reg_access_hca_lock_source_icm_resource_print(const struct reg_access_hca_lock_source_icm_resource* ptr_struct,
-                                                       FILE* fd,
-                                                       int indent_level);
+    void reg_access_hca_lock_source_icm_resource_pack(const struct reg_access_hca_lock_source_icm_resource* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_lock_source_icm_resource_unpack(struct reg_access_hca_lock_source_icm_resource* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_lock_source_icm_resource_print(const struct reg_access_hca_lock_source_icm_resource* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_lock_source_icm_resource_size(void);
 #define REG_ACCESS_HCA_LOCK_SOURCE_ICM_RESOURCE_SIZE (0x1c)
-    void reg_access_hca_lock_source_icm_resource_dump(const struct reg_access_hca_lock_source_icm_resource* ptr_struct,
-                                                      FILE* fd);
+    void reg_access_hca_lock_source_icm_resource_dump(const struct reg_access_hca_lock_source_icm_resource* ptr_struct, FILE* fd);
     /* lock_source_uapp_resource */
-    void reg_access_hca_lock_source_uapp_resource_pack(const struct reg_access_hca_lock_source_uapp_resource* ptr_struct,
-                                                       u_int8_t* ptr_buff);
-    void reg_access_hca_lock_source_uapp_resource_unpack(struct reg_access_hca_lock_source_uapp_resource* ptr_struct,
-                                                         const u_int8_t* ptr_buff);
-    void
-      reg_access_hca_lock_source_uapp_resource_print(const struct reg_access_hca_lock_source_uapp_resource* ptr_struct,
-                                                     FILE* fd,
-                                                     int indent_level);
+    void reg_access_hca_lock_source_uapp_resource_pack(const struct reg_access_hca_lock_source_uapp_resource* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_lock_source_uapp_resource_unpack(struct reg_access_hca_lock_source_uapp_resource* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_lock_source_uapp_resource_print(const struct reg_access_hca_lock_source_uapp_resource* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_lock_source_uapp_resource_size(void);
 #define REG_ACCESS_HCA_LOCK_SOURCE_UAPP_RESOURCE_SIZE (0x1c)
-    void reg_access_hca_lock_source_uapp_resource_dump(const struct reg_access_hca_lock_source_uapp_resource* ptr_struct,
-                                                       FILE* fd);
+    void reg_access_hca_lock_source_uapp_resource_dump(const struct reg_access_hca_lock_source_uapp_resource* ptr_struct, FILE* fd);
     /* lock_source_stop_toggle_modifier_category_modifier_auto */
-    void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_pack(
-      const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_unpack(
-      union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_print(
-      const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_pack(const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct,
+                                                                                     u_int8_t* ptr_buff);
+    void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_unpack(union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct,
+                                                                                       const u_int8_t* ptr_buff);
+    void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_print(const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct,
+                                                                                      FILE* fd,
+                                                                                      int indent_level);
     unsigned int reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_size(void);
 #define REG_ACCESS_HCA_LOCK_SOURCE_STOP_TOGGLE_MODIFIER_CATEGORY_MODIFIER_AUTO_SIZE (0x1c)
-    void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_dump(
-      const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_dump(const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct, FILE* fd);
     /* uint64 */
     void reg_access_hca_uint64_pack(const u_int64_t* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_uint64_unpack(u_int64_t* ptr_struct, const u_int8_t* ptr_buff);
@@ -2304,49 +2279,26 @@ gle Modifier Layout," on page  1390 */
 #define REG_ACCESS_HCA_UINT64_SIZE (0x8)
     void reg_access_hca_uint64_dump(const u_int64_t* ptr_struct, FILE* fd);
     /* irisc_hang_mini_flow_modifier */
-    void reg_access_hca_irisc_hang_mini_flow_modifier_pack(
-      const struct reg_access_hca_irisc_hang_mini_flow_modifier* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_irisc_hang_mini_flow_modifier_unpack(
-      struct reg_access_hca_irisc_hang_mini_flow_modifier* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_irisc_hang_mini_flow_modifier_print(
-      const struct reg_access_hca_irisc_hang_mini_flow_modifier* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_irisc_hang_mini_flow_modifier_pack(const struct reg_access_hca_irisc_hang_mini_flow_modifier* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_irisc_hang_mini_flow_modifier_unpack(struct reg_access_hca_irisc_hang_mini_flow_modifier* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_irisc_hang_mini_flow_modifier_print(const struct reg_access_hca_irisc_hang_mini_flow_modifier* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_irisc_hang_mini_flow_modifier_size(void);
 #define REG_ACCESS_HCA_IRISC_HANG_MINI_FLOW_MODIFIER_SIZE (0x20)
-    void reg_access_hca_irisc_hang_mini_flow_modifier_dump(
-      const struct reg_access_hca_irisc_hang_mini_flow_modifier* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_irisc_hang_mini_flow_modifier_dump(const struct reg_access_hca_irisc_hang_mini_flow_modifier* ptr_struct, FILE* fd);
     /* lock_source_stop_toggle_modifier */
-    void reg_access_hca_lock_source_stop_toggle_modifier_pack(
-      const struct reg_access_hca_lock_source_stop_toggle_modifier* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_lock_source_stop_toggle_modifier_unpack(
-      struct reg_access_hca_lock_source_stop_toggle_modifier* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_lock_source_stop_toggle_modifier_print(
-      const struct reg_access_hca_lock_source_stop_toggle_modifier* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_lock_source_stop_toggle_modifier_pack(const struct reg_access_hca_lock_source_stop_toggle_modifier* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_lock_source_stop_toggle_modifier_unpack(struct reg_access_hca_lock_source_stop_toggle_modifier* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_lock_source_stop_toggle_modifier_print(const struct reg_access_hca_lock_source_stop_toggle_modifier* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_lock_source_stop_toggle_modifier_size(void);
 #define REG_ACCESS_HCA_LOCK_SOURCE_STOP_TOGGLE_MODIFIER_SIZE (0x20)
-    void reg_access_hca_lock_source_stop_toggle_modifier_dump(
-      const struct reg_access_hca_lock_source_stop_toggle_modifier* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_lock_source_stop_toggle_modifier_dump(const struct reg_access_hca_lock_source_stop_toggle_modifier* ptr_struct, FILE* fd);
     /* mcqi_activation_method */
-    void reg_access_hca_mcqi_activation_method_pack(const struct reg_access_hca_mcqi_activation_method* ptr_struct,
-                                                    u_int8_t* ptr_buff);
-    void reg_access_hca_mcqi_activation_method_unpack(struct reg_access_hca_mcqi_activation_method* ptr_struct,
-                                                      const u_int8_t* ptr_buff);
-    void reg_access_hca_mcqi_activation_method_print(const struct reg_access_hca_mcqi_activation_method* ptr_struct,
-                                                     FILE* fd,
-                                                     int indent_level);
+    void reg_access_hca_mcqi_activation_method_pack(const struct reg_access_hca_mcqi_activation_method* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_mcqi_activation_method_unpack(struct reg_access_hca_mcqi_activation_method* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_mcqi_activation_method_print(const struct reg_access_hca_mcqi_activation_method* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_mcqi_activation_method_size(void);
 #define REG_ACCESS_HCA_MCQI_ACTIVATION_METHOD_SIZE (0x7c)
-    void reg_access_hca_mcqi_activation_method_dump(const struct reg_access_hca_mcqi_activation_method* ptr_struct,
-                                                    FILE* fd);
+    void reg_access_hca_mcqi_activation_method_dump(const struct reg_access_hca_mcqi_activation_method* ptr_struct, FILE* fd);
     /* mcqi_cap */
     void reg_access_hca_mcqi_cap_pack(const struct reg_access_hca_mcqi_cap* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_mcqi_cap_unpack(struct reg_access_hca_mcqi_cap* ptr_struct, const u_int8_t* ptr_buff);
@@ -2355,235 +2307,131 @@ gle Modifier Layout," on page  1390 */
 #define REG_ACCESS_HCA_MCQI_CAP_SIZE (0x7c)
     void reg_access_hca_mcqi_cap_dump(const struct reg_access_hca_mcqi_cap* ptr_struct, FILE* fd);
     /* mcqi_linkx_properties */
-    void reg_access_hca_mcqi_linkx_properties_pack(const struct reg_access_hca_mcqi_linkx_properties* ptr_struct,
-                                                   u_int8_t* ptr_buff);
-    void reg_access_hca_mcqi_linkx_properties_unpack(struct reg_access_hca_mcqi_linkx_properties* ptr_struct,
-                                                     const u_int8_t* ptr_buff);
-    void reg_access_hca_mcqi_linkx_properties_print(const struct reg_access_hca_mcqi_linkx_properties* ptr_struct,
-                                                    FILE* fd,
-                                                    int indent_level);
+    void reg_access_hca_mcqi_linkx_properties_pack(const struct reg_access_hca_mcqi_linkx_properties* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_mcqi_linkx_properties_unpack(struct reg_access_hca_mcqi_linkx_properties* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_mcqi_linkx_properties_print(const struct reg_access_hca_mcqi_linkx_properties* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_mcqi_linkx_properties_size(void);
 #define REG_ACCESS_HCA_MCQI_LINKX_PROPERTIES_SIZE (0x7c)
-    void reg_access_hca_mcqi_linkx_properties_dump(const struct reg_access_hca_mcqi_linkx_properties* ptr_struct,
-                                                   FILE* fd);
+    void reg_access_hca_mcqi_linkx_properties_dump(const struct reg_access_hca_mcqi_linkx_properties* ptr_struct, FILE* fd);
     /* mcqi_version */
     void reg_access_hca_mcqi_version_pack(const struct reg_access_hca_mcqi_version* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_mcqi_version_unpack(struct reg_access_hca_mcqi_version* ptr_struct, const u_int8_t* ptr_buff);
-    void reg_access_hca_mcqi_version_print(const struct reg_access_hca_mcqi_version* ptr_struct,
-                                           FILE* fd,
-                                           int indent_level);
+    void reg_access_hca_mcqi_version_print(const struct reg_access_hca_mcqi_version* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_mcqi_version_size(void);
 #define REG_ACCESS_HCA_MCQI_VERSION_SIZE (0x7c)
     void reg_access_hca_mcqi_version_dump(const struct reg_access_hca_mcqi_version* ptr_struct, FILE* fd);
     /* packet_drop_mini_flow_modifier */
-    void reg_access_hca_packet_drop_mini_flow_modifier_pack(
-      const struct reg_access_hca_packet_drop_mini_flow_modifier* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_packet_drop_mini_flow_modifier_unpack(
-      struct reg_access_hca_packet_drop_mini_flow_modifier* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_packet_drop_mini_flow_modifier_print(
-      const struct reg_access_hca_packet_drop_mini_flow_modifier* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_packet_drop_mini_flow_modifier_pack(const struct reg_access_hca_packet_drop_mini_flow_modifier* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_packet_drop_mini_flow_modifier_unpack(struct reg_access_hca_packet_drop_mini_flow_modifier* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_packet_drop_mini_flow_modifier_print(const struct reg_access_hca_packet_drop_mini_flow_modifier* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_packet_drop_mini_flow_modifier_size(void);
 #define REG_ACCESS_HCA_PACKET_DROP_MINI_FLOW_MODIFIER_SIZE (0x20)
-    void reg_access_hca_packet_drop_mini_flow_modifier_dump(
-      const struct reg_access_hca_packet_drop_mini_flow_modifier* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_packet_drop_mini_flow_modifier_dump(const struct reg_access_hca_packet_drop_mini_flow_modifier* ptr_struct, FILE* fd);
     /* pause_tx_stop_toggle_modifier */
-    void reg_access_hca_pause_tx_stop_toggle_modifier_pack(
-      const struct reg_access_hca_pause_tx_stop_toggle_modifier* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_pause_tx_stop_toggle_modifier_unpack(
-      struct reg_access_hca_pause_tx_stop_toggle_modifier* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_pause_tx_stop_toggle_modifier_print(
-      const struct reg_access_hca_pause_tx_stop_toggle_modifier* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_pause_tx_stop_toggle_modifier_pack(const struct reg_access_hca_pause_tx_stop_toggle_modifier* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_pause_tx_stop_toggle_modifier_unpack(struct reg_access_hca_pause_tx_stop_toggle_modifier* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_pause_tx_stop_toggle_modifier_print(const struct reg_access_hca_pause_tx_stop_toggle_modifier* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_pause_tx_stop_toggle_modifier_size(void);
 #define REG_ACCESS_HCA_PAUSE_TX_STOP_TOGGLE_MODIFIER_SIZE (0x20)
-    void reg_access_hca_pause_tx_stop_toggle_modifier_dump(
-      const struct reg_access_hca_pause_tx_stop_toggle_modifier* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_pause_tx_stop_toggle_modifier_dump(const struct reg_access_hca_pause_tx_stop_toggle_modifier* ptr_struct, FILE* fd);
     /* rom_version */
     void reg_access_hca_rom_version_pack(const struct reg_access_hca_rom_version* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_rom_version_unpack(struct reg_access_hca_rom_version* ptr_struct, const u_int8_t* ptr_buff);
-    void
-      reg_access_hca_rom_version_print(const struct reg_access_hca_rom_version* ptr_struct, FILE* fd, int indent_level);
+    void reg_access_hca_rom_version_print(const struct reg_access_hca_rom_version* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_rom_version_size(void);
 #define REG_ACCESS_HCA_ROM_VERSION_SIZE (0x4)
     void reg_access_hca_rom_version_dump(const struct reg_access_hca_rom_version* ptr_struct, FILE* fd);
     /* rxb_hang_stop_toggle_modifier */
-    void reg_access_hca_rxb_hang_stop_toggle_modifier_pack(
-      const struct reg_access_hca_rxb_hang_stop_toggle_modifier* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_rxb_hang_stop_toggle_modifier_unpack(
-      struct reg_access_hca_rxb_hang_stop_toggle_modifier* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_rxb_hang_stop_toggle_modifier_print(
-      const struct reg_access_hca_rxb_hang_stop_toggle_modifier* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_rxb_hang_stop_toggle_modifier_pack(const struct reg_access_hca_rxb_hang_stop_toggle_modifier* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_rxb_hang_stop_toggle_modifier_unpack(struct reg_access_hca_rxb_hang_stop_toggle_modifier* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_rxb_hang_stop_toggle_modifier_print(const struct reg_access_hca_rxb_hang_stop_toggle_modifier* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_rxb_hang_stop_toggle_modifier_size(void);
 #define REG_ACCESS_HCA_RXB_HANG_STOP_TOGGLE_MODIFIER_SIZE (0x20)
-    void reg_access_hca_rxb_hang_stop_toggle_modifier_dump(
-      const struct reg_access_hca_rxb_hang_stop_toggle_modifier* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_rxb_hang_stop_toggle_modifier_dump(const struct reg_access_hca_rxb_hang_stop_toggle_modifier* ptr_struct, FILE* fd);
     /* rxp_hang_stop_toggle_modifier */
-    void reg_access_hca_rxp_hang_stop_toggle_modifier_pack(
-      const struct reg_access_hca_rxp_hang_stop_toggle_modifier* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_rxp_hang_stop_toggle_modifier_unpack(
-      struct reg_access_hca_rxp_hang_stop_toggle_modifier* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_rxp_hang_stop_toggle_modifier_print(
-      const struct reg_access_hca_rxp_hang_stop_toggle_modifier* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_rxp_hang_stop_toggle_modifier_pack(const struct reg_access_hca_rxp_hang_stop_toggle_modifier* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_rxp_hang_stop_toggle_modifier_unpack(struct reg_access_hca_rxp_hang_stop_toggle_modifier* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_rxp_hang_stop_toggle_modifier_print(const struct reg_access_hca_rxp_hang_stop_toggle_modifier* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_rxp_hang_stop_toggle_modifier_size(void);
 #define REG_ACCESS_HCA_RXP_HANG_STOP_TOGGLE_MODIFIER_SIZE (0x20)
-    void reg_access_hca_rxp_hang_stop_toggle_modifier_dump(
-      const struct reg_access_hca_rxp_hang_stop_toggle_modifier* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_rxp_hang_stop_toggle_modifier_dump(const struct reg_access_hca_rxp_hang_stop_toggle_modifier* ptr_struct, FILE* fd);
     /* sxp_hang_stop_toggle_modifier */
-    void reg_access_hca_sxp_hang_stop_toggle_modifier_pack(
-      const struct reg_access_hca_sxp_hang_stop_toggle_modifier* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_sxp_hang_stop_toggle_modifier_unpack(
-      struct reg_access_hca_sxp_hang_stop_toggle_modifier* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_sxp_hang_stop_toggle_modifier_print(
-      const struct reg_access_hca_sxp_hang_stop_toggle_modifier* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_sxp_hang_stop_toggle_modifier_pack(const struct reg_access_hca_sxp_hang_stop_toggle_modifier* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_sxp_hang_stop_toggle_modifier_unpack(struct reg_access_hca_sxp_hang_stop_toggle_modifier* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_sxp_hang_stop_toggle_modifier_print(const struct reg_access_hca_sxp_hang_stop_toggle_modifier* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_sxp_hang_stop_toggle_modifier_size(void);
 #define REG_ACCESS_HCA_SXP_HANG_STOP_TOGGLE_MODIFIER_SIZE (0x20)
-    void reg_access_hca_sxp_hang_stop_toggle_modifier_dump(
-      const struct reg_access_hca_sxp_hang_stop_toggle_modifier* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_sxp_hang_stop_toggle_modifier_dump(const struct reg_access_hca_sxp_hang_stop_toggle_modifier* ptr_struct, FILE* fd);
     /* diagnostic_cntr_layout */
-    void reg_access_hca_diagnostic_cntr_layout_pack(const struct reg_access_hca_diagnostic_cntr_layout* ptr_struct,
-                                                    u_int8_t* ptr_buff);
-    void reg_access_hca_diagnostic_cntr_layout_unpack(struct reg_access_hca_diagnostic_cntr_layout* ptr_struct,
-                                                      const u_int8_t* ptr_buff);
-    void reg_access_hca_diagnostic_cntr_layout_print(const struct reg_access_hca_diagnostic_cntr_layout* ptr_struct,
-                                                     FILE* fd,
-                                                     int indent_level);
+    void reg_access_hca_diagnostic_cntr_layout_pack(const struct reg_access_hca_diagnostic_cntr_layout* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_diagnostic_cntr_layout_unpack(struct reg_access_hca_diagnostic_cntr_layout* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_diagnostic_cntr_layout_print(const struct reg_access_hca_diagnostic_cntr_layout* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_diagnostic_cntr_layout_size(void);
 #define REG_ACCESS_HCA_DIAGNOSTIC_CNTR_LAYOUT_SIZE (0x4)
-    void reg_access_hca_diagnostic_cntr_layout_dump(const struct reg_access_hca_diagnostic_cntr_layout* ptr_struct,
-                                                    FILE* fd);
+    void reg_access_hca_diagnostic_cntr_layout_dump(const struct reg_access_hca_diagnostic_cntr_layout* ptr_struct, FILE* fd);
     /* mcqi_reg_data_auto */
-    void reg_access_hca_mcqi_reg_data_auto_pack(const union reg_access_hca_mcqi_reg_data_auto* ptr_struct,
-                                                u_int8_t* ptr_buff);
-    void reg_access_hca_mcqi_reg_data_auto_unpack(union reg_access_hca_mcqi_reg_data_auto* ptr_struct,
-                                                  const u_int8_t* ptr_buff);
-    void reg_access_hca_mcqi_reg_data_auto_print(const union reg_access_hca_mcqi_reg_data_auto* ptr_struct,
-                                                 FILE* fd,
-                                                 int indent_level);
+    void reg_access_hca_mcqi_reg_data_auto_pack(const union reg_access_hca_mcqi_reg_data_auto* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_mcqi_reg_data_auto_unpack(union reg_access_hca_mcqi_reg_data_auto* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_mcqi_reg_data_auto_print(const union reg_access_hca_mcqi_reg_data_auto* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_mcqi_reg_data_auto_size(void);
 #define REG_ACCESS_HCA_MCQI_REG_DATA_AUTO_SIZE (0x7c)
     void reg_access_hca_mcqi_reg_data_auto_dump(const union reg_access_hca_mcqi_reg_data_auto* ptr_struct, FILE* fd);
     /* mgir_dev_info */
     void reg_access_hca_mgir_dev_info_pack(const struct reg_access_hca_mgir_dev_info* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_mgir_dev_info_unpack(struct reg_access_hca_mgir_dev_info* ptr_struct, const u_int8_t* ptr_buff);
-    void reg_access_hca_mgir_dev_info_print(const struct reg_access_hca_mgir_dev_info* ptr_struct,
-                                            FILE* fd,
-                                            int indent_level);
+    void reg_access_hca_mgir_dev_info_print(const struct reg_access_hca_mgir_dev_info* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_mgir_dev_info_size(void);
 #define REG_ACCESS_HCA_MGIR_DEV_INFO_SIZE (0x1c)
     void reg_access_hca_mgir_dev_info_dump(const struct reg_access_hca_mgir_dev_info* ptr_struct, FILE* fd);
     /* mgir_fw_info */
     void reg_access_hca_mgir_fw_info_pack(const struct reg_access_hca_mgir_fw_info* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_mgir_fw_info_unpack(struct reg_access_hca_mgir_fw_info* ptr_struct, const u_int8_t* ptr_buff);
-    void reg_access_hca_mgir_fw_info_print(const struct reg_access_hca_mgir_fw_info* ptr_struct,
-                                           FILE* fd,
-                                           int indent_level);
+    void reg_access_hca_mgir_fw_info_print(const struct reg_access_hca_mgir_fw_info* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_mgir_fw_info_size(void);
 #define REG_ACCESS_HCA_MGIR_FW_INFO_SIZE (0x40)
     void reg_access_hca_mgir_fw_info_dump(const struct reg_access_hca_mgir_fw_info* ptr_struct, FILE* fd);
     /* mgir_hardware_info */
-    void reg_access_hca_mgir_hardware_info_pack(const struct reg_access_hca_mgir_hardware_info* ptr_struct,
-                                                u_int8_t* ptr_buff);
-    void reg_access_hca_mgir_hardware_info_unpack(struct reg_access_hca_mgir_hardware_info* ptr_struct,
-                                                  const u_int8_t* ptr_buff);
-    void reg_access_hca_mgir_hardware_info_print(const struct reg_access_hca_mgir_hardware_info* ptr_struct,
-                                                 FILE* fd,
-                                                 int indent_level);
+    void reg_access_hca_mgir_hardware_info_pack(const struct reg_access_hca_mgir_hardware_info* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_mgir_hardware_info_unpack(struct reg_access_hca_mgir_hardware_info* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_mgir_hardware_info_print(const struct reg_access_hca_mgir_hardware_info* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_mgir_hardware_info_size(void);
 #define REG_ACCESS_HCA_MGIR_HARDWARE_INFO_SIZE (0x20)
     void reg_access_hca_mgir_hardware_info_dump(const struct reg_access_hca_mgir_hardware_info* ptr_struct, FILE* fd);
     /* mgir_sw_info */
     void reg_access_hca_mgir_sw_info_pack(const struct reg_access_hca_mgir_sw_info* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_mgir_sw_info_unpack(struct reg_access_hca_mgir_sw_info* ptr_struct, const u_int8_t* ptr_buff);
-    void reg_access_hca_mgir_sw_info_print(const struct reg_access_hca_mgir_sw_info* ptr_struct,
-                                           FILE* fd,
-                                           int indent_level);
+    void reg_access_hca_mgir_sw_info_print(const struct reg_access_hca_mgir_sw_info* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_mgir_sw_info_size(void);
 #define REG_ACCESS_HCA_MGIR_SW_INFO_SIZE (0x20)
     void reg_access_hca_mgir_sw_info_dump(const struct reg_access_hca_mgir_sw_info* ptr_struct, FILE* fd);
     /* smbus_failed_fault_inject_modifier */
-    void reg_access_hca_smbus_failed_fault_inject_modifier_pack(
-      const struct reg_access_hca_smbus_failed_fault_inject_modifier* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_smbus_failed_fault_inject_modifier_unpack(
-      struct reg_access_hca_smbus_failed_fault_inject_modifier* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_smbus_failed_fault_inject_modifier_print(
-      const struct reg_access_hca_smbus_failed_fault_inject_modifier* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_smbus_failed_fault_inject_modifier_pack(const struct reg_access_hca_smbus_failed_fault_inject_modifier* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_smbus_failed_fault_inject_modifier_unpack(struct reg_access_hca_smbus_failed_fault_inject_modifier* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_smbus_failed_fault_inject_modifier_print(const struct reg_access_hca_smbus_failed_fault_inject_modifier* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_smbus_failed_fault_inject_modifier_size(void);
 #define REG_ACCESS_HCA_SMBUS_FAILED_FAULT_INJECT_MODIFIER_SIZE (0x20)
-    void reg_access_hca_smbus_failed_fault_inject_modifier_dump(
-      const struct reg_access_hca_smbus_failed_fault_inject_modifier* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_smbus_failed_fault_inject_modifier_dump(const struct reg_access_hca_smbus_failed_fault_inject_modifier* ptr_struct, FILE* fd);
     /* string_db_parameters */
-    void reg_access_hca_string_db_parameters_pack(const struct reg_access_hca_string_db_parameters* ptr_struct,
-                                                  u_int8_t* ptr_buff);
-    void reg_access_hca_string_db_parameters_unpack(struct reg_access_hca_string_db_parameters* ptr_struct,
-                                                    const u_int8_t* ptr_buff);
-    void reg_access_hca_string_db_parameters_print(const struct reg_access_hca_string_db_parameters* ptr_struct,
-                                                   FILE* fd,
-                                                   int indent_level);
+    void reg_access_hca_string_db_parameters_pack(const struct reg_access_hca_string_db_parameters* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_string_db_parameters_unpack(struct reg_access_hca_string_db_parameters* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_string_db_parameters_print(const struct reg_access_hca_string_db_parameters* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_string_db_parameters_size(void);
 #define REG_ACCESS_HCA_STRING_DB_PARAMETERS_SIZE (0x8)
-    void reg_access_hca_string_db_parameters_dump(const struct reg_access_hca_string_db_parameters* ptr_struct,
-                                                  FILE* fd);
+    void reg_access_hca_string_db_parameters_dump(const struct reg_access_hca_string_db_parameters* ptr_struct, FILE* fd);
     /* strs_mini_flow_reg_per_type_modifier_auto */
-    void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_pack(
-      const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_unpack(
-      union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_print(
-      const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_pack(const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_unpack(union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_print(const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_size(void);
 #define REG_ACCESS_HCA_STRS_MINI_FLOW_REG_PER_TYPE_MODIFIER_AUTO_SIZE (0x20)
-    void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_dump(
-      const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_dump(const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto* ptr_struct, FILE* fd);
     /* strs_stop_toggle_reg_per_type_modifier_auto */
-    void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_pack(
-      const union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_unpack(
-      union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_print(
-      const union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_pack(const union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_unpack(union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_print(const union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_size(void);
 #define REG_ACCESS_HCA_STRS_STOP_TOGGLE_REG_PER_TYPE_MODIFIER_AUTO_SIZE (0x20)
-    void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_dump(
-      const union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto* ptr_struct,
-      FILE* fd);
+    void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_dump(const union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto* ptr_struct, FILE* fd);
     /* debug_cap */
     void reg_access_hca_debug_cap_pack(const struct reg_access_hca_debug_cap* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_debug_cap_unpack(struct reg_access_hca_debug_cap* ptr_struct, const u_int8_t* ptr_buff);
@@ -2622,9 +2470,7 @@ gle Modifier Layout," on page  1390 */
     /* mfrl_reg_ext */
     void reg_access_hca_mfrl_reg_ext_pack(const struct reg_access_hca_mfrl_reg_ext* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_mfrl_reg_ext_unpack(struct reg_access_hca_mfrl_reg_ext* ptr_struct, const u_int8_t* ptr_buff);
-    void reg_access_hca_mfrl_reg_ext_print(const struct reg_access_hca_mfrl_reg_ext* ptr_struct,
-                                           FILE* fd,
-                                           int indent_level);
+    void reg_access_hca_mfrl_reg_ext_print(const struct reg_access_hca_mfrl_reg_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_mfrl_reg_ext_size(void);
 #define REG_ACCESS_HCA_MFRL_REG_EXT_SIZE (0x8)
     void reg_access_hca_mfrl_reg_ext_dump(const struct reg_access_hca_mfrl_reg_ext* ptr_struct, FILE* fd);
@@ -2673,18 +2519,14 @@ gle Modifier Layout," on page  1390 */
     /* mtrc_cap_reg */
     void reg_access_hca_mtrc_cap_reg_pack(const struct reg_access_hca_mtrc_cap_reg* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_mtrc_cap_reg_unpack(struct reg_access_hca_mtrc_cap_reg* ptr_struct, const u_int8_t* ptr_buff);
-    void reg_access_hca_mtrc_cap_reg_print(const struct reg_access_hca_mtrc_cap_reg* ptr_struct,
-                                           FILE* fd,
-                                           int indent_level);
+    void reg_access_hca_mtrc_cap_reg_print(const struct reg_access_hca_mtrc_cap_reg* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_mtrc_cap_reg_size(void);
 #define REG_ACCESS_HCA_MTRC_CAP_REG_SIZE (0x84)
     void reg_access_hca_mtrc_cap_reg_dump(const struct reg_access_hca_mtrc_cap_reg* ptr_struct, FILE* fd);
     /* mtrc_stdb_reg */
     void reg_access_hca_mtrc_stdb_reg_pack(const struct reg_access_hca_mtrc_stdb_reg* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_mtrc_stdb_reg_unpack(struct reg_access_hca_mtrc_stdb_reg* ptr_struct, const u_int8_t* ptr_buff);
-    void reg_access_hca_mtrc_stdb_reg_print(const struct reg_access_hca_mtrc_stdb_reg* ptr_struct,
-                                            FILE* fd,
-                                            int indent_level);
+    void reg_access_hca_mtrc_stdb_reg_print(const struct reg_access_hca_mtrc_stdb_reg* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_mtrc_stdb_reg_size(void);
 #define REG_ACCESS_HCA_MTRC_STDB_REG_SIZE (0x8)
     void reg_access_hca_mtrc_stdb_reg_dump(const struct reg_access_hca_mtrc_stdb_reg* ptr_struct, FILE* fd);
@@ -2698,70 +2540,45 @@ gle Modifier Layout," on page  1390 */
     /* resource_dump */
     void reg_access_hca_resource_dump_pack(const struct reg_access_hca_resource_dump* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_resource_dump_unpack(struct reg_access_hca_resource_dump* ptr_struct, const u_int8_t* ptr_buff);
-    void reg_access_hca_resource_dump_print(const struct reg_access_hca_resource_dump* ptr_struct,
-                                            FILE* fd,
-                                            int indent_level);
+    void reg_access_hca_resource_dump_print(const struct reg_access_hca_resource_dump* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_resource_dump_size(void);
 #define REG_ACCESS_HCA_RESOURCE_DUMP_SIZE (0x100)
     void reg_access_hca_resource_dump_dump(const struct reg_access_hca_resource_dump* ptr_struct, FILE* fd);
     /* strs_fault_inject_reg */
-    void reg_access_hca_strs_fault_inject_reg_pack(const struct reg_access_hca_strs_fault_inject_reg* ptr_struct,
-                                                   u_int8_t* ptr_buff);
-    void reg_access_hca_strs_fault_inject_reg_unpack(struct reg_access_hca_strs_fault_inject_reg* ptr_struct,
-                                                     const u_int8_t* ptr_buff);
-    void reg_access_hca_strs_fault_inject_reg_print(const struct reg_access_hca_strs_fault_inject_reg* ptr_struct,
-                                                    FILE* fd,
-                                                    int indent_level);
+    void reg_access_hca_strs_fault_inject_reg_pack(const struct reg_access_hca_strs_fault_inject_reg* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_strs_fault_inject_reg_unpack(struct reg_access_hca_strs_fault_inject_reg* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_strs_fault_inject_reg_print(const struct reg_access_hca_strs_fault_inject_reg* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_strs_fault_inject_reg_size(void);
 #define REG_ACCESS_HCA_STRS_FAULT_INJECT_REG_SIZE (0x40)
-    void reg_access_hca_strs_fault_inject_reg_dump(const struct reg_access_hca_strs_fault_inject_reg* ptr_struct,
-                                                   FILE* fd);
+    void reg_access_hca_strs_fault_inject_reg_dump(const struct reg_access_hca_strs_fault_inject_reg* ptr_struct, FILE* fd);
     /* strs_mini_flow_reg */
-    void reg_access_hca_strs_mini_flow_reg_pack(const struct reg_access_hca_strs_mini_flow_reg* ptr_struct,
-                                                u_int8_t* ptr_buff);
-    void reg_access_hca_strs_mini_flow_reg_unpack(struct reg_access_hca_strs_mini_flow_reg* ptr_struct,
-                                                  const u_int8_t* ptr_buff);
-    void reg_access_hca_strs_mini_flow_reg_print(const struct reg_access_hca_strs_mini_flow_reg* ptr_struct,
-                                                 FILE* fd,
-                                                 int indent_level);
+    void reg_access_hca_strs_mini_flow_reg_pack(const struct reg_access_hca_strs_mini_flow_reg* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_strs_mini_flow_reg_unpack(struct reg_access_hca_strs_mini_flow_reg* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_strs_mini_flow_reg_print(const struct reg_access_hca_strs_mini_flow_reg* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_strs_mini_flow_reg_size(void);
 #define REG_ACCESS_HCA_STRS_MINI_FLOW_REG_SIZE (0x40)
     void reg_access_hca_strs_mini_flow_reg_dump(const struct reg_access_hca_strs_mini_flow_reg* ptr_struct, FILE* fd);
     /* strs_resource_reg */
-    void reg_access_hca_strs_resource_reg_pack(const struct reg_access_hca_strs_resource_reg* ptr_struct,
-                                               u_int8_t* ptr_buff);
-    void reg_access_hca_strs_resource_reg_unpack(struct reg_access_hca_strs_resource_reg* ptr_struct,
-                                                 const u_int8_t* ptr_buff);
-    void reg_access_hca_strs_resource_reg_print(const struct reg_access_hca_strs_resource_reg* ptr_struct,
-                                                FILE* fd,
-                                                int indent_level);
+    void reg_access_hca_strs_resource_reg_pack(const struct reg_access_hca_strs_resource_reg* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_strs_resource_reg_unpack(struct reg_access_hca_strs_resource_reg* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_strs_resource_reg_print(const struct reg_access_hca_strs_resource_reg* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_strs_resource_reg_size(void);
 #define REG_ACCESS_HCA_STRS_RESOURCE_REG_SIZE (0x40)
     void reg_access_hca_strs_resource_reg_dump(const struct reg_access_hca_strs_resource_reg* ptr_struct, FILE* fd);
     /* strs_stop_toggle_reg */
-    void reg_access_hca_strs_stop_toggle_reg_pack(const struct reg_access_hca_strs_stop_toggle_reg* ptr_struct,
-                                                  u_int8_t* ptr_buff);
-    void reg_access_hca_strs_stop_toggle_reg_unpack(struct reg_access_hca_strs_stop_toggle_reg* ptr_struct,
-                                                    const u_int8_t* ptr_buff);
-    void reg_access_hca_strs_stop_toggle_reg_print(const struct reg_access_hca_strs_stop_toggle_reg* ptr_struct,
-                                                   FILE* fd,
-                                                   int indent_level);
+    void reg_access_hca_strs_stop_toggle_reg_pack(const struct reg_access_hca_strs_stop_toggle_reg* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_strs_stop_toggle_reg_unpack(struct reg_access_hca_strs_stop_toggle_reg* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_strs_stop_toggle_reg_print(const struct reg_access_hca_strs_stop_toggle_reg* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_strs_stop_toggle_reg_size(void);
 #define REG_ACCESS_HCA_STRS_STOP_TOGGLE_REG_SIZE (0x40)
-    void reg_access_hca_strs_stop_toggle_reg_dump(const struct reg_access_hca_strs_stop_toggle_reg* ptr_struct,
-                                                  FILE* fd);
+    void reg_access_hca_strs_stop_toggle_reg_dump(const struct reg_access_hca_strs_stop_toggle_reg* ptr_struct, FILE* fd);
     /* reg_access_hca_Nodes */
-    void reg_access_hca_reg_access_hca_Nodes_pack(const union reg_access_hca_reg_access_hca_Nodes* ptr_struct,
-                                                  u_int8_t* ptr_buff);
-    void reg_access_hca_reg_access_hca_Nodes_unpack(union reg_access_hca_reg_access_hca_Nodes* ptr_struct,
-                                                    const u_int8_t* ptr_buff);
-    void reg_access_hca_reg_access_hca_Nodes_print(const union reg_access_hca_reg_access_hca_Nodes* ptr_struct,
-                                                   FILE* fd,
-                                                   int indent_level);
+    void reg_access_hca_reg_access_hca_Nodes_pack(const union reg_access_hca_reg_access_hca_Nodes* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_hca_reg_access_hca_Nodes_unpack(union reg_access_hca_reg_access_hca_Nodes* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_hca_reg_access_hca_Nodes_print(const union reg_access_hca_reg_access_hca_Nodes* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_hca_reg_access_hca_Nodes_size(void);
 #define REG_ACCESS_HCA_REG_ACCESS_HCA_NODES_SIZE (0x100)
-    void reg_access_hca_reg_access_hca_Nodes_dump(const union reg_access_hca_reg_access_hca_Nodes* ptr_struct,
-                                                  FILE* fd);
+    void reg_access_hca_reg_access_hca_Nodes_dump(const union reg_access_hca_reg_access_hca_Nodes* ptr_struct, FILE* fd);
 
 #ifdef __cplusplus
 }

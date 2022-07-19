@@ -600,109 +600,61 @@ replay-protection. */
 
     /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
     /* command_payload_ext */
-    void reg_access_switch_command_payload_ext_pack(const struct reg_access_switch_command_payload_ext* ptr_struct,
-                                                    u_int8_t* ptr_buff);
-    void reg_access_switch_command_payload_ext_unpack(struct reg_access_switch_command_payload_ext* ptr_struct,
-                                                      const u_int8_t* ptr_buff);
-    void reg_access_switch_command_payload_ext_print(const struct reg_access_switch_command_payload_ext* ptr_struct,
-                                                     FILE* fd,
-                                                     int indent_level);
+    void reg_access_switch_command_payload_ext_pack(const struct reg_access_switch_command_payload_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_command_payload_ext_unpack(struct reg_access_switch_command_payload_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_command_payload_ext_print(const struct reg_access_switch_command_payload_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_command_payload_ext_size(void);
 #define REG_ACCESS_SWITCH_COMMAND_PAYLOAD_EXT_SIZE (0x104)
-    void reg_access_switch_command_payload_ext_dump(const struct reg_access_switch_command_payload_ext* ptr_struct,
-                                                    FILE* fd);
+    void reg_access_switch_command_payload_ext_dump(const struct reg_access_switch_command_payload_ext* ptr_struct, FILE* fd);
     /* crspace_access_payload_ext */
-    void reg_access_switch_crspace_access_payload_ext_pack(
-      const struct reg_access_switch_crspace_access_payload_ext* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_switch_crspace_access_payload_ext_unpack(
-      struct reg_access_switch_crspace_access_payload_ext* ptr_struct,
-      const u_int8_t* ptr_buff);
-    void reg_access_switch_crspace_access_payload_ext_print(
-      const struct reg_access_switch_crspace_access_payload_ext* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_switch_crspace_access_payload_ext_pack(const struct reg_access_switch_crspace_access_payload_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_crspace_access_payload_ext_unpack(struct reg_access_switch_crspace_access_payload_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_crspace_access_payload_ext_print(const struct reg_access_switch_crspace_access_payload_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_crspace_access_payload_ext_size(void);
 #define REG_ACCESS_SWITCH_CRSPACE_ACCESS_PAYLOAD_EXT_SIZE (0x104)
-    void reg_access_switch_crspace_access_payload_ext_dump(
-      const struct reg_access_switch_crspace_access_payload_ext* ptr_struct,
-      FILE* fd);
+    void reg_access_switch_crspace_access_payload_ext_dump(const struct reg_access_switch_crspace_access_payload_ext* ptr_struct, FILE* fd);
     /* device_info_ext */
-    void reg_access_switch_device_info_ext_pack(const struct reg_access_switch_device_info_ext* ptr_struct,
-                                                u_int8_t* ptr_buff);
-    void reg_access_switch_device_info_ext_unpack(struct reg_access_switch_device_info_ext* ptr_struct,
-                                                  const u_int8_t* ptr_buff);
-    void reg_access_switch_device_info_ext_print(const struct reg_access_switch_device_info_ext* ptr_struct,
-                                                 FILE* fd,
-                                                 int indent_level);
+    void reg_access_switch_device_info_ext_pack(const struct reg_access_switch_device_info_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_device_info_ext_unpack(struct reg_access_switch_device_info_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_device_info_ext_print(const struct reg_access_switch_device_info_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_device_info_ext_size(void);
 #define REG_ACCESS_SWITCH_DEVICE_INFO_EXT_SIZE (0x20)
     void reg_access_switch_device_info_ext_dump(const struct reg_access_switch_device_info_ext* ptr_struct, FILE* fd);
     /* prm_register_payload_ext */
-    void reg_access_switch_prm_register_payload_ext_pack(
-      const struct reg_access_switch_prm_register_payload_ext* ptr_struct,
-      u_int8_t* ptr_buff);
-    void reg_access_switch_prm_register_payload_ext_unpack(struct reg_access_switch_prm_register_payload_ext* ptr_struct,
-                                                           const u_int8_t* ptr_buff);
-    void reg_access_switch_prm_register_payload_ext_print(
-      const struct reg_access_switch_prm_register_payload_ext* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_switch_prm_register_payload_ext_pack(const struct reg_access_switch_prm_register_payload_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_prm_register_payload_ext_unpack(struct reg_access_switch_prm_register_payload_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_prm_register_payload_ext_print(const struct reg_access_switch_prm_register_payload_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_prm_register_payload_ext_size(void);
 #define REG_ACCESS_SWITCH_PRM_REGISTER_PAYLOAD_EXT_SIZE (0x104)
-    void reg_access_switch_prm_register_payload_ext_dump(
-      const struct reg_access_switch_prm_register_payload_ext* ptr_struct,
-      FILE* fd);
+    void reg_access_switch_prm_register_payload_ext_dump(const struct reg_access_switch_prm_register_payload_ext* ptr_struct, FILE* fd);
     /* slot_info_ext */
-    void reg_access_switch_slot_info_ext_pack(const struct reg_access_switch_slot_info_ext* ptr_struct,
-                                              u_int8_t* ptr_buff);
-    void reg_access_switch_slot_info_ext_unpack(struct reg_access_switch_slot_info_ext* ptr_struct,
-                                                const u_int8_t* ptr_buff);
-    void reg_access_switch_slot_info_ext_print(const struct reg_access_switch_slot_info_ext* ptr_struct,
-                                               FILE* fd,
-                                               int indent_level);
+    void reg_access_switch_slot_info_ext_pack(const struct reg_access_switch_slot_info_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_slot_info_ext_unpack(struct reg_access_switch_slot_info_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_slot_info_ext_print(const struct reg_access_switch_slot_info_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_slot_info_ext_size(void);
 #define REG_ACCESS_SWITCH_SLOT_INFO_EXT_SIZE (0x20)
     void reg_access_switch_slot_info_ext_dump(const struct reg_access_switch_slot_info_ext* ptr_struct, FILE* fd);
     /* slot_name_ext */
-    void reg_access_switch_slot_name_ext_pack(const struct reg_access_switch_slot_name_ext* ptr_struct,
-                                              u_int8_t* ptr_buff);
-    void reg_access_switch_slot_name_ext_unpack(struct reg_access_switch_slot_name_ext* ptr_struct,
-                                                const u_int8_t* ptr_buff);
-    void reg_access_switch_slot_name_ext_print(const struct reg_access_switch_slot_name_ext* ptr_struct,
-                                               FILE* fd,
-                                               int indent_level);
+    void reg_access_switch_slot_name_ext_pack(const struct reg_access_switch_slot_name_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_slot_name_ext_unpack(struct reg_access_switch_slot_name_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_slot_name_ext_print(const struct reg_access_switch_slot_name_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_slot_name_ext_size(void);
 #define REG_ACCESS_SWITCH_SLOT_NAME_EXT_SIZE (0x20)
     void reg_access_switch_slot_name_ext_dump(const struct reg_access_switch_slot_name_ext* ptr_struct, FILE* fd);
     /* mddq_data_auto_ext */
-    void reg_access_switch_mddq_data_auto_ext_pack(const union reg_access_switch_mddq_data_auto_ext* ptr_struct,
-                                                   u_int8_t* ptr_buff);
-    void reg_access_switch_mddq_data_auto_ext_unpack(union reg_access_switch_mddq_data_auto_ext* ptr_struct,
-                                                     const u_int8_t* ptr_buff);
-    void reg_access_switch_mddq_data_auto_ext_print(const union reg_access_switch_mddq_data_auto_ext* ptr_struct,
-                                                    FILE* fd,
-                                                    int indent_level);
+    void reg_access_switch_mddq_data_auto_ext_pack(const union reg_access_switch_mddq_data_auto_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_mddq_data_auto_ext_unpack(union reg_access_switch_mddq_data_auto_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_mddq_data_auto_ext_print(const union reg_access_switch_mddq_data_auto_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_mddq_data_auto_ext_size(void);
 #define REG_ACCESS_SWITCH_MDDQ_DATA_AUTO_EXT_SIZE (0x20)
-    void reg_access_switch_mddq_data_auto_ext_dump(const union reg_access_switch_mddq_data_auto_ext* ptr_struct,
-                                                   FILE* fd);
+    void reg_access_switch_mddq_data_auto_ext_dump(const union reg_access_switch_mddq_data_auto_ext* ptr_struct, FILE* fd);
     /* mddt_reg_payload_auto_ext */
-    void reg_access_switch_mddt_reg_payload_auto_ext_pack(
-      const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct,
-      u_int8_t* ptr_buff);
-    void
-      reg_access_switch_mddt_reg_payload_auto_ext_unpack(union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct,
-                                                         const u_int8_t* ptr_buff);
-    void reg_access_switch_mddt_reg_payload_auto_ext_print(
-      const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void reg_access_switch_mddt_reg_payload_auto_ext_pack(const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_mddt_reg_payload_auto_ext_unpack(union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_mddt_reg_payload_auto_ext_print(const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_mddt_reg_payload_auto_ext_size(void);
 #define REG_ACCESS_SWITCH_MDDT_REG_PAYLOAD_AUTO_EXT_SIZE (0x104)
-    void reg_access_switch_mddt_reg_payload_auto_ext_dump(
-      const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct,
-      FILE* fd);
+    void reg_access_switch_mddt_reg_payload_auto_ext_dump(const union reg_access_switch_mddt_reg_payload_auto_ext* ptr_struct, FILE* fd);
     /* uint64 */
     void reg_access_switch_uint64_pack(const u_int64_t* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_switch_uint64_unpack(u_int64_t* ptr_struct, const u_int8_t* ptr_buff);
@@ -711,91 +663,61 @@ replay-protection. */
 #define REG_ACCESS_SWITCH_UINT64_SIZE (0x8)
     void reg_access_switch_uint64_dump(const u_int64_t* ptr_struct, FILE* fd);
     /* icam_reg_ext */
-    void reg_access_switch_icam_reg_ext_pack(const struct reg_access_switch_icam_reg_ext* ptr_struct,
-                                             u_int8_t* ptr_buff);
-    void reg_access_switch_icam_reg_ext_unpack(struct reg_access_switch_icam_reg_ext* ptr_struct,
-                                               const u_int8_t* ptr_buff);
-    void reg_access_switch_icam_reg_ext_print(const struct reg_access_switch_icam_reg_ext* ptr_struct,
-                                              FILE* fd,
-                                              int indent_level);
+    void reg_access_switch_icam_reg_ext_pack(const struct reg_access_switch_icam_reg_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_icam_reg_ext_unpack(struct reg_access_switch_icam_reg_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_icam_reg_ext_print(const struct reg_access_switch_icam_reg_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_icam_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_ICAM_REG_EXT_SIZE (0x18)
     void reg_access_switch_icam_reg_ext_dump(const struct reg_access_switch_icam_reg_ext* ptr_struct, FILE* fd);
     /* icsr_ext */
     void reg_access_switch_icsr_ext_pack(const struct reg_access_switch_icsr_ext* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_switch_icsr_ext_unpack(struct reg_access_switch_icsr_ext* ptr_struct, const u_int8_t* ptr_buff);
-    void
-      reg_access_switch_icsr_ext_print(const struct reg_access_switch_icsr_ext* ptr_struct, FILE* fd, int indent_level);
+    void reg_access_switch_icsr_ext_print(const struct reg_access_switch_icsr_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_icsr_ext_size(void);
 #define REG_ACCESS_SWITCH_ICSR_EXT_SIZE (0x410)
     void reg_access_switch_icsr_ext_dump(const struct reg_access_switch_icsr_ext* ptr_struct, FILE* fd);
     /* mddq_ext */
     void reg_access_switch_mddq_ext_pack(const struct reg_access_switch_mddq_ext* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_switch_mddq_ext_unpack(struct reg_access_switch_mddq_ext* ptr_struct, const u_int8_t* ptr_buff);
-    void
-      reg_access_switch_mddq_ext_print(const struct reg_access_switch_mddq_ext* ptr_struct, FILE* fd, int indent_level);
+    void reg_access_switch_mddq_ext_print(const struct reg_access_switch_mddq_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_mddq_ext_size(void);
 #define REG_ACCESS_SWITCH_MDDQ_EXT_SIZE (0x30)
     void reg_access_switch_mddq_ext_dump(const struct reg_access_switch_mddq_ext* ptr_struct, FILE* fd);
     /* mddt_reg_ext */
-    void reg_access_switch_mddt_reg_ext_pack(const struct reg_access_switch_mddt_reg_ext* ptr_struct,
-                                             u_int8_t* ptr_buff);
-    void reg_access_switch_mddt_reg_ext_unpack(struct reg_access_switch_mddt_reg_ext* ptr_struct,
-                                               const u_int8_t* ptr_buff);
-    void reg_access_switch_mddt_reg_ext_print(const struct reg_access_switch_mddt_reg_ext* ptr_struct,
-                                              FILE* fd,
-                                              int indent_level);
+    void reg_access_switch_mddt_reg_ext_pack(const struct reg_access_switch_mddt_reg_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_mddt_reg_ext_unpack(struct reg_access_switch_mddt_reg_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_mddt_reg_ext_print(const struct reg_access_switch_mddt_reg_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_mddt_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MDDT_REG_EXT_SIZE (0x110)
     void reg_access_switch_mddt_reg_ext_dump(const struct reg_access_switch_mddt_reg_ext* ptr_struct, FILE* fd);
     /* mdsr_reg_ext */
-    void reg_access_switch_mdsr_reg_ext_pack(const struct reg_access_switch_mdsr_reg_ext* ptr_struct,
-                                             u_int8_t* ptr_buff);
-    void reg_access_switch_mdsr_reg_ext_unpack(struct reg_access_switch_mdsr_reg_ext* ptr_struct,
-                                               const u_int8_t* ptr_buff);
-    void reg_access_switch_mdsr_reg_ext_print(const struct reg_access_switch_mdsr_reg_ext* ptr_struct,
-                                              FILE* fd,
-                                              int indent_level);
+    void reg_access_switch_mdsr_reg_ext_pack(const struct reg_access_switch_mdsr_reg_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_mdsr_reg_ext_unpack(struct reg_access_switch_mdsr_reg_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_mdsr_reg_ext_print(const struct reg_access_switch_mdsr_reg_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_mdsr_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MDSR_REG_EXT_SIZE (0x30)
     void reg_access_switch_mdsr_reg_ext_dump(const struct reg_access_switch_mdsr_reg_ext* ptr_struct, FILE* fd);
     /* mkdc_reg_ext */
-    void reg_access_switch_mkdc_reg_ext_pack(const struct reg_access_switch_mkdc_reg_ext* ptr_struct,
-                                             u_int8_t* ptr_buff);
-    void reg_access_switch_mkdc_reg_ext_unpack(struct reg_access_switch_mkdc_reg_ext* ptr_struct,
-                                               const u_int8_t* ptr_buff);
-    void reg_access_switch_mkdc_reg_ext_print(const struct reg_access_switch_mkdc_reg_ext* ptr_struct,
-                                              FILE* fd,
-                                              int indent_level);
+    void reg_access_switch_mkdc_reg_ext_pack(const struct reg_access_switch_mkdc_reg_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_mkdc_reg_ext_unpack(struct reg_access_switch_mkdc_reg_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_mkdc_reg_ext_print(const struct reg_access_switch_mkdc_reg_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_mkdc_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MKDC_REG_EXT_SIZE (0x2c)
     void reg_access_switch_mkdc_reg_ext_dump(const struct reg_access_switch_mkdc_reg_ext* ptr_struct, FILE* fd);
     /* mtcq_reg_ext */
-    void reg_access_switch_mtcq_reg_ext_pack(const struct reg_access_switch_mtcq_reg_ext* ptr_struct,
-                                             u_int8_t* ptr_buff);
-    void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext* ptr_struct,
-                                               const u_int8_t* ptr_buff);
-    void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_reg_ext* ptr_struct,
-                                              FILE* fd,
-                                              int indent_level);
+    void reg_access_switch_mtcq_reg_ext_pack(const struct reg_access_switch_mtcq_reg_ext* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_reg_ext* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_mtcq_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MTCQ_REG_EXT_SIZE (0x70)
     void reg_access_switch_mtcq_reg_ext_dump(const struct reg_access_switch_mtcq_reg_ext* ptr_struct, FILE* fd);
     /* reg_access_switch_Nodes */
-    void
-      reg_access_switch_reg_access_switch_Nodes_pack(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct,
-                                                     u_int8_t* ptr_buff);
-    void reg_access_switch_reg_access_switch_Nodes_unpack(union reg_access_switch_reg_access_switch_Nodes* ptr_struct,
-                                                          const u_int8_t* ptr_buff);
-    void
-      reg_access_switch_reg_access_switch_Nodes_print(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct,
-                                                      FILE* fd,
-                                                      int indent_level);
+    void reg_access_switch_reg_access_switch_Nodes_pack(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct, u_int8_t* ptr_buff);
+    void reg_access_switch_reg_access_switch_Nodes_unpack(union reg_access_switch_reg_access_switch_Nodes* ptr_struct, const u_int8_t* ptr_buff);
+    void reg_access_switch_reg_access_switch_Nodes_print(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct, FILE* fd, int indent_level);
     unsigned int reg_access_switch_reg_access_switch_Nodes_size(void);
 #define REG_ACCESS_SWITCH_REG_ACCESS_SWITCH_NODES_SIZE (0x410)
-    void
-      reg_access_switch_reg_access_switch_Nodes_dump(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct,
-                                                     FILE* fd);
+    void reg_access_switch_reg_access_switch_Nodes_dump(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct, FILE* fd);
 
 #ifdef __cplusplus
 }
