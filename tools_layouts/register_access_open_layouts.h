@@ -175,20 +175,12 @@ extern "C"
 #define REGISTER_ACCESS_MFPA_SIZE (0x20)
     void register_access_mfpa_dump(const struct register_access_mfpa* ptr_struct, FILE* fd);
     /* register_access_open_Nodes */
-    void
-      register_access_register_access_open_Nodes_pack(const union register_access_register_access_open_Nodes* ptr_struct,
-                                                      u_int8_t* ptr_buff);
-    void register_access_register_access_open_Nodes_unpack(union register_access_register_access_open_Nodes* ptr_struct,
-                                                           const u_int8_t* ptr_buff);
-    void register_access_register_access_open_Nodes_print(
-      const union register_access_register_access_open_Nodes* ptr_struct,
-      FILE* fd,
-      int indent_level);
+    void register_access_register_access_open_Nodes_pack(const union register_access_register_access_open_Nodes* ptr_struct, u_int8_t* ptr_buff);
+    void register_access_register_access_open_Nodes_unpack(union register_access_register_access_open_Nodes* ptr_struct, const u_int8_t* ptr_buff);
+    void register_access_register_access_open_Nodes_print(const union register_access_register_access_open_Nodes* ptr_struct, FILE* fd, int indent_level);
     unsigned int register_access_register_access_open_Nodes_size(void);
 #define REGISTER_ACCESS_REGISTER_ACCESS_OPEN_NODES_SIZE (0x10c)
-    void
-      register_access_register_access_open_Nodes_dump(const union register_access_register_access_open_Nodes* ptr_struct,
-                                                      FILE* fd);
+    void register_access_register_access_open_Nodes_dump(const union register_access_register_access_open_Nodes* ptr_struct, FILE* fd);
 
 #ifdef __cplusplus
 }
