@@ -750,11 +750,7 @@ void reg_access_switch_mddq_ext_print(const struct reg_access_switch_mddq_ext* p
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "slot_index           : " UH_FMT "\n", ptr_struct->slot_index);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "query_type           : %s (" UH_FMT ")\n",
-            (ptr_struct->query_type == 0 ?
-               ("Reserved") :
-               ((ptr_struct->query_type == 1 ? ("slot_info") : ((ptr_struct->query_type == 2 ? ("device_info") : ((ptr_struct->query_type == 3 ? ("slot_name") : ("unknown")))))))),
-            ptr_struct->query_type);
+	fprintf(fd, "query_type           : %s (" UH_FMT ")\n", (ptr_struct->query_type == 0 ? ("Reserved") : ((ptr_struct->query_type == 1 ? ("slot_info") : ((ptr_struct->query_type == 2 ? ("device_info") : ((ptr_struct->query_type == 3 ? ("slot_name") : ("unknown")))))))), ptr_struct->query_type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "sie                  : " UH_FMT "\n", ptr_struct->sie);
     adb2c_add_indentation(fd, indent_level);
@@ -875,8 +871,7 @@ void reg_access_switch_mddt_reg_ext_print(const struct reg_access_switch_mddt_re
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "slot_index           : " UH_FMT "\n", ptr_struct->slot_index);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "type                 : %s (" UH_FMT ")\n",
-            (ptr_struct->type == 0 ? ("PRM_Register") : ((ptr_struct->type == 1 ? ("Command") : ((ptr_struct->type == 2 ? ("CrSpace_access") : ("unknown")))))), ptr_struct->type);
+	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("PRM_Register") : ((ptr_struct->type == 1 ? ("Command") : ((ptr_struct->type == 2 ? ("CrSpace_access") : ("unknown")))))), ptr_struct->type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "write_size           : " UH_FMT "\n", ptr_struct->write_size);
     adb2c_add_indentation(fd, indent_level);
@@ -1006,14 +1001,7 @@ void reg_access_switch_mkdc_reg_ext_print(const struct reg_access_switch_mkdc_re
     fprintf(fd, "======== reg_access_switch_mkdc_reg_ext ========\n");
 
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "error_code           : %s (" UH_FMT ")\n",
-            (ptr_struct->error_code == 0 ?
-               ("OK") :
-               ((ptr_struct->error_code == 1 ?
-                   ("BAD_SESSION_ID") :
-                   ((ptr_struct->error_code == 2 ? ("BAD_KEEP_ALIVE_COUNTER") :
-                                                   ((ptr_struct->error_code == 3 ? ("BAD_SOURCE_ADDRESS") : ((ptr_struct->error_code == 4 ? ("SESSION_TIMEOUT") : ("unknown")))))))))),
-            ptr_struct->error_code);
+	fprintf(fd, "error_code           : %s (" UH_FMT ")\n", (ptr_struct->error_code == 0 ? ("OK") : ((ptr_struct->error_code == 1 ? ("BAD_SESSION_ID") : ((ptr_struct->error_code == 2 ? ("BAD_KEEP_ALIVE_COUNTER") : ((ptr_struct->error_code == 3 ? ("BAD_SOURCE_ADDRESS") : ((ptr_struct->error_code == 4 ? ("SESSION_TIMEOUT") : ("unknown")))))))))), ptr_struct->error_code);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "session_id           : " UH_FMT "\n", ptr_struct->session_id);
     adb2c_add_indentation(fd, indent_level);

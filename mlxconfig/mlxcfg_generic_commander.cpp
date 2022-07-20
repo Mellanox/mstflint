@@ -37,13 +37,13 @@
  *      Author: ahmads
  */
 
-#include <set>
-#include <mtcr.h>
-#include <mft_sig_handler.h>
-#include <tools_dev_types.h>
-#include <mft_utils.h>
 #include <algorithm>
 #include <memory>
+#include <mft_sig_handler.h>
+#include <mft_utils.h>
+#include <mtcr.h>
+#include <set>
+#include <tools_dev_types.h>
 
 #if !defined(NO_OPEN_SSL)
 #include <mlxsign_lib/mlxsign_lib.h>
@@ -51,11 +51,11 @@
 #include <mlxsign_lib/mlxsign_openssl_engine.h>
 #endif
 #endif
-#include "mlxcfg_generic_commander.h"
-#include "mlxcfg_utils.h"
-#include "mlxcfg_tlv.h"
-#include "mlxcfg_status.h"
 #include "mlxcfg_expression.h"
+#include "mlxcfg_generic_commander.h"
+#include "mlxcfg_status.h"
+#include "mlxcfg_tlv.h"
+#include "mlxcfg_utils.h"
 
 #if !defined(DISABLE_XML2)
 #include <libxml/parser.h>

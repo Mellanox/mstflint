@@ -615,7 +615,7 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, 
     static const u_int32_t sector_size = FS3_DEFAULT_SECTOR_SIZE;
     u_int32_t offset = 0;
     offset = (offset % sector_size == 0) ? offset : (offset + sector_size - offset % 0x1000);
-    u_int8_t buffer[TOC_HEADER_SIZE], entry_buffer[TOC_ENTRY_SIZE];
+    u_int8_t buffer[TOC_HEADER_SIZE] = {0}, entry_buffer[TOC_ENTRY_SIZE] = {0};
     struct connectx4_itoc_header itoc_header;
     while (offset < fimage.get_size())
     {
@@ -641,6 +641,7 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, 
                 u_int32_t flash_addr = toc_entry.flash_addr << 2;
                 u_int32_t entry_size_in_bytes = toc_entry.size * 4;
                 u_int8_t* buff = new u_int8_t[entry_size_in_bytes];
+                memset(buff, 0, entry_size_in_bytes);
                 fimage.read(flash_addr, buff, entry_size_in_bytes);
                 // read image info
                 struct connectx4_image_info image_info;

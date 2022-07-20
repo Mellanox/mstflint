@@ -785,7 +785,6 @@ supported. */
         /* Description - module base index
 assiciated_module_id[0] = 32 * module_base */
         /* 0x10.28 - 0x10.31 */
-        u_int8_t module_base;
         /*---------------- DWORD[5] (Offset 0x14) ----------------*/
         /* Description - LSB of the "base" MAC address of the NIC that was
 allocate during manufacturing. The NIC derives the
@@ -801,7 +800,6 @@ supported. */
 0: module is not managed by ASIC
 1: module is managed by ASIC */
         /* 0x18.0 - 0x18.31 */
-        u_int32_t associated_module_id_31_0;
         /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
         /* Description - Time (in secs.) since last reset0 */
         /* 0x1c.0 - 0x1c.31 */
@@ -1394,6 +1392,10 @@ Synced driver flow will not require to issue MFRL command
 from other hosts (x86 / ARM for SoC) */
         /* 0x4.29 - 0x4.29 */
         u_int8_t pci_sync_for_fw_update_start;
+	/* Description - Setting this bit to 1 indicates a need of rescan for the corre
+sponding PCI slot */
+	/* 0x4.31 - 0x4.31 */
+	u_int8_t pci_rescan_required;
     };
 
     /* Description -   */
@@ -1673,6 +1675,34 @@ returned. */
         u_int8_t info_string[8];
     };
 
+/* Description -   */
+/* Size in bytes - 16 */
+struct reg_access_hca_mtcap_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Number of ASIC+platform sensors supported by the device 
+This includes the ASIC and the ambient sensors. QSFP module 
+sensors are not included. */
+	/* 0x0.0 - 0x0.6 */
+	u_int8_t sensor_count;
+	/* Description - Slot index
+0: Main board */
+	/* 0x0.16 - 0x0.19 */
+	u_int8_t slot_index;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Number of sensors supported by the device that are on the 
+ASIC. */
+	/* 0x4.0 - 0x4.6 */
+	u_int8_t internal_sensor_count;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Mapping of system sensors supported by the device. Only ASIC 
+and ambient sensors are supported. Each bit represents a sen
+sor.
+Per bit:
+0: Not_connected_or_not_supported
+1: Supports_temperature_measurements */
+	/* 0x8.0 - 0xc.31 */
+	u_int64_t sensor_map;
+};
     /* Description -   */
     /* Size in bytes - 132 */
     struct reg_access_hca_mtrc_cap_reg
@@ -2193,10 +2223,13 @@ gle Modifier Layout," on page  1390 */
         struct reg_access_hca_mfsv_reg mfsv_reg;
         /* Description -  */
         /* 0x0.0 - 0x8c.31 */
-        struct reg_access_hca_mcda_reg mcda_reg;
-        /* Description -  */
-        /* 0x0.0 - 0x80.31 */
-        struct reg_access_hca_mtrc_cap_reg mtrc_cap_reg;
+		struct reg_access_hca_mcda_reg mcda_reg;
+		/* Description -  */
+		/* 0x0.0 - 0xc.31 */
+		struct reg_access_hca_mtcap_ext mtcap_ext;
+		/* Description -  */
+		/* 0x0.0 - 0x80.31 */
+		struct reg_access_hca_mtrc_cap_reg mtrc_cap_reg;
         /* Description -  */
         /* 0x0.0 - 0x28.31 */
         struct reg_access_hca_mpegc_reg mpegc_reg;
@@ -2261,13 +2294,9 @@ gle Modifier Layout," on page  1390 */
 #define REG_ACCESS_HCA_LOCK_SOURCE_UAPP_RESOURCE_SIZE (0x1c)
     void reg_access_hca_lock_source_uapp_resource_dump(const struct reg_access_hca_lock_source_uapp_resource* ptr_struct, FILE* fd);
     /* lock_source_stop_toggle_modifier_category_modifier_auto */
-    void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_pack(const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct,
-                                                                                     u_int8_t* ptr_buff);
-    void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_unpack(union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct,
-                                                                                       const u_int8_t* ptr_buff);
-    void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_print(const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct,
-                                                                                      FILE* fd,
-                                                                                      int indent_level);
+void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_pack(const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_unpack(union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_print(const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto *ptr_struct, FILE *fd, int indent_level);
     unsigned int reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_size(void);
 #define REG_ACCESS_HCA_LOCK_SOURCE_STOP_TOGGLE_MODIFIER_CATEGORY_MODIFIER_AUTO_SIZE (0x1c)
     void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_dump(const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct, FILE* fd);
@@ -2516,6 +2545,13 @@ gle Modifier Layout," on page  1390 */
     unsigned int reg_access_hca_mqis_reg_size(void);
 #define REG_ACCESS_HCA_MQIS_REG_SIZE (0x18)
     void reg_access_hca_mqis_reg_dump(const struct reg_access_hca_mqis_reg* ptr_struct, FILE* fd);
+	/* mtcap_ext */
+	void reg_access_hca_mtcap_ext_pack(const struct reg_access_hca_mtcap_ext *ptr_struct, u_int8_t *ptr_buff);
+	void reg_access_hca_mtcap_ext_unpack(struct reg_access_hca_mtcap_ext *ptr_struct, const u_int8_t *ptr_buff);
+	void reg_access_hca_mtcap_ext_print(const struct reg_access_hca_mtcap_ext *ptr_struct, FILE *fd, int indent_level);
+	unsigned int reg_access_hca_mtcap_ext_size(void);
+	#define REG_ACCESS_HCA_MTCAP_EXT_SIZE    (0x10)
+	void reg_access_hca_mtcap_ext_dump(const struct reg_access_hca_mtcap_ext *ptr_struct, FILE *fd);
     /* mtrc_cap_reg */
     void reg_access_hca_mtrc_cap_reg_pack(const struct reg_access_hca_mtrc_cap_reg* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_mtrc_cap_reg_unpack(struct reg_access_hca_mtrc_cap_reg* ptr_struct, const u_int8_t* ptr_buff);

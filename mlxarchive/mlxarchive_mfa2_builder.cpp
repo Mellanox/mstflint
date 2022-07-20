@@ -75,7 +75,8 @@ FWDirectoryBuilder::FWDirectoryBuilder(const string& version, string directory) 
         {
             fprintf(
               stderr,
-              "Exception: '%s' was catched.\nPlease try to add the following line into your /etc/profile file and retry:\nexport LC_ALL=C; unset LANGUAGE\n"
+              "Exception: '%s' was catched.\nPlease try to add the following line into your /etc/profile file and "
+              "retry:\nexport LC_ALL=C; unset LANGUAGE\n"
               "Please note, you need to reload the .profile file, after editing. \nsource /etc/profile might help.\n",
               e.what());
             exit(1);

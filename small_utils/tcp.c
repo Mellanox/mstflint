@@ -413,7 +413,7 @@ INSIDE_MTCR int open_cli_connection(const char* host, const int port, proto_type
         my_addr.sin_port = (short)(htons((short)port));
 
         /*  Bind our local address so that the client can send to us. */
-        if (bind(SockFD, (struct sockaddr*)&my_addr, sizeof(my_addr)) < 0)
+        if (bind(SockFD, (const struct sockaddr*)&my_addr, (socklen_t)sizeof(my_addr)) < 0)
         {
             COMP_CLOSE(SockFD);
             perror("bind failed\n");
@@ -459,7 +459,7 @@ INSIDE_MTCR int open_serv_connection(const int port)
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = (short)(htons((short)port));
-    if (bind(SockFD, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+    if (bind(SockFD, (const struct sockaddr*)&serv_addr, (socklen_t)sizeof(serv_addr)) < 0)
     {
 #ifdef __WIN__
         errno = WSAGetLastError();

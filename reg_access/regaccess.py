@@ -139,7 +139,8 @@ if REG_ACCESS:
             ("reset_type", c_uint8),
             ("rst_type_sel", c_uint8),
             ("pci_sync_for_fw_update_resp", c_uint8),
-            ("pci_sync_for_fw_update_start", c_uint8)
+            ("pci_sync_for_fw_update_start", c_uint8),
+            ("pci_rescan_required", c_uint8)
         ]
 
     class MPCIR_ST(Structure):
@@ -173,9 +174,7 @@ if REG_ACCESS:
                     ("num_ports", c_uint8),
                     ("hw_dev_id", c_uint16),
                     ("manufacturing_base_mac_47_32", c_uint16),
-                    ("module_base", c_uint8),
                     ("manufacturing_base_mac_31_0", c_uint32),
-                    ("associated_module_id_31_0", c_uint32),
                     ("uptime", c_uint32),
                     ("sub_minor", c_uint8),
                     ("minor", c_uint8),
@@ -224,24 +223,32 @@ if REG_ACCESS:
                     ("lc_ready", c_uint8),
                     ("sr_valid", c_uint8),
                     ("provisioned", c_uint8),
-                    ("minor_ini_file_version", c_uint16),
-                    ("major_ini_file_version", c_uint16),
+                    ("ini_file_version", c_uint16),
+                    ("hw_revision", c_uint16),
                     ("card_type", c_uint8)]
 
     class MDDQ_DEVICE_INFO(Structure):
         _fields_ = [("device_index", c_uint8),
                     ("flash_id", c_uint8),
+                    ("lc_pwr_on", c_uint8),
                     ("thermal_sd", c_uint8),
                     ("flash_owner", c_uint8),
                     ("uses_flash", c_uint8),
                     ("device_type", c_uint16),
                     ("fw_major", c_uint16),
                     ("fw_sub_minor", c_uint16),
-                    ("fw_minor", c_uint16)]
+                    ("fw_minor", c_uint16),
+                    ("max_cmd_write_size_supp", c_uint8),
+                    ("max_cmd_read_size_supp", c_uint8),
+                    ("device_type_name", c_uint8 * 8)]
+
+    class MDDQ_SLOT_NAME(Structure):
+        _fields_ = [("slot_ascii_name", c_uint8 * 20)]
 
     class MDDQ_DATA_UN(Union):
-        _fields_ = [("mddq_slot_info_ext", MDDQ_SLOT_INFO),
-                    ("mddq_device_info_ext", MDDQ_DEVICE_INFO)]
+        _fields_ = [("slot_info_ext", MDDQ_SLOT_INFO),
+                    ("device_info_ext", MDDQ_DEVICE_INFO),
+                    ("slot_name_ext", MDDQ_SLOT_NAME)]
 
     class MDDQ_ST(Structure):
         _fields_ = [("slot_index", c_uint8),
@@ -252,6 +259,14 @@ if REG_ACCESS:
                     ("query_index", c_uint8),
                     ("data_valid", c_uint8),
                     ("data", MDDQ_DATA_UN)]
+
+    class MDSR(Structure):
+        _fields_ = [("type_of_token", c_uint8),
+                    ("additional_info", c_uint8),
+                    ("status", c_uint8),
+                    ("end", c_uint8),
+                    ("time_left", c_uint32)]
+
 
     class RegAccess:
         GET = REG_ACCESS_METHOD_GET
@@ -271,6 +286,7 @@ if REG_ACCESS:
             self._reg_access_res_dump = REG_ACCESS.reg_access_res_dump
             self._reg_access_debug_cap = REG_ACCESS.reg_access_debug_cap
             self._reg_access_mddq = REG_ACCESS.reg_access_mddq
+            self._reg_access_mdsr = REG_ACCESS.reg_access_mdsr
 
         def _err2str(self, rc):
             err2str = REG_ACCESS.reg_access_err2str
@@ -285,6 +301,14 @@ if REG_ACCESS:
         def __del__(self):
             if self._mstDev:
                 self.close()
+
+        def isCsTokenApplied(self):
+            mdsrRegP = pointer(MDSR())
+            rc = self._reg_access_mdsr(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mdsrRegP)
+            if rc:
+                return False  # if if mdsr not support (or other fail), assume no token
+
+            return (mdsrRegP.contents.type_of_token == 1 and mdsrRegP.contents.status == 2)  # CS token and debug session active
 
         def sendMtrcCapTakeOwnership(self):
 
@@ -526,23 +550,28 @@ if REG_ACCESS:
             data = {}
             if query_type == 1:
                 data.update({
-                    "active": mddqRegisterP.contents.data.mddq_slot_info_ext.active,
-                    "lc_ready": mddqRegisterP.contents.data.mddq_slot_info_ext.lc_ready,
-                    "sr_valid": mddqRegisterP.contents.data.mddq_slot_info_ext.sr_valid,
-                    "provisioned": mddqRegisterP.contents.data.mddq_slot_info_ext.provisioned,
-                    "minor_ini_file_version": mddqRegisterP.contents.data.mddq_slot_info_ext.minor_ini_file_version,
-                    "major_ini_file_version": mddqRegisterP.contents.data.mddq_slot_info_ext.major_ini_file_version
+                    "active": mddqRegisterP.contents.data.slot_info_ext.active,
+                    "lc_ready": mddqRegisterP.contents.data.slot_info_ext.lc_ready,
+                    "sr_valid": mddqRegisterP.contents.data.slot_info_ext.sr_valid,
+                    "provisioned": mddqRegisterP.contents.data.slot_info_ext.provisioned,
+                    "ini_file_version": mddqRegisterP.contents.data.slot_info_ext.ini_file_version,
+                    "hw_revision": mddqRegisterP.contents.data.slot_info_ext.hw_revision,
+                    "card_type": mddqRegisterP.contents.data.slot_info_ext.card_type
                 })
             elif query_type == 2:
+                device_type_name = "".join(chr(val) for val in mddqRegisterP.contents.data.device_info_ext.device_type_name if val != 0)
                 data.update({
-                    "device_index": mddqRegisterP.contents.data.mddq_device_info_ext.device_index,
-                    "flash_id": mddqRegisterP.contents.data.mddq_device_info_ext.flash_id,
-                    "flash_owner": mddqRegisterP.contents.data.mddq_device_info_ext.flash_owner,
-                    "uses_flash": mddqRegisterP.contents.data.mddq_device_info_ext.uses_flash,
-                    "device_type": mddqRegisterP.contents.data.mddq_device_info_ext.device_type,
-                    "fw_major": mddqRegisterP.contents.data.mddq_device_info_ext.fw_major,
-                    "fw_sub_minor": mddqRegisterP.contents.data.mddq_device_info_ext.fw_sub_minor,
-                    "fw_minor": mddqRegisterP.contents.data.mddq_device_info_ext.fw_minor
+                    "device_index": mddqRegisterP.contents.data.device_info_ext.device_index,
+                    "flash_id": mddqRegisterP.contents.data.device_info_ext.flash_id,
+                    "flash_owner": mddqRegisterP.contents.data.device_info_ext.flash_owner,
+                    "uses_flash": mddqRegisterP.contents.data.device_info_ext.uses_flash,
+                    "device_type": mddqRegisterP.contents.data.device_info_ext.device_type,
+                    "fw_major": mddqRegisterP.contents.data.device_info_ext.fw_major,
+                    "fw_sub_minor": mddqRegisterP.contents.data.device_info_ext.fw_sub_minor,
+                    "fw_minor": mddqRegisterP.contents.data.device_info_ext.fw_minor,
+                    "max_cmd_write_size_supp": mddqRegisterP.contents.data.device_info_ext.max_cmd_write_size_supp,
+                    "max_cmd_read_size_supp": mddqRegisterP.contents.data.device_info_ext.max_cmd_read_size_supp,
+                    "device_type_name": device_type_name
                 })
             return ({"slot_index": mddqRegisterP.contents.slot_index,
                      "query_type": mddqRegisterP.contents.query_type,

@@ -65,11 +65,7 @@ void reg_access_hca_lock_source_general_semaphore_print(const struct reg_access_
     fprintf(fd, "======== reg_access_hca_lock_source_general_semaphore ========\n");
 
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "type                 : %s (" UH_FMT ")\n",
-            (ptr_struct->type == 0 ?
-               ("QPC_GW") :
-               ((ptr_struct->type == 1 ? ("CQE_GW") : ((ptr_struct->type == 2 ? ("EQE_GW") : ((ptr_struct->type == 3 ? ("MEM_GW") : ((ptr_struct->type == 4 ? ("IPC") : ("unknown")))))))))),
-            ptr_struct->type);
+	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("QPC_GW") : ((ptr_struct->type == 1 ? ("CQE_GW") : ((ptr_struct->type == 2 ? ("EQE_GW") : ((ptr_struct->type == 3 ? ("MEM_GW") : ((ptr_struct->type == 4 ? ("IPC") : ("unknown")))))))))), ptr_struct->type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "log_toggle_cycle     : " UH_FMT "\n", ptr_struct->log_toggle_cycle);
 }
@@ -171,18 +167,7 @@ void reg_access_hca_lock_source_uapp_resource_print(const struct reg_access_hca_
     fprintf(fd, "======== reg_access_hca_lock_source_uapp_resource ========\n");
 
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "type                 : %s (" UH_FMT ")\n",
-            (ptr_struct->type == 0 ?
-               ("UAPP_QP") :
-               ((ptr_struct->type == 1 ?
-                   ("SRQ") :
-                   ((ptr_struct->type == 2 ?
-                       ("UAPP_SRQ_META") :
-                       ((ptr_struct->type == 3 ?
-                           ("UAPP_RES_CQ") :
-                           ((ptr_struct->type == 4 ? ("UAPP_REQ_CQ") :
-                                                     ((ptr_struct->type == 5 ? ("UAPP_EQ") : ((ptr_struct->type == 6 ? ("NSQ") : ((ptr_struct->type == 7 ? ("NCQ") : ("unknown")))))))))))))))),
-            ptr_struct->type);
+	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("UAPP_QP") : ((ptr_struct->type == 1 ? ("SRQ") : ((ptr_struct->type == 2 ? ("UAPP_SRQ_META") : ((ptr_struct->type == 3 ? ("UAPP_RES_CQ") : ((ptr_struct->type == 4 ? ("UAPP_REQ_CQ") : ((ptr_struct->type == 5 ? ("UAPP_EQ") : ((ptr_struct->type == 6 ? ("NSQ") : ((ptr_struct->type == 7 ? ("NCQ") : ("unknown")))))))))))))))), ptr_struct->type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "gvmi                 : " UH_FMT "\n", ptr_struct->gvmi);
     adb2c_add_indentation(fd, indent_level);
@@ -211,9 +196,7 @@ void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_unpa
     reg_access_hca_lock_source_general_semaphore_unpack(&(ptr_struct->lock_source_general_semaphore), ptr_buff);
 }
 
-void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_print(const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto* ptr_struct,
-                                                                                  FILE* fd,
-                                                                                  int indent_level)
+void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_print(const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto *ptr_struct, FILE *fd, int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto ========\n");
@@ -341,9 +324,7 @@ void reg_access_hca_lock_source_stop_toggle_modifier_print(const struct reg_acce
     fprintf(fd, "======== reg_access_hca_lock_source_stop_toggle_modifier ========\n");
 
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "category             : %s (" UH_FMT ")\n",
-            (ptr_struct->category == 0 ? ("GENERAL_SEMAPHORE") : ((ptr_struct->category == 1 ? ("ICM_RESOURCE") : ((ptr_struct->category == 2 ? ("UAPP_RESOURCE") : ("unknown")))))),
-            ptr_struct->category);
+	fprintf(fd, "category             : %s (" UH_FMT ")\n", (ptr_struct->category == 0 ? ("GENERAL_SEMAPHORE") : ((ptr_struct->category == 1 ? ("ICM_RESOURCE") : ((ptr_struct->category == 2 ? ("UAPP_RESOURCE") : ("unknown")))))), ptr_struct->category);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "category_modifier:\n");
     reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_print(&(ptr_struct->category_modifier), fd, indent_level + 1);
@@ -756,8 +737,7 @@ void reg_access_hca_packet_drop_mini_flow_modifier_print(const struct reg_access
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "num_packets          : " UH_FMT "\n", ptr_struct->num_packets);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))),
-            ptr_struct->port_number);
+	fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))), ptr_struct->port_number);
 }
 
 unsigned int reg_access_hca_packet_drop_mini_flow_modifier_size(void)
@@ -796,23 +776,9 @@ void reg_access_hca_pause_tx_stop_toggle_modifier_print(const struct reg_access_
     fprintf(fd, "======== reg_access_hca_pause_tx_stop_toggle_modifier ========\n");
 
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "sl_prio_mask         : %s (" UH_FMT ")\n",
-            (ptr_struct->sl_prio_mask == 1 ?
-               ("SL_PRIO_0") :
-               ((ptr_struct->sl_prio_mask == 2 ?
-                   ("SL_PRIO_1") :
-                   ((ptr_struct->sl_prio_mask == 4 ?
-                       ("SL_PRIO_2") :
-                       ((ptr_struct->sl_prio_mask == 8 ?
-                           ("SL_PRIO_3") :
-                           ((ptr_struct->sl_prio_mask == 16 ?
-                               ("SL_PRIO_4") :
-                               ((ptr_struct->sl_prio_mask == 32 ? ("SL_PRIO_5") :
-                                                                  ((ptr_struct->sl_prio_mask == 64 ? ("SL_PRIO_6") : ((ptr_struct->sl_prio_mask == 128 ? ("SL_PRIO_7") : ("unknown")))))))))))))))),
-            ptr_struct->sl_prio_mask);
+	fprintf(fd, "sl_prio_mask         : %s (" UH_FMT ")\n", (ptr_struct->sl_prio_mask == 1 ? ("SL_PRIO_0") : ((ptr_struct->sl_prio_mask == 2 ? ("SL_PRIO_1") : ((ptr_struct->sl_prio_mask == 4 ? ("SL_PRIO_2") : ((ptr_struct->sl_prio_mask == 8 ? ("SL_PRIO_3") : ((ptr_struct->sl_prio_mask == 16 ? ("SL_PRIO_4") : ((ptr_struct->sl_prio_mask == 32 ? ("SL_PRIO_5") : ((ptr_struct->sl_prio_mask == 64 ? ("SL_PRIO_6") : ((ptr_struct->sl_prio_mask == 128 ? ("SL_PRIO_7") : ("unknown")))))))))))))))), ptr_struct->sl_prio_mask);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))),
-            ptr_struct->port_number);
+	fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))), ptr_struct->port_number);
 }
 
 unsigned int reg_access_hca_pause_tx_stop_toggle_modifier_size(void)
@@ -898,25 +864,9 @@ void reg_access_hca_rxb_hang_stop_toggle_modifier_print(const struct reg_access_
     fprintf(fd, "======== reg_access_hca_rxb_hang_stop_toggle_modifier ========\n");
 
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "vl_tc_mask           : %s (" UH_FMT ")\n",
-            (ptr_struct->vl_tc_mask == 1 ?
-               ("VL_TC_0") :
-               ((ptr_struct->vl_tc_mask == 2 ?
-                   ("VL_TC_1") :
-                   ((ptr_struct->vl_tc_mask == 4 ?
-                       ("VL_TC_2") :
-                       ((ptr_struct->vl_tc_mask == 8 ?
-                           ("VL_TC_3") :
-                           ((ptr_struct->vl_tc_mask == 16 ?
-                               ("VL_TC_4") :
-                               ((ptr_struct->vl_tc_mask == 32 ?
-                                   ("VL_TC_5") :
-                                   ((ptr_struct->vl_tc_mask == 64 ? ("VL_TC_6") :
-                                                                    ((ptr_struct->vl_tc_mask == 128 ? ("VL_TC_7") : ((ptr_struct->vl_tc_mask == 32768 ? ("VL_TC_15") : ("unknown")))))))))))))))))),
-            ptr_struct->vl_tc_mask);
+	fprintf(fd, "vl_tc_mask           : %s (" UH_FMT ")\n", (ptr_struct->vl_tc_mask == 1 ? ("VL_TC_0") : ((ptr_struct->vl_tc_mask == 2 ? ("VL_TC_1") : ((ptr_struct->vl_tc_mask == 4 ? ("VL_TC_2") : ((ptr_struct->vl_tc_mask == 8 ? ("VL_TC_3") : ((ptr_struct->vl_tc_mask == 16 ? ("VL_TC_4") : ((ptr_struct->vl_tc_mask == 32 ? ("VL_TC_5") : ((ptr_struct->vl_tc_mask == 64 ? ("VL_TC_6") : ((ptr_struct->vl_tc_mask == 128 ? ("VL_TC_7") : ((ptr_struct->vl_tc_mask == 32768 ? ("VL_TC_15") : ("unknown")))))))))))))))))), ptr_struct->vl_tc_mask);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))),
-            ptr_struct->port_number);
+	fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))), ptr_struct->port_number);
 }
 
 unsigned int reg_access_hca_rxb_hang_stop_toggle_modifier_size(void)
@@ -959,27 +909,11 @@ void reg_access_hca_rxp_hang_stop_toggle_modifier_print(const struct reg_access_
     fprintf(fd, "======== reg_access_hca_rxp_hang_stop_toggle_modifier ========\n");
 
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "vl_tc_mask           : %s (" UH_FMT ")\n",
-            (ptr_struct->vl_tc_mask == 1 ?
-               ("VL_TC_0") :
-               ((ptr_struct->vl_tc_mask == 2 ?
-                   ("VL_TC_1") :
-                   ((ptr_struct->vl_tc_mask == 4 ?
-                       ("VL_TC_2") :
-                       ((ptr_struct->vl_tc_mask == 8 ?
-                           ("VL_TC_3") :
-                           ((ptr_struct->vl_tc_mask == 16 ?
-                               ("VL_TC_4") :
-                               ((ptr_struct->vl_tc_mask == 32 ?
-                                   ("VL_TC_5") :
-                                   ((ptr_struct->vl_tc_mask == 64 ? ("VL_TC_6") :
-                                                                    ((ptr_struct->vl_tc_mask == 128 ? ("VL_TC_7") : ((ptr_struct->vl_tc_mask == 32768 ? ("VL_TC_15") : ("unknown")))))))))))))))))),
-            ptr_struct->vl_tc_mask);
+	fprintf(fd, "vl_tc_mask           : %s (" UH_FMT ")\n", (ptr_struct->vl_tc_mask == 1 ? ("VL_TC_0") : ((ptr_struct->vl_tc_mask == 2 ? ("VL_TC_1") : ((ptr_struct->vl_tc_mask == 4 ? ("VL_TC_2") : ((ptr_struct->vl_tc_mask == 8 ? ("VL_TC_3") : ((ptr_struct->vl_tc_mask == 16 ? ("VL_TC_4") : ((ptr_struct->vl_tc_mask == 32 ? ("VL_TC_5") : ((ptr_struct->vl_tc_mask == 64 ? ("VL_TC_6") : ((ptr_struct->vl_tc_mask == 128 ? ("VL_TC_7") : ((ptr_struct->vl_tc_mask == 32768 ? ("VL_TC_15") : ("unknown")))))))))))))))))), ptr_struct->vl_tc_mask);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "pnat                 : " UH_FMT "\n", ptr_struct->pnat);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))),
-            ptr_struct->port_number);
+	fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))), ptr_struct->port_number);
 }
 
 unsigned int reg_access_hca_rxp_hang_stop_toggle_modifier_size(void)
@@ -1014,8 +948,7 @@ void reg_access_hca_sxp_hang_stop_toggle_modifier_print(const struct reg_access_
     fprintf(fd, "======== reg_access_hca_sxp_hang_stop_toggle_modifier ========\n");
 
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))),
-            ptr_struct->port_number);
+	fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))), ptr_struct->port_number);
 }
 
 unsigned int reg_access_hca_sxp_hang_stop_toggle_modifier_size(void)
@@ -1360,12 +1293,8 @@ void reg_access_hca_mgir_hardware_info_pack(const struct reg_access_hca_mgir_har
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->hw_dev_id);
     offset = 144;
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->manufacturing_base_mac_47_32);
-    offset = 128;
-    adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->module_base);
     offset = 160;
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->manufacturing_base_mac_31_0);
-    offset = 192;
-    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->associated_module_id_31_0);
     offset = 224;
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->uptime);
 }
@@ -1388,12 +1317,8 @@ void reg_access_hca_mgir_hardware_info_unpack(struct reg_access_hca_mgir_hardwar
     ptr_struct->hw_dev_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
     offset = 144;
     ptr_struct->manufacturing_base_mac_47_32 = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-    offset = 128;
-    ptr_struct->module_base = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
     offset = 160;
     ptr_struct->manufacturing_base_mac_31_0 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-    offset = 192;
-    ptr_struct->associated_module_id_31_0 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
     offset = 224;
     ptr_struct->uptime = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
@@ -1418,11 +1343,7 @@ void reg_access_hca_mgir_hardware_info_print(const struct reg_access_hca_mgir_ha
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "manufacturing_base_mac_47_32 : " UH_FMT "\n", ptr_struct->manufacturing_base_mac_47_32);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "module_base          : " UH_FMT "\n", ptr_struct->module_base);
-    adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "manufacturing_base_mac_31_0 : " U32H_FMT "\n", ptr_struct->manufacturing_base_mac_31_0);
-    adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "associated_module_id_31_0 : " U32H_FMT "\n", ptr_struct->associated_module_id_31_0);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "uptime               : " U32H_FMT "\n", ptr_struct->uptime);
 }
@@ -1890,30 +1811,7 @@ void reg_access_hca_mcc_reg_print(const struct reg_access_hca_mcc_reg* ptr_struc
     fprintf(fd, "======== reg_access_hca_mcc_reg ========\n");
 
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "instruction          : %s (" UH_FMT ")\n",
-            (ptr_struct->instruction == 1 ?
-               ("LOCK_UPDATE_HANDLE") :
-               ((ptr_struct->instruction == 2 ?
-                   ("RELEASE_UPDATE_HANDLE") :
-                   ((ptr_struct->instruction == 3 ?
-                       ("UPDATE_COMPONENT") :
-                       ((ptr_struct->instruction == 4 ?
-                           ("VERIFY_COMPONENT") :
-                           ((ptr_struct->instruction == 5 ?
-                               ("ACTIVATE_COMPONENET") :
-                               ((ptr_struct->instruction == 6 ?
-                                   ("ACTIVATE") :
-                                   ((ptr_struct->instruction == 7 ?
-                                       ("READ_COMPONENT") :
-                                       ((ptr_struct->instruction == 8 ?
-                                           ("CANCEL") :
-                                           ((ptr_struct->instruction == 9 ?
-                                               ("CHECK_UPDATE_HANDLE") :
-                                               ((ptr_struct->instruction == 10 ?
-                                                   ("FORCE_HANDLE_RELEASE") :
-                                                   ((ptr_struct->instruction == 11 ? ("READ_PENDING_COMPONENT") :
-                                                                                     ((ptr_struct->instruction == 12 ? ("DOWNSRTEAM_DEVICE_TRANSFER") : ("unknown")))))))))))))))))))))))),
-            ptr_struct->instruction);
+	fprintf(fd, "instruction          : %s (" UH_FMT ")\n", (ptr_struct->instruction == 1 ? ("LOCK_UPDATE_HANDLE") : ((ptr_struct->instruction == 2 ? ("RELEASE_UPDATE_HANDLE") : ((ptr_struct->instruction == 3 ? ("UPDATE_COMPONENT") : ((ptr_struct->instruction == 4 ? ("VERIFY_COMPONENT") : ((ptr_struct->instruction == 5 ? ("ACTIVATE_COMPONENET") : ((ptr_struct->instruction == 6 ? ("ACTIVATE") : ((ptr_struct->instruction == 7 ? ("READ_COMPONENT") : ((ptr_struct->instruction == 8 ? ("CANCEL") : ((ptr_struct->instruction == 9 ? ("CHECK_UPDATE_HANDLE") : ((ptr_struct->instruction == 10 ? ("FORCE_HANDLE_RELEASE") : ((ptr_struct->instruction == 11 ? ("READ_PENDING_COMPONENT") : ((ptr_struct->instruction == 12 ? ("DOWNSRTEAM_DEVICE_TRANSFER") : ("unknown")))))))))))))))))))))))), ptr_struct->instruction);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "activation_delay_sec : " UH_FMT "\n", ptr_struct->activation_delay_sec);
     adb2c_add_indentation(fd, indent_level);
@@ -1925,25 +1823,7 @@ void reg_access_hca_mcc_reg_print(const struct reg_access_hca_mcc_reg* ptr_struc
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "auto_update          : " UH_FMT "\n", ptr_struct->auto_update);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "control_state        : %s (" UH_FMT ")\n",
-            (ptr_struct->control_state == 0 ?
-               ("IDLE") :
-               ((ptr_struct->control_state == 1 ?
-                   ("LOCKED") :
-                   ((ptr_struct->control_state == 2 ?
-                       ("INITIALIZE") :
-                       ((ptr_struct->control_state == 3 ?
-                           ("DOWNLOAD") :
-                           ((ptr_struct->control_state == 4 ?
-                               ("VERIFY") :
-                               ((ptr_struct->control_state == 5 ?
-                                   ("APPLY") :
-                                   ((ptr_struct->control_state == 6 ?
-                                       ("ACTIVATE") :
-                                       ((ptr_struct->control_state == 7 ?
-                                           ("UPLOAD") :
-                                           ((ptr_struct->control_state == 8 ? ("UPLOAD_PENDING") : ((ptr_struct->control_state == 9 ? ("DOWNSRTEAM_DEVICE_TRANSFER") : ("unknown")))))))))))))))))))),
-            ptr_struct->control_state);
+	fprintf(fd, "control_state        : %s (" UH_FMT ")\n", (ptr_struct->control_state == 0 ? ("IDLE") : ((ptr_struct->control_state == 1 ? ("LOCKED") : ((ptr_struct->control_state == 2 ? ("INITIALIZE") : ((ptr_struct->control_state == 3 ? ("DOWNLOAD") : ((ptr_struct->control_state == 4 ? ("VERIFY") : ((ptr_struct->control_state == 5 ? ("APPLY") : ((ptr_struct->control_state == 6 ? ("ACTIVATE") : ((ptr_struct->control_state == 7 ? ("UPLOAD") : ((ptr_struct->control_state == 8 ? ("UPLOAD_PENDING") : ((ptr_struct->control_state == 9 ? ("DOWNSRTEAM_DEVICE_TRANSFER") : ("unknown")))))))))))))))))))), ptr_struct->control_state);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "error_code           : " UH_FMT "\n", ptr_struct->error_code);
     adb2c_add_indentation(fd, indent_level);
@@ -2142,11 +2022,7 @@ void reg_access_hca_mcqi_reg_print(const struct reg_access_hca_mcqi_reg* ptr_str
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "device_type          : " UH_FMT "\n", ptr_struct->device_type);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "info_type            : %s (" UH_FMT ")\n",
-            (ptr_struct->info_type == 0 ?
-               ("CAPABILITIES") :
-               ((ptr_struct->info_type == 1 ? ("VERSION") : ((ptr_struct->info_type == 5 ? ("ACTIVATION_METHOD") : ((ptr_struct->info_type == 6 ? ("LINKX_PROPERTIES") : ("unknown")))))))),
-            ptr_struct->info_type);
+	fprintf(fd, "info_type            : %s (" UH_FMT ")\n", (ptr_struct->info_type == 0 ? ("CAPABILITIES") : ((ptr_struct->info_type == 1 ? ("VERSION") : ((ptr_struct->info_type == 5 ? ("ACTIVATION_METHOD") : ((ptr_struct->info_type == 6 ? ("LINKX_PROPERTIES") : ("unknown")))))))), ptr_struct->info_type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "info_size            : " U32H_FMT "\n", ptr_struct->info_size);
     adb2c_add_indentation(fd, indent_level);
@@ -2254,47 +2130,11 @@ void reg_access_hca_mcqs_reg_print(const struct reg_access_hca_mcqs_reg* ptr_str
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "last_index_flag      : " UH_FMT "\n", ptr_struct->last_index_flag);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "identifier           : %s (" UH_FMT ")\n",
-            (ptr_struct->identifier == 1 ?
-               ("BOOT_IMG") :
-               ((ptr_struct->identifier == 4 ?
-                   ("OEM_NVCONFIG") :
-                   ((ptr_struct->identifier == 5 ?
-                       ("MLNX_NVCONFIG") :
-                       ((ptr_struct->identifier == 6 ?
-                           ("CS_TOKEN") :
-                           ((ptr_struct->identifier == 7 ?
-                               ("DBG_TOKEN") :
-                               ((ptr_struct->identifier == 10 ?
-                                   ("Gearbox") :
-                                   ((ptr_struct->identifier == 11 ?
-                                       ("CC_ALGO") :
-                                       ((ptr_struct->identifier == 12 ?
-                                           ("LINKX_IMG") :
-                                           ((ptr_struct->identifier == 13 ?
-                                               ("CRYPTO_TO_COMMISSIONING") :
-                                               ((ptr_struct->identifier == 14 ? ("RMCS_TOKEN") : ((ptr_struct->identifier == 15 ? ("RMDT_TOKEN") : ("unknown")))))))))))))))))))))),
-            ptr_struct->identifier);
+	fprintf(fd, "identifier           : %s (" UH_FMT ")\n", (ptr_struct->identifier == 1 ? ("BOOT_IMG") : ((ptr_struct->identifier == 4 ? ("OEM_NVCONFIG") : ((ptr_struct->identifier == 5 ? ("MLNX_NVCONFIG") : ((ptr_struct->identifier == 6 ? ("CS_TOKEN") : ((ptr_struct->identifier == 7 ? ("DBG_TOKEN") : ((ptr_struct->identifier == 10 ? ("Gearbox") : ((ptr_struct->identifier == 11 ? ("CC_ALGO") : ((ptr_struct->identifier == 12 ? ("LINKX_IMG") : ((ptr_struct->identifier == 13 ? ("CRYPTO_TO_COMMISSIONING") : ((ptr_struct->identifier == 14 ? ("RMCS_TOKEN") : ((ptr_struct->identifier == 15 ? ("RMDT_TOKEN") : ("unknown")))))))))))))))))))))), ptr_struct->identifier);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "component_update_state : %s (" UH_FMT ")\n",
-            (ptr_struct->component_update_state == 0 ?
-               ("IDLE") :
-               ((ptr_struct->component_update_state == 1 ?
-                   ("IN_PROGRESS") :
-                   ((ptr_struct->component_update_state == 2 ?
-                       ("APPLIED") :
-                       ((ptr_struct->component_update_state == 3 ?
-                           ("ACTIVE") :
-                           ((ptr_struct->component_update_state == 4 ?
-                               ("ACTIVE_PENDING_RESET") :
-                               ((ptr_struct->component_update_state == 5 ?
-                                   ("FAILED") :
-                                   ((ptr_struct->component_update_state == 6 ? ("CANCELED") : ((ptr_struct->component_update_state == 7 ? ("BUSY") : ("unknown")))))))))))))))),
-            ptr_struct->component_update_state);
+	fprintf(fd, "component_update_state : %s (" UH_FMT ")\n", (ptr_struct->component_update_state == 0 ? ("IDLE") : ((ptr_struct->component_update_state == 1 ? ("IN_PROGRESS") : ((ptr_struct->component_update_state == 2 ? ("APPLIED") : ((ptr_struct->component_update_state == 3 ? ("ACTIVE") : ((ptr_struct->component_update_state == 4 ? ("ACTIVE_PENDING_RESET") : ((ptr_struct->component_update_state == 5 ? ("FAILED") : ((ptr_struct->component_update_state == 6 ? ("CANCELED") : ((ptr_struct->component_update_state == 7 ? ("BUSY") : ("unknown")))))))))))))))), ptr_struct->component_update_state);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "component_status     : %s (" UH_FMT ")\n",
-            (ptr_struct->component_status == 0 ? ("NOT_PRESENT") : ((ptr_struct->component_status == 1 ? ("PRESENT") : ((ptr_struct->component_status == 2 ? ("IN_USE") : ("unknown")))))),
-            ptr_struct->component_status);
+	fprintf(fd, "component_status     : %s (" UH_FMT ")\n", (ptr_struct->component_status == 0 ? ("NOT_PRESENT") : ((ptr_struct->component_status == 1 ? ("PRESENT") : ((ptr_struct->component_status == 2 ? ("IN_USE") : ("unknown")))))), ptr_struct->component_status);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "progress             : " UH_FMT "\n", ptr_struct->progress);
     adb2c_add_indentation(fd, indent_level);
@@ -2302,17 +2142,7 @@ void reg_access_hca_mcqs_reg_print(const struct reg_access_hca_mcqs_reg* ptr_str
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "last_update_state_changer_host_id : " UH_FMT "\n", ptr_struct->last_update_state_changer_host_id);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "last_update_state_changer_type : %s (" UH_FMT ")\n",
-            (ptr_struct->last_update_state_changer_type == 0 ?
-               ("unspecified") :
-               ((ptr_struct->last_update_state_changer_type == 1 ?
-                   ("Chassis_BMC") :
-                   ((ptr_struct->last_update_state_changer_type == 2 ?
-                       ("MAD") :
-                       ((ptr_struct->last_update_state_changer_type == 3 ?
-                           ("BMC") :
-                           ((ptr_struct->last_update_state_changer_type == 4 ? ("command_interface") : ((ptr_struct->last_update_state_changer_type == 5 ? ("ICMD") : ("unknown")))))))))))),
-            ptr_struct->last_update_state_changer_type);
+	fprintf(fd, "last_update_state_changer_type : %s (" UH_FMT ")\n", (ptr_struct->last_update_state_changer_type == 0 ? ("unspecified") : ((ptr_struct->last_update_state_changer_type == 1 ? ("Chassis_BMC") : ((ptr_struct->last_update_state_changer_type == 2 ? ("MAD") : ((ptr_struct->last_update_state_changer_type == 3 ? ("BMC") : ((ptr_struct->last_update_state_changer_type == 4 ? ("command_interface") : ((ptr_struct->last_update_state_changer_type == 5 ? ("ICMD") : ("unknown")))))))))))), ptr_struct->last_update_state_changer_type);
 }
 
 unsigned int reg_access_hca_mcqs_reg_size(void)
@@ -2339,6 +2169,8 @@ void reg_access_hca_mfrl_reg_ext_pack(const struct reg_access_hca_mfrl_reg_ext* 
     adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->pci_sync_for_fw_update_resp);
     offset = 34;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pci_sync_for_fw_update_start);
+	offset = 32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pci_rescan_required);
 }
 
 void reg_access_hca_mfrl_reg_ext_unpack(struct reg_access_hca_mfrl_reg_ext* ptr_struct, const u_int8_t* ptr_buff)
@@ -2355,6 +2187,8 @@ void reg_access_hca_mfrl_reg_ext_unpack(struct reg_access_hca_mfrl_reg_ext* ptr_
     ptr_struct->pci_sync_for_fw_update_resp = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
     offset = 34;
     ptr_struct->pci_sync_for_fw_update_start = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 32;
+	ptr_struct->pci_rescan_required = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 }
 
 void reg_access_hca_mfrl_reg_ext_print(const struct reg_access_hca_mfrl_reg_ext* ptr_struct, FILE* fd, int indent_level)
@@ -2369,12 +2203,11 @@ void reg_access_hca_mfrl_reg_ext_print(const struct reg_access_hca_mfrl_reg_ext*
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "rst_type_sel         : " UH_FMT "\n", ptr_struct->rst_type_sel);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "pci_sync_for_fw_update_resp : %s (" UH_FMT ")\n",
-            (ptr_struct->pci_sync_for_fw_update_resp == 1 ? ("Acknowledgment") :
-                                                            ((ptr_struct->pci_sync_for_fw_update_resp == 2 ? ("Dis") : ((ptr_struct->pci_sync_for_fw_update_resp == 3 ? ("Reserved") : ("unknown")))))),
-            ptr_struct->pci_sync_for_fw_update_resp);
+	fprintf(fd, "pci_sync_for_fw_update_resp : %s (" UH_FMT ")\n", (ptr_struct->pci_sync_for_fw_update_resp == 1 ? ("Acknowledgment") : ((ptr_struct->pci_sync_for_fw_update_resp == 2 ? ("Dis") : ((ptr_struct->pci_sync_for_fw_update_resp == 3 ? ("Reserved") : ("unknown")))))), ptr_struct->pci_sync_for_fw_update_resp);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "pci_sync_for_fw_update_start : " UH_FMT "\n", ptr_struct->pci_sync_for_fw_update_start);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "pci_rescan_required  : " UH_FMT "\n", ptr_struct->pci_rescan_required);
 }
 
 unsigned int reg_access_hca_mfrl_reg_ext_size(void)
@@ -2770,13 +2603,7 @@ void reg_access_hca_mqis_reg_print(const struct reg_access_hca_mqis_reg* ptr_str
     fprintf(fd, "======== reg_access_hca_mqis_reg ========\n");
 
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "info_type            : %s (" UH_FMT ")\n",
-            (ptr_struct->info_type == 1 ?
-               ("MODEL_NAME") :
-               ((ptr_struct->info_type == 2 ?
-                   ("MODEL_DESCRIPTION") :
-                   ((ptr_struct->info_type == 3 ? ("IMAGE_VSD") : ((ptr_struct->info_type == 4 ? ("DEVICE_VSD") : ((ptr_struct->info_type == 5 ? ("ROM_INFO") : ("unknown")))))))))),
-            ptr_struct->info_type);
+	fprintf(fd, "info_type            : %s (" UH_FMT ")\n", (ptr_struct->info_type == 1 ? ("MODEL_NAME") : ((ptr_struct->info_type == 2 ? ("MODEL_DESCRIPTION") : ((ptr_struct->info_type == 3 ? ("IMAGE_VSD") : ((ptr_struct->info_type == 4 ? ("DEVICE_VSD") : ((ptr_struct->info_type == 5 ? ("ROM_INFO") : ("unknown")))))))))), ptr_struct->info_type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "info_length          : " UH_FMT "\n", ptr_struct->info_length);
     adb2c_add_indentation(fd, indent_level);
@@ -2798,6 +2625,52 @@ unsigned int reg_access_hca_mqis_reg_size(void)
 void reg_access_hca_mqis_reg_dump(const struct reg_access_hca_mqis_reg* ptr_struct, FILE* fd)
 {
     reg_access_hca_mqis_reg_print(ptr_struct, fd, 0);
+}
+void reg_access_hca_mtcap_ext_pack(const struct reg_access_hca_mtcap_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	offset = 25;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 7, (u_int32_t)ptr_struct->sensor_count);
+	offset = 12;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->slot_index);
+	offset = 57;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 7, (u_int32_t)ptr_struct->internal_sensor_count);
+	offset = 64;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 8, ptr_struct->sensor_map);
+}
+void reg_access_hca_mtcap_ext_unpack(struct reg_access_hca_mtcap_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	offset = 25;
+	ptr_struct->sensor_count = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 7);
+	offset = 12;
+	ptr_struct->slot_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 57;
+	ptr_struct->internal_sensor_count = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 7);
+	offset = 64;
+	ptr_struct->sensor_map = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
+}
+void reg_access_hca_mtcap_ext_print(const struct reg_access_hca_mtcap_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_mtcap_ext ========\n");
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "sensor_count         : " UH_FMT "\n", ptr_struct->sensor_count);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "slot_index           : " UH_FMT "\n", ptr_struct->slot_index);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "internal_sensor_count : " UH_FMT "\n", ptr_struct->internal_sensor_count);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "sensor_map           : " U64H_FMT "\n", ptr_struct->sensor_map);
+}
+unsigned int reg_access_hca_mtcap_ext_size(void)
+{
+	return REG_ACCESS_HCA_MTCAP_EXT_SIZE;
+}
+void reg_access_hca_mtcap_ext_dump(const struct reg_access_hca_mtcap_ext *ptr_struct, FILE *fd)
+{
+	reg_access_hca_mtcap_ext_print(ptr_struct, fd, 0);
+}
 }
 
 void reg_access_hca_mtrc_cap_reg_pack(const struct reg_access_hca_mtrc_cap_reg* ptr_struct, u_int8_t* ptr_buff)
@@ -3207,24 +3080,7 @@ void reg_access_hca_strs_fault_inject_reg_print(const struct reg_access_hca_strs
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "supported            : " UH_FMT "\n", ptr_struct->supported);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "type                 : %s (" UH_FMT ")\n",
-            (ptr_struct->type == 0 ?
-               ("ICM_ALLOC_REFUSE") :
-               ((ptr_struct->type == 1 ?
-                   ("ICM_ALLOC_BUSY") :
-                   ((ptr_struct->type == 2 ?
-                       ("EQE_GW_BUSY") :
-                       ((ptr_struct->type == 3 ?
-                           ("CQE_GW_BUSY") :
-                           ((ptr_struct->type == 4 ?
-                               ("RX_FENCE_BUSY") :
-                               ((ptr_struct->type == 5 ?
-                                   ("SX_FENCE_BUSY") :
-                                   ((ptr_struct->type == 6 ?
-                                       ("RXT_SLICE_FENCE_BUSY") :
-                                       ((ptr_struct->type == 7 ? ("SXD_SLICE_FENCE_BUSY") :
-                                                                 ((ptr_struct->type == 8 ? ("GENERAL_FENCE_BUSY") : ((ptr_struct->type == 9 ? ("SMBUS_FAILED") : ("unknown")))))))))))))))))))),
-            ptr_struct->type);
+	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("ICM_ALLOC_REFUSE") : ((ptr_struct->type == 1 ? ("ICM_ALLOC_BUSY") : ((ptr_struct->type == 2 ? ("EQE_GW_BUSY") : ((ptr_struct->type == 3 ? ("CQE_GW_BUSY") : ((ptr_struct->type == 4 ? ("RX_FENCE_BUSY") : ((ptr_struct->type == 5 ? ("SX_FENCE_BUSY") : ((ptr_struct->type == 6 ? ("RXT_SLICE_FENCE_BUSY") : ((ptr_struct->type == 7 ? ("SXD_SLICE_FENCE_BUSY") : ((ptr_struct->type == 8 ? ("GENERAL_FENCE_BUSY") : ((ptr_struct->type == 9 ? ("SMBUS_FAILED") : ("unknown")))))))))))))))))))), ptr_struct->type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "num_skip             : " UH_FMT "\n", ptr_struct->num_skip);
     adb2c_add_indentation(fd, indent_level);
@@ -3296,40 +3152,7 @@ void reg_access_hca_strs_mini_flow_reg_print(const struct reg_access_hca_strs_mi
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "supported            : " UH_FMT "\n", ptr_struct->supported);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(
-      fd, "type                 : %s (" UH_FMT ")\n",
-      (ptr_struct->type == 0 ?
-         ("SX_FLICK_THROTTLE") :
-         ((ptr_struct->type == 1 ?
-             ("INVALIDATE_STEERING_CACHE") :
-             ((ptr_struct->type == 2 ?
-                 ("INVALIDATE_RXT_QP_L0_CACHE") :
-                 ((ptr_struct->type == 3 ?
-                     ("INVALIDATE_DCT_L0_CACHE") :
-                     ((ptr_struct->type == 4 ?
-                         ("INVALIDATE_LDB_REQSL_CACHE") :
-                         ((ptr_struct->type == 5 ?
-                             ("INVALIDATE_RXC_CACHE") :
-                             ((ptr_struct->type == 6 ?
-                                 ("INVALIDATE_SXDC_CACHE") :
-                                 ((ptr_struct->type == 7 ?
-                                     ("RECONSTRUCT_STEERING_BYPASS") :
-                                     ((ptr_struct->type == 8 ?
-                                         ("INVALIDATE_LDB_CACHE") :
-                                         ((ptr_struct->type == 9 ?
-                                             ("PCI_READ_ERROR") :
-                                             ((ptr_struct->type == 10 ?
-                                                 ("INVALIDATE_ALL_RO_CACHES") :
-                                                 ((ptr_struct->type == 11 ?
-                                                     ("INVALIDATE_PKEY_CACHE") :
-                                                     ((ptr_struct->type == 12 ?
-                                                         ("INVALIDATE_GUID_CACHE") :
-                                                         ((ptr_struct->type == 13 ?
-                                                             ("INVALIDATE_PORT_INFO_CACHE") :
-                                                             ((ptr_struct->type == 14 ?
-                                                                 ("INVALIDATE_QP_CACHE") :
-                                                                 ((ptr_struct->type == 15 ? ("IRISC_HANG") : ((ptr_struct->type == 16 ? ("PACKET_DROP") : ("unknown")))))))))))))))))))))))))))))))))),
-      ptr_struct->type);
+	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("SX_FLICK_THROTTLE") : ((ptr_struct->type == 1 ? ("INVALIDATE_STEERING_CACHE") : ((ptr_struct->type == 2 ? ("INVALIDATE_RXT_QP_L0_CACHE") : ((ptr_struct->type == 3 ? ("INVALIDATE_DCT_L0_CACHE") : ((ptr_struct->type == 4 ? ("INVALIDATE_LDB_REQSL_CACHE") : ((ptr_struct->type == 5 ? ("INVALIDATE_RXC_CACHE") : ((ptr_struct->type == 6 ? ("INVALIDATE_SXDC_CACHE") : ((ptr_struct->type == 7 ? ("RECONSTRUCT_STEERING_BYPASS") : ((ptr_struct->type == 8 ? ("INVALIDATE_LDB_CACHE") : ((ptr_struct->type == 9 ? ("PCI_READ_ERROR") : ((ptr_struct->type == 10 ? ("INVALIDATE_ALL_RO_CACHES") : ((ptr_struct->type == 11 ? ("INVALIDATE_PKEY_CACHE") : ((ptr_struct->type == 12 ? ("INVALIDATE_GUID_CACHE") : ((ptr_struct->type == 13 ? ("INVALIDATE_PORT_INFO_CACHE") : ((ptr_struct->type == 14 ? ("INVALIDATE_QP_CACHE") : ((ptr_struct->type == 15 ? ("IRISC_HANG") : ((ptr_struct->type == 16 ? ("PACKET_DROP") : ("unknown")))))))))))))))))))))))))))))))))), ptr_struct->type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "freq                 : " UH_FMT "\n", ptr_struct->freq);
     adb2c_add_indentation(fd, indent_level);
@@ -3464,51 +3287,7 @@ void reg_access_hca_strs_stop_toggle_reg_print(const struct reg_access_hca_strs_
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "supported            : " UH_FMT "\n", ptr_struct->supported);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "type                 : %s (" UH_FMT ")\n",
-            (ptr_struct->type == 0 ?
-               ("DC_CNAK") :
-               ((ptr_struct->type == 1 ?
-                   ("RXT_CHECKS") :
-                   ((ptr_struct->type == 2 ?
-                       ("TIMEOUT") :
-                       ((ptr_struct->type == 3 ?
-                           ("SX_ERROR") :
-                           ((ptr_struct->type == 4 ?
-                               ("RX_ERROR") :
-                               ((ptr_struct->type == 5 ?
-                                   ("MX_ERROR") :
-                                   ((ptr_struct->type == 6 ?
-                                       ("MAD_TRAP") :
-                                       ((ptr_struct->type == 7 ?
-                                           ("RXT_SLICE") :
-                                           ((ptr_struct->type == 8 ?
-                                               ("QOS_ARBITER") :
-                                               ((ptr_struct->type == 9 ?
-                                                   ("RXB_HANG") :
-                                                   ((ptr_struct->type == 10 ?
-                                                       ("FW_SCHED_Q") :
-                                                       ((ptr_struct->type == 11 ?
-                                                           ("LOCK_RESOURCE") :
-                                                           ((ptr_struct->type == 12 ?
-                                                               ("IRISC_HANG") :
-                                                               ((ptr_struct->type == 13 ?
-                                                                   ("SXW_SLICE") :
-                                                                   ((ptr_struct->type == 14 ?
-                                                                       ("RXC_CQE") :
-                                                                       ((ptr_struct->type == 15 ?
-                                                                           ("RXC_EQE") :
-                                                                           ((ptr_struct->type == 16 ?
-                                                                               ("SXP_HANG") :
-                                                                               ((ptr_struct->type == 17 ?
-                                                                                   ("SX_EXT_DB") :
-                                                                                   ((ptr_struct->type == 18 ?
-                                                                                       ("SX_INT_DB") :
-                                                                                       ((ptr_struct->type == 19 ?
-                                                                                           ("QPC_SLICE") :
-                                                                                           ((ptr_struct->type == 20 ?
-                                                                                               ("RXB_HOST_HANG") :
-                                                                                               ((ptr_struct->type == 21 ? ("PAUSE_TX") : ("unknown")))))))))))))))))))))))))))))))))))))))))))),
-            ptr_struct->type);
+	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("DC_CNAK") : ((ptr_struct->type == 1 ? ("RXT_CHECKS") : ((ptr_struct->type == 2 ? ("TIMEOUT") : ((ptr_struct->type == 3 ? ("SX_ERROR") : ((ptr_struct->type == 4 ? ("RX_ERROR") : ((ptr_struct->type == 5 ? ("MX_ERROR") : ((ptr_struct->type == 6 ? ("MAD_TRAP") : ((ptr_struct->type == 7 ? ("RXT_SLICE") : ((ptr_struct->type == 8 ? ("QOS_ARBITER") : ((ptr_struct->type == 9 ? ("RXB_HANG") : ((ptr_struct->type == 10 ? ("FW_SCHED_Q") : ((ptr_struct->type == 11 ? ("LOCK_RESOURCE") : ((ptr_struct->type == 12 ? ("IRISC_HANG") : ((ptr_struct->type == 13 ? ("SXW_SLICE") : ((ptr_struct->type == 14 ? ("RXC_CQE") : ((ptr_struct->type == 15 ? ("RXC_EQE") : ((ptr_struct->type == 16 ? ("SXP_HANG") : ((ptr_struct->type == 17 ? ("SX_EXT_DB") : ((ptr_struct->type == 18 ? ("SX_INT_DB") : ((ptr_struct->type == 19 ? ("QPC_SLICE") : ((ptr_struct->type == 20 ? ("RXB_HOST_HANG") : ((ptr_struct->type == 21 ? ("PAUSE_TX") : ("unknown")))))))))))))))))))))))))))))))))))))))))))), ptr_struct->type);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "log_stressor         : " UH_FMT "\n", ptr_struct->log_stressor);
     adb2c_add_indentation(fd, indent_level);
@@ -3576,6 +3355,9 @@ void reg_access_hca_reg_access_hca_Nodes_print(const union reg_access_hca_reg_ac
     fprintf(fd, "mcda_reg:\n");
     reg_access_hca_mcda_reg_print(&(ptr_struct->mcda_reg), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mtcap_ext:\n");
+	reg_access_hca_mtcap_ext_print(&(ptr_struct->mtcap_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "mtrc_cap_reg:\n");
     reg_access_hca_mtrc_cap_reg_print(&(ptr_struct->mtrc_cap_reg), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);

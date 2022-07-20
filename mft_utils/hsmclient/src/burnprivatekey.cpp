@@ -42,7 +42,7 @@ CK_RV HSMLunaClient::CreatePublicKey(string publicKeyLabel, unsigned char* Publi
     CK_BBOOL bTrue = 1;
     CK_BBOOL bSign = bTrue, bToken = bTrue, bPrivate = bTrue, bDecrypt = bTrue, bWrap = bTrue;
     // CK_BBOOL bToken = bTrue, bDecrypt = bTrue, bSign = bTrue, bWrap = bTrue;
-    CK_OBJECT_HANDLE hPublicRSAKey;
+    CK_OBJECT_HANDLE hPublicRSAKey = 0;
     CK_RV rv = CKR_TOKEN_NOT_PRESENT;
     unsigned int publicLabelSize = publicKeyLabel.size() + 1;
     CK_BYTE* pLabelPub = new CK_BYTE[publicLabelSize];
@@ -135,7 +135,7 @@ CK_RV HSMLunaClient::BurnPrivateKey(string privateKeyLabel, string publicKeyLabe
 {
     protectedInfo_T protectedInfo;
     CK_RV rv = CKR_TOKEN_NOT_PRESENT;
-    CK_OBJECT_HANDLE hPrivateRSAKey;
+    CK_OBJECT_HANDLE hPrivateRSAKey = 0;
     char* pbWrappedKey;
     unsigned long ulWrappedKeySize;
     CK_OBJECT_CLASS privateKey = CKO_PRIVATE_KEY;
@@ -203,6 +203,7 @@ CK_RV HSMLunaClient::BurnPrivateKey(string privateKeyLabel, string publicKeyLabe
                 "Error 0x"
              << hex << rv;
         cout << " generating the DES3 Key.\n";
+        delete[] pLabelPub;
         return -11;
     }
 
@@ -276,6 +277,7 @@ CK_RV HSMLunaClient::BurnPrivateKey(string privateKeyLabel, string publicKeyLabe
     if (rv != CKR_OK)
     {
         cout << "C_UnwrapKey FAILED...rv = " << hex << rv << endl;
+        delete[] pEncryptedData;
         return -1;
     }
     else

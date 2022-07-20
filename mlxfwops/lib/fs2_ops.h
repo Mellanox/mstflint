@@ -214,7 +214,6 @@ private:
 
     bool ModifyKeySection(guid_t access_key, ProgressCallBack callBackFunc = (ProgressCallBack)NULL);
     void PatchKeySect(u_int32_t* buff, u_int32_t keyOff, guid_t hw_key);
-    bool Fs2IsMacAvailable();
 
     bool ModifyVSDSection(const char* vsd, ProgressCallBack callBackFunc = (ProgressCallBack)NULL);
     bool

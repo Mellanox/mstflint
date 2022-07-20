@@ -261,7 +261,7 @@ using namespace std;
 #define READALLOCBUF(f, o, d, l, p)                              \
     do                                                           \
     {                                                            \
-        d = (u_int8_t*)malloc(sizeof(u_int8_t) * l);             \
+        d = (u_int8_t*)calloc(l, sizeof(u_int8_t));              \
         if (!f.read(o, d, l))                                    \
         {                                                        \
             free(d);                                             \

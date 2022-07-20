@@ -326,8 +326,8 @@ int mainEntry(int argc, char* argv[])
 #if defined(ONLY_PCI_FORMAT) || defined(__WIN__)
                 print_err("-E- No devices found or specified\n");
 #else
-                print_err(
-                  "-E- No devices found or specified, mst might be stopped, run 'mst start' to load MST modules\n");
+                print_err("-E- No devices found or specified, mst might be stopped, run 'mst start' to load MST "
+                          "modules\n");
 #endif
             }
             goto clean_up;

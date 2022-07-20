@@ -1611,7 +1611,7 @@ bool VpiParams4thGen::hardLimitCheck()
     {
         if (_phyType < 1 || _phyType > 3)
         {
-            errmsg("illegal Phy Type value (shold be 1|2|3)");
+            errmsg("illegal Phy Type value (should be 1|2|3)");
             return false;
         }
 

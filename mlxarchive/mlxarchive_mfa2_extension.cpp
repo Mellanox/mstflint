@@ -181,14 +181,14 @@ string VersionExtension::getVersion(bool pad_sub_minor) const
 
 string VersionExtension::getDateAndTime() const
 {
-    tm tm_obj;
+    tm tm_obj = tm();
     tm_obj.tm_sec = _seconds;
     tm_obj.tm_min = _minutes;
     tm_obj.tm_hour = _hours;
     tm_obj.tm_mday = _day;
     tm_obj.tm_mon = _month;
     tm_obj.tm_year = _year - 1900;
-    char buffer[64];
+    char buffer[64] = {0};
     strftime(buffer, 64, "%Y-%m-%d %H:%M:%S", &tm_obj);
     return string(buffer);
 }

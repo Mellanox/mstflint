@@ -3168,9 +3168,13 @@ the default link type when no cable is connected */
 #define TOOLS_OPEN_CAP_MASK_SIZE (0x4)
     void tools_open_cap_mask_dump(const struct tools_open_cap_mask* ptr_struct, FILE* fd);
     /* capability_mask_smp */
-    void tools_open_capability_mask_smp_pack(const struct tools_open_capability_mask_smp* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_capability_mask_smp_unpack(struct tools_open_capability_mask_smp* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_capability_mask_smp_print(const struct tools_open_capability_mask_smp* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_capability_mask_smp_pack(const struct tools_open_capability_mask_smp* ptr_struct,
+                                             u_int8_t* ptr_buff);
+    void tools_open_capability_mask_smp_unpack(struct tools_open_capability_mask_smp* ptr_struct,
+                                               const u_int8_t* ptr_buff);
+    void tools_open_capability_mask_smp_print(const struct tools_open_capability_mask_smp* ptr_struct,
+                                              FILE* fd,
+                                              int indent_level);
     unsigned int tools_open_capability_mask_smp_size(void);
 #define TOOLS_OPEN_CAPABILITY_MASK_SMP_SIZE (0x40)
     void tools_open_capability_mask_smp_dump(const struct tools_open_capability_mask_smp* ptr_struct, FILE* fd);
@@ -3198,14 +3202,17 @@ the default link type when no cable is connected */
     /* nv_hdr_fifth_gen */
     void tools_open_nv_hdr_fifth_gen_pack(const struct tools_open_nv_hdr_fifth_gen* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_nv_hdr_fifth_gen_unpack(struct tools_open_nv_hdr_fifth_gen* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_nv_hdr_fifth_gen_print(const struct tools_open_nv_hdr_fifth_gen* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_nv_hdr_fifth_gen_print(const struct tools_open_nv_hdr_fifth_gen* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level);
     unsigned int tools_open_nv_hdr_fifth_gen_size(void);
 #define TOOLS_OPEN_NV_HDR_FIFTH_GEN_SIZE (0xc)
     void tools_open_nv_hdr_fifth_gen_dump(const struct tools_open_nv_hdr_fifth_gen* ptr_struct, FILE* fd);
     /* pmdio_addr_data */
     void tools_open_pmdio_addr_data_pack(const struct tools_open_pmdio_addr_data* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_pmdio_addr_data_unpack(struct tools_open_pmdio_addr_data* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_pmdio_addr_data_print(const struct tools_open_pmdio_addr_data* ptr_struct, FILE* fd, int indent_level);
+    void
+      tools_open_pmdio_addr_data_print(const struct tools_open_pmdio_addr_data* ptr_struct, FILE* fd, int indent_level);
     unsigned int tools_open_pmdio_addr_data_size(void);
 #define TOOLS_OPEN_PMDIO_ADDR_DATA_SIZE (0x4)
     void tools_open_pmdio_addr_data_dump(const struct tools_open_pmdio_addr_data* ptr_struct, FILE* fd);
@@ -3238,9 +3245,13 @@ the default link type when no cable is connected */
 #define TOOLS_OPEN_AUX_TLV_HEADER_SIZE (0x14)
     void tools_open_aux_tlv_header_dump(const struct tools_open_aux_tlv_header* ptr_struct, FILE* fd);
     /* extended_ib_port_info */
-    void tools_open_extended_ib_port_info_pack(const struct tools_open_extended_ib_port_info* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_extended_ib_port_info_unpack(struct tools_open_extended_ib_port_info* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_extended_ib_port_info_print(const struct tools_open_extended_ib_port_info* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_extended_ib_port_info_pack(const struct tools_open_extended_ib_port_info* ptr_struct,
+                                               u_int8_t* ptr_buff);
+    void tools_open_extended_ib_port_info_unpack(struct tools_open_extended_ib_port_info* ptr_struct,
+                                                 const u_int8_t* ptr_buff);
+    void tools_open_extended_ib_port_info_print(const struct tools_open_extended_ib_port_info* ptr_struct,
+                                                FILE* fd,
+                                                int indent_level);
     unsigned int tools_open_extended_ib_port_info_size(void);
 #define TOOLS_OPEN_EXTENDED_IB_PORT_INFO_SIZE (0x3c)
     void tools_open_extended_ib_port_info_dump(const struct tools_open_extended_ib_port_info* ptr_struct, FILE* fd);
@@ -3385,9 +3396,13 @@ the default link type when no cable is connected */
 #define TOOLS_OPEN_PMDIO_SIZE (0x108)
     void tools_open_pmdio_dump(const struct tools_open_pmdio* ptr_struct, FILE* fd);
     /* smp_vsp_general_info */
-    void tools_open_smp_vsp_general_info_pack(const union tools_open_smp_vsp_general_info* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_smp_vsp_general_info_unpack(union tools_open_smp_vsp_general_info* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_smp_vsp_general_info_print(const union tools_open_smp_vsp_general_info* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_smp_vsp_general_info_pack(const union tools_open_smp_vsp_general_info* ptr_struct,
+                                              u_int8_t* ptr_buff);
+    void tools_open_smp_vsp_general_info_unpack(union tools_open_smp_vsp_general_info* ptr_struct,
+                                                const u_int8_t* ptr_buff);
+    void tools_open_smp_vsp_general_info_print(const union tools_open_smp_vsp_general_info* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level);
     unsigned int tools_open_smp_vsp_general_info_size(void);
 #define TOOLS_OPEN_SMP_VSP_GENERAL_INFO_SIZE (0x40)
     void tools_open_smp_vsp_general_info_dump(const union tools_open_smp_vsp_general_info* ptr_struct, FILE* fd);
@@ -3422,7 +3437,9 @@ the default link type when no cable is connected */
     /* boot_settings_ext */
     void tools_open_boot_settings_ext_pack(const struct tools_open_boot_settings_ext* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_boot_settings_ext_unpack(struct tools_open_boot_settings_ext* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_boot_settings_ext_print(const struct tools_open_boot_settings_ext* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_boot_settings_ext_print(const struct tools_open_boot_settings_ext* ptr_struct,
+                                            FILE* fd,
+                                            int indent_level);
     unsigned int tools_open_boot_settings_ext_size(void);
 #define TOOLS_OPEN_BOOT_SETTINGS_EXT_SIZE (0x4)
     void tools_open_boot_settings_ext_dump(const struct tools_open_boot_settings_ext* ptr_struct, FILE* fd);
@@ -3434,9 +3451,13 @@ the default link type when no cable is connected */
 #define TOOLS_OPEN_COMMON_HEADER_SIZE (0x4)
     void tools_open_common_header_dump(const struct tools_open_common_header* ptr_struct, FILE* fd);
     /* component_desciptor */
-    void tools_open_component_desciptor_pack(const struct tools_open_component_desciptor* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_component_desciptor_unpack(struct tools_open_component_desciptor* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_component_desciptor_print(const struct tools_open_component_desciptor* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_component_desciptor_pack(const struct tools_open_component_desciptor* ptr_struct,
+                                             u_int8_t* ptr_buff);
+    void tools_open_component_desciptor_unpack(struct tools_open_component_desciptor* ptr_struct,
+                                               const u_int8_t* ptr_buff);
+    void tools_open_component_desciptor_print(const struct tools_open_component_desciptor* ptr_struct,
+                                              FILE* fd,
+                                              int indent_level);
     unsigned int tools_open_component_desciptor_size(void);
 #define TOOLS_OPEN_COMPONENT_DESCIPTOR_SIZE (0x10)
     void tools_open_component_desciptor_dump(const struct tools_open_component_desciptor* ptr_struct, FILE* fd);
@@ -3462,23 +3483,37 @@ the default link type when no cable is connected */
 #define TOOLS_OPEN_IMAGE_INFO_SIZE (0x400)
     void tools_open_image_info_dump(const struct tools_open_image_info* ptr_struct, FILE* fd);
     /* infiniband_boot_settings */
-    void tools_open_infiniband_boot_settings_pack(const struct tools_open_infiniband_boot_settings* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_infiniband_boot_settings_unpack(struct tools_open_infiniband_boot_settings* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_infiniband_boot_settings_print(const struct tools_open_infiniband_boot_settings* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_infiniband_boot_settings_pack(const struct tools_open_infiniband_boot_settings* ptr_struct,
+                                                  u_int8_t* ptr_buff);
+    void tools_open_infiniband_boot_settings_unpack(struct tools_open_infiniband_boot_settings* ptr_struct,
+                                                    const u_int8_t* ptr_buff);
+    void tools_open_infiniband_boot_settings_print(const struct tools_open_infiniband_boot_settings* ptr_struct,
+                                                   FILE* fd,
+                                                   int indent_level);
     unsigned int tools_open_infiniband_boot_settings_size(void);
 #define TOOLS_OPEN_INFINIBAND_BOOT_SETTINGS_SIZE (0x4)
-    void tools_open_infiniband_boot_settings_dump(const struct tools_open_infiniband_boot_settings* ptr_struct, FILE* fd);
+    void tools_open_infiniband_boot_settings_dump(const struct tools_open_infiniband_boot_settings* ptr_struct,
+                                                  FILE* fd);
     /* infiniband_dc_capabilities */
-    void tools_open_infiniband_dc_capabilities_pack(const struct tools_open_infiniband_dc_capabilities* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_infiniband_dc_capabilities_unpack(struct tools_open_infiniband_dc_capabilities* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_infiniband_dc_capabilities_print(const struct tools_open_infiniband_dc_capabilities* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_infiniband_dc_capabilities_pack(const struct tools_open_infiniband_dc_capabilities* ptr_struct,
+                                                    u_int8_t* ptr_buff);
+    void tools_open_infiniband_dc_capabilities_unpack(struct tools_open_infiniband_dc_capabilities* ptr_struct,
+                                                      const u_int8_t* ptr_buff);
+    void tools_open_infiniband_dc_capabilities_print(const struct tools_open_infiniband_dc_capabilities* ptr_struct,
+                                                     FILE* fd,
+                                                     int indent_level);
     unsigned int tools_open_infiniband_dc_capabilities_size(void);
 #define TOOLS_OPEN_INFINIBAND_DC_CAPABILITIES_SIZE (0x10)
-    void tools_open_infiniband_dc_capabilities_dump(const struct tools_open_infiniband_dc_capabilities* ptr_struct, FILE* fd);
+    void tools_open_infiniband_dc_capabilities_dump(const struct tools_open_infiniband_dc_capabilities* ptr_struct,
+                                                    FILE* fd);
     /* infiniband_dc_settings */
-    void tools_open_infiniband_dc_settings_pack(const struct tools_open_infiniband_dc_settings* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_infiniband_dc_settings_unpack(struct tools_open_infiniband_dc_settings* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_infiniband_dc_settings_print(const struct tools_open_infiniband_dc_settings* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_infiniband_dc_settings_pack(const struct tools_open_infiniband_dc_settings* ptr_struct,
+                                                u_int8_t* ptr_buff);
+    void tools_open_infiniband_dc_settings_unpack(struct tools_open_infiniband_dc_settings* ptr_struct,
+                                                  const u_int8_t* ptr_buff);
+    void tools_open_infiniband_dc_settings_print(const struct tools_open_infiniband_dc_settings* ptr_struct,
+                                                 FILE* fd,
+                                                 int indent_level);
     unsigned int tools_open_infiniband_dc_settings_size(void);
 #define TOOLS_OPEN_INFINIBAND_DC_SETTINGS_SIZE (0x8)
     void tools_open_infiniband_dc_settings_dump(const struct tools_open_infiniband_dc_settings* ptr_struct, FILE* fd);
@@ -3490,9 +3525,13 @@ the default link type when no cable is connected */
 #define TOOLS_OPEN_ISCSI_SETTINGS_SIZE (0xc)
     void tools_open_iscsi_settings_dump(const struct tools_open_iscsi_settings* ptr_struct, FILE* fd);
     /* lldp_client_settings */
-    void tools_open_lldp_client_settings_pack(const struct tools_open_lldp_client_settings* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_lldp_client_settings_unpack(struct tools_open_lldp_client_settings* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_lldp_client_settings_print(const struct tools_open_lldp_client_settings* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_lldp_client_settings_pack(const struct tools_open_lldp_client_settings* ptr_struct,
+                                              u_int8_t* ptr_buff);
+    void tools_open_lldp_client_settings_unpack(struct tools_open_lldp_client_settings* ptr_struct,
+                                                const u_int8_t* ptr_buff);
+    void tools_open_lldp_client_settings_print(const struct tools_open_lldp_client_settings* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level);
     unsigned int tools_open_lldp_client_settings_size(void);
 #define TOOLS_OPEN_LLDP_CLIENT_SETTINGS_SIZE (0xc)
     void tools_open_lldp_client_settings_dump(const struct tools_open_lldp_client_settings* ptr_struct, FILE* fd);
@@ -3541,49 +3580,69 @@ the default link type when no cable is connected */
     /* nv_base_mac_guid */
     void tools_open_nv_base_mac_guid_pack(const struct tools_open_nv_base_mac_guid* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_nv_base_mac_guid_unpack(struct tools_open_nv_base_mac_guid* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_nv_base_mac_guid_print(const struct tools_open_nv_base_mac_guid* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_nv_base_mac_guid_print(const struct tools_open_nv_base_mac_guid* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level);
     unsigned int tools_open_nv_base_mac_guid_size(void);
 #define TOOLS_OPEN_NV_BASE_MAC_GUID_SIZE (0x10)
     void tools_open_nv_base_mac_guid_dump(const struct tools_open_nv_base_mac_guid* ptr_struct, FILE* fd);
     /* nv_base_mac_guid_cap */
-    void tools_open_nv_base_mac_guid_cap_pack(const struct tools_open_nv_base_mac_guid_cap* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_nv_base_mac_guid_cap_unpack(struct tools_open_nv_base_mac_guid_cap* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_nv_base_mac_guid_cap_print(const struct tools_open_nv_base_mac_guid_cap* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_nv_base_mac_guid_cap_pack(const struct tools_open_nv_base_mac_guid_cap* ptr_struct,
+                                              u_int8_t* ptr_buff);
+    void tools_open_nv_base_mac_guid_cap_unpack(struct tools_open_nv_base_mac_guid_cap* ptr_struct,
+                                                const u_int8_t* ptr_buff);
+    void tools_open_nv_base_mac_guid_cap_print(const struct tools_open_nv_base_mac_guid_cap* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level);
     unsigned int tools_open_nv_base_mac_guid_cap_size(void);
 #define TOOLS_OPEN_NV_BASE_MAC_GUID_CAP_SIZE (0x8)
     void tools_open_nv_base_mac_guid_cap_dump(const struct tools_open_nv_base_mac_guid_cap* ptr_struct, FILE* fd);
     /* nv_cx3_global_conf */
     void tools_open_nv_cx3_global_conf_pack(const struct tools_open_nv_cx3_global_conf* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_nv_cx3_global_conf_unpack(struct tools_open_nv_cx3_global_conf* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_nv_cx3_global_conf_print(const struct tools_open_nv_cx3_global_conf* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_nv_cx3_global_conf_unpack(struct tools_open_nv_cx3_global_conf* ptr_struct,
+                                              const u_int8_t* ptr_buff);
+    void tools_open_nv_cx3_global_conf_print(const struct tools_open_nv_cx3_global_conf* ptr_struct,
+                                             FILE* fd,
+                                             int indent_level);
     unsigned int tools_open_nv_cx3_global_conf_size(void);
 #define TOOLS_OPEN_NV_CX3_GLOBAL_CONF_SIZE (0x20)
     void tools_open_nv_cx3_global_conf_dump(const struct tools_open_nv_cx3_global_conf* ptr_struct, FILE* fd);
     /* option_rom_capability */
-    void tools_open_option_rom_capability_pack(const struct tools_open_option_rom_capability* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_option_rom_capability_unpack(struct tools_open_option_rom_capability* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_option_rom_capability_print(const struct tools_open_option_rom_capability* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_option_rom_capability_pack(const struct tools_open_option_rom_capability* ptr_struct,
+                                               u_int8_t* ptr_buff);
+    void tools_open_option_rom_capability_unpack(struct tools_open_option_rom_capability* ptr_struct,
+                                                 const u_int8_t* ptr_buff);
+    void tools_open_option_rom_capability_print(const struct tools_open_option_rom_capability* ptr_struct,
+                                                FILE* fd,
+                                                int indent_level);
     unsigned int tools_open_option_rom_capability_size(void);
 #define TOOLS_OPEN_OPTION_ROM_CAPABILITY_SIZE (0x4)
     void tools_open_option_rom_capability_dump(const struct tools_open_option_rom_capability* ptr_struct, FILE* fd);
     /* package_descriptor */
     void tools_open_package_descriptor_pack(const struct tools_open_package_descriptor* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_package_descriptor_unpack(struct tools_open_package_descriptor* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_package_descriptor_print(const struct tools_open_package_descriptor* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_package_descriptor_unpack(struct tools_open_package_descriptor* ptr_struct,
+                                              const u_int8_t* ptr_buff);
+    void tools_open_package_descriptor_print(const struct tools_open_package_descriptor* ptr_struct,
+                                             FILE* fd,
+                                             int indent_level);
     unsigned int tools_open_package_descriptor_size(void);
 #define TOOLS_OPEN_PACKAGE_DESCRIPTOR_SIZE (0x1c)
     void tools_open_package_descriptor_dump(const struct tools_open_package_descriptor* ptr_struct, FILE* fd);
     /* pci_capabilities */
     void tools_open_pci_capabilities_pack(const struct tools_open_pci_capabilities* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_pci_capabilities_unpack(struct tools_open_pci_capabilities* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_pci_capabilities_print(const struct tools_open_pci_capabilities* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_pci_capabilities_print(const struct tools_open_pci_capabilities* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level);
     unsigned int tools_open_pci_capabilities_size(void);
 #define TOOLS_OPEN_PCI_CAPABILITIES_SIZE (0x14)
     void tools_open_pci_capabilities_dump(const struct tools_open_pci_capabilities* ptr_struct, FILE* fd);
     /* pci_configuration */
     void tools_open_pci_configuration_pack(const struct tools_open_pci_configuration* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_pci_configuration_unpack(struct tools_open_pci_configuration* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_pci_configuration_print(const struct tools_open_pci_configuration* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_pci_configuration_print(const struct tools_open_pci_configuration* ptr_struct,
+                                            FILE* fd,
+                                            int indent_level);
     unsigned int tools_open_pci_configuration_size(void);
 #define TOOLS_OPEN_PCI_CONFIGURATION_SIZE (0xc)
     void tools_open_pci_configuration_dump(const struct tools_open_pci_configuration* ptr_struct, FILE* fd);
@@ -3597,21 +3656,28 @@ the default link type when no cable is connected */
     /* port_boot_state */
     void tools_open_port_boot_state_pack(const struct tools_open_port_boot_state* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_port_boot_state_unpack(struct tools_open_port_boot_state* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_port_boot_state_print(const struct tools_open_port_boot_state* ptr_struct, FILE* fd, int indent_level);
+    void
+      tools_open_port_boot_state_print(const struct tools_open_port_boot_state* ptr_struct, FILE* fd, int indent_level);
     unsigned int tools_open_port_boot_state_size(void);
 #define TOOLS_OPEN_PORT_BOOT_STATE_SIZE (0x4)
     void tools_open_port_boot_state_dump(const struct tools_open_port_boot_state* ptr_struct, FILE* fd);
     /* preboot_boot_settings */
-    void tools_open_preboot_boot_settings_pack(const struct tools_open_preboot_boot_settings* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_preboot_boot_settings_unpack(struct tools_open_preboot_boot_settings* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_preboot_boot_settings_print(const struct tools_open_preboot_boot_settings* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_preboot_boot_settings_pack(const struct tools_open_preboot_boot_settings* ptr_struct,
+                                               u_int8_t* ptr_buff);
+    void tools_open_preboot_boot_settings_unpack(struct tools_open_preboot_boot_settings* ptr_struct,
+                                                 const u_int8_t* ptr_buff);
+    void tools_open_preboot_boot_settings_print(const struct tools_open_preboot_boot_settings* ptr_struct,
+                                                FILE* fd,
+                                                int indent_level);
     unsigned int tools_open_preboot_boot_settings_size(void);
 #define TOOLS_OPEN_PREBOOT_BOOT_SETTINGS_SIZE (0x4)
     void tools_open_preboot_boot_settings_dump(const struct tools_open_preboot_boot_settings* ptr_struct, FILE* fd);
     /* preboot_flow_ctrl */
     void tools_open_preboot_flow_ctrl_pack(const struct tools_open_preboot_flow_ctrl* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_preboot_flow_ctrl_unpack(struct tools_open_preboot_flow_ctrl* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_preboot_flow_ctrl_print(const struct tools_open_preboot_flow_ctrl* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_preboot_flow_ctrl_print(const struct tools_open_preboot_flow_ctrl* ptr_struct,
+                                            FILE* fd,
+                                            int indent_level);
     unsigned int tools_open_preboot_flow_ctrl_size(void);
 #define TOOLS_OPEN_PREBOOT_FLOW_CTRL_SIZE (0x4)
     void tools_open_preboot_flow_ctrl_dump(const struct tools_open_preboot_flow_ctrl* ptr_struct, FILE* fd);
@@ -3630,19 +3696,28 @@ the default link type when no cable is connected */
 #define TOOLS_OPEN_QOS_CAP_SIZE (0xc)
     void tools_open_qos_cap_dump(const struct tools_open_qos_cap* ptr_struct, FILE* fd);
     /* query_def_params_global */
-    void tools_open_query_def_params_global_pack(const struct tools_open_query_def_params_global* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_query_def_params_global_unpack(struct tools_open_query_def_params_global* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_query_def_params_global_print(const struct tools_open_query_def_params_global* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_query_def_params_global_pack(const struct tools_open_query_def_params_global* ptr_struct,
+                                                 u_int8_t* ptr_buff);
+    void tools_open_query_def_params_global_unpack(struct tools_open_query_def_params_global* ptr_struct,
+                                                   const u_int8_t* ptr_buff);
+    void tools_open_query_def_params_global_print(const struct tools_open_query_def_params_global* ptr_struct,
+                                                  FILE* fd,
+                                                  int indent_level);
     unsigned int tools_open_query_def_params_global_size(void);
 #define TOOLS_OPEN_QUERY_DEF_PARAMS_GLOBAL_SIZE (0x14)
     void tools_open_query_def_params_global_dump(const struct tools_open_query_def_params_global* ptr_struct, FILE* fd);
     /* query_def_params_per_port */
-    void tools_open_query_def_params_per_port_pack(const struct tools_open_query_def_params_per_port* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_query_def_params_per_port_unpack(struct tools_open_query_def_params_per_port* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_query_def_params_per_port_print(const struct tools_open_query_def_params_per_port* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_query_def_params_per_port_pack(const struct tools_open_query_def_params_per_port* ptr_struct,
+                                                   u_int8_t* ptr_buff);
+    void tools_open_query_def_params_per_port_unpack(struct tools_open_query_def_params_per_port* ptr_struct,
+                                                     const u_int8_t* ptr_buff);
+    void tools_open_query_def_params_per_port_print(const struct tools_open_query_def_params_per_port* ptr_struct,
+                                                    FILE* fd,
+                                                    int indent_level);
     unsigned int tools_open_query_def_params_per_port_size(void);
 #define TOOLS_OPEN_QUERY_DEF_PARAMS_PER_PORT_SIZE (0x1c)
-    void tools_open_query_def_params_per_port_dump(const struct tools_open_query_def_params_per_port* ptr_struct, FILE* fd);
+    void tools_open_query_def_params_per_port_dump(const struct tools_open_query_def_params_per_port* ptr_struct,
+                                                   FILE* fd);
     /* roce_cc */
     void tools_open_roce_cc_pack(const struct tools_open_roce_cc* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_roce_cc_unpack(struct tools_open_roce_cc* ptr_struct, const u_int8_t* ptr_buff);
@@ -3658,12 +3733,17 @@ the default link type when no cable is connected */
 #define TOOLS_OPEN_ROCE_CC_ECN_SIZE (0x44)
     void tools_open_roce_cc_ecn_dump(const struct tools_open_roce_cc_ecn* ptr_struct, FILE* fd);
     /* roce_v_1_5_next_protocol */
-    void tools_open_roce_v_1_5_next_protocol_pack(const struct tools_open_roce_v_1_5_next_protocol* ptr_struct, u_int8_t* ptr_buff);
-    void tools_open_roce_v_1_5_next_protocol_unpack(struct tools_open_roce_v_1_5_next_protocol* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_roce_v_1_5_next_protocol_print(const struct tools_open_roce_v_1_5_next_protocol* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_roce_v_1_5_next_protocol_pack(const struct tools_open_roce_v_1_5_next_protocol* ptr_struct,
+                                                  u_int8_t* ptr_buff);
+    void tools_open_roce_v_1_5_next_protocol_unpack(struct tools_open_roce_v_1_5_next_protocol* ptr_struct,
+                                                    const u_int8_t* ptr_buff);
+    void tools_open_roce_v_1_5_next_protocol_print(const struct tools_open_roce_v_1_5_next_protocol* ptr_struct,
+                                                   FILE* fd,
+                                                   int indent_level);
     unsigned int tools_open_roce_v_1_5_next_protocol_size(void);
 #define TOOLS_OPEN_ROCE_V_1_5_NEXT_PROTOCOL_SIZE (0x4)
-    void tools_open_roce_v_1_5_next_protocol_dump(const struct tools_open_roce_v_1_5_next_protocol* ptr_struct, FILE* fd);
+    void tools_open_roce_v_1_5_next_protocol_dump(const struct tools_open_roce_v_1_5_next_protocol* ptr_struct,
+                                                  FILE* fd);
     /* smp_data */
     void tools_open_smp_data_pack(const union tools_open_smp_data* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_smp_data_unpack(union tools_open_smp_data* ptr_struct, const u_int8_t* ptr_buff);
@@ -3681,14 +3761,18 @@ the default link type when no cable is connected */
     /* tpt_capabilities */
     void tools_open_tpt_capabilities_pack(const struct tools_open_tpt_capabilities* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_tpt_capabilities_unpack(struct tools_open_tpt_capabilities* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_tpt_capabilities_print(const struct tools_open_tpt_capabilities* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_tpt_capabilities_print(const struct tools_open_tpt_capabilities* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level);
     unsigned int tools_open_tpt_capabilities_size(void);
 #define TOOLS_OPEN_TPT_CAPABILITIES_SIZE (0x4)
     void tools_open_tpt_capabilities_dump(const struct tools_open_tpt_capabilities* ptr_struct, FILE* fd);
     /* tpt_configuration */
     void tools_open_tpt_configuration_pack(const struct tools_open_tpt_configuration* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_tpt_configuration_unpack(struct tools_open_tpt_configuration* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_tpt_configuration_print(const struct tools_open_tpt_configuration* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_tpt_configuration_print(const struct tools_open_tpt_configuration* ptr_struct,
+                                            FILE* fd,
+                                            int indent_level);
     unsigned int tools_open_tpt_configuration_size(void);
 #define TOOLS_OPEN_TPT_CONFIGURATION_SIZE (0x4)
     void tools_open_tpt_configuration_dump(const struct tools_open_tpt_configuration* ptr_struct, FILE* fd);
@@ -3723,7 +3807,9 @@ the default link type when no cable is connected */
     /* access_registers */
     void tools_open_access_registers_pack(const union tools_open_access_registers* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_access_registers_unpack(union tools_open_access_registers* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_access_registers_print(const union tools_open_access_registers* ptr_struct, FILE* fd, int indent_level);
+    void tools_open_access_registers_print(const union tools_open_access_registers* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level);
     unsigned int tools_open_access_registers_size(void);
 #define TOOLS_OPEN_ACCESS_REGISTERS_SIZE (0x200)
     void tools_open_access_registers_dump(const union tools_open_access_registers* ptr_struct, FILE* fd);
@@ -3744,7 +3830,8 @@ the default link type when no cable is connected */
     /* mcdd_descriptor */
     void tools_open_mcdd_descriptor_pack(const struct tools_open_mcdd_descriptor* ptr_struct, u_int8_t* ptr_buff);
     void tools_open_mcdd_descriptor_unpack(struct tools_open_mcdd_descriptor* ptr_struct, const u_int8_t* ptr_buff);
-    void tools_open_mcdd_descriptor_print(const struct tools_open_mcdd_descriptor* ptr_struct, FILE* fd, int indent_level);
+    void
+      tools_open_mcdd_descriptor_print(const struct tools_open_mcdd_descriptor* ptr_struct, FILE* fd, int indent_level);
     unsigned int tools_open_mcdd_descriptor_size(void);
 #define TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE (0x24)
     void tools_open_mcdd_descriptor_dump(const struct tools_open_mcdd_descriptor* ptr_struct, FILE* fd);

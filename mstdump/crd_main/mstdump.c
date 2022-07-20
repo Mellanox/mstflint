@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
     int rc;
     int full = 0;
     int cause_addr = -1, cause_off = -1;
-    crd_ctxt_t* context;
+    crd_ctxt_t* context = NULL;
     u_int32_t arr_size = 0;
     char* endptr;
     u_int8_t new_i2c_slave = 0;

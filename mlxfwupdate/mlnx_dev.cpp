@@ -375,80 +375,64 @@ void MlnxDev::setDeviceType(void)
         return;
     }
 
-    switch (ptr_dm_dev_id)
+    if (dm_dev_is_eth_switch(ptr_dm_dev_id))
     {
-        case DeviceSpectrum:
-        case DeviceSpectrum2:
-        case DeviceSpectrum3:
-        case DeviceSpectrum4:
-            portOneType = PORT_ETH;
-            portTwoType = PORT_ETH;
-            isOnlyBase = true;
-            break;
-
-        case DeviceConnectIB:
-            portOneType = PORT_IB;
-            portTwoType = PORT_IB;
-            break;
-
-        case DeviceConnectX3:
-        case DeviceConnectX3Pro:
-            u_int32_t mac;
-            if ((mread4(mf, 0x1f148, &mac)) == 4)
-            { // port1
-                portOneType = EXT(mac, 30, 29) != 1 ? PORT_ETH : PORT_IB;
-            }
-            if ((mread4(mf, 0x1f164, &mac)) == 4)
-            { // port2
-                portTwoType = EXT(mac, 30, 29) != 1 ? PORT_ETH : PORT_IB;
-            }
-            break;
-
-        case DeviceSwitchIB:
-        case DeviceSwitchIB2:
-        case DeviceQuantum:
-        case DeviceQuantum2:
-            portOneType = PORT_IB;
-            portTwoType = PORT_IB;
-            isOnlyBase = true;
-            break;
-
-        case DeviceConnectX4LX:
-            portOneType = PORT_ETH;
-            portTwoType = PORT_ETH;
-            isOnlyBase = true;
-            break;
-
-        case DeviceConnectX4:
-        case DeviceConnectX5:
-        case DeviceConnectX6:
-        case DeviceConnectX6DX:
-        case DeviceConnectX6LX:
-        case DeviceConnectX7:
-        case DeviceBlueField:
-        case DeviceBlueField2:
-        case DeviceBlueField3:
-            try
-            {
-                _commander = Commander::create(mf, getDevName(), "");
-            }
-            catch (MlxcfgException& e)
-            {
-                _commander = NULL;
-            }
-            isOnlyBase = true;
-            portOneType = findPortType(1);
-            portTwoType = findPortType(2);
-            if (_commander)
-            {
-                delete _commander;
-            }
+        portOneType = PORT_ETH;
+        portTwoType = PORT_ETH;
+        isOnlyBase = true;
+    }
+    else if (dm_is_connectib(ptr_dm_dev_id))
+    {
+        portOneType = PORT_IB;
+        portTwoType = PORT_IB;
+    }
+    else if (dm_is_4th_gen(ptr_dm_dev_id))
+    {
+        u_int32_t mac;
+        if ((mread4(mf, 0x1f148, &mac)) == 4)
+        { // port1
+            portOneType = EXT(mac, 30, 29) != 1 ? PORT_ETH : PORT_IB;
+        }
+        if ((mread4(mf, 0x1f164, &mac)) == 4)
+        { // port2
+            portTwoType = EXT(mac, 30, 29) != 1 ? PORT_ETH : PORT_IB;
+        }
+    }
+    else if (dm_dev_is_ib_switch(ptr_dm_dev_id))
+    {
+        portOneType = PORT_IB;
+        portTwoType = PORT_IB;
+        isOnlyBase = true;
+    }
+    else if (ptr_dm_dev_id == DeviceConnectX4LX)
+    {
+        portOneType = PORT_ETH;
+        portTwoType = PORT_ETH;
+        isOnlyBase = true;
+    }
+    else if (dm_is_5th_gen_hca(ptr_dm_dev_id))
+    {
+        try
+        {
+            _commander = Commander::create(mf, getDevName(), "");
+        }
+        catch (MlxcfgException& e)
+        {
             _commander = NULL;
-            break;
-
-        default:
-            portOneType = PORT_NA;
-            portTwoType = PORT_NA;
+        }
+        isOnlyBase = true;
+        portOneType = findPortType(1);
+        portTwoType = findPortType(2);
+        if (_commander)
+        {
+            delete _commander;
+        }
+        _commander = NULL;
+    }
+    else
+    {
+        portOneType = PORT_NA;
+        portTwoType = PORT_NA;
     }
     if (mf)
     {

@@ -62,6 +62,7 @@ public:
     AdbParser(string fileName,
               Adb* adbCtxt,
               bool addReserved = false,
+              AdbProgress* progressObj = NULL,
               bool strict = true,
               string includePath = "",
               bool enforceExtraChecks = false,
@@ -120,6 +121,7 @@ private:
     string _lastError;
     bool _addReserved;
     int _progressCnt;
+    AdbProgress* _progressObj;
     bool _strict;
     bool _checkDsAlign;
     bool skipNode;
@@ -185,6 +187,7 @@ const string AdbParser::TAG_ATTR_DEFINE_PATTERN = "([A-Za-z_]\\w*)=(\\w+)";
 AdbParser::AdbParser(string fileName,
                      Adb* adbCtxt,
                      bool addReserved,
+                     AdbProgress* progressObj,
                      bool strict,
                      string includePath,
                      bool enforceExtraChecks,
@@ -194,6 +197,7 @@ AdbParser::AdbParser(string fileName,
     _fileName(fileName),
     _addReserved(addReserved),
     _progressCnt(0),
+    _progressObj(progressObj),
     _strict(strict),
     _checkDsAlign(_checkDsAlign),
     skipNode(false),
@@ -741,8 +745,8 @@ void AdbParser::includeFile(AdbParser* adbParser, string fileName, int lineNumbe
         adbParser->_adbCtxt->includedFiles[fileName] = info;
 
         // parse the included file
-        AdbParser p(filePath, adbParser->_adbCtxt, adbParser->_addReserved, adbParser->_strict, "",
-                    adbParser->_enforceExtraChecks);
+        AdbParser p(filePath, adbParser->_adbCtxt, adbParser->_addReserved, adbParser->_progressObj, adbParser->_strict,
+                    "", adbParser->_enforceExtraChecks);
         if (!p.load())
         {
             throw AdbException(p.getError());
@@ -1673,7 +1677,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
             // check if all mandatory attributes were supplied
             for (unsigned int i = 0; i < adbParser->field_mand_attr.size(); i++)
             {
-                if (attrValue(atts, adbParser->field_mand_attr[i].c_str()) == "")
+                if (!checkAttrExist(atts, adbParser->field_mand_attr[i].c_str()))
                 {
                     expFound = raiseException(
                       allowMultipleExceptions,
@@ -2067,6 +2071,12 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
             adbParser->_adbCtxt->nodesMap.insert(
               pair<string, AdbNode*>(adbParser->_currentNode->name, adbParser->_currentNode));
             adbParser->_currentNode = 0;
+
+            // Call progress_func callback
+            if (adbParser->_progressObj && !(adbParser->_progressCnt++ % PROGRESS_NODE_CNT))
+            {
+                adbParser->_progressObj->progress(); // TODO - call with real parameters
+            }
         }
     }
     /*
@@ -2375,6 +2385,7 @@ string Adb::printAdbExceptionMap()
  **/
 bool Adb::load(string fname,
                bool addReserved,
+               AdbProgress* progressObj,
                bool strict,
                string includePath,
                string includeDir,
@@ -2393,7 +2404,8 @@ bool Adb::load(string fname,
             AdbParser::setAllowMultipleExceptionsTrue();
         }
         _logFile->init(logFileStr, allowMultipleExceptions);
-        AdbParser p(fname, this, addReserved, strict, includePath, enforceExtraChecks, checkDsAlign, enforceGuiChecks);
+        AdbParser p(fname, this, addReserved, progressObj, strict, includePath, enforceExtraChecks, checkDsAlign,
+                    enforceGuiChecks);
         _checkDsAlign = checkDsAlign;
         _enforceGuiChecks = enforceGuiChecks;
         if (!p.load())
@@ -2440,11 +2452,15 @@ bool Adb::load(string fname,
 /**
  * Function: Adb::loadFromString
  **/
-bool Adb::loadFromString(const char* adbContents, bool addReserved, bool strict, bool enforceExtraChecks)
+bool Adb::loadFromString(const char* adbContents,
+                         bool addReserved,
+                         AdbProgress* progressObj,
+                         bool strict,
+                         bool enforceExtraChecks)
 {
     try
     {
-        AdbParser p(string(), this, addReserved, strict, "", enforceExtraChecks);
+        AdbParser p(string(), this, addReserved, progressObj, strict, "", enforceExtraChecks);
         mainFileName = OS_PATH_SEP;
         if (!p.loadFromString(adbContents))
         {
@@ -2638,6 +2654,7 @@ void Adb::cleanInstAttrs()
  **/
 AdbInstance* Adb::createLayout(string rootNodeName,
                                bool isExprEval,
+                               AdbProgress* progressObj,
                                int depth,
                                bool ignoreMissingNodes,
                                bool allowMultipleExceptions)
@@ -2675,8 +2692,8 @@ AdbInstance* Adb::createLayout(string rootNodeName,
         for (size_t i = 0; (depth == -1 || depth > 0) && i < nodeDesc->fields.size(); i++)
         {
             vector<AdbInstance*> subItems =
-              createInstance(nodeDesc->fields[i], rootItem, emptyVars, isExprEval, depth == -1 ? -1 : depth - 1,
-                             ignoreMissingNodes, allowMultipleExceptions);
+              createInstance(nodeDesc->fields[i], rootItem, emptyVars, isExprEval, progressObj,
+                             depth == -1 ? -1 : depth - 1, ignoreMissingNodes, allowMultipleExceptions);
             rootItem->subItems.insert(rootItem->subItems.end(), subItems.begin(), subItems.end());
         }
 
@@ -2886,11 +2903,16 @@ vector<AdbInstance*> Adb::createInstance(AdbField* field,
                                          AdbInstance* parent,
                                          map<string, string> vars,
                                          bool isExprEval,
+                                         AdbProgress* progressObj,
                                          int depth,
                                          bool ignoreMissingNodes,
                                          bool allowMultipleExceptions)
 {
     static const regex EXP_PATTERN("\\s*([a-zA-Z0-9_]+)=((\\$\\(.*?\\)|\\S+|$)*)\\s*");
+    if (progressObj)
+    {
+        progressObj->progress();
+    }
 
     // if array create instance for each item. else - create 1
     vector<AdbInstance*> instList;
@@ -2910,6 +2932,7 @@ vector<AdbInstance*> Adb::createInstance(AdbField* field,
                 raiseException(allowMultipleExceptions,
                                "Can't find the definition for subnode: " + field->subNode + " of field: " + field->name,
                                ExceptionHolder::ERROR_EXCEPTION);
+                return instList;
             }
             else
             {
@@ -2917,10 +2940,13 @@ vector<AdbInstance*> Adb::createInstance(AdbField* field,
             }
         }
 
-        inst->name = field->name;
-        inst->arrIdx = 0;
-        inst->size = field->eSize();
-        inst->parent = parent;
+        if (inst)
+        {
+            inst->name = field->name;
+            inst->arrIdx = 0;
+            inst->size = field->eSize();
+            inst->parent = parent;
+        }
 
         if (field->offset == 0xffffffff)
         {
@@ -3063,12 +3089,15 @@ vector<AdbInstance*> Adb::createInstance(AdbField* field,
             {
                 map<string, string> varsCopy = vars;
                 vector<AdbInstance*> subItems =
-                  createInstance(*it, inst, vars, isExprEval, depth == -1 ? -1 : depth - 1, ignoreMissingNodes,
-                                 allowMultipleExceptions);
-                inst->subItems.insert(inst->subItems.end(), subItems.begin(), subItems.end());
-                if (subItems[0]->maxLeafSize > inst->maxLeafSize)
+                  createInstance(*it, inst, vars, isExprEval, progressObj, depth == -1 ? -1 : depth - 1,
+                                 ignoreMissingNodes, allowMultipleExceptions);
+                if (subItems.size() > 0)
                 {
-                    inst->maxLeafSize = subItems[0]->maxLeafSize;
+                    inst->subItems.insert(inst->subItems.end(), subItems.begin(), subItems.end());
+                    if (subItems[0]->maxLeafSize > inst->maxLeafSize)
+                    {
+                        inst->maxLeafSize = subItems[0]->maxLeafSize;
+                    }
                 }
             }
             inst->nodeDesc->inLayout = false;
@@ -3082,7 +3111,7 @@ vector<AdbInstance*> Adb::createInstance(AdbField* field,
                                ExceptionHolder::ERROR_EXCEPTION);
             }
 
-            if (!inst->isUnion())
+            if (!inst->isUnion() && inst->subItems.size() > 0)
             {
                 stable_sort(inst->subItems.begin(), inst->subItems.end(), compareFieldsPtr<AdbInstance>);
 

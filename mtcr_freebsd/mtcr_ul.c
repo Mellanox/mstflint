@@ -77,6 +77,7 @@
 #define PCI_VPD_ADDR 0x2
 #define PCI_CAP_ID_VPD 0x3
 #define PCI_VPD_DATA 0x4
+#define HW_ID_ADDR 0xf0014
 
 #define _PATH_DEVPCI "/dev/pci"
 
@@ -174,11 +175,16 @@ void mtcr_connectx_flush(void* ptr, int fdlock)
     }
 }
 
+int read_device_id(mfile* mf, u_int32_t* device_id)
+{
+    return mread4(mf, HW_ID_ADDR, device_id);
+}
+
 int mtcr_check_signature(mfile* mf)
 {
     unsigned signature;
     int rc;
-    rc = mread4(mf, 0xF0014, &signature);
+    rc = read_device_id(mf, &signature);
     if (rc != 4)
     {
         if (!errno)
@@ -341,13 +347,12 @@ int write_config(mfile* mf, unsigned int reg, uint32_t data, int width)
 }
 
 #define WO_REG_ADDR_DATA 0xbadacce5
-#define DEVID_OFFSET 0xf0014
 #define PCICONF_ADDR_OFF 0x58
 #define PCICONF_DATA_OFF 0x5c
 
 static int is_wo_pciconf_gw(mfile* mf)
 {
-    unsigned offset = DEVID_OFFSET;
+    unsigned offset = HW_ID_ADDR;
     u_int32_t data = 0;
     int lock_rc;
     lock_rc = _flock_int(mf->fdlock, LOCK_EX);
@@ -1392,6 +1397,7 @@ static int get_device_ids(const char* dev_name, dev_info* dinfo)
     }
     dinfo->pci.vend_id = EXTRACT(buf, 0, 16);
     dinfo->pci.dev_id = EXTRACT(buf, 16, 16);
+
     rc = read_config(mf, PCI_CLASS_OFFS, &buf, 4);
     if (rc)
     {
@@ -2335,7 +2341,7 @@ static int mreg_send_raw(mfile* mf,
     return ME_OK;
 }
 
-#define HW_ID_ADDR 0xf0014
+
 
 #define CONNECTX3_HW_ID 0x1f5
 #define CONNECTX3_PRO_HW_ID 0x1f7
@@ -2344,7 +2350,7 @@ static int supports_icmd(mfile* mf)
 {
     u_int32_t dev_id;
 
-    if (mread4(mf, HW_ID_ADDR, &dev_id) != 4)
+    if (read_device_id(mf, &dev_id) != 4)
     {
         // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
         return 0;
@@ -2365,7 +2371,7 @@ static int supports_tools_cmdif_reg(mfile* mf)
 {
     u_int32_t dev_id;
 
-    if (mread4(mf, HW_ID_ADDR, &dev_id) != 4)
+    if (read_device_id(mf, &dev_id) != 4)
     {
         return 0;
     }

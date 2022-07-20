@@ -99,6 +99,7 @@ public:
         LibHandle(NULL),
         P11Functions(NULL),
         SfntFunctions(NULL),
+        m_hSession(0),
         hSymKey(0),
         m_ckSlot(0xffff),
         pLibraryPath("/usr/safenet/lunaclient/lib"),

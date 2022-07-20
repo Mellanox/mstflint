@@ -485,6 +485,7 @@ void Expr::GetToken(token* pt)
             }
     } while ((old_str != str) && *str);
 
+    pt->value = 0;
     pt->beg = str;
     pt->sta = state;
     switch (state)

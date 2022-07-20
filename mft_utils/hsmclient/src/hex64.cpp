@@ -33,7 +33,6 @@
 #include "hex64.h"
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 using namespace std;
 static const char* base64_chars[2] = {"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                       "abcdefghijklmnopqrstuvwxyz"

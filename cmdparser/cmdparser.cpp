@@ -375,12 +375,13 @@ string CommandLineRequester::GetUsageOptionalSection(vector<struct optional_help
 /* private methods */
 void CommandLineParser::SetLastError(const char* fmt, ...)
 {
-    char buff[1024];
+    const int MAX_BUFF = 1024;
+    char buff[MAX_BUFF];
     va_list args;
 
     memset(buff, 0, sizeof(buff));
     va_start(args, fmt);
-    vsprintf(buff, fmt, args);
+    vsnprintf(buff, MAX_BUFF, fmt, args);
     va_end(args);
 
     this->last_error.assign(buff);

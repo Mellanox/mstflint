@@ -83,6 +83,7 @@ typedef struct ParamView
         type(BOOLEAN_TYPE),
         val(MLXCFG_UNKNOWN),
         port(0),
+        module(-1),
         strVal(""),
         setVal(""),
         rule(""),

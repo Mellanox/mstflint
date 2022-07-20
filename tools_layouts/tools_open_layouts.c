@@ -710,7 +710,8 @@ void tools_open_cap_mask_print(const struct tools_open_cap_mask* ptr_struct, FIL
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "is_system_image_guid_sup : " UH_FMT "\n", ptr_struct->is_system_image_guid_sup);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "is_pkey_switch_external_port_trap_sup : " UH_FMT "\n", ptr_struct->is_pkey_switch_external_port_trap_sup);
+    fprintf(fd, "is_pkey_switch_external_port_trap_sup : " UH_FMT "\n",
+            ptr_struct->is_pkey_switch_external_port_trap_sup);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "is_extended_speed_sup : " UH_FMT "\n", ptr_struct->is_extended_speed_sup);
     adb2c_add_indentation(fd, indent_level);
@@ -734,9 +735,11 @@ void tools_open_cap_mask_print(const struct tools_open_cap_mask* ptr_struct, FIL
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "is_client_reregistration_sup : " UH_FMT "\n", ptr_struct->is_client_reregistration_sup);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "is_other_local_changes_notice_supported : " UH_FMT "\n", ptr_struct->is_other_local_changes_notice_supported);
+    fprintf(fd, "is_other_local_changes_notice_supported : " UH_FMT "\n",
+            ptr_struct->is_other_local_changes_notice_supported);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "is_link_speed_width_pairs_table_supported : " UH_FMT "\n", ptr_struct->is_link_speed_width_pairs_table_supported);
+    fprintf(fd, "is_link_speed_width_pairs_table_supported : " UH_FMT "\n",
+            ptr_struct->is_link_speed_width_pairs_table_supported);
 }
 
 unsigned int tools_open_cap_mask_size(void)
@@ -821,7 +824,9 @@ void tools_open_capability_mask_smp_unpack(struct tools_open_capability_mask_smp
     ptr_struct->IsASlaveVirtualSwitch = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 }
 
-void tools_open_capability_mask_smp_print(const struct tools_open_capability_mask_smp* ptr_struct, FILE* fd, int indent_level)
+void tools_open_capability_mask_smp_print(const struct tools_open_capability_mask_smp* ptr_struct,
+                                          FILE* fd,
+                                          int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_capability_mask_smp ========\n");
@@ -849,7 +854,8 @@ void tools_open_capability_mask_smp_print(const struct tools_open_capability_mas
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "IsAccessRegisterSupported : " UH_FMT "\n", ptr_struct->IsAccessRegisterSupported);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "IsInterProcessCommunicationSupported : " UH_FMT "\n", ptr_struct->IsInterProcessCommunicationSupported);
+    fprintf(fd, "IsInterProcessCommunicationSupported : " UH_FMT "\n",
+            ptr_struct->IsInterProcessCommunicationSupported);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "IsPortSLToPrivateLFTMapSupported : " UH_FMT "\n", ptr_struct->IsPortSLToPrivateLFTMapSupported);
     adb2c_add_indentation(fd, indent_level);
@@ -1234,11 +1240,15 @@ void tools_open_nv_hdr_fifth_gen_print(const struct tools_open_nv_hdr_fifth_gen*
                                      ("NV_WRITER_ID_ICMD_UEFI_CLP") :
                                      ((ptr_struct->writer_id == 8 ?
                                          ("NV_WRITER_ID_ICMD_FLEXBOOT") :
-                                         ((ptr_struct->writer_id == 9 ? ("NV_WRITER_ID_ICMD_MLXCONFIG") :
+                                         ((ptr_struct->writer_id == 9 ?
+                                             ("NV_WRITER_ID_ICMD_MLXCONFIG") :
                                                                         ((ptr_struct->writer_id == 10 ?
                                                                             ("NV_WRITER_ID_ICMD_USER1") :
-                                                                            ((ptr_struct->writer_id == 11 ? ("NV_WRITER_ID_ICMD_USER2") :
-                                                                                                            ((ptr_struct->writer_id == 31 ? ("NV_WRITER_ID_OTHER") : ("unknown")))))))))))))))))))))))))),
+                                                 ((ptr_struct->writer_id == 11 ?
+                                                     ("NV_WRITER_ID_ICMD_USER2") :
+                                                     ((ptr_struct->writer_id == 31 ? ("NV_WRITER_ID_OTHER") :
+                                                                                     ("unknow"
+                                                                                      "n")))))))))))))))))))))))))),
       ptr_struct->writer_id);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "read_current         : " UH_FMT "\n", ptr_struct->read_current);
@@ -1578,7 +1588,8 @@ void tools_open_aux_tlv_header_dump(const struct tools_open_aux_tlv_header* ptr_
     tools_open_aux_tlv_header_print(ptr_struct, fd, 0);
 }
 
-void tools_open_extended_ib_port_info_pack(const struct tools_open_extended_ib_port_info* ptr_struct, u_int8_t* ptr_buff)
+void tools_open_extended_ib_port_info_pack(const struct tools_open_extended_ib_port_info* ptr_struct,
+                                           u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -1596,7 +1607,8 @@ void tools_open_extended_ib_port_info_pack(const struct tools_open_extended_ib_p
     adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->ActiveCell);
 }
 
-void tools_open_extended_ib_port_info_unpack(struct tools_open_extended_ib_port_info* ptr_struct, const u_int8_t* ptr_buff)
+void tools_open_extended_ib_port_info_unpack(struct tools_open_extended_ib_port_info* ptr_struct,
+                                             const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -1614,7 +1626,9 @@ void tools_open_extended_ib_port_info_unpack(struct tools_open_extended_ib_port_
     ptr_struct->ActiveCell = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 }
 
-void tools_open_extended_ib_port_info_print(const struct tools_open_extended_ib_port_info* ptr_struct, FILE* fd, int indent_level)
+void tools_open_extended_ib_port_info_print(const struct tools_open_extended_ib_port_info* ptr_struct,
+                                            FILE* fd,
+                                            int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_extended_ib_port_info ========\n");
@@ -3150,7 +3164,9 @@ void tools_open_smp_vsp_general_info_unpack(union tools_open_smp_vsp_general_inf
     tools_open_capability_mask_smp_unpack(&(ptr_struct->capability_mask_smp), ptr_buff);
 }
 
-void tools_open_smp_vsp_general_info_print(const union tools_open_smp_vsp_general_info* ptr_struct, FILE* fd, int indent_level)
+void tools_open_smp_vsp_general_info_print(const union tools_open_smp_vsp_general_info* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_smp_vsp_general_info ========\n");
@@ -3397,7 +3413,9 @@ void tools_open_boot_settings_ext_unpack(struct tools_open_boot_settings_ext* pt
     ptr_struct->ip_ver = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 }
 
-void tools_open_boot_settings_ext_print(const struct tools_open_boot_settings_ext* ptr_struct, FILE* fd, int indent_level)
+void tools_open_boot_settings_ext_print(const struct tools_open_boot_settings_ext* ptr_struct,
+                                        FILE* fd,
+                                        int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_boot_settings_ext ========\n");
@@ -3495,7 +3513,9 @@ void tools_open_component_desciptor_unpack(struct tools_open_component_desciptor
     ptr_struct->size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
 
-void tools_open_component_desciptor_print(const struct tools_open_component_desciptor* ptr_struct, FILE* fd, int indent_level)
+void tools_open_component_desciptor_print(const struct tools_open_component_desciptor* ptr_struct,
+                                          FILE* fd,
+                                          int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_component_desciptor ========\n");
@@ -3701,7 +3721,8 @@ void tools_open_image_info_dump(const struct tools_open_image_info* ptr_struct, 
     tools_open_image_info_print(ptr_struct, fd, 0);
 }
 
-void tools_open_infiniband_boot_settings_pack(const struct tools_open_infiniband_boot_settings* ptr_struct, u_int8_t* ptr_buff)
+void tools_open_infiniband_boot_settings_pack(const struct tools_open_infiniband_boot_settings* ptr_struct,
+                                              u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -3709,7 +3730,8 @@ void tools_open_infiniband_boot_settings_pack(const struct tools_open_infiniband
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->boot_pkey);
 }
 
-void tools_open_infiniband_boot_settings_unpack(struct tools_open_infiniband_boot_settings* ptr_struct, const u_int8_t* ptr_buff)
+void tools_open_infiniband_boot_settings_unpack(struct tools_open_infiniband_boot_settings* ptr_struct,
+                                                const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -3717,7 +3739,9 @@ void tools_open_infiniband_boot_settings_unpack(struct tools_open_infiniband_boo
     ptr_struct->boot_pkey = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 }
 
-void tools_open_infiniband_boot_settings_print(const struct tools_open_infiniband_boot_settings* ptr_struct, FILE* fd, int indent_level)
+void tools_open_infiniband_boot_settings_print(const struct tools_open_infiniband_boot_settings* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_infiniband_boot_settings ========\n");
@@ -3736,7 +3760,8 @@ void tools_open_infiniband_boot_settings_dump(const struct tools_open_infiniband
     tools_open_infiniband_boot_settings_print(ptr_struct, fd, 0);
 }
 
-void tools_open_infiniband_dc_capabilities_pack(const struct tools_open_infiniband_dc_capabilities* ptr_struct, u_int8_t* ptr_buff)
+void tools_open_infiniband_dc_capabilities_pack(const struct tools_open_infiniband_dc_capabilities* ptr_struct,
+                                                u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -3750,7 +3775,8 @@ void tools_open_infiniband_dc_capabilities_pack(const struct tools_open_infiniba
     adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->max_dcr_lifo_size);
 }
 
-void tools_open_infiniband_dc_capabilities_unpack(struct tools_open_infiniband_dc_capabilities* ptr_struct, const u_int8_t* ptr_buff)
+void tools_open_infiniband_dc_capabilities_unpack(struct tools_open_infiniband_dc_capabilities* ptr_struct,
+                                                  const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -3764,7 +3790,9 @@ void tools_open_infiniband_dc_capabilities_unpack(struct tools_open_infiniband_d
     ptr_struct->max_dcr_lifo_size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
 
-void tools_open_infiniband_dc_capabilities_print(const struct tools_open_infiniband_dc_capabilities* ptr_struct, FILE* fd, int indent_level)
+void tools_open_infiniband_dc_capabilities_print(const struct tools_open_infiniband_dc_capabilities* ptr_struct,
+                                                 FILE* fd,
+                                                 int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_infiniband_dc_capabilities ========\n");
@@ -3784,12 +3812,14 @@ unsigned int tools_open_infiniband_dc_capabilities_size(void)
     return TOOLS_OPEN_INFINIBAND_DC_CAPABILITIES_SIZE;
 }
 
-void tools_open_infiniband_dc_capabilities_dump(const struct tools_open_infiniband_dc_capabilities* ptr_struct, FILE* fd)
+void tools_open_infiniband_dc_capabilities_dump(const struct tools_open_infiniband_dc_capabilities* ptr_struct,
+                                                FILE* fd)
 {
     tools_open_infiniband_dc_capabilities_print(ptr_struct, fd, 0);
 }
 
-void tools_open_infiniband_dc_settings_pack(const struct tools_open_infiniband_dc_settings* ptr_struct, u_int8_t* ptr_buff)
+void tools_open_infiniband_dc_settings_pack(const struct tools_open_infiniband_dc_settings* ptr_struct,
+                                            u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -3799,7 +3829,8 @@ void tools_open_infiniband_dc_settings_pack(const struct tools_open_infiniband_d
     adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->dcr_lifo_size);
 }
 
-void tools_open_infiniband_dc_settings_unpack(struct tools_open_infiniband_dc_settings* ptr_struct, const u_int8_t* ptr_buff)
+void tools_open_infiniband_dc_settings_unpack(struct tools_open_infiniband_dc_settings* ptr_struct,
+                                              const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -3809,7 +3840,9 @@ void tools_open_infiniband_dc_settings_unpack(struct tools_open_infiniband_dc_se
     ptr_struct->dcr_lifo_size = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
 }
 
-void tools_open_infiniband_dc_settings_print(const struct tools_open_infiniband_dc_settings* ptr_struct, FILE* fd, int indent_level)
+void tools_open_infiniband_dc_settings_print(const struct tools_open_infiniband_dc_settings* ptr_struct,
+                                             FILE* fd,
+                                             int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_infiniband_dc_settings ========\n");
@@ -3943,7 +3976,8 @@ void tools_open_lldp_client_settings_pack(const struct tools_open_lldp_client_se
     adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->lldp_nb_tx_mode);
 }
 
-void tools_open_lldp_client_settings_unpack(struct tools_open_lldp_client_settings* ptr_struct, const u_int8_t* ptr_buff)
+void tools_open_lldp_client_settings_unpack(struct tools_open_lldp_client_settings* ptr_struct,
+                                            const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -3955,7 +3989,9 @@ void tools_open_lldp_client_settings_unpack(struct tools_open_lldp_client_settin
     ptr_struct->lldp_nb_tx_mode = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 }
 
-void tools_open_lldp_client_settings_print(const struct tools_open_lldp_client_settings* ptr_struct, FILE* fd, int indent_level)
+void tools_open_lldp_client_settings_print(const struct tools_open_lldp_client_settings* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_lldp_client_settings ========\n");
@@ -4398,7 +4434,8 @@ void tools_open_nv_base_mac_guid_cap_pack(const struct tools_open_nv_base_mac_gu
     adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_of_allocated_guids);
 }
 
-void tools_open_nv_base_mac_guid_cap_unpack(struct tools_open_nv_base_mac_guid_cap* ptr_struct, const u_int8_t* ptr_buff)
+void tools_open_nv_base_mac_guid_cap_unpack(struct tools_open_nv_base_mac_guid_cap* ptr_struct,
+                                            const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -4412,7 +4449,9 @@ void tools_open_nv_base_mac_guid_cap_unpack(struct tools_open_nv_base_mac_guid_c
     ptr_struct->num_of_allocated_guids = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 }
 
-void tools_open_nv_base_mac_guid_cap_print(const struct tools_open_nv_base_mac_guid_cap* ptr_struct, FILE* fd, int indent_level)
+void tools_open_nv_base_mac_guid_cap_print(const struct tools_open_nv_base_mac_guid_cap* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_nv_base_mac_guid_cap ========\n");
@@ -4465,7 +4504,9 @@ void tools_open_nv_cx3_global_conf_unpack(struct tools_open_nv_cx3_global_conf* 
     ptr_struct->cq_timestamp = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 }
 
-void tools_open_nv_cx3_global_conf_print(const struct tools_open_nv_cx3_global_conf* ptr_struct, FILE* fd, int indent_level)
+void tools_open_nv_cx3_global_conf_print(const struct tools_open_nv_cx3_global_conf* ptr_struct,
+                                         FILE* fd,
+                                         int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_nv_cx3_global_conf ========\n");
@@ -4490,7 +4531,8 @@ void tools_open_nv_cx3_global_conf_dump(const struct tools_open_nv_cx3_global_co
     tools_open_nv_cx3_global_conf_print(ptr_struct, fd, 0);
 }
 
-void tools_open_option_rom_capability_pack(const struct tools_open_option_rom_capability* ptr_struct, u_int8_t* ptr_buff)
+void tools_open_option_rom_capability_pack(const struct tools_open_option_rom_capability* ptr_struct,
+                                           u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -4498,7 +4540,8 @@ void tools_open_option_rom_capability_pack(const struct tools_open_option_rom_ca
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->ip_ver);
 }
 
-void tools_open_option_rom_capability_unpack(struct tools_open_option_rom_capability* ptr_struct, const u_int8_t* ptr_buff)
+void tools_open_option_rom_capability_unpack(struct tools_open_option_rom_capability* ptr_struct,
+                                             const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -4506,7 +4549,9 @@ void tools_open_option_rom_capability_unpack(struct tools_open_option_rom_capabi
     ptr_struct->ip_ver = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 }
 
-void tools_open_option_rom_capability_print(const struct tools_open_option_rom_capability* ptr_struct, FILE* fd, int indent_level)
+void tools_open_option_rom_capability_print(const struct tools_open_option_rom_capability* ptr_struct,
+                                            FILE* fd,
+                                            int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_option_rom_capability ========\n");
@@ -4569,7 +4614,9 @@ void tools_open_package_descriptor_unpack(struct tools_open_package_descriptor* 
     ptr_struct->user_data_offset = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
 
-void tools_open_package_descriptor_print(const struct tools_open_package_descriptor* ptr_struct, FILE* fd, int indent_level)
+void tools_open_package_descriptor_print(const struct tools_open_package_descriptor* ptr_struct,
+                                         FILE* fd,
+                                         int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_package_descriptor ========\n");
@@ -4825,7 +4872,9 @@ void tools_open_pci_configuration_unpack(struct tools_open_pci_configuration* pt
     ptr_struct->num_vf_msix = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 10);
 }
 
-void tools_open_pci_configuration_print(const struct tools_open_pci_configuration* ptr_struct, FILE* fd, int indent_level)
+void tools_open_pci_configuration_print(const struct tools_open_pci_configuration* ptr_struct,
+                                        FILE* fd,
+                                        int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_pci_configuration ========\n");
@@ -4962,7 +5011,8 @@ void tools_open_port_boot_state_dump(const struct tools_open_port_boot_state* pt
     tools_open_port_boot_state_print(ptr_struct, fd, 0);
 }
 
-void tools_open_preboot_boot_settings_pack(const struct tools_open_preboot_boot_settings* ptr_struct, u_int8_t* ptr_buff)
+void tools_open_preboot_boot_settings_pack(const struct tools_open_preboot_boot_settings* ptr_struct,
+                                           u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -4978,7 +5028,8 @@ void tools_open_preboot_boot_settings_pack(const struct tools_open_preboot_boot_
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->boot_option_rom_en);
 }
 
-void tools_open_preboot_boot_settings_unpack(struct tools_open_preboot_boot_settings* ptr_struct, const u_int8_t* ptr_buff)
+void tools_open_preboot_boot_settings_unpack(struct tools_open_preboot_boot_settings* ptr_struct,
+                                             const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -4994,7 +5045,9 @@ void tools_open_preboot_boot_settings_unpack(struct tools_open_preboot_boot_sett
     ptr_struct->boot_option_rom_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 }
 
-void tools_open_preboot_boot_settings_print(const struct tools_open_preboot_boot_settings* ptr_struct, FILE* fd, int indent_level)
+void tools_open_preboot_boot_settings_print(const struct tools_open_preboot_boot_settings* ptr_struct,
+                                            FILE* fd,
+                                            int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_preboot_boot_settings ========\n");
@@ -5053,7 +5106,9 @@ void tools_open_preboot_flow_ctrl_unpack(struct tools_open_preboot_flow_ctrl* pt
     ptr_struct->pptx = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 }
 
-void tools_open_preboot_flow_ctrl_print(const struct tools_open_preboot_flow_ctrl* ptr_struct, FILE* fd, int indent_level)
+void tools_open_preboot_flow_ctrl_print(const struct tools_open_preboot_flow_ctrl* ptr_struct,
+                                        FILE* fd,
+                                        int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_preboot_flow_ctrl ========\n");
@@ -5162,7 +5217,8 @@ void tools_open_qos_cap_dump(const struct tools_open_qos_cap* ptr_struct, FILE* 
     tools_open_qos_cap_print(ptr_struct, fd, 0);
 }
 
-void tools_open_query_def_params_global_pack(const struct tools_open_query_def_params_global* ptr_struct, u_int8_t* ptr_buff)
+void tools_open_query_def_params_global_pack(const struct tools_open_query_def_params_global* ptr_struct,
+                                             u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -5196,7 +5252,8 @@ void tools_open_query_def_params_global_pack(const struct tools_open_query_def_p
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->sriov_en);
 }
 
-void tools_open_query_def_params_global_unpack(struct tools_open_query_def_params_global* ptr_struct, const u_int8_t* ptr_buff)
+void tools_open_query_def_params_global_unpack(struct tools_open_query_def_params_global* ptr_struct,
+                                               const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -5230,7 +5287,9 @@ void tools_open_query_def_params_global_unpack(struct tools_open_query_def_param
     ptr_struct->sriov_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 }
 
-void tools_open_query_def_params_global_print(const struct tools_open_query_def_params_global* ptr_struct, FILE* fd, int indent_level)
+void tools_open_query_def_params_global_print(const struct tools_open_query_def_params_global* ptr_struct,
+                                              FILE* fd,
+                                              int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_query_def_params_global ========\n");
@@ -5275,7 +5334,8 @@ void tools_open_query_def_params_global_dump(const struct tools_open_query_def_p
     tools_open_query_def_params_global_print(ptr_struct, fd, 0);
 }
 
-void tools_open_query_def_params_per_port_pack(const struct tools_open_query_def_params_per_port* ptr_struct, u_int8_t* ptr_buff)
+void tools_open_query_def_params_per_port_pack(const struct tools_open_query_def_params_per_port* ptr_struct,
+                                               u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -5345,7 +5405,8 @@ void tools_open_query_def_params_per_port_pack(const struct tools_open_query_def
     adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->iscsi_link_up_delay_time);
 }
 
-void tools_open_query_def_params_per_port_unpack(struct tools_open_query_def_params_per_port* ptr_struct, const u_int8_t* ptr_buff)
+void tools_open_query_def_params_per_port_unpack(struct tools_open_query_def_params_per_port* ptr_struct,
+                                                 const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -5415,7 +5476,9 @@ void tools_open_query_def_params_per_port_unpack(struct tools_open_query_def_par
     ptr_struct->iscsi_link_up_delay_time = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 }
 
-void tools_open_query_def_params_per_port_print(const struct tools_open_query_def_params_per_port* ptr_struct, FILE* fd, int indent_level)
+void tools_open_query_def_params_per_port_print(const struct tools_open_query_def_params_per_port* ptr_struct,
+                                                FILE* fd,
+                                                int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_query_def_params_per_port ========\n");
@@ -5680,7 +5743,8 @@ void tools_open_roce_cc_ecn_dump(const struct tools_open_roce_cc_ecn* ptr_struct
     tools_open_roce_cc_ecn_print(ptr_struct, fd, 0);
 }
 
-void tools_open_roce_v_1_5_next_protocol_pack(const struct tools_open_roce_v_1_5_next_protocol* ptr_struct, u_int8_t* ptr_buff)
+void tools_open_roce_v_1_5_next_protocol_pack(const struct tools_open_roce_v_1_5_next_protocol* ptr_struct,
+                                              u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -5688,7 +5752,8 @@ void tools_open_roce_v_1_5_next_protocol_pack(const struct tools_open_roce_v_1_5
     adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->roce_over_ip_next_protocol);
 }
 
-void tools_open_roce_v_1_5_next_protocol_unpack(struct tools_open_roce_v_1_5_next_protocol* ptr_struct, const u_int8_t* ptr_buff)
+void tools_open_roce_v_1_5_next_protocol_unpack(struct tools_open_roce_v_1_5_next_protocol* ptr_struct,
+                                                const u_int8_t* ptr_buff)
 {
     u_int32_t offset;
 
@@ -5696,7 +5761,9 @@ void tools_open_roce_v_1_5_next_protocol_unpack(struct tools_open_roce_v_1_5_nex
     ptr_struct->roce_over_ip_next_protocol = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 }
 
-void tools_open_roce_v_1_5_next_protocol_print(const struct tools_open_roce_v_1_5_next_protocol* ptr_struct, FILE* fd, int indent_level)
+void tools_open_roce_v_1_5_next_protocol_print(const struct tools_open_roce_v_1_5_next_protocol* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_roce_v_1_5_next_protocol ========\n");
@@ -5846,7 +5913,9 @@ void tools_open_tpt_configuration_unpack(struct tools_open_tpt_configuration* pt
     ptr_struct->log_max_payload_size = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 }
 
-void tools_open_tpt_configuration_print(const struct tools_open_tpt_configuration* ptr_struct, FILE* fd, int indent_level)
+void tools_open_tpt_configuration_print(const struct tools_open_tpt_configuration* ptr_struct,
+                                        FILE* fd,
+                                        int indent_level)
 {
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== tools_open_tpt_configuration ========\n");

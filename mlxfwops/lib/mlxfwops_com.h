@@ -59,7 +59,6 @@
 #define EFIAPI
 #endif
 
-#define CONNECTX_HW_ID 400
 #define SWITCH_IB_HW_ID 583
 #define SPECTRUM_HW_ID 585
 #define SWITCH_IB2_HW_ID 587
@@ -67,6 +66,7 @@
 #define SPECTRUM2_HW_ID 590
 #define SPECTRUM3_HW_ID 592
 #define QUANTUM2_HW_ID 599
+#define QUANTUM3_HW_ID 603
 #define SPECTRUM4_HW_ID 596
 #define GEARBOX_HW_ID 594
 #define GB_MANAGER_HW_ID 595
@@ -82,10 +82,9 @@
 #define BF_HW_ID 529
 #define BF2_HW_ID 532
 #define BF3_HW_ID 540
-#define CX2_HW_ID 400
+#define BF4_HW_ID 544
 #define CX3_HW_ID 501
 #define CX3_PRO_HW_ID 503
-#define IS4_HW_ID 435
 #define CONNECT_IB_HW_ID 511
 
 #define INBAND_MAX_REG_SIZE 44
@@ -286,7 +285,6 @@ typedef enum chip_type
 {
     CT_UNKNOWN = 0,
     CT_CONNECTX,
-    CT_IS4,
     CT_CONNECT_IB,
     CT_SWITCH_IB,
     CT_SPECTRUM,
@@ -305,8 +303,10 @@ typedef enum chip_type
     CT_SPECTRUM3,
     CT_BLUEFIELD2,
     CT_BLUEFIELD3,
+    CT_BLUEFIELD4,
     CT_CONNECTX3,
     CT_QUANTUM2,
+    CT_QUANTUM3,
     CT_SPECTRUM4,
     CT_GEARBOX,
     CT_GEARBOX_MGR,
@@ -318,7 +318,7 @@ typedef enum chip_type
      ((chipType) == CT_CONNECTX4_LX) || ((chipType) == CT_CONNECTX5) || ((chipType) == CT_CONNECTX6) ||  \
      ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || ((chipType) == CT_CONNECTX7) || \
      ((chipType) == CT_CONNECTX8) || ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_BLUEFIELD2) ||    \
-     ((chipType) == CT_BLUEFIELD3))
+     ((chipType) == CT_BLUEFIELD3) || ((chipType) == CT_BLUEFIELD4))
 
 typedef enum chip_family_type
 {

@@ -73,6 +73,8 @@
 #define SEMAPHORE_ADDR_SW_IB 0xa24f8 // sem 62
 #define SEMAPHORE_ADDR_QUANTUM 0xa68f8
 #define SEMAPHORE_ADDR_QUANTUM2 0xa52f8
+#define SEMAPHORE_ADDR_QUANTUM3 0xa52f8 // 0x25b
+#define SEMAPHORE_ADDR_GB100 0xa52f8
 #define SEMAPHORE_ADDR_CX5 0xe74e0
 #define SEMAPHORE_ADDR_CX7 0xe5660
 #define HCR_ADDR_CIB 0x0
@@ -278,9 +280,11 @@ enum
 #define CX6DX_HW_ID 530
 #define CX6LX_HW_ID 534
 #define CX7_HW_ID 536
+#define CX8_HW_ID 542
 #define BF_HW_ID 529
 #define BF2_HW_ID 532
 #define BF3_HW_ID 540
+#define BF4_HW_ID 544
 #define SW_IB_HW_ID 583
 #define SW_EN_HW_ID 585
 #define SW_IB2_HW_ID 587
@@ -288,6 +292,8 @@ enum
 #define SPECTRUM2_HW_ID 590
 #define SPECTRUM3_HW_ID 592
 #define QUANTUM2_HW_ID 599
+#define QUANTUM3_HW_ID 603 // 0x25b
+#define GB100_HW_ID 0x2900
 #define SPECTRUM4_HW_ID 596
 #define AMOS_GBOX_HW_ID 594
 
@@ -1010,6 +1016,8 @@ static int icmd_init_cr(mfile* mf)
             break;
 
         case (QUANTUM2_HW_ID):
+        case (QUANTUM3_HW_ID):
+        case (GB100_HW_ID):
         case (SPECTRUM4_HW_ID):
             cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
             hcr_address = HCR_ADDR_QUANTUM;
@@ -1031,6 +1039,8 @@ static int icmd_init_cr(mfile* mf)
 
         case (CX7_HW_ID):
         case (BF3_HW_ID):
+        case (CX8_HW_ID):
+        case (BF4_HW_ID):
             cmd_ptr_addr = CMD_PTR_ADDR_CX7;
             hcr_address = HCR_ADDR_CX7;
             mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX7;
@@ -1136,6 +1146,8 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
         case (SPECTRUM2_HW_ID):
         case (SPECTRUM3_HW_ID):
         case (QUANTUM2_HW_ID):
+        case (QUANTUM3_HW_ID):
+        case (GB100_HW_ID):
         case (SPECTRUM4_HW_ID):
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
@@ -1147,6 +1159,8 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
         case (BF2_HW_ID):
         case (BF3_HW_ID):
         case (CX7_HW_ID):
+        case (BF4_HW_ID):
+        case (CX8_HW_ID):
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5; // same bit offset as CX5
             break;
