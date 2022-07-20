@@ -202,7 +202,7 @@ void write_ok(int con)
 #include <unistd.h>
 
 #define FILE_PATH "/tmp/mmap.log"
-#define NUM_INTS (0x2000000)
+#define NUM_INTS (0x20000000)
 #define FILE_SIZE (NUM_INTS * sizeof(int))
 
 u_int32_t* cr_space;
@@ -550,7 +550,7 @@ void get_devices_list(int con)
 #ifndef MST_UL
     dev_info* mdevs_inf = NULL;
     int devs_num = -1, i = 0;
-    mdevs_inf = mdevices_info(MDEVS_ALL, &devs_num);
+    mdevs_inf = mdevices_info_v(MDEVS_ALL, &devs_num, 1);
 
     if (devs_num < 0 || !mdevs_inf)
     {
@@ -1123,7 +1123,7 @@ int main(int ac, char* av[])
                             writes_deb(con, "E Invalid size");
                         }
 
-                        for (i = 0; i<(size + 3)> > 2; i++)
+                        for (i = 0; i < ((size + 3) >> 2); i++)
                         {
                             ((u_int32_t*)buf_data)[i] = strtoul(end, &end, 0);
 

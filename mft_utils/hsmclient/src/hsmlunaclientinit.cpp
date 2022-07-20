@@ -151,15 +151,19 @@ CK_RV HSMLunaClient::FindFirstSlot(CK_SLOT_ID& pckSlot)
         }
     }
     pSlotList = (CK_SLOT_ID_PTR) new CK_SLOT_ID[ulCount * sizeof(CK_SLOT_ID)];
+
     if (pSlotList == NULL)
     {
         printf("Memory allocation error. ulCount = %u\n", (unsigned int)ulCount);
         return retCode;
     }
+    memset(pSlotList, 0, ulCount * sizeof(CK_SLOT_ID) * sizeof(CK_SLOT_ID));
+
 
     retCode = P11Functions->C_GetSlotList(CK_TRUE, pSlotList, &ulCount);
     if (retCode != CKR_OK)
     {
+        delete[] pSlotList;
         return retCode;
     }
     pckSlot = pSlotList[0];

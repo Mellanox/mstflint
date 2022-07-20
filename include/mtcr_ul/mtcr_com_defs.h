@@ -250,9 +250,9 @@ typedef enum MType_t
     MST_DEV_I2C = 0x1000,
 #endif
     MST_CALBR = 0x2000,
-    MST_FPGA_ICMD = 0x4000,
+    MST_FPGA_ICMD = 0x4000, // Unsupported
     MST_CABLE = 0x8000,
-    MST_FPGA_DRIVER = 0x10000,
+    MST_FPGA_DRIVER = 0x10000, // Unsupported
     MST_SOFTWARE = 0x20000,
     MST_DRIVER_CONF = 0x40000,
     MST_DRIVER_CR = 0x80000,
@@ -286,8 +286,8 @@ typedef enum Mdevs_t
     MDEVS_MLNX_OS = 0x800,      /* access by CmdIf in MlnxOS */
     MDEVS_FWCTX = 0x900,        /* access by func/context (like UEFI) */
     MDEVS_LPC = 0x1000,         /* Access LPC region */
-    MDEVS_FPGA = 0x2000,        /* Access LPC region */
-    MDEVS_FPGA_NEWTON = 0x4000, /* Access LPC region */
+    MDEVS_FPGA = 0x2000,        /* Access LPC region - DEPRECATED */
+    MDEVS_FPGA_NEWTON = 0x4000, /* Access LPC region - DEPRECATED */
     MDEVS_CABLE = 0x8000,
     MDEVS_SOFTWARE = 0x10000, /* Software system char dev */
     MDEVS_LINKX_CHIP = 0x200000,

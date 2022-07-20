@@ -89,7 +89,7 @@ public:
     void getConfigViews(std::vector<TLVConfView>& confs, const std::string& configName = "");
 
     void genTLVsList(vector<string>& tlvs);
-    void genXMLTemplate(vector<string> tlvs, string& xml, bool allAttrs);
+    void genXMLTemplate(vector<string> tlvs, string& xmlTemplate, bool allAttrs);
     void XML2TLVConf(const string& xmlContent, vector<TLVConf*>& tlvs);
     void binTLV2XML(const vector<u_int32_t>& binTLV, string& xml);
     void binTLV2TLVConf(const vector<u_int32_t>& binTLV, TLVConf*& tlv);

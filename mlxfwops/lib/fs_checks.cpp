@@ -163,7 +163,8 @@ void FsChecks::UpdateContext(FwOperations** devFwOps, FwOperations::ExtBurnParam
 #if !defined(UEFI_BUILD)
 string AddIdentToString(const string& ident, const string& s)
 {
-    std::stringstream ss(s);
+    std::stringstream ss;
+    ss << s;
     vector<string> lines;
 
     while (ss.good())

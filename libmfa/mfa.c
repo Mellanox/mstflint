@@ -307,6 +307,10 @@ int mfa_read_map(struct mfa_desc* mfa_d)
     mfa_d->map = buf;
 
 clean_up:
+    if (res < 0)
+    {
+        free(buf);
+    }
     return res;
 }
 
@@ -330,6 +334,10 @@ int mfa_read_toc(struct mfa_desc* mfa_d)
     mfa_d->toc = buf;
 
 clean_up:
+    if (res < 0)
+    {
+        free(buf);
+    }
     return res;
 }
 
@@ -556,6 +564,7 @@ ssize_t mfa_get_image(mfa_desc* mfa_d, char* board_type_id, u_int8_t type, char*
             res = _ERR_STR(mfa_d, MFA_ERR_MEM_ALLOC, "Failed to allocate %u memory", (unsigned)total_size);
             goto clean_up;
         }
+        memset(*buffer, 0, total_size * sizeof(u_int8_t));
     }
 
     accum_size = 0;

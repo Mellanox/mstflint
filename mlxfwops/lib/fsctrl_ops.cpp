@@ -709,9 +709,9 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
     }
     if (fw_query.fs3_info.security_mode == SM_NONE)
     {
-        return errmsg(
-          MLXFW_MISSING_IMAGE_SIGNATURE,
-          "This is an old image format that does not have a signature or does not support FW control commands.\n-E- please retry with --no_fw_ctrl flag\n");
+        return errmsg(MLXFW_MISSING_IMAGE_SIGNATURE,
+                      "This is an old image format that does not have a signature or does not support FW control "
+                      "commands.\n-E- please retry with --no_fw_ctrl flag\n");
     }
     // Check TimeStamp
     if (!TestAndSetTimeStamp(imageOps))
@@ -1048,7 +1048,7 @@ Tlv_Status_t FsCtrlOperations::GetTsObj(TimeStampIFC** tsObj)
 
 bool FsCtrlOperations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer)
 {
-    TimeStampIFC* tsObj;
+    TimeStampIFC* tsObj = NULL;
     Tlv_Status_t rc;
 
     if (GetTsObj(&tsObj))
@@ -1067,7 +1067,7 @@ bool FsCtrlOperations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, str
 
 bool FsCtrlOperations::FwResetTimeStamp()
 {
-    TimeStampIFC* tsObj;
+    TimeStampIFC* tsObj = NULL;
     Tlv_Status_t rc;
 
     if (GetTsObj(&tsObj))
@@ -1087,7 +1087,7 @@ bool FsCtrlOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
                                         struct tools_open_fw_version& fwVer,
                                         bool queryRunning)
 {
-    TimeStampIFC* tsObj;
+    TimeStampIFC* tsObj = NULL;
     Tlv_Status_t rc;
 
     if (GetTsObj(&tsObj))

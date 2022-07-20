@@ -1257,7 +1257,7 @@ int mtcr_pciconf_rw(mfile* mf, unsigned int offset, u_int32_t* data, int rw)
     if (EXTRACT(address, 30, 2))
     {
         if (errno == EEXIST)
-        { // not sure if it's OK to change errno in all cases
+        {
             errno = EINVAL;
         }
         return ME_BAD_PARAMS;
@@ -1826,34 +1826,34 @@ int mhca_reset_ul(mfile* mf)
     return -1;
 }
 
-static long supported_dev_ids[] = {
-  /* CX2 */
-  0x6340, 0x634a, 0x6368, 0x6372, 0x6732, 0x673c, 0x6750, 0x675a, 0x676e, 0x6746, 0x6764,
-  /*****/
-  0x1003, // Connect-X3
-  0x1007, // Connect-X3Pro
-  0x1011, // Connect-IB
-  0x1013, // Connect-X4
-  0x1015, // Connect-X4Lx
-  0x1017, // Connect-X5
-  0x1019, // Connect-X5Ex
-  0x101b, // Connect-X6
-  0x101d, // Connect-X6DX
-  0x101f, // Connect-X6LX
-  0x1021, // Connect-X7
-  0xcb20, // Switch-IB
-  0xcb84, // Spectrum
-  0xcf08, // Switch-IB2
-  0xd2f0, // Quantum
-  0xd2f2, // Quantum2
-  0xcf6c, // Spectrum2
-  0xa2d2, // MT416842 Family BlueField integrated ConnectX-5 network controller
-  0xa2d6, // MT42822 Family BlueField2 integrated ConnectX-6DX network controller
-  0xa2dc, // MT43244 Family BlueField3 integrated ConnectX-7 network controller
-  0xcf70, // Spectrum3
-  0xcf80, // Spectrum4
-  0x1976, // Schrodinger
-  -1};
+static long supported_dev_ids[] = {0x1003, // Connect-X3
+                                   0x1007, // Connect-X3Pro
+                                   0x1011, // Connect-IB
+                                   0x1013, // Connect-X4
+                                   0x1015, // Connect-X4Lx
+                                   0x1017, // Connect-X5
+                                   0x1019, // Connect-X5Ex
+                                   0x101b, // Connect-X6
+                                   0x101d, // Connect-X6DX
+                                   0x101f, // Connect-X6LX
+                                   0x1021, // Connect-X7
+                                   0x1023, // Connect-X8
+                                   0xcb20, // Switch-IB
+                                   0xcb84, // Spectrum
+                                   0xcf08, // Switch-IB2
+                                   0xd2f0, // Quantum
+                                   0xd2f2, // Quantum2
+                                   0xcf6c, // Spectrum2
+                                   0xa2d2, // MT416842 Family BlueField integrated ConnectX-5 network controller
+                                   0xa2d6, // MT42822 Family BlueField2 integrated ConnectX-6DX network controller
+                                   0xa2dc, // MT43244 Family BlueField3 integrated ConnectX-7 network controller
+                                   0xa2de, // BF4 Family BlueField4 integrated ConnectX-8 network controller
+                                   0xcf70, // Spectrum3
+                                   0xcf80, // Spectrum4
+                                   0x1976, // Schrodinger
+                                   0x2900, // GB-100
+                                   0xd2f4, // Sunbird 0x25b
+                                   -1};
 
 static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24b, 0x24d, 0x24e, 0x1F6, 0x1F8,
                                        0x1FF, 0x247, 0x209, 0x20b, 0x20d, 0x20f, 0x211,
@@ -1861,10 +1861,13 @@ static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24b, 0x24d, 0x24e,
                                        0x212, // Connect-X6DX
                                        0x216, // Connect-X6LX
                                        0x218, // Connect-X7
+                                       0x21e, // Connect-X8
                                        0x21C, // BlueField3
+                                       0x220, // BlueField4
                                        0x250, // Spectrum3
                                        0x254, // Spectrum4
                                        0x257, // Quantum2
+                                       0x25b, // Quantum3 
                                        -1};
 
 int is_supported_devid(long devid)
@@ -2716,8 +2719,8 @@ open_failed:
 
 int init_dev_info_ul(mfile* mf, const char* dev_name, unsigned domain, unsigned bus, unsigned dev, unsigned func)
 {
-    int i;
-    int devs_len;
+    int i = 0;
+    int devs_len = 0;
     int ret = 0;
     dev_info* devs = mdevices_info_v_ul(0xffffffff, &devs_len, 1);
     for (i = 0; i < devs_len; i++)

@@ -62,9 +62,10 @@ MlxSignSHA::MlxSignSHA(u_int32_t digestLength)
 
 int MlxSignSHA::getDigest(std::string& digest)
 {
-    int rc;
+    int rc = 0;
     std::vector<u_int8_t> digestVec;
     char* digestStr = new char[_digestLength * 2 + 1];
+    digestStr = (char*)memset(digestStr, 0, (_digestLength * 2 + 1));
 
     rc = getDigest(digestVec);
     if (rc != MlxSign::MLX_SIGN_SUCCESS)
@@ -308,15 +309,14 @@ int MlxSignRSA::createRSAFromPEMFileName(const std::string& fname, bool isPrivat
     {
         return MlxSign::MLX_SIGN_RSA_FILE_OPEN_ERROR;
     }
-    rsa = RSA_new();
     if (isPrivateKey)
     {
-        rsa = PEM_read_RSAPrivateKey(fp, &rsa, NULL, NULL);
+        rsa = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
         REPLACE_RSA_CTX(_privCtx, rsa);
     }
     else
     {
-        rsa = PEM_read_RSA_PUBKEY(fp, &rsa, NULL, NULL);
+        rsa = PEM_read_RSA_PUBKEY(fp, NULL, NULL, NULL);
         REPLACE_RSA_CTX(_pubCtx, rsa);
     }
 

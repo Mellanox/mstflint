@@ -348,7 +348,7 @@ bool Fs2Operations::checkGen(u_int32_t beg,
     const char* sect_name;
 
     u_int32_t size = 0;
-    GPH gph;
+    GPH gph = GPH();
     bool is_sect_to_read = false;
     // GPH
     sprintf(pr, "%s /0x%08x/ (GeneralHeader)", pref, offs + beg);
@@ -550,7 +550,7 @@ bool Fs2Operations::Fs2Verify(VerifyCallBack verifyCallBackFunc,
     {
         bool fs_en = false;
         u_int32_t log2chunk_size = 0;
-        u_int32_t buff[FS2_BOOT_START / 4];
+        u_int32_t buff[FS2_BOOT_START / 4] = {0};
 
         _ioAccess->get_image_crc().clear();
 
@@ -714,17 +714,22 @@ bool Fs2Operations::FwReadData(void* image, u_int32_t* image_size, bool verbose)
 
 bool Fs2Operations::Fs2Query()
 {
-    u_int32_t guid_ptr, nguids;
+    u_int32_t guid_ptr = 0, nguids = 0;
     guid_t guids[MAX_GUIDS];
+    int i = 0;
+    for (i = 0; i < MAX_GUIDS; i++)
+    {
+        guids[i] = guid_t();
+    }
     /*
        if (_fwImgInfo.wasQueried == true) {
         return true;
        }
      */
     // FW ID
-    u_int32_t fw_id;
-    u_int32_t fw_id_offs;
-    u_int32_t fw_size;
+    u_int32_t fw_id = 0;
+    u_int32_t fw_id_offs = 0;
+    u_int32_t fw_size = 0;
     u_int32_t im_start = _fwImgInfo.imgStart;
 
     if (_fwImgInfo.ext_info.is_failsafe && _fwImgInfo.actuallyFailsafe)
@@ -769,7 +774,7 @@ bool Fs2Operations::Fs2Query()
     READBUF((*_ioAccess), guid_ptr, guids, nguids * sizeof(u_int64_t), "GUIDS");
     TOCPUBY64(guids);
 
-    u_int32_t guids_crc;
+    u_int32_t guids_crc = 0;
     READ4((*_ioAccess), guid_ptr + nguids * sizeof(u_int64_t), &guids_crc, "GUIDS CRC");
     guids_crc = __be32_to_cpu(guids_crc);
 
@@ -797,8 +802,8 @@ bool Fs2Operations::Fs2Query()
 
     // Read Info:
     u_int32_ba info_ptr_ba;
-    u_int32_t info_ptr;
-    u_int32_t info_size;
+    u_int32_t info_ptr = 0;
+    u_int32_t info_size = 0;
     u_int8_t info_ptr_cs = 0;
     READ4((*_ioAccess), im_start + fw_id_offs + 0xC, &info_ptr, "INFO PTR");
     TOCPU1(info_ptr);
@@ -812,10 +817,10 @@ bool Fs2Operations::Fs2Query()
 
     if (info_ptr_cs)
     {
-        return errmsg(
-          MLXFW_BAD_CHECKSUM_ERR,
-          "Failed to read Info Section - Bad checksum for Info section pointer (%08x). Probably the image is corrupted.",
-          info_ptr);
+        return errmsg(MLXFW_BAD_CHECKSUM_ERR,
+                      "Failed to read Info Section - Bad checksum for Info section pointer (%08x). Probably the image "
+                      "is corrupted.",
+                      info_ptr);
     }
 
     info_ptr = info_ptr_ba.range(23, 0);
@@ -964,7 +969,6 @@ u_int32_t Fs2Operations::getDefaultSectorSz()
     u_int32_t devid = _ioAccess->get_dev_id();
     switch (devid)
     {
-        case CX2_HW_ID:
         case CX3_HW_ID:
         case CX3_PRO_HW_ID:
             return CX_DFLT_SECTOR_SIZE;
@@ -1708,15 +1712,6 @@ bool Fs2Operations::Fs2Burn(Fs2Operations& imageOps, ExtBurnParams& burnParams)
         }
     }
     return Fs2FailSafeBurn(imageOps, burnParams);
-}
-
-bool Fs2Operations::Fs2IsMacAvailable()
-{
-    if (_fwImgInfo.ext_info.chip_type == CT_IS4)
-    {
-        return false;
-    }
-    return true;
 }
 
 bool Fs2Operations::FwBurn(FwOperations* imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc)

@@ -94,7 +94,7 @@ int convert_rc(int rc);
         free(_data);                                                                   \
         return convert_rc(_rc);                                                        \
     }                                                                                  \
-    struct_name##_unpack(cmd_struct, _data);                                           \
+    struct_name##_out_unpack(&(cmd_struct->out), _data);                               \
     free(_data);                                                                       \
     return GCIF_STATUS_SUCCESS
 

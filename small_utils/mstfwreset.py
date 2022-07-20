@@ -106,7 +106,6 @@ MLNX_DEVICES = [
     dict(name="ConnectX7", devid=0x218, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX8", devid=0x21e, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX3", devid=0x1f5),
-    dict(name="IS4", devid=0x1b3),
 ]
 
 # Supported devices.

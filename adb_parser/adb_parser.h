@@ -57,6 +57,7 @@ class LogFile;
 #include "adb_exceptionHolder.h"
 #include "adb_logfile.h"
 #include "adb_config.h"
+#include "adb_progress.h"
 #include "adb_instance.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -134,10 +135,12 @@ public:
     //   3- check node size vs instance size
     bool loadFromString(const char* adbContents,
                         bool addReserved = false,
+                        AdbProgress* progressObj = NULL,
                         bool strict = true,
                         bool enforceExtraChecks = false);
     bool load(string fname,
               bool addReserved = false,
+              AdbProgress* progressObj = NULL,
               bool strict = true,
               string includePath = "",
               string includeDir = "",
@@ -154,6 +157,7 @@ public:
     AdbInstance* addMissingNodes(int depth, bool allowMultipleExceptions);
     AdbInstance* createLayout(string rootNodeName,
                               bool isExprEval = false,
+                              AdbProgress* progressObj = NULL,
                               int depth = -1, /* -1 means instantiate full tree */
                               bool ignoreMissingNodes = false,
                               bool getAllExceptions = false);
@@ -194,6 +198,7 @@ private:
                                         AdbInstance* parent,
                                         map<string, string> vars,
                                         bool isExprEval,
+                                        AdbProgress* progressObj,
                                         int depth,
                                         bool ignoreMissingNodes = false,
                                         bool getAllExceptions = false);

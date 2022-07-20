@@ -39,7 +39,7 @@ class CmdRegMfrl():
     reset_levels_db = [
         {'level': LIVE_PATCH, 'description': 'Driver, PCI link, network link will remain up ("live-Patch")', 'mask': 0x1, 'support_reset_type': False},
         {'level': PCI_RESET, 'description': 'Driver restart and PCI reset', 'mask': 0x8, 'support_reset_type': True},
-        {'level': WARM_REBOOT, 'description': 'Warm Reboot', 'mask': 0x40, 'support_reset_type': True},
+        {'level': WARM_REBOOT, 'description': 'Warm Reboot', 'mask': 0x48, 'support_reset_type': True},
     ]
 
     FULL_CHIP, PHY_LESS, NIC_ONLY = 0, 1, 2

@@ -122,8 +122,8 @@ int OutputFmts::createInventoryXML(vector<MlnxDev*>& devs,
     }
     else
     {
-        xmlChar* doc_txt_ptr;
-        int doc_txt_len;
+        xmlChar* doc_txt_ptr = NULL;
+        int doc_txt_len = 0;
 
         xmlDocDumpFormatMemoryEnc(doc, &doc_txt_ptr, &doc_txt_len, "UTF-8", 1);
         if (doc_txt_len)
@@ -258,8 +258,8 @@ int OutputFmts::createBurnXML(vector<MlnxDev*>& devs,
     }
     else
     {
-        xmlChar* doc_txt_ptr;
-        int doc_txt_len;
+        xmlChar* doc_txt_ptr = NULL;
+        int doc_txt_len = 0;
 
         xmlDocDumpFormatMemoryEnc(doc, &doc_txt_ptr, &doc_txt_len, "UTF-8", 1);
         if (doc_txt_len)
@@ -318,8 +318,8 @@ int OutputFmts::createFailXML(int result, int update_query_, string& buffer, int
     }
     else
     {
-        xmlChar* doc_txt_ptr;
-        int doc_txt_len;
+        xmlChar* doc_txt_ptr = NULL;
+        int doc_txt_len = 0;
 
         xmlDocDumpFormatMemoryEnc(doc, &doc_txt_ptr, &doc_txt_len, "UTF-8", 1);
         if (doc_txt_len)

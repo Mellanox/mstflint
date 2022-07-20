@@ -112,6 +112,7 @@ CK_RV HSMLunaClient::RSA_CreateSignature(vector<CK_BYTE> data,
         return rv;
     }
     signature = new CK_BYTE[signatureLength];
+    memset(signature, 0, signatureLength * sizeof(CK_BYTE));
     rv = P11Functions->C_Sign(m_hSession, &data[0], dataLength, signature, &signatureLength);
     if (rv != CKR_OK)
     {
@@ -148,6 +149,7 @@ CK_RV HSMLunaClient::RSA_CreateSignature(vector<CK_BYTE> data,
             if (rv != CKR_OK)
             {
                 delete[] pPublicLabel;
+                delete[] pLabel;
                 return rv;
             }
             rv = P11Functions->C_FindObjects(m_hSession, handles, MAX_NUM_OF_HANDLES, &numHandles);
@@ -160,6 +162,7 @@ CK_RV HSMLunaClient::RSA_CreateSignature(vector<CK_BYTE> data,
         if (numHandles == 0)
         {
             cout << "Public key not found!" << endl;
+            delete[] pPublicLabel;
             return CKR_FUNCTION_FAILED;
         }
         pub_key = handles[0];
@@ -169,6 +172,7 @@ CK_RV HSMLunaClient::RSA_CreateSignature(vector<CK_BYTE> data,
         if (rv != CKR_OK)
         {
             cout << "Signature C_VerifyInit failed. Error is " << hex << rv << endl;
+            delete[] signature;
             return rv;
         }
         rv = P11Functions->C_Verify(m_hSession, &data[0], dataLength, signature, signatureLength);
@@ -256,6 +260,7 @@ CK_RV HSMLunaClient::RSA_EncryptDataTest(string privateKeyLabel, string publicKe
             return rv;
         }
         CK_BYTE* decipher = new CK_BYTE[decipher_len];
+        memset(decipher, 0, decipher_len * sizeof(CK_BYTE));
         rv = P11Functions->C_Decrypt(m_hSession, cipher, cipher_len, decipher, &decipher_len);
         if (rv != CKR_OK)
         {
@@ -266,6 +271,7 @@ CK_RV HSMLunaClient::RSA_EncryptDataTest(string privateKeyLabel, string publicKe
         if (rv != CKR_OK)
         {
             cout << "C_DestroyObject public " << hex << rv << endl;
+            delete[] decipher;
             return rv;
         }
 

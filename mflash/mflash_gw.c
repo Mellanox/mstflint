@@ -385,7 +385,7 @@ int cntx_st_spi_block_write_ex(mflash* mfl,
     u_int32_t offs = 0;
     u_int32_t gw_cmd = 0;
     u_int32_t gw_addr = 0;
-    u_int32_t buff[4];
+    u_int32_t buff[4] = {0};
 
     if (blk_addr & ((u_int32_t)mfl->attr.block_write - 1))
     {

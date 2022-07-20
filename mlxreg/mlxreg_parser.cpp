@@ -254,7 +254,6 @@ void RegAccessParser::parseAccessType(std::vector<string> tokens,
             }
         }
     }
-
 }
 
 /************************************

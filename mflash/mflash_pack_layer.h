@@ -82,8 +82,6 @@ typedef void* trm_ctx;
 #define MFLASH_ERR_STR_SIZE 4
 #endif
 
-#define IS4_HW_ID 0x1b3
-#define CONNECTX_HW_ID 0x190
 #define CX3_PRO_HW_ID 0x1F7
 #define CX3_HW_ID 0x1F5
 #define CX4_HW_ID 0x209
@@ -91,10 +89,13 @@ typedef void* trm_ctx;
 #define CX5_HW_ID 0x20d
 #define CX6_HW_ID 0x20f
 #define CX7_HW_ID 0x218
+#define CX8_HW_ID 0x21e
 #define CX6DX_HW_ID 0x212
 #define CX6LX_HW_ID 0x216
 #define BLUEFIELD_HW_ID 0x211
 #define BLUEFIELD2_HW_ID 0x214
+#define BLUEFIELD3_HW_ID 0x21c
+#define BLUEFIELD4_HW_ID 0x220
 #define CONNECT_IB_HW_ID 0x1FF
 #define SWITCH_IB_HW_ID 0x247
 #define SPECTRUM_HW_ID 0x249
@@ -103,15 +104,14 @@ typedef void* trm_ctx;
 #define SPECTRUM2_HW_ID 0x24e
 #define SPECTRUM3_HW_ID 0x250
 #define QUANTUM2_HW_ID 0x257
+#define QUANTUM3_HW_ID 0x25b
 #define SPECTRUM4_HW_ID 0x254
 #define INBAND_MAX_REG_SIZE 44
 
 /*
  * Device IDs Macros:
  */
-#define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) \
-    (((dev_id) == CONNECTX_HW_ID) || ((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
-#define IS_IS4_FAMILY(dev_id) (((dev_id) == IS4_HW_ID))
+#define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) (((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
 #define IS_SIB(dev_id) ((dev_id) == SWITCH_IB_HW_ID)
 #define IS_SIB2(dev_id) ((dev_id) == SWITCH_IB2_HW_ID)
 #define IS_SEN(dev_id) ((dev_id) == SPECTRUM_HW_ID)
@@ -121,6 +121,7 @@ typedef void* trm_ctx;
 #define IS_CONNECTX4LX(dev_id) ((dev_id) == CX4LX_HW_ID)
 #define IS_CONNECTX5(dev_id) ((dev_id) == CX5_HW_ID)
 #define IS_CONNECTX7(dev_id) ((dev_id) == CX7_HW_ID)
+#define IS_CONNECTX8(dev_id) ((dev_id) == CX8_HW_ID)
 #define IS_CONNECTX6(dev_id) ((dev_id) == CX6_HW_ID)
 #define IS_CONNECTX6DX(dev_id) ((dev_id) == CX6DX_HW_ID)
 #define IS_CONNECTX6LX(dev_id) ((dev_id) == CX6LX_HW_ID)
@@ -130,7 +131,9 @@ typedef void* trm_ctx;
 #define IS_BLUEFEILD(dev_id) ((dev_id) == BLUEFIELD_HW_ID)
 #define IS_BLUEFEILD2(dev_id) ((dev_id) == BLUEFIELD2_HW_ID)
 #define IS_BLUEFEILD3(dev_id) ((dev_id) == BLUEFIELD3_HW_ID)
+#define IS_BLUEFEILD4(dev_id) ((dev_id) == BLUEFIELD4_HW_ID)
 #define IS_QUANTUM2(dev_id) ((dev_id) == QUANTUM2_HW_ID)
+#define IS_QUANTUM3(dev_id) ((dev_id) == QUANTUM3_HW_ID)
 #define IS_SPECTRUM4(dev_id) ((dev_id) == SPECTRUM4_HW_ID)
 
 #define HAS_TOOLS_CMDIF(dev_id) ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))

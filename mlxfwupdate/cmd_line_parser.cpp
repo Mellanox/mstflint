@@ -291,18 +291,19 @@ void CmdLineParser::initOptions()
     AddDescription(TOOL_DESC);
 
 #ifdef ONLY_PCI_FORMAT
-    this->AddOptions(
-      DEVICE_L,
-      DEVICE_S,
-      "DeviceName",
-      "Perform operation for specified PCI (using the format <Bus>:<Device>.<Function>) or IB device(s)."
-      " Multiple devices can be specified delimited by semicolons. A device list containing semicolons must be quoted.");
+    this->AddOptions(DEVICE_L,
+                     DEVICE_S,
+                     "DeviceName",
+                     "Perform operation for specified PCI (using the format <Bus>:<Device>.<Function>) or IB device(s)."
+                     " Multiple devices can be specified delimited by semicolons. A device list containing semicolons "
+                     "must be quoted.");
 #else
     this->AddOptions(
       DEVICE_L,
       DEVICE_S,
       "DeviceName",
-      "Perform operation for specified mst device(s). Run 'mst status' command to list the available devices. Multiple devices can be specified delimited by semicolons. A device list containing semicolons must be quoted.");
+      "Perform operation for specified mst device(s). Run 'mst status' command to list the available devices. Multiple "
+      "devices can be specified delimited by semicolons. A device list containing semicolons must be quoted.");
 #endif
 
     this->AddOptions(NUM_OF_RETRIALS_L, NUM_OF_RETRIALS_S, "NumOfRetrials", "Number of download retrials default is 5",
@@ -349,12 +350,12 @@ void CmdLineParser::initOptions()
     this->AddOptions(FFV_L, FFV_S, "", "Compare Firmware family version",
                      true); // Hidden
 
-    this->AddOptions(
-      CLEAR_SEM_L,
-      CLEAR_SEM_S,
-      "",
-      "Force clear the flash semaphore on the device, No command is allowed when this flag is used. "
-      "NOTE: May result in system instability or flash corruption if the device or another application is currently using the flash. Exercise caution.");
+    this->AddOptions(CLEAR_SEM_L,
+                     CLEAR_SEM_S,
+                     "",
+                     "Force clear the flash semaphore on the device, No command is allowed when this flag is used. "
+                     "NOTE: May result in system instability or flash corruption if the device or another application "
+                     "is currently using the flash. Exercise caution.");
 
     this->AddOptions(EXE_REL_PATH_L, EXE_REL_PATH_S, "", "Use paths relative to the location of the executable", false);
 

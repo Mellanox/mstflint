@@ -379,7 +379,7 @@ int write_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
 
             if (mfl->opts[MFO_NO_VERIFY] == 0)
             {
-                u_int8_t verify_buffer[MAX_WRITE_BUFFER_SIZE];
+                u_int8_t verify_buffer[MAX_WRITE_BUFFER_SIZE] = {0};
                 rc = mfl->f_reset(mfl);
                 CHECK_RC(rc);
                 rc = mfl->f_read(mfl, addr, data_size, verify_buffer, false);
@@ -724,7 +724,7 @@ int get_flash_params(mflash* mfl, flash_params_t* flash_params, flash_info_t* fl
 
     for (spi_sel = 0; spi_sel < num_of_flashes; spi_sel++)
     {
-        int log2size;
+        int log2size = 0;
         u_int8_t no_flash = 0;
         const char* type_name;
         rc = set_bank(mfl, spi_sel);
@@ -916,7 +916,7 @@ int read_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data, bool
     u_int32_t block_mask = 0;
 
     // TODO - Check MAX_WRITE_BUFFER_SIZE against block_size in open (or here)
-    u_int8_t tmp_buff[MAX_WRITE_BUFFER_SIZE];
+    u_int8_t tmp_buff[MAX_WRITE_BUFFER_SIZE] = {0};
 
     block_mask = ~(block_size - 1);
     u_int32_t perc = 0xffffffff;
@@ -1172,8 +1172,7 @@ int spi_update_num_of_banks(mflash* mfl, int prev_num_of_flashes)
     num_of_banks = spi_get_num_of_flashes(prev_num_of_flashes);
     if (num_of_banks == -1)
     {
-        if (IS_SIB(mfl->attr.hw_dev_id) || IS_SEN(mfl->attr.hw_dev_id) ||
-            IS_SIB2(mfl->attr.hw_dev_id))
+        if (IS_SIB(mfl->attr.hw_dev_id) || IS_SEN(mfl->attr.hw_dev_id) || IS_SIB2(mfl->attr.hw_dev_id))
         {
             mfl->opts[MFO_NUM_OF_BANKS] = 2;
         }
@@ -1576,12 +1575,6 @@ int connectib_flash_lock(mflash* mfl, int lock_state)
 
 #define SX_CS_SUPPORT_ADDR 0xF0420
 
-int sx_init_cs_support(mflash* mfl)
-{
-    (void)mfl;
-    return MFE_NOT_IMPLEMENTED;
-}
-
 #define HW_DEV_ID 0xf0014
 #define CX5_EFUSE_ADDR 0xf0c0c
 
@@ -1619,7 +1612,8 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
         }
 
         // Read the Cache replacement offset and cmd fields
-        if (devid_t == DeviceQuantum2 || devid_t == DeviceSpectrum4 || devid_t == DeviceConnectX7)
+        if (devid_t == DeviceQuantum2 || devid_t == DeviceQuantum3 || devid_t == DeviceSpectrum4 ||
+            devid_t == DeviceConnectX7 || devid_t == DeviceConnectX8)
         {
             MREAD4(CACHE_REP_OFF_NEW_GW_ADDR, &data);
             off = data;
@@ -1753,7 +1747,7 @@ int gen6_flash_init_com(mflash* mfl, flash_params_t* flash_params)
 //
 // TODO: Unify fith ConnectX inif function
 
-int gen4_flash_init_com(mflash* mfl, flash_params_t* flash_params, u_int8_t init_cs_support)
+int gen4_flash_init_com(mflash* mfl, flash_params_t* flash_params)
 {
     int rc = 0;
     FLASH_ACCESS_DPRINTF(("gen4_flash_init_com(): Flash init to use direct-access\n"));
@@ -1771,14 +1765,6 @@ int gen4_flash_init_com(mflash* mfl, flash_params_t* flash_params, u_int8_t init
     mfl->f_sst_spi_block_write_ex = cntx_sst_spi_block_write_ex;
     mfl->f_st_spi_block_read_ex = cntx_st_spi_block_read_ex;
     mfl->f_spi_write_status_reg = cntx_spi_write_status_reg;
-
-    if (init_cs_support)
-    {
-        // Update the chip_select_support according to the banks number of cs.
-        rc = sx_init_cs_support(mfl);
-        CHECK_RC(rc);
-    }
-
     mfl->f_spi_status = cntx_st_spi_get_status;
     mfl->supp_sr_mod = 1;
     rc = st_spi_fill_attr(mfl, flash_params);
@@ -1818,7 +1804,7 @@ int is4_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
     mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_NO;
     mfl->f_lock = is4_flash_lock;
-    return gen4_flash_init_com(mfl, flash_params, 0);
+    return gen4_flash_init_com(mfl, flash_params);
 }
 
 static void flash_update_amos_gearbox_gw(mflash* mfl)
@@ -1835,7 +1821,7 @@ static void flash_update_amos_gearbox_gw(mflash* mfl)
 int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 {
     mfl->f_lock = is4_flash_lock;
-    return gen4_flash_init_com(mfl, flash_params, 1);
+    return gen4_flash_init_com(mfl, flash_params);
 }
 
 int sixth_gen_init_direct_access(mflash* mfl, flash_params_t* flash_params)
@@ -1850,7 +1836,7 @@ int sixth_gen_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 int fifth_gen_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 {
     mfl->f_lock = connectib_flash_lock;
-    return gen4_flash_init_com(mfl, flash_params, 0);
+    return gen4_flash_init_com(mfl, flash_params);
 }
 
 int sx_get_flash_info(mflash* mfl, flash_info_t* f_info, int* log2size, u_int8_t* no_flash)
@@ -2381,17 +2367,17 @@ int get_dev_info(mflash* mfl)
         // mgir.HWInfo.DEVID, mgir.HWInfo.hw_dev_id);
         if (rc)
         {
-            dev_id = SWITCH_IB_HW_ID;
+            dev_id = DeviceSwitchIB_HwId;
             mfl->attr.rev_id = 0;
-            mfl->attr.hw_dev_id = SWITCH_IB_HW_ID;
+            mfl->attr.hw_dev_id = DeviceSwitchIB_HwId;
         }
         else
         {
             dev_id = mgir.hw_info.hw_dev_id;
             if (dev_id == 0)
             {
-                dev_id = SWITCH_IB_HW_ID;
-                mfl->attr.hw_dev_id = SWITCH_IB_HW_ID;
+                dev_id = DeviceSwitchIB_HwId;
+                mfl->attr.hw_dev_id = DeviceSwitchIB_HwId;
                 mfl->attr.rev_id = mgir.hw_info.device_hw_revision & 0xf;
             }
             else
@@ -2647,21 +2633,21 @@ bool force_flash_out_of_hold_state(mflash* mfl)
             case DeviceConnectX6:
             case DeviceConnectX6DX:
             {
-                gpio_toggle_conf_cx6 gpio_toggle_conf;
+                gpio_toggle_conf_cx6 gpio_toggle_conf = {0};
                 set_gpio_toggle_conf_cx6(&gpio_toggle_conf);
                 res = toggle_flash_io3_gpio_cx6(mfl->mf, gpio_toggle_conf);
                 break;
             }
             case DeviceBlueField2:
             {
-                gpio_toggle_conf_cx6 gpio_toggle_conf;
+                gpio_toggle_conf_cx6 gpio_toggle_conf = {0};
                 set_gpio_toggle_conf_bf2(&gpio_toggle_conf);
                 res = toggle_flash_io3_gpio_cx6(mfl->mf, gpio_toggle_conf);
                 break;
             }
             case DeviceConnectX7:
             {
-                gpio_toggle_conf_cx7 gpio_toggle_conf;
+                gpio_toggle_conf_cx7 gpio_toggle_conf = {0};
                 set_gpio_toggle_conf_cx7(&gpio_toggle_conf);
                 res = toggle_flash_io3_gpio_cx7(mfl->mf, gpio_toggle_conf);
                 break;
@@ -2723,10 +2709,6 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
         if (IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id))
         {
             rc = cntx_flash_init(mfl, flash_params);
-        }
-        else if (IS_IS4_FAMILY(mfl->attr.hw_dev_id))
-        {
-            rc = is4_flash_init(mfl, flash_params);
         }
         else if (icmdif_supported)
         {
@@ -3190,9 +3172,9 @@ int mf_cr_write(mflash* mfl, u_int32_t cr_addr, u_int32_t data)
 int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
 {
     int rc;
-    u_int32_t set_reset_bit_dword_addr;
+    u_int32_t set_reset_bit_dword_addr = 0;
     int set_reset_bit_offset;
-    u_int32_t set_reset_bit_dword;
+    u_int32_t set_reset_bit_dword = 0;
     switch (mfl->dm_dev_id)
     {
         case DeviceConnectX3:
@@ -3202,8 +3184,11 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
         case DeviceSwitchIB2:
         case DeviceQuantum:
         case DeviceQuantum2:
+        case DeviceQuantum3:
         case DeviceConnectX7:
         case DeviceBlueField3:
+        case DeviceConnectX8:
+        case DeviceBlueField4:
         case DeviceSpectrum4:
         case DeviceAbirGearBox:
             return MFE_OK;
@@ -3279,11 +3264,14 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
             break;
         case DeviceSpectrum4:
         case DeviceQuantum2:
+        case DeviceQuantum3:
             boot_cr_space_address = 0xf1000;
             offset_in_address = 0;
             break;
         case DeviceConnectX7:
         case DeviceBlueField3:
+        case DeviceConnectX8:
+        case DeviceBlueField4:
             boot_cr_space_address = 0xf2000;
             offset_in_address = 0;
             break;

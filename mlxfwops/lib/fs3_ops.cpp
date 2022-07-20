@@ -266,6 +266,7 @@ bool Fs3Operations::GetMfgInfo(u_int8_t* buff)
         memset(&tools_mfg_info, 0, sizeof(tools_mfg_info));
         tools_open_mfg_info_unpack(&tools_mfg_info, buff);
         strncpy(_fs3ImgInfo.ext_info.orig_prs_name, tools_mfg_info.orig_prs_name, FS3_PRS_NAME_LEN);
+        _fs3ImgInfo.ext_info.orig_prs_name[FS3_PRS_NAME_LEN - 1] = '\0';
     }
     return true;
 }
@@ -351,7 +352,9 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
     {
         strncpy(_fs3ImgInfo.ext_info.name, image_info.name, NAME_LEN);
         strncpy(_fs3ImgInfo.ext_info.description, image_info.description, DESCRIPTION_LEN);
+        _fs3ImgInfo.ext_info.description[DESCRIPTION_LEN - 1] = '\0';
         strncpy(_fs3ImgInfo.ext_info.prs_name, image_info.prs_name, FS3_PRS_NAME_LEN);
+        _fs3ImgInfo.ext_info.prs_name[FS3_PRS_NAME_LEN - 1] = '\0';
     }
 
     _fs3ImgInfo.ext_info.mcc_en = image_info.mcc_en;
@@ -683,9 +686,9 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr,
                                 if (!GetImageInfoFromSection(buff, toc_entry.type, toc_entry.size * 4))
                                 {
                                     ret_val = false;
-                                    errmsg(
-                                      "Failed to get info from section %d, check the supported_hw_id section in MLX file!\n",
-                                      toc_entry.type);
+                                    errmsg("Failed to get info from section %d, check the supported_hw_id section in "
+                                           "MLX file!\n",
+                                           toc_entry.type);
                                 }
                             }
                             else if (toc_entry.type == FS3_DBG_FW_INI)
@@ -1396,13 +1399,13 @@ bool Fs3Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
             // we will take device data section from device: perform some checks
             if (_fs3ImgInfo.itocAddr == 0)
             {
-                return errmsg(
-                  "Cannot extract device data sections: invalid ITOC section. please ignore extracting device data sections.");
+                return errmsg("Cannot extract device data sections: invalid ITOC section. please ignore extracting "
+                              "device data sections.");
             }
             if (_badDevDataSections)
             {
-                return errmsg(
-                  "Cannot integrate device data sections: device data sections are corrupted. please ignore extracting device data sections.");
+                return errmsg("Cannot integrate device data sections: device data sections are corrupted. please "
+                              "ignore extracting device data sections.");
             }
         }
         else
@@ -1528,7 +1531,7 @@ bool Fs3Operations::ReBurnCurrentImage(ProgressCallBack progressFunc)
     vector<u_int8_t> newImageData(size);
     _imageCache.get(newImageData, 0x0, size);
 
-    FwOperations* newImageOps;
+    FwOperations* newImageOps = NULL;
     ExtBurnParams newBurnParams;
 
     if (!CreateBasicImageFromData((u_int32_t*)newImageData.data(), size, &newImageOps))
@@ -2935,7 +2938,10 @@ bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc, bool burnFails
     for (int i = 0; i < _fs3ImgInfo.numOfItocs; i++)
     {
         struct toc_info* curr_itoc = &_fs3ImgInfo.tocArr[i];
-        memcpy(p + CIBFW_ITOC_HEADER_SIZE + i * CIBFW_ITOC_ENTRY_SIZE, curr_itoc->data, CIBFW_ITOC_ENTRY_SIZE);
+        if ((u_int32_t)(CIBFW_ITOC_HEADER_SIZE + (i + 1) * CIBFW_ITOC_ENTRY_SIZE) <= itocSize)
+        {
+            memcpy(p + CIBFW_ITOC_HEADER_SIZE + i * CIBFW_ITOC_ENTRY_SIZE, curr_itoc->data, CIBFW_ITOC_ENTRY_SIZE);
+        }
     }
     memset(&p[itocSize] - CIBFW_ITOC_ENTRY_SIZE, FS3_END, CIBFW_ITOC_ENTRY_SIZE);
 
@@ -3550,6 +3556,7 @@ bool Fs3Operations::RemoveWriteProtection()
         if (rc != MFE_OK)
         {
             errmsg("Failed to disable flash write protection: %s", mf_err2str(rc));
+            delete[] attr.type_str;
             return false;
         }
     }
@@ -4058,7 +4065,7 @@ Tlv_Status_t Fs3Operations::GetTsObj(TimeStampIFC** tsObj)
 
 bool Fs3Operations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer)
 {
-    TimeStampIFC* tsObj;
+    TimeStampIFC* tsObj = NULL;
     Tlv_Status_t rc;
 
     if (!_ioAccess->is_flash() && !FsIntQueryAux(false, true))
@@ -4094,7 +4101,7 @@ bool Fs3Operations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct
 
 bool Fs3Operations::FwResetTimeStamp()
 {
-    TimeStampIFC* tsObj;
+    TimeStampIFC* tsObj = NULL;
     Tlv_Status_t rc;
 
     if (!_ioAccess->is_flash() && !FsIntQueryAux(false, true))
@@ -4118,7 +4125,7 @@ bool Fs3Operations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
                                      struct tools_open_fw_version& fwVer,
                                      bool queryRunning)
 {
-    TimeStampIFC* tsObj;
+    TimeStampIFC* tsObj = NULL;
     Tlv_Status_t rc;
     if (!_ioAccess->is_flash())
     {
@@ -4179,7 +4186,7 @@ bool Fs3Operations::DeviceTimestampEnabled()
     Tlv_Status_t rc;
     Tlv_Status_t queryNextTsRc;
     Tlv_Status_t queryRunningTsRc;
-    TimeStampIFC* devTsObj;
+    TimeStampIFC* devTsObj = NULL;
     struct tools_open_ts_entry devTs;
     struct tools_open_fw_version devFwVer;
     memset(&devTs, 0, sizeof(devTs));

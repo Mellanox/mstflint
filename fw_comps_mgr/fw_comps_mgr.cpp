@@ -808,9 +808,9 @@ bool FwCompsMgr::runMCQI(u_int32_t componentIndex,
     _currCompInfo.component_index = componentIndex;
     _currCompInfo.device_index = _deviceIndex;
     _currCompInfo.device_type = _deviceType;
-    DPRINTF(
-      ("-D- MCQI: read_pending_component %u infoType %u offset %u dataSize %u, componentIndex %u _deviceIndex %u \n",
-       readPending, infoType, offset, dataSize, componentIndex, _deviceIndex));
+    DPRINTF(("-D- MCQI: read_pending_component %u infoType %u offset %u dataSize %u, componentIndex %u _deviceIndex %u "
+             "\n",
+             readPending, infoType, offset, dataSize, componentIndex, _deviceIndex));
     reg_access_status_t rc = reg_access_mcqi(_mf, REG_ACCESS_METHOD_GET, &_currCompInfo);
     deal_with_signal();
     if (rc)
@@ -1538,8 +1538,7 @@ u_int32_t FwCompsMgr::getFwSupport()
     /*
      * If 4TH gen nic or switch with no MCAM reg return not supported
      */
-    if (devid == CX2_HW_ID || devid == CX3_HW_ID || devid == CX3_PRO_HW_ID ||
-        devid == IS4_HW_ID || devid == SWITCH_IB_HW_ID || devid == SWITCH_IB2_HW_ID)
+    if (devid == CX3_HW_ID || devid == CX3_PRO_HW_ID || devid == SWITCH_IB_HW_ID || devid == SWITCH_IB2_HW_ID)
     {
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return 0;

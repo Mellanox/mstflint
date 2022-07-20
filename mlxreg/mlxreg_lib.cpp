@@ -141,7 +141,7 @@ dm_dev_id_t MlxRegLib::getDevId(mfile* mf)
 bool MlxRegLib::isDeviceSupported(mfile* mf)
 {
     dm_dev_id_t devID = getDevId(mf);
-    return devID != DeviceConnectX3 && devID != DeviceConnectX3Pro;
+    return !dm_is_4th_gen(devID);
 }
 
 void MlxRegLib::initAdb(string extAdbFile)
@@ -149,7 +149,7 @@ void MlxRegLib::initAdb(string extAdbFile)
     _adb = new Adb();
     if (extAdbFile != "")
     {
-        if (!_adb->load(extAdbFile, false, false))
+        if (!_adb->load(extAdbFile, false, NULL, false))
         {
             throw MlxRegException("Failure in loading Adabe file. %s", _adb->getLastError().c_str());
         }
@@ -337,5 +337,6 @@ MlxRegLibStatus MlxRegLib::dumpRegisterData(string output_file_name, std::vector
     {
         throw MlxRegException("Failed to open file");
     }
+    fclose(outputFile);
     return MRLS_SUCCESS;
 }

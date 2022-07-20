@@ -40,6 +40,7 @@
 #define REG_ID_PMAOS 0x5012
 #define REG_ID_MCIA 0x9014
 #define REG_ID_MTMP 0x900a
+#define REG_ID_MTCAP 0x9009
 #define REG_ID_MIRC 0x9162
 #define REG_ID_MGIR 0x9020
 #define REG_ID_PMLP 0x5002
@@ -140,6 +141,7 @@
     u_int32_t t_offset = size_func();                                                                                 \
     u_int32_t r_size_reg = reg_size;                                                                                  \
     u_int32_t w_size_reg = reg_size;                                                                                  \
+    int wrapper_needed = 0;                                                                                           \
     if (method == REG_ACCESS_METHOD_GET)                                                                              \
     {                                                                                                                 \
         w_size_reg -= data_struct->data_size_name;                                                                    \

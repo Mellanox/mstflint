@@ -86,7 +86,8 @@ public:
         {
             return new RavenSwitchSignatureManager();
         }
-        else if (deviceId == DeviceQuantum2 || deviceId == DeviceSpectrum4)
+        else if (deviceId == DeviceQuantum2 || deviceId == DeviceQuantum3 ||
+                 deviceId == DeviceSpectrum4)
         {
             return new SecuredSwitchSignatureManager();
         }
@@ -134,7 +135,7 @@ public:
         {
             return new RavenSwitchSignatureManager();
         }
-        else if (chip == CT_QUANTUM2 || chip == CT_SPECTRUM4)
+        else if (chip == CT_QUANTUM2 || chip == CT_QUANTUM3 || chip == CT_SPECTRUM4)
         {
             return new SecuredSwitchSignatureManager();
         }

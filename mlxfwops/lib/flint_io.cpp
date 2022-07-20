@@ -237,9 +237,9 @@ bool FImage::read(u_int32_t addr, void* data, int len, bool verbose, const char*
 ////////////////////////////////////////////////////////////////////////
 u_int32_t FImage::get_sector_size()
 {
-    u_int32_t log2_sector_sz_ptr;
-    u_int32_t log2_sector_sz;
-    u_int32_t signature;
+    u_int32_t log2_sector_sz_ptr = 0;
+    u_int32_t log2_sector_sz = 0;
+    u_int32_t signature = 0;
 
     read(0x24, &signature);
     TOCPU1(signature);
@@ -748,7 +748,7 @@ bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
 ////////////////////////////////////////////////////////////////////////
 bool Flash::write(u_int32_t addr, u_int32_t data)
 {
-    u_int32_t word;
+    u_int32_t word = 0;
 
     if (!_mfl)
     {

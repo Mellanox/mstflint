@@ -324,6 +324,7 @@ bool FwOperations::checkBoot2(u_int32_t beg,
     {
         Crc16 crc;
         u_int32_t* buff = new u_int32_t[size + 4];
+        memset(buff, 0, (size + 4) * sizeof(u_int32_t));
         bool rc = readBufAux((*_ioAccess), offs + beg, buff, size * 4 + 16, pr);
         if (!rc)
         {
@@ -415,7 +416,7 @@ bool FwOperations::FindMagicPattern(FBase* ioAccess, u_int32_t addr, u_int32_t c
     }
     for (int i = 0; i < 4; i++)
     {
-        u_int32_t w;
+        u_int32_t w = 0;
         READ4_NOERRMSG((*ioAccess), addr + i * 4, &w);
         TOCPU1(w);
         if (w != cntx_magic_pattern[i])
@@ -631,7 +632,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP)
 u_int8_t FwOperations::IsFS4Image(FBase& f, u_int32_t* found_images)
 {
     DPRINTF(("FwOperations::IsFS4Image\n"));
-    u_int32_t data;
+    u_int32_t data = 0;
     u_int8_t image_version;
     u_int32_t image_start[CNTX_START_POS_SIZE] = {0};
 
@@ -660,7 +661,7 @@ u_int8_t FwOperations::IsFS4Image(FBase& f, u_int32_t* found_images)
 
 u_int8_t FwOperations::IsFS3OrFS2Image(FBase& f, u_int32_t* found_images)
 {
-    u_int32_t data;
+    u_int32_t data = 0;
     u_int8_t image_version;
     u_int32_t image_start[CNTX_START_POS_SIZE] = {0};
     FindAllImageStart(&f, image_start, found_images, _cntx_magic_pattern);
@@ -826,6 +827,7 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams,
     memset(&imgQuery, 0, sizeof(fw_info_t));
     if (!(*imgFwOps)->FwQuery(&imgQuery, true, false, true, ignoreDToc))
     {
+        delete *imgFwOps;
         *imgFwOps = NULL;
         return false;
     }
@@ -1002,8 +1004,8 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                                 {
                                     if (fwInfo.security_type.secure_fw == 0)
                                     {
-                                        FLASH_ACCESS_DPRINTF((
-                                          "Non secured BB device, deleting fw comps mgr object and setting no_fw_ctrl mode\n"));
+                                        FLASH_ACCESS_DPRINTF(("Non secured BB device, deleting fw comps mgr object and "
+                                                              "setting no_fw_ctrl mode\n"));
                                         delete fwCompsAccess;
                                         fwCompsAccess = (FwCompsMgr*)NULL;
                                         fwParams.noFwCtrl = 1;
@@ -1070,6 +1072,7 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             {
                 if (!fwCompsAccess)
                 {
+                    delete ioAccess;
                     return (FwOperations*)NULL;
                 }
                 DPRINTF(("FSCTRL ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
@@ -1103,6 +1106,7 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
         if (!fwops->CreateSignatureManager())
         {
             WriteToErrBuff(fwParams.errBuff, (char*)"Cannot create signature manager!", fwParams.errBuffSize);
+            fwops->err_clear();
             delete fwops; // will also delete the fwCompsAccess! no memory leak here
             return NULL;
         }
@@ -1392,12 +1396,14 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"BlueField", BF_HW_ID, CT_BLUEFIELD, CFT_HCA, 0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField2", BF2_HW_ID, CT_BLUEFIELD2, CFT_HCA, 0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField3", BF3_HW_ID, CT_BLUEFIELD3, CFT_HCA, 0, {41690, 41691, 41692, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"BlueField4", BF4_HW_ID, CT_BLUEFIELD4, CFT_HCA, 0, {41694, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum", SPECTRUM_HW_ID, CT_SPECTRUM, CFT_SWITCH, 0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Switch_IB2", SWITCH_IB2_HW_ID, CT_SWITCH_IB2, CFT_SWITCH, 0, {53000, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Quantum", QUANTUM_HW_ID, CT_QUANTUM, CFT_SWITCH, 0, {54000, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum2", SPECTRUM2_HW_ID, CT_SPECTRUM2, CFT_SWITCH, 0, {53100, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum3", SPECTRUM3_HW_ID, CT_SPECTRUM3, CFT_SWITCH, 0, {53104, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Quantum2", QUANTUM2_HW_ID, CT_QUANTUM2, CFT_SWITCH, 0, {54002, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"Quantum3", QUANTUM3_HW_ID, CT_QUANTUM3, CFT_SWITCH, 0, {54004, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum4", SPECTRUM4_HW_ID, CT_SPECTRUM4, CFT_SWITCH, 0, {53120, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Gearbox", GEARBOX_HW_ID, CT_GEARBOX, CFT_GEARBOX, 0, {0, 0}, {{UNKNOWN_BIN, {0}}}},
   {"GearboxManager", GB_MANAGER_HW_ID, CT_GEARBOX_MGR, CFT_GEARBOX, 0, {0, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1406,26 +1412,39 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
 };
 
 const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
-  {"ConnectX-3 A0", CX3_HW_ID, 0x00},       {"ConnectX-3 A1", CX3_HW_ID, 0x01},
-  {"ConnectX-3Pro", CX3_PRO_HW_ID, 0x00},   {"ConnectX-4", CX4_HW_ID, 0x00},
-  {"ConnectX-4LX", CX4LX_HW_ID, 0x00},      {"ConnectX-5", CX5_HW_ID, 0x00},
-  {"ConnectX-6", CX6_HW_ID, 0x00},          {"ConnectX-6DX", CX6DX_HW_ID, 0x00},
-  {"ConnectX-6LX", CX6LX_HW_ID, 0x00},      {"ConnectX-7", CX7_HW_ID, 0x00},
-  {"ConnectX-8", CX8_HW_ID, 0x00},          {"BlueField", BF_HW_ID, 0x00},
-  {"BlueField2", BF2_HW_ID, 0x00},          {"BlueField3", BF3_HW_ID, 0x00},
-  {"SwitchIB A0", SWITCH_IB_HW_ID, 0x00},   {"Spectrum A0", SPECTRUM_HW_ID, 0x00},
-  {"SwitchIB2 A0", SWITCH_IB2_HW_ID, 0x00}, {"Quantum A0", QUANTUM_HW_ID, 0x00},
-  {"Spectrum A1", SPECTRUM_HW_ID, 0x01},    {"Spectrum2 A0", SPECTRUM2_HW_ID, 0x00},
-  {"Spectrum3 A0", SPECTRUM3_HW_ID, 0x00},  {"Quantum2 A0", QUANTUM2_HW_ID, 0x00},
-  {"Spectrum4 A0", SPECTRUM4_HW_ID, 0x00},  {(char*)NULL, (u_int32_t)0, (u_int8_t)0x00}, // zero device ID terminator
+  {"ConnectIB", CONNECT_IB_HW_ID, 0x00},
+  {"ConnectX-3 A0", CX3_HW_ID, 0x00},
+  {"ConnectX-3 A1", CX3_HW_ID, 0x01},
+  {"ConnectX-3Pro", CX3_PRO_HW_ID, 0x00},
+  {"ConnectX-4", CX4_HW_ID, 0x00},
+  {"ConnectX-4LX", CX4LX_HW_ID, 0x00},
+  {"ConnectX-5", CX5_HW_ID, 0x00},
+  {"ConnectX-6", CX6_HW_ID, 0x00},
+  {"ConnectX-6DX", CX6DX_HW_ID, 0x00},
+  {"ConnectX-6LX", CX6LX_HW_ID, 0x00},
+  {"ConnectX-7", CX7_HW_ID, 0x00},
+  {"ConnectX-8", CX8_HW_ID, 0x00},
+  {"BlueField", BF_HW_ID, 0x00},
+  {"BlueField2", BF2_HW_ID, 0x00},
+  {"BlueField3", BF3_HW_ID, 0x00},
+  {"BlueField4", BF4_HW_ID, 0x00},
+  {"SwitchIB A0", SWITCH_IB_HW_ID, 0x00},
+  {"Spectrum A0", SPECTRUM_HW_ID, 0x00},
+  {"SwitchIB2 A0", SWITCH_IB2_HW_ID, 0x00},
+  {"Quantum A0", QUANTUM_HW_ID, 0x00},
+  {"Spectrum A1", SPECTRUM_HW_ID, 0x01},
+  {"Spectrum2 A0", SPECTRUM2_HW_ID, 0x00},
+  {"Spectrum3 A0", SPECTRUM3_HW_ID, 0x00},
+  {"Quantum2 A0", QUANTUM2_HW_ID, 0x00},
+  {"Quantum3 A0", QUANTUM3_HW_ID, 0x00},
+  {"Spectrum4 A0", SPECTRUM4_HW_ID, 0x00},
+  {(char*)NULL, (u_int32_t)0, (u_int8_t)0x00}, // zero device ID terminator
 };
 
 chip_type FwOperations::GetChipType(string chip)
 {
     if (chip == "CT_CONNECTX")
         return CT_CONNECTX;
-    else if (chip == "CT_IS4")
-        return CT_IS4;
     else if (chip == "CT_CONNECT_IB")
         return CT_CONNECT_IB;
     else if (chip == "CT_SWITCH_IB")
@@ -1462,10 +1481,14 @@ chip_type FwOperations::GetChipType(string chip)
         return CT_BLUEFIELD2;
     else if (chip == "CT_BLUEFIELD3")
         return CT_BLUEFIELD3;
+    else if (chip == "CT_BLUEFIELD4")
+        return CT_BLUEFIELD4;
     else if (chip == "CT_CONNECTX3")
         return CT_CONNECTX3;
     else if (chip == "CT_QUANTUM2")
         return CT_QUANTUM2;
+    else if (chip == "CT_QUANTUM3")
+        return CT_QUANTUM3;
     else if (chip == "CT_SPECTRUM4")
         return CT_SPECTRUM4;
     else if (chip == "CT_GEARBOX")
@@ -2110,21 +2133,14 @@ bool FwOperations::ReadBinFile(const char* fimage, u_int8_t*& file_data, int& fi
 void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_type_t fwType, bool& ibDev, bool& ethDev)
 {
     (void)devType;
-    if (chipType == CT_IS4)
-    {
-        ibDev = true;
-        ethDev = false;
-    }
-    else
-    {
-        ibDev = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
-        ethDev = (chipType == CT_CONNECTX) || (chipType == CT_CONNECTX4) || (chipType == CT_CONNECTX4_LX) ||
-                 (chipType == CT_CONNECTX5) || (chipType == CT_CONNECTX6) || (chipType == CT_CONNECTX6DX) ||
-                 (chipType == CT_CONNECTX6LX) || (chipType == CT_SPECTRUM) || (chipType == CT_SPECTRUM2) ||
-                 (chipType == CT_SPECTRUM3) || (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) ||
-                 (chipType == CT_SPECTRUM4) || (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2) ||
-                 (chipType == CT_BLUEFIELD3) || (chipType == CT_CONNECTX8);
-    }
+    ibDev = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
+    ethDev = (chipType == CT_CONNECTX) || (chipType == CT_CONNECTX4) || (chipType == CT_CONNECTX4_LX) ||
+             (chipType == CT_CONNECTX5) || (chipType == CT_CONNECTX6) || (chipType == CT_CONNECTX6DX) ||
+             (chipType == CT_CONNECTX6LX) || (chipType == CT_SPECTRUM) || (chipType == CT_SPECTRUM2) ||
+             (chipType == CT_SPECTRUM3) || (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) ||
+             (chipType == CT_QUANTUM3) || (chipType == CT_SPECTRUM4) || (chipType == CT_BLUEFIELD) ||
+             (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3) || (chipType == CT_CONNECTX8) ||
+             (chipType == CT_BLUEFIELD4);
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN)
     {
@@ -2243,7 +2259,7 @@ bool FwOperations::FwBurnData(burnDataParamsT& burnDataParams)
     u_int32_t* data = burnDataParams.data;
     u_int32_t dataSize = burnDataParams.dataSize;
     ProgressCallBack progressFunc = burnDataParams.progressFunc;
-    FwOperations* newImgOps;
+    FwOperations* newImgOps = NULL;
     ExtBurnParams burnParams = ExtBurnParams();
 
     if (!CreateBasicImageFromData(data, dataSize, &newImgOps))
@@ -2571,9 +2587,10 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
     }
     else if (hwDevId == CX5_HW_ID || hwDevId == CX6_HW_ID || hwDevId == CX6DX_HW_ID || hwDevId == CX6LX_HW_ID ||
              hwDevId == CX7_HW_ID || hwDevId == CX8_HW_ID || hwDevId == BF_HW_ID || hwDevId == BF2_HW_ID ||
-             hwDevId == BF3_HW_ID || hwDevId == QUANTUM_HW_ID || hwDevId == QUANTUM2_HW_ID ||
-             hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM2_HW_ID || hwDevId == SPECTRUM3_HW_ID ||
-             hwDevId == GEARBOX_HW_ID || hwDevId == GB_MANAGER_HW_ID || hwDevId == ABIR_GB_HW_ID)
+             hwDevId == BF3_HW_ID || hwDevId == BF4_HW_ID || hwDevId == QUANTUM_HW_ID || hwDevId == QUANTUM2_HW_ID ||
+             hwDevId == QUANTUM3_HW_ID || hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM2_HW_ID ||
+             hwDevId == SPECTRUM3_HW_ID || hwDevId == GEARBOX_HW_ID || hwDevId == GB_MANAGER_HW_ID ||
+             hwDevId == ABIR_GB_HW_ID)
     {
         return FS_FS4_GEN;
     }
@@ -2594,8 +2611,8 @@ bool FwOperations::TestAndSetTimeStamp(FwOperations* imageOps)
     Tlv_Status_t rc;
     Tlv_Status_t devTsQueryRc;
     bool retRc = true;
-    TimeStampIFC* imgTsObj;
-    TimeStampIFC* devTsObj;
+    TimeStampIFC* imgTsObj = NULL;
+    TimeStampIFC* devTsObj = NULL;
     bool tsFoundOnImage = false;
     struct tools_open_ts_entry imgTs;
     struct tools_open_fw_version imgFwVer;
@@ -2680,8 +2697,8 @@ bool FwOperations::TestAndSetTimeStamp(FwOperations* imageOps)
             if (devTsQueryRc == TS_OK)
             {
                 // we got running timestamp return error
-                retRc = errmsg(
-                  "No valid timestamp detected. please set a valid timestamp on image/device or reset timestamps on device.");
+                retRc = errmsg("No valid timestamp detected. please set a valid timestamp on image/device or reset "
+                               "timestamps on device.");
             }
             else if (devTsQueryRc == TS_NO_VALID_TIMESTAMP)
             {
@@ -2895,8 +2912,11 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
             bitLen = 2;
             break;
         case CT_CONNECTX7:
+        case CT_CONNECTX8:
         case CT_QUANTUM2:
+        case CT_QUANTUM3:
         case CT_BLUEFIELD3:
+        case CT_BLUEFIELD4:
             lifeCycleAddress = 0xf0000;
             firstBit = 4;
             bitLen = 2;
@@ -2919,11 +2939,14 @@ int CRSpaceRegisters::getGlobalImageStatus()
         case CT_CONNECTX6DX:
         case CT_CONNECTX6LX:
         case CT_CONNECTX7:
+        case CT_CONNECTX8:
         case CT_BLUEFIELD2:
         case CT_BLUEFIELD3:
+        case CT_BLUEFIELD4:
             global_image_status_address = 0xE3044;
             break;
         case CT_QUANTUM2:
+        case CT_QUANTUM3:
             global_image_status_address = 0xa1844;
             break;
         default:
@@ -2943,6 +2966,7 @@ u_int32_t CRSpaceRegisters::getSecurityVersion()
     switch (_chip_type)
     {
         case CT_QUANTUM2:
+        case CT_QUANTUM3:
             rollbackMSB = getRegister(0xf3248);
             rollbackLSB = getRegister(0xf324c);
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf3238), 3, 8);
@@ -2988,7 +3012,7 @@ u_int32_t CRSpaceRegisters::getConsecutiveBits(u_int32_t data, u_int8_t firstBit
 
 u_int32_t CRSpaceRegisters::getRegister(u_int32_t address)
 {
-    u_int32_t crSpaceReg;
+    u_int32_t crSpaceReg = 0;
     int rc = mread4(_mf, address, &crSpaceReg);
     if (rc != 4)
     {

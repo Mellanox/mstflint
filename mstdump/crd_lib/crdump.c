@@ -524,7 +524,7 @@ static int crd_set_tlv_blocks(IN mfile* mf, OUT crd_parsed_csv_t blocks[], IN u_
 
 static int crd_get_tlv_from_address(IN mfile* mf, IN u_int32_t address, OUT crd_sp2_tlv_t* crd_sp2_tlv)
 {
-    u_int32_t data;
+    u_int32_t data = 0;
 
     // read signature
     if (mread4(mf, address, &data) != sizeof(u_int32_t))
@@ -564,7 +564,6 @@ static int crd_get_tlv_from_address(IN mfile* mf, IN u_int32_t address, OUT crd_
     {
         crd_sp2_tlv->address = data;
     }
-
     return CRD_OK;
 }
 
