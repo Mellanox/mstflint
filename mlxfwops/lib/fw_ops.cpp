@@ -445,13 +445,6 @@ bool FwOperations::FindAllImageStart(FBase* ioAccess,
 
     needed_pos_num = CNTX_START_POS_SIZE;
 
-    if (ioAccess->is_flash())
-    {
-        if ((ioAccess->get_dev_id() == CX2_HW_ID) || (ioAccess->get_dev_id() == IS4_HW_ID))
-        {
-            needed_pos_num = OLD_CNTX_START_POS_SIZE;
-        }
-    }
     /* WA: due to bug on SwichIB first GA FW (FW doesnt look at chip select field in mfba)
      *     when reading from flash address 0x400000 it wraps around to 0x0 causing more than one
      *     valid image to be found. as a WA we dont check at 0x400000. basic flash operations

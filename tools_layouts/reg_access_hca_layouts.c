@@ -2663,14 +2663,15 @@ void reg_access_hca_mtcap_ext_print(const struct reg_access_hca_mtcap_ext *ptr_s
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "sensor_map           : " U64H_FMT "\n", ptr_struct->sensor_map);
 }
+
 unsigned int reg_access_hca_mtcap_ext_size(void)
 {
 	return REG_ACCESS_HCA_MTCAP_EXT_SIZE;
 }
+
 void reg_access_hca_mtcap_ext_dump(const struct reg_access_hca_mtcap_ext *ptr_struct, FILE *fd)
 {
 	reg_access_hca_mtcap_ext_print(ptr_struct, fd, 0);
-}
 }
 
 void reg_access_hca_mtrc_cap_reg_pack(const struct reg_access_hca_mtrc_cap_reg* ptr_struct, u_int8_t* ptr_buff)
