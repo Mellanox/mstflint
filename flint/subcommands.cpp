@@ -3793,10 +3793,6 @@ bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
                               ethDev);
     // setDevFlags(fwInfo, ibDev, ethDev);
     int numPorts = 2;
-    if (fwInfo.fw_info.chip_type == CT_IS4)
-    {
-        numPorts = 0;
-    }
     // we do not support cards with one port anymore.
 
     // GUIDS:
