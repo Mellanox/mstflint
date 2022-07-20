@@ -41,6 +41,7 @@
 #
 #######################################################
 
+from resource_data.DataPrinter import DataPrinter
 from segments.SegmentCreator import SegmentCreator
 from utils import constants
 from utils import constants as cs
@@ -65,7 +66,7 @@ try:
     import pyverbs.providers.mlx5.mlx5_enums as dve
     from pyverbs.providers.mlx5.mlx5dv import Mlx5Context, Mlx5DVContextAttr
     from pyverbs.providers.mlx5.mlx5dv import Mlx5UMEM
-    from pyverbs.mem_alloc import read32
+    from pyverbs.mem_alloc import read32, read
     import resource
     PYVERVBS_SUPPORT = True
 except Exception as _:
@@ -278,9 +279,10 @@ class ResourceDumpFetcher:
     # very big number that represent the inf number 2^32 - 1 (we will not reach that number)
     INF_DEPTH = 4294967295
 
-    def __init__(self, device_name):
+    def __init__(self, device_name, bin_file=None):
         self._sequence_number = ResourceDumpFetcher._sequence_incrementor()
         self._device_name = device_name
+        self._bin_file = bin_file
         self._start_seq_number = 0
         try:
             mst_device = mtcr.MstDevice(self._device_name)
@@ -289,6 +291,17 @@ class ResourceDumpFetcher:
             self.reg_access_obj = regaccess.RegAccess(mst_device)
         except Exception as e:
             raise Exception("{0}".format(e))
+
+        self._bin_file_h = None
+        if self._bin_file:
+            try:
+                self._bin_file_h = open(self._bin_file, "wb")
+            except Exception as e:
+                raise Exception("Failed to create binary file, {0}".format(e))
+
+    def __del__(self):
+        if self._bin_file_h:
+            self._bin_file_h.close()
 
     @staticmethod
     def _create_segments(segments_data):
@@ -307,6 +320,9 @@ class ResourceDumpFetcher:
         # read the inline data from the resource dump register and split it to segments list
         self._start_seq_number = 0
         inline_data = self._retrieve_resource_dump_inline_data(kwargs[cs.UI_ARG_SEGMENT], **kwargs)
+        if kwargs["fast_mode"]:
+            return []
+
         segments_list = self._create_segments(inline_data)
         segments_list_last_position = 0
 
@@ -324,7 +340,7 @@ class ResourceDumpFetcher:
                     inner_inline_data.extend(
                         self._retrieve_resource_dump_inline_data(seg.reference_type, index1=seg.index1,
                                                                  index2=seg.index2, numOfObj1=seg.num_of_obj1,
-                                                                 numOfObj2=seg.num_of_obj2, vHCAid=kwargs["vHCAid"], mem=kwargs["mem"]))
+                                                                 numOfObj2=seg.num_of_obj2, vHCAid=kwargs["vHCAid"], mem=kwargs["mem"], fast_mode=kwargs["fast_mode"]))
 
             segments_list_last_position = len(segments_list)
             segments_list.extend(self._create_segments(inner_inline_data))
@@ -372,7 +388,7 @@ class ResourceDumpFetcher:
         if kwargs["vHCAid"] is None:
             vhca_id = 0
         else:
-            vhca_id = int(kwargs["vHCAid"])
+            vhca_id = int(kwargs["vHCAid"], 0)
             vhca_id_valid = 1
 
         if kwargs["mem"] is not None:
@@ -417,14 +433,21 @@ class ResourceDumpFetcher:
             device_opaque = results["device_opaque"]
             size = int(math.ceil(results["size"] / 4))
 
+            bin_data = None
             if kwargs["mem"] is not None:
-                # Read all dwords and change endianness
-                my_data = []
-                for i in range(size):
-                    my_data.append(struct.unpack("<I", struct.pack(">I", read32(self.umem.umem_addr, i)))[0])
-                inline_data.extend(my_data)
+                if not kwargs["fast_mode"] or segment_type == cs.RESOURCE_DUMP_SEGMENT_TYPE_MENU:
+                    # Read all dwords and change endianness
+                    for i in range(size):
+                        inline_data.append(struct.unpack("<I", struct.pack(">I", read32(self.umem.umem_addr, i)))[0])
+                else:
+                    bin_data = read(self.umem.umem_addr, results["size"])
             else:
-                inline_data.extend(results["inline_data"][:size])
+                if not kwargs["fast_mode"] or segment_type == cs.RESOURCE_DUMP_SEGMENT_TYPE_MENU:
+                    inline_data.extend(results["inline_data"][:size])
+                else:
+                    bin_data = struct.pack(">{}I".format(size), *results["inline_data"][:size])
+            if bin_data:
+                DataPrinter.append_binary_data_to_file(bin_data, self._bin_file_h)
 
             if not self._validate_sequence_number(seg_number):
                 raise Exception("E - wrong sequence number while calling resource dump register with seq num = {0}"
@@ -447,7 +470,7 @@ class ResourceDumpFetcher:
         def _create_umem(self, ctx, size,
                          access=e.IBV_ACCESS_LOCAL_WRITE,
                          alignment=resource.getpagesize()):
-            return Mlx5UMEM(ctx, size=size, alignment=alignment, access=access)
+            return Mlx5UMEM(ctx, size=size, alignment=alignment, access=access, pgsz_bitmap=alignment)
 
         def _create_mr_devx(self, rdma_device, buf_size):
             """This method create mkey and memory buffer using devx (part of ofed driver).

@@ -56,7 +56,7 @@ class QueryData:
         """
         try:
             query_kwargs = {'segment': constants.RESOURCE_DUMP_SEGMENT_TYPE_MENU,
-                            'vHCAid': vhca_id, 'index1': 0, 'index2': 0, 'numOfObj1': 0, 'numOfObj2': 0, 'depth': 0, 'mem': mem}
+                            'vHCAid': vhca_id, 'index1': 0, 'index2': 0, 'numOfObj1': 0, 'numOfObj2': 0, 'depth': 0, 'mem': mem, 'fast_mode': False}
             query_segments = ResourceDumpFetcher(device_name).fetch_data(**query_kwargs)
             res = SegmentsFilter.get_segments(query_segments, constants.RESOURCE_DUMP_SEGMENT_TYPE_MENU)
             try:

@@ -93,3 +93,7 @@ class DataPrinter:
                     binary_file.write(four_bytes)
 
         print("write to file: ", path)
+
+    @classmethod
+    def append_binary_data_to_file(cls, data, file_h):
+        file_h.write(data)

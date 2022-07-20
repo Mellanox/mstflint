@@ -67,6 +67,8 @@ class DumpCommand(ResDumpCommand):
         self.mem = kwargs[cs.UI_ARG_MEM]
         self.data = None
 
+        self._fast_mode = self.bin and not self.depth
+
     def get_data(self):
         """call the QueryData for getting the dump data.
         """
@@ -79,13 +81,15 @@ class DumpCommand(ResDumpCommand):
                                       numOfObj2=self.numOfObj2,
                                       depth=self.depth,
                                       bin=self.bin,
-                                      mem=self.mem)
+                                      mem=self.mem,
+                                      fast_mode=self._fast_mode)
 
     def print_data(self):
         """call the data printer with the right configuration for print the dump data to
         screen or in a binary format (choosed by the user).
         """
-        DataPrinter.print_dump_data(self.data, self.bin)
+        if not self._fast_mode:
+            DataPrinter.print_dump_data(self.data, self.bin)
 
     def validate(self):
         """call the capability validator and check if the core dump supported by the FW.
