@@ -606,110 +606,111 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr,
             u_int32_t entry_size_in_bytes = toc_entry.size * 4;
             // printf("-D- entry_crc = %#x, toc_entry.itoc_entry_crc = %#x\n", entry_crc, toc_entry.itoc_entry_crc);
 
-            if (toc_entry.itoc_entry_crc == entry_crc)
+            if (toc_entry.itoc_entry_crc != entry_crc)
             {
-                // Update last image address
-                u_int32_t section_last_addr;
-                u_int32_t flash_addr = toc_entry.flash_addr << 2;
-                if (!toc_entry.relative_addr)
+                if (_fwParams.ignoreCrcCheck)
                 {
-                    _ioAccess->set_address_convertor(0, 0);
-                    phys_addr = flash_addr;
-                    _fs3ImgInfo.smallestAbsAddr =
-                      (_fs3ImgInfo.smallestAbsAddr < flash_addr && _fs3ImgInfo.smallestAbsAddr > 0) ?
-                        _fs3ImgInfo.smallestAbsAddr :
-                        flash_addr;
+                    printf("-W- Bad Itoc Entry CRC. Expected: 0x%x , Actual: 0x%x\n", toc_entry.itoc_entry_crc,
+                           entry_crc);
                 }
                 else
                 {
-                    phys_addr =
-                      _ioAccess->get_phys_from_cont(flash_addr, _fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
-                    u_int32_t currSizeOfImgdata = phys_addr + entry_size_in_bytes;
-                    _fs3ImgInfo.sizeOfImgData =
-                      (_fs3ImgInfo.sizeOfImgData > currSizeOfImgdata) ? _fs3ImgInfo.sizeOfImgData : currSizeOfImgdata;
+                    return errmsg(MLXFW_BAD_CRC_ERR, "Bad Itoc Entry CRC. Expected: 0x%x , Actual: 0x%x",
+                                  toc_entry.itoc_entry_crc, entry_crc);
                 }
-                section_last_addr = phys_addr + entry_size_in_bytes;
-                _fwImgInfo.lastImageAddr =
-                  (_fwImgInfo.lastImageAddr >= section_last_addr) ? _fwImgInfo.lastImageAddr : section_last_addr;
+            }
 
-                if (IsFs3SectionReadable(toc_entry.type, queryOptions))
-                {
-                    if (ignoreDToc && toc_entry.device_data)
-                    {
-                        break;
-                    }
-                    // Only when we have full verify or the info of this section should be collected for query
-                    std::vector<u_int8_t> buffv(entry_size_in_bytes);
-                    u_int8_t* buff = (u_int8_t*)(buffv.size() ? (&(buffv[0])) : NULL);
-                    if (show_itoc)
-                    {
-                        cibfw_itoc_entry_dump(&toc_entry, stdout);
-                        if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, 0, 0, true,
-                                             verifyCallBackFunc))
-                        {
-                            ret_val = false;
-                        }
-                    }
-                    else
-                    {
-                        if (!verbose)
-                        {
-                            READBUF((*_ioAccess), flash_addr, buff, entry_size_in_bytes, "Section");
-                        }
-                        else
-                        {
-                            if (!(*_ioAccess).read(flash_addr, buff, entry_size_in_bytes, true, "Section"))
-                            {
-                                return errmsg("%s - read error (%s)\n", "Section", (*_ioAccess).err());
-                            }
-                        }
-                        Fs3UpdateImgCache(buff, flash_addr, entry_size_in_bytes);
-                        u_int32_t sect_crc = CalcImageCRC((u_int32_t*)buff, toc_entry.size);
-
-                        // printf("-D- flash_addr: %#x, toc_entry_size = %#x, actual sect = %#x, from itoc: %#x np_crc =
-                        // %s\n", flash_addr, toc_entry.size, sect_crc,
-                        //    toc_entry.section_crc, toc_entry.no_crc ? "yes" : "no");
-                        if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, sect_crc,
-                                             toc_entry.section_crc, toc_entry.no_crc, verifyCallBackFunc))
-                        {
-                            if (toc_entry.device_data)
-                            {
-                                _badDevDataSections = true;
-                            }
-                            ret_val = false;
-                        }
-                        else
-                        {
-                            // printf("-D- toc type : 0x%.8x\n" , toc_entry.type);
-                            GetSectData(_fs3ImgInfo.tocArr[section_index].section_data, (u_int32_t*)buff,
-                                        toc_entry.size * 4);
-                            if (IsGetInfoSupported(toc_entry.type))
-                            {
-                                if (!GetImageInfoFromSection(buff, toc_entry.type, toc_entry.size * 4))
-                                {
-                                    ret_val = false;
-                                    errmsg("Failed to get info from section %d, check the supported_hw_id section in "
-                                           "MLX file!\n",
-                                           toc_entry.type);
-                                }
-                            }
-                            else if (toc_entry.type == FS3_DBG_FW_INI)
-                            {
-                                TOCPUn(buff, toc_entry.size);
-                                GetSectData(_fwConfSect, (u_int32_t*)buff, toc_entry.size * 4);
-                            }
-                        }
-                    }
-                }
+            // Update last image address
+            u_int32_t section_last_addr;
+            u_int32_t flash_addr = toc_entry.flash_addr << 2;
+            if (!toc_entry.relative_addr)
+            {
+                _ioAccess->set_address_convertor(0, 0);
+                phys_addr = flash_addr;
+                _fs3ImgInfo.smallestAbsAddr =
+                  (_fs3ImgInfo.smallestAbsAddr < flash_addr && _fs3ImgInfo.smallestAbsAddr > 0) ?
+                    _fs3ImgInfo.smallestAbsAddr :
+                    flash_addr;
             }
             else
             {
-                /*
-                   printf("-D- Bad ITOC CRC: toc_entry.itoc_entry_crc = %#x, actual crc: %#x, entry_size_in_bytes =
-                   %#x\n", toc_entry.itoc_entry_crc, entry_crc, entry_size_in_bytes);
-                 */
-                return errmsg(MLXFW_BAD_CRC_ERR, "Bad Itoc Entry CRC. Expected: 0x%x , Actual: 0x%x",
-                              toc_entry.itoc_entry_crc, entry_crc);
+                phys_addr =
+                  _ioAccess->get_phys_from_cont(flash_addr, _fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
+                u_int32_t currSizeOfImgdata = phys_addr + entry_size_in_bytes;
+                _fs3ImgInfo.sizeOfImgData =
+                  (_fs3ImgInfo.sizeOfImgData > currSizeOfImgdata) ? _fs3ImgInfo.sizeOfImgData : currSizeOfImgdata;
+            }
+            section_last_addr = phys_addr + entry_size_in_bytes;
+            _fwImgInfo.lastImageAddr =
+              (_fwImgInfo.lastImageAddr >= section_last_addr) ? _fwImgInfo.lastImageAddr : section_last_addr;
+
+            if (IsFs3SectionReadable(toc_entry.type, queryOptions))
+            {
+                if (ignoreDToc && toc_entry.device_data)
+                {
+                    break;
+                }
+                // Only when we have full verify or the info of this section should be collected for query
+                std::vector<u_int8_t> buffv(entry_size_in_bytes);
+                u_int8_t* buff = (u_int8_t*)(buffv.size() ? (&(buffv[0])) : NULL);
+                if (show_itoc)
+                {
+                    cibfw_itoc_entry_dump(&toc_entry, stdout);
+                    if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, 0, 0, true, verifyCallBackFunc))
+                    {
+                        ret_val = false;
+                    }
+                }
+                else
+                {
+                    if (!verbose)
+                    {
+                        READBUF((*_ioAccess), flash_addr, buff, entry_size_in_bytes, "Section");
+                    }
+                    else
+                    {
+                        if (!(*_ioAccess).read(flash_addr, buff, entry_size_in_bytes, true, "Section"))
+                        {
+                            return errmsg("%s - read error (%s)\n", "Section", (*_ioAccess).err());
+                        }
+                    }
+                    Fs3UpdateImgCache(buff, flash_addr, entry_size_in_bytes);
+                    u_int32_t sect_crc = CalcImageCRC((u_int32_t*)buff, toc_entry.size);
+
+                    // printf("-D- flash_addr: %#x, toc_entry_size = %#x, actual sect = %#x, from itoc: %#x np_crc =
+                    // %s\n", flash_addr, toc_entry.size, sect_crc,
+                    //    toc_entry.section_crc, toc_entry.no_crc ? "yes" : "no");
+                    if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, sect_crc,
+                                         toc_entry.section_crc, toc_entry.no_crc, verifyCallBackFunc))
+                    {
+                        if (toc_entry.device_data)
+                        {
+                            _badDevDataSections = true;
+                        }
+                        ret_val = false;
+                    }
+                    else
+                    {
+                        // printf("-D- toc type : 0x%.8x\n" , toc_entry.type);
+                        GetSectData(_fs3ImgInfo.tocArr[section_index].section_data, (u_int32_t*)buff,
+                                    toc_entry.size * 4);
+                        if (IsGetInfoSupported(toc_entry.type))
+                        {
+                            if (!GetImageInfoFromSection(buff, toc_entry.type, toc_entry.size * 4))
+                            {
+                                ret_val = false;
+                                errmsg("Failed to get info from section %d, check the supported_hw_id section in "
+                                       "MLX file!\n",
+                                       toc_entry.type);
+                            }
+                        }
+                        else if (toc_entry.type == FS3_DBG_FW_INI)
+                        {
+                            TOCPUn(buff, toc_entry.size);
+                            GetSectData(_fwConfSect, (u_int32_t*)buff, toc_entry.size * 4);
+                        }
+                    }
+                }
             }
 
             _fs3ImgInfo.tocArr[section_index].entry_addr = entry_addr;

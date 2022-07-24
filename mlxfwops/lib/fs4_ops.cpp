@@ -680,8 +680,16 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr,
             entryCrc = CalcImageCRC((u_int32_t*)entryBuffer, (TOC_ENTRY_SIZE / 4) - 1);
             if (tocEntry.itoc_entry_crc != entryCrc)
             {
-                return errmsg(MLXFW_BAD_CRC_ERR, "Bad %s Entry CRC. Expected: 0x%x , Actual: 0x%x",
-                              isDtoc ? "DToc" : "IToc", tocEntry.itoc_entry_crc, entryCrc);
+                if (_fwParams.ignoreCrcCheck)
+                {
+                    printf("-W- Bad %s Entry CRC. Expected: 0x%x , Actual: 0x%x\n", isDtoc ? "DToc" : "IToc",
+                           tocEntry.itoc_entry_crc, entryCrc);
+                }
+                else
+                {
+                    return errmsg(MLXFW_BAD_CRC_ERR, "Bad %s Entry CRC. Expected: 0x%x , Actual: 0x%x",
+                                  isDtoc ? "DToc" : "IToc", tocEntry.itoc_entry_crc, entryCrc);
+                }
             }
 
             entrySizeInBytes = tocEntry.size * 4;
