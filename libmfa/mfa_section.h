@@ -37,8 +37,8 @@
 #include <compatibility.h>
 #include "xz_io_ops.h"
 
-
-enum {
+enum
+{
     MFA_SEC_OK = 0,
     MFA_SEC_ERR_GENERIC = 1,
     MFA_SEC_ERR_MEM_ALLOC,
@@ -49,22 +49,22 @@ enum {
     MFA_SEC_ERR_EXTRACT_FILE
 };
 
-
-enum mfa_section_types {
-    MFA_MAP_SECTION =  1,
-    MFA_TOC_SECTION =  2,
+enum mfa_section_types
+{
+    MFA_MAP_SECTION = 1,
+    MFA_TOC_SECTION = 2,
     MFA_DATA_SECTION = 3,
     MFA_NUM_SECTIONS
 };
 
-
-enum image_types {
+enum image_types
+{
     IT_FW_IMAGE = 1,
     IT_N_IMAGE_TYPES
 };
 
-
-enum subimage_types {
+enum subimage_types
+{
     SIT_PADDING = 0,
     SIT_FW = 1,
 
@@ -74,21 +74,21 @@ enum subimage_types {
     SIT_FCODE = 0x121
 };
 
-
-enum section_flags {
+enum section_flags
+{
     SFLAG_XZ_COMPRESSED = 1
 };
 
-
-typedef struct section_hdr {
+typedef struct section_hdr
+{
     u_int8_t type;
     u_int8_t reserved[2];
     u_int8_t flags;
     u_int32_t size;
 } section_hdr;
 
-
-typedef struct map_entry_hdr {
+typedef struct map_entry_hdr
+{
     char board_type_id[32];
     u_int8_t nimages;
     u_int8_t reserved;
@@ -96,8 +96,8 @@ typedef struct map_entry_hdr {
 } map_entry_hdr;
 // This struct is followed by the metadata unless metadata_size is zero
 
-
-typedef struct map_image_entry {
+typedef struct map_image_entry
+{
     u_int32_t toc_offset;
     u_int16_t image_type;
     u_int8_t reserved;
@@ -105,37 +105,40 @@ typedef struct map_image_entry {
     char select_tag[32];
 } map_image_entry;
 
-
-typedef struct toc_entry {
+typedef struct toc_entry
+{
     u_int32_t data_offset;
     u_int32_t data_size;
     u_int16_t subimage_type;
     u_int8_t reserved0;
     u_int8_t num_ver_fields;
     u_int16_t version[4];
-    u_int16_t reserved1;
+    u_int16_t data_offset_msb;
     u_int16_t metadata_size;
 } toc_entry;
 
-
-enum metadata_type {
+enum metadata_type
+{
     MDT_RAW = 0,
     MDT_KEY_VALUE_PAIR = 1
 };
 
-//MDT_KEY_VALUE_PAIR => modifier is number of pairs
-typedef struct metadata_hdr {
+// MDT_KEY_VALUE_PAIR => modifier is number of pairs
+typedef struct metadata_hdr
+{
     u_int8_t type;
     u_int8_t reserved;
     u_int16_t modifier;
 } metadata_hdr;
 
-
-void      mfasec_init();
-u_int32_t mfasec_crc32(const u_int8_t *buf, size_t size, u_int32_t crc);
-ssize_t   mfasec_get_map(u_int8_t *inbuf, size_t inbufsz, u_int8_t **outbuf);
-ssize_t   mfasec_get_toc(u_int8_t *inbuf, size_t inbufsz, u_int8_t **outbuf);
-int       mfasec_get_data_chunk(u_int8_t *data_sec_ptr, size_t data_sec_len, size_t chunk_offset, size_t length, u_int8_t *outbuf);
-char*     mfasec_get_sub_image_type_str(int t);
+void mfasec_init();
+u_int32_t mfasec_crc32(const u_int8_t* buf, size_t size, u_int32_t crc);
+ssize_t mfasec_get_map(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf);
+ssize_t mfasec_get_toc(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf);
+int mfasec_get_data_chunk(u_int8_t* data_sec_ptr,
+                          size_t data_sec_len,
+                          u_int64_t chunk_offset,
+                          size_t length,
+                          u_int8_t* outbuf);
+char* mfasec_get_sub_image_type_str(int t);
 #endif
-

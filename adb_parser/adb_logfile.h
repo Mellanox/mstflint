@@ -45,14 +45,16 @@
 
 using namespace std;
 
-class LogFile {
+class LogFile
+{
 public:
     LogFile();
     void init(string logFileName, bool allowMultipleExceptions);
     ~LogFile();
     void appendLogFile(string adbFileName);
+
 private:
-    FILE *_logFile;
+    FILE* _logFile;
 };
 
 #endif

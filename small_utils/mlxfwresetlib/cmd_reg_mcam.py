@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 import sys
 try:
@@ -37,23 +37,40 @@ except Exception as e:
     print("-E- could not import : %s" % str(e))
     sys.exit(1)
 
+
 class CmdRegMcam():
 
     def __init__(self, reg_access):
 
         self._reg_access = reg_access
+        self._mcam_get_result = None
 
+    def get_mcam(self):
+        if self._mcam_get_result is None:
+            self._mcam_get_result = self._reg_access.getMCAM()
+        return self._mcam_get_result
+
+    def is_pci_rescan_required_supported(self):
+        """
+        Read MCAM and check if the feature "PCI rescan required" is supported
+        """
+        try:
+            mcam_get_result = self.get_mcam()
+        except BaseException:
+            pci_rescan_required_sup = 0
+        else:
+            pci_rescan_required_sup = mcam_get_result["mng_feature_cap_mask"][45]
+        return True if pci_rescan_required_sup == 1 else False
 
     def is_reset_by_fw_driver_sync_supported(self):
         """
         Read MCAM and check if the feature "reset by fw-driver sync" is supported
         """
         try:
-            mcam_get_result = self._reg_access.getMCAM()
+            mcam_get_result = self.get_mcam()
         except RegAccException as e:
             pci_sync_for_fw_update_sup = 0
         else:
-            # print(mcam_get_result)
             pci_sync_for_fw_update_sup = mcam_get_result["mng_feature_cap_mask"][19]
         return True if pci_sync_for_fw_update_sup == 1 else False
 

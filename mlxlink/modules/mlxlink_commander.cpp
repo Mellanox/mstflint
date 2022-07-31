@@ -1715,46 +1715,48 @@ string MlxlinkCommander::getComplianceLabel(u_int32_t compliance, u_int32_t extC
     return complianceLabel;
 }
 
-void MlxlinkCommander::prepareSltp28_40nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber)
+string MlxlinkCommander::getSltpFieldStr(const PRM_FIELD& field)
 {
-    sltpLanes[laneNumber].push_back(getFieldStr("polarity"));
-    sltpLanes[laneNumber].push_back(getFieldStr("ob_tap0"));
-    sltpLanes[laneNumber].push_back(getFieldStr("ob_tap1"));
-    sltpLanes[laneNumber].push_back(getFieldStr("ob_tap2"));
-    sltpLanes[laneNumber].push_back(getFieldStr("ob_bias"));
-    sltpLanes[laneNumber].push_back(getFieldStr("ob_preemp_mode"));
-    if (_userInput._advancedMode)
+    string fieldStr = getFieldStr(field.prmField);
+    if (field.isSigned)
     {
-        sltpLanes[laneNumber].push_back(getFieldStr("ob_reg"));
-        sltpLanes[laneNumber].push_back(getFieldStr("ob_leva"));
+        fieldStr = to_string(readSigned(getFieldValue(field.prmField), getFieldSize(field.prmField)));
+    }
+    return MlxlinkRecord::addSpace(fieldStr, field.uiField.size() + 1, false);
+}
+
+void MlxlinkCommander::prepareSltpEdrHdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber)
+{
+    map<u_int32_t, PRM_FIELD> sltpParam = _mlxlinkMaps->_SltpEdrParams;
+    if (_productTechnology == PRODUCT_16NM)
+    {
+        sltpParam = _mlxlinkMaps->_SltpHdrParams;
+    }
+
+    for (auto const& param : sltpParam)
+    {
+        if ((param.second.fieldAccess & FIELD_ACCESS_R) ||
+            (_userInput._advancedMode && (param.second.fieldAccess & FIELD_ACCESS_ADVANCED)))
+        {
+            sltpLanes[laneNumber].push_back(getSltpFieldStr(param.second));
+        }
     }
 }
 
-void MlxlinkCommander::prepareSltp16nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber)
-{
-    // The first four fields are stored as a signed integers
-    sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("pre_2_tap"))));
-    sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("pre_tap"))));
-    sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("main_tap"))));
-    sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("post_tap"))));
-    sltpLanes[laneNumber].push_back(to_string(readSigned(getFieldValue("ob_m2lp"), getFieldSize("ob_m2lp"))));
-    sltpLanes[laneNumber].push_back(getFieldStr("ob_amp"));
-}
-
-void MlxlinkCommander::prepareSltp7nm(std::vector<std::vector<string> >& sltpLanes, u_int32_t laneNumber)
+void MlxlinkCommander::prepareSltpNdrGen(std::vector<std::vector<string>>& sltpLanes, u_int32_t laneNumber)
 {
     if (isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
     {
-        sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_pre3"))));
-        sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_pre2"))));
+        sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_PRE3]));
+        sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_PRE2]));
     }
     else if (isSpeed50GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
     {
-        sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_pre2"))));
+        sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_PRE2]));
     }
-    sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_pre1"))));
-    sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_main"))));
-    sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_post1"))));
+    sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_PRE1]));
+    sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_MAIN]));
+    sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_POST1]));
 }
 
 template<typename T, typename Q>
@@ -1848,7 +1850,7 @@ void MlxlinkCommander::operatingInfoPage()
         setPrintVal(_operatingInfoCmd, "FEC", fec_mode_str == "" ? "N/A" : fec_mode_str,
                     fec_mode_str == "" ? MlxlinkRecord::state2Color(0) : color, !_prbsTestMode, _linkUP);
 
-        setPrintVal(_operatingInfoCmd, "Loopback Mode", _mlxlinkMaps->_loopbackModeList[loopbackMode],
+        setPrintVal(_operatingInfoCmd, "Loopback Mode", _mlxlinkMaps->_loopbackModeList[loopbackMode].second,
                     getLoopbackColor(loopbackMode), true, !_prbsTestMode && loopbackMode != -1);
         setPrintVal(_operatingInfoCmd, "Auto Negotiation", _mlxlinkMaps->_anDisableList[_anDisable] + _speedForce,
                     getAnDisableColor(_anDisable), true, !_prbsTestMode);
@@ -2498,15 +2500,14 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
     string fomMode = _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode")];
     setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Lane", getStringFromVector(legand), ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", getStringFromVector(initialFom), ANSI_COLOR_RESET,
-                !initialFom.empty(), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", getStringFromVector(initialFom), ANSI_COLOR_RESET, true, true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Last FOM", getStringFromVector(lastFom), ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET, true,
-                (fomMeasurement & SLRG_EOM_UPPER), true);
-    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET, true,
-                (fomMeasurement & SLRG_EOM_MIDDLE), true);
-    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET, true,
-                (fomMeasurement & SLRG_EOM_LOWER), true);
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_UPPER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_LOWER), true, true);
 }
 
 void MlxlinkCommander::showEye()
@@ -2670,6 +2671,55 @@ void MlxlinkCommander::showFEC()
     }
 }
 
+string MlxlinkCommander::getSltpHeader()
+{
+    string sep = ",";
+    vector<string> sltpHeader;
+    map<u_int32_t, PRM_FIELD> sltpParam = _mlxlinkMaps->_SltpNdrParams;
+
+    if (_productTechnology == PRODUCT_7NM)
+    {
+        bool is100gPerLane = isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive);
+        bool is50gPerLane = isSpeed50GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive);
+        if (is100gPerLane)
+        {
+            sltpHeader.push_back(MlxlinkRecord::addSpace(sltpParam[SLTP_NDR_FIR_PRE3].uiField,
+                                                         sltpParam[SLTP_NDR_FIR_PRE3].uiField.size() + 1, false));
+        }
+        if (is50gPerLane || is100gPerLane)
+        {
+            sltpHeader.push_back(MlxlinkRecord::addSpace(sltpParam[SLTP_NDR_FIR_PRE2].uiField,
+                                                         sltpParam[SLTP_NDR_FIR_PRE2].uiField.size() + 1, false));
+        }
+        sltpHeader.push_back(MlxlinkRecord::addSpace(sltpParam[SLTP_NDR_FIR_PRE1].uiField,
+                                                     sltpParam[SLTP_NDR_FIR_PRE1].uiField.size() + 1, false));
+        sltpHeader.push_back(MlxlinkRecord::addSpace(sltpParam[SLTP_NDR_FIR_MAIN].uiField,
+                                                     sltpParam[SLTP_NDR_FIR_MAIN].uiField.size() + 1, false));
+        sltpHeader.push_back(MlxlinkRecord::addSpace(sltpParam[SLTP_NDR_FIR_POST1].uiField,
+                                                     sltpParam[SLTP_NDR_FIR_POST1].uiField.size() + 1, false));
+    }
+    else
+    {
+        sltpParam = _mlxlinkMaps->_SltpEdrParams;
+        if (_productTechnology == PRODUCT_16NM)
+        {
+            sltpParam = _mlxlinkMaps->_SltpHdrParams;
+        }
+
+        for (auto const& param : sltpParam)
+        {
+            if ((param.second.fieldAccess & FIELD_ACCESS_R) ||
+                (_userInput._advancedMode && (param.second.fieldAccess & FIELD_ACCESS_ADVANCED)))
+            {
+                sltpHeader.push_back(
+                  MlxlinkRecord::addSpace(param.second.uiField, param.second.uiField.size() + 1, false));
+            }
+        }
+    }
+
+    return getStringFromVector(sltpHeader);
+}
+
 void MlxlinkCommander::showSltp()
 {
     if (_userInput._pcie)
@@ -2678,75 +2728,50 @@ void MlxlinkCommander::showSltp()
     }
     try
     {
-        string regName = "SLTP";
-
         bool valid = true;
         u_int32_t numOfLanesToUse = (_userInput._pcie) ? _numOfLanesPcie : _numOfLanes;
-        std::vector<std::vector<string> > sltpLanes(numOfLanesToUse, std::vector<string>());
+        std::vector<std::vector<string>> sltpLanes(numOfLanesToUse, std::vector<string>());
         string showSltpTitle = "Serdes Tuning Transmitter Info";
+        string sltpHeader = getSltpHeader();
+
         if (_userInput._pcie)
         {
             showSltpTitle += " (PCIe)";
         }
         setPrintTitle(_sltpInfoCmd, showSltpTitle, numOfLanesToUse + 1);
-        if (_productTechnology == PRODUCT_7NM)
-        {
-            _mlxlinkMaps->_sltpHeader = "fir_pre1,fir_main,fir_post1";
-            if (isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
-            {
-                _mlxlinkMaps->_sltpHeader = "fir_pre3,fir_pre2," + _mlxlinkMaps->_sltpHeader;
-            }
-            else if (isSpeed50GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
-            {
-                _mlxlinkMaps->_sltpHeader = "fir_pre2," + _mlxlinkMaps->_sltpHeader;
-            }
-        }
-        else if (_productTechnology == PRODUCT_16NM)
-        {
-            _mlxlinkMaps->_sltpHeader = "pre2Tap,preTap,mainTap,postTap,m2lp,amp";
-        }
-        else
-        {
-            _mlxlinkMaps->_sltpHeader = "Pol,tap0,tap1,tap2,bias,preemp_mode";
-            if (_userInput._advancedMode)
-            {
-                _mlxlinkMaps->_sltpHeader += ",reg,leva";
-            }
-        }
+
         if (!_linkUP && !_userInput._pcie && !_prbsTestMode)
         {
-            setPrintVal(_sltpInfoCmd, "Serdes TX parameters", _mlxlinkMaps->_sltpHeader, ANSI_COLOR_RESET, true, false,
-                        true);
+            setPrintVal(_sltpInfoCmd, "Serdes TX parameters", sltpHeader, ANSI_COLOR_RESET, true, false, true);
             cout << _sltpInfoCmd;
             return;
         }
-        setPrintVal(_sltpInfoCmd, "Serdes TX parameters", _mlxlinkMaps->_sltpHeader, ANSI_COLOR_RESET, true, true,
-                    true);
+        setPrintVal(_sltpInfoCmd, "Serdes TX parameters", sltpHeader, ANSI_COLOR_RESET, true, true, true);
+
         for (u_int32_t i = 0; i < numOfLanesToUse; i++)
         {
-            resetParser(regName);
+            resetParser(ACCESS_REG_SLTP);
             updatePortType();
             updateField("local_port", _localPort);
             updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
             updateField("lane", i);
             updateField("c_db", _userInput._db);
-            genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-            if (_productTechnology == PRODUCT_16NM)
+            genBuffSendRegister(ACCESS_REG_SLTP, MACCESS_REG_METHOD_GET);
+
+            if (_productTechnology == PRODUCT_7NM)
             {
-                prepareSltp16nm(sltpLanes, i);
-            }
-            else if (_productTechnology == PRODUCT_7NM)
-            {
-                prepareSltp7nm(sltpLanes, i);
+                prepareSltpNdrGen(sltpLanes, i);
             }
             else
             {
-                prepareSltp28_40nm(sltpLanes, i);
+                prepareSltpEdrHdrGen(sltpLanes, i);
             }
+
             if (!getFieldValue("status"))
             {
                 valid = false;
             }
+
             setPrintVal(_sltpInfoCmd, "Lane " + to_string(i), getStringFromVector(sltpLanes[i]), ANSI_COLOR_RESET, true,
                         valid, true);
         }
@@ -3857,6 +3882,22 @@ void MlxlinkCommander::checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMas
         modeToCheck += "A";
     }
 
+    switch (modeToCheck[-1])
+    {
+        case '8':
+            findAndReplace(modeToCheck, "8", "A");
+            break;
+        case '4':
+            findAndReplace(modeToCheck, "4", "B");
+            break;
+        case '2':
+            findAndReplace(modeToCheck, "2", "C");
+            break;
+        case '1':
+            findAndReplace(modeToCheck, "1", "D");
+            break;
+    }
+
     // Fetching mode capability from mode list
     u_int32_t modeCap = 0;
 
@@ -4521,7 +4562,7 @@ void MlxlinkCommander::getSltpAlevOut(u_int32_t lane)
 
     genBuffSendRegister(ACCESS_REG_SLTP, MACCESS_REG_METHOD_GET);
 
-    _userInput._sltpParams[OB_ALEV_OUT] = getFieldValue("ob_alev_out");
+    _userInput._sltpParams[SLTP_HDR_OB_ALEV_OUT] = getFieldValue("ob_alev_out");
 }
 
 void MlxlinkCommander::getSltpRegAndLeva(u_int32_t lane)
@@ -4534,8 +4575,8 @@ void MlxlinkCommander::getSltpRegAndLeva(u_int32_t lane)
 
     genBuffSendRegister(ACCESS_REG_SLTP, MACCESS_REG_METHOD_GET);
 
-    _userInput._sltpParams[OB_REG] = getFieldValue("ob_reg");
-    _userInput._sltpParams[OB_LEVA] = getFieldValue("ob_leva");
+    _userInput._sltpParams[SLTP_EDR_OB_REG] = getFieldValue("ob_reg");
+    _userInput._sltpParams[SLTP_EDR_OB_LEVA] = getFieldValue("ob_leva");
 }
 
 u_int32_t MlxlinkCommander::getLaneSpeed(u_int32_t lane)
@@ -4558,17 +4599,17 @@ void MlxlinkCommander::validateNumOfParamsForNDRGen()
     errMsg += "valid parameters for the active speed are: ";
     if (isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
     {
-        params = PARAMS_7NM_LAST;
+        params = SLTP_NDR_LAST;
         errMsg += "fir_pre3,fir_pre2,fir_pre1,fir_main,fir_post1";
     }
     else if (isSpeed50GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
     {
-        params = FIR_POST1;
+        params = SLTP_NDR_FIR_POST1;
         errMsg += "fir_pre2,fir_pre1,fir_main,fir_post1";
     }
     else
     {
-        params = FIR_MAIN;
+        params = SLTP_NDR_FIR_MAIN;
         errMsg += "fir_pre1,fir_main,fir_post1";
     }
     if (_userInput._sltpParams.size() != params)
@@ -4587,10 +4628,10 @@ void MlxlinkCommander::validateNumOfParamsForNDRGen()
 
 void MlxlinkCommander::checkSltpParamsSize()
 {
-    u_int32_t sltpParamsSize = OB_REG;
+    u_int32_t sltpParamsSize = SLTP_EDR_OB_REG;
     if (_productTechnology == PRODUCT_16NM)
     {
-        sltpParamsSize = OB_ALEV_OUT;
+        sltpParamsSize = SLTP_HDR_OB_ALEV_OUT;
         for (map<u_int32_t, u_int32_t>::iterator it = _userInput._sltpParams.begin();
              it != _userInput._sltpParams.end();
              it++)
@@ -4607,7 +4648,7 @@ void MlxlinkCommander::checkSltpParamsSize()
     }
     else if (_userInput._advancedMode)
     {
-        sltpParamsSize = PARAMS_40NM_LAST;
+        sltpParamsSize = SLTP_EDR_LAST;
     }
     if (_userInput._sltpParams.size() != sltpParamsSize && _productTechnology != PRODUCT_7NM)
     {
@@ -4615,49 +4656,43 @@ void MlxlinkCommander::checkSltpParamsSize()
     }
 }
 
-void MlxlinkCommander::updateSltp28_40nmFields()
+void MlxlinkCommander::updateSltpEdrHdrFields()
 {
-    updateField("polarity", _userInput._sltpParams[POLARITY]);
-    updateField("ob_tap0", _userInput._sltpParams[OB_TAP0]);
-    updateField("ob_tap1", _userInput._sltpParams[OB_TAP1]);
-    updateField("ob_tap2", _userInput._sltpParams[OB_TAP2]);
-    updateField("ob_bias", _userInput._sltpParams[OB_BIAS]);
-    updateField("ob_preemp_mode", _userInput._sltpParams[OB_PREEMP_MODE]);
-    updateField("ob_reg", _userInput._sltpParams[OB_REG]);
-    updateField("ob_leva", _userInput._sltpParams[OB_LEVA]);
+    map<u_int32_t, PRM_FIELD> sltpParam = _mlxlinkMaps->_SltpEdrParams;
+    if (_productTechnology == PRODUCT_16NM)
+    {
+        sltpParam = _mlxlinkMaps->_SltpHdrParams;
+    }
+
+    for (auto const& param : sltpParam)
+    {
+        if (param.second.fieldAccess & (FIELD_ACCESS_W | FIELD_ACCESS_ADVANCED))
+        {
+            updateField(param.second.prmField, _userInput._sltpParams[param.first]);
+        }
+    }
 }
 
-void MlxlinkCommander::updateSltp16nmFields()
-{
-    updateField("pre_2_tap", _userInput._sltpParams[PRE_2_TAP]);
-    updateField("pre_tap", _userInput._sltpParams[PRE_TAP]);
-    updateField("main_tap", _userInput._sltpParams[MAIN_TAP]);
-    updateField("post_tap", _userInput._sltpParams[POST_TAP]);
-    updateField("ob_m2lp", _userInput._sltpParams[OB_M2LP]);
-    updateField("ob_amp", _userInput._sltpParams[OB_AMP]);
-    updateField("ob_alev_out", _userInput._sltpParams[OB_ALEV_OUT]);
-}
-
-void MlxlinkCommander::updateSltp7nmFields()
+void MlxlinkCommander::updateSltpNdrFields()
 {
     u_int32_t indexCorrection = 0;
     if (isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
     {
-        updateField("fir_pre3", _userInput._sltpParams[FIR_PRE3]);
-        updateField("fir_pre2", _userInput._sltpParams[FIR_PRE2]);
+        updateField("fir_pre3", _userInput._sltpParams[SLTP_NDR_FIR_PRE3]);
+        updateField("fir_pre2", _userInput._sltpParams[SLTP_NDR_FIR_PRE2]);
     }
     else if (isSpeed50GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
     {
         indexCorrection = 1;
-        updateField("fir_pre2", _userInput._sltpParams[FIR_PRE2 - indexCorrection]);
+        updateField("fir_pre2", _userInput._sltpParams[SLTP_NDR_FIR_PRE2 - indexCorrection]);
     }
     else
     {
         indexCorrection = 2;
     }
-    updateField("fir_pre1", _userInput._sltpParams[FIR_PRE1 - indexCorrection]);
-    updateField("fir_main", _userInput._sltpParams[FIR_MAIN - indexCorrection]);
-    updateField("fir_post1", _userInput._sltpParams[FIR_POST1 - indexCorrection]);
+    updateField("fir_pre1", _userInput._sltpParams[SLTP_NDR_FIR_PRE1 - indexCorrection]);
+    updateField("fir_main", _userInput._sltpParams[SLTP_NDR_FIR_MAIN - indexCorrection]);
+    updateField("fir_post1", _userInput._sltpParams[SLTP_NDR_FIR_POST1 - indexCorrection]);
 }
 
 string MlxlinkCommander::getSltpStatus()
@@ -4741,19 +4776,16 @@ void MlxlinkCommander::sendSltp()
             updateField("lane_speed", laneSpeed);
             updateField("lane", i);
             updateField("tx_policy", _userInput._txPolicy);
-            switch (_productTechnology)
+
+            if (_productTechnology == PRODUCT_7NM)
             {
-                case PRODUCT_40NM:
-                case PRODUCT_28NM:
-                    updateSltp28_40nmFields();
-                    break;
-                case PRODUCT_16NM:
-                    updateSltp16nmFields();
-                    break;
-                case PRODUCT_7NM:
-                    updateSltp7nmFields();
-                    break;
+                updateSltpNdrFields();
             }
+            else
+            {
+                updateSltpEdrHdrFields();
+            }
+
             updateField("c_db", _userInput._db || _userInput._txPolicy);
             genBuffSendRegister(ACCESS_REG_SLTP, MACCESS_REG_METHOD_SET);
         }
@@ -4769,14 +4801,13 @@ void MlxlinkCommander::sendSltp()
 
 string MlxlinkCommander::getLoopbackStr(u_int32_t loopbackCapMask)
 {
-    string loopbackStr = "";
-    for (map<u_int32_t, string>::iterator it = _mlxlinkMaps->_loopbackModeList.begin();
-         it != _mlxlinkMaps->_loopbackModeList.end();
-         it++)
+    string loopbackStr = _mlxlinkMaps->_loopbackModeList[LOOPBACK_MODE_NO].first + "(" +
+                         _mlxlinkMaps->_loopbackModeList[LOOPBACK_MODE_NO].second + ")/";
+    for (const auto& lbConf : _mlxlinkMaps->_loopbackModeList)
     {
-        if ((it->first != PHY_REMOTE_LOOPBACK) && (it->first & loopbackCapMask) && !it->second.empty())
+        if ((lbConf.first & loopbackCapMask) && !lbConf.second.second.empty())
         {
-            loopbackStr += it->second + ",";
+            loopbackStr += lbConf.second.first + "(" + lbConf.second.second + ")/";
         }
     }
     return deleteLastChar(loopbackStr);
@@ -4792,17 +4823,17 @@ void MlxlinkCommander::checkPplrCap()
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
     u_int32_t loopBackCap = getFieldValue("lb_cap");
     u_int32_t loopBackVal = getLoopbackMode(_userInput._pplrLB);
-    if (loopBackVal != PHY_NO_LOOPBACK)
+    if (loopBackVal != LOOPBACK_MODE_NO)
     {
         if (!(loopBackCap & getLoopbackMode(_userInput._pplrLB)))
         {
             string supportedLoopbacks = getLoopbackStr(loopBackCap);
-            throw MlxRegException("selected loopback not supported\n"
-                                  "Supported Loopback modes for the device: [%s]",
-                                  supportedLoopbacks.c_str());
+            throw MlxRegException(
+              "\n%s Loopback configuration is not supported, supported Loopback configurations are [%s]",
+              _userInput._pplrLB.c_str(), supportedLoopbacks.c_str());
         }
     }
-    if (loopBackVal == PHY_REMOTE_LOOPBACK && _productTechnology < PRODUCT_7NM)
+    if (loopBackVal == LOOPBACK_MODE_REMOTE && _productTechnology < PRODUCT_7NM)
     {
         string warMsg = "Remote loopback mode pre-request (all should be satisfied):\n";
         warMsg += "1. Remote loopback is supported only in force mode.\n";
@@ -4820,14 +4851,13 @@ void MlxlinkCommander::sendPplr()
         MlxlinkRecord::printCmdLine("Configuring Port Loopback", _jsonRoot);
 
         checkPplrCap();
-        string regName = "PPLR";
-        resetParser(regName);
+        resetParser(ACCESS_REG_PPLR);
         updatePortType();
 
         updateField("local_port", _localPort);
         updateField("lb_en", getLoopbackMode(_userInput._pplrLB));
 
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
+        genBuffSendRegister(ACCESS_REG_PPLR, MACCESS_REG_METHOD_SET);
     }
     catch (const std::exception& exc)
     {
@@ -4838,23 +4868,15 @@ void MlxlinkCommander::sendPplr()
 
 u_int32_t MlxlinkCommander::getLoopbackMode(const string& lb)
 {
-    if (lb == "NO")
+    auto it = find_if(_mlxlinkMaps->_loopbackModeList.begin(), _mlxlinkMaps->_loopbackModeList.end(),
+                      [lb](pair<u_int32_t, pair<string, string>> lpConf) { return lb == lpConf.second.first; });
+
+    if (it == _mlxlinkMaps->_loopbackModeList.end())
     {
-        return PHY_NO_LOOPBACK;
+        throw MlxRegException("Invalid loopback option: %s, see tool usage \"%s --help\"", lb.c_str(), MLXLINK_EXEC);
     }
-    if (lb == "RM")
-    {
-        return PHY_REMOTE_LOOPBACK;
-    }
-    if (lb == "PH")
-    {
-        return PHY_LOCAL_LOOPBACK;
-    }
-    if (lb == "EX")
-    {
-        return EXTERNAL_LOCAL_LOOPBACK;
-    }
-    throw MlxRegException("Invalid loopback option: %s, see tool usage \"%s --help\"", lb.c_str(), MLXLINK_EXEC);
+
+    return it->first;
 }
 
 void MlxlinkCommander::sendPepc()

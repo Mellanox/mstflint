@@ -36,7 +36,6 @@
 
 namespace MlxSign
 {
-
 enum SHAType
 {
     SHA256,

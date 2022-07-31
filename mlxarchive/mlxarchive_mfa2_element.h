@@ -44,16 +44,20 @@
 
 #include "mlxarchive_mfa2_common_header.h"
 
-namespace mfa2 {
-class Element {
+namespace mfa2
+{
+class Element
+{
 private:
     CommonHeader buildCommonHeader(u_int8_t version, MFA2Type type, u_int32_t length);
+
 protected:
     CommonHeader _commonHeader;
+
 public:
     Element(u_int8_t version, MFA2Type type, u_int32_t length);
-    //virtual void pack(vector<u_int8_t>& buff) const = 0;
-    ~Element() {};
+    // virtual void pack(vector<u_int8_t>& buff) const = 0;
+    ~Element(){};
 };
-}
+} // namespace mfa2
 #endif

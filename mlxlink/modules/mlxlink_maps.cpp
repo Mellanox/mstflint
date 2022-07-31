@@ -48,10 +48,12 @@ MlxlinkMaps* MlxlinkMaps::getInstance()
 void MlxlinkMaps::initPublicStrings()
 {
     _berCollectTitle =
-      "Test Mode (Nominal/Corner/Drift),Protocol,Speed [Gb/s],Active FEC,Iteration Number,Device PN,FW Version,Device ID,Port Number,Media,Cable PN,Length [m],Attenuation [dB],"
-      "Test time [Min],Raw Errors Lane 0,Raw Errors Lane 1,Raw Errors Lane 2,Raw Errors Lane 3,Raw Errors Lane 4,Raw Errors Lane 5,Raw Errors Lane 6,Raw Errors Lane 7,Link Down,Total Raw BER,Raw BER limit,"
-      "Effective Errors,Effective BER,Result,System Voltage,Chip Start Temp,Chip End Temp,Module Start Temp,Module End Temp,Active RTN,Device SN,Cable SN,RX End BW [Gb/s]";
-    _sltpHeader = "";
+      "Test Mode (Nominal/Corner/Drift),Protocol,Speed [Gb/s],Active FEC,Iteration Number,Device PN,FW Version,Device "
+      "ID,Port Number,Media,Cable PN,Length [m],Attenuation [dB],"
+      "Test time [Min],Raw Errors Lane 0,Raw Errors Lane 1,Raw Errors Lane 2,Raw Errors Lane 3,Raw Errors Lane 4,Raw "
+      "Errors Lane 5,Raw Errors Lane 6,Raw Errors Lane 7,Link Down,Total Raw BER,Raw BER limit,"
+      "Effective Errors,Effective BER,Result,System Voltage,Chip Start Temp,Chip End Temp,Module Start Temp,Module End "
+      "Temp,Active RTN,Device SN,Cable SN,RX End BW [Gb/s]";
     _showErrorsTitle = "Errors";
 }
 
@@ -177,10 +179,11 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
     _fecPerSpeed.push_back(make_pair("25G", ""));
     _fecPerSpeed.push_back(make_pair("10G", ""));
 
-    _loopbackModeList[PHY_NO_LOOPBACK] = "No Loopback";
-    _loopbackModeList[PHY_REMOTE_LOOPBACK] = "PHY Remote Loopback";
-    _loopbackModeList[PHY_LOCAL_LOOPBACK] = "PHY Local Loopback";
-    _loopbackModeList[EXTERNAL_LOCAL_LOOPBACK] = "External Local Loopback";
+    _loopbackModeList[LOOPBACK_MODE_NO] = make_pair("NO", "No Loopback");
+    _loopbackModeList[LOOPBACK_MODE_REMOTE] = make_pair("RM", "PHY Remote Loopback");
+    _loopbackModeList[LOOPBACK_MODE_LOCAL] = make_pair("PH", "PHY Local Loopback");
+    _loopbackModeList[LOOPBACK_MODE_EXTERNAL] = make_pair("EX", "External Local Loopback");
+    _loopbackModeList[LOOPBACK_MODE_LL] = make_pair("LL", "Link Layer Local Loopback");
 }
 
 void MlxlinkMaps::ethSpeedMapping()
@@ -577,6 +580,29 @@ void MlxlinkMaps::initLinkDownInfoMapping()
 
 void MlxlinkMaps::initSltpStatusMapping()
 {
+    _SltpEdrParams[SLTP_EDR_POLARITY] = PRM_FIELD{"polarity", "Pol", FIELD_ACCESS_RW, false};
+    _SltpEdrParams[SLTP_EDR_OB_TAP0] = PRM_FIELD{"ob_tap0", "tap0", FIELD_ACCESS_RW, false};
+    _SltpEdrParams[SLTP_EDR_OB_TAP1] = PRM_FIELD{"ob_tap1", "tap1", FIELD_ACCESS_RW, false};
+    _SltpEdrParams[SLTP_EDR_OB_TAP2] = PRM_FIELD{"ob_tap2", "tap2", FIELD_ACCESS_RW, false};
+    _SltpEdrParams[SLTP_EDR_OB_BIAS] = PRM_FIELD{"ob_bias", "bias", FIELD_ACCESS_RW, false};
+    _SltpEdrParams[SLTP_EDR_OB_PREEMP_MODE] = PRM_FIELD{"ob_preemp_mode", "preemp_mode", FIELD_ACCESS_RW, false};
+    _SltpEdrParams[SLTP_EDR_OB_REG] = PRM_FIELD{"ob_reg", "reg", FIELD_ACCESS_ADVANCED, false};
+    _SltpEdrParams[SLTP_EDR_OB_LEVA] = PRM_FIELD{"ob_leva", "leva", FIELD_ACCESS_ADVANCED, false};
+
+    _SltpHdrParams[SLTP_HDR_PRE_2_TAP] = PRM_FIELD{"pre_2_tap", "pre2Tap", FIELD_ACCESS_RW, true};
+    _SltpHdrParams[SLTP_HDR_PRE_TAP] = PRM_FIELD{"pre_tap", "preTap", FIELD_ACCESS_RW, true};
+    _SltpHdrParams[SLTP_HDR_MAIN_TAP] = PRM_FIELD{"main_tap", "mainTap", FIELD_ACCESS_RW, true};
+    _SltpHdrParams[SLTP_HDR_POST_TAP] = PRM_FIELD{"post_tap", "postTap", FIELD_ACCESS_RW, true};
+    _SltpHdrParams[SLTP_HDR_OB_M2LP] = PRM_FIELD{"ob_m2lp", "m2lp", FIELD_ACCESS_RW, true};
+    _SltpHdrParams[SLTP_HDR_OB_AMP] = PRM_FIELD{"ob_amp", "amp", FIELD_ACCESS_RW, false};
+    _SltpHdrParams[SLTP_HDR_OB_ALEV_OUT] = PRM_FIELD{"ob_alev_out", "alev_out", FIELD_ACCESS_W, false};
+
+    _SltpNdrParams[SLTP_NDR_FIR_PRE3] = PRM_FIELD{"fir_pre3", "fir_pre3", FIELD_ACCESS_RW, true};
+    _SltpNdrParams[SLTP_NDR_FIR_PRE2] = PRM_FIELD{"fir_pre2", "fir_pre2", FIELD_ACCESS_RW, true};
+    _SltpNdrParams[SLTP_NDR_FIR_PRE1] = PRM_FIELD{"fir_pre1", "fir_pre1", FIELD_ACCESS_RW, true};
+    _SltpNdrParams[SLTP_NDR_FIR_MAIN] = PRM_FIELD{"fir_main", "fir_main", FIELD_ACCESS_RW, true};
+    _SltpNdrParams[SLTP_NDR_FIR_POST1] = PRM_FIELD{"fir_post1", "fir_post1", FIELD_ACCESS_RW, true};
+
     _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_PRE3] = "pre3 is out of range";
     _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_PRE2] = "pre2 is out of range";
     _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_PRE1] = "pre1 is out of range";

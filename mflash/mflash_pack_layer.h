@@ -50,15 +50,26 @@
 #ifndef UEFI_BUILD
 #include <tools_res_mgmt.h>
 #else
-typedef void*trm_ctx;
+typedef void* trm_ctx;
 #endif
 
 // TODO: use: (int)log2((float)num)
-#define NEAREST_POW2(num) \
-    (num) < (256) ? ((num) < (128) ? ((num) < (64) ? ((num) < (32) ? ((num) < (16) ? ((num) < (8) ? (4) : (8)) : (16)) : (32)) : (64)) : (128)) : (256)
+#define NEAREST_POW2(num)                                                                                    \
+    (num) < (256) ?                                                                                          \
+      ((num) < (128) ?                                                                                       \
+         ((num) < (64) ? ((num) < (32) ? ((num) < (16) ? ((num) < (8) ? (4) : (8)) : (16)) : (32)) : (64)) : \
+         (128)) :                                                                                            \
+      (256)
 
 #ifndef CHECK_RC
-#define CHECK_RC(rc) do {if (rc) {return rc;}} while (0)
+#define CHECK_RC(rc)   \
+    do                 \
+    {                  \
+        if (rc)        \
+        {              \
+            return rc; \
+        }              \
+    } while (0)
 #endif
 
 #ifndef ARR_SIZE
@@ -68,129 +79,120 @@ typedef void*trm_ctx;
 #ifndef IRISC
 #define MFLASH_ERR_STR_SIZE 1024
 #else
-#define MFLASH_ERR_STR_SIZE    4
+#define MFLASH_ERR_STR_SIZE 4
 #endif
 
-#define IS4_HW_ID        0x1b3
-#define SWITCHX_HW_ID    0x245
-#define CONNECTX_HW_ID   0x190
-#define CX3_PRO_HW_ID    0x1F7
-#define CX3_HW_ID        0x1F5
-#define CX4_HW_ID        0x209
-#define CX4LX_HW_ID      0x20b
-#define CX5_HW_ID        0x20d
-#define CX6_HW_ID        0x20f
-#define CX7_HW_ID        0x218
-#define CX6DX_HW_ID      0x212
-#define CX6LX_HW_ID      0x216
-#define BLUEFIELD_HW_ID  0x211
+#define CX3_PRO_HW_ID 0x1F7
+#define CX3_HW_ID 0x1F5
+#define CX4_HW_ID 0x209
+#define CX4LX_HW_ID 0x20b
+#define CX5_HW_ID 0x20d
+#define CX6_HW_ID 0x20f
+#define CX7_HW_ID 0x218
+#define CX8_HW_ID 0x21e
+#define CX6DX_HW_ID 0x212
+#define CX6LX_HW_ID 0x216
+#define BLUEFIELD_HW_ID 0x211
 #define BLUEFIELD2_HW_ID 0x214
+#define BLUEFIELD3_HW_ID 0x21c
+#define BLUEFIELD4_HW_ID 0x220
 #define CONNECT_IB_HW_ID 0x1FF
-#define SWITCH_IB_HW_ID  0x247
-#define SPECTRUM_HW_ID   0x249
+#define SWITCH_IB_HW_ID 0x247
+#define SPECTRUM_HW_ID 0x249
 #define SWITCH_IB2_HW_ID 0x24b
-#define QUANTUM_HW_ID    0x24d
-#define SPECTRUM2_HW_ID  0x24e
-#define SPECTRUM3_HW_ID  0x250
-#define QUANTUM2_HW_ID   0x257
-#define SPECTRUM4_HW_ID  0x254
+#define QUANTUM_HW_ID 0x24d
+#define SPECTRUM2_HW_ID 0x24e
+#define SPECTRUM3_HW_ID 0x250
+#define QUANTUM2_HW_ID 0x257
+#define QUANTUM3_HW_ID 0x25b
+#define SPECTRUM4_HW_ID 0x254
 #define INBAND_MAX_REG_SIZE 44
 
 /*
  * Device IDs Macros:
  */
-#define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) \
-    (((dev_id) == CONNECTX_HW_ID) || ((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
-#define IS_IS4_FAMILY(dev_id) \
-    (((dev_id) == IS4_HW_ID))
-#define IS_SX(dev_id) \
-    ((dev_id) == SWITCHX_HW_ID)
-#define IS_SIB(dev_id) \
-    ((dev_id) == SWITCH_IB_HW_ID)
-#define IS_SIB2(dev_id) \
-    ((dev_id) == SWITCH_IB2_HW_ID)
-#define IS_SEN(dev_id) \
-    ((dev_id) == SPECTRUM_HW_ID)
-#define IS_SPECTRUM2(dev_id) \
-    ((dev_id) == SPECTRUM2_HW_ID)
-#define IS_CONNECT_IB(dev_id) \
-    ((dev_id) == CONNECT_IB_HW_ID)
-#define IS_CONNECTX4(dev_id) \
-    ((dev_id) == CX4_HW_ID)
-#define IS_CONNECTX4LX(dev_id) \
-    ((dev_id) == CX4LX_HW_ID)
-#define IS_CONNECTX5(dev_id) \
-    ((dev_id) == CX5_HW_ID)
-#define IS_CONNECTX7(dev_id) \
-    ((dev_id) == CX7_HW_ID)
-#define IS_CONNECTX6(dev_id) \
-    ((dev_id) == CX6_HW_ID)
-#define IS_CONNECTX6DX(dev_id) \
-    ((dev_id) == CX6DX_HW_ID)
-#define IS_CONNECTX6LX(dev_id) \
-    ((dev_id) == CX6LX_HW_ID)
-#define IS_BLUEFIELD(dev_id) \
-    ((dev_id) == BLUEFIELD_HW_ID)
-#define IS_QUANTUM(dev_id) \
-    ((dev_id) == QUANTUM_HW_ID)
-#define IS_SPECTRUM(dev_id) \
-    ((dev_id) == SPECTRUM_HW_ID)
-#define IS_BLUEFEILD(dev_id) \
-    ((dev_id) == BLUEFIELD_HW_ID)
-#define IS_BLUEFEILD2(dev_id) \
-    ((dev_id) == BLUEFIELD2_HW_ID)
-#define IS_BLUEFEILD3(dev_id) \
-    ((dev_id) == BLUEFIELD3_HW_ID)
-#define IS_QUANTUM2(dev_id) \
-    ((dev_id) == QUANTUM2_HW_ID)
-#define IS_SPECTRUM4(dev_id) \
-    ((dev_id) == SPECTRUM4_HW_ID)
+#define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) (((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
+#define IS_SIB(dev_id) ((dev_id) == SWITCH_IB_HW_ID)
+#define IS_SIB2(dev_id) ((dev_id) == SWITCH_IB2_HW_ID)
+#define IS_SEN(dev_id) ((dev_id) == SPECTRUM_HW_ID)
+#define IS_SPECTRUM2(dev_id) ((dev_id) == SPECTRUM2_HW_ID)
+#define IS_CONNECT_IB(dev_id) ((dev_id) == CONNECT_IB_HW_ID)
+#define IS_CONNECTX4(dev_id) ((dev_id) == CX4_HW_ID)
+#define IS_CONNECTX4LX(dev_id) ((dev_id) == CX4LX_HW_ID)
+#define IS_CONNECTX5(dev_id) ((dev_id) == CX5_HW_ID)
+#define IS_CONNECTX7(dev_id) ((dev_id) == CX7_HW_ID)
+#define IS_CONNECTX8(dev_id) ((dev_id) == CX8_HW_ID)
+#define IS_CONNECTX6(dev_id) ((dev_id) == CX6_HW_ID)
+#define IS_CONNECTX6DX(dev_id) ((dev_id) == CX6DX_HW_ID)
+#define IS_CONNECTX6LX(dev_id) ((dev_id) == CX6LX_HW_ID)
+#define IS_BLUEFIELD(dev_id) ((dev_id) == BLUEFIELD_HW_ID)
+#define IS_QUANTUM(dev_id) ((dev_id) == QUANTUM_HW_ID)
+#define IS_SPECTRUM(dev_id) ((dev_id) == SPECTRUM_HW_ID)
+#define IS_BLUEFEILD(dev_id) ((dev_id) == BLUEFIELD_HW_ID)
+#define IS_BLUEFEILD2(dev_id) ((dev_id) == BLUEFIELD2_HW_ID)
+#define IS_BLUEFEILD3(dev_id) ((dev_id) == BLUEFIELD3_HW_ID)
+#define IS_BLUEFEILD4(dev_id) ((dev_id) == BLUEFIELD4_HW_ID)
+#define IS_QUANTUM2(dev_id) ((dev_id) == QUANTUM2_HW_ID)
+#define IS_QUANTUM3(dev_id) ((dev_id) == QUANTUM3_HW_ID)
+#define IS_SPECTRUM4(dev_id) ((dev_id) == SPECTRUM4_HW_ID)
 
-#define HAS_TOOLS_CMDIF(dev_id) \
-    ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))
+#define HAS_TOOLS_CMDIF(dev_id) ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))
 
-typedef int (*f_mf_lock)(mflash *mfl, int lock_state);
+typedef int (*f_mf_lock)(mflash* mfl, int lock_state);
 
-typedef int (*f_mf_set_bank)(mflash *mfl, u_int32_t bank);
-typedef int (*f_mf_read)(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool verbose);
-typedef int (*f_mf_write)(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data);
-typedef int (*f_mf_erase_sect)(mflash *mfl, u_int32_t addr);
-typedef int (*f_mf_reset)(mflash *mfl);
+typedef int (*f_mf_set_bank)(mflash* mfl, u_int32_t bank);
+typedef int (*f_mf_read)(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data, bool verbose);
+typedef int (*f_mf_write)(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data);
+typedef int (*f_mf_erase_sect)(mflash* mfl, u_int32_t addr);
+typedef int (*f_mf_reset)(mflash* mfl);
 
-typedef int (*f_st_spi_status)(mflash *mfl, u_int8_t op_type, u_int8_t *status);
-typedef int (*f_mf_get_info)(mflash *mfl, flash_info_t *f_info, int *log2size, u_int8_t *no_flash);
-typedef int (*f_mf_get_jedec_id)(mflash *mfl, u_int32_t *jedec_id);
+typedef int (*f_st_spi_status)(mflash* mfl, u_int8_t op_type, u_int8_t* status);
+typedef int (*f_mf_get_info)(mflash* mfl, flash_info_t* f_info, int* log2size, u_int8_t* no_flash);
+typedef int (*f_mf_get_jedec_id)(mflash* mfl, u_int32_t* jedec_id);
 
 /*
  * flash parameters methods get/set
  */
-typedef int (*f_mf_get_quad_en)(mflash *mfl, u_int8_t *quad_en);
-typedef int (*f_mf_set_quad_en)(mflash *mfl, u_int8_t quad_en);
+typedef int (*f_mf_get_quad_en)(mflash* mfl, u_int8_t* quad_en);
+typedef int (*f_mf_set_quad_en)(mflash* mfl, u_int8_t quad_en);
 
-typedef int (*f_mf_get_driver_strength)(mflash *mfl, u_int8_t *driver_strength);
-typedef int (*f_mf_set_driver_strength)(mflash *mfl, u_int8_t driver_strength);
+typedef int (*f_mf_get_driver_strength)(mflash* mfl, u_int8_t* driver_strength);
+typedef int (*f_mf_set_driver_strength)(mflash* mfl, u_int8_t driver_strength);
 
-typedef int (*f_mf_get_write_protect)(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
-typedef int (*f_mf_set_write_protect)(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
+typedef int (*f_mf_get_write_protect)(mflash* mfl, u_int8_t bank_num, write_protect_info_t* protect_info);
+typedef int (*f_mf_set_write_protect)(mflash* mfl, u_int8_t bank_num, write_protect_info_t* protect_info);
 
-typedef int (*f_mf_get_dummy_cycles)(mflash *mfl, u_int8_t *num_of_cycles);
-typedef int (*f_mf_set_dummy_cycles)(mflash *mfl, u_int8_t num_of_cycles);
+typedef int (*f_mf_get_dummy_cycles)(mflash* mfl, u_int8_t* num_of_cycles);
+typedef int (*f_mf_set_dummy_cycles)(mflash* mfl, u_int8_t num_of_cycles);
 
-typedef int (*f_cntx_st_spi_erase_sect)(mflash *mfl, u_int32_t addr);
-typedef int (*f_cntx_int_spi_get_status_data)(mflash *mfl, u_int8_t op_type, u_int32_t *status, u_int8_t data_num);
-typedef int (*f_cntx_st_spi_block_write_ex)(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, u_int8_t is_first, u_int8_t is_last, u_int32_t total_size);
-typedef int (*f_cntx_sst_spi_block_write_ex)(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data);
-typedef int (*f_cntx_st_spi_block_read_ex)(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, u_int8_t is_first, u_int8_t is_last, bool verbose);
-typedef int (*f_cntx_spi_write_status_reg)(mflash *mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num);
+typedef int (*f_cntx_st_spi_erase_sect)(mflash* mfl, u_int32_t addr);
+typedef int (*f_cntx_int_spi_get_status_data)(mflash* mfl, u_int8_t op_type, u_int32_t* status, u_int8_t data_num);
+typedef int (*f_cntx_st_spi_block_write_ex)(mflash* mfl,
+                                            u_int32_t blk_addr,
+                                            u_int32_t blk_size,
+                                            u_int8_t* data,
+                                            u_int8_t is_first,
+                                            u_int8_t is_last,
+                                            u_int32_t total_size);
+typedef int (*f_cntx_sst_spi_block_write_ex)(mflash* mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t* data);
+typedef int (*f_cntx_st_spi_block_read_ex)(mflash* mfl,
+                                           u_int32_t blk_addr,
+                                           u_int32_t blk_size,
+                                           u_int8_t* data,
+                                           u_int8_t is_first,
+                                           u_int8_t is_last,
+                                           bool verbose);
+typedef int (*f_cntx_spi_write_status_reg)(mflash* mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num);
 
 /////////////////////////////////////////////
 //
 // MFlash struct
 //
 /////////////////////////////////////////////
-struct mflash {
+struct mflash
+{
 #ifndef IRISC
-    mfile *mf;
+    mfile* mf;
 #endif
 
     // Functions:
@@ -202,8 +204,8 @@ struct mflash {
 
     f_mf_read f_read;
     f_mf_write f_write;
-    f_mf_write f_write_blk;   // write and write_block have the same signateure, but theyr'e not the same func !
-    f_mf_read f_read_blk;    // read  and read_block have the same signateure, but theyr'e not the same func !
+    f_mf_write f_write_blk; // write and write_block have the same signateure, but theyr'e not the same func !
+    f_mf_read f_read_blk;   // read  and read_block have the same signateure, but theyr'e not the same func !
     f_mf_erase_sect f_erase_sect;
     f_mf_reset f_reset;
 
@@ -241,7 +243,7 @@ struct mflash {
     int opts[MFO_LAST];
     char last_err_str[MFLASH_ERR_STR_SIZE];
 
-    u_int8_t access_type; //0 = mfile , 1 = uefi
+    u_int8_t access_type; // 0 = mfile , 1 = uefi
     trm_ctx trm;
     dm_dev_id_t dm_dev_id;
     int cputUtilizationApplied;
@@ -255,24 +257,31 @@ struct mflash {
     u_int32_t cache_rep_cmd;
 };
 
-typedef struct mfpa_command_args {
-    u_int8_t flash_bank;                                // IN
-    u_int32_t boot_address;                           // IN/OUT
-    int num_of_banks;                                // OUT
-    u_int32_t jedec_id;                                 // OUT
-    u_int32_t fw_flash_sector_sz;               //OUT
-    u_int8_t supp_sub_and_sector_erase; // OUT
-    u_int8_t supp_sector_write_prot;         // OUT
+typedef struct mfpa_command_args
+{
+    u_int8_t flash_bank;                 // IN
+    u_int32_t boot_address;              // IN/OUT
+    int num_of_banks;                    // OUT
+    u_int32_t jedec_id;                  // OUT
+    u_int32_t fw_flash_sector_sz;        // OUT
+    u_int8_t supp_sub_and_sector_erase;  // OUT
+    u_int8_t supp_sector_write_prot;     // OUT
     u_int8_t supp_sub_sector_write_prot; // OUT
-    u_int8_t supp_quad_en;                      // OUT
-    u_int8_t supp_dummy_cycles;             //OUT
+    u_int8_t supp_quad_en;               // OUT
+    u_int8_t supp_dummy_cycles;          // OUT
 } mfpa_command_args;
 
-enum AccessTypeByMfile {
-    ATBM_NO = 0, ATBM_INBAND, ATBM_MLNXOS_CMDIF, ATBM_ICMD, ATBM_TOOLS_CMDIF,
+enum AccessTypeByMfile
+{
+    ATBM_NO = 0,
+    ATBM_INBAND,
+    ATBM_MLNXOS_CMDIF,
+    ATBM_ICMD,
+    ATBM_TOOLS_CMDIF,
 };
 
-enum CntxCrConstants {
+enum CntxCrConstants
+{
     HCR_FLASH_CMD = 0xf0400,
     HCR_FLASH_ADDR = 0xf0404,
     HCR_FLASH_NEW_GW_ADDR = 0xf0420,
@@ -289,7 +298,6 @@ enum CntxCrConstants {
     HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_CMD = 0x200c,
     HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_EN_ADDR = 0x2020,
 
-
     HBO_READ_OP = 0,
     HBO_CMD_PHASE = 2,
     HBS_CHIP_SELECT = 1,
@@ -301,7 +309,7 @@ enum CntxCrConstants {
     HBO_CS_HOLD = 5,
     HBO_CHIP_SELECT = 11,
     HBO_NEW_GW_CHIP_SELECT = 13,
-    HBO_FLASH_ENABLE = 13, //In old devices
+    HBO_FLASH_ENABLE = 13, // In old devices
     HBO_ADDR_SIZE = 14,
     HBO_NEW_GW_ADDR_SIZE = 15,
     HBO_CMD = 16,
@@ -321,45 +329,55 @@ enum CntxCrConstants {
     HBS_GPIO_CS = 4
 };
 
-#define WRITE_CHECK_ALIGN(addr, block_write, size) { \
-        if (addr & ((u_int32_t)block_write - 1)) { \
-            return MFE_BAD_ALIGN; \
-        } \
-        if (size & ((u_int32_t)block_write - 1)) { \
-            return MFE_BAD_ALIGN; \
-        } \
-}
+#define WRITE_CHECK_ALIGN(addr, block_write, size) \
+    {                                              \
+        if (addr & ((u_int32_t)block_write - 1))   \
+        {                                          \
+            return MFE_BAD_ALIGN;                  \
+        }                                          \
+        if (size & ((u_int32_t)block_write - 1))   \
+        {                                          \
+            return MFE_BAD_ALIGN;                  \
+        }                                          \
+    }
 
-#define COM_CHECK_ALIGN(flash_addr, size) { \
-        if (flash_addr & (size - 1 )) { \
-            return MFE_BAD_ALIGN; \
-        } \
-}
+#define COM_CHECK_ALIGN(flash_addr, size) \
+    {                                     \
+        if (flash_addr & (size - 1))      \
+        {                                 \
+            return MFE_BAD_ALIGN;         \
+        }                                 \
+    }
 
 //////////////////////////////////// SX FLASH functions ////////////////////////////////////
 
-typedef u_int32_t (*f_reg_pack)(void *data_to_pack, u_int8_t *packed_buffer);
-typedef void (*f_reg_unpack)(void *unpacked_data, u_int8_t *buffer_to_unpack);
-typedef void (*f_reg_dump)(void *data_to_print, FILE *out_port);
+typedef u_int32_t (*f_reg_pack)(void* data_to_pack, u_int8_t* packed_buffer);
+typedef void (*f_reg_unpack)(void* unpacked_data, u_int8_t* buffer_to_unpack);
+typedef void (*f_reg_dump)(void* data_to_print, FILE* out_port);
 
-int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t size, u_int8_t *data, reg_access_method_t method);
+int sx_st_block_access(mfile* mf,
+                       u_int32_t flash_addr,
+                       u_int8_t bank,
+                       u_int32_t size,
+                       u_int8_t* data,
+                       reg_access_method_t method);
 
-int common_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank, u_int32_t erase_size);
+int common_erase_sector(mfile* mf, u_int32_t addr, u_int8_t flash_bank, u_int32_t erase_size);
 
-int run_mfpa_command(mfile *mf, u_int8_t access_cmd, mfpa_command_args *mfpa_args);
+int run_mfpa_command(mfile* mf, u_int8_t access_cmd, mfpa_command_args* mfpa_args);
 
-int com_get_jedec(mfile *mf, mfpa_command_args *mfpa_args);
-int get_num_of_banks(mfile *mf);
-int get_info_from_jededc_id(u_int32_t jededc_id, u_int8_t *vendor, u_int8_t *type, u_int8_t *capacity);
-int get_type_index_by_vendor_type_density(u_int8_t vendor, u_int8_t type, u_int8_t density, unsigned *type_index);
-int get_log2size_by_vendor_type_density(u_int8_t vendor, u_int8_t type, u_int8_t capacity, int *log2size);
-int get_max_reg_size(mfile *mf);
+int com_get_jedec(mfile* mf, mfpa_command_args* mfpa_args);
+int get_num_of_banks(mfile* mf);
+int get_info_from_jededc_id(u_int32_t jededc_id, u_int8_t* vendor, u_int8_t* type, u_int8_t* capacity);
+int get_type_index_by_vendor_type_density(u_int8_t vendor, u_int8_t type, u_int8_t density, unsigned* type_index);
+int get_log2size_by_vendor_type_density(u_int8_t vendor, u_int8_t type, u_int8_t capacity, int* log2size);
+int get_max_reg_size(mfile* mf);
 
-int set_bank(mflash *mfl, u_int32_t addr);
-int set_bank_int(mflash *mfl, int bank_num);
-int get_bank_int(mflash *mfl);
-int get_flash_offset(u_int32_t addr, int log2_bank_size, u_int32_t *flash_addr_p);
-int mfl_get_bank_info(mflash *mfl, u_int32_t addr, u_int32_t *flash_off_p, int *bank_p);
+int set_bank(mflash* mfl, u_int32_t addr);
+int set_bank_int(mflash* mfl, int bank_num);
+int get_bank_int(mflash* mfl);
+int get_flash_offset(u_int32_t addr, int log2_bank_size, u_int32_t* flash_addr_p);
+int mfl_get_bank_info(mflash* mfl, u_int32_t addr, u_int32_t* flash_off_p, int* bank_p);
 MfError MError2MfError(MError rc);
 
 #endif /* MFLASH_COMMON_H_ */

@@ -43,16 +43,18 @@
 
 #include <compatibility.h>
 
-class MBufferUnit {
+class MBufferUnit
+{
 public:
     MBufferUnit(const std::vector<u_int8_t>& data, u_int32_t offset) : _data(data), _offset(offset) {}
-    u_int32_t size() const {return (u_int32_t)_data.size();}
-    u_int32_t offset() const {return _offset;}
+    u_int32_t size() const { return (u_int32_t)_data.size(); }
+    u_int32_t offset() const { return _offset; }
     std::vector<u_int8_t>& data() { return _data; }
     u_int8_t& operator[](const u_int32_t idx) { return _data[idx]; }
     MBufferUnit& operator=(const MBufferUnit& other);
-    bool intersects( const MBufferUnit& other) const;
+    bool intersects(const MBufferUnit& other) const;
     ~MBufferUnit() = default;
+
 private:
     std::vector<u_int8_t> _data;
     u_int32_t _offset;
@@ -63,17 +65,19 @@ MBufferUnit& operator<<(MBufferUnit& a, MBufferUnit& b);
 /*
  * Large buffer with minimal memory footprint
  */
-class MlargeBuffer {
+class MlargeBuffer
+{
 public:
-    MlargeBuffer(u_int8_t defaultVal = 0x0) : _defaultValue(defaultVal){}
+    MlargeBuffer(u_int8_t defaultVal = 0x0) : _defaultValue(defaultVal) {}
     void add(const std::vector<u_int8_t>& data, u_int32_t offset);
-    void add(const u_int8_t *data, u_int32_t offset, u_int32_t size);
-    u_int8_t operator[](const u_int32_t offset);  // for read only
+    void add(const u_int8_t* data, u_int32_t offset, u_int32_t size);
+    u_int8_t operator[](const u_int32_t offset); // for read only
     void get(std::vector<u_int8_t>& data, u_int32_t offset, u_int32_t size);
-    void get(std::vector<u_int8_t>& data, u_int32_t size) {return get(data, 0, size);}
-    void get(u_int8_t *data, u_int32_t offset, u_int32_t size);
-    void get(u_int8_t *data, u_int32_t size) {return get(data, 0, size);}
-    void clear() {_bData.clear();}
+    void get(std::vector<u_int8_t>& data, u_int32_t size) { return get(data, 0, size); }
+    void get(u_int8_t* data, u_int32_t offset, u_int32_t size);
+    void get(u_int8_t* data, u_int32_t size) { return get(data, 0, size); }
+    void clear() { _bData.clear(); }
+
 private:
     u_int8_t _defaultValue;
     std::vector<MBufferUnit> _bData;

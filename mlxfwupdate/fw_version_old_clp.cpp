@@ -35,29 +35,28 @@
 #include "fw_version_old_clp.h"
 #include <stdio.h>
 
-FwVersionOldClp::FwVersionOldClp() :
-        FwVersion() {
-}
+FwVersionOldClp::FwVersionOldClp() : FwVersion() {}
 
 FwVersionOldClp::FwVersionOldClp(unsigned short int major,
-        unsigned short int minor, unsigned short int subminor,
-        const std::string& devBranchTag) :
-        FwVersion(major, minor, subminor, devBranchTag) {
-
+                                 unsigned short int minor,
+                                 unsigned short int subminor,
+                                 const std::string& devBranchTag) :
+    FwVersion(major, minor, subminor, devBranchTag)
+{
 }
 
-FwVersionOldClp::~FwVersionOldClp() {
-}
+FwVersionOldClp::~FwVersionOldClp() {}
 
-std::string FwVersionOldClp::get_master_version(const std::string& format,
-        bool even_subminor) const {
-    (void) format;
-    (void) even_subminor;
-    char buff[MAX_VERSION_LENGTH + 1] = { 0 };
+std::string FwVersionOldClp::get_master_version(const std::string& format, bool even_subminor) const
+{
+    (void)format;
+    (void)even_subminor;
+    char buff[MAX_VERSION_LENGTH + 1] = {0};
     snprintf(buff, sizeof(buff), "%d", _minor);
     return buff;
 }
 
-FwVersionOldClp* FwVersionOldClp::clone() const {
+FwVersionOldClp* FwVersionOldClp::clone() const
+{
     return new FwVersionOldClp(*this);
 }

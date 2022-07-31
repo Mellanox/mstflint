@@ -40,12 +40,13 @@
 #define _MST_SOCKETS_H
 
 #ifndef __WIN__
-    #define ATTRIBUTE  __attribute__ ((format(printf, 1, 2)))
+#define ATTRIBUTE __attribute__((format(printf, 1, 2)))
 #else
-    #define ATTRIBUTE
+#define ATTRIBUTE
 #endif
 
-typedef enum proto_type {
+typedef enum proto_type
+{
     PT_TCP = 0,
     PT_UDP,
 } proto_type_t;
@@ -59,12 +60,12 @@ void logset(const int ena);
 /*
 ** plog - debug printouts (like printf). Set 1 via logset to see output
 */
-int plog(const char *fmt, ...) ATTRIBUTE;
+int plog(const char* fmt, ...) ATTRIBUTE;
 
 /*
 ** open_cli_connection - open client TCP/UDP connection and return socket fd
 */
-int open_cli_connection(const char *host, const int port, proto_type_t proto);
+int open_cli_connection(const char* host, const int port, proto_type_t proto);
 
 /*
 ** open_serv_connection - open server TCP connection and return socket fd
@@ -86,7 +87,7 @@ int open_serv_connection(const int port);
 /*
 ** reads - reads string (till \0)  from the socket "fd"
 */
-int reads(int fd, char *ptr, int maxlen, proto_type_t proto);
+int reads(int fd, char* ptr, int maxlen, proto_type_t proto);
 
 /*
 ** readnl - reads till till newline  from the socket "fd"
@@ -102,12 +103,12 @@ int reads(int fd, char *ptr, int maxlen, proto_type_t proto);
 ** Returns number of bytes written, or -1 if an error occurs.
 ** Return value will always be either -1 or "nbytes"
 */
-int writen(int fd, void *vptr, int nbytes, proto_type_t proto);
+int writen(int fd, void* vptr, int nbytes, proto_type_t proto);
 
 /*
 ** writes - write string (null ternminated buffer) to the socket "fd"
 */
-int writes(int fd, char *ptr, proto_type_t proto);
+int writes(int fd, char* ptr, proto_type_t proto);
 
 /*
 ** writenl - write newline ternminated buffer to the socket "fd"

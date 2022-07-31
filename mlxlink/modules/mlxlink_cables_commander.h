@@ -197,7 +197,7 @@ private:
     void enablePMPT(ModuleAccess_t moduleAccess);
     void disablePMPT();
 
-    u_int32_t getPMCRValue(ControlParam paramId, const string& value);
+    u_int32_t pmcrStrToValue(ControlParam paramId, const string& value);
     string getPMCRCapValueStr(u_int32_t valueCap, ControlParam paramId);
     void checkPMCRFieldsCap(vector<pair<ControlParam, string>>& params);
     void buildPMCRRequest(ControlParam paramId, const string& value);

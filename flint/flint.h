@@ -48,9 +48,9 @@
 
 using namespace std;
 
-typedef map <sub_cmd_t, SubCommand*> map_sub_cmd_t_to_subcommand;
-typedef map <string, string> map_string_to_string;
-typedef map <string, int> map_string_to_int;
+typedef map<sub_cmd_t, SubCommand*> map_sub_cmd_t_to_subcommand;
+typedef map<string, string> map_string_to_string;
+typedef map<string, int> map_string_to_int;
 
 map_string_to_string initShortToLongFlagMap();
 map_string_to_int initLongFlagToNumOfArgsMap();
@@ -64,7 +64,7 @@ private:
     CommandLineParser _cmdParser;
     map_sub_cmd_t_to_subcommand _subcommands;
 
-    //methods
+    // methods
     map_sub_cmd_t_to_subcommand initSubcommandMap();
     void deInitSubcommandMap(map_sub_cmd_t_to_subcommand cmdMap);
 
@@ -73,8 +73,8 @@ public:
     ~Flint();
     void initCmdParser();
     virtual ParseStatus HandleOption(string name, string value);
-    ParseStatus parseCmdLine(int argc, char *argv[]);
-    FlintStatus run(int argc, char *argv[]);
+    ParseStatus parseCmdLine(int argc, char* argv[]);
+    FlintStatus run(int argc, char* argv[]);
     FlintParams& GetFlintParams() { return _flintParams; }
     map_sub_cmd_t_to_subcommand& GetSubCommands() { return _subcommands; }
 };

@@ -134,21 +134,23 @@ string getLoopbackColor(u_int32_t loopbackMode)
 {
     switch (loopbackMode)
     {
-        case PHY_NO_LOOPBACK:
+        case LOOPBACK_MODE_NO:
             return ANSI_COLOR_GREEN;
             break;
 
-        case PHY_REMOTE_LOOPBACK:
+        case LOOPBACK_MODE_REMOTE:
             return ANSI_COLOR_CYAN;
             break;
 
-        case PHY_LOCAL_LOOPBACK:
+        case LOOPBACK_MODE_LOCAL:
             return ANSI_COLOR_BLUE;
             break;
 
-        case EXTERNAL_LOCAL_LOOPBACK:
+        case LOOPBACK_MODE_EXTERNAL:
             return ANSI_COLOR_MAGENTA;
 
+        case LOOPBACK_MODE_LL:
+            return ANSI_COLOR_YELLOW;
         default:
             return ANSI_COLOR_RED;
     }
@@ -490,6 +492,10 @@ int ptysSpeedToExtMaskETH(const string& speed)
     if (speed == "400G_8X")
     {
         return ETH_LINK_SPEED_EXT_400GAUI_8;
+    }
+    if (speed == "800G_8X")
+    {
+        return ETH_LINK_SPEED_EXT_800GAUI_8;
     }
     return 0x0;
 }

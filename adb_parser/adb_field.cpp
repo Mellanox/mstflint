@@ -43,17 +43,22 @@
 #include <boost/filesystem/operations.hpp>
 #include <iostream>
 
-AdbField::AdbField() : size(0), offset(0xffffffff), definedAsArr(false), lowBound(0),
-                       highBound(0), unlimitedArr(false), isReserved(false), userData(0)
+AdbField::AdbField() :
+    size(0),
+    offset(0xffffffff),
+    definedAsArr(false),
+    lowBound(0),
+    highBound(0),
+    unlimitedArr(false),
+    isReserved(false),
+    userData(0)
 {
 }
 
 /**
  * Function: AdbField::~AdbField
  **/
-AdbField::~AdbField()
-{
-}
+AdbField::~AdbField() {}
 
 /**
  * Function: AdbField::isLeaf
@@ -74,7 +79,7 @@ bool AdbField::isStruct()
 /**
  * Function: AdbField::operator<
  **/
-bool AdbField::operator<(AdbField &other)
+bool AdbField::operator<(AdbField& other)
 {
     return offset < other.offset;
 }
@@ -138,15 +143,15 @@ u_int32_t AdbField::eSize()
 void AdbField::print(int indent)
 {
     cout << indentString(indent);
-    cout << "- FIELD - Name: " << name << " offset: 0x" << hex << offset / 32 * 4 << "." << dec << offset % 32 << " size: 0x" << hex << size / 32 * 4 << "." << dec << size % 32 << " low_bound: " << lowBound
-         << " high_bound: " << highBound << " sub_node: " << subNode
-         << " isReserved: " << isReserved << endl;
+    cout << "- FIELD - Name: " << name << " offset: 0x" << hex << offset / 32 * 4 << "." << dec << offset % 32
+         << " size: 0x" << hex << size / 32 * 4 << "." << dec << size % 32 << " low_bound: " << lowBound
+         << " high_bound: " << highBound << " sub_node: " << subNode << " isReserved: " << isReserved << endl;
 }
 
 /**
  * Function: AdbField::toXml
  **/
-string AdbField::toXml(const string &addPrefix)
+string AdbField::toXml(const string& addPrefix)
 {
     string xml = "<field name=\"" + name + "\" descr=\"" + encodeXml(descNativeToXml(desc)) + "\"";
     if (isStruct())

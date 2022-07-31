@@ -59,40 +59,39 @@
 #define EFIAPI
 #endif
 
-#define CONNECTX_HW_ID      400
-#define SWITCHX_HW_ID       581
-#define SWITCH_IB_HW_ID     583
-#define SPECTRUM_HW_ID      585
-#define SWITCH_IB2_HW_ID    587
-#define QUANTUM_HW_ID       589
-#define SPECTRUM2_HW_ID     590
-#define SPECTRUM3_HW_ID     592
-#define QUANTUM2_HW_ID      599
-#define SPECTRUM4_HW_ID     596
-#define GEARBOX_HW_ID       594
-#define GB_MANAGER_HW_ID    595
-#define ABIR_GB_HW_ID       598
-#define CX4_HW_ID           521
-#define CX4LX_HW_ID         523
-#define CX5_HW_ID           525
-#define CX6_HW_ID           527
-#define CX6DX_HW_ID         530
-#define CX6LX_HW_ID         534
-#define CX7_HW_ID           536
-#define CX8_HW_ID           542
-#define BF_HW_ID            529
-#define BF2_HW_ID           532
-#define BF3_HW_ID           540
-#define CX2_HW_ID           400
-#define CX3_HW_ID           501
-#define CX3_PRO_HW_ID       503
-#define IS4_HW_ID           435
-#define CONNECT_IB_HW_ID    511
+#define SWITCH_IB_HW_ID 583
+#define SPECTRUM_HW_ID 585
+#define SWITCH_IB2_HW_ID 587
+#define QUANTUM_HW_ID 589
+#define SPECTRUM2_HW_ID 590
+#define SPECTRUM3_HW_ID 592
+#define QUANTUM2_HW_ID 599
+#define QUANTUM3_HW_ID 603
+#define SPECTRUM4_HW_ID 596
+#define GEARBOX_HW_ID 594
+#define GB_MANAGER_HW_ID 595
+#define ABIR_GB_HW_ID 598
+#define CX4_HW_ID 521
+#define CX4LX_HW_ID 523
+#define CX5_HW_ID 525
+#define CX6_HW_ID 527
+#define CX6DX_HW_ID 530
+#define CX6LX_HW_ID 534
+#define CX7_HW_ID 536
+#define CX8_HW_ID 542
+#define BF_HW_ID 529
+#define BF2_HW_ID 532
+#define BF3_HW_ID 540
+#define BF4_HW_ID 544
+#define CX3_HW_ID 501
+#define CX3_PRO_HW_ID 503
+#define CONNECT_IB_HW_ID 511
 
 #define INBAND_MAX_REG_SIZE 44
-#define MCDA_REG_HEADER     16
+#define MCDA_REG_HEADER 16
 
-typedef enum {
+typedef enum
+{
     PROG_WITH_PRECENTAGE,
     PROG_WITHOUT_PRECENTAGE,
     PROG_STRING_ONLY,
@@ -106,20 +105,21 @@ typedef enum
     GA_NON_SECURED = 2,
     RMA = 3,
     NUM_OF_LIFE_CYCLES = 4
-}life_cycle_t;
+} life_cycle_t;
 
 typedef int EFIAPI (*f_prog_func)(int completion);
-typedef int EFIAPI (*f_prog_func_ex)(int completion, void *opaque);
-typedef int EFIAPI (*f_prog_func_adv)(int completion, const char *str, prog_t, void *opaque);
-typedef int (*f_prog_func_str)(char *str);
+typedef int EFIAPI (*f_prog_func_ex)(int completion, void* opaque);
+typedef int EFIAPI (*f_prog_func_adv)(int completion, const char* str, prog_t, void* opaque);
+typedef int (*f_prog_func_str)(char* str);
 
-typedef struct {
+typedef struct
+{
     f_prog_func_adv func;
-    void *opaque;
+    void* opaque;
     f_prog_func uefi_func;
 } f_prog_func_adv_st;
 
-#define VSD_LEN  208
+#define VSD_LEN 208
 #define PSID_LEN 16
 #define PRODUCT_VER_LEN 16
 #define PRS_NAME_LEN 100
@@ -130,27 +130,29 @@ typedef struct {
 #define BRANCH_LEN 28
 #define MIN_BRANCH_LEN 5
 
-#define FREE_STR_MAX_LEN    256
+#define FREE_STR_MAX_LEN 256
 
-#define MAX_ROMS_NUM        5
+#define MAX_ROMS_NUM 5
 #define MAX_ROM_ERR_MSG_LEN 256
-#define ROM_INFO_SIZE       12
+#define ROM_INFO_SIZE 12
 
-//min version that supports Rom Modify
-#define MAJOR_MOD_ROM_FW    2
-#define MINOR_MOD_ROM_FW    6
+// min version that supports Rom Modify
+#define MAJOR_MOD_ROM_FW 2
+#define MINOR_MOD_ROM_FW 6
 #define SUBMINOR_MOD_ROM_FW 1410
 
-//Macros
+// Macros
 #define PRINT_PROGRESS(printFunc, arg) \
-    do { \
-        if (printFunc) { \
-            printFunc((arg)); \
-        } \
-    } while (0) \
+    do                                 \
+    {                                  \
+        if (printFunc)                 \
+        {                              \
+            printFunc((arg));          \
+        }                              \
+    } while (0)
 
-
-enum {
+enum
+{
     MLXFW_OK = 0,
     MLXFW_ERR,
     MLXFW_MEM_ERR,
@@ -222,14 +224,16 @@ enum {
     MLXFW_IMAGE_REACTIVATION_UNKNOWN_ERROR
 };
 
-enum {
+enum
+{
     GUIDS = 4,
     MACS = 2,
     MAX_GUIDS = 32
 };
 
 // needed for flint query
-enum {
+enum
+{
     BX_NP_GUIDS = 2,
     BX_SYS_GUIDS = 1,
     BX_GUIDS = BX_NP_GUIDS + BX_SYS_GUIDS,
@@ -244,7 +248,8 @@ enum {
     BX_SLICES_NUM = 2,
 };
 
-enum {
+enum
+{
     BI_IMACS = 0,
     BI_EMACS = BI_IMACS + BX_IMACS,
     BI_WWPNS = BI_EMACS + BX_EMACS,
@@ -253,20 +258,22 @@ enum {
     BI_SYS_GUID = BX_ALL_GUIDS - 1,
 };
 
-typedef enum security_mode_mask {
-    SMM_MCC_EN    = 0x1,
-    SMM_DEBUG_FW  = 0x1 << 1,
+typedef enum security_mode_mask
+{
+    SMM_MCC_EN = 0x1,
+    SMM_DEBUG_FW = 0x1 << 1,
     SMM_SIGNED_FW = 0x1 << 2,
     SMM_SECURE_FW = 0x1 << 3,
-    SMM_DEV_FW    = 0x1 << 4,
-    SMM_CS_TOKEN  = 0x1 << 5,
+    SMM_DEV_FW = 0x1 << 4,
+    SMM_CS_TOKEN = 0x1 << 5,
     SMM_DBG_TOKEN = 0x1 << 6,
     SMM_CRYTO_TO_COMMISSIONING = 0x1 << 7,
-    SMM_RMCS_TOKEN  = 0x1 << 8,
-    SMM_RMDT_TOKEN  = 0x1 << 9
+    SMM_RMCS_TOKEN = 0x1 << 8,
+    SMM_RMDT_TOKEN = 0x1 << 9
 } security_mode_mask_t;
 
-typedef enum security_mode {
+typedef enum security_mode
+{
     SM_NONE = 0x0,
     SM_SHA_DIGEST = SMM_MCC_EN,
     SM_SIGNED_IMAGE = SMM_MCC_EN | SMM_SIGNED_FW,
@@ -274,11 +281,10 @@ typedef enum security_mode {
     SM_DEBUG_FW = SMM_MCC_EN | SMM_SIGNED_FW | SMM_SECURE_FW | SMM_DEBUG_FW
 } security_mode_t;
 
-typedef enum chip_type {
+typedef enum chip_type
+{
     CT_UNKNOWN = 0,
     CT_CONNECTX,
-    CT_SWITCHX,
-    CT_IS4,
     CT_CONNECT_IB,
     CT_SWITCH_IB,
     CT_SPECTRUM,
@@ -297,64 +303,68 @@ typedef enum chip_type {
     CT_SPECTRUM3,
     CT_BLUEFIELD2,
     CT_BLUEFIELD3,
+    CT_BLUEFIELD4,
     CT_CONNECTX3,
     CT_QUANTUM2,
+    CT_QUANTUM3,
     CT_SPECTRUM4,
     CT_GEARBOX,
     CT_GEARBOX_MGR,
     CT_ABIR_GEARBOX
 } chip_type_t;
 
-#define IS_HCA(chipType) \
-    (((chipType) == CT_CONNECTX) || \
-    ((chipType) == CT_CONNECT_IB) || \
-    ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX) || \
-    ((chipType) == CT_CONNECTX5) || \
-    ((chipType) == CT_CONNECTX6) || ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || \
-    ((chipType) == CT_CONNECTX7) || ((chipType) == CT_CONNECTX8) || \
-    ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_BLUEFIELD2) || ((chipType) == CT_BLUEFIELD3))
+#define IS_HCA(chipType)                                                                                 \
+    (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) ||     \
+     ((chipType) == CT_CONNECTX4_LX) || ((chipType) == CT_CONNECTX5) || ((chipType) == CT_CONNECTX6) ||  \
+     ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || ((chipType) == CT_CONNECTX7) || \
+     ((chipType) == CT_CONNECTX8) || ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_BLUEFIELD2) ||    \
+     ((chipType) == CT_BLUEFIELD3) || ((chipType) == CT_BLUEFIELD4))
 
-
-typedef enum chip_family_type {
+typedef enum chip_family_type
+{
     CFT_UNKNOWN = 0,
     CFT_HCA,
     CFT_SWITCH,
     CFT_GEARBOX
 } chip_family_type_t;
 
-typedef struct guid {
+typedef struct guid
+{
     u_int32_t h;
     u_int32_t l;
 } guid_t;
 typedef guid_t hw_key_t;
 
-typedef struct fs3_uid {
+typedef struct fs3_uid
+{
     guid_t base_guid;
     int base_guid_specified;
     guid_t base_mac;
     int base_mac_specified;
-    u_int8_t num_of_guids; // set 0 for default
-    u_int8_t step_size; // set 0 for default, not relevant for devices >= CX4
-    int set_mac_from_guid;  // if set , base_mac will be derrived automatically from base guid
-    int use_pp_attr; // if set, num_of_guids[2] and step_size[2] will be used for the uid attributes.
+    u_int8_t num_of_guids;       // set 0 for default
+    u_int8_t step_size;          // set 0 for default, not relevant for devices >= CX4
+    int set_mac_from_guid;       // if set , base_mac will be derrived automatically from base guid
+    int use_pp_attr;             // if set, num_of_guids[2] and step_size[2] will be used for the uid attributes.
     u_int8_t num_of_guids_pp[2]; // set 0xff for default
-    u_int8_t step_size_pp[2]; // set 0xff for default, not relevant for devices >= CX4
+    u_int8_t step_size_pp[2];    // set 0xff for default, not relevant for devices >= CX4
 } fs3_uid_t;
 
-typedef struct fs4_uid {
+typedef struct fs4_uid
+{
     guid_t base_guid;
     int base_guid_specified;
     guid_t base_mac;
     int base_mac_specified;
-    u_int8_t num_of_guids; // set 0 for default
-    u_int8_t step_size; // set 0 for default, not relevant for devices >= CX4
-    int set_mac_from_guid;  // if set , base_mac will be derrived automatically from base guid
-    int use_pp_attr; // if set, num_of_guids[2] and step_size[2] will be used for the uid attributes.
+    u_int8_t num_of_guids;       // set 0 for default
+    u_int8_t step_size;          // set 0 for default, not relevant for devices >= CX4
+    int set_mac_from_guid;       // if set , base_mac will be derrived automatically from base guid
+    int use_pp_attr;             // if set, num_of_guids[2] and step_size[2] will be used for the uid attributes.
     u_int8_t num_of_guids_pp[2]; // set 0xff for default
-    u_int8_t step_size_pp[2]; // set 0xff for default, not relevant for devices >= CX4
+    u_int8_t step_size_pp[2];    // set 0xff for default, not relevant for devices >= CX4
 } fs4_uid_t;
 
-typedef struct rom_info {
+typedef struct rom_info
+{
     u_int16_t exp_rom_product_id; // 0 - invalid.
     u_int16_t exp_rom_ver[3];
     u_int16_t exp_rom_dev_id;
@@ -362,36 +372,47 @@ typedef struct rom_info {
     u_int8_t exp_rom_proto;
     u_int8_t exp_rom_num_ver_fields;
     u_int8_t exp_rom_supp_cpu_arch;
-    //char      expRomFreestr[FREE_STR_MAX_LEN];
+    // char      expRomFreestr[FREE_STR_MAX_LEN];
 } rom_info_t;
 
-struct fs3_uid_entry {
+struct fs3_uid_entry
+{
     u_int8_t num_allocated;
     u_int8_t step; // not relevant for devices >= CX4
     u_int64_t uid;
 };
 
-typedef struct cibfw_uids {
+typedef struct cibfw_uids
+{
     struct fs3_uid_entry guids[2];
     struct fs3_uid_entry macs[2];
 } cib_uids_t;
 
-typedef struct cx4fw_uids {
+typedef struct cx4fw_uids
+{
     struct fs3_uid_entry base_guid;
     struct fs3_uid_entry base_mac;
 } cx4_uids_t;
 
-typedef struct uids {
+typedef struct uids
+{
     int valid_field; // 0: cib_uids , 1: cx4_uids
-    union {
+    union
+    {
         cib_uids_t cib_uids;
         cx4_uids_t cx4_uids;
     };
 } uids_t;
 
-typedef enum {NOT_VALID, DIRECT_ACCESS, MFSV} device_security_version_access_method_t;
+typedef enum
+{
+    NOT_VALID,
+    DIRECT_ACCESS,
+    MFSV
+} device_security_version_access_method_t;
 
-typedef struct fs3_info_ext {
+typedef struct fs3_info_ext
+{
     u_int8_t guids_override_en;
     uids_t fs3_uids_info;
     uids_t orig_fs3_uids_info;
@@ -410,18 +431,19 @@ typedef struct fs3_info_ext {
     bool dev_sec_boot;
 
     // security version (for fs4)
-    u_int32_t                               image_security_version;       
+    u_int32_t image_security_version;
     device_security_version_access_method_t device_security_version_access_method;
-    u_int32_t                               device_security_version_gw;
-    struct reg_access_hca_mfsv_reg          device_security_version_mfsv;
-    
+    u_int32_t device_security_version_gw;
+    struct reg_access_hca_mfsv_reg device_security_version_mfsv;
+
     int global_image_status;
 
 } fs3_info_t;
 
 // typedef struct fs3_info_ext fs4_info_t;
 
-typedef struct fs2_info_ext {
+typedef struct fs2_info_ext
+{
     guid_t guids[MAX_GUIDS];
     u_int32_t guid_num;
     u_int32_t config_sectors;
@@ -433,7 +455,8 @@ typedef struct fs2_info_ext {
 } fs2_info_t;
 
 #ifdef CABLES_SUPP
-typedef struct cablefw_info_ext {
+typedef struct cablefw_info_ext
+{
     u_int8_t fw_gw_revision[2];
     u_int16_t fw_dev_id;
     u_int32_t fw_revision;
@@ -441,7 +464,8 @@ typedef struct cablefw_info_ext {
 } cablefw_info_t;
 #endif
 
-typedef struct roms_info {
+typedef struct roms_info
+{
     u_int8_t exp_rom_found;
     u_int8_t num_of_exp_rom;
     u_int8_t no_rom_checksum;
@@ -453,7 +477,8 @@ typedef struct roms_info {
     rom_info_t rom_info[MAX_ROMS_NUM];
 } roms_info_t;
 
-typedef struct fw_info_com {
+typedef struct fw_info_com
+{
     char psid[PSID_LEN + 1];
     u_int8_t vsd_sect_found; // relevant to FS2 image only
     char vsd[VSD_LEN + 1];
@@ -478,11 +503,12 @@ typedef struct fw_info_com {
     char branch_ver[BRANCH_LEN + 1];
     char running_branch_ver[BRANCH_LEN + 1];
     u_int8_t encrypted_fw;
-    u_int32_t burn_image_size;  //! Be aware! This field is backward compatible starting from BB/CX-7 
-                                //! Use this field only for encrypted images
+    u_int32_t burn_image_size; //! Be aware! This field is backward compatible starting from BB/CX-7
+                               //! Use this field only for encrypted images
 } fw_info_com_t;
 
-typedef struct fw_info_ext {
+typedef struct fw_info_ext
+{
     u_int8_t fw_type;
     fw_info_com_t fw_info;
     fs2_info_t fs2_info;
@@ -493,7 +519,8 @@ typedef struct fw_info_ext {
     // fs3_info_t fs4_info;
 } fw_info_t;
 
-typedef enum fw_hndl_type {
+typedef enum fw_hndl_type
+{
     FHT_MST_DEV,
     FHT_FW_FILE,
     FHT_UEFI_DEV,
@@ -501,7 +528,8 @@ typedef enum fw_hndl_type {
     FHT_CABLE_DEV,
 } fw_hndl_type_t;
 
-typedef enum fw_img_type {
+typedef enum fw_img_type
+{
     FIT_FS2 = 0,
     FIT_FS3 = 1,
     FIT_FC1 = 2,
@@ -509,13 +537,15 @@ typedef enum fw_img_type {
     FIT_FSCTRL = 4,
 } fw_img_type_t;
 
-enum ExpRomProto {
+enum ExpRomProto
+{
     ER_IB = 0,
     ER_ETH = 1,
     ER_VPI = 2
 };
 
-enum ExpRomCpuArch {
+enum ExpRomCpuArch
+{
     ERC_UNSPECIFIED = 0,
     ERC_AMD64 = 1,
     ERC_AARCH64 = 2,
@@ -523,7 +553,8 @@ enum ExpRomCpuArch {
     ERC_IA32 = 4
 };
 
-typedef enum fw_ver_info {
+typedef enum fw_ver_info
+{
     FVI_SMALLER = -1,
     FVI_EQUAL = 0,
     FVI_GREATER = 1,

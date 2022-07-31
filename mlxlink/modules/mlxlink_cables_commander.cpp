@@ -419,7 +419,7 @@ void MlxlinkCablesCommander::prepareSfpddDdmInfo()
 void MlxlinkCablesCommander::prepareQSFPDdmInfo()
 {
     u_int32_t tempVal = 0;
-    u_int8_t* page0L = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+    u_int8_t* page0L = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
     if (page0L != NULL)
     {
         loadEEPRMPage(PAGE_0, LOWER_PAGE_OFFSET, page0L);
@@ -552,7 +552,7 @@ void MlxlinkCablesCommander::prepareThresholdInfo(u_int8_t* thresholdPage)
 // Reading cable DDM information
 void MlxlinkCablesCommander::readCableDDMInfo()
 {
-    u_int8_t* thresholdPage = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+    u_int8_t* thresholdPage = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
 
     switch (_cableIdentifier)
     {
@@ -795,7 +795,7 @@ void MlxlinkCablesCommander::initValidPages()
     }
     if (qsfpCable && !_passiveQsfp)
     {
-        u_int8_t* page0H = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+        u_int8_t* page0H = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
         loadEEPRMPage(PAGE_0, UPPER_PAGE_OFFSET, page0H);
         u_int8_t optionsValue = 0;
         readFromPage(page0H, 195 - 0x80, &optionsValue);
@@ -830,7 +830,7 @@ void MlxlinkCablesCommander::initValidPages()
         // (SFP-DD)
         // if 2:7=0, dump page 0x1
         u_int8_t extendedPages = 0;
-        u_int8_t* page0L = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+        u_int8_t* page0L = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
         loadEEPRMPage(PAGE_0, LOWER_PAGE_OFFSET, page0L);
         ;
         readFromPage(page0L, EXTENDED_PAGES_1_2_10_11_ADDR, &extendedPages);
@@ -852,7 +852,7 @@ void MlxlinkCablesCommander::initValidPages()
                 //                   dump page 0x12 (H)
                 //         B142:5=1, dump page 0x13 (H)
                 //                   dump page 0x14 (H)
-                u_int8_t* page1H = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+                u_int8_t* page1H = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
                 loadEEPRMPage(PAGE_01, UPPER_PAGE_OFFSET, page1H);
                 ;
                 u_int8_t extendedQsfpPages = 0;
@@ -885,7 +885,7 @@ vector<MlxlinkCmdPrint> MlxlinkCablesCommander::getPagesToDump()
     initValidPages();
     for (u_int32_t i = 0; i < _validPages.size(); i++)
     {
-        u_int8_t* pageP = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+        u_int8_t* pageP = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
         if (pageP != NULL)
         {
             loadEEPRMPage(_validPages[i].page, _validPages[i].offset, pageP, _validPages[i].i2cAddress);
@@ -998,11 +998,11 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page, u_int16_t 
     {
         i2cAddress = I2C_ADDR_HIGH;
     }
-    pageL = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+    pageL = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
     loadEEPRMPage(page, LOWER_PAGE_OFFSET, pageL, i2cAddress);
     if ((length + offset) > CABLE_PAGE_SIZE)
     {
-        pageH = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+        pageH = (u_int8_t*)calloc(CABLE_PAGE_SIZE, sizeof(u_int8_t));
         loadEEPRMPage(page, UPPER_PAGE_OFFSET, pageH);
     }
     char label[32];
@@ -1418,7 +1418,7 @@ void MlxlinkCablesCommander::getPMPDInfo(vector<string>& traffic,
         traficStr = to_string(add32BitTo64(getFieldValue("prbs_bits_high"), getFieldValue("prbs_bits_low")));
         errorsStr = to_string(add32BitTo64(getFieldValue("prbs_errors_high"), getFieldValue("prbs_errors_low")));
         berStr = to_string(getFieldValue("ber_coef")) + "E-" + to_string(getFieldValue("ber_magnitude"));
-        snrStr = to_string(getFieldValue("measured_snr")) + " dB";
+        snrStr = getFieldValue("measured_snr") ? (to_string(getFieldValue("measured_snr")) + " dB") : "N/A";
 
         traffic.push_back(MlxlinkRecord::addSpaceForModulePrbs(traficStr));
 
@@ -1435,7 +1435,7 @@ void MlxlinkCablesCommander::getPMPDInfo(vector<string>& traffic,
         {
             snr.push_back(MlxlinkRecord::addSpaceForModulePrbs(getFieldValue("snr_cap") ? snrStr : "Not Supported"));
         }
-        // Print only one indecation for each cap if it's not supported
+        // Print only one indication for each cap if it's not supported
         if (getFieldValue("errors_cap") == 0)
         {
             skipErrorCap = true;
@@ -1535,7 +1535,7 @@ void MlxlinkCablesCommander::showControlParams()
     cout << controlParamsOutput;
 }
 
-u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const string& value)
+u_int32_t MlxlinkCablesCommander::pmcrStrToValue(ControlParam paramId, const string& value)
 {
     double valueToSet = 0;
     bool invalidConfiguration = false;
@@ -1556,9 +1556,7 @@ u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const strin
 
     if (isDecemal && !isCmis && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH)
     {
-        throw MlxRegException("The requested RX Emphasis configuration value is valid for "
-                              "CMIS modules only (pre-emphasis): %s",
-                              value.c_str());
+        invalidConfiguration = true;
     }
 
     if (isCmis && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH)
@@ -1571,15 +1569,24 @@ u_int32_t MlxlinkCablesCommander::getPMCRValue(ControlParam paramId, const strin
         }
     }
 
-    if (valueStr == "0" || valueToSet > MAX_SFF_CODE_VALUE ||
-        (isDecemal && paramId != CABLE_CONTROL_PARAMETERS_SET_RX_EMPH))
+    if ((valueToSet < 0) || (valueStr == "0" && paramId != CABLE_CONTROL_PARAMETERS_SET_RX_AMP) ||
+        (valueToSet > MAX_SFF_CODE_VALUE) || (isDecemal && paramId != CABLE_CONTROL_PARAMETERS_SET_RX_EMPH))
     {
         invalidConfiguration = true;
     }
 
     if (invalidConfiguration)
     {
-        throw MlxRegException("Invalid %s configuration: %s", _modulePMCRParams[paramId].first.c_str(), value.c_str());
+        u_int32_t capVal = getFieldValue(_modulePMCRParams[paramId].second + "_value_cap");
+        string capStr = "";
+        if (capVal)
+        {
+            capStr = "\nSupported configuration values are [";
+            capStr += getPMCRCapValueStr(capVal, paramId);
+            capStr += "]";
+        }
+        throw MlxRegException("Invalid %s configuration: %s %s", _modulePMCRParams[paramId].first.c_str(),
+                              value.c_str(), capStr.c_str());
     }
 
     return (u_int32_t)valueToSet;
@@ -1598,7 +1605,11 @@ string MlxlinkCablesCommander::getPMCRCapValueStr(u_int32_t valueCap, ControlPar
         char tmpFmt[64];
         for (u_int32_t val = 0; val <= valueCap; val++)
         {
-            if (_cableIdentifier >= IDENTIFIER_SFP_DD && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH)
+            if (val == 0)
+            {
+                capStr += "NE,";
+            }
+            else if (_cableIdentifier >= IDENTIFIER_SFP_DD && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH)
             {
                 sprintf(tmpFmt, "%.1f,", ((float)val / 2.0));
                 capStr += string(tmpFmt);
@@ -1644,9 +1655,8 @@ void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string
     for (auto it = params.begin(); it != params.end(); it++)
     {
         fieldName = _modulePMCRParams[it->first].second;
-        valueToSet = getPMCRValue(it->first, it->second);
+        valueToSet = pmcrStrToValue(it->first, it->second);
         valueCap = getFieldValue(fieldName + "_value_cap");
-        ; //
         if (it->first == CABLE_CONTROL_PARAMETERS_SET_RX_AMP)
         {
             valueToSet = (u_int32_t)pow(2.0, (double)valueToSet);
@@ -1663,19 +1673,19 @@ void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string
         {
             if (valueCap)
             {
-                validCapStr = "\nValid configuration values are [";
+                validCapStr = "\nSupported configuration values are [";
                 validCapStr += getPMCRCapValueStr(valueCap, it->first);
                 validCapStr += "]";
             }
-            throw MlxRegException("Invalid %s configuration value: %s %s", _modulePMCRParams[it->first].first.c_str(),
-                                  it->second.c_str(), validCapStr.c_str());
+            throw MlxRegException("Not supported %s configuration value: %s %s",
+                                  _modulePMCRParams[it->first].first.c_str(), it->second.c_str(), validCapStr.c_str());
         }
     }
 }
 
 void MlxlinkCablesCommander::buildPMCRRequest(ControlParam paramId, const string& value)
 {
-    u_int32_t valueToSet = getPMCRValue(paramId, value);
+    u_int32_t valueToSet = pmcrStrToValue(paramId, value);
 
     updateField(_modulePMCRParams[paramId].second + "_cntl", 2);
     updateField(_modulePMCRParams[paramId].second + "_value", (u_int32_t)valueToSet);

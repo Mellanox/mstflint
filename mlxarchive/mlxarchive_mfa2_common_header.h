@@ -52,23 +52,23 @@
 
 using namespace std;
 
-namespace mfa2 {
-
-class CommonHeader {
-
+namespace mfa2
+{
+class CommonHeader
+{
 private:
-    u_int8_t    _version;
-    MFA2Type    _type;
-    u_int16_t   _length;
+    u_int8_t _version;
+    MFA2Type _type;
+    u_int16_t _length;
 
 public:
     CommonHeader(u_int8_t version, MFA2Type type, u_int16_t length);
 
-    //inline void setLength(u_int16_t length) { _length = length; }
+    // inline void setLength(u_int16_t length) { _length = length; }
     void pack(vector<u_int8_t>& buff) const;
-    bool unpack(Mfa2Buffer & buff);
-    const u_int16_t & getLength() const {return _length;}
+    bool unpack(Mfa2Buffer& buff);
+    const u_int16_t& getLength() const { return _length; }
 };
 
-}
+} // namespace mfa2
 #endif

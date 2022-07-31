@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 """
 * $Id           : pci_device.py 2017-11-28
@@ -36,15 +36,16 @@
 """
 
 from __future__ import print_function
+
+from mtcr import MstDevice
+from .mcra import Mcra
 # TODO fix it latter - need to import the function from mlxfwreset.py
-import sys,os
+import sys
+import os
 mlxfwreset_dir = os.path.dirname(os.path.dirname(__file__))
 sys.path.append(mlxfwreset_dir)
-
-from .mcra import Mcra
-from mtcr import MstDevice
-from regaccess import RegAccess
 from dev_mgt import DevMgt
+from regaccess import RegAccess
 
 
 class PciDevice(object):
@@ -57,8 +58,8 @@ class PciDevice(object):
             FreeBSD 'pci0:2:0:0'
         '''
 
-        assert type(domain) == int and type(bus) == int and type(device) == int and type(fn) == int
-        assert type(aliases) == list
+        assert isinstance(domain, int) and isinstance(bus, int) and isinstance(device, int) and isinstance(fn, int)
+        assert isinstance(aliases, list)
 
         self.aliases = aliases
 
@@ -68,9 +69,9 @@ class PciDevice(object):
         self.fn = fn
 
     def __str__(self):
-        return '{0} pci_address={1:04x}:{2:02x}:{3:02x}.{4:01x}'.format([alias for alias in self.aliases],self.domain, self.bus, self.device, self.fn)
+        return '{0} pci_address={1:04x}:{2:02x}:{3:02x}.{4:01x}'.format([alias for alias in self.aliases], self.domain, self.bus, self.device, self.fn)
 
-    def has_alias(self,alias):
+    def has_alias(self, alias):
         return alias in self.aliases
 
     def get_alias(self):
@@ -80,14 +81,13 @@ class PciDevice(object):
 
         DEVID_ADDR = [0xf0014, 0, 16]  # Adresses [Base offset length]
         mcra = Mcra()
-        return mcra.read(self.aliases[0],DEVID_ADDR[0], DEVID_ADDR[1], DEVID_ADDR[2])
-        #return get_cfg_did(self.aliases[0]) # PCI configuration DID
+        return mcra.read(self.aliases[0], DEVID_ADDR[0], DEVID_ADDR[1], DEVID_ADDR[2])
+        # return get_cfg_did(self.aliases[0]) # PCI configuration DID
 
     def is_livefish_mode(self):
         mst_device = MstDevice(self.aliases[0])
         device_mgt = DevMgt(mst_device)
         return True if device_mgt.isLivefishMode() == 1 else False
-
 
     def get_manufacturing_base_mac(self):
         # Be-careful : The logic won't work for all devices

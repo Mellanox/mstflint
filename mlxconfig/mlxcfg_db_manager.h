@@ -83,7 +83,7 @@ public:
     TLVConf* getTLVByNameAux(std::string tlvName, u_int32_t port, int32_t module);
     TLVConf* getAndSetTLVByNameAuxNotInitialized(string tlv_name, u_int32_t port, int32_t module);
     TLVConf* getTLVByIndexAndClassAux(u_int32_t id, TLVClass c);
-      TLVConf* getTLVByName(std::string tlvName, u_int32_t port, int32_t module);
+    TLVConf* getTLVByName(std::string tlvName, u_int32_t port, int32_t module);
     TLVConf* getAndCreateTLVByName(std::string tlvName, u_int32_t port, int32_t module);
     TLVConf* getTLVByParamMlxconfigName(std::string mlxconfigName, u_int32_t index, mfile* mf);
     TLVConf* findTLVInExisting(std::string mlxconfigName,

@@ -48,18 +48,18 @@
 
 using namespace mfa2;
 
-#define VERSION_STR             "Version"
-#define CREATION_TIME_STR       "Creation Time"
-#define COMMENT_STR             "Comment"
-#define DEVICEDESCRIPTORS_STR   "Device Descriptors"
-#define COMPONENTS_STR          "Components"
-#define PSID_STR                "PSID"
-#define SOURCE_STR              "Source"
+#define VERSION_STR "Version"
+#define CREATION_TIME_STR "Creation Time"
+#define COMMENT_STR "Comment"
+#define DEVICEDESCRIPTORS_STR "Device Descriptors"
+#define COMPONENTS_STR "Components"
+#define PSID_STR "PSID"
+#define SOURCE_STR "Source"
 
 /* Class FWDirectoryBuilder */
 
 FWDirectoryBuilder::FWDirectoryBuilder(const string& version, string directory) :
-                _version(VersionExtension(version)), _directory(directory)
+    _version(VersionExtension(version)), _directory(directory)
 {
     string fileExtension = ".bin";
     vector<string> files;
@@ -68,60 +68,67 @@ FWDirectoryBuilder::FWDirectoryBuilder(const string& version, string directory) 
     {
         listDir(directory.c_str(), files);
     }
-    catch(std::exception& e)
+    catch (std::exception& e)
     {
         std::string err_str = "locale::facet::_S_create_c_locale name not valid";
-        if(!err_str.compare(e.what()))
+        if (!err_str.compare(e.what()))
         {
-            fprintf(stderr, "Exception: '%s' was catched.\nPlease try to add the following line into your /etc/profile file and retry:\nexport LC_ALL=C; unset LANGUAGE\n"
-            "Please note, you need to reload the .profile file, after editing. \nsource /etc/profile might help.\n", e.what());
+            fprintf(
+              stderr,
+              "Exception: '%s' was catched.\nPlease try to add the following line into your /etc/profile file and "
+              "retry:\nexport LC_ALL=C; unset LANGUAGE\n"
+              "Please note, you need to reload the .profile file, after editing. \nsource /etc/profile might help.\n",
+              e.what());
             exit(1);
         }
         throw e;
     }
-    VECTOR_ITERATOR(string, files, file) {
-      if ((*file).rfind(fileExtension) == ((*file).size() - fileExtension.size())) {
-        string fullPath = directory + "/" + (*file);
-        //_files.push_back(fullPath);
+    VECTOR_ITERATOR(string, files, file)
+    {
+        if ((*file).rfind(fileExtension) == ((*file).size() - fileExtension.size()))
+        {
+            string fullPath = directory + "/" + (*file);
+            //_files.push_back(fullPath);
 
-        //Query FW Image retrieve version, date, psid info
-        char errBuff[1024];
-        FwOperations* ops = FwOperations::FwOperationsCreate(
-                (void*)fullPath.c_str(), NULL, NULL, FHT_FW_FILE, errBuff,
-                1024);
-        if (!ops) {
-            printf("Can't handle the FW image file %s\n", fullPath.c_str());
-            exit(1);
+            // Query FW Image retrieve version, date, psid info
+            char errBuff[1024];
+            FwOperations* ops =
+              FwOperations::FwOperationsCreate((void*)fullPath.c_str(), NULL, NULL, FHT_FW_FILE, errBuff, 1024);
+            if (!ops)
+            {
+                printf("Can't handle the FW image file %s\n", fullPath.c_str());
+                exit(1);
+            }
+            fw_info_t fwQueryResult;
+            if (!ops->FwQuery(&fwQueryResult, true, false))
+            {
+                // throw exception
+                printf("Can't query FW image file %s:%s\n", fullPath.c_str(), ops->err());
+                exit(1);
+            }
+            /*FWInfo fwInfo;
+            memcpy(fwInfo.version, fwQueryResult.fw_info.fw_ver, sizeof(fwInfo.version));
+            memcpy(fwInfo.date, fwQueryResult.fw_info.fw_rel_date, sizeof(fwInfo.date));
+            fwInfo.psid = fwQueryResult.fw_info.psid;
+            _fwInfo[fullPath] = fwInfo;*/
+            //_imgsFwOps[fullPath] = ops;
+            vector<ComponentPointerExtension> componentPointers;
+            PSIDExtension PSID(fwQueryResult.fw_info.psid);
+            ComponentPointerExtension componentPointer(index++);
+            componentPointers.push_back(componentPointer);
+            DeviceDescriptor deviceDescriptor(componentPointers, PSID);
+            _deviceDescriptors.push_back(deviceDescriptor);
+            VersionExtension version(fwQueryResult.fw_info.fw_ver, fwQueryResult.fw_info.fw_rel_date);
+            vector<u_int8_t> data;
+            if (!ops->FwExtract4MBImage(data, true))
+            {
+                printf("Can't Extract FW data from the image file %s:%s\n", fullPath.c_str(), ops->err());
+                exit(1);
+            }
+            ComponentDescriptor componentDescriptor(version, data);
+            Component component(componentDescriptor);
+            _components.push_back(component);
         }
-        fw_info_t fwQueryResult;
-        if (!ops->FwQuery(&fwQueryResult, true, false)) {
-            //throw exception
-            printf("Can't query FW image file %s:%s\n", fullPath.c_str(), ops->err());
-            exit(1);
-        }
-        /*FWInfo fwInfo;
-        memcpy(fwInfo.version, fwQueryResult.fw_info.fw_ver, sizeof(fwInfo.version));
-        memcpy(fwInfo.date, fwQueryResult.fw_info.fw_rel_date, sizeof(fwInfo.date));
-        fwInfo.psid = fwQueryResult.fw_info.psid;
-        _fwInfo[fullPath] = fwInfo;*/
-        //_imgsFwOps[fullPath] = ops;
-        vector<ComponentPointerExtension> componentPointers;
-        PSIDExtension PSID(fwQueryResult.fw_info.psid);
-        ComponentPointerExtension componentPointer(index++);
-        componentPointers.push_back(componentPointer);
-        DeviceDescriptor deviceDescriptor(componentPointers, PSID);
-        _deviceDescriptors.push_back(deviceDescriptor);
-        VersionExtension version(fwQueryResult.fw_info.fw_ver, fwQueryResult.fw_info.fw_rel_date);
-        vector<u_int8_t> data;
-        if (!ops->FwExtract4MBImage(data, true)) {
-            printf("Can't Extract FW data from the image file %s:%s\n",
-                   fullPath.c_str(), ops->err());
-            exit(1);
-        }
-        ComponentDescriptor componentDescriptor(version, data);
-        Component component(componentDescriptor);
-        _components.push_back(component);
-      }
     }
 };
 

@@ -70,58 +70,48 @@ void MFA2::packDescriptors(vector<u_int8_t>& buff) const
 {
     _fingerPrint.pack(buff);
     _packageDescriptor.pack(buff);
-    CONST_VECTOR_ITERATOR(DeviceDescriptor, _deviceDescriptors, it) {
-        (*it).pack(buff);
-    }
-    CONST_VECTOR_ITERATOR(Component, _components, it) {
-        (*it).packDescriptor(buff);
-    }
+    CONST_VECTOR_ITERATOR(DeviceDescriptor, _deviceDescriptors, it) { (*it).pack(buff); }
+    CONST_VECTOR_ITERATOR(Component, _components, it) { (*it).packDescriptor(buff); }
 }
 
 void MFA2::pack(vector<u_int8_t>& buff)
 {
-    //find size of components block:
+    // find size of components block:
     u_int64_t componentsBlockSize = 0;
-    CONST_VECTOR_ITERATOR(Component, _components, it) {
-        componentsBlockSize += (*it).getComponentBinarySize();
-    }
+    CONST_VECTOR_ITERATOR(Component, _components, it) { componentsBlockSize += (*it).getComponentBinarySize(); }
     _packageDescriptor.setComponentsBlockSize(componentsBlockSize);
 
     _fingerPrint.pack(buff);
 
     _packageDescriptor.pack(buff);
 
-    CONST_VECTOR_ITERATOR(DeviceDescriptor, _deviceDescriptors, it) {
-        (*it).pack(buff);
-    }
+    CONST_VECTOR_ITERATOR(DeviceDescriptor, _deviceDescriptors, it) { (*it).pack(buff); }
 
-    CONST_VECTOR_ITERATOR(Component, _components, it) {
-        (*it).packDescriptor(buff);
-    }
+    CONST_VECTOR_ITERATOR(Component, _components, it) { (*it).packDescriptor(buff); }
 
     _packageDescriptor.setComponentsBlockOffset(buff.size());
 
-    //compress components block
+    // compress components block
     vector<u_int8_t> componentsBlockBuff;
-    VECTOR_ITERATOR(Component, _components, it) {
+    VECTOR_ITERATOR(Component, _components, it)
+    {
         (*it).setComponentBinaryOffset(componentsBlockBuff.size());
         (*it).packData(componentsBlockBuff);
     }
     u_int32_t zippedSize = componentsBlockBuff.size();
-    zippedSize = xz_compress_crc32(8, componentsBlockBuff.data(),
-            componentsBlockBuff.size(), NULL, 0);
+    zippedSize = xz_compress_crc32(8, componentsBlockBuff.data(), componentsBlockBuff.size(), NULL, 0);
     if (zippedSize <= 0)
     {
-        //TODO throw exception
+        // TODO throw exception
         printf("-E- Error while compressing\n");
         exit(1);
     }
     _packageDescriptor.setComponentsBlockArchiveSize(zippedSize);
     vector<u_int8_t> zippedComponentBlockBuff(zippedSize);
-    xz_compress_crc32(9, componentsBlockBuff.data(), componentsBlockBuff.size(),
-            zippedComponentBlockBuff.data(), zippedSize);
+    xz_compress_crc32(9, componentsBlockBuff.data(), componentsBlockBuff.size(), zippedComponentBlockBuff.data(),
+                      zippedSize);
 
-    //compute descriptors SHA256
+    // compute descriptors SHA256
     vector<u_int8_t> descriptorsBuff;
     packDescriptors(descriptorsBuff);
     vector<u_int8_t> digest;
@@ -130,14 +120,13 @@ void MFA2::pack(vector<u_int8_t>& buff)
     mlxSignSHA256.getDigest(digest);
     _packageDescriptor.setDescriptorsSHA256(digest);
 
-    //append the zipped components block
+    // append the zipped components block
     packBytesArray(zippedComponentBlockBuff.data(), zippedComponentBlockBuff.size(), buff);
 
-    //compute SHA256
+    // compute SHA256
     mlxSignSHA256 << zippedComponentBlockBuff;
     mlxSignSHA256.getDigest(digest);
     _packageDescriptor.setSHA256(digest);
-
 }
 
 /*void MFA2::update(vector<u_int8_t>& buff)
@@ -152,46 +141,51 @@ void MFA2::generateBinary(vector<u_int8_t>& buff)
 {
     vector<u_int8_t> tmpBuff;
 
-    //do first pass
+    // do first pass
     pack(tmpBuff);
 
-    //do second pass
+    // do second pass
     pack(buff);
 
-    //compute SHA256
-
+    // compute SHA256
 }
 
-MFA2 * MFA2::LoadMFA2Package(const string & file_name) {
+MFA2* MFA2::LoadMFA2Package(const string& file_name)
+{
     Mfa2Buffer mfa2buff;
-    if(!mfa2buff.loadFile(file_name)) {
+    if (!mfa2buff.loadFile(file_name))
+    {
         fprintf(stderr, "Failed to load mfa2 package: %s\n", file_name.c_str());
         return NULL;
     }
     FingerPrint finger_print("");
     VersionExtension version("");
-    PackageDescriptor        packageDescriptor(0, 0, version);
+    PackageDescriptor packageDescriptor(0, 0, version);
     vector<DeviceDescriptor> deviceDescriptors;
-    vector<Component>        components;
-    MFA2 * mfa2pkg = new MFA2(packageDescriptor, deviceDescriptors, components);
-    if(!mfa2pkg->unpack(mfa2buff)) {
+    vector<Component> components;
+    MFA2* mfa2pkg = new MFA2(packageDescriptor, deviceDescriptors, components);
+    if (!mfa2pkg->unpack(mfa2buff))
+    {
         delete mfa2pkg;
-        mfa2pkg =  NULL;
+        mfa2pkg = NULL;
         return NULL;
     }
     mfa2pkg->setBufferAndZipOffset(mfa2buff.getBuffer(), mfa2buff.getSize(), mfa2buff.tell());
     return mfa2pkg;
 }
 
-bool MFA2::unpack(Mfa2Buffer & buff) {
-    if (!_fingerPrint.unpack(buff)) {
+bool MFA2::unpack(Mfa2Buffer& buff)
+{
+    if (!_fingerPrint.unpack(buff))
+    {
         return false;
     }
     _packageDescriptor.unpack(buff);
     u_int16_t devCount = _packageDescriptor.getDeviceDescriptorsCount();
     u_int16_t compCount = _packageDescriptor.getComponentsCount();
 
-    for(u_int16_t devIdx=0; devIdx<devCount; devIdx++) {
+    for (u_int16_t devIdx = 0; devIdx < devCount; devIdx++)
+    {
         vector<ComponentPointerExtension> componentPointers;
         PSIDExtension psidExt("");
         DeviceDescriptor devDescriptor(componentPointers, psidExt);
@@ -199,7 +193,8 @@ bool MFA2::unpack(Mfa2Buffer & buff) {
         _deviceDescriptors.push_back(devDescriptor);
     }
 
-    for(u_int16_t compIdx=0; compIdx<compCount; compIdx++) {
+    for (u_int16_t compIdx = 0; compIdx < compCount; compIdx++)
+    {
         VersionExtension version("");
         ComponentDescriptor compDescriptor(version, "");
         compDescriptor.unpack(buff);
@@ -210,36 +205,39 @@ bool MFA2::unpack(Mfa2Buffer & buff) {
     return true;
 }
 
-void MFA2::minidump() {
+void MFA2::minidump()
+{
     printf("Package Version : %s\n", _packageDescriptor.getVersionExtension().getVersion(false).c_str());
 }
 
-void MFA2::dump() {
-    //printf("Finger print    : %s\n", _fingerPrint.toString().c_str());
+void MFA2::dump()
+{
+    // printf("Finger print    : %s\n", _fingerPrint.toString().c_str());
     u_int16_t devCount = _packageDescriptor.getDeviceDescriptorsCount();
-    //u_int16_t compCount = _packageDescriptor.getComponentsCount();
+    // u_int16_t compCount = _packageDescriptor.getComponentsCount();
     printf("Package Version : %s\n", _packageDescriptor.getVersionExtension().getVersion(false).c_str());
     printf("Creation Time   : %s\n", _packageDescriptor.getVersionExtension().getDateAndTime().c_str());
-    //printf("Extensions      : %u\n", _packageDescriptor.getExtensionsCount());
+    // printf("Extensions      : %u\n", _packageDescriptor.getExtensionsCount());
     printf("Devices         : %u\n", devCount);
-    for(u_int16_t index=0; index < devCount; index++) {
-        DeviceDescriptor & devDescriptor = _deviceDescriptors[index];
+    for (u_int16_t index = 0; index < devCount; index++)
+    {
+        DeviceDescriptor& devDescriptor = _deviceDescriptors[index];
         string psid = devDescriptor.getPSIDExtension().getString();
         u_int8_t compPtrCount = devDescriptor.getComponentPointerExtensionsCount();
         printf("    PSID       : %s\n", psid.c_str());
         printf("    Num of Images : %u\n", compPtrCount);
-        for(u_int8_t comp=0; comp < compPtrCount; comp++) {
-            const ComponentPointerExtension & compPtr = devDescriptor.getComponentPointerExtension(comp);
+        for (u_int8_t comp = 0; comp < compPtrCount; comp++)
+        {
+            const ComponentPointerExtension& compPtr = devDescriptor.getComponentPointerExtension(comp);
             u_int16_t compIndex = compPtr.getComponentIndex();
             Component compObj = _components[compIndex];
-            const ComponentDescriptor & compDescr = compObj.getComponentDescriptor();
+            const ComponentDescriptor& compDescr = compObj.getComponentDescriptor();
             printf("        Index   : %u\n", compIndex);
             printf("        Version : %s\n", compDescr.getVersionExtension().getVersion(true).c_str());
-            char buffer[32] = { 0 };
+            char buffer[32] = {0};
             compDescr.getVersionExtension().getDateAndTime(buffer);
             printf("        Date    : %s\n", buffer);
         }
-
     }
 }
 
@@ -253,16 +251,21 @@ bool MFA2::extractComponent(Component* requiredComponent, vector<u_int8_t>& fwBi
     unzippedBlockBuff.resize(totalSize);
     vector<u_int8_t> zippedBuff = getBuffer();
     u_int8_t* zippedData = (u_int8_t*)zippedBuff.data() + zipOffset;
-    int32_t retVal = xz_decompress_crc32(zippedData, zippedBuff.size() - zipOffset, unzippedBlockBuff.data(), totalSize);
-    if (retVal != (int32_t)totalSize) {
+    int32_t retVal =
+      xz_decompress_crc32(zippedData, zippedBuff.size() - zipOffset, unzippedBlockBuff.data(), totalSize);
+    if (retVal != (int32_t)totalSize)
+    {
         printf("Decompress error occurred %s\n", xz_get_error(retVal));
         return false;
     }
     u_int32_t requiredOffset = requiredComponent->getBinaryComponentOffset();
     u_int32_t componentBinarySize = requiredComponent->getComponentBinarySize() - strlen(FINGERPRINT_MFA2);
     fwBinaryData.resize(componentBinarySize);
-    for (unsigned int index = 0; index < componentBinarySize; index++) {
-        fwBinaryData[index] = unzippedBlockBuff[requiredOffset + index + strlen(FINGERPRINT_MFA2)];//skip 16 bytes from decompressed file !
+    for (unsigned int index = 0; index < componentBinarySize; index++)
+    {
+        fwBinaryData[index] =
+          unzippedBlockBuff[requiredOffset + index + strlen(FINGERPRINT_MFA2)]; // skip 16 bytes from decompressed file
+                                                                                // !
     }
     return true;
 }
@@ -270,16 +273,20 @@ bool MFA2::extractComponent(Component* requiredComponent, vector<u_int8_t>& fwBi
 bool MFA2::unzipLatestVersionComponent(map_string_to_component& matchingComponentsMap, vector<u_int8_t>& fwBinaryData)
 {
     map_string_to_component::iterator itAtKey = matchingComponentsMap.find(_latestComponentKey);
-    if (itAtKey == matchingComponentsMap.end()) {
+    if (itAtKey == matchingComponentsMap.end())
+    {
         return false;
     }
     Component* requiredComponent = &itAtKey->second;
     return extractComponent(requiredComponent, fwBinaryData);
 }
 
-bool MFA2::unzipComponent(map_string_to_component& matchingComponentsMap, u_int32_t choice, vector<u_int8_t>& fwBinaryData)
+bool MFA2::unzipComponent(map_string_to_component& matchingComponentsMap,
+                          u_int32_t choice,
+                          vector<u_int8_t>& fwBinaryData)
 {
-    if (choice >= matchingComponentsMap.size()) {
+    if (choice >= matchingComponentsMap.size())
+    {
         return false;
     }
     map_string_to_component::iterator itAtOffset = matchingComponentsMap.begin();
@@ -297,47 +304,58 @@ map_string_to_component MFA2::getMatchingComponents(char* device_psid, u_int16_t
     u_int8_t deviceMajorVer = (u_int8_t)fw_ver[0];
     u_int8_t deviceMinorVer = (u_int8_t)fw_ver[1];
     u_int16_t deviceSubMinorVer = fw_ver[2];
-    for (u_int16_t index = 0; index < devCount; index++) {
+    for (u_int16_t index = 0; index < devCount; index++)
+    {
         DeviceDescriptor devDescriptor = getDeviceDescriptor(index);
         string psid = devDescriptor.getPSIDExtension().getString();
-        if (device_psid != NULL) {
-            if (strcmp((char*)psid.c_str(), device_psid)) {
+        if (device_psid != NULL)
+        {
+            if (strcmp((char*)psid.c_str(), device_psid))
+            {
                 continue;
             }
         }
         u_int8_t compPtrCount = devDescriptor.getComponentPointerExtensionsCount();
-        for (u_int8_t comp = 0; comp < compPtrCount; comp++) {
+        for (u_int8_t comp = 0; comp < compPtrCount; comp++)
+        {
             const ComponentPointerExtension& compPtr = devDescriptor.getComponentPointerExtension(comp);
             u_int16_t compIndex = compPtr.getComponentIndex();
             Component compObj = getComponentObject(compIndex);
-            const ComponentDescriptor & compDescr = compObj.getComponentDescriptor();
+            const ComponentDescriptor& compDescr = compObj.getComponentDescriptor();
             u_int8_t majorVer = compDescr.getVersionExtension().getMajor();
             u_int8_t minorVer = compDescr.getVersionExtension().getMinor();
             u_int16_t subMinorVer = compDescr.getVersionExtension().getSubMinor();
-            if (deviceMajorVer != 0xff) {
-                if (deviceMajorVer != majorVer) {
+            if (deviceMajorVer != 0xff)
+            {
+                if (deviceMajorVer != majorVer)
+                {
                     continue;
                 }
             }
-            if (deviceMinorVer != 0xff) {
-                if (minorVer != deviceMinorVer) {
+            if (deviceMinorVer != 0xff)
+            {
+                if (minorVer != deviceMinorVer)
+                {
                     continue;
                 }
             }
-            if (deviceSubMinorVer != 0xffff) {
-                if (subMinorVer != deviceSubMinorVer) {
+            if (deviceSubMinorVer != 0xffff)
+            {
+                if (subMinorVer != deviceSubMinorVer)
+                {
                     continue;
                 }
             }
-            char dateTimeBuffer[32] = { 0 };
+            char dateTimeBuffer[32] = {0};
             compDescr.getVersionExtension().getDateAndTime(dateTimeBuffer);
             VersionExtension currentVersion = compDescr.getVersionExtension();
             string currentVersionString = currentVersion.getVersion(true);
             string mapKey = currentVersionString + "  " + dateTimeBuffer;
             matchingComponentsMap.insert(std::pair<string, Component>(mapKey, compObj));
             Version version(currentVersionString);
-            //find the latest matching FW version
-            if (version > currentLatestVersion) {
+            // find the latest matching FW version
+            if (version > currentLatestVersion)
+            {
                 currentLatestVersion = version;
                 _latestComponentKey = mapKey;
             }
@@ -345,4 +363,3 @@ map_string_to_component MFA2::getMatchingComponents(char* device_psid, u_int16_t
     }
     return matchingComponentsMap;
 }
-

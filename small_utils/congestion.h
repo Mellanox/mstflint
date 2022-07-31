@@ -38,9 +38,11 @@
 
 using namespace std;
 
-class CongestionUI : public CommandLineRequester {
+class CongestionUI : public CommandLineRequester
+{
 public:
-    typedef enum {
+    typedef enum
+    {
         EXIT_STATUS_OK = 0,
         EXIT_STATUS_ERROR = 1,
         EXIT_STATUS_USAGE = 2,
@@ -51,7 +53,7 @@ public:
     ~CongestionUI();
     ParseStatus HandleOption(string name, string value);
 
-    exit_status_t run(int argc, char **argv);
+    exit_status_t run(int argc, char** argv);
 
     void printUsage();
     void printError();
@@ -61,14 +63,15 @@ public:
     string getSuccess() { return _successMsg; };
 
 private:
-
-    typedef enum {
+    typedef enum
+    {
         MODE_AGGRESSIVE = 0,
         MODE_DYNAMIC = 1,
         MODE_NA
     } cong_mode_t;
 
-    typedef enum {
+    typedef enum
+    {
         ACTION_DISABLED = 0,
         ACTION_DROP = 1,
         ACTION_MARK = 2,
@@ -88,7 +91,7 @@ private:
     string _devname;
     cong_action_t _action;
     cong_mode_t _mode;
-    mfile *_mf;
+    mfile* _mf;
     string _errorMsg;
     string _successMsg;
     bool _query;
@@ -97,4 +100,3 @@ private:
     u_int8_t _markCqeSupp;
     u_int8_t _markCnpSupp;
 };
-

@@ -32,19 +32,21 @@
  */
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <time.h>
 
-typedef struct tt_ctx {
-    time_t now;
-} tt_ctx_t;
+    typedef struct tt_ctx
+    {
+        time_t now;
+    } tt_ctx_t;
 
-// update context with the current time
-void tt_get_time(tt_ctx_t *tt);
-// get diff in ms between the time t1 was created and t2
-double tt_diff_in_ms(tt_ctx_t t1, tt_ctx_t t2);
+    // update context with the current time
+    void tt_get_time(tt_ctx_t* tt);
+    // get diff in ms between the time t1 was created and t2
+    double tt_diff_in_ms(tt_ctx_t t1, tt_ctx_t t2);
 
 #ifdef __cplusplus
 }

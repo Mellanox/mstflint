@@ -102,67 +102,69 @@
 
 #include <common/compatibility.h>
 
-
 class Expr
 {
 public:
     // Error codes
-    enum {
-        ERR_RPAR_EXP  = -1,   // Right parentheses expected
-        ERR_VALUE_EXP = -2,   // Value expected
-        ERR_BIN_EXP   = -3,   // Binary operation expected (normal at end)
-        ERR_DIV_ZERO  = -4,   // Divide zero attempt
-        ERR_BAD_NUMBER = -5,   // Bad constant syntax
-        ERR_BAD_NAME  = -6    // Name not resolved
+    enum
+    {
+        ERR_RPAR_EXP = -1,   // Right parentheses expected
+        ERR_VALUE_EXP = -2,  // Value expected
+        ERR_BIN_EXP = -3,    // Binary operation expected (normal at end)
+        ERR_DIV_ZERO = -4,   // Divide zero attempt
+        ERR_BAD_NUMBER = -5, // Bad constant syntax
+        ERR_BAD_NAME = -6    // Name not resolved
     };
-    Expr() : def_radix(10) { }
-    virtual ~Expr()        { }
+    Expr() : def_radix(10) {}
+    virtual ~Expr() {}
 
-    int     expr(char **pstr, u_int64_t *result);
+    int expr(char** pstr, u_int64_t* result);
 
     /* Current state of parsing. */
-    typedef enum {
-        was_bin,          /* was binary operation */
-        was_opr           /* was operand          */
+    typedef enum
+    {
+        was_bin, /* was binary operation */
+        was_opr  /* was operand          */
     } status;
 
     /* Token as it read by parser. */
-    typedef struct {
-        char      *beg;  /* pointer to token begining                         */
+    typedef struct
+    {
+        char* beg;       /* pointer to token begining                         */
         status sta;      /* state of parser before this token                 */
         int type;        /* type of token (any operation, VALUE or error code */
         u_int64_t value; /* if type == VALUE value of token                   */
     } token;
 
     /* Table of operations. */
-    typedef struct {
-        int type;         /* type of operation - internal number */
-        int pri;          /* priority of this operation          */
-        const char *st;         /* string which cause this operation   */
+    typedef struct
+    {
+        int type;       /* type of operation - internal number */
+        int pri;        /* priority of this operation          */
+        const char* st; /* string which cause this operation   */
     } table;
 
 private:
-
-    static char    *str;
-    static char    *initial_arg;
+    static char* str;
+    static char* initial_arg;
     static status state;
     int def_radix;
 
-    int     GetBinaryOp(u_int64_t *val, int priority);
-    int     GetUnaryOp(u_int64_t *val);
-    void    GetToken(token *pt);
-    void    UngetToken(token t);
-    int     GetNumb(u_int64_t *val);
-    int     GetName(u_int64_t *val);
-    int     valid_digit(char ch, int radix);
-    int     valid_name(char ch);
+    int GetBinaryOp(u_int64_t* val, int priority);
+    int GetUnaryOp(u_int64_t* val);
+    void GetToken(token* pt);
+    void UngetToken(token t);
+    int GetNumb(u_int64_t* val);
+    int GetName(u_int64_t* val);
+    int valid_digit(char ch, int radix);
+    int valid_name(char ch);
 
-    void    ErrorReport(const std::string& msg);
+    void ErrorReport(const std::string& msg);
 
     /*
      * Pure virtual methods. You must define them to use expr.
      */
-    virtual int  ResolveName(char *name, u_int64_t *val) = 0;
+    virtual int ResolveName(char* name, u_int64_t* val) = 0;
     virtual void Error(const std::string& msg) = 0;
 };
 

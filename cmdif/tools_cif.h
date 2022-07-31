@@ -38,92 +38,93 @@
 #define TOOLS_CIF_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <mtcr.h>
 #include <tools_layouts/tools_open_layouts.h>
 
+    /**
+     * tcif_query_dev_cap:
+     * @param[in]  dev           A pointer to a device context.
+     * @param[in]  offs          offset in even dword to read from the DEV_CAP vector
+     * @param[out] data          Quad-word read from the device capabilities vector from offset: offs
 
-/**
- * tcif_query_dev_cap:
- * @param[in]  dev           A pointer to a device context.
- * @param[in]  offs          offset in even dword to read from the DEV_CAP vector
- * @param[out] data          Quad-word read from the device capabilities vector from offset: offs
+     * @return     One of the MError* values, or a raw
+     **/
+    MError tcif_query_dev_cap(mfile* dev, u_int32_t offs, u_int64_t* data);
 
- * @return     One of the MError* values, or a raw
- **/
-MError tcif_query_dev_cap(mfile *dev, u_int32_t offs, u_int64_t *data);
+    /**
+     * tcif_query_global_def_params:
+     * @param[in]     dev           A pointer to a device context.
+     * @param[in/out] global_params pointer to global params struct
 
-/**
- * tcif_query_global_def_params:
- * @param[in]     dev           A pointer to a device context.
- * @param[in/out] global_params pointer to global params struct
+     * @return     One of the MError* values, or a raw
+     **/
+    MError tcif_query_global_def_params(mfile* dev, struct tools_open_query_def_params_global* global_params);
 
- * @return     One of the MError* values, or a raw
- **/
-MError tcif_query_global_def_params(mfile *dev, struct tools_open_query_def_params_global *global_params);
+    /**
+     * tcif_query_per_port_def_params:
+     * @param[in]     dev           A pointer to a device context.
+     * @param[in]     port          Port that the query will be performed on (1 or 2)
+     * @param[in/out] port_params   Pointer to port params struct
 
-/**
- * tcif_query_per_port_def_params:
- * @param[in]     dev           A pointer to a device context.
- * @param[in]     port          Port that the query will be performed on (1 or 2)
- * @param[in/out] port_params   Pointer to port params struct
+     * @return     One of the MError* values, or a raw
+     **/
+    MError tcif_query_per_port_def_params(mfile* dev,
+                                          u_int8_t port,
+                                          struct tools_open_query_def_params_per_port* port_params);
 
- * @return     One of the MError* values, or a raw
- **/
-MError tcif_query_per_port_def_params(mfile *dev, u_int8_t port, struct tools_open_query_def_params_per_port *port_params);
+    /**
+     * tcif_qpc_context_read:
+     * @param[in]     dev           A pointer to a device context.
+     * @param[in]     qpn           QP Number
+     * @param[in]     source        QP Source
+     * @param[in]     data          Data that was read
+     *
+     * @return     One of the MError* values, or a raw
+     **/
+    MError tcif_qpc_context_read(mfile* dev, u_int32_t qpn, u_int32_t source, u_int8_t* data, u_int32_t len);
 
-/**
- * tcif_qpc_context_read:
- * @param[in]     dev           A pointer to a device context.
- * @param[in]     qpn           QP Number
- * @param[in]     source        QP Source
- * @param[in]     data          Data that was read
- *
- * @return     One of the MError* values, or a raw
- **/
-MError tcif_qpc_context_read(mfile *dev, u_int32_t qpn, u_int32_t source, u_int8_t *data, u_int32_t len);
+    /**
+     * tcif_qpc_context_write:
+     * @param[in]     dev           A pointer to a device context.
+     * @param[in]     qpn           QP Number
+     * @param[in]     source        QP Source
+     * @param[in]     data          Data to be written
+     *
+     * @return     One of the MError* values, or a raw
+     **/
+    MError tcif_qpc_context_write(mfile* dev, u_int32_t qpn, u_int32_t source, u_int8_t* data, u_int32_t len);
 
-/**
- * tcif_qpc_context_write:
- * @param[in]     dev           A pointer to a device context.
- * @param[in]     qpn           QP Number
- * @param[in]     source        QP Source
- * @param[in]     data          Data to be written
- *
- * @return     One of the MError* values, or a raw
- **/
-MError tcif_qpc_context_write(mfile *dev, u_int32_t qpn, u_int32_t source, u_int8_t *data, u_int32_t len);
+    /**
+     * tcif_hw_access:
+     * @param[in]  dev           A pointer to a device context.
+     * @param[in]  key           key with which we attempt to lock/unlock the cr-space (should be 0 for locking)
+     * @param[out] lock_unlock   1-lock , 0-unlock
 
+     * @return     One of the MError* values, or a raw
+     **/
+    MError tcif_hw_access(mfile* dev, u_int64_t key, int lock_unlock);
 
-/**
- * tcif_hw_access:
- * @param[in]  dev           A pointer to a device context.
- * @param[in]  key           key with which we attempt to lock/unlock the cr-space (should be 0 for locking)
- * @param[out] lock_unlock   1-lock , 0-unlock
+    /**
+     * tcif_cr_mailbox_supported:
+     * @param[in]  dev           A pointer to a device context.
 
- * @return     One of the MError* values, or a raw
- **/
-MError tcif_hw_access(mfile *dev, u_int64_t key, int lock_unlock);
+     * @return     ME_OK                - cr mailbox supported
+     *             ME_SEM_LOCKED        - tools HCR semaphore locked
+     *             ME_CMDIF_NOT_SUPP    - cr mailbox not supported
+     **/
+    MError tcif_cr_mbox_supported(mfile* dev);
 
-/**
- * tcif_cr_mailbox_supported:
- * @param[in]  dev           A pointer to a device context.
+    /**
+     * tcif_err2str:
+     * @param[in]  rc            return code from one of the above functions
 
- * @return     ME_OK                - cr mailbox supported
- *             ME_SEM_LOCKED        - tools HCR semaphore locked
- *             ME_CMDIF_NOT_SUPP    - cr mailbox not supported
- **/
-MError tcif_cr_mbox_supported(mfile *dev);
-
-/**
- * tcif_err2str:
- * @param[in]  rc            return code from one of the above functions
-
- * @return     string describing the error occurred.
- **/
-const char* tcif_err2str(MError rc);
+     * @return     string describing the error occurred.
+     **/
+    const char* tcif_err2str(MError rc);
 
 #ifdef __cplusplus
 }

@@ -36,10 +36,11 @@
 #ifndef __ERR_MSGS__
 #define __ERR_MSGS__
 
-enum {
+enum
+{
     MLX_FWM_SUCCESS = 0,
     ERR_CODE_QUERY_FAILED = 1,
-    ERR_CODE_PROG_FAILED  = 2,
+    ERR_CODE_PROG_FAILED = 2,
     ERR_CODE_BAD_CMD_ARGS = 3,
     ERR_CODE_CREATE_LOG_FAIL = 4,
     ERR_CODE_FETCH_LOCAL_DEVICES_FAIL = 5,
@@ -56,7 +57,7 @@ enum {
     ERR_CODE_MIXED_VERSIONS_FOUND = 16,
     ERR_CODE_FILE_PARSE_FAILED = 17,
     ERR_CODE_INTERRUPTED = 18,
-    ERR_CODE_NOT_ROOT    = 19,
+    ERR_CODE_NOT_ROOT = 19,
     ERR_CODE_NO_DEVICES_FOUND = 20,
     ERR_CODE_NO_DEVICES_FOUND_LVIM = 171,
     ERR_CODE_CLEAR_SEMAPORE = 21,
@@ -70,33 +71,33 @@ enum {
     ERR_CODES_NUM
 };
 
-#define ERR_MSG_QUERY_FAILED             "Failed to query one or more devices"
-#define ERR_MSG_PROG_FAILED              "Failed to program device"
-#define ERR_MSG_BAD_CMD_ARGS             "Bad command line arguments"
-#define ERR_MSG_CREATE_LOG_FAIL          "Failed to create log file"
+#define ERR_MSG_QUERY_FAILED "Failed to query one or more devices"
+#define ERR_MSG_PROG_FAILED "Failed to program device"
+#define ERR_MSG_BAD_CMD_ARGS "Bad command line arguments"
+#define ERR_MSG_CREATE_LOG_FAIL "Failed to create log file"
 #define ERR_MSG_FETCH_LOCAL_DEVICES_FAIL "Failed during device query"
-#define ERR_MSG_SERVER_DOWNLOAD_FAILED   "Failed to download from server"
-#define ERR_MSG_MEM_ALLOC_FAIL           "Failed to allocate memory"
-#define ERR_MSG_INTERNAL_ERR             "Internal Error"
-#define ERR_MSG_IMG_NOT_FOUND            "No relevant image found for one or more devices"
-#define ERR_MSG_CREATE_OUTPUT_FILE_FAIL  "Failed to create output file"
-#define ERR_MSG_MULTI_IMG_SRC_FOUND      "Failed due to multiple image source ambiguity"
-#define ERR_MSG_BAD_INI_FILE             "Error parsing ini file"
-#define ERR_MSG_SERVER_RETRIEVE_FAIL     "Failed to retrieve from server"
-#define ERR_MSG_WRITE_FILE_FAIL          "Failed to write file"
-#define ERR_MSG_EXTRACT_IMAGE_FAIL       "Failed to extract image"
-#define ERR_MSG_MIXED_VERSIONS_FOUND     "Mixed component versions found"
-#define ERR_MSG_FILE_PARSE_FAILED        "Failed while parsing file"
-#define ERR_MSG_INTERRUPTED              "Interrupted by user"
-#define ERR_MSG_NOT_ROOT                 "User is not root"
-#define ERR_MSG_NO_DEVICES_FOUND         "No devices found or specified"
-#define ERR_MSG_CLEAR_SEMAPORE           "Clear semaphore failure"
-#define ERR_MSG_UNKNOWN_EXPANSION_ROM    "Unknown expansion rom"
-#define ERR_MSG_UNSUPPORTED_DEVICE       "Device is not supported in online update"
+#define ERR_MSG_SERVER_DOWNLOAD_FAILED "Failed to download from server"
+#define ERR_MSG_MEM_ALLOC_FAIL "Failed to allocate memory"
+#define ERR_MSG_INTERNAL_ERR "Internal Error"
+#define ERR_MSG_IMG_NOT_FOUND "No relevant image found for one or more devices"
+#define ERR_MSG_CREATE_OUTPUT_FILE_FAIL "Failed to create output file"
+#define ERR_MSG_MULTI_IMG_SRC_FOUND "Failed due to multiple image source ambiguity"
+#define ERR_MSG_BAD_INI_FILE "Error parsing ini file"
+#define ERR_MSG_SERVER_RETRIEVE_FAIL "Failed to retrieve from server"
+#define ERR_MSG_WRITE_FILE_FAIL "Failed to write file"
+#define ERR_MSG_EXTRACT_IMAGE_FAIL "Failed to extract image"
+#define ERR_MSG_MIXED_VERSIONS_FOUND "Mixed component versions found"
+#define ERR_MSG_FILE_PARSE_FAILED "Failed while parsing file"
+#define ERR_MSG_INTERRUPTED "Interrupted by user"
+#define ERR_MSG_NOT_ROOT "User is not root"
+#define ERR_MSG_NO_DEVICES_FOUND "No devices found or specified"
+#define ERR_MSG_CLEAR_SEMAPORE "Clear semaphore failure"
+#define ERR_MSG_UNKNOWN_EXPANSION_ROM "Unknown expansion rom"
+#define ERR_MSG_UNSUPPORTED_DEVICE "Device is not supported in online update"
 #define ERR_MSG_ONLINE_UPDATE_CONNECTION_ERROR "Failed to communicate with Server"
-#define ERR_MSG_ONLINE_UPDATE_INTERNAL_ERR   "Internal Error in online update"
-#define ERR_MSG_IVALID_CHOICE                "Select choice is invalid"
-#define ERR_MSG_NONE_FAIL_SAFE               "Burn is fail safe, None fail safe required"
-#define ERR_MSG_SERVER_QUERY                 "Failed to query PSIDs from server"
+#define ERR_MSG_ONLINE_UPDATE_INTERNAL_ERR "Internal Error in online update"
+#define ERR_MSG_IVALID_CHOICE "Select choice is invalid"
+#define ERR_MSG_NONE_FAIL_SAFE "Burn is fail safe, None fail safe required"
+#define ERR_MSG_SERVER_QUERY "Failed to query PSIDs from server"
 
 #endif

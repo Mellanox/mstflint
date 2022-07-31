@@ -42,7 +42,6 @@
 #include "err_msgs.h"
 #include <iomanip>
 
-
 string int2str(int n)
 {
     stringstream num;
@@ -52,7 +51,6 @@ string int2str(int n)
     str = num.str();
     return str;
 }
-
 
 string hex2str(int n, int w = 1)
 {
@@ -64,60 +62,74 @@ string hex2str(int n, int w = 1)
     return str;
 }
 
-
-int OutputFmts::createInventoryXML(vector<MlnxDev*> &devs, PsidLookupDB &psidLookupDB, int result, string msg, string &buffer, int buf_is_file)
+int OutputFmts::createInventoryXML(vector<MlnxDev*>& devs,
+                                   PsidLookupDB& psidLookupDB,
+                                   int result,
+                                   string msg,
+                                   string& buffer,
+                                   int buf_is_file)
 {
     int res = 0;
 #ifdef USE_XML
     xmlDocPtr doc = NULL;
-    xmlNodePtr root_node = NULL, devices_node = NULL, node = NULL; //device_node = NULL, fw_node = NULL, ;
+    xmlNodePtr root_node = NULL, devices_node = NULL, node = NULL; // device_node = NULL, fw_node = NULL, ;
     doc = xmlNewDoc(BAD_CAST "1.0");
 
     root_node = xmlNewNode(NULL, BAD_CAST "SVMInventory");
     xmlNewProp(root_node, BAD_CAST "lang", BAD_CAST "en");
     xmlDocSetRootElement(doc, root_node);
 
-    for (unsigned i = 0; i < devs.size(); i++) {
+    for (unsigned i = 0; i < devs.size(); i++)
+    {
         devices_node = xmlNewChild(root_node, NULL, BAD_CAST "Device", NULL);
         xmlNewProp(devices_node, BAD_CAST "vendorID", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.vend_id).c_str());
         xmlNewProp(devices_node, BAD_CAST "deviceID", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.dev_id).c_str());
-        xmlNewProp(devices_node, BAD_CAST "subDeviceID", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.subsys_id, 4).c_str());
-        xmlNewProp(devices_node, BAD_CAST "subVendorID", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.subsys_vend_id).c_str());
+        xmlNewProp(devices_node, BAD_CAST "subDeviceID",
+                   BAD_CAST hex2str(devs[i]->getDevInfo()->pci.subsys_id, 4).c_str());
+        xmlNewProp(devices_node, BAD_CAST "subVendorID",
+                   BAD_CAST hex2str(devs[i]->getDevInfo()->pci.subsys_vend_id).c_str());
         xmlNewProp(devices_node, BAD_CAST "domain", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.domain).c_str());
         xmlNewProp(devices_node, BAD_CAST "bus", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.bus).c_str());
         xmlNewProp(devices_node, BAD_CAST "device", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.dev).c_str());
         xmlNewProp(devices_node, BAD_CAST "function", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.func).c_str());
-        if (!devs[i]->isQuerySuccess()) {
+        if (!devs[i]->isQuerySuccess())
+        {
             continue;
         }
-        xmlNewProp(devices_node, BAD_CAST "display", BAD_CAST psidLookupDB.getProdDesc(devs[i]->getBoardTypeId()).c_str());
+        xmlNewProp(devices_node, BAD_CAST "display",
+                   BAD_CAST psidLookupDB.getProdDesc(devs[i]->getBoardTypeId()).c_str());
         node = xmlNewChild(devices_node, NULL, BAD_CAST "Application", NULL);
         xmlNewProp(node, BAD_CAST "componentType", BAD_CAST "FRMW");
         xmlNewProp(node, BAD_CAST "version", BAD_CAST devs[i]->getFWVersion(false).c_str());
         xmlNewProp(node, BAD_CAST "display", BAD_CAST psidLookupDB.getProdDesc(devs[i]->getBoardTypeId()).c_str());
-
     }
 
-    if (result) {
+    if (result)
+    {
         node = xmlNewChild(root_node, NULL, BAD_CAST "SPStatus", NULL);
         xmlNewProp(node, BAD_CAST "result", BAD_CAST "false");
         node = xmlNewChild(node, NULL, BAD_CAST "Message", BAD_CAST msg.c_str());
         xmlNewProp(node, BAD_CAST "id", BAD_CAST int2str(result).c_str());
     }
 
-    if (buf_is_file) {
+    if (buf_is_file)
+    {
         int rc = xmlSaveFormatFileEnc(buffer.c_str(), doc, "UTF-8", 1);
-        if (rc == -1) {
+        if (rc == -1)
+        {
             res = -1;
         }
-    } else {
-        xmlChar *doc_txt_ptr;
-        int doc_txt_len;
+    }
+    else
+    {
+        xmlChar* doc_txt_ptr = NULL;
+        int doc_txt_len = 0;
 
         xmlDocDumpFormatMemoryEnc(doc, &doc_txt_ptr, &doc_txt_len, "UTF-8", 1);
-        if (doc_txt_len) {
+        if (doc_txt_len)
+        {
             buffer = (char*)doc_txt_ptr;
-            //xmlFree(doc_txt_ptr); //TODO: This is a leak, temporarily only until windows crash is resolved!!
+            // xmlFree(doc_txt_ptr); //TODO: This is a leak, temporarily only until windows crash is resolved!!
         }
     }
 
@@ -127,8 +139,12 @@ int OutputFmts::createInventoryXML(vector<MlnxDev*> &devs, PsidLookupDB &psidLoo
     return res;
 }
 
-
-int OutputFmts::createBurnXML(vector<MlnxDev*> &devs, map<string, PsidQueryItem> &psidUpdateInfo, PsidLookupDB &psidLookupDB, string &buffer, int buf_is_file, int compareFFV)
+int OutputFmts::createBurnXML(vector<MlnxDev*>& devs,
+                              map<string, PsidQueryItem>& psidUpdateInfo,
+                              PsidLookupDB& psidLookupDB,
+                              string& buffer,
+                              int buf_is_file,
+                              int compareFFV)
 {
     int res = 0;
 #ifdef USE_XML
@@ -140,17 +156,22 @@ int OutputFmts::createBurnXML(vector<MlnxDev*> &devs, map<string, PsidQueryItem>
     root_node = xmlNewNode(NULL, BAD_CAST "SVMExecution");
     xmlNewProp(root_node, BAD_CAST "lang", BAD_CAST "en");
     xmlDocSetRootElement(doc, root_node);
-    for (unsigned i = 0; i < devs.size(); i++) {
+    for (unsigned i = 0; i < devs.size(); i++)
+    {
         devices_node = xmlNewChild(root_node, NULL, BAD_CAST "Device", NULL);
         xmlNewProp(devices_node, BAD_CAST "vendorID", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.vend_id).c_str());
         xmlNewProp(devices_node, BAD_CAST "deviceID", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.dev_id).c_str());
-        xmlNewProp(devices_node, BAD_CAST "subDeviceID", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.subsys_id, 4).c_str());
-        xmlNewProp(devices_node, BAD_CAST "subVendorID", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.subsys_vend_id).c_str());
+        xmlNewProp(devices_node, BAD_CAST "subDeviceID",
+                   BAD_CAST hex2str(devs[i]->getDevInfo()->pci.subsys_id, 4).c_str());
+        xmlNewProp(devices_node, BAD_CAST "subVendorID",
+                   BAD_CAST hex2str(devs[i]->getDevInfo()->pci.subsys_vend_id).c_str());
         xmlNewProp(devices_node, BAD_CAST "bus", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.bus).c_str());
         xmlNewProp(devices_node, BAD_CAST "device", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.dev).c_str());
         xmlNewProp(devices_node, BAD_CAST "function", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.func).c_str());
-        xmlNewProp(devices_node, BAD_CAST "display", BAD_CAST psidLookupDB.getProdDesc(devs[i]->getBoardTypeId()).c_str());
-        if (!devs[i]->isQuerySuccess()) {
+        xmlNewProp(devices_node, BAD_CAST "display",
+                   BAD_CAST psidLookupDB.getProdDesc(devs[i]->getBoardTypeId()).c_str());
+        if (!devs[i]->isQuerySuccess())
+        {
             node = xmlNewChild(devices_node, NULL, BAD_CAST "SPStatus", NULL);
             xmlNewProp(node, BAD_CAST "result", BAD_CAST "false");
             node = xmlNewChild(node, NULL, BAD_CAST "Message", BAD_CAST "Failed to query the device.");
@@ -162,12 +183,16 @@ int OutputFmts::createBurnXML(vector<MlnxDev*> &devs, map<string, PsidQueryItem>
         xmlNewProp(app_node, BAD_CAST "version", BAD_CAST devs[i]->getFWVersion(false).c_str());
         xmlNewProp(app_node, BAD_CAST "display", BAD_CAST psidLookupDB.getProdDesc(devs[i]->getBoardTypeId()).c_str());
 
-        if (psidUpdateInfo.find(devs[i]->getPsid()) != psidUpdateInfo.end()) {
-            if (psidUpdateInfo[devs[i]->getPsid()].found) {
+        if (psidUpdateInfo.find(devs[i]->getPsid()) != psidUpdateInfo.end())
+        {
+            if (psidUpdateInfo[devs[i]->getPsid()].found)
+            {
                 node = xmlNewChild(app_node, NULL, BAD_CAST "Package", NULL);
-                ImgVersion *fwImgVer = (ImgVersion*)psidUpdateInfo[devs[i]->getPsid()].findImageVersion("FW");
-                if (fwImgVer != NULL) {
-                    xmlNewProp(node, BAD_CAST "version", BAD_CAST fwImgVer->getPrintableVersion(compareFFV, false).c_str());
+                ImgVersion* fwImgVer = (ImgVersion*)psidUpdateInfo[devs[i]->getPsid()].findImageVersion("FW");
+                if (fwImgVer != NULL)
+                {
+                    xmlNewProp(node, BAD_CAST "version",
+                               BAD_CAST fwImgVer->getPrintableVersion(compareFFV, false).c_str());
                 }
             }
         }
@@ -175,63 +200,82 @@ int OutputFmts::createBurnXML(vector<MlnxDev*> &devs, map<string, PsidQueryItem>
 
         int burn_res = ERR_CODE_PROG_FAILED;
         string msg = "Update failure.";
-        if (devs[i]->isBurnSuccess() == 0) {
+        if (devs[i]->isBurnSuccess() == 0)
+        {
             msg += " ";
             msg += devs[i]->getLastErrMsg();
-        } else if (devs[i]->isBurnSuccess() == 1) {
+        }
+        else if (devs[i]->isBurnSuccess() == 1)
+        {
             boot_required = 1;
             burn_res = MLX_FWM_SUCCESS;
             msg = "Update success.";
-        } else { // == -1
-            if (psidUpdateInfo.find(devs[i]->getPsid()) != psidUpdateInfo.end()) {
-                if (!psidUpdateInfo[devs[i]->getPsid()].found) {
+        }
+        else
+        { // == -1
+            if (psidUpdateInfo.find(devs[i]->getPsid()) != psidUpdateInfo.end())
+            {
+                if (!psidUpdateInfo[devs[i]->getPsid()].found)
+                {
                     msg += " No relevant image file was found for this device";
-                } else if (psidUpdateInfo[devs[i]->getPsid()].found > 1) {
+                }
+                else if (psidUpdateInfo[devs[i]->getPsid()].found > 1)
+                {
                     msg += " Multiple image sources found for this device";
-                } else {
-                    ImgVersion *fwImgVer = (ImgVersion*)psidUpdateInfo[devs[i]->getPsid()].findImageVersion("FW");
-                    if (fwImgVer != NULL) {
-                        if ((devs[i]->compareFWVer(*fwImgVer) <= 0) && !_force_mode) {
+                }
+                else
+                {
+                    ImgVersion* fwImgVer = (ImgVersion*)psidUpdateInfo[devs[i]->getPsid()].findImageVersion("FW");
+                    if (fwImgVer != NULL)
+                    {
+                        if ((devs[i]->compareFWVer(*fwImgVer) <= 0) && !_force_mode)
+                        {
                             burn_res = MLX_FWM_SUCCESS;
                             msg = "Update success. No update required.";
                         }
                     }
                 }
-            } else {
+            }
+            else
+            {
                 msg = "Update failure. No relevant image file was found for this device";
             }
         }
 
-        xmlNewProp(node, BAD_CAST "result", BAD_CAST(burn_res ? "false" : "true" ));
+        xmlNewProp(node, BAD_CAST "result", BAD_CAST(burn_res ? "false" : "true"));
         node = xmlNewChild(node, NULL, BAD_CAST "Message", BAD_CAST msg.c_str());
         xmlNewProp(node, BAD_CAST "id", BAD_CAST int2str(burn_res).c_str());
     }
     node = xmlNewChild(root_node, NULL, BAD_CAST "RebootRequired", BAD_CAST int2str(boot_required).c_str());
 
-    if (buf_is_file) {
+    if (buf_is_file)
+    {
         int rc = xmlSaveFormatFileEnc(buffer.c_str(), doc, "UTF-8", 1);
-        if (rc == -1) {
+        if (rc == -1)
+        {
             res = -1;
         }
-    } else {
-        xmlChar *doc_txt_ptr;
-        int doc_txt_len;
+    }
+    else
+    {
+        xmlChar* doc_txt_ptr = NULL;
+        int doc_txt_len = 0;
 
         xmlDocDumpFormatMemoryEnc(doc, &doc_txt_ptr, &doc_txt_len, "UTF-8", 1);
-        if (doc_txt_len) {
+        if (doc_txt_len)
+        {
             buffer = (char*)doc_txt_ptr;
-            //xmlFree(doc_txt_ptr); //TODO: This is a leak, temporarily only until windows crash is resolved!!
+            // xmlFree(doc_txt_ptr); //TODO: This is a leak, temporarily only until windows crash is resolved!!
         }
     }
-    (void) node;
+    (void)node;
     xmlFreeDoc(doc);
     xmlCleanupParser();
 #endif
     return res;
 }
 
-
-int OutputFmts::createFailXML(int result, int update_query_, string &buffer, int buf_is_file)
+int OutputFmts::createFailXML(int result, int update_query_, string& buffer, int buf_is_file)
 {
     int res = 0;
 #ifdef USE_XML
@@ -239,9 +283,12 @@ int OutputFmts::createFailXML(int result, int update_query_, string &buffer, int
     xmlNodePtr root_node = NULL, node = NULL;
     doc = xmlNewDoc(BAD_CAST "1.0");
 
-    if (update_query_ == 0) {
+    if (update_query_ == 0)
+    {
         root_node = xmlNewNode(NULL, BAD_CAST "SVMInventory");
-    } else {
+    }
+    else
+    {
         root_node = xmlNewNode(NULL, BAD_CAST "SVMExecution");
     }
     xmlNewProp(root_node, BAD_CAST "lang", BAD_CAST "en");
@@ -249,41 +296,46 @@ int OutputFmts::createFailXML(int result, int update_query_, string &buffer, int
 
     node = xmlNewChild(root_node, NULL, BAD_CAST "SPStatus", NULL);
     xmlNewProp(node, BAD_CAST "result", BAD_CAST "false");
-    if (update_query_ == 1) {
+    if (update_query_ == 1)
+    {
         xmlNewProp(node, BAD_CAST "code", BAD_CAST int2str(result).c_str());
     }
     node = xmlNewChild(node, NULL, BAD_CAST "Message", BAD_CAST getErrStr(result).c_str());
     xmlNewProp(node, BAD_CAST "id", BAD_CAST int2str(result).c_str());
 
-    if (update_query_ == 1) {
+    if (update_query_ == 1)
+    {
         node = xmlNewChild(root_node, NULL, BAD_CAST "RebootRequired", BAD_CAST "0");
     }
 
-    if (buf_is_file) {
+    if (buf_is_file)
+    {
         int rc = xmlSaveFormatFileEnc(buffer.c_str(), doc, "UTF-8", 1);
-        if (rc == -1) {
+        if (rc == -1)
+        {
             res = -1;
         }
-    } else {
-        xmlChar *doc_txt_ptr;
-        int doc_txt_len;
+    }
+    else
+    {
+        xmlChar* doc_txt_ptr = NULL;
+        int doc_txt_len = 0;
 
         xmlDocDumpFormatMemoryEnc(doc, &doc_txt_ptr, &doc_txt_len, "UTF-8", 1);
-        if (doc_txt_len) {
+        if (doc_txt_len)
+        {
             buffer = (char*)doc_txt_ptr;
-            //xmlFree(doc_txt_ptr); //TODO: This is a leak, temporarily only until windows crash is resolved!!
+            // xmlFree(doc_txt_ptr); //TODO: This is a leak, temporarily only until windows crash is resolved!!
         }
     }
-    (void) node;
+    (void)node;
     xmlFreeDoc(doc);
     xmlCleanupParser();
 #endif
     return res;
 }
 
-
 void OutputFmts::setForceModeParam(bool force_mode)
 {
     _force_mode = force_mode;
 }
-

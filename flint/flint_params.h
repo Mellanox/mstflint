@@ -47,7 +47,8 @@
 
 using namespace std;
 
-typedef enum {
+typedef enum
+{
     SC_No_Cmd = 0,
     SC_Burn,
     SC_Query,
@@ -94,9 +95,10 @@ typedef enum {
     SC_Export_Public_Key
 } sub_cmd_t;
 
-class FlintParams {
+class FlintParams
+{
 public:
-    //add more params
+    // add more params
     FlintParams();
     ~FlintParams();
     bool device_specified;
@@ -188,7 +190,7 @@ public:
     bool hsm_password_specified;
     string hsm_password;
     bool linkx_control;
-    int  cableDeviceIndex;
+    int cableDeviceIndex;
     int cableDeviceSize;
     bool cable_device_index_specified;
     bool cable_device_size_specified;
@@ -196,12 +198,13 @@ public:
     bool activate;
     bool download_downstream_specified;
     bool downstream_device_ids_specified;
-    std::vector<int>  downstream_device_ids;
+    std::vector<int> downstream_device_ids;
     bool download_transfer;
     u_int8_t activate_delay_sec;
     string openssl_engine;
     string openssl_key_id;
     bool openssl_engine_usage_specified;
+    u_int32_t cert_chain_index;
 };
 
 #endif

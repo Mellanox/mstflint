@@ -417,7 +417,6 @@ mlxCfgStatus MlxCfg::getNumberFromString(const char* str, u_int32_t& num)
 
 mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
 {
-    mlxCfgStatus status = MLX_CFG_OK;
     int i = 1;
     for (; i < argc; i++)
     {
@@ -449,8 +448,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
             Device_Type dType = getDeviceTypeFromString(argv[i]);
             if (dType == Device_Type::UNSUPPORTED_DEVICE)
             {
-                return err(
-                  true, "Unsupported device name given, please specify \"switch\" or \"hca\"device type");
+                return err(true, "Unsupported device name given, please specify \"switch\" or \"hca\"device type");
             }
             _mlxParams.deviceType = dType;
         }
@@ -615,8 +613,8 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     }
 
     if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw ||
-         _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply)
-         && _mlxParams.device.length() == 0)
+         _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply) &&
+        _mlxParams.device.length() == 0)
     {
         return err(true, "%s command expects device to be specified.",
                    _mlxParams.cmd == Mc_Set ?
@@ -627,10 +625,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
                      "get_raw" :
                      _mlxParams.cmd == Mc_Clr_Sem ?
                      "clear_semaphore" :
-                     _mlxParams.cmd == Mc_Backup ?
-                     "backup" :
-                     _mlxParams.cmd == Mc_Apply ?
-                     "apply" : "show_confs");
+                     _mlxParams.cmd == Mc_Backup ? "backup" : _mlxParams.cmd == Mc_Apply ? "apply" : "show_confs");
     }
     if (((_mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Get_Raw) && _mlxParams.rawTlvFile.size() == 0))
     {
@@ -665,22 +660,20 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
 
     if (_mlxParams.cmd == Mc_CreateConf)
     {
-        if (!_mlxParams.privPemFile.empty() &&
-            (!_mlxParams.opensslEngine.empty() || !_mlxParams.opensslKeyId.empty()))
+        if (!_mlxParams.privPemFile.empty() && (!_mlxParams.opensslEngine.empty() || !_mlxParams.opensslKeyId.empty()))
         {
             return err(true,
-                        "Please provide either private pem file or OpenSSL engine and key identifier "
-                        "but not both of them");
+                       "Please provide either private pem file or OpenSSL engine and key identifier "
+                       "but not both of them");
         }
 
-        if (!_mlxParams.keyPairUUID.empty() ^
-            (!_mlxParams.privPemFile.empty() ||
-                (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty())))
+        if (!_mlxParams.keyPairUUID.empty() ^ (!_mlxParams.privPemFile.empty() ||
+                                               (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty())))
         {
             return err(true,
-                        "if you want to sign the configuration file you have to "
-                        "provide key pair UUID file with either private pem file "
-                        "or OpenSSL engine and key identifier");
+                       "if you want to sign the configuration file you have to "
+                       "provide key pair UUID file with either private pem file "
+                       "or OpenSSL engine and key identifier");
         }
     }
 

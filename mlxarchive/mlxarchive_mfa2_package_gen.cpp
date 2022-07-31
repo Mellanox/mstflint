@@ -39,16 +39,14 @@
  *      Author: Ahmad Soboh
  */
 
-
 #include "mlxarchive_mfa2_package_gen.h"
 #include "mlxarchive_mfa2_builder.h"
 
-void MFA2PackageGen::generateBinFromFWDirectory(const string& directory, const string& version,
-        vector<u_int8_t>& buff) const
+void MFA2PackageGen::generateBinFromFWDirectory(const string& directory,
+                                                const string& version,
+                                                vector<u_int8_t>& buff) const
 {
     FWDirectoryBuilder builder(version, directory);
-    MFA2 mfa2(builder.getPackageDescriptor(),
-            builder.getDeviceDescriptors(),
-            builder.getComponents());
+    MFA2 mfa2(builder.getPackageDescriptor(), builder.getDeviceDescriptors(), builder.getComponents());
     mfa2.generateBinary(buff);
 }

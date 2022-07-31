@@ -40,15 +40,17 @@
 
 class PldmRecordDescriptor;
 
-class PldmDevIdRecord {
+class PldmDevIdRecord
+{
 public:
-    PldmDevIdRecord(u_int8_t componentBitmapBitLength=0);
+    PldmDevIdRecord(u_int8_t componentBitmapBitLength = 0);
     virtual ~PldmDevIdRecord();
-    bool unpack(PldmBuffer & buff);
+    bool unpack(PldmBuffer& buff);
     int getComponentImageIndex() const;
     std::string getDevicePsid() const;
     std::string getDescription() const;
-    void print(FILE * fp);
+    void print(FILE* fp);
+
 private:
     u_int8_t componentBitmapBitLength;
 
@@ -58,11 +60,10 @@ private:
     u_int8_t componentImageSetVersionStringType;
     u_int8_t componentImageSetVersionStringLength;
     u_int16_t firmwareDevicePackageDataLength;
-    u_int8_t * applicableComponents;
+    u_int8_t* applicableComponents;
     std::string componentImageSetVersionString;
-    std::vector<PldmRecordDescriptor *> recordDescriptors;
-    u_int8_t * firmwareDevicePackageData;
+    std::vector<PldmRecordDescriptor*> recordDescriptors;
+    u_int8_t* firmwareDevicePackageData;
 };
 
 #endif /* _PLDM_DEV_ID_RECORD_HDR_ */
-

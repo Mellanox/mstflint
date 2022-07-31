@@ -31,12 +31,12 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.20.1, eranj@mellanox.co.il)
+AC_INIT(mstflint, 4.21.0, eranj@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.20.1"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.21.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -283,7 +283,7 @@ PKG_CHECK_MODULES([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
     JSON_SYSTEM_AVAILABLE="no"
     JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
     AC_SUBST(JSON_CFLAGS)
-    JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.a'
+    JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
     AC_SUBST(JSON_LIBS)
 ])
 AM_CONDITIONAL([USE_LOCAL_JSON], [test "$JSON_SYSTEM_AVAILABLE" = no])

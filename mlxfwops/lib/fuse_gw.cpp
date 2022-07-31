@@ -35,8 +35,7 @@
 #include <bit_slice.h>
 #include "fuse_gw.h"
 
-FuseGW::FuseGW(mfile* mf): _mf(mf), _gw_address(0), _data_address(0), _data_bit_offset(0), _data_bit_len(0)
-{};
+FuseGW::FuseGW(mfile* mf) : _mf(mf), _gw_address(0), _data_address(0), _data_bit_offset(0), _data_bit_len(0){};
 
 void FuseGW::setGWAddress(u_int32_t address)
 {
@@ -61,14 +60,17 @@ void FuseGW::setFieldBitLen(size_t len)
 void FuseGW::getData(u_int32_t& data)
 {
     // Read from GW
-    try {
+    try
+    {
         lock();
         executeReadCommand();
         waitForResult();
         readResult(data);
         unlock();
-    } catch (const char* msg) {
-        unlock();   
+    }
+    catch (const char* msg)
+    {
+        unlock();
         throw msg;
     }
 }
@@ -77,7 +79,7 @@ void FuseGW::getData(u_int32_t& data)
 // Private methods
 // ---------------
 
-void FuseGW::lock() 
+void FuseGW::lock()
 {
     waitForGWLockState(_gw_address, 0);
 
@@ -85,20 +87,22 @@ void FuseGW::lock()
     waitForGWLockState(_gw_address + 4, 1);
 }
 
-void FuseGW::waitForGWLockState(u_int32_t address, u_int32_t requiredState) 
+void FuseGW::waitForGWLockState(u_int32_t address, u_int32_t requiredState)
 {
     const u_int32_t MAX_ITER_NUM = 100;
     const u_int32_t SLEEP_TIME = 10; // [msec]
-    u_int32_t iter_num = 0;    
+    u_int32_t iter_num = 0;
     u_int32_t currentState = getCurrentGWState(address);
 
-    while (currentState != requiredState) {
+    while (currentState != requiredState)
+    {
         msleep(SLEEP_TIME);
 
         currentState = getCurrentGWState(address);
 
-        iter_num++;        
-        if (iter_num > MAX_ITER_NUM) {
+        iter_num++;
+        if (iter_num > MAX_ITER_NUM)
+        {
             throw "failed to lock (timeout error)";
         }
     }
@@ -108,44 +112,50 @@ bool FuseGW::getCurrentGWState(u_int32_t address)
 {
     u_int32_t ctrl_reg = 0;
 
-    if (mread4(_mf, address, &ctrl_reg) != 4) {
+    if (mread4(_mf, address, &ctrl_reg) != 4)
+    {
         throw "failed to lock (read error)";
     }
-        
+
     return EXTRACT(ctrl_reg, CTRL_LOCK_BIT_OFFSET, 1);
 }
 
-void FuseGW::executeReadCommand() 
+void FuseGW::executeReadCommand()
 {
     int rc = mwrite4(_mf, _gw_address, CTRL_READ | CTRL_BUSY);
-    if (rc != 4) {
+    if (rc != 4)
+    {
         throw "failed to executeReadCommand (write error)";
     }
 }
 
-void FuseGW::waitForResult() 
+void FuseGW::waitForResult()
 {
     int iter_num = 0, MAX_ITER_NUM = 100;
     int const SLEEP_TIME = 10; // [msec]
 
     bool busy;
-    do {
+    do
+    {
         int rc = 0;
         u_int32_t ctrl_reg = 0;
 
-        if (iter_num != 0) {
+        if (iter_num != 0)
+        {
             msleep(SLEEP_TIME);
         }
         rc = mread4(_mf, _gw_address, &ctrl_reg);
-        
-        if (rc != 4) {
+
+        if (rc != 4)
+        {
             throw "failed to waitForResult (read error)";
         }
 
         busy = (ctrl_reg & CTRL_BUSY) != 0;
         iter_num++;
-        
-        if (iter_num > MAX_ITER_NUM) {
+
+        if (iter_num > MAX_ITER_NUM)
+        {
             throw "failed to waitForResult (timeout error)";
         }
     } while (busy);
@@ -154,22 +164,23 @@ void FuseGW::waitForResult()
 void FuseGW::readResult(u_int32_t& result)
 {
     int rc = mread4(_mf, _data_address, &result);
-    if (rc !=  4) 
+    if (rc != 4)
     {
         throw "failed to readResult (read error)";
     }
 
-    TOCPU(&result);    
+    TOCPU(&result);
     result = EXTRACT(result, _data_bit_offset, _data_bit_len);
 }
 
-void FuseGW::unlock(){
+void FuseGW::unlock()
+{
     int rc = mwrite4(_mf, _gw_address, 0);
-    if (rc != 4) {
+    if (rc != 4)
+    {
         throw "failed to unlock (write error)";
     }
 }
-
 
 /********************************************************************************/
 /*                                                                              */
@@ -177,21 +188,21 @@ void FuseGW::unlock(){
 /*                                                                              */
 /********************************************************************************/
 
-SecureBootFuse::SecureBootFuse(mfile* mf, chip_type_t chip_type):
+SecureBootFuse::SecureBootFuse(mfile* mf, chip_type_t chip_type) :
     _gw(mf), _chip_type(chip_type), _is_supported_in_live_fish(false)
 {
     switch (chip_type)
     {
         case CT_CONNECTX7:
-            _gw.setGWAddress(0xE4C00);      // irisc.ir_fuse_gw
-            _gw.setDataAddress(0xE4E7C);    // irisc.ir_fuse_gw.desc0.secure_boot
+            _gw.setGWAddress(0xE4C00);   // irisc.ir_fuse_gw
+            _gw.setDataAddress(0xE4E7C); // irisc.ir_fuse_gw.desc0.secure_boot
             _gw.setFieldBitOffset(28);
             _gw.setFieldBitLen(1);
             _is_supported_in_live_fish = true;
             break;
         case CT_QUANTUM2:
-            _gw.setGWAddress(0xa2800);      // mng.irisc.ir_fuse_gw
-            _gw.setDataAddress(0xa2a7c);    // mng.ir.ir_fuse_gw.desc0.secure_boot
+            _gw.setGWAddress(0xa2800);   // mng.irisc.ir_fuse_gw
+            _gw.setDataAddress(0xa2a7c); // mng.ir.ir_fuse_gw.desc0.secure_boot
             _gw.setFieldBitOffset(29);
             _gw.setFieldBitLen(1);
             _is_supported_in_live_fish = true;
@@ -212,11 +223,11 @@ int SecureBootFuse::isSecureBoot(bool& is_secure_boot)
 {
     u_int32_t data;
     int rc = 0;
-    
+
     try
     {
         _gw.getData(data);
-        
+
         switch (_chip_type)
         {
             case CT_CONNECTX7:
@@ -229,17 +240,17 @@ int SecureBootFuse::isSecureBoot(bool& is_secure_boot)
                 break;
         }
     }
-    catch(const char* msg)
+    catch (const char* msg)
     {
         printf("-E- Failed to get data from Fuse: %s.\n", msg);
         rc = -1;
     }
-    catch(exception e)
+    catch (exception e)
     {
         printf("-E- Failed to get data from Fuse: %s.\n", e.what());
         rc = -1;
     }
-    catch(...)
+    catch (...)
     {
         rc = -1;
     }
@@ -247,28 +258,27 @@ int SecureBootFuse::isSecureBoot(bool& is_secure_boot)
     return rc;
 }
 
-
 /********************************************************************************/
 /*                                                                              */
 /*                        LifeCycleFuse Class                                   */
 /*                                                                              */
 /********************************************************************************/
 
-LifeCycleFuse::LifeCycleFuse(mfile* mf, chip_type_t chip_type):
+LifeCycleFuse::LifeCycleFuse(mfile* mf, chip_type_t chip_type) :
     _gw(mf), _chip_type(chip_type), _is_supported_in_live_fish(false)
 {
     switch (chip_type)
     {
         case CT_CONNECTX7:
-            _gw.setGWAddress(0xF4550);      // yu.fuse_gw_life_cycle
-            _gw.setDataAddress(0xF455C);    // yu.fuse_gw_life_cycle.desc0.life_cycle_replica0
+            _gw.setGWAddress(0xF4550);   // yu.fuse_gw_life_cycle
+            _gw.setDataAddress(0xF455C); // yu.fuse_gw_life_cycle.desc0.life_cycle_replica0
             _gw.setFieldBitOffset(0);
             _gw.setFieldBitLen(32);
             _is_supported_in_live_fish = true;
             break;
         case CT_QUANTUM2:
-            _gw.setGWAddress(0xf3250);      // mng.yu.fuse_gw_life_cycle
-            _gw.setDataAddress(0xf325c);    // mng.yu.fuse_gw_life_cycle.desc0.life_cycle_replica0
+            _gw.setGWAddress(0xf3250);   // mng.yu.fuse_gw_life_cycle
+            _gw.setDataAddress(0xf325c); // mng.yu.fuse_gw_life_cycle.desc0.life_cycle_replica0
             _gw.setFieldBitOffset(0);
             _gw.setFieldBitLen(32);
             _is_supported_in_live_fish = true;
@@ -288,11 +298,11 @@ int LifeCycleFuse::getStatus(life_cycle_t& life_cycle)
 {
     u_int32_t data;
     int rc = 0;
-    
+
     try
     {
-        _gw.getData(data); 
-        
+        _gw.getData(data);
+
         switch (_chip_type)
         {
             case CT_CONNECTX7:
@@ -305,17 +315,17 @@ int LifeCycleFuse::getStatus(life_cycle_t& life_cycle)
                 break;
         }
     }
-    catch(const char* msg)
+    catch (const char* msg)
     {
         printf("-E- Failed to get data from Fuse: %s.\n", msg);
         rc = -1;
     }
-    catch(exception e)
+    catch (exception e)
     {
         printf("-E- Failed to get data from Fuse: %s.\n", e.what());
         rc = -1;
     }
-    catch(...)
+    catch (...)
     {
         rc = -1;
     }
@@ -324,7 +334,7 @@ int LifeCycleFuse::getStatus(life_cycle_t& life_cycle)
 }
 
 // in 4 bytes there are 16 replicas, each replica is 2 bits.
-// this method calculates the vote for each bit, and determines bit's value 
+// this method calculates the vote for each bit, and determines bit's value
 // in the life cycle status using majority vote
 life_cycle_t LifeCycleFuse::calcMajorityVote4B(u_int32_t data)
 {
@@ -367,7 +377,7 @@ u_int8_t LifeCycleFuse::calcOnBits1B(u_int8_t byte)
     u_int8_t first_bit_mask = 0x1;
     size_t i = 0;
 
-    for (; i < BYTE_SIZE; ++i) 
+    for (; i < BYTE_SIZE; ++i)
     {
         on_bits_count += ((byte >> i) & first_bit_mask);
     }
@@ -375,36 +385,35 @@ u_int8_t LifeCycleFuse::calcOnBits1B(u_int8_t byte)
     return on_bits_count;
 }
 
-
 /********************************************************************************/
 /*                                                                              */
 /*                        SecurityVersionFuse Class                             */
 /*                                                                              */
 /********************************************************************************/
 
-SecurityVersionFuse::SecurityVersionFuse(mfile* mf, chip_type_t chip_type):
+SecurityVersionFuse::SecurityVersionFuse(mfile* mf, chip_type_t chip_type) :
     _rollbackProtectionGW(mf), _minimalSecurityVersionGW(mf), _chip_type(chip_type), _is_supported_in_live_fish(false)
 {
     switch (chip_type)
     {
         case CT_CONNECTX7:
-            _rollbackProtectionGW.setGWAddress(0xf4540);      
-            _rollbackProtectionGW.setDataAddress(0xf4548);    
+            _rollbackProtectionGW.setGWAddress(0xf4540);
+            _rollbackProtectionGW.setDataAddress(0xf4548);
             _rollbackProtectionGW.setFieldBitOffset(0);
             _rollbackProtectionGW.setFieldBitLen(32);
-            _minimalSecurityVersionGW.setGWAddress(0xf4520);      
-            _minimalSecurityVersionGW.setDataAddress(0xf452c);  
+            _minimalSecurityVersionGW.setGWAddress(0xf4520);
+            _minimalSecurityVersionGW.setDataAddress(0xf452c);
             _minimalSecurityVersionGW.setFieldBitOffset(0);
             _minimalSecurityVersionGW.setFieldBitLen(32);
             _is_supported_in_live_fish = true;
             break;
         case CT_QUANTUM2:
-            _rollbackProtectionGW.setGWAddress(0xf3240);      
-            _rollbackProtectionGW.setDataAddress(0xf3248);    
+            _rollbackProtectionGW.setGWAddress(0xf3240);
+            _rollbackProtectionGW.setDataAddress(0xf3248);
             _rollbackProtectionGW.setFieldBitOffset(0);
             _rollbackProtectionGW.setFieldBitLen(32);
-            _minimalSecurityVersionGW.setGWAddress(0xf3220);      
-            _minimalSecurityVersionGW.setDataAddress(0xf322c);  
+            _minimalSecurityVersionGW.setGWAddress(0xf3220);
+            _minimalSecurityVersionGW.setDataAddress(0xf322c);
             _minimalSecurityVersionGW.setFieldBitOffset(0);
             _minimalSecurityVersionGW.setFieldBitLen(32);
             _is_supported_in_live_fish = true;
@@ -424,7 +433,7 @@ bool SecurityVersionFuse::getSecurityVersion(u_int32_t& securityVersion)
 {
     u_int32_t data;
     int rc = 0;
-    
+
     try
     {
         u_int32_t const MINIMAL_SECURITY_VERSION_MASK = 0x00000ff0;
@@ -439,9 +448,9 @@ bool SecurityVersionFuse::getSecurityVersion(u_int32_t& securityVersion)
                 _rollbackProtectionGW.setDataAddress(0xf454c);
                 _rollbackProtectionGW.getData(data);
                 securityVersion += countSetBits(data);
-                
+
                 _minimalSecurityVersionGW.getData(data);
-                securityVersion += ((data & MINIMAL_SECURITY_VERSION_MASK) >> MINIMAL_SECURITY_VERSION_OFFSET); 
+                securityVersion += ((data & MINIMAL_SECURITY_VERSION_MASK) >> MINIMAL_SECURITY_VERSION_OFFSET);
                 break;
             default:
                 printf("-E- Failed to get data from Fuse: Device is not supported.\n");
@@ -449,17 +458,17 @@ bool SecurityVersionFuse::getSecurityVersion(u_int32_t& securityVersion)
                 break;
         }
     }
-    catch(const char* msg)
+    catch (const char* msg)
     {
         printf("-E- Failed to get data from Fuse: %s.\n", msg);
         rc = -1;
     }
-    catch(exception e)
+    catch (exception e)
     {
         printf("-E- Failed to get data from Fuse: %s.\n", e.what());
         rc = -1;
     }
-    catch(...)
+    catch (...)
     {
         rc = -1;
     }
@@ -467,9 +476,11 @@ bool SecurityVersionFuse::getSecurityVersion(u_int32_t& securityVersion)
     return rc;
 }
 
-u_int32_t SecurityVersionFuse::countSetBits(u_int32_t num){
+u_int32_t SecurityVersionFuse::countSetBits(u_int32_t num)
+{
     u_int32_t count = 0;
-    while (num) {
+    while (num)
+    {
         count += num & 1;
         num >>= 1;
     }

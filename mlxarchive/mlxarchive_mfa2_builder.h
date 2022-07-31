@@ -56,28 +56,29 @@
 
 using namespace std;
 
-namespace mfa2 {
-
-class MFA2Builder {
-
+namespace mfa2
+{
+class MFA2Builder
+{
 public:
-    MFA2Builder()   {};
-    
-    virtual PackageDescriptor           getPackageDescriptor()  const = 0;
-    virtual vector<DeviceDescriptor>    getDeviceDescriptors()  const = 0;
-    virtual vector<Component>           getComponents()         const = 0;
+    MFA2Builder(){};
 
-    virtual ~MFA2Builder()  {};
+    virtual PackageDescriptor getPackageDescriptor() const = 0;
+    virtual vector<DeviceDescriptor> getDeviceDescriptors() const = 0;
+    virtual vector<Component> getComponents() const = 0;
+
+    virtual ~MFA2Builder(){};
 };
 
-class FWDirectoryBuilder : MFA2Builder {
+class FWDirectoryBuilder : MFA2Builder
+{
 private:
-    VersionExtension            _version;
-    string                      _directory;
-    vector<string>              _files;
-    //vector<FwOperations*>   _imgsFwOps;
-    vector<DeviceDescriptor>    _deviceDescriptors;
-    vector<Component>           _components;
+    VersionExtension _version;
+    string _directory;
+    vector<string> _files;
+    // vector<FwOperations*>   _imgsFwOps;
+    vector<DeviceDescriptor> _deviceDescriptors;
+    vector<Component> _components;
     /*struct FWInfo {
         string      psid;
         u_int16_t   version[3];
@@ -86,10 +87,10 @@ private:
     map<string, FwOperations*> _imgsFwOps;*/
 public:
     FWDirectoryBuilder(const string& version, string directory);
-    PackageDescriptor           getPackageDescriptor()  const;
-    vector<DeviceDescriptor>    getDeviceDescriptors()  const;
-    vector<Component>           getComponents()         const;
+    PackageDescriptor getPackageDescriptor() const;
+    vector<DeviceDescriptor> getDeviceDescriptors() const;
+    vector<Component> getComponents() const;
 };
 
-}
+} // namespace mfa2
 #endif

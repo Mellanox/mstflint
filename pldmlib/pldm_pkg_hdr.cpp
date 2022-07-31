@@ -40,31 +40,34 @@
 #include <errno.h>
 #include <string>
 
-
 #include "pldm_buff.h"
 #include "pldm_pkg_hdr.h"
 
-
-PldmPkgHdr::PldmPkgHdr(): packageHeaderFormatRevision(0), packageHeaderSize(0),
-        componentBitmapBitLength(0), packageVersionStringType(0),
-        packageVersionStringLength(0)
+PldmPkgHdr::PldmPkgHdr() :
+    packageHeaderFormatRevision(0),
+    packageHeaderSize(0),
+    componentBitmapBitLength(0),
+    packageVersionStringType(0),
+    packageVersionStringLength(0)
 {
     int i = 0;
-    for(i=0; i<ID_COUNT; i++) {
+    for (i = 0; i < ID_COUNT; i++)
+    {
         packageHeaderIdentifier[i] = 0;
     }
 
-    for(i=0; i<TIMESTAMP_SIZE; i++) {
+    for (i = 0; i < TIMESTAMP_SIZE; i++)
+    {
         packageReleaseDateTime[i] = 0;
     }
-
 }
 
-PldmPkgHdr::~PldmPkgHdr() {
-}
+PldmPkgHdr::~PldmPkgHdr() {}
 
-bool PldmPkgHdr::unpack(PldmBuffer & buff) {
-    for(int i=0; i<ID_COUNT; i++) {
+bool PldmPkgHdr::unpack(PldmBuffer& buff)
+{
+    for (int i = 0; i < ID_COUNT; i++)
+    {
         buff.read(packageHeaderIdentifier[i]);
     }
     buff.read(packageHeaderFormatRevision);
@@ -77,11 +80,11 @@ bool PldmPkgHdr::unpack(PldmBuffer & buff) {
     return true;
 }
 
-void PldmPkgHdr::print(FILE * fp) {
-
-    for(int i=0; i<ID_COUNT; i++) {
-        fprintf(fp, "packageHeaderIdentifier[%d]: 0x%X\n", i,
-                packageHeaderIdentifier[i]);
+void PldmPkgHdr::print(FILE* fp)
+{
+    for (int i = 0; i < ID_COUNT; i++)
+    {
+        fprintf(fp, "packageHeaderIdentifier[%d]: 0x%X\n", i, packageHeaderIdentifier[i]);
     }
     fprintf(fp, "packageHeaderFormatRevision: 0x%X\n", packageHeaderFormatRevision);
     fprintf(fp, "packageHeaderSize: 0x%X\n", packageHeaderSize);

@@ -33,22 +33,24 @@
 
 #include "security_version_gw.h"
 
-bool SecurityVersionGW::isAccessibleInLiveFish(){
-
+bool SecurityVersionGW::isAccessibleInLiveFish()
+{
     setGWAddress(ROLLBACK_PROTECTION); // only to set _ctrl_address (can pick ROLLBACK_PROTECTION or MINIMAL_VERSION)
     return _ctrl_address == GW_NOT_SUPPORTED ? false : true;
-
 }
 
-bool SecurityVersionGW::getSecurityVersion(u_int32_t* result){
-    
+bool SecurityVersionGW::getSecurityVersion(u_int32_t* result)
+{
     u_int32_t rollbackProtection;
     u_int32_t minimalSecurityVersion;
-    
-    try{
+
+    try
+    {
         getRollbackProtection(&rollbackProtection);
         getMinimalSecurityVersion(&minimalSecurityVersion);
-    } catch (const char* msg) {
+    }
+    catch (const char* msg)
+    {
         // Ignore the message and return false instead
         return false;
     }
@@ -61,39 +63,42 @@ bool SecurityVersionGW::getSecurityVersion(u_int32_t* result){
 // Private methods
 // ---------------
 
-void SecurityVersionGW::setGWAddress(gw_type_t gw_type){
-
-    switch (_chip_type){
+void SecurityVersionGW::setGWAddress(gw_type_t gw_type)
+{
+    switch (_chip_type)
+    {
         case CT_CONNECTX7:
-            _ctrl_address = (gw_type == ROLLBACK_PROTECTION ? 0xf4540 : 0xf4520 );
+            _ctrl_address = (gw_type == ROLLBACK_PROTECTION ? 0xf4540 : 0xf4520);
             break;
         case CT_BLUEFIELD3:
-            _ctrl_address = (gw_type == ROLLBACK_PROTECTION ? 0xf4340 : 0xf4320 ) ;
+            _ctrl_address = (gw_type == ROLLBACK_PROTECTION ? 0xf4340 : 0xf4320);
             break;
         default:
-            _ctrl_address = GW_NOT_SUPPORTED; 
+            _ctrl_address = GW_NOT_SUPPORTED;
     }
 
     _result1_address = _ctrl_address + 8;
-    _result2_address =  _result1_address + 4;
-
+    _result2_address = _result1_address + 4;
 }
 
-void SecurityVersionGW::getRollbackProtection(u_int32_t* result){
-
+void SecurityVersionGW::getRollbackProtection(u_int32_t* result)
+{
     u_int32_t result1, result2;
 
     setGWAddress(ROLLBACK_PROTECTION);
-    
+
     // Read from GW
-    try {
+    try
+    {
         lock();
         executeReadCommand();
         waitForResult();
         readResult1(&result1);
         readResult2(&result2);
         unlock();
-    } catch (const char* msg) {
+    }
+    catch (const char* msg)
+    {
         unlock();
         throw msg;
     }
@@ -101,101 +106,110 @@ void SecurityVersionGW::getRollbackProtection(u_int32_t* result){
     *result = countSetBits(result1) + countSetBits(result2);
 }
 
-
-void SecurityVersionGW::getMinimalSecurityVersion(u_int32_t* result){
-
+void SecurityVersionGW::getMinimalSecurityVersion(u_int32_t* result)
+{
     u_int32_t result2;
 
     setGWAddress(MINIMAL_VERSION);
 
     // Read from GW
-    try {
+    try
+    {
         lock();
         executeReadCommand();
         waitForResult();
         readResult2(&result2);
         unlock();
-    } catch (const char* msg) {
-        unlock();   
+    }
+    catch (const char* msg)
+    {
+        unlock();
         throw msg;
     }
 
     // Extract minimal_security_version
     u_int32_t const MINIMAL_SECURITY_VERSION_MASK = 0x00000ff0;
     u_int32_t const MINIMAL_SECURITY_VERSION_OFFSET = 4;
-    *result = (result2 & MINIMAL_SECURITY_VERSION_MASK) >> MINIMAL_SECURITY_VERSION_OFFSET; 
-
+    *result = (result2 & MINIMAL_SECURITY_VERSION_MASK) >> MINIMAL_SECURITY_VERSION_OFFSET;
 }
 
-
-void SecurityVersionGW::lock(){
-
+void SecurityVersionGW::lock()
+{
     int iter_num = 0, MAX_ITER_NUM = 100;
     int const SLEEP_TIME = 10; // [msec]
 
     bool lock;
-    do {
+    do
+    {
         int rc = 0;
         u_int32_t ctrl_reg = 0;
-        if (iter_num != 0) msleep(SLEEP_TIME);
+        if (iter_num != 0)
+            msleep(SLEEP_TIME);
         rc = mread4(_mf, _ctrl_address, &ctrl_reg);
-        if (rc != 4) throw "failed to lock (read error)";
+        if (rc != 4)
+            throw "failed to lock (read error)";
         lock = (ctrl_reg & CTRL_LOCK) != 0;
         iter_num++;
-        if (iter_num > MAX_ITER_NUM) throw "failed to lock (timeout error)";
+        if (iter_num > MAX_ITER_NUM)
+            throw "failed to lock (timeout error)";
     } while (lock);
-
 }
 
-
-void SecurityVersionGW::executeReadCommand(){
-
+void SecurityVersionGW::executeReadCommand()
+{
     int rc = mwrite4(_mf, _ctrl_address, CTRL_READ | CTRL_BUSY);
-    if (rc != 4) throw "failed to executeReadCommand (write error)";
+    if (rc != 4)
+        throw "failed to executeReadCommand (write error)";
 }
 
-
-void SecurityVersionGW::waitForResult(){
-
+void SecurityVersionGW::waitForResult()
+{
     int iter_num = 0, MAX_ITER_NUM = 100;
     int const SLEEP_TIME = 10; // [msec]
 
     bool busy;
-    do {
+    do
+    {
         int rc = 0;
         u_int32_t ctrl_reg = 0;
-        if (iter_num != 0) msleep(SLEEP_TIME);
+        if (iter_num != 0)
+            msleep(SLEEP_TIME);
         rc = mread4(_mf, _ctrl_address, &ctrl_reg);
-        if (rc != 4) throw "failed to waitForResult (read error)";
+        if (rc != 4)
+            throw "failed to waitForResult (read error)";
         busy = (ctrl_reg & CTRL_BUSY) != 0;
         iter_num++;
-        if (iter_num > MAX_ITER_NUM) throw "failed to waitForResult (timeout error)";
+        if (iter_num > MAX_ITER_NUM)
+            throw "failed to waitForResult (timeout error)";
     } while (busy);
-
 }
 
-
-void SecurityVersionGW::readResult1(u_int32_t* result){
+void SecurityVersionGW::readResult1(u_int32_t* result)
+{
     int rc = mread4(_mf, _result1_address, result);
-    if (rc != 4) throw "failed to readResult1 (read error)";
+    if (rc != 4)
+        throw "failed to readResult1 (read error)";
 }
 
-
-void SecurityVersionGW::readResult2(u_int32_t* result){
+void SecurityVersionGW::readResult2(u_int32_t* result)
+{
     int rc = mread4(_mf, _result2_address, result);
-    if (rc != 4) throw "failed to readResult2 (read error)";
+    if (rc != 4)
+        throw "failed to readResult2 (read error)";
 }
 
-
-void SecurityVersionGW::unlock(){
+void SecurityVersionGW::unlock()
+{
     int rc = mwrite4(_mf, _ctrl_address, 0);
-    if (rc != 4) throw "failed to unlock (write error)";
+    if (rc != 4)
+        throw "failed to unlock (write error)";
 }
 
-
-u_int32_t SecurityVersionGW::countSetBits(u_int32_t num){
+u_int32_t SecurityVersionGW::countSetBits(u_int32_t num)
+{
     u_int32_t count = 0;
-    while (num) {
+    while (num)
+    {
         count += num & 1;
         num >>= 1;
     }

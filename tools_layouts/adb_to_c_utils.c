@@ -29,7 +29,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
 
 /***
 *** This file was generated at "2017-03-24 22:07:56"
@@ -41,77 +40,74 @@
 /************************************
  * Function: adb2c_calc_array_field_address
  ************************************/
-u_int32_t adb2c_calc_array_field_address(u_int32_t start_bit_offset, u_int32_t arr_elemnt_size,
-                                   int arr_idx, u_int32_t parent_node_size,
-                                   int is_big_endian_arr)
+u_int32_t adb2c_calc_array_field_address(u_int32_t start_bit_offset, u_int32_t arr_elemnt_size, int arr_idx, u_int32_t parent_node_size, int is_big_endian_arr)
 {
     u_int32_t offs;
 
     if (arr_elemnt_size > 32)
     {
         assert(!(arr_elemnt_size % 32));
-        start_bit_offset += arr_elemnt_size*(u_int32_t)arr_idx;                                                                                     
+        start_bit_offset += arr_elemnt_size * (u_int32_t)arr_idx;
         return start_bit_offset;
     }
 
     if (is_big_endian_arr)
     {
         u_int32_t dword_delta;
-        offs = start_bit_offset - arr_elemnt_size*(u_int32_t)arr_idx;
-        dword_delta = (((start_bit_offset>>5)<<2) - ((offs>>5)<<2))/4;
+        offs = start_bit_offset - arr_elemnt_size * (u_int32_t)arr_idx;
+        dword_delta = (((start_bit_offset >> 5) << 2) - ((offs >> 5) << 2)) / 4;
         if (dword_delta)
         {
-            offs += 64*dword_delta;
+            offs += 64 * dword_delta;
         }
     }
     else
     {
-        offs = start_bit_offset + arr_elemnt_size*(u_int32_t)arr_idx;
+        offs = start_bit_offset + arr_elemnt_size * (u_int32_t)arr_idx;
     }
 
-    //printf("==> %d\n", MIN(32, parent_node_size) - (offs%32) - arr_elemnt_size + ((offs>>5)<<5));
-    return ADB2C_MIN(32, parent_node_size) - (offs%32) - arr_elemnt_size + ((offs>>5)<<5);
+    // printf("==> %d\n", MIN(32, parent_node_size) - (offs%32) - arr_elemnt_size + ((offs>>5)<<5));
+    return ADB2C_MIN(32, parent_node_size) - (offs % 32) - arr_elemnt_size + ((offs >> 5) << 5);
 }
 
 /************************************
  * Function: adb2c_push_integer_to_buff
  ************************************/
-void adb2c_push_integer_to_buff(u_int8_t *buff, u_int32_t bit_offset,  u_int32_t byte_size, u_int64_t field_value)
+void adb2c_push_integer_to_buff(u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size, u_int64_t field_value)
 {
     field_value = ADB2C_CPU_TO_BE64(field_value);
-    memcpy(buff + bit_offset/8, (u_int8_t*)&field_value + (8-byte_size), (size_t)byte_size);
+    memcpy(buff + bit_offset / 8, (u_int8_t*)&field_value + (8 - byte_size), (size_t)byte_size);
 }
 
 /************************************
  * Function: adb2c_push_integer_to_buff_le
  ************************************/
 // little endian version of the function
-void adb2c_push_integer_to_buff_le(u_int8_t *buff, u_int32_t bit_offset,  u_int32_t byte_size, u_int64_t field_value)
+void adb2c_push_integer_to_buff_le(u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size, u_int64_t field_value)
 {
     field_value = ADB2C_CPU_TO_LE64(field_value);
-    memcpy(buff + bit_offset/8, (u_int8_t*)&field_value, (size_t)byte_size);
+    memcpy(buff + bit_offset / 8, (u_int8_t*)&field_value, (size_t)byte_size);
 }
-
 
 /************************************
  * Function: adb2c_push_bits_to_buff
  ************************************/
-//the next function will push the field into the buffer by inserting it's MSB bits first
-//and therefore by doing it we save the CPU_TO_BE operation
-void adb2c_push_bits_to_buff(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int32_t field_value)
+// the next function will push the field into the buffer by inserting it's MSB bits first
+// and therefore by doing it we save the CPU_TO_BE operation
+void adb2c_push_bits_to_buff(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_int32_t field_value)
 {
-    u_int32_t i 		= 0;
-    u_int32_t byte_n	= bit_offset / 8;
-    u_int32_t byte_n_offset	= bit_offset % 8;
+    u_int32_t i = 0;
+    u_int32_t byte_n = bit_offset / 8;
+    u_int32_t byte_n_offset = bit_offset % 8;
     u_int32_t to_push;
 
-    //going over all bits in field
+    // going over all bits in field
     while (i < field_size)
     {
         to_push = ADB2C_MIN(8 - byte_n_offset, field_size - i);
         i += to_push;
         ADB2C_INSERTF_8(ADB2C_BYTE_N(buff, byte_n), 8U - to_push - byte_n_offset, field_value, field_size - i, to_push);
-        byte_n_offset  = 0;	//(byte_n_offset + to_push) % 8U;
+        byte_n_offset = 0; //(byte_n_offset + to_push) % 8U;
         byte_n++;
     }
 }
@@ -119,17 +115,17 @@ void adb2c_push_bits_to_buff(u_int8_t *buff, u_int32_t bit_offset, u_int32_t fie
 /************************************
  * Function: adb2c_push_bits_to_buff_le
  ************************************/
-//the next function will push the field into the buffer by inserting it's LSB bits first
-//and therefore by doing it we save the CPU_TO_LE operation
-void adb2c_push_bits_to_buff_le(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int32_t field_value)
+// the next function will push the field into the buffer by inserting it's LSB bits first
+// and therefore by doing it we save the CPU_TO_LE operation
+void adb2c_push_bits_to_buff_le(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_int32_t field_value)
 {
-    u_int32_t i                 = 0;
-    u_int32_t byte_n    = (bit_offset / 8) + (field_size / 8) - 1;
-    u_int32_t byte_n_offset     = bit_offset % 8;
+    u_int32_t i = 0;
+    u_int32_t byte_n = (bit_offset / 8) + (field_size / 8) - 1;
+    u_int32_t byte_n_offset = bit_offset % 8;
     u_int32_t to_push;
     byte_n += (field_size % 8) ? 1 : 0;
 
-    //going over all bits in field
+    // going over all bits in field
     while (i < field_size)
     {
         to_push = ADB2C_MIN(8 - byte_n_offset, (field_size - i) % 8);
@@ -137,7 +133,7 @@ void adb2c_push_bits_to_buff_le(u_int8_t *buff, u_int32_t bit_offset, u_int32_t 
             to_push += 8;
         i += to_push;
         ADB2C_INSERTF_8(ADB2C_BYTE_N(buff, byte_n), 8U - to_push - byte_n_offset, field_value, field_size - i, to_push);
-        byte_n_offset  = 0;     //(byte_n_offset + to_push) % 8U;
+        byte_n_offset = 0; //(byte_n_offset + to_push) % 8U;
         byte_n--;
     }
 }
@@ -145,67 +141,67 @@ void adb2c_push_bits_to_buff_le(u_int8_t *buff, u_int32_t bit_offset, u_int32_t 
 /************************************
  * Function: adb2c_push_to_buf
  ************************************/
-void adb2c_push_to_buf(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value)
+void adb2c_push_to_buf(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value)
 {
     bit_offset = adb2c_calc_array_field_address(bit_offset, field_size, 0, field_size + 32, 0);
     if (field_size <= 32)
         adb2c_push_bits_to_buff(buff, bit_offset, field_size, (u_int32_t)field_value);
     else
-        adb2c_push_integer_to_buff(buff, bit_offset, field_size/8,  field_value);
+        adb2c_push_integer_to_buff(buff, bit_offset, field_size / 8, field_value);
 }
 
 /************************************
  * Function: adb2c_push_to_buf_le
  ************************************/
-void adb2c_push_to_buf_le(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value)
+void adb2c_push_to_buf_le(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value)
 {
     bit_offset = adb2c_calc_array_field_address(bit_offset, field_size, 0, field_size + 32, 0);
     if (field_size <= 32)
         adb2c_push_bits_to_buff_le(buff, bit_offset, field_size, (u_int32_t)field_value);
     else
-        adb2c_push_integer_to_buff_le(buff, bit_offset, field_size/8,  field_value);
+        adb2c_push_integer_to_buff_le(buff, bit_offset, field_size / 8, field_value);
 }
 
 /************************************
  * Function: adb2c_pop_integer_from_buff
  ************************************/
-u_int64_t adb2c_pop_integer_from_buff(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t byte_size)
+u_int64_t adb2c_pop_integer_from_buff(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size)
 {
     u_int64_t val = 0;
-    memcpy((u_int8_t*)&val + (8-byte_size), buff + bit_offset/8, (size_t)byte_size);
+    memcpy((u_int8_t*)&val + (8 - byte_size), buff + bit_offset / 8, (size_t)byte_size);
     return ADB2C_BE64_TO_CPU(val);
 }
 
 /************************************
  * Function: adb2c_pop_integer_from_buff_le
  ************************************/
-u_int64_t adb2c_pop_integer_from_buff_le(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t byte_size)
+u_int64_t adb2c_pop_integer_from_buff_le(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size)
 {
     u_int64_t val = 0;
-    memcpy((u_int8_t*)&val, buff + bit_offset/8, (size_t)byte_size);
+    memcpy((u_int8_t*)&val, buff + bit_offset / 8, (size_t)byte_size);
     return ADB2C_LE64_TO_CPU(val);
 }
 
 /************************************
  * Function: adb2c_pop_bits_from_buff
  ************************************/
-//the next function will pop the field into the buffer by removing it's MSB bits first
-//and therefore by doing it we save the BE_TO_CPU operation
-u_int32_t adb2c_pop_bits_from_buff(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size)
+// the next function will pop the field into the buffer by removing it's MSB bits first
+// and therefore by doing it we save the BE_TO_CPU operation
+u_int32_t adb2c_pop_bits_from_buff(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size)
 {
-    u_int32_t i 		= 0;
-    u_int32_t byte_n	= bit_offset / 8;
-    u_int32_t byte_n_offset	= bit_offset % 8;
-    u_int32_t field_32	= 0;
+    u_int32_t i = 0;
+    u_int32_t byte_n = bit_offset / 8;
+    u_int32_t byte_n_offset = bit_offset % 8;
+    u_int32_t field_32 = 0;
     u_int32_t to_pop;
 
-    //going over all bits in field
+    // going over all bits in field
     while (i < field_size)
     {
-        to_pop =  ADB2C_MIN(8 - byte_n_offset, field_size - i);
+        to_pop = ADB2C_MIN(8 - byte_n_offset, field_size - i);
         i += to_pop;
         ADB2C_INSERTF_8(field_32, field_size - i, ADB2C_BYTE_N(buff, byte_n), 8 - to_pop - byte_n_offset, to_pop);
-        byte_n_offset  = 0;	//(byte_n_offset + to_pop) % 8;
+        byte_n_offset = 0; //(byte_n_offset + to_pop) % 8;
         byte_n++;
     }
     return field_32;
@@ -214,26 +210,26 @@ u_int32_t adb2c_pop_bits_from_buff(const u_int8_t *buff, u_int32_t bit_offset, u
 /************************************
  * Function: adb2c_pop_bits_from_buff_le
  ************************************/
-//the next function will pop the field into the buffer by removing it's LSB bits first
-//and therefore by doing it we save the BE_TO_CPU operation
-u_int32_t adb2c_pop_bits_from_buff_le(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size)
+// the next function will pop the field into the buffer by removing it's LSB bits first
+// and therefore by doing it we save the BE_TO_CPU operation
+u_int32_t adb2c_pop_bits_from_buff_le(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size)
 {
-    u_int32_t i                 = 0;
-    u_int32_t byte_n    = bit_offset / 8 + (field_size / 8) - 1;
-    u_int32_t byte_n_offset     = bit_offset % 8;
-    u_int32_t field_32  = 0;
+    u_int32_t i = 0;
+    u_int32_t byte_n = bit_offset / 8 + (field_size / 8) - 1;
+    u_int32_t byte_n_offset = bit_offset % 8;
+    u_int32_t field_32 = 0;
     u_int32_t to_pop;
     byte_n += (field_size % 8) ? 1 : 0;
 
-    //going over all bits in field
+    // going over all bits in field
     while (i < field_size)
     {
-        to_pop =  ADB2C_MIN(8 - byte_n_offset, (field_size - i) % 8);
+        to_pop = ADB2C_MIN(8 - byte_n_offset, (field_size - i) % 8);
         if (to_pop == 0)
             to_pop += 8;
         i += to_pop;
         ADB2C_INSERTF_8(field_32, field_size - i, ADB2C_BYTE_N(buff, byte_n), 8 - to_pop - byte_n_offset, to_pop);
-        byte_n_offset  = 0;     //(byte_n_offset + to_pop) % 8;
+        byte_n_offset = 0; //(byte_n_offset + to_pop) % 8;
         byte_n--;
     }
     return field_32;
@@ -242,25 +238,25 @@ u_int32_t adb2c_pop_bits_from_buff_le(const u_int8_t *buff, u_int32_t bit_offset
 /************************************
  * Function: adb2c_pop_from_buf
  ************************************/
-u_int64_t adb2c_pop_from_buf(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size)
+u_int64_t adb2c_pop_from_buf(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size)
 {
     bit_offset = adb2c_calc_array_field_address(bit_offset, field_size, 0, field_size + 32, 0);
     if (field_size <= 32)
         return adb2c_pop_bits_from_buff(buff, bit_offset, field_size);
     else
-        return adb2c_pop_integer_from_buff(buff, bit_offset, field_size/8);
+        return adb2c_pop_integer_from_buff(buff, bit_offset, field_size / 8);
 }
 
 /************************************
  * Function: adb2c_pop_from_buf_le
  ************************************/
-u_int64_t adb2c_pop_from_buf_le(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size)
+u_int64_t adb2c_pop_from_buf_le(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size)
 {
     bit_offset = adb2c_calc_array_field_address(bit_offset, field_size, 0, field_size + 32, 0);
     if (field_size <= 32)
         return adb2c_pop_bits_from_buff_le(buff, bit_offset, field_size);
     else
-        return adb2c_pop_integer_from_buff_le(buff, bit_offset, field_size/8);
+        return adb2c_pop_integer_from_buff_le(buff, bit_offset, field_size / 8);
 }
 
 /************************************
@@ -275,7 +271,6 @@ const char* adb2c_db_get_field_enum_name(struct adb2c_field_format* field, int v
             return field->enums[i].name;
     }
 
-    
     return "Unknown Enum Value";
 }
 
@@ -299,14 +294,14 @@ int adb2c_db_get_field_enum_val(struct adb2c_field_format* field, const char* na
  ************************************/
 const char* adb2c_db_get_field_attr(struct adb2c_field_format* field, const char* attr_name)
 {
-	int i;
-	for (i = 0; i < field->attrs_len; i++)
-	{
-		if (!strcmp(attr_name, field->attrs[i].name))
-			return field->attrs[i].val;
-	}
-	
-	return NULL;
+    int i;
+    for (i = 0; i < field->attrs_len; i++)
+    {
+        if (!strcmp(attr_name, field->attrs[i].name))
+            return field->attrs[i].val;
+    }
+
+    return NULL;
 }
 
 /************************************
@@ -314,14 +309,14 @@ const char* adb2c_db_get_field_attr(struct adb2c_field_format* field, const char
  ************************************/
 const char* adb2c_db_get_node_attr(struct adb2c_node_format* node, const char* attr_name)
 {
-	int i;
-	for (i = 0; i < node->attrs_len; i++)
-	{
-		if (!strcmp(attr_name, node->attrs[i].name))
-			return node->attrs[i].val;
-	}
+    int i;
+    for (i = 0; i < node->attrs_len; i++)
+    {
+        if (!strcmp(attr_name, node->attrs[i].name))
+            return node->attrs[i].val;
+    }
 
-	return NULL;
+    return NULL;
 }
 
 /************************************
@@ -330,13 +325,13 @@ const char* adb2c_db_get_node_attr(struct adb2c_node_format* node, const char* a
 struct adb2c_node_format* adb2c_db_find_node(struct adb2c_node_db* db, const char* node_name)
 {
     int i;
-    
+
     for (i = 0; i < db->nodes_len; i++)
     {
         if (!strcmp(node_name, db->nodes[i].name))
             return &db->nodes[i];
     }
-    
+
     return NULL;
 }
 
@@ -346,13 +341,13 @@ struct adb2c_node_format* adb2c_db_find_node(struct adb2c_node_db* db, const cha
 struct adb2c_field_format* adb2c_db_find_field(struct adb2c_node_format* node, const char* field_name)
 {
     int i;
-    
-    for(i = 0; i < node->fields_len; i++)
+
+    for (i = 0; i < node->fields_len; i++)
     {
         if (!strcmp(field_name, node->fields[i].full_name))
             return &node->fields[i];
     }
-    
+
     return NULL;
 }
 
@@ -361,11 +356,11 @@ struct adb2c_field_format* adb2c_db_find_field(struct adb2c_node_format* node, c
  ************************************/
 void adb2c_add_indentation(FILE* file, int indent_level)
 {
-	while (indent_level)
-	{
-		fprintf(file, "\t");
-		indent_level--;
-	}
+    while (indent_level)
+    {
+        fprintf(file, "\t");
+        indent_level--;
+    }
 }
 
 /************************************

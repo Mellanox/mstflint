@@ -1,25 +1,25 @@
-/* 
+/*
  * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -59,25 +59,29 @@
 #define MLXREG_EXEC "mlxreg"
 #endif
 
-#define CHECK_UNIQUE_OP(op) \
-    if (op != CMD_UNKNOWN) { \
+#define CHECK_UNIQUE_OP(op)                                                        \
+    if (op != CMD_UNKNOWN)                                                         \
+    {                                                                              \
         throw MlxRegException("incompatible flags combination, please read help"); \
     }
 
-#define CHECK_UNIQUE_STR(op) \
-    if (op != "") { \
+#define CHECK_UNIQUE_STR(op)                                                       \
+    if (op != "")                                                                  \
+    {                                                                              \
         throw MlxRegException("incompatible flags combination, please read help"); \
     }
 
-#define CHECK_UNIQUE_UINT(op) \
-    if (op != 0) { \
+#define CHECK_UNIQUE_UINT(op)                                                      \
+    if (op != 0)                                                                   \
+    {                                                                              \
         throw MlxRegException("incompatible flags combination, please read help"); \
     }
 
-#define PRINT_LINE(len) \
-    for (int i = 0; i < len; i++) { \
-        printf("="); \
-    } \
+#define PRINT_LINE(len)           \
+    for (int i = 0; i < len; i++) \
+    {                             \
+        printf("=");              \
+    }                             \
     printf("\n");
 
 /************************************
@@ -97,6 +101,8 @@
 #define REG_ID_FLAG_SHORT           ' '
 #define IDXES_FLAG                  "indexes"
 #define IDXES_FLAG_SHORT            'i'
+#define OPS_FLAG                    "op"
+#define OPS_FLAG_SHORT              'o'
 #define REG_LEN_FLAG                "reg_len"
 #define REG_LEN_FLAG_SHORT          ' '
 #define OP_GET_FLAG                 "get"
@@ -109,68 +115,68 @@
 #define OP_SHOW_REGS_FLAG_SHORT     ' '
 #define OP_SHOW_ALL_REGS_FLAG       "show_all_regs"
 #define OP_SHOW_ALL_REGS_FLAG_SHORT ' '
-#define IGNORE_CAP_CHECK_FLAG       "ignore_cap_check"
+#define IGNORE_CAP_CHECK_FLAG "ignore_cap_check"
 #define IGNORE_CAP_CHECK_FLAG_SHORT ' '
-#define IGNORE_REG_CHECK_FLAG       "ignore_reg_check"
+#define IGNORE_REG_CHECK_FLAG "ignore_reg_check"
 #define IGNORE_REG_CHECK_FLAG_SHORT ' '
-#define FORCE_FLAG                  "yes"
-#define FORCE_FLAG_SHORT            ' '
-#define IGNORE_RO                   "ignore_ro"
-#define IGNORE_RO_SHORT             ' '
-#define FILE_TO_DUMP_BUFFER         "output_file"
-#define FILE_TO_DUMP_BUFFER_SHORT    ' '
-#define FILE_IO                     "file_io"
-#define FILE_IO_SHORT               ' '
+#define FORCE_FLAG "yes"
+#define FORCE_FLAG_SHORT ' '
+#define IGNORE_RO "ignore_ro"
+#define IGNORE_RO_SHORT ' '
+#define FILE_TO_DUMP_BUFFER "output_file"
+#define FILE_TO_DUMP_BUFFER_SHORT ' '
+#define FILE_IO "file_io"
+#define FILE_IO_SHORT ' '
 
 using namespace mlxreg;
 
 /************************************
-* Function: MlxRegUi
-************************************/
-MlxRegUi::MlxRegUi() :
-    CommandLineRequester("mlxreg OPTIONS"),
-    _cmdParser("mlxreg")
+ * Function: MlxRegUi
+ ************************************/
+MlxRegUi::MlxRegUi() : CommandLineRequester("mlxreg OPTIONS"), _cmdParser("mlxreg")
 {
     initCmdParser();
-    _device         = "";
-    _mf             = NULL;
-    _extAdbFile     = "";
-    _regName        = "";
-    _regID          = 0;
-    _dataStr        = "";
-    _indexesStr     = "";
-    _dataLen        = 0;
+    _device = "";
+    _mf = NULL;
+    _extAdbFile = "";
+    _regName = "";
+    _regID = 0;
+    _dataStr = "";
+    _indexesStr = "";
+    _dataLen = 0;
     _ignoreCapCheck = false;
-    _op             = CMD_UNKNOWN;
-    _mlxRegLib      = NULL;
-    _force          = false;
-    _ignore_ro      = false;
-    _output_file    ="";
-    _file_io        ="";
+    _op = CMD_UNKNOWN;
+    _mlxRegLib = NULL;
+    _force = false;
+    _ignore_ro = false;
+    _output_file = "";
+    _file_io = "";
 
 #if defined(EXTERNAL) || defined(MST_UL)
-    _isExternal     = true;
+    _isExternal = true;
 #else
-    _isExternal     = false;
+    _isExternal = false;
 #endif
 }
 
 /************************************
-* Function: ~MlxRegUi
-************************************/
+ * Function: ~MlxRegUi
+ ************************************/
 MlxRegUi::~MlxRegUi()
 {
-    if (_mf) {
+    if (_mf)
+    {
         mclose(_mf);
     }
-    if (_mlxRegLib) {
+    if (_mlxRegLib)
+    {
         delete _mlxRegLib;
     }
 }
 
 /************************************
-* Function: initCmdParser
-************************************/
+ * Function: initCmdParser
+ ************************************/
 void MlxRegUi::initCmdParser()
 {
     AddOptions(DEVICE_FLAG,       DEVICE_FLAG_SHORT, "MstDevice", "Mellanox mst device name");
@@ -180,57 +186,60 @@ void MlxRegUi::initCmdParser()
     AddOptions(REG_NAME_FLAG,     REG_NAME_FLAG_SHORT, "RegisterName", "Access register name");
     AddOptions(REG_ID_FLAG,       REG_ID_FLAG_SHORT, "RegisterID", "Access register ID");
     AddOptions(IDXES_FLAG,        IDXES_FLAG_SHORT, "RegisterData", "Register data");
+    AddOptions(OPS_FLAG,          OPS_FLAG_SHORT, "RegisterData", "Register data");
     AddOptions(REG_LEN_FLAG,      REG_LEN_FLAG_SHORT, "RegisterDataLen", "Register data length");
     AddOptions(IGNORE_CAP_CHECK_FLAG, IGNORE_CAP_CHECK_FLAG_SHORT, "", "");
     AddOptions(IGNORE_REG_CHECK_FLAG, IGNORE_REG_CHECK_FLAG_SHORT, "", "");
-    AddOptions(OP_GET_FLAG,       OP_GET_FLAG_SHORT, "", "Register access GET");
-    AddOptions(OP_SET_FLAG,       OP_SET_FLAG_SHORT, "RegisterData", "Register access SET");
-    AddOptions(OP_SHOW_REG_FLAG,  OP_SHOW_REG_FLAG_SHORT, "RegisterName", "Print register <reg_name> properties and exit");
+    AddOptions(OP_GET_FLAG, OP_GET_FLAG_SHORT, "", "Register access GET");
+    AddOptions(OP_SET_FLAG, OP_SET_FLAG_SHORT, "RegisterData", "Register access SET");
+    AddOptions(OP_SHOW_REG_FLAG, OP_SHOW_REG_FLAG_SHORT, "RegisterName",
+               "Print register <reg_name> properties and exit");
     AddOptions(OP_SHOW_REGS_FLAG, OP_SHOW_REGS_FLAG_SHORT, "", "Print available registers names and exit");
     AddOptions(OP_SHOW_ALL_REGS_FLAG, OP_SHOW_ALL_REGS_FLAG_SHORT, "", "");
     AddOptions(FORCE_FLAG, FORCE_FLAG_SHORT, "", "");
     AddOptions(IGNORE_RO, IGNORE_RO_SHORT, "", "Ignore the access check in the SET operation");
-    AddOptions(FILE_TO_DUMP_BUFFER, FILE_TO_DUMP_BUFFER_SHORT, "OutputFile", "Dump buffer to file instead of sending to device");
+    AddOptions(FILE_TO_DUMP_BUFFER, FILE_TO_DUMP_BUFFER_SHORT, "OutputFile",
+               "Dump buffer to file instead of sending to device");
     AddOptions(FILE_IO, FILE_IO_SHORT, "FilePath", "Work with file for IO instead of CLI flags");
 
     _cmdParser.AddRequester(this);
 }
 
 /************************************
-* Function: printFlagLine
-************************************/
+ * Function: printFlagLine
+ ************************************/
 static void printFlagLine(const char flag_s, string flag_l, string param, string desc)
 {
     string sflags_s(1, flag_s);
-    if (sflags_s != " ") {
+    if (sflags_s != " ")
+    {
         printf(IDENT2 "-%-2s|--%-10s", sflags_s.c_str(), flag_l.c_str());
-    } else {
+    }
+    else
+    {
         printf(IDENT2 "--%-14s", flag_l.c_str());
     }
-    if (param.length()) {
+    if (param.length())
+    {
         printf(" <%s>", param.c_str());
-    } else {
+    }
+    else
+    {
         printf("\t");
     }
     printf(IDENT3 ": %-30s\n", desc.c_str());
 }
 
 /************************************
-* Function: PrintHelp
-************************************/
+ * Function: PrintHelp
+ ************************************/
 void MlxRegUi::printHelp()
 {
     // print opening
-    printf(
-        IDENT "NAME:\n"
-        IDENT2 MLXREG_EXEC "\n"
-        IDENT "SYNOPSIS:\n"
-        IDENT2 MLXREG_EXEC " [OPTIONS]\n");
-    printf(
-        IDENT "DESCRIPTION:\n"
-        IDENT2 "Exposes supported access registers, and allows users to obtain information regarding\n"
-        IDENT2 "the registers fields and attributes, and to set and get data with specific\n"
-        IDENT2 "register.\n");
+    printf(IDENT "NAME:\n" IDENT2 MLXREG_EXEC "\n" IDENT "SYNOPSIS:\n" IDENT2 MLXREG_EXEC " [OPTIONS]\n");
+    printf(IDENT "DESCRIPTION:\n" IDENT2
+                 "Exposes supported access registers, and allows users to obtain information regarding\n" IDENT2
+                 "the registers fields and attributes, and to set and get data with specific\n" IDENT2 "register.\n");
     // print options
     printf("\n");
     printf(IDENT "OPTIONS:\n");
@@ -242,6 +251,7 @@ void MlxRegUi::printHelp()
     printFlagLine(REG_ID_FLAG_SHORT,        REG_ID_FLAG,       "reg_ID", "Access register ID");
     printFlagLine(REG_LEN_FLAG_SHORT,       REG_LEN_FLAG,      "reg_length", "Access register layout length (bytes)");
     printFlagLine(IDXES_FLAG_SHORT,         IDXES_FLAG,        "idxs_vals", "Register indexes");
+    printFlagLine(OPS_FLAG_SHORT,           OPS_FLAG,          "ops_vals", "Register optional fields");
     printFlagLine(OP_GET_FLAG_SHORT,        OP_GET_FLAG,       "", "Register access GET");
     printFlagLine(OP_SET_FLAG_SHORT,        OP_SET_FLAG,       "reg_dataStr", "Register access SET");
     printFlagLine(OP_SHOW_REG_FLAG_SHORT,   OP_SHOW_REG_FLAG,  "reg_name", "Print the fields of a given reg access (must have reg_name)");
@@ -261,13 +271,15 @@ void MlxRegUi::printHelp()
 }
 
 /************************************
-* Function: getLongestNodeLen
-************************************/
+ * Function: getLongestNodeLen
+ ************************************/
 size_t getLongestNodeLen(std::vector<AdbInstance*> root)
 {
     size_t len = 0;
-    for (std::vector<AdbInstance*>::size_type i = 0; i != root.size(); i++) {
-        if (strlen(root[i]->name.c_str()) > len) {
+    for (std::vector<AdbInstance*>::size_type i = 0; i != root.size(); i++)
+    {
+        if (strlen(root[i]->name.c_str()) > len)
+        {
             len = strlen(root[i]->name.c_str());
         }
     }
@@ -275,14 +287,16 @@ size_t getLongestNodeLen(std::vector<AdbInstance*> root)
 }
 
 /************************************
-* Function: printRegFields
-************************************/
+ * Function: printRegFields
+ ************************************/
 void MlxRegUi::printRegFields(vector<AdbInstance*> nodeFields)
 {
     int largestName = (int)getLongestNodeLen(nodeFields);
-    printf("%-*s | %-10s | %-8s | %-8s | %-8s\n", largestName, "Field Name", "Address (Bytes)", "Offset (Bits)", "Size (Bits)", "Access");
+    printf("%-*s | %-10s | %-8s | %-8s | %-8s\n", largestName, "Field Name", "Address (Bytes)", "Offset (Bits)",
+           "Size (Bits)", "Access");
     PRINT_LINE(58 + largestName);
-    for (std::vector<AdbInstance*>::size_type i = 0; i != nodeFields.size(); i++) {
+    for (std::vector<AdbInstance*>::size_type i = 0; i != nodeFields.size(); i++)
+    {
         printf("%-*s | 0x%08x      | %-8d      | %-8d    | %-15s\n",
                largestName,
                nodeFields[i]->name.c_str(),
@@ -291,31 +305,34 @@ void MlxRegUi::printRegFields(vector<AdbInstance*> nodeFields)
                nodeFields[i]->fieldDesc->eSize(),
                RegAccessParser::getAccess(nodeFields[i]).c_str());
     }
-    PRINT_LINE(58 + largestName);;
+    PRINT_LINE(58 + largestName);
+    ;
 }
 
 /************************************
-* Function: printRegNames
-************************************/
+ * Function: printRegNames
+ ************************************/
 void MlxRegUi::printRegNames(std::vector<string> regs)
 {
     printf("Available Access Registers\n");
     PRINT_LINE(104);
-    for (std::vector<string>::size_type i = 0; i != regs.size(); i++) {
+    for (std::vector<string>::size_type i = 0; i != regs.size(); i++)
+    {
         printf("%-30s\n", regs[i].c_str());
     }
 }
 
 /************************************
-* Function: printAdbContext
-************************************/
-void MlxRegUi::printAdbContext(AdbInstance *node, std::vector<u_int32_t> buff)
+ * Function: printAdbContext
+ ************************************/
+void MlxRegUi::printAdbContext(AdbInstance* node, std::vector<u_int32_t> buff)
 {
     std::vector<AdbInstance*> subItems = node->getLeafFields(true);
     int largestName = (int)getLongestNodeLen(subItems);
     printf("%-*s | %-8s\n", largestName, "Field Name", "Data");
     PRINT_LINE(largestName + 14);
-    for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++) {
+    for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++)
+    {
         printf("%-*s | 0x%08x\n",
                largestName,
                subItems[i]->name.c_str(),
@@ -325,14 +342,15 @@ void MlxRegUi::printAdbContext(AdbInstance *node, std::vector<u_int32_t> buff)
 }
 
 /************************************
-* Function: printAdbContext
-************************************/
+ * Function: printAdbContext
+ ************************************/
 void MlxRegUi::printBuff(std::vector<u_int32_t> buff)
 {
     u_int32_t rawAddr = 0;
     printf("Address    | Data\n");
     PRINT_LINE(23);
-    for (std::vector<u_int32_t>::size_type i = 0; i != buff.size(); i++) {
+    for (std::vector<u_int32_t>::size_type i = 0; i != buff.size(); i++)
+    {
         printf("0x%08x | 0x%08x\n", rawAddr, CPU_TO_BE32(buff[i]));
         rawAddr += 4;
     }
@@ -340,110 +358,150 @@ void MlxRegUi::printBuff(std::vector<u_int32_t> buff)
 }
 
 /************************************
-* Function: askUser
-************************************/
-bool MlxRegUi::askUser(const char *question)
+ * Function: askUser
+ ************************************/
+bool MlxRegUi::askUser(const char* question)
 {
     printf("\n %s ? (y/n) [n] : ", question);
-    if (_force) {
+    if (_force)
+    {
         printf("y\n");
-    } else {
+    }
+    else
+    {
         mft_restore_and_raise();
         fflush(stdout);
         std::string answer;
         std::getline(std::cin, answer);
-        if (strcasecmp(answer.c_str(), "y") &&
-            strcasecmp(answer.c_str(), "yes")) {
+        if (strcasecmp(answer.c_str(), "y") && strcasecmp(answer.c_str(), "yes"))
+        {
             return false;
         }
-        mft_signal_set_handling(1);//set again in case we move from here to another critical section.
+        mft_signal_set_handling(1); // set again in case we move from here to another critical section.
     }
     return true;
 }
 
 /************************************
-* Function: HandleOption
-************************************/
+ * Function: HandleOption
+ ************************************/
 ParseStatus MlxRegUi::HandleOption(string name, string value)
 {
-    if (name == HELP_FLAG) {
+    if (name == HELP_FLAG)
+    {
         printHelp();
         return PARSE_OK_WITH_EXIT;
-    } else if (name == VERSION_FLAG) {
+    }
+    else if (name == VERSION_FLAG)
+    {
 #if defined(EXTERNAL) || defined(MST_UL)
         print_version_string(MLXREG_EXEC, NULL);
 #else
         print_version_string("mlxreg (internal)", NULL);
 #endif
         return PARSE_OK_WITH_EXIT;
-    } else if (name == DEVICE_FLAG) {
+    }
+    else if (name == DEVICE_FLAG)
+    {
         _device = value;
         return PARSE_OK;
-    } else if (name == ADB_FILE_FLAG) {
+    }
+    else if (name == ADB_FILE_FLAG)
+    {
         _extAdbFile = value;
         return PARSE_OK;
-    } else if (name == IDXES_FLAG) {
+    }
+    else if (name == IDXES_FLAG)
+    {
         _indexesStr = value;
         return PARSE_OK;
-    } else if (name == REG_NAME_FLAG) {
+    } else if (name == OPS_FLAG) {
+        _opsStr = value;
+        return PARSE_OK;
+    }
+    else if (name == REG_NAME_FLAG) {
         CHECK_UNIQUE_UINT(_regID);
         CHECK_UNIQUE_UINT(_dataLen);
         _regName = value;
         return PARSE_OK;
-    } else if (name == REG_ID_FLAG) {
+    }
+    else if (name == REG_ID_FLAG)
+    {
         CHECK_UNIQUE_STR(_regName);
         RegAccessParser::strToUint32((char*)value.c_str(), _regID);
         return PARSE_OK;
-    } else if (name == REG_LEN_FLAG) {
+    }
+    else if (name == REG_LEN_FLAG)
+    {
         CHECK_UNIQUE_STR(_regName);
         RegAccessParser::strToUint32((char*)value.c_str(), _dataLen);
         return PARSE_OK;
     }
 #if !defined(EXTERNAL) && !defined(MST_UL)
-    else if (name == IGNORE_CAP_CHECK_FLAG) {
+    else if (name == IGNORE_CAP_CHECK_FLAG)
+    {
         _ignoreCapCheck = true;
         return PARSE_OK;
     }
 #endif
-    else if (name == IGNORE_REG_CHECK_FLAG) {
+    else if (name == IGNORE_REG_CHECK_FLAG)
+    {
         // TODO: remove IGNORE_REG_CHECK_FLAG from UI after 4.14.0 release, it's deprecated
-        cout << endl << "-W- The flag --" << IGNORE_REG_CHECK_FLAG
-             << " is deprecated and will be removed." << endl << endl;
+        cout << endl
+             << "-W- The flag --" << IGNORE_REG_CHECK_FLAG << " is deprecated and will be removed." << endl
+             << endl;
         return PARSE_OK;
-    } else if (name == FORCE_FLAG) {
+    }
+    else if (name == FORCE_FLAG)
+    {
         _force = true;
         return PARSE_OK;
-    } else if (name == OP_SET_FLAG) {
+    }
+    else if (name == OP_SET_FLAG)
+    {
         CHECK_UNIQUE_OP(_op);
         _op = CMD_SET;
         _dataStr = value;
         return PARSE_OK;
-    } else if (name == OP_GET_FLAG) {
+    }
+    else if (name == OP_GET_FLAG)
+    {
         CHECK_UNIQUE_OP(_op);
         _op = CMD_GET;
         return PARSE_OK;
-    } else if (name == OP_SHOW_REG_FLAG) {
+    }
+    else if (name == OP_SHOW_REG_FLAG)
+    {
         CHECK_UNIQUE_OP(_op);
         _op = CMD_SHOW_REG;
         _regName = value;
         return PARSE_OK;
-    } else if (name == OP_SHOW_REGS_FLAG) {
+    }
+    else if (name == OP_SHOW_REGS_FLAG)
+    {
         CHECK_UNIQUE_OP(_op);
         _op = CMD_SHOW_REGS;
         return PARSE_OK;
-    } else if (name == OP_SHOW_ALL_REGS_FLAG) {
+    }
+    else if (name == OP_SHOW_ALL_REGS_FLAG)
+    {
         CHECK_UNIQUE_OP(_op);
         _op = CMD_SHOW_ALL_REGS;
         return PARSE_OK;
     }
 #if !defined(EXTERNAL) && !defined(MST_UL)
-    else if (name == IGNORE_RO) {
+    else if (name == IGNORE_RO)
+    {
         _ignore_ro = true;
         return PARSE_OK;
-    } else if (name == FILE_TO_DUMP_BUFFER) {
+    }
+    else if (name == FILE_TO_DUMP_BUFFER)
+    {
         _output_file = value;
         return PARSE_OK;
-    } else if (name == FILE_IO){
+    }
+    else if (name == FILE_IO)
+    {
         _file_io = value;
         return PARSE_OK;
     }
@@ -452,50 +510,60 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
 }
 
 /************************************
-* Function: paramValidate
-************************************/
+ * Function: paramValidate
+ ************************************/
 void MlxRegUi::paramValidate()
 {
-    if (_device == "") {
+    if (_device == "")
+    {
         throw MlxRegException("you must provide a device name");
     }
-    if (_op == CMD_UNKNOWN) {
+    if (_op == CMD_UNKNOWN)
+    {
         throw MlxRegException("no operation flag, please read help");
     }
-    if (_op == CMD_SHOW_REG) {
-        if (_regName == "") {
+    if (_op == CMD_SHOW_REG)
+    {
+        if (_regName == "")
+        {
             throw MlxRegException("you must provide reg_name in order to use show_register");
         }
-        if (_regID != 0) {
+        if (_regID != 0)
+        {
             throw MlxRegException("you can't use show_register with reg_id");
         }
     }
-    if (_op == CMD_GET || _op == CMD_SET) {
-        if (_regID == 0 && _regName == "") {
+    if (_op == CMD_GET || _op == CMD_SET)
+    {
+        if (_regID == 0 && _regName == "")
+        {
             throw MlxRegException("you must provide register name or register id when SET/GET");
         }
         // Unknown mode
-        if (_regID != 0) {
-            if (_dataLen == 0) {
+        if (_regID != 0)
+        {
+            if (_dataLen == 0)
+            {
                 throw MlxRegException("you must provide register length when SET/GET using register id");
             }
         }
     }
-    if (_op == CMD_SET && _dataStr == "") {
+    if (_op == CMD_SET && _dataStr == "")
+    {
         throw MlxRegException("you must provide registers data string to use SET");
     }
 }
 
-
-void MlxRegUi::readFromFile(string file_name, vector<u_int32_t> &buff, int len)
+void MlxRegUi::readFromFile(string file_name, vector<u_int32_t>& buff, int len)
 {
-    ifstream file;
-    file.open( file_name.c_str(), ios::binary );
-    
-    for (int idx=0; idx<(len/4); idx++) {
+    ifstream file(file_name.c_str(), ios::binary);
+
+    for (int idx = 0; idx < (len / 4); idx++)
+    {
         u_int32_t data;
-        file.read((char*) &data, sizeof(u_int32_t));
-        if (!file) {
+        file.read((char*)&data, sizeof(u_int32_t));
+        if (!file)
+        {
             MlxRegException("Failed to read from file");
         }
         buff.push_back(__cpu_to_be32(data));
@@ -504,66 +572,74 @@ void MlxRegUi::readFromFile(string file_name, vector<u_int32_t> &buff, int len)
     file.close();
 }
 
-
 void MlxRegUi::writeToFile(string file_name, vector<u_int32_t> buff)
 {
-    ofstream file;
-    file.open(file_name.c_str(), ios::binary | ios::in | ios::out); // Overwrite the file (in/out)
-    for(unsigned int idx=0; idx<buff.size(); idx++) {
+    ofstream file(file_name.c_str(), ios::binary | ios::in | ios::out);// Overwrite the file (in/out)
+    for (unsigned int idx = 0; idx < buff.size(); idx++)
+    {
         u_int32_t data = __cpu_to_be32(buff[idx]);
-        file.write((char*) &data, sizeof(u_int32_t));
+        file.write((char*)&data, sizeof(u_int32_t));
     }
     file.close();
 }
 
-
 void MlxRegUi::sendCmdBasedOnFileIo(maccess_reg_method_t cmd, int reg_size)
 {
-    
-    std::vector<u_int32_t>  buff; 
+    std::vector<u_int32_t> buff;
 
     //* read input from file
     readFromFile(_file_io, buff, reg_size);
-    
+
     //* Send GET command
     _mlxRegLib->sendRegister(_regName, cmd, buff);
 
     //* Write output to file (for GET)
-    if (cmd == MACCESS_REG_METHOD_GET) {
+    if (cmd == MACCESS_REG_METHOD_GET)
+    {
         writeToFile(_file_io, buff);
-    } 
+    }
 }
 
-void MlxRegUi::run(int argc, char **argv)
+void MlxRegUi::run(int argc, char** argv)
 {
     ParseStatus rc = _cmdParser.ParseOptions(argc, argv);
 
-    if (rc == PARSE_OK_WITH_EXIT) {
+    if (rc == PARSE_OK_WITH_EXIT)
+    {
         return;
-    } else if (rc == PARSE_ERROR) {
+    }
+    else if (rc == PARSE_ERROR)
+    {
         cout << _cmdParser.GetUsage();
         throw MlxRegException("failed to parse arguments. %s", _cmdParser.GetErrDesc());
     }
     paramValidate();
     // Init device
     _mf = mopen(_device.c_str());
-    if (!_mf) {
+    if (!_mf)
+    {
         throw MlxRegException("Failed to open device: \"" + _device + "\", " + strerror(errno));
     }
 
-    if (!MlxRegLib::isDeviceSupported(_mf)) {
+    if (!MlxRegLib::isDeviceSupported(_mf))
+    {
         throw MlxRegException("Device is not supported");
     }
 
-    if (_ignoreCapCheck == false) {
-        try {
+    if (_ignoreCapCheck == false)
+    {
+        try
+        {
             MlxRegLib::isAccessRegisterSupported(_mf);
-        } catch (MlxRegException& exp) {
+        }
+        catch (MlxRegException& exp)
+        {
 #if defined(EXTERNAL) || defined(MST_UL)
             throw exp;
 #else
-            throw MlxRegException("%s. \n   internal only: FW might be old, consider running " \
-                    "with --%s (This flag is deprecated)", exp.what(), IGNORE_CAP_CHECK_FLAG);
+            throw MlxRegException("%s. \n   internal only: FW might be old, consider running "
+                                  "with --%s (This flag is deprecated)",
+                                  exp.what(), IGNORE_CAP_CHECK_FLAG);
 #endif
         }
     }
@@ -571,93 +647,111 @@ void MlxRegUi::run(int argc, char **argv)
     _mlxRegLib = new MlxRegLib(_mf, _extAdbFile, _isExternal);
 
     std::vector<AdbInstance*> regFields;
-    std::vector<string>       regs;
-    AdbInstance *regNode = NULL;
-    std::vector<u_int32_t>    buff;
+    std::vector<string> regs;
+    AdbInstance* regNode = NULL;
+    std::vector<u_int32_t> buff;
 
-    switch (_op) {
-    case CMD_SHOW_REG:
-        _mlxRegLib->showRegister(_regName, regFields);
-        printRegFields(regFields);
-        break;
+    switch (_op)
+    {
+        case CMD_SHOW_REG:
+            _mlxRegLib->showRegister(_regName, regFields);
+            printRegFields(regFields);
+            break;
 
-    case CMD_SHOW_REGS:
-        _mlxRegLib->showRegisters(regs);
-        printRegNames(regs);
-        break;
+        case CMD_SHOW_REGS:
+            _mlxRegLib->showRegisters(regs);
+            printRegNames(regs);
+            break;
 
-    case CMD_SHOW_ALL_REGS:
-        // TODO: remove CMD_SHOW_ALL_REGS from UI after 4.14.0 release, it's deprecated
-        cout << endl << "-W- The option --" << OP_SHOW_ALL_REGS_FLAG
-             << " is deprecated and will be removed, please use --"
-             << OP_SHOW_REGS_FLAG << " instead." << endl << endl;
-        _mlxRegLib->showRegisters(regs);
-        printRegNames(regs);
-        break;
+        case CMD_SHOW_ALL_REGS:
+            // TODO: remove CMD_SHOW_ALL_REGS from UI after 4.14.0 release, it's deprecated
+            cout << endl
+                 << "-W- The option --" << OP_SHOW_ALL_REGS_FLAG << " is deprecated and will be removed, please use --"
+                 << OP_SHOW_REGS_FLAG << " instead." << endl
+                 << endl;
+            _mlxRegLib->showRegisters(regs);
+            printRegNames(regs);
+            break;
 
-    case CMD_GET:
+        case CMD_GET:
         {
-            if (_file_io != "") {
+            if (_file_io != "")
+            {
                 assert(_regName != "");
                 int reg_size = (_mlxRegLib->findAdbNode(_regName)->size) / 8; // in Bytes
                 sendCmdBasedOnFileIo(MACCESS_REG_METHOD_GET, reg_size);
                 break;
             }
 
-            if (_regName != "") {
+            if (_regName != "")
+            {
                 regNode = _mlxRegLib->findAdbNode(_regName);
             }
-            RegAccessParser parser(_dataStr, _indexesStr, regNode, _dataLen);
+            RegAccessParser parser(_dataStr, _indexesStr, _opsStr, regNode, _dataLen);
             buff = parser.genBuff();
             printf("Sending access register...\n\n");
-            if (_regName != "") { // Known mode
+            if (_regName != "")
+            { // Known mode
                 _mlxRegLib->sendRegister(_regName, MACCESS_REG_METHOD_GET, buff);
                 printAdbContext(regNode, buff);
-            } else {          // Unknown mode
+            }
+            else
+            { // Unknown mode
                 _mlxRegLib->sendRegister(_regID, MACCESS_REG_METHOD_GET, buff);
                 printBuff(buff);
             }
         }
         break;
 
-    case CMD_SET:
+        case CMD_SET:
         {
-            if (_file_io != "") {
+            if (_file_io != "")
+            {
                 int reg_size = (_mlxRegLib->findAdbNode(_regName)->size) / 8; // in Bytes
                 sendCmdBasedOnFileIo(MACCESS_REG_METHOD_SET, reg_size);
                 break;
             }
 
-            if (_regName != "") {
+            if (_regName != "")
+            {
                 regNode = _mlxRegLib->findAdbNode(_regName);
             }
             // Read current register data into buffer
-            RegAccessParser parserGet(_dataStr, _indexesStr, regNode, _dataLen, _ignore_ro);
+            RegAccessParser parserGet(_dataStr, _indexesStr, _opsStr, regNode, _dataLen, _ignore_ro);
             buff = parserGet.genBuff();
-            if (_regName != "") { // Known mode
+            if (_regName != "")
+            { // Known mode
                 _mlxRegLib->sendRegister(_regName, MACCESS_REG_METHOD_GET, buff);
-            } else {          // Unknown mode
+            }
+            else
+            { // Unknown mode
                 _mlxRegLib->sendRegister(_regID, MACCESS_REG_METHOD_GET, buff);
             }
             // Update the register buffer with user inputs
-            RegAccessParser parser(_dataStr, _indexesStr, regNode, buff, _ignore_ro);
+            RegAccessParser parser(_dataStr, _indexesStr, _opsStr, regNode, buff, _ignore_ro);
             buff = parser.genBuff();
-            if (_output_file != "") {
+            if (_output_file != "")
+            {
                 printAdbContext(regNode, buff);
                 _mlxRegLib->dumpRegisterData(_output_file, buff);
                 break;
             }
-            if (_regName != "") { // Known mode
+            if (_regName != "")
+            { // Known mode
                 printf("You are about to send access register: %s with the following data:\n", _regName.c_str());
                 printAdbContext(regNode, buff);
-                if (askUser("Do you want to continue")) {
+                if (askUser("Do you want to continue"))
+                {
                     printf(" Sending access register...\n");
                     _mlxRegLib->sendRegister(_regName, MACCESS_REG_METHOD_SET, buff);
                 }
-            } else {          // Unknown mode
+            }
+            else
+            { // Unknown mode
                 printf("You are about to send access register id: 0x%x with the following data:\n", _regID);
                 printBuff(buff);
-                if (askUser("Do you want to continue")) {
+                if (askUser("Do you want to continue"))
+                {
                     printf(" Sending access register...\n");
                     _mlxRegLib->sendRegister(_regID, MACCESS_REG_METHOD_SET, buff);
                 }
@@ -665,15 +759,15 @@ void MlxRegUi::run(int argc, char **argv)
         }
         break;
 
-    default:
-        break;
+        default:
+            break;
     }
 }
 
 /************************************
-* Function: main
-************************************/
-int main(int argc, char **argv)
+ * Function: main
+ ************************************/
+int main(int argc, char** argv)
 {
     try
     {
@@ -699,4 +793,3 @@ int main(int argc, char **argv)
     }
     return 0;
 }
-

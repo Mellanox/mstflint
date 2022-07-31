@@ -37,11 +37,10 @@
 
 #include "tools_time.h"
 
-
-
-void tt_get_time(tt_ctx_t *tt)
+void tt_get_time(tt_ctx_t* tt)
 {
-    if (!tt) {
+    if (!tt)
+    {
         return;
     }
     time(&(tt->now));
@@ -52,6 +51,3 @@ double tt_diff_in_ms(tt_ctx_t t1, tt_ctx_t t2)
 {
     return difftime(t2.now, t1.now) * 1000;
 }
-
-
-

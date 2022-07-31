@@ -45,11 +45,11 @@ from mft_logger import LoggerFactory
 CONFIG_SPACE_PTR_OFFSET = 0X34
 MAXIMUN_LEGACY_CAP_SIZE = 0x100
 MAX_PCI_OFFSET = 0xfff
-MELLANOX_PCI_SKIP_LIST = [0x58,0x59,0x5a,0x5b,0x5c,0x5d,0x5e,0x5f] # it is harmful for the device to read offset 0x58 and 0x5c for example
+MELLANOX_PCI_SKIP_LIST = [0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f]  # it is harmful for the device to read offset 0x58 and 0x5c for example
 VENDOR_ID_ADDR = 0X0
 DEVICE_ID_ADDR = 0x2
 # Legacy Capabilities
-CAP_PCI_EXPRESS= 0x10
+CAP_PCI_EXPRESS = 0x10
 CAP_MSI = 0x05
 CAP_MSI_X = 0x11
 CAP_POWER_MANAGEMENT = 0x01
@@ -67,20 +67,22 @@ CAP_ARI = 0X0e
 CAP_SRIOV = 0x10
 CAP_SECONDRY_PCI_EXPRESS = 0x19
 CAP_PHYSICAL_LAYER_GEN4 = 0x26
-CAP_DPC= 0x1d
+CAP_DPC = 0x1d
 CAP_ACS = 0xd
-CAP_ATS = 0xf    
+CAP_ATS = 0xf
 # Key:ID, value:size
 CAP_EXTENDED_DICT = {CAP_AER: 0x48,
-                    CAP_SRIOV: 0x40,
-                    CAP_SECONDRY_PCI_EXPRESS: 0x10,
-                    CAP_PHYSICAL_LAYER_GEN4: 0x40,
-                    CAP_DPC: 0x40,
-                    CAP_ATS: 0x8
-                   }
+                     CAP_SRIOV: 0x40,
+                     CAP_SECONDRY_PCI_EXPRESS: 0x10,
+                     CAP_PHYSICAL_LAYER_GEN4: 0x40,
+                     CAP_DPC: 0x40,
+                     CAP_ATS: 0x8
+                     }
+
 
 class NotSupportedDeviceException(Exception):
     pass
+
 
 class PCIDeviceBase(object):
     """
@@ -90,23 +92,23 @@ class PCIDeviceBase(object):
         """
         """
         self.dbdf = dbdf
-        self.logger = LoggerFactory().get('mlxpci',debug_level)
+        self.logger = LoggerFactory().get('mlxpci', debug_level)
 
         temp_dir = tempfile.gettempdir()
         self.dump_file_path = os.path.join(temp_dir, "{0}.pkl".format(str(self.dbdf)))
 
-        self._pci_conf_space = {} # <capability-id> : <value:integer>
+        self._pci_conf_space = {}  # <capability-id> : <value:integer>
         self._pci_express_offset = None
-    
+
     def read(self, offset, size, skip_offset_list=None):
         """
         Read from PCI configuration space
         skip_offset_list is a list of offsets to skip reading for some offsets
         """
-        if self._is_valid_range(offset, size) is False: 
+        if self._is_valid_range(offset, size) is False:
             raise Exception("offset [{0}] with size {1} is not a valid offset to read from.".format(offset, size))
         self.logger.debug("Reading offset[{0}] with size [{1}] for PCI device[{2}]".format(offset, size, self.dbdf))
-        
+
     def write(self, offset, size, bytes_list):
         """
         Write to PCI configuration space
@@ -114,40 +116,40 @@ class PCIDeviceBase(object):
         if self._is_valid_range(offset, size) is False:
             raise Exception("offset [{0}] with size {1} is not a valid offset to write.".format(offset, size))
         self.logger.debug("Writing [{0}] on  offset[{1}]  for PCI device[{2}]".format(bytes_list, offset, self.dbdf))
-    
+
     def save_configuration_space(self, to_file=False):
         """
         Save PCI configuration space of the device
         """
         self.logger.debug("Saving configurations for PCI device[{0}]".format(self.dbdf))
-        visited_capabilities = [] # A variable to save the visited capability to avoid an infinite loop
+        visited_capabilities = []  # A variable to save the visited capability to avoid an infinite loop
 
         # read and save PCI header 0x0-0x3f
         self.logger.debug("Reading and saving pci header [0x0-0x3f] ...")
         self._pci_conf_space["pci_header_start"] = self.read(0x0, 16)
         self._pci_conf_space["pci_header_bars"] = self.read(0x10, 24)
         self._pci_conf_space["pci_header_end"] = self.read(0x28, 24)
-        
+
         self.logger.debug("Reading and saving legacy list ...")
-        pci_legacy_ptr =  self.read_byte(CONFIG_SPACE_PTR_OFFSET)
+        pci_legacy_ptr = self.read_byte(CONFIG_SPACE_PTR_OFFSET)
         while pci_legacy_ptr != 0:
             assert 0 < pci_legacy_ptr < MAXIMUN_LEGACY_CAP_SIZE, "Legacy pointer (<{0:#x}>) is out of range".format(pci_legacy_ptr)
-            capability_id =  self.read_byte(pci_legacy_ptr)
+            capability_id = self.read_byte(pci_legacy_ptr)
             if capability_id in CAP_LEGACY_DICT:
                 if capability_id in visited_capabilities:
-                    raise RuntimeError("Capability id {0} was seen before (avoid infinite loop).".format(capability_id)) 
+                    raise RuntimeError("Capability id {0} was seen before (avoid infinite loop).".format(capability_id))
                 cap_size = CAP_LEGACY_DICT[capability_id]
-                self._pci_conf_space["{0}_leg".format(capability_id)] = self.read(pci_legacy_ptr,  cap_size)
+                self._pci_conf_space["{0}_leg".format(capability_id)] = self.read(pci_legacy_ptr, cap_size)
                 visited_capabilities.append(capability_id)
             pci_legacy_ptr = self.read_byte(pci_legacy_ptr + 1)
 
         self.logger.debug("Reading and saving extended list ...")
         pci_extended_ptr = MAXIMUN_LEGACY_CAP_SIZE
         visited_capabilities = []
-        while pci_extended_ptr and pci_extended_ptr != 0xfff: # Reading PCI Extended Configurations on VM will return 0XFFF For FBSD
+        while pci_extended_ptr and pci_extended_ptr != 0xfff:  # Reading PCI Extended Configurations on VM will return 0XFFF For FBSD
             assert pci_extended_ptr >= MAXIMUN_LEGACY_CAP_SIZE, "Extended pointer (<{0:#x}>) is out of range".format(pci_extended_ptr)
             capability_id = self.read_word(pci_extended_ptr)
-            if capability_id is None: # Reading PCI Extended Configurations on VM will return None
+            if capability_id is None:  # Reading PCI Extended Configurations on VM will return None
                 break
             if capability_id in CAP_EXTENDED_DICT:
                 if capability_id in visited_capabilities:
@@ -164,7 +166,7 @@ class PCIDeviceBase(object):
             self.logger.debug("PCI Configuration space dict {0} saved to a file {1}".format(self._pci_conf_space, self.dump_file_path))
             self._pci_conf_space = {}
         self.logger.info("PCI Configurations for [{0} was saved successfully]".format(self.dbdf))
-    
+
     def restore_configuration_space(self):
         """
         Restore PCI configuration space of the device
@@ -173,21 +175,20 @@ class PCIDeviceBase(object):
         if self._pci_conf_space == {}:
             self._pci_conf_space = self._get_pci_conf_from_file()
 
-        visited_capabilities = [] # Save the visited capability to avoid infinit loop
+        visited_capabilities = []  # Save the visited capability to avoid infinit loop
 
         # Read and save PCI configuration space offset from 0x0-0xfff
         # Reading the pci conf space one time to have better performance
         cached_data = self.read(offset=0x0, size=MAX_PCI_OFFSET, skip_offset_list=MELLANOX_PCI_SKIP_LIST)
         # write pci header 0x0-0x3f
         self.logger.debug("Writing PCI header [0x0-0x3f] ...")
-        self.write(0x10, 24, self._pci_conf_space["pci_header_bars"]) # Restore the BAR 
-        self.write(0x0, 16, self._pci_conf_space["pci_header_start"]) # and then restore bar_enable (part of the "start")
+        self.write(0x10, 24, self._pci_conf_space["pci_header_bars"])  # Restore the BAR
+        self.write(0x0, 16, self._pci_conf_space["pci_header_start"])  # and then restore bar_enable (part of the "start")
         self.write(0x28, 24, self._pci_conf_space["pci_header_end"])
-
 
         # Write Legacy list
         self.logger.debug("Writing back Legacy list ...")
-        pci_legacy_ptr =  self._fetch_byte(cached_data, CONFIG_SPACE_PTR_OFFSET)
+        pci_legacy_ptr = self._fetch_byte(cached_data, CONFIG_SPACE_PTR_OFFSET)
         while pci_legacy_ptr:
             assert 0 < pci_legacy_ptr < MAXIMUN_LEGACY_CAP_SIZE, "Legacy pointer (<{0:#x}>) is out of range".format(pci_legacy_ptr)
             capability_id = self._fetch_byte(cached_data, pci_legacy_ptr)
@@ -206,7 +207,7 @@ class PCIDeviceBase(object):
         while pci_extended_ptr and pci_extended_ptr != 0xfff:
             assert pci_extended_ptr >= MAXIMUN_LEGACY_CAP_SIZE, "Extended pointer (<{0:#x}>) is out of range".format(pci_extended_ptr)
             capability_id = self._fetch_word(cached_data, pci_extended_ptr)
-            if capability_id is None: # Reading PCI Extended Configurations on VM will return None
+            if capability_id is None:  # Reading PCI Extended Configurations on VM will return None
                 break
             if capability_id in CAP_EXTENDED_DICT and "{0}_ext".format(capability_id) in self._pci_conf_space:
                 if capability_id in visited_capabilities:
@@ -215,16 +216,16 @@ class PCIDeviceBase(object):
                 self.write(pci_extended_ptr, cap_size, self._pci_conf_space["{0}_ext".format(capability_id)])
                 visited_capabilities.append(capability_id)
             pci_extended_ptr = self._fetch_word(cached_data, pci_extended_ptr + 2) >> 4
-            
+
         self.logger.info("PCI Configurations for [{0} was restored successfully]".format(self.dbdf))
-    
+
     def _is_valid_range(self, offset, size):
         """
         A method to validate offset and size
         it returns True if the offset is valid, else False
         """
         return (offset + size <= 0xfffe)
-    
+
     def _is_valid_device(self):
         """
         Checks if the device is valid or not
@@ -234,21 +235,21 @@ class PCIDeviceBase(object):
         if self._vendor_id == 0xffff and self._dev_id == 0xffff:
             return False
         return True
-    
+
     def _get_pci_express_offset(self):
         """
         Get PCI express offset
         """
         visited_capabilities = []
-        pci_legacy_ptr =  self.read_byte(CONFIG_SPACE_PTR_OFFSET)
+        pci_legacy_ptr = self.read_byte(CONFIG_SPACE_PTR_OFFSET)
         while pci_legacy_ptr != 0:
             assert 0 < pci_legacy_ptr < MAXIMUN_LEGACY_CAP_SIZE, "Legacy pointer (<{0:#x}>) is out of range".format(pci_legacy_ptr)
-            capability_id =  self.read_byte(pci_legacy_ptr)
+            capability_id = self.read_byte(pci_legacy_ptr)
             if capability_id == 0x10:
                 return pci_legacy_ptr
             if capability_id in CAP_LEGACY_DICT:
                 if capability_id in visited_capabilities:
-                    raise RuntimeError("Capability id {0} was seen before (avoid infinite loop).".format(capability_id)) 
+                    raise RuntimeError("Capability id {0} was seen before (avoid infinite loop).".format(capability_id))
                 visited_capabilities.append(capability_id)
             pci_legacy_ptr = self.read_byte(pci_legacy_ptr + 1)
         raise RuntimeError("Failed to find pci express offset")
@@ -261,7 +262,7 @@ class PCIDeviceBase(object):
         LINK_STATUS_REG_OFFSET = 0x12
         link_status_reg_address = self._pci_express_offset + LINK_STATUS_REG_OFFSET
         link_status_reg_value = self.read_word(link_status_reg_address)
-        dll_value_bin = bin(link_status_reg_value).replace('0b', '').zfill(16)[-13-1]  #bit 13
+        dll_value_bin = bin(link_status_reg_value).replace('0b', '').zfill(16)[-13 - 1]  # bit 13
         return int(dll_value_bin)
 
     @property
@@ -272,7 +273,7 @@ class PCIDeviceBase(object):
         LINK_CAPABILITIES_REG_OFFSET = 0xc
         link_capabilities_reg_address = self._pci_express_offset + LINK_CAPABILITIES_REG_OFFSET
         link_capabilities_reg_value = self.read_long(link_capabilities_reg_address)
-        dll_reporting_cable_bin = bin(link_capabilities_reg_value).replace('0b', '').zfill(32)[-20-1]  #bit 20
+        dll_reporting_cable_bin = bin(link_capabilities_reg_value).replace('0b', '').zfill(32)[-20 - 1]  # bit 20
         return int(dll_reporting_cable_bin)
 
     @property
@@ -283,7 +284,7 @@ class PCIDeviceBase(object):
         SLOT_CAPABILITIES_REG_OFFSET = 0x14
         slot_capabilities_address = self._pci_express_offset + SLOT_CAPABILITIES_REG_OFFSET
         slot_capabilities_value = self.read_long(slot_capabilities_address)
-        hotplug_capable_value_str = bin(slot_capabilities_value).replace('0b', '').zfill(32)[-6-1]  #bit 6
+        hotplug_capable_value_str = bin(slot_capabilities_value).replace('0b', '').zfill(32)[-6 - 1]  # bit 6
         return int(hotplug_capable_value_str)
 
     @property
@@ -294,7 +295,7 @@ class PCIDeviceBase(object):
         SLOT_CONTROL_REG_OFFSET = 0x18
         slot_control_address = self._pci_express_offset + SLOT_CONTROL_REG_OFFSET
         slot_control_value = self.read_word(slot_control_address)
-        hotplug_interrupt_enable_value_str = bin(slot_control_value).replace('0b', '').zfill(16)[-5-1]  #bit 5
+        hotplug_interrupt_enable_value_str = bin(slot_control_value).replace('0b', '').zfill(16)[-5 - 1]  # bit 5
         return int(hotplug_interrupt_enable_value_str)
 
     # Helper methods
@@ -309,7 +310,7 @@ class PCIDeviceBase(object):
         """
         Helper method that extract a word from a data that was read before
         """
-        if offset + 1 < len(cached_pci_conf): # Device does not have extended PCI configurationfor VMs
+        if offset + 1 < len(cached_pci_conf):  # Device does not have extended PCI configurationfor VMs
             byte0 = "{0:x}".format(cached_pci_conf[offset]).zfill(2)
             byte1 = "{0:x}".format(cached_pci_conf[offset + 1]).zfill(2)
             return int("{0}{1}".format(byte1, byte0), 16)
@@ -349,10 +350,10 @@ class LinuxPCIDevice(PCIDeviceBase):
             return self._bin_file.read(offset=offset, size=size, skip_offset_list=skip_offset_list)
         except Exception as e:
             raise RuntimeError("Failed to read offset [{0}] with size [{1}] for PCI device [{2}]. Error is [{3}]".format(offset, size, self.dbdf, e))
-    
+
     def read_byte(self, offset):
         return self._bin_file.read_byte(offset)
-    
+
     def read_word(self, offset):
         assert offset % 2 == 0, "Offset should be aligned to 2"
         return self._bin_file.read_word(offset)
@@ -364,13 +365,13 @@ class LinuxPCIDevice(PCIDeviceBase):
     def write(self, offset, size, bytes_list):
         super(LinuxPCIDevice, self).write(offset, size, bytes_list)
         self._bin_file.write(bytes_list=bytes_list, offset=offset, size=size)
-        self.logger.debug("Data was Written [{0}] to  offset[{1}] for PCI device [{2}]".format(bytes_list, offset, self.dbdf))    
+        self.logger.debug("Data was Written [{0}] to  offset[{1}] for PCI device [{2}]".format(bytes_list, offset, self.dbdf))
 
 
 class FreeBSDPCIDevice(PCIDeviceBase):
     """
     PCI device for FreeBSD
-    """ 
+    """
     def __init__(self, dbdf, debug_level="debug"):
         super(FreeBSDPCIDevice, self).__init__(dbdf, debug_level)
         if self._is_valid_device() == False:
@@ -379,12 +380,12 @@ class FreeBSDPCIDevice(PCIDeviceBase):
         self._pci_express_offset = self._get_pci_express_offset()
 
     def align_to(self, number, base, round="down"):
-        if number%base == 0:
-            ret_number = number  
+        if number % base == 0:
+            ret_number = number
         elif round == "down":
             ret_number = number - number % base
         elif round == "up":
-            ret_number =  number - number % base + base
+            ret_number = number - number % base + base
         else:
             raise RuntimeError("Please add valid round: up/down")
         return ret_number
@@ -405,10 +406,10 @@ class FreeBSDPCIDevice(PCIDeviceBase):
                     rc, out, err = exec_cmd(read_cmd)
                     if rc:
                         raise RuntimeError("Failed to read using cmd {0}, Error[{1}]".format(read_cmd, err))
-                    pci_hex_data_list = out.replace("\n", " ").split(" ") # Remove new lines + split on spaces
+                    pci_hex_data_list = out.replace("\n", " ").split(" ")  # Remove new lines + split on spaces
                     for hex_str in pci_hex_data_list:
-                        if hex_str != '':  # little endian 
-                            bytes_as_string += [hex_str[6:8] , hex_str[4:6] , hex_str[2:4] , hex_str[0:2]]
+                        if hex_str != '':  # little endian
+                            bytes_as_string += [hex_str[6:8], hex_str[4:6], hex_str[2:4], hex_str[0:2]]
                 else:
                     bytes_as_string.append("00")
         except Exception as e:
@@ -424,7 +425,7 @@ class FreeBSDPCIDevice(PCIDeviceBase):
             else:
                 bytes_list.append(None)
         return bytes_list
-    
+
     def read_byte(self, offset):
         """
         Reads 1B from the pci configuration
@@ -463,12 +464,12 @@ class FreeBSDPCIDevice(PCIDeviceBase):
         super(FreeBSDPCIDevice, self).write(offset, size, bytes_list)
         # assert offset % 4 == 0, "Offset {0} is not aligned to 4".format(offset)
 
-        for ii,byte in enumerate(bytes_list):
-            write_cmd = "pciconf -wb {0} {1} {2:02x}".format(self.dbdf, offset+ii, byte)
+        for ii, byte in enumerate(bytes_list):
+            write_cmd = "pciconf -wb {0} {1} {2:02x}".format(self.dbdf, offset + ii, byte)
             rc, _, err = exec_cmd(write_cmd)
             if rc:
                 raise RuntimeError("Failed to write pci conf space data using cmd {0}, Error[{1}]".format(write_cmd, err))
-        
+
 
 def exec_cmd(cmd):
     """
@@ -483,6 +484,7 @@ def exec_cmd(cmd):
     output = p.communicate()
     stat = p.wait()
     return stat, output[0].decode('utf-8'), output[1].decode('utf-8')  # RC, Stdout, Stderr
+
 
 class PCIDeviceFactory(object):
     """

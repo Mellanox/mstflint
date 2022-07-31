@@ -37,7 +37,6 @@
 #ifndef TOOLS_VERSION_H
 #define TOOLS_VERSION_H
 
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -47,43 +46,40 @@
 #include "gitversion.h"
 #endif
 #ifndef TOOLS_GIT_SHA
-    #define TOOLS_GIT_SHA "6469M"
+#define TOOLS_GIT_SHA "6469M"
 #endif
 
 #ifdef HAVE_CONFIG_H
-    #include <config.h>
-    #ifndef MSTFLINT_VERSION_STR
-        #define MSTFLINT_VERSION_STR PACKAGE_STRING
-    #endif
+#include <config.h>
+#ifndef MSTFLINT_VERSION_STR
+#define MSTFLINT_VERSION_STR PACKAGE_STRING
+#endif
 #endif
 
 #ifndef MFT_VERSION_STR
-    #define MFT_VERSION_STR "mft V.V.V-R"
+#define MFT_VERSION_STR "mft V.V.V-R"
 #endif
 
-static inline
-int get_version_string(char *buf, int buf_size, const char *exe_name, const char *tool_version)
+static inline int get_version_string(char* buf, int buf_size, const char* exe_name, const char* tool_version)
 {
     int len = 0;
     // "svn ci" updates the below line
 
-
-    if (tool_version == NULL || !strcmp(tool_version, "")) {
+    if (tool_version == NULL || !strcmp(tool_version, ""))
+    {
         len = snprintf(buf, buf_size, "%s, ", exe_name);
-    } else {
+    }
+    else
+    {
         len = snprintf(buf, buf_size, "%s %s, ", exe_name, tool_version);
     }
     // cut out first and last "$" from the SVN version string:
-    len += snprintf(buf + len, buf_size - len, "%s, built on %s, %s. Git SHA Hash: %s",
-                    MSTFLINT_VERSION_STR,
-                    __DATE__,
-                    __TIME__,
-                    TOOLS_GIT_SHA);
+    len += snprintf(buf + len, buf_size - len, "%s, built on %s, %s. Git SHA Hash: %s", MSTFLINT_VERSION_STR, __DATE__,
+                    __TIME__, TOOLS_GIT_SHA);
     return len;
 }
 
-static inline
-void print_version_string(const char *exe_name, const char *tool_version)
+static inline void print_version_string(const char* exe_name, const char* tool_version)
 {
     char buf[1024] = {0};
     get_version_string(buf, sizeof(buf), exe_name, tool_version);

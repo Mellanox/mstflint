@@ -99,23 +99,31 @@ void MlxlinkUi::printSynopsisCommands()
                                  "Configure Port State [UP(up)/DN(down)/TG(toggle)]");
     MlxlinkRecord::printFlagLine(
       PTYS_FLAG_SHORT, PTYS_FLAG, "speeds",
-      "Configure Speeds [NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]");
+      "Configure Speeds "
+      "[NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,800G_8X,400G_4X,200G_2X,100G_1X,400G_8X,200G_4X,100G_2X,"
+      "50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
                                  "Configure Link Mode Force (Disable AN)");
     MlxlinkRecord::printFlagLine(
       PPLR_FLAG_SHORT, PPLR_FLAG, "loopback",
-      "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(internal phy Tx-to-Rx loopback)/EX(external loopback connector needed)/EX(external Tx-to-Rx loopback)]");
+      "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(internal phy Tx-to-Rx "
+      "loopback)/EX(external loopback connector needed)/EX(external Tx-to-Rx loopback)]");
     MlxlinkRecord::printFlagLine(
       PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
-      "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode FEC)/RS(RS-FEC)/LL(LL-RS-FEC)/DF-RS(Interleaved_RS-FEC)/DF-LL(Interleaved_LL_RS-FEC)]");
+      "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode "
+      "FEC)/RS(RS-FEC)/LL(LL-RS-FEC)/DF-RS(Interleaved_RS-FEC)/DF-LL(Interleaved_LL_RS-FEC)]");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(
-      FEC_SPEED_FLAG_SHORT, FEC_SPEED_FLAG, "fec_speed",
-      "Speed to Configure FEC [100G,56G,50G,40G,25G,10G,800G_8X,400G_4x,400G_8X,200G_2X,200G_4X,100G_2X,50G_1X,100G_4X] (Default is Active Speed)");
-    MlxlinkRecord::printFlagLine(
-      SLTP_SET_FLAG_SHORT, SLTP_SET_FLAG, "params",
-      "Configure Transmitter Parameters For 16nm devices: [pre2Tap,preTap,mainTap,postTap,m2lp,amp] For 28nm devices: [Pol,tap0,tap1,tap2,bias,preemp_mode]");
+    MlxlinkRecord::printFlagLine(FEC_SPEED_FLAG_SHORT, FEC_SPEED_FLAG, "fec_speed",
+                                 "Speed to Configure FEC "
+                                 "[100G,56G,50G,40G,25G,10G,800G_8X,400G_4x,400G_8X,200G_2X,200G_4X,100G_2X,50G_1X,"
+                                 "100G_4X] (Default is Active Speed)");
+    MlxlinkRecord::printFlagLine(SLTP_SET_FLAG_SHORT, SLTP_SET_FLAG, "params",
+                                 "Configure Transmitter Parameters. "
+                                 "For 7nm devices (lane rate specifies the valid Parameters): "
+                                 "[fir_pre3,fir_pre2,fir_pre1,fir_main,fir_post1], "
+                                 "For 16nm devices: [pre2Tap,preTap,mainTap,postTap,m2lp,amp], "
+                                 "For 28nm devices: [Pol,tap0,tap1,tap2,bias,preemp_mode]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(LANE_FLAG_SHORT, LANE_FLAG, "transmitter_lane",
                                  "Transmitter Lane to Set (Optional - Default All Lanes)");
@@ -125,7 +133,8 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(
       SLTP_TX_POLICY_FLAG_SHORT, SLTP_TX_POLICY_FLAG, "",
-      "Set the parameters according to Data Base only, otherwise it will be set according to the best possible configuration chosen by the system (e.g. KR-startup) (Optional)");
+      "Set the parameters according to Data Base only, otherwise it will be set according to the best possible "
+      "configuration chosen by the system (e.g. KR-startup) (Optional)");
     MlxlinkRecord::printFlagLine(SET_TX_GROUP_MAP_FLAG_SHORT, SET_TX_GROUP_MAP_FLAG, "group_num",
                                  "Map ports to group <group_num> (for Spectrum-2 and Quantum devices)");
     printf(IDENT);
@@ -134,21 +143,28 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PRBS_MODE_FLAG_SHORT, PRBS_MODE_FLAG, "prbs_mode",
                                  "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(
-      PPRT_PRBS_FLAG_SHORT, PPRT_PRBS_FLAG, "rx_prbs_mode",
-      "RX PRBS Mode [PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/SQUARE_WAVEA/SQUARE_WAVEB/SQUARE_WAVEC/SQUARE_WAVED/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ/LT_frames/PRBS15/PRBS28] (Optional - Default PRBS31)");
+    MlxlinkRecord::printFlagLine(PPRT_PRBS_FLAG_SHORT, PPRT_PRBS_FLAG, "rx_prbs_mode",
+                                 "RX PRBS Mode "
+                                 "[PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/"
+                                 "PRBS9/IDLE/SQUARE_WAVEA/SQUARE_WAVEB/SQUARE_WAVEC/SQUARE_WAVED/PRBS13A/PRBS13B/"
+                                 "PRBS13C/PRBS13D/SSPR/SSPRQ/LT_frames/PRBS15/PRBS28] (Optional - Default PRBS31)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(
       PPTT_PRBS_FLAG_SHORT, PPTT_PRBS_FLAG, "tx_prbs_mode",
-      "TX PRBS Mode [PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/SQUARE_WAVEA/SQUARE_WAVEB/SQUARE_WAVEC/SQUARE_WAVED/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ/LT_frames/PRBS15/PRBS28/SQUARE_WAVE3,SQUARE_WAVE13,SQUARE_WAVE30] (Optional - Default PRBS31] (Optional - Default PRBS31)");
+      "TX PRBS Mode "
+      "[PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/SQUARE_WAVEA/"
+      "SQUARE_WAVEB/SQUARE_WAVEC/SQUARE_WAVED/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ/LT_frames/PRBS15/PRBS28/"
+      "SQUARE_WAVE3,SQUARE_WAVE13,SQUARE_WAVE30] (Optional - Default PRBS31] (Optional - Default PRBS31)");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(
-      PPRT_RATE_FLAG_SHORT, PPRT_RATE_FLAG, "rx_lane_rate",
-      "RX Lane Rate [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
+    MlxlinkRecord::printFlagLine(PPRT_RATE_FLAG_SHORT, PPRT_RATE_FLAG, "rx_lane_rate",
+                                 "RX Lane Rate "
+                                 "[HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
+                                 "2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(
-      PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
-      "TX Lane Rate [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
+    MlxlinkRecord::printFlagLine(PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
+                                 "TX Lane Rate "
+                                 "[HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
+                                 "2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PRBS_INVERT_TX_POL_FLAG_SHORT, PRBS_INVERT_TX_POL_FLAG, "",
                                  "PRBS TX polarity inversion (Optional - Default No Inversion)");
@@ -220,9 +236,9 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_INV_SHORT, CABLE_PRBS_GEN_INV, "",
                                  "Enable PRBS generator inversion (Optional)");
     printf(IDENT3);
-    MlxlinkRecord::printFlagLine(
-      CABLE_PRBS_GEN_LANES_SHORT, CABLE_PRBS_GEN_LANES, "lanes",
-      "PRBS generator lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_GEN_LANES_SHORT, CABLE_PRBS_GEN_LANES, "lanes",
+                                 "PRBS generator lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] "
+                                 "(Optional - Default all lanes)");
     printf(IDENT3);
     MlxlinkRecord::printFlagLine(
       CABLE_PRBS_CH_PAT_SHORT, CABLE_PRBS_CH_PAT, "pattern",
@@ -234,13 +250,13 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_INV_SHORT, CABLE_PRBS_CH_INV, "",
                                  "Enable PRBS checker inversion (Optional)");
     printf(IDENT3);
-    MlxlinkRecord::printFlagLine(
-      CABLE_PRBS_CH_LANES_SHORT, CABLE_PRBS_CH_LANES, "lanes",
-      "PRBS checker lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] (Optional - Default all lanes)");
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_CH_LANES_SHORT, CABLE_PRBS_CH_LANES, "lanes",
+                                 "PRBS checker lanes to set (one or more lane separated by comma)[0,1,2,3,4,5,6,7] "
+                                 "(Optional - Default all lanes)");
     printf(IDENT3);
-    MlxlinkRecord::printFlagLine(
-      CABLE_PRBS_LANE_RATE_SHORT, CABLE_PRBS_LANE_RATE, "rate",
-      "Set PRBS checker and generator lane rate [HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
+    MlxlinkRecord::printFlagLine(CABLE_PRBS_LANE_RATE_SHORT, CABLE_PRBS_LANE_RATE, "rate",
+                                 "Set PRBS checker and generator lane rate "
+                                 "[HDR(50G)(default),1.25G,SDR(2.5G),10.3125G,FDR(14G),EDR(25G),NDR(100G)]");
     printf(IDENT2);
     MlxlinkRecord::printFlagLine(CABLE_PRBS_SHOW_DIAG_SHORT, CABLE_PRBS_SHOW_DIAG, "",
                                  "Show PRBS diagnostic counters information");
@@ -252,7 +268,7 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT2);
     MlxlinkRecord::printFlagLine(
       CTRL_PARAM_TX_EQ_FLAG_SHORT, CTRL_PARAM_TX_EQ_FLAG, "value",
-      "Set Module Tx Input Equalization in dB [NE(No Equalization),1,2,3,4,5,6,7,9,10,11,12]");
+      "Set Module Tx Input Equalization in dB [NE(No Equalization),1,2,3,4,5,6,7,8,9,10,11,12]");
     printf(IDENT2);
     MlxlinkRecord::printFlagLine(CTRL_PARAM_RX_EMPH_FLAG_SHORT, CTRL_PARAM_RX_EMPH_FLAG, "value",
                                  "Set Module RX Output Emphasis in dB. for CMIS, pre-emphasis value will be set "
@@ -267,9 +283,9 @@ void MlxlinkUi::printSynopsisCommands()
 
     MlxlinkRecord::printFlagLine(MARGIN_SCAN_FLAG_SHORT, MARGIN_SCAN_FLAG, "", "Read the SerDes eye margins per lane");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(
-      EYE_MEASURE_TIME_FLAG_SHORT, EYE_MEASURE_TIME_FLAG, "time",
-      "Measure time in seconds for single eye [10/30/60/90/120/240/480/600/900] (Optional - Default 60 for PCIe and 30 for Network ports)");
+    MlxlinkRecord::printFlagLine(EYE_MEASURE_TIME_FLAG_SHORT, EYE_MEASURE_TIME_FLAG, "time",
+                                 "Measure time in seconds for single eye [10/30/60/90/120/240/480/600/900] (Optional - "
+                                 "Default 60 for PCIe and 30 for Network ports)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(EYE_SEL_FLAG_SHORT, EYE_SEL_FLAG, "eye_sel",
                                  "Eye selection for PAM4 [UP/MID/DOWN/ALL] (Optional - Default ALL)");
@@ -330,10 +346,9 @@ void MlxlinkUi::printHelp()
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Port Speeds",
            MLXLINK_EXEC " -d <device> -p <port_number> --speeds 25G,50G,100G");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure FEC", MLXLINK_EXEC " -d <device> -p <port_number> --fec RS");
-    printf(
-      IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Port for Physical Test Mode",
-      MLXLINK_EXEC
-      " -d <device> -p <port_number> --test_mode EN (--rx_prbs PRBS31 --rx_rate 25G --tx_prbs PRBS7 --tx_rate 10G)");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Port for Physical Test Mode",
+           MLXLINK_EXEC " -d <device> -p <port_number> --test_mode EN (--rx_prbs PRBS31 --rx_rate 25G --tx_prbs PRBS7 "
+                        "--tx_rate 10G)");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Perform PRBS Tuning",
            MLXLINK_EXEC " -d <device> -p <port_number> --test_mode TU");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Cable operations", MLXLINK_EXEC " -d <device> --cable options");
@@ -347,17 +362,17 @@ void MlxlinkUi::printHelp()
            " -d <device> --cable --write <bytes separated by comma> --page <page number> --offset <bytes offset> ");
     if (_mlxlinkCommander->_userInput._advancedMode)
     {
-        printf(
-          IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Transmitter Parameters (on lane, to database)",
-          MLXLINK_EXEC
-          " -d <device> -p <port_number> --serdes_tx <polarity>,<ob_tap0>,<ob_tap1>,<ob_tap2>,<ob_bias>,<ob_preemp_mode>,<ob_reg>,<ob_leva> (--serdes_tx_lane <lane number>) (--database)");
+        printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Transmitter Parameters (on lane, to database)",
+               MLXLINK_EXEC " -d <device> -p <port_number> --serdes_tx "
+                            "<polarity>,<ob_tap0>,<ob_tap1>,<ob_tap2>,<ob_bias>,<ob_preemp_mode>,<ob_reg>,<ob_leva> "
+                            "(--serdes_tx_lane <lane number>) (--database)");
     }
     else
     {
-        printf(
-          IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Transmitter Parameters (on lane, to database)",
-          MLXLINK_EXEC
-          " -d <device> -p <port_number> --serdes_tx <polarity>,<ob_tap0>,<ob_tap1>,<ob_tap2>,<ob_bias>,<ob_preemp_mode> (--serdes_tx_lane <lane number>) (--database)");
+        printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Transmitter Parameters (on lane, to database)",
+               MLXLINK_EXEC " -d <device> -p <port_number> --serdes_tx "
+                            "<polarity>,<ob_tap0>,<ob_tap1>,<ob_tap2>,<ob_bias>,<ob_preemp_mode> (--serdes_tx_lane "
+                            "<lane number>) (--database)");
     }
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Transmitter Parameters for 16nm devices",
            MLXLINK_EXEC
@@ -421,8 +436,8 @@ void MlxlinkUi::validatePCIeParams()
         {
             if (dpnFlags)
             {
-                throw MlxRegException(
-                  "For PCIE port, either port flag or depth, pcie_index and node flags should be specified");
+                throw MlxRegException("For PCIE port, either port flag or depth, pcie_index and node flags should be "
+                                      "specified");
             }
         }
     }
@@ -504,11 +519,17 @@ void MlxlinkUi::validateModulePRBSParams()
     {
         throw MlxRegException("--" CABLE_PRBS_MODE " flag should be provided!");
     }
+    if (_mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_MODE] == "DS" &&
+        _mlxlinkCommander->_userInput.modulePrbsParams.size() > 2)
+    {
+        throw MlxRegException("PRBS module parameters flags are valid only with PRBS enable mode (--prbs_mode EN)");
+    }
 
     if (_mlxlinkCommander->_userInput.isPrbsModeProvided &&
         (_mlxlinkCommander->_userInput.isPrbsShowDiagProvided || _mlxlinkCommander->_userInput.isPrbsClearDiagProvided))
     {
-        throw MlxRegException("PRBS Module Diagnostic info flags are not working while configuring the PRBS test mode!");
+        throw MlxRegException("PRBS Module Diagnostic info flags are not working while configuring the PRBS test "
+                              "mode!");
     }
 
     if (_mlxlinkCommander->_userInput.isPrbsShowDiagProvided && _mlxlinkCommander->_userInput.isPrbsClearDiagProvided)

@@ -31,6 +31,7 @@
 
  *
  */
+
 #ifndef MLXLINK_MAPS_H
 #define MLXLINK_MAPS_H
 
@@ -104,6 +105,14 @@ struct CAP_VALUE
     u_int32_t capMask;
     u_int32_t value;
     string name;
+};
+
+struct PRM_FIELD
+{
+    string prmField;
+    string uiField;
+    u_int32_t fieldAccess;
+    bool isSigned;
 };
 
 class MlxlinkMaps
@@ -200,11 +209,14 @@ public:
     std::map<u_int32_t, string> _SLTPBadSetStatus2Str;
     std::map<u_int32_t, string> _SLTP16BadSetStatus2Str;
     std::map<u_int32_t, string> _SLTP7BadSetStatus2Str;
+    std::map<u_int32_t, PRM_FIELD> _SltpEdrParams;
+    std::map<u_int32_t, PRM_FIELD> _SltpHdrParams;
+    std::map<u_int32_t, PRM_FIELD> _SltpNdrParams;
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
     std::vector<pair<string, string>> _fecPerSpeed;
-    std::map<u_int32_t, std::string> _loopbackModeList;
+    std::map<u_int32_t, pair<string, string>> _loopbackModeList;
     std::map<u_int32_t, std::string> _anDisableList;
     std::map<u_int32_t, std::string> _tech;
     std::map<u_int32_t, std::string> _cableComplianceSfp;

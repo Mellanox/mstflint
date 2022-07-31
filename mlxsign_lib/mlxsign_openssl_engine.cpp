@@ -57,13 +57,29 @@ string to_lowercase_copy(string str)
     return str;
 }
 
-OpensslEngineException::OpensslEngineException(const string &exceptionMsg, ErrorCode errorCode) : msg(exceptionMsg), errorCode(errorCode) {}
-OpensslEngineException::OpensslEngineException(const char *exceptionMsg, ErrorCode errorCode) : msg(exceptionMsg), errorCode(errorCode) {}
-const string OpensslEngineException::getErrorString() const throw() { return msg; }
-const char *OpensslEngineException::what() const throw() { return msg.c_str(); }
-ErrorCode OpensslEngineException::getErrorCode() { return errorCode; }
+OpensslEngineException::OpensslEngineException(const string& exceptionMsg, ErrorCode errorCode) :
+    msg(exceptionMsg), errorCode(errorCode)
+{
+}
+OpensslEngineException::OpensslEngineException(const char* exceptionMsg, ErrorCode errorCode) :
+    msg(exceptionMsg), errorCode(errorCode)
+{
+}
+const string OpensslEngineException::getErrorString() const throw()
+{
+    return msg;
+}
+const char* OpensslEngineException::what() const throw()
+{
+    return msg.c_str();
+}
+ErrorCode OpensslEngineException::getErrorCode()
+{
+    return errorCode;
+}
 
-OpensslEngineSigner::OpensslEngineSigner(const string &engineName, const string &keyIdentifier) : mdCtx(NULL), key(NULL), engineName(engineName), keyIdentifier(keyIdentifier)
+OpensslEngineSigner::OpensslEngineSigner(const string& engineName, const string& keyIdentifier) :
+    mdCtx(NULL), key(NULL), engineName(engineName), keyIdentifier(keyIdentifier)
 {
     SSL_library_init();
     SSL_load_error_strings();
@@ -103,9 +119,9 @@ OpensslEngineSigner::~OpensslEngineSigner()
 
 string OpensslEngineSigner::getOpenSSLError()
 {
-    BIO *bio = BIO_new(BIO_s_mem());
+    BIO* bio = BIO_new(BIO_s_mem());
     ERR_print_errors(bio);
-    char *buf = NULL;
+    char* buf = NULL;
     size_t len = BIO_get_mem_data(bio, &buf);
     string errorString(buf, len);
     BIO_free(bio);
@@ -118,15 +134,18 @@ void OpensslEngineSigner::initOpenSSLEngine()
     engine = ENGINE_by_id(engineName.c_str());
     if (engine == NULL)
     {
-        throw OpensslEngineException("Invalid engine: " + engineName, MlxSign::MLX_SIGN_RSA_KEY_INIT_ENGINE_OPENSSL_ERROR);
+        throw OpensslEngineException("Invalid engine: " + engineName,
+                                     MlxSign::MLX_SIGN_RSA_KEY_INIT_ENGINE_OPENSSL_ERROR);
     }
     if (!ENGINE_init(engine))
     {
-        throw OpensslEngineException("Failed to init engine: " + engineName, MlxSign::MLX_SIGN_RSA_KEY_INIT_ENGINE_OPENSSL_ERROR);
+        throw OpensslEngineException("Failed to init engine: " + engineName,
+                                     MlxSign::MLX_SIGN_RSA_KEY_INIT_ENGINE_OPENSSL_ERROR);
     }
     if (!ENGINE_set_default(engine, ENGINE_METHOD_ALL))
     {
-        throw OpensslEngineException("Failed to use engine: " + engineName, MlxSign::MLX_SIGN_RSA_KEY_INIT_ENGINE_OPENSSL_ERROR);
+        throw OpensslEngineException("Failed to use engine: " + engineName,
+                                     MlxSign::MLX_SIGN_RSA_KEY_INIT_ENGINE_OPENSSL_ERROR);
     }
 }
 
@@ -135,7 +154,8 @@ void OpensslEngineSigner::loadPrivateKey()
     key = ENGINE_load_private_key(engine, keyIdentifier.c_str(), NULL, NULL);
     if (!key)
     {
-        throw OpensslEngineException("Failed to load key from engine with key identifier:" + keyIdentifier, MlxSign::MLX_SIGN_RSA_KEY_ILLEGAL_OPENSSL_URI);
+        throw OpensslEngineException("Failed to load key from engine with key identifier:" + keyIdentifier,
+                                     MlxSign::MLX_SIGN_RSA_KEY_ILLEGAL_OPENSSL_URI);
     }
     privateKeySize = EVP_PKEY_size(key);
 }
@@ -150,38 +170,42 @@ void OpensslEngineSigner::createContext()
     mdCtx = EVP_MD_CTX_create();
     if (!mdCtx)
     {
-        throw OpensslEngineException("Failed to create conxtext:" + getOpenSSLError(), MLX_SIGN_RSA_KEY_DIGEST_INIT_OPENSSL_ERROR);
+        throw OpensslEngineException("Failed to create conxtext:" + getOpenSSLError(),
+                                     MLX_SIGN_RSA_KEY_DIGEST_INIT_OPENSSL_ERROR);
     }
 }
 
-void OpensslEngineSigner::digest(const vector<u_int8_t> &msg, vector<u_int8_t> &signed_msg)
+void OpensslEngineSigner::digest(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg)
 {
-
-    int rc = EVP_DigestSignInit(mdCtx, NULL, EVP_sha512(), NULL, (EVP_PKEY *)key);
+    int rc = EVP_DigestSignInit(mdCtx, NULL, EVP_sha512(), NULL, (EVP_PKEY*)key);
     if (rc != 1)
     {
-        throw OpensslEngineException("Failed to init digest:" + getOpenSSLError(), MLX_SIGN_RSA_KEY_DIGEST_INIT_OPENSSL_ERROR);
+        throw OpensslEngineException("Failed to init digest:" + getOpenSSLError(),
+                                     MLX_SIGN_RSA_KEY_DIGEST_INIT_OPENSSL_ERROR);
     }
     /* Call update with the message */
     rc = EVP_DigestSignUpdate(mdCtx, msg.data(), msg.size());
     if (rc != 1)
     {
-        throw OpensslEngineException("EVP_DigestSignUpdate failed: " + getOpenSSLError(), MlxSign::MLX_SIGN_RSA_KEY_DIGEST_UPDATE_OPENSSL_ERROR);
+        throw OpensslEngineException("EVP_DigestSignUpdate failed: " + getOpenSSLError(),
+                                     MlxSign::MLX_SIGN_RSA_KEY_DIGEST_UPDATE_OPENSSL_ERROR);
     }
     size_t slen = 0;
     /* Finalise the DigestSign operation */
     /* First call EVP_DigestSignFinal with a NULL sig parameter to obtain the length of the
-        * signature. Length is returned in slen */
+     * signature. Length is returned in slen */
     rc = EVP_DigestSignFinal(mdCtx, NULL, &slen);
     if (rc != 1)
     {
-        throw OpensslEngineException("Digest failed: " + getOpenSSLError(), MlxSign::MLX_SIGN_RSA_KEY_DIGEST_FINAL_OPENSSL_ERROR);
+        throw OpensslEngineException("Digest failed: " + getOpenSSLError(),
+                                     MlxSign::MLX_SIGN_RSA_KEY_DIGEST_FINAL_OPENSSL_ERROR);
     }
     /* Allocate memory for the signature based on size in slen */
-    unsigned char *sig;
-    if (!(sig = (unsigned char *)OPENSSL_malloc(sizeof(unsigned char) * (slen))))
+    unsigned char* sig;
+    if (!(sig = (unsigned char*)OPENSSL_malloc(sizeof(unsigned char) * (slen))))
     {
-        throw OpensslEngineException("Digest failed: " + getOpenSSLError(), MlxSign::MLX_SIGN_RSA_KEY_MEMORY_ALLOC_OPENSSL_ERROR);
+        throw OpensslEngineException("Digest failed: " + getOpenSSLError(),
+                                     MlxSign::MLX_SIGN_RSA_KEY_MEMORY_ALLOC_OPENSSL_ERROR);
     }
     signed_msg.resize(slen);
     /* Obtain the signature */
@@ -189,7 +213,8 @@ void OpensslEngineSigner::digest(const vector<u_int8_t> &msg, vector<u_int8_t> &
     if (rc != 1)
     {
         OPENSSL_free(sig);
-        throw OpensslEngineException("Digest failed: " + getOpenSSLError(), MlxSign::MLX_SIGN_RSA_KEY_DIGEST_FINAL_OPENSSL_ERROR);
+        throw OpensslEngineException("Digest failed: " + getOpenSSLError(),
+                                     MlxSign::MLX_SIGN_RSA_KEY_DIGEST_FINAL_OPENSSL_ERROR);
     }
     for (unsigned int i = 0; i < slen; i++)
     {
@@ -207,7 +232,7 @@ ErrorCode OpensslEngineSigner::init()
         loadPrivateKey();
         createContext();
     }
-    catch (OpensslEngineException &ex)
+    catch (OpensslEngineException& ex)
     {
         cout << ex.getErrorString() << endl;
         errorCode = ex.getErrorCode();
@@ -215,14 +240,14 @@ ErrorCode OpensslEngineSigner::init()
     return errorCode;
 }
 
-ErrorCode OpensslEngineSigner::sign(const vector<u_int8_t> &msg, vector<u_int8_t> &signed_msg)
+ErrorCode OpensslEngineSigner::sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg)
 {
     MlxSign::ErrorCode errorCode = MlxSign::MLX_SIGN_SUCCESS;
     try
     {
         digest(msg, signed_msg);
     }
-    catch (OpensslEngineException &ex)
+    catch (OpensslEngineException& ex)
     {
         cout << ex.getErrorString() << endl;
         errorCode = ex.getErrorCode();
@@ -230,4 +255,4 @@ ErrorCode OpensslEngineSigner::sign(const vector<u_int8_t> &msg, vector<u_int8_t
     return errorCode;
 }
 
-#endif //ENABLE_OPENSSL
+#endif // ENABLE_OPENSSL

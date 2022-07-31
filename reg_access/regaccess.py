@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 from __future__ import print_function
 import os
@@ -37,17 +37,22 @@ import platform
 import ctypes
 import mtcr
 
+
 def ones(n):
     return (1 << n) - 1
 
+
 def extractField(val, start, size):
-    return (val & (ones(size)<<start)) >> start
+    return (val & (ones(size) << start)) >> start
+
 
 def insertField(val1, start1, val2, start2, size):
-    return val1 & ~(ones(size)<<start1) | (extractField(val2, start2, size) << start1)
+    return val1 & ~(ones(size) << start1) | (extractField(val2, start2, size) << start1)
+
 
 class RegAccException(Exception):
     pass
+
 
 # Constants
 REG_ACCESS_METHOD_GET = 1
@@ -60,12 +65,12 @@ try:
     if platform.system() == "Windows" or os.name == "nt":
         try:
             REG_ACCESS = CDLL("libreg_access-1.dll")
-        except:
+        except BaseException:
             REG_ACCESS = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libreg_access-1.dll"))
     else:
         try:
             REG_ACCESS = CDLL("rreg_access.so")
-        except:
+        except BaseException:
             REG_ACCESS = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "rreg_access.so"))
 except Exception as exp:
     raise RegAccException("Failed to load shared library rreg_access.so/libreg_access-1.dll: %s" % exp)
@@ -74,63 +79,58 @@ if REG_ACCESS:
 
     class ownershipEnum:
         REG_ACCESS_OWNERSHIP_TAKEN_SUCCESSFULLY = 0
-        REG_ACCESS_FAILED_TO_AQUIRE_OWNERSHIP   = 1
-        REG_ACCESS_NO_OWNERSHIP_REQUIRED        = 2
-
+        REG_ACCESS_FAILED_TO_AQUIRE_OWNERSHIP = 1
+        REG_ACCESS_NO_OWNERSHIP_REQUIRED = 2
 
     class RES_DUMP_ST(Structure):
         _fields_ = [
-            ("segment_type",c_uint16),
-            ("seq_num",c_uint8),
-            ("vhca_id_valid",c_uint8),
-            ("inline_dump",c_uint8),
-            ("more_dump",c_uint8),
-            ("vhca_id",c_uint16),
-            ("index_1",c_uint32),
-            ("index_2",c_uint32),
-            ("num_of_obj_2",c_uint16),
-            ("num_of_obj_1",c_uint16),
-            ("device_opaque",c_uint64),
-            ("mkey",c_uint32),
-            ("size",c_uint32),
-            ("address",c_uint64),
-            ("inline_data",c_uint32 * 52)
+            ("segment_type", c_uint16),
+            ("seq_num", c_uint8),
+            ("vhca_id_valid", c_uint8),
+            ("inline_dump", c_uint8),
+            ("more_dump", c_uint8),
+            ("vhca_id", c_uint16),
+            ("index_1", c_uint32),
+            ("index_2", c_uint32),
+            ("num_of_obj_2", c_uint16),
+            ("num_of_obj_1", c_uint16),
+            ("device_opaque", c_uint64),
+            ("mkey", c_uint32),
+            ("size", c_uint32),
+            ("address", c_uint64),
+            ("inline_data", c_uint32 * 52)
         ]
-
 
     class DIAGNOSTIC_CNTR_ST(Structure):
         _fields_ = [
-            ("counter_id",c_uint16),
-            ("sync",c_uint8)
+            ("counter_id", c_uint16),
+            ("sync", c_uint8)
         ]
-
 
     class DIAGNOSTIC_CNTR_ST_ARR(Array):
         _type_ = DIAGNOSTIC_CNTR_ST
         _length_ = 10
 
-
     class DEBUG_CUP_ST(Structure):
         _fields_ = [
-            ("log_max_samples",c_uint8),
-            ("resource_dump",c_uint8),
-            ("log_cr_dump_to_mem_size",c_uint8),
-            ("core_dump_qp",c_uint8),
-            ("core_dump_general",c_uint8),
-            ("log_min_sample_period",c_uint8),
-            ("diag_counter_tracer_dump",c_uint8),
-            ("health_mon_rx_activity",c_uint8),
-            ("repetitive",c_uint8),
-            ("single",c_uint8),
-            #("diagnostic_counter",POINTER(DIAGNOSTIC_CNTR_ST))
-            ("diagnostic_counter",POINTER(DIAGNOSTIC_CNTR_ST_ARR))
+            ("log_max_samples", c_uint8),
+            ("resource_dump", c_uint8),
+            ("log_cr_dump_to_mem_size", c_uint8),
+            ("core_dump_qp", c_uint8),
+            ("core_dump_general", c_uint8),
+            ("log_min_sample_period", c_uint8),
+            ("diag_counter_tracer_dump", c_uint8),
+            ("health_mon_rx_activity", c_uint8),
+            ("repetitive", c_uint8),
+            ("single", c_uint8),
+            # ("diagnostic_counter",POINTER(DIAGNOSTIC_CNTR_ST))
+            ("diagnostic_counter", POINTER(DIAGNOSTIC_CNTR_ST_ARR))
         ]
-
 
     class PCNR_ST(Structure):
         _fields_ = [
-            ("tuning_override",c_uint8),
-            ("local_port",c_uint8)
+            ("tuning_override", c_uint8),
+            ("local_port", c_uint8)
         ]
 
     class MFRL_ST(Structure):
@@ -139,7 +139,8 @@ if REG_ACCESS:
             ("reset_type", c_uint8),
             ("rst_type_sel", c_uint8),
             ("pci_sync_for_fw_update_resp", c_uint8),
-            ("pci_sync_for_fw_update_start", c_uint8)
+            ("pci_sync_for_fw_update_start", c_uint8),
+            ("pci_rescan_required", c_uint8)
         ]
 
     class MPCIR_ST(Structure):
@@ -151,10 +152,9 @@ if REG_ACCESS:
 
     class MCAM_REG_ST(Structure):
         _fields_ = [("access_reg_group", c_uint8),
-                     ("feature_group", c_uint8),
-                     ("mng_access_reg_cap_mask", c_uint8 * 16),
-                     ("mng_feature_cap_mask", c_uint8 * 16)]
-
+                    ("feature_group", c_uint8),
+                    ("mng_access_reg_cap_mask", c_uint8 * 16),
+                    ("mng_feature_cap_mask", c_uint8 * 16)]
 
     class MTRC_CAP_REG_ST(Structure):
         _fields_ = [("num_string_db", c_uint8),
@@ -166,18 +166,15 @@ if REG_ACCESS:
                     ("log_max_trace_buffer_size", c_uint8),
                     ("reg_access_hca_string_db_parameters", c_uint8 * 64)]
 
-
     class MGIR_ST(Structure):
         _fields_ = [("device_id", c_uint16),
                     ("device_hw_revision", c_uint16),
                     ("pvs", c_uint8),
                     ("technology", c_uint8),
-                    ("num_ports",c_uint8),
+                    ("num_ports", c_uint8),
                     ("hw_dev_id", c_uint16),
                     ("manufacturing_base_mac_47_32", c_uint16),
-                    ("module_base",c_uint8),
                     ("manufacturing_base_mac_31_0", c_uint32),
-                    ("associated_module_id_31_0", c_uint32),
                     ("uptime", c_uint32),
                     ("sub_minor", c_uint8),
                     ("minor", c_uint8),
@@ -226,24 +223,32 @@ if REG_ACCESS:
                     ("lc_ready", c_uint8),
                     ("sr_valid", c_uint8),
                     ("provisioned", c_uint8),
-                    ("minor_ini_file_version", c_uint16),
-                    ("major_ini_file_version", c_uint16),
+                    ("ini_file_version", c_uint16),
+                    ("hw_revision", c_uint16),
                     ("card_type", c_uint8)]
 
     class MDDQ_DEVICE_INFO(Structure):
         _fields_ = [("device_index", c_uint8),
                     ("flash_id", c_uint8),
+                    ("lc_pwr_on", c_uint8),
                     ("thermal_sd", c_uint8),
                     ("flash_owner", c_uint8),
                     ("uses_flash", c_uint8),
                     ("device_type", c_uint16),
                     ("fw_major", c_uint16),
                     ("fw_sub_minor", c_uint16),
-                    ("fw_minor", c_uint16)]
+                    ("fw_minor", c_uint16),
+                    ("max_cmd_write_size_supp", c_uint8),
+                    ("max_cmd_read_size_supp", c_uint8),
+                    ("device_type_name", c_uint8 * 8)]
+
+    class MDDQ_SLOT_NAME(Structure):
+        _fields_ = [("slot_ascii_name", c_uint8 * 20)]
 
     class MDDQ_DATA_UN(Union):
-        _fields_ = [("mddq_slot_info_ext", MDDQ_SLOT_INFO),
-                    ("mddq_device_info_ext", MDDQ_DEVICE_INFO)]
+        _fields_ = [("slot_info_ext", MDDQ_SLOT_INFO),
+                    ("device_info_ext", MDDQ_DEVICE_INFO),
+                    ("slot_name_ext", MDDQ_SLOT_NAME)]
 
     class MDDQ_ST(Structure):
         _fields_ = [("slot_index", c_uint8),
@@ -254,6 +259,14 @@ if REG_ACCESS:
                     ("query_index", c_uint8),
                     ("data_valid", c_uint8),
                     ("data", MDDQ_DATA_UN)]
+
+    class MDSR(Structure):
+        _fields_ = [("type_of_token", c_uint8),
+                    ("additional_info", c_uint8),
+                    ("status", c_uint8),
+                    ("end", c_uint8),
+                    ("time_left", c_uint32)]
+
 
     class RegAccess:
         GET = REG_ACCESS_METHOD_GET
@@ -273,6 +286,7 @@ if REG_ACCESS:
             self._reg_access_res_dump = REG_ACCESS.reg_access_res_dump
             self._reg_access_debug_cap = REG_ACCESS.reg_access_debug_cap
             self._reg_access_mddq = REG_ACCESS.reg_access_mddq
+            self._reg_access_mdsr = REG_ACCESS.reg_access_mdsr
 
         def _err2str(self, rc):
             err2str = REG_ACCESS.reg_access_err2str
@@ -288,11 +302,16 @@ if REG_ACCESS:
             if self._mstDev:
                 self.close()
 
+        def isCsTokenApplied(self):
+            mdsrRegP = pointer(MDSR())
+            rc = self._reg_access_mdsr(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mdsrRegP)
+            if rc:
+                return False  # if if mdsr not support (or other fail), assume no token
 
-
+            return (mdsrRegP.contents.type_of_token == 1 and mdsrRegP.contents.status == 2)  # CS token and debug session active
 
         def sendMtrcCapTakeOwnership(self):
-            
+
             mcamRegP = pointer(MCAM_REG_ST())
             rc = self._reg_access_mcam(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mcamRegP)
             if rc:
@@ -320,7 +339,6 @@ if REG_ACCESS:
                     return 0
                 iter += 1
 
-
         def sendResDump(self, segment_type, seq_num, inline_mode, more_dump, vhca_id, vhca_id_valid, index1, index2, num_of_obj2, num_of_obj1, device_opaque, mkey, size, address):
             resDumpRegP = pointer(RES_DUMP_ST())
             resDumpRegP.contents.segment_type = c_uint16(segment_type)
@@ -340,7 +358,7 @@ if REG_ACCESS:
             rc = self._reg_access_res_dump(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), resDumpRegP)
             if rc:
                 raise RegAccException("Failed to send Register RESOURCE DUMP with rc: %d" % rc)
-            #return (resDumpRegP.contents.segment_type, resDumpRegP.contents.seq_num, resDumpRegP.contents.inline_data[0])
+            # return (resDumpRegP.contents.segment_type, resDumpRegP.contents.seq_num, resDumpRegP.contents.inline_data[0])
             return ({"segment_type": resDumpRegP.contents.segment_type,
                      "seq_num": resDumpRegP.contents.seq_num,
                      "inline_dump": resDumpRegP.contents.inline_dump,
@@ -356,7 +374,6 @@ if REG_ACCESS:
                      "size": resDumpRegP.contents.size,
                      "address": resDumpRegP.contents.address,
                      "inline_data": resDumpRegP.contents.inline_data})
-
 
         def sendDebugCap(self):
             debugCapRegP = pointer(DEBUG_CUP_ST())
@@ -379,8 +396,7 @@ if REG_ACCESS:
                 raise RegAccException("Failed to send Register DEBUG CAP with rc: %d" % rc)
             return debugCapRegP.contents.resource_dump
 
-
-        def sendPcnr(self, tuning_override, local_port): # Requirments : new FW version + burn with allow_pcnr
+        def sendPcnr(self, tuning_override, local_port):  # Requirments : new FW version + burn with allow_pcnr
 
             pcnrRegisterP = pointer(PCNR_ST())
             pcnrRegisterP.contents.tuning_override = c_uint8(tuning_override)
@@ -390,9 +406,8 @@ if REG_ACCESS:
             if rc:
                 raise RegAccException("Failed to send Register PCNR: %s (%d)" % (self._err2str(rc), rc))
 
-
         def sendMpcir(self, command):
-            
+
             # 2 operations (both executed with 'set' register):
             #   (1) Start perperations for FW upgrade
             #   (2) Query operation #1 (idle/done)
@@ -413,12 +428,11 @@ if REG_ACCESS:
             if command == CMD_GET_STATUS:
                 return mpcirRegisterP.contents.ports_stat
 
-
         ##########################
         def sendMFRL(self, method, resetLevel=None, reset_type=None, reset_sync=None):
 
             mfrlRegisterP = pointer(MFRL_ST())
-            
+
             if method == REG_ACCESS_METHOD_SET:
                 if resetLevel is None or reset_type is None or reset_sync is None:
                     raise RegAccException("Failed to sendMFRL (reset level/type/sync is None for SET command)")
@@ -435,7 +449,7 @@ if REG_ACCESS:
                 raise RegAccException("Failed to send Register MFRL: %s (%d)" % (self._err2str(rc), rc))
 
             if method == REG_ACCESS_METHOD_GET:
-                return mfrlRegisterP.contents.reset_trigger, mfrlRegisterP.contents.reset_type
+                return mfrlRegisterP.contents.reset_trigger, mfrlRegisterP.contents.reset_type, mfrlRegisterP.contents.pci_rescan_required
 
         ##########################
         def getMCAM(self):
@@ -444,23 +458,22 @@ if REG_ACCESS:
                 list_of_bits = []
                 for byte_ in list_of_bytes:
                     # print("{0:08b}".format(byte_))
-                    for ii in range(7,-1,-1):
-                        val = 0 if byte_ & (1<<ii) == 0 else 1
+                    for ii in range(7, -1, -1):
+                        val = 0 if byte_ & (1 << ii) == 0 else 1
                         list_of_bits.append(val)
                 return list_of_bits[::-1]
 
             mcamRegP = pointer(MCAM_REG_ST())
-            rc = self._reg_access_mcam(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mcamRegP)            
+            rc = self._reg_access_mcam(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mcamRegP)
             if rc:
                 raise RegAccException("Failed to send Register MCAM (rc: {0})".format(rc))
-            
+
             return {
-                "access_reg_group" :mcamRegP.contents.access_reg_group,
-                "feature_group":mcamRegP.contents.feature_group,
+                "access_reg_group": mcamRegP.contents.access_reg_group,
+                "feature_group": mcamRegP.contents.feature_group,
                 "mng_access_reg_cap_mask": to_bits(mcamRegP.contents.mng_access_reg_cap_mask),
                 "mng_feature_cap_mask": to_bits(mcamRegP.contents.mng_feature_cap_mask)
             }
-
 
         ##########################
         def getFwVersion(self):
@@ -497,7 +510,6 @@ if REG_ACCESS:
 
             return mgirRegisterP.contents.uptime
 
-
         def getManufacturingBaseMac(self):
 
             mgirRegisterP = pointer(MGIR_ST())
@@ -507,11 +519,10 @@ if REG_ACCESS:
             if rc:
                 raise RegAccException("Failed to send Register MGIR (case 2): %s (%d)" % (self._err2str(rc), rc))
 
-
             lsp = mgirRegisterP.contents.manufacturing_base_mac_31_0
             msp = mgirRegisterP.contents.manufacturing_base_mac_47_32
 
-            return msp*(2**32)+lsp
+            return msp * (2**32) + lsp
 
         def getSecureFWStatus(self):
             """ Returns True if the FW is secured, False otherwise.
@@ -539,30 +550,35 @@ if REG_ACCESS:
             data = {}
             if query_type == 1:
                 data.update({
-                    "active": mddqRegisterP.contents.data.mddq_slot_info_ext.active,
-                    "lc_ready": mddqRegisterP.contents.data.mddq_slot_info_ext.lc_ready,
-                    "sr_valid": mddqRegisterP.contents.data.mddq_slot_info_ext.sr_valid,
-                    "provisioned": mddqRegisterP.contents.data.mddq_slot_info_ext.provisioned,
-                    "minor_ini_file_version": mddqRegisterP.contents.data.mddq_slot_info_ext.minor_ini_file_version,
-                    "major_ini_file_version": mddqRegisterP.contents.data.mddq_slot_info_ext.major_ini_file_version
+                    "active": mddqRegisterP.contents.data.slot_info_ext.active,
+                    "lc_ready": mddqRegisterP.contents.data.slot_info_ext.lc_ready,
+                    "sr_valid": mddqRegisterP.contents.data.slot_info_ext.sr_valid,
+                    "provisioned": mddqRegisterP.contents.data.slot_info_ext.provisioned,
+                    "ini_file_version": mddqRegisterP.contents.data.slot_info_ext.ini_file_version,
+                    "hw_revision": mddqRegisterP.contents.data.slot_info_ext.hw_revision,
+                    "card_type": mddqRegisterP.contents.data.slot_info_ext.card_type
                 })
             elif query_type == 2:
+                device_type_name = "".join(chr(val) for val in mddqRegisterP.contents.data.device_info_ext.device_type_name if val != 0)
                 data.update({
-                    "device_index": mddqRegisterP.contents.data.mddq_device_info_ext.device_index,
-                    "flash_id": mddqRegisterP.contents.data.mddq_device_info_ext.flash_id,
-                    "flash_owner": mddqRegisterP.contents.data.mddq_device_info_ext.flash_owner,
-                    "uses_flash": mddqRegisterP.contents.data.mddq_device_info_ext.uses_flash,
-                    "device_type": mddqRegisterP.contents.data.mddq_device_info_ext.device_type,
-                    "fw_major": mddqRegisterP.contents.data.mddq_device_info_ext.fw_major,
-                    "fw_sub_minor": mddqRegisterP.contents.data.mddq_device_info_ext.fw_sub_minor,
-                    "fw_minor": mddqRegisterP.contents.data.mddq_device_info_ext.fw_minor
+                    "device_index": mddqRegisterP.contents.data.device_info_ext.device_index,
+                    "flash_id": mddqRegisterP.contents.data.device_info_ext.flash_id,
+                    "flash_owner": mddqRegisterP.contents.data.device_info_ext.flash_owner,
+                    "uses_flash": mddqRegisterP.contents.data.device_info_ext.uses_flash,
+                    "device_type": mddqRegisterP.contents.data.device_info_ext.device_type,
+                    "fw_major": mddqRegisterP.contents.data.device_info_ext.fw_major,
+                    "fw_sub_minor": mddqRegisterP.contents.data.device_info_ext.fw_sub_minor,
+                    "fw_minor": mddqRegisterP.contents.data.device_info_ext.fw_minor,
+                    "max_cmd_write_size_supp": mddqRegisterP.contents.data.device_info_ext.max_cmd_write_size_supp,
+                    "max_cmd_read_size_supp": mddqRegisterP.contents.data.device_info_ext.max_cmd_read_size_supp,
+                    "device_type_name": device_type_name
                 })
             return ({"slot_index": mddqRegisterP.contents.slot_index,
                      "query_type": mddqRegisterP.contents.query_type,
                      "request_message_sequence": mddqRegisterP.contents.request_message_sequence,
                      "response_message_sequence": mddqRegisterP.contents.response_message_sequence,
                      "data_valid": mddqRegisterP.contents.data_valid},
-                     data)
+                    data)
 
 else:
     raise RegAccException("Failed to load rreg_access.so/libreg_access.dll")

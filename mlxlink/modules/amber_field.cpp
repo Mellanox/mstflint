@@ -133,7 +133,7 @@ u_int64_t AmberField::getPrmValue() const
     return _prmValue;
 }
 
-bool AmberField::isVisible()
+bool AmberField::isVisible() const
 {
     return _visible;
 }

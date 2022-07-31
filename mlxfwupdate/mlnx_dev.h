@@ -52,20 +52,25 @@
 using namespace std;
 #define MLNX_ERR_BUFF_SIZE 1024
 
-class MlnxDev {
+class MlnxDev
+{
 public:
-    MlnxDev(dev_info *devinfo, int compare_ffv);
-    MlnxDev(const char *devname, int compare_ffv);
+    MlnxDev(dev_info* devinfo, int compare_ffv);
+    MlnxDev(const char* devname, int compare_ffv);
     ~MlnxDev();
 
-    int    query();
-    int    preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe, bool& isTimeConsumingFixesNeeded,
-                   vector<string>& questions, f_prog_func_adv stage_prog = (f_prog_func_adv)NULL);
-    int    burn(bool&);
-    bool   clearSemaphore();
-    int    isBurnSuccess();
-    int    isQuerySuccess();
-    int    compareFWVer(const ImgVersion& ver);
+    int query();
+    int preBurn(string mfa_file,
+                f_prog_func prog_cb,
+                bool burnFailsafe,
+                bool& isTimeConsumingFixesNeeded,
+                vector<string>& questions,
+                f_prog_func_adv stage_prog = (f_prog_func_adv)NULL);
+    int burn(bool&);
+    bool clearSemaphore();
+    int isBurnSuccess();
+    int isQuerySuccess();
+    int compareFWVer(const ImgVersion& ver);
     string getLastErrMsg();
     string getLog();
     string getDevDisplayName(bool pci_if_possible = false);
@@ -78,23 +83,25 @@ public:
     dm_dev_id_t getDeviceType();
     string getBoardTypeId();
     dev_info* getDevInfo();
-    void   patchPsidInfo(string psid);
-    void   setDevToNeedUpdate();
-    bool   doesDevNeedUpdate();
-    void   setNoFwCtrl();
-    void   setMccSupport(bool val = true) {_mccSupport = val;};
+    void patchPsidInfo(string psid);
+    void setDevToNeedUpdate();
+    bool doesDevNeedUpdate();
+    void setNoFwCtrl();
+    void setMccSupport(bool val = true) { _mccSupport = val; };
     vector<ImgVersion> _imageVers;
     inline bool isAlignmentNeeded();
-    inline void setShifting8MBInBurnParams(bool v) {_burnParams.shift8MBIfNeeded = v;}
+    inline void setShifting8MBInBurnParams(bool v) { _burnParams.shift8MBIfNeeded = v; }
 
     bool checkExistence(vector<MlnxDev*>& devs);
-    string getUniqueId() {return _uniqueId;};
+    string getUniqueId() { return _uniqueId; };
+
 public:
     string guidPortOne;
     string guidPortTwo;
     string macPortOne;
     string macPortTwo;
-    typedef enum    {
+    typedef enum
+    {
         PORT_NA,
         PORT_IB,
         PORT_ETH
@@ -102,28 +109,31 @@ public:
     port_type_t portOneType;
     port_type_t portTwoType;
     bool isOnlyBase;
+
 private:
     bool InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams);
     void setDeviceType(void);
-    void setGuidMac(fw_info_t &fw_query);
+    void setGuidMac(fw_info_t& fw_query);
     void _MlnxDevInit(int compare_ffv);
-    int  getImageIndex(string type);
-    int  queryFwops();
+    int getImageIndex(string type);
+    int queryFwops();
     bool OpenDev();
-    bool openImg(u_int32_t *fileBuffer, u_int32_t bufferSize);
+    bool openImg(u_int32_t* fileBuffer, u_int32_t bufferSize);
     port_type_t findPortType(int port);
     void initUniqueId();
-    bool equals(MlnxDev *dev);
-    int LockDevice(FwOperations *fwOps);
-    int UnlockDevice(FwOperations *fwOps);
+    bool equals(MlnxDev* dev);
+    int LockDevice(FwOperations* fwOps);
+    int UnlockDevice(FwOperations* fwOps);
+
 private:
-    typedef enum    {
+    typedef enum
+    {
         INIT_DEVINFO,
         INIT_DEVNAME
     } init_type_t;
 
     init_type_t _init_type;
-    dev_info *_devinfo;
+    dev_info* _devinfo;
     string _devname;
     int _querySuccess;
     int _burnSuccess;
@@ -134,15 +144,15 @@ private:
     string _errMsg;
     string _boardTypeId;
     string _uniqueId;
-    FwOperations *_devFwOps;
-    FwOperations *_imgFwOps;
+    FwOperations* _devFwOps;
+    FwOperations* _imgFwOps;
     FwOperations::fw_ops_params_t _devFwParams;
     FwOperations::fw_ops_params_t _imgFwParams;
     FwOperations::ExtBurnParams _burnParams;
     bool _imageEncrypted;
     bool _deviceEncrypted;
 
-    Commander *_commander;
+    Commander* _commander;
     char _errBuff[MLNX_ERR_BUFF_SIZE];
     int _compareFFV;
     int _ExpRomExists;

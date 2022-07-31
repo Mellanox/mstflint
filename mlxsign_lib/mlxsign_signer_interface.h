@@ -33,7 +33,6 @@
 #ifndef USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_
 #define USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_
 
-
 #include "mlxsign_lib.h"
 #include "mlxsign_openssl_engine.h"
 
@@ -43,14 +42,16 @@ using namespace std;
  * Class Signer: interface for various types of signers
  */
 
-class Signer {
+class Signer
+{
 public:
-    virtual ~Signer() {};
+    virtual ~Signer(){};
     virtual MlxSign::ErrorCode Init() = 0;
     virtual MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature) = 0;
 };
 
-class MlxSignRSAViaOpenssl : public Signer {
+class MlxSignRSAViaOpenssl : public Signer
+{
 public:
     MlxSignRSAViaOpenssl(string privPemFileStr);
 
@@ -63,7 +64,8 @@ private:
     MlxSignRSA _rsa;
 };
 
-class MlxSignRSAViaHSM : public Signer {
+class MlxSignRSAViaHSM : public Signer
+{
 public:
     MlxSignRSAViaHSM(string opensslEngine, string opensslKeyID);
 

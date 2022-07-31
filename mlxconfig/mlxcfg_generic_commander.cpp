@@ -37,13 +37,13 @@
  *      Author: ahmads
  */
 
-#include <set>
-#include <mtcr.h>
-#include <mft_sig_handler.h>
-#include <tools_dev_types.h>
-#include <mft_utils.h>
 #include <algorithm>
 #include <memory>
+#include <mft_sig_handler.h>
+#include <mft_utils.h>
+#include <mtcr.h>
+#include <set>
+#include <tools_dev_types.h>
 
 #if !defined(NO_OPEN_SSL)
 #include <mlxsign_lib/mlxsign_lib.h>
@@ -51,11 +51,11 @@
 #include <mlxsign_lib/mlxsign_openssl_engine.h>
 #endif
 #endif
-#include "mlxcfg_generic_commander.h"
-#include "mlxcfg_utils.h"
-#include "mlxcfg_tlv.h"
-#include "mlxcfg_status.h"
 #include "mlxcfg_expression.h"
+#include "mlxcfg_generic_commander.h"
+#include "mlxcfg_status.h"
+#include "mlxcfg_tlv.h"
+#include "mlxcfg_utils.h"
 
 #if !defined(DISABLE_XML2)
 #include <libxml/parser.h>
@@ -919,7 +919,7 @@ const char* GenericCommander::loadConfigurationGetStr()
     u_int32_t hwDevId, hwRevId;
     struct reg_access_hca_mfrl_reg_ext mfrl;
 
-    if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId) )
+    if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId))
     {
         throw MlxcfgException("Failed to identify the device");
     }
@@ -1642,11 +1642,11 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
 #else
     (void)buff;
     (void)privateKeyFile;
+    (void)openssl_engine;
+    (void)openssl_key_identifier;
     throw MlxcfgException("Sign command is not implemented\n");
 #endif
 }
-
-
 
 void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::comps_ids_t& compsId)
 {
@@ -1815,7 +1815,6 @@ void GenericCommander::apply(const vector<u_int8_t>& buff)
     {
         throw MlxcfgException("Error applying the component: %s", fwCompsAccess.getLastErrMsg());
     }
-
 }
 
 void GenericCommander::raw2XML(const vector<string>& lines, string& xmlTemplate)

@@ -28,7 +28,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 import logging
 
@@ -50,23 +50,22 @@ class LoggerFactory(object):
         elif level == 'debug':
             log_level = logging.DEBUG
 
-
         #import logging
         logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - {%(pathname)s:%(lineno)d} - %(message)s')
         logger = logging.getLogger(name)
 
         #logger = logging.getLogger(name)
-        #logger.setLevel(logging.INFO)
+        # logger.setLevel(logging.INFO)
 
         # create a file handler
         #handler = logging.FileHandler(name+'.log')
-        #handler.setLevel(logging.INFO)
+        # handler.setLevel(logging.INFO)
 
         # create a logging format
         #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        #handler.setFormatter(formatter)
+        # handler.setFormatter(formatter)
 
         # add the handlers to the logger
-        #logger.addHandler(handler)
+        # logger.addHandler(handler)
 
         return logger

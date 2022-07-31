@@ -49,27 +49,34 @@ typedef struct tools_open_mcdd_reg mcddReg;
 class DMAComponentAccess : public AbstractComponentAccess
 {
 public:
-    DMAComponentAccess(FwCompsMgr* Manager, mfile * Mf) : AbstractComponentAccess(Manager, Mf) {}
+    DMAComponentAccess(FwCompsMgr* Manager, mfile* Mf) : AbstractComponentAccess(Manager, Mf) {}
     virtual ~DMAComponentAccess() {}
-    virtual bool accessComponent(u_int32_t updateHandle, u_int32_t offset,
-        u_int32_t size,
-        u_int32_t* data,
-        access_type_t access,
-        const char* currComponentStr,
-        ProgressCallBackAdvSt *progressFuncAdv);
+    virtual bool accessComponent(u_int32_t updateHandle,
+                                 u_int32_t offset,
+                                 u_int32_t size,
+                                 u_int32_t* data,
+                                 access_type_t access,
+                                 const char* currComponentStr,
+                                 ProgressCallBackAdvSt* progressFuncAdv);
     bool allocateMemory();
     static bool isBMESet(mfile* mf);
     virtual fw_comps_error_t getLastFirmwareError() { return _lastFwError; }
-    virtual reg_access_status_t  getLastRegisterAccessStatus() {return _lastRegisterAccessStatus;}
+    virtual reg_access_status_t getLastRegisterAccessStatus() { return _lastRegisterAccessStatus; }
 
 private:
-    bool prepareParameters(u_int32_t _updateHandle, mcddReg* accessData,
-        int offset, u_int32_t* data, int data_size, int access, int leftSize,
-        mtcr_page_addresses page, mtcr_page_addresses mailbox_page);
+    bool prepareParameters(u_int32_t _updateHandle,
+                           mcddReg* accessData,
+                           int offset,
+                           u_int32_t* data,
+                           int data_size,
+                           int access,
+                           int leftSize,
+                           mtcr_page_addresses page,
+                           mtcr_page_addresses mailbox_page);
     bool readFromDataPage(mcddReg* accessData, mtcr_page_addresses page, u_int32_t* data, int data_size, int leftSize);
-    std::vector <mtcr_page_addresses> _allocatedListVect;
+    std::vector<mtcr_page_addresses> _allocatedListVect;
     fw_comps_error_t _lastFwError;
     reg_access_status_t _lastRegisterAccessStatus;
-    void setLastError(fw_comps_error_t error) {_lastFwError = error;}
+    void setLastError(fw_comps_error_t error) { _lastFwError = error; }
 };
 #endif

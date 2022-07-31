@@ -37,16 +37,16 @@
 
 #include <mlxfwops/lib/fw_version.h>
 
-class FwVersionWithSubBuild: public FwVersion {
+class FwVersionWithSubBuild : public FwVersion
+{
 public:
     FwVersionWithSubBuild();
-    FwVersionWithSubBuild(unsigned short int, unsigned short int,
-            unsigned short int, const std::string& = "");
+    FwVersionWithSubBuild(unsigned short int, unsigned short int, unsigned short int, const std::string& = "");
     virtual ~FwVersionWithSubBuild();
     FwVersionWithSubBuild* clone() const;
+
 private:
-    std::string get_master_version(const std::string& format,
-            bool even_subminor = false) const;
+    std::string get_master_version(const std::string& format, bool even_subminor = false) const;
 };
 
 #endif /* MLXFWUPDATE_FW_VERSION_WITH_SUB_BUILD_H_ */

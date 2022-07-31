@@ -34,10 +34,8 @@
 
 #include "cmd_line_params.h"
 
-
 CmdLineParams::CmdLineParams()
 {
-
     force_update = 0;
     update_fw = 0;
     use_mfa_file = 0;
@@ -52,34 +50,34 @@ CmdLineParams::CmdLineParams()
     use_lookup_file = 0;
     list_file_contents = false;
     display_archive_names = false;
-    extract_image   = false;
-    show_progress   = true;
-    log_on_update   = false;
-    calc_crc        = false;
-    query_device    = false;
+    extract_image = false;
+    show_progress = true;
+    log_on_update = false;
+    calc_crc = false;
+    query_device = false;
     query_device_xml = false;
     clear_semaphore = false;
-    extract_all     = false;
-    no_fw_ctrl      = false;
-    target_file     = "";
-    server_url      = "https://www.mellanox.com";
-    proxy           = "";
-    update_online   = false;
-    download        = false;
+    extract_all = false;
+    no_fw_ctrl = false;
+    target_file = "";
+    server_url = "https://www.mellanox.com";
+    proxy = "";
+    update_online = false;
+    download = false;
     download_default = false;
     get_download_opt = "";
-    download_os     = "";  // will be changed to enum
-    download_type   = "";
-    download_dev    = "";
-    download_key    = "last_release";
+    download_os = ""; // will be changed to enum
+    download_type = "";
+    download_dev = "";
+    download_key = "last_release";
     psid = "";
-    burnFailsafe    = true;
+    burnFailsafe = true;
     onlineQueryPsids = "";
-    queryFormat     = "text";
-    download_dir    = ".";
-    extract_dir     = ".";
-    lvim            = false;
-    dl              = false;
+    queryFormat = "text";
+    download_dir = ".";
+    extract_dir = ".";
+    lvim = false;
+    dl = false;
     no_extract_list = false;
     numberOfRetrials = 5;
 
@@ -93,16 +91,12 @@ CmdLineParams::CmdLineParams()
     certificate = string(certificatPath);
 
 #else
-    #ifdef MSTFLINT
+#ifdef MSTFLINT
     certificate = (string)ROOT_PATH + "etc/mstflint/ca-bundle.crt";
-    #else
+#else
     certificate = (string)ROOT_PATH + "etc/mft/ca-bundle.crt";
-    #endif
+#endif
 #endif
 }
 
-
-CmdLineParams::~CmdLineParams()
-{
-}
-
+CmdLineParams::~CmdLineParams() {}
