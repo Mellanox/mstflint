@@ -4923,6 +4923,7 @@ bool Fs4Operations::GetPublicKeyFromFile(const char* public_key_file,
     vector<u_int8_t> publicKeyData;
     u_int32_t keyPairExp;
     image_layout_component_authentication_configuration keyAuthConf;
+    memset(&keyAuthConf, 0, sizeof(keyAuthConf));
     if (!ParsePublicKeyFromFile(public_key_file, publicKeyData, keyPairExp, keyAuthConf))
     {
         return errmsg("preparePublicKeyDataForStore failed - Error: %s", err());
