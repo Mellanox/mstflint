@@ -36,7 +36,6 @@
 
 #include <cibfw_layouts.h>
 #include <cx6fw_layouts.h>
-#include <image_layout_layouts.h>
 #include <cx4fw_layouts.h>
 #include "fw_ops.h"
 #include "fs3_ops.h"
@@ -376,6 +375,10 @@ private:
 
     virtual bool
       GetPublicKeyFromFile(const char* public_key_file, const char* uuid, image_layout_file_public_keys_3* public_key);
+    virtual bool GetFreeSlotInPublicKeys2(fs4_toc_info* itocEntry, u_int32_t& idx);
+    virtual bool IsPublicKeyAlreadyInPublicKeys2(const image_layout_file_public_keys_2& public_key,
+                                                 fs4_toc_info* itocEntry);
+    virtual bool StorePublicKeyInPublicKeys2(const image_layout_file_public_keys_3& public_key);
 
     // Members
     Fs4ImgInfo _fs4ImgInfo;

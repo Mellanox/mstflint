@@ -31,12 +31,47 @@
  */
 
 /***
- *** This file was generated at "2022-02-06 17:27:46"
+ *** This file was generated at "2022-08-02 16:49:25"
  *** by:
  ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/image_layout/image_layout.adb
  *--file-prefix image_layout --prefix image_layout_ --no-adb-utils
  ***/
 #include "image_layout_layouts.h"
+
+void image_layout_uint64_pack(const u_int64_t* ptr_struct, u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+
+    offset = 0;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 8, *ptr_struct);
+}
+
+void image_layout_uint64_unpack(u_int64_t* ptr_struct, const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+
+    offset = 0;
+    *ptr_struct = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
+}
+
+void image_layout_uint64_print(const u_int64_t* ptr_struct, FILE* fd, int indent_level)
+{
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== image_layout_uint64 ========\n");
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "uint64               : " U64H_FMT "\n", (u_int64_t)*ptr_struct);
+}
+
+unsigned int image_layout_uint64_size(void)
+{
+    return IMAGE_LAYOUT_UINT64_SIZE;
+}
+
+void image_layout_uint64_dump(const u_int64_t* ptr_struct, FILE* fd)
+{
+    image_layout_uint64_print(ptr_struct, fd, 0);
+}
 
 void image_layout_component_authentication_configuration_pack(
   const struct image_layout_component_authentication_configuration* ptr_struct,
@@ -116,122 +151,6 @@ void image_layout_component_authentication_configuration_dump(
   FILE* fd)
 {
     image_layout_component_authentication_configuration_print(ptr_struct, fd, 0);
-}
-
-void image_layout_file_public_keys_3_pack(const struct image_layout_file_public_keys_3* ptr_struct, u_int8_t* ptr_buff)
-{
-    u_int32_t offset;
-    int i;
-
-    offset = 0;
-    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->keypair_exp);
-    for (i = 0; i < 4; ++i)
-    {
-        offset = adb2c_calc_array_field_address(32, 32, i, 4352, 1);
-        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->keypair_uuid[i]);
-    }
-    for (i = 0; i < 128; ++i)
-    {
-        offset = adb2c_calc_array_field_address(160, 32, i, 4352, 1);
-        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->key[i]);
-    }
-    offset = 4256;
-    image_layout_component_authentication_configuration_pack(&(ptr_struct->component_authentication_configuration),
-                                                             ptr_buff + offset / 8);
-}
-
-void image_layout_file_public_keys_3_unpack(struct image_layout_file_public_keys_3* ptr_struct,
-                                            const u_int8_t* ptr_buff)
-{
-    u_int32_t offset;
-    int i;
-
-    offset = 0;
-    ptr_struct->keypair_exp = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-    for (i = 0; i < 4; ++i)
-    {
-        offset = adb2c_calc_array_field_address(32, 32, i, 4352, 1);
-        ptr_struct->keypair_uuid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-    }
-    for (i = 0; i < 128; ++i)
-    {
-        offset = adb2c_calc_array_field_address(160, 32, i, 4352, 1);
-        ptr_struct->key[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-    }
-    offset = 4256;
-    image_layout_component_authentication_configuration_unpack(&(ptr_struct->component_authentication_configuration),
-                                                               ptr_buff + offset / 8);
-}
-
-void image_layout_file_public_keys_3_print(const struct image_layout_file_public_keys_3* ptr_struct,
-                                           FILE* fd,
-                                           int indent_level)
-{
-    int i;
-
-    adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "======== image_layout_file_public_keys_3 ========\n");
-
-    adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "keypair_exp          : " U32H_FMT "\n", ptr_struct->keypair_exp);
-    for (i = 0; i < 4; ++i)
-    {
-        adb2c_add_indentation(fd, indent_level);
-        fprintf(fd, "keypair_uuid_%03d    : " U32H_FMT "\n", i, ptr_struct->keypair_uuid[i]);
-    }
-    for (i = 0; i < 128; ++i)
-    {
-        adb2c_add_indentation(fd, indent_level);
-        fprintf(fd, "key_%03d             : " U32H_FMT "\n", i, ptr_struct->key[i]);
-    }
-    adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "component_authentication_configuration:\n");
-    image_layout_component_authentication_configuration_print(&(ptr_struct->component_authentication_configuration), fd,
-                                                              indent_level + 1);
-}
-
-unsigned int image_layout_file_public_keys_3_size(void)
-{
-    return IMAGE_LAYOUT_FILE_PUBLIC_KEYS_3_SIZE;
-}
-
-void image_layout_file_public_keys_3_dump(const struct image_layout_file_public_keys_3* ptr_struct, FILE* fd)
-{
-    image_layout_file_public_keys_3_print(ptr_struct, fd, 0);
-}
-void image_layout_uint64_pack(const u_int64_t* ptr_struct, u_int8_t* ptr_buff)
-{
-    u_int32_t offset;
-
-    offset = 0;
-    adb2c_push_integer_to_buff(ptr_buff, offset, 8, *ptr_struct);
-}
-
-void image_layout_uint64_unpack(u_int64_t* ptr_struct, const u_int8_t* ptr_buff)
-{
-    u_int32_t offset;
-
-    offset = 0;
-    *ptr_struct = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
-}
-
-void image_layout_uint64_print(const u_int64_t* ptr_struct, FILE* fd, int indent_level)
-{
-    adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "======== image_layout_uint64 ========\n");
-
-    adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "uint64               : " U64H_FMT "\n", (u_int64_t)*ptr_struct);
-}
-
-unsigned int image_layout_uint64_size(void)
-{
-    return IMAGE_LAYOUT_UINT64_SIZE;
-}
-
-void image_layout_uint64_dump(const u_int64_t* ptr_struct, FILE* fd)
-{
-    image_layout_uint64_print(ptr_struct, fd, 0);
 }
 
 void image_layout_htoc_entry_pack(const struct image_layout_htoc_entry* ptr_struct, u_int8_t* ptr_buff)
@@ -375,55 +294,6 @@ void image_layout_module_version_dump(const struct image_layout_module_version* 
     image_layout_module_version_print(ptr_struct, fd, 0);
 }
 
-void image_layout_public_keys_3_pack(const struct image_layout_public_keys_3* ptr_struct, u_int8_t* ptr_buff)
-{
-    u_int32_t offset;
-    int i;
-
-    for (i = 0; i < 8; ++i)
-    {
-        offset = adb2c_calc_array_field_address(0, 4352, i, 34816, 1);
-        image_layout_file_public_keys_3_pack(&(ptr_struct->file_public_keys_3[i]), ptr_buff + offset / 8);
-    }
-}
-
-void image_layout_public_keys_3_unpack(struct image_layout_public_keys_3* ptr_struct, const u_int8_t* ptr_buff)
-{
-    u_int32_t offset;
-    int i;
-
-    for (i = 0; i < 8; ++i)
-    {
-        offset = adb2c_calc_array_field_address(0, 4352, i, 34816, 1);
-        image_layout_file_public_keys_3_unpack(&(ptr_struct->file_public_keys_3[i]), ptr_buff + offset / 8);
-    }
-}
-
-void image_layout_public_keys_3_print(const struct image_layout_public_keys_3* ptr_struct, FILE* fd, int indent_level)
-{
-    int i;
-
-    adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "======== image_layout_public_keys_3 ========\n");
-
-    for (i = 0; i < 8; ++i)
-    {
-        adb2c_add_indentation(fd, indent_level);
-        fprintf(fd, "file_public_keys_3_%03d:\n", i);
-        image_layout_file_public_keys_3_print(&(ptr_struct->file_public_keys_3[i]), fd, indent_level + 1);
-    }
-}
-
-unsigned int image_layout_public_keys_3_size(void)
-{
-    return IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE;
-}
-
-void image_layout_public_keys_3_dump(const struct image_layout_public_keys_3* ptr_struct, FILE* fd)
-{
-    image_layout_public_keys_3_print(ptr_struct, fd, 0);
-}
-
 void image_layout_reset_capabilities_pack(const struct image_layout_reset_capabilities* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
@@ -513,88 +383,6 @@ unsigned int image_layout_reset_version_size(void)
 void image_layout_reset_version_dump(const struct image_layout_reset_version* ptr_struct, FILE* fd)
 {
     image_layout_reset_version_print(ptr_struct, fd, 0);
-}
-
-void image_layout_secure_boot_signatures_pack(const struct image_layout_secure_boot_signatures* ptr_struct,
-                                              u_int8_t* ptr_buff)
-{
-    u_int32_t offset;
-    int i;
-
-    for (i = 0; i < 128; ++i)
-    {
-        offset = adb2c_calc_array_field_address(0, 32, i, 12288, 1);
-        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->boot_signature[i]);
-    }
-    for (i = 0; i < 128; ++i)
-    {
-        offset = adb2c_calc_array_field_address(4096, 32, i, 12288, 1);
-        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->critical_signature[i]);
-    }
-    for (i = 0; i < 128; ++i)
-    {
-        offset = adb2c_calc_array_field_address(8192, 32, i, 12288, 1);
-        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->non_critical_signature[i]);
-    }
-}
-
-void image_layout_secure_boot_signatures_unpack(struct image_layout_secure_boot_signatures* ptr_struct,
-                                                const u_int8_t* ptr_buff)
-{
-    u_int32_t offset;
-    int i;
-
-    for (i = 0; i < 128; ++i)
-    {
-        offset = adb2c_calc_array_field_address(0, 32, i, 12288, 1);
-        ptr_struct->boot_signature[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-    }
-    for (i = 0; i < 128; ++i)
-    {
-        offset = adb2c_calc_array_field_address(4096, 32, i, 12288, 1);
-        ptr_struct->critical_signature[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-    }
-    for (i = 0; i < 128; ++i)
-    {
-        offset = adb2c_calc_array_field_address(8192, 32, i, 12288, 1);
-        ptr_struct->non_critical_signature[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-    }
-}
-
-void image_layout_secure_boot_signatures_print(const struct image_layout_secure_boot_signatures* ptr_struct,
-                                               FILE* fd,
-                                               int indent_level)
-{
-    int i;
-
-    adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "======== image_layout_secure_boot_signatures ========\n");
-
-    for (i = 0; i < 128; ++i)
-    {
-        adb2c_add_indentation(fd, indent_level);
-        fprintf(fd, "boot_signature_%03d  : " U32H_FMT "\n", i, ptr_struct->boot_signature[i]);
-    }
-    for (i = 0; i < 128; ++i)
-    {
-        adb2c_add_indentation(fd, indent_level);
-        fprintf(fd, "critical_signature_%03d : " U32H_FMT "\n", i, ptr_struct->critical_signature[i]);
-    }
-    for (i = 0; i < 128; ++i)
-    {
-        adb2c_add_indentation(fd, indent_level);
-        fprintf(fd, "non_critical_signature_%03d : " U32H_FMT "\n", i, ptr_struct->non_critical_signature[i]);
-    }
-}
-
-unsigned int image_layout_secure_boot_signatures_size(void)
-{
-    return IMAGE_LAYOUT_SECURE_BOOT_SIGNATURES_SIZE;
-}
-
-void image_layout_secure_boot_signatures_dump(const struct image_layout_secure_boot_signatures* ptr_struct, FILE* fd)
-{
-    image_layout_secure_boot_signatures_print(ptr_struct, fd, 0);
 }
 
 void image_layout_uid_entry_pack(const struct image_layout_uid_entry* ptr_struct, u_int8_t* ptr_buff)
@@ -774,6 +562,170 @@ unsigned int image_layout_TRIPPLE_VERSION_size(void)
 void image_layout_TRIPPLE_VERSION_dump(const struct image_layout_TRIPPLE_VERSION* ptr_struct, FILE* fd)
 {
     image_layout_TRIPPLE_VERSION_print(ptr_struct, fd, 0);
+}
+
+void image_layout_file_public_keys_2_pack(const struct image_layout_file_public_keys_2* ptr_struct, u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    offset = 0;
+    image_layout_component_authentication_configuration_pack(&(ptr_struct->component_authentication_configuration),
+                                                             ptr_buff + offset / 8);
+    offset = 96;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->keypair_exp);
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(128, 32, i, 4352, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->keypair_uuid[i]);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(256, 32, i, 4352, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->key[i]);
+    }
+}
+
+void image_layout_file_public_keys_2_unpack(struct image_layout_file_public_keys_2* ptr_struct,
+                                            const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    offset = 0;
+    image_layout_component_authentication_configuration_unpack(&(ptr_struct->component_authentication_configuration),
+                                                               ptr_buff + offset / 8);
+    offset = 96;
+    ptr_struct->keypair_exp = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(128, 32, i, 4352, 1);
+        ptr_struct->keypair_uuid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(256, 32, i, 4352, 1);
+        ptr_struct->key[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+}
+
+void image_layout_file_public_keys_2_print(const struct image_layout_file_public_keys_2* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level)
+{
+    int i;
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== image_layout_file_public_keys_2 ========\n");
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "component_authentication_configuration:\n");
+    image_layout_component_authentication_configuration_print(&(ptr_struct->component_authentication_configuration), fd,
+                                                              indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "keypair_exp          : " U32H_FMT "\n", ptr_struct->keypair_exp);
+    for (i = 0; i < 4; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "keypair_uuid_%03d    : " U32H_FMT "\n", i, ptr_struct->keypair_uuid[i]);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "key_%03d             : " U32H_FMT "\n", i, ptr_struct->key[i]);
+    }
+}
+
+unsigned int image_layout_file_public_keys_2_size(void)
+{
+    return IMAGE_LAYOUT_FILE_PUBLIC_KEYS_2_SIZE;
+}
+
+void image_layout_file_public_keys_2_dump(const struct image_layout_file_public_keys_2* ptr_struct, FILE* fd)
+{
+    image_layout_file_public_keys_2_print(ptr_struct, fd, 0);
+}
+
+void image_layout_file_public_keys_3_pack(const struct image_layout_file_public_keys_3* ptr_struct, u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    offset = 0;
+    adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->keypair_exp);
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(32, 32, i, 4352, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->keypair_uuid[i]);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(160, 32, i, 4352, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->key[i]);
+    }
+    offset = 4256;
+    image_layout_component_authentication_configuration_pack(&(ptr_struct->component_authentication_configuration),
+                                                             ptr_buff + offset / 8);
+}
+
+void image_layout_file_public_keys_3_unpack(struct image_layout_file_public_keys_3* ptr_struct,
+                                            const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    offset = 0;
+    ptr_struct->keypair_exp = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(32, 32, i, 4352, 1);
+        ptr_struct->keypair_uuid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(160, 32, i, 4352, 1);
+        ptr_struct->key[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    offset = 4256;
+    image_layout_component_authentication_configuration_unpack(&(ptr_struct->component_authentication_configuration),
+                                                               ptr_buff + offset / 8);
+}
+
+void image_layout_file_public_keys_3_print(const struct image_layout_file_public_keys_3* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level)
+{
+    int i;
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== image_layout_file_public_keys_3 ========\n");
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "keypair_exp          : " U32H_FMT "\n", ptr_struct->keypair_exp);
+    for (i = 0; i < 4; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "keypair_uuid_%03d    : " U32H_FMT "\n", i, ptr_struct->keypair_uuid[i]);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "key_%03d             : " U32H_FMT "\n", i, ptr_struct->key[i]);
+    }
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "component_authentication_configuration:\n");
+    image_layout_component_authentication_configuration_print(&(ptr_struct->component_authentication_configuration), fd,
+                                                              indent_level + 1);
+}
+
+unsigned int image_layout_file_public_keys_3_size(void)
+{
+    return IMAGE_LAYOUT_FILE_PUBLIC_KEYS_3_SIZE;
+}
+
+void image_layout_file_public_keys_3_dump(const struct image_layout_file_public_keys_3* ptr_struct, FILE* fd)
+{
+    image_layout_file_public_keys_3_print(ptr_struct, fd, 0);
 }
 
 void image_layout_guids_pack(const struct image_layout_guids* ptr_struct, u_int8_t* ptr_buff)
@@ -1503,7 +1455,7 @@ void image_layout_hw_pointers_carmel_pack(const struct image_layout_hw_pointers_
     offset = 640;
     image_layout_hw_pointer_entry_pack(&(ptr_struct->image_info_section_pointer), ptr_buff + offset / 8);
     offset = 704;
-    image_layout_hw_pointer_entry_pack(&(ptr_struct->hmac_end_pointer), ptr_buff + offset / 8);
+    image_layout_hw_pointer_entry_pack(&(ptr_struct->image_signature_pointer), ptr_buff + offset / 8);
     offset = 768;
     image_layout_hw_pointer_entry_pack(&(ptr_struct->public_key_pointer), ptr_buff + offset / 8);
     offset = 832;
@@ -1542,7 +1494,7 @@ void image_layout_hw_pointers_carmel_unpack(struct image_layout_hw_pointers_carm
     offset = 640;
     image_layout_hw_pointer_entry_unpack(&(ptr_struct->image_info_section_pointer), ptr_buff + offset / 8);
     offset = 704;
-    image_layout_hw_pointer_entry_unpack(&(ptr_struct->hmac_end_pointer), ptr_buff + offset / 8);
+    image_layout_hw_pointer_entry_unpack(&(ptr_struct->image_signature_pointer), ptr_buff + offset / 8);
     offset = 768;
     image_layout_hw_pointer_entry_unpack(&(ptr_struct->public_key_pointer), ptr_buff + offset / 8);
     offset = 832;
@@ -1594,8 +1546,8 @@ void image_layout_hw_pointers_carmel_print(const struct image_layout_hw_pointers
     fprintf(fd, "image_info_section_pointer:\n");
     image_layout_hw_pointer_entry_print(&(ptr_struct->image_info_section_pointer), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "hmac_end_pointer:\n");
-    image_layout_hw_pointer_entry_print(&(ptr_struct->hmac_end_pointer), fd, indent_level + 1);
+    fprintf(fd, "image_signature_pointer:\n");
+    image_layout_hw_pointer_entry_print(&(ptr_struct->image_signature_pointer), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "public_key_pointer:\n");
     image_layout_hw_pointer_entry_print(&(ptr_struct->public_key_pointer), fd, indent_level + 1);
@@ -1625,6 +1577,8 @@ void image_layout_image_info_pack(const struct image_layout_image_info* ptr_stru
     u_int32_t offset;
     int i;
 
+    offset = 30;
+    adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->toc_header_duplication);
     offset = 29;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->secure_boot);
     offset = 27;
@@ -1683,6 +1637,8 @@ void image_layout_image_info_pack(const struct image_layout_image_info* ptr_stru
     image_layout_image_size_pack(&(ptr_struct->image_size), ptr_buff + offset / 8);
     offset = 2200;
     adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->synced_reset_downtime);
+    offset = 2176;
+    adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->toc_copy_ofst);
     for (i = 0; i < 4; ++i)
     {
         offset = adb2c_calc_array_field_address(2240, 32, i, 8192, 1);
@@ -1723,6 +1679,8 @@ void image_layout_image_info_unpack(struct image_layout_image_info* ptr_struct, 
     u_int32_t offset;
     int i;
 
+    offset = 30;
+    ptr_struct->toc_header_duplication = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
     offset = 29;
     ptr_struct->secure_boot = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
     offset = 27;
@@ -1783,6 +1741,8 @@ void image_layout_image_info_unpack(struct image_layout_image_info* ptr_struct, 
     image_layout_image_size_unpack(&(ptr_struct->image_size), ptr_buff + offset / 8);
     offset = 2200;
     ptr_struct->synced_reset_downtime = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+    offset = 2176;
+    ptr_struct->toc_copy_ofst = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
     for (i = 0; i < 4; ++i)
     {
         offset = adb2c_calc_array_field_address(2240, 32, i, 8192, 1);
@@ -1829,6 +1789,8 @@ void image_layout_image_info_print(const struct image_layout_image_info* ptr_str
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "======== image_layout_image_info ========\n");
 
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "toc_header_duplication : " UH_FMT "\n", ptr_struct->toc_header_duplication);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "secure_boot          : " UH_FMT "\n", ptr_struct->secure_boot);
     adb2c_add_indentation(fd, indent_level);
@@ -1882,6 +1844,8 @@ void image_layout_image_info_print(const struct image_layout_image_info* ptr_str
     image_layout_image_size_print(&(ptr_struct->image_size), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "synced_reset_downtime : " UH_FMT "\n", ptr_struct->synced_reset_downtime);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "toc_copy_ofst        : " UH_FMT "\n", ptr_struct->toc_copy_ofst);
     for (i = 0; i < 4; ++i)
     {
         adb2c_add_indentation(fd, indent_level);
@@ -1911,6 +1875,86 @@ unsigned int image_layout_image_info_size(void)
 void image_layout_image_info_dump(const struct image_layout_image_info* ptr_struct, FILE* fd)
 {
     image_layout_image_info_print(ptr_struct, fd, 0);
+}
+
+void image_layout_image_signature_2_pack(const struct image_layout_image_signature_2* ptr_struct, u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(0, 32, i, 4608, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature_uuid[i]);
+    }
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(128, 32, i, 4608, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->keypair_uuid[i]);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(256, 32, i, 4608, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature[i]);
+    }
+}
+
+void image_layout_image_signature_2_unpack(struct image_layout_image_signature_2* ptr_struct, const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(0, 32, i, 4608, 1);
+        ptr_struct->signature_uuid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    for (i = 0; i < 4; ++i)
+    {
+        offset = adb2c_calc_array_field_address(128, 32, i, 4608, 1);
+        ptr_struct->keypair_uuid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(256, 32, i, 4608, 1);
+        ptr_struct->signature[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+}
+
+void image_layout_image_signature_2_print(const struct image_layout_image_signature_2* ptr_struct,
+                                          FILE* fd,
+                                          int indent_level)
+{
+    int i;
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== image_layout_image_signature_2 ========\n");
+
+    for (i = 0; i < 4; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "signature_uuid_%03d  : " U32H_FMT "\n", i, ptr_struct->signature_uuid[i]);
+    }
+    for (i = 0; i < 4; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "keypair_uuid_%03d    : " U32H_FMT "\n", i, ptr_struct->keypair_uuid[i]);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "signature_%03d       : " U32H_FMT "\n", i, ptr_struct->signature[i]);
+    }
+}
+
+unsigned int image_layout_image_signature_2_size(void)
+{
+    return IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE;
+}
+
+void image_layout_image_signature_2_dump(const struct image_layout_image_signature_2* ptr_struct, FILE* fd)
+{
+    image_layout_image_signature_2_print(ptr_struct, fd, 0);
 }
 
 void image_layout_itoc_entry_pack(const struct image_layout_itoc_entry* ptr_struct, u_int8_t* ptr_buff)
@@ -2091,6 +2135,186 @@ void image_layout_itoc_header_dump(const struct image_layout_itoc_header* ptr_st
     image_layout_itoc_header_print(ptr_struct, fd, 0);
 }
 
+void image_layout_public_keys_2_pack(const struct image_layout_public_keys_2* ptr_struct, u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    for (i = 0; i < 8; ++i)
+    {
+        offset = adb2c_calc_array_field_address(0, 4352, i, 34816, 1);
+        image_layout_file_public_keys_2_pack(&(ptr_struct->file_public_keys_2[i]), ptr_buff + offset / 8);
+    }
+}
+
+void image_layout_public_keys_2_unpack(struct image_layout_public_keys_2* ptr_struct, const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    for (i = 0; i < 8; ++i)
+    {
+        offset = adb2c_calc_array_field_address(0, 4352, i, 34816, 1);
+        image_layout_file_public_keys_2_unpack(&(ptr_struct->file_public_keys_2[i]), ptr_buff + offset / 8);
+    }
+}
+
+void image_layout_public_keys_2_print(const struct image_layout_public_keys_2* ptr_struct, FILE* fd, int indent_level)
+{
+    int i;
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== image_layout_public_keys_2 ========\n");
+
+    for (i = 0; i < 8; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "file_public_keys_2_%03d:\n", i);
+        image_layout_file_public_keys_2_print(&(ptr_struct->file_public_keys_2[i]), fd, indent_level + 1);
+    }
+}
+
+unsigned int image_layout_public_keys_2_size(void)
+{
+    return IMAGE_LAYOUT_PUBLIC_KEYS_2_SIZE;
+}
+
+void image_layout_public_keys_2_dump(const struct image_layout_public_keys_2* ptr_struct, FILE* fd)
+{
+    image_layout_public_keys_2_print(ptr_struct, fd, 0);
+}
+
+void image_layout_public_keys_3_pack(const struct image_layout_public_keys_3* ptr_struct, u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    for (i = 0; i < 8; ++i)
+    {
+        offset = adb2c_calc_array_field_address(0, 4352, i, 34816, 1);
+        image_layout_file_public_keys_3_pack(&(ptr_struct->file_public_keys_3[i]), ptr_buff + offset / 8);
+    }
+}
+
+void image_layout_public_keys_3_unpack(struct image_layout_public_keys_3* ptr_struct, const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    for (i = 0; i < 8; ++i)
+    {
+        offset = adb2c_calc_array_field_address(0, 4352, i, 34816, 1);
+        image_layout_file_public_keys_3_unpack(&(ptr_struct->file_public_keys_3[i]), ptr_buff + offset / 8);
+    }
+}
+
+void image_layout_public_keys_3_print(const struct image_layout_public_keys_3* ptr_struct, FILE* fd, int indent_level)
+{
+    int i;
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== image_layout_public_keys_3 ========\n");
+
+    for (i = 0; i < 8; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "file_public_keys_3_%03d:\n", i);
+        image_layout_file_public_keys_3_print(&(ptr_struct->file_public_keys_3[i]), fd, indent_level + 1);
+    }
+}
+
+unsigned int image_layout_public_keys_3_size(void)
+{
+    return IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE;
+}
+
+void image_layout_public_keys_3_dump(const struct image_layout_public_keys_3* ptr_struct, FILE* fd)
+{
+    image_layout_public_keys_3_print(ptr_struct, fd, 0);
+}
+
+void image_layout_secure_boot_signatures_pack(const struct image_layout_secure_boot_signatures* ptr_struct,
+                                              u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(0, 32, i, 12288, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->boot_signature[i]);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(4096, 32, i, 12288, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->critical_signature[i]);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(8192, 32, i, 12288, 1);
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->non_critical_signature[i]);
+    }
+}
+
+void image_layout_secure_boot_signatures_unpack(struct image_layout_secure_boot_signatures* ptr_struct,
+                                                const u_int8_t* ptr_buff)
+{
+    u_int32_t offset;
+    int i;
+
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(0, 32, i, 12288, 1);
+        ptr_struct->boot_signature[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(4096, 32, i, 12288, 1);
+        ptr_struct->critical_signature[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        offset = adb2c_calc_array_field_address(8192, 32, i, 12288, 1);
+        ptr_struct->non_critical_signature[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+    }
+}
+
+void image_layout_secure_boot_signatures_print(const struct image_layout_secure_boot_signatures* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level)
+{
+    int i;
+
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== image_layout_secure_boot_signatures ========\n");
+
+    for (i = 0; i < 128; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "boot_signature_%03d  : " U32H_FMT "\n", i, ptr_struct->boot_signature[i]);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "critical_signature_%03d : " U32H_FMT "\n", i, ptr_struct->critical_signature[i]);
+    }
+    for (i = 0; i < 128; ++i)
+    {
+        adb2c_add_indentation(fd, indent_level);
+        fprintf(fd, "non_critical_signature_%03d : " U32H_FMT "\n", i, ptr_struct->non_critical_signature[i]);
+    }
+}
+
+unsigned int image_layout_secure_boot_signatures_size(void)
+{
+    return IMAGE_LAYOUT_SECURE_BOOT_SIGNATURES_SIZE;
+}
+
+void image_layout_secure_boot_signatures_dump(const struct image_layout_secure_boot_signatures* ptr_struct, FILE* fd)
+{
+    image_layout_secure_boot_signatures_print(ptr_struct, fd, 0);
+}
+
 void image_layout_tools_area_pack(const struct image_layout_tools_area* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
@@ -2158,12 +2382,12 @@ void image_layout_tools_area_dump(const struct image_layout_tools_area* ptr_stru
 
 void image_layout_image_layout_Nodes_pack(const union image_layout_image_layout_Nodes* ptr_struct, u_int8_t* ptr_buff)
 {
-    image_layout_hashes_table_pack(&(ptr_struct->hashes_table), ptr_buff);
+    image_layout_public_keys_3_pack(&(ptr_struct->public_keys_3), ptr_buff);
 }
 
 void image_layout_image_layout_Nodes_unpack(union image_layout_image_layout_Nodes* ptr_struct, const u_int8_t* ptr_buff)
 {
-    image_layout_hashes_table_unpack(&(ptr_struct->hashes_table), ptr_buff);
+    image_layout_public_keys_3_unpack(&(ptr_struct->public_keys_3), ptr_buff);
 }
 
 void image_layout_image_layout_Nodes_print(const union image_layout_image_layout_Nodes* ptr_struct,
@@ -2174,26 +2398,38 @@ void image_layout_image_layout_Nodes_print(const union image_layout_image_layout
     fprintf(fd, "======== image_layout_image_layout_Nodes ========\n");
 
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "tools_area:\n");
-    image_layout_tools_area_print(&(ptr_struct->tools_area), fd, indent_level + 1);
+    fprintf(fd, "device_info:\n");
+    image_layout_device_info_print(&(ptr_struct->device_info), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "public_keys_3:\n");
+    image_layout_public_keys_3_print(&(ptr_struct->public_keys_3), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "public_keys_2:\n");
+    image_layout_public_keys_2_print(&(ptr_struct->public_keys_2), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "itoc_entry:\n");
     image_layout_itoc_entry_print(&(ptr_struct->itoc_entry), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "hashes_table:\n");
-    image_layout_hashes_table_print(&(ptr_struct->hashes_table), fd, indent_level + 1);
-    adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "image_info:\n");
     image_layout_image_info_print(&(ptr_struct->image_info), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "hw_pointers_carmel:\n");
-    image_layout_hw_pointers_carmel_print(&(ptr_struct->hw_pointers_carmel), fd, indent_level + 1);
+    fprintf(fd, "hashes_table:\n");
+    image_layout_hashes_table_print(&(ptr_struct->hashes_table), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "itoc_header:\n");
     image_layout_itoc_header_print(&(ptr_struct->itoc_header), fd, indent_level + 1);
     adb2c_add_indentation(fd, indent_level);
-    fprintf(fd, "device_info:\n");
-    image_layout_device_info_print(&(ptr_struct->device_info), fd, indent_level + 1);
+    fprintf(fd, "secure_boot_signatures:\n");
+    image_layout_secure_boot_signatures_print(&(ptr_struct->secure_boot_signatures), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "image_signature_2:\n");
+    image_layout_image_signature_2_print(&(ptr_struct->image_signature_2), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "hw_pointers_carmel:\n");
+    image_layout_hw_pointers_carmel_print(&(ptr_struct->hw_pointers_carmel), fd, indent_level + 1);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "tools_area:\n");
+    image_layout_tools_area_print(&(ptr_struct->tools_area), fd, indent_level + 1);
 }
 
 unsigned int image_layout_image_layout_Nodes_size(void)
