@@ -411,6 +411,7 @@ public:
     bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st* cmpLinkX);
     void GenerateHandle();
     bool isMCDDSupported() { return isDmaSupported; };
+    bool IsSecondaryHost(bool& isSecondary);
 
 private:
     typedef enum

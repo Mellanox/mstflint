@@ -141,6 +141,7 @@ extern "C"
     reg_access_status_t
       reg_access_mdsr(mfile* mf, reg_access_method_t method, struct reg_access_switch_mdsr_reg_ext* mtcq);
     reg_access_status_t reg_access_mpegc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg* mpegc);
+    reg_access_status_t reg_access_pmaos(mfile* mf, reg_access_method_t method, struct reg_access_switch_pmaos_reg_ext* pmaos);
 
 #ifdef __cplusplus
 }
