@@ -277,12 +277,25 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc,
     for (unsigned int k = 0; k < s; k += 2)
     {
         u_int32_t* tempBuff = (u_int32_t*)buff;
-        // Calculate HW CRC:
-        u_int32_t calcPtrCRC = calc_hw_crc((u_int8_t*)((u_int32_t*)tempBuff + k), 6);
+        // Actual CRC:
         u_int32_t ptrCRC = tempBuff[k + 1];
-        u_int32_t ptr = tempBuff[k];
-        TOCPUn(&ptr, 1);
         TOCPUn(&ptrCRC, 1);
+
+        // Compare with SW CRC:
+        u_int32_t calcPtrCRC;
+        u_int32_t calcPtrSWCRC = CalcImageCRC((u_int32_t*)tempBuff + k, 1);
+        if (ptrCRC == calcPtrSWCRC)
+        {
+            // Some devices (QT3) uses SW CRC calculation for HW pointers
+            // and since we don't have an indication for that, we'll just check
+            // if SW CRC calculation matches the actual CRC
+            calcPtrCRC = calcPtrSWCRC;
+        }
+        else
+        {
+            // Calculate HW CRC:
+            calcPtrCRC = calc_hw_crc((u_int8_t*)((u_int32_t*)tempBuff + k), 6);
+        }
         if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE, calcPtrCRC, ptrCRC,
                              false, verifyCallBackFunc))
         {
