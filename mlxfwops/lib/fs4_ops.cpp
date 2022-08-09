@@ -3118,6 +3118,10 @@ bool Fs4Operations::Fs4UpdateVsdSection(std::vector<u_int8_t> section_data,
 
 bool Fs4Operations::Init()
 {
+    if (!initHwPtrs())
+    {
+        return false;
+    }
     fw_info_t fwInfo;
     if (!FwQuery(&fwInfo, false, false, false))
     {
@@ -4602,9 +4606,11 @@ bool Fs4Operations::GetFreeSlotInPublicKeys2(fs4_toc_info* itocEntry, u_int32_t&
     for (u_int32_t ii = 0; ii < num_of_key_slots; ii++)
     {
         u_int32_t key_start_offset = ii * image_layout_file_public_keys_2_size();
-        u_int32_t key_end_offset = key_start_offset + image_layout_file_public_keys_2_size();
-        if (all_of(itocEntry->section_data.begin() + key_start_offset, itocEntry->section_data.begin() + key_end_offset,
-                   [](u_int8_t val) { return val == 0; }))
+        image_layout_file_public_keys_2 public_key;
+        memset(&public_key, 0, sizeof(public_key));
+        image_layout_file_public_keys_2_unpack(&public_key, itocEntry->section_data.data() + key_start_offset);
+        if (all_of(public_key.keypair_uuid, public_key.keypair_uuid + 4,
+                   [](u_int32_t val) { return val == 0; }))
         {
             idx = ii;
             DPRINTF(("free slot at index = %d\n", idx));
@@ -4929,9 +4935,9 @@ bool Fs4Operations::signForSecureBoot(const char* private_key_file, const char* 
     {
         return errmsg("signForSecureBoot not allowed for devices");
     }
-    if (!initHwPtrs())
+    if (!Init())
     {
-        return errmsg("signForSecureBoot failed - Error: HW pointers not found\n");
+        return errmsg("signForSecureBoot failed - Error: %s\n", err());
     }
 
     SecureBootSignVersion secure_boot_version = getSecureBootSignVersion();
