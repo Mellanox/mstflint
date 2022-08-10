@@ -2902,6 +2902,7 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
         case CT_QUANTUM3:
         case CT_BLUEFIELD3:
         case CT_BLUEFIELD4:
+        case CT_SPECTRUM4:
             lifeCycleAddress = 0xf0000;
             firstBit = 4;
             bitLen = 2;
