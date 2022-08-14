@@ -1,0 +1,8 @@
+PACKAGE_NAME="mstflint"
+PACKAGE_VERSION="@PKGVER@"
+BUILT_MODULE_NAME[0]="mstflint_access"
+BUILT_MODULE_LOCATION[0]="./"
+DEST_MODULE_LOCATION[0]="/kernel/../misc/"
+MAKE="make all"
+CLEAN="make clean"
+AUTOINSTALL="yes"
