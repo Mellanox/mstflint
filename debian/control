@@ -1,16 +1,25 @@
 Source: mstflint
 Section: net
-Priority: extra
-Maintainer: Gal Sivan <gsivan@unknown>
-Build-Depends: debhelper (>= 8.0.0), autotools-dev
-Standards-Version: 3.9.2
-Homepage: http://www.mellanox.com
-#Vcs-Git: git://git.debian.org/collab-maint/mstflint.git
-#Vcs-Browser: http://git.debian.org/?p=collab-maint/mstflint.git;a=summary
+Priority: optional
+Maintainer: NVIDIA MFT Apps team <akiselman-org@nvidia.com>
+Build-Depends: autoconf, automake, autotools-dev, bzip2, debhelper, debhelper (>= 9.0), dkms, dpkg-dev, g++, git, libibmad-dev, libibverbs-dev, libjsoncpp-dev, libssl-dev, libtool, make, pkg-config, zlib1g-dev
+Standards-Version: 4.6.1
+Homepage: https://www.nvidia.com/networking/
+Vcs-Git: https://github.com/Mellanox/mstflint.git
 
 Package: mstflint
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Mellanox firmware burning application
- This package contains firmware update tool, vpd dump and register dump tools
- for network adapters based on Mellanox Technologies chips.
+Depends: ${misc:Depends}
+Description: mstflint - Mellanox firmware burning tools
+ This package contains firmware manipulation tools for network adapters based on Mellanox Technologies chips.
+
+Package: mstflint-dkms
+Section: kernel
+Priority: optional
+Architecture: all
+Depends: dkms, make, ${misc:Depends}
+Recommends: linux-headers-arm64 | linux-headers-powerpc | linux-headers-ppc64 | linux-headers-ppc64le | linux-headers-amd64 | linux-headers-generic | linux-headers
+Description: DKMS support for mstflint kernel modules
+ This package provides integration with the DKMS infrastructure for automatically building out of tree kernel modules.
+ .
+ This package contains the source to be built with dkms.

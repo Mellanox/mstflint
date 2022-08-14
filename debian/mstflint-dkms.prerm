@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+#DEBHELPER#
+
+module="mstflint_access"
+# Unload the module if it was installed
+if lsmod | grep -q -w "$module"; then
+	rmmod "$module" 2>/dev/null || :
+fi
+
+exit 0

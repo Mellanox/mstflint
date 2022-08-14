@@ -17,14 +17,14 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
     ./configure --enable-openssl which will enable all open SSL features including CS.
 
     As of mstflint-4.6.0 hca_self_test.ofed will not be a part of msflint package,
-    it will be found in ofed-scripts  provided by mellanox OFED package. 
-     
+    it will be found in ofed-scripts  provided by mellanox OFED package.
+
     This burning tool should be used only with Mellanox-manufactured
-    HCA/NIC cards. Using it with cards manufactured by other vendors 
+    HCA/NIC cards. Using it with cards manufactured by other vendors
     may be harmful  to  the cards (due to different configurations).
     Using the diagnostic tools is normally safe for all HCAs/NICs.
     ----------------------------------------------------------------------------
-    
+
 2) Package Contents
     a) mstflint source code
     b) mflash lib
@@ -57,14 +57,21 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
        autotools method.
 
 	   NOTE: if you are trying to build from the GitHub repository, need to run ./autogen.sh first.
-	   
-       Example: 
+
+       Example:
        > ./configure
        > make
        > make install
 
        - Run "configure --help" for custom configuration options.
        - Typically, root privileges are required to run "make install"
+
+    b) Installation on DEB based OS. This package is using Debian package development tools.
+
+       Example:
+       > dpkg-buildpackage -uc -us
+       > dpkg -i ../mstflint_<version>_<arch>.deb
+       > dpkg -i ../mstflint-dkms_<version>_all.deb
 
 4) Hardware Access Device Names
    The tools in this package require a device name in the command
@@ -76,7 +83,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
       Example:
       # List all Mellanox devices
       > /sbin/lspci -d 15b3:
-        02:00.0 Ethernet controller: Mellanox Technologies MT25448 [ConnectX EN 10GigE, PCIe 2.0 2.5GT/s] (rev a0) 
+        02:00.0 Ethernet controller: Mellanox Technologies MT25448 [ConnectX EN 10GigE, PCIe 2.0 2.5GT/s] (rev a0)
 
       # Use mstflint tool to query the firmware on this device
       > mstflint -d 02:00.0 q
@@ -84,7 +91,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
     b) When the IB driver (mlx4 or mthca) is loaded, the devices can be accessed
        by their IB device name.
        Example:
-       # List the IB devices 
+       # List the IB devices
        > ibv_devinfo | grep hca_id
          hca_id: mlx4_0
 
@@ -103,8 +110,8 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
        Example:
        # List all Mellanox devices
        > /sbin/lspci -d 15b3:
-         02:00.0 Ethernet controller: Mellanox Technologies MT25448 [ConnectX EN 10GigE, PCIe 2.0 2.5GT/s] (rev a0) 
-	   
+         02:00.0 Ethernet controller: Mellanox Technologies MT25448 [ConnectX EN 10GigE, PCIe 2.0 2.5GT/s] (rev a0)
+
        # Use mstregdump to dump HW registers, using PCI config cycles
        > mstregdump /proc/bus/pci/02/00.0 > crdump.log
 
@@ -146,8 +153,8 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
        If you purchased your card from a vendor other than Mellanox, get a
        specific firmware configuration (INI) file from your HCA card vendor and
        generate the binary image.
-	
-       Use mstflint to burn a device according to the burning instructions in 
+
+       Use mstflint to burn a device according to the burning instructions in
        "mstflint -hh" and in Mellanox web site firmware page.
 
 6) Usage (mstregdump):
