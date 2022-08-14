@@ -54,6 +54,8 @@ using namespace mlxreg;
 #define PDDR_STATUS_MESSAGE_LENGTH_HCA 236
 #define PDDR_STATUS_MESSAGE_LENGTH_SWITCH 59
 
+#define MAX_FIELDS_BUFFER 1024
+
 class MlxlinkRegParser : public RegAccessParser
 {
 public:
@@ -65,6 +67,10 @@ public:
     void genBuffSendRegister(const string& regName, maccess_reg_method_t method);
     void writeGvmi(u_int32_t data);
     void updateField(string field_name, u_int32_t value);
+    void updateWithDefault(const string& fieldName, const string& fieldsStr, u_int32_t val);
+    void setDefaultFields(const string& fieldsStr);
+    void sendPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...);
+    void sendPrmReg(const string& regName, maccess_reg_method_t method);
     u_int32_t getFieldValue(string field_name);
     string getFieldStr(const string& field);
     string getRawFieldValueStr(const string fieldName);
@@ -75,6 +81,11 @@ public:
     MlxRegLib* _regLib;
     mfile* _mf;
     MlxlinkLogger* _mlxlinkLogger;
+
+    u_int32_t _localPort;
+    u_int32_t _pnat;
+    u_int32_t _portType;
+    bool _isHCA;
 };
 
 #endif /* MLXLINK_REG_PARSER_H */

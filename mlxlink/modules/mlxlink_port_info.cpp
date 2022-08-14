@@ -37,9 +37,6 @@
 
 MlxlinkPortInfo::MlxlinkPortInfo(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
 {
-    _localPort = 0;
-    _pnat = 0;
-    _portType = 0;
     _fecActive = 0;
     _histType = HIST_TYPE_AUTO;
     _numOfBins = 0;
@@ -48,34 +45,9 @@ MlxlinkPortInfo::MlxlinkPortInfo(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
 
 MlxlinkPortInfo::~MlxlinkPortInfo() {}
 
-void MlxlinkPortInfo::resetPPHCR()
-{
-    resetParser(PPHCR_REG);
-    updateField("local_port", _localPort);
-    updateField("pnat", _pnat);
-    updateField("hist_type", _histType);
-}
-
-void MlxlinkPortInfo::resetPPCNT()
-{
-    resetParser(PPCNT_REG);
-    updateField("local_port", _localPort);
-    updateField("pnat", _pnat);
-    updateField("grp", PPCNT_HISTOGRAM_GROUP);
-}
-
-u_int32_t MlxlinkPortInfo::getNumberOfBins()
-{
-    resetPPHCR();
-    genBuffSendRegister(PPHCR_REG, MACCESS_REG_METHOD_GET);
-
-    return getFieldValue("num_of_bins");
-}
-
 void MlxlinkPortInfo::init()
 {
-    resetPPHCR();
-    genBuffSendRegister(PPHCR_REG, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_PPHCR, GET);
 
     if (!getFieldValue("active_hist_type"))
     {
@@ -87,13 +59,12 @@ void MlxlinkPortInfo::init()
         _fieldSep = ",";
     }
 
-    _numOfBins = getNumberOfBins();
+    _numOfBins = getFieldValue("num_of_bins");
 }
 
 void MlxlinkPortInfo::updateBinsRange()
 {
-    resetPPHCR();
-    genBuffSendRegister(PPHCR_REG, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_PPHCR, GET);
 
     for (u_int32_t binIdx = 0; binIdx < _numOfBins; ++binIdx)
     {
@@ -105,8 +76,7 @@ void MlxlinkPortInfo::updateBinsRange()
 
 void MlxlinkPortInfo::updateBinsErrorsCount()
 {
-    resetPPCNT();
-    genBuffSendRegister(PPCNT_REG, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_HISTOGRAM_GROUP);
 
     for (u_int32_t binIdx = 0; binIdx < _numOfBins; ++binIdx)
     {
@@ -146,7 +116,5 @@ void MlxlinkPortInfo::clearHistogram()
 {
     MlxlinkRecord::printCmdLine("Clearing Histogram Counters", _jsonRoot);
 
-    resetPPCNT();
-    updateField("clr", 1);
-    genBuffSendRegister(PPCNT_REG, MACCESS_REG_METHOD_SET);
+    sendPrmReg(ACCESS_REG_PPCNT, SET, "grp=%d,clr=%d", PPCNT_HISTOGRAM_GROUP, 1);
 }

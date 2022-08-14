@@ -414,7 +414,7 @@ public:
     virtual void showEye();
     void showFEC();
     virtual void showSltp();
-    virtual void showDeviceData();
+    void showDeviceData();
     void showBerMonitorInfo();
     void showExternalPhy();
     void showPcie();
@@ -473,11 +473,8 @@ public:
     int getLinkDown();
     float getRawBERLimit();
     bool getResult(std::map<std::string, float> errors_vector, float raw_ber_limit, int link_down);
-    string getDevicePN(bool queryMSGI = false);
-    string getDeviceSN(bool queryMSGI = false);
-    string getDeviceProductName(bool queryMSGI = false);
-    string getDeviceRev(bool queryMSGI = false);
-    string getDeviceFW();
+    string getDevicePN();
+    virtual string getFwVersion();
     void printOuptputVector(vector<MlxlinkCmdPrint>& cmdOut);
     virtual void prepareJsonOut();
 
@@ -563,8 +560,8 @@ public:
     u_int32_t fecToBit(const string& fec, const string& speedStrG);
     u_int32_t getFecCapForCheck(const string& speedStr);
     void checkPplmCap();
-    void updateSltpEdrHdrFields();
-    void updateSltpNdrFields();
+    string updateSltpEdrHdrFields();
+    string updateSltpNdrFields();
     string getSltpStatus();
     void getSltpAlevOut(u_int32_t lane);
     void getSltpRegAndLeva(u_int32_t lane);
@@ -575,8 +572,6 @@ public:
     // Mlxlink params
     UserInput _userInput;
     dm_dev_id_t _devID;
-    u_int32_t _localPort;
-    u_int32_t _portType;
     DPN _dpn;
     u_int32_t _numOfLanes;
     u_int32_t _numOfLanesPcie;
@@ -616,7 +611,6 @@ public:
     bool _plugged;
     bool _linkModeForce;
     bool _useExtAdb;
-    bool _isHCA;
     bool _ddmSupported;
     bool _cmisCable;
     bool _qsfpCable;

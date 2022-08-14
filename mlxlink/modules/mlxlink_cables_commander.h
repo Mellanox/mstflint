@@ -137,7 +137,6 @@ public:
     u_int32_t _cableIdentifier;
     bool _sfp51Paging;
     bool _passiveQsfp;
-    u_int32_t _localPort;
     u_int32_t _numOfLanes;
     MlxlinkMaps* _mlxlinkMaps;
     map<ModulePrbs_t, string> _modulePrbsParams;
@@ -200,7 +199,7 @@ private:
     u_int32_t pmcrStrToValue(ControlParam paramId, const string& value);
     string getPMCRCapValueStr(u_int32_t valueCap, ControlParam paramId);
     void checkPMCRFieldsCap(vector<pair<ControlParam, string>>& params);
-    void buildPMCRRequest(ControlParam paramId, const string& value);
+    string buildPMCRRequest(ControlParam paramId, const string& value);
 
     Json::Value& _jsonRoot;
     vector<page_t> _validPages;

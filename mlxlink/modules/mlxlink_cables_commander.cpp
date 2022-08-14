@@ -65,16 +65,10 @@ void MlxlinkCablesCommander::readMCIA(u_int32_t page,
                                       u_int8_t* data,
                                       u_int32_t i2cAddress)
 {
-    string regName = "MCIA";
-    resetParser(regName);
-    updateField("module", _moduleNumber);
-    updateField("slot_index", _slotIndex);
-    updateField("size", size);
-    updateField("page_number", page);
-    updateField("device_address", offset);
-    updateField("i2c_device_address", i2cAddress);
-    updateField("l", 0);
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_MCIA, GET,
+               "module=%d,slot_index=%d,size=%d,page_number=%d,device_address=%d,i2c_device_address=%d", _moduleNumber,
+               _slotIndex, size, page, offset, i2cAddress);
+
     u_int32_t i = 0;
     char fieldName[32];
     for (; i < size / 4; i++)
@@ -99,27 +93,24 @@ void MlxlinkCablesCommander::writeMCIA(u_int32_t page,
     {
         throw MlxRegException("Data exceeded the maximum page size (255 bytes), check the offset or data size");
     }
-    string regName = "MCIA";
-    resetParser(regName);
-    updateField("module", _moduleNumber);
-    updateField("slot_index", _slotIndex);
-    updateField("size", dataSize);
-    updateField("page_number", page);
-    updateField("device_address", offset);
-    updateField("i2c_device_address", i2cAddress);
+
     u_int32_t i = 0;
-    char fieldName[20];
+    char fieldName[64];
+    string dataCmd = "";
     u_int32_t dwordDataSize = (u_int32_t)ceil((double)size / sizeof(u_int32_t));
     u_int32_t* dwordData = (u_int32_t*)malloc(dwordDataSize);
     memset(dwordData, 0, dwordDataSize);
     memcpy(dwordData, data, size);
     for (; i < dwordDataSize; i++)
     {
-        sprintf(fieldName, "dword[%d]", i);
-        updateField(fieldName, __cpu_to_be32(dwordData[i]));
+        sprintf(fieldName, ",dword[%d]=%d", i, __cpu_to_be32(dwordData[i]));
+        dataCmd += string(fieldName);
     }
     free(dwordData);
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
+
+    sendPrmReg(ACCESS_REG_MCIA, SET,
+               "module=%d,slot_index=%d,size=%d,page_number=%d,device_address=%d,i2c_device_address=%d%s",
+               _moduleNumber, _slotIndex, size, page, offset, i2cAddress, dataCmd.c_str());
 }
 
 // Reading EEPROM data from MCIA register and loading it to readable pages
@@ -186,13 +177,7 @@ u_int16_t MlxlinkCablesCommander::getStatusBit(u_int32_t channel, u_int16_t val,
 
 void MlxlinkCablesCommander::getDdmValuesFromPddr()
 {
-    string regName = "PDDR";
-    resetParser(regName);
-
-    updateField("local_port", _localPort);
-    updateField("pnat", 0);
-    updateField("page_select", 3);
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
 
     _cableDdm.channels = _numOfLanes;
     _cableDdm.temperature.val = getFieldValue("temperature") / 256;
@@ -1148,10 +1133,7 @@ void MlxlinkCablesCommander::getNumOfModuleLanes()
         // As a WA, use module_width for MEDIA and HOST lanes
         // TODO: use module_media_width once it be supported
         // if (_modulePrbsParams[MODULE_PRBS_SELECT] == "HOST") {
-        resetParser(ACCESS_REG_PMTM);
-        updateField("module", _moduleNumber);
-        updateField("slot_index", _slotIndex);
-        genBuffSendRegister(ACCESS_REG_PMTM, MACCESS_REG_METHOD_GET);
+        sendPrmReg(ACCESS_REG_PMTM, GET, "module=%d,slot_index=%d", _moduleNumber, _slotIndex);
 
         _numOfLanes = getFieldValue("module_width");
         //} else {
@@ -1168,11 +1150,7 @@ void MlxlinkCablesCommander::checkAndParsePMPTCap(ModuleAccess_t moduleAccess)
     bool regFaild = false;
     try
     {
-        resetParser(ACCESS_REG_PMPT);
-        updateField("module", _moduleNumber);
-        updateField("slot_index", _slotIndex);
-        updateField("lane_mask", 0x1);
-        genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+        sendPrmReg(ACCESS_REG_PMPT, GET, "module=%d,slot_index=%d,lane_mask=%d", _moduleNumber, _slotIndex, 1);
     }
     catch (MlxRegException& exc)
     {
@@ -1185,14 +1163,9 @@ void MlxlinkCablesCommander::checkAndParsePMPTCap(ModuleAccess_t moduleAccess)
     _prbsRate = getRateAdminFromStr(getFieldValue("lane_rate_cap"), _modulePrbsParams[ModulePrbs_t(MODULE_PRBS_RATE)]);
 
     // read the other PMPT caps according to the prbsRate
-    resetParser(ACCESS_REG_PMPT);
-    updateField("module", _moduleNumber);
-    updateField("slot_index", _slotIndex);
-    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
-    updateField("ch_ge", (u_int32_t)moduleAccess);
-    updateField("modulation", _prbsRate >= MODULE_PRBS_LANE_RATE_HDR);
-    updateField("lane_mask", 0x1);
-    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_PMPT, GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d,ch_ge=%d,modulation=%d",
+               _moduleNumber, _slotIndex, _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 1, (u_int32_t)moduleAccess,
+               _prbsRate >= MODULE_PRBS_LANE_RATE_HDR);
 
     u_int32_t chAccessShift = moduleAccess == MODULE_PRBS_ACCESS_CH ? MODULE_PRBS_GEN_INV : 0;
 
@@ -1208,13 +1181,8 @@ void MlxlinkCablesCommander::checkAndParsePMPTCap(ModuleAccess_t moduleAccess)
 
 u_int32_t MlxlinkCablesCommander::getPMPTStatus(ModuleAccess_t moduleAccess)
 {
-    resetParser(ACCESS_REG_PMPT);
-    updateField("module", _moduleNumber);
-    updateField("slot_index", _slotIndex);
-    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
-    updateField("ch_ge", (u_int32_t)moduleAccess);
-    updateField("lane_mask", 0x1);
-    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_PMPT, GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d,ch_ge=%d", _moduleNumber,
+               _slotIndex, _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 1, (u_int32_t)moduleAccess);
 
     return getFieldValue("status");
 }
@@ -1223,20 +1191,12 @@ void MlxlinkCablesCommander::sendPMPT(ModuleAccess_t moduleAccess)
 {
     checkAndParsePMPTCap(moduleAccess);
 
-    resetParser(ACCESS_REG_PMPT);
-    updateField("module", _moduleNumber);
-    updateField("slot_index", _slotIndex);
-    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
-    updateField("ch_ge", (u_int32_t)moduleAccess);
-    updateField("e", 1);
-    updateField("prbs_mode_admin", _prbsMode);
-    updateField("lane_rate_admin", _prbsRate);
-    updateField("invt_admin", _prbsInv);
-    updateField("swap_admin", _prbsSwap);
-    updateField("lane_mask", _prbsLanes ? _prbsLanes : 0xff);
-    updateField("le", _prbsLanes != 0);
-    updateField("modulation", _prbsRate >= MODULE_PRBS_LANE_RATE_HDR);
-    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_SET);
+    sendPrmReg(ACCESS_REG_PMPT, SET,
+               "module=%d,slot_index=%d,host_media=%d,lane_mask=%d,ch_ge=%d,e=%d,prbs_mode_admin=%d,lane_rate_admin=%d,"
+               "invt_admin=%d,swap_admin=%d,le=%d,modulation=%d",
+               _moduleNumber, _slotIndex, _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST",
+               _prbsLanes ? _prbsLanes : 0xff, (u_int32_t)moduleAccess, 1, _prbsMode, _prbsRate, _prbsInv, _prbsSwap,
+               _prbsLanes != 0, _prbsRate >= MODULE_PRBS_LANE_RATE_HDR);
 
     if (getPMPTStatus(moduleAccess) == PMPT_STATUS_CONFIG_ERROR)
     {
@@ -1263,17 +1223,8 @@ void MlxlinkCablesCommander::enablePMPT(ModuleAccess_t moduleAccess)
 
 void MlxlinkCablesCommander::disablePMPT()
 {
-    resetParser(ACCESS_REG_PMPT);
-    updateField("module", _moduleNumber);
-    updateField("slot_index", _slotIndex);
-    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
-    updateField("ch_ge", 0);
-    updateField("e", 0);
-    updateField("prbs_mode_admin", _prbsMode);
-    updateField("lane_rate_admin", _prbsRate);
-    updateField("modulation", 1);
-    updateField("lane_mask", 0xff);
-    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_SET);
+    sendPrmReg(ACCESS_REG_PMPT, SET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d", _moduleNumber, _slotIndex,
+               _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 0xff);
 }
 
 void MlxlinkCablesCommander::handlePrbsTestMode(const string& ctrl, ModuleAccess_t moduleAccess)
@@ -1301,13 +1252,8 @@ void MlxlinkCablesCommander::getPMPTConfiguration(ModuleAccess_t moduleAccess,
                                                   vector<string>& prbsInv,
                                                   vector<string>& prbsSwap)
 {
-    resetParser(ACCESS_REG_PMPT);
-    updateField("module", _moduleNumber);
-    updateField("slot_index", _slotIndex);
-    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
-    updateField("ch_ge", (u_int32_t)moduleAccess);
-    updateField("lane_mask", 0x1);
-    genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_PMPT, GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d,ch_ge=%d", _moduleNumber,
+               _slotIndex, _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 1, (u_int32_t)moduleAccess);
 
     u_int32_t index = (u_int32_t)pow(2.0, (double)getFieldValue("prbs_mode_admin"));
     prbsPattern.push_back(MlxlinkRecord::addSpaceForModulePrbs(_mlxlinkMaps->_modulePrbsModeCapToStr[index]));
@@ -1330,12 +1276,8 @@ string MlxlinkCablesCommander::getPMPDLockStatus()
 
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
     {
-        resetParser(ACCESS_REG_PMPD);
-        updateField("module", _moduleNumber);
-        updateField("slot_index", _slotIndex);
-        updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
-        updateField("lane", lane);
-        genBuffSendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);
+        sendPrmReg(ACCESS_REG_PMPD, GET, "module=%d,slot_index=%d,host_media=%d,lane=%d", _moduleNumber, _slotIndex,
+                   _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", lane);
 
         lockStatusStr += MlxlinkRecord::addSpaceForModulePrbs(_mlxlinkMaps->_modulePMPDStatus[getFieldValue("status")]);
         lockStatusStr += ",";
@@ -1363,13 +1305,8 @@ void MlxlinkCablesCommander::showPrbsTestMode()
 
     try
     {
-        resetParser(ACCESS_REG_PMPT);
-        updateField("module", _moduleNumber);
-        updateField("slot_index", _slotIndex);
-        updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
-        updateField("ch_ge", 0);
-        updateField("lane_mask", 0x1);
-        genBuffSendRegister(ACCESS_REG_PMPT, MACCESS_REG_METHOD_GET);
+        sendPrmReg(ACCESS_REG_PMPT, GET, "module=%d,slot_index=%d,host_media=%d,lane_mask=%d", _moduleNumber,
+                   _slotIndex, _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 1);
     }
     catch (MlxRegException& exc)
     {
@@ -1408,12 +1345,8 @@ void MlxlinkCablesCommander::getPMPDInfo(vector<string>& traffic,
     bool skipSnrCap = false;
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
     {
-        resetParser(ACCESS_REG_PMPD);
-        updateField("module", _moduleNumber);
-        updateField("slot_index", _slotIndex);
-        updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
-        updateField("lane", lane);
-        genBuffSendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);
+        sendPrmReg(ACCESS_REG_PMPD, GET, "module=%d,slot_index=%d,host_media=%d,lane=%d", _moduleNumber, _slotIndex,
+                   _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", lane);
 
         traficStr = to_string(add32BitTo64(getFieldValue("prbs_bits_high"), getFieldValue("prbs_bits_low")));
         errorsStr = to_string(add32BitTo64(getFieldValue("prbs_errors_high"), getFieldValue("prbs_errors_low")));
@@ -1477,12 +1410,8 @@ void MlxlinkCablesCommander::clearPrbsDiagInfo()
 {
     MlxlinkRecord::printCmdLine("Clearing PRBS Diagnostic Counters", _jsonRoot);
 
-    resetParser(ACCESS_REG_PMPD);
-    updateField("module", _moduleNumber);
-    updateField("slot_index", _slotIndex);
-    updateField("host_media", _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST");
-    updateField("cl", 1);
-    genBuffSendRegister(ACCESS_REG_PMPD, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_PMPD, GET, "module=%d,slot_index=%d,host_media=%d,cl=%d", _moduleNumber, _slotIndex,
+               _modulePrbsParams[MODULE_PRBS_SELECT] == "HOST", 1);
 }
 
 void MlxlinkCablesCommander::showControlParams()
@@ -1490,10 +1419,7 @@ void MlxlinkCablesCommander::showControlParams()
     MlxlinkCmdPrint controlParamsOutput = MlxlinkCmdPrint();
     setPrintTitle(controlParamsOutput, "Module Control Parameters", CABLE_CONTROL_PARAMETERS_SET_RX_AMP);
 
-    resetParser(ACCESS_REG_PDDR);
-    updateField("local_port", _localPort);
-    updateField("page_select", PDDR_MODULE_INFO_PAGE);
-    genBuffSendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
 
     u_int32_t txEq = getFieldValue("cable_tx_equalization");
     float rxEmph = (double)getFieldValue("cable_rx_emphasis");
@@ -1501,9 +1427,7 @@ void MlxlinkCablesCommander::showControlParams()
     u_int32_t rxAmp = getFieldValue("cable_rx_amp");
     bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
 
-    resetParser(ACCESS_REG_PMCR);
-    updateField("local_port", _localPort);
-    genBuffSendRegister(ACCESS_REG_PMCR, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_PMCR, GET);
 
     if (isCmis)
     {
@@ -1561,7 +1485,7 @@ u_int32_t MlxlinkCablesCommander::pmcrStrToValue(ControlParam paramId, const str
 
     if (isCmis && paramId == CABLE_CONTROL_PARAMETERS_SET_RX_EMPH)
     {
-        _modulePMCRParams[paramId].first += " (Pre)";
+        _modulePMCRParams[paramId].first += " (pre)";
         valueToSet *= 2;
         if ((valueToSet - (int)valueToSet) > 0)
         {
@@ -1628,9 +1552,7 @@ string MlxlinkCablesCommander::getPMCRCapValueStr(u_int32_t valueCap, ControlPar
 
 void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string>>& params)
 {
-    resetParser(ACCESS_REG_PMCR);
-    updateField("local_port", _localPort);
-    genBuffSendRegister(ACCESS_REG_PMCR, MACCESS_REG_METHOD_GET);
+    sendPrmReg(ACCESS_REG_PMCR, GET);
 
     // Check provided params exestance capability
     string fieldName = "";
@@ -1683,12 +1605,14 @@ void MlxlinkCablesCommander::checkPMCRFieldsCap(vector<pair<ControlParam, string
     }
 }
 
-void MlxlinkCablesCommander::buildPMCRRequest(ControlParam paramId, const string& value)
+string MlxlinkCablesCommander::buildPMCRRequest(ControlParam paramId, const string& value)
 {
     u_int32_t valueToSet = pmcrStrToValue(paramId, value);
 
-    updateField(_modulePMCRParams[paramId].second + "_cntl", 2);
-    updateField(_modulePMCRParams[paramId].second + "_value", (u_int32_t)valueToSet);
+    string pmcrReq = _modulePMCRParams[paramId].second + "_cntl=2,";
+    pmcrReq += _modulePMCRParams[paramId].second + "_value=" + to_string((u_int32_t)valueToSet);
+
+    return pmcrReq;
 }
 
 void MlxlinkCablesCommander::setControlParams(vector<pair<ControlParam, string>>& params)
@@ -1698,18 +1622,18 @@ void MlxlinkCablesCommander::setControlParams(vector<pair<ControlParam, string>>
     checkPMCRFieldsCap(params);
 
     string fieldsStr = "";
+    string pmcrFieldsRequest = "";
     try
     {
-        resetParser(ACCESS_REG_PMCR);
-        updateField("local_port", _localPort);
-
         for (auto it = params.begin(); it != params.end(); it++)
         {
             fieldsStr += _modulePMCRParams[it->first].first + ", ";
-            buildPMCRRequest(it->first, it->second);
+            pmcrFieldsRequest += buildPMCRRequest(it->first, it->second);
+            pmcrFieldsRequest += ",";
         }
 
-        genBuffSendRegister(ACCESS_REG_PMCR, MACCESS_REG_METHOD_SET);
+        pmcrFieldsRequest = deleteLastChar(pmcrFieldsRequest);
+        sendPrmReg(ACCESS_REG_PMCR, SET, pmcrFieldsRequest.c_str());
     }
     catch (MlxRegException& exc)
     {
