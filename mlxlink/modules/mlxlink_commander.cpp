@@ -234,9 +234,9 @@ void MlxlinkCommander::checkValidFW()
         u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
 
         sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d,group_opcode=%d", PDDR_TROUBLESHOOTING_INFO_PAGE,
-                   ADVANCED_OPCODE);
+                   MONITOR_OPCODE);
 
-        u_int32_t statusOpcode = getFieldValue("advanced_opcode");
+        u_int32_t statusOpcode = getFieldValue("monitor_opcode");
 
         if (phyMngrFsmState == 0 && statusOpcode == 0)
         {
@@ -326,9 +326,9 @@ bool MlxlinkCommander::checkPortStatus(u_int32_t localPort)
     u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
 
     sendPrmReg(ACCESS_REG_PDDR, GET, "local_port=%d,page_select=%d,group_opcode=%d", localPort,
-               PDDR_TROUBLESHOOTING_INFO_PAGE, ADVANCED_OPCODE);
+               PDDR_TROUBLESHOOTING_INFO_PAGE, MONITOR_OPCODE);
 
-    u_int32_t statusOpcode = getFieldValue("advanced_opcode");
+    u_int32_t statusOpcode = getFieldValue("monitor_opcode");
 
     if (!(phyMngrFsmState == 0 && statusOpcode == 0))
     {
@@ -1772,21 +1772,21 @@ void MlxlinkCommander::troubInfoPage()
     try
     {
         sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d,group_opcode=%d", PDDR_TROUBLESHOOTING_INFO_PAGE,
-                   ADVANCED_OPCODE);
+                   MONITOR_OPCODE);
 
-        u_int32_t advancedOpcode = getFieldValue("advanced_opcode");
-        string color = status2Color(advancedOpcode);
+        u_int32_t monitorOpcode = getFieldValue("monitor_opcode");
+        string color = status2Color(monitorOpcode);
         setPrintTitle(_troubInfoCmd, "Troubleshooting Info", PDDR_TRUOBLESHOOTING_INFO_LAST, !_prbsTestMode);
 
-        if (advancedOpcode == CABLE_IS_UNPLUGGED)
+        if (monitorOpcode == CABLE_IS_UNPLUGGED)
         {
             _mngCableUnplugged = true;
         }
         stringstream statusOp;
-        statusOp << std::dec << advancedOpcode;
+        statusOp << std::dec << monitorOpcode;
         setPrintVal(_troubInfoCmd, "Status Opcode", statusOp.str(), color, true, !_prbsTestMode);
 
-        string groupOpcode = getGroupStr(advancedOpcode);
+        string groupOpcode = getGroupStr(monitorOpcode);
         setPrintVal(_troubInfoCmd, "Group Opcode", groupOpcode, color, true, !_prbsTestMode);
 
         string message = "";

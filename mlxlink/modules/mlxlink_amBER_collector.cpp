@@ -241,7 +241,6 @@ void MlxlinkAmBerCollector::init()
             updateField("local_port", _localPort);
             updateField("pnat", PNAT_LOCAL);
             updateField("page_select", PDDR_MODULE_INFO_PAGE);
-            updateField("group_opcode", ADVANCED_OPCODE);
             genBuffSendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
 
             u_int32_t cableType = getFieldValue("cable_type");
@@ -1728,7 +1727,7 @@ vector<AmberField> MlxlinkAmBerCollector::getTroubleshootingInfo()
             updateField("local_port", _localPort);
             updateField("pnat", PNAT_LOCAL);
             updateField("page_select", PDDR_TROUBLESHOOTING_INFO_PAGE);
-            updateField("group_opcode", ADVANCED_OPCODE);
+            updateField("group_opcode", MONITOR_OPCODE);
             sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
 
             string message = "";
@@ -1758,7 +1757,7 @@ vector<AmberField> MlxlinkAmBerCollector::getTroubleshootingInfo()
                 }
             }
 
-            fields.push_back(AmberField("Advanced_Status_Opcode", getFieldStr("advanced_opcode")));
+            fields.push_back(AmberField("Advanced_Status_Opcode", getFieldStr("monitor_opcode")));
             fields.push_back(AmberField("Status_Message", message));
         }
     }
