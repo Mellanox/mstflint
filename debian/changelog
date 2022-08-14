@@ -1,14 +1,14 @@
-mstflint (4.22.0-1) unstable; urgency=low
+mstflint (4.22.0-4) unstable; urgency=low
 
   * Updated from MFT-4.22.0
 
  -- Alex Blago <alexbl@nvidia.com>  Thu, 8 Sep 2022 00:00:00 +0000
 
-mstflint (4.21.0-1) unstable; urgency=low
+mstflint (4.21.0-6) unstable; urgency=low
 
   * Updated from MFT-4.21.0
 
- -- Tomer Tubi <ttubi@nvidia.com>  Sun, 31 Jul 2022 00:00:00 +0000
+ -- Alex Blago <alexbl@nvidia.com>  Sun, 2 Oct 2022 00:00:00 +0000
 
 mstflint (4.20.1-1) unstable; urgency=low
 
