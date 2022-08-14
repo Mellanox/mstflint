@@ -106,11 +106,11 @@ private:
     void getIbComplianceCodes(string& ibComplianceCodeStr);
     string getCableTechnologyStr(u_int32_t cableTechnology);
     string getCableBreakoutStr(u_int32_t cableBreakout, u_int32_t cableIdentifier);
-    void calcRxTxPowerLane(vector<AmberField>& fields, string str);
+    void pushModulePerLaneField(vector<AmberField>& fields, string fieldName, float valueCorrection = 1.0);
     void getModuleInfoPage(vector<AmberField>& fields);
     string getSmfLength(const u_int32_t smfLength, const u_int32_t cableTechnology, const bool optical);
     string getDateCode(u_int64_t dateCode);
-    void loopAllLanesStr(vector<AmberField>& fields, const string str);
+    void pushModuleDpPerLane(vector<AmberField>& fields, const string str);
     void getTxBiasLane(vector<AmberField>& fields);
     string getByMap(u_int32_t flags, std::map<u_int32_t, std::string> map);
     void getCmisComplianceCode(u_int32_t ethComplianceCode,

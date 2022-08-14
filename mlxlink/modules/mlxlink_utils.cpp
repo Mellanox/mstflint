@@ -1257,7 +1257,7 @@ string getCompliance(u_int32_t compliance, std::map<u_int32_t, std::string> comp
     return compliance_str;
 }
 
-string getFwVersion(bool passive, u_int32_t moduleFWVer)
+string getModuleFwVersion(bool passive, u_int32_t moduleFWVer)
 {
     string moduleFWVersion = "N/A";
     if (!passive)

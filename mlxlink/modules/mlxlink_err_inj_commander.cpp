@@ -36,8 +36,6 @@
 
 MlxlinkErrInjCommander::MlxlinkErrInjCommander(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
 {
-    _localPort = 0;
-    _pnat = 0;
     _mixerOffset0 = -1;
     _mixerOffset1 = -1;
     _force = false;
@@ -56,11 +54,8 @@ bool MlxlinkErrInjCommander::getUserConfirm()
 
 u_int16_t MlxlinkErrInjCommander::getMixerOffset(u_int32_t id)
 {
-    string regName = "PREI";
-    resetParser(regName);
-    updateField("local_port", _localPort);
+    sendPrmReg(ACCESS_REG_PREI, GET);
 
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
     return getFieldValue("mixer_offset" + to_string(id));
 }
 
@@ -68,26 +63,27 @@ void MlxlinkErrInjCommander::setMixersOffset()
 {
     u_int16_t oldMixer0 = getMixerOffset(0);
     u_int16_t oldMixer1 = getMixerOffset(1);
-    string regName = "PREI";
-    resetParser(regName);
-    updateField("local_port", _localPort);
+    string mixerFieldsCmd = "";
+
     if (_mixerOffset0 >= 0)
     {
-        updateField("mixer_offset0", (u_int16_t)_mixerOffset0);
+        mixerFieldsCmd += "mixer_offset0=" + to_string((u_int16_t)_mixerOffset0);
         if (_mixerOffset1 == -1)
         {
-            updateField("mixer_offset1", oldMixer1);
+            mixerFieldsCmd += ",mixer_offset1=" + to_string(oldMixer1);
         }
     }
+
     if (_mixerOffset1 >= 0)
     {
-        updateField("mixer_offset1", (u_int16_t)_mixerOffset1);
+        mixerFieldsCmd += "mixer_offset1=" + to_string((u_int16_t)_mixerOffset1);
         if (_mixerOffset0 == -1)
         {
-            updateField("mixer_offset0", oldMixer0);
+            mixerFieldsCmd += ",mixer_offset0=" + to_string((u_int16_t)oldMixer0);
         }
     }
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
+
+    sendPrmReg(ACCESS_REG_PREI, GET, mixerFieldsCmd.c_str());
 }
 
 void MlxlinkErrInjCommander::updateMixerOffsets()

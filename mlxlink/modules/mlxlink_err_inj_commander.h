@@ -51,8 +51,6 @@ public:
     void showMixersOffset();
     void updateMixerOffsets();
 
-    u_int32_t _localPort;
-    u_int32_t _pnat;
     int _mixerOffset0;
     int _mixerOffset1;
     bool _force;

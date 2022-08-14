@@ -57,7 +57,6 @@
 #define DFLT_EYE_DIAG_DIM_PORT 1
 #define MAX_ITERATION_SCAN_PORT 1
 
-#define SLRED_REG "SLRED"
 #define CMD_TITLE "Eye Grades per lane info"
 
 enum SCAN_TIME
@@ -143,9 +142,6 @@ public:
     virtual ~MlxlinkEyeOpener();
 
     // Fields setters
-    void setPageDataSel(u_int32_t pageDataSel);
-    void setErrResBase(u_int32_t errResBase);
-    void setEyeDiagDim(u_int32_t eyeDiagDim);
     void setMeasureTime(u_int32_t measureTime);
     void setEyeSel(const string& eyeSel);
     void setNonInteractiveMode(bool force);
@@ -154,7 +150,7 @@ public:
     void enableGradeScan();
 
     // Global fields should be taken from mlxlink_commander
-    u_int32_t localPort;
+    u_int32_t version;
     u_int32_t portType;
     u_int32_t depth;
     u_int32_t pcieIndex;
@@ -163,7 +159,6 @@ public:
     u_int32_t numOfLanes;
     u_int32_t scanIterations;
     bool isPam4Speed;
-    bool pciePort;
     int lane;
     string activeSpeedStr;
 
@@ -176,11 +171,9 @@ private:
     void printField(const string& key, const string& val, bool newLine = true);
     void printTitle(const string& title);
     bool isActiveGenSupported();
-    void updatePortType();
-    u_int32_t getDeviceVersion();
     void preChecks();
     void printFinalResults();
-    void prepareSlred(u_int32_t lane, u_int32_t eye);
+    string prepareSlred(u_int32_t lane, u_int32_t eye);
     void enableSlredGradeScan(u_int32_t lane, u_int32_t eye);
     void slredStopSignalHandler();
     void getSlredMargin(u_int32_t iteration, u_int32_t lane, u_int32_t eye);
@@ -193,9 +186,6 @@ private:
 
     // Internal fields
     Json::Value& _jsonRoot;
-    int _pageDataSel;
-    int _errResBase;
-    int _eyeDiagDim;
     int _measureTime;
     int _eyeSel;
     u_int32_t _numOfEyes;

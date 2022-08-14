@@ -40,6 +40,12 @@ MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0)
     _regLib = NULL;
     _gvmiAddress = 0;
     _mlxlinkLogger = NULL;
+
+    _localPort = 0;
+    _portType = 0;
+    _pnat = 0;
+
+    _isHCA = false;
 }
 
 MlxlinkRegParser::~MlxlinkRegParser() {}
@@ -75,6 +81,7 @@ void MlxlinkRegParser::resetParser(const string& regName)
 void MlxlinkRegParser::genBuffSendRegister(const string& regName, maccess_reg_method_t method)
 {
     DEBUG_LOG(_mlxlinkLogger, "%-15s: %s\n", "ACCESS_METHOD", method == MACCESS_REG_METHOD_GET ? "GET" : "SET");
+
     if (_gvmiAddress)
     {
         writeGvmi(1);
@@ -95,10 +102,10 @@ void MlxlinkRegParser::writeGvmi(u_int32_t data)
 
 void MlxlinkRegParser::updateField(string field_name, u_int32_t value)
 {
+    RegAccessParser::updateField(field_name, value);
+
     DEBUG_LOG(_mlxlinkLogger, "%-15s: %-30s\tVALUE: 0x%08x (%d)\n", "UPDATE_FIELD", (char*)field_name.c_str(), value,
               value);
-
-    RegAccessParser::updateField(field_name, value);
 
     if (field_name == "local_port")
     {
@@ -113,6 +120,67 @@ void MlxlinkRegParser::updateField(string field_name, u_int32_t value)
             // If the lp_msb does not exists on some access register, no need to fail the command
         }
     }
+}
+
+void MlxlinkRegParser::updateWithDefault(const string& fieldName, const string& fieldsStr, u_int32_t val)
+{
+    if (fieldsStr.find(fieldName) == string::npos)
+    {
+        try
+        {
+            updateField(fieldName, val);
+        }
+        catch (...)
+        {
+        }
+    }
+}
+
+void MlxlinkRegParser::setDefaultFields(const string& fieldsStr)
+{
+    updateWithDefault("local_port", fieldsStr, _localPort);
+    updateWithDefault("pnat", fieldsStr, _pnat);
+
+    if (!_isHCA)
+    {
+        updateWithDefault("port_type", fieldsStr, _portType);
+    }
+}
+
+void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t method)
+{
+    resetParser(regName);
+
+    setDefaultFields("");
+
+    genBuffSendRegister(regName, method);
+}
+
+void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...)
+{
+    char fieldsCstr[MAX_FIELDS_BUFFER];
+    va_list args;
+    va_start(args, fields);
+    vsnprintf(fieldsCstr, MAX_FIELDS_BUFFER, fields, args);
+    va_end(args);
+
+    string fieldsStr = string(fieldsCstr);
+    auto vectorOffields = MlxlinkRecord::split(fieldsStr, ",");
+
+    resetParser(regName);
+
+    for (const auto& token : vectorOffields)
+    {
+        auto fieldToken = MlxlinkRecord::split(token, "=");
+        string fieldName = fieldToken[0];
+        u_int32_t fieldValue = stoi(fieldToken[1], nullptr, 0);
+
+        updateField(fieldName, fieldValue);
+    }
+
+    setDefaultFields(fieldsStr);
+
+    genBuffSendRegister(regName, method);
 }
 
 string MlxlinkRegParser::getFieldStr(const string& field)
