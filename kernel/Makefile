@@ -31,6 +31,11 @@ KPVER ?= $(shell uname -r)
 KSRC ?= /lib/modules/$(KPVER)/build
 CPU_ARCH ?= $(shell uname -m)
 
+PACKAGE_NAME := mstflint
+PACKAGE_VERSION := $(shell sed -r '1 s:(.*) \((.*)\).*:\2:; q' ../debian/changelog)
+DKMS_SRC_DIR := /usr/src/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
+SOURCE_FILES := Makefile mst.h mst_kernel.h mst_main.c mst_vpd.c
+
 # GCC earlier than 4.6.0 will build modules which require 'mcount',
 # and this symbol will not be available in the kernel if the kernel was
 # compiled with GCC 4.6.0 and above.
@@ -80,4 +85,8 @@ all:
 
 clean:
 	make -C $(KSRC) M=$(PWD) clean
+
+install-dkms: $(SOURCE_FILES)
+	install -d $(DESTDIR)$(DKMS_SRC_DIR)
+	cp -a $^ $(DESTDIR)$(DKMS_SRC_DIR)
 
