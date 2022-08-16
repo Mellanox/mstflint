@@ -47,6 +47,7 @@ MlxlinkCablesCommander::MlxlinkCablesCommander(Json::Value& jsonRoot) : _jsonRoo
     _prbsSwap = false;
     _prbsLanes = 0;
 
+    memset(&_cableDdm, 0, sizeof(cable_ddm_q_t));
     // PMCR control fields names
     // pair(UI name, PMCR field name)
     _modulePMCRParams[CABLE_CONTROL_PARAMETERS_SET_TX_EQ] = make_pair("TX Equalization", "tx_equ_override");
@@ -543,6 +544,7 @@ void MlxlinkCablesCommander::readCableDDMInfo()
     {
         case IDENTIFIER_QSFP28:
         case IDENTIFIER_QSFP_PLUS:
+        case IDENTIFIER_QSFP_SPLIT_CABLE:
             prepareQSFPDdmInfo();
             loadEEPRMPage(PAGE_03, UPPER_PAGE_OFFSET, thresholdPage);
             prepareThresholdInfo(thresholdPage);
@@ -559,8 +561,12 @@ void MlxlinkCablesCommander::readCableDDMInfo()
         case IDENTIFIER_QSFP_DD:
         case IDENTIFIER_OSFP:
         case IDENTIFIER_DSFP:
+        case IDENTIFIER_QSFP_CMIS:
             prepareQsfpddDdmInfo();
             break;
+        default:
+            free(thresholdPage);
+            throw MlxRegException("Cable does not support DDM");
     }
 
     fixThresholdBytes();
@@ -647,11 +653,11 @@ void MlxlinkCablesCommander::prepareDDMOutput()
     int skipTitle = (_cableDdm.channels == 1);
     if (!skipTitle)
     {
-        setPrintVal(cableDDMCmd, "Channels", title, ANSI_COLOR_RESET, true, true, true);
+        setPrintVal(cableDDMCmd, "Channels", title, ANSI_COLOR_RESET, true, _cableDdm.channels > 0, true);
     }
-    setPrintVal(cableDDMCmd, "RX Power", rxPower, ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(cableDDMCmd, "TX Power", txPower, ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(cableDDMCmd, "TX Bias", txBias, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(cableDDMCmd, "RX Power", rxPower, ANSI_COLOR_RESET, true, _cableDdm.channels > 0, true);
+    setPrintVal(cableDDMCmd, "TX Power", txPower, ANSI_COLOR_RESET, true, _cableDdm.channels > 0, true);
+    setPrintVal(cableDDMCmd, "TX Bias", txBias, ANSI_COLOR_RESET, true, _cableDdm.channels > 0, true);
 
     cableDDMCmd.toJsonFormat(_jsonRoot);
     _cableDDMOutput.push_back(cableDDMCmd);
