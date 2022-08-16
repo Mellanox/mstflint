@@ -29,7 +29,7 @@ You should consider trying the following rules too :
 ## III - License
 
 This software is released under MIT License.
-See LICENSE for full informations
+See LICENSE for full information
 
 ## IV - Versions
 

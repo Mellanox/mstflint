@@ -399,7 +399,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
     }
     catch (std::exception& e)
     {
-        DPRINTF(("DMAComponentAccess::Exception occured %s\n", e.what()));
+        DPRINTF(("DMAComponentAccess::Exception occurred %s\n", e.what()));
         return false;
     }
 #endif
