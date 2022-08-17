@@ -3115,6 +3115,25 @@ bool Fs3Operations::SignForFwUpdate(const char* uuid,
         return errmsg("Signing is not applicable for devices");
     }
 
+    if (shaType == MlxSign::SHA256)
+    {
+        if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_512, CX4FW_IMAGE_SIGNATURE_512_SIZE, printFunc))
+        {
+            return false;
+        }
+    }
+    else if (shaType == MlxSign::SHA512)
+    {
+        if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_256, CX4FW_IMAGE_SIGNATURE_256_SIZE, printFunc))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return errmsg("Unexpected type of SHA");
+    }
+
     vector<u_int8_t> fourMbImage;
     vector<u_int8_t> signature;
     vector<u_int8_t> sha;
@@ -4373,10 +4392,6 @@ bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature,
 
     if (shaType == MlxSign::SHA256)
     {
-        if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_512, CX4FW_IMAGE_SIGNATURE_512_SIZE, printFunc))
-        {
-            return false;
-        }
         struct cx4fw_image_signature_256 image_signature_256;
         memset(&image_signature_256, 0, sizeof(image_signature_256));
         memcpy(image_signature_256.signature, signature.data(), signature.size());
@@ -4385,7 +4400,6 @@ bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature,
         vector<u_int8_t> image_signature_256_data;
         image_signature_256_data.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0x0);
         cx4fw_image_signature_256_pack(&image_signature_256, image_signature_256_data.data());
-
         if (!UpdateSection(image_signature_256_data.data(), FS3_IMAGE_SIGNATURE_256, false, CMD_SET_SIGNATURE,
                            printFunc))
         {
@@ -4394,10 +4408,6 @@ bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature,
     }
     else if (shaType == MlxSign::SHA512)
     {
-        if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_256, CX4FW_IMAGE_SIGNATURE_256_SIZE, printFunc))
-        {
-            return false;
-        }
         struct cx4fw_image_signature_512 image_signature_512;
         memset(&image_signature_512, 0, sizeof(image_signature_512));
         memcpy(image_signature_512.signature, signature.data(), signature.size());
