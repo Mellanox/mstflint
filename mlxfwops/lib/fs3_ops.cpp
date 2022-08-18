@@ -99,7 +99,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
   {FS3_FW_BOOT_CFG, "FW_BOOT_CFG"},
   {FS3_FW_MAIN_CFG, "FW_MAIN_CFG"},
   {FS3_APU_KERNEL, "APU_KERNEL"},
-  {FS3_APU_APPS, "APU_APPS"},
+  {FS3_ACE_CODE, "ACE_CODE"},
   {FS3_ROM_CODE, "ROM_CODE"},
   {FS3_RESET_INFO, "RESET_INFO"},
   {FS3_DBG_FW_INI, "DBG_FW_INI"},
