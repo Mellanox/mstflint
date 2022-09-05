@@ -1248,7 +1248,7 @@ bool FwCompsMgr::IsSecondaryHost(bool& isSecondary)
         setLastRegisterAccessStatus(rc);
         return false;
     }
-    isSecondary = false; // TODO - pmaos.secondary != 0; uncomment once tools_layouts updated
+    isSecondary = (pmaos.secondary != 0);
     return true;
 }
 
