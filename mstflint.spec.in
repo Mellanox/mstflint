@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.21.0}
+%{!?version: %define version 4.22.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -215,6 +215,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Thu Sep 8 2022 Alex Blago <alexbl@nvidia.com>
+   MFT 4.22.0 Updates
+
 * Sun Jul 31 2022 Tomer Tubi <ttubi@nvidia.com>
    MFT 4.21.0 Updates
 
