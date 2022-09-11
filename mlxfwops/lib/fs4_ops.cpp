@@ -4523,73 +4523,84 @@ bool Fs4Operations::IsLifeCycleSupported()
     return _signatureMngr->IsLifeCycleSupported();
 }
 
-bool Fs4Operations::PreparePublicKeyData(const char* public_key_file,
-                                         vector<u_int8_t>& publicKeyData,
-                                         unsigned int& pem_offset)
+bool Fs4Operations::ParsePublicKeyFromFile(const char* public_key_file,
+                                           vector<u_int8_t>& publicKeyData,
+                                           u_int32_t& keyPairExp,
+                                           image_layout_component_authentication_configuration& keyAuthConf)
 {
-    connectx4_public_keys_3 unpackedData;
+    image_layout_public_keys_3 unpackedData;
     unsigned int PublicKeySize = sizeof(unpackedData.file_public_keys_3[0].key);
     fs3_section_t sectionType;
     bool PublicKeyIsSet = false;
-    string pubFileStr(public_key_file);
+    unsigned int pem_offset = 0;
+    keyPairExp = 0x10001; // Default value
     // is the public key file in PEM format?
     if (CheckPublicKeysFile(public_key_file, sectionType, true))
     {
         if (sectionType == FS3_PUBLIC_KEYS_4096)
         {
-            if (Fs3UpdatePublicKeysSection((CONNECTX4_PUBLIC_KEYS_3_SIZE >> 2), public_key_file, publicKeyData, true))
+            if (Fs3UpdatePublicKeysSection((IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE >> 2), public_key_file, publicKeyData, true))
             {
                 PublicKeyIsSet = true;
-                pem_offset =
-                  CONNECTX4_FILE_PUBLIC_KEYS_3_SIZE - PublicKeySize; // first 32 bytes in the PEM file are auxilary data
+                pem_offset = IMAGE_LAYOUT_FILE_PUBLIC_KEYS_3_SIZE -
+                             PublicKeySize; // first 32 bytes in the PEM file are auxilary data
+                image_layout_component_authentication_configuration_unpack(
+                  &keyAuthConf, publicKeyData.data()); // First Dword represents the key auth conf
+                u_int32_t keyPairExpOffset = 3;        // Fourth Dword represents key pair exponent
+                keyPairExp = *((u_int32_t*)publicKeyData.data() + keyPairExpOffset);
+                TOCPU1(keyPairExp);
             }
         }
     }
     // Is the public key file in text format?
     if (PublicKeyIsSet == false)
     {
+        string pubFileStr(public_key_file);
         if (!fromFileToArray(pubFileStr, publicKeyData, PublicKeySize))
         {
-            return errmsg("PreparePublicKeyData: Public key file parsing failed");
+            return errmsg("ParsePublicKeyFromFile: Public key file parsing failed");
         }
+        DPRINTF(("Public key in text format. No key pair exponent and key auth conf, using default values\n"));
+    }
+
+    if (pem_offset > 0)
+    {
+        publicKeyData.erase(publicKeyData.begin(), publicKeyData.begin() + pem_offset);
     }
     return true;
 }
 
-bool Fs4Operations::storePublicKeyInSection(const char* public_key_file, const char* uuid)
+void Fs4Operations::PreparePublicKey(const vector<u_int8_t>& publicKeyData,
+                                     const vector<u_int32_t>& uuidData,
+                                     const u_int32_t keyPairExp,
+                                     const image_layout_component_authentication_configuration& keyAuthConf,
+                                     image_layout_file_public_keys_3& publicKey)
 {
-    //* Parse uuid
-    vector<u_int32_t> uuidData;
-    if (!extractUUIDFromString(uuid, uuidData))
+    unsigned int PublicKeySize = sizeof(publicKey.key);
+    publicKey.keypair_exp = keyPairExp;
+    publicKey.component_authentication_configuration = keyAuthConf;
+    memcpy(&publicKey.keypair_uuid, uuidData.data(), sizeof(publicKey.keypair_uuid));
+    memcpy(&publicKey.key, publicKeyData.data(), PublicKeySize);
+    TOCPUn(&publicKey.key, PublicKeySize >> 2);
+}
+
+bool Fs4Operations::StorePublicKey(const char* public_key_file, const char* uuid)
+{
+    image_layout_public_keys_3 public_keys_3;
+    memset(&public_keys_3, 0, sizeof(public_keys_3));
+    if (!GetPublicKeyFromFile(public_key_file, uuid, &(public_keys_3.file_public_keys_3[0])))
     {
-        return errmsg("storePublicKeyInSection: UUID parsing failed.");
+        return errmsg("StorePublicKey failed - Error: %s", err());
     }
 
-    //* Parse public-key
-    vector<u_int8_t> publicKeyData;
-    unsigned int pem_offset = 0;
-    if (!PreparePublicKeyData(public_key_file, publicKeyData, pem_offset))
-    { // Parsing public_key_file and storing public key in publicKeyData
-        return errmsg("storePublicKeyInSection failed - Error: %s", err());
-    }
-
-    //* Prepare public-key and uuid data to be stored in section
-    vector<u_int8_t> finishData;
-    connectx4_public_keys_3 unpackedData;
-    unsigned int PublicKeySize = sizeof(unpackedData.file_public_keys_3[0].key);
-    memset(&unpackedData, 0, sizeof(unpackedData));
-    unpackedData.file_public_keys_3[0].keypair_exp = 0x10001;
-    memcpy(&unpackedData.file_public_keys_3[0].keypair_uuid, uuidData.data(),
-           sizeof(unpackedData.file_public_keys_3[0].keypair_uuid));
-    memcpy(&unpackedData.file_public_keys_3[0].key, publicKeyData.data() + pem_offset, PublicKeySize);
-    TOCPUn(&unpackedData.file_public_keys_3[0].key, PublicKeySize >> 2);
-    finishData.resize(connectx4_public_keys_3_size());
-    connectx4_public_keys_3_pack(&unpackedData, finishData.data());
+    vector<u_int8_t> public_keys_3_data;
+    public_keys_3_data.resize(image_layout_public_keys_3_size());
+    image_layout_public_keys_3_pack(&public_keys_3, public_keys_3_data.data());
 
     //* Store public-key and uuid in section and update its matching ITOC entry (with updated section_crc and entry_crc)
-    if (!UpdateSection(finishData.data(), FS4_RSA_PUBLIC_KEY, true, CMD_BURN, NULL))
+    if (!UpdateSection(public_keys_3_data.data(), FS4_RSA_PUBLIC_KEY, true, CMD_BURN, NULL))
     {
-        return errmsg("storePublicKeyInSection failed - Error: %s", err());
+        return errmsg("StorePublicKey failed - Error: %s", err());
     }
 
     return true;
@@ -4607,7 +4618,7 @@ bool Fs4Operations::storeSecureBootSignaturesInSection(vector<u_int8_t> boot_sig
 
     vector<u_int8_t> finishData;
 
-    connectx4_secure_boot_signatures secure_boot_signatures;
+    image_layout_secure_boot_signatures secure_boot_signatures;
     memset(&secure_boot_signatures, 0, sizeof(secure_boot_signatures));
 
     memcpy(&secure_boot_signatures.boot_signature, boot_signature.data(),
@@ -4629,8 +4640,8 @@ bool Fs4Operations::storeSecureBootSignaturesInSection(vector<u_int8_t> boot_sig
                sizeof(secure_boot_signatures.non_critical_signature) >> 2);
     }
 
-    finishData.resize(connectx4_secure_boot_signatures_size());
-    connectx4_secure_boot_signatures_pack(&secure_boot_signatures, finishData.data());
+    finishData.resize(image_layout_secure_boot_signatures_size());
+    image_layout_secure_boot_signatures_pack(&secure_boot_signatures, finishData.data());
     if (!UpdateSection(finishData.data(), FS4_RSA_4096_SIGNATURES, true, CMD_BURN, NULL))
     {
         return errmsg("storeSecureBootSignaturesInSection: store secure-boot signatures failed.\n");
@@ -4745,9 +4756,9 @@ bool Fs4Operations::signForSecureBootUsingHSM(const char* public_key_file,
         }
     }
 
-    if (!storePublicKeyInSection(public_key_file, uuid))
+    if (!StorePublicKey(public_key_file, uuid))
     {
-        return errmsg("signForSecureBootUsingHSM failed - Error: storePublicKeyInSection failed (%s)\n", err());
+        return errmsg("signForSecureBootUsingHSM failed - Error: StorePublicKey failed (%s)\n", err());
     }
 
     //* Get boot area signature
@@ -4834,7 +4845,7 @@ bool Fs4Operations::signForSecureBoot(const char* private_key_file, const char* 
         }
     }
 
-    if (!storePublicKeyInSection(public_key_file, uuid))
+    if (!StorePublicKey(public_key_file, uuid))
     {
         return errmsg("signForSecureBoot failed - Error: %s\n", err());
     }
@@ -4895,6 +4906,31 @@ bool Fs4Operations::signForSecureBoot(const char* private_key_file, const char* 
     (void)uuid;
     return errmsg("signForSecureBoot is not suppported.");
 #endif
+}
+
+bool Fs4Operations::GetPublicKeyFromFile(const char* public_key_file,
+                                         const char* uuid,
+                                         image_layout_file_public_keys_3* public_key)
+{
+    //* Parse uuid
+    vector<u_int32_t> uuidData;
+    if (!extractUUIDFromString(uuid, uuidData))
+    {
+        return errmsg("preparePublicKeyDataForStore: UUID parsing failed.");
+    }
+
+    //* Parse public-key
+    vector<u_int8_t> publicKeyData;
+    u_int32_t keyPairExp;
+    image_layout_component_authentication_configuration keyAuthConf;
+    if (!ParsePublicKeyFromFile(public_key_file, publicKeyData, keyPairExp, keyAuthConf))
+    {
+        return errmsg("preparePublicKeyDataForStore failed - Error: %s", err());
+    }
+
+    PreparePublicKey(publicKeyData, uuidData, keyPairExp, keyAuthConf, *public_key);
+
+    return true;
 }
 
 bool Fs4Operations::FwSignWithHmac(const char* keyFile)
