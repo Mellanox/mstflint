@@ -323,11 +323,11 @@ void MlxCfg::printSingleParam(const char* name, QueryOutputItem& queryOutItem, u
     if ((showDefault && queryOutItem.nextVal != queryOutItem.defVal) ||
         (showCurrent && queryOutItem.nextVal != queryOutItem.currVal))
     {
-        printf("*        %-36s", fieldName.c_str());
+        printf("*        %-44s", fieldName.c_str());
     }
     else
     {
-        printf("         %-36s", fieldName.c_str());
+        printf("         %-44s", fieldName.c_str());
     }
     if (showDefault)
     {
@@ -407,22 +407,22 @@ void MlxCfg::printConfHeader(bool showDefualt, bool showNew, bool showCurrent)
     {
         if (showCurrent)
         {
-            printf("%-16s%36s%16s%18s", "Configurations:", "Default", "Current", NEXT_STR);
+            printf("%-16s%44s%16s%18s", "Configurations:", "Default", "Current", NEXT_STR);
         }
         else
         {
-            printf("%-16s%36s%18s", "Configurations:", "Default", NEXT_STR);
+            printf("%-16s%44s%18s", "Configurations:", "Default", NEXT_STR);
         }
     }
     else
     {
         if (showCurrent)
         {
-            printf("%-16s%36s%18s", "Configurations:", "Current", NEXT_STR);
+            printf("%-16s%46s%18s", "Configurations:", "Current", NEXT_STR);
         }
         else
         {
-            printf("%-16s%38s", "Configurations:", NEXT_STR);
+            printf("%-16s%46s", "Configurations:", NEXT_STR);
         }
     }
     if (showNew)

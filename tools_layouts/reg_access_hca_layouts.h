@@ -1779,8 +1779,90 @@ read_size */
 
     /* Description -   */
     /* Size in bytes - 12 */
-    struct reg_access_hca_pcnr_reg
-    {
+struct reg_access_hca_nic_cap_ext_reg {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Indicates which capabiltiy group is accessed.
+0x1: DPA_CAP */
+	/* 0x0.16 - 0x0.31 */
+	u_int16_t cap_group;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Capability information according to cap_group.
+For DPA_CAP See Table 1195, "DPA_CAP Capability Layout," on page 1486 */
+	/* 0x10.0 - 0x7c.31 */
+	u_int32_t cap_data[28];
+};
+
+/* Description -   */
+/* Size in bytes - 256 */
+struct reg_access_hca_nic_dpa_hart_group_reg {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - DPA HART group id
+For WRITE method with operation CREATE this field is RO and provides the newly created HART group.
+For other method/operation, this field is an index to a valid HART group */
+	/* 0x0.0 - 0x0.15 */
+	u_int16_t hart_group_id;
+	/* Description - Operation performed for WRITE method:
+0x0: CRETAE - create a new DPA HART group
+0x1: MODIFY - change the members of an existing DPA HART group
+0x2: DESTROY - destroy an existing DPA HART group
+other values are reserved. */
+	/* 0x0.28 - 0x0.30 */
+	u_int8_t operation;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - HART group name (ASCII string) */
+	/* 0x10.0 - 0x1c.31 */
+	u_int32_t hart_group_name[4];
+/*---------------- DWORD[16] (Offset 0x40) ----------------*/
+	/* Description - Bitmask indicating which HARTs are members of the group. Set bit indicates the respective HART is a member. HART groups may not overlap, and HARTs beyond NIC_CAP_EXT_REG.max_num_dpa_hart are reserved. */
+	/* 0x40.0 - 0xbc.31 */
+	u_int32_t group_member_mask[32];
+};
+
+/* Description -   */
+/* Size in bytes - 64 */
+struct reg_access_hca_nic_dpa_perf_ctrl_reg {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - DPA process handle, as appears in the report provided by NIC_DPA_PERF_REG */
+	/* 0x0.0 - 0x0.31 */
+	u_int32_t dpa_process_handle;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Process performance counting state
+0x0: UNCHANGED
+0x1: ACTIVE
+0x2: INACTIVE
+Other values are reserved */
+	/* 0x4.30 - 0x4.31 */
+	u_int8_t count_state;
+};
+
+/* Description -   */
+/* Size in bytes - 64 */
+struct reg_access_hca_nic_dpa_perf_reg {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Number of active DPA processes */
+	/* 0x0.0 - 0x0.31 */
+	u_int32_t dpa_process_num;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - The DPA timer ticks frequency, given in kHZ.
+Using this frequency, timer ticks can be converted to running clock by
+clock_time = ticks/dpa_timer_frequency */
+	/* 0x4.0 - 0x4.31 */
+	u_int32_t dpa_timer_frequency;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Memory Key for holding the performance report. */
+	/* 0x10.0 - 0x10.31 */
+	u_int32_t mkey;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - The size of the buffer allocated for the performance report, given in Bytes, */
+	/* 0x14.0 - 0x14.31 */
+	u_int32_t size;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - Address of memory where to DPA performance report starts */
+	/* 0x18.0 - 0x1c.31 */
+	u_int64_t address;
+};
+
+struct reg_access_hca_pcnr_reg {
         /*---------------- DWORD[0] (Offset 0x0) ----------------*/
         /* Description - When Set, port will override tuning process upon fol
 lowing link-up command (PAOS.admin_status = UP)
@@ -2243,15 +2325,24 @@ gle Modifier Layout," on page  1390 */
         /* 0x0.0 - 0x1c.31 */
         struct reg_access_hca_mcc_reg mcc_reg;
         /* Description -  */
-        /* 0x0.0 - 0x3c.31 */
-        struct reg_access_hca_strs_mini_flow_reg strs_mini_flow_reg;
-        /* Description -  */
-        /* 0x0.0 - 0x78.31 */
-        struct reg_access_hca_mcqi_cap mcqi_cap;
-        /* Description -  */
-        /* 0x0.0 - 0x14.31 */
-        struct reg_access_hca_mqis_reg mqis_reg;
-        /* Description -  */
+		/* 0x0.0 - 0xfc.31 */
+		struct reg_access_hca_nic_dpa_hart_group_reg nic_dpa_hart_group_reg;
+		/* Description -  */
+		/* 0x0.0 - 0x3c.31 */
+		struct reg_access_hca_strs_mini_flow_reg strs_mini_flow_reg;
+		/* Description -  */
+		/* 0x0.0 - 0x3c.31 */
+		struct reg_access_hca_nic_dpa_perf_ctrl_reg nic_dpa_perf_ctrl_reg;
+		/* Description -  */
+		/* 0x0.0 - 0x78.31 */
+		struct reg_access_hca_mcqi_cap mcqi_cap;
+		/* Description -  */
+		/* 0x0.0 - 0x14.31 */
+		struct reg_access_hca_mqis_reg mqis_reg;
+		/* Description -  */
+		/* 0x0.0 - 0x7c.31 */
+		struct reg_access_hca_nic_cap_ext_reg nic_cap_ext_reg;
+		/* Description -  */
         /* 0x0.0 - 0xc.31 */
         struct reg_access_hca_mpcir_ext mpcir_ext;
         /* Description -  */
@@ -2264,6 +2355,9 @@ gle Modifier Layout," on page  1390 */
         /* 0x0.0 - 0x9c.31 */
         struct reg_access_hca_mgir mgir;
         /* Description -  */
+		/* 0x0.0 - 0x3c.31 */
+		struct reg_access_hca_nic_dpa_perf_reg nic_dpa_perf_reg;
+		/* Description -  */
         /* 0x0.0 - 0x78.31 */
         struct reg_access_hca_mcqi_version mcqi_version;
         /* Description -  */
@@ -2566,7 +2660,35 @@ void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_prin
     unsigned int reg_access_hca_mtrc_stdb_reg_size(void);
 #define REG_ACCESS_HCA_MTRC_STDB_REG_SIZE (0x8)
     void reg_access_hca_mtrc_stdb_reg_dump(const struct reg_access_hca_mtrc_stdb_reg* ptr_struct, FILE* fd);
-    /* pcnr_reg */
+/* nic_cap_ext_reg */
+void reg_access_hca_nic_cap_ext_reg_pack(const struct reg_access_hca_nic_cap_ext_reg *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_nic_cap_ext_reg_unpack(struct reg_access_hca_nic_cap_ext_reg *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_nic_cap_ext_reg_print(const struct reg_access_hca_nic_cap_ext_reg *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_nic_cap_ext_reg_size(void);
+#define REG_ACCESS_HCA_NIC_CAP_EXT_REG_SIZE    (0x80)
+void reg_access_hca_nic_cap_ext_reg_dump(const struct reg_access_hca_nic_cap_ext_reg *ptr_struct, FILE *fd);
+/* nic_dpa_hart_group_reg */
+void reg_access_hca_nic_dpa_hart_group_reg_pack(const struct reg_access_hca_nic_dpa_hart_group_reg *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_nic_dpa_hart_group_reg_unpack(struct reg_access_hca_nic_dpa_hart_group_reg *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_nic_dpa_hart_group_reg_print(const struct reg_access_hca_nic_dpa_hart_group_reg *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_nic_dpa_hart_group_reg_size(void);
+#define REG_ACCESS_HCA_NIC_DPA_HART_GROUP_REG_SIZE    (0x100)
+void reg_access_hca_nic_dpa_hart_group_reg_dump(const struct reg_access_hca_nic_dpa_hart_group_reg *ptr_struct, FILE *fd);
+/* nic_dpa_perf_ctrl_reg */
+void reg_access_hca_nic_dpa_perf_ctrl_reg_pack(const struct reg_access_hca_nic_dpa_perf_ctrl_reg *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_nic_dpa_perf_ctrl_reg_unpack(struct reg_access_hca_nic_dpa_perf_ctrl_reg *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_nic_dpa_perf_ctrl_reg_print(const struct reg_access_hca_nic_dpa_perf_ctrl_reg *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_nic_dpa_perf_ctrl_reg_size(void);
+#define REG_ACCESS_HCA_NIC_DPA_PERF_CTRL_REG_SIZE    (0x40)
+void reg_access_hca_nic_dpa_perf_ctrl_reg_dump(const struct reg_access_hca_nic_dpa_perf_ctrl_reg *ptr_struct, FILE *fd);
+/* nic_dpa_perf_reg */
+void reg_access_hca_nic_dpa_perf_reg_pack(const struct reg_access_hca_nic_dpa_perf_reg *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_nic_dpa_perf_reg_unpack(struct reg_access_hca_nic_dpa_perf_reg *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_nic_dpa_perf_reg_print(const struct reg_access_hca_nic_dpa_perf_reg *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_nic_dpa_perf_reg_size(void);
+#define REG_ACCESS_HCA_NIC_DPA_PERF_REG_SIZE    (0x40)
+void reg_access_hca_nic_dpa_perf_reg_dump(const struct reg_access_hca_nic_dpa_perf_reg *ptr_struct, FILE *fd);
+/* pcnr_reg */
     void reg_access_hca_pcnr_reg_pack(const struct reg_access_hca_pcnr_reg* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_hca_pcnr_reg_unpack(struct reg_access_hca_pcnr_reg* ptr_struct, const u_int8_t* ptr_buff);
     void reg_access_hca_pcnr_reg_print(const struct reg_access_hca_pcnr_reg* ptr_struct, FILE* fd, int indent_level);
