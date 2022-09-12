@@ -1503,7 +1503,7 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
             if ((keySize != KEY_SIZE_256) && (keySize != KEY_SIZE_512))
             {
                 throw MlxcfgException("Invalid length of private key(%d bytes). It is "
-                                      "recommanded to use 4096 bit key.\n",
+                                      "recommended to use 4096 bit key.\n",
                                       keySize);
             }
             // Init successfuly with valid key -> can continue to sign the massage

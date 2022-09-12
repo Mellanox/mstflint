@@ -37,7 +37,7 @@ typedef enum _line_status_
   @param    in   String to convert.
   @param    out Output buffer.
   @param    len Size of the out buffer.
-  @return   ptr to the out buffer or NULL if an error occured.
+  @return   ptr to the out buffer or NULL if an error occurred.
 
   This function convert a string into lowercase.
   At most len - 1 elements of the input string will be converted.

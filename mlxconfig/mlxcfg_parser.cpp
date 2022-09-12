@@ -99,7 +99,7 @@ void MlxCfg::printHelp()
     printf("\n");
     printf(IDENT "COMMANDS SUMMARY\n");
     printf(IDENT2 "%-24s : %s\n", "clear_semaphore", "clear the tool semaphore.");
-    printf(IDENT2 "%-24s : %s\n", "i|show_confs", "display informations about all configurations.");
+    printf(IDENT2 "%-24s : %s\n", "i|show_confs", "display information about all configurations.");
     printf(IDENT2 "%-24s : %s\n", "q|query", "query supported configurations.");
     printf(IDENT2 "%-24s : %s\n", "r|reset", "reset all configurations to their default value.");
     printf(IDENT2 "%-24s : %s\n", "s|set", "set configurations to a specific device.");

@@ -679,7 +679,7 @@ reg_access_status_t reg_access_mcqs(mfile* mf, reg_access_method_t method, struc
     char* path_env = getenv("MCQS_DEBUG");
     if (path_env != NULL)
     {
-        printf("-I- MCQS: Recieved data --\n");
+        printf("-I- MCQS: Received data --\n");
         reg_access_hca_mcqs_reg_dump(mcqs, stdout);
     }
 
@@ -700,7 +700,7 @@ reg_access_status_t reg_access_mcqi(mfile* mf, reg_access_method_t method, struc
     char* path_env = getenv("MCQI_DEBUG");
     if (path_env != NULL)
     {
-        printf("-I- MCQI: Recieved data --\n");
+        printf("-I- MCQI: Received data --\n");
         reg_access_hca_mcqi_reg_dump(mcqi, stdout);
     }
     return ret;
