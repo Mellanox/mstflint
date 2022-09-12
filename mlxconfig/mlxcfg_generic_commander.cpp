@@ -133,6 +133,7 @@ const u_int8_t btcTokenId = 0x8;
 const u_int8_t rmcsTokenId = 0x10;
 const u_int8_t rmdtTokenId = 0x11;
 const u_int32_t idMlnxId = 0x10e;
+const u_int32_t idVendorId = 0x10f;
 
 void GenericCommander::supportsNVData()
 {
@@ -1654,6 +1655,7 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
     bool csCompFound = false;
     bool foundApplicableTLV = false;
     bool idMlnxCompFound = false;
+    bool idVendorCompFound = false;
     compsId = FwComponent::COMPID_UNKNOWN;
     u_int32_t type = 0;
     mget_mdevs_type(_mf, &type);
@@ -1691,6 +1693,11 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
             idMlnxCompFound = true;
             compsId = FwComponent::COMPID_MLNX_NVCONFIG;
         }
+        else if (tlv->_tlvClass == 0x0 && tlv->_id == idVendorId)
+        {
+            idVendorCompFound = true;
+            compsId = FwComponent::COMPID_OEM_NVCONFIG;
+        }
         else if (tlv->_name == "file_applicable_to")
         {
             foundApplicableTLV = true;
@@ -1702,14 +1709,16 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
         }
     }
 
-    if (!dbgCompFound && !csCompFound && !idMlnxCompFound)
+    u_int32_t numOfCompsFound =
+      (dbgCompFound ? 1 : 0) + (csCompFound ? 1 : 0) + (idMlnxCompFound ? 1 : 0) + (idVendorCompFound ? 1 : 0);
+    if (numOfCompsFound == 0)
     {
         throw MlxcfgException("Unsupported device: No debug tokens or CS tokens or "
-                              "MLNX ID Components were found for "
+                              "MLNX/Vendor ID Components were found for "
                               "this device");
     }
 
-    if ((dbgCompFound && csCompFound) || (dbgCompFound && idMlnxCompFound) || (csCompFound && idMlnxCompFound))
+    if (numOfCompsFound > 1)
     {
         throw MlxcfgException("Only one component is allowed");
     }
