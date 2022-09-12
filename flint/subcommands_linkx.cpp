@@ -321,6 +321,7 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
     FwComponent bootImageComponent;
     std::vector<FwComponent> compsToBurn;
     FwCompsMgr fwCompsAccess(mfile, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
+    fwCompsAccess.GenerateHandle();
     bool isSecondary = false;
     if (/*(mfile->flags & MDEVS_IB) && */ !fwCompsAccess.IsSecondaryHost(isSecondary)) // TODO - check if limitation
                                                                                        // applicable to IB only
