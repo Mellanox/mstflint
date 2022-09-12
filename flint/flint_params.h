@@ -91,7 +91,6 @@ typedef enum
     SC_Image_Reactivation,
     SC_RSA_Sign,
     SC_Binary_Compare,
-    SC_Import_Hsm_Key,
     SC_Export_Public_Key
 } sub_cmd_t;
 
@@ -157,12 +156,9 @@ public:
     bool hexdump_format;
     bool skip_ci_req;
     bool use_dev_rom;
-    bool privkey_specified;
-    bool pubkey_specified;
     string privkey_file;
     string pubkey_file;
 
-    bool uuid_specified;
     string privkey_uuid;
     bool privkey2_specified;
     bool key_specified;
@@ -180,11 +176,6 @@ public:
     string congestion_control_param;
     bool use_cpu_utilization;
     int cpu_percent;
-    bool hsm_specified;
-    string private_key_label;
-    string public_key_label;
-    bool private_key_label_specified;
-    bool public_key_label_specified;
     bool output_file_specified;
     string output_file;
     bool hsm_password_specified;

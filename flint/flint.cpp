@@ -185,7 +185,6 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Image_Reactivation] = new ImageReactivationSubCommand();
     cmdMap[SC_RSA_Sign] = new SignRSASubCommand();
     cmdMap[SC_Binary_Compare] = new BinaryCompareSubCommand();
-    cmdMap[SC_Import_Hsm_Key] = new ImportHsmKeySubCommand();
 #ifndef NO_OPEN_SSL
     cmdMap[SC_Export_Public_Key] = new ExportPublicSubCommand();
 #endif
@@ -271,7 +270,7 @@ FlintStatus Flint::run(int argc, char* argv[])
     if (_subcommands.count(_flintParams.cmd) == 0)
     {
         // should not be reached
-        printf("-E- FATAL: command object not found.");
+        printf("-E- FATAL: command object not found.\n");
         return FLINT_FAILED;
     }
     _subcommands[_flintParams.cmd]->setParams(_flintParams);

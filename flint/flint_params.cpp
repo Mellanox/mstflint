@@ -92,10 +92,7 @@ FlintParams::FlintParams()
     hexdump_format = false;
     skip_ci_req = false;
     use_dev_rom = false;
-    privkey_specified = false;
-    pubkey_specified = false;
     privkey2_specified = false;
-    uuid_specified = false;
     uuid2_specified = false;
     no_fw_ctrl = false;
     image_reactivation = false;
@@ -104,9 +101,6 @@ FlintParams::FlintParams()
     use_psid = false;
     congestion_control = false;
     use_cpu_utilization = false;
-    public_key_label_specified = false;
-    private_key_label_specified = false;
-    hsm_specified = false;
     hsm_password_specified = false;
     linkx_control = false;
     cableDeviceIndex = -1;

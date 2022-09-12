@@ -30,9 +30,9 @@
  * SOFTWARE.
  */
 
-#ifndef NO_OPEN_SSL
 
 #include "mlxsign_signer_interface.h"
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
 
 using namespace MlxSign;
 
@@ -69,7 +69,7 @@ ErrorCode MlxSignRSAViaOpenssl::Init()
     return MLX_SIGN_SUCCESS;
 }
 
-ErrorCode MlxSignRSAViaOpenssl::Sign(const vector<u_int8_t>& data, vector<u_int8_t>& signature)
+ErrorCode MlxSignRSAViaOpenssl::Sign(const vector<u_int8_t>& data, vector<u_int8_t>& signature) const
 {
     vector<u_int8_t> sha;
     int rc;
@@ -97,6 +97,7 @@ ErrorCode MlxSignRSAViaOpenssl::Sign(const vector<u_int8_t>& data, vector<u_int8
     return MLX_SIGN_SUCCESS;
 }
 
+#if !defined(NO_DYNAMIC_ENGINE)
 MlxSignRSAViaHSM::MlxSignRSAViaHSM(string opensslEngine, string opensslKeyID) :
     _engineSigner(opensslEngine, opensslKeyID), _opensslEngine(opensslEngine)
 {
@@ -119,7 +120,7 @@ ErrorCode MlxSignRSAViaHSM::Init()
     return MLX_SIGN_SUCCESS;
 }
 
-ErrorCode MlxSignRSAViaHSM::Sign(const vector<u_int8_t>& data, vector<u_int8_t>& signature)
+ErrorCode MlxSignRSAViaHSM::Sign(const vector<u_int8_t>& data, vector<u_int8_t>& signature) const
 {
     int rc = _engineSigner.sign(data, signature);
     if (rc)
@@ -129,5 +130,6 @@ ErrorCode MlxSignRSAViaHSM::Sign(const vector<u_int8_t>& data, vector<u_int8_t>&
     }
     return MLX_SIGN_SUCCESS;
 }
+#endif // #if !defined(NO_DYNAMIC_ENGINE)
 
-#endif // ENABLE_OPENSSL
+#endif // #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)

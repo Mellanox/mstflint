@@ -46,20 +46,9 @@
 #include <cable_access/cable_access.h>
 #endif
 #include <fw_comps_mgr/fw_comps_mgr.h>
+#include "mlxsign_lib/mlxsign_signer_interface.h"
 #if !defined(NO_OPEN_SSL)
 #include <mlxsign_lib/mlxsign_lib.h>
-#if !defined(NO_DYNAMIC_ENGINE)
-#include <mlxsign_lib/mlxsign_openssl_engine.h>
-#endif
-#endif
-
-// declaration only to enable compilation when NO_OPEN_SSL
-// of signForFwUpdateUsingHSM(...), signForSecureBootUsingHSM(...) which decelare OpensslEngineSigner in argument.
-#ifdef NO_OPEN_SSL
-namespace MlxSign
-{
-class OpensslEngineSigner;
-}
 #endif
 
 typedef f_prog_func_str VerifyCallBack;
@@ -163,25 +152,21 @@ public:
     virtual u_int32_t GetPublicKeySecureBootPtr();
     virtual bool FwReactivateImage() { return errmsg("Operation not supported."); }
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
-    virtual bool InsertSecureFWSignature(vector<u_int8_t> signature, const char* uuid, PrintCallBack printFunc);
     virtual bool
       storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
                                          vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
                                          vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
-    virtual bool
-      signForFwUpdate(const char* privPemFile, const char* uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
-    virtual bool
-      signForFwUpdateUsingHSM(const char* uuid, MlxSign::OpensslEngineSigner& engineSigner, PrintCallBack printFunc);
+    virtual bool SignForFwUpdate(const char* uuid,
+                                 const MlxSign::Signer& signer,
+                                 MlxSign::SHAType shaType,
+                                 PrintCallBack printFunc);
     virtual bool FwSignWithTwoRSAKeys(const char* privPemFile1,
                                       const char* uuid1,
                                       const char* privPemFile2,
                                       const char* uuid2,
                                       PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithHmac(const char* key_file);
-    virtual bool signForSecureBoot(const char* private_key_file, const char* public_key_file, const char* guid_key_file);
-    virtual bool signForSecureBootUsingHSM(const char* public_key_file,
-                                           const char* uuid,
-                                           MlxSign::OpensslEngineSigner& engineSigner);
+    virtual bool SignForSecureBoot(const char* public_key_file, const char* uuid, const MlxSign::Signer& signer);
     virtual bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool IsCriticalSection(u_int8_t sect_type);
 
