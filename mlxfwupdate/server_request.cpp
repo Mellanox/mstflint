@@ -527,6 +527,8 @@ int ServerRequest::curl_request(const char* url, const char* data, const char* d
     if (fp == NULL)
     {
         setError(-1, "Failed to Open file for writing " + (string)strerror(errno) + "\n");
+        curl_easy_cleanup(_curl);
+        curl_global_cleanup();
         return -1;
     }
     curl_easy_setopt(_curl, CURLOPT_TIMEOUT, 360); // 6 minute operation timeout

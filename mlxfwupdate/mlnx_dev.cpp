@@ -636,6 +636,7 @@ int MlnxDev::preBurn(string mfa_file,
         }
 
         FwOperations::fw_ops_params_t fwParams;
+        memset(&fwParams, 0, sizeof(fwParams));
         if (InitDevFWParams(fwParams))
         {
             FsChecks fsChecks(dev_fw_query, _devFwOps, _imgFwOps, _burnParams, fwParams);
@@ -1107,8 +1108,9 @@ int MlnxDev::query()
     ImgVersion imgv;
     u_int16_t fwVer[4];
     fw_info_t fw_query;
-
     int versionFields = 3; /*TODO: set variable length*/
+    memset(&fw_query, 0, sizeof(fw_query));
+
     if (geteuid() == 0)
     {
         return queryFwops();

@@ -162,9 +162,6 @@ public:
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
     virtual u_int32_t GetPublicKeySecureBootPtr();
     virtual bool FwReactivateImage() { return errmsg("Operation not supported."); }
-    virtual bool
-      PreparePublicKeyData(const char* public_key_file, vector<u_int8_t>& publicKeyData, unsigned int& pem_offset);
-    virtual bool storePublicKeyInSection(const char* public_key_file, const char* uuid);
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool InsertSecureFWSignature(vector<u_int8_t> signature, const char* uuid, PrintCallBack printFunc);
     virtual bool

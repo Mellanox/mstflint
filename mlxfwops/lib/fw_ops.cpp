@@ -2788,14 +2788,6 @@ bool FwOperations::InsertSecureFWSignature(vector<u_int8_t>, const char*, PrintC
 {
     return errmsg("InsertSecureFWSignature not supported");
 }
-bool FwOperations::PreparePublicKeyData(const char*, vector<u_int8_t>&, unsigned int&)
-{
-    return errmsg("PreparePublicKeyData not supported");
-}
-bool FwOperations::storePublicKeyInSection(const char*, const char*)
-{
-    return errmsg("storePublicKeyInSection not supported");
-}
 bool FwOperations::storeSecureBootSignaturesInSection(vector<u_int8_t>, vector<u_int8_t>, vector<u_int8_t>)
 {
     return errmsg("storeSecureBootSignaturesInSection not supported");
@@ -2910,6 +2902,7 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
         case CT_QUANTUM3:
         case CT_BLUEFIELD3:
         case CT_BLUEFIELD4:
+        case CT_SPECTRUM4:
             lifeCycleAddress = 0xf0000;
             firstBit = 4;
             bitLen = 2;

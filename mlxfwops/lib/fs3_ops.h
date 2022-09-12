@@ -42,7 +42,6 @@
 // #include "flint_base.h"
 #include "fw_ops.h"
 #include "aux_tlv_ops.h"
-#include "fuse_gw.h"
 
 // FW Binary version
 
