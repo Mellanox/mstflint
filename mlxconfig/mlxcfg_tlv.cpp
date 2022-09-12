@@ -868,7 +868,7 @@ void substituteVarsValues(string orgExpr,
             }
             if (var[0] == '_' && isTempVars)
             {
-                tempVar = var.substr(1); // don't take first char(because of exprtk)
+                tempVar = var.substr(1);
                 expr += tempVar;
             }
             else

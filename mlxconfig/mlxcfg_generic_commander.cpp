@@ -1696,7 +1696,7 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
             foundApplicableTLV = true;
         }
 
-        if ((type & (MST_USB | MST_USB_DIMAX)) && (compsId == FwComponent::COMPID_UNKNOWN))
+        if ((type & (MST_USB_DIMAX)) && (compsId == FwComponent::COMPID_UNKNOWN))
         { // MST_USB tlv's must have component
             throw MlxcfgException("MTUSB device is not supported.");
         }

@@ -170,18 +170,20 @@ bool strToNum(string str, u_int32_t& num, int base)
 {
     char* endp;
     char* numStr = strcpy(new char[str.size() + 1], str.c_str());
-    num = strtoul(numStr, &endp, base);
+    unsigned long tmpNum = strtoul(numStr, &endp, base);
+
     if (*endp)
     {
         delete[] numStr;
         return false;
     }
     delete[] numStr;
-    // check errno
-    if (errno == ERANGE)
+    //errno will only be set in 32bit arch, in 64bit it can parse much larger numbers, which will be cought on the second part
+    if (errno == ERANGE || (tmpNum > 0xFFFFFFFF))
     {
-        return false;
+        throw MlxcfgException("value is out of range");
     }
+    num = tmpNum;
     return true;
 }
 

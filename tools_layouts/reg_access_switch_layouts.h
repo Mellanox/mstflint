@@ -569,6 +569,81 @@ replay-protection. */
         /* 0x48.0 - 0x64.31 */
         u_int32_t challenge[8];
     };
+/* Description -   */
+/* Size in bytes - 16 */
+struct reg_access_switch_pmaos_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Module state (reserved while admin_status is disabled):
+0: initializing
+1: plugged_enabled
+2: unplugged
+3: module_plugged_with_error - (details in error_type).
+5: unknown */
+	/* 0x0.0 - 0x0.3 */
+	u_int8_t oper_status;
+	/* Description - Module administrative state (the desired state of the module):
+1: enabled
+2: disabled_by_configuration
+3: enabled_once - if the module is active and then unplugged, or module experienced an error event, the operational status should go to "disabled" and can only be enabled upon explicit enable command.
+
+Note - To disable a module, all ports associated with the port must be disabled first.
+ */
+	/* 0x0.8 - 0x0.11 */
+	u_int8_t admin_status;
+	/* Description - Module number. */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t module;
+	/* Description - Reserved for HCA
+Slot_index 
+Slot_index = 0 represent the onboard (motherboard). 
+In case of non modular system only slot_index = 0 is available. */
+	/* 0x0.24 - 0x0.27 */
+	u_int8_t slot_index;
+	/* Description - Module Reset toggle
+NOTE: setting reset while module is plugged-in will result in transition of oper_status to initialization. */
+	/* 0x0.31 - 0x0.31 */
+	u_int8_t rst;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Event Generation on operational state change:
+0: Do_not_generate_event
+1: Generate_Event 
+2: Generate_Single_Event */
+	/* 0x4.0 - 0x4.1 */
+	u_int8_t e;
+	/* Description - Module error details:
+0x0: Power_Budget_Exceeded
+0x1: Long_Range_for_non_MLNX_cable_or_module
+0x2: Bus_stuck - (I2C Data or clock shorted)
+0x3: bad_or_unsupported_EEPROM
+0x4: Enforce_part_number_list
+0x5: unsupported_cable
+0x6: High_Temperature
+0x7: bad_cable - (Module/Cable is shorted)
+0x8: PMD_type_is_not_enabled - (see PMTPS).
+0xc: pcie_system_power_slot_Exceeded
+Valid only when oper_status = 4'b0011. */
+	/* 0x4.8 - 0x4.11 */
+	u_int8_t error_type;
+	/* Description - This notification can occur only if module passed initialization process
+0x0: No notifications.
+0x1: Speed degradation - the module is not enabled in its full speed due to incompatible transceiver/cable 
+Valid only when oper_status = 4'b0001. */
+	/* 0x4.16 - 0x4.19 */
+	u_int8_t operational_notification;
+	/* Description - When in multi ASIC module sharing systems,
+This flag will be asserted in case primary and secondary FW versions are not compatible. */
+	/* 0x4.28 - 0x4.28 */
+	u_int8_t rev_incompatible;
+	/* Description - Indicates whether the ASIC serves as a the modules secondary (=1) or primary (=0) device. */
+	/* 0x4.29 - 0x4.29 */
+	u_int8_t secondary;
+	/* Description - Event update enable. If this bit is set, event generation will be updated based on the e field. Only relevant on Set operations. */
+	/* 0x4.30 - 0x4.30 */
+	u_int8_t ee;
+	/* Description - Admin state update enable. If this bit is set, admin state will be updated based on admin_state field. Only relevant on Set() operations. */
+	/* 0x4.31 - 0x4.31 */
+	u_int8_t ase;
+};
 
     /* Description -   */
     /* Size in bytes - 1040 */
@@ -582,6 +657,9 @@ replay-protection. */
         /* 0x0.0 - 0x14.31 */
         struct reg_access_switch_icam_reg_ext icam_reg_ext;
         /* Description -  */
+		/* 0x0.0 - 0xc.31 */
+		struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
+		/* Description -  */
         /* 0x0.0 - 0x2c.31 */
         struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
         /* Description -  */
@@ -711,6 +789,13 @@ replay-protection. */
     unsigned int reg_access_switch_mtcq_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MTCQ_REG_EXT_SIZE (0x70)
     void reg_access_switch_mtcq_reg_ext_dump(const struct reg_access_switch_mtcq_reg_ext* ptr_struct, FILE* fd);
+	/* pmaos_reg_ext */
+	void reg_access_switch_pmaos_reg_ext_pack(const struct reg_access_switch_pmaos_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+	void reg_access_switch_pmaos_reg_ext_unpack(struct reg_access_switch_pmaos_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+	void reg_access_switch_pmaos_reg_ext_print(const struct reg_access_switch_pmaos_reg_ext *ptr_struct, FILE *fd, int indent_level);
+	unsigned int reg_access_switch_pmaos_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_PMAOS_REG_EXT_SIZE    (0x10)
+	void reg_access_switch_pmaos_reg_ext_dump(const struct reg_access_switch_pmaos_reg_ext *ptr_struct, FILE *fd);
     /* reg_access_switch_Nodes */
     void reg_access_switch_reg_access_switch_Nodes_pack(const union reg_access_switch_reg_access_switch_Nodes* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_switch_reg_access_switch_Nodes_unpack(union reg_access_switch_reg_access_switch_Nodes* ptr_struct, const u_int8_t* ptr_buff);
