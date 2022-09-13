@@ -41,13 +41,8 @@
 #include <ctype.h>
 #include <compatibility.h>
 #include <stdio.h>
-
-#define CRD_SELECT_CSV_PATH(dev_name)    \
-    do                                   \
-    {                                    \
-        strcat(csv_file_path, dev_name); \
-        strcat(csv_file_path, ".csv");   \
-    } while (0)
+#include <reg_access/reg_access.h>
+#include <stdbool.h>
 
 #define CRD_CHECK_NULL(var)                        \
     if (var == NULL)                               \
@@ -118,7 +113,10 @@ static char crd_error[CRD_CSV_PATH_SIZE + 50];
 /*
    Store the csv file path at csv_file_path.
  */
-static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char* csv_file_path, IN const char* db_path);
+static int crd_get_csv_path(IN dm_dev_id_t dev_type,
+                            OUT char* csv_file_path,
+                            IN const char* db_path,
+                            const char* csv_path_from_user);
 
 /*
    count number of dwords, and store all needed data from csv file at parsed_csv
@@ -180,7 +178,8 @@ int crd_init(OUT crd_ctxt_t** context,
              IN int is_full,
              IN int cause_addr,
              IN int cause_off,
-             IN const char* db_path)
+             IN const char* db_path,
+             const char* csv_path_from_user)
 {
     dm_dev_id_t dev_type = DeviceUnknown;
     u_int32_t with_sp2 = 0;
@@ -216,7 +215,7 @@ int crd_init(OUT crd_ctxt_t** context,
     }
 
     CRD_DEBUG("Device type : 0x%x, device id : 0x%x, chip rev : 0x%x\n", dev_type, dev_id, chip_rev);
-    if ((rc = crd_get_csv_path(dev_type, csv_file_path, db_path)) != CRD_OK)
+    if ((rc = crd_get_csv_path(dev_type, csv_file_path, db_path, csv_path_from_user)) != CRD_OK)
     {
         return rc;
     }
@@ -351,7 +350,7 @@ int crd_dump_data(IN crd_ctxt_t* context, OUT crd_dword_t* dword_arr, IN crd_cal
             addr = context->blocks[i].addr + (j * sizeof(u_int32_t));
 
             if (context->cause_addr >= 0)
-            { /* if we want to check cause bit - read it and verify it hasn't been raised */
+            { // if we want to check cause bit - read it and verify it hasn't been raised
                 if (mread4(context->mf, context->cause_addr, &cause_reg) != sizeof(u_int32_t))
                 {
                     CRD_DEBUG("Cr read (0x%08x) failed: %s(%d)\n", context->cause_addr, strerror(errno),
@@ -396,7 +395,85 @@ int crd_get_dword_num(IN crd_ctxt_t* context, OUT u_int32_t* arr_size)
     return CRD_OK;
 }
 
-static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char* csv_file_path, IN const char* db_path)
+static bool ends_with(char* str, char* suffix)
+{
+    int str_len = strlen(str);
+    int suffix_len = strlen(suffix);
+    int i = 0;
+
+    bool ends_with = false;
+    if (suffix_len <= str_len)
+    {
+        for (i = 0; i < suffix_len; i++)
+        {
+            if (str[i + str_len - suffix_len] != suffix[i])
+            {
+                ends_with = false;
+                break;
+            }
+            ends_with = true;
+        }
+    }
+    return ends_with;
+}
+
+static bool is_valid_csv(char* csv_path_from_user)
+{
+    if (!ends_with((char*)csv_path_from_user, ".csv"))
+    {
+        return false; // not a .csv file
+    }
+
+    FILE* file = fopen(csv_path_from_user, "r");
+    if (!file)
+    {
+        return false; // file does not exist
+    }
+
+    // check the format is valid
+    char line[256] = {0};
+    // char* line = calloc(256, sizeof(char));
+    // if (line == NULL) {
+    //     goto cleanup;
+    // }
+    int buf_len = sizeof(line);
+    size_t len = 0;
+    size_t i = 0;
+    bool ret = true; // assume format is valid
+    int count = 0;
+    while (fgets(line, buf_len, file) != NULL)
+    {
+        if (line[0] == '#')
+        {
+            continue; // skipping lines that are a comment
+        }
+        len = strlen(line);
+        if (len > 1)
+        { // skip blank lines
+            count = 0;
+            for (i = 0; i < len; i++)
+            {
+                if (line[i] == ',')
+                {
+                    count++;
+                }
+            }
+            if ((count < 1) || (count > 2))
+            { // support a,b or a,b, format
+                ret = false;
+                goto cleanup;
+            }
+        }
+    }
+cleanup:
+    fclose(file);
+    return ret;
+}
+
+static int crd_get_csv_path(IN dm_dev_id_t dev_type,
+                            OUT char* csv_file_path,
+                            IN const char* db_path,
+                            const char* csv_path_from_user)
 {
     const int dev_name_len = 100;
     char dev_name[100] = {0};
@@ -409,13 +486,33 @@ static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char* csv_file_path, IN
         return CRD_UNKOWN_DEVICE;
     }
 
-    rc = crd_update_csv_path(csv_file_path, db_path);
-    if (rc != CRD_OK)
+    // if user specified DB path via cmdline, use it instead of the DB in the default location.
+    // check the user gave a valid path.
+    if (strlen(csv_path_from_user) > 0)
     {
-        return rc;
+        if (is_valid_csv((char*)csv_path_from_user))
+        {
+            strcpy(csv_file_path, csv_path_from_user);
+            return CRD_OK;
+        }
+        else
+        {
+            sprintf(crd_error, "Invalid csv file: %s\n", csv_path_from_user);
+            return CRD_CSV_BAD_FORMAT;
+        }
     }
-    CRD_SELECT_CSV_PATH(dev_name);
-    return CRD_OK;
+    else // user did not specify DB path
+    {
+        rc = crd_update_csv_path(csv_file_path, db_path);
+        if (rc != CRD_OK)
+        {
+            return rc;
+        }
+        strcat(csv_file_path, dev_name);
+        strcat(csv_file_path, ".csv");
+        return CRD_OK;
+    }
+    return 0;
 }
 
 static void crd_parse(IN char* record, IN char* delim, OUT char arr[][CRD_MAXFLDSIZE], OUT int* field_count)
@@ -584,9 +681,19 @@ static int crd_count_blocks(IN char* csv_file_path, OUT u_int32_t* block_count, 
     }
     while (!feof(fd))
     {
-        if (crd_read_line(fd, tmp) == CRD_SKIP)
+        int read_line_result = crd_read_line(fd, tmp);
+        if (read_line_result == CRD_SKIP)
         {
             continue;
+        }
+
+        // if the given address has invalid char in it
+        if (read_line_result == CRD_CSV_BAD_FORMAT)
+        {
+            CRD_DEBUG("CSV File has bad format - invalid char in address");
+            sprintf(crd_error, "CSV File has bad format");
+            fclose(fd);
+            return CRD_CSV_BAD_FORMAT;
         }
         crd_parse(tmp, ",", arr, &field_count); /* whack record into fields */
         if (field_count < 2)
@@ -640,10 +747,21 @@ static int crd_count_double_word(IN mfile* mf,
 
     while (!feof(fd))
     {
-        if (crd_read_line(fd, tmp) == CRD_SKIP)
+        int read_line_result = crd_read_line(fd, tmp);
+        if (read_line_result == CRD_SKIP)
         {
             continue;
         }
+
+        // if the given address has invalid char in it
+        if (read_line_result == CRD_CSV_BAD_FORMAT)
+        {
+            CRD_DEBUG("CSV File has bad format - invalid char in address");
+            sprintf(crd_error, "CSV File has bad format");
+            fclose(fd);
+            return CRD_CSV_BAD_FORMAT;
+        }
+
         crd_parse(tmp, ",", arr, &field_count); /* whack record into fields */
         if (field_count < 2)
         {
@@ -742,6 +860,7 @@ static int crd_read_line(IN FILE* fd, OUT char* tmp)
 {
     int i = 0;
     int j = 0;
+    int has_comma = 0;
     for (i = 0; i < CRD_MAXLINESIZE;)
     { // This loop to read line by line no matter the length of the line.
         if (!feof(fd))
@@ -763,12 +882,25 @@ static int crd_read_line(IN FILE* fd, OUT char* tmp)
             {
                 break;
             }
+            else if (feof(fd))
+            {
+                break;
+            }
             else if (c == ' ')
             {
                 continue;
             }
+            else if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) && !(i == 1 && c == 'x') && !(has_comma < 2 && c == ','))
+            {
+                printf("Error - the character %c is not valid for address!\n", c);
+                return CRD_CSV_BAD_FORMAT;
+            }
             else
             {
+                if (c == ',')
+                {
+                    has_comma++;
+                }
                 j++;
                 tmp[i] = c;
                 i++;
