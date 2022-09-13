@@ -39,7 +39,7 @@ from __future__ import print_function
 
 from mtcr import MstDevice
 from .mcra import Mcra
-# TODO fix it later - need to import the function from mlxfwreset.py
+# TODO fix it latter - need to import the function from mlxfwreset.py
 import sys
 import os
 mlxfwreset_dir = os.path.dirname(os.path.dirname(__file__))
