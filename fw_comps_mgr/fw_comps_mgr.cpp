@@ -1235,7 +1235,22 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
     return true;
 }
 
-// TODO: Check all the rc ..
+bool FwCompsMgr::IsSecondaryHost(bool& isSecondary)
+{
+    reg_access_switch_pmaos_reg_ext pmaos;
+    memset(&pmaos, 0, sizeof(pmaos));
+    mft_signal_set_handling(1);
+    reg_access_status_t rc = reg_access_pmaos(_mf, REG_ACCESS_METHOD_GET, &pmaos);
+    deal_with_signal();
+    if (rc)
+    {
+        _lastError = regErrTrans(rc);
+        setLastRegisterAccessStatus(rc);
+        return false;
+    }
+    isSecondary = (pmaos.secondary != 0);
+    return true;
+}
 
 bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType,
                                FwComponent& fwComp,
