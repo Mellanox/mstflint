@@ -99,7 +99,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
   {FS3_FW_BOOT_CFG, "FW_BOOT_CFG"},
   {FS3_FW_MAIN_CFG, "FW_MAIN_CFG"},
   {FS3_APU_KERNEL, "APU_KERNEL"},
-  {FS3_APU_APPS, "APU_APPS"},
+  {FS3_ACE_CODE, "ACE_CODE"},
   {FS3_ROM_CODE, "ROM_CODE"},
   {FS3_RESET_INFO, "RESET_INFO"},
   {FS3_DBG_FW_INI, "DBG_FW_INI"},
@@ -3104,53 +3104,60 @@ bool Fs3Operations::Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, P
     }
     return true;
 }
-bool Fs3Operations::signForFwUpdate(const char* privPemFile, const char* uuid, PrintCallBack printFunc)
-{
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-    MlxSignRSA rsa;
 
-    int rc = rsa.setPrivKeyFromFile(privPemFile);
-    if (rc)
+bool Fs3Operations::SignForFwUpdate(const char* uuid,
+                                    const MlxSign::Signer& signer,
+                                    MlxSign::SHAType shaType,
+                                    PrintCallBack printFunc)
+{
+    if (_ioAccess->is_flash())
     {
-        return errmsg("Failed to set private key from file (rc = 0x%x)\n", rc);
+        return errmsg("Signing is not applicable for devices");
     }
 
-    int privKeyLength = rsa.getPrivKeyLength();
-    if (privKeyLength == 0x100)
+    if (shaType == MlxSign::SHA256)
     {
-        // MemsetSection();
         if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_512, CX4FW_IMAGE_SIGNATURE_512_SIZE, printFunc))
         {
             return false;
         }
-        if (!FwInsertEncSHA(MlxSign::SHA256, privPemFile, uuid, printFunc))
-        {
-            return false;
-        }
     }
-    else if (privKeyLength == 0x200)
+    else if (shaType == MlxSign::SHA512)
     {
-        // MemsetSection();
         if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_256, CX4FW_IMAGE_SIGNATURE_256_SIZE, printFunc))
-        {
-            return false;
-        }
-        if (!FwInsertEncSHA(MlxSign::SHA512, privPemFile, uuid, printFunc))
         {
             return false;
         }
     }
     else
     {
-        return errmsg("Unexpected length of key(%d bytes)", privKeyLength);
+        return errmsg("Unexpected type of SHA");
     }
+
+    vector<u_int8_t> fourMbImage;
+    vector<u_int8_t> signature;
+    vector<u_int8_t> sha;
+
+    //* Get image data (image_signature,image_signature_2 sections masked with 0xff)
+    if (!FwCalcSHA(shaType, sha, fourMbImage))
+    {
+        return errmsg("SignForFwUpdate: Failed to read image");
+    }
+
+    //* Sign image data
+    int rc = signer.Sign(fourMbImage, signature);
+    if (rc)
+    {
+        return errmsg("SignForFwUpdate: Failed to create secured FW signature (rc = 0x%x)", rc);
+    }
+
+    //* Store FW update signature in section
+    if (!InsertSecureFWSignature(signature, uuid, shaType, printFunc))
+    {
+        return errmsg("SignForFwUpdate: Failed to insert secured FW signature\n");
+    }
+
     return true;
-#else
-    (void)privPemFile;
-    (void)uuid;
-    (void)printFunc;
-    return errmsg("signForFwUpdate is not supported.");
-#endif
 }
 
 bool Fs3Operations::FwInsertEncSHA(MlxSign::SHAType shaType,
@@ -4372,31 +4379,52 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
     }
     return true;
 }
-bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature, const char* uuid, PrintCallBack printFunc)
+bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature,
+                                            const char* uuid,
+                                            MlxSign::SHAType shaType,
+                                            PrintCallBack printFunc)
 {
-    struct cx4fw_image_signature_512 image_signature_512;
     vector<u_int32_t> uuidData;
-    if (_ioAccess->is_flash())
-    {
-        return errmsg("Signing is not applicable for devices");
-    }
     if (!extractUUIDFromString(uuid, uuidData))
     {
         return false;
     }
-    if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_256, CX4FW_IMAGE_SIGNATURE_256_SIZE, printFunc))
+
+    if (shaType == MlxSign::SHA256)
     {
-        return false;
+        struct cx4fw_image_signature_256 image_signature_256;
+        memset(&image_signature_256, 0, sizeof(image_signature_256));
+        memcpy(image_signature_256.signature, signature.data(), signature.size());
+        TOCPUn(image_signature_256.signature, signature.size() >> 2);
+        memcpy(image_signature_256.keypair_uuid, uuidData.data(), uuidData.size() << 2);
+        vector<u_int8_t> image_signature_256_data;
+        image_signature_256_data.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0x0);
+        cx4fw_image_signature_256_pack(&image_signature_256, image_signature_256_data.data());
+        if (!UpdateSection(image_signature_256_data.data(), FS3_IMAGE_SIGNATURE_256, false, CMD_SET_SIGNATURE,
+                           printFunc))
+        {
+            return false;
+        }
     }
-    memset(&image_signature_512, 0, sizeof(image_signature_512));
-    memcpy(image_signature_512.signature, signature.data(), signature.size());
-    TOCPUn(image_signature_512.signature, signature.size() >> 2);
-    memcpy(image_signature_512.keypair_uuid, uuidData.data(), uuidData.size() << 2);
-    signature.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
-    cx4fw_image_signature_512_pack(&image_signature_512, signature.data());
-    if (!UpdateSection(signature.data(), FS3_IMAGE_SIGNATURE_512, false, CMD_SET_SIGNATURE, printFunc))
+    else if (shaType == MlxSign::SHA512)
     {
-        return false;
+        struct cx4fw_image_signature_512 image_signature_512;
+        memset(&image_signature_512, 0, sizeof(image_signature_512));
+        memcpy(image_signature_512.signature, signature.data(), signature.size());
+        TOCPUn(image_signature_512.signature, signature.size() >> 2);
+        memcpy(image_signature_512.keypair_uuid, uuidData.data(), uuidData.size() << 2);
+        vector<u_int8_t> image_signature_512_data;
+        image_signature_512_data.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
+        cx4fw_image_signature_512_pack(&image_signature_512, image_signature_512_data.data());
+        if (!UpdateSection(image_signature_512_data.data(), FS3_IMAGE_SIGNATURE_512, false, CMD_SET_SIGNATURE,
+                           printFunc))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return errmsg("Unexpected type of SHA");
     }
     return true;
 }

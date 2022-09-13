@@ -139,15 +139,20 @@ public:
     virtual bool FwShiftDevData(PrintCallBack progressFunc = (PrintCallBack)NULL);
     virtual const char* FwGetResetRecommandationStr();
     virtual const char* FwGetReSignMsgStr();
-    virtual bool InsertSecureFWSignature(vector<u_int8_t> signature, const char* uuid, PrintCallBack printFunc);
+    virtual bool InsertSecureFWSignature(vector<u_int8_t> signature,
+                                         const char* uuid,
+                                         MlxSign::SHAType shaType,
+                                         PrintCallBack printFunc);
     bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
-    bool signForFwUpdate(const char* privPemFile, const char* uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
     bool FwSignWithTwoRSAKeys(const char* privPemFile1,
                               const char* uuid1,
                               const char* privPemFile2,
                               const char* uuid2,
                               PrintCallBack printFunc = (PrintCallBack)NULL);
-
+    bool SignForFwUpdate(const char* uuid,
+                         const MlxSign::Signer& signer,
+                         MlxSign::SHAType shaType,
+                         PrintCallBack printFunc);
     bool FwInsertEncSHA(MlxSign::SHAType shaType,
                         const char* privPemFile,
                         const char* uuid,

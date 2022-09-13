@@ -358,7 +358,7 @@ typedef enum fs3_section
     FS3_FW_BOOT_CFG = 0x11,
     FS3_FW_MAIN_CFG = 0x12,
     FS3_APU_KERNEL = 0x14,
-    FS3_APU_APPS = 0x15,
+    FS3_ACE_CODE = 0x15,
     FS3_ROM_CODE = 0x18,
     FS3_RESET_INFO = 0x20,
     FS3_DBG_FW_INI = 0x30,

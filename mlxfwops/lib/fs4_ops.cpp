@@ -4577,6 +4577,10 @@ bool Fs4Operations::ParsePublicKeyFromFile(const char* public_key_file,
             return errmsg("ParsePublicKeyFromFile: Public key file parsing failed");
         }
         DPRINTF(("Public key in text format. No key pair exponent and key auth conf, using default values\n"));
+        keyAuthConf.auth_type = 4; // RSA 4K
+        keyAuthConf.mlnx_nvconfig_en = 1;
+        keyAuthConf.cs_token_en = 1;
+        keyAuthConf.fw_en = 1;
     }
 
     if (pem_offset > 0)
@@ -4609,8 +4613,7 @@ bool Fs4Operations::GetFreeSlotInPublicKeys2(fs4_toc_info* itocEntry, u_int32_t&
         image_layout_file_public_keys_2 public_key;
         memset(&public_key, 0, sizeof(public_key));
         image_layout_file_public_keys_2_unpack(&public_key, itocEntry->section_data.data() + key_start_offset);
-        if (all_of(public_key.keypair_uuid, public_key.keypair_uuid + 4,
-                   [](u_int32_t val) { return val == 0; }))
+        if (all_of(public_key.keypair_uuid, public_key.keypair_uuid + 4, [](u_int32_t val) { return val == 0; }))
         {
             idx = ii;
             DPRINTF(("free slot at index = %d\n", idx));
@@ -4788,43 +4791,6 @@ bool Fs4Operations::isHashesTableHwPtrValid()
     return res;
 }
 
-bool Fs4Operations::signForFwUpdateUsingHSM(const char* uuid,
-                                            MlxSign::OpensslEngineSigner& engineSigner,
-                                            PrintCallBack printFunc)
-{
-#ifndef NO_OPEN_SSL
-    vector<u_int8_t> fourMbImage;
-    vector<u_int8_t> signature;
-    vector<u_int8_t> sha;
-
-    //* Get image data (image_signature,image_signature_2 sections masked with 0xff)
-    if (!FwCalcSHA(MlxSign::SHA512, sha, fourMbImage))
-    {
-        return errmsg("signForFwUpdateUsingHSM: Failed to read image");
-    }
-
-    //* Sign image data
-    int rc = engineSigner.sign(fourMbImage, signature);
-    if (rc)
-    {
-        return errmsg("signForFwUpdateUsingHSM: Failed to create secured FW signature (rc = 0x%x)", rc);
-    }
-
-    //* Store FW update signature in section
-    if (!InsertSecureFWSignature(signature, uuid, printFunc))
-    {
-        return errmsg("signForFwUpdateUsingHSM: Failed to insert secured FW signature\n");
-    }
-#else
-    (void)uuid;
-    (void)printFunc;
-    (void)engineSigner;
-    return errmsg("signForFwUpdateUsingHSM is not suppported");
-#endif
-
-    return true;
-}
-
 SecureBootSignVersion Fs4Operations::getSecureBootSignVersion()
 {
     SecureBootSignVersion res = VERSION_1;
@@ -4837,107 +4803,16 @@ SecureBootSignVersion Fs4Operations::getSecureBootSignVersion()
     return res;
 }
 
-bool Fs4Operations::signForSecureBootUsingHSM(const char* public_key_file,
-                                              const char* uuid,
-                                              MlxSign::OpensslEngineSigner& engineSigner)
+bool Fs4Operations::SignForSecureBoot(const char* public_key_file, const char* uuid, const MlxSign::Signer& signer)
 {
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     if (_ioAccess->is_flash())
     {
-        return errmsg("signForSecureBootUsingHSM not allowed for devices");
-    }
-    if (!initHwPtrs())
-    {
-        return errmsg("signForSecureBootUsingHSM failed - Error: HW pointers not found");
-    }
-
-    SecureBootSignVersion secure_boot_version = getSecureBootSignVersion();
-
-    if (secure_boot_version == VERSION_2)
-    {
-        if (!SetImageIVHwPointer())
-        {
-            return errmsg("signForSecureBootUsingHSM failed - Error: %s\n", err());
-        }
-    }
-
-    if (!StorePublicKey(public_key_file, uuid))
-    {
-        return errmsg("signForSecureBootUsingHSM failed - Error: StorePublicKey failed (%s)\n", err());
-    }
-
-    //* Get boot area signature
-    vector<u_int8_t> boot_data;
-    vector<u_int8_t> boot_signature;
-    if (!getBootDataForSign(boot_data))
-    {
-        return errmsg("signForSecureBootUsingHSM failed - Error: getBootDataForSign failed (%s)\n", err());
-    }
-    int rc = engineSigner.sign(boot_data, boot_signature);
-    if (rc)
-    {
-        return errmsg("signForSecureBootUsingHSM failed - Error: failed to set private key from engine (rc = 0x%x)",
-                      rc);
-    }
-
-    //* Get critical and non-critical sections signatures
-    vector<u_int8_t> critical_sections_data, non_critical_sections_data;
-    vector<u_int8_t> critical_signature, non_critical_signature;
-    if (secure_boot_version == VERSION_1)
-    {
-        if (!getCriticalNonCriticalSections(critical_sections_data, non_critical_sections_data))
-        {
-            return errmsg("signForSecureBootUsingHSM failed - Error: getCriticalNonCriticalSections failed (%s)\n",
-                          err());
-        }
-        rc = engineSigner.sign(critical_sections_data, critical_signature);
-        if (rc)
-        {
-            return errmsg("signForSecureBootUsingHSM failed - Error: failed to set private key from engine (rc = 0x%x)",
-                          rc);
-        }
-        rc = engineSigner.sign(non_critical_sections_data, non_critical_signature);
-        if (rc)
-        {
-            return errmsg("signForSecureBootUsingHSM failed - Error: failed to set private key from engine (rc = 0x%x)",
-                          rc);
-        }
-    }
-
-    //* Store secure boot signatures in section
-    bool res;
-    if (secure_boot_version == VERSION_1)
-    {
-        res = storeSecureBootSignaturesInSection(boot_signature, critical_signature, non_critical_signature);
-    }
-    else
-    {
-        res = storeSecureBootSignaturesInSection(boot_signature);
-    }
-    if (!res)
-    {
-        return errmsg("signForSecureBootUsingHSM: Failed to insert secure boot signatures (%s)\n", err());
-    }
-
-    return true;
-#else
-    (void)public_key_file;
-    (void)uuid;
-    (void)engineSigner;
-    return errmsg("signForSecureBootUsingHSM is not suppported");
-#endif
-}
-
-bool Fs4Operations::signForSecureBoot(const char* private_key_file, const char* public_key_file, const char* uuid)
-{
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-    if (_ioAccess->is_flash())
-    {
-        return errmsg("signForSecureBoot not allowed for devices");
+        return errmsg("SignForSecureBoot not allowed for devices");
     }
     if (!Init())
     {
-        return errmsg("signForSecureBoot failed - Error: %s\n", err());
+        return errmsg("SignForSecureBoot failed - Error: %s\n", err());
     }
 
     SecureBootSignVersion secure_boot_version = getSecureBootSignVersion();
@@ -4946,27 +4821,26 @@ bool Fs4Operations::signForSecureBoot(const char* private_key_file, const char* 
     {
         if (!SetImageIVHwPointer())
         {
-            return errmsg("signForSecureBoot failed - Error: %s\n", err());
+            return errmsg("SignForSecureBoot failed - Error: %s\n", err());
         }
     }
 
     if (!StorePublicKey(public_key_file, uuid))
     {
-        return errmsg("signForSecureBoot failed - Error: %s\n", err());
+        return errmsg("SignForSecureBoot failed - Error: StorePublicKey failed (%s)\n", err());
     }
-
-    string privPemFileStr(private_key_file);
 
     //* Get boot area signature
     vector<u_int8_t> boot_data;
     vector<u_int8_t> boot_signature;
     if (!getBootDataForSign(boot_data))
     {
-        return errmsg("signForSecureBoot failed - Error: getBootDataForSign failed (%s)\n", err());
+        return errmsg("SignForSecureBoot failed - Error: getBootDataForSign failed (%s)\n", err());
     }
-    if (!FwSignSection(boot_data, privPemFileStr, boot_signature))
+    int rc = signer.Sign(boot_data, boot_signature);
+    if (rc)
     {
-        return false;
+        return errmsg("SignForSecureBoot failed - Error: failed to set private key from engine (rc = 0x%x)", rc);
     }
 
     //* Get critical and non-critical sections signatures
@@ -4976,15 +4850,17 @@ bool Fs4Operations::signForSecureBoot(const char* private_key_file, const char* 
     {
         if (!getCriticalNonCriticalSections(critical_sections_data, non_critical_sections_data))
         {
-            return errmsg("signForSecureBoot failed - Error: getCriticalNonCriticalSections failed (%s)\n", err());
+            return errmsg("SignForSecureBoot failed - Error: getCriticalNonCriticalSections failed (%s)\n", err());
         }
-        if (!FwSignSection(critical_sections_data, privPemFileStr, critical_signature))
+        rc = signer.Sign(critical_sections_data, critical_signature);
+        if (rc)
         {
-            return false;
+            return errmsg("SignForSecureBoot failed - Error: failed to set private key from engine (rc = 0x%x)", rc);
         }
-        if (!FwSignSection(non_critical_sections_data, privPemFileStr, non_critical_signature))
+        rc = signer.Sign(non_critical_sections_data, non_critical_signature);
+        if (rc)
         {
-            return false;
+            return errmsg("SignForSecureBoot failed - Error: failed to set private key from engine (rc = 0x%x)", rc);
         }
     }
 
@@ -5000,16 +4876,15 @@ bool Fs4Operations::signForSecureBoot(const char* private_key_file, const char* 
     }
     if (!res)
     {
-        return errmsg("signForSecureBoot failed - Error: failed to insert secure boot signatures (%s)\n", err());
+        return errmsg("SignForSecureBoot: Failed to insert secure boot signatures (%s)\n", err());
     }
 
     return true;
-
 #else
-    (void)private_key_file;
     (void)public_key_file;
     (void)uuid;
-    return errmsg("signForSecureBoot is not suppported.");
+    (void)signer;
+    return errmsg("SignForSecureBoot is not suppported");
 #endif
 }
 

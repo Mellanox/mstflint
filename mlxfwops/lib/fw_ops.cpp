@@ -2436,14 +2436,9 @@ bool FwOperations::FwInsertSHA256(PrintCallBack)
     return errmsg("FwInsertSHA256 not supported");
 }
 
-bool FwOperations::signForFwUpdate(const char*, const char*, PrintCallBack)
+bool FwOperations::SignForFwUpdate(const char*, const MlxSign::Signer&, MlxSign::SHAType, PrintCallBack)
 {
-    return errmsg("signForFwUpdate not supported");
-}
-
-bool FwOperations::signForFwUpdateUsingHSM(const char*, MlxSign::OpensslEngineSigner&, PrintCallBack)
-{
-    return errmsg("signForFwUpdateUsingHSM not supported");
+    return errmsg("SignForFwUpdate not supported");
 }
 
 bool FwOperations::FwSignWithTwoRSAKeys(const char*, const char*, const char*, const char*, PrintCallBack)
@@ -2456,13 +2451,9 @@ bool FwOperations::FwSignWithHmac(const char*)
     return errmsg("FwSignWithHmac not supported");
 }
 
-bool FwOperations::signForSecureBoot(const char*, const char*, const char*)
+bool FwOperations::SignForSecureBoot(const char*, const char*, const MlxSign::Signer&)
 {
-    return errmsg("signForSecureBoot not supported");
-}
-bool FwOperations::signForSecureBootUsingHSM(const char*, const char*, MlxSign::OpensslEngineSigner&)
-{
-    return errmsg("signForSecureBoot not supported");
+    return errmsg("SignForSecureBoot not supported");
 }
 bool FwOperations::isHashesTableHwPtrValid()
 {
@@ -2783,10 +2774,6 @@ bool FwOperations::CreateSignatureManager()
 bool FwOperations::FwCalcSHA(MlxSign::SHAType, vector<u_int8_t>&, vector<u_int8_t>&)
 {
     return errmsg("FwCalcSHA is not supported.");
-}
-bool FwOperations::InsertSecureFWSignature(vector<u_int8_t>, const char*, PrintCallBack)
-{
-    return errmsg("InsertSecureFWSignature not supported");
 }
 bool FwOperations::storeSecureBootSignaturesInSection(vector<u_int8_t>, vector<u_int8_t>, vector<u_int8_t>)
 {

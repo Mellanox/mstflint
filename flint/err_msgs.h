@@ -59,7 +59,6 @@ typedef enum
 #define FLINT_CLEAR_SEM_CMD_ERROR "No command is allowed when -clear_semaphore flag is given.\n"
 #define FLINT_COMMAND_FLAGS_ERROR "For %s command, Please specify %s.\n"
 #define FLINT_COMMAND_INCORRECT_FLAGS_ERROR "For %s command, %s.\n"
-#define FLINT_PARSE_MEM_ERROR "Failed to allocate memory for parsing.\n "
 #define FLINT_NO_OPTIONS_FOUND_ERROR "No options found. "
 #define FLINT_INVALID_COMMAD_ERROR "Invalid command: %s\n"
 #define FLINT_TOO_MANY_ARGS_ERROR "Too many arguments. Expected: %d , Received: %d\n"
@@ -85,8 +84,9 @@ typedef enum
 #define FLINT_INVALID_FLAG_WITHOUT_FLAG_ERROR "\"%s\" flag must be specified with \"%s\" flag.\n"
 #define FLINT_INVALID_FLAG_WITH_CMD_ERROR "Cannot specify flag: %s with Command: %s\n"
 #define FLINT_CMD_VERIFY_ERROR "FW image verification failed: %s. AN HCA DEVICE CAN NOT BOOT FROM THIS IMAGE.\n"
-#define FLINT_CMD_VERIFY_ERROR_1 \
-    "FW image verification failed: No valid FS4 image found.Check the flash parameters, if specified..AN HCA DEVICE CAN NOT BOOT FROM THIS IMAGE"
+#define FLINT_CMD_VERIFY_ERROR_1                                                                                      \
+    "FW image verification failed: No valid FS4 image found.Check the flash parameters, if specified..AN HCA DEVICE " \
+    "CAN NOT BOOT FROM THIS IMAGE"
 #define FLINT_FAILED_QUERY_ERROR "Failed to query %s: %s. %s\n"
 #define FLINT_COMMAND_DEVICE_IMAGE_ERROR "Command \"%s\" requires both image and device to be specified.\n"
 #define FLINT_COMMAND_DEVICE_ERROR "Command \"%s\" requires device, but an image file was given.\n"
@@ -109,7 +109,6 @@ typedef enum
 #define FLINT_IMAGE_READ_ERROR "Failed to read image. %s\n"
 #define FLINT_READ_ERROR "Failed to read from %s. %s\n"
 #define FLINT_READ_FILE_ERROR "Failed to read from %s.\n"
-#define FLINT_WIN_NOT_SUPP_ERROR "Command \"%s\" is not supported in windows.\n"
 #define FLINT_WIN_ONLY_SUPP_ERROR "Command  \"%s\" is supported only in windows.\n"
 #define FLINT_GEN_COMMAND_ERROR "Failed to execute command %s. %s\n"
 #define FLINT_FS3_BB_ERROR \
@@ -138,14 +137,12 @@ typedef enum
 #define FLINT_WB_FILE_ERROR "failed to open file: %s. %s\n"
 #define FLINT_WB_ERROR "write Block Failed. %s\n"
 #define FLINT_NO_ZLIB_ERROR "Executable was compiled with \"dump files\" option disabled.\n"
-#define FLINT_FLAG_WITH_FLAG_ERROR "\"%s\" flag must be specified with \"%s\" flag.\n"
 #define FLINT_INVALID_PASSWORD "Invalid Password.\n"
 #define FLINT_NO_GUID_MAC_FLAGS_ERROR "Can not set GUIDs/MACs: please run with -uid/-guid/-mac flag.\n"
 #define FLINT_NOT_SUPP_UID_FLAG_ERROR \
     "Can not set GUIDs/MACs: %s flag is not supported for this device.\nPlease run with -uid/-guid/-mac flag.\n"
 #define FLINT_NO_UID_FLAG_ERROR "Can not set GUIDs/MACs: uid is not specified, please run with -uid flag.\n"
 #define FLINT_CHECKSUM_ERROR "Failed to calculate checksum on %s: %s\n"
-#define FLINT_CHECKSUM_MISMATCH_ERROR "Given checksum: %s does not match the checksum calculated on device FW: %s.\n"
 #define FLINT_CHECKSUM_PARSE_ERROR "Failed to parse given checksum.\n"
 #define FLINT_CHECKSUM_LEN_ERROR "MD5 checksum should be exactly 16 bytes long.\n"
 #define FLINT_CHECKSUM_HEX_ERROR "MD5 checksum should contain only hexadecimal digits.\n"
@@ -169,34 +166,21 @@ typedef enum
 #define UNCOMPRESSS_ERROR "Failed uncompressing FW configuration section. uncompress returns %d"
 #define OPEN_WRITE_FILE_ERROR "Can not open file %s for write: %s."
 #define IMAGE_SIGN_TYPE_ERROR "Image signing is applicable only for selected FW images. Please check your image type.\n"
-#define HSM_INIT_ERROR "HSM init has failed! Please check if the HSM card installed and configured properly.\n"
-#define HSM_PRIVATE_KEY_DUPLICATE "Creating HSM signature has failed - the private key label is duplicated.\n"
-#define HSM_PUBLIC_KEY_DUPLICATE "Creating HSM signature has failed - the public key label is duplicated.\n"
-#define HSM_SIGNATURE_CREATION_FAILED "Creating HSM signature has failed\n"
-#define HSM_UUID_MISSING "To Sign the image with RSA you must provide UUID with HSM sign.\n"
-#define HSM_PRIVATE_KEY_LABEL_MISSING "Must supply private key label for sign with HSM sign.\n"
-#define HSM_PASSWORD_MISSING "Must supply HSM user password for sign with HSM sign.\n"
 #define SIGN_PRIVATE_KEY_NOT_FOUND "Can't find private key file %s \n"
 #define SIGN_PUBLIC_KEY_NOT_FOUND "Can't find public key file %s \n"
-#define HSM_BOOT_SIGNATURE_CREATION_FAILED "Creating HSM BOOT signature has failed\n"
-#define HSM_CRITICAL_SIGNATURE_CREATION_FAILED "Creating HSM critical signature has failed\n"
-#define HSM_NON_CRITICAL_SIGNATURE_CREATION_FAILED "Creating HSM non-critical signature has failed\n"
-#define HSM_SECURE_BOOT_SIGNATURE_FAILED "Inserting secure BOOT signatures has failed : %s.\n"
-#define HSM_SECURE_FW_SIGNATURE_FAILED "Creation secured FW signatures has failed.\n"
 #define LINKX_QUERY_DEVICE_NOT_SUPPORTED "Linkx query for device %s is not supported.\n"
 #define LINKX_BURN_DEVICE_NOT_SUPPORTED "Linkx burn for device %s is not supported.\n"
 /**************************
  * Flint Warning Messages
  *************************/
-#define FLINT_QQ_WARRNING "-W- Running quick query - Skipping full image integrity checks.\n"
 #define FLINT_NOT_MLNX_FW_WARNING "-W- Not a Mellanox FW image (vendor_id = 0x%04x). VSD and PSID are not displayed.\n"
 #define FLINT_BLANK_GUIDS_WARNING "-W- GUIDs/MACs values and their CRC are not set.\n"
 #define FLINT_MULTI_BIT_WARNING "Multicast bit (bit 40) is set."
 #define FLINT_MORE_48_BITS_WARNING "More than 48 bits are used."
 #define FLINT_BAD_MAC_ADRESS_WARNING "\n-W- Bad mac address ( %4.4x%8.8x ): %s\n"
-#define FLINT_MAC_ENTRIES_WARNING \
-    "-W- Cannot get MAC address: Expecting %d entries in guid section, got %d. Probably an old FW image. Please update.\n"
-#define FLINT_INTERRUPT_WARRNING "\n-W- An internal error occurred. This program cannot be interrupted.\n"
+#define FLINT_MAC_ENTRIES_WARNING                                                                                 \
+    "-W- Cannot get MAC address: Expecting %d entries in guid section, got %d. Probably an old FW image. Please " \
+    "update.\n"
 #define FLINT_SET_GUIDS_WARRNING "-W- GUIDs are already set, re-burning image with the new GUIDs ...\n"
 #define FLINT_OCR_WARRNING \
     "\n-W- Firmware flash cache access is enabled. Running in this mode may cause the firmware to hang.\n"
