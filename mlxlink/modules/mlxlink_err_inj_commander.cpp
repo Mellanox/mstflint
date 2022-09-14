@@ -61,29 +61,20 @@ u_int16_t MlxlinkErrInjCommander::getMixerOffset(u_int32_t id)
 
 void MlxlinkErrInjCommander::setMixersOffset()
 {
-    u_int16_t oldMixer0 = getMixerOffset(0);
-    u_int16_t oldMixer1 = getMixerOffset(1);
-    string mixerFieldsCmd = "";
+    u_int16_t mixer0 = getMixerOffset(0);
+    u_int16_t mixer1 = getMixerOffset(1);
 
     if (_mixerOffset0 >= 0)
     {
-        mixerFieldsCmd += "mixer_offset0=" + to_string((u_int16_t)_mixerOffset0);
-        if (_mixerOffset1 == -1)
-        {
-            mixerFieldsCmd += ",mixer_offset1=" + to_string(oldMixer1);
-        }
+        mixer0 = (u_int16_t)_mixerOffset0;
     }
 
     if (_mixerOffset1 >= 0)
     {
-        mixerFieldsCmd += "mixer_offset1=" + to_string((u_int16_t)_mixerOffset1);
-        if (_mixerOffset0 == -1)
-        {
-            mixerFieldsCmd += ",mixer_offset0=" + to_string((u_int16_t)oldMixer0);
-        }
+        mixer1 = (u_int16_t)_mixerOffset1;
     }
 
-    sendPrmReg(ACCESS_REG_PREI, GET, mixerFieldsCmd.c_str());
+    sendPrmReg(ACCESS_REG_PREI, SET, "mixer_offset0=%d,mixer_offset1=%d", mixer0, mixer1);
 }
 
 void MlxlinkErrInjCommander::updateMixerOffsets()
