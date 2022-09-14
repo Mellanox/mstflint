@@ -77,7 +77,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_GENERAL] = FIELDS_COUNT{4, 4, 4};
     _baseSheetsList[AMBER_SHEET_INDEXES] = FIELDS_COUNT{2, 2, 4};
     _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{48, 141, 6};
-    _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{111, 111, 0};
+    _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{110, 110, 0};
     _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{16, 21, 11};
     _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{376, 736, 0};
     _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{206, 374, 499};
@@ -89,6 +89,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_TEST_MODE_INFO] = FIELDS_COUNT{68, 136, 0};
     _baseSheetsList[AMBER_SHEET_TEST_MODE_MODULE_INFO] = FIELDS_COUNT{70, 110, 0};
     _baseSheetsList[AMBER_SHEET_PHY_DEBUG_INFO] = FIELDS_COUNT{4, 4, 0};
+    _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{102, 102, 0};
 
     for_each(_baseSheetsList.begin(), _baseSheetsList.end(), [&](pair<AMBER_SHEET, FIELDS_COUNT> sheet) {
         _sheetsList.push_back({sheet.first, sheet.second});
@@ -112,6 +113,31 @@ void MlxlinkAmBerCollector::sendRegister(const string& regName, maccess_reg_meth
         if (AmberField::_dataValid)
         {
             genBuffSendRegister(regName, method);
+        }
+    }
+    catch (MlxRegException& exc)
+    {
+#ifdef VALIDATE_REG_REQUEST
+        throw MlxRegException(regName + ": " + exc.what());
+#else
+        AmberField::_dataValid = false;
+#endif
+    }
+}
+
+void MlxlinkAmBerCollector::sendLocalPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...)
+{
+    char fieldsCstr[MAX_FIELDS_BUFFER];
+    try
+    {
+        if (AmberField::_dataValid)
+        {
+            va_list args;
+            va_start(args, fields);
+            vsnprintf(fieldsCstr, MAX_FIELDS_BUFFER, fields, args);
+            va_end(args);
+
+            sendPrmReg(regName, method, fieldsCstr);
         }
     }
     catch (MlxRegException& exc)
@@ -1216,7 +1242,7 @@ void MlxlinkAmBerCollector::pushModulePerLaneField(vector<AmberField>& fields, s
     float value = 0;
     for (u_int32_t lane = 0; lane < MAX_NETWORK_LANES; lane++)
     {
-        value = getFieldValue(fieldName + to_string(lane));
+        value = getLocalFieldValue(fieldName + to_string(lane));
         if (fieldName.find("power") != string::npos)
         {
             value = getPower(value);
@@ -1235,7 +1261,7 @@ void MlxlinkAmBerCollector::pushModuleDpPerLane(vector<AmberField>& fields, cons
     for (u_int32_t lane = 0; lane < MAX_NETWORK_LANES; lane++)
     {
         string laneStr = to_string(lane);
-        dpStateStr = getStrByMask(getFieldValue(fieldName + laneStr), _mlxlinkMaps->_dataPathSt);
+        dpStateStr = getStrByMask(getLocalFieldValue(fieldName + laneStr), _mlxlinkMaps->_dataPathSt);
         fields.push_back(AmberField(str + laneStr, dpStateStr));
         dpStateStr = "N/A";
     }
@@ -1408,8 +1434,7 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField>& fields)
 
     pushModuleDpPerLane(fields, "Dp_st_lane");
 
-    fields.push_back(AmberField("rx_output_valid", getBitmaskPerLaneStr(getFieldValue("rx_output_valid_change"))));
-    fields.push_back(AmberField("rx_input_valid", getBitmaskPerLaneStr(getFieldValue("rx_input_valid_change"))));
+    fields.push_back(AmberField("rx_output_valid", getBitmaskPerLaneStr(getFieldValue("rx_output_valid"))));
 
     if (cableIdentifier < IDENTIFIER_SFP_DD)
     {
@@ -1992,6 +2017,21 @@ vector<AmberField> MlxlinkAmBerCollector::getPhyDebugInfo()
     return fields;
 }
 
+vector<AmberField> MlxlinkAmBerCollector::getExtModuleStatus()
+{
+    vector<AmberField> fields;
+
+    try
+    {
+    }
+    catch (const std::exception& exc)
+    {
+        throw MlxRegException("Failed to get Extended Module information: %s", exc.what());
+    }
+
+    return fields;
+}
+
 void MlxlinkAmBerCollector::groupValidIf(bool condition)
 {
     if (condition)
@@ -2112,6 +2152,16 @@ vector<AmberField> MlxlinkAmBerCollector::collectSheet(AMBER_SHEET sheet)
             if (!_inPRBSMode)
             {
                 fields = getPhyDebugInfo();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
+        case AMBER_SHEET_EXT_MODULE_STATUS:
+            if (!_inPRBSMode)
+            {
+                fields = getExtModuleStatus();
             }
             else if (isIn(sheet, _sheetsToDump))
             {
