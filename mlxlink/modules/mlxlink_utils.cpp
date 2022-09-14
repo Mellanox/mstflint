@@ -1383,6 +1383,22 @@ void setPrintVal(MlxlinkCmdPrint& mlxlinkCmdPrint,
     mlxlinkCmdPrint.lastInsertedRow++;
 }
 
+int getPrintRowIndex(MlxlinkCmdPrint& mlxlinkCmdPrint, const string& key)
+{
+    int recordIndex = 0;
+
+    for (const auto& record : mlxlinkCmdPrint.mlxlinkRecords)
+    {
+        if (record.key == key)
+        {
+            break;
+        }
+        recordIndex++;
+    }
+
+    return recordIndex;
+}
+
 void setPrintTitle(MlxlinkCmdPrint& mlxlinkCmdPrint, string title, u_int32_t size, bool print)
 {
     mlxlinkCmdPrint.title = title;

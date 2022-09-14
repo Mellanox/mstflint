@@ -355,7 +355,7 @@ public:
 
     void checkRegCmd();
     void validatePortToLC();
-    void validatePortType(const string& portTypeStr);
+    virtual void validatePortType(const string& portTypeStr);
     void updatePortType();
     void gearboxBlock(const string& option);
     void checkLocalPortDPNMapping(u_int32_t localPort);
@@ -403,8 +403,8 @@ public:
     virtual void showModuleInfo();
     void prepareBerModuleInfoNdr(bool valid);
     virtual void runningVersion();
-    void operatingInfoPage();
-    void supportedInfoPage();
+    virtual void operatingInfoPage();
+    virtual void supportedInfoPage();
     virtual void troubInfoPage();
     void showPddr();
     void getPtys();
@@ -412,14 +412,14 @@ public:
     void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
     void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
     virtual void showEye();
-    void showFEC();
+    virtual void showFEC();
     virtual void showSltp();
     void showDeviceData();
     void showBerMonitorInfo();
     void showExternalPhy();
     void showPcie();
     void showPcieLinks();
-    void collectAMBER();
+    virtual void collectAMBER();
     void collectBER();
     void showTxGroupMapping();
 

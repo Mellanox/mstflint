@@ -1440,7 +1440,6 @@ void MlxlinkCommander::prepareBerModuleInfoNdr(bool valid)
     fieldsToQuery.push_back(MODULE_FIELD{"Module State", "Module_st", false, false, false});
     fieldsToQuery.push_back(MODULE_FIELD{"DataPath state [per lane]", "Dp_st_lane", true, true, true});
     fieldsToQuery.push_back(MODULE_FIELD{"Rx Output Valid [per lane]", "rx_output_valid", true, true, true});
-    fieldsToQuery.push_back(MODULE_FIELD{"Rx Input Valid [per lane]", "rx_input_valid", true, true, true});
     fieldsToQuery.push_back(MODULE_FIELD{"Nominal bit rate", "Nominal_Bit_Rate", false, false, false});
     fieldsToQuery.push_back(MODULE_FIELD{"Rx Power Type", "Rx_Power_Type", false, false, false});
     fieldsToQuery.push_back(MODULE_FIELD{"Manufacturing Date", "Date_Code", false, false, false});
