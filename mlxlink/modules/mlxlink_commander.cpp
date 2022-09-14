@@ -1954,17 +1954,6 @@ std::map<std::string, std::string> MlxlinkCommander::getPptt()
     return ppttMap;
 }
 
-void MlxlinkCommander::showMpcntTimers(DPN& dpn)
-{
-    sendPrmReg(ACCESS_REG_MPCNT, GET, "depth=%d,pcie_index=%d,node=%d,grp=%d", dpn.depth, dpn.pcieIndex, dpn.node,
-               MPCNT_TIMERS_GROUPS);
-
-    setPrintTitle(_mpcntTimerInfCmd, "Management PCIe Timers Counters Info", MPCNT_TIMER_INFO_LAST);
-    setPrintVal(_mpcntTimerInfCmd, "dl down", getFieldStr("dl_down"));
-
-    cout << _mpcntTimerInfCmd;
-}
-
 void MlxlinkCommander::prepareBerInfo()
 {
     initAmBerCollector();
@@ -2030,11 +2019,6 @@ void MlxlinkCommander::prepareBerInfoEDR()
 
 void MlxlinkCommander::showBer()
 {
-    if (_userInput._pcie)
-    {
-        checkPCIeValidity();
-        showMpcntTimers(_dpn);
-    }
     try
     {
         if (_prbsTestMode)
@@ -2866,28 +2850,66 @@ void MlxlinkCommander::collectBER()
                                                    "this device, please use " AMBER_COLLECT_FLAG " flag instead");
         }
 
+        MlxlinkRecord::printCmdLine("Collecting BER and producing report to " + _userInput._csvBer, _jsonRoot);
+
         const char* fileName = _userInput._csvBer.c_str();
         ifstream ifile(fileName);
         ofstream berFile(fileName, std::ofstream::app);
 
+        vector<AmberField> fields = getBerFields();
+
         if (!ifile.good())
         {
-            berFile << _mlxlinkMaps->_berCollectTitle << endl;
+            for (const auto& field : fields)
+            {
+                if (field.isVisible())
+                {
+                    berFile << field.getUiField();
+                    if (field.getFieldIndex() < fields.size())
+                    {
+                        berFile << ",";
+                    }
+                }
+            }
+            berFile << endl;
         }
 
-        MlxlinkRecord::printCmdLine("Collecting BER and producing report to " + _userInput._csvBer, _jsonRoot);
+        // Preparing CSV values
+        for (const auto& field : fields)
+        {
+            if (field.isVisible())
+            {
+                berFile << field.getUiValue();
+                if (field.getFieldIndex() < fields.size())
+                {
+                    berFile << ",";
+                }
+            }
+        }
+        berFile << endl;
+        berFile.close();
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors += string("Collecting BER and producing report raised the following exception: \n") +
+                               string(exc.what()) + string("\n");
+    }
+}
 
+vector<AmberField> MlxlinkCommander::getBerFields()
+{
+    vector<AmberField> fields;
+    try
+    {
         string active_fec = _prbsTestMode ? "N/A" : _mlxlinkMaps->_fecModeActive[_fecActive];
         findAndReplace(active_fec, ",", " ");
         string devicePN = getDevicePN();
         string deviceFW = _fwVersion;
         getCableParams();
-        u_int32_t linkDown = getLinkDown();
-        std::map<std::string, float> errorsVector = getRawEffectiveErrors();
-        float rawBerLimit = getRawBERLimit();
-        string result = (getResult(errorsVector, rawBerLimit, linkDown)) ? "Pass" : "Fail";
+
+        std::map<string, string> errorsVector = getRawEffectiveErrors();
         string protocol = _prbsTestMode ? getPrbsModeRX() : _speedStrG;
-        u_int32_t speed = _prbsTestMode ? getPrbsRateRX() : _speedBerCsv;
+        float speed = _prbsTestMode ? getPrbsRateRX() : _speedBerCsv;
         if (_protoActive == IB)
         {
             speed = (speed * _numOfLanes) / MAX_LANES_NUMBER;
@@ -2897,25 +2919,49 @@ void MlxlinkCommander::collectBER()
         {
             port += "/" + to_string(_userInput._splitPort);
         }
-        berFile << _userInput._testMode << ',' << protocol << ',' << speed << ',' << active_fec << ','
-                << _userInput._iteration << ',' << devicePN << ',' << deviceFW << ',' << '1' << ',' << port << ','
-                << getCableMedia(_cableMediaType) << ',' << _cablePN << ',' << getCableLengthStr(_cableLen, _cmisCable)
-                << ',' << _cableAtten12G << ',' << errorsVector["time_since_last_clear_sec"] / 60 << ','
-                << errorsVector["phy_corrected_bits_lane0"] << ',' << errorsVector["phy_corrected_bits_lane1"] << ','
-                << errorsVector["phy_corrected_bits_lane2"] << ',' << errorsVector["phy_corrected_bits_lane3"] << ','
-                << errorsVector["phy_corrected_bits_lane4"] << ',' << errorsVector["phy_corrected_bits_lane5"] << ','
-                << errorsVector["phy_corrected_bits_lane6"] << ',' << errorsVector["phy_corrected_bits_lane7"] << ','
-                << linkDown << ',' << errorsVector["raw_ber"] << ',' << rawBerLimit << ','
-                << errorsVector["eff_errors_counter"] << ',' << errorsVector["eff_ber"] << ',' << result << ','
-                << "N/A,N/A,N/A," << _moduleTemp << ',' << _moduleTemp << ",N/A,N/A," << _cableSN << ",N/A";
-        berFile << endl;
-        berFile.close();
+
+        fields.push_back(AmberField("Test Mode (Nominal/Corner/Drift)", _userInput._testMode));
+        fields.push_back(AmberField("Protocol", protocol));
+        fields.push_back(AmberField("Speed [Gb/s]", to_string(speed)));
+        fields.push_back(AmberField("Active FEC", active_fec));
+        fields.push_back(AmberField("Iteration Number", to_string(_userInput._iteration)));
+        fields.push_back(AmberField("Device PN", devicePN));
+        fields.push_back(AmberField("FW Version", deviceFW));
+        fields.push_back(AmberField("Device ID", "1"));
+        fields.push_back(AmberField("Port Number", port));
+        fields.push_back(AmberField("Media", getCableMedia(_cableMediaType)));
+        fields.push_back(AmberField("Cable PN", _cablePN));
+        fields.push_back(AmberField("Length [m]", getCableLengthStr(_cableLen, _cmisCable)));
+        fields.push_back(AmberField("Attenuation [dB]", to_string(_cableAtten12G)));
+        fields.push_back(AmberField("Test time [Min]", errorsVector["time_since_last_clear_sec"]));
+        fields.push_back(AmberField("Raw Errors Lane 0", errorsVector["phy_corrected_bits_lane0"]));
+        fields.push_back(AmberField("Raw Errors Lane 1", errorsVector["phy_corrected_bits_lane1"]));
+        fields.push_back(AmberField("Raw Errors Lane 2", errorsVector["phy_corrected_bits_lane2"]));
+        fields.push_back(AmberField("Raw Errors Lane 3", errorsVector["phy_corrected_bits_lane3"]));
+        fields.push_back(AmberField("Raw Errors Lane 4", errorsVector["phy_corrected_bits_lane4"]));
+        fields.push_back(AmberField("Raw Errors Lane 5", errorsVector["phy_corrected_bits_lane5"]));
+        fields.push_back(AmberField("Raw Errors Lane 6", errorsVector["phy_corrected_bits_lane6"]));
+        fields.push_back(AmberField("Raw Errors Lane 7", errorsVector["phy_corrected_bits_lane7"]));
+        fields.push_back(AmberField("Total Raw BER", errorsVector["raw_ber"]));
+        fields.push_back(AmberField("Raw BER limit", to_string(getRawBERLimit())));
+        fields.push_back(AmberField("Effective Errors", errorsVector["eff_errors_counter"]));
+        fields.push_back(AmberField("Effective BER", errorsVector["eff_ber"]));
+        fields.push_back(AmberField("System Voltage", "N/A"));
+        fields.push_back(AmberField("Chip Start Temp", "N/A"));
+        fields.push_back(AmberField("Chip End Temp", "N/A"));
+        fields.push_back(AmberField("Module Start Temp", _moduleTemp));
+        fields.push_back(AmberField("Module End Temp", "N/A"));
+        fields.push_back(AmberField("Active RTN", "N/A"));
+        fields.push_back(AmberField("Device SN", "N/A"));
+        fields.push_back(AmberField("Cable SN", _cableSN));
+        fields.push_back(AmberField("RX End BW [Gb/s]", "N/A"));
     }
     catch (const std::exception& exc)
     {
         _allUnhandledErrors += string("Collecting BER and producing report raised the following exception: \n") +
                                string(exc.what()) + string("\n");
     }
+    return fields;
 }
 
 u_int32_t MlxlinkCommander::readBitFromField(const string& fieldName, u_int32_t bitIndex)
@@ -2970,99 +3016,66 @@ void MlxlinkCommander::showTxGroupMapping()
     }
 }
 
-int MlxlinkCommander::getLinkDown()
+std::map<string, string> MlxlinkCommander::getRawEffectiveErrorsinTestMode()
 {
-    sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
-
-    return getFieldValue("link_down_events");
-}
-
-std::map<std::string, float> MlxlinkCommander::getRawEffectiveErrorsinTestMode()
-{
-    std::map<string, float> errorsVector;
+    std::map<string, string> errorsVector;
 
     sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
 
     errorsVector["phy_corrected_bits_lane0"] =
-      add32BitTo64(getFieldValue("edpl_bip_errors_lane0_high"), getFieldValue("edpl_bip_errors_lane0_low"));
+      to_string(add32BitTo64(getFieldValue("edpl_bip_errors_lane0_high"), getFieldValue("edpl_bip_errors_lane0_low")));
     errorsVector["phy_corrected_bits_lane1"] =
-      add32BitTo64(getFieldValue("edpl_bip_errors_lane1_high"), getFieldValue("edpl_bip_errors_lane1_low"));
+      to_string(add32BitTo64(getFieldValue("edpl_bip_errors_lane1_high"), getFieldValue("edpl_bip_errors_lane1_low")));
     errorsVector["phy_corrected_bits_lane2"] =
-      add32BitTo64(getFieldValue("edpl_bip_errors_lane2_high"), getFieldValue("edpl_bip_errors_lane2_low"));
+      to_string(add32BitTo64(getFieldValue("edpl_bip_errors_lane2_high"), getFieldValue("edpl_bip_errors_lane2_low")));
     errorsVector["phy_corrected_bits_lane3"] =
-      add32BitTo64(getFieldValue("edpl_bip_errors_lane3_high"), getFieldValue("edpl_bip_errors_lane3_low"));
-    errorsVector["time_since_last_clear_sec"] =
-      (add32BitTo64(getFieldValue("time_since_last_clear_high"), getFieldValue("time_since_last_clear_low"))) / 1000;
-
-    sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_STATISTICAL_GROUP);
-
-    float effBerCoef = 0, effBerMag = 0, rawBerCoef = 0, rawBerMag = 0;
-    float raw_ber = 0, eff_ber = 0;
-    int raw_errors_counter = 0, eff_errors_counter = 0;
-    eff_errors_counter = add32BitTo64(getFieldValue("phy_symbol_errors_high"), getFieldValue("phy_symbol_errors_low"));
-    raw_errors_counter =
-      add32BitTo64(getFieldValue("phy_corrected_bits_high"), getFieldValue("phy_corrected_bits_low"));
-    rawBerCoef = getFieldValue("raw_ber_coef");
-    rawBerMag = getFieldValue("raw_ber_magnitude");
-    effBerCoef = getFieldValue("effective_ber_coef");
-    effBerMag = getFieldValue("effective_ber_magnitude");
-    raw_ber = rawBerCoef * std::pow(10, -rawBerMag);
-    eff_ber = effBerCoef * std::pow(10, -effBerMag);
-
-    errorsVector["raw_errors_counter"] = raw_errors_counter;
-    errorsVector["raw_ber"] = raw_ber;
-    errorsVector["eff_errors_counter"] = eff_errors_counter;
-    errorsVector["eff_ber"] = eff_ber;
+      to_string(add32BitTo64(getFieldValue("edpl_bip_errors_lane3_high"), getFieldValue("edpl_bip_errors_lane3_low")));
+    errorsVector["phy_corrected_bits_lane4"] = "0";
+    errorsVector["phy_corrected_bits_lane5"] = "0";
+    errorsVector["phy_corrected_bits_lane6"] = "0";
+    errorsVector["phy_corrected_bits_lane7"] = "0";
 
     return errorsVector;
 }
 
-std::map<string, float> MlxlinkCommander::getRawEffectiveErrors()
+std::map<string, string> MlxlinkCommander::getRawEffectiveErrors()
 {
+    std::map<string, string> errorsVector;
     if (_prbsTestMode)
     {
-        return getRawEffectiveErrorsinTestMode();
+        errorsVector = getRawEffectiveErrorsinTestMode();
+    }
+    else
+    {
+        sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_STATISTICAL_GROUP);
+
+        errorsVector["phy_corrected_bits_lane0"] = to_string(
+          add32BitTo64(getFieldValue("phy_raw_errors_lane0_high"), getFieldValue("phy_raw_errors_lane0_low")));
+        errorsVector["phy_corrected_bits_lane1"] = to_string(
+          add32BitTo64(getFieldValue("phy_raw_errors_lane1_high"), getFieldValue("phy_raw_errors_lane1_low")));
+        errorsVector["phy_corrected_bits_lane2"] = to_string(
+          add32BitTo64(getFieldValue("phy_raw_errors_lane2_high"), getFieldValue("phy_raw_errors_lane2_low")));
+        errorsVector["phy_corrected_bits_lane3"] = to_string(
+          add32BitTo64(getFieldValue("phy_raw_errors_lane3_high"), getFieldValue("phy_raw_errors_lane3_low")));
+        errorsVector["phy_corrected_bits_lane4"] = to_string(
+          add32BitTo64(getFieldValue("phy_raw_errors_lane4_high"), getFieldValue("phy_raw_errors_lane4_low")));
+        errorsVector["phy_corrected_bits_lane5"] = to_string(
+          add32BitTo64(getFieldValue("phy_raw_errors_lane5_high"), getFieldValue("phy_raw_errors_lane5_low")));
+        errorsVector["phy_corrected_bits_lane6"] = to_string(
+          add32BitTo64(getFieldValue("phy_raw_errors_lane6_high"), getFieldValue("phy_raw_errors_lane6_low")));
+        errorsVector["phy_corrected_bits_lane7"] = to_string(
+          add32BitTo64(getFieldValue("phy_raw_errors_lane7_high"), getFieldValue("phy_raw_errors_lane7_low")));
     }
 
-    sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_STATISTICAL_GROUP);
-
-    std::map<string, float> errorsVector;
-    errorsVector["phy_corrected_bits_lane0"] =
-      add32BitTo64(getFieldValue("phy_raw_errors_lane0_high"), getFieldValue("phy_raw_errors_lane0_low"));
-    errorsVector["phy_corrected_bits_lane1"] =
-      add32BitTo64(getFieldValue("phy_raw_errors_lane1_high"), getFieldValue("phy_raw_errors_lane1_low"));
-    errorsVector["phy_corrected_bits_lane2"] =
-      add32BitTo64(getFieldValue("phy_raw_errors_lane2_high"), getFieldValue("phy_raw_errors_lane2_low"));
-    errorsVector["phy_corrected_bits_lane3"] =
-      add32BitTo64(getFieldValue("phy_raw_errors_lane3_high"), getFieldValue("phy_raw_errors_lane3_low"));
-    errorsVector["phy_corrected_bits_lane4"] =
-      add32BitTo64(getFieldValue("phy_raw_errors_lane4_high"), getFieldValue("phy_raw_errors_lane4_low"));
-    errorsVector["phy_corrected_bits_lane5"] =
-      add32BitTo64(getFieldValue("phy_raw_errors_lane5_high"), getFieldValue("phy_raw_errors_lane5_low"));
-    errorsVector["phy_corrected_bits_lane6"] =
-      add32BitTo64(getFieldValue("phy_raw_errors_lane6_high"), getFieldValue("phy_raw_errors_lane6_low"));
-    errorsVector["phy_corrected_bits_lane7"] =
-      add32BitTo64(getFieldValue("phy_raw_errors_lane7_high"), getFieldValue("phy_raw_errors_lane7_low"));
-    errorsVector["time_since_last_clear_sec"] =
-      (add32BitTo64(getFieldValue("time_since_last_clear_high"), getFieldValue("time_since_last_clear_low"))) / 1000;
-
-    float effBerCoef = 0, effBerMag = 0, rawBerCoef = 0, rawBerMag = 0;
-    float raw_ber = 0, eff_ber = 0;
-    int raw_errors_counter = 0, eff_errors_counter = 0;
-    eff_errors_counter = add32BitTo64(getFieldValue("phy_symbol_errors_high"), getFieldValue("phy_symbol_errors_low"));
-    raw_errors_counter =
-      add32BitTo64(getFieldValue("phy_corrected_bits_high"), getFieldValue("phy_corrected_bits_low"));
-    rawBerCoef = getFieldValue("raw_ber_coef");
-    rawBerMag = getFieldValue("raw_ber_magnitude");
-    effBerCoef = getFieldValue("effective_ber_coef");
-    effBerMag = getFieldValue("effective_ber_magnitude");
-    raw_ber = rawBerCoef * std::pow(10, -rawBerMag);
-    eff_ber = effBerCoef * std::pow(10, -effBerMag);
-
-    errorsVector["raw_errors_counter"] = raw_errors_counter;
-    errorsVector["raw_ber"] = raw_ber;
-    errorsVector["eff_errors_counter"] = eff_errors_counter;
-    errorsVector["eff_ber"] = eff_ber;
+    errorsVector["time_since_last_clear_sec"] = to_string(
+      (add32BitTo64((float)getFieldValue("time_since_last_clear_high"), getFieldValue("time_since_last_clear_low"))) /
+      1000.0 / 60.0);
+    errorsVector["raw_errors_counter"] =
+      to_string(add32BitTo64(getFieldValue("phy_corrected_bits_high"), getFieldValue("phy_corrected_bits_low")));
+    errorsVector["raw_ber"] = getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude");
+    errorsVector["eff_errors_counter"] =
+      to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high"), getFieldValue("phy_symbol_errors_low")));
+    errorsVector["eff_ber"] = getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude");
 
     return errorsVector;
 }
@@ -3210,20 +3223,6 @@ float MlxlinkCommander::getRawBERLimit()
         }
     }
     return limit;
-}
-
-bool MlxlinkCommander::getResult(std::map<std::string, float> errorsVector, float rawBerLimit, int linkDown)
-{
-    float timeSinceLastClearSec = errorsVector["time_since_last_clear_sec"];
-    if (timeSinceLastClearSec == 0 || 1 / (timeSinceLastClearSec * _speedBerCsv * pow(10.0, 9)) > getRawBERLimit())
-    {
-        return false;
-    }
-    if (errorsVector["raw_ber"] < rawBerLimit && errorsVector["eff_ber"] < rawBerLimit && linkDown == 0)
-    {
-        return true;
-    }
-    return false;
 }
 
 string MlxlinkCommander::getFwVersion()
@@ -4181,7 +4180,7 @@ string MlxlinkCommander::updateSltpEdrHdrFields()
 {
     map<u_int32_t, PRM_FIELD> sltpParam = _mlxlinkMaps->_SltpEdrParams;
     string sltpParamCmd = "";
-    char hdrEdrParamBuff[32];
+    char hdrEdrParamBuff[32] = "";
     if (_productTechnology == PRODUCT_16NM)
     {
         sltpParam = _mlxlinkMaps->_SltpHdrParams;
@@ -4202,9 +4201,9 @@ string MlxlinkCommander::updateSltpEdrHdrFields()
 string MlxlinkCommander::updateSltpNdrFields()
 {
     u_int32_t indexCorrection = 0;
-    char ndrParamBuff[64];
-    char hdrParamBuff[32];
-    char paramBuff[128];
+    char ndrParamBuff[64] = "";
+    char hdrParamBuff[32] = "";
+    char paramBuff[128] = "";
     string sltpParamsCmd = "";
 
     if (isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))

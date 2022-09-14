@@ -456,12 +456,13 @@ public:
     virtual void prepareBerInfo();
     virtual void prepareBerInfoEDR();
     virtual void getPcieNdrCounters();
+    virtual vector<AmberField> getBerFields();
 
     std::map<std::string, std::string> getPprt();
     std::map<std::string, std::string> getPptt();
 
-    std::map<std::string, float> getRawEffectiveErrors();
-    std::map<std::string, float> getRawEffectiveErrorsinTestMode();
+    std::map<string, string> getRawEffectiveErrors();
+    std::map<string, string> getRawEffectiveErrorsinTestMode();
     int prbsModeToMask(const string& mode);
     string prbsMaskToMode(u_int32_t mask, u_int32_t modeSelector);
     string getPrbsModeRX();
