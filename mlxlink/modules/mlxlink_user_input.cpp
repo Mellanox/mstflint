@@ -129,4 +129,10 @@ UserInput::UserInput()
     prbsModuleAccess = MODULE_PRBS_ACCESS_BOTH;
 
     isModuleConfigParamsProvided = false;
+
+    isPcieErrInjProvided = false;
+    errorType = "";
+    errorDuration = -1;
+    injDelay = -1;
+    dbdf = "";
 }

@@ -146,6 +146,9 @@ string getCableLengthStr(u_int32_t cableLength, bool cmisCable);
 string getRxTxCDRState(u_int32_t state, u_int32_t numOfLanes);
 string getModuleFwVersion(bool passive, u_int32_t moduleFWVer);
 string getVendorRev(u_int32_t rev);
+string getBDFStr(u_int32_t bdf);
+int getBDFInt(const string& bdfStr);
+size_t LevStrMatch(const string& s1, const string& s2);
 string getStrByValue(u_int32_t flags, map<u_int32_t, string> map);
 string getStrByMask(u_int32_t bitmask, map<u_int32_t, string> maskMap, const string& fieldSeparator = ",");
 string getStrByMaskFromPair(u_int32_t bitmask,

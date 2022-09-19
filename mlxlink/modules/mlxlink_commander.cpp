@@ -94,6 +94,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _portInfo = NULL;
     _amberCollector = NULL;
     _uniqueCableCmds = 0;
+    _uniquePcieCmds = 0;
 }
 
 MlxlinkCommander::~MlxlinkCommander()
@@ -462,7 +463,9 @@ void MlxlinkCommander::labelToLocalPort()
         _dpn.depth = _userInput._depth;
         _dpn.pcieIndex = _userInput._pcieIndex;
         _dpn.node = _userInput._node;
+
         initValidDPNList();
+
         if (_userInput._sendDpn)
         {
             int localPort = getLocalPortFromMPIR(_dpn);
@@ -619,6 +622,7 @@ int MlxlinkCommander::getLocalPortFromMPIR(DPN& dpn)
         {
             sendPrmReg(ACCESS_REG_MPIR, GET, "depth=%d,pcie_index=%d,node=%d", dpn.depth, dpn.pcieIndex, dpn.node);
             localPort = getFieldValue("local_port");
+            dpn.bdf = getBDFStr(getFieldValue("bdf0"));
         }
         catch (MlxRegException& exc)
         {
@@ -632,6 +636,7 @@ int MlxlinkCommander::getLocalPortFromMPIR(DPN& dpn)
     {
         localPort = 0;
     }
+
     return localPort;
 }
 
@@ -2641,6 +2646,7 @@ void MlxlinkCommander::initValidDPNList()
     u_int32_t maxNumOfDsPort = 16;
     u_int32_t maxDepth = 4;
     u_int32_t depth, pcieIndex, node;
+    string bdf = "";
 
     if (_validDpns.empty())
     {
@@ -2657,13 +2663,13 @@ void MlxlinkCommander::initValidDPNList()
             }
             if (valid && getFieldValue("port_type") == PORT_TYPE_EP)
             {
-                _validDpns.push_back(DPN(0, pcieIndex, 0));
+                _validDpns.push_back(DPN(0, pcieIndex, 0, getBDFStr(getFieldValue("bdf0"))));
             }
             else
             {
                 if (valid && getFieldValue("port_type") == PORT_TYPE_US)
                 {
-                    _validDpns.push_back(DPN(0, pcieIndex, 0));
+                    _validDpns.push_back(DPN(0, pcieIndex, 0, getBDFStr(getFieldValue("bdf0"))));
                 }
                 for (depth = 1; depth < maxDepth; depth++)
                 {
@@ -2672,14 +2678,14 @@ void MlxlinkCommander::initValidDPNList()
                         sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", depth, pcieIndex, 0);
                         if (getFieldValue("port_type") == PORT_TYPE_DS)
                         {
-                            _validDpns.push_back(DPN(depth, pcieIndex, 0));
+                            _validDpns.push_back(DPN(depth, pcieIndex, 0, getBDFStr(getFieldValue("bdf0"))));
                             for (node = 1; node < maxNumOfDsPort; node++)
                             {
                                 try
                                 {
                                     sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", depth,
                                                pcieIndex, node);
-                                    _validDpns.push_back(DPN(depth, pcieIndex, node));
+                                    _validDpns.push_back(DPN(depth, pcieIndex, node, getBDFStr(getFieldValue("bdf0"))));
                                 }
                                 catch (...)
                                 {
@@ -2710,13 +2716,14 @@ void MlxlinkCommander::showPcieLinks()
             throw MlxRegException("No valid DPN's detected!");
         }
         setPrintTitle(_validPcieLinks, "Valid PCIe Links", _validDpns.size() + 1);
-        setPrintVal(_validPcieLinks, "Legend", "depth, pcie_index, node, port", ANSI_COLOR_RESET, true, true, true);
+        setPrintVal(_validPcieLinks, "Legend", "depth ,pcie_index ,node ,port ,bdf", ANSI_COLOR_RESET, true, true,
+                    true);
         for (u_int32_t i = 0; i < _validDpns.size(); i++)
         {
-            char dpnStr[20];
+            char dpnStr[128];
             int localPort = getLocalPortFromMPIR(_validDpns[i]);
-            sprintf(dpnStr, "%d, %d, %d, %d", _validDpns[i].depth, _validDpns[i].pcieIndex, _validDpns[i].node,
-                    localPort);
+            snprintf(dpnStr, sizeof(dpnStr), "%-5d ,%-10d ,%-4d ,%-4d ,%s", _validDpns[i].depth,
+                     _validDpns[i].pcieIndex, _validDpns[i].node, localPort, _validDpns[i].bdf.c_str());
             setPrintVal(_validPcieLinks, "Link " + to_string(i + 1), dpnStr, ANSI_COLOR_RESET, localPort >= 0, true,
                         true);
         }
@@ -2751,6 +2758,10 @@ void MlxlinkCommander::showPcie()
                 {
                     showPcieState(_validDpns[i]);
                 }
+                if (_userInput.isPcieErrInjProvided)
+                {
+                    break;
+                }
             }
         }
         else
@@ -2767,22 +2778,25 @@ void MlxlinkCommander::showPcie()
 
 void MlxlinkCommander::showPcieState(DPN& dpn)
 {
+    MlxlinkCmdPrint pcieInfoCmd;
     sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", dpn.depth, dpn.pcieIndex, dpn.node);
 
     string linkSpeedEnabled = " (" + pcieSpeedStr(getFieldValue("link_speed_enabled")) + ")";
     string linkWidthEnabled = " (" + to_string((getFieldValue("link_width_enabled"))) + "X)";
     _numOfLanesPcie = getFieldValue("link_width_active");
 
-    setPrintTitle(_pcieInfoCmd, "PCIe Operational (Enabled) Info", PCIE_INFO_LAST);
+    setPrintTitle(pcieInfoCmd, "PCIe Operational (Enabled) Info", PCIE_INFO_LAST);
 
     char dpnStr[15];
     sprintf(dpnStr, "%d, %d, %d", dpn.depth, dpn.pcieIndex, dpn.node);
-    setPrintVal(_pcieInfoCmd, "Depth, pcie index, node", dpnStr);
-    setPrintVal(_pcieInfoCmd, "Link Speed Active (Enabled)",
+    setPrintVal(pcieInfoCmd, "Depth, pcie index, node", dpnStr);
+    setPrintVal(pcieInfoCmd, "Link Speed Active (Enabled)",
                 pcieSpeedStr(getFieldValue("link_speed_active")) + linkSpeedEnabled);
-    setPrintVal(_pcieInfoCmd, "Link Width Active (Enabled)", to_string(_numOfLanesPcie) + "X" + linkWidthEnabled);
+    setPrintVal(pcieInfoCmd, "Link Width Active (Enabled)", to_string(_numOfLanesPcie) + "X" + linkWidthEnabled);
 
-    cout << _pcieInfoCmd;
+    pcieInfoCmd.toJsonFormat(_jsonRoot);
+
+    cout << pcieInfoCmd;
 }
 
 void MlxlinkCommander::collectAMBER()
@@ -4793,6 +4807,16 @@ void MlxlinkCommander::initEyeOpener()
 
 void MlxlinkCommander::initErrInj()
 {
+    _errInjector = new MlxlinkErrInjCommander(_jsonRoot);
+    _errInjector->_regLib = _regLib;
+    _errInjector->_mlxlinkLogger = _mlxlinkLogger;
+    _errInjector->_localPort = _localPort;
+    _errInjector->_force = _userInput.force;
+    _errInjector->_mlxlinkMaps = _mlxlinkMaps;
+}
+
+void MlxlinkCommander::handleRxErrInj()
+{
     try
     {
         gearboxBlock(PREI_RX_ERR_INJ_FLAG);
@@ -4822,11 +4846,7 @@ void MlxlinkCommander::initErrInj()
             throw MlxRegException("This feature supporting links running with NO-FEC only");
         }
 
-        _errInjector = new MlxlinkErrInjCommander(_jsonRoot);
-        _errInjector->_regLib = _regLib;
-        _errInjector->_mlxlinkLogger = _mlxlinkLogger;
-        _errInjector->_localPort = _localPort;
-        _errInjector->_force = _userInput.force;
+        initErrInj();
 
         if (_userInput.mixerOffset0 >= 0 || _userInput.mixerOffset1 >= 0)
         {
@@ -4841,9 +4861,41 @@ void MlxlinkCommander::initErrInj()
     }
     catch (MlxRegException& exc)
     {
-        _allUnhandledErrors += string("Reading RX error injection raised the following"
-                                      " exception:\n") +
-                               string(exc.what()) + string("\n");
+        _allUnhandledErrors +=
+          string("Reading RX error injection raised the following exception:\n") + string(exc.what()) + string("\n");
+    }
+}
+
+bool MlxlinkCommander::isMpeinjSupported()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_MPEINJ, GET, "depth=%d,pcie_index=%d,node=%d", _dpn.depth, _dpn.pcieIndex, _dpn.node);
+        return true;
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
+
+void MlxlinkCommander::handlePCIeErrInj()
+{
+    if (!isMpeinjSupported())
+    {
+        throw MlxRegException("The current device does not support PCIe Error Injection!");
+    }
+
+    initErrInj();
+
+    if (_userInput.errorType.empty())
+    {
+        _errInjector->showPcieErrInjState(_dpn);
+    }
+    else
+    {
+        _errInjector->startPcieErrInj(_dpn, _userInput.errorType, _userInput.errorDuration, _userInput.injDelay,
+                                      _userInput.dbdf, _userInput.parameters);
     }
 }
 
@@ -4942,7 +4994,6 @@ void MlxlinkCommander::prepareJsonOut()
     _troubInfoCmd.toJsonFormat(_jsonRoot);
     _toolInfoCmd.toJsonFormat(_jsonRoot);
     _testModeInfoCmd.toJsonFormat(_jsonRoot);
-    _pcieInfoCmd.toJsonFormat(_jsonRoot);
     _moduleInfoCmd.toJsonFormat(_jsonRoot);
     _berInfoCmd.toJsonFormat(_jsonRoot);
     _testModeBerInfoCmd.toJsonFormat(_jsonRoot);

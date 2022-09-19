@@ -1475,6 +1475,109 @@ string linkWidthMaskToStr(u_int32_t width)
     return widthStr;
 }
 
+string getBDFStr(u_int32_t bdf)
+{
+    char bdfBuff[128];
+
+    snprintf(
+      bdfBuff, sizeof(bdfBuff), "%02x:%02x.%x", (u_int8_t)(bdf >> 8), (u_int8_t)(bdf >> 3) & 0x1f, (u_int8_t)(bdf)&7);
+
+    return string(bdfBuff);
+}
+
+int getBDFInt(const string& bdfStr)
+{
+    u_int32_t bdf = 0;
+    try
+    {
+        auto pfStr = MlxlinkRecord::split(bdfStr, ":");
+        size_t sz;
+
+        // make sure that there is one ":" symbol
+        if (pfStr.size() != 2)
+        {
+            return -1;
+        }
+
+        // make sure that there it's matching this format xx:xx.x
+        if (pfStr[0].size() > 2 || pfStr[1].size() > 4)
+        {
+            return -1;
+        }
+
+        // append 0x to work with hex format only
+        pfStr[0] = "0x" + pfStr[0];
+        pfStr[1] = "0x" + pfStr[1];
+
+        // parse the main pcie function 00:xx.x
+        bdf = stoi(pfStr[0], &sz, 16);
+        bdf <<= 8;
+        if (sz != pfStr[0].size())
+        {
+            return -1;
+        }
+
+        // parse the port function par xx:00.0, split the sec
+        auto funcStr = MlxlinkRecord::split(pfStr[1], ".");
+        u_int32_t tmp = stoi(funcStr[0], &sz, 16);
+        tmp <<= 3;
+        bdf |= tmp;
+        if (sz != funcStr[0].size())
+        {
+            return -1;
+        }
+
+        // get the function number
+        bdf |= stoi(funcStr[1], &sz, 0);
+        if (sz != funcStr[1].size())
+        {
+            return -1;
+        }
+    }
+    catch (const exception& exp)
+    {
+        return -1;
+    }
+
+    return bdf;
+}
+
+size_t LevStrMatch(const string& source, const string& target)
+{
+    const size_t srcLen = source.size();
+    const size_t trgLen = target.size();
+    size_t idx = 0;
+
+    if (srcLen == 0)
+        return trgLen;
+    if (trgLen == 0)
+        return srcLen;
+
+    vector<size_t> costs(trgLen + 1);
+
+    for (idx = 0; idx < costs.size(); idx++)
+    {
+        costs[idx] = idx;
+    }
+
+    idx = 0;
+    for (auto srcChar : source)
+    {
+        costs[0] = idx + 1;
+        size_t corner = idx;
+        size_t jdx = 0;
+        for (auto trgChar : target)
+        {
+            size_t upper = costs[jdx + 1];
+            costs[jdx + 1] = (srcChar == trgChar) ? corner : 1 + min(min(upper, corner), costs[jdx]);
+            corner = upper;
+            ++jdx;
+        }
+        ++idx;
+    }
+    return costs[trgLen];
+}
+
 bool askUser(const char* question, bool force)
 {
     if (MlxlinkRecord::jsonFormat && force)

@@ -146,6 +146,13 @@ public:
 
     bool isModuleConfigParamsProvided;
     vector<pair<ControlParam, string>> configParamsToSet;
+
+    bool isPcieErrInjProvided;
+    string errorType;
+    int errorDuration;
+    int injDelay;
+    string dbdf;
+    vector<string> parameters;
 };
 
 #endif /* MLXLINK_USER_INPUT_H */

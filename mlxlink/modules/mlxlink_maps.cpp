@@ -47,13 +47,6 @@ MlxlinkMaps* MlxlinkMaps::getInstance()
 
 void MlxlinkMaps::initPublicStrings()
 {
-    _berCollectTitle =
-      "Test Mode (Nominal/Corner/Drift),Protocol,Speed [Gb/s],Active FEC,Iteration Number,Device PN,FW Version,Device "
-      "ID,Port Number,Media,Cable PN,Length [m],Attenuation [dB],"
-      "Test time [Min],Raw Errors Lane 0,Raw Errors Lane 1,Raw Errors Lane 2,Raw Errors Lane 3,Raw Errors Lane 4,Raw "
-      "Errors Lane 5,Raw Errors Lane 6,Raw Errors Lane 7,Link Down,Total Raw BER,Raw BER limit,"
-      "Effective Errors,Effective BER,Result,System Voltage,Chip Start Temp,Chip End Temp,Module Start Temp,Module End "
-      "Temp,Active RTN,Device SN,Cable SN,RX End BW [Gb/s]";
     _showErrorsTitle = "Errors";
 }
 
@@ -1191,6 +1184,31 @@ void MlxlinkMaps::activeComplianceMapping()
     _activeCableCompliance[4] = "Active Cable assembly with BER < 10-6";
 }
 
+void MlxlinkMaps::pcieEnumMapping()
+{
+    _pcieErrType[PCIE_ERR_TYPE_ABORT] = PcieErrType{"ABORT", 0, 0, 0, false, false, false, false, false, false, ""};
+    _pcieErrType[PCIE_ERR_TYPE_BAD_DLLP_LCRC] = PcieErrType{
+      "BAD_DLLP_LCRC", 100000, 1, PCIE_MAX_DURATION_HW_COUNTERS, true, false, false, false, false, false, "Packet"};
+    _pcieErrType[PCIE_ERR_TYPE_BAD_TLP_LCRC] = PcieErrType{
+      "BAD_TLP_LCRC", 100000, 1, PCIE_MAX_DURATION_HW_COUNTERS, true, true, false, false, false, false, "Packet"};
+    _pcieErrType[PCIE_ERR_TYPE_BAD_TLP_ECRC] = PcieErrType{
+      "BAD_TLP_ECRC", 100000, 1, PCIE_MAX_DURATION_HW_COUNTERS, true, true, false, false, false, false, "Packet"};
+    _pcieErrType[PCIE_ERR_TYPE_ERR_MSG] =
+      PcieErrType{"ERR_MSG", 0, 1, PCIE_MAX_DURATION, true, true, false, false, false, false, "Packet"};
+    _pcieErrType[PCIE_ERR_TYPE_MALFORMED_TLP] =
+      PcieErrType{"MALFORMED_TLP", 0, 1, PCIE_MAX_DURATION, true, false, false, false, false, true, "Packet"};
+    _pcieErrType[PCIE_ERR_TYPE_POISONED_TLP] =
+      PcieErrType{"POISONED_TLP", 0, 1, PCIE_MAX_DURATION, true, false, false, false, false, true, "Packet"};
+    _pcieErrType[PCIE_ERR_TYPE_UNEXPECTED_CPL] =
+      PcieErrType{"UNEXPECTED_CPL", 0, 1, PCIE_MAX_DURATION, true, true, true, false, false, true, "Packet"};
+    _pcieErrType[PCIE_ERR_TYPE_ACS_VIOLATION] =
+      PcieErrType{"ACS_VIOLATION", 0, 1, PCIE_MAX_DURATION, true, false, false, false, false, false, "Packet"};
+    _pcieErrType[PCIE_ERR_TYPE_SURP_LINK_DOWN] =
+      PcieErrType{"SURPRISE_LINK_DOWN", 100000, 1, PCIE_MAX_DURATION, true, true, false, false, false, false, "usec"};
+    _pcieErrType[PCIE_ERR_TYPE_RECEIVER_ERROR] =
+      PcieErrType{"RECEIVER_ERROR", 100000, 0, PCIE_MAX_DURATION, true, false, false, false, false, false, "usec"};
+}
+
 void MlxlinkMaps::initCableComplianceMapping()
 {
     qsfpComlianceMapping();
@@ -1216,6 +1234,7 @@ void MlxlinkMaps::initCableComplianceMapping()
     errorCodeResMapping();
     techMapping();
     modulePrbsMapping();
+    pcieEnumMapping();
 }
 
 void MlxlinkMaps::initCableTechnologyMapping()

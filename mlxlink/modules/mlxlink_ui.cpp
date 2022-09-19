@@ -305,6 +305,28 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PREI_SHOW_MIXERS_FLAG_SHORT, PREI_SHOW_MIXERS_FLAG, "",
                                  "Show mixer offset 0 and mixer offset 1");
 
+    MlxlinkRecord::printFlagLine(MPEINJ_PCIE_ERR_INJ_FLAG_SHORT, MPEINJ_PCIE_ERR_INJ_FLAG, "",
+                                 "Start/show PCIe error injection");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(MPEINJ_ERR_TYPE_FLAG_SHORT, MPEINJ_ERR_TYPE_FLAG, "type",
+                                 "PCIe error type [BAD_DLLP_LCRC(1),BAD_TLP_LCRC(2),BAD_TLP_ECRC(3),ERR_MSG(4),"
+                                 "MALFORMED_TLP(5),POISONED_TLP(6),UNEXPECTED_CPL(7),ACS_VIOLATION(8),"
+                                 "SURPRISE_LINK_DOWN(9),RECEIVER_ERROR(10)]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(MPEINJ_ERR_DURATION_FLAG_SHORT, MPEINJ_ERR_DURATION_FLAG, "duration",
+                                 "Error duration, depend on the error type, refer to the UM for more info (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(MPEINJ_INJ_DELAY_FLAG_SHORT, MPEINJ_INJ_DELAY_FLAG, "delay",
+                                 "Delay in micro-seconds before applying the error (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(MPEINJ_ERR_PARAMETERS_FLAG_SHORT, MPEINJ_ERR_PARAMETERS_FLAG, "params",
+                                 "Comma-separated parameters for selected error type (param0,param1,param2,param3), "
+                                 "refer to the UM for more info (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(MPEINJ_DBDF_FLAG_SHORT, MPEINJ_DBDF_FLAG, "dbdf",
+                                 "Destination bus device function, e.g af:00.0 (Optional used for specific error "
+                                 "type)");
+
     MlxlinkRecord::printFlagLine(PPHCR_FEC_HIST_FLAG_SHORT, PPHCR_FEC_HIST_FLAG, "",
                                  "Provide histogram of FEC errors. The result is divided to bins. "
                                  "Each bin is holding different number of errored bit within FEC protected block");
@@ -409,13 +431,20 @@ void MlxlinkUi::validatePCIeParams()
     if (_mlxlinkCommander->_userInput._portType == "PCIE")
     {
         _mlxlinkCommander->_userInput._pcie = true;
+
         if (_mlxlinkCommander->_uniqueCmds)
         {
             throw MlxRegException("Command flags are not available for PCIE");
         }
+
         if (_mlxlinkCommander->_networkCmds)
         {
             throw MlxRegException("FEC and Module Info flags are not available for PCIE");
+        }
+
+        if (_mlxlinkCommander->_uniquePcieCmds > 1)
+        {
+            throw MlxRegException("Commands are mutually exclusive!");
         }
 
         replace(_sendRegFuncMap.begin(), _sendRegFuncMap.end(), SHOW_PDDR, SHOW_PCIE);
@@ -716,6 +745,31 @@ void MlxlinkUi::validateErrInjParams()
             throw MlxRegException("Invalid mixer offset value, " + string(errMsg));
         }
     }
+
+    if (_mlxlinkCommander->_userInput.isPcieErrInjProvided)
+    {
+        if (!_mlxlinkCommander->_userInput._pcie)
+        {
+            throw MlxRegException("The PCIE error injection feature is applicable to the PCIe links only!");
+        }
+        if (_mlxlinkCommander->_userInput.errorType.empty())
+        {
+            if (_mlxlinkCommander->_userInput.errorDuration != -1 || !_mlxlinkCommander->_userInput.dbdf.empty() ||
+                _mlxlinkCommander->_userInput.injDelay != -1)
+            {
+                throw MlxRegException(MPEINJ_ERR_TYPE_FLAG " flag should be specified!");
+            }
+        }
+    }
+    if (_mlxlinkCommander->_userInput.errorDuration != -1 || !_mlxlinkCommander->_userInput.dbdf.empty() ||
+        _mlxlinkCommander->_userInput.injDelay != -1 || !_mlxlinkCommander->_userInput.errorType.empty() ||
+        !_mlxlinkCommander->_userInput.parameters.empty())
+    {
+        if (!_mlxlinkCommander->_userInput.isPcieErrInjProvided)
+        {
+            throw MlxRegException(MPEINJ_PCIE_ERR_INJ_FLAG " flag should be specified!");
+        }
+    }
 }
 
 void MlxlinkUi::validatePortInfoParams()
@@ -849,6 +903,12 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PREI_MIXER_OFFSET_1, PREI_MIXER_OFFSET_1_SHORT, "value", "Eye centering control");
     AddOptions(PREI_SHOW_MIXERS_FLAG, PREI_SHOW_MIXERS_FLAG_SHORT, "", "Show mixers offset values");
 
+    AddOptions(MPEINJ_PCIE_ERR_INJ_FLAG, MPEINJ_PCIE_ERR_INJ_FLAG_SHORT, "", "");
+    AddOptions(MPEINJ_ERR_TYPE_FLAG, MPEINJ_ERR_TYPE_FLAG_SHORT, "type", "");
+    AddOptions(MPEINJ_ERR_DURATION_FLAG, MPEINJ_ERR_DURATION_FLAG_SHORT, "duration", "");
+    AddOptions(MPEINJ_INJ_DELAY_FLAG, MPEINJ_INJ_DELAY_FLAG_SHORT, "delay", "");
+    AddOptions(MPEINJ_DBDF_FLAG, MPEINJ_DBDF_FLAG_SHORT, "dbdf", "");
+    AddOptions(MPEINJ_ERR_PARAMETERS_FLAG, MPEINJ_ERR_PARAMETERS_FLAG_SHORT, "params", "");
     AddOptions(PPHCR_FEC_HIST_FLAG, PPHCR_FEC_HIST_FLAG_SHORT, "", "Provide histogram of FEC errors");
     AddOptions(PPHCR_SHOW_FEC_HIST_FLAG, PPHCR_SHOW_FEC_HIST_FLAG_SHORT, "", "Show FEC errors histograms");
     AddOptions(PPHCR_CLEAR_HISTOGRAM_FLAG, PPHCR_CLEAR_HISTOGRAM_FLAG_SHORT, "", "Clears FEC errors histograms");
@@ -975,8 +1035,8 @@ void MlxlinkUi::commandsCaller()
                 _mlxlinkCommander->initEyeOpener();
                 break;
             case ERR_INJ_ENABLE:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> Error injection");
-                _mlxlinkCommander->initErrInj();
+                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> RX Error injection");
+                _mlxlinkCommander->handleRxErrInj();
                 break;
             case RS_FEC_HISTOGRAM:
                 PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> FEC histogram info");
@@ -989,6 +1049,10 @@ void MlxlinkUi::commandsCaller()
             case CABLE_CTRL_PARM:
                 PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> Cable Control Parameter");
                 _mlxlinkCommander->performControlParams();
+                break;
+            case PCIE_ERROR_INJ:
+                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> PCIE Error injection");
+                _mlxlinkCommander->handlePCIeErrInj();
                 break;
             default:
                 break;
@@ -1347,6 +1411,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == MARGIN_SCAN_FLAG)
     {
         addCmd(GRADE_SCAN_ENABLE);
+        _mlxlinkCommander->_uniquePcieCmds++;
         return PARSE_OK;
     }
     else if (name == EYE_MEASURE_TIME_FLAG)
@@ -1530,6 +1595,38 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_AMP, value));
         return PARSE_OK;
     }
+    else if (name == MPEINJ_PCIE_ERR_INJ_FLAG)
+    {
+        addCmd(PCIE_ERROR_INJ);
+        _mlxlinkCommander->_userInput.isPcieErrInjProvided = true;
+        _mlxlinkCommander->_uniquePcieCmds++;
+        return PARSE_OK;
+    }
+    else if (name == MPEINJ_ERR_TYPE_FLAG)
+    {
+        _mlxlinkCommander->_userInput.errorType = toUpperCase(value);
+        return PARSE_OK;
+    }
+    else if (name == MPEINJ_ERR_DURATION_FLAG)
+    {
+        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput.errorDuration);
+        return PARSE_OK;
+    }
+    else if (name == MPEINJ_INJ_DELAY_FLAG)
+    {
+        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput.injDelay);
+        return PARSE_OK;
+    }
+    else if (name == MPEINJ_ERR_PARAMETERS_FLAG)
+    {
+        _mlxlinkCommander->_userInput.parameters = _mlxlinkCommander->parseParamsFromLine(value);
+        return PARSE_OK;
+    }
+    else if (name == MPEINJ_DBDF_FLAG)
+    {
+        _mlxlinkCommander->_userInput.dbdf = value;
+        return PARSE_OK;
+    }
     return PARSE_ERROR;
 }
 
@@ -1548,9 +1645,11 @@ int MlxlinkUi::run(int argc, char** argv)
     {
         throw MlxRegException("failed to parse arguments. " + string(_cmdParser.GetErrDesc()));
     }
+
     paramValidate();
+
     _mlxlinkCommander->_mf = mopen(_mlxlinkCommander->_device.c_str());
-    ;
+
     if (!_mlxlinkCommander->_mf)
     {
         throw MlxRegException("Failed to open device: \"" + _mlxlinkCommander->_device + "\", " + strerror(errno));
@@ -1559,6 +1658,7 @@ int MlxlinkUi::run(int argc, char** argv)
     {
         throw MlxRegException("Device is not supported");
     }
+
     MlxRegLib::isAccessRegisterSupported(_mlxlinkCommander->_mf);
     _mlxlinkCommander->_regLib =
       new MlxRegLib(_mlxlinkCommander->_mf, _mlxlinkCommander->_extAdbFile, _mlxlinkCommander->_useExtAdb);
@@ -1595,7 +1695,9 @@ int MlxlinkUi::run(int argc, char** argv)
     {
         _mlxlinkCommander->_mlxlinkLogger = new MlxlinkLogger(_mlxlinkCommander->_userInput._logFilePath);
     }
+
     commandsCaller();
+
     if (_mlxlinkCommander->_allUnhandledErrors != "")
     {
         exit_code = 1;
