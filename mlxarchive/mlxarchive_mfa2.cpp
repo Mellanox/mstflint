@@ -99,7 +99,7 @@ void MFA2::pack(vector<u_int8_t>& buff)
         (*it).packData(componentsBlockBuff);
     }
     u_int32_t zippedSize = componentsBlockBuff.size();
-    zippedSize = xz_compress_crc32(8, componentsBlockBuff.data(), componentsBlockBuff.size(), NULL, 0);
+    zippedSize = xz_compress_crc32(9, componentsBlockBuff.data(), componentsBlockBuff.size(), NULL, 0);
     if (zippedSize <= 0)
     {
         // TODO throw exception
@@ -108,9 +108,13 @@ void MFA2::pack(vector<u_int8_t>& buff)
     }
     _packageDescriptor.setComponentsBlockArchiveSize(zippedSize);
     vector<u_int8_t> zippedComponentBlockBuff(zippedSize);
-    xz_compress_crc32(9, componentsBlockBuff.data(), componentsBlockBuff.size(), zippedComponentBlockBuff.data(),
-                      zippedSize);
-
+    u_int32_t actualZippedSize = xz_compress_crc32(9, componentsBlockBuff.data(), componentsBlockBuff.size(),
+                                                   zippedComponentBlockBuff.data(), zippedSize);
+    if (zippedSize != actualZippedSize)
+    {
+        printf("-E- zipped size not as expected\n");
+        exit(1);
+    }
     // compute descriptors SHA256
     vector<u_int8_t> descriptorsBuff;
     packDescriptors(descriptorsBuff);
