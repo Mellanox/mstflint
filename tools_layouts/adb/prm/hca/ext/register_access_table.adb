@@ -35,7 +35,7 @@
 <config  field_attr="capability" type="ascii" />
 <config  field_attr="target" type="ascii" />
 <config  field_attr="version" type="ascii" />
-<info source_doc_name="Mellanox &lt;Doc Name&gt;" source_doc_version="Rev 0.58" />
+<info source_doc_name="" source_doc_version="" />
 <node name="IB_long_portcntrs_attribute_grp_data_ext" descr="" size="0xf8.0" >
 	<field name="symbol_error_counter_high" descr="For counter description please refer to the InfiniBand specification" access="RO" offset="0x0.0" size="0x4.0" />
 	<field name="symbol_error_counter_low" descr="For counter description please refer to the InfiniBand specification" access="RO" offset="0x4.0" size="0x4.0" />
@@ -126,7 +126,7 @@
 </node>
 
 <node name="access_reg_summary_ctrl_ext" descr="" attr_is_union="1" size="0x4.0" >
-	<field name="id" descr="" subnode="enum_entry" enum="UNIT_PERF_COUNTERS_=0x100,MISC_COUNTERS=0x104,Loopback_Control_Register=0x700,DB_TRESHOLD=0x701,DCBX_PARAM=0x4020,DCBX_APPLICATION=0x4021,QPTS=0x4002,QPDPM=0x4013,QETCR=0x4005,QSHR=0x4030,QEEC=0x400d,QPDP=0x4007,QPRT=0x4008,QTCT=0x400a,QSPIP=0x400e,QSPCP=0x401e,QHLL=0x4016,QCAM=0x4019,ROCE_ACCL=0x402c,PCAM=0x507f,PCAP=0x5001,PTYS=0x5004,PAOS=0x5006,PLTC=0x5046,PPCNT=0x5008,PGMR=0x5039,PTER=0x5055,PREI=0x5058,PGUID=0x5066,PMLP=0x5002,PMAOS=0x5012,PMMP=0x5044,PMCR=0x5045,PMPT=0x5064,PMPD=0x5065,PPLR=0x5018,PPLM=0x5023,SLTP=0x5027,SLRG=0x5028,PDDR=0x5031,PPTT=0x5036,PPRT=0x5037,PPHCR=0x503e,PPAOS=0x5040,SLRED=0x505a,PMTU=0x5003,PPAD=0x5005,PFCC=0x5007,PPTB=0x500b,PBMC=0x500c,PBSR=0x5038,PCMR=0x5041,PVLS=0x504b,PPCC=0x506e,SET_NODE=0x6001,POWER_SETTINGS=0x7001,FP_SL_MAP=0x7002,HOST_ENDIANNESS=0x7004,MPFM=0x9022,MPEIN=0x9050,MPCNT=0x9051,MPIR=0x9059,MPECS=0x905b,MMDIO=0x9017,MLCR=0x902b,MGCR=0x903a,MHMPR=0x905d,MJTAG=0x901f,MFM=0x901d,MHSR=0x901e,MTPPS=0x9053,MTUTC=0x9055,MRTC=0x902d,MPGO=0x9058,MSECQ=0x9155,MSEES=0x9156,MSPI=0x9029,MCIA=0x9014,MCION=0x9052,MDDT=0x9160,MDDQ=0x9161,MDDC=0x9163,MGPIR=0x9100,MDRCR=0x9102,MDFCR=0x9101,MTCAP=0x9009,MTECR=0x9109,MTMP=0x900a,MTWE=0x900b,MTEWE=0x910b,MTBR=0x900f,MVCAP=0x902e,MVCR=0x900c,MSPS=0x900d,MCPP=0x900e,MRSR=0x9023,MFRL=0x9028,MCQS=0x9060,MCQI=0x9061,MCC=0x9062,MCDA=0x9063,MCDD=0x905c,MIRC=0x9162,MQIS=0x9064,MGIR=0x9020,MSGI=0x9021,MDIR=0x911a,MSSIR=0x9105,MMIA=0x9016,MINI=0x905e,MCAM=0x907f,MECCC=0x905f,MBCT=0x9120,MDSR=0x9110,MFSV=0x9115,MTCQ=0x9065,MQDIK=0x9116,MKDC=0x9066,MSPMER=0x9067,MNVDA=0x9024,MNVDI=0x9025,MNVQC=0x9030,MNVIA=0x9033,MNVGC=0x9034,MNVGN=0x9035,MGNLE=0x9036,MTRC_CAP=0x9040,MTRC_CONF=0x9041,MTRC_STDB=0x9042,MTRC_CTRL=0x9043,MFPA=0x9010,MFBA=0x9011,MFBE=0x9012,MFMC=0x9013,MFCR=0x9001,MFSC=0x9002,MFSM=0x9003,MFSL=0x9004,FORE=0x9007,MFNR=0x903b,MPCIR=0x905a,MERR=0x903c,MRPR=0x9117,MDCR=0x9111,MMHI=0x904a,CWGCR=0x2801,CWTP=0x2802,CWPP=0x2804,CWTPM=0x2803,CPQE=0x2806,CHLTR=0x2810,CHLTM=0x2811,CHLMM=0x2812,CNCT=0x2030,CPCS=0x2031,CPID=0x2032,CNMC=0x2033,CWCAM=0x281f,SBGCR=0xb000,SBPR=0xb001,SBCM=0xb002,SBPM=0xb003,SBMM=0xb004,SBME=0xb00e,SBSR=0xb005,SBIB=0xb006,SBDCC=0xb007,SBDCM=0xb008,SBDCR=0xb019,SBHBR=0xb00a,SBHRR=0xb00b,SBHBR_V2=0xb011,SBHRR_V2=0xb012,SBCTC=0xb00c,SBCTR=0xb00d,SBCTS=0xb00f,SBHPC=0xb013,SBSNT=0xb020,SBSNS=0xb021,SBSNTE=0xb022,SBCAM=0xb01f,NCFG=0xc001,CRYPTO_OPERATIONAL=0xc002,IMPORT_KEK_HANDLE=0xc004,CREDENTIAL_HANDLE=0xc005,ZTT=0xc006,VHCA_TRUST_LEVEL=0xc007,PORT_STATE_BEHAVIOR=0xc008,HCA_CMD_ENCAP=0xc009,NVMF_TARGET_PACER_DEFAULTS=0xc00a" offset="0x0.0" size="0x4.0" />
+	<field name="id" descr="" subnode="enum_entry" enum="UNIT_PERF_COUNTERS_=0x100,MISC_COUNTERS=0x104,Loopback_Control_Register=0x700,DB_TRESHOLD=0x701,DCBX_PARAM=0x4020,DCBX_APPLICATION=0x4021,QPTS=0x4002,QPDPM=0x4013,QETCR=0x4005,QSHR=0x4030,QEEC=0x400d,QPDP=0x4007,QPRT=0x4008,QTCT=0x400a,QSPIP=0x400e,QSPCP=0x401e,QHLL=0x4016,QCAM=0x4019,ROCE_ACCL=0x402c,PCAM=0x507f,PCAP=0x5001,PTYS=0x5004,PAOS=0x5006,PLTC=0x5046,PPCNT=0x5008,PGMR=0x5039,PTER=0x5055,PREI=0x5058,PGUID=0x5066,PMLP=0x5002,PMAOS=0x5012,PMMP=0x5044,PMCR=0x5045,PMPT=0x5064,PMPD=0x5065,PPLR=0x5018,PPLM=0x5023,SLTP=0x5027,SLRG=0x5028,PDDR=0x5031,PPTT=0x5036,PPRT=0x5037,PPHCR=0x503e,PPAOS=0x5040,SLRED=0x505a,PMTU=0x5003,PPAD=0x5005,PFCC=0x5007,PPTB=0x500b,PBMC=0x500c,PBSR=0x5038,PCMR=0x5041,PVLS=0x504b,PPCC=0x506e,SET_NODE=0x6001,POWER_SETTINGS=0x7001,FP_SL_MAP=0x7002,HOST_ENDIANNESS=0x7004,MPFM=0x9022,MPEIN=0x9050,MPCNT=0x9051,MPEGC=0x9056,MPIR=0x9059,MPECS=0x905b,MPEINJ=0x9057,MMDIO=0x9017,MLCR=0x902b,MGCR=0x903a,MHMPR=0x905d,MJTAG=0x901f,MFM=0x901d,MHSR=0x901e,MTPPS=0x9053,MTUTC=0x9055,MRTC=0x902d,MPGO=0x9058,MSECQ=0x9155,MSEES=0x9156,MSPI=0x9029,MCIA=0x9014,MCION=0x9052,MDDT=0x9160,MDDQ=0x9161,MDDC=0x9163,MGPIR=0x9100,MDRCR=0x9102,MDFCR=0x9101,MTCAP=0x9009,MTECR=0x9109,MTMP=0x900a,MTWE=0x900b,MTEWE=0x910b,MTBR=0x900f,MVCAP=0x902e,MVCR=0x900c,MSPS=0x900d,MCPP=0x900e,MRSR=0x9023,MFRL=0x9028,MCQS=0x9060,MCQI=0x9061,MCC=0x9062,MCDA=0x9063,MCDD=0x905c,MIRC=0x9162,MQIS=0x9064,MGIR=0x9020,MSGI=0x9021,MDIR=0x911a,MSSIR=0x9105,MMIA=0x9016,MINI=0x905e,MCAM=0x907f,MECCC=0x905f,MBCT=0x9120,MDSR=0x9110,MFSV=0x9115,MTCQ=0x9065,MQDIK=0x9116,MKDC=0x9066,MSPMER=0x9067,MNVDA=0x9024,MNVDI=0x9025,MNVQC=0x9030,MNVIA=0x9033,MNVGC=0x9034,MNVGN=0x9035,MGNLE=0x9036,MTRC_CAP=0x9040,MTRC_CONF=0x9041,MTRC_STDB=0x9042,MTRC_CTRL=0x9043,MFPA=0x9010,MFBA=0x9011,MFBE=0x9012,MFMC=0x9013,MFCR=0x9001,MFSC=0x9002,MFSM=0x9003,MFSL=0x9004,FORE=0x9007,MFNR=0x903b,MPCIR=0x905a,MERR=0x903c,MRPR=0x9117,MDCR=0x9111,MMHI=0x904a,CWGCR=0x2801,CWTP=0x2802,CWPP=0x2804,CWTPM=0x2803,CPQE=0x2806,CHLTR=0x2810,CHLTM=0x2811,CHLMM=0x2812,CNCT=0x2030,CPCS=0x2031,CPID=0x2032,CNMC=0x2033,CWCAM=0x281f,SBGCR=0xb000,SBPR=0xb001,SBCM=0xb002,SBPM=0xb003,SBMM=0xb004,SBME=0xb00e,SBSR=0xb005,SBIB=0xb006,SBDCC=0xb007,SBDCM=0xb008,SBDCR=0xb019,SBHBR=0xb00a,SBHRR=0xb00b,SBHBR_V2=0xb011,SBHRR_V2=0xb012,SBCTC=0xb00c,SBCTR=0xb00d,SBCTS=0xb00f,SBHPC=0xb013,SBSNT=0xb020,SBSNS=0xb021,SBSNTE=0xb022,SBCAM=0xb01f,NCFG=0xc001,CRYPTO_OPERATIONAL=0xc002,IMPORT_KEK_HANDLE=0xc004,CREDENTIAL_HANDLE=0xc005,ZTT=0xc006,VHCA_TRUST_LEVEL=0xc007,PORT_STATE_BEHAVIOR=0xc008,HCA_CMD_ENCAP=0xc009,NVMF_TARGET_PACER_DEFAULTS=0xc00a" offset="0x0.0" size="0x4.0" />
 </node>
 
 <node name="access_reg_summary_ext" descr="" attr_is_union="1" size="0x420" >
@@ -191,8 +191,10 @@
 	<field name="mpfm" descr="" subnode="mpfm_ext" capability="0" offset="0x0.0" selected_by="MPFM" size="0x8" />
 	<field name="mpein_reg" descr="" subnode="mpein_reg_ext" capability="0" offset="0x0.0" selected_by="MPEIN" size="0x30" />
 	<field name="mpcnt_reg" descr="" subnode="mpcnt_reg_ext" capability="0" offset="0x0.0" selected_by="MPCNT" size="0x100" />
+	<field name="mpegc_reg" descr="" subnode="mpegc_reg_ext" capability="0" offset="0x0.0" selected_by="MPEGC" size="0x2c" />
 	<field name="mpir" descr="" subnode="mpir_ext" capability="0" offset="0x0.0" selected_by="MPIR" size="0x10" />
 	<field name="mpecs_reg" descr="" subnode="mpecs_reg_ext" capability="0" offset="0x0.0" selected_by="MPECS" size="0x20" />
+	<field name="mpeinj_reg" descr="" subnode="mpeinj_reg_ext" capability="0" offset="0x0.0" selected_by="MPEINJ" size="0x20" />
 	<field name="mmdio" descr="" subnode="mmdio_ext" capability="0" offset="0x0.0" selected_by="MMDIO" size="0xc" />
 	<field name="mlcr" descr="" subnode="mlcr_ext" capability="0" offset="0x0.0" selected_by="MLCR" size="0xc" />
 	<field name="mgcr_reg" descr="" subnode="mgcr_reg_ext" capability="0" offset="0x0.0" selected_by="MGCR" size="0x20" />
@@ -380,7 +382,7 @@
 	<field name="version" descr="Configuration item version - defines the data structure following the header (together with the type field)." access="RW" offset="0x0.12" size="0x0.4" />
 	<field name="writer_id" descr="The entity which configured this parameter\;0x0: UNSPECIFIED\;0x1: CHASSIS_BMC\;0x2: MAD\;0x3: BMC\;0x4: COMMAND_INTERFACE\;0x5: ICMD - with unspecified source\;0x6: ICMD_UEFI_HII - configured by the NIC&apos;s UEFI expansion ROM&quot;s HII menu.\;0x7: ICMD_UEFI_CLP - configured by the NIC&apos;s expansion ROM&quot;s CLP.\;0x8: ICMD_Flexboot - configured by the NIC&quot;s legacy expansion ROM.\;0x9: ICMD_mlxconfig - configured by Mellanox mlxconfig tool\;0xA: ICMD_USER1 - value available for customer created tools that uses the ICMD interface for writing TLVs.\;0xB: ICMD_USER2 - value available for customer created tools that uses the ICMD interface for writing TLVs.\;0xC: ICMD_MLXCONFIG_SET_RAW - configures by\;mlxconfig set raw operation.\;0xD: ICMD_FLEXBOOT_CLP - configured by Legacy Expansion ROM CLP\;0x10: BMC_APP1 - Configuration was done over the BMC by application #1 (application name is OEM specific)\;0x11: BMC_APP2 - Configuration was done over the BMC by application #2 (application name is OEM specific)\;0x12: BMP_APP3 - Configuration was done over the BMC by application #3 (application name is OEM specific)\;0x1F: OTHER - the parameter was written by the NIC due to other reasons. \;\;Note - This field is writeable only when using the ICMD interface. The only value that are valid for writes are 0x6 through 0xB. Other values will be replaced by 0x5ICMD." access="RO" enum="UNSPECIFIED=0x0,CHASSIS_BMC=0x1,MAD=0x2,BMC=0x3,COMMAND_INTERFACE=0x4,ICMD=0x5,ICMD_UEFI_HII=0x6,ICMD_UEFI_CLP=0x7,ICMD_Flexboot=0x8,ICMD_mlxconfig=0x9,ICMD_USER1=0xa,ICMD_USER2=0xb,ICMD_MLXCONFIG_SET_RAW=0xc,ICMD_FLEXBOOT_CLP=0xd,BMC_APP1=0x10,BMC_APP2=0x11,BMP_APP3=0x12,OTHER=0x1f" offset="0x0.16" size="0x0.5" />
 	<field name="access_mode" descr="Defines which value of the Configuration Item will be accessed.\;0: NEXT - Next value to be applied 1: CURRENT - Currently set values (only valid for Query operation) Supported only if NVGC.nvda_read_current_settings==1.2: FACTORY - Default factory values (only valid for Query operation). Supported only if NVGC.nvda_read_factory_settings==1." access="INDEX" enum="NEXT=0x0" offset="0x0.22" size="0x0.2" />
-	<field name="type_index" descr="Configuration item index according to its type_class. \;Table 1981, &quot;Configuration Item Data Type Class Global Layout,&quot; on page 2287\;Table 1983, &quot;Configuration Item Data Type Class Physical Port Layout,&quot; on page 2287\;Table 1985, &quot;Configuration Item Data Type Class Per Host-PF Layout,&quot; on page 2288\;Table 1987, &quot;Configuration Item Data Type Class Log Layout,&quot; on page 2288\;Table 1989, &quot;Configuration Item Data Type Class File Layout,&quot; on page 2289\;Table 1991, &quot;Configuration Item Data Type Class Host Layout,&quot; on page 2289\;\;Table 1995, &quot;Configuration Item Data Type Class Module Layout,&quot; on page 2290" access="INDEX" offset="0x4.0" size="0x0.24" />
+	<field name="type_index" descr="Configuration item index according to its type_class. \;Table 1986, &quot;Configuration Item Data Type Class Global Layout,&quot; on page 2288\;Table 1988, &quot;Configuration Item Data Type Class Physical Port Layout,&quot; on page 2288\;Table 1990, &quot;Configuration Item Data Type Class Per Host-PF Layout,&quot; on page 2289\;Table 1992, &quot;Configuration Item Data Type Class Log Layout,&quot; on page 2289\;Table 1994, &quot;Configuration Item Data Type Class File Layout,&quot; on page 2290\;Table 1996, &quot;Configuration Item Data Type Class Host Layout,&quot; on page 2290\;\;Table 2000, &quot;Configuration Item Data Type Class Module Layout,&quot; on page 2291" access="INDEX" offset="0x4.0" size="0x0.24" />
 	<field name="type_class" descr="Type Class:\;0: Global\;1: Port\;2: BMC\;3: Host_PF\;6: File\;7: Host\;\;9: Module" access="INDEX" enum="Global=0x0,Port=0x1,BMC=0x2,Host_PF=0x3,File=0x6,Host=0x7,Module=0x9" offset="0x4.24" size="0x0.8" />
 </node>
 
@@ -907,7 +909,7 @@
 
 <node name="mcda_reg_ext" descr="" size="0x90.0" >
 	<field name="update_handle" descr="Update handle registered when the FSM was activated." access="RW" offset="0x0.0" size="0x0.24" />
-	<field name="offset" descr="Offset of accessed address relative to component start. Accesses must be in accordance to log_mcda_word_size in Table 1907, &quot;MCQI CAPABILITIES Info Layout,&quot; on page 2233" access="RW" offset="0x4.0" size="0x4.0" />
+	<field name="offset" descr="Offset of accessed address relative to component start. Accesses must be in accordance to log_mcda_word_size in Table 1912, &quot;MCQI CAPABILITIES Info Layout,&quot; on page 2234" access="RW" offset="0x4.0" size="0x4.0" />
 	<field name="size" descr="Size of the data accessed, given in bytes" access="RW" offset="0x8.0" size="0x0.16" />
 	<field name="data" descr="Data block accessed" access="RW" high_bound="31" low_bound="0" offset="0x10.0" size="0x80.0" />
 </node>
@@ -1011,7 +1013,7 @@
 	<field name="info_size" descr="Properties set structure size, given in bytes." access="RO" offset="0xC.0" size="0x4.0" />
 	<field name="offset" descr="The requested/returned data offset from the section start, given in bytes.\;Must be DWORD aligned." access="RW" offset="0x10.0" size="0x4.0" />
 	<field name="data_size" descr="The requested/returned data size, given in bytes.\;If data_size is not DWORD aligned, the last bytes are zero padded." access="RW" offset="0x14.0" size="0x0.16" />
-	<field name="data" descr="Properties set structure according to info_type.\;CAPABILITIES - See Table 1907, &quot;MCQI CAPABILITIES Info Layout,&quot; on page 2233\;VERSION - See Table 1909, &quot;MCQI VERSION Info Layout,&quot; on page 2235\;ACTIVATION_METHOD - See Table 1913, &quot;MCQI ACTIVATION_METHOD Info Layout,&quot; on page 2237\;LINKX_PREPERTIES - See Table 1915, &quot;MCQI LINKX_PROPERTIES Info Layout,&quot; on page 2238" subnode="mcqi_reg_data_auto_ext" access="RO" offset="0x18.0" size="0x7c.0" union_selector="$(parent).info_type" />
+	<field name="data" descr="Properties set structure according to info_type.\;CAPABILITIES - See Table 1912, &quot;MCQI CAPABILITIES Info Layout,&quot; on page 2234\;VERSION - See Table 1914, &quot;MCQI VERSION Info Layout,&quot; on page 2236\;ACTIVATION_METHOD - See Table 1918, &quot;MCQI ACTIVATION_METHOD Info Layout,&quot; on page 2238\;LINKX_PREPERTIES - See Table 1920, &quot;MCQI LINKX_PROPERTIES Info Layout,&quot; on page 2239" subnode="mcqi_reg_data_auto_ext" access="RO" offset="0x18.0" size="0x7c.0" union_selector="$(parent).info_type" />
 </node>
 
 <node name="mcqi_version_ext" descr="" size="0x7c.0" >
@@ -1019,8 +1021,8 @@
 	<field name="user_defined_time_valid" descr="When set, the component has a valid user-defined version time-stamp in user_defined_time" access="RW" offset="0x0.28" size="0x0.1" />
 	<field name="build_time_valid" descr="When set, the component has a valid creation time-stamp in build_time" access="RW" offset="0x0.29" size="0x0.1" />
 	<field name="version" descr="Version number" access="RW" offset="0x4.0" size="0x4.0" />
-	<field name="build_time" descr="Time of component creation. Valid only if build_time_valid is set. See Table 1911, &quot;Date-Time Layout,&quot; on page 2236" subnode="uint64" access="RW" offset="0x8.0" size="0x8.0" />
-	<field name="user_defined_time" descr="User-defined time assigned to the component version. Valid only if user_defined_time_valid is set. See Table 1911, &quot;Date-Time Layout,&quot; on page 2236" subnode="uint64" access="RW" offset="0x10.0" size="0x8.0" />
+	<field name="build_time" descr="Time of component creation. Valid only if build_time_valid is set. See Table 1916, &quot;Date-Time Layout,&quot; on page 2237" subnode="uint64" access="RW" offset="0x8.0" size="0x8.0" />
+	<field name="user_defined_time" descr="User-defined time assigned to the component version. Valid only if user_defined_time_valid is set. See Table 1916, &quot;Date-Time Layout,&quot; on page 2237" subnode="uint64" access="RW" offset="0x10.0" size="0x8.0" />
 	<field name="build_tool_version" descr="Build tool version number.\;Valid only when not equal to 0" access="RW" offset="0x18.0" size="0x4.0" />
 	<field name="version_string" descr="NULL terminated string representing the version." access="RW" high_bound="91" low_bound="0" offset="0x20.24" size="0x5c.0" />
 </node>
@@ -1042,7 +1044,7 @@
 	<field name="device_type" descr="Peripheral device type\;1: XM" access="INDEX" offset="0x0.0" size="0x0.8" />
 	<field name="slot_index" descr="Slot index\;0: Main board" access="INDEX" offset="0x0.16" size="0x0.4" />
 	<field name="device_index" descr="Device number \;For gearboxes, the index represents the gearbox die." access="INDEX" offset="0x4.0" size="0x0.12" />
-	<field name="device_status_data" descr="Device initialization Data. \;For XM status, see Table 2049, &quot;MDCR - XM Data Layout,&quot; on page 2322" subnode="mdcr_xm_data_ext" access="RO" offset="0x10.0" size="0x50.0" />
+	<field name="device_status_data" descr="Device initialization Data. \;For XM status, see Table 2054, &quot;MDCR - XM Data Layout,&quot; on page 2323" subnode="mdcr_xm_data_ext" access="RO" offset="0x10.0" size="0x50.0" />
 </node>
 
 <node name="mdcr_xm_data_ext" descr="" size="0x50.0" >
@@ -1076,7 +1078,7 @@
 	<field name="response_message_sequence" descr="Response message sequential number. \;For a specific request, the response message sequential number is the following one. \;In addition, the last message should be 0." access="RO" offset="0x4.16" size="0x0.8" />
 	<field name="query_index" descr="Index related to the specific query_type. \;For query_type = 1,2,3 this field is neglected." access="INDEX" offset="0x8.0" size="0x0.8" />
 	<field name="data_valid" descr="If set, the data in the data field is valid and contain the information for the queried index. \;Note: This field is not reflecting any validity of the data while accessing a non-existing query entity. Querying with an out of range index will lead to BAD_PARAM status of the register." access="RO" offset="0x8.31" size="0x0.1" />
-	<field name="data" descr="Properties of that field are based on query_type.\;For slot information query_type data - see Table 1857, &quot;MDDQ slot_info Layout,&quot; on page 2194\;For devices on slot query_type data - see Table 1859, &quot;MDDQ device_info Register Layout,&quot; on page 2195\;For slot name query_type data - see Table 1861, &quot;MDDQ slot_name Layout,&quot; on page 2197" subnode="mddq_data_auto_ext" access="RO" offset="0x10.0" size="0x20.0" union_selector="$(parent).query_type" />
+	<field name="data" descr="Properties of that field are based on query_type.\;For slot information query_type data - see Table 1862, &quot;MDDQ slot_info Layout,&quot; on page 2195\;For devices on slot query_type data - see Table 1864, &quot;MDDQ device_info Register Layout,&quot; on page 2196\;For slot name query_type data - see Table 1866, &quot;MDDQ slot_name Layout,&quot; on page 2198" subnode="mddq_data_auto_ext" access="RO" offset="0x10.0" size="0x20.0" union_selector="$(parent).query_type" />
 </node>
 
 <node name="mddt_reg_ext" descr="" size="0x110.0" >
@@ -1085,7 +1087,7 @@
 	<field name="type" descr="0: PRM_Register\;1: Command\;2: CrSpace_access - [Internal]" access="OP" enum="PRM_Register=0x0,Command=0x1,CrSpace_access=0x2" offset="0x4.0" size="0x0.2" />
 	<field name="write_size" descr="Write size in D-Words." access="OP" offset="0x4.16" size="0x0.8" />
 	<field name="read_size" descr="Read size in D-Words." access="OP" offset="0x4.24" size="0x0.8" />
-	<field name="payload" descr="Payload\;For PRM Register type payload- See Table 1849, &quot;PRM Register Payload Layout,&quot; on page 2190\;For Command type payload - See Table 1851, &quot;Command Payload Layout,&quot; on page 2191\;For CrSpace type payload - See Table 1853, &quot;CrSpace access Payload Layout,&quot; on page 2191" subnode="mddt_reg_payload_auto_ext" access="RW" offset="0xC.0" size="0x104.0" union_selector="$(parent).type" />
+	<field name="payload" descr="Payload\;For PRM Register type payload- See Table 1854, &quot;PRM Register Payload Layout,&quot; on page 2191\;For Command type payload - See Table 1856, &quot;Command Payload Layout,&quot; on page 2192\;For CrSpace type payload - See Table 1858, &quot;CrSpace access Payload Layout,&quot; on page 2192" subnode="mddt_reg_payload_auto_ext" access="RW" offset="0xC.0" size="0x104.0" union_selector="$(parent).type" />
 </node>
 
 <node name="mddt_reg_payload_auto_ext" descr="" attr_is_union="1" size="0x104.0" >
@@ -1256,9 +1258,9 @@
 </node>
 
 <node name="mgir_ext" descr="" size="0xa0.0" >
-	<field name="hw_info" descr="Hardware Information, see Table 1929, &quot;Hardware Info Layout,&quot; on page 2250" subnode="mgir_hardware_info_ext" access="RW" offset="0x0.0" size="0x20.0" />
-	<field name="fw_info" descr="Firmware Information, see Table 1931, &quot;Firmware Info Layout,&quot; on page 2252" subnode="mgir_fw_info_ext" access="RW" offset="0x20.0" size="0x40.0" />
-	<field name="sw_info" descr="Software Information, see Table 1933, &quot;Software Info Layout,&quot; on page 2254\;This field indicates the oldest software version compatible with the current firmware" subnode="mgir_sw_info_ext" access="RW" offset="0x60.0" size="0x20.0" />
+	<field name="hw_info" descr="Hardware Information, see Table 1934, &quot;Hardware Info Layout,&quot; on page 2251" subnode="mgir_hardware_info_ext" access="RW" offset="0x0.0" size="0x20.0" />
+	<field name="fw_info" descr="Firmware Information, see Table 1936, &quot;Firmware Info Layout,&quot; on page 2253" subnode="mgir_fw_info_ext" access="RW" offset="0x20.0" size="0x40.0" />
+	<field name="sw_info" descr="Software Information, see Table 1938, &quot;Software Info Layout,&quot; on page 2255\;This field indicates the oldest software version compatible with the current firmware" subnode="mgir_sw_info_ext" access="RW" offset="0x60.0" size="0x20.0" />
 </node>
 
 <node name="mgir_fw_info_ext" descr="" size="0x40.0" >
@@ -1328,7 +1330,7 @@
 </node>
 
 <node name="mgpir_ext" descr="" size="0xa0.0" >
-	<field name="hw_info" descr="Hardware Information, see Table 1867, &quot;Hardware Info Layout,&quot; on page 2199" subnode="mgpir_hw_info_ext" access="RW" offset="0x0.0" size="0x20.0" />
+	<field name="hw_info" descr="Hardware Information, see Table 1872, &quot;Hardware Info Layout,&quot; on page 2200" subnode="mgpir_hw_info_ext" access="RW" offset="0x0.0" size="0x20.0" />
 </node>
 
 <node name="mgpir_hw_info_ext" descr="" size="0x20.0" >
@@ -1352,7 +1354,7 @@
 <node name="mini_ext" descr="" size="0x30.0" >
 	<field name="type" descr="Type:\;1: module_parameters\;2: module_primary" access="INDEX" enum="module_parameters=0x1,module_primary=0x2" offset="0x0.0" size="0x0.8" />
 	<field name="valid" descr="Valid:\;0: the relevant type is not supported by this Firmware version\;1: the relevant type is valid" access="RO" offset="0x4.0" size="0x0.1" />
-	<field name="data" descr="This field takes meaning per type\;For module_parameters see Table  1951, &quot;MINI type module_parameters Layout,&quot; on page  2265\;For module_primary see Table  1953, &quot;MINI type module_primary Layout,&quot; on page  2265" subnode="mini_data_auto_ext" access="RW" offset="0x10.0" size="0x20.0" union_selector="$(parent).type" />
+	<field name="data" descr="This field takes meaning per type\;For module_parameters see Table  1956, &quot;MINI type module_parameters Layout,&quot; on page  2266\;For module_primary see Table  1958, &quot;MINI type module_primary Layout,&quot; on page  2266" subnode="mini_data_auto_ext" access="RW" offset="0x10.0" size="0x20.0" union_selector="$(parent).type" />
 </node>
 
 <node name="mini_module_parameters_ext" descr="" size="0x8.0" >
@@ -1372,7 +1374,7 @@
 	<field name="size" descr="Size of operation - relevant for JTAG interface access commands only, indicating the number of transaction bytes to execute. Maximum size supported is 40.\;Note: when size=0, no operation is performed (clock is not toggled). The tdo is sampled and provided in the response at jtag_transaction_set_0." access="WO" offset="0x0.0" size="0x0.8" />
 	<field name="sequence_number" descr="Command sequence number - to prevent re-execution of the same command due to command retransmission, this command includes a sequence number.\;The enable and disable commands MUST be issues with sequence_number = 0 while any JTAG access command must increase the sequence_number by 1 (the first JTAG access command should start at sequence_number = 1)." access="WO" offset="0x0.24" size="0x0.4" />
 	<field name="cmd" descr="Command\;0 - JTAG interface disable - JTAG interface is disabled\;1 - JTAG interface enable - enabling JTAG interface\;2 - JTAG interface access" access="RW" offset="0x0.30" size="0x0.2" />
-	<field name="jtag_transaction_set" descr="See Table 1817, &quot;JTAG Transaction Set Byte Layout,&quot; on page 2162" access="RW" high_bound="43" low_bound="0" offset="0x4.24" size="0x2c.0" />
+	<field name="jtag_transaction_set" descr="See Table 1822, &quot;JTAG Transaction Set Byte Layout,&quot; on page 2163" access="RW" high_bound="43" low_bound="0" offset="0x4.24" size="0x2c.0" />
 </node>
 
 <node name="mkdc_reg_ext" descr="" size="0x2c.0" >
@@ -1436,11 +1438,11 @@
 
 <node name="mnvia_reg_ext" descr="" size="0x8.0" >
 	<field name="target" descr="Information targeted for invalidation\;0: ALL - all NVRAM parameters.\; All other values are reserved." access="WO" offset="0x0.0" size="0x0.3" />
-	<field name="writer_id" descr="The entity which perform the invalidate.\;The encoding same as writer_id in Configuration Item register (See Table 1979, &quot;Configuration Item Header Layout,&quot; on page 2284)." access="RW" offset="0x0.4" size="0x0.5" />
+	<field name="writer_id" descr="The entity which perform the invalidate.\;The encoding same as writer_id in Configuration Item register (See Table 1984, &quot;Configuration Item Header Layout,&quot; on page 2285)." access="RW" offset="0x0.4" size="0x0.5" />
 </node>
 
 <node name="mnvqc_reg_ext" descr="" size="0x8.0" >
-	<field name="type" descr="Configuration item type. \;Table 1981, &quot;Configuration Item Data Type Class Global Layout,&quot; on page 2287\;Table 1983, &quot;Configuration Item Data Type Class Physical Port Layout,&quot; on page 2287\;Table 1985, &quot;Configuration Item Data Type Class Per Host-PF Layout,&quot; on page 2288" access="INDEX" offset="0x0.0" size="0x4.0" />
+	<field name="type" descr="Configuration item type. \;Table 1986, &quot;Configuration Item Data Type Class Global Layout,&quot; on page 2288\;Table 1988, &quot;Configuration Item Data Type Class Physical Port Layout,&quot; on page 2288\;Table 1990, &quot;Configuration Item Data Type Class Per Host-PF Layout,&quot; on page 2289" access="INDEX" offset="0x0.0" size="0x4.0" />
 	<field name="support_rd" descr="The configuration item is supported and can be read" access="RO" offset="0x4.0" size="0x0.1" />
 	<field name="support_wr" descr="The configuration item is supported and can be updated" access="RO" offset="0x4.1" size="0x0.1" />
 	<field name="version" descr="The maximal version of the configuration item supported by the device" access="RO" offset="0x4.4" size="0x0.4" />
@@ -1485,7 +1487,7 @@
 </node>
 
 <node name="mpcnt_reg_ext" descr="" size="0x100.0" >
-	<field name="grp" descr="Performance counter group.\;0: PCIE_performance_counters\;\;" access="INDEX" enum="PCIE_performance_counters=0x0" offset="0x0.0" size="0x0.6" />
+	<field name="grp" descr="Performance counter group.\;0: PCIE_performance_counters\;\; \;3: PCIE_physical_layer_indications" access="INDEX" enum="PCIE_performance_counters=0x0,PCIE_physical_layer_indications=0x3" offset="0x0.0" size="0x0.6" />
 	<field name="node" descr="the node within each depth." access="INDEX" offset="0x0.8" size="0x0.8" />
 	<field name="pcie_index" descr="PCIe index number (Internal domain index)\;Reserved when access is from the host" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="depth" descr="depth level of the DUT of some hierarchy" access="INDEX" offset="0x0.24" size="0x0.6" />
@@ -1504,6 +1506,21 @@
 	<field name="func_num" descr="Function number\;physical function index - see PCIE spec" access="INDEX" offset="0xC.16" size="0x0.8" />
 	<field name="ext" descr="Extended or regular configuration space, as defined in PCIE spec:\;0 - Regular\;1 - Extended" access="INDEX" offset="0x10.0" size="0x0.2" />
 	<field name="data" descr="" access="RW" offset="0x14.0" size="0x4.0" />
+</node>
+
+<node name="mpegc_reg_ext" descr="" size="0x2c.0" >
+	<field name="node" descr="the node within each depth." access="INDEX" offset="0x0.8" size="0x0.8" />
+	<field name="pcie_index" descr="PCIe index number (Internal domain index)\;Reserved when access is from the host" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="depth" descr="depth level of the DUT of some hierarchy" access="INDEX" offset="0x0.24" size="0x0.6" />
+	<field name="field_select" descr="Field select indicated which writable fields to modify.\;Bit 0: tx_lossy_overflow_oper\;Bit 1 : outbound_stalled_reads_th\;Bit 2 :outbound_stalled_writes_th\;Bit 3 : tx_overflow_sense\;Bit 4 : mark_tx_action_cqe\;Bit 5 : mark_tx_action_cnp\;Bit 6: virtual_hot_plug_unplug (supported only for internal host)" access="WO" offset="0x4.0" size="0x0.16" />
+	<field name="tx_lossy_overflow_oper" descr="When overflow encountered for lossy packets, it will be dropped or marked and will be counted in &quot;tx_overflow_buffer_dropped_pkt&quot; or &quot;tx_overflow_buffer_marked_pkt&quot; counter.\;00 - Disabled\;01 - drop - overflow traffic will be dropped.  \;10 - mark - overflow traffic will be marked in the CE field in the CqE.  Supported only when MCAM.mark_tx_action_cqe or MCAM.mark_tx_action_cnp are &apos;1&apos;. \;" access="RW" offset="0x8.0" size="0x0.2" />
+	<field name="mark_cnp" descr="When this bit is set, the marking action will be generating a CNP for RoCE traffic. Supported only when MCAM.mark_tx_action_cnp is &apos;1&apos;." access="RW" offset="0x8.29" size="0x0.1" />
+	<field name="mark_cqe" descr="When this bit is set, the marking action will be set in the CqE for TCP traffic. Supported only when MCAM.mark_tx_action_cqe is &apos;1&apos;." access="RW" offset="0x8.30" size="0x0.1" />
+	<field name="tx_overflow_sense" descr="Set the sensibility level of the tx overflow mechanism. \;0 - Aggressive 1 - Dynamic adjustment. When tx_lossy_overflow_oper is disabled, tx_overflow_sense must be disabled. Supported only when MCAM.dynamic_tx_oveflow is &apos;1&apos;." access="RW" offset="0x8.31" size="0x0.1" />
+	<field name="outbound_stalled_writes_th" descr="Each time that the counter outbound_stalled_writes will exceed this threshold, will be counted in the counter outbound_stalled_writes_events - range 0   100." access="RW" offset="0xC.0" size="0x0.7" />
+	<field name="outbound_stalled_reads_th" descr="Each time that the counter outbound_stalled_reads will exceed this threshold, will be counted in the counter outbound_stalled_reads_events - range 0   100." access="RW" offset="0xC.8" size="0x0.7" />
+	<field name="operation" descr="Operation to perform\;0: Idle - no operation required (default)\;1: Emulate hot removal\;2: Emulate hot insertion\;3-15: Reserved" access="RW" offset="0x10.16" size="0x0.4" />
+	<field name="status" descr="Operation completion status\;0: Operation in process\;1: Unplugged\;2: Plugged\;3: Warning - disconnecting an already disconnected bus cannot be performed\;4: Warning - connecting an already connected bus cannot be performed\;5: Error - unknown bus number or no device installed on selected bus" access="RO" offset="0x10.24" size="0x0.8" />
 </node>
 
 <node name="mpein_reg_ext" descr="" size="0x30.0" >
@@ -1526,6 +1543,20 @@
 	<field name="pci_power" descr="Power reported by the PCI device. The units are in Watts.\;0: Power is unknown." access="RO" offset="0x1C.0" size="0x0.12" />
 	<field name="link_peer_max_speed" descr="Peer Max Link Speed:\;Bit 0: 2.5G - (Gen1)\;Bit 1: 5G - (Gen2)\;Bit 2: 8G - (Gen3)\;Bit 4: 16G - (Gen4)\;Bit 5: 32G (Gen5)" access="RO" offset="0x1C.16" size="0x0.16" />
 	<field name="device_status" descr="device_status bit mask:\;Bit 0: Correctable_error\;Bit 1: Non_Fatal_Error_detection\;Bit 2: Fatal_Error_detected\;Bit 3: Unsupported_request_detected\;Bit 4: AUX_power \;Bit 5: Transaction_Pending" access="RO" enum="Correctable_error=0x1,Non_Fatal_Error_detection=0x2,Fatal_Error_detected=0x4,Unsupported_request_detected=0x8,AUX_power=0x10,Transaction_Pending=0x20" offset="0x24.16" size="0x0.16" />
+</node>
+
+<node name="mpeinj_reg_ext" descr="" size="0x20.0" >
+	<field name="error_type" descr="Error type selector.\;See at Table 1772, &quot;MPEINJ error list and params,&quot; on page 2116 for error_index." access="RW" offset="0x0.0" size="0x0.8" />
+	<field name="node" descr="the node within each depth." access="INDEX" offset="0x0.8" size="0x0.8" />
+	<field name="pcie_index" descr="PCIE index number\;Reserved when access is from the host" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="depth" descr="depth level of the DUT of some hierarchy" access="INDEX" offset="0x0.24" size="0x0.6" />
+	<field name="error_duration" descr="Depending on the error type, can be either -    \;Number of packets or number of usecs to apply the error according to Table 1772, &quot;MPEINJ error list and params,&quot; on page 2116.\;For Read access, the current value is returned (how many errors/time are left to be executed), or 0 if no error is pending injection" access="RW" offset="0x4.0" size="0x0.24" />
+	<field name="start_delay" descr="Delay in usecs before the error is applied.\;For Read access, the current value of this timer is returned." access="RW" offset="0x8.0" size="0x0.24" />
+	<field name="dest_bdf" descr="Destination BDF for applicable errors   ." access="RW" offset="0xC.0" size="0x0.16" />
+	<field name="error_params_0" descr="Error specific parameters according to Table 1772, &quot;MPEINJ error list and params,&quot; on page 2116." access="RW" offset="0x10.0" size="0x4.0" />
+	<field name="error_params_1" descr="Error specific parameters according to Table 1772, &quot;MPEINJ error list and params,&quot; on page 2116." access="RW" offset="0x14.0" size="0x4.0" />
+	<field name="error_params_2" descr="Error specific parameters according to Table 1772, &quot;MPEINJ error list and params,&quot; on page 2116." access="RW" offset="0x18.0" size="0x4.0" />
+	<field name="error_params_3" descr="Error specific parameters according to Table 1772, &quot;MPEINJ error list and params,&quot; on page 2116." access="RW" offset="0x1C.0" size="0x4.0" />
 </node>
 
 <node name="mpfm_ext" descr="" size="0x8.0" >
@@ -1608,14 +1639,14 @@
 
 <node name="mssir_reg_ext" descr="" size="0x88.0" >
 	<field name="sys_indx" descr="System Identifier\;0: Firebird\;" access="INDEX" enum="Firebird=0x0" offset="0x0.0" size="0x0.4" />
-	<field name="sys_info" descr="Firebird System Information, see Table 1929, &quot;Hardware Info Layout,&quot; on page 2250" access="RW" high_bound="31" low_bound="0" offset="0x8.0" size="0x80.0" />
+	<field name="sys_info" descr="Firebird System Information, see Table 1934, &quot;Hardware Info Layout,&quot; on page 2251" access="RW" high_bound="31" low_bound="0" offset="0x8.0" size="0x80.0" />
 </node>
 
 <node name="mtbr_reg_ext" descr="" size="0x18.0" >
 	<field name="base_sensor_index" descr="Base sensor index\;Sensors are read starting from base_sensor_index\;Sensor 0 is the ASIC sensor, sensors 1-63 are ambient sensors and sensors 64-127 are mapped to the SFP+/QSFP modules sequentially (module 0 is mapped to sensor 64, module 1 to sensor 65 and so on). Gearbox sensors starts from 256 index." access="INDEX" offset="0x0.0" size="0x0.12" />
 	<field name="slot_index" descr="Slot index\;0: Main board" access="INDEX" offset="0x0.16" size="0x0.4" />
 	<field name="num_rec" descr="Number of records to read\;Range 1..255" access="OP" offset="0x4.0" size="0x0.8" />
-	<field name="temperature_record" descr="Temperature record\;See Table 1887, &quot;MTBR - Temperature Record Layout,&quot; on page 2218" subnode="mtbr_temp_record_ext" access="RO" high_bound="1" low_bound="0" offset="0x10.0" size="0x8.0" />
+	<field name="temperature_record" descr="Temperature record\;See Table 1892, &quot;MTBR - Temperature Record Layout,&quot; on page 2219" subnode="mtbr_temp_record_ext" access="RO" high_bound="1" low_bound="0" offset="0x10.0" size="0x8.0" />
 </node>
 
 <node name="mtbr_temp_record_ext" descr="" size="0x4.0" >
