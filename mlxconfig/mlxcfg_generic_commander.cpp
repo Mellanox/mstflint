@@ -1264,7 +1264,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
                 isAllPorts = true;
                 port = 1;
             }
-            else if (!strToNum((const char*)portAttr, port) || (1 <= port && (int32_t)port <= tlvConf->getMaxPort(_mf)))
+            else if (!strToNum((const char*)portAttr, port) || !(1 <= port && (int32_t)port <= tlvConf->getMaxPort(_mf)))
             {
                 throw MlxcfgException("Illegal value of port attribute %s", (const char*)portAttr);
             }
@@ -1278,7 +1278,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
                 isAllModules = true;
                 module = 0;
             }
-            else if (!strToNum((const char*)moduleAttr, u_module) || ((int32_t)u_module <= tlvConf->getMaxModule()))
+            else if (!strToNum((const char*)moduleAttr, u_module) || !(u_module <= (u_int32_t)tlvConf->getMaxModule()))
             {
                 throw MlxcfgException("Illegal value of module attribute %s", (const char*)portAttr);
             }
