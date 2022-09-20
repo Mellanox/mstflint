@@ -247,6 +247,21 @@
 #define PREI_SHOW_MIXERS_FLAG_SHORT ' '
 
 //------------------------------------------------------------
+//        Mlxlink PCIE Error Injection Flags
+#define MPEINJ_PCIE_ERR_INJ_FLAG "pcie_error_injection"
+#define MPEINJ_PCIE_ERR_INJ_FLAG_SHORT ' '
+#define MPEINJ_ERR_TYPE_FLAG "error_type"
+#define MPEINJ_ERR_TYPE_FLAG_SHORT ' '
+#define MPEINJ_ERR_DURATION_FLAG "error_duration"
+#define MPEINJ_ERR_DURATION_FLAG_SHORT ' '
+#define MPEINJ_INJ_DELAY_FLAG "injection_delay"
+#define MPEINJ_INJ_DELAY_FLAG_SHORT ' '
+#define MPEINJ_ERR_PARAMETERS_FLAG "error_parameters"
+#define MPEINJ_ERR_PARAMETERS_FLAG_SHORT ' '
+#define MPEINJ_DBDF_FLAG "dbdf"
+#define MPEINJ_DBDF_FLAG_SHORT ' '
+
+//------------------------------------------------------------
 //        Histogram Counters Flags
 #define PPHCR_FEC_HIST_FLAG "rx_fec_histogram"
 #define PPHCR_FEC_HIST_FLAG_SHORT ' '
@@ -308,34 +323,12 @@ enum OPTION_TYPE
     ERR_INJ_ENABLE,
     RS_FEC_HISTOGRAM,
     SLRG_TEST,
+    PCIE_ERROR_INJ,
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
 };
 
 ///////////
-struct DPN
-{
-    DPN()
-    {
-        depth = 0;
-        pcieIndex = 0;
-        node = 0;
-    }
-
-    DPN(u_int32_t d, u_int32_t p, u_int32_t n)
-    {
-        depth = d;
-        pcieIndex = p;
-        node = n;
-    }
-
-    bool operator==(DPN dpn) { return (dpn.depth == depth && dpn.pcieIndex == pcieIndex && dpn.node == node); }
-
-    u_int32_t depth;
-    u_int32_t pcieIndex;
-    u_int32_t node;
-};
-
 struct MODULE_FIELD
 {
     string uiName;
@@ -494,7 +487,6 @@ public:
     void writeCableEEPROM();
     void readCableEEPROM();
     void performModulePrbsCommands();
-    ;
     void performControlParams();
 
     MlxlinkCmdPrint _toolInfoCmd;
@@ -502,7 +494,6 @@ public:
     MlxlinkCmdPrint _supportedInfoCmd;
     MlxlinkCmdPrint _troubInfoCmd;
     MlxlinkCmdPrint _testModeInfoCmd;
-    MlxlinkCmdPrint _pcieInfoCmd;
     MlxlinkCmdPrint _moduleInfoCmd;
     MlxlinkCmdPrint _berInfoCmd;
     MlxlinkCmdPrint _testModeBerInfoCmd;
@@ -530,6 +521,8 @@ public:
     void sendPplr();
     void sendPepc();
     void setTxGroupMapping();
+    void handleRxErrInj();
+    void handlePCIeErrInj();
 
     // Config helper functions
     bool isForceDownSupported();
@@ -569,6 +562,7 @@ public:
     u_int32_t getLaneSpeed(u_int32_t lane);
     void validateNumOfParamsForNDRGen();
     void checkSltpParamsSize();
+    bool isMpeinjSupported();
 
     // Mlxlink params
     UserInput _userInput;
@@ -581,6 +575,7 @@ public:
     u_int32_t _protoActive;
     u_int32_t _uniqueCmds;
     u_int32_t _uniqueCableCmds;
+    u_int32_t _uniquePcieCmds;
     u_int32_t _networkCmds;
     u_int32_t _anDisable;
     u_int32_t _speedBerCsv;

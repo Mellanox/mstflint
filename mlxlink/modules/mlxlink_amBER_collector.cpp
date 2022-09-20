@@ -1699,12 +1699,12 @@ vector<AmberField> MlxlinkAmBerCollector::getPortCounters()
                                             to_string(add32BitTo64(getFieldValue("plr_sync_events_high"),
                                                                    getFieldValue("plr_sync_events_low")))));
                 fields.push_back(AmberField("HiRetransmissionRate",
-                                            to_string(add32BitTo64(getFieldValue("hi_retransmission_rate_high"),
-                                                                   getFieldValue("hi_retransmission_rate_low")))));
+                                            to_string(add32BitTo64(getLocalFieldValue("hi_retransmission_rate_high"),
+                                                                   getLocalFieldValue("hi_retransmission_rate_low")))));
                 fields.push_back(
                   AmberField("PlrXmitRetryCodesWithinTSecMax",
-                             to_string(add32BitTo64(getFieldValue("plr_xmit_retry_codes_within_t_sec_max_high"),
-                                                    getFieldValue("plr_xmit_retry_codes_within_t_sec_max_low")))));
+                             to_string(add32BitTo64(getLocalFieldValue("plr_xmit_retry_codes_within_t_sec_max_high"),
+                                                    getLocalFieldValue("plr_xmit_retry_codes_within_t_sec_max_low")))));
             }
         }
         else

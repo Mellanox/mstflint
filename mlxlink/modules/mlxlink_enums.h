@@ -43,6 +43,7 @@
 #define ACCESS_REG_MGPIR "MGPIR"
 #define ACCESS_REG_MPCNT "MPCNT"
 #define ACCESS_REG_MPEIN "MPEIN"
+#define ACCESS_REG_MPEINJ "MPEINJ"
 #define ACCESS_REG_MPIR "MPIR"
 #define ACCESS_REG_MSGI "MSGI"
 #define ACCESS_REG_MTCAP "MTCAP"
@@ -404,6 +405,97 @@
 
 #define GET MACCESS_REG_METHOD_GET
 #define SET MACCESS_REG_METHOD_SET
+
+#define PCIE_MAX_DURATION 16777215
+#define PCIE_MAX_DURATION_HW_COUNTERS 255
+#define PCIE_MAX_ERR_PARAM 4
+
+struct DPN
+{
+    DPN()
+    {
+        depth = 0;
+        pcieIndex = 0;
+        node = 0;
+        bdf = "";
+    }
+
+    DPN(u_int32_t _depth, u_int32_t _pcieIndex, u_int32_t _node, string _bdf)
+    {
+        depth = _depth;
+        pcieIndex = _pcieIndex;
+        node = _node;
+        bdf = _bdf;
+    }
+
+    bool operator==(DPN dpn) { return (dpn.depth == depth && dpn.pcieIndex == pcieIndex && dpn.node == node); }
+
+    u_int32_t depth;
+    u_int32_t pcieIndex;
+    u_int32_t node;
+    string bdf;
+};
+
+struct PcieErrType
+{
+    PcieErrType()
+    {
+        errorTypeStr = "";
+        defaultInjDelay = 0;
+        defaultErrDuration = 0;
+        maxErrDuration = 0;
+        errorDurationValid = false;
+        paramsValid[0] = false;
+        paramsValid[1] = false;
+        paramsValid[2] = false;
+        paramsValid[3] = false;
+        dbdfValid = false;
+        unit = "";
+    }
+
+    PcieErrType(string _errorTypeStr,
+                u_int32_t _defaultInjDelay,
+                u_int32_t _defaultErrDuration,
+                u_int32_t _maxErrDuration,
+                bool _errorDurationValid,
+                bool _param0Valid,
+                bool _param1Valid,
+                bool _param2Valid,
+                bool _param3Valid,
+                bool _dbdfValid,
+                string _unit)
+    {
+        errorTypeStr = _errorTypeStr;
+        defaultInjDelay = _defaultInjDelay;
+        defaultErrDuration = _defaultErrDuration;
+        maxErrDuration = _maxErrDuration;
+        errorDurationValid = _errorDurationValid;
+        paramsValid[0] = _param0Valid;
+        paramsValid[1] = _param1Valid;
+        paramsValid[2] = _param2Valid;
+        paramsValid[3] = _param3Valid;
+        dbdfValid = _dbdfValid;
+        unit = _unit;
+    }
+
+    string errorTypeStr;
+    u_int32_t defaultInjDelay;
+    u_int32_t defaultErrDuration;
+    u_int32_t maxErrDuration;
+    bool errorDurationValid;
+    bool paramsValid[4];
+    bool dbdfValid;
+    string unit;
+};
+
+struct ReqParms
+{
+    u_int8_t errorType;
+    u_int32_t errorDuration;
+    u_int32_t injectionDelay;
+    u_int16_t dbdf;
+    u_int32_t parameters[4];
+};
 
 enum FIELD_ACCESS
 {
@@ -1565,5 +1657,20 @@ typedef enum
     CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH,
     CABLE_CONTROL_PARAMETERS_SET_RX_AMP
 } ControlParam;
+
+enum PCIE_ERR_INJ_TYPE
+{
+    PCIE_ERR_TYPE_ABORT = 0,
+    PCIE_ERR_TYPE_BAD_DLLP_LCRC,
+    PCIE_ERR_TYPE_BAD_TLP_LCRC,
+    PCIE_ERR_TYPE_BAD_TLP_ECRC,
+    PCIE_ERR_TYPE_ERR_MSG,
+    PCIE_ERR_TYPE_MALFORMED_TLP,
+    PCIE_ERR_TYPE_POISONED_TLP,
+    PCIE_ERR_TYPE_UNEXPECTED_CPL,
+    PCIE_ERR_TYPE_ACS_VIOLATION,
+    PCIE_ERR_TYPE_SURP_LINK_DOWN = 100,
+    PCIE_ERR_TYPE_RECEIVER_ERROR = 101
+};
 
 #endif /* MLXLINK_ENUMS_H */
