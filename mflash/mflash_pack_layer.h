@@ -255,6 +255,14 @@ struct mflash
     u_int32_t gw_cmd;
     u_int32_t cache_rep_offset;
     u_int32_t cache_rep_cmd;
+
+    // Frequency related fields relevant for CX7 and BF3
+    bool is_freq_handle_required;
+    bool is_freq_changed;
+    u_int32_t core_clocks_per_usec_addr;
+    u_int32_t flash_div_addr;
+    u_int32_t orig_flash_div_reg; // Whole register, not flash_div field only
+    u_int32_t core_clocks_per_usec;
 };
 
 typedef struct mfpa_command_args

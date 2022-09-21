@@ -1527,6 +1527,121 @@ int restore_cache_replacemnt(mflash* mfl)
     return MFE_OK;
 }
 
+void init_freq_configuration_fields(mflash* mfl)
+{
+    switch (mfl->dm_dev_id)
+    {
+        case DeviceConnectX7:
+        {
+            mfl->is_freq_handle_required = true;
+            mfl->core_clocks_per_usec_addr = 0x7f4;
+            mfl->flash_div_addr = 0xfe804;
+            break;
+        }
+        case DeviceBlueField3:
+        {
+            mfl->is_freq_handle_required = true;
+            mfl->core_clocks_per_usec_addr = 0x7f4;
+            mfl->flash_div_addr = 0x3409804;
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+}
+
+int read_freq_configurations(mflash* mfl)
+{
+    if (!mfl->core_clocks_per_usec) // If field was already read then we skip
+    {
+        if (mread4(mfl->mf, mfl->core_clocks_per_usec_addr, &(mfl->core_clocks_per_usec)) != 4)
+        {
+            printf("-E- Failed to read core_clocks_per_usec\n");
+            return MFE_CR_ERROR;
+        }
+    }
+    if (!mfl->orig_flash_div_reg) // If field was already read then we skip
+    {
+        if (mread4(mfl->mf, mfl->flash_div_addr, &(mfl->orig_flash_div_reg)) != 4)
+        {
+            printf("-E- Failed to read flash_div_register\n");
+            return MFE_CR_ERROR;
+        }
+    }
+    return MFE_OK;
+}
+
+int get_flash_freq(mflash* mfl, u_int32_t* freq)
+{
+    int rc = read_freq_configurations(mfl);
+    CHECK_RC(rc);
+    u_int32_t flash_div = EXTRACT(mfl->orig_flash_div_reg, 0, 4); // flash_div field is 4bits
+    *freq = mfl->core_clocks_per_usec / (2 * (flash_div + 1));
+    return MFE_OK;
+}
+
+int write_flash_div(mflash* mfl, u_int32_t new_flash_div)
+{
+    u_int32_t new_flash_div_register = MERGE(mfl->orig_flash_div_reg, new_flash_div, 0, 4);
+    FLASH_DPRINTF(("Setting new flash_div = %d\n", new_flash_div));
+    if (mwrite4(mfl->mf, mfl->flash_div_addr, new_flash_div_register) != 4)
+    {
+        printf("-E- Writing 0x%08x to flash_div register failed\n", new_flash_div_register);
+        return MFE_CR_ERROR;
+    }
+    return MFE_OK;
+}
+
+int decrease_flash_freq(mflash* mfl)
+{
+    int rc = MFE_OK;
+    if (mfl->is_freq_handle_required)
+    {
+        u_int32_t freq = 0;
+        rc = get_flash_freq(mfl, &freq);
+        CHECK_RC(rc);
+        if (freq <= MAX_FLASH_FREQ)
+        {
+            // Flash freq is already in a valid range for OCR operation
+            mfl->is_freq_handle_required = false; // Setting this will skip this logic next time we're here
+        }
+        else
+        {
+            // Calculate new flash_div value to decrease flash frequency to valid value for OCR operation
+            u_int32_t new_flash_div = EXTRACT(mfl->orig_flash_div_reg, 0, 4); // flash_div field is 4bits
+            FLASH_DPRINTF((
+              "Flash freq (%dMHz) higher than allowed (%dMHz) for OCR operation: core_clocks_per_usec = %d, flash_div = %d\n",
+              freq, MAX_FLASH_FREQ, mfl->core_clocks_per_usec, new_flash_div));
+            while (freq > MAX_FLASH_FREQ)
+            {
+                new_flash_div++; // Reducing freq by incrementing flash_div (incrementing by 1 should to be enough)
+                freq = mfl->core_clocks_per_usec / (2 * (new_flash_div + 1));
+            }
+            FLASH_DPRINTF(("Reducing flash freq to %dMHz, using new flash_div = %d\n", freq, new_flash_div));
+            rc = write_flash_div(mfl, new_flash_div);
+            CHECK_RC(rc);
+            mfl->is_freq_changed = true;
+        }
+    }
+    return rc;
+}
+
+int restore_flash_freq(mflash* mfl)
+{
+    int rc = MFE_OK;
+    if (mfl->is_freq_changed)
+    {
+        u_int32_t orig_flash_div = EXTRACT(mfl->orig_flash_div_reg, 0, 4); // flash_div field is 4bits
+        FLASH_DPRINTF(("Restoring original flash_div = %d\n", orig_flash_div));
+        rc = write_flash_div(mfl, orig_flash_div);
+        CHECK_RC(rc);
+        mfl->is_freq_changed = false;
+    }
+    return rc;
+}
+
 int sixth_gen_flash_lock(mflash* mfl, int lock_state)
 {
     int rc = 0;
@@ -1538,13 +1653,18 @@ int sixth_gen_flash_lock(mflash* mfl, int lock_state)
         CHECK_RC(rc);
         rc = disable_cache_replacement(mfl);
         CHECK_RC(rc);
+        rc = decrease_flash_freq(mfl);
+        CHECK_RC(rc);
         rc = gw_wait_ready(mfl, "WAIT TO BUSY");
         CHECK_RC(rc);
     }
     else
     { // unlock the flash
+        rc = restore_flash_freq(mfl);
+        CHECK_RC(rc);
         rc = restore_cache_replacemnt(mfl);
         CHECK_RC(rc);
+        // Restoring GCM is handled by FW
         rc = is4_flash_lock(mfl, lock_state);
         CHECK_RC(rc);
     }
@@ -1824,10 +1944,16 @@ int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
     return gen4_flash_init_com(mfl, flash_params);
 }
 
-int sixth_gen_init_direct_access(mflash* mfl, flash_params_t* flash_params)
+void update_sixth_gen_addrs(mflash* mfl)
 {
     mfl->cache_repacement_en_addr = HCR_NEW_GW_CACHE_REPLACEMNT_EN_ADDR;
     mfl->gcm_en_addr = HCR_NEW_GW_GCM_EN_ADDR;
+    init_freq_configuration_fields(mfl);
+}
+
+int sixth_gen_init_direct_access(mflash* mfl, flash_params_t* flash_params)
+{
+    update_sixth_gen_addrs(mfl);
 
     mfl->f_lock = sixth_gen_flash_lock;
     return gen6_flash_init_com(mfl, flash_params);

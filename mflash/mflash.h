@@ -120,6 +120,7 @@ EXTERN_C_START
 #define FLASH_ACCESS_DPRINTF(...)
 #endif
 
+#define MAX_FLASH_FREQ 90 // MHz
 typedef struct gpio_toggle_conf_cx6
 {
     u_int32_t lock_addr;
