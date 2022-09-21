@@ -34,7 +34,7 @@
 #define USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_
 
 #include "mlxsign_lib.h"
-#if !defined(NO_DYNAMIC_ENGINE)
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
 #include "mlxsign_openssl_engine.h"
 #endif
 
