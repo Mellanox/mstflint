@@ -43,6 +43,7 @@
 #define MAX_PASSWORD_LEN 256
 
 #include <string>
+#include <memory>
 
 #include <tools_layouts/tools_open_layouts.h>
 
