@@ -1738,7 +1738,8 @@ void GenericCommander::orderConfTlvs(vector<TLVConf*>& tlvs)
         TLVConf* tlv = *it;
         if (((tlv->_tlvClass == NVFile) &&
              (tlv->_id == debugTokenId || tlv->_id == csTokenId || tlv->_id == btcTokenId)) ||
-            (tlv->_tlvClass == Global && tlv->_id == idMlnxId))
+            ((tlv->_tlvClass == Global) &&
+             (tlv->_id == idMlnxId || tlv->_id == idVendorId)))
         {
             *it = tlvs.front();
             tlvs.front() = tlv;
