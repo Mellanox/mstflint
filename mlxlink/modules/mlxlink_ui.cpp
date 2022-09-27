@@ -108,7 +108,7 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(
       PPLR_FLAG_SHORT, PPLR_FLAG, "loopback",
       "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(internal phy Tx-to-Rx "
-      "loopback)/EX(external loopback connector needed)/EX(external Tx-to-Rx loopback)]");
+      "loopback)/EX(external loopback connector needed)/LL(link layer local loopback)]");
     MlxlinkRecord::printFlagLine(
       PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
       "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode "
