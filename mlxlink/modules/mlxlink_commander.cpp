@@ -2279,6 +2279,13 @@ void MlxlinkCommander::showEye()
     if (_userInput._pcie)
     {
         checkPCIeValidity();
+
+        sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", _dpn.depth, _dpn.pcieIndex, _dpn.node);
+
+        if (getFieldValue("link_speed_active") < GEN3)
+        {
+            throw MlxRegException("Eye information available for Gen3 and above");
+        }
     }
     try
     {
