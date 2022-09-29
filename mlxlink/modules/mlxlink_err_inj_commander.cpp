@@ -350,8 +350,8 @@ void MlxlinkErrInjCommander::startPcieErrInj(const DPN& dpn,
             try
             {
                 sendPrmReg(ACCESS_REG_MPEINJ, SET,
-                           "depth=%d,pcie_index=%d,node=%d,error_type=%d,error_duration=%d,"
-                           "start_delay=%d,dbdf=%d,err_params[0]=%d,err_params[1]=%d,err_params[2]=%d,err_params[3]=%d",
+                           "depth=%d,pcie_index=%d,node=%d,error_type=%d,error_duration=%d,start_delay=%d,dest_bdf=%d,"
+                           "error_params_0=%d,error_params_1=%d,error_params_2=%d,error_params_3=%d",
                            dpn.depth, dpn.pcieIndex, dpn.node, req.errorType, req.errorDuration, req.injectionDelay,
                            req.dbdf, req.parameters[0], req.parameters[1], req.parameters[2], req.parameters[3]);
             }
