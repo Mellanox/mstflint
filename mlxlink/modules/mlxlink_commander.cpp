@@ -1977,11 +1977,12 @@ void MlxlinkCommander::prepareBerInfo()
                     ANSI_COLOR_RESET, true, _linkUP);
     }
     setPrintVal(_berInfoCmd, "Effective Physical Errors",
-                AmberField::getValueFromFields(_ppcntFields, "Effective_Errors"), ANSI_COLOR_RESET, true, _linkUP);
+                AmberField::getValueFromFields(_ppcntFields, "Effective_Errors", true), ANSI_COLOR_RESET, true,
+                _linkUP);
     setPrintVal(_berInfoCmd, "Effective Physical BER", AmberField::getValueFromFields(_ppcntFields, "Effective_BER"),
                 ANSI_COLOR_RESET, true, _linkUP);
 
-    string phyRawErr = AmberField::getValueFromFields(_ppcntFields, "Raw_Errors_Lane", false);
+    string phyRawErr = AmberField::getValueFromFields(_ppcntFields, "Raw_Errors_lane", false);
     findAndReplace(phyRawErr, "_", ",");
     phyRawErr = getValuesOfActiveLanes(phyRawErr);
 

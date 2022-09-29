@@ -80,7 +80,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{110, 110, 0};
     _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{16, 21, 11};
     _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{376, 736, 0};
-    _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{206, 374, 499};
+    _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{206, 374, 502};
     _baseSheetsList[AMBER_SHEET_PORT_COUNTERS] = FIELDS_COUNT{35, 0, 35};
     _baseSheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT{2, 2, 0};
     _baseSheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{18, 18, 15};
@@ -683,12 +683,10 @@ void MlxlinkAmBerCollector::getPpcntBer(u_int32_t portType, vector<AmberField>& 
       to_string(getFieldValue("effective_ber_coef")) + "E-" + to_string(getFieldValue("effective_ber_magnitude"));
     fields.push_back(AmberField(preTitle + "Effective_BER", berStr));
 
-    if (_isPortETH)
+    if (_isPortETH && (portType == NETWORK_PORT_TYPE_NEAR || portType == NETWORK_PORT_TYPE_FAR))
     {
-        string effErrorsStr = (portType == NETWORK_PORT_TYPE_NEAR || portType == NETWORK_PORT_TYPE_FAR) ?
-                                to_string(add32BitTo64(getFieldValue("phy_effective_errors_high"),
-                                                       getFieldValue("phy_effective_errors_low"))) :
-                                "N/A";
+        string effErrorsStr = to_string(
+          add32BitTo64(getFieldValue("phy_effective_errors_high"), getFieldValue("phy_effective_errors_low")));
 
         fields.push_back(AmberField(preTitle + "Effective_Errors", effErrorsStr));
     }
@@ -835,7 +833,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
                                             getFieldValue("phy_raw_errors_lane" + to_string(lane) + "_low"));
                     val = to_string(rawError);
                 }
-                fields.push_back(AmberField("Raw_Errors_Lane" + to_string(lane), val));
+                fields.push_back(AmberField("Raw_Errors_lane" + to_string(lane), val));
             }
             resetLocalParser(ACCESS_REG_PPCNT);
             updateField("local_port", _localPort);
@@ -2260,6 +2258,10 @@ void MlxlinkAmBerCollector::exportToCSV()
     // Preparing CSV header line
     if (!ifile.good())
     {
+        if (!berFile.good())
+        {
+            throw MlxRegException("The provided file path does not exist!");
+        }
         // Going over all groups inside _amberCollection and getting the field name for each one
         for (const auto& sheet : _sheetsList)
         {
