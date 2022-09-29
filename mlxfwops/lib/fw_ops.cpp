@@ -2920,6 +2920,7 @@ int CRSpaceRegisters::getGlobalImageStatus()
             break;
         case CT_QUANTUM2:
         case CT_QUANTUM3:
+        case CT_SPECTRUM4:
             global_image_status_address = 0xa1844;
             break;
         default:
