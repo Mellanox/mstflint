@@ -39,17 +39,19 @@
 #include <dirent.h>
 #endif
 
-#if defined(__WIN__)
 const char* SafeGetEnv(const char* var)
 {
     char* val = getenv(var);
     if (val == NULL)
     {
+#if defined(__WIN__)
         return "."; // Local dir
+#else
+        return "/tmp";
+#endif
     }
     return val;
 }
-#endif
 
 int mapRetValue(int rc, mlxFWMSetupType::T setupType)
 {

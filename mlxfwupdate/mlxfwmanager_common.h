@@ -65,15 +65,14 @@
 #ifdef _MSC_VER
 typedef int mode_t;
 #endif
-const char* SafeGetEnv(const char* var);
-#define TMP_DIR SafeGetEnv("TEMP")
 #define PATH_SEPARATOR "\\"
 #define GetCurrDir(sz, buf) GetCurrentDirectory(sz, buf)
 #else
-#define TMP_DIR "/tmp"
 #define PATH_SEPARATOR "/"
 #define GetCurrDir(sz, buf) getcwd(buf, sz)
 #endif
+const char* SafeGetEnv(const char* var);
+#define TMP_DIR SafeGetEnv("TEMP")
 
 using namespace std;
 
