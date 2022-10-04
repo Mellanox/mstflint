@@ -1671,7 +1671,7 @@ void MlxlinkCommander::strToInt32(char* str, u_int32_t& value)
 void MlxlinkCommander::runningVersion()
 {
     setPrintTitle(_toolInfoCmd, "Tool Information", TOOL_INFORMAITON_INFO_LAST, !_prbsTestMode);
-    setPrintVal(_toolInfoCmd, "Firmware Version", _fwVersion, ANSI_COLOR_GREEN, true, !_prbsTestMode);
+    setPrintVal(_toolInfoCmd, "Firmware Version", getFwVersion(), ANSI_COLOR_GREEN, true, !_prbsTestMode);
     setPrintVal(_toolInfoCmd, "amBER Version", AMBER_VERSION, ANSI_COLOR_GREEN, _productTechnology >= PRODUCT_16NM,
                 !_prbsTestMode);
     setPrintVal(_toolInfoCmd, PKG_NAME " Version", PKG_VER, ANSI_COLOR_GREEN, true, !_prbsTestMode);
