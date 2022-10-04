@@ -153,7 +153,10 @@ protected:
     void sendLocalPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...);
     string getBitmaskPerLaneStr(u_int32_t bitmask);
     void fillParamsToFields(const string& title, const vector<string>& values, vector<AmberField>& fields);
-    void pushModulePerLaneField(vector<AmberField>& fields, string fieldName, float valueCorrection = 1.0);
+    void pushModulePerLaneField(vector<AmberField>& fields,
+                                string fieldName,
+                                float valueCorrection = 1.0,
+                                string laneSep = "_");
     void pushModuleDpPerLane(vector<AmberField>& fields, const string str);
 
     // Helper functions
