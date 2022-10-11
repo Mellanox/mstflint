@@ -76,14 +76,14 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
 
     _baseSheetsList[AMBER_SHEET_GENERAL] = FIELDS_COUNT{4, 4, 4};
     _baseSheetsList[AMBER_SHEET_INDEXES] = FIELDS_COUNT{2, 2, 4};
-    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{48, 141, 6};
+    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{49, 142, 6};
     _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{110, 110, 0};
     _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{16, 21, 11};
     _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{376, 736, 0};
     _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{206, 374, 502};
     _baseSheetsList[AMBER_SHEET_PORT_COUNTERS] = FIELDS_COUNT{35, 0, 50};
     _baseSheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT{2, 2, 0};
-    _baseSheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{18, 18, 15};
+    _baseSheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{17, 17, 15};
     _baseSheetsList[AMBER_SHEET_LINK_UP_INFO] = FIELDS_COUNT{9, 9, 0};
     _baseSheetsList[AMBER_SHEET_LINK_DOWN_INFO] = FIELDS_COUNT{5, 5, 0};
     _baseSheetsList[AMBER_SHEET_TEST_MODE_INFO] = FIELDS_COUNT{68, 136, 0};
@@ -475,7 +475,7 @@ vector<AmberField> MlxlinkAmBerCollector::getSystemInfo()
 
         resetLocalParser(ACCESS_REG_MSGI);
         sendRegister(ACCESS_REG_MSGI, MACCESS_REG_METHOD_GET);
-        fields.push_back(AmberField("Device_PartNumber", getAscii("part_number", 20)));
+        fields.push_back(AmberField("Device_Part_Number", getAscii("part_number", 20)));
 
         resetLocalParser(ACCESS_REG_MGIR);
         sendRegister(ACCESS_REG_MGIR, MACCESS_REG_METHOD_GET);
@@ -610,7 +610,7 @@ vector<AmberField> MlxlinkAmBerCollector::getPhyOperationInfo()
                                 "-1";
         u_int32_t fecModeRequest = (u_int32_t)log2((float)getFieldValue("fec_mode_request"));
         fields.push_back(AmberField("loopback_mode", loopbackMode, !_isPortPCIE));
-        fields.push_back(AmberField("fec_mode_request ", _mlxlinkMaps->_fecModeActive[fecModeRequest], !_isPortPCIE));
+        fields.push_back(AmberField("fec_mode_request", _mlxlinkMaps->_fecModeActive[fecModeRequest], !_isPortPCIE));
 
         if (_isPortPCIE)
         {
@@ -722,6 +722,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             fields.push_back(AmberField("Phy_Manager_State", _mlxlinkMaps->_pmFsmState[getFieldValue("phy_mngr_fsm_"
                                                                                                      "state")]));
             fields.push_back(AmberField("Protocol", _mlxlinkMaps->_networkProtocols[_protoActive]));
+
             resetLocalParser(ACCESS_REG_PTYS);
             updateField("local_port", _localPort);
             updateField("proto_mask", _protoActive);
@@ -735,6 +736,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             fields.push_back(AmberField("Ethernet_Protocol_Active",
                                         ethLinkActive ? _mlxlinkMaps->_EthExtSpeed2Str[ethLinkActive] : "N/A",
                                         _isPortETH));
+
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
             updateField("page_select", PDDR_OPERATIONAL_INFO_PAGE);
@@ -1235,7 +1237,10 @@ string MlxlinkAmBerCollector::getCableBreakoutStr(u_int32_t cableBreakout, u_int
     return cableBreakoutStr;
 }
 
-void MlxlinkAmBerCollector::pushModulePerLaneField(vector<AmberField>& fields, string fieldName, float valueCorrection)
+void MlxlinkAmBerCollector::pushModulePerLaneField(vector<AmberField>& fields,
+                                                   string fieldName,
+                                                   float valueCorrection,
+                                                   string laneSep)
 {
     float value = 0;
     for (u_int32_t lane = 0; lane < MAX_NETWORK_LANES; lane++)
@@ -1245,7 +1250,7 @@ void MlxlinkAmBerCollector::pushModulePerLaneField(vector<AmberField>& fields, s
         {
             value = getPower(value);
         }
-        fields.push_back(AmberField(fieldName + "_" + to_string(lane), to_string(value / valueCorrection)));
+        fields.push_back(AmberField(fieldName + laneSep + to_string(lane), to_string(value / valueCorrection)));
     }
 }
 
