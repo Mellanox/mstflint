@@ -395,7 +395,7 @@ public:
     // Mlxlink query functions
     virtual void showModuleInfo();
     void prepareBerModuleInfoNdr(bool valid);
-    virtual void runningVersion();
+    void runningVersion();
     virtual void operatingInfoPage();
     virtual void supportedInfoPage();
     virtual void troubInfoPage();
