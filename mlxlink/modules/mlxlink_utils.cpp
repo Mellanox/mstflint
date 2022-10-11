@@ -1499,8 +1499,11 @@ int getBDFInt(const string& bdfStr)
             return -1;
         }
 
+        // parse the port function par xx:00.0, split the sec
+        auto funcStr = MlxlinkRecord::split(pfStr[1], ".");
+
         // make sure that there it's matching this format xx:xx.x
-        if (pfStr[0].size() > 2 || pfStr[1].size() > 4)
+        if (pfStr[0].size() > 2 || pfStr[1].size() > 4 || funcStr.size() != 2)
         {
             return -1;
         }
@@ -1517,8 +1520,6 @@ int getBDFInt(const string& bdfStr)
             return -1;
         }
 
-        // parse the port function par xx:00.0, split the sec
-        auto funcStr = MlxlinkRecord::split(pfStr[1], ".");
         u_int32_t tmp = stoi(funcStr[0], &sz, 16);
         tmp <<= 3;
         bdf |= tmp;

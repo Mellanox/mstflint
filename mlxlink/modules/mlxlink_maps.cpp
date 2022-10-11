@@ -637,7 +637,7 @@ void MlxlinkMaps::cimsCableBreakoutMapping()
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_UNSPECIFIED] = "Unspecified";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_QSFPDD] = "X to X";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_2QSFP_or_2QSFPDD] = "X to 2xQSFP or 2xX (depopulated / 4 lanes)";
-    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_4SFPDD_or_4QSFP] = "X to 4xSFP-DD or 4xX (depopulated / 2 lanes)";
+    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_4SFPDD_or_4QSFP] = "X to 4xDSFP or 4xQSFP (depopulated / 2 lanes)";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_8SFP] = "X to 8xSFP";
     _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_QSFP_or_QSFPDD] =
       "X (depopulated / 4 lanes) to QSFP or X (depopulated / 4 lanes)";

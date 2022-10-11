@@ -309,8 +309,8 @@ void MlxlinkUi::printSynopsisCommands()
                                  "Start/show PCIe error injection");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(MPEINJ_ERR_TYPE_FLAG_SHORT, MPEINJ_ERR_TYPE_FLAG, "type",
-                                 "PCIe error type [BAD_DLLP_LCRC(1),BAD_TLP_LCRC(2),BAD_TLP_ECRC(3),ERR_MSG(4),"
-                                 "MALFORMED_TLP(5),POISONED_TLP(6),UNEXPECTED_CPL(7),ACS_VIOLATION(8),"
+                                 "PCIe error type [ABORT(0),BAD_DLLP_LCRC(1),BAD_TLP_LCRC(2),BAD_TLP_ECRC(3),"
+                                 "ERR_MSG(4),MALFORMED_TLP(5),POISONED_TLP(6),UNEXPECTED_CPL(7),ACS_VIOLATION(8),"
                                  "SURPRISE_LINK_DOWN(9),RECEIVER_ERROR(10)]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(MPEINJ_ERR_DURATION_FLAG_SHORT, MPEINJ_ERR_DURATION_FLAG, "duration",
