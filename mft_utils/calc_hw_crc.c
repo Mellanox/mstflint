@@ -30,10 +30,6 @@
  * SOFTWARE.
  */
 
-#include <stdio.h>
-#include "string.h"
-#include <stdlib.h>
-
 #include "calc_hw_crc.h"
 
 u_int16_t crc16table2[256] = {
@@ -60,20 +56,15 @@ u_int16_t crc16table2[256] = {
 u_int16_t calc_hw_crc(u_int8_t* d, int size)
 {
     int i;
-    u_int8_t* data = (u_int8_t*)malloc(sizeof(u_int8_t) * size);
-
-    memcpy(data, d, size);
-    data[0] = ~data[0];
-    data[1] = ~data[1];
 
     unsigned crc = 0xffff;
     for (i = 0; i < size; i++)
     {
-        int table_index = ((crc ^ data[i]) & 0xff);
+        u_int8_t data = i > 1 ? d[i] : ~d[i];
+        int table_index = ((crc ^ data) & 0xff);
         crc = ((crc >> 8) ^ crc16table2[table_index]);
     };
     crc = ((crc << 8) & 0xff00) | ((crc >> 8) & 0xff);
 
-    free(data);
     return crc;
 }
