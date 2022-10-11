@@ -95,6 +95,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _amberCollector = NULL;
     _uniqueCableCmds = 0;
     _uniquePcieCmds = 0;
+    _groupOpcode = MONITOR_OPCODE;
 }
 
 MlxlinkCommander::~MlxlinkCommander()
@@ -1776,7 +1777,7 @@ void MlxlinkCommander::troubInfoPage()
     try
     {
         sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d,group_opcode=%d", PDDR_TROUBLESHOOTING_INFO_PAGE,
-                   MONITOR_OPCODE);
+                   _groupOpcode);
 
         u_int32_t monitorOpcode = getFieldValue("monitor_opcode");
         string color = status2Color(monitorOpcode);

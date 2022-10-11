@@ -593,6 +593,7 @@ public:
     u_int32_t _moduleNumber;
     u_int32_t _slotIndex;
     u_int32_t _linkSpeed;
+    u_int32_t _groupOpcode;
     string _extAdbFile;
     string _device;
     string _fwVersion;
