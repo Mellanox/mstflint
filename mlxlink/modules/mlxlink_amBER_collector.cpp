@@ -1088,6 +1088,7 @@ void MlxlinkAmBerCollector::initCableIdentifier(u_int32_t cableIdentifier)
         case IDENTIFIER_QSFP_DD:
         case IDENTIFIER_OSFP:
         case IDENTIFIER_DSFP:
+        case IDENTIFIER_QSFP_CMIS:
             _isCmisCable = true;
             break;
     }
@@ -1111,6 +1112,7 @@ void MlxlinkAmBerCollector::getCmisComplianceCode(u_int32_t ethComplianceCode,
 
         case ACTIVE:
             ethComplianceStr = _mlxlinkMaps->_activeCableCompliance[ethComplianceCode];
+            ethComplianceStr = ethComplianceStr.empty() ? "N/A" : ethComplianceStr;
             extComplianceStr = _mlxlinkMaps->_cmisHostCompliance[extEthComplianceCode];
             break;
 
@@ -1456,8 +1458,8 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField>& fields)
 
     if (_isCmisCable)
     {
-        activeSetHostComplianceCode = ethComplianceStr;
-        activeSetMediaComplianceCode = extComplianceStr;
+        activeSetHostComplianceCode = extComplianceStr;
+        activeSetMediaComplianceCode = ethComplianceStr;
     }
     fields.push_back(AmberField("Active_set_host_compliance_code", activeSetHostComplianceCode));
     fields.push_back(AmberField("Active_set_media_compliance_code", activeSetMediaComplianceCode));
