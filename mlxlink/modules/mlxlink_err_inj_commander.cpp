@@ -257,7 +257,7 @@ ReqParms MlxlinkErrInjCommander::validateErrType(const string& type,
     }
     else if (duration != -1)
     {
-        if (((u_int32_t)duration) > errTypeSt.maxErrDuration && ((u_int32_t)duration) < errTypeSt.defaultErrDuration)
+        if (((u_int32_t)duration) > errTypeSt.maxErrDuration || ((u_int32_t)duration) < errTypeSt.defaultErrDuration)
         {
             throw MlxRegException("Invalid error duration value for %s: %d", errTypeSt.errorTypeStr.c_str(), duration);
         }
