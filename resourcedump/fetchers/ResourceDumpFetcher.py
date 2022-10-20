@@ -41,6 +41,7 @@
 #
 #######################################################
 
+from codecs import utf_16_be_decode
 from resource_data.DataPrinter import DataPrinter
 from segments.SegmentCreator import SegmentCreator
 from utils import constants
@@ -50,6 +51,8 @@ import os
 import math
 import struct
 import errno
+import ctypes
+import platform
 
 sys.path.append(os.path.join("mtcr_py"))
 sys.path.append(os.path.join("reg_access"))
@@ -58,219 +61,13 @@ import mtcr  # noqa
 import regaccess  # noqa
 
 
-try:
-    import pyverbs.enums as e
-    from pyverbs.providers.mlx5.mlx5dv_objects import Mlx5DvObj
-    from pyverbs.providers.mlx5.mlx5dv import Mlx5DevxObj
-    from pyverbs.pd import PD
-    import pyverbs.providers.mlx5.mlx5_enums as dve
-    from pyverbs.providers.mlx5.mlx5dv import Mlx5Context, Mlx5DVContextAttr
-    from pyverbs.providers.mlx5.mlx5dv import Mlx5UMEM
-    from pyverbs.mem_alloc import read32, read
-    import resource
-    PYVERVBS_SUPPORT = True
-except Exception as _:
-    PYVERVBS_SUPPORT = False
+class MKEY_PARAMS_ST(ctypes.Structure):
+    _fields_ = [("lkey", ctypes.c_uint32),
+                ("umem_addr", ctypes.c_uint64)]
 
-try:
-    from scapy.fields import *
-    from scapy.packet import *
-    SCAPY_SUPPORT = True
-    MLX5_CMD_OP_CREATE_MKEY = 0x200
 
-    class SwMkc(Packet):
-        fields_desc = [
-            BitField('reserved1', 0, 1),
-            BitField('free', 0, 1),                 # 0 - memory key is in use. It can be used for address translation
-                                                    # 1 - memory key is free. Cannot be used for address translation
-            BitField('reserved2', 0, 1),
-            BitField('access_mode_4_2', 0, 3),      # 3 MSB bits of access mode. See encoding in access_mode_1_0 field.
-            BitField('alter_pd_to_vhca_id', 0, 1),    # replace pd check with cross_vhca check
-            BitField('crossed_side_mkey', 0, 1),    # crossed side mkey. Valid if alter_pd_to_vhca_id==1
-            BitField('reserved3', 0, 5),
-            BitField('relaxed_ordering_write', 0, 1),    # If set
-            # ,
-            # issue PCIe cycle with "relaxed ordering" attribute (allows
-            # write after write bypassing) for writes.
-            # Supported only when HCA_CAP.relaxed_oredering_write==1.
-            BitField('reserved4', 0, 1),
-            BitField('small_fence_on_rdma_read_response', 0, 1),    # Responder will have one read request toward the PCIe (per QP).
-            BitField('umr_en', 0, 1),               # Enable umr operation on this MKey
-            BitField('a', 0, 1),                    # If set, atomic operation is enabled
-            BitField('rw', 0, 1),                   # If set, remote write is enabled
-            BitField('rr', 0, 1),                   # If set, remote read is enabled
-            BitField('lw', 0, 1),                   # If set, local write is enabled
-            BitField('lr', 0, 1),                   # If set, local read is enabled. Must be set for all MKeys
-            BitField('access_mode_1_0', 0, 2),      # 2
-                                                    # LSB bits of access mode.
-                                                    # 0
-                                                    # x0: PA - (VA=PA, no translation needed) if set, no virtual to physi
-                                                    # cal address translation is performed for this MKey. Not valid for,
-                                                    # block mode MKey, replicated MTT MKey
-                                                    # 0x1: MTT - (PA is needed)
-                                                    # 0x2: KLMs - (Indirect access)
-                                                    # 0x3: Fixed_Buffer_Size - used when KLMs are associated with fixed
-                                                    # memory size. The fixed sized is determined by log_entity_size. Sup
-                                                    # ported only if HCA_CAP.fixed_buffer_size==1.
-                                                    # See Table 1013,
-                                                    # "
-                                                    # HCA Capabilities Layout
-                                                    # ," on page 1122
-                                                    # 0x4: SW_ICM
-                                                    # 0x5: MEMIC - Supported only when HCA_CAP.DEVICE_MEM
-                                                    # ORY.memic==1. See
-                                                    # Table 1051, "
-                                                    # Device Memory Capabilities
-                                                    # Layout
-                                                    # ," on page 1182
-            BitField('reserved5', 0, 1),
-            BitField('tunneled_atomic', 0, 1),      # If set, part of the MSB"s of the address is set to
-                                                    # in order to generate a
-                                                    # command in the CPU and do atomic for RDMA WR operations in
-                                                    # the memory controller instead of accessing the user"s memory
-                                                    # (DMA). This is according to IBM p9 spec.
-                                                    # Supported only when HCA_CAP.
-                                                    # tunneled_atomic==1.
-            BitField('ma_translation_mode', 0, 2),    # MA translation mode
-            # 0x0: None - no MA translation needed.
-            # 0x1: ATS -
-            # Supported only when HCA_CAP.ats==1, and valid only
-            # when access_mode==PA or MTT.
-            # 0x3: CAPI - valid when access_mode==PA. Then a CAPI translation
-            # can be performed.
-            BitField('reserved6', 0, 4),
-            BitField('qpn', 0, 24),                 # For type 2 memory window - indicates the QP number this memory
-                                                    # window is attached to.
-                                                    # otherwise -
-                                                    # must be 0xffffff.
-            ByteField('mkey_7_0', 0),               # Variant part of MKey specified by this MKey context
-            ByteField('reserved7', 0),
-            BitField('pasid', 0, 24),               # PASID associated with MKEY.
-                                                    # Valid when ma_translation_mode==CAPI
-            BitField('length64', 0, 1),             # Enable registering 2
-                                                    # ^64
-                                                    # bytes per region
-            BitField('bsf_en', 0, 1),               # Enable having bsf list on this MKey
-            BitField('sync_umr', 0, 1),             # Memory region to be used by synchronous UMR process
-            BitField('reserved8', 0, 2),
-            BitField('expected_sigerr_count', 0, 1),    # LSB of expected number of sigerr_cqes. (See
-            # Section 17.4.1, "
-            # Signa
-            # ture Handover Steps
-            # ," on page 696
-            # )
-            BitField('reserved9', 0, 1),
-            BitField('en_rinval', 0, 1),            # Enable remote invalidation
-            BitField('pd', 0, 24),                  # Protection domain. Valid if alter_pd_to_vhca_id==0
-            LongField('start_addr', 0),             # Start Address - Virtual address where this region/window starts
-                                                    # .
-                                                    # For access_mode ==MEMIC, indicates the address of an allocated
-                                                    # MEMIC buffer.
-            LongField('len', 0),                    # Region length. Reserved when length64 bit is set (in which case the
-                                                    # region length is 2^64B).
-                                                    # For access_mode ==MEMIC, indicates the size of an allocated
-                                                    # MEMIC buffer.
-            IntField('bsf_octword_size', 0),        # Size (in units of 16B) required for this MKey's BSFs
-                                                    # Must be a multiple of 4
-            StrFixedLenField('reserved10', None, length=12),
-            ShortField('crossing_target_vhca_id', 0),    # crossing/crossed VHCA ID. Valid if access_mode==INTER_GVMI (crossing) or alter_pd_to_vhca_id==1 (crossed)
-            ShortField('reserved11', 0),
-            IntField('translations_octword_size', 0),    # Size (in units of 16B) required for this MKey's physical buffer list or
-            # SGEs
-            # access_mode: MTT - each translation is 8B
-            # access_mode: KLM
-            # /Fixed
-            #
-            # Buffer Size
-            # - each SGE is 16B
-            # access_mode: PA - reserved
-            # Must be a multiple of 4
-            BitField('reserved12', 0, 25),
-            BitField('relaxed_ordering_read', 0, 1),    # Supported only when .relaxed_oredering_read==1.
-            BitField('reserved13', 0, 1),
-            BitField('log_entity_size', 0, 5),      # When access_mode==MTT: log2 of Page size in bytes granularity.
-                                                    # When access_mode==Fixed_Buffer_Size:
-                                                    # determines the length of
-                                                    # the memory buffers (KLMs) associated with the MKEY.
-                                                    # otherwise: reserved.
-                                                    # Must be >=12
-            BitField('reserved14', 0, 3),
-            BitField('crypto_en', 0, 2),            # Enable crypto. Non-UMRable. Implies one BSF of 64B or 128B must be present.
-            BitField('reserved15', 0, 27),
-        ]
-
-    class CreateMkeyIn(Packet):
-        fields_desc = [
-            ShortField('opcode', MLX5_CMD_OP_CREATE_MKEY),
-            ShortField('uid', 0),                   # Defines the user identifier for which the object was cre
-                                                    # ated.
-                                                    # See Section  8.24.1, "
-                                                    # UCTX - User Context
-                                                    # ," on page  501
-            ShortField('reserved1', 0),
-            ShortField('op_mod', 0),
-            ByteField('reserved2', 0),
-            BitField('input_mkey_index', 0, 24),    # mkey index of the created mkey. 0 means reserved and
-                                                    # mkey index is returned by the device in command output.
-                                                    # See Table  1309, "
-                                                    # MKey Most Significant Bits Selection
-                                                    # ," on
-                                                    # page  1356
-                                                    # .
-            BitField('pg_access', 0, 1),            # Per-page access rights. If set, the
-                                                    # wr_en
-                                                    # and
-                                                    # rd_en
-                                                    # fields
-                                                    # of provided translation entries are valid and must specify
-                                                    # the desired access rights.
-                                                    # Can be set only when access_mode==MTT.
-            BitField('mkey_umem_valid', 0, 1),      # Indicates if buffer is given directly by
-                                                    # MTT
-                                                    # list or by
-                                                    # umem_id and umem_offset.
-                                                    # When 0,
-                                                    # MTT/KLM
-                                                    # list.
-                                                    # When 1, umem_offset and umem_offset ars valid
-            BitField('reserved3', 0, 30),
-            PacketField('sw_mkc', SwMkc(), SwMkc),    # MKey context.
-            LongField('e_mtt_pointer', 0),          # Pointer to MTTs in ICM.
-                                                    # Used instead of
-                                                    # pas
-                                                    # when global
-                                                    # e
-                                                    # bit is set (
-                                                    # See
-                                                    # Table  1165, "
-                                                    # SET_HCA_CAP Input Structure Layout
-                                                    # ," on
-                                                    # page  1306
-                                                    # ).
-                                                    # mtt index should be 64 byte aligned (mtt_index_l[2:0]
-                                                    # should be 0x0).
-            LongField('e_bsf_pointer', 0),
-            IntField('translations_octword_actual_size', 0),    # Actual number of octwords that contain translation
-            # entries. Can be 0 if no KLMs/MTTs are delivered.
-            IntField('mkey_umem_id', 0),
-            LongField('mkey_umem_offset', 0),
-            IntField('bsf_octword_actual_size', 0),    # Actual number of octwords that contain translation
-            # entries. Can be 0 if no KLMs/MTTs are delivered.
-            StrFixedLenField('reserved4', None, length=156),
-            FieldListField('klm_pas_mtt', [0 for x in range(0)], IntField('', 0), count_from=lambda pkt:0),    # Translation entries and BSFs.
-        ]
-
-    class CreateMkeyOut(Packet):
-        fields_desc = [
-            ByteField('status', 0),
-            BitField('reserved1', 0, 24),
-            IntField('syndrome', 0),
-            ByteField('reserved2', 0),
-            BitField('mkey_index', 0, 24),          # MKey index
-            StrFixedLenField('reserved3', None, length=4),
-        ]
-except Exception as _:
-    SCAPY_SUPPORT = False
+class EXTRACTBITS_PARAMS_ST(ctypes.Structure):
+    _fields_ = [("val", ctypes.c_uint32)]
 
 
 class ResourceDumpFetcher:
@@ -280,6 +77,8 @@ class ResourceDumpFetcher:
     INF_DEPTH = 4294967295
 
     def __init__(self, device_name, bin_file=None):
+
+        self._bin_file_h = None
         self._sequence_number = ResourceDumpFetcher._sequence_incrementor()
         self._device_name = device_name
         self._bin_file = bin_file
@@ -292,7 +91,6 @@ class ResourceDumpFetcher:
         except Exception as e:
             raise Exception("{0}".format(e))
 
-        self._bin_file_h = None
         if self._bin_file:
             try:
                 self._bin_file_h = open(self._bin_file, "wb")
@@ -341,7 +139,6 @@ class ResourceDumpFetcher:
                         self._retrieve_resource_dump_inline_data(seg.reference_type, index1=seg.index1,
                                                                  index2=seg.index2, numOfObj1=seg.num_of_obj1,
                                                                  numOfObj2=seg.num_of_obj2, vHCAid=kwargs["vHCAid"], mem=kwargs["mem"], fast_mode=kwargs["fast_mode"]))
-
             segments_list_last_position = len(segments_list)
             segments_list.extend(self._create_segments(inner_inline_data))
 
@@ -364,6 +161,15 @@ class ResourceDumpFetcher:
             yield cnt % 16
             cnt += 1
 
+    def initSourceDump(self):
+        source_dump_lib = None
+        try:
+            mft_py_dir = os.path.dirname(os.path.dirname(__file__))
+            source_dump_lib = ctypes.CDLL(os.path.join(mft_py_dir, 'resourcedump_lib/cresourcedump.so'), use_errno=True)
+        except OSError:
+            raise Exception("resourcedump_lib/cresourcedump.so loading failed")
+        return source_dump_lib
+
     def _retrieve_resource_dump_inline_data(self, segment_type, **kwargs):
         """call the resource dump access register and retrieve the inline data
         till more dump is '0'
@@ -384,6 +190,8 @@ class ResourceDumpFetcher:
         mkey = 0
         buf_size = 0
         address = 0
+        params_st = ctypes.pointer(MKEY_PARAMS_ST())
+        extract_params_st = ctypes.pointer(EXTRACTBITS_PARAMS_ST())
 
         if kwargs["vHCAid"] is None:
             vhca_id = 0
@@ -392,37 +200,42 @@ class ResourceDumpFetcher:
             vhca_id_valid = 1
 
         if kwargs["mem"] is not None:
+            source_dump_lib = None
             try:
-                self._create_mr_devx(kwargs["mem"], cs.MKEY_BUF_SIZE)
-            except Exception as _:
-                if not SCAPY_SUPPORT:
-                    raise Exception("Missing 'scapy' package, please install scapy")
-                elif PYVERVBS_SUPPORT == False:
-                    raise Exception("Missing 'pyverbs' package, please install pyverbs")
-                elif _.args[0] != '':
-                    raise Exception(_.args[0] + " Check the driver is up and the device's rdma name is correct.")
-                else:
-                    raise Exception("mem mode is not supported, make sure rdma-core with devx package installed (part of ofed driver)")
+                if(platform.system() != 'Linux'):
+                    raise Exception("This feature supported only on Linux")
+                source_dump_lib = self.initSourceDump()
+                gen_lkey_ret = source_dump_lib.generate_lkey(ctypes.c_char_p(bytes(kwargs["mem"], "utf-8")), params_st)
+                if gen_lkey_ret != 0:
+                    raise Exception("Check the driver is up and the device's rdma name is correct")
+                mkey = params_st.contents.lkey
+            except Exception as e:
+                raise(e)
+
             inline_dump = 0
-            mkey = self.lkey
             buf_size = cs.MKEY_BUF_SIZE
-            address = self.umem.umem_addr
+            address = params_st.contents.umem_addr
 
         while call_res_dump:
-            results = self.reg_access_obj.sendResDump(segment,  # "segment_type"
-                                                      seg_number,  # "seq_num"  * need check
-                                                      inline_dump,  # "inline_dump"
-                                                      more_dump,  # "more_dump" *
-                                                      vhca_id,  # "vHCAid"
-                                                      vhca_id_valid,  # "vHCAid_valid"
-                                                      index1,  # "index_1" *
-                                                      index2,  # "index_2" *
-                                                      num_of_obj_2,  # "num_of_obj_2" *
-                                                      num_of_obj_1,  # "num_of_obj_1" *
-                                                      device_opaque,  # "device_opaque" *
-                                                      mkey,  # "mkey" 0
-                                                      buf_size,  # "size" 0
-                                                      address)  # "address" 0
+
+            try:
+                results = self.reg_access_obj.sendResDump(segment,  # "segment_type"
+                                                          seg_number,  # "seq_num"  * need check
+                                                          inline_dump,  # "inline_dump"
+                                                          more_dump,  # "more_dump" *
+                                                          vhca_id,  # "vHCAid"
+                                                          vhca_id_valid,  # "vHCAid_valid"
+                                                          index1,  # "index_1" *
+                                                          index2,  # "index_2" *
+                                                          num_of_obj_2,  # "num_of_obj_2" *
+                                                          num_of_obj_1,  # "num_of_obj_1" *
+                                                          device_opaque,  # "device_opaque" *
+                                                          mkey,  # "mkey"
+                                                          buf_size,  # "size"
+                                                          address)  # "address"
+            except Exception as _:
+                if _.args[0] != '':
+                    raise Exception(_.args[0] + "\n Check the driver is up and the device's rdma name is correct.")
 
             more_dump = results["more_dump"]
             vhca_id = results["vhca_id"]
@@ -438,9 +251,14 @@ class ResourceDumpFetcher:
                 if not kwargs["fast_mode"] or segment_type == cs.RESOURCE_DUMP_SEGMENT_TYPE_MENU:
                     # Read all dwords and change endianness
                     for i in range(size):
-                        inline_data.append(struct.unpack("<I", struct.pack(">I", read32(self.umem.umem_addr, i)))[0])
+                        ret = source_dump_lib.bit_extracted_32(ctypes.c_uint64(address), i, extract_params_st)
+                        if(ret == 0):
+                            inline_data.append(extract_params_st.contents.val)
+                        else:
+                            raise Exception("Extracting bits from c code failed!")
                 else:
-                    bin_data = read(self.umem.umem_addr, results["size"])
+                    bin_data = bytes(results["size"])
+                    ret = source_dump_lib.extrac_all(ctypes.c_uint64(address), ctypes.c_int32(results["size"]), bin_data)
             else:
                 if not kwargs["fast_mode"] or segment_type == cs.RESOURCE_DUMP_SEGMENT_TYPE_MENU:
                     inline_data.extend(results["inline_data"][:size])
@@ -459,35 +277,4 @@ class ResourceDumpFetcher:
             if more_dump == 0:
                 call_res_dump = False
 
-        # Release the resorces if use mem mode
-        if kwargs["mem"] is not None:
-            self.mkey_obj.close()
-            self.umem.close()
-
         return inline_data
-
-    try:
-        def _create_umem(self, ctx, size,
-                         access=e.IBV_ACCESS_LOCAL_WRITE,
-                         alignment=resource.getpagesize()):
-            return Mlx5UMEM(ctx, size=size, alignment=alignment, access=access, pgsz_bitmap=alignment)
-
-        def _create_mr_devx(self, rdma_device, buf_size):
-            """This method create mkey and memory buffer using devx (part of ofed driver).
-            """
-            mlx5dv_attr = Mlx5DVContextAttr()
-            self.ctx = Mlx5Context(mlx5dv_attr, name=rdma_device)
-            self.my_pd = PD(self.ctx)
-            self.dv_pd = Mlx5DvObj(dve.MLX5DV_OBJ_PD, pd=self.my_pd).dvpd
-            self.umem = self._create_umem(self.ctx, buf_size)
-            self.mkey_ctx = SwMkc(umr_en=0, lr=1, lw=1, access_mode_1_0=0x1, pd=self.dv_pd.pdn, start_addr=self.umem.umem_addr, len=buf_size)
-            mkey_in = CreateMkeyIn(sw_mkc=self.mkey_ctx, mkey_umem_id=self.umem.umem_id, mkey_umem_valid=1)
-            self.mkey_obj = Mlx5DevxObj(self.ctx, mkey_in, len(CreateMkeyOut()))
-            mkey_out = CreateMkeyOut(self.mkey_obj.out_view)
-            if mkey_out.status:
-                raise PyverbsRDMAError("Failed to create mkey with syndrome {0}".format(mkey_out.syndrome))
-
-            mkey_index = mkey_out.mkey_index
-            self.lkey = mkey_index << 8
-    except Exception as _:
-        pass
