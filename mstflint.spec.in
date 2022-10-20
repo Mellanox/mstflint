@@ -205,6 +205,7 @@ rm -rf $RPM_BUILD_ROOT
 %{mstflint_python_tools}/mstresourcedump/filters/*.py
 %{mstflint_python_tools}/mstresourcedump/fetchers/*.py
 %{mstflint_python_tools}/mstresourcedump/commands/*.py
+%{mstflint_python_tools}/mstresourcedump/resourcedump_lib/cresourcedump.so
 %{mstflint_python_tools}/mstresourceparse/*.py
 %{mstflint_python_tools}/mstresourceparse/parsers/*.py
 %{mstflint_python_tools}/mstresourceparse/utils/*.py
