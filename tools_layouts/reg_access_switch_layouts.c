@@ -1020,6 +1020,40 @@ void reg_access_switch_mkdc_reg_ext_dump(const struct reg_access_switch_mkdc_reg
     reg_access_switch_mkdc_reg_ext_print(ptr_struct, fd, 0);
 }
 
+void reg_access_switch_mrsr_ext_pack(const struct reg_access_switch_mrsr_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 28;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->command);
+}
+
+void reg_access_switch_mrsr_ext_unpack(struct reg_access_switch_mrsr_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 28;
+	ptr_struct->command = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+}
+
+void reg_access_switch_mrsr_ext_print(const struct reg_access_switch_mrsr_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_switch_mrsr_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "command              : " UH_FMT "\n", ptr_struct->command);
+}
+
+unsigned int reg_access_switch_mrsr_ext_size(void)
+{
+	return REG_ACCESS_SWITCH_MRSR_EXT_SIZE;
+}
+
+void reg_access_switch_mrsr_ext_dump(const struct reg_access_switch_mrsr_ext *ptr_struct, FILE *fd)
+{
+	reg_access_switch_mrsr_ext_print(ptr_struct, fd, 0);
+}
 void reg_access_switch_mtcq_reg_ext_pack(const struct reg_access_switch_mtcq_reg_ext* ptr_struct, u_int8_t* ptr_buff)
 {
     u_int32_t offset;
@@ -1275,6 +1309,9 @@ void reg_access_switch_reg_access_switch_Nodes_print(const union reg_access_swit
     adb2c_add_indentation(fd, indent_level);
     fprintf(fd, "icam_reg_ext:\n");
     reg_access_switch_icam_reg_ext_print(&(ptr_struct->icam_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mrsr_ext:\n");
+	reg_access_switch_mrsr_ext_print(&(ptr_struct->mrsr_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "pmaos_reg_ext:\n");
 	reg_access_switch_pmaos_reg_ext_print(&(ptr_struct->pmaos_reg_ext), fd, indent_level + 1);

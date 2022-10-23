@@ -496,8 +496,18 @@ sequence number of each keep-alive session. */
         u_int32_t next_keep_alive_counter;
     };
 
-    /* Description -   */
-    /* Size in bytes - 112 */
+/* Description -   */
+/* Size in bytes - 8 */
+struct reg_access_switch_mrsr_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Reset/shutdown command
+0: clear state of reset_at_pci_disable
+1: software reset (switch soft reset)
+
+6: reset_at_pci_disable - reset will be done at PCI_DISABLE */
+	/* 0x0.0 - 0x0.3 */
+	u_int8_t command;
+};
     struct reg_access_switch_mtcq_reg_ext
     {
         /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -656,7 +666,10 @@ This flag will be asserted in case primary and secondary FW versions are not com
         /* Description -  */
         /* 0x0.0 - 0x14.31 */
         struct reg_access_switch_icam_reg_ext icam_reg_ext;
-        /* Description -  */
+		/* Description -  */
+		/* 0x0.0 - 0x4.31 */
+		struct reg_access_switch_mrsr_ext mrsr_ext;
+		/* Description -  */
 		/* 0x0.0 - 0xc.31 */
 		struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
 		/* Description -  */
@@ -782,6 +795,13 @@ This flag will be asserted in case primary and secondary FW versions are not com
     unsigned int reg_access_switch_mkdc_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MKDC_REG_EXT_SIZE (0x2c)
     void reg_access_switch_mkdc_reg_ext_dump(const struct reg_access_switch_mkdc_reg_ext* ptr_struct, FILE* fd);
+	/* mrsr_ext */
+	void reg_access_switch_mrsr_ext_pack(const struct reg_access_switch_mrsr_ext *ptr_struct, u_int8_t *ptr_buff);
+	void reg_access_switch_mrsr_ext_unpack(struct reg_access_switch_mrsr_ext *ptr_struct, const u_int8_t *ptr_buff);
+	void reg_access_switch_mrsr_ext_print(const struct reg_access_switch_mrsr_ext *ptr_struct, FILE *fd, int indent_level);
+	unsigned int reg_access_switch_mrsr_ext_size(void);
+#define REG_ACCESS_SWITCH_MRSR_EXT_SIZE    (0x8)
+	void reg_access_switch_mrsr_ext_dump(const struct reg_access_switch_mrsr_ext *ptr_struct, FILE *fd);
     /* mtcq_reg_ext */
     void reg_access_switch_mtcq_reg_ext_pack(const struct reg_access_switch_mtcq_reg_ext* ptr_struct, u_int8_t* ptr_buff);
     void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext* ptr_struct, const u_int8_t* ptr_buff);
