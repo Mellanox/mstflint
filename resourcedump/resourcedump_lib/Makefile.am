@@ -36,7 +36,7 @@ lib_LTLIBRARIES = libresourcedump.la
 
 libresourcedump_la_SOURCES = resource_dump.c resource_dump.h
 libresourcedump_la_LIBADD = $(MTCR_DIR)/libmtcr_ul.a $(USER_DIR)/reg_access/libreg_access.a \
-                            $(DEV_MGT_DIR)/libdev_mgt.a -L$(USER_DIR)/tools_layouts/.libs -ltools_layouts
+                            $(DEV_MGT_DIR)/libdev_mgt.a -L$(USER_DIR)/tools_layouts -ltools_layouts
 
 
 resourcedump_pylibdir = $(libdir)/mft/python_tools/resourcedump/resourcedump_lib/
@@ -44,8 +44,8 @@ dist_resourcedump_pylib_DATA = cresourcedump.so
 
 cresourcedump.so: libresourcedump.la
 	$(CC) -Wall -pthread -fpic -shared ${CFLAGS} resource_dump.o -o cresourcedump.so $(MFT_CORE_LIB_LINK) \
-	-L$(USER_DIR)/reg_access/.libs -lreg_access -L$(DEV_MGT_DIR)/.libs  -ldev_mgt \
-    -L$(MTCR_DIR)/.libs/ -lmtcr -L$(USER_DIR)/tools_layouts/.libs -ltools_layouts \
+	-L$(USER_DIR)/reg_access -lreg_access -L$(DEV_MGT_DIR)  -ldev_mgt \
+    -L$(MTCR_DIR) -lmtcr -L$(USER_DIR)/tools_layouts -ltools_layouts \
     $(MFT_CORE_LIB_LINK)
 
 endif
