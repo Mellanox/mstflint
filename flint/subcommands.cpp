@@ -2539,7 +2539,6 @@ bool BurnSubCommand::checkFwVersion(bool CreateFromImgInfo, u_int16_t fw_ver0, u
 
     const string current_version_str = current.get_fw_version(VERSION_FORMAT(_devInfo.fw_info.fw_ver[1]), false, "N/A");
     printf("\n    Current FW version on flash:  %s\n", current_version_str.c_str());
-
     const string next_version_str = new_version.get_fw_version(
       VERSION_FORMAT((CreateFromImgInfo ? _imgInfo.fw_info.fw_ver[1] : fw_ver1)), false, "N/A");
     printf("    New FW version:               %s\n", next_version_str.c_str());
