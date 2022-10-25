@@ -268,6 +268,8 @@ if REG_ACCESS:
                     ("time_left", c_uint32)]
 
 
+    class MRSR_ST(Structure):
+        _fields_ = [("command", c_uint8),]
     class RegAccess:
         GET = REG_ACCESS_METHOD_GET
         SET = REG_ACCESS_METHOD_SET
@@ -287,6 +289,7 @@ if REG_ACCESS:
             self._reg_access_debug_cap = REG_ACCESS.reg_access_debug_cap
             self._reg_access_mddq = REG_ACCESS.reg_access_mddq
             self._reg_access_mdsr = REG_ACCESS.reg_access_mdsr
+			self._reg_access_mrsr = REG_ACCESS.reg_access_mrsr
 
         def _err2str(self, rc):
             err2str = REG_ACCESS.reg_access_err2str
@@ -428,6 +431,11 @@ if REG_ACCESS:
             if command == CMD_GET_STATUS:
                 return mpcirRegisterP.contents.ports_stat
 
+        def sendMRSR(self, command):
+            mrsrRegisterP = pointer(MRSR_ST(command=command))
+            rc = self._reg_access_mrsr(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_SET), mrsrRegisterP)
+            if rc != 0:
+                raise RegAccException("Failed to send Command Register MRSR")
         ##########################
         def sendMFRL(self, method, resetLevel=None, reset_type=None, reset_sync=None):
 

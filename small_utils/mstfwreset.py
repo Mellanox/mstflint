@@ -106,11 +106,21 @@ MLNX_DEVICES = [
     dict(name="ConnectX7", devid=0x218, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX8", devid=0x21e, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX3", devid=0x1f5),
+    dict(name="Switch-IB", devid=0x247, status_config_not_done=(0x80010, 0)),
+    dict(name="Switch-IB-2", devid=0x24b, status_config_not_done=(0x80010, 0)),
+    dict(name="Quantum", devid=0x24d, status_config_not_done=(0x100010, 0)),
+    dict(name="Quantum-2", devid=0x257, status_config_not_done=(0x100010, 0)),
+    dict(name="Spectrum", devid=0x249, status_config_not_done=(0x80010, 0)),
+    dict(name="Spectrum-2", devid=0x24E, status_config_not_done=(0x100010, 0)),
+    dict(name="Spectrum-3", devid=0x250, status_config_not_done=(0x100010, 0)),
+    dict(name="Spectrum-4", devid=0x254, status_config_not_done=(0x100010, 0)),
 ]
 
 # Supported devices.
 SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
                 "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "BlueField4"]
+SUPP_SWITCH_DEVICES = ["Spectrum", "Spectrum-2", "Spectrum-3", "Spectrum-4", 
+                        "Switch-IB", "Switch-IB-2", "Quantum", "Quantum-2"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
 IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
@@ -810,6 +820,22 @@ def isDevSupp(device):
             else:
                 raise RuntimeError("Unsupported Device: %s (%s)" % (device, devDict["name"]))
     raise RuntimeError("Failed to Identify Device: %s" % (device))
+######################################################################
+# Description: Check if device is a switch 
+# OS Support : Linux/Windows
+######################################################################
+def isSwitchDevice(device):
+    devid = 0
+    try:
+        devid = getDevidFromDevice(device)
+        logger.debug('devid = {0:x}'.format(devid))
+    except Exception as e:
+        return False
+    for devDict in MLNX_DEVICES:
+        if devDict["devid"] == devid:
+            if devDict["name"] in SUPP_SWITCH_DEVICES:
+                return True
+    return False
 
 ######################################################################
 # Description: Get All PCI Module Paths
@@ -1532,6 +1558,231 @@ def map2DevPath(device):
             return d
     raise RuntimeError("Can not find path of the provided mst device: " + device)
 
+######################################################################
+# Description: provide host/nic reset flow
+######################################################################
+
+
+def reset_flow_host(device, args, command):
+    # open reg access obj
+    global MstDevObj
+    global RegAccessObj
+    global SkipMstRestart
+    global PciOpsObj
+    global MstFlags
+    global CmdifObj
+    global SkipMultihostSync
+    global DevDBDF
+    global skipDriver
+    global FWResetStatusChecker
+
+    if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
+            and args.reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
+        raise RuntimeError("The tool supports only reset-level 4 on UEFI Secure Boot")  # and it's restricted on UEFI secure boot
+
+    # Exit in case of virtual-machine (not implemented for FreeBSD and Windows)
+    if command == "reset" and platform.system() == "Linux" and "ppc64" not in platform.machine() and "xenenterprise" not in platform.platform():
+        rc, out, _ = cmdExec('lscpu')
+        if rc == 0:
+            if "Hypervisor vendor" in out:
+                raise RuntimeError("The tool is not supported on virtual machines")
+        else:
+            logger.debug("Failed to execute 'lscpu' command rc = {0}".format(rc))
+
+    if platform.system() == "Linux":  # Convert ib-device , net-device to mst-device(mst started) or pci-device
+        if IS_MSTFLINT:
+            if device.startswith('mlx'):
+                driver_path = '/sys/class/infiniband/{0}/device'.format(device)
+                try:
+                    device = os.path.basename(os.readlink(driver_path))
+                except BaseException:
+                    raise RuntimeError('Failed to Identify Device: {0}'.format(device))
+        else:
+            device = map2DevPath(device)
+
+    isDevSupp(device)  # function takes ~330msec - TODO remove it if you need performace
+    
+    DevDBDF = mlxfwreset_utils.getDevDBDF(device, logger)
+    logger.info('device domain:bus:dev.fn (DBDF) is {0}'.format(DevDBDF))
+    SkipMstRestart = args.no_mst_restart
+    skipDriver = args.skip_driver
+    SkipMultihostSync = args.skip_fsm_sync
+    MstDevObj = mtcr.MstDevice(device)
+    RegAccessObj = regaccess.RegAccess(MstDevObj)
+    CmdifObj = cmdif.CmdIf(MstDevObj)
+    PciOpsObj = MlnxPciOpFactory().getPciOpObj(DevDBDF)
+
+    mfrl = CmdRegMfrl(RegAccessObj)
+    # mpcir = CmdRegMpcir(RegAccessObj)
+    mcam = CmdRegMcam(RegAccessObj)
+
+
+    logger.info('Check if device is livefish')
+    DevMgtObj = dev_mgt.DevMgt(MstDevObj)  # check if device is in livefish
+    if DevMgtObj.isLivefishMode() == 1:
+        raise RuntimeError("%s is not supported for device in Flash Recovery mode" % PROG)
+
+    # Check if other process is accessing the device (burning the device)
+    # Supportted on Windows OS only
+    if platform.system() == "Windows":
+        from tools_sync import ToolsSync
+        if ToolsSync(MstDevObj.mf).lock() == False:
+            raise RuntimeError("Other tool is accessing the device! Please try again latter")
+
+    # Socket Direct - Create a list of command i/f for all "other" devices
+    global CmdifObjsSD
+    global MstDevObjsSD
+    global RegAccessObjsSD
+
+    devicesSD = []
+    if command == "reset" and not args.skip_socket_direct:
+
+        try:
+            peripherals = MlnxPeripheralComponents()
+            usr_pci_device = peripherals.get_pci_device(device)
+            socket_direct_pci_devices = peripherals.get_socket_direct_pci_devices(usr_pci_device)
+            for socket_direct_pci_device in socket_direct_pci_devices:
+                devicesSD.append(socket_direct_pci_device.get_alias())
+
+            for deviceSD in devicesSD:
+                MstDevObjsSD.append(mtcr.MstDevice(deviceSD))
+                RegAccessObjsSD.append(regaccess.RegAccess(MstDevObjsSD[-1]))
+                CmdifObjsSD.append(cmdif.CmdIf(MstDevObjsSD[-1]))
+        except BaseException:
+            logger.warning("Failed to check if device is Socket Direct!")
+            devicesSD = []
+            for MstDevObjSD in MstDevObjsSD:
+                MstDevObjSD.close()
+            MstDevObjsSD = []
+            CmdifObjsSD = []
+            RegAccessObjsSD = []
+
+    MstFlags = "" if (args.mst_flags is None) else args.mst_flags
+
+    logger.info('Create FWResetStatusChecker')
+    FWResetStatusChecker = FirmwareResetStatusChecker(RegAccessObj)
+
+    try:
+        if args.pci_bridge:
+            PciOpsObj.setPciBridgeAddr(args.pci_bridge[0])
+    except NotImplementedError as re:
+        if platform.system() == "Windows":
+            pass
+        else:
+            raise re
+
+    print("")
+
+    if command == "query":
+        print(mfrl.query_text())
+        print(mcam.reset_sync_query_text())
+
+    elif command == "reset":
+
+        #print("Reset device {0}:".format(device))
+
+        reset_level = mfrl.default_reset_level() if args.reset_level is None else args.reset_level
+        # print("  * reset-level is '{0}' ({1})".format(reset_level, mfrl.reset_level_description(reset_level)))
+        if mfrl.is_reset_level_supported(reset_level) is False:
+            raise RuntimeError("Reset-level '{0}' is not supported in the current state of this device".format(reset_level))
+
+        reset_type = mfrl.default_reset_type() if args.reset_type is None else args.reset_type
+        # print("  * reset-type  is '{0}' ({1})".format(reset_type, mfrl.reset_type_description(reset_type)))
+        if mfrl.is_reset_type_supported(reset_type) is False:
+            raise RuntimeError("Reset-type '{0}' is not supported in the current state of this device".format(reset_type))
+
+        if args.reset_type and mfrl.is_reset_level_support_reset_type(reset_level) is False:
+            raise RuntimeError("Reset-level '{0}' is not supported with reset-type '{1}'".format(reset_level, reset_type))
+
+        reset_sync = args.reset_sync
+        if reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
+            raise RuntimeError("Synchronization by driver is not supported in the current state of this device")
+        if reset_sync != SyncOwner.TOOL and reset_level != CmdRegMfrl.PCI_RESET:
+            raise RuntimeError("Reset-sync '{0}' is not supported with reset-level '{1}'".format(reset_sync, reset_level))
+
+        minimal_or_requested = 'Minimal' if args.reset_level is None else 'Requested'
+        print("{0} reset level for device, {1}:\n".format(minimal_or_requested, device))
+        print("{0}: {1}".format(reset_level, mfrl.reset_level_description(reset_level)))
+
+        if CmdRegMfrl.is_reset_level_trigger_is_pci_link(reset_level) and mcam.is_pci_rescan_required_supported() and mfrl.is_pci_rescan_required():
+            print("-W- PCI rescan is required after device reset.")
+
+        AskUser("Continue with reset", args.yes)
+        execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, args, mfrl)
+        if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
+            reset_fsm_register()
+            print("-E- Firmware reset failed, retry operation or reboot machine.")
+            return 1
+        else:
+            print("-I- FW was loaded successfully.")
+    elif command == "reset_fsm_register":
+        reset_fsm_register()
+        print("-I- FSM register was reset successfully.")
+    return 0
+
+######################################################################
+# Description: provide switch reset flow
+######################################################################
+
+
+def reset_flow_switch(device, args, command):
+    global MstDevObj
+    global RegAccessObj
+    global FWResetStatusChecker
+
+    MstDevObj = mtcr.MstDevice(device)
+    RegAccessObj = regaccess.RegAccess(MstDevObj)
+
+    logger.info('Check if device is livefish')
+    DevMgtObj = dev_mgt.DevMgt(MstDevObj)  # check if device is in livefish
+    if DevMgtObj.isLivefishMode() == 1:
+        raise RuntimeError("%s is not supported for device in Flash Recovery mode" % PROG)
+
+    # Ch
+    # Check if device is connected via IB, as this method is not supported
+    if DevMgtObj.is_ib_access() == True:
+        raise RuntimeError("Switch FW reset is not supported via IB")
+
+    # Check if other process is accessing the device (burning the device)
+    # Supportted on Windows OS only
+    if platform.system() == "Windows":
+        from tools_sync import ToolsSync
+        if ToolsSync(MstDevObj.mf).lock() == False:
+            raise RuntimeError("Other tool is accessing the device! Please try again later")
+
+    logger.info('Create FWResetStatusChecker')
+    FWResetStatusChecker = FirmwareResetStatusChecker(RegAccessObj)
+
+    if command == "query":
+        raise RuntimeError("query is not supported for switch devices")
+
+    elif command == "reset":
+        if not is_fw_ready(device):
+            raise RuntimeError("FW is not ready to handle ICMD")
+        AskUser("Continue with reset", args.yes)
+        logger.debug('UpdateUptimeBeforeReset')
+        FWResetStatusChecker.UpdateUptimeBeforeReset()
+        RegAccessObj.sendMRSR(0x1)
+        # Min wait time until fw is ready to answer
+        time.sleep(5)
+        # Polling until fw is ready
+        for i in range(10):
+            if i == 10:
+                raise Exception("Timeout waiting for FW to respond after reset command sent")
+            time.sleep(1)
+            if is_fw_ready(device):
+                logger.debug("FW is ready after = " + str(i) + " seconds")
+                break
+
+        logger.debug('UpdateUptimeAfterReset')
+        FWResetStatusChecker.UpdateUptimeAfterReset()
+
+        if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
+            print("-E- Firmware reset failed, retry operation or reboot machine.")
+            return 1
+        else:
+            print("-I- FW reset success.")
+    return 0
 
 ######################################################################
 # Description: Main
@@ -1649,7 +1900,6 @@ def main():
     device = args.device
     global device_global
     device_global = args.device  # required for reset_fsm_register when exiting with ctrl+c/exception (latter think how to move the global)
-    yes = args.yes
 
     command = args.command[0]
     if command in ["r", "reset"]:
@@ -1662,161 +1912,34 @@ def main():
     # logger
     logger = LoggerFactory().get('mlxfwreset', args.log)
 
-    # open reg access obj
-    global MstDevObj
-    global RegAccessObj
-    global SkipMstRestart
-    global PciOpsObj
-    global skipDriver
-    global MstFlags
-    global CmdifObj
-    global SkipMultihostSync
-    global DevDBDF
-    global FWResetStatusChecker
 
-    if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
-            and args.reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
-        raise RuntimeError("The tool supports only reset-level 4 on UEFI Secure Boot")  # and it's restricted on UEFI secure boot
 
-    # Exit in case of virtual-machine (not implemented for FreeBSD and Windows)
-    if command == "reset" and platform.system() == "Linux" and "ppc64" not in platform.machine():
-        rc, out, _ = cmdExec('lscpu')
-        if rc == 0:
-            if "Hypervisor vendor" in out:
-                raise RuntimeError("The tool is not supported on virtual machines")
-        else:
-            logger.debug("Failed to execute 'lscpu' command rc = {0}".format(rc))
 
-    if platform.system() == "Linux":  # Convert ib-device , net-device to mst-device(mst started) or pci-device
-        if IS_MSTFLINT:
-            if device.startswith('mlx'):
-                driver_path = '/sys/class/infiniband/{0}/device'.format(device)
-                try:
-                    device = os.path.basename(os.readlink(driver_path))
-                except BaseException:
-                    raise RuntimeError('Failed to Identify Device: {0}'.format(device))
-        else:
-            device = map2DevPath(device)
 
     # Insert Flow here
-    isDevSupp(device)  # function takes ~330msec - TODO remove it if you need performace
+    if isSwitchDevice(device):
 
-    DevDBDF = mlxfwreset_utils.getDevDBDF(device, logger)
-    logger.info('device domain:bus:dev.fn (DBDF) is {0}'.format(DevDBDF))
-    SkipMstRestart = args.no_mst_restart
-    skipDriver = args.skip_driver
-    SkipMultihostSync = args.skip_fsm_sync
-    MstDevObj = mtcr.MstDevice(device)
-    RegAccessObj = regaccess.RegAccess(MstDevObj)
-    CmdifObj = cmdif.CmdIf(MstDevObj)
-    PciOpsObj = MlnxPciOpFactory().getPciOpObj(DevDBDF)
 
-    mfrl = CmdRegMfrl(RegAccessObj)
-    # mpcir = CmdRegMpcir(RegAccessObj)
-    mcam = CmdRegMcam(RegAccessObj)
 
-    logger.info('Check if device is livefish')
-    DevMgtObj = dev_mgt.DevMgt(MstDevObj)  # check if device is in livefish
-    if DevMgtObj.isLivefishMode() == 1:
-        raise RuntimeError("%s is not supported for device in Flash Recovery mode" % PROG)
 
-    # Check if other process is accessing the device (burning the device)
-    # Supportted on Windows OS only
-    if platform.system() == "Windows":
-        from tools_sync import ToolsSync
-        if ToolsSync(MstDevObj.mf).lock() == False:
-            raise RuntimeError("Other tool is accessing the device! Please try again latter")
+       return reset_flow_switch(device, args, command)
 
-    # Socket Direct - Create a list of command i/f for all "other" devices
-    global CmdifObjsSD
-    global MstDevObjsSD
-    global RegAccessObjsSD
 
-    devicesSD = []
-    if command == "reset" and not args.skip_socket_direct:
 
-        try:
-            peripherals = MlnxPeripheralComponents()
-            usr_pci_device = peripherals.get_pci_device(device)
-            socket_direct_pci_devices = peripherals.get_socket_direct_pci_devices(usr_pci_device)
-            for socket_direct_pci_device in socket_direct_pci_devices:
-                devicesSD.append(socket_direct_pci_device.get_alias())
 
-            for deviceSD in devicesSD:
-                MstDevObjsSD.append(mtcr.MstDevice(deviceSD))
-                RegAccessObjsSD.append(regaccess.RegAccess(MstDevObjsSD[-1]))
-                CmdifObjsSD.append(cmdif.CmdIf(MstDevObjsSD[-1]))
-        except BaseException:
-            logger.warning("Failed to check if device is Socket Direct!")
-            devicesSD = []
-            for MstDevObjSD in MstDevObjsSD:
-                MstDevObjSD.close()
-            MstDevObjsSD = []
-            CmdifObjsSD = []
-            RegAccessObjsSD = []
 
-    MstFlags = "" if (args.mst_flags is None) else args.mst_flags
+    else:
 
-    logger.info('Create FWResetStatusChecker')
-    FWResetStatusChecker = FirmwareResetStatusChecker(RegAccessObj)
 
-    try:
-        if args.pci_bridge:
-            PciOpsObj.setPciBridgeAddr(args.pci_bridge[0])
-    except NotImplementedError as re:
-        if platform.system() == "Windows":
-            pass
-        else:
-            raise re
 
-    print("")
 
-    if command == "query":
-        print(mfrl.query_text())
-        print(mcam.reset_sync_query_text())
+      
 
-    elif command == "reset":
 
-        #print("Reset device {0}:".format(device))
 
-        reset_level = mfrl.default_reset_level() if args.reset_level is None else args.reset_level
-        # print("  * reset-level is '{0}' ({1})".format(reset_level, mfrl.reset_level_description(reset_level)))
-        if mfrl.is_reset_level_supported(reset_level) is False:
-            raise RuntimeError("Reset-level '{0}' is not supported in the current state of this device".format(reset_level))
 
-        reset_type = mfrl.default_reset_type() if args.reset_type is None else args.reset_type
-        # print("  * reset-type  is '{0}' ({1})".format(reset_type, mfrl.reset_type_description(reset_type)))
-        if mfrl.is_reset_type_supported(reset_type) is False:
-            raise RuntimeError("Reset-type '{0}' is not supported in the current state of this device".format(reset_type))
 
-        if args.reset_type and mfrl.is_reset_level_support_reset_type(reset_level) is False:
-            raise RuntimeError("Reset-level '{0}' is not supported with reset-type '{1}'".format(reset_level, reset_type))
-
-        reset_sync = args.reset_sync
-        if reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
-            raise RuntimeError("Synchronization by driver is not supported in the current state of this device")
-        if reset_sync != SyncOwner.TOOL and reset_level != CmdRegMfrl.PCI_RESET:
-            raise RuntimeError("Reset-sync '{0}' is not supported with reset-level '{1}'".format(reset_sync, reset_level))
-
-        minimal_or_requested = 'Minimal' if args.reset_level is None else 'Requested'
-        print("{0} reset level for device, {1}:\n".format(minimal_or_requested, device))
-        print("{0}: {1}".format(reset_level, mfrl.reset_level_description(reset_level)))
-
-        if CmdRegMfrl.is_reset_level_trigger_is_pci_link(reset_level) and mcam.is_pci_rescan_required_supported() and mfrl.is_pci_rescan_required():
-            print("-W- PCI rescan is required after device reset.")
-
-        AskUser("Continue with reset", yes)
-        execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, args, mfrl)
-        if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
-            reset_fsm_register()
-            print("-E- Firmware reset failed, retry operation or reboot machine.")
-            return 1
-        else:
-            print("-I- FW was loaded successfully.")
-    elif command == "reset_fsm_register":
-        reset_fsm_register()
-        print("-I- FSM register was reset successfully.")
-    return 0
+       return reset_flow_host(device, args, command)
 
 
 if __name__ == '__main__':
