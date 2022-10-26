@@ -1542,7 +1542,7 @@ void init_freq_configuration_fields(mflash* mfl)
         {
             mfl->is_freq_handle_required = true;
             mfl->core_clocks_per_usec_addr = 0x7f4;
-            mfl->flash_div_addr = 0x3409804;
+            mfl->flash_div_addr = 0xff804;
             break;
         }
         default:
