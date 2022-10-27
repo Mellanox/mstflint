@@ -49,6 +49,7 @@ public:
     virtual ~FsCtrlOperations();
 
     virtual u_int8_t FwType();
+    virtual bool IsFifthGen() { return true; }
 
     virtual bool FwQuery(fw_info_t* fwInfo,
                          bool readRom = true,

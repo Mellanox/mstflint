@@ -103,7 +103,7 @@ public:
         memset(&_fwParams, 0, sizeof(_fwParams));
     };
 
-    bool IsFifthGen() { return (_ioAccess != NULL && _ioAccess->is_flash() && _ioAccess->is_fifth_gen()); }
+    virtual bool IsFifthGen() { return (_ioAccess != NULL && _ioAccess->is_flash() && _ioAccess->is_fifth_gen()); }
 
     bool CreateSignatureManager();
 

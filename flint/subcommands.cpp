@@ -3244,7 +3244,7 @@ FlintStatus BurnSubCommand::executeCommand()
     }
     // set fw type
     _fwType = _fwOps->FwType();
-    if (_fwOps->IsFsCtrlOperations() || _fwOps->IsFifthGen())
+    if (_fwOps->IsFifthGen())
     {
         if (_flintParams.mac_specified || _flintParams.macs_specified)
         {
