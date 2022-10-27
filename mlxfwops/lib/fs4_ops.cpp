@@ -4695,6 +4695,66 @@ bool Fs4Operations::StorePublicKeyInPublicKeys2(const image_layout_file_public_k
     return true;
 }
 
+bool Fs4Operations::FindPublicKeyInPublicKeys2(const vector<u_int32_t>& keypair_uuid,
+                                               bool& found,
+                                               image_layout_file_public_keys_3& public_key)
+{
+    // Find ITOC entry
+    fs4_toc_info* itocEntry = (fs4_toc_info*)NULL;
+    if (!Fs4GetItocInfo(_fs4ImgInfo.itocArr.tocArr, _fs4ImgInfo.itocArr.numOfTocs, FS3_PUBLIC_KEYS_4096, itocEntry))
+    {
+        return errmsg("FindPublicKeyInPublicKeys2 failed - Error: %s", err());
+    }
+
+    u_int32_t num_of_key_slots = image_layout_public_keys_2_size() / image_layout_file_public_keys_2_size();
+    for (u_int32_t ii = 0; ii < num_of_key_slots; ii++)
+    {
+        u_int32_t key_start_offset = ii * image_layout_file_public_keys_2_size();
+        image_layout_file_public_keys_2 stored_public_key;
+        memset(&stored_public_key, 0, sizeof(stored_public_key));
+        image_layout_file_public_keys_2_unpack(&stored_public_key, itocEntry->section_data.data() + key_start_offset);
+
+        // Compare keys based on UUID
+        if (equal(begin(keypair_uuid), end(keypair_uuid), begin(stored_public_key.keypair_uuid)))
+        {
+            found = true;
+            memset(&public_key, 0, sizeof(public_key));
+            copy(begin(stored_public_key.key), end(stored_public_key.key), begin(public_key.key));
+            copy(begin(stored_public_key.keypair_uuid), end(stored_public_key.keypair_uuid),
+                 begin(public_key.keypair_uuid));
+            public_key.keypair_exp = stored_public_key.keypair_exp;
+            public_key.component_authentication_configuration =
+              stored_public_key.component_authentication_configuration;
+            break;
+        }
+    }
+    return true;
+}
+
+bool Fs4Operations::GetFRCKey(image_layout_file_public_keys_3& frc_key)
+{
+    // FRC UUIDs
+    const unsigned int NUM_OF_UNIQUE_UUIDS = 2;
+    vector<u_int32_t> uuids[NUM_OF_UNIQUE_UUIDS];
+    // uuids[0] = {0xec897142, 0x386911e7, 0x9d48f44d, 0x306574e8}; // Legacy 2K FRC
+    uuids[0] = {0x4562e75e, 0x619511ec, 0x8139ac1f, 0x6b01e5ae}; // CX7
+    uuids[1] = {0x0bcbe8d2, 0x029f11ed, 0x8708ac1f, 0x6b01e5ae}; // BF3
+
+    for (auto& uuid : uuids)
+    {
+        bool uuid_found = false;
+        if (!FindPublicKeyInPublicKeys2(uuid, uuid_found, frc_key))
+        {
+            return errmsg("GetFRCKey failed - Error: %s", err());
+        }
+        if (uuid_found)
+        {
+            break;
+        }
+    }
+    return true;
+}
+
 bool Fs4Operations::StorePublicKey(const char* public_key_file, const char* uuid)
 {
     image_layout_public_keys_3 public_keys_3;
@@ -4707,6 +4767,11 @@ bool Fs4Operations::StorePublicKey(const char* public_key_file, const char* uuid
     if (!StorePublicKeyInPublicKeys2(public_keys_3.file_public_keys_3[0]))
     {
         return errmsg("StorePublicKey failed - Error: %s", err());
+    }
+
+    if (!GetFRCKey(public_keys_3.file_public_keys_3[1]))
+    {
+        return errmsg("GetFRCKey failed - Error: %s", err());
     }
 
     //* Store public-key and uuid in section and update its matching ITOC entry (with updated section_crc and entry_crc)

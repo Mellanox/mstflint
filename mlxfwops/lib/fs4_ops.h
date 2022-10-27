@@ -372,6 +372,10 @@ private:
     virtual bool IsPublicKeyAlreadyInPublicKeys2(const image_layout_file_public_keys_2& public_key,
                                                  fs4_toc_info* itocEntry);
     virtual bool StorePublicKeyInPublicKeys2(const image_layout_file_public_keys_3& public_key);
+    virtual bool GetFRCKey(image_layout_file_public_keys_3& frc_key);
+    virtual bool FindPublicKeyInPublicKeys2(const vector<u_int32_t>& keypair_uuid,
+                                            bool& found,
+                                            image_layout_file_public_keys_3& public_key);
 
     // Members
     Fs4ImgInfo _fs4ImgInfo;
