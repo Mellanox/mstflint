@@ -30,7 +30,7 @@ INCLUDES = -I$(top_srcdir) -I$(COMMON_DIR) -I$(REG_ACCESS_DIR) -I$(LAYOUTS_DIR) 
 
 AM_CXXFLAGS = -Wall -W -MP -H -MD -pipe -DMST_UL -g -std=c++11 $(COMPILER_FPIC)
 AM_CPPFLAGS = $(AM_CXXFLAGS)
-
+CRESOURCEDUMP_SO = cresourcedump.so
 lib_LTLIBRARIES = libresourcedump.la
 
 
@@ -39,13 +39,13 @@ libresourcedump_la_LIBADD = $(MTCR_DIR)/libmtcr_ul.a $(USER_DIR)/reg_access/libr
                             $(DEV_MGT_DIR)/libdev_mgt.a -L$(USER_DIR)/tools_layouts -ltools_layouts
 
 
-resourcedump_pylibdir = $(libdir)/mft/python_tools/resourcedump/resourcedump_lib/
+resourcedump_pylibdir = $(libdir)/mstflint/python_tools/mstresourcedump/resourcedump_lib/
 dist_resourcedump_pylib_DATA = cresourcedump.so
 
-cresourcedump.so: libresourcedump.la
-	$(CC) -Wall -pthread -fpic -shared ${CFLAGS} resource_dump.o -o cresourcedump.so $(MFT_CORE_LIB_LINK) \
+${CRESOURCEDUMP_SO}: libresourcedump.la
+	$(CC) -Wall -pthread -fpic -shared ${CFLAGS} resource_dump.o -o ${CRESOURCEDUMP_SO} $(MFT_CORE_LIB_LINK) \
 	-L$(USER_DIR)/reg_access -lreg_access -L$(DEV_MGT_DIR)  -ldev_mgt \
-    -L$(MTCR_DIR) -lmtcr -L$(USER_DIR)/tools_layouts -ltools_layouts \
+    -L$(MTCR_DIR) -L$(USER_DIR)/tools_layouts -ltools_layouts \
     $(MFT_CORE_LIB_LINK)
 
 endif
