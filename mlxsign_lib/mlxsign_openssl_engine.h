@@ -71,7 +71,7 @@ public:
     OpensslEngineSigner(const string& engineName, const string& keyIdentifier);
     virtual ~OpensslEngineSigner();
     ErrorCode init();
-    ErrorCode sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg);
+    ErrorCode sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg) const;
     int getPrivateKeySize();
 
 private:
@@ -81,11 +81,11 @@ private:
     ENGINE* engine;
     string engineName;
     string keyIdentifier;
-    string getOpenSSLError();
+    string getOpenSSLError() const;
     void initOpenSSLEngine();
     void loadPrivateKey();
     void createContext();
-    void digest(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg);
+    void digest(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg) const;
 };
 
 } // namespace MlxSign

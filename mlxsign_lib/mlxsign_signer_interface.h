@@ -34,10 +34,14 @@
 #define USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_
 
 #include "mlxsign_lib.h"
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
 #include "mlxsign_openssl_engine.h"
+#endif
 
 using namespace std;
 
+namespace MlxSign
+{
 /*
  * Class Signer: interface for various types of signers
  */
@@ -47,16 +51,18 @@ class Signer
 public:
     virtual ~Signer(){};
     virtual MlxSign::ErrorCode Init() = 0;
-    virtual MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature) = 0;
+    virtual MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature) const = 0;
 };
 
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
 class MlxSignRSAViaOpenssl : public Signer
 {
 public:
     MlxSignRSAViaOpenssl(string privPemFileStr);
 
-    MlxSign::ErrorCode Init();
-    MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature);
+    MlxSign::ErrorCode Init() override;
+    MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature) const override;
+    MlxSign::SHAType GetShaType() { return _shaType; };
 
 private:
     string _privPemFileStr;
@@ -64,17 +70,22 @@ private:
     MlxSignRSA _rsa;
 };
 
+#if !defined(NO_DYNAMIC_ENGINE)
 class MlxSignRSAViaHSM : public Signer
 {
 public:
     MlxSignRSAViaHSM(string opensslEngine, string opensslKeyID);
 
-    MlxSign::ErrorCode Init();
-    MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature);
+    MlxSign::ErrorCode Init() override;
+    MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature) const override;
 
 private:
     MlxSign::OpensslEngineSigner _engineSigner;
     string _opensslEngine;
 };
+#endif // #if !defined(NO_DYNAMIC_ENGINE)
 
+#endif // #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+
+} // namespace MlxSign
 #endif /* USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_ */

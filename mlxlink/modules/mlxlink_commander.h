@@ -247,6 +247,21 @@
 #define PREI_SHOW_MIXERS_FLAG_SHORT ' '
 
 //------------------------------------------------------------
+//        Mlxlink PCIE Error Injection Flags
+#define MPEINJ_PCIE_ERR_INJ_FLAG "pcie_error_injection"
+#define MPEINJ_PCIE_ERR_INJ_FLAG_SHORT ' '
+#define MPEINJ_ERR_TYPE_FLAG "error_type"
+#define MPEINJ_ERR_TYPE_FLAG_SHORT ' '
+#define MPEINJ_ERR_DURATION_FLAG "error_duration"
+#define MPEINJ_ERR_DURATION_FLAG_SHORT ' '
+#define MPEINJ_INJ_DELAY_FLAG "injection_delay"
+#define MPEINJ_INJ_DELAY_FLAG_SHORT ' '
+#define MPEINJ_ERR_PARAMETERS_FLAG "error_parameters"
+#define MPEINJ_ERR_PARAMETERS_FLAG_SHORT ' '
+#define MPEINJ_DBDF_FLAG "dbdf"
+#define MPEINJ_DBDF_FLAG_SHORT ' '
+
+//------------------------------------------------------------
 //        Histogram Counters Flags
 #define PPHCR_FEC_HIST_FLAG "rx_fec_histogram"
 #define PPHCR_FEC_HIST_FLAG_SHORT ' '
@@ -308,34 +323,12 @@ enum OPTION_TYPE
     ERR_INJ_ENABLE,
     RS_FEC_HISTOGRAM,
     SLRG_TEST,
+    PCIE_ERROR_INJ,
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
 };
 
 ///////////
-struct DPN
-{
-    DPN()
-    {
-        depth = 0;
-        pcieIndex = 0;
-        node = 0;
-    }
-
-    DPN(u_int32_t d, u_int32_t p, u_int32_t n)
-    {
-        depth = d;
-        pcieIndex = p;
-        node = n;
-    }
-
-    bool operator==(DPN dpn) { return (dpn.depth == depth && dpn.pcieIndex == pcieIndex && dpn.node == node); }
-
-    u_int32_t depth;
-    u_int32_t pcieIndex;
-    u_int32_t node;
-};
-
 struct MODULE_FIELD
 {
     string uiName;
@@ -355,7 +348,7 @@ public:
 
     void checkRegCmd();
     void validatePortToLC();
-    void validatePortType(const string& portTypeStr);
+    virtual void validatePortType(const string& portTypeStr);
     void updatePortType();
     void gearboxBlock(const string& option);
     void checkLocalPortDPNMapping(u_int32_t localPort);
@@ -402,9 +395,9 @@ public:
     // Mlxlink query functions
     virtual void showModuleInfo();
     void prepareBerModuleInfoNdr(bool valid);
-    virtual void runningVersion();
-    void operatingInfoPage();
-    void supportedInfoPage();
+    void runningVersion();
+    virtual void operatingInfoPage();
+    virtual void supportedInfoPage();
     virtual void troubInfoPage();
     void showPddr();
     void getPtys();
@@ -412,14 +405,14 @@ public:
     void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
     void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
     virtual void showEye();
-    void showFEC();
+    virtual void showFEC();
     virtual void showSltp();
-    virtual void showDeviceData();
+    void showDeviceData();
     void showBerMonitorInfo();
     void showExternalPhy();
     void showPcie();
     void showPcieLinks();
-    void collectAMBER();
+    virtual void collectAMBER();
     void collectBER();
     void showTxGroupMapping();
 
@@ -456,12 +449,13 @@ public:
     virtual void prepareBerInfo();
     virtual void prepareBerInfoEDR();
     virtual void getPcieNdrCounters();
+    virtual vector<AmberField> getBerFields();
 
     std::map<std::string, std::string> getPprt();
     std::map<std::string, std::string> getPptt();
 
-    std::map<std::string, float> getRawEffectiveErrors();
-    std::map<std::string, float> getRawEffectiveErrorsinTestMode();
+    std::map<string, string> getRawEffectiveErrors();
+    std::map<string, string> getRawEffectiveErrorsinTestMode();
     int prbsModeToMask(const string& mode);
     string prbsMaskToMode(u_int32_t mask, u_int32_t modeSelector);
     string getPrbsModeRX();
@@ -473,11 +467,8 @@ public:
     int getLinkDown();
     float getRawBERLimit();
     bool getResult(std::map<std::string, float> errors_vector, float raw_ber_limit, int link_down);
-    string getDevicePN(bool queryMSGI = false);
-    string getDeviceSN(bool queryMSGI = false);
-    string getDeviceProductName(bool queryMSGI = false);
-    string getDeviceRev(bool queryMSGI = false);
-    string getDeviceFW();
+    string getDevicePN();
+    virtual string getFwVersion();
     void printOuptputVector(vector<MlxlinkCmdPrint>& cmdOut);
     virtual void prepareJsonOut();
 
@@ -496,7 +487,6 @@ public:
     void writeCableEEPROM();
     void readCableEEPROM();
     void performModulePrbsCommands();
-    ;
     void performControlParams();
 
     MlxlinkCmdPrint _toolInfoCmd;
@@ -504,7 +494,6 @@ public:
     MlxlinkCmdPrint _supportedInfoCmd;
     MlxlinkCmdPrint _troubInfoCmd;
     MlxlinkCmdPrint _testModeInfoCmd;
-    MlxlinkCmdPrint _pcieInfoCmd;
     MlxlinkCmdPrint _moduleInfoCmd;
     MlxlinkCmdPrint _berInfoCmd;
     MlxlinkCmdPrint _testModeBerInfoCmd;
@@ -532,6 +521,8 @@ public:
     void sendPplr();
     void sendPepc();
     void setTxGroupMapping();
+    void handleRxErrInj();
+    void handlePCIeErrInj();
 
     // Config helper functions
     bool isForceDownSupported();
@@ -563,20 +554,19 @@ public:
     u_int32_t fecToBit(const string& fec, const string& speedStrG);
     u_int32_t getFecCapForCheck(const string& speedStr);
     void checkPplmCap();
-    void updateSltpEdrHdrFields();
-    void updateSltpNdrFields();
+    string updateSltpEdrHdrFields();
+    string updateSltpNdrFields();
     string getSltpStatus();
     void getSltpAlevOut(u_int32_t lane);
     void getSltpRegAndLeva(u_int32_t lane);
     u_int32_t getLaneSpeed(u_int32_t lane);
     void validateNumOfParamsForNDRGen();
     void checkSltpParamsSize();
+    bool isMpeinjSupported();
 
     // Mlxlink params
     UserInput _userInput;
     dm_dev_id_t _devID;
-    u_int32_t _localPort;
-    u_int32_t _portType;
     DPN _dpn;
     u_int32_t _numOfLanes;
     u_int32_t _numOfLanesPcie;
@@ -585,6 +575,7 @@ public:
     u_int32_t _protoActive;
     u_int32_t _uniqueCmds;
     u_int32_t _uniqueCableCmds;
+    u_int32_t _uniquePcieCmds;
     u_int32_t _networkCmds;
     u_int32_t _anDisable;
     u_int32_t _speedBerCsv;
@@ -602,6 +593,7 @@ public:
     u_int32_t _moduleNumber;
     u_int32_t _slotIndex;
     u_int32_t _linkSpeed;
+    u_int32_t _groupOpcode;
     string _extAdbFile;
     string _device;
     string _fwVersion;
@@ -616,7 +608,6 @@ public:
     bool _plugged;
     bool _linkModeForce;
     bool _useExtAdb;
-    bool _isHCA;
     bool _ddmSupported;
     bool _cmisCable;
     bool _qsfpCable;

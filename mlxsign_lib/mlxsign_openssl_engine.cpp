@@ -117,7 +117,7 @@ OpensslEngineSigner::~OpensslEngineSigner()
 #endif
 }
 
-string OpensslEngineSigner::getOpenSSLError()
+string OpensslEngineSigner::getOpenSSLError() const
 {
     BIO* bio = BIO_new(BIO_s_mem());
     ERR_print_errors(bio);
@@ -175,7 +175,7 @@ void OpensslEngineSigner::createContext()
     }
 }
 
-void OpensslEngineSigner::digest(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg)
+void OpensslEngineSigner::digest(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg) const
 {
     int rc = EVP_DigestSignInit(mdCtx, NULL, EVP_sha512(), NULL, (EVP_PKEY*)key);
     if (rc != 1)
@@ -240,7 +240,7 @@ ErrorCode OpensslEngineSigner::init()
     return errorCode;
 }
 
-ErrorCode OpensslEngineSigner::sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg)
+ErrorCode OpensslEngineSigner::sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signed_msg) const
 {
     MlxSign::ErrorCode errorCode = MlxSign::MLX_SIGN_SUCCESS;
     try

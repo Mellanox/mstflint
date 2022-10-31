@@ -31,6 +31,10 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
+if LINUX_BUILD
+   SUBDIRS=resourcedump_lib
+endif 
+
 USER_DIR = $(top_srcdir)
 bin_SCRIPTS=mstresourcedump
 

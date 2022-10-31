@@ -160,6 +160,7 @@ private:
     void linkPeerMaxSpeedMapping();
     void portStateMapping();
     void techMapping();
+    void pcieEnumMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -278,9 +279,9 @@ public:
     std::map<u_int32_t, std::string> _pllUglState;
     std::map<u_int32_t, std::string> _slrgFomMode;
     std::map<u_int32_t, std::string> _pcieDevStatus;
+    std::map<u_int32_t, PcieErrType> _pcieErrType;
 
     string _sltpHeader;
-    string _berCollectTitle;
     string _showErrorsTitle;
 };
 

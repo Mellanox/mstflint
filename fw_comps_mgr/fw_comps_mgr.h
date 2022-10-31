@@ -274,6 +274,7 @@ typedef enum
     FWCOMPS_MCC_REJECTED_LINKX_TRANSFER = 0x115,
     FWCOMPS_MCC_REJECTED_LINKX_ACTIVATE = 0x116,
     FWCOMPS_MCC_REJECTED_INCOMPATIBLE_FLASH = 0x117,
+    FWCOMPS_MCC_REJECTED_TOKEN_ALREADY_APPLIED = 0x118,
 
     // errors regarding REG_ACCESS
     FWCOMPS_REG_ACCESS_OK = 0,
@@ -364,7 +365,8 @@ public:
     typedef enum
     {
         DEVICE_HCA_SWITCH = 0,
-        DEVICE_GEARBOX = 1
+        DEVICE_GEARBOX = 1,
+        DEVICE_UNKNOWN
     } DeviceTypeT;
 
     FwCompsMgr(const char* devname, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
@@ -409,6 +411,7 @@ public:
     bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st* cmpLinkX);
     void GenerateHandle();
     bool isMCDDSupported() { return isDmaSupported; };
+    bool IsSecondaryHost(bool& isSecondary);
 
 private:
     typedef enum
@@ -469,7 +472,8 @@ private:
         MCC_ERRCODE_REJECTED_HOST_STORAGE_IN_USE = 0x13,
         MCC_ERRCODE_REJECTED_LINKX_TRANSFER = 0x14,
         MCC_ERRCODE_REJECTED_LINKX_ACTIVATE = 0x15,
-        MCC_ERRCODE_REJECTED_INCOMPATIBLE_FLASH = 0x16
+        MCC_ERRCODE_REJECTED_INCOMPATIBLE_FLASH = 0x16,
+        MCC_ERRCODE_REJECTED_TOKEN_ALREADY_APPLIED = 0x17
     } mcc_command_error_t;
 
     typedef enum

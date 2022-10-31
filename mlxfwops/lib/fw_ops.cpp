@@ -2436,14 +2436,9 @@ bool FwOperations::FwInsertSHA256(PrintCallBack)
     return errmsg("FwInsertSHA256 not supported");
 }
 
-bool FwOperations::signForFwUpdate(const char*, const char*, PrintCallBack)
+bool FwOperations::SignForFwUpdate(const char*, const MlxSign::Signer&, MlxSign::SHAType, PrintCallBack)
 {
-    return errmsg("signForFwUpdate not supported");
-}
-
-bool FwOperations::signForFwUpdateUsingHSM(const char*, MlxSign::OpensslEngineSigner&, PrintCallBack)
-{
-    return errmsg("signForFwUpdateUsingHSM not supported");
+    return errmsg("SignForFwUpdate not supported");
 }
 
 bool FwOperations::FwSignWithTwoRSAKeys(const char*, const char*, const char*, const char*, PrintCallBack)
@@ -2456,13 +2451,9 @@ bool FwOperations::FwSignWithHmac(const char*)
     return errmsg("FwSignWithHmac not supported");
 }
 
-bool FwOperations::signForSecureBoot(const char*, const char*, const char*)
+bool FwOperations::SignForSecureBoot(const char*, const char*, const MlxSign::Signer&)
 {
-    return errmsg("signForSecureBoot not supported");
-}
-bool FwOperations::signForSecureBootUsingHSM(const char*, const char*, MlxSign::OpensslEngineSigner&)
-{
-    return errmsg("signForSecureBoot not supported");
+    return errmsg("SignForSecureBoot not supported");
 }
 bool FwOperations::isHashesTableHwPtrValid()
 {
@@ -2784,18 +2775,6 @@ bool FwOperations::FwCalcSHA(MlxSign::SHAType, vector<u_int8_t>&, vector<u_int8_
 {
     return errmsg("FwCalcSHA is not supported.");
 }
-bool FwOperations::InsertSecureFWSignature(vector<u_int8_t>, const char*, PrintCallBack)
-{
-    return errmsg("InsertSecureFWSignature not supported");
-}
-bool FwOperations::PreparePublicKeyData(const char*, vector<u_int8_t>&, unsigned int&)
-{
-    return errmsg("PreparePublicKeyData not supported");
-}
-bool FwOperations::storePublicKeyInSection(const char*, const char*)
-{
-    return errmsg("storePublicKeyInSection not supported");
-}
 bool FwOperations::storeSecureBootSignaturesInSection(vector<u_int8_t>, vector<u_int8_t>, vector<u_int8_t>)
 {
     return errmsg("storeSecureBootSignaturesInSection not supported");
@@ -2910,6 +2889,7 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
         case CT_QUANTUM3:
         case CT_BLUEFIELD3:
         case CT_BLUEFIELD4:
+        case CT_SPECTRUM4:
             lifeCycleAddress = 0xf0000;
             firstBit = 4;
             bitLen = 2;
@@ -2940,6 +2920,7 @@ int CRSpaceRegisters::getGlobalImageStatus()
             break;
         case CT_QUANTUM2:
         case CT_QUANTUM3:
+        case CT_SPECTRUM4:
             global_image_status_address = 0xa1844;
             break;
         default:

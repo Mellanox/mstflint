@@ -36,7 +36,6 @@
 
 #include <cibfw_layouts.h>
 #include <cx6fw_layouts.h>
-#include <image_layout_layouts.h>
 #include <cx4fw_layouts.h>
 #include "fw_ops.h"
 #include "fs3_ops.h"
@@ -97,14 +96,17 @@ public:
     bool FwResetTimeStamp();
     virtual bool FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage = false);
     bool FwSignWithHmac(const char* key_file);
-    bool signForSecureBoot(const char* private_key_file, const char* public_key_file, const char* guid_key_file);
-    bool signForSecureBootUsingHSM(const char* public_key_file,
-                                   const char* uuid,
-                                   MlxSign::OpensslEngineSigner& engineSigner);
-    bool signForFwUpdateUsingHSM(const char* uuid, MlxSign::OpensslEngineSigner& engineSigner, PrintCallBack printFunc);
-    virtual bool
-      PreparePublicKeyData(const char* public_key_file, vector<u_int8_t>& publicKeyData, unsigned int& pem_offset);
-    virtual bool storePublicKeyInSection(const char* public_key_file, const char* uuid);
+    bool SignForSecureBoot(const char* public_key_file, const char* uuid, const MlxSign::Signer& signer);
+    virtual bool ParsePublicKeyFromFile(const char* public_key_file,
+                                        vector<u_int8_t>& publicKeyData,
+                                        u_int32_t& keyPairExp,
+                                        image_layout_component_authentication_configuration& keyAuthConf);
+    virtual bool StorePublicKey(const char* public_key_file, const char* uuid);
+    virtual void PreparePublicKey(const vector<u_int8_t>& publicKeyData,
+                                  const vector<u_int32_t>& uuidData,
+                                  const u_int32_t keyPairExp,
+                                  const image_layout_component_authentication_configuration& keyAuthConf,
+                                  image_layout_file_public_keys_3& secureBootPublicKey);
     virtual bool
       storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
                                          vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
@@ -366,6 +368,13 @@ private:
     bool SetImageIVHwPointer();
     void RemoveCRCsFromMainSection(vector<u_int8_t>& img);
     bool MaskBootRecordCRC(vector<u_int8_t>& img);
+
+    virtual bool
+      GetPublicKeyFromFile(const char* public_key_file, const char* uuid, image_layout_file_public_keys_3* public_key);
+    virtual bool GetFreeSlotInPublicKeys2(fs4_toc_info* itocEntry, u_int32_t& idx);
+    virtual bool IsPublicKeyAlreadyInPublicKeys2(const image_layout_file_public_keys_2& public_key,
+                                                 fs4_toc_info* itocEntry);
+    virtual bool StorePublicKeyInPublicKeys2(const image_layout_file_public_keys_3& public_key);
 
     // Members
     Fs4ImgInfo _fs4ImgInfo;

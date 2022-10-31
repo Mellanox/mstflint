@@ -31,12 +31,12 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.21.0, eranj@mellanox.co.il)
+AC_INIT(mstflint, 4.22.0, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.21.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.22.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -431,9 +431,11 @@ else
     AC_CONFIG_FILES(mtcr_ul/Makefile)
 fi
 
+AM_CONDITIONAL(LINUX_BUILD, [test  "x$OS" = "xLinux"])
+AC_SUBST(LINUX_BUILD)
 
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mft_utils/hsmclient/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
         tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
         flint/Makefile small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
-        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile resourcedump/Makefile resourceparse/Makefile )
+        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile resourcedump/Makefile resourcedump/resourcedump_lib/Makefile resourceparse/Makefile )
 

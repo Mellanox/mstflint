@@ -188,11 +188,11 @@ class Parser:
     def _parse_union_selector_field(self, field, seg):
         """This method parse union field and present only the relevant field
         (selected by the selector)"""
-        selected_field_enum = field.uSelector.dict[int(self._current_bit_array[field.uSelector.offset:field.uSelector.offset + field.size], 2)]
+        union_field_offset = self._calculate_aligned_to_dword_offset(field.uSelector.offset, field.uSelector.size)
+        selected_field_enum = field.uSelector.dict[int(self._current_bit_array[union_field_offset:union_field_offset + field.uSelector.size], 2)]
         for item in field.subItems:
             if item.attrs['selected_by'] == selected_field_enum:
-                prefix = self._build_union_prefix(field.nodeDesc)
-                self._parse_seg_field(item, prefix + item.name, seg)
+                self._parse_seg_field(item, item.name, seg)
 
     def _parse_seg_field(self, field, field_str, seg):
         """This method is a recursive method that build the inner fields

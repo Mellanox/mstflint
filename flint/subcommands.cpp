@@ -53,9 +53,6 @@
 #endif
 #if !defined(NO_OPEN_SSL)
 #include <mlxsign_lib/mlxsign_lib.h>
-#if !defined(NO_DYNAMIC_ENGINE)
-#include <mlxsign_lib/mlxsign_openssl_engine.h>
-#endif
 #endif
 #include "hex64.h"
 #define MAX_IMG_TYPE_LEN 20
@@ -1698,8 +1695,8 @@ SignSubCommand::SignSubCommand()
     _flagLong = "sign";
     _flagShort = "";
     _paramExp = "None";
-    _example = FLINT_NAME
-      " -i fw_image.bin [--private_key file.pem --key_uuid uuid_string] OR [--openssl_engine engine --openssl_key_id identifier --key_uuid uuid_string] sign";
+    _example = FLINT_NAME " -i fw_image.bin [--private_key file.pem --key_uuid uuid_string] OR [--openssl_engine "
+                          "engine --openssl_key_id identifier --key_uuid uuid_string] sign";
     _v = Wtv_Img;
     _maxCmdParamNum = 0;
     _cmdType = SC_Sign;
@@ -1721,85 +1718,67 @@ FlintStatus SignSubCommand::executeCommand()
     if (_flintParams.openssl_engine_usage_specified)
     {
 #if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
-        MlxSign::OpensslEngineSigner engineSigner(_flintParams.openssl_engine, _flintParams.openssl_key_id);
-        int rc = engineSigner.init();
+        //* Init Signer
+        MlxSign::MlxSignRSAViaHSM signer(_flintParams.openssl_engine, _flintParams.openssl_key_id);
+        int rc = signer.Init();
         if (rc)
         {
-            reportErr(true, "Failed to initialize %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
+            reportErr(true, "Open SSL dynamic engine functionality is not supported.\n");
             return FLINT_FAILED;
         }
 
-        // flint sign over openssl only allow for 4K key size
-        int keySize = engineSigner.getPrivateKeySize();
-        if (keySize != KEY_SIZE_512)
-        {
-            reportErr(true, "The HSM key has to be 4096 bit!\n");
-            return FLINT_FAILED;
-        }
-        vector<u_int8_t> fourMbImage;
-        vector<u_int8_t> signature;
-        vector<u_int8_t> sha;
-        if (!_imgOps->FwCalcSHA(MlxSign::SHA512, sha, fourMbImage))
-        {
-            reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-        rc = engineSigner.sign(fourMbImage, signature);
-        if (rc)
-        {
-            reportErr(true, "Failed to set private key from engine (rc = 0x%x)\n", rc);
-            return FLINT_FAILED;
-        }
-        if (!_imgOps->InsertSecureFWSignature(signature, _flintParams.privkey_uuid.c_str(), &verifyCbFunc))
+        if (!_imgOps->SignForFwUpdate(_flintParams.privkey_uuid.c_str(), signer, MlxSign::SHA512, &verifyCbFunc))
         {
             reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
             return FLINT_FAILED;
         }
-        return FLINT_SUCCESS;
 #else
         reportErr(true, "Open SSL functionality is not supported.\n");
         return FLINT_FAILED;
 #endif
     }
-    if (_flintParams.hsm_specified)
+    else if (!_flintParams.privkey_file.empty() && !_flintParams.privkey_uuid.empty())
     {
-        // Luna HSM not supported
-        reportErr(true, FLINT_NO_HSM);
-        return FLINT_FAILED;
-    }
-    else
-    {
-        if (_flintParams.privkey_specified && _flintParams.uuid_specified)
+        if (_flintParams.privkey2_specified && _flintParams.uuid2_specified)
         {
-            if (_flintParams.privkey2_specified && _flintParams.uuid2_specified)
-            {
-                if (!_imgOps->FwSignWithTwoRSAKeys(_flintParams.privkey_file.c_str(),
-                                                   _flintParams.privkey_uuid.c_str(),
-                                                   _flintParams.privkey2_file.c_str(),
-                                                   _flintParams.privkey2_uuid.c_str(),
-                                                   &verifyCbFunc))
-                {
-                    reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
-                    return FLINT_FAILED;
-                }
-            }
-            else
-            {
-                if (!_imgOps->signForFwUpdate(_flintParams.privkey_file.c_str(), _flintParams.privkey_uuid.c_str(),
-                                              &verifyCbFunc))
-                {
-                    reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
-                    return FLINT_FAILED;
-                }
-            }
-        }
-        else
-        {
-            if (!_imgOps->FwInsertSHA256(&verifyCbFunc))
+            if (!_imgOps->FwSignWithTwoRSAKeys(_flintParams.privkey_file.c_str(),
+                                               _flintParams.privkey_uuid.c_str(),
+                                               _flintParams.privkey2_file.c_str(),
+                                               _flintParams.privkey2_uuid.c_str(),
+                                               &verifyCbFunc))
             {
                 reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
                 return FLINT_FAILED;
             }
+        }
+        else
+        {
+#if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
+            //* Init Signer
+            MlxSign::MlxSignRSAViaOpenssl signer(_flintParams.privkey_file.c_str());
+            int rc = signer.Init();
+            if (rc)
+            {
+                return FLINT_FAILED;
+            }
+
+            if (!_imgOps->SignForFwUpdate(_flintParams.privkey_uuid.c_str(), signer, signer.GetShaType(), &verifyCbFunc))
+            {
+                reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
+                return FLINT_FAILED;
+            }
+#else
+            reportErr(true, "Open SSL functionality is not supported.\n");
+            return FLINT_FAILED;
+#endif
+        }
+    }
+    else
+    {
+        if (!_imgOps->FwInsertSHA256(&verifyCbFunc))
+        {
+            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
+            return FLINT_FAILED;
         }
     }
     return FLINT_SUCCESS;
@@ -1824,48 +1803,29 @@ bool SignSubCommand::verifyParams()
             reportErr(true, "The Sign command with --openssl_key_id flag does not accept public keys\n");
             return false;
         }
-        if (_flintParams.privkey_specified)
+        if (!_flintParams.privkey_file.empty())
         {
-            reportErr(
-              true,
-              "The Sign command does not accept --private_key flag with the following flags: --openssl_engine, --openssl_key_id\n");
-            return false;
-        }
-    }
-    else if (_flintParams.hsm_specified)
-    {
-        if (_flintParams.uuid_specified == false)
-        {
-            reportErr(true, HSM_UUID_MISSING);
-            return false;
-        }
-        if (_flintParams.private_key_label_specified == false)
-        {
-            reportErr(true, HSM_PRIVATE_KEY_LABEL_MISSING);
-            return false;
-        }
-        if (_flintParams.hsm_password_specified == false)
-        {
-            reportErr(true, HSM_PASSWORD_MISSING);
+            reportErr(true, "The Sign command does not accept --private_key flag with the following flags: "
+                            "--openssl_engine, --openssl_key_id\n");
             return false;
         }
     }
     else
     {
-        if (_flintParams.privkey_specified ^ _flintParams.uuid_specified)
+        if (_flintParams.privkey_file.empty() != _flintParams.privkey_uuid.empty())
         {
             reportErr(true, "To Sign the image with RSA you must provide "
                             "private key and uuid.\n");
             return false;
         }
 
-        if (!_flintParams.privkey_specified && _flintParams.privkey2_specified)
+        if (_flintParams.privkey_file.empty() && _flintParams.privkey2_specified)
         {
             reportErr(true, "Use --private_key if you want to sign with only one key.\n");
             return false;
         }
 
-        if (_flintParams.privkey2_specified ^ _flintParams.uuid2_specified)
+        if (_flintParams.privkey2_specified != _flintParams.uuid2_specified)
         {
             reportErr(true, "To Sign the image with two RSA keys you must provide "
                             "two private keys and two uuid.\n");
@@ -1897,7 +1857,6 @@ BinaryCompareSubCommand::BinaryCompareSubCommand()
     _maxCmdParamNum = 1;
     _minCmdParamNum = 0;
     _cmdType = SC_Binary_Compare;
-    _fwType = 0;
     _devQueryRes = 0;
     _mccSupported = false;
     memset(&_devInfo, 0, sizeof(_devInfo));
@@ -2033,7 +1992,6 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
     {
         _flintParams.override_cache_replacement = true;
     }
-    _fwType = _fwOps->FwType();
     // query both image and device
     if (!_fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false)))
     {
@@ -2112,14 +2070,45 @@ SignRSASubCommand::SignRSASubCommand()
     _flagLong = "rsa_sign";
     _flagShort = "";
     _paramExp = "None";
-    _example = FLINT_NAME
-      " -i fw_image.bin [--private_key file.pem] OR [--private_key_label <label> --user_password <password> --hsm] --public_key file.pub --key_uuid <uuid_string> rsa_sign";
+    _example = FLINT_NAME " -i fw_image.bin --private_key file.pem"
+                          " --public_key file.pub --key_uuid <uuid_string> rsa_sign";
     _v = Wtv_Img;
     _maxCmdParamNum = 0;
     _cmdType = SC_RSA_Sign;
 }
 
 SignRSASubCommand::~SignRSASubCommand() {}
+
+// TODO - consider moving this functionality to a factory in mlxsign lib
+unique_ptr<MlxSign::Signer> SignRSASubCommand::createSigner()
+{
+    unique_ptr<MlxSign::Signer> signer = nullptr;
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+    if (_flintParams.openssl_engine_usage_specified)
+    {
+#if !defined(NO_DYNAMIC_ENGINE)
+        //* Init openssl engine for signing
+        signer = unique_ptr<MlxSign::Signer>(
+          new MlxSign::MlxSignRSAViaHSM(_flintParams.openssl_engine, _flintParams.openssl_key_id));
+#else
+        reportErr(true, "Open SSL functionality is not supported.\n");
+#endif
+    }
+    else
+    {
+        signer = unique_ptr<MlxSign::Signer>(new MlxSign::MlxSignRSAViaOpenssl(_flintParams.privkey_file.c_str()));
+    }
+#else
+    reportErr(true, "RSA sign is not supported.\n");
+#endif
+
+    if (signer != nullptr && signer->Init() != MlxSign::MLX_SIGN_SUCCESS)
+    {
+        signer.reset();
+        reportErr(true, "Failed to initialize signer.\n");
+    }
+    return signer;
+}
 
 FlintStatus SignRSASubCommand::executeCommand()
 {
@@ -2133,147 +2122,88 @@ FlintStatus SignRSASubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
-    if (_flintParams.openssl_engine_usage_specified)
+    unique_ptr<MlxSign::Signer> signer_ptr = createSigner();
+    if (signer_ptr == nullptr)
     {
-#if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
-        //* Init openssl engine for signing
-        MlxSign::OpensslEngineSigner engineSigner(_flintParams.openssl_engine, _flintParams.openssl_key_id);
-        int rc = engineSigner.init();
-        if (rc)
-        {
-            reportErr(true, "Failed to initialize %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
-            return FLINT_FAILED;
-        }
-        int keySize = engineSigner.getPrivateKeySize();
-        if (keySize != KEY_SIZE_512)
-        {
-            reportErr(true, "The HSM key has to be 4096 bit!\n");
-            return FLINT_FAILED;
-        }
-
-        //* Sign for secure-boot
-        if (!_imgOps->signForSecureBootUsingHSM(_flintParams.pubkey_file.c_str(), _flintParams.privkey_uuid.c_str(),
-                                                engineSigner))
-        {
-            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-
-        //* Sign for FW update
-        if (!_imgOps->signForFwUpdateUsingHSM(_flintParams.privkey_uuid.c_str(), engineSigner, &verifyCbFunc))
-        {
-            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-
-        //* Fill image_signature section with 0xff
-        vector<u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
-        _imgOps->UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
-        return FLINT_SUCCESS;
-#else
-        reportErr(true, "Open SSL functionality is not supported.\n");
-        return FLINT_FAILED;
-#endif
-    }
-
-    if (!_flintParams.hsm_specified)
-    { // While working via HSM we don't need a private key, only public key
-        if (!is_file_exists(_flintParams.privkey_file.c_str()))
-        {
-            reportErr(true, SIGN_PRIVATE_KEY_NOT_FOUND, _flintParams.privkey_file.c_str());
-            return FLINT_FAILED;
-        }
-    }
-    if (!is_file_exists(_flintParams.pubkey_file.c_str()))
-    {
-        reportErr(true, SIGN_PUBLIC_KEY_NOT_FOUND, _flintParams.pubkey_file.c_str());
         return FLINT_FAILED;
     }
 
-    if (_flintParams.hsm_specified)
+    if (!_imgOps->SignForSecureBoot(_flintParams.pubkey_file.c_str(), _flintParams.privkey_uuid.c_str(), *signer_ptr))
     {
-        // Luna HSM not supported
-        reportErr(true, FLINT_NO_HSM);
+        reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
         return FLINT_FAILED;
     }
-    else
+
+    if (!_imgOps->SignForFwUpdate(_flintParams.privkey_uuid.c_str(), *signer_ptr, MlxSign::SHA512, &verifyCbFunc))
     {
-        //* Sign for secure-boot
-        if (!_imgOps->signForSecureBoot(_flintParams.privkey_file.c_str(), _flintParams.pubkey_file.c_str(),
-                                        _flintParams.privkey_uuid.c_str()))
-        {
-            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-
-        //* Sign for FW update
-        if (!_imgOps->signForFwUpdate(_flintParams.privkey_file.c_str(), _flintParams.privkey_uuid.c_str(),
-                                      &verifyCbFunc))
-        {
-            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-
-        //* Fill image_signature section with 0xff
-        vector<u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
-        _imgOps->UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
-        return FLINT_SUCCESS;
+        reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
+        return FLINT_FAILED;
     }
+
+    //* Fill image_signature section with 0xff
+    vector<u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
+    _imgOps->UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
+    return FLINT_SUCCESS;
 }
 
 bool SignRSASubCommand::verifyParams()
 {
-    if (_flintParams.openssl_engine_usage_specified)
-    {
-        if (!_flintParams.pubkey_specified)
-        {
-            reportErr(true, "To create secure boot signature with OpenSSL you must provide public key.\n");
-            return false;
-        }
-        if (_flintParams.privkey_uuid.empty())
-        {
-            reportErr(true, "To create secure boot signature with OpenSSL you must provide uuid string.\n");
-            return false;
-        }
-        if (_flintParams.openssl_engine.empty() || _flintParams.openssl_key_id.empty())
-        {
-            reportErr(true, "To Sign the image with OpenSSL you must provide the engine and the key identifier.\n");
-            return false;
-        }
-        if (_flintParams.openssl_key_id.find("type=public", 0) != std::string::npos)
-        {
-            reportErr(true, "The rsa_sign command with --openssl_key_id flag does not accept public keys\n");
-            return false;
-        }
-        if (_flintParams.privkey_specified)
-        {
-            reportErr(
-              true,
-              "The Sign command does not accept --private_key flag with the following flags: --openssl_engine, --openssl_key_id\n");
-            return false;
-        }
-        return true;
-    }
-    if (!_flintParams.hsm_specified && !_flintParams.privkey_specified)
-    {
-        reportErr(true, "To Sign the image with RSA you must provide private key.\n");
-        return false;
-    }
-    if (!_flintParams.pubkey_specified)
-    {
-        reportErr(true, "To Sign the image with RSA you must provide public key.\n");
-        return false;
-    }
-    if (!_flintParams.uuid_specified)
-    {
-        reportErr(true, "To Sign the image with RSA you must provide uuid string.\n");
-        return false;
-    }
-
     if (_flintParams.cmd_params.size() > 0)
     {
         reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
         return false;
+    }
+
+    if (_flintParams.pubkey_file.empty())
+    {
+        reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "\"--public_key\"");
+        return false;
+    }
+    else if (!is_file_exists(_flintParams.pubkey_file.c_str()))
+    {
+        reportErr(true, SIGN_PUBLIC_KEY_NOT_FOUND, _flintParams.pubkey_file.c_str());
+        return false;
+    }
+
+    if (_flintParams.privkey_uuid.empty())
+    {
+        reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "\"--key_uuid\"");
+        return false;
+    }
+
+    if (_flintParams.openssl_engine_usage_specified)
+    {
+        if (_flintParams.openssl_engine.empty() || _flintParams.openssl_key_id.empty())
+        {
+            reportErr(true, "To use OpenSSL engine you must provide the engine and the key identifier.\n");
+            return false;
+        }
+        if (_flintParams.openssl_key_id.find("type=public", 0) != std::string::npos)
+        {
+            reportErr(true, "The %s command with --openssl_key_id flag does not accept public keys\n", _name.c_str());
+            return false;
+        }
+        if (!_flintParams.privkey_file.empty())
+        {
+            reportErr(true,
+                      "The %s command does not accept --private_key flag with the following flags: "
+                      "--openssl_engine, --openssl_key_id\n",
+                      _name.c_str());
+            return false;
+        }
+    }
+    else
+    {
+        if (_flintParams.privkey_file.empty())
+        {
+            reportErr(true, "To sign the image with RSA you must provide private key.\n");
+            return false;
+        }
+        else if (!is_file_exists(_flintParams.privkey_file.c_str()))
+        {
+            reportErr(true, SIGN_PRIVATE_KEY_NOT_FOUND, _flintParams.privkey_file.c_str());
+            return false;
+        }
     }
     return true;
 }
@@ -2388,9 +2318,8 @@ bool BurnSubCommand::verifyParams()
                 if (_flintParams.cable_device_index_specified == false ||
                     _flintParams.cable_device_size_specified == false)
                 {
-                    reportErr(
-                      true,
-                      "Must supply the linkx <device index and size> or <autoupdate> for activate cables, but not both simultaneously!\n");
+                    reportErr(true, "Must supply the linkx <device index and size> or <autoupdate> for activate "
+                                    "cables, but not both simultaneously!\n");
                     return false;
                 }
             }
@@ -2399,9 +2328,8 @@ bool BurnSubCommand::verifyParams()
                 if (_flintParams.cable_device_index_specified == true ||
                     _flintParams.cable_device_size_specified == true)
                 {
-                    reportErr(
-                      true,
-                      "Must supply the linkx <device index and size> or <autoupdate> for activate cables, bot not both simultaneously!\n");
+                    reportErr(true, "Must supply the linkx <device index and size> or <autoupdate> for activate "
+                                    "cables, bot not both simultaneously!\n");
                     return false;
                 }
             }
@@ -5511,8 +5439,8 @@ SetCertChainSubCommand::SetCertChainSubCommand()
 {
     _name = "set attestation certificate chain";
     _desc = "Set read-only attestation certificate chain (For FS4 image only).";
-    _extendedDesc =
-      "Set Read-only attestation certificate chain, Set attestation certificate chain in the given FS4 image, intended for production use only.";
+    _extendedDesc = "Set Read-only attestation certificate chain, Set attestation certificate chain in the given FS4 "
+                    "image, intended for production use only.";
     _flagLong = "set_attestation_cert_chain";
     _flagShort = "";
     _param = "<Certificate chain file>";
@@ -7334,9 +7262,8 @@ bool TimeStampSubCommand::parseTimeStamp(string tsStr)
     int count = sscanf(tsStr.c_str(), "%04d-%02d-%02dT%02d:%02d:%02dZ", &year, &month, &day, &hour, &minutes, &seconds);
     if (count != 6)
     {
-        reportErr(
-          true,
-          "Failed to parse timestamp: input should be compliant to the following ISO 8601 format: YYYY-MM-DDThh:mm:ssZ\n");
+        reportErr(true, "Failed to parse timestamp: input should be compliant to the following ISO 8601 format: "
+                        "YYYY-MM-DDThh:mm:ssZ\n");
         return false;
     }
     // check time args
@@ -7508,9 +7435,8 @@ FlintStatus TimeStampSubCommand::executeCommand()
         case TimeStampSubCommand::TS_Set:
             if (!IsValidDevice)
             {
-                reportErr(
-                  true,
-                  "Failed to perform timestamp set operation. Failed to set timestamp. Time stamping not supported by FW.\n");
+                reportErr(true, "Failed to perform timestamp set operation. Failed to set timestamp. Time stamping not "
+                                "supported by FW.\n");
                 return FLINT_FAILED;
             }
             rc = setTs();
@@ -7529,9 +7455,8 @@ FlintStatus TimeStampSubCommand::executeCommand()
         case TimeStampSubCommand::TS_Reset:
             if (!IsValidDevice)
             {
-                reportErr(
-                  true,
-                  "Failed to perform timestamp reset operation. Failed to reset timestamp. Time stamping not supported by FW.\n");
+                reportErr(true, "Failed to perform timestamp reset operation. Failed to reset timestamp. Time stamping "
+                                "not supported by FW.\n");
                 return FLINT_FAILED;
             }
             rc = resetTs();
@@ -7638,52 +7563,6 @@ FlintStatus SubCommand::UnlockDevice(FwOperations* fwOps)
     return FLINT_SUCCESS;
 }
 
-/***********************
- * Class: SignSubCommand
- ***********************/
-ImportHsmKeySubCommand::ImportHsmKeySubCommand()
-{
-    _name = "import_hsm_key";
-    _desc = "Import PEM file to HSM device";
-    _extendedDesc = "Import PEM file to HSM device";
-    _flagLong = "import_hsm_key";
-    _flagShort = "";
-    _paramExp = "None";
-    _example = FLINT_NAME
-      " --user_password <password> --private_key file.pem --private_key_label <label> --public_key_label <label> (optional)";
-    _v = Wtv_Uninitilized;
-    _maxCmdParamNum = 0;
-    _cmdType = SC_Sign;
-}
-
-ImportHsmKeySubCommand::~ImportHsmKeySubCommand() {}
-
-FlintStatus ImportHsmKeySubCommand::executeCommand()
-{
-    reportErr(true, FLINT_NO_HSM);
-    return FLINT_FAILED;
-}
-
-bool ImportHsmKeySubCommand::verifyParams()
-{
-    if (_flintParams.privkey_specified == false)
-    {
-        reportErr(true, "To import the key to the HSM device you must provide private key PEM file\n");
-        return false;
-    }
-    if (_flintParams.private_key_label_specified == false)
-    {
-        reportErr(true, "To import the key to the HSM device you must provide private key label\n");
-        return false;
-    }
-    if (_flintParams.hsm_password_specified == false)
-    {
-        reportErr(true, "To import the key to the HSM device you must HSM user password\n");
-        return false;
-    }
-    return true;
-}
-
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
 /***********************
  * Class: ExportPublicSubCommand
@@ -7706,17 +7585,16 @@ ExportPublicSubCommand::~ExportPublicSubCommand() {}
 
 bool ExportPublicSubCommand::verifyParams()
 {
-    if (_flintParams.privkey_specified == false && _flintParams.image_specified == false)
+    if (_flintParams.privkey_file.empty() && _flintParams.image_specified == false)
     {
         reportErr(true,
                   "Incorrect input. To export the public key you must provide private key PEM file OR BIN file.\n");
         return false;
     }
-    if (_flintParams.privkey_specified == true && _flintParams.image_specified == true)
+    if (!_flintParams.privkey_file.empty() && _flintParams.image_specified == true)
     {
-        reportErr(
-          true,
-          "Incorrect input. To export the public key you must provide private key [PEM file AND UUID string] OR BIN file.\n");
+        reportErr(true, "Incorrect input. To export the public key you must provide private key [PEM file AND UUID "
+                        "string] OR BIN file.\n");
         return false;
     }
     if (_flintParams.output_file_specified == false)
@@ -7724,18 +7602,17 @@ bool ExportPublicSubCommand::verifyParams()
         reportErr(true, "Incorrect input. To export the public key you must provide output file name.\n");
         return false;
     }
-    if (_flintParams.privkey_specified == true)
+    if (!_flintParams.privkey_file.empty())
     {
         if (!is_file_exists(_flintParams.privkey_file.c_str()))
         {
             reportErr(true, "Incorrect input. Can't find private key file %s \n", _flintParams.privkey_file.c_str());
             return false;
         }
-        if (_flintParams.uuid_specified == false)
+        if (_flintParams.privkey_uuid.empty())
         {
-            reportErr(
-              true,
-              "Incorrect input. To export the public key you must provide [private key PEM file AND UUID string].UUID string is missing.\n");
+            reportErr(true, "Incorrect input. To export the public key you must provide [private key PEM file AND UUID "
+                            "string].UUID string is missing.\n");
             return false;
         }
         for (string::const_iterator it = _flintParams.privkey_uuid.begin(); it != _flintParams.privkey_uuid.end(); ++it)
@@ -7759,11 +7636,10 @@ bool ExportPublicSubCommand::verifyParams()
             reportErr(true, "Can't find BIN file %s \n", _flintParams.image.c_str());
             return false;
         }
-        if (_flintParams.uuid_specified == true)
+        if (!_flintParams.privkey_uuid.empty())
         {
-            reportErr(
-              true,
-              "To export the public key from the BIN you should not provide [UUID string].UUID string is extracted from the BIN file.\n");
+            reportErr(true, "To export the public key from the BIN you should not provide [UUID string].UUID string is "
+                            "extracted from the BIN file.\n");
             return false;
         }
     }
@@ -7773,7 +7649,7 @@ bool ExportPublicSubCommand::verifyParams()
 FlintStatus ExportPublicSubCommand::executeCommand()
 {
     vector<unsigned char> resultBuffer;
-    if (_flintParams.privkey_specified == true)
+    if (!_flintParams.privkey_file.empty())
     { // working with PEM file
         if (!verifyParams())
         {

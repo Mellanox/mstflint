@@ -37,9 +37,6 @@
 
 #include "mlxlink_reg_parser.h"
 
-#define PPHCR_REG "PPHCR"
-#define PPCNT_REG "PPCNT"
-
 enum HISTOGRAM_TYPE
 {
     HIST_TYPE_AUTO,
@@ -82,14 +79,9 @@ public:
     void showHistogram();
     void clearHistogram();
 
-    u_int32_t _localPort;
-    u_int32_t _pnat;
-    u_int32_t _portType;
     u_int32_t _fecActive;
 
 private:
-    void resetPPHCR();
-    void resetPPCNT();
     u_int32_t getNumberOfBins();
     void updateBinsRange();
     void updateBinsErrorsCount();

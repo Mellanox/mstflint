@@ -43,6 +43,7 @@
 #define MAX_PASSWORD_LEN 256
 
 #include <string>
+#include <memory>
 
 #include <tools_layouts/tools_open_layouts.h>
 
@@ -263,7 +264,6 @@ public:
 class BinaryCompareSubCommand : public SubCommand
 {
 private:
-    u_int8_t _fwType;
     fw_info_t _devInfo;
     fw_info_t _imgInfo;
     FwOperations::ExtBurnParams _burnParams;
@@ -334,15 +334,6 @@ public:
     bool verifyParams();
 };
 
-class ImportHsmKeySubCommand : public SubCommand
-{
-public:
-    ImportHsmKeySubCommand();
-    ~ImportHsmKeySubCommand();
-    FlintStatus executeCommand();
-    bool verifyParams();
-};
-
 class ExportPublicSubCommand : public SubCommand
 {
 public:
@@ -360,6 +351,9 @@ public:
     ~SignRSASubCommand();
     FlintStatus executeCommand();
     bool verifyParams();
+
+protected:
+    unique_ptr<MlxSign::Signer> createSigner();
 };
 
 class SetPublicKeysSubCommand : public SubCommand

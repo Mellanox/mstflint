@@ -322,6 +322,18 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
     std::vector<FwComponent> compsToBurn;
     FwCompsMgr fwCompsAccess(mfile, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
     fwCompsAccess.GenerateHandle();
+    bool isSecondary = false;
+    if (/*(mfile->flags & MDEVS_IB) && */ !fwCompsAccess.IsSecondaryHost(isSecondary)) // TODO - check if limitation
+                                                                                       // applicable to IB only
+    {
+        printf("-E- Failed to query if device is secondary\n");
+        return FLINT_FAILED;
+    }
+    if (isSecondary)
+    {
+        printf("-E- LinkX burn is not supported by secondary.\n");
+        return FLINT_FAILED;
+    }
     fwCompsAccess.SetIndexAndSize(deviceIndex + 1, deviceSize, linkx_auto_update, activationNeeded,
                                   downloadTransferNeeded, activate_delay_sec);
     if (!fwCompsAccess.RefreshComponentsStatus())

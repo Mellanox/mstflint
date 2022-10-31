@@ -76,7 +76,6 @@ libmlxfwops_a_SOURCES = flint_base.cpp \
 			   signature_manager_factory.h \
                flint_io.cpp \
                security_version_gw.cpp security_version_gw.h \
-               fuse_gw.cpp fuse_gw.h \
                fw_ops.cpp \
                fs2_ops.cpp fs2_ops.h\
                fs3_ops.cpp fs3_ops.h\

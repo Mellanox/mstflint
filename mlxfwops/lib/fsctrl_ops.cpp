@@ -348,6 +348,7 @@ void FsCtrlOperations::ExtractSwitchFWVersion(const fwInfoT& fwQuery)
     if (VerifyBranchFormat(fwQuery.imageVsd))
     {
         strncpy(_fwImgInfo.ext_info.running_branch_ver, fwQuery.imageVsd, BRANCH_LEN);
+        _fwImgInfo.ext_info.running_branch_ver[BRANCH_LEN - 1] = '\0';
     }
     if (fwQuery.running_fw_version.version_string_length &&
         fwQuery.running_fw_version.version_string_length <= BRANCH_LEN)

@@ -67,8 +67,8 @@ class AdbParser:
             to all items recursively.
         """
         if layout_item.uSelector and layout_item.uSelector.selector_full_path:
-            selector_field, full_path, offset = self._get_explicit_field_path_and_offset(layout_item.parent, layout_item.uSelector.selector_full_path)
-            self.set_union_properties(self._get_enum_dict_from_field(selector_field), full_path, offset)
+            selector_field, full_path, offset, size = self._get_explicit_field_details(layout_item.parent, layout_item.uSelector.selector_full_path)
+            layout_item.uSelector.set_union_properties(self._get_enum_dict_from_field(selector_field), full_path, offset, size)
         for item in layout_item.subItems:
             self._update_union(item)
 
@@ -96,9 +96,9 @@ class AdbParser:
 
         return selector_dict
 
-    def _get_explicit_field_path_and_offset(self, layout_item, relative_path: str):
+    def _get_explicit_field_details(self, layout_item, relative_path: str):
         """This method gets a node's name and a relative path and returns the full path to the field, the
-        explicit field to the enum related to the union selector and it's offset.
+        explicit field to the enum related to the union selector and it's offset and size.
         """
         path = relative_path.split('.')
         if len(path) == 0:
@@ -119,7 +119,7 @@ class AdbParser:
                         break
                 if current_node is None:
                     raise Exception("Error - Failed to find field {0} in node {1}, wrong path {2}".format(child, current_node.name, relative_path))
-            return current_node, full_path, current_node.offset
+            return current_node, full_path, current_node.offset, current_node.size
         except Exception as _:
             raise Exception("Failed to get the explicit field")
 
@@ -461,8 +461,10 @@ class AdbUnionSelector(object):
         self.dict = None               # mapping between the value and the enum, None if empty
         self.full_path = None          # full path to the selector field, None if empty
         self.offset = None             # absolute offset from the begining of the segment until the selector field (by layout)
+        self.size = None               # size of the selector itself
 
-    def set_union_properties(self, union_dict, full_path, offset):
+    def set_union_properties(self, union_dict, full_path, offset, size):
         self.dict = union_dict
         self.full_path = full_path
         self.offset = offset
+        self.size = size

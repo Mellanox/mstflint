@@ -99,7 +99,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
   {FS3_FW_BOOT_CFG, "FW_BOOT_CFG"},
   {FS3_FW_MAIN_CFG, "FW_MAIN_CFG"},
   {FS3_APU_KERNEL, "APU_KERNEL"},
-  {FS3_APU_APPS, "APU_APPS"},
+  {FS3_ACE_CODE, "ACE_CODE"},
   {FS3_ROM_CODE, "ROM_CODE"},
   {FS3_RESET_INFO, "RESET_INFO"},
   {FS3_DBG_FW_INI, "DBG_FW_INI"},
@@ -351,6 +351,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
     else if (image_info.minor_version == 3)
     {
         strncpy(_fs3ImgInfo.ext_info.name, image_info.name, NAME_LEN);
+        _fs3ImgInfo.ext_info.name[NAME_LEN - 1] = '\0';
         strncpy(_fs3ImgInfo.ext_info.description, image_info.description, DESCRIPTION_LEN);
         _fs3ImgInfo.ext_info.description[DESCRIPTION_LEN - 1] = '\0';
         strncpy(_fs3ImgInfo.ext_info.prs_name, image_info.prs_name, FS3_PRS_NAME_LEN);
@@ -375,7 +376,8 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
     {
         if (VerifyBranchFormat(image_info.vsd))
         {
-            (strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN));
+            strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
+            _fwImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
         }
     }
     _fwImgInfo.ext_info.encrypted_fw = image_info.encrypted_fw;
@@ -604,110 +606,111 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr,
             u_int32_t entry_size_in_bytes = toc_entry.size * 4;
             // printf("-D- entry_crc = %#x, toc_entry.itoc_entry_crc = %#x\n", entry_crc, toc_entry.itoc_entry_crc);
 
-            if (toc_entry.itoc_entry_crc == entry_crc)
+            if (toc_entry.itoc_entry_crc != entry_crc)
             {
-                // Update last image address
-                u_int32_t section_last_addr;
-                u_int32_t flash_addr = toc_entry.flash_addr << 2;
-                if (!toc_entry.relative_addr)
+                if (_fwParams.ignoreCrcCheck)
                 {
-                    _ioAccess->set_address_convertor(0, 0);
-                    phys_addr = flash_addr;
-                    _fs3ImgInfo.smallestAbsAddr =
-                      (_fs3ImgInfo.smallestAbsAddr < flash_addr && _fs3ImgInfo.smallestAbsAddr > 0) ?
-                        _fs3ImgInfo.smallestAbsAddr :
-                        flash_addr;
+                    printf("-W- Bad Itoc Entry CRC. Expected: 0x%x , Actual: 0x%x\n", toc_entry.itoc_entry_crc,
+                           entry_crc);
                 }
                 else
                 {
-                    phys_addr =
-                      _ioAccess->get_phys_from_cont(flash_addr, _fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
-                    u_int32_t currSizeOfImgdata = phys_addr + entry_size_in_bytes;
-                    _fs3ImgInfo.sizeOfImgData =
-                      (_fs3ImgInfo.sizeOfImgData > currSizeOfImgdata) ? _fs3ImgInfo.sizeOfImgData : currSizeOfImgdata;
+                    return errmsg(MLXFW_BAD_CRC_ERR, "Bad Itoc Entry CRC. Expected: 0x%x , Actual: 0x%x",
+                                  toc_entry.itoc_entry_crc, entry_crc);
                 }
-                section_last_addr = phys_addr + entry_size_in_bytes;
-                _fwImgInfo.lastImageAddr =
-                  (_fwImgInfo.lastImageAddr >= section_last_addr) ? _fwImgInfo.lastImageAddr : section_last_addr;
+            }
 
-                if (IsFs3SectionReadable(toc_entry.type, queryOptions))
-                {
-                    if (ignoreDToc && toc_entry.device_data)
-                    {
-                        break;
-                    }
-                    // Only when we have full verify or the info of this section should be collected for query
-                    std::vector<u_int8_t> buffv(entry_size_in_bytes);
-                    u_int8_t* buff = (u_int8_t*)(buffv.size() ? (&(buffv[0])) : NULL);
-                    if (show_itoc)
-                    {
-                        cibfw_itoc_entry_dump(&toc_entry, stdout);
-                        if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, 0, 0, true,
-                                             verifyCallBackFunc))
-                        {
-                            ret_val = false;
-                        }
-                    }
-                    else
-                    {
-                        if (!verbose)
-                        {
-                            READBUF((*_ioAccess), flash_addr, buff, entry_size_in_bytes, "Section");
-                        }
-                        else
-                        {
-                            if (!(*_ioAccess).read(flash_addr, buff, entry_size_in_bytes, true, "Section"))
-                            {
-                                return errmsg("%s - read error (%s)\n", "Section", (*_ioAccess).err());
-                            }
-                        }
-                        Fs3UpdateImgCache(buff, flash_addr, entry_size_in_bytes);
-                        u_int32_t sect_crc = CalcImageCRC((u_int32_t*)buff, toc_entry.size);
-
-                        // printf("-D- flash_addr: %#x, toc_entry_size = %#x, actual sect = %#x, from itoc: %#x np_crc =
-                        // %s\n", flash_addr, toc_entry.size, sect_crc,
-                        //    toc_entry.section_crc, toc_entry.no_crc ? "yes" : "no");
-                        if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, sect_crc,
-                                             toc_entry.section_crc, toc_entry.no_crc, verifyCallBackFunc))
-                        {
-                            if (toc_entry.device_data)
-                            {
-                                _badDevDataSections = true;
-                            }
-                            ret_val = false;
-                        }
-                        else
-                        {
-                            // printf("-D- toc type : 0x%.8x\n" , toc_entry.type);
-                            GetSectData(_fs3ImgInfo.tocArr[section_index].section_data, (u_int32_t*)buff,
-                                        toc_entry.size * 4);
-                            if (IsGetInfoSupported(toc_entry.type))
-                            {
-                                if (!GetImageInfoFromSection(buff, toc_entry.type, toc_entry.size * 4))
-                                {
-                                    ret_val = false;
-                                    errmsg("Failed to get info from section %d, check the supported_hw_id section in "
-                                           "MLX file!\n",
-                                           toc_entry.type);
-                                }
-                            }
-                            else if (toc_entry.type == FS3_DBG_FW_INI)
-                            {
-                                TOCPUn(buff, toc_entry.size);
-                                GetSectData(_fwConfSect, (u_int32_t*)buff, toc_entry.size * 4);
-                            }
-                        }
-                    }
-                }
+            // Update last image address
+            u_int32_t section_last_addr;
+            u_int32_t flash_addr = toc_entry.flash_addr << 2;
+            if (!toc_entry.relative_addr)
+            {
+                _ioAccess->set_address_convertor(0, 0);
+                phys_addr = flash_addr;
+                _fs3ImgInfo.smallestAbsAddr =
+                  (_fs3ImgInfo.smallestAbsAddr < flash_addr && _fs3ImgInfo.smallestAbsAddr > 0) ?
+                    _fs3ImgInfo.smallestAbsAddr :
+                    flash_addr;
             }
             else
             {
-                /*
-                   printf("-D- Bad ITOC CRC: toc_entry.itoc_entry_crc = %#x, actual crc: %#x, entry_size_in_bytes =
-                   %#x\n", toc_entry.itoc_entry_crc, entry_crc, entry_size_in_bytes);
-                 */
-                return errmsg(MLXFW_BAD_CRC_ERR, "Bad Itoc Entry CRC. Expected: 0x%x , Actual: 0x%x",
-                              toc_entry.itoc_entry_crc, entry_crc);
+                phys_addr =
+                  _ioAccess->get_phys_from_cont(flash_addr, _fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
+                u_int32_t currSizeOfImgdata = phys_addr + entry_size_in_bytes;
+                _fs3ImgInfo.sizeOfImgData =
+                  (_fs3ImgInfo.sizeOfImgData > currSizeOfImgdata) ? _fs3ImgInfo.sizeOfImgData : currSizeOfImgdata;
+            }
+            section_last_addr = phys_addr + entry_size_in_bytes;
+            _fwImgInfo.lastImageAddr =
+              (_fwImgInfo.lastImageAddr >= section_last_addr) ? _fwImgInfo.lastImageAddr : section_last_addr;
+
+            if (IsFs3SectionReadable(toc_entry.type, queryOptions))
+            {
+                if (ignoreDToc && toc_entry.device_data)
+                {
+                    break;
+                }
+                // Only when we have full verify or the info of this section should be collected for query
+                std::vector<u_int8_t> buffv(entry_size_in_bytes);
+                u_int8_t* buff = (u_int8_t*)(buffv.size() ? (&(buffv[0])) : NULL);
+                if (show_itoc)
+                {
+                    cibfw_itoc_entry_dump(&toc_entry, stdout);
+                    if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, 0, 0, true, verifyCallBackFunc))
+                    {
+                        ret_val = false;
+                    }
+                }
+                else
+                {
+                    if (!verbose)
+                    {
+                        READBUF((*_ioAccess), flash_addr, buff, entry_size_in_bytes, "Section");
+                    }
+                    else
+                    {
+                        if (!(*_ioAccess).read(flash_addr, buff, entry_size_in_bytes, true, "Section"))
+                        {
+                            return errmsg("%s - read error (%s)\n", "Section", (*_ioAccess).err());
+                        }
+                    }
+                    Fs3UpdateImgCache(buff, flash_addr, entry_size_in_bytes);
+                    u_int32_t sect_crc = CalcImageCRC((u_int32_t*)buff, toc_entry.size);
+
+                    // printf("-D- flash_addr: %#x, toc_entry_size = %#x, actual sect = %#x, from itoc: %#x np_crc =
+                    // %s\n", flash_addr, toc_entry.size, sect_crc,
+                    //    toc_entry.section_crc, toc_entry.no_crc ? "yes" : "no");
+                    if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, sect_crc,
+                                         toc_entry.section_crc, toc_entry.no_crc, verifyCallBackFunc))
+                    {
+                        if (toc_entry.device_data)
+                        {
+                            _badDevDataSections = true;
+                        }
+                        ret_val = false;
+                    }
+                    else
+                    {
+                        // printf("-D- toc type : 0x%.8x\n" , toc_entry.type);
+                        GetSectData(_fs3ImgInfo.tocArr[section_index].section_data, (u_int32_t*)buff,
+                                    toc_entry.size * 4);
+                        if (IsGetInfoSupported(toc_entry.type))
+                        {
+                            if (!GetImageInfoFromSection(buff, toc_entry.type, toc_entry.size * 4))
+                            {
+                                ret_val = false;
+                                errmsg("Failed to get info from section %d, check the supported_hw_id section in "
+                                       "MLX file!\n",
+                                       toc_entry.type);
+                            }
+                        }
+                        else if (toc_entry.type == FS3_DBG_FW_INI)
+                        {
+                            TOCPUn(buff, toc_entry.size);
+                            GetSectData(_fwConfSect, (u_int32_t*)buff, toc_entry.size * 4);
+                        }
+                    }
+                }
             }
 
             _fs3ImgInfo.tocArr[section_index].entry_addr = entry_addr;
@@ -2943,7 +2946,7 @@ bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc, bool burnFails
             memcpy(p + CIBFW_ITOC_HEADER_SIZE + i * CIBFW_ITOC_ENTRY_SIZE, curr_itoc->data, CIBFW_ITOC_ENTRY_SIZE);
         }
     }
-    memset(&p[itocSize] - CIBFW_ITOC_ENTRY_SIZE, FS3_END, CIBFW_ITOC_ENTRY_SIZE);
+    memset(&p[itocSize - CIBFW_ITOC_ENTRY_SIZE], FS3_END, CIBFW_ITOC_ENTRY_SIZE);
 
     PRINT_PROGRESS(callBackFunc, (char*)"Updating ITOC section - ");
     bool rc = writeImage((ProgressCallBack)NULL, newItocAddr, p, itocSize, false, true);
@@ -3101,53 +3104,60 @@ bool Fs3Operations::Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, P
     }
     return true;
 }
-bool Fs3Operations::signForFwUpdate(const char* privPemFile, const char* uuid, PrintCallBack printFunc)
-{
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-    MlxSignRSA rsa;
 
-    int rc = rsa.setPrivKeyFromFile(privPemFile);
-    if (rc)
+bool Fs3Operations::SignForFwUpdate(const char* uuid,
+                                    const MlxSign::Signer& signer,
+                                    MlxSign::SHAType shaType,
+                                    PrintCallBack printFunc)
+{
+    if (_ioAccess->is_flash())
     {
-        return errmsg("Failed to set private key from file (rc = 0x%x)\n", rc);
+        return errmsg("Signing is not applicable for devices");
     }
 
-    int privKeyLength = rsa.getPrivKeyLength();
-    if (privKeyLength == 0x100)
+    if (shaType == MlxSign::SHA256)
     {
-        // MemsetSection();
         if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_512, CX4FW_IMAGE_SIGNATURE_512_SIZE, printFunc))
         {
             return false;
         }
-        if (!FwInsertEncSHA(MlxSign::SHA256, privPemFile, uuid, printFunc))
-        {
-            return false;
-        }
     }
-    else if (privKeyLength == 0x200)
+    else if (shaType == MlxSign::SHA512)
     {
-        // MemsetSection();
         if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_256, CX4FW_IMAGE_SIGNATURE_256_SIZE, printFunc))
-        {
-            return false;
-        }
-        if (!FwInsertEncSHA(MlxSign::SHA512, privPemFile, uuid, printFunc))
         {
             return false;
         }
     }
     else
     {
-        return errmsg("Unexpected length of key(%d bytes)", privKeyLength);
+        return errmsg("Unexpected type of SHA");
     }
+
+    vector<u_int8_t> fourMbImage;
+    vector<u_int8_t> signature;
+    vector<u_int8_t> sha;
+
+    //* Get image data (image_signature,image_signature_2 sections masked with 0xff)
+    if (!FwCalcSHA(shaType, sha, fourMbImage))
+    {
+        return errmsg("SignForFwUpdate: Failed to read image");
+    }
+
+    //* Sign image data
+    int rc = signer.Sign(fourMbImage, signature);
+    if (rc)
+    {
+        return errmsg("SignForFwUpdate: Failed to create secured FW signature (rc = 0x%x)", rc);
+    }
+
+    //* Store FW update signature in section
+    if (!InsertSecureFWSignature(signature, uuid, shaType, printFunc))
+    {
+        return errmsg("SignForFwUpdate: Failed to insert secured FW signature\n");
+    }
+
     return true;
-#else
-    (void)privPemFile;
-    (void)uuid;
-    (void)printFunc;
-    return errmsg("signForFwUpdate is not supported.");
-#endif
 }
 
 bool Fs3Operations::FwInsertEncSHA(MlxSign::SHAType shaType,
@@ -4369,31 +4379,52 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
     }
     return true;
 }
-bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature, const char* uuid, PrintCallBack printFunc)
+bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature,
+                                            const char* uuid,
+                                            MlxSign::SHAType shaType,
+                                            PrintCallBack printFunc)
 {
-    struct cx4fw_image_signature_512 image_signature_512;
     vector<u_int32_t> uuidData;
-    if (_ioAccess->is_flash())
-    {
-        return errmsg("Signing is not applicable for devices");
-    }
     if (!extractUUIDFromString(uuid, uuidData))
     {
         return false;
     }
-    if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_256, CX4FW_IMAGE_SIGNATURE_256_SIZE, printFunc))
+
+    if (shaType == MlxSign::SHA256)
     {
-        return false;
+        struct cx4fw_image_signature_256 image_signature_256;
+        memset(&image_signature_256, 0, sizeof(image_signature_256));
+        memcpy(image_signature_256.signature, signature.data(), signature.size());
+        TOCPUn(image_signature_256.signature, signature.size() >> 2);
+        memcpy(image_signature_256.keypair_uuid, uuidData.data(), uuidData.size() << 2);
+        vector<u_int8_t> image_signature_256_data;
+        image_signature_256_data.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0x0);
+        cx4fw_image_signature_256_pack(&image_signature_256, image_signature_256_data.data());
+        if (!UpdateSection(image_signature_256_data.data(), FS3_IMAGE_SIGNATURE_256, false, CMD_SET_SIGNATURE,
+                           printFunc))
+        {
+            return false;
+        }
     }
-    memset(&image_signature_512, 0, sizeof(image_signature_512));
-    memcpy(image_signature_512.signature, signature.data(), signature.size());
-    TOCPUn(image_signature_512.signature, signature.size() >> 2);
-    memcpy(image_signature_512.keypair_uuid, uuidData.data(), uuidData.size() << 2);
-    signature.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
-    cx4fw_image_signature_512_pack(&image_signature_512, signature.data());
-    if (!UpdateSection(signature.data(), FS3_IMAGE_SIGNATURE_512, false, CMD_SET_SIGNATURE, printFunc))
+    else if (shaType == MlxSign::SHA512)
     {
-        return false;
+        struct cx4fw_image_signature_512 image_signature_512;
+        memset(&image_signature_512, 0, sizeof(image_signature_512));
+        memcpy(image_signature_512.signature, signature.data(), signature.size());
+        TOCPUn(image_signature_512.signature, signature.size() >> 2);
+        memcpy(image_signature_512.keypair_uuid, uuidData.data(), uuidData.size() << 2);
+        vector<u_int8_t> image_signature_512_data;
+        image_signature_512_data.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
+        cx4fw_image_signature_512_pack(&image_signature_512, image_signature_512_data.data());
+        if (!UpdateSection(image_signature_512_data.data(), FS3_IMAGE_SIGNATURE_512, false, CMD_SET_SIGNATURE,
+                           printFunc))
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return errmsg("Unexpected type of SHA");
     }
     return true;
 }

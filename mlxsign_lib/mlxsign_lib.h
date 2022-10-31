@@ -88,22 +88,10 @@ public:
 };
 
 /*
- * Class MlxSignRSA: used for encrypting/decrypting messages using RSA encryption algorithm
+ * Class MlxSignRSA: used for signing messages using RSA algorithm
  * Usage:
  *     set private and/or public keys
- *     encrypt/decrypt your message.
- *
- *     Note:
- *     -    encryption is performed with the provided private key.
- *     -    decryption is performed with the provided public key.
- *     -    user should make sure that encrypted and decrypted messages dont exceed the relevant Max message size
- * Example:
- *      MlxSignRSA rsa;
- *      rsa.setPrivKeyFromFile(filePathPriv);
- *      rsa.encrypt(msg, encryptedMsg);
- *      cout << rsa.str(encryptedMsg);
- *      rsa.setPubKeyFromFile(filePathPub);
- *      rsa.decrypt(encryptedMsg, originalMsg);
+ *     sign your message.
  */
 class MlxSignRSA
 {
@@ -117,7 +105,7 @@ public:
     int setPubKeyFromFile(const std::string& pemKeyFilePath);
     int setPubKey(const std::string& pemKey);
 
-    int sign(MlxSign::SHAType shaType, const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg);
+    int sign(MlxSign::SHAType shaType, const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg) const;
     int verify(MlxSign::SHAType shaType,
                const std::vector<u_int8_t>& sha256Dgst,
                const std::vector<u_int8_t>& sig,

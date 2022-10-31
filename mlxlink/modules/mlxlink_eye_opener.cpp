@@ -34,9 +34,6 @@
 
 MlxlinkEyeOpener::MlxlinkEyeOpener(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
 {
-    _pageDataSel = 0;
-    _errResBase = 0;
-    _eyeDiagDim = 0;
     _measureTime = -1;
     _eyeSel = -1;
     _numOfEyes = 0;
@@ -44,6 +41,7 @@ MlxlinkEyeOpener::MlxlinkEyeOpener(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
     _oneLaneScan = false;
     _oneEyeScan = false;
     scanIterations = MAX_ITERATION_SCAN_PCIE;
+
     initSlredMaps();
 }
 
@@ -80,21 +78,6 @@ void MlxlinkEyeOpener::initSlredMaps()
     _laneSpeedMap[SLRED_LANE_SPEED_HDR] = "HDR (50GE / 200GE / 400GE) (26.5625Gbd / 53.125Gb/s)";
 }
 
-void MlxlinkEyeOpener::setPageDataSel(u_int32_t pageDataSel)
-{
-    _pageDataSel = pageDataSel;
-}
-
-void MlxlinkEyeOpener::setErrResBase(u_int32_t errResBase)
-{
-    _errResBase = errResBase;
-}
-
-void MlxlinkEyeOpener::setEyeDiagDim(u_int32_t eyeDiagDim)
-{
-    _eyeDiagDim = eyeDiagDim;
-}
-
 void MlxlinkEyeOpener::setMeasureTime(u_int32_t measureTime)
 {
     string timesStr = "";
@@ -122,7 +105,7 @@ void MlxlinkEyeOpener::setMeasureTime(u_int32_t measureTime)
 
 void MlxlinkEyeOpener::setEyeSel(const string& eyeSel)
 {
-    if (pciePort)
+    if (_pnat == PNAT_PCIE)
     {
         return;
     }
@@ -182,7 +165,7 @@ void MlxlinkEyeOpener::initWarMsgs()
     {
         numOfLanes = 1;
     }
-    scanIterations = pciePort ? MAX_ITERATION_SCAN_PCIE : MAX_ITERATION_SCAN_PORT;
+    scanIterations = (_pnat == PNAT_PCIE) ? MAX_ITERATION_SCAN_PCIE : MAX_ITERATION_SCAN_PORT;
     u_int32_t totalScan = totalEysScanTime * numOfLanes * scanIterations;
     char scanTitle[64];
     u_int32_t min = (u_int32_t)totalScan / 60;
@@ -198,78 +181,47 @@ void MlxlinkEyeOpener::initWarMsgs()
     MlxlinkRecord::printWar(scanTitle, _jsonRoot);
 }
 
-void MlxlinkEyeOpener::updatePortType()
-{
-    if (portType)
-    {
-        updateField("port_type", portType);
-    }
-}
-
-u_int32_t MlxlinkEyeOpener::getDeviceVersion()
-{
-    string regName = "SLRG";
-    resetParser(regName);
-    updatePortType();
-    updateField("local_port", localPort);
-    updateField("pnat", (pciePort) ? PNAT_PCIE : PNAT_LOCAL);
-    updateField("lane", 0);
-
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-    u_int32_t version = getVersion(getFieldValue("version"));
-
-    return version;
-}
-
 bool MlxlinkEyeOpener::isActiveGenSupported()
 {
-    string regName = "MPEIN";
-    resetParser(regName);
-    updateField("pcie_index", pcieIndex);
-    updateField("depth", depth);
-    updateField("node", node);
+    sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", depth, pcieIndex, node);
 
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-    u_int32_t activeGen = getFieldValue("link_speed_active");
-
-    return (activeGen >= GEN3);
+    return (getFieldValue("link_speed_active") >= GEN3);
 }
 
-void MlxlinkEyeOpener::prepareSlred(u_int32_t lane, u_int32_t eye)
+string MlxlinkEyeOpener::prepareSlred(u_int32_t lane, u_int32_t eye)
 {
-    resetParser(ACCESS_REG_SLRED);
-    updatePortType();
-    updateField("local_port", localPort);
-    updateField("pnat", (pciePort) ? PNAT_PCIE : PNAT_LOCAL);
-    updateField("lane", lane);
-    updateField("measure_time", _measureTime);
-    updateField("err_res_scale", DFLT_ERR_RES_SCALE);
-    updateField("err_res_base", DFLT_ERR_RES_BASE);
-    updateField("eye_diag_dim", pciePort ? DFLT_EYE_DIAG_DIM_PCIE : DFLT_EYE_DIAG_DIM_PORT);
-    if (!pciePort && isPam4Speed)
+    string fields = "lane=" + to_string(lane);
+    fields += ",measure_time=" + to_string(_measureTime);
+    fields += ",err_res_scale=" + to_string(DFLT_ERR_RES_SCALE);
+    fields += ",err_res_base=" + to_string(DFLT_ERR_RES_BASE);
+    fields += ",eye_diag_dim=" + to_string((_pnat == PNAT_PCIE) ? DFLT_EYE_DIAG_DIM_PCIE : DFLT_EYE_DIAG_DIM_PORT);
+
+    if (_pnat != PNAT_PCIE && isPam4Speed)
     {
-        updateField("eye_sel", eye);
+        fields += ",eye_sel=" + to_string(eye);
     }
+
+    return fields;
 }
 
 void MlxlinkEyeOpener::enableSlredGradeScan(u_int32_t lane, u_int32_t eye)
 {
-    prepareSlred(lane, eye);
+    string fields = prepareSlred(lane, eye);
+
     if ((_numOfEyes == EYE_ALL && eye == EYE_DOWN) || (_numOfEyes != EYE_ALL))
     {
-        updateField("last_scan", 1);
+        fields += ",last_scan=1";
     }
-    updateField("en", 1);
-    genBuffSendRegister(ACCESS_REG_SLRED, MACCESS_REG_METHOD_SET);
+
+    sendPrmReg(ACCESS_REG_SLRED, SET, "en=%d,%s", 1, fields.c_str());
 }
 
 void MlxlinkEyeOpener::slredStopSignalHandler()
 {
     if (mft_signal_is_fired())
     {
-        prepareSlred(0, 0);
-        updateField("abort", 1);
-        genBuffSendRegister(SLRED_REG, MACCESS_REG_METHOD_SET);
+        string fields = prepareSlred(0, 0);
+        sendPrmReg(ACCESS_REG_SLRED, SET, "abort=%d,%s", 1, fields.c_str());
 
         printf("\n\n");
         exit(1);
@@ -278,27 +230,26 @@ void MlxlinkEyeOpener::slredStopSignalHandler()
 
 void MlxlinkEyeOpener::getSlredMargin(u_int32_t iteration, u_int32_t lane, u_int32_t eye)
 {
-    prepareSlred(lane, eye);
-    updateField("page_data_sel", 0);
-    genBuffSendRegister(SLRED_REG, MACCESS_REG_METHOD_GET);
+    string fields = prepareSlred(lane, eye);
+    sendPrmReg(ACCESS_REG_SLRED, SET, fields.c_str());
     // put all margins in one vector for later calculations
-    _measuredMargins.push_back(MarginInfo(lane, (!pciePort && isPam4Speed) ? eye : 0, getFieldValue("margin"),
+    _measuredMargins.push_back(MarginInfo(lane, (_pnat != PNAT_PCIE && isPam4Speed) ? eye : 0, getFieldValue("margin"),
                                           getFieldValue("status"), getFieldValue("margin_version"), iteration));
 }
 
 // Get the status of scan for specific lane\eye
 u_int32_t MlxlinkEyeOpener::getSlredStatus(u_int32_t lane, u_int32_t eye)
 {
-    prepareSlred(lane, eye);
-    genBuffSendRegister(ACCESS_REG_SLRED, MACCESS_REG_METHOD_GET);
+    string fields = prepareSlred(lane, eye);
+    sendPrmReg(ACCESS_REG_SLRED, GET, fields.c_str());
 
     return getFieldValue("status");
 }
 
 string MlxlinkEyeOpener::getSlredLaneSpeedStr(u_int32_t lane, u_int32_t eye)
 {
-    prepareSlred(lane, eye);
-    genBuffSendRegister(ACCESS_REG_SLRED, MACCESS_REG_METHOD_GET);
+    string fields = prepareSlred(lane, eye);
+    sendPrmReg(ACCESS_REG_SLRED, GET, fields.c_str());
 
     return _laneSpeedMap[getFieldValue("lane_speed")];
 }
@@ -345,7 +296,7 @@ void MlxlinkEyeOpener::gradeEyeScanner(u_int32_t iteration, u_int32_t lane, u_in
 // scan all grades per lane
 void MlxlinkEyeOpener::laneEyesScanner(u_int32_t iteration, u_int32_t lane)
 {
-    if (isPam4Speed && _eyeSel == MAX_NUMBER_OF_EYES && !pciePort)
+    if (isPam4Speed && _eyeSel == MAX_NUMBER_OF_EYES && _pnat != PNAT_PCIE)
     {
         // scan all eyes
         for (u_int32_t i = 0; i < MAX_NUMBER_OF_EYES; i++)
@@ -390,11 +341,11 @@ void MlxlinkEyeOpener::preChecks()
                               "use --yes flag to force the execution");
     }
 
-    if (getDeviceVersion() != PRODUCT_16NM)
+    if (version != PRODUCT_16NM)
     {
         throw MlxRegException("Device not supported!");
     }
-    if (pciePort)
+    if (_pnat == PNAT_PCIE)
     {
         if (!isActiveGenSupported())
         {
@@ -530,7 +481,7 @@ void MlxlinkEyeOpener::printMarginsSummary()
         if (status != EYE_SCAN_COMPLETED || (status == EYE_SCAN_COMPLETED && it->version == NO_MARGIN))
         {
             sprintf(laneIdxStr, "Failure of lane %d", it->lane);
-            if (!pciePort && isPam4Speed)
+            if (_pnat != PNAT_PCIE && isPam4Speed)
             {
                 sprintf(failureStr, "%s, %s eye", laneIdxStr, _eyeSelctorMap[it->eye].c_str());
             }
@@ -619,7 +570,7 @@ void MlxlinkEyeOpener::enableGradeScan()
         printField("Scanning status", "Completed    ", true);
         fflush(MlxlinkRecord::stdOut);
 
-        if (!pciePort && isPam4Speed)
+        if (_pnat != PNAT_PCIE && isPam4Speed)
         {
             char gradeTitle[64];
             if (_eyeSel != EYE_ALL)

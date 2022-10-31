@@ -77,13 +77,19 @@ string AmberField::getValueFromFields(const vector<AmberField>& fields, const st
 {
     string value = "";
     bool found = false;
+
     for (auto it = fields.begin(); it != fields.end(); it++)
     {
         if (it->getUiField().find(uiField) != string::npos)
         {
-            if (matchUiField && it->getUiField() != uiField)
+            if (matchUiField)
             {
-                continue;
+                if (it->getUiField() == uiField)
+                {
+                    value = it->getUiValue();
+                    found = true;
+                    break;
+                }
             }
             else
             {
@@ -92,12 +98,16 @@ string AmberField::getValueFromFields(const vector<AmberField>& fields, const st
             }
         }
     }
+
     if (!found)
     {
         throw MlxRegException("Requested field does not exist: %s", uiField.c_str());
     }
 
-    value = deleteLastChar(value);
+    if (!matchUiField)
+    {
+        value = deleteLastChar(value);
+    }
 
     return value;
 }

@@ -133,6 +133,7 @@ const u_int8_t btcTokenId = 0x8;
 const u_int8_t rmcsTokenId = 0x10;
 const u_int8_t rmdtTokenId = 0x11;
 const u_int32_t idMlnxId = 0x10e;
+const u_int32_t idVendorId = 0x10f;
 
 void GenericCommander::supportsNVData()
 {
@@ -1264,7 +1265,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
                 isAllPorts = true;
                 port = 1;
             }
-            else if (!strToNum((const char*)portAttr, port) || (1 <= port && (int32_t)port <= tlvConf->getMaxPort(_mf)))
+            else if (!strToNum((const char*)portAttr, port) || !(1 <= port && (int32_t)port <= tlvConf->getMaxPort(_mf)))
             {
                 throw MlxcfgException("Illegal value of port attribute %s", (const char*)portAttr);
             }
@@ -1278,7 +1279,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
                 isAllModules = true;
                 module = 0;
             }
-            else if (!strToNum((const char*)moduleAttr, u_module) || ((int32_t)u_module <= tlvConf->getMaxModule()))
+            else if (!strToNum((const char*)moduleAttr, u_module) || !(u_module <= (u_int32_t)tlvConf->getMaxModule()))
             {
                 throw MlxcfgException("Illegal value of module attribute %s", (const char*)portAttr);
             }
@@ -1503,7 +1504,7 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
             if ((keySize != KEY_SIZE_256) && (keySize != KEY_SIZE_512))
             {
                 throw MlxcfgException("Invalid length of private key(%d bytes). It is "
-                                      "recommanded to use 4096 bit key.\n",
+                                      "recommended to use 4096 bit key.\n",
                                       keySize);
             }
             // Init successfuly with valid key -> can continue to sign the massage
@@ -1654,6 +1655,7 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
     bool csCompFound = false;
     bool foundApplicableTLV = false;
     bool idMlnxCompFound = false;
+    bool idVendorCompFound = false;
     compsId = FwComponent::COMPID_UNKNOWN;
     u_int32_t type = 0;
     mget_mdevs_type(_mf, &type);
@@ -1691,25 +1693,32 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
             idMlnxCompFound = true;
             compsId = FwComponent::COMPID_MLNX_NVCONFIG;
         }
+        else if (tlv->_tlvClass == 0x0 && tlv->_id == idVendorId)
+        {
+            idVendorCompFound = true;
+            compsId = FwComponent::COMPID_OEM_NVCONFIG;
+        }
         else if (tlv->_name == "file_applicable_to")
         {
             foundApplicableTLV = true;
         }
 
-        if ((type & (MST_USB | MST_USB_DIMAX)) && (compsId == FwComponent::COMPID_UNKNOWN))
+        if ((type & (MST_USB_DIMAX)) && (compsId == FwComponent::COMPID_UNKNOWN))
         { // MST_USB tlv's must have component
             throw MlxcfgException("MTUSB device is not supported.");
         }
     }
 
-    if (!dbgCompFound && !csCompFound && !idMlnxCompFound)
+    u_int32_t numOfCompsFound =
+      (dbgCompFound ? 1 : 0) + (csCompFound ? 1 : 0) + (idMlnxCompFound ? 1 : 0) + (idVendorCompFound ? 1 : 0);
+    if (numOfCompsFound == 0)
     {
         throw MlxcfgException("Unsupported device: No debug tokens or CS tokens or "
-                              "MLNX ID Components were found for "
+                              "MLNX/Vendor ID Components were found for "
                               "this device");
     }
 
-    if ((dbgCompFound && csCompFound) || (dbgCompFound && idMlnxCompFound) || (csCompFound && idMlnxCompFound))
+    if (numOfCompsFound > 1)
     {
         throw MlxcfgException("Only one component is allowed");
     }
@@ -1729,7 +1738,8 @@ void GenericCommander::orderConfTlvs(vector<TLVConf*>& tlvs)
         TLVConf* tlv = *it;
         if (((tlv->_tlvClass == NVFile) &&
              (tlv->_id == debugTokenId || tlv->_id == csTokenId || tlv->_id == btcTokenId)) ||
-            (tlv->_tlvClass == Global && tlv->_id == idMlnxId))
+            ((tlv->_tlvClass == Global) &&
+             (tlv->_id == idMlnxId || tlv->_id == idVendorId)))
         {
             *it = tlvs.front();
             tlvs.front() = tlv;

@@ -101,8 +101,9 @@ extern "C"
                                 IN int is_full,
                                 IN int cause,
                                 IN int cause_off,
-                                IN const char* db_path); // fill device type, and number of dewords according to the
-                                                         // is_full
+                                IN const char* db_path,
+                                const char* csv_path_from_user); // fill device type, and number of dewords according to
+                                                                 // the is_full
 
     /*
        Store cr space length at arr_size

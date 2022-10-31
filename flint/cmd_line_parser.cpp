@@ -124,7 +124,6 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("ir", "image_reactivation", SC_Image_Reactivation));
     _sCmds.push_back(new SubCmd("bc", "binary_compare", SC_Binary_Compare));
     _sCmds.push_back(new SubCmd("", "rsa_sign", SC_RSA_Sign));
-    _sCmds.push_back(new SubCmd("", "import_hsm_key", SC_Import_Hsm_Key));
     _sCmds.push_back(new SubCmd("", "export_public_key", SC_Export_Public_Key));
 }
 
@@ -232,11 +231,6 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "activate_delay_sec", 1));
     _flags.push_back(new Flag("", "downstream_device_ids", 1));
     _flags.push_back(new Flag("", "download_transfer", 0));
-#ifndef __WIN__
-    _flags.push_back(new Flag("", "private_key_label", 1));
-    _flags.push_back(new Flag("", "public_key_label", 1));
-    _flags.push_back(new Flag("", "hsm", 0));
-#endif
     _flags.push_back(new Flag("", "openssl_engine", 1));
     _flags.push_back(new Flag("", "openssl_key_id", 1));
 #ifdef __WIN__
@@ -784,8 +778,6 @@ void Flint::initCmdParser()
 
     AddOptions("ocr", ' ', "", "another flag for override cache replacement", true);
 
-    AddOptions("hsm", ' ', "", "flag for the sign command", true);
-
     AddOptions("private_key", ' ', "<key_file>", "path to PEM formatted private key to be used by the sign command");
 
     AddOptions("public_key", ' ', "<key_file>", "path to PEM formatted public key to be used by the sign command");
@@ -821,65 +813,61 @@ void Flint::initCmdParser()
     AddOptions("linkx_auto_update", ' ', "", "Use this flag while burning all cable devices connected to host.", false,
                false, 1);
 
-    AddOptions(
-      "activate",
-      ' ',
-      "",
-      "Use this flag to apply the activation of all cable devices connected to host. By default, the activation is not performed.",
-      false,
-      false,
-      1);
+    AddOptions("activate",
+               ' ',
+               "",
+               "Use this flag to apply the activation of all cable devices connected to host. By default, the "
+               "activation is not performed.",
+               false,
+               false,
+               1);
 
     AddOptions(
       "activate_delay_sec",
       ' ',
       "<timeout in seconds>",
-      "Use this flag to activate all cable devices connected to host with delay, acceptable values are between 0 and 255 (default - 1). Important: 'activate' flag must be set.  This flag is relevant only for cable components.",
+      "Use this flag to activate all cable devices connected to host with delay, acceptable values are between 0 and "
+      "255 (default - 1). Important: 'activate' flag must be set.  This flag is relevant only for cable components.",
       false,
       false,
       1);
 
-    AddOptions(
-      "download_transfer",
-      ' ',
-      "",
-      "Use this flag to perform the download and transfer of all cable data for cables. By default, the download and transfer are not performed . This flag is relevant only for cable components.",
-      false,
-      false,
-      1);
+    AddOptions("download_transfer",
+               ' ',
+               "",
+               "Use this flag to perform the download and transfer of all cable data for cables. By default, the "
+               "download and transfer are not performed . This flag is relevant only for cable components.",
+               false,
+               false,
+               1);
 
-    AddOptions(
-      "downstream_device_ids",
-      ' ',
-      "<list of ports>",
-      "Use this flag to specify the LNKX ports to perform query. List must be only comma-separated numbers, without spaces.",
-      false,
-      false,
-      1);
+    AddOptions("downstream_device_ids",
+               ' ',
+               "<list of ports>",
+               "Use this flag to specify the LNKX ports to perform query. List must be only comma-separated numbers, "
+               "without spaces.",
+               false,
+               false,
+               1);
 
-#ifndef __WIN__
-    AddOptions("public_key_label", ' ', "<string>", "public key label to be used by the sign --hsm command");
-
-    AddOptions("private_key_label", ' ', "<string>", "private key label to be used by the sign --hsm command");
-#endif
     AddOptions(
       "openssl_engine",
       ' ',
       "<string>",
       "Name of the OpenSSL engine to used by the sign/rsa_sign commands to work with the HSM hardware via OpenSSL API");
-    AddOptions(
-      "openssl_key_id",
-      ' ',
-      "<string>",
-      "Key identification string to be used by the sign/rsa_sign commands to work with the HSM hardware via OpenSSL API");
+    AddOptions("openssl_key_id",
+               ' ',
+               "<string>",
+               "Key identification string to be used by the sign/rsa_sign commands to work with the HSM hardware via "
+               "OpenSSL API");
     AddOptions("output_file", ' ', "<string>", "output file name for exporting the public key from PEM/BIN");
     AddOptions("user_password", ' ', "<string>", "the HSM user password string in order to work with HSM device");
 #ifdef __WIN__
-    AddOptions(
-      "cpu_util",
-      ' ',
-      "<CPU_UTIL>",
-      "Use this flag to reduce CPU utilization while burning, Windows only. Legal values are from 1 (lowest CPU) to 5 (highest CPU)");
+    AddOptions("cpu_util",
+               ' ',
+               "<CPU_UTIL>",
+               "Use this flag to reduce CPU utilization while burning, Windows only. Legal values are from 1 (lowest "
+               "CPU) to 5 (highest CPU)");
 #endif
     AddOptions(
       "cert_chain_index",
@@ -906,9 +894,9 @@ void Flint::initCmdParser()
 
     AddOptionalSectionData("RETURN VALUES", "0", "Successful completion.");
     AddOptionalSectionData("RETURN VALUES", "1", "An error has occurred.");
-    AddOptionalSectionData(
-      "RETURN VALUES", "7",
-      "For burn command - burning new firmware option was not chosen by the user when prompted, thus the firmware burning process was aborted.");
+    AddOptionalSectionData("RETURN VALUES", "7",
+                           "For burn command - burning new firmware option was not chosen by the user when prompted, "
+                           "thus the firmware burning process was aborted.");
 
     for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++)
     {
@@ -1207,17 +1195,14 @@ ParseStatus Flint::HandleOption(string name, string value)
     }
     else if (name == "private_key")
     {
-        _flintParams.privkey_specified = true;
         _flintParams.privkey_file = value;
     }
     else if (name == "public_key")
     {
-        _flintParams.pubkey_specified = true;
         _flintParams.pubkey_file = value;
     }
     else if (name == "key_uuid")
     {
-        _flintParams.uuid_specified = true;
         _flintParams.privkey_uuid = value;
     }
     else if (name == "hmac_key")
@@ -1263,10 +1248,6 @@ ParseStatus Flint::HandleOption(string name, string value)
         }
         _flintParams.cpu_percent = (int)cpu_percent;
     }
-    else if (name == "hsm")
-    {
-        _flintParams.hsm_specified = true;
-    }
     else if (name == "openssl_engine")
     {
         _flintParams.openssl_engine_usage_specified = true;
@@ -1276,16 +1257,6 @@ ParseStatus Flint::HandleOption(string name, string value)
     {
         _flintParams.openssl_engine_usage_specified = true;
         _flintParams.openssl_key_id = value;
-    }
-    else if (name == "private_key_label")
-    {
-        _flintParams.private_key_label_specified = true;
-        _flintParams.private_key_label = value;
-    }
-    else if (name == "public_key_label")
-    {
-        _flintParams.public_key_label_specified = true;
-        _flintParams.public_key_label = value;
     }
     else if (name == "output_file")
     {

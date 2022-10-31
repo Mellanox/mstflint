@@ -34,48 +34,51 @@
 #define MLXLINK_ENUMS_H
 
 // Common definitions
-#define AMBER_VERSION "2.05"
+#define AMBER_VERSION "2.08"
 
+#define ACCESS_REG_MCIA "MCIA"
+#define ACCESS_REG_MDDQ "MDDQ"
+#define ACCESS_REG_MDIR "MDIR"
+#define ACCESS_REG_MGIR "MGIR"
+#define ACCESS_REG_MGPIR "MGPIR"
+#define ACCESS_REG_MPCNT "MPCNT"
+#define ACCESS_REG_MPEIN "MPEIN"
+#define ACCESS_REG_MPEINJ "MPEINJ"
+#define ACCESS_REG_MPIR "MPIR"
+#define ACCESS_REG_MSGI "MSGI"
+#define ACCESS_REG_MTCAP "MTCAP"
+#define ACCESS_REG_MTMP "MTMP"
+#define ACCESS_REG_MVCAP "MVCAP"
+#define ACCESS_REG_MVCR "MVCR"
+#define ACCESS_REG_PAOS "PAOS"
+#define ACCESS_REG_PCAM "PCAM"
+#define ACCESS_REG_PDDR "PDDR"
+#define ACCESS_REG_PEPC "PEPC"
+#define ACCESS_REG_PGMR "PGMR"
 #define ACCESS_REG_PGUID "PGUID"
-#define ACCESS_REG_SPZR "SPZR"
-#define ACCESS_REG_SPAD "SPAD"
+#define ACCESS_REG_PLIB "PLIB"
+#define ACCESS_REG_PLLP "PLLP"
+#define ACCESS_REG_PMAOS "PMAOS"
+#define ACCESS_REG_PMCR "PMCR"
+#define ACCESS_REG_PMLP "PMLP"
+#define ACCESS_REG_PMPD "PMPD"
+#define ACCESS_REG_PMPT "PMPT"
+#define ACCESS_REG_PMTM "PMTM"
+#define ACCESS_REG_PPAOS "PPAOS"
+#define ACCESS_REG_PPBMC "PPBMC"
 #define ACCESS_REG_PPCNT "PPCNT"
 #define ACCESS_REG_PPHCR "PPHCR"
 #define ACCESS_REG_PPLM "PPLM"
-#define ACCESS_REG_PDDR "PDDR"
+#define ACCESS_REG_PPLR "PPLR"
+#define ACCESS_REG_PPRT "PPRT"
+#define ACCESS_REG_PPTT "PPTT"
+#define ACCESS_REG_PREI "PREI"
 #define ACCESS_REG_PTYS "PTYS"
-#define ACCESS_REG_MPCNT "MPCNT"
-#define ACCESS_REG_MPEIN "MPEIN"
-#define ACCESS_REG_PMDR "PMDR"
-#define ACCESS_REG_PMCR "PMCR"
-#define ACCESS_REG_PLLP "PLLP"
-#define ACCESS_REG_MDDQ "MDDQ"
+#define ACCESS_REG_SLRED "SLRED"
 #define ACCESS_REG_SLRG "SLRG"
 #define ACCESS_REG_SLTP "SLTP"
-#define ACCESS_REG_SLRIP "SLRIP"
-#define ACCESS_REG_SLRP "SLRP"
-#define ACCESS_REG_PPLL "PPLL"
-#define ACCESS_REG_SLSIR "SLSIR"
-#define ACCESS_REG_SLLM "SLLM"
-#define ACCESS_REG_MGIR "MGIR"
-#define ACCESS_REG_PMLP "PMLP"
-#define ACCESS_REG_MSGI "MSGI"
-#define ACCESS_REG_MDIR "MDIR"
-#define ACCESS_REG_MVCR "MVCR"
-#define ACCESS_REG_MTMP "MTMP"
-#define ACCESS_REG_MVCAP "MVCAP"
-#define ACCESS_REG_MTCAP "MTCAP"
-#define ACCESS_REG_SLRED "SLRED"
-#define ACCESS_REG_PLIB "PLIB"
-#define ACCESS_REG_PMLP "PMLP"
-#define ACCESS_REG_PMAOS "PMAOS"
-#define ACCESS_REG_PPAOS "PPAOS"
-#define ACCESS_REG_PPTT "PPTT"
-#define ACCESS_REG_PPRT "PPRT"
-#define ACCESS_REG_PMPT "PMPT"
-#define ACCESS_REG_PMPD "PMPD"
-#define ACCESS_REG_PMTM "PMTM"
-#define ACCESS_REG_PPLR "PPLR"
+#define ACCESS_REG_SPAD "SPAD"
+#define ACCESS_REG_SPZR "SPZR"
 // define all used regs above this line
 
 #define QSFP_CHANNELS 4
@@ -399,6 +402,100 @@
 #define MAX_INPUT_LENGTH 10
 #define SECOND_LEVEL_PORT_ACCESS 2
 #define THIRD_LEVEL_PORT_ACCESS 3
+
+#define GET MACCESS_REG_METHOD_GET
+#define SET MACCESS_REG_METHOD_SET
+
+#define PCIE_MAX_DURATION 16777215
+#define PCIE_MAX_DURATION_HW_COUNTERS 255
+#define PCIE_MAX_ERR_PARAM 4
+
+struct DPN
+{
+    DPN()
+    {
+        depth = 0;
+        pcieIndex = 0;
+        node = 0;
+        bdf = "";
+    }
+
+    DPN(u_int32_t _depth, u_int32_t _pcieIndex, u_int32_t _node, string _bdf)
+    {
+        depth = _depth;
+        pcieIndex = _pcieIndex;
+        node = _node;
+        bdf = _bdf;
+    }
+
+    bool operator==(DPN dpn) { return (dpn.depth == depth && dpn.pcieIndex == pcieIndex && dpn.node == node); }
+
+    u_int32_t depth;
+    u_int32_t pcieIndex;
+    u_int32_t node;
+    string bdf;
+};
+
+struct PcieErrType
+{
+    PcieErrType()
+    {
+        errorTypeStr = "";
+        defaultInjDelay = 0;
+        defaultErrDuration = 0;
+        maxErrDuration = 0;
+        errorDurationValid = false;
+        paramsValid[0] = false;
+        paramsValid[1] = false;
+        paramsValid[2] = false;
+        paramsValid[3] = false;
+        dbdfValid = false;
+        unit = "";
+    }
+
+    PcieErrType(string _errorTypeStr,
+                u_int32_t _defaultInjDelay,
+                u_int32_t _defaultErrDuration,
+                u_int32_t _maxErrDuration,
+                bool _errorDurationValid,
+                bool _param0Valid,
+                bool _param1Valid,
+                bool _param2Valid,
+                bool _param3Valid,
+                bool _dbdfValid,
+                string _unit)
+    {
+        errorTypeStr = _errorTypeStr;
+        defaultInjDelay = _defaultInjDelay;
+        defaultErrDuration = _defaultErrDuration;
+        maxErrDuration = _maxErrDuration;
+        errorDurationValid = _errorDurationValid;
+        paramsValid[0] = _param0Valid;
+        paramsValid[1] = _param1Valid;
+        paramsValid[2] = _param2Valid;
+        paramsValid[3] = _param3Valid;
+        dbdfValid = _dbdfValid;
+        unit = _unit;
+    }
+
+    string errorTypeStr;
+    u_int32_t defaultInjDelay;
+    u_int32_t defaultErrDuration;
+    u_int32_t maxErrDuration;
+    bool errorDurationValid;
+    bool paramsValid[4];
+    bool dbdfValid;
+    string unit;
+};
+
+struct ReqParms
+{
+    u_int8_t errorType;
+    u_int32_t errorDuration;
+    u_int32_t injectionDelay;
+    u_int16_t dbdf;
+    u_int32_t parameters[4];
+};
 
 enum FIELD_ACCESS
 {
@@ -1393,7 +1490,8 @@ enum PRODUCT_TECHNOLOGY
     PRODUCT_40NM = 0,
     PRODUCT_28NM = 1,
     PRODUCT_16NM = 3,
-    PRODUCT_7NM = 4
+    PRODUCT_7NM = 4,
+    PRODUCT_5NM = 5
 };
 
 enum STATUS_OPCODE
@@ -1454,6 +1552,7 @@ enum AMBER_SHEET
     AMBER_SHEET_TEST_MODE_INFO = 13,
     AMBER_SHEET_TEST_MODE_MODULE_INFO = 14,
     AMBER_SHEET_PHY_DEBUG_INFO = 15,
+    AMBER_SHEET_EXT_MODULE_STATUS = 16,
     AMBER_SHEET_ALL // Keep this enum last
 };
 
@@ -1559,5 +1658,20 @@ typedef enum
     CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH,
     CABLE_CONTROL_PARAMETERS_SET_RX_AMP
 } ControlParam;
+
+enum PCIE_ERR_INJ_TYPE
+{
+    PCIE_ERR_TYPE_ABORT = 0,
+    PCIE_ERR_TYPE_BAD_DLLP_LCRC,
+    PCIE_ERR_TYPE_BAD_TLP_LCRC,
+    PCIE_ERR_TYPE_BAD_TLP_ECRC,
+    PCIE_ERR_TYPE_ERR_MSG,
+    PCIE_ERR_TYPE_MALFORMED_TLP,
+    PCIE_ERR_TYPE_POISONED_TLP,
+    PCIE_ERR_TYPE_UNEXPECTED_CPL,
+    PCIE_ERR_TYPE_ACS_VIOLATION,
+    PCIE_ERR_TYPE_SURP_LINK_DOWN = 100,
+    PCIE_ERR_TYPE_RECEIVER_ERROR = 101
+};
 
 #endif /* MLXLINK_ENUMS_H */

@@ -71,6 +71,7 @@ public:
     virtual vector<AmberField> getTestModeInfo();
     virtual vector<AmberField> getTestModeModuleInfo();
     virtual vector<AmberField> getPhyDebugInfo();
+    virtual vector<AmberField> getExtModuleStatus();
 
     void getPpcntBer(u_int32_t portType, vector<AmberField>& fields);
     bool isGBValid();
@@ -106,11 +107,9 @@ private:
     void getIbComplianceCodes(string& ibComplianceCodeStr);
     string getCableTechnologyStr(u_int32_t cableTechnology);
     string getCableBreakoutStr(u_int32_t cableBreakout, u_int32_t cableIdentifier);
-    void calcRxTxPowerLane(vector<AmberField>& fields, string str);
     void getModuleInfoPage(vector<AmberField>& fields);
     string getSmfLength(const u_int32_t smfLength, const u_int32_t cableTechnology, const bool optical);
     string getDateCode(u_int64_t dateCode);
-    void loopAllLanesStr(vector<AmberField>& fields, const string str);
     void getTxBiasLane(vector<AmberField>& fields);
     string getByMap(u_int32_t flags, std::map<u_int32_t, std::string> map);
     void getCmisComplianceCode(u_int32_t ethComplianceCode,
@@ -121,11 +120,20 @@ private:
                                u_int32_t cableTechnology);
     void initCableIdentifier(u_int32_t cableIdentifier);
     void getModuleLatchedFlagInfoPage(vector<AmberField>& fields);
+    string getPrbsModeCap(u_int32_t modeSelector, u_int32_t capsMask);
+    string getPrpsRateCap(u_int32_t capsMask);
     void groupValidIf(bool condition);
     void getTestModeModulePMPT(vector<AmberField>& fields, string moduleSide, ModuleAccess_t mode);
     void getTestModeModulePMPD(vector<AmberField>& fields, string moduleSide);
     u_int32_t getSheetIndex(AMBER_SHEET sheet);
     u_int32_t getFomMeasurement();
+
+    void collect();
+    vector<AmberField> collectSheet(AMBER_SHEET sheet);
+    void initAmberSheetsToDump();
+    u_int32_t fixFieldsData();
+    void exportToCSV();
+    void exportToConsole();
 
     bool _isQsfpCable;
     bool _isSfpCable;
@@ -138,29 +146,25 @@ private:
     map<AMBER_SHEET, FIELDS_COUNT> _baseSheetsList;
 
 protected:
-    string getBitmaskPerLaneStr(u_int32_t bitmask);
     void resetLocalParser(const string& regName);
     string getLocalFieldStr(const string& fieldName);
     u_int32_t getLocalFieldValue(const string& fieldName);
     void sendRegister(const string& regName, maccess_reg_method_t method);
-
+    void sendLocalPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...);
+    string getBitmaskPerLaneStr(u_int32_t bitmask);
     void fillParamsToFields(const string& title, const vector<string>& values, vector<AmberField>& fields);
-    string getPrbsModeCap(u_int32_t modeSelector, u_int32_t capsMask);
-    string getPrpsRateCap(u_int32_t capsMask);
-    virtual void getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params);
+    void pushModulePerLaneField(vector<AmberField>& fields,
+                                string fieldName,
+                                float valueCorrection = 1.0,
+                                string laneSep = "_");
+    void pushModuleDpPerLane(vector<AmberField>& fields, const string str);
 
     // Helper functions
     virtual string getBerAndErrorTitle(u_int32_t portType);
+    virtual void getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params);
     string getClRawBer();
 
     // Callers
-    void initAmberSheetsToDump();
-    vector<AmberField> collectSheet(AMBER_SHEET sheet);
-    void collect();
-
-    u_int32_t fixFieldsData();
-    void exportToCSV();
-    void exportToConsole();
 
     bool _isCmisCable;
     bool _isPortIB;

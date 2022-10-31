@@ -51,16 +51,28 @@ public:
     void showMixersOffset();
     void updateMixerOffsets();
 
-    u_int32_t _localPort;
-    u_int32_t _pnat;
+    void showPcieErrInjState(const DPN& dpn);
+    void startPcieErrInj(const DPN& dpn,
+                         const string& type,
+                         int duration,
+                         int injDelay,
+                         const string& dbdf,
+                         vector<string> params);
+
     int _mixerOffset0;
     int _mixerOffset1;
     bool _force;
+    MlxlinkMaps* _mlxlinkMaps;
 
 private:
-    bool getUserConfirm();
+    bool getUserConfirm(const string& msg);
     u_int16_t getMixerOffset(u_int32_t id);
     void setMixersOffset();
+    string getNumOfValidParams(PcieErrType& errTypeSt);
+    string getDbdfUsage();
+    string getValidErrorTypes(bool perDbdf = false);
+    string getPcieErrInjStatus(u_int32_t errorType);
+    ReqParms validateErrType(const string& type, int duration, int injDelay, vector<string> params, const string& dbdf);
 
     Json::Value& _jsonRoot;
     MlxlinkCmdPrint _errInjOutput;

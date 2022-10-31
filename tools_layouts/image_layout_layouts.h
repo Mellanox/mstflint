@@ -31,7 +31,7 @@
  */
 
 /***
- *** This file was generated at "2022-02-06 17:27:46"
+ *** This file was generated at "2022-08-02 16:49:25"
  *** by:
  ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/image_layout/image_layout.adb
  *--file-prefix image_layout --prefix image_layout_ --no-adb-utils
@@ -53,6 +53,40 @@ extern "C"
         /* Description -  */
         /* 0x0.0 - 0x4.31 */
         u_int64_t uint64;
+    };
+
+    /* Description -   */
+    /* Size in bytes - 4 */
+    struct image_layout_component_authentication_configuration
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - 0-NULL, 1-SHA256Digest, 3-2048 bit RSA */
+        /* 0x0.0 - 0x0.7 */
+        u_int8_t auth_type;
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - used for authenticating Back to commissioning tokens */
+        /* 0x0.26 - 0x0.26 */
+        u_int8_t btc_token_en;
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - used for authenticating Factory Re-COnfiguration Responses */
+        /* 0x0.27 - 0x0.27 */
+        u_int8_t frc_en;
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - used for signing NVCONFIG at MLNX level */
+        /* 0x0.28 - 0x0.28 */
+        u_int8_t mlnx_nvconfig_en;
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - used for authenticating NVCONFIG at OEM level */
+        /* 0x0.29 - 0x0.29 */
+        u_int8_t vendor_nvconfig_en;
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - used for authenticating CS tokens at OEM level */
+        /* 0x0.30 - 0x0.30 */
+        u_int8_t cs_token_en;
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - Used for authenticating firmware, DBG_FW, DBG Tokens */
+        /* 0x0.31 - 0x0.31 */
+        u_int8_t fw_en;
     };
 
     /* Description -   */
@@ -219,6 +253,50 @@ See struct description */
         /* Description -  */
         /* 0x4.16 - 0x4.31 */
         u_int16_t MINOR;
+    };
+
+    /* Description -   */
+    /* Size in bytes - 544 */
+    struct image_layout_file_public_keys_2
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - configuration bits to enable authentication for each component */
+        /* 0x0.0 - 0x0.31 */
+        struct image_layout_component_authentication_configuration component_authentication_configuration;
+        /*---------------- DWORD[3] (Offset 0xc) ----------------*/
+        /* Description - public key exponent, FW should use an exponent of 65537 */
+        /* 0xc.0 - 0xc.31 */
+        u_int32_t keypair_exp;
+        /*---------------- DWORD[4] (Offset 0x10) ----------------*/
+        /* Description - UUID of this key created by server when it generates a keypair */
+        /* 0x10.0 - 0x1c.31 */
+        u_int32_t keypair_uuid[4];
+        /*---------------- DWORD[8] (Offset 0x20) ----------------*/
+        /* Description - 4096 bit public-key */
+        /* 0x20.0 - 0x21c.31 */
+        u_int32_t key[128];
+    };
+
+    /* Description -   */
+    /* Size in bytes - 544 */
+    struct image_layout_file_public_keys_3
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - public key exponent, FW should use an exponent of 65537 */
+        /* 0x0.0 - 0x0.31 */
+        u_int32_t keypair_exp;
+        /*---------------- DWORD[1] (Offset 0x4) ----------------*/
+        /* Description - UUID of this key created by server when it generates a keypair */
+        /* 0x4.0 - 0x10.31 */
+        u_int32_t keypair_uuid[4];
+        /*---------------- DWORD[5] (Offset 0x14) ----------------*/
+        /* Description - 4096 bit public-key */
+        /* 0x14.0 - 0x210.31 */
+        u_int32_t key[128];
+        /*---------------- DWORD[133] (Offset 0x214) ----------------*/
+        /* Description - configuration bits to enable authentication for each component */
+        /* 0x214.0 - 0x214.31 */
+        struct image_layout_component_authentication_configuration component_authentication_configuration;
     };
 
     /* Description -   */
@@ -534,7 +612,7 @@ be used for multiple virtual guests, multi host and managment */
         /*---------------- DWORD[22] (Offset 0x58) ----------------*/
         /* Description -  */
         /* 0x58.0 - 0x5c.31 */
-        struct image_layout_hw_pointer_entry hmac_end_pointer;
+        struct image_layout_hw_pointer_entry image_signature_pointer;
         /*---------------- DWORD[24] (Offset 0x60) ----------------*/
         /* Description -  */
         /* 0x60.0 - 0x64.31 */
@@ -557,6 +635,10 @@ be used for multiple virtual guests, multi host and managment */
     /* Size in bytes - 1024 */
     struct image_layout_image_info
     {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description -  */
+        /* 0x0.1 - 0x0.1 */
+        u_int8_t toc_header_duplication;
         /*---------------- DWORD[0] (Offset 0x0) ----------------*/
         /* Description - Indicate that this binary intended for secure boot enabled devices */
         /* 0x0.2 - 0x0.2 */
@@ -662,6 +744,10 @@ be used for multiple virtual guests, multi host and managment */
         /* Description - The needed 10’s of ms timeout between the PCI link disable and PCI link enable. */
         /* 0x110.0 - 0x110.7 */
         u_int8_t synced_reset_downtime;
+        /*---------------- DWORD[68] (Offset 0x110) ----------------*/
+        /* Description - indication for tool where to locate toc header copy */
+        /* 0x110.16 - 0x110.31 */
+        u_int16_t toc_copy_ofst;
         /*---------------- DWORD[70] (Offset 0x118) ----------------*/
         /* Description - HW device(s) supported by this FW image.
 0 means invalid entry.
@@ -704,6 +790,24 @@ or FW only. */
         /* Description - PRS used to generate the FW binary */
         /* 0x380.24 - 0x400.23 */
         char prs_name[129];
+    };
+
+    /* Description -   */
+    /* Size in bytes - 576 */
+    struct image_layout_image_signature_2
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - time based UUID for this signature */
+        /* 0x0.0 - 0xc.31 */
+        u_int32_t signature_uuid[4];
+        /*---------------- DWORD[4] (Offset 0x10) ----------------*/
+        /* Description - The UUID of the keypair used for signing this file */
+        /* 0x10.0 - 0x1c.31 */
+        u_int32_t keypair_uuid[4];
+        /*---------------- DWORD[8] (Offset 0x20) ----------------*/
+        /* Description - The signature itself */
+        /* 0x20.0 - 0x21c.31 */
+        u_int32_t signature[128];
     };
 
     /* Description -   */
@@ -819,6 +923,44 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
         u_int16_t itoc_entry_crc;
     };
 
+    /* Description -   */
+    /* Size in bytes - 4352 */
+    struct image_layout_public_keys_2
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description -  */
+        /* 0x0.0 - 0x10fc.31 */
+        struct image_layout_file_public_keys_2 file_public_keys_2[8];
+    };
+
+    /* Description -   */
+    /* Size in bytes - 4352 */
+    struct image_layout_public_keys_3
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description -  */
+        /* 0x0.0 - 0x10fc.31 */
+        struct image_layout_file_public_keys_3 file_public_keys_3[8];
+    };
+
+    /* Description -   */
+    /* Size in bytes - 1536 */
+    struct image_layout_secure_boot_signatures
+    {
+        /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - boot signature of data: image signature, hw pointers, boot record, table of content, boot2 */
+        /* 0x0.0 - 0x1fc.31 */
+        u_int32_t boot_signature[128];
+        /*---------------- DWORD[128] (Offset 0x200) ----------------*/
+        /* Description - fw critical signature of itcos: HW_BOOT_INI, PCIE_PHY_UC_COMMANDS, PCIE_LINK_CODE */
+        /* 0x200.0 - 0x3fc.31 */
+        u_int32_t critical_signature[128];
+        /*---------------- DWORD[256] (Offset 0x400) ----------------*/
+        /* Description - fw non critical signatures of all other itocs  */
+        /* 0x400.0 - 0x5fc.31 */
+        u_int32_t non_critical_signature[128];
+    };
+
     /* Description -  tools speific section */
     /* Size in bytes - 64 */
     struct image_layout_tools_area
@@ -850,31 +992,43 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
     };
 
     /* Description -   */
-    /* Size in bytes - 2052 */
+    /* Size in bytes - 4352 */
     union image_layout_image_layout_Nodes
     {
         /*---------------- DWORD[0] (Offset 0x0) ----------------*/
         /* Description -  */
-        /* 0x0.0 - 0x3c.31 */
-        struct image_layout_tools_area tools_area;
+        /* 0x0.0 - 0x1fc.31 */
+        struct image_layout_device_info device_info;
+        /* Description -  */
+        /* 0x0.0 - 0x10fc.31 */
+        struct image_layout_public_keys_3 public_keys_3;
+        /* Description -  */
+        /* 0x0.0 - 0x10fc.31 */
+        struct image_layout_public_keys_2 public_keys_2;
         /* Description -  */
         /* 0x0.0 - 0x1c.31 */
         struct image_layout_itoc_entry itoc_entry;
         /* Description -  */
-        /* 0x0.0 - 0x800.31 */
-        struct image_layout_hashes_table hashes_table;
-        /* Description -  */
         /* 0x0.0 - 0x3fc.31 */
         struct image_layout_image_info image_info;
         /* Description -  */
-        /* 0x0.0 - 0x7c.31 */
-        struct image_layout_hw_pointers_carmel hw_pointers_carmel;
+        /* 0x0.0 - 0x800.31 */
+        struct image_layout_hashes_table hashes_table;
         /* Description -  */
         /* 0x0.0 - 0x1c.31 */
         struct image_layout_itoc_header itoc_header;
         /* Description -  */
-        /* 0x0.0 - 0x1fc.31 */
-        struct image_layout_device_info device_info;
+        /* 0x0.0 - 0x5fc.31 */
+        struct image_layout_secure_boot_signatures secure_boot_signatures;
+        /* Description -  */
+        /* 0x0.0 - 0x23c.31 */
+        struct image_layout_image_signature_2 image_signature_2;
+        /* Description -  */
+        /* 0x0.0 - 0x7c.31 */
+        struct image_layout_hw_pointers_carmel hw_pointers_carmel;
+        /* Description -  */
+        /* 0x0.0 - 0x3c.31 */
+        struct image_layout_tools_area tools_area;
     };
 
     /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
@@ -885,6 +1039,22 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
     unsigned int image_layout_uint64_size(void);
 #define IMAGE_LAYOUT_UINT64_SIZE (0x8)
     void image_layout_uint64_dump(const u_int64_t* ptr_struct, FILE* fd);
+    /* component_authentication_configuration */
+    void image_layout_component_authentication_configuration_pack(
+      const struct image_layout_component_authentication_configuration* ptr_struct,
+      u_int8_t* ptr_buff);
+    void image_layout_component_authentication_configuration_unpack(
+      struct image_layout_component_authentication_configuration* ptr_struct,
+      const u_int8_t* ptr_buff);
+    void image_layout_component_authentication_configuration_print(
+      const struct image_layout_component_authentication_configuration* ptr_struct,
+      FILE* fd,
+      int indent_level);
+    unsigned int image_layout_component_authentication_configuration_size(void);
+#define IMAGE_LAYOUT_COMPONENT_AUTHENTICATION_CONFIGURATION_SIZE (0x4)
+    void image_layout_component_authentication_configuration_dump(
+      const struct image_layout_component_authentication_configuration* ptr_struct,
+      FILE* fd);
     /* htoc_entry */
     void image_layout_htoc_entry_pack(const struct image_layout_htoc_entry* ptr_struct, u_int8_t* ptr_buff);
     void image_layout_htoc_entry_unpack(struct image_layout_htoc_entry* ptr_struct, const u_int8_t* ptr_buff);
@@ -902,21 +1072,28 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
     /* module_version */
     void image_layout_module_version_pack(const struct image_layout_module_version* ptr_struct, u_int8_t* ptr_buff);
     void image_layout_module_version_unpack(struct image_layout_module_version* ptr_struct, const u_int8_t* ptr_buff);
-    void image_layout_module_version_print(const struct image_layout_module_version* ptr_struct, FILE* fd, int indent_level);
+    void image_layout_module_version_print(const struct image_layout_module_version* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level);
     unsigned int image_layout_module_version_size(void);
 #define IMAGE_LAYOUT_MODULE_VERSION_SIZE (0x4)
     void image_layout_module_version_dump(const struct image_layout_module_version* ptr_struct, FILE* fd);
     /* reset_capabilities */
-    void image_layout_reset_capabilities_pack(const struct image_layout_reset_capabilities* ptr_struct, u_int8_t* ptr_buff);
-    void image_layout_reset_capabilities_unpack(struct image_layout_reset_capabilities* ptr_struct, const u_int8_t* ptr_buff);
-    void image_layout_reset_capabilities_print(const struct image_layout_reset_capabilities* ptr_struct, FILE* fd, int indent_level);
+    void image_layout_reset_capabilities_pack(const struct image_layout_reset_capabilities* ptr_struct,
+                                              u_int8_t* ptr_buff);
+    void image_layout_reset_capabilities_unpack(struct image_layout_reset_capabilities* ptr_struct,
+                                                const u_int8_t* ptr_buff);
+    void image_layout_reset_capabilities_print(const struct image_layout_reset_capabilities* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level);
     unsigned int image_layout_reset_capabilities_size(void);
 #define IMAGE_LAYOUT_RESET_CAPABILITIES_SIZE (0x4)
     void image_layout_reset_capabilities_dump(const struct image_layout_reset_capabilities* ptr_struct, FILE* fd);
     /* reset_version */
     void image_layout_reset_version_pack(const struct image_layout_reset_version* ptr_struct, u_int8_t* ptr_buff);
     void image_layout_reset_version_unpack(struct image_layout_reset_version* ptr_struct, const u_int8_t* ptr_buff);
-    void image_layout_reset_version_print(const struct image_layout_reset_version* ptr_struct, FILE* fd, int indent_level);
+    void
+      image_layout_reset_version_print(const struct image_layout_reset_version* ptr_struct, FILE* fd, int indent_level);
     unsigned int image_layout_reset_version_size(void);
 #define IMAGE_LAYOUT_RESET_VERSION_SIZE (0x4)
     void image_layout_reset_version_dump(const struct image_layout_reset_version* ptr_struct, FILE* fd);
@@ -937,10 +1114,34 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
     /* TRIPPLE_VERSION */
     void image_layout_TRIPPLE_VERSION_pack(const struct image_layout_TRIPPLE_VERSION* ptr_struct, u_int8_t* ptr_buff);
     void image_layout_TRIPPLE_VERSION_unpack(struct image_layout_TRIPPLE_VERSION* ptr_struct, const u_int8_t* ptr_buff);
-    void image_layout_TRIPPLE_VERSION_print(const struct image_layout_TRIPPLE_VERSION* ptr_struct, FILE* fd, int indent_level);
+    void image_layout_TRIPPLE_VERSION_print(const struct image_layout_TRIPPLE_VERSION* ptr_struct,
+                                            FILE* fd,
+                                            int indent_level);
     unsigned int image_layout_TRIPPLE_VERSION_size(void);
 #define IMAGE_LAYOUT_TRIPPLE_VERSION_SIZE (0x8)
     void image_layout_TRIPPLE_VERSION_dump(const struct image_layout_TRIPPLE_VERSION* ptr_struct, FILE* fd);
+    /* file_public_keys_2 */
+    void image_layout_file_public_keys_2_pack(const struct image_layout_file_public_keys_2* ptr_struct,
+                                              u_int8_t* ptr_buff);
+    void image_layout_file_public_keys_2_unpack(struct image_layout_file_public_keys_2* ptr_struct,
+                                                const u_int8_t* ptr_buff);
+    void image_layout_file_public_keys_2_print(const struct image_layout_file_public_keys_2* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level);
+    unsigned int image_layout_file_public_keys_2_size(void);
+#define IMAGE_LAYOUT_FILE_PUBLIC_KEYS_2_SIZE (0x220)
+    void image_layout_file_public_keys_2_dump(const struct image_layout_file_public_keys_2* ptr_struct, FILE* fd);
+    /* file_public_keys_3 */
+    void image_layout_file_public_keys_3_pack(const struct image_layout_file_public_keys_3* ptr_struct,
+                                              u_int8_t* ptr_buff);
+    void image_layout_file_public_keys_3_unpack(struct image_layout_file_public_keys_3* ptr_struct,
+                                                const u_int8_t* ptr_buff);
+    void image_layout_file_public_keys_3_print(const struct image_layout_file_public_keys_3* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level);
+    unsigned int image_layout_file_public_keys_3_size(void);
+#define IMAGE_LAYOUT_FILE_PUBLIC_KEYS_3_SIZE (0x220)
+    void image_layout_file_public_keys_3_dump(const struct image_layout_file_public_keys_3* ptr_struct, FILE* fd);
     /* guids */
     void image_layout_guids_pack(const struct image_layout_guids* ptr_struct, u_int8_t* ptr_buff);
     void image_layout_guids_unpack(struct image_layout_guids* ptr_struct, const u_int8_t* ptr_buff);
@@ -949,9 +1150,13 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
 #define IMAGE_LAYOUT_GUIDS_SIZE (0x40)
     void image_layout_guids_dump(const struct image_layout_guids* ptr_struct, FILE* fd);
     /* hashes_table_header */
-    void image_layout_hashes_table_header_pack(const struct image_layout_hashes_table_header* ptr_struct, u_int8_t* ptr_buff);
-    void image_layout_hashes_table_header_unpack(struct image_layout_hashes_table_header* ptr_struct, const u_int8_t* ptr_buff);
-    void image_layout_hashes_table_header_print(const struct image_layout_hashes_table_header* ptr_struct, FILE* fd, int indent_level);
+    void image_layout_hashes_table_header_pack(const struct image_layout_hashes_table_header* ptr_struct,
+                                               u_int8_t* ptr_buff);
+    void image_layout_hashes_table_header_unpack(struct image_layout_hashes_table_header* ptr_struct,
+                                                 const u_int8_t* ptr_buff);
+    void image_layout_hashes_table_header_print(const struct image_layout_hashes_table_header* ptr_struct,
+                                                FILE* fd,
+                                                int indent_level);
     unsigned int image_layout_hashes_table_header_size(void);
 #define IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE (0xc)
     void image_layout_hashes_table_header_dump(const struct image_layout_hashes_table_header* ptr_struct, FILE* fd);
@@ -971,8 +1176,11 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
     void image_layout_htoc_hash_dump(const struct image_layout_htoc_hash* ptr_struct, FILE* fd);
     /* hw_pointer_entry */
     void image_layout_hw_pointer_entry_pack(const struct image_layout_hw_pointer_entry* ptr_struct, u_int8_t* ptr_buff);
-    void image_layout_hw_pointer_entry_unpack(struct image_layout_hw_pointer_entry* ptr_struct, const u_int8_t* ptr_buff);
-    void image_layout_hw_pointer_entry_print(const struct image_layout_hw_pointer_entry* ptr_struct, FILE* fd, int indent_level);
+    void image_layout_hw_pointer_entry_unpack(struct image_layout_hw_pointer_entry* ptr_struct,
+                                              const u_int8_t* ptr_buff);
+    void image_layout_hw_pointer_entry_print(const struct image_layout_hw_pointer_entry* ptr_struct,
+                                             FILE* fd,
+                                             int indent_level);
     unsigned int image_layout_hw_pointer_entry_size(void);
 #define IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE (0x8)
     void image_layout_hw_pointer_entry_dump(const struct image_layout_hw_pointer_entry* ptr_struct, FILE* fd);
@@ -986,21 +1194,26 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
     /* module_versions */
     void image_layout_module_versions_pack(const struct image_layout_module_versions* ptr_struct, u_int8_t* ptr_buff);
     void image_layout_module_versions_unpack(struct image_layout_module_versions* ptr_struct, const u_int8_t* ptr_buff);
-    void image_layout_module_versions_print(const struct image_layout_module_versions* ptr_struct, FILE* fd, int indent_level);
+    void image_layout_module_versions_print(const struct image_layout_module_versions* ptr_struct,
+                                            FILE* fd,
+                                            int indent_level);
     unsigned int image_layout_module_versions_size(void);
 #define IMAGE_LAYOUT_MODULE_VERSIONS_SIZE (0x40)
     void image_layout_module_versions_dump(const struct image_layout_module_versions* ptr_struct, FILE* fd);
     /* operation_key */
     void image_layout_operation_key_pack(const struct image_layout_operation_key* ptr_struct, u_int8_t* ptr_buff);
     void image_layout_operation_key_unpack(struct image_layout_operation_key* ptr_struct, const u_int8_t* ptr_buff);
-    void image_layout_operation_key_print(const struct image_layout_operation_key* ptr_struct, FILE* fd, int indent_level);
+    void
+      image_layout_operation_key_print(const struct image_layout_operation_key* ptr_struct, FILE* fd, int indent_level);
     unsigned int image_layout_operation_key_size(void);
 #define IMAGE_LAYOUT_OPERATION_KEY_SIZE (0x10)
     void image_layout_operation_key_dump(const struct image_layout_operation_key* ptr_struct, FILE* fd);
     /* version_vector */
     void image_layout_version_vector_pack(const struct image_layout_version_vector* ptr_struct, u_int8_t* ptr_buff);
     void image_layout_version_vector_unpack(struct image_layout_version_vector* ptr_struct, const u_int8_t* ptr_buff);
-    void image_layout_version_vector_print(const struct image_layout_version_vector* ptr_struct, FILE* fd, int indent_level);
+    void image_layout_version_vector_print(const struct image_layout_version_vector* ptr_struct,
+                                           FILE* fd,
+                                           int indent_level);
     unsigned int image_layout_version_vector_size(void);
 #define IMAGE_LAYOUT_VERSION_VECTOR_SIZE (0x30)
     void image_layout_version_vector_dump(const struct image_layout_version_vector* ptr_struct, FILE* fd);
@@ -1019,9 +1232,13 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
 #define IMAGE_LAYOUT_HASHES_TABLE_SIZE (0x804)
     void image_layout_hashes_table_dump(const struct image_layout_hashes_table* ptr_struct, FILE* fd);
     /* hw_pointers_carmel */
-    void image_layout_hw_pointers_carmel_pack(const struct image_layout_hw_pointers_carmel* ptr_struct, u_int8_t* ptr_buff);
-    void image_layout_hw_pointers_carmel_unpack(struct image_layout_hw_pointers_carmel* ptr_struct, const u_int8_t* ptr_buff);
-    void image_layout_hw_pointers_carmel_print(const struct image_layout_hw_pointers_carmel* ptr_struct, FILE* fd, int indent_level);
+    void image_layout_hw_pointers_carmel_pack(const struct image_layout_hw_pointers_carmel* ptr_struct,
+                                              u_int8_t* ptr_buff);
+    void image_layout_hw_pointers_carmel_unpack(struct image_layout_hw_pointers_carmel* ptr_struct,
+                                                const u_int8_t* ptr_buff);
+    void image_layout_hw_pointers_carmel_print(const struct image_layout_hw_pointers_carmel* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level);
     unsigned int image_layout_hw_pointers_carmel_size(void);
 #define IMAGE_LAYOUT_HW_POINTERS_CARMEL_SIZE (0x80)
     void image_layout_hw_pointers_carmel_dump(const struct image_layout_hw_pointers_carmel* ptr_struct, FILE* fd);
@@ -1032,6 +1249,17 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
     unsigned int image_layout_image_info_size(void);
 #define IMAGE_LAYOUT_IMAGE_INFO_SIZE (0x400)
     void image_layout_image_info_dump(const struct image_layout_image_info* ptr_struct, FILE* fd);
+    /* image_signature_2 */
+    void image_layout_image_signature_2_pack(const struct image_layout_image_signature_2* ptr_struct,
+                                             u_int8_t* ptr_buff);
+    void image_layout_image_signature_2_unpack(struct image_layout_image_signature_2* ptr_struct,
+                                               const u_int8_t* ptr_buff);
+    void image_layout_image_signature_2_print(const struct image_layout_image_signature_2* ptr_struct,
+                                              FILE* fd,
+                                              int indent_level);
+    unsigned int image_layout_image_signature_2_size(void);
+#define IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE (0x240)
+    void image_layout_image_signature_2_dump(const struct image_layout_image_signature_2* ptr_struct, FILE* fd);
     /* itoc_entry */
     void image_layout_itoc_entry_pack(const struct image_layout_itoc_entry* ptr_struct, u_int8_t* ptr_buff);
     void image_layout_itoc_entry_unpack(struct image_layout_itoc_entry* ptr_struct, const u_int8_t* ptr_buff);
@@ -1046,6 +1274,34 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
     unsigned int image_layout_itoc_header_size(void);
 #define IMAGE_LAYOUT_ITOC_HEADER_SIZE (0x20)
     void image_layout_itoc_header_dump(const struct image_layout_itoc_header* ptr_struct, FILE* fd);
+    /* public_keys_2 */
+    void image_layout_public_keys_2_pack(const struct image_layout_public_keys_2* ptr_struct, u_int8_t* ptr_buff);
+    void image_layout_public_keys_2_unpack(struct image_layout_public_keys_2* ptr_struct, const u_int8_t* ptr_buff);
+    void
+      image_layout_public_keys_2_print(const struct image_layout_public_keys_2* ptr_struct, FILE* fd, int indent_level);
+    unsigned int image_layout_public_keys_2_size(void);
+#define IMAGE_LAYOUT_PUBLIC_KEYS_2_SIZE (0x1100)
+    void image_layout_public_keys_2_dump(const struct image_layout_public_keys_2* ptr_struct, FILE* fd);
+    /* public_keys_3 */
+    void image_layout_public_keys_3_pack(const struct image_layout_public_keys_3* ptr_struct, u_int8_t* ptr_buff);
+    void image_layout_public_keys_3_unpack(struct image_layout_public_keys_3* ptr_struct, const u_int8_t* ptr_buff);
+    void
+      image_layout_public_keys_3_print(const struct image_layout_public_keys_3* ptr_struct, FILE* fd, int indent_level);
+    unsigned int image_layout_public_keys_3_size(void);
+#define IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE (0x1100)
+    void image_layout_public_keys_3_dump(const struct image_layout_public_keys_3* ptr_struct, FILE* fd);
+    /* secure_boot_signatures */
+    void image_layout_secure_boot_signatures_pack(const struct image_layout_secure_boot_signatures* ptr_struct,
+                                                  u_int8_t* ptr_buff);
+    void image_layout_secure_boot_signatures_unpack(struct image_layout_secure_boot_signatures* ptr_struct,
+                                                    const u_int8_t* ptr_buff);
+    void image_layout_secure_boot_signatures_print(const struct image_layout_secure_boot_signatures* ptr_struct,
+                                                   FILE* fd,
+                                                   int indent_level);
+    unsigned int image_layout_secure_boot_signatures_size(void);
+#define IMAGE_LAYOUT_SECURE_BOOT_SIGNATURES_SIZE (0x600)
+    void image_layout_secure_boot_signatures_dump(const struct image_layout_secure_boot_signatures* ptr_struct,
+                                                  FILE* fd);
     /* tools_area */
     void image_layout_tools_area_pack(const struct image_layout_tools_area* ptr_struct, u_int8_t* ptr_buff);
     void image_layout_tools_area_unpack(struct image_layout_tools_area* ptr_struct, const u_int8_t* ptr_buff);
@@ -1054,11 +1310,15 @@ dtoc_header: Represents the layout version depicted by the dTOC: 1. */
 #define IMAGE_LAYOUT_TOOLS_AREA_SIZE (0x40)
     void image_layout_tools_area_dump(const struct image_layout_tools_area* ptr_struct, FILE* fd);
     /* image_layout_Nodes */
-    void image_layout_image_layout_Nodes_pack(const union image_layout_image_layout_Nodes* ptr_struct, u_int8_t* ptr_buff);
-    void image_layout_image_layout_Nodes_unpack(union image_layout_image_layout_Nodes* ptr_struct, const u_int8_t* ptr_buff);
-    void image_layout_image_layout_Nodes_print(const union image_layout_image_layout_Nodes* ptr_struct, FILE* fd, int indent_level);
+    void image_layout_image_layout_Nodes_pack(const union image_layout_image_layout_Nodes* ptr_struct,
+                                              u_int8_t* ptr_buff);
+    void image_layout_image_layout_Nodes_unpack(union image_layout_image_layout_Nodes* ptr_struct,
+                                                const u_int8_t* ptr_buff);
+    void image_layout_image_layout_Nodes_print(const union image_layout_image_layout_Nodes* ptr_struct,
+                                               FILE* fd,
+                                               int indent_level);
     unsigned int image_layout_image_layout_Nodes_size(void);
-#define IMAGE_LAYOUT_IMAGE_LAYOUT_NODES_SIZE (0x804)
+#define IMAGE_LAYOUT_IMAGE_LAYOUT_NODES_SIZE (0x1100)
     void image_layout_image_layout_Nodes_dump(const union image_layout_image_layout_Nodes* ptr_struct, FILE* fd);
 
 #ifdef __cplusplus

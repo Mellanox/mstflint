@@ -192,7 +192,9 @@ int MlxSignRSA::setPubKey(const std::string& pemKey)
     return createRSAFromPEMKeyString(pemKey, false);
 }
 
-int MlxSignRSA::sign(MlxSign::SHAType shaType, const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg)
+int MlxSignRSA::sign(MlxSign::SHAType shaType,
+                     const std::vector<u_int8_t>& msg,
+                     std::vector<u_int8_t>& encryptedMsg) const
 {
     unsigned int maxMsgSize, signLen;
     std::vector<u_int8_t> encryptedMsgTemp;

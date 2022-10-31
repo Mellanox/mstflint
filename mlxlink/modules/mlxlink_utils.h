@@ -136,6 +136,7 @@ void setPrintVal(MlxlinkCmdPrint& mlxlinkCmdPrint,
                  bool valid = true,
                  bool arrayValue = false,
                  bool colorKey = false);
+int getPrintRowIndex(MlxlinkCmdPrint& mlxlinkCmdPrint, const string& key);
 bool isSpeed25GPerLane(u_int32_t speed, u_int32_t protocol);
 string linkWidthMaskToStr(u_int32_t width);
 bool isSpeed50GPerLane(u_int32_t speed, u_int32_t protocol);
@@ -143,8 +144,11 @@ bool isSpeed100GPerLane(u_int32_t speed, u_int32_t protocol);
 bool askUser(const char* question, bool force = false);
 string getCableLengthStr(u_int32_t cableLength, bool cmisCable);
 string getRxTxCDRState(u_int32_t state, u_int32_t numOfLanes);
-string getFwVersion(bool passive, u_int32_t moduleFWVer);
+string getModuleFwVersion(bool passive, u_int32_t moduleFWVer);
 string getVendorRev(u_int32_t rev);
+string getBDFStr(u_int32_t bdf);
+int getBDFInt(const string& bdfStr);
+size_t LevStrMatch(const string& s1, const string& s2);
 string getStrByValue(u_int32_t flags, map<u_int32_t, string> map);
 string getStrByMask(u_int32_t bitmask, map<u_int32_t, string> maskMap, const string& fieldSeparator = ",");
 string getStrByMaskFromPair(u_int32_t bitmask,
