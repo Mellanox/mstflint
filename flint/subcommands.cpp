@@ -4652,7 +4652,6 @@ FlintStatus VerifySubCommand::executeCommand()
 
     if (preFwOps() == FLINT_FAILED)
     {
-        reportErr(true, FLINT_CMD_VERIFY_ERROR_1);
         return FLINT_FAILED;
     }
 
