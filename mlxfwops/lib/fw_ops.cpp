@@ -2851,6 +2851,7 @@ u_int32_t CRSpaceRegisters::getSecurityVersion()
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf3238), 3, 8);
             break;
         case CT_BLUEFIELD3:
+        case CT_SPECTRUM4:
             rollbackMSB = getRegister(0xf4348);
             rollbackLSB = getRegister(0xf434c);
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf4338), 4, 8);
