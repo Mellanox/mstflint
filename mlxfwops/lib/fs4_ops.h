@@ -162,7 +162,7 @@ protected:
                                          vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
     virtual bool IsSectionExists(fs3_section_t sectType);
     virtual bool VerifyImageAfterModifications();
-    bool parseDevData(bool readRom = true, bool quickQuery = true, bool verbose = false);
+    bool parseDevData(bool quickQuery = true, bool verbose = false, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
 
 private:
 #define PRE_CRC_OUTPUT "    "
@@ -215,7 +215,6 @@ private:
     bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
     bool encryptedFwReadImageInfoSection();
     bool encryptedFwQuery(fw_info_t* fwInfo,
-                          bool readRom = true,
                           bool quickQuery = true,
                           bool ignoreDToc = false,
                           bool verbose = false);

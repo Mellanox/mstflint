@@ -1080,14 +1080,12 @@ bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     }
     if (image_encrypted)
     {
-        if (_ioAccess->is_flash())
+        //* Verify DTOC CRCs only
+        if (!parseDevData(false, false, verifyCallBackFunc))
         {
-            return errmsg("In order to verify encrypted flash please provide burnt image with \"-i\"");
+            return errmsg("%s", err());
         }
-        else
-        {
-            return errmsg("Cannot verify an encrypted image");
-        }
+        return true;
     }
 
     return Fs3Operations::FwVerify(verifyCallBackFunc, isStripedImage, showItoc, ignoreDToc);
@@ -1168,14 +1166,14 @@ bool Fs4Operations::encryptedFwReadImageInfoSection()
     return true;
 }
 
-bool Fs4Operations::parseDevData(bool readRom, bool quickQuery, bool verbose)
+bool Fs4Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack verifyCallBackFunc)
 {
     //* Initializing DTOC info
     _ioAccess->set_address_convertor(0, 0);
     // Parse DTOC header:
     u_int32_t dtoc_addr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
     DPRINTF(("Fs4Operations::parseDevData call verifyTocHeader() DTOC, dtoc_addr = 0x%x\n", dtoc_addr));
-    if (!verifyTocHeader(dtoc_addr, true, (VerifyCallBack)NULL))
+    if (!verifyTocHeader(dtoc_addr, true, verifyCallBackFunc))
     {
         return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
     }
@@ -1183,10 +1181,10 @@ bool Fs4Operations::parseDevData(bool readRom, bool quickQuery, bool verbose)
 
     // Parse DTOC entries:
     struct QueryOptions queryOptions;
-    queryOptions.readRom = readRom;
+    queryOptions.readRom = false;
     queryOptions.quickQuery = quickQuery;
     DPRINTF(("Fs4Operations::parseDevData call verifyTocEntries() DTOC\n"));
-    if (!verifyTocEntries(dtoc_addr, false, true, queryOptions, (VerifyCallBack)NULL, verbose))
+    if (!verifyTocEntries(dtoc_addr, false, true, queryOptions, verifyCallBackFunc, verbose))
     {
         return false;
     }
@@ -1194,7 +1192,7 @@ bool Fs4Operations::parseDevData(bool readRom, bool quickQuery, bool verbose)
     return true;
 }
 
-bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
+bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs4Operations::encryptedFwQuery\n"));
 
@@ -1211,7 +1209,7 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool readRom, bool quick
 
     if (!ignoreDToc)
     {
-        if (!parseDevData(readRom, quickQuery, verbose))
+        if (!parseDevData(quickQuery, verbose))
         {
             return errmsg("%s", err());
         }
@@ -1251,7 +1249,7 @@ bool Fs4Operations::FwQuery(fw_info_t* fwInfo,
     }
     if (image_encrypted)
     {
-        return encryptedFwQuery(fwInfo, readRom, quickQuery, ignoreDToc, verbose);
+        return encryptedFwQuery(fwInfo, quickQuery, ignoreDToc, verbose);
     }
 
     if (!Fs3Operations::FwQuery(fwInfo, readRom, isStripedImage, quickQuery, ignoreDToc, verbose))
@@ -1412,7 +1410,7 @@ bool Fs4Operations::getEncryptedImageSize(u_int32_t* imageSize)
 {
     DPRINTF(("Fs4Operations::getEncryptedImageSize\n"));
     fw_info_t fwInfo;
-    if (!encryptedFwQuery(&fwInfo, false, false, true))
+    if (!encryptedFwQuery(&fwInfo, false, true))
     {
         return errmsg("%s", err());
     }
@@ -2407,7 +2405,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         }
 
         //* Parse DTOC and its sections
-        ((Fs4Operations*)imageOps)->parseDevData(true, false);
+        ((Fs4Operations*)imageOps)->parseDevData(false);
 
         //* DTOC sanity check
         if (!((Fs4Operations*)imageOps)->CheckDTocArray())
@@ -3619,7 +3617,7 @@ bool Fs4Operations::VerifyImageAfterModifications()
     if (image_encrypted)
     {
         fw_info_t fwInfo;
-        if (!encryptedFwQuery(&fwInfo, false, false))
+        if (!encryptedFwQuery(&fwInfo, false))
         {
             return errmsg("%s", err());
         }

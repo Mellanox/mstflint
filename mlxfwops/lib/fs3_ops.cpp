@@ -1717,9 +1717,9 @@ bool Fs3Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
     return FwSetMFG(bGuid, callBackFunc);
 }
 
-bool Fs3Operations::parseDevData(bool readRom, bool quickQuery, bool verbose)
+bool Fs3Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack)
 {
-    return FsIntQueryAux(readRom, quickQuery, false, verbose);
+    return FsIntQueryAux(false, quickQuery, false, verbose);
 }
 
 bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc, ProgressCallBack progressFunc)
@@ -1733,7 +1733,7 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
         return errmsg("Base GUID not found.");
     }
     // query device to get mfg info (for guids override en bit)
-    if (!parseDevData(false))
+    if (!parseDevData())
     {
         return false;
     }
