@@ -1331,11 +1331,10 @@ bool Fs4Operations::QuerySecurityFeatures()
             {
                 CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
                 _fs3ImgInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
+                _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
 
                 if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED)
                 {
-                    _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
-
                     if (IsSecurityVersionAccessible(_fwImgInfo.ext_info.chip_type))
                     {
                         _fs3ImgInfo.ext_info.device_security_version_gw = crSpaceReg.getSecurityVersion();
