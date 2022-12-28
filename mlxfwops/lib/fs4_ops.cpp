@@ -1136,6 +1136,27 @@ bool Fs4Operations::GetImageInfo(u_int8_t* buff)
     return true;
 }
 
+bool Fs4Operations::CheckDevRSAPublicKeyUUID()
+{
+    //* Read RSA_PUBLIC_KEY section
+    u_int32_t rsa_public_keys_section_addr = _public_key_ptr + _fwImgInfo.imgStart;
+    DPRINTF(
+      ("Fs4Operations::CheckDevRSAPublicKeyUUID rsa_public_keys_section_addr = 0x%x\n", rsa_public_keys_section_addr));
+    vector<u_int8_t> rsa_public_keys_data;
+    rsa_public_keys_data.resize(IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE);
+    if (!_ioAccess->read(rsa_public_keys_section_addr, rsa_public_keys_data.data(), IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE))
+    {
+        return errmsg("%s - read error (%s)\n", "RSA_PUBLIC_KEY", (*_ioAccess).err());
+    }
+
+    //* Check if key uuid is dev
+    image_layout_public_keys_3 public_keys_3;
+    image_layout_public_keys_3_unpack(&public_keys_3, rsa_public_keys_data.data());
+    GetImgSigInfo(public_keys_3.file_public_keys_3[0].keypair_uuid);
+
+    return true;
+}
+
 bool Fs4Operations::encryptedFwReadImageInfoSection()
 {
     //* Read IMAGE_INFO section
@@ -1188,7 +1209,7 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ig
 {
     DPRINTF(("Fs4Operations::encryptedFwQuery\n"));
 
-    if (!initHwPtrs(true))
+    if (!initHwPtrs())
     {
         DPRINTF(("Fs4Operations::encryptedFwQuery HW pointers not found"));
         return false;
@@ -1196,14 +1217,19 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ig
 
     if (!encryptedFwReadImageInfoSection())
     {
-        return errmsg("%s", err());
+        return false;
+    }
+
+    if (!CheckDevRSAPublicKeyUUID())
+    {
+        return false;
     }
 
     if (!ignoreDToc)
     {
         if (!parseDevData(quickQuery, verbose))
         {
-            return errmsg("%s", err());
+            return false;
         }
     }
 
@@ -4840,7 +4866,8 @@ bool Fs4Operations::GetHashesTableSize(u_int32_t& size)
     {
         return false;
     }
-    u_int32_t htoc_hash_size = HTOC_HASH_SIZE; // In case of encrypted device we can't parse HTOC header to get hash size so we use constant
+    u_int32_t htoc_hash_size =
+      HTOC_HASH_SIZE; // In case of encrypted device we can't parse HTOC header to get hash size so we use constant
     if (!image_encrypted)
     {
         //* Read HTOC header for hash size
@@ -4852,11 +4879,11 @@ bool Fs4Operations::GetHashesTableSize(u_int32_t& size)
         htoc_hash_size = header.hash_size;
         free(buff);
     }
-    u_int32_t htoc_size = IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + htoc_hash_size);
+    u_int32_t htoc_size =
+      IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + htoc_hash_size);
     size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + htoc_size + HASHES_TABLE_TAIL_SIZE;
 
     return true;
-
 }
 
 bool Fs4Operations::GetHashesTableData(vector<u_int8_t>& data)
