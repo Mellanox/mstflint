@@ -2818,6 +2818,7 @@ int CRSpaceRegisters::getGlobalImageStatus()
 
     switch (_chip_type)
     {
+        case CT_CONNECTX6:
         case CT_CONNECTX6DX:
         case CT_CONNECTX6LX:
         case CT_CONNECTX7:
