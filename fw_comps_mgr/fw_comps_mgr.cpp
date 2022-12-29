@@ -988,7 +988,7 @@ void FwCompsMgr::initialize(mfile* mf)
         GenerateHandle();
     }
     ComponentAccessFactory* factory = ComponentAccessFactory::GetInstance();
-    _accessObj = factory->createDataAccessObject(this, mf, isDmaSupported);
+    _accessObj = factory->createDataAccessObject(this, mf, _isDmaSupported);
     _refreshed = false;
 }
 
@@ -1538,7 +1538,7 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 u_int32_t FwCompsMgr::getFwSupport()
 {
     u_int32_t devid = 0;
-    isDmaSupported = false;
+    _isDmaSupported = false;
 #ifndef UEFI_BUILD
     if (getenv("FW_CTRL") != NULL)
     {
@@ -1574,16 +1574,23 @@ u_int32_t FwCompsMgr::getFwSupport()
         return 0;
     }
     /*
-     * MCDA bit are in offsets 0x60-0x64
+     * MCQS in bit 0x60
+     * MCQI in bit 0x61
+     * MCC in bit 0x62
+     * MCDA in bit 0x63
+     * MQIS in bit 0x64
      * MCDD in bit 0x5C
      * MGIR in bit 0x20
-     * The bytes are in reverse order
      */
-    u_int8_t mcdaCaps = EXTRACT(mcam.mng_access_reg_cap_mask[3], 0, 5);
-    u_int8_t mcddCaps = EXTRACT(mcam.mng_access_reg_cap_mask[4], 4, 1); //##EDDY: need check ! register 5c
-    u_int8_t mgirCaps = EXTRACT(mcam.mng_access_reg_cap_mask[11], 0, 1);
-    if (mcddCaps == 1)
-        isDmaSupported = true;
+    u_int8_t mcqsCap = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 3], 0, 1);
+    u_int8_t mcqiCap = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 3], 1, 1);
+    u_int8_t mccCap = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 3], 2, 1);
+    u_int8_t mcdaCap = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 3], 3,
+                               1); // DWORD select logic: 3 - (0x63 / 0x20); bit select logic: 0x63 % 0x20
+    u_int8_t mqisCap = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 3], 4, 1);
+    u_int8_t mcddCap = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 2], 28, 1);
+    u_int8_t mgirCap = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 1], 0, 1);
+    _isDmaSupported = (mcddCap == 1);
 
     memset(&mcam, 0, sizeof(mcam));
     mcam.access_reg_group = 2; // for MIRC register
@@ -1594,11 +1601,12 @@ u_int32_t FwCompsMgr::getFwSupport()
         return 0;
     }
 
-    _mircCaps = EXTRACT(mcam.mng_access_reg_cap_mask[3], 2, 1); // MIRC is 0x9162
-    DPRINTF(("getFwSupport _mircCaps = %d mcdaCaps = %d mcddCaps = %d mgirCaps = %d\n", _mircCaps, mcdaCaps, mcddCaps,
-             mgirCaps));
+    _mircCaps = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 3], 2, 1);
+    DPRINTF((
+      "getFwSupport _mircCaps = %d mcqsCap = %d mcqiCap = %d mccCap = %d mcdaCap = %d mqisCap = %d mcddCap = %d mgirCap = %d\n",
+      _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap));
 
-    if (mcdaCaps == 0x1f && mgirCaps)
+    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap)
     {
         return 1;
     }
@@ -2147,7 +2155,8 @@ bool FwCompsMgr::GetComponentLinkxProperties(FwComponent::comps_ids_t compType, 
     cmpLinkX->factory_image_minor = _currCompInfo.data.mcqi_linkx_properties.factory_image_minor;
     cmpLinkX->factory_image_major = _currCompInfo.data.mcqi_linkx_properties.factory_image_major;
     cmpLinkX->factory_image_subminor = _currCompInfo.data.mcqi_linkx_properties.factory_image_subminor;
-    cmpLinkX->management_interface_protocol = _currCompInfo.data.mcqi_linkx_properties.management_interface_protocol;
+    cmpLinkX->management_interface_protocol = 
+      _currCompInfo.data.mcqi_linkx_properties.management_interface_protocol;
     cmpLinkX->activation_type = _currCompInfo.data.mcqi_linkx_properties.activation_type;
     cmpLinkX->vendor_sn = _currCompInfo.data.mcqi_linkx_properties.vendor_sn;
     return true;

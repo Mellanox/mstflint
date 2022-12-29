@@ -410,7 +410,7 @@ public:
     bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL);
     bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st* cmpLinkX);
     void GenerateHandle();
-    bool isMCDDSupported() { return isDmaSupported; };
+    bool isMCDDSupported() { return _isDmaSupported; };
     bool IsSecondaryHost(bool& isSecondary);
 
 private:
@@ -563,7 +563,7 @@ private:
     mfile* _mf;
     const char* _currComponentStr;
     std::vector<u_int8_t> _productVerStr;
-    bool isDmaSupported;
+    bool _isDmaSupported;
     AbstractComponentAccess* _accessObj;
     int _linkXDeviceSize;
     int _linkXDeviceIndex;

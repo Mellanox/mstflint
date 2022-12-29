@@ -78,8 +78,8 @@
 #define REG_ID_MTRC_STDB 0x9042
 #define REG_ID_MCDD 0x905C
 #define REG_ID_MCQS 0x9060
-#define REG_ID_MCC 0x9062
 #define REG_ID_MCQI 0x9061
+#define REG_ID_MCC 0x9062
 #define REG_ID_MCDA 0x9063
 #define REG_ID_MQIS 0x9064
 #define REG_ID_MTCQ 0x9065
