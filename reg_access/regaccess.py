@@ -537,6 +537,15 @@ if REG_ACCESS:
             result = True if result else False
             return result
 
+        def getPSID(self):
+            mgirRegisterP = pointer(MGIR_ST())
+            rc = self._reg_access_mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register MGIR (case 4): %s (%d)" % (self._err2str(rc), rc))
+
+            psid = "".join(chr(val) for val in mgirRegisterP.contents.psid if val != 0)
+            return psid
+
         def sendMddq(self, query_type, request_message_sequence, slot_index, query_index=0):
             mddqRegisterP = pointer(MDDQ_ST())
             mddqRegisterP.contents.query_type = c_uint8(query_type)
