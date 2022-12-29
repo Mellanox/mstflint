@@ -1723,7 +1723,7 @@ def main():
     if devid == 0x218: # CX7
         psid = RegAccessObj.getPSID()
         logger.debug("ConnectX7 device with PSID: %s" % psid)
-        if psid == "MT_0000000891":
+        if psid in ["MT_0000000891", "MT_0000000929", "MT_0000000937"]:
             raise RuntimeError("Cedar device is not supported")
 
     # Check if other process is accessing the device (burning the device)
