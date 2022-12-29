@@ -5180,13 +5180,6 @@ bool Fs4Operations::getCriticalNonCriticalSections(vector<u_int8_t>& critical, v
     return true;
 }
 
-bool Fs4Operations::IsCriticalSection(u_int8_t sect_type)
-{
-    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PCIE_PHY_UC_CODE && sect_type != FS3_HW_BOOT_CFG)
-        return false;
-    return true;
-}
-
 bool Fs4Operations::CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest)
 {
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)

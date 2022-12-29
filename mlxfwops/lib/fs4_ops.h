@@ -107,10 +107,6 @@ public:
                                   const u_int32_t keyPairExp,
                                   const image_layout_component_authentication_configuration& keyAuthConf,
                                   image_layout_file_public_keys_3& secureBootPublicKey);
-    virtual bool
-      storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
-                                         vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
-                                         vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img,
                                    bool maskMagicPatternAndDevToc,
                                    bool verbose = false,
@@ -119,8 +115,6 @@ public:
     virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
-    bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
-    bool IsCriticalSection(u_int8_t sect_type);
     bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
     bool CheckIfAlignmentIsNeeded(FwOperations* imgops);
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
@@ -161,6 +155,11 @@ protected:
         std::vector<u_int8_t> section_data;
     };
 
+    bool AlignDeviceSections(FwOperations* imageOps);
+    virtual bool
+      storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
+                                         vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
+                                         vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
     virtual bool IsSectionExists(fs3_section_t sectType);
     virtual bool VerifyImageAfterModifications();
     bool parseDevData(bool readRom = true, bool quickQuery = true, bool verbose = false);
@@ -212,6 +211,7 @@ private:
 #ifndef UEFI_BUILD
     bool FwSignSection(const vector<u_int8_t>& section, const string privPemFileStr, vector<u_int8_t>& encSha);
 #endif
+    bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
     bool encryptedFwReadImageInfoSection();
     bool encryptedFwQuery(fw_info_t* fwInfo,
@@ -350,8 +350,6 @@ private:
     void MaskItocSectionAndEntry(u_int32_t itocType, vector<u_int8_t>& img);
     bool Fs4UpdateSignatureSection(vector<u_int8_t> sha256Buff, vector<u_int8_t>& newSectionData);
     bool isDTocSection(fs3_section_t sect_type, bool& isDtoc);
-
-    bool AlignDeviceSections(FwOperations* imageOps);
 
     bool restoreWriteProtection(mflash* mfl, u_int8_t banksNum, write_protect_info_t protect_info[]);
 

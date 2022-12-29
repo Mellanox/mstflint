@@ -175,7 +175,6 @@ public:
 
     bool FwCheckIfWeCanBurnWithFwControl(FwOperations* imageOps);
     bool FwCheckIf8MBShiftingNeeded(FwOperations* imageOps, const ExtBurnParams& burnParams);
-    using FwOperations::CalcHMAC;
     bool CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& digest);
     virtual bool GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& size, u_int32_t& offset);
     MlargeBuffer GetImageCache() { return _imageCache; }
@@ -190,7 +189,6 @@ public:
                                dm_dev_id_t devid_t,
                                const cx4fw_uid_entry& base_guid,
                                const cx4fw_uid_entry& base_mac);
-    bool IsCriticalSection(u_int8_t sect_type);
 
 protected:
 #define ITOC_ASCII 0x49544f43
@@ -205,6 +203,7 @@ protected:
 #define DEV_INFO "DEV_INFO"
 #define UNKNOWN_SECTION "UNKNOWN"
 
+    bool IsCriticalSection(u_int8_t sect_type);
     u_int32_t getNewImageStartAddress(Fs3Operations& imageOps, bool isBurnFailSafe);
     virtual bool FsBurnAux(FwOperations* imageOps, ExtBurnParams& burnParams);
     bool DumpFs3CRCCheck(u_int8_t sect_type,

@@ -85,8 +85,6 @@ public:
     };
     FwOperations(FBase* ioAccess) :
         _ioAccess(ioAccess),
-        _isCached(false),
-        _wasVerified(false),
         _quickQuery(false),
         _printFunc((PrintCallBack)NULL),
         _fname((const char*)NULL),
@@ -103,9 +101,6 @@ public:
         memset(&_fwParams, 0, sizeof(_fwParams));
     };
 
-    virtual bool IsFifthGen() { return (_ioAccess != NULL && _ioAccess->is_flash() && _ioAccess->is_fifth_gen()); }
-
-    bool CreateSignatureManager();
 
     virtual ~FwOperations()
     {
@@ -124,17 +119,15 @@ public:
         mfile* mf = _ioAccess->is_flash() ? ((Flash*)_ioAccess)->getMfileObj() : (mfile*)NULL;
         return mf;
     }
+    virtual bool IsFifthGen() { return (_ioAccess != NULL && _ioAccess->is_flash() && _ioAccess->is_fifth_gen()); }
     FBase* GetIoAccess() { return _ioAccess; }
     virtual u_int8_t FwType() = 0;
     static bool IsFwSupportingRomModify(const FwVersion&);
-    static bool CntxEthOnly(u_int32_t devid);
     static void SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_type_t fwType, bool& ibDev, bool& ethDev);
     static bool checkMatchingExpRomDevId(const fw_info_t& info);
     static bool checkMatchingExpRomDevId(u_int16_t dev_type, const roms_info_t& roms_info);
     static const char* expRomType2Str(u_int16_t type);
-    static chip_type GetChipType(string chip);
     static chip_type_t getChipType(u_int32_t devid);
-    bool readBufAux(FBase& f, u_int32_t o, void* d, int l, const char* p);
     virtual bool FwQuery(fw_info_t* fwInfo,
                          bool readRom = true,
                          bool isStripedImage = false,
@@ -152,10 +145,6 @@ public:
     virtual u_int32_t GetPublicKeySecureBootPtr();
     virtual bool FwReactivateImage() { return errmsg("Operation not supported."); }
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
-    virtual bool
-      storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
-                                         vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
-                                         vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
     virtual bool SignForFwUpdate(const char* uuid,
                                  const MlxSign::Signer& signer,
                                  MlxSign::SHAType shaType,
@@ -167,8 +156,6 @@ public:
                                       PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithHmac(const char* key_file);
     virtual bool SignForSecureBoot(const char* public_key_file, const char* uuid, const MlxSign::Signer& signer);
-    virtual bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
-    virtual bool IsCriticalSection(u_int8_t sect_type);
 
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img,
                                    bool maskMagicPatternAndDevToc,
@@ -179,8 +166,6 @@ public:
                                dm_dev_id_t devid_t,
                                const cx4fw_uid_entry& base_guid,
                                const cx4fw_uid_entry& base_mac);
-    virtual bool initHwPtrs(bool isVerify = false);
-    virtual bool isHashesTableHwPtrValid();
     virtual bool openEncryptedImageAccess(const char* encrypted_image_path);
     virtual bool isEncrypted(bool& is_encrypted);
     virtual bool FwExtractEncryptedImage(vector<u_int8_t>& img,
@@ -190,7 +175,6 @@ public:
     virtual bool burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams);
     virtual bool FwSetPublicKeys(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
-    virtual bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect) = 0;
     virtual bool FwBurnRom(FImage* romImg,
                            bool ignoreProdIdCheck = false,
@@ -244,13 +228,7 @@ public:
     virtual bool FwCheckIfWeCanBurnWithFwControl(FwOperations*) { return true; }
     virtual bool FwCheckIf8MBShiftingNeeded(FwOperations*, const ExtBurnParams&) { return false; }
 
-    bool CreateBasicImageFromData(u_int32_t* data, u_int32_t dataSize, FwOperations** newImgOps);
-
     virtual bool CheckIfAlignmentIsNeeded(FwOperations*) { return false; }
-    virtual bool AlignDeviceSections(FwOperations* /*imageOps*/)
-    {
-        return errmsg("Align device sections is not supported");
-    }
     virtual bool RemoveWriteProtection()
     {
         return true;
@@ -258,7 +236,6 @@ public:
     }
     virtual void FwCleanUp();
     virtual bool FwInit() = 0;
-    virtual bool FsIntQuery() { return true; }
     bool FwSetPrint(PrintCallBack PrintFunc);
 
     virtual bool UpdateSection(void* new_info,
@@ -268,20 +245,7 @@ public:
                                PrintCallBack callBackFunc = (PrintCallBack)NULL);
     // needed for flint low level operations
     bool FwSwReset();
-    virtual bool CheckCX4Device() { return true; /* deprecated always return true*/ }
     virtual bool FwCalcMD5(u_int8_t md5sum[16]) = 0;
-    virtual u_int32_t GetHwDevId()
-    {
-        mfile* mf = _ioAccess->getMfileObj();
-        dm_dev_id_t deviceId = DeviceUnknown;
-        u_int32_t hwDevId = 0x0, hwRevId = 0x0;
-        if (dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId))
-        {
-            return 0xffff;
-        }
-        return hwDevId;
-    }
-    // virtual bool FwBurnBlock(FwOperations &FwImageAccess); // Add call back
     static FwOperations* FwOperationsCreate(void* fwHndl,
                                             void* info,
                                             char* psid,
@@ -298,16 +262,13 @@ public:
                                          bool ignoreSecurityAttributes = false,
                                          bool ignoreDToc = false);
 
-    virtual bool IsFsCtrlOperations();
+    virtual bool IsFsCtrlOperations() {  return false; }
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
     virtual bool IsEncryptionSupported();
     void GetFwParams(fw_ops_params_t&);
-    virtual void CleanInterruptedCommand() {} // by default do nothing
-    virtual bool FwCalcSHA(MlxSign::SHAType, vector<u_int8_t>&, vector<u_int8_t>&);
-    // bool GetExpRomVersionWrapper();
     void getSupporteHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum);
 
     static FwVersion createFwVersion(const fw_info_com_t*);
@@ -602,6 +563,27 @@ protected:
     typedef int (*print2log_func)(const char* format, ...);
 
     // Protected Methods
+    virtual u_int32_t GetHwDevId()
+    {
+        mfile* mf = _ioAccess->getMfileObj();
+        dm_dev_id_t deviceId = DeviceUnknown;
+        u_int32_t hwDevId = 0x0, hwRevId = 0x0;
+        if (dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId))
+        {
+            return 0xffff;
+        }
+        return hwDevId;
+    }
+    virtual bool AlignDeviceSections(FwOperations* /*imageOps*/)
+    {
+        return errmsg("Align device sections is not supported");
+    }
+    bool CreateBasicImageFromData(u_int32_t* data, u_int32_t dataSize, FwOperations** newImgOps);
+    virtual bool
+      storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
+                                         vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
+                                         vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
+    bool readBufAux(FBase& f, u_int32_t o, void* d, int l, const char* p);
     static int GetFwVerFormat(u_int16_t fwVer[3]);
     virtual bool UpdateImgCache(u_int8_t* buff, u_int32_t addr, u_int32_t size);
     bool CheckAndPrintCrcRes(char* pr,
@@ -678,7 +660,6 @@ protected:
 
     // Protected Members
     FBase* _ioAccess;
-    bool _isCached;
     FwImgInfo _fwImgInfo;
     fw_ops_params_t _fwParams;
     std::vector<u_int8_t> _romSect;
@@ -686,7 +667,6 @@ protected:
     std::vector<u_int8_t> _hashFileSect;
     std::vector<u_int8_t> _readSectList;
     bool _sectionsToRead[H_LAST];
-    bool _wasVerified;
     bool _quickQuery;
 
     PrintCallBack _printFunc;
@@ -721,6 +701,7 @@ private:
     static u_int8_t IsFS3OrFS2Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsCableImage(FBase& f);
     static bool FindMagicPattern(FBase* ioAccess, u_int32_t addr, u_int32_t const cntx_magic_pattern[]);
+    static bool CntxEthOnly(u_int32_t devid);
 
     /* Name:        WriteToErrBuff
      * Description: Write a string into buffer.
@@ -731,8 +712,9 @@ private:
      * @param[in] bufSize - size of error buffer */
     static void WriteToErrBuff(char* errBuff, char* errStr, int bufSize);
 
-    void BackUpFwParams(fw_ops_params_t& fwParams);
     // Methods
+    void BackUpFwParams(fw_ops_params_t& fwParams);
+    bool CreateSignatureManager();
 
     // Static Members
     static const u_int32_t _cntx_image_start_pos[CNTX_START_POS_SIZE];

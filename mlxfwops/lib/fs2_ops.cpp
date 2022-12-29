@@ -685,7 +685,6 @@ bool Fs2Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     }
     // empty the initSectToRead
     initSectToRead(H_LAST);
-    _wasVerified = true;
     return true;
 }
 

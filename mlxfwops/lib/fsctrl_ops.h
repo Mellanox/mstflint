@@ -111,7 +111,6 @@ public:
                                   struct tools_open_fw_version& fwVer,
                                   bool queryRunning = false);
     virtual bool FwResetTimeStamp();
-    virtual u_int32_t GetHwDevId() { return _hwDevId; }
     bool FwReactivateImage();
     Tlv_Status_t GetTsObj(TimeStampIFC** tsObj);
     bool isEncrypted(bool& is_encrypted);
@@ -128,6 +127,7 @@ public:
     virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
 
 protected:
+    virtual u_int32_t GetHwDevId() { return _hwDevId; }
     bool FsIntQuery();
     bool GetImageInfo(u_int8_t* buff);
     bool ReadBootImage(void* image,
