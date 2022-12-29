@@ -87,6 +87,7 @@ typedef enum
 #define FLINT_CMD_VERIFY_ERROR_1                                                                                      \
     "FW image verification failed: No valid FS4 image found.Check the flash parameters, if specified..AN HCA DEVICE " \
     "CAN NOT BOOT FROM THIS IMAGE"
+#define FLINT_CMD_VERIFY_ERROR_2 "FW image verification failed. AN HCA DEVICE CAN NOT BOOT FROM THIS IMAGE.\n"
 #define FLINT_FAILED_QUERY_ERROR "Failed to query %s: %s. %s\n"
 #define FLINT_COMMAND_DEVICE_IMAGE_ERROR "Command \"%s\" requires both image and device to be specified.\n"
 #define FLINT_COMMAND_DEVICE_ERROR "Command \"%s\" requires device, but an image file was given.\n"

@@ -1957,6 +1957,20 @@ FlintStatus BinaryCompareSubCommand::compareMFA2()
 #endif
 }
 
+bool BinaryCompareSubCommand::CompareEncryptedBinary(vector<u_int8_t> deviceBuff, vector<u_int8_t> imgBuff)
+{
+    bool res = true;
+    if (deviceBuff.size() != imgBuff.size())
+    {
+        res = false;
+    }
+    else if (deviceBuff != imgBuff)
+    {
+        res = false;
+    }
+    return res;
+}
+
 FlintStatus BinaryCompareSubCommand::executeCommand()
 {
 #ifndef NO_MSTARCHIVE
@@ -2020,6 +2034,24 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
+    bool device_encrypted = false;
+    bool image_encrypted = false;
+    if (!_fwOps->isEncrypted(device_encrypted))
+    {
+        reportErr(true, "Failed to identify if device is encrypted.\n");
+        return FLINT_FAILED;
+    }
+    if (!_imgOps->isEncrypted(image_encrypted))
+    {
+        reportErr(true, "Failed to identify if image is encrypted.\n");
+        return FLINT_FAILED;
+    }
+    if (device_encrypted != image_encrypted)
+    {
+        reportErr(true, "Binary comparison failed - encryption mismatch.\n");
+        return FLINT_FAILED;
+    }
+
     u_int32_t imgSize = 0;
     // on first call we get the image size
     if (!_fwOps->FwReadData(NULL, &imgSize))
@@ -2041,19 +2073,32 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
         reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
         return FLINT_FAILED;
     }
-    _imgOps->PrepItocSectionsForCompare(image_critical, image_non_critical);
-    _fwOps->PrepItocSectionsForCompare(device_critical, device_non_critical);
 
-    if (image_critical != device_critical)
+    if (device_encrypted)
     {
-        reportErr(true, "Binary comparison failed - binary mismatch.\n");
-        return FLINT_FAILED;
+        if (!CompareEncryptedBinary(imgBuffOnDevice, imgBuffInFile))
+        {
+            reportErr(true, "Binary comparison failed - binary mismatch.\n");
+            return FLINT_FAILED;
+        }
     }
-    if (image_non_critical != device_non_critical)
+    else
     {
-        reportErr(true, "Binary comparison failed - binary mismatch.\n");
-        return FLINT_FAILED;
+        _imgOps->PrepItocSectionsForCompare(image_critical, image_non_critical);
+        _fwOps->PrepItocSectionsForCompare(device_critical, device_non_critical);
+
+        if (image_critical != device_critical)
+        {
+            reportErr(true, "Binary comparison failed - binary mismatch.\n");
+            return FLINT_FAILED;
+        }
+        if (image_non_critical != device_non_critical)
+        {
+            reportErr(true, "Binary comparison failed - binary mismatch.\n");
+            return FLINT_FAILED;
+        }
     }
+
     printf("\33[2K\r"); // clear the current line
     printf("Binary comparison success.\n");
     return FLINT_SUCCESS;
@@ -4587,6 +4632,24 @@ bool VerifySubCommand::verifyParams()
 
 FlintStatus VerifySubCommand::executeCommand()
 {
+    if (_flintParams.image_specified == true && _flintParams.device_specified == true)
+    {
+        // Verify based on binary compare
+        BinaryCompareSubCommand bc;
+        _flintParams.silent = true;
+        bc.setParams(_flintParams);
+        FlintStatus bc_res = bc.executeCommand();
+        if (bc_res == FLINT_SUCCESS)
+        {
+            printf("\n-I- FW image verification succeeded. Image is bootable.\n\n");
+        }
+        else
+        {
+            reportErr(true, FLINT_CMD_VERIFY_ERROR_2);
+        }
+        return bc_res;
+    }
+
     if (preFwOps() == FLINT_FAILED)
     {
         reportErr(true, FLINT_CMD_VERIFY_ERROR_1);

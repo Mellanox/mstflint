@@ -455,7 +455,7 @@ bool FsCtrlOperations::FwVerifyAdv(ExtVerifyParams& verifyParams)
     }
     else if (image_encrypted)
     {
-        errmsg("Cannot verify an encrypted flash");
+        errmsg("In order to verify encrypted flash please provide burnt image with \"-i\"");
         ret = false;
     }
     else if (!imageOps->FwVerify(verifyParams.verifyCallBackFunc, verifyParams.isStripedImage, verifyParams.showItoc,

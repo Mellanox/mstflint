@@ -1080,7 +1080,14 @@ bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     }
     if (image_encrypted)
     {
-        return errmsg("Cannot verify an encrypted %s", _ioAccess->is_flash() ? "flash" : "image");
+        if (_ioAccess->is_flash())
+        {
+            return errmsg("In order to verify encrypted flash please provide burnt image with \"-i\"");
+        }
+        else
+        {
+            return errmsg("Cannot verify an encrypted image");
+        }
     }
 
     return Fs3Operations::FwVerify(verifyCallBackFunc, isStripedImage, showItoc, ignoreDToc);
@@ -1405,7 +1412,7 @@ bool Fs4Operations::getEncryptedImageSize(u_int32_t* imageSize)
 {
     DPRINTF(("Fs4Operations::getEncryptedImageSize\n"));
     fw_info_t fwInfo;
-    if (!encryptedFwQuery(&fwInfo, false, false))
+    if (!encryptedFwQuery(&fwInfo, false, false, true))
     {
         return errmsg("%s", err());
     }
@@ -2279,12 +2286,11 @@ bool Fs4Operations::FwExtractEncryptedImage(vector<u_int8_t>& img,
     }
 
     //* Get image size
-    fw_info_t fwInfo;
-    if (!encryptedFwQuery(&fwInfo, false, false, true))
+    u_int32_t burn_image_size;
+    if (!getEncryptedImageSize(&burn_image_size))
     {
         return errmsg("%s", err());
     }
-    u_int32_t burn_image_size = fwInfo.fw_info.burn_image_size;
 
     //* Read image from _fwImgInfo.imgStart to burn_image_size (_fwImgInfo.imgStart expected to be zero)
     DPRINTF(("Fs4Operations::FwExtractEncryptedImage - Reading 0x%x bytes from address 0x%x\n", burn_image_size,

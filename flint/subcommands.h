@@ -270,6 +270,7 @@ private:
     bool _devQueryRes;
     int _unknownProgress; // used to trace the progress of unknown progress.
     FlintStatus compareMFA2();
+    bool CompareEncryptedBinary(vector<u_int8_t> deviceBuff, vector<u_int8_t> imgBuff);
 
 public:
     BinaryCompareSubCommand();
