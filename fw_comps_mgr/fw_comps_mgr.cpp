@@ -933,7 +933,7 @@ reg_access_status_t FwCompsMgr::getGI(mfile* mf, mgirReg* gi)
     mget_mdevs_type(mf, &tp);
     mft_signal_set_handling(1);
 #if !defined(UEFI_BUILD) && !defined(NO_INBAND)
-    if (tp == MST_IB)
+    if (tp == MST_IB && !supports_reg_access_gmp(mf, MACCESS_REG_METHOD_GET))
     {
         rc = (reg_access_status_t)mad_ifc_general_info_hw(mf, &gi->hw_info);
         if (rc)

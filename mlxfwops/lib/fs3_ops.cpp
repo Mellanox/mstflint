@@ -948,7 +948,7 @@ reg_access_status_t Fs3Operations::getGI(mfile* mf, struct reg_access_hca_mgir* 
     mget_mdevs_type(mf, &tp);
 #if !defined(UEFI_BUILD) && !defined(NO_INBAND)
     mft_signal_set_handling(1);
-    if (tp == MST_IB)
+    if (tp == MST_IB && !supports_reg_access_gmp(mf, MACCESS_REG_METHOD_GET))
     {
         rc = (reg_access_status_t)mad_ifc_general_info_hw(mf, &gi->hw_info);
         if (!rc)
