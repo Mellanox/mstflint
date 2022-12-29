@@ -141,6 +141,8 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
   {FS4_RSA_PUBLIC_KEY, "RSA_PUBLIC_KEY"},
   {FS4_RSA_4096_SIGNATURES, "RSA_4096_SIGNATURES"},
   {FS4_EXCLKSYNC_INFO, "EXCLKSYNC_INFO"},
+  {FS4_MAIN_HASHES_PAGES, "MAIN_HASHES_PAGES"},
+  {FS4_MAIN_LOCKED_HASHES_PAGES, "MAIN_LOCKED_HASHES_PAGES"},
   {FS4_HASHES_TABLE, "HASHES_TABLE"}};
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t* buff, u_int32_t addr, u_int32_t size)
