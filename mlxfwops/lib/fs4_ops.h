@@ -45,7 +45,6 @@
 #define FS4_MIN_BIN_VER_MAJOR 1
 #define FS4_MIN_BIN_VER_MINOR 0
 #define HMAC_SIGNATURE_LENGTH 64
-#define MAX_HTOC_ENTRIES_NUM 28
 #define ENCRYPTED_BURN_IMAGE_SIZE_LOCATION_IN_BYTES 0x1000000 // 16MB
 #define DELTA_IV_HW_POINTER_ADDR 0x88
 enum SecureBootSignVersion
@@ -145,6 +144,7 @@ public:
     bool IsSecurityVersionViolated(u_int32_t image_security_version);
     bool GetImageInfo(u_int8_t* buff);
     bool GetImageSize(u_int32_t* image_size);
+    bool GetHashesTableData(vector<u_int8_t>& data);
 
 protected:
     struct fs4_toc_info
@@ -376,7 +376,8 @@ private:
     virtual bool FindPublicKeyInPublicKeys2(const vector<u_int32_t>& keypair_uuid,
                                             bool& found,
                                             image_layout_file_public_keys_3& public_key);
-
+    bool GetHashesTableSize(u_int32_t& size);
+    
     // Members
     Fs4ImgInfo _fs4ImgInfo;
     u_int32_t _boot2_ptr;

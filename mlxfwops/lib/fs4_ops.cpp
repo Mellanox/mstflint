@@ -949,8 +949,6 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
         DPRINTF(("Fs4Operations::FsVerifyAux call isHashesTableHwPtrValid()\n"));
         if (isHashesTableHwPtrValid())
         {
-            const u_int32_t HASHES_TABLE_TAIL_SIZE = 8;
-
             //* Check hashes_table header CRC
             READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE,
                          "HASHES TABLE HEADER");
@@ -974,18 +972,13 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
                 }
             }
 
-            //* Parse HTOC header (for hash_size)
-            u_int32_t htoc_header_address = _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE;
-            READALLOCBUF((*_ioAccess), htoc_header_address, buff, IMAGE_LAYOUT_HTOC_HEADER_SIZE, "HTOC header");
-            struct image_layout_htoc_header header;
-            image_layout_htoc_header_unpack(&header, buff);
-            free(buff);
-
-            //* Get hashes_table data
-            const u_int32_t hashes_table_size =
-              IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + IMAGE_LAYOUT_HTOC_HEADER_SIZE +
-              MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + header.hash_size) + HASHES_TABLE_TAIL_SIZE;
-            READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, hashes_table_size, "HASHES TABLE");
+            vector<u_int8_t> hashes_table_data;
+            if (!GetHashesTableData(hashes_table_data))
+            {
+                return false;
+            }
+            buff = hashes_table_data.data();
+            const u_int32_t hashes_table_size = hashes_table_data.size();
 
             Fs3UpdateImgCache(buff, _hashes_table_ptr, hashes_table_size);
 
@@ -996,7 +989,6 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
             u_int32_t hashes_table_crc = ((u_int32_t*)buff)[(hashes_table_size / 4) - 1];
             TOCPU1(hashes_table_crc)
             hashes_table_crc = hashes_table_crc & 0xFFFF;
-            free(buff);
             if (!DumpFs3CRCCheck(FS4_HASHES_TABLE, _hashes_table_ptr, hashes_table_size, hashes_table_calc_crc,
                                  hashes_table_crc, false, verifyCallBackFunc))
             {
@@ -3382,7 +3374,6 @@ bool Fs4Operations::UpdateHashInHashesTable(fs3_section_t section_type, vector<u
     }
 
     //* Calculate CRC on modified hashes_table
-    const u_int32_t HASHES_TABLE_TAIL_SIZE = 8;
     u_int32_t hashes_table_size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + IMAGE_LAYOUT_HTOC_HEADER_SIZE +
                                   MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + hash_size) +
                                   HASHES_TABLE_TAIL_SIZE;
@@ -4843,6 +4834,56 @@ bool Fs4Operations::initHwPtrs(bool isVerify)
     return true;
 }
 
+bool Fs4Operations::GetHashesTableSize(u_int32_t& size)
+{
+    bool image_encrypted = false;
+    if (!isEncrypted(image_encrypted))
+    {
+        return false;
+    }
+    u_int32_t htoc_hash_size = HTOC_HASH_SIZE; // In case of encrypted device we can't parse HTOC header to get hash size so we use constant
+    if (!image_encrypted)
+    {
+        //* Read HTOC header for hash size
+        u_int8_t* buff;
+        u_int32_t htoc_header_address = _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE;
+        READALLOCBUF((*_ioAccess), htoc_header_address, buff, IMAGE_LAYOUT_HTOC_HEADER_SIZE, "HTOC header");
+        image_layout_htoc_header header;
+        image_layout_htoc_header_unpack(&header, buff);
+        htoc_hash_size = header.hash_size;
+        free(buff);
+    }
+    u_int32_t htoc_size = IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + htoc_hash_size);
+    size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + htoc_size + HASHES_TABLE_TAIL_SIZE;
+
+    return true;
+
+}
+
+bool Fs4Operations::GetHashesTableData(vector<u_int8_t>& data)
+{
+    if (!isHashesTableHwPtrValid())
+    {
+        return false;
+    }
+
+    //* Get size
+    u_int32_t hashes_table_size = 0;
+    if (!GetHashesTableSize(hashes_table_size))
+    {
+        return false;
+    }
+
+    //* Read hashes table
+    u_int8_t* buff;
+    READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, hashes_table_size, "HASHES TABLE");
+    data.insert(data.end(), buff, buff + hashes_table_size);
+    free(buff);
+
+    return true;
+}
+
+//! TODO - Fix return value to status and result as output argument
 bool Fs4Operations::isHashesTableHwPtrValid()
 {
     //* Check HW pointers initialized

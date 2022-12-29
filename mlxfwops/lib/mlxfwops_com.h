@@ -107,6 +107,10 @@ typedef enum
     NUM_OF_LIFE_CYCLES = 4
 } life_cycle_t;
 
+#define MAX_HTOC_ENTRIES_NUM 28
+#define HASHES_TABLE_TAIL_SIZE 8
+#define HTOC_HASH_SIZE 64
+
 typedef int EFIAPI (*f_prog_func)(int completion);
 typedef int EFIAPI (*f_prog_func_ex)(int completion, void* opaque);
 typedef int EFIAPI (*f_prog_func_adv)(int completion, const char* str, prog_t, void* opaque);

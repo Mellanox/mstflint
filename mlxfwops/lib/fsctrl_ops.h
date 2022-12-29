@@ -114,8 +114,6 @@ public:
     bool FwReactivateImage();
     Tlv_Status_t GetTsObj(TimeStampIFC** tsObj);
     bool isEncrypted(bool& is_encrypted);
-    bool getITOCAddr(u_int32_t& addr);
-    bool CheckITOCSignature(u_int8_t* signature);
     bool burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams);
 
     virtual bool IsFsCtrlOperations() { return true; }
@@ -125,8 +123,9 @@ public:
     virtual bool IsLifeCycleSupported();
     virtual bool IsEncryptionSupported();
     virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
+    bool GetHashesTableData(vector<u_int8_t>& data);
 
-protected:
+private:
     virtual u_int32_t GetHwDevId() { return _hwDevId; }
     bool FsIntQuery();
     bool GetImageInfo(u_int8_t* buff);
@@ -143,6 +142,11 @@ protected:
                FwComponent::comps_ids_t ComponentId = FwComponent::COMPID_BOOT_IMG);
     bool _createImageOps(FwOperations** imgOps);
     void ExtractSwitchFWVersion(const fwInfoT& fwQuery);
+    bool GetHWPointers(image_layout_hw_pointers_carmel& hw_pointers);
+    bool GetITOCAddr(u_int32_t& addr);
+    bool CheckITOCSignature(u_int8_t* signature);
+    bool GetHashesTableAddr(u_int32_t& addr);
+    bool GetHashesTableSize(u_int32_t hashes_table_addr, u_int32_t& size);
 
     fs3_info_t _fsCtrlImgInfo;
     FwCompsMgr* _fwCompsAccess;

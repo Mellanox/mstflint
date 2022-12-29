@@ -2003,14 +2003,25 @@ bool BinaryCompareSubCommand::CompareEncryptedFwOpsViaDirectAccess(bool& res)
 }
 bool BinaryCompareSubCommand::CompareEncryptedFwOpsViaMCC(bool& res)
 {
-    reportErr(true, "BinaryCompareSubCommand::CompareEncryptedFwOpsViaMCC not supported\n");
-    (void)res;
-    return false;
-    // TODO
-    // //* Compare hashes table
-    // res = false;
-    // TODO - implementation
-    // return true;
+    //* Compare hashes table
+    res = false;
+
+    std::vector<u_int8_t> deviceBuff;
+    std::vector<u_int8_t> imgBuff;
+    if (!_fwOps->GetHashesTableData(deviceBuff))
+    {
+        return false;
+    }
+    if (!_imgOps->GetHashesTableData(imgBuff))
+    {
+        return false;
+    }
+
+    if (deviceBuff == imgBuff)
+    {
+        res = true;
+    }
+    return true;
 }
 
 bool BinaryCompareSubCommand::CompareEncryptedFwOps(bool& res)

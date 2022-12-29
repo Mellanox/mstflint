@@ -2739,6 +2739,10 @@ bool FwOperations::GetImageSize(u_int32_t*)
 {
     return errmsg("GetImageSize is not supported");
 }
+bool FwOperations::GetHashesTableData(vector<u_int8_t>& data)
+{
+    return errmsg("GetHashesTableData is not supported");
+}
 
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
 bool FwOperations::CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize)

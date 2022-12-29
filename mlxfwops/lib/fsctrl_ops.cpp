@@ -629,7 +629,39 @@ bool FsCtrlOperations::_createImageOps(FwOperations** imageOps)
     return true;
 }
 
-bool FsCtrlOperations::getITOCAddr(u_int32_t& addr)
+bool FsCtrlOperations::GetHashesTableSize(u_int32_t hashes_table_addr, u_int32_t& size)
+{
+    u_int32_t htoc_size = IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + HTOC_HASH_SIZE);
+    size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + htoc_size + HASHES_TABLE_TAIL_SIZE;
+    return true;
+}
+
+bool FsCtrlOperations::GetHashesTableData(vector<u_int8_t>& data)
+{
+    //* Get addr
+    u_int32_t hashes_table_addr = 0;
+    if (!GetHashesTableAddr(hashes_table_addr))
+    {
+        return false;
+    }
+
+    //* Get size
+    u_int32_t hashes_table_size = 0;
+    if (!GetHashesTableSize(hashes_table_addr, hashes_table_size))
+    {
+        return false;
+    }
+
+    //* Read data
+    if (!FwReadBlock(hashes_table_addr, hashes_table_size, data))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool FsCtrlOperations::GetHWPointers(image_layout_hw_pointers_carmel& hw_pointers)
 {
     vector<u_int8_t> buff(IMAGE_LAYOUT_HW_POINTERS_CARMEL_SIZE);
     if (!FwReadBlock(FS4_HW_PTR_START, buff.size(), buff))
@@ -637,8 +669,32 @@ bool FsCtrlOperations::getITOCAddr(u_int32_t& addr)
         return errmsg("Failed to read HW pointers from flash");
     }
 
-    struct image_layout_hw_pointers_carmel hw_pointers;
     image_layout_hw_pointers_carmel_unpack(&hw_pointers, buff.data());
+    return true;
+}
+
+bool FsCtrlOperations::GetHashesTableAddr(u_int32_t& addr)
+{
+    struct image_layout_hw_pointers_carmel hw_pointers;
+    if (!GetHWPointers(hw_pointers))
+    {
+        return false;
+    }
+    addr = hw_pointers.hashes_table_pointer.ptr;
+    if (addr == 0xffffffff || addr == 0x0)
+    {
+        return errmsg("Hashes table doesn't exist on device");
+    }
+    return true;
+}
+
+bool FsCtrlOperations::GetITOCAddr(u_int32_t& addr)
+{
+    struct image_layout_hw_pointers_carmel hw_pointers;
+    if (!GetHWPointers(hw_pointers))
+    {
+        return false;
+    }
     addr = hw_pointers.toc_ptr.ptr;
     return true;
 }
