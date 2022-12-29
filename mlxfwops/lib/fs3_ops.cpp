@@ -141,6 +141,8 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
   {FS4_RSA_PUBLIC_KEY, "RSA_PUBLIC_KEY"},
   {FS4_RSA_4096_SIGNATURES, "RSA_4096_SIGNATURES"},
   {FS4_EXCLKSYNC_INFO, "EXCLKSYNC_INFO"},
+  {FS4_MAIN_HASHES_PAGES, "MAIN_HASHES_PAGES"},
+  {FS4_MAIN_LOCKED_HASHES_PAGES, "MAIN_LOCKED_HASHES_PAGES"},
   {FS4_HASHES_TABLE, "HASHES_TABLE"}};
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t* buff, u_int32_t addr, u_int32_t size)
@@ -946,7 +948,7 @@ reg_access_status_t Fs3Operations::getGI(mfile* mf, struct reg_access_hca_mgir* 
     mget_mdevs_type(mf, &tp);
 #if !defined(UEFI_BUILD) && !defined(NO_INBAND)
     mft_signal_set_handling(1);
-    if (tp == MST_IB)
+    if (tp == MST_IB && !supports_reg_access_gmp(mf, MACCESS_REG_METHOD_GET))
     {
         rc = (reg_access_status_t)mad_ifc_general_info_hw(mf, &gi->hw_info);
         if (!rc)
@@ -1717,9 +1719,9 @@ bool Fs3Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
     return FwSetMFG(bGuid, callBackFunc);
 }
 
-bool Fs3Operations::parseDevData(bool readRom, bool quickQuery, bool verbose)
+bool Fs3Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack)
 {
-    return FsIntQueryAux(readRom, quickQuery, false, verbose);
+    return FsIntQueryAux(false, quickQuery, false, verbose);
 }
 
 bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc, ProgressCallBack progressFunc)
@@ -1733,7 +1735,7 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
         return errmsg("Base GUID not found.");
     }
     // query device to get mfg info (for guids override en bit)
-    if (!parseDevData(false))
+    if (!parseDevData())
     {
         return false;
     }

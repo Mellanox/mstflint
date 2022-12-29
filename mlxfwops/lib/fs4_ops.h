@@ -45,7 +45,6 @@
 #define FS4_MIN_BIN_VER_MAJOR 1
 #define FS4_MIN_BIN_VER_MINOR 0
 #define HMAC_SIGNATURE_LENGTH 64
-#define MAX_HTOC_ENTRIES_NUM 28
 #define ENCRYPTED_BURN_IMAGE_SIZE_LOCATION_IN_BYTES 0x1000000 // 16MB
 #define DELTA_IV_HW_POINTER_ADDR 0x88
 enum SecureBootSignVersion
@@ -107,10 +106,6 @@ public:
                                   const u_int32_t keyPairExp,
                                   const image_layout_component_authentication_configuration& keyAuthConf,
                                   image_layout_file_public_keys_3& secureBootPublicKey);
-    virtual bool
-      storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
-                                         vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
-                                         vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img,
                                    bool maskMagicPatternAndDevToc,
                                    bool verbose = false,
@@ -119,8 +114,6 @@ public:
     virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
-    bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
-    bool IsCriticalSection(u_int8_t sect_type);
     bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
     bool CheckIfAlignmentIsNeeded(FwOperations* imgops);
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
@@ -151,6 +144,7 @@ public:
     bool IsSecurityVersionViolated(u_int32_t image_security_version);
     bool GetImageInfo(u_int8_t* buff);
     bool GetImageSize(u_int32_t* image_size);
+    bool GetHashesTableData(vector<u_int8_t>& data);
 
 protected:
     struct fs4_toc_info
@@ -161,9 +155,16 @@ protected:
         std::vector<u_int8_t> section_data;
     };
 
+    bool AlignDeviceSections(FwOperations* imageOps);
+    virtual bool
+      storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
+                                         vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
+                                         vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
     virtual bool IsSectionExists(fs3_section_t sectType);
     virtual bool VerifyImageAfterModifications();
-    bool parseDevData(bool readRom = true, bool quickQuery = true, bool verbose = false);
+    bool parseDevData(bool quickQuery = true,
+                      bool verbose = false,
+                      VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
 
 private:
 #define PRE_CRC_OUTPUT "    "
@@ -212,13 +213,11 @@ private:
 #ifndef UEFI_BUILD
     bool FwSignSection(const vector<u_int8_t>& section, const string privPemFileStr, vector<u_int8_t>& encSha);
 #endif
+    bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
     bool encryptedFwReadImageInfoSection();
-    bool encryptedFwQuery(fw_info_t* fwInfo,
-                          bool readRom = true,
-                          bool quickQuery = true,
-                          bool ignoreDToc = false,
-                          bool verbose = false);
+    bool CheckDevRSAPublicKeyUUID();
+    bool encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
     virtual bool FwQuery(fw_info_t* fwInfo,
                          bool readRom = true,
                          bool isStripedImage = false,
@@ -351,8 +350,6 @@ private:
     bool Fs4UpdateSignatureSection(vector<u_int8_t> sha256Buff, vector<u_int8_t>& newSectionData);
     bool isDTocSection(fs3_section_t sect_type, bool& isDtoc);
 
-    bool AlignDeviceSections(FwOperations* imageOps);
-
     bool restoreWriteProtection(mflash* mfl, u_int8_t banksNum, write_protect_info_t protect_info[]);
 
     bool GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& size, u_int32_t& offset);
@@ -375,7 +372,12 @@ private:
     virtual bool IsPublicKeyAlreadyInPublicKeys2(const image_layout_file_public_keys_2& public_key,
                                                  fs4_toc_info* itocEntry);
     virtual bool StorePublicKeyInPublicKeys2(const image_layout_file_public_keys_3& public_key);
-
+    virtual bool GetFRCKey(image_layout_file_public_keys_3& frc_key);
+    virtual bool FindPublicKeyInPublicKeys2(const vector<u_int32_t>& keypair_uuid,
+                                            bool& found,
+                                            image_layout_file_public_keys_3& public_key);
+    bool GetHashesTableSize(u_int32_t& size);
+    
     // Members
     Fs4ImgInfo _fs4ImgInfo;
     u_int32_t _boot2_ptr;

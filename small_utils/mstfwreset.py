@@ -806,7 +806,7 @@ def isDevSupp(device):
     for devDict in MLNX_DEVICES:
         if devDict["devid"] == devid:
             if devDict["name"] in SUPP_DEVICES:
-                return
+                return devid
             else:
                 raise RuntimeError("Unsupported Device: %s (%s)" % (device, devDict["name"]))
     raise RuntimeError("Failed to Identify Device: %s" % (device))
@@ -1699,7 +1699,7 @@ def main():
             device = map2DevPath(device)
 
     # Insert Flow here
-    isDevSupp(device)  # function takes ~330msec - TODO remove it if you need performace
+    devid = isDevSupp(device)  # function takes ~330msec - TODO remove it if you need performace
 
     DevDBDF = mlxfwreset_utils.getDevDBDF(device, logger)
     logger.info('device domain:bus:dev.fn (DBDF) is {0}'.format(DevDBDF))
@@ -1719,6 +1719,12 @@ def main():
     DevMgtObj = dev_mgt.DevMgt(MstDevObj)  # check if device is in livefish
     if DevMgtObj.isLivefishMode() == 1:
         raise RuntimeError("%s is not supported for device in Flash Recovery mode" % PROG)
+
+    if devid == 0x218: # CX7
+        psid = RegAccessObj.getPSID()
+        logger.debug("ConnectX7 device with PSID: %s" % psid)
+        if psid in ["MT_0000000891", "MT_0000000929", "MT_0000000937"]:
+            raise RuntimeError("Cedar device is not supported")
 
     # Check if other process is accessing the device (burning the device)
     # Supportted on Windows OS only

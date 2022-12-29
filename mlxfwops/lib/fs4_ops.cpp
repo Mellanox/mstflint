@@ -949,8 +949,6 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
         DPRINTF(("Fs4Operations::FsVerifyAux call isHashesTableHwPtrValid()\n"));
         if (isHashesTableHwPtrValid())
         {
-            const u_int32_t HASHES_TABLE_TAIL_SIZE = 8;
-
             //* Check hashes_table header CRC
             READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE,
                          "HASHES TABLE HEADER");
@@ -974,18 +972,13 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
                 }
             }
 
-            //* Parse HTOC header (for hash_size)
-            u_int32_t htoc_header_address = _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE;
-            READALLOCBUF((*_ioAccess), htoc_header_address, buff, IMAGE_LAYOUT_HTOC_HEADER_SIZE, "HTOC header");
-            struct image_layout_htoc_header header;
-            image_layout_htoc_header_unpack(&header, buff);
-            free(buff);
-
-            //* Get hashes_table data
-            const u_int32_t hashes_table_size =
-              IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + IMAGE_LAYOUT_HTOC_HEADER_SIZE +
-              MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + header.hash_size) + HASHES_TABLE_TAIL_SIZE;
-            READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, hashes_table_size, "HASHES TABLE");
+            vector<u_int8_t> hashes_table_data;
+            if (!GetHashesTableData(hashes_table_data))
+            {
+                return false;
+            }
+            buff = hashes_table_data.data();
+            const u_int32_t hashes_table_size = hashes_table_data.size();
 
             Fs3UpdateImgCache(buff, _hashes_table_ptr, hashes_table_size);
 
@@ -996,7 +989,6 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
             u_int32_t hashes_table_crc = ((u_int32_t*)buff)[(hashes_table_size / 4) - 1];
             TOCPU1(hashes_table_crc)
             hashes_table_crc = hashes_table_crc & 0xFFFF;
-            free(buff);
             if (!DumpFs3CRCCheck(FS4_HASHES_TABLE, _hashes_table_ptr, hashes_table_size, hashes_table_calc_crc,
                                  hashes_table_crc, false, verifyCallBackFunc))
             {
@@ -1080,7 +1072,12 @@ bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     }
     if (image_encrypted)
     {
-        return errmsg("Cannot verify an encrypted %s", _ioAccess->is_flash() ? "flash" : "image");
+        //* Verify DTOC CRCs only
+        if (!parseDevData(false, false, verifyCallBackFunc))
+        {
+            return errmsg("%s", err());
+        }
+        return true;
     }
 
     return Fs3Operations::FwVerify(verifyCallBackFunc, isStripedImage, showItoc, ignoreDToc);
@@ -1139,6 +1136,27 @@ bool Fs4Operations::GetImageInfo(u_int8_t* buff)
     return true;
 }
 
+bool Fs4Operations::CheckDevRSAPublicKeyUUID()
+{
+    //* Read RSA_PUBLIC_KEY section
+    u_int32_t rsa_public_keys_section_addr = _public_key_ptr + _fwImgInfo.imgStart;
+    DPRINTF(
+      ("Fs4Operations::CheckDevRSAPublicKeyUUID rsa_public_keys_section_addr = 0x%x\n", rsa_public_keys_section_addr));
+    vector<u_int8_t> rsa_public_keys_data;
+    rsa_public_keys_data.resize(IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE);
+    if (!_ioAccess->read(rsa_public_keys_section_addr, rsa_public_keys_data.data(), IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE))
+    {
+        return errmsg("%s - read error (%s)\n", "RSA_PUBLIC_KEY", (*_ioAccess).err());
+    }
+
+    //* Check if key uuid is dev
+    image_layout_public_keys_3 public_keys_3;
+    image_layout_public_keys_3_unpack(&public_keys_3, rsa_public_keys_data.data());
+    GetImgSigInfo(public_keys_3.file_public_keys_3[0].keypair_uuid);
+
+    return true;
+}
+
 bool Fs4Operations::encryptedFwReadImageInfoSection()
 {
     //* Read IMAGE_INFO section
@@ -1161,14 +1179,14 @@ bool Fs4Operations::encryptedFwReadImageInfoSection()
     return true;
 }
 
-bool Fs4Operations::parseDevData(bool readRom, bool quickQuery, bool verbose)
+bool Fs4Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack verifyCallBackFunc)
 {
     //* Initializing DTOC info
     _ioAccess->set_address_convertor(0, 0);
     // Parse DTOC header:
     u_int32_t dtoc_addr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
     DPRINTF(("Fs4Operations::parseDevData call verifyTocHeader() DTOC, dtoc_addr = 0x%x\n", dtoc_addr));
-    if (!verifyTocHeader(dtoc_addr, true, (VerifyCallBack)NULL))
+    if (!verifyTocHeader(dtoc_addr, true, verifyCallBackFunc))
     {
         return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
     }
@@ -1176,10 +1194,10 @@ bool Fs4Operations::parseDevData(bool readRom, bool quickQuery, bool verbose)
 
     // Parse DTOC entries:
     struct QueryOptions queryOptions;
-    queryOptions.readRom = readRom;
+    queryOptions.readRom = false;
     queryOptions.quickQuery = quickQuery;
     DPRINTF(("Fs4Operations::parseDevData call verifyTocEntries() DTOC\n"));
-    if (!verifyTocEntries(dtoc_addr, false, true, queryOptions, (VerifyCallBack)NULL, verbose))
+    if (!verifyTocEntries(dtoc_addr, false, true, queryOptions, verifyCallBackFunc, verbose))
     {
         return false;
     }
@@ -1187,11 +1205,11 @@ bool Fs4Operations::parseDevData(bool readRom, bool quickQuery, bool verbose)
     return true;
 }
 
-bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
+bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs4Operations::encryptedFwQuery\n"));
 
-    if (!initHwPtrs(true))
+    if (!initHwPtrs())
     {
         DPRINTF(("Fs4Operations::encryptedFwQuery HW pointers not found"));
         return false;
@@ -1199,14 +1217,19 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool readRom, bool quick
 
     if (!encryptedFwReadImageInfoSection())
     {
-        return errmsg("%s", err());
+        return false;
+    }
+
+    if (!CheckDevRSAPublicKeyUUID())
+    {
+        return false;
     }
 
     if (!ignoreDToc)
     {
-        if (!parseDevData(readRom, quickQuery, verbose))
+        if (!parseDevData(quickQuery, verbose))
         {
-            return errmsg("%s", err());
+            return false;
         }
     }
 
@@ -1244,7 +1267,7 @@ bool Fs4Operations::FwQuery(fw_info_t* fwInfo,
     }
     if (image_encrypted)
     {
-        return encryptedFwQuery(fwInfo, readRom, quickQuery, ignoreDToc, verbose);
+        return encryptedFwQuery(fwInfo, quickQuery, ignoreDToc, verbose);
     }
 
     if (!Fs3Operations::FwQuery(fwInfo, readRom, isStripedImage, quickQuery, ignoreDToc, verbose))
@@ -1334,11 +1357,10 @@ bool Fs4Operations::QuerySecurityFeatures()
             {
                 CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
                 _fs3ImgInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
+                _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
 
                 if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED)
                 {
-                    _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
-
                     if (IsSecurityVersionAccessible(_fwImgInfo.ext_info.chip_type))
                     {
                         _fs3ImgInfo.ext_info.device_security_version_gw = crSpaceReg.getSecurityVersion();
@@ -1405,7 +1427,7 @@ bool Fs4Operations::getEncryptedImageSize(u_int32_t* imageSize)
 {
     DPRINTF(("Fs4Operations::getEncryptedImageSize\n"));
     fw_info_t fwInfo;
-    if (!encryptedFwQuery(&fwInfo, false, false))
+    if (!encryptedFwQuery(&fwInfo, false, true))
     {
         return errmsg("%s", err());
     }
@@ -2279,12 +2301,11 @@ bool Fs4Operations::FwExtractEncryptedImage(vector<u_int8_t>& img,
     }
 
     //* Get image size
-    fw_info_t fwInfo;
-    if (!encryptedFwQuery(&fwInfo, false, false, true))
+    u_int32_t burn_image_size;
+    if (!getEncryptedImageSize(&burn_image_size))
     {
         return errmsg("%s", err());
     }
-    u_int32_t burn_image_size = fwInfo.fw_info.burn_image_size;
 
     //* Read image from _fwImgInfo.imgStart to burn_image_size (_fwImgInfo.imgStart expected to be zero)
     DPRINTF(("Fs4Operations::FwExtractEncryptedImage - Reading 0x%x bytes from address 0x%x\n", burn_image_size,
@@ -2401,7 +2422,10 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         }
 
         //* Parse DTOC and its sections
-        ((Fs4Operations*)imageOps)->parseDevData(true, false);
+        if (!((Fs4Operations*)imageOps)->parseDevData(false))
+        {
+            return errmsg("%s", imageOps->err());
+        }
 
         //* DTOC sanity check
         if (!((Fs4Operations*)imageOps)->CheckDTocArray())
@@ -3375,7 +3399,6 @@ bool Fs4Operations::UpdateHashInHashesTable(fs3_section_t section_type, vector<u
     }
 
     //* Calculate CRC on modified hashes_table
-    const u_int32_t HASHES_TABLE_TAIL_SIZE = 8;
     u_int32_t hashes_table_size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + IMAGE_LAYOUT_HTOC_HEADER_SIZE +
                                   MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + hash_size) +
                                   HASHES_TABLE_TAIL_SIZE;
@@ -3613,7 +3636,7 @@ bool Fs4Operations::VerifyImageAfterModifications()
     if (image_encrypted)
     {
         fw_info_t fwInfo;
-        if (!encryptedFwQuery(&fwInfo, false, false))
+        if (!encryptedFwQuery(&fwInfo, false))
         {
             return errmsg("%s", err());
         }
@@ -4688,6 +4711,66 @@ bool Fs4Operations::StorePublicKeyInPublicKeys2(const image_layout_file_public_k
     return true;
 }
 
+bool Fs4Operations::FindPublicKeyInPublicKeys2(const vector<u_int32_t>& keypair_uuid,
+                                               bool& found,
+                                               image_layout_file_public_keys_3& public_key)
+{
+    // Find ITOC entry
+    fs4_toc_info* itocEntry = (fs4_toc_info*)NULL;
+    if (!Fs4GetItocInfo(_fs4ImgInfo.itocArr.tocArr, _fs4ImgInfo.itocArr.numOfTocs, FS3_PUBLIC_KEYS_4096, itocEntry))
+    {
+        return errmsg("FindPublicKeyInPublicKeys2 failed - Error: %s", err());
+    }
+
+    u_int32_t num_of_key_slots = image_layout_public_keys_2_size() / image_layout_file_public_keys_2_size();
+    for (u_int32_t ii = 0; ii < num_of_key_slots; ii++)
+    {
+        u_int32_t key_start_offset = ii * image_layout_file_public_keys_2_size();
+        image_layout_file_public_keys_2 stored_public_key;
+        memset(&stored_public_key, 0, sizeof(stored_public_key));
+        image_layout_file_public_keys_2_unpack(&stored_public_key, itocEntry->section_data.data() + key_start_offset);
+
+        // Compare keys based on UUID
+        if (equal(begin(keypair_uuid), end(keypair_uuid), begin(stored_public_key.keypair_uuid)))
+        {
+            found = true;
+            memset(&public_key, 0, sizeof(public_key));
+            copy(begin(stored_public_key.key), end(stored_public_key.key), begin(public_key.key));
+            copy(begin(stored_public_key.keypair_uuid), end(stored_public_key.keypair_uuid),
+                 begin(public_key.keypair_uuid));
+            public_key.keypair_exp = stored_public_key.keypair_exp;
+            public_key.component_authentication_configuration =
+              stored_public_key.component_authentication_configuration;
+            break;
+        }
+    }
+    return true;
+}
+
+bool Fs4Operations::GetFRCKey(image_layout_file_public_keys_3& frc_key)
+{
+    // FRC UUIDs
+    const unsigned int NUM_OF_UNIQUE_UUIDS = 2;
+    vector<u_int32_t> uuids[NUM_OF_UNIQUE_UUIDS];
+    // uuids[0] = {0xec897142, 0x386911e7, 0x9d48f44d, 0x306574e8}; // Legacy 2K FRC
+    uuids[0] = {0x4562e75e, 0x619511ec, 0x8139ac1f, 0x6b01e5ae}; // CX7
+    uuids[1] = {0x0bcbe8d2, 0x029f11ed, 0x8708ac1f, 0x6b01e5ae}; // BF3
+
+    for (auto& uuid : uuids)
+    {
+        bool uuid_found = false;
+        if (!FindPublicKeyInPublicKeys2(uuid, uuid_found, frc_key))
+        {
+            return errmsg("GetFRCKey failed - Error: %s", err());
+        }
+        if (uuid_found)
+        {
+            break;
+        }
+    }
+    return true;
+}
+
 bool Fs4Operations::StorePublicKey(const char* public_key_file, const char* uuid)
 {
     image_layout_public_keys_3 public_keys_3;
@@ -4700,6 +4783,11 @@ bool Fs4Operations::StorePublicKey(const char* public_key_file, const char* uuid
     if (!StorePublicKeyInPublicKeys2(public_keys_3.file_public_keys_3[0]))
     {
         return errmsg("StorePublicKey failed - Error: %s", err());
+    }
+
+    if (!GetFRCKey(public_keys_3.file_public_keys_3[1]))
+    {
+        return errmsg("GetFRCKey failed - Error: %s", err());
     }
 
     //* Store public-key and uuid in section and update its matching ITOC entry (with updated section_crc and entry_crc)
@@ -4771,6 +4859,57 @@ bool Fs4Operations::initHwPtrs(bool isVerify)
     return true;
 }
 
+bool Fs4Operations::GetHashesTableSize(u_int32_t& size)
+{
+    bool image_encrypted = false;
+    if (!isEncrypted(image_encrypted))
+    {
+        return false;
+    }
+    u_int32_t htoc_hash_size =
+      HTOC_HASH_SIZE; // In case of encrypted device we can't parse HTOC header to get hash size so we use constant
+    if (!image_encrypted)
+    {
+        //* Read HTOC header for hash size
+        u_int8_t* buff;
+        u_int32_t htoc_header_address = _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE;
+        READALLOCBUF((*_ioAccess), htoc_header_address, buff, IMAGE_LAYOUT_HTOC_HEADER_SIZE, "HTOC header");
+        image_layout_htoc_header header;
+        image_layout_htoc_header_unpack(&header, buff);
+        htoc_hash_size = header.hash_size;
+        free(buff);
+    }
+    u_int32_t htoc_size =
+      IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + htoc_hash_size);
+    size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + htoc_size + HASHES_TABLE_TAIL_SIZE;
+
+    return true;
+}
+
+bool Fs4Operations::GetHashesTableData(vector<u_int8_t>& data)
+{
+    if (!isHashesTableHwPtrValid())
+    {
+        return false;
+    }
+
+    //* Get size
+    u_int32_t hashes_table_size = 0;
+    if (!GetHashesTableSize(hashes_table_size))
+    {
+        return false;
+    }
+
+    //* Read hashes table
+    u_int8_t* buff;
+    READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, hashes_table_size, "HASHES TABLE");
+    data.insert(data.end(), buff, buff + hashes_table_size);
+    free(buff);
+
+    return true;
+}
+
+//! TODO - Fix return value to status and result as output argument
 bool Fs4Operations::isHashesTableHwPtrValid()
 {
     //* Check HW pointers initialized
@@ -5171,13 +5310,6 @@ bool Fs4Operations::getCriticalNonCriticalSections(vector<u_int8_t>& critical, v
             // currentItoc++;
         }
     }
-    return true;
-}
-
-bool Fs4Operations::IsCriticalSection(u_int8_t sect_type)
-{
-    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PCIE_PHY_UC_CODE && sect_type != FS3_HW_BOOT_CFG)
-        return false;
     return true;
 }
 

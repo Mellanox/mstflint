@@ -377,6 +377,8 @@ typedef enum fs3_section
     FS4_RSA_PUBLIC_KEY = 0xa6,
     FS4_RSA_4096_SIGNATURES = 0xa7,
     FS4_EXCLKSYNC_INFO = 0xb0,
+    FS4_MAIN_HASHES_PAGES = 0xb1,
+    FS4_MAIN_LOCKED_HASHES_PAGES = 0xb2,
     FS3_MFG_INFO = 0xe0,
     FS3_DEV_INFO = 0xe1,
     FS3_NV_DATA1 = 0xe2,

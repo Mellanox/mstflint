@@ -1957,6 +1957,110 @@ FlintStatus BinaryCompareSubCommand::compareMFA2()
 #endif
 }
 
+bool BinaryCompareSubCommand::ReadFwOpsImageData(vector<u_int8_t>& deviceBuff, vector<u_int8_t>& imgBuff)
+{
+    u_int32_t imgSize = 0;
+    // on first call we get the image size
+    if (!_fwOps->FwReadData(NULL, &imgSize))
+    {
+        reportErr(true, FLINT_IMAGE_READ_ERROR, _fwOps->err());
+        return false;
+    }
+    deviceBuff.resize(imgSize);
+    // on second call we fill it
+    if (!_fwOps->FwReadData((void*)(&deviceBuff[0]), &imgSize, _flintParams.silent == false))
+    {
+        reportErr(true, FLINT_IMAGE_READ_ERROR, _fwOps->err());
+        return false;
+    }
+
+    if (!_imgOps->FwExtract4MBImage(imgBuff, false, (_flintParams.silent == false)))
+    {
+        reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
+        return false;
+    }
+
+    return true;
+}
+
+bool BinaryCompareSubCommand::CompareEncryptedFwOpsViaDirectAccess(bool& res)
+{
+    //* Compare image
+    res = false;
+
+    std::vector<u_int8_t> deviceBuff;
+    std::vector<u_int8_t> imgBuff;
+    if (!ReadFwOpsImageData(deviceBuff, imgBuff))
+    {
+        return false;
+    }
+
+    if (deviceBuff == imgBuff)
+    {
+        res = true;
+    }
+    return true;
+}
+bool BinaryCompareSubCommand::CompareEncryptedFwOpsViaMCC(bool& res)
+{
+    //* Compare hashes table
+    res = false;
+
+    std::vector<u_int8_t> deviceBuff;
+    std::vector<u_int8_t> imgBuff;
+    if (!_fwOps->GetHashesTableData(deviceBuff))
+    {
+        return false;
+    }
+    if (!_imgOps->GetHashesTableData(imgBuff))
+    {
+        return false;
+    }
+
+    if (deviceBuff == imgBuff)
+    {
+        res = true;
+    }
+    return true;
+}
+
+bool BinaryCompareSubCommand::CompareEncryptedFwOps(bool& res)
+{
+    if (_fwOps->IsFsCtrlOperations())
+    {
+        return CompareEncryptedFwOpsViaMCC(res);
+    }
+    else
+    {
+        return CompareEncryptedFwOpsViaDirectAccess(res);
+    }
+}
+
+bool BinaryCompareSubCommand::CompareFwOps(bool& res)
+{
+    //* Legacy binary compare flow for non encrypted images
+    res = false;
+    std::vector<u_int8_t> deviceBuff;
+    std::vector<u_int8_t> imgBuff;
+    if (!ReadFwOpsImageData(deviceBuff, imgBuff)) // This call initializes fwops objects with the image data before calling to PrepItocSectionsForCompare
+    {
+        return false;
+    }
+
+    vector<u_int8_t> device_critical;
+    vector<u_int8_t> device_non_critical;
+    vector<u_int8_t> image_critical;
+    vector<u_int8_t> image_non_critical;
+    _imgOps->PrepItocSectionsForCompare(image_critical, image_non_critical);
+    _fwOps->PrepItocSectionsForCompare(device_critical, device_non_critical);
+
+    if (image_critical == device_critical && image_non_critical == device_non_critical)
+    {
+        res = true;
+    }
+    return true;
+}
+
 FlintStatus BinaryCompareSubCommand::executeCommand()
 {
 #ifndef NO_MSTARCHIVE
@@ -1968,11 +2072,6 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
         return compareMFA2();
     }
 #endif
-
-    vector<u_int8_t> device_critical;
-    vector<u_int8_t> device_non_critical;
-    vector<u_int8_t> image_critical;
-    vector<u_int8_t> image_non_critical;
 
     if (preFwOps() == FLINT_FAILED)
     {
@@ -2020,43 +2119,51 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
-    u_int32_t imgSize = 0;
-    // on first call we get the image size
-    if (!_fwOps->FwReadData(NULL, &imgSize))
+    bool device_encrypted = false;
+    bool image_encrypted = false;
+    if (!_fwOps->isEncrypted(device_encrypted))
     {
-        reportErr(true, FLINT_IMAGE_READ_ERROR, _fwOps->err());
+        reportErr(true, "Failed to identify if device is encrypted.\n");
         return FLINT_FAILED;
     }
-    std::vector<u_int8_t> imgBuffOnDevice(imgSize);
-    // on second call we fill it
-    if (!_fwOps->FwReadData((void*)(&imgBuffOnDevice[0]), &imgSize, _flintParams.silent == false))
+    if (!_imgOps->isEncrypted(image_encrypted))
     {
-        reportErr(true, FLINT_IMAGE_READ_ERROR, _fwOps->err());
+        reportErr(true, "Failed to identify if image is encrypted.\n");
+        return FLINT_FAILED;
+    }
+    if (device_encrypted != image_encrypted)
+    {
+        reportErr(true, "Binary comparison failed - encryption mismatch.\n");
         return FLINT_FAILED;
     }
 
-    std::vector<u_int8_t> imgBuffInFile;
-    if (!_imgOps->FwExtract4MBImage(imgBuffInFile, false, (_flintParams.silent == false)))
+    bool compare_res = false;
+    if (device_encrypted)
     {
-        reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
-        return FLINT_FAILED;
+        if (!CompareEncryptedFwOps(compare_res))
+        {
+            return FLINT_FAILED;
+        }
     }
-    _imgOps->PrepItocSectionsForCompare(image_critical, image_non_critical);
-    _fwOps->PrepItocSectionsForCompare(device_critical, device_non_critical);
+    else
+    {
+        if (!CompareFwOps(compare_res))
+        {
+            return FLINT_FAILED;
+        }
+    }
 
-    if (image_critical != device_critical)
+    if (compare_res == false)
     {
         reportErr(true, "Binary comparison failed - binary mismatch.\n");
         return FLINT_FAILED;
     }
-    if (image_non_critical != device_non_critical)
+    else
     {
-        reportErr(true, "Binary comparison failed - binary mismatch.\n");
-        return FLINT_FAILED;
+        printf("\33[2K\r"); // clear the current line
+        printf("Binary comparison success.\n");
+        return FLINT_SUCCESS;
     }
-    printf("\33[2K\r"); // clear the current line
-    printf("Binary comparison success.\n");
-    return FLINT_SUCCESS;
 }
 
 /***********************
@@ -3199,7 +3306,7 @@ FlintStatus BurnSubCommand::executeCommand()
     }
     // set fw type
     _fwType = _fwOps->FwType();
-    if (_fwOps->IsFsCtrlOperations() || _fwOps->IsFifthGen())
+    if (_fwOps->IsFifthGen())
     {
         if (_flintParams.mac_specified || _flintParams.macs_specified)
         {
@@ -4587,9 +4694,26 @@ bool VerifySubCommand::verifyParams()
 
 FlintStatus VerifySubCommand::executeCommand()
 {
+    if (_flintParams.image_specified == true && _flintParams.device_specified == true)
+    {
+        // Verify based on binary compare
+        BinaryCompareSubCommand bc;
+        _flintParams.silent = true;
+        bc.setParams(_flintParams);
+        FlintStatus bc_res = bc.executeCommand();
+        if (bc_res == FLINT_SUCCESS)
+        {
+            printf("\n-I- FW image verification succeeded. Image is bootable.\n\n");
+        }
+        else
+        {
+            reportErr(true, FLINT_CMD_VERIFY_ERROR_2);
+        }
+        return bc_res;
+    }
+
     if (preFwOps() == FLINT_FAILED)
     {
-        reportErr(true, FLINT_CMD_VERIFY_ERROR_1);
         return FLINT_FAILED;
     }
 

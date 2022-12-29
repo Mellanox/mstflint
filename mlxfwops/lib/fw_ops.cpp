@@ -265,11 +265,6 @@ void FwOperations::FwInitCom()
     memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
 }
 
-bool FwOperations::IsFsCtrlOperations()
-{
-    return false;
-}
-
 void FwOperations::GetFwParams(fw_ops_params_t& fwParams)
 {
     fwParams = _fwParams;
@@ -1434,64 +1429,6 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
   {(char*)NULL, (u_int32_t)0, (u_int8_t)0x00}, // zero device ID terminator
 };
 
-chip_type FwOperations::GetChipType(string chip)
-{
-    if (chip == "CT_CONNECTX")
-        return CT_CONNECTX;
-    else if (chip == "CT_CONNECT_IB")
-        return CT_CONNECT_IB;
-    else if (chip == "CT_SWITCH_IB")
-        return CT_SWITCH_IB;
-    else if (chip == "CT_SPECTRUM")
-        return CT_SPECTRUM;
-    else if (chip == "CT_CONNECTX4")
-        return CT_CONNECTX4;
-    else if (chip == "CT_CONNECTX4_LX")
-        return CT_CONNECTX4_LX;
-    else if (chip == "CT_SWITCH_IB2")
-        return CT_SWITCH_IB2;
-    else if (chip == "CT_CONNECTX5")
-        return CT_CONNECTX5;
-    else if (chip == "CT_CONNECTX6")
-        return CT_CONNECTX6;
-    else if (chip == "CT_BLUEFIELD")
-        return CT_BLUEFIELD;
-    else if (chip == "CT_QUANTUM")
-        return CT_QUANTUM;
-    else if (chip == "CT_SPECTRUM2")
-        return CT_SPECTRUM2;
-    else if (chip == "CT_CONNECTX6DX")
-        return CT_SPECTRUM2;
-    else if (chip == "CT_CONNECTX6LX")
-        return CT_CONNECTX6LX;
-    else if (chip == "CT_CONNECTX7")
-        return CT_CONNECTX7;
-    else if (chip == "CT_CONNECTX8")
-        return CT_CONNECTX8;
-    else if (chip == "CT_SPECTRUM3")
-        return CT_SPECTRUM3;
-    else if (chip == "CT_BLUEFIELD2")
-        return CT_BLUEFIELD2;
-    else if (chip == "CT_BLUEFIELD3")
-        return CT_BLUEFIELD3;
-    else if (chip == "CT_BLUEFIELD4")
-        return CT_BLUEFIELD4;
-    else if (chip == "CT_CONNECTX3")
-        return CT_CONNECTX3;
-    else if (chip == "CT_QUANTUM2")
-        return CT_QUANTUM2;
-    else if (chip == "CT_QUANTUM3")
-        return CT_QUANTUM3;
-    else if (chip == "CT_SPECTRUM4")
-        return CT_SPECTRUM4;
-    else if (chip == "CT_GEARBOX")
-        return CT_GEARBOX;
-    else if (chip == "CT_GEARBOX_MGR")
-        return CT_GEARBOX_MGR;
-    else
-        return CT_UNKNOWN;
-}
-
 #define ARR_SIZE(arr) sizeof(arr) / sizeof(arr[0])
 #define MAX_HW_NAME_LEN 100
 bool FwOperations::HWIdRevToName(u_int32_t hw_id, u_int8_t rev_id, char* hw_name)
@@ -2349,14 +2286,14 @@ const char* FwOperations::expRomType2Str(u_int16_t type)
 
 bool FwOperations::FwSetCertChain(char*, u_int32_t, PrintCallBack)
 {
-    return errmsg("Operation not supported.");
+    return errmsg("FwSetCertChain not supported.");
 }
 
 bool FwOperations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer)
 {
     (void)timestamp;
     (void)fwVer;
-    return errmsg("Operation not supported.");
+    return errmsg("FwSetTimeStamp not supported.");
 }
 
 bool FwOperations::FwResetTimeStamp()
@@ -2391,14 +2328,14 @@ bool FwOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData,
     (void)imageOps4MData;
     (void)burnParams;
     (void)ComponentId;
-    return errmsg("Operation not supported.");
+    return errmsg("FwBurnAdvanced not supported.");
 }
 
 bool FwOperations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
 {
     (void)critical;
     (void)non_critical;
-    return errmsg("Operation not supported.");
+    return errmsg("PrepItocSectionsForCompare not supported.");
 }
 
 bool FwOperations::UpdateSection(void* new_info,
@@ -2412,7 +2349,7 @@ bool FwOperations::UpdateSection(void* new_info,
     (void)is_sect_failsafe;
     (void)cmd_type;
     (void)callBackFunc;
-    return errmsg("Operation not supported.");
+    return errmsg("UpdateSection not supported.");
 }
 bool FwOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
                                     struct tools_open_fw_version& fwVer,
@@ -2421,7 +2358,7 @@ bool FwOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
     (void)timestamp;
     (void)fwVer;
     (void)queryRunning;
-    return errmsg("Operation not supported.");
+    return errmsg("FwQueryTimeStamp not supported.");
 }
 
 Tlv_Status_t FwOperations::GetTsObj(TimeStampIFC** tsObj)
@@ -2455,14 +2392,6 @@ bool FwOperations::SignForSecureBoot(const char*, const char*, const MlxSign::Si
 {
     return errmsg("SignForSecureBoot not supported");
 }
-bool FwOperations::isHashesTableHwPtrValid()
-{
-    return false;
-}
-bool FwOperations::initHwPtrs(bool)
-{
-    return errmsg("initHwPtrs not supported");
-}
 bool FwOperations::openEncryptedImageAccess(const char* encrypted_image_path)
 {
     (void)encrypted_image_path;
@@ -2482,26 +2411,6 @@ bool FwOperations::burnEncryptedImage(FwOperations*, ExtBurnParams&)
 {
     return errmsg("Burning encrypted image not supported");
 }
-bool FwOperations::PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
-{
-    (void)critical;
-    (void)non_critical;
-    return errmsg("PrepItocSectionsForHmac not supported");
-}
-
-bool FwOperations::IsCriticalSection(u_int8_t sect_type)
-{
-    (void)sect_type;
-    return errmsg("IsCriticalSection not supported");
-}
-
-bool FwOperations::CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest)
-{
-    (void)key;
-    (void)data;
-    (void)digest;
-    return errmsg("CalcHMAC not supported");
-}
 
 bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img,
                                      bool maskMagicPatternAndDevToc,
@@ -2512,7 +2421,7 @@ bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img,
     (void)maskMagicPatternAndDevToc;
     (void)verbose;
     (void)ignoreImageStart;
-    return errmsg("Operation not supported");
+    return errmsg("FwExtract4MBImage not supported");
 }
 
 bool FwOperations::RestoreDevToc(vector<u_int8_t>& img,
@@ -2526,21 +2435,21 @@ bool FwOperations::RestoreDevToc(vector<u_int8_t>& img,
     (void)devid_t;
     (void)base_guid;
     (void)base_mac;
-    return errmsg("Operation not supported");
+    return errmsg("RestoreDevToc not supported");
 }
 
 bool FwOperations::FwSetPublicKeys(char* fname, PrintCallBack callBackFunc)
 {
     (void)fname;
     (void)callBackFunc;
-    return errmsg("Operation not supported");
+    return errmsg("FwSetPublicKeys not supported");
 }
 
 bool FwOperations::FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc)
 {
     (void)fname;
     (void)callBackFunc;
-    return errmsg("Operation not supported");
+    return errmsg("FwSetForbiddenVersions not supported");
 }
 
 bool FwOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec)
@@ -2771,10 +2680,6 @@ bool FwOperations::CreateSignatureManager()
     }
     return false;
 }
-bool FwOperations::FwCalcSHA(MlxSign::SHAType, vector<u_int8_t>&, vector<u_int8_t>&)
-{
-    return errmsg("FwCalcSHA is not supported.");
-}
 bool FwOperations::storeSecureBootSignaturesInSection(vector<u_int8_t>, vector<u_int8_t>, vector<u_int8_t>)
 {
     return errmsg("storeSecureBootSignaturesInSection not supported");
@@ -2833,6 +2738,10 @@ bool FwOperations::IsSecurityVersionViolated(u_int32_t)
 bool FwOperations::GetImageSize(u_int32_t*)
 {
     return errmsg("GetImageSize is not supported");
+}
+bool FwOperations::GetHashesTableData(vector<u_int8_t>& data)
+{
+    return errmsg("GetHashesTableData is not supported");
 }
 
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
@@ -2909,6 +2818,7 @@ int CRSpaceRegisters::getGlobalImageStatus()
 
     switch (_chip_type)
     {
+        case CT_CONNECTX6:
         case CT_CONNECTX6DX:
         case CT_CONNECTX6LX:
         case CT_CONNECTX7:
@@ -2946,6 +2856,7 @@ u_int32_t CRSpaceRegisters::getSecurityVersion()
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf3238), 3, 8);
             break;
         case CT_BLUEFIELD3:
+        case CT_SPECTRUM4:
             rollbackMSB = getRegister(0xf4348);
             rollbackLSB = getRegister(0xf434c);
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf4338), 4, 8);

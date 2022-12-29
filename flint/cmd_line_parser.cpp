@@ -186,6 +186,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "flashed_version", 0));
     _flags.push_back(new Flag("", "nofs", 0));
     _flags.push_back(new Flag("", "allow_psid_change", 0));
+    _flags.push_back(new Flag("", "apc", 0));
     _flags.push_back(new Flag("", "allow_rom_change", 0));
     _flags.push_back(new Flag("", "override_cache_replacement", 0));
     _flags.push_back(new Flag("", "ocr", 0));
@@ -667,6 +668,8 @@ void Flint::initCmdParser()
                " that changing a PSID may cause the device to malfunction. Use only if you know what you are doing",
                isExternal);
 
+    AddOptions("apc", ' ', "", "another flag for allow psid change", isExternal);
+
     AddOptions("allow_rom_change",
                ' ',
                "",
@@ -1083,7 +1086,7 @@ ParseStatus Flint::HandleOption(string name, string value)
     {
         _flintParams.nofs = true;
     }
-    else if (name == "allow_psid_change")
+    else if (name == "allow_psid_change" || name == "apc")
     {
         _flintParams.allow_psid_change = true;
     }
