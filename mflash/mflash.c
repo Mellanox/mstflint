@@ -4049,6 +4049,27 @@ int mf_get_jedec_id(mflash* mfl, u_int32_t* jedec_id)
 
 int mf_set_quad_en(mflash* mfl, u_int8_t quad_en)
 {
+    if (quad_en == 0 && getenv("FORCE_RESET_QUAD_EN") == NULL)
+    {
+        // If flash HOLD state issue is relevant for given device, we'll block disabling Quad mode
+        if (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V)
+        {
+            switch (mfl->dm_dev_id)
+            {
+                case DeviceConnectX6:
+                case DeviceConnectX6DX:
+                case DeviceBlueField2:
+                case DeviceConnectX7:
+                case DeviceBlueField3:
+                {
+                    printf("-E- Disable QuadEn for given device is not allowed.\n");
+                    return MFE_ERROR;
+                }
+                default:
+                    break;
+            }
+        }
+    }
     return mfl->f_set_quad_en(mfl, quad_en);
 }
 
@@ -4074,7 +4095,7 @@ int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength)
             driver_strength = DRIVER_STRENGTH_VAL_100_WINBOND;
             break;
         default:
-            driver_strength = 0xff;
+            return MFE_BAD_PARAMS;
     }
     return mfl->f_set_driver_strength(mfl, driver_strength);
 }
