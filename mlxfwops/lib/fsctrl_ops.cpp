@@ -440,33 +440,31 @@ bool FsCtrlOperations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripe
 
 bool FsCtrlOperations::FwVerifyAdv(ExtVerifyParams& verifyParams)
 {
-    bool ret = true;
-    FwOperations* imageOps = NULL;
-    if (!_createImageOps(&imageOps))
+    bool isEncrypted = false;
+    if (!this->isEncrypted(isEncrypted))
     {
         return errmsg("%s", err());
     }
-
-    bool image_encrypted = false;
-    if (!imageOps->isEncrypted(image_encrypted))
+    else if (isEncrypted)
     {
-        errmsg(imageOps->getErrorCode(), "%s", imageOps->err());
-        ret = false;
+        return errmsg("Cannot verify an encrypted flash");
     }
-    else if (image_encrypted)
+    else
     {
-        errmsg("Cannot verify an encrypted flash");
-        ret = false;
+        FwOperations* imageOps = NULL;
+        if (!_createImageOps(&imageOps))
+        {
+            return errmsg("%s", err());
+        }
+        if (!imageOps->FwVerify(verifyParams.verifyCallBackFunc, verifyParams.isStripedImage, verifyParams.showItoc,
+                                    true))
+        {
+            delete imageOps;
+            return errmsg(imageOps->getErrorCode(), "%s", imageOps->err());
+        }
+        delete imageOps;
     }
-    else if (!imageOps->FwVerify(verifyParams.verifyCallBackFunc, verifyParams.isStripedImage, verifyParams.showItoc,
-                                 true))
-    {
-        errmsg(imageOps->getErrorCode(), "%s", imageOps->err());
-        ret = false;
-    }
-
-    delete imageOps;
-    return ret;
+    return true;
 }
 
 bool FsCtrlOperations::FwReadData(void* image, u_int32_t* image_size, bool verbose)

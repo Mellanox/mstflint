@@ -2286,14 +2286,14 @@ const char* FwOperations::expRomType2Str(u_int16_t type)
 
 bool FwOperations::FwSetCertChain(char*, u_int32_t, PrintCallBack)
 {
-    return errmsg("Operation not supported.");
+    return errmsg("FwSetCertChain not supported.");
 }
 
 bool FwOperations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer)
 {
     (void)timestamp;
     (void)fwVer;
-    return errmsg("Operation not supported.");
+    return errmsg("FwSetTimeStamp not supported.");
 }
 
 bool FwOperations::FwResetTimeStamp()
@@ -2328,14 +2328,14 @@ bool FwOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData,
     (void)imageOps4MData;
     (void)burnParams;
     (void)ComponentId;
-    return errmsg("Operation not supported.");
+    return errmsg("FwBurnAdvanced not supported.");
 }
 
 bool FwOperations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
 {
     (void)critical;
     (void)non_critical;
-    return errmsg("Operation not supported.");
+    return errmsg("PrepItocSectionsForCompare not supported.");
 }
 
 bool FwOperations::UpdateSection(void* new_info,
@@ -2349,7 +2349,7 @@ bool FwOperations::UpdateSection(void* new_info,
     (void)is_sect_failsafe;
     (void)cmd_type;
     (void)callBackFunc;
-    return errmsg("Operation not supported.");
+    return errmsg("UpdateSection not supported.");
 }
 bool FwOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
                                     struct tools_open_fw_version& fwVer,
@@ -2358,7 +2358,7 @@ bool FwOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
     (void)timestamp;
     (void)fwVer;
     (void)queryRunning;
-    return errmsg("Operation not supported.");
+    return errmsg("FwQueryTimeStamp not supported.");
 }
 
 Tlv_Status_t FwOperations::GetTsObj(TimeStampIFC** tsObj)
@@ -2421,7 +2421,7 @@ bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img,
     (void)maskMagicPatternAndDevToc;
     (void)verbose;
     (void)ignoreImageStart;
-    return errmsg("Operation not supported");
+    return errmsg("FwExtract4MBImage not supported");
 }
 
 bool FwOperations::RestoreDevToc(vector<u_int8_t>& img,
@@ -2435,21 +2435,21 @@ bool FwOperations::RestoreDevToc(vector<u_int8_t>& img,
     (void)devid_t;
     (void)base_guid;
     (void)base_mac;
-    return errmsg("Operation not supported");
+    return errmsg("RestoreDevToc not supported");
 }
 
 bool FwOperations::FwSetPublicKeys(char* fname, PrintCallBack callBackFunc)
 {
     (void)fname;
     (void)callBackFunc;
-    return errmsg("Operation not supported");
+    return errmsg("FwSetPublicKeys not supported");
 }
 
 bool FwOperations::FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc)
 {
     (void)fname;
     (void)callBackFunc;
-    return errmsg("Operation not supported");
+    return errmsg("FwSetForbiddenVersions not supported");
 }
 
 bool FwOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec)
