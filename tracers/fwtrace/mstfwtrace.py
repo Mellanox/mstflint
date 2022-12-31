@@ -335,7 +335,7 @@ def check_secure_fw_args(devInfo):
     if maskable is None or maskable is False:
         if MASK is not None:
             raise TracerException("This device traces can't be masked")
-    if MASK and not is_numaric(MASK):
+    if MASK and not is_int_or_hex(MASK):
         classes = MASK.split("+")
         for klass in classes:
             valid_class = False
@@ -382,24 +382,40 @@ def get_epilog():
     return classes_info
 
 
-def is_numaric(str):
-    if str.startswith("0x") or str.startswith("0X") or str.isdigit():
-        try:
-            eval(str)
-        except BaseException:
-            return False
+def is_int_or_hex(string):
+    try:
+        int(string)
         return True
-    return False
+    except ValueError:
+        try:
+            int(string, base=16)
+            return True
+        except ValueError:
+            return False
 
+def is_int_or_hex_test():
+    test_cases = ['123', 'quetzalcoatl', '456', 'k1a2l2imba',  '789', '0xFF', '0x1A3B']
+    print([is_int_or_hex(x) for x in test_cases])
 
 def apply_mask(devInfo, dev, cmdifdev):
     if not MASK:
         return 0
 
     maskAddr = devInfo["mask_addr"]
-    level = eval(LEVEL)
-    if is_numaric(MASK):
-        mask = eval(MASK)
+
+    try:
+        level = int(LEVEL)
+    except ValueError:
+        raise ValueError("Trace level is expected to be a numeric")
+
+    if is_int_or_hex(MASK):
+        try:
+            mask = int(MASK)
+        except ValueError:
+            try:
+                mask = int(MASK, base=16)
+            except ValueError:
+                raise ValueError("Internal error")
     else:
         maskClasses = devInfo["mask_classes"]
         reqClasses = MASK.split("+")
