@@ -1635,37 +1635,7 @@ vector<AmberField> MlxlinkAmBerCollector::getPortCounters()
                 fields.push_back(AmberField(
                   "PortRcvPktsExtended",
                   to_string(add32BitTo64(getFieldValue("port_rcv_pkts_high"), getFieldValue("port_rcv_pkts_low")))));
-                // Getting port pkts info
-                resetLocalParser(ACCESS_REG_PPCNT);
-                updateField("local_port", _localPort);
-                updateField("grp", PPCNT_IB_PKTS_GROUP);
-                sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
 
-                fields.push_back(AmberField("PortUniCastXmitPkts",
-                                            to_string(add32BitTo64(getFieldValue("if_out_ucast_pkts_high"),
-                                                                   getFieldValue("if_out_ucast_pkts_low")))));
-                fields.push_back(AmberField("PortUniCastRcvPkts",
-                                            to_string(add32BitTo64(getFieldValue("if_in_ucast_pkts_high"),
-                                                                   getFieldValue("if_in_ucast_pkts_low")))));
-                fields.push_back(AmberField("PortMultiCastXmitPkts",
-                                            to_string(add32BitTo64(getFieldValue("if_out_multicast_pkts_high"),
-                                                                   getFieldValue("if_out_multicast_pkts_low")))));
-                fields.push_back(AmberField("PortMultiCastRcvPkts",
-                                            to_string(add32BitTo64(getFieldValue("if_in_multicast_pkts_high"),
-                                                                   getFieldValue("if_in_multicast_pkts_low")))));
-                fields.push_back(AmberField("SyncHeaderErrorCounter",
-                                            to_string(add32BitTo64(getFieldValue("if_in_multicast_pkts_high"),
-                                                                   getFieldValue("if_in_multicast_pkts_low")))));
-                /* Un-defined counters, will be defined later
-                 * PortLocalPhysicalErrors
-                 * PortMalformedPacketErrors
-                 * PortBufferOverrunErrors
-                 * PortDLIDMappingErrors
-                 * PortVLMappingErrors
-                 * PortLoopingErrors
-                 * PortInactiveDiscards
-                 * PortNeighborMTUDiscards
-                 */
                 // Getting engress counters
                 resetLocalParser(ACCESS_REG_PPCNT);
                 updateField("local_port", _localPort);
@@ -1703,13 +1673,13 @@ vector<AmberField> MlxlinkAmBerCollector::getPortCounters()
                 fields.push_back(AmberField("PlrSyncEvents",
                                             to_string(add32BitTo64(getFieldValue("plr_sync_events_high"),
                                                                    getFieldValue("plr_sync_events_low")))));
-                fields.push_back(AmberField("HiRetransmissionRate",
-                                            to_string(add32BitTo64(getLocalFieldValue("hi_retransmission_rate_high"),
-                                                                   getLocalFieldValue("hi_retransmission_rate_low")))));
-                fields.push_back(
-                  AmberField("PlrXmitRetryCodesWithinTSecMax",
-                             to_string(add32BitTo64(getLocalFieldValue("plr_xmit_retry_codes_within_t_sec_max_high"),
-                                                    getLocalFieldValue("plr_xmit_retry_codes_within_t_sec_max_low")))));
+                fields.push_back(AmberField("PlrCodesLoss",
+                                            to_string(add32BitTo64(getLocalFieldValue("plr_codes_loss_high"),
+                                                                   getLocalFieldValue("plr_codes_loss_low")))));
+                fields.push_back(AmberField(
+                  "PlrXmitRetryEventsWithinTSecMax",
+                  to_string(add32BitTo64(getLocalFieldValue("plr_xmit_retry_events_within_t_sec_max_high"),
+                                         getLocalFieldValue("plr_xmit_retry_events_within_t_sec_max_low")))));
             }
         }
         else
