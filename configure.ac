@@ -62,9 +62,33 @@ AC_COMPILE_IFELSE(
 #endif
 ]])], [OPENSSL_VERSION_VALID=yes], [OPENSSL_VERSION_VALID=no])
 OS=$(uname -s)
+KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]\.[[0-9]][[0-9]]|[[0-9]]\.[[0-9]]' | head -1`
+OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]\.[[0-9]][[0-9]]|[[0-9]]\.[[0-9]]' | head -1`
+OFED_EXIST=`ofed_info -s`
+OFED_NOT_EXIST="ofed_info: command not found"
 MTCR_CONF_DIR=""
 LDL=""
 default_en_inband=""
+OFED_BUILD_CHK=0
+KERNEL_BUILD_CHK=0
+
+if test "x$OFED_EXIST" != "x$OFED_NOT_EXIST"; then
+  if test "x$OFED_VER" \> "x5.6" ; then
+      OFED_BUILD_CHK=1
+  fi
+fi
+
+AM_CONDITIONAL(OFED_BUILD,[test ${OFED_BUILD_CHK} = 1])
+AC_SUBST(OFED_BUILD)
+
+#AC_MSG_NOTICE(Kernel: ${KERNEL_VER})
+
+if test ${KERNEL_VER} \> "x5.13" ; then
+    KERNEL_BUILD_CHK=1
+fi
+
+AM_CONDITIONAL(KERNEL_BUILD,[test ${KERNEL_BUILD_CHK} = 1])
+AC_SUBST(KERNEL_BUILD)
 
 LDFLAGS="${LDFLAGS} -L/usr/local/lib -L/usr/local/lib64 -L/usr/lib64"
 CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include" 

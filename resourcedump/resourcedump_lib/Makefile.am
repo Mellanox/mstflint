@@ -25,7 +25,7 @@ RES_MGMT_DIR = $(top_srcdir)/tools_res_mgmt
 DEV_MGT_DIR = $(top_srcdir)/dev_mgt
 TOOLS_CRYPTO_DIR = $(top_srcdir)/tools_crypto
 RES_DUMP_DIR= $(top_srcdir)/resourcedump/resourcedump_lib
-INFINIBAND_INCLUDE = -isystem /auto/mswg/projects/mft/mft_build/external_libs/mft_ext_libs_inc/libibmad/linux/infiniband_new
+INFINIBAND_INCLUDE = -isystem /usr
 INCLUDES = -I$(top_srcdir) -I$(COMMON_DIR) -I$(REG_ACCESS_DIR) -I$(LAYOUTS_DIR) -I$(MTCR_DIR) $(INFINIBAND_INCLUDE) -I$(MTCR_INC_DIR)
 
 AM_CXXFLAGS = -Wall -W -MP -H -MD -pipe -DMST_UL -g -std=c++11 $(COMPILER_FPIC)

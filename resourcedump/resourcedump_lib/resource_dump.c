@@ -95,8 +95,8 @@ struct mlx5dv_mkey* create_mkey_c(struct mlx5_mkey* mkey,
     DEVX_SET(create_mkey_in, in, mkey_umem_valid, 1);
     DEVX_SET(create_mkey_in, in, mkey_umem_id, umem_id);
 
-    f_mlx5dv_devx_obj_create mlx5dv_devx_obj_create_func =
-      (f_mlx5dv_devx_obj_create)dlsym(handler, OBJECT_CREATE);
+    f_mlx5dv_devx_obj_create mlx5dv_devx_obj_create_func = (f_mlx5dv_devx_obj_create)dlsym(handler, OBJECT_CREATE);
+
     mkey->devx_obj = mlx5dv_devx_obj_create_func(context, in, sizeof(in), out, sizeof(out));
 
     if (!mkey->devx_obj)
@@ -132,8 +132,8 @@ struct mlx5dv_devx_umem* mlx5dv_devx_umem_register_ex(struct ibv_context* ctx,
     umem_in->size = buff_al_size;
     umem_in->access = IBV_ACCESS_LOCAL_WRITE;
     umem_in->pgsz_bitmap = sysconf(_SC_PAGESIZE);
-    f_mlx5dv_devx_umem_reg_ex mlx5dv_devx_umem_reg_ex_func =
-      (f_mlx5dv_devx_umem_reg_ex)dlsym(handler, UMEM_REG);
+    f_mlx5dv_devx_umem_reg_ex mlx5dv_devx_umem_reg_ex_func = (f_mlx5dv_devx_umem_reg_ex)dlsym(handler, UMEM_REG);
+
     struct mlx5dv_devx_umem* umem = mlx5dv_devx_umem_reg_ex_func(ctx, umem_in);
 
     return umem;
@@ -154,8 +154,12 @@ int generate_lkey(char device_name[], struct result* res)
         handler = dlopen(LIB_VERBS_UBUNTU_PATH, RTLD_LOCAL | RTLD_LAZY);
         if (!handler)
         {
-            printf("Failed to load the libibverbs shared library");
-            return ret;
+            handler = dlopen(LIB_VERBS_BLUEFIELD_PATH, RTLD_LOCAL | RTLD_LAZY);
+            if (!handler)
+            {
+                printf("Failed to load the libibverbs shared library");
+                return ret;
+            }
         }
     }
 
@@ -165,9 +169,13 @@ int generate_lkey(char device_name[], struct result* res)
         handler_2 = dlopen(LIB_MLX5_UBUNTU_PATH, RTLD_LOCAL | RTLD_LAZY);
         if (!handler_2)
         {
-            printf("Failed to load the libmlx5 shared library");
-            dlclose(handler);
-            return ret;
+            handler_2 = dlopen(LIB_MLX5_BLUEFIELD_PATH, RTLD_LOCAL | RTLD_LAZY);
+            if (!handler_2)
+            {
+                printf("Failed to load the libmlx5 shared library");
+                dlclose(handler);
+                return ret;
+            }
         }
     }
 
@@ -211,8 +219,8 @@ int generate_lkey(char device_name[], struct result* res)
         return ret;
     }
 
-    f_mlx5dv_devx_umem_dereg mlx5dv_devx_umem_dereg_func =
-      (f_mlx5dv_devx_umem_dereg)dlsym(handler, UMEM_DEREG);
+    f_mlx5dv_devx_umem_dereg mlx5dv_devx_umem_dereg_func = (f_mlx5dv_devx_umem_dereg)dlsym(handler, UMEM_DEREG);
+    
     struct mlx5_mkey* mmkey = calloc(1, sizeof(*mkey));
     if (!mmkey)
     {
