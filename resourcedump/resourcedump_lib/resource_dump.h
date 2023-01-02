@@ -125,8 +125,10 @@ struct mlx5_ifc_destroy_mkey_in_bits {
 #define MLX5_CMD_OP_DESTROY_MKEY 0x202
 #define LIB_VERBS_LINUX_PATH "/usr/lib64/libibverbs.so"
 #define LIB_VERBS_UBUNTU_PATH "/usr/lib/x86_64-linux-gnu/libibverbs.so"
+#define LIB_VERBS_BLUEFIELD_PATH "/usr/lib/aarch64-linux-gnu/libibverbs.so"
 #define LIB_MLX5_LINUX_PATH "/usr/lib64/libmlx5.so"
 #define LIB_MLX5_UBUNTU_PATH "/usr/lib/x86_64-linux-gnu/libmlx5.so"
+#define LIB_MLX5_BLUEFIELD_PATH "/usr/lib/aarch64-linux-gnu/libmlx5.so"
 #define GET_DEVICE_LIST_FUNC "ibv_get_device_list"
 #define GET_DEVICE_NAME_FUNC "ibv_get_device_name"
 #define OPEN_DEVICE_FUNC "mlx5dv_open_device"
