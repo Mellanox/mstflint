@@ -537,32 +537,7 @@ bool GenericCommander::checkDependency(TLVConf* cTLV, string dStr)
         {
             string dTLVName = (*it).substr(0, dotPos).replace(0, 1, "");
             string dParamName = (*it).substr(dotPos + 1);
-            // to allow cross class/port dependency we need to check dependency for
-            // port 0 and for port 1 (higher port numbers will act the same)
-            int lookForPorts[] = {int(cTLV->_port), (int(cTLV->_port) == 0) ? 1 : 0};
-            TLVConf* dTLV = NULL;
-            for (int ports = 0; ports < 2; ports++)
-            {
-                try
-                {
-                    if (lookForPorts[ports] == 0)
-                    {
-                        dTLV = _dbManager->getTLVByName(dTLVName, lookForPorts[ports], cTLV->_module);
-                    }
-                    else
-                    {
-                        dTLV = _dbManager->getTLVByName(dTLVName, lookForPorts[ports], -1);
-                    }
-                    if (dTLV != NULL)
-                    {
-                        break;
-                    }
-                }
-                catch (MlxcfgTLVNotFoundException e)
-                { // if TLV not found exception continue to search
-                    continue;
-                }
-            }
+            TLVConf* dTLV = _dbManager->getDependencyTLVByName(dTLVName, cTLV->_port, cTLV->_module);
             if (dTLV == NULL)
             {
                 throw MlxcfgTLVNotFoundException(dTLVName.c_str());

@@ -418,6 +418,19 @@ TLVConf* MlxcfgDBManager::getAndCreateTLVByName(string tlvName, u_int32_t port, 
     return tlv;
 }
 
+TLVConf* MlxcfgDBManager::getTLVByNameOnlyAux(string tlv_name)
+{
+    VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it)
+    {
+        TLVConf* t = *it;
+        if (t->_name == tlv_name)
+        {
+            return t;
+        }
+    }
+    return NULL;
+}
+
 TLVConf* MlxcfgDBManager::getTLVByName(string tlvName, u_int32_t port, int32_t module)
 {
     TLVConf* tlv = NULL;
@@ -429,6 +442,29 @@ TLVConf* MlxcfgDBManager::getTLVByName(string tlvName, u_int32_t port, int32_t m
     }
 
     return tlv;
+}
+
+TLVConf* MlxcfgDBManager::getDependencyTLVByName(string tlvName, u_int32_t cTLVPort, int32_t cTLVModule)
+{
+    TLVConf* dependendTLV = getTLVByNameOnlyAux(tlvName);
+    if (!dependendTLV)
+    {
+        getAllTLVs();
+        dependendTLV = getTLVByNameOnlyAux(tlvName);
+        if (!dependendTLV)
+        {
+            // TLV not in DB
+            return NULL;
+        }
+    }
+    if ((dependendTLV->_tlvClass == TLVClass::Physical_Port) || (dependendTLV->_tlvClass == TLVClass::Module))
+    {
+        return getTLVByName(tlvName, cTLVPort, cTLVModule); // get TLV with same port and module as the requester TLV
+    }
+    else // this is not port / module related tlv, ignore the requeter port/module (for cross class dependency)
+    {
+        return getTLVByName(tlvName, 0, -1);
+    }
 }
 
 TLVConf* MlxcfgDBManager::getTLVByIndexAndClassAux(u_int32_t id, TLVClass c)
