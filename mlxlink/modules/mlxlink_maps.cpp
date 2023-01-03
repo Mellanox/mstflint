@@ -1200,7 +1200,7 @@ void MlxlinkMaps::pcieEnumMapping()
     _pcieErrType[PCIE_ERR_TYPE_POISONED_TLP] =
       PcieErrType{"POISONED_TLP", 0, 1, PCIE_MAX_DURATION, true, false, false, false, false, true, "Packet"};
     _pcieErrType[PCIE_ERR_TYPE_UNEXPECTED_CPL] =
-      PcieErrType{"UNEXPECTED_CPL", 0, 1, PCIE_MAX_DURATION, true, true, true, false, false, true, "Packet"};
+      PcieErrType{"UNEXPECTED_CPL", 0, 1, PCIE_MAX_DURATION, true, true, true, true, false, true, "Packet"};
     _pcieErrType[PCIE_ERR_TYPE_ACS_VIOLATION] =
       PcieErrType{"ACS_VIOLATION", 0, 1, PCIE_MAX_DURATION, true, false, false, false, false, false, "Packet"};
     _pcieErrType[PCIE_ERR_TYPE_SURP_LINK_DOWN] =
