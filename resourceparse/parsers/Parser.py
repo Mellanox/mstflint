@@ -185,9 +185,21 @@ class Parser:
         else:  # if segment not for parse, need to set raw data
             self._build_and_add_raw_data(seg)
 
+    def _parse_enum_field(self, field, field_str, seg):
+        """This method parse enum field and present the enum name as well as the enum value.
+        """
+        field_offset = self._calculate_aligned_to_dword_offset(field.offset, field.size)
+        enum_value = int(self._current_bit_array[field_offset:field_offset + field.size], 2)
+        if len(self._current_bit_array) >= (field_offset + field.size):
+            if enum_value in field.enum_dict:
+                seg.add_parsed_data(field_str, "(" + field.enum_dict[enum_value] + " = " + hex(enum_value) + ")")
+            else:
+                seg.add_parsed_data(field_str, hex(int(self._current_bit_array[field_offset:field_offset + field.size], 2)))
+
     def _parse_union_selector_field(self, field, seg):
         """This method parse union field and present only the relevant field
-        (selected by the selector)"""
+        (selected by the selector)
+        """
         union_field_offset = self._calculate_aligned_to_dword_offset(field.uSelector.offset, field.uSelector.size)
         selected_field_enum = field.uSelector.dict[int(self._current_bit_array[union_field_offset:union_field_offset + field.uSelector.size], 2)]
         for item in field.subItems:
@@ -197,7 +209,9 @@ class Parser:
     def _parse_seg_field(self, field, field_str, seg):
         """This method is a recursive method that build the inner fields
         """
-        if len(field.subItems) > 0:
+        if field.enum_dict:
+            self._parse_enum_field(field, field_str, seg)
+        elif len(field.subItems) > 0:
             for sub_field in field.subItems:
                 prefix = self._build_union_prefix(sub_field.nodeDesc)
                 self._parse_seg_field(sub_field, field_str + "." + prefix + sub_field.name, seg)
