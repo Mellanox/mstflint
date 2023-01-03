@@ -501,20 +501,22 @@ tuple<string, int> MlxcfgDBManager::splitMlxcfgNameAndPortOrModule(std::string m
 }
 
 TLVConf* MlxcfgDBManager::findTLVInExisting(std::string mlxconfigName,
-                                            std::string noPortMlxcfgName,
-                                            std::string noModuleMlxcfgName,
+                                            std::string noPortModuleMlxcfgName,
                                             u_int32_t port,
                                             u_int32_t index,
                                             int32_t module)
 {
     VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it)
     {
-        if ((port != 0 && (*it)->findParamByMlxconfigNamePortModule(noPortMlxcfgName, port, module)) ||
-            (module != -1 && (*it)->findParamByMlxconfigNamePortModule(noModuleMlxcfgName, port, module)) ||
+        if (((port != 0 || module != -1) &&
+             (*it)->findParamByMlxconfigNamePortModule(noPortModuleMlxcfgName, port, module)) ||
             (*it)->findParamByMlxconfigNamePortModule(mlxconfigName, port, module) ||
             (*it)->findParamByMlxconfigNamePortModule(mlxconfigName + getArraySuffixByInterval(index), port, module))
         {
-            return (*it);
+            if (port == (*it)->_port && module == (*it)->_module)
+            {
+                return (*it);
+            }
         }
     }
     return NULL;
@@ -548,26 +550,12 @@ void MlxcfgDBManager::findTLVInDB(string mlxconfigName, u_int32_t index)
     }
 }
 
-TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string mlxconfigName, u_int32_t index, mfile* mf)
+tuple<string, int, int> MlxcfgDBManager::getMlxconfigNamePortModule(string mlxconfigName, mfile* mf)
 {
     u_int32_t port = 0;
     int32_t module = -1;
-    string tlvName = "";
     auto namePortTuple = splitMlxcfgNameAndPortOrModule(mlxconfigName, PORT, mf);
     auto nameModuleTuple = splitMlxcfgNameAndPortOrModule(mlxconfigName, MODULE, mf);
-
-    TLVConf* existingTlv = findTLVInExisting(mlxconfigName,
-                                             get<0>(namePortTuple),
-                                             get<0>(nameModuleTuple),
-                                             get<1>(namePortTuple),
-                                             index,
-                                             get<1>(nameModuleTuple));
-    if (existingTlv != NULL && int(existingTlv->_port) == get<1>(namePortTuple) &&
-        existingTlv->_module == get<1>(nameModuleTuple))
-    {
-        return existingTlv;
-    }
-
     if (get<1>(namePortTuple) != 0)
     {
         port = get<1>(namePortTuple);
@@ -579,6 +567,23 @@ TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string mlxconfigName, 
         mlxconfigName = get<0>(nameModuleTuple);
     }
 
+    return make_tuple(mlxconfigName, port, module);
+}
+
+TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string mlxconfigName, u_int32_t index, mfile* mf)
+{
+    string tlvName = "";
+
+    auto ret = this->getMlxconfigNamePortModule(mlxconfigName, mf);
+    string mlxconfigNameNoPortModuleName = get<0>(ret);
+    u_int32_t port = get<1>(ret);
+    int32_t module = get<2>(ret);
+    TLVConf* existingTlv = findTLVInExisting(mlxconfigName, mlxconfigNameNoPortModuleName, port, index, module);
+    if (existingTlv != NULL && existingTlv->_port == port && existingTlv->_module == module)
+    {
+        return existingTlv;
+    }
+    mlxconfigName = mlxconfigNameNoPortModuleName;
     findTLVInDB(mlxconfigName, index);
 
     tlvName = _paramSqlResult->_tlvName;

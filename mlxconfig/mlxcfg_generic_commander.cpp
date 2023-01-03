@@ -782,7 +782,7 @@ void GenericCommander::setCfg(vector<ParamView>& params, bool force)
         }
         else
         {
-            tlvMap[(*p).mlxconfigName]->updateParamByMlxconfigName(mlxconfigName, (*p).strVal);
+            tlvMap[(*p).mlxconfigName]->updateParamByMlxconfigName(mlxconfigName, (*p).strVal, _mf);
         }
     }
 

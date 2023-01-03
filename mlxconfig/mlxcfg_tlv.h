@@ -116,7 +116,7 @@ public:
     std::shared_ptr<Param> getValidBitParam(std::string n);
     bool checkParamValidBit(std::shared_ptr<Param> p);
     std::vector<std::pair<ParamView, std::string>> query(mfile* mf, QueryType qT);
-    void updateParamByMlxconfigName(std::string param, std::string val);
+    void updateParamByMlxconfigName(std::string param, std::string val, mfile* mf);
     void updateParamByMlxconfigName(std::string param, std::string val, u_int32_t index);
     void updateParamByName(string param, string val);
     void updateParamByName(string paramName, vector<string> vals);
