@@ -513,9 +513,10 @@ TLVConf* MlxcfgDBManager::findTLVInExisting(std::string mlxconfigName,
             (module != -1 && (*it)->findParamByMlxconfigNamePortModule(noModuleMlxcfgName, port, module)) ||
             (*it)->findParamByMlxconfigNamePortModule(mlxconfigName, port, module) ||
             (*it)->findParamByMlxconfigNamePortModule(mlxconfigName + getArraySuffixByInterval(index), port, module))
-        {
-            return (*it);
-        }
+            if (port == (*it)->_port && module == (*it)->_module)
+            {
+                return (*it);
+            }
     }
     return NULL;
 }
