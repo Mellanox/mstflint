@@ -258,7 +258,8 @@ void MlxcfgDBManager::getAllTLVs()
     while (j < fetchedTLVs.size() && i < fetchedParams.size())
     {
         std::shared_ptr<Param> p = fetchedParams[i];
-        if (p->_tlvName == fetchedTLVs[j]->_name)
+        if (p->_tlvName == fetchedTLVs[j]->_name && p->_port == fetchedTLVs[j]->_port &&
+            p->_module == fetchedTLVs[j]->_module)
         {
             fetchedTLVs[j]->_params.push_back(p);
             i++; // move to next parameter
