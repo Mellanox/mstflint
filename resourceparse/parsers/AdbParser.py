@@ -79,20 +79,36 @@ class AdbParser:
         for seg in self.segment_id_nodes_dict.values():
             self._update_union(seg)
 
-    def _get_enum_dict_from_field(self, selector_field: ET.Element):
-        """This method gets field that contains enums for union_selector and build a dictionary with
-        it's values and enums.
+    def _create_enum_dict(self, enum_lst: list):
+        """This function gets a list of enums and export them to a dictionary.
+        if the enums_lst is empty, return None.
         """
-        selector_dict = {}
-        enum_lst = selector_field.attrs['enum'].split(',')
+        enums_dict = {}
         if len(enum_lst) == 0:
-            raise Exception("Error - enum attribute for field {0} is empty!".format(selector_field['name']))
+            return None
 
         for enum in enum_lst:
             enum = enum.split('=')
             if len(enum) != 2:
-                raise Exception("Error - Failed to parse enum attribute {0} for field {1}".format(str(enum), selector_field['name']))
-            selector_dict[int(enum[1], 0)] = enum[0]
+                raise Exception("Error - Failed to parse enum attribute {0}".format(str(enum)))
+            enums_dict[int(enum[1], 0)] = enum[0]
+        return enums_dict
+
+    def _get_enum_dict_from_field(self, selector_field: ET.Element):
+        """This method gets field that contains enums for union_selector and build a dictionary with
+        it's values and enums.
+        """
+        # in case the enum was already parsed - we should always get in this if
+        if selector_field.enum_dict:
+            return selector_field.enum_dict
+
+        if selector_field.attrs['enum'] == '':
+            raise Exception("Error - enum attribute for field {0} is empty!".format(selector_field['name']))
+
+        enum_lst = selector_field.attrs['enum'].split(',')
+        selector_dict = self._create_enum_dict(enum_lst)
+        if selector_dict is None:
+            raise Exception("Error - could not create the enums dictionary for field {0}".format(selector_field['name']))
 
         return selector_dict
 
@@ -271,7 +287,7 @@ class AdbParser:
                 if not self._check_expressions(item.attrib['inst_if']):
                     continue
             if "low_bound" in item.attrib and "high_bound" in item.attrib:
-                self._extract_array_to_list(node, counter, item, sub_items, parent)
+                counter += self._extract_array_to_list(node, counter, item, sub_items, parent)
             else:
                 adb_layout_item = self._node_to_AdbLayoutItem(item)
                 if adb_layout_item:
@@ -280,6 +296,15 @@ class AdbParser:
                     if 'union_selector' in item.attrib:
                         adb_layout_item.uSelector = AdbUnionSelector()
                         adb_layout_item.uSelector.selector_full_path = item.attrib['union_selector']
+                    if 'enum' in item.attrib:
+                        if item.attrib['enum'] == '':
+                            enums_dict = None
+                        else:
+                            enums_lst = item.attrib['enum'].split(',')
+                            enums_dict = self._create_enum_dict(enums_lst)
+                            if enums_dict is None:
+                                raise Exception("Error - could not create the enums dictionary for node {0}".format(item.attrib['name']))
+                        adb_layout_item.enum_dict = enums_dict
                     sub_items.insert(counter, adb_layout_item)
                     counter += 1
         return sub_items
@@ -302,12 +327,25 @@ class AdbParser:
         calculated_size = int(size / (end_index - start_index))
         current_offset = offset
 
+        enum_dict = None
+        if 'index_enum' in item.attrib:
+            if item.attrib['index_enum'] == '':
+                enum_dict = None
+            else:
+                enums_lst = item.attrib['index_enum'].split(',')
+                enum_dict = self._create_enum_dict(enums_lst)
+                if enum_dict is None:
+                    raise Exception("Error - could not parse the 'index_enum' attribute for node .".format(name))
+
         for i in range(start_index, end_index):
             adb_layout_item = AdbLayoutItem()
             # adb_layout_item.attrs = node.attrib
             adb_layout_item.parent = parent
             adb_layout_item.nodeDesc = self._node_to_node_desc(item)
-            adb_layout_item.name = name + "[" + str(i) + "]"
+            if enum_dict is None or i not in enum_dict:
+                adb_layout_item.name = name + "[" + str(i) + "]"
+            else:
+                adb_layout_item.name = name + "[" + enum_dict[i] + "]"
             adb_layout_item.size = calculated_size
             adb_layout_item.offset = current_offset
             try:
@@ -322,6 +360,7 @@ class AdbParser:
             subitems_list.insert(index, adb_layout_item)
             current_offset += calculated_size
             index += 1
+        return index
 
     def _node_to_AdbLayoutItem(self, node: ET.Element):
         """This method build adb layout field from a given node.
@@ -342,7 +381,7 @@ class AdbParser:
             else:
                 adb_layout_item.subItems = self._build_subitems(node, adb_layout_item)
         except Exception as _:
-            raise Exception("Failed to create a valid layout from node {0}".format(node['name']))
+            raise Exception("Failed to create a valid layout from node '{0}'".format(node['name']))
 
         if "offset" in node.attrib:
             adb_layout_item.offset = self._parse_node_size(node.attrib["offset"])
@@ -411,7 +450,8 @@ class AdbLayoutItem(object):
         self.attrs = {}              # Attributes after evaluations and array expanding
         self.arrayIdx = -1           # in case of being part of an array this will hold the array index, -1 means not part of array
         self.vars = {}               # all variable relevant to this item after evaluation
-        self.uSelector = None        # data structure that represent the unopn-selector properties
+        self.uSelector = None        # data structure that represent the union-selector properties
+        self.enum_dict = None        # in case of being an enum element, holds the key-value of the enum
 
 
 ####################################################################
