@@ -87,14 +87,14 @@ public:
     TLVConf* getAndCreateTLVByName(std::string tlvName, u_int32_t port, int32_t module);
     TLVConf* getTLVByParamMlxconfigName(std::string mlxconfigName, u_int32_t index, mfile* mf);
     TLVConf* findTLVInExisting(std::string mlxconfigName,
-                               std::string noPortMlxcfgName,
-                               std::string noModuleMlxcfgName,
+                               std::string noPortModuleMlxcfgName,
                                u_int32_t port,
                                u_int32_t index,
                                int32_t module);
     void findTLVInDB(std::string mlxconfigName, u_int32_t index);
     TLVConf* getTLVByIndexAndClass(u_int32_t id, TLVClass c);
     void fillInRelevantParamsOfTlv(TLVConf* tlv, u_int32_t port, int32_t module);
+    static tuple<string, int, int> getMlxconfigNamePortModule(std::string mlxconfigName, mfile* mf);
     static tuple<string, int> splitMlxcfgNameAndPortOrModule(std::string mlxconfigName, SPLITBY splitBy, mfile* mf);
     void execSQL(sqlite3_callback f, void* obj, const char* stat, ...);
 };

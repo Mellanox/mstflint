@@ -585,12 +585,17 @@ vector<pair<ParamView, string> > TLVConf::query(mfile* mf, QueryType qT)
     return queryResult;
 }
 
-void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val)
+void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, mfile* mf)
 {
-    std::shared_ptr<Param> p = findParamByMlxconfigName(paramMlxconfigName);
+    std::shared_ptr<Param> p = findParamByMlxconfigNamePortModule(paramMlxconfigName, this->_port, this->_module);
     if (!p)
     {
-        throw MlxcfgException("Unknown parameter: %s", paramMlxconfigName.c_str());
+        auto ret = MlxcfgDBManager::getMlxconfigNamePortModule(paramMlxconfigName, mf);
+        p = findParamByMlxconfigNamePortModule(get<0>(ret), get<1>(ret), get<2>(ret));
+        if (!p)
+        {
+            throw MlxcfgException("Unknown parameter: %s", paramMlxconfigName.c_str());
+        }
     }
     p->setVal(val);
     // check if there is a valid bit
