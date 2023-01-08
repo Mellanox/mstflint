@@ -2281,16 +2281,19 @@ void MlxlinkCommander::showEye()
     if (_userInput._pcie)
     {
         checkPCIeValidity();
-
-        sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", _dpn.depth, _dpn.pcieIndex, _dpn.node);
-
-        if (getFieldValue("link_speed_active") < GEN3)
-        {
-            throw MlxRegException("Eye information available for Gen3 and above");
-        }
     }
     try
     {
+        if (_userInput._pcie)
+        {
+            sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", _dpn.depth, _dpn.pcieIndex, _dpn.node);
+
+            if (getFieldValue("link_speed_active") < GEN3)
+            {
+                throw MlxRegException("Eye information available for Gen3 and above");
+            }
+        }
+
         u_int32_t numOfLanesToUse = (_userInput._pcie) ? _numOfLanesPcie : _numOfLanes;
         string showEyeTitle = "EYE Opening Info";
         if (_userInput._pcie)
