@@ -178,12 +178,28 @@ class Parser:
                 if field.nodeDesc.isUnion and field.uSelector:
                     self._parse_union_selector_field(field, seg)
                 else:
+                    if(field.condition and self._segment_map[seg.get_type()].is_conditional):
+                        self._calc_values_condition(field)
+                        if(not field.condition.eval_expr()):
+                            continue
+
                     prefix = self._build_union_prefix(field.nodeDesc)
                     self._parse_seg_field(field, prefix + field.name, seg)
             if self._raw:
                 self._build_and_add_raw_data(seg)
         else:  # if segment not for parse, need to set raw data
             self._build_and_add_raw_data(seg)
+
+    def _calc_values_condition(self, field):
+        """This method go over all the items and perform value calculation then update
+            the condition.var_details per item.
+        """
+        cond_elem = field.condition.var_details
+        for elem in cond_elem:
+            if cond_elem[elem].is_found:
+                field_offset = self._calculate_aligned_to_dword_offset(cond_elem[elem].offset, cond_elem[elem].size)
+                cond_elem[elem].value = hex(int(self._current_bit_array[field_offset:field_offset + cond_elem[elem].size], 2))
+                field.condition.parsed_str = field.condition.parsed_str.replace(cond_elem[elem].substring, cond_elem[elem].value)
 
     def _parse_enum_field(self, field, field_str, seg):
         """This method parse enum field and present the enum name as well as the enum value.
@@ -206,6 +222,55 @@ class Parser:
             if item.attrs['selected_by'] == selected_field_enum:
                 self._parse_seg_field(item, item.name, seg)
 
+    def _parse_printf_format(self, value, format):
+        """ Enables specifying how a field should be dumped
+            %d - dump field as decimal
+            %x – dump field as hexadecimal
+            %b - dump field as binary
+            %s – dump field as ASCII tex"""
+
+        cases = ['d', 'x', 'b', 's']
+        new_val = ''
+        tmp_val = value.split("0x")[1]
+        str_list = []
+        str_list[:0] = format
+
+        for i, c in enumerate(str_list):
+            f = ""
+            if(i + 1 < len(str_list)):
+                if(c == '%' or c + str_list[i + 1] == '0x' or c + str_list[i + 1] == c + 'x'):
+                    if(c == '%' and str_list[i + 1] in cases):
+                        f = c + str_list[i + 1]
+                        del str_list[i]
+                    if(i + 1 < len(str_list)):
+                        if(c + str_list[i + 1] == '0x'):
+                            new_val += '0x'
+                            del str_list[i]
+                    if(f == '%d'):
+                        new_val += str(int(tmp_val, 16))
+                    if(f == '%x'):
+                        new_val += str(tmp_val)
+                    if(f == '%b'):
+                        new_val += str(bin(int(tmp_val, 16)).replace("0b", ""))
+                    if(f == '%s'):
+                        new_val += str(tmp_val)
+                    if(i + 2 < len(str_list)):
+                        if(c + str_list[i + 1] + str_list[i + 2] == '%' + str_list[i + 1] + 'x'):
+                            new_val += (int(str_list[i + 1]) - 1) * ' ' + str(tmp_val)
+                            for _ in range(2):
+                                del str_list[i]
+                    if(i + 2 < len(str_list)):
+                        if(c + str_list[i + 1] + str_list[i + 2] == '%' + str_list[i + 1] + str_list[i + 2] and str_list[i + 1].isdigit()):
+                            new_val += (int(str_list[i + 2]) - 1) * '0' + str(tmp_val)
+                            for _ in range(3):
+                                del str_list[i]
+                else:
+                    new_val += c
+            else:
+                new_val += c
+
+        return new_val
+
     def _parse_seg_field(self, field, field_str, seg):
         """This method is a recursive method that build the inner fields
         """
@@ -213,12 +278,29 @@ class Parser:
             self._parse_enum_field(field, field_str, seg)
         elif len(field.subItems) > 0:
             for sub_field in field.subItems:
+                if(sub_field.condition and sub_field.parent.is_conditional):
+                    if(not sub_field.condition.eval_expr()):
+                        continue
                 prefix = self._build_union_prefix(sub_field.nodeDesc)
                 self._parse_seg_field(sub_field, field_str + "." + prefix + sub_field.name, seg)
+                if(field.is_unlimited_array):
+                    field_offset = self._calculate_aligned_to_dword_offset(field.offset, field.size)
+                    field_offset_bytes = field_offset / 8
+                    field_size_bytes = field.size / 8
+                    array_size_bytes = (len(seg.get_data()) - cs.RESOURCE_SEGMENT_START_OFFSET_IN_DW) * 4
+                    end_index = int((array_size_bytes - field_offset_bytes) / field_size_bytes)
+                    for i in range(1, end_index):
+                        value = hex(int(self._current_bit_array[field_offset + 32 * i:field_offset + 32 * i + field.size], 2))
+                        field_str_ = field_str.replace("0", str(i)) + "." + prefix + sub_field.name
+                        seg.add_parsed_data(field_str_, value)
+
         else:
             field_offset = self._calculate_aligned_to_dword_offset(field.offset, field.size)
             if len(self._current_bit_array) >= (field_offset + field.size):
-                seg.add_parsed_data(field_str, hex(int(self._current_bit_array[field_offset:field_offset + field.size], 2)))
+                value = hex(int(self._current_bit_array[field_offset:field_offset + field.size], 2))
+                if("printf" in field.attrs):
+                    value = self._parse_printf_format(value, field.attrs["printf"])
+                seg.add_parsed_data(field_str, value)
 
     @classmethod
     def _build_and_add_raw_data(cls, seg):

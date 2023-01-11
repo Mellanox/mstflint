@@ -41,6 +41,7 @@
 #######################################################
 import xml.etree.ElementTree as ET
 import utils.constants as CONST
+import ast
 
 
 class AdbParser:
@@ -59,6 +60,8 @@ class AdbParser:
             self._fix_nodes_offset(self.segment_id_nodes_dict)
             # update the union dict in the layout item if it has union_selector attribute
             self._update_union_dict()
+            self._update_layout_items_paths()
+            self._update_fields_with_conditions()
         except Exception as _:
             raise Exception("Failed to parse the ADB file")
 
@@ -78,6 +81,61 @@ class AdbParser:
         """
         for seg in self.segment_id_nodes_dict.values():
             self._update_union(seg)
+
+    def check_if_exists(self, operand, item, seg):
+        founded_item = None
+        if('.' not in operand or "$(parent)" in operand):
+            if("$(parent)" in operand):
+                operand = ''.join(operand.split("$(parent)."))
+            for item_it in item.parent.subItems:
+                if(item_it.name == operand):
+                    return item_it
+        if("$(segment)" in operand or '.' in operand):
+            if("$(segment)" in operand):
+                operand = operand.replace("$(segment)", seg.name)
+            for item_it in seg.subItems:
+                if(item_it.full_path == operand):
+                    return item_it
+                founded_item = self.check_if_exists(operand, item, item_it)
+
+        return founded_item
+
+    def update_fields_elements(self, item, parent, seg):
+        """This method go over all the fields in parentment and update the condtion field"""
+        if(item.condition and item.parent.is_conditional):
+            for operand in item.condition.operands:
+                founded_item = self.check_if_exists(operand, item, seg)
+                if(founded_item):
+                    item.condition.var_details[founded_item.name] = ConditionVariable()
+                    item.condition.var_details[founded_item.name].is_found = True
+                    item.condition.var_details[founded_item.name].size = founded_item.size
+                    item.condition.var_details[founded_item.name].offset = founded_item.offset
+                    item.condition.var_details[founded_item.name].substring = operand
+        for item_it in item.subItems:
+            self.update_fields_elements(item_it, item, seg)
+
+    def _update_fields_with_conditions(self):
+        """This method go over all the segments and update fields with conditions."""
+
+        for seg in self.segment_id_nodes_dict.values():
+            for item in seg.subItems:
+                self.update_fields_elements(item, seg, seg)
+
+    def _update_layout_items_paths(self):
+        for seg in self.segment_id_nodes_dict.values():
+            for item in seg.subItems:
+                item.full_path = seg.name + '.' + item.name
+                self.update_fields_paths(item, seg)
+
+    def update_fields_paths(self, item, parent):
+        """This method go over all the fields in segment and update the path field"""
+
+        for item_it in parent.subItems:
+            if(item_it.name not in item_it.full_path and parent.name):
+                item_it.full_path += parent.name + "." + item_it.name
+                if(item_it.parent.full_path):
+                    item_it.full_path = item_it.parent.full_path + '.' + item_it.name
+            self.update_fields_paths(item_it, item)
 
     def _create_enum_dict(self, enum_lst: list):
         """This function gets a list of enums and export them to a dictionary.
@@ -249,6 +307,9 @@ class AdbParser:
             if "segment_id" in node.attrib:
                 adb_layout_item = self._node_to_AdbLayoutItem(node)
                 self.segment_id_nodes_dict[node.attrib["segment_id"]] = adb_layout_item
+                if("is_conditional" in node.attrib):
+                    if(node.attrib["is_conditional"] == '1'):
+                        self.segment_id_nodes_dict[node.attrib["segment_id"]].is_conditional = True
 
     def _retrieve_node_by_name(self, node_name: str):
         """This method return the node with the
@@ -277,6 +338,9 @@ class AdbParser:
         """
         sub_items = []
         counter = 0
+        last_elem_attr = [elem for elem in node.iter('field')][-1].attrib
+        last_elem_flag = False
+
         for item in node:
             # Skip on elements that are excluded in the configuration ('inst_ifdef')
             if 'inst_ifdef' in item.attrib:
@@ -286,10 +350,12 @@ class AdbParser:
             if 'inst_if' in item.attrib:
                 if not self._check_expressions(item.attrib['inst_if']):
                     continue
+            if(last_elem_attr == item.attrib):
+                last_elem_flag = True
             if "low_bound" in item.attrib and "high_bound" in item.attrib:
-                counter += self._extract_array_to_list(node, counter, item, sub_items, parent)
+                counter += self._extract_array_to_list(node, counter, item, sub_items, parent, last_elem_flag)
             else:
-                adb_layout_item = self._node_to_AdbLayoutItem(item)
+                adb_layout_item = self._node_to_AdbLayoutItem(item, last_elem_flag)
                 if adb_layout_item:
                     adb_layout_item.parent = parent
                     adb_layout_item.attrs = item.attrib
@@ -309,7 +375,7 @@ class AdbParser:
                     counter += 1
         return sub_items
 
-    def _extract_array_to_list(self, node: ET.Element, index, item, subitems_list, parent):
+    def _extract_array_to_list(self, node: ET.Element, index, item, subitems_list, parent, last_elem_flag=False):
         """This method build insert array items to a list form a specific index.
         :param node: always field element except from the root which is node.
         :param parent: layout item representing the parent of the array.
@@ -341,6 +407,7 @@ class AdbParser:
             adb_layout_item = AdbLayoutItem()
             # adb_layout_item.attrs = node.attrib
             adb_layout_item.parent = parent
+            adb_layout_item.parent.size = self._parse_node_size(node.attrib["size"])
             adb_layout_item.nodeDesc = self._node_to_node_desc(item)
             if enum_dict is None or i not in enum_dict:
                 adb_layout_item.name = name + "[" + str(i) + "]"
@@ -348,6 +415,10 @@ class AdbParser:
                 adb_layout_item.name = name + "[" + enum_dict[i] + "]"
             adb_layout_item.size = calculated_size
             adb_layout_item.offset = current_offset
+            if(last_elem_flag):
+                adb_layout_item.last_elem = True
+            if(item.attrib['high_bound'] == 'VARIABLE' and last_elem_flag and (parent.last_elem or 'segment_id' in node.attrib)):
+                adb_layout_item.is_unlimited_array = True
             try:
                 if "subnode" in item.attrib:
                     sub_node = self._retrieve_node_by_name(item.attrib["subnode"])
@@ -362,7 +433,7 @@ class AdbParser:
             index += 1
         return index
 
-    def _node_to_AdbLayoutItem(self, node: ET.Element):
+    def _node_to_AdbLayoutItem(self, node: ET.Element, last_elem_flag=False):
         """This method build adb layout field from a given node.
         :param node: always field element except from the root which is node.
         """
@@ -371,6 +442,19 @@ class AdbParser:
         # adb_layout_item.parent = None  # Reference to parent "AdbLayoutItem" object, always != None (expect of the root)
         adb_layout_item.name = node.attrib["name"]
         adb_layout_item.attrs = node.attrib
+        if(last_elem_flag):
+            adb_layout_item.last_elem = True
+        if("condition" in node.attrib and node.attrib["condition"]):
+            for conf in self.if_dict:
+                for op in ConditionParser.operators:
+                    if(conf in node.attrib["condition"] and (op + conf or conf + op) in node.attrib["condition"] and
+                       not ("." + conf or conf + ".") in node.attrib["condition"]):
+                        node.attrib["condition"] = node.attrib["condition"].replace(conf, self.if_dict[conf])
+            adb_layout_item.condition = ConditionParser(node.attrib["condition"])
+        if("is_conditional" in node.attrib):
+            if(node.attrib["is_conditional"] == '1'):
+                adb_layout_item.is_conditional = True
+
         adb_layout_item.nodeDesc = self._node_to_node_desc(node)  # For leafs must be None
         try:
             if "subnode" in node.attrib:
@@ -435,6 +519,60 @@ class AdbParser:
 ####################################################################
 
 
+class ConditionVariable(object):
+    def __init__(self):
+        self.is_found = False
+        self.value = 0
+        self.offset = 0
+        self.size = 0
+        self.substring = ""
+
+
+class ConditionParser(object):
+    ops = {'~': 'not ', 'AND': 'and', '|': 'or'}
+    operators = ['~', '|', 'AND', '==', '!=', '(', ')']
+
+    def __init__(self, condition):
+        self.operands = set()
+        self.parsed_str = self.parse_str(condition)
+        self.var_details = {}
+        self.result = False
+
+    def parse_str(self, str):
+        lst = str.split(" ")
+        for elem in lst:
+            tmp_elem = elem
+            for op in ConditionParser.operators:
+                if op in elem:
+                    if op == '==' or op == '!=':
+                        tmp_elem = elem.split(op)[0]
+                    tmp_elem = tmp_elem.replace(op, "")
+            if("segment" in tmp_elem):
+                tmp_elem = tmp_elem.replace("segment", "(segment)")
+            if("parent" in tmp_elem):
+                tmp_elem = tmp_elem.replace("parent", "(parent)")
+            self.operands.add(tmp_elem)
+        if('' in self.operands):
+            self.operands.remove('')
+        for key in ConditionParser.ops:
+            if key in str:
+                str = str.replace(key, ConditionParser.ops[key])
+        return str
+
+    def eval_expr(self):
+        try:
+            tree = ast.parse(self.parsed_str, mode='eval')
+        except SyntaxError:
+            return    # not a Python expression
+        if not all(isinstance(node, (ast.Expression,
+                                     ast.UnaryOp, ast.unaryop,
+                                     ast.BinOp, ast.operator,
+                                     ast.BoolOp, ast.Num, ast.And, ast.Or,
+                                     ast.Compare, ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE)) for node in ast.walk(tree)):
+            return    # not a mathematical expression (numbers and op)
+        return eval(compile(tree, filename='', mode='eval'))
+
+
 class AdbLayoutItem(object):
     """ Represents a Layout node/leaf instance """
 
@@ -452,6 +590,11 @@ class AdbLayoutItem(object):
         self.vars = {}               # all variable relevant to this item after evaluation
         self.uSelector = None        # data structure that represent the union-selector properties
         self.enum_dict = None        # in case of being an enum element, holds the key-value of the enum
+        self.condition = None
+        self.full_path = ""
+        self.is_conditional = False
+        self.last_elem = False
+        self.is_unlimited_array = False
 
 
 ####################################################################
