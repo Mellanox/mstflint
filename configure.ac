@@ -84,6 +84,8 @@ AC_SUBST(default_en_inband)
 
 dnl Checks for headers
 AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
+AC_CHECK_HEADER(infiniband/verbs.h,,AC_MSG_ERROR([cannot find infiniband/verbs.h . Make sure that the infiniband headers are installed (usually provided by rdma-core).]))
+AC_CHECK_HEADER(infiniband/mlx5dv.h,,AC_MSG_ERROR([cannot find infiniband/mlx5dv.h . Make sure that the infiniband headers are installed (usually provided by rdma-core).]))
 TOOLS_CRYPTO=""
 MAD_IFC=""
 FW_MGR_TOOLS=""
