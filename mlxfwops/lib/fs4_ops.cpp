@@ -4750,11 +4750,12 @@ bool Fs4Operations::FindPublicKeyInPublicKeys2(const vector<u_int32_t>& keypair_
 bool Fs4Operations::GetFRCKey(image_layout_file_public_keys_3& frc_key)
 {
     // FRC UUIDs
-    const unsigned int NUM_OF_UNIQUE_UUIDS = 2;
+    const unsigned int NUM_OF_UNIQUE_UUIDS = 3;
     vector<u_int32_t> uuids[NUM_OF_UNIQUE_UUIDS];
     // uuids[0] = {0xec897142, 0x386911e7, 0x9d48f44d, 0x306574e8}; // Legacy 2K FRC
     uuids[0] = {0x4562e75e, 0x619511ec, 0x8139ac1f, 0x6b01e5ae}; // CX7
     uuids[1] = {0x0bcbe8d2, 0x029f11ed, 0x8708ac1f, 0x6b01e5ae}; // BF3
+    uuids[2] = {0xa219aadd, 0x7cfc4c54, 0x86cd4f18, 0xf8eef762}; // SPEC4
 
     for (auto& uuid : uuids)
     {
