@@ -122,15 +122,14 @@ class ResourceDumpFetcher:
             return []
 
         segments_list = self._create_segments(inline_data)
-        segments_list_last_position = 0
 
+        segments_list_last_position = 0
         # go over oll the segments from the last position till the and of the segments list
         # and repeat it according the depth parameter
         if kwargs[cs.UI_ARG_DEPTH] == "inf":
             depth = ResourceDumpFetcher.INF_DEPTH
         else:
             depth = int(kwargs[cs.UI_ARG_DEPTH]) if kwargs[cs.UI_ARG_DEPTH] else 0
-
         for i in range(depth):
             inner_inline_data = []
             for seg in segments_list[segments_list_last_position:]:
@@ -245,8 +244,8 @@ class ResourceDumpFetcher:
             num_of_obj_2 = results["num_of_obj_2"]
             device_opaque = results["device_opaque"]
             size = int(math.ceil(results["size"] / 4))
-
             bin_data = None
+
             if kwargs["mem"] is not None:
                 if not kwargs["fast_mode"] or segment_type == cs.RESOURCE_DUMP_SEGMENT_TYPE_MENU:
                     # Read all dwords and change endianness
@@ -270,10 +269,8 @@ class ResourceDumpFetcher:
             if not self._validate_sequence_number(seg_number):
                 raise Exception("E - wrong sequence number while calling resource dump register with seq num = {0}"
                                 .format(seg_number))
-
             seg_number = results["seq_num"]
             self._start_seq_number = seg_number
-
             if more_dump == 0:
                 call_res_dump = False
 

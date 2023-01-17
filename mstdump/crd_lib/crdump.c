@@ -41,6 +41,7 @@
 #include <ctype.h>
 #include <compatibility.h>
 #include <stdio.h>
+#include <tools_layouts/reg_access_switch_layouts.h>
 #include <reg_access/reg_access.h>
 #include <stdbool.h>
 
@@ -441,6 +442,7 @@ static bool is_valid_csv(char* csv_path_from_user)
     size_t i = 0;
     bool ret = true; // assume format is valid
     int count = 0;
+    int digit_counter = 0;
     while (fgets(line, buf_len, file) != NULL)
     {
         if (line[0] == '#')
@@ -448,6 +450,7 @@ static bool is_valid_csv(char* csv_path_from_user)
             continue; // skipping lines that are a comment
         }
         len = strlen(line);
+        digit_counter = 0;
         if (len > 1)
         { // skip blank lines
             count = 0;
@@ -457,8 +460,15 @@ static bool is_valid_csv(char* csv_path_from_user)
                 {
                     count++;
                 }
+
+                if (isxdigit(line[i]) != 0 && count < 1)
+                {
+                    digit_counter++;
+                }
+
             }
-            if ((count < 1) || (count > 2))
+
+            if ((count < 1) || (count > 2) || (digit_counter < 2) || (digit_counter > 9))
             { // support a,b or a,b, format
                 ret = false;
                 goto cleanup;

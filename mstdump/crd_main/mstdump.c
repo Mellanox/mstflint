@@ -30,7 +30,7 @@
  * SOFTWARE.
  *
  */
-
+//#include <stdbool.h>
 #include <crdump.h>
 #include <dev_mgt/tools_dev_types.h>
 #include <common/tools_version.h>
@@ -60,6 +60,21 @@ char correct_cmdline[] = "   Mellanox " MSTDUMP_NAME " utility, dumps device int
 void print_dword(crd_dword_t* dword)
 {
     printf("0x%8.8x 0x%8.8x\n", dword->addr, dword->data);
+}
+
+bool check_device_name(const char* device)
+{
+    if (device == NULL)
+    {
+        return false;
+    }
+
+    unsigned int dev_len = strlen(device);
+    if (dev_len == 0 || dev_len > MAX_DEV_LEN)
+    {
+        return false;
+    }
+    return true;
 }
 
 int main(int argc, char* argv[])
@@ -131,6 +146,11 @@ int main(int argc, char* argv[])
         return 1;
     }
     strncpy(device, argv[i], MAX_DEV_LEN - 1);
+    if (!check_device_name(device))
+    {
+        fprintf(stderr, "Invalid device format, %s. Exiting\n", device);
+        return 1;
+    }
     if (!(mf = mopen_adv((const char*)device, (MType)(MST_DEFAULT | MST_CABLE))))
     {
         fprintf(stderr, "Unable to open device %s. Exiting.\n", argv[i]);
@@ -165,7 +185,7 @@ int main(int argc, char* argv[])
         }
     }
     rc = CRD_OK;
-    rc = crd_init(&context, mf, full, cause_addr, cause_off, NULL, "");
+    rc = crd_init(&context, mf, full, cause_addr, cause_off, NULL, NULL);
     if (rc)
     {
         mclose(mf);

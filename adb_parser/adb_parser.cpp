@@ -1,5 +1,4 @@
 /*
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
  * Copyright (c) 2012-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -30,6 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+ *  Version: $Id$
  */
 /*************************** Adb ***************************/
 /**
@@ -38,6 +38,8 @@
 
 #include "adb_parser.h"
 #include "adb_instance.h"
+#include "adb_condition.h"
+#include "adb_condVar.h"
 #include "buf_ops.h"
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
@@ -136,7 +138,6 @@ private:
     string _nname_pattern;
     string _fname_pattern;
     string _enum_pattern;
-    std::map<string, string> defines_map;
     std::set<string> field_attr_names_set;
     std::set<string> field_spec_attr;
     std::vector<string> field_mand_attr;
@@ -288,7 +289,14 @@ bool AdbParser::load()
 {
     FILE* file;
     char* data = NULL;
-    file = fopen(_fileName.c_str(), "r");
+    // Important: we open the file to read it as binary not as text.
+    // Difference in line endings style in Linux and Windows causes unexpected behavior on Windows
+    // platform when file has Windows style line endings.
+    // In case if file is opened to read it as text, "fread"-call in function below skips line
+    // ending symbols effectively reducing number of bytes read from file by amount of lines in file.
+    // Since we expect it to read the entire file at once it will fail to do that (number of bytes
+    // read is less than the size of file in bytes).
+    file = fopen(_fileName.c_str(), "rb");
     _adbCtxt->_logFile->appendLogFile("Opening " + _fileName + "\n");
 
     if (!file)
@@ -827,7 +835,7 @@ bool AdbParser::checkSpecialChars(string tagName)
 bool AdbParser::checkHEXFormat(string addr)
 {
     smatch match;
-    regex correctHEXExpr("(0x)?[0-9A-Fa-f]+?(.0)?$");
+    regex correctHEXExpr("^(0x[0-9A-fa-f])?[0-9A-Fa-f]*(\\.[0-9]*)?$");
     if (!regex_search(addr, match, correctHEXExpr))
     {
         return false;
@@ -970,7 +978,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
                     // check for define duplication
                     string define_key = result[1], define_value = result[2];
 
-                    if (adbParser->defines_map.find(define_key) != adbParser->defines_map.end())
+                    if (adbParser->_adbCtxt->defines_map.find(define_key) != adbParser->_adbCtxt->defines_map.end())
                     {
                         expFound = raiseException(allowMultipleExceptions,
                                                   string("Multiple definition of preprocessor variable: \"") +
@@ -981,7 +989,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
                     }
                     else
                     {
-                        adbParser->defines_map.insert(pair<string, string>(define_key, define_value));
+                        adbParser->_adbCtxt->defines_map.insert(pair<string, string>(define_key, define_value));
                     }
                 }
             }
@@ -1310,6 +1318,14 @@ void AdbParser::startNodeElement(const XML_Char** atts, AdbParser* adbParser, co
                 raiseException(
                   allowMultipleExceptions,
                   "Invalid size format, valid format 0x0.0 not allowed to be more than 0x0.31",
+                  ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                  ExceptionHolder::WARN_EXCEPTION);
+            }
+            if (!AdbParser::checkHEXFormat(size))
+            {
+                raiseException(
+                  allowMultipleExceptions,
+                  "Invalid size format",
                   ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
                   ExceptionHolder::WARN_EXCEPTION);
             }
@@ -2684,6 +2700,7 @@ AdbInstance* Adb::createLayout(string rootNodeName,
 
         map<string, string> emptyVars;
         _unionSelectorEvalDeffered.clear();
+        _conditionInstances.clear();
         if (ignoreMissingNodes)
         {
             addMissingNodes(depth, allowMultipleExceptions);
@@ -2841,6 +2858,26 @@ AdbInstance* Adb::createLayout(string rootNodeName,
                         raiseException(allowMultipleExceptions, exceptionTxt, ExceptionHolder::ERROR_EXCEPTION);
                     }
                 }
+            }
+        }
+
+        // initialize condition variables objects
+        for (list<AdbInstance*>::iterator it = _conditionInstances.begin(); it != _conditionInstances.end(); it++)
+        {
+            map<string, CondVar> variables = (*it)->condition.getVarsMap();
+            for (map<string, CondVar>::iterator it2 = variables.begin(); it2 != variables.end(); it2++)
+            {
+                string currentName = it2->first;
+                CondVar* currentVar = &(it2->second);
+                map<string, string>::iterator currentDefine = defines_map.find(currentName);
+                if (currentDefine != defines_map.end())
+                {
+                    currentVar->setScalar(std::stoi(currentDefine->second));
+                }
+                // else // if it's a conditional variable
+                // {
+                //     //TODO: to be evaluated later!
+                // }
             }
         }
 
@@ -3060,6 +3097,17 @@ vector<AdbInstance*> Adb::createInstance(AdbField* field,
         if (inst->isUnion() && found)
         {
             _unionSelectorEvalDeffered.push_back(inst);
+        }
+
+        // if the field has a condition attribute
+        found = false;
+        inst->getInstanceAttrIterator("condition", found);
+        AdbInstance* parent = inst->parent;
+        if (found && parent->getInstanceAttr("is_conditional") == "1")
+        {
+            const string condition = inst->getInstanceAttr("condition");
+            inst->condition.setCondition(condition);
+            _conditionInstances.push_back(inst);
         }
 
         checkInstanceOffsetValidity(inst, parent, allowMultipleExceptions);

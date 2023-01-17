@@ -40,6 +40,7 @@
 # Original author: talve
 #
 #######################################################
+import tools_version
 import sys
 import os
 
@@ -52,7 +53,6 @@ from utils import constants as cs
 from parsers.Parser import Parser
 
 sys.path.append(os.path.join("common"))
-import tools_version
 
 
 class ResourceParse:
@@ -70,9 +70,9 @@ class ResourceParse:
 
         # required arguments by the parser
         required_named = parser.add_argument_group('required arguments')
-        required_named.add_argument(cs.UI_DASHES + cs.UI_ARG_DUMP_FILE.replace("_", "-"),
+        required_named.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_DUMP_FILE_SHORT, cs.UI_DASHES + cs.UI_ARG_DUMP_FILE.replace("_", "-"),
                                     help='Location of the dump file used for parsing', required=True)
-        required_named.add_argument(cs.UI_DASHES + cs.UI_ARG_ADB_FILE.replace("_", "-"),
+        required_named.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_ADB_FILE_SHORT, cs.UI_DASHES + cs.UI_ARG_ADB_FILE.replace("_", "-"),
                                     help='Location of the ADB file', required=True)
 
         # optional arguments by the parser
@@ -81,8 +81,8 @@ class ResourceParse:
         parser.add_argument('--version', action='version', help="Shows the tool's version and exit",
                             version=tools_version.GetVersionString(tool_name, None))
 
-        parser.add_argument(cs.UI_DASHES + cs.UI_ARG_OUT, help='Location of the output file', required=False)
-        parser.add_argument(cs.UI_DASHES + cs.UI_ARG_RAW, help='Prints the raw data in addition to the parsed data',
+        parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_OUT_SHORT, cs.UI_DASHES + cs.UI_ARG_OUT, help='Location of the output file', required=False)
+        parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_RAW_SHORT, cs.UI_DASHES + cs.UI_ARG_RAW, help='Prints the raw data in addition to the parsed data',
                             required=False, action="store_true", default=False)
         parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_VERBOSITY,
                             help='Verbosity notice', dest=cs.UI_ARG_VERBOSITY_COUNT,

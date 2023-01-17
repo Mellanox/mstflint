@@ -1,123 +1,140 @@
-#define u8 uint8_t
 
+/*
+ * Copyright © 2012-2021 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ *
+ * This software product is a proprietary product of Nvidia Corporation and its affiliates
+ * (the "Company") and all right, title, and interest in and to the software
+ * product, including all associated intellectual property rights, are and
+ * shall remain exclusively with the Company.
+ *
+ * This software product is governed by the End User License Agreement
+ * provided with the software product.
+ */
+
+#define u8 uint8_t
 
 static inline unsigned long align(unsigned long val, unsigned long align)
 {
-        return (val + align - 1) & ~(align - 1);
+    return (val + align - 1) & ~(align - 1);
 }
 
-struct mlx5_ifc_mkc_bits {
-	u8         reserved_at_0[0x1];
-	u8         free[0x1];
-	u8         reserved_at_2[0x1];
-	u8         access_mode_4_2[0x3];
-	u8         reserved_at_6[0x7];
-	u8         relaxed_ordering_write[0x1];
-	u8         reserved_at_e[0x1];
-	u8         small_fence_on_rdma_read_response[0x1];
-	u8         umr_en[0x1];
-	u8         a[0x1];
-	u8         rw[0x1];
-	u8         rr[0x1];
-	u8         lw[0x1];
-	u8         lr[0x1];
-	u8         access_mode_1_0[0x2];
-	u8         reserved_at_18[0x8];
+struct mlx5_ifc_mkc_bits
+{
+    u8 reserved_at_0[0x1];
+    u8 free[0x1];
+    u8 reserved_at_2[0x1];
+    u8 access_mode_4_2[0x3];
+    u8 reserved_at_6[0x7];
+    u8 relaxed_ordering_write[0x1];
+    u8 reserved_at_e[0x1];
+    u8 small_fence_on_rdma_read_response[0x1];
+    u8 umr_en[0x1];
+    u8 a[0x1];
+    u8 rw[0x1];
+    u8 rr[0x1];
+    u8 lw[0x1];
+    u8 lr[0x1];
+    u8 access_mode_1_0[0x2];
+    u8 reserved_at_18[0x8];
 
-	u8         qpn[0x18];
-	u8         mkey_7_0[0x8];
+    u8 qpn[0x18];
+    u8 mkey_7_0[0x8];
 
-	u8         reserved_at_40[0x20];
+    u8 reserved_at_40[0x20];
 
-	u8         length64[0x1];
-	u8         bsf_en[0x1];
-	u8         sync_umr[0x1];
-	u8         reserved_at_63[0x2];
-	u8         expected_sigerr_count[0x1];
-	u8         reserved_at_66[0x1];
-	u8         en_rinval[0x1];
-	u8         pd[0x18];
+    u8 length64[0x1];
+    u8 bsf_en[0x1];
+    u8 sync_umr[0x1];
+    u8 reserved_at_63[0x2];
+    u8 expected_sigerr_count[0x1];
+    u8 reserved_at_66[0x1];
+    u8 en_rinval[0x1];
+    u8 pd[0x18];
 
-	u8         start_addr[0x40];
+    u8 start_addr[0x40];
 
-	u8         len[0x40];
+    u8 len[0x40];
 
-	u8         bsf_octword_size[0x20];
+    u8 bsf_octword_size[0x20];
 
-	u8         reserved_at_120[0x80];
+    u8 reserved_at_120[0x80];
 
-	u8         translations_octword_size[0x20];
+    u8 translations_octword_size[0x20];
 
-	u8         reserved_at_1c0[0x19];
-	u8         relaxed_ordering_read[0x1];
-	u8         reserved_at_1d9[0x1];
-	u8         log_page_size[0x5];
+    u8 reserved_at_1c0[0x19];
+    u8 relaxed_ordering_read[0x1];
+    u8 reserved_at_1d9[0x1];
+    u8 log_page_size[0x5];
 
-	u8         reserved_at_1e0[0x3];
-	u8         crypto_en[0x2];
-	u8         reserved_at_1e5[0x1b];
+    u8 reserved_at_1e0[0x3];
+    u8 crypto_en[0x2];
+    u8 reserved_at_1e5[0x1b];
 };
 
-struct mlx5_ifc_create_mkey_out_bits {
-	u8         status[0x8];
-	u8         reserved_at_8[0x18];
+struct mlx5_ifc_create_mkey_out_bits
+{
+    u8 status[0x8];
+    u8 reserved_at_8[0x18];
 
-	u8         syndrome[0x20];
+    u8 syndrome[0x20];
 
-	u8         reserved_at_40[0x8];
-	u8         mkey_index[0x18];
+    u8 reserved_at_40[0x8];
+    u8 mkey_index[0x18];
 
-	u8         reserved_at_60[0x20];
+    u8 reserved_at_60[0x20];
 };
 
-struct mlx5_ifc_create_mkey_in_bits {
-	u8         opcode[0x10];
-	u8         reserved_at_10[0x10];
+struct mlx5_ifc_create_mkey_in_bits
+{
+    u8 opcode[0x10];
+    u8 reserved_at_10[0x10];
 
-	u8         reserved_at_20[0x10];
-	u8         op_mod[0x10];
+    u8 reserved_at_20[0x10];
+    u8 op_mod[0x10];
 
-	u8         reserved_at_40[0x20];
+    u8 reserved_at_40[0x20];
 
-	u8         pg_access[0x1];
-	u8         mkey_umem_valid[0x1];
-	u8         reserved_at_62[0x1e];
+    u8 pg_access[0x1];
+    u8 mkey_umem_valid[0x1];
+    u8 reserved_at_62[0x1e];
 
-	struct mlx5_ifc_mkc_bits memory_key_mkey_entry;
+    struct mlx5_ifc_mkc_bits memory_key_mkey_entry;
 
-	u8         reserved_at_280[0x80];
+    u8 reserved_at_280[0x80];
 
-	u8         translations_octword_actual_size[0x20];
+    u8 translations_octword_actual_size[0x20];
 
-	u8	   mkey_umem_id[0x20];
+    u8 mkey_umem_id[0x20];
 
-	u8	   mkey_umem_offset[0x40];
+    u8 mkey_umem_offset[0x40];
 
-	u8         reserved_at_320[0x500];
+    u8 reserved_at_320[0x500];
 
-	u8         klm_pas_mtt[0][0x20];
+    u8 klm_pas_mtt[0][0x20];
 };
 
-struct mlx5_ifc_destroy_mkey_out_bits {
-	u8         status[0x8];
-	u8         reserved_at_8[0x18];
+struct mlx5_ifc_destroy_mkey_out_bits
+{
+    u8 status[0x8];
+    u8 reserved_at_8[0x18];
 
-	u8         syndrome[0x20];
+    u8 syndrome[0x20];
 
-	u8         reserved_at_40[0x40];
+    u8 reserved_at_40[0x40];
 };
 
-struct mlx5_ifc_destroy_mkey_in_bits {
-	u8         opcode[0x10];
-	u8         uid[0x10];
+struct mlx5_ifc_destroy_mkey_in_bits
+{
+    u8 opcode[0x10];
+    u8 uid[0x10];
 
-	u8         reserved_at_20[0x10];
-	u8         op_mod[0x10];
+    u8 reserved_at_20[0x10];
+    u8 op_mod[0x10];
 
-	u8         reserved_at_40[0x8];
-	u8         mkey_index[0x18];
+    u8 reserved_at_40[0x8];
+    u8 mkey_index[0x18];
 
-	u8         reserved_at_60[0x20];
+    u8 reserved_at_60[0x20];
 };
 
 #define BUFF_SIZE 1024 * 1024
@@ -139,7 +156,6 @@ struct mlx5_ifc_destroy_mkey_in_bits {
 #define CLOSE_DEVICE "ibv_close_device"
 #define DEALLOCATE_PD "ibv_dealloc_pd"
 #define UMEM_DEREG "mlx5dv_devx_umem_dereg"
-
 
 #define container_of(ptr, type, member)                   \
     ({                                                    \
