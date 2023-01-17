@@ -1,6 +1,5 @@
 /*
  *
- * Copyright (C) February 2010, Mellanox Technologies Ltd. ALL RIGHTS RESERVED.
  * Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two

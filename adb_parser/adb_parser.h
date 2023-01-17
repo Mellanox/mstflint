@@ -1,5 +1,4 @@
 /*
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
  * Copyright (c) 2012-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -30,6 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+ *  Version: $Id$
  */
 /*************************** Adb ***************************/
 #ifndef ADB_ADB_H
@@ -66,6 +66,7 @@ class LogFile;
 #include <list>
 #include <stdexcept>
 #include "adb_xmlCreator.h"
+#include "adb_condition.h"
 
 #ifdef __WIN__
 #include <process.h>
@@ -188,6 +189,7 @@ public:
     /* For internal use */
 public:
     StringVector includePaths;
+    std::map<string, string> defines_map;
     string mainFileName;
     IncludeFileMap includedFiles;
     StringVector warnings;
@@ -213,6 +215,7 @@ private:
     bool _checkDsAlign;
     bool _enforceGuiChecks;
     list<AdbInstance*> _unionSelectorEvalDeffered;
+    list<AdbInstance*> _conditionInstances;
     void checkInstanceOffsetValidity(AdbInstance* inst, AdbInstance* parent, bool allowMultipleExceptions);
     void throwExeption(bool allowMultipleExceptions, string exceptionTxt, string addedMsgMultiExp);
 };

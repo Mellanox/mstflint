@@ -40,6 +40,7 @@
 # Original author: talve
 #
 #######################################################
+import tools_version
 import sys
 import os
 
@@ -51,7 +52,6 @@ import argparse
 from commands.CommandFactory import CommandFactory
 from utils import constants as cs
 sys.path.append(os.path.join("common"))
-import tools_version
 
 
 class MlxResDump:
@@ -143,46 +143,46 @@ class MlxResDump:
 
         # required arguments by dump sub parser
         dump_required_args = dump_parser.add_argument_group('required arguments')
-        dump_required_args.add_argument(cs.UI_DASHES + cs.UI_ARG_DEVICE, cs.UI_DASHES_SHORT + cs.UI_ARG_DEVICE_SHORT,
+        dump_required_args.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_DEVICE_SHORT, cs.UI_DASHES + cs.UI_ARG_DEVICE,
                                         help='The device name', required=True)
-        dump_required_args.add_argument(cs.UI_DASHES + cs.UI_ARG_SEGMENT, help='The segment to dump', required=True,
-                                        type=self._decimal_hex_to_str_hex)
+        dump_required_args.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_SEGMENT_SHORT, cs.UI_DASHES + cs.UI_ARG_SEGMENT,
+                                        help='The segment to dump', required=True, type=self._decimal_hex_to_str_hex)
 
-        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_VHCAID.replace("_", "-"),
+        dump_parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_VHCAID_SHORT, cs.UI_DASHES + cs.UI_ARG_VHCAID.replace("_", "-"),
                                  help='The virtual HCA (host channel adapter, NIC) ID')
-        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_INDEX1,
+        dump_parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_INDEX1_SHORT, cs.UI_DASHES + cs.UI_ARG_INDEX1,
                                  help='The first context index to dump (if supported for this segment)',
                                  type=self._decimal_hex_check)
-        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_INDEX2,
+        dump_parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_INDEX2_SHORT, cs.UI_DASHES + cs.UI_ARG_INDEX2,
                                  help='The second context index to dump (if supported for this segment)',
                                  type=self._decimal_hex_check)
-        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_NUMOFOBJ1.replace("_", "-"),
+        dump_parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_NUMOFOBJ1_SHORT, cs.UI_DASHES + cs.UI_ARG_NUMOFOBJ1.replace("_", "-"),
                                  help='The number of objects to be dumped (if supported for this segment). accepts: ["all", "active", number, depends on the capabilities]',
                                  type=self._num_of_objs_check)
-        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_NUMOFOBJ2.replace("_", "-"),
+        dump_parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_NUMOFOBJ2_SHORT, cs.UI_DASHES + cs.UI_ARG_NUMOFOBJ2.replace("_", "-"),
                                  help='The number of objects to be dumped (if supported for this segment). accepts: ["all", "active", number, depends on the capabilities]',
                                  type=self._num_of_objs_check)
-        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_DEPTH,
+        dump_parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_DEPTH_SHORT, cs.UI_DASHES + cs.UI_ARG_DEPTH,
                                  help='The depth of walking through reference segments. 0 stands for flat, '
                                       '1 allows crawling of a single layer down the struct, etc. "inf" for all',
                                  type=self._depth_check)
-        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_BIN,
+        dump_parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_BIN_SHORT, cs.UI_DASHES + cs.UI_ARG_BIN,
                                  help='The output to a binary file that replaces the default print in hexadecimal,'
                                       ' a readable format')
-        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_MEM.replace("_", "-"), default=None,
+        dump_parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_MEM_SHORT, cs.UI_DASHES + cs.UI_ARG_MEM.replace("_", "-"), default=None,
                                  help='Perform the dump through memory (ofed with rdma-core dependency). accepts: [rdma device (for example "mlx5_4")]')
 
         # query sub parser
         query_parser = commands.add_parser(cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY)
         query_parser.set_defaults(parser=cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY)
-        query_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_VHCAID.replace("_", "-"),
+        query_parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_VHCAID_SHORT, cs.UI_DASHES + cs.UI_ARG_VHCAID.replace("_", "-"),
                                   help='The virtual HCA (host channel adapter, NIC) ID')
-        query_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_MEM.replace("_", "-"), default=None,
+        query_parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_MEM_SHORT, cs.UI_DASHES + cs.UI_ARG_MEM.replace("_", "-"), default=None,
                                   help='Perform the dump through memory (ofed with rdma-core dependency). accepts: [rdma device (for example "mlx5_4")]')
 
         # required arguments by query sub parser
         query_required_args = query_parser.add_argument_group('required arguments')
-        query_required_args.add_argument(cs.UI_DASHES + cs.UI_ARG_DEVICE, cs.UI_DASHES_SHORT + cs.UI_ARG_DEVICE_SHORT,
+        query_required_args.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_DEVICE_SHORT, cs.UI_DASHES + cs.UI_ARG_DEVICE,
                                          help='The device name', required=True)
 
         # args = parser.parse_args(

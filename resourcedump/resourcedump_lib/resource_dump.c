@@ -1,3 +1,16 @@
+
+/*
+ * Copyright © 2012-2021 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ *
+ * This software product is a proprietary product of Nvidia Corporation and its affiliates
+ * (the "Company") and all right, title, and interest in and to the software
+ * product, including all associated intellectual property rights, are and
+ * shall remain exclusively with the Company.
+ *
+ * This software product is governed by the End User License Agreement
+ * provided with the software product.
+ */
+
 #include <stdio.h>
 #include <unistd.h>
 #include <malloc.h>
@@ -96,7 +109,6 @@ struct mlx5dv_mkey* create_mkey_c(struct mlx5_mkey* mkey,
     DEVX_SET(create_mkey_in, in, mkey_umem_id, umem_id);
 
     f_mlx5dv_devx_obj_create mlx5dv_devx_obj_create_func = (f_mlx5dv_devx_obj_create)dlsym(handler, OBJECT_CREATE);
-
     mkey->devx_obj = mlx5dv_devx_obj_create_func(context, in, sizeof(in), out, sizeof(out));
 
     if (!mkey->devx_obj)
@@ -133,7 +145,6 @@ struct mlx5dv_devx_umem* mlx5dv_devx_umem_register_ex(struct ibv_context* ctx,
     umem_in->access = IBV_ACCESS_LOCAL_WRITE;
     umem_in->pgsz_bitmap = sysconf(_SC_PAGESIZE);
     f_mlx5dv_devx_umem_reg_ex mlx5dv_devx_umem_reg_ex_func = (f_mlx5dv_devx_umem_reg_ex)dlsym(handler, UMEM_REG);
-
     struct mlx5dv_devx_umem* umem = mlx5dv_devx_umem_reg_ex_func(ctx, umem_in);
 
     return umem;
@@ -157,7 +168,7 @@ int generate_lkey(char device_name[], struct result* res)
             handler = dlopen(LIB_VERBS_BLUEFIELD_PATH, RTLD_LOCAL | RTLD_LAZY);
             if (!handler)
             {
-                printf("Failed to load the libibverbs shared library");
+                printf("Failed to load the libibverbs shared library\n");
                 return ret;
             }
         }
@@ -172,7 +183,7 @@ int generate_lkey(char device_name[], struct result* res)
             handler_2 = dlopen(LIB_MLX5_BLUEFIELD_PATH, RTLD_LOCAL | RTLD_LAZY);
             if (!handler_2)
             {
-                printf("Failed to load the libmlx5 shared library");
+                printf("Failed to load the libmlx5 shared library\n");
                 dlclose(handler);
                 return ret;
             }
@@ -220,7 +231,6 @@ int generate_lkey(char device_name[], struct result* res)
     }
 
     f_mlx5dv_devx_umem_dereg mlx5dv_devx_umem_dereg_func = (f_mlx5dv_devx_umem_dereg)dlsym(handler, UMEM_DEREG);
-    
     struct mlx5_mkey* mmkey = calloc(1, sizeof(*mkey));
     if (!mmkey)
     {

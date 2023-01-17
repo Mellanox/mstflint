@@ -1,5 +1,4 @@
 /*
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
  * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
  * This software is available to you under a choice of one of two
@@ -30,21 +29,25 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+ *  Version: $Id$
  */
 /*************************** AdbInstance ***************************/
 
 #ifndef ADB_INSTANCE_H
 #define ADB_INSTANCE_H
 
-#include "adb_xmlCreator.h"
 #include <map>
 #include <string>
 #include <vector>
+#include "adb_xmlCreator.h"
+#include "adb_condition.h"
+
 
 using namespace std;
 using namespace xmlCreator;
 
 typedef map<string, string> AttrsMap;
+class AdbCondition;
 class AdbField;
 class AdbNode;
 
@@ -96,6 +99,7 @@ public:
     AdbField* fieldDesc;
     AdbNode* nodeDesc;
     AdbInstance* parent;
+    AdbCondition condition;
     string name; // instance name
     vector<AdbInstance*> subItems;
     u_int32_t offset;      // Global offset in bits (Relative to 0)
