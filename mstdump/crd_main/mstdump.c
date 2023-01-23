@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
         }
     }
     rc = CRD_OK;
-    rc = crd_init(&context, mf, full, cause_addr, cause_off, NULL, NULL);
+    rc = crd_init(&context, mf, full, cause_addr, cause_off, NULL, "");
     if (rc)
     {
         mclose(mf);
