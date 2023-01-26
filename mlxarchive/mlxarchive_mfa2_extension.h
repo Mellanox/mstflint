@@ -46,7 +46,7 @@
 #include <vector>
 #include <iostream>
 #include <compatibility.h>
-#include <tools_layouts/tools_open_layouts.h>
+#include <tools_layouts/mlxarchive_layouts.h>
 
 #include "mlxarchive_mfa2_element.h"
 #include "mfa2_buff.h"
@@ -136,7 +136,7 @@ private:
 
 public:
     const static u_int8_t ELEMENT_VERSION = 0x0;
-    const static u_int32_t LENGTH = TOOLS_OPEN_VERSION_SIZE;
+    const static u_int32_t LENGTH = MLXARCHIVE_VERSION_SIZE;
     void fillTimeAndDate();
     VersionExtension(const string& version);
     VersionExtension(const u_int16_t* version, const u_int16_t* fw_rel_date);
@@ -159,7 +159,7 @@ private:
 
 public:
     const static u_int8_t ELEMENT_VERSION = 0x0;
-    const static u_int32_t LENGTH = TOOLS_OPEN_COMPONENT_PTR_SIZE;
+    const static u_int32_t LENGTH = MLXARCHIVE_COMPONENT_PTR_SIZE;
 
     explicit ComponentPointerExtension(u_int16_t componentIndex) :
         Extension(ELEMENT_VERSION, ComponentPointerExtensionType, LENGTH),

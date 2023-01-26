@@ -80,6 +80,7 @@ mstarchive_LDADD = libmstarchive.a\
                    $(JSON_LIBS)\
                    $(USER_DIR)/cmdparser/libcmdparser.a\
                    $(USER_DIR)/reg_access/libreg_access.a\
+                   $(USER_DIR)/tools_layouts/libmlxarchive_layouts.a\
                    $(USER_DIR)/tools_layouts/libtools_layouts.a\
                    $(USER_DIR)/xz_utils/libxz_utils.a\
                    $(USER_DIR)/ext_libs/minixz/libminixz.a\

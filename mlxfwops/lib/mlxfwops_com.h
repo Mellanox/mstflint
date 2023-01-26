@@ -438,7 +438,7 @@ typedef struct fs3_info_ext
     u_int32_t image_security_version;
     device_security_version_access_method_t device_security_version_access_method;
     u_int32_t device_security_version_gw;
-    struct reg_access_hca_mfsv_reg device_security_version_mfsv;
+    struct reg_access_hca_mfsv_reg_ext device_security_version_mfsv;
 
     int global_image_status;
 

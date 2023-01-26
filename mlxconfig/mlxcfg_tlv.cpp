@@ -45,7 +45,8 @@
 #include <compatibility.h>
 #include <mlxcfg_db_manager.h>
 
-#include "../tools_layouts/tools_open_layouts.h"
+#include <tools_layouts/tools_open_layouts.h>
+#include <tools_layouts/reg_access_hca_layouts.h>
 #include "mlxcfg_tlv.h"
 
 #include <muParser.h>
@@ -182,7 +183,7 @@ TLVConf::~TLVConf()
 int TLVConf::getMaxPort(mfile* mf)
 {
     reg_access_status_t rc;
-    struct reg_access_hca_mgir mgir;
+    struct reg_access_hca_mgir_ext mgir;
     memset(&mgir, 0, sizeof(mgir));
     rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
     if (rc == ME_OK)
@@ -363,12 +364,12 @@ u_int32_t TLVConf::getPhysicalPortTypeBe()
 
 u_int32_t TLVConf::getModuleTypeBe()
 {
-    struct tools_open_per_module_type type;
+    struct tools_open_configuration_item_type_class_module type;
     u_int32_t tlvType = 0;
-    type.param_class = Module;
-    type.module = _module;
-    type.param_idx = _id;
-    tools_open_per_module_type_pack(&type, (u_int8_t*)&tlvType);
+    type.type_class = Module;
+    type.module_index = _module;
+    type.parameter_index = _id;
+    tools_open_configuration_item_type_class_module_pack(&type, (u_int8_t*)&tlvType);
     return tlvType;
 }
 
@@ -1075,7 +1076,7 @@ void TLVConf::unpackTLVType(TLVClass tlvClass, tools_open_tlv_type& type, u_int3
     struct tools_open_global_type global;
     struct tools_open_host_type per_host;
     struct tools_open_per_port_type per_port;
-    struct tools_open_per_module_type per_module;
+    struct tools_open_configuration_item_type_class_module per_module;
     struct tools_open_per_host_type per_host_function;
     switch (tlvClass)
     {
@@ -1106,8 +1107,9 @@ void TLVConf::unpackTLVType(TLVClass tlvClass, tools_open_tlv_type& type, u_int3
             break;
 
         case Module:
-            tools_open_per_module_type_unpack(&per_module, (u_int8_t*)&(type.tlv_type_dw.tlv_type_dw));
-            id = per_module.param_idx;
+            tools_open_configuration_item_type_class_module_unpack(&per_module,
+                                                                   (u_int8_t*)&(type.tlv_type_dw.tlv_type_dw));
+            id = per_module.parameter_index;
             type.per_module = per_module;
             break;
 

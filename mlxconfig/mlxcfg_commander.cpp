@@ -39,7 +39,7 @@
 
 #include <set>
 #include <mtcr.h>
-#include "mlxcfg_4thgen_commander.h"
+#include "mlxcfg_4th_gen_commander.h"
 #include "mlxcfg_generic_commander.h"
 #include "mlxcfg_param_lib.h"
 #include "mlxcfg_utils.h"

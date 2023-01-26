@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,8 +31,7 @@
  * SOFTWARE.
  */
 
-#ifndef _ICMD_OPEN_LIB /* guard */
-#define _ICMD_OPEN_LIB
+#pragma once
 
 #ifdef __cplusplus
 extern "C"
@@ -39,52 +39,16 @@ extern "C"
 #endif
 
 #include <mtcr.h>
-#include <common/compatibility.h>
-#include <tools_layouts/icmd_hca_layouts.h>
-#ifdef MST_UL
-#include <tools_layouts/icmd_layouts.h>
-#else
-#include <tools_layouts/connectib_layouts.h>
-#include <tools_layouts/connectx4_layouts.h>
-#include <tools_layouts/icmd_hca_layouts.h>
-#include "cib_cif.h"
-#endif
-#include "icmd_cif_common.h"
 
-#ifndef IN
-#define IN
-#define OUT
-#define INOUT
-#endif
-
-    enum
+    typedef enum
     {
-        GET_FW_INFO = 0x8007,
-        FLASH_REG_ACCESS = 0x9001,
-    };
+        REG_ACCESS_METHOD_GET = MACCESS_REG_METHOD_GET,
+        REG_ACCESS_METHOD_SET = MACCESS_REG_METHOD_SET
+    } reg_access_method_t;
 
-#ifdef MST_UL
-    // instead of cib_cif.h in mstflint
-    enum
-    {
-        GET_ICMD_QUERY_CAP = 0x8400,
-        SET_ITRACE = 0xf003,
-        SET_PORT_SNIFFER = 0xc002,
-    };
-#endif
-
-    int gcif_get_fw_info(mfile* mf, OUT struct connectib_icmd_get_fw_info* fw_info);
-
-    int get_icmd_query_cap(mfile* mf, struct icmd_hca_icmd_query_cap_general* icmd_query_caps);
-
-    int gcif_mh_sync(mfile* mf, struct icmd_hca_icmd_mh_sync_in* mh_sync_in, struct icmd_hca_icmd_mh_sync_out* mh_sync_out);
-
-    int gcif_mh_sync_status(mfile* mf, struct icmd_hca_icmd_mh_sync_in* mh_sync_in, struct icmd_hca_icmd_mh_sync_out* mh_sync_out);
-
-    int gcif_set_port_sniffer(mfile* mf, struct connectib_icmd_set_port_sniffer* set_port_sniffer);
+    // we use the same error messages as mtcr
+    typedef MError reg_access_status_t;
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

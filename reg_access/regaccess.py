@@ -111,22 +111,6 @@ if REG_ACCESS:
         _type_ = DIAGNOSTIC_CNTR_ST
         _length_ = 10
 
-    class DEBUG_CUP_ST(Structure):
-        _fields_ = [
-            ("log_max_samples", c_uint8),
-            ("resource_dump", c_uint8),
-            ("log_cr_dump_to_mem_size", c_uint8),
-            ("core_dump_qp", c_uint8),
-            ("core_dump_general", c_uint8),
-            ("log_min_sample_period", c_uint8),
-            ("diag_counter_tracer_dump", c_uint8),
-            ("health_mon_rx_activity", c_uint8),
-            ("repetitive", c_uint8),
-            ("single", c_uint8),
-            # ("diagnostic_counter",POINTER(DIAGNOSTIC_CNTR_ST))
-            ("diagnostic_counter", POINTER(DIAGNOSTIC_CNTR_ST_ARR))
-        ]
-
     class PCNR_ST(Structure):
         _fields_ = [
             ("tuning_override", c_uint8),
@@ -153,8 +137,8 @@ if REG_ACCESS:
     class MCAM_REG_ST(Structure):
         _fields_ = [("access_reg_group", c_uint8),
                     ("feature_group", c_uint8),
-                    ("mng_access_reg_cap_mask", c_uint8 * 16),
-                    ("mng_feature_cap_mask", c_uint8 * 16)]
+                    ("mng_access_reg_cap_mask", c_uint32 * 4),
+                    ("mng_feature_cap_mask", c_uint32 * 4)]
 
     class MTRC_CAP_REG_ST(Structure):
         _fields_ = [("num_string_db", c_uint8),
@@ -184,7 +168,7 @@ if REG_ACCESS:
                     ("debug_fw", c_uint8),
                     ("dev_fw", c_uint8),
                     ("string_tlv", c_uint8),
-
+                    ("latency_tlv", c_uint8),
                     ("dev_sc", c_uint8),
                     ("build_id", c_uint32),
                     ("year", c_uint16),
@@ -261,12 +245,11 @@ if REG_ACCESS:
                     ("data", MDDQ_DATA_UN)]
 
     class MDSR(Structure):
-        _fields_ = [("type_of_token", c_uint8),
+        _fields_ = [("status", c_uint8),
                     ("additional_info", c_uint8),
-                    ("status", c_uint8),
+                    ("type_of_token", c_uint8),
                     ("end", c_uint8),
                     ("time_left", c_uint32)]
-
 
     class RegAccess:
         GET = REG_ACCESS_METHOD_GET
@@ -304,11 +287,12 @@ if REG_ACCESS:
 
         def isCsTokenApplied(self):
             mdsrRegP = pointer(MDSR())
+            mdsrRegP.contents.type_of_token == 0  # index for CS token (changed on PRM 0.58)
             rc = self._reg_access_mdsr(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mdsrRegP)
             if rc:
-                return False  # if if mdsr not support (or other fail), assume no token
+                return False  # if mdsr not support (or other fail), assume no token
 
-            return (mdsrRegP.contents.type_of_token == 1 and mdsrRegP.contents.status == 2)  # CS token and debug session active
+            return (mdsrRegP.contents.status == 2)  # session active - tokem is applied
 
         def sendMtrcCapTakeOwnership(self):
 
@@ -317,7 +301,7 @@ if REG_ACCESS:
             if rc:
                 # in case of failure to get capability assume taking ownership is not required, same as in mlxtrace.
                 return ownershipEnum.REG_ACCESS_NO_OWNERSHIP_REQUIRED
-            mtcrCapSupported = extractField(mcamRegP.contents.mng_access_reg_cap_mask[7], 0, 1)
+            mtcrCapSupported = extractField(mcamRegP.contents.mng_access_reg_cap_mask[3 - 2], 0, 1)
             if mtcrCapSupported == 0:
                 return ownershipEnum.REG_ACCESS_NO_OWNERSHIP_REQUIRED
 
@@ -329,12 +313,12 @@ if REG_ACCESS:
                 mtrcaCapRegisterP.contents.trace_owner = c_uint8(1)
                 rc = self._reg_access_mtrc_cap(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_SET), mtrcaCapRegisterP)
                 if rc:
-                    raise RegAccException("Failed to send Register MTRC (case 1): %s (%d)" % (self._err2str(rc), rc))
+                    raise RegAccException("Failed to send Register MTRC (case 2): %s (%d)" % (self._err2str(rc), rc))
                 mtrcaCapRegisterP.contents.trace_owner = c_uint8(0)
                 mtrcaCapRegisterPquery = pointer(MTRC_CAP_REG_ST())
                 rc = self._reg_access_mtrc_cap(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mtrcaCapRegisterPquery)
                 if rc:
-                    raise RegAccException("Failed to send Register MTRC (case 2): %s (%d)" % (self._err2str(rc), rc))
+                    raise RegAccException("Failed to send Register MTRC (case 3): %s (%d)" % (self._err2str(rc), rc))
                 if mtrcaCapRegisterPquery.contents.trace_owner == 1:
                     return 0
                 iter += 1
@@ -374,27 +358,6 @@ if REG_ACCESS:
                      "size": resDumpRegP.contents.size,
                      "address": resDumpRegP.contents.address,
                      "inline_data": resDumpRegP.contents.inline_data})
-
-        def sendDebugCap(self):
-            debugCapRegP = pointer(DEBUG_CUP_ST())
-            debugCapRegP.contents.log_max_samples = c_uint8(0)
-            debugCapRegP.contents.resource_dump = c_uint8(0)
-            debugCapRegP.contents.log_cr_dump_to_mem_size = c_uint8(0)
-            debugCapRegP.contents.core_dump_qp = c_uint8(0)
-            debugCapRegP.contents.core_dump_general = c_uint8(0)
-            debugCapRegP.contents.log_min_sample_period = c_uint8(0)
-            debugCapRegP.contents.diag_counter_tracer_dump = c_uint8(0)
-            debugCapRegP.contents.health_mon_rx_activity = c_uint8(0)
-            debugCapRegP.contents.repetitive = c_uint8(0)
-            debugCapRegP.contents.single = c_uint8(0)
-            tmp = pointer(DIAGNOSTIC_CNTR_ST())
-            tmp.contents.counter_id = c_uint16(0)
-            tmp.contents.sync = c_uint8(0)
-            debugCapRegP.contents.diagnostic_counter = pointer(DIAGNOSTIC_CNTR_ST_ARR())
-            rc = self._reg_access_debug_cap(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), debugCapRegP)
-            if rc:
-                raise RegAccException("Failed to send Register DEBUG CAP with rc: %d" % rc)
-            return debugCapRegP.contents.resource_dump
 
         def sendPcnr(self, tuning_override, local_port):  # Requirments : new FW version + burn with allow_pcnr
 
@@ -454,15 +417,6 @@ if REG_ACCESS:
         ##########################
         def getMCAM(self):
 
-            def to_bits(list_of_bytes):
-                list_of_bits = []
-                for byte_ in list_of_bytes:
-                    # print("{0:08b}".format(byte_))
-                    for ii in range(7, -1, -1):
-                        val = 0 if byte_ & (1 << ii) == 0 else 1
-                        list_of_bits.append(val)
-                return list_of_bits[::-1]
-
             mcamRegP = pointer(MCAM_REG_ST())
             rc = self._reg_access_mcam(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mcamRegP)
             if rc:
@@ -471,8 +425,8 @@ if REG_ACCESS:
             return {
                 "access_reg_group": mcamRegP.contents.access_reg_group,
                 "feature_group": mcamRegP.contents.feature_group,
-                "mng_access_reg_cap_mask": to_bits(mcamRegP.contents.mng_access_reg_cap_mask),
-                "mng_feature_cap_mask": to_bits(mcamRegP.contents.mng_feature_cap_mask)
+                "mng_access_reg_cap_mask": mcamRegP.contents.mng_access_reg_cap_mask,
+                "mng_feature_cap_mask": mcamRegP.contents.mng_feature_cap_mask
             }
 
         ##########################
@@ -487,7 +441,7 @@ if REG_ACCESS:
                 # get dev branch tag
                 info_ver = "".join(chr(val) for val in mgirRegisterP.contents.dev_branch_tag if val != 0)
 
-                # if dev branch is empty, try to get the master version
+                # if dev branch is empty, try to get the primary version
                 if info_ver == "":
                     if mgirRegisterP.contents.fw_major != 0:
                         info_ver = "{0}.{1}.{2}".format(mgirRegisterP.contents.fw_major,

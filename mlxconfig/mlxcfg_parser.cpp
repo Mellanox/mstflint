@@ -48,6 +48,7 @@
 #include "mlxcfg_view.h"
 #include "mlxcfg_utils.h"
 #include <mft_utils.h>
+#include <tools_layouts/reg_access_switch_layouts.h>
 
 using namespace std;
 

@@ -37,6 +37,7 @@
 
 #include <mtcr.h>
 #include <reg_access.h>
+#include <tools_layouts/reg_access_hca_layouts.h>
 
 #include "mflash_types.h"
 #include "mflash_pack_layer.h"
@@ -282,7 +283,7 @@ int sx_set_quad_en(mflash* mfl, u_int8_t quad_en)
 {
     int bank = 0;
     int rc = 0;
-    struct tools_open_mfmc mfmc;
+    struct reg_access_hca_mfmc_reg_ext mfmc;
 
     if (!mfl)
     {
@@ -313,7 +314,7 @@ int sx_get_quad_en(mflash* mfl, u_int8_t* quad_en)
 {
     int bank = 0;
     int rc = MFE_OK;
-    struct tools_open_mfmc mfmc;
+    struct reg_access_hca_mfmc_reg_ext mfmc;
     int is_first_val = 1;
 
     if (!mfl || !quad_en)
@@ -355,7 +356,7 @@ int sx_set_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* p
 {
     u_int8_t log2_sect_num = 0;
     u_int8_t sectors_num = 0;
-    struct tools_open_mfmc mfmc;
+    struct reg_access_hca_mfmc_reg_ext mfmc;
     int rc = 0;
 
     if (!mfl || !protect_info)
@@ -425,7 +426,7 @@ int sx_set_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* p
 int sx_get_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* protect_info)
 {
     int rc = 0;
-    struct tools_open_mfmc mfmc;
+    struct reg_access_hca_mfmc_reg_ext mfmc;
 
     if (!mfl || !protect_info)
     {
@@ -451,7 +452,7 @@ int sx_set_dummy_cycles(mflash* mfl, u_int8_t num_of_cycles)
 {
     int bank = 0;
     int rc = 0;
-    struct tools_open_mfmc mfmc;
+    struct reg_access_hca_mfmc_reg_ext mfmc;
 
     if (!mfl || num_of_cycles < 1 || num_of_cycles > 15)
     {
@@ -481,7 +482,7 @@ int sx_get_dummy_cycles(mflash* mfl, u_int8_t* num_of_cycles)
 {
     int bank = 0;
     int rc = MFE_OK;
-    struct tools_open_mfmc mfmc;
+    struct reg_access_hca_mfmc_reg_ext mfmc;
     int is_first_val = 1;
 
     if (!mfl || !num_of_cycles)

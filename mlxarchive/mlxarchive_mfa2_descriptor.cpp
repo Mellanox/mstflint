@@ -67,18 +67,18 @@ Descriptor::Descriptor(u_int8_t version, DescriptorType type, u_int32_t length) 
 
 void Descriptor::packMultiPart(u_int8_t extensionsCount, u_int16_t totalLength, vector<u_int8_t>& buff) const
 {
-    struct tools_open_multi_part multiPart;
-    vector<u_int8_t> tmpBuff(tools_open_multi_part_size(), 0x0);
+    struct mlxarchive_multi_part multiPart;
+    vector<u_int8_t> tmpBuff(mlxarchive_multi_part_size(), 0x0);
 
-    CommonHeader commonHeader(0x0, MFA2Type_MULTI_PART, tools_open_multi_part_size());
+    CommonHeader commonHeader(0x0, MFA2Type_MULTI_PART, mlxarchive_multi_part_size());
     commonHeader.pack(buff);
 
     memset(&multiPart, 0x0, sizeof(multiPart));
 
     multiPart.number_of_extensions = extensionsCount;
-    multiPart.total_length = totalLength + ((extensionsCount + 1) * tools_open_common_header_size());
+    multiPart.total_length = totalLength + ((extensionsCount + 1) * mlxarchive_common_header_size());
 
-    tools_open_multi_part_pack(&multiPart, tmpBuff.data());
+    mlxarchive_multi_part_pack(&multiPart, tmpBuff.data());
 
     packBytesArray(tmpBuff.data(), tmpBuff.size(), buff);
 }
@@ -87,16 +87,16 @@ bool Descriptor::unpackMultiPart(u_int8_t& extensionsCount, u_int16_t& totalLeng
 {
     CommonHeader commonHeader(0x0, MFA2Type_MULTI_PART, 0x0);
     commonHeader.unpack(buff);
-    struct tools_open_multi_part multiPart;
-    int arr_size = tools_open_multi_part_size();
+    struct mlxarchive_multi_part multiPart;
+    int arr_size = mlxarchive_multi_part_size();
     u_int8_t* arr = new u_int8_t[arr_size];
     buff.read(arr, arr_size);
     memset(&multiPart, 0x0, arr_size);
-    tools_open_multi_part_unpack(&multiPart, arr);
+    mlxarchive_multi_part_unpack(&multiPart, arr);
     delete[] arr;
     arr = NULL;
     extensionsCount = multiPart.number_of_extensions;
-    totalLength = multiPart.total_length - ((extensionsCount + 1) * tools_open_common_header_size());
+    totalLength = multiPart.total_length - ((extensionsCount + 1) * mlxarchive_common_header_size());
     return true;
 }
 
@@ -124,7 +124,7 @@ PackageDescriptor::PackageDescriptor(u_int16_t deviceDescriptorsCount,
 void PackageDescriptor::pack(vector<u_int8_t>& buff) const
 {
     vector<u_int8_t> tmpBuff;
-    struct tools_open_package_descriptor packageDescriptor;
+    struct mlxarchive_package_descriptor packageDescriptor;
 
     // TODO: pack the multipart, it comes before the desc' itself
     packMultiPart(_extensions.size() + 3, LENGTH + VersionExtension::LENGTH + 2 * SHA256Extension::LENGTH, buff);
@@ -146,8 +146,8 @@ void PackageDescriptor::pack(vector<u_int8_t>& buff) const
     packageDescriptor.cb_compression = 0x1;   // TODO use enums
     packageDescriptor.user_data_offset = 0x0; // TODO
 
-    tmpBuff.resize(tools_open_package_descriptor_size(), 0x0);
-    tools_open_package_descriptor_pack(&packageDescriptor, tmpBuff.data());
+    tmpBuff.resize(mlxarchive_package_descriptor_size(), 0x0);
+    mlxarchive_package_descriptor_pack(&packageDescriptor, tmpBuff.data());
 
     packBytesArray(tmpBuff.data(), tmpBuff.size(), buff);
 
@@ -174,12 +174,12 @@ bool PackageDescriptor::unpack(Mfa2Buffer& buff)
     _commonHeader.unpack(buff);
 
     // unpack descriptor
-    struct tools_open_package_descriptor packageDescriptor;
-    int arr_size = tools_open_package_descriptor_size();
+    struct mlxarchive_package_descriptor packageDescriptor;
+    int arr_size = mlxarchive_package_descriptor_size();
     u_int8_t* arr = new u_int8_t[arr_size];
     buff.read(arr, arr_size);
     memset(&packageDescriptor, 0x0, arr_size);
-    tools_open_package_descriptor_unpack(&packageDescriptor, arr);
+    mlxarchive_package_descriptor_unpack(&packageDescriptor, arr);
     delete[] arr;
     arr = NULL;
 
@@ -290,7 +290,7 @@ void ComponentDescriptor::pack(vector<u_int8_t>& buff) const
     packMultiPart(_extensions.size() + 1, ComponentDescriptor::LENGTH + VersionExtension::LENGTH, buff);
 
     vector<u_int8_t> tmpBuff;
-    struct tools_open_component_desciptor componentDescriptor;
+    struct mlxarchive_component_desciptor componentDescriptor;
 
     // pack common header
     _commonHeader.pack(buff);
@@ -303,8 +303,8 @@ void ComponentDescriptor::pack(vector<u_int8_t>& buff) const
     componentDescriptor.cb_offset_l = (u_int32_t)_componentBlockOffset;
     componentDescriptor.size = _binarySize;
 
-    tmpBuff.resize(tools_open_component_desciptor_size());
-    tools_open_component_desciptor_pack(&componentDescriptor, tmpBuff.data());
+    tmpBuff.resize(mlxarchive_component_desciptor_size());
+    mlxarchive_component_desciptor_pack(&componentDescriptor, tmpBuff.data());
     packBytesArray(tmpBuff.data(), tmpBuff.size(), buff);
 
     _version.pack(buff);
@@ -321,12 +321,12 @@ bool ComponentDescriptor::unpack(Mfa2Buffer& buff)
     _commonHeader.unpack(buff);
 
     // unpack descriptor
-    struct tools_open_component_desciptor componentDescriptor;
-    int arr_size = tools_open_component_desciptor_size();
+    struct mlxarchive_component_desciptor componentDescriptor;
+    int arr_size = mlxarchive_component_desciptor_size();
     u_int8_t* arr = new u_int8_t[arr_size];
     buff.read(arr, arr_size);
     memset(&componentDescriptor, 0x0, arr_size);
-    tools_open_component_desciptor_unpack(&componentDescriptor, arr);
+    mlxarchive_component_desciptor_unpack(&componentDescriptor, arr);
     delete[] arr;
     arr = NULL;
     _binarySize = componentDescriptor.size;

@@ -107,16 +107,20 @@ extern "C"
 #define ADB2C_CPU_TO_BE16(x) htons(x)
 #define ADB2C_BE16_TO_CPU(x) ntohs(x)
 #ifdef _LITTLE_ENDIANESS
-#define ADB2C_CPU_TO_BE64(x) (((u_int64_t)htonl((u_int32_t)((x)&0xffffffff)) << 32) | ((u_int64_t)htonl((u_int32_t)((x >> 32) & 0xffffffff))))
+#define ADB2C_CPU_TO_BE64(x) \
+    (((u_int64_t)htonl((u_int32_t)((x)&0xffffffff)) << 32) | ((u_int64_t)htonl((u_int32_t)((x >> 32) & 0xffffffff))))
 
-#define ADB2C_BE64_TO_CPU(x) (((u_int64_t)ntohl((u_int32_t)((x)&0xffffffff)) << 32) | ((u_int64_t)ntohl((u_int32_t)((x >> 32) & 0xffffffff))))
+#define ADB2C_BE64_TO_CPU(x) \
+    (((u_int64_t)ntohl((u_int32_t)((x)&0xffffffff)) << 32) | ((u_int64_t)ntohl((u_int32_t)((x >> 32) & 0xffffffff))))
 #define ADB2C_LE64_TO_CPU(x) (x)
 #define ADB2C_CPU_TO_LE64(x) (x)
 #else
 #define ADB2C_CPU_TO_BE64(x) (x)
 #define ADB2C_BE64_TO_CPU(x) (x)
-#define ADB2C_LE64_TO_CPU(x) (((u_int64_t)ntohl((u_int32_t)((x)&0xffffffff)) << 32) | ((u_int64_t)ntohl((u_int32_t)((x >> 32) & 0xffffffff))))
-#define ADB2C_CPU_TO_LE64(x) (((u_int64_t)ntohl((u_int32_t)((x)&0xffffffff)) << 32) | ((u_int64_t)ntohl((u_int32_t)((x >> 32) & 0xffffffff))))
+#define ADB2C_LE64_TO_CPU(x) \
+    (((u_int64_t)ntohl((u_int32_t)((x)&0xffffffff)) << 32) | ((u_int64_t)ntohl((u_int32_t)((x >> 32) & 0xffffffff))))
+#define ADB2C_CPU_TO_LE64(x) \
+    (((u_int64_t)ntohl((u_int32_t)((x)&0xffffffff)) << 32) | ((u_int64_t)ntohl((u_int32_t)((x >> 32) & 0xffffffff))))
 
 #endif
 
@@ -262,7 +266,11 @@ typedef unsigned __int64 u_int64_t;
     /************************************/
     /************************************/
     /************************************/
-    u_int32_t adb2c_calc_array_field_address(u_int32_t start_bit_offset, u_int32_t arr_elemnt_size, int arr_idx, u_int32_t parent_node_size, int is_big_endian_arr);
+    u_int32_t adb2c_calc_array_field_address(u_int32_t start_bit_offset,
+                                             u_int32_t arr_elemnt_size,
+                                             int arr_idx,
+                                             u_int32_t parent_node_size,
+                                             int is_big_endian_arr);
     /* Big Endian Functions */
     void adb2c_push_integer_to_buff(u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size, u_int64_t field_value);
     void adb2c_push_bits_to_buff(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_int32_t field_value);

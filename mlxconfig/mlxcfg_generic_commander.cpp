@@ -137,12 +137,12 @@ const u_int32_t idVendorId = 0x10f;
 
 void GenericCommander::supportsNVData()
 {
-    struct tools_open_nvqc nvqcTlv;
-    memset(&nvqcTlv, 0, sizeof(struct tools_open_nvqc));
+    struct reg_access_hca_mnvqc_reg_ext nvqcTlv;
+    memset(&nvqcTlv, 0, sizeof(struct reg_access_hca_mnvqc_reg_ext));
     MError rc;
     // "suspend" signals as we are going to take semaphores
     mft_signal_set_handling(1);
-    rc = reg_access_nvqc(_mf, REG_ACCESS_METHOD_GET, &nvqcTlv);
+    rc = reg_access_mnvqc(_mf, REG_ACCESS_METHOD_GET, &nvqcTlv);
     dealWithSignal();
     if (rc == ME_REG_ACCESS_BAD_PARAM || rc == ME_REG_ACCESS_INTERNAL_ERROR)
     {
@@ -799,13 +799,13 @@ void GenericCommander::setCfg(vector<ParamView>& params, bool force)
 
 bool GenericCommander::isDefaultSupported()
 {
-    struct tools_open_nvqgc nvqgcTlv;
+    struct reg_access_hca_mnvgc_reg_ext mnvgc_reg;
 
-    memset(&nvqgcTlv, 0, sizeof(struct tools_open_nvqgc));
+    memset(&mnvgc_reg, 0, sizeof(struct reg_access_hca_mnvgc_reg_ext));
     MError rc;
 
     mft_signal_set_handling(1);
-    rc = reg_access_nvqgc(_mf, REG_ACCESS_METHOD_GET, &nvqgcTlv);
+    rc = reg_access_mnvgc(_mf, REG_ACCESS_METHOD_GET, &mnvgc_reg);
     dealWithSignal();
     if (rc == ME_REG_ACCESS_BAD_PARAM || rc == ME_REG_ACCESS_INTERNAL_ERROR)
     {
@@ -813,7 +813,7 @@ bool GenericCommander::isDefaultSupported()
     }
     else if (rc == ME_OK)
     {
-        return nvqgcTlv.read_factory_settings_support;
+        return mnvgc_reg.nvda_read_factory_settings;
     }
     throw MlxcfgException("Error when checked if Firmware supports querying "
                           "default configurations or not: %s.",
@@ -822,13 +822,13 @@ bool GenericCommander::isDefaultSupported()
 
 bool GenericCommander::isCurrentSupported()
 {
-    struct tools_open_nvqgc nvqgcTlv;
+    struct reg_access_hca_mnvgc_reg_ext mnvgc_reg;
 
-    memset(&nvqgcTlv, 0, sizeof(struct tools_open_nvqgc));
+    memset(&mnvgc_reg, 0, sizeof(struct reg_access_hca_mnvgc_reg_ext));
     MError rc;
 
     mft_signal_set_handling(1);
-    rc = reg_access_nvqgc(_mf, REG_ACCESS_METHOD_GET, &nvqgcTlv);
+    rc = reg_access_mnvgc(_mf, REG_ACCESS_METHOD_GET, &mnvgc_reg);
     dealWithSignal();
     if (rc == ME_REG_ACCESS_BAD_PARAM || rc == ME_REG_ACCESS_INTERNAL_ERROR)
     {
@@ -836,7 +836,7 @@ bool GenericCommander::isCurrentSupported()
     }
     else if (rc == ME_OK)
     {
-        return nvqgcTlv.nvda_read_current_settings;
+        return mnvgc_reg.nvda_read_current_settings;
     }
     throw MlxcfgException("Error when checked if Firmware supports "
                           "querying current configurations or not: %s.",
@@ -855,12 +855,12 @@ void GenericCommander::clearSemaphore()
 void GenericCommander::invalidateCfgs()
 {
     int rc;
-    struct tools_open_nvia nviaTlv;
-    u_int8_t buffer[TOOLS_OPEN_NVIA_SIZE] = {0};
-    memset(&nviaTlv, 0, sizeof(struct tools_open_nvia));
-    tools_open_nvia_pack(&nviaTlv, buffer);
+    struct reg_access_hca_mnvia_reg_ext nviaTlv;
+    u_int8_t buffer[REG_ACCESS_HCA_MNVIA_REG_EXT_SIZE] = {0};
+    memset(&nviaTlv, 0, sizeof(struct reg_access_hca_mnvia_reg_ext));
+    reg_access_hca_mnvia_reg_ext_pack(&nviaTlv, buffer);
     mft_signal_set_handling(1);
-    rc = reg_access_nvia(_mf, REG_ACCESS_METHOD_SET, &nviaTlv);
+    rc = reg_access_mnvia(_mf, REG_ACCESS_METHOD_SET, &nviaTlv);
     dealWithSignal();
 
     if (rc)
@@ -1863,29 +1863,29 @@ void GenericCommander::raw2XML(const vector<string>& lines, string& xmlTemplate)
  */
 RawCfgParams5thGen::RawCfgParams5thGen()
 {
-    memset(&_nvdaTlv, 0, sizeof(struct tools_open_nvda));
+    memset(&_nvdaTlv, 0, sizeof(tools_open_mnvda));
 }
 
 int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff)
 {
-    if (tlvBuff.size() * 4 > TOOLS_OPEN_NVDA_SIZE)
+    if (tlvBuff.size() * 4 > TOOLS_OPEN_MNVDA_SIZE)
     {
         return errmsg(MCE_BAD_PARAM_VAL,
                       "TLV size exceeds maximal limit. Maximum size is 0x%x bytes, "
                       "actual length is 0x%x bytes",
-                      TOOLS_OPEN_NVDA_SIZE, (u_int32_t)(tlvBuff.size() * 4));
+                      TOOLS_OPEN_MNVDA_SIZE, (u_int32_t)(tlvBuff.size() * 4));
     }
     _tlvBuff = tlvBuff;
-    memset(&_nvdaTlv, 0, sizeof(struct tools_open_nvda));
+    memset(&_nvdaTlv, 0, sizeof(struct tools_open_mnvda));
     std::vector<u_int32_t> tlvBuffBe = _tlvBuff;
-    tlvBuffBe.resize(TOOLS_OPEN_NVDA_SIZE >> 2);
-    memset(&tlvBuffBe[0], 0, TOOLS_OPEN_NVDA_SIZE);
+    tlvBuffBe.resize(TOOLS_OPEN_MNVDA_SIZE >> 2);
+    memset(&tlvBuffBe[0], 0, TOOLS_OPEN_MNVDA_SIZE);
     tlvBuffBe.insert(tlvBuffBe.begin(), _tlvBuff.begin(), _tlvBuff.end());
     for (std::vector<u_int32_t>::iterator it = tlvBuffBe.begin(); it != tlvBuffBe.end(); it++)
     {
         *it = __cpu_to_be32(*it);
     }
-    tools_open_nvda_unpack(&_nvdaTlv, ((u_int8_t*)(&tlvBuffBe[0])));
+    tools_open_mnvda_unpack(&_nvdaTlv, ((u_int8_t*)(&tlvBuffBe[0])));
     _nvdaTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG_SET_RAW;
     return verifyTlv();
 }
@@ -1893,9 +1893,9 @@ int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff)
 std::vector<u_int32_t> RawCfgParams5thGen::getRawData()
 {
     std::vector<u_int32_t> tlvBuff;
-    tlvBuff.resize(TOOLS_OPEN_NVDA_SIZE >> 2);
-    memset(&tlvBuff[0], 0, TOOLS_OPEN_NVDA_SIZE >> 2);
-    tools_open_nvda_pack(&_nvdaTlv, ((u_int8_t*)(&tlvBuff[0])));
+    tlvBuff.resize(TOOLS_OPEN_MNVDA_SIZE >> 2);
+    memset(&tlvBuff[0], 0, TOOLS_OPEN_MNVDA_SIZE >> 2);
+    tools_open_mnvda_pack(&_nvdaTlv, ((u_int8_t*)(&tlvBuff[0])));
     for (std::vector<u_int32_t>::iterator it = tlvBuff.begin(); it != tlvBuff.end(); it++)
     {
         *it = __be32_to_cpu(*it);
@@ -1910,7 +1910,7 @@ int RawCfgParams5thGen::setOnDev(mfile* mf, RawTlvMode mode)
     int rc;
     mft_signal_set_handling(1);
     DEBUG_PRINT_SEND(&_nvdaTlv, nvda);
-    rc = reg_access_nvda(mf, mode == SET_RAW ? REG_ACCESS_METHOD_SET : REG_ACCESS_METHOD_GET, &_nvdaTlv);
+    rc = reg_access_mnvda(mf, mode == SET_RAW ? REG_ACCESS_METHOD_SET : REG_ACCESS_METHOD_GET, &_nvdaTlv);
     DEBUG_PRINT_RECEIVE(&_nvdaTlv, nvda);
     dealWithSignal();
     if (rc)

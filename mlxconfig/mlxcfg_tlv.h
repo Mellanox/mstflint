@@ -60,6 +60,10 @@
 #define ALL_ATTR_VAL "all"
 #define INDEX_ATTR "index"
 
+/* Forward declaration */
+union tools_open_tlv_type;
+/* End of forward declaration */
+
 enum TLVTarget
 {
     NIC,

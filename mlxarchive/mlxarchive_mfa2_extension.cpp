@@ -111,13 +111,13 @@ VersionExtension::VersionExtension(const u_int16_t* version, const u_int16_t* fw
 void VersionExtension::pack(vector<u_int8_t>& buff) const
 {
     vector<u_int8_t> tmpBuff;
-    struct tools_open_version version;
+    struct mlxarchive_version version;
 
     // pack common header
     _commonHeader.pack(buff);
 
     // pack version info
-    tmpBuff.resize(tools_open_version_size());
+    tmpBuff.resize(mlxarchive_version_size());
     memset(&version, 0x0, sizeof(version));
     version.version_major = _major;
     version.version_sub_minor = _subMinor;
@@ -129,7 +129,7 @@ void VersionExtension::pack(vector<u_int8_t>& buff) const
     version.minutes = _minutes;
     version.hour = _hours;
 
-    tools_open_version_pack(&version, tmpBuff.data());
+    mlxarchive_version_pack(&version, tmpBuff.data());
     buff.insert(buff.end(), tmpBuff.begin(), tmpBuff.end());
 }
 
@@ -138,12 +138,12 @@ bool VersionExtension::unpack(Mfa2Buffer& buff)
     // unpack common header
     _commonHeader.unpack(buff);
 
-    struct tools_open_version version;
-    int arr_size = tools_open_version_size();
+    struct mlxarchive_version version;
+    int arr_size = mlxarchive_version_size();
     u_int8_t* arr = new u_int8_t[arr_size];
     buff.read(arr, arr_size);
     memset(&version, 0x0, arr_size);
-    tools_open_version_unpack(&version, arr);
+    mlxarchive_version_unpack(&version, arr);
     delete[] arr;
     arr = NULL;
     // unpack version info
@@ -201,17 +201,17 @@ void VersionExtension::getDateAndTime(char* buffer) const
 void ComponentPointerExtension::pack(vector<u_int8_t>& buff) const
 {
     vector<u_int8_t> tmpBuff;
-    struct tools_open_component_ptr componentPointer;
+    struct mlxarchive_component_ptr componentPointer;
 
     // pack common header
     _commonHeader.pack(buff);
 
-    tmpBuff.resize(tools_open_component_ptr_size());
+    tmpBuff.resize(mlxarchive_component_ptr_size());
     memset(&componentPointer, 0x0, sizeof(componentPointer));
     componentPointer.component_index = _componentIndex;
     componentPointer.storage_id = _storageId;
     componentPointer.storage_address = _storageAddress;
-    tools_open_component_ptr_pack(&componentPointer, tmpBuff.data());
+    mlxarchive_component_ptr_pack(&componentPointer, tmpBuff.data());
     buff.insert(buff.end(), tmpBuff.begin(), tmpBuff.end());
 }
 
@@ -220,12 +220,12 @@ bool ComponentPointerExtension::unpack(Mfa2Buffer& buff)
     // unpack common header
     _commonHeader.unpack(buff);
 
-    struct tools_open_component_ptr componentPointer;
-    int arr_size = tools_open_component_ptr_size();
+    struct mlxarchive_component_ptr componentPointer;
+    int arr_size = mlxarchive_component_ptr_size();
     u_int8_t* arr = new u_int8_t[arr_size];
     buff.read(arr, arr_size);
     memset(&componentPointer, 0x0, arr_size);
-    tools_open_component_ptr_unpack(&componentPointer, arr);
+    mlxarchive_component_ptr_unpack(&componentPointer, arr);
     delete[] arr;
     arr = NULL;
     // unpack version info

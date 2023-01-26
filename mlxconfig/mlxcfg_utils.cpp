@@ -48,13 +48,19 @@
 #include <cmdif/tools_cif.h>
 #include <compatibility.h>
 
-#include "../tools_layouts/tools_open_layouts.h"
+#include <tools_layouts/tools_open_layouts.h>
+#include <tools_layouts/reg_access_hca_layouts.h>
 #include "mlxcfg_utils.h"
+#if __cplusplus >= 201402L || defined(_MSC_VER)
 #include <regex>
+#elif !defined(MST_UL)
+#include <boost/regex.hpp>
+using namespace boost;
+#endif
 
 using namespace std;
 
-typedef struct reg_access_hca_mqis_reg mqisReg;
+typedef struct reg_access_hca_mqis_reg_ext mqisReg;
 #define MAX_REG_DATA 128
 
 void dealWithSignal()
@@ -77,8 +83,8 @@ void dealWithSignal()
 MError
   mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, QueryType qT)
 {
-    struct tools_open_nvda mnvaTlv;
-    memset(&mnvaTlv, 0, sizeof(struct tools_open_nvda));
+    struct tools_open_mnvda mnvaTlv;
+    memset(&mnvaTlv, 0, sizeof(struct tools_open_mnvda));
 
     if (method == REG_ACCESS_METHOD_GET && mf->tp != MST_IB)
     {
@@ -106,7 +112,7 @@ MError
     // "suspend" signals as we are going to take semaphores
     mft_signal_set_handling(1);
     // DEBUG_PRINT_SEND(&mnvaTlv, nvda);
-    rc = reg_access_nvda(mf, method, &mnvaTlv);
+    rc = reg_access_mnvda(mf, method, &mnvaTlv);
     // DEBUG_PRINT_RECEIVE(&mnvaTlv, nvda);
     dealWithSignal();
     if (rc)
@@ -119,15 +125,15 @@ MError
 
 MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite, u_int32_t& version)
 {
-    struct tools_open_nvqc nvqcTlv;
-    memset(&nvqcTlv, 0, sizeof(struct tools_open_nvqc));
+    struct reg_access_hca_mnvqc_reg_ext nvqcTlv;
+    memset(&nvqcTlv, 0, sizeof(struct reg_access_hca_mnvqc_reg_ext));
 
     // tlvType should be in the correct endianess
-    nvqcTlv.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(tlvType);
+    nvqcTlv.type = __be32_to_cpu(tlvType);
     MError rc;
     // "suspend" signals as we are going to take semaphores
     mft_signal_set_handling(1);
-    rc = reg_access_nvqc(mf, REG_ACCESS_METHOD_GET, &nvqcTlv);
+    rc = reg_access_mnvqc(mf, REG_ACCESS_METHOD_GET, &nvqcTlv);
     dealWithSignal();
     if (rc)
     {
@@ -142,21 +148,23 @@ MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWri
 
 MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
 {
-    struct tools_open_nvdi nvdiTlv;
-    memset(&nvdiTlv, 0, sizeof(struct tools_open_nvdi));
+    struct reg_access_hca_mnvdi_reg_ext nvdiTlv;
+    memset(&nvdiTlv, 0, sizeof(struct reg_access_hca_mnvdi_reg_ext));
 
-    nvdiTlv.nv_hdr.length = 0;
-    nvdiTlv.nv_hdr.rd_en = 0;
-    nvdiTlv.nv_hdr.over_en = 1;
+    nvdiTlv.configuration_item_header.length = 0;
+    // nvdiTlv.configuration_item_header.rd_en = 0;
+    // nvdiTlv.configuration_item_header.over_en = 1; // ask Dan
 
     // tlvType should be in the correct endianess
-    nvdiTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(tlvType);
+    nvdiTlv.configuration_item_header.type_class = __be32_to_cpu(tlvType) & 0xF000;
+    nvdiTlv.configuration_item_header.type_index = __be32_to_cpu(tlvType) & 0x0FFF;
+    printf("type_class = %d\n", nvdiTlv.configuration_item_header.type_class); // should be some number between 0-9
 
     MError rc;
     // "suspend" signals as we are going to take semaphores
     mft_signal_set_handling(1);
     // DEBUG_PRINT_SEND(&nvdiTlv, nvdi);
-    rc = reg_access_nvdi(mf, REG_ACCESS_METHOD_SET, &nvdiTlv);
+    rc = reg_access_mnvdi(mf, REG_ACCESS_METHOD_SET, &nvdiTlv);
     // DEBUG_PRINT_RECEIVE(&nvdiTlv, nvdi);
     dealWithSignal();
     if (rc)
@@ -178,7 +186,8 @@ bool strToNum(string str, u_int32_t& num, int base)
         return false;
     }
     delete[] numStr;
-    //errno will only be set in 32bit arch, in 64bit it can parse much larger numbers, which will be cought on the second part
+    // errno will only be set in 32bit arch, in 64bit it can parse much larger numbers, which will be cought on the
+    // second part
     if (errno == ERANGE || (tmpNum > 0xFFFFFFFF))
     {
         throw MlxcfgException("value is out of range");
