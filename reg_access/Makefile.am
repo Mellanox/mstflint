@@ -40,12 +40,15 @@ AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(srcdir) -I$(LAYOUTS_DIR) -I$(USER_DIR)/inclu
 
 AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 
-lib_LTLIBRARIES = libreg_access.a
+lib_LTLIBRARIES = libreg_access.a libmlxconfig_4th_gen_regsiters.a
 
-libreg_access_a_SOURCES = reg_access.c reg_access.h
+libreg_access_a_SOURCES = reg_access.c reg_access.h reg_access_common.h reg_access_macros.h
 libreg_access_a_DEPENDENCIES = $(USER_DIR)/tools_layouts/libtools_layouts.a
 libreg_access_a_LIBADD = $(libreg_access_a_DEPENDENCIES)
 
+libmlxconfig_4th_gen_regsiters_a_SOURCES = mlxconfig_4th_gen_registers.c mlxconfig_4th_gen_registers.h
+libmlxconfig_4th_gen_regsiters_a_DEPENDENCIES = $(USER_DIR)/tools_layouts/libmlxconfig_4th_gen_layouts.a
+libmlxconfig_4th_gen_regsiters_a_LIBADD = $(libmlxconfig_4th_gen_regsiters_la_DEPENDENCIES)
 RREG_ACCESS_SO = rreg_access.so
 reg_access_pylibdir = $(libdir)/mstflint/python_tools/
 
@@ -54,6 +57,6 @@ dist_reg_access_pylib_DATA = regaccess.py
 
 ${RREG_ACCESS_SO}: libreg_access.a
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${RREG_ACCESS_SO} \
-	-L$(USER_DIR)/tools_layouts -ltools_layouts -L$(MTCR_DIR) -lmtcr_ul
+	-L$(USER_DIR)/tools_layouts -ltools_layouts -lmlxconfig_4th_gen_layouts -L$(MTCR_DIR) -lmtcr_ul
 
 CLEANFILES = ${RREG_ACCESS_SO}

@@ -37,11 +37,12 @@ AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)\"
 
 SUBDIRS = ${ADABE_DBS}
 
-lib_LTLIBRARIES = libtools_layouts.a
+lib_LTLIBRARIES = libadb_utils.a libtools_layouts.a libmlxarchive_layouts.a libmlxconfig_4th_gen_layouts.a
 
 toolslayoutsincludedir = $(includedir)/mstflint/tools_layouts/
 
-toolslayoutsinclude_HEADERS = icmd_layouts.h adb_to_c_utils.h
+toolslayoutsinclude_HEADERS = icmd_hca_layouts.h adb_to_c_utils.h
+libadb_utils_a_SOURCES = adb_to_c_utils.c
 
 libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
 				adb_to_c_utils.c adb_to_c_utils.h\
@@ -52,8 +53,17 @@ libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
 				cx4fw_layouts.c cx4fw_layouts.h \
 				image_layout_layouts.c image_layout_layouts.h\
 				cx6fw_layouts.c cx6fw_layouts.h\
-				icmd_layouts.c icmd_layouts.h\
+				icmd_layouts.c icmd_layouts.h \
+				icmd_hca_layouts.c icmd_hca_layouts.h \
 				reg_access_hca_layouts.c reg_access_hca_layouts.h\
 				image_info_layouts.c image_info_layouts.h \
 				reg_access_switch_layouts.c reg_access_switch_layouts.h
+
+libtools_layouts_a_DEPENDENCIES = libadb_utils.a
+libmlxarchive_layouts_a_DEPENDENCIES = $(libtools_layouts_a_DEPENDENCIES)
+libmlxarchive_layouts_a_LIBADD = $(libtools_layouts_a_LIBADD)
+libmlxarchive_layouts_a_SOURCES = mlxarchive_layouts.h mlxarchive_layouts.c
+
+libmlxconfig_4th_gen_layouts_a_SOURCES = mlxconfig_4th_gen_layouts.h mlxconfig_4th_gen_layouts.c
+libmlxconfig_4th_gen_layouts_a_DEPENDENCIES = libadb_utils.a
 EXTRA_DIST = ${ADABE_DBS_EXTRA_DIST}

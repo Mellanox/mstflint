@@ -46,7 +46,7 @@
 #include <vector>
 
 #include <compatibility.h>
-#include <tools_layouts/tools_open_layouts.h>
+#include <tools_layouts/mlxarchive_layouts.h>
 
 #include "mlxarchive_mfa2_element.h"
 #include "mlxarchive_mfa2_extension.h"
@@ -98,7 +98,7 @@ private:
 
 public:
     const static u_int8_t ELEMENT_VERSION = 0x0;
-    const static u_int32_t LENGTH = TOOLS_OPEN_PACKAGE_DESCRIPTOR_SIZE;
+    const static u_int32_t LENGTH = MLXARCHIVE_PACKAGE_DESCRIPTOR_SIZE;
 
     PackageDescriptor(u_int16_t deviceDescriptorsCount, u_int16_t componentsCount, VersionExtension version);
 
@@ -170,7 +170,7 @@ private:
 
 public:
     const static u_int8_t ELEMENT_VERSION = 0x0;
-    const static u_int32_t LENGTH = TOOLS_OPEN_COMPONENT_DESCIPTOR_SIZE;
+    const static u_int32_t LENGTH = MLXARCHIVE_COMPONENT_DESCIPTOR_SIZE;
     ComponentDescriptor(VersionExtension version, string source);
     ComponentDescriptor(VersionExtension version, vector<u_int8_t> data);
 

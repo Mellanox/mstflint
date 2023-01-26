@@ -43,6 +43,7 @@
 
 #include <mft_sig_handler.h>
 #include <reg_access/reg_access.h>
+#include <reg_access/mlxconfig_4th_gen_registers.h>
 #include <bit_slice.h>
 #include <cmdif/tools_cif.h>
 #include <mtcr.h>
@@ -245,8 +246,8 @@ MError mnvaCom4thGen(mfile* mf,
                      reg_access_method_t method,
                      u_int16_t typeMod)
 {
-    struct tools_open_mnva mnvaTlv;
-    memset(&mnvaTlv, 0, sizeof(struct tools_open_mnva));
+    struct mlxconfig_4th_gen_mnva mnvaTlv;
+    memset(&mnvaTlv, 0, sizeof(mlxconfig_4th_gen_mnva));
 
     mnvaTlv.nv_hdr.length = len >> 2; // length is in dwords
     mnvaTlv.nv_hdr.type = tlvTypeIdx;
@@ -264,63 +265,6 @@ MError mnvaCom4thGen(mfile* mf,
     memcpy(buff, mnvaTlv.data, len);
     return ME_OK;
 }
-
-/*MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, bool
-   getDefault=false)
-   {
-    struct tools_open_nvda mnvaTlv;
-    memset(&mnvaTlv, 0, sizeof(struct tools_open_nvda));
-
-    mnvaTlv.nv_hdr.length = len;
-    mnvaTlv.nv_hdr.rd_en = 0;
-    mnvaTlv.nv_hdr.over_en = 1;
-    if (getDefault) {
-        mnvaTlv.nv_hdr.default_ = 1;
-    }
-    // tlvType should be in the correct endianess
-    mnvaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw =  __be32_to_cpu(tlvType);
-    memcpy(mnvaTlv.data, buff, len);
-    MError rc;
-    // "suspend" signals as we are going to take semaphores
-    mft_signal_set_handling(1);
-    DEBUG_PRINT_SEND(&mnvaTlv, nvda);
-    rc = reg_access_nvda(mf, method, &mnvaTlv);
-    DEBUG_PRINT_RECEIVE(&mnvaTlv, nvda);
-    dealWithSignal();
-    if (rc) {
-        return rc;
-    }
-    memcpy(buff, mnvaTlv.data, len);
-    return ME_OK;
-   }
-
-   MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite)
-   {
-    struct tools_open_nvqc nvqcTlv;
-    memset(&nvqcTlv, 0, sizeof(struct tools_open_nvqc));
-
-    // tlvType should be in the correct endianess
-    nvqcTlv.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(tlvType);
-    MError rc;
-    // "suspend" signals as we are going to take semaphores
-    mft_signal_set_handling(1);
-    rc = reg_access_nvqc(mf, REG_ACCESS_METHOD_GET, &nvqcTlv);
-    dealWithSignal();
-    if (rc) {
-        return rc;
-    }
-    suppRead = nvqcTlv.support_rd;
-    suppWrite = nvqcTlv.support_wr;
-    return ME_OK;
-   }*/
-
-/***************************
- * Class implementations :
- ***************************/
-
-/*
- * CfgParams Class implementation :
- */
 
 CfgParams::CfgParams(mlxCfgType t, u_int32_t tlvT)
 {
@@ -488,15 +432,15 @@ int BootSettingsExtParams4thGen::getFromDev(mfile* mf)
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[TOOLS_OPEN_SRIOV_SIZE];
-    struct tools_open_boot_settings_ext bootSettingsExtTlv;
-    memset(buff, 0, tools_open_boot_settings_ext_size());
-    memset(&bootSettingsExtTlv, 0, sizeof(struct tools_open_boot_settings_ext));
+    u_int8_t buff[MLXCONFIG_4TH_GEN_SRIOV_SIZE];
+    struct mlxconfig_4th_gen_boot_settings_ext bootSettingsExtTlv;
+    memset(buff, 0, mlxconfig_4th_gen_boot_settings_ext_size());
+    memset(&bootSettingsExtTlv, 0, sizeof(mlxconfig_4th_gen_boot_settings_ext));
     // pack it
-    tools_open_boot_settings_ext_pack(&bootSettingsExtTlv, buff);
+    mlxconfig_4th_gen_boot_settings_ext_pack(&bootSettingsExtTlv, buff);
     // send it
     DEBUG_PRINT_SEND(&bootSettingsExtTlv, boot_settings_ext);
-    rc = mnvaCom4thGen(mf, buff, tools_open_boot_settings_ext_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, _port);
+    rc = mnvaCom4thGen(mf, buff, mlxconfig_4th_gen_boot_settings_ext_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, _port);
     // check rc
     DEBUG_PRINT_RECEIVE(&bootSettingsExtTlv, boot_settings_ext);
     if (rc)
@@ -509,7 +453,7 @@ int BootSettingsExtParams4thGen::getFromDev(mfile* mf)
         return errmsg(MCE_BAD_STATUS, "Failed to get Boot Settings Extras configuration: %s", m_err2str(rc));
     }
     // unpack and update
-    tools_open_boot_settings_ext_unpack(&bootSettingsExtTlv, buff);
+    mlxconfig_4th_gen_boot_settings_ext_unpack(&bootSettingsExtTlv, buff);
     setParams(bootSettingsExtTlv.ip_ver);
     _updated = true;
 
@@ -529,16 +473,16 @@ int BootSettingsExtParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[TOOLS_OPEN_BOOT_SETTINGS_EXT_SIZE];
-    struct tools_open_boot_settings_ext bootSettingsExtTlv;
+    u_int8_t buff[MLXCONFIG_4TH_GEN_BOOT_SETTINGS_EXT_SIZE];
+    struct mlxconfig_4th_gen_boot_settings_ext bootSettingsExtTlv;
 
-    memset(buff, 0, tools_open_boot_settings_ext_size());
-    memset(&bootSettingsExtTlv, 0, sizeof(struct tools_open_boot_settings_ext));
+    memset(buff, 0, mlxconfig_4th_gen_boot_settings_ext_size());
+    memset(&bootSettingsExtTlv, 0, sizeof(struct mlxconfig_4th_gen_boot_settings_ext));
     bootSettingsExtTlv.ip_ver = _ipVer;
     // pack it
-    tools_open_boot_settings_ext_pack(&bootSettingsExtTlv, buff);
+    mlxconfig_4th_gen_boot_settings_ext_pack(&bootSettingsExtTlv, buff);
     // send it
-    ret = mnvaCom4thGen(mf, buff, tools_open_boot_settings_ext_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, _port);
+    ret = mnvaCom4thGen(mf, buff, mlxconfig_4th_gen_boot_settings_ext_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, _port);
     // check rc
     if (ret)
     {
@@ -651,15 +595,15 @@ int SriovParams4thGen::getFromDev(mfile* mf)
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[TOOLS_OPEN_SRIOV_SIZE];
-    struct tools_open_sriov sriovTlv;
-    memset(buff, 0, tools_open_sriov_size());
-    memset(&sriovTlv, 0, sizeof(struct tools_open_sriov));
+    u_int8_t buff[MLXCONFIG_4TH_GEN_SRIOV_SIZE];
+    struct mlxconfig_4th_gen_sriov sriovTlv;
+    memset(buff, 0, mlxconfig_4th_gen_sriov_size());
+    memset(&sriovTlv, 0, sizeof(struct mlxconfig_4th_gen_sriov));
     // pack it
-    tools_open_sriov_pack(&sriovTlv, buff);
+    mlxconfig_4th_gen_sriov_pack(&sriovTlv, buff);
     // send it
     DEBUG_PRINT_SEND(&sriovTlv, sriov);
-    rc = mnvaCom4thGen(mf, buff, tools_open_sriov_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, 0);
+    rc = mnvaCom4thGen(mf, buff, mlxconfig_4th_gen_sriov_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, 0);
     // check rc
     DEBUG_PRINT_RECEIVE(&sriovTlv, sriov);
     if (rc)
@@ -672,7 +616,7 @@ int SriovParams4thGen::getFromDev(mfile* mf)
         return errmsg(MCE_BAD_STATUS, "Failed to get SRIOV configuration: %s", m_err2str(rc));
     }
     // unpack and update
-    tools_open_sriov_unpack(&sriovTlv, buff);
+    mlxconfig_4th_gen_sriov_unpack(&sriovTlv, buff);
     setParams(sriovTlv.sriov_en, sriovTlv.total_vfs);
     _updated = true;
 
@@ -692,18 +636,18 @@ int SriovParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[TOOLS_OPEN_SRIOV_SIZE];
-    struct tools_open_sriov sriovTlv;
+    u_int8_t buff[MLXCONFIG_4TH_GEN_SRIOV_SIZE];
+    struct mlxconfig_4th_gen_sriov sriovTlv;
 
-    memset(buff, 0, tools_open_sriov_size());
-    memset(&sriovTlv, 0, sizeof(struct tools_open_sriov));
+    memset(buff, 0, mlxconfig_4th_gen_sriov_size());
+    memset(&sriovTlv, 0, sizeof(struct mlxconfig_4th_gen_sriov));
 
     sriovTlv.sriov_en = _sriovEn;
     sriovTlv.total_vfs = _numOfVfs;
     // pack it
-    tools_open_sriov_pack(&sriovTlv, buff);
+    mlxconfig_4th_gen_sriov_pack(&sriovTlv, buff);
     // send it
-    ret = mnvaCom4thGen(mf, buff, tools_open_sriov_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, 0);
+    ret = mnvaCom4thGen(mf, buff, mlxconfig_4th_gen_sriov_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, 0);
     // check rc
     if (ret)
     {
@@ -874,15 +818,15 @@ int CX3GlobalConfParams::getFromDev(mfile* mf)
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[TOOLS_OPEN_NV_CX3_GLOBAL_CONF_SIZE];
-    struct tools_open_nv_cx3_global_conf globalConfTlv;
-    memset(buff, 0, tools_open_nv_cx3_global_conf_size());
-    memset(&globalConfTlv, 0, sizeof(struct tools_open_nv_cx3_global_conf));
+    u_int8_t buff[MLXCONFIG_4TH_GEN_NV_CX3_GLOBAL_CONF_SIZE];
+    struct mlxconfig_4th_gen_nv_cx3_global_conf globalConfTlv;
+    memset(buff, 0, mlxconfig_4th_gen_nv_cx3_global_conf_size());
+    memset(&globalConfTlv, 0, sizeof(struct mlxconfig_4th_gen_nv_cx3_global_conf));
     // pack it
-    tools_open_nv_cx3_global_conf_pack(&globalConfTlv, buff);
+    mlxconfig_4th_gen_nv_cx3_global_conf_pack(&globalConfTlv, buff);
     // send it
     DEBUG_PRINT_SEND(&globalConfTlv, nv_cx3_global_conf);
-    rc = mnvaCom4thGen(mf, buff, tools_open_nv_cx3_global_conf_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, 0);
+    rc = mnvaCom4thGen(mf, buff, mlxconfig_4th_gen_nv_cx3_global_conf_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, 0);
     // check rc
     DEBUG_PRINT_RECEIVE(&globalConfTlv, nv_cx3_global_conf);
     if (rc)
@@ -895,7 +839,7 @@ int CX3GlobalConfParams::getFromDev(mfile* mf)
         return errmsg(MCE_BAD_STATUS, "Failed to get CX3_GLOBAL_CONF configuration: %s", m_err2str(rc));
     }
     // unpack and update
-    tools_open_nv_cx3_global_conf_unpack(&globalConfTlv, buff);
+    mlxconfig_4th_gen_nv_cx3_global_conf_unpack(&globalConfTlv, buff);
     setParams(globalConfTlv.cq_timestamp, globalConfTlv.steer_force_vlan, globalConfTlv.phy_param_mode,
               globalConfTlv.clock_map_to_user);
     _updated = true;
@@ -929,18 +873,18 @@ int CX3GlobalConfParams::setOnDev(mfile* mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[TOOLS_OPEN_NV_CX3_GLOBAL_CONF_SIZE];
-    struct tools_open_nv_cx3_global_conf globalConfTlv;
-    memset(buff, 0, tools_open_nv_cx3_global_conf_size());
-    memset(&globalConfTlv, 0, sizeof(struct tools_open_nv_cx3_global_conf));
+    u_int8_t buff[MLXCONFIG_4TH_GEN_NV_CX3_GLOBAL_CONF_SIZE];
+    struct mlxconfig_4th_gen_nv_cx3_global_conf globalConfTlv;
+    memset(buff, 0, mlxconfig_4th_gen_nv_cx3_global_conf_size());
+    memset(&globalConfTlv, 0, sizeof(struct mlxconfig_4th_gen_nv_cx3_global_conf));
     globalConfTlv.phy_param_mode = _phyParamMode;
     globalConfTlv.clock_map_to_user = _intClockToUser;
     globalConfTlv.cq_timestamp = _timestamp;
     globalConfTlv.steer_force_vlan = _steerForceVlan;
     // pack it
-    tools_open_nv_cx3_global_conf_pack(&globalConfTlv, buff);
+    mlxconfig_4th_gen_nv_cx3_global_conf_pack(&globalConfTlv, buff);
     // send it
-    ret = mnvaCom4thGen(mf, buff, tools_open_nv_cx3_global_conf_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, 0);
+    ret = mnvaCom4thGen(mf, buff, mlxconfig_4th_gen_nv_cx3_global_conf_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, 0);
     // check rc
     if (ret)
     {
@@ -1088,14 +1032,14 @@ int WolParams4thGen::getFromDev(mfile* mf)
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[TOOLS_OPEN_WOL_SIZE];
-    struct tools_open_wol wolTlv;
-    memset(buff, 0, tools_open_wol_size());
-    memset(&wolTlv, 0, sizeof(struct tools_open_wol));
+    u_int8_t buff[MLXCONFIG_4TH_GEN_WOL_SIZE];
+    struct mlxconfig_4th_gen_wol wolTlv;
+    memset(buff, 0, mlxconfig_4th_gen_wol_size());
+    memset(&wolTlv, 0, sizeof(struct mlxconfig_4th_gen_wol));
     // pack it
-    tools_open_wol_pack(&wolTlv, buff);
+    mlxconfig_4th_gen_wol_pack(&wolTlv, buff);
     // send it
-    rc = mnvaCom4thGen(mf, buff, tools_open_wol_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, _port);
+    rc = mnvaCom4thGen(mf, buff, mlxconfig_4th_gen_wol_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, _port);
     // check rc
     if (rc)
     {
@@ -1106,7 +1050,7 @@ int WolParams4thGen::getFromDev(mfile* mf)
         return errmsg("Failed to get WOL port%d configuration: %s", _port, m_err2str(rc));
     }
     // unpack and update
-    tools_open_wol_unpack(&wolTlv, buff);
+    mlxconfig_4th_gen_wol_unpack(&wolTlv, buff);
     setParams(wolTlv.en_wol_magic);
     _updated = true;
 
@@ -1125,17 +1069,17 @@ int WolParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
     }
     // prep tlv
     MError ret;
-    u_int8_t buff[TOOLS_OPEN_WOL_SIZE];
-    struct tools_open_wol wolTlv;
+    u_int8_t buff[MLXCONFIG_4TH_GEN_WOL_SIZE];
+    struct mlxconfig_4th_gen_wol wolTlv;
 
-    memset(buff, 0, tools_open_wol_size());
-    memset(&wolTlv, 0, sizeof(struct tools_open_wol));
+    memset(buff, 0, mlxconfig_4th_gen_wol_size());
+    memset(&wolTlv, 0, sizeof(struct mlxconfig_4th_gen_wol));
 
     wolTlv.en_wol_magic = _wolMagicEn;
     // pack it
-    tools_open_wol_pack(&wolTlv, buff);
+    mlxconfig_4th_gen_wol_pack(&wolTlv, buff);
     // send it
-    ret = mnvaCom4thGen(mf, buff, tools_open_wol_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, _port);
+    ret = mnvaCom4thGen(mf, buff, mlxconfig_4th_gen_wol_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, _port);
     // check rc
     if (ret)
     {
@@ -1249,14 +1193,14 @@ int BarSzParams4thGen::getFromDev(mfile* mf)
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[TOOLS_OPEN_BAR_SIZE_SIZE];
-    struct tools_open_bar_size barSzTlv;
-    memset(buff, 0, tools_open_bar_size_size());
-    memset(&barSzTlv, 0, sizeof(struct tools_open_bar_size));
+    u_int8_t buff[MLXCONFIG_4TH_GEN_BAR_SIZE_SIZE];
+    struct mlxconfig_4th_gen_bar_size barSzTlv;
+    memset(buff, 0, mlxconfig_4th_gen_bar_size_size());
+    memset(&barSzTlv, 0, sizeof(struct mlxconfig_4th_gen_bar_size));
     // pack it
-    tools_open_bar_size_pack(&barSzTlv, buff);
+    mlxconfig_4th_gen_bar_size_pack(&barSzTlv, buff);
     // send it
-    rc = mnvaCom4thGen(mf, buff, tools_open_bar_size_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, 0);
+    rc = mnvaCom4thGen(mf, buff, mlxconfig_4th_gen_bar_size_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, 0);
     // check rc
     if (rc)
     {
@@ -1267,7 +1211,7 @@ int BarSzParams4thGen::getFromDev(mfile* mf)
         return errmsg("Failed to get BAR size configuration: %s", m_err2str(rc));
     }
     // unpack and update
-    tools_open_bar_size_unpack(&barSzTlv, buff);
+    mlxconfig_4th_gen_bar_size_unpack(&barSzTlv, buff);
     setParams(barSzTlv.log_uar_bar_size);
     _updated = true;
 
@@ -1288,17 +1232,17 @@ int BarSzParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[TOOLS_OPEN_BAR_SIZE_SIZE];
-    struct tools_open_bar_size barSzTlv;
+    u_int8_t buff[MLXCONFIG_4TH_GEN_BAR_SIZE_SIZE];
+    struct mlxconfig_4th_gen_bar_size barSzTlv;
 
-    memset(buff, 0, tools_open_bar_size_size());
-    memset(&barSzTlv, 0, sizeof(struct tools_open_bar_size));
+    memset(buff, 0, mlxconfig_4th_gen_bar_size_size());
+    memset(&barSzTlv, 0, sizeof(struct mlxconfig_4th_gen_bar_size));
 
     barSzTlv.log_uar_bar_size = _logBarSz;
     // pack it
-    tools_open_bar_size_pack(&barSzTlv, buff);
+    mlxconfig_4th_gen_bar_size_pack(&barSzTlv, buff);
     // send it
-    ret = mnvaCom4thGen(mf, buff, tools_open_bar_size_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, 0);
+    ret = mnvaCom4thGen(mf, buff, mlxconfig_4th_gen_bar_size_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, 0);
     // check rc
     if (ret)
     {
@@ -1360,11 +1304,11 @@ bool BarSzParams4thGen::softLimitCheck(mfile* mf)
 int VpiParams::getFromDevComPre()
 {
     // prep tlv
-    _tlvBuff.resize(TOOLS_OPEN_VPI_SETTINGS_SIZE);
-    memset(&_tlvBuff[0], 0, TOOLS_OPEN_VPI_SETTINGS_SIZE);
-    memset(&_vpiTlv, 0, sizeof(struct tools_open_vpi_settings));
+    _tlvBuff.resize(MLXCONFIG_4TH_GEN_VPI_SETTINGS_SIZE);
+    memset(&_tlvBuff[0], 0, MLXCONFIG_4TH_GEN_VPI_SETTINGS_SIZE);
+    memset(&_vpiTlv, 0, sizeof(struct mlxconfig_4th_gen_vpi_settings));
     // pack it
-    tools_open_vpi_settings_pack(&_vpiTlv, &_tlvBuff[0]);
+    mlxconfig_4th_gen_vpi_settings_pack(&_vpiTlv, &_tlvBuff[0]);
     return MCE_SUCCESS;
 }
 
@@ -1379,7 +1323,7 @@ int VpiParams::getFromDevComPost(MError mnvaComRC)
         return errmsg("Failed to get VPI port%d configuration: %s", _port, m_err2str(mnvaComRC));
     }
     // unpack and update
-    tools_open_vpi_settings_unpack(&_vpiTlv, &_tlvBuff[0]);
+    mlxconfig_4th_gen_vpi_settings_unpack(&_vpiTlv, &_tlvBuff[0]);
     setParams(_vpiTlv.network_link_type, _vpiTlv.default_link_type, _vpiTlv.phy_type, _vpiTlv.xfi_mode,
               _vpiTlv.force_mode);
     _updated = true;
@@ -1414,16 +1358,16 @@ int VpiParams::setOnDevComPre(bool ignoreCheck)
     {
         return MCE_BAD_PARAMS;
     }
-    _tlvBuff.resize(TOOLS_OPEN_VPI_SETTINGS_SIZE);
+    _tlvBuff.resize(MLXCONFIG_4TH_GEN_VPI_SETTINGS_SIZE);
     memset(&_tlvBuff[0], 0, _tlvBuff.size());
-    memset(&_vpiTlv, 0, sizeof(struct tools_open_vpi_settings));
+    memset(&_vpiTlv, 0, sizeof(struct mlxconfig_4th_gen_vpi_settings));
     _vpiTlv.network_link_type = _linkType;
     _vpiTlv.default_link_type = _defaultLinkType;
     _vpiTlv.phy_type = _phyType;
     _vpiTlv.xfi_mode = _xfiMode;
     _vpiTlv.force_mode = _forceMode;
     // pack it
-    tools_open_vpi_settings_pack(&_vpiTlv, &_tlvBuff[0]);
+    mlxconfig_4th_gen_vpi_settings_pack(&_vpiTlv, &_tlvBuff[0]);
     return MCE_SUCCESS;
 }
 
@@ -1579,7 +1523,8 @@ int VpiParams4thGen::getFromDev(mfile* mf)
     {
         return rc;
     }
-    mRc = mnvaCom4thGen(mf, &_tlvBuff[0], TOOLS_OPEN_VPI_SETTINGS_SIZE, tlvTypeIdx, REG_ACCESS_METHOD_GET, _port);
+    mRc =
+      mnvaCom4thGen(mf, &_tlvBuff[0], MLXCONFIG_4TH_GEN_VPI_SETTINGS_SIZE, tlvTypeIdx, REG_ACCESS_METHOD_GET, _port);
     return getFromDevComPost(mRc);
 }
 
@@ -1592,7 +1537,8 @@ int VpiParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
     {
         return rc;
     }
-    mRc = mnvaCom4thGen(mf, &_tlvBuff[0], TOOLS_OPEN_VPI_SETTINGS_SIZE, tlvTypeIdx, REG_ACCESS_METHOD_SET, _port);
+    mRc =
+      mnvaCom4thGen(mf, &_tlvBuff[0], MLXCONFIG_4TH_GEN_VPI_SETTINGS_SIZE, tlvTypeIdx, REG_ACCESS_METHOD_SET, _port);
     return setOnDevComPost(mRc);
 }
 
@@ -1677,8 +1623,8 @@ u_int32_t InfinibandBootSettingsParams4thGen::getDefaultParam(mlxCfgParam paramT
 int InfinibandBootSettingsParams4thGen::getFromDev(mfile* mf)
 {
     MError mRc;
-    u_int8_t tlvBuff[TOOLS_OPEN_INFINIBAND_BOOT_SETTINGS_SIZE] = {0};
-    struct tools_open_infiniband_boot_settings bootSettingsTlv;
+    u_int8_t tlvBuff[MLXCONFIG_4TH_GEN_INFINIBAND_BOOT_SETTINGS_SIZE] = {0};
+    struct mlxconfig_4th_gen_infiniband_boot_settings bootSettingsTlv;
     memset(&bootSettingsTlv, 0, sizeof(bootSettingsTlv));
 
     if (_updated)
@@ -1686,8 +1632,8 @@ int InfinibandBootSettingsParams4thGen::getFromDev(mfile* mf)
         return MCE_SUCCESS;
     }
 
-    mRc = mnvaCom4thGen(mf, &tlvBuff[0], TOOLS_OPEN_INFINIBAND_BOOT_SETTINGS_SIZE, tlvTypeIdx, REG_ACCESS_METHOD_GET,
-                        _port);
+    mRc = mnvaCom4thGen(mf, &tlvBuff[0], MLXCONFIG_4TH_GEN_INFINIBAND_BOOT_SETTINGS_SIZE, tlvTypeIdx,
+                        REG_ACCESS_METHOD_GET, _port);
 
     if (mRc)
     {
@@ -1698,7 +1644,7 @@ int InfinibandBootSettingsParams4thGen::getFromDev(mfile* mf)
         return errmsg("Failed to get Infiniband Boot Settings: %s", m_err2str(mRc));
     }
     // unpack and update
-    tools_open_infiniband_boot_settings_unpack(&bootSettingsTlv, &tlvBuff[0]);
+    mlxconfig_4th_gen_infiniband_boot_settings_unpack(&bootSettingsTlv, &tlvBuff[0]);
     _bootPkey = bootSettingsTlv.boot_pkey;
     _updated = true;
 
@@ -1713,16 +1659,17 @@ int InfinibandBootSettingsParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
         return MCE_BAD_PARAMS;
     }
     // get Tlv modify it and set it
-    u_int8_t tlvBuff[TOOLS_OPEN_INFINIBAND_BOOT_SETTINGS_SIZE] = {0};
-    struct tools_open_infiniband_boot_settings bootSettingsTlv;
+    u_int8_t tlvBuff[MLXCONFIG_4TH_GEN_INFINIBAND_BOOT_SETTINGS_SIZE] = {0};
+    struct mlxconfig_4th_gen_infiniband_boot_settings bootSettingsTlv;
     memset(&bootSettingsTlv, 0, sizeof(bootSettingsTlv));
 
     bootSettingsTlv.boot_pkey = _bootPkey;
 
     // pack it
-    tools_open_infiniband_boot_settings_pack(&bootSettingsTlv, tlvBuff);
+    mlxconfig_4th_gen_infiniband_boot_settings_pack(&bootSettingsTlv, tlvBuff);
 
-    mRc = mnvaCom4thGen(mf, tlvBuff, TOOLS_OPEN_TPT_CONFIGURATION_SIZE, tlvTypeIdx, REG_ACCESS_METHOD_SET, _port);
+    mRc = mnvaCom4thGen(mf, tlvBuff, MLXCONFIG_4TH_GEN_INFINIBAND_BOOT_SETTINGS_SIZE, tlvTypeIdx, REG_ACCESS_METHOD_SET,
+                        _port);
 
     if (mRc)
     {
@@ -1898,17 +1845,17 @@ void PrebootBootSettingsParams4thGen::updateClassAttrFromDefaultParams()
 
 int PrebootBootSettingsParams4thGen::getFromDev(mfile* mf)
 {
-    GET_FROM_DEV_4TH_GEN(mf, tools_open_preboot_boot_settings, "Preboot Boot Settings", _port);
+    GET_FROM_DEV_4TH_GEN(mf, mlxconfig_4th_gen_preboot_boot_settings, "Preboot Boot Settings", _port);
 }
 
 int PrebootBootSettingsParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
 {
-    SET_ON_DEV_4TH_GEN(mf, ignoreCheck, tools_open_preboot_boot_settings, "Preboot Boot Settings", _port);
+    SET_ON_DEV_4TH_GEN(mf, ignoreCheck, mlxconfig_4th_gen_preboot_boot_settings, "Preboot Boot Settings", _port);
 }
 
 void PrebootBootSettingsParams4thGen::updateTlvFromClassAttr(void* tlv)
 {
-    struct tools_open_preboot_boot_settings* prebootTlv = (struct tools_open_preboot_boot_settings*)tlv;
+    struct mlxconfig_4th_gen_preboot_boot_settings* prebootTlv = (struct mlxconfig_4th_gen_preboot_boot_settings*)tlv;
     prebootTlv->boot_option_rom_en = _bootOptionRomEn;
     prebootTlv->boot_vlan_en = _bootVlanEn;
     prebootTlv->boot_retry_count = _bootRetryCnt;
@@ -1918,7 +1865,7 @@ void PrebootBootSettingsParams4thGen::updateTlvFromClassAttr(void* tlv)
 
 void PrebootBootSettingsParams4thGen::updateClassAttrFromTlv(void* tlv)
 {
-    struct tools_open_preboot_boot_settings* prebootTlv = (struct tools_open_preboot_boot_settings*)tlv;
+    struct mlxconfig_4th_gen_preboot_boot_settings* prebootTlv = (struct mlxconfig_4th_gen_preboot_boot_settings*)tlv;
     _bootOptionRomEn = prebootTlv->boot_option_rom_en;
     _bootVlanEn = prebootTlv->boot_vlan_en;
     _bootRetryCnt = prebootTlv->boot_retry_count;
@@ -1928,7 +1875,7 @@ void PrebootBootSettingsParams4thGen::updateClassAttrFromTlv(void* tlv)
 
 void PrebootBootSettingsParams4thGen::updateClassDefaultAttrFromTlv(void* tlv)
 {
-    struct tools_open_preboot_boot_settings* prebootTlv = (struct tools_open_preboot_boot_settings*)tlv;
+    struct mlxconfig_4th_gen_preboot_boot_settings* prebootTlv = (struct mlxconfig_4th_gen_preboot_boot_settings*)tlv;
     _bootOptionRomEnDefault = prebootTlv->boot_option_rom_en;
     _bootVlanEnDefault = prebootTlv->boot_vlan_en;
     _bootRetryCntDefault = prebootTlv->boot_retry_count;

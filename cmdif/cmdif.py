@@ -128,42 +128,51 @@ if CMDIF:
                 raise CmdIfException("Failed to get FW INFO: %s, device maybe in livefish mode." % (self.errStrFunc(rc)))
             return getFwInfoStruct
 
-        ##########################
-        class MH_SYNC_ST(Structure):
-            _fields_ = [("input_state", c_uint8),
-                        ("input_sync_type", c_uint8),
-                        ("input_ignore_inactive_host", c_uint8),
-                        ("fsm_state", c_uint8),
-                        ("fsm_sync_type", c_uint8),
-                        ("fsm_ignore_inactive_host", c_uint8),
-                        ("fsm_host_ready", c_uint8),
-                        ("fsm_start_uptime", c_uint32)]
+        class MH_SYNC_IN_ST(Structure):
+            _fields_ = [("state", c_uint8),
+                        ("sync_type", c_uint8),
+                        ("ignore_inactive_host", c_uint8)]
+
+        class MH_SYNC_OUT_ST(Structure):
+            _fields_ = [("state", c_uint8),
+                        ("sync_type", c_uint8),
+                        ("ignore_inactive_host", c_uint8),
+                        ("host_ready", c_uint8),
+                        ("start_uptime", c_uint32)]
 
         ##########################
         def multiHostSync(self, state, syncType, ignoreInactiveHost=0x0):
-            multiHostSyncOutStruct = self.MH_SYNC_ST()
+            multiHostSyncInStruct = self.MH_SYNC_IN_ST()
+            multiHostSyncInStructPtr = pointer(multiHostSyncInStruct)
+            multiHostSyncInStructPtr.contents.ignore_inactive_host = c_uint8(ignoreInactiveHost)
+            multiHostSyncInStructPtr.contents.state = c_uint8(state)
+            multiHostSyncInStructPtr.contents.sync_type = c_uint8(syncType)
+            multiHostSyncOutStruct = self.MH_SYNC_OUT_ST()
             multiHostSyncOutStructPtr = pointer(multiHostSyncOutStruct)
-            multiHostSyncOutStructPtr.contents.input_ignore_inactive_host = c_uint8(ignoreInactiveHost)
-            multiHostSyncOutStructPtr.contents.input_state = c_uint8(state)
-            multiHostSyncOutStructPtr.contents.input_sync_type = c_uint8(syncType)
-            rc = self.multiHostSyncFunc(self.mstDev.mf, multiHostSyncOutStructPtr)
+            rc = self.multiHostSyncFunc(self.mstDev.mf, multiHostSyncInStructPtr, multiHostSyncOutStructPtr)
             if rc:
                 raise CmdIfException("Failed to run multi host icmd: %s (%d)" % (self.errStrFunc(rc), rc))
             return multiHostSyncOutStruct
 
         ##########################
         def multiHostSyncStatus(self):
-            multiHostSyncOutStruct = self.MH_SYNC_ST()
+            multiHostSyncInStruct = self.MH_SYNC_IN_ST()
+            multiHostSyncInStructPtr = pointer(multiHostSyncInStruct)
+            multiHostSyncOutStruct = self.MH_SYNC_OUT_ST()
             multiHostSyncOutStructPtr = pointer(multiHostSyncOutStruct)
-            rc = self.multiHostSyncStatusFunc(self.mstDev.mf, multiHostSyncOutStructPtr)
+            rc = self.multiHostSyncStatusFunc(self.mstDev.mf, multiHostSyncInStructPtr, multiHostSyncOutStructPtr)
             if rc:
                 raise CmdIfException("Failed to run multi host icmd: %s (%d)" % (self.errStrFunc(rc), rc))
             return multiHostSyncOutStruct
 
         ##########################
         class QUERY_CAP_ST(Structure):
-            _fields_ = [("golden_tlv_version", c_uint8),
+            _fields_ = [("nic_cap_reg", c_uint8),
+                        ("port_state_behavior", c_uint8),
+                        ("virt_node_guid", c_uint8),
+                        ("ncfg_reg", c_uint8),
                         ("cwcam_reg", c_uint8),
+                        ("sbcam_reg", c_uint8),
                         ("capability_groups", c_uint8),
                         ("virtual_link_down", c_uint8),
                         ("icmd_exmb", c_uint8),

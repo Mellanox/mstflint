@@ -39,7 +39,7 @@
  *      Author: Ahmad Soboh
  */
 
-#include <tools_layouts/tools_open_layouts.h>
+#include <tools_layouts/mlxarchive_layouts.h>
 #include "mlxarchive_mfa2_common_header.h"
 
 using namespace mfa2;
@@ -50,7 +50,7 @@ CommonHeader::CommonHeader(u_int8_t version, MFA2Type type, u_int16_t length) :
 void CommonHeader::pack(vector<u_int8_t>& buff) const
 {
     vector<u_int8_t> tmpBuff;
-    struct tools_open_common_header commonHeader;
+    struct mlxarchive_common_header commonHeader;
 
     // padding buff if it is not DW aligned:
     for (unsigned int i = 0; i < (buff.size() % 4); i++)
@@ -69,14 +69,14 @@ void CommonHeader::pack(vector<u_int8_t>& buff) const
             break;
     }*/
 
-    tmpBuff.resize(tools_open_common_header_size(), 0x0);
+    tmpBuff.resize(mlxarchive_common_header_size(), 0x0);
 
     memset(&commonHeader, 0x0, sizeof(commonHeader));
     commonHeader.version = _version;
     commonHeader.type = (u_int8_t)_type;
     commonHeader.length = _length;
 
-    tools_open_common_header_pack(&commonHeader, tmpBuff.data());
+    mlxarchive_common_header_pack(&commonHeader, tmpBuff.data());
     packBytesArray(tmpBuff.data(), tmpBuff.size(), buff);
 }
 
@@ -88,12 +88,12 @@ bool CommonHeader::unpack(Mfa2Buffer& buff)
     {
         buff.seek(4 - (pos % 4), SEEK_CUR);
     }
-    int arr_size = tools_open_common_header_size();
+    int arr_size = mlxarchive_common_header_size();
     u_int8_t* arr = new u_int8_t[arr_size];
     buff.read(arr, arr_size);
-    struct tools_open_common_header commonHeader;
+    struct mlxarchive_common_header commonHeader;
     memset(&commonHeader, 0x0, sizeof(commonHeader));
-    tools_open_common_header_unpack(&commonHeader, arr);
+    mlxarchive_common_header_unpack(&commonHeader, arr);
     delete[] arr;
     arr = NULL;
     _version = commonHeader.version;

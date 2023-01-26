@@ -98,7 +98,7 @@ static void extractFwVersion(u_int16_t* fwVerArr, u_int32_t fwVersion)
     fwVerArr[2] = EXTRACT(fwVersion, 0, 16);
 }
 
-static void extractFwVersion(u_int16_t* fwVerArr, const reg_access_hca_rom_version fwVersion)
+static void extractFwVersion(u_int16_t* fwVerArr, const reg_access_hca_rom_version_ext fwVersion)
 {
     if (!fwVerArr)
     {
@@ -264,13 +264,13 @@ bool FsCtrlOperations::FsIntQuery()
     mfile* mf = getMfileObj();
 
     // Check if MFSV (register-id 0x9115) is supported
-    tools_open_mcam mcam;
+    reg_access_hca_mcam_reg_ext mcam;
     memset(&mcam, 0, sizeof(mcam));
     mcam.access_reg_group = 2;
     rc = reg_access_mcam(mf, REG_ACCESS_METHOD_GET, &mcam);
     if (rc == ME_OK)
     {
-        mfsv_reg_supported = EXTRACT(mcam.mng_access_reg_cap_mask[13], 5, 1); // bit 21
+        mfsv_reg_supported = EXTRACT(mcam.mng_access_reg_cap_mask[3-0], 21, 1);
     }
     DPRINTF(("mfsv_reg_supported = %d\n", mfsv_reg_supported));
 
@@ -286,13 +286,13 @@ bool FsCtrlOperations::FsIntQuery()
     // GET MFSV
     if (mfsv_reg_supported == 1)
     {
-        struct reg_access_hca_mfsv_reg mfsv_reg;
+        struct reg_access_hca_mfsv_reg_ext mfsv_reg;
         memset(&mfsv_reg, 0, sizeof(mfsv_reg));
         rc = reg_access_mfsv(mf, REG_ACCESS_METHOD_GET, &mfsv_reg);
         if (rc == ME_OK)
         {
             //// reg_access_hca_mfsv_reg_print(&mfsv_reg, stdout, 4);
-            memcpy(&(_fsCtrlImgInfo.device_security_version_mfsv), &mfsv_reg, sizeof(reg_access_hca_mfsv_reg));
+            memcpy(&(_fsCtrlImgInfo.device_security_version_mfsv), &mfsv_reg, sizeof(reg_access_hca_mfsv_reg_ext));
         }
     }
 

@@ -36,7 +36,6 @@
 
 #include <mtcr.h>
 #include <tools_layouts/tools_open_layouts.h>
-#include <tools_layouts/register_access_open_layouts.h>
 
 typedef enum
 {

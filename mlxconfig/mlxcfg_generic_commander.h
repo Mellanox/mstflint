@@ -122,7 +122,7 @@ public:
 private:
     int verifyTlv();
     std::vector<u_int32_t> _tlvBuff;
-    struct tools_open_nvda _nvdaTlv;
+    struct tools_open_mnvda _nvdaTlv;
 };
 
 #endif /* MLXCFG_GENERIC_COMMANDER_H_ */

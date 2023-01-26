@@ -50,7 +50,7 @@ static void mft_signal_set_handling(int isOn)
 }
 #endif
 
-typedef struct reg_access_hca_mcda_reg mcdaReg;
+typedef struct reg_access_hca_mcda_reg_ext mcdaReg;
 
 bool DirectComponentAccess::accessComponent(u_int32_t updateHandle,
                                             u_int32_t offset,

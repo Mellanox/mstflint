@@ -41,6 +41,8 @@
 
 #include "mflash_types.h"
 #include "mflash_pack_layer.h"
+#include <tools_layouts/reg_access_hca_layouts.h>
+#include <tools_layouts/tools_open_layouts.h>
 
 int sx_st_block_access(mfile* mf,
                        u_int32_t flash_addr,
@@ -49,7 +51,7 @@ int sx_st_block_access(mfile* mf,
                        u_int8_t* data,
                        reg_access_method_t method)
 {
-    struct register_access_mfba mfba;
+    struct reg_access_hca_mfba_reg_ext mfba;
     int rc;
     int max_size = mget_max_reg_size(mf, (maccess_reg_method_t)method);
     if (!max_size)
@@ -96,7 +98,7 @@ int sx_st_block_access(mfile* mf,
 
 int common_erase_sector(mfile* mf, u_int32_t addr, u_int8_t flash_bank, u_int32_t erase_size)
 {
-    struct register_access_mfbe mfbe;
+    struct reg_access_hca_mfbe_reg_ext mfbe;
     if (addr & (erase_size - 1))
     {
         return MFE_ERASE_ERROR;
@@ -113,7 +115,7 @@ int common_erase_sector(mfile* mf, u_int32_t addr, u_int8_t flash_bank, u_int32_
 
 int run_mfpa_command(mfile* mf, u_int8_t access_cmd, mfpa_command_args* mfpa_args)
 {
-    struct tools_open_mfpa mfpa;
+    struct reg_access_hca_mfpa_reg_ext mfpa;
     int rc;
 
     memset(&mfpa, 0, sizeof(mfpa));
@@ -123,7 +125,7 @@ int run_mfpa_command(mfile* mf, u_int8_t access_cmd, mfpa_command_args* mfpa_arg
     {
         mfpa.boot_address = mfpa_args->boot_address;
     }
-    rc = MError2MfError(reg_access_mfpa_new(mf, (reg_access_method_t)access_cmd, &mfpa));
+    rc = MError2MfError(reg_access_mfpa(mf, (reg_access_method_t)access_cmd, &mfpa));
 
     if (rc && rc != MFE_REG_ACCESS_BAD_PARAM)
     {

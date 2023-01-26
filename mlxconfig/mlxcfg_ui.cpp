@@ -45,6 +45,7 @@
 
 #include <tools_dev_types.h>
 #include <reg_access/reg_access.h>
+#include <tools_layouts/reg_access_switch_layouts.h>
 
 #include "mlxcfg_ui.h"
 #include "mlxcfg_utils.h"

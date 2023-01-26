@@ -73,15 +73,15 @@ using namespace std;
 #else
 #define DPRINTF(...)
 #endif
-typedef struct reg_access_hca_mqis_reg mqisReg;
-typedef struct reg_access_hca_mcqs_reg comp_status_st;
-typedef struct reg_access_hca_mcqi_reg comp_info_st;
-typedef struct reg_access_hca_mcc_reg fsm_control_st;
-typedef struct reg_access_hca_mcqi_cap comp_cap_st;
-typedef struct reg_access_hca_mgir mgirReg;
+typedef struct reg_access_hca_mqis_reg_ext mqisReg;
+typedef struct reg_access_hca_mcqs_reg_ext comp_status_st;
+typedef struct reg_access_hca_mcqi_reg_ext comp_info_st;
+typedef struct reg_access_hca_mcc_reg_ext fsm_control_st;
+typedef struct reg_access_hca_mcqi_cap_ext comp_cap_st;
+typedef struct reg_access_hca_mgir_ext mgirReg;
 
-typedef struct reg_access_hca_mcqi_version component_version_st;
-typedef struct reg_access_hca_mcqi_linkx_properties component_linkx_st;
+typedef struct reg_access_hca_mcqi_version_ext component_version_st;
+typedef struct reg_access_hca_mcqi_linkx_properties_ext component_linkx_st;
 
 typedef int (*ProgressFunc)(int completion);
 
@@ -97,7 +97,7 @@ typedef struct
 {
     u_int8_t type;
     u_int8_t arch;
-    reg_access_hca_rom_version version;
+    reg_access_hca_rom_version_ext version;
 } mgirRomInfo;
 
 typedef struct
@@ -526,11 +526,11 @@ private:
                  u_int32_t offset,
                  u_int32_t* data);
 
-    bool runNVDA(std::vector<u_int8_t>& buff,
-                 u_int16_t len,
-                 u_int32_t tlvType,
-                 reg_access_method_t method,
-                 bool queryDefault);
+    bool runMNVDA(std::vector<u_int8_t>& buff,
+                  u_int16_t len,
+                  u_int32_t tlvType,
+                  reg_access_method_t method,
+                  bool queryDefault);
 
     bool readComponentInfo(FwComponent::comps_ids_t compType,
                            comp_info_t infoType,

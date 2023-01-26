@@ -99,7 +99,9 @@ common_LDADD  = $(USER_DIR)/dev_mgt/libdev_mgt.a\
                         $(USER_DIR)/mft_utils/libmftutils.a\
                         $(USER_DIR)/cmdif/libcmdif.a\
                         $(USER_DIR)/reg_access/libreg_access.a\
+                        $(USER_DIR)/reg_access/libmlxconfig_4th_gen_regsiters.a\
                         $(USER_DIR)/tools_layouts/libtools_layouts.a\
+			$(USER_DIR)/tools_layouts/libmlxconfig_4th_gen_layouts.a\
                         $(USER_DIR)/fw_comps_mgr/libfw_comps_mgr.a\
                         $(XML_LIBS)\
                         $(CURL_LIBS)\

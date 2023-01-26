@@ -31,35 +31,38 @@
  * SOFTWARE.
  */
 
-#ifndef MAD_IFC_H
-#define MAD_IFC_H
-#ifdef __cplusplus
-extern "C"
+#include "reg_access.h"
+#include "reg_access_macros.h"
+#include "common/compatibility.h"
+
+#include <tools_layouts/mlxconfig_4th_gen_layouts.h>
+
+#define REG_ID_MNVA 0x9024
+#define REG_ID_MNVIA_4TH_GEN 0x9029
+
+reg_access_status_t reg_access_mnva(mfile* mf, reg_access_method_t method, struct mlxconfig_4th_gen_mnva* mnva)
 {
-#endif
-
-#include <mtcr.h>
-#ifndef NO_INBAND
-#include "mtcr_ib.h"
-#endif
-#include <tools_layouts/tools_open_layouts.h>
-#include <tools_layouts/reg_access_hca_layouts.h>
-
-    typedef enum
+    // reg_size is in bytes
+    u_int32_t reg_size = (mnva->nv_hdr.length << 2) + mlxconfig_4th_gen_nv_hdr_size();
+    u_int32_t r_size_reg = reg_size;
+    u_int32_t w_size_reg = reg_size;
+    if (method == REG_ACCESS_METHOD_GET)
     {
-        MAD_IFC_METHOD_GET = MACCESS_REG_METHOD_GET,
-        MAD_IFC_METHOD_SET = MACCESS_REG_METHOD_SET
-    } mad_ifc_method_t;
-
-    // we use the same error messages as mtcr
-    typedef MError mad_ifc_status_t;
-
-    const char* mad_ifc_err2str(mad_ifc_status_t status);
-    mad_ifc_status_t mad_ifc_general_info_hw(mfile* mf, struct reg_access_hca_mgir_hardware_info_ext* hw_info);
-    mad_ifc_status_t mad_ifc_general_info_fw(mfile* mf, struct reg_access_hca_mgir_fw_info_ext* fw_info);
-    mad_ifc_status_t mad_ifc_general_info_sw(mfile* mf, struct reg_access_hca_mgir_sw_info_ext* sw_info);
-#ifdef __cplusplus
+        w_size_reg -= mnva->nv_hdr.length << 2;
+    }
+    else
+    {
+        r_size_reg -= mnva->nv_hdr.length << 2;
+    }
+    REG_ACCCESS_VAR(mf, method, REG_ID_MNVA, mnva, mnva, reg_size, r_size_reg, w_size_reg, mlxconfig_4th_gen);
 }
-#endif
 
-#endif // MAD_IFC_H
+reg_access_status_t
+  reg_access_mnvia_4th_gen(mfile* mf, reg_access_method_t method, struct mlxconfig_4th_gen_mnvia* mnvia)
+{
+    if (method != REG_ACCESS_METHOD_SET)
+    { // this register supports only set method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_MNVIA_4TH_GEN, mnvia, mnvia, mlxconfig_4th_gen);
+}

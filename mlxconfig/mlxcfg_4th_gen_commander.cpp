@@ -31,24 +31,21 @@
  * SOFTWARE.
  *
  *
- * mlxcfg_4thgen_commander.cpp
- *
- *  Created on: Jun 22, 2016
- *      Author: ahmads
  */
 
 #include <set>
 #include <cmath>
 #include <signal.h>
 #include <mtcr.h>
-#include <tools_layouts/tools_open_layouts.h>
+#include <tools_layouts/reg_access_hca_layouts.h>
 #include <mft_sig_handler.h>
 #include <reg_access/reg_access.h>
+#include <reg_access/mlxconfig_4th_gen_registers.h>
 #include <cmdif/tools_cif.h>
 #include <sstream>
 #include <algorithm>
 
-#include "mlxcfg_4thgen_commander.h"
+#include "mlxcfg_4th_gen_commander.h"
 #include "mlxcfg_param_lib.h"
 #include "mlxcfg_utils.h"
 
@@ -343,14 +340,14 @@ bool FourthGenCommander::supportsCfg(mlxCfgType cfg)
 
 void FourthGenCommander::invalidateCfgs()
 {
-    struct tools_open_mnvia mnviaTlv;
-    u_int8_t buffer[TOOLS_OPEN_MNVIA_SIZE] = {0};
+    struct mlxconfig_4th_gen_mnvia mnviaTlv;
+    u_int8_t buffer[MLXCONFIG_4TH_GEN_MNVIA_SIZE] = {0};
     int rc;
 
-    memset(&mnviaTlv, 0, sizeof(struct tools_open_mnvia));
-    tools_open_mnvia_pack(&mnviaTlv, buffer);
+    memset(&mnviaTlv, 0, sizeof(struct mlxconfig_4th_gen_mnvia));
+    mlxconfig_4th_gen_mnvia_pack(&mnviaTlv, buffer);
     mft_signal_set_handling(1);
-    rc = reg_access_mnvia(_mf, REG_ACCESS_METHOD_SET, &mnviaTlv);
+    rc = reg_access_mnvia_4th_gen(_mf, REG_ACCESS_METHOD_SET, &mnviaTlv);
     dealWithSignal();
 
     if (rc)

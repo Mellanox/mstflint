@@ -40,7 +40,8 @@
 #include <compatibility.h>
 #include <mtcr.h>
 
-#include "mlxcfg_4thgen_commander.h"
+
+#include "mlxcfg_4th_gen_commander.h"
 //#include "mlxcfg_lib.h"
 #include "mlxcfg_commander.h"
 #include "mlxcfg_view.h"

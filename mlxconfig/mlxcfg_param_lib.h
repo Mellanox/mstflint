@@ -45,7 +45,7 @@
 #include <stdexcept>
 
 #include <errmsg.h>
-#include <tools_layouts/tools_open_layouts.h>
+#include <tools_layouts/mlxconfig_4th_gen_layouts.h>
 
 #include "mlxcfg_utils.h"
 
@@ -523,7 +523,7 @@ protected:
     u_int32_t _forceModeDefault;
     // FW TLV (used when actually setting/getting the TLV from FW)
     std::vector<u_int8_t> _tlvBuff;
-    struct tools_open_vpi_settings _vpiTlv;
+    struct mlxconfig_4th_gen_vpi_settings _vpiTlv;
 };
 
 class VpiParams4thGen : public VpiParams

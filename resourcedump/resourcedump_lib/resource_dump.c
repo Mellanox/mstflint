@@ -20,6 +20,8 @@
 #include <arpa/inet.h>
 #include <infiniband/verbs.h>
 #include <infiniband/mlx5dv.h>
+#include <mtcr.h>
+#include <tools_layouts/reg_access_hca_layouts.h>
 #include <reg_access/reg_access.h>
 #include <dlfcn.h>
 #include <linux/swab.h>

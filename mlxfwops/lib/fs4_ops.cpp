@@ -3908,13 +3908,13 @@ bool Fs4Operations::UpdateSection(void* new_info,
     {
         char* publicKeysData = (char*)new_info;
         type_msg = "FS4_RSA_PUBLIC_KEY";
-        GetSectData(newSection, (u_int32_t*)publicKeysData, connectx4_public_keys_3_size());
+        GetSectData(newSection, (u_int32_t*)publicKeysData, image_layout_public_keys_3_size());
     }
     else if (sect_type == FS4_RSA_4096_SIGNATURES)
     {
         char* signaturesData = (char*)new_info;
         type_msg = "FS4_RSA_4096_SIGNATURES";
-        GetSectData(newSection, (u_int32_t*)signaturesData, connectx4_secure_boot_signatures_size());
+        GetSectData(newSection, (u_int32_t*)signaturesData, image_layout_secure_boot_signatures_size());
     }
 #endif
     else if (sect_type == FS3_FORBIDDEN_VERSIONS && cmd_type == CMD_SET_FORBIDDEN_VERSIONS)

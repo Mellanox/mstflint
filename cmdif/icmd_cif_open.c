@@ -57,15 +57,15 @@ int get_icmd_query_cap(mfile* mf, struct icmd_hca_icmd_query_cap_general* icmd_q
     SEND_ICMD_FLOW(mf, GET_ICMD_QUERY_CAP, icmd_hca_icmd_query_cap_general, icmd_query_caps, 1, 0);
 }
 
-int gcif_mh_sync(mfile* mf, struct connectx4_icmd_mh_sync* mh_sync)
+int gcif_mh_sync(mfile* mf, struct icmd_hca_icmd_mh_sync_in* mh_sync_in, struct icmd_hca_icmd_mh_sync_out* mh_sync_out)
 {
-    SEND_ICMD_FLOW(mf, MH_SYNC_OPCODE, connectx4_icmd_mh_sync, mh_sync, 1, 0);
+    SEND_IN_OUT_ICMD_FLOW(mf, MH_SYNC_OPCODE, icmd_hca_icmd_mh_sync, mh_sync_in, mh_sync_out, 1, 0);
 }
 
-int gcif_mh_sync_status(mfile* mf, struct connectx4_icmd_mh_sync* mh_sync_out)
+int gcif_mh_sync_status(mfile* mf, struct icmd_hca_icmd_mh_sync_in* mh_sync_in, struct icmd_hca_icmd_mh_sync_out* mh_sync_out)
 {
     memset(mh_sync_out, 0x0, sizeof(*mh_sync_out));
-    SEND_ICMD_FLOW(mf, MH_SYNC_STATUS_OPCODE, connectx4_icmd_mh_sync, mh_sync_out, 1, 0);
+    SEND_IN_OUT_ICMD_FLOW(mf, MH_SYNC_STATUS_OPCODE, icmd_hca_icmd_mh_sync, mh_sync_in, mh_sync_out, 1, 0);
 }
 
 int gcif_set_itrace(mfile* mf, struct connectib_itrace* itrace)

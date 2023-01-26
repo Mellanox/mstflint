@@ -30,15 +30,9 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *
- * mlxcfg_4thgen_commander.h
- *
- *  Created on: Jun 22, 2016
- *      Author: ahmads
  */
 
-#ifndef MLXCFG_4THGEN_COMMANDER_H_
-#define MLXCFG_4THGEN_COMMANDER_H_
+#pragma once
 
 #include <vector>
 #include <utility>
@@ -153,9 +147,6 @@ private:
     MlxCfgInfo createWakeOnLAN();
     MlxCfgInfo createBootSettingsExt();
     MlxCfgInfo createCX3GlobalConf();
-    MlxCfgInfo createQoS();
-    MlxCfgInfo createLLDPClientSettings();
-    MlxCfgInfo createLLDPNBDCBX();
 };
 
 class FourthGenCommander : public Commander, public ErrMsg
@@ -202,5 +193,3 @@ public:
     void setIgnoreHardLimits(bool val);
     void updateParamViewValue(ParamView&, std::string val);
 };
-
-#endif /* MLXCFG_4THGEN_COMMANDER_H_ */

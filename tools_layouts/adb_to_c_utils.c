@@ -40,7 +40,11 @@
 /************************************
  * Function: adb2c_calc_array_field_address
  ************************************/
-u_int32_t adb2c_calc_array_field_address(u_int32_t start_bit_offset, u_int32_t arr_elemnt_size, int arr_idx, u_int32_t parent_node_size, int is_big_endian_arr)
+u_int32_t adb2c_calc_array_field_address(u_int32_t start_bit_offset,
+                                         u_int32_t arr_elemnt_size,
+                                         int arr_idx,
+                                         u_int32_t parent_node_size,
+                                         int is_big_endian_arr)
 {
     u_int32_t offs;
 
