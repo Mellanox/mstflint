@@ -985,3 +985,7 @@ int dm_dev_is_fs4(dm_dev_id_t type)
            type == DeviceSpectrum4 || type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceGearBox ||
            type == DeviceGearBoxManager;
 }
+int dm_is_ib_access(mfile* mf)
+{
+    return (mf->flags & MDEVS_IB);
+}

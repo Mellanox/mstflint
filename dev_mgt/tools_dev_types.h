@@ -267,6 +267,7 @@ extern "C"
      */
     int dm_is_livefish_mode(mfile* mf);
 
+    int dm_is_ib_access(mfile* mf);
 #ifdef __cplusplus
 } /* end of 'extern "C"' */
 #endif
