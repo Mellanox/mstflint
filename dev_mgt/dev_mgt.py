@@ -67,6 +67,7 @@ if DEV_MGT:
             self.mf = 0
             self._isLivefishModeFunc = DEV_MGT.dm_is_livefish_mode  # dm_is_livefish_mode(mfile* mf)
             self._getDeviceIdFunc = DEV_MGT.dm_get_device_id
+            self._isIBAccess = DEV_MGT.dm_is_ib_access
             if isinstance(dev, (mtcr.MstDevice)):
                 self._mstdev = dev
             else:
@@ -157,5 +158,7 @@ if DEV_MGT:
 
             return {"return_code": rc, "dm_device_id": dm_dev_id, "hw_device_id": hw_dev_id, "hw_revision": hw_rev}
 
+        def is_ib_access(self):
+            return (self._isIBAccess(self._mstdev.mf) != 0)
 else:
     raise DevMgtException("Failed to load c_dev_mgt.so/libdev_mgt.dll")

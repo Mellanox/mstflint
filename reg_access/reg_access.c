@@ -96,8 +96,9 @@
 #define REG_ID_MGPIR 0x9100
 #define REG_ID_MDFCR 0x9101
 #define REG_ID_MDRCR 0x9102
-#define REG_ID_MDSR  0x9110
-#define REG_ID_MFSV  0x9115
+#define REG_ID_MDSR 0x9110
+#define REG_ID_MFSV 0x9115
+#define REG_ID_MRSR 0x9023
 
 #define REG_ID_MDDT 0x9160
 #define REG_ID_MDDQ 0x9161
@@ -564,4 +565,11 @@ reg_access_status_t reg_access_mpegc(mfile* mf, reg_access_method_t method, stru
 {
     /*    reg_access_hca_mpegc_reg_dump(mpegc, stdout)s; */
     REG_ACCCESS(mf, method, REG_ID_MPEGC, mpegc, mpegc_reg, reg_access_hca);
+}
+/************************************
+ * Function: reg_access_mrsr
+ ************************************/
+reg_access_status_t reg_access_mrsr(mfile* mf, reg_access_method_t method, struct reg_access_switch_mrsr_ext* mrsr)
+{
+    REG_ACCCESS(mf, method, REG_ID_MRSR, mrsr, mrsr_ext, reg_access_switch);
 }

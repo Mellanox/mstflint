@@ -32,7 +32,7 @@
 
 import sys
 try:
-    from regaccess import RegAccException
+    from regaccess import RegAccException, extractField
 except Exception as e:
     print("-E- could not import : %s" % str(e))
     sys.exit(1)
@@ -59,7 +59,10 @@ class CmdRegMcam():
         except BaseException:
             pci_rescan_required_sup = 0
         else:
-            pci_rescan_required_sup = mcam_get_result["mng_feature_cap_mask"][45]
+            # bit 45 is bit 13 in 2nd DWORD.
+            # due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order
+            # so we actually access the 3rd DWORD (index 2)
+            pci_rescan_required_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3-1], 13, 1)
         return True if pci_rescan_required_sup == 1 else False
 
     def is_reset_by_fw_driver_sync_supported(self):
@@ -71,7 +74,10 @@ class CmdRegMcam():
         except RegAccException as e:
             pci_sync_for_fw_update_sup = 0
         else:
-            pci_sync_for_fw_update_sup = mcam_get_result["mng_feature_cap_mask"][19]
+            # bit 19 in 1st DWORD.
+            # due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order
+            # so we actually access the 4th DWORD (index 3)
+            pci_sync_for_fw_update_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3-0], 19, 1)
         return True if pci_sync_for_fw_update_sup == 1 else False
 
     def reset_sync_query_text(self):
