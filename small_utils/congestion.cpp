@@ -208,11 +208,11 @@ CongestionUI::exit_status_t CongestionUI::run(int argc, char** argv)
         _errorMsg = "mstcongestion is not supported on this device (Failed to get device capabilities).";
         return EXIT_STATUS_CAP_ERR;
     }
-    u_int8_t caps = mcam.mng_feature_cap_mask[14];
+    u_int8_t caps = mcam.mng_feature_cap_mask[3];
 
-    _dynamicSupp = caps & 0x2;
-    _markCqeSupp = caps & 0x4;
-    _markCnpSupp = caps & 0x8;
+    _dynamicSupp = EXTRACT(caps, 0x9, 1);
+    _markCqeSupp = EXTRACT(caps, 0x10, 1);
+    _markCnpSupp = EXTRACT(caps, 0x11, 1);
     if (_ops != 1) {
         _errorMsg = "Please choose one operation.";
         return EXIT_STATUS_ERROR;
