@@ -354,7 +354,7 @@ class Parser:
         return RawData(dumped_file_path).to_segments()
 
     @classmethod
-    def _build_union_prefix(cls, node_desc: AdbNodeDesc):
+    def _build_union_prefix(cls, node_desc): # cls, node_desc: AdbNodeDesc
         """This method build the prefix for the struct in order to give the user
         information indicate if the node is a union
         """
