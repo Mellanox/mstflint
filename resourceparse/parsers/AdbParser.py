@@ -137,7 +137,7 @@ class AdbParser:
                     item_it.full_path = item_it.parent.full_path + '.' + item_it.name
             self.update_fields_paths(item_it, item)
 
-    def _create_enum_dict(self, enum_lst: list):
+    def _create_enum_dict(self, enum_lst): # self, enum_lst: list
         """This function gets a list of enums and export them to a dictionary.
         if the enums_lst is empty, return None.
         """
@@ -152,7 +152,7 @@ class AdbParser:
             enums_dict[int(enum[1], 0)] = enum[0]
         return enums_dict
 
-    def _get_enum_dict_from_field(self, selector_field: ET.Element):
+    def _get_enum_dict_from_field(self, selector_field): # self, selector_field: ET.Element
         """This method gets field that contains enums for union_selector and build a dictionary with
         it's values and enums.
         """
@@ -170,7 +170,7 @@ class AdbParser:
 
         return selector_dict
 
-    def _get_explicit_field_details(self, layout_item, relative_path: str):
+    def _get_explicit_field_details(self, layout_item, relative_path): # self, layout_item, relative_path: str
         """This method gets a node's name and a relative path and returns the full path to the field, the
         explicit field to the enum related to the union selector and it's offset and size.
         """
@@ -311,7 +311,7 @@ class AdbParser:
                     if(node.attrib["is_conditional"] == '1'):
                         self.segment_id_nodes_dict[node.attrib["segment_id"]].is_conditional = True
 
-    def _retrieve_node_by_name(self, node_name: str):
+    def _retrieve_node_by_name(self, node_name): # self, node_name: str
         """This method return the node with the
         wanted name, if not found return None.
         """
@@ -332,7 +332,7 @@ class AdbParser:
                     return subItem
         return None
 
-    def _build_subitems(self, node: ET.Element, parent):
+    def _build_subitems(self, node): # self, node: ET.Element, parent
         """This method build the subitems of the specific node.
         :param node: always field element except from the root which is node.
         """
@@ -375,7 +375,7 @@ class AdbParser:
                     counter += 1
         return sub_items
 
-    def _extract_array_to_list(self, node: ET.Element, index, item, subitems_list, parent, last_elem_flag=False):
+    def _extract_array_to_list(self, node, index, item, subitems_list, parent, last_elem_flag=False): # self, node: ET.Element, index, item, subitems_list, parent, last_elem_flag=False
         """This method build insert array items to a list form a specific index.
         :param node: always field element except from the root which is node.
         :param parent: layout item representing the parent of the array.
@@ -433,7 +433,7 @@ class AdbParser:
             index += 1
         return index
 
-    def _node_to_AdbLayoutItem(self, node: ET.Element, last_elem_flag=False):
+    def _node_to_AdbLayoutItem(self, node, last_elem_flag=False): # self, node: ET.Element, last_elem_flag=False
         """This method build adb layout field from a given node.
         :param node: always field element except from the root which is node.
         """
@@ -476,7 +476,7 @@ class AdbParser:
         # adb_layout_item.vars = {}  # all variable relevant to this item after evaluation
         return adb_layout_item
 
-    def _node_to_node_desc(self, node: ET.Element):
+    def _node_to_node_desc(self, node): # self, node: ET.Element
         """This method build adb desc field from a given node.
         """
         node_description = AdbNodeDesc()
