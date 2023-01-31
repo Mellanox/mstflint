@@ -368,8 +368,8 @@ string Param::getVal(u_int32_t index)
 
 void Param::getView(ParamView& paramView)
 {
-    if ((_type != BOOLEAN_TYPE && _type != ENUM && _type != INTEGER && _type != UNSIGNED && _type != BINARY) ||
-        (_arrayLength != 0 && (_type == STRING || _type == BYTES)))
+    if ((_type != BOOLEAN_TYPE && _type != ENUM && _type != INTEGER && _type != UNSIGNED && _type != BINARY) &&
+        (_arrayLength == 0 && (_type == STRING || _type == BYTES)))
     {
         throw MlxcfgException("Operation not supported");
     }
