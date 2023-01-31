@@ -627,7 +627,6 @@ bool FwOperations::GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset
     image_layout_boot_version boot_version;
     memset(&boot_version, 0, sizeof(boot_version));
     image_layout_boot_version_unpack(&boot_version, (u_int8_t*)&data);
-    image_layout_boot_version_dump(&boot_version, stdout);
     image_format_version = boot_version.image_format_version;
     DPRINTF(("FwOperations::GetImageFormatVersion image_format_version = %d\n", image_format_version));
     return true;
