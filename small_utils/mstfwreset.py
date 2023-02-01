@@ -2046,6 +2046,4 @@ if __name__ == '__main__':
     except Exception as e:
         print("-E- %s." % str(e))
         rc = 1
-        import traceback
-        traceback.print_exc()
     sys.exit(rc)
