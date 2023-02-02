@@ -332,7 +332,7 @@ class AdbParser:
                     return subItem
         return None
 
-    def _build_subitems(self, node): # self, node: ET.Element, parent
+    def _build_subitems(self, node, parent): # self, node: ET.Element, parent
         """This method build the subitems of the specific node.
         :param node: always field element except from the root which is node.
         """
