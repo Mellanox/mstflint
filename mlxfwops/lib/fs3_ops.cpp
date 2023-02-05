@@ -1545,7 +1545,7 @@ bool Fs3Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
     return FwSetMFG(bGuid, callBackFunc);
 }
 
-bool Fs3Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack)
+bool Fs3Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack, bool)
 {
     return FsIntQueryAux(false, quickQuery, false, verbose);
 }

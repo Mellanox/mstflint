@@ -164,7 +164,8 @@ protected:
     virtual bool VerifyImageAfterModifications();
     bool parseDevData(bool quickQuery = true,
                       bool verbose = false,
-                      VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
+                      VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL,
+                      bool showItoc = false);
 
 private:
 #define PRE_CRC_OUTPUT "    "
