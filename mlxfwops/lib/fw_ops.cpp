@@ -2125,11 +2125,6 @@ bool FwOperations::FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, P
     {
         return errmsg("no data to write.");
     }
-    // make sure we work on device
-    if (!_ioAccess->is_flash())
-    {
-        return errmsg("no flash detected.(command is only supported on flash)");
-    }
 
     // check if flash is big enough
     if ((addr + dataVec.size()) > _ioAccess->get_effective_size())

@@ -274,7 +274,7 @@ protected:
     bool Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool IsSectionExists(fs3_section_t sectType);
     virtual bool VerifyImageAfterModifications();
-    virtual bool parseDevData(bool quickQuery = true, bool verbose = false, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
+    virtual bool parseDevData(bool quickQuery = true, bool verbose = false, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL, bool showItoc = false);
 
     bool isOld4MBImage(FwOperations* imageOps);
     bool FwCalcSHA(MlxSign::SHAType shaType, vector<u_int8_t>& sha256, vector<u_int8_t>& fourMbImage);
