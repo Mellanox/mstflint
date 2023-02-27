@@ -242,6 +242,7 @@ typedef enum MType_t
     /*MST_CALBR,*/
     MST_USB = 0x20,
     MST_IB = 0x40,
+    MST_MLX5_CONTROL_DRIVER = 0x80,
     MST_PPC = 0x100,
     MST_USB_DIMAX = 0x200,
     MST_FWCTX = 0x400,

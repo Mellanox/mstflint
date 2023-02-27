@@ -160,6 +160,10 @@ reg_access_status_t reg_access_mtmp(mfile* mf, reg_access_method_t method, struc
 }
 
 
+reg_access_status_t reg_access_ptys(mfile* mf, reg_access_method_t method, struct reg_access_hca_ptys_reg_ext* ptys)
+{
+    REG_ACCCESS(mf, method, REG_ID_PTYS, ptys, ptys_reg_ext, reg_access_hca);
+}
 /************************************
 * Function: reg_access_mnvgc
 ************************************/

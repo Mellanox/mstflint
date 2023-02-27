@@ -63,6 +63,7 @@ AC_COMPILE_IFELSE(
 ]])], [OPENSSL_VERSION_VALID=yes], [OPENSSL_VERSION_VALID=no])
 OS=$(uname -s)
 KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]\.[[0-9]][[0-9]]|[[0-9]]\.[[0-9]]' | head -1`
+LINUX_KERNEL_INCLUDE="/lib/modules/"$(uname -r)"/"
 OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]\.[[0-9]][[0-9]]|[[0-9]]\.[[0-9]]' | head -1`
 OFED_EXIST=`ofed_info -s`
 OFED_NOT_EXIST="ofed_info: command not found"
@@ -457,6 +458,7 @@ fi
 
 AM_CONDITIONAL(LINUX_BUILD, [test  "x$OS" = "xLinux"])
 AC_SUBST(LINUX_BUILD)
+AC_SUBST(LINUX_KERNEL_INCLUDE)
 
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mft_utils/hsmclient/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
         tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
