@@ -19,17 +19,8 @@ static int mlx5_cmd_ioctl(int fd, struct mlx5ctl_cmd_inout *cmd)
 	return ioctl(fd, MLX5CTL_IOCTL_CMD_INOUT, cmd);
 }
 
-/*
-static void hexdump(void *data, int size)
-{
-	u8 *p = data;
-	int i;
 
-	for (i = 0; i < size; i++)
-		printf("%02x ", p[i]);
-	printf("\n");
-};
-*/
+
 
 int mlx5_control_access_register(int fd, void *data_in,
                                  int size_in, __u16 reg_id,
@@ -37,7 +28,7 @@ int mlx5_control_access_register(int fd, void *data_in,
 {
 	int outlen = MLX5_ST_SZ_BYTES(access_register_out) + size_in;
 	int inlen = MLX5_ST_SZ_BYTES(access_register_in) + size_in;
-	struct mlx5ctl_cmd_inout cmd = {};
+	struct mlx5ctl_cmd_inout cmd = {0};
 	int err = -ENOMEM;
 	u32 *out = NULL;
 	u32 *in = NULL;
@@ -45,8 +36,9 @@ int mlx5_control_access_register(int fd, void *data_in,
 
 	in = malloc(inlen);
 	out = malloc(outlen);
-	if (!in || !out)
+	if (!in || !out) {
 		goto out;
+    }
 
     memset(in, 0, inlen);
     memset(out, 0, outlen);
@@ -66,8 +58,10 @@ int mlx5_control_access_register(int fd, void *data_in,
 	MLX5_SET(access_register_in, in, register_id, reg_id);
 
 	err = mlx5_cmd_ioctl(fd, &cmd);
-	if (err)
+	if (err) {
 		goto out;
+    }
+
     data = MLX5_ADDR_OF(access_register_out, out, register_data);
 	memcpy(data_in, data, size_in);
 out:
