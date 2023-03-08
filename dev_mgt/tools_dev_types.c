@@ -678,12 +678,16 @@ static int dm_get_device_id_inner(mfile      * mf,
             }
         }
     } else {
-        if (mread4(mf, DEVID_ADDR, &dword) != 4) {
-            return CRSPACE_READ_ERROR;
+        struct reg_access_hca_mgir_ext mgir;
+        memset(&mgir, 0, sizeof(mgir));
+        reg_access_status_t rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
+        
+        if (rc) {
+            return GET_DEV_ID_ERROR;
         }
 
-        *ptr_hw_dev_id = EXTRACT(dword, 0, 16);
-        *ptr_hw_rev = EXTRACT(dword, 16, 8);
+        *ptr_hw_dev_id = mgir.hw_info.hw_dev_id;
+        *ptr_hw_rev = mgir.hw_info.device_hw_revision;
     }
 
     *ptr_dm_dev_id = get_entry_by_dev_rev_id(*ptr_hw_dev_id, *ptr_hw_rev)->dm_id;

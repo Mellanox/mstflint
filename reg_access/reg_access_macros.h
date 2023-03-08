@@ -21,29 +21,28 @@
 #define DEBUG_PRINT_RECEIVE(data_struct, struct_name, method, print_func)
 #endif
 
-/* register access for variable size registers (like mfba) */
-#define REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size,  \
-                                           w_reg_size, pack_func, unpack_func, size_func, print_func, status)   \
-    int rc;                                                                                                     \
-    int       max_data_size = size_func();                                                                      \
-    u_int8_t* data = NULL;                                                                                      \
-    if (method != REG_ACCESS_METHOD_GET && method != REG_ACCESS_METHOD_SET)                                     \
-    {                                                                                                           \
-        return ME_REG_ACCESS_BAD_METHOD;                                                                        \
-    }                                                                                                           \
-                                                                                                                \
-    data = (u_int8_t*)malloc(sizeof(u_int8_t) * max_data_size);                                                 \
-    if (!data)                                                                                                  \
-    {                                                                                                           \
-        return ME_MEM_ERROR;                                                                                    \
-    };                                                                                                          \
-    memset(data, 0, max_data_size);                                                                             \
-    pack_func(data_struct, data);                                                                               \
-    DEBUG_PRINT_SEND(data_struct, struct_name, method, print_func);                                             \
-    rc = maccess_reg(mf, reg_id, (maccess_reg_method_t)method, data, reg_size, r_reg_size, w_reg_size, status); \
-    unpack_func(data_struct, data);                                                                             \
-    free(data);                                                                                                 \
-    DEBUG_PRINT_RECEIVE(data_struct, struct_name, method, print_func);
+// register access for variable size registers (like mfba)
+#define REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size,      \
+                                           w_reg_size, pack_func, unpack_func, size_func, print_func, status)       \
+    int rc;                                                                                                         \
+    int max_data_size = size_func();                                                                                \
+    u_int8_t* data = NULL;                                                                                          \
+    if (method != REG_ACCESS_METHOD_GET && method != REG_ACCESS_METHOD_SET)                                         \
+    {                                                                                                               \
+        return ME_REG_ACCESS_BAD_METHOD;                                                                            \
+    }                                                                                                               \
+    data = (u_int8_t*)malloc(sizeof(u_int8_t) * max_data_size);                                                     \
+    if (!data)                                                                                                      \
+    {                                                                                                               \
+        return ME_MEM_ERROR;                                                                                        \
+    };                                                                                                              \
+    memset(data, 0, max_data_size);                                                                                 \
+    pack_func(data_struct, data);                                                                                   \
+    DEBUG_PRINT_SEND(data_struct, struct_name, method, print_func);                                                 \
+    rc = maccess_reg(mf, reg_id, (maccess_reg_method_t)method, data, reg_size, r_reg_size, w_reg_size, status);     \
+    unpack_func(data_struct, data);                                                                                 \
+    free(data);                                                                                                     \
+    DEBUG_PRINT_RECEIVE(data_struct, struct_name, method, print_func);                                              \
 
 #define REG_ACCESS_GENERIC_VAR(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size, w_reg_size,         \
                                pack_func, unpack_func, size_func, print_func)                                          \
