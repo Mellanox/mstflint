@@ -425,6 +425,7 @@ public:
     void prepareAttenuationAndFwSection(bool valid);
     void preparePowerAndCdrSection(bool valid);
     void prepareDDMSection(bool valid);
+    virtual void preparePrtlSection(bool valid);
     void strToInt32(char* str, u_int32_t& value);
     template<typename T, typename Q>
     string getValueAndThresholdsStr(T value, Q lowTH, Q highTH);
