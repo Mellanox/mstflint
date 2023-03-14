@@ -1532,6 +1532,7 @@ void MlxlinkCommander::showModuleInfo()
         prepareDDMSection(valid, isModuleExtSupported);
         if (_productTechnology >= PRODUCT_16NM)
         {
+            preparePrtlSection(valid);
             prepareBerModuleInfoNdr(valid);
         }
         cout << _moduleInfoCmd;
@@ -1547,6 +1548,43 @@ void MlxlinkCommander::showModuleInfo()
     {
         _allUnhandledErrors +=
           string("Showing Module Info via PDDR raised the following exception: ") + string(exc.what()) + string("\n");
+    }
+}
+
+void MlxlinkCommander::preparePrtlSection(bool valid)
+{
+    if (_userInput._advancedMode)
+    {
+        char rttFrmt[64];
+        bool isRttSupported = false;
+        u_int16_t asicLatency = 0;
+        u_int16_t moduleLatency = 0;
+
+        try
+        {
+            sendPrmReg(ACCESS_REG_PRTL, GET);
+        }
+        catch (const std::exception& exc)
+        {
+            valid = false;
+        }
+
+        if (valid)
+        {
+            isRttSupported = getFieldValue("rtt_support");
+            asicLatency = (u_int16_t)getFieldValue("local_phy_latency");
+            moduleLatency = (u_int16_t)getFieldValue("local_mod_dp_latency");
+
+            float rttLatency = ((float)getFieldValue("round_trip_latency")) / ((float)getFieldValue("latency_res"));
+            snprintf(rttFrmt, sizeof(rttFrmt), "%0.2f", rttLatency);
+        }
+
+        setPrintVal(_moduleInfoCmd, "Intra-ASIC Latency [ns]", to_string(asicLatency), ANSI_COLOR_RESET, true,
+                    valid && isRttSupported);
+        setPrintVal(_moduleInfoCmd, "Module Datapath Latency [ns]", to_string(moduleLatency), ANSI_COLOR_RESET, true,
+                    valid && isRttSupported);
+        setPrintVal(_moduleInfoCmd, "Intra-ASIC Latency [ns]", string(rttFrmt), ANSI_COLOR_RESET, true,
+                    valid && isRttSupported);
     }
 }
 
