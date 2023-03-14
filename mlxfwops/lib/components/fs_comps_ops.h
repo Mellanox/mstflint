@@ -31,11 +31,11 @@ class FsCompsOperations : public FwOperations
 {
 public:
     FsCompsOperations(FBase* ioAccess) : FwOperations(ioAccess) {}
-    virtual u_int8_t FwType() { return FIT_COMPS; }
-    virtual bool FwInit() { return true; }
+    u_int8_t FwType() override { return FIT_COMPS; }
+    bool FwInit() override { return true; }
     bool GetImageSize(u_int32_t* image_size) override;
 
-    bool SignForSecureBoot(const char*, const char*, const MlxSign::Signer&);
+    bool SignForSecureBoot(const char*, const char*, const MlxSign::Signer&) override;
 
     // Unsupported functionality
     bool FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool) override;
