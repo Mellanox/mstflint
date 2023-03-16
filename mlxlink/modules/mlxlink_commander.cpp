@@ -1365,10 +1365,13 @@ void MlxlinkCommander::preparePowerAndCdrSection(bool valid)
     setPrintVal(_moduleInfoCmd, "LOS Alarm", "N/A", ANSI_COLOR_RESET, true, valid);
 }
 
-void MlxlinkCommander::prepareDDMSection(bool valid)
+void MlxlinkCommander::prepareDDMSection(bool valid, bool isModuleExtSupported)
 {
     std::vector<float> rxPowerLane, txPowerLane, biasCurrentLane;
-
+    float rxPowerHighTH;
+    float rxPowerLowTH;
+    float txPowerHighTH;
+    float txPowerLowTH;
     u_int32_t tempNum = getFieldValue("temperature");
     string temp = getTemp(tempNum);
     string tempHighTH = getTemp(getFieldValue("temperature_high_th"));
@@ -1378,18 +1381,26 @@ void MlxlinkCommander::prepareDDMSection(bool valid)
     float voltageHighTH = getFieldValue("voltage_high_th") / 10.0;
     float voltageLowTH = getFieldValue("voltage_low_th") / 10.0;
 
-    float rxPowerHighTH = getPower(getFieldValue("rx_power_high_th"));
-    float rxPowerLowTH = getPower(getFieldValue("rx_power_low_th"));
-    float txPowerHighTH = getPower(getFieldValue("tx_power_high_th"));
-    float txPowerLowTH = getPower(getFieldValue("tx_power_low_th"));
+    rxPowerHighTH = getPower(getFieldValue("rx_power_high_th"), isModuleExtSupported);
+    rxPowerLowTH = getPower(getFieldValue("rx_power_low_th"), isModuleExtSupported);
+    txPowerHighTH = getPower(getFieldValue("tx_power_high_th"), isModuleExtSupported);
+    txPowerLowTH = getPower(getFieldValue("tx_power_low_th"), isModuleExtSupported);
+    if (isModuleExtSupported)
+    {
+        rxPowerHighTH = convertFloatPrec(rxPowerHighTH);
+        rxPowerLowTH = convertFloatPrec(rxPowerLowTH);
+        txPowerHighTH = convertFloatPrec(txPowerHighTH);
+        txPowerLowTH = convertFloatPrec(txPowerLowTH);
+    }
+
     float biasLowTH = getFieldValue("tx_bias_low_th") / 500.0;
     float biasHighTH = getFieldValue("tx_bias_high_th") / 500.0;
 
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
     {
         string laneStr = to_string(lane);
-        rxPowerLane.push_back(getPower(getFieldValue("rx_power_lane" + laneStr)));
-        txPowerLane.push_back(getPower(getFieldValue("tx_power_lane" + laneStr)));
+        rxPowerLane.push_back(getPower(getFieldValue("rx_power_lane" + laneStr), isModuleExtSupported));
+        txPowerLane.push_back(getPower(getFieldValue("tx_power_lane" + laneStr), isModuleExtSupported));
         biasCurrentLane.push_back(getFieldValue("tx_bias_lane" + laneStr) / 500.0);
     }
 
@@ -1485,6 +1496,21 @@ void MlxlinkCommander::prepareBerModuleInfoNdr(bool valid)
     }
 }
 
+bool MlxlinkCommander::checkIfModuleExtSupported()
+{
+    bool isModuleExtSupported = false;
+    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d , module_info_ext=0", PDDR_MODULE_INFO_PAGE);
+    float rxPowerHighTH_fst = getFieldValue("rx_power_high_th");
+    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d , module_info_ext=1", PDDR_MODULE_INFO_PAGE);
+    float rxPowerHighTH_sec = getFieldValue("rx_power_high_th");
+    if (rxPowerHighTH_sec != rxPowerHighTH_fst)
+    {
+        isModuleExtSupported = true;
+    }
+
+    return isModuleExtSupported;
+}
+
 void MlxlinkCommander::showModuleInfo()
 {
     try
@@ -1494,8 +1520,7 @@ void MlxlinkCommander::showModuleInfo()
         sendPrmReg(ACCESS_REG_PMAOS, GET, "module=%d,slot_index=%d", _moduleNumber, _slotIndex);
 
         u_int32_t oper_status = getFieldValue("oper_status");
-
-        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+        bool isModuleExtSupported = checkIfModuleExtSupported();
 
         setPrintTitle(_moduleInfoCmd, "Module Info",
                       _productTechnology >= PRODUCT_16NM ? MODULE_INFO_AMBER : MODULE_INFO_LAST);
@@ -1504,7 +1529,7 @@ void MlxlinkCommander::showModuleInfo()
         prepareStaticInfoSection(valid);
         prepareAttenuationAndFwSection(valid);
         preparePowerAndCdrSection(valid);
-        prepareDDMSection(valid);
+        prepareDDMSection(valid, isModuleExtSupported);
         if (_productTechnology >= PRODUCT_16NM)
         {
             prepareBerModuleInfoNdr(valid);
