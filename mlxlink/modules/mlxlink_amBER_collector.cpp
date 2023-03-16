@@ -1245,7 +1245,14 @@ void MlxlinkAmBerCollector::pushModulePerLaneField(vector<AmberField>& fields,
                                                    string laneSep)
 {
     float value = 0;
-    for (u_int32_t lane = 0; lane < MAX_NETWORK_LANES; lane++)
+    u_int32_t lanes = MAX_NETWORK_LANES;
+
+    if (_isPortIB)
+    {
+        lanes = MAX_IB_LANES;
+    }
+
+    for (u_int32_t lane = 0; lane < lanes; lane++)
     {
         value = getLocalFieldValue(fieldName + to_string(lane));
         if (fieldName.find("power") != string::npos)
