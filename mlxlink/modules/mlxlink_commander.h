@@ -391,6 +391,7 @@ public:
     vector<string> localToPortsPerGroup(vector<u_int32_t> localPorts);
     u_int32_t getPortGroup(u_int32_t localPort);
     string getValuesOfActiveLanes(const string& row);
+    bool checkIfModuleExtSupported();
 
     // Mlxlink query functions
     virtual void showModuleInfo();
@@ -424,7 +425,7 @@ public:
     void prepareStaticInfoSection(bool valid);
     void prepareAttenuationAndFwSection(bool valid);
     void preparePowerAndCdrSection(bool valid);
-    void prepareDDMSection(bool valid);
+    void prepareDDMSection(bool valid, bool isModuleExtSupported);
     void strToInt32(char* str, u_int32_t& value);
     template<typename T, typename Q>
     string getValueAndThresholdsStr(T value, Q lowTH, Q highTH);
