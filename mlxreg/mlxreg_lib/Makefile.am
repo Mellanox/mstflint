@@ -33,8 +33,6 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-SUBDIRS = mlxreg_lib
-
 USER_DIR = $(top_srcdir)
 UTILS_DIR = $(top_srcdir)/mft_utils
 
@@ -50,20 +48,16 @@ INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_D
 
 AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe 
 
-mstreg_SOURCES = mlxreg_ui.cpp mlxreg_ui.h
+lib_LTLIBRARIES = libmstreg_lib.a
 
-bin_PROGRAMS = mstreg
+libmstreg_lib_a_SOURCES = mlxreg_exception.h \
+                           mlxreg_exception.cpp \
+                           mlxreg_parser.h \
+                           mlxreg_parser.cpp \
+                           mlxreg_lib.h \
+                           mlxreg_lib.cpp
 
-mstreg_LDADD =  $(MLXREG_DIR)/mlxreg_lib/libmstreg_lib.a \
-                $(USER_DIR)/cmdparser/libcmdparser.a \
-                $(MFT_UTILS_DIR)/libmftutils.a \
-                $(MTCR_DIR)/libmtcr_ul.a \
-                $(USER_DIR)/adb_parser/libadb_parser.a \
-                $(USER_DIR)/cmdif/libcmdif.a \
-                $(USER_DIR)/dev_mgt/libdev_mgt.a \
-                $(USER_DIR)/reg_access/libreg_access.a \
-                $(LAYOUTS_DIR)/libtools_layouts.a \
-                $(USER_DIR)/xz_utils/libxz_utils.a \
-                $(USER_DIR)/ext_libs/minixz/libminixz.a \
-                -lboost_regex -lboost_filesystem -lboost_system \
-                -llzma $(LIBSTD_CPP) ${LDL} -lexpat
+libmstreg_lib_a_LIBDADD = $(MFT_UTILS_DIR)/libmftutils.a \
+                          $(MTCR_DIR)/libmtcr_ul.a \
+                          $(USER_DIR)/adb_parser/libadb_parser.a \
+                          $(USER_DIR)/dev_mgt/libdev_mgt.a

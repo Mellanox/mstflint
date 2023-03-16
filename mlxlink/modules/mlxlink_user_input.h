@@ -38,8 +38,8 @@
 #include <string>
 #include <string.h>
 #include <stdint.h>
-#include <mlxreg/mlxreg_lib.h>
-#include <mlxreg/mlxreg_parser.h>
+#include <mlxreg/mlxreg_lib/mlxreg_lib.h>
+#include <mlxreg/mlxreg_lib/mlxreg_parser.h>
 #include "mlxlink_enums.h"
 
 using namespace std;

@@ -430,6 +430,7 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(tools_layouts/adb/prm/switch/Makefile)
         AC_CONFIG_FILES(tools_layouts/adb/prm/switch/ext/Makefile)
         AC_CONFIG_FILES(mlxreg/Makefile)
+        AC_CONFIG_FILES(mlxreg/mlxreg_lib/Makefile)
         AC_CONFIG_FILES(mlxlink/Makefile)
         AC_CONFIG_FILES(mlxlink/modules/Makefile)
         AC_CONFIG_FILES(mlxlink/modules/printutil/Makefile)

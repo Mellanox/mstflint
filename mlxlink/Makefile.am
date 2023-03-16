@@ -57,7 +57,7 @@ mstlink_SOURCES = mlxlink_main.cpp
 
 mstlink_DEPENDENCIES = modules/libmodules_lib.a \
                        modules/printutil/libprint_util_lib.a \
-                      $(USER_DIR)/mlxreg/libmstreg_lib.a \
+                      $(USER_DIR)/mlxreg/mlxreg_lib/libmstreg_lib.a \
                       $(USER_DIR)/cmdparser/libcmdparser.a \
                       $(UTILS_DIR)/libmftutils.a \
                       $(MTCR_DIR)/libmtcr_ul.a \

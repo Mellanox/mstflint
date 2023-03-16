@@ -43,8 +43,8 @@
 #include <sstream>
 #include <iterator>
 #include <vector>
-#include <mlxreg/mlxreg_lib.h>
-#include <mlxreg/mlxreg_parser.h>
+#include <mlxreg/mlxreg_lib/mlxreg_lib.h>
+#include <mlxreg/mlxreg_lib/mlxreg_parser.h>
 #include "mlxlink_user_input.h"
 #include "printutil/mlxlink_cmd_print.h"
 #include "mlxlink_enums.h"
