@@ -132,10 +132,6 @@ MlxlinkCommander::~MlxlinkCommander()
     {
         delete _regLib;
     }
-    if (_mlxlinkLogger)
-    {
-        delete _mlxlinkLogger;
-    }
     if (_mlxlinkMaps)
     {
         delete _mlxlinkMaps;
@@ -4558,7 +4554,6 @@ void MlxlinkCommander::initCablesCommander()
         _cablesCommander->_mf = _mf;
         _cablesCommander->_regLib = _regLib;
         _cablesCommander->_gvmiAddress = _gvmiAddress;
-        _cablesCommander->_mlxlinkLogger = _mlxlinkLogger;
         _cablesCommander->_moduleNumber = _moduleNumber;
         _cablesCommander->_slotIndex = _slotIndex;
         _cablesCommander->_localPort = _localPort;
@@ -4775,7 +4770,6 @@ void MlxlinkCommander::initEyeOpener()
             _eyeOpener->_mf = _mf;
             _eyeOpener->_regLib = _regLib;
             _eyeOpener->_gvmiAddress = _gvmiAddress;
-            _eyeOpener->_mlxlinkLogger = _mlxlinkLogger;
             _eyeOpener->_localPort = _localPort;
             _eyeOpener->_pnat = _pnat;
             _eyeOpener->version = _productTechnology;
@@ -4821,7 +4815,6 @@ void MlxlinkCommander::initErrInj()
 {
     _errInjector = new MlxlinkErrInjCommander(_jsonRoot);
     _errInjector->_regLib = _regLib;
-    _errInjector->_mlxlinkLogger = _mlxlinkLogger;
     _errInjector->_localPort = _localPort;
     _errInjector->_force = _userInput.force;
     _errInjector->_mlxlinkMaps = _mlxlinkMaps;
@@ -4948,7 +4941,6 @@ void MlxlinkCommander::initPortInfo()
 
         _portInfo = new MlxlinkPortInfo(_jsonRoot);
         _portInfo->_regLib = _regLib;
-        _portInfo->_mlxlinkLogger = _mlxlinkLogger;
         _portInfo->_localPort = _localPort;
         _portInfo->_portType = _portType;
         _portInfo->_fecActive = _fecActive;
@@ -4974,7 +4966,6 @@ void MlxlinkCommander::initPortInfo()
 void MlxlinkCommander::setAmBerCollectorFields()
 {
     _amberCollector->_regLib = _regLib;
-    _amberCollector->_mlxlinkLogger = _mlxlinkLogger;
     _amberCollector->_pnat = _pnat;
     _amberCollector->_localPort = _localPort;
     _amberCollector->_csvFileName = _userInput._csvBer;

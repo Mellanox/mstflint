@@ -39,7 +39,6 @@ MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0)
     _mf = NULL;
     _regLib = NULL;
     _gvmiAddress = 0;
-    _mlxlinkLogger = NULL;
 
     _localPort = 0;
     _portType = 0;
@@ -52,7 +51,6 @@ MlxlinkRegParser::~MlxlinkRegParser() {}
 
 void MlxlinkRegParser::resetParser(const string& regName)
 {
-    DEBUG_LOG(_mlxlinkLogger, "%s: %-30s\n", "OPERATION ON REGISTER", (char*)regName.c_str());
     _regNode = (_regLib)->findAdbNode(regName);
     _data = "";
     _indexes = "";
@@ -80,8 +78,6 @@ void MlxlinkRegParser::resetParser(const string& regName)
 
 void MlxlinkRegParser::genBuffSendRegister(const string& regName, maccess_reg_method_t method)
 {
-    DEBUG_LOG(_mlxlinkLogger, "%-15s: %s\n", "ACCESS_METHOD", method == MACCESS_REG_METHOD_GET ? "GET" : "SET");
-
     if (_gvmiAddress)
     {
         writeGvmi(1);
@@ -103,9 +99,6 @@ void MlxlinkRegParser::writeGvmi(u_int32_t data)
 void MlxlinkRegParser::updateField(string field_name, u_int32_t value)
 {
     RegAccessParser::updateField(field_name, value);
-
-    DEBUG_LOG(_mlxlinkLogger, "%-15s: %-30s\tVALUE: 0x%08x (%d)\n", "UPDATE_FIELD", (char*)field_name.c_str(), value,
-              value);
 
     if (field_name == "local_port")
     {
@@ -220,10 +213,7 @@ string MlxlinkRegParser::getRawFieldValueStr(const string fieldName)
 
 u_int32_t MlxlinkRegParser::getFieldValue(string field_name)
 {
-    u_int32_t field_Val = RegAccessParser::getFieldValue(field_name, _buffer);
-    DEBUG_LOG(_mlxlinkLogger, "%-15s: %-30s\tVALUE: 0x%08x (%d)\n", "GET_FIELD", (char*)field_name.c_str(), field_Val,
-              field_Val);
-    return field_Val;
+    return RegAccessParser::getFieldValue(field_name, _buffer);
 }
 
 u_int32_t MlxlinkRegParser::getFieldSize(string field_name)

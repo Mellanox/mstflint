@@ -923,135 +923,102 @@ void MlxlinkUi::commandsCaller()
         switch (*it)
         {
             case SHOW_PDDR:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Network Port Information\"");
                 _mlxlinkCommander->showPddr();
                 break;
             case SHOW_PCIE:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"PCIE Port Information\"");
                 _mlxlinkCommander->showPcie();
                 break;
             case SHOW_MODULE:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Show Module Info\"");
                 _mlxlinkCommander->showModuleInfo();
                 break;
             case SHOW_BER:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Show Physical Counters and BER Info\"");
                 _mlxlinkCommander->showBer();
                 break;
             case SHOW_EYE:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Show Eye Opening Info\"");
                 _mlxlinkCommander->showEye();
                 break;
             case SHOW_FEC:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Show FEC Capabilities\"");
                 _mlxlinkCommander->showFEC();
                 break;
             case SHOW_SLTP:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Show Transmitter Info\"");
                 _mlxlinkCommander->showSltp();
                 break;
             case SHOW_DEVICE:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"General Device Info\"");
                 _mlxlinkCommander->showDeviceData();
                 break;
             case SHOW_BER_MONITOR:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Show Physical Counters and BER Info\"");
                 _mlxlinkCommander->showBerMonitorInfo();
                 break;
             case SHOW_EXTERNAL_PHY:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Show External PHY Info\"");
                 _mlxlinkCommander->showExternalPhy();
                 break;
             case SHOW_PCIE_LINKS:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Show Valid PCIe Links\"");
                 _mlxlinkCommander->showPcieLinks();
                 break;
             case SEND_BER_COLLECT:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Port Extended Information Collection\"");
                 _mlxlinkCommander->collectBER();
                 break;
             case SEND_AMBER_COLLECT:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"AmBER Collection\"");
                 _mlxlinkCommander->collectAMBER();
                 break;
             case SEND_PAOS:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Configure Port State\"");
                 _mlxlinkCommander->sendPaos();
                 break;
             case SEND_PTYS:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Configure Speeds\"");
                 _mlxlinkCommander->sendPtys();
                 break;
             case SEND_PPLM:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Configure FEC\"");
                 _mlxlinkCommander->sendPplm();
                 break;
             case SEND_PPLR:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Configure Loopback Mode\"");
                 _mlxlinkCommander->sendPplr();
                 break;
             case SEND_PRBS:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Physical Test Mode Configuration\"");
                 _mlxlinkCommander->handlePrbs();
                 break;
             case SEND_SLTP:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Configure Transmitter Parameters\"");
                 _mlxlinkCommander->sendSltp();
                 break;
             case SEND_CLEAR_COUNTERS:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Clear Counters\"");
                 _mlxlinkCommander->clearCounters();
                 break;
             case SEND_PEPC:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Set External PHY\"");
                 _mlxlinkCommander->sendPepc();
                 break;
             case CABLE_SHOW_DUMP:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Dump cable pages\"");
                 _mlxlinkCommander->showCableDump();
                 break;
             case CABLE_SHOW_DDM:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Show DDM info\"");
                 _mlxlinkCommander->showCableDDM();
                 break;
             case CABLE_EEPROM_WRITE:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Write to EEPROM\"");
                 _mlxlinkCommander->writeCableEEPROM();
                 break;
             case CABLE_EEPROM_READ:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Write to EEPROM\"");
                 _mlxlinkCommander->readCableEEPROM();
                 break;
             case SHOW_TX_GROUP_MAP:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Show TX Group Mapping\"");
                 _mlxlinkCommander->showTxGroupMapping();
                 break;
             case SET_TX_GROUP_MAP:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Set TX Group Mapping\"");
                 _mlxlinkCommander->setTxGroupMapping();
                 break;
             case GRADE_SCAN_ENABLE:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> EYE scan");
                 _mlxlinkCommander->initEyeOpener();
                 break;
             case ERR_INJ_ENABLE:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> RX Error injection");
                 _mlxlinkCommander->handleRxErrInj();
                 break;
             case RS_FEC_HISTOGRAM:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> FEC histogram info");
                 _mlxlinkCommander->initPortInfo();
                 break;
             case CABLE_PRBS_CMDS:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> Cable PRBS Commands");
                 _mlxlinkCommander->performModulePrbsCommands();
                 break;
             case CABLE_CTRL_PARM:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> Cable Control Parameter");
                 _mlxlinkCommander->performControlParams();
                 break;
             case PCIE_ERROR_INJ:
-                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> PCIE Error injection");
                 _mlxlinkCommander->handlePCIeErrInj();
                 break;
             default:
@@ -1335,11 +1302,6 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == PTYS_LINK_MODE_FORCE_FLAG)
     {
         _mlxlinkCommander->_linkModeForce = true;
-        return PARSE_OK;
-    }
-    else if (name == LOG_FLAG)
-    {
-        _mlxlinkCommander->_userInput._logFilePath = value;
         return PARSE_OK;
     }
     else if (name == CABLE_FLAG)
@@ -1689,11 +1651,6 @@ int MlxlinkUi::run(int argc, char** argv)
     else if (!_mlxlinkCommander->_userInput._sendDpn)
     {
         _mlxlinkCommander->initValidDPNList();
-    }
-
-    if (_mlxlinkCommander->_userInput._logFilePath != "")
-    {
-        _mlxlinkCommander->_mlxlinkLogger = new MlxlinkLogger(_mlxlinkCommander->_userInput._logFilePath);
     }
 
     commandsCaller();

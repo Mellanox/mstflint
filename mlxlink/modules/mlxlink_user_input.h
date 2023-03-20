@@ -89,7 +89,6 @@ public:
     bool _read;
     bool gradeScanPerLane;
 
-    string _logFilePath;
     string _portType;
     string _paosCmd;
     string _pplmFec;

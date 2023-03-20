@@ -57,8 +57,6 @@ libmodules_lib_a_SOURCES = mlxlink_commander.h \
                             mlxlink_maps.cpp \
                             mlxlink_utils.h \
                             mlxlink_utils.cpp \
-                            mlxlink_logger.cpp \
-                            mlxlink_logger.h \
                             mlxlink_cables_commander.h \
                             mlxlink_cables_commander.cpp \
                             mlxlink_ui.h \
