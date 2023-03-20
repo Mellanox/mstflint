@@ -35,11 +35,12 @@
 #ifndef MLXLINK_UTILS_H
 #define MLXLINK_UTILS_H
 
-#include "mlxlink_logger.h"
 #include "mlxlink_maps.h"
 #include <math.h>
 #include <signal.h>
 #include <cmath>
+
+#include "mlxlink_maps.h"
 
 using namespace std;
 
