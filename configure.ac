@@ -63,7 +63,6 @@ AC_COMPILE_IFELSE(
 ]])], [OPENSSL_VERSION_VALID=yes], [OPENSSL_VERSION_VALID=no])
 OS=$(uname -s)
 KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]\.[[0-9]][[0-9]]|[[0-9]]\.[[0-9]]' | head -1`
-LINUX_KERNEL_INCLUDE="/lib/modules/"$(uname -r)"/"
 OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]\.[[0-9]][[0-9]]|[[0-9]]\.[[0-9]]' | head -1`
 OFED_EXIST=`ofed_info -s`
 OFED_NOT_EXIST="ofed_info: command not found"
