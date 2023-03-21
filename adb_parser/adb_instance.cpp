@@ -49,14 +49,13 @@
 
 string addPathSuffixForArraySupport(string path)
 {
-    if (path[path.length() - 1] == ']')
-    { // Won't add suffix if leaf is in Array
+    if (path[path.length() - 1] == ']') { /* Won't add suffix if leaf is in Array */
         return "";
     }
     size_t pos = 0;
     string suffix = "";
-    while ((pos = path.find("[")) != std::string::npos)
-    { // Add array index number in path to suffix.
+
+    while ((pos = path.find("[")) != std::string::npos) { /* Add array index number in path to suffix. */
         size_t end_pos = path.find("]");
         size_t len = end_pos - pos - 1;
         suffix = suffix + "_" + path.substr(pos + 1, len);
@@ -70,6 +69,7 @@ AdbInstance::AdbInstance() :
     nodeDesc(NULL),
     parent(NULL),
     condition(AdbCondition()),
+    conditionalSize(AdbCondition()),
     offset(0xffffffff),
     size(0),
     maxLeafSize(0),
@@ -78,7 +78,6 @@ AdbInstance::AdbInstance() :
     unionSelector(NULL),
     isDiff(false),
     userData(NULL)
-
 {
 }
 
@@ -87,8 +86,9 @@ AdbInstance::AdbInstance() :
  **/
 AdbInstance::~AdbInstance()
 {
-    for (size_t i = 0; i < subItems.size(); i++)
+    for (size_t i = 0; i < subItems.size(); i++) {
         delete subItems[i];
+    }
 }
 
 /**
@@ -136,27 +136,22 @@ bool AdbInstance::isPartOfArray()
  **/
 string AdbInstance::fullName(int skipLevel)
 {
-    list<string> fnList;
+    list < string > fnList;
     AdbInstance* p = parent;
 
     fnList.push_front(name);
-    while (p != NULL)
-    {
+    while (p != NULL) {
         fnList.push_front(p->name);
         p = p->parent;
     }
 
-    if ((int)fnList.size() > skipLevel)
-    {
-        while (skipLevel--)
-        {
+    if ((int)fnList.size() > skipLevel) {
+        while (skipLevel--) {
             fnList.pop_front();
         }
 
         return boost::algorithm::join(fnList, ".");
-    }
-    else
-    {
+    } else {
         return fnList.back();
     }
 }
@@ -188,7 +183,7 @@ u_int32_t AdbInstance::startBit()
 /**
  * Function: AdbInstance::operator<
  **/
-bool AdbInstance::operator<(const AdbInstance& other)
+bool AdbInstance::operator < (const AdbInstance& other)
 {
     return offset < other.offset;
 }
@@ -199,8 +194,8 @@ bool AdbInstance::operator<(const AdbInstance& other)
 AdbInstance* AdbInstance::getChildByPath(const string& path, bool isCaseSensitive)
 {
     string effPath = isCaseSensitive ? path : boost::algorithm::to_lower_copy(path);
-    if (effPath[0] == '.')
-    {
+
+    if (effPath[0] == '.') {
         effPath.erase(0, 1);
     }
 
@@ -208,59 +203,51 @@ AdbInstance* AdbInstance::getChildByPath(const string& path, bool isCaseSensitiv
     string childName = idx == string::npos ? effPath : effPath.substr(0, idx);
     string grandChildPath = idx == string::npos ? string() : effPath.substr(idx + 1);
 
-    if (path.empty())
-    {
+    if (path.empty()) {
         return this;
     }
 
-    // Search for childName
+    /* Search for childName */
     AdbInstance* child = NULL;
-    for (size_t i = 0; i < subItems.size(); i++)
-    {
+
+    for (size_t i = 0; i < subItems.size(); i++) {
         string subName = isCaseSensitive ? subItems[i]->name : boost::algorithm::to_lower_copy(subItems[i]->name);
-        if (subName == childName)
-        {
+        if (subName == childName) {
             child = subItems[i];
             break;
         }
     }
 
-    if (!child)
-    {
+    if (!child) {
         return NULL;
     }
 
-    // if grandChildPath isn't empty this means we need to continue and find the desired field in grand child node
+    /* if grandChildPath isn't empty this means we need to continue and find the desired field in grand child node */
     return grandChildPath.empty() ? child : child->getChildByPath(grandChildPath, isCaseSensitive);
 }
 
 /**
  * Function: AdbInstance::findChild
  **/
-vector<AdbInstance*> AdbInstance::findChild(const string& childName, bool isCaseSensitive, bool by_inst_name)
+vector < AdbInstance * > AdbInstance::findChild(const string& childName, bool isCaseSensitive, bool by_inst_name)
 {
     string effName = isCaseSensitive ? childName : boost::algorithm::to_lower_copy(childName);
-    vector<AdbInstance*> childList;
 
-    if (by_inst_name || isLeaf())
-    {
-        if (name == childName)
-        {
+    vector < AdbInstance * > childList;
+
+    if (by_inst_name || isLeaf()) {
+        if (name == childName) {
             childList.push_back(this);
         }
-    }
-    else
-    {
-        if (isNode() && nodeDesc->name == childName)
-        {
+    } else {
+        if (isNode() && (nodeDesc->name == childName)) {
             childList.push_back(this);
         }
     }
 
-    // do that recursively for all child items
-    for (size_t i = 0; i < subItems.size(); i++)
-    {
-        vector<AdbInstance*> l = subItems[i]->findChild(effName, true);
+    /* do that recursively for all child items */
+    for (size_t i = 0; i < subItems.size(); i++) {
+        vector < AdbInstance * > l = subItems[i]->findChild(effName, true);
         childList.insert(childList.end(), l.begin(), l.end());
     }
 
@@ -273,18 +260,14 @@ vector<AdbInstance*> AdbInstance::findChild(const string& childName, bool isCase
 string AdbInstance::getInstanceAttr(const string& attrName) const
 {
     AttrsMap::const_iterator it = instAttrsMap.find(attrName);
-    if (it == instAttrsMap.end())
-    {
-        if (fieldDesc)
-        {
+
+    if (it == instAttrsMap.end()) {
+        if (fieldDesc) {
             it = fieldDesc->attrs.find(attrName);
-            if (it == fieldDesc->attrs.end())
-            {
+            if (it == fieldDesc->attrs.end()) {
                 return string();
             }
-        }
-        else
-        {
+        } else {
             return string();
         }
     }
@@ -297,16 +280,13 @@ string AdbInstance::getInstanceAttr(const string& attrName) const
 AttrsMap::iterator AdbInstance::getInstanceAttrIterator(const string& attrName, bool& found)
 {
     AttrsMap::iterator it = instAttrsMap.find(attrName);
+
     found = false;
-    if (it != instAttrsMap.end())
-    {
+    if (it != instAttrsMap.end()) {
         found = true;
-    }
-    else if (fieldDesc)
-    {
+    } else if (fieldDesc) {
         it = fieldDesc->attrs.find(attrName);
-        if (it != fieldDesc->attrs.end())
-        {
+        if (it != fieldDesc->attrs.end()) {
             found = true;
         }
     }
@@ -335,14 +315,13 @@ void AdbInstance::copyAllInstanceAttr(AttrsMap& attsToCopy)
 AttrsMap AdbInstance::getFullInstanceAttrsMapCopy()
 {
     AttrsMap tmpCopy;
-    // copy first the fields attr map
-    for (AttrsMap::iterator it = fieldDesc->attrs.begin(); it != fieldDesc->attrs.end(); it++)
-    {
+
+    /* copy first the fields attr map */
+    for (AttrsMap::iterator it = fieldDesc->attrs.begin(); it != fieldDesc->attrs.end(); it++) {
         tmpCopy[it->first] = it->second;
     }
-    // copy the overriden variables - in instAttrsMap
-    for (AttrsMap::iterator it = instAttrsMap.begin(); it != instAttrsMap.end(); it++)
-    {
+    /* copy the overriden variables - in instAttrsMap */
+    for (AttrsMap::iterator it = instAttrsMap.begin(); it != instAttrsMap.end(); it++) {
         tmpCopy[it->first] = it->second;
     }
     return tmpCopy;
@@ -385,28 +364,25 @@ bool AdbInstance::isEnumExists()
  **/
 bool AdbInstance::enumToInt(const string& name, u_int64_t& val)
 {
-    vector<string> enumValues;
+    vector < string > enumValues;
     string enums = getInstanceAttr("enum");
+
     boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
 
-    for (size_t i = 0; i < enumValues.size(); i++)
-    {
-        vector<string> pair;
+    for (size_t i = 0; i < enumValues.size(); i++) {
+        vector < string > pair;
         string trimedEnumValues = enumValues[i];
         boost::algorithm::trim(trimedEnumValues);
         boost::algorithm::split(pair, trimedEnumValues, boost::is_any_of(string("=")));
 
-        if (pair.size() != 2)
-        {
+        if (pair.size() != 2) {
             continue;
         }
 
         char* end;
-        if (pair[0] == name)
-        {
+        if (pair[0] == name) {
             val = strtoul(pair[1].c_str(), &end, 0);
-            if (*end != '\0')
-            {
+            if (*end != '\0') {
                 return false;
             }
             return true;
@@ -421,31 +397,28 @@ bool AdbInstance::enumToInt(const string& name, u_int64_t& val)
  **/
 bool AdbInstance::intToEnum(u_int64_t val, string& valName)
 {
-    vector<string> enumValues;
+    vector < string > enumValues;
     string enums = getInstanceAttr("enum");
+
     boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
 
-    for (size_t i = 0; i < enumValues.size(); i++)
-    {
-        vector<string> pair;
+    for (size_t i = 0; i < enumValues.size(); i++) {
+        vector < string > pair;
         string trimedEnumValues = enumValues[i];
         boost::algorithm::trim(trimedEnumValues);
         boost::algorithm::split(pair, trimedEnumValues, boost::is_any_of(string("=")));
 
-        if (pair.size() != 2)
-        {
+        if (pair.size() != 2) {
             continue;
         }
 
-        char* end;
+        char    * end;
         u_int64_t tmp = strtoul(pair[1].c_str(), &end, 0);
-        if (*end != '\0')
-        {
+        if (*end != '\0') {
             continue;
         }
 
-        if (tmp == val)
-        {
+        if (tmp == val) {
             valName = pair[0];
             return true;
         }
@@ -457,31 +430,29 @@ bool AdbInstance::intToEnum(u_int64_t val, string& valName)
 /**
  * Function: AdbInstance::getEnumMap
  **/
-map<string, u_int64_t> AdbInstance::getEnumMap()
+map < string, u_int64_t > AdbInstance::getEnumMap()
 {
-    map<string, u_int64_t> enumMap;
-    vector<string> enumValues;
+    map < string, u_int64_t > enumMap;
+    vector < string > enumValues;
     string enums = getInstanceAttr("enum");
+
     boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
 
-    for (size_t i = 0; i < enumValues.size(); i++)
-    {
-        vector<string> pair;
+    for (size_t i = 0; i < enumValues.size(); i++) {
+        vector < string > pair;
         string trimedEnumValues = enumValues[i];
         boost::algorithm::trim(trimedEnumValues);
         boost::algorithm::split(pair, trimedEnumValues, boost::is_any_of(string("=")));
-        if (pair.size() != 2)
-        {
+        if (pair.size() != 2) {
             throw AdbException("Can't parse enum: " + enumValues[i]);
-            // continue;
+            /* continue; */
         }
 
-        char* end;
+        char    * end;
         u_int64_t intVal = strtoul(pair[1].c_str(), &end, 0);
-        if (*end != '\0')
-        {
+        if (*end != '\0') {
             throw AdbException(string("Can't evaluate enum (") + pair[0].c_str() + "): " + pair[1].c_str());
-            // continue;
+            /* continue; */
         }
 
         enumMap[pair[0]] = intVal;
@@ -493,28 +464,26 @@ map<string, u_int64_t> AdbInstance::getEnumMap()
 /**
  * Function: AdbInstance::getEnumValues
  **/
-vector<u_int64_t> AdbInstance::getEnumValues()
+vector < u_int64_t > AdbInstance::getEnumValues()
 {
-    vector<u_int64_t> values;
-    vector<string> enumValues;
+    vector < u_int64_t > values;
+    vector < string > enumValues;
     string enums = getInstanceAttr("enum");
+
     boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
 
-    for (size_t i = 0; i < enumValues.size(); i++)
-    {
-        vector<string> pair;
+    for (size_t i = 0; i < enumValues.size(); i++) {
+        vector < string > pair;
         string trimedEnumValues = enumValues[i];
         boost::algorithm::trim(trimedEnumValues);
         boost::algorithm::split(pair, trimedEnumValues, boost::is_any_of(string("=")));
-        if (pair.size() != 2)
-        {
+        if (pair.size() != 2) {
             continue;
         }
 
-        char* end;
+        char    * end;
         u_int64_t intVal = strtoul(pair[1].c_str(), &end, 0);
-        if (*end != '\0')
-        {
+        if (*end != '\0') {
             continue;
         }
 
@@ -529,27 +498,21 @@ vector<u_int64_t> AdbInstance::getEnumValues()
  **/
 AdbInstance* AdbInstance::getUnionSelectedNodeName(const u_int64_t& selectorVal)
 {
-    if (!isUnion())
-    {
+    if (!isUnion()) {
         throw AdbException("This is not union node (%s), can't get selected node name", fullName().c_str());
     }
 
-    if (!unionSelector)
-    {
+    if (!unionSelector) {
         throw AdbException("Can't find selector for union: " + name);
     }
 
-    map<string, u_int64_t> selectorValMap = unionSelector->getEnumMap();
-    for (map<string, u_int64_t>::iterator it = selectorValMap.begin(); it != selectorValMap.end(); it++)
-    {
-        if (it->second == selectorVal)
-        {
+    map < string, u_int64_t > selectorValMap = unionSelector->getEnumMap();
+    for (map < string, u_int64_t > ::iterator it = selectorValMap.begin(); it != selectorValMap.end(); it++) {
+        if (it->second == selectorVal) {
             const string& selectorEnum = it->first;
-            // search for the sub instance with the "selected_by" attribute == selectorEnum
-            for (size_t i = 0; i < subItems.size(); i++)
-            {
-                if (subItems[i]->getInstanceAttr("selected_by") == selectorEnum)
-                {
+            /* search for the sub instance with the "selected_by" attribute == selectorEnum */
+            for (size_t i = 0; i < subItems.size(); i++) {
+                if (subItems[i]->getInstanceAttr("selected_by") == selectorEnum) {
                     return subItems[i];
                 }
             }
@@ -559,7 +522,7 @@ AdbInstance* AdbInstance::getUnionSelectedNodeName(const u_int64_t& selectorVal)
     }
 
     throw AdbException("Union selector field (" + unionSelector->name + ") doesn't define selector value (" +
-                       boost::lexical_cast<string>(selectorVal));
+                       boost::lexical_cast < string > (selectorVal));
 }
 
 /**
@@ -567,20 +530,16 @@ AdbInstance* AdbInstance::getUnionSelectedNodeName(const u_int64_t& selectorVal)
  **/
 AdbInstance* AdbInstance::getUnionSelectedNodeName(const string& selectorEnum)
 {
-    if (!isUnion())
-    {
+    if (!isUnion()) {
         throw AdbException("This is not union node (%s), can't get selected node name", fullName().c_str());
     }
 
-    if (!unionSelector)
-    {
+    if (!unionSelector) {
         throw AdbException("Can't find selector for union: " + name);
     }
 
-    for (size_t i = 0; i < subItems.size(); i++)
-    {
-        if (subItems[i]->getInstanceAttr("selected_by") == selectorEnum)
-        {
+    for (size_t i = 0; i < subItems.size(); i++) {
+        if (subItems[i]->getInstanceAttr("selected_by") == selectorEnum) {
             return subItems[i];
         }
     }
@@ -595,8 +554,7 @@ AdbInstance* AdbInstance::getUnionSelectedNodeName(const string& selectorEnum)
  **/
 bool AdbInstance::isConditionalNode()
 {
-    if (isNode())
-    {
+    if (isNode()) {
         return (getInstanceAttr("is_conditional") == "1");
     }
     return false;
@@ -606,23 +564,21 @@ bool AdbInstance::isConditionalNode()
  * Function: AdbInstance::isConditionValid
  * Throws exception: AdbException
  **/
-bool AdbInstance::isConditionValid(map<string, string>* valuesMap)
+bool AdbInstance::isConditionValid(map < string, string > * valuesMap)
 {
     u_int64_t res;
-    AdbExpr expressionChecker;
-    int status = -1;
-    char* condExp;
-    char* exp;
+    AdbExpr   expressionChecker;
+    int       status = -1;
+    char    * condExp;
+    char    * exp;
 
-    if (fieldDesc->condition.empty())
-    {
+    if (fieldDesc->condition.empty()) {
         return true;
     }
 
     condExp = new char[fieldDesc->condition.size() + 1];
     exp = condExp;
-    if (!exp)
-    {
+    if (!exp) {
         throw AdbException("Memory allocation error");
     }
     strcpy(exp, fieldDesc->condition.c_str());
@@ -632,15 +588,14 @@ bool AdbInstance::isConditionValid(map<string, string>* valuesMap)
     {
         status = expressionChecker.expr(&exp, &res);
     }
-    catch (AdbException& e)
+    catch(AdbException & e)
     {
         delete[] condExp;
         throw AdbException(string("AdbException: ") + e.what_s());
     }
     delete[] condExp;
 
-    if (status < 0)
-    {
+    if (status < 0) {
         throw AdbException(string("Error evaluating expression \"") + fieldDesc->condition.c_str() +
                            "\" : " + AdbExpr::statusStr(status));
     }
@@ -651,27 +606,19 @@ bool AdbInstance::isConditionValid(map<string, string>* valuesMap)
 /**
  * Function: AdbInstance::getLeafFields
  **/
-vector<AdbInstance*> AdbInstance::getLeafFields(bool extendenName)
+vector < AdbInstance * > AdbInstance::getLeafFields(bool extendenName)
 {
-    vector<AdbInstance*> fields;
+    vector < AdbInstance * > fields;
 
-    for (size_t i = 0; i < subItems.size(); i++)
-    {
-        if (subItems[i]->isNode())
-        {
-            vector<AdbInstance*> subFields = subItems[i]->getLeafFields(extendenName);
+    for (size_t i = 0; i < subItems.size(); i++) {
+        if (subItems[i]->isNode()) {
+            vector < AdbInstance * > subFields = subItems[i]->getLeafFields(extendenName);
             fields.insert(fields.end(), subFields.begin(), subFields.end());
-        }
-        else
-        {
-            if (extendenName && !subItems[i]->isNameBeenExtended)
-            {
-                if (subItems[i]->parent->fieldDesc->subNode == "uint64")
-                {
+        } else {
+            if (extendenName && !subItems[i]->isNameBeenExtended) {
+                if (subItems[i]->parent->fieldDesc->subNode == "uint64") {
                     subItems[i]->name = subItems[i]->parent->name + "_" + subItems[i]->name;
-                }
-                else
-                {
+                } else {
                     subItems[i]->name = subItems[i]->name + addPathSuffixForArraySupport(subItems[i]->fullName());
                 }
                 subItems[i]->isNameBeenExtended = true;
@@ -705,12 +652,13 @@ u_int64_t AdbInstance::popBuf(u_int8_t* buf)
 void AdbInstance::print(int indent)
 {
     string indentStr = indentString(indent);
+
     printf("%sfullName: %s, offset: 0x%x.%d, size: 0x%x.%d, isNode:%d, isUnion:%d\n", indentStr.c_str(),
            fullName().c_str(), (offset >> 5) << 2, offset % 32, (size >> 5) << 2, size % 32, isNode(), isUnion());
 
-    if (isNode())
-    {
-        for (size_t i = 0; i < subItems.size(); i++)
+    if (isNode()) {
+        for (size_t i = 0; i < subItems.size(); i++) {
             subItems[i]->print(indent + 1);
+        }
     }
 }

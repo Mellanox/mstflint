@@ -51,8 +51,7 @@ AdbCondition::AdbCondition()
 void AdbCondition::setCondition(std::string condition)
 {
     this->condition = condition;
-    if(condition != "")
-    {
+    if (condition != "") {
         splitConditionIntoVariables();
     }
 }
@@ -60,17 +59,23 @@ void AdbCondition::setCondition(std::string condition)
 void AdbCondition::splitConditionIntoVariables()
 {
     static const regex EXP_PATTERN("(\\w+)\\s*==");
-    match_results<string::const_iterator> match;
+
+    match_results < string::const_iterator > match;
     string::const_iterator start = this->condition.begin();
     string::const_iterator end = this->condition.end();
-    while(regex_search(start, end, match, EXP_PATTERN)){
+
+    while (regex_search(start, end, match, EXP_PATTERN)) {
         this->varsMap[match[0]] = CondVar();
         start = match[0].second;
     }
 }
 
-map<string, CondVar>& AdbCondition::getVarsMap()
+map < string, CondVar > &AdbCondition::getVarsMap()
 {
     return this->varsMap;
 }
 
+std::string AdbCondition::getCondition()
+{
+    return this->condition;
+}
