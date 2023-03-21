@@ -24,7 +24,7 @@ typedef __u32       __be32;
 #define __packed
 #define gcm
 
-#include <source/include/linux/mlx5/mlx5_ifc.h>
+#include "mlx5_ifc_stub.h"
 
 /* helper macros */
 #define __mlx5_nullp(typ) ((struct mlx5_ifc_##typ##_bits *)0)
