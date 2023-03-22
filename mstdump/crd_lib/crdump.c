@@ -900,7 +900,8 @@ static int crd_read_line(IN FILE* fd, OUT char* tmp)
             {
                 continue;
             }
-            else if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) && !(i == 1 && c == 'x') && !(has_comma < 2 && c == ','))
+            else if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')) &&
+                     !(i == 1 && c == 'x') && !(has_comma < 2 && c == ','))
             {
                 printf("Error - the character %c is not valid for address!\n", c);
                 return CRD_CSV_BAD_FORMAT;

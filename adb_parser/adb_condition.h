@@ -48,16 +48,16 @@ class AdbCondition
 {
 public:
     AdbCondition();
-    map < string, CondVar > &getVarsMap();
+    map<string, CondVar>& getVarsMap();
     ~AdbCondition() = default;
     void setCondition(std::string);
     std::string getCondition();
 
 private:
     void splitConditionIntoVariables();
-    AdbExpr     evaluatedCondition;
+    AdbExpr evaluatedCondition;
     std::string condition;
-    map < string, CondVar > varsMap;
+    map<string, CondVar> varsMap;
 };
 
-#endif /* ADB_CONDITION_Hs */
+#endif // ADB_CONDITION_Hs
