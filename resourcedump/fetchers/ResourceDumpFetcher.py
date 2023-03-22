@@ -63,7 +63,8 @@ import regaccess  # noqa
 
 class MKEY_PARAMS_ST(ctypes.Structure):
     _fields_ = [("lkey", ctypes.c_uint32),
-                ("umem_addr", ctypes.c_uint64)]
+                ("umem_addr", ctypes.c_uint64),
+                ("umem_size", ctypes.c_uint32)]
 
 
 class EXTRACTBITS_PARAMS_ST(ctypes.Structure):
@@ -212,7 +213,7 @@ class ResourceDumpFetcher:
                 raise(e)
 
             inline_dump = 0
-            buf_size = cs.MKEY_BUF_SIZE
+            buf_size = params_st.contents.umem_size
             address = params_st.contents.umem_addr
 
         while call_res_dump:

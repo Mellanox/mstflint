@@ -137,7 +137,7 @@ struct mlx5_ifc_destroy_mkey_in_bits
     u8 reserved_at_60[0x20];
 };
 
-#define BUFF_SIZE 1024 * 1024
+#define BUFF_SIZE 32 * 1024 * 1024
 #define MLX5_CMD_OP_CREATE_MKEY 0x200
 #define MLX5_CMD_OP_DESTROY_MKEY 0x202
 #define LIB_VERBS_LINUX_PATH "/usr/lib64/libibverbs.so"
@@ -156,13 +156,6 @@ struct mlx5_ifc_destroy_mkey_in_bits
 #define CLOSE_DEVICE "ibv_close_device"
 #define DEALLOCATE_PD "ibv_dealloc_pd"
 #define UMEM_DEREG "mlx5dv_devx_umem_dereg"
-
-#define container_of(ptr, type, member)                   \
-    ({                                                    \
-        const typeof(((type*)0)->member)* __mptr = (ptr); \
-        (type*)((char*)__mptr - offsetof(type, member));  \
-    })
-#define to_mxxx(xxx, type) container_of(ib##xxx, struct mlx5_##type, ibv_##xxx)
 
 typedef struct ibv_pd* (*f_ibv_alloc_pd)(struct ibv_context*);
 typedef int (*f_ibv_close_device)(struct ibv_context*);
@@ -228,6 +221,7 @@ struct result
 {
     uint32_t lkey;
     uint64_t umem_addr;
+    uint32_t umem_size;
 };
 
 struct extract

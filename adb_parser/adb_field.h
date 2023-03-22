@@ -43,12 +43,12 @@
 using namespace xmlCreator;
 using namespace std;
 
-typedef map < string, string > AttrsMap;
+typedef map<string, string> AttrsMap;
 
 class AdbField
 {
 public:
-    /* Methods */
+    // Methods
     AdbField();
     ~AdbField();
     bool isLeaf();
@@ -60,30 +60,30 @@ public:
     u_int32_t eSize();
     string toXml(const string& addPrefix);
 
-    /* Operator overloading - useful for sorting */
-    bool operator < (AdbField & other);
+    // Operator overloading - useful for sorting
+    bool operator<(AdbField& other);
 
-    /* FOR DEBUG */
+    // FOR DEBUG
     void print(int indent = 0);
 
 public:
-    /* Members */
-    string    name;
-    u_int32_t size;   /* in bits */
-    u_int32_t offset; /* in bits (relative to the node start addr) */
-    string    desc;
-    bool      definedAsArr;
+    // Members
+    string name;
+    u_int32_t size;   // in bits
+    u_int32_t offset; // in bits (relative to the node start addr)
+    string desc;
+    bool definedAsArr;
     u_int32_t lowBound;
     u_int32_t highBound;
-    bool      unlimitedArr;
-    bool      dynamicArr;
-    string    subNode;
-    AttrsMap  attrs;
-    bool      isReserved;
-    string    condition; /* field's visibility dynamic condition */
+    bool unlimitedArr;
+    bool dynamicArr;
+    string subNode;
+    AttrsMap attrs;
+    bool isReserved;
+    string condition; // field's visibility dynamic condition
 
-    /* FOR USER USAGE */
+    // FOR USER USAGE
     void* userData;
 };
 
-#endif /* ifndef ADB_FIELD_H */
+#endif
