@@ -62,8 +62,8 @@ AC_COMPILE_IFELSE(
 #endif
 ]])], [OPENSSL_VERSION_VALID=yes], [OPENSSL_VERSION_VALID=no])
 OS=$(uname -s)
-KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]\.[[0-9]][[0-9]]|[[0-9]]\.[[0-9]]' | head -1`
-OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]\.[[0-9]][[0-9]]|[[0-9]]\.[[0-9]]' | head -1`
+KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
+OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
 OFED_EXIST=`ofed_info -s`
 OFED_NOT_EXIST="ofed_info: command not found"
 MTCR_CONF_DIR=""
@@ -73,7 +73,7 @@ OFED_BUILD_CHK=0
 KERNEL_BUILD_CHK=0
 
 if test "x$OFED_EXIST" != "x$OFED_NOT_EXIST"; then
-  if test "x$OFED_VER" \> "x5.6" ; then
+  if test $(echo $OFED_VER 5.6 | tr " " "\n" | sort -V | tail -n 1) == $OFED_VER ; then
       OFED_BUILD_CHK=1
   fi
 fi
