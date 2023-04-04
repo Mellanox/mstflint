@@ -824,6 +824,7 @@ int MlnxDev::queryFwops()
         goto clean_up;
     }
     setGuidMac(fw_query);
+    _uniqueId += "_" + (guidPortOne.empty() ? "NA" : guidPortOne) + "_" + (guidPortTwo.empty() ? "NA" : guidPortTwo);
 
     // attempt to take some fields from image info
     if (fw_query.fw_type == FIT_FS3 || fw_query.fw_type == FIT_FS4)
