@@ -37,6 +37,7 @@
 #include <cibfw_layouts.h>
 #include <cx6fw_layouts.h>
 #include <cx4fw_layouts.h>
+#include "tools_layouts/image_layout_layouts.h"
 #include "fw_ops.h"
 #include "fs3_ops.h"
 #include "aux_tlv_ops.h"

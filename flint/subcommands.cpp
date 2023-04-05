@@ -2248,7 +2248,7 @@ FlintStatus SignRSASubCommand::executeCommand()
     }
 
     //* Fill image_signature section with 0xff
-    vector<u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
+    vector<u_int8_t> signature256Data(IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE, 0xff);
     _imgOps->UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
     return FLINT_SUCCESS;
 }

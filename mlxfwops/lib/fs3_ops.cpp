@@ -48,6 +48,7 @@
 #endif
 #else
 #include "connectx4lx_layouts.h"
+#include "cx4fw_layouts.h"
 #ifndef UEFI_BUILD
 #include <cmdif/cib_cif.h>
 #endif
@@ -385,18 +386,18 @@ bool Fs3Operations::GetImgSigInfo(u_int32_t keypair_uuid[4])
 
 bool Fs3Operations::GetImgSigInfo256(u_int8_t* buff)
 {
-    struct cx4fw_image_signature_256 fwSignature;
+    struct image_layout_image_signature fwSignature;
 
-    cx4fw_image_signature_256_unpack(&fwSignature, buff);
+    image_layout_image_signature_unpack(&fwSignature, buff);
     /* cx4fw_image_signature_dump(&fwSignature, stdout); */
     return GetImgSigInfo(fwSignature.keypair_uuid);
 }
 
 bool Fs3Operations::GetImgSigInfo512(u_int8_t* buff)
 {
-    struct cx4fw_image_signature_512 fwSignature;
+    struct image_layout_image_signature_2 fwSignature;
 
-    cx4fw_image_signature_512_unpack(&fwSignature, buff);
+    image_layout_image_signature_2_unpack(&fwSignature, buff);
     return GetImgSigInfo(fwSignature.keypair_uuid);
 }
 
@@ -2441,15 +2442,15 @@ bool Fs3Operations::UpdateSection(void        * new_info,
             return false;
         }
     } else if ((sect_type == FS3_IMAGE_SIGNATURE_256) && (cmd_type == CMD_SET_SIGNATURE)) {
-        vector < u_int8_t > sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_256_SIZE);
+        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE);
         type_msg = "SIGNATURE";
-        newSection.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE);
-        memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_256_SIZE);
+        newSection.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE);
+        memcpy(newSection.data(), sig.data(), IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE);
     } else if ((sect_type == FS3_IMAGE_SIGNATURE_512) && (cmd_type == CMD_SET_SIGNATURE)) {
-        vector < u_int8_t > sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_512_SIZE);
+        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
         type_msg = "SIGNATURE";
-        newSection.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE);
-        memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_512_SIZE);
+        newSection.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
+        memcpy(newSection.data(), sig.data(), IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
     } else if ((sect_type == FS3_PUBLIC_KEYS_2048) && (cmd_type == CMD_SET_PUBLIC_KEYS)) {
         char* publickeys_file = (char*)new_info;
         type_msg = "PUBLIC KEYS 2048";
@@ -2783,11 +2784,11 @@ bool Fs3Operations::SignForFwUpdate(const char           * uuid,
     }
 
     if (shaType == MlxSign::SHA256) {
-        if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_512, CX4FW_IMAGE_SIGNATURE_512_SIZE, printFunc)) {
+        if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_512, IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE, printFunc)) {
             return false;
         }
     } else if (shaType == MlxSign::SHA512) {
-        if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_256, CX4FW_IMAGE_SIGNATURE_256_SIZE, printFunc)) {
+        if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_256, IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE, printFunc)) {
             return false;
         }
     } else {
@@ -2828,8 +2829,8 @@ bool Fs3Operations::FwInsertEncSHA(MlxSign::SHAType shaType,
     int        rc;
     vector < u_int8_t > sha, encSha, sig;
     vector < u_int32_t > uuidData;
-    struct cx4fw_image_signature_256 image_signature_256;
-    struct cx4fw_image_signature_512 image_signature_512;
+    struct image_layout_image_signature image_signature_256;
+    struct image_layout_image_signature_2 image_signature_512;
 
     if (_ioAccess->is_flash()) {
         return errmsg("Signing is not applicable for devices");
@@ -2865,8 +2866,8 @@ bool Fs3Operations::FwInsertEncSHA(MlxSign::SHAType shaType,
         memcpy(image_signature_256.signature, encSha.data(), encSha.size());
         TOCPUn(image_signature_256.signature, encSha.size() >> 2);
         memcpy(image_signature_256.keypair_uuid, uuidData.data(), uuidData.size() << 2);
-        sig.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0x0);
-        cx4fw_image_signature_256_pack(&image_signature_256, sig.data());
+        sig.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE, 0x0);
+        image_layout_image_signature_pack(&image_signature_256, sig.data());
 
         if (!UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256, false, CMD_SET_SIGNATURE, printFunc)) {
             return false;
@@ -2876,8 +2877,8 @@ bool Fs3Operations::FwInsertEncSHA(MlxSign::SHAType shaType,
         memcpy(image_signature_512.signature, encSha.data(), encSha.size());
         TOCPUn(image_signature_512.signature, encSha.size() >> 2);
         memcpy(image_signature_512.keypair_uuid, uuidData.data(), uuidData.size() << 2);
-        sig.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
-        cx4fw_image_signature_512_pack(&image_signature_512, sig.data());
+        sig.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE, 0x0);
+        image_layout_image_signature_2_pack(&image_signature_512, sig.data());
 
         if (!UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_512, false, CMD_SET_SIGNATURE, printFunc)) {
             return false;
@@ -2903,7 +2904,7 @@ bool Fs3Operations::FwInsertEncSHA(MlxSign::SHAType shaType,
 bool Fs3Operations::FwInsertSHA256(PrintCallBack printFunc)
 {
     vector < u_int8_t > sha, sig;
-    struct cx4fw_image_signature_256 image_signature_256;
+    struct image_layout_image_signature image_signature_256;
 
     if (_ioAccess->is_flash()) {
         return errmsg("Signing is not applicable for devices");
@@ -2916,8 +2917,8 @@ bool Fs3Operations::FwInsertSHA256(PrintCallBack printFunc)
     memset(&image_signature_256, 0, sizeof(image_signature_256));
     memcpy(image_signature_256.signature, sha.data(), sha.size());
     TOCPUn(image_signature_256.signature, sha.size() >> 2);
-    sig.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE);
-    cx4fw_image_signature_256_pack(&image_signature_256, sig.data());
+    sig.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE);
+    image_layout_image_signature_pack(&image_signature_256, sig.data());
 
     if (!UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256, false, CMD_SET_SIGNATURE, printFunc)) {
         return false;
@@ -2939,24 +2940,24 @@ bool Fs3Operations::CheckPublicKeysFile(const char* fname, fs3_section_t& sectio
         return false;
     }
 
-    if ((publicKeysSize < CX4FW_PUBLIC_KEY_2048_SIZE) || (publicKeysSize < CX4FW_PUBLIC_KEY_4096_SIZE)) {
+    if (publicKeysSize < IMAGE_LAYOUT_PUBLIC_KEYS_SIZE || publicKeysSize < IMAGE_LAYOUT_PUBLIC_KEYS_2_SIZE) {
         delete[] publicKeysData;
         return errmsg("Invalid size (%d bytes) of public keys file", publicKeysSize);
     }
 
     /* try to parse as cx4fw_public_key_2048: */
-    struct cx4fw_public_key_2048 cx4fw_public_key_2048;
+    struct image_layout_file_public_keys image_layout_file_public_keys;
 
-    memset(&cx4fw_public_key_2048, 0x0, sizeof(cx4fw_public_key_2048));
-    cx4fw_public_key_2048_unpack(&cx4fw_public_key_2048, publicKeysData);
-    if (cx4fw_public_key_2048.auth_type == 0x3) {
+    memset(&image_layout_file_public_keys, 0x0, sizeof(image_layout_file_public_keys));
+    image_layout_file_public_keys_unpack(&image_layout_file_public_keys, publicKeysData);
+    if (image_layout_file_public_keys.component_authentication_configuration.auth_type == 0x3) {
         sectionType = FS3_PUBLIC_KEYS_2048;
     } else {
         /* Try to parse it as 4096 */
-        struct cx4fw_public_key_4096 cx4fw_public_key_4096;
-        memset(&cx4fw_public_key_4096, 0x0, sizeof(cx4fw_public_key_4096));
-        cx4fw_public_key_4096_unpack(&cx4fw_public_key_4096, publicKeysData);
-        if (cx4fw_public_key_4096.auth_type == 0x4) {
+        struct image_layout_file_public_keys_2 image_layout_file_public_keys_2;
+        memset(&image_layout_file_public_keys_2, 0x0, sizeof(image_layout_file_public_keys_2));
+        image_layout_file_public_keys_2_unpack(&image_layout_file_public_keys_2, publicKeysData);
+        if (image_layout_file_public_keys_2.component_authentication_configuration.auth_type == 0x4) {
             sectionType = FS3_PUBLIC_KEYS_4096;
         } else {
             delete[] publicKeysData;
@@ -3913,27 +3914,27 @@ bool Fs3Operations::InsertSecureFWSignature(vector < u_int8_t > signature,
     }
 
     if (shaType == MlxSign::SHA256) {
-        struct cx4fw_image_signature_256 image_signature_256;
+        struct image_layout_image_signature image_signature_256;
         memset(&image_signature_256, 0, sizeof(image_signature_256));
         memcpy(image_signature_256.signature, signature.data(), signature.size());
         TOCPUn(image_signature_256.signature, signature.size() >> 2);
         memcpy(image_signature_256.keypair_uuid, uuidData.data(), uuidData.size() << 2);
         vector < u_int8_t > image_signature_256_data;
-        image_signature_256_data.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0x0);
-        cx4fw_image_signature_256_pack(&image_signature_256, image_signature_256_data.data());
+        image_signature_256_data.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE, 0x0);
+        image_layout_image_signature_pack(&image_signature_256, image_signature_256_data.data());
         if (!UpdateSection(image_signature_256_data.data(), FS3_IMAGE_SIGNATURE_256, false, CMD_SET_SIGNATURE,
                            printFunc)) {
             return false;
         }
     } else if (shaType == MlxSign::SHA512) {
-        struct cx4fw_image_signature_512 image_signature_512;
+        struct image_layout_image_signature_2 image_signature_512;
         memset(&image_signature_512, 0, sizeof(image_signature_512));
         memcpy(image_signature_512.signature, signature.data(), signature.size());
         TOCPUn(image_signature_512.signature, signature.size() >> 2);
         memcpy(image_signature_512.keypair_uuid, uuidData.data(), uuidData.size() << 2);
         vector < u_int8_t > image_signature_512_data;
-        image_signature_512_data.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
-        cx4fw_image_signature_512_pack(&image_signature_512, image_signature_512_data.data());
+        image_signature_512_data.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE, 0x0);
+        image_layout_image_signature_2_pack(&image_signature_512, image_signature_512_data.data());
         if (!UpdateSection(image_signature_512_data.data(), FS3_IMAGE_SIGNATURE_512, false, CMD_SET_SIGNATURE,
                            printFunc)) {
             return false;

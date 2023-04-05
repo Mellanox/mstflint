@@ -3856,15 +3856,15 @@ bool Fs4Operations::UpdateSection(void* new_info,
     }
     else if (sect_type == FS3_IMAGE_SIGNATURE_256 && cmd_type == CMD_SET_SIGNATURE)
     {
-        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_256_SIZE);
+        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE);
         type_msg = "SIGNATURE";
-        newSection.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE);
-        memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_256_SIZE);
+        newSection.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE);
+        memcpy(newSection.data(), sig.data(), IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE);
         // Check if padding is needed, by comparing with the real size in the itoc entry:
         u_int32_t sizeInItocEntry = curr_toc->toc_entry.size << 2;
-        if (sizeInItocEntry > CX4FW_IMAGE_SIGNATURE_256_SIZE)
+        if (sizeInItocEntry > IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE)
         {
-            for (unsigned int l = 0; l < sizeInItocEntry - CX4FW_IMAGE_SIGNATURE_256_SIZE; l++)
+            for (unsigned int l = 0; l < sizeInItocEntry - IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE; l++)
             {
                 newSection.push_back(0x0);
             }
@@ -3872,14 +3872,14 @@ bool Fs4Operations::UpdateSection(void* new_info,
     }
     else if (sect_type == FS3_IMAGE_SIGNATURE_512 && cmd_type == CMD_SET_SIGNATURE)
     {
-        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_512_SIZE);
+        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
         type_msg = "SIGNATURE";
-        newSection.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE);
-        memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_512_SIZE);
+        newSection.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
+        memcpy(newSection.data(), sig.data(), IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
         u_int32_t sizeInItocEntry = curr_toc->toc_entry.size << 2;
-        if (sizeInItocEntry > CX4FW_IMAGE_SIGNATURE_256_SIZE)
+        if (sizeInItocEntry > IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE)
         {
-            for (unsigned int l = 0; l < sizeInItocEntry - CX4FW_IMAGE_SIGNATURE_256_SIZE; l++)
+            for (unsigned int l = 0; l < sizeInItocEntry - IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE; l++)
             {
                 newSection.push_back(0x0);
             }
