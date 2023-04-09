@@ -1465,7 +1465,7 @@ bool isSpeed100GPerLane(u_int32_t speed, u_int32_t protocol)
     bool valid = true;
     if ((protocol == IB && speed != IB_LINK_SPEED_NDR) ||
         (protocol == ETH && (speed != ETH_LINK_SPEED_EXT_100GAUI_1 && speed != ETH_LINK_SPEED_EXT_200GAUI_2 &&
-                             speed != ETH_LINK_SPEED_EXT_400GAUI_4)))
+                             speed != ETH_LINK_SPEED_EXT_400GAUI_4 && speed != ETH_LINK_SPEED_EXT_800GAUI_8)))
     {
         valid = false;
     }
