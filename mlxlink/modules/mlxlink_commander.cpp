@@ -4201,7 +4201,8 @@ void MlxlinkCommander::validateNumOfParamsForNDRGen()
     u_int32_t params;
     string errMsg = "Invalid set of Transmitter Parameters, ";
     errMsg += "valid parameters for the active speed are: ";
-    if (isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    if ((!_activeSpeed && _devID == DeviceSpectrum4) ||
+        isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
     {
         params = SLTP_NDR_LAST;
         errMsg += "fir_pre3,fir_pre2,fir_pre1,fir_main,fir_post1";
@@ -4291,7 +4292,8 @@ string MlxlinkCommander::updateSltpNdrFields()
     char paramBuff[128] = "";
     string sltpParamsCmd = "";
 
-    if (isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    if ((!_activeSpeed && _devID == DeviceSpectrum4) ||
+        isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
     {
         snprintf(ndrParamBuff, 64, ",fir_pre3=%d,fir_pre2=%d", _userInput._sltpParams[SLTP_NDR_FIR_PRE3],
                  _userInput._sltpParams[SLTP_NDR_FIR_PRE2]);
