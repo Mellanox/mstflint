@@ -1528,7 +1528,7 @@ void MlxlinkCommander::showModuleInfo()
         prepareDDMSection(valid, isModuleExtSupported);
         if (_productTechnology >= PRODUCT_16NM)
         {
-            preparePrtlSection(valid);
+            preparePrtlSection();
             prepareBerModuleInfoNdr(valid);
         }
         cout << _moduleInfoCmd;
@@ -1547,7 +1547,7 @@ void MlxlinkCommander::showModuleInfo()
     }
 }
 
-void MlxlinkCommander::preparePrtlSection(bool valid)
+void MlxlinkCommander::preparePrtlSection()
 {
     if (_userInput._advancedMode)
     {
@@ -1555,6 +1555,7 @@ void MlxlinkCommander::preparePrtlSection(bool valid)
         bool isRttSupported = false;
         u_int16_t asicLatency = 0;
         u_int16_t moduleLatency = 0;
+        bool valid = true;
 
         try
         {
@@ -1567,20 +1568,21 @@ void MlxlinkCommander::preparePrtlSection(bool valid)
 
         if (valid)
         {
-            isRttSupported = getFieldValue("rtt_support");
+            u_int32_t rttLatencyInt = getFieldValue("round_trip_latency");
+            isRttSupported = rttLatencyInt && rttLatencyInt != 0xffffff;
             asicLatency = (u_int16_t)getFieldValue("local_phy_latency");
             moduleLatency = (u_int16_t)getFieldValue("local_mod_dp_latency");
 
-            float rttLatency = ((float)getFieldValue("round_trip_latency")) / ((float)getFieldValue("latency_res"));
+            float rttLatency = ((float)rttLatencyInt) / ((float)getFieldValue("latency_res"));
             snprintf(rttFrmt, sizeof(rttFrmt), "%0.2f", rttLatency);
         }
 
         setPrintVal(_moduleInfoCmd, "Intra-ASIC Latency [ns]", to_string(asicLatency), ANSI_COLOR_RESET, true,
                     valid && isRttSupported);
         setPrintVal(_moduleInfoCmd, "Module Datapath Latency [ns]", to_string(moduleLatency), ANSI_COLOR_RESET, true,
-                    valid && isRttSupported);
-        setPrintVal(_moduleInfoCmd, "Intra-ASIC Latency [ns]", string(rttFrmt), ANSI_COLOR_RESET, true,
-                    valid && isRttSupported);
+                    asicLatency != 0);
+        setPrintVal(_moduleInfoCmd, "Round Trip Latency [ns]", string(rttFrmt), ANSI_COLOR_RESET, true,
+                    moduleLatency != 0);
     }
 }
 
