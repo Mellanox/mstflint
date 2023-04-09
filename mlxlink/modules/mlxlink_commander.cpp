@@ -3198,7 +3198,7 @@ string MlxlinkCommander::getSupportedPrbsModes(u_int32_t modeSelector)
     sendPrmReg(regName, GET);
 
     u_int32_t capsMask = getFieldValue("prbs_modes_cap");
-    capsMask = modeSelector == PRBS_RX ? capsMask & 0xffe3fff : capsMask;
+    capsMask = modeSelector == PRBS_RX ? capsMask & 0x1ffe3fff : capsMask;
     string modeCapStr = "";
     // Iterating over the supported modes according to capability mask
     // And preparing them in one string
@@ -3576,8 +3576,9 @@ void MlxlinkCommander::checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMas
     // checking if the fetched capability supported in cap mask or not
     if (!(modeCap & capMask))
     {
-        string errStr =
-          "Device does not support " + prbsModeStr + " PRBS pattern \"" + modeToCheck + "\" in physical test mode.";
+        string errStr = "Device does not support " + prbsModeStr + " PRBS pattern \"" +
+                        (modeSelector == PRBS_TX ? _userInput._ppttMode : _userInput._pprtMode) +
+                        "\" in physical test mode.";
         errStr += "\nValid RX PRBS modes Are: " + getSupportedPrbsModes(PRBS_RX);
         errStr += "\nValid TX PRBS modes Are: " + getSupportedPrbsModes(PRBS_TX);
         errStr += "\nDefault PRBS Mode is PRBS31";
