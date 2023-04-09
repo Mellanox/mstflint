@@ -1081,22 +1081,33 @@ void MlxlinkCommander::fillEthPortGroupMap(u_int32_t localPort,
     }
     else
     {
-        switch (width)
+        sendPrmReg(ACCESS_REG_PLLP, GET, "local_port=%d", localPort);
+        u_int32_t splitStat = getFieldValue("split_stat");
+        if (splitStat == 0)
         {
-            case 1:
-                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1));
-                _localPortsPerGroup.push_back(PortGroup(localPort + 1, labelPort, group, 2));
-                _localPortsPerGroup.push_back(PortGroup(localPort + 2, labelPort, group, 3));
-                _localPortsPerGroup.push_back(PortGroup(localPort + 3, labelPort, group, 4));
-                break;
-            case 2:
-                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1));
-                _localPortsPerGroup.push_back(PortGroup(localPort + 2, labelPort, group, 2));
-                break;
-            case 4:
-            case 8:
-                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
-                break;
+            _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
+        }
+        else
+        {
+            int found = 0;
+            for (int i = 0; i < (int)(pow(2.0, (double)splitStat)) || found < (int)(pow(2.0, (double)splitStat)); i++)
+            {
+                try
+                {
+                    sendPrmReg(ACCESS_REG_PMLP, GET, "local_port=%d", localPort + i);
+
+                    if (getFieldValue("width") == 0)
+                    {
+                        continue;
+                    }
+                }
+                catch (...)
+                {
+                    continue;
+                }
+                _localPortsPerGroup.push_back(PortGroup(localPort + i, labelPort, group, found + 1));
+                found++;
+            }
         }
     }
 }
