@@ -3346,6 +3346,7 @@ FlintStatus BurnSubCommand::executeCommand()
     // set fw type
 
     // updateBurnParams with input given by user
+    _fwType = _fwOps->FwType();
     updateBurnParams();
 
     if (_imgOps->FwType() == FIT_COMPS)
@@ -3367,7 +3368,6 @@ FlintStatus BurnSubCommand::executeCommand()
         }
     }
 
-    _fwType = _fwOps->FwType();
     if (_fwOps->IsFifthGen())
     {
         if (_flintParams.mac_specified || _flintParams.macs_specified)
