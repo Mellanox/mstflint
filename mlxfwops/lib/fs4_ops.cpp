@@ -1073,7 +1073,7 @@ bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     if (image_encrypted)
     {
         //* Verify DTOC CRCs only
-        if (!parseDevData(false, false, verifyCallBackFunc, showItoc))
+        if (!parseDevData(false, false, verifyCallBackFunc))
         {
             return errmsg("%s", err());
         }
@@ -1179,7 +1179,7 @@ bool Fs4Operations::encryptedFwReadImageInfoSection()
     return true;
 }
 
-bool Fs4Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack verifyCallBackFunc, bool showItoc)
+bool Fs4Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack verifyCallBackFunc)
 {
     //* Initializing DTOC info
     _ioAccess->set_address_convertor(0, 0);
@@ -1197,7 +1197,7 @@ bool Fs4Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack v
     queryOptions.readRom = false;
     queryOptions.quickQuery = quickQuery;
     DPRINTF(("Fs4Operations::parseDevData call verifyTocEntries() DTOC\n"));
-    if (!verifyTocEntries(dtoc_addr, showItoc, true, queryOptions, verifyCallBackFunc, verbose))
+    if (!verifyTocEntries(dtoc_addr, false, true, queryOptions, verifyCallBackFunc, verbose))
     {
         return false;
     }
