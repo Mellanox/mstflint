@@ -31,7 +31,7 @@
  */
 
 /***
-         *** This file was generated at "2023-01-24 14:29:14"
+         *** This file was generated at "2023-01-25 19:38:33"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/image_layout/image_layout.adb --file-prefix image_layout --prefix image_layout_ --no-adb-utils
          ***/
@@ -482,6 +482,23 @@ struct image_layout_version_vector {
 	/* Description -  */
 	/* 0x2c.0 - 0x2c.31 */
 	struct image_layout_reset_version reserved6;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct image_layout_boot_version {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.7 */
+	u_int8_t minor_version;
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.8 - 0x0.15 */
+	u_int8_t major_version;
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t image_format_version;
 };
 
 /* Description -   */
@@ -1007,44 +1024,47 @@ struct image_layout_tools_area {
 union image_layout_image_layout_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
+	/* 0x0.0 - 0x23c.31 */
+	struct image_layout_image_signature_2 image_signature_2;
+	/* Description -  */
 	/* 0x0.0 - 0x5fc.31 */
 	struct image_layout_secure_boot_signatures secure_boot_signatures;
-	/* Description -  */
-	/* 0x0.0 - 0x10fc.31 */
-	struct image_layout_public_keys_3 public_keys_3;
-	/* Description -  */
-	/* 0x0.0 - 0x800.31 */
-	struct image_layout_hashes_table hashes_table;
-	/* Description -  */
-	/* 0x0.0 - 0x1fc.31 */
-	struct image_layout_device_info device_info;
-	/* Description -  */
-	/* 0x0.0 - 0x3fc.31 */
-	struct image_layout_image_info image_info;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	struct image_layout_tools_area tools_area;
-	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
-	struct image_layout_itoc_entry itoc_entry;
-	/* Description -  */
-	/* 0x0.0 - 0x8fc.31 */
-	struct image_layout_public_keys public_keys;
-	/* Description -  */
-	/* 0x0.0 - 0x10fc.31 */
-	struct image_layout_public_keys_2 public_keys_2;
-	/* Description -  */
-	/* 0x0.0 - 0x13c.31 */
-	struct image_layout_image_signature image_signature;
-	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
-	struct image_layout_hw_pointers_carmel hw_pointers_carmel;
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
 	struct image_layout_itoc_header itoc_header;
 	/* Description -  */
-	/* 0x0.0 - 0x23c.31 */
-	struct image_layout_image_signature_2 image_signature_2;
+	/* 0x0.0 - 0x1fc.31 */
+	struct image_layout_device_info device_info;
+	/* Description -  */
+	/* 0x0.0 - 0x10fc.31 */
+	struct image_layout_public_keys_3 public_keys_3;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	struct image_layout_boot_version boot_version;
+	/* Description -  */
+	/* 0x0.0 - 0x13c.31 */
+	struct image_layout_image_signature image_signature;
+	/* Description -  */
+	/* 0x0.0 - 0x800.31 */
+	struct image_layout_hashes_table hashes_table;
+	/* Description -  */
+	/* 0x0.0 - 0x8fc.31 */
+	struct image_layout_public_keys public_keys;
+	/* Description -  */
+	/* 0x0.0 - 0x3fc.31 */
+	struct image_layout_image_info image_info;
+	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	struct image_layout_hw_pointers_carmel hw_pointers_carmel;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	struct image_layout_tools_area tools_area;
+	/* Description -  */
+	/* 0x0.0 - 0x10fc.31 */
+	struct image_layout_public_keys_2 public_keys_2;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	struct image_layout_itoc_entry itoc_entry;
 };
 
 
@@ -1203,6 +1223,13 @@ void image_layout_version_vector_print(const struct image_layout_version_vector 
 unsigned int image_layout_version_vector_size(void);
 #define IMAGE_LAYOUT_VERSION_VECTOR_SIZE    (0x30)
 void image_layout_version_vector_dump(const struct image_layout_version_vector *ptr_struct, FILE *fd);
+/* boot_version */
+void image_layout_boot_version_pack(const struct image_layout_boot_version *ptr_struct, u_int8_t *ptr_buff);
+void image_layout_boot_version_unpack(struct image_layout_boot_version *ptr_struct, const u_int8_t *ptr_buff);
+void image_layout_boot_version_print(const struct image_layout_boot_version *ptr_struct, FILE *fd, int indent_level);
+unsigned int image_layout_boot_version_size(void);
+#define IMAGE_LAYOUT_BOOT_VERSION_SIZE    (0x4)
+void image_layout_boot_version_dump(const struct image_layout_boot_version *ptr_struct, FILE *fd);
 /* device_info */
 void image_layout_device_info_pack(const struct image_layout_device_info *ptr_struct, u_int8_t *ptr_buff);
 void image_layout_device_info_unpack(struct image_layout_device_info *ptr_struct, const u_int8_t *ptr_buff);
