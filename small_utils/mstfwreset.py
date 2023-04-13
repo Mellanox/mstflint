@@ -1597,6 +1597,7 @@ def execute_driver_sync_reset(mfrl, reset_level, reset_type):
             logger.debug("MFRL sync 1 worked although MFRL returned with error: {0}".format(e))
             printAndFlush("Done")
     else:
+        time.sleep(1)  # Adding a sleep for cases where reset didn't take place yet so MGIR.uptime wasn't reset yet
         logger.debug('UpdateUptimeAfterReset')
         FWResetStatusChecker.UpdateUptimeAfterReset()
 
