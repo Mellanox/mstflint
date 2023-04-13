@@ -1011,9 +1011,9 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                     dm_dev_id_t deviceId = DeviceUnknown;
                     u_int32_t hwDevId = 0x0;
                     u_int32_t hwRevId = 0x0;
-                    if ((fwCompsAccess->getMfileObj()->flags & MDEVS_IB) == 0)
+                    if ((fwCompsAccess->getMfileObj()->flags & MDEVS_MLNX_OS) != 0)
                     {
-                        FLASH_ACCESS_DPRINTF(("Not IB interface\n"));
+                        FLASH_ACCESS_DPRINTF(("MLNXOS device interface\n"));
                         if (dm_get_device_id(fwCompsAccess->getMfileObj(), &deviceId, &hwDevId, &hwRevId) == MFE_OK)
                         {
                             FLASH_ACCESS_DPRINTF(("deviceId = %s\n", dm_dev_type2str(deviceId)));
