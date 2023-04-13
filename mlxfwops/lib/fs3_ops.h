@@ -36,7 +36,6 @@
 
 #include "reg_access/reg_access.h"
 #include <cibfw_layouts.h>
-#include <image_layout_layouts.h>
 #include <cx4fw_layouts.h>
 #include <mlarge_buffer.h>
 // #include "flint_base.h"

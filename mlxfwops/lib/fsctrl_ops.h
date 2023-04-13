@@ -35,7 +35,6 @@
 #include "aux_tlv_ops.h"
 #include "fw_comps_mgr/fw_comps_mgr.h"
 #include "fw_comps_mgr/fw_comps_mgr_dma_access.h"
-#include "tools_layouts/image_layout_layouts.h"
 
 class FsCtrlOperations : public FwOperations
 {

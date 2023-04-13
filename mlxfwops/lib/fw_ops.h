@@ -41,6 +41,7 @@
 #include "signature_manager_factory.h"
 #include "fw_version.h"
 #include "tools_layouts/cx4fw_layouts.h"
+#include "tools_layouts/image_layout_layouts.h"
 #include <mlxsign_lib/mlxsign_lib.h>
 #ifdef CABLES_SUPP
 #include <cable_access/cable_access.h>
@@ -100,7 +101,6 @@ public:
         memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
         memset(&_fwParams, 0, sizeof(_fwParams));
     };
-
 
     virtual ~FwOperations()
     {
@@ -262,7 +262,7 @@ public:
                                          bool ignoreSecurityAttributes = false,
                                          bool ignoreDToc = false);
 
-    virtual bool IsFsCtrlOperations() {  return false; }
+    virtual bool IsFsCtrlOperations() { return false; }
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
@@ -464,8 +464,8 @@ public:
     };
 
 protected:
-#define FS3_IND_ADDR 0x24
-#define FS4_IND_ADDR 0x10
+#define FS3_BOOT_VERSION_OFFSET 0x24
+#define FS4_BOOT_VERSION_OFFSET 0x10
 #define ARR_SIZE(arr) sizeof(arr) / sizeof(arr[0])
 
     struct FwImgInfo
@@ -498,7 +498,8 @@ protected:
     {
         IMG_VER_FS2 = 0,
         IMG_VER_FS3 = 3,
-        IMG_VER_FS4 = 4
+        IMG_VER_FS4 = 1,
+        IMG_VER_FS5 = 2
     };
     enum
     {
@@ -508,6 +509,7 @@ protected:
         FS_FS4_GEN,
         FS_FC1_GEN,
         FS_FSCTRL_GEN,
+        FS_FS5_GEN,
         FS_UNKNOWN_IMG
     };
 
@@ -698,7 +700,8 @@ private:
 
     static int getBufferSignature(u_int8_t* buf, u_int32_t size);
     static u_int8_t CheckFwFormat(FBase& f, bool getFwFormatFromImg = false);
-    static u_int8_t IsFS4Image(FBase& f, u_int32_t* found_images);
+    static bool GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset, u_int8_t& image_format_version);
+    static u_int8_t IsFS4OrFS5Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsFS3OrFS2Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsCableImage(FBase& f);
     static bool FindMagicPattern(FBase* ioAccess, u_int32_t addr, u_int32_t const cntx_magic_pattern[]);

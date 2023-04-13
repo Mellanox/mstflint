@@ -617,48 +617,63 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP)
     return true;
 }
 
-u_int8_t FwOperations::IsFS4Image(FBase& f, u_int32_t* found_images)
+bool FwOperations::GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset, u_int8_t& image_format_version)
 {
-    DPRINTF(("FwOperations::IsFS4Image\n"));
     u_int32_t data = 0;
-    u_int8_t image_version;
+    if (!f.read(boot_version_offset, &data, IMAGE_LAYOUT_BOOT_VERSION_SIZE))
+    {
+        return false;
+    }
+    image_layout_boot_version boot_version;
+    memset(&boot_version, 0, sizeof(boot_version));
+    image_layout_boot_version_unpack(&boot_version, (u_int8_t*)&data);
+    image_layout_boot_version_dump(&boot_version, stdout);
+    image_format_version = boot_version.image_format_version;
+    DPRINTF(("FwOperations::GetImageFormatVersion image_format_version = %d\n", image_format_version));
+    return true;
+}
+u_int8_t FwOperations::IsFS4OrFS5Image(FBase& f, u_int32_t* found_images)
+{
+    DPRINTF(("FwOperations::IsFS4OrFS5Image\n"));
+    u_int8_t image_format_version;
     u_int32_t image_start[CNTX_START_POS_SIZE] = {0};
 
     FindAllImageStart(&f, image_start, found_images, _fs4_magic_pattern);
 
     if (*found_images)
     {
-        // check if the image_format_version is ok
-        READ4_NOERRMSG(f, image_start[0] + 0x10, &data);
-        TOCPU1(data);
-        image_version = data >> 24;
-        DPRINTF(
-          ("FwOperations::IsFS4Image fw_image.begin_area.boot_version.image_format_version = %d\n", image_version));
-        if (image_version == 1)
-        { // 1 is the current version
+        if (!GetImageFormatVersion(f, image_start[0] + FS4_BOOT_VERSION_OFFSET, image_format_version))
+        {
+            return FS_UNKNOWN_IMG;
+        }
+        if (image_format_version == IMG_VER_FS4)
+        {
             return FS_FS4_GEN;
+        }
+        else if (image_format_version == IMG_VER_FS5)
+        {
+            return FS_FS5_GEN;
         }
         else
         {
             return FS_UNKNOWN_IMG;
         }
     }
-
     return FS_UNKNOWN_IMG;
 }
 
 u_int8_t FwOperations::IsFS3OrFS2Image(FBase& f, u_int32_t* found_images)
 {
-    u_int32_t data = 0;
-    u_int8_t image_version;
+    u_int8_t image_format_version;
     u_int32_t image_start[CNTX_START_POS_SIZE] = {0};
     FindAllImageStart(&f, image_start, found_images, _cntx_magic_pattern);
     if (found_images)
     {
-        READ4_NOERRMSG(f, image_start[0] + FS3_IND_ADDR, &data);
-        TOCPU1(data);
-        image_version = data >> 24;
-        if (image_version == IMG_VER_FS3)
+        if (!GetImageFormatVersion(f, image_start[0] + FS3_BOOT_VERSION_OFFSET, image_format_version))
+        {
+            return FS_UNKNOWN_IMG;
+        }
+        if (image_format_version == IMG_VER_FS3)
         {
             return FS_FS3_GEN;
         }
@@ -700,7 +715,7 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg)
             return v;
         }
         // First check if it is FS4
-        v = IsFS4Image(f, &found_images);
+        v = IsFS4OrFS5Image(f, &found_images);
         if (found_images)
         {
             return v;
@@ -2481,6 +2496,10 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
              hwDevId == ABIR_GB_HW_ID)
     {
         return FS_FS4_GEN;
+    }
+    else if ((hwDevId == QUANTUM3_HW_ID) || (hwDevId == CX8_HW_ID) || (hwDevId == BF4_HW_ID))
+    {
+        return FS_FS5_GEN;
     }
     return FS_UNKNOWN_IMG;
 }
