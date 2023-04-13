@@ -44,10 +44,11 @@ import os
 import math
 import re
 
-from parsers.AdbParser import AdbNodeDesc, AdbParser
 from utils import constants as cs
 from resource_data.RawData import RawData
 from resource_data.DataPrinter import DataPrinter
+from utils.Exceptions import ResourceParseException
+from parsers.AdbParser import AdbNodeDesc, AdbParser
 
 
 class Parser:
@@ -67,20 +68,20 @@ class Parser:
         self._notice_counter = 0
 
         if not self._validate_file_path(kwargs[cs.UI_ARG_DUMP_FILE]):
-            raise Exception("No such file '{0}'".format(kwargs[cs.UI_ARG_DUMP_FILE]))
+            raise ResourceParseException("No such file '{0}'".format(kwargs[cs.UI_ARG_DUMP_FILE]))
 
         if not self._validate_file_path(kwargs[cs.UI_ARG_ADB_FILE]):
-            raise Exception("No such file '{0}'".format(kwargs[cs.UI_ARG_ADB_FILE]))
+            raise ResourceParseException("No such file '{0}'".format(kwargs[cs.UI_ARG_ADB_FILE]))
 
         try:
             self._dumped_segment_db = self._retrieve_dumped_segment_db(kwargs[cs.UI_ARG_DUMP_FILE])
-        except Exception as _:
-            raise Exception("Fail to generate segment db from raw data")
+        except ResourceParseException as rpe:
+            raise ResourceParseException("{0}\nFail to generate segment db from raw data.".format(rpe))
 
         try:
             self._segment_map = self._retrieve_segment_map(kwargs[cs.UI_ARG_ADB_FILE])
-        except Exception as _:
-            raise Exception("Fail to generate segment map db from adb file")
+        except ResourceParseException as rpe:
+            raise ResourceParseException("{0}\nFail to generate segment map db from adb file.".format(rpe))
 
         self._validate_adb_version_with_notice(kwargs[cs.UI_ARG_ADB_FILE])
 
@@ -122,8 +123,8 @@ class Parser:
             for seg in self._dumped_segment_db:
                 seg_parsed_counter += 1
                 self._parse_segment(seg)
-        except Exception as e:
-            raise Exception("Fail to parse segments, failure occur at segment number {}".format(seg_parsed_counter))
+        except ResourceParseException as rpe:
+            raise ResourceParseException("{0}\nFail to parse segments, failure occur at segment number {1}.".format(rpe, seg_parsed_counter))
 
         # print all segments
         self._printer.print_parsed_segment(self._dumped_segment_db)
