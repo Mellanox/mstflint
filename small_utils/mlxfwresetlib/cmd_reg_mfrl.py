@@ -29,6 +29,10 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 # --
+
+import reg_access
+
+
 class CmdNotSupported(Exception):
     pass
 
@@ -100,9 +104,10 @@ class CmdRegMfrl():
         else:
             raise RuntimeError("Reset-level {0} doesn't exist in reset-levels !".format(reset_level))
 
-    def __init__(self, reg_access):
+    def __init__(self, reg_access, logger):
 
         self._reg_access = reg_access
+        self.logger = logger
 
         self._reset_levels = CmdRegMfrl.reset_levels_db[:]  # copy
         self._reset_types = CmdRegMfrl.reset_types_db[:]   # copy
@@ -124,8 +129,23 @@ class CmdRegMfrl():
             if 'supported' not in reset_type_ii:
                 reset_type_ii['supported'] = (reset_type & reset_type_ii['mask']) != 0
 
+    def _send(self, method, reset_level=None, reset_type=None, reset_sync=None):
+        try:
+            self.logger.debug("sending MFRL with method={}, reset_level={}, reset_type={}, reset_sync={}".format(
+                method, reset_level, reset_type, reset_sync
+            ))
+            return self._reg_access.sendMFRL(method, reset_level, reset_type, reset_sync)
+        except regaccess.RegAccException as e:
+            if reset_sync == 1:
+                raise e
+            # FW bug first mfrl register might fail
+            self.logger.debug("Retry MFRL with method={}, reset_level={}, reset_type={}, reset_sync={}".format(
+                method, reset_level, reset_type, reset_sync
+            ))
+            return self._reg_access.sendMFRL(method, reset_level, reset_type, reset_sync)
+
     def _read_reg(self):
-        reset_level, reset_type, pci_rescan_required = self._reg_access.sendMFRL(self._reg_access.GET)
+        reset_level, reset_type, pci_rescan_required = self._send(self._reg_access.GET)
         return {
             'reset_level': reset_level,
             'reset_type': reset_type,
@@ -133,7 +153,7 @@ class CmdRegMfrl():
         }
 
     def _write_reg(self, reset_level, reset_type, reset_sync):
-        self._reg_access.sendMFRL(self._reg_access.SET, reset_level, reset_type, reset_sync)
+        self._send(self._reg_access.SET, reset_level, reset_type, reset_sync)
 
     def is_pci_rescan_required(self):
         return True if self._pci_rescan_required == 1 else False

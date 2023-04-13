@@ -417,8 +417,6 @@ if REG_ACCESS:
             rc = self._reg_access_mfrl(self._mstDev.mf, c_method, mfrlRegisterP)
             # FW bug first mfrl register might fail
             if rc:
-                rc = self._reg_access_mfrl(self._mstDev.mf, c_method, mfrlRegisterP)
-            if rc:
                 raise RegAccException("Failed to send Register MFRL: %s (%d)" % (self._err2str(rc), rc))
 
             if method == REG_ACCESS_METHOD_GET:

@@ -1580,9 +1580,29 @@ def rebootMachine():
             "Failed to reboot machine please reboot machine manually")
 
 ######################################################################
-# Description:  execute reset level for device
+# Description:  execute sync 1 reset
 ######################################################################
 
+def execute_driver_sync_reset(mfrl, reset_level, reset_type):
+    logger.debug('UpdateUptimeBeforeReset')
+    FWResetStatusChecker.UpdateUptimeBeforeReset()
+    try:
+        send_reset_cmd_to_fw(mfrl, reset_level, reset_type, SyncOwner.DRIVER)
+    except regaccess.RegAccException as e:
+        logger.debug('UpdateUptimeAfterReset')
+        FWResetStatusChecker.UpdateUptimeAfterReset()
+        if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
+            raise e
+        else:
+            logger.debug("MFRL sync 1 worked although MFRL returned with error: {0}".format(e))
+            printAndFlush("Done")
+    else:
+        logger.debug('UpdateUptimeAfterReset')
+        FWResetStatusChecker.UpdateUptimeAfterReset()
+
+######################################################################
+# Description:  execute reset level for device
+######################################################################
 
 def execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, cmdLineArgs, mfrl):
 
@@ -1596,7 +1616,7 @@ def execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, cmdLineAr
         send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
     elif reset_level in [mfrl.PCI_RESET, mfrl.WARM_REBOOT]:
         if reset_sync == SyncOwner.DRIVER:
-            send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync)
+            execute_driver_sync_reset(mfrl, reset_level, reset_type)
         else:
             resetFlow(device, devicesSD, reset_level,
                       reset_type, cmdLineArgs, mfrl)
@@ -1706,7 +1726,7 @@ def reset_flow_host(device, args, command):
     CmdifObj = cmdif.CmdIf(MstDevObj)
     PciOpsObj = MlnxPciOpFactory().getPciOpObj(DevDBDF)
 
-    mfrl = CmdRegMfrl(RegAccessObj)
+    mfrl = CmdRegMfrl(RegAccessObj, logger)
     # mpcir = CmdRegMpcir(RegAccessObj)
     mcam = CmdRegMcam(RegAccessObj)
 
