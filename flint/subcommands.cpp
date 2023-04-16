@@ -1408,9 +1408,9 @@ bool SubCommand::checkGuidsFlags(u_int16_t devType,
     (void)ibDev;
     if (guidsSpecified || macsSpecified || uidSpecified)
     {
-        if (uidSpecified && fwType != FIT_FS3 && fwType != FIT_FS4 && fwType != FIT_FSCTRL)
+        if (uidSpecified && fwType != FIT_FS3 && fwType != FIT_FS4 && fwType != FIT_FS5 && fwType != FIT_FSCTRL)
         {
-            reportErr(true, "-uid flag is applicable only for FS3/FS4 FW Only.\n");
+            reportErr(true, "-uid flag is applicable only for FS3/FS4/FS5 FW Only.\n");
             return false;
         }
         else if (fwType != FIT_FS2 && !ethDev && macsSpecified)
@@ -1566,6 +1566,10 @@ const char* SubCommand::fwImgTypeToStr(u_int8_t fwImgType)
 
         case FIT_FS4:
             return "FS4";
+            break;
+
+        case FIT_FS5:
+            return "FS5";
             break;
 
         case FIT_FSCTRL:
@@ -4042,7 +4046,7 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
 
 FlintStatus QuerySubCommand::printImageInfo(const fw_info_t& fwInfo)
 {
-    bool isFs4 = (fwInfo.fw_type == FIT_FS4) ? true : false;
+    bool isFs4 = (fwInfo.fw_type == FIT_FS4 || fwInfo.fw_type == FIT_FS5) ? true : false;
     FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);
     printf("Image type:            %s\n", fwImgTypeToStr(fwInfo.fw_type));
     if (fwInfo.fw_info.isfu_major)
@@ -4125,7 +4129,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     DPRINTF(("QuerySubCommand::printInfo fullQuery=%d\n", fullQuery));
     bool isFs2 = (fwInfo.fw_type == FIT_FS2) ? true : false;
     bool isFs3 = (fwInfo.fw_type == FIT_FS3) ? true : false;
-    bool isFs4 = (fwInfo.fw_type == FIT_FS4) ? true : false;
+    bool isFs4 = (fwInfo.fw_type == FIT_FS4 || fwInfo.fw_type == FIT_FS5) ? true : false;
     bool isFsCtrl = (fwInfo.fw_type == FIT_FSCTRL) ? true : false;
     FwOperations* ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);

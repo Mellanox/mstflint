@@ -815,11 +815,11 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
     report_callback(verifyCallBackFunc, "\nFS3 failsafe image\n\n");
     /* adrianc: we dont check Preboot section (or boot start) because of a variance in the calculation of the CRC */
 
-    /* Get BOOT2 -Get Only bootSize if quickQuery == true else read and check CRC of boot2 section as well */
+    /* Get BOOT2 -Get Only boot2Size if quickQuery == true else read and check CRC of boot2 section as well */
     offset += FS3_BOOT_START;
     FS3_CHECKB2(0, offset, !queryOptions.quickQuery, PRE_CRC_OUTPUT, verifyCallBackFunc);
 
-    offset += _fwImgInfo.bootSize;
+    offset += _fwImgInfo.boot2Size;
     _fs3ImgInfo.firstItocIsEmpty = false;
     /* printf("-D- image_start = %#x\n", image_start); */
     /* Go over the ITOC entries */
@@ -884,8 +884,8 @@ bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery, bool ignoreDToc
         }
         _fwImgInfo.ext_info.dev_type = swId[0];
     }
-    if ((FwType() == FIT_FS4) && (_fwImgInfo.ext_info.image_info_minor_version >= 3) &&
-        (_fwImgInfo.ext_info.pci_device_id != 0))
+    if ((FwType() == FIT_FS4 || FwType() == FIT_FS5) && _fwImgInfo.ext_info.image_info_minor_version >= 3 &&
+        _fwImgInfo.ext_info.pci_device_id != 0)
     {
         _fwImgInfo.ext_info.dev_type = _fwImgInfo.ext_info.pci_device_id;
     }
@@ -1751,7 +1751,7 @@ bool Fs3Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
     return FwSetMFG(bGuid, callBackFunc);
 }
 
-bool Fs3Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack)
+bool Fs3Operations::ParseDevData(bool quickQuery, bool verbose, VerifyCallBack)
 {
     return FsIntQueryAux(false, quickQuery, false, verbose);
 }
@@ -1768,7 +1768,7 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
         return errmsg("Base GUID not found.");
     }
     /* query device to get mfg info (for guids override en bit) */
-    if (!parseDevData())
+    if (!ParseDevData())
     {
         return false;
     }
@@ -4092,7 +4092,7 @@ bool Fs3Operations::FwCalcMD5(u_int8_t md5sum[16])
         return false;
     }
     /* push beggining of image to md5buff */
-    int sz = FS3_BOOT_START + _fwImgInfo.bootSize;
+    int sz = FS3_BOOT_START + _fwImgInfo.boot2Size;
     std::vector<u_int8_t> md5buff(sz, 0);
     _imageCache.get(&(md5buff[0]), sz);
     /* push all non dev data sections to md5buff */

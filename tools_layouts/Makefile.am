@@ -57,7 +57,8 @@ libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
 				icmd_hca_layouts.c icmd_hca_layouts.h \
 				reg_access_hca_layouts.c reg_access_hca_layouts.h\
 				image_info_layouts.c image_info_layouts.h \
-				reg_access_switch_layouts.c reg_access_switch_layouts.h
+				reg_access_switch_layouts.c reg_access_switch_layouts.h \
+				fs5_image_layout_layouts.h fs5_image_layout_layouts.c
 
 libtools_layouts_a_DEPENDENCIES = libadb_utils.a
 libmlxarchive_layouts_a_DEPENDENCIES = $(libtools_layouts_a_DEPENDENCIES)

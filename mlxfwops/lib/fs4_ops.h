@@ -58,6 +58,7 @@ class Fs4Operations : public Fs3Operations
 public:
     Fs4Operations(FBase* ioAccess) :
         Fs3Operations(ioAccess),
+        _is_hw_ptrs_initialized(false),
         _boot2_ptr(0),
         _itoc_ptr(0),
         _tools_ptr(0),
@@ -65,7 +66,6 @@ public:
         _digest_recovery_key_ptr(0),
         _public_key_ptr(0),
         _signatureDataSet(false),
-        _is_hw_ptrs_initialized(false),
         _encrypted_image_io_access(NULL)
     {
         _minBinMinorVer = FS4_MIN_BIN_VER_MINOR;
@@ -77,10 +77,10 @@ public:
     virtual u_int8_t FwType();
     virtual bool FwInit();
 
-    bool FwVerify(VerifyCallBack verifyCallBackFunc,
-                  bool isStripedImage = false,
-                  bool showItoc = false,
-                  bool ignoreDToc = false);
+    virtual bool FwVerify(VerifyCallBack verifyCallBackFunc,
+                          bool isStripedImage = false,
+                          bool showItoc = false,
+                          bool ignoreDToc = false);
     bool FwShiftDevData(PrintCallBack progressFunc = (PrintCallBack)NULL);
     bool FwCalcMD5(u_int8_t md5sum[16]);
     bool FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
@@ -123,7 +123,7 @@ public:
                                dm_dev_id_t devid_t,
                                const cx4fw_uid_entry& base_guid,
                                const cx4fw_uid_entry& base_mac);
-    bool initHwPtrs(bool isVerify = false);
+    virtual bool InitHwPtrs(bool isVerify = false);
     bool isHashesTableHwPtrValid();
     bool isEncrypted(bool& is_encrypted);
     bool openEncryptedImageAccess(const char* encrypted_image_path);
@@ -143,7 +143,7 @@ public:
     bool IsSecurityVersionAccessible(chip_type_t chip_type);
     bool IsSecurityVersionViolated(u_int32_t image_security_version);
     bool GetImageInfo(u_int8_t* buff);
-    bool GetImageSize(u_int32_t* image_size);
+    virtual bool GetImageSize(u_int32_t* image_size);
     bool GetHashesTableData(vector<u_int8_t>& data);
 
 protected:
@@ -153,28 +153,6 @@ protected:
         struct image_layout_itoc_entry toc_entry;
         u_int8_t data[IMAGE_LAYOUT_ITOC_ENTRY_SIZE];
         std::vector<u_int8_t> section_data;
-    };
-
-    bool AlignDeviceSections(FwOperations* imageOps);
-    virtual bool
-      storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
-                                         vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
-                                         vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
-    virtual bool IsSectionExists(fs3_section_t sectType);
-    virtual bool VerifyImageAfterModifications();
-    bool parseDevData(bool quickQuery = true, bool verbose = false, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
-
-
-private:
-#define PRE_CRC_OUTPUT "    "
-#define FS4_DEFAULT_SECTOR_SIZE 0x1000
-#define DTOC_ASCII 0x44544f43
-
-    enum CRCTYPE
-    {
-        INITOCENTRY = 0,
-        NOCRC = 1,
-        INSECTION = 2
     };
 
     class TocArray
@@ -190,6 +168,58 @@ private:
         u_int32_t tocArrayAddr;
     };
 
+    struct Fs4ImgInfo
+    {
+        TocArray itocArr;
+        TocArray dtocArr;
+        u_int8_t firstItocArrayIsEmpty;
+        u_int32_t smallestDTocAddr;
+    };
+
+    bool _is_hw_ptrs_initialized;
+    u_int32_t _boot2_ptr;
+    u_int32_t _itoc_ptr;
+    u_int32_t _tools_ptr;
+    u_int32_t _image_info_section_ptr;
+    u_int32_t _hashes_table_ptr;
+    Fs4ImgInfo _fs4ImgInfo;
+
+    bool GetImageSizeFromImageInfo(u_int32_t* imageSize);
+    bool verifyToolsArea(VerifyCallBack verifyCallBackFunc);
+    bool verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBack verifyCallBackFunc);
+    bool verifyTocEntries(u_int32_t tocAddr,
+                          bool show_itoc,
+                          bool isDtoc,
+                          struct QueryOptions queryOptions,
+                          VerifyCallBack verifyCallBackFunc,
+                          bool verbose = false);
+    bool encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
+    bool getImgStart();
+    bool AlignDeviceSections(FwOperations* imageOps);
+    virtual bool
+      storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
+                                         vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
+                                         vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
+    virtual bool IsSectionExists(fs3_section_t sectType);
+    virtual bool VerifyImageAfterModifications();
+    bool ParseDevData(bool quickQuery = true,
+                      bool verbose = false,
+                      VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL,
+                      bool showItoc = false);
+
+
+private:
+#define PRE_CRC_OUTPUT "    "
+#define FS4_DEFAULT_SECTOR_SIZE 0x1000
+#define DTOC_ASCII 0x44544f43
+
+    enum CRCTYPE
+    {
+        INITOCENTRY = 0,
+        NOCRC = 1,
+        INSECTION = 2
+    };
+
     class HTOC
     {
     public:
@@ -202,13 +232,6 @@ private:
         bool AddNewEntry(FBase* ioAccess, fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
     };
 
-    struct Fs4ImgInfo
-    {
-        TocArray itocArr;
-        TocArray dtocArr;
-        u_int8_t firstItocArrayIsEmpty;
-        u_int32_t smallestDTocAddr;
-    };
 #ifndef UEFI_BUILD
     bool FwSignSection(const vector<u_int8_t>& section, const string privPemFileStr, vector<u_int8_t>& encSha);
 #endif
@@ -216,19 +239,18 @@ private:
     bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
     bool encryptedFwReadImageInfoSection();
     bool CheckDevRSAPublicKeyUUID();
-    bool encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
     virtual bool FwQuery(fw_info_t* fwInfo,
                          bool readRom = true,
                          bool isStripedImage = false,
                          bool quickQuery = true,
                          bool ignoreDToc = false,
                          bool verbose = false);
-    bool FsVerifyAux(VerifyCallBack verifyCallBackFunc,
-                     bool show_itoc,
-                     struct QueryOptions queryOptions,
-                     bool ignoreDToc = false,
-                     bool verbose = false);
-    bool Init();
+    virtual bool FsVerifyAux(VerifyCallBack verifyCallBackFunc,
+                             bool show_itoc,
+                             struct QueryOptions queryOptions,
+                             bool ignoreDToc = false,
+                             bool verbose = false);
+    virtual bool Init();
     bool CheckTocSignature(struct image_layout_itoc_header* itoc_header, u_int32_t first_signature);
     bool CheckDevInfoSignature(u_int32_t* buff);
     bool FsBurnAux(FwOperations* imageOps, ExtBurnParams& burnParams);
@@ -284,7 +306,6 @@ private:
     bool reburnITocSection(PrintCallBack callBackFunc, bool isFailSafe);
     bool Fs4UpdateItocInfo(struct fs4_toc_info* curr_toc, u_int32_t NewSectSize, std::vector<u_int8_t>& newSectionData);
     bool FwReadData(void* image, u_int32_t* imageSize, bool verbose = false);
-    bool getEncryptedImageSize(u_int32_t* imageSize);
     bool FwReadEncryptedData(void* image, u_int32_t imageSize, bool verbose);
     bool CreateDtoc(vector<u_int8_t>& img,
                     u_int8_t* SectionData,
@@ -326,20 +347,11 @@ private:
 
     u_int32_t getAbsAddr(fs4_toc_info* toc);
     u_int32_t getAbsAddr(fs4_toc_info* toc, u_int32_t imgStart);
-    bool getImgStart();
     bool getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess = false);
     bool getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc,
                                 FBase* ioAccess,
                                 bool IsBurningProcess = false,
                                 bool isVerify = false);
-    bool verifyToolsArea(VerifyCallBack verifyCallBackFunc);
-    bool verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBack verifyCallBackFunc);
-    bool verifyTocEntries(u_int32_t tocAddr,
-                          bool show_itoc,
-                          bool isDtoc,
-                          struct QueryOptions queryOptions,
-                          VerifyCallBack verifyCallBackFunc,
-                          bool verbose = false);
     bool CheckTocArrConsistency(TocArray& tocArr, u_int32_t imageStartAddr);
     bool CheckITocArray();
     bool CheckDTocArray();
@@ -378,23 +390,17 @@ private:
     bool GetHashesTableSize(u_int32_t& size);
     
     // Members
-    Fs4ImgInfo _fs4ImgInfo;
-    u_int32_t _boot2_ptr;
     u_int32_t _boot_record_ptr;
-    u_int32_t _itoc_ptr;
-    u_int32_t _tools_ptr;
-
     u_int32_t _authentication_start_ptr;
     u_int32_t _authentication_end_ptr;
     u_int32_t _digest_mdk_ptr;
     u_int32_t _digest_recovery_key_ptr;
-    u_int32_t _image_info_section_ptr;
+
     u_int32_t _public_key_ptr;
     u_int32_t _security_version;
     u_int32_t _gcm_image_iv;
-    u_int32_t _hashes_table_ptr;
+
     bool _signatureDataSet;
-    bool _is_hw_ptrs_initialized;
     FImage* _encrypted_image_io_access;
     u_int32_t GetPublicKeySecureBootPtr() { return _public_key_ptr; }
     // This class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData

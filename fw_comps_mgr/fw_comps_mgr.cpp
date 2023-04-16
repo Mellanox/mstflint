@@ -534,7 +534,7 @@ bool FwCompsMgr::accessComponent(u_int32_t              offset,
         _accessObj->accessComponent(_updateHandle, offset, size, data, access, _currComponentStr, progressFuncAdv);
 
     if (!bRes && (lastFsmCommandArgs != NULL) && isDMAAccess()) {
-        printf("\nBurning with DMA has failed, switching to Register-Access burn.\n");
+        printf("\nDMA access has failed, switching to Register-Access burn.\n");
         bRes = fallbackToRegisterAccess();
 
         if (bRes) {
