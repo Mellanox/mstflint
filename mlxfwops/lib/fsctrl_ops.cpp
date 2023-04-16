@@ -270,7 +270,7 @@ bool FsCtrlOperations::FsIntQuery()
     rc = reg_access_mcam(mf, REG_ACCESS_METHOD_GET, &mcam);
     if (rc == ME_OK)
     {
-        mfsv_reg_supported = EXTRACT(mcam.mng_access_reg_cap_mask[3-0], 21, 1);
+        mfsv_reg_supported = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 0], 21, 1);
     }
     DPRINTF(("mfsv_reg_supported = %d\n", mfsv_reg_supported));
 
@@ -457,7 +457,7 @@ bool FsCtrlOperations::FwVerifyAdv(ExtVerifyParams& verifyParams)
             return errmsg("%s", err());
         }
         if (!imageOps->FwVerify(verifyParams.verifyCallBackFunc, verifyParams.isStripedImage, verifyParams.showItoc,
-                                    true))
+                                true))
         {
             delete imageOps;
             return errmsg(imageOps->getErrorCode(), "%s", imageOps->err());
@@ -631,7 +631,8 @@ bool FsCtrlOperations::_createImageOps(FwOperations** imageOps)
 
 bool FsCtrlOperations::GetHashesTableSize(u_int32_t hashes_table_addr, u_int32_t& size)
 {
-    u_int32_t htoc_size = IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + HTOC_HASH_SIZE);
+    u_int32_t htoc_size =
+      IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + HTOC_HASH_SIZE);
     size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + htoc_size + HASHES_TABLE_TAIL_SIZE;
     return true;
 }
@@ -810,7 +811,7 @@ bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData,
         bool isBmeSet = DMAComponentAccess::isBMESet(_fwCompsAccess->getMfileObj());
         if (!isBmeSet)
         {
-            DPRINTF(("-W- DMA burning is not supported due to BME is unset (Bus primary Enable).\n"));
+            DPRINTF(("-W- DMA access is not supported due to BME is unset (Bus primary Enable).\n"));
         }
     }
     if (!_fwCompsAccess->burnComponents(compsToBurn, &burnParams.ProgressFuncAdv))

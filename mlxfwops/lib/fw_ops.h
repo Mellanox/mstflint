@@ -63,6 +63,7 @@ typedef int (*PrintCallBackAdv)(int completion, char* str);
 MLXFWOP_API extern bool nextBootFwVer;
 #define GLOBAL_ALIGNMENT 0x80
 #define UUID_LEN 16
+#define BAD_CRC_MSG "Bad CRC."
 class MLXFWOP_API FwOperations : public FlintErrMsg
 {
 public:
@@ -474,7 +475,7 @@ protected:
         u_int32_t imgStart;
         bool actuallyFailsafe;
         u_int32_t cntxLog2ChunkSize;
-        u_int32_t bootSize;
+        u_int32_t boot2Size;
         bool isGa;
         u_int32_t supportedHwId[MAX_NUM_SUPP_HW_IDS];
         int supportedHwIdNum;
@@ -596,12 +597,12 @@ protected:
                              u_int32_t crc_exp,
                              bool ignore_crc = false,
                              VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
-    bool checkBoot2(u_int32_t beg,
-                    u_int32_t offs,
-                    u_int32_t& next,
-                    bool fullRead,
-                    const char* pref,
-                    VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
+    virtual bool CheckBoot2(u_int32_t beg,
+                            u_int32_t offs,
+                            u_int32_t& next,
+                            bool fullRead,
+                            const char* pref,
+                            VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
     u_int32_t CalcImageCRC(u_int32_t* buff, u_int32_t size);
     bool writeImage(ProgressCallBack progressFunc,
                     u_int32_t addr,

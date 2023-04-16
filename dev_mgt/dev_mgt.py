@@ -143,6 +143,10 @@ if DEV_MGT:
             return DEV_MGT.dm_dev_is_fs4(dm_dev_id)
 
         @classmethod
+        def is_fs5(cls, dm_dev_id):
+            return DEV_MGT.dm_dev_is_fs5(dm_dev_id)
+
+        @classmethod
         def is_4th_gen(cls, dm_dev_id):
             return DEV_MGT.dm_is_4th_gen(dm_dev_id)
 

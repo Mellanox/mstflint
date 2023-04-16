@@ -353,7 +353,7 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
             bool isBmeSet = DMAComponentAccess::isBMESet(fwCompsAccess.getMfileObj());
             if (!isBmeSet)
             {
-                DPRINTF(("-W- DMA burning is not supported due to BME is unset (Bus Master Enable).\n"));
+                DPRINTF(("-W- DMA access is not supported due to BME is unset (Bus Master Enable).\n"));
             }
         }
     }

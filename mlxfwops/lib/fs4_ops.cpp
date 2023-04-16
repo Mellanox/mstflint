@@ -148,7 +148,7 @@ bool Fs4Operations::IsEncryptedImage(bool& is_encrypted)
 
     if (!_is_hw_ptrs_initialized)
     {
-        if (!initHwPtrs(true))
+        if (!InitHwPtrs(true))
         {
             DPRINTF(("Fs4Operations::IsEncryptedImage HW pointers not found"));
             return false;
@@ -273,7 +273,7 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc,
 
     image_layout_hw_pointers_carmel_unpack(&hw_pointers, (u_int8_t*)buff);
 
-    //- Check CRC of each pointers (always check CRC before you call ToCPU
+    // Check CRC of each pointers
     for (unsigned int k = 0; k < s; k += 2)
     {
         u_int32_t* tempBuff = (u_int32_t*)buff;
@@ -939,7 +939,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
 
         _ioAccess->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
 
-        // Get BOOT2 -Get Only bootSize if quickQuery == true else read and check CRC of boot2 section as well
+        // Get BOOT2 -Get Only boot2Size if quickQuery == true else read and check CRC of boot2 section as well
         DPRINTF(("Fs4Operations::FsVerifyAux call FS3_CHECKB2()\n"));
         FS3_CHECKB2(0, _boot2_ptr, !queryOptions.quickQuery, PRE_CRC_OUTPUT, verifyCallBackFunc);
 
@@ -1070,10 +1070,10 @@ bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     {
         return errmsg(getErrorCode(), "%s", err());
     }
-    if (image_encrypted)
+    if (!ignoreDToc && image_encrypted)
     {
         //* Verify DTOC CRCs only
-        if (!parseDevData(false, false, verifyCallBackFunc))
+        if (!ParseDevData(false, false, verifyCallBackFunc, showItoc))
         {
             return errmsg("%s", err());
         }
@@ -1179,13 +1179,13 @@ bool Fs4Operations::encryptedFwReadImageInfoSection()
     return true;
 }
 
-bool Fs4Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack verifyCallBackFunc)
+bool Fs4Operations::ParseDevData(bool quickQuery, bool verbose, VerifyCallBack verifyCallBackFunc, bool showItoc)
 {
     //* Initializing DTOC info
     _ioAccess->set_address_convertor(0, 0);
     // Parse DTOC header:
     u_int32_t dtoc_addr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
-    DPRINTF(("Fs4Operations::parseDevData call verifyTocHeader() DTOC, dtoc_addr = 0x%x\n", dtoc_addr));
+    DPRINTF(("Fs4Operations::ParseDevData call verifyTocHeader() DTOC, dtoc_addr = 0x%x\n", dtoc_addr));
     if (!verifyTocHeader(dtoc_addr, true, verifyCallBackFunc))
     {
         return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
@@ -1196,7 +1196,7 @@ bool Fs4Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack v
     struct QueryOptions queryOptions;
     queryOptions.readRom = false;
     queryOptions.quickQuery = quickQuery;
-    DPRINTF(("Fs4Operations::parseDevData call verifyTocEntries() DTOC\n"));
+    DPRINTF(("Fs4Operations::ParseDevData call verifyTocEntries() DTOC\n"));
     if (!verifyTocEntries(dtoc_addr, false, true, queryOptions, verifyCallBackFunc, verbose))
     {
         return false;
@@ -1209,7 +1209,7 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ig
 {
     DPRINTF(("Fs4Operations::encryptedFwQuery\n"));
 
-    if (!initHwPtrs())
+    if (!InitHwPtrs())
     {
         DPRINTF(("Fs4Operations::encryptedFwQuery HW pointers not found"));
         return false;
@@ -1227,16 +1227,11 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ig
 
     if (!ignoreDToc)
     {
-        if (!parseDevData(quickQuery, verbose))
+        if (!ParseDevData(quickQuery, verbose))
         {
             return false;
         }
     }
-
-    _fwImgInfo.ext_info.is_failsafe = true;
-    memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
-    memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
-    fwInfo->fw_type = FwType();
 
     if (!QuerySecurityFeatures())
     {
@@ -1423,9 +1418,9 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
     return true;
 }
 
-bool Fs4Operations::getEncryptedImageSize(u_int32_t* imageSize)
+bool Fs4Operations::GetImageSizeFromImageInfo(u_int32_t* imageSize)
 {
-    DPRINTF(("Fs4Operations::getEncryptedImageSize\n"));
+    DPRINTF(("Fs4Operations::GetImageSizeFromImageInfo\n"));
     fw_info_t fwInfo;
     if (!encryptedFwQuery(&fwInfo, false, true))
     {
@@ -1461,7 +1456,7 @@ bool Fs4Operations::FwReadData(void* image, u_int32_t* imageSize, bool verbose)
     {
         if (image == NULL)
         {
-            bool result = getEncryptedImageSize(imageSize);
+            bool result = GetImageSizeFromImageInfo(imageSize);
             DPRINTF(("Fs4Operations::FwReadData imageSize=0x%x result=%s\n", *imageSize, result ? "true" : "false"));
             return result;
         }
@@ -2302,7 +2297,7 @@ bool Fs4Operations::FwExtractEncryptedImage(vector<u_int8_t>& img,
 
     //* Get image size
     u_int32_t burn_image_size;
-    if (!getEncryptedImageSize(&burn_image_size))
+    if (!GetImageSizeFromImageInfo(&burn_image_size))
     {
         return errmsg("%s", err());
     }
@@ -2422,7 +2417,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         }
 
         //* Parse DTOC and its sections
-        if (!((Fs4Operations*)imageOps)->parseDevData(false))
+        if (!((Fs4Operations*)imageOps)->ParseDevData(false))
         {
             return errmsg("%s", imageOps->err());
         }
@@ -3142,7 +3137,7 @@ bool Fs4Operations::Fs4UpdateVsdSection(std::vector<u_int8_t> section_data,
 
 bool Fs4Operations::Init()
 {
-    if (!initHwPtrs())
+    if (!InitHwPtrs())
     {
         return false;
     }
@@ -4129,7 +4124,7 @@ bool Fs4Operations::FwCalcMD5(u_int8_t md5sum[16])
         return false;
     }
     // push beggining of image to md5buff
-    int sz = FS3_BOOT_START + _fwImgInfo.bootSize;
+    int sz = FS3_BOOT_START + _fwImgInfo.boot2Size;
     std::vector<u_int8_t> md5buff(sz, 0);
     _imageCache.get(&(md5buff[0]), sz);
     // push all non dev data sections to md5buff
@@ -4232,7 +4227,7 @@ bool Fs4Operations::GetImageSize(u_int32_t* image_size)
 
     if (is_encrypted)
     {
-        if (!getEncryptedImageSize(image_size))
+        if (!GetImageSizeFromImageInfo(image_size))
         {
             return false;
         }
@@ -4846,8 +4841,9 @@ bool Fs4Operations::storeSecureBootSignaturesInSection(vector<u_int8_t> boot_sig
     return true;
 }
 
-bool Fs4Operations::initHwPtrs(bool isVerify)
+bool Fs4Operations::InitHwPtrs(bool isVerify)
 {
+    DPRINTF(("Fs4Operations::InitHwPtrs\n"));
     if (!getImgStart())
     { // Set _fwImgInfo.imgStart with the image start address
         return false;
@@ -4855,7 +4851,7 @@ bool Fs4Operations::initHwPtrs(bool isVerify)
 
     if (!getExtendedHWAravaPtrs((VerifyCallBack)NULL, _ioAccess, false, isVerify))
     {
-        return errmsg("initHwPtrs: HW pointers not found.\n");
+        return errmsg("InitHwPtrs: HW pointers not found.\n");
     }
     return true;
 }
@@ -4916,7 +4912,7 @@ bool Fs4Operations::isHashesTableHwPtrValid()
     //* Check HW pointers initialized
     if (!_is_hw_ptrs_initialized)
     {
-        if (!initHwPtrs())
+        if (!InitHwPtrs())
         {
             return errmsg("isHashesTableHwPtrValid: HW pointers not found");
         }

@@ -204,7 +204,7 @@ using namespace std;
 #define CHECKB2(b, o, n, f, p, fp)          \
     do                                      \
     {                                       \
-        if (!checkBoot2(b, o, n, f, p, fp)) \
+        if (!CheckBoot2(b, o, n, f, p, fp)) \
         {                                   \
             return false;                   \
         }                                   \
@@ -212,7 +212,7 @@ using namespace std;
 #define FS3_CHECKB2(b, o, f, p, i)         \
     {                                      \
         u_int32_t n;                       \
-        if (!checkBoot2(b, o, n, f, p, i)) \
+        if (!CheckBoot2(b, o, n, f, p, i)) \
         {                                  \
             return false;                  \
         }                                  \

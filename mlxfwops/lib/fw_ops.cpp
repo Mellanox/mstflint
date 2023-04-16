@@ -38,6 +38,7 @@
 #include "flint_base.h"
 #include "flint_io.h"
 #include "fw_ops.h"
+#include "fs5_ops.h"
 #include "fs4_ops.h"
 #include "fs3_ops.h"
 #include "fs2_ops.h"
@@ -63,7 +64,6 @@
 #define OP_NOT_SUPPORTED EINVAL
 #endif // __WIN__
 
-#define BAD_CRC_MSG "Bad CRC."
 extern const char* g_sectNames[];
 
 bool FwOperations::readBufAux(FBase& f, u_int32_t o, void* d, int l, const char* p)
@@ -276,14 +276,14 @@ void FwOperations::getSupporteHwId(u_int32_t** supportedHwId, u_int32_t& support
     supportedHwIdNum = _fwImgInfo.supportedHwIdNum;
 }
 
-bool FwOperations::checkBoot2(u_int32_t beg,
+bool FwOperations::CheckBoot2(u_int32_t beg,
                               u_int32_t offs,
                               u_int32_t& next,
                               bool fullRead,
                               const char* pref,
                               VerifyCallBack verifyCallBackFunc)
 {
-    DPRINTF(("FwOperations::checkBoot2\n"));
+    DPRINTF(("FwOperations::CheckBoot2\n"));
     u_int32_t size = 0x0;
 
     char* pr = new char[strlen(pref) + 512];
@@ -291,19 +291,18 @@ bool FwOperations::checkBoot2(u_int32_t beg,
     // Size
     if (!(*_ioAccess).read(offs + beg + 4, &size))
     {
-        errmsg("%s - read error (%s)\n", pr, (*_ioAccess).err());
         delete[] pr;
-        return false;
+        return errmsg("%s - read error (%s)\n", pr, (*_ioAccess).err());
     }
     TOCPU1(size);
-    DPRINTF(("FwOperations::checkBoot2 size = 0x%x\n", size));
+    DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", size));
     if (size > 1048576 || size < 4)
     {
         report_callback(verifyCallBackFunc, "%s /0x%08x/ - unexpected size (0x%x)\n", pr, offs + beg + 4, size);
         delete[] pr;
-        return false;
+        return errmsg("Boot2 invalid size\n");
     }
-    _fwImgInfo.bootSize = (size + 4) * 4;
+    _fwImgInfo.boot2Size = (size + 4) * 4;
 
     // Get absolute address on flash when checking BOOT2 for FS3 image format (for FS2 its always displayed as
     // contiguous) Adrianc: why dont we show them both in the same way when running verify.
@@ -315,7 +314,7 @@ bool FwOperations::checkBoot2(u_int32_t beg,
     sprintf(pr, "%s /0x%08x-0x%08x (0x%06x)/ (BOOT2)", pref, offs + boot2AbsAddr,
             offs + boot2AbsAddr + (size + 4) * 4 - 1, (size + 4) * 4);
 
-    if ((_ioAccess->is_flash() && fullRead == true) || !_ioAccess->is_flash())
+    if (fullRead == true || !_ioAccess->is_flash())
     {
         Crc16 crc;
         u_int32_t* buff = new u_int32_t[size + 4];
@@ -325,7 +324,7 @@ bool FwOperations::checkBoot2(u_int32_t beg,
         {
             delete[] pr;
             delete[] buff;
-            return rc;
+            return errmsg("%s - read error (%s)\n", "Boot2", (*_ioAccess).err());
         }
         // we hold for FS3 an image cache so we selectevely update it in UpdateImgCache() call
         UpdateImgCache((u_int8_t*)buff, offs + beg, size * 4 + 16);
@@ -339,7 +338,7 @@ bool FwOperations::checkBoot2(u_int32_t beg,
         delete[] buff;
         if (crc.get() != crc_act)
         {
-            DPRINTF(("FwOperations::checkBoot2 wrong CRC (exp:0x%x, act:0x%x)\n", crc.get(), crc_act));
+            DPRINTF(("FwOperations::CheckBoot2 wrong CRC (exp:0x%x, act:0x%x)\n", crc.get(), crc_act));
             report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n", pr, offs + beg,
                             crc.get(), crc_act);
             if (!_fwParams.ignoreCrcCheck)
@@ -357,7 +356,7 @@ bool FwOperations::checkBoot2(u_int32_t beg,
     next = offs + size * 4 + 16;
     delete[] pr;
     return true;
-} // checkBoot2
+} // CheckBoot2
 
 bool FwOperations::CheckAndPrintCrcRes(char* pr,
                                        bool blank_crc,
@@ -1067,6 +1066,13 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             {
                 DPRINTF(("FS4 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
                 fwops = new Fs4Operations(ioAccess);
+                break;
+            }
+
+            case FS_FS5_GEN:
+            {
+                DPRINTF(("FS5 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
+                fwops = new Fs5Operations(ioAccess);
                 break;
             }
 
@@ -2476,6 +2482,7 @@ bool FwOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int
     return true;
 }
 
+// TODO - use dm_dev_is_fs3/4/5 from tools_dev_types.c and remove this function
 u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
 {
     if ((hwDevId == CX3_HW_ID) || (hwDevId == CX3_PRO_HW_ID))
