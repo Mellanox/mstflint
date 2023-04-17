@@ -250,11 +250,24 @@ struct mflash
     int cpuPercent;
     u_int32_t cache_repacement_en_addr;
     u_int32_t gcm_en_addr;
-    u_int32_t gw_addr;
-    u_int32_t gw_data;
-    u_int32_t gw_cmd;
-    u_int32_t cache_rep_offset;
-    u_int32_t cache_rep_cmd;
+    u_int32_t gw_addr_field_addr;
+    u_int32_t gw_data_field_addr;
+    u_int32_t gw_cmd_register_addr;
+    u_int32_t cache_rep_offset_field_addr;
+    u_int32_t cache_rep_cmd_field_addr;
+    // Below fields are initialized and used for mflash_new_gw.c only
+    u_int32_t gw_rw_bit_offset;
+    u_int32_t gw_cmd_phase_bit_offset;
+    u_int32_t gw_addr_phase_bit_offset;
+    u_int32_t gw_data_phase_bit_offset;
+    u_int32_t gw_cs_hold_bit_offset;
+    u_int32_t gw_data_size_bit_offset;
+    u_int32_t gw_data_size_bit_len;
+    u_int32_t gw_chip_select_bit_offset;
+    u_int32_t gw_addr_size_bit_offset;
+    u_int32_t gw_cmd_bit_offset;
+    u_int32_t gw_cmd_bit_len;
+    u_int32_t gw_busy_bit_offset;
 
     // Frequency related fields relevant for CX7 and BF3
     bool is_freq_handle_required;
@@ -308,7 +321,6 @@ enum CntxCrConstants
 
     HBO_READ_OP = 0,
     HBO_CMD_PHASE = 2,
-    HBS_CHIP_SELECT = 1,
     HBO_ADDR_PHASE = 3,
     HBS_MSIZE = 3,
     HBS_NEW_GW_MSIZE = 5,

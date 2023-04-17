@@ -163,9 +163,9 @@ static int cntx_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg)
         gw_cmd = MERGE(gw_cmd, 1, HBO_FLASH_ENABLE, 1);
     }
 
-    gw_cmd = MERGE(gw_cmd, (u_int32_t)mfl->curr_bank, HBO_CHIP_SELECT, HBS_CHIP_SELECT);
-    DPRINTF(("cntx_exec_cmd: %s, gw_cmd = %#x  GW = %#x\n", msg, gw_cmd, mfl->gw_cmd));
-    MWRITE4(mfl->gw_cmd, gw_cmd);
+    gw_cmd = MERGE(gw_cmd, (u_int32_t)mfl->curr_bank, HBO_CHIP_SELECT, 1);
+    DPRINTF(("cntx_exec_cmd: %s, gw_cmd = %#x  GW = %#x\n", msg, gw_cmd, mfl->gw_cmd_register_addr));
+    MWRITE4(mfl->gw_cmd_register_addr, gw_cmd);
     return gw_wait_ready(mfl, msg);
 }
 
@@ -196,7 +196,7 @@ static int
     // write GW addr if needed
     if (addr)
     {
-        if (mwrite4(mfl->mf, mfl->gw_addr, *addr) != 4)
+        if (mwrite4(mfl->mf, mfl->gw_addr_field_addr, *addr) != 4)
         {
             release_semaphore(mfl, 0);
             return MFE_CR_ERROR;
@@ -206,7 +206,7 @@ static int
     rc = cntx_exec_cmd(mfl, gw_cmd, msg);
     CHECK_RC_REL_SEM(mfl, rc);
     // copy data from CR-space to buff
-    if (mread4_block(mfl->mf, mfl->gw_data, buff, (buff_dword_sz << 2)) != (buff_dword_sz << 2))
+    if (mread4_block(mfl->mf, mfl->gw_data_field_addr, buff, (buff_dword_sz << 2)) != (buff_dword_sz << 2))
     {
         release_semaphore(mfl, 0);
         return MFE_CR_ERROR;
@@ -243,23 +243,23 @@ static int
     // write data from buff to CR-space
     if (buff && buff_dword_sz)
     {
-        if (mwrite4_block(mfl->mf, mfl->gw_data, buff, (buff_dword_sz << 2)) != (buff_dword_sz << 2))
+        if (mwrite4_block(mfl->mf, mfl->gw_data_field_addr, buff, (buff_dword_sz << 2)) != (buff_dword_sz << 2))
         {
             release_semaphore(mfl, 0);
             return MFE_CR_ERROR;
         }
-        DPRINTF(("cntx_exec_cmd_set: set DATA, GW = %#x DATA[0] = %#x\n", mfl->gw_data, buff[0]));
+        DPRINTF(("cntx_exec_cmd_set: set DATA, GW = %#x DATA[0] = %#x\n", mfl->gw_data_field_addr, buff[0]));
     }
 
     // write GW addr if needed
     if (addr)
     {
-        if (mwrite4(mfl->mf, mfl->gw_addr, *addr) != 4)
+        if (mwrite4(mfl->mf, mfl->gw_addr_field_addr, *addr) != 4)
         {
             release_semaphore(mfl, 0);
             return MFE_CR_ERROR;
         }
-        DPRINTF(("cntx_exec_cmd_set: set address, GW = %#x ADDR = %#x\n", mfl->gw_addr, *addr));
+        DPRINTF(("cntx_exec_cmd_set: set address, GW = %#x ADDR = %#x\n", mfl->gw_addr_field_addr, *addr));
     }
     // execute gw command
     rc = cntx_exec_cmd(mfl, gw_cmd, msg);

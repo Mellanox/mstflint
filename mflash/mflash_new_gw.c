@@ -126,34 +126,22 @@ static int new_gw_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg)
         // for new devices need to make sure this bit remains locked when writing the dword
         gw_cmd = MERGE(gw_cmd, 1, 31, 1);
     }
-    if ((gw_cmd & (1 << HBO_ADDR_PHASE)) != 0)
+    if ((gw_cmd & (1 << mfl->gw_addr_phase_bit_offset)) != 0)
     { // This is an access command
         if (is_x_byte_address_access_commands(mfl, 4))
         {
-            gw_cmd = MERGE(gw_cmd, 1, HBO_NEW_GW_ADDR_SIZE, 1);
+            gw_cmd = MERGE(gw_cmd, 1, mfl->gw_addr_size_bit_offset, 1);
         }
         else if (!is_x_byte_address_access_commands(mfl, 3))
         {
             return MFE_ACCESS_COMMANDS_NOT_INITIALIZED;
         }
     }
-    gw_cmd = MERGE(gw_cmd, 1, HBO_BUSY, 1);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_busy_bit_offset, 1);
 
-    MfError status;
-    int flash_enable_needed = is_flash_enable_needed(mfl, &status);
-    // for new devices this value is always 0
-    if (status != MFE_OK)
-    {
-        return status;
-    }
-    if (flash_enable_needed)
-    {
-        gw_cmd = MERGE(gw_cmd, 1, HBO_FLASH_ENABLE, 1);
-    }
-
-    gw_cmd = MERGE(gw_cmd, (u_int32_t)mfl->curr_bank, HBO_NEW_GW_CHIP_SELECT, HBS_CHIP_SELECT);
+    gw_cmd = MERGE(gw_cmd, (u_int32_t)mfl->curr_bank, mfl->gw_chip_select_bit_offset, 1);
     DPRINTF(("-D- new_gw_exec_cmd: %s, gw_cmd = %#x\n", msg, gw_cmd));
-    MWRITE4(HCR_FLASH_CMD, gw_cmd);
+    MWRITE4(mfl->gw_cmd_register_addr, gw_cmd);
     return gw_wait_ready(mfl, msg);
 }
 
@@ -184,7 +172,7 @@ static int
     // write GW addr if needed
     if (addr)
     {
-        if (mwrite4(mfl->mf, HCR_FLASH_NEW_GW_ADDR, *addr) != 4)
+        if (mwrite4(mfl->mf, mfl->gw_addr_field_addr, *addr) != 4)
         {
             release_semaphore(mfl, 0);
             return MFE_CR_ERROR;
@@ -194,7 +182,7 @@ static int
     rc = new_gw_exec_cmd(mfl, gw_cmd, msg);
     CHECK_RC_REL_SEM(mfl, rc);
     // copy data from CR-space to buff
-    if (mread4_block(mfl->mf, HCR_FLASH_DATA, buff, (buff_dword_sz << 2)) != (buff_dword_sz << 2))
+    if (mread4_block(mfl->mf, mfl->gw_data_field_addr, buff, (buff_dword_sz << 2)) != (buff_dword_sz << 2))
     {
         release_semaphore(mfl, 0);
         return MFE_CR_ERROR;
@@ -231,7 +219,7 @@ static int
     // write data from buff to CR-space
     if (buff && buff_dword_sz)
     {
-        if (mwrite4_block(mfl->mf, HCR_FLASH_DATA, buff, (buff_dword_sz << 2)) != (buff_dword_sz << 2))
+        if (mwrite4_block(mfl->mf, mfl->gw_data_field_addr, buff, (buff_dword_sz << 2)) != (buff_dword_sz << 2))
         {
             release_semaphore(mfl, 0);
             return MFE_CR_ERROR;
@@ -241,7 +229,7 @@ static int
     // write GW addr if needed
     if (addr)
     {
-        if (mwrite4(mfl->mf, HCR_FLASH_NEW_GW_ADDR, *addr) != 4)
+        if (mwrite4(mfl->mf, mfl->gw_addr_field_addr, *addr) != 4)
         {
             release_semaphore(mfl, 0);
             return MFE_CR_ERROR;
@@ -263,12 +251,12 @@ int new_gw_int_spi_get_status_data(mflash* mfl, u_int8_t op_type, u_int32_t* sta
     u_int32_t gw_cmd = 0;
     u_int32_t flash_data = 0;
     // TODO: adrianc: update msize from log2(bytes_num)
-    gw_cmd = MERGE(gw_cmd, 1, HBO_READ_OP, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 4, HBO_MSIZE, HBS_NEW_GW_MSIZE);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_rw_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cmd_phase_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, 4, mfl->gw_data_size_bit_offset, mfl->gw_data_size_bit_len);
 
-    gw_cmd = MERGE(gw_cmd, op_type, HBO_CMD, HBS_CMD);
+    gw_cmd = MERGE(gw_cmd, op_type, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);
     DPRINTF(("NEW gateway CMD gw_cmd=%08x\n", gw_cmd));
     if (bytes_num > 4)
     {
@@ -285,8 +273,8 @@ int new_gw_st_spi_write_enable(mflash* mfl)
     u_int32_t gw_cmd = 0;
     int rc = 0;
     // Write enable:
-    gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, SFC_WREN, HBO_CMD, HBS_CMD);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cmd_phase_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, SFC_WREN, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);
 
     rc = new_gw_exec_cmd_set(mfl, gw_cmd, (u_int32_t*)NULL, 0, (u_int32_t*)NULL, "WREN command");
     CHECK_RC(rc);
@@ -299,10 +287,10 @@ int new_gw_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t writ
     // TODO: adrianc: add support for dynamic writes of power of 2 bytes_num not just 1,2 bytes
     rc = new_gw_st_spi_write_enable(mfl);
     CHECK_RC(rc);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cmd_phase_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1);
 
-    gw_cmd = MERGE(gw_cmd, write_cmd, HBO_CMD, HBS_CMD);
+    gw_cmd = MERGE(gw_cmd, write_cmd, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);
 
     if (bytes_num != 1 && bytes_num != 2)
     {
@@ -310,7 +298,7 @@ int new_gw_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t writ
     }
     // push status reg to upper bytes
     status_reg = status_reg << ((bytes_num == 2) ? 16 : 24);
-    gw_cmd = MERGE(gw_cmd, bytes_num, HBO_MSIZE, HBS_NEW_GW_MSIZE);
+    gw_cmd = MERGE(gw_cmd, bytes_num, mfl->gw_data_size_bit_offset, mfl->gw_data_size_bit_len);
     DPRINTF(("new_gw_spi_write_status_reg: gw_cmd=%08x status_reg=%08x\n", gw_cmd, status_reg));
     rc = new_gw_exec_cmd_set(mfl, gw_cmd, &status_reg, 1, (u_int32_t*)NULL, "Write-Status-Register");
     // wait for flash to write the register
@@ -333,7 +321,7 @@ int new_gw_st_spi_erase_sect(mflash* mfl, u_int32_t addr)
     int rc = 0;
 
     u_int32_t gw_cmd = 0;
-    u_int32_t gw_addr = 0;
+    u_int32_t erase_addr = 0;
     rc = set_bank(mfl, addr);
     CHECK_RC(rc);
 
@@ -341,15 +329,15 @@ int new_gw_st_spi_erase_sect(mflash* mfl, u_int32_t addr)
     CHECK_RC(rc);
 
     // Erase sector command:
-    gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_ADDR_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, mfl->attr.erase_command, HBO_CMD, HBS_CMD);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cmd_phase_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_addr_phase_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, mfl->attr.erase_command, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);
 
-    gw_addr = addr & ONES32(mfl->attr.log2_bank_size);
+    erase_addr = addr & ONES32(mfl->attr.log2_bank_size);
 
-    DPRINTF(("new_gw_st_spi_erase_sect: addr = %#x, gw_cmd = %#x.\n", addr, gw_cmd));
+    DPRINTF(("new_gw_st_spi_erase_sect: addr = %#x, erase_addr = %#x, gw_cmd = %#x.\n", addr, erase_addr, gw_cmd));
 
-    rc = new_gw_exec_cmd_set(mfl, gw_cmd, (u_int32_t*)NULL, 0, &gw_addr, "ES");
+    rc = new_gw_exec_cmd_set(mfl, gw_cmd, (u_int32_t*)NULL, 0, &erase_addr, "ES");
     CHECK_RC(rc);
 
     // Wait for erase completion
@@ -368,7 +356,7 @@ int new_gw_st_spi_block_write_ex(mflash* mfl,
     int rc = 0;
     u_int32_t offs = 0;
     u_int32_t gw_cmd = 0;
-    u_int32_t gw_addr = 0;
+    u_int32_t addr = 0;
     u_int32_t buff[4];
 
     DPRINTF(("new_gw_st_spi_block_write_ex(addr=%05x, u_int32_t size=%05x, first=%d, last=%d)\n", blk_addr, blk_size,
@@ -388,8 +376,8 @@ int new_gw_st_spi_block_write_ex(mflash* mfl,
     rc = set_bank(mfl, blk_addr);
     CHECK_RC(rc);
 
-    gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, blk_size, HBO_MSIZE, HBS_NEW_GW_MSIZE);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, blk_size, mfl->gw_data_size_bit_offset, mfl->gw_data_size_bit_len);
 
     if (is_first)
     {
@@ -397,16 +385,16 @@ int new_gw_st_spi_block_write_ex(mflash* mfl,
         CHECK_RC(rc);
 
         // Write the data block
-        gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-        gw_cmd = MERGE(gw_cmd, 1, HBO_ADDR_PHASE, 1);
-        gw_cmd = MERGE(gw_cmd, mfl->attr.access_commands.sfc_page_program, HBO_CMD, HBS_CMD);
-        gw_addr = blk_addr & ONES32(mfl->attr.log2_bank_size);
-        DPRINTF(("-D- gw_addr = %#x, blk_addr = %#x\n", gw_addr, blk_addr));
+        gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cmd_phase_bit_offset, 1);
+        gw_cmd = MERGE(gw_cmd, 1, mfl->gw_addr_phase_bit_offset, 1);
+        gw_cmd = MERGE(gw_cmd, mfl->attr.access_commands.sfc_page_program, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);
+        addr = blk_addr & ONES32(mfl->attr.log2_bank_size);
+        DPRINTF(("-D- addr = %#x, blk_addr = %#x\n", addr, blk_addr));
     }
 
     if (!is_last)
     {
-        gw_cmd = MERGE(gw_cmd, 1, HBO_CS_HOLD, 1);
+        gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cs_hold_bit_offset, 1);
     }
 
     // Data:
@@ -420,10 +408,10 @@ int new_gw_st_spi_block_write_ex(mflash* mfl,
         word = MERGE(word, data[offs + 3], 0, 8);
         // MWRITE4(HCR_FLASH_DATA + offs, word );
         buff[offs / 4] = word;
-        DPRINTF(("-D- word = 0x%08x, %d\n", word, HBS_CMD));
+        DPRINTF(("-D- word = 0x%08x\n", word));
     }
 
-    rc = new_gw_exec_cmd_set(mfl, gw_cmd, buff, (blk_size >> 2), &gw_addr, "PP command");
+    rc = new_gw_exec_cmd_set(mfl, gw_cmd, buff, (blk_size >> 2), &addr, "PP command");
     CHECK_RC(rc);
 
     //
@@ -444,7 +432,7 @@ int new_gw_sst_spi_block_write_ex(mflash* mfl, u_int32_t blk_addr, u_int32_t blk
 {
     int rc = 0;
     u_int32_t gw_cmd = 0;
-    u_int32_t gw_addr = 0;
+    u_int32_t addr = 0;
     u_int32_t word = 0;
 
     // sanity check ??? remove ???
@@ -456,26 +444,24 @@ int new_gw_sst_spi_block_write_ex(mflash* mfl, u_int32_t blk_addr, u_int32_t blk
     rc = set_bank(mfl, blk_addr);
     CHECK_RC(rc);
 
-    gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_MSIZE, HBS_NEW_GW_MSIZE);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_size_bit_offset, mfl->gw_data_size_bit_len);
 
     rc = new_gw_st_spi_write_enable(mfl);
     CHECK_RC(rc);
 
     // Write the data block
-    gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_ADDR_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 0x02, HBO_CMD, HBS_CMD);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cmd_phase_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_addr_phase_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, 0x02, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);
 
-    gw_addr = blk_addr & ONES32(mfl->attr.log2_bank_size);
-
-    // gw_cmd = MERGE(gw_cmd, 1               , HBO_NEW_GW_CS_HOLD,    1);
+    addr = blk_addr & ONES32(mfl->attr.log2_bank_size);
 
     word = MERGE(word, data[0], 24, 8);
 
-    DPRINTF(("-D- data[0] = %#x, gw_addr = %#x, word = %#x, gw_cmd = %#x\n", data[0], gw_addr, word, gw_cmd));
+    DPRINTF(("-D- data[0] = %#x, addr = %#x, word = %#x, gw_cmd = %#x\n", data[0], addr, word, gw_cmd));
 
-    rc = new_gw_exec_cmd_set(mfl, gw_cmd, &word, 1, &gw_addr, "PB command");
+    rc = new_gw_exec_cmd_set(mfl, gw_cmd, &word, 1, &addr, "PB command");
     CHECK_RC(rc);
 
     rc = st_spi_wait_wip(mfl, 0, 0, 50000);
@@ -495,7 +481,7 @@ int new_gw_st_spi_block_read_ex(mflash* mfl,
     int rc = 0;
     u_int32_t i = 0;
     u_int32_t gw_cmd = 0;
-    u_int32_t gw_addr = 0;
+    u_int32_t addr = 0;
 
     DPRINTF(("-D- new_gw_st_spi_block_read_ex(addr=%05x, u_int32_t size=%05x, first=%d, last=%d)\n", blk_addr, blk_size,
              (u_int32_t)is_first, (u_int32_t)is_last));
@@ -511,25 +497,25 @@ int new_gw_st_spi_block_read_ex(mflash* mfl,
 
     if (is_first)
     {
-        gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-        gw_cmd = MERGE(gw_cmd, 1, HBO_ADDR_PHASE, 1);
-        gw_cmd = MERGE(gw_cmd, mfl->attr.access_commands.sfc_read, HBO_CMD, HBS_CMD);
-        rc = get_flash_offset(blk_addr, mfl->attr.log2_bank_size, &gw_addr);
+        gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cmd_phase_bit_offset, 1);
+        gw_cmd = MERGE(gw_cmd, 1, mfl->gw_addr_phase_bit_offset, 1);
+        gw_cmd = MERGE(gw_cmd, mfl->attr.access_commands.sfc_read, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);
+        rc = get_flash_offset(blk_addr, mfl->attr.log2_bank_size, &addr);
         CHECK_RC(rc);
     }
-    DPRINTF(("-D- gw_addr = %#x, gw_cmd = %#x, blk_addr = %#x, mfl->attr.log2_bank_size = %#x\n", gw_addr, gw_cmd,
-             blk_addr, mfl->attr.log2_bank_size));
+    DPRINTF(("-D- addr = %#x, gw_cmd = %#x, blk_addr = %#x, mfl->attr.log2_bank_size = %#x\n", addr, gw_cmd, blk_addr,
+             mfl->attr.log2_bank_size));
     if (!is_last)
     {
-        gw_cmd = MERGE(gw_cmd, 1, HBO_CS_HOLD, 1);
+        gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cs_hold_bit_offset, 1);
     }
 
     // Read the data block
-    gw_cmd = MERGE(gw_cmd, 1, HBO_READ_OP, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, blk_size, HBO_MSIZE, HBS_NEW_GW_MSIZE);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_rw_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1);
+    gw_cmd = MERGE(gw_cmd, blk_size, mfl->gw_data_size_bit_offset, mfl->gw_data_size_bit_len);
 
-    rc = new_gw_exec_cmd_get(mfl, gw_cmd, (u_int32_t*)data, (blk_size >> 2), &gw_addr, "Read");
+    rc = new_gw_exec_cmd_get(mfl, gw_cmd, (u_int32_t*)data, (blk_size >> 2), &addr, "Read");
     CHECK_RC(rc);
     for (i = 0; i < blk_size; i += 4)
     {
