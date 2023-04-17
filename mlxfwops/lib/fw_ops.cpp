@@ -43,6 +43,7 @@
 #include "fs3_ops.h"
 #include "fs2_ops.h"
 #include "fsctrl_ops.h"
+#include "fs_comps_factory.h"
 
 #ifdef CABLES_SUPP
 #include "cablefw_ops.h"
@@ -103,7 +104,7 @@ int FwOperations::getFileSignature(const char* fname)
         return res;
     }
 
-    if (!strncmp((char*)tmpb, "MTFW", 4))
+    if (!strncmp((char*)tmpb, "MTFW", 4) || FsCompsFactory::IsFsCompsFingerPrint(tmpb))
     {
         res = IMG_SIG_TYPE_BIN;
     }
@@ -695,6 +696,19 @@ u_int8_t FwOperations::IsCableImage(FBase& f)
     return FS_UNKNOWN_IMG;
 }
 
+u_int8_t FwOperations::IsFSCompsImage(FBase& f)
+{
+    u_int8_t data[16] = {0};
+    f.read(0, data, 16, false, NULL);
+
+    if (FsCompsFactory::IsFsCompsFingerPrint(data))
+    {
+        return FS_COMPS_GEN;
+    }
+
+    return FS_UNKNOWN_IMG;
+}
+
 u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg)
 {
     DPRINTF(("FwOperations::CheckFwFormat\n"));
@@ -712,6 +726,13 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg)
         {
             return v;
         }
+
+        v = IsFSCompsImage(f);
+        if (v != FS_UNKNOWN_IMG)
+        {
+            return v;
+        }
+
         // First check if it is FS4
         v = IsFS4OrFS5Image(f, &found_images);
         if (found_images)
@@ -832,10 +853,12 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams,
         *imgFwOps = NULL;
         return false;
     }
-    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false)
+    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false &&
+        (*imgFwOps)->FwType() != FIT_COMPS)
     {
         devParams.noFwCtrl = true;
     }
+    devParams.deviceIndex = (*imgFwOps)->GetDeviceIndex();
 
     *devFwOps = FwOperationsCreate(devParams);
     if (!(*devFwOps))
@@ -924,16 +947,13 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             (fwParams.hndlType == FHT_UEFI_DEV && !fwParams.uefiExtra.dev_info.no_fw_ctrl))
         {
             fw_comps_error_t fwCompsErr = FWCOMPS_SUCCESS;
-            if (fwParams.hndlType == FHT_MST_DEV)
+            if (!fwParams.canSkipFwCtrl)
+            { // CX3/PRO are unsupported
+                fwCompsAccess = new FwCompsMgr(fwParams.mstHndl, FwCompsMgr::DEVICE_HCA_SWITCH, fwParams.deviceIndex);
+            }
+            else
             {
-                if (!fwParams.canSkipFwCtrl)
-                { // CX3/PRO are unsupported
-                    fwCompsAccess = new FwCompsMgr(fwParams.mstHndl);
-                }
-                else
-                {
-                    fwCompsErr = FWCOMPS_UNSUPPORTED_DEVICE;
-                }
+                fwCompsErr = FWCOMPS_UNSUPPORTED_DEVICE;
             }
             else if (fwParams.hndlType == FHT_UEFI_DEV)
             {
@@ -945,7 +965,6 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             {
                 fwCompsErr = fwCompsAccess->getLastError();
             }
-
             if (fwCompsErr != FWCOMPS_SUCCESS)
             {
                 bool exitOnError = false;
@@ -1073,6 +1092,13 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             {
                 DPRINTF(("FS5 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
                 fwops = new Fs5Operations(ioAccess);
+                break;
+            }
+
+            case FS_COMPS_GEN:
+            {
+                DPRINTF(("FS COMPS ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
+                fwops = FsCompsFactory::Create(ioAccess);
                 break;
             }
 
@@ -2346,6 +2372,16 @@ bool FwOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData,
     return errmsg("FwBurnAdvanced not supported.");
 }
 
+bool FwOperations::FwBurnAdvanced(FwOperations* imageOps,
+                                  ExtBurnParams& burnParams,
+                                  FwComponent::comps_ids_t ComponentId)
+{
+    (void)imageOps;
+    (void)burnParams;
+    (void)ComponentId;
+    return errmsg("FwBurnAdvanced not supported.");
+}
+
 bool FwOperations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
 {
     (void)critical;
@@ -2743,6 +2779,11 @@ bool FwOperations::VerifyBranchFormat(const char* vsdString)
         return true;
     }
     return false;
+}
+
+bool FwOperations::PrintQuery()
+{
+    return errmsg("PrintQuery not supported.");
 }
 
 bool FwOperations::IsLifeCycleAccessible(chip_type_t)

@@ -727,7 +727,42 @@ bool FsCtrlOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData,
                                       ExtBurnParams& burnParams,
                                       FwComponent::comps_ids_t ComponentId)
 {
-    return _Burn(imageOps4MData, burnParams, ComponentId);
+    return _Burn(imageOps4MData, burnParams.ProgressFuncAdv, ComponentId);
+}
+
+bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps,
+                                      ExtBurnParams& burnParams,
+                                      FwComponent::comps_ids_t ComponentId)
+{
+    if (ComponentId == FwComponent::comps_ids_t::COMPID_CLOCK_SYNC_EEPROM)
+    {
+        // component_synce_st cmpSyncE;
+        // fw_info_t query;
+        // if (!_fwCompsAccess->GetComponentSyncEProperties(cmpSyncE))
+        // {
+        //     return false;
+        // }
+        // if (!imageOps->FwQuery(&query))
+        // {
+        //     return false;
+        // }
+
+        _fwCompsAccess->SetActivationStep(false);
+    }
+
+    std::vector<u_int8_t> compData;
+    u_int32_t imageSize = 0;
+    if (!imageOps->GetImageSize(&imageSize))
+    {
+        return false;
+    }
+    compData.resize(imageSize);
+    if (!imageOps->FwReadData(compData.data(), &imageSize))
+    {
+        return errmsg(imageOps->getErrorCode(), "Failed to read component from file");
+    }
+    printf("-I- Downloading FW ...\n");
+    return _Burn(compData, burnParams.ProgressFuncAdv, ComponentId);
 }
 
 bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams)
@@ -779,7 +814,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
     {
         return errmsg(imageOps->getErrorCode(), "Failed to Extract 4MB from the image");
     }
-    return _Burn(imageOps4MData, burnParams);
+    return _Burn(imageOps4MData, burnParams.ProgressFuncAdv);
 }
 
 bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams)
@@ -788,13 +823,11 @@ bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams&
 }
 
 bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData,
-                             ExtBurnParams& burnParams,
+                             ProgressCallBackAdvSt& progressCallBack,
                              FwComponent::comps_ids_t ComponentId)
 {
 #ifdef UEFI_BUILD
-    burnParams.ProgressFuncAdv.uefi_func = burnParams.progressFunc;
-#else
-    burnParams.progressFunc = (ProgressCallBack)NULL;
+    progressCallBack.uefi_func
 #endif
     FwComponent bootImageComponent;
     std::vector<FwComponent> compsToBurn;
@@ -814,7 +847,7 @@ bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData,
             DPRINTF(("-W- DMA access is not supported due to BME is unset (Bus primary Enable).\n"));
         }
     }
-    if (!_fwCompsAccess->burnComponents(compsToBurn, &burnParams.ProgressFuncAdv))
+    if (!_fwCompsAccess->burnComponents(compsToBurn, &progressCallBack))
     {
         _fwCompsAccess->unlock_flash_semaphore();
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());

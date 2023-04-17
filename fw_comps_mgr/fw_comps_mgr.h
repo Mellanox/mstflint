@@ -82,6 +82,7 @@ typedef struct reg_access_hca_mgir_ext mgirReg;
 
 typedef struct reg_access_hca_mcqi_version_ext component_version_st;
 typedef struct reg_access_hca_mcqi_linkx_properties_ext component_linkx_st;
+typedef struct reg_access_hca_mcqi_clock_source_properties_ext component_synce_st;
 
 typedef int (*ProgressFunc)(int completion);
 
@@ -163,7 +164,8 @@ typedef enum
     COMPINFO_PUBLIC_KEYS = 2,
     COMPINFO_FORBIDDEN_VERSION = 3,
     COMPINFO_ACTIVATION_METHOD = 5,
-    COMPINFO_LINKX_PROPERTIES = 6
+    COMPINFO_LINKX_PROPERTIES = 6,
+    COMPINFO_CLOCK_SOURCE_PROPERTIES = 7
 } comp_info_t;
 
 class FwComponent
@@ -185,6 +187,9 @@ public:
         COMPID_CRYPTO_TO_COMMISSIONING = 0xD,
         COMPID_RMCS_TOKEN = 0xE,
         COMPID_RMDT_TOKEN = 0xF,
+        COMPID_CRCS_TOKEN = 0x10,
+        COMPID_CRDT_TOKEN = 0x11,
+        COMPID_CLOCK_SYNC_EEPROM = 0x12,
         COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 
@@ -407,8 +412,10 @@ public:
                          bool activationNeeded = true,
                          bool downloadTransferNeeded = true,
                          int activate_delay_sec = 0);
+    void SetActivationStep(bool activationNeeded) { _activationNeeded = activationNeeded; }
     bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL);
     bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st* cmpLinkX);
+    bool GetComponentSyncEProperties(component_synce_st& cmpSyncE);
     void GenerateHandle();
     bool isMCDDSupported() { return _isDmaSupported; };
     bool IsSecondaryHost(bool& isSecondary);
