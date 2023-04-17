@@ -188,6 +188,7 @@ public:
     virtual bool
       FwBurn(FwOperations* imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0;
     virtual bool FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams) = 0;
+    virtual bool FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId);
     virtual bool
       getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess, bool isVerify);
     virtual bool FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData,
@@ -280,6 +281,8 @@ public:
     virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
     virtual bool GetImageSize(u_int32_t* image_size);
     virtual bool GetHashesTableData(vector<u_int8_t>& data);
+    virtual bool PrintQuery();
+    virtual u_int32_t GetDeviceIndex() { return 0; }
 
 #ifndef UEFI_BUILD
     static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);
@@ -447,6 +450,7 @@ public:
         bool mccUnsupported;
         bool canSkipFwCtrl;
         bool ignoreCrcCheck;
+        u_int32_t deviceIndex;
     };
 
     struct sgParams
@@ -511,6 +515,7 @@ protected:
         FS_FC1_GEN,
         FS_FSCTRL_GEN,
         FS_FS5_GEN,
+        FS_COMPS_GEN,
         FS_UNKNOWN_IMG
     };
 
@@ -705,6 +710,7 @@ private:
     static u_int8_t IsFS4OrFS5Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsFS3OrFS2Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsCableImage(FBase& f);
+    static u_int8_t IsFSCompsImage(FBase& f);
     static bool FindMagicPattern(FBase* ioAccess, u_int32_t addr, u_int32_t const cntx_magic_pattern[]);
     static bool CntxEthOnly(u_int32_t devid);
 

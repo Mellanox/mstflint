@@ -3309,6 +3309,25 @@ FlintStatus BurnSubCommand::executeCommand()
         return FLINT_FAILED;
     }
     // set fw type
+    
+    // updateBurnParams with input given by user
+    updateBurnParams();
+
+    if (_imgOps->FwType() == FIT_COMPS)
+    {
+        if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams, FwComponent::comps_ids_t::COMPID_CLOCK_SYNC_EEPROM))
+        {
+            reportErr(true, FLINT_FSX_BURN_ERROR, "FIT_COMPS", _fwOps->err());
+            return FLINT_FAILED;
+        }
+        else
+        {
+            cout << "-I- Component FW burn finished successfully." << endl;
+            cout << "-I- " << REBOOT_REQUIRED_STR << endl;
+            return FLINT_SUCCESS;
+        }
+    }
+
     _fwType = _fwOps->FwType();
     if (_fwOps->IsFifthGen())
     {
@@ -3361,9 +3380,6 @@ FlintStatus BurnSubCommand::executeCommand()
         reportErr(true, "The image you're trying to burn is restricted. Aborting ... \n");
         return FLINT_FAILED;
     }
-
-    // updateBurnParams with input given by user
-    updateBurnParams();
 
     if (_flintParams.use_image_guids && _fwType != FIT_FS2)
     {
@@ -4585,6 +4601,12 @@ FlintStatus QuerySubCommand::executeCommand()
         reportErr(true, FLINT_FAILED_QUERY_ERROR, _flintParams.device_specified ? "Device" : "image",
                   _flintParams.device_specified ? _flintParams.device.c_str() : _flintParams.image.c_str(), ops->err());
         return FLINT_FAILED;
+    }
+
+    if (ops->FwType() == FIT_COMPS)
+    {
+        ops->PrintQuery();
+        return FLINT_SUCCESS;
     }
 
     // print fw_info nicely to the user
