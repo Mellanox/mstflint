@@ -1024,7 +1024,8 @@ int gw_wait_ready(mflash* mfl, const char* msg)
         }
 
         MREAD4(mfl->gw_cmd_register_addr, &gw_cmd);
-    } while (EXTRACT(gw_cmd, BO_BUSY, 1));
+
+    } while (EXTRACT(gw_cmd, HBO_BUSY, 1));
 
     return MFE_OK;
 }
@@ -1658,6 +1659,27 @@ int restore_flash_freq(mflash* mfl)
     return rc;
 }
 
+int seventh_gen_flash_lock(mflash* mfl, int lock_state)
+{
+    int rc = 0;
+    if (lock_state == 1)
+    { // lock the flash
+        rc = is4_flash_lock(mfl, lock_state);
+        CHECK_RC(rc);
+        rc = disable_gcm(mfl);
+        CHECK_RC(rc);
+        rc = gw_wait_ready(mfl, "WAIT TO BUSY");
+        CHECK_RC(rc);
+    }
+    else
+    { // unlock the flash
+        // Restoring GCM is handled by FW
+        rc = is4_flash_lock(mfl, lock_state);
+        CHECK_RC(rc);
+    }
+    return MFE_OK;
+}
+
 int sixth_gen_flash_lock(mflash* mfl, int lock_state)
 {
     int rc = 0;
@@ -1965,9 +1987,28 @@ int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
     return gen4_flash_init_com(mfl, flash_params);
 }
 
+void update_seventh_gen_addrs(mflash* mfl)
+{
+    mfl->gw_cmd_register_addr = HCR_7GEN_FLASH_CMD;
+    mfl->gw_addr_field_addr = HCR_7GEN_FLASH_ADDR;
+    mfl->gw_data_field_addr = HCR_7GEN_FLASH_DATA;
+    mfl->gw_rw_bit_offset = HBO_7GEN_RW;
+    mfl->gw_cmd_phase_bit_offset = HBO_7GEN_CMD_PHASE;
+    mfl->gw_addr_phase_bit_offset = HBO_7GEN_ADDR_PHASE;
+    mfl->gw_data_phase_bit_offset = HBO_7GEN_DATA_PHASE;
+    mfl->gw_cs_hold_bit_offset = HBO_7GEN_CS_HOLD;
+    mfl->gw_chip_select_bit_offset = HBO_7GEN_CHIP_SELECT;
+    mfl->gw_addr_size_bit_offset = HBO_7GEN_ADDR_SIZE;
+    mfl->gw_cmd_bit_offset = HBO_7GEN_CMD;
+    mfl->gw_cmd_bit_len = HBS_7GEN_CMD;
+    mfl->gw_busy_bit_offset = HBO_7GEN_BUSY;
+    mfl->gcm_en_addr = HCR_7GEN_GCM_EN_ADDR;
+    mfl->gw_data_size_register_addr = HCR_7GEN_FLASH_DATA_SIZE;
+}
+
 void update_sixth_gen_addrs(mflash* mfl)
 {
-    mfl->gw_addr_field_addr = HCR_FLASH_NEW_GW_ADDR;
+    mfl->gw_addr_field_addr = HCR_NEW_GW_FLASH_ADDR;
     mfl->gw_addr_phase_bit_offset = HBO_ADDR_PHASE;
     mfl->gw_addr_size_bit_offset = HBO_NEW_GW_ADDR_SIZE;
     mfl->gw_busy_bit_offset = HBO_BUSY;
@@ -1975,14 +2016,22 @@ void update_sixth_gen_addrs(mflash* mfl)
     mfl->gw_rw_bit_offset = HBO_READ_OP;
     mfl->gw_cmd_phase_bit_offset = HBO_CMD_PHASE;
     mfl->gw_data_phase_bit_offset = HBO_DATA_PHASE;
-    mfl->gw_data_size_bit_offset = HBO_MSIZE;
-    mfl->gw_data_size_bit_len = HBS_NEW_GW_MSIZE;
+    mfl->gw_data_size_bit_offset = HBO_DATA_SIZE;
+    mfl->gw_data_size_bit_len = HBS_NEW_GW_DATA_SIZE;
     mfl->gw_cmd_bit_offset = HBO_CMD;
     mfl->gw_cmd_bit_len = HBS_CMD;
     mfl->gw_cs_hold_bit_offset = HBO_CS_HOLD;
     mfl->cache_repacement_en_addr = HCR_NEW_GW_CACHE_REPLACEMNT_EN_ADDR;
     mfl->gcm_en_addr = HCR_NEW_GW_GCM_EN_ADDR;
     init_freq_configuration_fields(mfl);
+}
+
+int seventh_gen_init_direct_access(mflash* mfl, flash_params_t* flash_params)
+{
+    update_seventh_gen_addrs(mfl);
+
+    mfl->f_lock = seventh_gen_flash_lock;
+    return gen6_flash_init_com(mfl, flash_params);
 }
 
 int sixth_gen_init_direct_access(mflash* mfl, flash_params_t* flash_params)
@@ -2280,6 +2329,11 @@ int tools_cmdif_init(mflash* mfl)
     return MFE_OK;
 }
 
+int seven_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
+{
+    return seventh_gen_init_direct_access(mfl, flash_params);
+}
+
 int six_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
     int rc = 0;
@@ -2516,7 +2570,6 @@ int get_dev_info(mflash* mfl)
     u_int32_t dev_flags = 0;
     u_int32_t access_type = 0;
     int rc = 0;
-    int is7NmSuppported;
     u_int32_t dev_id = 0;
 
     mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_NO;
@@ -2526,7 +2579,7 @@ int get_dev_info(mflash* mfl)
     CHECK_RC(rc);
 
     MfError status;
-    int icmdif_supported = is_icmdif_supported(mfl, &status, &is7NmSuppported);
+    int icmdif_supported = is_icmdif_supported(mfl, &status);
 
     if (status != MFE_OK)
     {
@@ -2894,9 +2947,8 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
         /** we need to toggle GPIO to get flash out of HOLD state (relevant to second source flash Winbond W25Q256JV) */
         rc = force_flash_out_of_hold_state(mfl);
 
-        int is7NmSuppported = 0;
         MfError status;
-        int icmdif_supported = is_icmdif_supported(mfl, &status, &is7NmSuppported);
+        int icmdif_supported = is_icmdif_supported(mfl, &status);
         if (status != MFE_OK)
         {
             return status;
@@ -2907,13 +2959,22 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
         }
         else if (icmdif_supported)
         {
-            if (!is7NmSuppported)
+            FlashGen flash_gen = get_flash_gen(mfl);
+            if (flash_gen == LEGACY_FLASH)
             {
                 rc = fifth_gen_flash_init(mfl, flash_params);
             }
-            else
+            else if (flash_gen == SIX_GEN_FLASH)
             {
                 rc = six_gen_flash_init(mfl, flash_params);
+            }
+            else if (flash_gen == SEVEN_GEN_FLASH)
+            {
+                rc = seven_gen_flash_init(mfl, flash_params);
+            }
+            else
+            {
+                rc = MFE_ERROR;
             }
         }
         else if (mfl->attr.hw_dev_id == 0xffff)
@@ -4010,8 +4071,7 @@ int mf_is_fifth_gen(mflash* mfl)
 {
     MfError status;
     int is7NmSuppported = 0;
-    int icmdif_supported = is_icmdif_supported(mfl, &status, &is7NmSuppported);
-
+    int icmdif_supported = is_icmdif_supported(mfl, &status);
     if (status != MFE_OK)
     {
         return status;

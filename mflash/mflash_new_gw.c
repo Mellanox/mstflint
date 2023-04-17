@@ -42,18 +42,6 @@
 #include "mflash_dev_capability.h"
 #include "mflash_access_layer.h"
 #include "flash_int_defs.h"
-#define DPRINTF(args)                            \
-    do                                           \
-    {                                            \
-        char* reacDebug = getenv("FLASH_DEBUG"); \
-        if (reacDebug != NULL)                   \
-        {                                        \
-            printf("\33[2K\r");                  \
-            printf("[FLASH_DEBUG]: -D- ");       \
-            printf args;                         \
-            fflush(stdout);                      \
-        }                                        \
-    } while (0)
 #ifdef __WIN__
 //
 // Windows (Under DDK)
@@ -71,6 +59,29 @@
             return rc;                 \
         }                              \
     } while (0)
+
+static int set_gw_data_size(mflash* mfl, u_int32_t data_size, u_int32_t* gw_cmd)
+{
+    FlashGen flash_gen = get_flash_gen(mfl);
+    if (flash_gen == SIX_GEN_FLASH)
+    {
+        *gw_cmd = MERGE((*gw_cmd), data_size, mfl->gw_data_size_bit_offset, mfl->gw_data_size_bit_len);
+    }
+    else if (flash_gen == SEVEN_GEN_FLASH)
+    {
+        if (mwrite4(mfl->mf, mfl->gw_data_size_register_addr, data_size) != 4)
+        {
+            release_semaphore(mfl, 0);
+            return MFE_CR_ERROR;
+        }
+    }
+    else
+    {
+        DPRINTF(("set_gw_data_size: flash_gen = %d mismatch\n", flash_gen));
+        return MFE_ERROR;
+    }
+    return MFE_OK;
+}
 
 static int st_spi_wait_wip(mflash* mfl, u_int32_t init_delay_us, u_int32_t retry_delay_us, u_int32_t num_of_retries)
 {
@@ -120,12 +131,7 @@ static bool is_x_byte_address_access_commands(mflash* mfl, int x)
 }
 static int new_gw_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg)
 {
-    if (!IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id))
-    {
-        // for old devices lock bit is separate from the flash HW ifc
-        // for new devices need to make sure this bit remains locked when writing the dword
-        gw_cmd = MERGE(gw_cmd, 1, 31, 1);
-    }
+    gw_cmd = MERGE(gw_cmd, 1, 31, 1); // Making sure lock bit stays locked
     if ((gw_cmd & (1 << mfl->gw_addr_phase_bit_offset)) != 0)
     { // This is an access command
         if (is_x_byte_address_access_commands(mfl, 4))
@@ -140,7 +146,7 @@ static int new_gw_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg)
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_busy_bit_offset, 1);
 
     gw_cmd = MERGE(gw_cmd, (u_int32_t)mfl->curr_bank, mfl->gw_chip_select_bit_offset, 1);
-    DPRINTF(("-D- new_gw_exec_cmd: %s, gw_cmd = %#x\n", msg, gw_cmd));
+    DPRINTF(("new_gw_exec_cmd: %s, gw_cmd = %#x\n", msg, gw_cmd));
     MWRITE4(mfl->gw_cmd_register_addr, gw_cmd);
     return gw_wait_ready(mfl, msg);
 }
@@ -254,7 +260,8 @@ int new_gw_int_spi_get_status_data(mflash* mfl, u_int8_t op_type, u_int32_t* sta
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_rw_bit_offset, 1);
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cmd_phase_bit_offset, 1);
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1);
-    gw_cmd = MERGE(gw_cmd, 4, mfl->gw_data_size_bit_offset, mfl->gw_data_size_bit_len);
+    rc = set_gw_data_size(mfl, 4, &gw_cmd);
+    CHECK_RC(rc);
 
     gw_cmd = MERGE(gw_cmd, op_type, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);
     DPRINTF(("NEW gateway CMD gw_cmd=%08x\n", gw_cmd));
@@ -298,7 +305,8 @@ int new_gw_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t writ
     }
     // push status reg to upper bytes
     status_reg = status_reg << ((bytes_num == 2) ? 16 : 24);
-    gw_cmd = MERGE(gw_cmd, bytes_num, mfl->gw_data_size_bit_offset, mfl->gw_data_size_bit_len);
+    rc = set_gw_data_size(mfl, bytes_num, &gw_cmd);
+    CHECK_RC(rc);
     DPRINTF(("new_gw_spi_write_status_reg: gw_cmd=%08x status_reg=%08x\n", gw_cmd, status_reg));
     rc = new_gw_exec_cmd_set(mfl, gw_cmd, &status_reg, 1, (u_int32_t*)NULL, "Write-Status-Register");
     // wait for flash to write the register
@@ -377,7 +385,8 @@ int new_gw_st_spi_block_write_ex(mflash* mfl,
     CHECK_RC(rc);
 
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1);
-    gw_cmd = MERGE(gw_cmd, blk_size, mfl->gw_data_size_bit_offset, mfl->gw_data_size_bit_len);
+    rc = set_gw_data_size(mfl, blk_size, &gw_cmd);
+    CHECK_RC(rc);
 
     if (is_first)
     {
@@ -389,7 +398,7 @@ int new_gw_st_spi_block_write_ex(mflash* mfl,
         gw_cmd = MERGE(gw_cmd, 1, mfl->gw_addr_phase_bit_offset, 1);
         gw_cmd = MERGE(gw_cmd, mfl->attr.access_commands.sfc_page_program, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);
         addr = blk_addr & ONES32(mfl->attr.log2_bank_size);
-        DPRINTF(("-D- addr = %#x, blk_addr = %#x\n", addr, blk_addr));
+        DPRINTF(("addr = %#x, blk_addr = %#x\n", addr, blk_addr));
     }
 
     if (!is_last)
@@ -408,7 +417,7 @@ int new_gw_st_spi_block_write_ex(mflash* mfl,
         word = MERGE(word, data[offs + 3], 0, 8);
         // MWRITE4(HCR_FLASH_DATA + offs, word );
         buff[offs / 4] = word;
-        DPRINTF(("-D- word = 0x%08x\n", word));
+        DPRINTF(("word = 0x%08x\n", word));
     }
 
     rc = new_gw_exec_cmd_set(mfl, gw_cmd, buff, (blk_size >> 2), &addr, "PP command");
@@ -445,7 +454,8 @@ int new_gw_sst_spi_block_write_ex(mflash* mfl, u_int32_t blk_addr, u_int32_t blk
     CHECK_RC(rc);
 
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1);
-    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_size_bit_offset, mfl->gw_data_size_bit_len);
+    rc = set_gw_data_size(mfl, 1, &gw_cmd);
+    CHECK_RC(rc);
 
     rc = new_gw_st_spi_write_enable(mfl);
     CHECK_RC(rc);
@@ -459,7 +469,7 @@ int new_gw_sst_spi_block_write_ex(mflash* mfl, u_int32_t blk_addr, u_int32_t blk
 
     word = MERGE(word, data[0], 24, 8);
 
-    DPRINTF(("-D- data[0] = %#x, addr = %#x, word = %#x, gw_cmd = %#x\n", data[0], addr, word, gw_cmd));
+    DPRINTF(("data[0] = %#x, addr = %#x, word = %#x, gw_cmd = %#x\n", data[0], addr, word, gw_cmd));
 
     rc = new_gw_exec_cmd_set(mfl, gw_cmd, &word, 1, &addr, "PB command");
     CHECK_RC(rc);
@@ -483,7 +493,7 @@ int new_gw_st_spi_block_read_ex(mflash* mfl,
     u_int32_t gw_cmd = 0;
     u_int32_t addr = 0;
 
-    DPRINTF(("-D- new_gw_st_spi_block_read_ex(addr=%05x, u_int32_t size=%05x, first=%d, last=%d)\n", blk_addr, blk_size,
+    DPRINTF(("new_gw_st_spi_block_read_ex(addr=%05x, u_int32_t size=%05x, first=%d, last=%d)\n", blk_addr, blk_size,
              (u_int32_t)is_first, (u_int32_t)is_last));
     COM_CHECK_ALIGN(blk_addr, blk_size);
 
@@ -503,7 +513,7 @@ int new_gw_st_spi_block_read_ex(mflash* mfl,
         rc = get_flash_offset(blk_addr, mfl->attr.log2_bank_size, &addr);
         CHECK_RC(rc);
     }
-    DPRINTF(("-D- addr = %#x, gw_cmd = %#x, blk_addr = %#x, mfl->attr.log2_bank_size = %#x\n", addr, gw_cmd, blk_addr,
+    DPRINTF(("addr = %#x, gw_cmd = %#x, blk_addr = %#x, mfl->attr.log2_bank_size = %#x\n", addr, gw_cmd, blk_addr,
              mfl->attr.log2_bank_size));
     if (!is_last)
     {
@@ -513,7 +523,8 @@ int new_gw_st_spi_block_read_ex(mflash* mfl,
     // Read the data block
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_rw_bit_offset, 1);
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1);
-    gw_cmd = MERGE(gw_cmd, blk_size, mfl->gw_data_size_bit_offset, mfl->gw_data_size_bit_len);
+    rc = set_gw_data_size(mfl, blk_size, &gw_cmd);
+    CHECK_RC(rc);
 
     rc = new_gw_exec_cmd_get(mfl, gw_cmd, (u_int32_t*)data, (blk_size >> 2), &addr, "Read");
     CHECK_RC(rc);

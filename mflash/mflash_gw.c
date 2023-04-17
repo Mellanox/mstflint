@@ -61,18 +61,6 @@
         }                              \
     } while (0)
 
-#define DPRINTF(args)                            \
-    do                                           \
-    {                                            \
-        char* reacDebug = getenv("FLASH_DEBUG"); \
-        if (reacDebug != NULL)                   \
-        {                                        \
-            printf("\33[2K\r");                  \
-            printf("[FLASH_DEBUG]: -D- ");       \
-            printf args;                         \
-            fflush(stdout);                      \
-        }                                        \
-    } while (0)
 static int st_spi_wait_wip(mflash* mfl, u_int32_t init_delay_us, u_int32_t retry_delay_us, u_int32_t num_of_retries)
 {
     int rc = 0;
@@ -280,7 +268,7 @@ int cntx_int_spi_get_status_data(mflash* mfl, u_int8_t op_type, u_int32_t* statu
     gw_cmd = MERGE(gw_cmd, 1, HBO_READ_OP, 1);
     gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
     gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 2, HBO_MSIZE, HBS_MSIZE);
+     gw_cmd = MERGE(gw_cmd, 2, HBO_DATA_SIZE, HBS_DATA_SIZE);
 
     gw_cmd = MERGE(gw_cmd, op_type, HBO_CMD, HBS_CMD);
 
@@ -326,7 +314,7 @@ int cntx_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t write_
     status_reg = status_reg << ((bytes_num == 2) ? 16 : 24);
     if (bytes_num == 2)
     {
-        gw_cmd = MERGE(gw_cmd, 1, HBO_MSIZE, 1);
+        gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_SIZE, 1);
     }
     rc = cntx_exec_cmd_set(mfl, gw_cmd, &status_reg, 1, (u_int32_t*)NULL, "Write-Status-Register");
     // wait for flash to write the register
@@ -402,7 +390,7 @@ int cntx_st_spi_block_write_ex(mflash* mfl,
     CHECK_RC(rc);
 
     gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, log2up(blk_size), HBO_MSIZE, HBS_MSIZE);
+    gw_cmd = MERGE(gw_cmd, log2up(blk_size), HBO_DATA_SIZE, HBS_DATA_SIZE);
 
     if (is_first)
     {
@@ -469,7 +457,7 @@ int cntx_sst_spi_block_write_ex(mflash* mfl, u_int32_t blk_addr, u_int32_t blk_s
     CHECK_RC(rc);
 
     gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 0, HBO_MSIZE, HBS_MSIZE);
+    gw_cmd = MERGE(gw_cmd, 0, HBO_DATA_SIZE, HBS_DATA_SIZE);
 
     rc = cntx_st_spi_write_enable(mfl);
     CHECK_RC(rc);
@@ -540,7 +528,7 @@ int cntx_st_spi_block_read_ex(mflash* mfl,
     // Read the data block
     gw_cmd = MERGE(gw_cmd, 1, HBO_READ_OP, 1);
     gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, log2up(blk_size), HBO_MSIZE, HBS_MSIZE);
+    gw_cmd = MERGE(gw_cmd, log2up(blk_size), HBO_DATA_SIZE, HBS_DATA_SIZE);
 
     rc = cntx_exec_cmd_get(mfl, gw_cmd, (u_int32_t*)data, (blk_size >> 2), &gw_addr, "Read");
     CHECK_RC(rc);
