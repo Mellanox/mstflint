@@ -108,7 +108,7 @@ int is_flash_enable_needed(mflash* mfl, MfError* status)
 }
 
 // When (*status != MFE_OK) return value is undefined
-int is_icmdif_supported(mflash* mfl, MfError* status, int* is7NmSuppported)
+int is_icmdif_supported(mflash* mfl, MfError* status)
 {
     *status = MFE_OK;
 
@@ -135,7 +135,6 @@ int is_icmdif_supported(mflash* mfl, MfError* status, int* is7NmSuppported)
         case DeviceConnectX6LX:
         case DeviceGearBox:
         case DeviceGearBoxManager:
-            *is7NmSuppported = 0;
             return 1;
         case DeviceQuantum2:
         case DeviceQuantum3:
@@ -145,11 +144,41 @@ int is_icmdif_supported(mflash* mfl, MfError* status, int* is7NmSuppported)
         case DeviceBlueField3:
         case DeviceBlueField4:
         case DeviceAbirGearBox:
-            *is7NmSuppported = 1;
             return 1;
         default:
             *status = MFE_UNSUPPORTED_DEVICE;
             fprintf(stderr, "The device type %d is not supported.\n", mfl->dm_dev_id);
             return 1;
     }
+}
+
+FlashGen get_flash_gen(mflash* mfl)
+{
+    FlashGen gen;
+    switch (mfl->dm_dev_id)
+    {
+        case DeviceQuantum2:
+        case DeviceSpectrum4:
+        case DeviceConnectX7:
+        case DeviceBlueField3:
+        case DeviceAbirGearBox:
+        {
+            gen = SIX_GEN_FLASH;
+            break;
+        }
+        case DeviceQuantum3:
+        case DeviceConnectX8:
+        case DeviceBlueField4:
+        {
+            gen = SEVEN_GEN_FLASH;
+            break;
+        }
+        default:
+        {
+            gen = LEGACY_FLASH;
+            break;
+        }
+    }
+    DPRINTF(("get_flash_gen: flash_gen = %d\n", gen));
+    return gen;
 }

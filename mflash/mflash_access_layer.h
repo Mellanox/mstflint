@@ -125,32 +125,6 @@ enum FlashConstant
     BP_SIZE = 3,
     PROTECT_BITS_SIZE = 5
 };
-//
-// Relevant CR addresses, Bit offset and bit size
-//
-
-enum CrConstans
-{
-    CR_FLASH_ADDR_7NM = 0xf0420,
-    // CR_FLASH_DATA = 0xf0408,
-    CR_FLASH_CS = 0xf0418,
-    CR_GPIO_LOCK = 0xf00ec,
-    BO_READ_OP = 0,
-    BO_ADDR_INCR = 1,
-    BO_LPC_STOP = 3,
-    BO_SPI_NO_DATA = 4,
-    BO_SPI_NO_ADDR = 5,
-    BO_SPI_SPECIAL = 6,
-    BO_STATUS = 26,
-    BS_STATUS = 4,
-    BO_BUSY = 30,
-    BO_SPI_ADDR = 0,
-    BS_SPI_ADDR = 24,
-    BO_SPI_CMD = 24,
-    BS_SPI_CMD = 8,
-    BO_SPI_GPIO = 25,
-    BS_SPI_GPIO = 4
-};
 
 int check_access_type(mflash* mfl);
 int sx_get_flash_info_by_type(mflash* mfl, flash_info_t* type_index, int* log2size, u_int8_t* no_flash);

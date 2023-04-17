@@ -184,6 +184,13 @@ typedef int (*f_cntx_st_spi_block_read_ex)(mflash* mfl,
                                            bool verbose);
 typedef int (*f_cntx_spi_write_status_reg)(mflash* mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num);
 
+typedef enum FlashGen
+{
+    LEGACY_FLASH = 0,
+    SIX_GEN_FLASH,
+    SEVEN_GEN_FLASH
+} FlashGen;
+
 /////////////////////////////////////////////
 //
 // MFlash struct
@@ -268,6 +275,7 @@ struct mflash
     u_int32_t gw_cmd_bit_offset;
     u_int32_t gw_cmd_bit_len;
     u_int32_t gw_busy_bit_offset;
+    u_int32_t gw_data_size_register_addr; // Relevant to 7th gen flash GW
 
     // Frequency related fields relevant for CX7 and BF3
     bool is_freq_handle_required;
@@ -305,37 +313,58 @@ enum CntxCrConstants
 {
     HCR_FLASH_CMD = 0xf0400,
     HCR_FLASH_ADDR = 0xf0404,
-    HCR_FLASH_NEW_GW_ADDR = 0xf0420,
     HCR_FLASH_CACHE_REPLACEMENT_OFFSET = 0xf0408,
     HCR_FLASH_CACHE_REPLACEMENT_CMD = 0xf040c,
     HCR_FLASH_DATA = 0xf0410,
     HCR_CACHE_REPLACEMNT_EN_ADDR = 0xf0420,
-    HCR_NEW_GW_CACHE_REPLACEMNT_EN_ADDR = 0xf0480,
-    HCR_NEW_GW_GCM_EN_ADDR = 0xf0440,
+    // Gearbox flash GW registers addresses
     HCR_FLASH_GEARBOX_CMD = 0x2000,
     HCR_FLASH_GEARBOX_ADDR = 0x2004,
     HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_OFFSET = 0x2008,
     HCR_FLASH_GEARBOX_DATA = 0x2010,
     HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_CMD = 0x200c,
     HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_EN_ADDR = 0x2020,
+    // 6th gen flash GW registers addresses
+    HCR_NEW_GW_FLASH_ADDR = 0xf0420,
+    HCR_NEW_GW_CACHE_REPLACEMNT_EN_ADDR = 0xf0480,
+    HCR_NEW_GW_GCM_EN_ADDR = 0xf0440,
+    // 7th gen flash GW registers addresses
+    HCR_7GEN_FLASH_CMD = 0x100000,
+    HCR_7GEN_FLASH_ADDR = 0x10003c,
+    HCR_7GEN_FLASH_DATA = 0x100010,
+    HCR_7GEN_GCM_EN_ADDR = 0x100028,
+    HCR_7GEN_FLASH_DATA_SIZE = 0x100044,
 
+    // Flash GW fields offsets and lengths
     HBO_READ_OP = 0,
     HBO_CMD_PHASE = 2,
     HBO_ADDR_PHASE = 3,
-    HBS_MSIZE = 3,
-    HBS_NEW_GW_MSIZE = 5,
+    HBS_DATA_SIZE = 3,
     HBO_DATA_PHASE = 4,
-    HBO_MSIZE = 8,
+    HBO_DATA_SIZE = 8,
     HBO_CS_HOLD = 5,
     HBO_CHIP_SELECT = 11,
-    HBO_NEW_GW_CHIP_SELECT = 13,
     HBO_FLASH_ENABLE = 13, // In old devices
     HBO_ADDR_SIZE = 14,
-    HBO_NEW_GW_ADDR_SIZE = 15,
     HBO_CMD = 16,
     HBS_CMD = 8,
     HBO_BUSY = 30,
     HBO_LOCK = 31,
+    // 6th gen flash GW fields offsets and lengths
+    HBS_NEW_GW_DATA_SIZE = 5,
+    HBO_NEW_GW_CHIP_SELECT = 13,
+    HBO_NEW_GW_ADDR_SIZE = 15,
+    // 7th gen flash GW fields offsets and lengths
+    HBO_7GEN_RW = 5,
+    HBO_7GEN_CMD_PHASE = 7,
+    HBO_7GEN_ADDR_PHASE = 8,
+    HBO_7GEN_DATA_PHASE = 9,
+    HBO_7GEN_CS_HOLD = 10,
+    HBO_7GEN_CHIP_SELECT = 13,
+    HBO_7GEN_ADDR_SIZE = 15,
+    HBO_7GEN_CMD = 16,
+    HBS_7GEN_CMD = 8,
+    HBO_7GEN_BUSY = 30,
 
     // GPIOs
     HCR_GPIO_LOCK = 0xf0048,
