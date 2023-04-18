@@ -40,8 +40,8 @@
 #include <common/compatibility.h>
 #include <cmdparser/cmdparser.h>
 #include <mtcr.h>
-#include "mlxreg_lib.h"
-#include "mlxreg_parser.h"
+#include <mlxreg_lib/mlxreg_lib.h>
+#include <mlxreg_lib/mlxreg_parser.h>
 
 using namespace mlxreg;
 

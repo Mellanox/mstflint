@@ -42,7 +42,6 @@
 #include "adb_xmlCreator.h"
 #include "adb_condition.h"
 
-
 using namespace std;
 using namespace xmlCreator;
 
@@ -100,7 +99,8 @@ public:
     AdbNode* nodeDesc;
     AdbInstance* parent;
     AdbCondition condition;
-    string name; // instance name
+    AdbCondition conditionalSize; // for dynamic arrays
+    string name;                  // instance name
     vector<AdbInstance*> subItems;
     u_int32_t offset;      // Global offset in bits (Relative to 0)
     u_int32_t size;        // in bits

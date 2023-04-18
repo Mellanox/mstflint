@@ -41,6 +41,7 @@
 #######################################################
 import xml.etree.ElementTree as ET
 import utils.constants as CONST
+from utils.Exceptions import ResourceParseException
 import ast
 
 
@@ -62,18 +63,21 @@ class AdbParser:
             self._update_union_dict()
             self._update_layout_items_paths()
             self._update_fields_with_conditions()
-        except Exception as _:
-            raise Exception("Failed to parse the ADB file")
+        except ResourceParseException as rpe:
+            raise ResourceParseException("{0}\nFailed to parse the ADB file.".format(rpe))
 
     def _update_union(self, layout_item):
         """This method go over all the subitems and perform union dict updating
             to all items recursively.
         """
-        if layout_item.uSelector and layout_item.uSelector.selector_full_path:
-            selector_field, full_path, offset, size = self._get_explicit_field_details(layout_item.parent, layout_item.uSelector.selector_full_path)
-            layout_item.uSelector.set_union_properties(self._get_enum_dict_from_field(selector_field), full_path, offset, size)
-        for item in layout_item.subItems:
-            self._update_union(item)
+        try:
+            if layout_item.uSelector and layout_item.uSelector.selector_full_path:
+                selector_field, full_path, offset, size = self._get_explicit_field_details(layout_item.parent, layout_item.uSelector.selector_full_path)
+                layout_item.uSelector.set_union_properties(self._get_enum_dict_from_field(selector_field), full_path, offset, size)
+            for item in layout_item.subItems:
+                self._update_union(item)
+        except ResourceParseException as rpe:
+            raise ResourceParseException("{0}\nFailed to update unions.".format(rpe))
 
     def _update_union_dict(self):
         """This method go over all the segments in the dictionary and
@@ -142,13 +146,13 @@ class AdbParser:
         if the enums_lst is empty, return None.
         """
         enums_dict = {}
-        if len(enum_lst) == 0:
+        if len(enum_lst) <= 1:
             return None
 
         for enum in enum_lst:
             enum = enum.split('=')
-            if len(enum) != 2:
-                raise Exception("Error - Failed to parse enum attribute {0}".format(str(enum)))
+            if len(enum) != 2 or enum[1] == '':
+                raise ResourceParseException("Error - Failed to parse enum attribute '{0}'".format(str(enum)))
             enums_dict[int(enum[1], 0)] = enum[0]
         return enums_dict
 
@@ -161,12 +165,12 @@ class AdbParser:
             return selector_field.enum_dict
 
         if selector_field.attrs['enum'] == '':
-            raise Exception("Error - enum attribute for field {0} is empty!".format(selector_field['name']))
+            raise ResourceParseException("Error - enum attribute for field '{0}' is empty!".format(selector_field.attrs['name']))
 
         enum_lst = selector_field.attrs['enum'].split(',')
         selector_dict = self._create_enum_dict(enum_lst)
         if selector_dict is None:
-            raise Exception("Error - could not create the enums dictionary for field {0}".format(selector_field['name']))
+            raise ResourceParseException("Error - could not create the enums dictionary for field '{0}'".format(selector_field.attrs['name']))
 
         return selector_dict
 
@@ -175,8 +179,8 @@ class AdbParser:
         explicit field to the enum related to the union selector and it's offset and size.
         """
         path = relative_path.split('.')
-        if len(path) == 0:
-            raise Exception("Error - wrong relative path {0} for node {1}".format(layout_item.name, relative_path))
+        if len(path) <= 1:
+            raise ResourceParseException("Error - wrong relative path '{0}' for node '{1}'".format(relative_path, layout_item.name))
         full_path = path
         if path[0] in CONST.PARENT_LST:
             current_node = layout_item
@@ -185,17 +189,19 @@ class AdbParser:
             current_node = self._retrieve_layout_item_by_name(path[0])
         try:
             if current_node is None:
-                raise Exception("Failed to find node: {0}".format(current_node.name))
+                raise ResourceParseException("Failed to find node: '{0}'".format(current_node.name))
             for child in path[1:]:
+                found_leaf = False
                 for item in current_node.subItems:
                     if item.name == child:
                         current_node = item
+                        found_leaf = True
                         break
-                if current_node is None:
-                    raise Exception("Error - Failed to find field {0} in node {1}, wrong path {2}".format(child, current_node.name, relative_path))
+                if current_node is None or not found_leaf:
+                    raise ResourceParseException("Error - Failed to find field '{0}' in node '{1}', wrong path '{2}'".format(child, current_node.name, relative_path))
             return current_node, full_path, current_node.offset, current_node.size
-        except Exception as _:
-            raise Exception("Failed to get the explicit field")
+        except ResourceParseException as rpe:
+            raise ResourceParseException("{0}\nFailed to get the explicit field.".format(rpe))
 
     def _build_xml_elements_dict(self):
         self._node_xml_elements = {}
@@ -231,7 +237,7 @@ class AdbParser:
         elif condition == ' GREAT ':
             return left_operand > right_operand
 
-        raise Exception("unsupported condition {0}".format(condition))
+        raise ResourceParseException("unsupported condition '{0}'".format(condition))
 
     def _get_condition_str(self, expression):
         """
@@ -248,7 +254,7 @@ class AdbParser:
         elif ' GREAT ' in expression:
             return ' GREAT '
 
-        raise Exception("No condition found in expression {0}".format(expression))
+        raise ResourceParseException("No condition found in expression '{0}'".format(expression))
 
     def _check_single_expression(self, expression):
         """
@@ -369,7 +375,7 @@ class AdbParser:
                             enums_lst = item.attrib['enum'].split(',')
                             enums_dict = self._create_enum_dict(enums_lst)
                             if enums_dict is None:
-                                raise Exception("Error - could not create the enums dictionary for node {0}".format(item.attrib['name']))
+                                raise ResourceParseException("Error - could not create the enums dictionary for node '{0}'".format(item.attrib['name']))
                         adb_layout_item.enum_dict = enums_dict
                     sub_items.insert(counter, adb_layout_item)
                     counter += 1
@@ -401,7 +407,7 @@ class AdbParser:
                 enums_lst = item.attrib['index_enum'].split(',')
                 enum_dict = self._create_enum_dict(enums_lst)
                 if enum_dict is None:
-                    raise Exception("Error - could not parse the 'index_enum' attribute for node .".format(name))
+                    raise ResourceParseException("Error - could not parse the 'index_enum' attribute for node '{0}'.".format(name))
 
         for i in range(start_index, end_index):
             adb_layout_item = AdbLayoutItem()
@@ -426,8 +432,9 @@ class AdbParser:
                         if "attr_is_union" in sub_node.attrib:
                             adb_layout_item.nodeDesc.isUnion = self._parse_union(sub_node.attrib["attr_is_union"])
                         adb_layout_item.subItems = self._build_subitems(sub_node, parent)  # List of the child items (for nodes only)
-            except Exception as _:
-                raise Exception("Failed to extract array to list from node {0}".format(node['name']))
+            except ResourceParseException as rpe:
+                raise ResourceParseException("{0}\nFailed to extract array to list from node '{1}'.".format(rpe, node.attrib['name']))
+
             subitems_list.insert(index, adb_layout_item)
             current_offset += calculated_size
             index += 1
@@ -464,8 +471,8 @@ class AdbParser:
                 adb_layout_item.subItems = self._build_subitems(sub_node, adb_layout_item)  # List of the child items (for nodes only)
             else:
                 adb_layout_item.subItems = self._build_subitems(node, adb_layout_item)
-        except Exception as _:
-            raise Exception("Failed to create a valid layout from node '{0}'".format(node['name']))
+        except ResourceParseException as rpe:
+            raise ResourceParseException("{0}\nFailed to create a valid layout from node '{1}'.".format(rpe, node.attrib['name']))
 
         if "offset" in node.attrib:
             adb_layout_item.offset = self._parse_node_size(node.attrib["offset"])

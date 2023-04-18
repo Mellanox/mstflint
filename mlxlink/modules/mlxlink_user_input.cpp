@@ -78,7 +78,6 @@ UserInput::UserInput()
     _ddm = false;
     _write = false;
     _read = false;
-    _logFilePath = "";
     _portType = "NETWORK";
     _paosCmd = "";
     _pplmFec = "";

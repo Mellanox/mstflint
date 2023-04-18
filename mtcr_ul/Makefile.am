@@ -43,7 +43,8 @@ libmtcr_ul_a_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 			mtcr_ul_com_defs.h mtcr_mf.h\
 			mtcr_ul_com.h mtcr_ul_com.c\
 			packets_common.c packets_common.h\
-			packets_layout.c packets_layout.h
+			packets_layout.c packets_layout.h \
+			mlx5ctl.c mlx5ctl.h mlx5ctl_ioctl.h
 libmtcr_ul_a_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 
 if ENABLE_INBAND

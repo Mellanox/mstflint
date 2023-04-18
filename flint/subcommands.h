@@ -46,7 +46,7 @@
 #include <memory>
 
 #include <tools_layouts/tools_open_layouts.h>
-
+#include "tools_layouts/image_layout_layouts.h"
 #include "flint_params.h"
 #include "mlxfwops/lib/fw_ops.h"
 #include "mlxfwops/lib/fs_checks.h"

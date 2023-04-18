@@ -35,10 +35,12 @@
 #ifndef MLXLINK_UTILS_H
 #define MLXLINK_UTILS_H
 
-#include "mlxlink_logger.h"
 #include "mlxlink_maps.h"
 #include <math.h>
 #include <signal.h>
+#include <cmath>
+
+#include "mlxlink_maps.h"
 
 using namespace std;
 
@@ -74,6 +76,7 @@ void termHandler(int sig);
 string deleteLastChar(const string& s, u_int32_t numOfCharsToRemove = 1);
 string getStringFromVector(std::vector<std::string> values);
 string getStringFromVector(std::vector<float> values);
+float convertFloatPrec(float value);
 u_int64_t add32BitTo64(u_int32_t value1, u_int32_t value2);
 string getFullString(u_int64_t intVal);
 string status2Color(u_int32_t status);
@@ -115,7 +118,7 @@ bool isQsfpCable(u_int32_t identifier);
 string getCmisCableType(u_int32_t cableType, u_int32_t cableLength);
 string getCableType(u_int32_t cableType);
 string getTemp(u_int32_t temp, int celsParam = 256);
-float getPower(u_int16_t power);
+float getPower(u_int16_t power, bool isModuleExtSupported = false);
 int getHeight(u_int16_t height);
 int getPhase(u_int8_t phase);
 int getVersion(u_int8_t version);

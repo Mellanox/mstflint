@@ -31,12 +31,12 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.23.0, akiselman-org@exchange.nvidia.com)
+AC_INIT(mstflint, 4.24.0, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.23.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.24.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -62,8 +62,8 @@ AC_COMPILE_IFELSE(
 #endif
 ]])], [OPENSSL_VERSION_VALID=yes], [OPENSSL_VERSION_VALID=no])
 OS=$(uname -s)
-KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]\.[[0-9]][[0-9]]|[[0-9]]\.[[0-9]]' | head -1`
-OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]\.[[0-9]][[0-9]]|[[0-9]]\.[[0-9]]' | head -1`
+KERNEL_VER=`uname -r | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
+OFED_VER=`ofed_info -s | egrep -E -o '[[0-9]]+\.[[0-9]]+' | head -1`
 OFED_EXIST=`ofed_info -s`
 OFED_NOT_EXIST="ofed_info: command not found"
 MTCR_CONF_DIR=""
@@ -73,7 +73,7 @@ OFED_BUILD_CHK=0
 KERNEL_BUILD_CHK=0
 
 if test "x$OFED_EXIST" != "x$OFED_NOT_EXIST"; then
-  if test "x$OFED_VER" \> "x5.6" ; then
+  if test $(echo $OFED_VER 5.6 | tr " " "\n" | sort -V | tail -n 1) == $OFED_VER ; then
       OFED_BUILD_CHK=1
   fi
 fi
@@ -429,6 +429,7 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(tools_layouts/adb/prm/switch/Makefile)
         AC_CONFIG_FILES(tools_layouts/adb/prm/switch/ext/Makefile)
         AC_CONFIG_FILES(mlxreg/Makefile)
+        AC_CONFIG_FILES(mlxreg/mlxreg_lib/Makefile)
         AC_CONFIG_FILES(mlxlink/Makefile)
         AC_CONFIG_FILES(mlxlink/modules/Makefile)
         AC_CONFIG_FILES(mlxlink/modules/printutil/Makefile)
@@ -457,9 +458,11 @@ fi
 
 AM_CONDITIONAL(LINUX_BUILD, [test  "x$OS" = "xLinux"])
 AC_SUBST(LINUX_BUILD)
+AC_SUBST(LINUX_KERNEL_INCLUDE)
+
+AC_CONFIG_FILES([debian/mstflint.install])
 
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mft_utils/hsmclient/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
         tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
         flint/Makefile small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
         fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile resourcedump/Makefile resourcedump/resourcedump_lib/Makefile resourceparse/Makefile )
-

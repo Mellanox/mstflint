@@ -216,6 +216,7 @@ private:
     bool _enforceGuiChecks;
     list<AdbInstance*> _unionSelectorEvalDeffered;
     list<AdbInstance*> _conditionInstances;
+    list<AdbInstance*> _conditionalArrays;
     void checkInstanceOffsetValidity(AdbInstance* inst, AdbInstance* parent, bool allowMultipleExceptions);
     void throwExeption(bool allowMultipleExceptions, string exceptionTxt, string addedMsgMultiExp);
 };

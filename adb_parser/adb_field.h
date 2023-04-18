@@ -56,6 +56,7 @@ public:
     bool isArray();
     u_int32_t arrayLen();
     bool isUnlimitedArr();
+    bool isDynamicArr();
     u_int32_t eSize();
     string toXml(const string& addPrefix);
 
@@ -75,6 +76,7 @@ public:
     u_int32_t lowBound;
     u_int32_t highBound;
     bool unlimitedArr;
+    bool dynamicArr;
     string subNode;
     AttrsMap attrs;
     bool isReserved;

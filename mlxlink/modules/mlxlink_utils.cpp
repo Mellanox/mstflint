@@ -70,6 +70,19 @@ string deleteLastChar(const string& s, u_int32_t numOfCharsToRemove)
     return newStr;
 }
 
+float convertFloatPrec(float value)
+{
+    string s;
+    char strVal[32];
+    float res;
+    u_int32_t prec = 3;
+
+    snprintf(strVal, sizeof(strVal), "%.*f", prec, value);
+    res = stof(string(strVal));
+
+    return res;
+}
+
 string getStringFromVector(vector<string> values)
 {
     string s;
@@ -87,7 +100,7 @@ string getStringFromVector(vector<float> values)
     u_int32_t prec = 0;
     for (vector<float>::const_iterator i = values.begin(); i != values.end(); ++i)
     {
-        if ((*i - ((int)*i)) > 0)
+        if (abs((*i - ((int)*i))) > 0)
         {
             prec = 3;
         }
@@ -1080,13 +1093,27 @@ string getTemp(u_int32_t temp, int celsParam)
     return to_string(temp / celsParam);
 }
 
-float getPower(u_int16_t power)
+float getPower(u_int16_t power, bool isModuleExtSupported)
 {
-    if (power & 0x8000)
+    double result = -40;
+
+    if (isModuleExtSupported)
     {
-        return -((~power & 0xFFFF) + 1);
+        if (power != 0)
+        {
+            result = 10 * log10(float(power) / 1000.0);
+        }
+
+        return result;
     }
-    return power;
+    else
+    {
+        if (power & 0x8000)
+        {
+            return -((~power & 0xFFFF) + 1);
+        }
+        return power;
+    }
 }
 
 int getHeight(u_int16_t height)
@@ -1438,7 +1465,7 @@ bool isSpeed100GPerLane(u_int32_t speed, u_int32_t protocol)
     bool valid = true;
     if ((protocol == IB && speed != IB_LINK_SPEED_NDR) ||
         (protocol == ETH && (speed != ETH_LINK_SPEED_EXT_100GAUI_1 && speed != ETH_LINK_SPEED_EXT_200GAUI_2 &&
-                             speed != ETH_LINK_SPEED_EXT_400GAUI_4)))
+                             speed != ETH_LINK_SPEED_EXT_400GAUI_4 && speed != ETH_LINK_SPEED_EXT_800GAUI_8)))
     {
         valid = false;
     }

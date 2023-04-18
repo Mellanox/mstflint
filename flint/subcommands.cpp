@@ -2248,7 +2248,7 @@ FlintStatus SignRSASubCommand::executeCommand()
     }
 
     //* Fill image_signature section with 0xff
-    vector<u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
+    vector<u_int8_t> signature256Data(IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE, 0xff);
     _imgOps->UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
     return FLINT_SUCCESS;
 }
@@ -6725,7 +6725,7 @@ WbSubCommand::WbSubCommand()
                 "addr - address to write the block to\n";
 
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " wb myData.bin 0x0";
-    _v = Wtv_Dev;
+    _v = Wtv_Dev_Or_Img;
     _maxCmdParamNum = 2;
     _minCmdParamNum = 2;
     _cmdType = SC_Wb;
@@ -6778,9 +6778,11 @@ FlintStatus WbSubCommand::executeCommand()
         return FLINT_FAILED;
     }
     // printf("-D- writing to addr:0x%08x %lu bytes\n",addr , data.size());
-    if (!_fwOps->FwWriteBlock(addr, data, wbCbFunc))
+    FwOperations* ops;
+    ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
+    if (!ops->FwWriteBlock(addr, data, wbCbFunc))
     {
-        reportErr(true, FLINT_WB_ERROR, _fwOps->err());
+        reportErr(true, FLINT_WB_ERROR, ops->err());
         return FLINT_FAILED;
     }
     wbCbFunc(101);

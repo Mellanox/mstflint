@@ -54,6 +54,7 @@ char correct_cmdline[] = "   Mellanox " MSTDUMP_NAME " utility, dumps device int
                          Note : be careful when using this flag, None safe addresses might be read.\n\
    -v | --version     :  Display version info\n\
    -h | --help        :  Print this help message\n\
+   i2c_slave          :   I2C slave [0-127]\n\
    Example :\n\
             " MSTDUMP_NAME " " DEV_EXAMPLE "\n";
 
