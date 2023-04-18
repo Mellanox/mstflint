@@ -1712,7 +1712,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xcf80, /* Spectrum4 */
                                    0x1976, /* Schrodinger */
                                    0x2900, /* BW-00 */
-                                   0xd2f4, /* Sunbird 0x25b */
+                                   0xd2f4, /* Sunbird */
                                    -1};
 
 static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24b, 0x24d, 0x24e, 0x1F6, 0x1F8,
