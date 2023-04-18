@@ -127,8 +127,8 @@ if DEV_MGT:
             return DEV_MGT.dm_is_connectib(dm_dev_id)
 
         @classmethod
-        def is_bw100(cls, dm_dev_id):
-            return DEV_MGT.dm_is_bw100(dm_dev_id)
+        def is_bw00(cls, dm_dev_id):
+            return DEV_MGT.dm_is_bw00(dm_dev_id)
 
         @classmethod
         def is_cx7(cls, dm_dev_id):
