@@ -292,8 +292,9 @@ bool FwOperations::CheckBoot2(u_int32_t beg,
     // Size
     if (!(*_ioAccess).read(offs + beg + 4, &size))
     {
+        errmsg("%s - read error (%s)\n", pr, (*_ioAccess).err());
         delete[] pr;
-        return errmsg("%s - read error (%s)\n", pr, (*_ioAccess).err());
+        return false;
     }
     TOCPU1(size);
     DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", size));
