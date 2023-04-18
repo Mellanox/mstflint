@@ -1711,7 +1711,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xcf70, /* Spectrum3 */
                                    0xcf80, /* Spectrum4 */
                                    0x1976, /* Schrodinger */
-                                   0x2900, /* GB-100 */
+                                   0x2900, /* BW-00 */
                                    0xd2f4, /* Sunbird 0x25b */
                                    -1};
 
