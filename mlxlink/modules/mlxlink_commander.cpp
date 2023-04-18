@@ -305,7 +305,7 @@ u_int32_t MlxlinkCommander::maxLocalPort()
 
         case DeviceQuantum2:
         case DeviceQuantum3:
-        case DeviceGB100:
+        case DeviceBW00:
             return MAX_LOCAL_PORT_QUANTUM2;
 
         case DeviceSpectrum2:
@@ -715,22 +715,22 @@ void MlxlinkCommander::labelToIBLocalPort()
 {
     u_int32_t labelPort = _userInput._labelPort;
     bool ibSplitReady = isIBSplitReady() && (_devID == DeviceQuantum || _devID == DeviceQuantum2 ||
-                                             _devID == DeviceQuantum3 || _devID == DeviceGB100);
+                                             _devID == DeviceQuantum3 || _devID == DeviceBW00);
     if (_userInput._splitProvided && _devID != DeviceQuantum && _devID != DeviceQuantum2)
     {
         throw MlxRegException("No split in IB!");
     }
-    u_int32_t maxLabelPort = (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100) ?
+    u_int32_t maxLabelPort = (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00) ?
                                maxLocalPort() / 4 :
                                _devID == DeviceQuantum ? maxLocalPort() / 2 - 1 : maxLocalPort();
     if ((labelPort > maxLabelPort) ||
         (_userInput._secondSplitProvided && _devID != DeviceQuantum2 && _devID != DeviceQuantum3 &&
-         _devID != DeviceGB100) ||
+         _devID != DeviceBW00) ||
         (_userInput._splitPort > 2))
     {
         throw MlxRegException("Invalid port number!");
     }
-    if (_devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100)
+    if (_devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00)
     {
         labelPort = calculatePanelPort(ibSplitReady);
     }
@@ -750,12 +750,12 @@ void MlxlinkCommander::labelToIBLocalPort()
             return;
         }
     }
-    if ((_devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100) &&
+    if ((_devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00) &&
         ibSplitReady)
     {
         string portStr = "Port " + to_string(_userInput._labelPort);
         string swSplitCmd = "module-type qsfp-split-2";
-        if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100)
+        if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00)
         {
             portStr = portStr + "/" + to_string(_userInput._splitPort);
             swSplitCmd = "port-type split-2";
@@ -793,7 +793,7 @@ u_int32_t MlxlinkCommander::calculatePanelPort(bool ibSplitReady)
     u_int32_t panelPort = _userInput._labelPort; // by default, the label port is equal to panel port if no split
     bool splitProvided = _devID == DeviceQuantum ? _userInput._splitProvided : _userInput._secondSplitProvided;
     u_int32_t split = _devID == DeviceQuantum ? _userInput._splitPort : _userInput._secondSplitPort;
-    if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100)
+    if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00)
     {
         // For Quantum-2, user should provide cage/port to access the ports in the cage
         // cage"panelPort"/port"_userInput._splitPort" is converted to label port according to the following equation:
@@ -1006,12 +1006,12 @@ void MlxlinkCommander::getprbsLanesFromParams(std::vector<string> prbsLanesParam
 int MlxlinkCommander::handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady)
 {
     int targetLocalPort = -1;
-    if (((_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100) ||
+    if (((_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00) ||
          (_devID == DeviceQuantum && ibSplitReady)))
     {
         labelPort = 2 * labelPort - 1;
     }
-    if ((_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100) && ibSplitReady)
+    if ((_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00) && ibSplitReady)
     {
         labelPort = 2 * labelPort - 1;
     }
@@ -1136,7 +1136,7 @@ void MlxlinkCommander::fillIbPortGroupMap(u_int32_t localPort, u_int32_t labelPo
                 _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1));
             }
         }
-        else if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100)
+        else if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00)
         {
             labelPort = (labelPort / 2) + 1;
             if (isIbLocalPortValid(localPort + 1))
@@ -1165,7 +1165,7 @@ void MlxlinkCommander::fillIbPortGroupMap(u_int32_t localPort, u_int32_t labelPo
         {
             _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
         }
-        else if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100)
+        else if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00)
         {
             labelPort = (labelPort / 2) + 1;
             _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1));
@@ -1201,7 +1201,7 @@ vector<string> MlxlinkCommander::localToPortsPerGroup(vector<u_int32_t> localPor
             labelPort = (getFieldValue("module_0")) + 1;
         }
         else if (_devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 ||
-                 _devID == DeviceGB100)
+                 _devID == DeviceBW00)
         {
             try
             {
@@ -1236,7 +1236,7 @@ void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr, bool 
         throw MlxRegException("The number of ports is invalid");
     }
     bool ibSplitReady =
-      (_devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100) ?
+      (_devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00) ?
         isIBSplitReady() :
         false;
     bool spect2WithGb = (_devID == DeviceSpectrum2) ? isSpect2WithGb() : false;
@@ -1248,7 +1248,7 @@ void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr, bool 
             localPort = handleEthLocalPort(labelPort, spect2WithGb);
         }
         else if (_devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 ||
-                 _devID == DeviceGB100)
+                 _devID == DeviceBW00)
         {
             localPort = handleIBLocalPort(labelPort, ibSplitReady);
         }
@@ -2630,7 +2630,7 @@ void MlxlinkCommander::showExternalPhy()
         gearboxBlock(PEPC_SHOW_FLAG);
 
         if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2 || _devID == DeviceQuantum ||
-            _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100)
+            _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00)
         {
             throw MlxRegException("\"--" PEPC_SHOW_FLAG "\" option is not supported for HCA and InfiniBand switches");
         }
@@ -2827,7 +2827,7 @@ void MlxlinkCommander::collectAMBER()
                 if (_userInput._portSpecified)
                 {
                     PortGroup pg{_localPort, _userInput._labelPort, 0, _userInput._splitPort};
-                    if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100)
+                    if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00)
                     {
                         pg.secondSplit = _userInput._secondSplitProvided ? _userInput._secondSplitPort : 0;
                     }
@@ -3007,7 +3007,7 @@ void MlxlinkCommander::showTxGroupMapping()
     try
     {
         if (_devID != DeviceSpectrum2 && _devID != DeviceQuantum && _devID != DeviceQuantum2 &&
-            _devID != DeviceQuantum3 && _devID != DeviceGB100)
+            _devID != DeviceQuantum3 && _devID != DeviceBW00)
         {
             throw MlxRegException("Port group mapping supported for Spectrum-2 and Quantum switches only!");
         }
@@ -4299,7 +4299,7 @@ void MlxlinkCommander::sendSltp()
     try
     {
         if ((_devID == DeviceSpectrum2 || _devID == DeviceQuantum || _devID == DeviceQuantum2 ||
-             _devID == DeviceQuantum3 || _devID == DeviceGB100) &&
+             _devID == DeviceQuantum3 || _devID == DeviceBW00) &&
             _userInput._db)
         {
             u_int32_t portGroup = getPortGroup(_localPort);
@@ -4434,7 +4434,7 @@ void MlxlinkCommander::sendPepc()
         gearboxBlock(PEPC_SET_FLAG);
 
         if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2 || _devID == DeviceQuantum ||
-            _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceGB100)
+            _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceBW00)
         {
             throw MlxRegException("\"--" PEPC_SET_FLAG "\" option is not supported for HCA and InfiniBand switches");
         }
@@ -4476,7 +4476,7 @@ void MlxlinkCommander::setTxGroupMapping()
     try
     {
         if (_devID != DeviceSpectrum2 && _devID != DeviceQuantum && _devID != DeviceQuantum2 &&
-            _devID != DeviceQuantum3 && _devID != DeviceGB100)
+            _devID != DeviceQuantum3 && _devID != DeviceBW00)
         {
             throw MlxRegException("Port group mapping supported for Spectrum-2 and Quantum switches only!");
         }
