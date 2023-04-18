@@ -199,7 +199,7 @@ static struct device_sem_info g_dev_sem_info_db[] = {
     1,              // vsec_sem_supported
   },
   {
-    DeviceBW100, // dev_id
+    DeviceBW00, // dev_id
     {0xe74e0},   // hw_sem_addr find correct one for 0x2900
     1,           // vsec_sem_supported
   },

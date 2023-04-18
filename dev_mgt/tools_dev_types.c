@@ -465,11 +465,11 @@ static struct device_info g_devs_info[] = {
         DM_SWITCH                                            /* dev_type */
     },
     {
-        DeviceBW100,                                      /* dm_id */
+        DeviceBW00,                                      /* dm_id */
         0x2900,                                           /* hw_dev_id */
         -1,                                               /* hw_rev_id */
         10496,                                            /* sw_dev_id */
-        "BW100",                                          /* name */
+        "BW00",                                          /* name */
         128,                                              /* port_num NEED_CHECK */
         DM_SWITCH                                         /* dev_type */
     },
@@ -950,9 +950,9 @@ int dm_is_connectib(dm_dev_id_t type)
     return (type == DeviceConnectIB);
 }
 
-int dm_is_bw100(dm_dev_id_t type)
+int dm_is_bw00(dm_dev_id_t type)
 {
-    return (type == DeviceBW100);
+    return (type == DeviceBW00);
 }
 
 int dm_is_cx7(dm_dev_id_t type)
@@ -968,14 +968,14 @@ int dm_is_new_gen_switch(dm_dev_id_t type)
 int dm_dev_is_raven_family_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) &&
-            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceBW100 ||
+            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceBW00 ||
              type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceSpectrum4));
 }
 
 int dm_dev_is_ib_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 ||
-                                       type == DeviceBW100 || type == DeviceSwitchIB || type == DeviceSwitchIB2));
+                                       type == DeviceBW00 || type == DeviceSwitchIB || type == DeviceSwitchIB2));
 }
 
 int dm_dev_is_eth_switch(dm_dev_id_t type)
