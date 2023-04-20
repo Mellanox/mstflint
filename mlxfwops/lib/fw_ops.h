@@ -165,8 +165,8 @@ public:
     virtual bool RestoreDevToc(vector<u_int8_t>& img,
                                char* psid,
                                dm_dev_id_t devid_t,
-                               const cx4fw_uid_entry& base_guid,
-                               const cx4fw_uid_entry& base_mac);
+                               const image_layout_uid_entry& base_guid,
+                               const image_layout_uid_entry& base_mac);
     virtual bool openEncryptedImageAccess(const char* encrypted_image_path);
     virtual bool isEncrypted(bool& is_encrypted);
     virtual bool FwExtractEncryptedImage(vector<u_int8_t>& img,

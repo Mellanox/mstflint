@@ -235,13 +235,12 @@ bool Fs3Operations::GetMfgInfo(u_int8_t* buff)
 {
     // structs of the same size we can unpack either way
     struct cibfw_mfg_info cib_mfg_info;
-    struct cx4fw_mfg_info cx4_mfg_info;
+    image_layout_mfg_info mfg_info;
 
     cibfw_mfg_info_unpack(&cib_mfg_info, buff);
     // cibfw_mfg_info_dump(&mfg_info, stdout);
-    if (IsExtendedGuidNumSupported())
+    if (IsExtendedGuidNumSupported() || CHECK_MFG_NEW_FORMAT(cib_mfg_info))
     {
-        image_layout_mfg_info mfg_info;
         image_layout_mfg_info_unpack(&mfg_info, buff);
         CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids, mfg_info.guids);
         memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids, &mfg_info.guids, sizeof(mfg_info.guids));
@@ -249,30 +248,18 @@ bool Fs3Operations::GetMfgInfo(u_int8_t* buff)
         _fs3ImgInfo.ext_info.guids_override_en = mfg_info.guids_override_en;
         _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 1;
     }
+    else if (CHECK_MFG_OLD_FORMAT(cib_mfg_info))
+    {
+        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, cib_mfg_info.guids);
+        memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, &cib_mfg_info.guids, sizeof(cib_mfg_info.guids));
+        strcpy(_fs3ImgInfo.ext_info.orig_psid, cib_mfg_info.psid);
+        _fs3ImgInfo.ext_info.guids_override_en = cib_mfg_info.guids_override_en;
+        _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 0;
+    }
     else
     {
-        if (CHECK_MFG_NEW_FORMAT(cib_mfg_info))
-        {
-            cx4fw_mfg_info_unpack(&cx4_mfg_info, buff);
-            CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.cx4_uids, cx4_mfg_info.guids);
-            memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.cx4_uids, &cx4_mfg_info.guids, sizeof(cx4_mfg_info.guids));
-            strcpy(_fs3ImgInfo.ext_info.orig_psid, cx4_mfg_info.psid);
-            _fs3ImgInfo.ext_info.guids_override_en = cx4_mfg_info.guids_override_en;
-            _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 1;
-        }
-        else if (CHECK_MFG_OLD_FORMAT(cib_mfg_info))
-        {
-            CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, cib_mfg_info.guids);
-            memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, &cib_mfg_info.guids, sizeof(cib_mfg_info.guids));
-            strcpy(_fs3ImgInfo.ext_info.orig_psid, cib_mfg_info.psid);
-            _fs3ImgInfo.ext_info.guids_override_en = cib_mfg_info.guids_override_en;
-            _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 0;
-        }
-        else
-        {
-            return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown MFG_INFO format version (%d.%d).",
-                          cib_mfg_info.major_version, cib_mfg_info.minor_version);
-        }
+        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown MFG_INFO format version (%d.%d).",
+                      cib_mfg_info.major_version, cib_mfg_info.minor_version);
     }
 
     if (cib_mfg_info.minor_version == 1)
@@ -437,13 +424,12 @@ bool Fs3Operations::GetImgSigInfo512(u_int8_t* buff)
 bool Fs3Operations::GetDevInfo(u_int8_t* buff)
 {
     struct cibfw_device_info cib_dev_info;
-    struct cx4fw_device_info cx4_dev_info;
+    image_layout_device_info device_info;
     // same size, we can unpack to check version
     cibfw_device_info_unpack(&cib_dev_info, buff);
     // cibfw_device_info_dump(&dev_info, stdout);
-    if (IsExtendedGuidNumSupported())
+    if (IsExtendedGuidNumSupported() || CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info))
     {
-        image_layout_device_info device_info;
         image_layout_device_info_unpack(&device_info, buff);
         CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids, device_info.guids);
         memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids, &device_info.guids, sizeof(device_info.guids));
@@ -451,30 +437,18 @@ bool Fs3Operations::GetDevInfo(u_int8_t* buff)
         _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 1;
         _fwImgInfo.ext_info.vsd_sect_found = true;
     }
+    else if (CHECK_DEV_INFO_OLD_FORMAT(cib_dev_info))
+    {
+        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, cib_dev_info.guids);
+        memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, &cib_dev_info.guids, sizeof(cib_dev_info.guids));
+        strcpy(_fwImgInfo.ext_info.vsd, cib_dev_info.vsd);
+        _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 0;
+        _fwImgInfo.ext_info.vsd_sect_found = true;
+    }
     else
     {
-        if (CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info))
-        {
-            cx4fw_device_info_unpack(&cx4_dev_info, buff);
-            CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids, cx4_dev_info.guids);
-            memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids, &cx4_dev_info.guids, sizeof(cx4_dev_info.guids));
-            strcpy(_fwImgInfo.ext_info.vsd, cx4_dev_info.vsd);
-            _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 1;
-            _fwImgInfo.ext_info.vsd_sect_found = true;
-        }
-        else if (CHECK_DEV_INFO_OLD_FORMAT(cib_dev_info))
-        {
-            CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, cib_dev_info.guids);
-            memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, &cib_dev_info.guids, sizeof(cib_dev_info.guids));
-            strcpy(_fwImgInfo.ext_info.vsd, cib_dev_info.vsd);
-            _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 0;
-            _fwImgInfo.ext_info.vsd_sect_found = true;
-        }
-        else
-        {
-            return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown DEV_INFO format version (%d.%d).",
-                          cib_dev_info.major_version, cib_dev_info.minor_version);
-        }
+        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown DEV_INFO format version (%d.%d).",
+                      cib_dev_info.major_version, cib_dev_info.minor_version);
     }
     return true;
 }
@@ -3720,8 +3694,8 @@ bool Fs3Operations::RemoveWriteProtection()
 bool Fs3Operations::RestoreDevToc(vector<u_int8_t>& img,
                                   char* psid,
                                   dm_dev_id_t devid_t,
-                                  const cx4fw_uid_entry& base_guid,
-                                  const cx4fw_uid_entry& base_mac)
+                                  const image_layout_uid_entry& base_guid,
+                                  const image_layout_uid_entry& base_mac)
 {
     (void)devid_t;
     u_int32_t tocEntryAddr = 0;

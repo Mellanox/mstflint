@@ -2478,8 +2478,8 @@ bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img,
 bool FwOperations::RestoreDevToc(vector<u_int8_t>& img,
                                  char* psid,
                                  dm_dev_id_t devid_t,
-                                 const cx4fw_uid_entry& base_guid,
-                                 const cx4fw_uid_entry& base_mac)
+                                 const image_layout_uid_entry& base_guid,
+                                 const image_layout_uid_entry& base_mac)
 {
     (void)img;
     (void)psid;
