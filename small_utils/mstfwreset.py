@@ -1285,9 +1285,18 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
 
     # Need to re-open the file handler because PCI tree is updated (OS remove/rescan)
     if isWindows is False:
-        MstDevObj.open()
-        for MstDevObjSD in MstDevObjsSD:
-            MstDevObjSD.open()
+        try:
+            MstDevObj.open()
+        except Exception as e:
+            time.sleep(2)
+            MstDevObj.open()
+        try:
+            for MstDevObjSD in MstDevObjsSD:
+                MstDevObjSD.open()
+        except Exception as e:
+            time.sleep(2)
+            for MstDevObjSD in MstDevObjsSD:
+                MstDevObjSD.open()
 
     set_signal_handler()
 
