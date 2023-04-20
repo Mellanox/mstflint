@@ -1810,7 +1810,12 @@ def reset_flow_host(device, args, command):
 
     if command == "query":
         print(mfrl.query_text())
-        print(mcam.reset_sync_query_text())
+        tool_owner_support = True
+        if platform.system() == "Linux":
+            devDict = getDeviceDict(devid)
+            if devDict['name'] in ['BlueField2', 'BlueField3']:
+                tool_owner_support = False
+        print(mcam.reset_sync_query_text(tool_owner_support))
 
     elif command == "reset":
 
