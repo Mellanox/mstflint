@@ -124,6 +124,7 @@ public:
     virtual bool IsEncryptionSupported();
     virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
     bool GetHashesTableData(vector<u_int8_t>& data);
+    virtual bool QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data);
 
 private:
     virtual u_int32_t GetHwDevId() { return _hwDevId; }
@@ -139,7 +140,6 @@ private:
     bool BadParamErrMsg(const char* unSupportedOperation, bool isSecure);
     bool _Burn(std::vector<u_int8_t> imageOps4MData,
                ProgressCallBackAdvSt& progressCallBack,
-               ExtBurnParams& burnParams,
                FwComponent::comps_ids_t ComponentId = FwComponent::COMPID_BOOT_IMG);
     bool _createImageOps(FwOperations** imgOps);
     void ExtractSwitchFWVersion(const fwInfoT& fwQuery);

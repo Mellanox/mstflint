@@ -32,6 +32,8 @@
  */
 
 #include "fsctrl_ops.h"
+#include "fw_version.h"
+#include "fs_comps_ops.h"
 
 #include <tools_utils.h>
 #include <bit_slice.h>
@@ -732,20 +734,22 @@ bool FsCtrlOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData,
 
 bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps,
                                       ExtBurnParams& burnParams,
-                                      FwComponent::comps_ids_t ComponentId)
+                                      FwComponent::comps_ids_t componentId)
 {
-    if (ComponentId == FwComponent::comps_ids_t::COMPID_CLOCK_SYNC_EEPROM)
+    if (componentId == FwComponent::comps_ids_t::COMPID_CLOCK_SYNC_EEPROM)
     {
-        // component_synce_st cmpSyncE;
-        // fw_info_t query;
-        // if (!_fwCompsAccess->GetComponentSyncEProperties(cmpSyncE))
-        // {
-        //     return false;
-        // }
-        // if (!imageOps->FwQuery(&query))
-        // {
-        //     return false;
-        // }
+        vector<u_int8_t> data;
+
+        if (!QueryComponentData(componentId, imageOps->GetDeviceIndex(), data))
+        {
+            return false;
+        }
+
+        FsCompsOperations* compsOps = dynamic_cast<FsCompsOperations*>(imageOps);
+        if (!compsOps->IsCompatibleToDevice(data, burnParams.ignoreVersionCheck))
+        {
+            return false;
+        }
 
         _fwCompsAccess->SetActivationStep(false);
     }
@@ -762,7 +766,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps,
         return errmsg(imageOps->getErrorCode(), "Failed to read component from file");
     }
     printf("-I- Downloading FW ...\n");
-    return _Burn(compData, burnParams.ProgressFuncAdv, ComponentId);
+    return _Burn(compData, burnParams.ProgressFuncAdv, componentId);
 }
 
 bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams)
@@ -1236,4 +1240,15 @@ bool FsCtrlOperations::IsSecurityVersionViolated(u_int32_t image_security_versio
 
     // Check violation of security-version
     return (imageSecurityVersion < deviceEfuseSecurityVersion);
+}
+
+bool FsCtrlOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data)
+{
+    DPRINTF(("QueryComponentData - %X\n", comp));
+    if (!_fwCompsAccess->GetComponentInfo(comp, deviceIndex, data) &&
+        _fwCompsAccess->getLastError() != FWCOMPS_DEVICE_NOT_PRESENT)
+    {
+        return errmsg("%s", _fwCompsAccess->getLastErrMsg());
+    }
+    return true;
 }

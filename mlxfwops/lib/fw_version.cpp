@@ -237,3 +237,87 @@ FwVersion* FwVersion::clone() const
 {
     return new FwVersion(*this);
 }
+
+ComponentFwVersion::ComponentFwVersion() : _major(0), _minor(0), _subMinor(0), _format(VersionFormat::None) {}
+
+ComponentFwVersion::ComponentFwVersion(unsigned short int major, unsigned short int minor) :
+    _major(major), _minor(minor), _subMinor(0), _format(VersionFormat::Minor)
+{
+}
+
+ComponentFwVersion::ComponentFwVersion(const ComponentFwVersion& rhs) :
+    _major(rhs._major), _minor(rhs._minor), _subMinor(rhs._subMinor), _format(rhs._format)
+{
+}
+
+ComponentFwVersion& ComponentFwVersion::operator=(const ComponentFwVersion& rhs)
+{
+    _major = rhs._major;
+    _minor = rhs._minor;
+    _subMinor = rhs._subMinor;
+    _format = rhs._format;
+    return (*this);
+}
+
+std::string ComponentFwVersion::ToString()
+{
+    std::string fwVersion;
+    switch (_format)
+    {
+        case VersionFormat::SubMinor:
+            fwVersion.insert(0, "." + std::to_string(_subMinor));
+        case VersionFormat::Minor:
+            fwVersion.insert(0, "." + std::to_string(_minor));
+        case VersionFormat::Major:
+            fwVersion.insert(0, std::to_string(_major));
+            break;
+        case VersionFormat::None:
+        default:
+            break;
+    }
+    return fwVersion;
+}
+
+bool ComponentFwVersion::operator==(const ComponentFwVersion& rhs) const
+{
+    return Compare(rhs) == 0;
+}
+
+bool ComponentFwVersion::operator!=(const ComponentFwVersion& rhs) const
+{
+    return Compare(rhs) != 0;
+}
+
+bool ComponentFwVersion::operator>(const ComponentFwVersion& rhs) const
+{
+    return Compare(rhs) > 0;
+}
+
+bool ComponentFwVersion::operator<(const ComponentFwVersion& rhs) const
+{
+    return Compare(rhs) < 0;
+}
+
+bool ComponentFwVersion::operator>=(const ComponentFwVersion& rhs) const
+{
+    return Compare(rhs) >= 0;
+}
+
+bool ComponentFwVersion::operator<=(const ComponentFwVersion& rhs) const
+{
+    return Compare(rhs) <= 0;
+}
+
+int ComponentFwVersion::Compare(const ComponentFwVersion& rhs) const
+{
+    unsigned short int lhsPrimaryVersion[] = {_major, _minor, _subMinor};
+    unsigned short int rhsPrimaryVersion[] = {rhs._major, rhs._minor, rhs._subMinor};
+    for (unsigned short i = 0; i < sizeof(lhsPrimaryVersion) / sizeof(lhsPrimaryVersion[0]); i++)
+    {
+        if (lhsPrimaryVersion[i] != rhsPrimaryVersion[i])
+        {
+            return lhsPrimaryVersion[i] - rhsPrimaryVersion[i];
+        }
+    }
+    return 0;
+}

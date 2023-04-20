@@ -125,6 +125,7 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("bc", "binary_compare", SC_Binary_Compare));
     _sCmds.push_back(new SubCmd("", "rsa_sign", SC_RSA_Sign));
     _sCmds.push_back(new SubCmd("", "export_public_key", SC_Export_Public_Key));
+    _sCmds.push_back(new SubCmd("qc", "query_components", SC_Query_Components));
 }
 
 SubCmdMetaData::~SubCmdMetaData()
@@ -240,6 +241,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "output_file", 1));
     _flags.push_back(new Flag("", "user_password", 1));
     _flags.push_back(new Flag("", "cert_chain_index", 1));
+    _flags.push_back(new Flag("", "component_type", 1));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -880,6 +882,7 @@ void Flint::initCmdParser()
       "In case index=0 certificate chain will be stored at CERT_CHAIN_0 section, otherwise at DIGITAL_CERT_RW "
       "section according to given index.\n"
       "This flag is relevant only for set_attestation_cert_chain command.");
+    AddOptions("component_type", ' ', "<type string>", "component to query, currently only \"clock_sync\" supported.");
 
     for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++)
     {
@@ -1360,6 +1363,10 @@ ParseStatus Flint::HandleOption(string name, string value)
             return PARSE_ERROR;
         }
         _flintParams.cert_chain_index = cert_chain_index;
+    }
+    else if (name == "component_type")
+    {
+        _flintParams.component_type = value;
     }
     else
     {

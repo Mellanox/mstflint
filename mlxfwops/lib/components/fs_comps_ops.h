@@ -13,7 +13,7 @@
 #ifndef FS_COMPS_OPS
 #define FS_COMPS_OPS
 
-#include "fw_ops.h"
+#include "mlxfwops/lib/fw_ops.h"
 
 class FsCompsException : public exception
 {
@@ -34,8 +34,9 @@ public:
     u_int8_t FwType() override { return FIT_COMPS; }
     bool FwInit() override { return true; }
     bool GetImageSize(u_int32_t* image_size) override;
-
-    bool SignForSecureBoot(const char*, const char*, const MlxSign::Signer&) override;
+    bool FwReadData(void* image, u_int32_t* image_size, bool verbose = false) override;
+    virtual bool IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion);
+    bool CheckFwVersion(ComponentFwVersion currentVersion, u_int8_t forceVersion);
 
     // Unsupported functionality
     bool FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool) override;
@@ -43,7 +44,7 @@ public:
                   bool isStripedImage = false,
                   bool showItoc = false,
                   bool ignoreDToc = false) override;
-    bool FwReadData(void* image, u_int32_t* image_size, bool verbose = false) override;
+    bool SignForSecureBoot(const char*, const char*, const MlxSign::Signer&) override;
     bool FwReadRom(std::vector<u_int8_t>& romSect) override;
     bool FwBurnRom(FImage* romImg,
                    bool ignoreProdIdCheck = false,

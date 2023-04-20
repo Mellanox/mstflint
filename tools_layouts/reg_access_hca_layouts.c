@@ -221,6 +221,53 @@ void reg_access_hca_mcqi_cap_ext_dump(const struct reg_access_hca_mcqi_cap_ext *
 	reg_access_hca_mcqi_cap_ext_print(ptr_struct, fd, 0);
 }
 
+void reg_access_hca_mcqi_clock_source_properties_ext_pack(const struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 28;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->image_version_minor);
+	offset = 24;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->image_version_major);
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->vendor_id);
+}
+
+void reg_access_hca_mcqi_clock_source_properties_ext_unpack(struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 28;
+	ptr_struct->image_version_minor = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 24;
+	ptr_struct->image_version_major = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 8;
+	ptr_struct->vendor_id = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+}
+
+void reg_access_hca_mcqi_clock_source_properties_ext_print(const struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_mcqi_clock_source_properties_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "image_version_minor  : " UH_FMT "\n", ptr_struct->image_version_minor);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "image_version_major  : " UH_FMT "\n", ptr_struct->image_version_major);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "vendor_id            : " UH_FMT "\n", ptr_struct->vendor_id);
+}
+
+unsigned int reg_access_hca_mcqi_clock_source_properties_ext_size(void)
+{
+	return REG_ACCESS_HCA_MCQI_CLOCK_SOURCE_PROPERTIES_EXT_SIZE;
+}
+
+void reg_access_hca_mcqi_clock_source_properties_ext_dump(const struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, FILE *fd)
+{
+	reg_access_hca_mcqi_clock_source_properties_ext_print(ptr_struct, fd, 0);
+}
+
 void reg_access_hca_mcqi_linkx_properties_ext_pack(const struct reg_access_hca_mcqi_linkx_properties_ext *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -619,6 +666,9 @@ void reg_access_hca_mcqi_reg_data_auto_ext_print(const union reg_access_hca_mcqi
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mcqi_linkx_properties_ext:\n");
 	reg_access_hca_mcqi_linkx_properties_ext_print(&(ptr_struct->mcqi_linkx_properties_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mcqi_clock_source_properties_ext:\n");
+	reg_access_hca_mcqi_clock_source_properties_ext_print(&(ptr_struct->mcqi_clock_source_properties_ext), fd, indent_level + 1);
 }
 
 unsigned int reg_access_hca_mcqi_reg_data_auto_ext_size(void)
@@ -1518,6 +1568,10 @@ void reg_access_hca_mcqi_reg_ext_pack(const struct reg_access_hca_mcqi_reg_ext *
 		offset = 192;
 		reg_access_hca_mcqi_linkx_properties_ext_pack(&(ptr_struct->data.mcqi_linkx_properties_ext), ptr_buff + offset / 8);
 		break;
+	case 0x7:
+		offset = 192;
+		reg_access_hca_mcqi_clock_source_properties_ext_pack(&(ptr_struct->data.mcqi_clock_source_properties_ext), ptr_buff + offset / 8);
+		break;
 	default:
 		break;
 	}
@@ -1561,6 +1615,10 @@ void reg_access_hca_mcqi_reg_ext_unpack(struct reg_access_hca_mcqi_reg_ext *ptr_
 		offset = 192;
 		reg_access_hca_mcqi_linkx_properties_ext_unpack(&(ptr_struct->data.mcqi_linkx_properties_ext), ptr_buff + offset / 8);
 		break;
+	case 0x7:
+		offset = 192;
+		reg_access_hca_mcqi_clock_source_properties_ext_unpack(&(ptr_struct->data.mcqi_clock_source_properties_ext), ptr_buff + offset / 8);
+		break;
 	default:
 		break;
 	}
@@ -1580,7 +1638,7 @@ void reg_access_hca_mcqi_reg_ext_print(const struct reg_access_hca_mcqi_reg_ext 
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "device_type          : " UH_FMT "\n", ptr_struct->device_type);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "info_type            : %s (" UH_FMT ")\n", (ptr_struct->info_type == 0 ? ("CAPABILITIES") : ((ptr_struct->info_type == 1 ? ("VERSION") : ((ptr_struct->info_type == 5 ? ("ACTIVATION_METHOD") : ((ptr_struct->info_type == 6 ? ("LINKX_PROPERTIES") : ("unknown")))))))), ptr_struct->info_type);
+	fprintf(fd, "info_type            : %s (" UH_FMT ")\n", (ptr_struct->info_type == 0 ? ("CAPABILITIES") : ((ptr_struct->info_type == 1 ? ("VERSION") : ((ptr_struct->info_type == 5 ? ("ACTIVATION_METHOD") : ((ptr_struct->info_type == 6 ? ("LINKX_PROPERTIES") : ((ptr_struct->info_type == 7 ? ("CLOCK_SOURCE_PROPERTIES") : ("unknown")))))))))), ptr_struct->info_type);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "info_size            : " U32H_FMT "\n", ptr_struct->info_size);
 	adb2c_add_indentation(fd, indent_level);
@@ -1607,6 +1665,11 @@ void reg_access_hca_mcqi_reg_ext_print(const struct reg_access_hca_mcqi_reg_ext 
 		adb2c_add_indentation(fd, indent_level);
 		fprintf(fd, "mcqi_linkx_properties_ext:\n");
 		reg_access_hca_mcqi_linkx_properties_ext_print(&(ptr_struct->data.mcqi_linkx_properties_ext), fd, indent_level + 1);
+		break;
+	case 0x7:
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "mcqi_clock_source_properties_ext:\n");
+		reg_access_hca_mcqi_clock_source_properties_ext_print(&(ptr_struct->data.mcqi_clock_source_properties_ext), fd, indent_level + 1);
 		break;
 	default:
 		break;

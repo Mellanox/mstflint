@@ -11,6 +11,7 @@
  */
 
 #include <fs_comps_ops.h>
+#include <mft_utils.h>
 
 FsCompsException::FsCompsException(const string& exceptionMsg) : msg(exceptionMsg) {}
 const char* FsCompsException::what() const throw()
@@ -35,6 +36,33 @@ bool FsCompsOperations::FwReadData(void* image, u_int32_t* image_size, bool verb
             return errmsg("Failed to read Image: %s", _ioAccess->err());
         }
     }
+    return true;
+}
+
+bool FsCompsOperations::CheckFwVersion(ComponentFwVersion currentVersion, u_int8_t forceVersion)
+{
+    ComponentFwVersion newVersion = ComponentFwVersion(_fwImgInfo.ext_info.fw_ver[0], _fwImgInfo.ext_info.fw_ver[1]);
+
+    printf("\n    Current FW version on flash:  %s\n", currentVersion.ToString().c_str());
+    printf("    New FW version:               %s\n", newVersion.ToString().c_str());
+
+    if (currentVersion >= newVersion)
+    {
+        printf("\n    Note: The new FW version is %s the current FW version on flash.\n",
+               currentVersion == newVersion ? "the same as" : "older than");
+        if (!mft_utils::askUser(nullptr, forceVersion))
+        {
+            return errmsg("Aborted by the user.");
+        }
+    }
+
+    return true;
+}
+
+bool FsCompsOperations::IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion)
+{
+    (void)data;
+    (void)forceVersion;
     return true;
 }
 

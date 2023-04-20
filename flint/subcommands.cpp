@@ -47,6 +47,7 @@
 #include <common/compatibility.h>
 #include <fw_comps_mgr/fw_comps_mgr.h>
 #include <mlxfwops/lib/fw_version.h>
+#include "mlxfwops/lib/components/fs_synce_ops.h"
 
 #ifndef NO_ZLIB
 #include <zlib.h>
@@ -3315,6 +3316,10 @@ FlintStatus BurnSubCommand::executeCommand()
 
     if (_imgOps->FwType() == FIT_COMPS)
     {
+        if (_flintParams.yes)
+        {
+            _burnParams.ignoreVersionCheck = true;
+        }
         if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams, FwComponent::comps_ids_t::COMPID_CLOCK_SYNC_EEPROM))
         {
             reportErr(true, FLINT_FSX_BURN_ERROR, "FIT_COMPS", _fwOps->err());
@@ -4618,6 +4623,99 @@ FlintStatus QuerySubCommand::executeCommand()
     }
     FlintStatus queryResult = printInfo(fwInfo, fullQuery);
     return queryResult;
+}
+
+/***********************
+ * Class: QueryComponentSubCommand
+ **********************/
+
+QueryComponentSubCommand::QueryComponentSubCommand()
+{
+    _name = "query components";
+    _desc = "Queries components on a given device via FW.";
+    _extendedDesc = "";
+    _flagLong = "query_components";
+    _flagShort = "qc";
+    _param = "";
+    _paramExp = "None";
+    _example = FLINT_NAME " -d /dev/mst/mt53100_pciconf0 --component_type sync_clock query_components";
+    _v = Wtv_Dev;
+    _maxCmdParamNum = 0;
+    _cmdType = SC_Query_Components;
+    _mccSupported = true;
+}
+
+QueryComponentSubCommand::~QueryComponentSubCommand() {}
+
+FlintStatus QueryComponentSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED)
+    {
+        return FLINT_FAILED;
+    }
+    if (_fwOps->IsFsCtrlOperations())
+    {
+        bool rc = true;
+        FwComponent::comps_ids_t comp = FwComponent::getCompId(_flintParams.component_type);
+        switch (comp)
+        {
+            case FwComponent::COMPID_CLOCK_SYNC_EEPROM:
+                rc = querySyncE();
+                break;
+            case FwComponent::COMPID_UNKNOWN:
+            default:
+                reportErr(true, "Unknown component type given.\n");
+                return FLINT_FAILED;
+        }
+        if (!rc)
+        {
+            return FLINT_FAILED;
+        }
+    }
+    else
+    {
+        reportErr(true, "Command is not supported in the current state of this device.\n");
+        return FLINT_FAILED;
+    }
+
+    return FLINT_SUCCESS;
+}
+
+bool QueryComponentSubCommand::verifyParams()
+{
+    if (_flintParams.component_type.empty())
+    {
+        reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "\"--component_type\"");
+        return false;
+    }
+    return true;
+}
+
+FlintStatus QueryComponentSubCommand::querySyncE()
+{
+    vector<u_int8_t> firstDeviceData, secondDeviceData;
+
+    if (!_fwOps->QueryComponentData(FwComponent::COMPID_CLOCK_SYNC_EEPROM, 1, firstDeviceData))
+    {
+        reportErr(true, "%s\n", _fwOps->err());
+        return FLINT_FAILED;
+    }
+    if (!_fwOps->QueryComponentData(FwComponent::COMPID_CLOCK_SYNC_EEPROM, 2, secondDeviceData))
+    {
+        reportErr(true, "%s\n", _fwOps->err());
+        return FLINT_FAILED;
+    }
+
+    if (firstDeviceData.empty() && secondDeviceData.empty())
+    {
+        reportErr(true, "failed getting info from the device.\n");
+        return FLINT_FAILED;
+    }
+
+    FsSyncEOperations::PrintComponentData(firstDeviceData, 1);
+    FsSyncEOperations::PrintComponentData(secondDeviceData, 2);
+
+    return FLINT_SUCCESS;
 }
 
 /***********************

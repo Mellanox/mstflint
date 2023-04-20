@@ -42,6 +42,7 @@ UTILS_DIR = $(USER_DIR)/mft_utils
 MAD_IFC_DIR = $(USER_DIR)/mad_ifc
 TOOLS_RES_MGMT_DIR = $(USER_DIR)/tools_res_mgmt
 DEV_MGT_DIR = $(USER_DIR)/dev_mgt
+MFT_UTILS_DIR = $(USER_DIR)/mft_utils
 
 INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_INC_DIR) -I$(MTCR_DIR) -I$(REG_ACCESS_DIR) -I$(CMDIF_DIR) \
            -I$(COMMON_DIR) -I $(LAYOUTS_DIR) -I $(UTILS_DIR) -I$(TOOLS_RES_MGMT_DIR) -I$(DEV_MGT_DIR)
@@ -61,7 +62,8 @@ else
 AM_CXXFLAGS += "-DNO_INBAND"
 endif
 
-libfw_comps_mgr_a_LIBADD = ../reg_access/libreg_access.a $(MTCR_DIR)/libmtcr_ul.a $(LAYOUTS_LIB) $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a
+libfw_comps_mgr_a_LIBADD = ../reg_access/libreg_access.a $(MTCR_DIR)/libmtcr_ul.a $(LAYOUTS_LIB) $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a \
+                            $(MFT_UTILS_DIR)/libmftutils.a
 
 if ENABLE_INBAND
 libfw_comps_mgr_a_LIBADD +=  $(top_srcdir)/mad_ifc/libmad_ifc.a
