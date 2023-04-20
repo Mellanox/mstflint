@@ -116,4 +116,37 @@ private:
     int get_master_format() const;
 };
 
+class MLXFWOP_API ComponentFwVersion
+{
+public:
+    ComponentFwVersion();
+    ComponentFwVersion(unsigned short int, unsigned short int);
+    ComponentFwVersion(const ComponentFwVersion&);
+    ComponentFwVersion& operator=(const ComponentFwVersion&);
+
+    std::string ToString();
+    bool operator==(const ComponentFwVersion&) const;
+    bool operator!=(const ComponentFwVersion&) const;
+    bool operator>(const ComponentFwVersion&) const;
+    bool operator<(const ComponentFwVersion&) const;
+    bool operator>=(const ComponentFwVersion&) const;
+    bool operator<=(const ComponentFwVersion&) const;
+
+private:
+    int Compare(const ComponentFwVersion&) const;
+
+    enum class VersionFormat : int
+    {
+        None = 0,
+        Major = 1,
+        Minor = 2,
+        SubMinor = 3
+    };
+
+    unsigned short int _major;
+    unsigned short int _minor;
+    unsigned short int _subMinor;
+    VersionFormat _format;
+};
+
 #endif /* MLXFWOPS_LIB_FW_VERSION_H_ */

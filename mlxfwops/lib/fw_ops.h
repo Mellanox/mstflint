@@ -283,6 +283,7 @@ public:
     virtual bool GetHashesTableData(vector<u_int8_t>& data);
     virtual bool PrintQuery();
     virtual u_int32_t GetDeviceIndex() { return 0; }
+    virtual bool QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data);
 
 #ifndef UEFI_BUILD
     static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);

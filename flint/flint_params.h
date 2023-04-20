@@ -91,7 +91,8 @@ typedef enum
     SC_Image_Reactivation,
     SC_RSA_Sign,
     SC_Binary_Compare,
-    SC_Export_Public_Key
+    SC_Export_Public_Key,
+    SC_Query_Components
 } sub_cmd_t;
 
 class FlintParams
@@ -196,6 +197,7 @@ public:
     string openssl_key_id;
     bool openssl_engine_usage_specified;
     u_int32_t cert_chain_index;
+    string component_type;
 };
 
 #endif

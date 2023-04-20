@@ -15,7 +15,19 @@
 
 #include "fs_comps_ops.h"
 
-class FsSyncEOperations : public FsCompsOperations
+#ifdef __WIN__
+
+#ifdef MLXFWOP_EXPORTS
+#define MLXFWOP_API __declspec(dllexport)
+#else
+#define MLXFWOP_API __declspec(dllimport)
+#endif
+
+#else
+#define MLXFWOP_API
+#endif
+
+class MLXFWOP_API FsSyncEOperations : public FsCompsOperations
 {
 public:
     FsSyncEOperations(FImage* imageAccess);
@@ -32,6 +44,8 @@ public:
                   bool ignoreDToc = false) override;
     bool PrintQuery() override;
     u_int32_t GetDeviceIndex() override;
+    bool IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion) override;
+    static void PrintComponentData(vector<u_int8_t>& data, u_int32_t deviceIndex);
 
 private:
     enum class SystemID : u_int16_t
@@ -71,8 +85,8 @@ private:
         u_int16_t S : 1;
     };
 
-    string ToString(SystemID systemID);
-    string ToString(ClockSyncVendorHWID hwID);
+    static string ToString(SystemID systemID);
+    static string ToString(ClockSyncVendorHWID hwID);
 
 private:
     SyncEFileHeader _header;

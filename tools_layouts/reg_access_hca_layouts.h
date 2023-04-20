@@ -116,6 +116,26 @@ Read and write access must be aligned to the word size. Write access must be don
 };
 
 /* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_hca_mcqi_clock_source_properties_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Image Version Minor Number */
+	/* 0x0.0 - 0x0.3 */
+	u_int8_t image_version_minor;
+	/* Description - Image Version Major Number */
+	/* 0x0.4 - 0x0.7 */
+	u_int8_t image_version_major;
+	/* Description - Clock Source Device Vendor Id
+0: Renesas
+1: SiTime 148
+2: SiTime 348
+3: TI
+4-255: Reserved */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t vendor_id;
+};
+
+/* Description -   */
 /* Size in bytes - 124 */
 struct reg_access_hca_mcqi_linkx_properties_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -346,6 +366,9 @@ union reg_access_hca_mcqi_reg_data_auto_ext {
 	/* Description -  */
 	/* 0x0.0 - 0x78.31 */
 	struct reg_access_hca_mcqi_linkx_properties_ext mcqi_linkx_properties_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	struct reg_access_hca_mcqi_clock_source_properties_ext mcqi_clock_source_properties_ext;
 };
 
 /* Description -   */
@@ -974,6 +997,7 @@ For cables, the index represents the module index starting at index 1. Index 0 i
 0x1: VERSION
 0x5: ACTIVATION_METHOD
 0x6: LINKX_PROPERTIES
+0x7: CLOCK_SOURCE_PROPERTIES
 Other values are reserved */
 	/* 0x8.0 - 0x8.4 */
 	u_int8_t info_type;
@@ -996,7 +1020,8 @@ If data_size is not DWORD aligned, the last bytes are zero padded. */
 CAPABILITIES - See Table 1973, "MCQI CAPABILITIES Info Layout," on page 2351
 VERSION - See Table 1975, "MCQI VERSION Info Layout," on page 2353
 ACTIVATION_METHOD - See Table 1979, "MCQI ACTIVATION_METHOD Info Layout," on page 2355
-LINKX_PREPERTIES - See Table 1981, "MCQI LINKX_PROPERTIES Info Layout," on page 2356 */
+LINKX_PREPERTIES - See Table 1981, "MCQI LINKX_PROPERTIES Info Layout," on page 2356
+CLOCK_SOURCE_PROPERTIES - See Table 2013, "MCQI CLOCK_SOURCE_PROPERTIES Layout," on page 2390 */
 	/* 0x18.0 - 0x90.31 */
 	union reg_access_hca_mcqi_reg_data_auto_ext data;
 };
@@ -2608,6 +2633,13 @@ void reg_access_hca_mcqi_cap_ext_print(const struct reg_access_hca_mcqi_cap_ext 
 unsigned int reg_access_hca_mcqi_cap_ext_size(void);
 #define REG_ACCESS_HCA_MCQI_CAP_EXT_SIZE    (0x7c)
 void reg_access_hca_mcqi_cap_ext_dump(const struct reg_access_hca_mcqi_cap_ext *ptr_struct, FILE *fd);
+/* mcqi_clock_source_properties_ext */
+void reg_access_hca_mcqi_clock_source_properties_ext_pack(const struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_mcqi_clock_source_properties_ext_unpack(struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_mcqi_clock_source_properties_ext_print(const struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_mcqi_clock_source_properties_ext_size(void);
+#define REG_ACCESS_HCA_MCQI_CLOCK_SOURCE_PROPERTIES_EXT_SIZE    (0x4)
+void reg_access_hca_mcqi_clock_source_properties_ext_dump(const struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, FILE *fd);
 /* mcqi_linkx_properties_ext */
 void reg_access_hca_mcqi_linkx_properties_ext_pack(const struct reg_access_hca_mcqi_linkx_properties_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mcqi_linkx_properties_ext_unpack(struct reg_access_hca_mcqi_linkx_properties_ext *ptr_struct, const u_int8_t *ptr_buff);

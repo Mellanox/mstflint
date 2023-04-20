@@ -58,6 +58,7 @@ static void mft_signal_set_handling(int isOn)
 #endif
 
 #include <errno.h>
+#include "mft_utils.h"
 
 static mfile* mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* dma_func, void* extra_data)
 {
@@ -1399,6 +1400,17 @@ bool FwCompsMgr::getFwComponents(std::vector < FwComponent >& compsMap, bool rea
     return true;
 }
 
+FwComponent::comps_ids_t FwComponent::getCompId(string compId)
+{
+    mft_utils::to_lowercase(compId);
+    if (compId == "sync_clock")
+    {
+        return COMPID_CLOCK_SYNC_EEPROM;
+    }
+
+    return COMPID_UNKNOWN;
+}
+
 const char* FwComponent::getCompIdStr(comps_ids_t compId)
 {
     switch (compId) {
@@ -1975,6 +1987,73 @@ bool FwCompsMgr::getComponentVersion(FwComponent::comps_ids_t compType, bool pen
         _productVerStr.resize(_currCompInfo.data.mcqi_version_ext.version_string_length);
         memcpy(_productVerStr.data(), _currCompInfo.data.mcqi_version_ext.version_string,
                _currCompInfo.data.mcqi_version_ext.version_string_length);
+    }
+    return true;
+}
+
+bool FwCompsMgr::GetComponentInfo(FwComponent::comps_ids_t compType, u_int32_t deviceIndex, vector<u_int8_t>& data)
+{
+    u_int32_t tmpDeviceIndex = _deviceIndex;
+    bool rc;
+
+    _deviceIndex = deviceIndex;
+    rc = GetComponentInfo(compType, data);
+    _deviceIndex = tmpDeviceIndex;
+    return rc;
+}
+
+bool FwCompsMgr::GetComponentInfo(FwComponent::comps_ids_t compType, vector<u_int8_t>& data)
+{
+    std::vector<u_int32_t> imageInfoData;
+    comp_info_t infoType;
+
+    switch (compType)
+    {
+        case FwComponent::COMPID_CLOCK_SYNC_EEPROM:
+            infoType = COMPINFO_CLOCK_SOURCE_PROPERTIES;
+            break;
+        case FwComponent::COMPID_UNKNOWN:
+        default:
+            _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
+            return false;
+    }
+
+    if (!IsDevicePresent(compType) && _lastError != FWCOMPS_DEVICE_NOT_PRESENT)
+    {
+        return false;
+    }
+
+    if (!readComponentInfo(compType, infoType, imageInfoData, false))
+    {
+        return false;
+    }
+
+    data.resize(imageInfoData.size() * 4);
+    memcpy(data.data(), imageInfoData.data(), data.size());
+
+    return true;
+}
+
+bool FwCompsMgr::IsDevicePresent(FwComponent::comps_ids_t compType)
+{
+    comp_status_st query;
+    memset(&query, 0, sizeof(query));
+    if (_compsQueryMap[compType].valid)
+    {
+        if (!queryComponentStatus(_compsQueryMap[compType].comp_status.component_index, &query))
+        {
+            return false;
+        }
+        if (query.component_status == 0)
+        {
+            _lastError = FWCOMPS_DEVICE_NOT_PRESENT;
+            return false;
+        }
+    }
+    else
+    {
+        _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
+        return false;
     }
     return true;
 }

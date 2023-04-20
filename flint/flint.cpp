@@ -188,6 +188,7 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
 #ifndef NO_OPEN_SSL
     cmdMap[SC_Export_Public_Key] = new ExportPublicSubCommand();
 #endif
+    cmdMap[SC_Query_Components] = new QueryComponentSubCommand();
     return cmdMap;
 }
 

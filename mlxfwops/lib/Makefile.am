@@ -51,7 +51,7 @@ AM_CPPFLAGS = -I$(srcdir) -I$(MTCR_INC_DIR) -I$(MFLASH_DIR) $(JSON_CFLAGS) -I$(M
 
 MLXFWOPS_VERSION = 1
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) -Wno-implicit-fallthrough
 
 if ENABLE_FWMGR
 AM_CPPFLAGS += -I$(top_srcdir)/libmfa

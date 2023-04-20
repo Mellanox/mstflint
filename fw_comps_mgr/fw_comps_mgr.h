@@ -42,6 +42,7 @@
 #define USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_
 
 #include <vector>
+#include <string>
 #include "reg_access/reg_access.h"
 #include "mlxfwops/uefi_c/mft_uefi_common.h"
 #include "mlxfwops/lib/mlxfwops_com.h"
@@ -221,6 +222,7 @@ public:
     void setStatus(comps_status_t compStat) { _status = compStat; };
 
     static const char* getCompIdStr(comps_ids_t compId);
+    static comps_ids_t getCompId(string compId);
 
 private:
     std::vector<u_int8_t> _data;
@@ -253,6 +255,7 @@ typedef enum
     FWCOMPS_FAIL_TO_CREATE_TRM_CONTEXT,
     FWCOMPS_FAIL_TO_LOCK_FLASH_SEMAPHORE,
     FWCOMPS_VERIFY_FAILED,
+    FWCOMPS_DEVICE_NOT_PRESENT,
 
     // MCC Return codes
     FWCOMPS_MCC_ERR_CODES = 0x100,
@@ -416,6 +419,8 @@ public:
     bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL);
     bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st* cmpLinkX);
     bool GetComponentSyncEProperties(component_synce_st& cmpSyncE);
+    bool GetComponentInfo(FwComponent::comps_ids_t compType, vector<u_int8_t>& data);
+    bool GetComponentInfo(FwComponent::comps_ids_t compType, u_int32_t deviceIndex, vector<u_int8_t>& data);
     void GenerateHandle();
     bool isMCDDSupported() { return _isDmaSupported; };
     bool IsSecondaryHost(bool& isSecondary);
@@ -551,6 +556,7 @@ private:
     void extractRomInfo(mgirReg* mgir, fwInfoT* fwQuery);
     bool isDMAAccess();
     bool fallbackToRegisterAccess();
+    bool IsDevicePresent(FwComponent::comps_ids_t compType);
 
     std::vector<comp_query_st> _compsQueryMap;
     bool _refreshed;

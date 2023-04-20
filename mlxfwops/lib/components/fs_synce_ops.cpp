@@ -56,30 +56,6 @@ bool FsSyncEOperations::FwVerify(VerifyCallBack, bool, bool, bool)
     {
         return errmsg("Header verify error - wrong length\n");
     }
-    // u_int32_t *data = (u_int32_t *)&_header;
-
-    // Crc16 crc;
-    // crc.add(*data);
-    // ++data;
-    // crc.add(*data);
-    // ++data;
-    // crc.add(*data);
-    // // ++data;
-    // // crc.add(*data & 0xFFFF0000);
-    // // crc.add(_header.fingerprint);
-    // // crc.add(_header.imageVersionMinor);
-    // // crc.add(_header.imageVersionMajor);
-    // // crc.add(_header.clockSyncIndex);
-    // // crc.add((u_int32_t)_header.systemID);
-    // // crc.add((u_int32_t)_header.clockSyncVendorHWID);
-    // // crc.add(_header.headerVersion);
-    // // crc.add(_header.fileCRC);
-    // // crc.add(_header.lengthOfFile);
-    // // crc.add(_header.reserved);
-    // // crc.add(_header.reserved2);
-    // // crc.add(_header.S);
-    // crc.finish();
-    // u_int32_t crcRes = crc.get();
 
     return true;
 }
@@ -88,14 +64,53 @@ bool FsSyncEOperations::PrintQuery()
 {
     ostringstream ss;
     ss << left;
+    ss << std::setw(23) << "Clock Sync Index:" << (short)_header.clockSyncIndex << endl;
     ss << std::setw(23) << "Image Version:" << (short)_header.imageVersionMajor << "."
        << (short)_header.imageVersionMinor << endl;
-    ss << std::setw(23) << "Clock Sync Index:" << (short)_header.clockSyncIndex << endl;
-    ss << std::setw(23) << "System ID:" << ToString(_header.systemID) << endl;
     ss << std::setw(23) << "Vendor HW ID:" << ToString(_header.clockSyncVendorHWID) << endl;
-    ss << std::setw(23) << "Header Version:" << (short)_header.headerVersion << endl;
-    ss << std::setw(23) << "Signed:" << ((short)_header.S == 1 ? "False" : "True") << endl;
+    ss << std::setw(23) << "System ID:" << ToString(_header.systemID) << endl;
     cout << ss.str();
+    return true;
+}
+
+void FsSyncEOperations::PrintComponentData(vector<u_int8_t>& data, u_int32_t deviceIndex)
+{
+    if (!data.empty())
+    {
+        ostringstream ss;
+        component_synce_st cmpSyncE;
+        memcpy(&cmpSyncE, data.data(), sizeof(cmpSyncE)); // do not change to unpack, already unpacked in MCQI
+
+        ss << left;
+        ss << std::setw(23) << "Clock Sync Index:" << (short)deviceIndex << endl;
+        ss << std::setw(23) << "Image Version:" << (short)cmpSyncE.image_version_major << "."
+           << (short)cmpSyncE.image_version_minor << endl;
+        ss << std::setw(23) << "Vendor HW ID:" << ToString((ClockSyncVendorHWID)cmpSyncE.vendor_id) << endl;
+        // ss << std::setw(23) << "System ID:" << ToString(_header.systemID) << endl;
+        cout << ss.str();
+    }
+}
+
+bool FsSyncEOperations::IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion)
+{
+    if (!data.empty())
+    {
+        ostringstream ss;
+        component_synce_st cmpSyncE;
+
+        memcpy(&cmpSyncE, data.data(), sizeof(cmpSyncE)); // do not change to unpack, already unpacked in MCQI
+
+        if ((ClockSyncVendorHWID)cmpSyncE.vendor_id != _header.clockSyncVendorHWID)
+        {
+            return errmsg("Vender HW ID is not compatible\n");
+        }
+
+        if (!CheckFwVersion(ComponentFwVersion(cmpSyncE.image_version_major, cmpSyncE.image_version_minor),
+                            forceVersion))
+        {
+            return false;
+        }
+    }
     return true;
 }
 

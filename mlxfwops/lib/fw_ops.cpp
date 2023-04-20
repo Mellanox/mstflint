@@ -951,13 +951,13 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             { // CX3/PRO are unsupported
                 fwCompsAccess = new FwCompsMgr(fwParams.mstHndl, FwCompsMgr::DEVICE_HCA_SWITCH, fwParams.deviceIndex);
             }
-            else
-            {
-                fwCompsErr = FWCOMPS_UNSUPPORTED_DEVICE;
-            }
             else if (fwParams.hndlType == FHT_UEFI_DEV)
             {
                 fwCompsAccess = new FwCompsMgr(fwParams.uefiHndl, &fwParams.uefiExtra);
+            }
+            else
+            {
+                fwCompsErr = FWCOMPS_UNSUPPORTED_DEVICE;
             }
             // In case MCDA capability isn't supported according to MCAM, we'll have
             // fwCompsAccess object created, but with an internal error in fwCompsErr
@@ -2803,6 +2803,11 @@ bool FwOperations::GetImageSize(u_int32_t*)
 bool FwOperations::GetHashesTableData(vector<u_int8_t>& data)
 {
     return errmsg("GetHashesTableData is not supported");
+}
+
+bool FwOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data)
+{
+    return errmsg("GetComponentData is not supported");
 }
 
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)

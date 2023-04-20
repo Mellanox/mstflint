@@ -311,6 +311,16 @@ public:
     bool verifyParams();
 };
 
+class QueryComponentSubCommand : public SubCommand
+{
+public:
+    QueryComponentSubCommand();
+    ~QueryComponentSubCommand();
+    FlintStatus executeCommand() override;
+    bool verifyParams() override;
+    FlintStatus querySyncE();
+};
+
 class Extract4MBImageSubCommand : public SubCommand
 {
 private:
