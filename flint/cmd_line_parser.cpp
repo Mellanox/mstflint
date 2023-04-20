@@ -882,7 +882,7 @@ void Flint::initCmdParser()
       "In case index=0 certificate chain will be stored at CERT_CHAIN_0 section, otherwise at DIGITAL_CERT_RW "
       "section according to given index.\n"
       "This flag is relevant only for set_attestation_cert_chain command.");
-    AddOptions("component_type", ' ', "<type string>", "component to query, currently only \"clock_sync\" supported.");
+    AddOptions("component_type", ' ', "<type string>", "component to query, currently only \"sync_clock\" supported.");
 
     for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++)
     {
