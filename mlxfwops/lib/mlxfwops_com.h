@@ -345,12 +345,12 @@ typedef struct fs3_uid
     int base_guid_specified;
     guid_t base_mac;
     int base_mac_specified;
-    u_int8_t num_of_guids;       // set 0 for default
-    u_int8_t step_size;          // set 0 for default, not relevant for devices >= CX4
-    int set_mac_from_guid;       // if set , base_mac will be derrived automatically from base guid
-    int use_pp_attr;             // if set, num_of_guids[2] and step_size[2] will be used for the uid attributes.
-    u_int8_t num_of_guids_pp[2]; // set 0xff for default
-    u_int8_t step_size_pp[2];    // set 0xff for default, not relevant for devices >= CX4
+    u_int8_t num_of_guids;        // set 0 for default
+    u_int8_t step_size;           // set 0 for default, not relevant for devices >= CX4
+    int set_mac_from_guid;        // if set , base_mac will be derrived automatically from base guid
+    int use_pp_attr;              // if set, num_of_guids[2] and step_size[2] will be used for the uid attributes.
+    u_int16_t num_of_guids_pp[2]; // set 0xffff for default
+    u_int8_t step_size_pp[2];     // set 0xff for default, not relevant for devices >= CX4
 } fs3_uid_t;
 
 typedef struct fs4_uid
@@ -386,6 +386,14 @@ struct fs3_uid_entry
     u_int64_t uid;
 };
 
+struct fs4_uid_entry
+{
+    u_int8_t num_allocated;
+    u_int8_t step; // not relevant for devices >= CX4
+    u_int8_t num_allocated_msb;
+    u_int64_t uid;
+};
+
 typedef struct cibfw_uids
 {
     struct fs3_uid_entry guids[2];
@@ -398,6 +406,12 @@ typedef struct cx4fw_uids
     struct fs3_uid_entry base_mac;
 } cx4_uids_t;
 
+typedef struct
+{
+    struct fs4_uid_entry base_guid;
+    struct fs4_uid_entry base_mac;
+} image_layout_uids_t;
+
 typedef struct uids
 {
     int valid_field; // 0: cib_uids , 1: cx4_uids
@@ -405,6 +419,7 @@ typedef struct uids
     {
         cib_uids_t cib_uids;
         cx4_uids_t cx4_uids;
+        image_layout_uids_t image_layout_uids;
     };
 } uids_t;
 

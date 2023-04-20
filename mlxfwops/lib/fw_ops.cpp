@@ -2810,6 +2810,21 @@ bool FwOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t d
     return errmsg("GetComponentData is not supported");
 }
 
+bool FwOperations::IsExtendedGuidNumSupported()
+{
+    bool isSupported = false;
+    switch (_fwImgInfo.supportedHwId[0])
+    {
+        case SPECTRUM4_HW_ID:
+            isSupported = true;
+            break;
+        default:
+            isSupported = false;
+            break;
+    }
+    return isSupported;
+}
+
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
 bool FwOperations::CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize)
 {

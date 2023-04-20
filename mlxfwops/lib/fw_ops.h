@@ -204,6 +204,7 @@ public:
     virtual bool FwSetGuids(sg_params_t& sgParam,
                             PrintCallBack callBackFunc = (PrintCallBack)NULL,
                             ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0;
+    virtual bool IsExtendedGuidNumSupported();
 
     virtual bool FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc = (PrintCallBack)NULL) = 0;
     virtual bool FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc = (PrintCallBack)NULL) = 0;
@@ -462,11 +463,11 @@ public:
         bool guidsSpecified;
         bool uidSpecified; // valid for ConnectIB only
         std::vector<guid_t> userGuids;
-        u_int8_t numOfGUIDs;      // number of GUIDs to allocate for each port. keep zero for default. (FS3 image Only)
-        u_int8_t stepSize;        // step size between GUIDs. keep zero for default. (FS3 Image Only)
-        bool usePPAttr;           // if set, use the per prot attributes below (FS3 Image Only)
-        u_int8_t numOfGUIDsPP[2]; // number of GUIDs to allocate for each port. keep 0xff for default. (FS3 image Only)
-        u_int8_t stepSizePP[2];   // step size between GUIDs. keep 0xff for default. (FS3 Image Only)
+        u_int8_t numOfGUIDs;       // number of GUIDs to allocate for each port. keep zero for default. (FS3 image Only)
+        u_int8_t stepSize;         // step size between GUIDs. keep zero for default. (FS3 Image Only)
+        bool usePPAttr;            // if set, use the per prot attributes below (FS3 Image Only)
+        u_int16_t numOfGUIDsPP[2]; // number of GUIDs to allocate for each port. keep 0xff for default. (FS3 image Only)
+        u_int8_t stepSizePP[2];    // step size between GUIDs. keep 0xffff for default. (FS3 Image Only)
     };
 
 protected:

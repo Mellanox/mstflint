@@ -236,38 +236,51 @@ bool Fs3Operations::CheckTocSignature(struct cibfw_itoc_header* itoc_header, u_i
 #define CHECK_MFG_OLD_FORMAT(mfg_st) (mfg_st.major_version == 0)
 bool Fs3Operations::GetMfgInfo(u_int8_t* buff)
 {
-    /* structs of the same size we can unpack either way */
+    // structs of the same size we can unpack either way
     struct cibfw_mfg_info cib_mfg_info;
     struct cx4fw_mfg_info cx4_mfg_info;
 
     cibfw_mfg_info_unpack(&cib_mfg_info, buff);
-    /* cibfw_mfg_info_dump(&mfg_info, stdout); */
-    if (CHECK_MFG_NEW_FORMAT(cib_mfg_info))
+    // cibfw_mfg_info_dump(&mfg_info, stdout);
+    if (IsExtendedGuidNumSupported())
     {
-        cx4fw_mfg_info_unpack(&cx4_mfg_info, buff);
-        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.cx4_uids, cx4_mfg_info.guids);
-        memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.cx4_uids, &cx4_mfg_info.guids, sizeof(cx4_mfg_info.guids));
-        strcpy(_fs3ImgInfo.ext_info.orig_psid, cx4_mfg_info.psid);
-        _fs3ImgInfo.ext_info.guids_override_en = cx4_mfg_info.guids_override_en;
+        image_layout_mfg_info mfg_info;
+        image_layout_mfg_info_unpack(&mfg_info, buff);
+        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids, mfg_info.guids);
+        memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids, &mfg_info.guids, sizeof(mfg_info.guids));
+        strcpy(_fs3ImgInfo.ext_info.orig_psid, mfg_info.psid);
+        _fs3ImgInfo.ext_info.guids_override_en = mfg_info.guids_override_en;
         _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 1;
-    }
-    else if (CHECK_MFG_OLD_FORMAT(cib_mfg_info))
-    {
-        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, cib_mfg_info.guids);
-        memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, &cib_mfg_info.guids, sizeof(cib_mfg_info.guids));
-        strcpy(_fs3ImgInfo.ext_info.orig_psid, cib_mfg_info.psid);
-        _fs3ImgInfo.ext_info.guids_override_en = cib_mfg_info.guids_override_en;
-        _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 0;
     }
     else
     {
-        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown MFG_INFO format version (%d.%d).",
-                      cib_mfg_info.major_version, cib_mfg_info.minor_version);
+        if (CHECK_MFG_NEW_FORMAT(cib_mfg_info))
+        {
+            cx4fw_mfg_info_unpack(&cx4_mfg_info, buff);
+            CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.cx4_uids, cx4_mfg_info.guids);
+            memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.cx4_uids, &cx4_mfg_info.guids, sizeof(cx4_mfg_info.guids));
+            strcpy(_fs3ImgInfo.ext_info.orig_psid, cx4_mfg_info.psid);
+            _fs3ImgInfo.ext_info.guids_override_en = cx4_mfg_info.guids_override_en;
+            _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 1;
+        }
+        else if (CHECK_MFG_OLD_FORMAT(cib_mfg_info))
+        {
+            CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, cib_mfg_info.guids);
+            memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, &cib_mfg_info.guids, sizeof(cib_mfg_info.guids));
+            strcpy(_fs3ImgInfo.ext_info.orig_psid, cib_mfg_info.psid);
+            _fs3ImgInfo.ext_info.guids_override_en = cib_mfg_info.guids_override_en;
+            _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 0;
+        }
+        else
+        {
+            return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown MFG_INFO format version (%d.%d).",
+                          cib_mfg_info.major_version, cib_mfg_info.minor_version);
+        }
     }
 
     if (cib_mfg_info.minor_version == 1)
     {
-        /* get orig_prs name */
+        // get orig_prs name
         struct tools_open_mfg_info tools_mfg_info;
         memset(&tools_mfg_info, 0, sizeof(tools_mfg_info));
         tools_open_mfg_info_unpack(&tools_mfg_info, buff);
@@ -428,31 +441,43 @@ bool Fs3Operations::GetDevInfo(u_int8_t* buff)
 {
     struct cibfw_device_info cib_dev_info;
     struct cx4fw_device_info cx4_dev_info;
-
-    /* same size, we can unpack to check version */
+    // same size, we can unpack to check version
     cibfw_device_info_unpack(&cib_dev_info, buff);
-    /* cibfw_device_info_dump(&dev_info, stdout); */
-    if (CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info))
+    // cibfw_device_info_dump(&dev_info, stdout);
+    if (IsExtendedGuidNumSupported())
     {
-        cx4fw_device_info_unpack(&cx4_dev_info, buff);
-        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids, cx4_dev_info.guids);
-        memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids, &cx4_dev_info.guids, sizeof(cx4_dev_info.guids));
-        strcpy(_fwImgInfo.ext_info.vsd, cx4_dev_info.vsd);
+        image_layout_device_info device_info;
+        image_layout_device_info_unpack(&device_info, buff);
+        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids, device_info.guids);
+        memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids, &device_info.guids, sizeof(device_info.guids));
+        strcpy(_fwImgInfo.ext_info.vsd, device_info.vsd);
         _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 1;
-        _fwImgInfo.ext_info.vsd_sect_found = true;
-    }
-    else if (CHECK_DEV_INFO_OLD_FORMAT(cib_dev_info))
-    {
-        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, cib_dev_info.guids);
-        memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, &cib_dev_info.guids, sizeof(cib_dev_info.guids));
-        strcpy(_fwImgInfo.ext_info.vsd, cib_dev_info.vsd);
-        _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 0;
         _fwImgInfo.ext_info.vsd_sect_found = true;
     }
     else
     {
-        return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown DEV_INFO format version (%d.%d).",
-                      cib_dev_info.major_version, cib_dev_info.minor_version);
+        if (CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info))
+        {
+            cx4fw_device_info_unpack(&cx4_dev_info, buff);
+            CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids, cx4_dev_info.guids);
+            memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids, &cx4_dev_info.guids, sizeof(cx4_dev_info.guids));
+            strcpy(_fwImgInfo.ext_info.vsd, cx4_dev_info.vsd);
+            _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 1;
+            _fwImgInfo.ext_info.vsd_sect_found = true;
+        }
+        else if (CHECK_DEV_INFO_OLD_FORMAT(cib_dev_info))
+        {
+            CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, cib_dev_info.guids);
+            memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, &cib_dev_info.guids, sizeof(cib_dev_info.guids));
+            strcpy(_fwImgInfo.ext_info.vsd, cib_dev_info.vsd);
+            _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 0;
+            _fwImgInfo.ext_info.vsd_sect_found = true;
+        }
+        else
+        {
+            return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown DEV_INFO format version (%d.%d).",
+                          cib_dev_info.major_version, cib_dev_info.minor_version);
+        }
     }
     return true;
 }
@@ -2435,6 +2460,43 @@ bool Fs3Operations::Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cx4fw_guids
     guids.macs.uid = base_mac_64;
     guids.macs.num_allocated =
       base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ? base_uid.num_of_guids_pp[0] : guids.macs.num_allocated;
+    guids.macs.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.macs.step;
+    return true;
+}
+
+bool Fs3Operations::ChangeUidsFromBase(fs3_uid_t base_uid, image_layout_guids& guids)
+{
+    /*
+     * on ConnectX4 we derrive guids from base_guid and macs from base_mac
+     */
+    u_int64_t base_guid_64;
+    u_int64_t base_mac_64;
+    if (!base_uid.use_pp_attr)
+    {
+        return errmsg("Expected per port attributes to be specified");
+    }
+
+    base_guid_64 = base_uid.base_guid_specified ? GUID_TO_64(base_uid.base_guid) : guids.guids.uid;
+    base_mac_64 = base_uid.base_mac_specified ? GUID_TO_64(base_uid.base_mac) : guids.macs.uid;
+    if (base_uid.set_mac_from_guid && base_uid.base_guid_specified)
+    {
+        // in case we derrive mac from guid
+        base_mac_64 =
+          (((u_int64_t)base_uid.base_guid.l & 0xffffff) | (((u_int64_t)base_uid.base_guid.h & 0xffffff00) << 16));
+    }
+
+    if (base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM)
+    {
+        guids.guids.num_allocated = (u_int8_t)(base_uid.num_of_guids_pp[0] & 0xff);
+        guids.guids.num_allocated_msb = (u_int8_t)((base_uid.num_of_guids_pp[0] >> 8) & 0xff);
+        guids.macs.num_allocated = guids.guids.num_allocated;
+        guids.macs.num_allocated_msb = guids.guids.num_allocated_msb;
+    }
+
+    guids.guids.uid = base_guid_64;
+    guids.guids.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.guids.step;
+
+    guids.macs.uid = base_mac_64;
     guids.macs.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.macs.step;
     return true;
 }
