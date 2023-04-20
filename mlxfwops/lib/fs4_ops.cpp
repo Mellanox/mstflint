@@ -72,9 +72,6 @@
 #define DEV_INFO_SIG2 0x2342cafa
 #define DEV_INFO_SIG3 0xbacafe00
 
-#define DEFAULT_GUID_NUM 0xff
-#define DEFAULT_STEP DEFAULT_GUID_NUM
-
 #define GUID_TO_64(guid_st) (guid_st.l | (u_int64_t)guid_st.h << 32)
 
 #define CHECK_IF_FS4_FILE_FOR_TIMESTAMP_OP()                                          \

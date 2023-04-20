@@ -77,6 +77,9 @@
         }                                                                                       \
     } while (0)
 
+#define DEFAULT_GUID_NUM 0xffff
+#define DEFAULT_STEP 0xff
+
 class Fs3Operations : public FwOperations
 {
 public:

@@ -72,9 +72,6 @@
 
 #define FS3_LOG_CHUNK_SIZE 21
 
-#define DEFAULT_GUID_NUM 0xff
-#define DEFAULT_STEP DEFAULT_GUID_NUM
-
 /* fs4 use the same itoc signatures, please double check */
 const u_int32_t Fs3Operations::_itocSignature[4] = {ITOC_ASCII, /* Ascii of "MTFW" */
                                                     TOC_RAND1,  /* Random data */
@@ -1771,8 +1768,7 @@ bool Fs3Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
 {
     /* in FS3 default behavior when setting GUIDs / MFG is to assign ini default step size and number. */
     fs3_uid_t bGuid = {
-      baseGuid, 1, {0, 0}, 0, 0, 0, 1, 1, {DEFAULT_GUID_NUM, DEFAULT_STEP}, {DEFAULT_GUID_NUM, DEFAULT_STEP}};
-
+      baseGuid, 1, {0, 0}, 0, 0, 0, 1, 1, {DEFAULT_GUID_NUM, DEFAULT_GUID_NUM}, {DEFAULT_STEP, DEFAULT_STEP}};
     return FwSetMFG(bGuid, callBackFunc);
 }
 
