@@ -1874,6 +1874,9 @@ unsigned char* FwCompsMgr::getLastErrMsg()
     case FWCOMPS_MCC_REJECTED_TOKEN_ALREADY_APPLIED:
         return (unsigned char*)"Token already applied";
 
+        case FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
+            return (unsigned char*)"DRAM not available";
+
     case FWCOMPS_UNSUPPORTED_DEVICE:
         return (unsigned char*)"Unsupported device";
 
@@ -2397,6 +2400,9 @@ fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
 
     case MCC_ERRCODE_REJECTED_TOKEN_ALREADY_APPLIED:
         return FWCOMPS_MCC_REJECTED_TOKEN_ALREADY_APPLIED;
+
+        case MCC_ERRCODE_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
+            return FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE;
 
     default:
         return FWCOMPS_GENERAL_ERR;
