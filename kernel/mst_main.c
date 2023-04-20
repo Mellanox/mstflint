@@ -598,7 +598,7 @@ static int mst_release(struct inode* inode, struct file* file)
         goto out;
     }
 
-    if (md->connectx_wa_slot_pl != 0) {
+    if (md->connectx_wa_slot_p1 != 0) {
         slot_mask = ~(1 << (md->connectx_wa_slot_p1 - 1));
         dev->connectx_wa_slots &= slot_mask;
     }
