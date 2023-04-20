@@ -1937,11 +1937,10 @@ def reset_flow_switch(device, args, command):
 # Description: Returns default reset sync
 ######################################################################
 
-
 def get_default_reset_sync(devid):
     devDict = getDeviceDict(devid)
     reset_sync = SyncOwner.TOOL
-    if devDict.get('allowed_sync_method'):
+    if platform.system() == "Linux" and devDict.get('allowed_sync_method'):
         reset_sync = devDict['allowed_sync_method']
     return reset_sync
 
