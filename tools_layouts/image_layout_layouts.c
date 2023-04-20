@@ -380,6 +380,8 @@ void image_layout_uid_entry_pack(const struct image_layout_uid_entry *ptr_struct
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->num_allocated);
 	offset = 16;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->step);
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->num_allocated_msb);
 	offset = 64;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 8, ptr_struct->uid);
 }
@@ -392,6 +394,8 @@ void image_layout_uid_entry_unpack(struct image_layout_uid_entry *ptr_struct, co
 	ptr_struct->num_allocated = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 16;
 	ptr_struct->step = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 8;
+	ptr_struct->num_allocated_msb = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 64;
 	ptr_struct->uid = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
 }
@@ -405,6 +409,8 @@ void image_layout_uid_entry_print(const struct image_layout_uid_entry *ptr_struc
 	fprintf(fd, "num_allocated        : " UH_FMT "\n", ptr_struct->num_allocated);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "step                 : " UH_FMT "\n", ptr_struct->step);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "num_allocated_msb    : " UH_FMT "\n", ptr_struct->num_allocated_msb);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "uid                  : " U64H_FMT "\n", ptr_struct->uid);
 }
@@ -2229,6 +2235,72 @@ unsigned int image_layout_itoc_header_size(void)
 void image_layout_itoc_header_dump(const struct image_layout_itoc_header *ptr_struct, FILE *fd)
 {
 	image_layout_itoc_header_print(ptr_struct, fd, 0);
+}
+
+void image_layout_mfg_info_pack(const struct image_layout_mfg_info *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	for (i = 0; i < 16; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 2560, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->psid[i]);
+	}
+	offset = 255;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->guids_override_en);
+	offset = 232;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->minor_version);
+	offset = 224;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->major_version);
+	offset = 256;
+	image_layout_guids_pack(&(ptr_struct->guids), ptr_buff + offset / 8);
+}
+
+void image_layout_mfg_info_unpack(struct image_layout_mfg_info *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	for (i = 0; i < 16; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 2560, 1);
+		ptr_struct->psid[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	}
+		ptr_struct->psid[16] = '\0';
+	offset = 255;
+	ptr_struct->guids_override_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 232;
+	ptr_struct->minor_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 224;
+	ptr_struct->major_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 256;
+	image_layout_guids_unpack(&(ptr_struct->guids), ptr_buff + offset / 8);
+}
+
+void image_layout_mfg_info_print(const struct image_layout_mfg_info *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== image_layout_mfg_info ========\n");
+
+		fprintf(fd, "psid                 : \"%s\"\n", ptr_struct->psid);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "guids_override_en    : " UH_FMT "\n", ptr_struct->guids_override_en);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "minor_version        : " UH_FMT "\n", ptr_struct->minor_version);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "major_version        : " UH_FMT "\n", ptr_struct->major_version);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "guids:\n");
+	image_layout_guids_print(&(ptr_struct->guids), fd, indent_level + 1);
+}
+
+unsigned int image_layout_mfg_info_size(void)
+{
+	return IMAGE_LAYOUT_MFG_INFO_SIZE;
+}
+
+void image_layout_mfg_info_dump(const struct image_layout_mfg_info *ptr_struct, FILE *fd)
+{
+	image_layout_mfg_info_print(ptr_struct, fd, 0);
 }
 
 void image_layout_public_keys_pack(const struct image_layout_public_keys *ptr_struct, u_int8_t *ptr_buff)

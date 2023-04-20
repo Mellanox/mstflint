@@ -197,15 +197,33 @@ bool FsCtrlOperations::FsIntQuery()
         return true;
     }
 
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.uid = fwQuery.base_mac.uid;
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQuery.base_mac.num_allocated;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.uid = fwQuery.base_mac_orig.uid;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQuery.base_mac_orig.num_allocated;
+    if (IsExtendedGuidNumSupported())
+    {
+        // TODO msb
+        _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.uid = fwQuery.base_mac.uid;
+        _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.num_allocated = fwQuery.base_mac.num_allocated;
+        _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.uid = fwQuery.base_mac_orig.uid;
+        _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.num_allocated =
+          fwQuery.base_mac_orig.num_allocated;
 
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.uid = fwQuery.base_guid.uid;
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQuery.base_guid.num_allocated;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.uid = fwQuery.base_guid_orig.uid;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQuery.base_guid_orig.num_allocated;
+        _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.uid = fwQuery.base_guid.uid;
+        _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.num_allocated = fwQuery.base_guid.num_allocated;
+        _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.uid = fwQuery.base_guid_orig.uid;
+        _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.num_allocated =
+          fwQuery.base_guid_orig.num_allocated;
+    }
+    else
+    {
+        _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.uid = fwQuery.base_mac.uid;
+        _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQuery.base_mac.num_allocated;
+        _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.uid = fwQuery.base_mac_orig.uid;
+        _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQuery.base_mac_orig.num_allocated;
+
+        _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.uid = fwQuery.base_guid.uid;
+        _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQuery.base_guid.num_allocated;
+        _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.uid = fwQuery.base_guid_orig.uid;
+        _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQuery.base_guid_orig.num_allocated;
+    }
 
     _fwImgInfo.ext_info.pci_device_id = fwQuery.dev_id;
     _fwImgInfo.ext_info.dev_type = fwQuery.dev_id;
@@ -891,8 +909,8 @@ bool FsCtrlOperations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFu
     {
         return errmsg("base GUID/MAC were not specified.");
     }
-    if (!sgParam.updateCrc || sgParam.numOfGUIDs != 0 || sgParam.stepSize != 0 || sgParam.numOfGUIDsPP[0] != 0xff ||
-        sgParam.numOfGUIDsPP[1] != 0xff || sgParam.stepSizePP[0] != 0xff || sgParam.stepSizePP[1] != 0xff)
+    if (!sgParam.updateCrc || sgParam.numOfGUIDs != 0 || sgParam.stepSize != 0 || sgParam.numOfGUIDsPP[0] != 0xffff ||
+        sgParam.numOfGUIDsPP[1] != 0xffff || sgParam.stepSizePP[0] != 0xff || sgParam.stepSizePP[1] != 0xff)
     {
         return errmsg("Tried to set unsupported values. Allowed values to set are mac,guid,uid.");
     }

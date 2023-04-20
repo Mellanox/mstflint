@@ -257,6 +257,7 @@ protected:
                               PrintCallBack callBackFunc = (PrintCallBack)NULL);
     bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cibfw_guids& guids);
     bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cx4fw_guids& guids);
+    bool ChangeUidsFromBase(fs3_uid_t base_uid, image_layout_guids& guids);
     bool DeviceTimestampEnabled();
     bool RomCommonCheck(bool ignoreProdIdCheck, bool checkIfRomEmpty);
     bool extractUUIDFromString(const char* uuid, std::vector<u_int32_t>& uuidData);

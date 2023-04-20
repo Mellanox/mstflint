@@ -3025,37 +3025,56 @@ bool Fs4Operations::Fs4UpdateMfgUidsSection(struct fs4_toc_info* curr_toc,
     struct cibfw_mfg_info cib_mfg_info;
     struct cx4fw_mfg_info cx4_mfg_info;
     (void)curr_toc;
-    cibfw_mfg_info_unpack(&cib_mfg_info, (u_int8_t*)&section_data[0]);
-
-    if (cib_mfg_info.major_version == 0)
+    if (IsExtendedGuidNumSupported())
     {
-        if (!Fs3ChangeUidsFromBase(base_uid, cib_mfg_info.guids))
+        image_layout_mfg_info mfg_info;
+        image_layout_mfg_info_unpack(&mfg_info, (u_int8_t*)&section_data[0]);
+        if (!ChangeUidsFromBase(base_uid, mfg_info.guids))
         {
             return false;
         }
+        newSectionData = section_data;
+        image_layout_mfg_info_pack(&mfg_info, (u_int8_t*)&newSectionData[0]);
     }
-    else if (cib_mfg_info.major_version == 1)
+    else
     {
-        cx4fw_mfg_info_unpack(&cx4_mfg_info, (u_int8_t*)&section_data[0]);
-        if (!Fs3ChangeUidsFromBase(base_uid, cx4_mfg_info.guids))
+        if (base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM && base_uid.num_of_guids_pp[0] > 254)
         {
-            return false;
+            return errmsg("Invalid argument values, values should be taken from the range [0..254]\n");
         }
-    }
-    else
-    {
-        return errmsg("Unknown MFG_INFO format version (%d.%d).", cib_mfg_info.major_version,
-                      cib_mfg_info.minor_version);
-    }
-    newSectionData = section_data;
 
-    if (cib_mfg_info.major_version == 1)
-    {
-        cx4fw_mfg_info_pack(&cx4_mfg_info, (u_int8_t*)&newSectionData[0]);
-    }
-    else
-    {
-        cibfw_mfg_info_pack(&cib_mfg_info, (u_int8_t*)&newSectionData[0]);
+        cibfw_mfg_info_unpack(&cib_mfg_info, (u_int8_t*)&section_data[0]);
+
+        if (cib_mfg_info.major_version == 0)
+        {
+            if (!Fs3ChangeUidsFromBase(base_uid, cib_mfg_info.guids))
+            {
+                return false;
+            }
+        }
+        else if (cib_mfg_info.major_version == 1)
+        {
+            cx4fw_mfg_info_unpack(&cx4_mfg_info, (u_int8_t*)&section_data[0]);
+            if (!Fs3ChangeUidsFromBase(base_uid, cx4_mfg_info.guids))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return errmsg("Unknown MFG_INFO format version (%d.%d).", cib_mfg_info.major_version,
+                          cib_mfg_info.minor_version);
+        }
+        newSectionData = section_data;
+
+        if (cib_mfg_info.major_version == 1)
+        {
+            cx4fw_mfg_info_pack(&cx4_mfg_info, (u_int8_t*)&newSectionData[0]);
+        }
+        else
+        {
+            cibfw_mfg_info_pack(&cib_mfg_info, (u_int8_t*)&newSectionData[0]);
+        }
     }
     return true;
 }
@@ -3081,14 +3100,26 @@ bool Fs4Operations::Fs4ChangeUidsFromBase(fs3_uid_t base_uid, struct image_layou
           (((u_int64_t)base_uid.base_guid.l & 0xffffff) | (((u_int64_t)base_uid.base_guid.h & 0xffffff00) << 16));
     }
 
+    if (!IsExtendedGuidNumSupported() && base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM &&
+        base_uid.num_of_guids_pp[0] > 254)
+    {
+        return errmsg("Invalid argument values, values should be taken from the range [0..254]\n");
+    }
+
     guids.guids.uid = base_guid_64;
     guids.guids.num_allocated =
       base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ? base_uid.num_of_guids_pp[0] : guids.guids.num_allocated;
+    guids.guids.num_allocated_msb = base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ?
+                                      ((base_uid.num_of_guids_pp[0] >> 8) & 0xff) :
+                                      guids.guids.num_allocated_msb;
     guids.guids.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.guids.step;
 
     guids.macs.uid = base_mac_64;
     guids.macs.num_allocated =
       base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ? base_uid.num_of_guids_pp[0] : guids.macs.num_allocated;
+    guids.macs.num_allocated_msb = base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ?
+                                     ((base_uid.num_of_guids_pp[0] >> 8) & 0xff) :
+                                     guids.macs.num_allocated_msb;
     guids.macs.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.macs.step;
     return true;
 }

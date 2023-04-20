@@ -1450,9 +1450,48 @@ void SubCommand::printMissingGuidErr(bool ibDev, bool ethDev)
 
 bool SubCommand::extractValuesFromString(string valStr, u_int8_t values[2], string origArg)
 {
-    // check if we need to extract 2 values or 1
-    u_int32_t tempNum0 = 0, tempNum1 = 0;
+    u_int32_t tempValues[2] = {0, 0};
+
+    if (!extractValuesFromStringAux(valStr, tempValues, origArg))
+    {
+        return false;
+    }
+
+    // perform checks
+    if (tempValues[0] > 255 || tempValues[1] > 255)
+    {
+        reportErr(true, "Invalid argument values for %s, values can't be larger than 255.\n", origArg.c_str());
+        return false;
+    }
+    values[0] = tempValues[0];
+    values[1] = tempValues[1];
+    return true;
+}
+
+bool SubCommand::extractValuesFromString(string valStr, u_int16_t values[2], string origArg)
+{
+    u_int32_t tempValues[2] = {0, 0};
+
+    if (!extractValuesFromStringAux(valStr, tempValues, origArg))
+    {
+        return false;
+    }
+
+    // perform checks
+    if (tempValues[0] > 1024 || tempValues[1] > 1024)
+    {
+        reportErr(true, "Invalid argument values for %s, values can't be larger than 1024.\n", origArg.c_str());
+        return false;
+    }
+    values[0] = tempValues[0];
+    values[1] = tempValues[1];
+    return true;
+}
+
+bool SubCommand::extractValuesFromStringAux(string valStr, u_int32_t values[2], string origArg)
+{
     string tempNumStr;
+    // check if we need to extract 2 values or 1
     if (valStr.find(',') != string::npos)
     {
         std::stringstream ss((valStr.c_str()));
@@ -1462,7 +1501,7 @@ bool SubCommand::extractValuesFromString(string valStr, u_int8_t values[2], stri
             reportErr(true, FLINT_INVALID_ARG_ERROR, origArg.c_str());
             return false;
         }
-        if (!str2Num(tempNumStr.c_str(), tempNum0))
+        if (!str2Num(tempNumStr.c_str(), values[0]))
         {
             reportErr(true, FLINT_INVALID_ARG_ERROR, origArg.c_str());
             return false;
@@ -1473,7 +1512,7 @@ bool SubCommand::extractValuesFromString(string valStr, u_int8_t values[2], stri
             reportErr(true, FLINT_INVALID_ARG_ERROR, origArg.c_str());
             return false;
         }
-        if (!str2Num(tempNumStr.c_str(), tempNum1))
+        if (!str2Num(tempNumStr.c_str(), values[1]))
         {
             reportErr(true, FLINT_INVALID_ARG_ERROR, origArg.c_str());
             return false;
@@ -1487,25 +1526,18 @@ bool SubCommand::extractValuesFromString(string valStr, u_int8_t values[2], stri
     }
     else
     {
-        if (!str2Num(valStr.c_str(), tempNum0))
+        if (!str2Num(valStr.c_str(), values[0]))
         {
             reportErr(true, FLINT_INVALID_ARG_ERROR, origArg.c_str());
             return false;
         }
-        tempNum1 = tempNum0;
+        values[1] = values[0];
     }
-    // perform checks
-    if (tempNum0 >= 255 || tempNum1 >= 255)
-    {
-        reportErr(true, "Invalid argument values, values should be taken from the range [0..254]\n");
-        return false;
-    }
-    values[0] = tempNum0;
-    values[1] = tempNum1;
+
     return true;
 }
 
-bool SubCommand::extractUIDArgs(std::vector<string>& cmdArgs, u_int8_t numOfGuids[2], u_int8_t stepSize[2])
+bool SubCommand::extractUIDArgs(std::vector<string>& cmdArgs, u_int16_t numOfGuids[2], u_int8_t stepSize[2])
 {
     // extract num_of_guids and step_size from numGuidsStr, stepStr
     string tag, valStr;
@@ -3966,6 +3998,43 @@ bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
     }                                                                    \
     printf("\n");
 
+#define PRINT_FS4_OR_NEWER_UID(uid1, str, printStep, isGuid)                      \
+    if (uid1.uid)                                                                 \
+    {                                                                             \
+        if (isGuid)                                                               \
+        {                                                                         \
+            printf("%-18s     %016" U64H_FMT_GEN, str, uid1.uid);                 \
+        }                                                                         \
+        else                                                                      \
+        {                                                                         \
+            printf("%-18s     %012" U64H_FMT_GEN "    ", str, uid1.uid);          \
+        }                                                                         \
+    }                                                                             \
+    else                                                                          \
+    {                                                                             \
+        printf("%-18s     %-16s", str, NA_STR);                                   \
+    }                                                                             \
+    if (uid1.num_allocated || uid1.num_allocated_msb)                             \
+    {                                                                             \
+        printf("        %d", uid1.num_allocated + (uid1.num_allocated_msb << 8)); \
+    }                                                                             \
+    else                                                                          \
+    {                                                                             \
+        printf("       %s", NA_STR);                                              \
+    }                                                                             \
+    if (printStep)                                                                \
+    {                                                                             \
+        if (uid1.step)                                                            \
+        {                                                                         \
+            printf("        %d", uid1.step);                                      \
+        }                                                                         \
+        else                                                                      \
+        {                                                                         \
+            printf("       %s", NA_STR);                                          \
+        }                                                                         \
+    }                                                                             \
+    printf("\n");
+
 static inline void
   printFs3OrNewerUids(struct fs3_uid_entry uid, struct fs3_uid_entry orig_uid, string guidMac, bool printStep)
 {
@@ -3980,6 +4049,32 @@ static inline void
         prefix = "Orig " + prefix;
         PRINT_FS3_OR_NEWER_UID(orig_uid, prefix.c_str(), printStep, isGuid);
     }
+}
+
+static inline void
+  printFs4OrNewerUids(struct fs4_uid_entry uid, struct fs4_uid_entry orig_uid, string guidMac, bool printStep)
+{
+    string prefix = BASE_STR + string(" ") + guidMac + ":";
+    bool isGuid = guidMac.find("GUID") != string::npos ? true : false;
+
+    PRINT_FS4_OR_NEWER_UID(uid, prefix.c_str(), printStep, isGuid);
+    if (uid.uid != orig_uid.uid || uid.num_allocated != orig_uid.num_allocated ||
+        (printStep && uid.step != orig_uid.step))
+    {
+        // Print MFG UIDs as well
+        prefix = "Orig " + prefix;
+        PRINT_FS4_OR_NEWER_UID(orig_uid, prefix.c_str(), printStep, isGuid);
+    }
+}
+
+bool QuerySubCommand::displayFs4Uids(const fw_info_t& fwInfo)
+{
+    printf("Description:           UID                GuidsNumber\n");
+    printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.image_layout_uids.base_guid,
+                        fwInfo.fs3_info.orig_fs3_uids_info.image_layout_uids.base_guid, "GUID", false);
+    printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.image_layout_uids.base_mac,
+                        fwInfo.fs3_info.orig_fs3_uids_info.image_layout_uids.base_mac, "MAC", false);
+    return true;
 }
 
 bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
@@ -4286,10 +4381,20 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 
     if (!isFs2)
     {
-        /*i.e its fs3/fs4*/
-        if (!displayFs3Uids(fwInfo))
+        if (ops->IsExtendedGuidNumSupported())
         {
-            return FLINT_FAILED;
+            if (!displayFs4Uids(fwInfo))
+            {
+                return FLINT_FAILED;
+            }
+        }
+        else
+        {
+            /*i.e its fs3/fs4*/
+            if (!displayFs3Uids(fwInfo))
+            {
+                return FLINT_FAILED;
+            }
         }
     }
     else
@@ -5295,8 +5400,8 @@ void SubCommand::ClearGuidStruct(FwOperations::sg_params_t& sgParams)
     sgParams.userGuids.resize(0);
     sgParams.numOfGUIDs = 0;    // number of GUIDs to allocate for each port. keep zero for default. (FS3 image Only)
     sgParams.stepSize = 0;      // step size between GUIDs. keep zero for default. (FS3 Image Only)
-    sgParams.usePPAttr = false; // if set, use the per prot attributes below (FS3 Image Only)
-    memset(&(sgParams.numOfGUIDsPP), 0xff, sizeof(sgParams.numOfGUIDsPP));
+    sgParams.usePPAttr = false; // if set, use the per port attributes below (FS3 Image Only)
+    memset(&(sgParams.numOfGUIDsPP), 0xffff, sizeof(sgParams.numOfGUIDsPP));
     memset(&(sgParams.stepSizePP), 0xff, sizeof(sgParams.stepSizePP));
 }
 
@@ -5572,7 +5677,7 @@ SmgSubCommand::SmgSubCommand()
     _ops = NULL;
     memset(&_baseGuid, 0, sizeof(_baseGuid));
     memset(&_info, 0, sizeof(_info));
-    memset(&(_baseGuid.num_of_guids_pp), 0xff, sizeof(_baseGuid.num_of_guids_pp));
+    memset(&(_baseGuid.num_of_guids_pp), 0xffff, sizeof(_baseGuid.num_of_guids_pp));
     memset(&(_baseGuid.step_size_pp), 0xff, sizeof(_baseGuid.step_size_pp));
     _baseGuid.use_pp_attr = 1;
 }
