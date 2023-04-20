@@ -62,7 +62,7 @@ class CmdRegMcam():
             # bit 45 is bit 13 in 2nd DWORD.
             # due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order
             # so we actually access the 3rd DWORD (index 2)
-            pci_rescan_required_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3-1], 13, 1)
+            pci_rescan_required_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3 - 1], 13, 1)
         return True if pci_rescan_required_sup == 1 else False
 
     def is_reset_by_fw_driver_sync_supported(self):
@@ -77,16 +77,16 @@ class CmdRegMcam():
             # bit 19 in 1st DWORD.
             # due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order
             # so we actually access the 4th DWORD (index 3)
-            pci_sync_for_fw_update_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3-0], 19, 1)
+            pci_sync_for_fw_update_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3 - 0], 19, 1)
         return True if pci_sync_for_fw_update_sup == 1 else False
 
-    def reset_sync_query_text(self):
+    def reset_sync_query_text(self, tool_owner_support):
         result = ""
         result += "Reset-sync (relevant only for reset-level 3):\n"
-        result += "{0}: {1:<62}-{2:<14}{3}\n".format(0, "Tool is the owner", "Supported", "(default)")
+        result += "{0}: {1:<62}-{2:<14}{3}\n".format(0, "Tool is the owner", "Supported" if tool_owner_support else "Not supported", "(default)" if tool_owner_support else "")
 
         is_supported = self.is_reset_by_fw_driver_sync_supported()
         supported_text = "Supported" if is_supported is True else "Not supported"
-        result += "{0}: {1:<62}-{2:<14}{3}\n".format(1, "Driver is the owner", supported_text, "")
+        result += "{0}: {1:<62}-{2:<14}{3}\n".format(1, "Driver is the owner", supported_text, "" if tool_owner_support else "(default)")
 
         return result
