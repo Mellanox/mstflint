@@ -2,7 +2,7 @@
 # Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
-# licenses.  You may choose to be licensed under the terms of the GNU
+# licenses.  You may choose to be licensed under the terms of the GNUf
 # General Public License (GPL) Version 2, available from the file
 # COPYING in the main directory of this source tree, or the
 # OpenIB.org BSD license below:
@@ -92,21 +92,21 @@ class SyncOwner():
 
 
 MLNX_DEVICES = [
+    dict(name="ConnectX3", devid=0x1f5),
     dict(name="ConnectX3Pro", devid=0x1f7),
     dict(name="ConnectIB", devid=0x1ff, status_config_not_done=(0xb0004, 31)),
     dict(name="ConnectX4", devid=0x209, status_config_not_done=(0xb0004, 31)),
     dict(name="ConnectX4LX", devid=0x20b, status_config_not_done=(0xb0004, 31)),
     dict(name="ConnectX5", devid=0x20d, status_config_not_done=(0xb5e04, 31)),
     dict(name="BlueField", devid=0x211, status_config_not_done=(0xb5e04, 31)),
-    dict(name="BlueField2", devid=0x214, status_config_not_done=(0xb5f04, 31)),
-    dict(name="BlueField3", devid=0x21c, status_config_not_done=(0xb5f04, 31)),
+    dict(name="BlueField2", devid=0x214, status_config_not_done=(0xb5f04, 31), allowed_sync_method=SyncOwner.DRIVER),
+    dict(name="BlueField3", devid=0x21c, status_config_not_done=(0xb5f04, 31), allowed_sync_method=SyncOwner.DRIVER),
     dict(name="BlueField4", devid=0x220, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX6", devid=0x20f, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX6DX", devid=0x212, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX7", devid=0x218, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX8", devid=0x21e, status_config_not_done=(0xb5f04, 31)),
-    dict(name="ConnectX3", devid=0x1f5),
     dict(name="Switch-IB", devid=0x247, status_config_not_done=(0x80010, 0)),
     dict(name="Switch-IB-2", devid=0x24b, status_config_not_done=(0x80010, 0)),
     dict(name="Quantum", devid=0x24d, status_config_not_done=(0x100010, 0)),
@@ -125,7 +125,7 @@ SUPP_SWITCH_DEVICES = ["Spectrum", "Spectrum-2", "Spectrum-3", "Spectrum-4",
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
 IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
-# TODO latter remove mcra to the new class
+# TODO later remove mcra to the new class
 MCRA = 'mcra'
 if IS_MSTFLINT:
     MCRA = "mstmcra"
@@ -219,6 +219,19 @@ class NoPciBridgeException(Exception):
     pass
 
 ######################################################################
+# Description:  Get device dictionary from MLNX_DEVICES
+######################################################################
+
+
+def getDeviceDict(devid):
+    logger.info('getDeviceDict() called. Inputs : devid = {0}'.format(devid))
+    for devDict in MLNX_DEVICES:
+        if devDict["devid"] == devid:
+            return devDict
+    else:
+        raise RuntimeError("Failed to Identify devid: %s" % (devid))
+
+######################################################################
 # Description:  is_fw_ready
 # OS Support :  Linux/FreeBSD/Windows.
 ######################################################################
@@ -232,9 +245,8 @@ def is_fw_ready(device):
 
         devid = getDevidFromDevice(device)
 
-        for mlnx_device in MLNX_DEVICES:
-            if mlnx_device['devid'] == devid:
-                address, offset = mlnx_device['status_config_not_done']
+        devDict = getDeviceDict(devid)
+        address, offset = devDict['status_config_not_done']
 
         status_config_not_done = mcraRead(device, address, offset, 1)
         return False if status_config_not_done == 1 else True
@@ -853,14 +865,14 @@ def isDevSupp(device):
     except Exception as e:
         raise RuntimeError("Failed to Identify Device: %s, %s" %
                            (device, str(e)))
-    for devDict in MLNX_DEVICES:
-        if devDict["devid"] == devid:
-            if devDict["name"] in SUPP_DEVICES:
-                return devid
-            else:
-                raise RuntimeError("Unsupported Device: %s (%s)" %
-                                   (device, devDict["name"]))
-    raise RuntimeError("Failed to Identify Device: %s" % (device))
+
+    devDict = getDeviceDict(devid)
+    if devDict["name"] in SUPP_DEVICES:
+        return devid
+    else:
+        raise RuntimeError("Unsupported Device: %s (%s)" %
+                           (device, devDict["name"]))
+
 ######################################################################
 # Description: Check if device is a switch
 # OS Support : Linux/Windows
@@ -868,16 +880,15 @@ def isDevSupp(device):
 
 
 def isSwitchDevice(device):
-    devid = 0
     try:
         devid = getDevidFromDevice(device)
         logger.debug('devid = {0:x}'.format(devid))
     except Exception as e:
-        return False
-    for devDict in MLNX_DEVICES:
-        if devDict["devid"] == devid:
-            if devDict["name"] in SUPP_SWITCH_DEVICES:
-                return True
+        raise RuntimeError("Failed to Identify Device: %s, %s" %
+                           (device, str(e)))
+    devDict = getDeviceDict(devid)
+    if devDict["name"] in SUPP_SWITCH_DEVICES:
+        return True
     return False
 
 ######################################################################
@@ -1685,12 +1696,6 @@ def reset_flow_host(device, args, command):
     global skipDriver
     global FWResetStatusChecker
 
-    if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
-            and args.reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
-        # and it's restricted on UEFI secure boot
-        raise RuntimeError(
-            "The tool supports only reset-level 4 on UEFI Secure Boot")
-
     # Exit in case of virtual-machine (not implemented for FreeBSD and Windows)
     if command == "reset" and platform.system() == "Linux" and "ppc64" not in platform.machine() and "xenenterprise" not in platform.platform():
         rc, out, _ = cmdExec('lscpu')
@@ -1716,6 +1721,13 @@ def reset_flow_host(device, args, command):
 
     # function takes ~330msec - TODO remove it if you need performace
     devid = isDevSupp(device)
+
+    reset_sync = args.reset_sync if args.reset_sync is not None else get_default_reset_sync(devid)
+    if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
+            and args.reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
+        # and it's restricted on UEFI secure boot
+        raise RuntimeError(
+            "The tool supports only reset-level 4 on UEFI Secure Boot")
 
     DevDBDF = mlxfwreset_utils.getDevDBDF(device, logger)
     logger.info('device domain:bus:dev.fn (DBDF) is {0}'.format(DevDBDF))
@@ -1744,12 +1756,12 @@ def reset_flow_host(device, args, command):
             raise RuntimeError("Cedar device is not supported")
 
     # Check if other process is accessing the device (burning the device)
-    # Supportted on Windows OS only
+    # Supported on Windows OS only
     if platform.system() == "Windows":
         from tools_sync import ToolsSync
         if ToolsSync(MstDevObj.mf).lock() == False:
             raise RuntimeError(
-                "Other tool is accessing the device! Please try again latter")
+                "Other tool is accessing the device! Please try again later")
 
     # Socket Direct - Create a list of command i/f for all "other" devices
     global CmdifObjsSD
@@ -1821,7 +1833,6 @@ def reset_flow_host(device, args, command):
             raise RuntimeError(
                 "Reset-level '{0}' is not supported with reset-type '{1}'".format(reset_level, reset_type))
 
-        reset_sync = args.reset_sync
         if reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
             raise RuntimeError(
                 "Synchronization by driver is not supported in the current state of this device")
@@ -1917,6 +1928,19 @@ def reset_flow_switch(device, args, command):
             print("-I- FW reset success.")
     return 0
 
+######################################################################
+# Description: Returns default reset sync
+######################################################################
+
+
+def get_default_reset_sync(devid):
+    devDict = getDeviceDict(devid)
+    reset_sync = SyncOwner.TOOL
+    if devDict.get('allowed_sync_method'):
+        reset_sync = devDict['allowed_sync_method']
+    return reset_sync
+
+######################################################################
 # Description: Main
 ######################################################################
 
@@ -1960,9 +1984,8 @@ def main():
     options_group.add_argument('--sync',
                                type=int,
                                choices=[SyncOwner.TOOL, SyncOwner.DRIVER],
-                               default=SyncOwner.TOOL,
                                dest='reset_sync',
-                               help=':  Run reset with the specified reset-sync')
+                               help=':  Run reset with the specified reset-sync. Sync 0 flow is not supported by BlueField2 and BlueField3 devices')
     options_group.add_argument('--yes',
                                '-y',
                                help=':  answer "yes" on prompt',
@@ -2034,7 +2057,8 @@ def main():
 
     device = args.device
     global device_global
-    device_global = args.device  # required for reset_fsm_register when exiting with ctrl+c/exception (latter think how to move the global)
+    # required for reset_fsm_register when exiting with ctrl+c/exception (later think how to move the global)
+    device_global = args.device
 
     command = args.command[0]
     if command in ["r", "reset"]:
@@ -2050,7 +2074,6 @@ def main():
     # Insert Flow here
     if isSwitchDevice(device):
         return reset_flow_switch(device, args, command)
-
     else:
         return reset_flow_host(device, args, command)
 
