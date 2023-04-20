@@ -197,33 +197,25 @@ bool FsCtrlOperations::FsIntQuery()
         return true;
     }
 
-    if (IsExtendedGuidNumSupported())
-    {
-        // TODO msb
-        _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.uid = fwQuery.base_mac.uid;
-        _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.num_allocated = fwQuery.base_mac.num_allocated;
-        _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.uid = fwQuery.base_mac_orig.uid;
-        _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.num_allocated =
-          fwQuery.base_mac_orig.num_allocated;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.uid = fwQuery.base_mac.uid;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.num_allocated = fwQuery.base_mac.num_allocated & 0xff;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.num_allocated_msb =
+      (fwQuery.base_mac.num_allocated >> 8) & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.uid = fwQuery.base_mac_orig.uid;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.num_allocated =
+      fwQuery.base_mac_orig.num_allocated & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.num_allocated_msb =
+      (fwQuery.base_mac_orig.num_allocated >> 8) & 0xff;
 
-        _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.uid = fwQuery.base_guid.uid;
-        _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.num_allocated = fwQuery.base_guid.num_allocated;
-        _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.uid = fwQuery.base_guid_orig.uid;
-        _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.num_allocated =
-          fwQuery.base_guid_orig.num_allocated;
-    }
-    else
-    {
-        _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.uid = fwQuery.base_mac.uid;
-        _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQuery.base_mac.num_allocated;
-        _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.uid = fwQuery.base_mac_orig.uid;
-        _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQuery.base_mac_orig.num_allocated;
-
-        _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.uid = fwQuery.base_guid.uid;
-        _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQuery.base_guid.num_allocated;
-        _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.uid = fwQuery.base_guid_orig.uid;
-        _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQuery.base_guid_orig.num_allocated;
-    }
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.uid = fwQuery.base_guid.uid;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.num_allocated = fwQuery.base_guid.num_allocated & 0xff;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.num_allocated_msb =
+      (fwQuery.base_guid.num_allocated >> 8) & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.uid = fwQuery.base_guid_orig.uid;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.num_allocated =
+      fwQuery.base_guid_orig.num_allocated & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.num_allocated_msb =
+      (fwQuery.base_guid_orig.num_allocated >> 8) & 0xff;
 
     _fwImgInfo.ext_info.pci_device_id = fwQuery.dev_id;
     _fwImgInfo.ext_info.dev_type = fwQuery.dev_id;

@@ -74,6 +74,7 @@
 
 #include "subcommands.h"
 #include "tools_layouts/cx4fw_layouts.h"
+#include "tools_layouts/image_layout_layouts.h"
 using namespace std;
 #ifndef NO_MSTARCHIVE
 using namespace mfa2;
@@ -2079,7 +2080,8 @@ bool BinaryCompareSubCommand::CompareFwOps(bool& res)
     res = false;
     std::vector<u_int8_t> deviceBuff;
     std::vector<u_int8_t> imgBuff;
-    if (!ReadFwOpsImageData(deviceBuff, imgBuff)) // This call initializes fwops objects with the image data before calling to PrepItocSectionsForCompare
+    if (!ReadFwOpsImageData(deviceBuff, imgBuff)) // This call initializes fwops objects with the image data before
+                                                  // calling to PrepItocSectionsForCompare
     {
         return false;
     }
@@ -3342,7 +3344,7 @@ FlintStatus BurnSubCommand::executeCommand()
         return FLINT_FAILED;
     }
     // set fw type
-    
+
     // updateBurnParams with input given by user
     updateBurnParams();
 
@@ -3612,19 +3614,22 @@ FlintStatus BurnSubCommand::burnMFA2LiveFish(dm_dev_id_t devid_t)
     {
         return FLINT_FAILED;
     }
-    struct cx4fw_uid_entry base_guid = {0, 0, 0};
-    struct cx4fw_uid_entry base_mac = {0, 0, 0};
+    struct image_layout_uid_entry base_guid = {0, 0, 0, 0};
+    struct image_layout_uid_entry base_mac = {0, 0, 0, 0};
+
     bool NeedToSetMacManually = true;
     if (_fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false)))
     {
         if (_devInfo.fs3_info.fs3_uids_info.valid_field == 1)
         {
-            base_guid.num_allocated = _devInfo.fs3_info.fs3_uids_info.cx4_uids.base_guid.num_allocated;
-            base_guid.step = _devInfo.fs3_info.fs3_uids_info.cx4_uids.base_guid.step;
-            base_guid.uid = _devInfo.fs3_info.fs3_uids_info.cx4_uids.base_guid.uid;
-            base_mac.num_allocated = _devInfo.fs3_info.fs3_uids_info.cx4_uids.base_mac.num_allocated;
-            base_mac.step = _devInfo.fs3_info.fs3_uids_info.cx4_uids.base_mac.step;
-            base_mac.uid = _devInfo.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid;
+            base_guid.num_allocated = _devInfo.fs3_info.fs3_uids_info.image_layout_uids.base_guid.num_allocated;
+            base_guid.num_allocated_msb = _devInfo.fs3_info.fs3_uids_info.image_layout_uids.base_guid.num_allocated_msb;
+            base_guid.step = _devInfo.fs3_info.fs3_uids_info.image_layout_uids.base_guid.step;
+            base_guid.uid = _devInfo.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid;
+            base_mac.num_allocated = _devInfo.fs3_info.fs3_uids_info.image_layout_uids.base_mac.num_allocated;
+            base_mac.num_allocated_msb = _devInfo.fs3_info.fs3_uids_info.image_layout_uids.base_mac.num_allocated_msb;
+            base_mac.step = _devInfo.fs3_info.fs3_uids_info.image_layout_uids.base_mac.step;
+            base_mac.uid = _devInfo.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid;
             NeedToSetMacManually = false;
         }
     }
@@ -4059,22 +4064,12 @@ static inline void
 
     PRINT_FS4_OR_NEWER_UID(uid, prefix.c_str(), printStep, isGuid);
     if (uid.uid != orig_uid.uid || uid.num_allocated != orig_uid.num_allocated ||
-        (printStep && uid.step != orig_uid.step))
+        uid.num_allocated_msb != orig_uid.num_allocated_msb || (printStep && uid.step != orig_uid.step))
     {
         // Print MFG UIDs as well
         prefix = "Orig " + prefix;
         PRINT_FS4_OR_NEWER_UID(orig_uid, prefix.c_str(), printStep, isGuid);
     }
-}
-
-bool QuerySubCommand::displayFs4Uids(const fw_info_t& fwInfo)
-{
-    printf("Description:           UID                GuidsNumber\n");
-    printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.image_layout_uids.base_guid,
-                        fwInfo.fs3_info.orig_fs3_uids_info.image_layout_uids.base_guid, "GUID", false);
-    printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.image_layout_uids.base_mac,
-                        fwInfo.fs3_info.orig_fs3_uids_info.image_layout_uids.base_mac, "MAC", false);
-    return true;
 }
 
 bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
@@ -4083,10 +4078,10 @@ bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
     {
         // new GUIDs format
         printf("Description:           UID                GuidsNumber\n");
-        printFs3OrNewerUids(fwInfo.fs3_info.fs3_uids_info.cx4_uids.base_guid,
-                            fwInfo.fs3_info.orig_fs3_uids_info.cx4_uids.base_guid, "GUID", false);
-        printFs3OrNewerUids(fwInfo.fs3_info.fs3_uids_info.cx4_uids.base_mac,
-                            fwInfo.fs3_info.orig_fs3_uids_info.cx4_uids.base_mac, "MAC", false);
+        printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.image_layout_uids.base_guid,
+                            fwInfo.fs3_info.orig_fs3_uids_info.image_layout_uids.base_guid, "GUID", false);
+        printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.image_layout_uids.base_mac,
+                            fwInfo.fs3_info.orig_fs3_uids_info.image_layout_uids.base_mac, "MAC", false);
     }
     else
     {
@@ -4381,20 +4376,10 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 
     if (!isFs2)
     {
-        if (ops->IsExtendedGuidNumSupported())
+        /*i.e its fs3/fs4*/
+        if (!displayFs3Uids(fwInfo))
         {
-            if (!displayFs4Uids(fwInfo))
-            {
-                return FLINT_FAILED;
-            }
-        }
-        else
-        {
-            /*i.e its fs3/fs4*/
-            if (!displayFs3Uids(fwInfo))
-            {
-                return FLINT_FAILED;
-            }
+            return FLINT_FAILED;
         }
     }
     else

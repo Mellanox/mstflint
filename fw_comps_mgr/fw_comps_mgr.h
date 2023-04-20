@@ -91,7 +91,7 @@ typedef f_prog_func_adv_st ProgressCallBackAdvSt;
 
 struct uid_entry
 {
-    u_int8_t num_allocated;
+    u_int16_t num_allocated;
     u_int64_t uid;
 };
 

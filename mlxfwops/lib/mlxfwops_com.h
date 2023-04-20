@@ -414,11 +414,11 @@ typedef struct
 
 typedef struct uids
 {
-    int valid_field; // 0: cib_uids , 1: cx4_uids
+    int valid_field; // 0: cib_uids , 1: image_layout_uids
     union
     {
         cib_uids_t cib_uids;
-        cx4_uids_t cx4_uids;
+        cx4_uids_t cx4_uids; // keeping this member for neohost
         image_layout_uids_t image_layout_uids;
     };
 } uids_t;

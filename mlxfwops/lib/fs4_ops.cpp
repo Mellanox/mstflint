@@ -1816,8 +1816,8 @@ bool Fs4Operations::CreateDtoc(vector<u_int8_t>& img,
 bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img,
                                   char* psid,
                                   dm_dev_id_t devid_t,
-                                  const cx4fw_uid_entry& base_guid,
-                                  const cx4fw_uid_entry& base_mac)
+                                  const image_layout_uid_entry& base_guid,
+                                  const image_layout_uid_entry& base_mac)
 {
     /*DTOC HEADER*/
 
@@ -1906,9 +1906,11 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img,
     dev_info.vsd_vendor_id = 0x15b3;
 
     dev_info.guids.guids.num_allocated = base_guid.num_allocated;
+    dev_info.guids.guids.num_allocated_msb = base_guid.num_allocated_msb;
     dev_info.guids.guids.step = base_guid.step;
     dev_info.guids.guids.uid = base_guid.uid;
     dev_info.guids.macs.num_allocated = base_mac.num_allocated;
+    dev_info.guids.macs.num_allocated_msb = base_mac.num_allocated_msb;
     dev_info.guids.macs.step = base_mac.step;
     dev_info.guids.macs.uid = base_mac.uid;
 
