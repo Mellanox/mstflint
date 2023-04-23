@@ -1,22 +1,41 @@
 
-/*                  - Mellanox Confidential and Proprietary -
+/* Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
- *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- *  Except as specifically permitted herein, no portion of the information,
- *  including but not limited to object code and source code, may be reproduced,
- *  modified, distributed, republished or otherwise exploited in any form or by
- *  any means for any purpose without the prior written permission of Mellanox
- *  Technologies Ltd. Use of software subject to the terms and conditions
- *  detailed in the file "LICENSE.txt".
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
  *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
+
  
 
 /***
-         *** This file was generated at "2023-01-09 15:12:36"
+         *** This file was generated at "2023-03-30 13:00:27"
          *** by:
-         ***    > /.autodirect/swgwork/astrutsovsky/work/4Dan/a-me_dev/adabe_plugins/adb2c/adb2pack.py --input adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils
+         ***    > /swgwork/hkarni/workspace/bug_fix_a-me/adabe_plugins/adb2c/adb2pack.py --input adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils
          ***/
 #include "icmd_hca_layouts.h"
 
@@ -55,6 +74,137 @@ void icmd_hca_counter_id_dump(const struct icmd_hca_counter_id *ptr_struct, FILE
 	icmd_hca_counter_id_print(ptr_struct, fd, 0);
 }
 
+void icmd_hca_diagnostic_cntr_layout_pack(const struct icmd_hca_diagnostic_cntr_layout *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->counter_id);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->sync);
+}
+
+void icmd_hca_diagnostic_cntr_layout_unpack(struct icmd_hca_diagnostic_cntr_layout *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	ptr_struct->counter_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 0;
+	ptr_struct->sync = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+}
+
+void icmd_hca_diagnostic_cntr_layout_print(const struct icmd_hca_diagnostic_cntr_layout *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== icmd_hca_diagnostic_cntr_layout ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "counter_id           : " UH_FMT "\n", ptr_struct->counter_id);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "sync                 : " UH_FMT "\n", ptr_struct->sync);
+}
+
+unsigned int icmd_hca_diagnostic_cntr_layout_size(void)
+{
+	return ICMD_HCA_DIAGNOSTIC_CNTR_LAYOUT_SIZE;
+}
+
+void icmd_hca_diagnostic_cntr_layout_dump(const struct icmd_hca_diagnostic_cntr_layout *ptr_struct, FILE *fd)
+{
+	icmd_hca_diagnostic_cntr_layout_print(ptr_struct, fd, 0);
+}
+
+void icmd_hca_diagnostic_params_context_pack(const struct icmd_hca_diagnostic_params_context *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 24;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->log_num_of_samples);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_of_counters);
+	offset = 56;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->log_sample_period);
+	offset = 38;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->tracer_dump);
+	offset = 37;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->enable);
+	offset = 36;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->on_demand);
+	offset = 35;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->clear);
+	offset = 34;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->sync);
+	offset = 33;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->repetitive);
+	offset = 32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->single);
+}
+
+void icmd_hca_diagnostic_params_context_unpack(struct icmd_hca_diagnostic_params_context *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 24;
+	ptr_struct->log_num_of_samples = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 0;
+	ptr_struct->num_of_counters = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 56;
+	ptr_struct->log_sample_period = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 38;
+	ptr_struct->tracer_dump = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 37;
+	ptr_struct->enable = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 36;
+	ptr_struct->on_demand = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 35;
+	ptr_struct->clear = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 34;
+	ptr_struct->sync = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 33;
+	ptr_struct->repetitive = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 32;
+	ptr_struct->single = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+}
+
+void icmd_hca_diagnostic_params_context_print(const struct icmd_hca_diagnostic_params_context *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== icmd_hca_diagnostic_params_context ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "log_num_of_samples   : " UH_FMT "\n", ptr_struct->log_num_of_samples);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "num_of_counters      : " UH_FMT "\n", ptr_struct->num_of_counters);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "log_sample_period    : " UH_FMT "\n", ptr_struct->log_sample_period);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "tracer_dump          : " UH_FMT "\n", ptr_struct->tracer_dump);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "enable               : %s (" UH_FMT ")\n", (ptr_struct->enable == 1 ? ("Enable") : ((ptr_struct->enable == 0 ? ("Disable") : ("unknown")))), ptr_struct->enable);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "on_demand            : " UH_FMT "\n", ptr_struct->on_demand);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "clear                : " UH_FMT "\n", ptr_struct->clear);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "sync                 : " UH_FMT "\n", ptr_struct->sync);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "repetitive           : " UH_FMT "\n", ptr_struct->repetitive);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "single               : " UH_FMT "\n", ptr_struct->single);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "unlimited array subnode: (counter_id)\n");
+}
+
+unsigned int icmd_hca_diagnostic_params_context_size(void)
+{
+	return ICMD_HCA_DIAGNOSTIC_PARAMS_CONTEXT_SIZE;
+}
+
+void icmd_hca_diagnostic_params_context_dump(const struct icmd_hca_diagnostic_params_context *ptr_struct, FILE *fd)
+{
+	icmd_hca_diagnostic_params_context_print(ptr_struct, fd, 0);
+}
 
 void icmd_hca_debug_cap_pack(const struct icmd_hca_debug_cap *ptr_struct, u_int8_t *ptr_buff)
 {
@@ -491,6 +641,129 @@ void icmd_hca_icmd_query_cap_in_dump(const struct icmd_hca_icmd_query_cap_in *pt
 	icmd_hca_icmd_query_cap_in_print(ptr_struct, fd, 0);
 }
 
+void icmd_hca_icmd_query_diagnostic_cntrs_in_pack(const struct icmd_hca_icmd_query_diagnostic_cntrs_in *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 80;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->sample_index);
+	offset = 64;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_of_samples);
+}
+
+void icmd_hca_icmd_query_diagnostic_cntrs_in_unpack(struct icmd_hca_icmd_query_diagnostic_cntrs_in *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 80;
+	ptr_struct->sample_index = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 64;
+	ptr_struct->num_of_samples = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+}
+
+void icmd_hca_icmd_query_diagnostic_cntrs_in_print(const struct icmd_hca_icmd_query_diagnostic_cntrs_in *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== icmd_hca_icmd_query_diagnostic_cntrs_in ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "sample_index         : " UH_FMT "\n", ptr_struct->sample_index);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "num_of_samples       : " UH_FMT "\n", ptr_struct->num_of_samples);
+}
+
+unsigned int icmd_hca_icmd_query_diagnostic_cntrs_in_size(void)
+{
+	return ICMD_HCA_ICMD_QUERY_DIAGNOSTIC_CNTRS_IN_SIZE;
+}
+
+void icmd_hca_icmd_query_diagnostic_cntrs_in_dump(const struct icmd_hca_icmd_query_diagnostic_cntrs_in *ptr_struct, FILE *fd)
+{
+	icmd_hca_icmd_query_diagnostic_cntrs_in_print(ptr_struct, fd, 0);
+}
+
+void icmd_hca_icmd_query_diagnostic_params_out_pack(const struct icmd_hca_icmd_query_diagnostic_params_out *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 64;
+	icmd_hca_diagnostic_params_context_pack(&(ptr_struct->diagnostic_params_context), ptr_buff + offset / 8);
+}
+
+void icmd_hca_icmd_query_diagnostic_params_out_unpack(struct icmd_hca_icmd_query_diagnostic_params_out *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 64;
+	icmd_hca_diagnostic_params_context_unpack(&(ptr_struct->diagnostic_params_context), ptr_buff + offset / 8);
+}
+
+void icmd_hca_icmd_query_diagnostic_params_out_print(const struct icmd_hca_icmd_query_diagnostic_params_out *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== icmd_hca_icmd_query_diagnostic_params_out ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "diagnostic_params_context:\n");
+	icmd_hca_diagnostic_params_context_print(&(ptr_struct->diagnostic_params_context), fd, indent_level + 1);
+}
+
+unsigned int icmd_hca_icmd_query_diagnostic_params_out_size(void)
+{
+	return ICMD_HCA_ICMD_QUERY_DIAGNOSTIC_PARAMS_OUT_SIZE;
+}
+
+void icmd_hca_icmd_query_diagnostic_params_out_dump(const struct icmd_hca_icmd_query_diagnostic_params_out *ptr_struct, FILE *fd)
+{
+	icmd_hca_icmd_query_diagnostic_params_out_print(ptr_struct, fd, 0);
+}
+
+void icmd_hca_icmd_set_diagnostic_params_in_pack(const struct icmd_hca_icmd_set_diagnostic_params_in *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 64;
+	icmd_hca_diagnostic_params_context_pack(&(ptr_struct->diagnostic_params_context), ptr_buff + offset / 8);
+}
+
+void icmd_hca_icmd_set_diagnostic_params_in_unpack(struct icmd_hca_icmd_set_diagnostic_params_in *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 64;
+	icmd_hca_diagnostic_params_context_unpack(&(ptr_struct->diagnostic_params_context), ptr_buff + offset / 8);
+}
+
+void icmd_hca_icmd_set_diagnostic_params_in_print(const struct icmd_hca_icmd_set_diagnostic_params_in *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== icmd_hca_icmd_set_diagnostic_params_in ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "diagnostic_params_context:\n");
+	icmd_hca_diagnostic_params_context_print(&(ptr_struct->diagnostic_params_context), fd, indent_level + 1);
+}
+
+unsigned int icmd_hca_icmd_set_diagnostic_params_in_size(void)
+{
+	return ICMD_HCA_ICMD_SET_DIAGNOSTIC_PARAMS_IN_SIZE;
+}
+
+void icmd_hca_icmd_set_diagnostic_params_in_dump(const struct icmd_hca_icmd_set_diagnostic_params_in *ptr_struct, FILE *fd)
+{
+	icmd_hca_icmd_set_diagnostic_params_in_print(ptr_struct, fd, 0);
+}
+
+void icmd_hca_icmd_hca_Nodes_pack(const union icmd_hca_icmd_hca_Nodes *ptr_struct, u_int8_t *ptr_buff)
+{
+	icmd_hca_debug_cap_pack(&(ptr_struct->debug_cap), ptr_buff);
+}
+
+void icmd_hca_icmd_hca_Nodes_unpack(union icmd_hca_icmd_hca_Nodes *ptr_struct, const u_int8_t *ptr_buff)
+{
+	icmd_hca_debug_cap_unpack(&(ptr_struct->debug_cap), ptr_buff);
+}
+
 void icmd_hca_icmd_hca_Nodes_print(const union icmd_hca_icmd_hca_Nodes *ptr_struct, FILE *fd, int indent_level)
 {
 	adb2c_add_indentation(fd, indent_level);
@@ -500,14 +773,21 @@ void icmd_hca_icmd_hca_Nodes_print(const union icmd_hca_icmd_hca_Nodes *ptr_stru
 	fprintf(fd, "icmd_query_cap_general:\n");
 	icmd_hca_icmd_query_cap_general_print(&(ptr_struct->icmd_query_cap_general), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "icmd_set_diagnostic_params_in:\n");
+	icmd_hca_icmd_set_diagnostic_params_in_print(&(ptr_struct->icmd_set_diagnostic_params_in), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "icmd_query_cap_in:\n");
 	icmd_hca_icmd_query_cap_in_print(&(ptr_struct->icmd_query_cap_in), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-
+	fprintf(fd, "icmd_query_diagnostic_params_out:\n");
+	icmd_hca_icmd_query_diagnostic_params_out_print(&(ptr_struct->icmd_query_diagnostic_params_out), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "debug_cap:\n");
 	icmd_hca_debug_cap_print(&(ptr_struct->debug_cap), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-
+	fprintf(fd, "icmd_query_diagnostic_cntrs_in:\n");
+	icmd_hca_icmd_query_diagnostic_cntrs_in_print(&(ptr_struct->icmd_query_diagnostic_cntrs_in), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "icmd_mh_sync_out:\n");
 	icmd_hca_icmd_mh_sync_out_print(&(ptr_struct->icmd_mh_sync_out), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);

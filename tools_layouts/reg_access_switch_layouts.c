@@ -1,22 +1,41 @@
 
-/*                  - Mellanox Confidential and Proprietary -
+/* Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
- *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- *  Except as specifically permitted herein, no portion of the information,
- *  including but not limited to object code and source code, may be reproduced,
- *  modified, distributed, republished or otherwise exploited in any form or by
- *  any means for any purpose without the prior written permission of Mellanox
- *  Technologies Ltd. Use of software subject to the terms and conditions
- *  detailed in the file "LICENSE.txt".
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
  *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
+
  
 
 /***
-         *** This file was generated at "2022-12-20 15:08:46"
+         *** This file was generated at "2023-04-03 16:03:49"
          *** by:
-         ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
+         ***    > /auto/mswg/release/tools/a-me/a-me-1.2.2/a-me-1.2.2-24/adabe_plugins/adb2c/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
          ***/
 #include "reg_access_switch_layouts.h"
 
@@ -414,12 +433,12 @@ void reg_access_switch_slot_name_ext_dump(const struct reg_access_switch_slot_na
 
 void reg_access_switch_mddq_data_auto_ext_pack(const union reg_access_switch_mddq_data_auto_ext *ptr_struct, u_int8_t *ptr_buff)
 {
-	reg_access_switch_slot_info_ext_pack(&(ptr_struct->slot_info_ext), ptr_buff);
+	reg_access_switch_slot_name_ext_pack(&(ptr_struct->slot_name_ext), ptr_buff);
 }
 
 void reg_access_switch_mddq_data_auto_ext_unpack(union reg_access_switch_mddq_data_auto_ext *ptr_struct, const u_int8_t *ptr_buff)
 {
-	reg_access_switch_slot_info_ext_unpack(&(ptr_struct->slot_info_ext), ptr_buff);
+	reg_access_switch_slot_name_ext_unpack(&(ptr_struct->slot_name_ext), ptr_buff);
 }
 
 void reg_access_switch_mddq_data_auto_ext_print(const union reg_access_switch_mddq_data_auto_ext *ptr_struct, FILE *fd, int indent_level)
@@ -450,12 +469,12 @@ void reg_access_switch_mddq_data_auto_ext_dump(const union reg_access_switch_mdd
 
 void reg_access_switch_mddt_reg_payload_auto_ext_pack(const union reg_access_switch_mddt_reg_payload_auto_ext *ptr_struct, u_int8_t *ptr_buff)
 {
-	reg_access_switch_prm_register_payload_ext_pack(&(ptr_struct->prm_register_payload_ext), ptr_buff);
+	reg_access_switch_crspace_access_payload_ext_pack(&(ptr_struct->crspace_access_payload_ext), ptr_buff);
 }
 
 void reg_access_switch_mddt_reg_payload_auto_ext_unpack(union reg_access_switch_mddt_reg_payload_auto_ext *ptr_struct, const u_int8_t *ptr_buff)
 {
-	reg_access_switch_prm_register_payload_ext_unpack(&(ptr_struct->prm_register_payload_ext), ptr_buff);
+	reg_access_switch_crspace_access_payload_ext_unpack(&(ptr_struct->crspace_access_payload_ext), ptr_buff);
 }
 
 void reg_access_switch_mddt_reg_payload_auto_ext_print(const union reg_access_switch_mddt_reg_payload_auto_ext *ptr_struct, FILE *fd, int indent_level)
