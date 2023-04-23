@@ -1,22 +1,41 @@
 
-/*                  - Mellanox Confidential and Proprietary -
+/* Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
- *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- *  Except as specifically permitted herein, no portion of the information,
- *  including but not limited to object code and source code, may be reproduced,
- *  modified, distributed, republished or otherwise exploited in any form or by
- *  any means for any purpose without the prior written permission of Mellanox
- *  Technologies Ltd. Use of software subject to the terms and conditions
- *  detailed in the file "LICENSE.txt".
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
  *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
+
  
 
 /***
-         *** This file was generated at "2023-01-09 15:12:36"
+         *** This file was generated at "2023-03-30 13:00:27"
          *** by:
-         ***    > /.autodirect/swgwork/astrutsovsky/work/4Dan/a-me_dev/adabe_plugins/adb2c/adb2pack.py --input adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils
+         ***    > /swgwork/hkarni/workspace/bug_fix_a-me/adabe_plugins/adb2c/adb2pack.py --input adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils
          ***/
 #ifndef ICMD_HCA_LAYOUTS_H
 #define ICMD_HCA_LAYOUTS_H
@@ -48,7 +67,53 @@ struct icmd_hca_diagnostic_cntr_layout {
 	u_int8_t sync;
 };
 
-
+/* Description -   */
+/* Size in bytes - 24 */
+struct icmd_hca_diagnostic_params_context {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - The number of samples to store on the device's sampling buffer is 2^ log_number_of_samples. Range is 1   floor(DIAG_CNT_CAP. log_max_samples_mul_counters /DIAG_CNT_SET. num_of_counters)
+Note that modifying this field will cause resetting the sampling buffer.
+ */
+	/* 0x0.0 - 0x0.7 */
+	u_int8_t log_num_of_samples;
+	/* Description - Number of valid counters to be captured in the list below. */
+	/* 0x0.16 - 0x0.31 */
+	u_int16_t num_of_counters;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - The sample_period is 2^ log_sample_period in device clocks. Range is diagnostic Capabilities Layout.Min_sample_period   35 (85 sec in 400 MHz clock) */
+	/* 0x4.0 - 0x4.7 */
+	u_int8_t log_sample_period;
+	/* Description - If set, the diagnostic counter report will be logged in the tracer buffer. */
+	/* 0x4.25 - 0x4.25 */
+	u_int8_t tracer_dump;
+	/* Description - 0x1: Enable - enables diagnostic counting.
+0x0: Disable - disables diagnostic counting. */
+	/* 0x4.26 - 0x4.26 */
+	u_int8_t enable;
+	/* Description - If set, the device does not collect samples. Upon QUERY_DIAGNOSTIC command, the device will fetch current sample. "on demand" mode is mutually exclusive with "repetitive", "clear" and "sync" modes and cannot be set together */
+	/* 0x4.27 - 0x4.27 */
+	u_int8_t on_demand;
+	/* Description - Clear counters at the beginning of each period. Valid only for Synched Start Diagnostic Counters, only when sync is set to '1'.
+Clear is mutually exclusive with "on demand". */
+	/* 0x4.28 - 0x4.28 */
+	u_int8_t clear;
+	/* Description - Use Synched Start counting on Diagnostics Counters that support sync operation. 
+Sync is mutually exclusive with "on demand". */
+	/* 0x4.29 - 0x4.29 */
+	u_int8_t sync;
+	/* Description - Repetitive sampling mode. Available only when HCA-CAP.repetitive is '1'
+Mutually exclusive with "single" mode and on_demand mode. */
+	/* 0x4.30 - 0x4.30 */
+	u_int8_t repetitive;
+	/* Description - Single sampling mode. Available only when HCA_CAP.single is '1'.
+Mutually exclusive with "repetitive" mode. */
+	/* 0x4.31 - 0x4.31 */
+	u_int8_t single;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - Counter ids to capture. */
+	/* 0x18.0 - 0x18.31 */
+	struct icmd_hca_counter_id *counter_id;
+};
 
 /* Description -   */
 /* Size in bytes - 64 */
@@ -61,12 +126,12 @@ struct icmd_hca_debug_cap {
 	/* 0x0.16 - 0x0.20 */
 	u_int8_t log_min_resource_dump_eq;
 	/* Description - If set, Resource_dump register is supported.
-See Table 1224, "RESOURCE_DUMP Register Layout," on page 1585 */
+See Table 1252, "RESOURCE_DUMP Register Layout," on page 1576 */
 	/* 0x0.22 - 0x0.22 */
 	u_int8_t resource_dump;
 	/* Description - Log(base 2) of the size in granularity of 4KB to be allocated by host in order to accommodate cr_dump.
 0 means feature is not supported.
-See Table 1222, "CORE_DUMP Register Layout," on page 1583 */
+See Table 1250, "CORE_DUMP Register Layout," on page 1574 */
 	/* 0x0.23 - 0x0.27 */
 	u_int8_t log_cr_dump_to_mem_size;
 	/* Description - If set, Core dump of type of specific QP is supported.
@@ -161,7 +226,7 @@ struct icmd_hca_icmd_query_cap_general {
 	/* 0x0.13 - 0x0.13 */
 	u_int8_t nic_cap_reg;
 	/* Description - If set, port_state_behavior register is supported.
-See Section 28.17, "PORT_STATE_BEHAVIOR Register", on page 1596 */
+See Section 25.2.27, "PORT_STATE_BEHAVIOR Register", on page 1587 */
 	/* 0x0.14 - 0x0.14 */
 	u_int8_t port_state_behavior;
 	/* Description - When set, virtual node GUID can be set/queried using ICMD_SET/QUERY_VIRTUAL_MAC */
@@ -170,10 +235,10 @@ See Section 28.17, "PORT_STATE_BEHAVIOR Register", on page 1596 */
 	/* Description - If set, NCFG register is supported. */
 	/* 0x0.16 - 0x0.16 */
 	u_int8_t ncfg_reg;
-	/* Description - If set, CWCAM register is supported. Table 1774, "CWCAM - Congestion WRED Capabilities Mask Register Layout," on page 2180 */
+	/* Description - If set, CWCAM register is supported. Table 1800, "CWCAM - Congestion WRED Capabilities Mask Register Layout," on page 2209 */
 	/* 0x0.17 - 0x0.17 */
 	u_int8_t cwcam_reg;
-	/* Description - If set, SBCAM register is supported. See Table 1832, "SBCAM - Shared Buffer Capabilities Mask Register Layout," on page 2227 */
+	/* Description - If set, SBCAM register is supported. See Table 1858, "SBCAM - Shared Buffer Capabilities Mask Register Layout," on page 2255 */
 	/* 0x0.18 - 0x0.18 */
 	u_int8_t sbcam_reg;
 	/* Description - When set, the command supports capability groups in addition to the General Capability group */
@@ -188,16 +253,16 @@ See Section 28.17, "PORT_STATE_BEHAVIOR Register", on page 1596 */
 	/* Description - If set, CAPI is supported. */
 	/* 0x0.24 - 0x0.24 */
 	u_int8_t capi;
-	/* Description - If set, QCAM register is supported. Table  1044, "QCAM - QoS Capabilities Mask Register Layout," on page  1358. */
+	/* Description - If set, QCAM register is supported. Table  1068, "QCAM - QoS Capabilities Mask Register Layout," on page  1346. */
 	/* 0x0.25 - 0x0.25 */
 	u_int8_t qcam_reg;
-	/* Description - If set, MCAM register is supported. Table  2023, "MCAM - Management Capabilities Mask Register Layout," on page  2386. */
+	/* Description - If set, MCAM register is supported. Table  2055, "MCAM - Management Capabilities Mask Register Layout," on page  2418. */
 	/* 0x0.26 - 0x0.26 */
 	u_int8_t mcam_reg;
-	/* Description - If set, PCAM register is supported. Table  1279, "PCAM - Ports Capabilities Mask Register Layout," on page  1632 */
+	/* Description - If set, PCAM register is supported. Table  1303, "PCAM - Ports Capabilities Mask Register Layout," on page  1620 */
 	/* 0x0.27 - 0x0.27 */
 	u_int8_t pcam_reg;
-	/* Description - When set, multi-host synchronization through the device is supported. Section  30.4.3, "ICMD_MH_SYNC - Multi-Host Synchronization," on page  3318. */
+	/* Description - When set, multi-host synchronization through the device is supported. Section  27.4.3, "ICMD_MH_SYNC - Multi-Host Synchronization," on page  3380. */
 	/* 0x0.28 - 0x0.28 */
 	u_int8_t mh_sync;
 	/* Description - If set, ICMD_ACCESS_REGISTER supports every register. (in the past it supported some of them). */
@@ -261,9 +326,39 @@ other values are reserved. */
 	u_int16_t capability_group;
 };
 
+/* Description -   */
+/* Size in bytes - 16 */
+struct icmd_hca_icmd_query_diagnostic_cntrs_in {
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - The sample_index is the first sample index. The sample index shall be in the range of 0    2^HCA_CAP.log_number_of_samples. See Section 26.3.4.10, "Debug Capabilities", on page 2682. */
+	/* 0x8.0 - 0x8.15 */
+	u_int16_t sample_index;
+	/* Description - The number of samples to return. 
+Device might return up to the configured value HCA_CAP.log_number_of_samples. (See Section 26.3.4.10, "Debug Capabilities", on page 2682).
+Note that the device can perform roll over when reaching number_of_samples. For example: if the user asks for 256 samples starting from index 128, the result will be: 128,   ,255,0,   ,127. */
+	/* 0x8.16 - 0x8.31 */
+	u_int16_t num_of_samples;
+};
 
+/* Description -   */
+/* Size in bytes - 36 */
+struct icmd_hca_icmd_query_diagnostic_params_out {
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Diagnostic parameters context.
+Table  3432, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  3290 */
+	/* 0x8.0 - 0x20.31 */
+	struct icmd_hca_diagnostic_params_context diagnostic_params_context;
+};
 
-
+/* Description -   */
+/* Size in bytes - 36 */
+struct icmd_hca_icmd_set_diagnostic_params_in {
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Diagnostic parameters context.
+Table  3432, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  3290 */
+	/* 0x8.0 - 0x20.31 */
+	struct icmd_hca_diagnostic_params_context diagnostic_params_context;
+};
 
 /* Description -   */
 /* Size in bytes - 68 */
@@ -273,15 +368,20 @@ union icmd_hca_icmd_hca_Nodes {
 	/* 0x0.0 - 0x4.31 */
 	struct icmd_hca_icmd_query_cap_general icmd_query_cap_general;
 	/* Description -  */
-
+	/* 0x0.0 - 0x20.31 */
+	struct icmd_hca_icmd_set_diagnostic_params_in icmd_set_diagnostic_params_in;
 	/* Description -  */
 	/* 0x0.0 - 0x0.31 */
 	struct icmd_hca_icmd_query_cap_in icmd_query_cap_in;
-
+	/* Description -  */
+	/* 0x0.0 - 0x20.31 */
+	struct icmd_hca_icmd_query_diagnostic_params_out icmd_query_diagnostic_params_out;
 	/* Description -  */
 	/* 0x0.0 - 0x40.31 */
 	struct icmd_hca_debug_cap debug_cap;
-
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	struct icmd_hca_icmd_query_diagnostic_cntrs_in icmd_query_diagnostic_cntrs_in;
 	/* Description -  */
 	/* 0x0.0 - 0x8.31 */
 	struct icmd_hca_icmd_mh_sync_out icmd_mh_sync_out;
@@ -306,6 +406,13 @@ void icmd_hca_diagnostic_cntr_layout_print(const struct icmd_hca_diagnostic_cntr
 unsigned int icmd_hca_diagnostic_cntr_layout_size(void);
 #define ICMD_HCA_DIAGNOSTIC_CNTR_LAYOUT_SIZE    (0x4)
 void icmd_hca_diagnostic_cntr_layout_dump(const struct icmd_hca_diagnostic_cntr_layout *ptr_struct, FILE *fd);
+/* diagnostic_params_context */
+void icmd_hca_diagnostic_params_context_pack(const struct icmd_hca_diagnostic_params_context *ptr_struct, u_int8_t *ptr_buff);
+void icmd_hca_diagnostic_params_context_unpack(struct icmd_hca_diagnostic_params_context *ptr_struct, const u_int8_t *ptr_buff);
+void icmd_hca_diagnostic_params_context_print(const struct icmd_hca_diagnostic_params_context *ptr_struct, FILE *fd, int indent_level);
+unsigned int icmd_hca_diagnostic_params_context_size(void);
+#define ICMD_HCA_DIAGNOSTIC_PARAMS_CONTEXT_SIZE    (0x18)
+void icmd_hca_diagnostic_params_context_dump(const struct icmd_hca_diagnostic_params_context *ptr_struct, FILE *fd);
 /* debug_cap */
 void icmd_hca_debug_cap_pack(const struct icmd_hca_debug_cap *ptr_struct, u_int8_t *ptr_buff);
 void icmd_hca_debug_cap_unpack(struct icmd_hca_debug_cap *ptr_struct, const u_int8_t *ptr_buff);
@@ -341,6 +448,27 @@ void icmd_hca_icmd_query_cap_in_print(const struct icmd_hca_icmd_query_cap_in *p
 unsigned int icmd_hca_icmd_query_cap_in_size(void);
 #define ICMD_HCA_ICMD_QUERY_CAP_IN_SIZE    (0x4)
 void icmd_hca_icmd_query_cap_in_dump(const struct icmd_hca_icmd_query_cap_in *ptr_struct, FILE *fd);
+/* icmd_query_diagnostic_cntrs_in */
+void icmd_hca_icmd_query_diagnostic_cntrs_in_pack(const struct icmd_hca_icmd_query_diagnostic_cntrs_in *ptr_struct, u_int8_t *ptr_buff);
+void icmd_hca_icmd_query_diagnostic_cntrs_in_unpack(struct icmd_hca_icmd_query_diagnostic_cntrs_in *ptr_struct, const u_int8_t *ptr_buff);
+void icmd_hca_icmd_query_diagnostic_cntrs_in_print(const struct icmd_hca_icmd_query_diagnostic_cntrs_in *ptr_struct, FILE *fd, int indent_level);
+unsigned int icmd_hca_icmd_query_diagnostic_cntrs_in_size(void);
+#define ICMD_HCA_ICMD_QUERY_DIAGNOSTIC_CNTRS_IN_SIZE    (0x10)
+void icmd_hca_icmd_query_diagnostic_cntrs_in_dump(const struct icmd_hca_icmd_query_diagnostic_cntrs_in *ptr_struct, FILE *fd);
+/* icmd_query_diagnostic_params_out */
+void icmd_hca_icmd_query_diagnostic_params_out_pack(const struct icmd_hca_icmd_query_diagnostic_params_out *ptr_struct, u_int8_t *ptr_buff);
+void icmd_hca_icmd_query_diagnostic_params_out_unpack(struct icmd_hca_icmd_query_diagnostic_params_out *ptr_struct, const u_int8_t *ptr_buff);
+void icmd_hca_icmd_query_diagnostic_params_out_print(const struct icmd_hca_icmd_query_diagnostic_params_out *ptr_struct, FILE *fd, int indent_level);
+unsigned int icmd_hca_icmd_query_diagnostic_params_out_size(void);
+#define ICMD_HCA_ICMD_QUERY_DIAGNOSTIC_PARAMS_OUT_SIZE    (0x24)
+void icmd_hca_icmd_query_diagnostic_params_out_dump(const struct icmd_hca_icmd_query_diagnostic_params_out *ptr_struct, FILE *fd);
+/* icmd_set_diagnostic_params_in */
+void icmd_hca_icmd_set_diagnostic_params_in_pack(const struct icmd_hca_icmd_set_diagnostic_params_in *ptr_struct, u_int8_t *ptr_buff);
+void icmd_hca_icmd_set_diagnostic_params_in_unpack(struct icmd_hca_icmd_set_diagnostic_params_in *ptr_struct, const u_int8_t *ptr_buff);
+void icmd_hca_icmd_set_diagnostic_params_in_print(const struct icmd_hca_icmd_set_diagnostic_params_in *ptr_struct, FILE *fd, int indent_level);
+unsigned int icmd_hca_icmd_set_diagnostic_params_in_size(void);
+#define ICMD_HCA_ICMD_SET_DIAGNOSTIC_PARAMS_IN_SIZE    (0x24)
+void icmd_hca_icmd_set_diagnostic_params_in_dump(const struct icmd_hca_icmd_set_diagnostic_params_in *ptr_struct, FILE *fd);
 /* icmd_hca_Nodes */
 void icmd_hca_icmd_hca_Nodes_pack(const union icmd_hca_icmd_hca_Nodes *ptr_struct, u_int8_t *ptr_buff);
 void icmd_hca_icmd_hca_Nodes_unpack(union icmd_hca_icmd_hca_Nodes *ptr_struct, const u_int8_t *ptr_buff);
