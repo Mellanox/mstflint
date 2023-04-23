@@ -758,7 +758,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps,
         FsCompsOperations* compsOps = dynamic_cast<FsCompsOperations*>(imageOps);
         if (!compsOps->IsCompatibleToDevice(data, burnParams.ignoreVersionCheck))
         {
-            return errmsg(compsOps->err());
+            return errmsg("%s", compsOps->err());
         }
 
         _fwCompsAccess->SetActivationStep(false);
