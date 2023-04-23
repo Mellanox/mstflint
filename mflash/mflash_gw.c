@@ -43,6 +43,8 @@
 #include "mflash_access_layer.h"
 #include "flash_int_defs.h"
 
+#include <stdlib.h>
+
 #ifdef __WIN__
 //
 // Windows (Under DDK)
