@@ -42,6 +42,21 @@
 #include "mflash_dev_capability.h"
 #include "mflash_access_layer.h"
 #include "flash_int_defs.h"
+
+#include <stdlib.h>
+
+#define DPRINTF(args)                            \
+    do                                           \
+    {                                            \
+        char* reacDebug = getenv("FLASH_DEBUG"); \
+        if (reacDebug != NULL)                   \
+        {                                        \
+            printf("\33[2K\r");                  \
+            printf("[FLASH_DEBUG]: -D- ");       \
+            printf args;                         \
+            fflush(stdout);                      \
+        }                                        \
+    } while (0)
 #ifdef __WIN__
 //
 // Windows (Under DDK)
