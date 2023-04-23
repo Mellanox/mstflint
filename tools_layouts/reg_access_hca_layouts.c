@@ -1,22 +1,41 @@
 
-/*                  - Mellanox Confidential and Proprietary -
+/* Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
- *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- *  Except as specifically permitted herein, no portion of the information,
- *  including but not limited to object code and source code, may be reproduced,
- *  modified, distributed, republished or otherwise exploited in any form or by
- *  any means for any purpose without the prior written permission of Mellanox
- *  Technologies Ltd. Use of software subject to the terms and conditions
- *  detailed in the file "LICENSE.txt".
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
  *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
+
  
 
 /***
-         *** This file was generated at "2023-01-09 15:12:34"
+         *** This file was generated at "2023-03-30 13:00:24"
          *** by:
-         ***    > /.autodirect/swgwork/astrutsovsky/work/4Dan/a-me_dev/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
+         ***    > /swgwork/hkarni/workspace/bug_fix_a-me/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
          ***/
 #include "reg_access_hca_layouts.h"
 
@@ -569,7 +588,7 @@ void reg_access_hca_config_item_ext_print(const struct reg_access_hca_config_ite
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "writer_id            : %s (" UH_FMT ")\n", (ptr_struct->writer_id == 0 ? ("UNSPECIFIED") : ((ptr_struct->writer_id == 1 ? ("CHASSIS_BMC") : ((ptr_struct->writer_id == 2 ? ("MAD") : ((ptr_struct->writer_id == 3 ? ("BMC") : ((ptr_struct->writer_id == 4 ? ("COMMAND_INTERFACE") : ((ptr_struct->writer_id == 5 ? ("ICMD") : ((ptr_struct->writer_id == 6 ? ("ICMD_UEFI_HII") : ((ptr_struct->writer_id == 7 ? ("ICMD_UEFI_CLP") : ((ptr_struct->writer_id == 8 ? ("ICMD_Flexboot") : ((ptr_struct->writer_id == 9 ? ("ICMD_mlxconfig") : ((ptr_struct->writer_id == 10 ? ("ICMD_USER1") : ((ptr_struct->writer_id == 11 ? ("ICMD_USER2") : ((ptr_struct->writer_id == 12 ? ("ICMD_MLXCONFIG_SET_RAW") : ((ptr_struct->writer_id == 13 ? ("ICMD_FLEXBOOT_CLP") : ((ptr_struct->writer_id == 16 ? ("BMC_APP1") : ((ptr_struct->writer_id == 17 ? ("BMC_APP2") : ((ptr_struct->writer_id == 18 ? ("BMP_APP3") : ((ptr_struct->writer_id == 31 ? ("OTHER") : ("unknown")))))))))))))))))))))))))))))))))))), ptr_struct->writer_id);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "access_mode          : %s (" UH_FMT ")\n", (ptr_struct->access_mode == 0 ? ("NEXT") : ("unknown")), ptr_struct->access_mode);
+	fprintf(fd, "access_mode          : %s (" UH_FMT ")\n", (ptr_struct->access_mode == 0 ? ("NEXT") : ((ptr_struct->access_mode == 1 ? ("CURRENT") : ((ptr_struct->access_mode == 2 ? ("FACTORY") : ("unknown")))))), ptr_struct->access_mode);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "type_index           : " UH_FMT "\n", ptr_struct->type_index);
 	adb2c_add_indentation(fd, indent_level);
@@ -641,12 +660,12 @@ void reg_access_hca_lane_2_module_mapping_ext_dump(const struct reg_access_hca_l
 
 void reg_access_hca_mcqi_reg_data_auto_ext_pack(const union reg_access_hca_mcqi_reg_data_auto_ext *ptr_struct, u_int8_t *ptr_buff)
 {
-	reg_access_hca_mcqi_linkx_properties_ext_pack(&(ptr_struct->mcqi_linkx_properties_ext), ptr_buff);
+	reg_access_hca_mcqi_cap_ext_pack(&(ptr_struct->mcqi_cap_ext), ptr_buff);
 }
 
 void reg_access_hca_mcqi_reg_data_auto_ext_unpack(union reg_access_hca_mcqi_reg_data_auto_ext *ptr_struct, const u_int8_t *ptr_buff)
 {
-	reg_access_hca_mcqi_linkx_properties_ext_unpack(&(ptr_struct->mcqi_linkx_properties_ext), ptr_buff);
+	reg_access_hca_mcqi_cap_ext_unpack(&(ptr_struct->mcqi_cap_ext), ptr_buff);
 }
 
 void reg_access_hca_mcqi_reg_data_auto_ext_print(const union reg_access_hca_mcqi_reg_data_auto_ext *ptr_struct, FILE *fd, int indent_level)
@@ -1750,7 +1769,7 @@ void reg_access_hca_mcqs_reg_ext_print(const struct reg_access_hca_mcqs_reg_ext 
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "last_index_flag      : " UH_FMT "\n", ptr_struct->last_index_flag);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "identifier           : %s (" UH_FMT ")\n", (ptr_struct->identifier == 1 ? ("BOOT_IMG") : ((ptr_struct->identifier == 4 ? ("OEM_NVCONFIG") : ((ptr_struct->identifier == 5 ? ("MLNX_NVCONFIG") : ((ptr_struct->identifier == 6 ? ("CS_TOKEN") : ((ptr_struct->identifier == 7 ? ("DBG_TOKEN") : ((ptr_struct->identifier == 10 ? ("Gearbox") : ((ptr_struct->identifier == 11 ? ("CC_ALGO") : ((ptr_struct->identifier == 12 ? ("LINKX_IMG") : ((ptr_struct->identifier == 13 ? ("CRYPTO_TO_COMMISSIONING") : ((ptr_struct->identifier == 14 ? ("RMCS_TOKEN") : ((ptr_struct->identifier == 15 ? ("RMDT_TOKEN") : ((ptr_struct->identifier == 16 ? ("CRCS_TOKEN") : ((ptr_struct->identifier == 17 ? ("CRDT_TOKEN") : ((ptr_struct->identifier == 18 ? ("CLOCK_SYNC_EEPROM") : ("unknown")))))))))))))))))))))))))))), ptr_struct->identifier);
+	fprintf(fd, "identifier           : %s (" UH_FMT ")\n", (ptr_struct->identifier == 1 ? ("BOOT_IMG") : ((ptr_struct->identifier == 4 ? ("OEM_NVCONFIG") : ((ptr_struct->identifier == 5 ? ("MLNX_NVCONFIG") : ((ptr_struct->identifier == 6 ? ("CS_TOKEN") : ((ptr_struct->identifier == 7 ? ("DBG_TOKEN") : ((ptr_struct->identifier == 10 ? ("Gearbox") : ((ptr_struct->identifier == 11 ? ("CC_ALGO") : ((ptr_struct->identifier == 12 ? ("LINKX_IMG") : ((ptr_struct->identifier == 13 ? ("CRYPTO_TO_COMMISSIONING") : ((ptr_struct->identifier == 14 ? ("RMCS_TOKEN") : ((ptr_struct->identifier == 15 ? ("RMDT_TOKEN") : ((ptr_struct->identifier == 16 ? ("CRCS_TOKEN_") : ((ptr_struct->identifier == 17 ? ("CRDT_TOKEN_") : ((ptr_struct->identifier == 18 ? ("CLOCK_SYNC_EEPROM_") : ("unknown")))))))))))))))))))))))))))), ptr_struct->identifier);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "component_update_state : %s (" UH_FMT ")\n", (ptr_struct->component_update_state == 0 ? ("IDLE") : ((ptr_struct->component_update_state == 1 ? ("IN_PROGRESS") : ((ptr_struct->component_update_state == 2 ? ("APPLIED") : ((ptr_struct->component_update_state == 3 ? ("ACTIVE") : ((ptr_struct->component_update_state == 4 ? ("ACTIVE_PENDING_RESET") : ((ptr_struct->component_update_state == 5 ? ("FAILED") : ((ptr_struct->component_update_state == 6 ? ("CANCELED") : ((ptr_struct->component_update_state == 7 ? ("BUSY") : ("unknown")))))))))))))))), ptr_struct->component_update_state);
 	adb2c_add_indentation(fd, indent_level);
@@ -2427,10 +2446,6 @@ void reg_access_hca_mnvgc_reg_ext_dump(const struct reg_access_hca_mnvgc_reg_ext
 {
 	reg_access_hca_mnvgc_reg_ext_print(ptr_struct, fd, 0);
 }
-
-
-
-
 
 void reg_access_hca_mnvia_reg_ext_pack(const struct reg_access_hca_mnvia_reg_ext *ptr_struct, u_int8_t *ptr_buff)
 {
@@ -3176,18 +3191,25 @@ void reg_access_hca_mtrc_cap_reg_ext_dump(const struct reg_access_hca_mtrc_cap_r
 void reg_access_hca_mtrc_stdb_reg_ext_pack(const struct reg_access_hca_mtrc_stdb_reg_ext *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
+	int i;
 
 	offset = 8;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->read_size);
 	offset = 0;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->string_db_index);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int8_t)ptr_struct->string_db_index);
 	offset = 32;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->start_offset);
+	int max_arr_offset = (ptr_struct->read_size < 704) ? (int)ptr_struct->read_size / 4 : 704 / 4;
+	for (i = 0; i < max_arr_offset; ++i) {
+		offset = adb2c_calc_array_field_address(64, 32, i, 96, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->string_db_data[i]);
+	}
 }
 
 void reg_access_hca_mtrc_stdb_reg_ext_unpack(struct reg_access_hca_mtrc_stdb_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
+	int i;
 
 	offset = 8;
 	ptr_struct->read_size = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
@@ -3195,10 +3217,18 @@ void reg_access_hca_mtrc_stdb_reg_ext_unpack(struct reg_access_hca_mtrc_stdb_reg
 	ptr_struct->string_db_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 32;
 	ptr_struct->start_offset = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	//int max_arr_offset = min( (int)ptr_struct->read_size / 4 , 704 / 4);
+	int max_arr_offset = (ptr_struct->read_size < 704) ? (int)ptr_struct->read_size / 4 : 704 / 4;
+	for (i = 0; i < max_arr_offset; ++i) {
+		offset = adb2c_calc_array_field_address(64, 32, i, 720, 1);
+		ptr_struct->string_db_data[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
 }
 
 void reg_access_hca_mtrc_stdb_reg_ext_print(const struct reg_access_hca_mtrc_stdb_reg_ext *ptr_struct, FILE *fd, int indent_level)
 {
+	int i;
+
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== reg_access_hca_mtrc_stdb_reg_ext ========\n");
 
@@ -3208,8 +3238,11 @@ void reg_access_hca_mtrc_stdb_reg_ext_print(const struct reg_access_hca_mtrc_std
 	fprintf(fd, "string_db_index      : " UH_FMT "\n", ptr_struct->string_db_index);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "start_offset         : " U32H_FMT "\n", ptr_struct->start_offset);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "unlimited array: (string_db_data)\n");
+	int max_arr_offset = (ptr_struct->read_size < 704) ? (int)ptr_struct->read_size / 4 : 704 / 4;
+	for (i = 0; i < max_arr_offset; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "string_db_data_%03d  : " U32H_FMT "\n", i, ptr_struct->string_db_data[i]);
+	}
 }
 
 unsigned int reg_access_hca_mtrc_stdb_reg_ext_size(void)
@@ -3410,7 +3443,7 @@ void reg_access_hca_nic_dpa_hart_partition_reg_ext_print(const struct reg_access
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "operation            : %s (" UH_FMT ")\n", (ptr_struct->operation == 0 ? ("CRETAE") : ((ptr_struct->operation == 1 ? ("MODIFY") : ((ptr_struct->operation == 2 ? ("DESTROY") : ("unknown")))))), ptr_struct->operation);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "modify_field_select  : " U32H_FMT "\n", ptr_struct->modify_field_select);
+	fprintf(fd, "modify_field_select  : %s (" U32H_FMT ")\n", (ptr_struct->modify_field_select == 1 ? ("member_mask") : ((ptr_struct->modify_field_select == 2 ? ("max_num_hart_group") : ((ptr_struct->modify_field_select == 4 ? ("num_vhca_id_and_vhca_id") : ("unknown")))))), ptr_struct->modify_field_select);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "max_num_hart_group   : " UH_FMT "\n", ptr_struct->max_num_hart_group);
 	adb2c_add_indentation(fd, indent_level);
@@ -3613,7 +3646,7 @@ void reg_access_hca_paos_reg_ext_print(const struct reg_access_hca_paos_reg_ext 
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "sleep_cap            : " UH_FMT "\n", ptr_struct->sleep_cap);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "lock_mode            : %s (" UH_FMT ")\n", (ptr_struct->lock_mode == 1 ? ("Force_down_by_fuse") : ((ptr_struct->lock_mode == 2 ? ("Force_down_by_hard_wire") : ((ptr_struct->lock_mode == 4 ? ("Force_down_by_config_at_init") : ((ptr_struct->lock_mode == 8 ? ("Locked_after_down") : ("unknown")))))))), ptr_struct->lock_mode);
+	fprintf(fd, "lock_mode            : %s (" UH_FMT ")\n", (ptr_struct->lock_mode == 1 ? ("Force_down_by_fuse") : ((ptr_struct->lock_mode == 2 ? ("Force_down_by_hard_wire") : ((ptr_struct->lock_mode == 4 ? ("Force_down_by_config") : ((ptr_struct->lock_mode == 8 ? ("Locked_after_down") : ("unknown")))))))), ptr_struct->lock_mode);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "ee                   : " UH_FMT "\n", ptr_struct->ee);
 	adb2c_add_indentation(fd, indent_level);
@@ -4279,7 +4312,6 @@ void reg_access_hca_reg_access_hca_Nodes_print(const union reg_access_hca_reg_ac
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mcqs_reg_ext:\n");
 	reg_access_hca_mcqs_reg_ext_print(&(ptr_struct->mcqs_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mpcir_ext:\n");
 	reg_access_hca_mpcir_ext_print(&(ptr_struct->mpcir_ext), fd, indent_level + 1);
