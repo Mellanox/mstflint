@@ -37,6 +37,7 @@
 #include <tools_layouts/reg_access_hca_layouts.h>
 #include <tools_layouts/reg_access_switch_layouts.h>
 #include <tools_layouts/tools_open_layouts.h>
+#include <tools_layouts/cibfw_layouts.h>
 
 #define REG_ID_PCNR              0x5050
 #define REG_ID_PAOS              0x5006
