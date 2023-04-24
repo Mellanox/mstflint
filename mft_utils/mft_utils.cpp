@@ -165,4 +165,33 @@ u_int32_t least_common_multiple(u_int32_t a, u_int32_t b)
     return (a * b) / greatest_common_divisor(a, b);
 }
 
+bool askUser(const char* question, bool force)
+{
+    if (question == NULL)
+    {
+        printf("\n Do you want to continue ? (y/n) [n] : ");
+    }
+    else
+    {
+        printf("\n %s ? (y/n) [n] : ", question);
+    }
+
+    if (force)
+    {
+        printf("y\n");
+    }
+    else
+    {
+        fflush(stdout);
+        std::string answer;
+        std::getline(std::cin, answer);
+
+        if (strcasecmp(answer.c_str(), "y") && strcasecmp(answer.c_str(), "yes"))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace mft_utils

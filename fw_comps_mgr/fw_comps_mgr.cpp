@@ -58,6 +58,7 @@ static void mft_signal_set_handling(int isOn)
 #endif
 
 #include <errno.h>
+#include "mft_utils.h"
 
 static mfile* mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* dma_func, void* extra_data)
 {
@@ -534,7 +535,7 @@ bool FwCompsMgr::accessComponent(u_int32_t              offset,
         _accessObj->accessComponent(_updateHandle, offset, size, data, access, _currComponentStr, progressFuncAdv);
 
     if (!bRes && (lastFsmCommandArgs != NULL) && isDMAAccess()) {
-        printf("\nBurning with DMA has failed, switching to Register-Access burn.\n");
+        printf("\nDMA access has failed, switching to Register-Access burn.\n");
         bRes = fallbackToRegisterAccess();
 
         if (bRes) {
@@ -647,7 +648,7 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
         _lastFsmCtrl.component_index = _componentIndex;
         _lastFsmCtrl.component_size = size;
         _lastFsmCtrl.update_handle = _updateHandle;
-        if (command == FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER || (_linkXFlow && command == FSM_CMD_ACTIVATE_ALL))
+        if (_linkXFlow && (command == FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER || command == FSM_CMD_ACTIVATE_ALL))
         {
             _lastFsmCtrl.component_index =
                 0; /* This the FW need - for downstream need to work with 0/device_id or auto_update */
@@ -1111,7 +1112,9 @@ const char* CompNames[] = {"NO_COMPONENT 1",          "COMPID_BOOT_IMG",
                            "COMPID_DEV_INFO",         "NO_COMPONENT 2",
                            "COMPID_GEARBOX",          "COMPID_CONGESTION_CONTROL",
                            "COMPID_LINKX_PROPERTIES", "COMPID_CRYPTO_TO_COMMISSIONING",
-                           "COMPID_RMCS_TOKEN",       "COMPID_RMDT_TOKEN"};
+                           "COMPID_RMCS_TOKEN",       "COMPID_RMDT_TOKEN",
+                           "COMPID_CRCS_TOKEN",       "COMPID_CRDT_TOKEN",
+                           "COMPID_CLOCK_SYNC_EEPROM"};
 
 bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
 {
@@ -1321,7 +1324,7 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
                 DPRINTF(("Verifying FW component has failed!\n"));
                 return false;
             }
-            if (comps[i].getType() == FwComponent::COMPID_LINKX) {
+            if (comps[i].getType() == FwComponent::COMPID_LINKX || comps[i].getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM) {
                 if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
                                 progressFuncAdv)) {
                     DPRINTF(("Downstream LinkX begin has failed!\n"));
@@ -1334,26 +1337,34 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
             }
         }
     }
-    if (_linkXFlow) {
-        if (_activationNeeded == true) { /* by default */
-            if (!controlFsm(FSM_CMD_ACTIVATE_ALL, FSMST_ACTIVATE, 0, FSMST_LOCKED, progressFuncAdv)) {
+    if (_activationNeeded == true)
+    {
+        if (_linkXFlow)
+        {
+            if (!controlFsm(FSM_CMD_ACTIVATE_ALL, FSMST_ACTIVATE, 0, FSMST_LOCKED, progressFuncAdv))
+            {
                 DPRINTF(("Moving to ACTIVATE state has failed!\n"));
                 return false;
             }
 
-            /* In case of activation delay, FW will set FSM to LOCKED */
-            if (!_isDelayedActivationCommandSent) {
+            // In case of activation delay, FW will set FSM to LOCKED
+            if (!_isDelayedActivationCommandSent)
+            {
                 printf("Please wait while activating the transceiver(s) FW ...\n");
-                if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_ACTIVATE, progressFuncAdv)) {
+                if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_ACTIVATE, progressFuncAdv))
+                {
                     DPRINTF(("Moving from activate state to locked state has failed!\n"));
                     return false;
                 }
             }
         }
-    } else {
-        if (!controlFsm(FSM_CMD_ACTIVATE_ALL)) {
-            DPRINTF(("Activating FW component has failed!\n"));
-            return false;
+        else
+        {
+            if (!controlFsm(FSM_CMD_ACTIVATE_ALL))
+            {
+                DPRINTF(("Activating FW component has failed!\n"));
+                return false;
+            }
         }
     }
 
@@ -1387,6 +1398,17 @@ bool FwCompsMgr::getFwComponents(std::vector < FwComponent >& compsMap, bool rea
         compsMap.push_back(fwCmp);
     }
     return true;
+}
+
+FwComponent::comps_ids_t FwComponent::getCompId(string compId)
+{
+    mft_utils::to_lowercase(compId);
+    if (compId == "sync_clock")
+    {
+        return COMPID_CLOCK_SYNC_EEPROM;
+    }
+
+    return COMPID_UNKNOWN;
 }
 
 const char* FwComponent::getCompIdStr(comps_ids_t compId)
@@ -1427,6 +1449,15 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 
     case COMPID_RMDT_TOKEN:
         return "COMPID_RMDT_TOKEN";
+    
+    case COMPID_CRCS_TOKEN:
+        return "COMPID_CRCS_TOKEN";
+
+    case COMPID_CRDT_TOKEN:
+        return "COMPID_CRDT_TOKEN";
+
+    case COMPID_CLOCK_SYNC_EEPROM:
+        return "COMPID_CLOCK_SYNC_EEPROM";
 
     default:
         return "UNKNOWN_COMPONENT";
@@ -1957,6 +1988,85 @@ bool FwCompsMgr::getComponentVersion(FwComponent::comps_ids_t compType, bool pen
         memcpy(_productVerStr.data(), _currCompInfo.data.mcqi_version_ext.version_string,
                _currCompInfo.data.mcqi_version_ext.version_string_length);
     }
+    return true;
+}
+
+bool FwCompsMgr::GetComponentInfo(FwComponent::comps_ids_t compType, u_int32_t deviceIndex, vector<u_int8_t>& data)
+{
+    u_int32_t tmpDeviceIndex = _deviceIndex;
+    bool rc;
+
+    _deviceIndex = deviceIndex;
+    rc = GetComponentInfo(compType, data);
+    _deviceIndex = tmpDeviceIndex;
+    return rc;
+}
+
+bool FwCompsMgr::GetComponentInfo(FwComponent::comps_ids_t compType, vector<u_int8_t>& data)
+{
+    std::vector<u_int32_t> imageInfoData;
+    comp_info_t infoType;
+
+    switch (compType)
+    {
+        case FwComponent::COMPID_CLOCK_SYNC_EEPROM:
+            infoType = COMPINFO_CLOCK_SOURCE_PROPERTIES;
+            break;
+        case FwComponent::COMPID_UNKNOWN:
+        default:
+            _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
+            return false;
+    }
+
+    if (!IsDevicePresent(compType) && _lastError != FWCOMPS_DEVICE_NOT_PRESENT)
+    {
+        return false;
+    }
+
+    if (!readComponentInfo(compType, infoType, imageInfoData, false))
+    {
+        return false;
+    }
+
+    data.resize(imageInfoData.size() * 4);
+    memcpy(data.data(), imageInfoData.data(), data.size());
+
+    return true;
+}
+
+bool FwCompsMgr::IsDevicePresent(FwComponent::comps_ids_t compType)
+{
+    comp_status_st query;
+    memset(&query, 0, sizeof(query));
+    if (_compsQueryMap[compType].valid)
+    {
+        if (!queryComponentStatus(_compsQueryMap[compType].comp_status.component_index, &query))
+        {
+            return false;
+        }
+        if (query.component_status == 0)
+        {
+            _lastError = FWCOMPS_DEVICE_NOT_PRESENT;
+            return false;
+        }
+    }
+    else
+    {
+        _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
+        return false;
+    }
+    return true;
+}
+
+bool FwCompsMgr::GetComponentSyncEProperties(component_synce_st& cmpSyncE)
+{
+    std::vector<u_int32_t> imageInfoData;
+    if (!readComponentInfo(FwComponent::COMPID_CLOCK_SYNC_EEPROM, COMPINFO_CLOCK_SOURCE_PROPERTIES, imageInfoData,
+                           false))
+    {
+        return false;
+    }
+    reg_access_hca_mcqi_clock_source_properties_ext_unpack(&cmpSyncE, (u_int8_t*)imageInfoData.data());
     return true;
 }
 

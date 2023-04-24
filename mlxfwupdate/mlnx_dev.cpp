@@ -235,7 +235,7 @@ void MlnxDev::setGuidMac(fw_info_t& fw_query)
         if (fw_query.fs3_info.fs3_uids_info.valid_field)
         {
             snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
-                     fw_query.fs3_info.fs3_uids_info.cx4_uids.base_guid.uid);
+                     fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid);
         }
         else
         {
@@ -243,15 +243,15 @@ void MlnxDev::setGuidMac(fw_info_t& fw_query)
                      fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid);
         }
         if (fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid ||
-            fw_query.fs3_info.fs3_uids_info.cx4_uids.base_guid.uid)
+            fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid)
         {
             guidPortOne = (string)buff;
         }
         if (fw_query.fs3_info.fs3_uids_info.valid_field)
         {
             snprintf(buff, sizeof(buff) - 1, "%012" U64H_FMT_GEN,
-                     fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid);
-            if (fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid)
+                     fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid);
+            if (fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid)
             {
                 macPortOne = (string)buff;
             }
@@ -262,7 +262,7 @@ void MlnxDev::setGuidMac(fw_info_t& fw_query)
             snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
                      fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid);
         }
-        if (fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid ||
+        if (fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid ||
             fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid)
         {
             guidPortTwo = (string)buff;
@@ -824,6 +824,14 @@ int MlnxDev::queryFwops()
         goto clean_up;
     }
     setGuidMac(fw_query);
+    if (!guidPortOne.empty() && guidPortOne != "N/A")
+    {
+        _uniqueId += "_" + guidPortOne;
+    }
+    if (!guidPortTwo.empty() && guidPortTwo != "N/A")
+    {
+        _uniqueId += "_" + guidPortTwo;
+    }
 
     // attempt to take some fields from image info
     if (fw_query.fw_type == FIT_FS3 || fw_query.fw_type == FIT_FS4)
