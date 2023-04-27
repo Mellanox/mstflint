@@ -30,7 +30,7 @@
 # SOFTWARE.
 # --
 
-import reg_access
+import regaccess
 
 
 class CmdNotSupported(Exception):
