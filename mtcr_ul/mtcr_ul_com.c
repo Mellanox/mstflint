@@ -81,6 +81,7 @@
 #include <stdlib.h>
 #include <libgen.h>
 #include <sys/file.h>
+#include <linux/types.h>
 
 #if CONFIG_ENABLE_MMAP
 #include <sys/mman.h>
@@ -96,7 +97,7 @@
 #include "packets_layout.h"
 #include "mtcr_tools_cif.h"
 #include "mtcr_icmd_cif.h"
-
+#include "mlx5ctl_ioctl.h"
 #include "kernel/mst.h"
 
 #define CX3_SW_ID    4099
@@ -768,6 +769,49 @@ static int mst_driver_connectx_flush(mfile* mf)
     return 0;
 }
 
+int mtcr_mlx5ctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
+{
+    (void)mf;
+    (void)offset;
+    (void)value;
+
+    fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+    return -1;
+}
+
+int mtcr_mlx5ctl_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
+{
+    (void)mf;
+    (void)offset;
+    (void)value;
+
+    fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+    return -1;
+}
+
+static int mlx5ctl_driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
+{
+    (void)mf;
+    (void)offset;
+    (void)data;
+    (void)length;
+
+    fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+    return -1;
+}
+
+static int mlx5ctl_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
+{
+    (void)mf;
+    (void)offset;
+    (void)data;
+    (void)length;
+
+    fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+    return -1;
+}
+
+
 int mtcr_driver_cr_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
@@ -823,7 +867,6 @@ static int driver_mwrite_chunk_as_multi_mwrite4(mfile* mf, unsigned int offset, 
     }
     return length;
 }
-
 static int driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
 {
     if ((mf->tp == MST_PCICONF) && mf->vsec_supp) {
@@ -900,6 +943,39 @@ static int mtcr_driver_mclose(mfile* mf)
     }
     return 0;
 }
+
+
+static int mlx5ctl_driver_open(mfile  * mf,
+                               unsigned domain_p,
+                               unsigned bus_p,
+                               unsigned dev_p,
+                               unsigned func_p,
+                               const char* name)
+{
+    char full_path_name[60];
+
+    sprintf(full_path_name, "/dev/%s", name);
+    ul_ctx_t* ctx = mf->ul_ctx;
+    ctx->connectx_flush = 0;
+    ctx->need_flush = 0;
+    ctx->via_driver = 1;
+    mf->fd = open(full_path_name, O_RDWR | O_SYNC);
+    if (mf->fd < 0) {
+        return mf->fd;
+    }
+    mf->tp = MST_MLX5_CONTROL_DRIVER;
+    ctx->mread4 = mtcr_mlx5ctl_driver_mread4;
+    ctx->mwrite4 = mtcr_mlx5ctl_driver_mwrite4;
+    ctx->mread4_block = mlx5ctl_driver_mread4_block;
+    ctx->mwrite4_block = mlx5ctl_driver_mwrite4_block;
+    ctx->mclose = mtcr_driver_mclose;
+    mf->bar_virtual_addr = NULL;
+    init_dev_info_ul(mf, name, domain_p, bus_p, dev_p, func_p);
+
+    return 0;
+}
+
+
 
 static int mtcr_driver_open(mfile  * mf,
                             MType    dev_type,
@@ -1612,6 +1688,12 @@ static MType mtcr_parse_name(const char* name,
         goto name_parsed;
     }
 
+    scnt = sscanf(name, "mlx5ctl-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+    if (scnt == 4) {
+        force_config = 1;
+        return MST_MLX5_CONTROL_DRIVER;
+    }
+
 parse_error:
     fprintf(stderr, "Unable to parse device name %s\n", name);
     errno = EINVAL;
@@ -1712,7 +1794,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xcf80, /* Spectrum4 */
                                    0x1976, /* Schrodinger */
                                    0x2900, /* BW-00 */
-                                   0xd2f4, /* Sunbird 0x25b */
+                                   0xd2f4, /* Sunbird */
                                    -1};
 
 static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24b, 0x24d, 0x24e, 0x1F6, 0x1F8,
@@ -2356,12 +2438,25 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     mf->res_fd = -1;
     mf->mpci_change = mpci_change_ul;
     dev_type = mtcr_parse_name(name, &force, &domain, &bus, &dev, &func);
-    if ((dev_type == MST_DRIVER_CR) || (dev_type == MST_DRIVER_CONF)) {
-        rc = mtcr_driver_open(mf, dev_type, domain, bus, dev, func);
-        if (rc) {
-            goto open_failed;
-        }
-        return mf;
+    switch (dev_type)
+    {
+        case MST_DRIVER_CR:
+        case MST_DRIVER_CONF:
+            rc = mtcr_driver_open(mf, dev_type, domain, bus, dev, func);
+            if (rc) {
+                goto open_failed;
+            }
+            return mf;
+            break;
+        case MST_MLX5_CONTROL_DRIVER:
+            rc = mlx5ctl_driver_open(mf, domain, bus, dev, func, name);
+            if (rc) {
+                goto open_failed;
+            }
+            return mf;
+            break;
+        default:
+            break;
     }
     if (dev_type == MST_ERROR) {
         goto open_failed;
@@ -2867,6 +2962,9 @@ int supports_reg_access_smp(mfile* mf)
            (!(mf->flags & MDEVS_IB) && (supports_icmd(mf) || supports_tools_cmdif_reg(mf)));
 }
 
+
+
+
 int maccess_reg_ul(mfile              * mf,
                    u_int16_t            reg_id,
                    maccess_reg_method_t reg_method,
@@ -2901,6 +2999,13 @@ int maccess_reg_ul(mfile              * mf,
         }
     }
 #endif
+
+    if (mf->tp == MST_MLX5_CONTROL_DRIVER) {
+        int method = (reg_method == MACCESS_REG_METHOD_GET) ? 1 : 0;
+        return mlx5_control_access_register(mf->fd, reg_data,
+                                            reg_size, reg_id,
+                                            method);
+    }
 
     if (reg_size <= INBAND_MAX_REG_SIZE) {
         if (supports_reg_access_smp(mf)) {
@@ -3010,6 +3115,9 @@ int mib_send_gmp_access_reg_mad_ul(mfile              * mf,
     return 0;
 #endif
 }
+
+
+
 
 static int init_operation_tlv(struct OperationTlv* operation_tlv, u_int16_t reg_id, u_int8_t method)
 {
@@ -3146,6 +3254,10 @@ static int mreg_send_raw(mfile              * mf,
 static int supports_icmd(mfile* mf)
 {
     u_int32_t dev_id = 0;
+
+    if (mf->tp == MST_MLX5_CONTROL_DRIVER) {
+        return 1;
+    }
 
     if (mread4_ul(mf, HW_ID_ADDR, &dev_id) != 4) { /* cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd */
         return 0;

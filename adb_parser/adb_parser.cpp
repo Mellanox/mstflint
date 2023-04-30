@@ -71,7 +71,7 @@ public:
               bool checkDsAlign = false,
               bool enforceGuiChecks = false);
     ~AdbParser();
-    bool load();
+    bool load(bool is_main = true);
     bool loadFromString(const char* adbString);
     string getError();
 
@@ -285,7 +285,7 @@ void AdbParser::setAllowMultipleExceptionsTrue()
 /**
  * Function: AdbParser::load
  **/
-bool AdbParser::load()
+bool AdbParser::load(bool is_main)
 {
     FILE* file;
     char* data = NULL;
@@ -376,6 +376,23 @@ bool AdbParser::load()
         {
             enum XML_Error errNo = XML_GetErrorCode(_xmlParser);
             throw AdbException(string("XML parsing issues: ") + XML_ErrorString(errNo));
+        }
+
+        if (is_main)
+        {
+            auto root_node_it = _adbCtxt->nodesMap.find("root");
+            if (root_node_it == _adbCtxt->nodesMap.end())
+            {
+                throw AdbException("No root found.");
+            }
+            else if (root_node_it->second->fields.size() == 0)
+            {
+                throw AdbException("Root node doesn't contain any field. Root must contain exactly one field.");
+            }
+            else if (root_node_it->second->fields.size() > 1)
+            {
+                throw AdbException("Only one field allowed in root node. (Check the root size and fields)");
+            }
         }
     }
     catch (AdbException& exp)
@@ -755,7 +772,7 @@ void AdbParser::includeFile(AdbParser* adbParser, string fileName, int lineNumbe
         // parse the included file
         AdbParser p(filePath, adbParser->_adbCtxt, adbParser->_addReserved, adbParser->_progressObj, adbParser->_strict,
                     "", adbParser->_enforceExtraChecks);
-        if (!p.load())
+        if (!p.load(false))
         {
             throw AdbException(p.getError());
         }
@@ -1495,7 +1512,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
         {
             int low = atoi(lowBound.c_str());
             int high = 0;
-            if (highBound != "VARIABLE")
+            if (highBound != "VARIABLE" && highBound != "DYNAMIC")
             {
                 high = atoi(highBound.c_str());
             }
@@ -1510,7 +1527,8 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
                   ExceptionHolder::ERROR_EXCEPTION);
             }
             if (entrySize < 8 && entrySize != 4 && entrySize != 2 && entrySize != 1 &&
-                ((isize > 32 && highBound != "VARIABLE") || highBound == "VARIABLE"))
+                ((isize > 32 && highBound != "VARIABLE" && highBound != "DYNAMIC") || highBound == "VARIABLE" ||
+                 highBound == "DYNAMIC"))
             {
                 expFound = raiseException(
                   allowMultipleExceptions,
@@ -1583,12 +1601,30 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
         }
         else
         {
-            adbParser->_currentField->highBound = highBound.empty() ? 0 : boost::lexical_cast<u_int32_t>(highBound);
+            if (highBound == "DYNAMIC")
+            {
+                adbParser->_currentField->highBound = 0;
+                adbParser->_currentField->dynamicArr = true;
+                string conditionalSize = attrValue(atts, "size_condition");
+                if (conditionalSize == "")
+                {
+                    expFound = raiseException(
+                      allowMultipleExceptions,
+                      "Missing size_condition attribute",
+                      ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                      ExceptionHolder::FATAL_EXCEPTION);
+                }
+            }
+            else
+            {
+                adbParser->_currentField->highBound = highBound.empty() ? 0 : boost::lexical_cast<u_int32_t>(highBound);
+            }
         }
         adbParser->_currentField->subNode = subNode;
 
         // Check array element size
         if (adbParser->_currentField->isArray() && !adbParser->_currentField->isUnlimitedArr() &&
+            !adbParser->_currentField->isDynamicArr() &&
             adbParser->_currentField->size % (adbParser->_currentField->arrayLen()))
         {
             char exceptionTxt[1000];
@@ -2701,6 +2737,7 @@ AdbInstance* Adb::createLayout(string rootNodeName,
         map<string, string> emptyVars;
         _unionSelectorEvalDeffered.clear();
         _conditionInstances.clear();
+        _conditionalArrays.clear();
         if (ignoreMissingNodes)
         {
             addMissingNodes(depth, allowMultipleExceptions);
@@ -2858,6 +2895,29 @@ AdbInstance* Adb::createLayout(string rootNodeName,
                         raiseException(allowMultipleExceptions, exceptionTxt, ExceptionHolder::ERROR_EXCEPTION);
                     }
                 }
+            }
+        }
+
+        // if the layout item has a conditional array
+        for (list<AdbInstance*>::iterator it = _conditionalArrays.begin(); it != _conditionalArrays.end(); it++)
+        {
+            string condSize = (*it)->getInstanceAttr("size_condition");
+
+            if (!condSize.substr(0, 10).compare("$(parent)."))
+            {
+                condSize.erase(0, 10);
+            }
+
+            if ((*it)->parent->getChildByPath(condSize) == NULL)
+            {
+                raiseException(allowMultipleExceptions,
+                               "The size_condition path doesn't exist. In instance: \"" + (*it)->name + "\"" +
+                                 "field name: \"" + (*it)->fieldDesc->name + "\"",
+                               ExceptionHolder::FATAL_EXCEPTION);
+            }
+            else
+            {
+                (*it)->conditionalSize.setCondition(condSize);
             }
         }
 
@@ -3108,6 +3168,14 @@ vector<AdbInstance*> Adb::createInstance(AdbField* field,
             const string condition = inst->getInstanceAttr("condition");
             inst->condition.setCondition(condition);
             _conditionInstances.push_back(inst);
+        }
+
+        // if the layout item has a conditional array
+        found = false;
+        inst->getInstanceAttrIterator("size_condition", found);
+        if (found)
+        {
+            _conditionalArrays.push_back(inst);
         }
 
         checkInstanceOffsetValidity(inst, parent, allowMultipleExceptions);

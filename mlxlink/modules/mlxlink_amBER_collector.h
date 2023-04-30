@@ -126,7 +126,6 @@ private:
     void getTestModeModulePMPT(vector<AmberField>& fields, string moduleSide, ModuleAccess_t mode);
     void getTestModeModulePMPD(vector<AmberField>& fields, string moduleSide);
     u_int32_t getSheetIndex(AMBER_SHEET sheet);
-    u_int32_t getFomMeasurement();
 
     void collect();
     vector<AmberField> collectSheet(AMBER_SHEET sheet);

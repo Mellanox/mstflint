@@ -364,7 +364,7 @@ bool Fs2Operations::checkGen(u_int32_t beg,
         if (part_cnt <= 2)
         {
             delete[] pr;
-            return checkBoot2(beg, offs, next, _isFullVerify, pref, verifyCallBackFunc);
+            return CheckBoot2(beg, offs, next, _isFullVerify, pref, verifyCallBackFunc);
         }
     }
 

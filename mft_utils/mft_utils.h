@@ -68,5 +68,7 @@ string to_uppercase_copy(string str);
 u_int32_t greatest_common_divisor(u_int32_t a, u_int32_t b);
 u_int32_t least_common_multiple(u_int32_t a, u_int32_t b);
 
+bool askUser(const char* question, bool force);
+
 } // namespace mft_utils
 #endif /* MFT_UTILS_H_ */

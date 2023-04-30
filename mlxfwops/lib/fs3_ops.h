@@ -36,7 +36,6 @@
 
 #include "reg_access/reg_access.h"
 #include <cibfw_layouts.h>
-#include <image_layout_layouts.h>
 #include <cx4fw_layouts.h>
 #include <mlarge_buffer.h>
 // #include "flint_base.h"
@@ -77,6 +76,9 @@
             return errmsg(MLXFW_OCR_ERR, "-ocr flag must be specified for %s operation.", str); \
         }                                                                                       \
     } while (0)
+
+#define DEFAULT_GUID_NUM 0xffff
+#define DEFAULT_STEP 0xff
 
 class Fs3Operations : public FwOperations
 {
@@ -187,8 +189,8 @@ public:
     virtual bool RestoreDevToc(vector<u_int8_t>& img,
                                char* psid,
                                dm_dev_id_t devid_t,
-                               const cx4fw_uid_entry& base_guid,
-                               const cx4fw_uid_entry& base_mac);
+                               const image_layout_uid_entry& base_guid,
+                               const image_layout_uid_entry& base_mac);
 
 protected:
 #define ITOC_ASCII 0x49544f43
@@ -258,6 +260,7 @@ protected:
                               PrintCallBack callBackFunc = (PrintCallBack)NULL);
     bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cibfw_guids& guids);
     bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cx4fw_guids& guids);
+    bool ChangeUidsFromBase(fs3_uid_t base_uid, image_layout_guids& guids);
     bool DeviceTimestampEnabled();
     bool RomCommonCheck(bool ignoreProdIdCheck, bool checkIfRomEmpty);
     bool extractUUIDFromString(const char* uuid, std::vector<u_int32_t>& uuidData);
@@ -274,7 +277,7 @@ protected:
     bool Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool IsSectionExists(fs3_section_t sectType);
     virtual bool VerifyImageAfterModifications();
-    virtual bool parseDevData(bool quickQuery = true, bool verbose = false, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
+    virtual bool ParseDevData(bool quickQuery = true, bool verbose = false, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
 
     bool isOld4MBImage(FwOperations* imageOps);
     bool FwCalcSHA(MlxSign::SHAType shaType, vector<u_int8_t>& sha256, vector<u_int8_t>& fourMbImage);

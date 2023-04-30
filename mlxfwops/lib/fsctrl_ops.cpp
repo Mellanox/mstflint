@@ -32,6 +32,8 @@
  */
 
 #include "fsctrl_ops.h"
+#include "fw_version.h"
+#include "fs_comps_ops.h"
 
 #include <tools_utils.h>
 #include <bit_slice.h>
@@ -195,15 +197,25 @@ bool FsCtrlOperations::FsIntQuery()
         return true;
     }
 
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.uid = fwQuery.base_mac.uid;
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQuery.base_mac.num_allocated;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.uid = fwQuery.base_mac_orig.uid;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQuery.base_mac_orig.num_allocated;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.uid = fwQuery.base_mac.uid;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.num_allocated = fwQuery.base_mac.num_allocated & 0xff;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.num_allocated_msb =
+      (fwQuery.base_mac.num_allocated >> 8) & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.uid = fwQuery.base_mac_orig.uid;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.num_allocated =
+      fwQuery.base_mac_orig.num_allocated & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.num_allocated_msb =
+      (fwQuery.base_mac_orig.num_allocated >> 8) & 0xff;
 
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.uid = fwQuery.base_guid.uid;
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQuery.base_guid.num_allocated;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.uid = fwQuery.base_guid_orig.uid;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQuery.base_guid_orig.num_allocated;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.uid = fwQuery.base_guid.uid;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.num_allocated = fwQuery.base_guid.num_allocated & 0xff;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.num_allocated_msb =
+      (fwQuery.base_guid.num_allocated >> 8) & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.uid = fwQuery.base_guid_orig.uid;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.num_allocated =
+      fwQuery.base_guid_orig.num_allocated & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.num_allocated_msb =
+      (fwQuery.base_guid_orig.num_allocated >> 8) & 0xff;
 
     _fwImgInfo.ext_info.pci_device_id = fwQuery.dev_id;
     _fwImgInfo.ext_info.dev_type = fwQuery.dev_id;
@@ -270,7 +282,7 @@ bool FsCtrlOperations::FsIntQuery()
     rc = reg_access_mcam(mf, REG_ACCESS_METHOD_GET, &mcam);
     if (rc == ME_OK)
     {
-        mfsv_reg_supported = EXTRACT(mcam.mng_access_reg_cap_mask[3-0], 21, 1);
+        mfsv_reg_supported = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 0], 21, 1);
     }
     DPRINTF(("mfsv_reg_supported = %d\n", mfsv_reg_supported));
 
@@ -457,7 +469,7 @@ bool FsCtrlOperations::FwVerifyAdv(ExtVerifyParams& verifyParams)
             return errmsg("%s", err());
         }
         if (!imageOps->FwVerify(verifyParams.verifyCallBackFunc, verifyParams.isStripedImage, verifyParams.showItoc,
-                                    true))
+                                true))
         {
             delete imageOps;
             return errmsg(imageOps->getErrorCode(), "%s", imageOps->err());
@@ -631,7 +643,8 @@ bool FsCtrlOperations::_createImageOps(FwOperations** imageOps)
 
 bool FsCtrlOperations::GetHashesTableSize(u_int32_t hashes_table_addr, u_int32_t& size)
 {
-    u_int32_t htoc_size = IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + HTOC_HASH_SIZE);
+    u_int32_t htoc_size =
+      IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + HTOC_HASH_SIZE);
     size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + htoc_size + HASHES_TABLE_TAIL_SIZE;
     return true;
 }
@@ -726,7 +739,44 @@ bool FsCtrlOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData,
                                       ExtBurnParams& burnParams,
                                       FwComponent::comps_ids_t ComponentId)
 {
-    return _Burn(imageOps4MData, burnParams, ComponentId);
+    return _Burn(imageOps4MData, burnParams.ProgressFuncAdv, ComponentId);
+}
+
+bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps,
+                                      ExtBurnParams& burnParams,
+                                      FwComponent::comps_ids_t componentId)
+{
+    if (componentId == FwComponent::comps_ids_t::COMPID_CLOCK_SYNC_EEPROM)
+    {
+        vector<u_int8_t> data;
+
+        if (!QueryComponentData(componentId, imageOps->GetDeviceIndex(), data))
+        {
+            return false;
+        }
+
+        FsCompsOperations* compsOps = dynamic_cast<FsCompsOperations*>(imageOps);
+        if (!compsOps->IsCompatibleToDevice(data, burnParams.ignoreVersionCheck))
+        {
+            return errmsg("%s", compsOps->err());
+        }
+
+        _fwCompsAccess->SetActivationStep(false);
+    }
+
+    std::vector<u_int8_t> compData;
+    u_int32_t imageSize = 0;
+    if (!imageOps->GetImageSize(&imageSize))
+    {
+        return false;
+    }
+    compData.resize(imageSize);
+    if (!imageOps->FwReadData(compData.data(), &imageSize))
+    {
+        return errmsg(imageOps->getErrorCode(), "Failed to read component from file");
+    }
+    printf("-I- Downloading FW ...\n");
+    return _Burn(compData, burnParams.ProgressFuncAdv, componentId);
 }
 
 bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams)
@@ -778,7 +828,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
     {
         return errmsg(imageOps->getErrorCode(), "Failed to Extract 4MB from the image");
     }
-    return _Burn(imageOps4MData, burnParams);
+    return _Burn(imageOps4MData, burnParams.ProgressFuncAdv);
 }
 
 bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams)
@@ -787,13 +837,11 @@ bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams&
 }
 
 bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData,
-                             ExtBurnParams& burnParams,
+                             ProgressCallBackAdvSt& progressCallBack,
                              FwComponent::comps_ids_t ComponentId)
 {
 #ifdef UEFI_BUILD
-    burnParams.ProgressFuncAdv.uefi_func = burnParams.progressFunc;
-#else
-    burnParams.progressFunc = (ProgressCallBack)NULL;
+    progressCallBack.uefi_func
 #endif
     FwComponent bootImageComponent;
     std::vector<FwComponent> compsToBurn;
@@ -810,10 +858,10 @@ bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData,
         bool isBmeSet = DMAComponentAccess::isBMESet(_fwCompsAccess->getMfileObj());
         if (!isBmeSet)
         {
-            DPRINTF(("-W- DMA burning is not supported due to BME is unset (Bus primary Enable).\n"));
+            DPRINTF(("-W- DMA access is not supported due to BME is unset (Bus primary Enable).\n"));
         }
     }
-    if (!_fwCompsAccess->burnComponents(compsToBurn, &burnParams.ProgressFuncAdv))
+    if (!_fwCompsAccess->burnComponents(compsToBurn, &progressCallBack))
     {
         _fwCompsAccess->unlock_flash_semaphore();
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
@@ -853,8 +901,8 @@ bool FsCtrlOperations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFu
     {
         return errmsg("base GUID/MAC were not specified.");
     }
-    if (!sgParam.updateCrc || sgParam.numOfGUIDs != 0 || sgParam.stepSize != 0 || sgParam.numOfGUIDsPP[0] != 0xff ||
-        sgParam.numOfGUIDsPP[1] != 0xff || sgParam.stepSizePP[0] != 0xff || sgParam.stepSizePP[1] != 0xff)
+    if (!sgParam.updateCrc || sgParam.numOfGUIDs != 0 || sgParam.stepSize != 0 || sgParam.numOfGUIDsPP[0] != 0xffff ||
+        sgParam.numOfGUIDsPP[1] != 0xffff || sgParam.stepSizePP[0] != 0xff || sgParam.stepSizePP[1] != 0xff)
     {
         return errmsg("Tried to set unsupported values. Allowed values to set are mac,guid,uid.");
     }
@@ -1202,4 +1250,15 @@ bool FsCtrlOperations::IsSecurityVersionViolated(u_int32_t image_security_versio
 
     // Check violation of security-version
     return (imageSecurityVersion < deviceEfuseSecurityVersion);
+}
+
+bool FsCtrlOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data)
+{
+    DPRINTF(("QueryComponentData - %X\n", comp));
+    if (!_fwCompsAccess->GetComponentInfo(comp, deviceIndex, data) &&
+        _fwCompsAccess->getLastError() != FWCOMPS_DEVICE_NOT_PRESENT)
+    {
+        return errmsg("%s", _fwCompsAccess->getLastErrMsg());
+    }
+    return true;
 }

@@ -1,22 +1,41 @@
 
-/*                  - Mellanox Confidential and Proprietary -
+/* Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
- *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- *  Except as specifically permitted herein, no portion of the information,
- *  including but not limited to object code and source code, may be reproduced,
- *  modified, distributed, republished or otherwise exploited in any form or by
- *  any means for any purpose without the prior written permission of Mellanox
- *  Technologies Ltd. Use of software subject to the terms and conditions
- *  detailed in the file "LICENSE.txt".
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
  *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
+
  
 
 /***
-         *** This file was generated at "2023-01-09 15:12:34"
+         *** This file was generated at "2023-03-30 13:00:24"
          *** by:
-         ***    > /.autodirect/swgwork/astrutsovsky/work/4Dan/a-me_dev/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
+         ***    > /swgwork/hkarni/workspace/bug_fix_a-me/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
          ***/
 #ifndef REG_ACCESS_HCA_LAYOUTS_H
 #define REG_ACCESS_HCA_LAYOUTS_H
@@ -110,9 +129,29 @@ Read and write access must be aligned to the word size. Write access must be don
 	/* Description - Only signed components are accepted. */
 	/* 0x10.30 - 0x10.30 */
 	u_int8_t signed_updates_only;
-	/* Description - When set, this components may be read, see Section 10.3.4, "Read Flow", on page 966. */
+	/* Description - When set, this components may be read, see Section 10.3.4, "Read Flow", on page 950. */
 	/* 0x10.31 - 0x10.31 */
 	u_int8_t rd_en;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_hca_mcqi_clock_source_properties_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Image Version Minor Number */
+	/* 0x0.0 - 0x0.3 */
+	u_int8_t image_version_minor;
+	/* Description - Image Version Major Number */
+	/* 0x0.4 - 0x0.7 */
+	u_int8_t image_version_major;
+	/* Description - Clock Source Device Vendor Id
+0: Renesas
+1: SiTime 148
+2: SiTime 348
+3: TI
+4-255: Reserved */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t vendor_id;
 };
 
 /* Description -   */
@@ -204,11 +243,11 @@ struct reg_access_hca_mcqi_version_ext {
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t version;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Time of component creation. Valid only if build_time_valid is set. See Table 1977, "Date-Time Layout," on page 2354 */
+	/* Description - Time of component creation. Valid only if build_time_valid is set. See Table 2007, "Date-Time Layout," on page 2386 */
 	/* 0x8.0 - 0xc.31 */
 	u_int64_t build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - User-defined time assigned to the component version. Valid only if user_defined_time_valid is set. See Table 1977, "Date-Time Layout," on page 2354 */
+	/* Description - User-defined time assigned to the component version. Valid only if user_defined_time_valid is set. See Table 2007, "Date-Time Layout," on page 2386 */
 	/* 0x10.0 - 0x14.31 */
 	u_int64_t user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -277,19 +316,21 @@ Note - This field is writeable only when using the ICMD interface. The only valu
 	/* 0x0.16 - 0x0.20 */
 	u_int8_t writer_id;
 	/* Description - Defines which value of the Configuration Item will be accessed.
-0: NEXT - Next value to be applied 1: CURRENT - Currently set values (only valid for Query operation) Supported only if NVGC.nvda_read_current_settings==1.2: FACTORY - Default factory values (only valid for Query operation). Supported only if NVGC.nvda_read_factory_settings==1. */
+0: NEXT - Next value to be applied
+1: CURRENT - Currently set values (only valid for Query operation) Supported only if NVGC.nvda_read_current_settings==1.
+2: FACTORY - Default factory values (only valid for Query operation). Supported only if NVGC.nvda_read_factory_settings==1. */
 	/* 0x0.22 - 0x0.23 */
 	u_int8_t access_mode;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Configuration item index according to its type_class. 
-Table 2047, "Configuration Item Data Type Class Global Layout," on page 2406
-Table 2049, "Configuration Item Data Type Class Physical Port Layout," on page 2406
-Table 2051, "Configuration Item Data Type Class Per Host-PF Layout," on page 2407
-Table 2053, "Configuration Item Data Type Class Log Layout," on page 2407
-Table 2055, "Configuration Item Data Type Class File Layout," on page 2408
-Table 2057, "Configuration Item Data Type Class Host Layout," on page 2408
+Table 2079, "Configuration Item Data Type Class Global Layout," on page 2438
+Table 2081, "Configuration Item Data Type Class Physical Port Layout," on page 2438
+Table 2083, "Configuration Item Data Type Class Per Host-PF Layout," on page 2439
+Table 2085, "Configuration Item Data Type Class Log Layout," on page 2439
+Table 2087, "Configuration Item Data Type Class File Layout," on page 2440
+Table 2089, "Configuration Item Data Type Class Host Layout," on page 2440
 
-Table 2061, "Configuration Item Data Type Class Module Layout," on page 2409 */
+Table 2093, "Configuration Item Data Type Class Module Layout," on page 2441 */
 	/* 0x4.0 - 0x4.23 */
 	u_int32_t type_index;
 	/* Description - Type Class:
@@ -346,6 +387,9 @@ union reg_access_hca_mcqi_reg_data_auto_ext {
 	/* Description -  */
 	/* 0x0.0 - 0x78.31 */
 	struct reg_access_hca_mcqi_linkx_properties_ext mcqi_linkx_properties_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	struct reg_access_hca_mcqi_clock_source_properties_ext mcqi_clock_source_properties_ext;
 };
 
 /* Description -   */
@@ -760,14 +804,14 @@ UPDATE_COMPONENT, ACTIVATE_COMPONENET, READ_COMPONENT and READ_PENDING_COMPONENT
 	u_int16_t component_index;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Token representing the current flow executed by the FSM.
-See Section 10.2.1, "Component Update State", on page 963. */
+See Section 10.2.1, "Component Update State", on page 947. */
 	/* 0x8.0 - 0x8.23 */
 	u_int32_t update_handle;
 	/* Description - Auto-update to all matching downstream devices is requested. */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t auto_update;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Current Update FSM state, see Section 10.3.8, "FSM States", on page 967
+	/* Description - Current Update FSM state, see Section 10.3.8, "FSM States", on page 951
 0x0: IDLE
 0x1: LOCKED
 0x2: INITIALIZE
@@ -781,7 +825,7 @@ See Section 10.2.1, "Component Update State", on page 963. */
 Other values are reserved */
 	/* 0xc.0 - 0xc.3 */
 	u_int8_t control_state;
-	/* Description - Indicates the successful completion of the instruction, or the reason it failed. See Section 10.3.7, "Error Handling", on page 966
+	/* Description - Indicates the successful completion of the instruction, or the reason it failed. See Section 10.3.7, "Error Handling", on page 950
 0x0: OK
 0x1: ERROR
 0x2: REJECTED_DIGEST_ERR
@@ -861,7 +905,7 @@ struct reg_access_hca_mcda_reg_ext {
 	/* 0x0.0 - 0x0.23 */
 	u_int32_t update_handle;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Offset of accessed address relative to component start. Accesses must be in accordance to log_mcda_word_size in Table 1973, "MCQI CAPABILITIES Info Layout," on page 2351 */
+	/* Description - Offset of accessed address relative to component start. Accesses must be in accordance to log_mcda_word_size in Table 2003, "MCQI CAPABILITIES Info Layout," on page 2383 */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t offset;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -956,7 +1000,9 @@ struct reg_access_hca_mcqi_reg_ext {
 	u_int16_t component_index;
 	/* Description - Device number.
 For gearboxes, the index represents the gearbox die. 
-For cables, the index represents the module index starting at index 1. Index 0 indicates the host device. */
+For cables, the index represents the module index starting at index 1. Index 0 indicates the host device.
+
+For Clock Source EEPROM, the index represents the Clock Source Index, starting from 1 */
 	/* 0x0.16 - 0x0.27 */
 	u_int16_t device_index;
 	/* Description - When set, the register will return information about the pending component (if available) */
@@ -974,6 +1020,7 @@ For cables, the index represents the module index starting at index 1. Index 0 i
 0x1: VERSION
 0x5: ACTIVATION_METHOD
 0x6: LINKX_PROPERTIES
+0x7: CLOCK_SOURCE_PROPERTIES
 Other values are reserved */
 	/* 0x8.0 - 0x8.4 */
 	u_int8_t info_type;
@@ -993,10 +1040,11 @@ If data_size is not DWORD aligned, the last bytes are zero padded. */
 	u_int16_t data_size;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description - Properties set structure according to info_type.
-CAPABILITIES - See Table 1973, "MCQI CAPABILITIES Info Layout," on page 2351
-VERSION - See Table 1975, "MCQI VERSION Info Layout," on page 2353
-ACTIVATION_METHOD - See Table 1979, "MCQI ACTIVATION_METHOD Info Layout," on page 2355
-LINKX_PREPERTIES - See Table 1981, "MCQI LINKX_PROPERTIES Info Layout," on page 2356 */
+CAPABILITIES - See Table 2003, "MCQI CAPABILITIES Info Layout," on page 2383
+VERSION - See Table 2005, "MCQI VERSION Info Layout," on page 2385
+ACTIVATION_METHOD - See Table 2009, "MCQI ACTIVATION_METHOD Info Layout," on page 2387
+LINKX_PREPERTIES - See Table 2011, "MCQI LINKX_PROPERTIES Info Layout," on page 2388
+CLOCK_SOURCE_PROPERTIES - See Table 2013, "MCQI CLOCK_SOURCE_PROPERTIES Layout," on page 2390 */
 	/* 0x18.0 - 0x90.31 */
 	union reg_access_hca_mcqi_reg_data_auto_ext data;
 };
@@ -1029,15 +1077,14 @@ For cables, the index represents the module index starting at index 1. Index 0 i
 0xD: CRYPTO_TO_COMMISSIONING
 0xE: RMCS_TOKEN
 0xF: RMDT_TOKEN
-[DWIP]:
-0x10: CRCS_TOKEN
-0x11: CRDT_TOKEN
-0x12: CLOCK_SYNC_EEPROM
+0x10: CRCS_TOKEN. 
+0x11: CRDT_TOKEN. 
+0x12: CLOCK_SYNC_EEPROM. 
 Other values are reserved */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t identifier;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Component state in update flow, see Section 10.2.1, "Component Update State", on page 963:
+	/* Description - Component state in update flow, see Section 10.2.1, "Component Update State", on page 947:
 0x0: IDLE
 0x1: IN_PROGRESS
 0x2: APPLIED
@@ -1319,20 +1366,20 @@ struct reg_access_hca_mfsv_reg_ext {
 /* Size in bytes - 160 */
 struct reg_access_hca_mgir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see Table 1995, "Hardware Info Layout," on page 2369 */
+	/* Description - Hardware Information, see Table 2027, "Hardware Info Layout," on page 2401 */
 	/* 0x0.0 - 0x1c.31 */
 	struct reg_access_hca_mgir_hardware_info_ext hw_info;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description - Firmware Information, see Table 1997, "Firmware Info Layout," on page 2371 */
+	/* Description - Firmware Information, see Table 2029, "Firmware Info Layout," on page 2403 */
 	/* 0x20.0 - 0x5c.31 */
 	struct reg_access_hca_mgir_fw_info_ext fw_info;
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
-	/* Description - Software Information, see Table 1999, "Software Info Layout," on page 2373
+	/* Description - Software Information, see Table 2031, "Software Info Layout," on page 2405
 This field indicates the oldest software version compatible with the current firmware */
 	/* 0x60.0 - 0x7c.31 */
 	struct reg_access_hca_mgir_sw_info_ext sw_info;
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
-	/* Description - Development Information, see Table 2003, "Development Info Layout," on page 2376 */
+	/* Description - Development Information, see Table 2035, "Development Info Layout," on page 2408 */
 	/* 0x80.0 - 0x98.31 */
 	struct reg_access_hca_mgir_dev_info_ext dev_info;
 };
@@ -1412,7 +1459,7 @@ struct reg_access_hca_mnvia_reg_ext {
 	/* 0x0.0 - 0x0.2 */
 	u_int8_t target;
 	/* Description - The entity which perform the invalidate.
-The encoding same as writer_id in Configuration Item register (See Table 2045, "Configuration Item Header Layout," on page 2403). */
+The encoding same as writer_id in Configuration Item register (See Table 2077, "Configuration Item Header Layout," on page 2435). */
 	/* 0x0.4 - 0x0.8 */
 	u_int8_t writer_id;
 };
@@ -1422,9 +1469,9 @@ The encoding same as writer_id in Configuration Item register (See Table 2045, "
 struct reg_access_hca_mnvqc_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Configuration item type. 
-Table 2047, "Configuration Item Data Type Class Global Layout," on page 2406
-Table 2049, "Configuration Item Data Type Class Physical Port Layout," on page 2406
-Table 2051, "Configuration Item Data Type Class Per Host-PF Layout," on page 2407 */
+Table 2079, "Configuration Item Data Type Class Global Layout," on page 2438
+Table 2081, "Configuration Item Data Type Class Physical Port Layout," on page 2438
+Table 2083, "Configuration Item Data Type Class Per Host-PF Layout," on page 2439 */
 	/* 0x0.0 - 0x0.31 */
 	u_int32_t type;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -1662,7 +1709,14 @@ struct reg_access_hca_msgi_ext {
 struct reg_access_hca_mtcap_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Number of ASIC+platform sensors supported by the device 
-This includes the ASIC and the ambient sensors. QSFP module sensors are not included. */
+This includes the ASIC and the ambient sensors. Module sensors are not included.
+This actually is equal to sum of all '1' in sensor_map
+Range 1..64
+
+Known sensors:
+0: current asic temp, FW exposes current max(all diode temp sensors)
+1..63: ambient, supported only for unmanaged switch, defined by ini
+64..127: modules (not exposed by this field) */
 	/* 0x0.0 - 0x0.6 */
 	u_int8_t sensor_count;
 	/* Description - Slot index
@@ -1670,7 +1724,9 @@ This includes the ASIC and the ambient sensors. QSFP module sensors are not incl
 	/* 0x0.16 - 0x0.19 */
 	u_int8_t slot_index;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Number of sensors supported by the device that are on the ASIC. */
+	/* Description - Number of sensors supported by the device that are on the ASIC.
+Exposes how many ASIC diodes exist. 
+The FW exposes all of them as sensor[0] */
 	/* 0x4.0 - 0x4.6 */
 	u_int8_t internal_sensor_count;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -1686,9 +1742,12 @@ Per bit:
 /* Size in bytes - 32 */
 struct reg_access_hca_mtmp_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Sensors index to access.
-
-64-127 of sensor_index are mapped to the SFP+/QSFP modules sequentially (module 0 is mapped to sensor_index 64, module 1 to sensor_index 65 and so on). Gearbox sensors are from index 256 (Gearbox 0 is mapped to sensor_index 256 and so on) */
+	/* Description - Sensors index
+0: current asic temp, FW exposes current max(all diode temp sensors)
+1..62: ambient, supported only for unmanaged switch, defined by ini
+64..255: modules
+256..288: Gearbox
+289..704: reserved for future */
 	/* 0x0.0 - 0x0.11 */
 	u_int16_t sensor_index;
 	/* Description - Slot index
@@ -1703,23 +1762,35 @@ For negative values 2's complement is used (for example: -3.25 Celsius will read
 	u_int16_t temperature;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - The highest measured temperature from the sensor.
-When the bit mte is cleared, the field max_temperature is reserved. */
+Reserved when mte = 0
+Cleared by mtr = 1
+Valid only when i = 0
+ */
 	/* 0x8.0 - 0x8.15 */
 	u_int16_t max_temperature;
-	/* Description - Shut Down Events Modify Enable - when set along with sdee set to receiving thermal shut down events, all other fields of the register are neglected and should not be set. */
+	/* Description - Shut Down Events Modify Set Enable:
+0: all fields are set
+1: only sdee field is set, all other fields reserved */
 	/* 0x8.28 - 0x8.28 */
 	u_int8_t sdme;
-	/* Description - Warning Events Modify Enable - when set along with tee set to receiving warning events, all other fields of the register are neglected and should not be set. */
+	/* Description - Warning Events Modify Set Enable:
+0: all fields are set
+1: only tee field is set, all other fields reserved */
 	/* 0x8.29 - 0x8.29 */
 	u_int8_t weme;
-	/* Description - Max Temperature Reset - clears the value of the max temperature register */
+	/* Description - Max Temperature Reset:
+0: do not modify the value of the max temperature register
+1: clear the value of the max temperature register */
 	/* 0x8.30 - 0x8.30 */
 	u_int8_t mtr;
-	/* Description - Max Temperature Enable - enables measuring the max temperature on a sensor */
+	/* Description - Max Temperature Enable:
+0: disable measuring the max temperature on a sensor
+1: enables measuring the max temperature on a sensor */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t mte;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - temperature_threshold_hi refers to the high threshold of Warning Event. If the sensor temperature measurement is above the threshold (and events are enabled), an event will be generated.
+	/* Description - temperature_threshold_hi refers to the high threshold of Warning Event. 
+If the sensor temperature measurement is above the threshold (and events are enabled), an event will be generated.
 threshold_hi and threshold_lo implements hysteresis mechanism of the threshold preventing toggling of the indication.
 Note that temperature_threshold_hi must be equal or lower than the system requirement.
 System requirement for module is the module warning temperature.
@@ -1735,17 +1806,17 @@ Note that the temperature threshold can be used to generate an event message or 
 Supported in downstream devices (devices on slots). */
 	/* 0xc.28 - 0xc.29 */
 	u_int8_t sdee;
-	/* Description - Temperature Event Enable (MTEWE Register)
+	/* Description - Temperature Warning Event Enable (MTEWE Register)
 0: do_not_generate_event
 1: generate_event
 2: generate_single_event
 
-Note - Events may be delayed by up to 60 Seconds from "generate event" or "generate single event"
-Supported Only for switch devices. For HCA devices, SW should register Temperature Warning Event to an EQ. */
+ */
 	/* 0xc.30 - 0xc.31 */
 	u_int8_t tee;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - temperature_threshold_hi refers to the low threshold of Warning Event. The offset threshold_lo implements the lower threshold for the hysteresis mechanism of over temperature alert. Once alert is set, if the temperature goes below this threshold, the alert is cleared.
+	/* Description - temperature_threshold_lo refers to the low threshold of Warning Event. 
+The offset threshold_lo implements the lower threshold for the hysteresis mechanism of over temperature alert. Once alert is set, if the temperature goes below this threshold, the alert is cleared.
 Note that temperature_threshold_lo must be at least 5 degrees lower than temperature_threshold_hi */
 	/* 0x10.0 - 0x10.15 */
 	u_int16_t temperature_threshold_lo;
@@ -1769,17 +1840,21 @@ struct reg_access_hca_mtrc_cap_reg_ext {
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t num_string_db;
 	/* Description - Indicates the version of the tracing mechanism.
-See Section 27.3.4.1, "Timestamp Event Traces", on page 1497
+See Section 24.3.4.1, "Timestamp Event Traces", on page 1490
 0x0: VER_0
 0x1: VER_1
-Other values are reserved */
+Other values are reserved.
+Reserved in Switch */
 	/* 0x0.24 - 0x0.25 */
 	u_int8_t trc_ver;
-	/* Description - When set the device supports logging traces to memory */
+	/* Description - When set the device supports logging traces to memory
+0: FIFO Mode
+1: Host Memory Mode */
 	/* 0x0.30 - 0x0.30 */
 	u_int8_t trace_to_memory;
 	/* Description - Write 0x1 to register for tracer ownership, write 0x0 to de-register.
-Read value 0x1 indicates tracer ownership is granted */
+Read value 0x1 indicates tracer ownership is granted.
+Reserved in Switch */
 	/* 0x0.31 - 0x0.31 */
 	u_int8_t trace_owner;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -1800,7 +1875,7 @@ Read value 0x1 indicates tracer ownership is granted */
 };
 
 /* Description -   */
-/* Size in bytes - 8 */
+/* Size in bytes - 12 */
 struct reg_access_hca_mtrc_stdb_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - The number of bytes to read from the String DB. The number of bytes must:
@@ -1834,7 +1909,7 @@ struct reg_access_hca_nic_cap_ext_reg_ext {
 	u_int16_t cap_group;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Capability information according to cap_group.
-For DPA_CAP See Table 1258, "DPA_CAP Capability Layout," on page 1611 */
+For DPA_CAP See Table 1286, "DPA_CAP Capability Layout," on page 1600 */
 	/* 0x10.0 - 0x7c.31 */
 	u_int32_t cap_data[28];
 };
@@ -1892,7 +1967,7 @@ other values are reserved. */
 	/* Description - Bitmask indicating which parameter is modified by MODIFY operation. Set bit indicates the field should be updated.
 bit 0: member_mask
 bit 1: max_num_hart_group
-bit 2: num_vhca_id and vhca_id[]
+bit 2: num_vhca_id_and_vhca_id
 other bits are reserved.
 For Query method, set bit indicates the relevant modification is supported */
 	/* 0x4.0 - 0x4.31 */
@@ -2018,7 +2093,7 @@ Can be set only with admin_status = 2 ('down_by_configuration'), will force link
 
 Bit 0: Force_down_by_fuse
 Bit 1: Force_down_by_hard_wire
-Bit 2: Force_down_by_config_at_init
+Bit 2: Force_down_by_config
 Bit 3: Locked_after_down
 
 Note - value of 0x0 indicates not locked */
@@ -2386,7 +2461,7 @@ Note: Ignored when an_disable_admin is not set */
 /* Size in bytes - 256 */
 struct reg_access_hca_resource_dump_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - See Section 27.8, "Resource Dump", on page 1507. */
+	/* Description - See Section 24.8, "Resource Dump", on page 1500. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t segment_type;
 	/* Description - Sequence number. 0 on first call of dump and incremented on each more dump. */
@@ -2608,6 +2683,13 @@ void reg_access_hca_mcqi_cap_ext_print(const struct reg_access_hca_mcqi_cap_ext 
 unsigned int reg_access_hca_mcqi_cap_ext_size(void);
 #define REG_ACCESS_HCA_MCQI_CAP_EXT_SIZE    (0x7c)
 void reg_access_hca_mcqi_cap_ext_dump(const struct reg_access_hca_mcqi_cap_ext *ptr_struct, FILE *fd);
+/* mcqi_clock_source_properties_ext */
+void reg_access_hca_mcqi_clock_source_properties_ext_pack(const struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_mcqi_clock_source_properties_ext_unpack(struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_mcqi_clock_source_properties_ext_print(const struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_mcqi_clock_source_properties_ext_size(void);
+#define REG_ACCESS_HCA_MCQI_CLOCK_SOURCE_PROPERTIES_EXT_SIZE    (0x4)
+void reg_access_hca_mcqi_clock_source_properties_ext_dump(const struct reg_access_hca_mcqi_clock_source_properties_ext *ptr_struct, FILE *fd);
 /* mcqi_linkx_properties_ext */
 void reg_access_hca_mcqi_linkx_properties_ext_pack(const struct reg_access_hca_mcqi_linkx_properties_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mcqi_linkx_properties_ext_unpack(struct reg_access_hca_mcqi_linkx_properties_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -2872,7 +2954,7 @@ void reg_access_hca_mtrc_stdb_reg_ext_pack(const struct reg_access_hca_mtrc_stdb
 void reg_access_hca_mtrc_stdb_reg_ext_unpack(struct reg_access_hca_mtrc_stdb_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
 void reg_access_hca_mtrc_stdb_reg_ext_print(const struct reg_access_hca_mtrc_stdb_reg_ext *ptr_struct, FILE *fd, int indent_level);
 unsigned int reg_access_hca_mtrc_stdb_reg_ext_size(void);
-#define REG_ACCESS_HCA_MTRC_STDB_REG_EXT_SIZE    (0x8)
+#define REG_ACCESS_HCA_MTRC_STDB_REG_EXT_SIZE    (0x2D0)
 void reg_access_hca_mtrc_stdb_reg_ext_dump(const struct reg_access_hca_mtrc_stdb_reg_ext *ptr_struct, FILE *fd);
 /* nic_cap_ext_reg_ext */
 void reg_access_hca_nic_cap_ext_reg_ext_pack(const struct reg_access_hca_nic_cap_ext_reg_ext *ptr_struct, u_int8_t *ptr_buff);

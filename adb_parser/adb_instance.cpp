@@ -70,6 +70,7 @@ AdbInstance::AdbInstance() :
     nodeDesc(NULL),
     parent(NULL),
     condition(AdbCondition()),
+    conditionalSize(AdbCondition()),
     offset(0xffffffff),
     size(0),
     maxLeafSize(0),
@@ -199,6 +200,7 @@ bool AdbInstance::operator<(const AdbInstance& other)
 AdbInstance* AdbInstance::getChildByPath(const string& path, bool isCaseSensitive)
 {
     string effPath = isCaseSensitive ? path : boost::algorithm::to_lower_copy(path);
+
     if (effPath[0] == '.')
     {
         effPath.erase(0, 1);

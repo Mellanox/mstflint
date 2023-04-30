@@ -42,13 +42,16 @@ LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 UTILS_LIB = $(top_srcdir)/mft_utils
 UEFI_COMMON_DIR = $(top_srcdir)/mlxfwops/uefi_c
 DEV_MGT_DIR = $(top_srcdir)/dev_mgt
+COMPONENTS_DIR = components
 
-AM_CPPFLAGS = -I$(srcdir) -I$(MTCR_INC_DIR) -I$(MFLASH_DIR) $(JSON_CFLAGS) -I$(MINIXZ_DIR)\
-           -I$(COMMON_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(MFT_EXT_LIBS_INC_DIR)/zlib -I$(LAYOUTS_DIR) -I$(top_srcdir)/common -I$(UTILS_LIB) -I$(UEFI_COMMON_DIR) -I$(DEV_MGT_DIR) -I$(MTCR_UL_DIR)
+AM_CPPFLAGS = -I$(srcdir) -I$(MTCR_INC_DIR) -I$(MFLASH_DIR) $(JSON_CFLAGS) -I$(MINIXZ_DIR) \
+              -I$(COMMON_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(MFT_EXT_LIBS_INC_DIR)/zlib -I$(LAYOUTS_DIR) \
+              -I$(top_srcdir)/common -I$(UTILS_LIB) -I$(UEFI_COMMON_DIR) -I$(DEV_MGT_DIR) -I$(MTCR_UL_DIR) \
+              -I$(COMPONENTS_DIR)
 
 MLXFWOPS_VERSION = 1
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) -Wno-implicit-fallthrough
 
 if ENABLE_FWMGR
 AM_CPPFLAGS += -I$(top_srcdir)/libmfa
@@ -81,10 +84,14 @@ libmlxfwops_a_SOURCES = flint_base.cpp \
                fs3_ops.cpp fs3_ops.h\
                fw_ops.h\
                fs4_ops.cpp fs4_ops.h\
+               fs5_ops.cpp fs5_ops.h\
                aux_tlv_ops.cpp aux_tlv_ops.h\
                mlxfwops.cpp mlxfwops.h \
                fsctrl_ops.cpp fsctrl_ops.h \
                fs_checks.h fs_checks.cpp \
                fw_version.cpp \
-               mlxfwops_com.h flint_base.h flint_io.h
+               mlxfwops_com.h flint_base.h flint_io.h \
+                $(COMPONENTS_DIR)/fs_comps_ops.h $(COMPONENTS_DIR)/fs_comps_ops.cpp \
+                $(COMPONENTS_DIR)/fs_synce_ops.h $(COMPONENTS_DIR)/fs_synce_ops.cpp $(COMPONENTS_DIR)/fs_comps_factory.h
+
 

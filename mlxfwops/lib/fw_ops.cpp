@@ -38,10 +38,12 @@
 #include "flint_base.h"
 #include "flint_io.h"
 #include "fw_ops.h"
+#include "fs5_ops.h"
 #include "fs4_ops.h"
 #include "fs3_ops.h"
 #include "fs2_ops.h"
 #include "fsctrl_ops.h"
+#include "fs_comps_factory.h"
 
 #ifdef CABLES_SUPP
 #include "cablefw_ops.h"
@@ -63,7 +65,6 @@
 #define OP_NOT_SUPPORTED EINVAL
 #endif // __WIN__
 
-#define BAD_CRC_MSG "Bad CRC."
 extern const char* g_sectNames[];
 
 bool FwOperations::readBufAux(FBase& f, u_int32_t o, void* d, int l, const char* p)
@@ -103,7 +104,7 @@ int FwOperations::getFileSignature(const char* fname)
         return res;
     }
 
-    if (!strncmp((char*)tmpb, "MTFW", 4))
+    if (!strncmp((char*)tmpb, "MTFW", 4) || FsCompsFactory::IsFsCompsFingerPrint(tmpb))
     {
         res = IMG_SIG_TYPE_BIN;
     }
@@ -276,14 +277,14 @@ void FwOperations::getSupporteHwId(u_int32_t** supportedHwId, u_int32_t& support
     supportedHwIdNum = _fwImgInfo.supportedHwIdNum;
 }
 
-bool FwOperations::checkBoot2(u_int32_t beg,
+bool FwOperations::CheckBoot2(u_int32_t beg,
                               u_int32_t offs,
                               u_int32_t& next,
                               bool fullRead,
                               const char* pref,
                               VerifyCallBack verifyCallBackFunc)
 {
-    DPRINTF(("FwOperations::checkBoot2\n"));
+    DPRINTF(("FwOperations::CheckBoot2\n"));
     u_int32_t size = 0x0;
 
     char* pr = new char[strlen(pref) + 512];
@@ -296,14 +297,14 @@ bool FwOperations::checkBoot2(u_int32_t beg,
         return false;
     }
     TOCPU1(size);
-    DPRINTF(("FwOperations::checkBoot2 size = 0x%x\n", size));
+    DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", size));
     if (size > 1048576 || size < 4)
     {
         report_callback(verifyCallBackFunc, "%s /0x%08x/ - unexpected size (0x%x)\n", pr, offs + beg + 4, size);
         delete[] pr;
-        return false;
+        return errmsg("Boot2 invalid size\n");
     }
-    _fwImgInfo.bootSize = (size + 4) * 4;
+    _fwImgInfo.boot2Size = (size + 4) * 4;
 
     // Get absolute address on flash when checking BOOT2 for FS3 image format (for FS2 its always displayed as
     // contiguous) Adrianc: why dont we show them both in the same way when running verify.
@@ -315,7 +316,7 @@ bool FwOperations::checkBoot2(u_int32_t beg,
     sprintf(pr, "%s /0x%08x-0x%08x (0x%06x)/ (BOOT2)", pref, offs + boot2AbsAddr,
             offs + boot2AbsAddr + (size + 4) * 4 - 1, (size + 4) * 4);
 
-    if ((_ioAccess->is_flash() && fullRead == true) || !_ioAccess->is_flash())
+    if (fullRead == true || !_ioAccess->is_flash())
     {
         Crc16 crc;
         u_int32_t* buff = new u_int32_t[size + 4];
@@ -325,7 +326,7 @@ bool FwOperations::checkBoot2(u_int32_t beg,
         {
             delete[] pr;
             delete[] buff;
-            return rc;
+            return errmsg("%s - read error (%s)\n", "Boot2", (*_ioAccess).err());
         }
         // we hold for FS3 an image cache so we selectevely update it in UpdateImgCache() call
         UpdateImgCache((u_int8_t*)buff, offs + beg, size * 4 + 16);
@@ -339,7 +340,7 @@ bool FwOperations::checkBoot2(u_int32_t beg,
         delete[] buff;
         if (crc.get() != crc_act)
         {
-            DPRINTF(("FwOperations::checkBoot2 wrong CRC (exp:0x%x, act:0x%x)\n", crc.get(), crc_act));
+            DPRINTF(("FwOperations::CheckBoot2 wrong CRC (exp:0x%x, act:0x%x)\n", crc.get(), crc_act));
             report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n", pr, offs + beg,
                             crc.get(), crc_act);
             if (!_fwParams.ignoreCrcCheck)
@@ -357,7 +358,7 @@ bool FwOperations::checkBoot2(u_int32_t beg,
     next = offs + size * 4 + 16;
     delete[] pr;
     return true;
-} // checkBoot2
+} // CheckBoot2
 
 bool FwOperations::CheckAndPrintCrcRes(char* pr,
                                        bool blank_crc,
@@ -617,48 +618,62 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP)
     return true;
 }
 
-u_int8_t FwOperations::IsFS4Image(FBase& f, u_int32_t* found_images)
+bool FwOperations::GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset, u_int8_t& image_format_version)
 {
-    DPRINTF(("FwOperations::IsFS4Image\n"));
     u_int32_t data = 0;
-    u_int8_t image_version;
+    if (!f.read(boot_version_offset, &data, IMAGE_LAYOUT_BOOT_VERSION_SIZE))
+    {
+        return false;
+    }
+    image_layout_boot_version boot_version;
+    memset(&boot_version, 0, sizeof(boot_version));
+    image_layout_boot_version_unpack(&boot_version, (u_int8_t*)&data);
+    image_format_version = boot_version.image_format_version;
+    DPRINTF(("FwOperations::GetImageFormatVersion image_format_version = %d\n", image_format_version));
+    return true;
+}
+u_int8_t FwOperations::IsFS4OrFS5Image(FBase& f, u_int32_t* found_images)
+{
+    DPRINTF(("FwOperations::IsFS4OrFS5Image\n"));
+    u_int8_t image_format_version;
     u_int32_t image_start[CNTX_START_POS_SIZE] = {0};
 
     FindAllImageStart(&f, image_start, found_images, _fs4_magic_pattern);
 
     if (*found_images)
     {
-        // check if the image_format_version is ok
-        READ4_NOERRMSG(f, image_start[0] + 0x10, &data);
-        TOCPU1(data);
-        image_version = data >> 24;
-        DPRINTF(
-          ("FwOperations::IsFS4Image fw_image.begin_area.boot_version.image_format_version = %d\n", image_version));
-        if (image_version == 1)
-        { // 1 is the current version
+        if (!GetImageFormatVersion(f, image_start[0] + FS4_BOOT_VERSION_OFFSET, image_format_version))
+        {
+            return FS_UNKNOWN_IMG;
+        }
+        if (image_format_version == IMG_VER_FS4)
+        {
             return FS_FS4_GEN;
+        }
+        else if (image_format_version == IMG_VER_FS5)
+        {
+            return FS_FS5_GEN;
         }
         else
         {
             return FS_UNKNOWN_IMG;
         }
     }
-
     return FS_UNKNOWN_IMG;
 }
 
 u_int8_t FwOperations::IsFS3OrFS2Image(FBase& f, u_int32_t* found_images)
 {
-    u_int32_t data = 0;
-    u_int8_t image_version;
+    u_int8_t image_format_version;
     u_int32_t image_start[CNTX_START_POS_SIZE] = {0};
     FindAllImageStart(&f, image_start, found_images, _cntx_magic_pattern);
     if (found_images)
     {
-        READ4_NOERRMSG(f, image_start[0] + FS3_IND_ADDR, &data);
-        TOCPU1(data);
-        image_version = data >> 24;
-        if (image_version == IMG_VER_FS3)
+        if (!GetImageFormatVersion(f, image_start[0] + FS3_BOOT_VERSION_OFFSET, image_format_version))
+        {
+            return FS_UNKNOWN_IMG;
+        }
+        if (image_format_version == IMG_VER_FS3)
         {
             return FS_FS3_GEN;
         }
@@ -682,6 +697,19 @@ u_int8_t FwOperations::IsCableImage(FBase& f)
     return FS_UNKNOWN_IMG;
 }
 
+u_int8_t FwOperations::IsFSCompsImage(FBase& f)
+{
+    u_int8_t data[16] = {0};
+    f.read(0, data, 16, false, NULL);
+
+    if (FsCompsFactory::IsFsCompsFingerPrint(data))
+    {
+        return FS_COMPS_GEN;
+    }
+
+    return FS_UNKNOWN_IMG;
+}
+
 u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg)
 {
     DPRINTF(("FwOperations::CheckFwFormat\n"));
@@ -699,8 +727,15 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg)
         {
             return v;
         }
+
+        v = IsFSCompsImage(f);
+        if (v != FS_UNKNOWN_IMG)
+        {
+            return v;
+        }
+
         // First check if it is FS4
-        v = IsFS4Image(f, &found_images);
+        v = IsFS4OrFS5Image(f, &found_images);
         if (found_images)
         {
             return v;
@@ -819,10 +854,12 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams,
         *imgFwOps = NULL;
         return false;
     }
-    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false)
+    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false &&
+        (*imgFwOps)->FwType() != FIT_COMPS)
     {
         devParams.noFwCtrl = true;
     }
+    devParams.deviceIndex = (*imgFwOps)->GetDeviceIndex();
 
     *devFwOps = FwOperationsCreate(devParams);
     if (!(*devFwOps))
@@ -911,20 +948,17 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             (fwParams.hndlType == FHT_UEFI_DEV && !fwParams.uefiExtra.dev_info.no_fw_ctrl))
         {
             fw_comps_error_t fwCompsErr = FWCOMPS_SUCCESS;
-            if (fwParams.hndlType == FHT_MST_DEV)
-            {
-                if (!fwParams.canSkipFwCtrl)
-                { // CX3/PRO are unsupported
-                    fwCompsAccess = new FwCompsMgr(fwParams.mstHndl);
-                }
-                else
-                {
-                    fwCompsErr = FWCOMPS_UNSUPPORTED_DEVICE;
-                }
+            if (!fwParams.canSkipFwCtrl)
+            { // CX3/PRO are unsupported
+                fwCompsAccess = new FwCompsMgr(fwParams.mstHndl, FwCompsMgr::DEVICE_HCA_SWITCH, fwParams.deviceIndex);
             }
             else if (fwParams.hndlType == FHT_UEFI_DEV)
             {
                 fwCompsAccess = new FwCompsMgr(fwParams.uefiHndl, &fwParams.uefiExtra);
+            }
+            else
+            {
+                fwCompsErr = FWCOMPS_UNSUPPORTED_DEVICE;
             }
             // In case MCDA capability isn't supported according to MCAM, we'll have
             // fwCompsAccess object created, but with an internal error in fwCompsErr
@@ -932,7 +966,6 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             {
                 fwCompsErr = fwCompsAccess->getLastError();
             }
-
             if (fwCompsErr != FWCOMPS_SUCCESS)
             {
                 bool exitOnError = false;
@@ -979,9 +1012,9 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                     dm_dev_id_t deviceId = DeviceUnknown;
                     u_int32_t hwDevId = 0x0;
                     u_int32_t hwRevId = 0x0;
-                    if ((fwCompsAccess->getMfileObj()->flags & MDEVS_IB) == 0)
+                    if ((fwCompsAccess->getMfileObj()->flags & MDEVS_MLNX_OS) != 0)
                     {
-                        FLASH_ACCESS_DPRINTF(("Not IB interface\n"));
+                        FLASH_ACCESS_DPRINTF(("MLNXOS device interface\n"));
                         if (dm_get_device_id(fwCompsAccess->getMfileObj(), &deviceId, &hwDevId, &hwRevId) == MFE_OK)
                         {
                             FLASH_ACCESS_DPRINTF(("deviceId = %s\n", dm_dev_type2str(deviceId)));
@@ -1053,6 +1086,20 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             {
                 DPRINTF(("FS4 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
                 fwops = new Fs4Operations(ioAccess);
+                break;
+            }
+
+            case FS_FS5_GEN:
+            {
+                DPRINTF(("FS5 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
+                fwops = new Fs5Operations(ioAccess);
+                break;
+            }
+
+            case FS_COMPS_GEN:
+            {
+                DPRINTF(("FS COMPS ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
+                fwops = FsCompsFactory::Create(ioAccess);
                 break;
             }
 
@@ -2125,11 +2172,6 @@ bool FwOperations::FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, P
     {
         return errmsg("no data to write.");
     }
-    // make sure we work on device
-    if (!_ioAccess->is_flash())
-    {
-        return errmsg("no flash detected.(command is only supported on flash)");
-    }
 
     // check if flash is big enough
     if ((addr + dataVec.size()) > _ioAccess->get_effective_size())
@@ -2331,6 +2373,16 @@ bool FwOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData,
     return errmsg("FwBurnAdvanced not supported.");
 }
 
+bool FwOperations::FwBurnAdvanced(FwOperations* imageOps,
+                                  ExtBurnParams& burnParams,
+                                  FwComponent::comps_ids_t ComponentId)
+{
+    (void)imageOps;
+    (void)burnParams;
+    (void)ComponentId;
+    return errmsg("FwBurnAdvanced not supported.");
+}
+
 bool FwOperations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
 {
     (void)critical;
@@ -2427,8 +2479,8 @@ bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img,
 bool FwOperations::RestoreDevToc(vector<u_int8_t>& img,
                                  char* psid,
                                  dm_dev_id_t devid_t,
-                                 const cx4fw_uid_entry& base_guid,
-                                 const cx4fw_uid_entry& base_mac)
+                                 const image_layout_uid_entry& base_guid,
+                                 const image_layout_uid_entry& base_mac)
 {
     (void)img;
     (void)psid;
@@ -2467,6 +2519,7 @@ bool FwOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int
     return true;
 }
 
+// TODO - use dm_dev_is_fs3/4/5 from tools_dev_types.c and remove this function
 u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
 {
     if ((hwDevId == CX3_HW_ID) || (hwDevId == CX3_PRO_HW_ID))
@@ -2486,6 +2539,10 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
              hwDevId == ABIR_GB_HW_ID)
     {
         return FS_FS4_GEN;
+    }
+    else if ((hwDevId == QUANTUM3_HW_ID) || (hwDevId == CX8_HW_ID) || (hwDevId == BF4_HW_ID))
+    {
+        return FS_FS5_GEN;
     }
     return FS_UNKNOWN_IMG;
 }
@@ -2725,6 +2782,11 @@ bool FwOperations::VerifyBranchFormat(const char* vsdString)
     return false;
 }
 
+bool FwOperations::PrintQuery()
+{
+    return errmsg("PrintQuery not supported.");
+}
+
 bool FwOperations::IsLifeCycleAccessible(chip_type_t)
 {
     return errmsg("IsLifeCycleAccessible not supported.");
@@ -2742,6 +2804,26 @@ bool FwOperations::GetImageSize(u_int32_t*)
 bool FwOperations::GetHashesTableData(vector<u_int8_t>& data)
 {
     return errmsg("GetHashesTableData is not supported");
+}
+
+bool FwOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data)
+{
+    return errmsg("GetComponentData is not supported");
+}
+
+bool FwOperations::IsExtendedGuidNumSupported()
+{
+    bool isSupported = false;
+    switch (_fwImgInfo.supportedHwId[0])
+    {
+        case SPECTRUM4_HW_ID:
+            isSupported = true;
+            break;
+        default:
+            isSupported = false;
+            break;
+    }
+    return isSupported;
 }
 
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
@@ -2856,10 +2938,14 @@ u_int32_t CRSpaceRegisters::getSecurityVersion()
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf3238), 3, 8);
             break;
         case CT_BLUEFIELD3:
-        case CT_SPECTRUM4:
             rollbackMSB = getRegister(0xf4348);
             rollbackLSB = getRegister(0xf434c);
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf4338), 4, 8);
+            break;
+        case CT_SPECTRUM4:
+            rollbackMSB = getRegister(0xf4348);
+            rollbackLSB = getRegister(0xf434c);
+            minimalSecurityVersion = getConsecutiveBits(getRegister(0xf4338), 0, 8);
             break;
         case CT_CONNECTX7:
             rollbackMSB = getRegister(0xf4548);

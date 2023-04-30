@@ -33,6 +33,8 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
+SUBDIRS = mlxreg_lib
+
 USER_DIR = $(top_srcdir)
 UTILS_DIR = $(top_srcdir)/mft_utils
 
@@ -42,25 +44,17 @@ MFLASH_DIR  = $(top_srcdir)/mflash
 COMMON_DIR  = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 MFT_UTILS_DIR = $(top_srcdir)/mft_utils
+MLXREG_DIR = $(USER_DIR)/mlxreg
 
-INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(MTCR_INC_DIR)
+INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(MTCR_INC_DIR) -I$(MLXREG_DIR)
 
 AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe 
-
-lib_LTLIBRARIES = libmstreg_lib.a
-
-libmstreg_lib_a_SOURCES = mlxreg_exception.h \
-                           mlxreg_exception.cpp \
-                           mlxreg_parser.h \
-                           mlxreg_parser.cpp \
-                           mlxreg_lib.h \
-                           mlxreg_lib.cpp
 
 mstreg_SOURCES = mlxreg_ui.cpp mlxreg_ui.h
 
 bin_PROGRAMS = mstreg
 
-mstreg_LDADD = libmstreg_lib.a \
+mstreg_LDADD =  $(MLXREG_DIR)/mlxreg_lib/libmstreg_lib.a \
                 $(USER_DIR)/cmdparser/libcmdparser.a \
                 $(MFT_UTILS_DIR)/libmftutils.a \
                 $(MTCR_DIR)/libmtcr_ul.a \

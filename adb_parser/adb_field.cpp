@@ -50,6 +50,7 @@ AdbField::AdbField() :
     lowBound(0),
     highBound(0),
     unlimitedArr(false),
+    dynamicArr(false),
     isReserved(false),
     userData(0)
 {
@@ -120,6 +121,14 @@ u_int32_t AdbField::arrayLen()
 bool AdbField::isUnlimitedArr()
 {
     return unlimitedArr;
+}
+
+/**
+ * Function: AdbField::isDynamicArr
+ **/
+bool AdbField::isDynamicArr()
+{
+    return dynamicArr;
 }
 
 /**

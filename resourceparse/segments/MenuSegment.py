@@ -44,7 +44,7 @@ from segments.Segment import Segment
 from segments.MenuRecord import MenuRecord
 from segments.SegmentFactory import SegmentFactory
 from utils import constants as cs
-from utils.Exceptions import DumpNotSupported
+from utils.Exceptions import ResourceParseException
 
 
 class MenuSegment(Segment):
@@ -119,59 +119,59 @@ class MenuSegment(Segment):
                     break
 
             if not match_rec:
-                raise DumpNotSupported("Dump type: {0} is not supported".format(dump_type))
+                raise ResourceParseException("Dump type: {0} is not supported".format(dump_type))
 
             # Check index1 attribute
             if not index1 and index1 != 0 and match_rec.must_have_index1:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} must have index1 attribute, and it wasn't provided".format(dump_type))
 
             if not index2 and index2 != 0 and match_rec.must_have_index2:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} must have index2 attribute, and it wasn't provided".format(dump_type))
 
             if index1 and not match_rec.supports_index1:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} does not support index1 attribute, and it was provided".format(dump_type))
 
             if index2 and not match_rec.supports_index2:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} does not support index2 attribute, and it was provided".format(dump_type))
 
             if not num_of_objs_1 and match_rec.must_have_num_of_obj1:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} must have numOfObj1 attribute, and it wasn't provided".format(dump_type))
 
             if not num_of_objs_2 and match_rec.must_have_num_of_obj2:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} must have numOfObj2 attribute, and it wasn't provided".format(dump_type))
 
             if num_of_objs_1 is not None and not match_rec.supports_num_of_obj1:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} does not support numOfObj1 attribute, and it was provided".format(dump_type))
 
             if num_of_objs_2 is not None and not match_rec.supports_num_of_obj2:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} does not support numOfObj2 attribute, and it was provided".format(dump_type))
 
             if num_of_objs_1 == "all" and not match_rec.supports_all_num_of_obj1:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} does not support 'all' as numOfObj1 attribute".format(dump_type))
 
             if num_of_objs_2 == "all" and not match_rec.supports_all_num_of_obj2:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} does not support 'all' as numOfObj2 attribute".format(dump_type))
 
             if num_of_objs_1 == "active" and not match_rec.supports_active_num_of_obj1:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} does not support 'active' as numOfObj1 attribute".format(dump_type))
 
             if num_of_objs_2 == "active" and not match_rec.supports_active_num_of_obj2:
-                raise DumpNotSupported(
+                raise ResourceParseException(
                     "Dump type: {0} does not support 'active' as numOfObj2 attribute".format(dump_type))
 
-        except DumpNotSupported as e:
-            print(e)
+        except ResourceParseException as rpe:
+            print(rpe)
             return False
 
         return True

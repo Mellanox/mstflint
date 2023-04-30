@@ -40,7 +40,5 @@
 #
 #######################################################
 
-
-class DumpNotSupported(Exception):
-    """Base class for other exceptions"""
+class ResourceParseException(Exception):
     pass

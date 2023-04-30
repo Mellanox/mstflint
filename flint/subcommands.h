@@ -46,7 +46,7 @@
 #include <memory>
 
 #include <tools_layouts/tools_open_layouts.h>
-
+#include "tools_layouts/image_layout_layouts.h"
 #include "flint_params.h"
 #include "mlxfwops/lib/fw_ops.h"
 #include "mlxfwops/lib/fs_checks.h"
@@ -161,8 +161,10 @@ protected:
                          bool ethDev);
     void printMissingGuidErr(bool ibDev, bool ethDev);
 
-    bool extractUIDArgs(std::vector<string>& cmdArgs, u_int8_t numOfGuids[2], u_int8_t stepSize[2]);
+    bool extractUIDArgs(std::vector<string>& cmdArgs, u_int16_t numOfGuids[2], u_int8_t stepSize[2]);
+    bool extractValuesFromString(string valStr, u_int16_t values[2], string origArg);
     bool extractValuesFromString(string valStr, u_int8_t values[2], string origArg);
+    bool extractValuesFromStringAux(string valStr, u_int32_t values[2], string origArg);
     bool getGUIDFromStr(string str, guid_t& guid, string prefixErr = "");
     bool getPasswordFromUser(const char* preStr, char buffer[MAX_PASSWORD_LEN + 1]);
     bool askUser(const char* question = NULL, bool printAbrtMsg = true);
@@ -290,6 +292,7 @@ private:
     FlintStatus printImageInfo(const fw_info_t& fwInfo);
     string printSecurityAttrInfo(u_int32_t m);
     FlintStatus printInfo(const fw_info_t& fwInfo, bool fullQuery);
+    bool displayFs4Uids(const fw_info_t& fwInfo);
     bool displayFs3Uids(const fw_info_t& fwInfo);
     bool displayFs2Uids(const fw_info_t& fwInfo);
     bool checkMac(u_int64_t mac, string& warrStr);
@@ -309,6 +312,16 @@ public:
     ~QuerySubCommand();
     FlintStatus executeCommand();
     bool verifyParams();
+};
+
+class QueryComponentSubCommand : public SubCommand
+{
+public:
+    QueryComponentSubCommand();
+    ~QueryComponentSubCommand();
+    FlintStatus executeCommand() override;
+    bool verifyParams() override;
+    FlintStatus querySyncE();
 };
 
 class Extract4MBImageSubCommand : public SubCommand

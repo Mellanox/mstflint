@@ -35,7 +35,6 @@
 #include "aux_tlv_ops.h"
 #include "fw_comps_mgr/fw_comps_mgr.h"
 #include "fw_comps_mgr/fw_comps_mgr_dma_access.h"
-#include "tools_layouts/image_layout_layouts.h"
 
 class FsCtrlOperations : public FwOperations
 {
@@ -77,6 +76,7 @@ public:
     virtual bool
       FwBurn(FwOperations* imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
     virtual bool FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams);
+    virtual bool FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId);
     virtual bool FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData,
                                 ExtBurnParams& burnParams,
                                 FwComponent::comps_ids_t ComponentId = FwComponent::COMPID_BOOT_IMG);
@@ -124,6 +124,7 @@ public:
     virtual bool IsEncryptionSupported();
     virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
     bool GetHashesTableData(vector<u_int8_t>& data);
+    virtual bool QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data);
 
 private:
     virtual u_int32_t GetHwDevId() { return _hwDevId; }
@@ -138,7 +139,7 @@ private:
     virtual bool VerifyAllowedParams(ExtBurnParams& burnParams, bool isSecure);
     bool BadParamErrMsg(const char* unSupportedOperation, bool isSecure);
     bool _Burn(std::vector<u_int8_t> imageOps4MData,
-               ExtBurnParams& burnParams,
+               ProgressCallBackAdvSt& progressCallBack,
                FwComponent::comps_ids_t ComponentId = FwComponent::COMPID_BOOT_IMG);
     bool _createImageOps(FwOperations** imgOps);
     void ExtractSwitchFWVersion(const fwInfoT& fwQuery);

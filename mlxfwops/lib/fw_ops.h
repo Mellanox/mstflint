@@ -41,6 +41,7 @@
 #include "signature_manager_factory.h"
 #include "fw_version.h"
 #include "tools_layouts/cx4fw_layouts.h"
+#include "tools_layouts/image_layout_layouts.h"
 #include <mlxsign_lib/mlxsign_lib.h>
 #ifdef CABLES_SUPP
 #include <cable_access/cable_access.h>
@@ -62,6 +63,7 @@ typedef int (*PrintCallBackAdv)(int completion, char* str);
 MLXFWOP_API extern bool nextBootFwVer;
 #define GLOBAL_ALIGNMENT 0x80
 #define UUID_LEN 16
+#define BAD_CRC_MSG "Bad CRC."
 class MLXFWOP_API FwOperations : public FlintErrMsg
 {
 public:
@@ -100,7 +102,6 @@ public:
         memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
         memset(&_fwParams, 0, sizeof(_fwParams));
     };
-
 
     virtual ~FwOperations()
     {
@@ -164,8 +165,8 @@ public:
     virtual bool RestoreDevToc(vector<u_int8_t>& img,
                                char* psid,
                                dm_dev_id_t devid_t,
-                               const cx4fw_uid_entry& base_guid,
-                               const cx4fw_uid_entry& base_mac);
+                               const image_layout_uid_entry& base_guid,
+                               const image_layout_uid_entry& base_mac);
     virtual bool openEncryptedImageAccess(const char* encrypted_image_path);
     virtual bool isEncrypted(bool& is_encrypted);
     virtual bool FwExtractEncryptedImage(vector<u_int8_t>& img,
@@ -187,6 +188,7 @@ public:
     virtual bool
       FwBurn(FwOperations* imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0;
     virtual bool FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams) = 0;
+    virtual bool FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId);
     virtual bool
       getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess, bool isVerify);
     virtual bool FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData,
@@ -202,6 +204,7 @@ public:
     virtual bool FwSetGuids(sg_params_t& sgParam,
                             PrintCallBack callBackFunc = (PrintCallBack)NULL,
                             ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0;
+    virtual bool IsExtendedGuidNumSupported();
 
     virtual bool FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc = (PrintCallBack)NULL) = 0;
     virtual bool FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc = (PrintCallBack)NULL) = 0;
@@ -262,7 +265,7 @@ public:
                                          bool ignoreSecurityAttributes = false,
                                          bool ignoreDToc = false);
 
-    virtual bool IsFsCtrlOperations() {  return false; }
+    virtual bool IsFsCtrlOperations() { return false; }
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
@@ -279,6 +282,9 @@ public:
     virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
     virtual bool GetImageSize(u_int32_t* image_size);
     virtual bool GetHashesTableData(vector<u_int8_t>& data);
+    virtual bool PrintQuery();
+    virtual u_int32_t GetDeviceIndex() { return 0; }
+    virtual bool QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data);
 
 #ifndef UEFI_BUILD
     static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);
@@ -446,6 +452,7 @@ public:
         bool mccUnsupported;
         bool canSkipFwCtrl;
         bool ignoreCrcCheck;
+        u_int32_t deviceIndex;
     };
 
     struct sgParams
@@ -456,16 +463,16 @@ public:
         bool guidsSpecified;
         bool uidSpecified; // valid for ConnectIB only
         std::vector<guid_t> userGuids;
-        u_int8_t numOfGUIDs;      // number of GUIDs to allocate for each port. keep zero for default. (FS3 image Only)
-        u_int8_t stepSize;        // step size between GUIDs. keep zero for default. (FS3 Image Only)
-        bool usePPAttr;           // if set, use the per prot attributes below (FS3 Image Only)
-        u_int8_t numOfGUIDsPP[2]; // number of GUIDs to allocate for each port. keep 0xff for default. (FS3 image Only)
-        u_int8_t stepSizePP[2];   // step size between GUIDs. keep 0xff for default. (FS3 Image Only)
+        u_int8_t numOfGUIDs;       // number of GUIDs to allocate for each port. keep zero for default. (FS3 image Only)
+        u_int8_t stepSize;         // step size between GUIDs. keep zero for default. (FS3 Image Only)
+        bool usePPAttr;            // if set, use the per prot attributes below (FS3 Image Only)
+        u_int16_t numOfGUIDsPP[2]; // number of GUIDs to allocate for each port. keep 0xff for default. (FS3 image Only)
+        u_int8_t stepSizePP[2];    // step size between GUIDs. keep 0xffff for default. (FS3 Image Only)
     };
 
 protected:
-#define FS3_IND_ADDR 0x24
-#define FS4_IND_ADDR 0x10
+#define FS3_BOOT_VERSION_OFFSET 0x24
+#define FS4_BOOT_VERSION_OFFSET 0x10
 #define ARR_SIZE(arr) sizeof(arr) / sizeof(arr[0])
 
     struct FwImgInfo
@@ -474,7 +481,7 @@ protected:
         u_int32_t imgStart;
         bool actuallyFailsafe;
         u_int32_t cntxLog2ChunkSize;
-        u_int32_t bootSize;
+        u_int32_t boot2Size;
         bool isGa;
         u_int32_t supportedHwId[MAX_NUM_SUPP_HW_IDS];
         int supportedHwIdNum;
@@ -498,7 +505,8 @@ protected:
     {
         IMG_VER_FS2 = 0,
         IMG_VER_FS3 = 3,
-        IMG_VER_FS4 = 4
+        IMG_VER_FS4 = 1,
+        IMG_VER_FS5 = 2
     };
     enum
     {
@@ -508,6 +516,8 @@ protected:
         FS_FS4_GEN,
         FS_FC1_GEN,
         FS_FSCTRL_GEN,
+        FS_FS5_GEN,
+        FS_COMPS_GEN,
         FS_UNKNOWN_IMG
     };
 
@@ -594,12 +604,12 @@ protected:
                              u_int32_t crc_exp,
                              bool ignore_crc = false,
                              VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
-    bool checkBoot2(u_int32_t beg,
-                    u_int32_t offs,
-                    u_int32_t& next,
-                    bool fullRead,
-                    const char* pref,
-                    VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
+    virtual bool CheckBoot2(u_int32_t beg,
+                            u_int32_t offs,
+                            u_int32_t& next,
+                            bool fullRead,
+                            const char* pref,
+                            VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
     u_int32_t CalcImageCRC(u_int32_t* buff, u_int32_t size);
     bool writeImage(ProgressCallBack progressFunc,
                     u_int32_t addr,
@@ -698,9 +708,11 @@ private:
 
     static int getBufferSignature(u_int8_t* buf, u_int32_t size);
     static u_int8_t CheckFwFormat(FBase& f, bool getFwFormatFromImg = false);
-    static u_int8_t IsFS4Image(FBase& f, u_int32_t* found_images);
+    static bool GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset, u_int8_t& image_format_version);
+    static u_int8_t IsFS4OrFS5Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsFS3OrFS2Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsCableImage(FBase& f);
+    static u_int8_t IsFSCompsImage(FBase& f);
     static bool FindMagicPattern(FBase* ioAccess, u_int32_t addr, u_int32_t const cntx_magic_pattern[]);
     static bool CntxEthOnly(u_int32_t devid);
 

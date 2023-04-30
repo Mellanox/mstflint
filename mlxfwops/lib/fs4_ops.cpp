@@ -72,9 +72,6 @@
 #define DEV_INFO_SIG2 0x2342cafa
 #define DEV_INFO_SIG3 0xbacafe00
 
-#define DEFAULT_GUID_NUM 0xff
-#define DEFAULT_STEP DEFAULT_GUID_NUM
-
 #define GUID_TO_64(guid_st) (guid_st.l | (u_int64_t)guid_st.h << 32)
 
 #define CHECK_IF_FS4_FILE_FOR_TIMESTAMP_OP()                                          \
@@ -148,7 +145,7 @@ bool Fs4Operations::IsEncryptedImage(bool& is_encrypted)
 
     if (!_is_hw_ptrs_initialized)
     {
-        if (!initHwPtrs(true))
+        if (!InitHwPtrs(true))
         {
             DPRINTF(("Fs4Operations::IsEncryptedImage HW pointers not found"));
             return false;
@@ -273,7 +270,7 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc,
 
     image_layout_hw_pointers_carmel_unpack(&hw_pointers, (u_int8_t*)buff);
 
-    //- Check CRC of each pointers (always check CRC before you call ToCPU
+    // Check CRC of each pointers
     for (unsigned int k = 0; k < s; k += 2)
     {
         u_int32_t* tempBuff = (u_int32_t*)buff;
@@ -939,7 +936,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
 
         _ioAccess->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
 
-        // Get BOOT2 -Get Only bootSize if quickQuery == true else read and check CRC of boot2 section as well
+        // Get BOOT2 -Get Only boot2Size if quickQuery == true else read and check CRC of boot2 section as well
         DPRINTF(("Fs4Operations::FsVerifyAux call FS3_CHECKB2()\n"));
         FS3_CHECKB2(0, _boot2_ptr, !queryOptions.quickQuery, PRE_CRC_OUTPUT, verifyCallBackFunc);
 
@@ -1070,10 +1067,10 @@ bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     {
         return errmsg(getErrorCode(), "%s", err());
     }
-    if (image_encrypted)
+    if (!ignoreDToc && image_encrypted)
     {
         //* Verify DTOC CRCs only
-        if (!parseDevData(false, false, verifyCallBackFunc))
+        if (!ParseDevData(false, false, verifyCallBackFunc, showItoc))
         {
             return errmsg("%s", err());
         }
@@ -1179,13 +1176,13 @@ bool Fs4Operations::encryptedFwReadImageInfoSection()
     return true;
 }
 
-bool Fs4Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack verifyCallBackFunc)
+bool Fs4Operations::ParseDevData(bool quickQuery, bool verbose, VerifyCallBack verifyCallBackFunc, bool showItoc)
 {
     //* Initializing DTOC info
     _ioAccess->set_address_convertor(0, 0);
     // Parse DTOC header:
     u_int32_t dtoc_addr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
-    DPRINTF(("Fs4Operations::parseDevData call verifyTocHeader() DTOC, dtoc_addr = 0x%x\n", dtoc_addr));
+    DPRINTF(("Fs4Operations::ParseDevData call verifyTocHeader() DTOC, dtoc_addr = 0x%x\n", dtoc_addr));
     if (!verifyTocHeader(dtoc_addr, true, verifyCallBackFunc))
     {
         return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
@@ -1196,7 +1193,7 @@ bool Fs4Operations::parseDevData(bool quickQuery, bool verbose, VerifyCallBack v
     struct QueryOptions queryOptions;
     queryOptions.readRom = false;
     queryOptions.quickQuery = quickQuery;
-    DPRINTF(("Fs4Operations::parseDevData call verifyTocEntries() DTOC\n"));
+    DPRINTF(("Fs4Operations::ParseDevData call verifyTocEntries() DTOC\n"));
     if (!verifyTocEntries(dtoc_addr, false, true, queryOptions, verifyCallBackFunc, verbose))
     {
         return false;
@@ -1209,7 +1206,7 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ig
 {
     DPRINTF(("Fs4Operations::encryptedFwQuery\n"));
 
-    if (!initHwPtrs())
+    if (!InitHwPtrs())
     {
         DPRINTF(("Fs4Operations::encryptedFwQuery HW pointers not found"));
         return false;
@@ -1227,16 +1224,11 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ig
 
     if (!ignoreDToc)
     {
-        if (!parseDevData(quickQuery, verbose))
+        if (!ParseDevData(quickQuery, verbose))
         {
             return false;
         }
     }
-
-    _fwImgInfo.ext_info.is_failsafe = true;
-    memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
-    memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
-    fwInfo->fw_type = FwType();
 
     if (!QuerySecurityFeatures())
     {
@@ -1423,9 +1415,9 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
     return true;
 }
 
-bool Fs4Operations::getEncryptedImageSize(u_int32_t* imageSize)
+bool Fs4Operations::GetImageSizeFromImageInfo(u_int32_t* imageSize)
 {
-    DPRINTF(("Fs4Operations::getEncryptedImageSize\n"));
+    DPRINTF(("Fs4Operations::GetImageSizeFromImageInfo\n"));
     fw_info_t fwInfo;
     if (!encryptedFwQuery(&fwInfo, false, true))
     {
@@ -1461,7 +1453,7 @@ bool Fs4Operations::FwReadData(void* image, u_int32_t* imageSize, bool verbose)
     {
         if (image == NULL)
         {
-            bool result = getEncryptedImageSize(imageSize);
+            bool result = GetImageSizeFromImageInfo(imageSize);
             DPRINTF(("Fs4Operations::FwReadData imageSize=0x%x result=%s\n", *imageSize, result ? "true" : "false"));
             return result;
         }
@@ -1824,8 +1816,8 @@ bool Fs4Operations::CreateDtoc(vector<u_int8_t>& img,
 bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img,
                                   char* psid,
                                   dm_dev_id_t devid_t,
-                                  const cx4fw_uid_entry& base_guid,
-                                  const cx4fw_uid_entry& base_mac)
+                                  const image_layout_uid_entry& base_guid,
+                                  const image_layout_uid_entry& base_mac)
 {
     /*DTOC HEADER*/
 
@@ -1914,9 +1906,11 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img,
     dev_info.vsd_vendor_id = 0x15b3;
 
     dev_info.guids.guids.num_allocated = base_guid.num_allocated;
+    dev_info.guids.guids.num_allocated_msb = base_guid.num_allocated_msb;
     dev_info.guids.guids.step = base_guid.step;
     dev_info.guids.guids.uid = base_guid.uid;
     dev_info.guids.macs.num_allocated = base_mac.num_allocated;
+    dev_info.guids.macs.num_allocated_msb = base_mac.num_allocated_msb;
     dev_info.guids.macs.step = base_mac.step;
     dev_info.guids.macs.uid = base_mac.uid;
 
@@ -2302,7 +2296,7 @@ bool Fs4Operations::FwExtractEncryptedImage(vector<u_int8_t>& img,
 
     //* Get image size
     u_int32_t burn_image_size;
-    if (!getEncryptedImageSize(&burn_image_size))
+    if (!GetImageSizeFromImageInfo(&burn_image_size))
     {
         return errmsg("%s", err());
     }
@@ -2422,7 +2416,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         }
 
         //* Parse DTOC and its sections
-        if (!((Fs4Operations*)imageOps)->parseDevData(false))
+        if (!((Fs4Operations*)imageOps)->ParseDevData(false))
         {
             return errmsg("%s", imageOps->err());
         }
@@ -3030,37 +3024,56 @@ bool Fs4Operations::Fs4UpdateMfgUidsSection(struct fs4_toc_info* curr_toc,
     struct cibfw_mfg_info cib_mfg_info;
     struct cx4fw_mfg_info cx4_mfg_info;
     (void)curr_toc;
-    cibfw_mfg_info_unpack(&cib_mfg_info, (u_int8_t*)&section_data[0]);
-
-    if (cib_mfg_info.major_version == 0)
+    if (IsExtendedGuidNumSupported())
     {
-        if (!Fs3ChangeUidsFromBase(base_uid, cib_mfg_info.guids))
+        image_layout_mfg_info mfg_info;
+        image_layout_mfg_info_unpack(&mfg_info, (u_int8_t*)&section_data[0]);
+        if (!ChangeUidsFromBase(base_uid, mfg_info.guids))
         {
             return false;
         }
+        newSectionData = section_data;
+        image_layout_mfg_info_pack(&mfg_info, (u_int8_t*)&newSectionData[0]);
     }
-    else if (cib_mfg_info.major_version == 1)
+    else
     {
-        cx4fw_mfg_info_unpack(&cx4_mfg_info, (u_int8_t*)&section_data[0]);
-        if (!Fs3ChangeUidsFromBase(base_uid, cx4_mfg_info.guids))
+        if (base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM && base_uid.num_of_guids_pp[0] > 254)
         {
-            return false;
+            return errmsg("Invalid argument values, values should be taken from the range [0..254]\n");
         }
-    }
-    else
-    {
-        return errmsg("Unknown MFG_INFO format version (%d.%d).", cib_mfg_info.major_version,
-                      cib_mfg_info.minor_version);
-    }
-    newSectionData = section_data;
 
-    if (cib_mfg_info.major_version == 1)
-    {
-        cx4fw_mfg_info_pack(&cx4_mfg_info, (u_int8_t*)&newSectionData[0]);
-    }
-    else
-    {
-        cibfw_mfg_info_pack(&cib_mfg_info, (u_int8_t*)&newSectionData[0]);
+        cibfw_mfg_info_unpack(&cib_mfg_info, (u_int8_t*)&section_data[0]);
+
+        if (cib_mfg_info.major_version == 0)
+        {
+            if (!Fs3ChangeUidsFromBase(base_uid, cib_mfg_info.guids))
+            {
+                return false;
+            }
+        }
+        else if (cib_mfg_info.major_version == 1)
+        {
+            cx4fw_mfg_info_unpack(&cx4_mfg_info, (u_int8_t*)&section_data[0]);
+            if (!Fs3ChangeUidsFromBase(base_uid, cx4_mfg_info.guids))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return errmsg("Unknown MFG_INFO format version (%d.%d).", cib_mfg_info.major_version,
+                          cib_mfg_info.minor_version);
+        }
+        newSectionData = section_data;
+
+        if (cib_mfg_info.major_version == 1)
+        {
+            cx4fw_mfg_info_pack(&cx4_mfg_info, (u_int8_t*)&newSectionData[0]);
+        }
+        else
+        {
+            cibfw_mfg_info_pack(&cib_mfg_info, (u_int8_t*)&newSectionData[0]);
+        }
     }
     return true;
 }
@@ -3086,14 +3099,26 @@ bool Fs4Operations::Fs4ChangeUidsFromBase(fs3_uid_t base_uid, struct image_layou
           (((u_int64_t)base_uid.base_guid.l & 0xffffff) | (((u_int64_t)base_uid.base_guid.h & 0xffffff00) << 16));
     }
 
+    if (!IsExtendedGuidNumSupported() && base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM &&
+        base_uid.num_of_guids_pp[0] > 254)
+    {
+        return errmsg("Invalid argument values, values should be taken from the range [0..254]\n");
+    }
+
     guids.guids.uid = base_guid_64;
     guids.guids.num_allocated =
       base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ? base_uid.num_of_guids_pp[0] : guids.guids.num_allocated;
+    guids.guids.num_allocated_msb = base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ?
+                                      ((base_uid.num_of_guids_pp[0] >> 8) & 0xff) :
+                                      guids.guids.num_allocated_msb;
     guids.guids.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.guids.step;
 
     guids.macs.uid = base_mac_64;
     guids.macs.num_allocated =
       base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ? base_uid.num_of_guids_pp[0] : guids.macs.num_allocated;
+    guids.macs.num_allocated_msb = base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ?
+                                     ((base_uid.num_of_guids_pp[0] >> 8) & 0xff) :
+                                     guids.macs.num_allocated_msb;
     guids.macs.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.macs.step;
     return true;
 }
@@ -3142,7 +3167,7 @@ bool Fs4Operations::Fs4UpdateVsdSection(std::vector<u_int8_t> section_data,
 
 bool Fs4Operations::Init()
 {
-    if (!initHwPtrs())
+    if (!InitHwPtrs())
     {
         return false;
     }
@@ -3856,15 +3881,15 @@ bool Fs4Operations::UpdateSection(void* new_info,
     }
     else if (sect_type == FS3_IMAGE_SIGNATURE_256 && cmd_type == CMD_SET_SIGNATURE)
     {
-        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_256_SIZE);
+        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE);
         type_msg = "SIGNATURE";
-        newSection.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE);
-        memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_256_SIZE);
+        newSection.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE);
+        memcpy(newSection.data(), sig.data(), IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE);
         // Check if padding is needed, by comparing with the real size in the itoc entry:
         u_int32_t sizeInItocEntry = curr_toc->toc_entry.size << 2;
-        if (sizeInItocEntry > CX4FW_IMAGE_SIGNATURE_256_SIZE)
+        if (sizeInItocEntry > IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE)
         {
-            for (unsigned int l = 0; l < sizeInItocEntry - CX4FW_IMAGE_SIGNATURE_256_SIZE; l++)
+            for (unsigned int l = 0; l < sizeInItocEntry - IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE; l++)
             {
                 newSection.push_back(0x0);
             }
@@ -3872,14 +3897,14 @@ bool Fs4Operations::UpdateSection(void* new_info,
     }
     else if (sect_type == FS3_IMAGE_SIGNATURE_512 && cmd_type == CMD_SET_SIGNATURE)
     {
-        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_512_SIZE);
+        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
         type_msg = "SIGNATURE";
-        newSection.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE);
-        memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_512_SIZE);
+        newSection.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
+        memcpy(newSection.data(), sig.data(), IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
         u_int32_t sizeInItocEntry = curr_toc->toc_entry.size << 2;
-        if (sizeInItocEntry > CX4FW_IMAGE_SIGNATURE_256_SIZE)
+        if (sizeInItocEntry > IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE)
         {
-            for (unsigned int l = 0; l < sizeInItocEntry - CX4FW_IMAGE_SIGNATURE_256_SIZE; l++)
+            for (unsigned int l = 0; l < sizeInItocEntry - IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE; l++)
             {
                 newSection.push_back(0x0);
             }
@@ -4129,7 +4154,7 @@ bool Fs4Operations::FwCalcMD5(u_int8_t md5sum[16])
         return false;
     }
     // push beggining of image to md5buff
-    int sz = FS3_BOOT_START + _fwImgInfo.bootSize;
+    int sz = FS3_BOOT_START + _fwImgInfo.boot2Size;
     std::vector<u_int8_t> md5buff(sz, 0);
     _imageCache.get(&(md5buff[0]), sz);
     // push all non dev data sections to md5buff
@@ -4232,7 +4257,7 @@ bool Fs4Operations::GetImageSize(u_int32_t* image_size)
 
     if (is_encrypted)
     {
-        if (!getEncryptedImageSize(image_size))
+        if (!GetImageSizeFromImageInfo(image_size))
         {
             return false;
         }
@@ -4750,11 +4775,12 @@ bool Fs4Operations::FindPublicKeyInPublicKeys2(const vector<u_int32_t>& keypair_
 bool Fs4Operations::GetFRCKey(image_layout_file_public_keys_3& frc_key)
 {
     // FRC UUIDs
-    const unsigned int NUM_OF_UNIQUE_UUIDS = 2;
+    const unsigned int NUM_OF_UNIQUE_UUIDS = 3;
     vector<u_int32_t> uuids[NUM_OF_UNIQUE_UUIDS];
     // uuids[0] = {0xec897142, 0x386911e7, 0x9d48f44d, 0x306574e8}; // Legacy 2K FRC
     uuids[0] = {0x4562e75e, 0x619511ec, 0x8139ac1f, 0x6b01e5ae}; // CX7
     uuids[1] = {0x0bcbe8d2, 0x029f11ed, 0x8708ac1f, 0x6b01e5ae}; // BF3
+    uuids[2] = {0xa219aadd, 0x7cfc4c54, 0x86cd4f18, 0xf8eef762}; // SPEC4
 
     for (auto& uuid : uuids)
     {
@@ -4845,8 +4871,9 @@ bool Fs4Operations::storeSecureBootSignaturesInSection(vector<u_int8_t> boot_sig
     return true;
 }
 
-bool Fs4Operations::initHwPtrs(bool isVerify)
+bool Fs4Operations::InitHwPtrs(bool isVerify)
 {
+    DPRINTF(("Fs4Operations::InitHwPtrs\n"));
     if (!getImgStart())
     { // Set _fwImgInfo.imgStart with the image start address
         return false;
@@ -4854,7 +4881,7 @@ bool Fs4Operations::initHwPtrs(bool isVerify)
 
     if (!getExtendedHWAravaPtrs((VerifyCallBack)NULL, _ioAccess, false, isVerify))
     {
-        return errmsg("initHwPtrs: HW pointers not found.\n");
+        return errmsg("InitHwPtrs: HW pointers not found.\n");
     }
     return true;
 }
@@ -4915,7 +4942,7 @@ bool Fs4Operations::isHashesTableHwPtrValid()
     //* Check HW pointers initialized
     if (!_is_hw_ptrs_initialized)
     {
-        if (!initHwPtrs())
+        if (!InitHwPtrs())
         {
             return errmsg("isHashesTableHwPtrValid: HW pointers not found");
         }

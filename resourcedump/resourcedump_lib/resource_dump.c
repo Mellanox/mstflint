@@ -11,6 +11,9 @@
  * provided with the software product.
  */
 
+#ifndef _BSD_SOURCE
+#define _BSD_SOURCE
+#endif
 #include <stdio.h>
 #include <unistd.h>
 #include <malloc.h>
@@ -30,7 +33,11 @@
 /* to_mpd always returns the real mlx5_pd object ie the protection domain. */
 static inline struct mlx5_pd* to_mpd(struct ibv_pd* ibpd)
 {
-    struct mlx5_pd* mpd = to_mxxx(pd, pd);
+    struct mlx5_pd* mpd = (
+      {
+          struct ibv_pd* __mptr = (ibpd);
+          (struct mlx5_pd*)((char*)__mptr - __builtin_offsetof(struct mlx5_pd, ibv_pd));
+      });
 
     if (mpd->mprotection_domain)
         return mpd->mprotection_domain;
@@ -252,12 +259,9 @@ int generate_lkey(char device_name[], struct result* res)
     }
     else
     {
-        // printf("Mkey: lkey: %u, rkey: %u\n", mkey->lkey, mkey->rkey);
-        // printf("%" PRIu64 "buff2-\n", (uint64_t)buff);
         res->lkey = mkey->lkey;
         res->umem_addr = (uint64_t)buff;
-        // printf("%d",res->lkey);
-        // printf("%" PRIu64 "\n", res->umem_addr);
+        res->umem_size = buff_al_size;
 
         dlclose(handler);
     }
