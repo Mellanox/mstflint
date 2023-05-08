@@ -35,7 +35,7 @@
 /***
          *** This file was generated at "2023-03-30 13:00:24"
          *** by:
-         ***    > /swgwork/hkarni/workspace/bug_fix_a-me/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
+         ***    > [REDACTED]/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
          ***/
 #ifndef REG_ACCESS_HCA_LAYOUTS_H
 #define REG_ACCESS_HCA_LAYOUTS_H

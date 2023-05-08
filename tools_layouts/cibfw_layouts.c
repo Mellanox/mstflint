@@ -34,7 +34,7 @@
 /***
  *** This file was generated at "2021-09-14 12:07:15"
  *** by:
- ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix
+ ***    > [REDACTED]/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix
  *cibfw --prefix cibfw_ --no-adb-utils
  ***/
 #include "cibfw_layouts.h"

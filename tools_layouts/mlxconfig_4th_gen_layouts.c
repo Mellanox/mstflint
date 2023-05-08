@@ -35,7 +35,7 @@
 /***
          *** This file was generated at "2023-01-17 10:38:00"
          *** by:
-         ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/mlxconfig_4th_gen.adb --file-prefix mlxconfig_4th_gen --prefix mlxconfig_4th_gen_ --no-adb-utils
+         ***    > [REDACTED]/adb2pack.py --input adb/tools_open/mlxconfig_4th_gen.adb --file-prefix mlxconfig_4th_gen --prefix mlxconfig_4th_gen_ --no-adb-utils
          ***/
 #include "mlxconfig_4th_gen_layouts.h"
 

@@ -35,7 +35,7 @@
 /***
          *** This file was generated at "2023-03-30 13:00:27"
          *** by:
-         ***    > /swgwork/hkarni/workspace/bug_fix_a-me/adabe_plugins/adb2c/adb2pack.py --input adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils
+         ***    > [REDACTED]/adb2pack.py --input adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils
          ***/
 #include "icmd_hca_layouts.h"
 

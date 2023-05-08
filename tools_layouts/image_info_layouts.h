@@ -33,7 +33,7 @@
 /***
  *** This file was generated at "2018-06-25 13:22:56"
  *** by:
- ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/connectx4/connectx4.adb
+ ***    > [REDACTED]/adb2pack.py --input adb/connectx4/connectx4.adb
  *--file-prefix connectx4 --prefix connectx4_
  ***/
 #ifndef IMAGE_INFO_LAYOUTS_H

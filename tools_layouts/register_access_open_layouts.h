@@ -34,7 +34,7 @@
 /***
  *** This file was generated at "2018-05-12 08:07:49"
  *** by:
- ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input
+ ***    > [REDACTED]/adb2pack.py --input
  *adb/register_access_open/register_access_open.adb --file-prefix register_access_open --prefix register_access_
  ***/
 #ifndef REGISTER_ACCESS_OPEN_LAYOUTS_H
