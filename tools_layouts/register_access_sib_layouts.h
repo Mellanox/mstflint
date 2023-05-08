@@ -33,7 +33,7 @@
 /***
  *** This file was generated at "2019-03-23 21:38:49"
  *** by:
- ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input
+ ***    > [REDACTED]/adb2pack.py --input
  *adb/register_access/register_access_sib.adb --file-prefix register_access_sib --prefix register_access_sib_
  ***/
 #ifndef REGISTER_ACCESS_SIB_LAYOUTS_H

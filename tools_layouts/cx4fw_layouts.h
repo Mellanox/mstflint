@@ -33,7 +33,7 @@
 /***
          *** This file was generated at "2023-01-24 14:29:07"
          *** by:
-         ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/cx4fw/cx4fw.adb --file-prefix cx4fw --prefix cx4fw_ --no-adb-utils
+         ***    > [REDACTED]/adb2pack.py --input adb/cx4fw/cx4fw.adb --file-prefix cx4fw --prefix cx4fw_ --no-adb-utils
          ***/
 #ifndef CX4FW_LAYOUTS_H
 #define CX4FW_LAYOUTS_H

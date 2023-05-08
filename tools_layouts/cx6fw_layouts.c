@@ -33,7 +33,7 @@
 /***
  *** This file was generated at "2018-08-29 13:02:13"
  *** by:
- ***    > /mswg/release/tools/a-me/a-me-1.0.110/adabe_plugins/adb2c/adb2pack.py --input adb/cx6fw/cx6fw.adb
+ ***    > [REDACTED]/adb2pack.py --input adb/cx6fw/cx6fw.adb
  *--file-prefix cx6fw --prefix cx6fw_
  ***/
 #include "cx6fw_layouts.h"
