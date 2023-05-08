@@ -34,7 +34,7 @@
 /***
  *** This file was generated at "2016-10-19 23:52:08"
  *** by:
- ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/connectx5/connectx5.adb
+ ***    > [REDACTED]/adb2pack.py --input adb/connectx5/connectx5.adb
  *--file-prefix connectx5 --prefix connectx5_
  ***/
 

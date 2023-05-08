@@ -34,7 +34,7 @@
 /***
          *** This file was generated at "2023-01-15 15:00:18"
          *** by:
-         ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_ --no-adb-utils
+         ***    > [REDACTED]/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_ --no-adb-utils
          ***/
 #include "tools_open_layouts.h"
 

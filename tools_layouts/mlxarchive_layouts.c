@@ -34,7 +34,7 @@
 /***
  *** This file was generated at "2023-01-05 14:52:46"
  *** by:
- ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/mlxarchive.adb
+ ***    > [REDACTED]/adb2pack.py --input adb/tools_open/mlxarchive.adb
  *--file-prefix mlxarchive --prefix mlxarchive_ --no-adb-utils
  ***/
 #include "mlxarchive_layouts.h"

@@ -35,7 +35,7 @@
 /***
          *** This file was generated at "2023-01-25 19:38:33"
          *** by:
-         ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/image_layout/image_layout.adb --file-prefix image_layout --prefix image_layout_ --no-adb-utils
+         ***    > [REDACTED]/adb2pack.py --input adb/image_layout/image_layout.adb --file-prefix image_layout --prefix image_layout_ --no-adb-utils
          ***/
 #ifndef IMAGE_LAYOUT_LAYOUTS_H
 #define IMAGE_LAYOUT_LAYOUTS_H
