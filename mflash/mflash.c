@@ -1989,9 +1989,25 @@ int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 
 void update_seventh_gen_addrs(mflash* mfl)
 {
-    mfl->gw_cmd_register_addr = HCR_7GEN_FLASH_CMD;
-    mfl->gw_addr_field_addr = HCR_7GEN_FLASH_ADDR;
-    mfl->gw_data_field_addr = HCR_7GEN_FLASH_DATA;
+    // Registers addresses
+    if (mfl->dm_dev_id == DeviceQuantum3)
+    {
+        mfl->gw_cmd_register_addr = HCR_7GEN_QTM3_FLASH_CMD;
+        mfl->gw_data_field_addr = HCR_7GEN_QTM3_FLASH_DATA;
+        mfl->gcm_en_addr = HCR_7GEN_QTM3_GCM_EN_ADDR;
+        mfl->gw_addr_field_addr = HCR_7GEN_QTM3_FLASH_ADDR;
+        mfl->gw_data_size_register_addr = HCR_7GEN_QTM3_FLASH_DATA_SIZE;
+    }
+    else if (mfl->dm_dev_id == DeviceConnectX8)
+    {
+        mfl->gw_cmd_register_addr = HCR_7GEN_CX7_FLASH_CMD;
+        mfl->gw_data_field_addr = HCR_7GEN_CX7_FLASH_DATA;
+        mfl->gcm_en_addr = HCR_7GEN_CX7_GCM_EN_ADDR;
+        mfl->gw_addr_field_addr = HCR_7GEN_CX7_FLASH_ADDR;
+        mfl->gw_data_size_register_addr = HCR_7GEN_CX7_FLASH_DATA_SIZE;
+    }
+
+    // Fields bit offsets and lengths
     mfl->gw_rw_bit_offset = HBO_7GEN_RW;
     mfl->gw_cmd_phase_bit_offset = HBO_7GEN_CMD_PHASE;
     mfl->gw_addr_phase_bit_offset = HBO_7GEN_ADDR_PHASE;
@@ -2002,8 +2018,6 @@ void update_seventh_gen_addrs(mflash* mfl)
     mfl->gw_cmd_bit_offset = HBO_7GEN_CMD;
     mfl->gw_cmd_bit_len = HBS_7GEN_CMD;
     mfl->gw_busy_bit_offset = HBO_7GEN_BUSY;
-    mfl->gcm_en_addr = HCR_7GEN_GCM_EN_ADDR;
-    mfl->gw_data_size_register_addr = HCR_7GEN_FLASH_DATA_SIZE;
 }
 
 void update_sixth_gen_addrs(mflash* mfl)
