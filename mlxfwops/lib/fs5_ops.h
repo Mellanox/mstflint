@@ -56,12 +56,10 @@ protected:
                     bool fullRead,
                     const char* pref,
                     VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL) override;
+    u_int32_t _ncore_bch_ptr;
 
 private:
-    bool CheckBoot2(u_int32_t offs,
-                    bool fullRead,
-                    const char* pref,
-                    VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
+    bool CheckBoot2(bool fullRead, const char* pref, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
     bool Init() override;
     bool InitHwPtrs(bool isVerify = false) override;
     bool ParseHwPointers(VerifyCallBack verifyCallBackFunc);

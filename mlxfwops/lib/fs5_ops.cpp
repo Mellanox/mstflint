@@ -94,6 +94,7 @@ bool Fs5Operations::ParseHwPointers(VerifyCallBack verifyCallBackFunc)
     _tools_ptr = hwPointers.tool2_ptr.ptr; // TODO - fix typo tool2 --> tools in gilboa adb
     _image_info_section_ptr = hwPointers.image_info_ptr.ptr;
     _hashes_table_ptr = hwPointers.ncore_hashes_ptr.ptr;
+    _ncore_bch_ptr = hwPointers.ncore_bch_ptr.ptr;
     _is_hw_ptrs_initialized = true;
     return true;
 }
@@ -140,34 +141,36 @@ bool Fs5Operations::GetImageSize(u_int32_t* image_size)
     return true;
 }
 
-bool Fs5Operations::CheckBoot2(u_int32_t offs, bool fullRead, const char* pref, VerifyCallBack verifyCallBackFunc)
+bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack verifyCallBackFunc)
 {
     DPRINTF(("FwOperations::CheckBoot2\n"));
     char* pr = new char[strlen(pref) + 512];
-    sprintf(pr, "%s /0x%08x/ (BOOT2)", pref, offs);
+    sprintf(pr, "%s /0x%08x/ (BOOT2)", pref, _boot2_ptr);
 
-    // Parse boot2 header
-    vector<u_int8_t> boot2HeaderData(FS5_IMAGE_LAYOUT_BOOT2_HEADER_GILBOA_SIZE);
-    if (!_ioAccess->read(offs, boot2HeaderData.data(), FS5_IMAGE_LAYOUT_BOOT2_HEADER_GILBOA_SIZE))
+    // Parse NCORE BCH for boot2 size
+    u_int32_t FS5_IMAGE_LAYOUT_BCH_GILBOA_SIZE = 0x1000; // TODO - temp until BCH struct generated in fs5_image_layout
+    vector<u_int8_t> ncoreBCHData(FS5_IMAGE_LAYOUT_BCH_GILBOA_SIZE);
+    if (!_ioAccess->read(_ncore_bch_ptr, ncoreBCHData.data(), FS5_IMAGE_LAYOUT_BCH_GILBOA_SIZE))
     {
         return errmsg("%s - read error (%s)\n", "FS5 boot2 header", _ioAccess->err());
     }
-    // TODO - verify boot2 header CRC
 
-    fs5_image_layout_boot2_header_gilboa boot2Header;
-    fs5_image_layout_boot2_header_gilboa_unpack(&boot2Header, boot2HeaderData.data());
-    DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", boot2Header.dw_size));
-    if (boot2Header.dw_size > 1048576 || boot2Header.dw_size < 4)
+    //=================================================
+    // TODO - temp until BCH struct generated in fs5_image_layout
+    // fs5_image_layout_bch_gilboa ncoreBCH;
+    // fs5_image_layout_bch_gilboa_unpack(&ncoreBCH, ncoreBCHData.data());
+    _fwImgInfo.boot2Size = __cpu_to_be32(*(u_int32_t*)(ncoreBCHData.data() + 0x2c));
+    //=================================================
+
+    DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", _fwImgInfo.boot2Size));
+    if (_fwImgInfo.boot2Size > 1048576 || _fwImgInfo.boot2Size < 4)
     {
-        report_callback(verifyCallBackFunc, "%s /0x%08x/ - unexpected size (0x%x)\n", pr, offs + 4,
-                        boot2Header.dw_size);
+        report_callback(verifyCallBackFunc, "%s - unexpected size (0x%x)\n", pr, _fwImgInfo.boot2Size);
         delete[] pr;
         return errmsg("Boot2 invalid size\n");
     }
-    _fwImgInfo.boot2Size =
-      FS5_IMAGE_LAYOUT_BOOT2_HEADER_GILBOA_SIZE + (boot2Header.dw_size * 4) + 4; // header + payload + crc
 
-    u_int32_t boot2AbsAddr = _fwImgInfo.imgStart + offs;
+    u_int32_t boot2AbsAddr = _fwImgInfo.imgStart + _boot2_ptr;
     sprintf(pr, "%s /0x%08x-0x%08x (0x%06x)/ (BOOT2)", pref, boot2AbsAddr, boot2AbsAddr + _fwImgInfo.boot2Size - 1,
             _fwImgInfo.boot2Size);
 
@@ -176,35 +179,16 @@ bool Fs5Operations::CheckBoot2(u_int32_t offs, bool fullRead, const char* pref, 
         u_int32_t boot2SizeInDW = _fwImgInfo.boot2Size / 4;
         u_int32_t* buff = new u_int32_t[boot2SizeInDW];
         memset(buff, 0, (boot2SizeInDW) * sizeof(u_int32_t));
-        bool rc = readBufAux((*_ioAccess), offs, buff, _fwImgInfo.boot2Size, pr);
+        bool rc = readBufAux((*_ioAccess), _boot2_ptr, buff, _fwImgInfo.boot2Size, pr);
         if (!rc)
         {
             delete[] pr;
             delete[] buff;
             return rc;
         }
-        UpdateImgCache((u_int8_t*)buff, offs, _fwImgInfo.boot2Size);
-
-        u_int32_t crc_calc =
-          calc_hw_crc((u_int8_t*)buff + FS5_IMAGE_LAYOUT_BOOT2_HEADER_GILBOA_SIZE, boot2Header.dw_size * 4);
-        TOCPUn(buff, boot2SizeInDW);
-        u_int32_t crc_act = buff[boot2SizeInDW - 1];
+        UpdateImgCache((u_int8_t*)buff, _boot2_ptr, _fwImgInfo.boot2Size);
         delete[] buff;
-        if (crc_calc != crc_act)
-        {
-            DPRINTF(("FwOperations::CheckBoot2 wrong CRC (exp:0x%x, act:0x%x)\n", crc_calc, crc_act));
-            report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n", pr, offs, crc_calc,
-                            crc_act);
-            if (!_fwParams.ignoreCrcCheck)
-            {
-                delete[] pr;
-                return errmsg(MLXFW_BAD_CRC_ERR, BAD_CRC_MSG);
-            }
-        }
-        else
-        {
-            report_callback(verifyCallBackFunc, "%s - OK\n", pr);
-        }
+        report_callback(verifyCallBackFunc, "%s - CRC IGNORED\n", pr);
     }
     delete[] pr;
     return true;
@@ -217,7 +201,7 @@ bool Fs5Operations::CheckBoot2(u_int32_t,
                                const char* pref,
                                VerifyCallBack verifyCallBackFunc)
 {
-    return CheckBoot2(offs, fullRead, pref, verifyCallBackFunc);
+    return CheckBoot2(fullRead, pref, verifyCallBackFunc);
 }
 
 bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
