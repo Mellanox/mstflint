@@ -4894,36 +4894,44 @@ bool Fs4Operations::FwSetPublicKeys(char* fname, PrintCallBack callBackFunc)
 
     if (sectionType == FS3_PUBLIC_KEYS_4096)
     {
-        image_layout_public_keys_2 public_keys_2;
-        image_layout_public_keys_3 public_keys_3;
-        memset(&public_keys_2, 0, sizeof(public_keys_2));
-        memset(&public_keys_3, 0, sizeof(public_keys_3));
-
-        if (!ReadPublicKeys2SectionFromFile(fname, public_keys_2))
+        struct fs4_toc_info* toc = (struct fs4_toc_info*)nullptr;
+        if (Fs4GetItocInfo(_fs4ImgInfo.itocArr.tocArr, _fs4ImgInfo.itocArr.numOfTocs, FS4_RSA_PUBLIC_KEY, toc))
         {
-            return false;
-        }
+            image_layout_public_keys_2 public_keys_2;
+            image_layout_public_keys_3 public_keys_3;
+            memset(&public_keys_2, 0, sizeof(public_keys_2));
+            memset(&public_keys_3, 0, sizeof(public_keys_3));
 
-        u_int32_t num_of_key_slots = image_layout_public_keys_3_size() / image_layout_file_public_keys_3_size();
-        for (u_int32_t i = 0; i < num_of_key_slots; ++i)
+            if (!ReadPublicKeys2SectionFromFile(fname, public_keys_2))
+            {
+                return false;
+            }
+
+            u_int32_t num_of_key_slots = image_layout_public_keys_3_size() / image_layout_file_public_keys_3_size();
+            for (u_int32_t i = 0; i < num_of_key_slots; ++i)
+            {
+                PublicKey2ToPublicKey3(public_keys_2.file_public_keys_2[i], public_keys_3.file_public_keys_3[i]);
+            }
+
+            vector<u_int8_t> public_keys_3_data;
+            public_keys_3_data.resize(image_layout_public_keys_2_size());
+            image_layout_public_keys_3_pack(&public_keys_3, public_keys_3_data.data());
+            if (!UpdateSection(FS4_RSA_PUBLIC_KEY, public_keys_3_data, "FS4_RSA_PUBLIC_KEY", callBackFunc))
+            {
+                return errmsg("FwSetPublicKeys failed - Error: %s", err());
+            }
+
+            if (!FsIntQueryAux(false, false))
+            {
+                return false;
+            }
+
+            INSERT_SHA_IF_NEEDS(callBackFunc);
+        }
+        else
         {
-            PublicKey2ToPublicKey3(public_keys_2.file_public_keys_2[i], public_keys_3.file_public_keys_3[i]);
+            err_clear();
         }
-
-        vector<u_int8_t> public_keys_3_data;
-        public_keys_3_data.resize(image_layout_public_keys_2_size());
-        image_layout_public_keys_3_pack(&public_keys_3, public_keys_3_data.data());
-        if (!UpdateSection(FS4_RSA_PUBLIC_KEY, public_keys_3_data, "FS4_RSA_PUBLIC_KEY", callBackFunc))
-        {
-            return errmsg("FwSetPublicKeys failed - Error: %s", err());
-        }
-
-        if (!FsIntQueryAux(false, false))
-        {
-            return false;
-        }
-
-        INSERT_SHA_IF_NEEDS(callBackFunc);
     }
 
     return true;
