@@ -176,16 +176,11 @@ class Parser:
 
         if seg_for_parse:
             for field in self._segment_map[seg.get_type()].subItems:
-                if field.nodeDesc.isUnion and field.uSelector:
+                if field.nodeDesc and field.nodeDesc.isUnion and field.uSelector:
                     self._parse_union_selector_field(field, seg)
                 else:
-                    if(field.condition and self._segment_map[seg.get_type()].is_conditional):
-                        self._calc_values_condition(field)
-                        if(not field.condition.eval_expr()):
-                            continue
-
                     prefix = self._build_union_prefix(field.nodeDesc)
-                    self._parse_seg_field(field, prefix + field.name, seg)
+                    self._parse_seg_field(field, prefix + field.name, 0, seg)
             if self._raw:
                 self._build_and_add_raw_data(seg)
         else:  # if segment not for parse, need to set raw data
@@ -198,30 +193,30 @@ class Parser:
         cond_elem = field.condition.var_details
         for elem in cond_elem:
             if cond_elem[elem].is_found:
-                field_offset = self._calculate_aligned_to_dword_offset(cond_elem[elem].offset, cond_elem[elem].size)
+                field_offset = calculate_aligned_offset(cond_elem[elem].offset, cond_elem[elem].size)
                 cond_elem[elem].value = hex(int(self._current_bit_array[field_offset:field_offset + cond_elem[elem].size], 2))
                 field.condition.parsed_str = field.condition.parsed_str.replace(cond_elem[elem].substring, cond_elem[elem].value)
 
-    def _parse_enum_field(self, field, field_str, seg):
+    def _parse_enum_field(self, field, field_str, offset_shift, seg):
         """This method parse enum field and present the enum name as well as the enum value.
         """
-        field_offset = self._calculate_aligned_to_dword_offset(field.offset, field.size)
+        field_offset = calculate_aligned_offset(field.offset + offset_shift, field.size)
         enum_value = int(self._current_bit_array[field_offset:field_offset + field.size], 2)
         if len(self._current_bit_array) >= (field_offset + field.size):
             if enum_value in field.enum_dict:
                 seg.add_parsed_data(field_str, "(" + field.enum_dict[enum_value] + " = " + hex(enum_value) + ")")
             else:
-                seg.add_parsed_data(field_str, hex(int(self._current_bit_array[field_offset:field_offset + field.size], 2)))
+                seg.add_parsed_data(field_str, hex(enum_value))
 
     def _parse_union_selector_field(self, field, seg):
         """This method parse union field and present only the relevant field
         (selected by the selector)
         """
-        union_field_offset = self._calculate_aligned_to_dword_offset(field.uSelector.offset, field.uSelector.size)
+        union_field_offset = calculate_aligned_offset(field.uSelector.offset, field.uSelector.size)
         selected_field_enum = field.uSelector.dict[int(self._current_bit_array[union_field_offset:union_field_offset + field.uSelector.size], 2)]
         for item in field.subItems:
             if item.attrs['selected_by'] == selected_field_enum:
-                self._parse_seg_field(item, item.name, seg)
+                self._parse_seg_field(item, item.name, 0, seg)
 
     def _parse_printf_format(self, value, format):
         """ Enables specifying how a field should be dumped
@@ -272,36 +267,42 @@ class Parser:
 
         return new_val
 
-    def _parse_seg_field(self, field, field_str, seg):
+    def _parse_seg_field(self, field, field_str, offset_shift, seg):  # offset_shift is 0 unless parsing a sub-tree of varaible-size arrays
         """This method is a recursive method that build the inner fields
         """
-        if field.enum_dict:
-            self._parse_enum_field(field, field_str, seg)
-        elif len(field.subItems) > 0:
-            for sub_field in field.subItems:
-                if(sub_field.condition and sub_field.parent.is_conditional):
-                    if(not sub_field.condition.eval_expr()):
-                        continue
-                prefix = self._build_union_prefix(sub_field.nodeDesc)
-                self._parse_seg_field(sub_field, field_str + "." + prefix + sub_field.name, seg)
-                if(field.is_unlimited_array):
-                    field_offset = self._calculate_aligned_to_dword_offset(field.offset, field.size)
-                    field_offset_bytes = field_offset / 8
-                    field_size_bytes = field.size / 8
-                    array_size_bytes = (len(seg.get_data()) - cs.RESOURCE_SEGMENT_START_OFFSET_IN_DW) * 4
-                    end_index = int((array_size_bytes - field_offset_bytes) / field_size_bytes)
-                    for i in range(1, end_index):
-                        value = hex(int(self._current_bit_array[field_offset + 32 * i:field_offset + 32 * i + field.size], 2))
-                        field_str_ = field_str.replace("0", str(i)) + "." + prefix + sub_field.name
-                        seg.add_parsed_data(field_str_, value)
+        try:
+            if field.condition and not field.condition.evaluate(self._current_bit_array):
+                return
+        except ResourceParseException as rpe:
+            seg.add_parsed_data("Warning[{}]".format(self._get_next_warning_counter()),
+                                cs.WARNING_FAILED_EVAL_CONDITION.format(
+                str(rpe), field_str))
 
-        else:
-            field_offset = self._calculate_aligned_to_dword_offset(field.offset, field.size)
-            if len(self._current_bit_array) >= (field_offset + field.size):
-                value = hex(int(self._current_bit_array[field_offset:field_offset + field.size], 2))
-                if("printf" in field.attrs):
-                    value = self._parse_printf_format(value, field.attrs["printf"])
-                seg.add_parsed_data(field_str, value)
+        num_unlimited_elements = 1
+        if field.is_unlimited_array:
+            unlimited_array_start_offset = calculate_aligned_offset(field.offset, field.size)
+            segment_remainder_size = len(self._current_bit_array) - unlimited_array_start_offset
+            num_unlimited_elements = segment_remainder_size // field.size
+
+        for i in range(num_unlimited_elements):
+            array_suffix = "[" + str(i) + "]" if field.is_unlimited_array else ""
+            element_field_str = field_str + array_suffix
+            element_offset_shift = offset_shift + field.size * i
+
+            if field.enum_dict:
+                self._parse_enum_field(field, element_field_str, element_offset_shift, seg)
+
+            elif len(field.subItems) > 0:
+                for sub_field in field.subItems:
+                    prefix = self._build_union_prefix(sub_field.nodeDesc)
+                    self._parse_seg_field(sub_field, element_field_str + "." + prefix + sub_field.name, element_offset_shift, seg)
+            else:
+                field_offset = calculate_aligned_offset(field.offset + element_offset_shift, field.size)
+                if len(self._current_bit_array) >= (field_offset + field.size):
+                    value = hex(int(self._current_bit_array[field_offset:field_offset + field.size], 2))
+                    if("printf" in field.attrs):
+                        value = self._parse_printf_format(value, field.attrs["printf"])
+                    seg.add_parsed_data(element_field_str, value)
 
     @classmethod
     def _build_and_add_raw_data(cls, seg):
@@ -330,16 +331,6 @@ class Parser:
                 ''.join(hex_list[:]))
         elif len(hex_list) == 1:
             seg.add_parsed_data("{:<15}".format("DWORD [{0}]".format(line_counter * 4)), ''.join(hex_list[:]))
-
-    @classmethod
-    def _calculate_aligned_to_dword_offset(cls, offset, size):
-        """This method calculate the new offset inside the dword
-        since the data inside has a different bit index
-        """
-        calculated_offset = offset
-        if size < 32:
-            calculated_offset = (int(offset / 32) * 32) + 32 - size - (offset % 32)
-        return calculated_offset
 
     @classmethod
     def _is_resource_segment(cls, seg_type):
