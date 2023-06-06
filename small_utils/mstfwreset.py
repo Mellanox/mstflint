@@ -1764,11 +1764,6 @@ def reset_flow_host(device, args, command):
         if psid in ["MT_0000000891", "MT_0000000929", "MT_0000000937"]:
             raise RuntimeError("Cedar device is not supported")
 
-    # Block BF2/BF3
-    devDict = getDeviceDict(devid)
-    if devDict['name'] in ['BlueField2', 'BlueField3']:
-        raise RuntimeError("%s device is not supported" % devDict['name'])
-
     # Check if other process is accessing the device (burning the device)
     # Supported on Windows OS only
     if platform.system() == "Windows":
