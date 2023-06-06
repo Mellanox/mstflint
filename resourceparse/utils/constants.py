@@ -130,5 +130,7 @@ PARSER_STRING_NOT_FOUND = -1
 DATA_PRINTER_SEPARATOR = 80 * "-"
 
 WARNING_SIZE_DOESNT_MATCH = " Segment size({0} DWs) doesn't match the adb segment size({1} DWs)"
+WARNING_FAILED_EVAL_CONDITION = ' Failed evaluating condition: {}, at field - "{}", exporting field by default'
 
-PARENT_LST = ["#(parent)", "$(parent)"]
+PARENT_PREFIX_LIST = ["#(parent)", "$(parent)"]
+SEGMENT_PREFIX = "$(segment)"
