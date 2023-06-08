@@ -48,6 +48,7 @@ from utils import constants as cs
 from resource_data.RawData import RawData
 from resource_data.DataPrinter import DataPrinter
 from utils.Exceptions import ResourceParseException
+from utils.common_functions import calculate_aligned_offset
 from parsers.AdbParser import AdbNodeDesc, AdbParser
 
 
