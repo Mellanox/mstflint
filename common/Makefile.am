@@ -36,6 +36,9 @@ noinst_HEADERS=compatibility.h bit_slice.h tools_utils.h tools_utils.h tools_ver
 
 commonincludedir = $(includedir)/mstflint/common/
 
+lib_LTLIBRARIES = libstring_utils.la
+libstring_utils_la_SOURCES = string_utils.cpp string_utils.h
+
 commoninclude_HEADERS = compatibility.h
 
 update_prefix = sed -e 's,[@]MST_LIB_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(libdir),g'\

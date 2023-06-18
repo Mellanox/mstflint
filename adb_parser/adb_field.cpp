@@ -37,8 +37,6 @@
  **/
 
 #include "adb_field.h"
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <iostream>
@@ -59,7 +57,9 @@ AdbField::AdbField() :
 /**
  * Function: AdbField::~AdbField
  **/
-AdbField::~AdbField() {}
+AdbField::~AdbField()
+{
+}
 
 /**
  * Function: AdbField::isLeaf
@@ -80,7 +80,7 @@ bool AdbField::isStruct()
 /**
  * Function: AdbField::operator<
  **/
-bool AdbField::operator<(AdbField& other)
+bool AdbField::operator < (AdbField & other)
 {
     return offset < other.offset;
 }
@@ -90,12 +90,9 @@ bool AdbField::operator<(AdbField& other)
  **/
 bool AdbField::isArray()
 {
-    if (unlimitedArr)
-    {
+    if (unlimitedArr) {
         return true;
-    }
-    else
-    {
+    } else {
         return definedAsArr ? true : lowBound != highBound;
     }
 }
@@ -105,12 +102,9 @@ bool AdbField::isArray()
  **/
 u_int32_t AdbField::arrayLen()
 {
-    if (unlimitedArr)
-    {
+    if (unlimitedArr) {
         return 1;
-    }
-    else
-    {
+    } else {
         return (highBound - lowBound + 1);
     }
 }
@@ -136,12 +130,9 @@ bool AdbField::isDynamicArr()
  **/
 u_int32_t AdbField::eSize()
 {
-    if (unlimitedArr)
-    {
+    if (unlimitedArr) {
         return size;
-    }
-    else
-    {
+    } else {
         return size / arrayLen();
     }
 }
@@ -163,15 +154,13 @@ void AdbField::print(int indent)
 string AdbField::toXml(const string& addPrefix)
 {
     string xml = "<field name=\"" + name + "\" descr=\"" + encodeXml(descNativeToXml(desc)) + "\"";
-    if (isStruct())
-    {
+
+    if (isStruct()) {
         xml += " subnode=\"" + addPrefix + subNode + "\"";
     }
 
-    for (AttrsMap::iterator it = attrs.begin(); it != attrs.end(); it++)
-    {
-        if (it->first == "name" || it->first == "subnode" || it->first == "descr")
-        {
+    for (AttrsMap::iterator it = attrs.begin(); it != attrs.end(); it++) {
+        if ((it->first == "name") || (it->first == "subnode") || (it->first == "descr")) {
             continue;
         }
 

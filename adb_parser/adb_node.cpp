@@ -41,32 +41,30 @@
 #include "adb_field.h"
 #include <iostream>
 
-#if __cplusplus >= 201402L
-#include <regex>
-#else
+#ifdef BOOST_ENABLED
 #include <boost/regex.hpp>
 using namespace boost;
+#else
+#include <regex>
 #endif
 
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 
-AdbNode::AdbNode() : size(0), _maxLeafSize(0), isUnion(false), inLayout(false), lineNumber(-1), userData(0) {}
+AdbNode::AdbNode() : size(0), _maxLeafSize(0), isUnion(false), inLayout(false), lineNumber(-1), userData(0)
+{
+}
 
 /**
  *  * Function: AdbNode::~AdbNode
  *   **/
 AdbNode::~AdbNode()
 {
-    for (size_t i = 0; i < fields.size(); i++)
-    {
+    for (size_t i = 0; i < fields.size(); i++) {
         delete fields[i];
     }
     fields.clear();
-    for (size_t i = 0; i < condFields.size(); i++)
-    {
+    for (size_t i = 0; i < condFields.size(); i++) {
         delete condFields[i];
     }
     condFields.clear();
@@ -78,10 +76,9 @@ AdbNode::~AdbNode()
 string AdbNode::toXml(const string& addPrefix)
 {
     string xml = "<node name=\"" + addPrefix + name + "\" descr=\"" + encodeXml(descNativeToXml(desc)) + "\"";
-    for (AttrsMap::iterator it = attrs.begin(); it != attrs.end(); it++)
-    {
-        if (it->first == "name" || it->first == "descr")
-        {
+
+    for (AttrsMap::iterator it = attrs.begin(); it != attrs.end(); it++) {
+        if ((it->first == "name") || (it->first == "descr")) {
             continue;
         }
 
@@ -90,13 +87,12 @@ string AdbNode::toXml(const string& addPrefix)
     xml += " >\n";
 
     FieldsList allFields = fields;
-    allFields.insert(allFields.end(), condFields.begin(), condFields.end());
-    stable_sort(allFields.begin(), allFields.end(), compareFieldsPtr<AdbField>);
 
-    for (size_t i = 0; i < allFields.size(); i++)
-    {
-        if (allFields[i]->isReserved)
-        {
+    allFields.insert(allFields.end(), condFields.begin(), condFields.end());
+    stable_sort(allFields.begin(), allFields.end(), compareFieldsPtr < AdbField >);
+
+    for (size_t i = 0; i < allFields.size(); i++) {
+        if (allFields[i]->isReserved) {
             continue;
         }
 
@@ -117,6 +113,7 @@ void AdbNode::print(int indent)
          << " isUnion: " << isUnion << " Description: " << desc << endl;
 
     cout << indentString(indent) << "Fields:" << endl;
-    for (size_t i = 0; i < fields.size(); i++)
+    for (size_t i = 0; i < fields.size(); i++) {
         fields[i]->print(indent + 1);
+    }
 }

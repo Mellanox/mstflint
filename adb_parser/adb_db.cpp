@@ -37,8 +37,8 @@
 
 #include <vector>
 #include <stdio.h>
-#include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
+#include <string>
+#include "common/string_utils.h"
 #include "adb_db.h"
 
 #define CHECK_FIELD(field, node_w)                                                  \
@@ -52,10 +52,9 @@
         continue;                                                                   \
     }
 
-struct node_wrapper
-{
+struct node_wrapper {
     AdbInstance* node;
-    vector<AdbInstance*>* fields;
+    vector < AdbInstance * > *fields;
 };
 
 static char err[1024] = {0};
@@ -73,8 +72,7 @@ adb_db_t* db_create()
  */
 int db_load(adb_db_t* db, const char* adb_file_path, int add_reserved)
 {
-    if (!((Adb*)db)->load(adb_file_path, add_reserved, NULL, false))
-    {
+    if (!((Adb*)db)->load(adb_file_path, add_reserved, NULL, false)) {
         sprintf(err, "Failed to load adabe project: %s", ((Adb*)db)->getLastError().c_str());
         return 1;
     }
@@ -87,8 +85,7 @@ int db_load(adb_db_t* db, const char* adb_file_path, int add_reserved)
  */
 int db_load_from_str(adb_db_t* db, const char* adb_data, int add_reserved)
 {
-    if (!((Adb*)db)->loadFromString(adb_data, add_reserved, NULL, false))
-    {
+    if (!((Adb*)db)->loadFromString(adb_data, add_reserved, NULL, false)) {
         sprintf(err, "Failed to load adabe project: %s", ((Adb*)db)->getLastError().c_str());
         return 1;
     }
@@ -101,9 +98,8 @@ int db_load_from_str(adb_db_t* db, const char* adb_data, int add_reserved)
  */
 void db_destroy(adb_db_t* db)
 {
-    if (db)
-    {
-        delete (Adb*)db;
+    if (db) {
+        delete(Adb*) db;
     }
 }
 
@@ -117,26 +113,20 @@ const char* db_get_last_err()
 
 adb_limits_map_t* db_create_limits_map(adb_db_t* db)
 {
-    map<string, string>* limits = new map<string, string>();
+    map < string, string > *limits = new map < string, string > ();
 
-    // Load defines
-    if (db)
-    {
-        for (size_t i = 0; i < ((Adb*)db)->configs.size(); i++)
-        {
+    /* Load defines */
+    if (db) {
+        for (size_t i = 0; i < ((Adb*)db)->configs.size(); i++) {
             AttrsMap::iterator attrs_map = ((Adb*)db)->configs[i]->attrs.find("define");
-            if (attrs_map != ((Adb*)db)->configs[i]->attrs.end())
-            {
-                vector<string> defVal;
-                boost::algorithm::split(defVal, attrs_map->second, boost::is_any_of(string("=")));
+            if (attrs_map != ((Adb*)db)->configs[i]->attrs.end()) {
+                vector < string > defVal;
+                string_utils::split(defVal, attrs_map->second, "=");
 
-                if (defVal.size() == 1)
-                {
-                    ((map<string, string>*)limits)->insert(pair<string, string>(defVal[0], "0"));
-                }
-                else
-                {
-                    ((map<string, string>*)limits)->insert(pair<string, string>(defVal[0], defVal[1]));
+                if (defVal.size() == 1) {
+                    ((map < string, string > *)limits)->insert(pair < string, string > (defVal[0], "0"));
+                } else {
+                    ((map < string, string > *)limits)->insert(pair < string, string > (defVal[0], defVal[1]));
                 }
             }
         }
@@ -146,10 +136,9 @@ adb_limits_map_t* db_create_limits_map(adb_db_t* db)
 
 void db_destroy_limits_map(adb_limits_map_t* limits)
 {
-    if (limits)
-    {
-        ((map<string, string>*)limits)->clear();
-        delete (map<string, string>*)limits;
+    if (limits) {
+        ((map < string, string > *)limits)->clear();
+        delete(map < string, string > *) limits;
     }
 }
 
@@ -158,23 +147,23 @@ void db_destroy_limits_map(adb_limits_map_t* limits)
  */
 adb_node_t* db_get_node(adb_db_t* db, const char* node_name)
 {
-    Adb* adb = (Adb*)db;
+    Adb        * adb = (Adb*)db;
     AdbInstance* node = adb->createLayout(node_name, false, NULL);
-    if (!node)
-    {
+
+    if (!node) {
         sprintf(err, "Failed to create node %s: %s", node_name, adb->getLastError().c_str());
         return NULL;
     }
     struct node_wrapper* node_w = (struct node_wrapper*)malloc(sizeof(struct node_wrapper));
-    if (!node_w)
-    {
+
+    if (!node_w) {
         delete node;
         sprintf(err, "Failed to allocate memory for node");
         return NULL;
     }
     memset(node_w, 0, sizeof(*node_w));
     node_w->node = node;
-    node_w->fields = new vector<AdbInstance*>;
+    node_w->fields = new vector < AdbInstance * >;
     *node_w->fields = node->getLeafFields(false);
     return node_w;
 }
@@ -185,14 +174,12 @@ adb_node_t* db_get_node(adb_db_t* db, const char* node_name)
 void db_node_destroy(adb_node_t* node)
 {
     struct node_wrapper* node_w = (struct node_wrapper*)node;
-    if (node_w)
-    {
-        if (node_w->node)
-        {
+
+    if (node_w) {
+        if (node_w->node) {
             delete node_w->node;
         }
-        if (node_w->fields)
-        {
+        if (node_w->fields) {
             delete node_w->fields;
         }
         free(node_w);
@@ -205,6 +192,7 @@ void db_node_destroy(adb_node_t* node)
 void db_node_name(adb_node_t* node, char name[])
 {
     struct node_wrapper* node_w = (struct node_wrapper*)node;
+
     strcpy(name, node_w->node->name.c_str());
 }
 
@@ -214,6 +202,7 @@ void db_node_name(adb_node_t* node, char name[])
 int db_node_size(adb_node_t* node)
 {
     struct node_wrapper* node_w = (struct node_wrapper*)node;
+
     return node_w->node->size;
 }
 
@@ -223,6 +212,7 @@ int db_node_size(adb_node_t* node)
 int db_node_num_of_fields(adb_node_t* node)
 {
     struct node_wrapper* node_w = (struct node_wrapper*)node;
+
     return (int)node_w->fields->size();
 }
 
@@ -231,13 +221,13 @@ int db_node_num_of_fields(adb_node_t* node)
  */
 adb_field_t* db_node_get_field(adb_node_t* node, int field_idx)
 {
-    if (field_idx >= db_node_num_of_fields(node))
-    {
+    if (field_idx >= db_node_num_of_fields(node)) {
         sprintf(err, "index out of range");
         return NULL;
     }
 
     struct node_wrapper* node_w = (struct node_wrapper*)node;
+
     return node_w->fields->at(field_idx);
 }
 
@@ -247,28 +237,22 @@ adb_field_t* db_node_get_field(adb_node_t* node, int field_idx)
 adb_field_t* db_node_get_field_by_path(adb_node_t* node, const char* path, int is_case_sensitive)
 {
     struct node_wrapper* node_w = (struct node_wrapper*)node;
+
     string fullPath(path);
 
-    if (node_w->node->isConditionalNode())
-    {
+    if (node_w->node->isConditionalNode()) {
         fullPath += ".val";
     }
-    for (size_t i = 0; i < node_w->fields->size(); i++)
-    {
-        if (is_case_sensitive)
-        {
-            if (node_w->fields->at(i)->fullName(1) == fullPath)
-            {
+    for (size_t i = 0; i < node_w->fields->size(); i++) {
+        if (is_case_sensitive) {
+            if (node_w->fields->at(i)->fullName(1) == fullPath) {
                 return node_w->fields->at(i);
             }
-        }
-        else
-        {
-            string field_name_lower = boost::algorithm::to_lower_copy(node_w->fields->at(i)->fullName(1));
-            string path_lower = boost::algorithm::to_lower_copy(fullPath);
+        } else {
+            string field_name_lower = string_utils::to_lower_copy(node_w->fields->at(i)->fullName(1));
+            string path_lower = string_utils::to_lower_copy(fullPath);
 
-            if (path_lower == field_name_lower)
-            {
+            if (path_lower == field_name_lower) {
                 return node_w->fields->at(i);
             }
         }
@@ -285,6 +269,7 @@ adb_field_t* db_node_get_field_by_path(adb_node_t* node, const char* path, int i
 bool db_node_dump(adb_node_t* node, u_int8_t buf[], dump_format_t format, FILE* stream)
 {
     struct node_wrapper* node_w = (struct node_wrapper*)node;
+
     return db_node_range_dump(node, 0, node_w->node->size - 1, buf, format, stream);
 }
 
@@ -292,13 +277,14 @@ bool db_node_dump(adb_node_t* node, u_int8_t buf[], dump_format_t format, FILE* 
  * db_node_dump_with_limits
  * Returns: false on error
  */
-bool db_node_conditional_dump(adb_node_t* node,
-                              u_int8_t buf[],
-                              dump_format_t format,
-                              FILE* stream,
+bool db_node_conditional_dump(adb_node_t      * node,
+                              u_int8_t          buf[],
+                              dump_format_t     format,
+                              FILE            * stream,
                               adb_limits_map_t* values_map)
 {
     struct node_wrapper* node_w = (struct node_wrapper*)node;
+
     return db_node_conditional_range_dump(node, 0, node_w->node->size - 1, buf, format, stream, values_map);
 }
 
@@ -306,12 +292,12 @@ bool db_node_conditional_dump(adb_node_t* node,
  * db_node_range_dump
  * Returns: false on error
  */
-bool db_node_range_dump(adb_node_t* node,
-                        u_int32_t from,
-                        u_int32_t to,
-                        u_int8_t buf[],
+bool db_node_range_dump(adb_node_t  * node,
+                        u_int32_t     from,
+                        u_int32_t     to,
+                        u_int8_t      buf[],
                         dump_format_t format,
-                        FILE* stream)
+                        FILE        * stream)
 {
     return db_node_conditional_range_dump(node, from, to, buf, format, stream, NULL);
 }
@@ -320,82 +306,73 @@ bool db_node_range_dump(adb_node_t* node,
  * db_node_range_dump_with_limits
  * Returns: false on error
  */
-bool db_node_conditional_range_dump(adb_node_t* node,
-                                    u_int32_t from,
-                                    u_int32_t to,
-                                    u_int8_t buf[],
-                                    dump_format_t format,
-                                    FILE* stream,
+bool db_node_conditional_range_dump(adb_node_t      * node,
+                                    u_int32_t         from,
+                                    u_int32_t         to,
+                                    u_int8_t          buf[],
+                                    dump_format_t     format,
+                                    FILE            * stream,
                                     adb_limits_map_t* values_map)
 {
-    int i;
-    adb_field_t* field;
-    char enum_str[256];
-    char name[256];
-    int is_enum;
-    u_int32_t value;
-    u_int32_t offset;
-    u_int32_t size;
+    int                  i;
+    adb_field_t        * field;
+    char                 enum_str[256];
+    char                 name[256];
+    int                  is_enum;
+    u_int32_t            value;
+    u_int32_t            offset;
+    u_int32_t            size;
     struct node_wrapper* node_w = (struct node_wrapper*)node;
-    if (values_map)
-    {
-        // Fill values map for conditions
-        for (i = 0; i < db_node_num_of_fields(node); i++)
-        {
+
+    if (values_map) {
+        /* Fill values map for conditions */
+        for (i = 0; i < db_node_num_of_fields(node); i++) {
             field = db_node_get_field(node, i);
-            if (!field)
-            {
+            if (!field) {
                 return false;
             }
             CHECK_FIELD(field, node_w);
             db_field_full_name(field, 0, name);
             value = db_field_value(field, (u_int8_t*)buf);
-            if (node_w->node->isConditionalNode())
-            {
+            if (node_w->node->isConditionalNode()) {
                 char* p = strstr(name, ".val");
-                if (p != NULL)
-                {
+                if (p != NULL) {
                     *p = '\0';
                 }
             }
-            ((map<string, string>*)values_map)->insert(pair<string, string>(name, boost::lexical_cast<string>(value)));
+            ((map < string, string > *)values_map)->insert(pair < string,
+                                                           string > (name, to_string(value)));
         }
     }
 
-    for (i = 0; i < db_node_num_of_fields(node); i++)
-    {
+    for (i = 0; i < db_node_num_of_fields(node); i++) {
         field = db_node_get_field(node, i);
-        if (!field)
-        {
+        if (!field) {
             return false;
         }
         CHECK_FIELD(field, node_w);
 
         db_field_full_name(field, 0, name);
         value = db_field_value(field, (u_int8_t*)buf);
-        if (node_w->node->isConditionalNode())
-        {
+        if (node_w->node->isConditionalNode()) {
             char* p = strstr(name, ".val");
-            if (p != NULL)
-            {
+            if (p != NULL) {
                 *p = '\0';
             }
         }
         /*
          * Just if the node is Conditional
          */
-        if (node_w->node->isConditionalNode() && values_map != NULL)
-        {
+        if (node_w->node->isConditionalNode() && (values_map != NULL)) {
             try
             {
                 AdbInstance* parentField = node_w->node->subItems[i];
-                if (!parentField->isConditionValid(((map<string, string>*)values_map)))
-                {
-                    ((map<string, string>*)values_map)->erase(name);
+                if (!parentField->isConditionValid((((map < string), (string > *))values_map))) {
+                    ((map < string, string > *)values_map)->erase(name);
                     continue;
                 }
             }
-            catch (...)
+            catch(...)
             {
                 continue;
             }
@@ -403,22 +380,20 @@ bool db_node_conditional_range_dump(adb_node_t* node,
 
         is_enum = db_field_enum(field, value, enum_str);
         size = db_field_size(field);
-        if (stream != NULL)
-        {
-            switch (format)
-            {
-                case DB_FORMAT_STANDARD:
-                    fprintf(stream, "%-40s : 0x%x %s\n", name, value, is_enum ? enum_str : "");
-                    break;
+        if (stream != NULL) {
+            switch (format) {
+            case DB_FORMAT_STANDARD:
+                fprintf(stream, "%-40s : 0x%x %s\n", name, value, is_enum ? enum_str : "");
+                break;
 
-                case DB_FORMAT_STANDARD_NO_ENUM:
-                    fprintf(stream, "%-40s : 0x%x\n", name, value);
-                    break;
+            case DB_FORMAT_STANDARD_NO_ENUM:
+                fprintf(stream, "%-40s : 0x%x\n", name, value);
+                break;
 
-                case DB_FORMAT_FULL_DETAILS:
-                    fprintf(stream, "%-40s : 0x%x %s - address: 0x%x.%d:%d\n", name, value, is_enum ? enum_str : "",
-                            offset / 32 * 4, offset % 32, size);
-                    break;
+            case DB_FORMAT_FULL_DETAILS:
+                fprintf(stream, "%-40s : 0x%x %s - address: 0x%x.%d:%d\n", name, value, is_enum ? enum_str : "",
+                        offset / 32 * 4, offset % 32, size);
+                break;
             }
         }
     }
@@ -462,10 +437,10 @@ int db_field_size(adb_field_t* field)
  */
 u_int64_t db_field_value(adb_field_t* field, u_int8_t buf[])
 {
-    //    cout << ((AdbInstance*)field)->offset / 8 << endl;
-    //    for (unsigned i = 0; i < ((AdbInstance*)field)->offset / 8; i++) {
-    //        printf ("%02x ", buf[i]);
-    //    }
+    /*    cout << ((AdbInstance*)field)->offset / 8 << endl; */
+    /*    for (unsigned i = 0; i < ((AdbInstance*)field)->offset / 8; i++) { */
+    /*        printf ("%02x ", buf[i]); */
+    /*    } */
     return ((AdbInstance*)field)->popBuf(buf);
 }
 
@@ -483,13 +458,11 @@ void db_field_set_value(adb_field_t* field, u_int8_t buf[], u_int64_t value)
 int db_field_enum(adb_field_t* field, u_int64_t value, char enum_str[])
 {
     string s;
-    if (((AdbInstance*)field)->intToEnum(value, s))
-    {
+
+    if (((AdbInstance*)field)->intToEnum(value, s)) {
         strcpy(enum_str, s.c_str());
         return 1;
-    }
-    else
-    {
+    } else {
         strcpy(enum_str, "");
         return 0;
     }
@@ -503,8 +476,7 @@ void db_print_nodes(adb_db_t* db)
     int i = 0;
 
     printf("DB nodes list:\n");
-    for (NodesMap::iterator iter = ((Adb*)db)->nodesMap.begin(); iter != ((Adb*)db)->nodesMap.end(); iter++)
-    {
+    for (NodesMap::iterator iter = ((Adb*)db)->nodesMap.begin(); iter != ((Adb*)db)->nodesMap.end(); iter++) {
         i++;
         printf("%-5d) %s\n", i, iter->first.c_str());
     }
