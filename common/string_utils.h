@@ -14,19 +14,20 @@
 #include <vector>
 #include <list>
 #include <string>
-using namespace std;
 
 #pragma once
 
 namespace string_utils
 {
-    string& trim(string& s);
-    string trim_copy(string& s);
-    string to_lower_copy(string s);
-    void to_lower(string& s);
-    string to_upper_copy(string s);
-    void replace_all(string& s, string const& to_replace, string const& replace_with);
-    string replace_all_copy(const string& s, string const& to_replace, string const& replace_with);
-    string join(list < string >& lst, const char* delim);
-    void split(vector < string >& result, string s, const char* separator);
+    std::string& ltrim(std::string& s);
+    std::string& rtrim(std::string& s);
+    std::string& trim(std::string& s);
+    std::string trim_copy(const std::string& s);
+    std::string to_lower_copy(std::string s);
+    void to_lower(std::string& s);
+    std::string to_upper_copy(std::string s);
+    void replace_all(std::string& s, std::string const& to_replace, std::string const& replace_with);
+    std::string replace_all_copy(const std::string& s, std::string const& to_replace, std::string const& replace_with);
+    std::string join(std::list < std::string >& lst, const char* delim);
+    void split(std::vector < std::string >& result, std::string s, const char* separator);
 } /* namespace string_utils */

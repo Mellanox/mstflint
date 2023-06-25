@@ -24,13 +24,38 @@
 
 namespace string_utils
 {
-    std::string& trim(std::string& s)
+    std::string& ltrim(std::string& s)
     {
-        s.erase(std::remove_if(s.begin(), s.end(), ::isspace), s.end());
+        auto it =
+            std::find_if(s.begin(), s.end(), [] (char c) { return !std::isspace < char > (c, std::locale::classic());
+                         });
+
+        s.erase(s.begin(), it);
         return s;
     }
 
-    std::string trim_copy(std::string& s)
+    std::string& rtrim(std::string& s)
+    {
+        auto it =
+            std::find_if(s.rbegin(), s.rend(), [] (char c) { return !std::isspace < char > (c, std::locale::classic());
+                         });
+
+        s.erase(it.base(), s.end());
+        return s;
+    }
+
+    std::string& trim(std::string& s)
+    {
+    #if defined(_WIN32) || defined(_WIN64) /* Windows */
+        s.erase(std::remove_if(s.begin(), s.end(), ::isspace), s.end());
+        return s;
+    #else
+        ltrim(rtrim(s));
+        return s;
+    #endif
+    }
+
+    std::string trim_copy(const std::string& s)
     {
         std::string out = s;
 
@@ -113,9 +138,9 @@ namespace string_utils
         return result;
     }
 
-    std::string join(list < std::string >& lst, const char* delim)
+    std::string join(std::list < std::string >& lst, const char* delim)
     {
-        vector < std::string > strings(lst.begin(), lst.end());
+        std::vector < std::string > strings(lst.begin(), lst.end());
         std::string result;
 
         switch (strings.size()) {
@@ -129,14 +154,14 @@ namespace string_utils
 
         default:
             std::ostringstream os;
-            copy(strings.begin(), strings.end() - 1, ostream_iterator < std::string > (os, delim));
+            copy(strings.begin(), strings.end() - 1, std::ostream_iterator < std::string > (os, delim));
             os << *strings.rbegin();
             result = os.str();
         }
         return result;
     }
 
-    void split(vector < std::string >& result, std::string s, const char* separator)
+    void split(std::vector < std::string >& result, std::string s, const char* separator)
     {
         if (s.size() == 0) {
             result.push_back(std::string(""));
