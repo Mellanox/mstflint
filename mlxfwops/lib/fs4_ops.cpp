@@ -1399,16 +1399,15 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
                       imageOps._maxImgLog2Size);
     }
 
-    // check if minimal dtoc is not overwriting the preceding chunk
+    // check if minimal dtoc section is not overwriting max itoc section
     if (useImageDevData)
     {
-        u_int32_t devAreaStartAddress = _ioAccess->get_effective_size() - (1 << imageOps._maxImgLog2Size);
-        if (imageOps._fs4ImgInfo.smallestDTocAddr < devAreaStartAddress)
+        if (imageOps._fs4ImgInfo.smallestDTocAddr < imageOps._fwImgInfo.lastImageAddr)
         {
             return errmsg(MLXFW_DTOC_OVERWRITE_CHUNK,
-                          "First DTOC address (0x%x) is less than device area start address (0x%x)",
+                          "First DTOC address (0x%x) is less than last ITOC address (0x%x)",
                           imageOps._fs4ImgInfo.smallestDTocAddr,
-                          devAreaStartAddress);
+                          imageOps._fwImgInfo.lastImageAddr);
         }
     }
 
