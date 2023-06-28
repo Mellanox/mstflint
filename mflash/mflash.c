@@ -2347,7 +2347,27 @@ int tools_cmdif_init(mflash* mfl)
 
 int seven_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
-    return seventh_gen_init_direct_access(mfl, flash_params);
+    int rc = MFE_OK;
+
+    if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0)
+    {
+        if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD)
+        {
+            rc = icmd_init(mfl);
+            CHECK_RC(rc);
+        }
+        rc = flash_init_fw_access(mfl, flash_params);
+    }
+    else
+    {
+        if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_MLNXOS_CMDIF)
+        {
+            // dont allow overidding cache replacement in mellanox OS env
+            return MFE_OCR_NOT_SUPPORTED;
+        }
+        rc = seventh_gen_init_direct_access(mfl, flash_params);
+    }
+    return rc;
 }
 
 int six_gen_flash_init(mflash* mfl, flash_params_t* flash_params)

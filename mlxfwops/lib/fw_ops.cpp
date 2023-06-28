@@ -2522,6 +2522,7 @@ bool FwOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int
 // TODO - use dm_dev_is_fs3/4/5 from tools_dev_types.c and remove this function
 u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
 {
+    // TODO - remove QTM3/CX8/BF4/ARCUSE from FS4
     if ((hwDevId == CX3_HW_ID) || (hwDevId == CX3_PRO_HW_ID))
     {
         return FS_FS2_GEN;
@@ -2536,11 +2537,12 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
              hwDevId == BF3_HW_ID || hwDevId == BF4_HW_ID || hwDevId == QUANTUM_HW_ID || hwDevId == QUANTUM2_HW_ID ||
              hwDevId == QUANTUM3_HW_ID || hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM2_HW_ID ||
              hwDevId == SPECTRUM3_HW_ID || hwDevId == GEARBOX_HW_ID || hwDevId == GB_MANAGER_HW_ID ||
-             hwDevId == ABIR_GB_HW_ID)
+             hwDevId == ABIR_GB_HW_ID || hwDevId == ARCUSE_HW_ID)
     {
         return FS_FS4_GEN;
     }
-    else if ((hwDevId == QUANTUM3_HW_ID) || (hwDevId == CX8_HW_ID) || (hwDevId == BF4_HW_ID))
+    else if ((hwDevId == QUANTUM3_HW_ID) || (hwDevId == CX8_HW_ID) || (hwDevId == BF4_HW_ID) ||
+             (hwDevId == ARCUSE_HW_ID))
     {
         return FS_FS5_GEN;
     }
