@@ -170,7 +170,7 @@ static struct device_sem_info g_dev_sem_info_db[] = {
   },
   {
     DeviceConnectX8, // dev_id
-    {0xe5660},       // hw_sem_addr
+    {0x54b80},       // hw_sem_addr
     1,               // vsec_sem_supported
   },
   {
@@ -195,8 +195,13 @@ static struct device_sem_info g_dev_sem_info_db[] = {
   },
   {
     DeviceQuantum3, // dev_id
-    {0xe74e0},      // hw_sem_addr find correct one for 0x25b
+    {0x154800},     // hw_sem_addr
     1,              // vsec_sem_supported
+  },
+  {
+    DeviceArcusE, // dev_id
+    {0x145800},   // hw_sem_addr
+    1,            // vsec_sem_supported
   },
   {
     DeviceBW00, // dev_id
