@@ -9,57 +9,40 @@
  * This software product is governed by the End User License Agreement
  * provided with the software product.
  */
-#include <fstream>
-#include <sstream>
 #include <algorithm>
+#include <cctype>
+#include <fstream>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <stdio.h>
 #include <string.h>
-#include <memory>
-#include <cctype>
-#include <algorithm>
 #include <string>
+#include <sstream>
 #include "string_utils.h"
 
 namespace string_utils
 {
-    std::string& ltrim(std::string& s)
+    void trim(std::string& s)
     {
-        auto it =
-            std::find_if(s.begin(), s.end(), [] (char c) { return !std::isspace < char > (c, std::locale::classic());
-                         });
+        std::string whitespace = " ";
+        const auto  first_non_whitespace = s.find_first_not_of(whitespace);
 
-        s.erase(s.begin(), it);
-        return s;
-    }
+        if (first_non_whitespace == std::string::npos) {
+            s.erase(0, s.length());
+        }
+        const auto last_non_whitespace = s.find_last_not_of(whitespace);
 
-    std::string& rtrim(std::string& s)
-    {
-        auto it =
-            std::find_if(s.rbegin(), s.rend(), [] (char c) { return !std::isspace < char > (c, std::locale::classic());
-                         });
-
-        s.erase(it.base(), s.end());
-        return s;
-    }
-
-    std::string& trim(std::string& s)
-    {
-    #if defined(_WIN32) || defined(_WIN64) /* Windows */
-        s.erase(std::remove_if(s.begin(), s.end(), ::isspace), s.end());
-        return s;
-    #else
-        ltrim(rtrim(s));
-        return s;
-    #endif
+        s.erase(last_non_whitespace + 1, s.length()); /* remove trailing whitespaces */
+        s.erase(0, first_non_whitespace);             /* remove leading whitespaces */
     }
 
     std::string trim_copy(const std::string& s)
     {
         std::string out = s;
 
-        return trim(out);
+        trim(out);
+        return out;
     }
 
     void to_lower(std::string& s)
@@ -68,12 +51,12 @@ namespace string_utils
                   });
     }
 
-    std::string to_lower_copy(std::string s)
+    std::string to_lower_copy(const std::string s)
     {
         std::string out = "";
 
         std::transform(s.begin(), s.end(), std::back_inserter(out),
-                       [] (unsigned char c) { return std::tolower(static_cast < unsigned char > (c));
+                       [] (unsigned char c) { return std::tolower(c);
                        });
         return out;
     }
@@ -83,7 +66,7 @@ namespace string_utils
         std::string out = "";
 
         transform(s.begin(), s.end(), back_inserter(out),
-                  [] (unsigned char c) { return toupper(static_cast < unsigned char > (c));
+                  [] (unsigned char c) { return toupper(c);
                   });
         return out;
     }

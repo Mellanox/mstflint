@@ -19,11 +19,9 @@
 
 namespace string_utils
 {
-    std::string& ltrim(std::string& s);
-    std::string& rtrim(std::string& s);
-    std::string& trim(std::string& s);
+    void trim(std::string& s);
     std::string trim_copy(const std::string& s);
-    std::string to_lower_copy(std::string s);
+    std::string to_lower_copy(const std::string s);
     void to_lower(std::string& s);
     std::string to_upper_copy(std::string s);
     void replace_all(std::string& s, std::string const& to_replace, std::string const& replace_with);
