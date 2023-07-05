@@ -37,6 +37,7 @@
 int mlx5_control_access_register(int fd, void *data_in,
                                  int size_in, __u16 reg_id,
                                  int method);
+void mlx5ctl_set_device_id(mfile* mf);
 
 struct mlx5ctl_drvinfo {
 	__u32 version;
