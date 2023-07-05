@@ -102,6 +102,7 @@
 
 #define CX3_SW_ID    4099
 #define CX3PRO_SW_ID 4103
+#define HW_ID_ADDR 0xf0014
 
 typedef enum {
     Clear_Vsec_Semaphore = 0x1,
@@ -771,12 +772,19 @@ static int mst_driver_connectx_flush(mfile* mf)
 
 int mtcr_mlx5ctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
-    (void)mf;
-    (void)offset;
-    (void)value;
+    int rc = -1;
 
-    fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
-    return -1;
+    if (offset == HW_ID_ADDR)
+    {
+        *value = mf->device_hw_id;
+        rc = 4;
+    }
+    else
+    {
+        fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+    }
+
+    return rc;
 }
 
 int mtcr_mlx5ctl_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
@@ -971,7 +979,8 @@ static int mlx5ctl_driver_open(mfile  * mf,
     ctx->mclose = mtcr_driver_mclose;
     mf->bar_virtual_addr = NULL;
     init_dev_info_ul(mf, name, domain_p, bus_p, dev_p, func_p);
-
+    mlx5ctl_set_device_id(mf);
+    DBG_PRINTF("mlx5ctl: device id is %d:\n", mf->device_hw_id);
     return 0;
 }
 
@@ -1691,6 +1700,11 @@ static MType mtcr_parse_name(const char* name,
     scnt = sscanf(name, "mlx5ctl-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
     if (scnt == 4) {
         force_config = 1;
+        *domain_p = my_domain;
+        *bus_p = my_bus;
+        *dev_p = my_dev;
+        *func_p = my_func;
+        *force = 0;
         return MST_MLX5_CONTROL_DRIVER;
     }
 
@@ -3248,8 +3262,6 @@ static int mreg_send_raw(mfile              * mf,
 /* needed device HW IDs */
 #define CONNECTX3_PRO_HW_ID 0x1f7
 #define CONNECTX3_HW_ID     0x1f5
-
-#define HW_ID_ADDR 0xf0014
 
 static int supports_icmd(mfile* mf)
 {

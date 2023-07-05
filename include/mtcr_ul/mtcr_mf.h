@@ -65,7 +65,7 @@ struct mfile_t
     MType res_tp;         /*  Will be used with HCR if need */
     DType dtype;          /*  target device to access to */
     DType itype;          /*  interface device to access via */
-    u_int32_t device_id;
+    u_int32_t device_hw_id;
     int is_i2cm;          /*  use device as I2C master */
     int is_vm;            /*  if the machine is VM    */
     int cr_access;        /* If cr access is allowed in MLNXOS devices */
