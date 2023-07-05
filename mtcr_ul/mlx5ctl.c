@@ -36,9 +36,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <asm/byteorder.h>
 #include <errno.h>
 #include <string.h>
 #include <stddef.h>
+#include "mtcr_mf.h"
 #include "mlx5ctl.h"
 #include "mlx5ctl_ioctl.h"
 
@@ -51,6 +53,21 @@ static int mlx5_cmd_ioctl(int fd, struct mlx5ctl_cmd_inout *cmd)
 }
 
 
+void mlx5ctl_set_device_id(mfile* mf)
+{
+    unsigned char register_data[1024];
+
+    memset(register_data, 0 ,1024);
+
+    int rc = mlx5_control_access_register(mf->fd, register_data,
+                                          1024, 0x9020, 1);
+
+    if (!rc)
+    {
+        memcpy(&mf->device_hw_id, &register_data[8], 4);
+        mf->device_hw_id = __cpu_to_be32(mf->device_hw_id);
+    }
+}
 
 
 int mlx5_control_access_register(int fd, void *data_in,
