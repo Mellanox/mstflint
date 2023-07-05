@@ -282,6 +282,7 @@ void MlxlinkMaps::ibSpeedMapping()
     _IBSpeed2gNum[IB_LINK_SPEED_EDR] = 100;
     _IBSpeed2gNum[IB_LINK_SPEED_HDR] = 200;
     _IBSpeed2gNum[IB_LINK_SPEED_NDR] = 400;
+    _IBSpeed2gNum[IB_LINK_SPEED_XDR] = 800;
 
     _IBSpeed2Str[IB_LINK_SPEED_SDR] = "IB-SDR";
     _IBSpeed2Str[IB_LINK_SPEED_DDR] = "IB-DDR";
@@ -291,6 +292,7 @@ void MlxlinkMaps::ibSpeedMapping()
     _IBSpeed2Str[IB_LINK_SPEED_EDR] = "IB-EDR";
     _IBSpeed2Str[IB_LINK_SPEED_HDR] = "IB-HDR";
     _IBSpeed2Str[IB_LINK_SPEED_NDR] = "IB-NDR";
+    _IBSpeed2Str[IB_LINK_SPEED_XDR] = "IB-XDR";
 }
 
 void MlxlinkMaps::speedToLanesMapping()
@@ -385,17 +387,20 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsModesList[27] = "SQUARE_WAVE13";
     _prbsModesList[28] = "SQUARE_WAVE30";
 
-    _prbsLaneRateList[0] = "SDR (2.5 Gb/s)";
-    _prbsLaneRateList[1] = "DDR/5G (5 Gb/s)";
-    _prbsLaneRateList[2] = "QDR (10 Gb/s)";
-    _prbsLaneRateList[3] = "FDR10/10G/40G (10.3125 Gb/s)";
-    _prbsLaneRateList[4] = "FDR/14G (14.0625 Gb/s)";
-    _prbsLaneRateList[5] = "EDR/25G/50G/100G (25.78125 Gb/s)";
-    _prbsLaneRateList[6] = "1G (1.25 Gb/s)";
-    _prbsLaneRateList[7] = "XAUI/2.5G (3.125 Gb/s)";
-    _prbsLaneRateList[8] = "50GE-KR4/12.89G (12.89 Gb/s)";
-    _prbsLaneRateList[9] = "HDR/50G_1X/100G_2X/200G_4X/400G_8X (26.5625Gbd/53.125Gb/s)";
-    _prbsLaneRateList[10] = "NDR/100G_1X/200G_2X/400G_4X/800G_8X (53.125Gbd/106.25Gb/s)";
+    _prbsLaneRateList[0] = "2.5G";
+    _prbsLaneRateList[1] = "5G";
+    _prbsLaneRateList[2] = "10G";
+    _prbsLaneRateList[3] = "10.3125G";
+    _prbsLaneRateList[4] = "14.0625G";
+    _prbsLaneRateList[5] = "25.78125G";
+    _prbsLaneRateList[6] = "53.125G";
+    _prbsLaneRateList[7] = "106.25G";
+    _prbsLaneRateList[8] = "212.5G";
+    _prbsLaneRateList[9] = "N/A";
+    _prbsLaneRateList[10] = "1.25G";
+    _prbsLaneRateList[11] = "3.125G";
+    _prbsLaneRateList[12] = "12.89G";
+
     // 1G
     _prbsLaneRate["1G"] = {LANE_RATE_1G_CAP, PRBS_1G};
     // 2.5G
@@ -445,23 +450,27 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsLaneRate["200G_2X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
     _prbsLaneRate["400G_4X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
     _prbsLaneRate["800G_8X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
+    // XDR
+    _prbsLaneRate["IB-XDR"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
+    _prbsLaneRate["XDR"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
 
     _prbsRxTuningStatus[0] = "PRBS mode tuning was not performed.";
     _prbsRxTuningStatus[1] = "Performing PRBS mode tuning.";
     _prbsRxTuningStatus[2] = "PRBS mode tuning completed.";
     _prbsRxTuningStatus[3] = "Signal Detect in progress.";
 
-    _prbsLaneRateCap[0x1] = "1G (1.25 Gb/s)";
-    _prbsLaneRateCap[0x2] = "SDR (2.5 Gb/s)";
-    _prbsLaneRateCap[0x4] = "XAUI/2.5G (3.125 Gb/s)";
-    _prbsLaneRateCap[0x8] = "DDR/5G (5 Gb/s)";
-    _prbsLaneRateCap[0x10] = "QDR (10 Gb/s)";
-    _prbsLaneRateCap[0x20] = "FDR10/10G/40G (10.3125 Gb/s)";
-    _prbsLaneRateCap[0x40] = "FDR/14G (14.0625 Gb/s)";
-    _prbsLaneRateCap[0x80] = "EDR/25G/50G/100G (25.78125 Gb/s)";
-    _prbsLaneRateCap[0x100] = "50GE-KR4/12.89G (12.89 Gb/s)";
-    _prbsLaneRateCap[0x200] = "HDR/50G/100G/200G/400G (26.5625Gbd/53.125Gb/s)";
-    _prbsLaneRateCap[0x400] = "NDR/100G/200G/400G/800G (53.125Gbd/106.25Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_1G_CAP] = "1G (1.25 Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_SDR_CAP] = "SDR (2.5 Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_XAUI_CAP] = "XAUI/2.5G (3.125 Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_DDR_CAP] = "DDR/5G (5 Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_QDR_CAP] = "QDR (10 Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_FDR10_CAP] = "FDR10/10G/40G (10.3125 Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_FDR_CAP] = "FDR/14G (14.0625 Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_EDR_CAP] = "EDR/25G/50G/100G (25.78125 Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_50G_CAP] = "50GE-KR4/12.89G (12.89 Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_HDR_CAP] = "HDR/50G/100G/200G/400G (26.5625Gbd/53.125Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_NDR_CAP] = "NDR/100G/200G/400G/800G (53.125Gbd/106.25Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_XDR_CAP] = "XDR (106.25Gbd/212.5Gb/s)";
 
     _prbsLockStatus[0] = "Not locked";
     _prbsLockStatus[1] = "Locked";
@@ -630,6 +639,7 @@ void MlxlinkMaps::cmisIbComlianceMapping()
     _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_EDR] = "EDR";
     _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_HDR] = "HDR";
     _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_NDR] = "NDR";
+    _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_XDR] = "XDR";
 }
 
 void MlxlinkMaps::cimsCableBreakoutMapping()
@@ -1110,6 +1120,7 @@ void MlxlinkMaps::hostComplianceMapping()
     _cmisHostCompliance[CMIS_COMPLIANCE_EDR] = "IB EDR";
     _cmisHostCompliance[CMIS_COMPLIANCE_HDR] = "IB HDR";
     _cmisHostCompliance[CMIS_COMPLIANCE_NDR] = "IB NDR";
+    _cmisHostCompliance[CMIS_COMPLIANCE_XDR] = "IB XDR";
 }
 
 void MlxlinkMaps::mediaComplianceMapping()
