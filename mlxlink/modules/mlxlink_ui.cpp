@@ -34,7 +34,10 @@
 
 #include "mlxlink_ui.h"
 
-MlxlinkUi::MlxlinkUi() : CommandLineRequester(MLXLINK_EXEC " OPTIONS"), _cmdParser(MLXLINK_EXEC) {}
+MlxlinkUi::MlxlinkUi() : CommandLineRequester(MLXLINK_EXEC " OPTIONS"), _cmdParser(MLXLINK_EXEC)
+{
+    _mlxlinkCommander = nullptr;
+}
 
 MlxlinkUi::~MlxlinkUi()
 {
@@ -156,15 +159,17 @@ void MlxlinkUi::printSynopsisCommands()
       "SQUARE_WAVEB/SQUARE_WAVEC/SQUARE_WAVED/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ/LT_frames/PRBS15/PRBS28/"
       "SQUARE_WAVE3,SQUARE_WAVE13,SQUARE_WAVE30] (Optional - Default PRBS31] (Optional - Default PRBS31)");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(PPRT_RATE_FLAG_SHORT, PPRT_RATE_FLAG, "rx_lane_rate",
-                                 "RX Lane Rate "
-                                 "[HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
-                                 "2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
+    MlxlinkRecord::printFlagLine(
+      PPRT_RATE_FLAG_SHORT, PPRT_RATE_FLAG, "rx_lane_rate",
+      "RX Lane Rate "
+      "[NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
+      "2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
-                                 "TX Lane Rate "
-                                 "[HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
-                                 "2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
+    MlxlinkRecord::printFlagLine(
+      PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
+      "TX Lane Rate "
+      "[NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
+      "2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PRBS_INVERT_TX_POL_FLAG_SHORT, PRBS_INVERT_TX_POL_FLAG, "",
                                  "PRBS TX polarity inversion (Optional - Default No Inversion)");

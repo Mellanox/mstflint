@@ -40,8 +40,6 @@
 #include <signal.h>
 #include <cmath>
 
-#include "mlxlink_maps.h"
-
 using namespace std;
 
 enum CABLE_MULTIPLIER
@@ -98,10 +96,7 @@ bool checkPepcForceMode(const string& forceMode);
 bool checkPepcANMode(const string& anMode);
 bool checkPplmCmd(const string& pplmCmd);
 bool checkPplrCmd(const string& pplrCmd);
-string prbsMaskToLaneRate(u_int32_t mask);
 u_int32_t prbsMaskToRateNum(u_int32_t mask);
-bool prbsLaneRateCheck(const string& rate);
-string prbsMaskToTuningStatus(u_int32_t mask);
 string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse);
 bool checkPrbsCmd(const string& prbsCmd);
 bool checkTestMode(const string& testMode);
@@ -144,6 +139,7 @@ bool isSpeed25GPerLane(u_int32_t speed, u_int32_t protocol);
 string linkWidthMaskToStr(u_int32_t width);
 bool isSpeed50GPerLane(u_int32_t speed, u_int32_t protocol);
 bool isSpeed100GPerLane(u_int32_t speed, u_int32_t protocol);
+bool isSpeed200GPerLane(u_int32_t speed, u_int32_t protocol);
 bool askUser(const char* question, bool force = false);
 string getCableLengthStr(u_int32_t cableLength, bool cmisCable);
 string getRxTxCDRState(u_int32_t state, u_int32_t numOfLanes);

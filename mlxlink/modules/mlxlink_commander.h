@@ -364,6 +364,7 @@ public:
     void labeltoDSlocalPort();
     bool isDSdevice();
     void labelToSpectLocalPort();
+    void labelToQtm3LocalPort();
     void labelToIBLocalPort();
     bool isIBSplitReady();
     u_int32_t calculatePanelPort(bool ibSplitReady);
@@ -385,8 +386,9 @@ public:
     void fillIbPortGroupMap(u_int32_t localPort, u_int32_t labelPort, u_int32_t group, bool splitReady);
     void
       fillEthPortGroupMap(u_int32_t localPort, u_int32_t labelPort, u_int32_t group, u_int32_t width, bool spect2WithGb);
-    int handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady);
-    int handleEthLocalPort(u_int32_t labelPort, bool spect2WithGb);
+    bool handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady);
+    bool handleEthLocalPort(u_int32_t labelPort, bool spect2WithGb);
+    bool handleQTM3LocalPort(u_int32_t labelPort);
     void handleLabelPorts(std::vector<string> labelPortsStr, bool skipException = false);
     vector<string> localToPortsPerGroup(vector<u_int32_t> localPorts);
     u_int32_t getPortGroup(u_int32_t localPort);
