@@ -315,7 +315,8 @@ typedef enum chip_type
     CT_SPECTRUM4,
     CT_GEARBOX,
     CT_GEARBOX_MGR,
-    CT_ABIR_GEARBOX
+    CT_ABIR_GEARBOX,
+    CT_ARCUSE
 } chip_type_t;
 
 #define IS_HCA(chipType)                                                                                 \
