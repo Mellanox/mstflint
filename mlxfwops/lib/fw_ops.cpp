@@ -1443,6 +1443,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"Gearbox", GEARBOX_HW_ID, CT_GEARBOX, CFT_GEARBOX, 0, {0, 0}, {{UNKNOWN_BIN, {0}}}},
   {"GearboxManager", GB_MANAGER_HW_ID, CT_GEARBOX_MGR, CFT_GEARBOX, 0, {0, 0}, {{UNKNOWN_BIN, {0}}}},
   {"AbirGearbox", ABIR_GB_HW_ID, CT_ABIR_GEARBOX, CFT_GEARBOX, 0, {0, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"ArcusE", ARCUSE_HW_ID, CT_ARCUSE, CFT_SWITCH, 0, {45568, 0}, {{UNKNOWN_BIN, {0}}}},
   {(char*)NULL, 0, CT_UNKNOWN, CFT_UNKNOWN, 0, {0}, {{UNKNOWN_BIN, {0}}}}, // zero devid terminator
 };
 
