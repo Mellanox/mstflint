@@ -126,6 +126,7 @@ private:
     void getTestModeModulePMPT(vector<AmberField>& fields, string moduleSide, ModuleAccess_t mode);
     void getTestModeModulePMPD(vector<AmberField>& fields, string moduleSide);
     u_int32_t getSheetIndex(AMBER_SHEET sheet);
+    void getPemiSnr(vector<AmberField>& fields, bool isGroupSupported);
 
     void collect();
     vector<AmberField> collectSheet(AMBER_SHEET sheet);
