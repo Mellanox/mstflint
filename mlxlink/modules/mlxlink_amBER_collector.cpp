@@ -416,16 +416,14 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
 
     AmberField::_dataValid = true;
     string labelPortStr = to_string(_labelPort);
-    if ((_splitPort && _splitPort != 1) || (_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) ||
-        (_devID == DeviceBW00))
+    if ((_splitPort && _splitPort != 1) || (_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || (_devID == DeviceBW00))
     {
         /* For Quantum-2, the split notation will stand for the port in the cage
          * For other, only add the split notation if it's not 1
          */
         labelPortStr += "/" + to_string(_splitPort);
     }
-    if ((_secondSplit && _secondSplit != 1) &&
-        ((_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || (_devID == DeviceBW00)))
+    if ((_secondSplit && _secondSplit != 1) && ((_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || (_devID == DeviceBW00)))
     {
         labelPortStr += "/" + to_string(_secondSplit);
     }
@@ -607,8 +605,9 @@ vector<AmberField> MlxlinkAmBerCollector::getPhyOperationInfo()
             fields.push_back(AmberField("num_of_vfs", getFieldStr("num_of_vfs")));
             fields.push_back(AmberField("bdf0", getFieldStr("bdf0")));
             fields.push_back(AmberField("max_read_request_size", _mlxlinkMaps->_maxReadReqSize[getFieldValue("max_read_request_size")]));
-            fields.push_back(AmberField("max_payload_size", _mlxlinkMaps->_maxReadReqSize[getFieldValue("max_payload_"
-                                                                                                        "size")]));
+            fields.push_back(AmberField("max_payload_size",
+                                        _mlxlinkMaps->_maxReadReqSize[getFieldValue("max_payload_"
+                                                                                    "size")]));
             fields.push_back(AmberField("pwr_status", _mlxlinkMaps->_pwrStatus[getFieldValue("pwr_status")]));
             fields.push_back(AmberField("port_type", _mlxlinkMaps->_portType[getFieldValue("port_type")]));
             fields.push_back(AmberField("link_peer_max_speed", _mlxlinkMaps->_linkPeerMaxSpeed[getFieldValue("link_peer_max_speed")]));
@@ -692,8 +691,9 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             updateField("page_select", PDDR_OPERATIONAL_INFO_PAGE);
             sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
 
-            fields.push_back(AmberField("Phy_Manager_State", _mlxlinkMaps->_pmFsmState[getFieldValue("phy_mngr_fsm_"
-                                                                                                     "state")]));
+            fields.push_back(AmberField("Phy_Manager_State",
+                                        _mlxlinkMaps->_pmFsmState[getFieldValue("phy_mngr_fsm_"
+                                                                                "state")]));
             fields.push_back(AmberField("Protocol", _mlxlinkMaps->_networkProtocols[_protoActive]));
 
             resetLocalParser(ACCESS_REG_PTYS);
@@ -1480,13 +1480,15 @@ vector<AmberField> MlxlinkAmBerCollector::getPortCounters()
                 updateField("grp", PPCNT_IB_PORT_COUNTERS_GROUP);
                 sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
                 fields.push_back(AmberField("LinkErrorRecoveryCounter", getFieldStr("link_error_recovery_counter")));
-                fields.push_back(AmberField("PortRcvRemotePhysicalErrors", getFieldStr("port_rcv_remote_physical_"
-                                                                                       "errors")));
+                fields.push_back(AmberField("PortRcvRemotePhysicalErrors",
+                                            getFieldStr("port_rcv_remote_physical_"
+                                                        "errors")));
                 fields.push_back(AmberField("PortRcvErrors", getFieldStr("port_rcv_errors")));
                 fields.push_back(AmberField("PortXmitDiscards", getFieldStr("port_xmit_discards")));
                 fields.push_back(AmberField("PortRcvSwitchRelayErrors", getFieldStr("port_rcv_switch_relay_errors")));
-                fields.push_back(AmberField("ExcessiveBufferOverrunErrors", getFieldStr("excessive_buffer_overrun_"
-                                                                                        "errors")));
+                fields.push_back(AmberField("ExcessiveBufferOverrunErrors",
+                                            getFieldStr("excessive_buffer_overrun_"
+                                                        "errors")));
                 fields.push_back(AmberField("LocalLinkIntegrityErrors", getFieldStr("local_link_integrity_errors")));
                 fields.push_back(AmberField("PortRcvConstraintErrors", getFieldStr("port_rcv_constraint_errors")));
                 fields.push_back(AmberField("PortXmitConstraintErrors", getFieldStr("port_xmit_constraint_errors")));
@@ -1548,8 +1550,9 @@ vector<AmberField> MlxlinkAmBerCollector::getPortCounters()
             fields.push_back(AmberField("outbound_stalled_reads", getFieldStr("outbound_stalled_reads")));
             fields.push_back(AmberField("outbound_stalled_writes", getFieldStr("outbound_stalled_writes")));
             fields.push_back(AmberField("outbound_stalled_reads_events", getFieldStr("outbound_stalled_reads_events")));
-            fields.push_back(AmberField("outbound_stalled_writes_events", getFieldStr("outbound_stalled_writes_"
-                                                                                      "events")));
+            fields.push_back(AmberField("outbound_stalled_writes_events",
+                                        getFieldStr("outbound_stalled_writes_"
+                                                    "events")));
             fields.push_back(AmberField("tx_overflow_buffer_marked_pkt", to_string(add32BitTo64(getFieldValue("tx_overflow_buffer_marked_pkt_hi"), getFieldValue("tx_overflow_buffer_marked_pkt_lo")))));
         }
     }
@@ -1821,12 +1824,31 @@ vector<AmberField> MlxlinkAmBerCollector::getPhyDebugInfo()
     return fields;
 }
 
+void MlxlinkAmBerCollector::getPemiSnr(vector<AmberField>& fields, bool isGroupSupported)
+{
+    if (!isGroupSupported)
+    {
+        AmberField::_dataValid = false;
+    }
+
+    sendLocalPrmReg(ACCESS_REG_PEMI, GET, "local_port=%d,page_select=%d", _localPort, PEMI_GROUP_SEL_SNR_SAMPLES);
+
+    pushModulePerLaneField(fields, "snr_media_lane", 256, "");
+    pushModulePerLaneField(fields, "snr_host_lane", 256, "");
+
+    AmberField::_dataValid = true;
+}
+
 vector<AmberField> MlxlinkAmBerCollector::getExtModuleStatus()
 {
     vector<AmberField> fields;
 
     try
     {
+        if (!_isPortPCIE)
+        {
+            getPemiSnr(fields, true);
+        }
     }
     catch (const std::exception& exc)
     {

@@ -1491,13 +1491,51 @@ string MlxlinkCommander::getValuesOfActiveLanes(const string& row)
 
     return newValue;
 }
-void MlxlinkCommander::prepareBerModuleInfoNdr(bool valid)
+
+void MlxlinkCommander::pushSnrModuleInfoFields(bool valid)
 {
-    initAmBerCollector();
-    _amberCollector->init();
+    vector<MODULE_FIELD> fieldsToQuery;
+    string snrMediaLanes = "N/A";
+    string snrHostLanes = "N/A";
 
-    vector<AmberField> moduleInfoFields = _amberCollector->getModuleStatus();
+    try
+    {
+        vector<AmberField> moduleInfoFields = _amberCollector->getExtModuleStatus();
+        snrMediaLanes = AmberField::getValueFromFields(moduleInfoFields, "snr_media_lane", false);
+        snrHostLanes = AmberField::getValueFromFields(moduleInfoFields, "snr_host_lane", false);
 
+        if (snrMediaLanes.find("N/A") != string::npos)
+        {
+            snrMediaLanes = "N/A";
+        }
+        else
+        {
+            findAndReplace(snrMediaLanes, "_", ",");
+            snrMediaLanes = getValuesOfActiveLanes(snrMediaLanes);
+        }
+
+        if (snrHostLanes.find("N/A") != string::npos)
+        {
+            snrHostLanes = "N/A";
+        }
+        else
+        {
+            findAndReplace(snrHostLanes, "_", ",");
+            snrHostLanes = getValuesOfActiveLanes(snrHostLanes);
+        }
+    }
+    catch (MlxRegException& excep)
+    {
+    }
+
+    setPrintVal(_moduleInfoCmd, "SNR Media Lanes [dB]", snrMediaLanes, ANSI_COLOR_RESET, true, valid && _ddmSupported,
+                true);
+    setPrintVal(_moduleInfoCmd, "SNR Host Lanes [dB]", snrHostLanes, ANSI_COLOR_RESET, true, valid && _ddmSupported,
+                true);
+}
+
+void MlxlinkCommander::prepareBerModuleInfoNdr(bool valid, const vector<AmberField>& moduleInfoFields)
+{
     vector<MODULE_FIELD> fieldsToQuery;
 
     fieldsToQuery.push_back(MODULE_FIELD{"IB Cable Width", "ib_width", true, false, false});
@@ -1528,6 +1566,8 @@ void MlxlinkCommander::prepareBerModuleInfoNdr(bool valid)
     fieldsToQuery.push_back(MODULE_FIELD{"Rx LOS [per lane]", "rx_los", true, true, true});
     fieldsToQuery.push_back(MODULE_FIELD{"Rx CDR LOL [per lane]", "rx_cdr_lol", true, true, true});
     fieldsToQuery.push_back(MODULE_FIELD{"Tx Adaptive EQ Fault [per lane]", "tx_ad_eq_fault", true, true, true});
+
+    pushSnrModuleInfoFields(valid);
 
     string fieldValue = "";
     for (auto it = fieldsToQuery.begin(); it != fieldsToQuery.end(); it++)
@@ -1586,7 +1626,12 @@ void MlxlinkCommander::showModuleInfo()
         if (_productTechnology >= PRODUCT_16NM)
         {
             preparePrtlSection();
-            prepareBerModuleInfoNdr(valid);
+
+            initAmBerCollector();
+            _amberCollector->init();
+            vector<AmberField> moduleInfoFields = _amberCollector->getModuleStatus();
+
+            prepareBerModuleInfoNdr(valid, moduleInfoFields);
         }
         cout << _moduleInfoCmd;
 
