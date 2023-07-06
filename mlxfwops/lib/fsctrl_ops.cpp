@@ -701,17 +701,6 @@ bool FsCtrlOperations::GetHashesTableAddr(u_int32_t& addr)
     return true;
 }
 
-bool FsCtrlOperations::GetITOCAddr(u_int32_t& addr)
-{
-    struct image_layout_hw_pointers_carmel hw_pointers;
-    if (!GetHWPointers(hw_pointers))
-    {
-        return false;
-    }
-    addr = hw_pointers.toc_ptr.ptr;
-    return true;
-}
-
 bool FsCtrlOperations::CheckITOCSignature(u_int8_t* signature)
 {
     const u_int32_t expected_sig[] = {0x49544f43, 0x04081516, 0x2342cafa, 0xbacafe00};

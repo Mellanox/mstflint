@@ -144,7 +144,6 @@ private:
     bool _createImageOps(FwOperations** imgOps);
     void ExtractSwitchFWVersion(const fwInfoT& fwQuery);
     bool GetHWPointers(image_layout_hw_pointers_carmel& hw_pointers);
-    bool GetITOCAddr(u_int32_t& addr);
     bool CheckITOCSignature(u_int8_t* signature);
     bool GetHashesTableAddr(u_int32_t& addr);
     bool GetHashesTableSize(u_int32_t hashes_table_addr, u_int32_t& size);
