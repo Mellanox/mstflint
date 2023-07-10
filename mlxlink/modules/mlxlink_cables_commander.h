@@ -32,8 +32,6 @@
 #ifndef MLXLINK_CABLES_COMMANDER_H
 #define MLXLINK_CABLES_COMMANDER_H
 
-//#include "mlxlink_utils.h"
-//#include <mtcr.h>
 #include "mlxlink_reg_parser.h"
 
 typedef struct
