@@ -135,6 +135,7 @@ void setPrintVal(MlxlinkCmdPrint& mlxlinkCmdPrint,
                  bool arrayValue = false,
                  bool colorKey = false);
 int getPrintRowIndex(MlxlinkCmdPrint& mlxlinkCmdPrint, const string& key);
+bool isNRZSpeed(u_int32_t speed, u_int32_t protocol);
 bool isSpeed25GPerLane(u_int32_t speed, u_int32_t protocol);
 string linkWidthMaskToStr(u_int32_t width);
 bool isSpeed50GPerLane(u_int32_t speed, u_int32_t protocol);
