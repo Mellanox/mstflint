@@ -104,7 +104,7 @@ void MlxlinkUi::printSynopsisCommands()
       PTYS_FLAG_SHORT, PTYS_FLAG, "speeds",
       "Configure Speeds "
       "[NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,800G_8X,400G_4X,200G_2X,100G_1X,400G_8X,200G_4X,100G_2X,"
-      "50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]");
+      "50G_1X,100G,100G_4X,50G,50G_2X,25G,40G,10G,2.5G,1G]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
                                  "Configure Link Mode Force (Disable AN)");
@@ -163,13 +163,13 @@ void MlxlinkUi::printSynopsisCommands()
       PPRT_RATE_FLAG_SHORT, PPRT_RATE_FLAG, "rx_lane_rate",
       "RX Lane Rate "
       "[NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
-      "2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
+      "2X,25G,40G,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(
       PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
       "TX Lane Rate "
       "[NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
-      "2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
+      "2X,25G,40G,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PRBS_INVERT_TX_POL_FLAG_SHORT, PRBS_INVERT_TX_POL_FLAG, "",
                                  "PRBS TX polarity inversion (Optional - Default No Inversion)");
@@ -362,11 +362,9 @@ void MlxlinkUi::printHelp()
     printf(IDENT "Examples:\n");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "get info of <device>, <port_number>",
            MLXLINK_EXEC " -d <device> -p <port_number>");
-    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n",
-           "get info of <device>, <port_number> and BER Counters",
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "get info of <device>, <port_number> and BER Counters",
            MLXLINK_EXEC " -d <device> -p <port_number> -c");
-    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n",
-           "get info of <device>, <port_number> and Transmitter Parameters",
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "get info of <device>, <port_number> and Transmitter Parameters",
            MLXLINK_EXEC " -d <device> -p <port_number> --show_serdes_tx");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Port State",
            MLXLINK_EXEC " -d <device> -p <port_number> --port_state UP");

@@ -1269,6 +1269,26 @@ double mw_to_dbm(double x)
     return 10 * log10(x);
 }
 
+string floatToStr(float num, int resolution)
+{
+    char fmt[32];
+
+    if (!(num - static_cast<int>(num)))
+    {
+        snprintf(fmt, sizeof(fmt), "%.0f", num);
+    }
+    else if (resolution < 0)
+    {
+        snprintf(fmt, sizeof(fmt), "%f", num);
+    }
+    else
+    {
+        snprintf(fmt, sizeof(fmt), "%.*f", resolution, num);
+    }
+
+    return string(fmt);
+}
+
 int readSigned(u_int32_t value, u_int32_t fieldSize)
 {
     u_int32_t signMask = (u_int32_t)pow(2.0, (1.0 * fieldSize) - 1);

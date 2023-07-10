@@ -37,7 +37,7 @@
 #include "amber_field.h"
 
 // Un-comment to see access register failures
-//#define VALIDATE_REG_REQUEST
+// #define VALIDATE_REG_REQUEST
 
 using namespace std;
 
@@ -151,6 +151,8 @@ protected:
     u_int32_t getLocalFieldValue(const string& fieldName);
     void sendRegister(const string& regName, maccess_reg_method_t method);
     void sendLocalPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...);
+    void sendLocalPrmReg(const string& regName, maccess_reg_method_t method);
+
     string getBitmaskPerLaneStr(u_int32_t bitmask);
     void fillParamsToFields(const string& title, const vector<string>& values, vector<AmberField>& fields);
     void pushModulePerLaneField(vector<AmberField>& fields,
