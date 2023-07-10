@@ -1412,6 +1412,13 @@ bool isSpeed200GPerLane(u_int32_t speed, u_int32_t protocol)
     return valid;
 }
 
+bool isNRZSpeed(u_int32_t speed, u_int32_t protocol)
+{
+    return isSpeed25GPerLane(speed, protocol) ||
+           !(isSpeed50GPerLane(speed, protocol) || isSpeed100GPerLane(speed, protocol) ||
+             isSpeed100GPerLane(speed, protocol));
+}
+
 string linkWidthMaskToStr(u_int32_t width)
 {
     string widthStr = "";
