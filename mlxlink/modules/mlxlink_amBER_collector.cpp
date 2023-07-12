@@ -770,10 +770,18 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
               AmberField("Link_Width_Active", linkWidthMaskToStr(getFieldValue("link_width_active")), _isPortIB));
             fields.push_back(AmberField("Active_FEC", _mlxlinkMaps->_fecModeActive[getFieldValue("fec_mode_active")]));
 
-            resetLocalParser(ACCESS_REG_PRTL);
-            updateField("local_port", _localPort);
-            sendRegister(ACCESS_REG_PRTL, MACCESS_REG_METHOD_GET);
-            fields.push_back(AmberField("round_trip_latency", getFieldStr("round_trip_latency"), _isPortIB));
+            string roundTripLatency = "N/A";
+            try
+            {
+                resetLocalParser(ACCESS_REG_PRTL);
+                updateField("local_port", _localPort);
+                sendRegister(ACCESS_REG_PRTL, MACCESS_REG_METHOD_GET);
+                roundTripLatency = getFieldStr("round_trip_latency");
+            }
+            catch (MlxRegException& exc)
+            {
+            }
+            fields.push_back(AmberField("round_trip_latency", roundTripLatency, _isPortIB));
         }
         else
         {
