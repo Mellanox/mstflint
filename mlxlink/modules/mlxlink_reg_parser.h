@@ -57,7 +57,7 @@ public:
     void writeGvmi(u_int32_t data);
     virtual void updateField(string field_name, u_int32_t value);
     void updateWithDefault(const string& fieldName, const string& fieldsStr, u_int32_t val);
-    void setDefaultFields(const string& fieldsStr);
+    void setDefaultFields(const string& regName, const string& fieldsStr);
     void sendPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...);
     void sendPrmReg(const string& regName, maccess_reg_method_t method);
     virtual u_int32_t getFieldValue(string field_name);
