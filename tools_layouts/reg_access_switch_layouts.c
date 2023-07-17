@@ -33,9 +33,9 @@
  
 
 /***
-         *** This file was generated at "2023-04-03 16:03:49"
+         *** This file was generated at "2023-07-16 15:06:38"
          *** by:
-         ***    > [REDACTED]/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
+         ***    > /auto/mswg/release/tools/a-me/a-me-1.2.4/a-me-1.2.4-24/adabe_plugins/adb2c/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o /auto/swgwork1/hkarni/workspace/prm_update_mft/user/tools_layouts
          ***/
 #include "reg_access_switch_layouts.h"
 

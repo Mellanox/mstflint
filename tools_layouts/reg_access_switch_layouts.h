@@ -33,9 +33,9 @@
  
 
 /***
-         *** This file was generated at "2023-04-03 16:03:49"
+         *** This file was generated at "2023-07-16 15:06:38"
          *** by:
-         ***    > [REDACTED]/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
+         ***    > /auto/mswg/release/tools/a-me/a-me-1.2.4/a-me-1.2.4-24/adabe_plugins/adb2c/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o /auto/swgwork1/hkarni/workspace/prm_update_mft/user/tools_layouts
          ***/
 #ifndef REG_ACCESS_SWITCH_LAYOUTS_H
 #define REG_ACCESS_SWITCH_LAYOUTS_H
@@ -312,9 +312,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 459, "MDDQ slot_info Layout," on page 711
-For devices on slot query_type data - see Table 461, "MDDQ device_info Register Layout," on page 712
-For slot name query_type data - see Table 463, "MDDQ slot_name Layout," on page 714 */
+For slot information query_type data - see Table 483, "MDDQ slot_info Layout," on page 719
+For devices on slot query_type data - see Table 485, "MDDQ device_info Register Layout," on page 720
+For slot name query_type data - see Table 487, "MDDQ slot_name Layout," on page 722 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_switch_mddq_data_auto_ext data;
 };
@@ -332,7 +332,7 @@ struct reg_access_switch_mddt_reg_ext {
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - 0: PRM_Register
 1: Command
-2: CrSpace_access - [Internal] */
+2: CrSpace_access */
 	/* 0x4.0 - 0x4.1 */
 	u_int8_t type;
 	/* Description - Write size in D-Words. */
@@ -343,9 +343,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload- See Table 451, "PRM Register Payload Layout," on page 707
-For Command type payload - See Table 453, "Command Payload Layout," on page 707
-For CrSpace type payload - See Table 455, "CrSpace access Payload Layout," on page 708 */
+For PRM Register type payload - See Table 475, "PRM Register Payload Layout," on page 715
+For Command type payload - See Table 477, "Command Payload Layout," on page 715
+For CrSpace type payload - See Table 479, "CrSpace access Payload Layout," on page 716 */
 	/* 0xc.0 - 0x10c.31 */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
 };
@@ -434,7 +434,8 @@ struct reg_access_switch_mrsr_ext {
 6: reset_at_pci_disable - reset will be done at PCI_DISABLE
 See MCAM bit48
 
-For Retimer: only command = 1 is supported. */
+For Retimer: only command = 1 is supported.
+ */
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t command;
 };
@@ -459,7 +460,8 @@ For cables, the index represents the module index starting at index 1 while inde
 	/* Description - The token which a challenge is generated for.
 0: RMCS
 1: RMDT
-
+2: CRCS - supported from Spectrum-4 and above
+3: CRDT - supported from Spectrum-4 and above
 Other: Reserved */
 	/* 0x0.24 - 0x0.31 */
 	u_int8_t token_opcode;
