@@ -362,9 +362,11 @@ void MlxlinkUi::printHelp()
     printf(IDENT "Examples:\n");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "get info of <device>, <port_number>",
            MLXLINK_EXEC " -d <device> -p <port_number>");
-    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "get info of <device>, <port_number> and BER Counters",
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n",
+           "get info of <device>, <port_number> and BER Counters",
            MLXLINK_EXEC " -d <device> -p <port_number> -c");
-    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "get info of <device>, <port_number> and Transmitter Parameters",
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n",
+           "get info of <device>, <port_number> and Transmitter Parameters",
            MLXLINK_EXEC " -d <device> -p <port_number> --show_serdes_tx");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Port State",
            MLXLINK_EXEC " -d <device> -p <port_number> --port_state UP");
