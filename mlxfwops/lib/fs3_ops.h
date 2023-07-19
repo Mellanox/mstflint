@@ -77,6 +77,28 @@
         }                                                                                       \
     } while (0)
 
+#define RESIGN_MSG "-W- The image requires to be signed by a valid key, run sign command before applying.\n"
+
+#define INSERT_SHA_IF_NEEDS(callBackF)                                            \
+    do                                                                            \
+    {                                                                             \
+        if (!_ioAccess->is_flash())                                               \
+        {                                                                         \
+            if (!(_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW))            \
+            {                                                                     \
+                PRINT_PROGRESS(callBackF, (char*)"-I- Updating image digest.\n"); \
+                if (!FwInsertSHA256((PrintCallBack)NULL))                         \
+                {                                                                 \
+                    return false;                                                 \
+                }                                                                 \
+            }                                                                     \
+            else                                                                  \
+            {                                                                     \
+                PRINT_PROGRESS(callBackF, (char*)RESIGN_MSG);                     \
+            }                                                                     \
+        }                                                                         \
+    } while (0)
+
 #define DEFAULT_GUID_NUM 0xffff
 #define DEFAULT_STEP 0xff
 
