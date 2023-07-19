@@ -80,6 +80,7 @@ private:
     int get_pldm_content(const string& fname, vector<PsidQueryItem>& riv);
     int get_bin_content(const string& fname, vector<PsidQueryItem>& riv);
     bool extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, PsidQueryItem& ri);
+    void parse_image_info_data(u_int8_t* image_info_data, PsidQueryItem& query_item);
     static int getBufferSignature(u_int8_t* buf, u_int32_t size);
     bool openImg(fw_hndl_type_t hndlType, char* psid, char* fileHndl);
     char _errBuff[MLNX_ERR_BUFF_SIZE];

@@ -535,6 +535,26 @@ int ImageAccess::get_mfa_content(const string& fname, vector < PsidQueryItem >& 
 #define TOC_ENTRY_SIZE          0x20
 #define FS3_DEFAULT_SECTOR_SIZE 0x1000
 
+void ImageAccess::parse_image_info_data(u_int8_t* image_info_data, PsidQueryItem& query_item)
+{
+    struct connectx4_image_info image_info;
+    connectx4_image_info_unpack(&image_info, image_info_data);
+    query_item.name = image_info.name;
+    query_item.pns = query_item.name;
+    query_item.description = image_info.description;
+    static const int FW_VER_SIZE = 3;
+    u_int16_t fw_ver[FW_VER_SIZE];
+    char fw_branch[BRANCH_LEN + 1] = {0};
+    fw_ver[0] = image_info.FW_VERSION.MAJOR;
+    fw_ver[1] = image_info.FW_VERSION.MINOR;
+    fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
+    (strncpy(fw_branch, image_info.vsd, BRANCH_LEN));
+    fw_branch[BRANCH_LEN] = (char)0;
+    ImgVersion imgv;
+    imgv.setVersion("FW", FW_VER_SIZE, fw_ver, fw_branch);
+    query_item.imgVers.push_back(imgv);
+}
+
 bool ImageAccess::extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, PsidQueryItem& query_item)
 {
     FImage fimage;
@@ -542,13 +562,14 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, 
     if (!fimage.open((u_int32_t*)buff, size)) {
         return false;
     }
+
     static const u_int32_t sector_size = FS3_DEFAULT_SECTOR_SIZE;
     u_int32_t              offset = 0;
 
     offset = (offset % sector_size == 0) ? offset : (offset + sector_size - offset % 0x1000);
     u_int8_t                     buffer[TOC_HEADER_SIZE] = {0}, entry_buffer[TOC_ENTRY_SIZE] = {0};
     struct connectx4_itoc_header itoc_header;
-
+    bool image_info_found = false;
     while (offset < fimage.get_size()) {
         /* read ITOC header */
         fimage.read(offset, buffer, TOC_HEADER_SIZE);
@@ -566,36 +587,39 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, 
 
             connectx4_itoc_entry_unpack(&toc_entry, entry_buffer);
             if (toc_entry.type == FS3_IMAGE_INFO) {
+                image_info_found = true;
                 u_int32_t flash_addr = toc_entry.flash_addr << 2;
                 u_int32_t entry_size_in_bytes = toc_entry.size * 4;
-                u_int8_t* buff = new u_int8_t[entry_size_in_bytes];
-                memset(buff, 0, entry_size_in_bytes);
-                fimage.read(flash_addr, buff, entry_size_in_bytes);
-                /* read image info */
-                struct connectx4_image_info image_info;
-                connectx4_image_info_unpack(&image_info, buff);
-                query_item.name = image_info.name;
-                query_item.pns = query_item.name;
-                query_item.description = image_info.description;
-                static const int FW_VER_SIZE = 3;
-                u_int16_t        fw_ver[FW_VER_SIZE];
-                char             fw_branch[BRANCH_LEN + 1] = {0};
-                fw_ver[0] = image_info.FW_VERSION.MAJOR;
-                fw_ver[1] = image_info.FW_VERSION.MINOR;
-                fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
-                (strncpy(fw_branch, image_info.vsd, BRANCH_LEN));
-                fw_branch[BRANCH_LEN] = (char)0;
-                ImgVersion imgv;
-                imgv.setVersion("FW", FW_VER_SIZE, fw_ver, fw_branch);
-                query_item.imgVers.push_back(imgv);
-
-                delete[] buff;
+                u_int8_t image_info_data[entry_size_in_bytes];
+                memset(image_info_data, 0, entry_size_in_bytes);
+                fimage.read(flash_addr, image_info_data, entry_size_in_bytes);
+                parse_image_info_data(image_info_data, query_item);
                 break;
             }
 
             section_index++;
         } while (toc_entry.type != FS3_END);
         break;
+    }
+    if (!image_info_found)
+    {
+        // Parse HW pointers
+        u_int32_t hw_pointers_data[IMAGE_LAYOUT_HW_POINTERS_CARMEL_SIZE / 4] = {0};
+        fimage.read(FS4_HW_PTR_START, hw_pointers_data, IMAGE_LAYOUT_HW_POINTERS_CARMEL_SIZE);
+        image_layout_hw_pointers_carmel hw_pointers;
+        image_layout_hw_pointers_carmel_unpack(&hw_pointers, (u_int8_t*)hw_pointers_data);
+
+        // Check if we couldn't find image_info because ITOC is encrypted
+        fimage.read(hw_pointers.toc_ptr.ptr, buffer, TOC_HEADER_SIZE);
+        connectx4_itoc_header_unpack(&itoc_header, buffer);
+        if (itoc_header.signature0 != ITOC_ASCII)
+        {
+            // Encrypted image, get image_info addr from hw pointer
+            u_int8_t buff[IMAGE_LAYOUT_IMAGE_INFO_SIZE];
+            memset(buff, 0, IMAGE_LAYOUT_IMAGE_INFO_SIZE);
+            fimage.read(hw_pointers.image_info_section_pointer.ptr, buff, IMAGE_LAYOUT_IMAGE_INFO_SIZE);
+            parse_image_info_data(buff, query_item);
+        }
     }
     fimage.close();
     return 0;
