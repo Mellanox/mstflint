@@ -52,6 +52,7 @@ enum SPLITBY
     PORT,
     MODULE,
 };
+
 class MlxcfgDBManager
 {
 private:

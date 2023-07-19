@@ -88,6 +88,7 @@ void MlxCfg::printHelp()
     printFlagLine("h", "help", "", "Display help message.");
     printFlagLine("v", "version", "", "Display version info.");
     printFlagLine("e", "enable_verbosity", "", "Show default and current configurations.");
+    printFlagLine("", "read_only", "", "Show read only configurations");
     printFlagLine("y", "yes", "", "Answer yes in prompt.");
     printFlagLine("a", "all_attrs", "", "Show all attributes in the XML template");
     printFlagLine("p", "private_key", "PKEY", "pem file for private key");
@@ -144,10 +145,9 @@ void MlxCfg::printHelp()
     printf("\n");
     printf(IDENT "Supported devices:\n");
     printf(IDENT2 "4th Generation devices: ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
-    printf(IDENT2 "5th Generation devices: ConnectIB, ConnectX4, ConnectX4-LX, ConnectX5, connectX5-Ex.\n");
-    printf(IDENT2 "6th Generation devices: BlueField, BlueField2, ConnectX6, ConnectX6-DX, ConnectX6-LX\n");
-    printf(IDENT2 "Switches: Switch-IB, Switch-IB2,Spectrum, Spectrum2, Spectrum3, Quantum, Quantum2\n");
-
+    printf(IDENT2 "5th Generation devices: BlueField, BlueField2, BlueField3, ConnectIB, ConnectX4, ConnectX4-LX,\n");
+    printf(IDENT4 "                    ConnectX5, connectX5-Ex, ConnectX6, ConnectX6-DX, ConnectX6-LX, ConnectX7.\n");
+    printf(IDENT2 "Switches: Switch-IB, Switch-IB2,Spectrum, Spectrum2, Spectrum3, Spectrum4, Quantum, Quantum2.\n");
     printf("\n");
     printf(IDENT "Note: query device to view supported configurations by Firmware.\n");
     printf("\n");
@@ -177,20 +177,21 @@ bool MlxCfg::tagExsists(string tag)
 
 inline const char* cmdNVInputFileTag(mlxCfgCmd cmd, const char* def)
 {
-    return (cmd == Mc_XML2Raw || cmd == Mc_XML2Bin || cmd == Mc_CreateConf) ?
-             "XML" :
-             (cmd == Mc_Raw2XML) ? "Raw" :
-                                   (cmd == Mc_GenXMLTemplate) ? "TLVs" : (cmd == Mc_Apply) ? "Configuration" : def;
+    return (cmd == Mc_XML2Raw || cmd == Mc_XML2Bin || cmd == Mc_CreateConf) ? "XML" :
+           (cmd == Mc_Raw2XML)                                              ? "Raw" :
+           (cmd == Mc_GenXMLTemplate)                                       ? "TLVs" :
+           (cmd == Mc_Apply)                                                ? "Configuration" :
+                                                                              def;
 }
 
 inline const char* cmdNVOutputFileTag(mlxCfgCmd cmd, const char* def)
 {
-    return (cmd == Mc_XML2Raw) ?
-             "Raw" :
-             (cmd == Mc_Raw2XML) ?
-             "XML" :
-             (cmd == Mc_GenXMLTemplate) ? "XML" :
-                                          (cmd == Mc_XML2Bin) ? "Bin" : (cmd == Mc_CreateConf) ? "Configuration" : def;
+    return (cmd == Mc_XML2Raw)        ? "Raw" :
+           (cmd == Mc_Raw2XML)        ? "XML" :
+           (cmd == Mc_GenXMLTemplate) ? "XML" :
+           (cmd == Mc_XML2Bin)        ? "Bin" :
+           (cmd == Mc_CreateConf)     ? "Configuration" :
+                                        def;
 }
 
 mlxCfgStatus MlxCfg::extractNVInputFile(int argc, char* argv[])
@@ -388,23 +389,6 @@ mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char* argv[])
     return MLX_CFG_OK;
 }
 
-Device_Type MlxCfg::getDeviceTypeFromString(string inStr)
-{
-    mft_utils::to_lowercase(inStr);
-    if (inStr == "switch")
-    {
-        return Device_Type::Switch;
-    }
-    else if (inStr == "hca")
-    {
-        return Device_Type::HCA;
-    }
-    else
-    {
-        return Device_Type::UNSUPPORTED_DEVICE;
-    }
-}
-
 mlxCfgStatus MlxCfg::getNumberFromString(const char* str, u_int32_t& num)
 {
     char* end = NULL;
@@ -418,6 +402,7 @@ mlxCfgStatus MlxCfg::getNumberFromString(const char* str, u_int32_t& num)
 
 mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
 {
+    mlxCfgStatus status = MLX_CFG_OK;
     int i = 1;
     for (; i < argc; i++)
     {
@@ -476,6 +461,10 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         else if (arg == "-e" || arg == "--enable_verbosity")
         {
             _mlxParams.enableVerbosity = true;
+        }
+        else if (arg == "--read_only")
+        {
+            _mlxParams.showReadOnlyParams = true;
         }
         else if (arg == "-a" || arg == "--all_attrs")
         {

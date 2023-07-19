@@ -172,7 +172,7 @@ public:
     bool isDefaultSupported() { return true; }
     bool isCurrentSupported() { return false; }
     void queryAux(std::vector<ParamView>&, QueryType, bool);
-    void queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt = QueryNext);
+    void queryParamViews(std::vector<ParamView>& paramsToQuery, bool isWriteOperation, QueryType qt = QueryNext);
     void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt = QueryNext);
     void clearSemaphore();
     void invalidateCfgs();

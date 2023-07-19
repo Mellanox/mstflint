@@ -141,11 +141,17 @@ void Expression::setVarVal(const string& var, double val)
     _varsVal[var] = val;
 }
 
+mu::value_type  BitwiseOr(mu::value_type  a_fVal, mu::value_type b_fVal) {  return (int)a_fVal | (int)b_fVal; }
+mu::value_type  BitwiseAnd(mu::value_type  a_fVal, mu::value_type b_fVal) {  return (int)a_fVal & (int)b_fVal; }
+
 double Expression::evaluate()
 {
     string expression;
     string varXName;
     mu::Parser p;
+
+    p.DefineFun("BitwiseOr", BitwiseOr,false);
+    p.DefineFun("BitwiseAnd", BitwiseAnd,false);
 
     substituteVarsValues(_expression, _varsVal, expression);
 

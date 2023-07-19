@@ -111,12 +111,13 @@ public:
     map<string, string> _attrs;
     vector<u_int8_t> _buff;
     u_int32_t _maxTlvVersionSuppByFw;
+    bool _isReadOnly;
 
     TLVConf(int columnsCount, char** dataRow, char** headerRow);
     ~TLVConf();
     bool isMlxconfigSupported();
     void getView(TLVConfView& tlvConfView, mfile* mf);
-    bool isFWSupported(mfile* mf, bool read_write);
+    bool isFWSupported(mfile* mf, bool isWriteOperation);
     std::shared_ptr<Param> getValidBitParam(std::string n);
     bool checkParamValidBit(std::shared_ptr<Param> p);
     std::vector<std::pair<ParamView, std::string>> query(mfile* mf, QueryType qT);

@@ -92,6 +92,14 @@ enum RawTlvMode
     GET_RAW
 };
 
+typedef enum
+{
+    UNSUPPORTED_DEVICE = -1,
+    HCA = 0,
+    Switch = 1,
+    LinkX = 2
+} Device_Type;
+
 #define VECTOR_ITERATOR(t, v, i) for (vector<t>::iterator i = v.begin(); i != v.end(); ++i)
 
 #define CONST_VECTOR_ITERATOR(t, v, i) for (vector<t>::const_iterator i = v.begin(); i != v.end(); ++i)
@@ -154,6 +162,7 @@ MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType);
 bool strToNum(std::string str, u_int32_t& num, int base = 0);
 
 std::string numToStr(u_int32_t num, bool isHex = false);
+std::string numToStrFormatted(u_int32_t num, bool isHex = false);
 
 vector<string> splitStr(const string s, char d);
 
@@ -188,6 +197,8 @@ string getArraySuffix(const string& mlxconfigName);
 string getArrayPrefix(const string& mlxconfigName);
 
 bool getDeviceInformationString(mfile* mf, info_type_t op, vector<char>& infoString);
+
+Device_Type getDeviceTypeFromString(string inStr);
 
 class MlxcfgException : public exception
 {

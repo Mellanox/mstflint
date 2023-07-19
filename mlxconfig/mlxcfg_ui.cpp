@@ -46,9 +46,8 @@
 #include <tools_dev_types.h>
 #include <reg_access/reg_access.h>
 #include <tools_layouts/reg_access_switch_layouts.h>
-
+#include "mtcr_ib_res_mgt.h"
 #include "mlxcfg_ui.h"
-#include "mlxcfg_utils.h"
 #include "mlxcfg_generic_commander.h"
 
 #define DISABLE_SLOT_POWER_LIMITER "DISABLE_SLOT_POWER_LIMITER"
@@ -314,22 +313,31 @@ int MlxCfg::printParam(string param, u_int32_t val)
         printf(" ");                 \
     }
 
-void MlxCfg::printSingleParam(const char* name, QueryOutputItem& queryOutItem, u_int8_t verbose, bool printNewCfg)
+void MlxCfg::printSingleParam(const char* name,
+                              QueryOutputItem& queryOutItem,
+                              u_int8_t verbose,
+                              bool printNewCfg,
+                              bool printReadOnly)
 {
     bool showDefault = QUERY_DEFAULT_MASK & verbose;
     bool showCurrent = QUERY_CURRENT_MASK & verbose;
     int width = 0;
     string fieldName = increaseIndexIfNeeded(name);
 
+    string diff = " ";
+    string readOnly = "  ";
+
     if ((showDefault && queryOutItem.nextVal != queryOutItem.defVal) ||
         (showCurrent && queryOutItem.nextVal != queryOutItem.currVal))
     {
-        printf("*        %-44s", fieldName.c_str());
+        diff = "*";
     }
-    else
+    if (queryOutItem.isReadOnly && printReadOnly)
     {
-        printf("         %-44s", fieldName.c_str());
+        readOnly = "RO";
     }
+    printf("%s%s     %-44s", diff.c_str(), readOnly.c_str(), fieldName.c_str());
+
     if (showDefault)
     {
         width = printParam(queryOutItem.strDefVal, queryOutItem.defVal);
@@ -438,6 +446,7 @@ void prepareSetInput(vector<QueryOutputItem>& output, vector<ParamView>& params)
     {
         QueryOutputItem o;
         o.mlxconfigName = p->mlxconfigName;
+        o.isReadOnly = p->isReadOnlyParam;
         o.defVal = MLXCFG_UNKNOWN;
         o.currVal = MLXCFG_UNKNOWN;
         o.nextVal = MLXCFG_UNKNOWN;
@@ -464,6 +473,7 @@ void prepareQueryOutput(vector<QueryOutputItem>& output, vector<ParamView>& para
         {
             QueryOutputItem o;
             o.mlxconfigName = p->mlxconfigName;
+            o.isReadOnly = p->isReadOnlyParam;
             o.defVal = MLXCFG_UNKNOWN;
             o.currVal = MLXCFG_UNKNOWN;
             o.nextVal = MLXCFG_UNKNOWN;
@@ -478,12 +488,13 @@ void queryAux(Commander* commander,
               vector<ParamView>& params,
               vector<ParamView>& paramsToQuery,
               vector<string>& failedTLVs,
-              QueryType qT)
+              QueryType qT,
+              bool isWriteOperation)
 {
     if (paramsToQuery.size() != 0)
     {
         params = paramsToQuery;
-        commander->queryParamViews(params, qT);
+        commander->queryParamViews(params, isWriteOperation, qT);
     }
     else
     {
@@ -497,7 +508,10 @@ string checkFailedTLVsVector(const vector<string>& failedTLVs, string queryType)
     if (failedTLVs.size() != 0)
     {
         failedTLVsErrorMessage += "    Failed to query the " + queryType + " values of the following TLVs:\n    ";
-        CONST_VECTOR_ITERATOR(string, failedTLVs, it) { failedTLVsErrorMessage += (*it) + " "; }
+        CONST_VECTOR_ITERATOR(string, failedTLVs, it)
+        {
+            failedTLVsErrorMessage += (*it) + " ";
+        }
         failedTLVsErrorMessage += "\n";
     }
     return failedTLVsErrorMessage;
@@ -529,7 +543,6 @@ void MlxCfg::removeContinuanceArray(std::vector<QueryOutputItem>& OutputItemOut,
                                     std::vector<QueryOutputItem>& OutputItemIn)
 {
     QueryOutputItem* queryItem = NULL;
-    ;
     u_int32_t arrayCounter = 0;
 
     VECTOR_ITERATOR(QueryOutputItem, OutputItemIn, o)
@@ -567,13 +580,19 @@ void MlxCfg::removeContinuanceArray(std::vector<QueryOutputItem>& OutputItemOut,
     }
 }
 
-mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander, const char* dev, const char* pci, int devIndex, bool printNewCfg)
+mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander,
+                                 const char* dev,
+                                 bool isWriteOperation,
+                                 const char* pci,
+                                 int devIndex,
+                                 bool printNewCfg)
 {
     (void)pci;
     std::vector<QueryOutputItem> output;
     std::vector<QueryOutputItem> newoutput;
     std::vector<ParamView> params, defaultParams, currentParams;
     bool failedToGetCfg = false, isParamsDiffer = false;
+    bool isParamsReadOnly = false;
     bool defaultSupported = false, currentSupported = false;
     bool showDefault = false, showCurrent = false;
 
@@ -604,19 +623,22 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander, const char* dev, const ch
 
         if (printNewCfg)
         {
-            VECTOR_ITERATOR(ParamView, _mlxParams.setParams, p) { commander->updateParamViewValue(*p, p->setVal); }
+            VECTOR_ITERATOR(ParamView, _mlxParams.setParams, p)
+            {
+                commander->updateParamViewValue(*p, p->setVal);
+            }
             prepareSetInput(output, _mlxParams.setParams);
         }
 
         if (showDefault)
         {
-            queryAux(commander, defaultParams, _mlxParams.setParams, defaultFailedTLVs, QueryDefault);
+            queryAux(commander, defaultParams, _mlxParams.setParams, defaultFailedTLVs, QueryDefault, isWriteOperation);
         }
         if (showCurrent)
         {
-            queryAux(commander, currentParams, _mlxParams.setParams, currentFailedTLVs, QueryCurrent);
+            queryAux(commander, currentParams, _mlxParams.setParams, currentFailedTLVs, QueryCurrent, isWriteOperation);
         }
-        queryAux(commander, params, _mlxParams.setParams, nextFailedTLVs, QueryNext);
+        queryAux(commander, params, _mlxParams.setParams, nextFailedTLVs, QueryNext, isWriteOperation);
     }
     catch (MlxcfgException& e)
     {
@@ -639,12 +661,17 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander, const char* dev, const ch
     // print output table:
     VECTOR_ITERATOR(QueryOutputItem, newoutput, o)
     {
-        printSingleParam(
-          o->mlxconfigName.c_str(),
-          *o,
-          QUERY_NEXT_MASK | (showDefault ? QUERY_DEFAULT_MASK : 0) | (showCurrent ? QUERY_CURRENT_MASK : 0),
-          printNewCfg);
-        isParamsDiffer |= (showDefault && (o->nextVal != o->defVal)) || (showCurrent && (o->nextVal != o->currVal));
+        if (!o->isReadOnly || _mlxParams.showReadOnlyParams)
+        {
+            printSingleParam(
+              o->mlxconfigName.c_str(),
+              *o,
+              QUERY_NEXT_MASK | (showDefault ? QUERY_DEFAULT_MASK : 0) | (showCurrent ? QUERY_CURRENT_MASK : 0),
+              printNewCfg,
+              _mlxParams.showReadOnlyParams);
+            isParamsDiffer |= (showDefault && (o->nextVal != o->defVal)) || (showCurrent && (o->nextVal != o->currVal));
+            isParamsReadOnly |= o->isReadOnly;
+        }
     }
 
     string failedTLVsErrorMessage = "Failed to query some of the TLVs:\n";
@@ -656,6 +683,10 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander, const char* dev, const ch
     {
         printf("The '*' shows parameters with next value different "
                "from default/current value.\n");
+    }
+    if (isParamsReadOnly)
+    {
+        printf("\nThe 'RO' shows parameters which are for read only and cannot be changed\n");
     }
 
     if (_mlxParams.enableVerbosity)
@@ -693,6 +724,7 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char* dev, const char* pci, int devIndex,
 {
     mlxCfgStatus rc;
     Commander* commander = NULL;
+    bool isWriteOperation = false;
     try
     {
         commander = Commander::create(string(dev), _mlxParams.dbName);
@@ -703,7 +735,7 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char* dev, const char* pci, int devIndex,
         return err(false, "%s", e._err.c_str());
     }
 
-    rc = queryDevCfg(commander, dev, pci, devIndex, printNewCfg);
+    rc = queryDevCfg(commander, dev, isWriteOperation, pci, devIndex, printNewCfg);
     delete commander;
     return rc;
 }
@@ -723,6 +755,7 @@ const char* MlxCfg::getConfigWarning(const string& mlx_config_name, const string
 mlxCfgStatus MlxCfg::setDevCfg()
 {
     Commander* commander = NULL;
+    bool isWriteOperation = true;
 
     try
     {
@@ -751,7 +784,7 @@ mlxCfgStatus MlxCfg::setDevCfg()
         }
     }
 
-    if (queryDevCfg(commander, _mlxParams.device.c_str(), NULL, 1, true) == MLX_CFG_ERROR_EXIT)
+    if (queryDevCfg(commander, _mlxParams.device.c_str(), isWriteOperation, NULL, 1, true) == MLX_CFG_ERROR_EXIT)
     {
         delete commander;
         printErr();
@@ -1179,7 +1212,10 @@ mlxCfgStatus MlxCfg::readNVInputFile(string& content)
         return rc;
     }
 
-    VECTOR_ITERATOR(string, lines, l) { content += *l; }
+    VECTOR_ITERATOR(string, lines, l)
+    {
+        content += *l;
+    }
     return MLX_CFG_OK;
 }
 
@@ -1219,7 +1255,10 @@ mlxCfgStatus MlxCfg::writeNVOutputFile(string content)
 mlxCfgStatus MlxCfg::writeNVOutputFile(vector<string> lines)
 {
     string content;
-    VECTOR_ITERATOR(string, lines, l) { content += *l; }
+    VECTOR_ITERATOR(string, lines, l)
+    {
+        content += *l;
+    }
     return writeNVOutputFile(content);
 }
 
