@@ -47,7 +47,6 @@
 #include "mlxcfg_db_manager.h"
 #include "mlxcfg_utils.h"
 #include <memory>
-
 // clang-format off
 #define SQL_SELECT_ALL_TLVS \
     "SELECT * FROM tlvs"

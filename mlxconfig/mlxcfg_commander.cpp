@@ -52,7 +52,7 @@ Commander* Commander::create(std::string device, std::string dbName, bool forceC
     int rc;
     u_int32_t type = 0;
 
-    mf = mopen(device.c_str());
+    mf = mopen_adv(device.c_str(), (MType)(MST_DEFAULT | MST_CABLE));
     if (mf == NULL)
     {
         throw MlxcfgException("Failed to open the device");
@@ -64,7 +64,7 @@ Commander* Commander::create(std::string device, std::string dbName, bool forceC
     }
     if (!forceCreate)
     {
-        if (type & (MST_USB | MST_USB_DIMAX))
+        if (type & (MST_USB_DIMAX))
         {
             throw MlxcfgException("MTUSB device is not supported.");
         }
@@ -99,7 +99,7 @@ Commander* Commander::create(mfile* mf, std::string device, std::string dbName)
         throw MlxcfgException("Device in Livefish mode is not supported");
     }
 
-    if (dm_is_new_gen_switch(deviceId) || dm_is_5th_gen_hca(deviceId))
+    if ( dm_dev_is_switch(deviceId)  || dm_is_5th_gen_hca(deviceId))
     {
         if (dbName.empty())
         { // take internal db file

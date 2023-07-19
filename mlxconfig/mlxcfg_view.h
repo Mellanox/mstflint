@@ -87,6 +87,7 @@ typedef struct ParamView
         strVal(""),
         setVal(""),
         rule(""),
+        isReadOnlyParam(false),
         supportedFromVersion(0){};
     std::string mlxconfigName;
     std::string description;
@@ -100,7 +101,9 @@ typedef struct ParamView
     std::vector<u_int32_t> arrayVal;
     std::vector<std::string> strArrayVal;
     std::string rule;
+    bool isReadOnlyParam; // in read only TLV all params are read only
     u_int32_t supportedFromVersion;
+
 } ParamView;
 
 typedef struct TLVConfView

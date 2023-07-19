@@ -50,14 +50,15 @@
 
 #include <tools_layouts/tools_open_layouts.h>
 #include <tools_layouts/reg_access_hca_layouts.h>
+#include <mft_utils.h>
 #include "mlxcfg_utils.h"
-#if __cplusplus >= 201402L || defined(_MSC_VER)
-#include <regex>
-#elif !defined(MST_UL)
+
+#ifdef BOOST_ENABLED
 #include <boost/regex.hpp>
 using namespace boost;
+#else
+#include <regex>
 #endif
-
 using namespace std;
 
 typedef struct reg_access_hca_mqis_reg_ext mqisReg;
@@ -206,6 +207,19 @@ string numToStr(u_int32_t num, bool isHex)
     }
 
     ss << num;
+    return ss.str();
+}
+
+string numToStrFormatted(u_int32_t num, bool isHex)
+{
+    stringstream ss;
+
+    if (isHex)
+    {
+        ss << std::uppercase << std::hex;
+    }
+
+    ss << std::setfill('0') << std::setw(8) << num;
     return ss.str();
 }
 
@@ -525,6 +539,23 @@ bool getDeviceInformationString(mfile* mf, info_type_t op, vector<char>& infoStr
         return false;
     }
     return true;
+}
+
+Device_Type getDeviceTypeFromString(string inStr)
+{
+    mft_utils::to_lowercase(inStr);
+    if (inStr == "switch")
+    {
+        return Device_Type::Switch;
+    }
+    else if (inStr == "hca")
+    {
+        return Device_Type::HCA;
+    }
+    else
+    {
+        return Device_Type::UNSUPPORTED_DEVICE;
+    }
 }
 
 MlxcfgException::MlxcfgException(const char* fmt, ...)

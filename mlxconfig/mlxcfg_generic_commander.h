@@ -48,6 +48,9 @@
 #include "mlxcfg_commander.h"
 #include "mlxcfg_db_manager.h"
 
+#define BIN_FILE_FINGERPRINT "MLNX.CONFIG.BIN!"
+#define BIN_FILE_FINGERPRINT_SIZE 16 // bytes
+
 class GenericCommander : public Commander
 {
 private:
@@ -59,18 +62,19 @@ private:
     void filterByDependency(TLVConf* cTLV,
                             const vector<pair<ParamView, string> >& dependencyTable,
                             vector<ParamView>& result);
-    void queryTLV(TLVConf* conf, std::vector<ParamView>& paramsConf, QueryType qt);
+    void queryTLV(TLVConf* conf, std::vector<ParamView>& paramsConf, bool isWriteOperation, QueryType qt);
     void getAllConfigurations(std::vector<TLVConfView>& confs);
     void excludeDuplicatedTLVs(vector<TLVConfView>& s, vector<TLVConfView>& d);
     void printTLVConfViews(FILE* f, vector<TLVConfView>& v);
     void printParamViews(FILE* f, vector<ParamView>& v);
     void genXMLTemplateAux(vector<string> tlvs, string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal);
+    void removeSignatureTlvs(vector<TLVConf*>& tlvs);
 
 public:
     GenericCommander(mfile* mf, string dbName, bool isSwitch = false);
     ~GenericCommander();
     void printLongDesc(FILE*);
-    void queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt = QueryNext);
+    void queryParamViews(std::vector<ParamView>& paramsToQuery, bool isWriteOperation, QueryType qt = QueryNext);
     void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt = QueryNext);
     void getCfg(ParamView& cfgParam, QueryType qt = QueryNext);
     void setCfg(std::vector<ParamView>& params, bool force);

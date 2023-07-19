@@ -558,8 +558,9 @@ int FourthGenCommander::setCfgAux(mlxCfgParam cfgParam, u_int32_t val)
     return MCE_SUCCESS;
 }
 
-void FourthGenCommander::queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt)
+void FourthGenCommander::queryParamViews(std::vector<ParamView>& paramsToQuery, bool isWriteOperation, QueryType qt)
 {
+    (void)(isWriteOperation);
     VECTOR_ITERATOR(ParamView, paramsToQuery, param)
     {
         bool found = false;
