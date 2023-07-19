@@ -100,6 +100,7 @@ public:
                                         vector<u_int8_t>& publicKeyData,
                                         u_int32_t& keyPairExp,
                                         image_layout_component_authentication_configuration& keyAuthConf);
+    virtual bool FwSetPublicKeys(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);                                        
     virtual bool StorePublicKey(const char* public_key_file, const char* uuid);
     virtual void PreparePublicKey(const vector<u_int8_t>& publicKeyData,
                                   const vector<u_int32_t>& uuidData,
@@ -380,13 +381,19 @@ private:
     virtual bool
       GetPublicKeyFromFile(const char* public_key_file, const char* uuid, image_layout_file_public_keys_3* public_key);
     virtual bool GetFreeSlotInPublicKeys2(fs4_toc_info* itocEntry, u_int32_t& idx);
+    virtual bool GetFreeSlotInPublicKeys3(const image_layout_public_keys_3& public_key, u_int32_t& idx);
     virtual bool IsPublicKeyAlreadyInPublicKeys2(const image_layout_file_public_keys_2& public_key,
                                                  fs4_toc_info* itocEntry);
+    virtual bool IsPublicKeyAlreadyInPublicKeys3(const image_layout_file_public_keys_3& public_key,
+                                                 const image_layout_public_keys_3& public_keys);
     virtual bool StorePublicKeyInPublicKeys2(const image_layout_file_public_keys_3& public_key);
-    virtual bool GetFRCKey(image_layout_file_public_keys_3& frc_key);
+    virtual bool StorePublicKeyInPublicKeys3(const image_layout_file_public_keys_3& public_key);
     virtual bool FindPublicKeyInPublicKeys2(const vector<u_int32_t>& keypair_uuid,
                                             bool& found,
                                             image_layout_file_public_keys_3& public_key);
+    virtual void PublicKey2ToPublicKey3(const image_layout_file_public_keys_2& public_key_2,
+                                        image_layout_file_public_keys_3& public_key_3);
+    virtual bool ReadPublicKeys2SectionFromFile(const char* fname, image_layout_public_keys_2& public_keys_2_section);
     bool GetHashesTableSize(u_int32_t& size);
     
     // Members

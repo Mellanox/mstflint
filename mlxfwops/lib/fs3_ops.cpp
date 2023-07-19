@@ -274,28 +274,6 @@ bool Fs3Operations::GetMfgInfo(u_int8_t* buff)
     return true;
 }
 
-#define RESIGN_MSG "-W- The image requires to be signed by a valid key, run sign command before applying.\n"
-
-#define INSERT_SHA_IF_NEEDS(callBackF)                                            \
-    do                                                                            \
-    {                                                                             \
-        if (!_ioAccess->is_flash())                                               \
-        {                                                                         \
-            if (!(_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW))            \
-            {                                                                     \
-                PRINT_PROGRESS(callBackF, (char*)"-I- Updating image digest.\n"); \
-                if (!FwInsertSHA256((PrintCallBack)NULL))                         \
-                {                                                                 \
-                    return false;                                                 \
-                }                                                                 \
-            }                                                                     \
-            else                                                                  \
-            {                                                                     \
-                PRINT_PROGRESS(callBackF, (char*)RESIGN_MSG);                     \
-            }                                                                     \
-        }                                                                         \
-    } while (0)
-
 bool Fs3Operations::GetImageInfo(u_int8_t* buff)
 {
     DPRINTF(("Fs3Operations::GetImageInfo\n"));
@@ -1057,12 +1035,11 @@ bool Fs3Operations::FwInit()
     return true;
 }
 
-#define GET_DIFFER_STR(flash_toc_entry, image_toc_entry)             \
-    (flash_toc_entry->device_data != image_toc_entry->device_data) ? \
-      "device_data" :                                                \
-      (flash_toc_entry->no_crc != image_toc_entry->no_crc) ?         \
-      "no_crc" :                                                     \
-      (flash_toc_entry->relative_addr != image_toc_entry->relative_addr) ? "relative_addr" : ""
+#define GET_DIFFER_STR(flash_toc_entry, image_toc_entry)                                   \
+    (flash_toc_entry->device_data != image_toc_entry->device_data)     ? "device_data" :   \
+    (flash_toc_entry->no_crc != image_toc_entry->no_crc)               ? "no_crc" :        \
+    (flash_toc_entry->relative_addr != image_toc_entry->relative_addr) ? "relative_addr" : \
+                                                                         ""
 
 bool Fs3Operations::UpdateDevDataITOC(Fs3Operations& imageOps,
                                       struct toc_info* image_toc_info_entry,
@@ -1773,14 +1750,18 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
         return errmsg("guids override is not set, cannot set device guids");
     }
 
-    usrGuid.num_of_guids_pp[0] =
-      sgParam.usePPAttr ? sgParam.numOfGUIDsPP[0] : sgParam.numOfGUIDs ? sgParam.numOfGUIDs : DEFAULT_GUID_NUM;
-    usrGuid.step_size_pp[0] =
-      sgParam.usePPAttr ? sgParam.stepSizePP[0] : sgParam.stepSize ? sgParam.stepSize : DEFAULT_STEP;
-    usrGuid.num_of_guids_pp[1] =
-      sgParam.usePPAttr ? sgParam.numOfGUIDsPP[1] : sgParam.numOfGUIDs ? sgParam.numOfGUIDs : DEFAULT_GUID_NUM;
-    usrGuid.step_size_pp[1] =
-      sgParam.usePPAttr ? sgParam.stepSizePP[1] : sgParam.stepSize ? sgParam.stepSize : DEFAULT_STEP;
+    usrGuid.num_of_guids_pp[0] = sgParam.usePPAttr  ? sgParam.numOfGUIDsPP[0] :
+                                 sgParam.numOfGUIDs ? sgParam.numOfGUIDs :
+                                                      DEFAULT_GUID_NUM;
+    usrGuid.step_size_pp[0] = sgParam.usePPAttr ? sgParam.stepSizePP[0] :
+                              sgParam.stepSize  ? sgParam.stepSize :
+                                                  DEFAULT_STEP;
+    usrGuid.num_of_guids_pp[1] = sgParam.usePPAttr  ? sgParam.numOfGUIDsPP[1] :
+                                 sgParam.numOfGUIDs ? sgParam.numOfGUIDs :
+                                                      DEFAULT_GUID_NUM;
+    usrGuid.step_size_pp[1] = sgParam.usePPAttr ? sgParam.stepSizePP[1] :
+                              sgParam.stepSize  ? sgParam.stepSize :
+                                                  DEFAULT_STEP;
     usrGuid.use_pp_attr = 1;
 
     usrGuid.base_guid_specified = false;
