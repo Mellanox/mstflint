@@ -423,6 +423,7 @@ flash_info_t g_flash_info_arr[] = {
   {WINBOND_W25X, FV_WINBOND, FMT_WINBOND_W25X, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0},
   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_3V, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 1},
   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_3V, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
+  {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
   {ATMEL_NAME, FV_ATMEL, FMT_ATMEL, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0},
   {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0},
   {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0},
@@ -3793,7 +3794,7 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
 
     int rc = MFE_OK;
 
-    if ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V))
+    if (mfl->attr.vendor == FV_WINBOND)
     {
         rc = mf_get_param_int(mfl, driver_strength_p,
                               SFC_RDSR3_WINBOND,               /* mflash, output pointer, status-register-3 read cmd */
