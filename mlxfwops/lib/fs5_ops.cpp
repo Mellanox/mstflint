@@ -91,10 +91,10 @@ bool Fs5Operations::ParseHwPointers(VerifyCallBack verifyCallBackFunc)
     fs5_image_layout_hw_pointers_gilboa_unpack(&hwPointers, (u_int8_t*)buff);
     _boot2_ptr = hwPointers.boot2_ptr.ptr;
     _itoc_ptr = hwPointers.toc_ptr.ptr;
-    _tools_ptr = hwPointers.tool2_ptr.ptr; // TODO - fix typo tool2 --> tools in gilboa adb
-    _image_info_section_ptr = hwPointers.image_info_ptr.ptr;
-    _hashes_table_ptr = hwPointers.ncore_hashes_ptr.ptr;
-    _ncore_bch_ptr = hwPointers.ncore_bch_ptr.ptr;
+    _tools_ptr = hwPointers.tools_ptr.ptr;
+    _image_info_section_ptr = hwPointers.image_info_section_pointer.ptr;
+    _hashes_table_ptr = hwPointers.ncore_hashes_pointer.ptr;
+    _ncore_bch_ptr = hwPointers.ncore_bch_pointer.ptr;
     _is_hw_ptrs_initialized = true;
     return true;
 }
@@ -148,18 +148,14 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
     sprintf(pr, "%s /0x%08x/ (BOOT2)", pref, _boot2_ptr);
 
     // Parse NCORE BCH for boot2 size
-    u_int32_t FS5_IMAGE_LAYOUT_BCH_GILBOA_SIZE = 0x1000; // TODO - temp until BCH struct generated in fs5_image_layout
-    vector<u_int8_t> ncoreBCHData(FS5_IMAGE_LAYOUT_BCH_GILBOA_SIZE);
-    if (!_ioAccess->read(_ncore_bch_ptr, ncoreBCHData.data(), FS5_IMAGE_LAYOUT_BCH_GILBOA_SIZE))
+    vector<u_int8_t> ncoreBCHData(FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE);
+    if (!_ioAccess->read(_ncore_bch_ptr, ncoreBCHData.data(), FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE))
     {
         return errmsg("%s - read error (%s)\n", "FS5 boot2 header", _ioAccess->err());
     }
-
-    //=================================================
-    // TODO - temp until BCH struct generated in fs5_image_layout
-    // fs5_image_layout_bch_gilboa ncoreBCH;
-    // fs5_image_layout_bch_gilboa_unpack(&ncoreBCH, ncoreBCHData.data());
-    _fwImgInfo.boot2Size = __cpu_to_be32(*(u_int32_t*)(ncoreBCHData.data() + 0x2c));
+    fs5_image_layout_boot_component_header ncoreBCH;
+    fs5_image_layout_boot_component_header_unpack(&ncoreBCH, ncoreBCHData.data());
+    _fwImgInfo.boot2Size = ncoreBCH.length;
     //=================================================
 
     DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", _fwImgInfo.boot2Size));
