@@ -167,6 +167,7 @@ FlashGen get_flash_gen(mflash* mfl)
             break;
         }
         case DeviceQuantum3:
+        case DeviceArcusE:
         case DeviceConnectX8:
         case DeviceBlueField4:
         {
