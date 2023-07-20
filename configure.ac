@@ -106,6 +106,9 @@ AC_SUBST(MTCR_CONF_DIR)
 AC_SUBST(LDL)
 AC_SUBST(default_en_inband)
 
+AM_CONDITIONAL(ARM64_BUILD, [ echo $build_cpu | grep -iq "aarch64" ])
+AM_CONDITIONAL(X86_64_BUILD, [ echo $build_cpu | grep -iq "x86_64" ])
+
 dnl Checks for headers
 AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 TOOLS_CRYPTO=""
@@ -465,4 +468,4 @@ AC_CONFIG_FILES([debian/mstflint.install])
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mft_utils/hsmclient/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
         tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
         flint/Makefile small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
-        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile resourcedump/Makefile resourcedump/resourcedump_lib/Makefile resourceparse/Makefile )
+        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile resourcedump/Makefile resourcedump/resourcedump_lib/Makefile resourceparse/Makefile mlxdpa/Makefile)
