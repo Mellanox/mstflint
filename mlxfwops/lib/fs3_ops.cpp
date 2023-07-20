@@ -326,18 +326,15 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
         struct tools_open_image_info tools_image_info;
         memset(&tools_image_info, 0, sizeof(tools_image_info));
         tools_open_image_info_unpack(&tools_image_info, buff);
-        strncpy(_fs3ImgInfo.ext_info.name, tools_image_info.name, NAME_LEN);
-        strncpy(_fs3ImgInfo.ext_info.description, tools_image_info.description, DESCRIPTION_LEN);
-        strncpy(_fs3ImgInfo.ext_info.prs_name, tools_image_info.prs_name, FS3_PRS_NAME_LEN);
+        strncpy(_fs3ImgInfo.ext_info.name, tools_image_info.name, strlen(tools_image_info.name));
+        strncpy(_fs3ImgInfo.ext_info.description, tools_image_info.description, strlen(tools_image_info.description));
+        strncpy(_fs3ImgInfo.ext_info.prs_name, tools_image_info.prs_name, strlen(tools_image_info.prs_name));
     }
     else if (image_info.minor_version == 3)
     {
-        strncpy(_fs3ImgInfo.ext_info.name, image_info.name, NAME_LEN);
-        _fs3ImgInfo.ext_info.name[NAME_LEN - 1] = '\0';
-        strncpy(_fs3ImgInfo.ext_info.description, image_info.description, DESCRIPTION_LEN);
-        _fs3ImgInfo.ext_info.description[DESCRIPTION_LEN - 1] = '\0';
-        strncpy(_fs3ImgInfo.ext_info.prs_name, image_info.prs_name, FS3_PRS_NAME_LEN);
-        _fs3ImgInfo.ext_info.prs_name[FS3_PRS_NAME_LEN - 1] = '\0';
+        strncpy(_fs3ImgInfo.ext_info.name, image_info.name, strlen(image_info.name));
+        strncpy(_fs3ImgInfo.ext_info.description, image_info.description, strlen(image_info.description));
+        strncpy(_fs3ImgInfo.ext_info.prs_name, image_info.prs_name, strlen(image_info.prs_name));
     }
 
     _fs3ImgInfo.ext_info.mcc_en = image_info.mcc_en;
