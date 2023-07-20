@@ -151,6 +151,7 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
     vector<u_int8_t> ncoreBCHData(FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE);
     if (!_ioAccess->read(_ncore_bch_ptr, ncoreBCHData.data(), FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE))
     {
+        delete[] pr;
         return errmsg("%s - read error (%s)\n", "FS5 boot2 header", _ioAccess->err());
     }
     fs5_image_layout_boot_component_header ncoreBCH;

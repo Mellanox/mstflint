@@ -3216,6 +3216,7 @@ bool Fs4Operations::UpdateDigitalCertRWSection(char* certChainFile,
     //* Assert given certificate chain doesn't exceed its allocated size (compared to CERT_CHAIN_0 with same size)
     if ((u_int32_t)certChainBuffSize > certChain0SectionSize)
     {
+        delete[] certChainBuffData;
         return errmsg("Certificate chain data exceeds its allocated size of 0x%x bytes", certChain0SectionSize);
     }
 
@@ -4907,6 +4908,7 @@ bool Fs4Operations::ReadPublicKeys2SectionFromFile(const char* fname, image_layo
         publicKeySectionIdx++;
     }
 
+    delete[] publicKeysData;
     return true;
 }
 
@@ -5230,7 +5232,7 @@ bool Fs4Operations::GetPublicKeyFromFile(const char* public_key_file,
 
     //* Parse public-key
     vector<u_int8_t> publicKeyData;
-    u_int32_t keyPairExp;
+    u_int32_t keyPairExp = 0;
     image_layout_component_authentication_configuration keyAuthConf;
     memset(&keyAuthConf, 0, sizeof(keyAuthConf));
     if (!ParsePublicKeyFromFile(public_key_file, publicKeyData, keyPairExp, keyAuthConf))
