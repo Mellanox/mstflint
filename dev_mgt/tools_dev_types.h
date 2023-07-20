@@ -229,6 +229,11 @@ extern "C"
     int dm_dev_is_cable(dm_dev_id_t type);
 
     /**
+     * A predicate returning if the device is an ArcusE chipset
+     */
+    int dm_dev_is_retimer_arcuse(dm_dev_id_t type);
+
+    /**
      * Returns the max num of ports or -1 on error
      */
     int dm_get_hw_ports_num(dm_dev_id_t type);
