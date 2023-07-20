@@ -4736,6 +4736,34 @@ bool Fs4Operations::FindImagePublicKeyInPublicKeys2(const image_layout_public_ke
     return res;
 }
 
+bool Fs4Operations::GetRSAPublicKey(vector<u_int8_t>& key)
+{
+    if (!InitHwPtrs())
+    {
+        return errmsg("HW pointers not found");
+    }
+
+    vector<u_int8_t> rsaPublicKeys(image_layout_public_keys_3_size());
+    if (!FwReadBlock(_public_key_ptr, image_layout_public_keys_3_size(), rsaPublicKeys))
+    {
+        return false;
+    }
+
+    image_layout_public_keys_3 stored_public_keys_3;
+    memset(&stored_public_keys_3, 0, sizeof(stored_public_keys_3));
+    image_layout_public_keys_3_unpack(&stored_public_keys_3, rsaPublicKeys.data());
+
+    u_int32_t imagePublicKeyIndex = 0;
+    if (!FindImagePublicKeyInPublicKeys3(stored_public_keys_3, imagePublicKeyIndex))
+    {
+        return errmsg("Couldn't find RSA public key");
+    }
+
+    key.resize(image_layout_file_public_keys_3_size());
+    image_layout_file_public_keys_3_pack(&stored_public_keys_3.file_public_keys_3[imagePublicKeyIndex], key.data());
+    return true;
+}
+
 bool Fs4Operations::FindImagePublicKeyInPublicKeys3(const image_layout_public_keys_3& public_keys, u_int32_t& idx)
 {
     bool res = false;

@@ -2505,6 +2505,12 @@ bool FwOperations::FwSetForbiddenVersions(char* fname, PrintCallBack callBackFun
     return errmsg("FwSetForbiddenVersions not supported");
 }
 
+bool FwOperations::GetRSAPublicKey(vector<u_int8_t>& key)
+{
+    (void)key;
+    return errmsg("GetRSAPublicKey not supported");
+}
+
 bool FwOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec)
 {
     if (addr + size > _ioAccess->get_effective_size())
