@@ -33,7 +33,7 @@
  
 
 /***
-         *** This file was generated at "2023-03-30 13:00:24"
+         *** This file was generated at "2023-07-19 14:43:11"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
          ***/
@@ -47,12 +47,129 @@ extern "C" {
 
 #include "adb_to_c_utils.h"
 /* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_hca_configuration_item_type_class_file_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.23 */
+	u_int32_t parameter_index;
+	/* Description - type_class = 0x6 */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t type_class;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_hca_configuration_item_type_class_global_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.23 */
+	u_int32_t parameter_index;
+	/* Description - type_class = 0x0 */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t type_class;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_hca_configuration_item_type_class_host_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.17 */
+	u_int32_t parameter_index;
+	/* Description - type_class = 0x7 */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t type_class;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_hca_configuration_item_type_class_log_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.23 */
+	u_int32_t parameter_index;
+	/* Description - type_class = 0x5 */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t type_class;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_hca_configuration_item_type_class_module_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.13 */
+	u_int16_t parameter_index;
+	/* Description - Module Index */
+	/* 0x0.14 - 0x0.23 */
+	u_int16_t module_index;
+	/* Description - type_class = 0x9 */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t type_class;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_hca_configuration_item_type_class_per_host_pf_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.9 */
+	u_int16_t parameter_index;
+	/* Description - type_class = 0x3 */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t type_class;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_hca_configuration_item_type_class_physical_port_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.15 */
+	u_int16_t parameter_index;
+	/* Description -  */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t port;
+	/* Description - type_class = 0x1 */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t type_class;
+};
+
+/* Description -   */
 /* Size in bytes - 8 */
 struct reg_access_hca_uint64 {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
 	/* 0x0.0 - 0x4.31 */
 	u_int64_t uint64;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+union reg_access_hca_config_item_type_auto_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	struct reg_access_hca_configuration_item_type_class_global_ext configuration_item_type_class_global_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	struct reg_access_hca_configuration_item_type_class_physical_port_ext configuration_item_type_class_physical_port_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	struct reg_access_hca_configuration_item_type_class_per_host_pf_ext configuration_item_type_class_per_host_pf_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	struct reg_access_hca_configuration_item_type_class_log_ext configuration_item_type_class_log_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	struct reg_access_hca_configuration_item_type_class_file_ext configuration_item_type_class_file_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	struct reg_access_hca_configuration_item_type_class_host_ext configuration_item_type_class_host_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	struct reg_access_hca_configuration_item_type_class_module_ext configuration_item_type_class_module_ext;
 };
 
 /* Description -   */
@@ -93,7 +210,9 @@ struct reg_access_hca_mcqi_cap_ext {
 	/* Description - Bitmask indicating which info_type(s) are supported for this component. Set bit indicates the property set is supported
 bit 1: VERSION
 bit 5: ACTIVATION_METHOD
-Other bits are reserved. CAPABILITIES set is always supported. */
+Other bits are reserved. CAPABILITIES set is always supported.
+bit 6: LinkX
+bit 7: Clock Synchronizer */
 	/* 0x0.0 - 0x0.31 */
 	u_int32_t supported_info_bitmask;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -129,7 +248,7 @@ Read and write access must be aligned to the word size. Write access must be don
 	/* Description - Only signed components are accepted. */
 	/* 0x10.30 - 0x10.30 */
 	u_int8_t signed_updates_only;
-	/* Description - When set, this components may be read, see Section 10.3.4, "Read Flow", on page 950. */
+	/* Description - When set, this components may be read, see Section 10.3.4, "Read Flow", on page 978. */
 	/* 0x10.31 - 0x10.31 */
 	u_int8_t rd_en;
 };
@@ -243,11 +362,11 @@ struct reg_access_hca_mcqi_version_ext {
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t version;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Time of component creation. Valid only if build_time_valid is set. See Table 2007, "Date-Time Layout," on page 2386 */
+	/* Description - Time of component creation. Valid only if build_time_valid is set. See Table 2217, "Date-Time Layout," on page 2735 */
 	/* 0x8.0 - 0xc.31 */
 	u_int64_t build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - User-defined time assigned to the component version. Valid only if user_defined_time_valid is set. See Table 2007, "Date-Time Layout," on page 2386 */
+	/* Description - User-defined time assigned to the component version. Valid only if user_defined_time_valid is set. See Table 2217, "Date-Time Layout," on page 2735 */
 	/* 0x10.0 - 0x14.31 */
 	u_int64_t user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -316,34 +435,58 @@ Note - This field is writeable only when using the ICMD interface. The only valu
 	/* 0x0.16 - 0x0.20 */
 	u_int8_t writer_id;
 	/* Description - Defines which value of the Configuration Item will be accessed.
-0: NEXT - Next value to be applied
-1: CURRENT - Currently set values (only valid for Query operation) Supported only if NVGC.nvda_read_current_settings==1.
-2: FACTORY - Default factory values (only valid for Query operation). Supported only if NVGC.nvda_read_factory_settings==1. */
+0: NEXT - Next value to be applied 1: CURRENT - Currently set values (only valid for Query operation) Supported only if NVGC.nvda_read_current_settings==1.2: FACTORY - Default factory values (only valid for Query operation). Supported only if NVGC.nvda_read_factory_settings==1. */
 	/* 0x0.22 - 0x0.23 */
 	u_int8_t access_mode;
+	/* Description - Read Enable
+Controls the read operation during different life-cycle stages.
+0: TLV cannot be read by the subsequent life-cycle priorities.
+1: TLV can be read by the subsequent life-cycle priorities. */
+	/* 0x0.24 - 0x0.24 */
+	u_int8_t rd_en;
+	/* Description - Override Enable
+0: Can only be overwritten by the current life-cycle priority.
+1: Allowed to be over-written by the subsequent life-cycle priorities. */
+	/* 0x0.25 - 0x0.25 */
+	u_int8_t ovr_en;
+	/* Description - The life-cycle priority of this configuration.
+0x0: USER,
+0x1: OEM,
+0x2: Reserved  
+0x3: MLNX
+
+The priority is set by either:
+1. When using MNVDA, the TLV will have user priority
+2. When using NVCONFIG, each TLV has its own priority */
+	/* 0x0.28 - 0x0.29 */
+	u_int8_t priority;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Configuration item index according to its type_class. 
-Table 2079, "Configuration Item Data Type Class Global Layout," on page 2438
-Table 2081, "Configuration Item Data Type Class Physical Port Layout," on page 2438
-Table 2083, "Configuration Item Data Type Class Per Host-PF Layout," on page 2439
-Table 2085, "Configuration Item Data Type Class Log Layout," on page 2439
-Table 2087, "Configuration Item Data Type Class File Layout," on page 2440
-Table 2089, "Configuration Item Data Type Class Host Layout," on page 2440
+Table 2286, "Configuration Item Data Type Class Global Layout," on page 2789
+Table 2288, "Configuration Item Data Type Class Physical Port Layout," on page 2789
+Table 2290, "Configuration Item Data Type Class Per Host-PF Layout," on page 2790
+Table 2292, "Configuration Item Data Type Class Log Layout," on page 2790
+Table 2294, "Configuration Item Data Type Class File Layout," on page 2791
+Table 2296, "Configuration Item Data Type Class Host Layout," on page 2791
 
-Table 2093, "Configuration Item Data Type Class Module Layout," on page 2441 */
-	/* 0x4.0 - 0x4.23 */
-	u_int32_t type_index;
-	/* Description - Type Class:
-0: Global
-1: Port
-2: BMC
-3: Host_PF
-6: File
-7: Host
+Table 2298, "Configuration Item Data Type Class Module Layout," on page 2792 */
+	/* 0x4.0 - 0x4.31 */
+	union reg_access_hca_config_item_type_auto_ext type;
+};
 
-9: Module */
-	/* 0x4.24 - 0x4.31 */
-	u_int8_t type_class;
+/* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_hca_default_timeout {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Timeout value */
+	/* 0x0.0 - 0x0.19 */
+	u_int32_t to_value;
+	/* Description - 0x0: millisecond   
+0x1: seconds   
+0x2: minutes   
+0x3: hours    */
+	/* 0x0.29 - 0x0.31 */
+	u_int8_t to_multiplier;
 };
 
 /* Description -   */
@@ -396,8 +539,7 @@ union reg_access_hca_mcqi_reg_data_auto_ext {
 /* Size in bytes - 28 */
 struct reg_access_hca_mgir_dev_info_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - [Internal]: The tag for the dev branch should be <feature>_YYYY.
-The format of the string represented by ASCII. */
+	/* Description - The format of the string represented by ASCII. */
 	/* 0x0.24 - 0x1c.23 */
 	u_int8_t dev_branch_tag[28];
 };
@@ -442,7 +584,7 @@ The device is running:
 	/* 0x0.27 - 0x0.27 */
 	u_int8_t dev;
 	/* Description - When set, string-TLV is supported.
- */
+For Retimer - always return 0 (not supported). */
 	/* 0x0.28 - 0x0.28 */
 	u_int8_t string_tlv;
 	/* Description - *NOTE* for NICs same as dev field
@@ -532,16 +674,7 @@ struct reg_access_hca_mgir_hardware_info_ext {
 	/* Description - PCI device ID. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t device_id;
-	/* Description - 
-
-SwitchX Devices:
-0x00A0: Device step A0, FCC package
-0x00A1: Device step A1, FCC package
-0x00A2: Device step A2, FCC package
-
-Switch-IB Devices:
-0x00A0: Switch-IB device step A0, FCC package
-0x0000 is a valid value for some devices not included in PRM. */
+	/* Description - See Table 2239, "Device HW Revision Descriptions," on page 2751 */
 	/* 0x0.16 - 0x0.31 */
 	u_int16_t device_hw_revision;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -559,7 +692,9 @@ Supported nominal V_CORE voltage (in 50mV units) for the device. */
 6-31: Reserved */
 	/* 0x4.11 - 0x4.15 */
 	u_int8_t technology;
-	/* Description - Number of physical port the device supports. */
+	/* Description - Number of physical port the device supports.
+For Retimer: returns the number of data path 
+ */
 	/* 0x4.16 - 0x4.23 */
 	u_int8_t num_ports;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -603,7 +738,13 @@ struct reg_access_hca_mgir_sw_info_ext {
 0x0: none
 0x1: Flexboot
 0x2: UEFI
-0x3: UEFI-CLP */
+0x3: UEFI-CLP
+0x4: NVME
+0x5: FCODE
+0x6: UEFI Virtio net
+0x7: UEFI Virtio blk
+0x8: PXE Virtio net
+0x9-0xF: Reserved */
 	/* 0x4.0 - 0x4.3 */
 	u_int8_t rom3_type;
 	/* Description - Arch type of ROM 3:
@@ -618,7 +759,13 @@ struct reg_access_hca_mgir_sw_info_ext {
 0x0: none
 0x1: Flexboot
 0x2: UEFI
-0x3: UEFI-CLP */
+0x3: UEFI-CLP
+0x4: NVME
+0x5: FCODE
+0x6: UEFI Virtio net
+0x7: UEFI Virtio blk
+0x8: PXE Virtio net
+0x9-0xF: Reserved */
 	/* 0x4.8 - 0x4.11 */
 	u_int8_t rom2_type;
 	/* Description - Arch type of ROM 2:
@@ -633,7 +780,13 @@ struct reg_access_hca_mgir_sw_info_ext {
 0x0: none
 0x1: Flexboot
 0x2: UEFI
-0x3: UEFI-CLP */
+0x3: UEFI-CLP
+0x4: NVME
+0x5: FCODE
+0x6: UEFI Virtio net
+0x7: UEFI Virtio blk
+0x8: PXE Virtio net
+0x9-0xF: Reserved */
 	/* 0x4.16 - 0x4.19 */
 	u_int8_t rom1_type;
 	/* Description - Arch type of ROM 1:
@@ -648,7 +801,13 @@ struct reg_access_hca_mgir_sw_info_ext {
 0x0: none
 0x1: Flexboot
 0x2: UEFI
-0x3: UEFI-CLP */
+0x3: UEFI-CLP
+0x4: NVME
+0x5: FCODE
+0x6: UEFI Virtio net
+0x7: UEFI Virtio blk
+0x8: PXE Virtio net
+0x9-0xF: Reserved */
 	/* 0x4.24 - 0x4.27 */
 	u_int8_t rom0_type;
 	/* Description - Arch type of ROM 0:
@@ -691,6 +850,55 @@ struct reg_access_hca_string_db_parameters_ext {
 };
 
 /* Description -   */
+/* Size in bytes - 64 */
+struct reg_access_hca_dtor_reg {
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Maximum period for PCIe to be alive after toggle. */
+	/* 0x4.0 - 0x4.31 */
+	struct reg_access_hca_default_timeout PCIE_TOGGLE_TO;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Interval for checking if FW health counter incremented. */
+	/* 0x14.0 - 0x14.31 */
+	struct reg_access_hca_default_timeout HEALTH_POLL_TO;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - On a multi-function device, in case of error, one function dump the CRspace, the other should not do reset till dump is finished. */
+	/* 0x18.0 - 0x18.31 */
+	struct reg_access_hca_default_timeout FULL_CRDUMP_TO;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description - Maximum period to wait for nic_interface reset. */
+	/* 0x1c.0 - 0x1c.31 */
+	struct reg_access_hca_default_timeout FW_RESET_TO;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description - Maximum period to flush an errored SQ\RQ. */
+	/* 0x20.0 - 0x20.31 */
+	struct reg_access_hca_default_timeout FLUSH_ON_ERR_TO;
+/*---------------- DWORD[9] (Offset 0x24) ----------------*/
+	/* Description - Maximum period for pci_sync_for_fw_update_start. */
+	/* 0x24.0 - 0x24.31 */
+	struct reg_access_hca_default_timeout PCI_SYNC_UPDATE_TO;
+/*---------------- DWORD[10] (Offset 0x28) ----------------*/
+	/* Description - Maximum period for TEARDOWN_HCA. */
+	/* 0x28.0 - 0x28.31 */
+	struct reg_access_hca_default_timeout TEAR_DOWN_TO;
+/*---------------- DWORD[11] (Offset 0x2c) ----------------*/
+	/* Description - The time that takes to do FW FSM reactivate. */
+	/* 0x2c.0 - 0x2c.31 */
+	struct reg_access_hca_default_timeout FSM_REACTIVATE_TO;
+/*---------------- DWORD[12] (Offset 0x30) ----------------*/
+	/* Description - Maximum period for PF to reclaim own function pages. */
+	/* 0x30.0 - 0x30.31 */
+	struct reg_access_hca_default_timeout RECLAIM_PAGES_TO;
+/*---------------- DWORD[13] (Offset 0x34) ----------------*/
+	/* Description - Maximum period for PF to reclaim VF function pages. */
+	/* 0x34.0 - 0x34.31 */
+	struct reg_access_hca_default_timeout RECLAIM_VFS_PAGES_TO;
+/*---------------- DWORD[14] (Offset 0x38) ----------------*/
+	/* Description - Maximum period for Reset FSM to move from UNLOAD ACCEPTED to LINK_TOGGLE_REQUEST */
+	/* 0x38.0 - 0x38.31 */
+	struct reg_access_hca_default_timeout DRIVER_UNLOAD_AND_RESET_TO;
+};
+
+/* Description -   */
 /* Size in bytes - 72 */
 struct reg_access_hca_mcam_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -705,7 +913,7 @@ struct reg_access_hca_mcam_reg_ext {
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t feature_group;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Supported management's access register bitmaks.Based on access_reg_group index. 
+	/* Description - Supported management's access register bitmask. Based on access_reg_group index. 
 When bit is set, the register is supported in the device. 
 For example:
 Bit 1: MFCR_0x9001
@@ -763,8 +971,9 @@ Bit 46: time_adjust_range_extended - if set, the MTUTC.time_adjustment range is 
 Bit 47: If set, MTUTC.freq_adj_units=1 is supported
 Bit 48: If set, MRSR.command=6 is supported
 Bit 49: If set, MCQS.identifier support CRCS and CRDT tokens
-
-Bit 51: If set, MTUTC.freq_adj_units=2 is supported */
+Bit 51: If set, MTUTC.freq_adj_units=2 is supported
+Bit 52: If set, MRSI is supported
+Bit 53: If set, Mlx mlxfwreset with downstream port is supported by FW [Internal]: NIC only, FW rejects reset till user committed that traffic is disabled */
 	/* 0x28.0 - 0x34.31 */
 	u_int32_t mng_feature_cap_mask[4];
 };
@@ -804,14 +1013,14 @@ UPDATE_COMPONENT, ACTIVATE_COMPONENET, READ_COMPONENT and READ_PENDING_COMPONENT
 	u_int16_t component_index;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Token representing the current flow executed by the FSM.
-See Section 10.2.1, "Component Update State", on page 947. */
+See Section 10.2.1, "Component Update State", on page 975. */
 	/* 0x8.0 - 0x8.23 */
 	u_int32_t update_handle;
 	/* Description - Auto-update to all matching downstream devices is requested. */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t auto_update;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Current Update FSM state, see Section 10.3.8, "FSM States", on page 951
+	/* Description - Current Update FSM state, see Section  10.3.8, "FSM States," on page  979
 0x0: IDLE
 0x1: LOCKED
 0x2: INITIALIZE
@@ -825,7 +1034,7 @@ See Section 10.2.1, "Component Update State", on page 947. */
 Other values are reserved */
 	/* 0xc.0 - 0xc.3 */
 	u_int8_t control_state;
-	/* Description - Indicates the successful completion of the instruction, or the reason it failed. See Section 10.3.7, "Error Handling", on page 950
+	/* Description - Indicates the successful completion of the instruction, or the reason it failed. See Section  10.3.7, "Error Handling," on page  978
 0x0: OK
 0x1: ERROR
 0x2: REJECTED_DIGEST_ERR
@@ -850,6 +1059,7 @@ Other values are reserved */
 0x15: REJECTED_LINKX_ACTIVATE (see module index in rejected_device_index)
 0x16: REJECTED_INCOMPATIBLE_FLASH
 0x17: REJECTED_TOKEN_ALREADY_APPLIED
+0x18: REJECTED_FW_BURN_DRAM_NOT_AVAILABLE
 Other values should be treated as an unknown error. */
 	/* 0xc.8 - 0xc.15 */
 	u_int8_t error_code;
@@ -905,7 +1115,7 @@ struct reg_access_hca_mcda_reg_ext {
 	/* 0x0.0 - 0x0.23 */
 	u_int32_t update_handle;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Offset of accessed address relative to component start. Accesses must be in accordance to log_mcda_word_size in Table 2003, "MCQI CAPABILITIES Info Layout," on page 2383 */
+	/* Description - Offset of accessed address relative to component start. Accesses must be in accordance to log_mcda_word_size in Table 2213, "MCQI CAPABILITIES Info Layout," on page 2732 */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t offset;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -957,7 +1167,8 @@ After boot and ISSU, default value is 0.
 Reserved when MCIA.l = 1 */
 	/* 0x4.16 - 0x4.23 */
 	u_int8_t page_number;
-	/* Description - I2C device address */
+	/* Description - I2C device address
+ */
 	/* 0x4.24 - 0x4.31 */
 	u_int8_t i2c_device_address;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -1030,21 +1241,23 @@ Other values are reserved */
 	u_int32_t info_size;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - The requested/returned data offset from the section start, given in bytes.
-Must be DWORD aligned. */
+Must be DWORD aligned.
+If offset is invalid, FW will return an error. */
 	/* 0x10.0 - 0x10.31 */
 	u_int32_t offset;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description - The requested/returned data size, given in bytes.
-If data_size is not DWORD aligned, the last bytes are zero padded. */
+If data_size is not DWORD aligned, the last bytes are zero padded.
+If size is invalid, FW will return an error. */
 	/* 0x14.0 - 0x14.15 */
 	u_int16_t data_size;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description - Properties set structure according to info_type.
-CAPABILITIES - See Table 2003, "MCQI CAPABILITIES Info Layout," on page 2383
-VERSION - See Table 2005, "MCQI VERSION Info Layout," on page 2385
-ACTIVATION_METHOD - See Table 2009, "MCQI ACTIVATION_METHOD Info Layout," on page 2387
-LINKX_PREPERTIES - See Table 2011, "MCQI LINKX_PROPERTIES Info Layout," on page 2388
-CLOCK_SOURCE_PROPERTIES - See Table 2013, "MCQI CLOCK_SOURCE_PROPERTIES Layout," on page 2390 */
+CAPABILITIES - See Table 2213, "MCQI CAPABILITIES Info Layout," on page 2732
+VERSION - See Table 2215, "MCQI VERSION Info Layout," on page 2734
+ACTIVATION_METHOD - See Table 2219, "MCQI ACTIVATION_METHOD Info Layout," on page 2736
+LINKX_PROPERTIES - See Table 2221, "MCQI LINKX_PROPERTIES Info Layout," on page 2737
+CLOCK_SOURCE_PROPERTIES - See Table 2223, "MCQI CLOCK_SOURCE_PROPERTIES Layout," on page 2739 */
 	/* 0x18.0 - 0x90.31 */
 	union reg_access_hca_mcqi_reg_data_auto_ext data;
 };
@@ -1058,7 +1271,8 @@ struct reg_access_hca_mcqs_reg_ext {
 	u_int16_t component_index;
 	/* Description - Device number.
 For gearboxes, the index represents the gearbox die. 
-For cables, the index represents the module index starting at index 1. Index 0 indicates the host device. */
+For cables, the index represents the module index starting at index 1. Index 0 indicates the host device.
+For Clock synchronizer, index is used to represent the clock sync' device index. Starting from 1. */
 	/* 0x0.16 - 0x0.27 */
 	u_int16_t device_index;
 	/* Description - When set, this component is the last component (highest component_index). */
@@ -1079,12 +1293,12 @@ For cables, the index represents the module index starting at index 1. Index 0 i
 0xF: RMDT_TOKEN
 0x10: CRCS_TOKEN. 
 0x11: CRDT_TOKEN. 
-0x12: CLOCK_SYNC_EEPROM. 
+0x12: CLOCK_SYNC_EEPROM.  
 Other values are reserved */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t identifier;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Component state in update flow, see Section 10.2.1, "Component Update State", on page 947:
+	/* Description - Component state in update flow, see Section  10.2.1, "Component Update State," on page  975:
 0x0: IDLE
 0x1: IN_PROGRESS
 0x2: APPLIED
@@ -1315,12 +1529,31 @@ Other bits are reserved. */
 	/* 0x4.0 - 0x4.7 */
 	u_int8_t reset_trigger;
 	/* Description - Each bit represents a chip reset type.
-If set to '1', the reset is supported. 
+If set to '1', the reset is supported.
 Bit 0: Full chip reset
 Bit 1: Keep network port active during reset
- */
+Bit 3: ARM only reset [DWIP] */
 	/* 0x4.8 - 0x4.15 */
 	u_int8_t reset_type;
+	/* Description - Reset state.
+0: IDLE
+1: Negotiation in progress
+2: Reset in progress
+3: Error - Negotiation timeout
+4: Error - Negotiation dis-acknowledgment
+5: Error- driver unload timeout [DWIP]
+6: Error- ARM OS is up, please shut down
+7: ARM OS shut down in progress
+8-15: Reserved */
+	/* 0x4.16 - 0x4.19 */
+	u_int8_t reset_state;
+	/* Description - [DWIP]:
+Pcie Bridge has leaf DSP */
+	/* 0x4.20 - 0x4.20 */
+	u_int8_t pci_leaf_dsp_exist;
+	/* Description - When set the host commits all drivers, traffic and flow through the Pcie-switch were removed, by the Host. This field is valid only at Single Host Topology. */
+	/* 0x4.21 - 0x4.21 */
+	u_int8_t pci_leaf_dsp_traffic_dis_commited;
 	/* Description - The requested reset type. */
 	/* 0x4.24 - 0x4.26 */
 	u_int8_t rst_type_sel;
@@ -1366,20 +1599,20 @@ struct reg_access_hca_mfsv_reg_ext {
 /* Size in bytes - 160 */
 struct reg_access_hca_mgir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see Table 2027, "Hardware Info Layout," on page 2401 */
+	/* Description - Hardware Information, see Table 2237, "Hardware Info Layout," on page 2750 */
 	/* 0x0.0 - 0x1c.31 */
 	struct reg_access_hca_mgir_hardware_info_ext hw_info;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description - Firmware Information, see Table 2029, "Firmware Info Layout," on page 2403 */
+	/* Description - Firmware Information, see Table 2240, "Firmware Info Layout," on page 2753 */
 	/* 0x20.0 - 0x5c.31 */
 	struct reg_access_hca_mgir_fw_info_ext fw_info;
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
-	/* Description - Software Information, see Table 2031, "Software Info Layout," on page 2405
+	/* Description - Software Information, see Table 2242, "Software Info Layout," on page 2755
 This field indicates the oldest software version compatible with the current firmware */
 	/* 0x60.0 - 0x7c.31 */
 	struct reg_access_hca_mgir_sw_info_ext sw_info;
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
-	/* Description - Development Information, see Table 2035, "Development Info Layout," on page 2408 */
+	/* Description - Development Information, see Table 2246, "Development Info Layout," on page 2759 */
 	/* 0x80.0 - 0x98.31 */
 	struct reg_access_hca_mgir_dev_info_ext dev_info;
 };
@@ -1459,7 +1692,7 @@ struct reg_access_hca_mnvia_reg_ext {
 	/* 0x0.0 - 0x0.2 */
 	u_int8_t target;
 	/* Description - The entity which perform the invalidate.
-The encoding same as writer_id in Configuration Item register (See Table 2077, "Configuration Item Header Layout," on page 2435). */
+The encoding same as writer_id in Configuration Item register (See Table 2284, "Configuration Item Header Layout," on page 2785). */
 	/* 0x0.4 - 0x0.8 */
 	u_int8_t writer_id;
 };
@@ -1468,10 +1701,15 @@ The encoding same as writer_id in Configuration Item register (See Table 2077, "
 /* Size in bytes - 8 */
 struct reg_access_hca_mnvqc_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Configuration item type. 
-Table 2079, "Configuration Item Data Type Class Global Layout," on page 2438
-Table 2081, "Configuration Item Data Type Class Physical Port Layout," on page 2438
-Table 2083, "Configuration Item Data Type Class Per Host-PF Layout," on page 2439 */
+	/* Description - Configuration item type according to its class. 
+Table 2286, "Configuration Item Data Type Class Global Layout," on page 2789
+Table 2288, "Configuration Item Data Type Class Physical Port Layout," on page 2789
+Table 2290, "Configuration Item Data Type Class Per Host-PF Layout," on page 2790
+Table 2292, "Configuration Item Data Type Class Log Layout," on page 2790
+Table 2294, "Configuration Item Data Type Class File Layout," on page 2791
+Table 2296, "Configuration Item Data Type Class Host Layout," on page 2791
+
+Table 2298, "Configuration Item Data Type Class Module Layout," on page 2792 */
 	/* 0x0.0 - 0x0.31 */
 	u_int32_t type;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -1745,8 +1983,7 @@ struct reg_access_hca_mtmp_ext {
 	/* Description - Sensors index
 0: current asic temp, FW exposes current max(all diode temp sensors)
 1..62: ambient, supported only for unmanaged switch, defined by ini
-64..255: modules
-256..288: Gearbox
+64..255: modules 256..288: Gearbox
 289..704: reserved for future */
 	/* 0x0.0 - 0x0.11 */
 	u_int16_t sensor_index;
@@ -1822,12 +2059,14 @@ Note that temperature_threshold_lo must be at least 5 degrees lower than tempera
 	u_int16_t temperature_threshold_lo;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description - Sensor Name
-8 character long sensor name */
+8 character long sensor name
+ */
 	/* 0x18.0 - 0x18.31 */
 	u_int32_t sensor_name_hi;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description - Sensor Name
-8 character long sensor name */
+8 character long sensor name
+ */
 	/* 0x1c.0 - 0x1c.31 */
 	u_int32_t sensor_name_lo;
 };
@@ -1840,7 +2079,7 @@ struct reg_access_hca_mtrc_cap_reg_ext {
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t num_string_db;
 	/* Description - Indicates the version of the tracing mechanism.
-See Section 24.3.4.1, "Timestamp Event Traces", on page 1490
+See Section 25.3.4.1, "Timestamp Event Traces", on page 1755
 0x0: VER_0
 0x1: VER_1
 Other values are reserved.
@@ -1875,7 +2114,7 @@ Reserved in Switch */
 };
 
 /* Description -   */
-/* Size in bytes - 12 */
+/* Size in bytes - 8 */
 struct reg_access_hca_mtrc_stdb_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - The number of bytes to read from the String DB. The number of bytes must:
@@ -1909,24 +2148,66 @@ struct reg_access_hca_nic_cap_ext_reg_ext {
 	u_int16_t cap_group;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Capability information according to cap_group.
-For DPA_CAP See Table 1286, "DPA_CAP Capability Layout," on page 1600 */
+For DPA_CAP See Table 1417, "DPA_CAP Capability Layout," on page 1877 */
 	/* 0x10.0 - 0x7c.31 */
 	u_int32_t cap_data[28];
 };
 
 /* Description -   */
-/* Size in bytes - 256 */
-struct reg_access_hca_nic_dpa_hart_group_reg_ext {
+/* Size in bytes - 768 */
+struct reg_access_hca_nic_dpa_eu_partition_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - DPA HART group id
-For WRITE method with operation CREATE this field is RO and provides the newly created HART group.
-For other method/operation, this field is an index to a valid HART group */
+	/* Description - DPA EU partition id
+For WRITE method with operation CREATE this field is RO and provides the newly created EU partition ID.
+For other method/operation, this field is an index to a valid EU partition */
 	/* 0x0.0 - 0x0.15 */
-	u_int16_t hart_group_id;
+	u_int16_t eu_partition_id;
 	/* Description - Operation performed for WRITE method:
-0x0: CRETAE - create a new DPA HART group
-0x1: MODIFY - change the members of an existing DPA HART group
-0x2: DESTROY - destroy an existing DPA HART group
+0x0: CRETAE - create a new partition
+0x1: MODIFY - change the parameters of an existing partition, absed on modify_field_select
+0x2: DESTROY - destroy an existing partition
+other values are reserved. */
+	/* 0x0.28 - 0x0.30 */
+	u_int8_t operation;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Bitmask indicating which parameter is modified by MODIFY operation. Set bit indicates the field should be updated.
+bit 0: member_mask
+bit 1: max_num_eug
+bit 2: num_vhca_id_and_vhca_id
+other bits are reserved.
+For Query method, set bit indicates the relevant modification is supported */
+	/* 0x4.0 - 0x4.31 */
+	u_int32_t modify_field_select;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - The maximal number of groups allowed for EUs in the partition */
+	/* 0x8.0 - 0x8.15 */
+	u_int16_t max_num_eug;
+	/* Description - The number of valid entries in vhca_id array. Value must not exceed DPA_CAP,max_num_partition_vhca_id */
+	/* 0x8.16 - 0x8.23 */
+	u_int8_t num_vhca_id;
+/*---------------- DWORD[16] (Offset 0x40) ----------------*/
+	/* Description - Bitmask indicating which EUs are members of the partition. Set bit indicates the respective EU is a member. EU partitions may not overlap, and EUs beyond DPA_CAP.max_num_dpa_eu are reserved. */
+	/* 0x40.0 - 0xbc.31 */
+	u_int32_t member_mask[32];
+/*---------------- DWORD[48] (Offset 0xc0) ----------------*/
+	/* Description - Array of VHCA IDs indicating which functions are allowed to use this partition. Array size is determined by num_vhca_id, entries with index num_vhca_id or higher are reserved. */
+	/* 0xc0.16 - 0x2c0.15 */
+	u_int16_t vhca_id[256];
+};
+
+/* Description -   */
+/* Size in bytes - 256 */
+struct reg_access_hca_nic_dpa_eug_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - DPA EUG id
+For WRITE method with operation CREATE this field is RO and provides the newly created EUG.
+For other method/operation, this field is an index to a valid EUG */
+	/* 0x0.0 - 0x0.15 */
+	u_int16_t eug_id;
+	/* Description - Operation performed for WRITE method:
+0x0: CRETAE - create a new DPA EUG
+0x1: MODIFY - change the members of an existing DPA EUG
+0x2: DESTROY - destroy an existing DPA EUG
 other values are reserved. */
 	/* 0x0.28 - 0x0.30 */
 	u_int8_t operation;
@@ -1938,55 +2219,13 @@ For Query method, set bit indicates the relevant modification is supported */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t modify_field_select;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - HART group name (ASCII string) */
+	/* Description - EUG name (ASCII string) */
 	/* 0x10.0 - 0x1c.31 */
-	u_int32_t hart_group_name[4];
+	u_int32_t eug_name[4];
 /*---------------- DWORD[16] (Offset 0x40) ----------------*/
-	/* Description - Bitmask indicating which HARTs are members of the group. Set bit indicates the respective HART is a member. HART groups may not overlap, and HARTs beyond NIC_CAP_EXT_REG.max_num_dpa_hart are reserved. */
+	/* Description - Bitmask indicating which EUs are members of the group. Set bit indicates the respective EU is a member. EUGs may not overlap, and EUs beyond NIC_CAP_EXT_REG.max_num_dpa_eu are reserved. */
 	/* 0x40.0 - 0xbc.31 */
 	u_int32_t member_mask[32];
-};
-
-/* Description -   */
-/* Size in bytes - 768 */
-struct reg_access_hca_nic_dpa_hart_partition_reg_ext {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - DPA HART partition id
-For WRITE method with operation CREATE this field is RO and provides the newly created HART partition ID.
-For other method/operation, this field is an index to a valid HART partition */
-	/* 0x0.0 - 0x0.15 */
-	u_int16_t hart_partition_id;
-	/* Description - Operation performed for WRITE method:
-0x0: CRETAE - create a new partition
-0x1: MODIFY - change the parameters of an existing partition, absed on modify_field_select
-0x2: DESTROY - destroy an existing partition
-other values are reserved. */
-	/* 0x0.28 - 0x0.30 */
-	u_int8_t operation;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Bitmask indicating which parameter is modified by MODIFY operation. Set bit indicates the field should be updated.
-bit 0: member_mask
-bit 1: max_num_hart_group
-bit 2: num_vhca_id_and_vhca_id
-other bits are reserved.
-For Query method, set bit indicates the relevant modification is supported */
-	/* 0x4.0 - 0x4.31 */
-	u_int32_t modify_field_select;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - The maximal number of groups allowed for HARTs in the partition */
-	/* 0x8.0 - 0x8.15 */
-	u_int16_t max_num_hart_group;
-	/* Description - The number of valid entries in vhca_id array. Value must not exceed DPA_CAP,max_num_partition_vhca_id */
-	/* 0x8.16 - 0x8.23 */
-	u_int8_t num_vhca_id;
-/*---------------- DWORD[16] (Offset 0x40) ----------------*/
-	/* Description - Bitmask indicating which HARTs are members of the partition. Set bit indicates the respective HART is a member. HART partitions may not overlap, and HARTs beyond DPA_CAP.max_num_dpa_hart are reserved. */
-	/* 0x40.0 - 0xbc.31 */
-	u_int32_t member_mask[32];
-/*---------------- DWORD[48] (Offset 0xc0) ----------------*/
-	/* Description - Array of VHCA IDs indicating which functions are allowed to use this partition. Array size is determined by num_vhca_id, entries with index num_vhca_id or higher are reserved. */
-	/* 0xc0.16 - 0x2c0.15 */
-	u_int16_t vhca_id[256];
 };
 
 /* Description -   */
@@ -2054,7 +2293,8 @@ struct reg_access_hca_paos_reg_ext {
 
 [Internal] opcode 5 is used only in NIC, for fast link up drivers after device boot. For most usecase the rate will be SDR, lowest rate support in IB systems. 
 
- */
+
+[Internal] - up_once shall not be used for GPU case. In order to define link down state set PLDS register */
 	/* 0x0.8 - 0x0.11 */
 	u_int8_t admin_status;
 	/* Description - Local port number [9:8] */
@@ -2070,7 +2310,7 @@ The swid field is only valid when the local_port is the router port. In this cas
 	/* 0x0.24 - 0x0.31 */
 	u_int8_t swid;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Event generation on operational state change:
+	/* Description - Event generation on operational state change (oper_status):
 0: Do_not_generate_event
 1: Generate_Event 
 2: Generate_Single_Event
@@ -2096,7 +2336,10 @@ Bit 1: Force_down_by_hard_wire
 Bit 2: Force_down_by_config
 Bit 3: Locked_after_down
 
-Note - value of 0x0 indicates not locked */
+Note - value of 0x0 indicates not locked
+[internal] - 
+GPU supports bits 0-3
+QM3 - supports bits 2,3 */
 	/* 0x4.24 - 0x4.27 */
 	u_int8_t lock_mode;
 	/* Description - Event update enable. If this bit is set, event generation will be updated based on the e field. Only relevant on Set operations.
@@ -2189,6 +2432,7 @@ NOTE: setting reset while module is plugged-in will result in transition of oper
 0xc: pcie_system_power_slot_Exceeded
 
 [DWIP] 0xf: Boot_error
+[DWIP] 0x10: Recovery_error
 Valid only when oper_status = 4'b0011 */
 	/* 0x4.8 - 0x4.12 */
 	u_int8_t error_type;
@@ -2254,7 +2498,7 @@ Up to 8 SerDeses in a module can be mapped to a local port. */
 };
 
 /* Description -   */
-/* Size in bytes - 64 */
+/* Size in bytes - 68 */
 struct reg_access_hca_ptys_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Protocol Mask. Indicates which of the protocol data is valid
@@ -2262,6 +2506,12 @@ Bit 0: InfiniBand
 Bit 2: Ethernet */
 	/* 0x0.0 - 0x0.2 */
 	u_int8_t proto_mask;
+	/* Description - 0: FW_default
+
+1: transmit_allowed - Transmitter is allowed to transmit signal on output. for enabling transmitter, PAOS.admin_status must be up as well.
+2: transmit_not_allowed - Transmitter is not allowed to transmit signal on output */
+	/* 0x0.3 - 0x0.4 */
+	u_int8_t transmit_allowed;
 	/* Description - Supported only when indicated by PCAM 
 0: Network_Port
 1: Near-End_Port - (For Gearbox - Host side)
@@ -2281,6 +2531,15 @@ Other values are reserved. */
  */
 	/* 0x0.24 - 0x0.24 */
 	u_int8_t force_tx_aba_param;
+	/* Description - 0: do_not_generate_event
+Bit 0: generate_tx_ready_event - When set, P*** register will generate event when Transmitter is generating valid signal on the line
+Bit 1: generate_tx_not_ready_event - when set, P*** will generate event when the transmitter stopped transmitting after Tx_ready was set. */
+	/* 0x0.26 - 0x0.27 */
+	u_int8_t tx_ready_e;
+	/* Description - Event Enable for tx_ready_e.
+when bit is not set, tx_teady_e write value will be ignored */
+	/* 0x0.28 - 0x0.28 */
+	u_int8_t ee_tx_ready;
 	/* Description - Auto Negotiation disable capability:
 0 - Device does not support AN disable
 1 - Device Supports  AN disable */
@@ -2440,6 +2699,17 @@ NOTE: This field and "eth_proto_admin" are mutual exclusive, meaning that only o
 8: PORT_OTHER - Other */
 	/* 0x2c.0 - 0x2c.3 */
 	u_int8_t connector_type;
+	/* Description - For active link, Indicates the lane data rate passed per physical lane including the overhead due to FEC.
+resolution of 10 Mb/s (lane_rate_oper * 10Mb/s). */
+	/* 0x2c.4 - 0x2c.23 */
+	u_int32_t lane_rate_oper;
+	/* Description - When set and link active, indicates link speed is xdr_2x slow. */
+	/* 0x2c.24 - 0x2c.24 */
+	u_int8_t xdr_2x_slow_active;
+	/* Description - When set, along with ib protocol xdr_2x, XDR_2x slow will be allowed instead of xdr_2x.
+Note: in GB100, set by default only with ini and cannot be changed. */
+	/* 0x2c.25 - 0x2c.25 */
+	u_int8_t xdr_2x_slow_admin;
 	/* Description - Ethernet Force mode options when AN disable is set.
 0 - auto, keep normal operation
 1 - Do Force LT (KR Startup) flow
@@ -2455,13 +2725,16 @@ In Ethernet port, when setting force LT flow, the "eth_proto_ext_admin" bit mask
 Note: Ignored when an_disable_admin is not set */
 	/* 0x2c.30 - 0x2c.30 */
 	u_int8_t force_lt_frames_cap;
+	/* Description - capability for XDR_2x slow is support (200G) */
+	/* 0x2c.31 - 0x2c.31 */
+	u_int8_t xdr_2x_slow_cap;
 };
 
 /* Description -   */
 /* Size in bytes - 256 */
 struct reg_access_hca_resource_dump_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - See Section 24.8, "Resource Dump", on page 1500. */
+	/* Description - See Section 25.10, "Resource Dump", on page 1772. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t segment_type;
 	/* Description - Sequence number. 0 on first call of dump and incremented on each more dump. */
@@ -2536,11 +2809,8 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* 0x0.0 - 0x78.31 */
 	struct reg_access_hca_mcqi_linkx_properties_ext mcqi_linkx_properties_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
-	struct reg_access_hca_mcc_reg_ext mcc_reg_ext;
-	/* Description -  */
 	/* 0x0.0 - 0x2fc.31 */
-	struct reg_access_hca_nic_dpa_hart_partition_reg_ext nic_dpa_hart_partition_reg_ext;
+	struct reg_access_hca_nic_dpa_eu_partition_reg_ext nic_dpa_eu_partition_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x108.31 */
 	struct reg_access_hca_mfba_reg_ext mfba_reg_ext;
@@ -2560,11 +2830,14 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* 0x0.0 - 0x78.31 */
 	struct reg_access_hca_mcqi_activation_method_ext mcqi_activation_method_ext;
 	/* Description -  */
-	/* 0x0.0 - 0xfc.31 */
-	struct reg_access_hca_nic_dpa_hart_group_reg_ext nic_dpa_hart_group_reg_ext;
+	/* 0x0.0 - 0x1c.31 */
+	struct reg_access_hca_mcc_reg_ext mcc_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x3c.31 */
 	struct reg_access_hca_nic_dpa_perf_reg_ext nic_dpa_perf_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xfc.31 */
+	struct reg_access_hca_nic_dpa_eug_reg_ext nic_dpa_eug_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x8c.31 */
 	struct reg_access_hca_mcda_reg_ext mcda_reg_ext;
@@ -2599,7 +2872,7 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* 0x0.0 - 0xc.31 */
 	struct reg_access_hca_paos_reg_ext paos_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
+	/* 0x0.0 - 0x40.31 */
 	struct reg_access_hca_ptys_reg_ext ptys_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x28.31 */
@@ -2610,6 +2883,9 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0x90.31 */
 	struct reg_access_hca_mcqi_reg_ext mcqi_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	struct reg_access_hca_dtor_reg dtor_reg;
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
 	struct reg_access_hca_mtmp_ext mtmp_ext;
@@ -2662,6 +2938,55 @@ union reg_access_hca_reg_access_hca_Nodes {
 
 
 /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
+/* configuration_item_type_class_file_ext */
+void reg_access_hca_configuration_item_type_class_file_ext_pack(const struct reg_access_hca_configuration_item_type_class_file_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_file_ext_unpack(struct reg_access_hca_configuration_item_type_class_file_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_file_ext_print(const struct reg_access_hca_configuration_item_type_class_file_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_configuration_item_type_class_file_ext_size(void);
+#define REG_ACCESS_HCA_CONFIGURATION_ITEM_TYPE_CLASS_FILE_EXT_SIZE    (0x4)
+void reg_access_hca_configuration_item_type_class_file_ext_dump(const struct reg_access_hca_configuration_item_type_class_file_ext *ptr_struct, FILE *fd);
+/* configuration_item_type_class_global_ext */
+void reg_access_hca_configuration_item_type_class_global_ext_pack(const struct reg_access_hca_configuration_item_type_class_global_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_global_ext_unpack(struct reg_access_hca_configuration_item_type_class_global_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_global_ext_print(const struct reg_access_hca_configuration_item_type_class_global_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_configuration_item_type_class_global_ext_size(void);
+#define REG_ACCESS_HCA_CONFIGURATION_ITEM_TYPE_CLASS_GLOBAL_EXT_SIZE    (0x4)
+void reg_access_hca_configuration_item_type_class_global_ext_dump(const struct reg_access_hca_configuration_item_type_class_global_ext *ptr_struct, FILE *fd);
+/* configuration_item_type_class_host_ext */
+void reg_access_hca_configuration_item_type_class_host_ext_pack(const struct reg_access_hca_configuration_item_type_class_host_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_host_ext_unpack(struct reg_access_hca_configuration_item_type_class_host_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_host_ext_print(const struct reg_access_hca_configuration_item_type_class_host_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_configuration_item_type_class_host_ext_size(void);
+#define REG_ACCESS_HCA_CONFIGURATION_ITEM_TYPE_CLASS_HOST_EXT_SIZE    (0x4)
+void reg_access_hca_configuration_item_type_class_host_ext_dump(const struct reg_access_hca_configuration_item_type_class_host_ext *ptr_struct, FILE *fd);
+/* configuration_item_type_class_log_ext */
+void reg_access_hca_configuration_item_type_class_log_ext_pack(const struct reg_access_hca_configuration_item_type_class_log_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_log_ext_unpack(struct reg_access_hca_configuration_item_type_class_log_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_log_ext_print(const struct reg_access_hca_configuration_item_type_class_log_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_configuration_item_type_class_log_ext_size(void);
+#define REG_ACCESS_HCA_CONFIGURATION_ITEM_TYPE_CLASS_LOG_EXT_SIZE    (0x4)
+void reg_access_hca_configuration_item_type_class_log_ext_dump(const struct reg_access_hca_configuration_item_type_class_log_ext *ptr_struct, FILE *fd);
+/* configuration_item_type_class_module_ext */
+void reg_access_hca_configuration_item_type_class_module_ext_pack(const struct reg_access_hca_configuration_item_type_class_module_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_module_ext_unpack(struct reg_access_hca_configuration_item_type_class_module_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_module_ext_print(const struct reg_access_hca_configuration_item_type_class_module_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_configuration_item_type_class_module_ext_size(void);
+#define REG_ACCESS_HCA_CONFIGURATION_ITEM_TYPE_CLASS_MODULE_EXT_SIZE    (0x4)
+void reg_access_hca_configuration_item_type_class_module_ext_dump(const struct reg_access_hca_configuration_item_type_class_module_ext *ptr_struct, FILE *fd);
+/* configuration_item_type_class_per_host_pf_ext */
+void reg_access_hca_configuration_item_type_class_per_host_pf_ext_pack(const struct reg_access_hca_configuration_item_type_class_per_host_pf_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_per_host_pf_ext_unpack(struct reg_access_hca_configuration_item_type_class_per_host_pf_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_per_host_pf_ext_print(const struct reg_access_hca_configuration_item_type_class_per_host_pf_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_configuration_item_type_class_per_host_pf_ext_size(void);
+#define REG_ACCESS_HCA_CONFIGURATION_ITEM_TYPE_CLASS_PER_HOST_PF_EXT_SIZE    (0x4)
+void reg_access_hca_configuration_item_type_class_per_host_pf_ext_dump(const struct reg_access_hca_configuration_item_type_class_per_host_pf_ext *ptr_struct, FILE *fd);
+/* configuration_item_type_class_physical_port_ext */
+void reg_access_hca_configuration_item_type_class_physical_port_ext_pack(const struct reg_access_hca_configuration_item_type_class_physical_port_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_physical_port_ext_unpack(struct reg_access_hca_configuration_item_type_class_physical_port_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_configuration_item_type_class_physical_port_ext_print(const struct reg_access_hca_configuration_item_type_class_physical_port_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_configuration_item_type_class_physical_port_ext_size(void);
+#define REG_ACCESS_HCA_CONFIGURATION_ITEM_TYPE_CLASS_PHYSICAL_PORT_EXT_SIZE    (0x4)
+void reg_access_hca_configuration_item_type_class_physical_port_ext_dump(const struct reg_access_hca_configuration_item_type_class_physical_port_ext *ptr_struct, FILE *fd);
 /* uint64 */
 void reg_access_hca_uint64_pack(const u_int64_t *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_uint64_unpack(u_int64_t *ptr_struct, const u_int8_t *ptr_buff);
@@ -2669,6 +2994,13 @@ void reg_access_hca_uint64_print(const u_int64_t *ptr_struct, FILE *fd, int inde
 unsigned int reg_access_hca_uint64_size(void);
 #define REG_ACCESS_HCA_UINT64_SIZE    (0x8)
 void reg_access_hca_uint64_dump(const u_int64_t *ptr_struct, FILE *fd);
+/* config_item_type_auto_ext */
+void reg_access_hca_config_item_type_auto_ext_pack(const union reg_access_hca_config_item_type_auto_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_config_item_type_auto_ext_unpack(union reg_access_hca_config_item_type_auto_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_config_item_type_auto_ext_print(const union reg_access_hca_config_item_type_auto_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_config_item_type_auto_ext_size(void);
+#define REG_ACCESS_HCA_CONFIG_ITEM_TYPE_AUTO_EXT_SIZE    (0x4)
+void reg_access_hca_config_item_type_auto_ext_dump(const union reg_access_hca_config_item_type_auto_ext *ptr_struct, FILE *fd);
 /* mcqi_activation_method_ext */
 void reg_access_hca_mcqi_activation_method_ext_pack(const struct reg_access_hca_mcqi_activation_method_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mcqi_activation_method_ext_unpack(struct reg_access_hca_mcqi_activation_method_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -2718,6 +3050,13 @@ void reg_access_hca_config_item_ext_print(const struct reg_access_hca_config_ite
 unsigned int reg_access_hca_config_item_ext_size(void);
 #define REG_ACCESS_HCA_CONFIG_ITEM_EXT_SIZE    (0xc)
 void reg_access_hca_config_item_ext_dump(const struct reg_access_hca_config_item_ext *ptr_struct, FILE *fd);
+/* default_timeout */
+void reg_access_hca_default_timeout_pack(const struct reg_access_hca_default_timeout *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_default_timeout_unpack(struct reg_access_hca_default_timeout *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_default_timeout_print(const struct reg_access_hca_default_timeout *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_default_timeout_size(void);
+#define REG_ACCESS_HCA_DEFAULT_TIMEOUT_SIZE    (0x4)
+void reg_access_hca_default_timeout_dump(const struct reg_access_hca_default_timeout *ptr_struct, FILE *fd);
 /* lane_2_module_mapping_ext */
 void reg_access_hca_lane_2_module_mapping_ext_pack(const struct reg_access_hca_lane_2_module_mapping_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_lane_2_module_mapping_ext_unpack(struct reg_access_hca_lane_2_module_mapping_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -2767,6 +3106,13 @@ void reg_access_hca_string_db_parameters_ext_print(const struct reg_access_hca_s
 unsigned int reg_access_hca_string_db_parameters_ext_size(void);
 #define REG_ACCESS_HCA_STRING_DB_PARAMETERS_EXT_SIZE    (0x8)
 void reg_access_hca_string_db_parameters_ext_dump(const struct reg_access_hca_string_db_parameters_ext *ptr_struct, FILE *fd);
+/* dtor_reg */
+void reg_access_hca_dtor_reg_pack(const struct reg_access_hca_dtor_reg *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_dtor_reg_unpack(struct reg_access_hca_dtor_reg *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_dtor_reg_print(const struct reg_access_hca_dtor_reg *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_dtor_reg_size(void);
+#define REG_ACCESS_HCA_DTOR_REG_SIZE    (0x40)
+void reg_access_hca_dtor_reg_dump(const struct reg_access_hca_dtor_reg *ptr_struct, FILE *fd);
 /* mcam_reg_ext */
 void reg_access_hca_mcam_reg_ext_pack(const struct reg_access_hca_mcam_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mcam_reg_ext_unpack(struct reg_access_hca_mcam_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -2954,7 +3300,7 @@ void reg_access_hca_mtrc_stdb_reg_ext_pack(const struct reg_access_hca_mtrc_stdb
 void reg_access_hca_mtrc_stdb_reg_ext_unpack(struct reg_access_hca_mtrc_stdb_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
 void reg_access_hca_mtrc_stdb_reg_ext_print(const struct reg_access_hca_mtrc_stdb_reg_ext *ptr_struct, FILE *fd, int indent_level);
 unsigned int reg_access_hca_mtrc_stdb_reg_ext_size(void);
-#define REG_ACCESS_HCA_MTRC_STDB_REG_EXT_SIZE    (0x2D0)
+#define REG_ACCESS_HCA_MTRC_STDB_REG_EXT_SIZE    (0x8)
 void reg_access_hca_mtrc_stdb_reg_ext_dump(const struct reg_access_hca_mtrc_stdb_reg_ext *ptr_struct, FILE *fd);
 /* nic_cap_ext_reg_ext */
 void reg_access_hca_nic_cap_ext_reg_ext_pack(const struct reg_access_hca_nic_cap_ext_reg_ext *ptr_struct, u_int8_t *ptr_buff);
@@ -2963,20 +3309,20 @@ void reg_access_hca_nic_cap_ext_reg_ext_print(const struct reg_access_hca_nic_ca
 unsigned int reg_access_hca_nic_cap_ext_reg_ext_size(void);
 #define REG_ACCESS_HCA_NIC_CAP_EXT_REG_EXT_SIZE    (0x80)
 void reg_access_hca_nic_cap_ext_reg_ext_dump(const struct reg_access_hca_nic_cap_ext_reg_ext *ptr_struct, FILE *fd);
-/* nic_dpa_hart_group_reg_ext */
-void reg_access_hca_nic_dpa_hart_group_reg_ext_pack(const struct reg_access_hca_nic_dpa_hart_group_reg_ext *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_hca_nic_dpa_hart_group_reg_ext_unpack(struct reg_access_hca_nic_dpa_hart_group_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_hca_nic_dpa_hart_group_reg_ext_print(const struct reg_access_hca_nic_dpa_hart_group_reg_ext *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_hca_nic_dpa_hart_group_reg_ext_size(void);
-#define REG_ACCESS_HCA_NIC_DPA_HART_GROUP_REG_EXT_SIZE    (0x100)
-void reg_access_hca_nic_dpa_hart_group_reg_ext_dump(const struct reg_access_hca_nic_dpa_hart_group_reg_ext *ptr_struct, FILE *fd);
-/* nic_dpa_hart_partition_reg_ext */
-void reg_access_hca_nic_dpa_hart_partition_reg_ext_pack(const struct reg_access_hca_nic_dpa_hart_partition_reg_ext *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_hca_nic_dpa_hart_partition_reg_ext_unpack(struct reg_access_hca_nic_dpa_hart_partition_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_hca_nic_dpa_hart_partition_reg_ext_print(const struct reg_access_hca_nic_dpa_hart_partition_reg_ext *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_hca_nic_dpa_hart_partition_reg_ext_size(void);
-#define REG_ACCESS_HCA_NIC_DPA_HART_PARTITION_REG_EXT_SIZE    (0x300)
-void reg_access_hca_nic_dpa_hart_partition_reg_ext_dump(const struct reg_access_hca_nic_dpa_hart_partition_reg_ext *ptr_struct, FILE *fd);
+/* nic_dpa_eu_partition_reg_ext */
+void reg_access_hca_nic_dpa_eu_partition_reg_ext_pack(const struct reg_access_hca_nic_dpa_eu_partition_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_nic_dpa_eu_partition_reg_ext_unpack(struct reg_access_hca_nic_dpa_eu_partition_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_nic_dpa_eu_partition_reg_ext_print(const struct reg_access_hca_nic_dpa_eu_partition_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_nic_dpa_eu_partition_reg_ext_size(void);
+#define REG_ACCESS_HCA_NIC_DPA_EU_PARTITION_REG_EXT_SIZE    (0x300)
+void reg_access_hca_nic_dpa_eu_partition_reg_ext_dump(const struct reg_access_hca_nic_dpa_eu_partition_reg_ext *ptr_struct, FILE *fd);
+/* nic_dpa_eug_reg_ext */
+void reg_access_hca_nic_dpa_eug_reg_ext_pack(const struct reg_access_hca_nic_dpa_eug_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_nic_dpa_eug_reg_ext_unpack(struct reg_access_hca_nic_dpa_eug_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_nic_dpa_eug_reg_ext_print(const struct reg_access_hca_nic_dpa_eug_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_nic_dpa_eug_reg_ext_size(void);
+#define REG_ACCESS_HCA_NIC_DPA_EUG_REG_EXT_SIZE    (0x100)
+void reg_access_hca_nic_dpa_eug_reg_ext_dump(const struct reg_access_hca_nic_dpa_eug_reg_ext *ptr_struct, FILE *fd);
 /* nic_dpa_perf_ctrl_reg_ext */
 void reg_access_hca_nic_dpa_perf_ctrl_reg_ext_pack(const struct reg_access_hca_nic_dpa_perf_ctrl_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_nic_dpa_perf_ctrl_reg_ext_unpack(struct reg_access_hca_nic_dpa_perf_ctrl_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -3024,7 +3370,7 @@ void reg_access_hca_ptys_reg_ext_pack(const struct reg_access_hca_ptys_reg_ext *
 void reg_access_hca_ptys_reg_ext_unpack(struct reg_access_hca_ptys_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
 void reg_access_hca_ptys_reg_ext_print(const struct reg_access_hca_ptys_reg_ext *ptr_struct, FILE *fd, int indent_level);
 unsigned int reg_access_hca_ptys_reg_ext_size(void);
-#define REG_ACCESS_HCA_PTYS_REG_EXT_SIZE    (0x40)
+#define REG_ACCESS_HCA_PTYS_REG_EXT_SIZE    (0x44)
 void reg_access_hca_ptys_reg_ext_dump(const struct reg_access_hca_ptys_reg_ext *ptr_struct, FILE *fd);
 /* resource_dump_ext */
 void reg_access_hca_resource_dump_ext_pack(const struct reg_access_hca_resource_dump_ext *ptr_struct, u_int8_t *ptr_buff);
