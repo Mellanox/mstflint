@@ -1713,7 +1713,7 @@ def reset_flow_host(device, args, command):
     # function takes ~330msec - TODO remove it if you need performace
     devid = isDevSupp(device)
 
-    reset_sync = args.reset_sync if args.reset_sync is not None else get_default_reset_sync(devid)
+    reset_sync = args.reset_sync if args.reset_sync is not None else get_default_reset_sync(devid, args.reset_level)
     if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
             and args.reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
         # and it's restricted on UEFI secure boot
@@ -1933,10 +1933,10 @@ def reset_flow_switch(device, args, command):
 # Description: Returns default reset sync
 ######################################################################
 
-def get_default_reset_sync(devid):
-    devDict = getDeviceDict(devid)
+def get_default_reset_sync(devid, reset_level):
     reset_sync = SyncOwner.TOOL
-    if platform.system() == "Linux" and devDict.get('allowed_sync_method'):
+    devDict = getDeviceDict(devid)
+    if platform.system() == "Linux" and reset_level != CmdRegMfrl.WARM_REBOOT and devDict.get('allowed_sync_method'):
         reset_sync = devDict['allowed_sync_method']
     return reset_sync
 
