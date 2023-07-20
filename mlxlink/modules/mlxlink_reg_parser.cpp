@@ -129,7 +129,7 @@ void MlxlinkRegParser::updateWithDefault(const string& fieldName, const string& 
     }
 }
 
-void MlxlinkRegParser::setDefaultFields(const string& fieldsStr)
+void MlxlinkRegParser::setDefaultFields(const string& regName, const string& fieldsStr)
 {
     updateWithDefault("local_port", fieldsStr, _localPort);
     updateWithDefault("pnat", fieldsStr, _pnat);
@@ -138,13 +138,20 @@ void MlxlinkRegParser::setDefaultFields(const string& fieldsStr)
     {
         updateWithDefault("port_type", fieldsStr, _portType);
     }
+
+    // Some registers need to have another indication for localport 255 to deal with it as a localport by setting lp_gl
+    // field
+    if (regName == ACCESS_REG_PPCNT && _localPort == 255)
+    {
+        updateWithDefault("lp_gl", fieldsStr, 1);
+    }
 }
 
 void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t method)
 {
     resetParser(regName);
 
-    setDefaultFields("");
+    setDefaultFields(regName, "");
 
     genBuffSendRegister(regName, method);
 }
@@ -171,7 +178,7 @@ void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t me
         updateField(fieldName, fieldValue);
     }
 
-    setDefaultFields(fieldsStr);
+    setDefaultFields(regName, fieldsStr);
 
     genBuffSendRegister(regName, method);
 }
