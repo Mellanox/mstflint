@@ -31,9 +31,9 @@
  */
 
 /***
-         *** This file was generated at "2023-02-06 14:12:04"
+         *** This file was generated at "2023-06-01 20:24:55"
          *** by:
-         ***    > [REDACTED]/adb2pack.py --input adb/fs5_image_layout/fs5_image_layout.adb --file-prefix fs5_image_layout --prefix fs5_image_layout_ --no-adb-utils
+         ***    > /auto/mswg/release/tools/a-me/a-me-1.2.3/a-me-1.2.3-6/adabe_plugins/adb2c/adb2pack.py --input adb/fs5_image_layout/fs5_image_layout.adb --file-prefix fs5_image_layout --prefix fs5_image_layout_ --no-adb-utils
          ***/
 #include "fs5_image_layout_layouts.h"
 
@@ -78,63 +78,87 @@ void fs5_image_layout_hw_pointer_entry_dump(const struct fs5_image_layout_hw_poi
 	fs5_image_layout_hw_pointer_entry_print(ptr_struct, fd, 0);
 }
 
-void fs5_image_layout_boot2_header_gilboa_pack(const struct fs5_image_layout_boot2_header_gilboa *ptr_struct, u_int8_t *ptr_buff)
+void fs5_image_layout_boot_component_header_pack(const struct fs5_image_layout_boot_component_header *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 
 	offset = 0;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->load_addr);
-	offset = 32;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->dw_size);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->component_digest);
 	offset = 64;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->branch_addr_lsb);
-	offset = 96;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->branch_addr_msb);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->component_security_version);
 	offset = 128;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->crc);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->component_metadata);
+	offset = 192;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature);
+	offset = 256;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->public_key);
+	offset = 63264;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->length);
+	offset = 63296;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->load_offset);
+	offset = 63328;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->hash_offset);
+	offset = 63360;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->branch_offset);
 }
 
-void fs5_image_layout_boot2_header_gilboa_unpack(struct fs5_image_layout_boot2_header_gilboa *ptr_struct, const u_int8_t *ptr_buff)
+void fs5_image_layout_boot_component_header_unpack(struct fs5_image_layout_boot_component_header *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 
 	offset = 0;
-	ptr_struct->load_addr = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-	offset = 32;
-	ptr_struct->dw_size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	ptr_struct->component_digest = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	offset = 64;
-	ptr_struct->branch_addr_lsb = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-	offset = 96;
-	ptr_struct->branch_addr_msb = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	ptr_struct->component_security_version = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	offset = 128;
-	ptr_struct->crc = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	ptr_struct->component_metadata = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 192;
+	ptr_struct->signature = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 256;
+	ptr_struct->public_key = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 63264;
+	ptr_struct->length = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 63296;
+	ptr_struct->load_offset = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 63328;
+	ptr_struct->hash_offset = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 63360;
+	ptr_struct->branch_offset = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 }
 
-void fs5_image_layout_boot2_header_gilboa_print(const struct fs5_image_layout_boot2_header_gilboa *ptr_struct, FILE *fd, int indent_level)
+void fs5_image_layout_boot_component_header_print(const struct fs5_image_layout_boot_component_header *ptr_struct, FILE *fd, int indent_level)
 {
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "======== fs5_image_layout_boot2_header_gilboa ========\n");
+	fprintf(fd, "======== fs5_image_layout_boot_component_header ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "load_addr            : " U32H_FMT "\n", ptr_struct->load_addr);
+	fprintf(fd, "component_digest     : " U32H_FMT "\n", ptr_struct->component_digest);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "dw_size              : " U32H_FMT "\n", ptr_struct->dw_size);
+	fprintf(fd, "component_security_version : " U32H_FMT "\n", ptr_struct->component_security_version);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "branch_addr_lsb      : " U32H_FMT "\n", ptr_struct->branch_addr_lsb);
+	fprintf(fd, "component_metadata   : " U32H_FMT "\n", ptr_struct->component_metadata);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "branch_addr_msb      : " U32H_FMT "\n", ptr_struct->branch_addr_msb);
+	fprintf(fd, "signature            : " U32H_FMT "\n", ptr_struct->signature);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "crc                  : " U32H_FMT "\n", ptr_struct->crc);
+	fprintf(fd, "public_key           : " U32H_FMT "\n", ptr_struct->public_key);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "length               : " U32H_FMT "\n", ptr_struct->length);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "load_offset          : " U32H_FMT "\n", ptr_struct->load_offset);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "hash_offset          : " U32H_FMT "\n", ptr_struct->hash_offset);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "branch_offset        : " U32H_FMT "\n", ptr_struct->branch_offset);
 }
 
-unsigned int fs5_image_layout_boot2_header_gilboa_size(void)
+unsigned int fs5_image_layout_boot_component_header_size(void)
 {
-	return FS5_IMAGE_LAYOUT_BOOT2_HEADER_GILBOA_SIZE;
+	return FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE;
 }
 
-void fs5_image_layout_boot2_header_gilboa_dump(const struct fs5_image_layout_boot2_header_gilboa *ptr_struct, FILE *fd)
+void fs5_image_layout_boot_component_header_dump(const struct fs5_image_layout_boot_component_header *ptr_struct, FILE *fd)
 {
-	fs5_image_layout_boot2_header_gilboa_print(ptr_struct, fd, 0);
+	fs5_image_layout_boot_component_header_print(ptr_struct, fd, 0);
 }
 
 void fs5_image_layout_hw_pointers_gilboa_pack(const struct fs5_image_layout_hw_pointers_gilboa *ptr_struct, u_int8_t *ptr_buff)
@@ -142,37 +166,37 @@ void fs5_image_layout_hw_pointers_gilboa_pack(const struct fs5_image_layout_hw_p
 	u_int32_t offset;
 
 	offset = 0;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->toc_ptr), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->psc_bct_pointer), ptr_buff + offset / 8);
 	offset = 64;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->tool2_ptr), ptr_buff + offset / 8);
-	offset = 128;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->image_info_ptr), ptr_buff + offset / 8);
-	offset = 192;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->psc_bl1_bch_ptr), ptr_buff + offset / 8);
-	offset = 256;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->psc_bl1_ptr), ptr_buff + offset / 8);
-	offset = 320;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->ncore_bch_ptr), ptr_buff + offset / 8);
-	offset = 384;
 	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->boot2_ptr), ptr_buff + offset / 8);
+	offset = 128;
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->toc_ptr), ptr_buff + offset / 8);
+	offset = 192;
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->tools_ptr), ptr_buff + offset / 8);
+	offset = 256;
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->psc_bl1_bch_pointer), ptr_buff + offset / 8);
+	offset = 320;
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->psc_bl1_pointer), ptr_buff + offset / 8);
+	offset = 384;
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->ncore_bch_pointer), ptr_buff + offset / 8);
 	offset = 448;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->ncore_hashes_ptr), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->reserved), ptr_buff + offset / 8);
 	offset = 512;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->psc_fw_bch_ptr), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->psc_fw_bch_pointer), ptr_buff + offset / 8);
 	offset = 576;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->psc_fw_ptr), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->psc_fw_pointer), ptr_buff + offset / 8);
 	offset = 640;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->reserved_ptr10), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->image_info_section_pointer), ptr_buff + offset / 8);
 	offset = 704;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->reserved_ptr11), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->image_signature_pointer), ptr_buff + offset / 8);
 	offset = 768;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->reserved_ptr12), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->public_key_pointer), ptr_buff + offset / 8);
 	offset = 832;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->reserved_ptr13), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->fw_security_version_pointer), ptr_buff + offset / 8);
 	offset = 896;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->reserved_ptr14), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->gcm_iv_delta_pointer), ptr_buff + offset / 8);
 	offset = 960;
-	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->reserved_ptr15), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_pack(&(ptr_struct->ncore_hashes_pointer), ptr_buff + offset / 8);
 }
 
 void fs5_image_layout_hw_pointers_gilboa_unpack(struct fs5_image_layout_hw_pointers_gilboa *ptr_struct, const u_int8_t *ptr_buff)
@@ -180,37 +204,37 @@ void fs5_image_layout_hw_pointers_gilboa_unpack(struct fs5_image_layout_hw_point
 	u_int32_t offset;
 
 	offset = 0;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->toc_ptr), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->psc_bct_pointer), ptr_buff + offset / 8);
 	offset = 64;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->tool2_ptr), ptr_buff + offset / 8);
-	offset = 128;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->image_info_ptr), ptr_buff + offset / 8);
-	offset = 192;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->psc_bl1_bch_ptr), ptr_buff + offset / 8);
-	offset = 256;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->psc_bl1_ptr), ptr_buff + offset / 8);
-	offset = 320;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->ncore_bch_ptr), ptr_buff + offset / 8);
-	offset = 384;
 	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->boot2_ptr), ptr_buff + offset / 8);
+	offset = 128;
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->toc_ptr), ptr_buff + offset / 8);
+	offset = 192;
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->tools_ptr), ptr_buff + offset / 8);
+	offset = 256;
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->psc_bl1_bch_pointer), ptr_buff + offset / 8);
+	offset = 320;
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->psc_bl1_pointer), ptr_buff + offset / 8);
+	offset = 384;
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->ncore_bch_pointer), ptr_buff + offset / 8);
 	offset = 448;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->ncore_hashes_ptr), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->reserved), ptr_buff + offset / 8);
 	offset = 512;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->psc_fw_bch_ptr), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->psc_fw_bch_pointer), ptr_buff + offset / 8);
 	offset = 576;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->psc_fw_ptr), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->psc_fw_pointer), ptr_buff + offset / 8);
 	offset = 640;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->reserved_ptr10), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->image_info_section_pointer), ptr_buff + offset / 8);
 	offset = 704;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->reserved_ptr11), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->image_signature_pointer), ptr_buff + offset / 8);
 	offset = 768;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->reserved_ptr12), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->public_key_pointer), ptr_buff + offset / 8);
 	offset = 832;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->reserved_ptr13), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->fw_security_version_pointer), ptr_buff + offset / 8);
 	offset = 896;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->reserved_ptr14), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->gcm_iv_delta_pointer), ptr_buff + offset / 8);
 	offset = 960;
-	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->reserved_ptr15), ptr_buff + offset / 8);
+	fs5_image_layout_hw_pointer_entry_unpack(&(ptr_struct->ncore_hashes_pointer), ptr_buff + offset / 8);
 }
 
 void fs5_image_layout_hw_pointers_gilboa_print(const struct fs5_image_layout_hw_pointers_gilboa *ptr_struct, FILE *fd, int indent_level)
@@ -219,53 +243,53 @@ void fs5_image_layout_hw_pointers_gilboa_print(const struct fs5_image_layout_hw_
 	fprintf(fd, "======== fs5_image_layout_hw_pointers_gilboa ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "toc_ptr:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->toc_ptr), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "tool2_ptr:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->tool2_ptr), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "image_info_ptr:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->image_info_ptr), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "psc_bl1_bch_ptr:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->psc_bl1_bch_ptr), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "psc_bl1_ptr:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->psc_bl1_ptr), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "ncore_bch_ptr:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->ncore_bch_ptr), fd, indent_level + 1);
+	fprintf(fd, "psc_bct_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->psc_bct_pointer), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "boot2_ptr:\n");
 	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->boot2_ptr), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "ncore_hashes_ptr:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->ncore_hashes_ptr), fd, indent_level + 1);
+	fprintf(fd, "toc_ptr:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->toc_ptr), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "psc_fw_bch_ptr:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->psc_fw_bch_ptr), fd, indent_level + 1);
+	fprintf(fd, "tools_ptr:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->tools_ptr), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "psc_fw_ptr:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->psc_fw_ptr), fd, indent_level + 1);
+	fprintf(fd, "psc_bl1_bch_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->psc_bl1_bch_pointer), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "reserved_ptr10:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->reserved_ptr10), fd, indent_level + 1);
+	fprintf(fd, "psc_bl1_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->psc_bl1_pointer), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "reserved_ptr11:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->reserved_ptr11), fd, indent_level + 1);
+	fprintf(fd, "ncore_bch_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->ncore_bch_pointer), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "reserved_ptr12:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->reserved_ptr12), fd, indent_level + 1);
+	fprintf(fd, "reserved:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->reserved), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "reserved_ptr13:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->reserved_ptr13), fd, indent_level + 1);
+	fprintf(fd, "psc_fw_bch_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->psc_fw_bch_pointer), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "reserved_ptr14:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->reserved_ptr14), fd, indent_level + 1);
+	fprintf(fd, "psc_fw_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->psc_fw_pointer), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "reserved_ptr15:\n");
-	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->reserved_ptr15), fd, indent_level + 1);
+	fprintf(fd, "image_info_section_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->image_info_section_pointer), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "image_signature_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->image_signature_pointer), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "public_key_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->public_key_pointer), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "fw_security_version_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->fw_security_version_pointer), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "gcm_iv_delta_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->gcm_iv_delta_pointer), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "ncore_hashes_pointer:\n");
+	fs5_image_layout_hw_pointer_entry_print(&(ptr_struct->ncore_hashes_pointer), fd, indent_level + 1);
 }
 
 unsigned int fs5_image_layout_hw_pointers_gilboa_size(void)
@@ -280,12 +304,12 @@ void fs5_image_layout_hw_pointers_gilboa_dump(const struct fs5_image_layout_hw_p
 
 void fs5_image_layout_fs5_image_layout_Nodes_pack(const union fs5_image_layout_fs5_image_layout_Nodes *ptr_struct, u_int8_t *ptr_buff)
 {
-	fs5_image_layout_hw_pointers_gilboa_pack(&(ptr_struct->hw_pointers_gilboa), ptr_buff);
+	fs5_image_layout_boot_component_header_pack(&(ptr_struct->boot_component_header), ptr_buff);
 }
 
 void fs5_image_layout_fs5_image_layout_Nodes_unpack(union fs5_image_layout_fs5_image_layout_Nodes *ptr_struct, const u_int8_t *ptr_buff)
 {
-	fs5_image_layout_hw_pointers_gilboa_unpack(&(ptr_struct->hw_pointers_gilboa), ptr_buff);
+	fs5_image_layout_boot_component_header_unpack(&(ptr_struct->boot_component_header), ptr_buff);
 }
 
 void fs5_image_layout_fs5_image_layout_Nodes_print(const union fs5_image_layout_fs5_image_layout_Nodes *ptr_struct, FILE *fd, int indent_level)
@@ -294,11 +318,11 @@ void fs5_image_layout_fs5_image_layout_Nodes_print(const union fs5_image_layout_
 	fprintf(fd, "======== fs5_image_layout_fs5_image_layout_Nodes ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "boot2_header_gilboa:\n");
-	fs5_image_layout_boot2_header_gilboa_print(&(ptr_struct->boot2_header_gilboa), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "hw_pointers_gilboa:\n");
 	fs5_image_layout_hw_pointers_gilboa_print(&(ptr_struct->hw_pointers_gilboa), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "boot_component_header:\n");
+	fs5_image_layout_boot_component_header_print(&(ptr_struct->boot_component_header), fd, indent_level + 1);
 }
 
 unsigned int fs5_image_layout_fs5_image_layout_Nodes_size(void)
