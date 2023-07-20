@@ -1771,6 +1771,7 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
             return rc;
         }
 
+        // TODO - fix for QTM3/CX8/ArcusE/BF4
         /* Read the Cache replacement offset and cmd fields */
         if ((devid_t == DeviceQuantum2) || (devid_t == DeviceQuantum3) || (devid_t == DeviceSpectrum4) ||
             (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8))
@@ -1991,7 +1992,7 @@ int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 void update_seventh_gen_addrs(mflash* mfl)
 {
     // Registers addresses
-    if (mfl->dm_dev_id == DeviceQuantum3)
+    if (mfl->dm_dev_id == DeviceQuantum3 || mfl->dm_dev_id == DeviceArcusE)
     {
         mfl->gw_cmd_register_addr = HCR_7GEN_QTM3_FLASH_CMD;
         mfl->gw_data_field_addr = HCR_7GEN_QTM3_FLASH_DATA;
