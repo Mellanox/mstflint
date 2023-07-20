@@ -58,7 +58,8 @@ enum dm_dev_type {
     DM_CMIS_CABLE,
     DM_SFP_CABLE,
     DM_LINKX, /* linkx chip */
-    DM_GEARBOX
+    DM_GEARBOX,
+    DM_RETIMER
 };
 
 struct device_info {
@@ -418,6 +419,15 @@ static struct device_info g_devs_info[] = {
         "ArcusE",                                          /* name */
         -1,                                                /* port_num */
         DM_LINKX                                           /* dev_type */
+    },
+    {
+        DeviceArcusE, // dm_id
+        0xb200,       // hw_dev_id (other versions 0x6f,0x73)
+        -1,           // hw_rev_id
+        -1,           // sw_dev_id
+        "ArcusE",     // name
+        -1,           // port_num
+        DM_RETIMER    // dev_type
     },
     {
         DeviceSecureHost,                                      /* dm_id */
@@ -868,6 +878,11 @@ int dm_dev_is_cable(dm_dev_id_t type)
 {
     return (type == DeviceCable || dm_dev_is_qsfp_cable(type) || dm_dev_is_sfp_cable(type) ||
             dm_dev_is_cmis_cable(type));
+}
+
+int dm_dev_is_retimer_arcuse(dm_dev_id_t type)
+{
+    return get_entry(type)->dev_type == DM_RETIMER && type == DeviceArcusE;
 }
 
 u_int32_t dm_get_hw_dev_id(dm_dev_id_t type)
