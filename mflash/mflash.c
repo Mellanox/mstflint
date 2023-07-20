@@ -3106,13 +3106,13 @@ int mf_open_int(mflash** pmfl,
     }
     rc = mf_opend_int(pmfl, (struct mfile_t*)mf, num_of_banks, flash_params, ignore_cache_rep_guard, MFAT_MFILE, NULL,
                       cx3_fw_access);
-    if (rc)
+    if ((*pmfl))
     {
-        mclose(mf);
+        (*pmfl)->opts[MFO_CLOSE_MF_ON_EXIT] = 1;
     }
     else
     {
-        (*pmfl)->opts[MFO_CLOSE_MF_ON_EXIT] = 1;
+        mclose(mf);
     }
     return rc;
 }
