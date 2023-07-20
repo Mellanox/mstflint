@@ -555,7 +555,7 @@ class MlnxPciOpLinux(MlnxPciOp):
 
     def getMFDeviceList(self, devAddr):
         """
-        Return the device and the sibling devices (in case of Innova also cousins devices)
+        Return the device and the sibling devices
         """
         MFDevices = []
         domainBus = ":".join(devAddr.split(":")[:2])
@@ -573,9 +573,6 @@ class MlnxPciOpLinux(MlnxPciOp):
                 pci_device_bridge2 = self.getPciBridgeAddr(pci_device_bridge1)
                 pci_device_bridge3 = self.getPciBridgeAddr(pci_device_bridge2)
                 return self.getAllPciDevices(pci_device_bridge3)
-            elif is_mellanox_device(pci_device_bridge1):  # Innova
-                pci_device_bridge2 = self.getPciBridgeAddr(pci_device_bridge1)
-                return self.getAllPciDevices(pci_device_bridge2)
             else:
                 cmd = "lspci -s {0}: -D".format(domainBus)
                 (rc, out, _) = cmdExec(cmd)
@@ -1065,16 +1062,7 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
             pci_devices_to_poll_devid.append(pci_device_bridge3)
             root_pci_devices.append(
                 PCIDeviceFactory().get(pci_device_bridge3, "debug"))
-        elif is_pci_bridge_is_mellanox_device(DevDBDF):  # Innova (FPGA)
-            pci_device_bridge1 = PciOpsObj.getPciBridgeAddr(DevDBDF)
-            pci_device_bridge2 = PciOpsObj.getPciBridgeAddr(pci_device_bridge1)
-            pci_device_bridge3 = PciOpsObj.getPciBridgeAddr(pci_device_bridge2)
-
-            pci_devices_to_poll_devid.append(pci_device_bridge2)
-            root_pci_devices.append(
-                PCIDeviceFactory().get(pci_device_bridge3, "debug"))
         else:
-
             for dev in [device] + devicesSD:
                 dbdf = mlxfwreset_utils.getDevDBDF(dev, logger)
                 pci_devices_to_poll_devid.append(dbdf)
@@ -1125,12 +1113,6 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
         bridgeDevs = []
         for busId in [busId] + busIdsSD:
             bridgeDev = PciOpsObj.getPciBridgeAddr(busId)
-            if is_mellanox_device(bridgeDev) and not is_in_internal_host():  # Innova
-                bridgeDev = PciOpsObj.getPciBridgeAddr(
-                    bridgeDev)     # bridgeDev = pci_device_bridge2
-                bridgeDev = PciOpsObj.getPciBridgeAddr(
-                    bridgeDev)     # bridgeDev = pci_device_bridge3
-
             # Link Control Register : PCI_EXPRESS_CAP_OFFS + 0x10
             capAddr = PciOpsObj.getPciECapAddr(bridgeDev)
 
@@ -1496,7 +1478,7 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
         logger, skipDriverFinal, all_devices, pci_device_id)
 
     try:
-        # Check if device with PCIe switch (Innova, BL) is supported
+        # Check if device with PCIe switch (BL) is supported
         if platform.system() != "Windows" and is_pci_bridge_is_mellanox_device(DevDBDF):  # Skip check on Windows OS (is_pci_bridge_is_mellanox_device is not implemented on Windows)
             if platform.system() != "Linux":
                 raise RuntimeError(
