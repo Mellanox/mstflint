@@ -5386,7 +5386,7 @@ void SubCommand::ClearGuidStruct(FwOperations::sg_params_t& sgParams)
     sgParams.numOfGUIDs = 0;    // number of GUIDs to allocate for each port. keep zero for default. (FS3 image Only)
     sgParams.stepSize = 0;      // step size between GUIDs. keep zero for default. (FS3 Image Only)
     sgParams.usePPAttr = false; // if set, use the per port attributes below (FS3 Image Only)
-    memset(&(sgParams.numOfGUIDsPP), 0xffff, sizeof(sgParams.numOfGUIDsPP));
+    memset(&(sgParams.numOfGUIDsPP), 0xff, sizeof(sgParams.numOfGUIDsPP));
     memset(&(sgParams.stepSizePP), 0xff, sizeof(sgParams.stepSizePP));
 }
 
@@ -5662,7 +5662,7 @@ SmgSubCommand::SmgSubCommand()
     _ops = NULL;
     memset(&_baseGuid, 0, sizeof(_baseGuid));
     memset(&_info, 0, sizeof(_info));
-    memset(&(_baseGuid.num_of_guids_pp), 0xffff, sizeof(_baseGuid.num_of_guids_pp));
+    memset(&(_baseGuid.num_of_guids_pp), 0xff, sizeof(_baseGuid.num_of_guids_pp));
     memset(&(_baseGuid.step_size_pp), 0xff, sizeof(_baseGuid.step_size_pp));
     _baseGuid.use_pp_attr = 1;
 }

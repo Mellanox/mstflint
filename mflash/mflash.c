@@ -3079,7 +3079,7 @@ int mf_open_int(mflash** pmfl,
                 int cx3_fw_access)
 {
     mfile* mf;
-    int rc = 0;
+    int rc = MFE_OK;
 
     if (!dev)
     {
@@ -3098,6 +3098,7 @@ int mf_open_int(mflash** pmfl,
         {
             if (mf_check_spi_channel(mf) != 1)
             {
+                mclose(mf);
                 printf("-E- Can not continue - SPI channel is not OK.\n");
                 return MFE_CR_ERROR;
             }
@@ -3105,12 +3106,15 @@ int mf_open_int(mflash** pmfl,
     }
     rc = mf_opend_int(pmfl, (struct mfile_t*)mf, num_of_banks, flash_params, ignore_cache_rep_guard, MFAT_MFILE, NULL,
                       cx3_fw_access);
-    if ((*pmfl))
+    if (rc)
+    {
+        mclose(mf);
+    }
+    else
     {
         (*pmfl)->opts[MFO_CLOSE_MF_ON_EXIT] = 1;
     }
-    CHECK_RC(rc);
-    return MFE_OK;
+    return rc;
 }
 
 int mf_open_adv(mflash** pmfl,
