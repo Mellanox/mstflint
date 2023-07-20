@@ -8057,25 +8057,12 @@ FlintStatus ExportPublicSubCommand::executeCommand()
             reportErr(true, "Extracting public key is applicable only for FS4 FW.\n");
             return FLINT_FAILED;
         }
-        if (!_imgOps->getExtendedHWAravaPtrs(NULL, _imgOps->GetIoAccess(), false, false))
+        if (!_imgOps->GetRSAPublicKey(resultBuffer))
         {
-            reportErr(true, "Extracting secure boot HW pointers failed: %s.\n", _imgOps->err());
-            return FLINT_FAILED;
-        }
-        u_int32_t addr = _imgOps->GetPublicKeySecureBootPtr();
-        if (addr == 0)
-        {
-            reportErr(true,
-                      "Extracting public key failed: please check that the image type supports the secure boot.\n",
-                      _imgOps->err());
+            reportErr(true, "Extracting public key failed - %s.\n", _imgOps->err());
             return FLINT_FAILED;
         }
         resultBuffer.resize(TOTAL_PUBLIC_KEY_SIZE);
-        if (!_imgOps->FwReadBlock(addr, TOTAL_PUBLIC_KEY_SIZE, resultBuffer))
-        {
-            reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
     }
     writeToFile(_flintParams.output_file, resultBuffer);
     return FLINT_SUCCESS;

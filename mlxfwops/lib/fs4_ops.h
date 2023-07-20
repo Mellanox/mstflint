@@ -146,6 +146,7 @@ public:
     bool GetImageInfo(u_int8_t* buff);
     virtual bool GetImageSize(u_int32_t* image_size);
     bool GetHashesTableData(vector<u_int8_t>& data);
+    bool GetRSAPublicKey(vector<u_int8_t>& key);
 
 protected:
     struct fs4_toc_info
