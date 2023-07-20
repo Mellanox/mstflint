@@ -4652,15 +4652,12 @@ void Fs4Operations::PreparePublicKey(const vector<u_int8_t>& publicKeyData,
     TOCPUn(&publicKey.key, PublicKeySize >> 2);
 }
 
-bool Fs4Operations::GetFreeSlotInPublicKeys2(fs4_toc_info* itocEntry, u_int32_t& idx)
+bool Fs4Operations::GetFreeSlotInPublicKeys2(const image_layout_public_keys_2& public_keys, u_int32_t& idx)
 {
     u_int32_t num_of_key_slots = image_layout_public_keys_2_size() / image_layout_file_public_keys_2_size();
     for (u_int32_t ii = 0; ii < num_of_key_slots; ii++)
     {
-        u_int32_t key_start_offset = ii * image_layout_file_public_keys_2_size();
-        image_layout_file_public_keys_2 public_key;
-        memset(&public_key, 0, sizeof(public_key));
-        image_layout_file_public_keys_2_unpack(&public_key, itocEntry->section_data.data() + key_start_offset);
+        const image_layout_file_public_keys_2& public_key = public_keys.file_public_keys_2[ii];
         if (all_of(public_key.keypair_uuid, public_key.keypair_uuid + 4, [](u_int32_t val) { return val == 0; }))
         {
             idx = ii;
@@ -4668,7 +4665,7 @@ bool Fs4Operations::GetFreeSlotInPublicKeys2(fs4_toc_info* itocEntry, u_int32_t&
             return true;
         }
     }
-    return errmsg("GetFreeSlotInPublicKeys2 failed - No free slot for public key in FS3_PUBLIC_KEYS_4096\n");
+    return errmsg("GetFreeSlotInPublicKeys2 failed - No free slot for public key\n");
 }
 
 bool Fs4Operations::GetFreeSlotInPublicKeys3(const image_layout_public_keys_3& public_keys, u_int32_t& idx)
@@ -4687,18 +4684,14 @@ bool Fs4Operations::GetFreeSlotInPublicKeys3(const image_layout_public_keys_3& p
     return errmsg("GetFreeSlotInPublicKeys3 failed - No free slot for public key\n");
 }
 
-bool Fs4Operations::IsPublicKeyAlreadyInPublicKeys2(const image_layout_file_public_keys_2& public_key,
-                                                    fs4_toc_info* itocEntry)
+bool Fs4Operations::IsPublicKeyAlreadyInPublicKeys2(const image_layout_public_keys_2& public_keys,
+                                                    const image_layout_file_public_keys_2& public_key)
 {
     bool res = false;
     u_int32_t num_of_key_slots = image_layout_public_keys_2_size() / image_layout_file_public_keys_2_size();
     for (u_int32_t ii = 0; ii < num_of_key_slots; ii++)
     {
-        u_int32_t key_start_offset = ii * image_layout_file_public_keys_2_size();
-        image_layout_file_public_keys_2 stored_public_key;
-        memset(&stored_public_key, 0, sizeof(stored_public_key));
-        image_layout_file_public_keys_2_unpack(&stored_public_key, itocEntry->section_data.data() + key_start_offset);
-
+        auto stored_public_key = public_keys.file_public_keys_2[ii];
         // Compare keys based on UUID
         if (equal(begin(public_key.keypair_uuid), end(public_key.keypair_uuid), begin(stored_public_key.keypair_uuid)))
         {
@@ -4709,14 +4702,14 @@ bool Fs4Operations::IsPublicKeyAlreadyInPublicKeys2(const image_layout_file_publ
     return res;
 }
 
-bool Fs4Operations::IsPublicKeyAlreadyInPublicKeys3(const image_layout_file_public_keys_3& public_key,
-                                                    const image_layout_public_keys_3& public_keys)
+bool Fs4Operations::IsPublicKeyAlreadyInPublicKeys3(const image_layout_public_keys_3& public_keys,
+                                                    const image_layout_file_public_keys_3& public_key)
 {
     bool res = false;
     u_int32_t num_of_key_slots = image_layout_public_keys_3_size() / image_layout_file_public_keys_3_size();
     for (u_int32_t ii = 0; ii < num_of_key_slots; ii++)
     {
-        const image_layout_file_public_keys_3& stored_public_key = public_keys.file_public_keys_3[ii];
+        auto stored_public_key = public_keys.file_public_keys_3[ii];
         // Compare keys based on UUID
         if (equal(begin(public_key.keypair_uuid), end(public_key.keypair_uuid), begin(stored_public_key.keypair_uuid)))
         {
@@ -4727,78 +4720,117 @@ bool Fs4Operations::IsPublicKeyAlreadyInPublicKeys3(const image_layout_file_publ
     return res;
 }
 
-bool Fs4Operations::StorePublicKeyInPublicKeys2(const image_layout_file_public_keys_3& public_key)
+bool Fs4Operations::FindImagePublicKeyInPublicKeys2(const image_layout_public_keys_2& public_keys, u_int32_t& idx)
+{
+    bool res = false;
+    u_int32_t num_of_key_slots = image_layout_public_keys_2_size() / image_layout_file_public_keys_2_size();
+    for (u_int32_t ii = 0; ii < num_of_key_slots; ii++)
+    {
+        if (public_keys.file_public_keys_2[ii].component_authentication_configuration.fw_en == 1)
+        {
+            idx = ii;
+            res = true;
+            break;
+        }
+    }
+    return res;
+}
+
+bool Fs4Operations::FindImagePublicKeyInPublicKeys3(const image_layout_public_keys_3& public_keys, u_int32_t& idx)
+{
+    bool res = false;
+    u_int32_t num_of_key_slots = image_layout_public_keys_3_size() / image_layout_file_public_keys_3_size();
+    for (u_int32_t ii = 0; ii < num_of_key_slots; ii++)
+    {
+        if (public_keys.file_public_keys_3[ii].component_authentication_configuration.fw_en == 1)
+        {
+            idx = ii;
+            res = true;
+            break;
+        }
+    }
+    return res;
+}
+
+bool Fs4Operations::StoreImagePublicKeyInPublicKeys2(const image_layout_file_public_keys_3& public_key)
 {
     // Find ITOC entry
     fs4_toc_info* itocEntry = (fs4_toc_info*)NULL;
+    image_layout_public_keys_2 public_keys_2;
+    memset(&public_keys_2, 0, sizeof(public_keys_2));
     if (!Fs4GetItocInfo(_fs4ImgInfo.itocArr.tocArr, _fs4ImgInfo.itocArr.numOfTocs, FS3_PUBLIC_KEYS_4096, itocEntry))
     {
-        return errmsg("StorePublicKeyInPublicKeys2 failed - Error: %s", err());
+        return errmsg("StoreImagePublicKeyInPublicKeys2 failed - Error: %s", err());
     }
+    image_layout_public_keys_2_unpack(&public_keys_2, itocEntry->section_data.data());
 
     // Convert public_keys_3 to public_keys_2
-    image_layout_file_public_keys_2 public_key_2;
-    memset(&public_key_2, 0, sizeof(public_key_2));
-    copy(begin(public_key.key), end(public_key.key), begin(public_key_2.key));
-    copy(begin(public_key.keypair_uuid), end(public_key.keypair_uuid), begin(public_key_2.keypair_uuid));
-    public_key_2.keypair_exp = public_key.keypair_exp;
-    public_key_2.component_authentication_configuration = public_key.component_authentication_configuration;
+    image_layout_file_public_keys_2 new_public_key_2;
+    memset(&new_public_key_2, 0, sizeof(new_public_key_2));
+    copy(begin(public_key.key), end(public_key.key), begin(new_public_key_2.key));
+    copy(begin(public_key.keypair_uuid), end(public_key.keypair_uuid), begin(new_public_key_2.keypair_uuid));
+    new_public_key_2.keypair_exp = public_key.keypair_exp;
+    new_public_key_2.component_authentication_configuration = public_key.component_authentication_configuration;
 
-    if (IsPublicKeyAlreadyInPublicKeys2(public_key_2, itocEntry) == false)
+    if (IsPublicKeyAlreadyInPublicKeys2(public_keys_2, new_public_key_2) == false)
     {
         // Get free slot for public key
         u_int32_t public_keys_2_free_slot_idx = 0;
-        if (!GetFreeSlotInPublicKeys2(itocEntry, public_keys_2_free_slot_idx))
+        if (!FindImagePublicKeyInPublicKeys2(public_keys_2, public_keys_2_free_slot_idx))
         {
-            return errmsg("StorePublicKeyInPublicKeys2 failed - Error: %s", err());
+            if (!GetFreeSlotInPublicKeys2(public_keys_2, public_keys_2_free_slot_idx))
+            {
+                return errmsg("StoreImagePublicKeyInPublicKeys2 failed - Error: %s", err());
+            }
         }
 
         // Prepare public_keys_2 section data with public key at free slot index
-        image_layout_public_keys_2 public_keys_2;
-        memset(&public_keys_2, 0, sizeof(public_keys_2));
-        image_layout_public_keys_2_unpack(&public_keys_2, itocEntry->section_data.data());
-        public_keys_2.file_public_keys_2[public_keys_2_free_slot_idx] = public_key_2;
+        public_keys_2.file_public_keys_2[public_keys_2_free_slot_idx] = new_public_key_2;
         vector<u_int8_t> public_keys_2_data;
         public_keys_2_data.resize(image_layout_public_keys_2_size());
         image_layout_public_keys_2_pack(&public_keys_2, public_keys_2_data.data());
         if (!UpdateSection(FS3_PUBLIC_KEYS_4096, public_keys_2_data, "PUBLIC KEYS 4096"))
         {
-            return errmsg("StorePublicKeyInPublicKeys2 failed - Error: %s", err());
+            return errmsg("StoreImagePublicKeyInPublicKeys2 failed - Error: %s", err());
         }
     }
 
     return true;
 }
 
-bool Fs4Operations::StorePublicKeyInPublicKeys3(const image_layout_file_public_keys_3& new_public_key)
+bool Fs4Operations::StoreImagePublicKeyInPublicKeys3(const image_layout_file_public_keys_3& new_public_key)
 {
     fs4_toc_info* itocEntry = (fs4_toc_info*)NULL;
     if (!Fs4GetItocInfo(_fs4ImgInfo.itocArr.tocArr, _fs4ImgInfo.itocArr.numOfTocs, FS4_RSA_PUBLIC_KEY, itocEntry))
     {
-        return errmsg("StorePublicKeyInPublicKeys3 failed - Error: %s", err());
+        return errmsg("StoreImagePublicKeyInPublicKeys3 failed - Error: %s", err());
     }
 
     image_layout_public_keys_3 stored_public_keys_3;
     memset(&stored_public_keys_3, 0, sizeof(stored_public_keys_3));
     image_layout_public_keys_3_unpack(&stored_public_keys_3, itocEntry->section_data.data());
 
-    if (!IsPublicKeyAlreadyInPublicKeys3(new_public_key, stored_public_keys_3))
+    u_int32_t imagePublicKeyIndex = 0;
+
+    if (IsPublicKeyAlreadyInPublicKeys3(stored_public_keys_3, new_public_key) == false)
     {
-        u_int32_t freeSlot = 0;
-        if (!GetFreeSlotInPublicKeys3(stored_public_keys_3, freeSlot))
+        if (!FindImagePublicKeyInPublicKeys3(stored_public_keys_3, imagePublicKeyIndex))
         {
-            return errmsg("StorePublicKeyInPublicKeys3 failed - Error: %s", err());
+            if (!GetFreeSlotInPublicKeys3(stored_public_keys_3, imagePublicKeyIndex))
+            {
+                return errmsg("StoreImagePublicKeyInPublicKeys3 failed - Error: %s", err());
+            }
         }
 
-        stored_public_keys_3.file_public_keys_3[freeSlot] = new_public_key;
-    }
+        stored_public_keys_3.file_public_keys_3[imagePublicKeyIndex] = new_public_key;
 
-    vector<u_int8_t> public_keys_3_data;
-    public_keys_3_data.resize(image_layout_public_keys_3_size());
-    image_layout_public_keys_3_pack(&stored_public_keys_3, public_keys_3_data.data());
-    if (!UpdateSection(public_keys_3_data.data(), FS4_RSA_PUBLIC_KEY, true, CMD_BURN, NULL))
-    {
-        return errmsg("StorePublicKeyInPublicKeys3 failed - Error: %s", err());
+        vector<u_int8_t> public_keys_3_data;
+        public_keys_3_data.resize(image_layout_public_keys_3_size());
+        image_layout_public_keys_3_pack(&stored_public_keys_3, public_keys_3_data.data());
+        if (!UpdateSection(public_keys_3_data.data(), FS4_RSA_PUBLIC_KEY, true, CMD_BURN, NULL))
+        {
+            return errmsg("StoreImagePublicKeyInPublicKeys3 failed - Error: %s", err());
+        }
     }
 
     return true;
@@ -4937,21 +4969,21 @@ bool Fs4Operations::FwSetPublicKeys(char* fname, PrintCallBack callBackFunc)
     return true;
 }
 
-bool Fs4Operations::StorePublicKey(const char* public_key_file, const char* uuid)
+bool Fs4Operations::StoreImagePublicKey(const char* public_key_file, const char* uuid)
 {
     image_layout_file_public_keys_3 public_key_3;
     memset(&public_key_3, 0, sizeof(public_key_3));
     if (!GetPublicKeyFromFile(public_key_file, uuid, &(public_key_3)))
     {
-        return errmsg("StorePublicKey failed - Error: %s", err());
+        return errmsg("StoreImagePublicKey failed - Error: %s", err());
     }
 
-    if (!StorePublicKeyInPublicKeys2(public_key_3))
+    if (!StoreImagePublicKeyInPublicKeys2(public_key_3))
     {
-        return errmsg("StorePublicKey failed - Error: %s", err());
+        return errmsg("StoreImagePublicKey failed - Error: %s", err());
     }
 
-    if (!StorePublicKeyInPublicKeys3(public_key_3))
+    if (!StoreImagePublicKeyInPublicKeys3(public_key_3))
     {
         return false;
     }
@@ -5122,9 +5154,9 @@ bool Fs4Operations::SignForSecureBoot(const char* public_key_file, const char* u
         }
     }
 
-    if (!StorePublicKey(public_key_file, uuid))
+    if (!StoreImagePublicKey(public_key_file, uuid))
     {
-        return errmsg("SignForSecureBoot failed - Error: StorePublicKey failed (%s)\n", err());
+        return errmsg("SignForSecureBoot failed - Error: StoreImagePublicKey failed (%s)\n", err());
     }
 
     //* Get boot area signature
