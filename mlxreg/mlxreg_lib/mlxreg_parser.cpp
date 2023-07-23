@@ -423,11 +423,11 @@ void RegAccessParser::strToUint32(char* str, u_int32_t& uint)
  ************************************/
 bool RegAccessParser::checkFieldWithPath(AdbInstance* field, u_int32_t idx, std::vector<string>& fieldsChain)
 {
-    if (idx == 0 && (field->name == fieldsChain[0]))
+    if (idx == 0 && (field->get_field_name() == fieldsChain[0]))
     {
         return true;
     }
-    else if (field->name == fieldsChain[idx])
+    else if (field->get_field_name() == fieldsChain[idx])
     {
         return checkFieldWithPath(field->parent, --idx, fieldsChain);
     }
@@ -503,7 +503,7 @@ std::vector<string> RegAccessParser::getAllIndexes(AdbInstance* node)
     {
         if (isIndex(subItems[i]))
         {
-            indexes.push_back(subItems[i]->name);
+            indexes.push_back(subItems[i]->get_field_name());
         }
     }
     return indexes;
@@ -517,7 +517,7 @@ std::vector<string> RegAccessParser::getAllOps(AdbInstance* node)
     {
         if (isOP(subItems[i]))
         {
-            ops.push_back(subItems[i]->name);
+            ops.push_back(subItems[i]->get_field_name());
         }
     }
     return ops;
