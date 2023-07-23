@@ -181,6 +181,18 @@ mfile* mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* extra_data)
     return NULL;
 }
 
+void get_pci_dev_rdma(mfile* mf, char* buf)
+{
+    if (mf != NULL && mf->dinfo != NULL && strlen(mf->dinfo->pci.ib_devs[0]) > 0)
+    {
+        snprintf(buf, 32, mf->dinfo->pci.ib_devs[0]);
+    }
+    else
+    {
+        *buf = '\0';
+    }
+}
+
 unsigned char mset_i2c_slave(mfile* mf, unsigned char new_i2c_slave)
 {
     (void)mf;

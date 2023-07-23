@@ -54,23 +54,12 @@ RESOURCE_DUMP_SEGMENT_TYPE_INFO = "0xfffe"
 RESOURCE_DUMP_SEGMENT_TYPE_MENU = "0xffff"
 RESOURCE_DUMP_SEGMENT_TYPE_REFERENCE = "0xfffd"
 
-UI_DASHES = "--"
-UI_DASHES_SHORT = "-"
-UI_ARG_OUT = "out"
-UI_ARG_OUT_SHORT = "o"
-UI_ARG_ADB_FILE = "adb_file"
-UI_ARG_ADB_FILE_SHORT = "a"
-UI_ARG_DUMP_FILE = "dump_file"
-UI_ARG_DUMP_FILE_SHORT = "d"
-UI_ARG_RAW = "raw"
-UI_ARG_RAW_SHORT = "r"
-UI_ARG_VERBOSITY = "v"
-UI_ARG_VERBOSITY_COUNT = "verbose"
-
 # segment start/end specify where the 'type' attr starts and ends in the raw_data of each segment.
 # should be 0-16 bits
 SEGMENT_TYPE_DWORD_LOCATION = 0
 SEGMENT_SIZE_DWORD_LOCATION = 0
+SEGMENT_AGGREGATE_DWORD_LOCATION = 1
+SEGMENT_AGGREGATE_BIT = 31
 SEGMENT_TYPE_START = 16
 SEGMENT_TYPE_END = 32
 SEGMENT_SIZE_START = 0
@@ -131,6 +120,7 @@ DATA_PRINTER_SEPARATOR = 80 * "-"
 
 WARNING_SIZE_DOESNT_MATCH = " Segment size({0} DWs) doesn't match the adb segment size({1} DWs)"
 WARNING_FAILED_EVAL_CONDITION = ' Failed evaluating condition: {}, at field - "{}", exporting field by default'
+WARNING_WRONG_PAIR_SIZE = " Segment size for Address-Value parsing is odd"
 
 PARENT_PREFIX_LIST = ["#(parent)", "$(parent)"]
 SEGMENT_PREFIX = "$(segment)"

@@ -56,7 +56,7 @@ class CommandSegment(Segment):
         self.raw_data = data
         self.index1 = self.raw_data[2]
         self.index2 = self.raw_data[3]
-    
+
     def additional_title_info(self):
         """return index1 and index2 if exists in the segment.
         """
@@ -71,26 +71,6 @@ class CommandSegment(Segment):
         """get the general segment type.
         """
         return cs.RESOURCE_DUMP_SEGMENT_TYPE_COMMAND
-
-    def get_parsed_data(self):
-        """get dictionary of parsed segment data.
-        """
-        # dw_data = self.get_data()
-        # self._parsed_data['Segment Type'] = "{0} ({1})".format("Command Segment",
-        #                                                  str(hex(int('{:0b}'.format(dw_data[0]).zfill(32)[16:32], 2))))
-        # offset = cs.SEGMENTS_HEADER_SIZE_IN_DW
-        #
-        # if len(dw_data) > cs.SEGMENTS_HEADER_SIZE_IN_DW:
-        #     self._parsed_data['segment_called'] = str(hex(int('{:0b}'.format(dw_data[offset]).zfill(32)[0:16], 2)))
-        #     self._parsed_data['vhca_id'] = str(hex(int('{:0b}'.format(dw_data[offset]).zfill(32)[16:32], 2)))
-        #     offset += 1
-        #     self._parsed_data['index1'] = str(hex(int('{:0b}'.format(dw_data[offset]).zfill(32)[0:32], 2)))
-        #     offset += 1
-        #     self._parsed_data['index2'] = str(hex(int('{:0b}'.format(dw_data[offset]).zfill(32)[0:32], 2)))
-        #     offset += 1
-        #     self._parsed_data['num_of_obj1'] = str(hex(int('{:0b}'.format(dw_data[offset]).zfill(32)[0:16], 2)))
-        #     self._parsed_data['num_of_obj2'] = str(hex(int('{:0b}'.format(dw_data[offset]).zfill(32)[16:32], 2)))
-        return self._parsed_data
 
 
 SegmentFactory.register(cs.RESOURCE_DUMP_SEGMENT_TYPE_COMMAND, CommandSegment)

@@ -184,8 +184,13 @@ if CMTCR:
 
             if self.mHcaResetFunc(self.mf, bus_array, bus_array_size) != 0:
                 raise MtcrException("Failed to reset device")
-        ##########################
 
+        ##########################
+        def getPCIDeviceRdma(self):
+            dev_rdma = ctypes.create_string_buffer(32)
+            CMTCR.get_pci_dev_rdma(self.mf, dev_rdma)
+            rdma_str = dev_rdma.value.decode("utf-8")
+            return rdma_str
 
 else:
     import subprocess

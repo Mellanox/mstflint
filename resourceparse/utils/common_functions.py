@@ -41,6 +41,11 @@
 #
 #######################################################
 
+from utils import constants as cs
+from argparse import ArgumentTypeError
+from pathlib import Path
+
+
 def calculate_aligned_offset(offset, size, alignment=32):
     """This method calculate the new offset inside the dword
     since the data inside has a different bit index
@@ -49,3 +54,16 @@ def calculate_aligned_offset(offset, size, alignment=32):
     if size < alignment:
         calculated_offset = (int(offset / alignment) * alignment) + alignment - size - (offset % alignment)
     return calculated_offset
+
+
+def is_resource_segment(seg_type):
+    """This method check if the seg type is resource segment
+    """
+    return cs.RESOURCE_DUMP_SEGMENT_TYPE_RESOURCE_MAX >= seg_type >= cs.RESOURCE_DUMP_SEGMENT_TYPE_RESOURCE_MIN
+
+
+def valid_path_arg_type(path_str):
+    p = Path(path_str)
+    if p.is_file():
+        return path_str
+    raise ArgumentTypeError("invalid file: {}".format(path_str))

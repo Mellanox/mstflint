@@ -90,10 +90,10 @@ if REG_ACCESS:
             ("inline_dump", c_uint8),
             ("more_dump", c_uint8),
             ("vhca_id", c_uint16),
-            ("index_1", c_uint32),
-            ("index_2", c_uint32),
-            ("num_of_obj_2", c_uint16),
-            ("num_of_obj_1", c_uint16),
+            ("index1", c_uint32),
+            ("index2", c_uint32),
+            ("num_of_obj2", c_uint16),
+            ("num_of_obj1", c_uint16),
             ("device_opaque", c_uint64),
             ("mkey", c_uint32),
             ("size", c_uint32),
@@ -335,10 +335,10 @@ if REG_ACCESS:
             resDumpRegP.contents.more_dump = c_uint8(more_dump)
             resDumpRegP.contents.vhca_id = c_uint16(vhca_id)
             resDumpRegP.contents.vhca_id_valid = c_uint8(vhca_id_valid)
-            resDumpRegP.contents.index_1 = c_uint32(index1)
-            resDumpRegP.contents.index_2 = c_uint32(index2)
-            resDumpRegP.contents.num_of_obj_2 = c_uint16(num_of_obj2)
-            resDumpRegP.contents.num_of_obj_1 = c_uint16(num_of_obj1)
+            resDumpRegP.contents.index1 = c_uint32(index1)
+            resDumpRegP.contents.index2 = c_uint32(index2)
+            resDumpRegP.contents.num_of_obj2 = c_uint16(num_of_obj2)
+            resDumpRegP.contents.num_of_obj1 = c_uint16(num_of_obj1)
             resDumpRegP.contents.device_opaque = c_uint64(device_opaque)
             resDumpRegP.contents.mkey = c_uint32(mkey)
             resDumpRegP.contents.size = c_uint32(size)
@@ -353,10 +353,10 @@ if REG_ACCESS:
                      "more_dump": resDumpRegP.contents.more_dump,
                      "vhca_id": resDumpRegP.contents.vhca_id,
                      "vhca_id_valid": resDumpRegP.contents.vhca_id_valid,
-                     "index_1": resDumpRegP.contents.index_1,
-                     "index_2": resDumpRegP.contents.index_2,
-                     "num_of_obj_2": resDumpRegP.contents.num_of_obj_2,
-                     "num_of_obj_1": resDumpRegP.contents.num_of_obj_1,
+                     "index1": resDumpRegP.contents.index1,
+                     "index2": resDumpRegP.contents.index2,
+                     "num_of_obj2": resDumpRegP.contents.num_of_obj2,
+                     "num_of_obj1": resDumpRegP.contents.num_of_obj1,
                      "device_opaque": resDumpRegP.contents.device_opaque,
                      "mkey": resDumpRegP.contents.mkey,
                      "size": resDumpRegP.contents.size,

@@ -39,7 +39,7 @@ PYTHON_WRAPPER_SCRIPT=$(USER_DIR)/common/python_wrapper
 ${PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
 	cp $(PYTHON_WRAPPER_SCRIPT) $@
 pythonlibdir=$(libdir)/mstflint/python_tools/mstresourceparse
-dist_pythonlib_DATA = __init__.py mstresourceparse.py
+dist_pythonlib_DATA = __init__.py mstresourceparse.py ResourceParseManager.py
 parserspythonlibdir=$(libdir)/mstflint/python_tools/mstresourceparse/parsers
 dist_parserspythonlib_DATA = parsers/*.py
 utilspythonlibdir=$(libdir)/mstflint/python_tools/mstresourceparse/utils

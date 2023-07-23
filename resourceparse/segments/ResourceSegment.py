@@ -56,7 +56,7 @@ class ResourceSegment(Segment):
         self.resource_type = constants.RESOURCE_DUMP_SEGMENT_TYPE_RESOURCE
         self.index1 = self.raw_data[2]
         self.index2 = self.raw_data[3]
-    
+
     def additional_title_info(self):
         """return index1 and index2 if exists in the segment.
         """
@@ -71,14 +71,6 @@ class ResourceSegment(Segment):
         """get the general segment type.
         """
         return "0x" + self.resource_type[2:].zfill(4)
-
-    def add_parsed_data(self, key, value):
-        self._parsed_data[key] = value
-
-    def get_parsed_data(self):
-        """get dictionary of parsed segment data.
-        """
-        return self._parsed_data
 
 
 SegmentFactory.register(constants.RESOURCE_DUMP_SEGMENT_TYPE_RESOURCE, ResourceSegment)

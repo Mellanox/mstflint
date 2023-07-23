@@ -74,16 +74,32 @@ class SegmentCreator:
         try:
             end_index = len(raw_data) - 1
             current_index = 0
+            starting_resource_type = None
             while current_index <= end_index:
                 # seg size specified in dwords
                 seg_size = '{:032b}'.format(raw_data[cs.SEGMENT_SIZE_DWORD_LOCATION + current_index])[
                            cs.SEGMENT_SIZE_START: cs.SEGMENT_SIZE_END]
                 seg_size = int(seg_size, 2)
+
                 if seg_size == 0:
                     raise Exception("Error in segments splitting. raw_data didn't get smaller - found segment_size = 0")
 
                 seg_data = raw_data[current_index:seg_size + current_index]
-                splitted_segments.append(seg_data)
+
+                seg_type = int('{:032b}'.format(seg_data[cs.SEGMENT_TYPE_DWORD_LOCATION])[
+                    cs.SEGMENT_TYPE_START: cs.SEGMENT_TYPE_END], 2)
+                is_resource_segment = seg_type <= int(cs.RESOURCE_DUMP_SEGMENT_TYPE_RESOURCE_MAX, 16)
+                aggregate = is_resource_segment and int('{:032b}'.format(seg_data[cs.SEGMENT_AGGREGATE_DWORD_LOCATION])[cs.SEGMENT_AGGREGATE_BIT], 2)  # resource segment and aggregate bit is on
+
+                if not aggregate:
+                    if is_resource_segment:
+                        starting_resource_type = seg_type
+                    splitted_segments.append(seg_data)
+                else:
+                    if not starting_resource_type or seg_type != starting_resource_type:
+                        raise Exception("Failed segment splitting. aggregate bit on first or control segment is illegal")
+                    else:
+                        splitted_segments[-1].extend(seg_data[cs.RESOURCE_SEGMENT_START_OFFSET_IN_DW:])
                 current_index += seg_size
         except Exception as e:
             raise Exception("Failed to split segments with error: {0}".format(e))
