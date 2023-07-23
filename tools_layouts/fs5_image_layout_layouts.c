@@ -33,7 +33,7 @@
 /***
          *** This file was generated at "2023-06-01 20:24:55"
          *** by:
-         ***    > /auto/mswg/release/tools/a-me/a-me-1.2.3/a-me-1.2.3-6/adabe_plugins/adb2c/adb2pack.py --input adb/fs5_image_layout/fs5_image_layout.adb --file-prefix fs5_image_layout --prefix fs5_image_layout_ --no-adb-utils
+         ***    > [REDACTED]/adb2pack.py --input adb/fs5_image_layout/fs5_image_layout.adb --file-prefix fs5_image_layout --prefix fs5_image_layout_ --no-adb-utils
          ***/
 #include "fs5_image_layout_layouts.h"
 
