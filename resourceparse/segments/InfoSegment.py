@@ -82,34 +82,5 @@ class InfoSegment(Segment):
                                         str(int('{:0b}'.format(dw_data[offset]).zfill(32)[16:32], 2)).rjust(4, '0'))
         return ""
 
-    def add_parsed_data(self, key, value):
-        # if key == "fw_version":
-        #    self._version_str = "{0}.{1}.{2}".format(str(int('{:0b}'.format(int(value, 16)).zfill(32)[0:8], 2)),
-        #                                             str(int('{:0b}'.format(int(value, 16)).zfill(32)[8:16], 2)),
-        #                                             str(int('{:0b}'.format(int(value, 16)).zfill(32)[16:32], 2)))
-        self._parsed_data[key] = value
-
-    def get_parsed_data(self):
-        """get dictionary of parsed segment data.
-        """
-
-        # dw_data = self.get_data()
-        # self._parsed_data['Segment Type'] = "{0} ({1})".format("Info Segment",
-        #                                                  str(hex(int('{:0b}'.format(dw_data[0]).zfill(32)[16:32], 2))))
-        # offset = cs.SEGMENTS_HEADER_SIZE_IN_DW
-        #
-        # if len(dw_data) > cs.SEGMENTS_HEADER_SIZE_IN_DW:
-        #     self._parsed_data['Dump version'] = str(int('{:0b}'.format(dw_data[offset]).zfill(32)[24:32], 2))
-        #     offset += 1
-        #     self._parsed_data['HW version'] = str(int('{:0b}'.format(dw_data[offset]).zfill(32)[0:8], 2)) + "." + str(
-        #         int('{:0b}'.format(dw_data[offset]).zfill(32)[8:16], 2)) + "." + str(
-        #         int('{:0b}'.format(dw_data[offset]).zfill(32)[16:32], 2))
-        #     offset += 1
-        #     self._parsed_data['FW version'] = str(int('{:0b}'.format(dw_data[offset]).zfill(32)[0:8], 2)) + "." + str(
-        #         int('{:0b}'.format(dw_data[offset]).zfill(32)[8:16], 2)) + "." + str(
-        #         int('{:0b}'.format(dw_data[offset]).zfill(32)[16:32], 2))
-
-        return self._parsed_data
-
 
 SegmentFactory.register(cs.RESOURCE_DUMP_SEGMENT_TYPE_INFO, InfoSegment)

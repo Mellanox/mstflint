@@ -71,8 +71,8 @@ class ErrorSegment(Segment):
         dw_data = self.get_data()
 
         if len(dw_data) > cs.SEGMENTS_HEADER_SIZE_IN_DW:
-            self._parsed_data['Error meg'] = MenuRecord.bin_list_to_ascii(
-                dw_data[cs.ERROR_SEGMENT_ERROR_MSG_START:cs.ERROR_SEGMENT_ERROR_MSG_END])
+            self._parsed_data.append("Error message = ".format(MenuRecord.bin_list_to_ascii(
+                dw_data[cs.ERROR_SEGMENT_ERROR_MSG_START:cs.ERROR_SEGMENT_ERROR_MSG_END])))
 
         return self._parsed_data
 

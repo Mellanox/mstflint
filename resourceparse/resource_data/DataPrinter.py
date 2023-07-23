@@ -60,40 +60,43 @@ class DataPrinter:
             else:
                 print(notice_msg)
 
-    def print_parsed_segment(self, parsed_segment_db):
+    def print_parsed_segment(self, parsed_segment_db, title, segment_separator):
         """This method print the parsed segments after check if we need to print to a file or to screen.
         """
         if self._out_file:
-            self._print_to_file(parsed_segment_db)
+            self._print_to_file(parsed_segment_db, title, segment_separator)
         else:
-            self._print_to_screen(parsed_segment_db)
+            self._print_to_screen(parsed_segment_db, title, segment_separator)
 
-    def _print_to_screen(self, parsed_segment_db):
+    def _print_to_screen(self, parsed_segment_db, title, segment_separator):
         """This method print the parsed segments to the screen.
         """
-        print("Parse {0} segments:".format(len(parsed_segment_db)))
+        if title:
+            print(title)
         for seg in parsed_segment_db:
-            print(cs.DATA_PRINTER_SEPARATOR)
+            if segment_separator:
+                print(segment_separator)
             parsed_seg = seg.get_parsed_data()
             for field in parsed_seg:
-                fixed_field = self._get_fixed_field(field)
-                print("{0}{1}{2}".format(fixed_field, self._build_body_msg(field), parsed_seg[field]))
-        print(cs.DATA_PRINTER_SEPARATOR)
+                print(field)
+        if segment_separator:
+            print(segment_separator)
 
-    def _print_to_file(self, parsed_segment_db):
+    def _print_to_file(self, parsed_segment_db, title, segment_separator):
         """This method print the parsed segments to a file.
         """
         with open(self._out_file, "w") as out_file:
             for notice_section in self._top_notice_db:
                 out_file.write(notice_section + "\n")
-            out_file.write("Parse {0} segments:".format(len(parsed_segment_db)) + "\n")
+            out_file.write(title + "\n")
             for seg in parsed_segment_db:
-                out_file.write(cs.DATA_PRINTER_SEPARATOR + "\n")
+                if segment_separator:
+                    out_file.write(segment_separator + "\n")
                 parsed_seg = seg.get_parsed_data()
                 for field in parsed_seg:
-                    fixed_field = self._get_fixed_field(field)
-                    out_file.write("{0}{1}{2}".format(fixed_field, self._build_body_msg(field), parsed_seg[field]) + "\n")
-            out_file.write(cs.DATA_PRINTER_SEPARATOR + "\n")
+                    out_file.write(field + "\n")
+            if segment_separator:
+                out_file.write(segment_separator + "\n")
         print("write to file: ", self._out_file)
 
     @classmethod

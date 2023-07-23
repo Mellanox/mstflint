@@ -79,6 +79,7 @@ UI_ARG_BIN = "bin"
 UI_ARG_BIN_SHORT = "b"
 UI_ARG_MEM = "mem"
 UI_ARG_MEM_SHORT = "m"
+DEVICE_RDMA = "__DEVICE_RDMA__"
 
 # segment start/end specify where the 'type' attr starts and ends in the raw_data of each segment.
 # should be 0-16 bits
