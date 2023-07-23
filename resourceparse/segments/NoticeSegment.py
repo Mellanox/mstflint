@@ -76,9 +76,9 @@ class NoticeSegment(Segment):
         if len(dw_data) > cs.SEGMENTS_HEADER_SIZE_IN_DW:
             # self._parsed_data['syndrome_id'] = str(hex(int('{:0b}'.format(dw_data[offset]).zfill(32)[16:32], 2)))
             try:
-                self._parsed_data['notice msg'] = MenuRecord.bin_list_to_ascii(
+                self._parsed_data.append('notice msg = {}'.format(MenuRecord.bin_list_to_ascii(
                     dw_data[cs.ERROR_SEGMENT_NOTICE_MSG_START:
-                            cs.ERROR_SEGMENT_NOTICE_MSG_END])
+                            cs.ERROR_SEGMENT_NOTICE_MSG_END])))
             except BaseException:
                 # in case that the bin is not an ascii we will not display the notice msg
                 pass

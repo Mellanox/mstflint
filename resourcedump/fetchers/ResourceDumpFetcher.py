@@ -77,7 +77,7 @@ class ResourceDumpFetcher:
     # very big number that represent the inf number 2^32 - 1 (we will not reach that number)
     INF_DEPTH = 4294967295
 
-    def __init__(self, device_name, bin_file=None):
+    def __init__(self, device_name, bin_file=None, mem=None):
 
         self._bin_file_h = None
         self._sequence_number = ResourceDumpFetcher._sequence_incrementor()
@@ -91,6 +91,7 @@ class ResourceDumpFetcher:
             self.reg_access_obj = regaccess.RegAccess(mst_device)
         except Exception as e:
             raise Exception("{0}".format(e))
+        self._rdma = ResourceDumpFetcher.get_device_rdma(mst_device, mem)
 
         if self._bin_file:
             try:
@@ -108,6 +109,12 @@ class ResourceDumpFetcher:
         """
         return SegmentCreator().create(segments_data)
 
+    @staticmethod
+    def get_device_rdma(mst_device, raw_rdma):
+        if raw_rdma and raw_rdma == cs.DEVICE_RDMA:
+            raw_rdma = mst_device.getPCIDeviceRdma()
+        return raw_rdma
+
     def fetch_data(self, **kwargs):
         """this method fetch the segments of the required dump by:
            1. read the core dump register from the reg access while more dump bit is
@@ -118,6 +125,7 @@ class ResourceDumpFetcher:
         """
         # read the inline data from the resource dump register and split it to segments list
         self._start_seq_number = 0
+
         inline_data = self._retrieve_resource_dump_inline_data(kwargs[cs.UI_ARG_SEGMENT], **kwargs)
         if kwargs["fast_mode"]:
             return []
@@ -138,7 +146,7 @@ class ResourceDumpFetcher:
                     inner_inline_data.extend(
                         self._retrieve_resource_dump_inline_data(seg.reference_type, index1=seg.index1,
                                                                  index2=seg.index2, numOfObj1=seg.num_of_obj1,
-                                                                 numOfObj2=seg.num_of_obj2, vHCAid=kwargs["vHCAid"], mem=kwargs["mem"], fast_mode=kwargs["fast_mode"]))
+                                                                 numOfObj2=seg.num_of_obj2, vHCAid=kwargs["vHCAid"], mem=self._rdma, fast_mode=kwargs["fast_mode"]))
             segments_list_last_position = len(segments_list)
             segments_list.extend(self._create_segments(inner_inline_data))
 
@@ -199,13 +207,13 @@ class ResourceDumpFetcher:
             vhca_id = int(kwargs["vHCAid"], 0)
             vhca_id_valid = 1
 
-        if kwargs["mem"] is not None:
+        if self._rdma is not None:
             source_dump_lib = None
             try:
                 if(platform.system() != 'Linux'):
                     raise Exception("This feature supported only on Linux")
                 source_dump_lib = self.initSourceDump()
-                gen_lkey_ret = source_dump_lib.generate_lkey(ctypes.c_char_p(bytes(kwargs["mem"], "utf-8")), params_st)
+                gen_lkey_ret = source_dump_lib.generate_lkey(ctypes.c_char_p(bytes(self._rdma, "utf-8")), params_st)
                 if gen_lkey_ret != 0:
                     raise Exception("Check the driver is up and the device's rdma name is correct")
                 mkey = params_st.contents.lkey
@@ -239,15 +247,15 @@ class ResourceDumpFetcher:
 
             more_dump = results["more_dump"]
             vhca_id = results["vhca_id"]
-            index1 = results["index_1"]
-            index2 = results["index_2"]
-            num_of_obj_1 = results["num_of_obj_1"]
-            num_of_obj_2 = results["num_of_obj_2"]
+            index1 = results["index1"]
+            index2 = results["index2"]
+            num_of_obj_1 = results["num_of_obj1"]
+            num_of_obj_2 = results["num_of_obj2"]
             device_opaque = results["device_opaque"]
             size = int(math.ceil(results["size"] / 4))
             bin_data = None
 
-            if kwargs["mem"] is not None:
+            if self._rdma is not None:
                 if not kwargs["fast_mode"] or segment_type == cs.RESOURCE_DUMP_SEGMENT_TYPE_MENU:
                     # Read all dwords and change endianness
                     for i in range(size):

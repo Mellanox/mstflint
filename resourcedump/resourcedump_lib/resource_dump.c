@@ -90,6 +90,7 @@ struct ibv_context* init_my_device_c(char device_name[], void* handler, void* ha
                 if (!context)
                 {
                     ibv_get_device_name_func(d_list[i]);
+                    free(my_context_attr);
                     return NULL;
                 }
                 return context;
@@ -195,8 +196,12 @@ int generate_lkey(char device_name[], struct result* res)
             handler = dlopen(LIB_VERBS_BLUEFIELD_PATH, RTLD_LOCAL | RTLD_LAZY);
             if (!handler)
             {
-                printf("Failed to load the libibverbs shared library\n");
-                return ret;
+                handler = dlopen(LIB_VERBS_PPC64LE_PATH, RTLD_LOCAL | RTLD_LAZY);
+                if (!handler)
+                {
+                    printf("Failed to load the libibverbs shared library\n");
+                    return ret;
+                }
             }
         }
     }
@@ -210,9 +215,13 @@ int generate_lkey(char device_name[], struct result* res)
             handler_2 = dlopen(LIB_MLX5_BLUEFIELD_PATH, RTLD_LOCAL | RTLD_LAZY);
             if (!handler_2)
             {
-                printf("Failed to load the libmlx5 shared library\n");
-                dlclose(handler);
-                return ret;
+                handler_2 = dlopen(LIB_MLX5_PPC64LE_PATH, RTLD_LOCAL | RTLD_LAZY);
+                if (!handler_2)
+                {
+                    printf("Failed to load the libmlx5 shared library\n");
+                    dlclose(handler);
+                    return ret;
+                }
             }
         }
     }
@@ -253,7 +262,9 @@ int generate_lkey(char device_name[], struct result* res)
     {
         printf("mlx5dv_devx_umem_reg failed\n");
         free(buff);
+        free(umem_in);
         dlclose(handler);
+        dlclose(handler_2);
         return ret;
     }
 
@@ -264,6 +275,7 @@ int generate_lkey(char device_name[], struct result* res)
         printf("calloc Failed\n");
         mlx5dv_devx_umem_dereg_func(umem);
         dlclose(handler);
+        dlclose(handler_2);
         return ret;
     }
 
@@ -271,6 +283,8 @@ int generate_lkey(char device_name[], struct result* res)
     if (!mkey)
     {
         printf("create_mkey failed\n");
+        free(umem_in);
+        free(buff);
         free(mmkey);
         dlclose(handler);
         return ret;
@@ -286,6 +300,7 @@ int generate_lkey(char device_name[], struct result* res)
 
     ret = 0;
     free(umem_in);
+    free(mmkey);
     return ret;
 }
 
