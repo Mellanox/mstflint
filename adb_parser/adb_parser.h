@@ -57,7 +57,6 @@ class LogFile;
 #include "adb_exceptionHolder.h"
 #include "adb_logfile.h"
 #include "adb_config.h"
-#include "adb_progress.h"
 #include "adb_instance.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,29 +74,8 @@ class LogFile;
 #define OS_PATH_SEP "/"
 #endif
 
-#ifdef __linux__
-#define LC_ALL_HINT " using `export LC_ALL=C`"
-#else
-#define LC_ALL_HINT ""
-#endif
-
-#define PROGRESS_NODE_CNT 100 // each 100 parsed node call progress callback
-
-#ifndef MIN
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif
-#ifndef MAX
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#endif
-
-#define CHECK_RUNTIME_ERROR(e)                                                         \
-    ((strstr(e.what(), "locale::facet::_S_create_c_locale") != NULL) ?                 \
-       string("Encoding error, please set locale encoding to C") + LC_ALL_HINT + "." : \
-       string("runtime_error: ") + e.what())
-
 using namespace std;
 
-//#define printf win32_printf
 #if defined(__MINGW32__) || defined(__MINGW64__)
 #define PRINTF_FORMAT __MINGW_PRINTF_FORMAT
 #else
@@ -110,19 +88,21 @@ class AdbField;
 using namespace xmlCreator;
 using namespace std;
 
+struct IncludeFileInfo;
+typedef map<string, IncludeFileInfo> IncludeFileMap;
 typedef map<string, string> AttrsMap;
-typedef vector<string> StringVector;
-typedef struct
+typedef map<string, AdbNode*> NodesMap;
+typedef vector<AdbConfig*> ConfigList;
+typedef map<string, AttrsMap> InstanceAttrs;
+typedef map<string, vector<string> > ExceptionsMap;
+
+struct IncludeFileInfo
 {
     string fullPath;
     string includedFromFile;
     int includedFromLine;
-} IncludeFileInfo;
-typedef map<string, IncludeFileInfo> IncludeFileMap;
-typedef map<string, AdbNode*> NodesMap;
-typedef vector<AdbConfig*> ConfigList;
-typedef map<string, AttrsMap> InstanceAttrs;
-typedef map<string, StringVector> ExceptionsMap;
+};
+
 class Adb
 {
 public:
@@ -136,12 +116,12 @@ public:
     //   3- check node size vs instance size
     bool loadFromString(const char* adbContents,
                         bool addReserved = false,
-                        AdbProgress* progressObj = NULL,
+                        bool evalExpr = false,
                         bool strict = true,
                         bool enforceExtraChecks = false);
     bool load(string fname,
               bool addReserved = false,
-              AdbProgress* progressObj = NULL,
+              bool evalExpr = false,
               bool strict = true,
               string includePath = "",
               string includeDir = "",
@@ -149,7 +129,8 @@ public:
               bool getAllExceptions = false,
               string logFile = "",
               bool checkDsAlign = false,
-              bool enforceGuiChecks = false);
+              bool enforceGuiChecks = false,
+              bool force_pad_32 = false);
     string toXml(vector<string> nodeNames = vector<string>(),
                  bool addRootNode = false,
                  string rootName = "MainNode",
@@ -158,11 +139,11 @@ public:
     AdbInstance* addMissingNodes(int depth, bool allowMultipleExceptions);
     AdbInstance* createLayout(string rootNodeName,
                               bool isExprEval = false,
-                              AdbProgress* progressObj = NULL,
                               int depth = -1, /* -1 means instantiate full tree */
                               bool ignoreMissingNodes = false,
                               bool getAllExceptions = false);
     vector<string> getNodeDeps(string nodeName);
+    void add_include(string fileName, string filePath, string included_from, int lineNumber);
     string getLastError();
 
     void fetchAdbExceptionsMap(ExceptionsMap otherMap);
@@ -188,30 +169,26 @@ public:
 
     /* For internal use */
 public:
-    StringVector includePaths;
+    vector<string> includePaths;
     std::map<string, string> defines_map;
     string mainFileName;
     IncludeFileMap includedFiles;
-    StringVector warnings;
+    vector<string> warnings;
     ExceptionsMap adbExceptionMap;
 
 private:
-    vector<AdbInstance*> createInstance(AdbField* fieldDesc,
-                                        AdbInstance* parent,
-                                        map<string, string> vars,
-                                        bool isExprEval,
-                                        AdbProgress* progressObj,
-                                        int depth,
-                                        bool ignoreMissingNodes = false,
-                                        bool getAllExceptions = false);
-    u_int32_t calcArrOffset(AdbField* fieldDesc, AdbInstance* parent, u_int32_t arrIdx);
+    bool createInstance(AdbField* fieldDesc,
+                        AdbInstance* parent,
+                        map<string, string> vars,
+                        bool isExprEval,
+                        int depth,
+                        bool ignoreMissingNodes = false,
+                        bool getAllExceptions = false);
     string evalExpr(string expr, AttrsMap* vars);
     bool checkInstSizeConsistency(bool getAllExceptions = false);
-    void cleanInstAttrs();
 
 private:
     string _lastError;
-    AdbExpr _adbExpr;
     bool _checkDsAlign;
     bool _enforceGuiChecks;
     list<AdbInstance*> _unionSelectorEvalDeffered;

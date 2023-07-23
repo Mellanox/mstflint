@@ -48,6 +48,15 @@ typedef map<string, string> AttrsMap;
 class AdbField
 {
 public:
+    enum struct ArrayType : unsigned char
+    {
+        none,
+        definite,
+        single_entry,
+        unlimited,
+        dynamic
+    };
+
     // Methods
     AdbField();
     ~AdbField();
@@ -72,11 +81,9 @@ public:
     u_int32_t size;   // in bits
     u_int32_t offset; // in bits (relative to the node start addr)
     string desc;
-    bool definedAsArr;
     u_int32_t lowBound;
     u_int32_t highBound;
-    bool unlimitedArr;
-    bool dynamicArr;
+    ArrayType array_type;
     string subNode;
     AttrsMap attrs;
     bool isReserved;

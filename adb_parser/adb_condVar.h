@@ -37,23 +37,22 @@
 #ifndef ADB_CONDVAR_H
 #define ADB_CONDVAR_H
 
-
 class CondVar
 {
-    public:
-        CondVar();
-        ~CondVar() = default;
+public:
+    CondVar() = default;
+    ~CondVar() = default;
 
-        bool isScalar();
-        void setScalar(int);
-        bool isEvaluated();
-        void setEvaluated(int);
-        int getValue();
+    bool isScalar();
+    void setScalar(int);
+    bool isEvaluated();
+    void setEvaluated(int);
+    int getValue();
 
-    private:
-        bool is_scalar;
-        bool evaluated;
-        int value;
+private:
+    bool is_scalar{};
+    bool evaluated{};
+    int value{};
 };
 
 #endif // ADB_CONDVAR_H
