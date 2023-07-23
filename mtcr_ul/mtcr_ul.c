@@ -39,6 +39,7 @@
 #include <errno.h>
 #include <common/tools_utils.h>
 #include <stdlib.h>
+#include <string.h>
 
 int mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
