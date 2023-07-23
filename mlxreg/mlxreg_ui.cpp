@@ -278,9 +278,9 @@ size_t getLongestNodeLen(std::vector<AdbInstance*> root)
     size_t len = 0;
     for (std::vector<AdbInstance*>::size_type i = 0; i != root.size(); i++)
     {
-        if (strlen(root[i]->name.c_str()) > len)
+        if (strlen(root[i]->get_field_name().c_str()) > len)
         {
-            len = strlen(root[i]->name.c_str());
+            len = strlen(root[i]->get_field_name().c_str());
         }
     }
     return (len + 3);
@@ -299,7 +299,7 @@ void MlxRegUi::printRegFields(vector<AdbInstance*> nodeFields)
     {
         printf("%-*s | 0x%08x      | %-8d      | %-8d    | %-15s\n",
                largestName,
-               nodeFields[i]->name.c_str(),
+               nodeFields[i]->get_field_name().c_str(),
                (nodeFields[i]->offset >> 3) & ~0x3,
                nodeFields[i]->startBit(),
                nodeFields[i]->fieldDesc->eSize(),
@@ -335,7 +335,7 @@ void MlxRegUi::printAdbContext(AdbInstance* node, std::vector<u_int32_t> buff)
     {
         printf("%-*s | 0x%08x\n",
                largestName,
-               subItems[i]->name.c_str(),
+               subItems[i]->get_field_name().c_str(),
                (unsigned int)subItems[i]->popBuf((u_int8_t*)&buff[0]));
     }
     PRINT_LINE(largestName + 14);

@@ -36,10 +36,6 @@
 
 #include "adb_condVar.h"
 
-CondVar::CondVar()
-{
-}
-
 bool CondVar::isScalar()
 {
     return this->is_scalar;
@@ -66,4 +62,3 @@ int CondVar::getValue()
 {
     return this->value;
 }
-

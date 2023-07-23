@@ -45,8 +45,7 @@
 
 using namespace std;
 
-typedef vector<string> StringVector;
-typedef map<string, StringVector> ExceptionsMap;
+typedef map<string, vector<string> > ExceptionsMap;
 
 class ExceptionHolder
 {

@@ -37,8 +37,8 @@
 
 #include <vector>
 #include <stdio.h>
+#include <string>
 #include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
 #include "adb_db.h"
 
 #define CHECK_FIELD(field, node_w)                                                  \
@@ -73,7 +73,7 @@ adb_db_t* db_create()
  */
 int db_load(adb_db_t* db, const char* adb_file_path, int add_reserved)
 {
-    if (!((Adb*)db)->load(adb_file_path, add_reserved, NULL, false))
+    if (!((Adb*)db)->load(adb_file_path, add_reserved, true, false))
     {
         sprintf(err, "Failed to load adabe project: %s", ((Adb*)db)->getLastError().c_str());
         return 1;
@@ -87,7 +87,7 @@ int db_load(adb_db_t* db, const char* adb_file_path, int add_reserved)
  */
 int db_load_from_str(adb_db_t* db, const char* adb_data, int add_reserved)
 {
-    if (!((Adb*)db)->loadFromString(adb_data, add_reserved, NULL, false))
+    if (!((Adb*)db)->loadFromString(adb_data, add_reserved, true, false))
     {
         sprintf(err, "Failed to load adabe project: %s", ((Adb*)db)->getLastError().c_str());
         return 1;
@@ -159,7 +159,7 @@ void db_destroy_limits_map(adb_limits_map_t* limits)
 adb_node_t* db_get_node(adb_db_t* db, const char* node_name)
 {
     Adb* adb = (Adb*)db;
-    AdbInstance* node = adb->createLayout(node_name, false, NULL);
+    AdbInstance* node = adb->createLayout(node_name, false);
     if (!node)
     {
         sprintf(err, "Failed to create node %s: %s", node_name, adb->getLastError().c_str());
@@ -205,7 +205,7 @@ void db_node_destroy(adb_node_t* node)
 void db_node_name(adb_node_t* node, char name[])
 {
     struct node_wrapper* node_w = (struct node_wrapper*)node;
-    strcpy(name, node_w->node->name.c_str());
+    strcpy(name, node_w->node->get_field_name().c_str());
 }
 
 /**
@@ -358,7 +358,7 @@ bool db_node_conditional_range_dump(adb_node_t* node,
                     *p = '\0';
                 }
             }
-            ((map<string, string>*)values_map)->insert(pair<string, string>(name, boost::lexical_cast<string>(value)));
+            ((map<string, string>*)values_map)->insert(pair<string, string>(name, to_string(value)));
         }
     }
 
@@ -430,7 +430,7 @@ bool db_node_conditional_range_dump(adb_node_t* node,
  */
 void db_field_name(adb_field_t* field, char name[])
 {
-    strcpy(name, ((AdbInstance*)field)->name.c_str());
+    strcpy(name, ((AdbInstance*)field)->get_field_name().c_str());
 }
 
 /**
