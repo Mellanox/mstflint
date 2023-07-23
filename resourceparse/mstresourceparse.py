@@ -50,7 +50,10 @@ if sys.version_info[0] < 3:
 
 import argparse
 from utils import constants as cs
-from parsers.Parser import Parser
+from utils.common_functions import valid_path_arg_type
+from ResourceParseManager import ResourceParseManager
+from utils.Exceptions import ResourceParseException
+from parsers.ResourceParser import PARSER_CLASSES, parser_type
 
 sys.path.append(os.path.join("common"))
 
@@ -64,43 +67,63 @@ class ResourceParse:
     def _run_arg_parse(self):
         """This method run the arg parse and return the arguments from the UI.
         """
-        # main parser
+
+        # Main parser
         tool_name = os.path.basename(__file__.split('.')[0])
-        parser = argparse.ArgumentParser(prog=tool_name, add_help=False, formatter_class=argparse.RawTextHelpFormatter)
 
-        # required arguments by the parser
-        required_named = parser.add_argument_group('required arguments')
-        required_named.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_DUMP_FILE_SHORT, cs.UI_DASHES + cs.UI_ARG_DUMP_FILE.replace("_", "-"),
-                                    help='Location of the dump file used for parsing', required=True)
-        required_named.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_ADB_FILE_SHORT, cs.UI_DASHES + cs.UI_ARG_ADB_FILE.replace("_", "-"),
-                                    help='Location of the ADB file', required=True)
+        parser = argparse.ArgumentParser(prog=tool_name, add_help=False)  # todo: fix help
 
-        # optional arguments by the parser
-        parser.add_argument('-h', '--help', action='help', default=argparse.SUPPRESS,
-                            help='Shows this help message and exit')
-        parser.add_argument('--version', action='version', help="Shows the tool's version and exit",
-                            version=tools_version.GetVersionString(tool_name, None))
+        # Common required arguments
+        required_named = parser.add_argument_group('Common required arguments')
+        required_named.add_argument("-d", "--dump-file", type=valid_path_arg_type, required=True, help='Location of the dump file used for parsing')
 
-        parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_OUT_SHORT, cs.UI_DASHES + cs.UI_ARG_OUT, help='Location of the output file', required=False)
-        parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_RAW_SHORT, cs.UI_DASHES + cs.UI_ARG_RAW, help='Prints the raw data in addition to the parsed data',
-                            required=False, action="store_true", default=False)
-        parser.add_argument(cs.UI_DASHES_SHORT + cs.UI_ARG_VERBOSITY,
-                            help='Verbosity notice', dest=cs.UI_ARG_VERBOSITY_COUNT,
-                            default=0, action='count')
-        arguments = parser.parse_args()
-        return arguments
+        # Common optional arguments
+        optional_named = parser.add_argument_group('Common optional arguments')
+        optional_named.add_argument("-p", "--parser", dest="resource_parser", type=parser_type, default=PARSER_CLASSES["adb"], help="Available options: {}. Default: 'adb'. see (Parsing methods) ".format(list(PARSER_CLASSES.keys())))
+        optional_named.add_argument('--version', action='version', help="Shows the tool's version and exit", version=tools_version.GetVersionString(tool_name, None))
+        optional_named.add_argument("-o", "--out", help='Location of the output file')
+        optional_named.add_argument("-v", help='Verbosity notice', dest="verbose", default=0, action='count')
+
+        # Artificial Parser, only to generate help message
+        common_description = \
+            """Description:
+    This tool parses the output of "resourcedump" tool.
+    There are several methods of parsing (see --parser).
+
+Parsing methods:
+"""
+        full_description = common_description + "\n".join(["    {}:\n".format(parsing_method) + parser_class.get_description() for parsing_method, parser_class in PARSER_CLASSES.items()])
+
+        help_parent_parsers = [parser_class.get_arg_parser() for parser_class in PARSER_CLASSES.values() if parser_class.get_arg_parser()]
+        help_parser = argparse.ArgumentParser(prog=tool_name, add_help=False, parents=[parser] + help_parent_parsers, description=full_description, formatter_class=argparse.RawDescriptionHelpFormatter)
+
+        class UnifiedHelpAction(argparse._HelpAction):
+            def __call__(self, parser, namespace, values, option_string):
+                help_parser.print_help()
+                parser.exit()
+
+        optional_named.add_argument("-h", "--help", action=UnifiedHelpAction, help="show this help message and exit")
+
+        manager_args, remaining = parser.parse_known_args()
+        parsing_method_arg_parser = manager_args.resource_parser.get_arg_parser()
+        parser_args = parsing_method_arg_parser.parse_args(remaining) if parsing_method_arg_parser else argparse.Namespace
+
+        return manager_args, parser_args
 
     def run(self):
         """This method run the parser with the needed arguments
         """
-        arguments = self._run_arg_parse()
-        resource_parser = Parser(**vars(arguments))
-        resource_parser.parse()
+        manager_args, parser_args = self._run_arg_parse()
+        creator = ResourceParseManager(manager_args, parser_args)
+        creator.parse()
 
 
 if __name__ == '__main__':
     try:
         ResourceParse().run()
+    except ResourceParseException as rpe:
+        print("ResourceParse failed!\n{0}.\nExiting...".format(rpe))
+        sys.exit(1)
     except Exception as e:
-        print("Error: {0}. Exiting...".format(e))
+        print("FATAL ERROR!\n{0}.\nExiting...".format(e))
         sys.exit(1)

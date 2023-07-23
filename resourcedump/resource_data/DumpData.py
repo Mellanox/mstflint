@@ -70,7 +70,7 @@ class DumpData:
             # segment type can be name, this method will convert the name (if needed) to seg number in hex (str)
             kwargs[cs.UI_ARG_SEGMENT] = res.get_segment_type_by_segment_name(kwargs[cs.UI_ARG_SEGMENT])
             bin_file = kwargs["bin"] if kwargs["fast_mode"] else None
-            dump_segments = ResourceDumpFetcher(kwargs["device_name"], bin_file).fetch_data(**kwargs)
+            dump_segments = ResourceDumpFetcher(kwargs["device_name"], bin_file, kwargs["mem"]).fetch_data(**kwargs)
         else:
             raise Exception("not supported or missing argument")
 

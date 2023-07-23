@@ -64,11 +64,5 @@ class TerminateSegment(Segment):
         """
         return cs.RESOURCE_DUMP_SEGMENT_TYPE_TERMINATE
 
-    def get_parsed_data(self):
-        """get dictionary of parsed segment data.
-        """
-        #parsed_data = {'Segment Type': "Terminate Segment" + " ({0})".format(cs.RESOURCE_DUMP_SEGMENT_TYPE_TERMINATE)}
-        return self._parsed_data
-
 
 SegmentFactory.register(cs.RESOURCE_DUMP_SEGMENT_TYPE_TERMINATE, TerminateSegment)
