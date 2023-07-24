@@ -157,9 +157,11 @@ MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
     // nvdiTlv.configuration_item_header.over_en = 1; // ask Dan
 
     // tlvType should be in the correct endianess
-    nvdiTlv.configuration_item_header.type_class = __be32_to_cpu(tlvType) & 0xF000;
-    nvdiTlv.configuration_item_header.type_index = __be32_to_cpu(tlvType) & 0x0FFF;
-    printf("type_class = %d\n", nvdiTlv.configuration_item_header.type_class); // should be some number between 0-9
+    u_int32_t reversed = __be32_to_cpu(tlvType);
+    u_int8_t* ptr_buff = (u_int8_t*)&reversed;
+    reg_access_hca_config_item_type_auto_ext_pack(&nvdiTlv.configuration_item_header.type, ptr_buff);
+    int type_class = __be32_to_cpu(tlvType) & 0xF000;
+    printf("type_class = %d\n", type_class); // should be some number between 0-9
 
     MError rc;
     // "suspend" signals as we are going to take semaphores
