@@ -965,7 +965,7 @@ void reg_access_hca_config_item_ext_dump(const struct reg_access_hca_config_item
 	reg_access_hca_config_item_ext_print(ptr_struct, fd, 0);
 }
 
-void reg_access_hca_default_timeout_pack(const struct reg_access_hca_default_timeout *ptr_struct, u_int8_t *ptr_buff)
+void reg_access_hca_default_timeout_ext_pack(const struct reg_access_hca_default_timeout_ext *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 
@@ -975,7 +975,7 @@ void reg_access_hca_default_timeout_pack(const struct reg_access_hca_default_tim
 	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->to_multiplier);
 }
 
-void reg_access_hca_default_timeout_unpack(struct reg_access_hca_default_timeout *ptr_struct, const u_int8_t *ptr_buff)
+void reg_access_hca_default_timeout_ext_unpack(struct reg_access_hca_default_timeout_ext *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 
@@ -985,10 +985,10 @@ void reg_access_hca_default_timeout_unpack(struct reg_access_hca_default_timeout
 	ptr_struct->to_multiplier = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
 }
 
-void reg_access_hca_default_timeout_print(const struct reg_access_hca_default_timeout *ptr_struct, FILE *fd, int indent_level)
+void reg_access_hca_default_timeout_ext_print(const struct reg_access_hca_default_timeout_ext *ptr_struct, FILE *fd, int indent_level)
 {
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "======== reg_access_hca_default_timeout ========\n");
+	fprintf(fd, "======== reg_access_hca_default_timeout_ext ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "to_value             : " UH_FMT "\n", ptr_struct->to_value);
@@ -996,14 +996,14 @@ void reg_access_hca_default_timeout_print(const struct reg_access_hca_default_ti
 	fprintf(fd, "to_multiplier        : " UH_FMT "\n", ptr_struct->to_multiplier);
 }
 
-unsigned int reg_access_hca_default_timeout_size(void)
+unsigned int reg_access_hca_default_timeout_ext_size(void)
 {
-	return REG_ACCESS_HCA_DEFAULT_TIMEOUT_SIZE;
+	return REG_ACCESS_HCA_DEFAULT_TIMEOUT_EXT_SIZE;
 }
 
-void reg_access_hca_default_timeout_dump(const struct reg_access_hca_default_timeout *ptr_struct, FILE *fd)
+void reg_access_hca_default_timeout_ext_dump(const struct reg_access_hca_default_timeout_ext *ptr_struct, FILE *fd)
 {
-	reg_access_hca_default_timeout_print(ptr_struct, fd, 0);
+	reg_access_hca_default_timeout_ext_print(ptr_struct, fd, 0);
 }
 
 void reg_access_hca_lane_2_module_mapping_ext_pack(const struct reg_access_hca_lane_2_module_mapping_ext *ptr_struct, u_int8_t *ptr_buff)
@@ -1576,110 +1576,110 @@ void reg_access_hca_string_db_parameters_ext_dump(const struct reg_access_hca_st
 	reg_access_hca_string_db_parameters_ext_print(ptr_struct, fd, 0);
 }
 
-void reg_access_hca_dtor_reg_pack(const struct reg_access_hca_dtor_reg *ptr_struct, u_int8_t *ptr_buff)
+void reg_access_hca_dtor_reg_ext_pack(const struct reg_access_hca_dtor_reg_ext *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 
 	offset = 32;
-	reg_access_hca_default_timeout_pack(&(ptr_struct->PCIE_TOGGLE_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_pack(&(ptr_struct->PCIE_TOGGLE_TO), ptr_buff + offset / 8);
 	offset = 160;
-	reg_access_hca_default_timeout_pack(&(ptr_struct->HEALTH_POLL_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_pack(&(ptr_struct->HEALTH_POLL_TO), ptr_buff + offset / 8);
 	offset = 192;
-	reg_access_hca_default_timeout_pack(&(ptr_struct->FULL_CRDUMP_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_pack(&(ptr_struct->FULL_CRDUMP_TO), ptr_buff + offset / 8);
 	offset = 224;
-	reg_access_hca_default_timeout_pack(&(ptr_struct->FW_RESET_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_pack(&(ptr_struct->FW_RESET_TO), ptr_buff + offset / 8);
 	offset = 256;
-	reg_access_hca_default_timeout_pack(&(ptr_struct->FLUSH_ON_ERR_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_pack(&(ptr_struct->FLUSH_ON_ERR_TO), ptr_buff + offset / 8);
 	offset = 288;
-	reg_access_hca_default_timeout_pack(&(ptr_struct->PCI_SYNC_UPDATE_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_pack(&(ptr_struct->PCI_SYNC_UPDATE_TO), ptr_buff + offset / 8);
 	offset = 320;
-	reg_access_hca_default_timeout_pack(&(ptr_struct->TEAR_DOWN_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_pack(&(ptr_struct->TEAR_DOWN_TO), ptr_buff + offset / 8);
 	offset = 352;
-	reg_access_hca_default_timeout_pack(&(ptr_struct->FSM_REACTIVATE_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_pack(&(ptr_struct->FSM_REACTIVATE_TO), ptr_buff + offset / 8);
 	offset = 384;
-	reg_access_hca_default_timeout_pack(&(ptr_struct->RECLAIM_PAGES_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_pack(&(ptr_struct->RECLAIM_PAGES_TO), ptr_buff + offset / 8);
 	offset = 416;
-	reg_access_hca_default_timeout_pack(&(ptr_struct->RECLAIM_VFS_PAGES_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_pack(&(ptr_struct->RECLAIM_VFS_PAGES_TO), ptr_buff + offset / 8);
 	offset = 448;
-	reg_access_hca_default_timeout_pack(&(ptr_struct->DRIVER_UNLOAD_AND_RESET_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_pack(&(ptr_struct->DRIVER_UNLOAD_AND_RESET_TO), ptr_buff + offset / 8);
 }
 
-void reg_access_hca_dtor_reg_unpack(struct reg_access_hca_dtor_reg *ptr_struct, const u_int8_t *ptr_buff)
+void reg_access_hca_dtor_reg_ext_unpack(struct reg_access_hca_dtor_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 
 	offset = 32;
-	reg_access_hca_default_timeout_unpack(&(ptr_struct->PCIE_TOGGLE_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_unpack(&(ptr_struct->PCIE_TOGGLE_TO), ptr_buff + offset / 8);
 	offset = 160;
-	reg_access_hca_default_timeout_unpack(&(ptr_struct->HEALTH_POLL_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_unpack(&(ptr_struct->HEALTH_POLL_TO), ptr_buff + offset / 8);
 	offset = 192;
-	reg_access_hca_default_timeout_unpack(&(ptr_struct->FULL_CRDUMP_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_unpack(&(ptr_struct->FULL_CRDUMP_TO), ptr_buff + offset / 8);
 	offset = 224;
-	reg_access_hca_default_timeout_unpack(&(ptr_struct->FW_RESET_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_unpack(&(ptr_struct->FW_RESET_TO), ptr_buff + offset / 8);
 	offset = 256;
-	reg_access_hca_default_timeout_unpack(&(ptr_struct->FLUSH_ON_ERR_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_unpack(&(ptr_struct->FLUSH_ON_ERR_TO), ptr_buff + offset / 8);
 	offset = 288;
-	reg_access_hca_default_timeout_unpack(&(ptr_struct->PCI_SYNC_UPDATE_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_unpack(&(ptr_struct->PCI_SYNC_UPDATE_TO), ptr_buff + offset / 8);
 	offset = 320;
-	reg_access_hca_default_timeout_unpack(&(ptr_struct->TEAR_DOWN_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_unpack(&(ptr_struct->TEAR_DOWN_TO), ptr_buff + offset / 8);
 	offset = 352;
-	reg_access_hca_default_timeout_unpack(&(ptr_struct->FSM_REACTIVATE_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_unpack(&(ptr_struct->FSM_REACTIVATE_TO), ptr_buff + offset / 8);
 	offset = 384;
-	reg_access_hca_default_timeout_unpack(&(ptr_struct->RECLAIM_PAGES_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_unpack(&(ptr_struct->RECLAIM_PAGES_TO), ptr_buff + offset / 8);
 	offset = 416;
-	reg_access_hca_default_timeout_unpack(&(ptr_struct->RECLAIM_VFS_PAGES_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_unpack(&(ptr_struct->RECLAIM_VFS_PAGES_TO), ptr_buff + offset / 8);
 	offset = 448;
-	reg_access_hca_default_timeout_unpack(&(ptr_struct->DRIVER_UNLOAD_AND_RESET_TO), ptr_buff + offset / 8);
+	reg_access_hca_default_timeout_ext_unpack(&(ptr_struct->DRIVER_UNLOAD_AND_RESET_TO), ptr_buff + offset / 8);
 }
 
-void reg_access_hca_dtor_reg_print(const struct reg_access_hca_dtor_reg *ptr_struct, FILE *fd, int indent_level)
+void reg_access_hca_dtor_reg_ext_print(const struct reg_access_hca_dtor_reg_ext *ptr_struct, FILE *fd, int indent_level)
 {
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "======== reg_access_hca_dtor_reg ========\n");
+	fprintf(fd, "======== reg_access_hca_dtor_reg_ext ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "PCIE_TOGGLE_TO:\n");
-	reg_access_hca_default_timeout_print(&(ptr_struct->PCIE_TOGGLE_TO), fd, indent_level + 1);
+	reg_access_hca_default_timeout_ext_print(&(ptr_struct->PCIE_TOGGLE_TO), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "HEALTH_POLL_TO:\n");
-	reg_access_hca_default_timeout_print(&(ptr_struct->HEALTH_POLL_TO), fd, indent_level + 1);
+	reg_access_hca_default_timeout_ext_print(&(ptr_struct->HEALTH_POLL_TO), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "FULL_CRDUMP_TO:\n");
-	reg_access_hca_default_timeout_print(&(ptr_struct->FULL_CRDUMP_TO), fd, indent_level + 1);
+	reg_access_hca_default_timeout_ext_print(&(ptr_struct->FULL_CRDUMP_TO), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "FW_RESET_TO:\n");
-	reg_access_hca_default_timeout_print(&(ptr_struct->FW_RESET_TO), fd, indent_level + 1);
+	reg_access_hca_default_timeout_ext_print(&(ptr_struct->FW_RESET_TO), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "FLUSH_ON_ERR_TO:\n");
-	reg_access_hca_default_timeout_print(&(ptr_struct->FLUSH_ON_ERR_TO), fd, indent_level + 1);
+	reg_access_hca_default_timeout_ext_print(&(ptr_struct->FLUSH_ON_ERR_TO), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "PCI_SYNC_UPDATE_TO:\n");
-	reg_access_hca_default_timeout_print(&(ptr_struct->PCI_SYNC_UPDATE_TO), fd, indent_level + 1);
+	reg_access_hca_default_timeout_ext_print(&(ptr_struct->PCI_SYNC_UPDATE_TO), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "TEAR_DOWN_TO:\n");
-	reg_access_hca_default_timeout_print(&(ptr_struct->TEAR_DOWN_TO), fd, indent_level + 1);
+	reg_access_hca_default_timeout_ext_print(&(ptr_struct->TEAR_DOWN_TO), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "FSM_REACTIVATE_TO:\n");
-	reg_access_hca_default_timeout_print(&(ptr_struct->FSM_REACTIVATE_TO), fd, indent_level + 1);
+	reg_access_hca_default_timeout_ext_print(&(ptr_struct->FSM_REACTIVATE_TO), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "RECLAIM_PAGES_TO:\n");
-	reg_access_hca_default_timeout_print(&(ptr_struct->RECLAIM_PAGES_TO), fd, indent_level + 1);
+	reg_access_hca_default_timeout_ext_print(&(ptr_struct->RECLAIM_PAGES_TO), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "RECLAIM_VFS_PAGES_TO:\n");
-	reg_access_hca_default_timeout_print(&(ptr_struct->RECLAIM_VFS_PAGES_TO), fd, indent_level + 1);
+	reg_access_hca_default_timeout_ext_print(&(ptr_struct->RECLAIM_VFS_PAGES_TO), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "DRIVER_UNLOAD_AND_RESET_TO:\n");
-	reg_access_hca_default_timeout_print(&(ptr_struct->DRIVER_UNLOAD_AND_RESET_TO), fd, indent_level + 1);
+	reg_access_hca_default_timeout_ext_print(&(ptr_struct->DRIVER_UNLOAD_AND_RESET_TO), fd, indent_level + 1);
 }
 
-unsigned int reg_access_hca_dtor_reg_size(void)
+unsigned int reg_access_hca_dtor_reg_ext_size(void)
 {
-	return REG_ACCESS_HCA_DTOR_REG_SIZE;
+	return REG_ACCESS_HCA_DTOR_REG_EXT_SIZE;
 }
 
-void reg_access_hca_dtor_reg_dump(const struct reg_access_hca_dtor_reg *ptr_struct, FILE *fd)
+void reg_access_hca_dtor_reg_ext_dump(const struct reg_access_hca_dtor_reg_ext *ptr_struct, FILE *fd)
 {
-	reg_access_hca_dtor_reg_print(ptr_struct, fd, 0);
+	reg_access_hca_dtor_reg_ext_print(ptr_struct, fd, 0);
 }
 
 void reg_access_hca_mcam_reg_ext_pack(const struct reg_access_hca_mcam_reg_ext *ptr_struct, u_int8_t *ptr_buff)
@@ -4792,38 +4792,47 @@ void reg_access_hca_reg_access_hca_Nodes_print(const union reg_access_hca_reg_ac
 	fprintf(fd, "======== reg_access_hca_reg_access_hca_Nodes ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mqis_reg_ext:\n");
+	reg_access_hca_mqis_reg_ext_print(&(ptr_struct->mqis_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "ptys_reg_ext:\n");
+	reg_access_hca_ptys_reg_ext_print(&(ptr_struct->ptys_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mcqi_linkx_properties_ext:\n");
 	reg_access_hca_mcqi_linkx_properties_ext_print(&(ptr_struct->mcqi_linkx_properties_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "nic_dpa_eu_partition_reg_ext:\n");
-	reg_access_hca_nic_dpa_eu_partition_reg_ext_print(&(ptr_struct->nic_dpa_eu_partition_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mfsv_reg_ext:\n");
+	reg_access_hca_mfsv_reg_ext_print(&(ptr_struct->mfsv_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mfba_reg_ext:\n");
-	reg_access_hca_mfba_reg_ext_print(&(ptr_struct->mfba_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mfbe_reg_ext:\n");
+	reg_access_hca_mfbe_reg_ext_print(&(ptr_struct->mfbe_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pmaos_reg_ext:\n");
-	reg_access_hca_pmaos_reg_ext_print(&(ptr_struct->pmaos_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mcam_reg_ext:\n");
+	reg_access_hca_mcam_reg_ext_print(&(ptr_struct->mcam_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mtrc_stdb_reg_ext:\n");
 	reg_access_hca_mtrc_stdb_reg_ext_print(&(ptr_struct->mtrc_stdb_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "nic_cap_ext_reg_ext:\n");
+	reg_access_hca_nic_cap_ext_reg_ext_print(&(ptr_struct->nic_cap_ext_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "pcnr_reg_ext:\n");
 	reg_access_hca_pcnr_reg_ext_print(&(ptr_struct->pcnr_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mtcap_ext:\n");
-	reg_access_hca_mtcap_ext_print(&(ptr_struct->mtcap_ext), fd, indent_level + 1);
+	fprintf(fd, "pmaos_reg_ext:\n");
+	reg_access_hca_pmaos_reg_ext_print(&(ptr_struct->pmaos_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mcqi_activation_method_ext:\n");
-	reg_access_hca_mcqi_activation_method_ext_print(&(ptr_struct->mcqi_activation_method_ext), fd, indent_level + 1);
+	fprintf(fd, "mtrc_cap_reg_ext:\n");
+	reg_access_hca_mtrc_cap_reg_ext_print(&(ptr_struct->mtrc_cap_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mcc_reg_ext:\n");
-	reg_access_hca_mcc_reg_ext_print(&(ptr_struct->mcc_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mnvdi_reg_ext:\n");
+	reg_access_hca_mnvdi_reg_ext_print(&(ptr_struct->mnvdi_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "nic_dpa_perf_reg_ext:\n");
-	reg_access_hca_nic_dpa_perf_reg_ext_print(&(ptr_struct->nic_dpa_perf_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mcqi_reg_ext:\n");
+	reg_access_hca_mcqi_reg_ext_print(&(ptr_struct->mcqi_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "nic_dpa_eug_reg_ext:\n");
-	reg_access_hca_nic_dpa_eug_reg_ext_print(&(ptr_struct->nic_dpa_eug_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "resource_dump_ext:\n");
+	reg_access_hca_resource_dump_ext_print(&(ptr_struct->resource_dump_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mcda_reg_ext:\n");
 	reg_access_hca_mcda_reg_ext_print(&(ptr_struct->mcda_reg_ext), fd, indent_level + 1);
@@ -4831,59 +4840,65 @@ void reg_access_hca_reg_access_hca_Nodes_print(const union reg_access_hca_reg_ac
 	fprintf(fd, "mnvgc_reg_ext:\n");
 	reg_access_hca_mnvgc_reg_ext_print(&(ptr_struct->mnvgc_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mcam_reg_ext:\n");
-	reg_access_hca_mcam_reg_ext_print(&(ptr_struct->mcam_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pmlp_reg_ext:\n");
-	reg_access_hca_pmlp_reg_ext_print(&(ptr_struct->pmlp_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "nic_cap_ext_reg_ext:\n");
-	reg_access_hca_nic_cap_ext_reg_ext_print(&(ptr_struct->nic_cap_ext_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mpegc_reg:\n");
-	reg_access_hca_mpegc_reg_print(&(ptr_struct->mpegc_reg), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mfrl_reg_ext:\n");
-	reg_access_hca_mfrl_reg_ext_print(&(ptr_struct->mfrl_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mfmc_reg_ext:\n");
-	reg_access_hca_mfmc_reg_ext_print(&(ptr_struct->mfmc_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mtrc_cap_reg_ext:\n");
-	reg_access_hca_mtrc_cap_reg_ext_print(&(ptr_struct->mtrc_cap_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mcqi_version_ext:\n");
-	reg_access_hca_mcqi_version_ext_print(&(ptr_struct->mcqi_version_ext), fd, indent_level + 1);
+	fprintf(fd, "mmdio_ext:\n");
+	reg_access_hca_mmdio_ext_print(&(ptr_struct->mmdio_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "paos_reg_ext:\n");
 	reg_access_hca_paos_reg_ext_print(&(ptr_struct->paos_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "ptys_reg_ext:\n");
-	reg_access_hca_ptys_reg_ext_print(&(ptr_struct->ptys_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "dtor_reg_ext:\n");
+	reg_access_hca_dtor_reg_ext_print(&(ptr_struct->dtor_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mpegc_reg_ext:\n");
-	reg_access_hca_mpegc_reg_ext_print(&(ptr_struct->mpegc_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mnvia_reg_ext:\n");
+	reg_access_hca_mnvia_reg_ext_print(&(ptr_struct->mnvia_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mfpa_reg_ext:\n");
-	reg_access_hca_mfpa_reg_ext_print(&(ptr_struct->mfpa_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "pmlp_reg_ext:\n");
+	reg_access_hca_pmlp_reg_ext_print(&(ptr_struct->pmlp_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mcqi_reg_ext:\n");
-	reg_access_hca_mcqi_reg_ext_print(&(ptr_struct->mcqi_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mtcap_ext:\n");
+	reg_access_hca_mtcap_ext_print(&(ptr_struct->mtcap_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "dtor_reg:\n");
-	reg_access_hca_dtor_reg_print(&(ptr_struct->dtor_reg), fd, indent_level + 1);
+	fprintf(fd, "mfmc_reg_ext:\n");
+	reg_access_hca_mfmc_reg_ext_print(&(ptr_struct->mfmc_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mcqs_reg_ext:\n");
+	reg_access_hca_mcqs_reg_ext_print(&(ptr_struct->mcqs_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mcqi_cap_ext:\n");
+	reg_access_hca_mcqi_cap_ext_print(&(ptr_struct->mcqi_cap_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mcqi_activation_method_ext:\n");
+	reg_access_hca_mcqi_activation_method_ext_print(&(ptr_struct->mcqi_activation_method_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mtmp_ext:\n");
 	reg_access_hca_mtmp_ext_print(&(ptr_struct->mtmp_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mmdio_ext:\n");
-	reg_access_hca_mmdio_ext_print(&(ptr_struct->mmdio_ext), fd, indent_level + 1);
+	fprintf(fd, "mpegc_reg_ext:\n");
+	reg_access_hca_mpegc_reg_ext_print(&(ptr_struct->mpegc_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "nic_dpa_eu_partition_reg_ext:\n");
+	reg_access_hca_nic_dpa_eu_partition_reg_ext_print(&(ptr_struct->nic_dpa_eu_partition_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "nic_dpa_eug_reg_ext:\n");
+	reg_access_hca_nic_dpa_eug_reg_ext_print(&(ptr_struct->nic_dpa_eug_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mpegc_reg:\n");
+	reg_access_hca_mpegc_reg_print(&(ptr_struct->mpegc_reg), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mfpa_reg_ext:\n");
+	reg_access_hca_mfpa_reg_ext_print(&(ptr_struct->mfpa_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mfba_reg_ext:\n");
+	reg_access_hca_mfba_reg_ext_print(&(ptr_struct->mfba_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "nic_dpa_perf_ctrl_reg_ext:\n");
+	reg_access_hca_nic_dpa_perf_ctrl_reg_ext_print(&(ptr_struct->nic_dpa_perf_ctrl_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mgir_ext:\n");
 	reg_access_hca_mgir_ext_print(&(ptr_struct->mgir_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mcqs_reg_ext:\n");
-	reg_access_hca_mcqs_reg_ext_print(&(ptr_struct->mcqs_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mcqi_version_ext:\n");
+	reg_access_hca_mcqi_version_ext_print(&(ptr_struct->mcqi_version_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mpcir_ext:\n");
 	reg_access_hca_mpcir_ext_print(&(ptr_struct->mpcir_ext), fd, indent_level + 1);
@@ -4891,35 +4906,20 @@ void reg_access_hca_reg_access_hca_Nodes_print(const union reg_access_hca_reg_ac
 	fprintf(fd, "mcia_ext:\n");
 	reg_access_hca_mcia_ext_print(&(ptr_struct->mcia_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mfsv_reg_ext:\n");
-	reg_access_hca_mfsv_reg_ext_print(&(ptr_struct->mfsv_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mnvdi_reg_ext:\n");
-	reg_access_hca_mnvdi_reg_ext_print(&(ptr_struct->mnvdi_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mcqi_cap_ext:\n");
-	reg_access_hca_mcqi_cap_ext_print(&(ptr_struct->mcqi_cap_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "resource_dump_ext:\n");
-	reg_access_hca_resource_dump_ext_print(&(ptr_struct->resource_dump_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mnvqc_reg_ext:\n");
 	reg_access_hca_mnvqc_reg_ext_print(&(ptr_struct->mnvqc_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mfbe_reg_ext:\n");
-	reg_access_hca_mfbe_reg_ext_print(&(ptr_struct->mfbe_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "msgi_ext:\n");
 	reg_access_hca_msgi_ext_print(&(ptr_struct->msgi_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mnvia_reg_ext:\n");
-	reg_access_hca_mnvia_reg_ext_print(&(ptr_struct->mnvia_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mcc_reg_ext:\n");
+	reg_access_hca_mcc_reg_ext_print(&(ptr_struct->mcc_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "nic_dpa_perf_ctrl_reg_ext:\n");
-	reg_access_hca_nic_dpa_perf_ctrl_reg_ext_print(&(ptr_struct->nic_dpa_perf_ctrl_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "nic_dpa_perf_reg_ext:\n");
+	reg_access_hca_nic_dpa_perf_reg_ext_print(&(ptr_struct->nic_dpa_perf_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mqis_reg_ext:\n");
-	reg_access_hca_mqis_reg_ext_print(&(ptr_struct->mqis_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mfrl_reg_ext:\n");
+	reg_access_hca_mfrl_reg_ext_print(&(ptr_struct->mfrl_reg_ext), fd, indent_level + 1);
 }
 
 unsigned int reg_access_hca_reg_access_hca_Nodes_size(void)
@@ -4931,4 +4931,3 @@ void reg_access_hca_reg_access_hca_Nodes_dump(const union reg_access_hca_reg_acc
 {
 	reg_access_hca_reg_access_hca_Nodes_print(ptr_struct, fd, 0);
 }
-
