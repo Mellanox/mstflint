@@ -188,6 +188,7 @@ rm -rf $RPM_BUILD_ROOT
 %{mstflint_python_tools}/cmdif.py
 %{mstflint_python_tools}/ccmdif.so
 %{mstflint_python_tools}/regaccess.py
+%{mstflint_python_tools}/regaccess_structs.py
 %{mstflint_python_tools}/rreg_access.so
 %{mstflint_python_tools}/dev_mgt.py
 %{mstflint_python_tools}/c_dev_mgt.so
