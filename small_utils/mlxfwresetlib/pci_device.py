@@ -95,12 +95,10 @@ class PciDevice(object):
 
     def get_manufacturing_base_mac(self):
         # Be-careful : The logic won't work for all devices
-
         mst_device = MstDevice(self.aliases[0])
         try:
             reg_access = RegAccess(mst_device)
             manufacturing_base_mac = reg_access.getManufacturingBaseMac()
         finally:
             mst_device.close()
-
         return manufacturing_base_mac
