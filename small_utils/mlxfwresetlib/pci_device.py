@@ -86,15 +86,19 @@ class PciDevice(object):
 
     def is_livefish_mode(self):
         mst_device = MstDevice(self.aliases[0])
-        device_mgt = DevMgt(mst_device)
-        return True if device_mgt.isLivefishMode() == 1 else False
+        try:
+            device_mgt = DevMgt(mst_device)
+            res = device_mgt.isLivefishMode() == 1
+        finally:
+            mst_device.close()
+        return res
 
     def get_manufacturing_base_mac(self):
         # Be-careful : The logic won't work for all devices
-
         mst_device = MstDevice(self.aliases[0])
-        reg_access = RegAccess(mst_device)
-        manufacturing_base_mac = reg_access.getManufacturingBaseMac()
-        mst_device.close()
-
+        try:
+            reg_access = RegAccess(mst_device)
+            manufacturing_base_mac = reg_access.getManufacturingBaseMac()
+        finally:
+            mst_device.close()
         return manufacturing_base_mac

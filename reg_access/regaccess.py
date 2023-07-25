@@ -267,6 +267,20 @@ if REG_ACCESS:
                     ("end", c_uint8),
                     ("time_left", c_uint32)]
 
+    class DTOR_REG_EXT(ctypes.Structure):
+        _fields_ = [
+            ("PCIE_TOGGLE_TO", DEFAULT_TIMEOUT),
+            ("HEALTH_POLL_TO", DEFAULT_TIMEOUT),
+            ("FULL_CRDUMP_TO", DEFAULT_TIMEOUT),
+            ("FW_RESET_TO", DEFAULT_TIMEOUT),
+            ("FLUSH_ON_ERR_TO", DEFAULT_TIMEOUT),
+            ("PCI_SYNC_UPDATE_TO", DEFAULT_TIMEOUT),
+            ("TEAR_DOWN_TO", DEFAULT_TIMEOUT),
+            ("FSM_REACTIVATE_TO", DEFAULT_TIMEOUT),
+            ("RECLAIM_PAGES_TO", DEFAULT_TIMEOUT),
+            ("RECLAIM_VFS_PAGES_TO", DEFAULT_TIMEOUT),
+            ("DRIVER_UNLOAD_AND_RESET_TO", DEFAULT_TIMEOUT)
+        ] 
 
     class RegAccess:
         GET = REG_ACCESS_METHOD_GET
@@ -287,6 +301,7 @@ if REG_ACCESS:
             self._reg_access_debug_cap = REG_ACCESS.reg_access_debug_cap
             self._reg_access_mddq = REG_ACCESS.reg_access_mddq
             self._reg_access_mdsr = REG_ACCESS.reg_access_mdsr
+            self._reg_access_dtor = REG_ACCESS.reg_access_dtor
 
         def _err2str(self, rc):
             err2str = REG_ACCESS.reg_access_err2str
@@ -473,6 +488,18 @@ if REG_ACCESS:
                 "feature_group": mcamRegP.contents.feature_group,
                 "mng_access_reg_cap_mask": to_bits(mcamRegP.contents.mng_access_reg_cap_mask),
                 "mng_feature_cap_mask": to_bits(mcamRegP.contents.mng_feature_cap_mask)
+            }
+        ##########################
+        def getDTOR(self):
+            dtorRegisterP = pointer(DTOR_REG_EXT())
+            rc = self._reg_access_dtor(self._mstDev.mf, REG_ACCESS_METHOD_GET, dtorRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register DTOR")
+
+            return {
+                "DRIVER_UNLOAD_AND_RESET_TO": dtorRegisterP.contents.DRIVER_UNLOAD_AND_RESET_TO,
+                "PCI_SYNC_UPDATE_TO": dtorRegisterP.contents.PCI_SYNC_UPDATE_TO,
+                "PCIE_TOGGLE_TO": dtorRegisterP.contents.PCIE_TOGGLE_TO
             }
 
         ##########################

@@ -29,6 +29,10 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 # --
+
+import regaccess
+
+
 class CmdNotSupported(Exception):
     pass
 
@@ -48,6 +52,8 @@ class CmdRegMfrl():
         {'type': PHY_LESS, 'description': 'Phy-less reset (keep network port active during reset)', 'mask': 0x2},
         {'type': NIC_ONLY, 'description': 'NIC only reset (for SoC devices)', 'mask': 0x4}
     ]
+
+    RESET_STATE_ARM_OS_SHUTDOWN_IN_PROGRESS = 7
 
     @classmethod
     def descriptions(cls):
@@ -100,15 +106,17 @@ class CmdRegMfrl():
         else:
             raise RuntimeError("Reset-level {0} doesn't exist in reset-levels !".format(reset_level))
 
-    def __init__(self, reg_access):
-
+    def __init__(self, reg_access, logger):
         self._reg_access = reg_access
+        self.logger = logger
 
         self._reset_levels = CmdRegMfrl.reset_levels_db[:]  # copy
         self._reset_types = CmdRegMfrl.reset_types_db[:]   # copy
 
         # Read register ('get' command) from device
-        reg = self._read_reg()
+        self.read()
+
+    def _update_variables(self, reg):
 
         # Update 'pci_rescan_required' field
         self._pci_rescan_required = reg['pci_rescan_required']
@@ -124,21 +132,39 @@ class CmdRegMfrl():
             if 'supported' not in reset_type_ii:
                 reset_type_ii['supported'] = (reset_type & reset_type_ii['mask']) != 0
 
+        self._reset_state = reg['reset_state']
+
+    def _send(self, method, reset_level=None, reset_type=None, reset_sync=None):
+        try:
+            self.logger.debug("sending MFRL with method={}, reset_level={}, reset_type={}, reset_sync={}".format(
+                method, reset_level, reset_type, reset_sync
+            ))
+            return self._reg_access.sendMFRL(method, reset_level, reset_type, reset_sync)
+        except regaccess.RegAccException as e:
+            if reset_sync == 1:
+                raise e
+            # FW bug first mfrl register might fail
+            self.logger.debug("Retry MFRL with method={}, reset_level={}, reset_type={}, reset_sync={}".format(
+                method, reset_level, reset_type, reset_sync
+            ))
+            return self._reg_access.sendMFRL(method, reset_level, reset_type, reset_sync)
+
     def _read_reg(self):
-        reset_level, reset_type, pci_rescan_required = self._reg_access.sendMFRL(self._reg_access.GET)
+        reset_level, reset_type, pci_rescan_required, reset_state = self._send(self._reg_access.GET)
         return {
             'reset_level': reset_level,
             'reset_type': reset_type,
-            'pci_rescan_required': pci_rescan_required
+            'pci_rescan_required': pci_rescan_required,
+            'reset_state': reset_state
         }
 
     def _write_reg(self, reset_level, reset_type, reset_sync):
-        self._reg_access.sendMFRL(self._reg_access.SET, reset_level, reset_type, reset_sync)
+        self._send(self._reg_access.SET, reset_level, reset_type, reset_sync)
 
     def is_pci_rescan_required(self):
         return True if self._pci_rescan_required == 1 else False
 
-    def query_text(self):
+    def query_text(self, is_cedar=False):
         'return the text for the query operation in mlxfwreset'
         # Reset levels
         default_reset_level = self.default_reset_level()
@@ -146,8 +172,12 @@ class CmdRegMfrl():
         for reset_level_ii in self._reset_levels:
             level = reset_level_ii['level']
             description = reset_level_ii['description']
-            supported = "Supported" if reset_level_ii['supported'] else "Not Supported"
-            default = "(default)" if reset_level_ii["level"] == default_reset_level else ""
+            if is_cedar:
+                supported = "Supported" if reset_level_ii['supported'] and reset_level_ii['level'] is CmdRegMfrl.WARM_REBOOT else "Not Supported"
+                default = "(default)" if reset_level_ii['level'] is CmdRegMfrl.WARM_REBOOT else ""
+            else:
+                supported = "Supported" if reset_level_ii['supported'] else "Not Supported"
+                default = "(default)" if reset_level_ii["level"] == default_reset_level else ""
             result += "{0}: {1:<62}-{2:<14}{3}\n".format(level, description, supported, default)
 
         # Reset types
@@ -220,7 +250,17 @@ class CmdRegMfrl():
     def is_default_reset_level(self, reset_level):
         return reset_level == self.default_reset_level()
 
-    def send(self, reset_level, reset_type, reset_sync):
+    def is_reset_state_in_progress(self):
+        return True if self._reset_state == CmdRegMfrl.RESET_STATE_ARM_OS_SHUTDOWN_IN_PROGRESS else False
+
+    def read(self):
+        # Read register ('get' command) from device
+        reg = self._read_reg()
+
+        # Update privates variables.
+        self._update_variables(reg)
+
+    def send(self, reset_level, reset_type, reset_sync, is_cedar=False):
         """
         send MFRL Set command
         Verify that reset-level and reset-type are supported (reset-sync is not verified)
@@ -233,6 +273,11 @@ class CmdRegMfrl():
                 break
         else:
             raise CmdNotSupported('Failed to send MFRL! reset-level {0} is not supported!'.format(reset_level))
+
+        if is_cedar:
+            for reset_level_ii in self._reset_levels:
+                if reset_level_ii['level'] == CmdRegMfrl.PCI_RESET:
+                    reset_level_2_send = reset_level_2_send | reset_level_ii['mask']
 
         # Reset-type to send
         for reset_type_ii in self._reset_types:
