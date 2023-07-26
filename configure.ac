@@ -118,6 +118,7 @@ XZ_UTILS_DIR=""
 ADABE_TOOLS=""
 ADABE_DBS=""
 ADABE_DBS_EXTRA_DIST=""
+DPA=""
 
 COMPILER_FPIC="-fPIC"
 AC_SUBST(COMPILER_FPIC)
@@ -136,7 +137,7 @@ fi
 # FWMANAGER
 AC_MSG_CHECKING(--enable-fw-mgr argument)
 AC_ARG_ENABLE(fw-mgr,
-             [  --enable-fw-mgr        Enable compiling mstfwmanager tool and features],
+             [  --enable-fw-mgr         Enable compiling mstfwmanager tool and features],
              [enable_fw_mgr="yes"],
              [enable_fw_mgr="no"])
 AC_MSG_RESULT($enable_fw_mgr)
@@ -148,6 +149,14 @@ if test "x$enable_fw_mgr" = "xyes"; then
     AC_CHECK_LIB(boost_regex, regcompA,, AC_MSG_ERROR([cannot find boost_regex regcompA() function. Try re-installing the library...]))
     CURL_INC_DIR=/usr/include/curl/
 fi
+
+# mlxdpa
+AC_MSG_CHECKING(--enable-dpa argument)
+AC_ARG_ENABLE(dpa,
+             [  --enable-dpa            Enable compiling mstdpa tool],
+             [enable_dpa="yes"],
+             [enable_dpa="no"])
+AC_MSG_RESULT($enable_dpa)
 
 # Adabe
 AC_MSG_CHECKING(--enable-adb-generic-tools argument)
@@ -423,6 +432,13 @@ AS_IF([test "x$enable_fw_mgr" = "xyes"], [
     
 AC_SUBST(FW_MGR_TOOLS)
 
+AS_IF([test "x$enable_dpa" = "xyes"], [
+    AC_CONFIG_FILES(mlxdpa/Makefile)
+    DPA="mlxdpa"
+])
+
+AC_SUBST(DPA)
+
 AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(adb_parser/Makefile)
         AC_CONFIG_FILES(tools_layouts/adb/Makefile)
@@ -468,4 +484,4 @@ AC_CONFIG_FILES([debian/mstflint.install])
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mft_utils/hsmclient/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
         tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
         flint/Makefile small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
-        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile resourcedump/Makefile resourcedump/resourcedump_lib/Makefile resourceparse/Makefile mlxdpa/Makefile)
+        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile resourcedump/Makefile resourcedump/resourcedump_lib/Makefile resourceparse/Makefile )

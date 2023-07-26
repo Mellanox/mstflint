@@ -33,10 +33,10 @@ mstdpa_LDADD    = $(USER_DIR)/cmdparser/libcmdparser.a $(MLXSIGN_DIR)/libmlxsign
 
 
 if ARM64_BUILD
-mstdpa_LDADD    += dpa_elf/arm64/libdpa_elf.a
+mstdpa_LDADD    += dpa_elf/arm64/libdpa_elf
 endif
 if X86_64_BUILD
-mstdpa_LDADD    += dpa_elf/x86_64/libdpa_elf.a
+mstdpa_LDADD    += dpa_elf/x86_64/libdpa_elf
 endif
 
 if ENABLE_OPENSSL
