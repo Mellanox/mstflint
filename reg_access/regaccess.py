@@ -116,20 +116,14 @@ if REG_ACCESS:
                 self._mstDev = mtcr.MstDevice(pci_device)
             self._reg_access_mcam = REG_ACCESS.reg_access_mcam
             self._reg_access_mtrc_cap = REG_ACCESS.reg_access_mtrc_cap
-            self._reg_access_mtrc_stdb_warpper = REG_ACCESS.reg_access_mtrc_stdb_wrapper
             self._reg_access_mgir = REG_ACCESS.reg_access_mgir
             self._reg_access_mfrl = REG_ACCESS.reg_access_mfrl
             self._reg_access_pcnr = REG_ACCESS.reg_access_pcnr
             self._reg_access_mpcir = REG_ACCESS.reg_access_mpcir
             self._reg_access_res_dump = REG_ACCESS.reg_access_res_dump
-            self._reg_access_debug_cap = REG_ACCESS.reg_access_debug_cap
             self._reg_access_mddq = REG_ACCESS.reg_access_mddq
             self._reg_access_mdsr = REG_ACCESS.reg_access_mdsr
-            self._reg_access_mteim = REG_ACCESS.reg_access_mteim
             self._reg_access_nic_dpa_eug = REG_ACCESS.reg_access_nic_dpa_eug
-            self._reg_access_nic_cap_ext = REG_ACCESS.reg_access_nic_cap_ext
-            self._reg_access_nic_dpa_perf = REG_ACCESS.reg_access_nic_dpa_perf
-            self._reg_access_nic_dpa_perf_ctrl = REG_ACCESS.reg_access_nic_dpa_perf_ctrl
             self._reg_access_mrsr = REG_ACCESS.reg_access_mrsr
             self._reg_access_dtor = REG_ACCESS.reg_access_dtor
 
