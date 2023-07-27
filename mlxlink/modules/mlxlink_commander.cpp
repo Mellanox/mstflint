@@ -200,14 +200,14 @@ void MlxlinkCommander::checkValidFW()
 {
     try
     {
-        u_int32_t tmpLocalPort = _localPort;
-        struct connectib_icmd_get_fw_info fw_info;
-        memset(&fw_info, 0, sizeof(fw_info));
-        gcif_get_fw_info(_mf, &fw_info);
         char fwVersion[32];
-        sprintf(fwVersion, "%02d.%02d.%04d", fw_info.fw_version.MAJOR, fw_info.fw_version.MINOR,
-                fw_info.fw_version.SUBMINOR);
+        u_int32_t tmpLocalPort = _localPort;
+
+        sendPrmReg(ACCESS_REG_MGIR, GET);
+        sprintf(fwVersion, "%02d.%02d.%04d", getFieldValue("extended_major"), getFieldValue("extended_minor"),
+                getFieldValue("extended_sub_minor"));
         _fwVersion = string(fwVersion);
+
         if (_userInput._pcie)
         { // Fw validity should be checked, so set the local port to 1.
             _localPort = 1;
