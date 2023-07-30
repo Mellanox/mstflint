@@ -59,8 +59,8 @@ const map<string, MlxDpa::MlxDpaCmd> MlxDpa::_cmdStringToEnum = {{"sign_dpa_apps
                                                                  {"sign_cert_container", SignDPACertContainer}};
 
 MlxDpa::MlxDpa() :
-    CommandLineRequester("mlxdpa OPTIONS"),
-    _cmdParser("mlxdpa"),
+    CommandLineRequester("mstdpa OPTIONS"),
+    _cmdParser("mstdpa"),
     _hostELFPath(""),
     _certificatePath(""),
     _privateKeyPem(""),
@@ -126,23 +126,23 @@ void MlxDpa::PrintHelp()
     printf(INDENT "Examples:\n");
     printf(INDENT2 "%-24s: %s\n",
            "Sign Host ELF using PEM file",
-           "mlxdpa -e /tmp/host.elf -c /tmp/chain.cert -p /tmp/p_key.pem -o /tmp/signed_host.elf sign_dpa_apps");
+           "mstdpa -e /tmp/host.elf -c /tmp/chain.cert -p /tmp/p_key.pem -o /tmp/signed_host.elf sign_dpa_apps");
     printf(
       INDENT2 "%-24s: %s\n",
       "Create certificate upload container",
-      "mlxdpa --cert_container_type add -c /tmp/cert.der -o /tmp/cert_container.bin --life_cycle_priority OEM create_cert_container");
+      "mstdpa --cert_container_type add -c /tmp/cert.der -o /tmp/cert_container.bin --life_cycle_priority OEM create_cert_container");
     printf(
       INDENT2 "%-24s: %s\n",
       "Create certificate remove all container",
-      "mlxdpa --cert_container_type remove --remove_all_certs -o /tmp/cert_container.bin --life_cycle_priority OEM create_cert_container");
+      "mstdpa --cert_container_type remove --remove_all_certs -o /tmp/cert_container.bin --life_cycle_priority OEM create_cert_container");
     printf(
       INDENT2 "%-24s: %s\n",
       "Create certificate remove container",
-      "mlxdpa --cert_container_type remove --cert_uuid 7c0ab0fc-082e-11ee-bd9d-e43d1a1f06ae -o /tmp/cert_container.bin --life_cycle_priority OEM create_cert_container");
+      "mstdpa --cert_container_type remove --cert_uuid 7c0ab0fc-082e-11ee-bd9d-e43d1a1f06ae -o /tmp/cert_container.bin --life_cycle_priority OEM create_cert_container");
     printf(
       INDENT2 "%-24s: %s\n",
       "Sign certificate container",
-      "mlxdpa --cert_container /tmp/cert_container.bin -p /tmp/p_key.pem --keypair_uuid 3c8f46b2-159f-11ee-9ac4-e43d1a1f06ae "
+      "mstdpa --cert_container /tmp/cert_container.bin -p /tmp/p_key.pem --keypair_uuid 3c8f46b2-159f-11ee-9ac4-e43d1a1f06ae "
       "--cert_uuid 7c0ab0fc-082e-11ee-bd9d-e43d1a1f06ae --life_cycle_priority OEM -o /tmp/signed_cert_container.bin sign_cert_container");
 
     printf("\n");
@@ -433,7 +433,7 @@ unique_ptr<MlxSign::Signer> MlxDpa::CreateSigner(string privateKeyPem, string ke
         throw MlxDpaException("failed to create signer.");
     }
 #else
-    throw MlxDpaException("mlxdpa sign is not supported.");
+    throw MlxDpaException("mstdpa sign is not supported.");
 #endif
 
     return signer;

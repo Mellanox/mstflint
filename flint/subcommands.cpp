@@ -1610,6 +1610,10 @@ const char* SubCommand::fwImgTypeToStr(u_int8_t fwImgType)
             return "FSCTRL";
             break;
 
+        case FIT_COMPS:
+            return "COMPS";
+            break;
+
         default:
             return "Unknown";
             break;
@@ -3351,11 +3355,12 @@ FlintStatus BurnSubCommand::executeCommand()
 
     if (_imgOps->FwType() == FIT_COMPS)
     {
+        FsCompsOperations* compsOps = dynamic_cast<FsCompsOperations*>(_imgOps);
         if (_flintParams.yes)
         {
             _burnParams.ignoreVersionCheck = true;
         }
-        if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams, FwComponent::comps_ids_t::COMPID_CLOCK_SYNC_EEPROM))
+        if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams, compsOps->GetComponentID()))
         {
             reportErr(true, FLINT_FSX_BURN_ERROR, "FIT_COMPS", _fwOps->err());
             return FLINT_FAILED;
@@ -3363,7 +3368,11 @@ FlintStatus BurnSubCommand::executeCommand()
         else
         {
             cout << "-I- Component FW burn finished successfully." << endl;
-            cout << "-I- " << REBOOT_REQUIRED_STR << endl;
+            const char* resetRec = _imgOps->FwGetResetRecommandationStr();
+            if (resetRec)
+            {
+                printf("-I- %s\n", resetRec);
+            }
             return FLINT_SUCCESS;
         }
     }

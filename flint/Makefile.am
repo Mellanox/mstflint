@@ -96,6 +96,11 @@ else
 mstflint_CXXFLAGS += -DNO_MSTARCHIVE
 endif
 
+if ENABLE_DPA
+mstflint_CXXFLAGS += -DENABLE_DPA
+mstflint_LDADD +=  $(top_srcdir)/mlxdpa/libmstdpa.a
+endif
+
 #get mst device examples and tool name from makefile
 mstflint_CXXFLAGS+= -DFLINT_NAME=\"mstflint\" -DFLINT_DISPLAY_NAME=\"MstFlint\"
 mstflint_CXXFLAGS += -DMST_DEV_EXAMPLE1=\"03:00.0\" -DMST_DEV_EXAMPLE2=\"mlx4_0\" -DMST_DEV_EXAMPLE3=\"03:00.0\" -DMST_DEV_EXAMPLE4=\"04:00.0\"

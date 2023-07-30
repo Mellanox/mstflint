@@ -30,8 +30,8 @@
 * SOFTWARE.
 */
 
-#ifndef FS_SYNCE_OPS
-#define FS_SYNCE_OPS
+#ifndef FS_CERT_OPS
+#define FS_CERT_OPS
 
 #include "fs_comps_ops.h"
 
@@ -47,11 +47,12 @@
 #define MLXFWOP_API
 #endif
 
-class MLXFWOP_API FsSyncEOperations : public FsCompsOperations
+class MLXFWOP_API FsCertOperations : public FsCompsOperations
 {
 public:
-    FsSyncEOperations(FImage* imageAccess);
+    FsCertOperations(FImage* imageAccess);
 
+    bool FwInit() override;
     bool FwQuery(fw_info_t* fwInfo,
                  bool readRom = true,
                  bool isStripedImage = false,
@@ -62,56 +63,11 @@ public:
                   bool isStripedImage = false,
                   bool showItoc = false,
                   bool ignoreDToc = false) override;
-    bool PrintQuery() override;
-    u_int32_t GetDeviceIndex() override;
-    bool IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion) override;
     const char* FwGetResetRecommandationStr() override;
-    FwComponent::comps_ids_t GetComponentID() override { return FwComponent::comps_ids_t::COMPID_CLOCK_SYNC_EEPROM; }
-    static void PrintComponentData(vector<u_int8_t>& data, u_int32_t deviceIndex);
+    FwComponent::comps_ids_t GetComponentID() override { return _compID; }
 
 private:
-    enum class SystemID : u_int16_t
-    {
-        Gorilla = 1,
-        AnacondaSecured = 2,
-        MarlinLeaf = 3,
-        MarlinSpine = 4,
-        Moose = 5,
-        Komodo = 6,
-        Kong = 7
-    };
-
-    enum class ClockSyncVendorHWID : u_int8_t
-    {
-        Renesas = 0,
-        SiTime148 = 1,
-        SiTime348 = 2,
-        TI = 3,
-        Microchip = 7
-    };
-
-    struct SyncEFileHeader
-    {
-        u_int16_t fingerprint;
-        u_int8_t imageVersionMinor : 4;
-        u_int8_t imageVersionMajor : 4;
-        u_int8_t reserved : 4;
-        u_int8_t clockSyncIndex : 4;
-        SystemID systemID;
-        ClockSyncVendorHWID clockSyncVendorHWID;
-        u_int8_t headerVersion;
-        u_int16_t fileCRC;
-        u_int16_t lengthOfFile;
-        u_int16_t headerCRC;
-        u_int16_t reserved2 : 15;
-        u_int16_t S : 1;
-    };
-
-    static string ToString(SystemID systemID);
-    static string ToString(ClockSyncVendorHWID hwID);
-
-private:
-    SyncEFileHeader _header;
+    FwComponent::comps_ids_t _compID;
 };
 
-#endif /* FS_SYNCE_OPS */
+#endif /* FS_CERT_OPS */

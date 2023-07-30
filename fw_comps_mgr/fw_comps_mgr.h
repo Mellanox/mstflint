@@ -191,6 +191,10 @@ public:
         COMPID_CRCS_TOKEN = 0x10,
         COMPID_CRDT_TOKEN = 0x11,
         COMPID_CLOCK_SYNC_EEPROM = 0x12,
+        DIGITAL_CACERT = 0x15,
+        DIGITAL_CACERT_CHAIN = 0x16,
+        DIGITAL_CACERT_REMOVAL = 0x17,
+        DIGITAL_CACERT_CHAIN_REMOVAL = 0x18,
         COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 
