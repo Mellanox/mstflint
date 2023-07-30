@@ -752,6 +752,11 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps,
 
         _fwCompsAccess->SetActivationStep(false);
     }
+    else if (componentId == FwComponent::comps_ids_t::DIGITAL_CACERT ||
+             componentId == FwComponent::comps_ids_t::DIGITAL_CACERT_REMOVAL)
+    {
+        _fwCompsAccess->SetActivationStep(false);
+    }
 
     std::vector<u_int8_t> compData;
     u_int32_t imageSize = 0;

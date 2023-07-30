@@ -77,7 +77,7 @@ bool FwOperations::readBufAux(FBase& f, u_int32_t o, void* d, int l, const char*
 int FwOperations::getFileSignature(const char* fname)
 {
     FILE* fin;
-    unsigned char tmpb[16] = {0};
+    unsigned char tmpb[17] = {0};
     int res = IMG_SIG_TYPE_UNKNOWN;
 
     if (!(fin = fopen(fname, "r")))
@@ -2818,6 +2818,11 @@ bool FwOperations::GetHashesTableData(vector<u_int8_t>& data)
 bool FwOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data)
 {
     return errmsg("GetComponentData is not supported");
+}
+
+bool FwOperations::IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion)
+{
+    return errmsg("IsCompatibleToDevice is not supported");
 }
 
 bool FwOperations::IsExtendedGuidNumSupported()

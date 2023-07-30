@@ -285,6 +285,7 @@ public:
     virtual bool PrintQuery();
     virtual u_int32_t GetDeviceIndex() { return 0; }
     virtual bool QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data);
+	virtual bool IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion);
     virtual bool GetRSAPublicKey(vector<u_int8_t>& key);
 
 #ifndef UEFI_BUILD

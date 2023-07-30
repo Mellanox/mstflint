@@ -17,12 +17,21 @@ UTILS_DIR = $(USER_DIR)/mft_utils
 MTCR_DIR = $(USER_DIR)/${MTCR_CONFIG_DIR}
 MLXSIGN_DIR = $(USER_DIR)/mlxsign_lib
 X509_PARSER_DIR = $(USER_DIR)/x509_parser
+MLXDPA_DIR = mlxdpa
 
 INCLUDE_PATH = -I. -I.. -I$(USER_DIR) -I$(COMMON_DIR) -I$(UTILS_DIR) -I$(MLXSIGN_DIR) -I$(MTCR_DIR) -isystem $(MFT_EXT_LIBS_INC_DIR)
 
 XML_FLAGS = -DUSE_XML -DLIBXML_STATIC
 
 AM_CXXFLAGS = $(INCLUDE_PATH) -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) $(XML_FLAGS)
+
+noinst_LIBRARIES = libmstdpa.a
+
+libmstdpa_a_CXXFLAGS = $(AM_CXXFLAGS) -I$(MLXDPA_DIR)
+libmstdpa_a_SOURCES = certcontainerbase.h certcontainerbase.cpp \
+                              certcontainerimp.h certcontainerimp.cpp
+libmstdpa_a_DEPENDENCIES =  $(UTILS_DIR)/libmftutils.a
+libmstdpa_a_LIBADD = $(libmstdpa_a_DEPENDENCIES)
 
 bin_PROGRAMS = mstdpa
 
@@ -44,3 +53,4 @@ mstdpa_LDADD    +=  -lcrypto -lssl
 else
 mstdpa_CXXFLAGS += -DNO_OPEN_SSL
 endif
+

@@ -1459,6 +1459,14 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
     case COMPID_CLOCK_SYNC_EEPROM:
         return "COMPID_CLOCK_SYNC_EEPROM";
 
+        case DIGITAL_CACERT:
+            return "DIGITAL_CACERT";
+        case DIGITAL_CACERT_CHAIN:
+            return "DIGITAL_CACERT_CHAIN";
+        case DIGITAL_CACERT_REMOVAL:
+            return "DIGITAL_CACERT_REMOVAL";
+        case DIGITAL_CACERT_CHAIN_REMOVAL:
+            return "DIGITAL_CACERT_CHAIN_REMOVAL";
     default:
         return "UNKNOWN_COMPONENT";
     }

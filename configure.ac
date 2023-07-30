@@ -436,6 +436,7 @@ AS_IF([test "x$enable_dpa" = "xyes"], [
     AC_CONFIG_FILES(mlxdpa/Makefile)
     DPA="mlxdpa"
 ])
+AM_CONDITIONAL(ENABLE_DPA, [test "x$enable_dpa" = "xyes" ])
 
 AC_SUBST(DPA)
 
