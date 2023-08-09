@@ -149,7 +149,7 @@ void MlxRegLib::initAdb(string extAdbFile)
     _adb = new Adb();
     if (extAdbFile != "")
     {
-        if (!_adb->load(extAdbFile, false, NULL, false))
+        if (!_adb->load(extAdbFile, false, false, false))
         {
             throw MlxRegException("Failure in loading Adabe file. %s", _adb->getLastError().c_str());
         }
