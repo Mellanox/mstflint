@@ -33,8 +33,10 @@
  
 
 /***
-*** This file was generated at "2023-07-16 15:06:38"
- ***/
+         *** This file was generated at "2023-07-16 15:06:38"
+         *** by:
+         ***    > [REDACTED]/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
+         ***/
 #ifndef REG_ACCESS_SWITCH_LAYOUTS_H
 #define REG_ACCESS_SWITCH_LAYOUTS_H
 

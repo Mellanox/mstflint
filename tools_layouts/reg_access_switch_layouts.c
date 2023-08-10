@@ -33,8 +33,10 @@
  
 
 /***
-*** This file was generated at "2023-07-16 15:06:38"
-***/
+         *** This file was generated at "2023-07-16 15:06:38"
+         *** by:
+         ***    > [REDACTED]/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
+         ***/
 #include "reg_access_switch_layouts.h"
 
 void reg_access_switch_command_payload_ext_pack(const struct reg_access_switch_command_payload_ext *ptr_struct, u_int8_t *ptr_buff)
