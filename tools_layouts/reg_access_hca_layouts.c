@@ -3384,6 +3384,53 @@ void reg_access_hca_mqis_reg_ext_dump(const struct reg_access_hca_mqis_reg_ext *
 	reg_access_hca_mqis_reg_ext_print(ptr_struct, fd, 0);
 }
 
+void reg_access_hca_mrsi_ext_pack(const struct reg_access_hca_mrsi_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 28;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->device);
+	offset = 60;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->reset_reason);
+	offset = 64;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 8, ptr_struct->crts);
+}
+
+void reg_access_hca_mrsi_ext_unpack(struct reg_access_hca_mrsi_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 28;
+	ptr_struct->device = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 60;
+	ptr_struct->reset_reason = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 64;
+	ptr_struct->crts = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
+}
+
+void reg_access_hca_mrsi_ext_print(const struct reg_access_hca_mrsi_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_mrsi_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "device               : " UH_FMT "\n", ptr_struct->device);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "reset_reason         : " UH_FMT "\n", ptr_struct->reset_reason);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "crts                 : " U64H_FMT "\n", ptr_struct->crts);
+}
+
+unsigned int reg_access_hca_mrsi_ext_size(void)
+{
+	return REG_ACCESS_HCA_MRSI_EXT_SIZE;
+}
+
+void reg_access_hca_mrsi_ext_dump(const struct reg_access_hca_mrsi_ext *ptr_struct, FILE *fd)
+{
+	reg_access_hca_mrsi_ext_print(ptr_struct, fd, 0);
+}
+
 void reg_access_hca_msgi_ext_pack(const struct reg_access_hca_msgi_ext *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;

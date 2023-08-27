@@ -1922,6 +1922,27 @@ other values are reserved. */
 };
 
 /* Description -   */
+/* Size in bytes - 64 */
+struct reg_access_hca_mrsi_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - [NIC_Only]
+0: Main 
+1: Embedded CPU 
+Reserved when Switches */
+	/* 0x0.0 - 0x0.3 */
+	u_int8_t device;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Reset/shutdown reason
+0: cold reset - A reset triggered following application of power to the component. 1: warm reset - A reset triggered without removal and re-application of power to the device */
+	/* 0x4.0 - 0x4.3 */
+	u_int8_t reset_reason;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Timestamp (number of clock cycles) since last cold reset */
+	/* 0x8.0 - 0xc.31 */
+	u_int64_t crts;
+};
+
+/* Description -   */
 /* Size in bytes - 128 */
 struct reg_access_hca_msgi_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -3267,6 +3288,13 @@ void reg_access_hca_mqis_reg_ext_print(const struct reg_access_hca_mqis_reg_ext 
 unsigned int reg_access_hca_mqis_reg_ext_size(void);
 #define REG_ACCESS_HCA_MQIS_REG_EXT_SIZE    (0x18)
 void reg_access_hca_mqis_reg_ext_dump(const struct reg_access_hca_mqis_reg_ext *ptr_struct, FILE *fd);
+/* mrsi_ext */
+void reg_access_hca_mrsi_ext_pack(const struct reg_access_hca_mrsi_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_mrsi_ext_unpack(struct reg_access_hca_mrsi_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_mrsi_ext_print(const struct reg_access_hca_mrsi_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_mrsi_ext_size(void);
+#define REG_ACCESS_HCA_MRSI_EXT_SIZE    (0x40)
+void reg_access_hca_mrsi_ext_dump(const struct reg_access_hca_mrsi_ext *ptr_struct, FILE *fd);
 /* msgi_ext */
 void reg_access_hca_msgi_ext_pack(const struct reg_access_hca_msgi_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_msgi_ext_unpack(struct reg_access_hca_msgi_ext *ptr_struct, const u_int8_t *ptr_buff);

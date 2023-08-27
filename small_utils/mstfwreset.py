@@ -68,6 +68,7 @@ try:
     from mlxfwresetlib.cmd_reg_mfrl import CmdRegMfrl, CmdNotSupported
     # from mlxfwresetlib.cmd_reg_mpcir import CmdRegMpcir
     from mlxfwresetlib.cmd_reg_mcam import CmdRegMcam
+    from mlxfwresetlib.cmd_reg_mrsi import CmdRegMrsi
     if os.name != 'nt':
         if not getattr(sys, 'frozen', False):
             sys.path.append(os.sep.join(
@@ -1951,6 +1952,7 @@ def reset_flow_host(device, args, command):
     mfrl = CmdRegMfrl(RegAccessObj, logger)
     # mpcir = CmdRegMpcir(RegAccessObj)
     mcam = CmdRegMcam(RegAccessObj)
+    mrsi = CmdRegMrsi(RegAccessObj)
 
     if is_prometheus_device(devid):
         raise RuntimeError("Prometheus device is not supported")
@@ -2024,6 +2026,8 @@ def reset_flow_host(device, args, command):
         if platform.system() == "Linux" and is_bluefield:
             tool_owner_support = False
         print(mcam.reset_sync_query_text(tool_owner_support))
+        if mcam.is_mrsi_supported():
+            print(mrsi.query_text(is_bluefield))
 
     elif command == "reset":
         if is_cedar_device(devid):
