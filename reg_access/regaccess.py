@@ -126,6 +126,7 @@ if REG_ACCESS:
             self._reg_access_nic_dpa_eug = REG_ACCESS.reg_access_nic_dpa_eug
             self._reg_access_mrsr = REG_ACCESS.reg_access_mrsr
             self._reg_access_dtor = REG_ACCESS.reg_access_dtor
+            self._reg_access_mrsi = REG_ACCESS.reg_access_mrsi
 
         def _err2str(self, rc):
             err2str = REG_ACCESS.reg_access_err2str
@@ -309,6 +310,18 @@ if REG_ACCESS:
                 "PCIE_TOGGLE_TO": dtorRegisterP.contents.PCIE_TOGGLE_TO
             }
 
+        def getMRSI(self):
+            mrsiRegisterP = pointer(MRSI_EXT())
+            rc = self._reg_access_mrsi(self._mstDev.mf, REG_ACCESS_METHOD_GET, mrsiRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register MRSI")
+
+            return {
+                "reset_reason": mrsiRegisterP.contents.reset_reason,
+                "crts": mrsiRegisterP.contents.crts,
+                # "ecos": mrsiRegisterP.contents.ecos    # will be uncommented when regaccess_structs.py will be updated.
+            }
+
         ##########################
         def sendMFRL(self, method, resetLevel=None, reset_type=None, reset_sync=None):
 
@@ -330,9 +343,11 @@ if REG_ACCESS:
                 return mfrlRegisterP.contents.reset_trigger, mfrlRegisterP.contents.reset_type, mfrlRegisterP.contents.pci_rescan_required, mfrlRegisterP.contents.reset_state
 
         ##########################
-        def getMCAM(self):
+        def getMCAM(self, access_reg_group=0):
 
             mcamRegP = pointer(MCAM_REG_EXT())
+            mcamRegP.contents.access_reg_group = c_uint8(access_reg_group)
+
             rc = self._reg_access_mcam(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mcamRegP)
             if rc:
                 raise RegAccException("Failed to send Register MCAM (rc: {0})".format(rc))

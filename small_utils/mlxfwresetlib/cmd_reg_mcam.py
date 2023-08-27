@@ -43,12 +43,17 @@ class CmdRegMcam():
     def __init__(self, reg_access):
 
         self._reg_access = reg_access
-        self._mcam_get_result = None
+        self._mcam_get_results = [None] * 3
 
-    def get_mcam(self):
-        if self._mcam_get_result is None:
-            self._mcam_get_result = self._reg_access.getMCAM()
-        return self._mcam_get_result
+    def get_mcam(self, access_reg_group=0):
+        try:
+            if self._mcam_get_results[access_reg_group] is None:
+                self._mcam_get_results[access_reg_group] = self._reg_access.getMCAM(access_reg_group)
+            return self._mcam_get_results[access_reg_group]
+        except IndexError as ie:
+            raise Exception("get_mcam() was called with invalid access_reg_group=%s\n" % str(access_reg_group))
+        except Exception as e:
+            raise e
 
     def is_pci_rescan_required_supported(self):
         """
@@ -64,6 +69,22 @@ class CmdRegMcam():
             # so we actually access the 3rd DWORD (index 2)
             pci_rescan_required_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3 - 1], 13, 1)
         return True if pci_rescan_required_sup == 1 else False
+
+    def is_mrsi_supported(self):
+        """
+        send MCAM access_reg_group=2
+        and then read mng_access_reg_cap_mask (bit 10 in 2nd DWORD) to see if MRSI is supported.
+        """
+        try:
+            mcam_get_result = self.get_mcam(2)
+        except RegAccException as e:
+            mrsi_sup = 0
+        else:
+            # bit 42 is bit 10 in 2nd DWORD.
+            # due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order
+            # so we actually access the 3rd DWORD (index 2)
+            mrsi_sup = extractField(mcam_get_result["mng_access_reg_cap_mask"][3 - 1], 10, 1)
+        return True if mrsi_sup == 1 else False
 
     def is_reset_by_fw_driver_sync_supported(self):
         """

@@ -67,6 +67,13 @@ class DTOR_REG_EXT(ctypes.Structure):
         ("DRIVER_UNLOAD_AND_RESET_TO", DEFAULT_TIMEOUT)
     ]
 
+class MRSI_EXT(ctypes.Structure):
+    _fields_ = [
+        ("device", ctypes.c_uint8),
+        ("reset_reason", ctypes.c_uint8),
+        ("crts", ctypes.c_uint64)
+    ]
+
 class PCNR_REG_EXT(ctypes.Structure):
     _fields_ = [
         ("tuning_override", ctypes.c_uint8),
