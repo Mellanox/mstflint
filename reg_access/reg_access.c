@@ -98,6 +98,7 @@
 #define REG_ID_MTEIM 0x9118
 #define REG_ID_MRSR 0x9023
 #define REG_ID_DTOR 0xC00E
+#define REG_ID_MRSI 0x912A
 
 #define REG_ID_MDDT 0x9160
 #define REG_ID_MDDQ 0x9161
@@ -632,4 +633,12 @@ reg_access_status_t reg_access_mrsr(mfile* mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_dtor(mfile* mf, reg_access_method_t method, struct reg_access_hca_dtor_reg_ext* dtor)
 {
     REG_ACCCESS(mf, method, REG_ID_DTOR, dtor, dtor_reg_ext, reg_access_hca);
+}
+
+/************************************
+ * Function: reg_access_mrsi
+ ************************************/
+reg_access_status_t reg_access_mrsi(mfile* mf, reg_access_method_t method, struct reg_access_hca_mrsi_ext* mrsi)
+{
+    REG_ACCCESS(mf, method, REG_ID_MRSI, mrsi, mrsi_ext, reg_access_hca);
 }
