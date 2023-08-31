@@ -47,6 +47,7 @@
 
 #if !defined(NO_OPEN_SSL)
 #include <mlxsign_lib/mlxsign_lib.h>
+#include <mlxsign_lib/mlxsign_signer_interface.h>
 #if !defined(NO_DYNAMIC_ENGINE)
 #include <mlxsign_lib/mlxsign_openssl_engine.h>
 #endif
@@ -1519,86 +1520,45 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
 {
     (void)keyPairUUid;
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
-    MlxSignSHA* mlxSignSHA = NULL;
     vector<u_int32_t> encDigestDW;
     vector<u_int8_t> digest, encDigest, bytesBuff;
     MlxSign::SHAType shaType;
+    unique_ptr<MlxSign::Signer> signer = nullptr;
 
     copyDwVectorToBytesVector(buff, bytesBuff);
 
-    if (!openssl_key_identifier.empty())
+    if (openssl_key_identifier.empty() && privateKeyFile.empty())
     {
-        // Sign with HSM engine
-        shaType = MlxSign::SHA512;
-        MlxSign::OpensslEngineSigner engineSigner(openssl_engine, openssl_key_identifier);
-        int rc = engineSigner.init();
-        if (!rc)
-        {
-            int keySize = engineSigner.getPrivateKeySize();
-            if ((keySize != KEY_SIZE_256) && (keySize != KEY_SIZE_512))
-            {
-                throw MlxcfgException("Invalid length of private key(%d bytes). It is "
-                                      "recommended to use 4096 bit key.\n",
-                                      keySize);
-            }
-            // Init successfuly with valid key -> can continue to sign the massage
-            rc = engineSigner.sign(bytesBuff, encDigest);
-        }
-        if (rc)
-        {
-            throw MlxcfgException("Failed to set private key and sign with %s "
-                                  "OpenSSL engine (rc = 0x%x)\n",
-                                  openssl_engine.c_str(), rc);
-        }
+        shaType = MlxSign::SHA256;
+        MlxSignSHA256 mlxSignSHA;
+        mlxSignSHA << bytesBuff;
+        mlxSignSHA.getDigest(digest);
+        encDigest.insert(encDigest.begin(), digest.begin(), digest.end());
     }
     else
     {
-        MlxSignRSA rsa;
-        if (privateKeyFile.empty())
+        if (!openssl_key_identifier.empty())
         {
-            shaType = MlxSign::SHA256;
-            mlxSignSHA = new MlxSignSHA256();
+            // Sign with local HSM engine
+            shaType = MlxSign::SHA512;
+#if !defined(NO_DYNAMIC_ENGINE)
+            signer = unique_ptr<MlxSign::Signer>(new MlxSign::MlxSignRSAViaHSM(openssl_engine, openssl_key_identifier));
+#else
+            reportErr(true, "Open SSL functionality is not supported.\n");
+#endif
         }
         else
         {
-            int rc = rsa.setPrivKeyFromFile(privateKeyFile);
-            if (rc)
-            {
-                throw MlxcfgException("Failed to set private key (rc = 0x%x)\n", rc);
-            }
-            int privKeyLength = rsa.getPrivKeyLength();
-            if (privKeyLength == 0x100)
-            {
-                shaType = MlxSign::SHA256;
-                mlxSignSHA = new MlxSignSHA256();
-            }
-            else if (privKeyLength == 0x200)
-            {
-                shaType = MlxSign::SHA512;
-                mlxSignSHA = new MlxSignSHA512();
-            }
-            else
-            {
-                throw MlxcfgException("Invalid length of private key(%d bytes)", privKeyLength);
-            }
+            signer = unique_ptr<MlxSign::Signer>(new MlxSign::MlxSignRSAViaOpenssl(privateKeyFile));
         }
 
-        (*mlxSignSHA) << bytesBuff;
-        mlxSignSHA->getDigest(digest);
-        delete mlxSignSHA;
+        if (signer != nullptr && signer->Init() != MlxSign::MLX_SIGN_SUCCESS)
+        {
+            signer.reset();
+            throw MlxcfgException("Failed to initialize signer.\n");
+        }
 
-        if (privateKeyFile.empty())
-        {
-            encDigest.insert(encDigest.begin(), digest.begin(), digest.end());
-        }
-        else
-        {
-            int rc = rsa.sign(shaType, digest, encDigest);
-            if (rc)
-            {
-                throw MlxcfgException("Failed to encrypt the digest (rc = 0x%x)\n", rc);
-            }
-        }
+        signer->Sign(bytesBuff, encDigest);
     }
 
     // fetch the signature tlv from the database and fill in the data
