@@ -102,7 +102,7 @@
 
 #define CX3_SW_ID    4099
 #define CX3PRO_SW_ID 4103
-#define HW_ID_ADDR 0xf0014
+#define HW_ID_ADDR   0xf0014
 
 typedef enum {
     Clear_Vsec_Semaphore = 0x1,
@@ -774,13 +774,10 @@ int mtcr_mlx5ctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
     int rc = -1;
 
-    if (offset == HW_ID_ADDR)
-    {
+    if (offset == HW_ID_ADDR) {
         *value = mf->device_hw_id;
         rc = 4;
-    }
-    else
-    {
+    } else {
         fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
     }
 
@@ -953,17 +950,18 @@ static int mtcr_driver_mclose(mfile* mf)
 }
 
 
-static int mlx5ctl_driver_open(mfile  * mf,
-                               unsigned domain_p,
-                               unsigned bus_p,
-                               unsigned dev_p,
-                               unsigned func_p,
+static int mlx5ctl_driver_open(mfile     * mf,
+                               unsigned    domain_p,
+                               unsigned    bus_p,
+                               unsigned    dev_p,
+                               unsigned    func_p,
                                const char* name)
 {
     char full_path_name[60];
 
     sprintf(full_path_name, "/dev/%s", name);
     ul_ctx_t* ctx = mf->ul_ctx;
+
     ctx->connectx_flush = 0;
     ctx->need_flush = 0;
     ctx->via_driver = 1;
@@ -983,7 +981,6 @@ static int mlx5ctl_driver_open(mfile  * mf,
     DBG_PRINTF("mlx5ctl: device id is %d:\n", mf->device_hw_id);
     return 0;
 }
-
 
 
 static int mtcr_driver_open(mfile  * mf,
@@ -1807,6 +1804,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xcf70, /* Spectrum3 */
                                    0xcf80, /* Spectrum4 */
                                    0x1976, /* Schrodinger */
+                                   0x1979, /* Freysa */
                                    0x2900, /* BW-00 */
                                    0xd2f4, /* Sunbird */
                                    -1};
@@ -2452,25 +2450,26 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     mf->res_fd = -1;
     mf->mpci_change = mpci_change_ul;
     dev_type = mtcr_parse_name(name, &force, &domain, &bus, &dev, &func);
-    switch (dev_type)
-    {
-        case MST_DRIVER_CR:
-        case MST_DRIVER_CONF:
-            rc = mtcr_driver_open(mf, dev_type, domain, bus, dev, func);
-            if (rc) {
-                goto open_failed;
-            }
-            return mf;
-            break;
-        case MST_MLX5_CONTROL_DRIVER:
-            rc = mlx5ctl_driver_open(mf, domain, bus, dev, func, name);
-            if (rc) {
-                goto open_failed;
-            }
-            return mf;
-            break;
-        default:
-            break;
+    switch (dev_type) {
+    case MST_DRIVER_CR:
+    case MST_DRIVER_CONF:
+        rc = mtcr_driver_open(mf, dev_type, domain, bus, dev, func);
+        if (rc) {
+            goto open_failed;
+        }
+        return mf;
+        break;
+
+    case MST_MLX5_CONTROL_DRIVER:
+        rc = mlx5ctl_driver_open(mf, domain, bus, dev, func, name);
+        if (rc) {
+            goto open_failed;
+        }
+        return mf;
+        break;
+
+    default:
+        break;
     }
     if (dev_type == MST_ERROR) {
         goto open_failed;
@@ -2977,8 +2976,6 @@ int supports_reg_access_smp(mfile* mf)
 }
 
 
-
-
 int maccess_reg_ul(mfile              * mf,
                    u_int16_t            reg_id,
                    maccess_reg_method_t reg_method,
@@ -3129,8 +3126,6 @@ int mib_send_gmp_access_reg_mad_ul(mfile              * mf,
     return 0;
 #endif
 }
-
-
 
 
 static int init_operation_tlv(struct OperationTlv* operation_tlv, u_int16_t reg_id, u_int8_t method)
