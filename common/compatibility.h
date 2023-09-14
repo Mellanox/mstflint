@@ -69,6 +69,8 @@
 #define ARCH_arm6l
 #elif defined(__riscv)
 #define ARCH_riscv
+#elif defined(__loongarch_lp64)
+#define ARCH_loongarch64
 #else
 #error Unknown CPU architecture using the linux OS
 #endif
@@ -116,7 +118,7 @@
 #define U48H_FMT "0x%012llx"
 #define U64D_FMT_GEN "llu"
 #endif
-#elif defined(ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(ARCH_arm64) || defined(ARCH_riscv)
+#elif defined(ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(ARCH_arm64) || defined(ARCH_riscv) || defined(ARCH_loongarch64)
 #define U64D_FMT "%lu"
 #define U64H_FMT "0x%016lx"
 #define U48H_FMT "0x%012lx"
