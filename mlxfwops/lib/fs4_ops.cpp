@@ -4619,16 +4619,7 @@ bool Fs4Operations::ParsePublicKeyFromFile(const char* public_key_file,
     // Is the public key file in text format?
     if (PublicKeyIsSet == false)
     {
-        string pubFileStr(public_key_file);
-        if (!fromFileToArray(pubFileStr, publicKeyData, PublicKeySize))
-        {
-            return errmsg("ParsePublicKeyFromFile: Public key file parsing failed");
-        }
-        DPRINTF(("Public key in text format. No key pair exponent and key auth conf, using default values\n"));
-        keyAuthConf.auth_type = 4; // RSA 4K
-        keyAuthConf.mlnx_nvconfig_en = 1;
-        keyAuthConf.cs_token_en = 1;
-        keyAuthConf.fw_en = 1;
+        return errmsg("ParsePublicKeyFromFile: Public key file parsing failed, unknown format");
     }
 
     if (pem_offset > 0)
