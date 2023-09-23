@@ -1918,7 +1918,7 @@ def reset_flow_host(device, args, command):
 
     if platform.system() == "Linux":  # Convert ib-device , net-device to mst-device(mst started) or pci-device
         if IS_MSTFLINT:
-            if device.startswith('mlx'):
+            if device.startswith('mlx') and not device.startswith('mlx5ctl-'):
                 driver_path = '/sys/class/infiniband/{0}/device'.format(device)
                 try:
                     device = os.path.basename(os.readlink(driver_path))
