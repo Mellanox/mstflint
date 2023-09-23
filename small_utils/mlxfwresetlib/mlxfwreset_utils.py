@@ -104,6 +104,11 @@ def isDevDBDFFormat(dev):
         return True
     return False
 
+def isMlx5CtlFormat(dev):
+    pat = r"mlx5ctl-[0-9,A-F,a-f]{4}:[0-9,A-F,a-f]{2}:[0-9,A-F,a-f]{2}\.[0-9,A-F,a-f]{1,2}"
+    if re.match(pat, dev):
+        return True
+    return False
 
 def isDevBDFFormat(dev):
     pat = r"[0-9,A-F,a-f]{2}:[0-9,A-F,a-f]{2}\.[0-9,A-F,a-f]{1,2}"
@@ -122,6 +127,8 @@ def getDevDBDF(device, logger=None):
         return device
     if isDevBDFFormat(device):
         return addDomainToAddress(device)
+    if isMlx5CtlFormat(device):
+        return addDomainToAddress(device[8:])
 
     operatingSys = platform.system()
     if (operatingSys == "FreeBSD"):
