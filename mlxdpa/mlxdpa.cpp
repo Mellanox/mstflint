@@ -256,7 +256,7 @@ ParseStatus MlxDpa::HandleOption(string name, string value)
         _removeAllCerts = true;
         if (_certContainerType != RemoveCert)
         {
-            throw MlxDpaException("remove_all_certs can be provided only with the sign_cert_remove command.");
+            throw MlxDpaException("remove_all_certs can be provided only with containter type \"remove\".");
         }
         return PARSE_OK;
     }
