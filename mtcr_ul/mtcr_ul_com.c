@@ -781,7 +781,9 @@ int mtcr_mlx5ctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
     }
     else
     {
-        fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+        if (mf->mlx5ctl_env_var_debug) {
+            fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+        }
     }
 
     return rc;
@@ -793,7 +795,10 @@ int mtcr_mlx5ctl_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
     (void)offset;
     (void)value;
 
-    fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+    if (mf->mlx5ctl_env_var_debug) {
+        fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+    }
+
     return -1;
 }
 
@@ -804,7 +809,10 @@ static int mlx5ctl_driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t
     (void)data;
     (void)length;
 
-    fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+    if (mf->mlx5ctl_env_var_debug) {
+        fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+    }
+
     return -1;
 }
 
@@ -815,7 +823,10 @@ static int mlx5ctl_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_
     (void)data;
     (void)length;
 
-    fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+    if (mf->mlx5ctl_env_var_debug) {
+        fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
+    }
+
     return -1;
 }
 
@@ -980,6 +991,9 @@ static int mlx5ctl_driver_open(mfile  * mf,
     mf->bar_virtual_addr = NULL;
     init_dev_info_ul(mf, name, domain_p, bus_p, dev_p, func_p);
     mlx5ctl_set_device_id(mf);
+
+    mf->mlx5ctl_env_var_debug = getenv(MLX5CTL_ENV_VAR_DEBUG);
+
     DBG_PRINTF("mlx5ctl: device id is %d:\n", mf->device_hw_id);
     return 0;
 }

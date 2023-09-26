@@ -58,7 +58,8 @@ struct mlx5ctl_cmd_inout {
 	__u16 outlen;
 };
 
-#define MLX5CTL_IOCTL_MAGIC 0xc8
+#define MLX5CTL_IOCTL_MAGIC     0xc8
+#define MLX5CTL_ENV_VAR_DEBUG   "MLX5CTL_DEBUG"
 
 #define MLX5CTL_IOCTL_DRVINFO \
 	_IOR(MLX5CTL_IOCTL_MAGIC, 0x0, struct mlx5ctl_drvinfo)
