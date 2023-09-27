@@ -19,16 +19,20 @@
 HostElf::HostElf(string path, string outputPath) : _filePath(path), _outputPath(outputPath)
 {
     ifstream hostElf(_filePath, std::ios::binary);
+    _data.assign(std::istreambuf_iterator<char>(hostElf), std::istreambuf_iterator<char>());
 
-    _data.assign((std::istreambuf_iterator<char>(hostElf)), std::istreambuf_iterator<char>());
-        
+    const char elfMagicNumber[5] = {0x7f, 0x45, 0x4c, 0x46, 0x0};
+    if (_data.size() < 4 || string(_data.begin(), _data.begin() + 4).compare(elfMagicNumber) != 0)
+    {
+        throw MlxDpaException("Provided Host ELF is not an ELF file.");
+    }
+
     FILE* hostELF = fopen(_filePath.c_str(), "r");
     if (hostELF == NULL)
     {
         throw MlxDpaException("Failed to open Host ELF file with error: %s", strerror(errno));
     }
-
-    //TODO should i release resources in _dpaAppsTable?
+    // TODO should i release resources in _dpaAppsTable?
     _dpaAppsTable = getAppList(hostELF);
 
     if (_outputPath.empty())
