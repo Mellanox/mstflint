@@ -68,6 +68,7 @@ mstlink_DEPENDENCIES = modules/libmodules_lib.a \
                       $(LAYOUTS_DIR)/libtools_layouts.a \
                       $(USER_DIR)/xz_utils/libxz_utils.a \
                       $(USER_DIR)/ext_libs/minixz/libminixz.a \
+                      $(USER_DIR)/common/libcommon.a \
                       -lboost_regex -lboost_filesystem  \
                       -llzma $(LIBSTD_CPP) ${LDL} -lexpat \
                       $(JSON_LIBS)
