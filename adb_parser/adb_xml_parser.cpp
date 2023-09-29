@@ -44,8 +44,7 @@
 #include <sstream>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
+#include "filesystem.h"
 
 #ifdef BOOST_ENABLED
 #include <boost/regex.hpp>
@@ -152,11 +151,11 @@ void AdbParser::addIncludePaths(Adb* adbCtxt, string includePaths)
     adbCtxt->includePaths.insert(adbCtxt->includePaths.end(), paths.begin(), paths.end());
 
     vector<string> relatives;
-    string projPath = boost::filesystem::path(adbCtxt->mainFileName).parent_path().string();
+    string projPath = mstflint::common::filesystem::path(adbCtxt->mainFileName).parent_path().string();
 
     for (vector<string>::iterator it = adbCtxt->includePaths.begin(); it != adbCtxt->includePaths.end(); it++)
     {
-        if (projPath != "" && projPath != *it && boost::filesystem::path(*it).is_relative())
+        if (projPath != "" && projPath != *it && mstflint::common::filesystem::path(*it).is_relative())
         {
             relatives.push_back(projPath + OS_PATH_SEP + *it);
         }
@@ -639,7 +638,7 @@ void AdbParser::includeFile(AdbParser* adbParser, string fileName, int lineNumbe
     string filePath;
     FILE* probeFile = NULL;
 
-    if (!boost::filesystem::path(fileName).is_relative())
+    if (!mstflint::common::filesystem::path(fileName).is_relative())
     {
         probeFile = fopen(fileName.c_str(), "r");
     }
@@ -659,7 +658,7 @@ void AdbParser::includeFile(AdbParser* adbParser, string fileName, int lineNumbe
     }
 
     // Update filename to be only base name with extension to prevent duplications
-    boost::filesystem::path boostPath(filePath);
+    mstflint::common::filesystem::path boostPath(filePath);
     fileName = boostPath.filename().string();
 
     if (!adbParser->_adbCtxt->includedFiles.count(fileName))
@@ -686,24 +685,24 @@ void AdbParser::includeFile(AdbParser* adbParser, string fileName, int lineNumbe
 void AdbParser::includeAllFilesInDir(AdbParser* adbParser, string dirPath, int lineNumber)
 {
     vector<string> paths;
-    boost::filesystem::path mainFile(adbParser->_fileName);
+    mstflint::common::filesystem::path mainFile(adbParser->_fileName);
     boost::algorithm::split(paths, dirPath, boost::is_any_of(string(";")));
     for (vector<string>::iterator pathIt = paths.begin(); pathIt != paths.end(); pathIt++)
     {
         // first look in the main file's path
-        boost::filesystem::path fsPath(mainFile.parent_path().string() + "/" + *pathIt);
-        if (!boost::filesystem::exists(fsPath))
+        mstflint::common::filesystem::path fsPath(mainFile.parent_path().string() + "/" + *pathIt);
+        if (!mstflint::common::filesystem::exists(fsPath))
         {
-            fsPath = boost::filesystem::path(*pathIt);
+            fsPath = mstflint::common::filesystem::path(*pathIt);
         }
 
-        if (boost::filesystem::exists(fsPath) && boost::filesystem::is_directory(fsPath))
+        if (mstflint::common::filesystem::exists(fsPath) && mstflint::common::filesystem::is_directory(fsPath))
         {
             addIncludePaths(adbParser->_adbCtxt, *pathIt);
-            boost::filesystem::directory_iterator filesIter(fsPath), dirEnd;
-            for (; filesIter != dirEnd; ++filesIter)
+            mstflint::common::filesystem::directory_iterator filesIter(fsPath), dirEnd;
+            for (; filesIter!=dirEnd; ++filesIter)
             {
-                if (boost::filesystem::is_regular_file(filesIter->status()) && filesIter->path().extension() == ".adb")
+                if (mstflint::common::filesystem::is_regular_file(filesIter->status()) && filesIter->path().extension() == ".adb")
                 {
                     try
                     {
@@ -1070,13 +1069,13 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
                                                      paths.end());
 
             vector<string> relatives;
-            string projPath = boost::filesystem::path(adbParser->_adbCtxt->mainFileName).parent_path().string();
+            string projPath = mstflint::common::filesystem::path(adbParser->_adbCtxt->mainFileName).parent_path().string();
 
             for (vector<string>::iterator it = adbParser->_adbCtxt->includePaths.begin();
                  it != adbParser->_adbCtxt->includePaths.end();
                  it++)
             {
-                if (boost::filesystem::path(*it).is_relative())
+                if (mstflint::common::filesystem::path(*it).is_relative())
                 {
                     relatives.push_back(projPath + OS_PATH_SEP + *it);
                 }
