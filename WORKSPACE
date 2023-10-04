@@ -29,7 +29,7 @@
 # SOFTWARE.
 
 # Please note, MSTflint code base is still supposed to be built by automake.
-# At this moment we are using Bazel for unit testing purposes only..
+# At this moment we are using Bazel for unit testing purposes only.
 # Please use Bazelisk (https://github.com/bazelbuild/bazelisk) to make sure
 # supported version of Bazel is used.
 
@@ -51,6 +51,24 @@ bazel_skylib_workspace()
 load("@bazel_skylib//lib:versions.bzl", "versions")
 
 versions.check(
-    maximum_bazel_version = "6.3.0",
-    minimum_bazel_version = "6.0.0",
+    maximum_bazel_version = "6.9.9",
+    minimum_bazel_version = "4.0.0",
 )
+
+http_archive(
+  name = "com_google_googletest",
+  sha256 = "755f9a39bc7205f5a0c428e920ddad092c33c8a1b46997def3f1d4a82aded6e1",
+  urls = ["https://github.com/google/googletest/archive/5ab508a01f9eb089207ee87fd547d290da39d015.zip"],
+  strip_prefix = "googletest-5ab508a01f9eb089207ee87fd547d290da39d015",
+)
+
+http_archive(
+    name = "com_github_nelhage_rules_boost",
+    sha256 = "5ea00abc70cdf396a23fb53201db19ebce2837d28887a08544429d27783309ed",
+    strip_prefix = "rules_boost-96e9b631f104b43a53c21c87b01ac538ad6f3b48",
+    url = "https://github.com/nelhage/rules_boost/archive/96e9b631f104b43a53c21c87b01ac538ad6f3b48.tar.gz",
+)
+
+load("@com_github_nelhage_rules_boost//:boost/boost.bzl", "boost_deps")
+
+boost_deps()

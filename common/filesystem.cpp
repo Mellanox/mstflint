@@ -34,102 +34,140 @@
 
 #include <boost/filesystem/operations.hpp>
 
-namespace mstflint
-{
-namespace common
-{
-namespace filesystem
-{
-path::path(std::string& s) : path_(s){};
+namespace mstflint {
+namespace common {
+namespace filesystem {
 
-path::path(const std::string& s) : path_(s){};
+/******************** path ********************/
+path::path(const path &p) : path_(p.string()) {}
 
-path path::parent_path() const
-{
-    return path(parent_path().string());
-}
+path::path(std::string &s) : path_(s) {}
 
-path path::extension() const
-{
-    return path(path_.extension().string());
-}
+path::path(const std::string &s) : path_(s) {}
 
-bool path::is_relative() const
-{
-    return path_.is_relative();
-}
+path path::parent_path() const { return path(path_.parent_path().string()); }
 
-path path::filename() const
-{
-    return path(path_.filename().string());
-}
+path path::extension() const { return path(path_.extension().string()); }
 
-const std::string& path::string() const
-{
-    return path_.string();
-}
+bool path::is_relative() const { return path_.is_relative(); }
 
-file_status::file_status(boost::filesystem::file_status file_status) : file_status_(file_status) {}
+path path::filename() const { return path(path_.filename().string()); }
 
-bool is_regular_file(file_status f) {
-    return boost::filesystem::is_regular_file(f.file_status_);
-}
+const std::string &path::string() const { return path_.string(); }
 
+/******************** file_status ********************/
+file_status::file_status(boost::filesystem::file_status file_status)
+    : file_status_(file_status) {}
+
+/******************** directory_entry ********************/
 directory_entry::directory_entry() {}
 
-directory_entry::directory_entry(const mstflint::common::filesystem::path& p) : directory_entry_(boost::filesystem::path(p.string())) {}
+directory_entry::directory_entry(const mstflint::common::filesystem::path &p)
+    : directory_entry_(boost::filesystem::path(p.string())) {}
 
-const file_status directory_entry::status() const
-{
-    return file_status(directory_entry_.status());
+const file_status directory_entry::status() const {
+  return file_status(directory_entry_.status());
 }
-const mstflint::common::filesystem::path directory_entry::path() const
-{
-    return mstflint::common::filesystem::path(directory_entry_.path().string());
-}
-
-directory_iterator::directory_iterator() : directory_entry_(nullptr) {}
-
-directory_iterator::directory_iterator(const path& p) : iterator_(boost::filesystem::path(p.string())), directory_entry_(nullptr) {}
-
-directory_iterator& directory_iterator::operator++()
-{
-    ++iterator_;
-    return *this;
+const mstflint::common::filesystem::path directory_entry::path() const {
+  return mstflint::common::filesystem::path(directory_entry_.path().string());
 }
 
-directory_iterator::~directory_iterator() {
-    if (directory_entry_)
-        delete (directory_entry_);
+/******************** directory_iterator ********************/
+directory_iterator::directory_iterator(directory_iterator const &other) {
+  iterator_ = other.iterator_;
+  directory_entry_ = other.directory_entry_;
 }
 
-directory_entry* directory_iterator::operator->()
-{
-    if (directory_entry_)
-        delete (directory_entry_);
-    directory_entry_ = new directory_entry(path(iterator_->path().string()));
-    return directory_entry_;
+directory_iterator::directory_iterator(const path &p)
+    : iterator_(boost::filesystem::path(p.string())) {
+  if (iterator_ == boost::filesystem::directory_iterator()) {
+    directory_entry entry;
+    directory_entry_ = entry;
+  } else {
+    path p(iterator_->path().string());
+    directory_entry entry(p);
+    directory_entry_ = entry;
+  }
 }
 
-bool operator!=(const directory_iterator& lhs, const directory_iterator& rhs)
-{
-    return lhs.iterator_ != rhs.iterator_;
+directory_iterator &directory_iterator::operator++() {
+  ++iterator_;
+  if (iterator_ == boost::filesystem::directory_iterator()) {
+    directory_entry entry;
+    directory_entry_ = entry;
+  } else {
+    path p(iterator_->path().string());
+    directory_entry entry(p);
+    directory_entry_ = entry;
+  }
+  return *this;
 }
 
-bool operator==(const path& lhs, const std::string& rhs) {
-    return boost::filesystem::path(lhs.string()) == boost::filesystem::path(rhs);
+directory_entry *directory_iterator::operator->() { return &directory_entry_; }
+
+directory_entry &directory_iterator::operator*() { return directory_entry_; }
+
+/******************** friend functions ********************/
+bool operator==(const path &lhs, const path &rhs) {
+  return boost::filesystem::path(lhs.string()) ==
+         boost::filesystem::path(rhs.string());
 }
 
-bool exists(const path& p)
-{
-    boost::filesystem::path path(p.string());
-    return boost::filesystem::exists(path);
+bool operator==(const path &lhs, const std::string &rhs) {
+  return boost::filesystem::path(lhs.string()) == boost::filesystem::path(rhs);
 }
 
-bool is_directory(const path& p)
-{
-    boost::filesystem::path path(p.string());
-    return boost::filesystem::is_directory(path);
+bool operator==(const std::string &lhs, const path &rhs) {
+  return boost::filesystem::path(lhs) == boost::filesystem::path(rhs.string());
+}
+
+bool operator!=(const path &lhs, const path &rhs) {
+  return boost::filesystem::path(lhs.string()) !=
+         boost::filesystem::path(rhs.string());
+}
+
+bool operator!=(const path &lhs, const std::string &rhs) {
+  return boost::filesystem::path(lhs.string()) != boost::filesystem::path(rhs);
+}
+
+bool operator!=(const std::string &lhs, const path &rhs) {
+  return boost::filesystem::path(lhs) != boost::filesystem::path(rhs.string());
+}
+
+bool is_regular_file(file_status f) {
+  return boost::filesystem::is_regular_file(f.file_status_);
+}
+
+bool operator!=(const directory_iterator &lhs, const directory_iterator &rhs) {
+  return lhs.iterator_ != rhs.iterator_;
+}
+
+/******************** other non-member functions ********************/
+const directory_iterator &begin(const directory_iterator &it) { return it; }
+
+const directory_iterator &cbegin(const directory_iterator &it) { return it; }
+
+directory_iterator end(const directory_iterator &) {
+  return directory_iterator();
+}
+
+directory_iterator cend(const directory_iterator &) {
+  return directory_iterator();
+}
+
+bool exists(const path &p) {
+  boost::filesystem::path path(p.string());
+  return boost::filesystem::exists(path);
+}
+
+bool is_directory(const path &p) {
+  boost::filesystem::path path(p.string());
+  return boost::filesystem::is_directory(path);
+}
+
+bool is_regular_file(const path &p) {
+  boost::filesystem::path path(p.string());
+  return boost::filesystem::is_regular_file(path);
 }
 
 } // namespace filesystem
