@@ -33,71 +33,109 @@
 #ifndef MSTFLINT_FILESYSTEM_H
 #define MSTFLINT_FILESYSTEM_H
 
-#include <string>
-#include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <string>
 
-namespace mstflint
-{
-namespace common
-{
-namespace filesystem
-{
-class path
-{
-public:
-    path(std::string& s);
-    path(const std::string& s);
-    path parent_path() const;
-    path extension() const;
-    bool is_relative() const;
-    path filename() const;
-    const std::string& string() const;
-    friend bool operator==(const path& lhs, const std::string& rhs);
-private:
-    boost::filesystem::path path_;
-};
+namespace mstflint {
+namespace common {
+namespace filesystem {
 
-class file_status
-{
+class path {
 public:
-    file_status(boost::filesystem::file_status file_status);
-    friend bool is_regular_file(file_status f);
-private:
-    boost::filesystem::file_status file_status_;
-};
+  path() = delete;
+  ~path() = default;
+  path(const path &);
+  explicit path(std::string &);
+  explicit path(const std::string &);
 
-class directory_entry
-{
-public:
-    directory_entry();
-    explicit directory_entry(const path& p);
-    const file_status status() const;
-    // FIXME const mstflint::common::filesystem::path& path();
-    const mstflint::common::filesystem::path path() const;
-private:
-    boost::filesystem::directory_entry directory_entry_;
-};
+  path &operator=(const path &) = default;
 
-class directory_iterator
-{
-public:
-    directory_iterator();
-    ~directory_iterator();
-    explicit directory_iterator(const path& p);
-    directory_iterator(directory_iterator const& that) = default;
-    directory_iterator& operator=(directory_iterator const& that) = default;
-    directory_iterator& operator++();
-    directory_entry* operator->();
-    friend bool operator!=(const directory_iterator&, const directory_iterator&);
+  path parent_path() const;
+  path extension() const;
+  bool is_relative() const;
+  path filename() const;
+  const std::string &string() const;
+
+  friend bool operator==(const path &, const path &);
+  friend bool operator==(const path &, const std::string &);
+  friend bool operator==(const std::string &, const path &);
+  friend bool operator!=(const path &, const path &);
+  friend bool operator!=(const path &, const std::string &);
+  friend bool operator!=(const std::string &, const path &);
 
 private:
-    boost::filesystem::directory_iterator iterator_;
-    directory_entry* directory_entry_;
+  boost::filesystem::path path_;
 };
 
-bool exists(const path& p);
-bool is_directory(const path& p);
+class file_status { // TODO unit tests
+public:
+  file_status() = delete;
+  ~file_status() = default;
+  file_status(const file_status &) = default;
+  file_status(boost::filesystem::file_status);
+
+  file_status &operator=(const file_status &) = delete;
+
+  friend bool is_regular_file(file_status);
+
+private:
+  boost::filesystem::file_status file_status_;
+};
+
+class directory_entry {
+public:
+  directory_entry();
+  ~directory_entry() = default;
+  directory_entry(directory_entry const &) = default;
+  explicit directory_entry(const path &);
+
+  directory_entry &operator=(directory_entry const &) = default;
+
+  const file_status status() const;
+  // FIXME const mstflint::common::filesystem::path& path();
+  const mstflint::common::filesystem::path path() const;
+
+private:
+  boost::filesystem::directory_entry directory_entry_;
+};
+
+class directory_iterator {
+public:
+  directory_iterator() = default;
+  ~directory_iterator() = default;
+  directory_iterator(directory_iterator const &);
+  explicit directory_iterator(const path &);
+
+  directory_iterator &operator=(directory_iterator const &) = default;
+  directory_iterator &operator++();
+  directory_entry *operator->();
+  directory_entry &operator*();
+
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = directory_entry;
+  using pointer = directory_entry *;
+  using reference = directory_entry &;
+  using difference_type = long int;
+
+  friend bool operator!=(const directory_iterator &,
+                         const directory_iterator &);
+
+private:
+  boost::filesystem::directory_iterator iterator_;
+  directory_entry directory_entry_;
+};
+
+const directory_iterator &begin(const directory_iterator &);
+const directory_iterator &cbegin(const directory_iterator &);
+directory_iterator end(const directory_iterator &);
+directory_iterator cend(const directory_iterator &);
+
+bool exists(const path &p);
+
+bool is_directory(const path &p);
+bool is_regular_file(const path &p);
+
 bool is_regular_file(file_status f);
 
 } // namespace filesystem
