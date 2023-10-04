@@ -28,10 +28,5 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# Please not, MSTflint code base is still supposed to be build by automake.
-# At this moment we are using Bazel for unit testing purposes.
-# Please build with Bazelisk (https://github.com/bazelbuild/bazelisk) to make
-# sure supported version of Bazel is used.
-
-USE_BAZEL_VERSION=6.0.0
-BAZELISK_VERIFY_SHA256=f03d44ecaac3878e3d19489e37caa4ca1dc57427b686a78a85065ea3c27ebe68
+USE_BAZEL_VERSION=6.3.2
+BAZELISK_VERIFY_SHA256=e78fc3394deae5408d6f49a15c7b1e615901969ecf6e50d55ef899996b0b8458
