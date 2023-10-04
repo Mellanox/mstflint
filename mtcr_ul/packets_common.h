@@ -154,6 +154,8 @@
 #define ARCH_riscv
 #elif defined(__loongarch_lp64)
 #define ARCH_loongarch64
+#elif defined(__e2k__)
+#define ARCH_e2k
 #else
 #error Unknown CPU architecture using the linux OS
 #endif
