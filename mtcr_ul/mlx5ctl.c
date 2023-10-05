@@ -56,11 +56,14 @@ static int mlx5_cmd_ioctl(int fd, struct mlx5ctl_cmd_inout *cmd)
 void mlx5ctl_set_device_id(mfile* mf)
 {
     unsigned char register_data[1024];
+    int reg_status;
 
     memset(register_data, 0, sizeof(register_data));
 
     int rc = mlx5_control_access_register(mf->fd, register_data,
-                                          sizeof(register_data), 0x9020, 1);
+                                          sizeof(register_data), 0x9020,
+                                          MLX5CTL_METHOD_READ, &reg_status,
+                                          mf);
 
     if (!rc)
     {
@@ -72,7 +75,8 @@ void mlx5ctl_set_device_id(mfile* mf)
 
 int mlx5_control_access_register(int fd, void *data_in,
                                  int size_in, __u16 reg_id,
-                                 int method)
+                                 int method, int *reg_status,
+                                 mfile* mf)
 {
 	int outlen = MLX5_ST_SZ_BYTES(access_register_out) + size_in;
 	int inlen = MLX5_ST_SZ_BYTES(access_register_in) + size_in;
@@ -81,6 +85,7 @@ int mlx5_control_access_register(int fd, void *data_in,
 	u32 *out = NULL;
 	u32 *in = NULL;
 	void *data;
+    void *status;
 
 	in = malloc(inlen);
 	out = malloc(outlen);
@@ -111,7 +116,11 @@ int mlx5_control_access_register(int fd, void *data_in,
     }
 
     data = MLX5_ADDR_OF(access_register_out, out, register_data);
+    status = MLX5_ADDR_OF(access_register_out, out, status);
 	memcpy(data_in, data, size_in);
+    memcpy(reg_status, status, sizeof(int));
+    MLX5CTL_DEBUG_PRINT(mf, "register id = 0x%x, reg status = %d, error = %d\n", reg_id, *reg_status, err);
+
 out:
 	free(out);
 	free(in);

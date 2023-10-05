@@ -36,7 +36,8 @@
 
 int mlx5_control_access_register(int fd, void *data_in,
                                  int size_in, __u16 reg_id,
-                                 int method);
+                                 int method, int *reg_status,
+                                 mfile* mf);
 void mlx5ctl_set_device_id(mfile* mf);
 
 struct mlx5ctl_drvinfo {
@@ -58,8 +59,15 @@ struct mlx5ctl_cmd_inout {
 	__u16 outlen;
 };
 
+#define MLX5CTL_METHOD_READ     1
+#define MLX5CTL_METHOD_WRITE    0
 #define MLX5CTL_IOCTL_MAGIC     0xc8
 #define MLX5CTL_ENV_VAR_DEBUG   "MLX5CTL_DEBUG"
+
+#define MLX5CTL_DEBUG_PRINT(mf, format, arg...) \
+    if (mf->mlx5ctl_env_var_debug) {        \
+        printf("%s: %s %d: " format, MLX5CTL_ENV_VAR_DEBUG, __func__, __LINE__, ##arg); \
+    }
 
 #define MLX5CTL_IOCTL_DRVINFO \
 	_IOR(MLX5CTL_IOCTL_MAGIC, 0x0, struct mlx5ctl_drvinfo)
