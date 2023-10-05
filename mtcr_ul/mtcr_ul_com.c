@@ -778,9 +778,7 @@ int mtcr_mlx5ctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
         *value = mf->device_hw_id;
         rc = 4;
     } else {
-        if (mf->mlx5ctl_env_var_debug) {
-            fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
-        }
+        MLX5CTL_DEBUG_PRINT(mf, "mlx5 control driver doesn't support VSEC access.\n")
     }
 
     return rc;
@@ -792,9 +790,7 @@ int mtcr_mlx5ctl_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
     (void)offset;
     (void)value;
 
-    if (mf->mlx5ctl_env_var_debug) {
-        fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
-    }
+    MLX5CTL_DEBUG_PRINT(mf, "mlx5 control driver doesn't support VSEC access.\n")
 
     return -1;
 }
@@ -806,9 +802,7 @@ static int mlx5ctl_driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t
     (void)data;
     (void)length;
 
-    if (mf->mlx5ctl_env_var_debug) {
-        fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
-    }
+    MLX5CTL_DEBUG_PRINT(mf, "mlx5 control driver doesn't support VSEC access.\n")
 
     return -1;
 }
@@ -820,9 +814,7 @@ static int mlx5ctl_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_
     (void)data;
     (void)length;
 
-    if (mf->mlx5ctl_env_var_debug) {
-        fprintf(stderr, "mlx5 control driver doesn't support VSEC access.\n");
-    }
+    MLX5CTL_DEBUG_PRINT(mf, "mlx5 control driver doesn't support VSEC access.\n")
 
     return -1;
 }
@@ -3026,10 +3018,18 @@ int maccess_reg_ul(mfile              * mf,
 #endif
 
     if (mf->tp == MST_MLX5_CONTROL_DRIVER) {
-        int method = (reg_method == MACCESS_REG_METHOD_GET) ? 1 : 0;
-        return mlx5_control_access_register(mf->fd, reg_data,
-                                            reg_size, reg_id,
-                                            method);
+        int method = (reg_method == MACCESS_REG_METHOD_GET) ? MLX5CTL_METHOD_READ : MLX5CTL_METHOD_WRITE;
+        rc = mlx5_control_access_register(mf->fd, reg_data,
+                                          reg_size, reg_id,
+                                          method, reg_status,
+                                          mf);
+        if (*reg_status) {
+            int status = return_by_reg_status(*reg_status);
+            MLX5CTL_DEBUG_PRINT(mf, "reg status: %s. reg status code = %d\n", m_err2str(status), status)
+            return status;
+        }
+
+        return rc;
     }
 
     if (reg_size <= INBAND_MAX_REG_SIZE) {
