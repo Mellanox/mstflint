@@ -43,7 +43,7 @@ namespace filesystem {
 
 class path {
 public:
-  path() = delete;
+  path() = default;
   ~path() = default;
   path(const path &);
   explicit path(std::string &);
@@ -65,7 +65,16 @@ public:
   friend bool operator!=(const std::string &, const path &);
 
 private:
-  boost::filesystem::path path_;
+  void init();
+
+private:
+  static const char SEPARATOR;
+  std::string pathname_;
+  std::string stripped_pathname_;
+  std::string filename_;
+  std::string parent_pathname_;
+  std::string extension_;
+  bool is_relative_;
 };
 
 class file_status { // TODO unit tests
