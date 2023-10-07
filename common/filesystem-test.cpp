@@ -30,8 +30,6 @@
  * SOFTWARE.
  */
 
-// #define USE_BOOST
-
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -44,6 +42,8 @@ namespace fs = boost::filesystem;
 namespace fs = mstflint::common::filesystem;
 #endif
 
+#define SANDBOX_PREFIX "data/"
+
 #if 0
 #include <ostream>
 TEST(filesystem, existsFileVaryPerms) {
@@ -52,7 +52,7 @@ TEST(filesystem, existsFileVaryPerms) {
       for (int group = 0; group <= 7; ++group) {
         for (int owner = 0; owner <= 7; ++owner) {
           std::ostringstream oss;
-          oss << "data/overkill/file-" << special << owner << group << others;
+          oss << SANDBOX_PREFIX "overkill/file-" << special << owner << group << others;
           fs::path p(oss.str());
           ASSERT_TRUE(fs::exists(p));
         }
@@ -67,7 +67,7 @@ TEST(filesystem, existsFolderVaryPerms) {
       for (int group = 0; group <= 7; ++group) {
         for (int owner = 0; owner <= 7; ++owner) {
           std::ostringstream oss;
-          oss << "data/overkill/folder-" << special << owner << group << others;
+          oss << SANDBOX_PREFIX "overkill/folder-" << special << owner << group << others;
           fs::path p(oss.str());
           ASSERT_TRUE(fs::exists(p));
         }
@@ -78,58 +78,58 @@ TEST(filesystem, existsFolderVaryPerms) {
 #endif
 
 TEST(exists, RegularFile) {
-  fs::path p("data/regular-file");
+  fs::path p(SANDBOX_PREFIX "regular-file");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, RegularFolder) {
-  fs::path p("data/regular-folder");
+  fs::path p(SANDBOX_PREFIX "regular-folder");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, SoftLinkToFile) {
-  fs::path p("data/soft-link-to-file");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-file");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, SoftLinkToSoftLinkToFile) {
-  fs::path p("data/soft-link-to-soft-link-to-file");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-soft-link-to-file");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, SoftLinkToFileAbsolutePath) {
-  fs::path p("data/soft-link-to-file-absolute-path");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-file-absolute-path");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, SoftLinkToFolder) {
-  fs::path p("data/soft-link-to-folder");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-folder");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, SoftLinkToSoftLinkToFolder) {
-  fs::path p("data/soft-link-to-soft-link-to-folder");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-soft-link-to-folder");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, SoftLinkToFolderAbsolutePath) {
-  fs::path p("data/soft-link-to-folder-absolute-path");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-folder-absolute-path");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, DeadSoftLink) {
-  fs::path p("data/dead-soft-link");
+  fs::path p(SANDBOX_PREFIX "dead-soft-link");
   // boost::filesystem::exists returns false on dead soft links, so we are
   ASSERT_FALSE(fs::exists(p));
 }
 
 TEST(exists, HardLinkToFile) {
-  fs::path p("data/hard-link-to-file");
+  fs::path p(SANDBOX_PREFIX "hard-link-to-file");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, HardLinkToFileAbsolutePath) {
-  fs::path p("data/hard-link-to-file-absolute-path");
+  fs::path p(SANDBOX_PREFIX "hard-link-to-file-absolute-path");
   ASSERT_TRUE(fs::exists(p));
 }
 
@@ -139,77 +139,77 @@ TEST(exists, Negative) {
 }
 
 TEST(exists, FileWithSpaceInTheName) {
-  fs::path p("data/file with spaces in the name");
+  fs::path p(SANDBOX_PREFIX "file with spaces in the name");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, FolderWithSpaceInTheName) {
-  fs::path p("data/folder with spaces in the name");
+  fs::path p(SANDBOX_PREFIX "folder with spaces in the name");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, FileUnderFolderWithNoReadPermissions) {
-  fs::path p("data/folder-0311/file");
+  fs::path p(SANDBOX_PREFIX "folder-0311/file");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(exists, FolderUnderFolderWithNoReadPermissions) {
-  fs::path p("data/folder-0311/folder");
+  fs::path p(SANDBOX_PREFIX "folder-0311/folder");
   ASSERT_TRUE(fs::exists(p));
 }
 
 TEST(is_regular_file, RegularFile) {
-  fs::path p("data/regular-file");
+  fs::path p(SANDBOX_PREFIX "regular-file");
   ASSERT_TRUE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, RegularFolder) {
-  fs::path p("data/regular-folder");
+  fs::path p(SANDBOX_PREFIX "regular-folder");
   ASSERT_FALSE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, SoftLinkToFile) {
-  fs::path p("data/soft-link-to-file");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-file");
   ASSERT_TRUE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, SoftLinkToSoftLinkToFile) {
-  fs::path p("data/soft-link-to-soft-link-to-file");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-soft-link-to-file");
   ASSERT_TRUE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, SoftLinkToFileAbsolutePath) {
-  fs::path p("data/soft-link-to-file-absolute-path");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-file-absolute-path");
   ASSERT_TRUE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, SoftLinkToFolder) {
-  fs::path p("data/soft-link-to-folder");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-folder");
   ASSERT_FALSE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, SoftLinkToSoftLinkToFolder) {
-  fs::path p("data/soft-link-to-soft-link-to-folder");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-soft-link-to-folder");
   ASSERT_FALSE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, SoftLinkToFolderAbsolutePath) {
-  fs::path p("data/soft-link-to-folder-absolute-path");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-folder-absolute-path");
   ASSERT_FALSE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, DeadSoftLink) {
-  fs::path p("data/dead-soft-link");
+  fs::path p(SANDBOX_PREFIX "dead-soft-link");
   ASSERT_FALSE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, HardLinkToFile) {
-  fs::path p("data/hard-link-to-file");
+  fs::path p(SANDBOX_PREFIX "hard-link-to-file");
   ASSERT_TRUE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, HardLinkToFileAbsolutePath) {
-  fs::path p("data/hard-link-to-file-absolute-path");
+  fs::path p(SANDBOX_PREFIX "hard-link-to-file-absolute-path");
   ASSERT_TRUE(fs::is_regular_file(p));
 }
 
@@ -219,77 +219,77 @@ TEST(is_regular_file, Negative) {
 }
 
 TEST(is_regular_file, FileWithSpaceInTheName) {
-  fs::path p("data/file with spaces in the name");
+  fs::path p(SANDBOX_PREFIX "file with spaces in the name");
   ASSERT_TRUE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, FolderWithSpaceInTheName) {
-  fs::path p("data/folder with spaces in the name");
+  fs::path p(SANDBOX_PREFIX "folder with spaces in the name");
   ASSERT_FALSE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, FileUnderFolderWithNoReadPermissions) {
-  fs::path p("data/folder-0311/file");
+  fs::path p(SANDBOX_PREFIX "folder-0311/file");
   ASSERT_TRUE(fs::is_regular_file(p));
 }
 
 TEST(is_regular_file, FolderUnderFolderWithNoReadPermissions) {
-  fs::path p("data/folder-0311/folder");
+  fs::path p(SANDBOX_PREFIX "folder-0311/folder");
   ASSERT_FALSE(fs::is_regular_file(p));
 }
 
 TEST(is_directory, RegularFile) {
-  fs::path p("data/regular-file");
+  fs::path p(SANDBOX_PREFIX "regular-file");
   ASSERT_FALSE(fs::is_directory(p));
 }
 
 TEST(is_directory, RegularFolder) {
-  fs::path p("data/regular-folder");
+  fs::path p(SANDBOX_PREFIX "regular-folder");
   ASSERT_TRUE(fs::is_directory(p));
 }
 
 TEST(is_directory, SoftLinkToFile) {
-  fs::path p("data/soft-link-to-file");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-file");
   ASSERT_FALSE(fs::is_directory(p));
 }
 
 TEST(is_directory, SoftLinkToSoftLinkToFile) {
-  fs::path p("data/soft-link-to-soft-link-to-file");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-soft-link-to-file");
   ASSERT_FALSE(fs::is_directory(p));
 }
 
 TEST(is_directory, SoftLinkToFileAbsolutePath) {
-  fs::path p("data/soft-link-to-file-absolute-path");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-file-absolute-path");
   ASSERT_FALSE(fs::is_directory(p));
 }
 
 TEST(is_directory, SoftLinkToFolder) {
-  fs::path p("data/soft-link-to-folder");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-folder");
   ASSERT_TRUE(fs::is_directory(p));
 }
 
 TEST(is_directory, SoftLinkToSoftLinkToFolder) {
-  fs::path p("data/soft-link-to-soft-link-to-folder");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-soft-link-to-folder");
   ASSERT_TRUE(fs::is_directory(p));
 }
 
 TEST(is_directory, SoftLinkToFolderAbsolutePath) {
-  fs::path p("data/soft-link-to-folder-absolute-path");
+  fs::path p(SANDBOX_PREFIX "soft-link-to-folder-absolute-path");
   ASSERT_TRUE(fs::is_directory(p));
 }
 
 TEST(is_directory, DeadSoftLink) {
-  fs::path p("data/dead-soft-link");
+  fs::path p(SANDBOX_PREFIX "dead-soft-link");
   ASSERT_FALSE(fs::is_directory(p));
 }
 
 TEST(is_directory, HardLinkToFile) {
-  fs::path p("data/hard-link-to-file");
+  fs::path p(SANDBOX_PREFIX "hard-link-to-file");
   ASSERT_FALSE(fs::is_directory(p));
 }
 
 TEST(is_directory, HardLinkToFileAbsolutePath) {
-  fs::path p("data/hard-link-to-file-absolute-path");
+  fs::path p(SANDBOX_PREFIX "hard-link-to-file-absolute-path");
   ASSERT_FALSE(fs::is_directory(p));
 }
 
@@ -299,22 +299,22 @@ TEST(is_directory, Negative) {
 }
 
 TEST(is_directory, FileWithSpaceInTheName) {
-  fs::path p("data/file with spaces in the name");
+  fs::path p(SANDBOX_PREFIX "file with spaces in the name");
   ASSERT_FALSE(fs::is_directory(p));
 }
 
 TEST(is_directory, FolderWithSpaceInTheName) {
-  fs::path p("data/folder with spaces in the name");
+  fs::path p(SANDBOX_PREFIX "folder with spaces in the name");
   ASSERT_TRUE(fs::is_directory(p));
 }
 
 TEST(is_directory, FileUnderFolderWithNoReadPermissions) {
-  fs::path p("data/folder-0311/file");
+  fs::path p(SANDBOX_PREFIX "folder-0311/file");
   ASSERT_FALSE(fs::is_directory(p));
 }
 
 TEST(is_directory, FolderUnderFolderWithNoReadPermissions) {
-  fs::path p("data/folder-0311/folder");
+  fs::path p(SANDBOX_PREFIX "folder-0311/folder");
   ASSERT_TRUE(fs::is_directory(p));
 }
 
@@ -510,36 +510,117 @@ TEST(directory_entry, trivia) {
 
 std::vector<std::string> all_entries = {
     //
-    "data/dead-soft-link",
-    "data/file with spaces in the name",
-    "data/file with spaces in the name.with another extension",
-    "data/file with spaces in the name.with extension",
-    "data/folder with spaces in the name",
-    "data/folder-0311",
-    "data/hard-link-to-file",
-    "data/hard-link-to-file-absolute-path",
-    "data/hard-link-to-file-absolute-path.another-extension",
-    "data/hard-link-to-file-absolute-path.extension",
-    "data/hard-link-to-file.another-extension",
-    "data/hard-link-to-file.extension",
-    "data/regular-file",
-    "data/regular-file.another-extension",
-    "data/regular-file.extension",
-    "data/regular-folder",
-    "data/soft-link-to-file",
-    "data/soft-link-to-file-absolute-path",
-    "data/soft-link-to-file-absolute-path.another-extension",
-    "data/soft-link-to-file-absolute-path.extension",
-    "data/soft-link-to-file.another-extension",
-    "data/soft-link-to-file.extension",
-    "data/soft-link-to-folder",
-    "data/soft-link-to-folder-absolute-path",
-    "data/soft-link-to-soft-link-to-file",
-    "data/soft-link-to-soft-link-to-file.another-extension",
-    "data/soft-link-to-soft-link-to-file.extension",
-    "data/soft-link-to-soft-link-to-folder",
+    SANDBOX_PREFIX "..a",
+    SANDBOX_PREFIX ".a",
+    SANDBOX_PREFIX "a",
+    SANDBOX_PREFIX "a.",
+    SANDBOX_PREFIX "dead-soft-link",
+    SANDBOX_PREFIX "empty-folder",
+    SANDBOX_PREFIX "file with spaces in the name",
+    SANDBOX_PREFIX "file with spaces in the name.with another extension",
+    SANDBOX_PREFIX "file with spaces in the name.with extension",
+    SANDBOX_PREFIX "folder with spaces in the name",
+    SANDBOX_PREFIX "folder-0311",
+    SANDBOX_PREFIX "folder-with-content",
+    SANDBOX_PREFIX "hard-link-to-file",
+    SANDBOX_PREFIX "hard-link-to-file-absolute-path",
+    SANDBOX_PREFIX "hard-link-to-file-absolute-path.another-extension",
+    SANDBOX_PREFIX "hard-link-to-file-absolute-path.extension",
+    SANDBOX_PREFIX "hard-link-to-file.another-extension",
+    SANDBOX_PREFIX "hard-link-to-file.extension",
+    SANDBOX_PREFIX "regular-file",
+    SANDBOX_PREFIX "regular-file.another-extension",
+    SANDBOX_PREFIX "regular-file.extension",
+    SANDBOX_PREFIX "regular-folder",
+    SANDBOX_PREFIX "soft-link-to-file",
+    SANDBOX_PREFIX "soft-link-to-file-absolute-path",
+    SANDBOX_PREFIX "soft-link-to-file-absolute-path.another-extension",
+    SANDBOX_PREFIX "soft-link-to-file-absolute-path.extension",
+    SANDBOX_PREFIX "soft-link-to-file.another-extension",
+    SANDBOX_PREFIX "soft-link-to-file.extension",
+    SANDBOX_PREFIX "soft-link-to-folder",
+    SANDBOX_PREFIX "soft-link-to-folder-absolute-path",
+    SANDBOX_PREFIX "soft-link-to-soft-link-to-file",
+    SANDBOX_PREFIX "soft-link-to-soft-link-to-file.another-extension",
+    SANDBOX_PREFIX "soft-link-to-soft-link-to-file.extension",
+    SANDBOX_PREFIX "soft-link-to-soft-link-to-folder",
     //
 };
+
+TEST(directory_iterator, EmptyFolder) {
+  std::vector<std::string> actual;
+  for (const auto &entry :
+       fs::directory_iterator(fs::path(SANDBOX_PREFIX "empty-folder"))) {
+    actual.push_back(entry.path().string());
+  }
+  ASSERT_TRUE(actual.empty());
+}
+
+#ifdef USE_BOOST
+TEST(directory_iterator, FolderDoesNotExist) {
+  std::vector<std::string> actual;
+  EXPECT_THROW(
+      for (const auto &entry
+           : fs::directory_iterator(
+               fs::path(SANDBOX_PREFIX "does-not-exist"))) {
+        actual.push_back(entry.path().string());
+      },
+      boost::filesystem::filesystem_error);
+  ASSERT_TRUE(actual.empty());
+}
+#else
+TEST(directory_iterator, FolderDoesNotExist) {
+  std::vector<std::string> actual;
+  for (const auto &entry :
+       fs::directory_iterator(fs::path(SANDBOX_PREFIX "does-not-exist"))) {
+    actual.push_back(entry.path().string());
+  }
+  ASSERT_TRUE(actual.empty());
+}
+#endif
+
+#ifdef USE_BOOST
+TEST(directory_iterator, NotAFolder) {
+  std::vector<std::string> actual;
+  EXPECT_THROW(
+      for (const auto &entry
+           : fs::directory_iterator(fs::path(SANDBOX_PREFIX "regular-file"))) {
+        actual.push_back(entry.path().string());
+      },
+      boost::filesystem::filesystem_error);
+  ASSERT_TRUE(actual.empty());
+}
+#else
+TEST(directory_iterator, NotAFolder) {
+  std::vector<std::string> actual;
+  for (const auto &entry :
+       fs::directory_iterator(fs::path(SANDBOX_PREFIX "regular-file"))) {
+    actual.push_back(entry.path().string());
+  }
+  ASSERT_TRUE(actual.empty());
+}
+#endif
+
+// it appears that Boost behaviour is non-consistent here
+std::vector<std::string> expectedRedundantSeparators = {
+#ifdef USE_BOOST
+    "data/////folder-with-content////file", // Boost doesn't strip redundant
+                                            // separators for files
+    "data/////folder-with-content/folder",  // but does strip those for folders
+#else
+    "data/////folder-with-content////file",
+    "data/////folder-with-content////folder",
+#endif
+};
+TEST(directory_iterator, RedundantSeparators) {
+  std::vector<std::string> actual;
+  for (const auto &entry : fs::directory_iterator(
+           fs::path(SANDBOX_PREFIX "////folder-with-content////"))) {
+    actual.push_back(entry.path().string());
+  }
+  ASSERT_THAT(actual, ::testing::UnorderedElementsAreArray(
+                          expectedRedundantSeparators));
+}
 
 TEST(directory_iterator, Loop) {
   std::vector<std::string> actual;
@@ -607,32 +688,37 @@ TEST(directory_iterator, FilterByType) {
       regular_files.push_back(entry.path().string());
     }
   }
-  ASSERT_THAT(regular_files,
-              ::testing::UnorderedElementsAreArray({
-                  //
-                  "data/file with spaces in the name",
-                  "data/file with spaces in the name.with another extension",
-                  "data/file with spaces in the name.with extension",
-                  "data/hard-link-to-file",
-                  "data/hard-link-to-file-absolute-path",
-                  "data/hard-link-to-file-absolute-path.another-extension",
-                  "data/hard-link-to-file-absolute-path.extension",
-                  "data/hard-link-to-file.another-extension",
-                  "data/hard-link-to-file.extension",
-                  "data/regular-file",
-                  "data/regular-file.another-extension",
-                  "data/regular-file.extension",
-                  "data/soft-link-to-file",
-                  "data/soft-link-to-file-absolute-path",
-                  "data/soft-link-to-file-absolute-path.another-extension",
-                  "data/soft-link-to-file-absolute-path.extension",
-                  "data/soft-link-to-file.another-extension",
-                  "data/soft-link-to-file.extension",
-                  "data/soft-link-to-soft-link-to-file",
-                  "data/soft-link-to-soft-link-to-file.another-extension",
-                  "data/soft-link-to-soft-link-to-file.extension",
-                  //
-              }));
+  ASSERT_THAT(
+      regular_files,
+      ::testing::UnorderedElementsAreArray({
+          //
+          SANDBOX_PREFIX "..a",
+          SANDBOX_PREFIX ".a",
+          SANDBOX_PREFIX "a",
+          SANDBOX_PREFIX "a.",
+          SANDBOX_PREFIX "file with spaces in the name",
+          SANDBOX_PREFIX "file with spaces in the name.with another extension",
+          SANDBOX_PREFIX "file with spaces in the name.with extension",
+          SANDBOX_PREFIX "hard-link-to-file",
+          SANDBOX_PREFIX "hard-link-to-file-absolute-path",
+          SANDBOX_PREFIX "hard-link-to-file-absolute-path.another-extension",
+          SANDBOX_PREFIX "hard-link-to-file-absolute-path.extension",
+          SANDBOX_PREFIX "hard-link-to-file.another-extension",
+          SANDBOX_PREFIX "hard-link-to-file.extension",
+          SANDBOX_PREFIX "regular-file",
+          SANDBOX_PREFIX "regular-file.another-extension",
+          SANDBOX_PREFIX "regular-file.extension",
+          SANDBOX_PREFIX "soft-link-to-file",
+          SANDBOX_PREFIX "soft-link-to-file-absolute-path",
+          SANDBOX_PREFIX "soft-link-to-file-absolute-path.another-extension",
+          SANDBOX_PREFIX "soft-link-to-file-absolute-path.extension",
+          SANDBOX_PREFIX "soft-link-to-file.another-extension",
+          SANDBOX_PREFIX "soft-link-to-file.extension",
+          SANDBOX_PREFIX "soft-link-to-soft-link-to-file",
+          SANDBOX_PREFIX "soft-link-to-soft-link-to-file.another-extension",
+          SANDBOX_PREFIX "soft-link-to-soft-link-to-file.extension",
+          //
+      }));
 }
 
 TEST(directory_iterator, FilterByTypeAndExtension) {
@@ -654,38 +740,40 @@ TEST(directory_iterator, FilterByTypeAndExtension) {
             entry.path().string());
     }
   }
-  ASSERT_THAT(
-      regular_files_with_extension,
-      ::testing::UnorderedElementsAreArray({
-          //
-          "data/hard-link-to-file-absolute-path.extension",
-          "data/hard-link-to-file.extension", "data/regular-file.extension",
-          "data/soft-link-to-file-absolute-path.extension",
-          "data/soft-link-to-file.extension",
-          "data/soft-link-to-soft-link-to-file.extension",
-          //
-      }));
-  ASSERT_THAT(regular_files_with_other_extension,
+  ASSERT_THAT(regular_files_with_extension,
               ::testing::UnorderedElementsAreArray({
                   //
-                  "data/hard-link-to-file-absolute-path.another-extension",
-                  "data/hard-link-to-file.another-extension",
-                  "data/regular-file.another-extension",
-                  "data/soft-link-to-file-absolute-path.another-extension",
-                  "data/soft-link-to-file.another-extension",
-                  "data/soft-link-to-soft-link-to-file.another-extension",
+                  SANDBOX_PREFIX "hard-link-to-file-absolute-path.extension",
+                  SANDBOX_PREFIX "hard-link-to-file.extension",
+                  SANDBOX_PREFIX "regular-file.extension",
+                  SANDBOX_PREFIX "soft-link-to-file-absolute-path.extension",
+                  SANDBOX_PREFIX "soft-link-to-file.extension",
+                  SANDBOX_PREFIX "soft-link-to-soft-link-to-file.extension",
                   //
               }));
+  ASSERT_THAT(
+      regular_files_with_other_extension,
+      ::testing::UnorderedElementsAreArray({
+          //
+          SANDBOX_PREFIX "hard-link-to-file-absolute-path.another-extension",
+          SANDBOX_PREFIX "hard-link-to-file.another-extension",
+          SANDBOX_PREFIX "regular-file.another-extension",
+          SANDBOX_PREFIX "soft-link-to-file-absolute-path.another-extension",
+          SANDBOX_PREFIX "soft-link-to-file.another-extension",
+          SANDBOX_PREFIX "soft-link-to-soft-link-to-file.another-extension",
+          //
+      }));
   ASSERT_THAT(regular_files_with_extension_with_spaces,
               ::testing::UnorderedElementsAreArray({
                   //
-                  "data/file with spaces in the name.with extension",
+                  SANDBOX_PREFIX "file with spaces in the name.with extension",
                   //
               }));
-  ASSERT_THAT(regular_files_with_another_extension_with_spaces,
-              ::testing::UnorderedElementsAreArray({
-                  //
-                  "data/file with spaces in the name.with another extension",
-                  //
-              }));
+  ASSERT_THAT(
+      regular_files_with_another_extension_with_spaces,
+      ::testing::UnorderedElementsAreArray({
+          //
+          SANDBOX_PREFIX "file with spaces in the name.with another extension",
+          //
+      }));
 }
