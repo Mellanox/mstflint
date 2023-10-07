@@ -25,17 +25,31 @@ setup() {
   #  done
 
   install /dev/null regular-file
+  install /dev/null regular-file.extension
+  install /dev/null regular-file.another-extension
   install -d regular-folder
   ln -snf regular-file soft-link-to-file
+  ln -snf regular-file soft-link-to-file.extension
+  ln -snf regular-file soft-link-to-file.another-extension
   ln -snf soft-link-to-file soft-link-to-soft-link-to-file
+  ln -snf soft-link-to-file soft-link-to-soft-link-to-file.extension
+  ln -snf soft-link-to-file soft-link-to-soft-link-to-file.another-extension
   ln -snf $(readlink -f regular-file) soft-link-to-file-absolute-path
+  ln -snf $(readlink -f regular-file) soft-link-to-file-absolute-path.extension
+  ln -snf $(readlink -f regular-file) soft-link-to-file-absolute-path.another-extension
   ln -snf regular-folder soft-link-to-folder
   ln -snf soft-link-to-folder soft-link-to-soft-link-to-folder
   ln -snf $(readlink -f regular-folder) soft-link-to-folder-absolute-path
   ln -snf "does not exist" dead-soft-link
   ln -nf regular-file hard-link-to-file
+  ln -nf regular-file hard-link-to-file.extension
+  ln -nf regular-file hard-link-to-file.another-extension
   ln -nf regular-file hard-link-to-file-absolute-path
+  ln -nf regular-file hard-link-to-file-absolute-path.extension
+  ln -nf regular-file hard-link-to-file-absolute-path.another-extension
   install /dev/null "file with spaces in the name"
+  install /dev/null "file with spaces in the name.with extension"
+  install /dev/null "file with spaces in the name.with another extension"
   install -d "folder with spaces in the name"
   install -m 0311 -d folder-0311 # Access: (0311/d-wx--x--x)
   install /dev/null folder-0311/file

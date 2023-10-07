@@ -318,13 +318,30 @@ TEST(is_directory, FolderUnderFolderWithNoReadPermissions) {
   ASSERT_TRUE(fs::is_directory(p));
 }
 
-TEST(path, ConstuctFromString) {
+TEST(path, ConstructEmpty) {
+  fs::path p;
+  ASSERT_TRUE(p.string().empty());
+}
+
+TEST(path, ConstructFromString) {
   std::string s = "ceraunoGraPh";
   fs::path p(s);
   ASSERT_EQ(p.string(), "ceraunoGraPh");
 }
 
-TEST(path, ConstuctFromConstString) {
+TEST(path, ConstructFromStringExotic) {
+  fs::path p("../../../whimsical/../alchemy/../../secret/abyssal/enigmatic/../"
+             "../../magical");
+  ASSERT_EQ(p.string(), "../../../whimsical/../alchemy/../../secret/abyssal/"
+                        "enigmatic/../../../magical");
+}
+
+TEST(path, ConstructFromStringMessed) {
+  fs::path p("/cosmic///enigma////mystical////serendipity");
+  ASSERT_EQ(p.string(), "/cosmic///enigma////mystical////serendipity");
+}
+
+TEST(path, ConstructFromConstString) {
   const std::string s = "stibIAlisM";
   fs::path p(s);
   ASSERT_EQ(p.string(), "stibIAlisM");
@@ -491,26 +508,42 @@ TEST(directory_entry, trivia) {
   ASSERT_EQ(entry.path().string(), "/ZephYr/dAta/filE.txT");
 }
 
-std::vector<std::string> expected = {
+std::vector<std::string> all_entries = {
     //
     "data/dead-soft-link",
     "data/file with spaces in the name",
+    "data/file with spaces in the name.with another extension",
+    "data/file with spaces in the name.with extension",
     "data/folder with spaces in the name",
     "data/folder-0311",
     "data/hard-link-to-file",
     "data/hard-link-to-file-absolute-path",
+    "data/hard-link-to-file-absolute-path.another-extension",
+    "data/hard-link-to-file-absolute-path.extension",
+    "data/hard-link-to-file.another-extension",
+    "data/hard-link-to-file.extension",
     "data/regular-file",
+    "data/regular-file.another-extension",
+    "data/regular-file.extension",
     "data/regular-folder",
     "data/soft-link-to-file",
     "data/soft-link-to-file-absolute-path",
+    "data/soft-link-to-file-absolute-path.another-extension",
+    "data/soft-link-to-file-absolute-path.extension",
+    "data/soft-link-to-file.another-extension",
+    "data/soft-link-to-file.extension",
     "data/soft-link-to-folder",
     "data/soft-link-to-folder-absolute-path",
     "data/soft-link-to-soft-link-to-file",
+    "data/soft-link-to-soft-link-to-file.another-extension",
+    "data/soft-link-to-soft-link-to-file.extension",
     "data/soft-link-to-soft-link-to-folder",
+    //
 };
 
 TEST(directory_iterator, Loop) {
   std::vector<std::string> actual;
+  std::vector<std::string> &expected = all_entries;
   fs::directory_iterator it(fs::path("data")), last;
   while (it != last) {
     actual.push_back(it->path().string());
@@ -521,6 +554,7 @@ TEST(directory_iterator, Loop) {
 
 TEST(directory_iterator, RangeLoop) {
   std::vector<std::string> actual;
+  std::vector<std::string> &expected = all_entries;
   for (const auto &entry : fs::directory_iterator(fs::path("data"))) {
     actual.push_back(entry.path().string());
   }
@@ -529,6 +563,7 @@ TEST(directory_iterator, RangeLoop) {
 
 TEST(directory_iterator, ForEachClassic) {
   std::vector<std::string> actual;
+  std::vector<std::string> &expected = all_entries;
   struct func {
     func(std::vector<std::string> &actual) : actual(actual) {}
     void operator()(const fs::directory_entry &entry) {
@@ -543,6 +578,7 @@ TEST(directory_iterator, ForEachClassic) {
 
 TEST(directory_iterator, ForEachLambda) {
   std::vector<std::string> actual;
+  std::vector<std::string> &expected = all_entries;
   std::for_each(fs::directory_iterator(fs::path("data")),
                 fs::directory_iterator(),
                 [&actual](fs::directory_entry &entry) {
@@ -552,6 +588,7 @@ TEST(directory_iterator, ForEachLambda) {
 }
 
 TEST(directory_iterator, BackInserter) {
+  std::vector<std::string> &expected = all_entries;
   std::vector<fs::directory_entry> entries;
   std::copy(fs::directory_iterator(fs::path("data")), fs::directory_iterator(),
             std::back_inserter(entries));
@@ -561,4 +598,94 @@ TEST(directory_iterator, BackInserter) {
       entries.begin(), entries.end(), std::back_inserter(actual),
       [](fs::directory_entry entry) { return entry.path().string(); });
   ASSERT_THAT(actual, ::testing::UnorderedElementsAreArray(expected));
+}
+
+TEST(directory_iterator, FilterByType) {
+  std::vector<std::string> regular_files;
+  for (const auto &entry : fs::directory_iterator(fs::path("data"))) {
+    if (fs::is_regular_file(entry.status())) {
+      regular_files.push_back(entry.path().string());
+    }
+  }
+  ASSERT_THAT(regular_files,
+              ::testing::UnorderedElementsAreArray({
+                  //
+                  "data/file with spaces in the name",
+                  "data/file with spaces in the name.with another extension",
+                  "data/file with spaces in the name.with extension",
+                  "data/hard-link-to-file",
+                  "data/hard-link-to-file-absolute-path",
+                  "data/hard-link-to-file-absolute-path.another-extension",
+                  "data/hard-link-to-file-absolute-path.extension",
+                  "data/hard-link-to-file.another-extension",
+                  "data/hard-link-to-file.extension",
+                  "data/regular-file",
+                  "data/regular-file.another-extension",
+                  "data/regular-file.extension",
+                  "data/soft-link-to-file",
+                  "data/soft-link-to-file-absolute-path",
+                  "data/soft-link-to-file-absolute-path.another-extension",
+                  "data/soft-link-to-file-absolute-path.extension",
+                  "data/soft-link-to-file.another-extension",
+                  "data/soft-link-to-file.extension",
+                  "data/soft-link-to-soft-link-to-file",
+                  "data/soft-link-to-soft-link-to-file.another-extension",
+                  "data/soft-link-to-soft-link-to-file.extension",
+                  //
+              }));
+}
+
+TEST(directory_iterator, FilterByTypeAndExtension) {
+  std::vector<std::string> regular_files_with_extension;
+  std::vector<std::string> regular_files_with_other_extension;
+  std::vector<std::string> regular_files_with_extension_with_spaces;
+  std::vector<std::string> regular_files_with_another_extension_with_spaces;
+  for (const auto &entry : fs::directory_iterator(fs::path("data"))) {
+    if (fs::is_regular_file(entry.status())) {
+      if (entry.path().extension() == ".extension")
+        regular_files_with_extension.push_back(entry.path().string());
+      if (entry.path().extension() == ".another-extension")
+        regular_files_with_other_extension.push_back(entry.path().string());
+      if (entry.path().extension() == ".with extension")
+        regular_files_with_extension_with_spaces.push_back(
+            entry.path().string());
+      if (entry.path().extension() == ".with another extension")
+        regular_files_with_another_extension_with_spaces.push_back(
+            entry.path().string());
+    }
+  }
+  ASSERT_THAT(
+      regular_files_with_extension,
+      ::testing::UnorderedElementsAreArray({
+          //
+          "data/hard-link-to-file-absolute-path.extension",
+          "data/hard-link-to-file.extension", "data/regular-file.extension",
+          "data/soft-link-to-file-absolute-path.extension",
+          "data/soft-link-to-file.extension",
+          "data/soft-link-to-soft-link-to-file.extension",
+          //
+      }));
+  ASSERT_THAT(regular_files_with_other_extension,
+              ::testing::UnorderedElementsAreArray({
+                  //
+                  "data/hard-link-to-file-absolute-path.another-extension",
+                  "data/hard-link-to-file.another-extension",
+                  "data/regular-file.another-extension",
+                  "data/soft-link-to-file-absolute-path.another-extension",
+                  "data/soft-link-to-file.another-extension",
+                  "data/soft-link-to-soft-link-to-file.another-extension",
+                  //
+              }));
+  ASSERT_THAT(regular_files_with_extension_with_spaces,
+              ::testing::UnorderedElementsAreArray({
+                  //
+                  "data/file with spaces in the name.with extension",
+                  //
+              }));
+  ASSERT_THAT(regular_files_with_another_extension_with_spaces,
+              ::testing::UnorderedElementsAreArray({
+                  //
+                  "data/file with spaces in the name.with another extension",
+                  //
+              }));
 }
