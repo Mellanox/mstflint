@@ -34,26 +34,65 @@
 
 #include <boost/filesystem/operations.hpp>
 
+#include <sys/stat.h>
+
 namespace mstflint {
 namespace common {
 namespace filesystem {
 
 /******************** path ********************/
-path::path(const path &p) : path_(p.string()) {}
+path::path(const path &p) : pathname_(p.string()) { init(); }
 
-path::path(std::string &s) : path_(s) {}
+path::path(std::string &s) : pathname_(s) { init(); }
 
-path::path(const std::string &s) : path_(s) {}
+path::path(const std::string &s) : pathname_(s) { init(); }
 
-path path::parent_path() const { return path(path_.parent_path().string()); }
+path path::parent_path() const { return path(parent_pathname_); }
 
-path path::extension() const { return path(path_.extension().string()); }
+path path::extension() const { return path(extension_); }
 
-bool path::is_relative() const { return path_.is_relative(); }
+bool path::is_relative() const { return is_relative_; }
 
-path path::filename() const { return path(path_.filename().string()); }
+path path::filename() const { return path(filename_); }
 
-const std::string &path::string() const { return path_.string(); }
+const std::string &path::string() const { return pathname_; }
+
+// Precondition: pathname_ is set
+void path::init() {
+  if (pathname_.empty()) {
+    return;
+  }
+  std::size_t last_separator_pos = pathname_.find_last_of(SEPARATOR);
+  if (std::string::npos == last_separator_pos) {
+    filename_ = pathname_;
+    parent_pathname_.clear();
+  } else {
+    std::size_t last_non_separator_before_last_separator_pos =
+        pathname_.find_last_not_of(SEPARATOR, last_separator_pos);
+    filename_ = pathname_.substr(last_separator_pos + 1);
+    parent_pathname_ =
+        pathname_.substr(0, last_non_separator_before_last_separator_pos + 1);
+  }
+  std::size_t extension_pos = filename_.find_last_of('.');
+  if (std::string::npos != extension_pos) {
+    extension_ = filename_.substr(extension_pos);
+  }
+  is_relative_ = (pathname_[0] != SEPARATOR);
+  stripped_pathname_.reserve(pathname_.size());
+  char prev = 0;
+  for (char curr : pathname_) {
+    if (SEPARATOR == curr) {
+      if (SEPARATOR != prev) {
+        stripped_pathname_.append(1, SEPARATOR);
+      }
+    } else {
+      stripped_pathname_.append(1, curr);
+    }
+    prev = curr;
+  }
+}
+
+const char path::SEPARATOR = '/';
 
 /******************** file_status ********************/
 file_status::file_status(boost::filesystem::file_status file_status)
@@ -109,29 +148,27 @@ directory_entry &directory_iterator::operator*() { return directory_entry_; }
 
 /******************** friend functions ********************/
 bool operator==(const path &lhs, const path &rhs) {
-  return boost::filesystem::path(lhs.string()) ==
-         boost::filesystem::path(rhs.string());
+  return lhs.stripped_pathname_ == rhs.stripped_pathname_;
 }
 
 bool operator==(const path &lhs, const std::string &rhs) {
-  return boost::filesystem::path(lhs.string()) == boost::filesystem::path(rhs);
+  return lhs.stripped_pathname_ == path(rhs).stripped_pathname_;
 }
 
 bool operator==(const std::string &lhs, const path &rhs) {
-  return boost::filesystem::path(lhs) == boost::filesystem::path(rhs.string());
+  return path(lhs).stripped_pathname_ == rhs.stripped_pathname_;
 }
 
 bool operator!=(const path &lhs, const path &rhs) {
-  return boost::filesystem::path(lhs.string()) !=
-         boost::filesystem::path(rhs.string());
+  return !(lhs == rhs);
 }
 
 bool operator!=(const path &lhs, const std::string &rhs) {
-  return boost::filesystem::path(lhs.string()) != boost::filesystem::path(rhs);
+  return !(lhs == rhs);
 }
 
 bool operator!=(const std::string &lhs, const path &rhs) {
-  return boost::filesystem::path(lhs) != boost::filesystem::path(rhs.string());
+  return !(lhs == rhs);
 }
 
 bool is_regular_file(file_status f) {
@@ -156,18 +193,32 @@ directory_iterator cend(const directory_iterator &) {
 }
 
 bool exists(const path &p) {
-  boost::filesystem::path path(p.string());
-  return boost::filesystem::exists(path);
+  struct stat s;
+  return (0 == stat(p.string().c_str(), &s));
 }
 
 bool is_directory(const path &p) {
-  boost::filesystem::path path(p.string());
-  return boost::filesystem::is_directory(path);
+  struct stat s;
+  if (0 != stat(p.string().c_str(), &s)) {
+    return false;
+  }
+  if (S_ISDIR(s.st_mode)) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 bool is_regular_file(const path &p) {
-  boost::filesystem::path path(p.string());
-  return boost::filesystem::is_regular_file(path);
+  struct stat s;
+  if (0 != stat(p.string().c_str(), &s)) {
+    return false;
+  }
+  if (S_ISREG(s.st_mode)) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 } // namespace filesystem
