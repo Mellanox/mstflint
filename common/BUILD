@@ -28,9 +28,6 @@ cc_library(
         "-Wextra",
         "-Wpedantic",
     ],
-    deps = [
-        "@boost//:filesystem",
-    ],
 )
 
 cc_test(
@@ -51,13 +48,46 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "boost-filesystem-test-bin",
+    size = "small",
+    srcs = [
+        "filesystem-test.cpp",
+    ],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    defines = ["USE_BOOST"],
+    tags = ["manual"],
+    deps = [
+        ":filesystem",
+        "@com_google_googletest//:gtest_main",
+        "@boost//:filesystem",
+    ],
+)
+
 sh_test(
     name = "filesystem-test",
     size = "small",
     srcs = [
         "filesystem-test.sh",
     ],
+    args = ["filesystem-test-bin"],
     data = [
         ":filesystem-test-bin",
+    ],
+)
+
+sh_test(
+    name = "boost-filesystem-test",
+    size = "small",
+    srcs = [
+        "filesystem-test.sh",
+    ],
+    args = ["boost-filesystem-test-bin"],
+    data = [
+        ":boost-filesystem-test-bin",
     ],
 )
