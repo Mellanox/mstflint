@@ -2,9 +2,10 @@
 
 # set -x
 
+TEST_BINARY=$1
+# echo $TEST_BINARY
 ORIG_PWD=$(pwd)
-
-echo $ORIG_PWD
+# echo $ORIG_PWD
 
 setup() {
   echo "setup"
@@ -54,6 +55,13 @@ setup() {
   install -m 0311 -d folder-0311 # Access: (0311/d-wx--x--x)
   install /dev/null folder-0311/file
   install -d folder-0311/folder
+  install -d empty-folder
+  install /dev/null a    # the shortest name
+  install /dev/null .a   # '.', '..' skip challenge
+  install /dev/null ..a  #
+  install -d folder-with-content
+  install /dev/null folder-with-content/file
+  install -d folder-with-content/folder
 
   popd
   echo "setup done"
@@ -73,4 +81,19 @@ trap "teardown" EXIT
 trap "teardown && exit 1" SIGINT SIGTERM
 
 setup
-common/filesystem-test-bin
+./common/"$TEST_BINARY"
+# ./common/"$TEST_BINARY" --gtest_list_tests
+# ./common/"$TEST_BINARY" --gtest_filter="path.*"
+# ./common/"$TEST_BINARY" --gtest_filter="path.Construct*"
+# ./common/"$TEST_BINARY" --gtest_filter="path.Exten*"
+# ./common/"$TEST_BINARY" --gtest_filter="path.IsRelative*"
+# ./common/"$TEST_BINARY" --gtest_filter="path.Pare*"
+# ./common/"$TEST_BINARY" --gtest_filter="path.Equ*"
+
+# ./common/"$TEST_BINARY" --gtest_filter="directory_iterator.*"
+# ./common/"$TEST_BINARY" --gtest_filter="directory_iterator.EmptyFolder" --gtest_repeat=10000
+# ./common/"$TEST_BINARY" --gtest_filter="directory_iterator.Loop" --gtest_repeat=10000
+# ./common/"$TEST_BINARY" --gtest_filter="directory_iterator.RangeLoop" --gtest_repeat=10000
+# ./common/"$TEST_BINARY" --gtest_filter="directory_iterator.ForEachClassic"
+# ./common/"$TEST_BINARY" --gtest_filter="directory_iterator.ForEachLambda"
+# ./common/"$TEST_BINARY" --gtest_filter="directory_iterator.BackInserter"

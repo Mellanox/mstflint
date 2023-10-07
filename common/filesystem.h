@@ -33,9 +33,10 @@
 #ifndef MSTFLINT_FILESYSTEM_H
 #define MSTFLINT_FILESYSTEM_H
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+#include <memory>
 #include <string>
+
+#include <dirent.h>
 
 namespace mstflint {
 namespace common {
@@ -43,7 +44,7 @@ namespace filesystem {
 
 class path {
 public:
-  path() = default;
+  path();
   ~path() = default;
   path(const path &);
   explicit path(std::string &);
@@ -64,32 +65,51 @@ public:
   friend bool operator!=(const path &, const std::string &);
   friend bool operator!=(const std::string &, const path &);
 
+public:
+  static const char SEPARATOR;
+
 private:
   void init();
 
 private:
-  static const char SEPARATOR;
   std::string pathname_;
-  std::string stripped_pathname_;
+  bool is_relative_;
   std::string filename_;
   std::string parent_pathname_;
   std::string extension_;
-  bool is_relative_;
+  std::string stripped_pathname_;
+};
+
+// to be expanded on demand...
+enum file_type {
+  FILETYPE_ERROR,
+  // FILETYPE_NOT_FOUND,
+  FILETYPE_REGULAR,
+  // FILETYPE_DIRECTORY,
+  // FILETYPE_SYMLINK,
+  // FILETYPE_BLOCK,
+  // FILETYPE_CHARACTER,
+  // FILETYPE_FIFO,
+  // FILETYPE_SOCKET,
+  FILETYPE_UNKNOWN,
 };
 
 class file_status { // TODO unit tests
 public:
-  file_status() = delete;
+  file_status();
   ~file_status() = default;
   file_status(const file_status &) = default;
-  file_status(boost::filesystem::file_status);
+  explicit file_status(const path &);
 
-  file_status &operator=(const file_status &) = delete;
+  file_status &operator=(const file_status &) = default;
 
   friend bool is_regular_file(file_status);
 
 private:
-  boost::filesystem::file_status file_status_;
+  static file_type retrieve_file_type(const char *path);
+
+private:
+  file_type type_;
 };
 
 class directory_entry {
@@ -102,16 +122,27 @@ public:
   directory_entry &operator=(directory_entry const &) = default;
 
   const file_status status() const;
-  // FIXME const mstflint::common::filesystem::path& path();
-  const mstflint::common::filesystem::path path() const;
+  const mstflint::common::filesystem::path &path() const;
 
 private:
-  boost::filesystem::directory_entry directory_entry_;
+  mstflint::common::filesystem::path path_;
+  file_status status_;
+};
+
+class directory_stream {
+public:
+  directory_stream(const mstflint::common::filesystem::path &);
+  ~directory_stream();
+  bool is_open();
+  struct dirent *read();
+
+private:
+  DIR *stream;
 };
 
 class directory_iterator {
 public:
-  directory_iterator() = default;
+  directory_iterator();
   ~directory_iterator() = default;
   directory_iterator(directory_iterator const &);
   explicit directory_iterator(const path &);
@@ -131,8 +162,10 @@ public:
                          const directory_iterator &);
 
 private:
-  boost::filesystem::directory_iterator iterator_;
+  std::string dirname_;
   directory_entry directory_entry_;
+  std::shared_ptr<directory_stream> dr;
+  struct dirent *de; // TODO doesn't follow single-responsibility principle
 };
 
 const directory_iterator &begin(const directory_iterator &);

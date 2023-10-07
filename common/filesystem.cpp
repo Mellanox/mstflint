@@ -32,8 +32,9 @@
 
 #include "filesystem.h"
 
-#include <boost/filesystem/operations.hpp>
+#include <cassert>
 
+#include <dirent.h>
 #include <sys/stat.h>
 
 namespace mstflint {
@@ -41,11 +42,15 @@ namespace common {
 namespace filesystem {
 
 /******************** path ********************/
-path::path(const path &p) : pathname_(p.string()) { init(); }
+path::path() : is_relative_(false) { init(); }
 
-path::path(std::string &s) : pathname_(s) { init(); }
+path::path(const path &p) : pathname_(p.string()), is_relative_(false) {
+  init();
+}
 
-path::path(const std::string &s) : pathname_(s) { init(); }
+path::path(std::string &s) : pathname_(s), is_relative_(false) { init(); }
+
+path::path(const std::string &s) : pathname_(s), is_relative_(false) { init(); }
 
 path path::parent_path() const { return path(parent_pathname_); }
 
@@ -62,6 +67,7 @@ void path::init() {
   if (pathname_.empty()) {
     return;
   }
+  is_relative_ = (pathname_[0] != SEPARATOR);
   std::size_t last_separator_pos = pathname_.find_last_of(SEPARATOR);
   if (std::string::npos == last_separator_pos) {
     filename_ = pathname_;
@@ -77,7 +83,6 @@ void path::init() {
   if (std::string::npos != extension_pos) {
     extension_ = filename_.substr(extension_pos);
   }
-  is_relative_ = (pathname_[0] != SEPARATOR);
   stripped_pathname_.reserve(pathname_.size());
   char prev = 0;
   for (char curr : pathname_) {
@@ -95,49 +100,90 @@ void path::init() {
 const char path::SEPARATOR = '/';
 
 /******************** file_status ********************/
-file_status::file_status(boost::filesystem::file_status file_status)
-    : file_status_(file_status) {}
+file_status::file_status() : type_(file_type::FILETYPE_UNKNOWN) {}
+
+file_status::file_status(const path &p)
+    : type_(retrieve_file_type(p.string().c_str())) {}
+
+file_type file_status::retrieve_file_type(const char *path) {
+  assert(nullptr != path);
+  struct stat s;
+  if (0 != stat(path, &s)) {
+    return file_type::FILETYPE_ERROR; // TODO parse errno
+  }
+  // to be expanded on demand...
+  if (S_ISREG(s.st_mode)) {
+    return file_type::FILETYPE_REGULAR;
+  }
+  return file_type::FILETYPE_UNKNOWN;
+}
 
 /******************** directory_entry ********************/
 directory_entry::directory_entry() {}
 
 directory_entry::directory_entry(const mstflint::common::filesystem::path &p)
-    : directory_entry_(boost::filesystem::path(p.string())) {}
+    : path_(p), status_(p) {}
 
-const file_status directory_entry::status() const {
-  return file_status(directory_entry_.status());
+const file_status directory_entry::status() const { return status_; }
+
+const mstflint::common::filesystem::path &directory_entry::path() const {
+  return path_;
 }
-const mstflint::common::filesystem::path directory_entry::path() const {
-  return mstflint::common::filesystem::path(directory_entry_.path().string());
+
+/******************** directory_stream ********************/
+directory_stream::directory_stream(const mstflint::common::filesystem::path &p)
+    : stream(opendir(p.string().c_str())) {}
+directory_stream::~directory_stream() {
+  if (nullptr != stream) {
+    closedir(stream);
+  }
+}
+bool directory_stream::is_open() { return (nullptr != stream); }
+struct dirent *directory_stream::read() {
+  return readdir(stream);
 }
 
 /******************** directory_iterator ********************/
+directory_iterator::directory_iterator()
+    : dirname_(), directory_entry_(), dr(nullptr), de(nullptr) {}
+
 directory_iterator::directory_iterator(directory_iterator const &other) {
-  iterator_ = other.iterator_;
+  dirname_ = other.dirname_;
   directory_entry_ = other.directory_entry_;
+  dr = other.dr;
+  de = other.de;
 }
 
 directory_iterator::directory_iterator(const path &p)
-    : iterator_(boost::filesystem::path(p.string())) {
-  if (iterator_ == boost::filesystem::directory_iterator()) {
-    directory_entry entry;
-    directory_entry_ = entry;
-  } else {
-    path p(iterator_->path().string());
-    directory_entry entry(p);
-    directory_entry_ = entry;
+    : dirname_(p.string()), directory_entry_(), dr(new directory_stream(p)),
+      de(nullptr) {
+  if (!dirname_.empty() && path::SEPARATOR != dirname_.back()) {
+    dirname_.append(1, path::SEPARATOR);
+  }
+  if (!dr->is_open())
+    return;
+  while (nullptr != (de = dr->read())) {
+    if (('.' == de->d_name[0] && '\0' == de->d_name[1]) ||
+        ('.' == de->d_name[1] && '\0' == de->d_name[2]))
+      continue;
+    break;
+  }
+  if (nullptr != de) {
+    directory_entry_ = directory_entry(path(dirname_ + de->d_name));
   }
 }
 
 directory_iterator &directory_iterator::operator++() {
-  ++iterator_;
-  if (iterator_ == boost::filesystem::directory_iterator()) {
-    directory_entry entry;
-    directory_entry_ = entry;
-  } else {
-    path p(iterator_->path().string());
-    directory_entry entry(p);
-    directory_entry_ = entry;
+  assert(dr->is_open());
+  // struct dirent *de; TODO fixme
+  while (nullptr != (de = dr->read())) {
+    if (('.' == de->d_name[0] && '\0' == de->d_name[1]) ||
+        ('.' == de->d_name[1] && '\0' == de->d_name[2]))
+      continue;
+    break;
+  }
+  if (nullptr != de) {
+    directory_entry_ = directory_entry(path(dirname_ + de->d_name));
   }
   return *this;
 }
@@ -159,9 +205,7 @@ bool operator==(const std::string &lhs, const path &rhs) {
   return path(lhs).stripped_pathname_ == rhs.stripped_pathname_;
 }
 
-bool operator!=(const path &lhs, const path &rhs) {
-  return !(lhs == rhs);
-}
+bool operator!=(const path &lhs, const path &rhs) { return !(lhs == rhs); }
 
 bool operator!=(const path &lhs, const std::string &rhs) {
   return !(lhs == rhs);
@@ -172,11 +216,11 @@ bool operator!=(const std::string &lhs, const path &rhs) {
 }
 
 bool is_regular_file(file_status f) {
-  return boost::filesystem::is_regular_file(f.file_status_);
+  return file_type::FILETYPE_REGULAR == f.type_;
 }
 
 bool operator!=(const directory_iterator &lhs, const directory_iterator &rhs) {
-  return lhs.iterator_ != rhs.iterator_;
+  return lhs.de != rhs.de;
 }
 
 /******************** other non-member functions ********************/
