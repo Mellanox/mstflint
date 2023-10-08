@@ -66,5 +66,5 @@ mstreg_LDADD =  $(MLXREG_DIR)/mlxreg_lib/libmstreg_lib.a \
                 $(USER_DIR)/xz_utils/libxz_utils.a \
                 $(USER_DIR)/ext_libs/minixz/libminixz.a \
                 $(USER_DIR)/common/libcommon.a \
-                -lboost_regex -lboost_filesystem  \
+                -lboost_regex \
                 -llzma $(LIBSTD_CPP) ${LDL} -lexpat
