@@ -177,8 +177,9 @@ directory_iterator &directory_iterator::operator++() {
   assert(dr->is_open());
   // struct dirent *de; TODO fixme
   while (nullptr != (de = dr->read())) {
-    if (('.' == de->d_name[0] && '\0' == de->d_name[1]) ||
-        ('.' == de->d_name[1] && '\0' == de->d_name[2]))
+    if (('.' == de->d_name[0]) &&
+        (('\0' == de->d_name[1]) ||
+         ('.' == de->d_name[1] && '\0' == de->d_name[2])))
       continue;
     break;
   }

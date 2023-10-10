@@ -56,9 +56,10 @@ setup() {
   install /dev/null folder-0311/file
   install -d folder-0311/folder
   install -d empty-folder
-  install /dev/null a    # the shortest name
-  install /dev/null .a   # '.', '..' skip challenge
-  install /dev/null ..a  #
+  install /dev/null a    # corner
+  install /dev/null .a   #  cases
+  install /dev/null a.   #   for ".", ".." skip
+  install /dev/null ..a  #    feature
   install -d folder-with-content
   install /dev/null folder-with-content/file
   install -d folder-with-content/folder
