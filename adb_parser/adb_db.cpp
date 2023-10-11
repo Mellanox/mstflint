@@ -38,7 +38,7 @@
 #include <vector>
 #include <stdio.h>
 #include <string>
-#include <boost/algorithm/string.hpp>
+#include "common/algorithm.h"
 #include "adb_db.h"
 
 #define CHECK_FIELD(field, node_w)                                                  \
@@ -128,7 +128,7 @@ adb_limits_map_t* db_create_limits_map(adb_db_t* db)
             if (attrs_map != ((Adb*)db)->configs[i]->attrs.end())
             {
                 vector<string> defVal;
-                boost::algorithm::split(defVal, attrs_map->second, boost::is_any_of(string("=")));
+                mstflint::common::algorithm::split(defVal, attrs_map->second, mstflint::common::algorithm::is_any_of(string("=")));
 
                 if (defVal.size() == 1)
                 {
@@ -264,8 +264,8 @@ adb_field_t* db_node_get_field_by_path(adb_node_t* node, const char* path, int i
         }
         else
         {
-            string field_name_lower = boost::algorithm::to_lower_copy(node_w->fields->at(i)->fullName(1));
-            string path_lower = boost::algorithm::to_lower_copy(fullPath);
+            string field_name_lower = mstflint::common::algorithm::to_lower_copy(node_w->fields->at(i)->fullName(1));
+            string path_lower = mstflint::common::algorithm::to_lower_copy(fullPath);
 
             if (path_lower == field_name_lower)
             {

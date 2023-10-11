@@ -40,12 +40,12 @@
 #include "adb_expr.h"
 
 #include <string.h>
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 
-#include <boost/algorithm/string.hpp>
+#include "common/algorithm.h"
 #include "common/filesystem.h"
-
 #include "common/regex.h"
 
 bool AdbParser::allowMultipleExceptions = false;
@@ -129,7 +129,7 @@ AdbParser::AdbParser(string fileName,
         adbCtxt->includePaths.push_back(
           _fileName.find(OS_PATH_SEP) == string::npos ? "." : _fileName.substr(0, _fileName.rfind(OS_PATH_SEP)));
         vector<string> path;
-        boost::algorithm::split(path, fileName, boost::is_any_of(string(OS_PATH_SEP)));
+        mstflint::common::algorithm::split(path, fileName, mstflint::common::algorithm::is_any_of(string(OS_PATH_SEP)));
         // IncludeFileInfo info = {fileName, "ROOT", 0};
         // _adbCtxt->includedFiles[path[path.size() - 1]] = info;
 
@@ -141,7 +141,7 @@ AdbParser::AdbParser(string fileName,
 void AdbParser::addIncludePaths(Adb* adbCtxt, string includePaths)
 {
     vector<string> paths;
-    boost::algorithm::split(paths, includePaths, boost::is_any_of(string(";")));
+    mstflint::common::algorithm::split(paths, includePaths, mstflint::common::algorithm::is_any_of(string(";")));
     adbCtxt->includePaths.insert(adbCtxt->includePaths.end(), paths.begin(), paths.end());
 
     vector<string> relatives;
@@ -506,10 +506,10 @@ u_int32_t AdbParser::addr2int(string& s)
     try
     {
         u_int32_t res;
-        boost::algorithm::to_lower(s);
+        mstflint::common::algorithm::to_lower(s);
         char* end;
         vector<string> words;
-        boost::algorithm::split(words, s, boost::is_any_of(string(".")));
+        mstflint::common::algorithm::split(words, s, mstflint::common::algorithm::is_any_of(string(".")));
 
         // fix for cases like: 0x.16
         if (words.size() && !words[0].compare("0x"))
@@ -589,7 +589,7 @@ u_int32_t AdbParser::startBit(u_int32_t offset)
  **/
 string AdbParser::descXmlToNative(const string& desc)
 {
-    return boost::replace_all_copy(desc, "\\;", "\n");
+    return mstflint::common::algorithm::replace_all_copy(desc, "\\;", "\n");
 }
 
 bool AdbParser::is_inst_ifdef_exist_and_correct_project(const XML_Char** atts, AdbParser* adbParser)
@@ -605,7 +605,7 @@ bool AdbParser::is_inst_ifdef_exist_and_correct_project(const XML_Char** atts, A
             if (it_def != adbParser->_adbCtxt->configs[i]->attrs.end())
             {
                 vector<string> defVal;
-                boost::algorithm::split(defVal, it_def->second, boost::is_any_of(string("=")));
+                mstflint::common::algorithm::split(defVal, it_def->second, mstflint::common::algorithm::is_any_of(string("=")));
 
                 if (defVal[0] == definedProject)
                 {
@@ -680,7 +680,7 @@ void AdbParser::includeAllFilesInDir(AdbParser* adbParser, string dirPath, int l
 {
     vector<string> paths;
     mstflint::common::filesystem::path mainFile(adbParser->_fileName);
-    boost::algorithm::split(paths, dirPath, boost::is_any_of(string(";")));
+    mstflint::common::algorithm::split(paths, dirPath, mstflint::common::algorithm::is_any_of(string(";")));
     for (vector<string>::iterator pathIt = paths.begin(); pathIt != paths.end(); pathIt++)
     {
         // first look in the main file's path
@@ -864,7 +864,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
             if (!aName.compare("field_mand"))
             {
                 aValue = mstflint::common::regex::regex_replace(aValue, mstflint::common::regex::regex("\\s+"), string(""));
-                boost::split(adbParser->field_mand_attr, aValue, boost::is_any_of(","));
+                mstflint::common::algorithm::split(adbParser->field_mand_attr, aValue, mstflint::common::algorithm::is_any_of(","));
             }
 
             // check the define statement is according to format
@@ -1058,7 +1058,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
         if (!expFound && !TAG_ATTR_INCLUDE_PATH.compare(aName))
         {
             vector<string> paths;
-            boost::algorithm::split(paths, aValue, boost::is_any_of(string(";")));
+            mstflint::common::algorithm::split(paths, aValue, mstflint::common::algorithm::is_any_of(string(";")));
             adbParser->_adbCtxt->includePaths.insert(adbParser->_adbCtxt->includePaths.end(), paths.begin(),
                                                      paths.end());
 
@@ -1096,13 +1096,13 @@ void AdbParser::startIncludeElement(const XML_Char** atts, AdbParser* adbParser,
     if (cond)
     {
         string includeAttr = attrName(atts, 0);
-        boost::algorithm::trim(includeAttr);
+        mstflint::common::algorithm::trim(includeAttr);
 
         bool expFound = false;
         if (includeAttr == "file")
         {
             string fname = attrValue(atts, "file");
-            boost::algorithm::trim(fname);
+            mstflint::common::algorithm::trim(fname);
             if (fname.empty())
             {
                 expFound = raiseException(allowMultipleExceptions,
@@ -1116,7 +1116,7 @@ void AdbParser::startIncludeElement(const XML_Char** atts, AdbParser* adbParser,
         else if (includeAttr == "dir")
         {
             string includeAllDirPath = attrValue(atts, "dir");
-            boost::algorithm::trim(includeAllDirPath);
+            mstflint::common::algorithm::trim(includeAllDirPath);
             if (includeAllDirPath.empty())
             {
                 expFound = raiseException(allowMultipleExceptions,
@@ -1194,7 +1194,7 @@ void AdbParser::startNodeElement(const XML_Char** atts, AdbParser* adbParser, co
     if (cond)
     {
         string nodeName = attrValue(atts, "name");
-        boost::algorithm::trim(nodeName);
+        mstflint::common::algorithm::trim(nodeName);
         string size = attrValue(atts, "size");
 
         if (adbParser->_enforceGuiChecks)
@@ -1322,7 +1322,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
         }
 
         string fieldName = attrValue(atts, "name");
-        boost::algorithm::trim(fieldName);
+        mstflint::common::algorithm::trim(fieldName);
         string offset = attrValue(atts, "offset");
         string size = attrValue(atts, "size");
 
@@ -1879,7 +1879,7 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
         {
             if (!adbParser->_currentNode->isUnion)
             {
-                stable_sort(adbParser->_currentNode->fields.begin(),
+                std::stable_sort(adbParser->_currentNode->fields.begin(),
                             adbParser->_currentNode->fields.end(),
                             compareFieldsPtr<AdbField>);
             }
@@ -1986,7 +1986,7 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
             // Resort the fields by offset (since we changed offset to workaround big endian issues and added reserved)
             if (!adbParser->_currentNode->isUnion)
             {
-                stable_sort(adbParser->_currentNode->fields.begin(),
+                std::stable_sort(adbParser->_currentNode->fields.begin(),
                             adbParser->_currentNode->fields.end(),
                             compareFieldsPtr<AdbField>);
             }
@@ -2024,7 +2024,7 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
                     if (it_def != adbParser->_adbCtxt->configs[i]->attrs.end())
                     {
                         vector<string> defVal;
-                        boost::algorithm::split(defVal, it_def->second, boost::is_any_of(string("=")));
+                        mstflint::common::algorithm::split(defVal, it_def->second, mstflint::common::algorithm::is_any_of(string("=")));
 
                         if (defVal[0] == it->second)
                         {
@@ -2048,7 +2048,7 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
                     if (it_def != adbParser->_adbCtxt->configs[i]->attrs.end())
                     {
                         vector<string> defVal;
-                        boost::algorithm::split(defVal, it_def->second, boost::is_any_of(string("=")));
+                        mstflint::common::algorithm::split(defVal, it_def->second, mstflint::common::algorithm::is_any_of(string("=")));
 
                         if (defVal.size() == 1)
                         {
