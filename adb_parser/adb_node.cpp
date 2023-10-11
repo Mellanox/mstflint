@@ -41,14 +41,6 @@
 #include "adb_field.h"
 #include <iostream>
 
-#if __cplusplus >= 201402L
-#include <regex>
-#else
-#include <boost/regex.hpp>
-using namespace boost;
-#endif
-
-#include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 
 AdbNode::AdbNode() : size(0), _maxLeafSize(0), isUnion(false), inLayout(false), lineNumber(-1), userData(0) {}

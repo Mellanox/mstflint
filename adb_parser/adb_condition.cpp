@@ -37,12 +37,7 @@
 #include <stdlib.h>
 #include "adb_condition.h"
 
-#if __cplusplus >= 201402L
-#include <regex>
-#else
-#include <boost/regex.hpp>
-using namespace boost;
-#endif
+#include "common/regex.h"
 
 AdbCondition::AdbCondition() {}
 
@@ -57,11 +52,11 @@ void AdbCondition::setCondition(std::string condition)
 
 void AdbCondition::splitConditionIntoVariables()
 {
-    static const regex EXP_PATTERN("(\\w+)\\s*==");
-    match_results<string::const_iterator> match;
+    static const mstflint::common::regex::regex EXP_PATTERN("(\\w+)\\s*==");
+    mstflint::common::regex::match_results<string::const_iterator> match;
     string::const_iterator start = this->condition.begin();
     string::const_iterator end = this->condition.end();
-    while (regex_search(start, end, match, EXP_PATTERN))
+    while (mstflint::common::regex::regex_search(start, end, match, EXP_PATTERN))
     {
         this->varsMap[match[0]] = CondVar();
         start = match[0].second;
