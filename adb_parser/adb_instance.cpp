@@ -47,12 +47,7 @@
 
 #include <list>
 
-#if __cplusplus >= 201402L
-#include <regex>
-#else
-#include <boost/regex.hpp>
-using namespace boost;
-#endif
+#include "common/regex.h"
 
 // Constants
 const char AdbInstance::path_seperator{'.'};
@@ -178,7 +173,7 @@ u_int32_t AdbInstance::calcArrOffset(bool bigEndianArr)
 
 void AdbInstance::eval_expressions(AttrsMap& parent_vars)
 {
-    static regex EXP_REGEX(EXP_PATTERN);
+    static mstflint::common::regex::regex EXP_REGEX(EXP_PATTERN);
     try
     {
         // First add the special variables
@@ -195,14 +190,14 @@ void AdbInstance::eval_expressions(AttrsMap& parent_vars)
         {
             string& varStr = it->second;
             boost::algorithm::trim(varStr);
-            match_results<string::const_iterator> what;
+            mstflint::common::regex::match_results<string::const_iterator> what;
             string::const_iterator start = varStr.begin();
             string::const_iterator end = varStr.end();
 
             string var;
             string exp;
 
-            while (regex_search(start, end, what, EXP_REGEX))
+            while (mstflint::common::regex::regex_search(start, end, what, EXP_REGEX))
             {
                 var = string(what[1].first, what[1].second);
                 exp = string(what[2].first, what[2].second);
@@ -240,13 +235,13 @@ string AdbInstance::evalExpr(string expr, AttrsMap* vars)
         return expr;
     }
 
-    smatch what, what2;
-    regex singleExpr("^([^\\$]*)(\\$\\(([^)]+)\\))(.*)$");
-    while (regex_search(expr, what, singleExpr))
+    mstflint::common::regex::smatch what, what2;
+    mstflint::common::regex::regex singleExpr("^([^\\$]*)(\\$\\(([^)]+)\\))(.*)$");
+    while (mstflint::common::regex::regex_search(expr, what, singleExpr))
     {
         string vname = what[3].str();
         string vvalue;
-        regex singleVar("^[a-zA-Z_][a-zA-Z0-9_]*$");
+        mstflint::common::regex::regex singleVar("^[a-zA-Z_][a-zA-Z0-9_]*$");
 
         // Need to change to array-like initialization when we'll move to c++11
         vector<string> specialVars;
@@ -255,7 +250,7 @@ string AdbInstance::evalExpr(string expr, AttrsMap* vars)
         specialVars.push_back("BN");
         specialVars.push_back("parent");
 
-        if (regex_search(vname, what2, singleVar))
+        if (mstflint::common::regex::regex_search(vname, what2, singleVar))
         {
             if (find(specialVars.begin(), specialVars.end(), vname) == specialVars.end())
             {
@@ -274,9 +269,9 @@ string AdbInstance::evalExpr(string expr, AttrsMap* vars)
         else
         {
             string vnameCopy = vname;
-            regex singleVarInExpr("[a-zA-Z_][a-zA-Z0-9_]*");
-            smatch matches;
-            while (regex_search(vnameCopy, matches, singleVarInExpr))
+            mstflint::common::regex::regex singleVarInExpr("[a-zA-Z_][a-zA-Z0-9_]*");
+            mstflint::common::regex::smatch matches;
+            while (mstflint::common::regex::regex_search(vnameCopy, matches, singleVarInExpr))
             {
                 if (find(specialVars.begin(), specialVars.end(), matches[0]) == specialVars.end())
                 {
