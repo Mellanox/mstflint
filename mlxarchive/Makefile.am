@@ -86,7 +86,6 @@ mstarchive_LDADD = libmstarchive.a\
                    $(USER_DIR)/ext_libs/minixz/libminixz.a\
 		   $(USER_DIR)/xz_utils/libxz_utils.a \
                    $(CURL_LIBS)\
-                   -lboost_regex \
                    -llzma -lm $(LIBSTD_CPP) ${LDL}
 
 if ENABLE_OPENSSL
