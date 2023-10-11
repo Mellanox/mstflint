@@ -44,9 +44,11 @@
 #include "adb_condVar.h"
 #include "buf_ops.h"
 
-#include <boost/algorithm/string.hpp>
+#include <algorithm>
 #include <iostream>
 #include <sstream>
+
+#include "common/algorithm.h"
 
 using namespace std;
 using namespace xmlCreator;
@@ -306,7 +308,7 @@ string Adb::toXml(vector<string> nodeNames, bool addRootNode, string rootName, s
             vector<string> tmp = getNodeDeps(*it);
             nodeDeps.insert(nodeDeps.end(), tmp.begin(), tmp.end());
         }
-        stable_sort(nodeDeps.begin(), nodeDeps.end());
+        std::stable_sort(nodeDeps.begin(), nodeDeps.end());
         nodeDeps.erase(unique(nodeDeps.begin(), nodeDeps.end()), nodeDeps.end());
 
         string xml;
@@ -534,7 +536,7 @@ AdbInstance* Adb::createLayout(string rootNodeName,
             AdbInstance* inst = *it;
             AdbInstance* curInst = inst;
             const string splitVal = inst->getInstanceAttr("union_selector");
-            boost::algorithm::split(path, splitVal, boost::is_any_of(string(".")));
+            mstflint::common::algorithm::split(path, splitVal, mstflint::common::algorithm::is_any_of(string(".")));
             for (size_t i = 0; i < path.size(); i++)
             {
                 if (path[i] == "#(parent)" || path[i] == "$(parent)")
@@ -727,7 +729,7 @@ vector<string> Adb::getNodeDeps(string nodeName)
         }
     }
 
-    stable_sort(deps.begin(), deps.end());
+    std::stable_sort(deps.begin(), deps.end());
     deps.erase(unique(deps.begin(), deps.end()), deps.end());
     return deps;
 }
@@ -838,7 +840,7 @@ bool Adb::createInstance(AdbField* field,
 
             if (!inst->isUnion() && inst->subItems.size() > 0)
             {
-                stable_sort(inst->subItems.begin(), inst->subItems.end(),
+                std::stable_sort(inst->subItems.begin(), inst->subItems.end(),
                             compareFieldsPtr<AdbInstance>); // TODO: try to remove this shit
 
                 for (size_t j = 0; j < inst->subItems.size() - 1; j++)

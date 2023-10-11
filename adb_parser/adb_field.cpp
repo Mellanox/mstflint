@@ -37,7 +37,6 @@
  **/
 
 #include "adb_field.h"
-#include <boost/algorithm/string.hpp>
 #include <iostream>
 
 AdbField::AdbField() :

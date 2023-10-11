@@ -33,7 +33,7 @@
  */
 
 #include "adb_xmlCreator.h"
-#include <boost/algorithm/string.hpp>
+#include "common/algorithm.h"
 
 string xmlCreator::indentString(int i)
 {
@@ -112,5 +112,5 @@ string xmlCreator::encodeXml(const string& data)
 
 string xmlCreator::descNativeToXml(const string& desc)
 {
-    return boost::replace_all_copy(desc, "\n", "\\;");
+    return mstflint::common::algorithm::replace_all_copy(desc, "\n", "\\;");
 }
