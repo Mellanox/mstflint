@@ -43,10 +43,10 @@
 #include "adb_exceptionHolder.h"
 #include "buf_ops.h"
 #include <string>
-#include <boost/algorithm/string.hpp>
 
 #include <list>
 
+#include "common/algorithm.h"
 #include "common/regex.h"
 
 // Constants
@@ -189,7 +189,7 @@ void AdbInstance::eval_expressions(AttrsMap& parent_vars)
         if (it != fieldDesc->attrs.end())
         {
             string& varStr = it->second;
-            boost::algorithm::trim(varStr);
+            mstflint::common::algorithm::trim(varStr);
             mstflint::common::regex::match_results<string::const_iterator> what;
             string::const_iterator start = varStr.begin();
             string::const_iterator end = varStr.end();
@@ -419,7 +419,7 @@ string AdbInstance::fullName(size_t skipLevel)
             fnList.pop_front();
         }
 
-        return boost::algorithm::join(fnList, ".");
+        return mstflint::common::algorithm::join(fnList, ".");
     }
     else
     {
@@ -590,7 +590,7 @@ bool AdbInstance::operator<(const AdbInstance& other)
  **/
 AdbInstance* AdbInstance::getChildByPath(const string& path, bool isCaseSensitive)
 {
-    string effPath = isCaseSensitive ? path : boost::algorithm::to_lower_copy(path);
+    string effPath = isCaseSensitive ? path : mstflint::common::algorithm::to_lower_copy(path);
     if (effPath[0] == '.')
     {
         effPath.erase(0, 1);
@@ -610,7 +610,7 @@ AdbInstance* AdbInstance::getChildByPath(const string& path, bool isCaseSensitiv
     for (size_t i = 0; i < subItems.size(); i++)
     {
         string subName = isCaseSensitive ? subItems[i]->layout_item_name :
-                                           boost::algorithm::to_lower_copy(subItems[i]->layout_item_name);
+                                           mstflint::common::algorithm::to_lower_copy(subItems[i]->layout_item_name);
         if (subName == childName)
         {
             child = subItems[i];
@@ -632,7 +632,7 @@ AdbInstance* AdbInstance::getChildByPath(const string& path, bool isCaseSensitiv
  **/
 vector<AdbInstance*> AdbInstance::findChild(const string& childName, bool isCaseSensitive, bool by_inst_name)
 {
-    string effName = isCaseSensitive ? childName : boost::algorithm::to_lower_copy(childName);
+    string effName = isCaseSensitive ? childName : mstflint::common::algorithm::to_lower_copy(childName);
     vector<AdbInstance*> childList;
 
     if (by_inst_name || isLeaf())
@@ -817,14 +817,14 @@ bool AdbInstance::enumToInt(const string& name, u_int64_t& val)
     }
 
     vector<string> enumValues;
-    boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
+    mstflint::common::algorithm::split(enumValues, enums, mstflint::common::algorithm::is_any_of(string(",")));
 
     for (size_t i = 0; i < enumValues.size(); i++)
     {
         vector<string> pair;
         string trimedEnumValues = enumValues[i];
-        boost::algorithm::trim(trimedEnumValues);
-        boost::algorithm::split(pair, trimedEnumValues, boost::is_any_of(string("=")));
+        mstflint::common::algorithm::trim(trimedEnumValues);
+        mstflint::common::algorithm::split(pair, trimedEnumValues, mstflint::common::algorithm::is_any_of(string("=")));
 
         if (pair.size() != 2)
         {
@@ -860,14 +860,14 @@ bool AdbInstance::intToEnum(u_int64_t val, string& valName)
     }
 
     vector<string> enumValues;
-    boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
+    mstflint::common::algorithm::split(enumValues, enums, mstflint::common::algorithm::is_any_of(string(",")));
 
     for (size_t i = 0; i < enumValues.size(); i++)
     {
         vector<string> pair;
         string trimedEnumValues = enumValues[i];
-        boost::algorithm::trim(trimedEnumValues);
-        boost::algorithm::split(pair, trimedEnumValues, boost::is_any_of(string("=")));
+        mstflint::common::algorithm::trim(trimedEnumValues);
+        mstflint::common::algorithm::split(pair, trimedEnumValues, mstflint::common::algorithm::is_any_of(string("=")));
 
         if (pair.size() != 2)
         {
@@ -907,14 +907,14 @@ map<string, u_int64_t> AdbInstance::getEnumMap()
     }
 
     vector<string> enumValues;
-    boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
+    mstflint::common::algorithm::split(enumValues, enums, mstflint::common::algorithm::is_any_of(string(",")));
 
     for (size_t i = 0; i < enumValues.size(); i++)
     {
         vector<string> pair;
         string trimedEnumValues = enumValues[i];
-        boost::algorithm::trim(trimedEnumValues);
-        boost::algorithm::split(pair, trimedEnumValues, boost::is_any_of(string("=")));
+        mstflint::common::algorithm::trim(trimedEnumValues);
+        mstflint::common::algorithm::split(pair, trimedEnumValues, mstflint::common::algorithm::is_any_of(string("=")));
         if (pair.size() != 2)
         {
             throw AdbException("Can't parse enum: " + enumValues[i]);
@@ -948,14 +948,14 @@ vector<u_int64_t> AdbInstance::getEnumValues()
     }
 
     vector<string> enumValues;
-    boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
+    mstflint::common::algorithm::split(enumValues, enums, mstflint::common::algorithm::is_any_of(string(",")));
 
     for (size_t i = 0; i < enumValues.size(); i++)
     {
         vector<string> pair;
         string trimedEnumValues = enumValues[i];
-        boost::algorithm::trim(trimedEnumValues);
-        boost::algorithm::split(pair, trimedEnumValues, boost::is_any_of(string("=")));
+        mstflint::common::algorithm::trim(trimedEnumValues);
+        mstflint::common::algorithm::split(pair, trimedEnumValues, mstflint::common::algorithm::is_any_of(string("=")));
         if (pair.size() != 2)
         {
             continue;

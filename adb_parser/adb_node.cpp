@@ -40,8 +40,7 @@
 #include "adb_node.h"
 #include "adb_field.h"
 #include <iostream>
-
-#include <boost/algorithm/string.hpp>
+#include <algorithm>
 
 AdbNode::AdbNode() : size(0), _maxLeafSize(0), isUnion(false), inLayout(false), lineNumber(-1), userData(0) {}
 
@@ -81,7 +80,7 @@ string AdbNode::toXml(const string& addPrefix)
 
     FieldsList allFields = fields;
     allFields.insert(allFields.end(), condFields.begin(), condFields.end());
-    stable_sort(allFields.begin(), allFields.end(), compareFieldsPtr<AdbField>);
+    std::stable_sort(allFields.begin(), allFields.end(), compareFieldsPtr<AdbField>);
 
     for (size_t i = 0; i < allFields.size(); i++)
     {
