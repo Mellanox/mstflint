@@ -44,15 +44,9 @@
 #include <sstream>
 
 #include <boost/algorithm/string.hpp>
-#include "filesystem.h"
+#include "common/filesystem.h"
 
-#ifdef BOOST_ENABLED
-#include <boost/regex.hpp>
-using namespace boost;
-#else
-#include <regex>
-#endif
-using namespace std;
+#include "common/regex.h"
 
 bool AdbParser::allowMultipleExceptions = false;
 const string AdbParser::TAG_NODES_DEFINITION = "NodesDefinition";
@@ -723,25 +717,25 @@ void AdbParser::includeAllFilesInDir(AdbParser* adbParser, string dirPath, int l
  */
 bool AdbParser::checkSpecialChars(string tagName)
 {
-    smatch match;
-    regex allowedCharsExpr("[^\\w\\[\\]]"); // only alphanumeric and square brackets are allowed
-    if (regex_search(tagName, match, allowedCharsExpr))
+    mstflint::common::regex::smatch match;
+    mstflint::common::regex::regex allowedCharsExpr("[^\\w\\[\\]]"); // only alphanumeric and square brackets are allowed
+    if (mstflint::common::regex::regex_search(tagName, match, allowedCharsExpr))
     {
         return false;
     }
-    regex checkArrayExpr("[\\[\\]]"); // this check if containing the array brackets
-    if (regex_search(tagName, match, checkArrayExpr))
+    mstflint::common::regex::regex checkArrayExpr("[\\[\\]]"); // this check if containing the array brackets
+    if (mstflint::common::regex::regex_search(tagName, match, checkArrayExpr))
     {
-        regex correctNameForArrayExpr("[_A-Za-z][\\w]*\\[[\\d]+\\]$");
-        if (!regex_search(tagName, match, correctNameForArrayExpr))
+        mstflint::common::regex::regex correctNameForArrayExpr("[_A-Za-z][\\w]*\\[[\\d]+\\]$");
+        if (!mstflint::common::regex::regex_search(tagName, match, correctNameForArrayExpr))
         { // check the name if correct the square brackets (array)
             return false;
         }
     }
     else
     {
-        regex correctNameNoneArrayExpr("[_A-Za-z][\\w]*$");
-        if (!regex_search(tagName, match, correctNameNoneArrayExpr))
+        mstflint::common::regex::regex correctNameNoneArrayExpr("[_A-Za-z][\\w]*$");
+        if (!mstflint::common::regex::regex_search(tagName, match, correctNameNoneArrayExpr))
         { // check the name if correct without the square brackets (not array)
             return false;
         }
@@ -751,9 +745,9 @@ bool AdbParser::checkSpecialChars(string tagName)
 
 bool AdbParser::checkHEXFormat(string addr)
 {
-    smatch match;
-    regex correctHEXExpr("^(0x[0-9A-fa-f])?[0-9A-Fa-f]*(\\.[0-9]*)?$");
-    if (!regex_search(addr, match, correctHEXExpr))
+    mstflint::common::regex::smatch match;
+    mstflint::common::regex::regex correctHEXExpr("^(0x[0-9A-fa-f])?[0-9A-Fa-f]*(\\.[0-9]*)?$");
+    if (!mstflint::common::regex::regex_search(addr, match, correctHEXExpr))
     {
         return false;
     }
@@ -869,16 +863,16 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
             // check if the attribute is mandatory
             if (!aName.compare("field_mand"))
             {
-                aValue = regex_replace(aValue, regex("\\s+"), string(""));
+                aValue = mstflint::common::regex::regex_replace(aValue, mstflint::common::regex::regex("\\s+"), string(""));
                 boost::split(adbParser->field_mand_attr, aValue, boost::is_any_of(","));
             }
 
             // check the define statement is according to format
             else if (!aName.compare("define"))
             {
-                smatch result;
-                regex pattern(TAG_ATTR_DEFINE_PATTERN);
-                if (!regex_match(aValue, result, pattern))
+                mstflint::common::regex::smatch result;
+                mstflint::common::regex::regex pattern(TAG_ATTR_DEFINE_PATTERN);
+                if (!mstflint::common::regex::regex_match(aValue, result, pattern))
                 {
                     expFound =
                       raiseException(allowMultipleExceptions,
@@ -968,7 +962,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
                     try
                     {
                         string pattern_value = attrValue(atts, "pattern");
-                        regex r(pattern_value);
+                        mstflint::common::regex::regex r(pattern_value);
                         adbParser->attr_pattern.insert(pair<string, string>(aValue, pattern_value));
                     }
                     catch (...)
@@ -990,7 +984,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
                 try
                 {
                     string nname_pattern = attrValue(atts, "nname_pattern");
-                    regex r(nname_pattern);
+                    mstflint::common::regex::regex r(nname_pattern);
                     adbParser->_nname_pattern = nname_pattern;
                 }
                 catch (...)
@@ -1011,7 +1005,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
                 try
                 {
                     string fname_pattern = attrValue(atts, "fname_pattern");
-                    regex r(fname_pattern);
+                    mstflint::common::regex::regex r(fname_pattern);
                     adbParser->_fname_pattern = fname_pattern;
                 }
                 catch (...)
@@ -1206,7 +1200,7 @@ void AdbParser::startNodeElement(const XML_Char** atts, AdbParser* adbParser, co
         if (adbParser->_enforceGuiChecks)
         {
             // check the node name is compatible with the nname_pattern
-            if (!regex_match(nodeName, regex(adbParser->_nname_pattern)))
+            if (!mstflint::common::regex::regex_match(nodeName, mstflint::common::regex::regex(adbParser->_nname_pattern)))
             {
                 raiseException(allowMultipleExceptions,
                                "Illegal node name: \"" + nodeName + "\" doesn't match the given node name pattern: \"",
@@ -1615,7 +1609,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
             }
 
             // check if the field name is compatible with the fname pattern
-            if (!regex_match(adbParser->_currentField->name, regex(adbParser->_fname_pattern)))
+            if (!mstflint::common::regex::regex_match(adbParser->_currentField->name, mstflint::common::regex::regex(adbParser->_fname_pattern)))
             {
                 expFound = raiseException(allowMultipleExceptions,
                                           "Illegal field name: \"" + adbParser->_currentField->name +
@@ -1650,7 +1644,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
                     if (!aName.compare("enum"))
                     {
                         // check the enum attribute is compatible with the enum pattern
-                        if (!regex_match(aValue, regex(adbParser->_enum_pattern)))
+                        if (!mstflint::common::regex::regex_match(aValue, mstflint::common::regex::regex(adbParser->_enum_pattern)))
                         {
                             expFound =
                               raiseException(allowMultipleExceptions,
@@ -1664,7 +1658,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
                     {
                         // check the attribute name is compatible with the attribute pattern
                         if (adbParser->attr_pattern.find(aName) != adbParser->attr_pattern.end() &&
-                            !regex_match(aValue, regex(adbParser->attr_pattern[aName])))
+                            !mstflint::common::regex::regex_match(aValue, mstflint::common::regex::regex(adbParser->attr_pattern[aName])))
                         {
                             expFound =
                               raiseException(allowMultipleExceptions,

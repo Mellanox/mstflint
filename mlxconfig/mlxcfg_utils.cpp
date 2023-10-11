@@ -53,12 +53,7 @@
 #include <mft_utils.h>
 #include "mlxcfg_utils.h"
 
-#ifdef BOOST_ENABLED
-#include <boost/regex.hpp>
-using namespace boost;
-#else
-#include <regex>
-#endif
+#include "common/regex.h"
 using namespace std;
 
 typedef struct reg_access_hca_mqis_reg_ext mqisReg;
@@ -444,11 +439,11 @@ string getArraySuffix(const string& mlxconfigName)
     (void)mlxconfigName;
     return "";
 #else
-    static const regex EXP_PATTERN("(_[0-9]{2}_[0-9]+)");
+    static const mstflint::common::rege::regex EXP_PATTERN("(_[0-9]{2}_[0-9]+)");
     string suffix = "";
-    smatch match;
+    mstflint::common::rege::smatch match;
 
-    if (regex_search(mlxconfigName, match, EXP_PATTERN))
+    if (mstflint::common::rege::regex_search(mlxconfigName, match, EXP_PATTERN))
     {
         suffix = match.str();
     }
