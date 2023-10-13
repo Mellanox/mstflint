@@ -1,4 +1,4 @@
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -30,9 +30,8 @@ cc_library(
     ],
 )
 
-cc_test(
+cc_binary(
     name = "filesystem-test-bin",
-    size = "small",
     srcs = [
         "filesystem-test.cpp",
     ],
@@ -41,16 +40,14 @@ cc_test(
         "-Wextra",
         "-Wpedantic",
     ],
-    tags = ["manual"],
     deps = [
         ":filesystem",
         "@com_google_googletest//:gtest_main",
     ],
 )
 
-cc_test(
+cc_binary(
     name = "boost-filesystem-test-bin",
-    size = "small",
     srcs = [
         "filesystem-test.cpp",
     ],
@@ -60,7 +57,6 @@ cc_test(
         "-Wpedantic",
     ],
     defines = ["USE_BOOST"],
-    tags = ["manual"],
     deps = [
         ":filesystem",
         "@com_google_googletest//:gtest_main",
@@ -89,5 +85,76 @@ sh_test(
     args = ["boost-filesystem-test-bin"],
     data = [
         ":boost-filesystem-test-bin",
+    ],
+)
+
+cc_library(
+    name = "algorithm",
+    srcs = [
+        #
+    ],
+    hdrs = [
+        "algorithm.h",
+    ],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        "@boost//:algorithm",
+    ],
+)
+
+cc_library(
+    name = "boost-algorithm",
+    srcs = [
+        #
+    ],
+    hdrs = [
+        "algorithm.h",
+    ],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    defines = ["USE_BOOST_ALGORITHM"],
+    deps = [
+        "@boost//:algorithm",
+    ],
+)
+
+cc_test(
+    name = "algorithm-test",
+    size = "small",
+    srcs = [
+        "algorithm-test.cpp",
+    ],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        ":algorithm",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "boost-algorithm-test",
+    size = "small",
+    srcs = [
+        "algorithm-test.cpp",
+    ],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        ":boost-algorithm",
+        "@com_google_googletest//:gtest_main",
     ],
 )
