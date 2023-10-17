@@ -40,6 +40,7 @@
  */
 
 #include "mflash_dev_capability.h"
+#include <stdlib.h>
 
 // When (*status != MFE_OK) return value is undefined
 int is_four_byte_address_needed(mflash* mfl, MfError* status)
