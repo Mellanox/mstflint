@@ -52,7 +52,7 @@ dev_mgt_pylib_DATA = c_dev_mgt.so
 dist_dev_mgt_pylib_DATA = dev_mgt.py
 
 c_dev_mgt.so: libdev_mgt.la
-	$(CC) -g -Wall -pthread -shared ${CFLAGS} tools_dev_types.o -o c_dev_mgt.so \
+	$(CC) -g -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} tools_dev_types.o -o c_dev_mgt.so \
 	$(top_builddir)/reg_access/.libs/libreg_access.a \
 	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a \
 	$(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a
