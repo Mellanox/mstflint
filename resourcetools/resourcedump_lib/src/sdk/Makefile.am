@@ -86,7 +86,7 @@ resource_dump_sdk_so_DEPS = \
 
 # if !WIN_BUILD
 libresource_dump_sdk.so: libresource_dump_sdk.la
-	$(CC) -Wall -pthread -shared ${CFLAGS} $(COMPILER_FPIC) libresource_dump_sdk_la-resource_dump_sdk.o \
+	$(CC) -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} $(COMPILER_FPIC) libresource_dump_sdk_la-resource_dump_sdk.o \
 	-o libresource_dump_sdk.so ${AM_LDFLAGS} $(resource_dump_sdk_so_DEPS)
 # else
 # libresource_dump_sdk.dll: libresource_dump_sdk.la
