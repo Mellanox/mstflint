@@ -439,11 +439,11 @@ string getArraySuffix(const string& mlxconfigName)
     (void)mlxconfigName;
     return "";
 #else
-    static const mstflint::common::rege::regex EXP_PATTERN("(_[0-9]{2}_[0-9]+)");
+    static const mstflint::common::regex::regex EXP_PATTERN("(_[0-9]{2}_[0-9]+)");
     string suffix = "";
-    mstflint::common::rege::smatch match;
+    mstflint::common::regex::smatch match;
 
-    if (mstflint::common::rege::regex_search(mlxconfigName, match, EXP_PATTERN))
+    if (mstflint::common::regex::regex_search(mlxconfigName, match, EXP_PATTERN))
     {
         suffix = match.str();
     }
