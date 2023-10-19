@@ -45,9 +45,6 @@
 #define IDENT3 "\t\t"
 #define IDENT4 IDENT2 IDENT
 
-#define FIFTH_GENERATION_LIST "Connect-IB/Connect-X4/LX"
-#define FOURTH_GENERATION_LIST "ConnectX3/Pro"
-
 #include <string>
 #include <vector>
 
@@ -119,7 +116,7 @@ typedef enum
 /*
  * Debug print MACRO of the NV Tlvs:
  */
-//#define _ENABLE_DEBUG_
+// #define _ENABLE_DEBUG_
 #ifdef _ENABLE_DEBUG_
 #define DEBUG_PRINT_SEND(data_struct, struct_name) \
     printf("-I- Data Sent:\n");                    \

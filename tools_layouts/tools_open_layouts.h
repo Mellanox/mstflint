@@ -268,6 +268,12 @@ struct tools_open_nv_hdr_fifth_gen {
  */
 	/* 0x0.25 - 0x0.25 */
 	u_int8_t over_en;
+
+/*The priority is set by either:
+1. When using MNVDA, the TLV will have user priority
+2. When using NVCONFIG, each TLV has its own priority */
+	/* 0x0.28 - 0x0.29 */
+	u_int8_t priority;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
 	/* 0x4.0 - 0x4.31 */
