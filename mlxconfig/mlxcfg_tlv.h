@@ -54,6 +54,10 @@
 #define MODULE_ATTR "module"
 #define OVR_EN_ATTR "ovr_en"
 #define RD_EN_ATTR "rd_en"
+#define PRIORITY_ATTR "priority"
+#define USER_PRIORITY_ATTR "USER"
+#define OEM_PRIORITY_ATTR "OEM"
+#define MLNX_PRIORITY_ATTR "MLNX"
 #define WRITER_ID_ATTR "writer_id"
 #define HOST_ATTR "host"
 #define FUNC_ATTR "function"
@@ -153,5 +157,8 @@ public:
     void invalidate(mfile* mf);
     static void unpackTLVType(TLVClass tlvClass, tools_open_tlv_type& type, u_int32_t& id);
 };
+
+int PriorityStrToNum(string priority);
+string PriorityNumToStr(u_int8_t priority);
 
 #endif /* MLXCFG_TLV_H_ */

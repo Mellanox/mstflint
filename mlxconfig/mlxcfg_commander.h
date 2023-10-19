@@ -41,8 +41,10 @@
 #define MLXCFG_COMMANDER_H_
 
 #include <vector>
+#include "tools_dev_types.h"
 #include "mlxcfg_view.h"
 #include "mlxcfg_utils.h"
+#include "mlxcfg_status.h"
 
 class Commander
 {
@@ -51,7 +53,7 @@ public:
                              std::string dbName,
                              bool forceCreate = false); // clients can force create skiping any support check, and move
                                                         // the responsebility to the client.
-    static Commander* create(mfile* mf, std::string device, std::string dbName);
+    static Commander* create(mfile* mf, std::string dbName);
     virtual void printLongDesc(FILE*) = 0;
     virtual bool isDefaultSupported() = 0;
     virtual bool isCurrentSupported() = 0;

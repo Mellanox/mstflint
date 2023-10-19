@@ -150,7 +150,6 @@ MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
     nvdiTlv.configuration_item_header.length = 0;
     // nvdiTlv.configuration_item_header.rd_en = 0;
     // nvdiTlv.configuration_item_header.over_en = 1; // ask Dan
-
     // tlvType should be in the correct endianess
     u_int32_t reversed = __be32_to_cpu(tlvType);
     u_int8_t* ptr_buff = (u_int8_t*)&reversed;

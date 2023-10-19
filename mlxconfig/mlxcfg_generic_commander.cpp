@@ -1143,6 +1143,7 @@ void GenericCommander::binTLV2TLVConf(const vector<u_int32_t>& binTLV, TLVConf*&
     tlv->_attrs[WRITER_ID_ATTR] = numToStr(hdr.writer_id);
     tlv->_attrs[RD_EN_ATTR] = numToStr(hdr.rd_en);
     tlv->_attrs[OVR_EN_ATTR] = numToStr(hdr.over_en);
+    tlv->_attrs[PRIORITY_ATTR] = PriorityNumToStr(hdr.priority);
     if (tlvClass == Physical_Port)
     {
         tlv->_attrs[PORT_ATTR] = numToStr(type.per_port.port);
@@ -1216,7 +1217,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
     xmlDocPtr doc;
     xmlNodePtr root, currTlv, currParam;
     xmlChar *portAttr = NULL, *moduleAttr = NULL, *hostAttr = NULL, *funcAttr = NULL, *rdEnAttr = NULL,
-            *ovrEnAttr = NULL, *xmlVal = NULL, *indexAttr = NULL, *writerIdAttr = NULL;
+            *priorityAttr = NULL, *ovrEnAttr = NULL, *xmlVal = NULL, *indexAttr = NULL, *writerIdAttr = NULL;
 
     doc = xmlReadMemory(xmlContent.c_str(), xmlContent.size(), "noname.xml", NULL, 0);
     if (!doc)
@@ -1300,6 +1301,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
                 GET_AND_SET_ATTR(writerIdAttr, currTlv, WRITER_ID_ATTR)
                 GET_AND_SET_ATTR(ovrEnAttr, currTlv, OVR_EN_ATTR)
                 GET_AND_SET_ATTR(rdEnAttr, currTlv, RD_EN_ATTR)
+                GET_AND_SET_ATTR(priorityAttr, currTlv, PRIORITY_ATTR)
                 GET_AND_SET_ATTR(hostAttr, currTlv, HOST_ATTR)
                 GET_AND_SET_ATTR(funcAttr, currTlv, FUNC_ATTR)
 
@@ -1388,6 +1390,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
         XMLFREE_AND_SET_NULL(moduleAttr)
         XMLFREE_AND_SET_NULL(ovrEnAttr)
         XMLFREE_AND_SET_NULL(rdEnAttr)
+        XMLFREE_AND_SET_NULL(priorityAttr)
         XMLFREE_AND_SET_NULL(hostAttr)
         XMLFREE_AND_SET_NULL(funcAttr)
         XMLFREE_AND_SET_NULL(xmlVal)
@@ -1404,6 +1407,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
     XMLFREE_AND_SET_NULL(moduleAttr)
     XMLFREE_AND_SET_NULL(ovrEnAttr)
     XMLFREE_AND_SET_NULL(rdEnAttr)
+    XMLFREE_AND_SET_NULL(priorityAttr)
     XMLFREE_AND_SET_NULL(hostAttr)
     XMLFREE_AND_SET_NULL(funcAttr)
     XMLFREE_AND_SET_NULL(xmlVal)

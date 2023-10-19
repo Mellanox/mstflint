@@ -44,7 +44,6 @@
 #include <cable_access/cdb_cable_commander.h>
 #endif
 
-#include "mlxcfg_4th_gen_commander.h"
 // #include "mlxcfg_lib.h"
 #include "mlxcfg_commander.h"
 #include "mlxcfg_view.h"
@@ -118,8 +117,7 @@ public:
         cmd(Mc_UnknownCmd),
         yes(false),
         force(false),
-        enableVerbosity(false),
-        showReadOnlyParams(false)
+        enableVerbosity(false)
     {
     }
 
@@ -141,13 +139,12 @@ public:
     std::vector<ParamView> setParams;
     bool force; // ignore parameter checks
     bool enableVerbosity;
-    bool showReadOnlyParams;
 };
 
 class MlxCfg
 {
 public:
-    MlxCfg() : _mlxParams(), _errStr(), _allInfo(), _devType(DeviceUnknown) {}
+    MlxCfg() : _mlxParams(), _errStr(), _devType(DeviceUnknown) {}
     ~MlxCfg(){};
     mlxCfgStatus execute(int argc, char* argv[]);
 
@@ -222,11 +219,7 @@ private:
     // static print functions
     static int printParam(string param, u_int32_t val);
     static int printValue(string strVal, u_int32_t val);
-    static void printSingleParam(const char* name,
-                                 QueryOutputItem& queryOutItem,
-                                 u_int8_t verbose,
-                                 bool printNewCfg,
-                                 bool printReadOnly);
+    static void printSingleParam(const char* name, QueryOutputItem& queryOutItem, u_int8_t verbose, bool printNewCfg);
 
     bool askUser(const char* question, bool add_prefix = true, bool add_suffix = true);
     mlxCfgStatus err(bool report, const char* errMsg, ...);
@@ -235,7 +228,6 @@ private:
 
     MlxCfgParams _mlxParams;
     std::string _errStr;
-    MlxCfgAllInfo _allInfo;
     dm_dev_id_t _devType;
 };
 

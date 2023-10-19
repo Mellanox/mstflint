@@ -77,4 +77,14 @@ typedef enum
     MCE_UNKNOWN_ERR
 } McStatus;
 
+typedef enum
+{
+    MLX_CFG_OK,
+    MLX_CFG_OK_EXIT,
+    MLX_CFG_ABORTED,
+    MLX_CFG_ERROR,
+    MLX_CFG_ERROR_EXIT,
+    MLX_CFG_ERROR_NO_USAGE
+} mlxCfgStatus;
+
 #endif /* MLXCFG_STATUS_H_ */
