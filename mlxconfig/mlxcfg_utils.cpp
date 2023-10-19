@@ -150,7 +150,6 @@ MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
     nvdiTlv.configuration_item_header.length = 0;
     // nvdiTlv.configuration_item_header.rd_en = 0;
     // nvdiTlv.configuration_item_header.over_en = 1; // ask Dan
-
     // tlvType should be in the correct endianess
     u_int32_t reversed = __be32_to_cpu(tlvType);
     u_int8_t* ptr_buff = (u_int8_t*)&reversed;
@@ -439,11 +438,11 @@ string getArraySuffix(const string& mlxconfigName)
     (void)mlxconfigName;
     return "";
 #else
-    static const mstflint::common::rege::regex EXP_PATTERN("(_[0-9]{2}_[0-9]+)");
+    static const mstflint::common::regex::regex EXP_PATTERN("(_[0-9]{2}_[0-9]+)");
     string suffix = "";
-    mstflint::common::rege::smatch match;
+    mstflint::common::regex::smatch match;
 
-    if (mstflint::common::rege::regex_search(mlxconfigName, match, EXP_PATTERN))
+    if (mstflint::common::regex::regex_search(mlxconfigName, match, EXP_PATTERN))
     {
         suffix = match.str();
     }

@@ -88,7 +88,6 @@ void MlxCfg::printHelp()
     printFlagLine("h", "help", "", "Display help message.");
     printFlagLine("v", "version", "", "Display version info.");
     printFlagLine("e", "enable_verbosity", "", "Show default and current configurations.");
-    printFlagLine("", "read_only", "", "Show read only configurations");
     printFlagLine("y", "yes", "", "Answer yes in prompt.");
     printFlagLine("a", "all_attrs", "", "Show all attributes in the XML template");
     printFlagLine("p", "private_key", "PKEY", "pem file for private key");
@@ -142,14 +141,6 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-35s: %s\n", "To set raw configuration",
            MLXCFG_NAME " -d " MST_DEV_EXAMPLE2 " -f conf_file set_raw");
     printf(IDENT2 "%-35s: %s\n", "To reset configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " reset");
-    printf("\n");
-    printf(IDENT "Supported devices:\n");
-    printf(IDENT2 "4th Generation devices: ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
-    printf(IDENT2 "5th Generation devices: BlueField, BlueField2, BlueField3, ConnectIB, ConnectX4, ConnectX4-LX,\n");
-    printf(IDENT4 "                    ConnectX5, connectX5-Ex, ConnectX6, ConnectX6-DX, ConnectX6-LX, ConnectX7.\n");
-    printf(IDENT2 "Switches: Switch-IB, Switch-IB2,Spectrum, Spectrum2, Spectrum3, Spectrum4, Quantum, Quantum2.\n");
-    printf("\n");
-    printf(IDENT "Note: query device to view supported configurations by Firmware.\n");
     printf("\n");
 }
 
@@ -462,10 +453,6 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         {
             _mlxParams.enableVerbosity = true;
         }
-        else if (arg == "--read_only")
-        {
-            _mlxParams.showReadOnlyParams = true;
-        }
         else if (arg == "-a" || arg == "--all_attrs")
         {
             _mlxParams.allAttrs = true;
@@ -552,7 +539,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
             _mlxParams.cmd = Mc_GenXMLTemplate;
             break;
         }
-        else if (arg == "raw2xml" || arg == "r")
+        else if (arg == "raw2xml")
         {
             _mlxParams.cmd = Mc_Raw2XML;
             break;
@@ -603,7 +590,8 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     }
 
     if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw ||
-         _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply) &&
+         _mlxParams.cmd == Mc_Get_Raw || _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || 
+		 _mlxParams.cmd == Mc_Apply) &&
         _mlxParams.device.length() == 0)
     {
         return err(true, "%s command expects device to be specified.",
