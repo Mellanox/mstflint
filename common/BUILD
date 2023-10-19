@@ -102,7 +102,7 @@ cc_library(
         "-Wpedantic",
     ],
     deps = [
-        "@boost//:algorithm",
+        #
     ],
 )
 
