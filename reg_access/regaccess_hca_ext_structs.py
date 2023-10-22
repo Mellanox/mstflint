@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2023-07-20 15:41:50"
+#    This file was generated at "2023-10-18 11:41:04"
 #    by:
 #      > gen_adb_data.py -g hca_prm_projects
 ###############################################################################
@@ -46,7 +46,36 @@ import platform
 import mtcr
 
 
-class DEFAULT_TIMEOUT(ctypes.Structure):
+class MRSI_EXT(ctypes.Structure):
+    _fields_ = [
+        ("device", ctypes.c_uint8),
+        ("reset_reason", ctypes.c_uint8),
+        ("crts", ctypes.c_uint64)
+    ]
+
+class DIAGNOSTIC_CNTR_LAYOUT(ctypes.Structure):
+    _fields_ = [
+        ("counter_id", ctypes.c_uint16),
+        ("sync", ctypes.c_uint8)
+    ]
+
+class DEBUG_CAP(ctypes.Structure):
+    _fields_ = [
+        ("log_max_samples", ctypes.c_uint8),
+        ("log_min_resource_dump_eq", ctypes.c_uint8),
+        ("resource_dump", ctypes.c_uint8),
+        ("log_cr_dump_to_mem_size", ctypes.c_uint8),
+        ("core_dump_qp", ctypes.c_uint8),
+        ("core_dump_general", ctypes.c_uint8),
+        ("log_min_sample_period", ctypes.c_uint8),
+        ("diag_counter_tracer_dump", ctypes.c_uint8),
+        ("health_mon_rx_activity", ctypes.c_uint8),
+        ("repetitive", ctypes.c_uint8),
+        ("single", ctypes.c_uint8),
+        ("diagnostic_counter", DIAGNOSTIC_CNTR_LAYOUT)
+    ]
+
+class DEFAULT_TIMEOUT_EXT(ctypes.Structure):
     _fields_ = [
         ("to_value", ctypes.c_uint32),
         ("to_multiplier", ctypes.c_uint8)
@@ -54,24 +83,17 @@ class DEFAULT_TIMEOUT(ctypes.Structure):
 
 class DTOR_REG_EXT(ctypes.Structure):
     _fields_ = [
-        ("PCIE_TOGGLE_TO", DEFAULT_TIMEOUT),
-        ("HEALTH_POLL_TO", DEFAULT_TIMEOUT),
-        ("FULL_CRDUMP_TO", DEFAULT_TIMEOUT),
-        ("FW_RESET_TO", DEFAULT_TIMEOUT),
-        ("FLUSH_ON_ERR_TO", DEFAULT_TIMEOUT),
-        ("PCI_SYNC_UPDATE_TO", DEFAULT_TIMEOUT),
-        ("TEAR_DOWN_TO", DEFAULT_TIMEOUT),
-        ("FSM_REACTIVATE_TO", DEFAULT_TIMEOUT),
-        ("RECLAIM_PAGES_TO", DEFAULT_TIMEOUT),
-        ("RECLAIM_VFS_PAGES_TO", DEFAULT_TIMEOUT),
-        ("DRIVER_UNLOAD_AND_RESET_TO", DEFAULT_TIMEOUT)
-    ]
-
-class MRSI_EXT(ctypes.Structure):
-    _fields_ = [
-        ("device", ctypes.c_uint8),
-        ("reset_reason", ctypes.c_uint8),
-        ("crts", ctypes.c_uint64)
+        ("PCIE_TOGGLE_TO", DEFAULT_TIMEOUT_EXT),
+        ("HEALTH_POLL_TO", DEFAULT_TIMEOUT_EXT),
+        ("FULL_CRDUMP_TO", DEFAULT_TIMEOUT_EXT),
+        ("FW_RESET_TO", DEFAULT_TIMEOUT_EXT),
+        ("FLUSH_ON_ERR_TO", DEFAULT_TIMEOUT_EXT),
+        ("PCI_SYNC_UPDATE_TO", DEFAULT_TIMEOUT_EXT),
+        ("TEAR_DOWN_TO", DEFAULT_TIMEOUT_EXT),
+        ("FSM_REACTIVATE_TO", DEFAULT_TIMEOUT_EXT),
+        ("RECLAIM_PAGES_TO", DEFAULT_TIMEOUT_EXT),
+        ("RECLAIM_VFS_PAGES_TO", DEFAULT_TIMEOUT_EXT),
+        ("DRIVER_UNLOAD_AND_RESET_TO", DEFAULT_TIMEOUT_EXT)
     ]
 
 class PCNR_REG_EXT(ctypes.Structure):
@@ -97,6 +119,7 @@ class MTRC_CAP_REG_EXT(ctypes.Structure):
         ("num_string_trace", ctypes.c_uint8),
         ("first_string_trace", ctypes.c_uint8),
         ("log_max_trace_buffer_size", ctypes.c_uint8),
+        ("tracer_capabilities", ctypes.c_uint8),
         ("string_db_param", STRING_DB_PARAMETERS_EXT * 8)
     ]
 
@@ -199,12 +222,6 @@ class RESOURCE_DUMP_EXT(ctypes.Structure):
         ("inline_data", ctypes.c_uint32 * 52)
     ]
 
-class DIAGNOSTIC_CNTR_LAYOUT(ctypes.Structure):
-    _fields_ = [
-        ("counter_id", ctypes.c_uint16),
-        ("sync", ctypes.c_uint8)
-    ]
-
 class MFRL_REG_EXT(ctypes.Structure):
     _fields_ = [
         ("reset_trigger", ctypes.c_uint8),
@@ -241,7 +258,7 @@ class MTRC_STDB_REG_EXT(ctypes.Structure):
         ("string_db_data", ctypes.c_uint32)
     ]
 
-class MTEIM_REG(ctypes.Structure):
+class MTEIM_REG_EXT(ctypes.Structure):
     _fields_ = [
         ("cap_core_tile", ctypes.c_uint8),
         ("cap_core_main", ctypes.c_uint8),
@@ -257,67 +274,6 @@ class MTEIM_REG(ctypes.Structure):
         ("first_tile_core_event_id", ctypes.c_uint8 * 8)
     ]
 
-class SLOT_INFO_EXT(ctypes.Structure):
-    _fields_ = [
-        ("active", ctypes.c_uint8),
-        ("lc_ready", ctypes.c_uint8),
-        ("sr_valid", ctypes.c_uint8),
-        ("provisioned", ctypes.c_uint8),
-        ("ini_file_version", ctypes.c_uint16),
-        ("hw_revision", ctypes.c_uint16),
-        ("card_type", ctypes.c_uint8)
-    ]
-
-class DEVICE_INFO_EXT(ctypes.Structure):
-    _fields_ = [
-        ("device_index", ctypes.c_uint8),
-        ("flash_id", ctypes.c_uint8),
-        ("lc_pwr_on", ctypes.c_uint8),
-        ("thermal_sd", ctypes.c_uint8),
-        ("flash_owner", ctypes.c_uint8),
-        ("uses_flash", ctypes.c_uint8),
-        ("device_type", ctypes.c_uint16),
-        ("fw_major", ctypes.c_uint16),
-        ("fw_sub_minor", ctypes.c_uint16),
-        ("fw_minor", ctypes.c_uint16),
-        ("max_cmd_write_size_supp", ctypes.c_uint8),
-        ("max_cmd_read_size_supp", ctypes.c_uint8),
-        ("device_type_name", ctypes.c_uint8 * 8)
-    ]
-
-class SLOT_NAME_EXT(ctypes.Structure):
-    _fields_ = [
-        ("slot_ascii_name", ctypes.c_uint8 * 20)
-    ]
-
-class MDDQ_DATA_AUTO_EXT(ctypes.Union):
-    _fields_ = [
-        ("slot_info_ext", SLOT_INFO_EXT),
-        ("device_info_ext", DEVICE_INFO_EXT),
-        ("slot_name_ext", SLOT_NAME_EXT)
-    ]
-
-class MDDQ_EXT(ctypes.Structure):
-    _fields_ = [
-        ("slot_index", ctypes.c_uint8),
-        ("query_type", ctypes.c_uint8),
-        ("sie", ctypes.c_uint8),
-        ("request_message_sequence", ctypes.c_uint8),
-        ("response_message_sequence", ctypes.c_uint8),
-        ("query_index", ctypes.c_uint8),
-        ("data_valid", ctypes.c_uint8),
-        ("data", MDDQ_DATA_AUTO_EXT)
-    ]
-
-class MDSR_REG_EXT(ctypes.Structure):
-    _fields_ = [
-        ("status", ctypes.c_uint8),
-        ("additional_info", ctypes.c_uint8),
-        ("type_of_token", ctypes.c_uint8),
-        ("end", ctypes.c_uint8),
-        ("time_left", ctypes.c_uint32)
-    ]
-
 class NIC_DPA_EUG_REG_EXT(ctypes.Structure):
     _fields_ = [
         ("eug_id", ctypes.c_uint16),
@@ -327,18 +283,12 @@ class NIC_DPA_EUG_REG_EXT(ctypes.Structure):
         ("member_mask", ctypes.c_uint32 * 32)
     ]
 
-class NIC_DPA_PERF_REG_EXT(ctypes.Structure):
-    _fields_ = [
-        ("dpa_process_num", ctypes.c_uint32),
-        ("dpa_timer_frequency", ctypes.c_uint32),
-        ("mkey", ctypes.c_uint32),
-        ("size", ctypes.c_uint32),
-        ("address", ctypes.c_uint64)
-    ]
-
 class NIC_DPA_PERF_CTRL_REG_EXT(ctypes.Structure):
     _fields_ = [
-        ("dpa_process_handle", ctypes.c_uint32),
+        ("dpa_process_id", ctypes.c_uint32),
+        ("other_vhca_id", ctypes.c_uint16),
+        ("sample_type", ctypes.c_uint8),
+        ("other_vhca_id_valid", ctypes.c_uint8),
         ("count_state", ctypes.c_uint8)
     ]
 
@@ -346,10 +296,5 @@ class NIC_CAP_EXT_REG(ctypes.Structure):
     _fields_ = [
         ("cap_group", ctypes.c_uint16),
         ("cap_data", ctypes.c_uint32 * 28)
-    ]
-
-class MRSR_EXT(ctypes.Structure):
-    _fields_ = [
-        ("command", ctypes.c_uint8)
     ]
 

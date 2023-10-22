@@ -75,7 +75,10 @@
 #define REG_ID_SBMM 0xb004
 
 #define REG_ID_MTRC_CAP 0x9040
+#define REG_ID_MTRC_CONF 0x9041
 #define REG_ID_MTRC_STDB 0x9042
+#define REG_ID_MTRC_CTRL 0x9043
+#define REG_ID_DEBUG_CAP 0x8400
 #define REG_ID_MCDD 0x905C
 #define REG_ID_MCQS 0x9060
 #define REG_ID_MCQI 0x9061
@@ -96,6 +99,10 @@
 #define REG_ID_MDSR 0x9110
 #define REG_ID_MFSV 0x9115
 #define REG_ID_MTEIM 0x9118
+#define REG_ID_MTIE 0x911b
+#define REG_ID_MTIM 0x911c
+#define REG_ID_MTDC 0x911d
+#define REG_ID_PLIB 0x500a
 #define REG_ID_MRSR 0x9023
 #define REG_ID_DTOR 0xC00E
 #define REG_ID_MRSI 0x912A
@@ -138,6 +145,56 @@ reg_access_status_t reg_access_mddq(mfile* mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_pcnr(mfile* mf, reg_access_method_t method, struct reg_access_hca_pcnr_reg_ext* pcnr)
 {
     REG_ACCCESS(mf, method, REG_ID_PCNR, pcnr, pcnr_reg_ext, reg_access_hca);
+}
+
+
+/************************************
+ * Function: reg_access_plib
+ ************************************/
+reg_access_status_t reg_access_plib(mfile* mf, reg_access_method_t method, struct reg_access_switch_plib_reg_ext* plib)
+{
+    REG_ACCCESS(mf, method, REG_ID_PLIB, plib, plib_reg_ext, reg_access_switch);
+}
+
+/************************************
+ * Function: reg_access_mteim
+ ************************************/
+reg_access_status_t reg_access_mteim(mfile* mf, reg_access_method_t method, struct reg_access_hca_mteim_reg_ext* mteim)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTEIM, mteim, mteim_reg_ext, reg_access_hca);
+}
+
+/************************************
+ * Function: reg_access_mtie
+ ************************************/
+reg_access_status_t reg_access_mtie(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtie_ext* mtie)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTIE, mtie, mtie_ext, reg_access_hca);
+}
+
+/************************************
+ * Function: reg_access_mtim
+ ************************************/
+reg_access_status_t reg_access_mtim(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtim_ext* mtim)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTIM, mtim, mtim_ext, reg_access_hca);
+}
+
+/************************************
+ * Function: reg_access_mtdc
+ ************************************/
+reg_access_status_t reg_access_mtdc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtdc_ext* mtdc)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTDC, mtdc, mtdc_ext, reg_access_hca);
+}
+
+/************************************
+ * Function: reg_access_debug_cap
+ ************************************/
+reg_access_status_t
+  reg_access_debug_cap(mfile* mf, reg_access_method_t method, struct reg_access_hca_debug_cap* debug_cap)
+{
+    REG_ACCCESS(mf, method, REG_ID_DEBUG_CAP, debug_cap, debug_cap, reg_access_hca);
 }
 
 
@@ -248,7 +305,7 @@ reg_access_status_t reg_access_mnvgn(mfile* mf, reg_access_method_t method, stru
 
     REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, method, REG_ID_MNVGN, mnvgn, mnvgn, data_size, data_size, data_size,
                                        tools_open_mnvgn_pack, tools_open_mnvgn_unpack, tools_open_mnvgn_size,
-                                       tools_open_mnvgn_print, status);
+                                       tools_open_mnvgn_print, status, 0);
 
     if (rc || *status)
     {
@@ -270,7 +327,7 @@ reg_access_status_t reg_access_mgnle(mfile* mf, reg_access_method_t method, stru
 
     REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, method, REG_ID_MGNLE, mgnle, mgnle, data_size, data_size, data_size,
                                        tools_open_mgnle_pack, tools_open_mgnle_unpack, tools_open_mgnle_size,
-                                       tools_open_mgnle_print, status);
+                                       tools_open_mgnle_print, status, 0);
 
     if (rc || *status)
     {
@@ -419,6 +476,84 @@ reg_access_status_t
 }
 
 /************************************
+ * Function: reg_access_mtrc_conf
+ ************************************/
+reg_access_status_t
+  reg_access_mtrc_conf(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtrc_conf_reg_ext* mtrc_conf)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTRC_CONF, mtrc_conf, mtrc_conf_reg_ext, reg_access_hca);
+}
+
+/************************************
+ * Function: reg_access_mtrc_stdb
+ ************************************/
+reg_access_status_t reg_access_mtrc_stdb(mfile* mf,
+                                         reg_access_method_t method,
+                                         struct reg_access_hca_mtrc_stdb_reg_ext* mtrc_stdb,
+                                         int data_array_size)
+{
+    REG_ACCCESS_VAR_DYNAMIC_ARR(mf, method, REG_ID_MTRC_STDB, mtrc_stdb, mtrc_stdb_reg_ext, reg_access_hca,
+                                data_array_size);
+}
+
+reg_access_status_t reg_access_mtrc_stdb_wrapper(mfile* mf, u_int32_t read_size, u_int8_t string_db_index, char* buffer)
+{
+    int max_num_of_bytes = 704;
+    int iterations = read_size / max_num_of_bytes;
+    int read_bytes = 0;
+    int index = 0;
+    int num_bytes_to_read = max_num_of_bytes;
+
+    if (read_size % 64 != 0)
+    {
+        return ME_BAD_PARAMS;
+    }
+
+    for (index = 0; index < iterations + 1; index++)
+    {
+        struct reg_access_hca_mtrc_stdb_reg_ext mtrc_stdb;
+        if (index == iterations)
+        {
+            num_bytes_to_read = read_size % max_num_of_bytes;
+            if (num_bytes_to_read == 0)
+            {
+                break;
+            }
+        }
+        mtrc_stdb.read_size = num_bytes_to_read;
+        mtrc_stdb.string_db_index = string_db_index;
+        mtrc_stdb.start_offset = max_num_of_bytes * index;
+        mtrc_stdb.string_db_data = (u_int32_t*)malloc(num_bytes_to_read);
+        if (!mtrc_stdb.string_db_data)
+        {
+            fprintf(stderr, "Failed to allocate memory\n");
+            return ME_MEM_ERROR;
+        }
+        memset(mtrc_stdb.string_db_data, 0, num_bytes_to_read);
+        reg_access_status_t rc = reg_access_mtrc_stdb(mf, REG_ACCESS_METHOD_GET, &mtrc_stdb, num_bytes_to_read);
+
+        if (rc)
+        {
+            free(mtrc_stdb.string_db_data);
+            return rc;
+        }
+        memcpy(&buffer[read_bytes], mtrc_stdb.string_db_data, num_bytes_to_read);
+        free(mtrc_stdb.string_db_data);
+        read_bytes += num_bytes_to_read;
+    }
+    return 0;
+}
+
+/************************************
+ * Function: reg_access_mtrc_ctrl
+ ************************************/
+reg_access_status_t
+  reg_access_mtrc_ctrl(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtrc_ctrl_reg_ext* mtrc_ctrl)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTRC_CTRL, mtrc_ctrl, mtrc_ctrl_reg_ext, reg_access_hca);
+}
+
+/************************************
  * Function: reg_access_mcc
  ************************************/
 reg_access_status_t reg_access_mcc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcc_reg_ext* mcc)
@@ -533,9 +668,9 @@ reg_access_status_t reg_access_mvts(mfile* mf, reg_access_method_t method, struc
 /************************************
  * Function: reg_access_mfmc
  ************************************/
-reg_access_status_t reg_access_mfmc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mfmc_reg_ext* mfmc)
+reg_access_status_t reg_access_mfmc(mfile* mf, reg_access_method_t method, struct reg_access_switch_mfmc_reg_ext* mfmc)
 {
-    REG_ACCCESS(mf, method, REG_ID_MFMC, mfmc, mfmc_reg_ext, reg_access_hca);
+    REG_ACCCESS(mf, method, REG_ID_MFMC, mfmc, mfmc_reg_ext, reg_access_switch);
 }
 
 /************************************
@@ -601,10 +736,10 @@ reg_access_status_t
 /************************************
 * Function: reg_access_mpegc
 ************************************/
-reg_access_status_t reg_access_mpegc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg* mpegc)
+reg_access_status_t reg_access_mpegc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg_ext* mpegc)
 {
     /*    reg_access_hca_mpegc_reg_dump(mpegc, stdout)s; */
-    REG_ACCCESS(mf, method, REG_ID_MPEGC, mpegc, mpegc_reg, reg_access_hca);
+    REG_ACCCESS(mf, method, REG_ID_MPEGC, mpegc, mpegc_reg_ext, reg_access_hca);
 }
 
 /************************************

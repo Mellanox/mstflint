@@ -38,7 +38,8 @@ import ctypes
 import mtcr
 import struct
 from ctypes import memset
-from regaccess_structs import *
+from regaccess_hca_ext_structs import *
+from regaccess_switch_ext_structs import *
 
 
 def ones(n):
@@ -85,25 +86,7 @@ if REG_ACCESS:
         REG_ACCESS_FAILED_TO_AQUIRE_OWNERSHIP = 1
         REG_ACCESS_NO_OWNERSHIP_REQUIRED = 2
 
-    class DIAGNOSTIC_CNTR_ST_ARR(Array):
-        _type_ = DIAGNOSTIC_CNTR_LAYOUT
-        _length_ = 10
 
-    class DEBUG_CAP(Structure):
-        _fields_ = [
-            ("log_max_samples", ctypes.c_uint8),
-            ("log_min_resource_dump_eq", ctypes.c_uint8),
-            ("resource_dump", ctypes.c_uint8),
-            ("log_cr_dump_to_mem_size", ctypes.c_uint8),
-            ("core_dump_qp", ctypes.c_uint8),
-            ("core_dump_general", ctypes.c_uint8),
-            ("log_min_sample_period", ctypes.c_uint8),
-            ("diag_counter_tracer_dump", ctypes.c_uint8),
-            ("health_mon_rx_activity", ctypes.c_uint8),
-            ("repetitive", ctypes.c_uint8),
-            ("single", ctypes.c_uint8),
-            ("diagnostic_counter", POINTER(DIAGNOSTIC_CNTR_ST_ARR))
-        ]
 
     class RegAccess:
         GET = REG_ACCESS_METHOD_GET
@@ -116,14 +99,19 @@ if REG_ACCESS:
                 self._mstDev = mtcr.MstDevice(pci_device)
             self._reg_access_mcam = REG_ACCESS.reg_access_mcam
             self._reg_access_mtrc_cap = REG_ACCESS.reg_access_mtrc_cap
+            self._reg_access_mtrc_stdb_warpper = REG_ACCESS.reg_access_mtrc_stdb_wrapper
             self._reg_access_mgir = REG_ACCESS.reg_access_mgir
             self._reg_access_mfrl = REG_ACCESS.reg_access_mfrl
             self._reg_access_pcnr = REG_ACCESS.reg_access_pcnr
             self._reg_access_mpcir = REG_ACCESS.reg_access_mpcir
             self._reg_access_res_dump = REG_ACCESS.reg_access_res_dump
+            self._reg_access_debug_cap = REG_ACCESS.reg_access_debug_cap
             self._reg_access_mddq = REG_ACCESS.reg_access_mddq
             self._reg_access_mdsr = REG_ACCESS.reg_access_mdsr
+            self._reg_access_mteim = REG_ACCESS.reg_access_mteim
             self._reg_access_nic_dpa_eug = REG_ACCESS.reg_access_nic_dpa_eug
+            self._reg_access_nic_cap_ext = REG_ACCESS.reg_access_nic_cap_ext
+            self._reg_access_nic_dpa_perf_ctrl = REG_ACCESS.reg_access_nic_dpa_perf_ctrl
             self._reg_access_mrsr = REG_ACCESS.reg_access_mrsr
             self._reg_access_dtor = REG_ACCESS.reg_access_dtor
             self._reg_access_mrsi = REG_ACCESS.reg_access_mrsi
@@ -531,7 +519,7 @@ if REG_ACCESS:
                     data)
 
         def sendMTEIM(self):
-            mteimRegisterP = pointer(MTEIM_REG())
+            mteimRegisterP = pointer(MTEIM_REG_EXT())
             rc = self._reg_access_mteim(self._mstDev.mf, REG_ACCESS_METHOD_GET, mteimRegisterP)
             if rc:
                 return None  # done raise error, could be old FW / Device

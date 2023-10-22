@@ -398,6 +398,63 @@ For any other status, field should be zero */
 };
 
 /* Description -   */
+/* Size in bytes - 28 */
+struct reg_access_switch_mfmc_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Flash select - selects the flash device.
+Only zero is supported for NICs with a single flash device. 
+Range between 0 .. MFPA.flash_num -1 */
+	/* 0x0.4 - 0x0.5 */
+	u_int8_t fs;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Power of 2 of the write protect block count
+0: 1 block
+1: 2 blocks
+2: 4 blocks
+3: 8 blocks etc.
+Range 0..5
+Note that per flash device there may be invalid configurations
+Reserved when wrp_en = 0 */
+	/* 0x4.0 - 0x4.7 */
+	u_int8_t wrp_block_count;
+	/* Description - Block size
+0: write protect sub-sector blocks
+1: write protect sector blocks
+Reserved when wrp_en = 0
+Note that not all block sizes are supported on all flash device, need to check MFPA capabilities */
+	/* 0x4.16 - 0x4.17 */
+	u_int8_t block_size;
+	/* Description - Write protect enable
+Set write protect of flash device */
+	/* 0x4.31 - 0x4.31 */
+	u_int8_t wrp_en;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Power of 2 for sub_sector size in 4Kbytes.
+0: 4Kbyte.
+1: 8 Kbyte
+2: 16Kbyte.
+Etc. */
+	/* 0x8.0 - 0x8.5 */
+	u_int8_t sub_sector_protect_size;
+	/* Description - Power of 2 for sector size in 4Kbytes.
+0: 4Kbyte.
+1: 8 Kbyte
+2: 16Kbyte.
+Etc. */
+	/* 0x8.8 - 0x8.13 */
+	u_int8_t sector_protect_size;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Quad enable IO bit in the device status register */
+	/* 0x10.24 - 0x10.24 */
+	u_int8_t quad_en;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - The number of dummy clock cycles subsequent to all FAST READ commands. 
+Reserved if not supported by the device */
+	/* 0x18.0 - 0x18.3 */
+	u_int8_t dummy_clock_cycles;
+};
+
+/* Description -   */
 /* Size in bytes - 44 */
 struct reg_access_switch_mkdc_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -429,15 +486,35 @@ struct reg_access_switch_mrsr_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Reset/shutdown command
 0: clear state of reset_at_pci_disable
-1: software reset (switch soft reset)
-
-6: reset_at_pci_disable - reset will be done at PCI_DISABLE
-See MCAM bit48
+1: software reset (switch soft reset). From Quantum-3 (IB) and on must not be used for managed switches. Also must not be used from Spectrum-4 and on (ETH).
+6: reset_at_pci_disable - reset will be done at PCI_DISABLE. See MCAM bit48
 
 For Retimer: only command = 1 is supported.
+
  */
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t command;
+};
+
+/* Description -   */
+/* Size in bytes - 128 */
+struct reg_access_switch_msgi_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - System serial number (ASCII string) */
+	/* 0x0.0 - 0x14.31 */
+	u_int32_t serial_number[6];
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description - System part number (ASCII string) */
+	/* 0x20.0 - 0x30.31 */
+	u_int32_t part_number[5];
+/*---------------- DWORD[14] (Offset 0x38) ----------------*/
+	/* Description - Revision (ASCII string) */
+	/* 0x38.0 - 0x38.31 */
+	u_int32_t revision;
+/*---------------- DWORD[16] (Offset 0x40) ----------------*/
+	/* Description - Product Name (ASCII string) */
+	/* 0x40.0 - 0x7c.31 */
+	u_int32_t product_name[16];
 };
 
 /* Description -   */
@@ -503,6 +580,28 @@ Valid only for RMCS. */
 	/* Description - Random generated field. Used for randomness and replay-protection. */
 	/* 0x48.0 - 0x64.31 */
 	u_int32_t challenge[8];
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct reg_access_switch_plib_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - In IB port: InfiniBand port remapping for local_port
+In Ethernet port: Label port remapping for local_port
+Note: ib_port number can only be updated when a port admin state is DISABLED. */
+	/* 0x0.0 - 0x0.9 */
+	u_int16_t ib_port;
+	/* Description - Local port number [9:8] */
+	/* 0x0.12 - 0x0.13 */
+	u_int8_t lp_msb;
+	/* Description - Local port number. */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t local_port;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Valid only for Ethernet Switches. 
+Label split mapping for local_port */
+	/* 0x4.0 - 0x4.3 */
+	u_int8_t split_num;
 };
 
 /* Description -   */
@@ -601,17 +700,26 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* 0x0.0 - 0xc.31 */
 	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
 	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x28.31 */
 	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
 	/* Description -  */
+	/* 0x0.0 - 0x18.31 */
+	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x6c.31 */
 	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	struct reg_access_switch_mddq_ext mddq_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	struct reg_access_switch_msgi_ext msgi_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x40c.31 */
 	struct reg_access_switch_icsr_ext icsr_ext;
@@ -717,6 +825,13 @@ void reg_access_switch_mdsr_reg_ext_print(const struct reg_access_switch_mdsr_re
 unsigned int reg_access_switch_mdsr_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MDSR_REG_EXT_SIZE    (0x30)
 void reg_access_switch_mdsr_reg_ext_dump(const struct reg_access_switch_mdsr_reg_ext *ptr_struct, FILE *fd);
+/* mfmc_reg_ext */
+void reg_access_switch_mfmc_reg_ext_pack(const struct reg_access_switch_mfmc_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mfmc_reg_ext_unpack(struct reg_access_switch_mfmc_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mfmc_reg_ext_print(const struct reg_access_switch_mfmc_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mfmc_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_MFMC_REG_EXT_SIZE    (0x1c)
+void reg_access_switch_mfmc_reg_ext_dump(const struct reg_access_switch_mfmc_reg_ext *ptr_struct, FILE *fd);
 /* mkdc_reg_ext */
 void reg_access_switch_mkdc_reg_ext_pack(const struct reg_access_switch_mkdc_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mkdc_reg_ext_unpack(struct reg_access_switch_mkdc_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -731,6 +846,13 @@ void reg_access_switch_mrsr_ext_print(const struct reg_access_switch_mrsr_ext *p
 unsigned int reg_access_switch_mrsr_ext_size(void);
 #define REG_ACCESS_SWITCH_MRSR_EXT_SIZE    (0x8)
 void reg_access_switch_mrsr_ext_dump(const struct reg_access_switch_mrsr_ext *ptr_struct, FILE *fd);
+/* msgi_ext */
+void reg_access_switch_msgi_ext_pack(const struct reg_access_switch_msgi_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_msgi_ext_unpack(struct reg_access_switch_msgi_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_msgi_ext_print(const struct reg_access_switch_msgi_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_msgi_ext_size(void);
+#define REG_ACCESS_SWITCH_MSGI_EXT_SIZE    (0x80)
+void reg_access_switch_msgi_ext_dump(const struct reg_access_switch_msgi_ext *ptr_struct, FILE *fd);
 /* mtcq_reg_ext */
 void reg_access_switch_mtcq_reg_ext_pack(const struct reg_access_switch_mtcq_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -738,6 +860,13 @@ void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_re
 unsigned int reg_access_switch_mtcq_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MTCQ_REG_EXT_SIZE    (0x70)
 void reg_access_switch_mtcq_reg_ext_dump(const struct reg_access_switch_mtcq_reg_ext *ptr_struct, FILE *fd);
+/* plib_reg_ext */
+void reg_access_switch_plib_reg_ext_pack(const struct reg_access_switch_plib_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_plib_reg_ext_unpack(struct reg_access_switch_plib_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_plib_reg_ext_print(const struct reg_access_switch_plib_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_plib_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_PLIB_REG_EXT_SIZE    (0x10)
+void reg_access_switch_plib_reg_ext_dump(const struct reg_access_switch_plib_reg_ext *ptr_struct, FILE *fd);
 /* pmaos_reg_ext */
 void reg_access_switch_pmaos_reg_ext_pack(const struct reg_access_switch_pmaos_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_pmaos_reg_ext_unpack(struct reg_access_switch_pmaos_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
