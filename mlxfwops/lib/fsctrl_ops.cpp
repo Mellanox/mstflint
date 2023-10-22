@@ -143,15 +143,15 @@ static void extractFwVersion(u_int16_t* fwVerArr, const char* fwVersion)
     delete[] str;
 }
 
-static void extractFwBuildTime(u_int16_t* fwRelDate, u_int32_t buildTime)
+static void extractFwBuildTime(u_int16_t* fwRelDate, reg_access_hca_date_time_layout_ext buildTime)
 {
     if (!fwRelDate)
     {
         return;
     }
-    fwRelDate[0] = EXTRACT(buildTime, 0, 8);
-    fwRelDate[1] = EXTRACT(buildTime, 8, 8);
-    fwRelDate[2] = EXTRACT(buildTime, 16, 16);
+    fwRelDate[0] = buildTime.day;
+    fwRelDate[1] = buildTime.month;
+    fwRelDate[2] = buildTime.year;
 }
 
 bool FsCtrlOperations::FsIntQuery()

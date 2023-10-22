@@ -235,7 +235,7 @@ bool CongestionUI::setMode(cong_mode_t mode)
         return false;
     }
     _successMsg = "Mode was set successfully.";
-    struct reg_access_hca_mpegc_reg mpegc;
+    struct reg_access_hca_mpegc_reg_ext mpegc;
 
     memset(&mpegc, 0, sizeof(mpegc));
     mpegc.tx_overflow_sense = (int)mode;
@@ -252,7 +252,7 @@ bool CongestionUI::setMode(cong_mode_t mode)
 bool CongestionUI::setAction(cong_action_t action)
 {
     _successMsg = "Action was set successfully.";
-    struct reg_access_hca_mpegc_reg mpegc;
+    struct reg_access_hca_mpegc_reg_ext mpegc;
 
     memset(&mpegc, 0, sizeof(mpegc));
     mpegc.tx_lossy_overflow_oper = (int)action;
@@ -282,7 +282,7 @@ bool CongestionUI::setAction(cong_action_t action)
 
 bool CongestionUI::query()
 {
-    struct reg_access_hca_mpegc_reg mpegc;
+    struct reg_access_hca_mpegc_reg_ext mpegc;
 
     memset(&mpegc, 0, sizeof(mpegc));
     reg_access_status_t status = reg_access_mpegc(_mf, REG_ACCESS_METHOD_GET, &mpegc);

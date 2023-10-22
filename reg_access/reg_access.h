@@ -149,8 +149,9 @@ struct cibfw_register_mfai;
 reg_access_status_t reg_access_mfai(mfile* mf, reg_access_method_t method, struct cibfw_register_mfai* mfai);
 struct tools_open_mvts;
 reg_access_status_t reg_access_mvts(mfile* mf, reg_access_method_t method, struct tools_open_mvts* mvts);
-struct reg_access_hca_mfmc_reg_ext;
-reg_access_status_t reg_access_mfmc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mfmc_reg_ext* mfmc);
+    struct reg_access_switch_mfmc_reg_ext;
+    reg_access_status_t
+      reg_access_mfmc(mfile* mf, reg_access_method_t method, struct reg_access_switch_mfmc_reg_ext* mfmc);
 struct reg_access_hca_mfpa_reg_ext;
 reg_access_status_t
   reg_access_mfpa_new(mfile* mf, reg_access_method_t method, struct reg_access_hca_mfpa_reg_ext* mfpa);
@@ -176,14 +177,39 @@ reg_access_status_t reg_access_mgir(mfile* mf, reg_access_method_t method, struc
 struct reg_access_hca_mtrc_cap_reg_ext;
 reg_access_status_t
   reg_access_mtrc_cap(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtrc_cap_reg_ext* mtrc_cap);
+    struct reg_access_hca_mtrc_conf_reg_ext;
+    reg_access_status_t
+      reg_access_mtrc_conf(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtrc_conf_reg_ext* mtrc_conf);
 struct reg_access_hca_mtrc_stdb_reg_ext;
 reg_access_status_t
   reg_access_mtrc_stdb_wrapper(mfile* mf, u_int32_t read_size, u_int8_t string_db_index, char* buffer);
+    struct reg_access_hca_mtrc_ctrl_reg_ext;
+    reg_access_status_t
+      reg_access_mtrc_ctrl(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtrc_ctrl_reg_ext* mtrc_ctrl);
 struct tools_open_mcdd_reg;
 reg_access_status_t reg_access_mcdd(mfile* mf, reg_access_method_t method, struct tools_open_mcdd_reg* mcdd);
 const char* reg_access_err2str(reg_access_status_t status);
 struct tools_open_mirc_reg;
 reg_access_status_t reg_access_mirc(mfile* mf, reg_access_method_t method, struct tools_open_mirc_reg* mirc);
+
+    struct reg_access_switch_plib_reg_ext;
+    reg_access_status_t
+      reg_access_plib(mfile* mf, reg_access_method_t method, struct reg_access_switch_plib_reg_ext* plib);
+
+    struct reg_access_hca_mteim_reg_ext;
+    reg_access_status_t
+      reg_access_mteim(mfile* mf, reg_access_method_t method, struct reg_access_hca_mteim_reg_ext* mteim);
+
+    struct reg_access_hca_mtie_ext;
+    reg_access_status_t reg_access_mtie(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtie_ext* mtie);
+    struct reg_access_hca_mtim_ext;
+    reg_access_status_t reg_access_mtim(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtim_ext* mtim);
+    struct reg_access_hca_mtdc_ext;
+    reg_access_status_t reg_access_mtdc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtdc_ext* mtdc);
+
+    struct reg_access_hca_debug_cap;
+    reg_access_status_t
+      reg_access_debug_cap(mfile* mf, reg_access_method_t method, struct reg_access_hca_debug_cap* debug_cap);
 
 struct reg_access_switch_mkdc_reg_ext;
 reg_access_status_t
@@ -194,8 +220,6 @@ reg_access_status_t
 struct reg_access_switch_mdsr_reg_ext;
 reg_access_status_t
   reg_access_mdsr(mfile* mf, reg_access_method_t method, struct reg_access_switch_mdsr_reg_ext* mtcq);
-struct reg_access_hca_mpegc_reg;
-reg_access_status_t reg_access_mpegc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg* mpegc);
 struct reg_access_hca_nic_cap_ext_reg_ext;
 reg_access_status_t reg_access_nic_cap_ext(mfile* mf,
                                             reg_access_method_t method,
@@ -210,6 +234,9 @@ struct reg_access_hca_nic_dpa_eug_reg_ext;
 reg_access_status_t reg_access_nic_dpa_eug(mfile* mf,
                                             reg_access_method_t method,
                                             struct reg_access_hca_nic_dpa_eug_reg_ext* nic_dpa_eug);
+struct reg_access_hca_mpegc_reg_ext;
+reg_access_status_t reg_access_mpegc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg_ext* mpegc);
+
 struct reg_access_hca_nic_dpa_perf_reg_ext;
 reg_access_status_t reg_access_nic_dpa_perf(mfile* mf,
                                             reg_access_method_t method,
