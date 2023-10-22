@@ -156,7 +156,7 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
     }
     fs5_image_layout_boot_component_header ncoreBCH;
     fs5_image_layout_boot_component_header_unpack(&ncoreBCH, ncoreBCHData.data());
-    _fwImgInfo.boot2Size = ncoreBCH.length;
+    _fwImgInfo.boot2Size = ncoreBCH.u8_stage1_component.u32_binary_len;
     //=================================================
 
     DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", _fwImgInfo.boot2Size));
