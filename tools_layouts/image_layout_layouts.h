@@ -59,9 +59,13 @@ struct image_layout_uint64 {
 /* Size in bytes - 4 */
 struct image_layout_component_authentication_configuration {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - 0-NULL, 1-SHA256Digest, 3-2048 bit RSA */
+	/* Description - 0-FW_BURN_NONE, 1-FW_BURN_SHA256_DIGEST, 2-FW_BURN_SHA512_DIGEST,3-FW_BURN_2048BIT_RSASSA_PKCS1_V1_5_WITH_SHA256, 4-FW_BURN_4096BIT_RSASSA_PKCS1_V1_5_WITH_SHA512 */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t auth_type;
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - used for authenticating challenge-response based tokens */
+	/* 0x0.25 - 0x0.25 */
+	u_int8_t c_r_token_en;
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - used for authenticating Back to commissioning tokens */
 	/* 0x0.26 - 0x0.26 */

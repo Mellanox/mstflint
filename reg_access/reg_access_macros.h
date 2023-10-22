@@ -43,10 +43,15 @@
 
 // register access for variable size registers (like mfba)
 #define REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size,      \
-                                           w_reg_size, pack_func, unpack_func, size_func, print_func, status)       \
+                                           w_reg_size, pack_func, unpack_func, size_func, print_func, status,       \
+                                           is_dynamic_arr)                                                          \
     int rc;                                                                                                         \
     int max_data_size = size_func();                                                                                \
     u_int8_t* data = NULL;                                                                                          \
+    if (is_dynamic_arr)                                                                                             \
+    {                                                                                                               \
+        max_data_size = reg_size;                                                                                   \
+    }                                                                                                               \
     if (method != REG_ACCESS_METHOD_GET && method != REG_ACCESS_METHOD_SET)                                         \
     {                                                                                                               \
         return ME_REG_ACCESS_BAD_METHOD;                                                                            \
@@ -60,15 +65,22 @@
     pack_func(data_struct, data);                                                                                   \
     DEBUG_PRINT_SEND(data_struct, struct_name, method, print_func);                                                 \
     rc = maccess_reg(mf, reg_id, (maccess_reg_method_t)method, data, reg_size, r_reg_size, w_reg_size, status);     \
-    unpack_func(data_struct, data);                                                                                 \
-    free(data);                                                                                                     \
-    DEBUG_PRINT_RECEIVE(data_struct, struct_name, method, print_func);                                              \
+    if (rc && is_dynamic_arr)                                                                                   \
+    {                                                                                                           \
+        free(data);                                                                                             \
+    }                                                                                                           \
+    else                                                                                                        \
+    {                                                                                                           \
+        unpack_func(data_struct, data);                                                                         \
+        free(data);                                                                                             \
+        DEBUG_PRINT_RECEIVE(data_struct, struct_name, method, print_func);                                      \
+    }                                                                                                           \
 
 #define REG_ACCESS_GENERIC_VAR(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size, w_reg_size,         \
-                               pack_func, unpack_func, size_func, print_func)                                          \
+                               pack_func, unpack_func, size_func, print_func, is_dynamic_arr)                          \
     int status = 0;                                                                                                    \
     REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size, w_reg_size, \
-                                       pack_func, unpack_func, size_func, print_func, &status)                         \
+                                       pack_func, unpack_func, size_func, print_func, &status, is_dynamic_arr)         \
     if (rc || status)                                                                                                  \
     {                                                                                                                  \
         return (reg_access_status_t)rc;                                                                                \
@@ -159,10 +171,16 @@
 /* reg access with changing length of read\write in the register struct */
 #define REG_ACCCESS_VAR(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size, w_reg_size, prefix) \
     REG_ACCESS_GENERIC_VAR(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size, w_reg_size,      \
-                           prefix ## _ ## struct_name ## _pack, prefix ## _ ## struct_name ## _unpack,          \
-                           prefix ## _ ## struct_name ## _size, prefix ## _ ## struct_name ## _print)
+                           prefix##_##struct_name##_pack, prefix##_##struct_name##_unpack,                      \
+                           prefix##_##struct_name##_size, prefix##_##struct_name##_print, 0)
 
-/* register access for static sized registers */
+#define REG_ACCCESS_VAR_DYNAMIC_ARR(mf, method, reg_id, data_struct, struct_name, prefix, array_size)     \
+    int data_size = prefix##_##struct_name##_size() + array_size;                                         \
+    REG_ACCESS_GENERIC_VAR(mf, method, reg_id, data_struct, struct_name, data_size, data_size, data_size, \
+                           prefix##_##struct_name##_pack, prefix##_##struct_name##_unpack,                \
+                           prefix##_##struct_name##_size, prefix##_##struct_name##_print, 1)
+
+// register access for static sized registers
 #define REG_ACCCESS(mf, method, reg_id, data_struct, struct_name, prefix) \
-    int data_size = prefix ## _ ## struct_name ## _size();                \
+    int data_size = prefix##_##struct_name##_size();                      \
     REG_ACCCESS_VAR(mf, method, reg_id, data_struct, struct_name, data_size, data_size, data_size, prefix)
