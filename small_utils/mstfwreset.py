@@ -112,6 +112,7 @@ MLNX_DEVICES = [
     dict(name="Switch-IB-2", devid=0x24b, status_config_not_done=(0x80010, 0)),
     dict(name="Quantum", devid=0x24d, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-2", devid=0x257, status_config_not_done=(0x100010, 0)),
+    dict(name="Quantum-3", devid=0x25b, status_config_not_done=(0x200010, 0)),
     dict(name="Spectrum", devid=0x249, status_config_not_done=(0x80010, 0)),
     dict(name="Spectrum-2", devid=0x24E, status_config_not_done=(0x100010, 0)),
     dict(name="Spectrum-3", devid=0x250, status_config_not_done=(0x100010, 0)),
@@ -123,7 +124,7 @@ MLNX_DEVICES = [
 SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
                 "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "BlueField4"]
 SUPP_SWITCH_DEVICES = ["Spectrum", "Spectrum-2", "Spectrum-3", "Spectrum-4",
-                       "Switch-IB", "Switch-IB-2", "Quantum", "Quantum-2"]
+                       "Switch-IB", "Switch-IB-2", "Quantum", "Quantum-2", "Quantum-3"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
 IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
