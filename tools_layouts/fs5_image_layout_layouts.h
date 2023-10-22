@@ -44,6 +44,18 @@ extern "C" {
 #endif
 
 #include "adb_to_c_utils.h"
+/* Description -   */
+/* Size in bytes - 4 */
+struct fs5_image_layout_bch_boot_component_flags {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.30 */
+	u_int32_t res;
+	/* Description -  */
+	/* 0x0.31 - 0x0.31 */
+	u_int8_t is_encrypted;
+};
+
 /* Description -  HW pointer entry */
 /* Size in bytes - 8 */
 struct fs5_image_layout_hw_pointer_entry {
@@ -57,45 +69,88 @@ struct fs5_image_layout_hw_pointer_entry {
 	u_int16_t crc;
 };
 
+/* Description -   */
+/* Size in bytes - 64 */
+struct fs5_image_layout_u8_digest {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	u_int32_t digest[16];
+};
+
+/* Description -   */
+/* Size in bytes - 144 */
+struct fs5_image_layout_u8_stage1_component {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - served for PSC use,indicate component type */
+	/* 0x0.0 - 0x0.31 */
+	u_int8_t u8_binary_magic[4];
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - length[bytes] */
+	/* 0x8.0 - 0x8.31 */
+	u_int32_t u32_binary_len;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - the destination of the component to be copied to */
+	/* 0xc.0 - 0xc.31 */
+	u_int32_t u32_load_dest;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - the entry_point (absolute value) to start (jump address) */
+	/* 0x10.0 - 0x10.31 */
+	u_int32_t u32_entry_point;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description -  */
+	/* 0x14.0 - 0x14.31 */
+	u_int32_t boot_component_ver;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description -  */
+	/* 0x18.24 - 0x20.23 */
+	u_int8_t u8_res[8];
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description -  */
+	/* 0x20.0 - 0x20.31 */
+	struct fs5_image_layout_bch_boot_component_flags flags;
+};
+
+/* Description -   */
+/* Size in bytes - 1068 */
+struct fs5_image_layout_u8_stage1_res {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Reserved for PSC use */
+	/* 0x0.0 - 0x0.31 */
+	u_int32_t reserved;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Offset relative to load address of the starting location of the HASH table (for NCORE.FMC use) */
+	/* 0x10.0 - 0x10.31 */
+	u_int32_t hash_offset;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Version of PSC.BL1 to be bind with this NCORE.FMC version (will be compared to BL1 version as specified in PSC.BL1.BCH) */
+	/* 0x14.0 - 0x14.31 */
+	u_int32_t BL1_bind_version;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - Version of PSC.FW to be bind with this NCORE.FMC version (will be compared to FW version as specified in PSC.FW.BCH) */
+	/* 0x18.0 - 0x18.31 */
+	u_int32_t FW_bind_version;
+};
+
 /* Description -  BCH - boot component header */
 /* Size in bytes - 8192 */
 struct fs5_image_layout_boot_component_header {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
 	/* 0x0.0 - 0x0.31 */
-	u_int32_t component_digest;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	u_int32_t u8_header_magic;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
-	/* 0x8.0 - 0x8.31 */
-	u_int32_t component_security_version;
-/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* 0x4.0 - 0x40.31 */
+	struct fs5_image_layout_u8_digest u8_digest;
+/*---------------- DWORD[1705] (Offset 0x1aa4) ----------------*/
 	/* Description -  */
-	/* 0x10.0 - 0x10.31 */
-	u_int32_t component_metadata;
-/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* 0x1aa4.0 - 0x1ecc.31 */
+	struct fs5_image_layout_u8_stage1_res u8_stage1_res;
+/*---------------- DWORD[1976] (Offset 0x1ee0) ----------------*/
 	/* Description -  */
-	/* 0x18.0 - 0x18.31 */
-	u_int32_t signature;
-/*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description -  */
-	/* 0x20.0 - 0x20.31 */
-	u_int32_t public_key;
-/*---------------- DWORD[1977] (Offset 0x1ee4) ----------------*/
-	/* Description -  */
-	/* 0x1ee4.0 - 0x1ee4.31 */
-	u_int32_t length;
-/*---------------- DWORD[1978] (Offset 0x1ee8) ----------------*/
-	/* Description -  */
-	/* 0x1ee8.0 - 0x1ee8.31 */
-	u_int32_t load_offset;
-/*---------------- DWORD[1979] (Offset 0x1eec) ----------------*/
-	/* Description -  */
-	/* 0x1eec.0 - 0x1eec.31 */
-	u_int32_t hash_offset;
-/*---------------- DWORD[1980] (Offset 0x1ef0) ----------------*/
-	/* Description -  */
-	/* 0x1ef0.0 - 0x1ef0.31 */
-	u_int32_t branch_offset;
+	/* 0x1ee0.0 - 0x1f6c.31 */
+	struct fs5_image_layout_u8_stage1_component u8_stage1_component;
 };
 
 /* Description -  HW pointers */
@@ -181,6 +236,13 @@ union fs5_image_layout_fs5_image_layout_Nodes {
 
 
 /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
+/* bch_boot_component_flags */
+void fs5_image_layout_bch_boot_component_flags_pack(const struct fs5_image_layout_bch_boot_component_flags *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_bch_boot_component_flags_unpack(struct fs5_image_layout_bch_boot_component_flags *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_bch_boot_component_flags_print(const struct fs5_image_layout_bch_boot_component_flags *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_bch_boot_component_flags_size(void);
+#define FS5_IMAGE_LAYOUT_BCH_BOOT_COMPONENT_FLAGS_SIZE    (0x4)
+void fs5_image_layout_bch_boot_component_flags_dump(const struct fs5_image_layout_bch_boot_component_flags *ptr_struct, FILE *fd);
 /* hw_pointer_entry */
 void fs5_image_layout_hw_pointer_entry_pack(const struct fs5_image_layout_hw_pointer_entry *ptr_struct, u_int8_t *ptr_buff);
 void fs5_image_layout_hw_pointer_entry_unpack(struct fs5_image_layout_hw_pointer_entry *ptr_struct, const u_int8_t *ptr_buff);
@@ -188,6 +250,27 @@ void fs5_image_layout_hw_pointer_entry_print(const struct fs5_image_layout_hw_po
 unsigned int fs5_image_layout_hw_pointer_entry_size(void);
 #define FS5_IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE    (0x8)
 void fs5_image_layout_hw_pointer_entry_dump(const struct fs5_image_layout_hw_pointer_entry *ptr_struct, FILE *fd);
+/* u8_digest */
+void fs5_image_layout_u8_digest_pack(const struct fs5_image_layout_u8_digest *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_u8_digest_unpack(struct fs5_image_layout_u8_digest *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_u8_digest_print(const struct fs5_image_layout_u8_digest *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_u8_digest_size(void);
+#define FS5_IMAGE_LAYOUT_U8_DIGEST_SIZE    (0x40)
+void fs5_image_layout_u8_digest_dump(const struct fs5_image_layout_u8_digest *ptr_struct, FILE *fd);
+/* u8_stage1_component */
+void fs5_image_layout_u8_stage1_component_pack(const struct fs5_image_layout_u8_stage1_component *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_u8_stage1_component_unpack(struct fs5_image_layout_u8_stage1_component *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_u8_stage1_component_print(const struct fs5_image_layout_u8_stage1_component *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_u8_stage1_component_size(void);
+#define FS5_IMAGE_LAYOUT_U8_STAGE1_COMPONENT_SIZE    (0x90)
+void fs5_image_layout_u8_stage1_component_dump(const struct fs5_image_layout_u8_stage1_component *ptr_struct, FILE *fd);
+/* u8_stage1_res */
+void fs5_image_layout_u8_stage1_res_pack(const struct fs5_image_layout_u8_stage1_res *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_u8_stage1_res_unpack(struct fs5_image_layout_u8_stage1_res *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_u8_stage1_res_print(const struct fs5_image_layout_u8_stage1_res *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_u8_stage1_res_size(void);
+#define FS5_IMAGE_LAYOUT_U8_STAGE1_RES_SIZE    (0x42c)
+void fs5_image_layout_u8_stage1_res_dump(const struct fs5_image_layout_u8_stage1_res *ptr_struct, FILE *fd);
 /* boot_component_header */
 void fs5_image_layout_boot_component_header_pack(const struct fs5_image_layout_boot_component_header *ptr_struct, u_int8_t *ptr_buff);
 void fs5_image_layout_boot_component_header_unpack(struct fs5_image_layout_boot_component_header *ptr_struct, const u_int8_t *ptr_buff);
