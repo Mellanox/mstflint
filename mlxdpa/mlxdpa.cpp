@@ -94,6 +94,7 @@ void MlxDpa::PrintHelp()
     printf("\n");
     printf(INDENT "OPTIONS:\n");
     printFlagLine(HOST_ELF_FLAG, HOST_ELF_FLAG_SHORT, "Host ELF", "Path to the Host ELF file containing DPA apps");
+    printFlagLine(CERT_CHAIN_COUNT_FLAG, ' ', "Hex number", "Number of certificates in the provided certificate chain");
     printFlagLine(CERTIFICATE_FLAG,
                   CERTIFICATE_FLAG_SHORT,
                   "Certificate",
@@ -124,9 +125,10 @@ void MlxDpa::PrintHelp()
     printf(INDENT2 "%-24s: %s\n", "sign_cert_container", "sign a previously generated certificate container.");
 
     printf(INDENT "Examples:\n");
-    printf(INDENT2 "%-24s: %s\n",
-           "Sign Host ELF using PEM file",
-           "mstdpa -e /tmp/host.elf -c /tmp/chain.cert -p /tmp/p_key.pem -o /tmp/signed_host.elf sign_dpa_apps");
+    printf(
+      INDENT2 "%-24s: %s\n",
+      "Sign Host ELF using PEM file",
+      "mlxdpa -e /tmp/host.elf -c /tmp/chain.cert -p /tmp/p_key.pem [--cert_chain_count 5] -o /tmp/signed_host.elf sign_dpa_apps");
     printf(
       INDENT2 "%-24s: %s\n",
       "Create certificate upload container",
