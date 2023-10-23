@@ -876,7 +876,8 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr,
         // when you start checking device info signatures => uncomment this code
         if (validDevInfoCount != 1 && !show_itoc &&
             (_readSectList.size() == 0 ||
-             find(_readSectList.begin(), _readSectList.end(), FS3_DEV_INFO) != _readSectList.end()))
+             find(_readSectList.begin(), _readSectList.end(), FS3_DEV_INFO) != _readSectList.end()) &&
+            _fwImgInfo.supportedHwId[0] != ARCUSE_HW_ID) // ArcusE doesn't have DEV_INFO section
         {
             _badDevDataSections = true;
             if (validDevInfoCount == 0)

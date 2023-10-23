@@ -143,7 +143,6 @@ public:
     bool IsLifeCycleAccessible(chip_type_t chip_type);
     bool IsSecurityVersionAccessible(chip_type_t chip_type);
     bool IsSecurityVersionViolated(u_int32_t image_security_version);
-    bool GetImageInfo(u_int8_t* buff);
     virtual bool GetImageSize(u_int32_t* image_size);
     bool GetHashesTableData(vector<u_int8_t>& data);
     bool GetRSAPublicKey(vector<u_int8_t>& key);
@@ -209,6 +208,7 @@ protected:
                       VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL,
                       bool showItoc = false);
     bool GetHashesTableSize(u_int32_t& size);
+    bool GetImageInfo(u_int8_t* buff);
 
 
 private:

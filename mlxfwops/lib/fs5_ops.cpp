@@ -132,6 +132,12 @@ bool Fs5Operations::Init()
     return true;
 }
 
+bool Fs5Operations::GetImageInfo(u_int8_t* buff)
+{
+    DPRINTF(("Fs5Operations::GetImageInfo call Fs3Operations::GetImageInfo\n"));
+    return Fs3Operations::GetImageInfo(buff);
+}
+
 bool Fs5Operations::GetImageSize(u_int32_t* image_size)
 {
     if (!GetImageSizeFromImageInfo(image_size))

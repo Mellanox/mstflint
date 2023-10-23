@@ -253,7 +253,7 @@ protected:
     bool IsFs3SectionReadable(u_int8_t type, QueryOptions queryOptions);
     bool GetMfgInfo(u_int8_t* buff);
     bool GetDevInfo(u_int8_t* buff);
-    bool GetImageInfo(u_int8_t* buff);
+    virtual bool GetImageInfo(u_int8_t* buff);
     bool GetRomInfo(u_int8_t* buff, u_int32_t size);
     bool GetImgSigInfo(u_int32_t keypair_uuid[4]);
     bool GetImgSigInfo256(u_int8_t* buff);
