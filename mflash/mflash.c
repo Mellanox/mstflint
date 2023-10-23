@@ -3797,7 +3797,7 @@ int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength)
 
     for (; bank < mfl->attr.banks_num; bank++)
     {
-        if ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V))
+        if (mfl->attr.vendor == FV_WINBOND)
         {
             rc = mf_read_modify_status_new(
               mfl, bank, SFC_RDSR3_WINBOND,        /* mflash, bank num, status-register-3 read cmd */
@@ -3837,7 +3837,7 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
     }
     else
     {
-        rc = MFE_NOT_SUPPORTED_OPERATION;
+        rc = MFE_NOT_IMPLEMENTED;
     }
 
     return rc;
