@@ -40,6 +40,8 @@ AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(srcdir) -I$(LAYOUTS_DIR) -I$(USER_DIR)/inclu
 
 AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 
+lib_LTLIBRARIES = libreg_access.a
+
 libreg_access_a_SOURCES = reg_access.c reg_access.h reg_access_common.h reg_access_macros.h
 libreg_access_a_DEPENDENCIES = $(USER_DIR)/tools_layouts/libtools_layouts.a
 libreg_access_a_LIBADD = $(libreg_access_a_DEPENDENCIES)
@@ -48,7 +50,7 @@ RREG_ACCESS_SO = rreg_access.so
 reg_access_pylibdir = $(libdir)/mstflint/python_tools/
 
 reg_access_pylib_DATA = ${RREG_ACCESS_SO}
-dist_reg_access_pylib_DATA = regaccess.py regaccess_structs.py
+dist_reg_access_pylib_DATA = regaccess.py regaccess_hca_ext_structs.py regaccess_switch_ext_structs.py
 
 ${RREG_ACCESS_SO}: libreg_access.a
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${RREG_ACCESS_SO} \
