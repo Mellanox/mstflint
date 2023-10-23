@@ -1774,7 +1774,7 @@ def execute_driver_sync_reset(mfrl, reset_level, reset_type):
         FWResetStatusChecker.UpdateUptimeAfterReset()
         if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
             exception_str = "MGIR.uptime check failed after MFRL failure: {}".format(str(e))
-            raise exception_str
+            raise Exception(exception_str)
         else:
             logger.debug("MFRL sync 1 worked although MFRL returned with error: {0}".format(e))
             printAndFlush("Done")
