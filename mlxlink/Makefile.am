@@ -69,10 +69,9 @@ mstlink_DEPENDENCIES = modules/libmodules_lib.la \
                       $(USER_DIR)/xz_utils/libxz_utils.la \
                       $(USER_DIR)/ext_libs/minixz/libminixz.la \
                       $(USER_DIR)/common/libcommon.la \
-                      -llzma $(LIBSTD_CPP) ${LDL} -lexpat \
                       $(JSON_LIBS)
 
-mstlink_LDADD = $(mstlink_DEPENDENCIES)
+mstlink_LDADD = $(mstlink_DEPENDENCIES) -llzma ${LDL} -lexpat
 
 mstlink_LDFLAGS = -static
 
