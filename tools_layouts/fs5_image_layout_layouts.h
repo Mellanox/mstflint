@@ -83,19 +83,19 @@ struct fs5_image_layout_u8_digest {
 struct fs5_image_layout_u8_stage1_component {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - served for PSC use,indicate component type */
-	/* 0x0.0 - 0x0.31 */
+	/* 0x0.24 - 0x4.23 */
 	u_int8_t u8_binary_magic[4];
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - length[bytes] */
-	/* 0x8.0 - 0x8.31 */
+	/* 0x4.0 - 0x4.31 */
 	u_int32_t u32_binary_len;
-/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - the destination of the component to be copied to */
-	/* 0xc.0 - 0xc.31 */
+	/* 0x8.0 - 0x8.31 */
 	u_int32_t u32_load_dest;
-/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - the entry_point (absolute value) to start (jump address) */
-	/* 0x10.0 - 0x10.31 */
+	/* 0xc.0 - 0xc.31 */
 	u_int32_t u32_entry_point;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description -  */
@@ -227,11 +227,11 @@ struct fs5_image_layout_hw_pointers_gilboa {
 union fs5_image_layout_fs5_image_layout_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
-	struct fs5_image_layout_hw_pointers_gilboa hw_pointers_gilboa;
-	/* Description -  */
 	/* 0x0.0 - 0x1ffc.31 */
 	struct fs5_image_layout_boot_component_header boot_component_header;
+	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	struct fs5_image_layout_hw_pointers_gilboa hw_pointers_gilboa;
 };
 
 
