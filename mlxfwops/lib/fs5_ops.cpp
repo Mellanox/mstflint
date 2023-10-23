@@ -156,8 +156,13 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
     }
     fs5_image_layout_boot_component_header ncoreBCH;
     fs5_image_layout_boot_component_header_unpack(&ncoreBCH, ncoreBCHData.data());
-    _fwImgInfo.boot2Size = ncoreBCH.u8_stage1_component.u32_binary_len;
-    //=================================================
+    
+    u_int32_t hashes_table_size = 0;
+    if (!GetHashesTableSize(hashes_table_size))
+    {
+        return false;
+    }
+    _fwImgInfo.boot2Size = ncoreBCH.u8_stage1_component.u32_binary_len - hashes_table_size;
 
     DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", _fwImgInfo.boot2Size));
     if (_fwImgInfo.boot2Size > 1048576 || _fwImgInfo.boot2Size < 4)

@@ -208,6 +208,7 @@ protected:
                       bool verbose = false,
                       VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL,
                       bool showItoc = false);
+    bool GetHashesTableSize(u_int32_t& size);
 
 
 private:
@@ -397,7 +398,6 @@ private:
     virtual void PublicKey2ToPublicKey3(const image_layout_file_public_keys_2& public_key_2,
                                         image_layout_file_public_keys_3& public_key_3);
     virtual bool ReadPublicKeys2SectionFromFile(const char* fname, image_layout_public_keys_2& public_keys_2_section);
-    bool GetHashesTableSize(u_int32_t& size);
     
     // Members
     u_int32_t _boot_record_ptr;
