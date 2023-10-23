@@ -48,6 +48,7 @@ public:
                  bool ignoreDToc = false,
                  bool verbose = false) override;
     bool GetImageSize(u_int32_t* image_size) override;
+    bool GetImageInfo(u_int8_t* buff) override;
 
 protected:
     bool CheckBoot2(u_int32_t beg,
