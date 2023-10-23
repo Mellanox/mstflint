@@ -170,14 +170,14 @@ void fs5_image_layout_u8_stage1_component_pack(const struct fs5_image_layout_u8_
 	int i;
 
 	for (i = 0; i < 4; ++i) {
-		offset = adb2c_calc_array_field_address(0, 8, i, 1152, 1);
+		offset = adb2c_calc_array_field_address(24, 8, i, 1152, 1);
 		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->u8_binary_magic[i]);
 	}
-	offset = 64;
+	offset = 32;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->u32_binary_len);
-	offset = 96;
+	offset = 64;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->u32_load_dest);
-	offset = 128;
+	offset = 96;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->u32_entry_point);
 	offset = 160;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->boot_component_ver);
@@ -195,14 +195,14 @@ void fs5_image_layout_u8_stage1_component_unpack(struct fs5_image_layout_u8_stag
 	int i;
 
 	for (i = 0; i < 4; ++i) {
-		offset = adb2c_calc_array_field_address(0, 8, i, 1152, 1);
+		offset = adb2c_calc_array_field_address(24, 8, i, 1152, 1);
 		ptr_struct->u8_binary_magic[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
-	offset = 64;
+	offset = 32;
 	ptr_struct->u32_binary_len = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-	offset = 96;
+	offset = 64;
 	ptr_struct->u32_load_dest = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-	offset = 128;
+	offset = 96;
 	ptr_struct->u32_entry_point = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	offset = 160;
 	ptr_struct->boot_component_ver = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
@@ -518,11 +518,11 @@ void fs5_image_layout_fs5_image_layout_Nodes_print(const union fs5_image_layout_
 	fprintf(fd, "======== fs5_image_layout_fs5_image_layout_Nodes ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "hw_pointers_gilboa:\n");
-	fs5_image_layout_hw_pointers_gilboa_print(&(ptr_struct->hw_pointers_gilboa), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "boot_component_header:\n");
 	fs5_image_layout_boot_component_header_print(&(ptr_struct->boot_component_header), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "hw_pointers_gilboa:\n");
+	fs5_image_layout_hw_pointers_gilboa_print(&(ptr_struct->hw_pointers_gilboa), fd, indent_level + 1);
 }
 
 unsigned int fs5_image_layout_fs5_image_layout_Nodes_size(void)
