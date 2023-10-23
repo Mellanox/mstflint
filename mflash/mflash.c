@@ -4258,7 +4258,7 @@ int mf_set_quad_en(mflash* mfl, u_int8_t quad_en)
     if ((quad_en == 0) && (getenv("FORCE_RESET_QUAD_EN") == NULL))
     {
         /* If flash HOLD state issue is relevant for given device, we'll block disabling Quad mode */
-        if ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V))
+        if (mfl->attr.vendor == FV_WINBOND)
         {
             switch (mfl->dm_dev_id)
             {
