@@ -148,6 +148,8 @@ extern "C"
 #define ARCH_riscv
 #elif defined(__loongarch_lp64)
 #define ARCH_loongarch64
+#elif defined(__e2k__)
+#define ARCH_e2k
 #else
 #error Unknown CPU architecture using the linux OS
 #endif
@@ -190,7 +192,7 @@ extern "C"
 #define U64H_FMT "0x%016llx"
 #define U48H_FMT "0x%012llx"
 #endif
-#elif defined(ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(ARCH_arm64) || defined(ARCH_riscv) || defined(ARCH_loongarch64)
+#elif defined(ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(ARCH_arm64) || defined(ARCH_riscv) || defined(ARCH_loongarch64) || defined(ARCH_e2k)
 #define U64D_FMT "%lu"
 #define U64H_FMT "0x%016lx"
 #define U48H_FMT "0x%012lx"
