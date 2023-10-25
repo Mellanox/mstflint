@@ -28,7 +28,7 @@ RES_DUMP_DIR= $(top_srcdir)/resourcedump/resourcedump_lib
 INFINIBAND_INCLUDE = -isystem /usr
 AM_CPPFLAGS = -I$(top_srcdir) -I$(COMMON_DIR) -I$(REG_ACCESS_DIR) -I$(LAYOUTS_DIR) -I$(MTCR_DIR) $(INFINIBAND_INCLUDE) -I$(MTCR_INC_DIR)
 
-AM_CXXFLAGS = -Wall -W -MP -H -MD -pipe -DMST_UL -g -std=c++11 $(COMPILER_FPIC)
+AM_CXXFLAGS = -Wall -W -MP -H -MD -pipe -DMST_UL -g $(COMPILER_FPIC)
 AM_CPPFLAGS += $(AM_CXXFLAGS)
 CRESOURCEDUMP_SO = cresourcedump.so
 lib_LTLIBRARIES = libresourcedump.la
