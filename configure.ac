@@ -69,16 +69,17 @@ OFED_NOT_EXIST="ofed_info: command not found"
 MTCR_CONF_DIR=""
 LDL=""
 default_en_inband=""
-OFED_BUILD_CHK=0
+default_en_rdmem="no"
+OFED_VERSION_CHK=0
 KERNEL_BUILD_CHK=0
 
 if test "x$OFED_EXIST" != "x$OFED_NOT_EXIST"; then
   if test $(echo $OFED_VER 5.6 | tr " " "\n" | sort -V | tail -n 1) == $OFED_VER ; then
-      OFED_BUILD_CHK=1
+      OFED_VERSION_CHK=1
   fi
 fi
 
-AM_CONDITIONAL(OFED_BUILD,[test ${OFED_BUILD_CHK} = 1])
+AM_CONDITIONAL(OFED_BUILD,[test ${OFED_VERSION_CHK} = 1])
 AC_SUBST(OFED_BUILD)
 
 #AC_MSG_NOTICE(Kernel: ${KERNEL_VER})
@@ -95,12 +96,14 @@ CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include"
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
     MTCR_CONF_DIR="mtcr_freebsd"
-    default_en_inband="no"
     CFLAGS="${CFLAGS} -I /usr/local/include"
 else
     MTCR_CONF_DIR="mtcr_ul"
     LDL="-ldl"
     default_en_inband="yes"
+    if test ${OFED_VERSION_CHK} -eq 1 ; then
+        default_en_rdmem="yes"
+    fi
 fi
 AC_SUBST(MTCR_CONF_DIR)
 AC_SUBST(LDL)
@@ -224,6 +227,22 @@ fi
 AC_SUBST(MAD_IFC)
 
 AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband" = "xyes"])
+
+AC_MSG_CHECKING(--enable-rdmem argument)
+AC_ARG_ENABLE(rdmem,
+		    [  --enable-rdmem        Enable resource-dump memory mode. OFED libmlx5 and libibverbs dependency],
+		    [enable_rdmem=$enableval],
+		    [enable_rdmem=$default_en_rdmem])        
+AC_MSG_RESULT($enable_rdmem)
+if test "x$enable_rdmem" = "xyes"; then
+  AC_CHECK_HEADERS(infiniband/mlx5dv.h infiniband/verbs.h,,AC_MSG_ERROR([cannot find infiniband/mlx5dv.h or infiniband/verbs.h . Use --disable-rdmem to remove this dependaency]))
+  MAD_IFC="mad_ifc"
+else
+  CXXFLAGS="$CXXFLAGS -DNO_RDMEM"
+  CFLAGS="$CFLAGS -DNO_RDMEM"
+fi
+
+AM_CONDITIONAL(ENABLE_RDMEM, [test  "x$enable_rdmem" = "xyes"])
 
 AC_MSG_CHECKING(--enable-cs argument)
 AC_ARG_ENABLE(cs,
@@ -474,4 +493,6 @@ AC_CONFIG_FILES([debian/mstflint.install])
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mft_utils/hsmclient/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
         tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
         flint/Makefile small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
-        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile resourcedump/Makefile resourcedump/resourcedump_lib/Makefile resourceparse/Makefile )
+        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile \
+        resourcetools/Makefile resourcetools/resourcedump_lib/Makefile resourcetools/resourcedump_lib/src/Makefile resourcetools/resourcedump_lib/src/common/Makefile
+        resourcetools/resourcedump_lib/src/commands/Makefile resourcetools/resourcedump_lib/src/fetchers/Makefile resourcetools/resourcedump_lib/src/filters/Makefile resourcetools/resourcedump_lib/src/sdk/Makefile)
