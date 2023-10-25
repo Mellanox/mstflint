@@ -20,7 +20,7 @@ pversion_string:=$(shell sed -r '1 s:(.*) \((.*)\).*:\1 \2:; q' debian/changelog
 
 override_dh_auto_configure:
 	./autogen.sh
-	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS) "MSTFLINT_VERSION_STR=$(pversion_string)"
+	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS) "MSTFLINT_VERSION_STR=$(pversion_string)" --enable-adb-generic-tools
 
 override_dh_auto_build:
 	make
