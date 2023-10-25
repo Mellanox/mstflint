@@ -87,6 +87,7 @@ mstarchive_LDADD = libmstarchive.la\
 		   $(USER_DIR)/xz_utils/libxz_utils.la \
                    $(CURL_LIBS)\
                    -llzma -lm $(LIBSTD_CPP) ${LDL}
+mstarchive_LDFLAGS = -shared
 
 if ENABLE_OPENSSL
 mstarchive_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl

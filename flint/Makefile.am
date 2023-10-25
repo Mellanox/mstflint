@@ -67,6 +67,7 @@ mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
 		  ../mft_utils/hsmclient/libhsmclient.a\
 		  ${LDL}
 
+mstflint_LDFLAGS = -static
 
 if ENABLE_DC
 mstflint_LDADD += -lz

@@ -67,3 +67,5 @@ mstreg_LDADD =  $(MLXREG_DIR)/mlxreg_lib/libmstreg_lib.la \
                 $(USER_DIR)/ext_libs/minixz/libminixz.la \
                 $(USER_DIR)/common/libcommon.la \
                 -llzma $(LIBSTD_CPP) ${LDL} -lexpat
+
+mstreg_LDFLAGS = -static

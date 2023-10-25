@@ -47,8 +47,10 @@ bin_PROGRAMS = mstmread \
 bin_SCRIPTS = mstfwreset
 
 mstmread_SOURCES = mread.c
+mstmread_LDFLAGS = -static
 
 mstmwrite_SOURCES = mwrite.c
+mstmwrite_LDFLAGS = -static
 
 mstvpd_SOURCES = vpd.c
 mstvpd_LDADD = $(top_srcdir)/mvpd/libmvpd.la \
@@ -57,6 +59,7 @@ mstvpd_LDADD = $(top_srcdir)/mvpd/libmvpd.la \
                $(top_srcdir)/reg_access/libreg_access.la \
                $(top_srcdir)/tools_layouts/libtools_layouts.la \
                ${LDL}
+mstvpd_LDFLAGS = -static
 
 mstcongestion_SOURCES = congestion.cpp
 mstcongestion_LDADD = $(top_srcdir)/cmdif/libcmdif.la \
@@ -65,11 +68,14 @@ mstcongestion_LDADD = $(top_srcdir)/cmdif/libcmdif.la \
                       $(top_srcdir)/tools_layouts/libtools_layouts.la \
                       $(top_srcdir)/cmdparser/libcmdparser.a \
                       $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
+mstcongestion_LDFLAGS = -static
 
 mstmcra_SOURCES  = mcra.c
+mstmcra_LDFLAGS = -static
 
 mstmtserver_SOURCES = mtserver.c tcp.c tcp.h
 mstmtserver_CFLAGS = -DMST_UL
+mstmtserver_LDFLAGS = -static
 
 SUBDIRS = mlxfwresetlib
 MSTFWRESET_PYTHON_WRAPPER=mstfwreset
