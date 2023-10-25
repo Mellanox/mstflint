@@ -48,16 +48,16 @@ INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_D
 
 AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe 
 
-lib_LTLIBRARIES = libmstreg_lib.a
+lib_LTLIBRARIES = libmstreg_lib.la
 
-libmstreg_lib_a_SOURCES = mlxreg_exception.h \
+libmstreg_lib_la_SOURCES = mlxreg_exception.h \
                            mlxreg_exception.cpp \
                            mlxreg_parser.h \
                            mlxreg_parser.cpp \
                            mlxreg_lib.h \
                            mlxreg_lib.cpp
 
-libmstreg_lib_a_LIBDADD = $(MFT_UTILS_DIR)/libmftutils.a \
+libmstreg_lib_la_LIBDADD = $(MFT_UTILS_DIR)/libmftutils.a \
                           $(MTCR_DIR)/libmtcr_ul.a \
-                          $(USER_DIR)/adb_parser/libadb_parser.a \
-                          $(USER_DIR)/dev_mgt/libdev_mgt.a
+                          $(USER_DIR)/adb_parser/libadb_parser.la \
+                          $(USER_DIR)/dev_mgt/libdev_mgt.la

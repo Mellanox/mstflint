@@ -62,7 +62,7 @@ else
 AM_CXXFLAGS += "-DNO_INBAND"
 endif
 
-libfw_comps_mgr_a_LIBADD = ../reg_access/libreg_access.a $(MTCR_DIR)/libmtcr_ul.a $(LAYOUTS_LIB) $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a \
+libfw_comps_mgr_a_LIBADD = ../reg_access/libreg_access.la $(MTCR_DIR)/libmtcr_ul.a $(LAYOUTS_LIB) $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a \
                             $(MFT_UTILS_DIR)/libmftutils.a
 
 if ENABLE_INBAND

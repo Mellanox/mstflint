@@ -82,24 +82,24 @@ common_SOURCEES =  mlxfwmanager_common.cpp mlxfwmanager_common.h\
 						fw_version_old_clp.cpp fw_version_old_clp.h\
                         fw_version_with_sub_build.cpp fw_version_with_sub_build.h
                         
-common_LDADD  = $(USER_DIR)/dev_mgt/libdev_mgt.a\
-                        $(USER_DIR)/mvpd/libmvpd.a\
+common_LDADD  = $(USER_DIR)/dev_mgt/libdev_mgt.la\
+                        $(USER_DIR)/mvpd/libmvpd.la\
                         $(USER_DIR)/mlxfwops/lib/libmlxfwops.a\
-                        $(USER_DIR)/pldmlib/libpldm.a\
-                        $(USER_DIR)/mlxconfig/libmlxcfg.a\
-                        $(USER_DIR)/libmfa/libmfa.a\
-                        $(USER_DIR)/ext_libs/minixz/libminixz.a\
+                        $(USER_DIR)/pldmlib/libpldm.la\
+                        $(USER_DIR)/mlxconfig/libmlxcfg.la\
+                        $(USER_DIR)/libmfa/libmfa.la\
+                        $(USER_DIR)/ext_libs/minixz/libminixz.la\
                         $(USER_DIR)/cmdparser/libcmdparser.a\
-                        $(USER_DIR)/mflash/libmflash.a\
+                        $(USER_DIR)/mflash/libmflash.la\
                         $(USER_DIR)/tools_res_mgmt/libtools_res_mgmt.a\
                         $(JSON_LIBS)\
                         $(INIPARSER_LIBS)\
                         $(MUPARSER_LIBS)\
                         $(SQLITE_LIBS)\
                         $(USER_DIR)/mft_utils/libmftutils.a\
-                        $(USER_DIR)/cmdif/libcmdif.a\
-                        $(USER_DIR)/reg_access/libreg_access.a\
-                        $(USER_DIR)/tools_layouts/libtools_layouts.a\
+                        $(USER_DIR)/cmdif/libcmdif.la\
+                        $(USER_DIR)/reg_access/libreg_access.la\
+                        $(USER_DIR)/tools_layouts/libtools_layouts.la\
                         $(USER_DIR)/fw_comps_mgr/libfw_comps_mgr.a\
                         $(XML_LIBS)\
                         $(CURL_LIBS)\

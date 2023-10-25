@@ -34,8 +34,8 @@
 
 noinst_HEADERS=compatibility.h bit_slice.h tools_utils.h tools_utils.h tools_version.h
 
-lib_LTLIBRARIES = libcommon.a
-libcommon_a_SOURCES = filesystem.cpp
+lib_LTLIBRARIES = libcommon.la
+libcommon_la_SOURCES = filesystem.cpp
 
 commonincludedir = $(includedir)/mstflint/common/
 
