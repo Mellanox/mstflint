@@ -396,14 +396,6 @@ AC_DEFINE([MSTFLINT_VERSION_STR], [], [The MSTFLINT version])
 AC_DEFINE_UNQUOTED(MSTFLINT_VERSION_STR, "$MSTFLINT_VERSION_STR")
 
 
-AC_ARG_VAR(TOOLS_GIT_SHA, The MSTFLINT tree git sha hash version)
-if test x"$TOOLS_GIT_SHA" == x; then
-    TOOLS_GIT_SHA="N/A"
-fi
-AC_SUBST(TOOLS_GIT_SHA)
-AC_DEFINE([TOOLS_GIT_SHA], [], [The MSTFLINT tree git sha hash version])
-AC_DEFINE_UNQUOTED(TOOLS_GIT_SHA, "$TOOLS_GIT_SHA")
-
 AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(tools_crypto/Makefile)
     ])
