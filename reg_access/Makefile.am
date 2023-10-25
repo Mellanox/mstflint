@@ -54,6 +54,6 @@ dist_reg_access_pylib_DATA = regaccess.py regaccess_hca_ext_structs.py regaccess
 
 ${RREG_ACCESS_SO}: libreg_access.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${RREG_ACCESS_SO} \
-	-L$(USER_DIR)/tools_layouts/.libs -ltools_layouts -L$(MTCR_DIR) -lmtcr_ul
+	$(USER_DIR)/tools_layouts/.libs/libtools_layouts.a -L$(MTCR_DIR) -lmtcr_ul
 
 CLEANFILES = ${RREG_ACCESS_SO}

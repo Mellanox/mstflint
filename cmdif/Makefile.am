@@ -52,6 +52,6 @@ cmdif_pylibdir = $(libdir)/mstflint/python_tools/
 cmdif_pylib_DATA = ${CCMDIF_SO} cmdif.py
 ${CCMDIF_SO}: libcmdif.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${CCMDIF_SO} \
-	-L$(USER_DIR)/tools_layouts/.libs -ltools_layouts -L$(USER_DIR)/${MTCR_CONF_DIR} -lmtcr_ul
+	$(USER_DIR)/tools_layouts/.libs/libtools_layouts.a -L$(USER_DIR)/${MTCR_CONF_DIR} -lmtcr_ul
 
 CLEANFILES = ${CCMDIF_SO}

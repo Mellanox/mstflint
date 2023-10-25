@@ -79,6 +79,8 @@ mstconfig_LDADD = libmlxcfg.la $(UTILS_LIB) $(MUPARSER_LIBS) $(SQLITE_LIBS)\
 				$(CMDIF_DIR)/libcmdif.la ../reg_access/libreg_access.la $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
 				$(DEV_MGT_DIR)/libdev_mgt.la $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) ${LDL}
 
+mstconfig_LDFLAGS = -static
+
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2
 else

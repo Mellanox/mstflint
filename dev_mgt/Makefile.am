@@ -51,8 +51,8 @@ dist_dev_mgt_pylib_DATA = dev_mgt.py
 
 c_dev_mgt.so: libdev_mgt.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} tools_dev_types.o -o c_dev_mgt.so \
-	-L$(USER_DIR)/reg_access/.libs -lreg_access \
-	-L$(USER_DIR)/tools_layouts/.libs -ltools_layouts \
+	$(USER_DIR)/reg_access/.libs/libreg_access.a \
+	$(USER_DIR)/tools_layouts/.libs/libtools_layouts.a \
 	-L$(USER_DIR)/${MTCR_CONF_DIR} -lmtcr_ul
 
 CLEANFILES = c_dev_mgt.so

@@ -74,3 +74,5 @@ mstlink_DEPENDENCIES = modules/libmodules_lib.la \
 
 mstlink_LDADD = $(mstlink_DEPENDENCIES)
 
+mstlink_LDFLAGS = -static
+
