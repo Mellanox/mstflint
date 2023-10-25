@@ -130,8 +130,8 @@ AC_ARG_ENABLE(dc,
 		    [enable_dc="yes"])
 AC_MSG_RESULT($enable_dc)
 if test "$enable_dc" = "yes"; then
-  AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . Use --disable-dc to remove this dependaency]))
-  AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function. Use --disable-dc to remove this dependaency]))
+  AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . Use --disable-dc to remove this dependency]))
+  AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function. Use --disable-dc to remove this dependency]))
 fi
 
 # FWMANAGER
@@ -210,12 +210,12 @@ AC_SUBST(ENABLE_DC)
 
 AC_MSG_CHECKING(--enable-inband argument)
 AC_ARG_ENABLE(inband,
-		    [  --disable-inband        Disable inabnd access. Prevents FW updtes for Mellanox SwitchX and ConnectIB devices. Eliminates infiniband/mad.h dependency],
+		    [  --disable-inband        Disable inband access. Prevents FW update for Mellanox SwitchX and ConnectIB devices. Eliminates infiniband/mad.h dependency],
 		    [enable_inband=$enableval],
 		    [enable_inband=$default_en_inband])        
 AC_MSG_RESULT($enable_inband)
 if test "x$enable_inband" = "xyes"; then
-  AC_CHECK_HEADER(infiniband/mad.h,,AC_MSG_ERROR([cannot find infiniband/mad.h . Use --disable-inband to remove this dependaency]))
+  AC_CHECK_HEADER(infiniband/mad.h,,AC_MSG_ERROR([cannot find infiniband/mad.h . Use --disable-inband to remove this dependency]))
   MAD_IFC="mad_ifc"
 else
   CXXFLAGS="$CXXFLAGS -DNO_INBAND"
@@ -227,28 +227,28 @@ AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband" = "xyes"])
 
 AC_MSG_CHECKING(--enable-cs argument)
 AC_ARG_ENABLE(cs,
-            [  --enable-cs             Enable mstflint "checksum" command, dependant of openssl library],
+            [  --enable-cs             Enable mstflint "checksum" command, dependent of openssl library],
             [enable_cs="yes"],
             [enable_cs="no"])
 AC_MSG_RESULT($enable_cs)
 if test "x$enable_cs" = "xyes"; then
-  AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-cs to remove this dependaency or install openssl]))
+  AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-cs to remove this dependency or install openssl]))
   TOOLS_CRYPTO="tools_crypto"
 fi
 
 AC_MSG_CHECKING(openssl argument)
 AC_ARG_ENABLE(openssl,
-            [  --disable-openssl       Disable all openssl features, dependant of openssl library],
+            [  --disable-openssl       Disable functionalities that depend on the OpenSSL library],
             [enable_openssl=$enableval],
             [enable_openssl="yes"])
 AC_MSG_RESULT($enable_openssl)
 if test "x$enable_openssl" = "xyes"; then
   # check version >= 1.1.1 (not implemented)
-  AC_CHECK_HEADER(openssl/sha.h,,AC_MSG_ERROR([cannot find openssl/sha.h . remove --enable-openssl to remove this dependaency or install openssl]))
-  AC_CHECK_HEADER(openssl/rsa.h,,AC_MSG_ERROR([cannot find openssl/rsa.h . remove --enable-openssl to remove this dependaency or install openssl]))
-  AC_CHECK_HEADER(openssl/pem.h,,AC_MSG_ERROR([cannot find openssl/pem.h . remove --enable-openssl to remove this dependaency or install openssl]))
-  AC_CHECK_HEADER(openssl/bio.h,,AC_MSG_ERROR([cannot find openssl/bio.h . remove --enable-openssl to remove this dependaency or install openssl]))
-  AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-openssl to remove this dependaency or install openssl]))
+  AC_CHECK_HEADER(openssl/sha.h,,AC_MSG_ERROR([cannot find openssl/sha.h . remove --enable-openssl to remove this dependency or install openssl]))
+  AC_CHECK_HEADER(openssl/rsa.h,,AC_MSG_ERROR([cannot find openssl/rsa.h . remove --enable-openssl to remove this dependency or install openssl]))
+  AC_CHECK_HEADER(openssl/pem.h,,AC_MSG_ERROR([cannot find openssl/pem.h . remove --enable-openssl to remove this dependency or install openssl]))
+  AC_CHECK_HEADER(openssl/bio.h,,AC_MSG_ERROR([cannot find openssl/bio.h . remove --enable-openssl to remove this dependency or install openssl]))
+  AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-openssl to remove this dependency or install openssl]))
   TOOLS_CRYPTO="tools_crypto mlxsign_lib"
 fi
 
@@ -261,13 +261,13 @@ AC_MSG_RESULT($enable_all_static)
 
 AS_IF([test "x$enable_all_static" = "xyes"], [
   if test "x$enable_dc" = "xyes"; then
-    AC_MSG_ERROR([cannot enable all static with enable dc . add --disable-dc to remove dependaency with dynamic zlib])
+    AC_MSG_ERROR([cannot enable all static with enable dc . add --disable-dc to remove dependency with dynamic zlib])
   fi
   if test "x$enable_openssl" = "xyes"; then
-    AC_MSG_ERROR([cannot enable all static with enable openssl . add --disable-openssl to remove dependaency with dynamic openssl])
+    AC_MSG_ERROR([cannot enable all static with enable openssl . add --disable-openssl to remove dependency with dynamic openssl])
   fi
   if test "x$enable_inband" = "xyes"; then
-    AC_MSG_ERROR([cannot enable all static with enable inband . add --disable-inband to remove dependaency with dynamic inband])
+    AC_MSG_ERROR([cannot enable all static with enable inband . add --disable-inband to remove dependency with dynamic inband])
   fi
   LDFLAGS="$LDFLAGS -all-static"
   CFLAGS="$CFLAGS -DSQLITE_OMIT_LOAD_EXTENSION=0 -DIBVSMAD_DLOPEN"
