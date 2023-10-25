@@ -33,8 +33,8 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
 USER_DIR = ..
-INCLUDES = -I.
-AM_CPPFLAGS = -DXZ_DEC_ANY_CHECK -W  -g -MP -MD ${COMPILER_FPIC}
+AM_CPPFLAGS = -I.
+AM_CPPFLAGS += -DXZ_DEC_ANY_CHECK -W  -g -MP -MD ${COMPILER_FPIC}
 noinst_LTLIBRARIES = libminixz.la
 libminixz_la_SOURCES = xz_crc32.c  xz_dec_bcj.c  xz_dec_lzma2.c  xz_dec_stream.c xz_config.h   xz.h xz_lzma2.h    xz_private.h  xz_stream.h
 
