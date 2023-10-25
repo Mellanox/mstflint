@@ -43,6 +43,6 @@ libmlxsign_a_SOURCES = mlxsign_lib.cpp mlxsign_lib.h mlxsign_com_def.h \
 
 if ENABLE_OPENSSL
 else
-AM_CXXFLAGS = -DNO_OPEN_SSL
+AM_CXXFLAGS += -DNO_OPEN_SSL
 endif
 
