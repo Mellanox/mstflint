@@ -13,6 +13,7 @@
 %{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
 
 %define mstflint_python_tools %{_libdir}/mstflint/python_tools
+%define mstflint_sdkdir %{_libdir}/mstflint/sdk
 
 %define _unpackaged_files_terminate_build 0
 %define debug_package %{nil}
@@ -198,22 +199,22 @@ rm -rf $RPM_BUILD_ROOT
 # so we want to ignore python2 erros caused by incompatiblity with python3 syntax
 %define _python_bytecompile_errors_terminate_build 0
 
-%{mstflint_python_tools}/mstresourcedump/*.py
-%{mstflint_python_tools}/mstresourcedump/validation/*.py
-%{mstflint_python_tools}/mstresourcedump/utils/*.py
-%{mstflint_python_tools}/mstresourcedump/segments/*.py
-%{mstflint_python_tools}/mstresourcedump/resource_data/*.py
-%{mstflint_python_tools}/mstresourcedump/filters/*.py
-%{mstflint_python_tools}/mstresourcedump/fetchers/*.py
-%{mstflint_python_tools}/mstresourcedump/commands/*.py
-%( if [ -f %{mstflint_python_tools}/mstresourcedump/resourcedump_lib/cresourcedump.so ]; then
-   %{mstflint_python_tools}/mstresourcedump/resourcedump_lib/cresourcedump.so ;
-fi )
-%{mstflint_python_tools}/mstresourceparse/*.py
-%{mstflint_python_tools}/mstresourceparse/parsers/*.py
-%{mstflint_python_tools}/mstresourceparse/utils/*.py
-%{mstflint_python_tools}/mstresourceparse/segments/*.py
-%{mstflint_python_tools}/mstresourceparse/resource_data/*.py
+%{mstflint_sdkdir}/libresource_dump_sdk.so
+%{mstflint_python_tools}/resourcetools/*.py
+%{mstflint_python_tools}/resourcetools/segments/*.py
+
+%{mstflint_python_tools}/resourcetools/resourcedump_lib/*.py
+%{mstflint_python_tools}/resourcetools/resourcedump_lib/commands/*.py
+%{mstflint_python_tools}/resourcetools/resourcedump_lib/cresourcedump/*.py
+%{mstflint_python_tools}/resourcetools/resourcedump_lib/fetchers/*.py
+%{mstflint_python_tools}/resourcetools/resourcedump_lib/filters/*.py
+%{mstflint_python_tools}/resourcetools/resourcedump_lib/utils/*.py
+%{mstflint_python_tools}/resourcetools/resourcedump_lib/validation/*.py
+
+%{mstflint_python_tools}/resourcetools/resourceparse_lib/*.py
+%{mstflint_python_tools}/resourcetools/resourceparse_lib/parsers/*.py
+%{mstflint_python_tools}/resourcetools/resourceparse_lib/resource_data/*.py
+%{mstflint_python_tools}/resourcetools/resourceparse_lib/utils/*.py
 
 %{_datadir}/mstflint
 %{_mandir}/man1/*
