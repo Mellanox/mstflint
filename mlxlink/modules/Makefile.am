@@ -47,9 +47,9 @@ INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_D
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -std=c++11 #$(COMPILER_FPIC)
 
-lib_LTLIBRARIES = libmodules_lib.a
+lib_LTLIBRARIES = libmodules_lib.la
 
-libmodules_lib_a_SOURCES = mlxlink_commander.h \
+libmodules_lib_la_SOURCES = mlxlink_commander.h \
                             mlxlink_commander.cpp \
                             mlxlink_user_input.h \
                             mlxlink_user_input.cpp \
@@ -75,5 +75,5 @@ libmodules_lib_a_SOURCES = mlxlink_commander.h \
                             amber_field.cpp \
                             mlxlink_enums.h
 
-libmodules_lib_a_LIBADD = printutil/libprint_util_lib.a $(JSON_LIBS)
-libmodules_lib_a_CFLAGS = $(AM_CFLAGS)
+libmodules_lib_la_LIBADD = printutil/libprint_util_lib.la $(JSON_LIBS)
+libmodules_lib_la_CFLAGS = $(AM_CFLAGS)

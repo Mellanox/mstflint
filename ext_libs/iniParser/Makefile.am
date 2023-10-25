@@ -38,8 +38,8 @@ INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(USER_DIR)/common
 
 AM_CFLAGS = -W -g -MP -MD ${COMPILER_FPIC}
 
-noinst_LTLIBRARIES = libiniparser.a
+noinst_LTLIBRARIES = libiniparser.la
 
-libiniparser_a_SOURCES = \
+libiniparser_la_SOURCES = \
 	iniparser.c iniparser.h \
 	dictionary.c dictionary.h
