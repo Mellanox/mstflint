@@ -47,7 +47,7 @@ MLXLINK_MODULES_DIR = $(top_srcdir)/mlxlink
 
 AM_CPPFLAGS = -I. -I$(top_srcdir) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(MLXREG_DIR) -I$(MLXLINK_MODULES_DIR) -I$(MTCR_INC_DIR) $(JSON_CFLAGS)
 
-AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe  -std=c++11
+AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe
 AM_CPPFLAGS += $(AM_CXXFLAGS)
 
 bin_PROGRAMS = mstlink

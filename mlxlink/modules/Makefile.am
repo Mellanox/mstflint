@@ -45,7 +45,7 @@ MLXLINK_MODULES_DIR = $(top_srcdir)/mlxlink
 AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(MLXREG_DIR) -I$(MLXLINK_MODULES_DIR) -I$(MTCR_INC_DIR) $(JSON_CFLAGS)
 
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -std=c++11 #$(COMPILER_FPIC)
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe #$(COMPILER_FPIC)
 
 lib_LTLIBRARIES = libmodules_lib.la
 
