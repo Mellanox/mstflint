@@ -42,7 +42,7 @@ CMDIF_DIR = $(USER_DIR)/cmdif
 
 CURL_LIBS = -lcurl  -lssl -lcrypto -lrt
 
-INCLUDES = $(JSON_CFLAGS) -I. \
+AM_CPPFLAGS = $(JSON_CFLAGS) -I. \
            -I$(USER_DIR) -I$(USER_DIR)/libmfa \
            -I$(MTCR_DIR) -I$(USER_DIR)/include/mtcr_ul \
            -I$(USER_DIR)/mflash -I$(USER_DIR)/common \

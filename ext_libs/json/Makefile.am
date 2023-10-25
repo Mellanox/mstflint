@@ -34,7 +34,6 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
 USER_DIR = ../
-INCLUDES =
 AM_CPPFLAGS = -W -Werror -g -MP -MD ${COMPILER_FPIC} -Wno-missing-field-initializers -Wno-unused-parameter
 noinst_LTLIBRARIES = libjson.la
 libjson_la_SOURCES = json_reader.cpp  json_value.cpp  json_tool.h  json_writer.cpp  json/*.h
