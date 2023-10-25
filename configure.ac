@@ -312,7 +312,7 @@ AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
 ])
 
 
-PKG_CHECK_MODULES([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
+AC_SEARCH_LIBS([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
     JSON_SYSTEM_AVAILABLE="no"
     JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
     AC_SUBST(JSON_CFLAGS)
