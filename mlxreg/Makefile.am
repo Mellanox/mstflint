@@ -54,7 +54,8 @@ mstreg_SOURCES = mlxreg_ui.cpp mlxreg_ui.h
 
 bin_PROGRAMS = mstreg
 
-mstreg_LDADD =  $(MLXREG_DIR)/mlxreg_lib/libmstreg_lib.la \
+mstreg_DEPENDENCIES = \
+                $(MLXREG_DIR)/mlxreg_lib/libmstreg_lib.la \
                 $(USER_DIR)/cmdparser/libcmdparser.a \
                 $(MFT_UTILS_DIR)/libmftutils.a \
                 $(MTCR_DIR)/libmtcr_ul.a \
@@ -65,7 +66,8 @@ mstreg_LDADD =  $(MLXREG_DIR)/mlxreg_lib/libmstreg_lib.la \
                 $(LAYOUTS_DIR)/libtools_layouts.la \
                 $(USER_DIR)/xz_utils/libxz_utils.la \
                 $(USER_DIR)/ext_libs/minixz/libminixz.la \
-                $(USER_DIR)/common/libcommon.la \
-                -llzma $(LIBSTD_CPP) ${LDL} -lexpat
+                $(USER_DIR)/common/libcommon.la
+
+mstreg_LDADD = $(mstreg_DEPENDENCIES) -llzma ${LDL} -lexpat
 
 mstreg_LDFLAGS = -static
