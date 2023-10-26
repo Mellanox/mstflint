@@ -108,12 +108,12 @@ class PrivilegeException(Exception):
 
 
 class PrivilegeMgr(object):
-    CONFIG_CMD_LINE = "mlxconfig -d %s -f %s --yes set_raw"
-    QUERY_CMD_LINE = "mlxconfig -d %s -f %s --yes get_raw"
-    QUERY_MMHI_CMD_LINE = "mlxreg -d %s --reg_name MMHI --get"
-    QUERY_NVGC_CMD_LINE = "mlxreg -d %s --reg_name MNVGC --get"
-    QUERY_HW_ACCESS_STATUS = "mlxreg -d %s --reg_id 0x402d --reg_len 0x4 --get"
-    MCRA_CMD_LINE = "mcra %s 0xf0014.0:16"
+    CONFIG_CMD_LINE = "mstconfig -d %s -f %s --yes set_raw"
+    QUERY_CMD_LINE = "mstconfig -d %s -f %s --yes get_raw"
+    QUERY_MMHI_CMD_LINE = "mstreg -d %s --reg_name MMHI --get"
+    QUERY_NVGC_CMD_LINE = "mstreg -d %s --reg_name MNVGC --get"
+    QUERY_HW_ACCESS_STATUS = "mstreg -d %s --reg_id 0x402d --reg_len 0x4 --get"
+    MCRA_CMD_LINE = "mstmcra %s 0xf0014.0:16"
     TLV_DATA_RE = re.compile(r'Data\s*:\s*(.+)\n', flags=re.MULTILINE)
 
     BLUE_FIELD_DEV_ID = 0x211
