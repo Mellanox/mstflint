@@ -42,11 +42,11 @@ COMMANDS_DIR = $(RESOURCE_DUMP_SRC_DIR)/commands
 
 AM_CPPFLAGS = -I$(USER_DIR) -I$(RD_COMMON_DIR) -I$(SEGMENTS_DIR) -I$(FILTERS_DIR) -I$(FETCHERS_DIR) -I$(COMMANDS_DIR)
 
-lib_LTLIBRARIES = libresource_dump_sdk.a
+lib_LTLIBRARIES = libresource_dump_sdk.la
 
-libresource_dump_sdk_a_SOURCES = resource_dump_sdk.h resource_dump_sdk.cpp
-libresource_dump_sdk_a_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
-libresource_dump_sdk_a_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
+libresource_dump_sdk_la_SOURCES = resource_dump_sdk.h resource_dump_sdk.cpp
+libresource_dump_sdk_la_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
+libresource_dump_sdk_la_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
 
 resource_dump_sdk_sodir = $(libdir)/mstflint/sdk
 # if !WIN_BUILD
@@ -70,19 +70,20 @@ else
 OFED_LIBS =
 endif
 
-resource_dump_sdk_so_DEPS = -L$(COMMANDS_DIR)/ -lresource_dump_commands \
-	-L$(FETCHERS_DIR)/ -lreg_access_resource_dump_fetcher \
-	-L$(FILTERS_DIR)/ -lresource_dump_filters \
-	-L$(RD_COMMON_DIR)/ -lresource_dump_common \
-	-L$(REG_ACCESS_DIR)/ -lreg_access \
-	-L$(TOOLS_LAYOUT_DIR)/ -ltools_layouts \
-	$(MTCR_LIB) \
-	$(OFED_LIBS) \
-	-lstdc++
+resource_dump_sdk_so_DEPS = \
+    $(COMMANDS_DIR)/.libs/libresource_dump_commands.a \
+    $(FETCHERS_DIR)/.libs/libreg_access_resource_dump_fetcher.a \
+    $(FILTERS_DIR)/.libs/libresource_dump_filters.a \
+    $(RD_COMMON_DIR)/.libs/libresource_dump_common.a \
+    $(REG_ACCESS_DIR)/.libs/libreg_access.a \
+    $(TOOLS_LAYOUT_DIR)/.libs/libtools_layouts.a \
+    $(MTCR_LIB) \
+    $(OFED_LIBS) \
+    -lstdc++
 
 # if !WIN_BUILD
-libresource_dump_sdk.so: libresource_dump_sdk.a
-	$(CC) -Wall -pthread -shared ${CFLAGS} $(COMPILER_FPIC) libresource_dump_sdk_a-resource_dump_sdk.o \
+libresource_dump_sdk.so: libresource_dump_sdk.la
+	$(CC) -Wall -pthread -shared ${CFLAGS} $(COMPILER_FPIC) libresource_dump_sdk_la-resource_dump_sdk.o \
 	-o libresource_dump_sdk.so ${AM_LDFLAGS} $(resource_dump_sdk_so_DEPS)
 # else
 # libresource_dump_sdk.dll: libresource_dump_sdk.la
