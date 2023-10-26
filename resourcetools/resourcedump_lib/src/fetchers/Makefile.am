@@ -43,16 +43,16 @@ AM_CPPFLAGS = -I$(USER_DIR) -I$(MTCR_DIR) -I$(MTCR_INC_DIR) -I$(TOOLS_LAYOUT_DIR
 # AM_CFLAGS = -Wall -W -MP -MD -pipe -Werror $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 # AM_CXXFLAGS = -Wall -W -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
-lib_LTLIBRARIES = libreg_access_resource_dump_fetcher.a
+lib_LTLIBRARIES = libreg_access_resource_dump_fetcher.la
 
-libreg_access_resource_dump_fetcher_a_SOURCES = \
+libreg_access_resource_dump_fetcher_la_SOURCES = \
     fetcher.h fetcher_factory.h fetcher_factory.cpp\
     reg_access_resource_dump_fetcher.h reg_access_resource_dump_fetcher.cpp
 if ENABLE_RDMEM
-libreg_access_resource_dump_fetcher_a_SOURCES += \
+libreg_access_resource_dump_fetcher_la_SOURCES += \
     reg_access_resource_dump_mkey_fetcher.h reg_access_resource_dump_mkey_fetcher.cpp
 endif
 
 
-libreg_access_resource_dump_fetcher_a_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
-libreg_access_resource_dump_fetcher_a_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
+libreg_access_resource_dump_fetcher_la_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
+libreg_access_resource_dump_fetcher_la_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)

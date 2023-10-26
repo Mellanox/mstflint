@@ -39,14 +39,14 @@ MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
 
 AM_CPPFLAGS = -I$(USER_DIR) -I$(RD_COMMON_DIR) -I$(SEGMENTS_DIR) -I$(FETCHERS_DIR) -I$(MTCR_DIR) -I$(MTCR_INC_DIR)
 
-lib_LTLIBRARIES = libresource_dump_commands.a
+lib_LTLIBRARIES = libresource_dump_commands.la
 
-libresource_dump_commands_a_SOURCES =  resource_dump_command.h \
+libresource_dump_commands_la_SOURCES =  resource_dump_command.h \
                                         resource_dump_command.cpp \
                                         dump_command.h \
                                         dump_command.cpp \
                                         query_command.h \
                                         query_command.cpp
 
-libresource_dump_commands_a_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
-libresource_dump_commands_a_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
+libresource_dump_commands_la_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
+libresource_dump_commands_la_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
