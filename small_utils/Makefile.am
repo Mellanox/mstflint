@@ -37,12 +37,13 @@ AM_CFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir
 
 LDADD= $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
 
-bin_PROGRAMS = mstmread \
-					mstmwrite \
-					mstmcra \
-					mstmtserver \
-					mstvpd \
-					mstcongestion
+bin_PROGRAMS = \
+    mstmread \
+    mstmwrite \
+    mstmcra \
+    mstmtserver \
+    mstvpd \
+    mstcongestion
 					
 bin_SCRIPTS = mstfwreset
 
@@ -53,21 +54,22 @@ mstmwrite_SOURCES = mwrite.c
 mstmwrite_LDFLAGS = -static
 
 mstvpd_SOURCES = vpd.c
-mstvpd_LDADD = $(top_srcdir)/mvpd/libmvpd.la \
+mstvpd_DEPENDENCIES = $(top_srcdir)/mvpd/libmvpd.la \
                $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
                $(top_srcdir)/dev_mgt/libdev_mgt.la \
                $(top_srcdir)/reg_access/libreg_access.la \
-               $(top_srcdir)/tools_layouts/libtools_layouts.la \
-               ${LDL}
+               $(top_srcdir)/tools_layouts/libtools_layouts.la
+mstvpd_LDADD = $(mstvpd_DEPENDENCIES) ${LDL}
 mstvpd_LDFLAGS = -static
 
 mstcongestion_SOURCES = congestion.cpp
-mstcongestion_LDADD = $(top_srcdir)/cmdif/libcmdif.la \
+mstcongestion_DEPENDENCIES = $(top_srcdir)/cmdif/libcmdif.la \
 					  $(top_srcdir)/dev_mgt/libdev_mgt.la \
                       $(top_srcdir)/reg_access/libreg_access.la \
                       $(top_srcdir)/tools_layouts/libtools_layouts.la \
                       $(top_srcdir)/cmdparser/libcmdparser.a \
-                      $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
+                      $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a
+mstcongestion_LDADD = $(mstcongestion_DEPENDENCIES) ${LDL}
 mstcongestion_LDFLAGS = -static
 
 mstmcra_SOURCES  = mcra.c
