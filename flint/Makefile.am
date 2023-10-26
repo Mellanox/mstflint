@@ -53,19 +53,21 @@ bin_PROGRAMS = mstflint
 mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h subcommands_linkx.cpp \
 					flint_params.cpp flint_params.h cmd_line_parser.cpp err_msgs.h
 
-mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
-                  ../cmdparser/libcmdparser.a    \
-		  ../mflash/libmflash.la          \
-		  ../tools_res_mgmt/libtools_res_mgmt.a \
-		  $(CMDIF_DIR)/libcmdif.la        \
-		  ../reg_access/libreg_access.la  \
-		  ../dev_mgt/libdev_mgt.la        \
-		  ../${MTCR_CONF_DIR}/libmtcr_ul.a        \
-		  ../tools_layouts/libtools_layouts.la \
-		  ../fw_comps_mgr/libfw_comps_mgr.a \
-		  ../mft_utils/libmftutils.a\
-		  ../mft_utils/hsmclient/libhsmclient.a\
-		  ${LDL}
+mstflint_DEPENDENCIES = \
+     ../mlxfwops/lib/libmlxfwops.a  \
+     ../cmdparser/libcmdparser.a \
+     ../mflash/libmflash.la \
+     ../tools_res_mgmt/libtools_res_mgmt.a \
+     $(CMDIF_DIR)/libcmdif.la \
+     ../reg_access/libreg_access.la  \
+     ../dev_mgt/libdev_mgt.la \
+     ../${MTCR_CONF_DIR}/libmtcr_ul.a \
+     ../tools_layouts/libtools_layouts.la \
+     ../fw_comps_mgr/libfw_comps_mgr.a \
+     ../mft_utils/libmftutils.a \
+     ../mft_utils/hsmclient/libhsmclient.a
+
+mstflint_LDADD = $(mstflint_DEPENDENCIES) ${LDL}
 
 mstflint_LDFLAGS = -static
 
