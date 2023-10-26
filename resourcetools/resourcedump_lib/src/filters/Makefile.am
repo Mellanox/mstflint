@@ -44,14 +44,14 @@ AM_CPPFLAGS = -I$(USER_DIR) -I$(COMMANDS_DIR) -I$(FETCHERS_DIR) -I$(RD_COMMON_DI
 # AM_CFLAGS = -Wall -W -MP -MD -pipe -Werror $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 # AM_CXXFLAGS = -Wall -W -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
-lib_LTLIBRARIES = libresource_dump_filters.a
+lib_LTLIBRARIES = libresource_dump_filters.la
 
-libresource_dump_filters_a_SOURCES =   filter.h \
+libresource_dump_filters_la_SOURCES =   filter.h \
                                         filter.cpp \
                                         include_exclude_segments_filter.h \
                                         include_exclude_segments_filter.cpp \
                                         strip_control_segments_filter.h \
                                         strip_control_segments_filter.cpp
 
-libresource_dump_filters_a_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
-libresource_dump_filters_a_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
+libresource_dump_filters_la_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
+libresource_dump_filters_la_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)

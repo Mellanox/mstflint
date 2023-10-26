@@ -37,9 +37,9 @@
 # AM_CFLAGS = -Wall -W -MP -MD -pipe -Werror $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 # AM_CXXFLAGS = -Wall -W -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
-lib_LTLIBRARIES =                       libresource_dump_common.a
+lib_LTLIBRARIES =                       libresource_dump_common.la
 
-libresource_dump_common_a_SOURCES =    resource_dump_error_handling.h \
+libresource_dump_common_la_SOURCES =    resource_dump_error_handling.h \
                                         resource_dump_error_handling.cpp resource_dump_constants.h
-libresource_dump_common_a_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
-libresource_dump_common_a_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
+libresource_dump_common_la_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
+libresource_dump_common_la_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
