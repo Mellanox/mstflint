@@ -31,13 +31,14 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 USER_DIR = $(top_srcdir)
 MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
+MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
 RESOURCE_DUMP_SRC_DIR = $(USER_DIR)/resourcetools/resourcedump_lib/src
 RD_COMMON_DIR = $(RESOURCE_DUMP_SRC_DIR)/common
 SEGMENTS_DIR = $(RESOURCE_DUMP_SRC_DIR)/segments
 REG_ACCESS_DIR = $(USER_DIR)/reg_access
 TOOLS_LAYOUT_DIR = $(USER_DIR)/tools_layouts
 
-AM_CPPFLAGS = -I$(USER_DIR) -I$(MTCR_DIR) -I$(TOOLS_LAYOUT_DIR) -I$(REG_ACCESS_DIR) -I$(RD_COMMON_DIR) -I$(SEGMENTS_DIR)
+AM_CPPFLAGS = -I$(USER_DIR) -I$(MTCR_DIR) -I$(MTCR_INC_DIR) -I$(TOOLS_LAYOUT_DIR) -I$(REG_ACCESS_DIR) -I$(RD_COMMON_DIR) -I$(SEGMENTS_DIR)
 
 # AM_CFLAGS = -Wall -W -MP -MD -pipe -Werror $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 # AM_CXXFLAGS = -Wall -W -MP -MD -pipe -Werror $(COMPILER_FPIC)
