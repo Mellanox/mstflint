@@ -41,13 +41,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-// To be replaced by an external script:
-#ifdef MST_UL
 #include "gitversion.h"
-#endif
-#ifndef TOOLS_GIT_SHA
-#define TOOLS_GIT_SHA "6469M"
-#endif
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -74,8 +68,7 @@ static inline int get_version_string(char* buf, int buf_size, const char* exe_na
         len = snprintf(buf, buf_size, "%s %s, ", exe_name, tool_version);
     }
     // cut out first and last "$" from the SVN version string:
-    len += snprintf(buf + len, buf_size - len, "%s, built on %s, %s. Git SHA Hash: %s", MSTFLINT_VERSION_STR, __DATE__,
-                    __TIME__, TOOLS_GIT_SHA);
+    len += snprintf(buf + len, buf_size - len, "%s, Git SHA Hash: %s", MSTFLINT_VERSION_STR, TOOLS_GIT_SHA);
     return len;
 }
 
