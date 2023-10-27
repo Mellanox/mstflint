@@ -42,7 +42,7 @@ COMMANDS_DIR = $(RESOURCE_DUMP_SRC_DIR)/commands
 
 AM_CPPFLAGS = -I$(USER_DIR) -I$(RD_COMMON_DIR) -I$(SEGMENTS_DIR) -I$(FILTERS_DIR) -I$(FETCHERS_DIR) -I$(COMMANDS_DIR)
 
-lib_LTLIBRARIES = libresource_dump_sdk.la
+noinst_LTLIBRARIES = libresource_dump_sdk.la
 
 libresource_dump_sdk_la_SOURCES = resource_dump_sdk.h resource_dump_sdk.cpp
 libresource_dump_sdk_la_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)

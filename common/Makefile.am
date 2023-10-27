@@ -32,19 +32,18 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-noinst_HEADERS=compatibility.h bit_slice.h tools_utils.h tools_utils.h tools_version.h
+noinst_HEADERS = compatibility.h bit_slice.h tools_utils.h tools_utils.h tools_version.h filesystem.h regex.h algorithm.h
 
-lib_LTLIBRARIES = libcommon.la
+noinst_LTLIBRARIES = libcommon.la
 libcommon_la_SOURCES = filesystem.cpp
 
 commonincludedir = $(includedir)/mstflint/common/
-
-commoninclude_HEADERS = compatibility.h filesystem.h
+commoninclude_HEADERS = compatibility.h
 
 update_prefix = sed -e 's,[@]MST_LIB_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(libdir),g'\
                     -e 's,[@]MST_BIN_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(bindir),g'\
                     -e 's,[@]MFTCONF_PREFIX[@],$(prefix),g'
-                    
+
 update_tools_version = sed -e 's,[@]MSTFLINT_VERSION_STR[@],${MSTFLINT_VERSION_STR},g' \
      	          	-e 's,[@]TOOLS_BUILD_TIME[@],${TOOLS_BUILD_TIME},g' \
                     -e 's,[@]TOOLS_GIT_SHA[@],${TOOLS_GIT_SHA},g'
@@ -52,7 +51,7 @@ update_tools_version = sed -e 's,[@]MSTFLINT_VERSION_STR[@],${MSTFLINT_VERSION_S
 all: python_wrapper.sh tools_version.py  mft_logger.py
 	$(update_prefix) < $(srcdir)/python_wrapper.sh > python_wrapper
 	chmod +x python_wrapper
-	
+
 tools_version.py:
 	$(update_tools_version) < $(srcdir)/tools_version.py.in > tools_version.py
 

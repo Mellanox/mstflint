@@ -48,14 +48,10 @@ libmvpd_la_LIBADD = $(libmvpd_la_DEPENDENCIES)
 
 RMVPD_SO = rmvpd.so
 
-		  
-LDADD= ../${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
-
-
 noinst_HEADERS = mvpd.h
 
 ${RMVPD_SO}: libmvpd.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${RMVPD_SO} \
 	 -L$(MTCR_DIR) -lmtcr_ul
-	
+
 CLEANFILES = ${RMVPD_SO}

@@ -39,8 +39,8 @@ AM_CPPFLAGS = -I. -I../common -I../tools_layouts  -I${MTCR_DIR} -I.. -I$(USER_DI
 CCMDIF_SO = ccmdif.so
 
 AM_CFLAGS = -W -Wall  -g -MP -MD $(COMPILER_FPIC) -DCMDIF_EXPORTS
-CMDIF_VERSION = 1
-lib_LTLIBRARIES = libcmdif.la
+
+noinst_LTLIBRARIES = libcmdif.la
 
 cmdifincludedir = $(includedir)/mstflint/cmdif/
 
