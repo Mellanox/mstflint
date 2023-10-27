@@ -37,6 +37,5 @@ AM_CFLAGS = -fno-strict-aliasing -g -MP -MD -DSQLITE_THREADSAFE=0 ${COMPILER_FPI
 noinst_LIBRARIES = libsqlite3.a
 noinst_HEADERS = sqlite3.h
 
-
 libsqlite3_a_SOURCES = \
 	sqlite3.c sqlite3.h

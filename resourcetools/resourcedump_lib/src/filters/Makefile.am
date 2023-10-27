@@ -44,7 +44,7 @@ AM_CPPFLAGS = -I$(USER_DIR) -I$(COMMANDS_DIR) -I$(FETCHERS_DIR) -I$(RD_COMMON_DI
 # AM_CFLAGS = -Wall -W -MP -MD -pipe -Werror $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 # AM_CXXFLAGS = -Wall -W -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
-lib_LTLIBRARIES = libresource_dump_filters.la
+noinst_LTLIBRARIES = libresource_dump_filters.la
 
 libresource_dump_filters_la_SOURCES =   filter.h \
                                         filter.cpp \

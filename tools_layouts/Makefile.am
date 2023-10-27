@@ -33,11 +33,11 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 AM_CPPFLAGS = -I$(top_srcdir)/${MTCR_CONFIG_DIR} -I$(top_srcdir)/common
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
-AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)\" 
+AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)\"
 
 SUBDIRS = ${ADABE_DBS}
 
-lib_LTLIBRARIES = libadb_utils.la libtools_layouts.la libmlxarchive_layouts.la
+noinst_LTLIBRARIES = libadb_utils.la libtools_layouts.la libmlxarchive_layouts.la
 
 toolslayoutsincludedir = $(includedir)/mstflint/tools_layouts/
 

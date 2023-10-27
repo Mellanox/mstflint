@@ -39,7 +39,7 @@ MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
 
 AM_CPPFLAGS = -I$(USER_DIR) -I$(RD_COMMON_DIR) -I$(SEGMENTS_DIR) -I$(FETCHERS_DIR) -I$(MTCR_DIR) -I$(MTCR_INC_DIR)
 
-lib_LTLIBRARIES = libresource_dump_commands.la
+noinst_LTLIBRARIES = libresource_dump_commands.la
 
 libresource_dump_commands_la_SOURCES =  resource_dump_command.h \
                                         resource_dump_command.cpp \
