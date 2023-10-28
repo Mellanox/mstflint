@@ -1,5 +1,4 @@
-#--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,22 +27,27 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = $(top_srcdir)
-AM_CPPFLAGS = -I$(USER_DIR)/common -Iinc -Iinc/rsa $(COMPILER_FPIC) -DUNIX -DOS_UNIX -DOS_LINUX
+
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(srcdir)/inc \
+    -I$(srcdir)/inc/rsa \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/common -I$(top_builddir)/common \
+    $(COMPILER_FPIC) -DUNIX -DOS_UNIX -DOS_LINUX
 
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe  $(COMPILER_FPIC)
 
-noinst_HEADERS = 
+noinst_HEADERS =
 
 noinst_LIBRARIES = libhsmclient.a
 
 libhsmclient_a_SOURCES = \
-    src/hsmlunatest.cpp \
+    src/burnprivatekey.cpp \
     src/hex64.cpp \
     src/hsmaesencryption.cpp \
     src/hsmcreatersasignature.cpp \
-    src/burnprivatekey.cpp \
-    src/hsmlunaclientinit.cpp
+    src/hsmlunaclientinit.cpp \
+    src/hsmlunatest.cpp

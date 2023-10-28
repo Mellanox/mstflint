@@ -1,6 +1,4 @@
-#--
-# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
-# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,20 +27,26 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = $(top_srcdir)
-AM_CPPFLAGS = -I. -I$(USER_DIR)/ext_libs/minixz -I$(USER_DIR)/common
 
-AM_CFLAGS = -MD -pipe -Wall -W -g  $(COMPILER_FPIC) 
+USER_DIR = $(top_srcdir)
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/common -I$(top_builddir)/common \
+    -I$(top_srcdir)/ext_libs/minixz
+
+AM_CFLAGS = -MD -pipe -Wall -W -g $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libmfa.la
-libmfa_la_LIBADD = -L$(USER_DIR)/ext_libs/minixz -lminixz
 
 libmfa_la_SOURCES = \
-    mfa.c mfa.h\
-    mfa_section.c  mfa_section.h\
-    xz_io_ops.c xz_io_ops.h\
-    mfaerr.h
+    mfa.c \
+    mfa.h \
+    mfa_section.c \
+    mfa_section.h \
+    mfaerr.h \
+    xz_io_ops.c \
+    xz_io_ops.h
 

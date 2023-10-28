@@ -1,6 +1,4 @@
-#--
-#
-# Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,34 +28,30 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#--
-
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = $(top_srcdir)
-UTILS_DIR = $(top_srcdir)/mft_utils
 
-MTCR_DIR    = $(top_srcdir)/${MTCR_CONF_DIR}
-MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
-MFLASH_DIR  = $(top_srcdir)/mflash
-COMMON_DIR  = $(top_srcdir)/common
-LAYOUTS_DIR = $(top_srcdir)/tools_layouts
-MFT_UTILS_DIR = $(top_srcdir)/mft_utils
-MLXREG_DIR = $(USER_DIR)/mlxreg
-
-AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(MTCR_INC_DIR) -I$(MLXREG_DIR)
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)${MTCR_CONF_DIR} \
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mlxreg
 
 AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe
 
 noinst_LTLIBRARIES = libmstreg_lib.la
 
-libmstreg_lib_la_SOURCES = mlxreg_exception.h \
-                           mlxreg_exception.cpp \
-                           mlxreg_parser.h \
-                           mlxreg_parser.cpp \
-                           mlxreg_lib.h \
-                           mlxreg_lib.cpp
+libmstreg_lib_la_SOURCES = \
+    mlxreg_exception.cpp \
+    mlxreg_exception.h \
+    mlxreg_lib.cpp \
+    mlxreg_lib.h \
+    mlxreg_parser.cpp \
+    mlxreg_parser.h
 
-libmstreg_lib_la_LIBDADD = $(MFT_UTILS_DIR)/libmftutils.a \
-                          $(MTCR_DIR)/libmtcr_ul.a \
-                          $(USER_DIR)/adb_parser/libadb_parser.la \
-                          $(USER_DIR)/dev_mgt/libdev_mgt.la
+libmstreg_lib_la_LIBDADD = \
+    $(top_builddir)/mft_utils/libmftutils.a \
+    $(top_builddir)${MTCR_CONF_DIR}/libmtcr_ul.a \
+    $(top_builddir)/adb_parser/libadb_parser.la \
+    $(top_builddir)/dev_mgt/libdev_mgt.la

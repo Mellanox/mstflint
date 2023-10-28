@@ -1,5 +1,4 @@
-#--
-# Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,14 +27,14 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+
+# Makefile.am -- Process this file with automake to produce Makefile.in
 
 PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 
-AM_CPPFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/mvpd $(COMPILER_FPIC)
-AM_CFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/mvpd $(COMPILER_FPIC)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_builddir)/common -I$(top_srcdir)/mvpd $(COMPILER_FPIC)
 
-LDADD= $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
+LDADD = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
 
 bin_PROGRAMS = \
     mstmread \
@@ -44,7 +43,7 @@ bin_PROGRAMS = \
     mstmtserver \
     mstvpd \
     mstcongestion
-					
+
 bin_SCRIPTS = mstfwreset
 
 mstmread_SOURCES = mread.c
@@ -54,21 +53,21 @@ mstmwrite_SOURCES = mwrite.c
 mstmwrite_LDFLAGS = -static
 
 mstvpd_SOURCES = vpd.c
-mstvpd_DEPENDENCIES = $(top_srcdir)/mvpd/libmvpd.la \
-               $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
-               $(top_srcdir)/dev_mgt/libdev_mgt.la \
-               $(top_srcdir)/reg_access/libreg_access.la \
-               $(top_srcdir)/tools_layouts/libtools_layouts.la
+mstvpd_DEPENDENCIES = $(top_builddir)/mvpd/libmvpd.la \
+               $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
+               $(top_builddir)/dev_mgt/libdev_mgt.la \
+               $(top_builddir)/reg_access/libreg_access.la \
+               $(top_builddir)/tools_layouts/libtools_layouts.la
 mstvpd_LDADD = $(mstvpd_DEPENDENCIES) ${LDL}
 mstvpd_LDFLAGS = -static
 
 mstcongestion_SOURCES = congestion.cpp
-mstcongestion_DEPENDENCIES = $(top_srcdir)/cmdif/libcmdif.la \
-					  $(top_srcdir)/dev_mgt/libdev_mgt.la \
-                      $(top_srcdir)/reg_access/libreg_access.la \
-                      $(top_srcdir)/tools_layouts/libtools_layouts.la \
-                      $(top_srcdir)/cmdparser/libcmdparser.a \
-                      $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a
+mstcongestion_DEPENDENCIES = $(top_builddir)/cmdif/libcmdif.la \
+					  $(top_builddir)/dev_mgt/libdev_mgt.la \
+                      $(top_builddir)/reg_access/libreg_access.la \
+                      $(top_builddir)/tools_layouts/libtools_layouts.la \
+                      $(top_builddir)/cmdparser/libcmdparser.a \
+                      $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a
 mstcongestion_LDADD = $(mstcongestion_DEPENDENCIES) ${LDL}
 mstcongestion_LDFLAGS = -static
 
@@ -89,4 +88,3 @@ mlxpcilibdir=$(libdir)/mstflint/python_tools/mlxpci
 mlxpcilib_DATA = binary_file.py mlxpci_lib.py
 
 mstfwresetlib_DATA = $(MSTFWRESET_PYTHON_WRAPPER).py
-

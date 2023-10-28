@@ -59,7 +59,10 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 	   NOTE: if you are trying to build from the GitHub repository, need to run ./autogen.sh first.
 
        Example:
-       > ./configure
+       > ./autogen.sh
+       > mkdir build
+       > cd build
+       > ../configure
        > make
        > make install
 

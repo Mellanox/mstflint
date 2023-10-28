@@ -1,5 +1,4 @@
-#--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,18 +27,24 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-USER_DIR = ..
-MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
-AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(USER_DIR)/common
-AM_CFLAGS = -W  -g -MP -MD ${COMPILER_FPIC} 
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/${MTCR_CONF_DIR} \
+    -I$(top_srcdir)/common -I$(top_builddir)/common
+
+AM_CFLAGS = -W  -g -MP -MD ${COMPILER_FPIC}
+
 noinst_LTLIBRARIES = libxz_utils.la
-libxz_utils_la_SOURCES = xz_utils.c xz_utils.h
+
+libxz_utils_la_SOURCES = \
+    xz_utils.c \
+    xz_utils.h
 
 libxz_utils_la_DEPENDENCIES =
-libxz_utils_la_LIBADD =  -llzma
+libxz_utils_la_LIBADD = -llzma
 
-libraryincludedir=$(includedir)/mstflint/xz_utils/
+libraryincludedir = $(includedir)/mstflint/xz_utils/

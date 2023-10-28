@@ -1,5 +1,4 @@
-#--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,11 +27,14 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = ..
-AM_CPPFLAGS = -I$(USER_DIR) -I$(USER_DIR)/common
+
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/common -I$(top_builddir)/common
+
 AM_CXXFLAGS = -Wall -W  -g -MP -MD -pipe $(COMPILER_FPIC)
 AM_CXXFLAGS += -DTOOLS_CRYPTO_KEY='$(TOOLS_CRYPTO_KEY)' -DTOOLS_CRYPTO_IV='$(TOOLS_CRYPTO_IV)'
 
@@ -45,4 +47,3 @@ if ENABLE_OPENSSL
 else
 AM_CXXFLAGS += -DNO_OPEN_SSL
 endif
-

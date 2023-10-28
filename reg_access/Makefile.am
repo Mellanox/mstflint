@@ -1,5 +1,4 @@
-#--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,22 +27,17 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-MTCR_DIR = $(top_srcdir)/${MTCR_CONF_DIR}
-COMMON_DIR = $(top_srcdir)/common
-LAYOUTS_DIR = $(top_srcdir)/tools_layouts
-USER_DIR = $(top_srcdir)
 
-AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(srcdir) -I$(LAYOUTS_DIR) -I$(USER_DIR)/include/mtcr_ul
+AM_CPPFLAGS = $(srcdir) -I$(top_srcdir) -I$(top_srcdir)/tools_layouts -I$(top_srcdir)/include/mtcr_ul
 
 AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libreg_access.la
 
 libreg_access_la_SOURCES = reg_access.c reg_access.h reg_access_common.h reg_access_macros.h
-libreg_access_la_DEPENDENCIES = $(USER_DIR)/tools_layouts/libtools_layouts.la
+libreg_access_la_DEPENDENCIES = $(top_builddir)/tools_layouts/libtools_layouts.la
 libreg_access_la_LIBADD = $(libreg_access_la_DEPENDENCIES)
 
 RREG_ACCESS_SO = rreg_access.so
@@ -54,6 +48,6 @@ dist_reg_access_pylib_DATA = regaccess.py regaccess_hca_ext_structs.py regaccess
 
 ${RREG_ACCESS_SO}: libreg_access.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${RREG_ACCESS_SO} \
-	$(USER_DIR)/tools_layouts/.libs/libtools_layouts.a -L$(MTCR_DIR) -lmtcr_ul
+	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a -L$(top_builddir)/${MTCR_CONF_DIR} -lmtcr_ul
 
 CLEANFILES = ${RREG_ACCESS_SO}

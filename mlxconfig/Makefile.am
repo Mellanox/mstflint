@@ -1,5 +1,4 @@
-#--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,58 +27,72 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = $(top_srcdir)
-MTCR_DIR = $(top_srcdir)/${MTCR_CONF_DIR}
-COMMON_DIR = $(top_srcdir)/common
-LAYOUTS_DIR = $(top_srcdir)/tools_layouts
-UTILS_DIR = $(top_srcdir)/mft_utils
-DEV_MGT_DIR = $(top_srcdir)/dev_mgt
-LAYOUTS_LIB = $(LAYOUTS_DIR)/libtools_layouts.la
-UTILS_LIB = $(USER_DIR)/mft_utils/libmftutils.a
-CMDIF_DIR = $(USER_DIR)/cmdif
-MLXSIGN_DIR = $(USER_DIR)/mlxsign_lib
-MLXSIGN_LIB = $(MLXSIGN_DIR)/libmlxsign.a
-COMPS_MGR_DIR = $(USER_DIR)/fw_comps_mgr
-TOOLS_RES_MGMT_DIR = $(USER_DIR)/tools_res_mgmt
 
 PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 
 SUBDIRS = mlxconfig_dbs
 
-AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
-           -I$(LAYOUTS_DIR) -I$(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) -I$(TOOLS_RES_MGMT_DIR) $(MUPARSER_CFLAGS) $(SQLITE_CFLAGS) $(COMPILER_FPIC)
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/common -I$(top_builddir)/common \
+    -I$(top_srcdir)/tools_layouts \
+    -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/dev_mgt \
+    -I$(top_srcdir)/cmdif \
+    -I$(top_srcdir)/tools_res_mgmt
 
+AM_CPPFLAGS += $(MUPARSER_CFLAGS) $(SQLITE_CFLAGS) $(COMPILER_FPIC)
 
 AM_CXXFLAGS = -pthread -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
+
 bin_PROGRAMS = mstconfig
-MLXPRIVHOST_PYTHON_WRAPPER=mstprivhost
+
+MLXPRIVHOST_PYTHON_WRAPPER = mstprivhost
 bin_SCRIPTS = ${MLXPRIVHOST_PYTHON_WRAPPER}
 ${MLXPRIVHOST_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
 	cp $(PYTHON_WRAPPER_SCRIPT) $@
 
-mlxprivhostlibdir=$(libdir)/mstflint/python_tools/$(MLXPRIVHOST_PYTHON_WRAPPER)
+mlxprivhostlibdir = $(libdir)/mstflint/python_tools/$(MLXPRIVHOST_PYTHON_WRAPPER)
 mlxprivhostlib_DATA = $(MLXPRIVHOST_PYTHON_WRAPPER).py
 
 noinst_LTLIBRARIES = libmlxcfg.la
 
-libmlxcfg_la_SOURCES =  mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_view.h\
-        mlxcfg_expression.h mlxcfg_expression.cpp\
-mlxcfg_db_items.h mlxcfg_db_items.cpp\
-        mlxcfg_db_manager.h mlxcfg_db_manager.cpp mlxcfg_param.h mlxcfg_param.cpp mlxcfg_tlv.h mlxcfg_tlv.cpp\
+libmlxcfg_la_SOURCES = mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_view.h \
+        mlxcfg_expression.h mlxcfg_expression.cpp \
+        mlxcfg_db_items.h mlxcfg_db_items.cpp \
+        mlxcfg_db_manager.h mlxcfg_db_manager.cpp mlxcfg_param.h mlxcfg_param.cpp mlxcfg_tlv.h mlxcfg_tlv.cpp \
         mlxcfg_commander.h mlxcfg_commander.cpp mlxcfg_generic_commander.h mlxcfg_generic_commander.cpp
 
-libmlxcfg_la_DEPENDENCIES = $(UTILS_LIB) $(MUPARSER_LIBS) $(SQLITE_LIBS)\
-				$(CMDIF_DIR)/libcmdif.la ../reg_access/libreg_access.la $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
-				$(DEV_MGT_DIR)/libdev_mgt.la $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a
+libmlxcfg_la_DEPENDENCIES = \
+    $(top_builddir)/mft_utils/libmftutils.a \
+    $(top_builddir)/cmdif/libcmdif.la \
+    $(top_builddir)/reg_access/libreg_access.la \
+    $(top_builddir)/tools_layouts/libtools_layouts.la \
+    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
+    $(top_builddir)/dev_mgt/libdev_mgt.la \
+    $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
+    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+    $(MUPARSER_LIBS) \
+    $(SQLITE_LIBS)
 
 libmlxcfg_la_LIBADD = $(libmlxcfg_la_DEPENDENCIES) ${LDL}
 
-mstconfig_DEPENDENCIES = libmlxcfg.la $(UTILS_LIB) $(MUPARSER_LIBS) $(SQLITE_LIBS)\
-				$(CMDIF_DIR)/libcmdif.la ../reg_access/libreg_access.la $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
-				$(DEV_MGT_DIR)/libdev_mgt.la $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a
+mstconfig_DEPENDENCIES = \
+    libmlxcfg.la \
+    $(top_builddir)/mft_utils/libmftutils.a \
+    $(top_builddir)/cmdif/libcmdif.la \
+    $(top_builddir)/reg_access/libreg_access.la \
+    $(top_builddir)/tools_layouts/libtools_layouts.la \
+    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
+    $(top_builddir)/dev_mgt/libdev_mgt.la \
+    $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
+    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+    $(MUPARSER_LIBS) \
+    $(SQLITE_LIBS)
 
 mstconfig_LDADD = $(mstconfig_DEPENDENCIES) ${LDL}
 
@@ -93,21 +106,20 @@ libmlxcfg_la_LIBADD += -lxml2
 endif
 
 if ENABLE_INBAND
-mstconfig_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.a
-libmlxcfg_la_LIBADD += $(top_srcdir)/mad_ifc/libmad_ifc.a
+mstconfig_LDADD += $(top_builddir)/mad_ifc/libmad_ifc.a
+libmlxcfg_la_LIBADD += $(top_builddir)/mad_ifc/libmad_ifc.a
 else
 endif
 
 if ENABLE_OPENSSL
-mstconfig_LDADD +=   $(MLXSIGN_LIB) -lcrypto -lssl
-libmlxcfg_la_LIBADD +=   $(MLXSIGN_LIB) -lcrypto -lssl
+mstconfig_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
+libmlxcfg_la_LIBADD += $(top_builddir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
 else
 AM_CXXFLAGS += -DNO_OPEN_SSL
 endif
 
 mstconfig_SOURCES =  mlxcfg_ui.h mlxcfg_parser.cpp mlxcfg_ui.cpp
 
-#get mst device examples and tool name from makefile
+# get mst device examples and tool name from makefile
 AM_CXXFLAGS += -DMLXCFG_NAME=\"mstconfig\"
 AM_CXXFLAGS += -DMST_DEV_EXAMPLE=\"04:00.0\" -DMST_DEV_EXAMPLE2=\"05:00.0\"
-

@@ -1,6 +1,4 @@
-#--
-# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
-# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,28 +27,24 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-MTCR_DIR = $(top_srcdir)/${MTCR_CONF_DIR}
-MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
-MTCR_UL_DIR = $(top_srcdir)/mtcr_ul
-MFLASH_DIR = $(top_srcdir)/mflash
-MINIXZ_DIR = $(top_srcdir)/ext_libs/minixz
-COMMON_DIR = $(top_srcdir)/common
-LAYOUTS_DIR = $(top_srcdir)/tools_layouts
-UTILS_LIB = $(top_srcdir)/mft_utils
-UEFI_COMMON_DIR = $(top_srcdir)/mlxfwops/uefi_c
-DEV_MGT_DIR = $(top_srcdir)/dev_mgt
-COMPONENTS_DIR = components
-MLXDPA_DIR = mlxdpa
 
-AM_CPPFLAGS = -I$(srcdir) -I$(MTCR_INC_DIR) -I$(MFLASH_DIR) $(JSON_CFLAGS) -I$(MINIXZ_DIR) \
-              -I$(COMMON_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(MFT_EXT_LIBS_INC_DIR)/zlib -I$(LAYOUTS_DIR) \
-              -I$(top_srcdir)/common -I$(UTILS_LIB) -I$(UEFI_COMMON_DIR) -I$(DEV_MGT_DIR) -I$(MTCR_UL_DIR) \
-              -I$(COMPONENTS_DIR)
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(srcdir)/components \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/common -I$(top_builddir)/common \
+    -I$(top_srcdir)/dev_mgt \
+    -I$(top_srcdir)/ext_libs/minixz \
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/mflash \
+    -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mlxfwops/uefi_c \
+    -I$(top_srcdir)/mtcr_ul \
+    -I$(top_srcdir)/tools_layouts
 
-MLXFWOPS_VERSION = 1
+AM_CPPFLAGS += $(JSON_CFLAGS)
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) -Wno-implicit-fallthrough
 
@@ -70,33 +64,48 @@ else
 AM_CXXFLAGS += -DNO_CS_CMD
 endif
 
-
 noinst_LIBRARIES = libmlxfwops.a
 
-libmlxfwops_a_SOURCES = flint_base.cpp \
-			   bluefiled_signature_manager.cpp \
-			   connectx6_signature_manager.cpp \
-			   signature_manager.h \
-			   signature_manager_factory.h \
-               flint_io.cpp \
-               security_version_gw.cpp security_version_gw.h \
-               fw_ops.cpp \
-               fs2_ops.cpp fs2_ops.h\
-               fs3_ops.cpp fs3_ops.h\
-               fw_ops.h\
-               fs4_ops.cpp fs4_ops.h\
-               fs5_ops.cpp fs5_ops.h\
-               aux_tlv_ops.cpp aux_tlv_ops.h\
-               mlxfwops.cpp mlxfwops.h \
-               fsctrl_ops.cpp fsctrl_ops.h \
-               fs_checks.h fs_checks.cpp \
-               fw_version.cpp \
-               mlxfwops_com.h flint_base.h flint_io.h \
-                $(COMPONENTS_DIR)/fs_comps_ops.h $(COMPONENTS_DIR)/fs_comps_ops.cpp $(COMPONENTS_DIR)/fs_cert_ops.h $(COMPONENTS_DIR)/fs_cert_ops.cpp \
-                $(COMPONENTS_DIR)/fs_synce_ops.h $(COMPONENTS_DIR)/fs_synce_ops.cpp $(COMPONENTS_DIR)/fs_comps_factory.h
+libmlxfwops_a_SOURCES = \
+    aux_tlv_ops.cpp \
+    aux_tlv_ops.h \
+    bluefiled_signature_manager.cpp \
+    connectx6_signature_manager.cpp \
+    flint_base.cpp \
+    flint_base.h \
+    flint_io.cpp \
+    flint_io.h \
+    fs_checks.cpp \
+    fs_checks.h \
+    fs2_ops.cpp \
+    fs2_ops.h \
+    fs3_ops.cpp \
+    fs3_ops.h \
+    fs4_ops.cpp \
+    fs4_ops.h \
+    fs5_ops.cpp \
+    fs5_ops.h \
+    fsctrl_ops.cpp \
+    fsctrl_ops.h \
+    fw_ops.cpp \
+    fw_ops.h\
+    fw_version.cpp \
+    mlxfwops_com.h \
+    mlxfwops.cpp \
+    mlxfwops.h \
+    security_version_gw.cpp \
+    security_version_gw.h \
+    signature_manager_factory.h \
+    signature_manager.h \
+    components/fs_cert_ops.cpp \
+    components/fs_cert_ops.h \
+    components/fs_comps_factory.h \
+    components/fs_comps_ops.cpp \
+    components/fs_comps_ops.h \
+    components/fs_synce_ops.cpp \
+    components/fs_synce_ops.h
 
 if ENABLE_DPA
 AM_CXXFLAGS += -DENABLE_DPA
-libmlxfwops_a_DEPENDENCIES =  ../../$(MLXDPA_DIR)/libmstdpa.a
+libmlxfwops_a_DEPENDENCIES = $(top_builddir)/mlxdpa/libmstdpa.a
 endif
-

@@ -1,5 +1,4 @@
-#--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,98 +27,105 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = ..
-MTCR_DIR = $(USER_DIR)/${MTCR_CONFIG_DIR}
+
+docdir = $(INSTALL_BASEDIR)/etc/mstflint
+dist_doc_DATA = certificate/ca-bundle.crt
+
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/${MTCR_CONF_DIR} \
+    -I$(top_srcdir)/cmdparser \
+    -I$(top_srcdir)/common -I$(top_builddir)/common \
+    -I$(top_srcdir)/dev_mgt \
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/libmfa \
+    -I$(top_srcdir)/mflash \
+    -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mlxfwops/lib \
+    -I$(top_srcdir)/pldmlib \
+    -I$(CURL_INC_DIR)
 
 bin_PROGRAMS = mstfwmanager
 
-docdir=$(INSTALL_BASEDIR)/etc/mstflint
-dist_doc_DATA=certificate/ca-bundle.crt
+mstfwmanager_CXXFLAGS = -g -MP -MD -Wall -W -DMSTFLINT $(INIPARSER_CFLAGS) $(JSON_CFLAGS)
+mstfwmanager_CXXFLAGS += -DUSE_XML -DLIBXML_STATIC
+mstfwmanager_CXXFLAGS += -DUSE_CURL -DCURL_STATICLIB
 
-MTCR_UL_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
-MTCR_UL_LIB = $(MTCR_UL_DIR)/libmtcr_ul.a
-
-XML_FLAGS = -DUSE_XML -DLIBXML_STATIC
-XML_LIBS = -lxml2 $(ZLIB_LIB)
-
-CURL_LIBS = -lcurl  -lssl -lcrypto -lrt
-
-CURL_FLAGS = -DCURL_STATICLIB
-
-common_INCLUDES =  -I$(USER_DIR)/common\
-            -I$(USER_DIR)/\
-            -I$(USER_DIR)/include/mtcr_ul\
-            -I$(USER_DIR)/mflash\
-            -I$(USER_DIR)/cmdparser\
-            -I$(USER_DIR)/libmfa\
-            $(INIPARSER_CFLAGS)\
-            $(JSON_CFLAGS)\
-            -I$(USER_DIR)/mlxfwops/lib\
-            -I$(USER_DIR)/pldmlib\
-            -I$(CURL_INC_DIR)\
-            -I$(USER_DIR)/mft_utils\
-            -I$(USER_DIR)/dev_mgt
-
-AM_CXXFLAGS = -g -MP -MD -Wall -W  $(BOOST_CXX_IGNORES)
-
-
-common_SOURCEES =  mlxfwmanager_common.cpp mlxfwmanager_common.h\
-                        menu.cpp menu.h\
-                        mlxfwmanager.cpp mlxfwmanager.h\
-                        mlnx_dev.cpp mlnx_dev.h\
-                        cmd_line_parser.cpp cmd_line_parser.h\
-                        cmd_line_params.cpp cmd_line_params.h\
-                        psid_query_item.cpp psid_query_item.h\
-                        image_access.cpp image_access.h\
-                        server_request.cpp server_request.h\
-                        output_fmts.cpp output_fmts.h\
-                        psid_lookup_db.cpp psid_lookup_db.h\
-                        img_version.cpp img_version.h\
-                        err_msgs.h\
-						fw_version_old_clp.cpp fw_version_old_clp.h\
-                        fw_version_with_sub_build.cpp fw_version_with_sub_build.h
+mstfwmanager_SOURCES = \
+    cmd_line_params.cpp \
+    cmd_line_params.h \
+    cmd_line_parser.cpp \
+    cmd_line_parser.h \
+    err_msgs.h \
+    fw_version_old_clp.cpp \
+    fw_version_old_clp.h \
+    fw_version_with_sub_build.cpp \
+    fw_version_with_sub_build.h \
+    image_access.cpp \
+    image_access.h \
+    img_version.cpp \
+    img_version.h \
+    menu.cpp \
+    menu.h \
+    mlnx_dev.cpp \
+    mlnx_dev.h \
+    mlxfwmanager.cpp \
+    mlxfwmanager.h \
+    mlxfwmanager_common.cpp \
+    mlxfwmanager_common.h \
+    output_fmts.cpp \
+    output_fmts.h \
+    psid_lookup_db.cpp \
+    psid_lookup_db.h \
+    psid_query_item.cpp \
+    psid_query_item.h \
+    server_request.cpp \
+    server_request.h
                         
-common_LDADD  = $(USER_DIR)/dev_mgt/libdev_mgt.la\
-                        $(USER_DIR)/mvpd/libmvpd.la\
-                        $(USER_DIR)/mlxfwops/lib/libmlxfwops.a\
-                        $(USER_DIR)/pldmlib/libpldm.la\
-                        $(USER_DIR)/mlxconfig/libmlxcfg.la\
-                        $(USER_DIR)/libmfa/libmfa.la\
-                        $(USER_DIR)/ext_libs/minixz/libminixz.la\
-                        $(USER_DIR)/cmdparser/libcmdparser.a\
-                        $(USER_DIR)/mflash/libmflash.la\
-                        $(USER_DIR)/tools_res_mgmt/libtools_res_mgmt.a\
-                        $(JSON_LIBS)\
-                        $(INIPARSER_LIBS)\
-                        $(MUPARSER_LIBS)\
-                        $(SQLITE_LIBS)\
-                        $(USER_DIR)/mft_utils/libmftutils.a\
-                        $(USER_DIR)/cmdif/libcmdif.la\
-                        $(USER_DIR)/reg_access/libreg_access.la\
-                        $(USER_DIR)/tools_layouts/libtools_layouts.la\
-                        $(USER_DIR)/fw_comps_mgr/libfw_comps_mgr.a\
-                        $(XML_LIBS)\
-                        $(CURL_LIBS)\
-                        -lm $(LIBSTD_CPP) ${LDL}
-                        
+mstfwmanager_DEPENDENCIES = \
+    $(top_builddir)/dev_mgt/libdev_mgt.la \
+    $(top_builddir)/mvpd/libmvpd.la \
+    $(top_builddir)/mlxfwops/lib/libmlxfwops.a \
+    $(top_builddir)/pldmlib/libpldm.la \
+    $(top_builddir)/mlxconfig/libmlxcfg.la \
+    $(top_builddir)/libmfa/libmfa.la \
+    $(top_builddir)/ext_libs/minixz/libminixz.la \
+    $(top_builddir)/cmdparser/libcmdparser.a \
+    $(top_builddir)/mflash/libmflash.la \
+    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+    $(top_builddir)/mft_utils/libmftutils.a \
+    $(top_builddir)/cmdif/libcmdif.la \
+    $(top_builddir)/reg_access/libreg_access.la \
+    $(top_builddir)/tools_layouts/libtools_layouts.la \
+    $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
+    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
+    $(JSON_LIBS) \
+    $(INIPARSER_LIBS) \
+    $(MUPARSER_LIBS) \
+    $(SQLITE_LIBS)
+
+LDADD_mstfwmanager = -lm -lz ${LDL}
+# XML libs
+LDADD_mstfwmanager += -lxml2
+# curl libs
+LDADD_mstfwmanager += -lcurl  -lssl -lcrypto -lrt
+
 if ENABLE_OPENSSL
-common_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
-else
+mstfwmanager_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.a
+LDADD_mstfwmanager += -lcrypto -lssl
 endif
 
 if ENABLE_CS
-common_LDADD += $(top_srcdir)/tools_crypto/libtools_crypto.a -lcrypto
-else
+mstfwmanager_DEPENDENCIES += $(top_builddir)/tools_crypto/libtools_crypto.a
+LDADD_mstfwmanager += -lcrypto
 endif
 
 if ENABLE_INBAND
-common_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.a
-else
+mstfwmanager_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.a
 endif
 
-mstfwmanager_CXXFLAGS =  -DMSTFLINT -DUSE_CURL $(AM_CXXFLAGS) $(CURL_FLAGS) $(XML_FLAGS) -I$(MTCR_UL_DIR) $(common_INCLUDES) 
-mstfwmanager_SOURCES  = $(common_SOURCEES)
-mstfwmanager_LDADD    = $(common_LDADD) $(MTCR_UL_LIB) -lz
+mstfwmanager_LDADD = $(mstfwmanager_DEPENDENCIES) $(LDADD_mstfwmanager)
+mstfwmanager_LDFLAGS = -static
