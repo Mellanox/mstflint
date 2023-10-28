@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
@@ -28,14 +30,29 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-SUBDIRS = common mft_utils mft_utils/hsmclient ext_libs $(TOOLS_CRYPTO) tools_layouts ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) reg_access cmdif $(XZ_UTILS_DIR) dev_mgt tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib mlxconfig cmdparser $(DPA) mlxfwops $(FW_MGR_TOOLS) flint small_utils mstdump ${ADABE_TOOLS} tracers resourcetools
+GIT_SHA_FILENAME=tools_git_sha
 
-DIST_SUBDIRS = tracers
+unset GIT_SHA
 
-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1
+# Check if the current directory is inside a Git repository.
+if git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+  # If inside a Git repository, retrieve commit hash.
+  GIT_SHA=$(git rev-parse --short HEAD)
+else
+  # If not in a Git repository, check if GIT_SHA_FILENAME exists.
+  if [ -f "$GIT_SHA_FILENAME" ]; then
+    # If the file exists, assume it contains the commit hash.
+    GIT_SHA=$(<"$GIT_SHA_FILENAME")
+  else
+    GIT_SHA="N/A"
+  fi
+fi
 
-EXTRA_DIST = \
-	mstflint.spec \
-	common/gitversion.h \
-	debian \
-	$(man_MANS)
+if [ -z "$GIT_SHA" ]; then
+  echo "an unexpected error occurred"
+  exit 1
+fi
+
+# Calling code expects evaluated commit hash in STDOUT. In addition we
+# refresh the content of GIT_SHA_FILENAME to ensure it is up to date.
+echo $GIT_SHA | tee "$GIT_SHA_FILENAME"

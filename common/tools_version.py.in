@@ -32,7 +32,6 @@
 # To be replaced by an external script:
 TOOLS_GIT_SHA="@TOOLS_GIT_SHA@"
 MSTFLINT_VERSION_STR="@MSTFLINT_VERSION_STR@"
-TOOLS_BUILD_TIME="@TOOLS_BUILD_TIME@"
 
 
 ####################################################################
@@ -43,7 +42,7 @@ def GetVersionString(execName, toolVersion = None):
     else:
         res = "%s %s, " % (execName,toolVersion)
 
-    res += "%s, built on %s. Git SHA Hash: %s" % (MSTFLINT_VERSION_STR, TOOLS_BUILD_TIME, TOOLS_GIT_SHA)
+    res += "%s, Git SHA Hash: %s" % (MSTFLINT_VERSION_STR, TOOLS_GIT_SHA)
     return res
 ####################################################################
 
@@ -54,4 +53,3 @@ def PrintVersionString(execName, toolVersion = None):
 
 get_version_string = GetVersionString
 print_version_string = PrintVersionString
-  
