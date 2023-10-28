@@ -320,7 +320,7 @@ fi
 if test "$INIPARSER_SYSTEM_AVAILABLE" = "no"; then
     INIPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/iniParser'
     AC_SUBST(INIPARSER_CFLAGS)
-    INIPARSER_LIBS='$(top_builddir)/ext_libs/iniParser/libiniparser.a'
+    INIPARSER_LIBS='$(top_builddir)/ext_libs/iniParser/libiniparser.la'
     AC_SUBST(INIPARSER_LIBS)
 fi
 
@@ -487,16 +487,55 @@ AM_CONDITIONAL(LINUX_BUILD, [test  "x$OS" = "xLinux"])
 AC_SUBST(LINUX_BUILD)
 AC_SUBST(LINUX_KERNEL_INCLUDE)
 
-# we assume that project root may have a tool_git_sha
+# we assume that project root may have a tools_git_sha
 TOOLS_GIT_SHA=$(cd $(dirname "$0"); ./eval_git_sha.sh)
 AC_SUBST([TOOLS_GIT_SHA])
 AC_MSG_NOTICE(TOOLS_GIT_SHA $TOOLS_GIT_SHA)
 
 AC_CONFIG_FILES([debian/mstflint.install])
 
-AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mft_utils/hsmclient/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
-        tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
-        flint/Makefile small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
-        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile \
-        resourcetools/Makefile resourcetools/resourcedump_lib/Makefile resourcetools/resourcedump_lib/src/Makefile resourcetools/resourcedump_lib/src/common/Makefile
-        resourcetools/resourcedump_lib/src/commands/Makefile resourcetools/resourcedump_lib/src/fetchers/Makefile resourcetools/resourcedump_lib/src/filters/Makefile resourcetools/resourcedump_lib/src/sdk/Makefile)
+AC_OUTPUT( \
+    Makefile \
+    cmdif/Makefile \
+    cmdparser/Makefile \
+    common/Makefile \
+    dev_mgt/Makefile \
+    ext_libs/Makefile \
+    ext_libs/json/Makefile \
+    ext_libs/minixz/Makefile \
+    ext_libs/muparser/Makefile \
+    ext_libs/sqlite/Makefile \
+    flint/Makefile \
+    fw_comps_mgr/Makefile \
+    libmfa/Makefile \
+    mad_ifc/Makefile \
+    mflash/Makefile \
+    mft_utils/Makefile \
+    mft_utils/hsmclient/Makefile \
+    mlxconfig/Makefile \
+    mlxconfig/mlxconfig_dbs/Makefile \
+    mlxfwops/Makefile \
+    mlxfwops/lib/Makefile \
+    mstdump/Makefile \
+    mstdump/crd_lib/Makefile \
+    mstdump/crd_main/Makefile \
+    mstdump/mstdump_dbs/Makefile \
+    mtcr_py/Makefile \
+    mvpd/Makefile \
+    pldmlib/Makefile \
+    reg_access/Makefile \
+    resourcetools/Makefile \
+    resourcetools/resourcedump_lib/Makefile \
+    resourcetools/resourcedump_lib/src/Makefile \
+    resourcetools/resourcedump_lib/src/commands/Makefile \
+    resourcetools/resourcedump_lib/src/common/Makefile \
+    resourcetools/resourcedump_lib/src/fetchers/Makefile \
+    resourcetools/resourcedump_lib/src/filters/Makefile \
+    resourcetools/resourcedump_lib/src/sdk/Makefile \
+    small_utils/Makefile \
+    small_utils/mlxfwresetlib/Makefile \
+    tools_layouts/Makefile \
+    tools_res_mgmt/Makefile \
+    tracers/Makefile \
+    tracers/fwtrace/Makefile \
+ )

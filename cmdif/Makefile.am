@@ -1,5 +1,4 @@
-# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
-# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,14 +27,17 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-USER_DIR = $(top_srcdir)
-MTCR_DIR = $(USER_DIR)/include/mtcr_ul
-TOOLS_LAYOUTS_DIR = $(USER_DIR)/tools_layouts
-AM_CPPFLAGS = -I. -I../common -I../tools_layouts  -I${MTCR_DIR} -I.. -I$(USER_DIR)/${MTCR_CONF_DIR}
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/${MTCR_CONF_DIR} \
+    -I$(top_srcdir)/common -I$(top_builddir)/common\
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/tools_layouts
+
 CCMDIF_SO = ccmdif.so
 
 AM_CFLAGS = -W -Wall  -g -MP -MD $(COMPILER_FPIC) -DCMDIF_EXPORTS
@@ -52,6 +54,6 @@ cmdif_pylibdir = $(libdir)/mstflint/python_tools/
 cmdif_pylib_DATA = ${CCMDIF_SO} cmdif.py
 ${CCMDIF_SO}: libcmdif.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${CCMDIF_SO} \
-	$(USER_DIR)/tools_layouts/.libs/libtools_layouts.a -L$(USER_DIR)/${MTCR_CONF_DIR} -lmtcr_ul
+	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a -L$(top_builddir)/${MTCR_CONF_DIR} -lmtcr_ul
 
 CLEANFILES = ${CCMDIF_SO}

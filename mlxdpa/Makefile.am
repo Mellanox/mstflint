@@ -1,56 +1,94 @@
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
-# Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# OpenIB.org BSD license below:
 #
-# This software product is a proprietary product of Nvidia Corporation and its affiliates
-# (the "Company") and all right, title, and interest in and to the software
-# product, including all associated intellectual property rights, are and
-# shall remain exclusively with the Company.
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
 #
-# This software product is governed by the End User License Agreement
-# provided with the software product.
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
 #
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = ..
-COMMON_DIR = $(USER_DIR)/common
-UTILS_DIR = $(USER_DIR)/mft_utils
-MTCR_DIR = $(USER_DIR)/${MTCR_CONFIG_DIR}
-MLXSIGN_DIR = $(USER_DIR)/mlxsign_lib
-X509_PARSER_DIR = $(USER_DIR)/x509_parser
-MLXDPA_DIR = mlxdpa
 
-INCLUDE_PATH = -I. -I.. -I$(USER_DIR) -I$(COMMON_DIR) -I$(UTILS_DIR) -I$(MLXSIGN_DIR) -I$(MTCR_DIR) -isystem $(MFT_EXT_LIBS_INC_DIR)
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/${MTCR_CONFIG_DIR} \
+    -I$(top_srcdir)/common -I$(top_builddir)/common \
+    -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mlxsign_lib
 
 XML_FLAGS = -DUSE_XML -DLIBXML_STATIC
 
-AM_CXXFLAGS = $(INCLUDE_PATH) -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) $(XML_FLAGS)
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) $(XML_FLAGS)
 
 noinst_LIBRARIES = libmstdpa.a
 
-libmstdpa_a_CXXFLAGS = $(AM_CXXFLAGS) -I$(MLXDPA_DIR)
-libmstdpa_a_SOURCES = certcontainerbase.h certcontainerbase.cpp \
-                              certcontainerimp.h certcontainerimp.cpp
-libmstdpa_a_DEPENDENCIES =  $(UTILS_DIR)/libmftutils.a
+libmstdpa_a_SOURCES = \
+    certcontainerbase.cpp \
+    certcontainerbase.h \
+    certcontainerimp.cpp \
+    certcontainerimp.h
+
+libmstdpa_a_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) $(XML_FLAGS)
+
+libmstdpa_a_DEPENDENCIES = $(top_builddir)/mft_utils/libmftutils.a
+
 libmstdpa_a_LIBADD = $(libmstdpa_a_DEPENDENCIES)
 
 bin_PROGRAMS = mstdpa
 
-mstdpa_CXXFLAGS = $(AM_CXXFLAGS)
-mstdpa_SOURCES  = mlxdpa_utils.h mlxdpa_utils.cpp cryptodata.h cryptodata.cpp hostelf.h hostelf.cpp mlxdpa.h mlxdpa.cpp \
-                    certcontainerbase.h certcontainerbase.cpp certcontainerimp.h certcontainerimp.cpp
-mstdpa_LDADD    = $(USER_DIR)/cmdparser/libcmdparser.a $(MLXSIGN_DIR)/libmlxsign.a $(UTILS_DIR)/libmftutils.a
+mstdpa_SOURCES = \
+    certcontainerbase.cpp \
+    certcontainerbase.h \
+    certcontainerimp.cpp \
+    certcontainerimp.h \
+    cryptodata.cpp \
+    cryptodata.h \
+    hostelf.cpp \
+    hostelf.h \
+    mlxdpa.cpp \
+    mlxdpa.h \
+    mlxdpa_utils.cpp \
+    mlxdpa_utils.h
 
+mstdpa_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) $(XML_FLAGS)
 
+mstdpa_LDADD = \
+    $(top_builddir)/cmdparser/libcmdparser.a \
+    $(top_builddir)/mlxsign_lib/libmlxsign.a \
+    $(top_builddir)/mft_utils/libmftutils.a
+
+# these are precompiled
 if ARM64_BUILD
-mstdpa_LDADD    += dpa_elf/arm64/libdpa_elf
+mstdpa_LDADD += $(srcdir)/dpa_elf/arm64/libdpa_elf
 endif
 if X86_64_BUILD
-mstdpa_LDADD    += dpa_elf/x86_64/libdpa_elf
+mstdpa_LDADD += $(srcdir)/dpa_elf/x86_64/libdpa_elf
 endif
 
 if ENABLE_OPENSSL
-mstdpa_LDADD    +=  -lcrypto -lssl
+mstdpa_LDADD += -lcrypto -lssl
 else
 mstdpa_CXXFLAGS += -DNO_OPEN_SSL
 endif
-

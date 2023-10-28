@@ -1,5 +1,4 @@
-#--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,15 +27,16 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = -I. -I../common
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/common -I$(top_builddir)/common
 
-AM_CPPFLAGS += -W  -g -MP -MD $(COMPILER_FPIC)  $(COMPILER_FPIE)
+AM_CPPFLAGS += -W  -g -MP -MD $(COMPILER_FPIC) $(COMPILER_FPIE)
 
 noinst_LIBRARIES = libcmdparser.a
 
 libcmdparser_a_SOURCES = cmdparser.cpp my_getopt.c cmdparser.h my_getopt.h
-

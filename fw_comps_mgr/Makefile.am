@@ -1,5 +1,4 @@
-#--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,26 +27,21 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = $(top_srcdir)
-MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
-MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
-CMDIF_DIR = $(USER_DIR)/cmdif
-REG_ACCESS_DIR = $(USER_DIR)/reg_access
-COMMON_DIR = $(USER_DIR)/common
-LAYOUTS_DIR = $(USER_DIR)/tools_layouts
-UTILS_DIR = $(USER_DIR)/mft_utils
-MAD_IFC_DIR = $(USER_DIR)/mad_ifc
-TOOLS_RES_MGMT_DIR = $(USER_DIR)/tools_res_mgmt
-DEV_MGT_DIR = $(USER_DIR)/dev_mgt
-MFT_UTILS_DIR = $(USER_DIR)/mft_utils
 
-AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(MTCR_INC_DIR) -I$(MTCR_DIR) -I$(REG_ACCESS_DIR) -I$(CMDIF_DIR) \
-           -I$(COMMON_DIR) -I $(LAYOUTS_DIR) -I $(UTILS_DIR) -I$(TOOLS_RES_MGMT_DIR) -I$(DEV_MGT_DIR)
-
-FWCOMPS_VERSION = 1
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/${MTCR_CONF_DIR} \
+    -I$(top_srcdir)/cmdif \
+    -I$(top_srcdir)/common -I$(top_builddir)/common \
+    -I$(top_srcdir)/dev_mgt \
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/reg_access \
+    -I$(top_srcdir)/tools_layouts \
+    -I$(top_srcdir)/tools_res_mgmt
 
 AM_CFLAGS = -MD -pipe -Wall -W $(COMPILER_FPIC)
 
@@ -55,16 +49,19 @@ AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 
 noinst_LIBRARIES = libfw_comps_mgr.a
 
-libfw_comps_mgr_a_SOURCES =  fw_comps_mgr.cpp fw_comps_mgr.h fw_comps_mgr_dma_access.cpp fw_comps_mgr_dma_access.h fw_comps_mgr_direct_access.cpp fw_comps_mgr_direct_access.h fw_comps_mgr_abstract_access.cpp fw_comps_mgr_abstract_access.h
+libfw_comps_mgr_a_SOURCES = fw_comps_mgr.cpp fw_comps_mgr.h fw_comps_mgr_dma_access.cpp fw_comps_mgr_dma_access.h fw_comps_mgr_direct_access.cpp fw_comps_mgr_direct_access.h fw_comps_mgr_abstract_access.cpp fw_comps_mgr_abstract_access.h
 
 if ENABLE_INBAND
 else
 AM_CXXFLAGS += "-DNO_INBAND"
 endif
 
-libfw_comps_mgr_a_LIBADD = ../reg_access/libreg_access.la $(MTCR_DIR)/libmtcr_ul.a $(LAYOUTS_LIB) $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a \
-                            $(MFT_UTILS_DIR)/libmftutils.a
+libfw_comps_mgr_a_LIBADD = \
+    $(top_builddir)/reg_access/libreg_access.la \
+    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
+    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+    $(top_builddir)/mft_utils/libmftutils.a
 
 if ENABLE_INBAND
-libfw_comps_mgr_a_LIBADD +=  $(top_srcdir)/mad_ifc/libmad_ifc.a
+libfw_comps_mgr_a_LIBADD += $(top_builddir)/mad_ifc/libmad_ifc.a
 endif

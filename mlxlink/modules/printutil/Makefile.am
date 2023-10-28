@@ -1,6 +1,4 @@
-#--
-#
-# Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,25 +28,26 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#--
-
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-COMMON_DIR = $(top_srcdir)/common
-MTCR_DIR = $(top_srcdir)/${MTCR_CONF_DIR}
-MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
-UTILS_DIR = $(top_srcdir)/mft_utils
-MLXREG_DIR = $(top_srcdir)/mlxreg
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/${MTCR_CONF_DIR} \
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mlxreg
 
-AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(MLXREG_DIR) -I$(MTCR_INC_DIR) $(JSON_CFLAGS)
+AM_CPPFLAGS += $(JSON_CFLAGS)
 
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 
 noinst_LTLIBRARIES = libprint_util_lib.la
 
-libprint_util_lib_la_SOURCES = mlxlink_cmd_print.h \
-                            mlxlink_cmd_print.cpp \
-                            mlxlink_record.h \
-                            mlxlink_record.cpp
+libprint_util_lib_la_SOURCES = \
+    mlxlink_cmd_print.cpp \
+    mlxlink_cmd_print.h \
+    mlxlink_record.cpp \
+    mlxlink_record.h
+
 libprint_util_lib_la_LIBDADD = $(JSON_LIBS)
-libprint_util_lib_la_CFLAGS = $(AM_CFLAGS)

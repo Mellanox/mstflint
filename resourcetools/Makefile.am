@@ -30,10 +30,9 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-
 SUBDIRS = resourcedump_lib
 
-USER_DIR = $(top_srcdir)
+USER_DIR = $(top_builddir)
 bin_SCRIPTS = mstresourcedump mstresourceparse
 
 PYTHON_WRAPPER=mstresourcedump
@@ -49,30 +48,30 @@ pythonlibdir=$(libdir)/mstflint/python_tools/resourcetools
 dist_pythonlib_SCRIPTS = mstresourcedump.py mstresourceparse.py
 
 segmentspythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/segments
-dist_segmentspythonlib_DATA = segments/*.py
+dist_segmentspythonlib_DATA = $(srcdir)/segments/*.py
 
 maindumppythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourcedump_lib
-dist_maindumppythonlib_DATA = resourcedump_lib/*.py
+dist_maindumppythonlib_DATA = $(srcdir)/resourcedump_lib/*.py
 validationpythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourcedump_lib/validation
-dist_validationpythonlib_DATA = resourcedump_lib/validation/*.py
+dist_validationpythonlib_DATA = $(srcdir)/resourcedump_lib/validation/*.py
 utilspythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourcedump_lib/utils
-dist_utilspythonlib_DATA = resourcedump_lib/utils/*.py
+dist_utilspythonlib_DATA = $(srcdir)/resourcedump_lib/utils/*.py
 filterspythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourcedump_lib/filters
-dist_filterspythonlib_DATA = resourcedump_lib/filters/*.py
+dist_filterspythonlib_DATA = $(srcdir)/resourcedump_lib/filters/*.py
 fetcherspythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourcedump_lib/fetchers
-dist_fetcherspythonlib_DATA = resourcedump_lib/fetchers/*.py
+dist_fetcherspythonlib_DATA = $(srcdir)/resourcedump_lib/fetchers/*.py
 commandspythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourcedump_lib/commands
-dist_commandspythonlib_DATA = resourcedump_lib/commands/*.py
+dist_commandspythonlib_DATA = $(srcdir)/resourcedump_lib/commands/*.py
 cresourcedumppythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourcedump_lib/cresourcedump
-dist_cresourcedumppythonlib_DATA = resourcedump_lib/cresourcedump/*.py
+dist_cresourcedumppythonlib_DATA = $(srcdir)/resourcedump_lib/cresourcedump/*.py
 
 mainparsepythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourceparse_lib
-dist_mainparsepythonlib_DATA = resourceparse_lib/*.py
+dist_mainparsepythonlib_DATA = $(srcdir)/resourceparse_lib/*.py
 parsersparsepythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourceparse_lib/parsers
-dist_parsersparsepythonlib_DATA = resourceparse_lib/parsers/*.py
+dist_parsersparsepythonlib_DATA = $(srcdir)/resourceparse_lib/parsers/*.py
 parseutilspythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourceparse_lib/utils
-dist_parseutilspythonlib_DATA = resourceparse_lib/utils/*.py
+dist_parseutilspythonlib_DATA = $(srcdir)/resourceparse_lib/utils/*.py
 parsedatapythonlibdir=$(libdir)/mstflint/python_tools/resourcetools/resourceparse_lib/resource_data
-dist_parsedatapythonlib_DATA = resourceparse_lib/resource_data/*.py
+dist_parsedatapythonlib_DATA = $(srcdir)/resourceparse_lib/resource_data/*.py
 
 CLEANFILES = ${PYTHON_WRAPPER} ${PYTHON_WRAPPER2}

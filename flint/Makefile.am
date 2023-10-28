@@ -1,6 +1,4 @@
-#--
-# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
-# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -18,7 +16,7 @@
 #
 #      - Redistributions in binary form must reproduce the above
 #        copyright notice, this list of conditions and the following
-#        disclaimer in the documentation and/or othint2_oem.er materials
+#        disclaimer in the documentation and/or other materials
 #        provided with the distribution.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
@@ -29,22 +27,20 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-MTCR_DIR    = $(top_srcdir)/${MTCR_CONF_DIR}
-MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
-MFLASH_DIR  = $(top_srcdir)/mflash
-COMMON_DIR  = $(top_srcdir)/common
-LAYOUTS_DIR = $(top_srcdir)/tools_layouts
-MFT_UTILS_DIR = $(top_srcdir)/mft_utils
-HSM_CLIENT_LIB = $(top_srcdir)/mft_utils/hsmclient
-CMDIF_DIR   = $(top_srcdir)/cmdif
-MAD_IFC_DIR   = $(top_srcdir)/mad_ifc
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
-           -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(MTCR_INC_DIR) \
-           -I$(HSM_CLIENT_LIB)/inc -I$(HSM_CLIENT_LIB)/inc/rsa
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/${MTCR_CONF_DIR} \
+    -I$(top_srcdir)/common -I$(top_builddir)/common \
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/mflash \
+    -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mft_utils/hsmclient/inc \
+    -I$(top_srcdir)/mft_utils/hsmclient/inc/rsa \
+    -I$(top_srcdir)/tools_layouts
 
 mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC) \
                     -DUNIX -DOS_UNIX -DOS_LINUX ${MTCR_CONF_FLAGS}
@@ -54,18 +50,18 @@ mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h subcommands_l
 					flint_params.cpp flint_params.h cmd_line_parser.cpp err_msgs.h
 
 mstflint_DEPENDENCIES = \
-     ../mlxfwops/lib/libmlxfwops.a  \
-     ../cmdparser/libcmdparser.a \
-     ../mflash/libmflash.la \
-     ../tools_res_mgmt/libtools_res_mgmt.a \
-     $(CMDIF_DIR)/libcmdif.la \
-     ../reg_access/libreg_access.la  \
-     ../dev_mgt/libdev_mgt.la \
-     ../${MTCR_CONF_DIR}/libmtcr_ul.a \
-     ../tools_layouts/libtools_layouts.la \
-     ../fw_comps_mgr/libfw_comps_mgr.a \
-     ../mft_utils/libmftutils.a \
-     ../mft_utils/hsmclient/libhsmclient.a
+     $(top_builddir)/mlxfwops/lib/libmlxfwops.a  \
+     $(top_builddir)/cmdparser/libcmdparser.a \
+     $(top_builddir)/mflash/libmflash.la \
+     $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+     $(top_builddir)/cmdif/libcmdif.la \
+     $(top_builddir)/reg_access/libreg_access.la  \
+     $(top_builddir)/dev_mgt/libdev_mgt.la \
+     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
+     $(top_builddir)/tools_layouts/libtools_layouts.la \
+     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
+     $(top_builddir)/mft_utils/libmftutils.a \
+     $(top_builddir)/mft_utils/hsmclient/libhsmclient.a
 
 mstflint_LDADD = $(mstflint_DEPENDENCIES) ${LDL}
 
@@ -78,33 +74,32 @@ mstflint_CXXFLAGS += -DNO_ZLIB
 endif
 
 if ENABLE_CS
-mstflint_LDADD += $(top_srcdir)/tools_crypto/libtools_crypto.a -lcrypto
+mstflint_LDADD += $(top_builddir)/tools_crypto/libtools_crypto.a -lcrypto
 else
 endif
 
 if ENABLE_INBAND
-mstflint_LDADD += $(MAD_IFC_DIR)/libmad_ifc.a
+mstflint_LDADD += $(top_builddir)/mad_ifc/libmad_ifc.a
 else
 endif
 
 if ENABLE_OPENSSL
-mstflint_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
+mstflint_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
 else
 mstflint_CXXFLAGS += -DNO_OPEN_SSL
 endif
 
 if ENABLE_FWMGR
-mstflint_LDADD += $(top_srcdir)/libmfa/libmfa.la $(top_srcdir)/ext_libs/minixz/libminixz.la $(top_srcdir)/mlxarchive/libmstarchive.la $(top_srcdir)/tools_layouts/libmlxarchive_layouts.la $(top_srcdir)/xz_utils/libxz_utils.la -llzma -lm
+mstflint_LDADD += $(top_builddir)/libmfa/libmfa.la $(top_builddir)/ext_libs/minixz/libminixz.la $(top_builddir)/mlxarchive/libmstarchive.la $(top_builddir)/tools_layouts/libmlxarchive_layouts.la $(top_builddir)/xz_utils/libxz_utils.la -llzma -lm
 else
 mstflint_CXXFLAGS += -DNO_MSTARCHIVE
 endif
 
 if ENABLE_DPA
 mstflint_CXXFLAGS += -DENABLE_DPA
-mstflint_LDADD +=  $(top_srcdir)/mlxdpa/libmstdpa.a
+mstflint_LDADD += $(top_builddir)/mlxdpa/libmstdpa.a
 endif
 
-#get mst device examples and tool name from makefile
-mstflint_CXXFLAGS+= -DFLINT_NAME=\"mstflint\" -DFLINT_DISPLAY_NAME=\"MstFlint\"
+# get mst device examples and tool name from makefile
+mstflint_CXXFLAGS += -DFLINT_NAME=\"mstflint\" -DFLINT_DISPLAY_NAME=\"MstFlint\"
 mstflint_CXXFLAGS += -DMST_DEV_EXAMPLE1=\"03:00.0\" -DMST_DEV_EXAMPLE2=\"mlx4_0\" -DMST_DEV_EXAMPLE3=\"03:00.0\" -DMST_DEV_EXAMPLE4=\"04:00.0\"
-

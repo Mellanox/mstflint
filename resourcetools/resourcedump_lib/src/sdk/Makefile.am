@@ -28,19 +28,16 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-USER_DIR = $(top_srcdir)
-MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
-TOOLS_LAYOUT_DIR = $(USER_DIR)/tools_layouts
-REG_ACCESS_DIR = $(USER_DIR)/reg_access
-RESOURCE_DUMP_SRC_DIR = $(USER_DIR)/resourcetools/resourcedump_lib/src
-RD_COMMON_DIR = $(RESOURCE_DUMP_SRC_DIR)/common
-SEGMENTS_DIR = $(RESOURCE_DUMP_SRC_DIR)/segments
-FILTERS_DIR = $(RESOURCE_DUMP_SRC_DIR)/filters
-FETCHERS_DIR = $(RESOURCE_DUMP_SRC_DIR)/fetchers
-COMMANDS_DIR = $(RESOURCE_DUMP_SRC_DIR)/commands
-# COMMON_DIR = $(USER_DIR)/common
+# Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = -I$(USER_DIR) -I$(RD_COMMON_DIR) -I$(SEGMENTS_DIR) -I$(FILTERS_DIR) -I$(FETCHERS_DIR) -I$(COMMANDS_DIR)
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/commands \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/common \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/fetchers \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/filters \
+    -I$(top_srcdir)/resourcetools/resourcedump_lib/src/segments
 
 noinst_LTLIBRARIES = libresource_dump_sdk.la
 
@@ -56,12 +53,17 @@ resource_dump_sdk_so_DATA = libresource_dump_sdk.so
 # endif
 
 libraryincludedir=$(includedir)/mstflint/sdk/
-libraryinclude_HEADERS = resource_dump_sdk.h $(SEGMENTS_DIR)/resource_dump_segments.h $(SEGMENTS_DIR)/resource_dump_segments_le.h $(SEGMENTS_DIR)/resource_dump_segments_be.h $(RD_COMMON_DIR)/resource_dump_types.h
+libraryinclude_HEADERS = \
+    resource_dump_sdk.h \
+    $(top_srcdir)/resourcetools/resourcedump_lib/src/segments/resource_dump_segments.h \
+    $(top_srcdir)/resourcetools/resourcedump_lib/src/segments/resource_dump_segments_le.h \
+    $(top_srcdir)/resourcetools/resourcedump_lib/src/segments/resource_dump_segments_be.h \
+    $(top_srcdir)/resourcetools/resourcedump_lib/src/common/resource_dump_types.h
 
 # if WIN_BUILD
 # MTCR_LIB = $(MTCR_DIR)/.libs/libmtcr.dll.a
 # else
-MTCR_LIB = -L$(MTCR_DIR)/ -lmtcr_ul
+MTCR_LIB = -L$(top_builddir)/${MTCR_CONF_DIR} -lmtcr_ul
 # endif
 
 if ENABLE_RDMEM
@@ -71,12 +73,12 @@ OFED_LIBS =
 endif
 
 resource_dump_sdk_so_DEPS = \
-    $(COMMANDS_DIR)/.libs/libresource_dump_commands.a \
-    $(FETCHERS_DIR)/.libs/libreg_access_resource_dump_fetcher.a \
-    $(FILTERS_DIR)/.libs/libresource_dump_filters.a \
-    $(RD_COMMON_DIR)/.libs/libresource_dump_common.a \
-    $(REG_ACCESS_DIR)/.libs/libreg_access.a \
-    $(TOOLS_LAYOUT_DIR)/.libs/libtools_layouts.a \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/commands/.libs/libresource_dump_commands.a \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/fetchers/.libs/libreg_access_resource_dump_fetcher.a \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/filters/.libs/libresource_dump_filters.a \
+    $(top_builddir)/resourcetools/resourcedump_lib/src/common/.libs/libresource_dump_common.a \
+    $(top_builddir)/reg_access/.libs/libreg_access.a \
+    $(top_builddir)/tools_layouts/.libs/libtools_layouts.a \
     $(MTCR_LIB) \
     $(OFED_LIBS) \
     -lstdc++

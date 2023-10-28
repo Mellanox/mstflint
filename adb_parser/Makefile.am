@@ -1,6 +1,4 @@
-#--
-#
-# Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,16 +28,30 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-#--
-
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-DIST_SUBDIRS = .
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/common -I$(top_builddir)/common
 
-USER_DIR = ..
-AM_CPPFLAGS = -I$(USER_DIR) -I$(USER_DIR)/common
 AM_CXXFLAGS = -Wall -W -g -MP -MD  -pipe $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libadb_parser.la
 
-libadb_parser_la_SOURCES = buf_ops.cpp expr.cpp adb_expr.cpp adb_xml_parser.cpp adb_parser.cpp adb_db.cpp adb_config.cpp adb_exceptionHolder.cpp adb_field.cpp adb_instance.cpp adb_logfile.cpp adb_node.cpp adb_xmlCreator.cpp adb_condVar.cpp adb_condition.cpp
+libadb_parser_la_SOURCES = \
+    adb_condVar.cpp \
+    adb_condition.cpp \
+    adb_config.cpp \
+    adb_db.cpp \
+    adb_exceptionHolder.cpp \
+    adb_expr.cpp \
+    adb_field.cpp \
+    adb_instance.cpp \
+    adb_logfile.cpp \
+    adb_node.cpp \
+    adb_parser.cpp \
+    adb_xmlCreator.cpp \
+    adb_xml_parser.cpp \
+    buf_ops.cpp \
+    expr.cpp

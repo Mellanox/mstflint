@@ -1,5 +1,4 @@
-# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
-# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,16 +27,18 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-USER_DIR = $(top_srcdir)
-MTCR_DIR = $(USER_DIR)/include/mtcr_ul
-AM_CPPFLAGS = -I. -I../common -I$(MTCR_DIR) -I.. -I$(USER_DIR)/${MTCR_CONF_DIR}
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/${MTCR_CONF_DIR} \
+    -I$(top_srcdir)/common -I$(top_builddir)/common \
+    -I$(top_srcdir)/include/mtcr_ul
 
-AM_CFLAGS = -W -Wall  -g -MP -MD $(COMPILER_FPIC)
+AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
+
 noinst_LIBRARIES = libtools_res_mgmt.a
 
 libtools_res_mgmt_a_SOURCES = tools_res_mgmt.c tools_res_mgmt.h tools_time.c tools_time.h
-

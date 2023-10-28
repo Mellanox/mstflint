@@ -1,5 +1,4 @@
-#--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,13 +27,22 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-AM_CPPFLAGS = -I. -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/tools_layouts -I$(top_srcdir)/reg_access \
-          -I$(top_srcdir)/cmdif -I$(top_srcdir)/tools_res_mgmt $(COMPILER_FPIC)
 
-AM_CFLAGS = -MD -pipe -Wall -W  -DMST_UL -g ${MFLASH_INBAND_FLAG} $(COMPILER_FPIC)
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/cmdif \
+    -I$(top_srcdir)/common -I$(top_builddir)/common \
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/reg_access \
+    -I$(top_srcdir)/tools_layouts \
+    -I$(top_srcdir)/tools_res_mgmt
+
+AM_CPPFLAGS += $(COMPILER_FPIC)
+
+AM_CFLAGS = -MD -pipe -Wall -W -DMST_UL -g ${MFLASH_INBAND_FLAG} $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libmflash.la
 
