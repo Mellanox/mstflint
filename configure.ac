@@ -1,5 +1,5 @@
-# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
-# 
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
 # General Public License (GPL) Version 2, available from the file
@@ -27,7 +27,6 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 dnl Process this file with autoconf to produce a configure script.
 
@@ -92,7 +91,7 @@ AM_CONDITIONAL(KERNEL_BUILD,[test ${KERNEL_BUILD_CHK} = 1])
 AC_SUBST(KERNEL_BUILD)
 
 LDFLAGS="${LDFLAGS} -L/usr/local/lib -L/usr/local/lib64 -L/usr/lib64"
-CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include" 
+CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include"
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
     MTCR_CONF_DIR="mtcr_freebsd"
@@ -215,7 +214,7 @@ AC_MSG_CHECKING(--enable-inband argument)
 AC_ARG_ENABLE(inband,
 		    [  --disable-inband        Disable inband access. Prevents FW update for Mellanox SwitchX and ConnectIB devices. Eliminates infiniband/mad.h dependency],
 		    [enable_inband=$enableval],
-		    [enable_inband=$default_en_inband])        
+		    [enable_inband=$default_en_inband])
 AC_MSG_RESULT($enable_inband)
 if test "x$enable_inband" = "xyes"; then
   AC_CHECK_HEADER(infiniband/mad.h,,AC_MSG_ERROR([cannot find infiniband/mad.h . Use --disable-inband to remove this dependency]))
@@ -232,7 +231,7 @@ AC_MSG_CHECKING(--enable-rdmem argument)
 AC_ARG_ENABLE(rdmem,
 		    [  --enable-rdmem        Enable resource-dump memory mode. OFED libmlx5 and libibverbs dependency],
 		    [enable_rdmem=$enableval],
-		    [enable_rdmem=$default_en_rdmem])        
+		    [enable_rdmem=$default_en_rdmem])
 AC_MSG_RESULT($enable_rdmem)
 if test "x$enable_rdmem" = "xyes"; then
   AC_CHECK_HEADERS(infiniband/mlx5dv.h infiniband/verbs.h,,AC_MSG_ERROR([cannot find infiniband/mlx5dv.h or infiniband/verbs.h . Use --disable-rdmem to remove this dependaency]))
@@ -437,7 +436,7 @@ AS_IF([test "x$enable_fw_mgr" = "xyes"], [
         AC_CONFIG_FILES(mlxarchive/Makefile)
         FW_MGR_TOOLS="mlxfwupdate mlxarchive"
     ])
-    
+
 AC_SUBST(FW_MGR_TOOLS)
 
 AS_IF([test "x$enable_dpa" = "xyes"], [
@@ -487,6 +486,11 @@ fi
 AM_CONDITIONAL(LINUX_BUILD, [test  "x$OS" = "xLinux"])
 AC_SUBST(LINUX_BUILD)
 AC_SUBST(LINUX_KERNEL_INCLUDE)
+
+# we assume that project root may have a tool_git_sha
+TOOLS_GIT_SHA=$(cd $(dirname "$0"); ./eval_git_sha.sh)
+AC_SUBST([TOOLS_GIT_SHA])
+AC_MSG_NOTICE(TOOLS_GIT_SHA $TOOLS_GIT_SHA)
 
 AC_CONFIG_FILES([debian/mstflint.install])
 
