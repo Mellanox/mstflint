@@ -162,10 +162,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/mtcr_ul/mtcr_com_defs.h
 %{_libdir}/mstflint/libmtcr_ul.a
 %{_libdir}/libmtcr_ul.a
-%{_libdir}/libcmdif.a
-%{_libdir}/libdev_mgt.a
-%{_libdir}/libreg_access.a
-%{_libdir}/libtools_layouts.a
 
 %{mstflint_python_tools}/tools_version.py
 %{mstflint_python_tools}/mft_logger.py
@@ -216,7 +212,7 @@ rm -rf $RPM_BUILD_ROOT
 * Sun Jul 31 2022 Tomer Tubi <ttubi@nvidia.com>
    MFT 4.21.0 Updates
 
-* Thu May 31 2022 Tomer Tubi <ttubi@nvidia.com>
+* Tue May 31 2022 Tomer Tubi <ttubi@nvidia.com>
    MFT 4.20.1 Updates
 
 * Thu Apr 28 2022 Tomer Tubi <ttubi@nvidia.com>
