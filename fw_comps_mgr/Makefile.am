@@ -49,19 +49,30 @@ AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 
 noinst_LIBRARIES = libfw_comps_mgr.a
 
-libfw_comps_mgr_a_SOURCES = fw_comps_mgr.cpp fw_comps_mgr.h fw_comps_mgr_dma_access.cpp fw_comps_mgr_dma_access.h fw_comps_mgr_direct_access.cpp fw_comps_mgr_direct_access.h fw_comps_mgr_abstract_access.cpp fw_comps_mgr_abstract_access.h
+libfw_comps_mgr_a_SOURCES = \
+    fw_comps_mgr.cpp \
+    fw_comps_mgr.h \
+    fw_comps_mgr_abstract_access.cpp \
+    fw_comps_mgr_abstract_access.h \
+    fw_comps_mgr_direct_access.cpp \
+    fw_comps_mgr_direct_access.h \
+    fw_comps_mgr_dma_access.cpp \
+    fw_comps_mgr_dma_access.h
 
 if ENABLE_INBAND
 else
 AM_CXXFLAGS += "-DNO_INBAND"
 endif
 
-libfw_comps_mgr_a_LIBADD = \
+libfw_comps_mgr_a_DEPENDENCIES = \
     $(top_builddir)/reg_access/libreg_access.la \
-    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
+    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
     $(top_builddir)/mft_utils/libmftutils.a
 
+
 if ENABLE_INBAND
-libfw_comps_mgr_a_LIBADD += $(top_builddir)/mad_ifc/libmad_ifc.a
+libfw_comps_mgr_a_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.a
 endif
+
+libfw_comps_mgr_a_LIBADD = $(libfw_comps_mgr_a_DEPENDENCIES)

@@ -30,14 +30,24 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = $(srcdir) -I$(top_srcdir) -I$(top_srcdir)/tools_layouts -I$(top_srcdir)/include/mtcr_ul
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/tools_layouts
 
 AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libreg_access.la
 
-libreg_access_la_SOURCES = reg_access.c reg_access.h reg_access_common.h reg_access_macros.h
+libreg_access_la_SOURCES = \
+    reg_access.c \
+    reg_access.h \
+    reg_access_common.h \
+    reg_access_macros.h
+
 libreg_access_la_DEPENDENCIES = $(top_builddir)/tools_layouts/libtools_layouts.la
+
 libreg_access_la_LIBADD = $(libreg_access_la_DEPENDENCIES)
 
 RREG_ACCESS_SO = rreg_access.so
@@ -48,6 +58,6 @@ dist_reg_access_pylib_DATA = regaccess.py regaccess_hca_ext_structs.py regaccess
 
 ${RREG_ACCESS_SO}: libreg_access.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${RREG_ACCESS_SO} \
-	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a -L$(top_builddir)/${MTCR_CONF_DIR} -lmtcr_ul
+	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a
 
 CLEANFILES = ${RREG_ACCESS_SO}

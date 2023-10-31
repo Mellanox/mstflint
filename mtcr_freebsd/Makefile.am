@@ -37,9 +37,9 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/include/mtcr_ul \
     -I$(top_srcdir)/mtcr_ul
 
-noinst_LIBRARIES = libmtcr_ul.a
+noinst_LTLIBRARIES = libmtcr_ul.la
 
-libmtcr_ul_a_SOURCES = \
+libmtcr_ul_la_SOURCES = \
     $(top_srcdir)/mtcr_ul/mtcr_ib.h \
     $(top_srcdir)/mtcr_ul/mtcr_ib_res_mgt.c \
     $(top_srcdir)/mtcr_ul/mtcr_ib_res_mgt.h \
@@ -58,10 +58,10 @@ libmtcr_ul_a_SOURCES = \
     mtcr_ul.c \
     mtcr_ul_com_defs.h
 
-libmtcr_ul_a_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
+libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 
 if ENABLE_INBAND
-libmtcr_ul_a_SOURCES += $(top_srcdir)/mtcr_ul/mtcr_ib_ofed.c
+libmtcr_ul_la_SOURCES += $(top_srcdir)/mtcr_ul/mtcr_ib_ofed.c
 endif
 
 libraryincludedir=$(includedir)/mstflint

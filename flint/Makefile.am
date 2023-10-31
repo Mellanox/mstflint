@@ -42,12 +42,21 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/mft_utils/hsmclient/inc/rsa \
     -I$(top_srcdir)/tools_layouts
 
-mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC) \
-                    -DUNIX -DOS_UNIX -DOS_LINUX ${MTCR_CONF_FLAGS}
 bin_PROGRAMS = mstflint
 
-mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h subcommands_linkx.cpp \
-					flint_params.cpp flint_params.h cmd_line_parser.cpp err_msgs.h
+mstflint_SOURCES = \
+    cmd_line_parser.cpp \
+    err_msgs.h \
+    flint.cpp \
+    flint.h \
+    flint_params.cpp \
+    flint_params.h \
+    subcommands.cpp \
+    subcommands.h \
+    subcommands_linkx.cpp
+
+mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC) \
+                    -DUNIX -DOS_UNIX -DOS_LINUX
 
 mstflint_DEPENDENCIES = \
      $(top_builddir)/mlxfwops/lib/libmlxfwops.a  \
@@ -57,48 +66,58 @@ mstflint_DEPENDENCIES = \
      $(top_builddir)/cmdif/libcmdif.la \
      $(top_builddir)/reg_access/libreg_access.la  \
      $(top_builddir)/dev_mgt/libdev_mgt.la \
-     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
+     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
      $(top_builddir)/tools_layouts/libtools_layouts.la \
      $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
      $(top_builddir)/mft_utils/libmftutils.a \
      $(top_builddir)/mft_utils/hsmclient/libhsmclient.a
 
-mstflint_LDADD = $(mstflint_DEPENDENCIES) ${LDL}
+LDADD_mstflint = ${LDL}
 
 mstflint_LDFLAGS = -static
 
 if ENABLE_DC
-mstflint_LDADD += -lz
+LDADD_mstflint += -lz
 else
 mstflint_CXXFLAGS += -DNO_ZLIB
 endif
 
 if ENABLE_CS
-mstflint_LDADD += $(top_builddir)/tools_crypto/libtools_crypto.a -lcrypto
+mstflint_DEPENDENCIES += $(top_builddir)/tools_crypto/libtools_crypto.a
+LDADD_mstflint += -lcrypto
 else
 endif
 
 if ENABLE_INBAND
-mstflint_LDADD += $(top_builddir)/mad_ifc/libmad_ifc.a
+mstflint_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.a
 else
 endif
 
 if ENABLE_OPENSSL
-mstflint_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
+mstflint_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.a
+LDADD_mstflint += -lcrypto -lssl
 else
 mstflint_CXXFLAGS += -DNO_OPEN_SSL
 endif
 
 if ENABLE_FWMGR
-mstflint_LDADD += $(top_builddir)/libmfa/libmfa.la $(top_builddir)/ext_libs/minixz/libminixz.la $(top_builddir)/mlxarchive/libmstarchive.la $(top_builddir)/tools_layouts/libmlxarchive_layouts.la $(top_builddir)/xz_utils/libxz_utils.la -llzma -lm
+mstflint_DEPENDENCIES += \
+    $(top_builddir)/libmfa/libmfa.la \
+    $(top_builddir)/ext_libs/minixz/libminixz.la \
+    $(top_builddir)/mlxarchive/libmstarchive.la \
+    $(top_builddir)/tools_layouts/libmlxarchive_layouts.la \
+    $(top_builddir)/xz_utils/libxz_utils.la
+LDADD_mstflint += -llzma -lm
 else
 mstflint_CXXFLAGS += -DNO_MSTARCHIVE
 endif
 
 if ENABLE_DPA
 mstflint_CXXFLAGS += -DENABLE_DPA
-mstflint_LDADD += $(top_builddir)/mlxdpa/libmstdpa.a
+mstflint_DEPENDENCIES += $(top_builddir)/mlxdpa/libmstdpa.a
 endif
+
+mstflint_LDADD = $(mstflint_DEPENDENCIES) $(LDADD_mstflint)
 
 # get mst device examples and tool name from makefile
 mstflint_CXXFLAGS += -DFLINT_NAME=\"mstflint\" -DFLINT_DISPLAY_NAME=\"MstFlint\"

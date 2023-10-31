@@ -50,7 +50,7 @@ mstreg_DEPENDENCIES = \
     $(top_builddir)/mlxreg/mlxreg_lib/libmstreg_lib.la \
     $(top_builddir)/cmdparser/libcmdparser.a \
     $(top_builddir)/mft_utils/libmftutils.a \
-    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
+    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/adb_parser/libadb_parser.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la \

@@ -1,5 +1,4 @@
-# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
-# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,19 +27,14 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
-
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-MTCR_CONFIG_DIR = mtcr_ul
+
 mtcr_pylibdir = $(libdir)/mstflint/python_tools/
-USER_DIR = ..
-MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
 
 mtcr_pylib_DATA = cmtcr.so
 dist_mtcr_pylib_DATA = mtcr.py
 cmtcr.so:
-	$(CC) -g -Wall -pthread -shared ${CFLAGS} $(MTCR_DIR)/*.o -o cmtcr.so $(MFT_CORE_LIB_LINK)
+	$(CC) -g -Wall -pthread -shared ${CFLAGS} -o cmtcr.so -Wl,--whole-archive $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a -Wl,--no-whole-archive
 
 CLEANFILES = cmtcr.so
-

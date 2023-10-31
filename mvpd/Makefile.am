@@ -38,7 +38,7 @@ noinst_LTLIBRARIES = libmvpd.la
 
 libmvpd_la_SOURCES =  mvpd.c mvpd.h
 
-libmvpd_la_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a
+libmvpd_la_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
 libmvpd_la_LIBADD = $(libmvpd_la_DEPENDENCIES)
 
 RMVPD_SO = rmvpd.so
@@ -47,6 +47,6 @@ noinst_HEADERS = mvpd.h
 
 ${RMVPD_SO}: libmvpd.la
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${RMVPD_SO} \
-	 -L$(top_builddir)/${MTCR_CONF_DIR} -lmtcr_ul
+	 $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a
 
 CLEANFILES = ${RMVPD_SO}

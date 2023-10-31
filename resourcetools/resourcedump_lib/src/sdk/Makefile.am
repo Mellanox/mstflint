@@ -63,7 +63,7 @@ libraryinclude_HEADERS = \
 # if WIN_BUILD
 # MTCR_LIB = $(MTCR_DIR)/.libs/libmtcr.dll.a
 # else
-MTCR_LIB = -L$(top_builddir)/${MTCR_CONF_DIR} -lmtcr_ul
+MTCR_LIB = $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a
 # endif
 
 if ENABLE_RDMEM
