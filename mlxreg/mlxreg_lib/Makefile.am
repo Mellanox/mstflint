@@ -33,7 +33,7 @@
 AM_CPPFLAGS = \
     -I$(srcdir) \
     -I$(top_srcdir) \
-    -I$(top_srcdir)${MTCR_CONF_DIR} \
+    -I$(top_srcdir)/${MTCR_CONF_DIR} \
     -I$(top_srcdir)/include/mtcr_ul \
     -I$(top_srcdir)/mft_utils \
     -I$(top_srcdir)/mlxreg
@@ -50,8 +50,10 @@ libmstreg_lib_la_SOURCES = \
     mlxreg_parser.cpp \
     mlxreg_parser.h
 
-libmstreg_lib_la_LIBDADD = \
+libmstreg_lib_la_DEPENDENCIES = \
     $(top_builddir)/mft_utils/libmftutils.a \
-    $(top_builddir)${MTCR_CONF_DIR}/libmtcr_ul.a \
+    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/adb_parser/libadb_parser.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la
+
+libmstreg_lib_la_LIBADD = $(libmstreg_lib_la_DEPENDENCIES)

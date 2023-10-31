@@ -34,8 +34,6 @@ PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_builddir)/common -I$(top_srcdir)/mvpd $(COMPILER_FPIC)
 
-LDADD = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
-
 bin_PROGRAMS = \
     mstmread \
     mstmwrite \
@@ -47,14 +45,18 @@ bin_PROGRAMS = \
 bin_SCRIPTS = mstfwreset
 
 mstmread_SOURCES = mread.c
+mstmread_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
+mstmread_LDADD = $(mstmread_DEPENDENCIES) ${LDL}
 mstmread_LDFLAGS = -static
 
 mstmwrite_SOURCES = mwrite.c
+mstmwrite_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
+mstmwrite_LDADD = $(mstmwrite_DEPENDENCIES) ${LDL}
 mstmwrite_LDFLAGS = -static
 
 mstvpd_SOURCES = vpd.c
 mstvpd_DEPENDENCIES = $(top_builddir)/mvpd/libmvpd.la \
-               $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
+               $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
                $(top_builddir)/dev_mgt/libdev_mgt.la \
                $(top_builddir)/reg_access/libreg_access.la \
                $(top_builddir)/tools_layouts/libtools_layouts.la
@@ -67,15 +69,19 @@ mstcongestion_DEPENDENCIES = $(top_builddir)/cmdif/libcmdif.la \
                       $(top_builddir)/reg_access/libreg_access.la \
                       $(top_builddir)/tools_layouts/libtools_layouts.la \
                       $(top_builddir)/cmdparser/libcmdparser.a \
-                      $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.a
+                      $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
 mstcongestion_LDADD = $(mstcongestion_DEPENDENCIES) ${LDL}
 mstcongestion_LDFLAGS = -static
 
-mstmcra_SOURCES  = mcra.c
+mstmcra_SOURCES = mcra.c
+mstmcra_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
+mstmcra_LDADD = $(mstmcra_DEPENDENCIES) ${LDL}
 mstmcra_LDFLAGS = -static
 
 mstmtserver_SOURCES = mtserver.c tcp.c tcp.h
 mstmtserver_CFLAGS = -DMST_UL
+mstmtserver_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
+mstmtserver_LDADD = $(mstmtserver_DEPENDENCIES) ${LDL}
 mstmtserver_LDFLAGS = -static
 
 SUBDIRS = mlxfwresetlib
