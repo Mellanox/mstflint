@@ -94,7 +94,7 @@ else
 endif
 
 if ENABLE_OPENSSL
-mstflint_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.a
+mstflint_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.la
 LDADD_mstflint += -lcrypto -lssl
 else
 mstflint_CXXFLAGS += -DNO_OPEN_SSL

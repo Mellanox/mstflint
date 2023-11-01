@@ -90,7 +90,7 @@ mstarchive_LDADD = libmstarchive.la\
 mstarchive_LDFLAGS = -shared
 
 if ENABLE_OPENSSL
-mstarchive_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
+mstarchive_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
 else
 endif
 

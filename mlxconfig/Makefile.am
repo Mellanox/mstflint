@@ -112,8 +112,8 @@ else
 endif
 
 if ENABLE_OPENSSL
-mstconfig_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
-libmlxcfg_la_LIBADD += $(top_builddir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
+mstconfig_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
+libmlxcfg_la_LIBADD += $(top_builddir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
 else
 AM_CXXFLAGS += -DNO_OPEN_SSL
 endif

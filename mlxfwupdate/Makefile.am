@@ -114,7 +114,7 @@ LDADD_mstfwmanager += -lxml2
 LDADD_mstfwmanager += -lcurl  -lssl -lcrypto -lrt
 
 if ENABLE_OPENSSL
-mstfwmanager_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.a
+mstfwmanager_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.la
 LDADD_mstfwmanager += -lcrypto -lssl
 endif
 
