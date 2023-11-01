@@ -154,7 +154,7 @@ fi
 # mlxdpa
 AC_MSG_CHECKING(--enable-dpa argument)
 AC_ARG_ENABLE(dpa,
-             [  --enable-dpa            Enable compiling mstdpa tool],
+             [  --enable-dpa            Enable compiling mstdpa tool (x86_64/aarch64 Linux only, no FreeBSD support],
              [enable_dpa="yes"],
              [enable_dpa="no"])
 AC_MSG_RESULT($enable_dpa)
@@ -234,7 +234,7 @@ AC_ARG_ENABLE(rdmem,
 		    [enable_rdmem=$default_en_rdmem])
 AC_MSG_RESULT($enable_rdmem)
 if test "x$enable_rdmem" = "xyes"; then
-  AC_CHECK_HEADERS(infiniband/mlx5dv.h infiniband/verbs.h,,AC_MSG_ERROR([cannot find infiniband/mlx5dv.h or infiniband/verbs.h . Use --disable-rdmem to remove this dependaency]))
+  AC_CHECK_HEADERS(infiniband/mlx5dv.h infiniband/verbs.h,,AC_MSG_ERROR([cannot find infiniband/mlx5dv.h or infiniband/verbs.h . Use --disable-rdmem to remove this dependency]))
   MAD_IFC="mad_ifc"
 else
   CXXFLAGS="$CXXFLAGS -DNO_RDMEM"
@@ -343,7 +343,8 @@ AC_SEARCH_LIBS([mupCreateVar], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[
     MUPARSER_SYSTEM_AVAILABLE="no"
     MUPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/muparser'
     AC_SUBST(MUPARSER_CFLAGS)
-    MUPARSER_LIBS='$(top_builddir)/ext_libs/muparser/libmuparser.a'
+    MUPARSER_LIBS='$(top_builddir)/ext_libs/muparser/libmuparser.la'
+
     AC_SUBST(MUPARSER_LIBS)
 ])
 AM_CONDITIONAL([USE_LOCAL_MUPARSER], [test "$MUPARSER_SYSTEM_AVAILABLE" = no])
@@ -352,7 +353,7 @@ AC_SEARCH_LIBS([sqlite3_initialize], [sqlite3], [SQLITE_SYSTEM_AVAILABLE="yes"],
     SQLITE_SYSTEM_AVAILABLE="no"
     SQLITE_CFLAGS='-I$(top_srcdir)/ext_libs/sqlite'
     AC_SUBST(SQLITE_CFLAGS)
-    SQLITE_LIBS='$(top_builddir)/ext_libs/sqlite/libsqlite3.a'
+    SQLITE_LIBS='$(top_builddir)/ext_libs/sqlite/libsqlite3.la'
     AC_SUBST(SQLITE_LIBS)
 ])
 AM_CONDITIONAL([USE_LOCAL_SQLITE], [test "$SQLITE_SYSTEM_AVAILABLE" = no])

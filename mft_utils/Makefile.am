@@ -40,7 +40,7 @@ AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  $(COMPILER_FPIC)
 
 noinst_HEADERS = mft_sig_handler.h errmsg.h
 
-noinst_LIBRARIES = libmftutils.a
+noinst_LTLIBRARIES = libmftutils.la
 
-libmftutils_a_SOURCES =  mft_sig_handler.c errmsg.cpp calc_hw_crc.c mlarge_buffer.cpp mft_utils.cpp
+libmftutils_la_SOURCES =  mft_sig_handler.c errmsg.cpp calc_hw_crc.c mlarge_buffer.cpp mft_utils.cpp
 

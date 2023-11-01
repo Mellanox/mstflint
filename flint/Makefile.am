@@ -62,14 +62,14 @@ mstflint_DEPENDENCIES = \
      $(top_builddir)/mlxfwops/lib/libmlxfwops.a  \
      $(top_builddir)/cmdparser/libcmdparser.a \
      $(top_builddir)/mflash/libmflash.la \
-     $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+     $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
      $(top_builddir)/cmdif/libcmdif.la \
      $(top_builddir)/reg_access/libreg_access.la  \
      $(top_builddir)/dev_mgt/libdev_mgt.la \
      $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
      $(top_builddir)/tools_layouts/libtools_layouts.la \
-     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
-     $(top_builddir)/mft_utils/libmftutils.a \
+     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
+     $(top_builddir)/mft_utils/libmftutils.la \
      $(top_builddir)/mft_utils/hsmclient/libhsmclient.a
 
 LDADD_mstflint = ${LDL}
@@ -89,12 +89,12 @@ else
 endif
 
 if ENABLE_INBAND
-mstflint_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.a
+mstflint_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.la
 else
 endif
 
 if ENABLE_OPENSSL
-mstflint_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.a
+mstflint_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.la
 LDADD_mstflint += -lcrypto -lssl
 else
 mstflint_CXXFLAGS += -DNO_OPEN_SSL

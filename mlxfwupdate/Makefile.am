@@ -95,12 +95,12 @@ mstfwmanager_DEPENDENCIES = \
     $(top_builddir)/ext_libs/minixz/libminixz.la \
     $(top_builddir)/cmdparser/libcmdparser.a \
     $(top_builddir)/mflash/libmflash.la \
-    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
-    $(top_builddir)/mft_utils/libmftutils.a \
+    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
+    $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/reg_access/libreg_access.la \
     $(top_builddir)/tools_layouts/libtools_layouts.la \
-    $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
+    $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(JSON_LIBS) \
     $(INIPARSER_LIBS) \
@@ -114,7 +114,7 @@ LDADD_mstfwmanager += -lxml2
 LDADD_mstfwmanager += -lcurl  -lssl -lcrypto -lrt
 
 if ENABLE_OPENSSL
-mstfwmanager_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.a
+mstfwmanager_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.la
 LDADD_mstfwmanager += -lcrypto -lssl
 endif
 
@@ -124,7 +124,7 @@ LDADD_mstfwmanager += -lcrypto
 endif
 
 if ENABLE_INBAND
-mstfwmanager_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.a
+mstfwmanager_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.la
 endif
 
 mstfwmanager_LDADD = $(mstfwmanager_DEPENDENCIES) $(LDADD_mstfwmanager)

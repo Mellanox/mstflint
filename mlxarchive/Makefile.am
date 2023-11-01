@@ -70,13 +70,13 @@ mstarchive_SOURCES = mlxarchive.cpp mlxarchive.h
 mstarchive_LDADD = libmstarchive.la\
                    $(USER_DIR)/mlxfwops/lib/libmlxfwops.a\
                    $(USER_DIR)/libmfa/libmfa.la\
-                   $(USER_DIR)/fw_comps_mgr/libfw_comps_mgr.a\
+                   $(USER_DIR)/fw_comps_mgr/libfw_comps_mgr.la\
                    $(MTCR_DIR)/libmtcr_ul.la\
                    $(USER_DIR)/mflash/libmflash.la\
-                   $(RES_MGMT_DIR)/libtools_res_mgmt.a\
+                   $(RES_MGMT_DIR)/libtools_res_mgmt.la\
                    $(DEV_MGT_DIR)/libdev_mgt.la\
                    $(CMDIF_DIR)/libcmdif.la\
-                   $(UTILS_DIR)/libmftutils.a\
+                   $(UTILS_DIR)/libmftutils.la\
                    $(JSON_LIBS)\
                    $(USER_DIR)/cmdparser/libcmdparser.a\
                    $(USER_DIR)/reg_access/libreg_access.la\
@@ -90,7 +90,7 @@ mstarchive_LDADD = libmstarchive.la\
 mstarchive_LDFLAGS = -shared
 
 if ENABLE_OPENSSL
-mstarchive_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
+mstarchive_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
 else
 endif
 
@@ -100,6 +100,6 @@ else
 endif
 
 if ENABLE_INBAND
-mstarchive_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.a
+mstarchive_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.la
 else
 endif

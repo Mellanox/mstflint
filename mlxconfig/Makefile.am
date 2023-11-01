@@ -68,14 +68,14 @@ libmlxcfg_la_SOURCES = mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_vi
         mlxcfg_commander.h mlxcfg_commander.cpp mlxcfg_generic_commander.h mlxcfg_generic_commander.cpp
 
 libmlxcfg_la_DEPENDENCIES = \
-    $(top_builddir)/mft_utils/libmftutils.a \
+    $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/reg_access/libreg_access.la \
     $(top_builddir)/tools_layouts/libtools_layouts.la \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
-    $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
-    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+    $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
+    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
     $(MUPARSER_LIBS) \
     $(SQLITE_LIBS)
 
@@ -83,14 +83,14 @@ libmlxcfg_la_LIBADD = $(libmlxcfg_la_DEPENDENCIES) ${LDL}
 
 mstconfig_DEPENDENCIES = \
     libmlxcfg.la \
-    $(top_builddir)/mft_utils/libmftutils.a \
+    $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/reg_access/libreg_access.la \
     $(top_builddir)/tools_layouts/libtools_layouts.la \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
-    $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
-    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+    $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
+    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
     $(MUPARSER_LIBS) \
     $(SQLITE_LIBS)
 
@@ -106,14 +106,14 @@ libmlxcfg_la_LIBADD += -lxml2
 endif
 
 if ENABLE_INBAND
-mstconfig_LDADD += $(top_builddir)/mad_ifc/libmad_ifc.a
-libmlxcfg_la_LIBADD += $(top_builddir)/mad_ifc/libmad_ifc.a
+mstconfig_LDADD += $(top_builddir)/mad_ifc/libmad_ifc.la
+libmlxcfg_la_LIBADD += $(top_builddir)/mad_ifc/libmad_ifc.la
 else
 endif
 
 if ENABLE_OPENSSL
-mstconfig_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
-libmlxcfg_la_LIBADD += $(top_builddir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
+mstconfig_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
+libmlxcfg_la_LIBADD += $(top_builddir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
 else
 AM_CXXFLAGS += -DNO_OPEN_SSL
 endif
