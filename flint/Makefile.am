@@ -89,7 +89,7 @@ else
 endif
 
 if ENABLE_INBAND
-mstflint_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.a
+mstflint_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.la
 else
 endif
 

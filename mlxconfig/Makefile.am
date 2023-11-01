@@ -106,8 +106,8 @@ libmlxcfg_la_LIBADD += -lxml2
 endif
 
 if ENABLE_INBAND
-mstconfig_LDADD += $(top_builddir)/mad_ifc/libmad_ifc.a
-libmlxcfg_la_LIBADD += $(top_builddir)/mad_ifc/libmad_ifc.a
+mstconfig_LDADD += $(top_builddir)/mad_ifc/libmad_ifc.la
+libmlxcfg_la_LIBADD += $(top_builddir)/mad_ifc/libmad_ifc.la
 else
 endif
 

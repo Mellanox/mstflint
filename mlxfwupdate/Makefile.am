@@ -124,7 +124,7 @@ LDADD_mstfwmanager += -lcrypto
 endif
 
 if ENABLE_INBAND
-mstfwmanager_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.a
+mstfwmanager_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.la
 endif
 
 mstfwmanager_LDADD = $(mstfwmanager_DEPENDENCIES) $(LDADD_mstfwmanager)

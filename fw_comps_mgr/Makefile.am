@@ -72,7 +72,7 @@ libfw_comps_mgr_a_DEPENDENCIES = \
 
 
 if ENABLE_INBAND
-libfw_comps_mgr_a_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.a
+libfw_comps_mgr_a_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.la
 endif
 
 libfw_comps_mgr_a_LIBADD = $(libfw_comps_mgr_a_DEPENDENCIES)

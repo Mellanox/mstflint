@@ -100,6 +100,6 @@ else
 endif
 
 if ENABLE_INBAND
-mstarchive_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.a
+mstarchive_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.la
 else
 endif
