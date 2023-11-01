@@ -1,5 +1,4 @@
-# Copyright (c) 2020 Mellanox Technologies Ltd.  All rights reserved.
-# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,78 +27,88 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#
-# Makefile.am -- Process this file with automake to produce Makefile.in
 
-USER_DIR=$(top_srcdir)
-COM_DIR = $(USER_DIR)/common
-UTILS_DIR = $(USER_DIR)/mft_utils
-MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
-RES_MGMT_DIR = $(USER_DIR)/tools_res_mgmt
-DEV_MGT_DIR = $(USER_DIR)/dev_mgt
-TOOLS_CRYPTO_DIR = $(USER_DIR)/tools_crypto
-CMDIF_DIR = $(USER_DIR)/cmdif
+# Makefile.am -- Process this file with automake to produce Makefile.in
 
 CURL_LIBS = -lcurl  -lssl -lcrypto -lrt
 
-AM_CPPFLAGS = $(JSON_CFLAGS) -I. \
-           -I$(USER_DIR) -I$(USER_DIR)/libmfa \
-           -I$(MTCR_DIR) -I$(USER_DIR)/include/mtcr_ul \
-           -I$(USER_DIR)/mflash -I$(USER_DIR)/common \
-           -I$(UTILS_DIR) -I$(USER_DIR)/mlxfwops/lib \
-           -I$(USER_DIR)/dev_mgt -I$(USER_DIR)/tools_layouts
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir) \
+    -I$(top_srcdir)/libmfa \
+    -I$(top_srcdir)/${MTCR_CONF_DIR} \
+    -I$(top_srcdir)/include/mtcr_ul \
+    -I$(top_srcdir)/mflash \
+    -I$(top_srcdir)/common -I$(top_builddir)/common \
+    -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mlxfwops/lib \
+    -I$(top_srcdir)/dev_mgt \
+    -I$(top_srcdir)/tools_layouts
 
-lib_LTLIBRARIES = libmstarchive.la
+
+AM_CPPFLAGS += $(JSON_CFLAGS)
+
+noinst_LTLIBRARIES = libmstarchive.la
 
 libmstarchive_la_SOURCES = \
-              mlxarchive_mfa2_utils.h mlxarchive_mfa2_utils.cpp\
-              mlxarchive_mfa2_common_header.h mlxarchive_mfa2_common_header.cpp\
-              mlxarchive_mfa2_element.h mlxarchive_mfa2_element.cpp\
-              mlxarchive_mfa2_extension.h mlxarchive_mfa2_extension.cpp\
-              mlxarchive_mfa2_descriptor.h mlxarchive_mfa2_descriptor.cpp\
-              mlxarchive_mfa2_component.h\
-              mlxarchive_mfa2.h mlxarchive_mfa2.cpp\
-              mlxarchive_mfa2_builder.h mlxarchive_mfa2_builder.cpp\
-              mlxarchive_mfa2_package_gen.h mlxarchive_mfa2_package_gen.cpp\
+              mlxarchive_mfa2_utils.h mlxarchive_mfa2_utils.cpp \
+              mlxarchive_mfa2_common_header.h mlxarchive_mfa2_common_header.cpp \
+              mlxarchive_mfa2_element.h mlxarchive_mfa2_element.cpp \
+              mlxarchive_mfa2_extension.h mlxarchive_mfa2_extension.cpp \
+              mlxarchive_mfa2_descriptor.h mlxarchive_mfa2_descriptor.cpp \
+              mlxarchive_mfa2_component.h \
+              mlxarchive_mfa2.h mlxarchive_mfa2.cpp \
+              mlxarchive_mfa2_builder.h mlxarchive_mfa2_builder.cpp \
+              mlxarchive_mfa2_package_gen.h mlxarchive_mfa2_package_gen.cpp \
               mfa2_buff.h mfa2_buff.cpp
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(INCLUDES) $(COMPILER_FPIC)
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
+
 bin_PROGRAMS = mstarchive
 
 mstarchive_SOURCES = mlxarchive.cpp mlxarchive.h
-mstarchive_LDADD = libmstarchive.la\
-                   $(USER_DIR)/mlxfwops/lib/libmlxfwops.a\
-                   $(USER_DIR)/libmfa/libmfa.la\
-                   $(USER_DIR)/fw_comps_mgr/libfw_comps_mgr.la\
-                   $(MTCR_DIR)/libmtcr_ul.la\
-                   $(USER_DIR)/mflash/libmflash.la\
-                   $(RES_MGMT_DIR)/libtools_res_mgmt.la\
-                   $(DEV_MGT_DIR)/libdev_mgt.la\
-                   $(CMDIF_DIR)/libcmdif.la\
-                   $(UTILS_DIR)/libmftutils.la\
-                   $(JSON_LIBS)\
-                   $(USER_DIR)/cmdparser/libcmdparser.a\
-                   $(USER_DIR)/reg_access/libreg_access.la\
-                   $(USER_DIR)/tools_layouts/libmlxarchive_layouts.la\
-                   $(USER_DIR)/tools_layouts/libtools_layouts.la\
-                   $(USER_DIR)/xz_utils/libxz_utils.la\
-                   $(USER_DIR)/ext_libs/minixz/libminixz.la\
-		   $(USER_DIR)/xz_utils/libxz_utils.la \
-                   $(CURL_LIBS)\
-                   -llzma -lm $(LIBSTD_CPP) ${LDL}
-mstarchive_LDFLAGS = -shared
+
+mstarchive_CXXFLAGS =
+
+mstarchive_LDADD = libmstarchive.la \
+                   $(top_builddir)/mlxfwops/lib/libmlxfwops.a \
+                   $(top_builddir)/libmfa/libmfa.la \
+                   $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
+                   $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+                   $(top_builddir)/mflash/libmflash.la \
+                   $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
+                   $(top_builddir)/dev_mgt/libdev_mgt.la \
+                   $(top_builddir)/cmdif/libcmdif.la \
+                   $(top_builddir)/mft_utils/libmftutils.la \
+                   $(JSON_LIBS) \
+                   $(top_builddir)/cmdparser/libcmdparser.a \
+                   $(top_builddir)/reg_access/libreg_access.la \
+                   $(top_builddir)/tools_layouts/libmlxarchive_layouts.la \
+                   $(top_builddir)/tools_layouts/libtools_layouts.la \
+                   $(top_builddir)/xz_utils/libxz_utils.la \
+                   $(top_builddir)/ext_libs/minixz/libminixz.la \
+                   $(top_builddir)/xz_utils/libxz_utils.la \
+                   $(CURL_LIBS) \
+                   -llzma -lm ${LDL}
+
+mstarchive_LDFLAGS = -static
 
 if ENABLE_OPENSSL
-mstarchive_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
+mstarchive_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
 else
 endif
 
 if ENABLE_CS
-mstarchive_LDADD += $(top_srcdir)/tools_crypto/libtools_crypto.a -lcrypto
+mstarchive_LDADD += $(top_builddir)/tools_crypto/libtools_crypto.a -lcrypto
 else
 endif
 
 if ENABLE_INBAND
-mstarchive_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.la
+mstarchive_LDADD += $(top_builddir)/mad_ifc/libmad_ifc.la
 else
+endif
+
+if ENABLE_DPA
+mstarchive_CXXFLAGS += -DENABLE_DPA
+mstarchive_LDADD += $(top_builddir)/mlxdpa/libmstdpa.a
 endif
