@@ -127,5 +127,10 @@ if ENABLE_INBAND
 mstfwmanager_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.la
 endif
 
+if ENABLE_DPA
+mstfwmanager_CXXFLAGS += -DENABLE_DPA
+mstfwmanager_DEPENDENCIES += $(top_builddir)/mlxdpa/libmstdpa.a
+endif
+
 mstfwmanager_LDADD = $(mstfwmanager_DEPENDENCIES) $(LDADD_mstfwmanager)
 mstfwmanager_LDFLAGS = -static
