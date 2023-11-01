@@ -343,7 +343,8 @@ AC_SEARCH_LIBS([mupCreateVar], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[
     MUPARSER_SYSTEM_AVAILABLE="no"
     MUPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/muparser'
     AC_SUBST(MUPARSER_CFLAGS)
-    MUPARSER_LIBS='$(top_builddir)/ext_libs/muparser/libmuparser.a'
+    MUPARSER_LIBS='$(top_builddir)/ext_libs/muparser/libmuparser.la'
+
     AC_SUBST(MUPARSER_LIBS)
 ])
 AM_CONDITIONAL([USE_LOCAL_MUPARSER], [test "$MUPARSER_SYSTEM_AVAILABLE" = no])
