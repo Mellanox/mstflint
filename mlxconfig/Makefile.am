@@ -68,7 +68,7 @@ libmlxcfg_la_SOURCES = mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_vi
         mlxcfg_commander.h mlxcfg_commander.cpp mlxcfg_generic_commander.h mlxcfg_generic_commander.cpp
 
 libmlxcfg_la_DEPENDENCIES = \
-    $(top_builddir)/mft_utils/libmftutils.a \
+    $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/reg_access/libreg_access.la \
     $(top_builddir)/tools_layouts/libtools_layouts.la \
@@ -83,7 +83,7 @@ libmlxcfg_la_LIBADD = $(libmlxcfg_la_DEPENDENCIES) ${LDL}
 
 mstconfig_DEPENDENCIES = \
     libmlxcfg.la \
-    $(top_builddir)/mft_utils/libmftutils.a \
+    $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/reg_access/libreg_access.la \
     $(top_builddir)/tools_layouts/libtools_layouts.la \

@@ -69,7 +69,7 @@ mstflint_DEPENDENCIES = \
      $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
      $(top_builddir)/tools_layouts/libtools_layouts.la \
      $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
-     $(top_builddir)/mft_utils/libmftutils.a \
+     $(top_builddir)/mft_utils/libmftutils.la \
      $(top_builddir)/mft_utils/hsmclient/libhsmclient.a
 
 LDADD_mstflint = ${LDL}

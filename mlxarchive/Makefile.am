@@ -76,7 +76,7 @@ mstarchive_LDADD = libmstarchive.la\
                    $(RES_MGMT_DIR)/libtools_res_mgmt.a\
                    $(DEV_MGT_DIR)/libdev_mgt.la\
                    $(CMDIF_DIR)/libcmdif.la\
-                   $(UTILS_DIR)/libmftutils.a\
+                   $(UTILS_DIR)/libmftutils.la\
                    $(JSON_LIBS)\
                    $(USER_DIR)/cmdparser/libcmdparser.a\
                    $(USER_DIR)/reg_access/libreg_access.la\
