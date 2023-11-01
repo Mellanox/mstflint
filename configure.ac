@@ -108,8 +108,8 @@ AC_SUBST(MTCR_CONF_DIR)
 AC_SUBST(LDL)
 AC_SUBST(default_en_inband)
 
-AM_CONDITIONAL(ARM64_BUILD, [ echo $build_cpu | grep -iq "aarch64" ])
-AM_CONDITIONAL(X86_64_BUILD, [ echo $build_cpu | grep -iq "x86_64" ])
+AM_CONDITIONAL(ARM64_BUILD, [ echo $host_cpu | grep -iq "aarch64" ])
+AM_CONDITIONAL(X86_64_BUILD, [ echo $host_cpu | grep -iq "x86_64" ])
 
 dnl Checks for headers
 AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
