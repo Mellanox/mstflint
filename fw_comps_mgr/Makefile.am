@@ -47,9 +47,9 @@ AM_CFLAGS = -MD -pipe -Wall -W $(COMPILER_FPIC)
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 
-noinst_LIBRARIES = libfw_comps_mgr.a
+noinst_LTLIBRARIES = libfw_comps_mgr.la
 
-libfw_comps_mgr_a_SOURCES = \
+libfw_comps_mgr_la_SOURCES = \
     fw_comps_mgr.cpp \
     fw_comps_mgr.h \
     fw_comps_mgr_abstract_access.cpp \
@@ -64,7 +64,7 @@ else
 AM_CXXFLAGS += "-DNO_INBAND"
 endif
 
-libfw_comps_mgr_a_DEPENDENCIES = \
+libfw_comps_mgr_la_DEPENDENCIES = \
     $(top_builddir)/reg_access/libreg_access.la \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
@@ -72,7 +72,7 @@ libfw_comps_mgr_a_DEPENDENCIES = \
 
 
 if ENABLE_INBAND
-libfw_comps_mgr_a_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.la
+libfw_comps_mgr_la_DEPENDENCIES += $(top_builddir)/mad_ifc/libmad_ifc.la
 endif
 
-libfw_comps_mgr_a_LIBADD = $(libfw_comps_mgr_a_DEPENDENCIES)
+libfw_comps_mgr_la_LIBADD = $(libfw_comps_mgr_la_DEPENDENCIES)

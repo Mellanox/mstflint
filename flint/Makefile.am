@@ -68,7 +68,7 @@ mstflint_DEPENDENCIES = \
      $(top_builddir)/dev_mgt/libdev_mgt.la \
      $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
      $(top_builddir)/tools_layouts/libtools_layouts.la \
-     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
+     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
      $(top_builddir)/mft_utils/libmftutils.la \
      $(top_builddir)/mft_utils/hsmclient/libhsmclient.a
 
