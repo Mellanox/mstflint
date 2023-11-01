@@ -353,7 +353,7 @@ AC_SEARCH_LIBS([sqlite3_initialize], [sqlite3], [SQLITE_SYSTEM_AVAILABLE="yes"],
     SQLITE_SYSTEM_AVAILABLE="no"
     SQLITE_CFLAGS='-I$(top_srcdir)/ext_libs/sqlite'
     AC_SUBST(SQLITE_CFLAGS)
-    SQLITE_LIBS='$(top_builddir)/ext_libs/sqlite/libsqlite3.a'
+    SQLITE_LIBS='$(top_builddir)/ext_libs/sqlite/libsqlite3.la'
     AC_SUBST(SQLITE_LIBS)
 ])
 AM_CONDITIONAL([USE_LOCAL_SQLITE], [test "$SQLITE_SYSTEM_AVAILABLE" = no])
