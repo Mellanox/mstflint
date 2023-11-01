@@ -95,7 +95,7 @@ mstfwmanager_DEPENDENCIES = \
     $(top_builddir)/ext_libs/minixz/libminixz.la \
     $(top_builddir)/cmdparser/libcmdparser.a \
     $(top_builddir)/mflash/libmflash.la \
-    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
     $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/reg_access/libreg_access.la \

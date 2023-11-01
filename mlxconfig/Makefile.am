@@ -75,7 +75,7 @@ libmlxcfg_la_DEPENDENCIES = \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
-    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
     $(MUPARSER_LIBS) \
     $(SQLITE_LIBS)
 
@@ -90,7 +90,7 @@ mstconfig_DEPENDENCIES = \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.a \
-    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
     $(MUPARSER_LIBS) \
     $(SQLITE_LIBS)
 

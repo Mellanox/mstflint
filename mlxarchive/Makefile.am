@@ -73,7 +73,7 @@ mstarchive_LDADD = libmstarchive.la\
                    $(USER_DIR)/fw_comps_mgr/libfw_comps_mgr.a\
                    $(MTCR_DIR)/libmtcr_ul.la\
                    $(USER_DIR)/mflash/libmflash.la\
-                   $(RES_MGMT_DIR)/libtools_res_mgmt.a\
+                   $(RES_MGMT_DIR)/libtools_res_mgmt.la\
                    $(DEV_MGT_DIR)/libdev_mgt.la\
                    $(CMDIF_DIR)/libcmdif.la\
                    $(UTILS_DIR)/libmftutils.la\

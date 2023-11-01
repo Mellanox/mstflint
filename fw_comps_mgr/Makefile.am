@@ -67,7 +67,7 @@ endif
 libfw_comps_mgr_a_DEPENDENCIES = \
     $(top_builddir)/reg_access/libreg_access.la \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
-    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.a \
+    $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
     $(top_builddir)/mft_utils/libmftutils.la
 
 
