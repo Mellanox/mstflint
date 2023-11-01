@@ -52,7 +52,7 @@ libmstdpa_a_SOURCES = \
 
 libmstdpa_a_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) $(XML_FLAGS)
 
-libmstdpa_a_DEPENDENCIES = $(top_builddir)/mft_utils/libmftutils.a
+libmstdpa_a_DEPENDENCIES = $(top_builddir)/mft_utils/libmftutils.la
 
 libmstdpa_a_LIBADD = $(libmstdpa_a_DEPENDENCIES)
 
@@ -76,8 +76,8 @@ mstdpa_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) $(XML_FLAGS)
 
 mstdpa_LDADD = \
     $(top_builddir)/cmdparser/libcmdparser.a \
-    $(top_builddir)/mlxsign_lib/libmlxsign.a \
-    $(top_builddir)/mft_utils/libmftutils.a
+    $(top_builddir)/mlxsign_lib/libmlxsign.la \
+    $(top_builddir)/mft_utils/libmftutils.la
 
 # these are precompiled
 if ARM64_BUILD

@@ -51,7 +51,7 @@ libmstreg_lib_la_SOURCES = \
     mlxreg_parser.h
 
 libmstreg_lib_la_DEPENDENCIES = \
-    $(top_builddir)/mft_utils/libmftutils.a \
+    $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/adb_parser/libadb_parser.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la

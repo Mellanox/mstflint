@@ -34,8 +34,8 @@
 
 AM_CFLAGS = -fno-strict-aliasing -g -MP -MD -DSQLITE_THREADSAFE=0 ${COMPILER_FPIC}
 
-noinst_LIBRARIES = libsqlite3.a
+noinst_LTLIBRARIES = libsqlite3.la
 noinst_HEADERS = sqlite3.h
 
-libsqlite3_a_SOURCES = \
+libsqlite3_la_SOURCES = \
 	sqlite3.c sqlite3.h

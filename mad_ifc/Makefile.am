@@ -39,8 +39,8 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = -W -Wall  -g -MP -MD $(COMPILER_FPIC)
 
-noinst_LIBRARIES = libmad_ifc.a
+noinst_LTLIBRARIES = libmad_ifc.la
 
-libmad_ifc_a_SOURCES = mad_ifc.c mad_ifc.h
-libmad_ifc_a_DEPENDENCIES = $(top_builddir)/tools_layouts/libtools_layouts.la
-libmad_ifc_a_LIBADD = $(libmad_ifc_a_DEPENDENCIES)
+libmad_ifc_la_SOURCES = mad_ifc.c mad_ifc.h
+libmad_ifc_la_DEPENDENCIES = $(top_builddir)/tools_layouts/libtools_layouts.la
+libmad_ifc_la_LIBADD = $(libmad_ifc_la_DEPENDENCIES)
