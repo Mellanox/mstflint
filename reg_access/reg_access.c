@@ -119,6 +119,9 @@
 #define REG_ID_RES_DUMP 0xC000
 //==================================
 #define REG_ID_MPEGC 0x9056
+#define REG_ID_NIC_CAP_EXT 0xC011
+#define REG_ID_NIC_DPA_PERF 0xC013
+#define REG_ID_NIC_DPA_PERF_CTRL 0xC014
 #define REG_ID_NIC_DPA_EUG 0xC012
 #define REG_ID_NIC_DPA_EU_PARTITION 0xC015
 
@@ -723,6 +726,14 @@ reg_access_status_t reg_access_mkdc(mfile* mf, reg_access_method_t method, struc
 {
     REG_ACCCESS(mf, method, REG_ID_MKDC, mkdc, mkdc_reg_ext, reg_access_switch);
 }
+/************************************
+ * Function: reg_access_nic_cap_ext
+ ************************************/
+reg_access_status_t
+  reg_access_nic_cap_ext(mfile* mf, reg_access_method_t method, struct reg_access_hca_nic_cap_ext_reg_ext* nic_cap_ext)
+{
+    REG_ACCCESS(mf, method, REG_ID_NIC_CAP_EXT, nic_cap_ext, nic_cap_ext_reg_ext, reg_access_hca);
+}
 
 /************************************
  * Function: reg_access_nic_dpa_eug
@@ -731,6 +742,16 @@ reg_access_status_t
   reg_access_nic_dpa_eug(mfile* mf, reg_access_method_t method, struct reg_access_hca_nic_dpa_eug_reg_ext* nic_dpa_eug)
 {
     REG_ACCCESS(mf, method, REG_ID_NIC_DPA_EUG, nic_dpa_eug, nic_dpa_eug_reg_ext, reg_access_hca);
+}
+
+/************************************
+ * Function: reg_access_nic_dpa_perf_ctrl
+ ************************************/
+reg_access_status_t reg_access_nic_dpa_perf_ctrl(mfile* mf,
+                                                 reg_access_method_t method,
+                                                 struct reg_access_hca_nic_dpa_perf_ctrl_reg_ext* nic_dpa_perf_ctrl)
+{
+    REG_ACCCESS(mf, method, REG_ID_NIC_DPA_PERF_CTRL, nic_dpa_perf_ctrl, nic_dpa_perf_ctrl_reg_ext, reg_access_hca);
 }
 
 /************************************
