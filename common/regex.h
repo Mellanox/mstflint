@@ -1,6 +1,8 @@
 #ifndef MSTFLINT_REGEX_H
 #define MSTFLINT_REGEX_H
 
+#include "config.h"
+
 #ifdef USE_BOOST_REGEX
 #include <boost/regex.hpp>
 #else

@@ -62,4 +62,14 @@ mstreg_DEPENDENCIES = \
 
 mstreg_LDADD = $(mstreg_DEPENDENCIES) -llzma ${LDL} -lexpat
 
+# Certain older compilers may not fully support std::regex.
+# Signatuire is: the code compiles without issues, then it
+# crashes during runtime with:
+# terminate called after throwing an instance of 'std::regex_error'
+#  what():  regex_error
+# For those we resort to using boost::regex as a fallback.
+if USE_BOOST_REGEX
+mstreg_LDADD += -lboost_regex
+endif
+
 mstreg_LDFLAGS = -static
