@@ -47,7 +47,7 @@
 #include <list>
 
 #include "common/algorithm.h"
-#include "common/regex.h"
+#include "common/tools_regex.h"
 
 // Constants
 const char AdbInstance::path_seperator{'.'};

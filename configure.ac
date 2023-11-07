@@ -494,7 +494,7 @@ AC_SUBST(LINUX_KERNEL_INCLUDE)
 # terminate called after throwing an instance of 'std::regex_error'
 #  what():  regex_error
 # For those we resort to using boost::regex as a fallback.
-AC_MSG_CHECKING([Check whether std::regex does not crash])
+AC_MSG_CHECKING([Check for std::regex compatibility])
 AC_LANG_PUSH([C++])
 AC_RUN_IFELSE([
     AC_LANG_PROGRAM(
@@ -504,14 +504,11 @@ AC_RUN_IFELSE([
     )
 ],[
     AC_MSG_RESULT([yes])
-    use_boost_regex="no"
 ],[
     AC_MSG_RESULT([no])
-    AC_MSG_NOTICE([std::regex support appears to be incomplete, fallback to boost:regex])
-    AC_DEFINE([USE_BOOST_REGEX], [1], [Whether to use boost::regex])
-    use_boost_regex="yes"
+    AC_MSG_NOTICE([std::regex support appears to be incomplete, fallback to GNU C regex])
+    AC_DEFINE([USE_STDLIB_REGEX], [1], [Whether to use GNU C regex])
 ])
-AM_CONDITIONAL(USE_BOOST_REGEX, [test x$use_boost_regex = x$yes])
 AC_LANG_POP([C++])
 
 # we assume that project root may have a tools_git_sha

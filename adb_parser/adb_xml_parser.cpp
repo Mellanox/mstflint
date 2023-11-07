@@ -46,7 +46,7 @@
 
 #include "common/algorithm.h"
 #include "common/filesystem.h"
-#include "common/regex.h"
+#include "common/tools_regex.h"
 
 bool AdbParser::allowMultipleExceptions = false;
 const string AdbParser::TAG_NODES_DEFINITION = "NodesDefinition";

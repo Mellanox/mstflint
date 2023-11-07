@@ -59,8 +59,8 @@ cc_binary(
     defines = ["USE_BOOST"],
     deps = [
         ":filesystem",
-        "@com_google_googletest//:gtest_main",
         "@boost//:filesystem",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 
@@ -155,6 +155,128 @@ cc_test(
     ],
     deps = [
         ":boost-algorithm",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+genrule(
+    name = "gen-config-h",
+    outs = ["config.h"],
+    cmd = "touch $@",
+)
+
+cc_library(
+    name = "config-h",
+    hdrs = [
+        ":gen-config-h",
+    ],
+    include_prefix = ".",
+)
+
+cc_library(
+    name = "regex",
+    srcs = [
+        "tools_regex.cpp",
+    ],
+    hdrs = [
+        "tools_regex.h",
+    ],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        ":config-h",
+    ],
+)
+
+cc_library(
+    name = "stdlib-regex",
+    srcs = [
+        "tools_regex.cpp",
+    ],
+    hdrs = [
+        "tools_regex.h",
+    ],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    defines = ["USE_STDLIB_REGEX"],
+    deps = [
+        ":config-h",
+    ],
+)
+
+cc_library(
+    name = "boost-regex",
+    srcs = [
+        "tools_regex.cpp",
+    ],
+    hdrs = [
+        "tools_regex.h",
+    ],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    defines = ["USE_BOOST_REGEX"],
+    deps = [
+        ":config-h",
+        "@boost//:regex",
+    ],
+)
+
+cc_test(
+    name = "regex-test",
+    size = "small",
+    srcs = [
+        "tools_regex-test.cpp",
+    ],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        ":regex",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "stdlib-regex-test",
+    size = "small",
+    srcs = [
+        "tools_regex-test.cpp",
+    ],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        ":stdlib-regex",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "boost-regex-test",
+    size = "small",
+    srcs = [
+        "tools_regex-test.cpp",
+    ],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+    ],
+    deps = [
+        ":boost-regex",
         "@com_google_googletest//:gtest_main",
     ],
 )

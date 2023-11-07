@@ -43,7 +43,7 @@
 #include <vector>
 #include <iostream>
 #include <compatibility.h>
-#include "common/regex.h"
+#include "common/tools_regex.h"
 #include "mlxarchive_mfa2_package_gen.h"
 #include <cmdparser/cmdparser.h>
 #include "mlxarchive.h"
