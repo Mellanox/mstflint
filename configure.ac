@@ -235,7 +235,6 @@ AC_ARG_ENABLE(rdmem,
 AC_MSG_RESULT($enable_rdmem)
 if test "x$enable_rdmem" = "xyes"; then
   AC_CHECK_HEADERS(infiniband/mlx5dv.h infiniband/verbs.h,,AC_MSG_ERROR([cannot find infiniband/mlx5dv.h or infiniband/verbs.h . Use --disable-rdmem to remove this dependency]))
-  MAD_IFC="mad_ifc"
 else
   CXXFLAGS="$CXXFLAGS -DNO_RDMEM"
   CFLAGS="$CFLAGS -DNO_RDMEM"
@@ -493,8 +492,8 @@ AC_SUBST(LINUX_KERNEL_INCLUDE)
 # crashes during runtime with:
 # terminate called after throwing an instance of 'std::regex_error'
 #  what():  regex_error
-# For those we resort to using boost::regex as a fallback.
-AC_MSG_CHECKING([Check for std::regex compatibility])
+# For those we resort to using GNU C regex as a fallback.
+AC_MSG_CHECKING([for std::regex compatibility])
 AC_LANG_PUSH([C++])
 AC_RUN_IFELSE([
     AC_LANG_PROGRAM(
