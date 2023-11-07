@@ -235,7 +235,6 @@ AC_ARG_ENABLE(rdmem,
 AC_MSG_RESULT($enable_rdmem)
 if test "x$enable_rdmem" = "xyes"; then
   AC_CHECK_HEADERS(infiniband/mlx5dv.h infiniband/verbs.h,,AC_MSG_ERROR([cannot find infiniband/mlx5dv.h or infiniband/verbs.h . Use --disable-rdmem to remove this dependency]))
-  MAD_IFC="mad_ifc"
 else
   CXXFLAGS="$CXXFLAGS -DNO_RDMEM"
   CFLAGS="$CFLAGS -DNO_RDMEM"
