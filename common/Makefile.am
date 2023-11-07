@@ -1,5 +1,4 @@
-#--
-# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,14 +27,15 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-noinst_HEADERS = compatibility.h bit_slice.h tools_utils.h tools_utils.h tools_version.h filesystem.h regex.h algorithm.h
+noinst_HEADERS = compatibility.h bit_slice.h tools_utils.h tools_utils.h tools_version.h filesystem.h tools_regex.h algorithm.h
 
 noinst_LTLIBRARIES = libcommon.la
-libcommon_la_SOURCES = filesystem.cpp
+libcommon_la_SOURCES = \
+    filesystem.cpp \
+    tools_regex.cpp
 
 commonincludedir = $(includedir)/mstflint/common/
 commoninclude_HEADERS = compatibility.h

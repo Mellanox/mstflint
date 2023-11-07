@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include "adb_condition.h"
 
-#include "common/regex.h"
+#include "common/tools_regex.h"
 
 AdbCondition::AdbCondition() {}
 

@@ -53,7 +53,7 @@
 #include <mft_utils.h>
 #include "mlxcfg_utils.h"
 
-#include "common/regex.h"
+#include "common/tools_regex.h"
 using namespace std;
 
 typedef struct reg_access_hca_mqis_reg_ext mqisReg;
