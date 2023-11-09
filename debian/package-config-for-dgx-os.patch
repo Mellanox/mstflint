@@ -1,0 +1,54 @@
+From cc697d73833a35450b60ea556a27db5e08518db2 Mon Sep 17 00:00:00 2001
+From: AlexBlago <alexbl@nvidia.com>
+Date: Wed, 8 Nov 2023 19:03:13 -0800
+Subject: [PATCH] debian: package config for DGX OS
+
+---
+ debian/control | 4 +++-
+ debian/rules   | 2 +-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/debian/control b/debian/control
+index 38a1da9..dd72478 100644
+--- a/debian/control
++++ b/debian/control
+@@ -12,12 +12,14 @@ Build-Depends:
+     dpkg-dev,
+     g++,
+     git,
++    libcurl-dev,
+     libexpat1-dev,
+     libibmad-dev,
+     libibverbs-dev,
+     liblzma-dev,
+     libssl-dev,
+     libtool,
++    libxml2-dev,
+     make,
+     pkg-config,
+     zlib1g-dev
+@@ -27,7 +29,7 @@ Vcs-Git: https://github.com/Mellanox/mstflint.git
+ 
+ Package: mstflint
+ Architecture: any
+-Depends: ${misc:Depends}
++Depends: pciutils, ${shlibs:Depends}, ${misc:Depends}
+ Description: mstflint - Mellanox firmware burning tools
+  This package contains firmware manipulation tools for network adapters based on Mellanox Technologies chips.
+ 
+diff --git a/debian/rules b/debian/rules
+index 0fd5421..0029442 100755
+--- a/debian/rules
++++ b/debian/rules
+@@ -20,7 +20,7 @@ pversion_string:=$(shell sed -r '1 s:(.*) \((.*)\).*:\1 \2:; q' debian/changelog
+ 
+ override_dh_auto_configure:
+ 	./autogen.sh
+-	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS) "MSTFLINT_VERSION_STR=$(pversion_string)" --enable-adb-generic-tools
++	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS) "MSTFLINT_VERSION_STR=$(pversion_string)" --enable-xml2 --enable-adb-generic-tools --enable-dpa --enable-fw-mgr --enable-inband
+ 
+ override_dh_auto_build:
+ 	make
+-- 
+2.25.1
+
