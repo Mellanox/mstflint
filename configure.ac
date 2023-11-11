@@ -505,8 +505,11 @@ AC_RUN_IFELSE([
     AC_MSG_RESULT([yes])
 ],[
     AC_MSG_RESULT([no])
-    AC_MSG_NOTICE([std::regex support appears to be incomplete, fallback to GNU C regex])
+    AC_MSG_NOTICE([std::regex support appears to be incomplete; falling back to GNU C regex.])
     AC_DEFINE([USE_STDLIB_REGEX], [1], [Whether to use GNU C regex])
+],[
+    AC_MSG_RESULT([yes])
+    AC_MSG_WARN([Assuming the cross-compiler has complete support for std::regex functionality. VERIFY BEFORE USING!!!])
 ])
 AC_LANG_POP([C++])
 
