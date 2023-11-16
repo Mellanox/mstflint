@@ -2805,7 +2805,7 @@ bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
     bool rc;
     Fs4Operations& imageOps = *((Fs4Operations*)imgops);
 
-    if (imageOps.FwType() != FIT_FS4)
+    if (imageOps.FwType() != FIT_FS4 && imageOps.FwType() != FIT_FS5)
     {
         return errmsg(MLXFW_IMAGE_FORMAT_ERR, "FW image type is not compatible with device (FS4)");
     }

@@ -3435,7 +3435,7 @@ FlintStatus BurnSubCommand::executeCommand()
         reportErr(true, "The \"--use_image_guids\" flag is supported only for GEN4 devices.\n");
         return FLINT_FAILED;
     }
-    if (_fwType == FIT_FS3 || _fwType == FIT_FS4 || _fwType == FIT_FSCTRL)
+    if (_fwType == FIT_FS3 || _fwType == FIT_FS4 || _fwType == FIT_FS5 || _fwType == FIT_FSCTRL)
     {
         u_int32_t devid = 0;
         mfile* mf = _fwOps->getMfileObj();
