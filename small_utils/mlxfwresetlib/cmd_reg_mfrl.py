@@ -53,6 +53,8 @@ class CmdRegMfrl():
         {'type': NIC_ONLY, 'description': 'NIC only reset (for SoC devices)', 'mask': 0x4}
     ]
 
+    RESET_STATE_ERROR_NEGOTIATION_TIMEOUT = 3
+    RESET_STATE_ERROR_NEGOTIATION_DIS_ACK = 4
     RESET_STATE_ARM_OS_SHUTDOWN_IN_PROGRESS = 7
 
     @classmethod
@@ -249,6 +251,10 @@ class CmdRegMfrl():
 
     def is_default_reset_level(self, reset_level):
         return reset_level == self.default_reset_level()
+
+    def is_reset_state_in_error(self):
+        self.logger.debug("reset_state_error={}".format(self._reset_state))
+        return True if self._reset_state in [CmdRegMfrl.RESET_STATE_ERROR_NEGOTIATION_TIMEOUT, CmdRegMfrl.RESET_STATE_ERROR_NEGOTIATION_TIMEOUT] else False
 
     def is_reset_state_in_progress(self):
         return True if self._reset_state == CmdRegMfrl.RESET_STATE_ARM_OS_SHUTDOWN_IN_PROGRESS else False
