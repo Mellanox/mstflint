@@ -1758,9 +1758,7 @@ def check_if_shut_down_in_progress(mfrl):
     except BaseException:
         pass
     else:
-        if mfrl.is_reset_state_in_error() is True:
-            print("The BF reset flow encountered a failure due to a reset state error. Please check the dmesg logs for additional information.")
-            sys.exit(1)
+        mfrl.is_reset_state_in_error()
 
         if mfrl.is_reset_state_in_progress() is True:
             print("Arm OS shut down in progress, the completion of the process may take several minutes.")
