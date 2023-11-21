@@ -57,6 +57,11 @@ class CmdRegMfrl():
     RESET_STATE_ERROR_NEGOTIATION_DIS_ACK = 4
     RESET_STATE_ARM_OS_SHUTDOWN_IN_PROGRESS = 7
 
+    RESET_STATE_ERRORS = {
+        RESET_STATE_ERROR_NEGOTIATION_TIMEOUT: "The BF reset flow encountered a failure due to a reset state error of negotiation timeout",
+        RESET_STATE_ERROR_NEGOTIATION_DIS_ACK: "The BF reset flow encountered a failure due to a reset state error of negotiation dis-acknowledgment"
+    }
+
     @classmethod
     def descriptions(cls):
         result = "Reset levels:\n"
@@ -254,7 +259,8 @@ class CmdRegMfrl():
 
     def is_reset_state_in_error(self):
         self.logger.debug("reset_state_error={}".format(self._reset_state))
-        return True if self._reset_state in [CmdRegMfrl.RESET_STATE_ERROR_NEGOTIATION_TIMEOUT, CmdRegMfrl.RESET_STATE_ERROR_NEGOTIATION_TIMEOUT] else False
+        if self._reset_state in CmdRegMfrl.RESET_STATE_ERRORS:
+            raise Exception(CmdRegMfrl.RESET_STATE_ERRORS[self._reset_state])
 
     def is_reset_state_in_progress(self):
         return True if self._reset_state == CmdRegMfrl.RESET_STATE_ARM_OS_SHUTDOWN_IN_PROGRESS else False
