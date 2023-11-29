@@ -1894,6 +1894,9 @@ unsigned char* FwCompsMgr::getLastErrMsg()
         case FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
             return (unsigned char*)"DRAM not available";
 
+        case FWCOMPS_MCC_REJECTED_FLASH_WP:
+            return (unsigned char*)"Flash is write protected";
+
     case FWCOMPS_UNSUPPORTED_DEVICE:
         return (unsigned char*)"Unsupported device";
 
@@ -2421,6 +2424,9 @@ fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
 
         case MCC_ERRCODE_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
             return FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE;
+
+        case MCC_ERRCODE_REJECTED_FLASH_WP:
+            return FWCOMPS_MCC_REJECTED_FLASH_WP;
 
     default:
         return FWCOMPS_GENERAL_ERR;
