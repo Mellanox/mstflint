@@ -54,16 +54,6 @@ HostElf::HostElf(string path, string outputPath) : _filePath(path), _outputPath(
     }
     // TODO should i release resources in _dpaAppsTable?
     _dpaAppsTable = getAppList(hostELF);
-
-    if (_outputPath.empty())
-    {
-        _outputPath = _filePath;
-    }
-    else
-    {
-        string cmd("cp " + _filePath + " " + _outputPath);
-        RunCommand(cmd, "Failed to create output file");
-    }
     fclose(hostELF);
 }
 
