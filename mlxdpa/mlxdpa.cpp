@@ -575,6 +575,17 @@ void MlxDpa::SignCertContainer()
 void MlxDpa::SignHostElf()
 {
     const u_int32_t ALIGNMENT = 4;
+
+    if (_outputPath.empty())
+    {
+        _outputPath = _hostELFPath;
+    }
+    else
+    {
+        string cmd("cp " + _hostELFPath + " " + _outputPath);
+        RunCommand(cmd, "Failed to create output file");
+    }
+
     HostElf hostElf(_hostELFPath, _outputPath);
     CryptoDataSection::CertChain certChain;
     unique_ptr<MlxSign::Signer> signer = CreateSigner(_privateKeyPem, _keyLabel);
@@ -617,9 +628,15 @@ void MlxDpa::SignHostElf()
         {
             throw MlxDpaException("Failed to open Host ELF file with error: %s", strerror(errno));
         }
+        MLX_DPA_DPRINTF(
+          ("Calling updateSigSectionName: appName %s, sigSectionName %s.\n", app->name, sigSectionName.c_str()));
         if (updateSigSectionName(outHostELF, app->name, (char*)sigSectionName.c_str()))
         {
             throw MlxDpaException("Failed to update signature section name in metadata for %s.\n", app->name);
+        }
+        if (fclose(outHostELF) != 0)
+        {
+            throw MlxDpaException("Failed to close Host ELF file with error: %s", strerror(errno));
         }
     }
 
