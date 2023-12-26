@@ -919,6 +919,12 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
         return false;
     }
 
+    if (!ParseImageInfoFromEncryptedImage())
+    {
+        DPRINTF(("Fs4Operations::FsVerifyAux Failed to read IMAGE_INFO section"));
+        return false;
+    }
+
     // if nextBootFwVer is true, no need to get all the information, just the fw version is enough - therefore skip
     // everything else
     if (!nextBootFwVer)
