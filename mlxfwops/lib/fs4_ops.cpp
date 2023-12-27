@@ -3299,13 +3299,13 @@ bool Fs4Operations::Fs4UpdateVpdSection(struct fs4_toc_info* curr_toc, char* vpd
         return errmsg("Size of VPD file: %d is not 4-byte aligned!", vpd_size);
     }
 
-    // check if vpd exceeds the dtoc array
-    u_int32_t vpdAddress = curr_toc->toc_entry.flash_addr << 2;
-    if (vpdAddress + vpd_size >= (_ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE))
+    // corresponds to VPD max size in mlx
+    if (vpd_size > 0x1000)
     {
         delete[] vpd_data;
-        return errmsg("VPD data exceeds dtoc array, max VPD size: 0x%x bytes", _ioAccess->get_size() - vpdAddress - 1);
+        return errmsg("VPD data size exceeds max VPD size: 0x%x bytes", 0x1000);
     }
+
     GetSectData(newSectionData, (u_int32_t*)vpd_data, vpd_size);
     curr_toc->toc_entry.size = vpd_size / 4;
     delete[] vpd_data;
@@ -3829,14 +3829,9 @@ bool Fs4Operations::UpdateSection(void* new_info,
     }
     else
     {
-        int tocIndex = 0;
-        if (!Fs4GetItocInfo(tocArr, numOfTocs, sect_type, curr_toc, tocIndex))
+        if (!Fs4GetItocInfo(tocArr, numOfTocs, sect_type, curr_toc))
         {
             return false;
-        }
-        if (sect_type == FS3_VPD_R0 && ((u_int32_t)tocIndex) != numOfTocs - 1)
-        {
-            return errmsg("VPD Section is not the last device section");
         }
     }
 
@@ -4119,9 +4114,11 @@ bool Fs4Operations::UpdateSection(fs3_section_t sectionType,
     {
         return false;
     }
-    if (sectionType == FS3_VPD_R0 && ((u_int32_t)tocIndex) != numOfTocs - 1)
+
+    // corresponds to VPD max size in mlx
+    if (sectionType == FS3_VPD_R0 && newSectionData.size() > 0x1000)
     {
-        return errmsg("VPD Section is not the last device section");
+        return errmsg("VPD data size exceeds max VPD size: 0x%x bytes", 0x1000);
     }
 
     if (!WriteSection(sectionToc, newSectionData, msg, callBackFunc))
