@@ -487,28 +487,30 @@ AM_CONDITIONAL(LINUX_BUILD, [test  "x$OS" = "xLinux"])
 AC_SUBST(LINUX_BUILD)
 AC_SUBST(LINUX_KERNEL_INCLUDE)
 
-# Certain older compilers may not fully support std::regex.
-# Signatuire is: the code compiles without issues, then it
-# crashes during runtime with:
-# terminate called after throwing an instance of 'std::regex_error'
-#  what():  regex_error
-# For those we resort to using GNU C regex as a fallback.
-AC_MSG_CHECKING([for std::regex compatibility])
-AC_LANG_PUSH([C++])
-AC_RUN_IFELSE([
-    AC_LANG_PROGRAM(
-        [[#include <regex>
-        ]],
-        [[std::regex e("[a-z]");]]
-    )
-],[
-    AC_MSG_RESULT([yes])
-],[
-    AC_MSG_RESULT([no])
-    AC_MSG_NOTICE([std::regex support appears to be incomplete, fallback to GNU C regex])
-    AC_DEFINE([USE_STDLIB_REGEX], [1], [Whether to use GNU C regex])
-])
-AC_LANG_POP([C++])
+if test "$cross_compiling" = "no"; then
+  # Certain older compilers may not fully support std::regex.
+  # Signatuire is: the code compiles without issues, then it
+  # crashes during runtime with:
+  # terminate called after throwing an instance of 'std::regex_error'
+  #  what():  regex_error
+  # For those we resort to using GNU C regex as a fallback.
+  AC_MSG_CHECKING([for std::regex compatibility])
+  AC_LANG_PUSH([C++])
+  AC_RUN_IFELSE([
+      AC_LANG_PROGRAM(
+          [[#include <regex>
+          ]],
+          [[std::regex e("[a-z]");]]
+      )
+  ],[
+      AC_MSG_RESULT([yes])
+  ],[
+      AC_MSG_RESULT([no])
+      AC_MSG_NOTICE([std::regex support appears to be incomplete, fallback to GNU C regex])
+      AC_DEFINE([USE_STDLIB_REGEX], [1], [Whether to use GNU C regex])
+  ])
+  AC_LANG_POP([C++])
+fi
 
 # we assume that project root may have a tools_git_sha
 TOOLS_GIT_SHA=$(cd $(dirname "$0"); ./eval_git_sha.sh)
