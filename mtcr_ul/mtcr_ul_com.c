@@ -85,7 +85,11 @@
 
 #if CONFIG_ENABLE_MMAP
 #include <sys/mman.h>
+#ifdef HAVE_SYS_PCI_H
 #include <sys/pci.h>
+#else
+#include <linux/pci.h>
+#endif
 #include <sys/ioctl.h>
 #endif
 
