@@ -113,6 +113,7 @@ AM_CONDITIONAL(X86_64_BUILD, [ echo $build_cpu | grep -iq "x86_64" ])
 
 dnl Checks for headers
 AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
+AC_CHECK_HEADER(sys/pci.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_SYS_PCI_H"])
 TOOLS_CRYPTO=""
 MAD_IFC=""
 FW_MGR_TOOLS=""
