@@ -38,7 +38,7 @@
 #include <vector>
 #include <stdio.h>
 #include <string>
-#include "common/algorithm.h"
+#include "common/tools_algorithm.h"
 #include "adb_db.h"
 
 #define CHECK_FIELD(field, node_w)                                                  \

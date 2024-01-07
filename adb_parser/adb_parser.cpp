@@ -48,7 +48,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "common/algorithm.h"
+#include "common/tools_algorithm.h"
 
 using namespace std;
 using namespace xmlCreator;

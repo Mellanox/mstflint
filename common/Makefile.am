@@ -30,11 +30,11 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-noinst_HEADERS = compatibility.h bit_slice.h tools_utils.h tools_utils.h tools_version.h filesystem.h tools_regex.h algorithm.h
+noinst_HEADERS = compatibility.h bit_slice.h tools_utils.h tools_utils.h tools_version.h tools_filesystem.h tools_regex.h tools_algorithm.h
 
 noinst_LTLIBRARIES = libcommon.la
 libcommon_la_SOURCES = \
-    filesystem.cpp \
+    tools_filesystem.cpp \
     tools_regex.cpp
 
 commonincludedir = $(includedir)/mstflint/common/
