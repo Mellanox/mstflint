@@ -55,7 +55,7 @@ mstflint_SOURCES = \
     subcommands.h \
     subcommands_linkx.cpp
 
-mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC) \
+mstflint_CXXFLAGS = -Wall -pthread -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC) \
                     -DUNIX -DOS_UNIX -DOS_LINUX
 
 mstflint_DEPENDENCIES = \
