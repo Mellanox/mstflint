@@ -33,7 +33,7 @@
  */
 
 #include "adb_xmlCreator.h"
-#include "common/algorithm.h"
+#include "common/tools_algorithm.h"
 
 string xmlCreator::indentString(int i)
 {

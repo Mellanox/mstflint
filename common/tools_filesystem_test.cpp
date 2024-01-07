@@ -38,7 +38,7 @@
 #include <boost/filesystem/path.hpp>
 namespace fs = boost::filesystem;
 #else
-#include "filesystem.h"
+#include "tools_filesystem.h"
 namespace fs = mstflint::common::filesystem;
 #endif
 

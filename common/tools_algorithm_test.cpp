@@ -33,7 +33,7 @@
 #include <deque>
 #include <list>
 
-#include "algorithm.h"
+#include "tools_algorithm.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 

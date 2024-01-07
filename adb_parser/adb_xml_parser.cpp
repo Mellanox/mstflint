@@ -44,8 +44,8 @@
 #include <iostream>
 #include <sstream>
 
-#include "common/algorithm.h"
-#include "common/filesystem.h"
+#include "common/tools_algorithm.h"
+#include "common/tools_filesystem.h"
 #include "common/tools_regex.h"
 
 bool AdbParser::allowMultipleExceptions = false;

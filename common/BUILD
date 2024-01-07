@@ -5,7 +5,7 @@ package(
 )
 
 cc_library(
-    name = "common-headers",
+    name = "headers",
     hdrs = [
         "bit_slice.h",
         "compatibility.h",
@@ -18,10 +18,10 @@ cc_library(
 cc_library(
     name = "filesystem",
     srcs = [
-        "filesystem.cpp",
+        "tools_filesystem.cpp",
     ],
     hdrs = [
-        "filesystem.h",
+        "tools_filesystem.h",
     ],
     copts = [
         "-Wall",
@@ -31,9 +31,9 @@ cc_library(
 )
 
 cc_binary(
-    name = "filesystem-test-bin",
+    name = "tools-filesystem-test-bin",
     srcs = [
-        "filesystem-test.cpp",
+        "tools_filesystem_test.cpp",
     ],
     copts = [
         "-Wall",
@@ -49,7 +49,7 @@ cc_binary(
 cc_binary(
     name = "boost-filesystem-test-bin",
     srcs = [
-        "filesystem-test.cpp",
+        "tools_filesystem_test.cpp",
     ],
     copts = [
         "-Wall",
@@ -65,14 +65,14 @@ cc_binary(
 )
 
 sh_test(
-    name = "filesystem-test",
+    name = "tools-filesystem-test",
     size = "small",
     srcs = [
-        "filesystem-test.sh",
+        "tools_filesystem_test.sh",
     ],
-    args = ["filesystem-test-bin"],
+    args = ["tools-filesystem-test-bin"],
     data = [
-        ":filesystem-test-bin",
+        ":tools-filesystem-test-bin",
     ],
 )
 
@@ -80,7 +80,7 @@ sh_test(
     name = "boost-filesystem-test",
     size = "small",
     srcs = [
-        "filesystem-test.sh",
+        "tools_filesystem_test.sh",
     ],
     args = ["boost-filesystem-test-bin"],
     data = [
@@ -94,7 +94,7 @@ cc_library(
         #
     ],
     hdrs = [
-        "algorithm.h",
+        "tools_algorithm.h",
     ],
     copts = [
         "-Wall",
@@ -112,7 +112,7 @@ cc_library(
         #
     ],
     hdrs = [
-        "algorithm.h",
+        "tools_algorithm.h",
     ],
     copts = [
         "-Wall",
@@ -126,10 +126,10 @@ cc_library(
 )
 
 cc_test(
-    name = "algorithm-test",
+    name = "tools-algorithm-test",
     size = "small",
     srcs = [
-        "algorithm-test.cpp",
+        "tools_algorithm_test.cpp",
     ],
     copts = [
         "-Wall",
@@ -146,7 +146,7 @@ cc_test(
     name = "boost-algorithm-test",
     size = "small",
     srcs = [
-        "algorithm-test.cpp",
+        "tools_algorithm_test.cpp",
     ],
     copts = [
         "-Wall",
@@ -231,10 +231,10 @@ cc_library(
 )
 
 cc_test(
-    name = "regex-test",
+    name = "tools-regex-test",
     size = "small",
     srcs = [
-        "tools_regex-test.cpp",
+        "tools_regex_test.cpp",
     ],
     copts = [
         "-Wall",
@@ -251,7 +251,7 @@ cc_test(
     name = "stdlib-regex-test",
     size = "small",
     srcs = [
-        "tools_regex-test.cpp",
+        "tools_regex_test.cpp",
     ],
     copts = [
         "-Wall",
@@ -268,7 +268,7 @@ cc_test(
     name = "boost-regex-test",
     size = "small",
     srcs = [
-        "tools_regex-test.cpp",
+        "tools_regex_test.cpp",
     ],
     copts = [
         "-Wall",

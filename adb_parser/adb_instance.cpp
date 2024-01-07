@@ -46,7 +46,7 @@
 
 #include <list>
 
-#include "common/algorithm.h"
+#include "common/tools_algorithm.h"
 #include "common/tools_regex.h"
 
 // Constants
