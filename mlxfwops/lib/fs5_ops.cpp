@@ -125,12 +125,12 @@ bool Fs5Operations::Init()
     {
         return false;
     }
-    // Below commented out at the moment, if needed just remove and inherit it from fs4_ops
-    // fw_info_t fwInfo;
-    // if (!FwQuery(&fwInfo, false, false, false))
-    // {
-    //     return false;
-    // }
+
+    fw_info_t fwInfo;
+    if (!FwQuery(&fwInfo, false, false, false))
+    {
+        return false;
+    }
     return true;
 }
 
