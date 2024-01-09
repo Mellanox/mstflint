@@ -805,13 +805,27 @@ class MlnxPciOpFactory(object):
         else:
             raise RuntimeError("Unsupported OS: %s" % operatingSystem)
 
+
+def CloseAndMstRestart(lspci_valdation=True):
+    # We close MstDevObj to allow a clean operation of mst restart
+    MstDevObj.close()
+    for MstDevObjSD in MstDevObjsSD:
+        MstDevObjSD.close()
+
+    if SkipMstRestart == False and platform.system() == "Linux" and not IS_MSTFLINT:
+        printAndFlush("-I- %-40s-" % ("Restarting MST"), endChar="")
+        if mstRestart(lspci_valdation) == 0:
+            printAndFlush("Done")
+        else:
+            printAndFlush("Skipped")
+
 ######################################################################
 # Description:  Perform mst restart
 # OS Support :  Linux.
 ######################################################################
 
 
-def mstRestart(busId):
+def mstRestart(lspci_valdation):
     global MstFlags
     if platform.system() == "FreeBSD" or platform.system() == "Windows":
         return 1
@@ -833,22 +847,23 @@ def mstRestart(busId):
         else:
             time.sleep(2)
 
-    cmd = "lspci -s %s" % busId
-    logger.debug('Execute {0}'.format(cmd))
-    foundBus = False
-    rc = 0
-    for _ in range(0, 30):
-        (rc, stdout, _) = cmdExec(cmd)
-        if rc == 0 and stdout != "":
-            foundBus = True
-            break
-        else:
-            time.sleep(2)
-    if rc != 0:
-        raise WarningException(
-            "Failed to run lspci command, please restart MST manually")
-    if not foundBus:
-        raise RuntimeError("The device is not appearing in lspci output!")
+    if lspci_valdation is True:
+        cmd = "lspci -s %s" % DevDBDF
+        logger.debug('Execute {0}'.format(cmd))
+        foundBus = False
+        rc = 0
+        for _ in range(0, 30):
+            (rc, stdout, _) = cmdExec(cmd)
+            if rc == 0 and stdout != "":
+                foundBus = True
+                break
+            else:
+                time.sleep(2)
+        if rc != 0:
+            raise WarningException(
+                "Failed to run lspci command, please restart MST manually")
+        if not foundBus:
+            raise RuntimeError("The device is not appearing in lspci output!")
 
     ignore_signals()
     cmd = "/etc/init.d/mst restart %s" % MstFlags
@@ -1634,17 +1649,8 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
         logger.debug('UpdateUptimeAfterReset')
         FWResetStatusChecker.UpdateUptimeAfterReset()
 
-        # we close MstDevObj to allow a clean operation of mst restart
-        MstDevObj.close()
-        for MstDevObjSD in MstDevObjsSD:  # Roei close mst devices for all "other" devices
-            MstDevObjSD.close()
+        CloseAndMstRestart()
 
-        if SkipMstRestart == False and platform.system() == "Linux" and not IS_MSTFLINT:
-            printAndFlush("-I- %-40s-" % ("Restarting MST"), endChar="")
-            if mstRestart(DevDBDF) == 0:
-                printAndFlush("Done")
-            else:
-                printAndFlush("Skipped")
     except Exception as e:
         reset_fsm_register()
         printAndFlush("Failed")
@@ -1783,6 +1789,11 @@ def execute_driver_sync_reset(mfrl, reset_level, reset_type):
         time.sleep(1)
         logger.debug('UpdateUptimeAfterReset')
         FWResetStatusChecker.UpdateUptimeAfterReset()
+
+        # When Hotplug is activated, resetting the device causes the bdf to change.
+        # As a result, running lspci on the previously known bdf will not be successful due to the altered bdf.
+        # Running mst restart is necessary to re-enumerate the mst devices.
+        CloseAndMstRestart(lspci_valdation=False)
 
 ######################################################################
 # Description:  execute sync 1 reset for BF
