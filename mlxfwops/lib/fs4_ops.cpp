@@ -2549,7 +2549,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         // Get DTOC from the cache
         u_int8_t* dtoc_data = new u_int8_t[FS4_DEFAULT_SECTOR_SIZE];
         u_int32_t dtoc_addr = imageOps->GetIoAccess()->get_size() - FS4_DEFAULT_SECTOR_SIZE;
-        if (!GetDtocAddress(dtoc_addr))
+        if (!((Fs4Operations*)imageOps)->GetDtocAddress(dtoc_addr))
         {
             return false;
         }
