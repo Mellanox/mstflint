@@ -253,6 +253,9 @@ class CmdRegMfrl():
     def is_reset_state_in_progress(self):
         return True if self._reset_state == CmdRegMfrl.RESET_STATE_ARM_OS_SHUTDOWN_IN_PROGRESS else False
 
+    def is_arm_reset(self, reset_type):
+        return False if reset_type in [CmdRegMfrl.PHY_LESS, CmdRegMfrl.NIC_ONLY] else True
+
     def read(self):
         # Read register ('get' command) from device
         reg = self._read_reg()
