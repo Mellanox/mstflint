@@ -2085,7 +2085,9 @@ def reset_flow_host(device, args, command):
             print("-W- PCI rescan is required after device reset.")
 
         if is_bluefield:
-            print("Please be aware that resetting the Bluefield may take several minutes. Exiting the process in the middle of the waiting period will not halt the reset")
+            print("Please be aware that resetting the Bluefield may take several minutes. Exiting the process in the middle of the waiting period will not halt the reset.")
+            if mfrl.is_arm_reset(reset_type):
+                print("The ARM side will be restarted, and it will be unavailable for a while.")
 
         AskUser("Continue with reset", args.yes)
         execResLvl(device, devicesSD, reset_level,
