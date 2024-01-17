@@ -1251,7 +1251,7 @@ int ParserTester::EqnTest(const string_type& a_str, double a_fRes, bool a_fPass)
 
     try
     {
-        std::auto_ptr<Parser> p1;
+        std::unique_ptr<Parser> p1;
         Parser p2, p3; // three parser objects
                        // they will be used for testing copy and assignment operators
         // p1 is a pointer since i'm going to delete it in order to test if
