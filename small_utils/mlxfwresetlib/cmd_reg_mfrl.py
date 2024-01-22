@@ -53,7 +53,14 @@ class CmdRegMfrl():
         {'type': NIC_ONLY, 'description': 'NIC only reset (for SoC devices)', 'mask': 0x4}
     ]
 
+    RESET_STATE_ERROR_NEGOTIATION_TIMEOUT = 3
+    RESET_STATE_ERROR_NEGOTIATION_DIS_ACK = 4
     RESET_STATE_ARM_OS_SHUTDOWN_IN_PROGRESS = 7
+
+    RESET_STATE_ERRORS = {
+        RESET_STATE_ERROR_NEGOTIATION_TIMEOUT: "The BF reset flow encountered a failure due to a reset state error of negotiation timeout",
+        RESET_STATE_ERROR_NEGOTIATION_DIS_ACK: "The BF reset flow encountered a failure due to a reset state error of negotiation dis-acknowledgment"
+    }
 
     @classmethod
     def descriptions(cls):
@@ -250,8 +257,16 @@ class CmdRegMfrl():
     def is_default_reset_level(self, reset_level):
         return reset_level == self.default_reset_level()
 
+    def is_reset_state_in_error(self):
+        self.logger.debug("reset_state_error={}".format(self._reset_state))
+        if self._reset_state in CmdRegMfrl.RESET_STATE_ERRORS:
+            raise Exception(CmdRegMfrl.RESET_STATE_ERRORS[self._reset_state])
+
     def is_reset_state_in_progress(self):
         return True if self._reset_state == CmdRegMfrl.RESET_STATE_ARM_OS_SHUTDOWN_IN_PROGRESS else False
+
+    def is_arm_reset(self, reset_type):
+        return False if reset_type in [CmdRegMfrl.PHY_LESS, CmdRegMfrl.NIC_ONLY] else True
 
     def read(self):
         # Read register ('get' command) from device

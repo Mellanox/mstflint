@@ -70,6 +70,21 @@ class CmdRegMcam():
             pci_rescan_required_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3 - 1], 13, 1)
         return True if pci_rescan_required_sup == 1 else False
 
+    def is_reset_by_fw_driver_sync_supported(self):
+        """
+        Read MCAM and check if the feature "reset by fw-driver sync" is supported
+        """
+        try:
+            mcam_get_result = self.get_mcam()
+        except RegAccException as e:
+            pci_sync_for_fw_update_sup = 0
+        else:
+            # bit 19 in 1st DWORD.
+            # due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order
+            # so we actually access the 4th DWORD (index 3)
+            pci_sync_for_fw_update_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3 - 0], 19, 1)
+        return True if pci_sync_for_fw_update_sup == 1 else False
+
     def is_mrsi_supported(self):
         """
         send MCAM access_reg_group=2
@@ -85,21 +100,6 @@ class CmdRegMcam():
             # so we actually access the 3rd DWORD (index 2)
             mrsi_sup = extractField(mcam_get_result["mng_access_reg_cap_mask"][3 - 1], 10, 1)
         return True if mrsi_sup == 1 else False
-
-    def is_reset_by_fw_driver_sync_supported(self):
-        """
-        Read MCAM and check if the feature "reset by fw-driver sync" is supported
-        """
-        try:
-            mcam_get_result = self.get_mcam()
-        except RegAccException as e:
-            pci_sync_for_fw_update_sup = 0
-        else:
-            # bit 19 in 1st DWORD.
-            # due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order
-            # so we actually access the 4th DWORD (index 3)
-            pci_sync_for_fw_update_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3 - 0], 19, 1)
-        return True if pci_sync_for_fw_update_sup == 1 else False
 
     def reset_sync_query_text(self, tool_owner_support):
         result = ""
