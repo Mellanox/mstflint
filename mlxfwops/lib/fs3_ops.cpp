@@ -313,6 +313,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
     _fwImgInfo.ext_info.fw_rel_time[2] = (u_int16_t)image_info.FW_VERSION.Seconds;
 
     _fwImgInfo.ext_info.burn_image_size = image_info.burn_image_size;
+    _fwImgInfo.ext_info.dtoc_offset = image_info.dtoc_offset;
 
     /* assuming number of supported_hw_id < MAX_NUM_SUPP_HW_IDS */
     memcpy(_fwImgInfo.supportedHwId, image_info.supported_hw_id, sizeof(image_info.supported_hw_id));
