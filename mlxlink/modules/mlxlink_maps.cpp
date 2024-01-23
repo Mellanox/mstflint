@@ -1052,6 +1052,10 @@ void MlxlinkMaps::extComplianceMapping()
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_100GBASE_DR] = "100GBASE-DR, with CAUI-4 without FEC";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_100G_FR] = "100G-FR, with CAUI-4 without FEC";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_100G_LR] = "100G-LR, with CAUI-4 without FEC";
+    _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_400GBASE_SR4] = "100GBASE-SR1, 200GBASE-SR2 or 400GBASE-SR4";
+    _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_100GBASE_FR1] = "100GBASE-FR1 or 400GBASE-DR4-2";
+    _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_100GBASE_LR1] = "100GBASE-LR1";
+
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_ACC_10_6] =
       "Active Copper Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. "
       "Providing a worst BER of 10^(-6) or below";
@@ -1066,6 +1070,8 @@ void MlxlinkMaps::extComplianceMapping()
       "Active Optical Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. "
       "Providing a worst BER of 2.6x10^(-4) for AOC, 10^(-5) for AUI, "
       "or below";
+    _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_400GBASE_VR4] = "100GBASE-VR1, 200GBASE-VR2 or 400GBASE-VR4";
+    _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_400GBASE_CR4] = "100GBASE-CR1, 200GBASE-CR2 or 400GBASE-CR4";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_50GBASE_CR] = "50GBASE-CR, 100GBASE-CR2, or 200GBASE-CR4";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_50GBASE_SR] = "50GBASE-SR, 100GBASE-SR2, or 200GBASE-SR4";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_50GBASE_FR] = "50GBASE-FR or 200GBASE-DR4";
@@ -1073,6 +1079,7 @@ void MlxlinkMaps::extComplianceMapping()
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_200GBASE_1550NM_PSM4] = "200G 1550 nm PSM4";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_50GBASE_LR] = "50GBASE-LR";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_200GBASE_LR4] = "200GBASE-LR4";
+    _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_400GBASE_DR4] = "400GBASE-DR4, 400GAUI-4 C2M";
 }
 
 void MlxlinkMaps::hostComplianceMapping()
@@ -1121,6 +1128,10 @@ void MlxlinkMaps::hostComplianceMapping()
     _cmisHostCompliance[CMIS_COMPLIANCE_HDR] = "IB HDR";
     _cmisHostCompliance[CMIS_COMPLIANCE_NDR] = "IB NDR";
     _cmisHostCompliance[CMIS_COMPLIANCE_XDR] = "IB XDR";
+    _cmisHostCompliance[CMIS_COMPLIANCE_100G_BASE_R1] = "100GBASE-CR1";
+    _cmisHostCompliance[CMIS_COMPLIANCE_200G_BASE_R2] = "200GBASE-CR2";
+    _cmisHostCompliance[CMIS_COMPLIANCE_400G_BASE_R4] = "400GBASE-CR4";
+    _cmisHostCompliance[CMIS_COMPLIANCE_800G_BASE_R8] = "800G-ETC-CR8 or 800GBASE-CR8";
 }
 
 void MlxlinkMaps::mediaComplianceMapping()
