@@ -77,6 +77,7 @@ typedef map<string, string> AttrsMap;
  **/
 AdbParser::AdbParser(string fileName,
                      Adb* adbCtxt,
+                     string root_node_name,
                      bool addReserved,
                      bool evalExpr,
                      bool strict,
@@ -84,16 +85,21 @@ AdbParser::AdbParser(string fileName,
                      bool enforceExtraChecks,
                      bool checkDsAlign,
                      bool enforceGuiChecks,
-                     bool force_pad_32) :
+                     bool force_pad_32,
+                     bool variable_alignment) :
+
     _adbCtxt(adbCtxt),
     _fileName(fileName),
+     _root_node_name(root_node_name),
     _addReserved(addReserved),
     _isExprEval(evalExpr),
     _strict(strict),
     _checkDsAlign(checkDsAlign),
     skipNode(false),
+    _support_variable_alignment(variable_alignment),
     _includePath(includePath),
     _currentNode(0),
+    _current_node_alignment(32),
     _currentField(0),
     _currentConfig(0),
     _enforceGuiChecks(enforceGuiChecks),
@@ -273,7 +279,7 @@ bool AdbParser::load(bool is_main)
 
         if (is_main)
         {
-            auto root_node_it = _adbCtxt->nodesMap.find("root");
+            auto root_node_it = _adbCtxt->nodesMap.find(_root_node_name);
             if (root_node_it == _adbCtxt->nodesMap.end())
             {
                 throw AdbException("No root found.");
@@ -571,17 +577,17 @@ u_int32_t AdbParser::addr2int(string& s)
 /**
  * Function: AdbParser::dword
  **/
-u_int32_t AdbParser::dword(u_int32_t offset)
+u_int32_t AdbParser::aligned_word(u_int32_t offset, uint8_t alignment)
 {
-    return (offset >> 5) << 2;
+    return offset / alignment;
 }
 
 /**
  * Function: AdbParser::startBit
  **/
-u_int32_t AdbParser::startBit(u_int32_t offset)
+u_int32_t AdbParser::startBit(u_int32_t offset, uint8_t alignment)
 {
-    return offset % 32;
+    return offset % alignment;
 }
 
 /**
@@ -663,9 +669,9 @@ void AdbParser::includeFile(AdbParser* adbParser, string fileName, int lineNumbe
         adbParser->_adbCtxt->add_include(fileName, filePath, adbParser->_fileName, lineNumber);
 
         // parse the included file
-        AdbParser p(filePath, adbParser->_adbCtxt, adbParser->_addReserved, adbParser->_isExprEval, adbParser->_strict,
-                    "", adbParser->_enforceExtraChecks, adbParser->_checkDsAlign, adbParser->_enforceGuiChecks,
-                    adbParser->_force_pad_32);
+        AdbParser p(filePath, adbParser->_adbCtxt, adbParser->_root_node_name, adbParser->_addReserved,
+                    adbParser->_isExprEval, adbParser->_strict, "", adbParser->_enforceExtraChecks, adbParser->_checkDsAlign,
+                    adbParser->_enforceGuiChecks, adbParser->_force_pad_32, adbParser->_support_variable_alignment);
         if (!p.load(false))
         {
             throw AdbException(p.getError());
@@ -1284,6 +1290,16 @@ void AdbParser::startNodeElement(const XML_Char** atts, AdbParser* adbParser, co
             // throw AdbException("union must be dword aligned");
         }
 
+        if (adbParser->_support_variable_alignment && attrValue(atts, "cr_data_wdt") == "64")
+        {
+            adbParser->_current_node_alignment = 64;
+        }
+        else
+        {
+            adbParser->_current_node_alignment = 32;
+        }
+
+
         // Add all node attributes
         for (int i = 0; i < attrCount(atts); i++)
         {
@@ -1526,13 +1542,23 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
         }
 
         // Very tricky but works well for big endian arrays support - on endElement we will fix the address again
-        if (!expFound && adbParser->_adbCtxt->bigEndianArr)
+        if (!expFound && adbParser->_adbCtxt->bigEndianArr && adbParser->_current_node_alignment != 64)
         {
             u_int32_t offset = adbParser->_currentField->offset;
             u_int32_t size = adbParser->_currentField->eSize();
 
             adbParser->_currentField->offset =
               ((offset >> 5) << 5) + ((MIN(32, adbParser->_currentNode->size) - ((offset + size) % 32)) % 32);
+        }
+
+        // workaround for 64bit registers (flip every two adjacent 32b dwords)
+        if (adbParser->_current_node_alignment == 64 && adbParser->_currentField->size <= 32)
+        {
+            u_int32_t offset = adbParser->_currentField->offset;
+
+            u_int32_t in_dword_offset = offset % 32;
+            offset = ((offset >> 5) << 5) xor 32;
+            adbParser->_currentField->offset = offset + in_dword_offset;
         }
 
         // For DS alignment check
@@ -1744,35 +1770,39 @@ void AdbParser::startElement(void* _adbParser, const XML_Char* name, const XML_C
 /**
  * Function: AdbParser::addReserved
  **/
-void AdbParser::addReserved(vector<AdbField*>& reserveds, u_int32_t offset, u_int32_t size)
+void AdbParser::addReserved(vector<AdbField*>& reserveds, u_int32_t offset, u_int32_t size, uint8_t alignment)
 {
-    u_int32_t numOfDwords = (dword(offset + size - 1) - dword(offset)) / 4 + 1;
+    u_int32_t num_aligned_words = (aligned_word(offset + size - 1, alignment) - aligned_word(offset, alignment)) + 1;
 
     // printf("==> %s\n", formatAddr(offset, size).c_str());
-    // printf("numOfDwords = %d\n", numOfDwords);
-
-    if (numOfDwords == 1 || ((offset % 32) == 0 && ((offset + size) % 32) == 0))
+    // printf("num_aligned_words = %d\n", num_aligned_words);
+    if (num_aligned_words == 1 || ((offset % alignment) == 0 && ((offset + size) % alignment) == 0))
     {
         AdbField* f1 = new AdbField;
         f1->name = "reserved";
         f1->offset = offset;
         f1->isReserved = true;
         f1->size = size;
+        if (alignment == 64)
+        {
+            f1->attrs["cr_data_wdt"] = "64";
+        }
+
 
         reserveds.push_back(f1);
         // printf("case1: reserved0: %s\n", formatAddr(f1->offset, f1->size).c_str());
     }
-    else if (numOfDwords == 2)
+    else if (num_aligned_words == 2)
     {
         AdbField* f1 = new AdbField;
         f1->name = "reserved";
         f1->offset = offset;
         f1->isReserved = true;
-        f1->size = 32 - startBit(offset);
+        f1->size = alignment - startBit(offset, alignment);
 
         AdbField* f2 = new AdbField;
         f2->name = "reserved";
-        f2->offset = dword(offset + 32) * 8;
+        f2->offset = aligned_word(offset + alignment, alignment) * alignment;
         f2->isReserved = true;
         f2->size = size - f1->size;
         reserveds.push_back(f1);
@@ -1780,6 +1810,12 @@ void AdbParser::addReserved(vector<AdbField*>& reserveds, u_int32_t offset, u_in
         /*printf("case2: reserved0: %s, reserved1: %s\n",
          formatAddr(f1->offset, f1->size).c_str(),
          formatAddr(f2->offset, f2->size).c_str());*/
+        if (alignment == 64)
+        {
+            f1->attrs["cr_data_wdt"] = "64";
+            f2->attrs["cr_data_wdt"] = "64";
+        }
+
     }
     else
     {
@@ -1787,29 +1823,34 @@ void AdbParser::addReserved(vector<AdbField*>& reserveds, u_int32_t offset, u_in
         f1->name = "reserved";
         f1->offset = offset;
         f1->isReserved = true;
-        f1->size = 32 - startBit(offset);
+        f1->size = alignment - startBit(offset, alignment);
 
         AdbField* f2 = new AdbField;
         f2->name = "reserved";
-        f2->offset = dword(offset + 32) * 8;
+        f2->offset = aligned_word(offset + alignment, alignment) * alignment;
         f2->isReserved = true;
-        f2->size = (numOfDwords - 2) * 32;
+        f2->size = (num_aligned_words - 2) * alignment;
 
-        if (!((offset + size) % 32))
+        if (!((offset + size) % alignment))
         {
-            f2->size = (numOfDwords - 1) * 32;
+            f2->size = (num_aligned_words - 1) * alignment;
             reserveds.push_back(f1);
             reserveds.push_back(f2);
             /*printf("case3.1: reserved0: %s, reserved1: %s\n",
              formatAddr(f1->offset, f1->size).c_str(),
              formatAddr(f2->offset, f2->size).c_str());*/
+        if (alignment == 64)
+        {
+            f1->attrs["cr_data_wdt"] = "64";
+            f2->attrs["cr_data_wdt"] = "64";
+        }
             return;
         }
         else
         {
-            if (!(f1->size % 32))
+            if (!(f1->size % alignment))
             {
-                f1->size = (numOfDwords - 1) * 32;
+                f1->size = (num_aligned_words - 1) * alignment;
                 f2->size = size - f1->size;
                 f2->offset = f1->offset + f1->size;
                 reserveds.push_back(f1);
@@ -1817,11 +1858,17 @@ void AdbParser::addReserved(vector<AdbField*>& reserveds, u_int32_t offset, u_in
                 /*printf("case3.2: reserved0: %s, reserved1: %s\n",
                  formatAddr(f1->offset, f1->size).c_str(),
                  formatAddr(f2->offset, f2->size).c_str());*/
+
+                if (alignment == 64)
+                {
+                    f1->attrs["cr_data_wdt"] = "64";
+                    f2->attrs["cr_data_wdt"] = "64";
+                }                 
                 return;
             }
             else
             {
-                f2->size = (numOfDwords - 2) * 32;
+                f2->size = (num_aligned_words - 2) * alignment;
                 AdbField* f3 = new AdbField;
                 f3->name = "reserved";
                 f3->offset = f2->offset + f2->size;
@@ -1834,6 +1881,12 @@ void AdbParser::addReserved(vector<AdbField*>& reserveds, u_int32_t offset, u_in
                  formatAddr(f1->offset, f1->size).c_str(),
                  formatAddr(f2->offset, f2->size).c_str(),
                  formatAddr(f3->offset, f3->size).c_str());*/
+
+                if (alignment == 64)
+                {
+                    f1->attrs["cr_data_wdt"] = "64";
+                    f2->attrs["cr_data_wdt"] = "64";
+                }                 
                 return;
             }
         }
@@ -1915,7 +1968,8 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
                     }
                     if (delta > 0 && adbParser->_addReserved)
                     { // Need reserved
-                        addReserved(reserveds, prevField->offset + prevField->size, delta);
+                        addReserved(reserveds, prevField->offset + prevField->size, delta,
+                                    adbParser->_current_node_alignment);
                     }
 
                     prevField = field;
@@ -1928,7 +1982,7 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
             {
                 if (adbParser->_currentNode->isUnion)
                 {
-                    addReserved(reserveds, 0, adbParser->_currentNode->size);
+                    addReserved(reserveds, 0, adbParser->_currentNode->size, adbParser->_current_node_alignment);
                 }
                 else
                 {
@@ -1950,7 +2004,8 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
 
                     if (delta > 0)
                     {
-                        addReserved(reserveds, prevField->offset + prevField->size, delta);
+                        addReserved(reserveds, prevField->offset + prevField->size, delta,
+                                    adbParser->_current_node_alignment);
                     }
                 }
 
@@ -1971,7 +2026,7 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
             }
 
             // Re-fix fields offset
-            if (adbParser->_adbCtxt->bigEndianArr)
+            if (adbParser->_adbCtxt->bigEndianArr && adbParser->_current_node_alignment != 64)
             {
                 for (size_t i = 0; i < adbParser->_currentNode->fields.size(); i++)
                 {
@@ -2006,7 +2061,7 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
         // Add this field to current node
         if (!adbParser->skipNode)
         {
-            if (adbParser->_currentNode->name == "root")
+            if (adbParser->_currentNode->name == adbParser->_root_node_name)
             {
                 adbParser->_adbCtxt->rootNode = adbParser->_currentField->subNode;
             }

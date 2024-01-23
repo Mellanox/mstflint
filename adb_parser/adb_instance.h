@@ -51,6 +51,7 @@ using namespace xmlCreator;
 typedef map<string, string> AttrsMap;
 class AdbField;
 class AdbNode;
+struct PartitionTree;
 class LayoutItemAttrsMap
 {
 public:
@@ -144,6 +145,13 @@ class AdbInstance
         }
     };
 
+    struct LayoutPartitionProps
+    {
+        PartitionTree* partition_tree;
+
+        LayoutPartitionProps(PartitionTree* tree);
+    };
+
 public:
     // Methods
     AdbInstance() = default;
@@ -154,10 +162,15 @@ public:
                 map<string, string> vars,
                 bool bigEndianArr,
                 bool isExprEval,
-                unsigned char adabe_version = 1);
+                unsigned char adabe_version = 1,
+                bool optimize_time = false,
+                bool stop_on_partition = false,
+                PartitionTree* next_partition_tree = nullptr);
+
     ~AdbInstance();
     void init_props(unsigned char adabe_version);
     u_int32_t calcArrOffset(bool bigEndianArr);
+    bool stop_on_partition() const;
     void eval_expressions(AttrsMap& i_vars);
     static string evalExpr(string expr, AttrsMap* vars);
     const string& get_field_name();
@@ -174,9 +187,9 @@ public:
     bool is_wo() const;
     bool is_diff() const;
     void set_is_diff(bool val);
-    u_int32_t dwordAddr();
-    u_int32_t startBit();
     bool isEnumExists();
+    u_int32_t dwordAddr(uint8_t alignment = 32);
+    u_int32_t startBit(uint8_t alignment = 32);
     bool enumToInt(const string& name, u_int64_t& val); // false means no enum value found
     bool intToEnum(u_int64_t val, string& valName);     // false means no enum name found
     map<string, u_int64_t> getEnumMap();
@@ -189,6 +202,7 @@ public:
     // DB like access methods
     AdbInstance* getChildByPath(const string& path, bool isCaseSensitive = true);
     vector<AdbInstance*> findChild(const string& name, bool isCaseSensitive = true, bool by_inst_name = false);
+    AdbInstance* get_root();
     string getInstanceAttr(const string& attrName) const;
     bool getInstanceAttr(const string& attrName, string& value);
     LayoutItemAttrsMap::iterator getInstanceAttrIterator(const string& attrName);
@@ -210,6 +224,7 @@ public:
 
     // Members
     string layout_item_name{}; // instance name
+    string full_path{};
     vector<AdbInstance*> subItems{};
     AdbField* fieldDesc{nullptr};
     AdbNode* nodeDesc{nullptr};
@@ -221,6 +236,7 @@ public:
     u_int32_t size{0};            // in bits
     u_int32_t maxLeafSize{0};     // in bits for DS alignment check
     InstancePropertiesMask inst_props{};
+    PartitionTree* partition_tree{nullptr};
 };
 
 #endif
