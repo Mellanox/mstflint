@@ -109,10 +109,38 @@ struct CAP_VALUE
 
 struct PRM_FIELD
 {
+    PRM_FIELD()
+    {
+        prmField = "";
+        uiField = "";
+        fieldAccess = 0;
+        isSigned = false;
+        validationMask = 0;
+    }
+
+    PRM_FIELD(string _prmField, string _uiField, u_int32_t _fieldAccess, bool _isSigned)
+    {
+        prmField = _prmField;
+        uiField = _uiField;
+        fieldAccess = _fieldAccess;
+        isSigned = _isSigned;
+        validationMask = 0;
+    }
+
+    PRM_FIELD(string _prmField, string _uiField, u_int32_t _fieldAccess, bool _isSigned, u_int32_t _validationMask)
+    {
+        prmField = _prmField;
+        uiField = _uiField;
+        fieldAccess = _fieldAccess;
+        isSigned = _isSigned;
+        validationMask = _validationMask;
+    }
+
     string prmField;
     string uiField;
     u_int32_t fieldAccess;
     bool isSigned;
+    u_int32_t validationMask;
 };
 
 class MlxlinkMaps

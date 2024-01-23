@@ -2431,6 +2431,7 @@ void MlxlinkCommander::showEye()
     {
         checkPCIeValidity();
     }
+
     try
     {
         if (_userInput._pcie)
@@ -2454,7 +2455,7 @@ void MlxlinkCommander::showEye()
         {
             prepare40_28_16nmEyeInfo(numOfLanesToUse);
         }
-        else if (_productTechnology >= PRODUCT_7NM)
+        else if (_productTechnology == PRODUCT_7NM || _productTechnology == PRODUCT_5NM)
         {
             prepare7nmEyeInfo(numOfLanesToUse);
         }
@@ -2597,38 +2598,26 @@ string MlxlinkCommander::getSltpHeader()
 {
     string sep = ",";
     vector<string> sltpHeader;
-    map<u_int32_t, PRM_FIELD> sltpParam = _mlxlinkMaps->_SltpNdrParams;
+    map<u_int32_t, PRM_FIELD> sltpParam;
+    u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
 
-    if (_productTechnology >= PRODUCT_7NM)
+    switch (_productTechnology)
     {
-        bool is100gPerLane = isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive);
-        bool is50gPerLane = isSpeed50GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive);
-        if (is100gPerLane)
-        {
-            sltpHeader.push_back(MlxlinkRecord::addSpace(sltpParam[SLTP_NDR_FIR_PRE3].uiField,
-                                                         sltpParam[SLTP_NDR_FIR_PRE3].uiField.size() + 1, false));
-        }
-        if (is50gPerLane || is100gPerLane)
-        {
-            sltpHeader.push_back(MlxlinkRecord::addSpace(sltpParam[SLTP_NDR_FIR_PRE2].uiField,
-                                                         sltpParam[SLTP_NDR_FIR_PRE2].uiField.size() + 1, false));
-        }
-        sltpHeader.push_back(MlxlinkRecord::addSpace(sltpParam[SLTP_NDR_FIR_PRE1].uiField,
-                                                     sltpParam[SLTP_NDR_FIR_PRE1].uiField.size() + 1, false));
-        sltpHeader.push_back(MlxlinkRecord::addSpace(sltpParam[SLTP_NDR_FIR_MAIN].uiField,
-                                                     sltpParam[SLTP_NDR_FIR_MAIN].uiField.size() + 1, false));
-        sltpHeader.push_back(MlxlinkRecord::addSpace(sltpParam[SLTP_NDR_FIR_POST1].uiField,
-                                                     sltpParam[SLTP_NDR_FIR_POST1].uiField.size() + 1, false));
-    }
-    else
-    {
-        sltpParam = _mlxlinkMaps->_SltpEdrParams;
-        if (_productTechnology == PRODUCT_16NM)
-        {
+        case PRODUCT_7NM:
+            sltpParam = _mlxlinkMaps->_SltpNdrParams;
+            break;
+        case PRODUCT_16NM:
             sltpParam = _mlxlinkMaps->_SltpHdrParams;
-        }
+            break;
+        default:
+            sltpParam = _mlxlinkMaps->_SltpEdrParams;
+            activeSpeed = _protoActive;
+            break;
+    }
 
-        for (auto const& param : sltpParam)
+    for (auto const& param : sltpParam)
+    {
+        if (param.second.validationMask & activeSpeed)
         {
             if ((param.second.fieldAccess & FIELD_ACCESS_R) ||
                 (_userInput._advancedMode && (param.second.fieldAccess & FIELD_ACCESS_ADVANCED)))
@@ -2674,13 +2663,16 @@ void MlxlinkCommander::showSltp()
         {
             sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d,c_db=%d", lane, _userInput._db);
 
-            if (_productTechnology >= PRODUCT_7NM)
+            switch (_productTechnology)
             {
-                prepareSltpNdrGen(sltpLanes, lane);
-            }
-            else
-            {
-                prepareSltpEdrHdrGen(sltpLanes, lane);
+                case PRODUCT_5NM:
+                    prepareSltpXdrGen(sltpLanes, lane);
+                    break;
+                case PRODUCT_7NM:
+                    prepareSltpNdrGen(sltpLanes, lane);
+                    break;
+                default:
+                    prepareSltpEdrHdrGen(sltpLanes, lane);
             }
 
             if (!getFieldValue("status"))
@@ -4372,34 +4364,37 @@ string MlxlinkCommander::updateSltpEdrHdrFields()
 
 string MlxlinkCommander::updateSltpNdrFields()
 {
-    u_int32_t indexCorrection = 0;
-    char ndrParamBuff[64] = "";
-    char hdrParamBuff[32] = "";
-    char paramBuff[128] = "";
     string sltpParamsCmd = "";
+    u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
+    u_int32_t paramShift = 2; // Assuming that the active speed is NRZ, so user params will represent NRZ params
+    char paramValueBuff[32] = "";
 
-    if ((!_activeSpeed && _devID == DeviceSpectrum4) ||
-        isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    if (isSpeed100GPerLane(activeSpeed, _protoActive))
     {
-        snprintf(ndrParamBuff, 64, ",fir_pre3=%d,fir_pre2=%d", _userInput._sltpParams[SLTP_NDR_FIR_PRE3],
-                 _userInput._sltpParams[SLTP_NDR_FIR_PRE2]);
+        paramShift = 0;
     }
-    else if (isSpeed50GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    else if (isSpeed50GPerLane(activeSpeed, _protoActive))
     {
-        indexCorrection = 1;
-        snprintf(hdrParamBuff, 32, ",fir_pre2=%d", _userInput._sltpParams[SLTP_NDR_FIR_PRE2 - indexCorrection]);
-    }
-    else
-    {
-        indexCorrection = 2;
+        paramShift = 1;
     }
 
-    snprintf(paramBuff, 128, "fir_pre1=%d,fir_main=%d,fir_post1=%d",
-             _userInput._sltpParams[SLTP_NDR_FIR_PRE1 - indexCorrection],
-             _userInput._sltpParams[SLTP_NDR_FIR_MAIN - indexCorrection],
-             _userInput._sltpParams[SLTP_NDR_FIR_POST1 - indexCorrection]);
+    for (auto const& param : _mlxlinkMaps->_SltpNdrParams)
+    {
+        if (param.second.validationMask & activeSpeed)
+        {
+            snprintf(paramValueBuff, sizeof(paramValueBuff), "%s=%d", param.second.prmField.c_str(),
+                     _userInput._sltpParams[param.first - paramShift]);
+            sltpParamsCmd += string(paramValueBuff);
+            sltpParamsCmd += ",";
+        }
+    }
 
-    return string(paramBuff) + string(hdrParamBuff) + string(ndrParamBuff);
+    return deleteLastChar(sltpParamsCmd);
+}
+
+string MlxlinkCommander::updateSltpXdrFields()
+{
+    return "";
 }
 
 string MlxlinkCommander::getSltpStatus()
@@ -4472,22 +4467,28 @@ void MlxlinkCommander::sendSltp()
             }
 
             laneSpeed = getLaneSpeed(lane);
-            if (_productTechnology < PRODUCT_16NM && !_userInput._advancedMode)
-            {
-                getSltpRegAndLeva(lane);
-            }
-            else if (_productTechnology == PRODUCT_16NM)
-            {
-                getSltpAlevOut(lane);
-            }
 
-            if (_productTechnology >= PRODUCT_7NM)
+            switch (_productTechnology)
             {
-                sltpParamsCmd = updateSltpNdrFields();
-            }
-            else
-            {
-                sltpParamsCmd = updateSltpEdrHdrFields();
+                case PRODUCT_5NM:
+                    sltpParamsCmd = updateSltpXdrFields();
+                    break;
+                case PRODUCT_7NM:
+                    sltpParamsCmd = updateSltpNdrFields();
+                    break;
+                case PRODUCT_16NM:
+                    getSltpAlevOut(lane);
+                    sltpParamsCmd = updateSltpEdrHdrFields();
+                    break;
+                default:
+                {
+                    if (!_userInput._advancedMode)
+                    {
+                        getSltpRegAndLeva(lane);
+                    }
+                    sltpParamsCmd = updateSltpEdrHdrFields();
+                }
+                break;
             }
 
             sendPrmReg(ACCESS_REG_SLTP, SET, "lane=%d,lane_speed=%d,tx_policy=%d,c_db=%d,%s", lane, laneSpeed,
