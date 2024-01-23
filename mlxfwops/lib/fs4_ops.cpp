@@ -2488,7 +2488,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
                       total_img_size,
                       alreadyWrittenSz))
     {
-        return errmsg("Failed to burn encrypted image\n");
+        return errmsg("Failed to burn encrypted image - %s\n", this->err());"Failed to burn encrypted image\n");
     }
     alreadyWrittenSz += imgBuff.size() - FS3_FW_SIGNATURE_SIZE;
 

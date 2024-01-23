@@ -418,12 +418,14 @@ flash_info_t g_flash_info_arr[] = {
   {"M25Pxx", FV_ST, FMT_ST_M25P, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0},
   {"N25Q0XX", FV_ST, FMT_N25QXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 1, 0},
   /*{MICRON_3V_NAME, FV_ST, FMT_N25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 0}, */
+  {MICRON_3V_NAME, FV_ST, FMT_N25QXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 0},
   {SST_FLASH_NAME, FV_SST, FMT_SST_25, FD_LEGACY, MCS_SSTSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0},
   {WINBOND_NAME, FV_WINBOND, FMT_WINBOND, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0},
   {WINBOND_W25X, FV_WINBOND, FMT_WINBOND_W25X, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0},
   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_3V, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 1},
   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_3V, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
+  {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
   {ATMEL_NAME, FV_ATMEL, FMT_ATMEL, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0},
   {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0},
   {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0},
@@ -471,6 +473,10 @@ int get_log2size_by_vendor_type_density(u_int8_t vendor, u_int8_t type, u_int8_t
     {
         return cntx_sst_get_log2size(density, log2size);
     }
+    if (((type == FMT_WINBOND && vendor == FV_WINBOND) || (type == FMT_N25QXXX && vendor == FV_ST)) && density == 0x20)
+    {
+        *log2size = 0x1a;
+    }
     else
     {
         *log2size = density;
@@ -487,6 +493,14 @@ int get_type_index_by_vendor_type_density(u_int8_t vendor, u_int8_t type, u_int8
     for (i = 0; i < arr_size; i++)
     {
         flash_info_t* flash_info = &g_flash_info_arr[i];
+        
+        if (flash_info->vendor == vendor && flash_info->type == type)
+        {
+            if (density == 0x20)
+            {
+                density = 0x1a;
+            }
+        }
         if ((flash_info->vendor == vendor) && (flash_info->type == type) &&
             ((flash_info->densities & (1 << density)) != 0))
         {
