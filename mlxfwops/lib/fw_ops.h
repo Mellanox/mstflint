@@ -670,6 +670,7 @@ protected:
     virtual Tlv_Status_t GetTsObj(TimeStampIFC** tsObj);
     bool TestAndSetTimeStamp(FwOperations* imageOps);
     virtual bool VerifyBranchFormat(const char* vsdString);
+    virtual bool GetDtocAddress(u_int32_t& dTocAddress);
 
     // Protected Members
     FBase* _ioAccess;

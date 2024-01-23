@@ -1049,10 +1049,9 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
     is_image_in_odd_chunks = _ioAccess->get_is_image_in_odd_chunks();
     _ioAccess->set_address_convertor(0, 0);
     //-Verify DToC Header:
-    dtocPtr = _ioAccess->get_effective_size() - FS4_DEFAULT_SECTOR_SIZE;
-    if (_fwImgInfo.ext_info.dtoc_offset == 1)
+    if (!GetDtocAddress(dtocPtr))
     {
-        dtocPtr = (_ioAccess->get_effective_size() / 2) - FS4_DEFAULT_SECTOR_SIZE;
+        return false;
     }
     DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocHeader() DTOC\n"));
     if (!verifyTocHeader(dtocPtr, true, verifyCallBackFunc))
@@ -1144,6 +1143,22 @@ bool Fs4Operations::GetImageInfo(u_int8_t* buff)
     return true;
 }
 
+bool Fs4Operations::GetDtocAddress(u_int32_t& dTocAddress)
+{
+    u_int32_t imageSize = _ioAccess->get_effective_size();
+
+    if (_fwImgInfo.ext_info.dtoc_offset != 0)
+    {
+        dTocAddress = (imageSize / (_fwImgInfo.ext_info.dtoc_offset * 2)) - FS4_DEFAULT_SECTOR_SIZE;
+    }
+    else
+    {
+        dTocAddress = imageSize - FS4_DEFAULT_SECTOR_SIZE;
+    }
+
+    return true;
+}
+
 bool Fs4Operations::CheckDevRSAPublicKeyUUID()
 {
     //* Read RSA_PUBLIC_KEY section
@@ -1187,15 +1202,37 @@ bool Fs4Operations::encryptedFwReadImageInfoSection()
     return true;
 }
 
+bool Fs4Operations::ParseImageInfoFromEncryptedImage()
+{
+    //* Read IMAGE_INFO section
+    u_int32_t image_info_section_addr = _image_info_section_ptr + _fwImgInfo.imgStart;
+    DPRINTF(
+      ("Fs4Operations::ParseImageInfoFromEncryptedImage image_info_section_addr = 0x%x\n", image_info_section_addr));
+    vector<u_int8_t> image_info_data;
+    image_info_data.resize(IMAGE_LAYOUT_IMAGE_INFO_SIZE);
+    if (!_ioAccess->read(image_info_section_addr, image_info_data.data(), IMAGE_LAYOUT_IMAGE_INFO_SIZE))
+    {
+        return errmsg("%s - read error (%s)\n", "IMAGE_INFO", (*_ioAccess).err());
+    }
+
+    //* Parse IMAGE_INFO section
+    if (!GetImageInfo(image_info_data.data()))
+    {
+        return errmsg("Failed to parse IMAGE_INFO section - %s", err());
+    }
+
+    return true;
+}
+
 bool Fs4Operations::ParseDevData(bool quickQuery, bool verbose, VerifyCallBack verifyCallBackFunc, bool showItoc)
 {
     //* Initializing DTOC info
     _ioAccess->set_address_convertor(0, 0);
     // Parse DTOC header:
     u_int32_t dtoc_addr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
-    if (_fwImgInfo.ext_info.dtoc_offset == 1)
+    if (!GetDtocAddress(dtoc_addr))
     {
-        dtoc_addr = (_ioAccess->get_size() / 2) - FS4_DEFAULT_SECTOR_SIZE;
+        return false;
     }
     DPRINTF(("Fs4Operations::ParseDevData call verifyTocHeader() DTOC, dtoc_addr = 0x%x\n", dtoc_addr));
     if (!verifyTocHeader(dtoc_addr, true, verifyCallBackFunc))
@@ -2502,7 +2539,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
                       total_img_size,
                       alreadyWrittenSz))
     {
-        return errmsg("Failed to burn encrypted image - %s\n", this->err());"Failed to burn encrypted image\n");
+        return errmsg("Failed to burn encrypted image - %s\n", this->err());
     }
     alreadyWrittenSz += imgBuff.size() - FS3_FW_SIGNATURE_SIZE;
 
@@ -2512,9 +2549,9 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         // Get DTOC from the cache
         u_int8_t* dtoc_data = new u_int8_t[FS4_DEFAULT_SECTOR_SIZE];
         u_int32_t dtoc_addr = imageOps->GetIoAccess()->get_size() - FS4_DEFAULT_SECTOR_SIZE;
-        if (_fwImgInfo.ext_info.dtoc_offset == 1)
+        if (!GetDtocAddress(dtoc_addr))
         {
-            dtoc_addr = (imageOps->GetIoAccess()->get_size() / 2) - FS4_DEFAULT_SECTOR_SIZE;
+            return false;
         }
         DPRINTF(("Fs4Operations::burnEncryptedImage - Burning DTOC at addr 0x%0x\n", dtoc_addr));
         ((Fs4Operations*)imageOps)->_imageCache.get(dtoc_data, dtoc_addr, FS4_DEFAULT_SECTOR_SIZE);
