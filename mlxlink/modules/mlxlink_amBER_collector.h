@@ -62,6 +62,7 @@ public:
     virtual vector<AmberField> getLinkStatus();
     virtual vector<AmberField> getSerdesHDR();
     virtual vector<AmberField> getSerdesNDR();
+    virtual vector<AmberField> getSerdesXDR();
     virtual vector<AmberField> getModuleStatus();
     virtual vector<AmberField> getPortCounters();
     virtual vector<AmberField> getTroubleshootingInfo();
@@ -151,7 +152,6 @@ protected:
     u_int32_t getLocalFieldValue(const string& fieldName);
     void sendRegister(const string& regName, maccess_reg_method_t method);
     void sendLocalPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...);
-    void sendLocalPrmReg(const string& regName, maccess_reg_method_t method);
 
     string getBitmaskPerLaneStr(u_int32_t bitmask);
     void fillParamsToFields(const string& title, const vector<string>& values, vector<AmberField>& fields);
