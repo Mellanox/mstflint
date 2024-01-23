@@ -33,10 +33,12 @@
  */
 
 #include "mlxlink_ui.h"
+#include <mlxreg/mlxreg_lib/mlxreg_parser.h>
 
 MlxlinkUi::MlxlinkUi() : CommandLineRequester(MLXLINK_EXEC " OPTIONS"), _cmdParser(MLXLINK_EXEC)
 {
     _mlxlinkCommander = nullptr;
+    _mf = nullptr;
 }
 
 MlxlinkUi::~MlxlinkUi()
@@ -50,6 +52,74 @@ MlxlinkUi::~MlxlinkUi()
 void MlxlinkUi::createMlxlinkCommander()
 {
     _mlxlinkCommander = new MlxlinkCommander();
+}
+
+void MlxlinkUi::initRegAccessLib()
+{
+    MlxRegLib::isAccessRegisterSupported(_mf);
+
+    _mlxlinkCommander->_mf = _mf;
+
+    _mlxlinkCommander->_regLib =
+      new MlxRegLib(_mlxlinkCommander->_mf, _mlxlinkCommander->_extAdbFile, _mlxlinkCommander->_useExtAdb);
+
+    _mlxlinkCommander->_userInput = _userInput;
+
+    if (_mlxlinkCommander->_regLib->isIBDevice() &&
+        !_mlxlinkCommander->_regLib->isAccessRegisterGMPSupported(MACCESS_REG_METHOD_GET))
+    {
+        MlxlinkRecord::printWar("Warning: AccessRegisterGMP Get() method is not supported.\n"
+                                "         mlxlink has limited functionality",
+                                _mlxlinkCommander->_jsonRoot);
+    }
+
+    _mlxlinkCommander->_gvmiAddress = _userInput._gvmiAddress;
+    _mlxlinkCommander->_devID = _mlxlinkCommander->_regLib->getDevId();
+    _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
+}
+
+bool MlxlinkUi::isSwitch()
+{
+    return !_mlxlinkCommander->_isHCA;
+}
+
+bool MlxlinkUi::isPlaneSwitchDev()
+{
+    return (_mf->tp == MST_PLANARIZED);
+}
+
+void MlxlinkUi::initPortInfo()
+{
+    _mlxlinkCommander->labelToLocalPort();
+    _mlxlinkCommander->validatePortType(_userInput._portType);
+    if (!_userInput._pcie)
+    {
+        _mlxlinkCommander->checkValidFW();
+    }
+    _mlxlinkCommander->getProductTechnology();
+    if (!_userInput._pcie)
+    {
+        _mlxlinkCommander->_prbsTestMode = _mlxlinkCommander->inPrbsTestMode();
+        if (_userInput._networkCmds != 0 || _userInput._ddm || _userInput._dump || _userInput._write ||
+            _userInput._read || _userInput.isModuleConfigParamsProvided || _userInput.isPrbsSelProvided ||
+            _userInput._csvBer != "")
+        {
+            _mlxlinkCommander->getCableParams();
+        }
+    }
+    else if (!_userInput._sendDpn)
+    {
+        _mlxlinkCommander->initValidDPNList();
+    }
+}
+
+void MlxlinkUi::initMlxlinkCommander()
+{
+    createMlxlinkCommander();
+
+    initRegAccessLib();
+
+    initPortInfo();
 }
 
 void MlxlinkUi::printSynopsisHeader()
@@ -387,7 +457,7 @@ void MlxlinkUi::printHelp()
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Write to cable",
            MLXLINK_EXEC
            " -d <device> --cable --write <bytes separated by comma> --page <page number> --offset <bytes offset> ");
-    if (_mlxlinkCommander->_userInput._advancedMode)
+    if (_userInput._advancedMode)
     {
         printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Transmitter Parameters (on lane, to database)",
                MLXLINK_EXEC " -d <device> -p <port_number> --serdes_tx "
@@ -408,21 +478,20 @@ void MlxlinkUi::printHelp()
 
 void MlxlinkUi::validateMandatoryParams()
 {
-    if (_mlxlinkCommander->_device == "")
+    if (_userInput._device == "")
     {
         throw MlxRegException("Please provide a device name");
     }
-    if (_mlxlinkCommander->_userInput._links && _mlxlinkCommander->_userInput._portType != "PCIE")
+    if (_userInput._links && _userInput._portType != "PCIE")
     {
         throw MlxRegException("The --" PCIE_LINKS_FLAG " option is valid only with --port_type PCIE");
     }
-    if (_mlxlinkCommander->_userInput._links &&
-        (_mlxlinkCommander->_userInput._showEyeInfo || _mlxlinkCommander->_userInput._showSltp ||
-         _mlxlinkCommander->_userInput._showCounters || _mlxlinkCommander->_userInput._showSlrp))
+    if (_userInput._links &&
+        (_userInput._showEyeInfo || _userInput._showSltp || _userInput._showCounters || _userInput._showSlrp))
     {
         throw MlxRegException("No options allowed to use while querying --" PCIE_LINKS_FLAG);
     }
-    if ((_mlxlinkCommander->_userInput._labelPort == 0) && (_mlxlinkCommander->_userInput._portType != "PCIE"))
+    if ((_userInput._labelPort == 0) && (_userInput._portType != "PCIE"))
     {
         throw MlxRegException("Please provide a valid port number");
     }
@@ -430,24 +499,23 @@ void MlxlinkUi::validateMandatoryParams()
 
 void MlxlinkUi::validatePCIeParams()
 {
-    bool dpnFlags = _mlxlinkCommander->_userInput._sendNode || _mlxlinkCommander->_userInput._sendDepth ||
-                    _mlxlinkCommander->_userInput._sendPcieIndex;
+    bool dpnFlags = _userInput._sendNode || _userInput._sendDepth || _userInput._sendPcieIndex;
 
-    if (_mlxlinkCommander->_userInput._portType == "PCIE")
+    if (_userInput._portType == "PCIE")
     {
-        _mlxlinkCommander->_userInput._pcie = true;
+        _userInput._pcie = true;
 
-        if (_mlxlinkCommander->_uniqueCmds)
+        if (_userInput._uniqueCmds)
         {
             throw MlxRegException("Command flags are not available for PCIE");
         }
 
-        if (_mlxlinkCommander->_networkCmds)
+        if (_userInput._networkCmds)
         {
             throw MlxRegException("FEC and Module Info flags are not available for PCIE");
         }
 
-        if (_mlxlinkCommander->_uniquePcieCmds > 1)
+        if (_userInput._uniquePcieCmds > 1)
         {
             throw MlxRegException("Commands are mutually exclusive!");
         }
@@ -456,17 +524,16 @@ void MlxlinkUi::validatePCIeParams()
 
         if (dpnFlags)
         {
-            if (!(_mlxlinkCommander->_userInput._sendNode && _mlxlinkCommander->_userInput._sendDepth &&
-                  _mlxlinkCommander->_userInput._sendPcieIndex))
+            if (!(_userInput._sendNode && _userInput._sendDepth && _userInput._sendPcieIndex))
             {
                 throw MlxRegException("The --depth, --pcie_index and --node must be specified for PCIE");
             }
             else
             {
-                _mlxlinkCommander->_userInput._sendDpn = true;
+                _userInput._sendDpn = true;
             }
         }
-        if (_mlxlinkCommander->_userInput._portSpecified)
+        if (_userInput._portSpecified)
         {
             if (dpnFlags)
             {
@@ -483,27 +550,26 @@ void MlxlinkUi::validatePCIeParams()
 
 void MlxlinkUi::validateGeneralCmdsParams()
 {
-    if (_mlxlinkCommander->_uniqueCmds > 1)
+    if (_userInput._uniqueCmds > 1)
     {
         throw MlxRegException("Commands are mutually exclusive!");
     }
-    if (isIn(SEND_PAOS, _sendRegFuncMap) && !checkPaosCmd(_mlxlinkCommander->_userInput._paosCmd))
+    if (isIn(SEND_PAOS, _sendRegFuncMap) && !checkPaosCmd(_userInput._paosCmd))
     {
         throw MlxRegException("Please provide a valid paos command [UP(up)/DN(down)/TG(toggle)]");
     }
-    if (!isIn(SEND_PPLM, _sendRegFuncMap) && _mlxlinkCommander->_userInput._speedFec != "")
+    if (!isIn(SEND_PPLM, _sendRegFuncMap) && _userInput._speedFec != "")
     {
         throw MlxRegException("The --fec_speed flag is valid only with --fec flag");
     }
     if (isIn(SEND_SLTP, _sendRegFuncMap))
     {
-        if (_mlxlinkCommander->_userInput._sltpLane && _mlxlinkCommander->_userInput._db)
+        if (_userInput._sltpLane && _userInput._db)
         {
             throw MlxRegException("Lane and Database flags are mutually exclusive");
         }
     }
-    else if (_mlxlinkCommander->_userInput._sltpLane || _mlxlinkCommander->_userInput._db ||
-             _mlxlinkCommander->_userInput._txPolicy)
+    else if (_userInput._sltpLane || _userInput._db || _userInput._txPolicy)
     {
         throw MlxRegException(LANE_FLAG
                               ", --" DATABASE_FLAG " and --" SLTP_TX_POLICY_FLAG
@@ -513,17 +579,16 @@ void MlxlinkUi::validateGeneralCmdsParams()
 
 void MlxlinkUi::validatePRBSParams()
 {
-    bool prbsFlags = _mlxlinkCommander->_userInput._sendPprt || _mlxlinkCommander->_userInput._sendPptt ||
-                     _mlxlinkCommander->_userInput._pprtRate != "" || _mlxlinkCommander->_userInput._pprtRate != "" ||
-                     _mlxlinkCommander->_userInput._prbsTxInv || _mlxlinkCommander->_userInput._prbsRxInv ||
-                     _mlxlinkCommander->_userInput._prbsLanesToSet.size() > 0;
+    bool prbsFlags = _userInput._sendPprt || _userInput._sendPptt || _userInput._pprtRate != "" ||
+                     _userInput._pprtRate != "" || _userInput._prbsTxInv || _userInput._prbsRxInv ||
+                     _userInput._prbsLanesToSet.size() > 0;
     if (isIn(SEND_PRBS, _sendRegFuncMap))
     {
-        if (!checkPrbsCmd(_mlxlinkCommander->_userInput._prbsMode))
+        if (!checkPrbsCmd(_userInput._prbsMode))
         {
             throw MlxRegException("you must provide a valid PRBS test mode [DS/EN/TU]");
         }
-        if (_mlxlinkCommander->_userInput._prbsMode == "DS" || _mlxlinkCommander->_userInput._prbsMode == "TU")
+        if (_userInput._prbsMode == "DS" || _userInput._prbsMode == "TU")
         {
             if (prbsFlags)
             {
@@ -539,34 +604,30 @@ void MlxlinkUi::validatePRBSParams()
 
 void MlxlinkUi::validateModulePRBSParams()
 {
-    if (!_mlxlinkCommander->_userInput.isPrbsSelProvided &&
-        (_mlxlinkCommander->_userInput.isPrbsModeProvided || _mlxlinkCommander->_userInput.isPrbsChProvided ||
-         _mlxlinkCommander->_userInput.isPrbsGenProvided || _mlxlinkCommander->_userInput.isPrbsShowDiagProvided ||
-         _mlxlinkCommander->_userInput.isPrbsClearDiagProvided))
+    if (!_userInput.isPrbsSelProvided &&
+        (_userInput.isPrbsModeProvided || _userInput.isPrbsChProvided || _userInput.isPrbsGenProvided ||
+         _userInput.isPrbsShowDiagProvided || _userInput.isPrbsClearDiagProvided))
     {
         throw MlxRegException("Please select PRBS module side using --" CABLE_PRBS_SELECT " [MEDIA|HOST] flag!");
     }
 
-    if (!_mlxlinkCommander->_userInput.isPrbsModeProvided &&
-        (_mlxlinkCommander->_userInput.isPrbsChProvided || _mlxlinkCommander->_userInput.isPrbsGenProvided ||
-         !_mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_RATE].empty()))
+    if (!_userInput.isPrbsModeProvided && (_userInput.isPrbsChProvided || _userInput.isPrbsGenProvided ||
+                                           !_userInput.modulePrbsParams[MODULE_PRBS_RATE].empty()))
     {
         throw MlxRegException("--" CABLE_PRBS_MODE " flag should be provided!");
     }
-    if (_mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_MODE] == "DS" &&
-        _mlxlinkCommander->_userInput.modulePrbsParams.size() > 2)
+    if (_userInput.modulePrbsParams[MODULE_PRBS_MODE] == "DS" && _userInput.modulePrbsParams.size() > 2)
     {
         throw MlxRegException("PRBS module parameters flags are valid only with PRBS enable mode (--prbs_mode EN)");
     }
 
-    if (_mlxlinkCommander->_userInput.isPrbsModeProvided &&
-        (_mlxlinkCommander->_userInput.isPrbsShowDiagProvided || _mlxlinkCommander->_userInput.isPrbsClearDiagProvided))
+    if (_userInput.isPrbsModeProvided && (_userInput.isPrbsShowDiagProvided || _userInput.isPrbsClearDiagProvided))
     {
         throw MlxRegException("PRBS Module Diagnostic info flags are not working while configuring the PRBS test "
                               "mode!");
     }
 
-    if (_mlxlinkCommander->_userInput.isPrbsShowDiagProvided && _mlxlinkCommander->_userInput.isPrbsClearDiagProvided)
+    if (_userInput.isPrbsShowDiagProvided && _userInput.isPrbsClearDiagProvided)
     {
         throw MlxRegException("are mutually exclusive, please select one command only");
     }
@@ -583,39 +644,38 @@ void MlxlinkUi::validateSpeedAndCSVBerParams()
     }
     if (berCollect || amBerCollect)
     {
-        if (!endsWith(_mlxlinkCommander->_userInput._csvBer, ".csv"))
+        if (!endsWith(_userInput._csvBer, ".csv"))
         {
             throw MlxRegException("you must provide a valid .csv file");
         }
-        if (!checkTestMode(_mlxlinkCommander->_userInput._testMode))
+        if (!checkTestMode(_userInput._testMode))
         {
             throw MlxRegException("Please provide a valid test mode [Nominal(Default)/Corner/Drift]");
         }
     }
-    else if (_mlxlinkCommander->_userInput._testMode != "Nominal")
+    else if (_userInput._testMode != "Nominal")
     {
         throw MlxRegException("BER Limit Criteria flag is valid only with Port Information Collection flag (--bc)");
     }
     if (isIn(SEND_PEPC, _sendRegFuncMap))
     {
-        if (!_mlxlinkCommander->_userInput._sendPepcForceMode)
+        if (!_userInput._sendPepcForceMode)
         {
             throw MlxRegException("Please provide --twisted_pair_force_mode");
         }
-        if (_mlxlinkCommander->_userInput._sendPepcForceMode &&
-            !checkPepcForceMode(_mlxlinkCommander->_userInput._forceMode))
+        if (_userInput._sendPepcForceMode && !checkPepcForceMode(_userInput._forceMode))
         {
             throw MlxRegException("Please provide a valid twisted pair force mode [MA(Master)/SL(Slave)]");
         }
     }
     else
     {
-        if (_mlxlinkCommander->_userInput._sendPepcForceMode)
+        if (_userInput._sendPepcForceMode)
         {
             throw MlxRegException("Please provide --set_external_phy option to configure the twisted pair force mode");
         }
     }
-    if (_mlxlinkCommander->_linkModeForce && _mlxlinkCommander->_ptysSpeeds.size() != 1)
+    if (_userInput._linkModeForce && _userInput._ptysSpeeds.size() != 1)
     {
         throw MlxRegException("--link_mode_force should receive exactly one speed using --speeds");
     }
@@ -623,28 +683,25 @@ void MlxlinkUi::validateSpeedAndCSVBerParams()
 
 void MlxlinkUi::validateCableParams()
 {
-    bool readWriteFlags = _mlxlinkCommander->_userInput._page >= 0 || _mlxlinkCommander->_userInput._offset >= 0 ||
-                          _mlxlinkCommander->_userInput._len >= 0;
-    bool prbsParamProvided = _mlxlinkCommander->_userInput.modulePrbsParams.size();
-    bool cablePrbsParamProvided = _mlxlinkCommander->_userInput.isPrbsSelProvided || prbsParamProvided;
-    bool cableConfigParamProvided = _mlxlinkCommander->_userInput.isModuleConfigParamsProvided;
-    bool paramSetProvided = _mlxlinkCommander->_userInput.configParamsToSet.size();
-    bool cableCommandProvided = _mlxlinkCommander->_userInput._dump || _mlxlinkCommander->_userInput._write ||
-                                _mlxlinkCommander->_userInput._read || _mlxlinkCommander->_userInput._ddm ||
+    bool readWriteFlags = _userInput._page >= 0 || _userInput._offset >= 0 || _userInput._len >= 0;
+    bool prbsParamProvided = _userInput.modulePrbsParams.size();
+    bool cablePrbsParamProvided = _userInput.isPrbsSelProvided || prbsParamProvided;
+    bool cableConfigParamProvided = _userInput.isModuleConfigParamsProvided;
+    bool paramSetProvided = _userInput.configParamsToSet.size();
+    bool cableCommandProvided = _userInput._dump || _userInput._write || _userInput._read || _userInput._ddm ||
                                 cablePrbsParamProvided || cableConfigParamProvided;
 
-    if (!_mlxlinkCommander->_userInput._cable && (cableCommandProvided || readWriteFlags))
+    if (!_userInput._cable && (cableCommandProvided || readWriteFlags))
     {
         throw MlxRegException("\"--" CABLE_FLAG "\" flag should be specified!");
     }
-    else if (_mlxlinkCommander->_userInput._cable)
+    else if (_userInput._cable)
     {
-        if ((_mlxlinkCommander->_uniqueCableCmds > 1) || !cableCommandProvided)
+        if ((_userInput._uniqueCableCmds > 1) || !cableCommandProvided)
         {
             throw MlxRegException("Please choose one of " CABLE_FLAG " operations!");
         }
-        if ((_mlxlinkCommander->_userInput._read || _mlxlinkCommander->_userInput._write) &&
-            (_mlxlinkCommander->_userInput._page == -1 || _mlxlinkCommander->_userInput._offset == -1))
+        if ((_userInput._read || _userInput._write) && (_userInput._page == -1 || _userInput._offset == -1))
         {
             throw MlxRegException("\"--" WRITE_PAGE_FLAG "\" and \"--" WRITE_OFFSET_FLAG
                                   "\" flags should be specified!");
@@ -656,23 +713,23 @@ void MlxlinkUi::validateCableParams()
 
         if (readWriteFlags)
         {
-            if (!_mlxlinkCommander->_userInput._write && !_mlxlinkCommander->_userInput._read)
+            if (!_userInput._write && !_userInput._read)
             {
                 throw MlxRegException("Read or Write flag should be specified!");
             }
 
-            if (_mlxlinkCommander->_userInput._read)
+            if (_userInput._read)
             {
-                if (_mlxlinkCommander->_userInput._len == -1)
+                if (_userInput._len == -1)
                 {
-                    _mlxlinkCommander->_userInput._len = 1; // default number of bytes to read
+                    _userInput._len = 1; // default number of bytes to read
                 }
-                else if (_mlxlinkCommander->_userInput._len == 0)
+                else if (_userInput._len == 0)
                 {
                     throw MlxRegException("The length cannot be zero!");
                 }
             }
-            else if (_mlxlinkCommander->_userInput._len >= 0)
+            else if (_userInput._len >= 0)
             {
                 throw MlxRegException("\"--" READ_LEN_FLAG "\" flag is working with read option only!");
             }
@@ -682,32 +739,31 @@ void MlxlinkUi::validateCableParams()
 
 void MlxlinkUi::validateTxGroupParams()
 {
-    if (_mlxlinkCommander->_userInput._showGroup >= 0)
+    if (_userInput._showGroup >= 0)
     {
-        if (!_mlxlinkCommander->_userInput._labelPorts.empty())
+        if (!_userInput._labelPorts.empty())
         {
             throw MlxRegException("\"--" TX_GROUP_PORTS_FLAG "\" flag is working with " SET_TX_GROUP_MAP_FLAG " only!");
         }
     }
 
-    if (_mlxlinkCommander->_userInput._setGroup >= 0 && _mlxlinkCommander->_userInput._showGroup >= 0)
+    if (_userInput._setGroup >= 0 && _userInput._showGroup >= 0)
     {
         throw MlxRegException("Choose one of operations!");
     }
 
-    if (_mlxlinkCommander->_userInput._setGroup >= 0)
+    if (_userInput._setGroup >= 0)
     {
-        if (_mlxlinkCommander->_userInput._labelPorts.empty())
+        if (_userInput._labelPorts.empty())
         {
             throw MlxRegException("\"--" TX_GROUP_PORTS_FLAG "\" should be specified!");
         }
     }
-    if (_mlxlinkCommander->_userInput._setGroup >= MAX_TX_GROUP_COUNT ||
-        _mlxlinkCommander->_userInput._showGroup >= MAX_TX_GROUP_COUNT)
+    if (_userInput._setGroup >= MAX_TX_GROUP_COUNT || _userInput._showGroup >= MAX_TX_GROUP_COUNT)
     {
         throw MlxRegException("Tx group is invalid, it can be in range [0-9]!");
     }
-    if (_mlxlinkCommander->_userInput._setGroup == -1 && !_mlxlinkCommander->_userInput._labelPorts.empty())
+    if (_userInput._setGroup == -1 && !_userInput._labelPorts.empty())
     {
         throw MlxRegException("\"--" SET_TX_GROUP_MAP_FLAG "\" should be specified!");
     }
@@ -715,9 +771,9 @@ void MlxlinkUi::validateTxGroupParams()
 
 void MlxlinkUi::validateGradeScanParams()
 {
-    if (_mlxlinkCommander->_userInput.eyeSelectSpecified)
+    if (_userInput.eyeSelectSpecified)
     {
-        if (_mlxlinkCommander->_userInput._portType == "PCIE")
+        if (_userInput._portType == "PCIE")
         {
             throw MlxRegException(EYE_SEL_FLAG " flag is working with Network ports only!");
         }
@@ -726,10 +782,9 @@ void MlxlinkUi::validateGradeScanParams()
 
 void MlxlinkUi::validateErrInjParams()
 {
-    bool errInjEnable = _mlxlinkCommander->_userInput.enableRxErrInj;
-    bool showMixers = _mlxlinkCommander->_userInput.showMixers;
-    bool mixerControl =
-      _mlxlinkCommander->_userInput.mixerOffset0 >= 0 || _mlxlinkCommander->_userInput.mixerOffset1 >= 0;
+    bool errInjEnable = _userInput.enableRxErrInj;
+    bool showMixers = _userInput.showMixers;
+    bool mixerControl = _userInput.mixerOffset0 >= 0 || _userInput.mixerOffset1 >= 0;
     if ((errInjEnable) && ((!mixerControl && !showMixers) || (mixerControl && showMixers)))
     {
         throw MlxRegException("Please provide either mixers offset configuration, "
@@ -741,8 +796,7 @@ void MlxlinkUi::validateErrInjParams()
     }
     if (mixerControl)
     {
-        if (_mlxlinkCommander->_userInput.mixerOffset0 > MAX_MIXER_OFFSET_0 ||
-            _mlxlinkCommander->_userInput.mixerOffset1 > MAX_MIXER_OFFSET_1)
+        if (_userInput.mixerOffset0 > MAX_MIXER_OFFSET_0 || _userInput.mixerOffset1 > MAX_MIXER_OFFSET_1)
         {
             char errMsg[64];
             sprintf(errMsg, "For mixer_offset0 [0 to 0x%x] and mixer_offset1 [0 to 0x%x]", MAX_MIXER_OFFSET_0,
@@ -751,26 +805,24 @@ void MlxlinkUi::validateErrInjParams()
         }
     }
 
-    if (_mlxlinkCommander->_userInput.isPcieErrInjProvided)
+    if (_userInput.isPcieErrInjProvided)
     {
-        if (!_mlxlinkCommander->_userInput._pcie)
+        if (!_userInput._pcie)
         {
             throw MlxRegException("The PCIE error injection feature is applicable to the PCIe links only!");
         }
-        if (_mlxlinkCommander->_userInput.errorType.empty())
+        if (_userInput.errorType.empty())
         {
-            if (_mlxlinkCommander->_userInput.errorDuration != -1 || !_mlxlinkCommander->_userInput.dbdf.empty() ||
-                _mlxlinkCommander->_userInput.injDelay != -1)
+            if (_userInput.errorDuration != -1 || !_userInput.dbdf.empty() || _userInput.injDelay != -1)
             {
                 throw MlxRegException(MPEINJ_ERR_TYPE_FLAG " flag should be specified!");
             }
         }
     }
-    if (_mlxlinkCommander->_userInput.errorDuration != -1 || !_mlxlinkCommander->_userInput.dbdf.empty() ||
-        _mlxlinkCommander->_userInput.injDelay != -1 || !_mlxlinkCommander->_userInput.errorType.empty() ||
-        !_mlxlinkCommander->_userInput.parameters.empty())
+    if (_userInput.errorDuration != -1 || !_userInput.dbdf.empty() || _userInput.injDelay != -1 ||
+        !_userInput.errorType.empty() || !_userInput.parameters.empty())
     {
-        if (!_mlxlinkCommander->_userInput.isPcieErrInjProvided)
+        if (!_userInput.isPcieErrInjProvided)
         {
             throw MlxRegException(MPEINJ_PCIE_ERR_INJ_FLAG " flag should be specified!");
         }
@@ -779,20 +831,120 @@ void MlxlinkUi::validateErrInjParams()
 
 void MlxlinkUi::validatePortInfoParams()
 {
-    if (_mlxlinkCommander->_userInput.enableFecHistogram && !_mlxlinkCommander->_userInput.showFecHistogram &&
-        !_mlxlinkCommander->_userInput.clearFecHistogram)
+    if (_userInput.enableFecHistogram && !_userInput.showFecHistogram && !_userInput.clearFecHistogram)
     {
         throw MlxRegException("Please provide one of FEC Histogram options: "
                               "--" PPHCR_SHOW_FEC_HIST_FLAG " or --" PPHCR_CLEAR_HISTOGRAM_FLAG);
     }
-    if (!_mlxlinkCommander->_userInput.enableFecHistogram &&
-        (_mlxlinkCommander->_userInput.showFecHistogram || _mlxlinkCommander->_userInput.clearFecHistogram))
+    if (!_userInput.enableFecHistogram && (_userInput.showFecHistogram || _userInput.clearFecHistogram))
     {
         throw MlxRegException(PPHCR_FEC_HIST_FLAG " flag should  be specified");
     }
-    if (_mlxlinkCommander->_userInput.showFecHistogram && _mlxlinkCommander->_userInput.clearFecHistogram)
+    if (_userInput.showFecHistogram && _userInput.clearFecHistogram)
     {
         throw MlxRegException("Options are mutually exclusive, please select one option only");
+    }
+}
+
+void MlxlinkUi::strToInt32(char* str, u_int32_t& value)
+{
+    char* endp;
+    value = strtol(str, &endp, 0);
+    if (*endp)
+    {
+        throw MlxRegException("Argument: %s is invalid.", str);
+    }
+}
+
+std::vector<string> MlxlinkUi::parseParamsFromLine(const string& paramsLine)
+{
+    std::vector<string> paramVector;
+    string param;
+    stringstream stream(paramsLine);
+    while (getline(stream, param, ','))
+    {
+        if (param == "")
+        {
+            throw MlxRegException("Wrong input format");
+        }
+        paramVector.push_back(param.c_str());
+    }
+    return paramVector;
+}
+
+std::map<u_int32_t, u_int32_t> MlxlinkUi::getSltpParamsFromVector(const string& paramsLine)
+{
+    std::map<u_int32_t, u_int32_t> sltpParamsInt;
+    std::vector<string> sltpParamsStr = parseParamsFromLine(paramsLine);
+
+    for (u_int32_t i = 0; i < sltpParamsStr.size(); i++)
+    {
+        strToInt32((char*)sltpParamsStr[i].c_str(), sltpParamsInt[i]);
+    }
+
+    return sltpParamsInt;
+}
+
+std::map<u_int32_t, bool> MlxlinkUi::getprbsLanesFromParams(const string& paramsLine)
+{
+    std::vector<string> prbsLanesParams = parseParamsFromLine(paramsLine);
+
+    std::map<u_int32_t, bool> prbsLanesToSet;
+    u_int32_t lane = 0;
+    vector<string>::iterator it = prbsLanesParams.begin();
+    while (it != prbsLanesParams.end())
+    {
+        RegAccessParser::RegAccessParser::strToUint32((char*)(*it).c_str(), lane);
+        prbsLanesToSet[lane] = true;
+        it++;
+    }
+    return prbsLanesToSet;
+}
+
+void MlxlinkUi::handlePortStr(UserInput& userInput, const string& portStr)
+{
+    auto portParts = MlxlinkRecord::split(portStr, "/");
+    // validate arguments
+    for (auto it = portParts.begin(); it != portParts.end(); it++)
+    {
+        if ((*it).empty())
+        {
+            throw MlxRegException("Argument: %s is invalid.", portStr.c_str());
+        }
+    }
+
+    /* For Quantum-2:
+     * portStr should represent: (cage/port/split) if split sign provided
+     *                           (cage/port) if no split sign provided
+     * For Other Switches:
+     * portStr should represent: (port/split) if split sign provided
+     *                           (port) if no split sign provided
+     */
+    if (portParts.size() > 1)
+    {
+        RegAccessParser::RegAccessParser::strToUint32((char*)portParts[1].c_str(), userInput._splitPort);
+        userInput._splitProvided = true;
+        if (portParts.size() > SECOND_LEVEL_PORT_ACCESS)
+        {
+            // it's the split part of Quantum-2 (xx/xx/split)
+            RegAccessParser::RegAccessParser::strToUint32((char*)portParts[2].c_str(), userInput._secondSplitPort);
+            userInput._secondSplitProvided = true;
+        }
+        else if (portParts.size() > THIRD_LEVEL_PORT_ACCESS)
+        {
+            throw MlxRegException("Failed to handle option port");
+        }
+    }
+
+    RegAccessParser::RegAccessParser::strToUint32((char*)portParts[0].c_str(), userInput._labelPort);
+    userInput._portSpecified = true;
+}
+
+void MlxlinkUi::checkStrLength(const string& str)
+{
+    if (str.size() > MAX_INPUT_LENGTH)
+    {
+        throw MlxRegException("Argument: %s... is invalid.", str.substr(0, MAX_INPUT_LENGTH).c_str());
     }
 }
 
@@ -1062,107 +1214,105 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == DEVICE_FLAG)
     {
-        _mlxlinkCommander->_device = value;
+        _userInput._device = value;
         return PARSE_OK;
     }
     else if (name == MODULE_INFO_FLAG)
     {
         addCmd(SHOW_MODULE);
-        _mlxlinkCommander->_networkCmds++;
+        _userInput._networkCmds++;
         return PARSE_OK;
     }
     else if (name == BER_FLAG)
     {
         addCmd(SHOW_BER);
-        _mlxlinkCommander->_userInput._showCounters = true;
+        _userInput._showCounters = true;
         return PARSE_OK;
     }
     else if (name == PPCNT_CLEAR_FLAG)
     {
         addCmd(SEND_CLEAR_COUNTERS);
-        _mlxlinkCommander->_uniqueCmds++;
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == EYE_OPENING_FLAG)
     {
         addCmd(SHOW_EYE);
-        _mlxlinkCommander->_userInput._showEyeInfo = true;
+        _userInput._showEyeInfo = true;
         return PARSE_OK;
     }
     else if (name == SLTP_SHOW_FLAG)
     {
         addCmd(SHOW_SLTP);
-        _mlxlinkCommander->_userInput._showSltp = true;
+        _userInput._showSltp = true;
         return PARSE_OK;
     }
     else if (name == SLTP_SET_FLAG)
     {
-        string sltpParamsLine = toUpperCase(value);
-        std::vector<string> sltpParams = _mlxlinkCommander->parseParamsFromLine(sltpParamsLine);
-        _mlxlinkCommander->getSltpParamsFromVector(sltpParams);
+        _userInput._sltpParams = getSltpParamsFromVector(toUpperCase(value));
         addCmd(SEND_SLTP);
-        _mlxlinkCommander->_uniqueCmds++;
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == LANE_FLAG)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), _mlxlinkCommander->_userInput._lane);
-        _mlxlinkCommander->_userInput._sltpLane = true;
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._lane);
+        _userInput._sltpLane = true;
         return PARSE_OK;
     }
     else if (name == DATABASE_FLAG)
     {
-        _mlxlinkCommander->_userInput._db = true;
+        _userInput._db = true;
         return PARSE_OK;
     }
     else if (name == SLTP_TX_POLICY_FLAG)
     {
-        _mlxlinkCommander->_userInput._txPolicy = true;
+        _userInput._txPolicy = true;
         return PARSE_OK;
     }
     else if (name == GVMI_ADDRESS_FLAG)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), _mlxlinkCommander->_userInput._gvmiAddress);
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._gvmiAddress);
         return PARSE_OK;
     }
     else if (name == SLTP_SET_ADVANCED_FLAG)
     {
-        _mlxlinkCommander->_userInput._advancedMode = true;
+        _userInput._advancedMode = true;
         return PARSE_OK;
     }
     else if (name == PORT_TYPE_FLAG)
     {
-        _mlxlinkCommander->_userInput._portType = toUpperCase(value);
+        _userInput._portType = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == LABEL_PORT_FLAG)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->handlePortStr(value);
+        checkStrLength(value);
+        handlePortStr(_userInput, value);
         return PARSE_OK;
     }
     else if (name == DEPTH_FLAG)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), _mlxlinkCommander->_userInput._depth);
-        _mlxlinkCommander->_userInput._sendDepth = true;
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._depth);
+        _userInput._sendDepth = true;
         return PARSE_OK;
     }
     else if (name == PCIE_INDEX_FLAG)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), _mlxlinkCommander->_userInput._pcieIndex);
-        _mlxlinkCommander->_userInput._sendPcieIndex = true;
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._pcieIndex);
+        _userInput._sendPcieIndex = true;
         return PARSE_OK;
     }
     else if (name == NODE_FLAG)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), _mlxlinkCommander->_userInput._node);
-        _mlxlinkCommander->_userInput._sendNode = true;
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._node);
+        _userInput._sendNode = true;
         return PARSE_OK;
     }
     else if (name == PCIE_LINKS_FLAG)
     {
         addCmd(SHOW_PCIE_LINKS);
-        _mlxlinkCommander->_userInput._links = true;
+        _userInput._links = true;
         return PARSE_OK;
     }
     else if (name == DEVICE_DATA_FLAG)
@@ -1173,107 +1323,106 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == FEC_DATA_FLAG)
     {
         addCmd(SHOW_FEC);
-        _mlxlinkCommander->_networkCmds++;
+        _userInput._networkCmds++;
         return PARSE_OK;
     }
     else if (name == PAOS_FLAG)
     {
         addCmd(SEND_PAOS);
-        _mlxlinkCommander->_userInput._paosCmd = toUpperCase(value);
-        _mlxlinkCommander->_uniqueCmds++;
+        _userInput._paosCmd = toUpperCase(value);
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == PTYS_FLAG)
     {
         addCmd(SEND_PTYS);
-        _mlxlinkCommander->_ptysSpeeds = _mlxlinkCommander->parseParamsFromLine(toUpperCase(value));
-        _mlxlinkCommander->_uniqueCmds++;
+        _userInput._ptysSpeeds = parseParamsFromLine(toUpperCase(value));
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == PPLM_FLAG)
     {
         addCmd(SEND_PPLM);
-        _mlxlinkCommander->_userInput._pplmFec = toUpperCase(value);
-        _mlxlinkCommander->_uniqueCmds++;
+        _userInput._pplmFec = toUpperCase(value);
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == FEC_SPEED_FLAG)
     {
-        _mlxlinkCommander->_userInput._speedFec = toLowerCase(value);
+        _userInput._speedFec = toLowerCase(value);
         return PARSE_OK;
     }
     else if (name == PPLR_FLAG)
     {
         addCmd(SEND_PPLR);
-        _mlxlinkCommander->_userInput._pplrLB = toUpperCase(value);
-        _mlxlinkCommander->_uniqueCmds++;
+        _userInput._pplrLB = toUpperCase(value);
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == PRBS_MODE_FLAG)
     {
         addCmd(SEND_PRBS);
-        _mlxlinkCommander->_userInput._prbsMode = toUpperCase(value);
-        _mlxlinkCommander->_uniqueCmds++;
+        _userInput._prbsMode = toUpperCase(value);
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == PPRT_PRBS_FLAG)
     {
-        _mlxlinkCommander->_userInput._sendPprt = true;
-        _mlxlinkCommander->_userInput._pprtMode = toUpperCase(value);
+        _userInput._sendPprt = true;
+        _userInput._pprtMode = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == PPTT_PRBS_FLAG)
     {
-        _mlxlinkCommander->_userInput._sendPptt = true;
-        _mlxlinkCommander->_userInput._ppttMode = toUpperCase(value);
+        _userInput._sendPptt = true;
+        _userInput._ppttMode = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == PPRT_RATE_FLAG)
     {
-        _mlxlinkCommander->_userInput._pprtRate = toUpperCase(value);
+        _userInput._pprtRate = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == PPTT_RATE_FLAG)
     {
-        _mlxlinkCommander->_userInput._ppttRate = toUpperCase(value);
+        _userInput._ppttRate = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == PRBS_LANES_FLAG)
     {
-        std::vector<string> prbsLanesParams = _mlxlinkCommander->parseParamsFromLine(value);
-        _mlxlinkCommander->getprbsLanesFromParams(prbsLanesParams);
+        _userInput._prbsLanesToSet = getprbsLanesFromParams(value);
         return PARSE_OK;
     }
     else if (name == PRBS_INVERT_TX_POL_FLAG)
     {
-        _mlxlinkCommander->_userInput._prbsTxInv = true;
+        _userInput._prbsTxInv = true;
         return PARSE_OK;
     }
     else if (name == PRBS_INVERT_RX_POL_FLAG)
     {
-        _mlxlinkCommander->_userInput._prbsRxInv = true;
+        _userInput._prbsRxInv = true;
         return PARSE_OK;
     }
     else if (name == BER_COLLECT_FLAG)
     {
         addCmd(SEND_BER_COLLECT);
-        _mlxlinkCommander->_userInput._csvBer = value;
+        _userInput._csvBer = value;
         return PARSE_OK;
     }
     else if (name == AMBER_COLLECT_FLAG)
     {
         addCmd(SEND_AMBER_COLLECT);
-        _mlxlinkCommander->_userInput._csvBer = value;
+        _userInput._csvBer = value;
         return PARSE_OK;
     }
     else if (name == BER_LIMIT_FLAG)
     {
-        _mlxlinkCommander->_userInput._testMode = toUpperCase(value);
+        _userInput._testMode = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == ITERATION_FLAG)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), _mlxlinkCommander->_userInput._iteration);
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._iteration);
         return PARSE_OK;
     }
     else if (name == BER_MONITOR_INFO_FLAG)
@@ -1288,310 +1437,308 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == PEPC_FORCE_MODE_FLAG)
     {
-        _mlxlinkCommander->_userInput._sendPepcForceMode = true;
-        _mlxlinkCommander->_userInput._forceMode = toUpperCase(value);
+        _userInput._sendPepcForceMode = true;
+        _userInput._forceMode = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == PEPC_AN_MODE_FLAG)
     {
-        _mlxlinkCommander->_userInput._sendPepcANMode = true;
-        _mlxlinkCommander->_userInput._anMode = toUpperCase(value);
+        _userInput._sendPepcANMode = true;
+        _userInput._anMode = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == PEPC_SET_FLAG)
     {
         addCmd(SEND_PEPC);
-        _mlxlinkCommander->_uniqueCmds++;
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == PTYS_LINK_MODE_FORCE_FLAG)
     {
-        _mlxlinkCommander->_linkModeForce = true;
+        _userInput._linkModeForce = true;
         return PARSE_OK;
     }
     else if (name == CABLE_FLAG)
     {
-        _mlxlinkCommander->_userInput._cable = true;
+        _userInput._cable = true;
         return PARSE_OK;
     }
     else if (name == CABLE_DUMP_FLAG)
     {
-        _mlxlinkCommander->_userInput._dump = true;
+        _userInput._dump = true;
         addCmd(CABLE_SHOW_DUMP);
-        _mlxlinkCommander->_uniqueCableCmds++;
+        _userInput._uniqueCableCmds++;
         return PARSE_OK;
     }
     else if (name == CABLE_DDM_FLAG)
     {
-        _mlxlinkCommander->_userInput._ddm = true;
+        _userInput._ddm = true;
         addCmd(CABLE_SHOW_DDM);
-        _mlxlinkCommander->_uniqueCableCmds++;
+        _userInput._uniqueCableCmds++;
         return PARSE_OK;
     }
     else if (name == CABLE_WRITE_FLAG)
     {
-        _mlxlinkCommander->_userInput._write = true;
-        _mlxlinkCommander->_userInput._bytesToWrite = _mlxlinkCommander->parseParamsFromLine(value);
+        _userInput._write = true;
+        _userInput._bytesToWrite = parseParamsFromLine(value);
         addCmd(CABLE_EEPROM_WRITE);
-        _mlxlinkCommander->_uniqueCableCmds++;
+        _userInput._uniqueCableCmds++;
         return PARSE_OK;
     }
     else if (name == WRITE_PAGE_FLAG)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput._page);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._page);
         return PARSE_OK;
     }
     else if (name == WRITE_OFFSET_FLAG)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput._offset);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._offset);
         return PARSE_OK;
     }
     else if (name == CABLE_READ_FLAG)
     {
-        _mlxlinkCommander->_userInput._read = true;
-        _mlxlinkCommander->_uniqueCableCmds++;
+        _userInput._read = true;
+        _userInput._uniqueCableCmds++;
         addCmd(CABLE_EEPROM_READ);
         return PARSE_OK;
     }
     else if (name == READ_LEN_FLAG)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput._len);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._len);
         return PARSE_OK;
     }
     else if (name == SHOW_TX_GROUP_MAP_FLAG)
     {
         addCmd(SHOW_TX_GROUP_MAP);
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput._showGroup);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._showGroup);
         return PARSE_OK;
     }
     else if (name == SET_TX_GROUP_MAP_FLAG)
     {
         addCmd(SET_TX_GROUP_MAP);
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput._setGroup);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._setGroup);
         return PARSE_OK;
     }
     else if (name == TX_GROUP_PORTS_FLAG)
     {
-        _mlxlinkCommander->_userInput._labelPorts = _mlxlinkCommander->parseParamsFromLine(value);
+        _userInput._labelPorts = parseParamsFromLine(value);
         return PARSE_OK;
     }
     else if (name == MARGIN_SCAN_FLAG)
     {
         addCmd(GRADE_SCAN_ENABLE);
-        _mlxlinkCommander->_uniquePcieCmds++;
+        _userInput._uniquePcieCmds++;
         return PARSE_OK;
     }
     else if (name == EYE_MEASURE_TIME_FLAG)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput.measureTime);
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput.measureTime);
         return PARSE_OK;
     }
     else if (name == FORCE_YES_FLAG)
     {
-        _mlxlinkCommander->_userInput.force = true;
+        _userInput.force = true;
         return PARSE_OK;
     }
     else if (name == LANE_INDEX_FLAG)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput._lane);
-        _mlxlinkCommander->_userInput.gradeScanPerLane = true;
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._lane);
+        _userInput.gradeScanPerLane = true;
         return PARSE_OK;
     }
     else if (name == EYE_SEL_FLAG)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.eyeSelect = toUpperCase(value);
-        _mlxlinkCommander->_userInput.eyeSelectSpecified = true;
+        checkStrLength(value);
+        _userInput.eyeSelect = toUpperCase(value);
+        _userInput.eyeSelectSpecified = true;
         return PARSE_OK;
     }
     else if (name == PREI_RX_ERR_INJ_FLAG)
     {
         addCmd(ERR_INJ_ENABLE);
-        _mlxlinkCommander->_userInput.enableRxErrInj = true;
-        _mlxlinkCommander->_uniqueCmds++;
+        _userInput.enableRxErrInj = true;
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == PREI_MIXER_OFFSET_0)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput.mixerOffset0);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput.mixerOffset0);
         return PARSE_OK;
     }
     else if (name == PREI_MIXER_OFFSET_1)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput.mixerOffset1);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput.mixerOffset1);
         return PARSE_OK;
     }
     else if (name == PREI_SHOW_MIXERS_FLAG)
     {
-        _mlxlinkCommander->_userInput.showMixers = true;
+        _userInput.showMixers = true;
         return PARSE_OK;
     }
     else if (name == PPHCR_FEC_HIST_FLAG)
     {
         addCmd(RS_FEC_HISTOGRAM);
-        _mlxlinkCommander->_userInput.enableFecHistogram = true;
+        _userInput.enableFecHistogram = true;
         return PARSE_OK;
     }
     else if (name == PPHCR_SHOW_FEC_HIST_FLAG)
     {
-        _mlxlinkCommander->_userInput.showFecHistogram = true;
+        _userInput.showFecHistogram = true;
         return PARSE_OK;
     }
     else if (name == PPHCR_CLEAR_HISTOGRAM_FLAG)
     {
-        _mlxlinkCommander->_userInput.clearFecHistogram = true;
+        _userInput.clearFecHistogram = true;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_SELECT)
     {
         addCmd(CABLE_PRBS_CMDS);
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_SELECT] = toUpperCase(value);
-        _mlxlinkCommander->_userInput.isPrbsSelProvided = true;
-        _mlxlinkCommander->_uniqueCableCmds++;
+        checkStrLength(value);
+        _userInput.modulePrbsParams[MODULE_PRBS_SELECT] = toUpperCase(value);
+        _userInput.isPrbsSelProvided = true;
+        _userInput._uniqueCableCmds++;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_MODE)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_MODE] = toUpperCase(value);
-        _mlxlinkCommander->_userInput.isPrbsModeProvided = true;
+        checkStrLength(value);
+        _userInput.modulePrbsParams[MODULE_PRBS_MODE] = toUpperCase(value);
+        _userInput.isPrbsModeProvided = true;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_GEN_PAT)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_PAT] = toUpperCase(value);
-        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        checkStrLength(value);
+        _userInput.modulePrbsParams[MODULE_PRBS_GEN_PAT] = toUpperCase(value);
+        _userInput.isPrbsGenProvided = true;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_GEN_SWAP)
     {
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_SWAP] = "SWAP";
-        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        _userInput.modulePrbsParams[MODULE_PRBS_GEN_SWAP] = "SWAP";
+        _userInput.isPrbsGenProvided = true;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_GEN_INV)
     {
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_INV] = "INV";
-        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        _userInput.modulePrbsParams[MODULE_PRBS_GEN_INV] = "INV";
+        _userInput.isPrbsGenProvided = true;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_GEN_LANES)
     {
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES] = value;
-        _mlxlinkCommander->_userInput.isPrbsGenProvided = true;
+        _userInput.modulePrbsParams[MODULE_PRBS_GEN_LANES] = value;
+        _userInput.isPrbsGenProvided = true;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_CH_PAT)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_PAT] = toUpperCase(value);
-        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        checkStrLength(value);
+        _userInput.modulePrbsParams[MODULE_PRBS_CH_PAT] = toUpperCase(value);
+        _userInput.isPrbsChProvided = true;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_CH_SWAP)
     {
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_SWAP] = "SWAP";
-        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        _userInput.modulePrbsParams[MODULE_PRBS_CH_SWAP] = "SWAP";
+        _userInput.isPrbsChProvided = true;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_CH_INV)
     {
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_INV] = "INV";
-        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        _userInput.modulePrbsParams[MODULE_PRBS_CH_INV] = "INV";
+        _userInput.isPrbsChProvided = true;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_CH_LANES)
     {
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CH_LANES] = value;
-        _mlxlinkCommander->_userInput.isPrbsChProvided = true;
+        _userInput.modulePrbsParams[MODULE_PRBS_CH_LANES] = value;
+        _userInput.isPrbsChProvided = true;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_LANE_RATE)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_RATE] = toUpperCase(value);
+        checkStrLength(value);
+        _userInput.modulePrbsParams[MODULE_PRBS_RATE] = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_SHOW_DIAG)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_SHOW_DIAG] = value;
-        _mlxlinkCommander->_userInput.isPrbsShowDiagProvided = true;
+        checkStrLength(value);
+        _userInput.modulePrbsParams[MODULE_PRBS_SHOW_DIAG] = value;
+        _userInput.isPrbsShowDiagProvided = true;
         return PARSE_OK;
     }
     else if (name == CABLE_PRBS_CLEAR_DIAG)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.modulePrbsParams[MODULE_PRBS_CLEAR_DIAG] = value;
-        _mlxlinkCommander->_userInput.isPrbsClearDiagProvided = true;
+        checkStrLength(value);
+        _userInput.modulePrbsParams[MODULE_PRBS_CLEAR_DIAG] = value;
+        _userInput.isPrbsClearDiagProvided = true;
         return PARSE_OK;
     }
     else if (name == CTRL_PARAM_FLAG)
     {
         addCmd(CABLE_CTRL_PARM);
-        _mlxlinkCommander->_userInput.isModuleConfigParamsProvided = true;
+        _userInput.isModuleConfigParamsProvided = true;
         return PARSE_OK;
     }
     else if (name == CTRL_PARAM_TX_EQ_FLAG)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_TX_EQ, value));
+        checkStrLength(value);
+        _userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_TX_EQ, value));
         return PARSE_OK;
     }
     else if (name == CTRL_PARAM_RX_EMPH_FLAG)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.configParamsToSet.push_back(
-          make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_EMPH, value));
+        checkStrLength(value);
+        _userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_EMPH, value));
         return PARSE_OK;
     }
     else if (name == CTRL_PARAM_RX_POST_EMPH_FLAG)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.configParamsToSet.push_back(
-          make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH, value));
+        checkStrLength(value);
+        _userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_POST_EMPH, value));
         return PARSE_OK;
     }
     else if (name == CTRL_PARAM_RX_AMP_FLAG)
     {
-        _mlxlinkCommander->checkStrLength(value);
-        _mlxlinkCommander->_userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_AMP, value));
+        checkStrLength(value);
+        _userInput.configParamsToSet.push_back(make_pair(CABLE_CONTROL_PARAMETERS_SET_RX_AMP, value));
         return PARSE_OK;
     }
     else if (name == MPEINJ_PCIE_ERR_INJ_FLAG)
     {
         addCmd(PCIE_ERROR_INJ);
-        _mlxlinkCommander->_userInput.isPcieErrInjProvided = true;
-        _mlxlinkCommander->_uniquePcieCmds++;
+        _userInput.isPcieErrInjProvided = true;
+        _userInput._uniquePcieCmds++;
         return PARSE_OK;
     }
     else if (name == MPEINJ_ERR_TYPE_FLAG)
     {
-        _mlxlinkCommander->_userInput.errorType = toUpperCase(value);
+        _userInput.errorType = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == MPEINJ_ERR_DURATION_FLAG)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput.errorDuration);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput.errorDuration);
         return PARSE_OK;
     }
     else if (name == MPEINJ_INJ_DELAY_FLAG)
     {
-        _mlxlinkCommander->strToUint32((char*)value.c_str(), (u_int32_t&)_mlxlinkCommander->_userInput.injDelay);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput.injDelay);
         return PARSE_OK;
     }
     else if (name == MPEINJ_ERR_PARAMETERS_FLAG)
     {
-        _mlxlinkCommander->_userInput.parameters = _mlxlinkCommander->parseParamsFromLine(value);
+        _userInput.parameters = parseParamsFromLine(value);
         return PARSE_OK;
     }
     else if (name == MPEINJ_DBDF_FLAG)
     {
-        _mlxlinkCommander->_userInput.dbdf = value;
+        _userInput.dbdf = value;
         return PARSE_OK;
     }
     return PARSE_ERROR;
@@ -1600,8 +1747,9 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
 int MlxlinkUi::run(int argc, char** argv)
 {
     int exit_code = 0;
-    createMlxlinkCommander();
+
     initCmdParser();
+
     ParseStatus rc = _cmdParser.ParseOptions(argc, argv);
 
     if (rc == PARSE_OK_WITH_EXIT)
@@ -1615,48 +1763,19 @@ int MlxlinkUi::run(int argc, char** argv)
 
     paramValidate();
 
-    _mlxlinkCommander->_mf = mopen(_mlxlinkCommander->_device.c_str());
+    _mf = mopen(_userInput._device.c_str());
 
-    if (!_mlxlinkCommander->_mf)
+    if (!_mf)
     {
-        throw MlxRegException("Failed to open device: \"" + _mlxlinkCommander->_device + "\", " + strerror(errno));
+        throw MlxRegException("Failed to open device: \"" + _userInput._device + "\", " + strerror(errno));
     }
-    if (!MlxRegLib::isDeviceSupported(_mlxlinkCommander->_mf))
+    if (!MlxRegLib::isDeviceSupported(_mf))
     {
+        mclose(_mf);
         throw MlxRegException("Device is not supported");
     }
 
-    MlxRegLib::isAccessRegisterSupported(_mlxlinkCommander->_mf);
-    _mlxlinkCommander->_regLib =
-      new MlxRegLib(_mlxlinkCommander->_mf, _mlxlinkCommander->_extAdbFile, _mlxlinkCommander->_useExtAdb);
-    if (_mlxlinkCommander->_regLib->isIBDevice() &&
-        !_mlxlinkCommander->_regLib->isAccessRegisterGMPSupported(MACCESS_REG_METHOD_GET))
-    {
-        MlxlinkRecord::printWar("Warning: AccessRegisterGMP Get() method is not supported.\n"
-                                "         mlxlink has limited functionality",
-                                _mlxlinkCommander->_jsonRoot);
-    }
-
-    _mlxlinkCommander->_gvmiAddress = _mlxlinkCommander->_userInput._gvmiAddress;
-    _mlxlinkCommander->_devID = _mlxlinkCommander->_regLib->getDevId();
-    _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
-    _mlxlinkCommander->labelToLocalPort();
-    _mlxlinkCommander->validatePortType(_mlxlinkCommander->_userInput._portType);
-    if (!_mlxlinkCommander->_userInput._pcie)
-    {
-        _mlxlinkCommander->checkValidFW();
-    }
-    _mlxlinkCommander->getProductTechnology();
-
-    if (!_mlxlinkCommander->_userInput._pcie)
-    {
-        _mlxlinkCommander->_prbsTestMode = _mlxlinkCommander->inPrbsTestMode();
-        _mlxlinkCommander->getCableParams();
-    }
-    else if (!_mlxlinkCommander->_userInput._sendDpn)
-    {
-        _mlxlinkCommander->initValidDPNList();
-    }
+    initMlxlinkCommander();
 
     commandsCaller();
 
