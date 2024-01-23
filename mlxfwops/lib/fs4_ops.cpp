@@ -1044,6 +1044,10 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
     _ioAccess->set_address_convertor(0, 0);
     //-Verify DToC Header:
     dtocPtr = _ioAccess->get_effective_size() - FS4_DEFAULT_SECTOR_SIZE;
+    if (_fwImgInfo.ext_info.dtoc_offset == 1)
+    {
+        dtocPtr = (_ioAccess->get_effective_size() / 2) - FS4_DEFAULT_SECTOR_SIZE;
+    }
     DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocHeader() DTOC\n"));
     if (!verifyTocHeader(dtocPtr, true, verifyCallBackFunc))
     {
@@ -1183,6 +1187,10 @@ bool Fs4Operations::ParseDevData(bool quickQuery, bool verbose, VerifyCallBack v
     _ioAccess->set_address_convertor(0, 0);
     // Parse DTOC header:
     u_int32_t dtoc_addr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
+    if (_fwImgInfo.ext_info.dtoc_offset == 1)
+    {
+        dtoc_addr = (_ioAccess->get_size() / 2) - FS4_DEFAULT_SECTOR_SIZE;
+    }
     DPRINTF(("Fs4Operations::ParseDevData call verifyTocHeader() DTOC, dtoc_addr = 0x%x\n", dtoc_addr));
     if (!verifyTocHeader(dtoc_addr, true, verifyCallBackFunc))
     {
@@ -2498,6 +2506,10 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         // Get DTOC from the cache
         u_int8_t* dtoc_data = new u_int8_t[FS4_DEFAULT_SECTOR_SIZE];
         u_int32_t dtoc_addr = imageOps->GetIoAccess()->get_size() - FS4_DEFAULT_SECTOR_SIZE;
+        if (_fwImgInfo.ext_info.dtoc_offset == 1)
+        {
+            dtoc_addr = (imageOps->GetIoAccess()->get_size() / 2) - FS4_DEFAULT_SECTOR_SIZE;
+        }
         DPRINTF(("Fs4Operations::burnEncryptedImage - Burning DTOC at addr 0x%0x\n", dtoc_addr));
         ((Fs4Operations*)imageOps)->_imageCache.get(dtoc_data, dtoc_addr, FS4_DEFAULT_SECTOR_SIZE);
         if (!writeImageEx(burnParams.progressFuncEx,

@@ -1702,6 +1702,8 @@ void image_layout_image_info_pack(const struct image_layout_image_info *ptr_stru
 	image_layout_image_size_pack(&(ptr_struct->image_size), ptr_buff + offset / 8);
 	offset = 2200;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->synced_reset_downtime);
+	offset = 2192;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->dtoc_offset);
 	offset = 2176;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->toc_copy_ofst);
 	for (i = 0; i < 4; ++i) {
@@ -1799,6 +1801,8 @@ void image_layout_image_info_unpack(struct image_layout_image_info *ptr_struct, 
 	image_layout_image_size_unpack(&(ptr_struct->image_size), ptr_buff + offset / 8);
 	offset = 2200;
 	ptr_struct->synced_reset_downtime = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 2192;
+	ptr_struct->dtoc_offset = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 2176;
 	ptr_struct->toc_copy_ofst = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	for (i = 0; i < 4; ++i) {
@@ -1897,6 +1901,8 @@ void image_layout_image_info_print(const struct image_layout_image_info *ptr_str
 	image_layout_image_size_print(&(ptr_struct->image_size), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "synced_reset_downtime : " UH_FMT "\n", ptr_struct->synced_reset_downtime);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "dtoc_offset         : " UH_FMT "\n", ptr_struct->dtoc_offset);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "toc_copy_ofst        : " UH_FMT "\n", ptr_struct->toc_copy_ofst);
 	for (i = 0; i < 4; ++i) {
