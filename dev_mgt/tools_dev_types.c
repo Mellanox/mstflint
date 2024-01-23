@@ -226,7 +226,7 @@ static struct device_info g_devs_info[] = {
         DeviceConnectX8,                                      /* dm_id */
         0x21e,                                                /* hw_dev_id */
         -1,                                                   /* hw_rev_id */
-        -1,                                                   /* sw_dev_id */
+        4131,                                                 /* sw_dev_id */
         "ConnectX8",                                          /* name */
         4,                                                    /* port_num */
         DM_HCA                                                /* dev_type */
