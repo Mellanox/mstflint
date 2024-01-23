@@ -49,7 +49,7 @@ public:
     RecordList() = default;
     const menu_record_data& operator*();
     const menu_record_data& operator[](const uint16_t idx);
-    const uint16_t size();
+    uint16_t size();
 
 private:
     uint16_t _size;

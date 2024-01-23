@@ -73,7 +73,8 @@ class ResourceSegment(Segment):
         return aggregate_dword & self.AGGREGATE_BIT_MASK
 
     def aggregate(self, other):
-        self.raw_data += other.raw_data[16:]
+        data_start = self.segment_header_struct.size + self.aggregate_dword_struct.size + self.indices_struct.size
+        self.raw_data += other.raw_data[data_start:]
 
     def unpack_indices(self):
         index1, index2 = self.indices_struct.unpack_from(self.raw_data, self.segment_header_struct.size + self.aggregate_dword_struct.size)

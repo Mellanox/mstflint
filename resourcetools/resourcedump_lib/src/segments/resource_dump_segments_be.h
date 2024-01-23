@@ -30,8 +30,8 @@
  * SOFTWARE.
  */
 
-#ifndef RESOURCE_DUMP_SEGMENT_H
-#define RESOURCE_DUMP_SEGMENT_H
+#ifndef RESOURCE_DUMP_SEGMENT_BE_H
+#define RESOURCE_DUMP_SEGMENT_BE_H
 
 #include <stdint.h>
 
@@ -73,6 +73,7 @@ typedef struct segment_params_data
 
 typedef struct resource_segment_sub_header
 {
+    uint32_t reserved;
     uint32_t index1;
     uint32_t index2;
 } resource_segment_sub_header_t;
@@ -145,4 +146,4 @@ typedef struct menu_record_data
 } // namespace mft
 #endif
 
-#endif // RESOURCE_DUMP_SEGMENT_H
+#endif // RESOURCE_DUMP_SEGMENT_BE_H

@@ -79,7 +79,7 @@ protected:
     shared_ptr<std::istream> _istream;
 
     reference_segment_data _segment_params;
-    reg_access_hca_resource_dump_ext _reg_access_layout{0};
+    reg_access_hca_resource_dump_ext _reg_access_layout{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0}};
 
 private:
     void retrieve_from_reg_access();

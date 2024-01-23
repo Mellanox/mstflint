@@ -87,7 +87,7 @@ void ResourceDumpCommand::execute()
 
 void ResourceDumpCommand::parse_data()
 {
-    resource_dump_segment_header header_buffer{0};
+    resource_dump_segment_header header_buffer{0, 0};
 
     _istream->seekg(0);
     for (size_t pos = _istream->tellg(); pos < _dumped_size; pos = _istream->tellg())
@@ -98,12 +98,12 @@ void ResourceDumpCommand::parse_data()
     }
 }
 
-const size_t ResourceDumpCommand::get_dumped_size() const
+size_t ResourceDumpCommand::get_dumped_size() const
 {
     return _dumped_size;
 }
 
-const bool ResourceDumpCommand::data_fetched() const
+bool ResourceDumpCommand::data_fetched() const
 {
     return _data_fetched;
 }
