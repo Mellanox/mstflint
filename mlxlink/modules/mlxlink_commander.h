@@ -561,6 +561,7 @@ public:
     void checkPplmCap();
     string updateSltpEdrHdrFields();
     string updateSltpNdrFields();
+    virtual string updateSltpXdrFields();
     string getSltpStatus();
     void getSltpAlevOut(u_int32_t lane);
     void getSltpRegAndLeva(u_int32_t lane);
