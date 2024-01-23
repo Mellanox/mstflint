@@ -761,6 +761,10 @@ struct image_layout_image_info {
 	/* 0x110.0 - 0x110.7 */
 	u_int8_t synced_reset_downtime;
 /*---------------- DWORD[68] (Offset 0x110) ----------------*/
+	/* Description -  */
+	/* 0x110.8 - 0x110.15 */
+	u_int8_t dtoc_offset;
+/*---------------- DWORD[68] (Offset 0x110) ----------------*/
 	/* Description - indication for tool where to locate toc header copy */
 	/* 0x110.16 - 0x110.31 */
 	u_int16_t toc_copy_ofst;
