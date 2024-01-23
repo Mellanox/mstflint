@@ -39,7 +39,6 @@ using namespace mlxreg;
 MlxlinkCommander::MlxlinkCommander() : _userInput()
 
 {
-    _device = "";
     _extAdbFile = "";
     _localPort = 0;
     _portType = 0;
@@ -47,7 +46,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _numOfLanesPcie = 0;
     _linkUP = false;
     _plugged = false;
-    _linkModeForce = false;
+    _userInput._linkModeForce = false;
     _prbsTestMode = false;
     _useExtAdb = true;
     _portPolling = false;
@@ -63,8 +62,6 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _cableMediaType = 0;
     _moduleNumber = 0;
     _slotIndex = 0;
-    _uniqueCmds = 0;
-    _networkCmds = 0;
     _activeSpeed = 0;
     _activeSpeedEx = 0;
     _protoCapability = 0;
@@ -93,8 +90,6 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _errInjector = NULL;
     _portInfo = NULL;
     _amberCollector = NULL;
-    _uniqueCableCmds = 0;
-    _uniquePcieCmds = 0;
     _groupOpcode = MONITOR_OPCODE;
 }
 
@@ -884,14 +879,6 @@ u_int32_t MlxlinkCommander::calculatePanelPort(bool ibSplitReady)
     return panelPort;
 }
 
-void MlxlinkCommander::checkStrLength(const string& str)
-{
-    if (str.size() > MAX_INPUT_LENGTH)
-    {
-        throw MlxRegException("Argument: %s... is invalid.", str.substr(0, MAX_INPUT_LENGTH).c_str());
-    }
-}
-
 void MlxlinkCommander::getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended)
 {
     if (_protoActive == IB)
@@ -1020,42 +1007,6 @@ bool MlxlinkCommander::checkPpaosTestMode()
         return true;
     }
     return false;
-}
-
-void MlxlinkCommander::getSltpParamsFromVector(std::vector<string> sltpParams)
-{
-    for (u_int32_t i = 0; i < sltpParams.size(); i++)
-    {
-        strToInt32((char*)sltpParams[i].c_str(), _userInput._sltpParams[i]);
-    }
-}
-
-std::vector<string> MlxlinkCommander::parseParamsFromLine(const string& ParamsLine)
-{
-    std::vector<string> paramVector;
-    string param;
-    stringstream stream(ParamsLine);
-    while (getline(stream, param, ','))
-    {
-        if (param == "")
-        {
-            throw MlxRegException("Wrong input format");
-        }
-        paramVector.push_back(param.c_str());
-    }
-    return paramVector;
-}
-
-void MlxlinkCommander::getprbsLanesFromParams(std::vector<string> prbsLanesParams)
-{
-    u_int32_t lane = 0;
-    vector<string>::iterator it = prbsLanesParams.begin();
-    while (it != prbsLanesParams.end())
-    {
-        strToUint32((char*)(*it).c_str(), lane);
-        _userInput._prbsLanesToSet[lane] = true;
-        it++;
-    }
 }
 
 bool MlxlinkCommander::handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady)
@@ -1706,7 +1657,7 @@ void MlxlinkCommander::preparePrtlSection()
 {
     if (_userInput._advancedMode)
     {
-        char rttFrmt[64];
+        char rttFrmt[64] = "";
         bool isRttSupported = false;
         u_int16_t asicLatency = 0;
         u_int16_t moduleLatency = 0;
@@ -1873,16 +1824,6 @@ string MlxlinkCommander::getValueAndThresholdsStr(T value, Q lowTH, Q highTH)
         out << "N/A";
     }
     return out.str();
-}
-
-void MlxlinkCommander::strToInt32(char* str, u_int32_t& value)
-{
-    char* endp;
-    value = strtol(str, &endp, 0);
-    if (*endp)
-    {
-        throw MlxRegException("Argument: %s is invalid.", str);
-    }
 }
 
 void MlxlinkCommander::runningVersion()
@@ -3623,7 +3564,8 @@ void MlxlinkCommander::sendPaosDown(bool toggleCommand)
                 string message = "port is not Down, for some reasons:\n";
                 message +=
                   "1- The link is configured to be up, run this command if KEEP_" + protocol + "_LINK_UP_Px is True:\n";
-                message += "   mlxconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0\n";
+                message +=
+                  "   mlxconfig -d " + _userInput._device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0\n";
                 message += "2- Port management is enabled (management protocol requiring the link to remain up, PAOS "
                            "won't manage to disable the port)\n";
                 message += "3- In case of multi-host please verify all hosts are not holding the port up";
@@ -3930,7 +3872,7 @@ void MlxlinkCommander::resetPprtPptt()
 void MlxlinkCommander::validateSpeedStr()
 {
     // Normalize IB speeds (Ignore IB- from infiniband speeds)
-    for (vector<string>::iterator it = _ptysSpeeds.begin(); it != _ptysSpeeds.end(); it++)
+    for (vector<string>::iterator it = _userInput._ptysSpeeds.begin(); it != _userInput._ptysSpeeds.end(); it++)
     {
         size_t found = (*it).find("IB-");
         if (found != std::string::npos)
@@ -3950,7 +3892,7 @@ void MlxlinkCommander::validateSpeedStr()
     string speedToCheck = "";
     size_t fromIndex = 0;
     size_t toIndex = 0;
-    for (vector<string>::iterator it = _ptysSpeeds.begin(); it != _ptysSpeeds.end(); it++)
+    for (vector<string>::iterator it = _userInput._ptysSpeeds.begin(); it != _userInput._ptysSpeeds.end(); it++)
     {
         fromIndex = validSpeedStr.find(*it);
         toIndex = validSpeedStr.find_first_of(',', fromIndex);
@@ -3964,7 +3906,7 @@ void MlxlinkCommander::validateSpeedStr()
         }
     }
 
-    if (isIn(string("56G"), _ptysSpeeds) && _linkModeForce == true)
+    if (isIn(string("56G"), _userInput._ptysSpeeds) && _userInput._linkModeForce == true)
     {
         throw MlxRegException("No support of 56G FORCE mode");
     }
@@ -3986,11 +3928,11 @@ void MlxlinkCommander::sendPtys()
         u_int32_t ptysMask = 0x0;
         string ptysExtraCmd = "";
         string protoAdminField = "";
-        for (u_int32_t i = 0; i < _ptysSpeeds.size(); i++)
+        for (u_int32_t i = 0; i < _userInput._ptysSpeeds.size(); i++)
         {
-            ptysMask |= ptysSpeedToMask(_ptysSpeeds[i]);
+            ptysMask |= ptysSpeedToMask(_userInput._ptysSpeeds[i]);
         }
-        if (_linkModeForce == true)
+        if (_userInput._linkModeForce == true)
         {
             gearboxBlock(PTYS_LINK_MODE_FORCE_FLAG);
 
@@ -3998,7 +3940,7 @@ void MlxlinkCommander::sendPtys()
         }
         if (_protoActive == IB)
         {
-            if (_linkModeForce == false)
+            if (_userInput._linkModeForce == false)
             {
                 ptysMask |= 0x1;
             }
@@ -4784,6 +4726,7 @@ void MlxlinkCommander::initCablesCommander()
         _cablesCommander->_numOfLanes = _numOfLanes;
         _cablesCommander->_cableIdentifier = _cableIdentifier;
         _cablesCommander->_mlxlinkMaps = _mlxlinkMaps;
+        _cablesCommander->_mlxlinkLogger = _mlxlinkLogger;
         _cablesCommander->_sfp51Paging = isSFP51Paging();
         _cablesCommander->_passiveQsfp = isPassiveQSFP();
     }
@@ -5004,7 +4947,7 @@ void MlxlinkCommander::initEyeOpener()
             _eyeOpener->lane = _userInput.gradeScanPerLane ? _userInput._lane : -1;
             _eyeOpener->isPam4Speed = _isPam4Speed || ((_linkSpeed == IB_LINK_SPEED_HDR) && (_protoActive == IB));
             _eyeOpener->activeSpeedStr = _speedStrG;
-
+            _eyeOpener->_mlxlinkLogger = _mlxlinkLogger
             if (_userInput.measureTime < 0)
             {
                 if (_userInput._pcie)
@@ -5042,6 +4985,7 @@ void MlxlinkCommander::initErrInj()
     _errInjector->_localPort = _localPort;
     _errInjector->_force = _userInput.force;
     _errInjector->_mlxlinkMaps = _mlxlinkMaps;
+    _errInjector->_mlxlinkLogger = _mlxlinkLogger;
 }
 
 void MlxlinkCommander::handleRxErrInj()
@@ -5168,6 +5112,7 @@ void MlxlinkCommander::initPortInfo()
         _portInfo->_localPort = _localPort;
         _portInfo->_portType = _portType;
         _portInfo->_fecActive = _fecActive;
+        _portInfo->_mlxlinkLogger = _mlxlinkLogger;
         _portInfo->init();
 
         if (_userInput.showFecHistogram)
@@ -5202,7 +5147,8 @@ void MlxlinkCommander::setAmBerCollectorFields()
     _amberCollector->_isHca = _isHCA;
     _amberCollector->_devID = _devID;
     _amberCollector->_productTechnology = _productTechnology;
-    _amberCollector->_mstDevName = _device;
+    _amberCollector->_mstDevName = _userInput._device;
+    _amberCollector->_mlxlinkLogger = _mlxlinkLogger;
 }
 
 void MlxlinkCommander::initAmBerCollector()

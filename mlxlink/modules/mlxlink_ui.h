@@ -47,7 +47,7 @@ public:
 
 protected:
     virtual void addCmd(OPTION_TYPE option);
-    virtual ParseStatus HandleOption(string name, string value);
+    ParseStatus HandleOption(string name, string value);
     virtual void printSynopsisHeader();
     virtual void printSynopsisQueries();
     virtual void printSynopsisCommands();
@@ -68,9 +68,22 @@ protected:
     virtual void validatePortInfoParams();
     virtual void paramValidate();
     virtual void createMlxlinkCommander();
+    virtual void initRegAccessLib();
+    virtual void initPortInfo();
+    virtual void initMlxlinkCommander();
+
+    void handlePortStr(UserInput& userInput, const string& portStr);
+    void strToInt32(char* str, u_int32_t& value);
+    std::vector<string> parseParamsFromLine(const string& paramsLine);
+    std::map<u_int32_t, u_int32_t> getSltpParamsFromVector(const string& paramsLine);
+    std::map<u_int32_t, bool> getprbsLanesFromParams(const string& paramsLine);
+    void checkStrLength(const string& str);
 
     CommandLineParser _cmdParser;
     std::vector<OPTION_TYPE> _sendRegFuncMap;
     MlxlinkCommander* _mlxlinkCommander;
+    UserInput _userInput;
+
+    mfile* _mf;
 };
 #endif /* MLXLINK_UI_H */
