@@ -43,6 +43,7 @@ MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0)
     _localPort = 0;
     _portType = 0;
     _pnat = 0;
+    _planeInd = -1;
 
     _isHCA = false;
 }
@@ -144,6 +145,11 @@ void MlxlinkRegParser::setDefaultFields(const string& regName, const string& fie
     if (regName == ACCESS_REG_PPCNT && _localPort == 255)
     {
         updateWithDefault("lp_gl", fieldsStr, 1);
+    }
+
+    if (_isHCA && _planeInd >= 0)
+    {
+        updateWithDefault("plane_ind", fieldsStr, static_cast<u_int32_t>(_planeInd));
     }
 }
 
