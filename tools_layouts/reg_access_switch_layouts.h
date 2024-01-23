@@ -33,9 +33,9 @@
  
 
 /***
-         *** This file was generated at "2023-07-16 15:06:38"
+         *** This file was generated at "2024-01-14 09:35:17"
          *** by:
-         ***    > [REDACTED]/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
+         ***    > adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o user/tools_layouts
          ***/
 #ifndef REG_ACCESS_SWITCH_LAYOUTS_H
 #define REG_ACCESS_SWITCH_LAYOUTS_H
@@ -70,7 +70,7 @@ struct reg_access_switch_crspace_access_payload_ext {
 
 /* Description -   */
 /* Size in bytes - 32 */
-struct reg_access_switch_device_info_ext {
+struct reg_access_switch_mddq_device_info_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Device index
 The first device should number 0 */
@@ -122,33 +122,8 @@ Note: this bit is not an indication to validity of the fields related to the spe
 };
 
 /* Description -   */
-/* Size in bytes - 260 */
-struct reg_access_switch_prm_register_payload_ext {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Register ID */
-	/* 0x0.0 - 0x0.15 */
-	u_int16_t register_id;
-	/* Description - 0: Query
-1: Write */
-	/* 0x0.22 - 0x0.23 */
-	u_int8_t method;
-	/* Description - Return code of the Downstream Device to the register that was sent.
-0x0: OK - Operation was successfully executed
-0x1: BUSY 
-0x4: NOT_SUPP_REG - The Switch register requested is not supported on that device
-0x7: BAD_PARAM - Incomplete or erroneous parameter set
-0x70: INTERNAL_ERR - Internal error */
-	/* 0x0.24 - 0x0.31 */
-	u_int8_t status;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Register data */
-	/* 0x4.0 - 0x100.31 */
-	u_int32_t register_data[64];
-};
-
-/* Description -   */
 /* Size in bytes - 32 */
-struct reg_access_switch_slot_info_ext {
+struct reg_access_switch_mddq_slot_info_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - If set, the FW has completed the MDDC.device_enable command */
 	/* 0x0.27 - 0x0.27 */
@@ -187,7 +162,7 @@ Valid only when active or lc_ready are '1'. */
 
 /* Description -   */
 /* Size in bytes - 32 */
-struct reg_access_switch_slot_name_ext {
+struct reg_access_switch_mddq_slot_name_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Slot's ASCII name. Up to 20 chars
  */
@@ -196,18 +171,43 @@ struct reg_access_switch_slot_name_ext {
 };
 
 /* Description -   */
+/* Size in bytes - 260 */
+struct reg_access_switch_prm_register_payload_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Register ID */
+	/* 0x0.0 - 0x0.15 */
+	u_int16_t register_id;
+	/* Description - 0: Query
+1: Write */
+	/* 0x0.22 - 0x0.23 */
+	u_int8_t method;
+	/* Description - Return code of the Downstream Device to the register that was sent.
+0x0: OK - Operation was successfully executed
+0x1: BUSY 
+0x4: NOT_SUPP_REG - The Switch register requested is not supported on that device
+0x7: BAD_PARAM - Incomplete or erroneous parameter set
+0x70: INTERNAL_ERR - Internal error */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t status;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Register data */
+	/* 0x4.0 - 0x100.31 */
+	u_int32_t register_data[64];
+};
+
+/* Description -   */
 /* Size in bytes - 32 */
 union reg_access_switch_mddq_data_auto_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
-	struct reg_access_switch_slot_info_ext slot_info_ext;
+	struct reg_access_switch_mddq_slot_info_ext mddq_slot_info_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
-	struct reg_access_switch_device_info_ext device_info_ext;
+	struct reg_access_switch_mddq_device_info_ext mddq_device_info_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
-	struct reg_access_switch_slot_name_ext slot_name_ext;
+	struct reg_access_switch_mddq_slot_name_ext mddq_slot_name_ext;
 };
 
 /* Description -   */
@@ -312,9 +312,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 483, "MDDQ slot_info Layout," on page 719
-For devices on slot query_type data - see Table 485, "MDDQ device_info Register Layout," on page 720
-For slot name query_type data - see Table 487, "MDDQ slot_name Layout," on page 722 */
+For slot information query_type data - see Table 443, "MDDQ slot_info Layout," on page 776
+For devices on slot query_type data - see Table 445, "MDDQ device_info Register Layout," on page 777
+For slot name query_type data - see Table 447, "MDDQ slot_name Layout," on page 779 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_switch_mddq_data_auto_ext data;
 };
@@ -343,9 +343,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 475, "PRM Register Payload Layout," on page 715
-For Command type payload - See Table 477, "Command Payload Layout," on page 715
-For CrSpace type payload - See Table 479, "CrSpace access Payload Layout," on page 716 */
+For PRM Register type payload - See Table 435, "PRM Register Payload Layout," on page 772
+For Command type payload - See Table 437, "Command Payload Layout," on page 772
+For CrSpace type payload - See Table 439, "CrSpace access Payload Layout," on page 773 */
 	/* 0xc.0 - 0x10c.31 */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
 };
@@ -659,6 +659,7 @@ NOTE: setting reset while module is plugged-in will result in transition of oper
 
 [DWIP] 0xf: Boot_error
 [DWIP] 0x10: Recovery_error
+[DWIP] 0x11: Submodule_failure
 Valid only when oper_status = 4'b0011 */
 	/* 0x4.8 - 0x4.12 */
 	u_int8_t error_type;
@@ -741,13 +742,27 @@ void reg_access_switch_crspace_access_payload_ext_print(const struct reg_access_
 unsigned int reg_access_switch_crspace_access_payload_ext_size(void);
 #define REG_ACCESS_SWITCH_CRSPACE_ACCESS_PAYLOAD_EXT_SIZE    (0x104)
 void reg_access_switch_crspace_access_payload_ext_dump(const struct reg_access_switch_crspace_access_payload_ext *ptr_struct, FILE *fd);
-/* device_info_ext */
-void reg_access_switch_device_info_ext_pack(const struct reg_access_switch_device_info_ext *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_switch_device_info_ext_unpack(struct reg_access_switch_device_info_ext *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_switch_device_info_ext_print(const struct reg_access_switch_device_info_ext *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_switch_device_info_ext_size(void);
-#define REG_ACCESS_SWITCH_DEVICE_INFO_EXT_SIZE    (0x20)
-void reg_access_switch_device_info_ext_dump(const struct reg_access_switch_device_info_ext *ptr_struct, FILE *fd);
+/* mddq_device_info_ext */
+void reg_access_switch_mddq_device_info_ext_pack(const struct reg_access_switch_mddq_device_info_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mddq_device_info_ext_unpack(struct reg_access_switch_mddq_device_info_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mddq_device_info_ext_print(const struct reg_access_switch_mddq_device_info_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mddq_device_info_ext_size(void);
+#define REG_ACCESS_SWITCH_MDDQ_DEVICE_INFO_EXT_SIZE    (0x20)
+void reg_access_switch_mddq_device_info_ext_dump(const struct reg_access_switch_mddq_device_info_ext *ptr_struct, FILE *fd);
+/* mddq_slot_info_ext */
+void reg_access_switch_mddq_slot_info_ext_pack(const struct reg_access_switch_mddq_slot_info_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mddq_slot_info_ext_unpack(struct reg_access_switch_mddq_slot_info_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mddq_slot_info_ext_print(const struct reg_access_switch_mddq_slot_info_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mddq_slot_info_ext_size(void);
+#define REG_ACCESS_SWITCH_MDDQ_SLOT_INFO_EXT_SIZE    (0x20)
+void reg_access_switch_mddq_slot_info_ext_dump(const struct reg_access_switch_mddq_slot_info_ext *ptr_struct, FILE *fd);
+/* mddq_slot_name_ext */
+void reg_access_switch_mddq_slot_name_ext_pack(const struct reg_access_switch_mddq_slot_name_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mddq_slot_name_ext_unpack(struct reg_access_switch_mddq_slot_name_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mddq_slot_name_ext_print(const struct reg_access_switch_mddq_slot_name_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mddq_slot_name_ext_size(void);
+#define REG_ACCESS_SWITCH_MDDQ_SLOT_NAME_EXT_SIZE    (0x20)
+void reg_access_switch_mddq_slot_name_ext_dump(const struct reg_access_switch_mddq_slot_name_ext *ptr_struct, FILE *fd);
 /* prm_register_payload_ext */
 void reg_access_switch_prm_register_payload_ext_pack(const struct reg_access_switch_prm_register_payload_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_prm_register_payload_ext_unpack(struct reg_access_switch_prm_register_payload_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -755,20 +770,6 @@ void reg_access_switch_prm_register_payload_ext_print(const struct reg_access_sw
 unsigned int reg_access_switch_prm_register_payload_ext_size(void);
 #define REG_ACCESS_SWITCH_PRM_REGISTER_PAYLOAD_EXT_SIZE    (0x104)
 void reg_access_switch_prm_register_payload_ext_dump(const struct reg_access_switch_prm_register_payload_ext *ptr_struct, FILE *fd);
-/* slot_info_ext */
-void reg_access_switch_slot_info_ext_pack(const struct reg_access_switch_slot_info_ext *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_switch_slot_info_ext_unpack(struct reg_access_switch_slot_info_ext *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_switch_slot_info_ext_print(const struct reg_access_switch_slot_info_ext *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_switch_slot_info_ext_size(void);
-#define REG_ACCESS_SWITCH_SLOT_INFO_EXT_SIZE    (0x20)
-void reg_access_switch_slot_info_ext_dump(const struct reg_access_switch_slot_info_ext *ptr_struct, FILE *fd);
-/* slot_name_ext */
-void reg_access_switch_slot_name_ext_pack(const struct reg_access_switch_slot_name_ext *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_switch_slot_name_ext_unpack(struct reg_access_switch_slot_name_ext *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_switch_slot_name_ext_print(const struct reg_access_switch_slot_name_ext *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_switch_slot_name_ext_size(void);
-#define REG_ACCESS_SWITCH_SLOT_NAME_EXT_SIZE    (0x20)
-void reg_access_switch_slot_name_ext_dump(const struct reg_access_switch_slot_name_ext *ptr_struct, FILE *fd);
 /* mddq_data_auto_ext */
 void reg_access_switch_mddq_data_auto_ext_pack(const union reg_access_switch_mddq_data_auto_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mddq_data_auto_ext_unpack(union reg_access_switch_mddq_data_auto_ext *ptr_struct, const u_int8_t *ptr_buff);
