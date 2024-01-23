@@ -384,10 +384,12 @@ private:
       GetPublicKeyFromFile(const char* public_key_file, const char* uuid, image_layout_file_public_keys_3* public_key);
     virtual bool GetFreeSlotInPublicKeys2(const image_layout_public_keys_2& public_keys, u_int32_t& idx);
     virtual bool GetFreeSlotInPublicKeys3(const image_layout_public_keys_3& public_keys, u_int32_t& idx);
-    virtual bool IsPublicKeyAlreadyInPublicKeys2(const image_layout_public_keys_2& public_keys,
-                                                 const image_layout_file_public_keys_2& public_key);
-    virtual bool IsPublicKeyAlreadyInPublicKeys3(const image_layout_public_keys_3& public_keys,
-                                                 const image_layout_file_public_keys_3& public_key);
+    virtual bool FindPublicKeyInPublicKeys2(const image_layout_public_keys_2& public_keys,
+                                            const image_layout_file_public_keys_2& public_key,
+                                            u_int32_t& idx);
+    virtual bool FindPublicKeyInPublicKeys3(const image_layout_public_keys_3& public_keys,
+                                            const image_layout_file_public_keys_3& public_key,
+                                            u_int32_t& idx);
     virtual bool FindImagePublicKeyInPublicKeys2(const image_layout_public_keys_2& public_keys, u_int32_t& idx);
     virtual bool FindImagePublicKeyInPublicKeys3(const image_layout_public_keys_3& public_keys, u_int32_t& idx);
     virtual bool StoreImagePublicKeyInPublicKeys2(const image_layout_file_public_keys_3& public_key);
@@ -397,6 +399,8 @@ private:
                                             image_layout_file_public_keys_3& public_key);
     virtual void PublicKey2ToPublicKey3(const image_layout_file_public_keys_2& public_key_2,
                                         image_layout_file_public_keys_3& public_key_3);
+    virtual void PublicKey3ToPublicKey2(const image_layout_file_public_keys_3& public_key_3,
+                                        image_layout_file_public_keys_2& public_key_2);
     virtual bool ReadPublicKeys2SectionFromFile(const char* fname, image_layout_public_keys_2& public_keys_2_section);
     
     // Members
