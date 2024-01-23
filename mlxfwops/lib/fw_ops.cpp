@@ -2790,6 +2790,11 @@ bool FwOperations::VerifyBranchFormat(const char* vsdString)
     return false;
 }
 
+bool FwOperations::GetDtocAddress(u_int32_t& dTocAddress)
+{
+    return errmsg("GetDtocAddress not supported.");
+}
+
 bool FwOperations::PrintQuery()
 {
     return errmsg("PrintQuery not supported.");
