@@ -184,29 +184,26 @@ void RegAccessResourceDumpMkeyFetcher::init_ibv_context(const string rdma_name)
         }
         ibv_device_list = ibv_get_device_list(&num_ibv_devices);
 
-        if (ibv_device_list)
-        {
-            for (i = 0; i < num_ibv_devices; ++i)
-            {
-                if (ibv_device_list[i] != NULL &&
-                    strcmp(ibv_get_device_name(ibv_device_list[i]), device_rdma_name_buffer) == 0)
-                {
-                    _ibv_context = mlx5dv_open_device(ibv_device_list[i], my_context_attr);
-                    if (!_ibv_context)
-                    {
-                        throw ResourceDumpException(ResourceDumpException::Reason::MKEY_FETCHER_MLX5DV_OPEN_FAILED);
-                    }
-                    return;
-                }
-            }
-            if (!_ibv_context)
-            {
-                throw ResourceDumpException(ResourceDumpException::Reason::MKEY_FETCHER_RDMA_NAME_INVALID);
-            }
-        }
-        else
+        if (!ibv_device_list)
         {
             throw ResourceDumpException(ResourceDumpException::Reason::MKEY_FETCHER_GET_DEVICE_LIST_FAILED);
+        }
+        for (i = 0; i < num_ibv_devices; ++i)
+        {
+            if (ibv_device_list[i] != NULL &&
+                strcmp(ibv_get_device_name(ibv_device_list[i]), device_rdma_name_buffer) == 0)
+            {
+                _ibv_context = mlx5dv_open_device(ibv_device_list[i], my_context_attr);
+                if (!_ibv_context)
+                {
+                    throw ResourceDumpException(ResourceDumpException::Reason::MKEY_FETCHER_MLX5DV_OPEN_FAILED);
+                }
+                break;
+            }
+        }
+        if (!_ibv_context)
+        {
+            throw ResourceDumpException(ResourceDumpException::Reason::MKEY_FETCHER_RDMA_NAME_INVALID);
         }
     }
     catch (...)

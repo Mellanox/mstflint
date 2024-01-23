@@ -60,10 +60,12 @@ enum arg_attr_t
 constexpr const char* AUTO_RDMA_NAME = "__AUTO__";
 constexpr uint8_t NUM_INLINE_DATA_DWORDS = 52;
 constexpr uint16_t DEFAULT_VHCA = (uint16_t)-1;
+constexpr uint32_t INFINITE_DEPTH = (uint32_t)-1;
 #else
 #define AUTO_RDMA_NAME "__AUTO__"
 #define NUM_INLINE_DATA_DWORDS 52
 #define DEFAULT_VHCA ((uint16_t)-1)
+#define INFINITE_DEPTH ((uint32_t)-1)
 #endif
 
 typedef struct device_attributes

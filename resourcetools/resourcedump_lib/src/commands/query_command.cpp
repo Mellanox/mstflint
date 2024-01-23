@@ -48,7 +48,7 @@ namespace resource_dump
 using namespace std;
 
 QueryCommand::QueryCommand(device_attributes device_attrs) :
-    ResourceDumpCommand{device_attrs, dump_request{static_cast<uint16_t>(SegmentType::menu)}, 0, false},
+    ResourceDumpCommand{device_attrs, dump_request{static_cast<uint16_t>(SegmentType::menu), 0, 0, 0, 0}, 0, false},
     _sstream{make_shared<stringstream>()}
 {
     _ostream = _sstream;
@@ -90,7 +90,7 @@ RecordList::RecordList(string&& retrieved_data) : _full_data(move(retrieved_data
     // Switch endianness of char* to represent strings
 }
 
-const uint16_t RecordList::size()
+uint16_t RecordList::size()
 {
     return _size;
 }

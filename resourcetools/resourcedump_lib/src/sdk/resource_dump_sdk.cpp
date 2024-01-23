@@ -58,8 +58,16 @@ enum result_t
 
         query_command.execute();
 
-        auto record_data_size = sizeof(mft::resource_dump::menu_record_data) * query_command.menu_records.size();
-        available_resources->num_of_resources = query_command.menu_records.size();
+        auto record_data_count = query_command.menu_records.size();
+        auto record_data_size = sizeof(mft::resource_dump::menu_record_data) * record_data_count;
+
+        if (record_data_count > available_resources->num_of_resources)
+        {
+            throw mft::resource_dump::ResourceDumpException(
+              mft::resource_dump::ResourceDumpException::Reason::BUFFER_TOO_SMALL);
+        }
+
+        available_resources->num_of_resources = record_data_count;
 
         if (__BYTE_ORDER != __BIG_ENDIAN && endianess == endianess_t::RD_BIG_ENDIAN)
         {

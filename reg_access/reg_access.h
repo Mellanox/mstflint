@@ -113,8 +113,14 @@ reg_access_status_t reg_access_sbcm(mfile* mf, reg_access_method_t method, struc
 struct switchen_sbpm;
 reg_access_status_t reg_access_sbpm(mfile* mf, reg_access_method_t method, struct switchen_sbpm* sbpm);
 struct reg_access_hca_resource_dump_ext;
+/***********************************************************/
+/*********************** ATTENTION *************************/
+/** The registers below must be same (except for the ID) ***/
+/** Changes in them should be made both in switch and nic **/
 reg_access_status_t
   reg_access_res_dump(mfile* mf, reg_access_method_t method, struct reg_access_hca_resource_dump_ext* res_dump);
+reg_access_status_t
+  reg_access_mord(mfile* mf, reg_access_method_t method, struct reg_access_hca_resource_dump_ext* res_dump);
 
 struct switchen_ppcnt_reg;
 reg_access_status_t reg_access_ppcnt(mfile* mf, reg_access_method_t method, struct switchen_ppcnt_reg* ricnt);
