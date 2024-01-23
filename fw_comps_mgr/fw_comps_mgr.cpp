@@ -938,9 +938,7 @@ void FwCompsMgr::initialize(mfile* mf)
     _componentIndex = 0;
     _lastRegAccessStatus = ME_OK;
     _updateHandle = 0;
-    if (getFwSupport()) {
-        GenerateHandle();
-    }
+    _fwSupport = getFwSupport();
     ComponentAccessFactory* factory = ComponentAccessFactory::GetInstance();
 
     _accessObj = factory->createDataAccessObject(this, mf, _isDmaSupported);
@@ -966,6 +964,8 @@ void FwCompsMgr::SetIndexAndSize(int  deviceIndex,
 
 FwCompsMgr::FwCompsMgr(mfile* mf, DeviceTypeT devType, int deviceIndex)
 {
+    _fwSupport = false;
+    _handleGenerated = false;
     _clearSetEnv = false;
     _openedMfile = false;
     _hwDevId = 0;
@@ -991,6 +991,8 @@ FwCompsMgr::FwCompsMgr(mfile* mf, DeviceTypeT devType, int deviceIndex)
 FwCompsMgr::FwCompsMgr(const char* devname, DeviceTypeT devType, int deviceIndex)
 {
     _mf = NULL;
+    _fwSupport = false;
+    _handleGenerated = false;
     _openedMfile = false;
     _clearSetEnv = false;
     _accessObj = NULL;
@@ -1098,11 +1100,16 @@ bool FwCompsMgr::forceRelease()
 
 void FwCompsMgr::GenerateHandle()
 {
-    if (!controlFsm(FSM_QUERY, FSMST_NA, 0, FSMST_NA, NULL, REG_ACCESS_TOUT)) {
-        _updateHandle = 0;
-        return;
+    if (!_handleGenerated)
+    {
+        if (!controlFsm(FSM_QUERY, FSMST_NA, 0, FSMST_NA, NULL, REG_ACCESS_TOUT))
+        {
+            _updateHandle = 0;
+            return;
+        }
+        _updateHandle = _lastFsmCtrl.update_handle & 0xffffff;
+        _handleGenerated = true;
     }
-    _updateHandle = _lastFsmCtrl.update_handle & 0xffffff;
 }
 
 const char* CompNames[] = {"NO_COMPONENT 1",          "COMPID_BOOT_IMG",
@@ -1206,6 +1213,7 @@ bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType,
     u_int32_t compSize = _currCompQuery->comp_cap.component_size;
 
     if (_currCompQuery->comp_cap.rd_en) {
+        GenerateHandle();
         data.resize(compSize);
         if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
             return false;
@@ -1286,6 +1294,7 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
     if (!RefreshComponentsStatus()) {
         return false;
     }
+    GenerateHandle();
     if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
         DPRINTF(("Cannot lock the handle!\n"));
         if (forceRelease() == false) {
@@ -2145,6 +2154,7 @@ bool FwCompsMgr::readBlockFromComponent(FwComponent::comps_ids_t  compId,
         return false;
     }
     if (_currCompQuery->comp_cap.rd_en) {
+        GenerateHandle();
         data.resize(size);
         if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
             return false;
