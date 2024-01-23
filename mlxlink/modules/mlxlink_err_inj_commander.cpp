@@ -278,6 +278,10 @@ ReqParms MlxlinkErrInjCommander::validateErrType(const string& type,
             throw MlxRegException("Invalid parameters list for error type %s, %s", errTypeSt.errorTypeStr.c_str(),
                                   getNumOfValidParams(errTypeSt).c_str());
         }
+        if (params[idx].size() > MAX_PARAMS_ARG_LEN)
+        {
+            throw MlxRegException("Invalid error parameter value: %s", params[idx].c_str());
+        }
         strToUint32((char*)params[idx].c_str(), (u_int32_t&)paramsSet[idx]);
     }
 
