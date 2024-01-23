@@ -3845,41 +3845,35 @@ void MlxlinkCommander::prbsConfiguration(const string& prbsReg,
                                          bool perLaneConfig,
                                          bool prbsPolInv)
 {
-    string rateToUpdate = prbsReg == "PPRT" ? "lane_rate_oper" : "lane_rate_admin";
-    string prbsExtraCmd = "";
+    const string rateToUpdate = (prbsReg == "PPRT") ? "lane_rate_oper" : "lane_rate_admin";
+
+    auto buildPrbsRegArgs = [&]() -> string
+    {
+        stringstream cmd;
+        if (prbsPolInv)
+        {
+            cmd << ",p=1";
+        }
+        if (laneRate >= PRBS_HDR && laneRate <= PRBS_XDR)
+        {
+            cmd << ",modulation=" << PRBS_PAM4_ENCODING;
+        }
+        cmd << ",e=" << enable << "," << rateToUpdate << "=" << laneRate << ",prbs_mode_admin=" << prbsMode;
+        return cmd.str();
+    };
+
     if (perLaneConfig)
     {
         for (const auto& lane : _userInput._prbsLanesToSet)
         {
-            prbsExtraCmd = "";
-            if (prbsPolInv)
-            {
-                prbsExtraCmd += ",p=1";
-            }
-
-            if (laneRate == PRBS_HDR)
-            {
-                prbsExtraCmd += ",modulation=" + to_string(PRBS_PAM4_ENCODING);
-            }
-
-            sendPrmReg(prbsReg, SET, "e=%d,%s=%d,prbs_mode_admin=%d,le=%d,lane=%d%s", enable, rateToUpdate.c_str(),
-                       laneRate, prbsMode, perLaneConfig, lane.first, prbsExtraCmd.c_str());
+            const string prbsRegArgs = buildPrbsRegArgs();
+            sendPrmReg(prbsReg, SET, "le=%d,lane=%d%s", perLaneConfig, lane.first, prbsRegArgs.c_str());
         }
     }
     else
     {
-        prbsExtraCmd = "";
-        if (prbsPolInv)
-        {
-            prbsExtraCmd += ",p=1";
-        }
-        if (laneRate == PRBS_HDR)
-        {
-            prbsExtraCmd += ",modulation=" + to_string(PRBS_PAM4_ENCODING);
-        }
-
-        sendPrmReg(prbsReg, SET, "e=%d,%s=%d,prbs_mode_admin=%d%s", enable, rateToUpdate.c_str(), laneRate, prbsMode,
-                   prbsExtraCmd.c_str());
+        const string prbsRegArgs = buildPrbsRegArgs();
+        sendPrmReg(prbsReg, SET, prbsRegArgs.c_str());
     }
 }
 
