@@ -565,6 +565,8 @@ private:
     bool IsDevicePresent(FwComponent::comps_ids_t compType);
 
     std::vector<comp_query_st> _compsQueryMap;
+    bool _fwSupport;
+    bool _handleGenerated;
     bool _refreshed;
     bool _clearSetEnv;
     bool _openedMfile;
