@@ -251,9 +251,23 @@ void MlxlinkCommander::checkValidFW()
 
 u_int32_t MlxlinkCommander::getTechnologyFromMGIR()
 {
-    sendPrmReg(ACCESS_REG_MGIR, GET);
-
-    return getFieldValue("technology");
+    // Use SLRG to get the product technology, for backward compatibility
+    try
+    {
+        sendPrmReg(ACCESS_REG_SLRG, GET);
+        _productTechnology = getVersion(getFieldValue("version"));
+        if (_productTechnology <= 2)
+        {
+            _productTechnology = PRODUCT_28NM;
+        }
+    }
+    catch (MlxRegException& exc)
+    {
+        if (!_productTechnology)
+        {
+            throw MlxRegException("Unable to get product technology: %s", exc.what_s().c_str());
+        }
+    }
 }
 
 void MlxlinkCommander::getProductTechnology()
