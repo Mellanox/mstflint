@@ -39,6 +39,8 @@ namespace mft
 {
 namespace resource_dump
 {
+struct resource_dump_segment_header;
+
 class DumpCommand : public ResourceDumpCommand
 {
 public:
@@ -56,6 +58,11 @@ public:
     void reverse_fstream_endianess();
 
     bool validate() override;
+
+    resource_dump_segment_header read_header(size_t segment_idx);
+
+    // Returns true <-> dump contains an error segment, if returns true also puts the error message
+    bool get_error_message(std::string& error_message);
 
     const std::string to_string() const override;
 

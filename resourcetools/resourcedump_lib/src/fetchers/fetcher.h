@@ -51,6 +51,8 @@ public:
     virtual ~Fetcher() = default;
     virtual void set_streams(std::shared_ptr<std::ostream> os, std::shared_ptr<std::istream> is)
     {
+        (void)os;
+        (void)is;
         static_assert(true, "Abstract class, unimplemented");
     };
     virtual void fetch_data() { static_assert(true, "Abstract class, unimplemented"); };

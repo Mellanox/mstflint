@@ -30,9 +30,37 @@
  * SOFTWARE.
  */
 
+#ifndef RESOURCE_DUMP_SEGMENT_H
+#define RESOURCE_DUMP_SEGMENT_H
+
 #include <common/compatibility.h>
 #if __BYTE_ORDER == __BIG_ENDIAN
 #include "resource_dump_segments_be.h"
 #else
 #include "resource_dump_segments_le.h"
 #endif
+
+#ifdef __cplusplus
+namespace mft
+{
+namespace resource_dump
+{
+#endif
+
+#ifdef __cplusplus
+constexpr
+#else
+inline
+#endif
+  uint32_t
+  to_segment_data_size(uint16_t length_dw)
+{
+    return length_dw * 4 - (sizeof(resource_dump_segment_header_t) + sizeof(resource_segment_sub_header_t));
+}
+
+#ifdef __cplusplus
+} // namespace resource_dump
+} // namespace mft
+#endif
+
+#endif // RESOURCE_DUMP_SEGMENT_H

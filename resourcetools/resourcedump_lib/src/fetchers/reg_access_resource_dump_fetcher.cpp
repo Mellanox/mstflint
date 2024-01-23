@@ -35,6 +35,7 @@
 #include "resource_dump_types.h"
 
 #include "reg_access/reg_access.h"
+#include "dev_mgt/tools_dev_types.h"
 
 #include <common/compatibility.h>
 
@@ -99,7 +100,7 @@ void RegAccessResourceDumpFetcher::fetch_data()
 
     retrieve_from_reg_access();
 
-    resource_dump_segment_header header_buffer{0};
+    resource_dump_segment_header header_buffer{0, 0};
 
     uint32_t level{0};
     uint32_t prev_level_refs{1};
@@ -110,7 +111,10 @@ void RegAccessResourceDumpFetcher::fetch_data()
         while (level < _depth && _ostream->tellp() - _istream->tellg() > 0)
         {
             _istream->read(reinterpret_cast<char*>(&header_buffer), sizeof(resource_dump_segment_header));
-
+            if (header_buffer.length_dw * 4 < sizeof(resource_dump_segment_header))
+            {
+                throw ResourceDumpException(ResourceDumpException::Reason::SEGMENT_DATA_TOO_SHORT);
+            }
             if (header_buffer.segment_type == static_cast<uint16_t>(SegmentType::reference))
             {
                 _istream->read(reinterpret_cast<char*>(&_segment_params), sizeof(reference_segment_data));
@@ -134,7 +138,7 @@ void RegAccessResourceDumpFetcher::fetch_data()
     }
     catch (const istream::failure& e)
     {
-        if (_istream->eof())
+        if (_istream->fail())
         {
             throw ResourceDumpException(ResourceDumpException::Reason::SEGMENT_DATA_TOO_SHORT);
         }
@@ -149,7 +153,15 @@ void RegAccessResourceDumpFetcher::retrieve_from_reg_access()
 
     do
     {
-        reg_access_status_t res = reg_access_res_dump(_mf, REG_ACCESS_METHOD_GET, &_reg_access_layout);
+        dm_dev_id_t dev_id = DeviceUnknown;
+        u_int32_t hw_id, hw_rev;
+        dm_get_device_id(_mf, &dev_id, &hw_id, &hw_rev);
+        /***********************************************************/
+        /*********************** ATTENTION *************************/
+        /******** The functions below must be equivalent ***********/
+        /** Changes in them should be made both in switch and nic **/
+        auto reg_access_func = dm_dev_is_hca(dev_id) ? reg_access_res_dump : reg_access_mord;
+        reg_access_status_t res = reg_access_func(_mf, REG_ACCESS_METHOD_GET, &_reg_access_layout);
         if (res != ME_REG_ACCESS_OK)
         {
             throw ResourceDumpException(ResourceDumpException::Reason::SEND_REG_ACCESS_FAILED, res);

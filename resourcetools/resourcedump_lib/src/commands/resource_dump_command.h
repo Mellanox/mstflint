@@ -53,8 +53,8 @@ class ResourceDumpCommand
 {
 public:
     virtual void execute() final;
-    const size_t get_dumped_size() const;
-    const bool data_fetched() const;
+    size_t get_dumped_size() const;
+    bool data_fetched() const;
     const std::vector<size_t>& get_segment_offsets() const;
 
     std::istream& get_native_stream();

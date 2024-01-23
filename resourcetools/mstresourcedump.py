@@ -217,6 +217,9 @@ if __name__ == '__main__':
         command = create_command(dump_args)
         command.execute()
         print("{:#^100}".format(" Dump finished successfully "))
+    except KeyboardInterrupt:
+        print("Aborted by user.")
+        sys.exit(1)
     except Exception as e:
         print("Error: {0}. Exiting...".format(e))
         sys.exit(1)
@@ -231,6 +234,9 @@ if __name__ == '__main__':
             parse_manager.parse()
             print("{:#^100}".format(" Parse finished successfully "))
 
+    except KeyboardInterrupt:
+        print("Aborted by user.")
+        sys.exit(1)
     except ResourceParseException as rpe:
         print("ResourceParse failed!\n{0}.\nExiting...".format(rpe))
         sys.exit(1)

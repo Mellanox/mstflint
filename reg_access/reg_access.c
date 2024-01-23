@@ -117,6 +117,7 @@
 //==================================
 // RESOURCE DUMP FEATURE
 #define REG_ID_RES_DUMP 0xC000
+#define REG_ID_MORD 0x9153
 //==================================
 #define REG_ID_MPEGC 0x9056
 #define REG_ID_NIC_CAP_EXT 0xC011
@@ -356,6 +357,12 @@ reg_access_status_t reg_access_mmdio(mfile* mf, reg_access_method_t method, stru
 /************************************
  * * Function: reg_access_resource_dump
  * ************************************/
+
+/***********************************************************/
+/*********************** ATTENTION *************************/
+/** The registers below must be same (except for the ID) ***/
+/** Changes in them should be made both in switch and nic **/
+
 reg_access_status_t
   reg_access_res_dump(mfile* mf, reg_access_method_t method, struct reg_access_hca_resource_dump_ext* resource_dump)
 {
@@ -365,6 +372,12 @@ reg_access_status_t
         reg_access_hca_resource_dump_ext_dump(resource_dump, stdout);
     }
     REG_ACCCESS(mf, method, REG_ID_RES_DUMP, resource_dump, resource_dump_ext, reg_access_hca);
+}
+
+reg_access_status_t
+  reg_access_mord(mfile* mf, reg_access_method_t method, struct reg_access_hca_resource_dump_ext* resource_dump)
+{
+    REG_ACCCESS(mf, method, REG_ID_MORD, resource_dump, resource_dump_ext, reg_access_hca);
 }
 //=================================================================================================================================
 

@@ -61,7 +61,7 @@ string IncludeExcludeSegmentsFilter::get_big_endian_string()
 
 Filter::FilteredView IncludeExcludeSegmentsFilter::_apply()
 {
-    resource_dump_segment_header header_buffer{0};
+    resource_dump_segment_header header_buffer{0, 0};
     istream& parsed_istream = _command.get_native_stream();
     bool include;
 
@@ -76,7 +76,7 @@ Filter::FilteredView IncludeExcludeSegmentsFilter::_apply()
         if (include)
         {
             _filtered_stream.write(reinterpret_cast<char*>(&header_buffer), sizeof(resource_dump_segment_header));
-            uint16_t segment_payload_size = 4 * header_buffer.length_dw - sizeof(resource_dump_segment_header);
+            uint32_t segment_payload_size = 4 * header_buffer.length_dw - sizeof(resource_dump_segment_header);
             copy_n(istreambuf_iterator<char>(parsed_istream),
                    segment_payload_size,
                    ostreambuf_iterator<char>(_filtered_stream));

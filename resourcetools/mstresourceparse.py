@@ -136,6 +136,9 @@ class ResourceParse:
 if __name__ == '__main__':
     try:
         ResourceParse().run()
+    except KeyboardInterrupt:
+        print("Aborted by user.")
+        sys.exit(1)
     except ResourceParseException as rpe:
         print("ResourceParse failed!\n{0}.\nExiting...".format(rpe))
         sys.exit(1)
