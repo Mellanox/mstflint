@@ -1543,13 +1543,22 @@ u_int32_t FwCompsMgr::getFwSupport()
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return 0;
     }
-
     _mircCaps = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 3], 2, 1);
-    DPRINTF((
-                "getFwSupport _mircCaps = %d mcqsCap = %d mcqiCap = %d mccCap = %d mcdaCap = %d mqisCap = %d mcddCap = %d mgirCap = %d\n",
-                _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap));
+    int mode = 0;
+    struct tools_open_mlock mlock;
+    memset(&mlock, 0, sizeof(mlock));
+    rc = reg_access_secure_host(_mf, REG_ACCESS_METHOD_GET, &mlock);
+    if (rc == ME_OK)
+    {
+        mode = mlock.operation;
+    }
 
-    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap) {
+    DPRINTF((
+      "getFwSupport _mircCaps = %d mcqsCap = %d mcqiCap = %d mccCap = %d mcdaCap = %d mqisCap = %d mcddCap = %d mgirCap = %d secure_host = %d\n",
+      _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, mode));
+
+    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && mode == 0)
+    {
         return 1;
     }
     _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
