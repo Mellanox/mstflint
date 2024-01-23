@@ -30,7 +30,7 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.26.0, akiselman-org@exchange.nvidia.com)
+AC_INIT(mstflint, 4.27.0, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
