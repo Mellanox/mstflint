@@ -76,6 +76,7 @@ public:
     // METHODS
     AdbParser(string fileName,
               Adb* adbCtxt,
+              string root_node_name = "root",
               bool addReserved = false,
               bool evalExpr = false,
               bool strict = true,
@@ -83,7 +84,8 @@ public:
               bool enforceExtraChecks = false,
               bool checkDsAlign = false,
               bool enforceGuiChecks = false,
-              bool force_pad_32 = false);
+              bool force_pad_32 = false,
+              bool variable_alignment = false);
     ~AdbParser();
     bool load(bool is_main = true);
     bool loadFromString(const char* adbString);
@@ -118,15 +120,15 @@ private:
     static void startFieldElement(const XML_Char** atts, AdbParser* adbParser, const int lineNumber);
 
     static void endElement(void* adbParser, const XML_Char* name);
-    static void addReserved(vector<AdbField*>& reserveds, u_int32_t offset, u_int32_t size);
+    static void addReserved(vector<AdbField*>& reserveds, u_int32_t offset, u_int32_t size, uint8_t alignment = 32);
     static int attrCount(const XML_Char** atts);
     static string attrValue(const XML_Char** atts, const XML_Char* attrName);
     static string attrName(const XML_Char** atts, int i);
     static string attrValue(const XML_Char** atts, int i);
     static bool is_inst_ifdef_exist_and_correct_project(const XML_Char** atts, AdbParser* adbParser);
     static u_int32_t addr2int(string& s);
-    static u_int32_t dword(u_int32_t offset);
-    static u_int32_t startBit(u_int32_t offset);
+    static u_int32_t aligned_word(u_int32_t offset, uint8_t alignment = 32);
+    static u_int32_t startBit(u_int32_t offset, uint8_t alignment = 32);
     static bool raiseException(bool allowMultipleExceptions, string exceptionTxt, string addedMsg, const string expType);
 
 private:
@@ -134,15 +136,18 @@ private:
     Adb* _adbCtxt;
     XML_Parser _xmlParser;
     string _fileName;
+    string _root_node_name;
     string _lastError;
     bool _addReserved;
     bool _isExprEval;
     bool _strict;
     bool _checkDsAlign;
     bool skipNode;
+    bool _support_variable_alignment;
     string _includePath;
     string _currentTagValue;
     AdbNode* _currentNode;
+    uint8_t _current_node_alignment;
     AdbField* _currentField;
     AdbConfig* _currentConfig;
     bool _instanceOps;

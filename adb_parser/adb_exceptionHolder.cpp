@@ -107,3 +107,28 @@ void ExceptionHolder::insertNewException(const string exceptionType, string exce
     ExceptionHolder::adbExceptionMap[exceptionType].push_back(exceptionTxt);
     ExceptionHolder::exceptionCounter += 1;
 }
+
+/**
+ * Function: Adb::printAdbExceptionMap
+ * This function will pring the content of the Adb Exception Map
+ **/
+string ExceptionHolder::printAdbExceptionMap()
+{
+    string errorStr = "";
+    vector<string> fatals = ExceptionHolder::adbExceptionMap[ExceptionHolder::FATAL_EXCEPTION];
+    for (vector<string>::iterator it = fatals.begin(); it != fatals.end(); ++it)
+    {
+        errorStr += "-" + ExceptionHolder::FATAL_EXCEPTION + "- " + *it + ";";
+    }
+    vector<string> errors = ExceptionHolder::adbExceptionMap[ExceptionHolder::ERROR_EXCEPTION];
+    for (vector<string>::iterator it = errors.begin(); it != errors.end(); ++it)
+    {
+        errorStr += "-" + ExceptionHolder::ERROR_EXCEPTION + "- " + *it + ";";
+    }
+    vector<string> warnings = ExceptionHolder::adbExceptionMap[ExceptionHolder::WARN_EXCEPTION];
+    for (vector<string>::iterator it = warnings.begin(); it != warnings.end(); ++it)
+    {
+        errorStr += "-" + ExceptionHolder::WARN_EXCEPTION + "- " + "- " + *it + ";";
+    }
+    return errorStr;
+}

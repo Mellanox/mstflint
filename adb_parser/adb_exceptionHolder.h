@@ -54,6 +54,7 @@ public:
     static void insertNewException(const string exceptionType, string exceptionTxt);
     static ExceptionsMap getAdbExceptionsMap();
     static int getNumberOfExceptions();
+    static string printAdbExceptionMap();
 
 public:
     // VARIABLES

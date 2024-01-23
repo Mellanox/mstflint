@@ -103,6 +103,14 @@ struct IncludeFileInfo
     int includedFromLine;
 };
 
+struct PartitionTree
+{
+    string name;
+    bool stop;
+    PartitionTree* parent;
+    vector<PartitionTree*> sub_items;
+};
+
 class Adb
 {
 public:
@@ -118,7 +126,8 @@ public:
                         bool addReserved = false,
                         bool evalExpr = false,
                         bool strict = true,
-                        bool enforceExtraChecks = false);
+                        bool enforceExtraChecks = false,
+                        string root_node_name = "root");
     bool load(string fname,
               bool addReserved = false,
               bool evalExpr = false,
@@ -130,7 +139,9 @@ public:
               string logFile = "",
               bool checkDsAlign = false,
               bool enforceGuiChecks = false,
-              bool force_pad_32 = false);
+              bool force_pad_32 = false,
+              bool variable_alignment = false,
+              string root_node_name = "root");
     string toXml(vector<string> nodeNames = vector<string>(),
                  bool addRootNode = false,
                  string rootName = "MainNode",
@@ -141,14 +152,15 @@ public:
                               bool isExprEval = false,
                               int depth = -1, /* -1 means instantiate full tree */
                               bool ignoreMissingNodes = false,
-                              bool getAllExceptions = false);
+                              bool getAllExceptions = false,
+                              bool optimize_time = false,
+                              uint32_t root_offset = 0,
+                              string root_display_name = "",
+                              PartitionTree* partition_tree = nullptr);
     vector<string> getNodeDeps(string nodeName);
     void add_include(string fileName, string filePath, string included_from, int lineNumber);
     string getLastError();
 
-    void fetchAdbExceptionsMap(ExceptionsMap otherMap);
-    // excpetionType [FATAL:0, ERROR:1, WARNING:2]
-    void insertNewException(const string exceptionType, string exceptionTxt);
     string printAdbExceptionMap();
 
     // FOR DEBUG
@@ -174,7 +186,6 @@ public:
     string mainFileName;
     IncludeFileMap includedFiles;
     vector<string> warnings;
-    ExceptionsMap adbExceptionMap;
 
 private:
     bool createInstance(AdbField* fieldDesc,
@@ -183,9 +194,12 @@ private:
                         bool isExprEval,
                         int depth,
                         bool ignoreMissingNodes = false,
-                        bool getAllExceptions = false);
+                        bool getAllExceptions = false,
+                        bool optimize_time = false,
+                        PartitionTree* partition_tree = nullptr);
     string evalExpr(string expr, AttrsMap* vars);
     bool checkInstSizeConsistency(bool getAllExceptions = false);
+    static PartitionTree* prune_up(PartitionTree* partition_tree);
 
 private:
     string _lastError;
