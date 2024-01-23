@@ -4947,7 +4947,7 @@ void MlxlinkCommander::initEyeOpener()
             _eyeOpener->lane = _userInput.gradeScanPerLane ? _userInput._lane : -1;
             _eyeOpener->isPam4Speed = _isPam4Speed || ((_linkSpeed == IB_LINK_SPEED_HDR) && (_protoActive == IB));
             _eyeOpener->activeSpeedStr = _speedStrG;
-            _eyeOpener->_mlxlinkLogger = _mlxlinkLogger
+            _eyeOpener->_mlxlinkLogger = _mlxlinkLogger;
             if (_userInput.measureTime < 0)
             {
                 if (_userInput._pcie)
