@@ -2542,9 +2542,8 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
     else if (hwDevId == CX5_HW_ID || hwDevId == CX6_HW_ID || hwDevId == CX6DX_HW_ID || hwDevId == CX6LX_HW_ID ||
              hwDevId == CX7_HW_ID || hwDevId == CX8_HW_ID || hwDevId == BF_HW_ID || hwDevId == BF2_HW_ID ||
              hwDevId == BF3_HW_ID || hwDevId == BF4_HW_ID || hwDevId == QUANTUM_HW_ID || hwDevId == QUANTUM2_HW_ID ||
-             hwDevId == QUANTUM3_HW_ID || hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM2_HW_ID ||
-             hwDevId == SPECTRUM3_HW_ID || hwDevId == GEARBOX_HW_ID || hwDevId == GB_MANAGER_HW_ID ||
-             hwDevId == ABIR_GB_HW_ID || hwDevId == ARCUSE_HW_ID)
+             hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM3_HW_ID || hwDevId == SPECTRUM2_HW_ID ||
+             hwDevId == GEARBOX_HW_ID || hwDevId == GB_MANAGER_HW_ID || hwDevId == ABIR_GB_HW_ID)
     {
         return FS_FS4_GEN;
     }
