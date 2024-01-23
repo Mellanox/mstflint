@@ -33,9 +33,9 @@
  
 
 /***
-         *** This file was generated at "2023-07-19 14:43:11"
+         *** This file was generated at "2024-01-15 23:07:24"
          *** by:
-         ***    > [REDACTED]/adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
+         ***    > adb2pack.py --input adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils -o user/tools_layouts
          ***/
 #ifndef REG_ACCESS_HCA_LAYOUTS_H
 #define REG_ACCESS_HCA_LAYOUTS_H
@@ -270,7 +270,7 @@ Read and write access must be aligned to the word size. Write access must be don
 	/* Description - Only signed components are accepted. */
 	/* 0x10.30 - 0x10.30 */
 	u_int8_t signed_updates_only;
-	/* Description - When set, this components may be read, see Section 10.3.4, "Read Flow", on page 873. */
+	/* Description - When set, this components may be read, see Section 10.3.4, "Read Flow", on page 837. */
 	/* 0x10.31 - 0x10.31 */
 	u_int8_t rd_en;
 };
@@ -384,11 +384,11 @@ struct reg_access_hca_mcqi_version_ext {
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t version;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Time of component creation. Valid only if build_time_valid is set. See Table 2256, "Date-Time Layout," on page 2613 */
+	/* Description - Time of component creation. Valid only if build_time_valid is set. See Table 2180, "Date-Time Layout," on page 2437 */
 	/* 0x8.0 - 0xc.31 */
 	struct reg_access_hca_date_time_layout_ext build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - User-defined time assigned to the component version. Valid only if user_defined_time_valid is set. See Table 2256, "Date-Time Layout," on page 2613 */
+	/* Description - User-defined time assigned to the component version. Valid only if user_defined_time_valid is set. See Table 2180, "Date-Time Layout," on page 2437 */
 	/* 0x10.0 - 0x14.31 */
 	struct reg_access_hca_date_time_layout_ext user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -484,14 +484,14 @@ The priority is set by either:
 	u_int8_t priority;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Configuration item index according to its type_class. 
-Table 2337, "Configuration Item Data Type Class Global Layout," on page 2675
-Table 2339, "Configuration Item Data Type Class Physical Port Layout," on page 2675
-Table 2341, "Configuration Item Data Type Class Per Host-PF Layout," on page 2676
-Table 2343, "Configuration Item Data Type Class Log Layout," on page 2676
-Table 2345, "Configuration Item Data Type Class File Layout," on page 2677
-Table 2347, "Configuration Item Data Type Class Host Layout," on page 2677
+Table 2267, "Configuration Item Data Type Class Global Layout," on page 2502
+Table 2269, "Configuration Item Data Type Class Physical Port Layout," on page 2502
+Table 2271, "Configuration Item Data Type Class Per Host-PF Layout," on page 2503
+Table 2273, "Configuration Item Data Type Class Log Layout," on page 2503
+Table 2275, "Configuration Item Data Type Class File Layout," on page 2504
+Table 2277, "Configuration Item Data Type Class Host Layout," on page 2504
 
-Table 2349, "Configuration Item Data Type Class Module Layout," on page 2678 */
+Table 2279, "Configuration Item Data Type Class Module Layout," on page 2505 */
 	/* 0x4.0 - 0x4.31 */
 	union reg_access_hca_config_item_type_auto_ext type;
 };
@@ -699,6 +699,15 @@ The total number of tiles can be derived through MGPIR register. */
 1: Enable */
 	/* 0x34.3 - 0x34.3 */
 	u_int8_t encryption;
+	/* Description - [DWIP]
+ISSU-able:
+0: not ISSUable
+1: ISSUable
+Supported from Quantum-3 and on
+Supported for Retimers
+Based on FW decisions: fuse, INI, NV and version on flash vs. running version */
+	/* 0x34.13 - 0x34.13 */
+	u_int8_t issu_able;
 };
 
 /* Description -   */
@@ -708,7 +717,7 @@ struct reg_access_hca_mgir_hardware_info_ext {
 	/* Description - PCI device ID. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t device_id;
-	/* Description - See Table 2278, "Device HW Revision Descriptions," on page 2629 */
+	/* Description - See Table 2202, "Device HW Revision Descriptions," on page 2455 */
 	/* 0x0.16 - 0x0.31 */
 	u_int16_t device_hw_revision;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -740,6 +749,24 @@ For Retimer: returns the number of data path
 manufacturing_base_mac of value 0 means field is not supported. */
 	/* 0x10.0 - 0x10.15 */
 	u_int16_t manufacturing_base_mac_47_32;
+	/* Description - [DWIP]
+Geographical Address
+0: ASIC 0
+1: ASIC 1
+2: ASIC 2
+3: ASIC 3
+Valid for multi ASIC platforms only */
+	/* 0x10.16 - 0x10.21 */
+	u_int8_t ga;
+	/* Description - [DWIP]
+Chip Type
+0: Real chip
+1: Emulation
+2: ChipSim
+3: SimX 
+Supported from Quantum-3 and ArcusE */
+	/* 0x10.24 - 0x10.27 */
+	u_int8_t chip_type;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description - LSB of the "base" MAC address of the NIC that was allocate during manufacturing. The NIC derives the MAC addresses for the different PCI PFs from this MAC address. This parameter can be used as a canonical unique identifier of the NIC.
 manufacturing_base_mac of value 0 means field is not supported. */
@@ -903,12 +930,12 @@ struct reg_access_hca_debug_cap {
 	/* 0x0.16 - 0x0.20 */
 	u_int8_t log_min_resource_dump_eq;
 	/* Description - If set, Resource_dump register is supported.
-See Table 1406, "RESOURCE_DUMP Register Layout," on page 1698 */
+See Table 1439, "RESOURCE_DUMP Register Layout," on page 1726 */
 	/* 0x0.22 - 0x0.22 */
 	u_int8_t resource_dump;
 	/* Description - Log(base 2) of the size in granularity of 4KB to be allocated by host in order to accommodate cr_dump.
 0 means feature is not supported.
-See Table 1404, "CORE_DUMP Register Layout," on page 1696 */
+See Table 1437, "CORE_DUMP Register Layout," on page 1724 */
 	/* 0x0.23 - 0x0.27 */
 	u_int8_t log_cr_dump_to_mem_size;
 	/* Description - If set, Core dump of type of specific QP is supported.
@@ -1066,13 +1093,14 @@ Bit 49: If set, MCQS.identifier support CRCS and CRDT tokens
 Bit 51: If set, MTUTC.freq_adj_units=2 is supported
 
 Bit 53: If set, Mlx mlxfwreset with downstream port is supported by FW [Internal]: NIC only, FW rejects reset till user committed that traffic is disabled
+
  */
 	/* 0x28.0 - 0x34.31 */
 	u_int32_t mng_feature_cap_mask[4];
 };
 
 /* Description -   */
-/* Size in bytes - 32 */
+/* Size in bytes - 28 */
 struct reg_access_hca_mcc_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Command to be executed by the FSM
@@ -1106,14 +1134,14 @@ UPDATE_COMPONENT, ACTIVATE_COMPONENET, READ_COMPONENT and READ_PENDING_COMPONENT
 	u_int16_t component_index;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Token representing the current flow executed by the FSM.
-See Section 10.2.1, "Component Update State", on page 870. */
+See Section 10.2.1, "Component Update State", on page 834. */
 	/* 0x8.0 - 0x8.23 */
 	u_int32_t update_handle;
 	/* Description - Auto-update to all matching downstream devices is requested. */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t auto_update;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Current Update FSM state, see Section  10.3.8, "FSM States," on page  874
+	/* Description - Current Update FSM state, see Section  10.3.8, "FSM States," on page  838
 0x0: IDLE
 0x1: LOCKED
 0x2: INITIALIZE
@@ -1127,7 +1155,7 @@ See Section 10.2.1, "Component Update State", on page 870. */
 Other values are reserved */
 	/* 0xc.0 - 0xc.3 */
 	u_int8_t control_state;
-	/* Description - Indicates the successful completion of the instruction, or the reason it failed. See Section  10.3.7, "Error Handling," on page  873
+	/* Description - Indicates the successful completion of the instruction, or the reason it failed. See Section  10.3.7, "Error Handling," on page  837
 0x0: OK
 0x1: ERROR
 0x2: REJECTED_DIGEST_ERR
@@ -1153,6 +1181,22 @@ Other values are reserved */
 0x16: REJECTED_INCOMPATIBLE_FLASH
 0x17: REJECTED_TOKEN_ALREADY_APPLIED
 0x18: REJECTED_FW_BURN_DRAM_NOT_AVAILABLE
+0x19: FW_BURN_REJECTED_INVALID_SECURITY_VERSION
+0x1A: FW_BURN_REJECTED_CERT_CER509 
+0x1B: FW_BURN_REJECTED_CERT_SIGNATURE
+0x1C: FW_BURN_REJECTED_CERT_METADATA
+0x1D: FW_BURN_REJECTED_CERT_INTERNAL_ERROR_0 
+0x1E: FW_BURN_REJECTED_CERT_NO_PLACE
+0x1F: FW_BURN_REJECTED_CERT_REMOVAL_NO_MATCH_CERT_UIDD
+0x20: FW_BURN_REJECTED_CERTI_INTERNAL_ERROR_1 
+0x21: FW_BURN_REJECTED_CERT_INTERNAL_ERROR_2 0x22: FW_BURN_REJECTED_CERT_OF_NUM_OF_SWAP
+0x23: FW_BURN_REJECTED_CERT_INTERNAL_ERROR_3 
+0x24: FW_BURN_REJECTED_CERT_INTERNAL_ERROR_4 
+0x25: FW_BURN_REJECTED_CERT_NOT_ALLOWED_SAME_CERT_UIDD 
+0x26: FW_BURN_REJECTED_CERTIFICATE_INTERNAL_ERROR_5 
+0x27: FW_BURN_REJECTED_CERTIFICATE_INTERNAL_ERROR_6 
+0x28: REJECTED_FLASH_WP
+
 Other values should be treated as an unknown error. */
 	/* 0xc.8 - 0xc.15 */
 	u_int8_t error_code;
@@ -1208,7 +1252,7 @@ struct reg_access_hca_mcda_reg_ext {
 	/* 0x0.0 - 0x0.23 */
 	u_int32_t update_handle;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Offset of accessed address relative to component start. Accesses must be in accordance to log_mcda_word_size in Table 2252, "MCQI CAPABILITIES Info Layout," on page 2610 */
+	/* Description - Offset of accessed address relative to component start. Accesses must be in accordance to log_mcda_word_size in Table 2176, "MCQI CAPABILITIES Info Layout," on page 2434 */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t offset;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -1245,6 +1289,12 @@ NIC: Range 0 .. MGPIR.num_of_modules -1
  */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t module;
+	/* Description - [DWIP]:
+Page Number Valid
+0: write page number
+1: don't write page number */
+	/* 0x0.29 - 0x0.29 */
+	u_int8_t pnv;
 	/* Description - Lock Page bit. 
 When bit is set, FW can access the last accessed page.
 After boot and ISSU, default value is 0.
@@ -1257,7 +1307,7 @@ After boot and ISSU, default value is 0.
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t device_address;
 	/* Description - Page number
-Reserved when MCIA.l = 1 */
+Reserved when MCIA.l = 1 or when MCIA.pnv = 0 */
 	/* 0x4.16 - 0x4.23 */
 	u_int8_t page_number;
 	/* Description - I2C device address
@@ -1347,11 +1397,11 @@ If size is invalid, FW will return an error. */
 	u_int16_t data_size;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description - Properties set structure according to info_type.
-CAPABILITIES - See Table 2252, "MCQI CAPABILITIES Info Layout," on page 2610
-VERSION - See Table 2254, "MCQI VERSION Info Layout," on page 2612
-ACTIVATION_METHOD - See Table 2258, "MCQI ACTIVATION_METHOD Info Layout," on page 2614
-LINKX_PROPERTIES - See Table 2260, "MCQI LINKX_PROPERTIES Info Layout," on page 2615
-CLOCK_SOURCE_PROPERTIES - See Table 2262, "MCQI CLOCK_SOURCE_PROPERTIES Layout," on page 2617 */
+CAPABILITIES - See Table 2176, "MCQI CAPABILITIES Info Layout," on page 2434
+VERSION - See Table 2178, "MCQI VERSION Info Layout," on page 2436
+ACTIVATION_METHOD - See Table 2182, "MCQI ACTIVATION_METHOD Info Layout," on page 2438
+LINKX_PROPERTIES - See Table 2184, "MCQI LINKX_PROPERTIES Info Layout," on page 2439
+CLOCK_SOURCE_PROPERTIES - See Table 2186, "MCQI CLOCK_SOURCE_PROPERTIES Layout," on page 2441 */
 	/* 0x18.0 - 0x90.31 */
 	union reg_access_hca_mcqi_reg_data_auto_ext data;
 };
@@ -1360,7 +1410,7 @@ CLOCK_SOURCE_PROPERTIES - See Table 2262, "MCQI CLOCK_SOURCE_PROPERTIES Layout,"
 /* Size in bytes - 16 */
 struct reg_access_hca_mcqs_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Component Index. Values range from 1 to the last component indicated by last_index_flag. */
+	/* Description - Component Index. Values range from 0 to the last component indicated by last_index_flag. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t component_index;
 	/* Description - Device number.
@@ -1392,7 +1442,7 @@ Other values are reserved */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t identifier;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Component state in update flow, see Section  10.2.1, "Component Update State," on page  870:
+	/* Description - Component state in update flow, see Section  10.2.1, "Component Update State," on page  834:
 0x0: IDLE
 0x1: IN_PROGRESS
 0x2: APPLIED
@@ -1623,6 +1673,13 @@ struct reg_access_hca_mfsv_reg_ext {
 	/* Description - EFUSEs programming method.0: manually. Upon boot, if FW indicates that FW_sec_ver_stat is 1 and only if EFUSEs_prog_en is 1, it will program the EFUSEs as needed.1: automatically. Upon boot, if FW indicates that FW_sec_ver_stat is 1, it will program the EFUSEs as needed. */
 	/* 0x0.3 - 0x0.3 */
 	u_int8_t efuses_prog_method;
+	/* Description - [NIC Only]
+0:N/A - No info about fuse failure
+1: No failure
+2: Failure identified
+3: Reserved */
+	/* 0x0.8 - 0x0.9 */
+	u_int8_t fuse_failure;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Image security version value */
 	/* 0x4.0 - 0x4.31 */
@@ -1637,20 +1694,20 @@ struct reg_access_hca_mfsv_reg_ext {
 /* Size in bytes - 160 */
 struct reg_access_hca_mgir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see Table 2276, "Hardware Info Layout," on page 2628 */
+	/* Description - Hardware Information, see Table 2200, "Hardware Info Layout," on page 2453 */
 	/* 0x0.0 - 0x1c.31 */
 	struct reg_access_hca_mgir_hardware_info_ext hw_info;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description - Firmware Information, see Table 2279, "Firmware Info Layout," on page 2631 */
+	/* Description - Firmware Information, see Table 2203, "Firmware Info Layout," on page 2456 */
 	/* 0x20.0 - 0x5c.31 */
 	struct reg_access_hca_mgir_fw_info_ext fw_info;
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
-	/* Description - Software Information, see Table 2281, "Software Info Layout," on page 2633
+	/* Description - Software Information, see Table 2205, "Software Info Layout," on page 2459
 This field indicates the oldest software version compatible with the current firmware */
 	/* 0x60.0 - 0x7c.31 */
 	struct reg_access_hca_mgir_sw_info_ext sw_info;
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
-	/* Description - Development Information, see Table 2285, "Development Info Layout," on page 2637 */
+	/* Description - Development Information, see Table 2209, "Development Info Layout," on page 2462 */
 	/* 0x80.0 - 0x98.31 */
 	struct reg_access_hca_mgir_dev_info_ext dev_info;
 };
@@ -1730,7 +1787,7 @@ struct reg_access_hca_mnvia_reg_ext {
 	/* 0x0.0 - 0x0.2 */
 	u_int8_t target;
 	/* Description - The entity which perform the invalidate.
-The encoding same as writer_id in Configuration Item register (See Table 2335, "Configuration Item Header Layout," on page 2671). */
+The encoding same as writer_id in Configuration Item register (See Table 2265, "Configuration Item Header Layout," on page 2498). */
 	/* 0x0.4 - 0x0.8 */
 	u_int8_t writer_id;
 };
@@ -1740,14 +1797,14 @@ The encoding same as writer_id in Configuration Item register (See Table 2335, "
 struct reg_access_hca_mnvqc_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Configuration item type according to its class. 
-Table 2337, "Configuration Item Data Type Class Global Layout," on page 2675
-Table 2339, "Configuration Item Data Type Class Physical Port Layout," on page 2675
-Table 2341, "Configuration Item Data Type Class Per Host-PF Layout," on page 2676
-Table 2343, "Configuration Item Data Type Class Log Layout," on page 2676
-Table 2345, "Configuration Item Data Type Class File Layout," on page 2677
-Table 2347, "Configuration Item Data Type Class Host Layout," on page 2677
+Table 2267, "Configuration Item Data Type Class Global Layout," on page 2502
+Table 2269, "Configuration Item Data Type Class Physical Port Layout," on page 2502
+Table 2271, "Configuration Item Data Type Class Per Host-PF Layout," on page 2503
+Table 2273, "Configuration Item Data Type Class Log Layout," on page 2503
+Table 2275, "Configuration Item Data Type Class File Layout," on page 2504
+Table 2277, "Configuration Item Data Type Class Host Layout," on page 2504
 
-Table 2349, "Configuration Item Data Type Class Module Layout," on page 2678 */
+Table 2279, "Configuration Item Data Type Class Module Layout," on page 2505 */
 	/* 0x0.0 - 0x0.31 */
 	u_int32_t type;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -2187,7 +2244,7 @@ struct reg_access_hca_mtrc_cap_reg_ext {
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t num_string_db;
 	/* Description - Indicates the version of the tracing mechanism.
-See Section 25.3.4.1, "Timestamp Event Traces", on page 1598
+See Section 24.3.4.1, "Timestamp Event Traces", on page 1396
 0x0: VER_0
 0x1: VER_1
 Other values are reserved.
@@ -2317,7 +2374,7 @@ struct reg_access_hca_nic_cap_ext_reg_ext {
 	u_int16_t cap_group;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Capability information according to cap_group.
-For DPA_CAP See Table 1440, "DPA_CAP Capability Layout," on page 1722 */
+For DPA_CAP See Table 1326, "DPA_CAP Capability Layout," on page 1526 */
 	/* 0x10.0 - 0x7c.31 */
 	u_int32_t cap_data[28];
 };
@@ -2595,6 +2652,7 @@ NOTE: setting reset while module is plugged-in will result in transition of oper
 
 [DWIP] 0xf: Boot_error
 [DWIP] 0x10: Recovery_error
+[DWIP] 0x11: Submodule_failure
 Valid only when oper_status = 4'b0011 */
 	/* 0x4.8 - 0x4.12 */
 	u_int8_t error_type;
@@ -2697,14 +2755,11 @@ Other values are reserved. */
 	/* Description - Local port number */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t local_port;
-	/* Description - When AN is disabled, use aba TX set.
- */
-	/* 0x0.24 - 0x0.24 */
-	u_int8_t force_tx_aba_param;
 	/* Description - Valid only when ee_tx_ready is set, otherwise field is ignored.
 0: do_not_generate_event
 Bit 0: generate_tx_ready_event - When set, PTSE register will generate event when Transmitter is generating valid signal on the line
-Bit 1: generate_tx_not_ready_event - when set, PTSE will generate event when the transmitter stopped transmitting after Tx_ready was set. */
+Bit 1: generate_tx_not_ready_event - when set, PTSE will generate event when the transmitter stopped transmitting after Tx_ready was set.
+Note: if both tx_not_ready and tx_ready are set, one toggle event may be received instead of 2 consecutive events of not ready --> ready. */
 	/* 0x0.26 - 0x0.27 */
 	u_int8_t tx_ready_e;
 	/* Description - Event Enable for tx_ready_e.
@@ -2808,7 +2863,6 @@ Bit 0 - SGMII */
 	u_int32_t eth_proto_capability;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - InfiniBand port speed supported (bitmask)
-ib_link_speed <= ib_proto_capability[7:0]
 Bit 0: SDR
 Bit 1: DDR
 Bit 2: QDR
@@ -2908,7 +2962,7 @@ Note: Ignored when an_disable_admin is not set */
 /* Size in bytes - 256 */
 struct reg_access_hca_resource_dump_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - See Section 25.10, "Resource Dump", on page 1609. */
+	/* Description - See Section 24.10, "Resource Dump", on page 1407. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t segment_type;
 	/* Description - Sequence number. 0 on first call of dump and incremented on each more dump. */
@@ -3010,7 +3064,7 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* 0x0.0 - 0x78.31 */
 	struct reg_access_hca_mcqi_activation_method_ext mcqi_activation_method_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
+	/* 0x0.0 - 0x18.31 */
 	struct reg_access_hca_mcc_reg_ext mcc_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x7c.31 */
@@ -3332,7 +3386,7 @@ void reg_access_hca_mcc_reg_ext_pack(const struct reg_access_hca_mcc_reg_ext *pt
 void reg_access_hca_mcc_reg_ext_unpack(struct reg_access_hca_mcc_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
 void reg_access_hca_mcc_reg_ext_print(const struct reg_access_hca_mcc_reg_ext *ptr_struct, FILE *fd, int indent_level);
 unsigned int reg_access_hca_mcc_reg_ext_size(void);
-#define REG_ACCESS_HCA_MCC_REG_EXT_SIZE    (0x20)
+#define REG_ACCESS_HCA_MCC_REG_EXT_SIZE    (0x1c)
 void reg_access_hca_mcc_reg_ext_dump(const struct reg_access_hca_mcc_reg_ext *ptr_struct, FILE *fd);
 /* mcda_reg_ext */
 void reg_access_hca_mcda_reg_ext_pack(const struct reg_access_hca_mcda_reg_ext *ptr_struct, u_int8_t *ptr_buff);
