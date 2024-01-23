@@ -1654,6 +1654,7 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
     bool rmdtCompFound = false;
     bool rmcsCompFound = false;
     bool foundApplicableTLV = false;
+    bool foundFileDeviceID = false;
     bool idMlnxCompFound = false;
     bool idVendorCompFound = false;
     bool deviceUniqueFound = false;
@@ -1703,6 +1704,10 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
         {
             foundApplicableTLV = true;
         }
+        else if (tlv->_name == "file_device_id")
+        {
+            foundFileDeviceID = true;
+        }
         else if (tlv->_name == "file_device_unique")
         {
             deviceUniqueFound = true;
@@ -1740,10 +1745,17 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
         throw MlxcfgException("Only one component is allowed");
     }
 
-    // At least one TLV must be file_applicable_to
-    if (!foundApplicableTLV)
+    // At least one TLV must be file_applicable_to or file_device_id
+    if (!(foundApplicableTLV || foundFileDeviceID))
     {
-        throw MlxcfgException("At least one file_applicable_to tlv must be in the "
+        throw MlxcfgException("At least one file_applicable_to or file_device_id tlv must be in the "
+                              "configuration file");
+    }
+
+    // both file_applicable_to and file_device_id can't exist in the same file
+    if (foundApplicableTLV && foundFileDeviceID)
+    {
+        throw MlxcfgException("Both file_applicable_to and file_device_id tlv must not be in the "
                               "configuration file");
     }
 }
@@ -1767,7 +1779,7 @@ void GenericCommander::orderConfTlvs(vector<TLVConf*>& tlvs)
     VECTOR_ITERATOR(TLVConf*, tlvs, it)
     {
         TLVConf* tlv = *it;
-        if (tlv->_name == "file_applicable_to")
+        if (tlv->_name == "file_applicable_to" || tlv->_name == "file_device_id")
         {
             *it = *(tlvs.begin() + 1);
             *(tlvs.begin() + 1) = tlv;
