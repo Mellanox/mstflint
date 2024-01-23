@@ -272,29 +272,21 @@ u_int32_t MlxlinkCommander::getTechnologyFromMGIR()
 
 void MlxlinkCommander::getProductTechnology()
 {
-    _productTechnology = getTechnologyFromMGIR();
-
-    if (_productTechnology)
+    // Use SLRG to get the product technology, for backward compatibility
+    try
     {
+        sendPrmReg(ACCESS_REG_SLTP, GET);
+        _productTechnology = getVersion(getFieldValue("version"));
         if (_productTechnology <= 2)
         {
             _productTechnology = PRODUCT_28NM;
         }
     }
-    else
+    catch (MlxRegException& exc)
     {
-        // Use SLRG to get the product technology, for backward compatibility
-        try
+        if (!_productTechnology)
         {
-            sendPrmReg(ACCESS_REG_SLRG, GET);
-            _productTechnology = getVersion(getFieldValue("version"));
-        }
-        catch (MlxRegException& exc)
-        {
-            if (!_productTechnology)
-            {
-                throw MlxRegException("Unable to get product technology: %s", exc.what_s().c_str());
-            }
+            throw MlxRegException("Unable to get product technology: %s", exc.what_s().c_str());
         }
     }
 }
