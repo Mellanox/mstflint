@@ -36,8 +36,8 @@
 
 MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0)
 {
-    _mf = NULL;
-    _regLib = NULL;
+    _mf = nullptr;
+    _regLib = nullptr;
     _gvmiAddress = 0;
 
     _localPort = 0;

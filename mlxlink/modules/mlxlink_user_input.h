@@ -55,6 +55,10 @@ public:
     u_int32_t _depth;
     u_int32_t _pcieIndex;
     u_int32_t _node;
+    u_int32_t _uniqueCmds;
+    u_int32_t _uniqueCableCmds;
+    u_int32_t _uniquePcieCmds;
+    u_int32_t _networkCmds;
     bool _sendPrbs;
     bool _sendPprt;
     bool _sendPptt;
@@ -65,6 +69,7 @@ public:
     bool _sendPepcANMode;
     bool _pprtTuningTypeFlag;
     bool _toggle;
+    bool _linkModeForce;
     bool _pcie;
     bool _links;
     bool _sendDepth;
@@ -88,7 +93,10 @@ public:
     bool _write;
     bool _read;
     bool gradeScanPerLane;
+    bool autoCsvName;
 
+    string _device;
+    string _extAdbFile;
     string _portType;
     string _paosCmd;
     string _pplmFec;
@@ -104,11 +112,14 @@ public:
     string _testMode;
     string _forceMode;
     string _anMode;
-    u_int32_t _iteration;
+    string _logFile;
     double _testTime;
     u_int32_t _feedbackIndex;
     u_int32_t _feedbackData;
+    u_int32_t _iteration;
     std::map<u_int32_t, u_int32_t> _sltpParams;
+    std::vector<std::string> _ptysSpeeds;
+    std::vector<string> _amberPagesStr;
     u_int32_t _lane;
     u_int32_t _gvmiAddress;
     vector<string> _bytesToWrite;
@@ -118,6 +129,7 @@ public:
     std::map<u_int32_t, bool> _prbsLanesToSet;
     int _setGroup;
     int _showGroup;
+    int _slrgTestIterations;
     vector<string> _labelPorts;
 
     string eyeSelect;
