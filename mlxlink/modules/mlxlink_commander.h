@@ -378,9 +378,6 @@ public:
     bool checkGBPpaosDown();
     bool checkPaosDown();
     bool checkPpaosTestMode();
-    void getSltpParamsFromVector(std::vector<string> sltpParams);
-    void getprbsLanesFromParams(std::vector<string> prbsLanesParams);
-    std::vector<string> parseParamsFromLine(const string& ParamsLine);
     bool isSpect2WithGb();
     bool isIbLocalPortValid(u_int32_t localPort);
     void fillIbPortGroupMap(u_int32_t localPort, u_int32_t labelPort, u_int32_t group, bool splitReady);
@@ -430,7 +427,6 @@ public:
     void preparePowerAndCdrSection(bool valid);
     void prepareDDMSection(bool valid, bool isModuleExtSupported);
     virtual void preparePrtlSection();
-    void strToInt32(char* str, u_int32_t& value);
     template<typename T, typename Q>
     string getValueAndThresholdsStr(T value, Q lowTH, Q highTH);
     string getSltpFieldStr(const PRM_FIELD& field);
@@ -578,10 +574,6 @@ public:
     u_int32_t _cableMediaType;
     u_int32_t _fecActive;
     u_int32_t _protoActive;
-    u_int32_t _uniqueCmds;
-    u_int32_t _uniqueCableCmds;
-    u_int32_t _uniquePcieCmds;
-    u_int32_t _networkCmds;
     u_int32_t _anDisable;
     u_int32_t _speedBerCsv;
     u_int32_t _cableIdentifier;
@@ -600,7 +592,6 @@ public:
     u_int32_t _linkSpeed;
     u_int32_t _groupOpcode;
     string _extAdbFile;
-    string _device;
     string _fwVersion;
     string _speedStrG;
     string _speedForce;
@@ -623,7 +614,6 @@ public:
     bool _ignorePortStatus;
     bool _isGboxPort;
     bool _ignoreIbFECCheck;
-    std::vector<std::string> _ptysSpeeds;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;
     string _allUnhandledErrors;

@@ -46,6 +46,11 @@ UserInput::UserInput()
     _pcieIndex = 0;
     _node = 0;
     _lane = 0;
+    _networkCmds = 0;
+    _uniqueCmds = 0;
+    _networkCmds = 0;
+    _uniqueCableCmds = 0;
+    _uniquePcieCmds = 0;
     _sendPrbs = false;
     _sendPprt = false;
     _sendPptt = false;
@@ -56,6 +61,7 @@ UserInput::UserInput()
     _sendPepcANMode = false;
     _pprtTuningTypeFlag = false;
     _toggle = true;
+    _linkModeForce = false;
     _pcie = false;
     _links = false;
     _showSltp = false;
@@ -78,6 +84,10 @@ UserInput::UserInput()
     _ddm = false;
     _write = false;
     _read = false;
+
+    _device = "";
+    _extAdbFile = "";
+    _logFile = "";
     _portType = "NETWORK";
     _paosCmd = "";
     _pplmFec = "";
@@ -103,7 +113,9 @@ UserInput::UserInput()
     _len = -1;
     _setGroup = -1;
     _showGroup = -1;
+    _slrgTestIterations = -1;
 
+    autoCsvName = false;
     eyeSelect = "";
     eyeSelectSpecified = false;
     measureTime = -1;
