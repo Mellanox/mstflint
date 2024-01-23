@@ -1348,95 +1348,42 @@ void setPrintTitle(MlxlinkCmdPrint& mlxlinkCmdPrint, string title, u_int32_t siz
 
 bool isSpeed25GPerLane(u_int32_t speed, u_int32_t protocol)
 {
-    bool valid = false;
-
     if (protocol == IB)
     {
-        if (speed == IB_LINK_SPEED_EDR)
-        {
-            valid = true;
-        }
+        return speed & IB_LINK_SPEED_EDR;
     }
-    else if (protocol == ETH)
-    {
-        if (speed == ETH_LINK_SPEED_100G_CR4 || speed == ETH_LINK_SPEED_100G_KR4 || speed == ETH_LINK_SPEED_100G_LR4 ||
-            speed == ETH_LINK_SPEED_100G_SR4 || speed == ETH_LINK_SPEED_50G_KR2 || speed == ETH_LINK_SPEED_50G_SR2 ||
-            speed == ETH_LINK_SPEED_50G_CR2 || speed == ETH_LINK_SPEED_25G_CR || speed == ETH_LINK_SPEED_25G_KR ||
-            speed == ETH_LINK_SPEED_25G_SR || speed == ETH_LINK_SPEED_50G_KR4)
-        {
-            valid = true;
-        }
-    }
-
-    return valid;
+    return (speed & ETH_LINK_SPEED_25G_LANE);
 }
 
 bool isSpeed50GPerLane(u_int32_t speed, u_int32_t protocol)
 {
-    bool valid = false;
-
     if (protocol == IB)
     {
-        if (speed == IB_LINK_SPEED_HDR)
-        {
-            valid = true;
-        }
+        return speed & IB_LINK_SPEED_HDR;
     }
-    else if (protocol == ETH)
-    {
-        if (speed == ETH_LINK_SPEED_EXT_50GAUI_1 || speed == ETH_LINK_SPEED_EXT_100GAUI_2 ||
-            speed == ETH_LINK_SPEED_EXT_200GAUI_4 || speed == ETH_LINK_SPEED_EXT_400GAUI_8)
-        {
-            valid = true;
-        }
-    }
-
-    return valid;
+    return (speed & ETH_LINK_SPEED_50G_LANE);
 }
 
 bool isSpeed100GPerLane(u_int32_t speed, u_int32_t protocol)
 {
-    bool valid = false;
-
     if (protocol == IB)
     {
-        if (speed == IB_LINK_SPEED_NDR)
-        {
-            valid = true;
-        }
+        return speed & IB_LINK_SPEED_NDR;
     }
-    else if (protocol == ETH)
-    {
-        if (speed == ETH_LINK_SPEED_EXT_100GAUI_1 || speed == ETH_LINK_SPEED_EXT_200GAUI_2 ||
-            speed == ETH_LINK_SPEED_EXT_400GAUI_4 || speed == ETH_LINK_SPEED_EXT_800GAUI_8)
-        {
-            valid = true;
-        }
-    }
-
-    return valid;
+    return (speed & ETH_LINK_SPEED_100G_LANE);
 }
 
 bool isSpeed200GPerLane(u_int32_t speed, u_int32_t protocol)
 {
-    bool valid = false;
-
-    if (protocol == IB)
-    {
-        if (speed == IB_LINK_SPEED_XDR)
-        {
-            valid = true;
-        }
-    }
-
-    return valid;
+    (void)protocol;
+    return (speed & LINK_SPEED_200G_LANE);
 }
 
 bool isNRZSpeed(u_int32_t speed, u_int32_t protocol)
 {
     return isSpeed25GPerLane(speed, protocol) ||
            !(isSpeed50GPerLane(speed, protocol) || isSpeed100GPerLane(speed, protocol) ||
-             isSpeed100GPerLane(speed, protocol));
+             isSpeed200GPerLane(speed, protocol));
 }
 
 string linkWidthMaskToStr(u_int32_t width)
