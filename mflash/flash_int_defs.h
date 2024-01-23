@@ -91,7 +91,7 @@ typedef enum flash_densities
     FD_64 = 0x17,
     FD_128 = 0x18,
     FD_256 = 0x19,
-    FD_512 = 0x1a
+    FD_512 = 0x1a // flash vendors advertise 0x20
 } flash_densities_t;
 
 #endif /* USER_MFLASH_FLASH_INT_DEFS_H_ */
