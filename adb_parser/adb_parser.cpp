@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 
 #include "common/tools_algorithm.h"
 
@@ -138,63 +139,13 @@ void Adb::raiseException(bool allowMultipleExceptions, string exceptionTxt, cons
 }
 
 /**
- * Function: Adb::getAdbExceptionsMap
- * This function return the adb exception map
- **/
-void Adb::fetchAdbExceptionsMap(ExceptionsMap otherMap)
-{
-    vector<string> fatals = otherMap[ExceptionHolder::FATAL_EXCEPTION];
-    for (vector<string>::iterator it = fatals.begin(); it != fatals.end(); ++it)
-    {
-        insertNewException(ExceptionHolder::FATAL_EXCEPTION, *it);
-    }
-    vector<string> errors = otherMap[ExceptionHolder::ERROR_EXCEPTION];
-    for (vector<string>::iterator it = errors.begin(); it != errors.end(); ++it)
-    {
-        insertNewException(ExceptionHolder::ERROR_EXCEPTION, *it);
-    }
-    vector<string> warnings = otherMap[ExceptionHolder::WARN_EXCEPTION];
-    for (vector<string>::iterator it = warnings.begin(); it != warnings.end(); ++it)
-    {
-        insertNewException(ExceptionHolder::WARN_EXCEPTION, *it);
-    }
-}
-
-/**
- * Function: Adb::insertNewException
- * This function take the excpetion type [FATAL:0, ERROR:1, WARNING:2] and the exception string
- * Then it insert it to the adb exception map
- **/
-void Adb::insertNewException(const string exceptionType, string exceptionTxt)
-{
-    adbExceptionMap[exceptionType].push_back(exceptionTxt);
-}
-
-/**
  * Function: Adb::printAdbExceptionMap
  * This function will pring the content of the Adb Exception Map
  **/
 string Adb::printAdbExceptionMap()
 {
-    string errorStr = "";
-    vector<string> fatals = adbExceptionMap[ExceptionHolder::FATAL_EXCEPTION];
-    for (vector<string>::iterator it = fatals.begin(); it != fatals.end(); ++it)
-    {
-        errorStr += "-" + ExceptionHolder::FATAL_EXCEPTION + "- " + *it + ";";
-    }
-    vector<string> errors = adbExceptionMap[ExceptionHolder::ERROR_EXCEPTION];
-    for (vector<string>::iterator it = errors.begin(); it != errors.end(); ++it)
-    {
-        errorStr += "-" + ExceptionHolder::ERROR_EXCEPTION + "- " + *it + ";";
-    }
-    vector<string> warnings = adbExceptionMap[ExceptionHolder::WARN_EXCEPTION];
-    for (vector<string>::iterator it = warnings.begin(); it != warnings.end(); ++it)
-    {
-        errorStr += "-" + ExceptionHolder::WARN_EXCEPTION + "- " + "- " + *it + ";";
-    }
-    return errorStr;
+    return ExceptionHolder::printAdbExceptionMap();
 }
-
 /**
  * Function: Adb::load
  **/
@@ -209,7 +160,10 @@ bool Adb::load(string fname,
                string logFileStr,
                bool checkDsAlign,
                bool enforceGuiChecks,
-               bool force_pad_32)
+               bool force_pad_32,
+               bool variable_alignment,
+               string root_node_name)
+
 {
     try
     {
@@ -220,8 +174,8 @@ bool Adb::load(string fname,
             AdbParser::setAllowMultipleExceptionsTrue();
         }
         _logFile->init(logFileStr, allowMultipleExceptions);
-        AdbParser p(fname, this, addReserved, evalExpr, strict, includePath, enforceExtraChecks, checkDsAlign,
-                    enforceGuiChecks, force_pad_32);
+        AdbParser p(fname, this, root_node_name, addReserved, evalExpr, strict, includePath, enforceExtraChecks, checkDsAlign,
+                    enforceGuiChecks, force_pad_32, variable_alignment);
         _checkDsAlign = checkDsAlign;
         _enforceGuiChecks = enforceGuiChecks;
         if (!p.load())
@@ -238,7 +192,7 @@ bool Adb::load(string fname,
             _lastError = "Empty project, no nodes were found";
             if (allowMultipleExceptions)
             {
-                insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
+                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
             }
             status = false;
         }
@@ -249,7 +203,6 @@ bool Adb::load(string fname,
         }
         if (allowMultipleExceptions && ExceptionHolder::getNumberOfExceptions() > 0)
         {
-            fetchAdbExceptionsMap(ExceptionHolder::getAdbExceptionsMap());
             status = false;
         }
         return status;
@@ -259,7 +212,7 @@ bool Adb::load(string fname,
         _lastError = e.what_s();
         if (allowMultipleExceptions)
         {
-            insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
+            ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
         }
         return false;
     }
@@ -268,11 +221,16 @@ bool Adb::load(string fname,
 /**
  * Function: Adb::loadFromString
  **/
-bool Adb::loadFromString(const char* adbContents, bool addReserved, bool evalExpr, bool strict, bool enforceExtraChecks)
+bool Adb::loadFromString(const char* adbContents,
+                         bool addReserved,
+                         bool evalExpr,
+                         bool strict,
+                         bool enforceExtraChecks,
+                         string root_node_name)
 {
     try
     {
-        AdbParser p(string(), this, addReserved, evalExpr, strict, "", enforceExtraChecks);
+        AdbParser p(string(), this, root_node_name, addReserved, evalExpr, strict, "", enforceExtraChecks);
         mainFileName = OS_PATH_SEP;
         if (!p.loadFromString(adbContents))
         {
@@ -334,7 +292,7 @@ string Adb::toXml(vector<string> nodeNames, bool addRootNode, string rootName, s
             for (NodesMap::iterator it = nodesMap.begin(); it != nodesMap.end(); it++)
             {
                 AdbNode* node = it->second;
-                xml += node->toXml(addPrefix);
+                xml += node->toXml(addPrefix) + "\n";
             }
         }
         else
@@ -437,7 +395,7 @@ AdbInstance* Adb::addMissingNodes(int depth, bool allowMultipleExceptions)
         _lastError = exp.what_s();
         if (allowMultipleExceptions)
         {
-            insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
+            ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
         }
         return NULL;
     }
@@ -456,7 +414,11 @@ AdbInstance* Adb::createLayout(string rootNodeName,
                                bool isExprEval,
                                int depth,
                                bool ignoreMissingNodes,
-                               bool allowMultipleExceptions)
+                               bool allowMultipleExceptions,
+                               bool optimize_time,
+                               uint32_t root_offset,
+                               string root_display_name,
+                               PartitionTree* partition_tree)
 {
     try
     {
@@ -465,19 +427,21 @@ AdbInstance* Adb::createLayout(string rootNodeName,
         it = nodesMap.find(rootNodeName);
         if (it == nodesMap.end())
         {
-            raiseException(allowMultipleExceptions,
-                           "Can't find definition for node \"" + rootNodeName + "\"",
-                           ExceptionHolder::FATAL_EXCEPTION);
+            throw AdbException("Can't find definition for node \"" + rootNodeName + "\"");
         }
 
         AdbNode* nodeDesc = it->second;
-        nodeDesc->inLayout = true;
+        nodeDesc->inLayout = true && depth == -1;
         AdbInstance* rootItem = new AdbInstance();
         rootItem->fieldDesc = NULL;
         rootItem->nodeDesc = nodeDesc;
         rootItem->parent = NULL;
-        rootItem->layout_item_name = nodeDesc->name;
-        rootItem->offset = 0;
+        rootItem->layout_item_name = root_display_name.size() > 0 ? root_display_name : nodeDesc->name;
+        if (optimize_time)
+        {
+            rootItem->full_path = rootItem->layout_item_name;
+        }
+        rootItem->offset = root_offset;
         rootItem->size = nodeDesc->size;
         if (isExprEval)
         {
@@ -495,9 +459,22 @@ AdbInstance* Adb::createLayout(string rootNodeName,
 
         for (size_t i = 0; (depth == -1 || depth > 0) && i < nodeDesc->fields.size(); i++)
         {
+            PartitionTree* next_partition_tree = nullptr;
+            if (partition_tree)
+            {
+                auto found_partition_tree =
+                  find_if(partition_tree->sub_items.begin(), partition_tree->sub_items.end(),
+                          [&nodeDesc, i](PartitionTree* si) { return si->name == nodeDesc->fields[i]->name; });
+                if (found_partition_tree != partition_tree->sub_items.end())
+                {
+                    next_partition_tree = *found_partition_tree;
+                }
+            }
             createInstance(nodeDesc->fields[i], rootItem, emptyVars, isExprEval, depth == -1 ? -1 : depth - 1,
-                           ignoreMissingNodes, allowMultipleExceptions);
+                           ignoreMissingNodes, allowMultipleExceptions, optimize_time, next_partition_tree);
         }
+
+        nodeDesc->inLayout = false;
 
         // Now set the instance attributes (override field attrs), only if this is root node instantiation
         if (isExprEval && rootNodeName == rootNode && depth == -1)
@@ -539,6 +516,7 @@ AdbInstance* Adb::createLayout(string rootNodeName,
             mstflint::common::algorithm::split(path, splitVal, mstflint::common::algorithm::is_any_of(string(".")));
             for (size_t i = 0; i < path.size(); i++)
             {
+                // TODO: The code below is shady, looks buggy
                 if (path[i] == "#(parent)" || path[i] == "$(parent)")
                 {
                     curInst = curInst->parent;
@@ -683,7 +661,6 @@ AdbInstance* Adb::createLayout(string rootNodeName,
 
         if (allowMultipleExceptions && ExceptionHolder::getNumberOfExceptions() > 0)
         {
-            fetchAdbExceptionsMap(ExceptionHolder::getAdbExceptionsMap());
             delete rootItem;
             rootItem = NULL;
         }
@@ -694,7 +671,7 @@ AdbInstance* Adb::createLayout(string rootNodeName,
         _lastError = exp.what_s();
         if (allowMultipleExceptions)
         {
-            insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
+            ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
         }
         return NULL;
     }
@@ -743,8 +720,19 @@ bool Adb::createInstance(AdbField* field,
                          bool isExprEval,
                          int depth,
                          bool ignoreMissingNodes,
-                         bool allowMultipleExceptions)
+                         bool allowMultipleExceptions,
+                         bool optimize_time,
+                         PartitionTree* partition_tree)
+
 {
+    // Stop on exclude tree leaf
+    auto stop_on_partition_tree = partition_tree && partition_tree->stop;
+
+    if (stop_on_partition_tree)
+    {
+        partition_tree = prune_up(partition_tree);
+    }
+
     for (u_int32_t i = 0; i < field->arrayLen(); i++)
     {
         AdbInstance* inst{nullptr};
@@ -764,14 +752,16 @@ bool Adb::createInstance(AdbField* field,
                 }
                 node = nodes_it->second;
             }
-            inst = new AdbInstance(field, node, i, parent, vars, bigEndianArr, isExprEval, stoi(version));
+            inst = new AdbInstance(field, node, i, parent, vars, bigEndianArr, stoi(version), stop_on_partition_tree,
+                                   optimize_time, partition_tree);
         }
         catch (AdbException& exp)
         {
             delete inst;
             if (allowMultipleExceptions)
             {
-                insertNewException(ExceptionHolder::ERROR_EXCEPTION, exp.what());
+                ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exp.what());
+                return false;
             }
             else
             {
@@ -779,89 +769,108 @@ bool Adb::createInstance(AdbField* field,
             }
         }
 
-        /* if union and uses selecotr field add it to _unionSelectorEvalDeffered in order to defferred evaluation */
-        found_attr = inst->getInstanceAttr("union_selector", attr_val);
-        if (inst->isUnion() && found_attr)
-        {
-            _unionSelectorEvalDeffered.push_back(inst);
-        }
-
-        if (isExprEval)
-        {
-            // if the field has a condition attribute
-            if (!inst->inst_ops_props->condition.getCondition().empty())
-            {
-                _conditionInstances.push_back(inst);
-            }
-
-            // if the layout item has a conditional array
-            if (!inst->inst_ops_props->conditionalSize.getCondition().empty())
-            {
-                _conditionalArrays.push_back(inst);
-            }
-        }
-
         checkInstanceOffsetValidity(inst, parent, allowMultipleExceptions);
 
-        if (field->isStruct() && !inst->nodeDesc->fields.empty() && (depth == -1 || depth > 0))
+        if (!stop_on_partition_tree)
         {
-            if (inst->nodeDesc->inLayout)
+            /* if union and uses selecotr field add it to _unionSelectorEvalDeffered in order to defferred evaluation */
+            found_attr = inst->getInstanceAttr("union_selector", attr_val);
+            if (inst->isUnion() && found_attr)
             {
-                delete inst;
-                raiseException(false,
-                               "Cyclic definition of nodes, node: " + field->name + " was already added to the layout",
-                               ExceptionHolder::ERROR_EXCEPTION);
-            }
-            inst->nodeDesc->inLayout = true;
-
-            // // validation 2 TODO: move validation to adbXMLParser
-            // if (inst->size != inst->nodeDesc->size)
-            // {
-            //     inst->nodeDesc->size = inst->size;
-            //     /*throw AdbException("Node +(" + inst->name + ") size (" + to_string(inst->size)) +
-            //      " isn't the same as its instance (" + inst->nodeDesc->name +
-            //      ") (" +  to_string(inst->nodeDesc->size) + ")";*/
-            // }
-
-            for (auto it = inst->nodeDesc->fields.begin(); it != inst->nodeDesc->fields.end(); it++)
-            {
-                createInstance(*it, inst, vars, isExprEval, depth == -1 ? -1 : depth - 1, ignoreMissingNodes,
-                               allowMultipleExceptions);
-            }
-            inst->nodeDesc->inLayout = false;
-
-            if (_checkDsAlign && inst->maxLeafSize != 0 && inst->size % inst->maxLeafSize != 0)
-            {
-                raiseException(allowMultipleExceptions,
-                               "Node: " + inst->nodeDesc->name + " size(" + to_string(inst->size) +
-                                 ") is not aligned with largest leaf(" + to_string(inst->maxLeafSize) + ")",
-                               ExceptionHolder::ERROR_EXCEPTION);
+                _unionSelectorEvalDeffered.push_back(inst);
             }
 
-            if (!inst->isUnion() && inst->subItems.size() > 0)
+            if (isExprEval)
             {
-                std::stable_sort(inst->subItems.begin(), inst->subItems.end(),
-                            compareFieldsPtr<AdbInstance>); // TODO: try to remove this shit
-
-                for (size_t j = 0; j < inst->subItems.size() - 1; j++)
+                // if the field has a condition attribute
+                if (!inst->inst_ops_props->condition.getCondition().empty())
                 {
-                    if (inst->subItems[j + 1]->offset < inst->subItems[j]->offset + inst->subItems[j]->size)
+                    _conditionInstances.push_back(inst);
+                }
+
+                // if the layout item has a conditional array
+                if (!inst->inst_ops_props->conditionalSize.getCondition().empty())
+                {
+                    _conditionalArrays.push_back(inst);
+                }
+            }
+
+            if (field->isStruct() && !inst->nodeDesc->fields.empty() && (depth == -1 || depth > 0))
+            {
+                if (inst->nodeDesc->inLayout)
+                {
+                    delete inst;
+                    inst = nullptr;
+                    raiseException(false,
+                                "Cyclic definition of nodes, node: " + field->name + " was already added to the layout",
+                                ExceptionHolder::ERROR_EXCEPTION);
+                }
+                else
+                {
+                    inst->nodeDesc->inLayout = true && depth == -1;
+                }
+
+
+                // // validation 2 TODO: move validation to adbXMLParser
+                // if (inst->size != inst->nodeDesc->size)
+                // {
+                //     inst->nodeDesc->size = inst->size;
+                //     /*throw AdbException("Node +(" + inst->name + ") size (" + to_string(inst->size)) +
+                //      " isn't the same as its instance (" + inst->nodeDesc->name +
+                //      ") (" +  to_string(inst->nodeDesc->size) + ")";*/
+                // }
+
+                for (auto it = inst->nodeDesc->fields.begin(); it != inst->nodeDesc->fields.end(); it++)
+                {
+                    PartitionTree* next_partition_tree = nullptr;
+                    if (partition_tree)
                     {
-                        string exceptionTxt =
-                          "Field (" + inst->subItems[j + 1]->get_field_name() + ") (" +
-                          formatAddr(inst->subItems[j + 1]->offset, inst->subItems[j + 1]->size).c_str() +
-                          ") overlaps with (" + inst->subItems[j]->get_field_name() + ") (" +
-                          formatAddr(inst->subItems[j]->offset, inst->subItems[j]->size).c_str() + ")";
-                        raiseException(allowMultipleExceptions, exceptionTxt, ExceptionHolder::ERROR_EXCEPTION);
+                        auto found_partition_tree =
+                          find_if(partition_tree->sub_items.begin(), partition_tree->sub_items.end(),
+                                  [&it](PartitionTree* si) { return si->name == (*it)->name; });
+                        if (found_partition_tree != partition_tree->sub_items.end())
+                        {
+                            next_partition_tree = *found_partition_tree;
+                        }
+                    }
+                    createInstance(*it, inst, vars, isExprEval, depth == -1 ? -1 : depth - 1, ignoreMissingNodes,
+                                allowMultipleExceptions, next_partition_tree);
+                }
+                inst->nodeDesc->inLayout = false;
+
+                if (_checkDsAlign && inst->maxLeafSize != 0 && inst->size % inst->maxLeafSize != 0)
+                {
+                    raiseException(allowMultipleExceptions,
+                                "Node: " + inst->nodeDesc->name + " size(" + to_string(inst->size) +
+                                    ") is not aligned with largest leaf(" + to_string(inst->maxLeafSize) + ")",
+                                ExceptionHolder::ERROR_EXCEPTION);
+                }
+
+                if (!inst->isUnion() && inst->subItems.size() > 0)
+                {
+                    std::stable_sort(inst->subItems.begin(), inst->subItems.end(),
+                                compareFieldsPtr<AdbInstance>); // TODO: try to remove this shit
+
+                    for (size_t j = 0; j < inst->subItems.size() - 1; j++)
+                    {
+                        if (inst->subItems[j + 1]->offset < inst->subItems[j]->offset + inst->subItems[j]->size)
+                        {
+                            string exceptionTxt =
+                            "Field (" + inst->subItems[j + 1]->get_field_name() + ") (" +
+                            formatAddr(inst->subItems[j + 1]->offset, inst->subItems[j + 1]->size).c_str() +
+                            ") overlaps with (" + inst->subItems[j]->get_field_name() + ") (" +
+                            formatAddr(inst->subItems[j]->offset, inst->subItems[j]->size).c_str() + ")";
+                            raiseException(allowMultipleExceptions, exceptionTxt, ExceptionHolder::ERROR_EXCEPTION);
+                        }
                     }
                 }
             }
-        }
 
-        u_int32_t esize = inst->fieldDesc->size;
-        if ((field->isLeaf() || field->subNode == "uint64") && (esize == 16 || esize == 32 || esize == 64)) // A leaf
-        {
-            inst->maxLeafSize = esize;
+            u_int32_t esize = inst->fieldDesc->size;
+            if ((field->isLeaf() || field->subNode == "uint64") && (esize == 16 || esize == 32 || esize == 64)) // A leaf
+            {
+                inst->maxLeafSize = esize;
+            }
         }
         if (parent)
         {
@@ -887,7 +896,7 @@ void Adb::checkInstanceOffsetValidity(AdbInstance* inst, AdbInstance* parent, bo
                               formatAddr(parent->offset, parent->size) + " boundaries";
         if (allowMultipleExceptions)
         {
-            insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
+            ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
         }
         else
         {
@@ -930,7 +939,7 @@ bool Adb::checkInstSizeConsistency(bool allowMultipleExceptions)
                     if (allowMultipleExceptions)
                     {
                         status = false;
-                        insertNewException(ExceptionHolder::ERROR_EXCEPTION, tmp);
+                        ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, tmp);
                     }
                     else
                     {
@@ -977,4 +986,31 @@ void Adb::print(int indent)
     NodesMap::iterator iter;
     for (iter = nodesMap.begin(); iter != nodesMap.end(); iter++)
         iter->second->print(indent + 1);
+}
+
+PartitionTree* Adb::prune_up(PartitionTree* partition_tree)
+{
+    if (partition_tree->sub_items.size() > 0)
+    {
+        partition_tree->stop = false;
+    }
+    else
+    {
+        auto current_tree = partition_tree;
+        PartitionTree* parent_tree = current_tree->parent;
+        partition_tree = nullptr;
+
+        do
+        {
+            auto found = find(parent_tree->sub_items.begin(), parent_tree->sub_items.end(), current_tree);
+            printf("found name: %s\n", (*found)->name.c_str());
+            parent_tree->sub_items.erase(found);
+
+            auto temp = current_tree;
+            current_tree = parent_tree;
+            parent_tree = current_tree->parent;
+            delete temp;
+        } while (parent_tree && current_tree && current_tree->sub_items.size() == 0);
+    }
+    return partition_tree;
 }

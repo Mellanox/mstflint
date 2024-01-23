@@ -78,7 +78,10 @@ AdbInstance::AdbInstance(AdbField* i_fieldDesc,
                          map<string, string> vars,
                          bool bigEndianArr,
                          bool isExprEval,
-                         unsigned char adabe_version) :
+                         unsigned char adabe_version,
+                         bool optimize_time,
+                         bool stop_on_partition,
+                         PartitionTree* next_partition_tree) :
     fieldDesc(i_fieldDesc),
     nodeDesc(i_nodeDesc),
     parent(i_parent),
@@ -89,6 +92,11 @@ AdbInstance::AdbInstance(AdbField* i_fieldDesc,
     // Re-initializations due to packing efficiency
     string array_name_suffix{fieldDesc->isArray() ? "[" + to_string(arrIdx + fieldDesc->lowBound) + "]" : ""};
     layout_item_name = i_fieldDesc->name + array_name_suffix;
+    if (optimize_time)
+    {
+        full_path = parent ? parent->full_path + "." + layout_item_name : layout_item_name;
+    }
+
 
     // TODO: the whole block below looks unnecesarry
     if (fieldDesc->offset == 0xffffffff)
@@ -103,12 +111,20 @@ AdbInstance::AdbInstance(AdbField* i_fieldDesc,
         }
     }
 
-    init_props(adabe_version);
+    if (stop_on_partition)
+    {
+        partition_tree = next_partition_tree;
+    }
 
     if (isExprEval)
     {
-        initInstOps(false);
-        eval_expressions(vars);
+        if (!stop_on_partition)
+        {
+            init_props(adabe_version);
+
+            initInstOps();
+            eval_expressions(vars);
+        }
     }
 }
 
@@ -117,16 +133,17 @@ void AdbInstance::initInstOps(bool is_root)
     AttrsMap& attrs_map = is_root ? nodeDesc->attrs : fieldDesc->attrs;
     inst_ops_props = new InstOpsProperties(attrs_map);
 
-    auto found_it = getInstanceAttrIterator("condition");
-    if (found_it != inst_ops_props->instAttrsMap.end() && parent->getInstanceAttr("is_conditional") == "1")
+    string value;
+    auto found = getInstanceAttr("condition", value);
+    if (found && parent->getInstanceAttr("is_conditional") == "1")
     {
-        inst_ops_props->condition.setCondition(found_it->second);
+        inst_ops_props->condition.setCondition(value);
     }
 
-    found_it = getInstanceAttrIterator("size_condition");
-    if (found_it != inst_ops_props->instAttrsMap.end())
+    found = getInstanceAttr("size_condition", value);
+    if (found)
     {
-        string cond_size = found_it->second;
+        string cond_size = value;
         if (cond_size.substr(0, 10) == "$(parent).")
         {
             cond_size.erase(0, 10);
@@ -169,6 +186,11 @@ u_int32_t AdbInstance::calcArrOffset(bool bigEndianArr)
         }
     }
     return o_offset;
+}
+
+bool AdbInstance::stop_on_partition() const
+{
+    return partition_tree != nullptr;
 }
 
 void AdbInstance::eval_expressions(AttrsMap& parent_vars)
@@ -402,6 +424,10 @@ bool AdbInstance::isPartOfArray()
  **/
 string AdbInstance::fullName(size_t skipLevel)
 {
+    if (full_path.size() > 0)
+    {
+        return full_path;
+    }
     list<string> fnList;
     AdbInstance* p = parent;
 
@@ -562,19 +588,19 @@ void AdbInstance::set_is_diff(bool val)
 }
 
 /**
- * Function: AdbInstance::fullName
+ * Function: AdbInstance::dwordAddr
  **/
-u_int32_t AdbInstance::dwordAddr()
+u_int32_t AdbInstance::dwordAddr(uint8_t alignment)
 {
-    return (offset >> 5) << 2;
+    return (offset / alignment) << 2;
 }
 
 /**
- * Function: AdbInstance::fullName
+ * Function: AdbInstance::startBit
  **/
-u_int32_t AdbInstance::startBit()
+u_int32_t AdbInstance::startBit(uint8_t alignment)
 {
-    return offset % 32;
+    return offset % alignment;
 }
 
 /**
@@ -658,6 +684,19 @@ vector<AdbInstance*> AdbInstance::findChild(const string& childName, bool isCase
     }
 
     return childList;
+}
+
+/**
+ * Function: AdbInstance::get_root
+ **/
+AdbInstance* AdbInstance::get_root()
+{
+    auto current_layout_item = this;
+    while (current_layout_item->parent)
+    {
+        current_layout_item = current_layout_item->parent;
+    }
+    return current_layout_item;
 }
 
 /**
@@ -800,7 +839,9 @@ AttrsMap AdbInstance::getVarsMap()
  **/
 bool AdbInstance::isEnumExists()
 {
-    return inst_ops_props ? inst_ops_props->instAttrsMap.contains("enum") : fieldDesc->attrs.count("enum");
+    return inst_ops_props ? inst_ops_props->instAttrsMap.contains("enum") :
+           fieldDesc ? fieldDesc->attrs.count("enum") :
+                                         false;
 }
 
 /**
