@@ -49,6 +49,10 @@ public:
                  bool verbose = false) override;
     bool GetImageSize(u_int32_t* image_size) override;
     bool GetImageInfo(u_int8_t* buff) override;
+    bool FwExtract4MBImage(vector<u_int8_t>& img,
+                           bool maskMagicPatternAndDevToc,
+                           bool verbose = false,
+                           bool ignoreImageStart = false) override;
 
 protected:
     bool CheckBoot2(u_int32_t beg,
@@ -57,6 +61,7 @@ protected:
                     bool fullRead,
                     const char* pref,
                     VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL) override;
+    bool GetDtocAddress(u_int32_t& dTocAddress) override;
     u_int32_t _ncore_bch_ptr;
 
 private:
@@ -69,6 +74,9 @@ private:
                      struct QueryOptions queryOptions,
                      bool ignoreDToc = false,
                      bool verbose = false) override;
+    bool IsSecureFwUpdateSigned(bool& isSigned);      
+
+    static const u_int32_t BCH_SIZE_IN_BYTES;               
 };
 
 #endif /* FS5_OPS_H */

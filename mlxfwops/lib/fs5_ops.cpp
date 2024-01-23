@@ -33,6 +33,8 @@
 #include "calc_hw_crc.h"
 #include "fs5_image_layout_layouts.h"
 
+const u_int32_t Fs5Operations::BCH_SIZE_IN_BYTES = 0x2000;
+
 u_int8_t Fs5Operations::FwType()
 {
     return FIT_FS5;
@@ -344,6 +346,10 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
     _ioAccess->set_address_convertor(0, 0);
     //-Verify DToC Header:
     u_int32_t dtocPtr = _ioAccess->get_effective_size() - FS4_DEFAULT_SECTOR_SIZE;
+    if (!GetDtocAddress(dtocPtr))
+    {
+        return false;
+    }
     DPRINTF(("Fs5Operations::FsVerifyAux call verifyTocHeader() DTOC\n"));
     if (!verifyTocHeader(dtocPtr, true, verifyCallBackFunc))
     {
@@ -365,4 +371,98 @@ bool Fs5Operations::FwQuery(fw_info_t* fwInfo, bool, bool, bool quickQuery, bool
 {
     DPRINTF(("Fs5Operations::FwQuery\n"));
     return encryptedFwQuery(fwInfo, quickQuery, ignoreDToc, verbose);
+}
+
+bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
+                                      bool maskMagicPatternAndDevToc,
+                                      bool verbose,
+                                      bool ignoreImageStart)
+{
+    bool res = Fs4Operations::FwExtract4MBImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
+
+    if (res)
+    {
+        bool isSigned = false;
+
+        if (!IsSecureFwUpdateSigned(isSigned))
+        {
+            return false;
+        }
+
+        if (isSigned)
+        {
+            u_int32_t imageSize = img.size();
+            img.resize(imageSize + BCH_SIZE_IN_BYTES);
+            u_int32_t log2_chunk_size = _ioAccess->get_log2_chunk_size();
+            bool is_image_in_odd_chunks = _ioAccess->get_is_image_in_odd_chunks();
+
+            _ioAccess->set_address_convertor(0, 0);
+            if (!_ioAccess->read(_ioAccess->get_effective_size() - BCH_SIZE_IN_BYTES, img.data() + imageSize,
+                                 BCH_SIZE_IN_BYTES))
+            {
+                return errmsg("Image - read error (%s)\n", _ioAccess->err());
+            }
+            _ioAccess->set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
+        }
+    }
+
+    return res;
+}
+
+bool Fs5Operations::GetDtocAddress(u_int32_t& dTocAddress)
+{
+    u_int32_t imageSize = _ioAccess->get_effective_size();
+    bool isSigned = false;
+
+    if (!IsSecureFwUpdateSigned(isSigned))
+    {
+        return false;
+    }
+
+    if (isSigned)
+    {
+        imageSize -= BCH_SIZE_IN_BYTES;
+    }
+
+    if (_fwImgInfo.ext_info.dtoc_offset != 0)
+    {
+        dTocAddress = (imageSize / (_fwImgInfo.ext_info.dtoc_offset * 2)) - FS4_DEFAULT_SECTOR_SIZE;
+    }
+    else
+    {
+        dTocAddress = imageSize - FS4_DEFAULT_SECTOR_SIZE;
+    }
+
+    return true;
+}
+
+bool Fs5Operations::IsSecureFwUpdateSigned(bool& isSigned)
+{
+    u_int32_t imageSize = _ioAccess->get_effective_size();
+    const u_int32_t smallestSupportedImageSize = 0x40000;
+
+    if ((imageSize % smallestSupportedImageSize) != 0) // Check if there's an encapsulation header
+    {
+        vector<u_int8_t> bchHeaderMagic(5, 0);
+        u_int32_t log2_chunk_size = _ioAccess->get_log2_chunk_size();
+        bool is_image_in_odd_chunks = _ioAccess->get_is_image_in_odd_chunks();
+
+        _ioAccess->set_address_convertor(0, 0);
+        if (!_ioAccess->read(imageSize - BCH_SIZE_IN_BYTES, bchHeaderMagic.data(), 4))
+        {
+            return errmsg("Image - read error (%s)\n", _ioAccess->err());
+        }
+        _ioAccess->set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
+
+        if (string(reinterpret_cast<const char*>(bchHeaderMagic.data())) == "NVDA")
+        {
+            isSigned = true;
+        }
+        else
+        {
+            isSigned = false;
+        }
+    }
+
+    return true;
 }
