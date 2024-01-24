@@ -78,16 +78,6 @@ void MlxlinkUi::initRegAccessLib()
     _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
 }
 
-bool MlxlinkUi::isSwitch()
-{
-    return !_mlxlinkCommander->_isHCA;
-}
-
-bool MlxlinkUi::isPlaneSwitchDev()
-{
-    return (_mf->tp == MST_PLANARIZED);
-}
-
 void MlxlinkUi::initPortInfo()
 {
     _mlxlinkCommander->labelToLocalPort();
