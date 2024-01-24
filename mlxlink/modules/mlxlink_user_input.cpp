@@ -146,4 +146,6 @@ UserInput::UserInput()
     errorDuration = -1;
     injDelay = -1;
     dbdf = "";
+
+    planeIndex = -1;
 }
