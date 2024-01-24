@@ -34,6 +34,8 @@
 
 #include "mlxlink_err_inj_commander.h"
 
+#define MAX_PARAMS_ARG_LEN 8
+
 MlxlinkErrInjCommander::MlxlinkErrInjCommander(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
 {
     _mixerOffset0 = -1;
