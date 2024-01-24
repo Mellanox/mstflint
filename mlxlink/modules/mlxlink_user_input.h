@@ -164,6 +164,8 @@ public:
     int injDelay;
     string dbdf;
     vector<string> parameters;
+
+    int planeIndex;
 };
 
 #endif /* MLXLINK_USER_INPUT_H */

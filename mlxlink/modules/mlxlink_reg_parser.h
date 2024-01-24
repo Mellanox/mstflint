@@ -72,6 +72,7 @@ public:
     u_int32_t _localPort;
     u_int32_t _pnat;
     u_int32_t _portType;
+    int _planeInd;
     bool _isHCA;
 };
 
