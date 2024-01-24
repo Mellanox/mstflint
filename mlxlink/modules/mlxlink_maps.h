@@ -241,6 +241,7 @@ public:
     std::map<u_int32_t, PRM_FIELD> _SltpEdrParams;
     std::map<u_int32_t, PRM_FIELD> _SltpHdrParams;
     std::map<u_int32_t, PRM_FIELD> _SltpNdrParams;
+    std::map<u_int32_t, PRM_FIELD> _SltpXdrParams;
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
