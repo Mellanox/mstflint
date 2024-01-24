@@ -436,6 +436,7 @@ public:
     string getSltpFieldStr(const PRM_FIELD& field);
     void prepareSltpEdrHdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
     virtual void prepareSltpNdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
+    virtual void prepareSltpXdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
     virtual string getSltpHeader();
     void startSlrgPciScan(u_int32_t numOfLanesToUse);
     void initValidDPNList();
