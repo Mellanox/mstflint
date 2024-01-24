@@ -1840,18 +1840,20 @@ void MlxlinkCommander::prepareSltpEdrHdrGen(vector<vector<string>>& sltpLanes, u
 
 void MlxlinkCommander::prepareSltpNdrGen(std::vector<std::vector<string>>& sltpLanes, u_int32_t laneNumber)
 {
-    if (isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
+    for (auto const& param : _mlxlinkMaps->_SltpNdrParams)
     {
-        sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_PRE3]));
-        sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_PRE2]));
+        if (param.second.validationMask & activeSpeed)
+        {
+            sltpLanes[laneNumber].push_back(getSltpFieldStr(param.second));
+        }
     }
-    else if (isSpeed50GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
-    {
-        sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_PRE2]));
-    }
-    sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_PRE1]));
-    sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_MAIN]));
-    sltpLanes[laneNumber].push_back(getSltpFieldStr(_mlxlinkMaps->_SltpNdrParams[SLTP_NDR_FIR_POST1]));
+}
+
+void MlxlinkCommander::prepareSltpXdrGen(std::vector<std::vector<string>>& sltpLanes, u_int32_t laneNumber)
+{
+    (void)sltpLanes;
+    (void)laneNumber;
 }
 
 template<typename T, typename Q>
