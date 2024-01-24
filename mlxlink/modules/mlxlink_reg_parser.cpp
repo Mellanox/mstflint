@@ -43,6 +43,7 @@ MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0)
     _localPort = 0;
     _portType = 0;
     _pnat = 0;
+    _planeInd = -1;
 
     _isHCA = false;
 }

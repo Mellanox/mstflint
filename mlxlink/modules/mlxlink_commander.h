@@ -515,10 +515,10 @@ public:
     // Mlxlink config functions
     void clearCounters();
     void sendPaos();
-    void handlePrbs();
+    virtual void handlePrbs();
     void sendPtys();
     virtual void sendPplm();
-    void sendSltp();
+    virtual void sendSltp();
     void sendPplr();
     void sendPepc();
     void setTxGroupMapping();
