@@ -1871,9 +1871,14 @@ void MlxlinkCommander::operatingInfoPage()
                     getAnDisableColor(_anDisable), true, !_prbsTestMode);
 
         // Checking cable DDM capability
-        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+        if (_userInput._networkCmds != 0 || _userInput._ddm || _userInput._dump || _userInput._write ||
+            _userInput._read || _userInput.isModuleConfigParamsProvided || _userInput.isPrbsSelProvided ||
+            _userInput._csvBer != "")
+        {
+            sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
 
-        _ddmSupported = getFieldValue("temperature") && _numOfLanes;
+            _ddmSupported = getFieldValue("temperature") && _numOfLanes;
+        }
     }
     catch (const std::exception& exc)
     {
