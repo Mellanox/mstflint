@@ -388,7 +388,7 @@ void MlnxDev::setDeviceType(void)
     }
     else if (dm_is_4th_gen(ptr_dm_dev_id))
     {
-        u_int32_t mac;
+        u_int32_t mac = 0;
         if ((mread4(mf, 0x1f148, &mac)) == 4)
         { // port1
             portOneType = EXT(mac, 30, 29) != 1 ? PORT_ETH : PORT_IB;
