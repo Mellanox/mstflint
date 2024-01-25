@@ -4838,7 +4838,7 @@ bool Fs4Operations::StoreImagePublicKeyInPublicKeys2(const image_layout_file_pub
 {
     // Find ITOC entry
     fs4_toc_info* itocEntry = (fs4_toc_info*)NULL;
-    image_layout_public_keys_2 public_keys_2;
+    image_layout_public_keys_2 public_keys_2 = {{}};
     memset(&public_keys_2, 0, sizeof(public_keys_2));
     if (!Fs4GetItocInfo(_fs4ImgInfo.itocArr.tocArr, _fs4ImgInfo.itocArr.numOfTocs, FS3_PUBLIC_KEYS_4096, itocEntry))
     {
@@ -4847,10 +4847,10 @@ bool Fs4Operations::StoreImagePublicKeyInPublicKeys2(const image_layout_file_pub
     image_layout_public_keys_2_unpack(&public_keys_2, itocEntry->section_data.data());
 
     // Convert public_keys_3 to public_keys_2
-    image_layout_file_public_keys_2 new_public_key_2;
+    image_layout_file_public_keys_2 new_public_key_2 = {{0, 0, 0, 0, 0, 0, 0, 0}, 0, {0, 0, 0, 0}, {0}};;
     PublicKey3ToPublicKey2(public_key, new_public_key_2);
 
-    u_int32_t slot_of_given_key_in_image;
+    u_int32_t slot_of_given_key_in_image = 0;
     if (!FindPublicKeyInPublicKeys2(public_keys_2, new_public_key_2, slot_of_given_key_in_image))
     {
         if (new_public_key_2.component_authentication_configuration.auth_type == 0)
@@ -4859,7 +4859,7 @@ bool Fs4Operations::StoreImagePublicKeyInPublicKeys2(const image_layout_file_pub
         }
         else
         {
-            u_int32_t slot_idx_for_new_key;
+            u_int32_t slot_idx_for_new_key = 0;
             if (!FindImagePublicKeyInPublicKeys2(public_keys_2, slot_idx_for_new_key))
             {
                 if (!GetFreeSlotInPublicKeys2(public_keys_2, slot_idx_for_new_key))
@@ -4904,7 +4904,7 @@ bool Fs4Operations::StoreImagePublicKeyInPublicKeys3(const image_layout_file_pub
     memset(&public_keys_3, 0, sizeof(public_keys_3));
     image_layout_public_keys_3_unpack(&public_keys_3, itocEntry->section_data.data());
 
-    u_int32_t slot_of_given_key_in_image;
+    u_int32_t slot_of_given_key_in_image = 0;
     if (!FindPublicKeyInPublicKeys3(public_keys_3, public_key, slot_of_given_key_in_image))
     {
         if (public_key.component_authentication_configuration.auth_type == 0)
@@ -4913,7 +4913,7 @@ bool Fs4Operations::StoreImagePublicKeyInPublicKeys3(const image_layout_file_pub
         }
         else
         {
-            u_int32_t slot_idx_for_new_key;
+            u_int32_t slot_idx_for_new_key = 0;
             if (!FindImagePublicKeyInPublicKeys3(public_keys_3, slot_idx_for_new_key))
             {
                 if (!GetFreeSlotInPublicKeys3(public_keys_3, slot_idx_for_new_key))

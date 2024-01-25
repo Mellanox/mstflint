@@ -94,6 +94,7 @@ MlxDpa::MlxDpa() :
     _removeAllCertsSpecified(false),
     _removeAllCerts(false),
     _certContainerPath(""),
+     _certContainerType(CertContainerType::UnknownType),
     _command(Unknown)
 {
     InitCmdParser();
