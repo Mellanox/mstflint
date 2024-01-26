@@ -23,8 +23,6 @@ THE SOFTWARE.
 #ifndef ELFTYPES_H
 #define ELFTYPES_H
 
-#include <cstdint>
-
 #ifdef __cplusplus
 namespace ELFIO {
 #endif
