@@ -39,18 +39,21 @@ class CmdNotSupported(Exception):
 
 class CmdRegMfrl():
 
-    LIVE_PATCH, PCI_RESET, WARM_REBOOT = 0, 3, 4
+    LIVE_PATCH, IMMEDIATE_RESET, PCI_RESET, WARM_REBOOT = 0, 1, 3, 4
     reset_levels_db = [
-        {'level': LIVE_PATCH, 'description': 'Driver, PCI link, network link will remain up ("live-Patch")', 'mask': 0x1, 'support_reset_type': False},
-        {'level': PCI_RESET, 'description': 'Driver restart and PCI reset', 'mask': 0x8, 'support_reset_type': True},
-        {'level': WARM_REBOOT, 'description': 'Warm Reboot', 'mask': 0x40, 'support_reset_type': True},
+        {'level': LIVE_PATCH, 'description': 'Driver, PCI link, network link will remain up ("live-Patch")', 'mask': 0b1, 'support_reset_type': False},
+        {'level': IMMEDIATE_RESET, 'description': 'Only ARM side will not remain up ("Immediate reset").', 'mask': 0b10, 'support_reset_type': True},
+        {'level': PCI_RESET, 'description': 'Driver restart and PCI reset', 'mask': 0b1000, 'support_reset_type': True},
+        {'level': WARM_REBOOT, 'description': 'Warm Reboot', 'mask': 0b1000000, 'support_reset_type': True},
     ]
 
-    FULL_CHIP, PHY_LESS, NIC_ONLY = 0, 1, 2
+    FULL_CHIP, PHY_LESS, NIC_ONLY, ARM_ONLY, ARM_OS_SHUTDOWN = 0, 1, 2, 3, 4
     reset_types_db = [
-        {'type': FULL_CHIP, 'description': 'Full chip reset', 'mask': 0x1, 'supported': True},
-        {'type': PHY_LESS, 'description': 'Phy-less reset (keep network port active during reset)', 'mask': 0x2},
-        {'type': NIC_ONLY, 'description': 'NIC only reset (for SoC devices)', 'mask': 0x4}
+        {'type': FULL_CHIP, 'description': 'Full chip reset', 'mask': 0b1, 'supported': True},
+        {'type': PHY_LESS, 'description': 'Phy-less reset (keep network port active during reset)', 'mask': 0b10},
+        {'type': NIC_ONLY, 'description': 'NIC only reset (for SoC devices)', 'mask': 0b100},
+        {'type': ARM_ONLY, 'description': 'ARM only reset', 'mask': 0b1000},
+        {'type': ARM_OS_SHUTDOWN, 'description': 'ARM OS shut down', 'mask': 0b10000}
     ]
 
     RESET_STATE_ERROR_NEGOTIATION_TIMEOUT = 3
@@ -181,10 +184,10 @@ class CmdRegMfrl():
             description = reset_level_ii['description']
             if is_pcie_switch:
                 supported = "Supported" if reset_level_ii['supported'] and reset_level_ii['level'] is CmdRegMfrl.WARM_REBOOT else "Not Supported"
-                default = "(default)" if reset_level_ii['level'] is CmdRegMfrl.WARM_REBOOT else ""
             else:
                 supported = "Supported" if reset_level_ii['supported'] else "Not Supported"
-                default = "(default)" if reset_level_ii["level"] == default_reset_level else ""
+
+            default = "(default)" if reset_level_ii["level"] == default_reset_level else ""
             result += "{0}: {1:<62}-{2:<14}{3}\n".format(level, description, supported, default)
 
         # Reset types
@@ -230,11 +233,7 @@ class CmdRegMfrl():
             return False
 
     def default_reset_level(self):
-        'Return the default reset-level (minimal supported reset-level)'
-        for reset_level_ii in CmdRegMfrl.reset_levels():
-            if self.is_reset_level_supported(reset_level_ii) is True:
-                return reset_level_ii
-        raise CmdNotSupported("There is no supported reset-level")
+        return CmdRegMfrl.PCI_RESET
 
     def default_reset_type(self):
         'Return the default reset-type'
@@ -249,13 +248,20 @@ class CmdRegMfrl():
             if reset_type_ii['supported'] and reset_type_ii['type'] == CmdRegMfrl.FULL_CHIP:
                 return reset_type_ii['type']
 
+        # Return ARM_ONLY
+        for reset_type_ii in self._reset_types:
+            if reset_type_ii['supported'] and reset_type_ii['type'] == CmdRegMfrl.ARM_ONLY:
+                return reset_type_ii['type']
+
+        # Return ARM_OS_SHUTDOWN
+        for reset_type_ii in self._reset_types:
+            if reset_type_ii['supported'] and reset_type_ii['type'] == CmdRegMfrl.ARM_OS_SHUTDOWN:
+                return reset_type_ii['type']
+
         raise CmdNotSupported("There is no supported reset-type")
 
     def is_default_reset_type(self, reset_type):
         return reset_type == self.default_reset_type()
-
-    def is_default_reset_level(self, reset_level):
-        return reset_level == self.default_reset_level()
 
     def is_reset_state_in_error(self):
         self.logger.debug("reset_state_error={}".format(self._reset_state))
@@ -264,9 +270,6 @@ class CmdRegMfrl():
 
     def is_reset_state_in_progress(self):
         return True if self._reset_state == CmdRegMfrl.RESET_STATE_ARM_OS_SHUTDOWN_IN_PROGRESS else False
-
-    def is_arm_reset(self, reset_type):
-        return False if reset_type in [CmdRegMfrl.PHY_LESS, CmdRegMfrl.NIC_ONLY] else True
 
     def read(self):
         # Read register ('get' command) from device
