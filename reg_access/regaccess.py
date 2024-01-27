@@ -295,11 +295,12 @@ if REG_ACCESS:
             return {
                 "DRIVER_UNLOAD_AND_RESET_TO": dtorRegisterP.contents.DRIVER_UNLOAD_AND_RESET_TO,
                 "PCI_SYNC_UPDATE_TO": dtorRegisterP.contents.PCI_SYNC_UPDATE_TO,
-                "PCIE_TOGGLE_TO": dtorRegisterP.contents.PCIE_TOGGLE_TO
+                "PCIE_TOGGLE_TO": dtorRegisterP.contents.PCIE_TOGGLE_TO,
+                "EMBEDDED_CPU_OS_SHUTDOWN_TO": dtorRegisterP.contents.EMBEDDED_CPU_OS_SHUTDOWN_TO
             }
 
-        def getMRSI(self):
-            mrsiRegisterP = pointer(MRSI_EXT())
+        def getMRSI(self, device=0):
+            mrsiRegisterP = pointer(MRSI_EXT(device=device))
             rc = self._reg_access_mrsi(self._mstDev.mf, REG_ACCESS_METHOD_GET, mrsiRegisterP)
             if rc:
                 raise RegAccException("Failed to send Register MRSI")
@@ -307,7 +308,7 @@ if REG_ACCESS:
             return {
                 "reset_reason": mrsiRegisterP.contents.reset_reason,
                 "crts": mrsiRegisterP.contents.crts,
-                # "ecos": mrsiRegisterP.contents.ecos    # will be uncommented when regaccess_structs.py will be updated.
+                "ecos": mrsiRegisterP.contents.ecos
             }
 
         ##########################
@@ -523,7 +524,7 @@ if REG_ACCESS:
             rc = self._reg_access_mteim(self._mstDev.mf, REG_ACCESS_METHOD_GET, mteimRegisterP)
             if rc:
                 return None  # done raise error, could be old FW / Device
-                #raise RegAccException("Failed to send Register MTEIM: %s (%d)" % (self._err2str(rc), rc))
+                # raise RegAccException("Failed to send Register MTEIM: %s (%d)" % (self._err2str(rc), rc))
 
             return ({"cap_core_tile": mteimRegisterP.contents.cap_core_tile,
                     "cap_core_main": mteimRegisterP.contents.cap_core_main,
