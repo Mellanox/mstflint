@@ -1697,11 +1697,12 @@ def check_if_pci_link_is_down(root_pci_device, mfrl, dtor_result):
 
     start_time = time.time()
     # Continuously monitoring the active register of the DLL link until the link goes down
+    timeout = timeout_in_milliseconds_until_the_pci_link_goes_down / 1000
+    error_msg = "The PCI link is still up even after the expected time ({0}) seconds has passed. Exiting the process.".format(timeout)
     while root_pci_device.dll_link_active == 1:
         if is_in_shutdown_progress is False:
             is_in_shutdown_progress = check_if_shut_down_in_progress(mfrl)
-
-        check_if_elapsed_time(start_time, "up", timeout_in_milliseconds_until_the_pci_link_goes_down / 1000)
+        check_if_elapsed_time(start_time, timeout, error_msg)
 
     logger.debug("Link is down")
 
@@ -1729,17 +1730,20 @@ def check_if_pci_link_is_up(root_pci_device, dtor_result):
     logger.debug('timeout_in_milliseconds_until_the_pci_link_goes_up = {0}'.format(timeout_in_milliseconds_until_the_pci_link_goes_up))
 
     # Continuously monitoring the active register of the DLL link until the link goes up
+    timeout = timeout_in_milliseconds_until_the_pci_link_goes_up / 1000
+    error_msg = "The PCI link is still down even after the expected time ({0}) seconds has passed. Exiting the process".format(timeout)
     while root_pci_device.dll_link_active == 0:
-        check_if_elapsed_time(start_time, "down", timeout_in_milliseconds_until_the_pci_link_goes_up / 1000)
+       check_if_elapsed_time(start_time, timeout, error_msg)
 
     logger.debug("Link is up")
 
 
-def check_if_elapsed_time(start_time, state, timeout):
+def check_if_elapsed_time(start_time, timeout, error_msg):
     current_time = time.time()
     elapsed_time = current_time - start_time
+    logger.debug('elapsed_time = {0}'.format(elapsed_time))
     if elapsed_time >= timeout:
-        raise RuntimeError("The PCI link is still {0} even after the expected time ({1}) seconds has passed. Exiting the process.".format(state, timeout))
+        raise RuntimeError(error_msg)
 
 
 def check_if_shut_down_in_progress(mfrl):
@@ -1823,12 +1827,36 @@ def execute_driver_sync_reset_bf(mfrl, reset_level, reset_type):
         elif mfrl_error:
             logger.debug("MFRL sync 1 worked although MFRL returned with error: {0}".format(mfrl_error))
 
+
+######################################################################
+# Description: Resetting only the ARM side
+######################################################################
+
+
+def arm_reset(reset_level, reset_type, reset_sync, mrsi, mfrl):
+    if reset_type not in [CmdRegMfrl.ARM_ONLY, CmdRegMfrl.ARM_OS_SHUTDOWN]:
+        raise RuntimeError("Only the reset types ARM reset (3) and ARM shut down (4) are considered valid reset types with reset level IMMEDIATE RESET (1).")
+
+    logger.debug('Sending MFRL register to reset only the ARM side ')
+    send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync)
+    if reset_type is CmdRegMfrl.ARM_ONLY:
+        print("Issuing reset to the embedded CPU completed successfully")
+    else:
+        dtor_result = RegAccessObj.getDTOR()
+        timeout = get_timeout_in_miliseconds(dtor_result, "EMBEDDED_CPU_OS_SHUTDOWN_TO") / 1000
+        logger.debug('EMBEDDED_CPU_OS_SHUTDOWN timeout = {0}'.format(timeout))
+        start_time = time.time()
+        while mrsi.get_ecos(CmdRegMrsi.EMBEDDED_CPU_DEVICE) is not CmdRegMrsi.LOW_POWER_STANDBY:
+            error_msg = "The ARM side has not started running (the ecos field is in state {0})".format(mrsi.get_ecos(CmdRegMrsi.EMBEDDED_CPU_DEVICE))
+            logger.debug('ecos status {0}'.format(mrsi.get_ecos(CmdRegMrsi.EMBEDDED_CPU_DEVICE)))
+            check_if_elapsed_time(start_time, timeout, error_msg)
+
 ######################################################################
 # Description:  execute reset level for device
 ######################################################################
 
 
-def execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, cmdLineArgs, mfrl):
+def execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, cmdLineArgs, mfrl, mrsi):
 
     # mpcir usage removed due to RM #2214400
     # # In new FW, the FW doesn't need this command any more
@@ -1847,6 +1875,9 @@ def execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, cmdLineAr
         else:
             resetFlow(device, devicesSD, reset_level,
                       reset_type, cmdLineArgs, mfrl)
+
+    elif reset_level is mfrl.IMMEDIATE_RESET:
+        arm_reset(reset_level, reset_type, reset_sync, mrsi, mfrl)
     else:
         raise RuntimeError("Unknown reset level")
 
@@ -2032,17 +2063,17 @@ def reset_flow_host(device, args, command):
             print(mrsi.query_text(is_bluefield))
 
     elif command == "reset":
+        reset_level = mfrl.default_reset_level(
+        ) if args.reset_level is None else args.reset_level
+
         if is_pcie_switch_device(devid):
             if args.reset_level is None:
-                args.reset_level = CmdRegMfrl.WARM_REBOOT
+                args.reset_level = reset_level 
             if args.reset_level is not CmdRegMfrl.WARM_REBOOT:
                 raise RuntimeError("Only reboot is supported for Cedar device")
             global is_pcie_switch
             is_pcie_switch = True
 
-        reset_level = mfrl.default_reset_level(
-        ) if args.reset_level is None else args.reset_level
-        # print("  * reset-level is '{0}' ({1})".format(reset_level, mfrl.reset_level_description(reset_level)))
         if mfrl.is_reset_level_supported(reset_level) is False:
             raise RuntimeError(
                 "Reset-level '{0}' is not supported in the current state of this device".format(reset_level))
@@ -2060,7 +2091,7 @@ def reset_flow_host(device, args, command):
         if reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
             raise RuntimeError(
                 "Synchronization by driver is not supported in the current state of this device")
-        if reset_sync != SyncOwner.TOOL and reset_level != CmdRegMfrl.PCI_RESET:
+        if reset_sync != SyncOwner.TOOL and reset_level not in [CmdRegMfrl.PCI_RESET, CmdRegMfrl.IMMEDIATE_RESET]:
             raise RuntimeError(
                 "Reset-sync '{0}' is not supported with reset-level '{1}'".format(reset_sync, reset_level))
 
@@ -2075,12 +2106,13 @@ def reset_flow_host(device, args, command):
 
         if is_bluefield:
             print("Please be aware that resetting the Bluefield may take several minutes. Exiting the process in the middle of the waiting period will not halt the reset.")
-            if mfrl.is_arm_reset(reset_type):
+            if reset_type not in [CmdRegMfrl.PHY_LESS, CmdRegMfrl.NIC_ONLY]:
                 print("The ARM side will be restarted, and it will be unavailable for a while.")
 
         AskUser("Continue with reset", args.yes)
+
         execResLvl(device, devicesSD, reset_level,
-                   reset_type, reset_sync, args, mfrl)
+                   reset_type, reset_sync, args, mfrl, mrsi)
         if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
             reset_fsm_register()
             print("-E- Firmware reset failed, retry operation or reboot machine.")

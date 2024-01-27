@@ -55,13 +55,16 @@ class CmdRegMrsi():
         {11, 'FW Fault Crash Dump is complete'}
     ]
 
+    LOW_POWER_STANDBY = 6
+    EMBEDDED_CPU_DEVICE = 1
+
     def __init__(self, reg_access):
         self._reg_access = reg_access
         self._mrsi_get_result = None
 
-    def get_mrsi(self):
+    def get_mrsi(self, device=0):
         if self._mrsi_get_result is None:
-            self._mrsi_get_result = self._reg_access.getMRSI()
+            self._mrsi_get_result = self._reg_access.getMRSI(device)
         return self._mrsi_get_result  # returns {"reset_reason":value of reset_reason, "crts":value of crts, "ecos":value of ecos}
 
     def is_warm_reset(self):
@@ -74,8 +77,8 @@ class CmdRegMrsi():
         mrsi_get_result = self.get_mrsi()
         return mrsi_get_result["crts"]
 
-    def get_ecos(self):
-        mrsi_get_result = self.get_mrsi()
+    def get_ecos(self, device=0):
+        mrsi_get_result = self._reg_access.getMRSI(device)
         return mrsi_get_result["ecos"]
 
     def query_text(self, is_bluefield):
