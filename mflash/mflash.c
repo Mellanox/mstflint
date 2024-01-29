@@ -4133,7 +4133,6 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
 int mf_is_fifth_gen(mflash* mfl)
 {
     MfError status;
-    int is7NmSuppported = 0;
     int icmdif_supported = is_icmdif_supported(mfl, &status);
     if (status != MFE_OK)
     {
