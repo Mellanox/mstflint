@@ -285,7 +285,7 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
 int MlxCfg::printValue(string strVal, u_int32_t val)
 {
     string s = numToStr(val);
-    u_int32_t n;
+    u_int32_t n = 0;
     if (strVal == "" || strVal == s || (strToNum(strVal, n, 10) && n == val))
     {
         return printf("%-20u", val);
