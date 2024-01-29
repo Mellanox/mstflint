@@ -1211,7 +1211,7 @@ string PriorityNumToStr(u_int8_t priority)
 
 void TLVConf::genBin(vector<u_int32_t>& buff, bool withHeader)
 {
-    u_int32_t writer_id, rd_en, ovr_en;
+    u_int32_t writer_id = 0, rd_en = 0, ovr_en = 0;
     int priority;
     tools_open_nv_hdr_fifth_gen hdr;
 
