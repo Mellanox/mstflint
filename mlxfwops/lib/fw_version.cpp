@@ -266,8 +266,10 @@ std::string ComponentFwVersion::ToString()
     {
         case VersionFormat::SubMinor:
             fwVersion.insert(0, "." + std::to_string(_subMinor));
+	    /* fall through */
         case VersionFormat::Minor:
             fwVersion.insert(0, "." + std::to_string(_minor));
+	    /* fall through */
         case VersionFormat::Major:
             fwVersion.insert(0, std::to_string(_major));
             break;
