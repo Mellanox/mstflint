@@ -2238,7 +2238,10 @@ vector<AmberField> MlxlinkAmBerCollector::collectSheet(AMBER_SHEET sheet)
             break;
         case AMBER_SHEET_SERDES_5NM:
             groupValidIf(_productTechnology == PRODUCT_5NM);
-            fields = getSerdesXDR();
+            if (_productTechnology == PRODUCT_5NM)
+            {
+                fields = getSerdesXDR();
+            }
             break;
         case AMBER_SHEET_PORT_COUNTERS:
             if (!_inPRBSMode)
