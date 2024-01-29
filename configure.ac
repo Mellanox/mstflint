@@ -35,9 +35,6 @@ AC_INIT(mstflint, 4.27.0, akiselman-org@exchange.nvidia.com)
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.26.0"], [Define the project version.])
-AC_SUBST([VERSION])
-
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([README])
