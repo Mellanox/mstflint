@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2023-10-18 11:41:04"
+#    This file was generated at "2024-01-15 23:07:26"
 #    by:
 #      > gen_adb_data.py -g hca_prm_projects
 ###############################################################################
@@ -132,6 +132,8 @@ class MGIR_HARDWARE_INFO_EXT(ctypes.Structure):
         ("num_ports", ctypes.c_uint8),
         ("hw_dev_id", ctypes.c_uint16),
         ("manufacturing_base_mac_47_32", ctypes.c_uint16),
+        ("ga", ctypes.c_uint8),
+        ("chip_type", ctypes.c_uint8),
         ("manufacturing_base_mac_31_0", ctypes.c_uint32),
         ("uptime", ctypes.c_uint32)
     ]
@@ -161,7 +163,8 @@ class MGIR_FW_INFO_EXT(ctypes.Structure):
         ("disabled_tiles_bitmap", ctypes.c_uint16),
         ("life_cycle", ctypes.c_uint8),
         ("sec_boot", ctypes.c_uint8),
-        ("encryption", ctypes.c_uint8)
+        ("encryption", ctypes.c_uint8),
+        ("issu_able", ctypes.c_uint8)
     ]
 
 class ROM_VERSION_EXT(ctypes.Structure):
