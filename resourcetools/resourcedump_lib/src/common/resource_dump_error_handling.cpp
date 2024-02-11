@@ -61,8 +61,9 @@ ResourceDumpException::ResourceDumpException(Reason r, uint32_t m) : reason{r}, 
         case Reason::OPERATION_INVALID_BUFFER_MODE:
             message = "This operation is not eligible for dump to a buffer (only to a file).";
             break;
-        case Reason::OS_NOT_SUPPORTED:
-            message = "This operation is not supported for this OS.";
+        case Reason::MEM_MODE_NOT_SUPPORTED:
+            message =
+              "Mem Mode is either not supported for this OS, or the driver is down, or the driver's version is not supported.";
             break;
         case Reason::SEND_REG_ACCESS_FAILED:
             message = "Access register request to device failed. FW error code: " + to_string(minor);

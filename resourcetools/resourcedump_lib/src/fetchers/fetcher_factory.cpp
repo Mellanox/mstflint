@@ -61,7 +61,7 @@ unique_ptr<Fetcher>
 #ifndef NO_RDMEM
         return unique_ptr<Fetcher>{new RegAccessResourceDumpMkeyFetcher(mf, device_attrs, dump_request, depth)};
 #else
-        throw ResourceDumpException(ResourceDumpException::Reason::OS_NOT_SUPPORTED);
+        throw ResourceDumpException(ResourceDumpException::Reason::MEM_MODE_NOT_SUPPORTED);
 #endif
     }
 }
