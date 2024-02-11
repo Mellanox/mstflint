@@ -5361,7 +5361,7 @@ SgSubCommand::SgSubCommand()
                     "Use -guid(s), -mac(s) and -uid(s) flags to set the desired values.\n"
                     "- On pre-ConnectX devices, the sg command  is used in production to apply GUIDs/MACs values to"
                     " cards that were pre-burnt with blank GUIDs. It is not meant for use in field.\n"
-                    "- On 4th generation devices, this command can operate on both image file and image on flash.\n"
+                    "- On 4th and 5th  generation devices, this command can operate on both image file and image on flash.\n"
                     "If the GUIDs/MACs/UIDs in the image on flash are non-blank, flint will re-burn the current"
                     " image using the given GUIDs/MACs/UIDs.";
     _flagLong = "sg";
@@ -5650,7 +5650,7 @@ SmgSubCommand::SmgSubCommand()
 {
     _name = "smg";
     _desc = "Set manufacture GUIDs (For FS3/FS4 image only).";
-    _extendedDesc = "Set manufacture GUID, Set manufacture GUIDs in the given FS3/FS4 image.\n"
+    _extendedDesc = "Set manufacture GUID, Set manufacture GUIDs in the given FS3/FS4/FS5 image.\n"
                     "Use -uid flag to set the desired GUIDs, intended for production use only.";
     _flagLong = "smg";
     _flagShort = "";
