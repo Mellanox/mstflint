@@ -2835,6 +2835,7 @@ bool FwOperations::IsExtendedGuidNumSupported()
     switch (_fwImgInfo.supportedHwId[0])
     {
         case SPECTRUM4_HW_ID:
+        case QUANTUM3_HW_ID:
             isSupported = true;
             break;
         default:
