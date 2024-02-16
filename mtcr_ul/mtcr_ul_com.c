@@ -957,12 +957,7 @@ static int mtcr_driver_mclose(mfile* mf)
 }
 
 
-static int mlx5ctl_driver_open(mfile     * mf,
-                               unsigned    domain_p,
-                               unsigned    bus_p,
-                               unsigned    dev_p,
-                               unsigned    func_p,
-                               const char* name)
+static int mlx5ctl_driver_open(mfile* mf, const char* name)
 {
     char full_path_name[60];
 
@@ -983,7 +978,6 @@ static int mlx5ctl_driver_open(mfile     * mf,
     ctx->mwrite4_block = mlx5ctl_driver_mwrite4_block;
     ctx->mclose = mtcr_driver_mclose;
     mf->bar_virtual_addr = NULL;
-    init_dev_info_ul(mf, name, domain_p, bus_p, dev_p, func_p);
     mlx5ctl_set_device_id(mf);
 
     mf->mlx5ctl_env_var_debug = getenv(MLX5CTL_ENV_VAR_DEBUG);
@@ -1704,14 +1698,7 @@ static MType mtcr_parse_name(const char* name,
         goto name_parsed;
     }
 
-    scnt = sscanf(name, "mlx5ctl-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
-    if (scnt == 4) {
-        force_config = 1;
-        *domain_p = my_domain;
-        *bus_p = my_bus;
-        *dev_p = my_dev;
-        *func_p = my_func;
-        *force = 0;
+    if(strstr(name, "mlx5ctl-mlx5_core")) {
         return MST_MLX5_CONTROL_DRIVER;
     }
 
@@ -2471,7 +2458,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         break;
 
     case MST_MLX5_CONTROL_DRIVER:
-        rc = mlx5ctl_driver_open(mf, domain, bus, dev, func, name);
+        rc = mlx5ctl_driver_open(mf, name);
         if (rc) {
             goto open_failed;
         }
