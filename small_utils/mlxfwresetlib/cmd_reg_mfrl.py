@@ -171,7 +171,7 @@ class CmdRegMfrl():
     def is_pci_rescan_required(self):
         return True if self._pci_rescan_required == 1 else False
 
-    def query_text(self, is_cedar=False):
+    def query_text(self, is_pcie_switch=False):
         'return the text for the query operation in mlxfwreset'
         # Reset levels
         default_reset_level = self.default_reset_level()
@@ -179,7 +179,7 @@ class CmdRegMfrl():
         for reset_level_ii in self._reset_levels:
             level = reset_level_ii['level']
             description = reset_level_ii['description']
-            if is_cedar:
+            if is_pcie_switch:
                 supported = "Supported" if reset_level_ii['supported'] and reset_level_ii['level'] is CmdRegMfrl.WARM_REBOOT else "Not Supported"
                 default = "(default)" if reset_level_ii['level'] is CmdRegMfrl.WARM_REBOOT else ""
             else:
@@ -275,7 +275,7 @@ class CmdRegMfrl():
         # Update privates variables.
         self._update_variables(reg)
 
-    def send(self, reset_level, reset_type, reset_sync, is_cedar=False):
+    def send(self, reset_level, reset_type, reset_sync):
         """
         send MFRL Set command
         Verify that reset-level and reset-type are supported (reset-sync is not verified)
@@ -289,7 +289,8 @@ class CmdRegMfrl():
         else:
             raise CmdNotSupported('Failed to send MFRL! reset-level {0} is not supported!'.format(reset_level))
 
-        if is_cedar:
+        # If the reset level it is WARM_REBOOT, we need to set the PCI toggle bit because some servers may not perform PERST during the power cycle.
+        if reset_level == CmdRegMfrl.WARM_REBOOT:
             for reset_level_ii in self._reset_levels:
                 if reset_level_ii['level'] == CmdRegMfrl.PCI_RESET:
                     reset_level_2_send = reset_level_2_send | reset_level_ii['mask']
