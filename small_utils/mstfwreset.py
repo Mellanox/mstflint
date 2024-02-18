@@ -175,7 +175,7 @@ FWResetStatusChecker = None
 # Global options
 SkipMstRestart = False
 SkipMultihostSync = False
-is_cedar = False
+is_pcie_switch = False
 is_bluefield = False
 logger = None
 device_global = None
@@ -186,11 +186,16 @@ pathToPciModuleDir = "/etc/mft/mlxfwreset"
 SUPPORTED_DEVICES_WITH_SWITCHES = [
     "15b3", "10ee", "1af4"]  # 1af4 for Red Hat (virtio)
 
+PSID_CEDAR_VALUES = ["MT_0000000891", "MT_0000000929", "MT_0000000937"]
+PSID_PROMETHEUS_VALUS = ["NVD0000000033"]
+ALL_PSID_PCIE_SWITCH = PSID_CEDAR_VALUES + PSID_PROMETHEUS_VALUS
 
 ######################################################################
 # Description:  Pcnr Exception
 # OS Support :  Linux.
 ######################################################################
+
+
 class PcnrError(Exception):
     pass
 
@@ -1343,7 +1348,7 @@ def is_pci_bridge_is_mellanox_device(devAddr):
         return False
 
 
-def send_reset_cmd_to_cedar_devices(reset_level, reset_type, reset_sync):
+def send_reset_cmd_to_pcie_switch_devices(reset_level, reset_type, reset_sync):
     #
     # We are going to send MFRL request for all the Cedar devices on the host.
     #
@@ -1354,22 +1359,22 @@ def send_reset_cmd_to_cedar_devices(reset_level, reset_type, reset_sync):
         logger.debug("Creating regaccess obj for device %s" % pci_device.get_alias())
         pci_device_mst = mtcr.MstDevice(pci_device.get_alias())
         pci_device_reg_access = regaccess.RegAccess(pci_device_mst)
-        if is_cedar_device(pci_device.get_cfg_did(), pci_device_reg_access):
+        if is_pcie_switch_device(pci_device.get_cfg_did(), pci_device_reg_access):
             # Create MFRL for each Cedar device.
             logger.debug("Creating MFRL for device %s" % pci_device.get_alias())
-            cedar_device_mfrl = CmdRegMfrl(pci_device_reg_access, logger)
+            mfrl = CmdRegMfrl(pci_device_reg_access, logger)
             # Send MFRL reset.
             printAndFlush("-I- %-40s-" %
                           ("Sending Reset Command To Fw"), endChar="")
             logger.debug('[Timing Test] MFRL')
-            cedar_device_mfrl.send(reset_level, reset_type, reset_sync, True)
+            mfrl.send(reset_level, reset_type, reset_sync)
             printAndFlush("Done")
 
 
 def send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync=SyncOwner.TOOL):
     try:
-        if is_cedar:
-            send_reset_cmd_to_cedar_devices(reset_level, reset_type, reset_sync)
+        if is_pcie_switch:
+            send_reset_cmd_to_pcie_switch_devices(reset_level, reset_type, reset_sync)
             return
 
         printAndFlush("-I- %-40s-" %
@@ -1382,28 +1387,15 @@ def send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync=SyncOwner.TOO
         raise e
 
 
-def is_cedar_device(devid, reg_access_obj=None):
+def is_pcie_switch_device(devid, reg_access_obj=None):
     res = False
     reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
     devDict = getDeviceDict(devid)
     if devDict['name'] == 'ConnectX7':
         psid = reg_access_obj.getPSID()
         logger.debug("ConnectX7 device with PSID: %s" % psid)
-        if psid in ["MT_0000000891", "MT_0000000929", "MT_0000000937"]:
-            logger.debug("Found Cedar device")
-            res = True
-    return res
-
-
-def is_prometheus_device(devid, reg_access_obj=None):
-    res = False
-    reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
-    devDict = getDeviceDict(devid)
-    if devDict['name'] == 'ConnectX7':
-        psid = reg_access_obj.getPSID()
-        logger.debug("ConnectX7 device with PSID: %s" % psid)
-        if psid in ["NVD0000000033"]:
-            logger.debug("Found Prometheus device")
+        if psid in ALL_PSID_PCIE_SWITCH:
+            logger.debug("Found PCIE switch device")
             res = True
     return res
 
@@ -1967,9 +1959,6 @@ def reset_flow_host(device, args, command):
     mcam = CmdRegMcam(RegAccessObj)
     mrsi = CmdRegMrsi(RegAccessObj)
 
-    if is_prometheus_device(devid):
-        raise RuntimeError("Prometheus device is not supported")
-
     logger.info('Check if device is livefish')
     DevMgtObj = dev_mgt.DevMgt(MstDevObj)  # check if device is in livefish
     if DevMgtObj.isLivefishMode() == 1:
@@ -2034,7 +2023,7 @@ def reset_flow_host(device, args, command):
         global is_bluefield
         is_bluefield = True
     if command == "query":
-        print(mfrl.query_text(is_cedar_device(devid)))
+        print(mfrl.query_text(is_pcie_switch_device(devid)))
         tool_owner_support = True
         if platform.system() == "Linux" and is_bluefield:
             tool_owner_support = False
@@ -2043,14 +2032,13 @@ def reset_flow_host(device, args, command):
             print(mrsi.query_text(is_bluefield))
 
     elif command == "reset":
-        if is_cedar_device(devid):
+        if is_pcie_switch_device(devid):
             if args.reset_level is None:
                 args.reset_level = CmdRegMfrl.WARM_REBOOT
             if args.reset_level is not CmdRegMfrl.WARM_REBOOT:
                 raise RuntimeError("Only reboot is supported for Cedar device")
-            else:
-                global is_cedar
-                is_cedar = True
+            global is_pcie_switch
+            is_pcie_switch = True
 
         reset_level = mfrl.default_reset_level(
         ) if args.reset_level is None else args.reset_level
