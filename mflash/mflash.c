@@ -2022,11 +2022,11 @@ void update_seventh_gen_addrs(mflash* mfl)
     }
     else if (mfl->dm_dev_id == DeviceConnectX8)
     {
-        mfl->gw_cmd_register_addr = HCR_7GEN_CX7_FLASH_CMD;
-        mfl->gw_data_field_addr = HCR_7GEN_CX7_FLASH_DATA;
-        mfl->gcm_en_addr = HCR_7GEN_CX7_GCM_EN_ADDR;
-        mfl->gw_addr_field_addr = HCR_7GEN_CX7_FLASH_ADDR;
-        mfl->gw_data_size_register_addr = HCR_7GEN_CX7_FLASH_DATA_SIZE;
+        mfl->gw_cmd_register_addr = HCR_7GEN_CX8_FLASH_CMD;
+        mfl->gw_data_field_addr = HCR_7GEN_CX8_FLASH_DATA;
+        mfl->gcm_en_addr = HCR_7GEN_CX8_GCM_EN_ADDR;
+        mfl->gw_addr_field_addr = HCR_7GEN_CX8_FLASH_ADDR;
+        mfl->gw_data_size_register_addr = HCR_7GEN_CX8_FLASH_DATA_SIZE;
     }
     else if (mfl->dm_dev_id == DeviceArcusE)
     {
