@@ -2878,6 +2878,7 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
     u_int8_t firstBit = 0;
     u_int8_t bitLen = 0;
     life_cycle_t lifeCycle;
+    lifeCycle.version_field = 0;
 
     switch (_chip_type)
     {
