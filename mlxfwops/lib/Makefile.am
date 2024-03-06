@@ -46,7 +46,9 @@ AM_CPPFLAGS = \
 
 AM_CPPFLAGS += $(JSON_CFLAGS)
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) -Wno-implicit-fallthrough
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
+AM_CPPFLAGS += -Wno-unused-parameter
+AM_CXXFLAGS += -Wno-stringop-truncation
 
 if ENABLE_FWMGR
 AM_CPPFLAGS += -I$(top_srcdir)/libmfa

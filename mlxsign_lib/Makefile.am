@@ -37,6 +37,7 @@ AM_CPPFLAGS = \
 
 AM_CXXFLAGS = -Wall -W  -g -MP -MD -pipe $(COMPILER_FPIC)
 AM_CXXFLAGS += -DTOOLS_CRYPTO_KEY='$(TOOLS_CRYPTO_KEY)' -DTOOLS_CRYPTO_IV='$(TOOLS_CRYPTO_IV)'
+AM_CXXFLAGS += -Wno-deprecated-declarations
 
 noinst_LTLIBRARIES = libmlxsign.la
 libmlxsign_la_SOURCES = mlxsign_lib.cpp mlxsign_lib.h mlxsign_com_def.h \

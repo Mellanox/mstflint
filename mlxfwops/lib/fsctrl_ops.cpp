@@ -316,12 +316,12 @@ bool FsCtrlOperations::FsIntQuery()
             CRSpaceRegisters cr_space_reg(mf, _fwImgInfo.ext_info.chip_type);
             _fsCtrlImgInfo.global_image_status = cr_space_reg.getGlobalImageStatus();
         }
-        catch (logic_error e)
+        catch (logic_error const &e)
         {
             printf("%s\n", e.what());
             return false;
         }
-        catch (exception e)
+        catch (exception const &e)
         {
             printf("%s\n", e.what());
             return false;
