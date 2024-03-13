@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -35,20 +35,8 @@
 
 #include <linux/types.h>
 
-#define MLX5CTL_METHOD_READ     1
-#define MLX5CTL_METHOD_WRITE    0
-#define MLX5CTL_ENV_VAR_DEBUG   "MLX5CTL_DEBUG"
-
-#define MLX5CTL_DEBUG_PRINT(mf, format, arg...) \
-    if (mf->mlx5ctl_env_var_debug) {        \
-        printf("%s: %s %d: " format, MLX5CTL_ENV_VAR_DEBUG, __func__, __LINE__, ##arg); \
-    }
-
-int mlx5_control_access_register(int fd, void *data_in,
-                                 int size_in, __u16 reg_id,
-                                 int method, int *reg_status,
-                                 mfile* mf);
-void mlx5ctl_set_device_id(mfile* mf);
+#define DEV_PATH_MAX 256
+#define DEV_NAME_MAX 64
 
 struct mlx5ctl_info {
 	__u16 uctx_uid; /* current process allocated UCTX UID */
@@ -65,17 +53,31 @@ struct mlx5ctl_cmdrpc {
 	__u32 outlen; /* outbox buffer length */
 };
 
-struct mlx5ctl_umem_reg {
-	__aligned_u64 addr; /* user address */
-	__aligned_u64 len; /* user buffer length */
-	__u32 umem_id; /* returned device's umem ID */
-	__u32 reserved; /* explicit padding must be zero */
+struct mlx5ctl_dev {
+	int ctl_id;
+	char ctldev[DEV_NAME_MAX];
+	char mdev[DEV_NAME_MAX];
 };
 
-struct mlx5ctl_umem_unreg {
-	__u32 umem_id;
-	__u32 reserved; /* explicit padding must be zero */
+struct mlx5u_dev {
+	char devname[DEV_NAME_MAX];
+	int fd;
 };
+
+extern int verbosity_level;
+
+#define err_msg(fmt, ...) \
+	fprintf(stderr, "Error : " fmt, ##__VA_ARGS__)
+
+#define info_msg(fmt, ...) \
+	fprintf(stdout, "INFO : " fmt,  ##__VA_ARGS__)
+
+#define dbg_msg(verbosity, fmt, ...) \
+	do { \
+		if (verbosity <= verbosity_level) { \
+			fprintf(stdout, "[DEBUG] (%s:%d %s) "fmt , __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
+		} \
+	} while (0)
 
 #define MLX5CTL_MAX_RPC_SIZE (512 * 512) /* max FW RPC buffer size 512 blocks of 512 bytes */
 
@@ -86,11 +88,5 @@ struct mlx5ctl_umem_unreg {
 
 #define MLX5CTL_IOCTL_CMDRPC \
 	_IOWR(MLX5CTL_IOCTL_MAGIC, 0x1, struct mlx5ctl_cmdrpc)
-
-#define MLX5CTL_IOCTL_UMEM_REG \
-	_IOWR(MLX5CTL_IOCTL_MAGIC, 0x2, struct mlx5ctl_umem_reg)
-
-#define MLX5CTL_IOCTL_UMEM_UNREG \
-	_IOWR(MLX5CTL_IOCTL_MAGIC, 0x3, struct mlx5ctl_umem_unreg)
 
 #endif /* __MLX5CTL_IOCTL_H__ */

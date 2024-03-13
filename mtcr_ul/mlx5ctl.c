@@ -47,9 +47,9 @@
 
 
 
-static int mlx5_cmd_ioctl(int fd, struct mlx5ctl_cmd_inout *cmd)
+static int mlx5_cmd_ioctl(int fd, struct mlx5ctl_cmdrpc *cmd)
 {
-	return ioctl(fd, MLX5CTL_IOCTL_CMD_INOUT, cmd);
+	return ioctl(fd, MLX5CTL_IOCTL_CMDRPC, cmd);
 }
 
 
@@ -80,10 +80,10 @@ int mlx5_control_access_register(int fd, void *data_in,
 {
 	int outlen = MLX5_ST_SZ_BYTES(access_register_out) + size_in;
 	int inlen = MLX5_ST_SZ_BYTES(access_register_in) + size_in;
-	struct mlx5ctl_cmd_inout cmd = {0};
+	struct mlx5ctl_cmdrpc cmd = {0};
 	int err = -ENOMEM;
-	u32 *out = NULL;
-	u32 *in = NULL;
+	__aligned_u64 *out = NULL;
+	__aligned_u64 *in = NULL;
 	void *data;
     void *status;
 
@@ -96,10 +96,10 @@ int mlx5_control_access_register(int fd, void *data_in,
     memset(in, 0, inlen);
     memset(out, 0, outlen);
 
-	cmd = (struct mlx5ctl_cmd_inout){
-		.in = in,
+	cmd = (struct mlx5ctl_cmdrpc){
+		.in = (__aligned_u64)in,
 		.inlen = inlen,
-		.out = out,
+		.out = (__aligned_u64)out,
 		.outlen = outlen,
 	};
 	data = MLX5_ADDR_OF(access_register_in, in, register_data);
