@@ -166,6 +166,8 @@ extern "C"
 
     int read_dword_from_conf_space(mfile* mf, u_int32_t offset, u_int32_t* data);
 
+    void mtcr_fix_endianness(u_int32_t* buf, int len);
+
 #ifdef __cplusplus
 }
 #endif
