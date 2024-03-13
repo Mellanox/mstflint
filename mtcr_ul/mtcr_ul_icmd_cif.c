@@ -48,6 +48,7 @@
 #endif
 
 #include "mtcr_mem_ops.h"
+#include "mtcr_ul_com.h"
 
 #define ICMD_QUERY_CAP_CMD_ID 0x8400
 #define ICMD_QUERY_CAP_CMD_SZ 0x8
@@ -729,6 +730,7 @@ static int icmd_send_command_com(mfile* mf,
                                  IN int enhanced)
 {
     int ret;
+    bool rollback_byte_order_conversion = false;
     // open icmd interface by demand
     ret = icmd_open(mf);
     CHECK_RC(ret);
@@ -760,6 +762,7 @@ static int icmd_send_command_com(mfile* mf,
         }
         else
         {
+            rollback_byte_order_conversion = true; // rollback byte order conversion on MWRITE_BUF_ICMD failure
             MWRITE_BUF_ICMD(mf, mf->icmd.cmd_addr, data, write_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
         }
     }
@@ -805,6 +808,10 @@ cleanup:
     if (!enhanced)
     {
         (void)icmd_clear_semaphore(mf);
+    }
+    if (rollback_byte_order_conversion)
+    {
+        mtcr_fix_endianness((u_int32_t*)data, write_data_size);
     }
     return ret;
 }

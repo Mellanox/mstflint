@@ -2845,7 +2845,7 @@ int maccess_reg_mad_ul(mfile* mf, u_int8_t* data)
     return ((ul_ctx_t*)mf->ul_ctx)->maccess_reg(mf, data);
 }
 
-static void mtcr_fix_endianness(u_int32_t* buf, int len)
+void mtcr_fix_endianness(u_int32_t* buf, int len)
 {
     int i;
 
