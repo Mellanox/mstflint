@@ -729,6 +729,7 @@ static int icmd_send_command_com(mfile* mf,
                                  IN int enhanced)
 {
     int ret;
+    bool need_to_change_back_endiannes = false;
     // open icmd interface by demand
     ret = icmd_open(mf);
     CHECK_RC(ret);
@@ -760,12 +761,14 @@ static int icmd_send_command_com(mfile* mf,
         }
         else
         {
+            need_to_change_back_endiannes = true; // if MWRITE_BUF_ICMD fails, we will know in cleanup that endiannes should be changed back.
             MWRITE_BUF_ICMD(mf, mf->icmd.cmd_addr, data, write_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
         }
     }
 
     if (mf->icmd.dma_icmd)
     {
+        need_to_change_back_endiannes = true;
         ret = MWRITE4_ICMD(mf, mf->icmd.ctrl_addr + EXT_MBOX_DMA_OFF, EXTRACT64(mf->icmd.dma_pa, 32, 32));
         CHECK_RC(ret);
         ret = MWRITE4_ICMD(mf, mf->icmd.ctrl_addr + EXT_MBOX_DMA_OFF + 4, EXTRACT64(mf->icmd.dma_pa, 0, 32));
@@ -797,6 +800,8 @@ static int icmd_send_command_com(mfile* mf,
     }
     else
     {
+        need_to_change_back_endiannes = false; // MREAD_BUF_ICMD changes back the endiannes even if it returns return code of failure.
+                                               // So in case of failure, when we go to cleanup - don't need to change again the endiannes.
         MREAD_BUF_ICMD(mf, mf->icmd.cmd_addr, data, read_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
     }
 
@@ -805,6 +810,10 @@ cleanup:
     if (!enhanced)
     {
         (void)icmd_clear_semaphore(mf);
+    }
+    if (need_to_change_back_endiannes)
+    {
+        fix_endianness((u_int32_t*)data, read_data_size, 1);
     }
     return ret;
 }
