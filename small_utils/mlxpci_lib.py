@@ -70,13 +70,15 @@ CAP_PHYSICAL_LAYER_GEN4 = 0x26
 CAP_DPC = 0x1d
 CAP_ACS = 0xd
 CAP_ATS = 0xf
+CAP_PTM = 0x1f
 # Key:ID, value:size
 CAP_EXTENDED_DICT = {CAP_AER: 0x48,
                      CAP_SRIOV: 0x40,
                      CAP_SECONDRY_PCI_EXPRESS: 0x10,
                      CAP_PHYSICAL_LAYER_GEN4: 0x40,
                      CAP_DPC: 0x40,
-                     CAP_ATS: 0x8
+                     CAP_ATS: 0x8,
+                     CAP_PTM: 0xc
                      }
 
 
