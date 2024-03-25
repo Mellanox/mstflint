@@ -2088,9 +2088,7 @@ def reset_flow_host(device, args, command):
             raise RuntimeError(
                 "Reset-sync '{0}' is not supported with reset-level '{1}'".format(reset_sync, reset_level))
 
-        minimal_or_requested = 'Minimal' if args.reset_level is None else 'Requested'
-        print("{0} reset level for device, {1}:\n".format(
-            minimal_or_requested, device))
+        print("The reset level for device, {0} is:\n".format(device))
         print("{0}: {1}".format(reset_level,
               mfrl.reset_level_description(reset_level)))
 
