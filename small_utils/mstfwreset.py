@@ -1857,13 +1857,6 @@ def arm_reset(reset_level, reset_type, reset_sync, mrsi, mfrl):
 
 
 def execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, cmdLineArgs, mfrl, mrsi):
-
-    # mpcir usage removed due to RM #2214400
-    # # In new FW, the FW doesn't need this command any more
-    # if mfrl.is_phy_less_reset(reset_type):
-    #     logger.debug('[Timing Test] MPCIR')
-    #     mpcir.prepare_for_phyless_fw_upgrade()
-
     if reset_level == mfrl.LIVE_PATCH:
         send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
     elif reset_level in [mfrl.PCI_RESET, mfrl.WARM_REBOOT]:
@@ -2100,6 +2093,9 @@ def reset_flow_host(device, args, command):
             minimal_or_requested, device))
         print("{0}: {1}".format(reset_level,
               mfrl.reset_level_description(reset_level)))
+
+        if reset_type in [CmdRegMfrl.ARM_ONLY, CmdRegMfrl.ARM_OS_SHUTDOWN] and reset_level != mfrl.IMMEDIATE_RESET:
+            raise RuntimeError("Reset type 3 and 4 are only valid when reset level is 1")
 
         if CmdRegMfrl.is_reset_level_trigger_is_pci_link(reset_level) and mcam.is_pci_rescan_required_supported() and mfrl.is_pci_rescan_required():
             print("-W- PCI rescan is required after device reset.")
