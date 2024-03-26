@@ -730,7 +730,7 @@ static int icmd_send_command_com(mfile* mf,
                                  IN int enhanced)
 {
     int ret;
-    bool rollback_byte_order_conversion = false;
+    bool need_to_change_back_endianness = false;
     // open icmd interface by demand
     ret = icmd_open(mf);
     CHECK_RC(ret);
@@ -762,7 +762,7 @@ static int icmd_send_command_com(mfile* mf,
         }
         else
         {
-            rollback_byte_order_conversion = true; // rollback byte order conversion on MWRITE_BUF_ICMD failure
+            need_to_change_back_endianness = true; // if MWRITE_BUF_ICMD fails, we will know in cleanup that endianness should be changed back.
             MWRITE_BUF_ICMD(mf, mf->icmd.cmd_addr, data, write_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
         }
     }
@@ -800,6 +800,8 @@ static int icmd_send_command_com(mfile* mf,
     }
     else
     {
+        need_to_change_back_endianness = false; // MREAD_BUF_ICMD changes back the endianness even if it returns return code of failure. So in case of
+                                                // failure, when we go to cleanup - don't need to change again the endianness.
         MREAD_BUF_ICMD(mf, mf->icmd.cmd_addr, data, read_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
     }
 
@@ -809,7 +811,7 @@ cleanup:
     {
         (void)icmd_clear_semaphore(mf);
     }
-    if (rollback_byte_order_conversion)
+    if (need_to_change_back_endianness)
     {
         mtcr_fix_endianness((u_int32_t*)data, write_data_size);
     }
