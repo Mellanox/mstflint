@@ -203,11 +203,11 @@ static int _extract_dbdf_from_full_name(const char* name,
                                         unsigned  * dev,
                                         unsigned  * func)
 {
-    if (sscanf(name, "/sys/bus/pci/devices/%4x:%2x:%2x.%d/resource0", domain, bus, dev, func) == 4) {
+    if (sscanf(name, "/sys/bus/pci/devices/%x:%2x:%2x.%d/resource0", domain, bus, dev, func) == 4) {
         return 0;
-    } else if (sscanf(name, "/sys/bus/pci/devices/%4x:%2x:%2x.%d/config", domain, bus, dev, func) == 4) {
+    } else if (sscanf(name, "/sys/bus/pci/devices/%x:%2x:%2x.%d/config", domain, bus, dev, func) == 4) {
         return 0;
-    } else if (sscanf(name, "/proc/bus/pci/%4x:%2x/%2x.%d", domain, bus, dev, func) == 4) {
+    } else if (sscanf(name, "/proc/bus/pci/%x:%2x/%2x.%d", domain, bus, dev, func) == 4) {
         return 0;
     } else if (sscanf(name, "/proc/bus/pci/%2x/%2x.%d", bus, dev, func) == 3) {
         *domain = 0;

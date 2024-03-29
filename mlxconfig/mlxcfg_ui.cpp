@@ -257,9 +257,9 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
             mdevices_info_destroy(dev, numOfDev);
             return err(true, NO_DEV_ERR);
         }
-        // printf("-D- num of dev: %d , 1st dev : %s\n", numOfDev, buf);
+        // printf("-D- num of dev: %d , 1st dev : %s\n", numOfDev, dev->dev_name);
         dev_info* devPtr = dev;
-        char pcibuf[32] = {0};
+        char pcibuf[64] = {0};
 
         for (int i = 0; i < numOfDev; i++)
         {
@@ -268,7 +268,7 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
 #else
             const char* device_name_ptrn = "%04x:%02x:%02x.%x";
 #endif
-            snprintf(pcibuf, 32, device_name_ptrn, devPtr->pci.domain, devPtr->pci.bus, devPtr->pci.dev,
+            snprintf(pcibuf, 64, device_name_ptrn, devPtr->pci.domain, devPtr->pci.bus, devPtr->pci.dev,
                      devPtr->pci.func);
             if (queryDevCfg(devPtr->pci.conf_dev, pcibuf, i + 1))
             {
