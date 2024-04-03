@@ -1297,7 +1297,8 @@ int mwrite_i2cblock(mfile* mf, unsigned char i2c_slave, u_int8_t addr_width, uns
     return 0;
 }
 
-static void fix_endianness(u_int32_t* buf, int len)
+// TODO: Introduce a module to keep platform-independent routines like this one below
+void mtcr_fix_endianness(u_int32_t* buf, int len)
 {
     int i;
 
@@ -1313,13 +1314,13 @@ int mread_buffer(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len)
 {
     int rc;
     rc = mread4_block(mf, offset, (u_int32_t*)data, byte_len);
-    fix_endianness((u_int32_t*)data, byte_len);
+    mtcr_fix_endianness((u_int32_t*)data, byte_len);
     return rc;
 }
 
 int mwrite_buffer(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len)
 {
-    fix_endianness((u_int32_t*)data, byte_len);
+    mtcr_fix_endianness((u_int32_t*)data, byte_len);
     return mwrite4_block(mf, offset, (u_int32_t*)data, byte_len);
 }
 
