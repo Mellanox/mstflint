@@ -1350,17 +1350,17 @@ def is_pci_bridge_is_mellanox_device(devAddr):
 
 def send_reset_cmd_to_pcie_switch_devices(reset_level, reset_type, reset_sync):
     #
-    # We are going to send MFRL request for all the Cedar devices on the host.
+    # We are going to send MFRL request for all the PCIE switch devices on the host.
     #
 
-    # Discover all Cedar devices.
+    # Discover all PCIE switch devices.
     peripherals = MlnxPeripheralComponents()
     for pci_device in peripherals.pci_devices:
         logger.debug("Creating regaccess obj for device %s" % pci_device.get_alias())
         pci_device_mst = mtcr.MstDevice(pci_device.get_alias())
         pci_device_reg_access = regaccess.RegAccess(pci_device_mst)
         if is_pcie_switch_device(pci_device.get_cfg_did(), pci_device_reg_access):
-            # Create MFRL for each Cedar device.
+            # Create MFRL for each PCIE switch device.
             logger.debug("Creating MFRL for device %s" % pci_device.get_alias())
             mfrl = CmdRegMfrl(pci_device_reg_access, logger)
             # Send MFRL reset.
@@ -2063,7 +2063,7 @@ def reset_flow_host(device, args, command):
             if args.reset_level is None:
                 args.reset_level = reset_level
             if args.reset_level is not CmdRegMfrl.WARM_REBOOT:
-                raise RuntimeError("Only reboot is supported for Cedar device")
+                raise RuntimeError("Only reboot is supported for PCIE switch device")
             global is_pcie_switch
             is_pcie_switch = True
 
