@@ -1828,6 +1828,21 @@ def execute_driver_sync_reset_bf(mfrl, reset_level, reset_type):
             logger.debug("MFRL sync 1 worked although MFRL returned with error: {0}".format(mfrl_error))
 
 
+def send_mrsi(mrsi):
+    max_retries = 5
+    retry_count = 0
+    status = 0
+    while retry_count < max_retries:
+        try:
+            status = mrsi.get_ecos(CmdRegMrsi.EMBEDDED_CPU_DEVICE)
+        except Exception:
+            retry_count += 1
+        else:
+            break  # If the function call succeeds, break out of the loop
+    else:
+        raise RuntimeError("Maximum retries reached. Unable to retrieve ecos from mrsi register.")
+    return status
+
 ######################################################################
 # Description: Resetting only the ARM side
 ######################################################################
@@ -1846,7 +1861,7 @@ def arm_reset(reset_level, reset_type, reset_sync, mrsi, mfrl):
         timeout = get_timeout_in_miliseconds(dtor_result, "EMBEDDED_CPU_OS_SHUTDOWN_TO") / 1000
         logger.debug('EMBEDDED_CPU_OS_SHUTDOWN timeout = {0}'.format(timeout))
         start_time = time.time()
-        while mrsi.get_ecos(CmdRegMrsi.EMBEDDED_CPU_DEVICE) is not CmdRegMrsi.LOW_POWER_STANDBY:
+        while send_mrsi(mrsi) is not CmdRegMrsi.LOW_POWER_STANDBY:
             error_msg = "The ARM side has not started running (the ecos field is in state {0})".format(mrsi.get_ecos(CmdRegMrsi.EMBEDDED_CPU_DEVICE))
             logger.debug('ecos status {0}'.format(mrsi.get_ecos(CmdRegMrsi.EMBEDDED_CPU_DEVICE)))
             check_if_elapsed_time(start_time, timeout, error_msg)
@@ -2056,16 +2071,16 @@ def reset_flow_host(device, args, command):
             print(mrsi.query_text(is_bluefield))
 
     elif command == "reset":
-        reset_level = mfrl.default_reset_level(
-        ) if args.reset_level is None else args.reset_level
-
         if is_pcie_switch_device(devid):
             if args.reset_level is None:
-                args.reset_level = reset_level
+                args.reset_level = CmdRegMfrl.WARM_REBOOT
             if args.reset_level is not CmdRegMfrl.WARM_REBOOT:
                 raise RuntimeError("Only reboot is supported for Cedar device")
             global is_pcie_switch
             is_pcie_switch = True
+
+        reset_level = mfrl.default_reset_level(
+        ) if args.reset_level is None else args.reset_level
 
         if mfrl.is_reset_level_supported(reset_level) is False:
             raise RuntimeError(
