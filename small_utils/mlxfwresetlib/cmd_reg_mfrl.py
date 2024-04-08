@@ -41,10 +41,10 @@ class CmdRegMfrl():
 
     LIVE_PATCH, IMMEDIATE_RESET, PCI_RESET, WARM_REBOOT = 0, 1, 3, 4
     reset_levels_db = [
-        {'level': LIVE_PATCH, 'description': 'Driver, PCI link, network link will remain up ("live-Patch")', 'mask': 0b1, 'support_reset_type': False},
-        {'level': IMMEDIATE_RESET, 'description': 'Only ARM side will not remain up ("Immediate reset").', 'mask': 0b10, 'support_reset_type': True},
-        {'level': PCI_RESET, 'description': 'Driver restart and PCI reset', 'mask': 0b1000, 'support_reset_type': True},
-        {'level': WARM_REBOOT, 'description': 'Warm Reboot', 'mask': 0b1000000, 'support_reset_type': True},
+        {'level': LIVE_PATCH, 'description': 'Driver, PCI link, network link will remain up ("live-Patch")', 'mask': 0b1, 'support_reset_type': False, 'valid_default': True},
+        {'level': IMMEDIATE_RESET, 'description': 'Only ARM side will not remain up ("Immediate reset").', 'mask': 0b10, 'support_reset_type': True, 'valid_default': False},
+        {'level': PCI_RESET, 'description': 'Driver restart and PCI reset', 'mask': 0b1000, 'support_reset_type': True, 'valid_default': True},
+        {'level': WARM_REBOOT, 'description': 'Warm Reboot', 'mask': 0b1000000, 'support_reset_type': True, 'valid_default': True},
     ]
 
     FULL_CHIP, PHY_LESS, NIC_ONLY, ARM_ONLY, ARM_OS_SHUTDOWN = 0, 1, 2, 3, 4
@@ -79,7 +79,11 @@ class CmdRegMfrl():
     @classmethod
     def reset_levels(cls):
         'Return a list with all the optional reset-levels'
-        return [reset_level_ii['level'] for reset_level_ii in cls.reset_levels_db]
+        return [(reset_level_ii['level']) for reset_level_ii in cls.reset_levels_db]
+
+    @classmethod
+    def reset_levels_default(cls):
+        return [(reset_level_ii['level'], reset_level_ii['valid_default']) for reset_level_ii in cls.reset_levels_db]
 
     @classmethod
     def reset_types(cls):
@@ -184,10 +188,11 @@ class CmdRegMfrl():
             description = reset_level_ii['description']
             if is_pcie_switch:
                 supported = "Supported" if reset_level_ii['supported'] and reset_level_ii['level'] is CmdRegMfrl.WARM_REBOOT else "Not Supported"
+                default = "(default)" if reset_level_ii['level'] is CmdRegMfrl.WARM_REBOOT else ""
             else:
                 supported = "Supported" if reset_level_ii['supported'] else "Not Supported"
+                default = "(default)" if reset_level_ii["level"] == default_reset_level else ""
 
-            default = "(default)" if reset_level_ii["level"] == default_reset_level else ""
             result += "{0}: {1:<62}-{2:<14}{3}\n".format(level, description, supported, default)
 
         # Reset types
@@ -233,7 +238,11 @@ class CmdRegMfrl():
             return False
 
     def default_reset_level(self):
-        return CmdRegMfrl.PCI_RESET
+        'Return the default reset-level (minimal supported reset-level)'
+        for reset_level_ii, is_default in CmdRegMfrl.reset_levels_default():
+            if self.is_reset_level_supported(reset_level_ii) and is_default:
+                return reset_level_ii
+        raise CmdNotSupported("There is no supported reset-level")
 
     def default_reset_type(self):
         'Return the default reset-type'
