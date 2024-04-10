@@ -107,10 +107,11 @@ void close_log()
     return;
 }
 
-static const char* life_cycle_fs4_strings[NUM_OF_FS4_LIFE_CYCLES] = {"PRODUCTION", "GA SECURED", "GA NON SECURED",
-                                                                     "RMA"};
-static const char* life_cycle_fs5_strings[NUM_OF_FS5_LIFE_CYCLES] = {
-  "BLANK CHIP", "", "", "", "PRE PRODUCTION", "", "PRODUCTION", "FAILURE ANALYSIS"};
+#define NUM_OF_FS5_LIFE_CYCLES 5
+#define NUM_OF_FS4_LIFE_CYCLES 4
+
+static const char* life_cycle_strings[NUM_OF_FS5_LIFE_CYCLES] = {"PRODUCTION", "GA SECURED", "GA NON SECURED", "RMA",
+                                                                 "PRE PRODUCTION"};
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
@@ -4484,27 +4485,14 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
             if (ops->IsLifeCycleSupported())
             { // from CX6 and above
                 unsigned int index = (unsigned int)fwInfo.fs3_info.life_cycle.value;
-                if (fwInfo.fs3_info.life_cycle.version_field == 0)
+                if ((fwInfo.fs3_info.life_cycle.version_field == 0 && index >= NUM_OF_FS4_LIFE_CYCLES) ||
+                    (fwInfo.fs3_info.life_cycle.version_field == 1 && index >= NUM_OF_FS5_LIFE_CYCLES))
                 {
-                    if (index >= NUM_OF_FS4_LIFE_CYCLES)
-                    {
-                        reportErr(true, "The life cycle value is out of range: %u", index);
-                    }
-                    else
-                    {
-                        printf("Life cycle:            %s\n", life_cycle_fs4_strings[index]);
-                    }
+                    reportErr(true, "The life cycle value is out of range: %u", index);
                 }
                 else
                 {
-                    if (index >= NUM_OF_FS5_LIFE_CYCLES)
-                    {
-                        reportErr(true, "The life cycle value is out of range: %u", index);
-                    }
-                    else
-                    {
-                        printf("Life cycle:            %s\n", life_cycle_fs5_strings[index]);
-                    }
+                    printf("Life cycle:            %s\n", life_cycle_strings[index]);
                 }
             }
             if (ops->IsSecureBootSupported())
@@ -4550,34 +4538,23 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                     printf("Image Boot Status:     %d\n", fwInfo.fs3_info.global_image_status);
 
                     unsigned int index = (unsigned int)fwInfo.fs3_info.life_cycle.value;
-                    if (fwInfo.fs3_info.life_cycle.version_field == 0)
+                    if ((fwInfo.fs3_info.life_cycle.version_field == 0 && index >= NUM_OF_FS4_LIFE_CYCLES) ||
+                        (fwInfo.fs3_info.life_cycle.version_field == 1 && index >= NUM_OF_FS5_LIFE_CYCLES))
                     {
-                        if (index >= NUM_OF_FS4_LIFE_CYCLES)
-                        {
-                            reportErr(true, "The life cycle value is out of range: %u", index);
-                        }
-                        else
-                        {
-                            printf("Life cycle:            %s\n", life_cycle_fs4_strings[index]);
-                        }
-                        if (CRSpaceRegisters::IsLifeCycleSecured(fwInfo.fs3_info.life_cycle))
+                        reportErr(true, "The life cycle value is out of range: %u", index);
+                    }
+                    else
+                    {
+                        printf("Life cycle:            %s\n", life_cycle_strings[index]);
+
+                        if (fwInfo.fs3_info.life_cycle.version_field == 0 &&
+                            CRSpaceRegisters::IsLifeCycleSecured(fwInfo.fs3_info.life_cycle))
                         {
                             if (fwInfo.fs3_info.device_security_version_access_method == DIRECT_ACCESS)
                             {
                                 printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
                             }
                             printf("Image Security Ver:    %d\n", fwInfo.fs3_info.image_security_version);
-                        }
-                    }
-                    else
-                    {
-                        if (index >= NUM_OF_FS5_LIFE_CYCLES)
-                        {
-                            reportErr(true, "The life cycle value is out of range: %u", index);
-                        }
-                        else
-                        {
-                            printf("Life cycle:            %s\n", life_cycle_fs5_strings[index]);
                         }
                     }
                 }
