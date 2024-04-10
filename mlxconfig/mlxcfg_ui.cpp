@@ -1263,7 +1263,7 @@ mlxCfgStatus MlxCfg::genTLVsFile()
 
     try
     {
-        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Switch);
+        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType);
         commander.genTLVsList(tlvs);
         VECTOR_ITERATOR(string, tlvs, it)
         {
@@ -1340,7 +1340,7 @@ mlxCfgStatus MlxCfg::genXMLTemplate()
 
     try
     {
-        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Switch);
+        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType);
         commander.genXMLTemplate(tlvs, xmlTemplate, _mlxParams.allAttrs);
     }
     catch (MlxcfgException& e)
@@ -1381,7 +1381,7 @@ mlxCfgStatus MlxCfg::raw2XMLAux(bool isBin)
 
     try
     {
-        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Switch);
+        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType);
         if (isBin)
         {
             // commander.bin2XML(buff, xmlTemplate);
@@ -1434,7 +1434,7 @@ mlxCfgStatus MlxCfg::XML2RawAux(bool isBin)
 
     try
     {
-        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Switch);
+        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType);
         if (isBin)
         {
             commander.XML2Bin(xml, binBuff, false);
@@ -1495,7 +1495,7 @@ mlxCfgStatus MlxCfg::createConf()
 
     try
     {
-        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Switch);
+        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType);
         commander.createConf(xml, buff);
 
         if (!_mlxParams.privPemFile.empty() && !_mlxParams.keyPairUUID.empty()) {
