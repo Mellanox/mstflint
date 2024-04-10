@@ -72,6 +72,7 @@ typedef enum flash_memory_type
     FMT_WINBOND = 0x40,
     FMT_WINBOND_W25X = 0x30,
     FMT_WINBOND_3V = 0x70,
+    FMT_WINBOND_4MB = 0x80,
     FMT_ATMEL = 0x2,
     FMT_N25QXXX = 0xba,
     FMT_S25FLXXXP = 0x02,
