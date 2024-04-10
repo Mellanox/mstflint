@@ -350,8 +350,9 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
        ((image_info.secure_fw == 1) ? SMM_SECURE_FW : 0));
 
     _fs3ImgInfo.runFromAny = image_info.image_size.run_from_any;
-    const u_int32_t* swId = (u_int32_t*)NULL;
+    _fs3ImgInfo.logStep = image_info.image_size.log_step;
 
+    const u_int32_t* swId = (u_int32_t*)NULL;
     DPRINTF(("Fs3Operations::GetImageInfo _fwImgInfo.supportedHwId[0]=0x%x\n", _fwImgInfo.supportedHwId[0]));
     if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId))
     {
