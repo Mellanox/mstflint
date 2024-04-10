@@ -104,8 +104,7 @@ typedef enum
     PRODUCTION = 0,
     GA_SECURED = 1,
     GA_NON_SECURED = 2,
-    RMA = 3,
-    NUM_OF_FS4_LIFE_CYCLES = 4
+    RMA = 3
 } life_cycle_fs4_t;
 
 typedef enum
@@ -113,8 +112,7 @@ typedef enum
     BLANK_CHIP = 0,
     PRE_PROD = 4,
     PROD = 6,
-    FAILURE_ANALYSIS = 7,
-    NUM_OF_FS5_LIFE_CYCLES = 8
+    FAILURE_ANALYSIS = 7
 } life_cycle_fs5_t;
 
 #define MAX_HTOC_ENTRIES_NUM 28

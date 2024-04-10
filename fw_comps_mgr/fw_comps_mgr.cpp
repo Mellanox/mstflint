@@ -1745,6 +1745,7 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     query->security_type.debug_fw = mgir.fw_info.debug;
     query->security_type.dev_fw = mgir.fw_info.dev;
     query->life_cycle.value = mgir.fw_info.life_cycle;
+    query->life_cycle.value |= (mgir.fw_info.life_cycle_msb << 2);
     query->sec_boot = mgir.fw_info.sec_boot;
     query->encryption = mgir.fw_info.encryption;
     query->signed_fw = _compsQueryMap[FwComponent::COMPID_BOOT_IMG].comp_cap.signed_updates_only;
@@ -1757,6 +1758,10 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
         if (dm_dev_is_switch(dm_device_id) || dm_dev_is_retimer(dm_device_id))
         {
             query->security_type.dev_fw = mgir.fw_info.dev_sc;
+        }
+        if (dm_dev_is_fs5(dm_device_id))
+        {
+            query->life_cycle.version_field = 1;
         }
     } else {
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
