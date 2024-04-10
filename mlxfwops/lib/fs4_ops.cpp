@@ -120,7 +120,7 @@ bool Fs4Operations::IsEncryptedDevice(bool& is_encrypted)
             return false;
         }
         CRSpaceRegisters crSpaceReg(getMfileObj(), chip_type);
-        if (crSpaceReg.getLifeCycle() == GA_SECURED)
+        if (crSpaceReg.IsLifeCycleSecured())
         {
             is_encrypted = true;
         }
@@ -1425,7 +1425,7 @@ bool Fs4Operations::QuerySecurityFeatures()
                 _fs3ImgInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
                 _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
 
-                if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED)
+                if (CRSpaceRegisters::IsLifeCycleSecured(_fs3ImgInfo.ext_info.life_cycle))
                 {
                     if (IsSecurityVersionAccessible(_fwImgInfo.ext_info.chip_type))
                     {
