@@ -44,7 +44,7 @@
 
 using namespace std;
 
-Commander* Commander::create(std::string device, std::string dbName, bool forceCreate)
+Commander* Commander::create(std::string device, std::string dbName, bool forceCreate, Device_Type deviceType)
 {
     mfile* mf;
     int rc;
@@ -71,7 +71,7 @@ Commander* Commander::create(std::string device, std::string dbName, bool forceC
     Commander* cmdr = NULL;
     try
     {
-        cmdr = create(mf, dbName);
+        cmdr = create(mf, dbName, deviceType);
     }
     catch (MlxcfgException& exp)
     {
@@ -82,7 +82,7 @@ Commander* Commander::create(std::string device, std::string dbName, bool forceC
     return cmdr;
 }
 
-Commander* Commander::create(mfile* mf, std::string dbName)
+Commander* Commander::create(mfile* mf, std::string dbName, Device_Type deviceType)
 {
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId, hwRevId;
@@ -103,7 +103,7 @@ Commander* Commander::create(mfile* mf, std::string dbName)
         { // take internal db file
             dbName = getDefaultDBName(dm_dev_is_switch(deviceId));
         }
-        commander = new GenericCommander(mf, dbName);
+        commander = new GenericCommander(mf, dbName, deviceType);
     }
     else
     {
