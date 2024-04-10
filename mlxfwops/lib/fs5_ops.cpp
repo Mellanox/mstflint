@@ -382,27 +382,25 @@ bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
 
     if (res)
     {
-        bool isSigned = false;
-
-        if (!IsSecureFwUpdateSigned(isSigned))
+        //* Get image size
+        u_int32_t burn_image_size;
+        if (!GetEncryptedImageSizeFromImageInfo(&burn_image_size))
         {
-            return false;
+            return errmsg("%s", err());
         }
 
-        if (isSigned)
+        vector<u_int8_t> bch(BCH_SIZE_IN_BYTES + 1, 0);
+        if (!_ioAccess->read(burn_image_size, bch.data(), BCH_SIZE_IN_BYTES))
         {
-            u_int32_t imageSize = img.size();
-            img.resize(imageSize + BCH_SIZE_IN_BYTES);
-            u_int32_t log2_chunk_size = _ioAccess->get_log2_chunk_size();
-            bool is_image_in_odd_chunks = _ioAccess->get_is_image_in_odd_chunks();
+            return errmsg("Image - read error (%s)\n", _ioAccess->err());
+        }
 
-            _ioAccess->set_address_convertor(0, 0);
-            if (!_ioAccess->read(_ioAccess->get_effective_size() - BCH_SIZE_IN_BYTES, img.data() + imageSize,
-                                 BCH_SIZE_IN_BYTES))
-            {
-                return errmsg("Image - read error (%s)\n", _ioAccess->err());
-            }
-            _ioAccess->set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
+        string magicPattern(reinterpret_cast<const char*>(bch.data()), 4);
+        if (magicPattern == "NVDA")
+        {
+            img.resize(img.size() + BCH_SIZE_IN_BYTES);
+
+            std::copy(begin(bch), end(bch), begin(img) + burn_image_size);
         }
     }
 
