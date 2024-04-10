@@ -2877,7 +2877,7 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
     size_t lifeCycleAddress = 0;
     u_int8_t firstBit = 0;
     u_int8_t bitLen = 0;
-    u_int32_t lifeCycle;
+    life_cycle_t lifeCycle;
 
     switch (_chip_type)
     {
@@ -2894,9 +2894,7 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
             bitLen = 2;
             break;
         case CT_CONNECTX7:
-        case CT_CONNECTX8:
         case CT_QUANTUM2:
-        case CT_QUANTUM3:
         case CT_BLUEFIELD3:
         case CT_BLUEFIELD4:
         case CT_SPECTRUM4:
@@ -2904,13 +2902,38 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
             firstBit = 4;
             bitLen = 2;
             break;
+        case CT_CONNECTX8:
+        case CT_QUANTUM3:
+        case CT_ARCUSE:
+            lifeCycleAddress = 0xf0000;
+            firstBit = 16;
+            bitLen = 3;
+            lifeCycle.version_field = 1;
+            break;
         default:
             throw logic_error("-E- life_cycle query is not implemented for the current device.");
             break;
     }
 
-    lifeCycle = getRegister(lifeCycleAddress);
-    return (life_cycle_t)getConsecutiveBits(lifeCycle, firstBit, bitLen);
+    lifeCycle.value = getConsecutiveBits(getRegister(lifeCycleAddress), firstBit, bitLen);
+    return lifeCycle;
+}
+
+bool CRSpaceRegisters::IsLifeCycleSecured(life_cycle_t life_cycle)
+{
+    if (life_cycle.version_field == 1)
+    {
+        return (life_cycle.value == PRE_PROD || life_cycle.value == PROD);
+    }
+    else
+    {
+        return life_cycle.value == GA_SECURED;
+    }
+}
+
+bool CRSpaceRegisters::IsLifeCycleSecured()
+{
+    return IsLifeCycleSecured(getLifeCycle());
 }
 
 int CRSpaceRegisters::getGlobalImageStatus()
@@ -2931,6 +2954,8 @@ int CRSpaceRegisters::getGlobalImageStatus()
             break;
         case CT_QUANTUM2:
         case CT_QUANTUM3:
+            global_image_status_address = 0x152080;
+            break;
         case CT_SPECTRUM4:
             global_image_status_address = 0xa1844;
             break;
