@@ -62,6 +62,7 @@ protected:
                     const char* pref,
                     VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL) override;
     bool GetDtocAddress(u_int32_t& dTocAddress) override;
+    bool GetMfgInfo(u_int8_t* buff) override;
     u_int32_t _ncore_bch_ptr;
 
 private:
