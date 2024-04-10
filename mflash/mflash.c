@@ -3696,6 +3696,18 @@ int mf_read_modify_status_winbond(mflash* mfl,
     return MFE_OK;
 }
 
+u_int32_t mf_change_status_endianness(mflash* mfl, u_int32_t status, u_int8_t bytes_num)
+{
+    if (mfl->attr.vendor == FV_ST)
+    {
+        if (bytes_num == 2)
+        {
+            status = ___my_swab16(status);
+        }
+    }
+    return status;
+}
+
 /* read/write_cmd - command value for reading/writing from/to status register 1/2/3 */
 /* val - new value to be written */
 /* offset - destination bit offset */
@@ -3717,7 +3729,9 @@ int mf_read_modify_status_new(mflash* mfl,
     CHECK_RC(rc);
     rc = mfl->f_int_spi_get_status_data(mfl, read_cmd, &status, bytes_num);
     CHECK_RC(rc);
+    status = mf_change_status_endianness(mfl, status, bytes_num);
     status = MERGE(status, val, offset, size);
+    status = mf_change_status_endianness(mfl, status, bytes_num);
     rc = mfl->f_spi_write_status_reg(mfl, status, write_cmd, bytes_num);
     CHECK_RC(rc);
     return MFE_OK;
@@ -3741,7 +3755,7 @@ int mf_get_param_int(mflash* mfl,
         CHECK_RC(rc);
         rc = mfl->f_int_spi_get_status_data(mfl, cmd, &status, bytes_num);
         CHECK_RC(rc);
-
+        status = mf_change_status_endianness(mfl, status, bytes_num);
         curr_val = EXTRACT(status, offset, bit_size);
         if (bit_size == 1)
         {
