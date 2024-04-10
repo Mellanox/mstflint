@@ -71,7 +71,7 @@ private:
     void removeSignatureTlvs(vector<TLVConf*>& tlvs);
 
 public:
-    GenericCommander(mfile* mf, string dbName, bool isSwitch = false);
+    GenericCommander(mfile* mf, string dbName, Device_Type deviceType = Device_Type::HCA);
     ~GenericCommander();
     void printLongDesc(FILE*);
     void queryParamViews(std::vector<ParamView>& paramsToQuery, bool isWriteOperation, QueryType qt = QueryNext);
