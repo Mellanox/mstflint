@@ -98,12 +98,6 @@ int FwOperations::getFileSignature(const char* fname)
         return res;
     }
 
-    if (strlen((const char*)tmpb) < 4)
-    {
-        fclose(fin);
-        return res;
-    }
-
     if (!strncmp((char*)tmpb, "MTFW", 4) || FsCompsFactory::IsFsCompsFingerPrint(tmpb))
     {
         res = IMG_SIG_TYPE_BIN;
