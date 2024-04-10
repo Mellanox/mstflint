@@ -98,7 +98,7 @@ int is_flash_enable_needed(mflash* mfl, MfError* status)
     }
     else if ((mfl->dm_dev_id == DeviceSecureHost) || (dm_is_5th_gen_hca(mfl->dm_dev_id)) ||
              (dm_dev_is_gearbox(mfl->dm_dev_id)) || (dm_is_new_gen_switch(mfl->dm_dev_id)) ||
-             (dm_dev_is_retimer_arcuse(mfl->dm_dev_id)))
+             (dm_dev_is_retimer(mfl->dm_dev_id)))
     {
         return 0;
     }

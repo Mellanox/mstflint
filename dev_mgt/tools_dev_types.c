@@ -880,7 +880,7 @@ int dm_dev_is_cable(dm_dev_id_t type)
             dm_dev_is_cmis_cable(type));
 }
 
-int dm_dev_is_retimer_arcuse(dm_dev_id_t type)
+int dm_dev_is_retimer(dm_dev_id_t type)
 {
     return get_entry(type)->dev_type == DM_RETIMER && type == DeviceArcusE;
 }
