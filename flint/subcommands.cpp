@@ -5572,6 +5572,13 @@ FlintStatus SgSubCommand::sgFs3()
         return FLINT_FAILED;
     }
 
+    // ArcusE doesn't have DEV_INFO section
+    if (_info.fw_info.chip_type == CT_ARCUSE)
+    {
+        reportErr(true, FLINT_INVALID_COMMAD_ERROR, "ArcusE device/image is not supported.");
+        return FLINT_FAILED;
+    }
+
     // TODO: create method that checks the flags for FS3/FS2
     if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB)
     {
