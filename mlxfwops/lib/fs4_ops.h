@@ -211,7 +211,7 @@ protected:
     bool GetHashesTableSize(u_int32_t& size);
     bool GetImageInfo(u_int8_t* buff);
     virtual bool GetDtocAddress(u_int32_t& dTocAddress);
-
+    bool ParseImageInfoFromEncryptedImage();
 
 private:
 #define PRE_CRC_OUTPUT "    "
@@ -242,7 +242,6 @@ private:
 #endif
     bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
-    bool ParseImageInfoFromEncryptedImage();
     bool CheckDevRSAPublicKeyUUID();
     virtual bool FwQuery(fw_info_t* fwInfo,
                          bool readRom = true,
