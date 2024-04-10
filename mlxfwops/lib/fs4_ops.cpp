@@ -2499,7 +2499,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     //* Read chunk (=half-flash) size from image
     // ((Fs4Operations*)imageOps)->readFS4Log2ChunkSizeFromImage(log2_chunk_size); // TODO - use this function once it's
     // fixed
-    log2_chunk_size = FS4_ENCRYPTED_LOG_CHUNK_SIZE;
+    log2_chunk_size = _fs3ImgInfo.logStep;
 
     //* Assign new image start addr and current image partition
     is_curr_image_on_second_partition = 0;
