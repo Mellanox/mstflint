@@ -1744,7 +1744,7 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     query->security_type.signed_fw = mgir.fw_info.signed_fw;
     query->security_type.debug_fw = mgir.fw_info.debug;
     query->security_type.dev_fw = mgir.fw_info.dev;
-    query->life_cycle = (life_cycle_t)mgir.fw_info.life_cycle;
+    query->life_cycle.value = mgir.fw_info.life_cycle;
     query->sec_boot = mgir.fw_info.sec_boot;
     query->encryption = mgir.fw_info.encryption;
     query->signed_fw = _compsQueryMap[FwComponent::COMPID_BOOT_IMG].comp_cap.signed_updates_only;

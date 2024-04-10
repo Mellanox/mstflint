@@ -290,7 +290,8 @@ bool FsCtrlOperations::FsIntQuery()
     }
     DPRINTF(("mfsv_reg_supported = %d\n", mfsv_reg_supported));
 
-    if (_fsCtrlImgInfo.sec_boot == 1 && _fsCtrlImgInfo.life_cycle == GA_SECURED && mfsv_reg_supported == 1)
+    if (_fsCtrlImgInfo.sec_boot == 1 && CRSpaceRegisters::IsLifeCycleSecured(_fsCtrlImgInfo.life_cycle) &&
+        mfsv_reg_supported == 1)
     {
         _fsCtrlImgInfo.device_security_version_access_method = MFSV;
     }

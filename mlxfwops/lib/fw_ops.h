@@ -745,7 +745,7 @@ protected:
     static const u_int32_t _fs4_magic_pattern[4];
 };
 
-class CRSpaceRegisters
+class MLXFWOP_API CRSpaceRegisters
 {
 public:
     CRSpaceRegisters(mfile* mf, chip_type_t chip_type);
@@ -753,6 +753,8 @@ public:
     int getGlobalImageStatus();
     life_cycle_t getLifeCycle();
     u_int32_t getSecurityVersion();
+    bool IsLifeCycleSecured();
+    static bool IsLifeCycleSecured(life_cycle_t life_cycle);
 
 private:
     mfile* _mf;
