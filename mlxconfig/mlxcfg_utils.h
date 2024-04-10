@@ -94,7 +94,8 @@ typedef enum
     UNSUPPORTED_DEVICE = -1,
     HCA = 0,
     Switch = 1,
-    LinkX = 2
+    LinkX = 2,
+    Retimer
 } Device_Type;
 
 #define VECTOR_ITERATOR(t, v, i) for (vector<t>::iterator i = v.begin(); i != v.end(); ++i)
