@@ -285,7 +285,17 @@ int my_memcpy(void* dst, void* src, u_int32_t len)
 
 int write_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
 {
+    static bool env_vars_evaluated = false;
+    static bool erase_verification_enable = false;
+    static int retries_num = 0;
     int rc = 0;
+    if (!env_vars_evaluated)
+    {
+        erase_verification_enable = getenv("MFLASH_ERASE_VERIFY") ? true : false;
+        const char* retries_num_str = getenv("MFLASH_WRITE_RETRIES");
+        retries_num = retries_num_str ? atoi(retries_num_str) : 0;
+        env_vars_evaluated = true;
+    }
     u_int8_t* p = (u_int8_t*)data;
     int all_ffs = 0;
 
@@ -371,34 +381,78 @@ int write_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
 
         if (!all_ffs)
         {
-            rc = mfl->f_write_blk(mfl, block_addr, block_size, block_data);
-            CHECK_RC(rc);
-
-            if (mfl->opts[MFO_NO_VERIFY] == 0)
+            if (erase_verification_enable)
             {
                 u_int8_t verify_buffer[MAX_WRITE_BUFFER_SIZE] = {0};
                 rc = mfl->f_reset(mfl);
                 CHECK_RC(rc);
                 rc = mfl->f_read(mfl, addr, data_size, verify_buffer, false);
                 CHECK_RC(rc);
-                /* Verify data */
+                // Verify erase
                 for (i = 0; i < data_size; i++)
                 {
-                    if (verify_buffer[i] != block_data[i + prefix_pad_size])
+                    if (verify_buffer[i] != 0xff)
                     {
-                        FLASH_DPRINTF(("Write verification failed. Address 0x%08x - expected:0x%02x actual: 0x%02x\n",
-                                       addr + i,
-                                       block_data[i + prefix_pad_size],
-                                       verify_buffer[i]));
+                        printf("Erase verification failed. Address 0x%08x - expected:0x%02x actual: 0x%02x\n",
+                               addr + i,
+                               0xff,
+                               verify_buffer[i]);
                         return MFE_VERIFY_ERROR;
                     }
                 }
             }
+
+            bool write_block_passed = false;
+            int retries_counter = 0;
+            while (!write_block_passed)
+            {
+                rc = mfl->f_write_blk(mfl, block_addr, block_size, block_data);
+                CHECK_RC(rc);
+
+                if (mfl->opts[MFO_NO_VERIFY] == 0)
+                {
+                    u_int8_t verify_buffer[MAX_WRITE_BUFFER_SIZE] = {0};
+                    rc = mfl->f_reset(mfl);
+                    CHECK_RC(rc);
+                    rc = mfl->f_read(mfl, addr, data_size, verify_buffer, false);
+                    CHECK_RC(rc);
+                    // Verify data
+                    bool verify_pass = true;
+                    for (i = 0; i < data_size; i++)
+                    {
+                        if (verify_buffer[i] != block_data[i + prefix_pad_size])
+                        {
+                            verify_pass = false;
+                            FLASH_DPRINTF(
+                              ("Write verification failed. Address 0x%08x - expected:0x%02x actual: 0x%02x\n",
+                               addr + i,
+                               block_data[i + prefix_pad_size],
+                               verify_buffer[i]));
+
+                            if (retries_counter >= retries_num)
+                            {
+                                return MFE_VERIFY_ERROR;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    if (!verify_pass)
+                    {
+                        retries_counter++;
+                        FLASH_DPRINTF(("Retry number %d\n", retries_counter));
+                        continue;
+                    }
+                }
+                write_block_passed = true;
+            }
         }
 
-        /* */
-        /* loop advance */
-        /* */
+        //
+        // loop advance
+        //
 
         addr += data_size;
         p += data_size;
