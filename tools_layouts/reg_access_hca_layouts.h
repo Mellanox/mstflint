@@ -700,6 +700,11 @@ The total number of tiles can be derived through MGPIR register. */
 	/* 0x34.3 - 0x34.3 */
 	u_int8_t encryption;
 	/* Description - [DWIP]
+MSB of the life cycle.
+Supported in QM3, CX8 and on. */
+	/* 0x34.4 - 0x34.6 */
+	u_int8_t life_cycle_msb;
+	/* Description - [DWIP]
 ISSU-able:
 0: not ISSUable
 1: ISSUable
