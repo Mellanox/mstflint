@@ -75,7 +75,8 @@ private:
                      struct QueryOptions queryOptions,
                      bool ignoreDToc = false,
                      bool verbose = false) override;
-    bool IsSecureFwUpdateSigned(bool& isSigned);      
+    bool IsSecureFwUpdateSigned(bool& isSigned);
+    bool NCoreQuery(fw_info_t* fwInfo);
 
     static const u_int32_t BCH_SIZE_IN_BYTES;               
 };

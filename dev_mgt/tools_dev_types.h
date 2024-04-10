@@ -231,7 +231,7 @@ extern "C"
     /**
      * A predicate returning if the device is an ArcusE chipset
      */
-    int dm_dev_is_retimer_arcuse(dm_dev_id_t type);
+    int dm_dev_is_retimer(dm_dev_id_t type);
 
     /**
      * Returns the max num of ports or -1 on error
