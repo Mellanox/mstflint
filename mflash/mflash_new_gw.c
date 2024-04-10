@@ -276,6 +276,7 @@ int new_gw_int_spi_get_status_data(mflash* mfl, u_int8_t op_type, u_int32_t* sta
     CHECK_RC(rc);
     DPRINTF(("new_gw_int_spi_get_status_data: op=%02x status=%08x\n", op_type, flash_data));
     *status = (flash_data >> 8 * (4 - bytes_num));
+    DPRINTF(("new_gw_int_spi_get_status_data: after shift status=%08x\n", *status));
     return MFE_OK;
 }
 int new_gw_st_spi_write_enable(mflash* mfl)
