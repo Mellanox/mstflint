@@ -1069,11 +1069,24 @@ bool Flash::set_attr(char* param_name, char* param_val_str)
         char* endp;
         u_int8_t driver_strength_val;
         driver_strength_val = strtoul(param_val_str, &endp, 0);
-        if (*endp != '\0' || (driver_strength_val != 25 && driver_strength_val != 50 && driver_strength_val != 75 &&
-                              driver_strength_val != 100))
+
+        if (_attr.vendor == FV_ST)
         {
-            return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [25,50,75,100]\n", param_val_str);
+            if (*endp != '\0' || (driver_strength_val != 100 && driver_strength_val != 66 &&
+                                  driver_strength_val != 44 && driver_strength_val != 22))
+            {
+                return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [22,44,66,100]\n", param_val_str);
+            }
         }
+        else
+        {
+            if (*endp != '\0' || (driver_strength_val != 25 && driver_strength_val != 50 && driver_strength_val != 75 &&
+                                  driver_strength_val != 100))
+            {
+                return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [25,50,75,100]\n", param_val_str);
+            }
+        }
+
         rc = mf_set_driver_strength(_mfl, driver_strength_val);
         if (rc != MFE_OK)
         {
