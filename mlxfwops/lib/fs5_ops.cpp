@@ -370,7 +370,34 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
 bool Fs5Operations::FwQuery(fw_info_t* fwInfo, bool, bool, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs5Operations::FwQuery\n"));
-    return encryptedFwQuery(fwInfo, quickQuery, ignoreDToc, verbose);
+    if (!encryptedFwQuery(fwInfo, quickQuery, ignoreDToc, verbose))
+    {
+        return errmsg("%s", err());
+    }
+
+    return NCoreQuery(fwInfo);
+}
+
+bool Fs5Operations::NCoreQuery(fw_info_t* fwInfo)
+{
+    fs5_image_layout_boot_component_header ncoreBCH;
+    memset(&ncoreBCH, 0, sizeof(ncoreBCH));
+
+    u_int32_t ncoreAddr = _boot2_ptr;
+    u_int32_t ncoreSize =
+      _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_SIZE - ncoreAddr; // End of hashes_table - boot2 addr
+    vector<u_int8_t> ncoreData(ncoreSize);
+    if (!_ioAccess->read(ncoreAddr, ncoreData.data(), ncoreSize))
+    {
+        return errmsg("FS5 NCORE - read error (%s)\n", _ioAccess->err());
+    }
+
+    fs5_image_layout_boot_component_header_unpack(&ncoreBCH, ncoreData.data());
+    fwInfo->fs3_info.security_mode &= ~SMM_DEBUG_FW;
+    fwInfo->fs3_info.security_mode |= (ncoreBCH.u8_stage1_component.flags.is_debug == 1) ? SMM_DEBUG_FW : 0;
+    fwInfo->fw_info.encrypted_fw = ncoreBCH.u8_stage1_component.flags.is_encrypted ? 2 : 0;
+
+    return true;
 }
 
 bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,

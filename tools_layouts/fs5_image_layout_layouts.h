@@ -49,8 +49,11 @@ extern "C" {
 struct fs5_image_layout_bch_boot_component_flags {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x0.30 */
+	/* 0x0.0 - 0x0.29 */
 	u_int32_t res;
+	/* Description -  */
+	/* 0x0.30 - 0x0.30 */
+	u_int8_t is_debug;
 	/* Description -  */
 	/* 0x0.31 - 0x0.31 */
 	u_int8_t is_encrypted;
