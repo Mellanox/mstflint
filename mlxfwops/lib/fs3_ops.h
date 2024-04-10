@@ -251,7 +251,7 @@ protected:
       GetImageInfoFromSection(u_int8_t* buff, u_int8_t sect_type, u_int32_t sect_size, u_int8_t check_support_only = 0);
     bool IsGetInfoSupported(u_int8_t sect_type);
     bool IsFs3SectionReadable(u_int8_t type, QueryOptions queryOptions);
-    bool GetMfgInfo(u_int8_t* buff);
+    virtual bool GetMfgInfo(u_int8_t* buff);
     bool GetDevInfo(u_int8_t* buff);
     virtual bool GetImageInfo(u_int8_t* buff);
     bool GetRomInfo(u_int8_t* buff, u_int32_t size);
