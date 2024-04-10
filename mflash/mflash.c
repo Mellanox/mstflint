@@ -426,7 +426,8 @@ flash_info_t g_flash_info_arr[] = {
   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_3V, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
-  {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_4MB, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
+  {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IQ_4MB, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
+  {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IM_4MB, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
   {ATMEL_NAME, FV_ATMEL, FMT_ATMEL, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0},
   {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0},
   {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0},
@@ -436,9 +437,12 @@ flash_info_t g_flash_info_arr[] = {
   /*{CYPRESS_3V_NAME, FV_S25FLXXXX, FMT_S25FLXXXL, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB,  1, 1, 1, 0, 0, 0}, */
   {ISSI_3V_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
   {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_32), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
+  {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_28, (1 << FD_32), MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
   {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
   /* added by edwardg 06/09/2020 */
   {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
+  {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
+
   {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
   {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0}};
 
@@ -3884,7 +3888,9 @@ int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
     }
     for (bank = 0; bank < mfl->attr.banks_num; bank++)
     {
-        if (mfl->attr.vendor == FV_WINBOND && (mfl->attr.type == FMT_WINBOND_3V || mfl->attr.type == FMT_WINBOND_4MB))
+        if (mfl->attr.vendor == FV_WINBOND &&
+            (mfl->attr.type == FMT_WINBOND_3V || mfl->attr.type == FMT_WINBOND_IQ_4MB ||
+             mfl->attr.type == FMT_WINBOND_IM_4MB))
         {
             rc =
               mf_read_modify_status_new(mfl, bank, SFC_RDSR2, SFC_WRSR2, quad_en, QUAD_EN_OFFSET_WINBOND_CYPRESS, 1, 1);
