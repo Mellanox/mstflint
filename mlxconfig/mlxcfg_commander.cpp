@@ -97,7 +97,7 @@ Commander* Commander::create(mfile* mf, std::string dbName)
         throw MlxcfgException("Device in Livefish mode is not supported");
     }
 
-    if ( dm_dev_is_switch(deviceId)  || dm_is_5th_gen_hca(deviceId))
+    if (dm_dev_is_switch(deviceId)  || dm_is_5th_gen_hca(deviceId) || dm_dev_is_retimer(deviceId))
     {
         if (dbName.empty())
         { // take internal db file

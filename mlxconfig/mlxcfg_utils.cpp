@@ -548,6 +548,10 @@ Device_Type getDeviceTypeFromString(string inStr)
     {
         return Device_Type::HCA;
     }
+    else if (inStr == "retimer")
+    {
+        return Device_Type::Retimer;
+    }
     else
     {
         return Device_Type::UNSUPPORTED_DEVICE;
