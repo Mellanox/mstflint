@@ -51,9 +51,11 @@ class Commander
 public:
     static Commander* create(std::string device,
                              std::string dbName,
-                             bool forceCreate = false); // clients can force create skiping any support check, and move
-                                                        // the responsebility to the client.
-    static Commander* create(mfile* mf, std::string dbName);
+                             bool forceCreate = false,
+                             Device_Type deviceType = Device_Type::HCA); // clients can force create skiping any support
+                                                                         // check, and move the responsebility to the
+                                                                         // client.
+    static Commander* create(mfile* mf, std::string dbName, Device_Type deviceType = Device_Type::HCA);
     virtual void printLongDesc(FILE*) = 0;
     virtual bool isDefaultSupported() = 0;
     virtual bool isCurrentSupported() = 0;
