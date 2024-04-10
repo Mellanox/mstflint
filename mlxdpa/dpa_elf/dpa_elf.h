@@ -1,33 +1,16 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * NVIDIA_COPYRIGHT_BEGIN
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ * Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
+ * NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+ * property and proprietary rights in and to this material, related
+ * documentation and any modifications thereto. Any use, reproduction,
+ * disclosure or distribution of this material and related documentation
+ * without an express license agreement from NVIDIA CORPORATION or
+ * its affiliates is strictly prohibited.
  *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * NVIDIA_COPYRIGHT_END
  */
 
 #include <stdio.h>
@@ -35,9 +18,9 @@
 
 #define DPA_OBJ_SECTION_NAME          ".dpa_obj"
 #define DPA_BIN_SECTION_PREFIX        ".dpa_bin_"
-#define DPA_SIG_NAME_SECTION_PREFIX   ".dpa_sig_name_"
+#define DPA_SIG_SECTION_PREFIX        ".dpa_sig_"
 
-#define SIG_SECTION_NAME_MAX_LEN    256
+#define DPA_SIG_SECTION_DEFAULT_LEN 4096
 
 typedef Elf64_Ehdr     ELFHeader;
 typedef Elf64_Shdr     SectionHeader;
@@ -66,16 +49,21 @@ extern "C" {
 /// \return AppTable object
 AppTable getAppList(FILE* file);
 
-/// \brief Updates the signature blob section name in the section which
-/// is reserved to contain the signature section name. This function
-/// asserts if the sigSectionName string length is greater than 255 bytes or
-/// if the file handle is not open for both reading and writing
+/// \brief Writes sigSection to given DPA app's reserved signature section.
 ///
-/// \param[in] fHandle File handle of the executable with read and write permission
-/// \param[in] appName Name of the app
-/// \param[in] sigSectionName Name of the signature blob section
-/// \return Returns 0 on success or non-zero value otherwise
-int updateSigSectionName(FILE* fHandle, char* appName, char* sigSectionName);
+/// \param[in] fHandle File handle of the executable with read and write
+/// permission.
+/// \param[in] appName Name of the app.
+/// \param[in] sigSection signature section blob.
+/// \param[in] size size of the sigSection buffer.
+/// \retval 0 successfully updated signature blob.
+/// \retval 1 sigSEction size larger than reserved signature section in file.
+/// \retval 2 NULL pointer passed as argument.
+/// \retval 3 fHandle not available for read and write.
+/// \retval 4 signature section not found in file.
+int updateSignatureData(FILE *fHandle, char *appName, uint8_t *sigSection,
+                        size_t sigSectionSize);
+
 #ifdef __cplusplus
 }
 #endif
