@@ -617,23 +617,25 @@ void MlxDpa::SignHostElf()
             cryptoDataSectionByteStream.resize(cryptoDataSectionByteStream.size() + paddingSize, 0xff);
         }
 
-        // remove preexisting section to avoid collision
-        string sigSectionName = "sig_" + string(app->name);
-        hostElf.RemoveSection(sigSectionName);
-
-        hostElf.AddSection(sigSectionName, cryptoDataSectionByteStream);
-
         // invoke 3rd party function to update metadata in host elf output file
         FILE* outHostELF = fopen(_outputPath.c_str(), "r+");
         if (outHostELF == NULL)
         {
             throw MlxDpaException("Failed to open Host ELF file with error: %s", strerror(errno));
         }
-        MLX_DPA_DPRINTF(
-          ("Calling updateSigSectionName: appName %s, sigSectionName %s.\n", app->name, sigSectionName.c_str()));
-        if (updateSigSectionName(outHostELF, app->name, (char*)sigSectionName.c_str()))
+        MLX_DPA_DPRINTF(("Calling updateSignatureData: appName %s, cryptoData size %lu.\n",
+                         app->name,
+                         (long)cryptoDataSectionByteStream.size()));
+        int rc = updateSignatureData(
+          outHostELF, app->name, cryptoDataSectionByteStream.data(), cryptoDataSectionByteStream.size());
+        if (rc != 0)
         {
-            throw MlxDpaException("Failed to update signature section name in metadata for %s.\n", app->name);
+            string err("Failed to add crypto data for app" + string(app->name) + ".");
+            if (rc < 5)
+            {
+                err += " " + updateSigErrors[rc];
+            }
+            throw MlxDpaException(err.c_str());
         }
         if (fclose(outHostELF) != 0)
         {

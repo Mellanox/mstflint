@@ -61,6 +61,9 @@
 
 using namespace std;
 
+const string updateSigErrors[5] = {"Successfully updated signature blob.", "Signature section larger than expected.",
+                                   "Bad param.", "File not accessible.", "Signature section not found."};
+
 void RunCommand(string cmd, string errorMsg);
 
 string OpenTempFile(string path, ofstream& f);
