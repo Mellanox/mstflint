@@ -162,6 +162,14 @@ string FsSyncEOperations::ToString(SystemID systemID)
             return "Komodo";
         case (SystemID::Kong):
             return "Kong";
+        case (SystemID::Hippo):
+            return "Hippo";
+        case (SystemID::Crocodile):
+            return "Crocodile";
+        case (SystemID::BlackMamba):
+            return "BlackMamba";
+        case (SystemID::Bobcat):
+            return "Bobcat";
         default:
             return "Unknown";
     }
