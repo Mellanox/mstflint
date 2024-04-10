@@ -185,7 +185,7 @@ protected:
     u_int32_t _hashes_table_ptr;
     Fs4ImgInfo _fs4ImgInfo;
 
-    bool GetImageSizeFromImageInfo(u_int32_t* imageSize);
+    bool GetEncryptedImageSizeFromImageInfo(u_int32_t* imageSize);
     bool verifyToolsArea(VerifyCallBack verifyCallBackFunc);
     bool verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBack verifyCallBackFunc);
     bool verifyTocEntries(u_int32_t tocAddr,
@@ -207,6 +207,7 @@ protected:
                       bool verbose = false,
                       VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL,
                       bool showItoc = false);
+    bool IsDtocExists(bool& dtocExists);
     bool GetHashesTableSize(u_int32_t& size);
     bool GetImageInfo(u_int8_t* buff);
     virtual bool GetDtocAddress(u_int32_t& dTocAddress);
@@ -241,7 +242,6 @@ private:
 #endif
     bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
-    bool encryptedFwReadImageInfoSection();
     bool ParseImageInfoFromEncryptedImage();
     bool CheckDevRSAPublicKeyUUID();
     virtual bool FwQuery(fw_info_t* fwInfo,
