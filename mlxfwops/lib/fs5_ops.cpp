@@ -409,6 +409,7 @@ bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
 
 bool Fs5Operations::GetDtocAddress(u_int32_t& dTocAddress)
 {
+    ParseImageInfoFromEncryptedImage();
     u_int32_t imageSize = _ioAccess->get_effective_size();
     bool isSigned = false;
 
