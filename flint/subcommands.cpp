@@ -6439,8 +6439,10 @@ HwSubCommand::HwSubCommand()
                 "    QuadEn: can be 0 or 1\n"
                 "    DummyCycles: can be [1..15]\n"
                 "    Flash[0|1|2|3].WriteProtected can be:\n"
-                "        <Top|Bottom>,<1|2|4|8|16|32|64>-<Sectors|SubSectors>"
-                "    DriverStrength: can be [25,50,75,100]\n";
+                "        <Top|Bottom>,<1|2|4|8|16|32|64>-<Sectors|SubSectors>\n"
+                "    DriverStrength: can be:\n"
+                "        For Winbond flashes: [25,50,75,100](%)\n"
+                "        For Micron flashes:  [22,44,66,100](%)\n";
     _example = "flint -d " MST_DEV_EXAMPLE1 " hw query\n" FLINT_NAME " -d " MST_DEV_EXAMPLE1
                " hw set QuadEn=1\n" FLINT_NAME " -d " MST_DEV_EXAMPLE1 " hw set Flash1.WriteProtected=Top,1-SubSectors";
 #else
@@ -6603,7 +6605,7 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
         switch (attr.mf_get_driver_strength_rc)
         {
             case MFE_OK:
-                printf("  " DRIVER_STRENGTH_PARAM "          %d\n", attr.driver_strength);
+                printf("  " DRIVER_STRENGTH_PARAM "          %d%%\n", attr.driver_strength);
                 break;
 
             case MFE_MISMATCH_PARAM:

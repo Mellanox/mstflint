@@ -232,6 +232,9 @@ int mf_get_quad_en(mflash* mfl, u_int8_t* quad_en);
 int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength);
 int mf_get_driver_strength(mflash* mfl, u_int8_t* driver_strength);
 
+int mf_to_vendor_driver_strength(u_int8_t vendor, u_int8_t value, u_int8_t* vendor_driver_strength);
+int mf_from_vendor_driver_strength(u_int8_t vendor, u_int8_t vendor_driver_strength, u_int8_t* value);
+
 int mf_set_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* protect_info);
 int mf_get_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* protect_info);
 
