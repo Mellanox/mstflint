@@ -72,13 +72,17 @@ public:
 private:
     enum class SystemID : u_int16_t
     {
-        Gorilla = 1,
-        AnacondaSecured = 2,
-        MarlinLeaf = 3,
-        MarlinSpine = 4,
-        Moose = 5,
-        Komodo = 6,
-        Kong = 7
+        Gorilla = 0x1,
+        AnacondaSecured = 0x2,
+        MarlinLeaf = 0x3,
+        MarlinSpine = 0x4,
+        Moose = 0x5,
+        Komodo = 0x6,
+        Kong = 0x7,
+        Hippo = 0x8,
+        Crocodile = 0x9,
+        BlackMamba = 0xA,
+        Bobcat = 0xB
     };
 
     enum class ClockSyncVendorHWID : u_int8_t
