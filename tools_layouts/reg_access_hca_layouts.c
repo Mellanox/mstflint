@@ -1284,6 +1284,8 @@ void reg_access_hca_mgir_fw_info_ext_pack(const struct reg_access_hca_mgir_fw_in
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->sec_boot);
 	offset = 444;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->encryption);
+	offset = 441;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->life_cycle_msb);
 	offset = 434;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->issu_able);
 }
@@ -1343,6 +1345,8 @@ void reg_access_hca_mgir_fw_info_ext_unpack(struct reg_access_hca_mgir_fw_info_e
 	ptr_struct->sec_boot = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 444;
 	ptr_struct->encryption = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 441;
+	ptr_struct->life_cycle_msb = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
 	offset = 434;
 	ptr_struct->issu_able = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 }
@@ -1404,6 +1408,8 @@ void reg_access_hca_mgir_fw_info_ext_print(const struct reg_access_hca_mgir_fw_i
 	fprintf(fd, "sec_boot             : " UH_FMT "\n", ptr_struct->sec_boot);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "encryption           : " UH_FMT "\n", ptr_struct->encryption);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "life_cycle_msb       : " UH_FMT "\n", ptr_struct->life_cycle_msb);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "issu_able            : " UH_FMT "\n", ptr_struct->issu_able);
 }
