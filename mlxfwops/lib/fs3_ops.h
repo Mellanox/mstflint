@@ -324,6 +324,7 @@ protected:
         u_int32_t smallestAbsAddr;
         u_int32_t sizeOfImgData;
         bool runFromAny;
+        u_int8_t logStep;
     };
 
     static const SectionInfo _fs3SectionsInfoArr[];
