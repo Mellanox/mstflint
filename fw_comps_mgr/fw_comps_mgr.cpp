@@ -1754,7 +1754,8 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     dm_dev_id_t dm_device_id = DeviceUnknown;
 
     if (dm_get_device_id_offline(query->hw_dev_id, query->rev_id, &dm_device_id) == ME_OK) {
-        if (dm_dev_is_switch(dm_device_id)) {
+        if (dm_dev_is_switch(dm_device_id) || dm_dev_is_retimer(dm_device_id))
+        {
             query->security_type.dev_fw = mgir.fw_info.dev_sc;
         }
     } else {
