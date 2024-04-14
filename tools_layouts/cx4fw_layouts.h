@@ -174,14 +174,14 @@ When this bit is cleared, the GUIDs should be taken from the mfg_info node. */
 union cx4fw_cx4fw_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x13c.31 */
-	struct cx4fw_mfg_info mfg_info;
-	/* Description -  */
 	/* 0x0.0 - 0x1fc.31 */
 	struct cx4fw_device_info device_info;
 	/* Description -  */
 	/* 0x0.0 - 0x3c.31 */
 	struct cx4fw_guids guids;
+	/* Description -  */
+	/* 0x0.0 - 0x13c.31 */
+	struct cx4fw_mfg_info mfg_info;
 };
 
 
