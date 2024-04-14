@@ -390,14 +390,14 @@ void cx4fw_cx4fw_Nodes_print(const union cx4fw_cx4fw_Nodes *ptr_struct, FILE *fd
 	fprintf(fd, "======== cx4fw_cx4fw_Nodes ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mfg_info:\n");
-	cx4fw_mfg_info_print(&(ptr_struct->mfg_info), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "device_info:\n");
 	cx4fw_device_info_print(&(ptr_struct->device_info), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "guids:\n");
 	cx4fw_guids_print(&(ptr_struct->guids), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mfg_info:\n");
+	cx4fw_mfg_info_print(&(ptr_struct->mfg_info), fd, indent_level + 1);
 }
 
 unsigned int cx4fw_cx4fw_Nodes_size(void)
