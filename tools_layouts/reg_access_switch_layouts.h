@@ -1,4 +1,3 @@
-
 /* Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -30,12 +29,10 @@
  * SOFTWARE.
  */
 
- 
-
 /***
-         *** This file was generated at "2024-01-14 09:35:17"
+         *** This file was generated at "2024-04-07 09:29:02"
          *** by:
-         ***    > adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o user/tools_layouts
+         ***    > [REDACTED]/adb2pack.py --input [REDACTED]/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o [REDACTED]/user/tools_layouts
          ***/
 #ifndef REG_ACCESS_SWITCH_LAYOUTS_H
 #define REG_ACCESS_SWITCH_LAYOUTS_H
@@ -79,7 +76,7 @@ The first device should number 0 */
 	/* Description - The flash ID that the device is using. */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t flash_id;
-	/* Description - If set to '1', the fields related to the device are valid since the line-card is powered on and plugged and matching the INI version. 
+	/* Description - If set to '1', the fields related to the device are valid since the line-card is powered on and plugged and matching the INI version.
 Note: this bit is not an indication to validity of the fields related to the specific FW capabilities and version. */
 	/* 0x0.28 - 0x0.28 */
 	u_int8_t lc_pwr_on;
@@ -183,7 +180,7 @@ struct reg_access_switch_prm_register_payload_ext {
 	u_int8_t method;
 	/* Description - Return code of the Downstream Device to the register that was sent.
 0x0: OK - Operation was successfully executed
-0x1: BUSY 
+0x1: BUSY
 0x4: NOT_SUPP_REG - The Switch register requested is not supported on that device
 0x7: BAD_PARAM - Incomplete or erroneous parameter set
 0x70: INTERNAL_ERR - Internal error */
@@ -193,6 +190,31 @@ struct reg_access_switch_prm_register_payload_ext {
 	/* Description - Register data */
 	/* 0x4.0 - 0x100.31 */
 	u_int32_t register_data[64];
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_switch_lane_2_module_mapping_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Module number */
+	/* 0x0.0 - 0x0.7 */
+	u_int8_t module;
+	/* Description - Reserved for HCA
+Slot_index
+Slot_index = 0 represent the onboard (motherboard).
+In case of non modular system only slot_index = 0 is available. */
+	/* 0x0.8 - 0x0.11 */
+	u_int8_t slot_index;
+	/* Description - TX lane.
+When m_lane_m field is set, this field is ignored (Reserved).
+When rxtx field is cleared, this field is used for RX as well. */
+	/* 0x0.16 - 0x0.19 */
+	u_int8_t tx_lane;
+	/* Description - RX lane.
+When m_lane_m field is set, this field is ignored (Reserved).
+When rxtx field is cleared, this field is ignored and RX lane is equal to TX lane. */
+	/* 0x0.24 - 0x0.27 */
+	u_int8_t rx_lane;
 };
 
 /* Description -   */
@@ -235,17 +257,71 @@ struct reg_access_switch_uint64 {
 };
 
 /* Description -   */
+/* Size in bytes - 16 */
+struct reg_access_switch_PPCR_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Local port[9:8]
+Reserved for HCA */
+	/* 0x0.12 - 0x0.13 */
+	u_int8_t lp_msb;
+	/* Description - Local port number.
+ */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t local_port;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Aggregated Port number to be reflected in MAD.
+0 means N/A
+
+Reserved for HCA */
+	/* 0x8.0 - 0x8.7 */
+	u_int8_t aggregated_port;
+	/* Description - Plane number to be reflected in MAD.
+0 means N/A
+
+Reserved for HCA */
+	/* 0x8.16 - 0x8.18 */
+	u_int8_t plane;
+	/* Description - When planarized  the FW shall respond to Hierarchy Info.Split with the following split value.
+
+In this use case it represents the split of the APort.
+
+When split = 0, the FW shall send Hierarchy Info without the split field. (meaning it is NA)
+
+When Non planarized (num_of_planes = 0), Hierarchy Info.Split will reflect the actual split value, when 2X- it'll hold the location within the 4x.
+
+0: NA
+1: Split 1.
+2: Split 2.
+3-7: Reserved
+Reserved for HCA */
+	/* 0x8.24 - 0x8.26 */
+	u_int8_t split;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - The number of planes comprising this Aggregated port
+ */
+	/* 0xc.0 - 0xc.7 */
+	u_int8_t num_of_planes;
+	/* Description - [DWIP]
+Planarization Type
+0: non planarized
+1: planirized_gen1
+2-7: Reserved */
+	/* 0xc.16 - 0xc.18 */
+	u_int8_t p_type;
+};
+
+/* Description -   */
 /* Size in bytes - 24 */
 struct reg_access_switch_icam_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Access Register ID groups 
+	/* Description - Access Register ID groups
 0: REG_IDs 0x3800 to 0x387F
 1: REG_IDs 0x3880 to 0x38FF */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t access_reg_group;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Supported infrastructure's access register bitmask. Based on access_reg_group index. 
-When bit is set to '1', The register is supported in the device. 
+	/* Description - Supported infrastructure's access register bitmask. Based on access_reg_group index.
+When bit is set to '1', The register is supported in the device.
 For example, when access_reg_group == 1:
 Bit 112: ICSR
 Bit0 is at 08h.bit0
@@ -292,29 +368,29 @@ When set to '1', each change in the MDDQ.slot_info.provisioned / sr_valid / acti
 	/* 0x0.31 - 0x0.31 */
 	u_int8_t sie;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Request message sequential number. 
+	/* Description - Request message sequential number.
 The first message number should be 0 */
 	/* 0x4.0 - 0x4.7 */
 	u_int8_t request_message_sequence;
-	/* Description - Response message sequential number. 
-For a specific request, the response message sequential number is the following one. 
+	/* Description - Response message sequential number.
+For a specific request, the response message sequential number is the following one.
 In addition, the last message should be 0. */
 	/* 0x4.16 - 0x4.23 */
 	u_int8_t response_message_sequence;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Index related to the specific query_type. 
+	/* Description - Index related to the specific query_type.
 For query_type = 1,2,3 this field is neglected. */
 	/* 0x8.0 - 0x8.7 */
 	u_int8_t query_index;
-	/* Description - If set, the data in the data field is valid and contain the information for the queried index. 
+	/* Description - If set, the data in the data field is valid and contain the information for the queried index.
 Note: This field is not reflecting any validity of the data while accessing a non-existing query entity. Querying with an out of range index will lead to BAD_PARAM status of the register. */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 443, "MDDQ slot_info Layout," on page 776
-For devices on slot query_type data - see Table 445, "MDDQ device_info Register Layout," on page 777
-For slot name query_type data - see Table 447, "MDDQ slot_name Layout," on page 779 */
+For slot information query_type data - see Table 491, "MDDQ slot_info Layout," on page 866
+For devices on slot query_type data - see Table 493, "MDDQ device_info Register Layout," on page 867
+For slot name query_type data - see Table 495, "MDDQ slot_name Layout," on page 869 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_switch_mddq_data_auto_ext data;
 };
@@ -343,9 +419,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 435, "PRM Register Payload Layout," on page 772
-For Command type payload - See Table 437, "Command Payload Layout," on page 772
-For CrSpace type payload - See Table 439, "CrSpace access Payload Layout," on page 773 */
+For PRM Register type payload - See Table 483, "PRM Register Payload Layout," on page 862
+For Command type payload - See Table 485, "Command Payload Layout," on page 862
+For CrSpace type payload - See Table 487, "CrSpace access Payload Layout," on page 863 */
 	/* 0xc.0 - 0x10c.31 */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
 };
@@ -366,20 +442,20 @@ struct reg_access_switch_mdsr_reg_ext {
 Note: Status might be '0' even when debug query is not allowed and additional_info field will expose the reason. */
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t status;
-	/* Description - 0: No additional information available 
+	/* Description - 0: No additional information available
 1: There is no debug session in progress
 2: FW is not secured, debug session cannot be ended
-3: Fail - Debug end request cannot be accepted. 
+3: Fail - Debug end request cannot be accepted.
 4: Fail - Host is not allowed to query debug session
 5: Debug session active */
 	/* 0x0.8 - 0x0.13 */
 	u_int8_t additional_info;
-	/* Description - 0: CS token 
-1: Debug FW token 
-2: FRC token 
+	/* Description - 0: CS token
+1: Debug FW token
+2: FRC token
 3: RMCS token
-4: RMDT token 
-5: CRCS token 
+4: RMDT token
+5: CRCS token
 6: CRDT token */
 	/* 0x0.24 - 0x0.31 */
 	u_int8_t type_of_token;
@@ -402,7 +478,7 @@ For any other status, field should be zero */
 struct reg_access_switch_mfmc_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Flash select - selects the flash device.
-Only zero is supported for NICs with a single flash device. 
+Only zero is supported for NICs with a single flash device.
 Range between 0 .. MFPA.flash_num -1 */
 	/* 0x0.4 - 0x0.5 */
 	u_int8_t fs;
@@ -448,7 +524,7 @@ Etc. */
 	/* 0x10.24 - 0x10.24 */
 	u_int8_t quad_en;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
-	/* Description - The number of dummy clock cycles subsequent to all FAST READ commands. 
+	/* Description - The number of dummy clock cycles subsequent to all FAST READ commands.
 Reserved if not supported by the device */
 	/* 0x18.0 - 0x18.3 */
 	u_int8_t dummy_clock_cycles;
@@ -486,12 +562,9 @@ struct reg_access_switch_mrsr_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Reset/shutdown command
 0: clear state of reset_at_pci_disable
-1: software reset (switch soft reset). From Quantum-3 (IB) and on must not be used for managed switches. Also must not be used from Spectrum-4 and on (ETH).
-6: reset_at_pci_disable - reset will be done at PCI_DISABLE. See MCAM bit48
-
-For Retimer: only command = 1 is supported.
-
- */
+1: software reset immediate (switch soft reset).
+6: reset_at_pci_disable - reset will be done at PCI_DISABLE. See MCAM bit48. Note: when no PCI (e.g. unmanaged switches or for Retimers) will do reset without waiting for PCI_DISABLE
+7: flr_at_pci_disable - PCIe Functional Level Reset, core is up [DWIP] */
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t command;
 };
@@ -500,11 +573,11 @@ For Retimer: only command = 1 is supported.
 /* Size in bytes - 128 */
 struct reg_access_switch_msgi_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - System serial number (ASCII string) */
+	/* Description - ASIC serial number (ASCII string) */
 	/* 0x0.0 - 0x14.31 */
 	u_int32_t serial_number[6];
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description - System part number (ASCII string) */
+	/* Description - ASIC part number (ASCII string) */
 	/* 0x20.0 - 0x30.31 */
 	u_int32_t part_number[5];
 /*---------------- DWORD[14] (Offset 0x38) ----------------*/
@@ -515,6 +588,66 @@ struct reg_access_switch_msgi_ext {
 	/* Description - Product Name (ASCII string) */
 	/* 0x40.0 - 0x7c.31 */
 	u_int32_t product_name[16];
+};
+
+/* Description -   */
+/* Size in bytes - 48 */
+struct reg_access_switch_mspmer_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Device Index
+0: Main_board_or_NIC
+ */
+	/* 0x0.0 - 0x0.3 */
+	u_int8_t device_index;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Status
+0: Success
+1: Physical monitor is not supported
+2: Device index is not valid */
+	/* 0x4.0 - 0x4.3 */
+	u_int8_t status;
+	/* Description - Clear Counters
+0: don't clear counters
+1: clear counters */
+	/* 0x4.16 - 0x4.16 */
+	u_int8_t clr;
+	/* Description - Prevention Enable
+0: Notification only. Prevention is disabled
+1: Prevention is enabled
+
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 332, "NV_SWITCH_PHY_SEC_CONF Layout," on page 711 */
+	/* 0x4.24 - 0x4.24 */
+	u_int8_t prev_en;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - 31: FMON - Frequency MONitor
+30: VMON - Voltage MONitor
+29: SCPM - Secure Canary Path Monitor
+0: General
+
+ */
+	/* 0xc.0 - 0xc.31 */
+	u_int32_t supported_physical_monitor;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Frequency Monitor Counter
+
+Stuck at 0xF, cleared only at hard reset (RST_) or power down or clr bit. */
+	/* 0x14.0 - 0x14.3 */
+	u_int8_t fmon_ctr;
+	/* Description - Voltage Monitor Counter
+
+Stuck at 0xF, cleared only at hard reset (RST_) or power down or clr bit. */
+	/* 0x14.4 - 0x14.7 */
+	u_int8_t vmon_ctr;
+	/* Description - Security Canary Path Monitor Counter
+A circuit macro used to flag timing slack violations as part of mitigations for physical security attacks.
+
+Stuck at 0xF, cleared only at hard reset (RST_) or power down or clr bit. */
+	/* 0x14.8 - 0x14.11 */
+	u_int8_t scpm_ctr;
+	/* Description - General Error indication
+Cleared only at hard reset (RST_) or power down or clr bit. */
+	/* 0x14.12 - 0x14.12 */
+	u_int8_t general_err;
 };
 
 /* Description -   */
@@ -530,7 +663,7 @@ For cables, the index represents the module index starting at index 1 while inde
 0x0 - OK
 0x1 - TOKEN_ALREADY_APPLIED
 0x2 - TOKEN_NOT_SUPPORTED
-0x3 - NO_KEY_CONFIGURED (there is no public_key that can be used for this token) 
+0x3 - NO_KEY_CONFIGURED (there is no public_key that can be used for this token)
 0x4 - INTERFACE_NOT_ALLOWED (asking for local token from remote interface, or remote token from local interface) */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t status;
@@ -568,7 +701,7 @@ Valid only for RMCS/RMDT. */
 	/* 0x34.0 - 0x40.31 */
 	u_int32_t source_address[4];
 /*---------------- DWORD[17] (Offset 0x44) ----------------*/
-	/* Description - Unique debug session identifier. 
+	/* Description - Unique debug session identifier.
 See details in REMOTE_DEBUG_KEEP_ALIVE.
 Valid only for RMCS. */
 	/* 0x44.0 - 0x44.15 */
@@ -580,6 +713,43 @@ Valid only for RMCS. */
 	/* Description - Random generated field. Used for randomness and replay-protection. */
 	/* 0x48.0 - 0x64.31 */
 	u_int32_t challenge[8];
+};
+
+/* Description -   */
+/* Size in bytes - 96 */
+struct reg_access_switch_pguid_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Local port number [9:8] */
+	/* 0x0.12 - 0x0.13 */
+	u_int8_t lp_msb;
+	/* Description - Port number access type. determines the way local_port is interpreted:
+0 - Local port number
+1 - IB port number */
+	/* 0x0.14 - 0x0.15 */
+	u_int8_t pnat;
+	/* Description - local_port number */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t local_port;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - System GUID.
+Only 64 LSB are used. 64 MSB are reserved. */
+	/* 0x4.0 - 0x10.31 */
+	u_int32_t sys_guid[4];
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Node GUID.
+Only 64 LSB are used. 64 MSB are reserved. */
+	/* 0x14.0 - 0x20.31 */
+	u_int32_t node_guid[4];
+/*---------------- DWORD[9] (Offset 0x24) ----------------*/
+	/* Description - Port GUID.
+Only 64 LSB are used. 64 MSB are reserved. */
+	/* 0x24.0 - 0x30.31 */
+	u_int32_t port_guid[4];
+/*---------------- DWORD[13] (Offset 0x34) ----------------*/
+	/* Description - Allocated GUID.
+Only 64 LSB are used. 64 MSB are reserved. */
+	/* 0x34.0 - 0x40.31 */
+	u_int32_t allocated_guid[4];
 };
 
 /* Description -   */
@@ -598,10 +768,115 @@ Note: ib_port number can only be updated when a port admin state is DISABLED. */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t local_port;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Valid only for Ethernet Switches. 
+	/* Description - Valid only for Ethernet Switches.
 Label split mapping for local_port */
 	/* 0x4.0 - 0x4.3 */
 	u_int8_t split_num;
+};
+
+/* Description -   */
+/* Size in bytes - 20 */
+struct reg_access_switch_pllp_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Front panel label of the port
+Note:
+PLIB.ib_port provides IB port in IB and label_port in Eth
+MOLP provides the 16bit mirror header value */
+	/* 0x0.0 - 0x0.9 */
+	u_int16_t label_port;
+	/* Description - Local port[9:8] */
+	/* 0x0.12 - 0x0.13 */
+	u_int8_t lp_msb;
+	/* Description - Local port number. */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t local_port;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Port split mapping for local_port.
+The position of this local port within each splitted port.
+When no split: split_num should be 0
+When split to 2: split_num should be 0,1
+When split to 4: split_num should be 0   3
+When split to 8: split_num should be 0   7
+Split to 8 exists only for ETH */
+	/* 0x4.0 - 0x4.3 */
+	u_int8_t split_num;
+	/* Description - Inter port in Label number.
+gives mapping of the basic port unit  inside the label (cage), From the lowest lanes of the module to the highest.
+e.g Label of 8x lanes, with 2 ipil
+ipil 1 - will be port mapped to lanes 1-4
+ipil 2 - will be port mapped to lanes 5-8
+
+When ipil_stat is 0 (no ipil): ipil_num should be 0
+When ipil_stat is 1: ipil_num should be 1,2
+When ipil_stat is 2: ipil_num should be 1   4
+When ipil_stat is 3: ipil_num should be 1   8 */
+	/* 0x4.8 - 0x4.11 */
+	u_int8_t ipil_num;
+	/* Description - Defines the IPIL split. The value is by how much to split each IPIL
+The local_port status is:
+0: no split
+1: split to 2
+2: split to 4
+3: split to 8
+ */
+	/* 0x4.16 - 0x4.19 */
+	u_int8_t split_stat;
+	/* Description - Inter port in Label status.
+Number of basic port units inside the label (cage).
+0: 1 inter port in label
+1: 2 inter port in label
+2: 4 inter port in label
+3: 8 inter port in label */
+	/* 0x4.24 - 0x4.27 */
+	u_int8_t ipil_stat;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Valid only for Ethernet Switches.
+Slot_number mapping for local_port */
+	/* 0x8.0 - 0x8.3 */
+	u_int8_t slot_num;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Connectivity Type
+0: N/A
+1: not-wired
+2: wire to front panel
+3: wired to Switch
+4: wired to GPU
+5: wired to NIC
+
+Describes the internal wiring on the port.
+Supported from Quantum-3 and above */
+	/* 0xc.0 - 0xc.2 */
+	u_int8_t conn_type;
+	/* Description - Remote ASIC Id
+Reserved when conn_type = 0/1/2
+Supported from Quantum-3 and above */
+	/* 0xc.8 - 0xc.15 */
+	u_int8_t rmt_id;
+	/* Description - 0: Mission port
+1: FNM port
+Supported from Quantum-3 and above */
+	/* 0xc.16 - 0xc.16 */
+	u_int8_t is_fnm;
+	/* Description - Mission Port as FNM
+0: Mission port
+1: Mission port treated as FNM port.
+
+When set, the port shall be configured as a FNM port.
+Reserved when is_fnm is set.
+Note: This configuration does not change port type as stated in is_fnm field.
+Supported from Quantum-3 and above. */
+	/* 0xc.17 - 0xc.17 */
+	u_int8_t maf;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - 0: N/A (when FW has no info)
+1: ETH (for Eth devices)
+2: IB
+3: NVLink
+4: IBg2Eth
+Supported from Quantum-3 and above
+ */
+	/* 0x10.0 - 0x10.2 */
+	u_int8_t protocol;
 };
 
 /* Description -   */
@@ -629,8 +904,8 @@ Note - To disable a module, all ports associated with the port must be disabled 
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t module;
 	/* Description - Reserved for HCA
-Slot_index 
-Slot_index = 0 represent the onboard (motherboard). 
+Slot_index
+Slot_index = 0 represent the onboard (motherboard).
 In case of non modular system only slot_index = 0 is available. */
 	/* 0x0.24 - 0x0.27 */
 	u_int8_t slot_index;
@@ -642,7 +917,8 @@ NOTE: setting reset while module is plugged-in will result in transition of oper
 	/* Description - Event Generation on operational state change:
 0: Do_not_generate_event
 1: Generate_Event
-2: Generate_Single_Event */
+2: Generate_Single_Event
+Not supported by secondary ASICs. */
 	/* 0x4.0 - 0x4.1 */
 	u_int8_t e;
 	/* Description - Module error details:
@@ -665,7 +941,7 @@ Valid only when oper_status = 4'b0011 */
 	u_int8_t error_type;
 	/* Description - This notification can occur only if module passed initialization process
 0x0: No notifications.
-0x1: Speed degradation - the module is not enabled in its full speed due to incompatible transceiver/cable 
+0x1: Speed degradation - the module is not enabled in its full speed due to incompatible transceiver/cable
 Valid only when oper_status = 4'b0001. */
 	/* 0x4.16 - 0x4.19 */
 	u_int8_t operational_notification;
@@ -676,12 +952,57 @@ This flag will be asserted in case primary and secondary FW versions are not com
 	/* Description - Indicates whether the ASIC serves as a the modules secondary (=1) or primary (=0) device. */
 	/* 0x4.29 - 0x4.29 */
 	u_int8_t secondary;
-	/* Description - Event update enable. If this bit is set, event generation will be updated based on the e field. Only relevant on Set operations. */
+	/* Description - Event update enable. If this bit is set, event generation will be updated based on the e field. Only relevant on Set operations.
+Not supported by secondary ASICs. */
 	/* 0x4.30 - 0x4.30 */
 	u_int8_t ee;
 	/* Description - Admin state update enable. If this bit is set, admin state will be updated based on admin_state field. Only relevant on Set() operations. */
 	/* 0x4.31 - 0x4.31 */
 	u_int8_t ase;
+};
+
+/* Description -   */
+/* Size in bytes - 64 */
+struct reg_access_switch_pmlp_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - 0: unmap_local_port
+1: x1 - lane 0 is used
+2: x2 - lanes 0,1 are used
+4: x4 - lanes 0,1,2 and 3 are used
+8: x8 - lanes 0-7 are used
+
+Other - reserved */
+	/* 0x0.0 - 0x0.7 */
+	u_int8_t width;
+	/* Description - Reserved for non-planarized port.
+Plane port index of the aggregated port. A value of 0 refers to the aggregated port only. */
+	/* 0x0.8 - 0x0.11 */
+	u_int8_t plane_ind;
+	/* Description - Local port number [9:8] */
+	/* 0x0.12 - 0x0.13 */
+	u_int8_t lp_msb;
+	/* Description - Local port number. */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t local_port;
+	/* Description - Module lane mapping:
+0 - Local to Module mapping include module lanes mapping
+1 - Local to Module mapping only, without lane mapping
+
+When this operational is set ('1'), the following fields are ignored in SET command and should return the value "0" in GET commands:
+PMLP.rxtx
+PMLP.lane<i>_module_mapping.tx_lane
+PMLP.lane<i>_module_mapping.rx_lane */
+	/* 0x0.28 - 0x0.28 */
+	u_int8_t m_lane_m;
+	/* Description - Use different configuration for RX and TX.
+If this bit is cleared, the TX value is used for both RX and TX. When set, the RX configuration is taken from the separate field. This is to enable backward compatible implementation. */
+	/* 0x0.31 - 0x0.31 */
+	u_int8_t rxtx;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Module SerDes for lane <i>
+Up to 8 SerDeses in a module can be mapped to a local port. */
+	/* 0x4.0 - 0x20.31 */
+	struct reg_access_switch_lane_2_module_mapping_ext lane_module_mapping[8];
 };
 
 /* Description -   */
@@ -695,14 +1016,26 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* 0x0.0 - 0x14.31 */
 	struct reg_access_switch_icam_reg_ext icam_reg_ext;
 	/* Description -  */
+	/* 0x0.0 - 0x10.31 */
+	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x18.31 */
+	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x5c.31 */
+	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	struct reg_access_switch_mspmer_ext mspmer_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x4.31 */
 	struct reg_access_switch_mrsr_ext mrsr_ext;
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
-	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
 	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
@@ -710,8 +1043,8 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* 0x0.0 - 0x28.31 */
 	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x18.31 */
-	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
+	/* 0x0.0 - 0xc.31 */
+	struct reg_access_switch_PPCR_ext PPCR_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x6c.31 */
 	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
@@ -724,6 +1057,9 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0x40c.31 */
 	struct reg_access_switch_icsr_ext icsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
 };
 
 
@@ -770,6 +1106,13 @@ void reg_access_switch_prm_register_payload_ext_print(const struct reg_access_sw
 unsigned int reg_access_switch_prm_register_payload_ext_size(void);
 #define REG_ACCESS_SWITCH_PRM_REGISTER_PAYLOAD_EXT_SIZE    (0x104)
 void reg_access_switch_prm_register_payload_ext_dump(const struct reg_access_switch_prm_register_payload_ext *ptr_struct, FILE *fd);
+/* lane_2_module_mapping_ext */
+void reg_access_switch_lane_2_module_mapping_ext_pack(const struct reg_access_switch_lane_2_module_mapping_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_lane_2_module_mapping_ext_unpack(struct reg_access_switch_lane_2_module_mapping_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_lane_2_module_mapping_ext_print(const struct reg_access_switch_lane_2_module_mapping_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_lane_2_module_mapping_ext_size(void);
+#define REG_ACCESS_SWITCH_LANE_2_MODULE_MAPPING_EXT_SIZE    (0x4)
+void reg_access_switch_lane_2_module_mapping_ext_dump(const struct reg_access_switch_lane_2_module_mapping_ext *ptr_struct, FILE *fd);
 /* mddq_data_auto_ext */
 void reg_access_switch_mddq_data_auto_ext_pack(const union reg_access_switch_mddq_data_auto_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mddq_data_auto_ext_unpack(union reg_access_switch_mddq_data_auto_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -791,6 +1134,13 @@ void reg_access_switch_uint64_print(const u_int64_t *ptr_struct, FILE *fd, int i
 unsigned int reg_access_switch_uint64_size(void);
 #define REG_ACCESS_SWITCH_UINT64_SIZE    (0x8)
 void reg_access_switch_uint64_dump(const u_int64_t *ptr_struct, FILE *fd);
+/* PPCR_ext */
+void reg_access_switch_PPCR_ext_pack(const struct reg_access_switch_PPCR_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_PPCR_ext_unpack(struct reg_access_switch_PPCR_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_PPCR_ext_print(const struct reg_access_switch_PPCR_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_PPCR_ext_size(void);
+#define REG_ACCESS_SWITCH_PPCR_EXT_SIZE    (0x10)
+void reg_access_switch_PPCR_ext_dump(const struct reg_access_switch_PPCR_ext *ptr_struct, FILE *fd);
 /* icam_reg_ext */
 void reg_access_switch_icam_reg_ext_pack(const struct reg_access_switch_icam_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_icam_reg_ext_unpack(struct reg_access_switch_icam_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -854,6 +1204,13 @@ void reg_access_switch_msgi_ext_print(const struct reg_access_switch_msgi_ext *p
 unsigned int reg_access_switch_msgi_ext_size(void);
 #define REG_ACCESS_SWITCH_MSGI_EXT_SIZE    (0x80)
 void reg_access_switch_msgi_ext_dump(const struct reg_access_switch_msgi_ext *ptr_struct, FILE *fd);
+/* mspmer_ext */
+void reg_access_switch_mspmer_ext_pack(const struct reg_access_switch_mspmer_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mspmer_ext_unpack(struct reg_access_switch_mspmer_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mspmer_ext_print(const struct reg_access_switch_mspmer_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mspmer_ext_size(void);
+#define REG_ACCESS_SWITCH_MSPMER_EXT_SIZE    (0x30)
+void reg_access_switch_mspmer_ext_dump(const struct reg_access_switch_mspmer_ext *ptr_struct, FILE *fd);
 /* mtcq_reg_ext */
 void reg_access_switch_mtcq_reg_ext_pack(const struct reg_access_switch_mtcq_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -861,6 +1218,13 @@ void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_re
 unsigned int reg_access_switch_mtcq_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MTCQ_REG_EXT_SIZE    (0x70)
 void reg_access_switch_mtcq_reg_ext_dump(const struct reg_access_switch_mtcq_reg_ext *ptr_struct, FILE *fd);
+/* pguid_reg_ext */
+void reg_access_switch_pguid_reg_ext_pack(const struct reg_access_switch_pguid_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_pguid_reg_ext_unpack(struct reg_access_switch_pguid_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_pguid_reg_ext_print(const struct reg_access_switch_pguid_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_pguid_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_PGUID_REG_EXT_SIZE    (0x60)
+void reg_access_switch_pguid_reg_ext_dump(const struct reg_access_switch_pguid_reg_ext *ptr_struct, FILE *fd);
 /* plib_reg_ext */
 void reg_access_switch_plib_reg_ext_pack(const struct reg_access_switch_plib_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_plib_reg_ext_unpack(struct reg_access_switch_plib_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -868,6 +1232,13 @@ void reg_access_switch_plib_reg_ext_print(const struct reg_access_switch_plib_re
 unsigned int reg_access_switch_plib_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_PLIB_REG_EXT_SIZE    (0x10)
 void reg_access_switch_plib_reg_ext_dump(const struct reg_access_switch_plib_reg_ext *ptr_struct, FILE *fd);
+/* pllp_reg_ext */
+void reg_access_switch_pllp_reg_ext_pack(const struct reg_access_switch_pllp_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_pllp_reg_ext_unpack(struct reg_access_switch_pllp_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_pllp_reg_ext_print(const struct reg_access_switch_pllp_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_pllp_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_PLLP_REG_EXT_SIZE    (0x14)
+void reg_access_switch_pllp_reg_ext_dump(const struct reg_access_switch_pllp_reg_ext *ptr_struct, FILE *fd);
 /* pmaos_reg_ext */
 void reg_access_switch_pmaos_reg_ext_pack(const struct reg_access_switch_pmaos_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_pmaos_reg_ext_unpack(struct reg_access_switch_pmaos_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -875,6 +1246,13 @@ void reg_access_switch_pmaos_reg_ext_print(const struct reg_access_switch_pmaos_
 unsigned int reg_access_switch_pmaos_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_PMAOS_REG_EXT_SIZE    (0x10)
 void reg_access_switch_pmaos_reg_ext_dump(const struct reg_access_switch_pmaos_reg_ext *ptr_struct, FILE *fd);
+/* pmlp_reg_ext */
+void reg_access_switch_pmlp_reg_ext_pack(const struct reg_access_switch_pmlp_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_pmlp_reg_ext_unpack(struct reg_access_switch_pmlp_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_pmlp_reg_ext_print(const struct reg_access_switch_pmlp_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_pmlp_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_PMLP_REG_EXT_SIZE    (0x40)
+void reg_access_switch_pmlp_reg_ext_dump(const struct reg_access_switch_pmlp_reg_ext *ptr_struct, FILE *fd);
 /* reg_access_switch_Nodes */
 void reg_access_switch_reg_access_switch_Nodes_pack(const union reg_access_switch_reg_access_switch_Nodes *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_reg_access_switch_Nodes_unpack(union reg_access_switch_reg_access_switch_Nodes *ptr_struct, const u_int8_t *ptr_buff);
