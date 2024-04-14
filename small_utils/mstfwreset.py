@@ -1354,7 +1354,7 @@ def send_reset_cmd_to_pcie_switch_devices(reset_level, reset_type, reset_sync):
     #
 
     # Discover all PCIE switch devices.
-    peripherals = MlnxPeripheralComponents()
+    peripherals = MlnxPeripheralComponents(logger)
     for pci_device in peripherals.pci_devices:
         logger.debug("Creating regaccess obj for device %s" % pci_device.get_alias())
         pci_device_mst = mtcr.MstDevice(pci_device.get_alias())
@@ -2021,7 +2021,7 @@ def reset_flow_host(device, args, command):
     if command == "reset" and not args.skip_socket_direct:
 
         try:
-            peripherals = MlnxPeripheralComponents()
+            peripherals = MlnxPeripheralComponents(logger)
             usr_pci_device = peripherals.get_pci_device(device)
             socket_direct_pci_devices = peripherals.get_socket_direct_pci_devices(
                 usr_pci_device)
@@ -2032,8 +2032,8 @@ def reset_flow_host(device, args, command):
                 MstDevObjsSD.append(mtcr.MstDevice(deviceSD))
                 RegAccessObjsSD.append(regaccess.RegAccess(MstDevObjsSD[-1]))
                 CmdifObjsSD.append(cmdif.CmdIf(MstDevObjsSD[-1]))
-        except BaseException:
-            logger.warning("Failed to check if device is Socket Direct!")
+        except BaseException as e:
+            logger.warning("Failed to check if device is Socket Direct!, ERROR [%s]" % e)
             devicesSD = []
             for MstDevObjSD in MstDevObjsSD:
                 MstDevObjSD.close()
