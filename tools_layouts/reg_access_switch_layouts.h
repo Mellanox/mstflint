@@ -219,6 +219,31 @@ struct reg_access_switch_lane_2_module_mapping_ext {
 };
 
 /* Description -   */
+/* Size in bytes - 4 */
+struct reg_access_switch_lane_2_module_mapping_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+    /* Description - Module number */
+    /* 0x0.0 - 0x0.7 */
+    u_int8_t module;
+    /* Description - Reserved for HCA
+     *  Slot_index
+     *  Slot_index = 0 represent the onboard (motherboard).
+     *  In case of non modular system only slot_index = 0 is available. */
+    /* 0x0.8 - 0x0.11 */
+    u_int8_t slot_index;
+    /* Description - TX lane.
+     *  When m_lane_m field is set, this field is ignored (Reserved).
+     *  When rxtx field is cleared, this field is used for RX as well. */
+    /* 0x0.16 - 0x0.19 */
+    u_int8_t tx_lane;
+    /* Description - RX lane.
+     *  When m_lane_m field is set, this field is ignored (Reserved).
+     *  When rxtx field is cleared, this field is ignored and RX lane is equal to TX lane. */
+    /* 0x0.24 - 0x0.27 */
+    u_int8_t rx_lane;
+};
+
+/* Description -   */
 /* Size in bytes - 32 */
 union reg_access_switch_mddq_data_auto_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -255,6 +280,60 @@ struct reg_access_switch_uint64 {
     /* Description -  */
     /* 0x0.0 - 0x4.31 */
     u_int64_t uint64;
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct reg_access_switch_PPCR_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+    /* Description - Local port[9:8]
+     *  Reserved for HCA */
+    /* 0x0.12 - 0x0.13 */
+    u_int8_t lp_msb;
+    /* Description - Local port number.
+     */
+    /* 0x0.16 - 0x0.23 */
+    u_int8_t local_port;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+    /* Description - Aggregated Port number to be reflected in MAD.
+     *  0 means N/A
+     *
+     *  Reserved for HCA */
+    /* 0x8.0 - 0x8.7 */
+    u_int8_t aggregated_port;
+    /* Description - Plane number to be reflected in MAD.
+     *  0 means N/A
+     *
+     *  Reserved for HCA */
+    /* 0x8.16 - 0x8.18 */
+    u_int8_t plane;
+    /* Description - When planarized  the FW shall respond to Hierarchy Info.Split with the following split value.
+     *
+     *  In this use case it represents the split of the APort.
+     *
+     *  When split = 0, the FW shall send Hierarchy Info without the split field. (meaning it is NA)
+     *
+     *  When Non planarized (num_of_planes = 0), Hierarchy Info.Split will reflect the actual split value, when 2X- it'll hold the location within the 4x.
+     *
+     *  0: NA
+     *  1: Split 1.
+     *  2: Split 2.
+     *  3-7: Reserved
+     *  Reserved for HCA */
+    /* 0x8.24 - 0x8.26 */
+    u_int8_t split;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+    /* Description - The number of planes comprising this Aggregated port
+     */
+    /* 0xc.0 - 0xc.7 */
+    u_int8_t num_of_planes;
+    /* Description - [DWIP]
+     *  Planarization Type
+     *  0: non planarized
+     *  1: planirized_gen1
+     *  2-7: Reserved */
+    /* 0xc.16 - 0xc.18 */
+    u_int8_t p_type;
 };
 
 /* Description -   */
@@ -652,6 +731,66 @@ struct reg_access_switch_mspmer_ext {
 };
 
 /* Description -   */
+/* Size in bytes - 48 */
+struct reg_access_switch_mspmer_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+    /* Description - Device Index
+     *  0: Main_board_or_NIC
+     */
+    /* 0x0.0 - 0x0.3 */
+    u_int8_t device_index;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+    /* Description - Status
+     *  0: Success
+     *  1: Physical monitor is not supported
+     *  2: Device index is not valid */
+    /* 0x4.0 - 0x4.3 */
+    u_int8_t status;
+    /* Description - Clear Counters
+     *  0: don't clear counters
+     *  1: clear counters */
+    /* 0x4.16 - 0x4.16 */
+    u_int8_t clr;
+    /* Description - Prevention Enable
+     *  0: Notification only. Prevention is disabled
+     *  1: Prevention is enabled
+     *
+     *  In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 332, "NV_SWITCH_PHY_SEC_CONF Layout," on page 711 */
+    /* 0x4.24 - 0x4.24 */
+    u_int8_t prev_en;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+    /* Description - 31: FMON - Frequency MONitor
+     *  30: VMON - Voltage MONitor
+     *  29: SCPM - Secure Canary Path Monitor
+     *  0: General
+     *
+     */
+    /* 0xc.0 - 0xc.31 */
+    u_int32_t supported_physical_monitor;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+    /* Description - Frequency Monitor Counter
+     *
+     *  Stuck at 0xF, cleared only at hard reset (RST_) or power down or clr bit. */
+    /* 0x14.0 - 0x14.3 */
+    u_int8_t fmon_ctr;
+    /* Description - Voltage Monitor Counter
+     *
+     *  Stuck at 0xF, cleared only at hard reset (RST_) or power down or clr bit. */
+    /* 0x14.4 - 0x14.7 */
+    u_int8_t vmon_ctr;
+    /* Description - Security Canary Path Monitor Counter
+     *  A circuit macro used to flag timing slack violations as part of mitigations for physical security attacks.
+     *
+     *  Stuck at 0xF, cleared only at hard reset (RST_) or power down or clr bit. */
+    /* 0x14.8 - 0x14.11 */
+    u_int8_t scpm_ctr;
+    /* Description - General Error indication
+     *  Cleared only at hard reset (RST_) or power down or clr bit. */
+    /* 0x14.12 - 0x14.12 */
+    u_int8_t general_err;
+};
+
+/* Description -   */
 /* Size in bytes - 112 */
 struct reg_access_switch_mtcq_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -754,6 +893,43 @@ struct reg_access_switch_pguid_reg_ext {
 };
 
 /* Description -   */
+/* Size in bytes - 96 */
+struct reg_access_switch_pguid_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+    /* Description - Local port number [9:8] */
+    /* 0x0.12 - 0x0.13 */
+    u_int8_t lp_msb;
+    /* Description - Port number access type. determines the way local_port is interpreted:
+     *  0 - Local port number
+     *  1 - IB port number */
+    /* 0x0.14 - 0x0.15 */
+    u_int8_t pnat;
+    /* Description - local_port number */
+    /* 0x0.16 - 0x0.23 */
+    u_int8_t local_port;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+    /* Description - System GUID.
+     *  Only 64 LSB are used. 64 MSB are reserved. */
+    /* 0x4.0 - 0x10.31 */
+    u_int32_t sys_guid[4];
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+    /* Description - Node GUID.
+     *  Only 64 LSB are used. 64 MSB are reserved. */
+    /* 0x14.0 - 0x20.31 */
+    u_int32_t node_guid[4];
+/*---------------- DWORD[9] (Offset 0x24) ----------------*/
+    /* Description - Port GUID.
+     *  Only 64 LSB are used. 64 MSB are reserved. */
+    /* 0x24.0 - 0x30.31 */
+    u_int32_t port_guid[4];
+/*---------------- DWORD[13] (Offset 0x34) ----------------*/
+    /* Description - Allocated GUID.
+     *  Only 64 LSB are used. 64 MSB are reserved. */
+    /* 0x34.0 - 0x40.31 */
+    u_int32_t allocated_guid[4];
+};
+
+/* Description -   */
 /* Size in bytes - 16 */
 struct reg_access_switch_plib_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -773,6 +949,111 @@ struct reg_access_switch_plib_reg_ext {
      *  Label split mapping for local_port */
     /* 0x4.0 - 0x4.3 */
     u_int8_t split_num;
+};
+
+/* Description -   */
+/* Size in bytes - 20 */
+struct reg_access_switch_pllp_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+    /* Description - Front panel label of the port
+     *   Note:
+     *   PLIB.ib_port provides IB port in IB and label_port in Eth
+     *   MOLP provides the 16bit mirror header value */
+    /* 0x0.0 - 0x0.9 */
+    u_int16_t label_port;
+    /* Description - Local port[9:8] */
+    /* 0x0.12 - 0x0.13 */
+    u_int8_t lp_msb;
+    /* Description - Local port number. */
+    /* 0x0.16 - 0x0.23 */
+    u_int8_t local_port;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+    /* Description - Port split mapping for local_port.
+     *  The position of this local port within each splitted port.
+     *  When no split: split_num should be 0
+     *  When split to 2: split_num should be 0,1
+     *  When split to 4: split_num should be 0   3
+     *  When split to 8: split_num should be 0   7
+     *  Split to 8 exists only for ETH */
+    /* 0x4.0 - 0x4.3 */
+    u_int8_t split_num;
+    /* Description - Inter port in Label number.
+     *  gives mapping of the basic port unit  inside the label (cage), From the lowest lanes of the module to the highest.
+     *  e.g Label of 8x lanes, with 2 ipil
+     *  ipil 1 - will be port mapped to lanes 1-4
+     *  ipil 2 - will be port mapped to lanes 5-8
+     *
+     *  When ipil_stat is 0 (no ipil): ipil_num should be 0
+     *  When ipil_stat is 1: ipil_num should be 1,2
+     *  When ipil_stat is 2: ipil_num should be 1   4
+     *  When ipil_stat is 3: ipil_num should be 1   8 */
+    /* 0x4.8 - 0x4.11 */
+    u_int8_t ipil_num;
+    /* Description - Defines the IPIL split. The value is by how much to split each IPIL
+     *  The local_port status is:
+     *  0: no split
+     *  1: split to 2
+     *  2: split to 4
+     *  3: split to 8
+     */
+    /* 0x4.16 - 0x4.19 */
+    u_int8_t split_stat;
+    /* Description - Inter port in Label status.
+     *  Number of basic port units inside the label (cage).
+     *  0: 1 inter port in label
+     *  1: 2 inter port in label
+     *  2: 4 inter port in label
+     *  3: 8 inter port in label */
+    /* 0x4.24 - 0x4.27 */
+    u_int8_t ipil_stat;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+    /* Description - Valid only for Ethernet Switches.
+     *  Slot_number mapping for local_port */
+    /* 0x8.0 - 0x8.3 */
+    u_int8_t slot_num;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+    /* Description - Connectivity Type
+     *  0: N/A
+     *  1: not-wired
+     *  2: wire to front panel
+     *  3: wired to Switch
+     *  4: wired to GPU
+     *  5: wired to NIC
+     *
+     *  Describes the internal wiring on the port.
+     *  Supported from Quantum-3 and above */
+    /* 0xc.0 - 0xc.2 */
+    u_int8_t conn_type;
+    /* Description - Remote ASIC Id
+     *  Reserved when conn_type = 0/1/2
+     *  Supported from Quantum-3 and above */
+    /* 0xc.8 - 0xc.15 */
+    u_int8_t rmt_id;
+    /* Description - 0: Mission port
+     *  1: FNM port
+     *  Supported from Quantum-3 and above */
+    /* 0xc.16 - 0xc.16 */
+    u_int8_t is_fnm;
+    /* Description - Mission Port as FNM
+     *  0: Mission port
+     *  1: Mission port treated as FNM port.
+     *
+     *  When set, the port shall be configured as a FNM port.
+     *  Reserved when is_fnm is set.
+     *  Note: This configuration does not change port type as stated in is_fnm field.
+     *  Supported from Quantum-3 and above. */
+    /* 0xc.17 - 0xc.17 */
+    u_int8_t maf;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+    /* Description - 0: N/A (when FW has no info)
+     *  1: ETH (for Eth devices)
+     *  2: IB
+     *  3: NVLink
+     *  4: IBg2Eth
+     *  Supported from Quantum-3 and above
+     */
+    /* 0x10.0 - 0x10.2 */
+    u_int8_t protocol;
 };
 
 /* Description -   */
@@ -960,6 +1241,50 @@ struct reg_access_switch_pmaos_reg_ext {
     /* Description - Admin state update enable. If this bit is set, admin state will be updated based on admin_state field. Only relevant on Set() operations. */
     /* 0x4.31 - 0x4.31 */
     u_int8_t ase;
+};
+
+/* Description -   */
+/* Size in bytes - 64 */
+struct reg_access_switch_pmlp_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+    /* Description - 0: unmap_local_port
+     *  1: x1 - lane 0 is used
+     *  2: x2 - lanes 0,1 are used
+     *  4: x4 - lanes 0,1,2 and 3 are used
+     *  8: x8 - lanes 0-7 are used
+     *
+     *  Other - reserved */
+    /* 0x0.0 - 0x0.7 */
+    u_int8_t width;
+    /* Description - Reserved for non-planarized port.
+     *  Plane port index of the aggregated port. A value of 0 refers to the aggregated port only. */
+    /* 0x0.8 - 0x0.11 */
+    u_int8_t plane_ind;
+    /* Description - Local port number [9:8] */
+    /* 0x0.12 - 0x0.13 */
+    u_int8_t lp_msb;
+    /* Description - Local port number. */
+    /* 0x0.16 - 0x0.23 */
+    u_int8_t local_port;
+    /* Description - Module lane mapping:
+     *  0 - Local to Module mapping include module lanes mapping
+     *  1 - Local to Module mapping only, without lane mapping
+     *
+     *  When this operational is set ('1'), the following fields are ignored in SET command and should return the value "0" in GET commands:
+     *  PMLP.rxtx
+     *  PMLP.lane<i>_module_mapping.tx_lane
+     *  PMLP.lane<i>_module_mapping.rx_lane */
+    /* 0x0.28 - 0x0.28 */
+    u_int8_t m_lane_m;
+    /* Description - Use different configuration for RX and TX.
+     *  If this bit is cleared, the TX value is used for both RX and TX. When set, the RX configuration is taken from the separate field. This is to enable backward compatible implementation. */
+    /* 0x0.31 - 0x0.31 */
+    u_int8_t rxtx;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+    /* Description - Module SerDes for lane <i>
+     *  Up to 8 SerDeses in a module can be mapped to a local port. */
+    /* 0x4.0 - 0x20.31 */
+    struct reg_access_switch_lane_2_module_mapping_ext lane_module_mapping[8];
 };
 
 /* Description -   */

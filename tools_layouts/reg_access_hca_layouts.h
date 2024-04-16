@@ -433,6 +433,38 @@ struct reg_access_hca_nic_cap_ext_dpa_cap_ext {
 };
 
 /* Description -   */
+/* Size in bytes - 112 */
+struct reg_access_hca_nic_cap_ext_dpa_cap_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Maximal number of DPA EUGs */
+	/* 0x0.0 - 0x0.15 */
+	u_int16_t max_num_dpa_eug;
+	/* Description - Maximal number of DPA EUs */
+	/* 0x0.16 - 0x0.31 */
+	u_int16_t max_num_dpa_eu;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Maximal number of DPA EU partitions */
+	/* 0x4.0 - 0x4.15 */
+	u_int16_t max_num_dpa_eu_partition;
+	/* Description - Maximal number of DPA EUs in one DPA EUG */
+	/* 0x4.16 - 0x4.31 */
+	u_int16_t max_num_dpa_eu_per_group;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Bitmask indicating the supported sampling types of DPA performance counters. Set bit indicates this type is supported:
+Bit 0: CUMMULATIVE_EVENT
+Bit 1: EVENT_TRACER
+Other bits are reserved */
+	/* 0x8.8 - 0x8.15 */
+	u_int8_t dpa_perf_sample_type;
+	/* Description - Maximal number of VHCAs associated with a single DPA EU partition */
+	/* 0x8.16 - 0x8.24 */
+	u_int16_t max_num_partition_vhca_id;
+	/* Description - When set, DPA process performance counters can be activated using NIC_DPA_PERF_CTRL_REG */
+	/* 0x8.30 - 0x8.30 */
+	u_int8_t process_perf_cnt;
+};
+
+/* Description -   */
 /* Size in bytes - 4 */
 struct reg_access_hca_rom_version_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -967,6 +999,15 @@ union reg_access_hca_nic_cap_ext_reg_cap_data_auto_ext {
     /* Description -  */
     /* 0x0.0 - 0x6c.31 */
     struct reg_access_hca_nic_cap_ext_dpa_cap_ext nic_cap_ext_dpa_cap_ext;
+};
+
+/* Description -   */
+/* Size in bytes - 112 */
+union reg_access_hca_nic_cap_ext_reg_cap_data_auto_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x6c.31 */
+	struct reg_access_hca_nic_cap_ext_dpa_cap_ext nic_cap_ext_dpa_cap_ext;
 };
 
 /* Description -   */
@@ -2794,6 +2835,43 @@ struct reg_access_hca_pguid_reg_ext {
      *  Only 64 LSB are used. 64 MSB are reserved. */
     /* 0x34.0 - 0x40.31 */
     u_int32_t allocated_guid[4];
+};
+
+/* Description -   */
+/* Size in bytes - 96 */
+struct reg_access_hca_pguid_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Local port number [9:8] */
+	/* 0x0.12 - 0x0.13 */
+	u_int8_t lp_msb;
+	/* Description - Port number access type. determines the way local_port is interpreted:
+0 - Local port number
+1 - IB port number */
+	/* 0x0.14 - 0x0.15 */
+	u_int8_t pnat;
+	/* Description - local_port number */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t local_port;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - System GUID.
+Only 64 LSB are used. 64 MSB are reserved. */
+	/* 0x4.0 - 0x10.31 */
+	u_int32_t sys_guid[4];
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Node GUID.
+Only 64 LSB are used. 64 MSB are reserved. */
+	/* 0x14.0 - 0x20.31 */
+	u_int32_t node_guid[4];
+/*---------------- DWORD[9] (Offset 0x24) ----------------*/
+	/* Description - Port GUID.
+Only 64 LSB are used. 64 MSB are reserved. */
+	/* 0x24.0 - 0x30.31 */
+	u_int32_t port_guid[4];
+/*---------------- DWORD[13] (Offset 0x34) ----------------*/
+	/* Description - Allocated GUID.
+Only 64 LSB are used. 64 MSB are reserved. */
+	/* 0x34.0 - 0x40.31 */
+	u_int32_t allocated_guid[4];
 };
 
 /* Description -   */
