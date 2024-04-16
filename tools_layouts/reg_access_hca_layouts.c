@@ -1572,7 +1572,8 @@ void reg_access_hca_mgir_fw_info_ext_pack(const struct reg_access_hca_mgir_fw_in
     int       i;
 
     offset = 24;
-    adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->sub_minor);
+    
+  
     offset = 16;
     adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->minor);
     offset = 8;

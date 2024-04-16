@@ -231,7 +231,7 @@ extern "C"
     /**
      * A predicate returning if the device is an ArcusE chipset
      */
-    int dm_dev_is_retimer_arcuse(dm_dev_id_t type);
+    int dm_dev_is_retimer(dm_dev_id_t type);
 
     /**
      * Returns the max num of ports or -1 on error
@@ -255,6 +255,8 @@ extern "C"
     int dm_is_fpp_supported(dm_dev_id_t type);
 
     int dm_is_4th_gen(dm_dev_id_t type);
+
+    int dm_dev_is_fs5(dm_dev_id_t type);
 
     int dm_is_5th_gen_hca(dm_dev_id_t type);
 

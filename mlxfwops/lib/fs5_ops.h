@@ -62,6 +62,7 @@ protected:
                     const char* pref,
                     VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL) override;
     bool GetDtocAddress(u_int32_t& dTocAddress) override;
+    bool GetMfgInfo(u_int8_t* buff) override;
     u_int32_t _ncore_bch_ptr;
 
 private:
@@ -74,7 +75,8 @@ private:
                      struct QueryOptions queryOptions,
                      bool ignoreDToc = false,
                      bool verbose = false) override;
-    bool IsSecureFwUpdateSigned(bool& isSigned);      
+    bool IsSecureFwUpdateSigned(bool& isSigned);
+    bool NCoreQuery(fw_info_t* fwInfo);
 
     static const u_int32_t BCH_SIZE_IN_BYTES;               
 };

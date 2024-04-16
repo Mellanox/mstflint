@@ -285,7 +285,17 @@ int my_memcpy(void* dst, void* src, u_int32_t len)
 
 int write_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
 {
+    static bool env_vars_evaluated = false;
+    static bool erase_verification_enable = false;
+    static int retries_num = 0;
     int rc = 0;
+    if (!env_vars_evaluated)
+    {
+        erase_verification_enable = getenv("MFLASH_ERASE_VERIFY") ? true : false;
+        const char* retries_num_str = getenv("MFLASH_WRITE_RETRIES");
+        retries_num = retries_num_str ? atoi(retries_num_str) : 0;
+        env_vars_evaluated = true;
+    }
     u_int8_t* p = (u_int8_t*)data;
     int all_ffs = 0;
 
@@ -371,34 +381,78 @@ int write_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
 
         if (!all_ffs)
         {
-            rc = mfl->f_write_blk(mfl, block_addr, block_size, block_data);
-            CHECK_RC(rc);
-
-            if (mfl->opts[MFO_NO_VERIFY] == 0)
+            if (erase_verification_enable)
             {
                 u_int8_t verify_buffer[MAX_WRITE_BUFFER_SIZE] = {0};
                 rc = mfl->f_reset(mfl);
                 CHECK_RC(rc);
                 rc = mfl->f_read(mfl, addr, data_size, verify_buffer, false);
                 CHECK_RC(rc);
-                /* Verify data */
+                // Verify erase
                 for (i = 0; i < data_size; i++)
                 {
-                    if (verify_buffer[i] != block_data[i + prefix_pad_size])
+                    if (verify_buffer[i] != 0xff)
                     {
-                        FLASH_DPRINTF(("Write verification failed. Address 0x%08x - expected:0x%02x actual: 0x%02x\n",
-                                       addr + i,
-                                       block_data[i + prefix_pad_size],
-                                       verify_buffer[i]));
+                        printf("Erase verification failed. Address 0x%08x - expected:0x%02x actual: 0x%02x\n",
+                               addr + i,
+                               0xff,
+                               verify_buffer[i]);
                         return MFE_VERIFY_ERROR;
                     }
                 }
             }
+
+            bool write_block_passed = false;
+            int retries_counter = 0;
+            while (!write_block_passed)
+            {
+                rc = mfl->f_write_blk(mfl, block_addr, block_size, block_data);
+                CHECK_RC(rc);
+
+                if (mfl->opts[MFO_NO_VERIFY] == 0)
+                {
+                    u_int8_t verify_buffer[MAX_WRITE_BUFFER_SIZE] = {0};
+                    rc = mfl->f_reset(mfl);
+                    CHECK_RC(rc);
+                    rc = mfl->f_read(mfl, addr, data_size, verify_buffer, false);
+                    CHECK_RC(rc);
+                    // Verify data
+                    bool verify_pass = true;
+                    for (i = 0; i < data_size; i++)
+                    {
+                        if (verify_buffer[i] != block_data[i + prefix_pad_size])
+                        {
+                            verify_pass = false;
+                            FLASH_DPRINTF(
+                              ("Write verification failed. Address 0x%08x - expected:0x%02x actual: 0x%02x\n",
+                               addr + i,
+                               block_data[i + prefix_pad_size],
+                               verify_buffer[i]));
+
+                            if (retries_counter >= retries_num)
+                            {
+                                return MFE_VERIFY_ERROR;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    if (!verify_pass)
+                    {
+                        retries_counter++;
+                        FLASH_DPRINTF(("Retry number %d\n", retries_counter));
+                        continue;
+                    }
+                }
+                write_block_passed = true;
+            }
         }
 
-        /* */
-        /* loop advance */
-        /* */
+        //
+        // loop advance
+        //
 
         addr += data_size;
         p += data_size;
@@ -418,7 +472,8 @@ flash_info_t g_flash_info_arr[] = {
   {"M25Pxx", FV_ST, FMT_ST_M25P, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0},
   {"N25Q0XX", FV_ST, FMT_N25QXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 1, 0},
   /*{MICRON_3V_NAME, FV_ST, FMT_N25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 0}, */
-  {MICRON_3V_NAME, FV_ST, FMT_N25QXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 0},
+  {MICRON_3V_NAME, FV_ST, FMT_N25QXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 1},
+  {MICRON_1V8_NAME, FV_ST, FMT_N25QUXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 1},
   {SST_FLASH_NAME, FV_SST, FMT_SST_25, FD_LEGACY, MCS_SSTSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0},
   {WINBOND_NAME, FV_WINBOND, FMT_WINBOND, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0},
   {WINBOND_W25X, FV_WINBOND, FMT_WINBOND_W25X, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0},
@@ -426,6 +481,10 @@ flash_info_t g_flash_info_arr[] = {
   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_3V, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
   {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
+  {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IQ, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
+  {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IM, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
+  {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IQ, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
+  {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IM, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
   {ATMEL_NAME, FV_ATMEL, FMT_ATMEL, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0},
   {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0},
   {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0},
@@ -435,9 +494,13 @@ flash_info_t g_flash_info_arr[] = {
   /*{CYPRESS_3V_NAME, FV_S25FLXXXX, FMT_S25FLXXXL, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB,  1, 1, 1, 0, 0, 0}, */
   {ISSI_3V_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
   {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_32), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
+  {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_28, (1 << FD_32), MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
   {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
+  {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_512), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
   /* added by edwardg 06/09/2020 */
   {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
+  {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
+
   {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
   {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0}};
 
@@ -2017,11 +2080,11 @@ void update_seventh_gen_addrs(mflash* mfl)
     }
     else if (mfl->dm_dev_id == DeviceConnectX8)
     {
-        mfl->gw_cmd_register_addr = HCR_7GEN_CX7_FLASH_CMD;
-        mfl->gw_data_field_addr = HCR_7GEN_CX7_FLASH_DATA;
-        mfl->gcm_en_addr = HCR_7GEN_CX7_GCM_EN_ADDR;
-        mfl->gw_addr_field_addr = HCR_7GEN_CX7_FLASH_ADDR;
-        mfl->gw_data_size_register_addr = HCR_7GEN_CX7_FLASH_DATA_SIZE;
+        mfl->gw_cmd_register_addr = HCR_7GEN_CX8_FLASH_CMD;
+        mfl->gw_data_field_addr = HCR_7GEN_CX8_FLASH_DATA;
+        mfl->gcm_en_addr = HCR_7GEN_CX8_GCM_EN_ADDR;
+        mfl->gw_addr_field_addr = HCR_7GEN_CX8_FLASH_ADDR;
+        mfl->gw_data_size_register_addr = HCR_7GEN_CX8_FLASH_DATA_SIZE;
     }
     else if (mfl->dm_dev_id == DeviceArcusE)
     {
@@ -3691,6 +3754,18 @@ int mf_read_modify_status_winbond(mflash* mfl,
     return MFE_OK;
 }
 
+u_int32_t mf_change_status_endianness(mflash* mfl, u_int32_t status, u_int8_t bytes_num)
+{
+    if (mfl->attr.vendor == FV_ST)
+    {
+        if (bytes_num == 2)
+        {
+            status = ___my_swab16(status);
+        }
+    }
+    return status;
+}
+
 /* read/write_cmd - command value for reading/writing from/to status register 1/2/3 */
 /* val - new value to be written */
 /* offset - destination bit offset */
@@ -3712,7 +3787,9 @@ int mf_read_modify_status_new(mflash* mfl,
     CHECK_RC(rc);
     rc = mfl->f_int_spi_get_status_data(mfl, read_cmd, &status, bytes_num);
     CHECK_RC(rc);
+    status = mf_change_status_endianness(mfl, status, bytes_num);
     status = MERGE(status, val, offset, size);
+    status = mf_change_status_endianness(mfl, status, bytes_num);
     rc = mfl->f_spi_write_status_reg(mfl, status, write_cmd, bytes_num);
     CHECK_RC(rc);
     return MFE_OK;
@@ -3736,7 +3813,7 @@ int mf_get_param_int(mflash* mfl,
         CHECK_RC(rc);
         rc = mfl->f_int_spi_get_status_data(mfl, cmd, &status, bytes_num);
         CHECK_RC(rc);
-
+        status = mf_change_status_endianness(mfl, status, bytes_num);
         curr_val = EXTRACT(status, offset, bit_size);
         if (bit_size == 1)
         {
@@ -3790,17 +3867,11 @@ int mf_get_dummy_cycles_direct_access(mflash* mfl, u_int8_t* dummy_cycles_p)
         return MFE_NOT_SUPPORTED_OPERATION;
     }
     return mf_get_param_int(mfl, dummy_cycles_p, SFC_RDNVR, DUMMY_CYCLES_OFFSET_ST, 4, 2, 0);
-    return MFE_OK;
 }
 
 int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength)
 {
     if (!mfl)
-    {
-        return MFE_BAD_PARAMS;
-    }
-    if ((driver_strength != DRIVER_STRENGTH_VAL_25_WINBOND) && (driver_strength != DRIVER_STRENGTH_VAL_50_WINBOND) &&
-        (driver_strength != DRIVER_STRENGTH_VAL_75_WINBOND) && (driver_strength != DRIVER_STRENGTH_VAL_100_WINBOND))
     {
         return MFE_BAD_PARAMS;
     }
@@ -3819,6 +3890,15 @@ int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength)
               SFC_WRSR3_WINBOND, driver_strength,  /* status-register-3 write cmd, driver-strength new val */
               DRIVER_STRENGTH_OFFSET_WINBOND,      /* driver-strength bit offset */
               DRIVER_STRENGTH_BIT_LEN_WINBOND, 1); /* driver-strength bit length, status-register byte len */
+            CHECK_RC(rc);
+        }
+        else if (mfl->attr.vendor == FV_ST) // micron
+        {
+            rc = mf_read_modify_status_new(
+              mfl, bank, SFC_RDNVR,          // mflash, bank num, nonvolatile-configuration-register read cmd
+              SFC_WRNVR, driver_strength,    // nonvolatile-configuration-register write cmd, driver-strength new val
+              DRIVER_STRENGTH_OFFSET_MICRON, // driver-strength bit offset
+              DRIVER_STRENGTH_BIT_LEN_MICRON, 2); // driver-strength bit length, status-register byte len
             CHECK_RC(rc);
         }
         else
@@ -3850,6 +3930,14 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
                               DRIVER_STRENGTH_BIT_LEN_WINBOND, /* driver-strength bit length */
                               1, 0);                           /* status-register byte len, don't-care */
     }
+    else if (mfl->attr.vendor == FV_ST) // micron
+    {
+        rc = mf_get_param_int(mfl, driver_strength_p,         // mflash, output pointer,
+                              SFC_RDNVR,                      // nonvolatile-configuration-register read cmd
+                              DRIVER_STRENGTH_OFFSET_MICRON,  // driver-strength bit offset
+                              DRIVER_STRENGTH_BIT_LEN_MICRON, // driver-strength bit length
+                              2, 0);                          // status-register byte len, don't-care
+    }
     else
     {
         rc = MFE_NOT_IMPLEMENTED;
@@ -3872,7 +3960,9 @@ int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
     }
     for (bank = 0; bank < mfl->attr.banks_num; bank++)
     {
-        if ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V))
+        if (mfl->attr.vendor == FV_WINBOND &&
+            (mfl->attr.type == FMT_WINBOND_3V || mfl->attr.type == FMT_WINBOND_IQ ||
+             mfl->attr.type == FMT_WINBOND_IM))
         {
             rc =
               mf_read_modify_status_new(mfl, bank, SFC_RDSR2, SFC_WRSR2, quad_en, QUAD_EN_OFFSET_WINBOND_CYPRESS, 1, 1);
@@ -4298,57 +4388,114 @@ int mf_get_quad_en(mflash* mfl, u_int8_t* quad_en)
     return mfl->f_get_quad_en(mfl, quad_en);
 }
 
+int mf_to_vendor_driver_strength(u_int8_t vendor, u_int8_t value, u_int8_t* driver_strength)
+{
+    if (vendor == FV_ST)
+    {
+        switch (value)
+        {
+            case 100:
+                *driver_strength = DRIVER_STRENGTH_VAL_20_MICRON;
+                break;
+            case 66:
+                *driver_strength = DRIVER_STRENGTH_VAL_30_MICRON;
+                break;
+            case 44:
+                *driver_strength = DRIVER_STRENGTH_VAL_45_MICRON;
+                break;
+            case 22:
+                *driver_strength = DRIVER_STRENGTH_VAL_90_MICRON;
+                break;
+            default:
+                return MFE_BAD_PARAMS;
+        }
+    }
+    else
+    {
+        switch (value)
+        {
+            case 25:
+                *driver_strength = DRIVER_STRENGTH_VAL_25_WINBOND;
+                break;
+            case 50:
+                *driver_strength = DRIVER_STRENGTH_VAL_50_WINBOND;
+                break;
+            case 75:
+                *driver_strength = DRIVER_STRENGTH_VAL_75_WINBOND;
+                break;
+            case 100:
+                *driver_strength = DRIVER_STRENGTH_VAL_100_WINBOND;
+                break;
+            default:
+                return MFE_BAD_PARAMS;
+        }
+    }
+    return MFE_OK;
+}
+
+int mf_from_vendor_driver_strength(u_int8_t vendor, u_int8_t vendor_driver_strength, u_int8_t* value)
+{
+    if (vendor == FV_ST)
+    {
+        switch (vendor_driver_strength)
+        {
+            case DRIVER_STRENGTH_VAL_20_MICRON:
+                *value = 20;
+                break;
+            case DRIVER_STRENGTH_VAL_30_MICRON:
+                *value = 30;
+                break;
+            case DRIVER_STRENGTH_VAL_45_MICRON:
+                *value = 45;
+                break;
+            case DRIVER_STRENGTH_VAL_90_MICRON:
+                *value = 90;
+                break;
+            default:
+                *value = 0xff;
+        }
+        if (*value != 0xff)
+        {
+            *value = (20 * 100) / *value;
+        }
+    }
+    else
+    {
+        switch (vendor_driver_strength)
+        {
+            case DRIVER_STRENGTH_VAL_25_WINBOND:
+                *value = 25;
+                break;
+            case DRIVER_STRENGTH_VAL_50_WINBOND:
+                *value = 50;
+                break;
+            case DRIVER_STRENGTH_VAL_75_WINBOND:
+                *value = 75;
+                break;
+            case DRIVER_STRENGTH_VAL_100_WINBOND:
+                *value = 100;
+                break;
+            default:
+                *value = 0xff;
+        }
+    }
+    return MFE_OK;
+}
+
 int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength)
 {
-    switch (driver_strength)
-    {
-        case 25:
-            driver_strength = DRIVER_STRENGTH_VAL_25_WINBOND;
-            break;
-
-        case 50:
-            driver_strength = DRIVER_STRENGTH_VAL_50_WINBOND;
-            break;
-
-        case 75:
-            driver_strength = DRIVER_STRENGTH_VAL_75_WINBOND;
-            break;
-
-        case 100:
-            driver_strength = DRIVER_STRENGTH_VAL_100_WINBOND;
-            break;
-
-        default:
-            return MFE_BAD_PARAMS;
-    }
-    return mfl->f_set_driver_strength(mfl, driver_strength);
+    u_int8_t vendor_driver_strength = 0;
+    int rc = mf_to_vendor_driver_strength(mfl->attr.vendor, driver_strength, &vendor_driver_strength);
+    CHECK_RC(rc);
+    return mfl->f_set_driver_strength(mfl, vendor_driver_strength);
 }
 
 int mf_get_driver_strength(mflash* mfl, u_int8_t* driver_strength)
 {
-    int rc = mfl->f_get_driver_strength(mfl, driver_strength);
-
-    switch (*driver_strength)
-    {
-        case DRIVER_STRENGTH_VAL_25_WINBOND:
-            *driver_strength = 25;
-            break;
-
-        case DRIVER_STRENGTH_VAL_50_WINBOND:
-            *driver_strength = 50;
-            break;
-
-        case DRIVER_STRENGTH_VAL_75_WINBOND:
-            *driver_strength = 75;
-            break;
-
-        case DRIVER_STRENGTH_VAL_100_WINBOND:
-            *driver_strength = 100;
-            break;
-
-        default:
-            *driver_strength = 0xff;
-    }
+    u_int8_t value = 0;
+    int rc = mfl->f_get_driver_strength(mfl, &value);
+    CHECK_RC(rc);
+    rc = mf_from_vendor_driver_strength(mfl->attr.vendor, value, driver_strength);
     return rc;
 }
 

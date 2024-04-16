@@ -107,7 +107,11 @@ void close_log()
     return;
 }
 
-static const char* life_cycle_strings[NUM_OF_LIFE_CYCLES] = {"PRODUCTION", "GA SECURED", "GA NON SECURED", "RMA"};
+#define NUM_OF_FS5_LIFE_CYCLES 5
+#define NUM_OF_FS4_LIFE_CYCLES 4
+
+static const char* life_cycle_strings[NUM_OF_FS5_LIFE_CYCLES] = {"PRODUCTION", "GA SECURED", "GA NON SECURED", "RMA",
+                                                                 "PRE PRODUCTION"};
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
@@ -4480,8 +4484,9 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         { // working only on devices with FW control
             if (ops->IsLifeCycleSupported())
             { // from CX6 and above
-                unsigned int index = (unsigned int)fwInfo.fs3_info.life_cycle;
-                if (index >= NUM_OF_LIFE_CYCLES)
+                unsigned int index = (unsigned int)fwInfo.fs3_info.life_cycle.value;
+                if ((fwInfo.fs3_info.life_cycle.version_field == 0 && index >= NUM_OF_FS4_LIFE_CYCLES) ||
+                    (fwInfo.fs3_info.life_cycle.version_field == 1 && index >= NUM_OF_FS5_LIFE_CYCLES))
                 {
                     reportErr(true, "The life cycle value is out of range: %u", index);
                 }
@@ -4532,19 +4537,25 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                 {
                     printf("Image Boot Status:     %d\n", fwInfo.fs3_info.global_image_status);
 
-                    unsigned int index = (unsigned int)fwInfo.fs3_info.life_cycle;
-                    if (index >= NUM_OF_LIFE_CYCLES)
+                    unsigned int index = (unsigned int)fwInfo.fs3_info.life_cycle.value;
+                    if ((fwInfo.fs3_info.life_cycle.version_field == 0 && index >= NUM_OF_FS4_LIFE_CYCLES) ||
+                        (fwInfo.fs3_info.life_cycle.version_field == 1 && index >= NUM_OF_FS5_LIFE_CYCLES))
                     {
                         reportErr(true, "The life cycle value is out of range: %u", index);
                     }
                     else
                     {
                         printf("Life cycle:            %s\n", life_cycle_strings[index]);
-                    }
-                    if (fwInfo.fs3_info.life_cycle == GA_SECURED &&
-                        fwInfo.fs3_info.device_security_version_access_method == DIRECT_ACCESS)
-                    {
-                        printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
+
+                        if (fwInfo.fs3_info.life_cycle.version_field == 0 &&
+                            CRSpaceRegisters::IsLifeCycleSecured(fwInfo.fs3_info.life_cycle))
+                        {
+                            if (fwInfo.fs3_info.device_security_version_access_method == DIRECT_ACCESS)
+                            {
+                                printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
+                            }
+                            printf("Image Security Ver:    %d\n", fwInfo.fs3_info.image_security_version);
+                        }
                     }
                 }
             }
@@ -5572,6 +5583,13 @@ FlintStatus SgSubCommand::sgFs3()
         return FLINT_FAILED;
     }
 
+    // ArcusE doesn't have DEV_INFO section
+    if (_info.fw_info.chip_type == CT_ARCUSE)
+    {
+        reportErr(true, FLINT_INVALID_COMMAD_ERROR, "ArcusE device/image is not supported.");
+        return FLINT_FAILED;
+    }
+
     // TODO: create method that checks the flags for FS3/FS2
     if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB)
     {
@@ -6439,8 +6457,10 @@ HwSubCommand::HwSubCommand()
                 "    QuadEn: can be 0 or 1\n"
                 "    DummyCycles: can be [1..15]\n"
                 "    Flash[0|1|2|3].WriteProtected can be:\n"
-                "        <Top|Bottom>,<1|2|4|8|16|32|64>-<Sectors|SubSectors>"
-                "    DriverStrength: can be [25,50,75,100]\n";
+                "        <Top|Bottom>,<1|2|4|8|16|32|64>-<Sectors|SubSectors>\n"
+                "    DriverStrength: can be:\n"
+                "        For Winbond flashes: [25,50,75,100](%)\n"
+                "        For Micron flashes:  [22,44,66,100](%)\n";
     _example = "flint -d " MST_DEV_EXAMPLE1 " hw query\n" FLINT_NAME " -d " MST_DEV_EXAMPLE1
                " hw set QuadEn=1\n" FLINT_NAME " -d " MST_DEV_EXAMPLE1 " hw set Flash1.WriteProtected=Top,1-SubSectors";
 #else
@@ -6603,7 +6623,7 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
         switch (attr.mf_get_driver_strength_rc)
         {
             case MFE_OK:
-                printf("  " DRIVER_STRENGTH_PARAM "          %d\n", attr.driver_strength);
+                printf("  " DRIVER_STRENGTH_PARAM "          %d%%\n", attr.driver_strength);
                 break;
 
             case MFE_MISMATCH_PARAM:

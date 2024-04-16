@@ -142,7 +142,7 @@ bool Fs5Operations::GetImageInfo(u_int8_t* buff)
 
 bool Fs5Operations::GetImageSize(u_int32_t* image_size)
 {
-    if (!GetImageSizeFromImageInfo(image_size))
+    if (!GetEncryptedImageSizeFromImageInfo(image_size))
     {
         return false;
     }
@@ -370,7 +370,34 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
 bool Fs5Operations::FwQuery(fw_info_t* fwInfo, bool, bool, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs5Operations::FwQuery\n"));
-    return encryptedFwQuery(fwInfo, quickQuery, ignoreDToc, verbose);
+    if (!encryptedFwQuery(fwInfo, quickQuery, ignoreDToc, verbose))
+    {
+        return errmsg("%s", err());
+    }
+
+    return NCoreQuery(fwInfo);
+}
+
+bool Fs5Operations::NCoreQuery(fw_info_t* fwInfo)
+{
+    fs5_image_layout_boot_component_header ncoreBCH;
+    memset(&ncoreBCH, 0, sizeof(ncoreBCH));
+
+    u_int32_t ncoreAddr = _boot2_ptr;
+    u_int32_t ncoreSize =
+      _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_SIZE - ncoreAddr; // End of hashes_table - boot2 addr
+    vector<u_int8_t> ncoreData(ncoreSize);
+    if (!_ioAccess->read(ncoreAddr, ncoreData.data(), ncoreSize))
+    {
+        return errmsg("FS5 NCORE - read error (%s)\n", _ioAccess->err());
+    }
+
+    fs5_image_layout_boot_component_header_unpack(&ncoreBCH, ncoreData.data());
+    fwInfo->fs3_info.security_mode &= ~SMM_DEBUG_FW;
+    fwInfo->fs3_info.security_mode |= (ncoreBCH.u8_stage1_component.flags.is_debug == 1) ? SMM_DEBUG_FW : 0;
+    fwInfo->fw_info.encrypted_fw = ncoreBCH.u8_stage1_component.flags.is_encrypted ? 2 : 0;
+
+    return true;
 }
 
 bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
@@ -382,27 +409,25 @@ bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
 
     if (res)
     {
-        bool isSigned = false;
-
-        if (!IsSecureFwUpdateSigned(isSigned))
+        //* Get image size
+        u_int32_t burn_image_size;
+        if (!GetEncryptedImageSizeFromImageInfo(&burn_image_size))
         {
-            return false;
+            return errmsg("%s", err());
         }
 
-        if (isSigned)
+        vector<u_int8_t> bch(BCH_SIZE_IN_BYTES + 1, 0);
+        if (!_ioAccess->read(burn_image_size, bch.data(), BCH_SIZE_IN_BYTES))
         {
-            u_int32_t imageSize = img.size();
-            img.resize(imageSize + BCH_SIZE_IN_BYTES);
-            u_int32_t log2_chunk_size = _ioAccess->get_log2_chunk_size();
-            bool is_image_in_odd_chunks = _ioAccess->get_is_image_in_odd_chunks();
+            return errmsg("Image - read error (%s)\n", _ioAccess->err());
+        }
 
-            _ioAccess->set_address_convertor(0, 0);
-            if (!_ioAccess->read(_ioAccess->get_effective_size() - BCH_SIZE_IN_BYTES, img.data() + imageSize,
-                                 BCH_SIZE_IN_BYTES))
-            {
-                return errmsg("Image - read error (%s)\n", _ioAccess->err());
-            }
-            _ioAccess->set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
+        string magicPattern(reinterpret_cast<const char*>(bch.data()), 4);
+        if (magicPattern == "NVDA")
+        {
+            img.resize(img.size() + BCH_SIZE_IN_BYTES);
+
+            std::copy(begin(bch), end(bch), begin(img) + burn_image_size);
         }
     }
 
@@ -411,6 +436,7 @@ bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
 
 bool Fs5Operations::GetDtocAddress(u_int32_t& dTocAddress)
 {
+    ParseImageInfoFromEncryptedImage();
     u_int32_t imageSize = _ioAccess->get_effective_size();
     bool isSigned = false;
 
@@ -465,4 +491,20 @@ bool Fs5Operations::IsSecureFwUpdateSigned(bool& isSigned)
     }
 
     return true;
+}
+
+bool Fs5Operations::GetMfgInfo(u_int8_t* buff)
+{
+    bool rc = Fs4Operations::GetMfgInfo(buff);
+    if (rc != false)
+    {
+        if (_fwImgInfo.supportedHwId[0] == ARCUSE_HW_ID)
+        { // ArcusE is missing DEV_INFO section, align non-orig guids to make flint query output correct format
+            memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids,
+                   &_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids,
+                   sizeof(_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids));
+            _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 1;
+        }
+    }
+    return rc;
 }

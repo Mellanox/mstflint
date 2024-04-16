@@ -41,8 +41,10 @@ void fs5_image_layout_bch_boot_component_flags_pack(const struct fs5_image_layou
 {
 	u_int32_t offset;
 
+	offset = 2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 30, (u_int32_t)ptr_struct->res);
 	offset = 1;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 31, (u_int32_t)ptr_struct->res);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->is_debug);
 	offset = 0;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->is_encrypted);
 }
@@ -51,8 +53,10 @@ void fs5_image_layout_bch_boot_component_flags_unpack(struct fs5_image_layout_bc
 {
 	u_int32_t offset;
 
+	offset = 2;
+	ptr_struct->res = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 30);
 	offset = 1;
-	ptr_struct->res = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 31);
+	ptr_struct->is_debug = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 0;
 	ptr_struct->is_encrypted = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 }
@@ -64,6 +68,8 @@ void fs5_image_layout_bch_boot_component_flags_print(const struct fs5_image_layo
 
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "res                  : " UH_FMT "\n", ptr_struct->res);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "is_debug             : " UH_FMT "\n", ptr_struct->is_debug);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "is_encrypted         : " UH_FMT "\n", ptr_struct->is_encrypted);
 }

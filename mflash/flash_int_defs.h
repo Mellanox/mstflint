@@ -46,9 +46,11 @@
 #define CYPRESS_3V_NAME "S25FLxxx"
 #define ISSI_3V_NAME "IS25LPxxx"
 #define MICRON_3V_NAME "MT25QLxxx"
+#define MICRON_1V8_NAME "MT25QUxxx"
 #define MACRONIX_1V8_NAME "MX25Uxxx"
 #define GIGA_3V_NAME "GD25LBxxx"
 #define ISSI_HUAWEY_NAME "IS25WPxxx"
+#define ISSI_NAME "IS25LPxxx"
 
 typedef enum flash_vendor
 {
@@ -69,16 +71,21 @@ typedef enum flash_memory_type
     FMT_MX25K16XXX = 0x20,
     FMT_ST_M25PX = 0x71,
     FMT_SST_25 = 0x25,
+    FMT_SST_28 = 0x28,
     FMT_WINBOND = 0x40,
     FMT_WINBOND_W25X = 0x30,
     FMT_WINBOND_3V = 0x70,
+    FMT_WINBOND_IQ = 0x60,
+    FMT_WINBOND_IM = 0x80,
     FMT_ATMEL = 0x2,
     FMT_N25QXXX = 0xba,
+    FMT_N25QUXXX = 0xbb,
     FMT_S25FLXXXP = 0x02,
     FMT_S25FL116K = 0x40,
     FMT_S25FLXXXL = 0x60,
     FMT_MT25QLXXXABA = 0xba,
     FMT_IS25LPXXX = 0x60,
+    FMT_IS25WPXXX = 0x70,
     FVT_GD25QXXX = 0x40
 
 } flash_memory_type_t;

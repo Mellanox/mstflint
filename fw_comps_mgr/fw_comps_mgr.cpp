@@ -1744,7 +1744,8 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     query->security_type.signed_fw = mgir.fw_info.signed_fw;
     query->security_type.debug_fw = mgir.fw_info.debug;
     query->security_type.dev_fw = mgir.fw_info.dev;
-    query->life_cycle = (life_cycle_t)mgir.fw_info.life_cycle;
+    query->life_cycle.value = mgir.fw_info.life_cycle;
+    query->life_cycle.value |= (mgir.fw_info.life_cycle_msb << 2);
     query->sec_boot = mgir.fw_info.sec_boot;
     query->encryption = mgir.fw_info.encryption;
     query->signed_fw = _compsQueryMap[FwComponent::COMPID_BOOT_IMG].comp_cap.signed_updates_only;
@@ -1754,8 +1755,13 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     dm_dev_id_t dm_device_id = DeviceUnknown;
 
     if (dm_get_device_id_offline(query->hw_dev_id, query->rev_id, &dm_device_id) == ME_OK) {
-        if (dm_dev_is_switch(dm_device_id)) {
+        if (dm_dev_is_switch(dm_device_id) || dm_dev_is_retimer(dm_device_id))
+        {
             query->security_type.dev_fw = mgir.fw_info.dev_sc;
+        }
+        if (dm_dev_is_fs5(dm_device_id))
+        {
+            query->life_cycle.version_field = 1;
         }
     } else {
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;

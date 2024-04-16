@@ -104,9 +104,16 @@ typedef enum
     PRODUCTION = 0,
     GA_SECURED = 1,
     GA_NON_SECURED = 2,
-    RMA = 3,
-    NUM_OF_LIFE_CYCLES = 4
-} life_cycle_t;
+    RMA = 3
+} life_cycle_fs4_t;
+
+typedef enum
+{
+    BLANK_CHIP = 0,
+    PRE_PROD = 4,
+    PROD = 6,
+    FAILURE_ANALYSIS = 7
+} life_cycle_fs5_t;
 
 #define MAX_HTOC_ENTRIES_NUM 28
 #define HASHES_TABLE_TAIL_SIZE 8
@@ -424,6 +431,12 @@ typedef struct uids
         image_layout_uids_t image_layout_uids;
     };
 } uids_t;
+
+typedef struct life_cycle
+{
+    int version_field; // 0: fs4 , 1: fs5
+    u_int8_t value;
+} life_cycle_t;
 
 typedef enum
 {

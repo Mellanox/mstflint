@@ -120,7 +120,7 @@ bool Fs4Operations::IsEncryptedDevice(bool& is_encrypted)
             return false;
         }
         CRSpaceRegisters crSpaceReg(getMfileObj(), chip_type);
-        if (crSpaceReg.getLifeCycle() == GA_SECURED)
+        if (crSpaceReg.IsLifeCycleSecured())
         {
             is_encrypted = true;
         }
@@ -1049,22 +1049,28 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
     is_image_in_odd_chunks = _ioAccess->get_is_image_in_odd_chunks();
     _ioAccess->set_address_convertor(0, 0);
     //-Verify DToC Header:
-    if (!GetDtocAddress(dtocPtr))
+    bool dtocExists;
+    if (!IsDtocExists(dtocExists))
     {
         return false;
     }
-    DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocHeader() DTOC\n"));
-    if (!verifyTocHeader(dtocPtr, true, verifyCallBackFunc))
+    if (dtocExists)
     {
-        return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
-    }
-    _fs4ImgInfo.dtocArr.tocArrayAddr = dtocPtr;
-    //-Verify DToC Entries:
-    DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocEntries() DTOC\n"));
-    if (!verifyTocEntries(dtocPtr, show_itoc, true, queryOptions, verifyCallBackFunc, verbose))
-    {
-        _ioAccess->set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
-        return false;
+        // We have a DTOC to verify
+        dtocPtr = _ioAccess->get_effective_size() - FS4_DEFAULT_SECTOR_SIZE;
+        DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocHeader() DTOC\n"));
+        if (!verifyTocHeader(dtocPtr, true, verifyCallBackFunc))
+        {
+            return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
+        }
+        _fs4ImgInfo.dtocArr.tocArrayAddr = dtocPtr;
+        //-Verify DToC Entries:
+        DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocEntries() DTOC\n"));
+        if (!verifyTocEntries(dtocPtr, show_itoc, true, queryOptions, verifyCallBackFunc, verbose))
+        {
+            _ioAccess->set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
+            return false;
+        }
     }
     _ioAccess->set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
     return true;
@@ -1180,23 +1186,34 @@ bool Fs4Operations::CheckDevRSAPublicKeyUUID()
     return true;
 }
 
-bool Fs4Operations::encryptedFwReadImageInfoSection()
+bool Fs4Operations::IsDtocExists(bool& dtocExists)
 {
-    //* Read IMAGE_INFO section
-    u_int32_t image_info_section_addr = _image_info_section_ptr + _fwImgInfo.imgStart;
-    DPRINTF(
-      ("Fs4Operations::encryptedFwReadImageInfoSection image_info_section_addr = 0x%x\n", image_info_section_addr));
-    vector<u_int8_t> image_info_data;
-    image_info_data.resize(IMAGE_LAYOUT_IMAGE_INFO_SIZE);
-    if (!_ioAccess->read(image_info_section_addr, image_info_data.data(), IMAGE_LAYOUT_IMAGE_INFO_SIZE))
+    dtocExists = true;
+    if (!_ioAccess->is_flash())
     {
-        return errmsg("%s - read error (%s)\n", "IMAGE_INFO", (*_ioAccess).err());
-    }
+        // In case of image, need to check if it's reduced (without DTOC)
+        bool isEncryptedImage;
+        if (!IsEncryptedImage(isEncryptedImage))
+        {
+            return false;
+        }
+        u_int32_t imageSize;
+        if (isEncryptedImage)
+        {
+            if (!GetEncryptedImageSizeFromImageInfo(&imageSize))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            imageSize = getImageSize();
+        }
 
-    //* Parse IMAGE_INFO section
-    if (!GetImageInfo(image_info_data.data()))
-    {
-        return errmsg("Failed to parse IMAGE_INFO section - %s", err());
+        if (_ioAccess->get_effective_size() <= imageSize)
+        {
+            dtocExists = false;
+        }
     }
 
     return true;
@@ -1226,29 +1243,33 @@ bool Fs4Operations::ParseImageInfoFromEncryptedImage()
 
 bool Fs4Operations::ParseDevData(bool quickQuery, bool verbose, VerifyCallBack verifyCallBackFunc, bool showItoc)
 {
-    //* Initializing DTOC info
-    _ioAccess->set_address_convertor(0, 0);
-    // Parse DTOC header:
-    u_int32_t dtoc_addr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
-    if (!GetDtocAddress(dtoc_addr))
+    bool dtocExists;
+    if (!IsDtocExists(dtocExists))
     {
         return false;
     }
-    DPRINTF(("Fs4Operations::ParseDevData call verifyTocHeader() DTOC, dtoc_addr = 0x%x\n", dtoc_addr));
-    if (!verifyTocHeader(dtoc_addr, true, verifyCallBackFunc))
+    if (dtocExists)
     {
-        return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
-    }
-    _fs4ImgInfo.dtocArr.tocArrayAddr = dtoc_addr;
+        // We have a DTOC to parse
+        _ioAccess->set_address_convertor(0, 0);
+        // Parse DTOC header:
+        u_int32_t dtoc_addr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
+        DPRINTF(("Fs4Operations::ParseDevData call verifyTocHeader() DTOC, dtoc_addr = 0x%x\n", dtoc_addr));
+        if (!verifyTocHeader(dtoc_addr, true, verifyCallBackFunc))
+        {
+            return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
+        }
+        _fs4ImgInfo.dtocArr.tocArrayAddr = dtoc_addr;
 
-    // Parse DTOC entries:
-    struct QueryOptions queryOptions;
-    queryOptions.readRom = false;
-    queryOptions.quickQuery = quickQuery;
-    DPRINTF(("Fs4Operations::ParseDevData call verifyTocEntries() DTOC\n"));
-    if (!verifyTocEntries(dtoc_addr, false, true, queryOptions, verifyCallBackFunc, verbose))
-    {
-        return false;
+        // Parse DTOC entries:
+        struct QueryOptions queryOptions;
+        queryOptions.readRom = false;
+        queryOptions.quickQuery = quickQuery;
+        DPRINTF(("Fs4Operations::ParseDevData call verifyTocEntries() DTOC\n"));
+        if (!verifyTocEntries(dtoc_addr, showItoc, true, queryOptions, verifyCallBackFunc, verbose))
+        {
+            return false;
+        }
     }
 
     return true;
@@ -1264,8 +1285,9 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ig
         return false;
     }
 
-    if (!encryptedFwReadImageInfoSection())
+    if (!ParseImageInfoFromEncryptedImage())
     {
+        DPRINTF(("Fs4Operations::encryptedFwQuery Failed to read IMAGE_INFO section"));
         return false;
     }
 
@@ -1403,7 +1425,7 @@ bool Fs4Operations::QuerySecurityFeatures()
                 _fs3ImgInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
                 _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
 
-                if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED)
+                if (CRSpaceRegisters::IsLifeCycleSecured(_fs3ImgInfo.ext_info.life_cycle))
                 {
                     if (IsSecurityVersionAccessible(_fwImgInfo.ext_info.chip_type))
                     {
@@ -1466,15 +1488,24 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
     return true;
 }
 
-bool Fs4Operations::GetImageSizeFromImageInfo(u_int32_t* imageSize)
+bool Fs4Operations::GetEncryptedImageSizeFromImageInfo(u_int32_t* imageSize)
 {
-    DPRINTF(("Fs4Operations::GetImageSizeFromImageInfo\n"));
-    fw_info_t fwInfo;
-    if (!encryptedFwQuery(&fwInfo, false, true))
+    DPRINTF(("Fs4Operations::GetEncryptedImageSizeFromImageInfo\n"));
+    if (!_is_hw_ptrs_initialized)
     {
-        return errmsg("%s", err());
+        if (!InitHwPtrs())
+        {
+            DPRINTF(("Fs4Operations::GetEncryptedImageSizeFromImageInfo HW pointers not found"));
+            return false;
+        }
     }
-    *imageSize = fwInfo.fw_info.burn_image_size;
+
+    if (!ParseImageInfoFromEncryptedImage())
+    {
+        DPRINTF(("Fs4Operations::GetEncryptedImageSizeFromImageInfo Failed to read IMAGE_INFO section"));
+        return false;
+    }
+    *imageSize = _fwImgInfo.ext_info.burn_image_size;
     return true;
 }
 
@@ -1504,7 +1535,7 @@ bool Fs4Operations::FwReadData(void* image, u_int32_t* imageSize, bool verbose)
     {
         if (image == NULL)
         {
-            bool result = GetImageSizeFromImageInfo(imageSize);
+            bool result = GetEncryptedImageSizeFromImageInfo(imageSize);
             DPRINTF(("Fs4Operations::FwReadData imageSize=0x%x result=%s\n", *imageSize, result ? "true" : "false"));
             return result;
         }
@@ -2338,7 +2369,10 @@ bool Fs4Operations::FwExtractEncryptedImage(vector<u_int8_t>& img,
         io = _encrypted_image_io_access; // If encrypted image was given we'll read from it
     }
 
-    getImgStart(); // Stores image start value in _fwImgInfo.imgStart
+    if (!getImgStart()) // Stores image start value in _fwImgInfo.imgStart
+    {
+        return errmsg("%s", err());
+    }
     u_int32_t image_start = 0;
     if (!ignoreImageStart)
     {
@@ -2347,7 +2381,7 @@ bool Fs4Operations::FwExtractEncryptedImage(vector<u_int8_t>& img,
 
     //* Get image size
     u_int32_t burn_image_size;
-    if (!GetImageSizeFromImageInfo(&burn_image_size))
+    if (!GetEncryptedImageSizeFromImageInfo(&burn_image_size))
     {
         return errmsg("%s", err());
     }
@@ -2499,7 +2533,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     //* Read chunk (=half-flash) size from image
     // ((Fs4Operations*)imageOps)->readFS4Log2ChunkSizeFromImage(log2_chunk_size); // TODO - use this function once it's
     // fixed
-    log2_chunk_size = FS4_ENCRYPTED_LOG_CHUNK_SIZE;
+    log2_chunk_size = _fs3ImgInfo.logStep;
 
     //* Assign new image start addr and current image partition
     is_curr_image_on_second_partition = 0;
@@ -4310,7 +4344,7 @@ bool Fs4Operations::GetImageSize(u_int32_t* image_size)
 
     if (is_encrypted)
     {
-        if (!GetImageSizeFromImageInfo(image_size))
+        if (!GetEncryptedImageSizeFromImageInfo(image_size))
         {
             return false;
         }

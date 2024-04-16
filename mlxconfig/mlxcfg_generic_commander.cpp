@@ -161,16 +161,16 @@ void GenericCommander::supportsNVData()
     return;
 }
 
-GenericCommander::GenericCommander(mfile* mf, string dbName, bool isSwitch) : Commander(mf), _dbManager(NULL)
+GenericCommander::GenericCommander(mfile* mf, string dbName, Device_Type deviceType) : Commander(mf), _dbManager(NULL)
 {
-    if (_mf != NULL)
+    if (_mf != NULL && deviceType != Device_Type::Retimer)
     {
         supportsNVData();
     }
 
     if (dbName.empty())
     {
-        dbName = Commander::getDefaultDBName(isSwitch);
+        dbName = Commander::getDefaultDBName(deviceType == Device_Type::Switch || deviceType == Device_Type::Retimer);
     }
 
     _dbManager = new MlxcfgDBManager(dbName);
