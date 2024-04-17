@@ -1,0 +1,57 @@
+# This workflow warns and then closes issues and PRs that have had no activity for a specified amount of time.
+#
+# You can adjust the behavior by modifying this file.
+# For more information, see:
+# https://github.com/actions/stale
+name: Mark stale issues and pull requests
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 1 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  stale:
+    permissions:
+      issues: write
+      pull-requests: write
+    name: Track and close stale issues/PRs
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+      with:
+        egress-policy: audit
+
+    - name: Track and close stale issues/PRs
+      uses: actions/stale@28ca1036281a5e5922ead5184a1bbf96e5fc984e # v9.0.0
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        days-before-issue-stale: 430
+        days-before-pr-stale: 430
+        days-before-issue-close: 90
+        days-before-pr-close: 90
+        stale-issue-message: >
+          Thank you for your contribution to the mstflint repository! 
+          This issue has been flagged as inactive for over a year and is now considered stale. It will be closed within the next 90 
+          days unless there is any new activity. If you believe this issue is still pertinent and should remain open, please leave a comment here, and the stale status will be removed. 
+        close-issue-message: >
+          This issue has been automatically closed due to inactivity. 
+        stale-pr-message: >
+          Thank you for your contribution to the mstflint repository! 
+          This pull request has been flagged as inactive for over a year and is now considered stale. It will be closed within the next 90 
+          days unless there is any new activity. If you believe this PR is still pertinent and should remain open, please leave a comment here, and the stale status will be removed. 
+        close-pr-message: >
+          This pull request has been automatically closed due to inactivity. 
+        stale-issue-label: 'stale'
+        exempt-issue-labels: 'not stale,untriaged,P0,P1,P2,good first issue,help wanted'
+        close-issue-reason: "not_planned"
+        stale-pr-label: 'stale'
+        exempt-pr-labels: 'not stale,awaiting-review,awaiting-PR-merge,P0,P1,P2'
+        exempt-draft-pr: true
+        operations-per-run: 500
+        ascending: true
