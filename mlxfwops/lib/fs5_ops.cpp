@@ -503,7 +503,7 @@ bool Fs5Operations::GetMfgInfo(u_int8_t* buff)
             memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids,
                    &_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids,
                    sizeof(_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids));
-            _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 1;
+            _fs3ImgInfo.ext_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
         }
     }
     return rc;

@@ -232,7 +232,7 @@ void MlnxDev::setGuidMac(fw_info_t& fw_query)
     }
     else
     {
-        if (fw_query.fs3_info.fs3_uids_info.valid_field)
+        if (fw_query.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
         {
             snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
                      fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid);
@@ -247,7 +247,7 @@ void MlnxDev::setGuidMac(fw_info_t& fw_query)
         {
             guidPortOne = (string)buff;
         }
-        if (fw_query.fs3_info.fs3_uids_info.valid_field)
+        if (fw_query.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
         {
             snprintf(buff, sizeof(buff) - 1, "%012" U64H_FMT_GEN,
                      fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid);
