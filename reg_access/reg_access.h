@@ -37,6 +37,8 @@ extern "C"
 {
 #endif
 
+// #include <tools_layouts/reg_access_hca_layouts.h>
+// #include <tools_layouts/reg_access_switch_layouts.h>
 #include "reg_access_common.h"
 
 enum
@@ -256,6 +258,9 @@ reg_access_status_t
   reg_access_nic_dpa_eu_partition(mfile* mf,
                                   reg_access_method_t method,
                                   struct reg_access_hca_nic_dpa_eu_partition_reg_ext* nic_dpa_eu_partition);
+struct reg_access_hca_pguid_reg_ext;
+reg_access_status_t
+  reg_access_pguid(mfile* mf, reg_access_method_t method, struct reg_access_hca_pguid_reg_ext* pguid);
 
 #ifdef __cplusplus
 }

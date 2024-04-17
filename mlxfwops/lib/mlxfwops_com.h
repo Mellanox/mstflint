@@ -421,14 +421,31 @@ typedef struct
     struct fs4_uid_entry base_mac;
 } image_layout_uids_t;
 
+typedef struct multi_asicfw_guids
+{
+    image_layout_uids_t image_layout_uids;
+    u_int64_t sys_guid;
+    u_int64_t node_guid;
+    u_int64_t port_guid;
+    u_int64_t allocated_guid;
+} multi_asic_guids_t;
+
+typedef enum guid_format
+{
+    CIB_UIDS,
+    IMAGE_LAYOUT_UIDS,
+    MULTI_ASIC_GUIDS
+} guid_format_t;
+
 typedef struct uids
 {
-    int valid_field; // 0: cib_uids , 1: image_layout_uids
+    guid_format_t guid_format;
     union
     {
         cib_uids_t cib_uids;
         cx4_uids_t cx4_uids; // keeping this member for neohost
         image_layout_uids_t image_layout_uids;
+        multi_asic_guids_t multi_asic_guids;
     };
 } uids_t;
 

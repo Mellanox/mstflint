@@ -109,6 +109,7 @@
 
 #define REG_ID_MDDT 0x9160
 #define REG_ID_MDDQ 0x9161
+#define REG_ID_PGUID 0x5066
 
 // For mstdump oob feature:
 #define REG_ID_ICAM 0x387F
@@ -810,4 +811,12 @@ reg_access_status_t reg_access_dtor(mfile* mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mrsi(mfile* mf, reg_access_method_t method, struct reg_access_hca_mrsi_ext* mrsi)
 {
     REG_ACCCESS(mf, method, REG_ID_MRSI, mrsi, mrsi_ext, reg_access_hca);
+}
+
+/************************************
+ * Function: reg_access_pguid
+ ************************************/
+reg_access_status_t reg_access_pguid(mfile* mf, reg_access_method_t method, struct reg_access_hca_pguid_reg_ext* pguid)
+{
+    REG_ACCCESS(mf, method, REG_ID_PGUID, pguid, pguid_reg_ext, reg_access_hca);
 }

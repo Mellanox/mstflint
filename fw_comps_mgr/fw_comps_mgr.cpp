@@ -42,6 +42,7 @@
 #include "fw_comps_mgr_dma_access.h"
 #include "bit_slice.h"
 #include <signal.h>
+#include <iostream>
 
 #include "mflash/mflash_access_layer.h"
 #include "dev_mgt/tools_dev_types.h"
@@ -794,6 +795,31 @@ bool FwCompsMgr::runMCQI(u_int32_t componentIndex,
     return ret;
 }
 
+bool FwCompsMgr::runPGUID(reg_access_hca_pguid_reg_ext* guidsInfo,
+                          u_int32_t local_port,
+                          u_int8_t pnat,
+                          u_int32_t lp_msb)
+{
+    bool ret = true;
+
+    mft_signal_set_handling(1);
+    guidsInfo->local_port = local_port;
+    guidsInfo->pnat = pnat;
+    guidsInfo->lp_msb = lp_msb;
+
+    DPRINTF(("-D- PGUID: local_port %u pnat %u lp_msb %u""\n", local_port, pnat, lp_msb));
+    reg_access_status_t rc = reg_access_pguid(_mf, REG_ACCESS_METHOD_GET, guidsInfo);
+    deal_with_signal();
+    if (rc)
+    {
+        _lastError = regErrTrans(rc);
+        setLastRegisterAccessStatus(rc);
+        ret = false;
+    }
+
+    return ret;
+}
+
 bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op, vector < u_int8_t >& infoString)
 {
     mqisReg mqisRegister;
@@ -848,6 +874,35 @@ bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op, vector <
             leftSize -= mqisRegister.read_length;
         }
     }
+    return true;
+}
+
+bool FwCompsMgr::queryPGUID(fw_info_t* fwInfo,
+                            u_int32_t local_port,
+                            u_int8_t pnat,
+                            u_int32_t lp_msb)
+{
+    struct reg_access_hca_pguid_reg_ext guidsInfo;
+    memset(&guidsInfo, 0, sizeof(guidsInfo));
+
+    if (!runPGUID(&guidsInfo, local_port, pnat, lp_msb))
+    {
+        DPRINTF(("Error in reading PGUID register.\n"));
+        return false;
+    }
+    // FW writes the GUID info (64 bits) to indexes 2 and 3 of the uint32_t array.
+    // This operation is designed with little-endian systems in mind, where LSB is stored first.
+    // By shifting the third element (high part) to the left by 32 bits and combining it with the fourth element (low
+    // part) using bitwise OR, we ensure the correct assembly of the 64-bit GUID in a little-endian memory layout.
+    fwInfo->fs3_info.fs3_uids_info.multi_asic_guids.sys_guid =
+      (static_cast<uint64_t>(guidsInfo.sys_guid[2]) << 32) | guidsInfo.sys_guid[3];
+    fwInfo->fs3_info.fs3_uids_info.multi_asic_guids.node_guid =
+      (static_cast<uint64_t>(guidsInfo.node_guid[2]) << 32) | guidsInfo.node_guid[3];
+    fwInfo->fs3_info.fs3_uids_info.multi_asic_guids.port_guid =
+      (static_cast<uint64_t>(guidsInfo.port_guid[2]) << 32) | guidsInfo.port_guid[3];
+    fwInfo->fs3_info.fs3_uids_info.multi_asic_guids.allocated_guid =
+      (static_cast<uint64_t>(guidsInfo.allocated_guid[2]) << 32) | guidsInfo.allocated_guid[3];
+
     return true;
 }
 

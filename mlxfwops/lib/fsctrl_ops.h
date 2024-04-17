@@ -115,6 +115,7 @@ public:
     Tlv_Status_t GetTsObj(TimeStampIFC** tsObj);
     bool isEncrypted(bool& is_encrypted);
     bool burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams);
+    bool isMultiAsicSystemComponent();
 
     virtual bool IsFsCtrlOperations() { return true; }
     virtual mfile* getMfileObj() { return _fwCompsAccess->getMfileObj(); }
