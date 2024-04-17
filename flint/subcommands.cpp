@@ -42,6 +42,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <iomanip>
 
 #include "mtcr.h"
 #include <common/compatibility.h>
@@ -3633,7 +3634,7 @@ FlintStatus BurnSubCommand::burnMFA2LiveFish(dm_dev_id_t devid_t)
     bool NeedToSetMacManually = true;
     if (_fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false)))
     {
-        if (_devInfo.fs3_info.fs3_uids_info.valid_field == 1)
+        if (_devInfo.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
         {
             base_guid.num_allocated = _devInfo.fs3_info.fs3_uids_info.image_layout_uids.base_guid.num_allocated;
             base_guid.num_allocated_msb = _devInfo.fs3_info.fs3_uids_info.image_layout_uids.base_guid.num_allocated_msb;
@@ -4053,6 +4054,19 @@ bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
     }                                                                             \
     printf("\n");
 
+static inline void printGuid(const std::string& label, uint64_t guid)
+{
+    printf("%-18s     %016" U64H_FMT_GEN "\n", label.c_str(), guid);
+}
+
+static inline void printPguidGuids(const multi_asic_guids_t* guids)
+{
+    printGuid("System GUID:", guids->sys_guid);
+    printGuid("Node GUID:", guids->node_guid);
+    printGuid("Port GUID:", guids->port_guid);
+    printGuid("Allocated GUID:", guids->allocated_guid);
+}
+
 static inline void
   printFs3OrNewerUids(struct fs3_uid_entry uid, struct fs3_uid_entry orig_uid, string guidMac, bool printStep)
 {
@@ -4087,7 +4101,7 @@ static inline void
 
 bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
 {
-    if (fwInfo.fs3_info.fs3_uids_info.valid_field)
+    if (fwInfo.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
     {
         // new GUIDs format
         printf("Description:           UID                GuidsNumber\n");
@@ -4095,6 +4109,15 @@ bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
                             fwInfo.fs3_info.orig_fs3_uids_info.image_layout_uids.base_guid, "GUID", false);
         printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.image_layout_uids.base_mac,
                             fwInfo.fs3_info.orig_fs3_uids_info.image_layout_uids.base_mac, "MAC", false);
+    }
+    else if (fwInfo.fs3_info.fs3_uids_info.guid_format == MULTI_ASIC_GUIDS)
+    {
+        printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.multi_asic_guids.image_layout_uids.base_guid,
+                            fwInfo.fs3_info.fs3_uids_info.multi_asic_guids.image_layout_uids.base_guid, "GUID", false);
+        printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.multi_asic_guids.image_layout_uids.base_mac,
+                            fwInfo.fs3_info.orig_fs3_uids_info.multi_asic_guids.image_layout_uids.base_mac, "MAC",
+                            false);
+        printPguidGuids(&fwInfo.fs3_info.fs3_uids_info.multi_asic_guids);
     }
     else
     {

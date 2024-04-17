@@ -430,6 +430,14 @@ public:
     void GenerateHandle();
     bool isMCDDSupported() { return _isDmaSupported; };
     bool IsSecondaryHost(bool& isSecondary);
+    bool runPGUID(reg_access_hca_pguid_reg_ext* guidsInfo,
+                  u_int32_t local_port = 0,
+                  u_int8_t pnat = 0,
+                  u_int32_t lp_msb = 0);
+    bool queryPGUID(fw_info_t* fwInfo,
+                    u_int32_t local_port = 0,
+                    u_int8_t pnat = 0,
+                    u_int32_t lp_msb = 0);
 
 private:
     typedef enum

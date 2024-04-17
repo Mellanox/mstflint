@@ -251,7 +251,7 @@ bool Fs3Operations::GetMfgInfo(u_int8_t* buff)
         memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids, &mfg_info.guids, sizeof(mfg_info.guids));
         strcpy(_fs3ImgInfo.ext_info.orig_psid, mfg_info.psid);
         _fs3ImgInfo.ext_info.guids_override_en = mfg_info.guids_override_en;
-        _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 1;
+        _fs3ImgInfo.ext_info.orig_fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
     }
     else if (CHECK_MFG_OLD_FORMAT(cib_mfg_info))
     {
@@ -259,7 +259,7 @@ bool Fs3Operations::GetMfgInfo(u_int8_t* buff)
         memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, &cib_mfg_info.guids, sizeof(cib_mfg_info.guids));
         strcpy(_fs3ImgInfo.ext_info.orig_psid, cib_mfg_info.psid);
         _fs3ImgInfo.ext_info.guids_override_en = cib_mfg_info.guids_override_en;
-        _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 0;
+        _fs3ImgInfo.ext_info.orig_fs3_uids_info.guid_format = CIB_UIDS;
     }
     else
     {
@@ -416,7 +416,7 @@ bool Fs3Operations::GetDevInfo(u_int8_t* buff)
         CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids, device_info.guids);
         memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids, &device_info.guids, sizeof(device_info.guids));
         strcpy(_fwImgInfo.ext_info.vsd, device_info.vsd);
-        _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 1;
+        _fs3ImgInfo.ext_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
         _fwImgInfo.ext_info.vsd_sect_found = true;
     }
     else if (CHECK_DEV_INFO_OLD_FORMAT(cib_dev_info))
@@ -424,7 +424,7 @@ bool Fs3Operations::GetDevInfo(u_int8_t* buff)
         CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, cib_dev_info.guids);
         memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, &cib_dev_info.guids, sizeof(cib_dev_info.guids));
         strcpy(_fwImgInfo.ext_info.vsd, cib_dev_info.vsd);
-        _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 0;
+        _fs3ImgInfo.ext_info.fs3_uids_info.guid_format = CIB_UIDS;
         _fwImgInfo.ext_info.vsd_sect_found = true;
     }
     else
