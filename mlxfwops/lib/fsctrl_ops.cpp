@@ -440,9 +440,18 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo,
     (void)verbose;
     memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
     memcpy(&(fwInfo->fs3_info), &(_fsCtrlImgInfo), sizeof(fs3_info_t));
-    fwInfo->fs3_info.fs3_uids_info.valid_field = 1;
+    fwInfo->fs3_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
     fwInfo->fw_type = FwType();
 
+    if (isMultiAsicSystemComponent())
+    {
+        fwInfo->fs3_info.fs3_uids_info.guid_format = MULTI_ASIC_GUIDS;
+        if (!_fwCompsAccess->queryPGUID(fwInfo, 0, 0, 0)) // this updates fwInfo, which contains the info flint
+                                                          // query displays.
+        {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -833,6 +842,15 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
 bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
     return FwBurnAdvanced(imageOps, burnParams);
+}
+
+bool FsCtrlOperations::isMultiAsicSystemComponent()
+{
+    if (_hwDevId == QUANTUM3_HW_ID || _hwDevId == CX8_HW_ID)
+    {
+        return true;
+    }
+    return false;
 }
 
 bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData,
