@@ -155,6 +155,7 @@ struct mfile_t
     // MFT core wrapper objects.
     struct mft_core_wrapper mft_core_object;
     char* mlx5ctl_env_var_debug;
+    int is_remote;
 };
 
 #endif
