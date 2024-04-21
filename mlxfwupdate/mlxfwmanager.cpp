@@ -2370,7 +2370,15 @@ void printDeviceInfoQuery(int dev_index,
         }
         else if (devs[dev_index]->portOneType == MlnxDev::PORT_IB)
         {
-            print_out("  Base GUID:        %s\n", devs[dev_index]->guidPortOne.c_str());
+            if (!devs[dev_index]->baseGuid.empty() && devs[dev_index]->baseGuid != devs[dev_index]->guidPortOne)
+            {
+                print_out("  Base GUID:        %s\n", devs[dev_index]->baseGuid.c_str());
+                print_out("  Node GUID:        %s\n", devs[dev_index]->guidPortOne.c_str());
+            }
+            else
+            {
+                print_out("  Base GUID:        %s\n", devs[dev_index]->guidPortOne.c_str());
+            }
             if (devs[dev_index]->portTwoType == MlnxDev::PORT_ETH)
             {
                 print_out("  Base MAC:         %s\n", devs[dev_index]->macPortOne.c_str());
