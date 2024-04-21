@@ -3730,3 +3730,14 @@ int read_dword_from_conf_space(mfile* mf, u_int32_t offset, u_int32_t* data)
     return -1;
 #endif
 }
+
+int is_remote_dev(mfile* mf)
+{
+    if (mf)
+    {
+        return mf->is_remote;
+    }
+
+    return 0;
+}
+

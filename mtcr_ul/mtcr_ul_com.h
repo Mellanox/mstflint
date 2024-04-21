@@ -63,7 +63,8 @@ extern "C"
 
     int msw_reset_ul(mfile* mf);
     int mhca_reset_ul(mfile* mf);
-
+    int is_remote_dev(mfile* mf);
+    
     /*
      * Get list of MST_ul(Mellanox Software Tools) devices.
      * Put all device names as null-terminated strings to buf.
