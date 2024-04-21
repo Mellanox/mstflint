@@ -122,6 +122,7 @@ void MlnxDev::_MlnxDevInit(int compare_ffv)
     guidPortTwo = "N/A";
     macPortOne = "N/A";
     macPortTwo = "N/A";
+    baseGuid = "";
     _deviceTypeStr = "N/A";
     _deviceType = DeviceUnknown;
     memset(&_devFwParams, 0, sizeof(_devFwParams));
@@ -234,6 +235,9 @@ void MlnxDev::setGuidMac(fw_info_t& fw_query)
     {
         if (fw_query.fs3_info.fs3_uids_info.guid_format == MULTI_ASIC_GUIDS)
         {
+            snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
+                     fw_query.fs3_info.fs3_uids_info.multi_asic_guids.sys_guid);
+            baseGuid = buff;
             snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
                      fw_query.fs3_info.fs3_uids_info.multi_asic_guids.node_guid);
         }
