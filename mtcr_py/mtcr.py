@@ -93,8 +93,8 @@ if CMTCR:
             self.mwrite4BlockFunc = CMTCR.mwrite4_block
             self.icmdSendCommandFunc = CMTCR.icmd_send_command
             self.mHcaResetFunc = CMTCR.mhca_reset
-
             self.open()
+            self.is_remote_dev = CMTCR.is_remote_dev
 
         ##########################
         def close(self):
@@ -191,6 +191,9 @@ if CMTCR:
             CMTCR.get_pci_dev_rdma(self.mf, dev_rdma)
             rdma_str = dev_rdma.value.decode("utf-8")
             return rdma_str
+        def is_remote_device(self):
++            return self.is_remote_dev(self.mf)
++        ##########################
 
 else:
     import subprocess

@@ -1733,7 +1733,7 @@ def check_if_pci_link_is_up(root_pci_device, dtor_result):
     timeout = timeout_in_milliseconds_until_the_pci_link_goes_up / 1000
     error_msg = "The PCI link is still down even after the expected time ({0}) seconds has passed. Exiting the process".format(timeout)
     while root_pci_device.dll_link_active == 0:
-       check_if_elapsed_time(start_time, timeout, error_msg)
+        check_if_elapsed_time(start_time, timeout, error_msg)
 
     logger.debug("Link is up")
 
@@ -2068,7 +2068,7 @@ def reset_flow_host(device, args, command):
 
         if is_pcie_switch_device(devid):
             if args.reset_level is None:
-                args.reset_level = reset_level 
+                args.reset_level = reset_level
             if args.reset_level is not CmdRegMfrl.WARM_REBOOT:
                 raise RuntimeError("Only reboot is supported for Cedar device")
             global is_pcie_switch
@@ -2136,6 +2136,12 @@ def reset_flow_switch(device, args, command):
 
     MstDevObj = mtcr.MstDevice(device)
     RegAccessObj = regaccess.RegAccess(MstDevObj)
+
+    if MstDevObj.is_remote_device():
+        raise RuntimeError("Resetting the switch is not possible using remote access")
+
+    if isModuleLoaded("sx_core"):
+        raise RuntimeError("Resetting the switch is not possible because the SX_CORE driver is currently loaded")
 
     if not is_fw_ready(device):
         raise RuntimeError("FW is not ready to handle ICMD")
