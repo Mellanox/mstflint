@@ -456,7 +456,7 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo,
         }
 
         fwInfo->fs3_info.fs3_uids_info.guid_format = MULTI_ASIC_GUIDS;
-        if (!_fwCompsAccess->queryPGUID(fwInfo, localPort, 0, 0, 0)) // this updates fwInfo, which contains the info
+        if (!_fwCompsAccess->queryPGUID(fwInfo, localPort, 0, 0)) // this updates fwInfo, which contains the info
                                                                      // flint query displays.
         {
             fwInfo->fs3_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
