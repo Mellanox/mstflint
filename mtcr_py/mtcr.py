@@ -192,8 +192,8 @@ if CMTCR:
             rdma_str = dev_rdma.value.decode("utf-8")
             return rdma_str
         def is_remote_device(self):
-+            return self.is_remote_dev(self.mf)
-+        ##########################
+            return self.is_remote_dev(self.mf)
+        ##########################
 
 else:
     import subprocess
