@@ -170,7 +170,8 @@ GenericCommander::GenericCommander(mfile* mf, string dbName, Device_Type deviceT
 
     if (dbName.empty())
     {
-        dbName = Commander::getDefaultDBName(deviceType == Device_Type::Switch || deviceType == Device_Type::Retimer);
+        dbName = Commander::getDefaultDBName(deviceType == Device_Type::Switch || deviceType == Device_Type::Retimer ||
+                                             deviceType == Device_Type::LinkX);
     }
 
     _dbManager = new MlxcfgDBManager(dbName);
