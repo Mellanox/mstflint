@@ -445,11 +445,22 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo,
 
     if (isMultiAsicSystemComponent())
     {
-        fwInfo->fs3_info.fs3_uids_info.guid_format = MULTI_ASIC_GUIDS;
-        if (!_fwCompsAccess->queryPGUID(fwInfo, 0, 0, 0)) // this updates fwInfo, which contains the info flint
-                                                          // query displays.
+        dm_dev_id_t dm_device_id = DeviceUnknown;
+        u_int32_t localPort = 0;
+        if (dm_get_device_id_offline(_hwDevId, fwInfo->fw_info.dev_rev, &dm_device_id) == ME_OK)
         {
-            return false;
+            if (dm_dev_is_switch(dm_device_id))
+            { // local port 0 for switches is virtual, need to use any other port number
+                localPort = 1;
+            }
+        }
+
+        fwInfo->fs3_info.fs3_uids_info.guid_format = MULTI_ASIC_GUIDS;
+        if (!_fwCompsAccess->queryPGUID(fwInfo, localPort, 0, 0, 0)) // this updates fwInfo, which contains the info
+                                                                     // flint query displays.
+        {
+            fwInfo->fs3_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
+            return true;
         }
     }
     return true;
