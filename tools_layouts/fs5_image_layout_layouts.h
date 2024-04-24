@@ -100,17 +100,17 @@ struct fs5_image_layout_u8_stage1_component {
 	/* Description - the entry_point (absolute value) to start (jump address) */
 	/* 0xc.0 - 0xc.31 */
 	u_int32_t u32_entry_point;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description -  */
+	/* 0x10.0 - 0x10.31 */
+	u_int32_t boot_component_ver;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description -  */
-	/* 0x14.0 - 0x14.31 */
-	u_int32_t boot_component_ver;
-/*---------------- DWORD[6] (Offset 0x18) ----------------*/
-	/* Description -  */
-	/* 0x18.24 - 0x20.23 */
+	/* 0x14.24 - 0x1c.23 */
 	u_int8_t u8_res[8];
-/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description -  */
-	/* 0x20.0 - 0x20.31 */
+	/* 0x1c.0 - 0x1c.31 */
 	struct fs5_image_layout_bch_boot_component_flags flags;
 };
 
@@ -230,11 +230,11 @@ struct fs5_image_layout_hw_pointers_gilboa {
 union fs5_image_layout_fs5_image_layout_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x1ffc.31 */
-	struct fs5_image_layout_boot_component_header boot_component_header;
-	/* Description -  */
 	/* 0x0.0 - 0x7c.31 */
 	struct fs5_image_layout_hw_pointers_gilboa hw_pointers_gilboa;
+	/* Description -  */
+	/* 0x0.0 - 0x1ffc.31 */
+	struct fs5_image_layout_boot_component_header boot_component_header;
 };
 
 
