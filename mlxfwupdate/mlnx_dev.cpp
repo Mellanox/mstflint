@@ -232,7 +232,12 @@ void MlnxDev::setGuidMac(fw_info_t& fw_query)
     }
     else
     {
-        if (fw_query.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
+        if (fw_query.fs3_info.fs3_uids_info.guid_format == MULTI_ASIC_GUIDS)
+        {
+            snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
+                     fw_query.fs3_info.fs3_uids_info.multi_asic_guids.node_guid);
+        }
+        else if (fw_query.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
         {
             snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
                      fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid);
@@ -243,7 +248,8 @@ void MlnxDev::setGuidMac(fw_info_t& fw_query)
                      fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid);
         }
         if (fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid ||
-            fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid)
+            fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_guid.uid ||
+            fw_query.fs3_info.fs3_uids_info.multi_asic_guids.node_guid)
         {
             guidPortOne = (string)buff;
         }
