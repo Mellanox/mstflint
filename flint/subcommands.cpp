@@ -3411,7 +3411,7 @@ FlintStatus BurnSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
-    if (device_encrypted != image_encrypted)
+    if (device_encrypted != image_encrypted && _fwType != FIT_FS5)
     {
         reportErr(true, "Burning %sencrypted image on %sencrypted device is not allowed.\n",
                   image_encrypted ? "" : "non-", device_encrypted ? "" : "non-");
