@@ -79,6 +79,7 @@ resource_dump_sdk_so_DEPS = \
     $(top_builddir)/resourcetools/resourcedump_lib/src/common/.libs/libresource_dump_common.a \
     $(top_builddir)/reg_access/.libs/libreg_access.a \
     $(top_builddir)/tools_layouts/.libs/libtools_layouts.a \
+    $(top_builddir)/dev_mgt/.libs/libdev_mgt.a \
     $(MTCR_LIB) \
     $(OFED_LIBS) \
     -lstdc++
