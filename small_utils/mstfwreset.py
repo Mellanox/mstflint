@@ -2097,7 +2097,7 @@ def reset_flow_host(device, args, command):
             raise RuntimeError(
                 "Reset-level '{0}' is not supported with reset-type '{1}'".format(reset_level, reset_type))
 
-        if reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
+        if reset_level != CmdRegMfrl.IMMEDIATE_RESET and reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
             raise RuntimeError(
                 "Synchronization by driver is not supported in the current state of this device")
         if reset_sync != SyncOwner.TOOL and reset_level not in [CmdRegMfrl.PCI_RESET, CmdRegMfrl.IMMEDIATE_RESET]:
