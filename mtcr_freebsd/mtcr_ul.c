@@ -3017,3 +3017,13 @@ int mlxcables_remote_operation_client_side(mfile* mf, const char* device_name, c
     (void)reg_name;
     return 0;
 }
+
+int is_remote_dev(mfile* mf)
+{
+    if (mf)
+    {
+        return mf->is_remote;
+    }
+
+    return 0;
+}
