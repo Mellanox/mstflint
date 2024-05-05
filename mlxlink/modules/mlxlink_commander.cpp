@@ -1858,6 +1858,7 @@ void MlxlinkCommander::operatingInfoPage()
         u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
         int loopbackMode = (phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode") : -1;
         u_int32_t ethAnFsmState = getFieldValue("eth_an_fsm_state");
+        u_int32_t ib_phy_fsm_state = getFieldValue("ib_phy_fsm_state");
         string color =
           MlxlinkRecord::state2Color(phyMngrFsmState == PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)phyMngrFsmState);
         _protoActive = getFieldValue("proto_active");
@@ -1887,7 +1888,9 @@ void MlxlinkCommander::operatingInfoPage()
 
         setPrintVal(_operatingInfoCmd, "State", getStrByValue(phyMngrFsmState, _mlxlinkMaps->_pmFsmState), color, true,
                     !_prbsTestMode);
-        setPrintVal(_operatingInfoCmd, "Physical state", getStrByValue(ethAnFsmState, _mlxlinkMaps->_ethANFsmState),
+        setPrintVal(_operatingInfoCmd, "Physical state",
+                    _protoActive == ETH ? getStrByValue(ethAnFsmState, _mlxlinkMaps->_ethANFsmState) :
+                                          getStrByValue(ib_phy_fsm_state, _mlxlinkMaps->_ibPhyFsmState),
                     color, !_prbsTestMode);
         setPrintVal(_operatingInfoCmd, "Speed", _speedStrG, color, !_prbsTestMode, _linkUP);
         setPrintVal(_operatingInfoCmd, "Width", to_string(_numOfLanes) + "x", color, !_prbsTestMode, _linkUP);
@@ -2646,7 +2649,7 @@ string MlxlinkCommander::getSltpHeader()
 
     for (auto const& param : sltpParam)
     {
-        if (param.second.validationMask & activeSpeed)
+        if ((param.second.validationMask & activeSpeed) || _userInput._pcie)
         {
             if ((param.second.fieldAccess & FIELD_ACCESS_R) ||
                 (_userInput._advancedMode && (param.second.fieldAccess & FIELD_ACCESS_ADVANCED)))
