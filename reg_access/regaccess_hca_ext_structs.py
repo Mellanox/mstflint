@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2024-01-15 23:07:26"
+#    This file was generated at "2024-04-16 08:58:19"
 #    by:
 #      > gen_adb_data.py -g hca_prm_projects
 ###############################################################################
@@ -50,7 +50,8 @@ class MRSI_EXT(ctypes.Structure):
     _fields_ = [
         ("device", ctypes.c_uint8),
         ("reset_reason", ctypes.c_uint8),
-        ("crts", ctypes.c_uint64)
+        ("crts", ctypes.c_uint64),
+        ("ecos", ctypes.c_uint8)
     ]
 
 class DIAGNOSTIC_CNTR_LAYOUT(ctypes.Structure):
@@ -93,7 +94,8 @@ class DTOR_REG_EXT(ctypes.Structure):
         ("FSM_REACTIVATE_TO", DEFAULT_TIMEOUT_EXT),
         ("RECLAIM_PAGES_TO", DEFAULT_TIMEOUT_EXT),
         ("RECLAIM_VFS_PAGES_TO", DEFAULT_TIMEOUT_EXT),
-        ("DRIVER_UNLOAD_AND_RESET_TO", DEFAULT_TIMEOUT_EXT)
+        ("DRIVER_UNLOAD_AND_RESET_TO", DEFAULT_TIMEOUT_EXT),
+        ("EMBEDDED_CPU_OS_SHUTDOWN_TO", DEFAULT_TIMEOUT_EXT)
     ]
 
 class PCNR_REG_EXT(ctypes.Structure):
@@ -123,6 +125,12 @@ class MTRC_CAP_REG_EXT(ctypes.Structure):
         ("string_db_param", STRING_DB_PARAMETERS_EXT * 8)
     ]
 
+class MTIM_EXT(ctypes.Structure):
+    _fields_ = [
+        ("log_level", ctypes.c_uint8),
+        ("log_bit_mask", ctypes.c_uint32)
+    ]
+
 class MGIR_HARDWARE_INFO_EXT(ctypes.Structure):
     _fields_ = [
         ("device_id", ctypes.c_uint16),
@@ -130,7 +138,9 @@ class MGIR_HARDWARE_INFO_EXT(ctypes.Structure):
         ("pvs", ctypes.c_uint8),
         ("technology", ctypes.c_uint8),
         ("num_ports", ctypes.c_uint8),
+        ("ib_mad_gen", ctypes.c_uint8),
         ("hw_dev_id", ctypes.c_uint16),
+        ("development", ctypes.c_uint8),
         ("manufacturing_base_mac_47_32", ctypes.c_uint16),
         ("ga", ctypes.c_uint8),
         ("chip_type", ctypes.c_uint8),
@@ -164,7 +174,9 @@ class MGIR_FW_INFO_EXT(ctypes.Structure):
         ("life_cycle", ctypes.c_uint8),
         ("sec_boot", ctypes.c_uint8),
         ("encryption", ctypes.c_uint8),
-        ("issu_able", ctypes.c_uint8)
+        ("life_cycle_msb", ctypes.c_uint8),
+        ("issu_able", ctypes.c_uint8),
+        ("pds", ctypes.c_uint8)
     ]
 
 class ROM_VERSION_EXT(ctypes.Structure):
@@ -295,9 +307,39 @@ class NIC_DPA_PERF_CTRL_REG_EXT(ctypes.Structure):
         ("count_state", ctypes.c_uint8)
     ]
 
+class NIC_CAP_EXT_DPA_CAP(ctypes.Structure):
+    _fields_ = [
+        ("max_num_dpa_eug", ctypes.c_uint16),
+        ("max_num_dpa_eu", ctypes.c_uint16),
+        ("max_num_dpa_eu_partition", ctypes.c_uint16),
+        ("max_num_dpa_eu_per_group", ctypes.c_uint16),
+        ("dpa_perf_sample_type", ctypes.c_uint8),
+        ("max_num_partition_vhca_id", ctypes.c_uint16),
+        ("process_perf_cnt", ctypes.c_uint8)
+    ]
+
+class NIC_CAP_EXT_DIAG_DATA_CAP(ctypes.Structure):
+    _fields_ = [
+        ("sample_mode_on_demand", ctypes.c_uint8),
+        ("sample_mode_repetitive", ctypes.c_uint8),
+        ("sample_mode_single", ctypes.c_uint8),
+        ("tracer_dump", ctypes.c_uint8),
+        ("sync_start", ctypes.c_uint8),
+        ("data_clear", ctypes.c_uint8),
+        ("max_log_num_sample", ctypes.c_uint8),
+        ("log_max_num_data_id", ctypes.c_uint8),
+        ("data_timestamp_source", ctypes.c_uint8)
+    ]
+
+class NIC_CAP_EXT_REG_CAP_DATA_AUTO(ctypes.Union):
+    _fields_ = [
+        ("nic_cap_ext_dpa_cap", NIC_CAP_EXT_DPA_CAP),
+        ("nic_cap_ext_diag_data_cap", NIC_CAP_EXT_DIAG_DATA_CAP)
+    ]
+
 class NIC_CAP_EXT_REG(ctypes.Structure):
     _fields_ = [
         ("cap_group", ctypes.c_uint16),
-        ("cap_data", ctypes.c_uint32 * 28)
+        ("cap_data", NIC_CAP_EXT_REG_CAP_DATA_AUTO)
     ]
 
