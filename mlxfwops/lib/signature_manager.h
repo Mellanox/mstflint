@@ -131,6 +131,13 @@ public:
     virtual bool IsEncryptionSupported() { return true; }
 };
 
+class ConnectX8FwOperationsSignatureManager : public ConnectX7FwOperationsSignatureManager
+{
+public:
+    ConnectX8FwOperationsSignatureManager() : ConnectX7FwOperationsSignatureManager() {}
+    virtual ~ConnectX8FwOperationsSignatureManager() {}
+};
+
 class Bluefield2FwOperationsSignatureManager : public ConnectX6DXFwOperationsSignatureManager
 {
 public:
