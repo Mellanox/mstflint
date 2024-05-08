@@ -411,7 +411,7 @@ static void set_mad_data_for_mode_2(u_int32_t memory_address,
 static uint64_t
   ibvsmad_craccess_rw_smp(ibvs_mad* h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t* data)
 {
-    u_int8_t mad_data[IB_SMP_DATA_SIZE] = {0};
+    u_int8_t mad_data[2*IB_SMP_DATA_SIZE] = {0};
     int i;
     u_int8_t* p;
     u_int32_t attribute_mod = 0;
@@ -504,7 +504,7 @@ static uint64_t ibvsmad_craccess_rw_vs(ibvs_mad* h,
                                        u_int32_t* data,
                                        int class)
 {
-    u_int8_t vsmad_data[IB_VENDOR_RANGE1_DATA_SIZE] = {0};
+    u_int8_t vsmad_data[2*IB_VENDOR_RANGE1_DATA_SIZE] = {0};
     ib_vendor_call_t call;
     int i;
     u_int8_t* p;
