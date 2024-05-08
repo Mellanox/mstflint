@@ -394,7 +394,7 @@ public:
 
     // Mlxlink query functions
     virtual void showModuleInfo();
-    void prepareBerModuleInfoNdr(bool valid, const vector<AmberField>& moduleInfoFields);
+    void prepareBerModuleInfo(bool valid, const vector<AmberField>& moduleInfoFields);
     void pushSnrModuleInfoFields(bool valid);
     void runningVersion();
     virtual void operatingInfoPage();
