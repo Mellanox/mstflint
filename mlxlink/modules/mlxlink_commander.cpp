@@ -1547,7 +1547,7 @@ void MlxlinkCommander::pushSnrModuleInfoFields(bool valid)
                 true);
 }
 
-void MlxlinkCommander::prepareBerModuleInfoNdr(bool valid, const vector<AmberField>& moduleInfoFields)
+void MlxlinkCommander::prepareBerModuleInfo(bool valid, const vector<AmberField>& moduleInfoFields)
 {
     vector<MODULE_FIELD> fieldsToQuery;
 
@@ -1643,13 +1643,13 @@ void MlxlinkCommander::showModuleInfo()
         if (_productTechnology >= PRODUCT_16NM)
         {
             preparePrtlSection();
-
-            initAmBerCollector();
-            _amberCollector->init();
-            vector<AmberField> moduleInfoFields = _amberCollector->getModuleStatus();
-
-            prepareBerModuleInfoNdr(valid, moduleInfoFields);
         }
+        initAmBerCollector();
+        _amberCollector->init();
+        vector<AmberField> moduleInfoFields = _amberCollector->getModuleStatus();
+
+        prepareBerModuleInfo(valid, moduleInfoFields);
+
         cout << _moduleInfoCmd;
 
         if (oper_status != 1)
