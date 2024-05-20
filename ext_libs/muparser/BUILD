@@ -28,27 +28,50 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AM_CFLAGS = -w -g -MP -MD ${COMPILER_FPIC}
-AM_CXXFLAGS = -w -g -MP -MD ${COMPILER_FPIC}
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
-noinst_LTLIBRARIES = libmuparser.la
+cc_library(
+    name = "muparser-lib",
+    srcs = [
+        "muParser.cpp",
+        "muParserBase.cpp",
+        "muParserBytecode.cpp",
+        "muParserCallback.cpp",
+        "muParserError.cpp",
+        "muParserInt.cpp",
+        "muParserTokenReader.cpp",
+    ],
+    hdrs = [
+        "muParser.h",
+        "muParserBase.h",
+        "muParserBytecode.h",
+        "muParserCallback.h",
+        "muParserDef.h",
+        "muParserError.h",
+        "muParserFixes.h",
+        "muParserInt.h",
+        "muParserTemplateMagic.h",
+        "muParserToken.h",
+        "muParserTokenReader.h",
+    ],
+    include_prefix = "muparser",
+    linkopts = ["-lm"],
+    visibility = [
+        "//pkg:__pkg__",
+        "//support/bazel/examples:__pkg__",
+        "//user/mlxconfig:__pkg__",
+    ],
+)
 
-libmuparser_la_SOURCES = \
-        muParser.cpp \
-        muParser.h \
-        muParserBase.cpp \
-        muParserBase.h \
-        muParserBytecode.cpp \
-        muParserBytecode.h \
-        muParserCallback.cpp \
-        muParserCallback.h \
-        muParserDef.h \
-        muParserError.cpp \
-        muParserError.h \
-        muParserFixes.h \
-        muParserInt.cpp \
-        muParserInt.h \
-        muParserTemplateMagic.h \
-        muParserToken.h \
-        muParserTokenReader.cpp \
-        muParserTokenReader.h
+cc_test(
+    name = "muparser-lib-test",
+    size = "small",
+    srcs = [
+        "muParserTest.cpp",
+        "muParserTest.h",
+        "t_ParserTest.cpp",
+    ],
+    deps = [
+        ":muparser-lib",
+    ],
+)
