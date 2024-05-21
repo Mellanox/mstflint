@@ -231,7 +231,8 @@ bit 1: VERSION
 bit 5: ACTIVATION_METHOD
 Other bits are reserved. CAPABILITIES set is always supported.
 bit 6: LinkX
-bit 7: Clock Synchronizer */
+bit 7: Clock Synchronizer
+ */
 	/* 0x0.0 - 0x0.31 */
 	u_int32_t supported_info_bitmask;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -267,7 +268,7 @@ Read and write access must be aligned to the word size. Write access must be don
 	/* Description - Only signed components are accepted. */
 	/* 0x10.30 - 0x10.30 */
 	u_int8_t signed_updates_only;
-	/* Description - When set, this components may be read, see Section 10.3.4, "Read Flow", on page 890. */
+	/* Description - When set, this components may be read, see Section 10.3.4, "Read Flow", on page 893. */
 	/* 0x10.31 - 0x10.31 */
 	u_int8_t rd_en;
 };
@@ -306,7 +307,7 @@ Bit 6: Image B is erased / empty
 Bit 7: Reserved */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t fw_image_status_bitmap;
-	/* Description - Bit 0: FW image A is present
+	/* Description - Bit 0: FW image A is present 
 Bit 1: FW image B is present
 Bit 2: Factory / boot image is present
 Bits 3-7: Reserved */
@@ -381,11 +382,11 @@ struct reg_access_hca_mcqi_version_ext {
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t version;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Time of component creation. Valid only if build_time_valid is set. See Table 2420, "Date-Time Layout," on page 2777 */
+	/* Description - Time of component creation. Valid only if build_time_valid is set. See Table 2411, "Date-Time Layout," on page 2768 */
 	/* 0x8.0 - 0xc.31 */
 	struct reg_access_hca_date_time_layout_ext build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - User-defined time assigned to the component version. Valid only if user_defined_time_valid is set. See Table 2420, "Date-Time Layout," on page 2777 */
+	/* Description - User-defined time assigned to the component version. Valid only if user_defined_time_valid is set. See Table 2411, "Date-Time Layout," on page 2768 */
 	/* 0x10.0 - 0x14.31 */
 	struct reg_access_hca_date_time_layout_ext user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -480,7 +481,7 @@ mlxconfig set raw operation.
 0x10: BMC_APP1 - Configuration was done over the BMC by application #1 (application name is OEM specific)
 0x11: BMC_APP2 - Configuration was done over the BMC by application #2 (application name is OEM specific)
 0x12: BMP_APP3 - Configuration was done over the BMC by application #3 (application name is OEM specific)
-0x1F: OTHER - the parameter was written by the NIC due to other reasons.
+0x1F: OTHER - the parameter was written by the NIC due to other reasons. 
 
 Note - This field is writeable only when using the ICMD interface. The only value that are valid for writes are 0x6 through 0xB. Other values will be replaced by 0x5ICMD. */
 	/* 0x0.16 - 0x0.20 */
@@ -505,7 +506,7 @@ Controls the read operation during different life-cycle stages.
 	/* Description - The life-cycle priority of this configuration.
 0x0: USER,
 0x1: OEM,
-0x2: Reserved
+0x2: Reserved  
 0x3: MLNX
 
 The priority is set by either:
@@ -514,15 +515,15 @@ The priority is set by either:
 	/* 0x0.28 - 0x0.29 */
 	u_int8_t priority;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Configuration item index according to its type_class.
-Table 2517, "Configuration Item Data Type Class Global Layout," on page 2849
-Table 2519, "Configuration Item Data Type Class Physical Port Layout," on page 2849
-Table 2521, "Configuration Item Data Type Class Per Host-PF Layout," on page 2850
-Table 2523, "Configuration Item Data Type Class Log Layout," on page 2850
-Table 2525, "Configuration Item Data Type Class File Layout," on page 2851
-Table 2527, "Configuration Item Data Type Class Host Layout," on page 2851
+	/* Description - Configuration item index according to its type_class. 
+Table 2506, "Configuration Item Data Type Class Global Layout," on page 2839
+Table 2508, "Configuration Item Data Type Class Physical Port Layout," on page 2839
+Table 2510, "Configuration Item Data Type Class Per Host-PF Layout," on page 2840
+Table 2512, "Configuration Item Data Type Class Log Layout," on page 2840
+Table 2514, "Configuration Item Data Type Class File Layout," on page 2841
+Table 2516, "Configuration Item Data Type Class Host Layout," on page 2841
 
-Table 2529, "Configuration Item Data Type Class Module Layout," on page 2852 */
+Table 2518, "Configuration Item Data Type Class Module Layout," on page 2842 */
 	/* 0x4.0 - 0x4.31 */
 	union reg_access_hca_config_item_type_auto_ext type;
 };
@@ -534,9 +535,9 @@ struct reg_access_hca_default_timeout_ext {
 	/* Description - Timeout value */
 	/* 0x0.0 - 0x0.19 */
 	u_int32_t to_value;
-	/* Description - 0x0: millisecond
-0x1: seconds
-0x2: minutes
+	/* Description - 0x0: millisecond   
+0x1: seconds   
+0x2: minutes   
 0x3: hours    */
 	/* 0x0.29 - 0x0.31 */
 	u_int8_t to_multiplier;
@@ -561,19 +562,19 @@ struct reg_access_hca_lane_2_module_mapping_ext {
 	/* Description - Module number */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t module;
-	/* Description - Reserved for HCA
-Slot_index
-Slot_index = 0 represent the onboard (motherboard).
+	/* Description - Reserved for HCA 
+Slot_index 
+Slot_index = 0 represent the onboard (motherboard). 
 In case of non modular system only slot_index = 0 is available. */
 	/* 0x0.8 - 0x0.11 */
 	u_int8_t slot_index;
-	/* Description - TX lane.
-When m_lane_m field is set, this field is ignored (Reserved).
+	/* Description - TX lane. 
+When m_lane_m field is set, this field is ignored (Reserved). 
 When rxtx field is cleared, this field is used for RX as well. */
 	/* 0x0.16 - 0x0.19 */
 	u_int8_t tx_lane;
 	/* Description - RX lane.
-When m_lane_m field is set, this field is ignored (Reserved).
+When m_lane_m field is set, this field is ignored (Reserved). 
 When rxtx field is cleared, this field is ignored and RX lane is equal to TX lane. */
 	/* 0x0.24 - 0x0.27 */
 	u_int8_t rx_lane;
@@ -614,17 +615,17 @@ struct reg_access_hca_mgir_dev_info_ext {
 struct reg_access_hca_mgir_fw_info_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Sub-minor firmware version number.
-Deprecated and returns '0'.
+Deprecated and returns '0'. 
 Refer to extended_sub_minor. */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t sub_minor;
 	/* Description - Minor firmware version number.
-Deprecated and returns '0'.
+Deprecated and returns '0'. 
 Refer to extended_minor. */
 	/* 0x0.8 - 0x0.15 */
 	u_int8_t minor;
 	/* Description - Major firmware version number.
-Deprecated and returns '0'.
+Deprecated and returns '0'. 
 Refer to extended_major. */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t major;
@@ -637,7 +638,7 @@ Refer to extended_major. */
 	/* Description - When set, the device is running a debug firmware. 'debug' binary can only be installed on specific devices (identified by their 'Factory base MAC'), which currently run a specific firmware version. These restrictions are expressed by a signed 'debug' token that must be loaded to the device before installing the debug binary. */
 	/* 0x0.26 - 0x0.26 */
 	u_int8_t debug;
-	/* Description - *NOTE* this field has diff meaning for Switch vs. NIC
+	/* Description - *NOTE* this field has diff meaning for Switch vs. NIC 
 
 
 NIC:
@@ -660,22 +661,22 @@ The device is running:
 	/* 0x0.30 - 0x0.30 */
 	u_int8_t dev_sc;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Firmware Build ID. Optional.
+	/* Description - Firmware Build ID. Optional. 
 Note: Deprecated for switches and returns '0'. */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t build_id;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Firmware installation date.
+	/* Description - Firmware installation date. 
 
 For example: 3 May 2004 will be coded as Month= 0x05, Day= 0x03, and Year= 0x04 */
 	/* 0x8.0 - 0x8.15 */
 	u_int16_t year;
-	/* Description - Firmware installation date.
+	/* Description - Firmware installation date. 
 
 For example: 3 May 2004 will be coded as Month= 0x05, Day= 0x03, and Year= 0x04 */
 	/* 0x8.16 - 0x8.23 */
 	u_int8_t day;
-	/* Description - Firmware installation date.
+	/* Description - Firmware installation date. 
 
 For example: 3 May 2004 will be coded as Month= 0x05, Day= 0x03, and Year= 0x04 */
 	/* 0x8.24 - 0x8.31 */
@@ -709,7 +710,7 @@ For example 17:43 will be coded as 0x1743 */
 	/* Description - incremented by one when version is not ISSUable */
 	/* 0x30.0 - 0x30.15 */
 	u_int16_t isfu_major;
-	/* Description - Bitmap representing the disabled tiles in the ASIC. Tile '0' is represented by the msb bit.
+	/* Description - Bitmap representing the disabled tiles in the ASIC. Tile '0' is represented by the msb bit. 
 0: tile is enabled
 1: tile is disabled
 
@@ -763,7 +764,7 @@ struct reg_access_hca_mgir_hardware_info_ext {
 	/* Description - PCI device ID. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t device_id;
-	/* Description - See Table 2442, "Device HW Revision Descriptions," on page 2795 */
+	/* Description - See Table 2433, "Device HW Revision Descriptions," on page 2786 */
 	/* 0x0.16 - 0x0.31 */
 	u_int16_t device_hw_revision;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -782,7 +783,7 @@ Supported nominal V_CORE voltage (in 50mV units) for the device. */
 	/* 0x4.11 - 0x4.15 */
 	u_int8_t technology;
 	/* Description - Number of physical port the device supports.
-For Retimer: returns the number of data path
+For Retimer: returns the number of data path 
  */
 	/* 0x4.16 - 0x4.23 */
 	u_int8_t num_ports;
@@ -825,7 +826,7 @@ Chip Type
 0: Real chip
 1: Emulation
 2: ChipSim
-3: SimX
+3: SimX 
 Supported from Quantum-3 and ArcusE */
 	/* 0x10.24 - 0x10.27 */
 	u_int8_t chip_type;
@@ -1001,12 +1002,12 @@ struct reg_access_hca_debug_cap {
 	/* 0x0.16 - 0x0.20 */
 	u_int8_t log_min_resource_dump_eq;
 	/* Description - If set, Resource_dump register is supported.
-See Table  1502, "RESOURCE_DUMP Register Layout," on page  1804 */
+See Table  1503, "RESOURCE_DUMP Register Layout," on page  1802 */
 	/* 0x0.22 - 0x0.22 */
 	u_int8_t resource_dump;
 	/* Description - Log(base 2) of the size in granularity of 4KB to be allocated by host in order to accommodate cr_dump.
 0 means feature is not supported.
-See Table  1500, "CORE_DUMP Register Layout," on page  1802 */
+See Table  1501, "CORE_DUMP Register Layout," on page  1800 */
 	/* 0x0.23 - 0x0.27 */
 	u_int8_t log_cr_dump_to_mem_size;
 	/* Description - If set, Core dump of type of specific QP is supported.
@@ -1024,7 +1025,7 @@ See Table  1500, "CORE_DUMP Register Layout," on page  1802 */
 	/* 0x4.28 - 0x4.28 */
 	u_int8_t diag_counter_tracer_dump;
 	/* Description - If set, health monitoring for rx path activity is supported.
-See Table  26.5.1, "RX Path Activity," on page  1702 */
+See Table  26.5.1, "RX Path Activity," on page  1700 */
 	/* 0x4.29 - 0x4.29 */
 	u_int8_t health_mon_rx_activity;
 	/* Description - Repetitive sampling mode is supported */
@@ -1098,20 +1099,20 @@ Valid only if the timeout value is not zero.
 /* Size in bytes - 72 */
 struct reg_access_hca_mcam_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Access Register ID groups
+	/* Description - Access Register ID groups 
 0: First_128_REG_ID - Register IDs 0x9001 - 0x907F)
 1: Register_IDs_0x9080 - 0x90FF (bit 0 in mng_access_reg_cap_mask represent register ID 0x9080 while bit 127 represents register ID 0x90FF).
 2: Register_IDs_0x9100 - 0x917F (bit 0 in mng_access_reg_cap_mask represent register ID 0x9100 while bit 127 represents register ID 0x917F).
 3: Register_IDs_0x9180 - 0x91FF (bit 0 in mng_access_reg_cap_mask represent register ID 0x9180 while bit 127 represents register ID 0x91FF). */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t access_reg_group;
-	/* Description - Feature list mask index:
+	/* Description - Feature list mask index: 
 0: enhanced_features */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t feature_group;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Supported management's access register bitmask. Based on access_reg_group index.
-When bit is set, the register is supported in the device.
+	/* Description - Supported management's access register bitmask. Based on access_reg_group index. 
+When bit is set, the register is supported in the device. 
 For example:
 Bit 1: MFCR_0x9001
 Bit 2: MFSC_0x9002
@@ -1124,7 +1125,7 @@ Bit 127: MCAP_0x907F */
 	u_int32_t mng_access_reg_cap_mask[4];
 /*---------------- DWORD[10] (Offset 0x28) ----------------*/
 	/* Description - Supported port's enhanced features.Based on feature_group index.
-When bit is set, The feature is supported in the device:
+When bit is set, The feature is supported in the device: 
 Bit 0: MPCNT counter group- PCIE performance counters supported
 Bit 1: mtpps_fs - If set, field_select field in MTPPS register is supported.
 Bit 2: mtpps_enhanced_out_periodic_adjustment - If set, enhanced_out_periodic_adjustment field in MTPPS register is supported.
@@ -1132,16 +1133,16 @@ Bit 3: tx_lossy_overflow_oper - If set, tx_overflow_buffer_pkt counter in MPCNT 
 Bit 4: pcie_outbound_stalled - if set, outbound_stalled_reads, outbound_stalled_writes, outbound_stalled_reads_events and outbound_stalled_writes_events counters in MPCNT are supported.
 Bit 5: Management pass through is supported
 Bit 6: sensor_map - If set, sensor_map is supported in MTCAP register.
-Bit 7: if set, module_status bit 8 (Module Low Power) in MCION register is supported.
-Bit 8: beacon_capability_disable - If set, beacon feature, as appears in MLCR register, in not supported by the device.
-Bit 9: dynamic_tx_overflow - If set, tx_overflow_sense field is supported in MPEGC register.
+Bit 7: if set, module_status bit 8 (Module Low Power) in MCION register is supported. 
+Bit 8: beacon_capability_disable - If set, beacon feature, as appears in MLCR register, in not supported by the device. 
+Bit 9: dynamic_tx_overflow - If set, tx_overflow_sense field is supported in MPEGC register. 
 Bit 10: mark_tx_action_cqe is supported if set to '1'.
 Bit 11: mark_tx_action_cnp is supported if set to '1'.
 Bit 12: dev_info is supported in  register is set to '1'.
 Bit 13: sensor_count field is 12bit size in MTMP and MTBR
-Bit 14: cs_tokens_supported is supported
+Bit 14: cs_tokens_supported is supported 
 Bit 15: debug_fw_tokens_supported
-Bit 16: long_keys is supported
+Bit 16: long_keys is supported 
 Bit 17: pwr_status and pci_power are supported in MPEIN
 Bit 18: If set, accessing through device_type and device_index is supported in MCC, MCQI and MCQS
 Bit 19: pcie_sync_for_fw_update_supported is set to '1'
@@ -1158,8 +1159,8 @@ Bit 31: If set, sdee is supported in MTMP
 Bit 32: If set, npps_period is supported in MTPPS.
 Bit 33: If set, out_pulse_duration_ns is supported in MTPPS.
 Bit 34: If set, MCIA supports 32 D-words. Otherwise, 12 D-words.
-Bit 35: If set, MGIR.hw_info.technology is supported.
-Bit 37: If set, lp_msb is supported for MLCR, MPIR
+Bit 35: If set, MGIR.hw_info.technology is supported. 
+Bit 37: If set, lp_msb is supported for MLCR, MPIR 
 Bit 39: If set, MRCS and RMDT tokens are supported in MCQS
 Bit 40: If set, 'encryption' field in MGIR is supported
 Bit 43: If set, MFCR supports tacho_active_msb field
@@ -1174,7 +1175,9 @@ Bit 53: If set, Mlx mlxfwreset with downstream port is supported by FW [Internal
 Bit 59: If set, MCC.component_specific_error_code is valid for LinkX devices
 Bit 60: If set, MGNLE.clr is supported
 Bit 61: If set, MGIR supports life_cycle_msb and pds fields in FW info and development field in HW info.
- */
+
+
+Bit 65: If set, MVCR support current_sensor_value_msb */
 	/* 0x28.0 - 0x34.31 */
 	u_int32_t mng_feature_cap_mask[4];
 };
@@ -1185,7 +1188,7 @@ struct reg_access_hca_mcc_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Command to be executed by the FSM
 0x1: LOCK_UPDATE_HANDLE
-0x2: RELEASE_UPDATE_HANDLE
+0x2: RELEASE_UPDATE_HANDLE 
 0x3: UPDATE_COMPONENT
 0x4: VERIFY_COMPONENT
 0x6: ACTIVATE
@@ -1206,22 +1209,22 @@ This configuration is volatile. */
 	/* 0x0.16 - 0x0.27 */
 	u_int16_t time_elapsed_since_last_cmd;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Index of the accessed component.
+	/* Description - Index of the accessed component. 
 Value from MCQS.component_index
-Valid for
+Valid for 
 UPDATE_COMPONENT, ACTIVATE_COMPONENET, READ_COMPONENT and READ_PENDING_COMPONENT instructions. Otherwise, this field is reserved. */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t component_index;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Token representing the current flow executed by the FSM.
-See Section 10.2.1, "Component Update State", on page 887. */
+See Section 10.2.1, "Component Update State", on page 890. */
 	/* 0x8.0 - 0x8.23 */
 	u_int32_t update_handle;
 	/* Description - Auto-update to all matching downstream devices is requested. */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t auto_update;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Current Update FSM state, see Section  10.3.8, "FSM States," on page  891
+	/* Description - Current Update FSM state, see Section  10.3.8, "FSM States," on page  894
 0x0: IDLE
 0x1: LOCKED
 0x2: INITIALIZE
@@ -1235,7 +1238,7 @@ See Section 10.2.1, "Component Update State", on page 887. */
 Other values are reserved */
 	/* 0xc.0 - 0xc.3 */
 	u_int8_t control_state;
-	/* Description - Indicates the successful completion of the instruction, or the reason it failed. See Section  10.3.7, "Error Handling," on page  890
+	/* Description - Indicates the successful completion of the instruction, or the reason it failed. See Section  10.3.7, "Error Handling," on page  893
 0x0: OK
 0x1: ERROR
 0x2: REJECTED_DIGEST_ERR
@@ -1262,19 +1265,19 @@ Other values are reserved */
 0x17: REJECTED_TOKEN_ALREADY_APPLIED
 0x18: REJECTED_FW_BURN_DRAM_NOT_AVAILABLE
 0x19: FW_BURN_REJECTED_INVALID_SECURITY_VERSION
-0x1A: FW_BURN_REJECTED_CERT_CER509
+0x1A: FW_BURN_REJECTED_CERT_CER509 
 0x1B: FW_BURN_REJECTED_CERT_SIGNATURE
 0x1C: FW_BURN_REJECTED_CERT_METADATA
-0x1D: FW_BURN_REJECTED_CERT_INTERNAL_ERROR_0
+0x1D: FW_BURN_REJECTED_CERT_INTERNAL_ERROR_0 
 0x1E: FW_BURN_REJECTED_CERT_NO_PLACE
 0x1F: FW_BURN_REJECTED_CERT_REMOVAL_NO_MATCH_CERT_UIDD
-0x20: FW_BURN_REJECTED_CERTI_INTERNAL_ERROR_1
+0x20: FW_BURN_REJECTED_CERTI_INTERNAL_ERROR_1 
 0x21: FW_BURN_REJECTED_CERT_INTERNAL_ERROR_2 0x22: FW_BURN_REJECTED_CERT_OF_NUM_OF_SWAP
-0x23: FW_BURN_REJECTED_CERT_INTERNAL_ERROR_3
-0x24: FW_BURN_REJECTED_CERT_INTERNAL_ERROR_4
-0x25: FW_BURN_REJECTED_CERT_NOT_ALLOWED_SAME_CERT_UIDD
-0x26: FW_BURN_REJECTED_CERTIFICATE_INTERNAL_ERROR_5
-0x27: FW_BURN_REJECTED_CERTIFICATE_INTERNAL_ERROR_6
+0x23: FW_BURN_REJECTED_CERT_INTERNAL_ERROR_3 
+0x24: FW_BURN_REJECTED_CERT_INTERNAL_ERROR_4 
+0x25: FW_BURN_REJECTED_CERT_NOT_ALLOWED_SAME_CERT_UIDD 
+0x26: FW_BURN_REJECTED_CERTIFICATE_INTERNAL_ERROR_5 
+0x27: FW_BURN_REJECTED_CERTIFICATE_INTERNAL_ERROR_6 
 0x28: REJECTED_FLASH_WP
 
 Other values should be treated as an unknown error. */
@@ -1294,12 +1297,12 @@ Otherwise reserved */
 0x2: MAD
 0x3: BMC
 0x4: command interface
-0x5: ICMD
+0x5: ICMD 
 Other values are reserved. */
 	/* 0xc.28 - 0xc.31 */
 	u_int8_t handle_owner_type;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - Component size in bytes.
+	/* Description - Component size in bytes. 
 Valid for UPDATE_COMPONENT instruction. Specifying the size may shorten the update time.
 Value 0x0 means that size is unspecified. */
 	/* 0x10.0 - 0x10.31 */
@@ -1311,7 +1314,7 @@ Value 0x0 means that size is unspecified. */
 	/* 0x14.0 - 0x14.7 */
 	u_int8_t device_type;
 	/* Description - Device number.
-For gearboxes, the index represents the gearbox die.
+For gearboxes, the index represents the gearbox die. 
 For cables, the index represents the module index starting at index 1. Index 0 indicates the host device. */
 	/* 0x14.16 - 0x14.27 */
 	u_int16_t device_index;
@@ -1338,7 +1341,7 @@ struct reg_access_hca_mcda_reg_ext {
 	/* 0x0.0 - 0x0.23 */
 	u_int32_t update_handle;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Offset of accessed address relative to component start. Accesses must be in accordance to log_mcda_word_size in Table 2416, "MCQI CAPABILITIES Info Layout," on page 2774 */
+	/* Description - Offset of accessed address relative to component start. Accesses must be in accordance to log_mcda_word_size in Table 2407, "MCQI CAPABILITIES Info Layout," on page 2765 */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t offset;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -1358,11 +1361,11 @@ struct reg_access_hca_mcia_ext {
 	/* Description - Module Status
 0: SUCCESS
 1: NO_EEPROM_MODULE. No response from module's EEPROM.
-2: MODULE_NOT_SUPPORTED. Module type not supported by the device. 3: MODULE_NOT_CONNECTED. No module present indication.
-4: MODULE_TYPE_INVALID - module is not supported by INI.
+2: MODULE_NOT_SUPPORTED. Module type not supported by the device. 3: MODULE_NOT_CONNECTED. No module present indication. 
+4: MODULE_TYPE_INVALID - module is not supported by INI. 
 
 9: I2C_ERROR. Error occurred while trying to access the module's EEPROM using I2C.
-16: MODULE_DISABLED - module is disabled
+16: MODULE_DISABLED - module is disabled 
  */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t status;
@@ -1371,7 +1374,7 @@ struct reg_access_hca_mcia_ext {
 	/* 0x0.12 - 0x0.15 */
 	u_int8_t slot_index;
 	/* Description - Module number
-NIC: Range 0 .. MGPIR.num_of_modules -1
+NIC: Range 0 .. MGPIR.num_of_modules -1 
  */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t module;
@@ -1382,7 +1385,7 @@ Page Number Valid
 Valid only if module is in SW control */
 	/* 0x0.29 - 0x0.29 */
 	u_int8_t pnv;
-	/* Description - Lock Page bit.
+	/* Description - Lock Page bit. 
 When bit is set, FW can access the last accessed page.
 After boot and ISSU, default value is 0.
 
@@ -1394,7 +1397,7 @@ After boot and ISSU, default value is 0.
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t device_address;
 	/* Description - Page number
-Reserved when MCIA.l = 1 or when MCIA.pnv = 0 */
+Reserved when MCIA.l = 1 or when MCIA.pnv = 1 */
 	/* 0x4.16 - 0x4.23 */
 	u_int8_t page_number;
 	/* Description - I2C device address
@@ -1414,7 +1417,7 @@ Reserved when MCIA.l = 1 or when MCIA.pnv = 0 */
 	u_int8_t passwd_length;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - The password that is written to the module password field.
-This field is reserved when passwd_cap is not set to 1.
+This field is reserved when passwd_cap is not set to 1. 
 Reserved when module is in SW control. */
 	/* 0xc.0 - 0xc.31 */
 	u_int32_t password;
@@ -1441,7 +1444,7 @@ struct reg_access_hca_mcqi_reg_ext {
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t component_index;
 	/* Description - Device number.
-For gearboxes, the index represents the gearbox die.
+For gearboxes, the index represents the gearbox die. 
 For cables, the index represents the module index starting at index 1. Index 0 indicates the host device.
 
 For Clock Source EEPROM, the index represents the Clock Source Index, starting from 1 */
@@ -1484,11 +1487,11 @@ If size is invalid, FW will return an error. */
 	u_int16_t data_size;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description - Properties set structure according to info_type.
-CAPABILITIES - See Table 2416, "MCQI CAPABILITIES Info Layout," on page 2774
-VERSION - See Table 2418, "MCQI VERSION Info Layout," on page 2776
-ACTIVATION_METHOD - See Table 2422, "MCQI ACTIVATION_METHOD Info Layout," on page 2778
-LINKX_PROPERTIES - See Table 2424, "MCQI LINKX_PROPERTIES Info Layout," on page 2779
-CLOCK_SOURCE_PROPERTIES - See Table 2426, "MCQI CLOCK_SOURCE_PROPERTIES Layout," on page 2781 */
+CAPABILITIES - See Table 2407, "MCQI CAPABILITIES Info Layout," on page 2765
+VERSION - See Table 2409, "MCQI VERSION Info Layout," on page 2767
+ACTIVATION_METHOD - See Table 2413, "MCQI ACTIVATION_METHOD Info Layout," on page 2769
+LINKX_PROPERTIES - See Table 2415, "MCQI LINKX_PROPERTIES Info Layout," on page 2770
+CLOCK_SOURCE_PROPERTIES - See Table 2417, "MCQI CLOCK_SOURCE_PROPERTIES Layout," on page 2772 */
 	/* 0x18.0 - 0x90.31 */
 	union reg_access_hca_mcqi_reg_data_auto_ext data;
 };
@@ -1501,7 +1504,7 @@ struct reg_access_hca_mcqs_reg_ext {
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t component_index;
 	/* Description - Device number.
-For gearboxes, the index represents the gearbox die.
+For gearboxes, the index represents the gearbox die. 
 For cables, the index represents the module index starting at index 1. Index 0 indicates the host device.
 For Clock synchronizer, index is used to represent the clock sync' device index. Starting from 1. */
 	/* 0x0.16 - 0x0.27 */
@@ -1510,7 +1513,7 @@ For Clock synchronizer, index is used to represent the clock sync' device index.
 	/* 0x0.31 - 0x0.31 */
 	u_int8_t last_index_flag;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - This field uniquely identifies a specific component type.
+	/* Description - This field uniquely identifies a specific component type. 
 0x1: BOOT_IMG
 0x4: OEM_NVCONFIG
 0x5: MLNX_NVCONFIG
@@ -1522,18 +1525,19 @@ For Clock synchronizer, index is used to represent the clock sync' device index.
 0xD: CRYPTO_TO_COMMISSIONING
 0xE: RMCS_TOKEN
 0xF: RMDT_TOKEN
-0x10: CRCS_TOKEN.
-0x11: CRDT_TOKEN.
-0x12: CLOCK_SYNC_EEPROM.
+0x10: CRCS_TOKEN. 
+0x11: CRDT_TOKEN. 
+0x12: CLOCK_SYNC_EEPROM.  
+
 Other values are reserved */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t identifier;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Component state in update flow, see Section  10.2.1, "Component Update State," on page  887:
+	/* Description - Component state in update flow, see Section  10.2.1, "Component Update State," on page  890:
 0x0: IDLE
 0x1: IN_PROGRESS
 0x2: APPLIED
-0x3: ACTIVE
+0x3: ACTIVE 
 0x4: ACTIVE_PENDING_RESET
 0x5: FAILED
 0x6: CANCELED
@@ -1578,7 +1582,7 @@ Other values are reserved */
 struct reg_access_hca_mfba_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Flash select - selects the flash device.
-Only zero is supported for NICs with a single flash device
+Only zero is supported for NICs with a single flash device 
 Range between 0 .. MFPA.flash_num -1 */
 	/* 0x0.4 - 0x0.5 */
 	u_int8_t fs;
@@ -1605,7 +1609,7 @@ Should comply with block_size and block_alignment fields in MFPA. */
 struct reg_access_hca_mfbe_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Flash select - selects the flash device.
-Only zero is supported for NICs with a single flash device.
+Only zero is supported for NICs with a single flash device. 
 Range between 0 .. MFPA.flash_num -1 */
 	/* 0x0.4 - 0x0.5 */
 	u_int8_t fs;
@@ -1681,7 +1685,7 @@ Read and write access must be aligned to this value. */
 	u_int8_t block_size;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description - Bitmask indicates which capabilities are supported.
-Bit 15..0: reserved
+Bit 15..0: reserved 
 
 Bit 16: Set write protect supported (register MFMC supports setting write protection)
 Bit 17: quad enable read write is supported (register MFMC supports setting quad enable)
@@ -1694,7 +1698,7 @@ Bit 18: set dummy cycle supported (register MFMC supports setting dummy cycles) 
 /* Size in bytes - 8 */
 struct reg_access_hca_mfrl_reg_ext {
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - The firmware reset trigger.
+	/* Description - The firmware reset trigger. 
 Only a single bit may be set.
 Bit 0: TRIGGER0 (live-patch)
 Bit 1: TRIGGER1 (Immediate Reset)
@@ -1769,13 +1773,13 @@ struct reg_access_hca_mfsv_reg_ext {
  */
 	/* 0x0.3 - 0x0.3 */
 	u_int8_t efuses_prog_method;
-	/* Description - 0: EFUSEs value is equal to the currently running FW image value. No change is needed.
-1: EFUSEs value is smaller than the currently running FW image value. An update to the EFUSEs is required.
+	/* Description - 0: EFUSEs value is equal to the currently running FW image value. No change is needed. 
+1: EFUSEs value is smaller than the currently running FW image value. An update to the EFUSEs is required. 
  */
 	/* 0x0.4 - 0x0.4 */
 	u_int8_t revoke_efuse_prog;
-	/* Description - 0: No pending EFUSE programming command
-1: There is pending MFSV command
+	/* Description - 0: No pending EFUSE programming command 
+1: There is pending MFSV command 
 
  */
 	/* 0x0.5 - 0x0.5 */
@@ -1801,20 +1805,20 @@ struct reg_access_hca_mfsv_reg_ext {
 /* Size in bytes - 160 */
 struct reg_access_hca_mgir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see Table 2440, "Hardware Info Layout," on page 2793 */
+	/* Description - Hardware Information, see Table 2431, "Hardware Info Layout," on page 2784 */
 	/* 0x0.0 - 0x1c.31 */
 	struct reg_access_hca_mgir_hardware_info_ext hw_info;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description - Firmware Information, see Table 2443, "Firmware Info Layout," on page 2796 */
+	/* Description - Firmware Information, see Table 2434, "Firmware Info Layout," on page 2787 */
 	/* 0x20.0 - 0x5c.31 */
 	struct reg_access_hca_mgir_fw_info_ext fw_info;
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
-	/* Description - Software Information, see Table 2445, "Software Info Layout," on page 2799
+	/* Description - Software Information, see Table 2436, "Software Info Layout," on page 2790
 This field indicates the oldest software version compatible with the current firmware */
 	/* 0x60.0 - 0x7c.31 */
 	struct reg_access_hca_mgir_sw_info_ext sw_info;
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
-	/* Description - Development Information, see Table 2449, "Development Info Layout," on page 2803 */
+	/* Description - Development Information, see Table 2440, "Development Info Layout," on page 2794 */
 	/* 0x80.0 - 0x98.31 */
 	struct reg_access_hca_mgir_dev_info_ext dev_info;
 };
@@ -1894,7 +1898,7 @@ struct reg_access_hca_mnvia_reg_ext {
 	/* 0x0.0 - 0x0.2 */
 	u_int8_t target;
 	/* Description - The entity which perform the invalidate.
-The encoding same as writer_id in Configuration Item register (See Table 2515, "Configuration Item Header Layout," on page 2845). */
+The encoding same as writer_id in Configuration Item register (See Table 2504, "Configuration Item Header Layout," on page 2835). */
 	/* 0x0.4 - 0x0.8 */
 	u_int8_t writer_id;
 };
@@ -1903,15 +1907,15 @@ The encoding same as writer_id in Configuration Item register (See Table 2515, "
 /* Size in bytes - 8 */
 struct reg_access_hca_mnvqc_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Configuration item type according to its class.
-Table 2517, "Configuration Item Data Type Class Global Layout," on page 2849
-Table 2519, "Configuration Item Data Type Class Physical Port Layout," on page 2849
-Table 2521, "Configuration Item Data Type Class Per Host-PF Layout," on page 2850
-Table 2523, "Configuration Item Data Type Class Log Layout," on page 2850
-Table 2525, "Configuration Item Data Type Class File Layout," on page 2851
-Table 2527, "Configuration Item Data Type Class Host Layout," on page 2851
+	/* Description - Configuration item type according to its class. 
+Table 2506, "Configuration Item Data Type Class Global Layout," on page 2839
+Table 2508, "Configuration Item Data Type Class Physical Port Layout," on page 2839
+Table 2510, "Configuration Item Data Type Class Per Host-PF Layout," on page 2840
+Table 2512, "Configuration Item Data Type Class Log Layout," on page 2840
+Table 2514, "Configuration Item Data Type Class File Layout," on page 2841
+Table 2516, "Configuration Item Data Type Class Host Layout," on page 2841
 
-Table 2529, "Configuration Item Data Type Class Module Layout," on page 2852 */
+Table 2518, "Configuration Item Data Type Class Module Layout," on page 2842 */
 	/* 0x0.0 - 0x0.31 */
 	u_int32_t type;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -1938,7 +1942,7 @@ If set to '10', returns to operational state on all services. The values in op-c
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - For each of the services, the following operations are available:
 0: N/A (no action)
-1: start preparation flow for FW ISSU
+1: start preparation flow for FW ISSU 
 2: return to operational service (end of FW ISSU flow)
 3: get status
 
@@ -1946,8 +1950,8 @@ When set to '3', the current status will appear in corresponding _stat fields. *
 	/* 0x4.0 - 0x4.1 */
 	u_int8_t ports;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Status for each of the services.
-0: not in FW ISSU flow state (FW ISSU flow is not initiated)
+	/* Description - Status for each of the services. 
+0: not in FW ISSU flow state (FW ISSU flow is not initiated) 
 1: done with preparations for FW ISSU flow
 2: Preparation for FW ISSU flow started but FW still not done service handling [Internal]: busy with some other critical flow). */
 	/* 0xc.0 - 0xc.1 */
@@ -1982,8 +1986,8 @@ Bit 6: virtual_hot_plug_unplug (supported only for internal host) */
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - When overflow encountered for lossy packets, it will be dropped or marked and will be counted in "tx_overflow_buffer_dropped_pkt" or "tx_overflow_buffer_marked_pkt" counter.
 00 - Disabled
-01 - drop - overflow traffic will be dropped.
-10 - mark - overflow traffic will be marked in the CE field in the CqE.  Supported only when MCAM.mark_tx_action_cqe or MCAM.mark_tx_action_cnp are '1'.
+01 - drop - overflow traffic will be dropped.  
+10 - mark - overflow traffic will be marked in the CE field in the CqE.  Supported only when MCAM.mark_tx_action_cqe or MCAM.mark_tx_action_cnp are '1'. 
  */
 	/* 0x8.0 - 0x8.1 */
 	u_int8_t tx_lossy_overflow_oper;
@@ -1993,7 +1997,7 @@ Bit 6: virtual_hot_plug_unplug (supported only for internal host) */
 	/* Description - When this bit is set, the marking action will be set in the CqE for TCP traffic. Supported only when MCAM.mark_tx_action_cqe is '1'. */
 	/* 0x8.30 - 0x8.30 */
 	u_int8_t mark_cqe;
-	/* Description - Set the sensibility level of the tx overflow mechanism.
+	/* Description - Set the sensibility level of the tx overflow mechanism. 
 0 - Aggressive 1 - Dynamic adjustment. When tx_lossy_overflow_oper is disabled, tx_overflow_sense must be disabled. Supported only when MCAM.dynamic_tx_oveflow is '1'. */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t tx_overflow_sense;
@@ -2059,8 +2063,8 @@ other values are reserved. */
 struct reg_access_hca_mrsi_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - [NIC_Only]
-0: Main
-1: Embedded CPU
+0: Main 
+1: Embedded CPU 
 Reserved when Switches */
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t device;
@@ -2099,7 +2103,7 @@ Reserved when MRSI.device != Embedded CPU */
 /* Size in bytes - 16 */
 struct reg_access_hca_mtcap_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Number of ASIC+platform sensors supported by the device
+	/* Description - Number of ASIC+platform sensors supported by the device 
 This includes the ASIC and the ambient sensors. Module sensors are not included.
 This actually is equal to sum of all '1' in sensor_map
 Range 1..64
@@ -2116,7 +2120,7 @@ Known sensors:
 	u_int8_t slot_index;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Number of sensors supported by the device that are on the ASIC.
-Exposes how many ASIC diodes exist.
+Exposes how many ASIC diodes exist. 
 The FW exposes all of them as sensor[0] */
 	/* 0x4.0 - 0x4.6 */
 	u_int8_t internal_sensor_count;
@@ -2134,7 +2138,7 @@ Per bit:
 struct reg_access_hca_mtdc_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Tracer writing to PCI is limited.When this mode is enable, the hw tracer pointer cannot override the software read index pointer.If software will not update the read index pointer, new events will fall and will not be sent.
-0: NA - ignored, does not perform any operation
+0: NA - ignored, does not perform any operation 
 1: Enable
 2: Disable */
 	/* 0x0.0 - 0x0.1 */
@@ -2197,7 +2201,7 @@ Else: Reserved */
 Else: Reserved */
 	/* 0x4.8 - 0x4.11 */
 	u_int8_t type_core_dpa;
-	/* Description - Indicates wether Phy_UC tracers mapping are supported by the device FW.
+	/* Description - Indicates wether Phy_UC tracers mapping are supported by the device FW. 
 When set, The event_id of the Phy UC of the instance will be calculated by first_tile/main _core _event_id[i] + cap_core_tile/main.
 When clear the Phy UC will be ignored. */
 	/* 0x4.30 - 0x4.30 */
@@ -2250,7 +2254,7 @@ The mapping of source id to HW unit is unique per device and can be fetched from
 /* Size in bytes - 16 */
 struct reg_access_hca_mtim_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - The verbosity of the log.
+	/* Description - The verbosity of the log. 
 0: LOG_DEBUG
 1: LOG_INFO
 2: LOG_WARNING
@@ -2276,7 +2280,7 @@ struct reg_access_hca_mtmp_ext {
 0: current asic temp, FW exposes current max(all diode temp sensors)
 1..62: ambient, supported only for unmanaged switch, defined by ini
 64..255: modules 256..288: Gearbox
-289..704: reserved for future */
+Others up to 704 are reserved */
 	/* 0x0.0 - 0x0.11 */
 	u_int16_t sensor_index;
 	/* Description - Slot index
@@ -2284,7 +2288,7 @@ struct reg_access_hca_mtmp_ext {
 	/* 0x0.16 - 0x0.19 */
 	u_int8_t slot_index;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Temperature reading from the sensor.
+	/* Description - Temperature reading from the sensor. 
 Units of 0.125 Celsius degrees.
 For negative values 2's complement is used (for example: -3.25 Celsius will read as 0xFFE6) */
 	/* 0x4.0 - 0x4.15 */
@@ -2318,7 +2322,7 @@ Valid only when i = 0
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t mte;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - temperature_threshold_hi refers to the high threshold of Warning Event.
+	/* Description - temperature_threshold_hi refers to the high threshold of Warning Event. 
 If the sensor temperature measurement is above the threshold (and events are enabled), an event will be generated.
 threshold_hi and threshold_lo implements hysteresis mechanism of the threshold preventing toggling of the indication.
 Note that temperature_threshold_hi must be equal or lower than the system requirement.
@@ -2344,7 +2348,7 @@ Supported in downstream devices (devices on slots). */
 	/* 0xc.30 - 0xc.31 */
 	u_int8_t tee;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - temperature_threshold_lo refers to the low threshold of Warning Event.
+	/* Description - temperature_threshold_lo refers to the low threshold of Warning Event. 
 The offset threshold_lo implements the lower threshold for the hysteresis mechanism of over temperature alert. Once alert is set, if the temperature goes below this threshold, the alert is cleared.
 Note that temperature_threshold_lo must be at least 5 degrees lower than temperature_threshold_hi */
 	/* 0x10.0 - 0x10.15 */
@@ -2371,7 +2375,7 @@ struct reg_access_hca_mtrc_cap_reg_ext {
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t num_string_db;
 	/* Description - Indicates the version of the tracing mechanism.
-See Section 26.3.4.1, "Timestamp Event Traces", on page 1668
+See Section 26.3.4.1, "Timestamp Event Traces", on page 1666
 0x0: VER_0
 0x1: VER_1
 Other values are reserved.
@@ -2385,7 +2389,6 @@ Reserved in Switch */
 	u_int8_t trace_to_memory;
 	/* Description - Write 0x1 to register for tracer ownership, write 0x0 to de-register.
 Read value 0x1 indicates tracer ownership is granted.
-Reserved in Switch
  */
 	/* 0x0.31 - 0x0.31 */
 	u_int8_t trace_owner;
@@ -2502,7 +2505,7 @@ other values are reserved */
 	u_int16_t cap_group;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Capability information according to cap_group.
-For DPA_CAP See Table 1536, "DPA_CAP Capability Layout," on page 1829 */
+For DPA_CAP See Table 1537, "DPA_CAP Capability Layout," on page 1828 */
 	/* 0x10.0 - 0x7c.31 */
 	union reg_access_hca_nic_cap_ext_reg_cap_data_auto_ext cap_data;
 };
@@ -2621,7 +2624,7 @@ struct reg_access_hca_paos_reg_ext {
 1: up
 2: down
 4: down_by_port_failure - (transitioned by the hardware)
-
+  
  */
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t oper_status;
@@ -2635,7 +2638,7 @@ Plane port index of the aggregated port. A value of 0 refers to the aggregated p
 3: up_once - if the port goes up and then down, the operational status should go to "down by port failure" and can only go back up upon explicit command
 4: disabled_by_system - this mode cannot be set by the software, only by the hardware.
 6: sleep - can be configured only if sleep_cap is set. Note that a sleep setting will cause the port to transition immediately into sleep state regardless of previous admin_status.
-[Internal] opcode 5 is used only in NIC, for fast link up drivers after device boot. For most usecase the rate will be SDR, lowest rate support in IB systems.
+[Internal] opcode 5 is used only in NIC, for fast link up drivers after device boot. For most usecase the rate will be SDR, lowest rate support in IB systems. 
 
 
 [Internal] - up_once shall not be used for GPU case. In order to define link down state set PLDS register */
@@ -2656,7 +2659,7 @@ The swid field is only valid when the local_port is the router port. In this cas
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Event generation on operational state change (oper_status):
 0: Do_not_generate_event
-1: Generate_Event
+1: Generate_Event 
 2: Generate_Single_Event
 
 Not Supported for HCA. */
@@ -2677,7 +2680,7 @@ Ethernet devices that support this field will use only bits 2,3,5. */
 	u_int8_t physical_state_status;
 	/* Description - Force down.
 Supported only when indicated in PCAM
-Can be set only with admin_status = 2 ('down_by_configuration'), will force link to be down.
+Can be set only with admin_status = 2 ('down_by_configuration'), will force link to be down. 
  */
 	/* 0x4.8 - 0x4.8 */
 	u_int8_t fd;
@@ -2690,7 +2693,7 @@ Can be set only with admin_status = 2 ('down_by_configuration'), will force link
 On set operation, will be ignored if ee_ps is not set.
 When bit is set, will generate an event for transition into state.
 Bit 0: Sleep
-Bit 1: LinkUp
+Bit 1: LinkUp 
 Note - LinkUp for an Ethernet link refers to PhyUp state where local side is ready, but not necessarily that peer side is also ready.
 Bit 2: Disabled
 Bit 3: PortConfigurationTraining
@@ -2752,7 +2755,7 @@ If the field is set while operational status is DOWN (PAOS.oper_status=0x2), por
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - When Set, The port will keep the same phy setting upon link down event that occurs only upon link down command of peer port. In the event of Down command/cable disconnect, entire link up flow will be initialized.
 
-NOTE: This mode can be configured only when PTYS.an_disable_admin is set (i.e. AN is disabled).
+NOTE: This mode can be configured only when PTYS.an_disable_admin is set (i.e. AN is disabled). 
 NOTE: if physical environment was changed (i.e. replacement of module, temp change, etc) there is a possibility that link won't be established or will be established with high BER */
 	/* 0x4.0 - 0x4.0 */
 	u_int8_t keep_phy_setting;
@@ -2820,8 +2823,8 @@ Note - To disable a module, all ports associated with the port must be disabled 
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t module;
 	/* Description - Reserved for HCA
-Slot_index
-Slot_index = 0 represent the onboard (motherboard).
+Slot_index 
+Slot_index = 0 represent the onboard (motherboard). 
 In case of non modular system only slot_index = 0 is available. */
 	/* 0x0.24 - 0x0.27 */
 	u_int8_t slot_index;
@@ -2857,7 +2860,7 @@ Valid only when oper_status = 4'b0011 */
 	u_int8_t error_type;
 	/* Description - This notification can occur only if module passed initialization process
 0x0: No notifications.
-0x1: Speed degradation - the module is not enabled in its full speed due to incompatible transceiver/cable
+0x1: Speed degradation - the module is not enabled in its full speed due to incompatible transceiver/cable 
 Valid only when oper_status = 4'b0001. */
 	/* 0x4.16 - 0x4.19 */
 	u_int8_t operational_notification;
@@ -2900,11 +2903,11 @@ Plane port index of the aggregated port. A value of 0 refers to the aggregated p
 	/* Description - Local port number. */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t local_port;
-	/* Description - Module lane mapping:
+	/* Description - Module lane mapping: 
 0 - Local to Module mapping include module lanes mapping
 1 - Local to Module mapping only, without lane mapping
 
-When this operational is set ('1'), the following fields are ignored in SET command and should return the value "0" in GET commands:
+When this operational is set ('1'), the following fields are ignored in SET command and should return the value "0" in GET commands: 
 PMLP.rxtx
 PMLP.lane<i>_module_mapping.tx_lane
 PMLP.lane<i>_module_mapping.rx_lane */
@@ -2940,10 +2943,10 @@ Bit 2: Ethernet */
 Plane port index of the aggregated port. A value of 0 refers to the aggregated port only. */
 	/* 0x0.4 - 0x0.7 */
 	u_int8_t plane_ind;
-	/* Description - Supported only when indicated by PCAM
+	/* Description - Supported only when indicated by PCAM 
 0: Network_Port
 1: Near-End_Port - (For Gearbox - Host side)
-2: Internal_IC_Port
+2: Internal_IC_Port 
 3: Far-End_Port - (For Gearbox - Line side)
 
 Other values are reserved. */
@@ -2972,11 +2975,11 @@ when bit is not set, tx_teady_e write value will be ignored */
 	/* 0x0.29 - 0x0.29 */
 	u_int8_t an_disable_cap;
 	/* Description - Auto Negotiation disable:
-0 - Normal operation
+0 - Normal operation 
 1 - Disable AN.
 Note: In Ethernet port, when Disabling AN, the "eth_proto_admin" bit mask must comply to single speed rate set.
 In IB port, when Disabling AN, the "ib_proto_admin" bit mask must comply to single speed rate set.
-It's recommended to validate the FEC override bits in PPLM when operating with AN.
+It's recommended to validate the FEC override bits in PPLM when operating with AN. 
 
  */
 	/* 0x0.30 - 0x0.30 */
@@ -2993,11 +2996,11 @@ Value 0x0 indicates this field is not supported.
  */
 	/* 0x4.16 - 0x4.27 */
 	u_int16_t max_port_rate;
-	/* Description - Auto Negotiation status:
+	/* Description - Auto Negotiation status: 
 0: Status_is_unavailable
-1: AN_completed_successfully
+1: AN_completed_successfully 
 2: AN_performed_but_failed
-3: AN_was_not_performed_link_is_up
+3: AN_was_not_performed_link_is_up 
 4: AN_was_not_performed_link_is_down */
 	/* 0x4.28 - 0x4.31 */
 	u_int8_t an_status;
@@ -3008,12 +3011,12 @@ Bit 0: SGMII_100M
 Bit 1: 1000BASE-X / SGMII
 Bit 3: 5GBASE-R
 Bit 4: XFI / XAUI-1 // 10G
-Bit 5: XLAUI-4/XLPPI-4 // 40G
-Bit 6: 25GAUI-1/ 25GBASE-CR / KR
-Bit 7: 50GAUI-2 / LAUI-2/ 50GBASE-CR2/KR2
+Bit 5: XLAUI-4/XLPPI-4 // 40G 
+Bit 6: 25GAUI-1/ 25GBASE-CR / KR 
+Bit 7: 50GAUI-2 / LAUI-2/ 50GBASE-CR2/KR2 
 Bit 8: 50GAUI-1 /50GBASE-CR / KR
 Bit 9: CAUI-4 / 100GBASE-CR4 / KR4
-Bit 10: 100GAUI-2 / 100GBASE-CR2 / KR2
+Bit 10: 100GAUI-2 / 100GBASE-CR2 / KR2 
 Bit 11: 100GAUI-1 / 100GBASE-CR / KR
 Bit 12: 200GAUI-4 / 200GBASE-CR4/KR4
 Bit 13: 200GAUI-2 / 200GBASE-CR2/KR2
@@ -3034,7 +3037,7 @@ Bit 30 - 50GBase-CR2
 Bit 29 - 25GBase-SR
 Bit 28 - 25GBase-KR
 Bit 27 - 25GBase-CR
-Bit 26 - 10GBase-T
+Bit 26 - 10GBase-T 
 Bit 25 - 1000Base-T
 Bit 24 - 100Base-TX
 Bit 23 - 100GBase LR4/ER4
@@ -3113,7 +3116,7 @@ NOTE: This field and "eth_proto_admin" are mutual exclusive, meaning that only o
 	u_int16_t ib_link_width_oper;
 /*---------------- DWORD[11] (Offset 0x2c) ----------------*/
 	/* Description - Connector type indication
-0: No_connector_or_unknown
+0: No_connector_or_unknown 
 1: PORT_NONE - None
 2: PORT_TP - Twisted Pair
 3: PORT_AUI - AUI
@@ -3159,7 +3162,7 @@ Note: Ignored when an_disable_admin is not set */
 /* Size in bytes - 256 */
 struct reg_access_hca_resource_dump_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - See Section 26.10, "Resource Dump", on page 1706. */
+	/* Description - See Section 26.10, "Resource Dump", on page 1704. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t segment_type;
 	/* Description - Sequence number. 0 on first call of dump and incremented on each more dump. */
@@ -3190,12 +3193,12 @@ SW shall read this field upon command done and shall provide it on the next call
 	u_int32_t index2;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - The amount of objects to dump starting for index 2.
-SW shall read this field upon command done and shall provide it on the next call in case dump_more==1.
+SW shall read this field upon command done and shall provide it on the next call in case dump_more==1. 
 Range is 0..0xfff0. When the segment's num_of_obj2_supports_all is set, the special value of 0xffff represents "all". When the segment's num_of_objx_supports_active is set, the special value of 0xfffe represents "active". The  value of 0x0 and 0x1 are allowed even if the supported_num_of_obj2 is "0". */
 	/* 0x10.0 - 0x10.15 */
 	u_int16_t num_of_obj2;
 	/* Description - The amount of objects to dump starting for index 1
-SW shall read this field upon command done and shall provide it on the next call in case dump_more==1.
+SW shall read this field upon command done and shall provide it on the next call in case dump_more==1. 
 Range is 0..0xfff0. When the segment's num_of_obj1_supports_all is set, the special value of 0xffff represents "all". When the segment's num_of_objx_supports_active is set, the special value of 0xfffe represents "active". The  value of 0x0 and 0x1 are allowed even if the supported_num_of_obj1 is "0". */
 	/* 0x10.16 - 0x10.31 */
 	u_int16_t num_of_obj1;
@@ -3204,7 +3207,7 @@ Range is 0..0xfff0. When the segment's num_of_obj1_supports_all is set, the spec
 	/* 0x18.0 - 0x1c.31 */
 	u_int64_t device_opaque;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description - Memory key to dump to.
+	/* Description - Memory key to dump to. 
 Valid when inline_dump==0. */
 	/* 0x20.0 - 0x20.31 */
 	u_int32_t mkey;
@@ -3215,7 +3218,7 @@ In granularity of Bytes. */
 	/* 0x24.0 - 0x24.31 */
 	u_int32_t size;
 /*---------------- DWORD[10] (Offset 0x28) ----------------*/
-	/* Description - VA address (absolute address) of memory where to start dumping.
+	/* Description - VA address (absolute address) of memory where to start dumping. 
 Valid when inline_dump==0. */
 	/* 0x28.0 - 0x2c.31 */
 	u_int64_t address;
