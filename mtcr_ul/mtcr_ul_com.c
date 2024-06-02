@@ -101,7 +101,7 @@
 #include "packets_layout.h"
 #include "mtcr_tools_cif.h"
 #include "mtcr_icmd_cif.h"
-#include "mlx5ctl_ioctl.h"
+#include "fwctrl_ioctl.h"
 #include "kernel/mst.h"
 #include "tools_dev_types.h"
 
@@ -775,51 +775,54 @@ static int mst_driver_connectx_flush(mfile* mf)
     return 0;
 }
 
-int mtcr_mlx5ctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
+int mtcr_fwctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
     int rc = -1;
 
-    if (offset == HW_ID_ADDR) {
+    if (offset == HW_ID_ADDR)
+    {
         *value = mf->device_hw_id;
         rc = 4;
-    } else {
-        MLX5CTL_DEBUG_PRINT(mf, "mlx5 control driver doesn't support VSEC access.\n")
+    }
+    else
+    {
+        FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
     }
 
     return rc;
 }
 
-int mtcr_mlx5ctl_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
+int mtcr_fwctl_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
 {
     (void)mf;
     (void)offset;
     (void)value;
 
-    MLX5CTL_DEBUG_PRINT(mf, "mlx5 control driver doesn't support VSEC access.\n")
+    FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
 
     return -1;
 }
 
-static int mlx5ctl_driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
+static int fwctl_driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
 {
     (void)mf;
     (void)offset;
     (void)data;
     (void)length;
 
-    MLX5CTL_DEBUG_PRINT(mf, "mlx5 control driver doesn't support VSEC access.\n")
+    FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
 
     return -1;
 }
 
-static int mlx5ctl_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
+static int fwctl_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
 {
     (void)mf;
     (void)offset;
     (void)data;
     (void)length;
 
-    MLX5CTL_DEBUG_PRINT(mf, "mlx5 control driver doesn't support VSEC access.\n")
+    FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
 
     return -1;
 }
@@ -958,11 +961,11 @@ static int mtcr_driver_mclose(mfile* mf)
 }
 
 
-static int mlx5ctl_driver_open(mfile* mf, const char* name)
+static int fwctrl_driver_open(mfile* mf, const char* name)
 {
     char full_path_name[60];
 
-    sprintf(full_path_name, "/dev/%s", name);
+    sprintf(full_path_name, "/dev/fwctl/%s", name);
     ul_ctx_t* ctx = mf->ul_ctx;
 
     ctx->connectx_flush = 0;
@@ -972,18 +975,18 @@ static int mlx5ctl_driver_open(mfile* mf, const char* name)
     if (mf->fd < 0) {
         return mf->fd;
     }
-    mf->tp = MST_MLX5_CONTROL_DRIVER;
-    ctx->mread4 = mtcr_mlx5ctl_driver_mread4;
-    ctx->mwrite4 = mtcr_mlx5ctl_driver_mwrite4;
-    ctx->mread4_block = mlx5ctl_driver_mread4_block;
-    ctx->mwrite4_block = mlx5ctl_driver_mwrite4_block;
+    mf->tp = MST_FWCTL_CONTROL_DRIVER;
+    ctx->mread4 = mtcr_fwctl_driver_mread4;
+    ctx->mwrite4 = mtcr_fwctl_driver_mwrite4;
+    ctx->mread4_block = fwctl_driver_mread4_block;
+    ctx->mwrite4_block = fwctl_driver_mwrite4_block;
     ctx->mclose = mtcr_driver_mclose;
     mf->bar_virtual_addr = NULL;
-    mlx5ctl_set_device_id(mf);
+    fwctl_set_device_id(mf);
 
-    mf->mlx5ctl_env_var_debug = getenv(MLX5CTL_ENV_VAR_DEBUG);
+    mf->fwctl_env_var_debug = getenv(FWCTL_ENV_VAR_DEBUG);
 
-    DBG_PRINTF("mlx5ctl: device id is %d:\n", mf->device_hw_id);
+    DBG_PRINTF("fwctl: device id is %d:\n", mf->device_hw_id);
     return 0;
 }
 
@@ -1699,8 +1702,8 @@ static MType mtcr_parse_name(const char* name,
         goto name_parsed;
     }
 
-    if(strstr(name, "mlx5ctl-mlx5_core")) {
-        return MST_MLX5_CONTROL_DRIVER;
+    if(strstr(name, "fwctl")) {
+        return MST_FWCTL_CONTROL_DRIVER;
     }
 
 parse_error:
@@ -2458,8 +2461,8 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         return mf;
         break;
 
-    case MST_MLX5_CONTROL_DRIVER:
-        rc = mlx5ctl_driver_open(mf, name);
+    case MST_FWCTL_CONTROL_DRIVER:
+        rc = fwctrl_driver_open(mf, name);
         if (rc) {
             goto open_failed;
         }
@@ -3009,15 +3012,15 @@ int maccess_reg_ul(mfile              * mf,
     }
 #endif
 
-    if (mf->tp == MST_MLX5_CONTROL_DRIVER) {
-        int method = (reg_method == MACCESS_REG_METHOD_GET) ? MLX5CTL_METHOD_READ : MLX5CTL_METHOD_WRITE;
-        rc = mlx5_control_access_register(mf->fd, reg_data,
-                                          reg_size, reg_id,
-                                          method, reg_status,
-                                          mf);
+    if (mf->tp == MST_FWCTL_CONTROL_DRIVER) {
+        int method = (reg_method == MACCESS_REG_METHOD_GET) ? FWCTL_METHOD_READ : FWCTL_METHOD_WRITE;
+        rc = fwctl_control_access_register(mf->fd, reg_data,
+                                           reg_size, reg_id,
+                                           method, reg_status,
+                                           mf);
         if (*reg_status) {
             int status = return_by_reg_status(*reg_status);
-            MLX5CTL_DEBUG_PRINT(mf, "reg status: %s. reg status code = %d\n", m_err2str(status), status)
+            FWCTL_DEBUG_PRINT(mf, "reg status: %s. reg status code = %d\n", m_err2str(status), status)
             return status;
         }
 
@@ -3268,7 +3271,7 @@ static int supports_icmd(mfile* mf)
 {
     u_int32_t dev_id = 0;
 
-    if (mf->tp == MST_MLX5_CONTROL_DRIVER) {
+    if (mf->tp == MST_FWCTL_CONTROL_DRIVER) {
         return 1;
     }
 
