@@ -177,6 +177,11 @@ extern "C"
      * Returns the device name as a "const char*"
      */
     const char* dm_dev_type2str(dm_dev_id_t type);
+    
+    /**
+     * Returns the device name as a "const char*"
+     */
+    const char* dm_dev_hw_id2str(unsigned int hw_dev_id);
 
     /**
      * Returns the device id
