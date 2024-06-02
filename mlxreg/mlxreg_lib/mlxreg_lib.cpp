@@ -291,7 +291,7 @@ void MlxRegLib::isAccessRegisterSupported(mfile* mf)
     struct icmd_hca_icmd_query_cap_general icmd_cap;
     int i = RETRIES_COUNT;
 
-    if (mf->tp == MST_MLX5_CONTROL_DRIVER) {
+    if (mf->tp == MST_FWCTL_CONTROL_DRIVER) {
         return;
     }
 

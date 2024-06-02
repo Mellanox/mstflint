@@ -32,12 +32,13 @@
 
 PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_builddir)/common -I$(top_srcdir)/mvpd $(COMPILER_FPIC)
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_builddir)/common -I$(top_srcdir)/mvpd -I$(top_srcdir)/dev_mgt $(COMPILER_FPIC)
 
 bin_PROGRAMS = \
     mstmread \
     mstmwrite \
     mstmcra \
+	mstfwctrl \
     mstmtserver \
     mstvpd \
     mstcongestion
@@ -77,6 +78,13 @@ mstmcra_SOURCES = mcra.c
 mstmcra_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
 mstmcra_LDADD = $(mstmcra_DEPENDENCIES) ${LDL}
 mstmcra_LDFLAGS = -static
+
+mstfwctrl_SOURCES = mstfwctrl.c
+mstfwctrl_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+               			 $(top_builddir)/dev_mgt/libdev_mgt.la \
+ 	                     $(top_builddir)/reg_access/libreg_access.la
+mstfwctrl_LDADD = $(mstfwctrl_DEPENDENCIES) ${LDL}
+mstfwctrl_LDFLAGS = -static
 
 mstmtserver_SOURCES = mtserver.c tcp.c tcp.h
 mstmtserver_CFLAGS = -DMST_UL

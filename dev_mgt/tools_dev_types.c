@@ -811,6 +811,22 @@ dm_dev_id_t dm_dev_sw_id2type(int sw_dev_id)
     return DeviceUnknown;
 }
 
+
+const char* dm_dev_hw_id2str(unsigned int hw_dev_id)
+{
+    const struct device_info* p = g_devs_info;
+
+    while (p->dm_id != DeviceUnknown) {
+        if (hw_dev_id == p->hw_dev_id) {
+            return p->name;
+        }
+        p++;
+    }
+
+    return NULL;
+}
+
+
 int dm_get_hw_ports_num(dm_dev_id_t type)
 {
     return get_entry(type)->port_num;
