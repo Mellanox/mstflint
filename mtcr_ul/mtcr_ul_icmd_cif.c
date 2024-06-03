@@ -1310,7 +1310,7 @@ int icmd_open(mfile* mf)
 #ifndef __FreeBSD__
     // Currently livefish check is supported for PCI devices & devices that map to CR.
     // ICMD is not supported while in livefish (GW is locked).
-    if ((is_pci_device(mf) || (mf->flags & MDEVS_TAVOR_CR)) && is_livefish_device(mf))
+    if ((is_pci_device(mf) || (mf->flags & MDEVS_TAVOR_CR)) && (is_livefish_device(mf) || is_zombiefish_device(mf)))
     {
         return ME_ICMD_NOT_SUPPORTED;
     }

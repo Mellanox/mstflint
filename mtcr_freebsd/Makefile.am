@@ -35,7 +35,8 @@ AM_CPPFLAGS = \
     -I$(top_srcdir) \
     -I$(top_srcdir)/common -I$(top_builddir)/common \
     -I$(top_srcdir)/include/mtcr_ul \
-    -I$(top_srcdir)/mtcr_ul
+    -I$(top_srcdir)/mtcr_ul \
+    -I$(top_srcdir)/dev_mgt
 
 noinst_LTLIBRARIES = libmtcr_ul.la
 

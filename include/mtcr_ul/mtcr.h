@@ -197,6 +197,8 @@ extern "C"
 
     int read_dword_from_conf_space(mfile* mf, u_int32_t offset, u_int32_t* data);
 
+    int is_zombiefish_device(mfile* mf);
+
 #ifdef __cplusplus
 }
 #endif
