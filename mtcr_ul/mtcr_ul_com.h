@@ -169,6 +169,8 @@ extern "C"
 
     void mtcr_fix_endianness(u_int32_t* buf, int len);
 
+    int is_zombiefish_device(mfile* mf);
+
 #ifdef __cplusplus
 }
 #endif
