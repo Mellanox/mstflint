@@ -50,6 +50,7 @@
 #include <compatibility.h>
 #include <bit_slice.h>
 #include <stdlib.h>
+#include "tools_dev_types.h"
 
 #include <unistd.h>
 
@@ -3026,4 +3027,39 @@ int is_remote_dev(mfile* mf)
     }
 
     return 0;
+}
+
+
+int is_zombiefish_device(mfile* mf)
+{
+    size_t gis_address = 0; // gis == global image status
+    u_int32_t gis = 0;
+    uint32_t gis_operational = 0; // for NICs and HCAs
+
+    u_int32_t hw_dev_id = 0;
+    if (mread4_old(mf, HW_ID_ADDR, &hw_dev_id) != 4) {
+        return 0;
+    }
+
+    switch (hw_dev_id & 0xffff)
+    {
+        case DeviceConnectX8_HwId:
+            gis_address = 0xE3044;
+            break;
+        case DeviceQuantum3_HwId:
+            gis_operational = 0x5E;
+            gis_address = 0x152080;
+            break;
+        default:
+            return 0; // Device does not support Zombiefish mode
+    }
+
+    int rc = mread4_old(mf, gis_address, &gis);
+    if (rc != 4)
+    {
+        // printf("-E- Failed to read global_image_status from CR space.\n");
+        return 0;
+    }
+
+    return (gis != gis_operational);
 }

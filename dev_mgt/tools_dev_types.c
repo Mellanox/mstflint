@@ -917,7 +917,7 @@ int dm_is_livefish_mode(mfile* mf)
         return 1;
     }
     dm_dev_id_t devid_t = DeviceUnknown;
-    u_int32_t   devid = 0;
+    u_int32_t   devid = 0; // hw dev ID
     u_int32_t   revid = 0;
     int         rc = dm_get_device_id(mf, &devid_t, &devid, &revid);
 
@@ -931,7 +931,8 @@ int dm_is_livefish_mode(mfile* mf)
     if (dm_is_4th_gen(devid_t)) {
         return (devid == swid - 1);
     } else {
-        return (devid == swid);
+        int zombiefish = is_zombiefish_device(mf);
+        return ((devid == swid) || zombiefish);
     }
 
     return 0;
