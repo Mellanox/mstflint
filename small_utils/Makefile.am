@@ -38,7 +38,6 @@ bin_PROGRAMS = \
     mstmread \
     mstmwrite \
     mstmcra \
-	mstfwctrl \
     mstmtserver \
     mstvpd \
     mstcongestion
@@ -79,12 +78,16 @@ mstmcra_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
 mstmcra_LDADD = $(mstmcra_DEPENDENCIES) ${LDL}
 mstmcra_LDFLAGS = -static
 
+if LINUX_BUILD
+bin_PROGRAMS += mstfwctrl
+
 mstfwctrl_SOURCES = mstfwctrl.c
 mstfwctrl_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
                			 $(top_builddir)/dev_mgt/libdev_mgt.la \
  	                     $(top_builddir)/reg_access/libreg_access.la
 mstfwctrl_LDADD = $(mstfwctrl_DEPENDENCIES) ${LDL}
 mstfwctrl_LDFLAGS = -static
+endif
 
 mstmtserver_SOURCES = mtserver.c tcp.c tcp.h
 mstmtserver_CFLAGS = -DMST_UL
