@@ -5591,7 +5591,11 @@ FlintStatus SgSubCommand::sgFs2()
     return FLINT_SUCCESS;
 }
 
+#ifndef MST_UL
 #define FW_RESET_MSG "To load new configuration run mlxfwreset or reboot machine"
+#else
+#define FW_RESET_MSG "To load new configuration run mstfwreset or reboot machine"
+#endif
 
 FlintStatus SgSubCommand::sgFs3()
 {
