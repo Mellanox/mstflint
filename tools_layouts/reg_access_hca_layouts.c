@@ -30,7 +30,7 @@
  */
 
 /***
-         *** This file was generated at "2024-04-09 11:16:39"
+         *** This file was generated at "2024-06-13 14:38:39"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input [REDACTED]/user/tools_layouts/adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils -o [REDACTED]/user/tools_layouts
          ***/
@@ -2929,9 +2929,9 @@ void reg_access_hca_mfrl_reg_ext_pack(const struct reg_access_hca_mfrl_reg_ext *
 	offset = 44;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->reset_state);
 	offset = 43;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pci_leaf_dsp_exist);
-	offset = 42;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pci_leaf_dsp_traffic_dis_commited);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pci_switch_exist);
+	offset = 40;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->pci_reset_req_method);
 	offset = 37;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->rst_type_sel);
 	offset = 35;
@@ -2953,9 +2953,9 @@ void reg_access_hca_mfrl_reg_ext_unpack(struct reg_access_hca_mfrl_reg_ext *ptr_
 	offset = 44;
 	ptr_struct->reset_state = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 43;
-	ptr_struct->pci_leaf_dsp_exist = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-	offset = 42;
-	ptr_struct->pci_leaf_dsp_traffic_dis_commited = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	ptr_struct->pci_switch_exist = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 40;
+	ptr_struct->pci_reset_req_method = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
 	offset = 37;
 	ptr_struct->rst_type_sel = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
 	offset = 35;
@@ -2978,9 +2978,9 @@ void reg_access_hca_mfrl_reg_ext_print(const struct reg_access_hca_mfrl_reg_ext 
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "reset_state          : " UH_FMT "\n", ptr_struct->reset_state);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pci_leaf_dsp_exist   : " UH_FMT "\n", ptr_struct->pci_leaf_dsp_exist);
+	fprintf(fd, "pci_switch_exist     : " UH_FMT "\n", ptr_struct->pci_switch_exist);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pci_leaf_dsp_traffic_dis_commited : " UH_FMT "\n", ptr_struct->pci_leaf_dsp_traffic_dis_commited);
+	fprintf(fd, "pci_reset_req_method : " UH_FMT "\n", ptr_struct->pci_reset_req_method);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "rst_type_sel         : " UH_FMT "\n", ptr_struct->rst_type_sel);
 	adb2c_add_indentation(fd, indent_level);
@@ -5605,3 +5605,4 @@ void reg_access_hca_reg_access_hca_Nodes_dump(const union reg_access_hca_reg_acc
 {
 	reg_access_hca_reg_access_hca_Nodes_print(ptr_struct, fd, 0);
 }
+
