@@ -30,7 +30,7 @@
  */
 
 /***
-         *** This file was generated at "2024-04-07 09:29:02"
+         *** This file was generated at "2024-06-13 19:31:27"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input [REDACTED]/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o [REDACTED]/user/tools_layouts
          ***/

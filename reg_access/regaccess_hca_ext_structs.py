@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2024-04-16 08:58:19"
+#    This file was generated at "2024-06-13 14:38:43"
 #    by:
 #      > gen_adb_data.py -g hca_prm_projects
 ###############################################################################
@@ -242,8 +242,8 @@ class MFRL_REG_EXT(ctypes.Structure):
         ("reset_trigger", ctypes.c_uint8),
         ("reset_type", ctypes.c_uint8),
         ("reset_state", ctypes.c_uint8),
-        ("pci_leaf_dsp_exist", ctypes.c_uint8),
-        ("pci_leaf_dsp_traffic_dis_commited", ctypes.c_uint8),
+        ("pci_switch_exist", ctypes.c_uint8),
+        ("pci_reset_req_method", ctypes.c_uint8),
         ("rst_type_sel", ctypes.c_uint8),
         ("pci_sync_for_fw_update_resp", ctypes.c_uint8),
         ("pci_sync_for_fw_update_start", ctypes.c_uint8),
