@@ -1257,6 +1257,10 @@ static int is_pci_device(mfile* mf)
 
 static int is_livefish_device(mfile* mf)
 {
+    if (!mf || !mf->dinfo)
+    {
+        return 0;
+    }
     // Make sure to update this table both in mtcr.c & mtcr_ul_com.c !
     static u_int32_t live_fish_ids[][2] = {{DeviceConnectX4_HwId, DeviceConnectX4_HwId},
                                            {DeviceConnectX4LX_HwId, DeviceConnectX4LX_HwId},
