@@ -54,56 +54,16 @@ class AdbParser:
             self.adb_dict = ET.parse(adb_path)
             self._build_xml_elements_dict()
             self._build_definitions()
-            self._dependant_layout_items = []
+            self._dependant_layout_items = set()
             # build a dictionary with only the adb nodes that contain segment id field.
             self.segment_id_nodes_dict = {}
             self._build_nodes_with_seg_id()
             # fix the offset since subnode should contain the offset with the addition of his parent.
             self._fix_nodes_offset(self.segment_id_nodes_dict)
-            # update the union dict in the layout item if it has union_selector attribute
-            self._update_union_dict()
-            # update all items that has dependency on other items, like conditions. TODO: the functions above should be incorporated into this
+            # update all items that has dependency on other items, like conditions and union-selectors.
             self._update_dependant_layout_items()
         except ResourceParseException as rpe:
             raise ResourceParseException("{0}\nFailed to parse the ADB file.".format(rpe))
-
-    def _update_union(self, layout_item):
-        """This method go over all the subitems and perform union dict updating
-            to all items recursively.
-        """
-        try:
-            if layout_item.uSelector and layout_item.uSelector.selector_full_path:
-                selector_field, full_path, offset, size = self._get_explicit_field_details(layout_item.parent, layout_item.uSelector.selector_full_path)
-                layout_item.uSelector.set_union_properties(self._get_enum_dict_from_field(selector_field), full_path, offset, size)
-            for item in layout_item.subItems:
-                self._update_union(item)
-        except ResourceParseException as rpe:
-            raise ResourceParseException("{0}\nFailed to update unions.".format(rpe))
-
-    def _update_union_dict(self):
-        """This method go over all the segments in the dictionary and
-        send them to union dict update.
-        """
-        for seg in self.segment_id_nodes_dict.values():
-            self._update_union(seg)
-
-    def check_if_exists(self, operand, item, seg):
-        founded_item = None
-        if ('.' not in operand or "$(parent)" in operand):
-            if ("$(parent)" in operand):
-                operand = ''.join(operand.split("$(parent)."))
-            for item_it in item.parent.subItems:
-                if (item_it.name == operand):
-                    return item_it
-        if ("$(segment)" in operand or '.' in operand):
-            if ("$(segment)" in operand):
-                operand = operand.replace("$(segment)", seg.name)
-            for item_it in seg.subItems:
-                if (item_it.full_path == operand):
-                    return item_it
-                founded_item = self.check_if_exists(operand, item, item_it)
-
-        return founded_item
 
     def _update_dependant_layout_items(self):
         """This method go over all the segments and update fields with conditions."""
@@ -111,6 +71,8 @@ class AdbParser:
         for layout_item in self._dependant_layout_items:
             if layout_item.condition:
                 layout_item.condition.update_variables(layout_item)
+            if layout_item.uSelector:
+                layout_item.uSelector.update_references(layout_item)
 
     def _create_enum_dict(self, enum_lst: list):
         """This function gets a list of enums and export them to a dictionary.
@@ -126,53 +88,6 @@ class AdbParser:
                 raise ResourceParseException("Error - Failed to parse enum attribute '{0}'".format(str(enum)))
             enums_dict[int(enum[1], 0)] = enum[0]
         return enums_dict
-
-    def _get_enum_dict_from_field(self, selector_field: ET.Element):
-        """This method gets field that contains enums for union_selector and build a dictionary with
-        it's values and enums.
-        """
-        # in case the enum was already parsed - we should always get in this if
-        if selector_field.enum_dict:
-            return selector_field.enum_dict
-
-        if selector_field.attrs['enum'] == '':
-            raise ResourceParseException("Error - enum attribute for field '{0}' is empty!".format(selector_field.attrs['name']))
-
-        enum_lst = selector_field.attrs['enum'].split(',')
-        selector_dict = self._create_enum_dict(enum_lst)
-        if selector_dict is None:
-            raise ResourceParseException("Error - could not create the enums dictionary for field '{0}'".format(selector_field.attrs['name']))
-
-        return selector_dict
-
-    def _get_explicit_field_details(self, layout_item, relative_path: str):
-        """This method gets a node's name and a relative path and returns the full path to the field, the
-        explicit field to the enum related to the union selector and it's offset and size.
-        """
-        path = relative_path.split('.')
-        if len(path) <= 1:
-            raise ResourceParseException("Error - wrong relative path '{0}' for node '{1}'".format(relative_path, layout_item.name))
-        full_path = path
-        if path[0] in CONST.PARENT_PREFIX_LIST:
-            current_node = layout_item
-            full_path[0] = layout_item.name
-        else:
-            current_node = self._retrieve_layout_item_by_name(path[0])
-        try:
-            if current_node is None:
-                raise ResourceParseException("Failed to find node: '{0}'".format(current_node.name))
-            for child in path[1:]:
-                found_leaf = False
-                for item in current_node.subItems:
-                    if item.name == child:
-                        current_node = item
-                        found_leaf = True
-                        break
-                if current_node is None or not found_leaf:
-                    raise ResourceParseException("Error - Failed to find field '{0}' in node '{1}', wrong path '{2}'".format(child, current_node.name, relative_path))
-            return current_node, full_path, current_node.offset, current_node.size
-        except ResourceParseException as rpe:
-            raise ResourceParseException("{0}\nFailed to get the explicit field.".format(rpe))
 
     def _build_xml_elements_dict(self):
         self._node_xml_elements = {}
@@ -402,16 +317,6 @@ class AdbParser:
                 if adb_layout_item:
                     if is_unlimited_array:
                         adb_layout_item.is_unlimited_array = True
-                    else:
-                        if 'union_selector' in item.attrib:
-                            adb_layout_item.uSelector = AdbUnionSelector()
-                            adb_layout_item.uSelector.selector_full_path = item.attrib['union_selector']
-                        if 'enum' in item.attrib and item.attrib['enum'] != '':
-                            enums_lst = item.attrib['enum'].split(',')
-                            enums_dict = self._create_enum_dict(enums_lst)
-                            if enums_dict is None:
-                                raise ResourceParseException("Error - could not create the enums dictionary for node '{0}'".format(item.attrib['name']))
-                            adb_layout_item.enum_dict = enums_dict
                     sub_items.append(adb_layout_item)
         return sub_items
 
@@ -471,10 +376,23 @@ class AdbParser:
 
         if node_element:
             adb_layout_item.nodeDesc = self._node_to_node_desc(node_element)  # For leafs must be None
+
         condition_attr = field_element.attrib.get("condition")
         if (parent and parent.nodeDesc.is_conditional and condition_attr and condition_attr.strip() != ""):
             adb_layout_item.condition = ConditionParser(condition_attr, self.if_dict)
-            self._dependant_layout_items.append(adb_layout_item)
+            self._dependant_layout_items.add(adb_layout_item)
+
+        us_attr = field_element.attrib.get("union_selector")
+        if adb_layout_item.nodeDesc and adb_layout_item.nodeDesc.isUnion and us_attr and us_attr.strip():
+            adb_layout_item.uSelector = AdbUnionSelector(us_attr)
+            self._dependant_layout_items.add(adb_layout_item)
+
+        enum_attr = field_element.attrib.get("enum")
+        try:
+            if enum_attr:
+                adb_layout_item.adb_enum = AdbEnum(enum_attr.strip())
+        except ResourceParseException as rpe:
+            raise ResourceParseException("Error - could not create the enums dictionary for node '{0}'.\n{1}".format(adb_layout_item.name, rpe))
 
         try:
             if node_element:
@@ -492,9 +410,7 @@ class AdbParser:
         node_descriptor = AdbNodeDesc()
         # node_description.name = ""
         # node_description.size = 0  # Size in bits
-        is_union = node.attrib.get("attr_is_union")
-        if is_union:
-            node_descriptor.isUnion = self._parse_union(is_union)
+        node_descriptor.isUnion = int(node.attrib.get("attr_is_union", 0)) > 0
         node_descriptor.is_conditional = int(node.attrib.get("is_conditional", 0)) > 0
         # node_description.desc = ""
         # node_description.fields = []  # List of "AdbFieldDesc" objects
@@ -503,13 +419,6 @@ class AdbParser:
         # node_description.fileName = ""
         # node_description.lineNumber = -1
         return node_descriptor
-
-    def _parse_union(self, union_str):
-        """This method parse the 'is union' attribute.
-        """
-        if union_str == "1":
-            return True
-        return False
 
     def _parse_node_size(self, size_str):
         """This method return the size of the 'size' attribute in bits.
@@ -608,7 +517,7 @@ class AdbLayoutItem(object):
         self.attrs = {}              # Attributes after evaluations and array expanding
         self.vars = {}               # all variable relevant to this item after evaluation
         self.uSelector = None        # data structure that represent the union-selector properties
-        self.enum_dict = None        # in case of being an enum element, holds the key-value of the enum
+        self.adb_enum = None        # in case of being an enum element, holds the key-value of the enum
         self.condition = None
         self.is_unlimited_array = False
 
@@ -670,18 +579,49 @@ class AdbNodeDesc(object):
 
 
 ####################################################################
+class AdbEnum(object):
+    """ Represents an ADABE enum  """
+
+    ##########################
+    def __init__(self, enum_string):
+
+        self.num_to_string = {}
+        self.string_to_num = {}
+
+        enums_lst = enum_string.split(',')
+        if len(enums_lst) == 0:
+            raise ResourceParseException("Invalid enum format, or empty '{0}'".format(enum_string))
+
+        for enum in enums_lst:
+            enum = enum.split('=')
+            if len(enum) != 2 or not enum[1].strip():
+                raise ResourceParseException("Invalid enum pair '{0}', in enum {1}".format(str(enum), enum_string))
+            numeric = int(enum[1], 0)
+            string = enum[0].strip()
+            self.num_to_string[numeric] = string
+            self.string_to_num[string] = numeric
+
+
+####################################################################
 class AdbUnionSelector(object):
     """ Represents an ADABE union-selector descriptor, objects of this type are immutable """
 
     ##########################
-    def __init__(self):
-        self.dict = None               # mapping between the value and the enum, None if empty
-        self.full_path = None          # full path to the selector field, None if empty
-        self.offset = None             # absolute offset from the begining of the segment until the selector field (by layout)
-        self.size = None               # size of the selector itself
+    def __init__(self, selector_path=None):
+        self.select_to_layout_item = {}   # mapping between the value and the enum, None if empty
+        self.full_path = selector_path    # full path to the selector field, None if empty
+        self.selector_layout_item = None
 
-    def set_union_properties(self, union_dict, full_path, offset, size):
-        self.dict = union_dict
-        self.full_path = full_path
-        self.offset = offset
-        self.size = size
+    def update_references(self, dependant_layout_item):
+        self.selector_layout_item = AdbParser.get_layout_item_by_path(self.full_path, dependant_layout_item)
+
+        if not self.selector_layout_item:
+            raise ResourceParseException("Failed to find selector: '{0}' for node: '{1}'".format(self.full_path, dependant_layout_item.name))
+        if not self.selector_layout_item.adb_enum:
+            raise ResourceParseException("Selector field - '{0}' is not an enum".format(self.selector_layout_item.name))
+        for sub_item in dependant_layout_item.subItems:
+            selected_by = sub_item.attrs.get("selected_by")
+            if selected_by:
+                numeric_select = self.selector_layout_item.adb_enum.string_to_num.get(selected_by.strip())
+                if numeric_select is not None:
+                    self.select_to_layout_item[numeric_select] = sub_item
