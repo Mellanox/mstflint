@@ -131,6 +131,7 @@ class RawData:
     def _retrieve_raw_data_from_json_file(self):
         """This method go over the json file and collect the raw data.
         """
+        self._segments_raw_data = bytearray()
         with open(self._file_path) as f:  # try open file and open it as json
             data_dict = json.load(f)
             self._collect_all_data_sections(data_dict)
@@ -145,7 +146,7 @@ class RawData:
                 else:
                     for i in range(0, len(value), 4):
                         dw = self._build_dw_from_bytes(value[i], value[i + 1], value[i + 2], value[i + 3])
-                        self._segments_raw_data.append(dw)
+                        self._segments_raw_data.extend(dw.to_bytes(cs.DWORD_SIZE, sys.byteorder))
         elif isinstance(json_node, list):
             for node in json_node:
                 self._collect_all_data_sections(node)
