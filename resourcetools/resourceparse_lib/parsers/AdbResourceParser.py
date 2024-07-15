@@ -95,7 +95,7 @@ class AdbResourceParser(ResourceParser):
                 + self._segment_map[seg.get_type()].name
             if not self._is_seg_size_match_adb_seg_size(len(seg.get_data()), seg.get_type()):
                 seg.add_parsed_data("Warning:{}".format(cs.WARNING_SIZE_DOESNT_MATCH.format(
-                    len(seg.get_data()) - cs.RESOURCE_SEGMENT_START_OFFSET_IN_DW,
+                    (len(seg.get_data()) // cs.DWORD_SIZE) - cs.RESOURCE_SEGMENT_START_OFFSET_IN_DW,
                     math.ceil(self._segment_map[seg.get_type()].size / 32))))
             seg_for_parse = True
         else:
@@ -146,7 +146,7 @@ class AdbResourceParser(ResourceParser):
         dw_counter = 0
         seg.add_parsed_data("RAW DATA:")
 
-        for dw in struct.unpack("{}I".format(len(seg.get_data()) // 4), seg.get_data()):
+        for dw in struct.unpack("{}I".format(len(seg.get_data()) // cs.DWORD_SIZE), seg.get_data()):
             hex_list.append('0x{0:0{1}X} '.format(dw, 8))
             dw_counter += 1
 
