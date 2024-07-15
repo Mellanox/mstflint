@@ -121,12 +121,9 @@ class AdbResourceParser(ResourceParser):
             segment_layout_layout = self._segment_map[seg.get_type()]
             segment_parse_method = segment_layout_layout.parse_method
             if segment_parse_method == 'adb':
-                for field in self._segment_map[seg.get_type()].subItems:
-                    if field.nodeDesc and field.nodeDesc.isUnion and field.uSelector:
-                        self._parse_union_selector_field(field, seg)
-                    else:
-                        prefix = self._build_union_prefix(field.nodeDesc)
-                        self._parse_seg_field(field, prefix + field.name, 0, seg)
+                for field in self._get_union_selected_items(segment_layout_layout):
+                    prefix = self._build_union_prefix(field.nodeDesc)
+                    self._parse_seg_field(field, prefix + field.name, 0, seg)
                 if self._raw:
                     self._build_and_add_raw_data(seg)
             else:
@@ -189,15 +186,18 @@ class AdbResourceParser(ResourceParser):
             return False
         return True
 
-    def _parse_union_selector_field(self, field, seg):
+    def _get_union_selected_items(self, field):
         """This method parse union field and present only the relevant field
         (selected by the selector)
         """
-        union_field_offset = calculate_aligned_offset(field.uSelector.offset, field.uSelector.size)
-        selected_field_enum = field.uSelector.dict[int(self._current_bit_array[union_field_offset:union_field_offset + field.uSelector.size], 2)]
-        for item in field.subItems:
-            if item.attrs['selected_by'] == selected_field_enum:
-                self._parse_seg_field(item, item.name, 0, seg)
+        if not field.uSelector:
+            return field.subItems
+
+        selector_field_size = field.uSelector.selector_layout_item.size
+        selector_field_offset = calculate_aligned_offset(field.uSelector.selector_layout_item.offset, selector_field_size)
+        selected_layout_item = field.uSelector.select_to_layout_item.get(int(self._current_bit_array[selector_field_offset:selector_field_offset + selector_field_size], 2))
+
+        return [selected_layout_item] if selected_layout_item else field.subItems
 
     def _parse_seg_field(self, field, field_str, offset_shift, seg):  # offset_shift is 0 unless parsing a sub-tree of varaible-size arrays
         """This method is a recursive method that build the inner fields
@@ -219,11 +219,11 @@ class AdbResourceParser(ResourceParser):
             element_field_str = field_str + array_suffix
             element_offset_shift = offset_shift + field.size * i
 
-            if field.enum_dict:
+            if field.adb_enum:
                 self._parse_enum_field(field, element_field_str, element_offset_shift, seg)
 
             elif len(field.subItems) > 0:
-                for sub_field in field.subItems:
+                for sub_field in self._get_union_selected_items(field):
                     prefix = self._build_union_prefix(sub_field.nodeDesc)
                     self._parse_seg_field(sub_field, element_field_str + "." + prefix + sub_field.name, element_offset_shift, seg)
             else:
@@ -240,8 +240,9 @@ class AdbResourceParser(ResourceParser):
         field_offset = calculate_aligned_offset(field.offset + offset_shift, field.size)
         enum_value = int(self._current_bit_array[field_offset:field_offset + field.size], 2)
         if len(self._current_bit_array) >= (field_offset + field.size):
-            if enum_value in field.enum_dict:
-                seg.add_parsed_data("{} = ({} = {})".format(field_str, field.enum_dict[enum_value], hex(enum_value)))
+            enum_string = field.adb_enum.num_to_string.get(enum_value)
+            if enum_string is not None:
+                seg.add_parsed_data("{} = ({} = {})".format(field_str, enum_string, hex(enum_value)))
             else:
                 seg.add_parsed_data("{} = {}".format(field_str, hex(enum_value)))
 
