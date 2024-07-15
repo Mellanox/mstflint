@@ -46,10 +46,6 @@ RESOURCE_DUMP_SEGMENT_TYPE_REFERENCE = 0xfffd
 
 # segment start/end specify where the 'type' attr starts and ends in the raw_data of each segment.
 # should be 0-16 bits
-SEGMENT_SIZE_DWORD_LOCATION = 0
-SEGMENT_AGGREGATE_DWORD_LOCATION = 1
-SEGMENT_AGGREGATE_BIT = 31
-
 RAW_DATA_FILE_TYPE_BIN = 0
 RAW_DATA_FILE_TYPE_HUMAN_READABLE = 1
 RAW_DATA_FILE_TYPE_JSON = 2
