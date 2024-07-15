@@ -90,14 +90,20 @@ class AdbResourceParser(ResourceParser):
         """
 
         seg_for_parse = False
+        segment_parse_method = "adb"
+        segment_layout = None
+
         if seg.get_type() in self._segment_map:
-            segment_name = self._build_union_prefix(self._segment_map[seg.get_type()].nodeDesc) \
-                + self._segment_map[seg.get_type()].name
-            if not self._is_seg_size_match_adb_seg_size(len(seg.get_data()), seg.get_type()):
+            seg_for_parse = True
+            segment_layout = self._segment_map[seg.get_type()]
+            segment_parse_method = segment_layout.parse_method
+
+            segment_name = self._build_union_prefix(segment_layout.nodeDesc) \
+                + segment_layout.name
+            if segment_parse_method == "adb" and not self._is_seg_size_match_adb_seg_size(len(seg.get_data()), seg.get_type()):
                 seg.add_parsed_data("Warning:{}".format(cs.WARNING_SIZE_DOESNT_MATCH.format(
                     (len(seg.get_data()) // cs.DWORD_SIZE) - cs.RESOURCE_SEGMENT_START_OFFSET_IN_DW,
-                    math.ceil(self._segment_map[seg.get_type()].size / 32))))
-            seg_for_parse = True
+                    math.ceil(segment_layout.size / 32))))
         else:
             # reference segment is missing in the adb (this will help the user understand the type)
             if seg.get_type() == cs.RESOURCE_DUMP_SEGMENT_TYPE_REFERENCE:
@@ -118,10 +124,8 @@ class AdbResourceParser(ResourceParser):
         self._current_bit_array = ''.join(format(x, '08b') for x in bytes_array)
 
         if seg_for_parse:
-            segment_layout_layout = self._segment_map[seg.get_type()]
-            segment_parse_method = segment_layout_layout.parse_method
             if segment_parse_method == 'adb':
-                for field in self._get_union_selected_items(segment_layout_layout):
+                for field in self._get_union_selected_items(segment_layout):
                     prefix = self._build_union_prefix(field.nodeDesc)
                     self._parse_seg_field(field, prefix + field.name, 0, seg)
                 if self._raw:

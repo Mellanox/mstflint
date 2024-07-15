@@ -49,7 +49,7 @@ class ResourceSegment(Segment):
     """this class is responsible for holding Resource segment data.
     """
 
-    AGGREGATE_BIT_MASK = 0x1000000
+    AGGREGATE_BIT_MASK = 0x00000001
 
     _segment_type_id = constants.RESOURCE_DUMP_SEGMENT_TYPE_RESOURCE
 
