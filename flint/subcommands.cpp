@@ -4599,6 +4599,12 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         // blankGuids only exsists in FS2 image type in mlxfwops why?
         printf(FLINT_BLANK_GUIDS_WARNING);
     }
+
+    if (fwInfo.fs3_info.ini_file_version)
+    {
+        printf("INI revision:          0x%x\n", fwInfo.fs3_info.ini_file_version);
+    }
+
     return FLINT_SUCCESS;
 }
 

@@ -1804,6 +1804,7 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     query->sec_boot = mgir.fw_info.sec_boot;
     query->encryption = mgir.fw_info.encryption;
     query->signed_fw = _compsQueryMap[FwComponent::COMPID_BOOT_IMG].comp_cap.signed_updates_only;
+    query->ini_file_version = mgir.fw_info.ini_file_version;
 
     /* Since in switches MGIR 'dev' field is used to indicate dev-branch instead of the original purpose for dev-secure, */
     /* we now read from a new field called 'dev_sc' to determine if the switch is dev-secure */

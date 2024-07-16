@@ -136,6 +136,7 @@ typedef struct
     bool sec_boot;
     life_cycle_t life_cycle;
     bool encryption;
+    u_int32_t ini_file_version;
 
 } fwInfoT;
 
