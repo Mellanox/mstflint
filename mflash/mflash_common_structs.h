@@ -91,29 +91,33 @@ typedef struct write_protect_info
 ////////////////////////////////////////
 typedef enum StFlashCommand
 {
-    SFC_SE = 0xD8,            // Sector erase
-    SFC_4SE = 0xDC,           // Sector erase 4B addr
-    SFC_SSE = 0x20,           // Subsector erase
-    SFC_4SSE = 0x21,          // Subsector erase 4B addr
-    SFC_PP = 0x02,            // Page program
-    SFC_4PP = 0x12,           // Page program 4B addr
-    SFC_READ = 0x03,          // Read data
-    SFC_4READ = 0x13,         // Read data 4B addr
-    SFC_FAST_READ = 0x3B,     // Fast read dual output
-    SFC_4FAST_READ = 0x3C,    // Fast read dual output 4B addr
-    SFC_RES = 0xAB,           // Release power-down
-    SFC_JEDEC = 0x9F,         // Read JEDEC ID
-    SFC_RDSR = 0x05,          // Read status register
-    SFC_WRSR2 = 0x31,         // Write status register 2
-    SFC_RDSR2 = 0x35,         // Read status register 2
-    SFC_WRSR3_WINBOND = 0x11, // Write status register 3 (WINBOND)
-    SFC_RDSR3_WINBOND = 0x15, // Read status register 3 (WINBOND)
-    SFC_WREN = 0x06,          // Write enable
+    SFC_SE = 0xD8,                      // Sector erase
+    SFC_4SE = 0xDC,                     // Sector erase 4B addr
+    SFC_SSE = 0x20,                     // Subsector erase
+    SFC_4SSE = 0x21,                    // Subsector erase 4B addr
+    SFC_PP = 0x02,                      // Page program
+    SFC_4PP = 0x12,                     // Page program 4B addr
+    SFC_READ = 0x03,                    // Read data
+    SFC_4READ = 0x13,                   // Read data 4B addr
+    SFC_FAST_READ = 0x3B,               // Fast read dual output
+    SFC_4FAST_READ = 0x3C,              // Fast read dual output 4B addr
+    SFC_RES = 0xAB,                     // Release power-down
+    SFC_JEDEC = 0x9F,                   // Read JEDEC ID
+    SFC_RDSR = 0x05,                    // Read status register
+    SFC_WRSR2 = 0x31,                   // Write status register 2
+    SFC_RDSR2 = 0x35,                   // Read status register 2
+    SFC_WRSR3_WINBOND = 0x11,           // Write status register 3 (WINBOND)
+    SFC_RDSR3_WINBOND = 0x15,           // Read status register 3 (WINBOND)
+    SFC_SERPNV_ISSI = 0x85,             // write status extended read register
+    SFC_RDERP_ISSI = 0x81,              // read status extended read register
+    SFC_WRSR3_MICRON_MX25K16XXX = 0x11, // Write status register 3 (MICRON)
+    SFC_RDSR3_MICRON_MX25K16XXX = 0x15, // Read status register 3 (MICRON)
+    SFC_WREN = 0x06,                    // Write enable
     SFC_RDNVR = 0xB5,
-    SFC_RDCR = 0x15, // Read configuration register
+    SFC_RDCR = 0x15,                    // Read configuration register
     SFC_WRNVR = 0xB1,
-    SFC_WRSR = 0x01,      // Write status register
-    SFC_WRSR_GIGA = 0x31, // Write status register (GIGA)
+    SFC_WRSR = 0x01,                    // Write status register
+    SFC_WRSR_GIGA = 0x31,               // Write status register (GIGA)
     SFC_RDFR = 0x48,
     SFC_WRFR = 0x42
 } StFlashCommand_t;
