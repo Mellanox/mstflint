@@ -100,6 +100,8 @@ extern "C"
         DeviceCableCMIS,
         DeviceCableCMISPaging,
         DeviceBW00,    // Blackwell
+        DeviceGB100,
+        DeviceGR100,
         DeviceArcusPTC, // ArcusP Test Chip
         DeviceArcusP,
         DeviceArcusE,
@@ -258,6 +260,21 @@ extern "C"
      * A predicate returning if the device supports Function Per Port
      */
     int dm_is_fpp_supported(dm_dev_id_t type);
+
+    /**
+     * A predicate returning if the device is a gb100
+     */
+    int dm_is_gb100(dm_dev_id_t type);
+
+    /**
+     * A predicate returning if the device is a gpu device
+     */
+    int dm_is_gpu(dm_dev_id_t type);
+
+    /**
+     * A predicate returning if the device is a gr100
+     */
+    int dm_is_gr100(dm_dev_id_t type);
 
     int dm_is_4th_gen(dm_dev_id_t type);
 
