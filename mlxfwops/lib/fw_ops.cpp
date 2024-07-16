@@ -44,6 +44,7 @@
 #include "fs2_ops.h"
 #include "fsctrl_ops.h"
 #include "fs_comps_factory.h"
+#include "dev_mgt/tools_dev_types.h"
 
 #ifdef CABLES_SUPP
 #include "cablefw_ops.h"
@@ -915,6 +916,29 @@ const char* file_handle_type_to_str(fw_hndl_type_t type)
     }
 }
 
+bool FwOperations::IsDeviceSupported(fw_ops_params_t& fwParams)
+{
+    mfile* mf = mopen_adv(fwParams.mstHndl, (MType)(MST_DEFAULT | MST_LINKX_CHIP));
+    if (!mf)
+    {
+        WriteToErrBuff(fwParams.errBuff, (char*)"Failed to open the device.", fwParams.errBuffSize);
+        return false;
+    }
+
+    dm_dev_id_t devid_t = DeviceUnknown;
+    u_int32_t devid = 0;
+    u_int32_t revid = 0;
+    dm_get_device_id(mf, &devid_t, &devid, &revid);
+    if (dm_is_gpu(devid_t))
+    {
+        mclose(mf);
+        WriteToErrBuff(fwParams.errBuff, (char*)"GPUs are not supported.", fwParams.errBuffSize);
+        return false;
+    }
+    mclose(mf);
+    return true;
+}
+
 FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
 {
     DPRINTF(("FwOperations::FwOperationsCreate\n"));
@@ -923,6 +947,10 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
     FBase* ioAccess = (FBase*)NULL;
     FwCompsMgr* fwCompsAccess = (FwCompsMgr*)NULL;
     bool getFwFormatFromImg = false;
+    if (!IsDeviceSupported(fwParams))
+    {
+        return (FwOperations*)NULL;
+    }
 #ifdef CABLES_SUPP
     if (fwParams.hndlType == FHT_CABLE_DEV)
     {
