@@ -118,8 +118,6 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 mkdir -p %{buildroot}/%{_includedir}/mtcr_ul
 ln -s %{_includedir}/mstflint/mtcr.h %{buildroot}/%{_includedir}/mtcr_ul/mtcr.h
 ln -s %{_includedir}/mstflint/mtcr_com_defs.h %{buildroot}/%{_includedir}/mtcr_ul/mtcr_com_defs.h
-# link mtcr_ul to old lib path
-ln -s %{_libdir}/mstflint/libmtcr_ul.a %{buildroot}/%{_libdir}/libmtcr_ul.a 
 
 %clean
 rm -rf $RPM_BUILD_ROOT
