@@ -236,6 +236,7 @@ bool FsCtrlOperations::FsIntQuery()
     _fsCtrlImgInfo.sec_boot = fwQuery.sec_boot;
     _fsCtrlImgInfo.life_cycle = fwQuery.life_cycle;
     _fsCtrlImgInfo.encryption = fwQuery.encryption;
+    _fsCtrlImgInfo.ini_file_version = fwQuery.ini_file_version;
     std::vector<FwComponent> compsMap;
     if (!_fwCompsAccess->getFwComponents(compsMap, false))
     {
