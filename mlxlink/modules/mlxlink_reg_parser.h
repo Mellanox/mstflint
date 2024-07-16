@@ -74,6 +74,7 @@ public:
     u_int32_t _portType;
     int _planeInd;
     bool _isHCA;
+    bool _isSwControled;
 };
 
 #endif /* MLXLINK_REG_PARSER_H */

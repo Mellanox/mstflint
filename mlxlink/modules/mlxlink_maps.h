@@ -154,6 +154,7 @@ private:
     void ethSpeedMapping();
     void extEthSpeedMapping();
     void ibSpeedMapping();
+    void nvlinkSpeedMapping();
     void speedToLanesMapping();
     void initPortSpeedMapping();
     void initPrbsMapping();
@@ -189,6 +190,7 @@ private:
     void portStateMapping();
     void techMapping();
     void pcieEnumMapping();
+    void initEnhancedDebugMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -228,6 +230,7 @@ public:
     std::map<u_int32_t, std::string> _moduleRxAmpCap;
     std::map<u_int32_t, std::string> _pepcStatus;
     std::map<u_int32_t, string> _IBSpeed2Str;
+    std::map<u_int32_t, string> _NVLINKSpeed2Str;
     std::map<u_int32_t, string> _EthExtSpeed2Str;
     std::map<u_int32_t, u_int32_t> _IBSpeed2gNum;
     std::map<u_int32_t, u_int32_t> _ETHSpeed2gNum;

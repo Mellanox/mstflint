@@ -46,6 +46,7 @@ MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0)
     _planeInd = -1;
 
     _isHCA = false;
+    _isSwControled = false;
 }
 
 MlxlinkRegParser::~MlxlinkRegParser() {}

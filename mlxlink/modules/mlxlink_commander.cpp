@@ -76,7 +76,9 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _ignorePortType = true;
     _ignorePortStatus = true;
     _isGboxPort = false;
+    _isSwControled = false;
     _ignoreIbFECCheck = true;
+    _isNVLINK = false;
     _protoAdmin = 0;
     _protoAdminEx = 0;
     _speedBerCsv = 0;
@@ -438,6 +440,27 @@ void MlxlinkCommander::handlePortStr(const string& portStr)
 
     strToUint32((char*)portParts[0].c_str(), _userInput._labelPort);
     _userInput._portSpecified = true;
+}
+
+void MlxlinkCommander::updateSwControlStatus()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_MMCR, GET);
+    }
+    catch (MlxRegException& exc)
+    {
+        _isSwControled = false;
+        return;
+    }
+    u_int32_t currentModuleControl =
+      getFieldValue("curr_module_control[" + to_string((_userInput._labelPort - 1) / 32) + "]");
+    u_int32_t portMask = 0;
+    portMask = portMask | 1 << ((_userInput._labelPort - 1) % 32);
+    if (portMask & currentModuleControl)
+    {
+        _isSwControled = true;
+    }
 }
 
 void MlxlinkCommander::labelToLocalPort()
@@ -937,7 +960,9 @@ string MlxlinkCommander::activeSpeed2Str(u_int32_t mask, bool extended)
     {
         return _mlxlinkMaps->_EthExtSpeed2Str[mask];
     }
-    return (_protoActive == IB) ? _mlxlinkMaps->_IBSpeed2Str[mask] : _mlxlinkMaps->_ETHSpeed2Str[mask];
+    return (_isNVLINK)          ? _mlxlinkMaps->_NVLINKSpeed2Str[mask] :
+           (_protoActive == IB) ? _mlxlinkMaps->_IBSpeed2Str[mask] :
+                                  _mlxlinkMaps->_ETHSpeed2Str[mask];
 }
 
 void MlxlinkCommander::getCableParams()
@@ -1358,29 +1383,32 @@ string MlxlinkCommander::getCableTypeStr(u_int32_t cableType)
 
 void MlxlinkCommander::prepareStaticInfoSection(bool valid)
 {
-    u_int32_t cableVendor = getFieldValue("cable_vendor");
-    string complianceStr = getComplianceLabel(getFieldValue("ethernet_compliance_code"),
-                                              getFieldValue("ext_ethernet_compliance_code"),
-                                              (cableVendor != NVIDIA && cableVendor != MELLANOX));
-    u_int32_t cableLength = getFieldValue("cable_length");
+    if (!_isSwControled)
+    {
+        u_int32_t cableVendor = getFieldValue("cable_vendor");
+        string complianceStr = getComplianceLabel(getFieldValue("ethernet_compliance_code"),
+                                                  getFieldValue("ext_ethernet_compliance_code"),
+                                                  (cableVendor != NVIDIA && cableVendor != MELLANOX));
+        u_int32_t cableLength = getFieldValue("cable_length");
 
-    setPrintVal(_moduleInfoCmd, "Identifier", _plugged ? getCableIdentifier(_cableIdentifier) : "N/A", ANSI_COLOR_RESET,
-                true, valid);
-    setPrintVal(_moduleInfoCmd, "Compliance", complianceStr, ANSI_COLOR_RESET, true, valid);
-    setPrintVal(_moduleInfoCmd, "Cable Technology", _plugged ? getCableTechnologyStr(_cableTechnology) : "N/A",
-                ANSI_COLOR_RESET, true, valid);
-    setPrintVal(_moduleInfoCmd, "Cable Type", getCableTypeStr(getFieldValue("cable_type")), ANSI_COLOR_RESET, true,
-                valid);
-    setPrintVal(_moduleInfoCmd, "OUI", _plugged ? getOui(cableVendor) : "N/A", ANSI_COLOR_RESET, true, valid);
-    setPrintVal(_moduleInfoCmd, "Vendor Name", getAscii("vendor_name", 16), ANSI_COLOR_RESET, true, valid);
-    setPrintVal(_moduleInfoCmd, "Vendor Part Number", getAscii("vendor_pn", 16), ANSI_COLOR_RESET, true, valid);
-    setPrintVal(_moduleInfoCmd, "Vendor Serial Number", getAscii("vendor_sn", 16), ANSI_COLOR_RESET, true, valid);
-    setPrintVal(_moduleInfoCmd, "Rev", getVendorRev(getFieldValue("vendor_rev")), ANSI_COLOR_RESET, true, valid);
-    setPrintVal(_moduleInfoCmd, "Wavelength [nm]",
-                (_cableMediaType == PASSIVE) ? "N/A" : to_string(getFieldValue("wavelength")), ANSI_COLOR_RESET, true,
-                valid);
-    setPrintVal(_moduleInfoCmd, "Transfer Distance [m]", getCableLengthStr(cableLength, _cmisCable), ANSI_COLOR_RESET,
-                true, valid);
+        setPrintVal(_moduleInfoCmd, "Identifier", _plugged ? getCableIdentifier(_cableIdentifier) : "N/A",
+                    ANSI_COLOR_RESET, true, valid);
+        setPrintVal(_moduleInfoCmd, "Compliance", complianceStr, ANSI_COLOR_RESET, true, valid);
+        setPrintVal(_moduleInfoCmd, "Cable Technology", _plugged ? getCableTechnologyStr(_cableTechnology) : "N/A",
+                    ANSI_COLOR_RESET, true, valid);
+        setPrintVal(_moduleInfoCmd, "Cable Type", getCableTypeStr(getFieldValue("cable_type")), ANSI_COLOR_RESET, true,
+                    valid);
+        setPrintVal(_moduleInfoCmd, "OUI", _plugged ? getOui(cableVendor) : "N/A", ANSI_COLOR_RESET, true, valid);
+        setPrintVal(_moduleInfoCmd, "Vendor Name", getAscii("vendor_name", 16), ANSI_COLOR_RESET, true, valid);
+        setPrintVal(_moduleInfoCmd, "Vendor Part Number", getAscii("vendor_pn", 16), ANSI_COLOR_RESET, true, valid);
+        setPrintVal(_moduleInfoCmd, "Vendor Serial Number", getAscii("vendor_sn", 16), ANSI_COLOR_RESET, true, valid);
+        setPrintVal(_moduleInfoCmd, "Rev", getVendorRev(getFieldValue("vendor_rev")), ANSI_COLOR_RESET, true, valid);
+        setPrintVal(_moduleInfoCmd, "Wavelength [nm]",
+                    (_cableMediaType == PASSIVE) ? "N/A" : to_string(getFieldValue("wavelength")), ANSI_COLOR_RESET,
+                    true, valid);
+        setPrintVal(_moduleInfoCmd, "Transfer Distance [m]", getCableLengthStr(cableLength, _cmisCable),
+                    ANSI_COLOR_RESET, true, valid);
+    }
 }
 
 void MlxlinkCommander::prepareAttenuationAndFwSection(bool valid)
@@ -1392,7 +1420,7 @@ void MlxlinkCommander::prepareAttenuationAndFwSection(bool valid)
     {
         attenuationTitle += ",25g";
     }
-    attenuationTitle += ") [dB]";
+
     if (_cableIdentifier != IDENTIFIER_SFP && _cableIdentifier != IDENTIFIER_QSA)
     {
         if (passive)
@@ -1403,28 +1431,43 @@ void MlxlinkCommander::prepareAttenuationAndFwSection(bool valid)
             {
                 cableAttenuation += "," + getFieldStr("cable_attenuation_25g");
             }
+
+            string attenuation53g = getFieldStr("cable_attenuation_53g");
+            if (attenuation53g != "0")
+            {
+                attenuationTitle += ",53g";
+                cableAttenuation += "," + attenuation53g;
+            }
         }
     }
+    attenuationTitle += ")[dB]";
 
     setPrintVal(_moduleInfoCmd, attenuationTitle, cableAttenuation, ANSI_COLOR_RESET, true, valid);
-    setPrintVal(_moduleInfoCmd, "FW Version", getModuleFwVersion(passive, getFieldValue("fw_version")),
-                ANSI_COLOR_RESET, true, valid);
+    if (!_isSwControled)
+    {
+        setPrintVal(_moduleInfoCmd, "FW Version", getModuleFwVersion(passive, getFieldValue("fw_version")),
+                    ANSI_COLOR_RESET, true, valid);
+    }
 }
 
 void MlxlinkCommander::preparePowerAndCdrSection(bool valid)
 {
     string rxCdrState = "N/A";
     string txCdrState = "N/A";
-    if (getFieldValue("rx_cdr_cap") > 0)
+    string powerClassStr = "N/A";
+    if (!_isSwControled)
     {
-        rxCdrState = getRxTxCDRState(getFieldValue("rx_cdr_state"), _numOfLanes);
+        if (getFieldValue("rx_cdr_cap") > 0)
+        {
+            rxCdrState = getRxTxCDRState(getFieldValue("rx_cdr_state"), _numOfLanes);
+        }
+        if (getFieldValue("tx_cdr_cap") > 0)
+        {
+            txCdrState = getRxTxCDRState(getFieldValue("tx_cdr_state"), _numOfLanes);
+        }
+        powerClassStr =
+          getPowerClass(_mlxlinkMaps, _cableIdentifier, getFieldValue("cable_power_class"), getFieldValue("max_power"));
     }
-    if (getFieldValue("tx_cdr_cap") > 0)
-    {
-        txCdrState = getRxTxCDRState(getFieldValue("tx_cdr_state"), _numOfLanes);
-    }
-    string powerClassStr =
-      getPowerClass(_mlxlinkMaps, _cableIdentifier, getFieldValue("cable_power_class"), getFieldValue("max_power"));
 
     setPrintVal(_moduleInfoCmd, "Digital Diagnostic Monitoring", _ddmSupported ? "Yes" : "No", ANSI_COLOR_RESET, true,
                 valid);
@@ -1630,16 +1673,19 @@ void MlxlinkCommander::showModuleInfo()
         sendPrmReg(ACCESS_REG_PMAOS, GET, "module=%d,slot_index=%d", _moduleNumber, _slotIndex);
 
         u_int32_t oper_status = getFieldValue("oper_status");
-        bool isModuleExtSupported = checkIfModuleExtSupported();
-
+        bool isModuleExtSupported = false;
+        bool valid = (_cableMediaType != UNIDENTIFIED) && _plugged;
         setPrintTitle(_moduleInfoCmd, "Module Info",
                       _productTechnology >= PRODUCT_16NM ? MODULE_INFO_AMBER : MODULE_INFO_LAST);
+        if (!_isSwControled)
+        {
+            isModuleExtSupported = checkIfModuleExtSupported();
+            prepareDDMSection(valid, isModuleExtSupported);
+        }
 
-        bool valid = (_cableMediaType != UNIDENTIFIED) && _plugged;
         prepareStaticInfoSection(valid);
         prepareAttenuationAndFwSection(valid);
         preparePowerAndCdrSection(valid);
-        prepareDDMSection(valid, isModuleExtSupported);
         if (_productTechnology >= PRODUCT_16NM)
         {
             preparePrtlSection();
@@ -1862,6 +1908,11 @@ void MlxlinkCommander::operatingInfoPage()
         string color =
           MlxlinkRecord::state2Color(phyMngrFsmState == PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)phyMngrFsmState);
         _protoActive = getFieldValue("proto_active");
+        if (_protoActive == NVLINK)
+        {
+            _isNVLINK = true;
+            _protoActive = IB;
+        }
         _fecActive = getFieldValue("fec_mode_active");
 
         _linkUP = (phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
@@ -1903,9 +1954,9 @@ void MlxlinkCommander::operatingInfoPage()
                     getAnDisableColor(_anDisable), true, !_prbsTestMode);
 
         // Checking cable DDM capability
-        if (_userInput._networkCmds != 0 || _userInput._ddm || _userInput._dump || _userInput._write ||
-            _userInput._read || _userInput.isModuleConfigParamsProvided || _userInput.isPrbsSelProvided ||
-            _userInput._csvBer != "")
+        if (!_isSwControled && (_userInput._networkCmds != 0 || _userInput._ddm || _userInput._dump ||
+                                _userInput._write || _userInput._read || _userInput.isModuleConfigParamsProvided ||
+                                _userInput.isPrbsSelProvided || _userInput._csvBer != ""))
         {
             sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
 
@@ -2169,6 +2220,17 @@ void MlxlinkCommander::prepareBerInfo()
     phyRawErr = getValuesOfActiveLanes(phyRawErr);
 
     setPrintVal(_berInfoCmd, "Raw Physical Errors Per Lane", phyRawErr, ANSI_COLOR_RESET, true, _linkUP, true);
+
+    if (_protoActive == ETH)
+    {
+        sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
+
+        u_int32_t linkDownCounter = getFieldValue("link_down_events");
+        u_int32_t linkRecoveryCounter = getFieldValue("successful_recovery_events");
+        setPrintVal(_berInfoCmd, "Link Down Counter", to_string(linkDownCounter), ANSI_COLOR_RESET, true, _linkUP);
+        setPrintVal(_berInfoCmd, "Link Error Recovery Counter", to_string(linkRecoveryCounter), ANSI_COLOR_RESET, true,
+                    _linkUP);
+    }
 }
 
 void MlxlinkCommander::prepareBerInfoEDR()
@@ -2203,6 +2265,17 @@ void MlxlinkCommander::prepareBerInfoEDR()
                 true, _linkUP);
     setPrintVal(_berInfoCmd, "Raw Physical BER", getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"),
                 ANSI_COLOR_RESET, true, _linkUP);
+
+    if (_protoActive == ETH)
+    {
+        sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
+
+        u_int32_t linkDownCounter = getFieldValue("link_down_events");
+        u_int32_t linkRecoveryCounter = getFieldValue("successful_recovery_events");
+        setPrintVal(_berInfoCmd, "Link Down Counter", to_string(linkDownCounter), ANSI_COLOR_RESET, true, _linkUP);
+        setPrintVal(_berInfoCmd, "Link Error Recovery Counter", to_string(linkRecoveryCounter), ANSI_COLOR_RESET, true,
+                    _linkUP);
+    }
 }
 
 void MlxlinkCommander::showBer()
@@ -3006,14 +3079,25 @@ void MlxlinkCommander::collectAMBER()
                     }
                     _amberCollector->_localPorts.push_back(pg);
                 }
-                else
+                else if (_devID != DeviceBW00)
                 {
                     // collect all ports info if the port flag wasn't provided
-                    sendPrmReg(ACCESS_REG_MGPIR, GET);
+                    u_int32_t numOfPorts = 0;
 
-                    u_int32_t numOfPorts = getFieldValue("num_of_modules");
                     vector<string> labelPorts;
                     _ignorePortStatus = false;
+
+                    if (_devID == DeviceBW00 || _devID == DeviceSpectrum3 || _devID == DeviceQuantum3)
+                    {
+                        sendPrmReg(ACCESS_REG_MGIR, GET);
+                        numOfPorts = getFieldValue("num_ports");
+                    }
+                    else
+                    {
+                        sendPrmReg(ACCESS_REG_MGPIR, GET);
+                        numOfPorts = getFieldValue("num_of_modules");
+                    }
+
                     for (u_int32_t labelPort = 1; labelPort <= numOfPorts; labelPort++)
                     {
                         labelPorts.push_back(to_string(labelPort));
@@ -3104,7 +3188,11 @@ vector<AmberField> MlxlinkCommander::getBerFields()
         findAndReplace(active_fec, ",", " ");
         string devicePN = getDevicePN();
         string deviceFW = _fwVersion;
-        getCableParams();
+        if (!_isSwControled)
+        {
+            getCableParams();
+        }
+
 
         std::map<string, string> errorsVector = getRawEffectiveErrors();
         string protocol = _prbsTestMode ? getPrbsModeRX() : _speedStrG;
@@ -4772,6 +4860,10 @@ void MlxlinkCommander::showCableDDM()
     try
     {
         initCablesCommander();
+        if (_isSwControled)
+        {
+            _cablesCommander->setSwControlMode();
+        }
         if (_ddmSupported)
         {
             vector<MlxlinkCmdPrint> ddmOutput = _cablesCommander->getCableDDM();
