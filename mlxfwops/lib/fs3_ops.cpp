@@ -351,6 +351,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
 
     _fs3ImgInfo.runFromAny = image_info.image_size.run_from_any;
     _fs3ImgInfo.logStep = image_info.image_size.log_step;
+    _fs3ImgInfo.ext_info.ini_file_version = image_info.ini_file_num;
 
     const u_int32_t* swId = (u_int32_t*)NULL;
     DPRINTF(("Fs3Operations::GetImageInfo _fwImgInfo.supportedHwId[0]=0x%x\n", _fwImgInfo.supportedHwId[0]));
