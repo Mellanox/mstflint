@@ -535,7 +535,6 @@ AC_OUTPUT( \
     mad_ifc/Makefile \
     mflash/Makefile \
     mft_utils/Makefile \
-    mft_utils/hsmclient/Makefile \
     mlxconfig/Makefile \
     mlxconfig/mlxconfig_dbs/Makefile \
     mlxfwops/Makefile \
