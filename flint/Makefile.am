@@ -38,8 +38,6 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/include/mtcr_ul \
     -I$(top_srcdir)/mflash \
     -I$(top_srcdir)/mft_utils \
-    -I$(top_srcdir)/mft_utils/hsmclient/inc \
-    -I$(top_srcdir)/mft_utils/hsmclient/inc/rsa \
     -I$(top_srcdir)/tools_layouts
 
 bin_PROGRAMS = mstflint
@@ -69,8 +67,7 @@ mstflint_DEPENDENCIES = \
      $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
      $(top_builddir)/tools_layouts/libtools_layouts.la \
      $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
-     $(top_builddir)/mft_utils/libmftutils.la \
-     $(top_builddir)/mft_utils/hsmclient/libhsmclient.a
+     $(top_builddir)/mft_utils/libmftutils.la
 
 LDADD_mstflint = ${LDL}
 
