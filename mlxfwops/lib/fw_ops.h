@@ -257,6 +257,7 @@ public:
                                             int buffSize = 0,
                                             bool ignore_crc_check = false);
     static FwOperations* FwOperationsCreate(fw_ops_params_t& fwParams);
+    static bool IsDeviceSupported(fw_ops_params_t& fwParams);
 
     static bool imageDevOperationsCreate(fw_ops_params_t& devParams,
                                          fw_ops_params_t& imgParams,
