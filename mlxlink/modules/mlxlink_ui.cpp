@@ -82,6 +82,7 @@ void MlxlinkUi::initPortInfo()
 {
     _mlxlinkCommander->labelToLocalPort();
     _mlxlinkCommander->validatePortType(_userInput._portType);
+    _mlxlinkCommander->updateSwControlStatus();
     if (!_userInput._pcie)
     {
         _mlxlinkCommander->checkValidFW();
@@ -90,9 +91,10 @@ void MlxlinkUi::initPortInfo()
     if (!_userInput._pcie)
     {
         _mlxlinkCommander->_prbsTestMode = _mlxlinkCommander->inPrbsTestMode();
-        if (_userInput._networkCmds != 0 || _userInput._ddm || _userInput._dump || _userInput._write ||
-            _userInput._read || _userInput.isModuleConfigParamsProvided || _userInput.isPrbsSelProvided ||
-            _userInput._csvBer != "")
+        if (!_mlxlinkCommander->_isSwControled &&
+            (_userInput._networkCmds != 0 || _userInput._ddm || _userInput._dump || _userInput._write ||
+             _userInput._read || _userInput.isModuleConfigParamsProvided || _userInput.isPrbsSelProvided ||
+             _userInput._csvBer != ""))
         {
             _mlxlinkCommander->getCableParams();
         }

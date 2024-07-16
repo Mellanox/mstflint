@@ -472,8 +472,8 @@ static struct device_sem_info* get_device_sem_info(dm_dev_id_t dev_id)
 trm_sts trm_create(trm_ctx* trm_p, mfile* mf)
 {
     dm_dev_id_t dev_id = DeviceStartMarker;
-    u_int32_t hw_dev_id;
-    u_int32_t chip_rev;
+    u_int32_t hw_dev_id = 0;
+    u_int32_t chip_rev = 0;
 
     *trm_p = (trm_ctx)malloc(sizeof(struct trm_t));
     if (!(*trm_p))

@@ -440,6 +440,7 @@ public:
     string getSupportedFecForSpeed(const string& speed);
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
+    void updateSwControlStatus();
 
     void showTestMode();
     void showTestModeBer();
@@ -615,7 +616,9 @@ public:
     bool _ignorePortType;
     bool _ignorePortStatus;
     bool _isGboxPort;
+    bool _isSwControled;
     bool _ignoreIbFECCheck;
+    bool _isNVLINK;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;
     string _allUnhandledErrors;

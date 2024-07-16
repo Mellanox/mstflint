@@ -129,6 +129,7 @@ public:
     void clearPrbsDiagInfo();
     void showControlParams();
     void setControlParams(vector<pair<ControlParam, string>>& params);
+    void setSwControlMode();
 
     u_int32_t _moduleNumber;
     u_int32_t _slotIndex;
@@ -209,6 +210,7 @@ private:
     bool _prbsInv;
     bool _prbsSwap;
     u_int32_t _prbsLanes;
+    bool _swControlMode;
     map<ControlParam, pair<string, string>> _modulePMCRParams;
 };
 
