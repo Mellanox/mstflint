@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <sys/stat.h>
 
 #include "mfa2_buff.h"
 
@@ -60,6 +61,13 @@ bool Mfa2Buffer::loadFile(const std::string& fname)
 
     fp = fopen(fname.c_str(), "rb");
     if (!fp)
+    {
+        return false;
+    }
+
+    struct stat st;
+    int status = stat(fname.c_str(), &st);
+    if (status != 0 || S_ISREG(st.st_mode) == 0)
     {
         return false;
     }

@@ -70,25 +70,40 @@ void MFA2::packDescriptors(vector<u_int8_t>& buff) const
 {
     _fingerPrint.pack(buff);
     _packageDescriptor.pack(buff);
-    CONST_VECTOR_ITERATOR(DeviceDescriptor, _deviceDescriptors, it) { (*it).pack(buff); }
-    CONST_VECTOR_ITERATOR(Component, _components, it) { (*it).packDescriptor(buff); }
+    CONST_VECTOR_ITERATOR(DeviceDescriptor, _deviceDescriptors, it)
+    {
+        (*it).pack(buff);
+    }
+    CONST_VECTOR_ITERATOR(Component, _components, it)
+    {
+        (*it).packDescriptor(buff);
+    }
 }
 
 void MFA2::pack(vector<u_int8_t>& buff)
 {
     // find size of components block:
     u_int64_t componentsBlockSize = 0;
-    CONST_VECTOR_ITERATOR(Component, _components, it) { componentsBlockSize += (*it).getComponentBinarySize(); }
+    CONST_VECTOR_ITERATOR(Component, _components, it)
+    {
+        componentsBlockSize += (*it).getComponentBinarySize();
+    }
     _packageDescriptor.setComponentsBlockSize(componentsBlockSize);
 
     _fingerPrint.pack(buff);
 
     _packageDescriptor.pack(buff);
 
-    CONST_VECTOR_ITERATOR(DeviceDescriptor, _deviceDescriptors, it) { (*it).pack(buff); }
+    CONST_VECTOR_ITERATOR(DeviceDescriptor, _deviceDescriptors, it)
+    {
+        (*it).pack(buff);
+    }
 
-    CONST_VECTOR_ITERATOR(Component, _components, it) { (*it).packDescriptor(buff); }
-
+    CONST_VECTOR_ITERATOR(Component, _components, it)
+    {
+        (*it).packDescriptor(buff);
+    }
+    
     _packageDescriptor.setComponentsBlockOffset(buff.size());
 
     // compress components block
@@ -159,7 +174,7 @@ MFA2* MFA2::LoadMFA2Package(const string& file_name)
     Mfa2Buffer mfa2buff;
     if (!mfa2buff.loadFile(file_name))
     {
-        fprintf(stderr, "Failed to load mfa2 package: %s\n", file_name.c_str());
+        fprintf(stderr, "Failed to load file: %s.\n", file_name.c_str());
         return NULL;
     }
     FingerPrint finger_print("");
