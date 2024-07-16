@@ -358,6 +358,7 @@ int mainEntry(int argc, char* argv[])
             if (dm_is_gpu(deviceType))
             {
                 print_err("-E- GPU device is not supported\n");
+                delete dev;
                 continue;
             }
 
@@ -383,6 +384,7 @@ int mainEntry(int argc, char* argv[])
             dm_dev_id_t deviceType = dev->getDeviceType();
             if (dm_is_gpu(deviceType))
             {
+                delete dev;
                 continue;
             }
         }
