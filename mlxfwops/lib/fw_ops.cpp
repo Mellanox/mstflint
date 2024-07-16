@@ -921,7 +921,6 @@ bool FwOperations::IsDeviceSupported(fw_ops_params_t& fwParams)
     mfile* mf = mopen_adv(fwParams.mstHndl, (MType)(MST_DEFAULT | MST_LINKX_CHIP));
     if (!mf)
     {
-        WriteToErrBuff(fwParams.errBuff, (char*)"Failed to open the device.", fwParams.errBuffSize);
         return false;
     }
 
@@ -947,7 +946,7 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
     FBase* ioAccess = (FBase*)NULL;
     FwCompsMgr* fwCompsAccess = (FwCompsMgr*)NULL;
     bool getFwFormatFromImg = false;
-    if (!IsDeviceSupported(fwParams))
+    if (fwParams.hndlType == FHT_MST_DEV && !IsDeviceSupported(fwParams))
     {
         return (FwOperations*)NULL;
     }
