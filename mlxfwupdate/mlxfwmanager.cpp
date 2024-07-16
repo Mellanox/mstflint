@@ -354,6 +354,13 @@ int mainEntry(int argc, char* argv[])
         if (cmd_params.device_names.size())
         {
             dev = new MlnxDev(cmd_params.device_names[i].c_str(), cmd_params.compare_ffv);
+            dm_dev_id_t deviceType = dev->getDeviceType();
+            if (dm_is_gpu(deviceType))
+            {
+                print_err("-E- GPU device is not supported\n");
+                continue;
+            }
+
             if (cmd_params.clear_semaphore)
             {
                 if (!dev->clearSemaphore())
@@ -373,6 +380,11 @@ int mainEntry(int argc, char* argv[])
         else
         {
             dev = new MlnxDev(&devsinfo[i], cmd_params.compare_ffv);
+            dm_dev_id_t deviceType = dev->getDeviceType();
+            if (dm_is_gpu(deviceType))
+            {
+                continue;
+            }
         }
         if (cmd_params.no_fw_ctrl)
         {
