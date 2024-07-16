@@ -58,6 +58,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
 
     _isPortIB = false;
     _isPortETH = false;
+    _isPortNVLINK = false;
     _isPortPCIE = false;
     _isMCMSysValid = false;
     _isGBSysValid = false;
@@ -84,7 +85,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_SERDES_5NM] = FIELDS_COUNT{138, 0, 0};
     _baseSheetsList[AMBER_SHEET_PORT_COUNTERS] = FIELDS_COUNT{45, 0, 50};
     _baseSheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT{2, 2, 0};
-    _baseSheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{17, 17, 15};
+    _baseSheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{18, 17, 15};
     _baseSheetsList[AMBER_SHEET_LINK_UP_INFO] = FIELDS_COUNT{9, 9, 0};
     _baseSheetsList[AMBER_SHEET_LINK_DOWN_INFO] = FIELDS_COUNT{11, 14, 0};
     _baseSheetsList[AMBER_SHEET_TEST_MODE_INFO] = FIELDS_COUNT{68, 136, 0};
@@ -223,6 +224,11 @@ void MlxlinkAmBerCollector::init()
             bool linkUp = getFieldValue("phy_mngr_fsm_state") == PHY_MNGR_ACTIVE_LINKUP;
 
             _protoActive = getFieldValue("proto_active");
+            if (_protoActive == NVLINK)
+            {
+                _isPortNVLINK = true;
+                _protoActive = IB;
+            }
 
             _isPortIB = (_protoActive == IB) && (_pnat != PNAT_PCIE);
             _isPortETH = (_protoActive == ETH) && (_pnat != PNAT_PCIE);
@@ -457,6 +463,8 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
     fields.push_back(AmberField("aggregated_port", aggregatedPort, _isPortIB));
     fields.push_back(AmberField("plane_port", planePort, _isPortIB));
 
+    string labelCage = "N/A";
+
     if (!_isPortPCIE)
     {
         resetLocalParser(ACCESS_REG_MGIR);
@@ -468,7 +476,7 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
             resetLocalParser(ACCESS_REG_PLLP);
             updateField("local_port", _localPort);
             sendRegister(ACCESS_REG_PLLP, MACCESS_REG_METHOD_GET);
-            fields.push_back(AmberField("Label_cage", getRawFieldValueStr("label_port")));
+            labelCage = getRawFieldValueStr("label_port");
             if (getFieldValue("ipil_stat") == 0)
             {
                 fields.push_back(AmberField("IPIL", getRawFieldValueStr("ipil_num"), _isPortIB));
@@ -479,6 +487,7 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
             }
         }
     }
+    fields.push_back(AmberField("Label_cage", labelCage));
 
     return fields;
 }
@@ -562,12 +571,6 @@ vector<AmberField> MlxlinkAmBerCollector::getSystemInfo()
         fields.push_back(AmberField("Device_SN", getAscii("serial_number", 24)));
 
         fields.push_back(AmberField("Temp_sensor_name", sensNameTemp));
-
-        resetLocalParser(ACCESS_REG_PDDR);
-        updateField("local_port", _localPort);
-        updateField("page_select", PDDR_MODULE_INFO_PAGE);
-        sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
-        fields.push_back(AmberField("Module_Temp", getTemp(getFieldValue("temperature")), !_isPortPCIE));
 
         if (_productTechnology == PRODUCT_5NM)
         {
@@ -769,7 +772,8 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
 
             fields.push_back(AmberField("Phy_Manager_State", _mlxlinkMaps->_pmFsmState[getFieldValue("phy_mngr_fsm_"
                                                                                                      "state")]));
-            fields.push_back(AmberField("Protocol", _mlxlinkMaps->_networkProtocols[_protoActive]));
+            fields.push_back(AmberField("Protocol", (_isPortNVLINK) ? _mlxlinkMaps->_networkProtocols[NVLINK] :
+                                                                      _mlxlinkMaps->_networkProtocols[_protoActive]));
 
             resetLocalParser(ACCESS_REG_PTYS);
             updateField("local_port", _localPort);
@@ -784,6 +788,34 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             fields.push_back(AmberField("Ethernet_Protocol_Active",
                                         ethLinkActive ? _mlxlinkMaps->_EthExtSpeed2Str[ethLinkActive] : "N/A",
                                         _isPortETH));
+
+            resetLocalParser(ACCESS_REG_PPCNT);
+            updateField("local_port", _localPort);
+            updateField("grp", PPCNT_PHY_GROUP);
+            sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
+
+            if (_isPortETH)
+            {
+                resetLocalParser(ACCESS_REG_PPCNT);
+                updateField("local_port", _localPort);
+                updateField("port_type", NETWORK_PORT_TYPE_NEAR);
+                updateField("grp", PPCNT_PHY_GROUP);
+                sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
+
+                fields.push_back(AmberField("Link_Down_GB_host", to_string(getFieldValue("link_down_events"))));
+
+                resetLocalParser(ACCESS_REG_PPCNT);
+                updateField("local_port", _localPort);
+                updateField("port_type", NETWORK_PORT_TYPE_FAR);
+                updateField("grp", PPCNT_PHY_GROUP);
+                sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
+
+                fields.push_back(AmberField("Link_Down_GB_line", to_string(getFieldValue("link_down_events"))));
+            }
+
+            fields.push_back(AmberField("Link_Down", to_string(getFieldValue("link_down_events"))));
+            fields.push_back(
+              AmberField("successful_recovery_events", to_string(getFieldValue("successful_recovery_events"))));
 
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
@@ -820,6 +852,37 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             sendRegister(ACCESS_REG_MPEIN, MACCESS_REG_METHOD_GET);
             fields.push_back(AmberField("pci_link_speed_active", pcieSpeedStr(getFieldValue("link_speed_active"))));
             fields.push_back(AmberField("pci_link_width_active", to_string(getFieldValue("link_width_active")) + "x"));
+        }
+
+        if (_isPortETH)
+        {
+            resetLocalParser(ACCESS_REG_PPCNT);
+            updateField("local_port", _localPort);
+            if (!_isHca)
+            {
+                updateField("port_type", NETWORK_PORT_TYPE_TILE_USR);
+            }
+            updateField("grp", PPCNT_PHY_GROUP);
+            sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
+            if (!_isMCMSysValid)
+            {
+                AmberField::_dataValid = false;
+            }
+            fields.push_back(AmberField("USR-T_Link_Down", to_string(getFieldValue("link_down_events"))));
+
+            resetLocalParser(ACCESS_REG_PPCNT);
+            updateField("local_port", _localPort);
+            if (!_isHca)
+            {
+                updateField("port_type", NETWORK_PORT_TYPE_MAIN_USR);
+            }
+            updateField("grp", PPCNT_PHY_GROUP);
+            sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
+            if (!_isMCMSysValid)
+            {
+                AmberField::_dataValid = false;
+            }
+            fields.push_back(AmberField("USR-M_Link_Down", to_string(getFieldValue("link_down_events"))));
         }
 
         if (!_isPortPCIE)
@@ -958,7 +1021,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             fields.push_back(AmberField("Tx_error_pci", to_string(getFieldValue("tx_errors"))));
         }
 
-        if (_productTechnology == PRODUCT_5NM && _isPortIB)
+        if (_productTechnology == PRODUCT_5NM && _isPortIB && !_isHca)
         {
             resetLocalParser(ACCESS_REG_PAOS);
             updateField("local_port", _localPort);
@@ -1951,7 +2014,20 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkDownInfo()
 
     try
     {
-        // Access regs: [PDDR.linkdown_info_page]
+        if (!_isPortPCIE)
+        {
+            sendLocalPrmReg(ACCESS_REG_PDDR, GET, "local_port=%d,page_select=%d", _localPort,
+                            PDDR_MODULE_LINK_DOWN_INFO_PAGE);
+
+            fields.push_back(AmberField("down_blame", _mlxlinkMaps->_downBlame[getFieldValue("down_blame")]));
+            fields.push_back(
+              AmberField("local_reason_opcode", _mlxlinkMaps->_localReasonOpcode[getFieldValue("local_reason_"
+                                                                                               "opcode")]));
+            fields.push_back(
+              AmberField("remote_reason_opcode", _mlxlinkMaps->_localReasonOpcode[getFieldValue("remote_reason_"
+                                                                                                "opcode")]));
+            fields.push_back(AmberField("e2e_reason_opcode", getFieldStr("e2e_reason_opcode")));
+        }
     }
     catch (const std::exception& exc)
     {

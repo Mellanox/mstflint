@@ -58,10 +58,18 @@ void MlxlinkMaps::initPortStateMapping()
     _pmFsmState[PHY_MNGR_ACTIVE_LINKUP] = "Active";
     _pmFsmState[PHY_MNGR_CLOSE_PORT] = "Close port";
     _pmFsmState[PHY_MNGR_PHYSICAL_LINKUP] = "Physical LinkUp";
+    _pmFsmState[PHY_MNGR_SLEEP] = "Sleep";
     _pmFsmState[PHY_MNGR_RX_DISABLE] = "Rx disable";
+    _pmFsmState[PHY_MNGR_SIGNAL_DETECT] = "Signal detect";
+    _pmFsmState[PHY_MNGR_RECEIVER_DETECT] = "Receiver detect";
+    _pmFsmState[PHY_MNGR_SYNC_PEER] = "Sync peer";
+    _pmFsmState[PHY_MNGR_NEGOTIATION] = "Negotiation";
+    _pmFsmState[PHY_MNGR_TRAINING] = "Training";
+    _pmFsmState[PHY_MNGR_SUB_FSM_ACTIVE] = "SubFSM active";
 
     _networkProtocols[IB] = "InfiniBand";
     _networkProtocols[ETH] = "Ethernet";
+    _networkProtocols[NVLINK] = "NVLink";
 
     _ethANFsmState[0x0] = "ETH_AN_FSM_ENABLE";
     _ethANFsmState[0x1] = "ETH_AN_FSM_XMIT_DISABLE";
@@ -295,6 +303,19 @@ void MlxlinkMaps::ibSpeedMapping()
     _IBSpeed2Str[IB_LINK_SPEED_XDR] = "IB-XDR";
 }
 
+void MlxlinkMaps::nvlinkSpeedMapping()
+{
+  _NVLINKSpeed2Str[NVLINK_SPEED_SDR] = "NVLink-SDR";
+    _NVLINKSpeed2Str[NVLINK_SPEED_DDR] = "NVLink-DDR";
+    _NVLINKSpeed2Str[NVLINK_SPEED_QDR] = "NVLink-QDR";
+    _NVLINKSpeed2Str[NVLINK_SPEED_FDR10] = "NVLink-FDR10";
+    _NVLINKSpeed2Str[NVLINK_SPEED_FDR] = "NVLink-FDR";
+    _NVLINKSpeed2Str[NVLINK_SPEED_EDR] = "NVLink-EDR";
+    _NVLINKSpeed2Str[NVLINK_SPEED_HDR] = "NVLink-HDR";
+    _NVLINKSpeed2Str[NVLINK_SPEED_NDR] = "NVLink-NDR";
+    _NVLINKSpeed2Str[NVLINK_SPEED_XDR] = "NVLink-XDR";
+}
+
 void MlxlinkMaps::speedToLanesMapping()
 {
     _ETHSpeed2Lanes[ETH_LINK_SPEED_100_BaseTx] = 1;
@@ -352,6 +373,7 @@ void MlxlinkMaps::initPortSpeedMapping()
     ethSpeedMapping();
     extEthSpeedMapping();
     ibSpeedMapping();
+    nvlinkSpeedMapping();
     speedToLanesMapping();
 }
 
@@ -1329,6 +1351,55 @@ void MlxlinkMaps::initCablePowerClassMapping()
     _sfpddPowerClassToValue[POWER_CLASS5] = 5.0;
 }
 
+void MlxlinkMaps::initEnhancedDebugMapping()
+{
+    _downBlame[DOWN_BLAME_UNKOWN] = "Unknown";
+    _downBlame[DOWN_BLAME_LOCAL_PHY] = "Local_phy";
+    _downBlame[DOWN_BLAME_REMOTE_PHY] = "Remote_phy";
+
+    _localReasonOpcode[LOCAL_REASON_OPCODE_NO_LINK_DOWN_INDICAION] = "No_link_down_indication";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_UNKWON_REASON] = "Unknown_reason";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_HI_SER_OR_HI_BER] = "Hi_SER_or_Hi_BER";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_BLOCK_LOCK_LOSS] = "Block_Lock_loss";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_ALIGNMENT_LOSS] = "Alignment_loss";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FEC_SYNC_LOSS] = "FEC_sync_loss";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PLL_SYNC_LOSS] = "PLL_lock_loss";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FIFO_OVERFLOW] = "FIFO_overflow";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FALSE_SKIP_CONDITION] = "false_SKIP_condition";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_MINOR_ERROR_THRESHOLD_EXCEEDED] = "Minor_Error_threshold_exceeded";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PHYSICAL_LAYER_RETRANSMISSION_TIMEOUT] =
+      "Physical_layer_retransmission_timeout";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_HEARTBEAT_ERRORS] = "Heartbeat_errors";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_LINK_LAYER_CREDIT_MONITORING_WATCHDOG] =
+      "Link_Layer_credit_monitoring_watchdog";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_LINK_LAYER_INTEGRITY_THRESHOLD_EXCEEDED] =
+      "Link_Layer_integrity_threshold_exceeded";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_LINK_LAYER_BUFFER_OVERRUN] = "Link_Layer_buffer_overrun";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_BY_OUTBAND_COMMAND_WITH_HEALTHY_LINK] =
+      "Down_by_outband_command_with_healthy_link";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_BY_OUTBAND_COMMAND_FOR_LINK_WITH_HI_BER] =
+      "Down_by_outband_command_for_link_with_hi_ber";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_BY_INBAND_COMMAND_WITH_HEALTHY_LINK] =
+      "Down_by_inband_command_with_healthy_link";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_BY_INBAND_COMMAND_FOR_LINK_WITH_HI_BER] =
+      "Down_by_inband_command_for_link_with_hi_ber";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_BY_VERIFICATION_GW] = "Down_by_verification_GW";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_RECEIVED_REMOTE_FAULT] = "Received_Remote_Fault";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_RECEIVED_TS1] = "Received_TS1";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_BY_MANAGEMENT_COMMAND] = "Down_by_management_command";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_CABLE_WAS_UNPLUGGED] = "Cable_was_unplugged";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_CABLE_ACCESS_ISSUE] = "Cable_access_issue";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_THERMAL_SHUTDOWN] = "Thermal_shutdown";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_CURRENT_ISSUE] = "Current_issue";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_POWER_BUDGET] = "Power_budget";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_EFFECTIVE_BER] = "Fast_recovery_raw_ber";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_EFFECTIVE_BER] = "Fast_recovery_effective_ber";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_SYMBOL_BER] = "Fast_recovery_symbol_ber";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_CREDIT_WATCHDOG] = "Fast_recovery_credit_watchdog";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_TIMEOUT] = "Timeout";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_RESERVED] = "N/A";
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();
@@ -1342,6 +1413,7 @@ MlxlinkMaps::MlxlinkMaps()
     initCableComplianceMapping();
     initCableTechnologyMapping();
     initCablePowerClassMapping();
+    initEnhancedDebugMapping();
     phyHstFsmHdrStateMapping();
 }
 

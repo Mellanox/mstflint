@@ -154,7 +154,7 @@ void RegAccessResourceDumpFetcher::retrieve_from_reg_access()
     do
     {
         dm_dev_id_t dev_id = DeviceUnknown;
-        u_int32_t hw_id, hw_rev;
+        u_int32_t hw_id = 0, hw_rev = 0;
         dm_get_device_id(_mf, &dev_id, &hw_id, &hw_rev);
         /***********************************************************/
         /*********************** ATTENTION *************************/

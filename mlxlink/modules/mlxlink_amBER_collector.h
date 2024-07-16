@@ -171,6 +171,7 @@ protected:
     bool _isCmisCable;
     bool _isPortIB;
     bool _isPortETH;
+    bool _isPortNVLINK;
     bool _isPortPCIE;
     bool _isMCMSysValid;
     bool _isGBSysValid;

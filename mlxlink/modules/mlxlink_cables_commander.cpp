@@ -45,6 +45,7 @@ MlxlinkCablesCommander::MlxlinkCablesCommander(Json::Value& jsonRoot) : _jsonRoo
     _prbsMode = PRBS31;
     _prbsInv = false;
     _prbsSwap = false;
+    _swControlMode = false;
     _prbsLanes = 0;
 
     memset(&_cableDdm, 0, sizeof(cable_ddm_q_t));
@@ -58,6 +59,11 @@ MlxlinkCablesCommander::MlxlinkCablesCommander(Json::Value& jsonRoot) : _jsonRoo
 }
 
 MlxlinkCablesCommander::~MlxlinkCablesCommander() {}
+
+void MlxlinkCablesCommander::setSwControlMode()
+{
+    _swControlMode = true;
+}
 
 // Read EEPROM data from MCIA register
 void MlxlinkCablesCommander::readMCIA(u_int32_t page,
@@ -178,19 +184,22 @@ u_int16_t MlxlinkCablesCommander::getStatusBit(u_int32_t channel, u_int16_t val,
 
 void MlxlinkCablesCommander::getDdmValuesFromPddr()
 {
-    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
-
-    _cableDdm.channels = _numOfLanes;
-    _cableDdm.temperature.val = getFieldValue("temperature") / 256;
-    _cableDdm.voltage.val = getFieldValue("voltage") / MILLIVOLT_UNIT;
-
-    string laneStr = "";
-    for (int lane = 0; lane < _cableDdm.channels; lane++)
+    if (!_swControlMode)
     {
-        laneStr = to_string(lane);
-        _cableDdm.rx_power[lane].val = getPower(getFieldValue("rx_power_lane" + laneStr));
-        _cableDdm.tx_power[lane].val = getPower(getFieldValue("tx_power_lane" + laneStr));
-        _cableDdm.tx_bias[lane].val = getFieldValue("tx_bias_lane" + laneStr);
+        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+
+        _cableDdm.channels = _numOfLanes;
+        _cableDdm.temperature.val = getFieldValue("temperature") / 256;
+        _cableDdm.voltage.val = getFieldValue("voltage") / MILLIVOLT_UNIT;
+
+        string laneStr = "";
+        for (int lane = 0; lane < _cableDdm.channels; lane++)
+        {
+            laneStr = to_string(lane);
+            _cableDdm.rx_power[lane].val = getPower(getFieldValue("rx_power_lane" + laneStr));
+            _cableDdm.tx_power[lane].val = getPower(getFieldValue("tx_power_lane" + laneStr));
+            _cableDdm.tx_bias[lane].val = getFieldValue("tx_bias_lane" + laneStr);
+        }
     }
 }
 
@@ -1425,12 +1434,20 @@ void MlxlinkCablesCommander::showControlParams()
     MlxlinkCmdPrint controlParamsOutput = MlxlinkCmdPrint();
     setPrintTitle(controlParamsOutput, "Module Control Parameters", CABLE_CONTROL_PARAMETERS_SET_RX_AMP);
 
-    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+    u_int32_t txEq = 0;
+    u_int32_t rxPostEmph = 0;
+    u_int32_t rxAmp = 0;
+    float rxEmph = 0.0;
+    if (!_isSwControled)
+    {
+        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
 
-    u_int32_t txEq = getFieldValue("cable_tx_equalization");
-    float rxEmph = (double)getFieldValue("cable_rx_emphasis");
-    u_int32_t rxPostEmph = getFieldValue("cable_rx_post_emphasis");
-    u_int32_t rxAmp = getFieldValue("cable_rx_amp");
+        txEq = getFieldValue("cable_tx_equalization");
+        rxEmph = (double)getFieldValue("cable_rx_emphasis");
+        rxPostEmph = getFieldValue("cable_rx_post_emphasis");
+        rxAmp = getFieldValue("cable_rx_amp");
+    }
+    
     bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
 
     sendPrmReg(ACCESS_REG_PMCR, GET);
