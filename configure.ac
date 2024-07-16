@@ -87,8 +87,11 @@ fi
 AM_CONDITIONAL(KERNEL_BUILD,[test ${KERNEL_BUILD_CHK} = 1])
 AC_SUBST(KERNEL_BUILD)
 
-LDFLAGS="${LDFLAGS} -L/usr/local/lib -L/usr/local/lib64 -L/usr/lib64"
-CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include"
+if test "x$cross_compiling" = "xno"; then
+    LDFLAGS="${LDFLAGS} -L/usr/local/lib -L/usr/local/lib64 -L/usr/lib64"
+    CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include"
+fi
+
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
     MTCR_CONF_DIR="mtcr_freebsd"
