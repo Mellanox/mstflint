@@ -38,6 +38,7 @@
 #define WINBOND_NAME "W25QxxBV"
 #define WINBOND_W25X "W25Xxx"
 #define WINBOND_3V_NAME "W25Qxxx"
+#define WINBOND_1V8_NAME "W25QxxxNW"
 #define ATMEL_NAME "AT25DFxxx"
 #define S25FLXXXP_NAME "S25FLXXXP"
 #define S25FL116K_NAME "S25FL11xx"
@@ -49,6 +50,7 @@
 #define MICRON_1V8_NAME "MT25QUxxx"
 #define MACRONIX_1V8_NAME "MX25Uxxx"
 #define GIGA_3V_NAME "GD25LBxxx"
+#define GIGA_1V8_NAME "GD25LBxxxMF"
 #define ISSI_HUAWEY_NAME "IS25WPxxx"
 #define ISSI_NAME "IS25LPxxx"
 
@@ -86,7 +88,9 @@ typedef enum flash_memory_type
     FMT_MT25QLXXXABA = 0xba,
     FMT_IS25LPXXX = 0x60,
     FMT_IS25WPXXX = 0x70,
-    FVT_GD25QXXX = 0x40
+    FVT_GD25QXXX = 0x40,
+    FVT_GD25LBXXX = 0x60
+
 
 } flash_memory_type_t;
 

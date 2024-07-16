@@ -500,9 +500,13 @@ flash_info_t g_flash_info_arr[] = {
   /* added by edwardg 06/09/2020 */
   {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
   {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
+  // https://www.issi.com/WW/pdf/25LP-WP512MG.pdf
+  {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
 
   {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
-  {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0}};
+  {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
+  // https://www.gigadevice.com.cn/Public/Uploads/uploadfile/files/20231213/DS-01012-GD25LB512MF-Rev1.0.pdf
+  {GIGA_1V8_NAME, FV_GD25QXXX, FVT_GD25LBXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0}};
 
 int cntx_sst_get_log2size(u_int8_t density, int* log2spi_size)
 {
