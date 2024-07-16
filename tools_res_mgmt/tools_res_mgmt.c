@@ -201,7 +201,7 @@ static struct device_sem_info g_dev_sem_info_db[] = {
   {
     DeviceArcusE, // dev_id
     {0x145800},   // hw_sem_addr
-    1,            // vsec_sem_supported
+    0,            // vsec_sem_supported
   },
   {
     DeviceBW00, // dev_id
