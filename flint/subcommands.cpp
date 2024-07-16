@@ -43,6 +43,7 @@
 #include <sstream>
 #include <string>
 #include <iomanip>
+#include <sys/stat.h>
 
 #include "mtcr.h"
 #include <common/compatibility.h>
@@ -2519,6 +2520,13 @@ bool BurnSubCommand::verifyParams()
             if (!is_file_exists(image.c_str()))
             {
                 reportErr(true, "The supplied image for cables burn doesn't exist.\n");
+                return false;
+            }
+            struct stat st;
+            int status = stat(image.c_str(), &st);
+            if (status != 0 || S_ISREG(st.st_mode) == 0)
+            {
+                reportErr(true, "The supplied image path is not a file.\n");
                 return false;
             }
             long fileSize = 0;
