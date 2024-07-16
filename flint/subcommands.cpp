@@ -6496,7 +6496,9 @@ HwSubCommand::HwSubCommand()
                 "        <Top|Bottom>,<1|2|4|8|16|32|64>-<Sectors|SubSectors>\n"
                 "    DriverStrength: can be:\n"
                 "        For Winbond flashes: [25,50,75,100](%)\n"
-                "        For Micron flashes:  [22,44,66,100](%)\n";
+                "        For Micron flashes:  [22,44,66,100](%)\n"
+                "        For Micron MX25K16XXX flashes:  [41,70,83,100](%)\n"
+                "        For Issi flashes:  [16,25,33,50,75,100](%)\n";
     _example = "flint -d " MST_DEV_EXAMPLE1 " hw query\n" FLINT_NAME " -d " MST_DEV_EXAMPLE1
                " hw set QuadEn=1\n" FLINT_NAME " -d " MST_DEV_EXAMPLE1 " hw set Flash1.WriteProtected=Top,1-SubSectors";
 #else
