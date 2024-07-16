@@ -1078,6 +1078,23 @@ bool Flash::set_attr(char* param_name, char* param_val_str)
                 return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [22,44,66,100]\n", param_val_str);
             }
         }
+        else if (_attr.vendor == FV_IS25LPXXX)
+        {
+            if (*endp != '\0' || (driver_strength_val != 16 && driver_strength_val != 25 && driver_strength_val != 33 &&
+                                  driver_strength_val != 50 && driver_strength_val != 75 && driver_strength_val != 100))
+            {
+                return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [16,25,33,50,75,100]\n",
+                              param_val_str);
+            }
+        }
+        else if (_attr.vendor == FV_MX25K16XXX)
+        {
+            if (*endp != '\0' || (driver_strength_val != 41 && driver_strength_val != 70 && driver_strength_val != 83 &&
+                                  driver_strength_val != 100))
+            {
+                return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [41,70,83,100]\n", param_val_str);
+            }
+        }
         else
         {
             if (*endp != '\0' || (driver_strength_val != 25 && driver_strength_val != 50 && driver_strength_val != 75 &&

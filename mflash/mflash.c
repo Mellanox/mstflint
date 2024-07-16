@@ -496,12 +496,12 @@ flash_info_t g_flash_info_arr[] = {
   {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_32), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
   {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_28, (1 << FD_32), MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
   {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
-  {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_512), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
+  {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_512), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
   /* added by edwardg 06/09/2020 */
   {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
   {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
   // https://www.issi.com/WW/pdf/25LP-WP512MG.pdf
-  {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
+  {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 1},
 
   {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
   {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
@@ -3905,6 +3905,25 @@ int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength)
               DRIVER_STRENGTH_BIT_LEN_MICRON, 2); // driver-strength bit length, status-register byte len
             CHECK_RC(rc);
         }
+        else if (mfl->attr.vendor == FV_MX25K16XXX)
+        {
+            rc = mf_read_modify_status_new(
+              mfl, bank, SFC_RDSR3_MICRON_MX25K16XXX, // mflash, bank num, nonvolatile-configuration-register read cmd
+              SFC_WRSR3_MICRON_MX25K16XXX,
+              driver_strength, // nonvolatile-configuration-register write cmd, driver-strength new val
+              DRIVER_STRENGTH_OFFSET_MICRON_MX25K16XXX,      // driver-strength bit offset
+              DRIVER_STRENGTH_BIT_LEN_MICRON_MX25K16XXX, 1); // driver-strength bit length, status-register byte len
+            CHECK_RC(rc);
+        }
+        else if (mfl->attr.vendor == FV_IS25LPXXX) // issi
+        {
+            rc = mf_read_modify_status_new(
+              mfl, bank, SFC_RDERP_ISSI,        // mflash, bank num, nonvolatile-configuration-register read cmd
+              SFC_SERPNV_ISSI, driver_strength, // nonvolatile-configuration-register write cmd, driver-strength new val
+              DRIVER_STRENGTH_OFFSET_ISSI,      // driver-strength bit offset
+              DRIVER_STRENGTH_BIT_LEN_ISSI, 1); // driver-strength bit length, status-register byte len
+            CHECK_RC(rc);
+        }
         else
         {
             return MFE_NOT_IMPLEMENTED;
@@ -3941,6 +3960,22 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
                               DRIVER_STRENGTH_OFFSET_MICRON,  // driver-strength bit offset
                               DRIVER_STRENGTH_BIT_LEN_MICRON, // driver-strength bit length
                               2, 0);                          // status-register byte len, don't-care
+    }
+    else if (mfl->attr.vendor == FV_MX25K16XXX) // micron
+    {
+        rc = mf_get_param_int(mfl, driver_strength_p,                    // mflash, output pointer,
+                              SFC_RDSR3_MICRON_MX25K16XXX,               // nonvolatile-configuration-register read cmd
+                              DRIVER_STRENGTH_OFFSET_MICRON_MX25K16XXX,  // driver-strength bit offset
+                              DRIVER_STRENGTH_BIT_LEN_MICRON_MX25K16XXX, // driver-strength bit length
+                              1, 0);                                     // status-register byte len, don't-care
+    }
+    else if (mfl->attr.vendor == FV_IS25LPXXX) // issi
+    {
+        rc = mf_get_param_int(mfl, driver_strength_p,         // mflash, output pointer,
+                              SFC_RDERP_ISSI,                 // nonvolatile-configuration-register read cmd
+                              DRIVER_STRENGTH_OFFSET_ISSI,    // driver-strength bit offset
+                              DRIVER_STRENGTH_BIT_LEN_MICRON, // driver-strength bit length
+                              1, 0);                          // status-register byte len, don't-care
     }
     else
     {
@@ -4414,6 +4449,52 @@ int mf_to_vendor_driver_strength(u_int8_t vendor, u_int8_t value, u_int8_t* driv
                 return MFE_BAD_PARAMS;
         }
     }
+    else if (vendor == FV_MX25K16XXX)
+    {
+        switch (value)
+        {
+            case 100:
+                *driver_strength = DRIVER_STRENGTH_VAL_120_MICRON_MX25K16XXX;
+                break;
+            case 83:
+                *driver_strength = DRIVER_STRENGTH_VAL_100_MICRON_MX25K16XXX;
+                break;
+            case 70:
+                *driver_strength = DRIVER_STRENGTH_VAL_85_MICRON_MX25K16XXX;
+                break;
+            case 41:
+                *driver_strength = DRIVER_STRENGTH_VAL_50_MICRON_MX25K16XXX;
+                break;
+            default:
+                return MFE_BAD_PARAMS;
+        }
+    }
+    else if (vendor == FV_IS25LPXXX)
+    {
+        switch (value)
+        {
+            case 100:
+                *driver_strength = DRIVER_STRENGTH_VAL_15_ISSI;
+                break;
+            case 75:
+                *driver_strength = DRIVER_STRENGTH_VAL_20_ISSI;
+                break;
+            case 50:
+                *driver_strength = DRIVER_STRENGTH_VAL_30_ISSI;
+                break;
+            case 33:
+                *driver_strength = DRIVER_STRENGTH_VAL_45_ISSI;
+                break;
+            case 25:
+                *driver_strength = DRIVER_STRENGTH_VAL_60_ISSI;
+                break;
+            case 16:
+                *driver_strength = DRIVER_STRENGTH_VAL_90_ISSI;
+                break;
+            default:
+                return MFE_BAD_PARAMS;
+        }
+    }
     else
     {
         switch (value)
@@ -4461,6 +4542,56 @@ int mf_from_vendor_driver_strength(u_int8_t vendor, u_int8_t vendor_driver_stren
         if (*value != 0xff)
         {
             *value = (20 * 100) / *value;
+        }
+    }
+    else if (vendor == FV_IS25LPXXX)
+    {
+        switch (vendor_driver_strength)
+        {
+            case DRIVER_STRENGTH_VAL_15_ISSI:
+                *value = 15;
+                break;
+            case DRIVER_STRENGTH_VAL_20_ISSI:
+                *value = 20;
+                break;
+            case DRIVER_STRENGTH_VAL_30_ISSI:
+                *value = 30;
+                break;
+            case DRIVER_STRENGTH_VAL_45_ISSI:
+                *value = 45;
+                break;
+            case DRIVER_STRENGTH_VAL_60_ISSI:
+                *value = 60;
+                break;
+            case DRIVER_STRENGTH_VAL_90_ISSI:
+                *value = 90;
+                break;
+            default:
+                *value = 0xff;
+        }
+        if (*value != 0xff)
+        {
+            *value = (15 * 100) / *value;
+        }
+    }
+    else if (vendor == FV_MX25K16XXX)
+    {
+        switch (vendor_driver_strength)
+        {
+            case DRIVER_STRENGTH_VAL_120_MICRON_MX25K16XXX:
+                *value = 100;
+                break;
+            case DRIVER_STRENGTH_VAL_100_MICRON_MX25K16XXX:
+                *value = 83;
+                break;
+            case DRIVER_STRENGTH_VAL_85_MICRON_MX25K16XXX:
+                *value = 70;
+                break;
+            case DRIVER_STRENGTH_VAL_50_MICRON_MX25K16XXX:
+                *value = 41;
+                break;
+            default:
+                return MFE_BAD_PARAMS;
         }
     }
     else
