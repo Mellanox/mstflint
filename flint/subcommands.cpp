@@ -50,6 +50,7 @@
 #include <fw_comps_mgr/fw_comps_mgr.h>
 #include <mlxfwops/lib/fw_version.h>
 #include "mlxfwops/lib/components/fs_synce_ops.h"
+#include "hex64.h"
 
 #ifndef NO_ZLIB
 #include <zlib.h>
