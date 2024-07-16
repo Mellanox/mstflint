@@ -52,3 +52,7 @@ endif
 
 libraryincludedir=$(includedir)/mstflint
 libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h  $(top_srcdir)/include/mtcr_ul/mtcr_mf.h
+
+install-exec-hook:
+	rm -f $(DESTDIR)$(pkglibdir)/libmtcr_ul.so* $(DESTDIR)$(pkglibdir)/libmtcr_ul.la
+	ln -snf mstflint/libmtcr_ul.a $(DESTDIR)$(libdir)/
