@@ -6,6 +6,7 @@
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
 DEB_CONFIGURE_EXTRA_FLAGS ?= ""
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 pname:=mstflint
 pdkms:=$(pname)-dkms
@@ -21,6 +22,8 @@ pversion_string:=$(shell sed -r '1 s:(.*) \((.*)\).*:\1 \2:; q' debian/changelog
 override_dh_auto_configure:
 	./autogen.sh
 	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS) "MSTFLINT_VERSION_STR=$(pversion_string)" --enable-adb-generic-tools
+	sed 's/@DEB_HOST_MULTIARCH@/$(DEB_HOST_MULTIARCH)/g' \
+		debian/mstflint.links.in > debian/mstflint.links
 
 override_dh_auto_build:
 	make
