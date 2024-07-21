@@ -30,7 +30,7 @@
  */
 
 /***
-         *** This file was generated at "2024-06-13 14:38:39"
+         *** This file was generated at "2024-07-03 13:35:38"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input [REDACTED]/user/tools_layouts/adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils -o [REDACTED]/user/tools_layouts
          ***/
@@ -2928,16 +2928,14 @@ void reg_access_hca_mfrl_reg_ext_pack(const struct reg_access_hca_mfrl_reg_ext *
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->reset_type);
 	offset = 44;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->reset_state);
-	offset = 43;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pci_switch_exist);
 	offset = 40;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->pci_reset_req_method);
 	offset = 37;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->rst_type_sel);
 	offset = 35;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->pci_sync_for_fw_update_resp);
-	offset = 34;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pci_sync_for_fw_update_start);
+	offset = 33;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->pci_sync_for_fw_update_start);
 	offset = 32;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pci_rescan_required);
 }
@@ -2952,16 +2950,14 @@ void reg_access_hca_mfrl_reg_ext_unpack(struct reg_access_hca_mfrl_reg_ext *ptr_
 	ptr_struct->reset_type = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 44;
 	ptr_struct->reset_state = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
-	offset = 43;
-	ptr_struct->pci_switch_exist = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 40;
 	ptr_struct->pci_reset_req_method = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
 	offset = 37;
 	ptr_struct->rst_type_sel = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
 	offset = 35;
 	ptr_struct->pci_sync_for_fw_update_resp = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
-	offset = 34;
-	ptr_struct->pci_sync_for_fw_update_start = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 33;
+	ptr_struct->pci_sync_for_fw_update_start = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 	offset = 32;
 	ptr_struct->pci_rescan_required = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 }
@@ -2977,8 +2973,6 @@ void reg_access_hca_mfrl_reg_ext_print(const struct reg_access_hca_mfrl_reg_ext 
 	fprintf(fd, "reset_type           : " UH_FMT "\n", ptr_struct->reset_type);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "reset_state          : " UH_FMT "\n", ptr_struct->reset_state);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pci_switch_exist     : " UH_FMT "\n", ptr_struct->pci_switch_exist);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "pci_reset_req_method : " UH_FMT "\n", ptr_struct->pci_reset_req_method);
 	adb2c_add_indentation(fd, indent_level);
