@@ -30,7 +30,7 @@
  */
 
 /***
-         *** This file was generated at "2024-06-13 19:31:27"
+         *** This file was generated at "2024-07-15 11:27:38"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input [REDACTED]/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o [REDACTED]/user/tools_layouts
          ***/
@@ -446,9 +446,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 566, "MDDQ slot_info Layout," on page 906
-For devices on slot query_type data - see Table 568, "MDDQ device_info Register Layout," on page 907
-For slot name query_type data - see Table 570, "MDDQ slot_name Layout," on page 909 */
+For slot information query_type data - see Table 568, "MDDQ slot_info Layout," on page 911
+For devices on slot query_type data - see Table 570, "MDDQ device_info Register Layout," on page 912
+For slot name query_type data - see Table 572, "MDDQ slot_name Layout," on page 914 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -483,9 +483,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 558, "PRM Register Payload Layout," on page 902
-For Command type payload - See Table 560, "Command Payload Layout," on page 902
-For CrSpace type payload - See Table 562, "CrSpace access Payload Layout," on page 903 */
+For PRM Register type payload - See Table 560, "PRM Register Payload Layout," on page 907
+For Command type payload - See Table 562, "Command Payload Layout," on page 907
+For CrSpace type payload - See Table 564, "CrSpace access Payload Layout," on page 908 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -705,7 +705,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 397, "NV_SWITCH_PHY_SEC_CONF Layout," on page 738 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 397, "NV_SWITCH_PHY_SEC_CONF Layout," on page 742 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -800,7 +800,7 @@ Other: Reserved */
 	/* access: RO */
 	u_int32_t fw_version_31_0;
 /*---------------- DWORD[13] (Offset 0x34) ----------------*/
-	/* Description - Source address of debug requester. DLID for Infiniband, ETH / IBg2 - TBD.
+	/* Description - Source address of debug requester. DLID for Infiniband
 Valid only for RMCS/RMDT. */
 	/* 0x34.0 - 0x40.31 */
 	/* access: RO */
