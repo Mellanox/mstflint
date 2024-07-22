@@ -44,6 +44,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _portType = 0;
     _numOfLanes = MAX_LANES_NUMBER;
     _numOfLanesPcie = 0;
+    _moduleLanesMapping = vector<u_int32_t>(MAX_LANES_NUMBER);
     _linkUP = false;
     _plugged = false;
     _userInput._linkModeForce = false;
@@ -943,6 +944,13 @@ void MlxlinkCommander::getActualNumOfLanes(u_int32_t linkSpeedActive, bool exten
             _numOfLanes = getFieldValue("width");
         }
     }
+    
+    sendPrmReg(ACCESS_REG_PMLP, GET);
+
+    for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
+    {
+        _moduleLanesMapping[lane] = getFieldValue("rx_lane_" + to_string(lane));
+    }
 }
 
 u_int32_t MlxlinkCommander::activeSpeed2gNum(u_int32_t mask, bool extended)
@@ -1511,7 +1519,7 @@ void MlxlinkCommander::prepareDDMSection(bool valid, bool isModuleExtSupported)
 
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
     {
-        string laneStr = to_string(lane);
+        string laneStr = to_string(_moduleLanesMapping[lane]);
         rxPowerLane.push_back(getPower(getFieldValue("rx_power_lane" + laneStr), isModuleExtSupported));
         txPowerLane.push_back(getPower(getFieldValue("tx_power_lane" + laneStr), isModuleExtSupported));
         biasCurrentLane.push_back(getFieldValue("tx_bias_lane" + laneStr) / 500.0);
