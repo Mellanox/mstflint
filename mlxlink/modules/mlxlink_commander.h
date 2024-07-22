@@ -573,6 +573,7 @@ public:
     UserInput _userInput;
     dm_dev_id_t _devID;
     DPN _dpn;
+    vector<u_int32_t> _moduleLanesMapping;
     u_int32_t _numOfLanes;
     u_int32_t _numOfLanesPcie;
     u_int32_t _cableMediaType;
