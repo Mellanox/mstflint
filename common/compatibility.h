@@ -1,6 +1,6 @@
 /*
  * Copyright (C) Jan 2006 Mellanox Technologies Ltd. All rights reserved.
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -340,7 +340,6 @@ inline
 
 typedef struct stat Stat;
 
-#include <sys/time.h>
 #include <strings.h>
 
 #endif
@@ -400,13 +399,6 @@ typedef uint32_t u_int32_t;
 typedef uint16_t u_int16_t;
 typedef uint8_t u_int8_t;
 
-#endif
-
-/* define msleep(x) - sleeps for x milliseconds */
-#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
-#define msleep(x) Sleep(x)
-#else
-#define msleep(x) usleep(((unsigned long)x) * 1000)
 #endif
 
 // Convert BYTES - DWORDS with MEMCPY BE

@@ -1,6 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -40,7 +40,8 @@
 
 #include <math.h>
 #include "fw_comps_mgr_dma_access.h"
-#include "bit_slice.h"
+#include "common/bit_slice.h"
+#include "common/tools_time.h"
 
 #ifndef UEFI_BUILD
 #include <mft_sig_handler.h>

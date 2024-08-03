@@ -1,6 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -43,7 +43,8 @@
 #include <errno.h>
 #include <string.h>
 
-#include <common/bit_slice.h>
+#include "common/bit_slice.h"
+#include "common/tools_time.h"
 #include <mtcr.h>
 #include <reg_access.h>
 #include <tools_layouts/reg_access_hca_layouts.h>
