@@ -1,6 +1,6 @@
 /*
  * Copyright (C) Jan 2020 Mellanox Technologies Ltd. All rights reserved.
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -38,6 +38,7 @@
  *  Created on: Jul 8, 2020
  *      Author: edwardg
  */
+#include "common/tools_time.h"
 #include "mflash_pack_layer.h"
 #include "mflash_dev_capability.h"
 #include "mflash_access_layer.h"
@@ -92,7 +93,7 @@ static int st_spi_wait_wip(mflash* mfl, u_int32_t init_delay_us, u_int32_t retry
     u_int8_t status = 0;
     u_int32_t i = 0;
 
-    usleep(init_delay_us);
+    mft_usleep(init_delay_us);
 
     for (i = 0; i < num_of_retries; ++i)
     {
@@ -102,7 +103,7 @@ static int st_spi_wait_wip(mflash* mfl, u_int32_t init_delay_us, u_int32_t retry
         {
             return MFE_OK;
         }
-        usleep(retry_delay_us);
+        mft_usleep(retry_delay_us);
         if (mfl->cputUtilizationApplied)
         {
             if ((i % mfl->cpuPercent) == 0)

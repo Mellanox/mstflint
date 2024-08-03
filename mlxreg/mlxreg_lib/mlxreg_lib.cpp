@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -39,7 +39,8 @@
 #include <tools_layouts/adb_dbs.h>
 #endif
 #include <tools_layouts/prm_adb_db.h>
-#include <common/tools_utils.h>
+#include "common/tools_time.h"
+#include "common/tools_utils.h"
 #include <mlxreg_exception.h>
 
 #define REG_ACCESS_UNION_NODE "access_reg_summary"

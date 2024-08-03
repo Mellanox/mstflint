@@ -1,6 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -47,8 +47,9 @@
 #include <sched.h>
 
 #include "mtcr.h"
-#include <compatibility.h>
-#include <bit_slice.h>
+#include "common/compatibility.h"
+#include "common/bit_slice.h"
+#include "common/tools_time.h"
 #include <stdlib.h>
 #include "tools_dev_types.h"
 
@@ -115,7 +116,7 @@ static int _flock_int(int fdlock, int operation)
         {
             break; // BAD! lock/free failed
         }
-        usleep(10);
+        mft_usleep(10);
         cnt++;
     } while (cnt < FREEBSD_MAX_RETRY_CNT);
     perror("failed to perform lock operation.");

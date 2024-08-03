@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -35,8 +35,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <bit_slice.h>
-#include <common/tools_utils.h>
+#include "common/bit_slice.h"
+#include "common/tools_utils.h"
+#include "common/tools_time.h"
 
 #include "mtcr_tools_cif.h"
 

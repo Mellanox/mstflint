@@ -1,6 +1,5 @@
 /*
- *
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,9 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  mtcr_ul.c - Mellanox Hardware Access implementation
- *
  */
 
 /* use memory mapped /dev/mem for access */
@@ -93,7 +89,8 @@
 #include <sys/ioctl.h>
 #endif
 
-#include <bit_slice.h>
+#include "common/bit_slice.h"
+#include "common/tools_time.h"
 #include "tools_utils.h"
 #include "mtcr_ul_com.h"
 #include "mtcr_int_defs.h"
@@ -160,7 +157,7 @@ static int _flock_int(int fdlock, int operation)
             break; /* BAD! lock/free failed */
         }
         if ((cnt & 0xf) == 0) { /* sleep every 16 retries */
-            usleep(1);
+            mft_usleep(1);
         }
         cnt++;
     } while (cnt < MAX_RETRY_CNT);

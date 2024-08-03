@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -38,8 +38,8 @@
 #if !defined(_MSC_VER)
 #include <unistd.h>
 #endif
-#include <bit_slice.h>
-//#include <common/tools_utils.h>
+#include "common/bit_slice.h"
+#include "common/tools_time.h"
 #include "mtcr_icmd_cif.h"
 #include "packets_common.h"
 #ifndef __FreeBSD__
@@ -521,11 +521,7 @@ static int set_and_poll_on_busy_bit(mfile* mf, int enhanced, int busy_bit_offset
             }
             else
             {
-#ifdef _MSC_VER
-                msleep(1);
-#else
-                usleep(1);
-#endif
+                mft_usleep(1);
             }
         }
 
