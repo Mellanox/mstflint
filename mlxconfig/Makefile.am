@@ -51,6 +51,7 @@ AM_CXXFLAGS = -pthread -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations  
 
 bin_PROGRAMS = mstconfig
 
+if ADB_GENERIC_TOOLS_ENABLED
 MLXPRIVHOST_PYTHON_WRAPPER = mstprivhost
 bin_SCRIPTS = ${MLXPRIVHOST_PYTHON_WRAPPER}
 ${MLXPRIVHOST_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
@@ -58,6 +59,7 @@ ${MLXPRIVHOST_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
 
 mlxprivhostlibdir = $(libdir)/mstflint/python_tools/$(MLXPRIVHOST_PYTHON_WRAPPER)
 mlxprivhostlib_DATA = $(MLXPRIVHOST_PYTHON_WRAPPER).py
+endif
 
 noinst_LTLIBRARIES = libmlxcfg.la
 
