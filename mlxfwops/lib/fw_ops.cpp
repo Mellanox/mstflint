@@ -397,7 +397,7 @@ const u_int32_t FwOperations::_cntx_magic_pattern[4] = {0x4D544657, // Ascii of 
 const u_int32_t FwOperations::_fs4_magic_pattern[4] = {0x4D544657, 0xABCDEF00, 0xFADE1234, 0x5678DEAD};
 
 const u_int32_t FwOperations::_cntx_image_start_pos[FwOperations::CNTX_START_POS_SIZE] = {
-  0, 0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000, 0x1000000};
+  0, 0x10000, 0x20000, 0x40000, 0x80000, 0x100000, 0x200000, 0x400000, 0x800000, 0x1000000, 0x2000000};
 
 bool FwOperations::FindMagicPattern(FBase* ioAccess, u_int32_t addr, u_int32_t const cntx_magic_pattern[])
 {
