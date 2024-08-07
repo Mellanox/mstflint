@@ -497,7 +497,7 @@ protected:
     enum
     {
         OLD_CNTX_START_POS_SIZE = 6,
-        CNTX_START_POS_SIZE = 10
+        CNTX_START_POS_SIZE = 11
     };
     enum
     {
