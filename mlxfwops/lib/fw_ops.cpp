@@ -2988,11 +2988,13 @@ int CRSpaceRegisters::getGlobalImageStatus()
         case CT_CONNECTX6DX:
         case CT_CONNECTX6LX:
         case CT_CONNECTX7:
-        case CT_CONNECTX8:
         case CT_BLUEFIELD2:
         case CT_BLUEFIELD3:
         case CT_BLUEFIELD4:
             global_image_status_address = 0xE3044;
+            break;
+        case CT_CONNECTX8:
+            global_image_status_address = 0x55084;
             break;
         case CT_QUANTUM2:
         case CT_QUANTUM3:
