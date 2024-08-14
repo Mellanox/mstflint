@@ -107,7 +107,7 @@ MLNX_DEVICES = [
     dict(name="ConnectX6DX", devid=0x212, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX7", devid=0x218, status_config_not_done=(0xb5f04, 31)),
-    dict(name="ConnectX8", devid=0x21e, status_config_not_done=(0xb5f04, 31)),
+    dict(name="ConnectX8", devid=0x21e, status_config_not_done=(0xa0304, 31)),
     dict(name="Switch-IB", devid=0x247, status_config_not_done=(0x80010, 0)),
     dict(name="Switch-IB-2", devid=0x24b, status_config_not_done=(0x80010, 0)),
     dict(name="Quantum", devid=0x24d, status_config_not_done=(0x100010, 0)),
