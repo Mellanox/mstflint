@@ -62,6 +62,16 @@ string hex2str(int n, int w = 1)
     return str;
 }
 
+void freeNode(xmlNodePtr* node)
+{
+    if (node && *node)
+    {
+        xmlUnlinkNode(*node); // Unlink node from the document
+        xmlFreeNode(*node);   // Free the node
+        *node = NULL;         // Set pointer to NULL to avoid double-free
+    }
+}
+
 int OutputFmts::createInventoryXML(vector<MlnxDev*>& devs,
                                    PsidLookupDB& psidLookupDB,
                                    int result,
@@ -132,7 +142,7 @@ int OutputFmts::createInventoryXML(vector<MlnxDev*>& devs,
             // xmlFree(doc_txt_ptr); //TODO: This is a leak, temporarily only until windows crash is resolved!!
         }
     }
-
+    freeNode(&root_node);
     xmlFreeDoc(doc);
     xmlCleanupParser();
 #endif
