@@ -1265,6 +1265,7 @@ static int is_livefish_device(mfile* mf)
                                            {DeviceConnectX6DX_HwId, DeviceConnectX6DX_HwId},
                                            {DeviceConnectX6LX_HwId, DeviceConnectX6LX_HwId},
                                            {DeviceConnectX7_HwId, DeviceConnectX7_HwId},
+                                           {DeviceConnectX8_HwId, DeviceConnectX8_HwId},
                                            {DeviceBlueField3_HwId, DeviceBlueField3_HwId},
                                            {DeviceBlueField2_HwId, DeviceBlueField2_HwId},
                                            {DeviceBlueField_HwId, DeviceBlueField_HwId},
