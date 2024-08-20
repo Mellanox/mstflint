@@ -136,6 +136,7 @@ static struct pci_device_id supported_pci_devices[] = {
 #define AS_ICMD 0x3
 #define AS_CR_SPACE 0x2
 #define AS_SEMAPHORE 0xa
+#define AS_RECOVERY 0xc
 
 /* PCI address space related enum*/
 enum
