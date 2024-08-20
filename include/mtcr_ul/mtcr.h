@@ -48,6 +48,7 @@ extern "C"
 #endif
 
 #define SLV_ADDRS_NUM 128
+#define INIT_DONE_OFFSET_IN_RECOVERY_SPACE 0
 
     typedef enum mtcr_access_method
     {
