@@ -3741,37 +3741,34 @@ int is_remote_dev(mfile* mf)
 
     return 0;
 }
-
 int is_zombiefish_device(mfile* mf)
 {
-    size_t gis_address = 0; // gis == global image status
-    u_int32_t gis = 0;
-    uint32_t gis_operational = 0; // for NICs and HCAs
-
-    u_int32_t hw_dev_id = 0;
-    if (mread4_ul(mf, HW_ID_ADDR, &hw_dev_id) != 4) {
-        return 0;
-    }
-
-    switch (hw_dev_id & 0xffff)
+    uint32_t zombiefish = 0;
+    if (mf->device_hw_id == DeviceConnectX8_HwId || mf->device_hw_id == DeviceQuantum3_HwId)
     {
-        case DeviceConnectX8_HwId:
-            gis_address = 0xE3044;
-            break;
-        case DeviceQuantum3_HwId:
-            gis_operational = 0x5E;
-            gis_address = 0x152080;
-            break;
-        default:
-            return 0; // Device does not support Zombiefish mode
+        int prev_address_space = mf->address_space;
+        mset_addr_space(mf, AS_RECOVERY);
+        uint32_t init_done = 0;
+        int rc = mread4(mf, INIT_DONE_OFFSET_IN_RECOVERY_SPACE, &init_done);
+        if (rc != 4)
+        {
+            mf->address_space = prev_address_space;
+            DBG_PRINTF("-E- Failed to read the first dword in VSC recovery space.\n");
+            return 0;
+        }
+        uint32_t recovery = EXTRACT(init_done, 1, 1);          // Extract bit 1
+        uint32_t flash_control_vld = EXTRACT(init_done, 2, 1); // Extract bit 2
+        init_done = EXTRACT(init_done, 0, 1);                  // Extract bit 0
+        zombiefish = recovery && init_done;
+        if (zombiefish)
+        {
+            DBG_PRINTF("device with HW ID: %u is in ZombieFish mode. flash_control_vld: %u\n", mf->device_hw_id,
+                       flash_control_vld); // If flash_control_vld is 0, device recovery should fail. but just in
+                                           // case: we should not attempt recovery if the value is 0.
+        }
+        mf->vsc_recovery_space_flash_control_vld = flash_control_vld;
+        mf->address_space = prev_address_space;
     }
-
-    int rc = mread4_ul(mf, gis_address, &gis);
-    if (rc != 4)
-    {
-        DBG_PRINTF("-E- Failed to read global_image_status from CR space.\n");
-        return 0;
-    }
-
-    return (gis != gis_operational);
+    mf->is_zombiefish = zombiefish;
+    return zombiefish;
 }

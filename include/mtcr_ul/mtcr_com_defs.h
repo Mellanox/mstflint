@@ -328,6 +328,7 @@ typedef enum
     AS_ND_CRSPACE = 0x6,
     AS_SCAN_CRSPACE = 0x7,
     AS_SEMAPHORE = 0xa,
+    AS_RECOVERY = 0Xc,
     AS_MAC = 0xf,
     AS_END
 } address_space_t;
