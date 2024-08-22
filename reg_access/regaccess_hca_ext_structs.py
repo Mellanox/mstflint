@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2024-07-03 13:35:43"
+#    This file was generated at "2024-08-13 11:28:45"
 #    by:
 #      > gen_adb_data.py -g hca_prm_projects
 ###############################################################################
@@ -140,6 +140,7 @@ class MGIR_HARDWARE_INFO_EXT(ctypes.Structure):
         ("num_ports", ctypes.c_uint8),
         ("ib_mad_gen", ctypes.c_uint8),
         ("hw_dev_id", ctypes.c_uint16),
+        ("ga_valid", ctypes.c_uint8),
         ("development", ctypes.c_uint8),
         ("manufacturing_base_mac_47_32", ctypes.c_uint16),
         ("ga", ctypes.c_uint8),
