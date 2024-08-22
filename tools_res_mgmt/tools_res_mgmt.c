@@ -171,7 +171,7 @@ static struct device_sem_info g_dev_sem_info_db[] = {
   },
   {
     DeviceConnectX8, // dev_id
-    {0x54b80},       // hw_sem_addr
+    {0x57680},       // hw_sem_addr
     1,               // vsec_sem_supported
   },
   {
