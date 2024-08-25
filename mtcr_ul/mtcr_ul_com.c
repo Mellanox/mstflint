@@ -3741,34 +3741,83 @@ int is_remote_dev(mfile* mf)
 
     return 0;
 }
+
+
+static int check_zf_through_memory(mfile* mf)
+{
+    uint32_t gis = 0; // Global image status
+    size_t gis_address = 0;
+    switch (mf->device_hw_id)
+    {
+        case DeviceQuantum3_HwId:
+            gis_address = 0x152080;
+            break;
+        default:
+            return 0; // Device does not support Zombiefish mode
+    }
+    int rc = mread4(mf, gis_address, &gis);
+
+    if (rc != 4)
+    {
+        DBG_PRINTF("-E- Failed to read global_image_status from CR space (BAR0).\n");
+        return 0;
+    }
+    gis = EXTRACT(gis, 0, 16); // Extract the first 16 bits
+    return gis == AUTHENTICATION_FAILURE;
+}
+
+static int check_zf_through_vsc(mfile* mf)
+{
+    int prev_address_space = mf->address_space;
+    mset_addr_space(mf, AS_RECOVERY);
+
+    uint32_t first_dword = 0;
+    int rc = mread4(mf, INITIALIZING_BIT_OFFSET_IN_VSC_RECOVERY_SPACE, &first_dword);
+
+    if (rc != 4)
+    {
+        mset_addr_space(mf, prev_address_space);
+        DBG_PRINTF("-E- Failed to read the first dword in VSC recovery space.\n");
+        return 0;
+    }
+
+    uint32_t in_recovery = EXTRACT(first_dword, 1, 1);       // Extract bit 1
+    uint32_t flash_control_vld = EXTRACT(first_dword, 2, 1); // Extract bit 2
+    uint32_t initializing = EXTRACT(first_dword, 0, 1);      // Extract bit 0
+
+    mf->vsc_recovery_space_flash_control_vld = flash_control_vld;
+    mset_addr_space(mf, prev_address_space);
+
+    if (in_recovery && initializing)
+    {
+        DBG_PRINTF("Device with HW ID: %u is in ZombieFish mode. flash_control_vld: %u\n", mf->device_hw_id,
+                   flash_control_vld);
+        return 1;
+    }
+
+    return 0;
+}
+
 int is_zombiefish_device(mfile* mf)
 {
-    uint32_t zombiefish = 0;
-    if (mf->device_hw_id == DeviceConnectX8_HwId || mf->device_hw_id == DeviceQuantum3_HwId)
+    if (mread4(mf, HW_ID_ADDR, &mf->device_hw_id) != 4)
     {
-        int prev_address_space = mf->address_space;
-        mset_addr_space(mf, AS_RECOVERY);
-        uint32_t init_done = 0;
-        int rc = mread4(mf, INIT_DONE_OFFSET_IN_RECOVERY_SPACE, &init_done);
-        if (rc != 4)
-        {
-            mset_addr_space(mf, prev_address_space);
-            DBG_PRINTF("-E- Failed to read the first dword in VSC recovery space.\n");
-            return 0;
-        }
-        uint32_t recovery = EXTRACT(init_done, 1, 1);          // Extract bit 1
-        uint32_t flash_control_vld = EXTRACT(init_done, 2, 1); // Extract bit 2
-        init_done = EXTRACT(init_done, 0, 1);                  // Extract bit 0
-        zombiefish = recovery && init_done;
-        if (zombiefish)
-        {
-            DBG_PRINTF("device with HW ID: %u is in ZombieFish mode. flash_control_vld: %u\n", mf->device_hw_id,
-                       flash_control_vld); // If flash_control_vld is 0, device recovery should fail. but just in
-                                           // case: we should not attempt recovery if the value is 0.
-        }
-        mf->vsc_recovery_space_flash_control_vld = flash_control_vld;
-        mset_addr_space(mf, prev_address_space);
+        return 0;
     }
-    mf->is_zombiefish = zombiefish;
-    return zombiefish;
+    if (mf->device_hw_id != DeviceConnectX8_HwId && mf->device_hw_id != DeviceQuantum3_HwId)
+    {
+        return 0;
+    }
+
+    switch (mf->tp)
+    {
+        case MST_PCI:
+            mf->is_zombiefish = check_zf_through_memory(mf);
+            return mf->is_zombiefish;
+        case MST_PCICONF:
+            mf->is_zombiefish = check_zf_through_vsc(mf);
+            return mf->is_zombiefish;
+        default:
+            return 0;
+    }
 }

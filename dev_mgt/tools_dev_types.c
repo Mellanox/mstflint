@@ -561,6 +561,11 @@ static int dm_get_device_id_inner(mfile      * mf,
                                   u_int32_t  * ptr_hw_dev_id,
                                   u_int32_t  * ptr_hw_rev)
 {
+    if (mf->is_zombiefish)
+    {
+        mset_addr_space(mf,
+                        AS_CR_SPACE); // In ZombieFish mode we use recovery space, for reading device ID need cr space.
+    }
     u_int32_t dword = 0;
     int       rc;
     u_int32_t dev_flags;

@@ -66,6 +66,14 @@
 
 static int set_gw_data_size(mflash* mfl, u_int32_t data_size, u_int32_t* gw_cmd)
 {
+    if (mfl->mf->is_zombiefish)
+    {
+        if (!mfl->mf->vsc_recovery_space_flash_control_vld)
+        {
+            return MFE_VSC_RECOVERY_SPACE_FLASH_CONTROL_NOT_VALID;
+        }
+        mset_addr_space(mfl->mf, AS_RECOVERY);
+    }
     FlashGen flash_gen = get_flash_gen(mfl);
     if (flash_gen == SIX_GEN_FLASH)
     {
@@ -135,6 +143,14 @@ static bool is_x_byte_address_access_commands(mflash* mfl, int x)
 }
 static int new_gw_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg)
 {
+    if (mfl->mf->is_zombiefish)
+    {
+        if (!mfl->mf->vsc_recovery_space_flash_control_vld)
+        {
+            return MFE_VSC_RECOVERY_SPACE_FLASH_CONTROL_NOT_VALID;
+        }
+        mset_addr_space(mfl->mf, AS_RECOVERY);
+    }
     gw_cmd = MERGE(gw_cmd, 1, 31, 1); // Making sure lock bit stays locked
     if ((gw_cmd & (1 << mfl->gw_addr_phase_bit_offset)) != 0)
     { // This is an access command
@@ -170,6 +186,14 @@ static int new_gw_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg)
 static int
   new_gw_exec_cmd_get(mflash* mfl, u_int32_t gw_cmd, u_int32_t* buff, int buff_dword_sz, u_int32_t* addr, char* msg)
 {
+    if (mfl->mf->is_zombiefish)
+    {
+        if (!mfl->mf->vsc_recovery_space_flash_control_vld)
+        {
+            return MFE_VSC_RECOVERY_SPACE_FLASH_CONTROL_NOT_VALID;
+        }
+        mset_addr_space(mfl->mf, AS_RECOVERY);
+    }
     int rc = 0;
     if (!mfl || !buff || !buff_dword_sz)
     {
@@ -217,6 +241,14 @@ static int
 static int
   new_gw_exec_cmd_set(mflash* mfl, u_int32_t gw_cmd, u_int32_t* buff, int buff_dword_sz, u_int32_t* addr, char* msg)
 {
+    if (mfl->mf->is_zombiefish)
+    {
+        if (!mfl->mf->vsc_recovery_space_flash_control_vld)
+        {
+            return MFE_VSC_RECOVERY_SPACE_FLASH_CONTROL_NOT_VALID;
+        }
+        mset_addr_space(mfl->mf, AS_RECOVERY);
+    }
     int rc = 0;
     if (!mfl)
     {

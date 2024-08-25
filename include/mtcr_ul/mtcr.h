@@ -48,7 +48,8 @@ extern "C"
 #endif
 
 #define SLV_ADDRS_NUM 128
-#define INIT_DONE_OFFSET_IN_RECOVERY_SPACE 0
+#define INITIALIZING_BIT_OFFSET_IN_VSC_RECOVERY_SPACE 0
+#define AUTHENTICATION_FAILURE 0xffa6
 
     typedef enum mtcr_access_method
     {
