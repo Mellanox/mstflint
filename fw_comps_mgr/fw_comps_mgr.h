@@ -137,6 +137,8 @@ typedef struct
     life_cycle_t life_cycle;
     bool encryption;
     u_int32_t ini_file_version;
+    u_int8_t geo_address;
+    bool geo_address_valid;
 
 } fwInfoT;
 
