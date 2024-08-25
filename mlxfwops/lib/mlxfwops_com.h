@@ -489,6 +489,8 @@ typedef struct fs3_info_ext
 
     int global_image_status;
     u_int32_t ini_file_version;
+    u_int8_t geo_address;
+    bool geo_address_valid;
 
 } fs3_info_t;
 

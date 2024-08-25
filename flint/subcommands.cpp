@@ -4605,6 +4605,11 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("INI revision:          0x%x\n", fwInfo.fs3_info.ini_file_version);
     }
 
+    if (fwInfo.fs3_info.geo_address_valid)
+    {
+        printf("Geographical Address:  ASIC %x\n", fwInfo.fs3_info.geo_address);
+    }
+
     return FLINT_SUCCESS;
 }
 
