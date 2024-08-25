@@ -1094,6 +1094,14 @@ int read_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data, bool
 
 int gw_wait_ready(mflash* mfl, const char* msg)
 {
+    if (mfl->mf->is_zombiefish)
+    {
+        if (!mfl->mf->vsc_recovery_space_flash_control_vld)
+        {
+            return MFE_VSC_RECOVERY_SPACE_FLASH_CONTROL_NOT_VALID;
+        }
+        mset_addr_space(mfl->mf, AS_RECOVERY);
+    }
     u_int32_t gw_cmd = 0;
     u_int32_t cnt = 0;
 
@@ -1553,6 +1561,14 @@ int is4_init_gpios(mflash* mfl)
 
 int is4_flash_lock(mflash* mfl, int lock_state)
 {
+    if (mfl->mf->is_zombiefish)
+    {
+        if (!mfl->mf->vsc_recovery_space_flash_control_vld)
+        {
+            return MFE_VSC_RECOVERY_SPACE_FLASH_CONTROL_NOT_VALID;
+        }
+        mset_addr_space(mfl->mf, AS_RECOVERY);
+    }
     /* Obtain GPIO Semaphore */
     static u_int32_t cnt;
     u_int32_t word = 0;
@@ -1597,6 +1613,14 @@ int is4_flash_lock(mflash* mfl, int lock_state)
 
 int disable_gcm(mflash* mfl)
 {
+    if (mfl->mf->is_zombiefish)
+    {
+        if (!mfl->mf->vsc_recovery_space_flash_control_vld)
+        {
+            return MFE_VSC_RECOVERY_SPACE_FLASH_CONTROL_NOT_VALID;
+        }
+        mset_addr_space(mfl->mf, AS_RECOVERY);
+    }
     u_int32_t data = 0;
 
     MREAD4(mfl->gcm_en_addr, &data);
@@ -2082,6 +2106,19 @@ void update_seventh_gen_addrs(mflash* mfl)
         mfl->gcm_en_addr = HCR_7GEN_QTM3_GCM_EN_ADDR;
         mfl->gw_addr_field_addr = HCR_7GEN_QTM3_FLASH_ADDR;
         mfl->gw_data_size_register_addr = HCR_7GEN_QTM3_FLASH_DATA_SIZE;
+        if (is_zombiefish_device(mfl->mf))
+        {
+            mfl->gw_cmd_register_addr =
+              mfl->gw_cmd_register_addr - HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_data_field_addr =
+              mfl->gw_data_field_addr - HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gcm_en_addr =
+              mfl->gcm_en_addr - HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_addr_field_addr =
+              mfl->gw_addr_field_addr - HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_data_size_register_addr = mfl->gw_data_size_register_addr - HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR +
+                                              VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+        }
     }
     else if (mfl->dm_dev_id == DeviceConnectX8)
     {
@@ -2090,6 +2127,19 @@ void update_seventh_gen_addrs(mflash* mfl)
         mfl->gcm_en_addr = HCR_7GEN_CX8_GCM_EN_ADDR;
         mfl->gw_addr_field_addr = HCR_7GEN_CX8_FLASH_ADDR;
         mfl->gw_data_size_register_addr = HCR_7GEN_CX8_FLASH_DATA_SIZE;
+        if (is_zombiefish_device(mfl->mf))
+        {
+            mfl->gw_cmd_register_addr =
+              mfl->gw_cmd_register_addr - HCR_7GEN_CX8_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_data_field_addr =
+              mfl->gw_data_field_addr - HCR_7GEN_CX8_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gcm_en_addr =
+              mfl->gcm_en_addr - HCR_7GEN_CX8_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_addr_field_addr =
+              mfl->gw_addr_field_addr - HCR_7GEN_CX8_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_data_size_register_addr = mfl->gw_data_size_register_addr - HCR_7GEN_CX8_FLASH_GW_BASE_ADDR +
+                                              VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+        }
     }
     else if (mfl->dm_dev_id == DeviceArcusE)
     {
@@ -3204,6 +3254,7 @@ int mf_open_int(mflash** pmfl,
     {
         return MFE_CR_ERROR;
     }
+
     if (ignore_cache_rep_guard)
     { /* relevant only if working with -ocr flag */
         if (mf->gb_info.is_gb_mngr == 1)

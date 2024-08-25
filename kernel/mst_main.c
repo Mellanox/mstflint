@@ -504,7 +504,11 @@ static int get_space_support_status(struct mst_dev_data* dev)
         return 1;
     }
 
-    if (_set_addr_space(dev, AS_CR_SPACE))
+    if (_set_addr_space(dev, AS_RECOVERY))
+    {
+        capability_support_info_message(dev, RECOVERY); // this space is supported only for ConnectX8 and Quantum3
+    }
+    else if (_set_addr_space(dev, AS_CR_SPACE))
     {
         capability_support_info_message(dev, CR_SPACE);
         dev->spaces_support_status = SS_NOT_ALL_SPACES_SUPPORTED;

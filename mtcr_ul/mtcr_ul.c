@@ -278,8 +278,10 @@ MTCR_API int mset_addr_space(mfile* mf, int space)
     if (VSEC_SUPPORTED_UL(mf) && (mf->vsec_cap_mask & (1 << space_to_cap_offset(space))))
     {
         mf->address_space = space;
+        // printf("VSC address space was set successfully to: %d\n", mf->address_space);
         return 0;
     }
+    // printf("failed to set VSC address space to: %d. mf->address_space = %d\n", space, mf->address_space);
     return -1;
 }
 
