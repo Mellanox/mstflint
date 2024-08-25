@@ -237,6 +237,8 @@ bool FsCtrlOperations::FsIntQuery()
     _fsCtrlImgInfo.life_cycle = fwQuery.life_cycle;
     _fsCtrlImgInfo.encryption = fwQuery.encryption;
     _fsCtrlImgInfo.ini_file_version = fwQuery.ini_file_version;
+    _fsCtrlImgInfo.geo_address = fwQuery.geo_address;
+    _fsCtrlImgInfo.geo_address_valid = fwQuery.geo_address_valid;
     std::vector<FwComponent> compsMap;
     if (!_fwCompsAccess->getFwComponents(compsMap, false))
     {
@@ -463,6 +465,10 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo,
             fwInfo->fs3_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
             return true;
         }
+    }
+    else
+    {
+        fwInfo->fs3_info.geo_address_valid = false;
     }
     return true;
 }
