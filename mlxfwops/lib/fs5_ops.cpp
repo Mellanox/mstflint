@@ -506,3 +506,21 @@ bool Fs5Operations::GetMfgInfo(u_int8_t* buff)
     }
     return rc;
 }
+
+bool Fs5Operations::CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_int32_t imageCntxLog2ChunkSize)
+{
+    if (cntxLog2ChunkSize > 0x19)
+    {
+        return errmsg("Unsupported Device partition size 0x%x", cntxLog2ChunkSize);
+    }
+    if (imageCntxLog2ChunkSize > 0x19)
+    {
+        return errmsg("Unsupported Image partition size 0x%x", imageCntxLog2ChunkSize);
+    }
+    if (cntxLog2ChunkSize != imageCntxLog2ChunkSize)
+    {
+        return errmsg("Device and Image partition size differ(0x%x/0x%x), use non failsafe (-nofs) burn flow.",
+                      cntxLog2ChunkSize, imageCntxLog2ChunkSize);
+    }
+    return true;
+}
