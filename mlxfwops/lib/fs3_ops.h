@@ -293,7 +293,7 @@ protected:
                                     bool silent = false);
     bool Fs3UpdateForbiddenVersionsSection(unsigned int size, char* publicKeys, std::vector<u_int8_t>& newSectionData);
 
-    bool CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_int32_t imageCntxLog2ChunkSize);
+    virtual bool CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_int32_t imageCntxLog2ChunkSize);
     bool ReBurnCurrentImage(ProgressCallBack progressFunc);
     bool RemoveWriteProtection();
     bool Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, PrintCallBack printFunc = (PrintCallBack)NULL);
