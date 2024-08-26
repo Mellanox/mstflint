@@ -3752,7 +3752,7 @@ int is_zombiefish_device(mfile* mf)
         int rc = mread4(mf, INIT_DONE_OFFSET_IN_RECOVERY_SPACE, &init_done);
         if (rc != 4)
         {
-            mf->address_space = prev_address_space;
+            mset_addr_space(mf, prev_address_space);
             DBG_PRINTF("-E- Failed to read the first dword in VSC recovery space.\n");
             return 0;
         }
@@ -3767,7 +3767,7 @@ int is_zombiefish_device(mfile* mf)
                                            // case: we should not attempt recovery if the value is 0.
         }
         mf->vsc_recovery_space_flash_control_vld = flash_control_vld;
-        mf->address_space = prev_address_space;
+        mset_addr_space(mf, prev_address_space);
     }
     mf->is_zombiefish = zombiefish;
     return zombiefish;
