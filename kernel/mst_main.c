@@ -131,14 +131,20 @@ static struct pci_device_id supported_pci_devices[] = {
 /* Allow minor numbers 0-255 */
 #define MAXMINOR 256
 #define BUFFER_SIZE 256
-#define MLNX_VENDOR_SPECIFIC_CAP_ID 0x9
+#define VENDOR_SPECIFIC_CAP_ID 0x9
 #define CRSPACE_DOMAIN 0x2
 #define AS_ICMD 0x3
 #define AS_CR_SPACE 0x2
 #define AS_SEMAPHORE 0xa
 #define AS_RECOVERY 0xc
 
-/* PCI address space related enum*/
+/* Mellanox VSC */
+#define MLX_VSC_TYPE_OFFSET 24
+#define MLX_VSC_TYPE_LEN 8
+#define FUNCTIONAL_VSC 0
+#define RECOVERY_VSC 2
+
+/* PCI FUNCTIONAL VSC address space related enum*/
 enum
 {
     PCI_CAP_PTR = 0x34,
@@ -185,7 +191,25 @@ enum
 
 // VSEC supported macro
 #define VSEC_FULLY_SUPPORTED(dev) \
-    (((dev)->vendor_specific_cap) && ((dev)->spaces_support_status == SS_ALL_SPACES_SUPPORTED))
+    (((dev)->functional_vsc_offset) && ((dev)->spaces_support_status == SS_ALL_SPACES_SUPPORTED))
+
+
+static int _update_vsc_type(struct mst_dev_data* dev)
+{
+    unsigned int vsc_first_dword;
+    int ret = pci_read_config_dword(dev->pci_dev, dev->functional_vsc_offset, &vsc_first_dword);
+    if (ret)
+    {
+        return ret;
+    }
+    u_int8_t vsc_type = EXTRACT(vsc_first_dword, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
+    if (vsc_type == RECOVERY_VSC)
+    {
+        dev->recovery_vsc_offset = dev->functional_vsc_offset;
+        dev->functional_vsc_offset = 0;
+    }
+    return 0;
+}
 
 static int _vendor_specific_sem(struct mst_dev_data* dev, int state)
 {
@@ -196,7 +220,7 @@ static int _vendor_specific_sem(struct mst_dev_data* dev, int state)
 
     if (!state)
     { // unlock
-        ret = pci_write_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_SEMAPHORE_OFFSET, 0);
+        ret = pci_write_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_SEMAPHORE_OFFSET, 0);
         if (ret)
             return ret;
     }
@@ -207,7 +231,7 @@ static int _vendor_specific_sem(struct mst_dev_data* dev, int state)
             if (retries > SEM_MAX_RETRIES)
                 return -1;
             // read semaphore untill 0x0
-            ret = pci_read_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_SEMAPHORE_OFFSET, &lock_val);
+            ret = pci_read_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_SEMAPHORE_OFFSET, &lock_val);
             if (ret)
                 return ret;
 
@@ -218,15 +242,15 @@ static int _vendor_specific_sem(struct mst_dev_data* dev, int state)
                 continue;
             }
             // read ticket
-            ret = pci_read_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_COUNTER_OFFSET, &counter);
+            ret = pci_read_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_COUNTER_OFFSET, &counter);
             if (ret)
                 return ret;
             // write ticket to semaphore dword
-            ret = pci_write_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_SEMAPHORE_OFFSET, counter);
+            ret = pci_write_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_SEMAPHORE_OFFSET, counter);
             if (ret)
                 return ret;
             // read back semaphore make sure ticket == semaphore else repeat
-            ret = pci_read_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_SEMAPHORE_OFFSET, &lock_val);
+            ret = pci_read_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_SEMAPHORE_OFFSET, &lock_val);
             if (ret)
                 return ret;
             retries++;
@@ -246,7 +270,7 @@ static int _wait_on_flag(struct mst_dev_data* dev, u8 expected_val)
         if (retries > IFC_MAX_RETRIES)
             return -1;
 
-        ret = pci_read_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_ADDR_OFFSET, &flag);
+        ret = pci_read_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_ADDR_OFFSET, &flag);
         if (ret)
             return ret;
 
@@ -266,15 +290,15 @@ static int _set_addr_space(struct mst_dev_data* dev, u16 space)
     u32 val;
     int ret;
 
-    ret = pci_read_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_CTRL_OFFSET, &val);
+    ret = pci_read_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_CTRL_OFFSET, &val);
     if (ret)
         return ret;
     val = MERGE(val, space, PCI_SPACE_BIT_OFFS, PCI_SPACE_BIT_LEN);
-    ret = pci_write_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_CTRL_OFFSET, val);
+    ret = pci_write_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_CTRL_OFFSET, val);
     if (ret)
         return ret;
     // read status and make sure space is supported
-    ret = pci_read_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_CTRL_OFFSET, &val);
+    ret = pci_read_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_CTRL_OFFSET, &val);
     if (ret)
         return ret;
 
@@ -300,11 +324,11 @@ static int _pciconf_rw(struct mst_dev_data* dev, unsigned int offset, u32* data,
     if (rw == WRITE_OP)
     {
         // write data
-        ret = pci_write_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_DATA_OFFSET, *data);
+        ret = pci_write_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_DATA_OFFSET, *data);
         if (ret)
             return ret;
         // write address
-        ret = pci_write_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_ADDR_OFFSET, address);
+        ret = pci_write_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_ADDR_OFFSET, address);
         if (ret)
             return ret;
         // wait on flag
@@ -313,13 +337,13 @@ static int _pciconf_rw(struct mst_dev_data* dev, unsigned int offset, u32* data,
     else
     {
         // write address
-        ret = pci_write_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_ADDR_OFFSET, address);
+        ret = pci_write_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_ADDR_OFFSET, address);
         if (ret)
             return ret;
         // wait on flag
         ret = _wait_on_flag(dev, 1);
         // read data
-        ret = pci_read_config_dword(dev->pci_dev, dev->vendor_specific_cap + PCI_DATA_OFFSET, data);
+        ret = pci_read_config_dword(dev->pci_dev, dev->functional_vsc_offset + PCI_DATA_OFFSET, data);
         if (ret)
             return ret;
     }
@@ -490,9 +514,15 @@ static int read4_block_vsec(struct mst_dev_data* dev, int address_space, unsigne
 
 static int get_space_support_status(struct mst_dev_data* dev)
 {
+    // If VSC is of type RECOVERY, all the spaces are not supported
+    if (dev->functional_vsc_offset == RECOVERY_VSC)
+    {
+        dev->spaces_support_status = SS_NOT_ALL_SPACES_SUPPORTED;
+        return 0;
+    }
     int ret;
     //    printk("[MST] Checking if the Vendor CAP %d supports the SPACES in devices\n", vend_cap);
-    if ((!dev->vendor_specific_cap) || (!dev->pci_dev))
+    if ((!dev->functional_vsc_offset) || (!dev->pci_dev))
         return 0;
     if (dev->spaces_support_status != SS_UNINITIALIZED)
         return 0;
@@ -904,15 +934,15 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
             paramst.vendor = dev->pci_dev->vendor;
             paramst.subsystem_device = dev->pci_dev->subsystem_device;
             paramst.subsystem_vendor = dev->pci_dev->subsystem_vendor;
-            if (dev->vendor_specific_cap && (dev->spaces_support_status == SS_ALL_SPACES_SUPPORTED ||
+            if (dev->functional_vsc_offset && (dev->spaces_support_status == SS_ALL_SPACES_SUPPORTED ||
                                              dev->spaces_support_status == SS_UNINITIALIZED))
             {
                 // assume supported if SS_UNINITIALIZED (since semaphore is locked)
-                paramst.vendor_specific_cap = dev->vendor_specific_cap;
+                paramst.functional_vsc_offset = dev->functional_vsc_offset;
             }
             else
             {
-                paramst.vendor_specific_cap = 0;
+                paramst.functional_vsc_offset = 0;
             }
             if (copy_to_user(user_buf, &paramst, sizeof(struct mst_params)))
             {
@@ -1269,8 +1299,12 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
             dev->data_reg = initst.data_reg;
 
             dev->wo_addr = is_wo_gw(dev->pci_dev, initst.addr_reg);
-            dev->vendor_specific_cap = pci_find_capability(dev->pci_dev, MLNX_VENDOR_SPECIFIC_CAP_ID);
-            // mst_info("VSEC SUPP: %#x\n", dev->vendor_specific_cap);
+            dev->functional_vsc_offset = pci_find_capability(dev->pci_dev, VENDOR_SPECIFIC_CAP_ID);
+            _update_vsc_type(dev);
+            // mst_info("dev->functional_vsc_offset: %#x. dev->recovery_vsc_offset: %#x dev->wo_addr:%d.\n", dev->functional_vsc_offset, dev->recovery_vsc_offset, dev->wo_addr);
+
+
+            // mst_info("FUNCTIONAL VSC SUPP: %#x\n", dev->functional_vsc_offset);
             dev->spaces_support_status = SS_UNINITIALIZED; // init on first op
 
             dev->initialized = 1;
@@ -1684,8 +1718,11 @@ static struct mst_dev_data* mst_device_create(enum dev_type type, struct pci_dev
          * Initialize 5th Gen attributes
          */
         dev->wo_addr = is_wo_gw(dev->pci_dev, MST_CONF_ADDR_REG);
-        dev->vendor_specific_cap = pci_find_capability(dev->pci_dev, MLNX_VENDOR_SPECIFIC_CAP_ID);
-        // mst_info("VSEC SUPP: %#x\n", dev->vendor_specific_cap);
+        dev->functional_vsc_offset = pci_find_capability(dev->pci_dev, VENDOR_SPECIFIC_CAP_ID);
+        _update_vsc_type(dev);
+        // mst_info("dev->functional_vsc_offset: %#x. dev->recovery_vsc_offset: %#x dev->wo_addr:%d.\n", dev->functional_vsc_offset, dev->recovery_vsc_offset, dev->wo_addr);
+
+        // mst_info("FUNCTIONAL VSC SUPP: %#x\n", dev->functional_vsc_offset);
         dev->spaces_support_status = SS_UNINITIALIZED; // init on first op
     }
     dev->initialized = 1;
