@@ -261,7 +261,7 @@ int supports_reg_access_gmp(mfile* mf, maccess_reg_method_t reg_method)
 
 int mget_vsec_supp(mfile* mf)
 {
-    return mf->vsec_supp;
+    return mf->functional_vsec_supp;
 }
 
 MTCR_API int mget_addr_space(mfile* mf)
