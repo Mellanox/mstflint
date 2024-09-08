@@ -170,12 +170,12 @@
  * Macros for accessing Icmd Space
  */
 #define SET_SPACE_FOR_ICMD_ACCESS(mf) \
-    if (mf->vsec_supp)                \
+    if (mf->functional_vsec_supp)                \
     {                                 \
         mset_addr_space(mf, AS_ICMD); \
     }
 #define SET_SPACE_FOR_SEMAPHORE_ACCESS(mf) \
-    if (mf->vsec_supp)                     \
+    if (mf->functional_vsec_supp)                     \
     {                                      \
         mset_addr_space(mf, AS_SEMAPHORE); \
     }
@@ -663,7 +663,7 @@ static int icmd_take_semaphore_com(mfile* mf, u_int32_t expected_read_val)
         else
 #endif
         {
-            if (mf->vsec_supp)
+            if (mf->functional_vsec_supp)
             {
                 // write expected val before reading it
                 MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, expected_read_val);
@@ -691,7 +691,7 @@ int icmd_take_semaphore(mfile* mf)
     ret = icmd_open(mf);
     CHECK_RC(ret);
 
-    if (mf->vsec_supp)
+    if (mf->functional_vsec_supp)
     {
         if (!pid)
         {
@@ -1321,7 +1321,7 @@ int icmd_open(mfile* mf)
     mf->icmd.ib_semaphore_lock_supported = 0;
     // attempt to open via CR-Space
 #if defined(MST_UL) && !defined(MST_UL_ICMD)
-    if (mf->vsec_supp)
+    if (mf->functional_vsec_supp)
     {
         return icmd_init_vcr(mf);
     }
@@ -1335,7 +1335,7 @@ int icmd_open(mfile* mf)
     /*if (mf->gb_info.is_gearbox){
         return icmd_init_cr(mf);
     }*/
-    if (mf->vsec_supp)
+    if (mf->functional_vsec_supp)
     {
         int rc = icmd_init_vcr(mf);
         if (rc == ME_OK)
