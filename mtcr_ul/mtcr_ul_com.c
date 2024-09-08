@@ -605,7 +605,7 @@ end:
             ul_ctx_t* conf_ctx = conf_mf->ul_ctx;
             mf->res_tp = conf_mf->tp;
             mf->vsec_addr = conf_mf->vsec_addr;
-            mf->vsec_supp = conf_mf->vsec_supp;
+            mf->functional_vsec_supp = conf_mf->functional_vsec_supp;
             mf->address_space = conf_mf->address_space;
             ctx->res_fdlock = conf_ctx->fdlock;
             ctx->res_mread4 = conf_ctx->mread4;
@@ -882,7 +882,7 @@ static int driver_mwrite_chunk_as_multi_mwrite4(mfile* mf, unsigned int offset, 
 }
 static int driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
 {
-    if ((mf->tp == MST_PCICONF) && mf->vsec_supp) {
+    if ((mf->tp == MST_PCICONF) && mf->functional_vsec_supp) {
         int        left_size = 0;
         u_int32_t* dest_ptr = data;
         for (left_size = length; left_size > 0; left_size -= PCICONF_MAX_BUFFER_SIZE) {
@@ -909,7 +909,7 @@ static int driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data,
 
 static int driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
 {
-    if ((mf->tp == MST_PCICONF) && mf->vsec_supp) {
+    if ((mf->tp == MST_PCICONF) && mf->functional_vsec_supp) {
         int        left_size = 0;
         u_int32_t* dest_ptr = data;
         for (left_size = length; left_size > 0; left_size -= PCICONF_MAX_BUFFER_SIZE) {
@@ -1061,8 +1061,8 @@ end:
             fprintf(stderr, "-E- Failed to get Device PARAMS!\n");
             return -1;
         }
-        mf->vsec_supp = (int)dev_params.vendor_specific_cap;
-        if (dev_params.vendor_specific_cap) {
+        mf->functional_vsec_supp = (int)dev_params.functional_vsc_offset;
+        if (dev_params.functional_vsc_offset) {
             mf->address_space = CR_SPACE_DOMAIN;
             mf->vsec_cap_mask |=
                 ((1 << VCC_INITIALIZED) | (1 << VCC_SEMAPHORE_SPACE_SUPPORTED) | (1 << VCC_CRSPACE_SPACE_SUPPORTED) |
@@ -1507,6 +1507,8 @@ static int get_space_support_status(mfile* mf, u_int16_t space)
 static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
+    u_int32_t vsec_type = 0;
+    mf->functional_vsec_supp = 0;
 
     mf->fd = -1;
     mf->fd = open(name, O_RDWR | O_SYNC);
@@ -1516,41 +1518,53 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
 
     mf->tp = MST_PCICONF;
 
-    if ((mf->vsec_addr = pci_find_capability(mf, CAP_ID))) {
-        mf->vsec_supp = 1;
-        /* check if the needed spaces are supported */
-        if (adv_opt & Clear_Vsec_Semaphore) {
+    if (mf->vsec_addr = pci_find_capability(mf, CAP_ID))
+    {
+        READ4_PCI(mf, &vsec_type, mf->vsec_addr, "read vsc type", return ME_PCI_READ_ERROR);
+        mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
+        DBG_PRINTF("in mtcr_pciconf_open function. mf->vsec_type: %d\n", mf->vsec_type);
+        if (mf->vsec_type == FUNCTIONAL_VSC)
+        {
+            DBG_PRINTF("FUNCTIONAL VSC Supported\n");
+            mf->functional_vsec_supp = 1;
+
+            /* check if the needed spaces are supported */
+            if (adv_opt & Clear_Vsec_Semaphore) {
+                mtcr_pciconf_cap9_sem(mf, 0);
+            }
+            if (mtcr_pciconf_cap9_sem(mf, 1)) {
+                close(mf->fd);
+                errno = EBUSY;
+                return -1;
+            }
+
+            get_space_support_status(mf, AS_ICMD);
+            get_space_support_status(mf, AS_NODNIC_INIT_SEG);
+            get_space_support_status(mf, AS_EXPANSION_ROM);
+            get_space_support_status(mf, AS_ND_CRSPACE);
+            get_space_support_status(mf, AS_SCAN_CRSPACE);
+            get_space_support_status(mf, AS_MAC);
+            get_space_support_status(mf, AS_ICMD_EXT);
+            get_space_support_status(mf, AS_SEMAPHORE);
+            get_space_support_status(mf, AS_CR_SPACE);
+            mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
+
             mtcr_pciconf_cap9_sem(mf, 0);
-        }
-        if (mtcr_pciconf_cap9_sem(mf, 1)) {
-            close(mf->fd);
-            errno = EBUSY;
-            return -1;
-        }
 
-        get_space_support_status(mf, AS_ICMD);
-        get_space_support_status(mf, AS_NODNIC_INIT_SEG);
-        get_space_support_status(mf, AS_EXPANSION_ROM);
-        get_space_support_status(mf, AS_ND_CRSPACE);
-        get_space_support_status(mf, AS_SCAN_CRSPACE);
-        get_space_support_status(mf, AS_MAC);
-        get_space_support_status(mf, AS_ICMD_EXT);
-        get_space_support_status(mf, AS_SEMAPHORE);
-        get_space_support_status(mf, AS_CR_SPACE);
-        mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
-
-        mtcr_pciconf_cap9_sem(mf, 0);
+            if (VSEC_SUPPORTED_UL(mf)) 
+            {
+                mf->address_space = AS_CR_SPACE;
+                ctx->mread4 = mtcr_pciconf_mread4;
+                ctx->mwrite4 = mtcr_pciconf_mwrite4;
+                ctx->mread4_block = mread4_block_pciconf;
+                ctx->mwrite4_block = mwrite4_block_pciconf;
+            } 
+        }
     }
-
-    if (VSEC_SUPPORTED_UL(mf)) {
-        mf->address_space = AS_CR_SPACE;
-        ctx->mread4 = mtcr_pciconf_mread4;
-        ctx->mwrite4 = mtcr_pciconf_mwrite4;
-        ctx->mread4_block = mread4_block_pciconf;
-        ctx->mwrite4_block = mwrite4_block_pciconf;
-    } else {
+    if (!mf->functional_vsec_supp)
+    {
         ctx->wo_addr = is_wo_pciconf_gw(mf);
-        /* printf("Write Only Address: %#x\n", ctx->wo_addr); */
+        DBG_PRINTF("Write Only Address: %d\n", ctx->wo_addr);
         ctx->mread4 = mtcr_pciconf_mread4_old;
         ctx->mwrite4 = mtcr_pciconf_mwrite4_old;
         ctx->mread4_block = mread_chunk_as_multi_mread4;
@@ -3160,7 +3174,7 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_i
         }
     } else if (supports_icmd(mf)) {
 #if defined(MST_UL) && !defined(MST_UL_ICMD)
-        if (mf->vsec_supp) { /* we support accessing fw via icmd space */
+        if (mf->functional_vsec_supp) { /* we support accessing fw via icmd space */
             rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
             if (rc) {
                 return rc;

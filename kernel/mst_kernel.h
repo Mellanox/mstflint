@@ -64,6 +64,10 @@
 #define MST_CONF_ADDR_REG 88
 #define MST_CONF_DATA_REG 92
 
+#define FUNCTIONAL_VSC 0
+#define RECOVERY_VSC 2
+#define RECOVERY_VSC_OFFSET_IN_CONFIG_SPACE 0x54 // Agreed with FW to keep the VSC offset always in 0x54 in recovery mode(LF/Late LF in CX8,QTM3 and above)
+
 #define MST_VPD_DEFAULT_TOUT 2000 /* milli seconds */
 
 #define mst_err(format, arg...) pr_err("%s: %s %d: " format, MST_PREFIX, __func__, __LINE__, ##arg)
@@ -110,8 +114,9 @@ struct mst_dev_data
 
     unsigned char connectx_wa_slots; /* wa for pci bug */
                                      /* Vendor specific capability address */
-    int vendor_specific_cap;
-    /* status on VSEC supported spaces*/
+    int functional_vsc_offset;
+    unsigned int recovery_vsc_offset; // For LF and Late LF in CX8, QTM3 and above
+    /* status on FUNCTIONAL VSC supported spaces*/
     int spaces_support_status;
 
     // Allocated pages for the user space.
