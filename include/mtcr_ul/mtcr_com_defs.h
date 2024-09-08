@@ -528,6 +528,6 @@ typedef struct cables_info_t
      ((mf)->vsec_cap_mask & (1 << VCC_SEMAPHORE_SPACE_SUPPORTED)))
 
 // VSEC supported macro
-#define VSEC_SUPPORTED_UL(mf) ((mf)->vsec_supp && VSEC_MIN_SUPPORT_UL(mf))
+#define VSEC_SUPPORTED_UL(mf) ((mf)->functional_vsec_supp && VSEC_MIN_SUPPORT_UL(mf))
 
 #endif

@@ -43,7 +43,7 @@
  *                   O   0x00000001 /dev/mst/mt25418_pci_cr0
  *       Send buff(W/O Dtype, deprecated):  O   DevName
  *                                          O   /dev/mst/mt25418_pci_cr0
- *       Rcv buff:   O   VSEC_SUPP
+ *       Rcv buff:   O   FUNCTIONAL_VSEC_SUPP
  *                   O   1
  *
  *  Mclose:

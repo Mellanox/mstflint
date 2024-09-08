@@ -81,6 +81,12 @@
 #define PCI_VPD_DATA 0x4
 #define HW_ID_ADDR 0xf0014
 
+/* Mellanox VSC */
+#define MLX_VSC_TYPE_OFFSET 24
+#define MLX_VSC_TYPE_LEN 8
+#define FUNCTIONAL_VSC 0
+#define RECOVERY_VSC 2
+
 #define _PATH_DEVPCI "/dev/pci"
 
 typedef enum
@@ -267,7 +273,7 @@ int mtcr_check_signature(mfile* mf)
 
 #define PCI_CONF_ADDR (0x00000058)
 #define PCI_CONF_DATA (0x0000005c)
-#define MLNX_VENDOR_SPECIFIC_CAP_ID 0x9
+#define VENDOR_SPECIFIC_CAP_ID 0x9
 
 /* PCI address space related enum*/
 enum
@@ -887,20 +893,30 @@ mfile* mopen_int(const char* name, u_int32_t adv_opt)
         _create_lock(mf, real_name);
         mf->wo_addr = is_wo_pciconf_gw(mf);
         // printf("-D- is_wo_pciconf_gw: %d\n", mf->wo_addr);
-        mf->vsec_addr = pci_find_capability(mf, MLNX_VENDOR_SPECIFIC_CAP_ID);
+        mf->vsec_addr = pci_find_capability(mf, VENDOR_SPECIFIC_CAP_ID);
+
+        uint32_t vsec_type = 0;
+        int rc = read_config(mf, mf->vsec_addr, &vsec_type, 4);
+        if (rc)
+        {
+            // printf("-E- Failed to read first dword from VSC - Attempt to read VSC type failed.\n");
+        }
+        mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
+        // printf("Device ID: %d mf->wo_addr:%d mf->vsec_addr:%#x mf->vsec_type:%d\n", mf->hw_dev_id, mf->wo_addr, mf->vsec_addr, mf->vsec_type);
+
         mf->vpd_cap_addr = pci_find_capability(mf, PCI_CAP_ID_VPD);
         mf->is_cable = is_cable;
-        mf->vsec_supp = 0;
-        if (mf->vsec_addr)
+        mf->functional_vsec_supp = 0;
+        if (mf->vsec_addr && mf->vsec_type == FUNCTIONAL_VSC)
         {
             if (adv_opt & Clear_Vsec_Semaphore)
             {
                 _vendor_specific_sem(mf, 0);
             }
-            mf->vsec_supp = vsec_spaces_supported(mf);
+            mf->functional_vsec_supp = vsec_spaces_supported(mf);
             mf->address_space = AS_CR_SPACE;
         }
-        // printf("mtcr_open_config Succeeded VSEC_SUPP: %d\n", mf->vsec_supp);
+        // printf("mtcr_open_config Succeeded FUNCTIONAL_VSEC_SUPP: %d\n", mf->functional_vsec_supp);
 #ifndef MST_UL
         if (mf->is_cable)
         {
@@ -1062,7 +1078,7 @@ int mread4(mfile* mf, unsigned int offset, u_int32_t* value)
         }
     }
 #endif
-    if (mf->vsec_supp)
+    if (mf->functional_vsec_supp)
     {
         return mread4_new(mf, offset, value);
     }
@@ -1165,7 +1181,7 @@ int mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
         }
     }
 #endif
-    if (mf->vsec_supp)
+    if (mf->functional_vsec_supp)
     {
         return mwrite4_new(mf, offset, value);
     }
@@ -1226,7 +1242,7 @@ int mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len)
         return rc;
     }
 #endif
-    if (mf->vsec_supp)
+    if (mf->functional_vsec_supp)
     {
         int rc = mread4_block_new(mf, offset, byte_len, data);
         // printf("-D- MREAD BLOCK LEN: %d, RC: %d\n", byte_len, rc);
@@ -1251,7 +1267,7 @@ int mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len)
         return rc;
     }
 #endif
-    if (mf->vsec_supp)
+    if (mf->functional_vsec_supp)
     {
         return mwrite4_block_new(mf, offset, byte_len, data);
     }
@@ -2625,7 +2641,7 @@ int mset_cr_access(mfile* mf, int access)
 
 int mget_vsec_supp(mfile* mf)
 {
-    return mf->vsec_supp;
+    return mf->functional_vsec_supp;
 }
 
 int mget_addr_space(mfile* mf)

@@ -115,7 +115,8 @@ struct mfile_t
     int old_mst;
     unsigned short mst_version_major;
     unsigned int mst_version_minor;
-    int vsec_supp;
+    int functional_vsec_supp;
+    u_int8_t vsec_type;
     mtcr_status_e icmd_support;
     unsigned int vsec_addr;
     u_int32_t vsec_cap_mask;

@@ -48,6 +48,12 @@ extern "C"
 {
 #endif
 
+/* Mellanox VSC */
+#define MLX_VSC_TYPE_OFFSET 24
+#define MLX_VSC_TYPE_LEN 8
+#define FUNCTIONAL_VSC 0
+#define RECOVERY_VSC 2
+
     /*
      * Read 4 bytes, return number of succ. read bytes or -1 on failure
      */
