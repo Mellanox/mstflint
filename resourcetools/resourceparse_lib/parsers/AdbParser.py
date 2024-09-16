@@ -53,7 +53,7 @@ class AdbParser:
             # build a dictionary with all the adb nodes.
             self.adb_dict = ET.parse(adb_path)
             self._build_xml_elements_dict()
-            self._build_definitions()
+            self._parse_config()
             self._dependant_layout_items = set()
             # build a dictionary with only the adb nodes that contain segment id field.
             self.segment_id_nodes_dict = {}
@@ -94,19 +94,29 @@ class AdbParser:
         for xml_element in self.adb_dict.iter('node'):
             self._node_xml_elements[xml_element.attrib["name"]] = xml_element
 
-    def _build_definitions(self):
-        # Create a list for 'inst_ifdef' (C like 'define' feature)
+    def _parse_config(self):
         self.ifdef_list = []
-        for xml_element in self.adb_dict.iter('config'):
-            if 'define' in xml_element.attrib and "=" not in xml_element.attrib["define"]:
-                self.ifdef_list.append(xml_element.attrib["define"])
-
-        # Create a dict for 'inst_if' (C like 'define' feature)
         self.if_dict = {}
+        self._configs = {
+            'big_endian_arr': False
+        }
         for xml_element in self.adb_dict.iter('config'):
-            if 'define' in xml_element.attrib and "=" in xml_element.attrib["define"]:
-                define_name, define_value = xml_element.attrib["define"].split("=")
-                self.if_dict[define_name] = define_value
+            attr = xml_element.attrib.get('define')
+            if attr:
+                if "=" not in attr:
+                    # Create a list for 'inst_ifdef' (C like 'define' feature)
+                    self.ifdef_list.append(attr)
+                else:
+                    # Create a dict for 'inst_if' (C like 'define' feature)
+                    define_name, define_value = attr.split("=")
+                    self.if_dict[define_name] = define_value
+
+            attr = xml_element.attrib.get('big_endian_arr')
+            if attr:
+                try:
+                    self._configs['big_endian_arr'] = int(attr) != 0
+                except ValueError:
+                    raise ResourceParseException("invalid value - {} of config - 'big_endian_array', should be numeric".format(attr))
 
     def _check_condition(self, left_operand, right_operand, condition):
         """
@@ -320,6 +330,17 @@ class AdbParser:
                     sub_items.append(adb_layout_item)
         return sub_items
 
+    @staticmethod
+    def _calculate_array_item_offset(offset, element_size, idx, align=32, be_array=True):
+        if be_array and element_size < align:
+            array_dword_offset = offset // align * align
+            element_dword_offset = (align - offset % align + (idx - 1) * element_size) // align * align  # calculating the offset as if elements were reversed inside the dword
+            element_bit_offset = (offset + (align - idx * element_size) % align) % align
+
+            return array_dword_offset + element_dword_offset + element_bit_offset
+        else:
+            return offset + element_size * idx
+
     def _extract_array_to_list(self, item, parent, start_index, end_index):
         """This method build insert array items to a list form a specific index.
         :param node: always field element except from the root which is node.
@@ -331,7 +352,6 @@ class AdbParser:
         array_size = self._parse_node_size(item.attrib["size"])
 
         element_size = int(array_size / (end_index - start_index))
-        current_element_offset = array_offset
 
         enum_dict = None
         if 'index_enum' in item.attrib and item.attrib['index_enum'] != '':
@@ -341,6 +361,7 @@ class AdbParser:
                 raise ResourceParseException("Error - could not parse the 'index_enum' attribute for node '{0}'.".format(item.attrib["name"]))
 
         for i in range(start_index, end_index):
+            current_element_offset = AdbParser._calculate_array_item_offset(array_offset, element_size, i, be_array=self._configs['big_endian_arr'])
             adb_layout_item = self._node_to_AdbLayoutItem(item, parent, current_element_offset, element_size, False)
 
             if enum_dict is None or i not in enum_dict:
@@ -349,7 +370,6 @@ class AdbParser:
                 adb_layout_item.name += "[" + enum_dict[i] + "]"
 
             extracted_array_layout_items.append(adb_layout_item)
-            current_element_offset += element_size
         return extracted_array_layout_items
 
     def _node_to_AdbLayoutItem(self, field_element: ET.Element, parent, offset, size, last_sub_tree_flag):
