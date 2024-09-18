@@ -98,6 +98,10 @@ typedef long long int64_t;
 #define DEV_NAME_SZ 512
 #define MAX_PAGES_SIZE 8
 #define SMP_SEMAPHOE_LOCK_CMD 0xff53
+#define ADDRESS_OUT_OF_RANGE 0x3 // syndrome_code value
+#define PXIR_SPACE_OFFSET 0x100
+
+#define CX8_HW_ID 0x21e
 
 /*
  * MST <--> MTCR API defines
@@ -139,6 +143,7 @@ typedef enum MError
     ME_SEM_LOCKED,
     ME_MEM_ERROR,
     ME_TIMEOUT,
+    ME_ADDRESS_OUT_OF_RANGE,
 
     ME_MAD_SEND_FAILED,
     ME_UNKOWN_ACCESS_TYPE,
@@ -316,6 +321,11 @@ typedef enum
     VCC_SCAN_CRSPACE_SPACE_SUPPORTED = 0x7,
     VCC_SEMAPHORE_SPACE_SUPPORTED = 0x8,
     VCC_MAC_SPACE_SUPPORTED = 0x9,
+    VCC_PCI_ICMD_SPACE_SUPPORTED = 0xa,
+    VCC_PCI_CRSPACE_SPACE_SUPPORTED = 0xb,
+    VCC_PCI_ALL_ICMD_SPACE_SUPPORTED = 0xc,
+    VCC_PCI_SCAN_CRSPACE_SPACE_SUPPORTED = 0xd,
+    VCC_PCI_GLOBAL_SEMAPHORE_SPACE_SUPPORTED = 0xe
 } VSCCapCom;
 
 typedef enum
@@ -330,6 +340,11 @@ typedef enum
     AS_SEMAPHORE = 0xa,
     AS_RECOVERY = 0Xc,
     AS_MAC = 0xf,
+    AS_PCI_ICMD = 0x101,
+    AS_PCI_CRSPACE = 0x102,
+    AS_PCI_ALL_ICMD = 0x103,
+    AS_PCI_SCAN_CRSPACE = 0x107,
+    AS_PCI_GLOBAL_SEMAPHORE = 0x10a,
     AS_END
 } address_space_t;
 
@@ -522,12 +537,18 @@ typedef struct cables_info_t
     int slave_addr_additional_offset;
 } cables_info;
 
-#define VSEC_MIN_SUPPORT_UL(mf)                                                                                      \
-    (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) && ((mf)->vsec_cap_mask & (1 << VCC_CRSPACE_SPACE_SUPPORTED)) && \
-     ((mf)->vsec_cap_mask & (1 << VCC_ICMD_EXT_SPACE_SUPPORTED)) &&                                                  \
+#define VSEC_MIN_SUPPORT_UL(mf) \
+    (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) && \
+     ((mf)->vsec_cap_mask & (1 << VCC_CRSPACE_SPACE_SUPPORTED)) && \
+     ((mf)->vsec_cap_mask & (1 << VCC_ICMD_EXT_SPACE_SUPPORTED)) && \
      ((mf)->vsec_cap_mask & (1 << VCC_SEMAPHORE_SPACE_SUPPORTED)))
 
-// VSEC supported macro
-#define VSEC_SUPPORTED_UL(mf) ((mf)->functional_vsec_supp && VSEC_MIN_SUPPORT_UL(mf))
+#define VSEC_PXIR_SUPPORT(mf) \
+    ((mf)->device_hw_id == CX8_HW_ID)
+
+// Macro for VSEC_SUPPORTED_UL
+#define VSEC_SUPPORTED_UL(mf) \
+    ((mf)->functional_vsec_supp && (VSEC_MIN_SUPPORT_UL(mf) || VSEC_PXIR_SUPPORT(mf)))
+
 
 #endif
