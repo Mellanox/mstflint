@@ -316,26 +316,6 @@ bool FsCtrlOperations::FsIntQuery()
         }
     }
 
-    //* Read global image status
-    if (_fsCtrlImgInfo.sec_boot == true)
-    {
-        try
-        {
-            CRSpaceRegisters cr_space_reg(mf, _fwImgInfo.ext_info.chip_type);
-            _fsCtrlImgInfo.global_image_status = cr_space_reg.getGlobalImageStatus();
-        }
-        catch (logic_error e)
-        {
-            printf("%s\n", e.what());
-            return false;
-        }
-        catch (exception e)
-        {
-            printf("%s\n", e.what());
-            return false;
-        }
-    }
-
     /*
      * Fill ROM info
      */
