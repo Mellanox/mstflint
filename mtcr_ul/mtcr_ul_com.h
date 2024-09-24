@@ -177,6 +177,7 @@ void mtcr_fix_endianness(u_int32_t* buf, int len);
 
 int is_zombiefish_device(mfile* mf);
 
+int read_device_id(mfile* mf, u_int32_t* device_id);
 #ifdef __cplusplus
 }
 #endif

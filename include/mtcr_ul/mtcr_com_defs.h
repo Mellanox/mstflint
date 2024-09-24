@@ -414,6 +414,10 @@ typedef struct icmd_params_t {
     int           took_semaphore;
     int           ctrl_addr;
     int           cmd_addr;
+    int           cmd_ptr_bitlen;
+    int           version_addr;
+    int           version_bit_offset;
+    int           version_bitlen;
     u_int32_t     max_cmd_size;
     int           semaphore_addr;
     int           static_cfg_not_done_addr;

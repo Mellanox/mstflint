@@ -75,11 +75,11 @@ string PrmAdbDB::prm_adb_db_trim(const string& s)
     return prm_adb_db_rtrim(prm_adb_db_ltrim(s));
 }
 
-string PrmAdbDB::getDefaultDBName(bool isSwitch)
+string PrmAdbDB::getDefaultDBName(dm_dev_id_t devID)
 {
     const string dbDirName = "prm_dbs";
     const string dbFileName = "register_access_table.adb";
-    const string hcaOrSwitch = isSwitch ? "switch" : "hca";
+    const string hcaOrSwitch = (dm_is_gpu(devID) ? "gpu" : dm_dev_is_switch(devID) ? "switch" : "hca");
     string       dbPathName = "";
 
 #ifdef __WIN__

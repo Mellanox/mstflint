@@ -104,7 +104,6 @@ enum dm_dev_id {
     DeviceCableCMIS,
     DeviceCableCMISPaging,
     DeviceGB100,        /* Blackwell */
-    DeviceGB100,
     DeviceGR100,
     DeviceArcusPTC,     /* ArcusP Test Chip */
     DeviceArcusP,
@@ -145,6 +144,7 @@ enum hw_dev_id {
     DeviceQuantum3_HwId         = 0x25b,
     DeviceQuantum4_HwId         = 0x278,
     DeviceGB100_HwId            = 0x2900,
+    DeviceGR100_HwId            = 0x3000,
     DeviceArdbeg_HwId           = 0x6e,
     DeviceBaritone_HwId         = 0x6b,
     DeviceMenhit_HwId           = 0x72,

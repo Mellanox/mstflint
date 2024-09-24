@@ -57,6 +57,8 @@ struct page_list_fbsd {
 /*  or modified by user programs. Except i2c_slave that may be */
 /*  modified before each access to target I2C slave address */
 struct mfile_t {
+    u_int16_t     hw_dev_id;
+    u_int16_t     rev_id;
     MType         tp; /*  type of driver */
     MType         orig_tp;
     MType         res_tp; /*  Will be used with HCR if need */
@@ -77,6 +79,8 @@ struct mfile_t {
     int           sock;  /*  in not -1 - remote interface */
     int           is_mtserver_req; /* request came from mtServer - means came from remote client */
     void        * bar_virtual_addr;
+    unsigned int  big_endian;
+    unsigned int  cr_space_offset;
     unsigned int  map_size;
     unsigned int  bar0_gw_offset; /* for MST_BAR0_GW_PCI devices, offset from BAR0 - gateway - for R/W operations */
     int           file_lock_descriptor; /* file descriptor to the lock file aka semaphore in order to protect parallel read/write */
