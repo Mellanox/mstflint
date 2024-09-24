@@ -58,7 +58,7 @@ MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
     {
         if (_isExternal && (extAdbFile == "")) {
             dm_dev_id_t devID = getDevId();
-            extAdbFile = PrmAdbDB::getDefaultDBName(dm_dev_is_switch(devID));
+            extAdbFile = PrmAdbDB::getDefaultDBName(devID);
         }
         initAdb(extAdbFile);
     }

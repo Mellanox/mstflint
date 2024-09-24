@@ -430,7 +430,7 @@ vector < AmberField > MlxlinkAmBerCollector::getIndexesInfo()
         labelPortStr += "/" + to_string(_splitPort);
     }
     if ((_secondSplit && (_secondSplit != 1)) &&
-        ((_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || (_devID == DeviceGB100))) {
+        ((_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || (_devID == DeviceGB100) || (_devID == DeviceGR100))) {
         labelPortStr += "/" + to_string(_secondSplit);
     }
     fields.push_back(AmberField("Port_Number", labelPortStr + "(" + to_string(_localPort) + ")", !_isPortPCIE));
@@ -785,6 +785,10 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
 
                 fields.push_back(AmberField("Link_Down_GB_line", to_string(getFieldValue("link_down_events"))));
             }
+
+            fields.push_back(AmberField("Link_Down", to_string(getFieldValue("link_down_events"))));
+            fields.push_back(
+                AmberField("successful_recovery_events", to_string(getFieldValue("successful_recovery_events"))));
 
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);

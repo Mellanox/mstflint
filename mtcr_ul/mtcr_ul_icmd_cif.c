@@ -42,6 +42,7 @@
 #include "common/tools_time.h"
 #include "mtcr_icmd_cif.h"
 #include "packets_common.h"
+#include "mtcr_gpu.h"
 #ifndef __FreeBSD__
 #include "mtcr_ib_res_mgt.h"
 #endif
@@ -64,6 +65,7 @@
 #define STAT_CFG_NOT_DONE_ADDR_CX5     0xb5e04
 #define STAT_CFG_NOT_DONE_ADDR_CX6     0xb5f04
 #define STAT_CFG_NOT_DONE_ADDR_CX7     0xb5f04
+#define STAT_CFG_NOT_DONE_ADDR_GPU     0x3100010
 #define STAT_CFG_NOT_DONE_BITOFF_CIB   31
 #define STAT_CFG_NOT_DONE_BITOFF_CX4   31
 #define STAT_CFG_NOT_DONE_BITOFF_SW_IB 0
@@ -78,13 +80,16 @@
 #define SEMAPHORE_ADDR_GB100           0xa52f8
 #define SEMAPHORE_ADDR_CX5             0xe74e0
 #define SEMAPHORE_ADDR_CX7             0xe5660
+#define SEMAPHORE_ADDR_GPU             0x308F4F8
 #define HCR_ADDR_CIB                   0x0
 #define HCR_ADDR_CX4                   HCR_ADDR_CIB
 #define HCR_ADDR_CX5                   HCR_ADDR_CIB
 #define HCR_ADDR_CX7                   HCR_ADDR_CIB
 #define HCR_ADDR_SW_IB                 0x80000
 #define HCR_ADDR_QUANTUM               0x100000
+#define HCR_ADDR_GPU                   0x3100044
 #define ICMD_VERSION_BITOFF            24
+#define ICMD_VERSION_BITOFF_GPU        0
 #define ICMD_VERSION_BITLEN            8
 #define CMD_PTR_ADDR_CIB               0x0
 #define CMD_PTR_ADDR_SW_IB             0x80000
@@ -92,8 +97,10 @@
 #define CMD_PTR_ADDR_CX4               CMD_PTR_ADDR_CIB
 #define CMD_PTR_ADDR_CX5               CMD_PTR_ADDR_CIB
 #define CMD_PTR_ADDR_CX7               CMD_PTR_ADDR_CIB
+#define CMD_PTR_ADDR_GPU               0x3100000
 #define CMD_PTR_BITOFF                 0
 #define CMD_PTR_BITLEN                 24
+#define CMD_PTR_BITLEN_GPU             32
 #define CTRL_OFFSET                    0x3fc
 #define BUSY_BITOFF                    0
 #define BUSY_BITLEN                    1
@@ -291,6 +298,7 @@ enum {
 #define QUANTUM2_HW_ID  599
 #define QUANTUM3_HW_ID  603 /* 0x25b */
 #define GB100_HW_ID     0x2900
+#define GR100_HW_ID     0x3000
 #define SPECTRUM4_HW_ID 596
 #define AMOS_GBOX_HW_ID 594
 
@@ -315,7 +323,7 @@ static int get_version(mfile* mf, u_int32_t hcr_address)
     if (MREAD4(mf, hcr_address, &reg)) {
         return ME_ICMD_STATUS_CR_FAIL;
     }
-    reg = EXTRACT(reg, ICMD_VERSION_BITOFF, ICMD_VERSION_BITLEN);
+    reg = EXTRACT(reg, mf->icmd.version_bit_offset, ICMD_VERSION_BITLEN);
     return reg;
 }
 
@@ -913,7 +921,12 @@ static int icmd_init_cr(mfile* mf)
 #endif
 
     /* get device specific addresses */
-    MREAD4((mf), (HW_ID_ADDR), &(hw_id));
+    if (read_device_id(mf, &hw_id) != 4) {
+        return ME_ICMD_NOT_SUPPORTED;
+    }
+
+    mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN;
+    mf->icmd.version_bit_offset = ICMD_VERSION_BITOFF;
     switch (hw_id & 0xffff) {
     case (CIB_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CIB;
@@ -963,13 +976,23 @@ static int icmd_init_cr(mfile* mf)
 
     case (QUANTUM2_HW_ID):
     case (QUANTUM3_HW_ID):
-    case (GB100_HW_ID):
     case (SPECTRUM4_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM2;
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
+        break;
+
+    case (GB100_HW_ID):
+    case (GR100_HW_ID):
+        cmd_ptr_addr = CMD_PTR_ADDR_GPU;
+        hcr_address = HCR_ADDR_GPU;
+        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_GPU;
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_GPU;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
+        mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN_GPU;
+        mf->icmd.version_bit_offset = ICMD_VERSION_BITOFF_GPU;
         break;
 
     case (CX6_HW_ID):
@@ -987,7 +1010,6 @@ static int icmd_init_cr(mfile* mf)
     case (BF3_HW_ID):
     case (CX8_HW_ID):
     case (BF4_HW_ID):
-    case (CX9_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX7;
         hcr_address = HCR_ADDR_CX7;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX7;
@@ -1029,7 +1051,8 @@ static int icmd_init_cr(mfile* mf)
         if (MREAD4(mf, cmd_ptr_addr, &reg)) {
             return ME_ICMD_STATUS_CR_FAIL;
         }
-        mf->icmd.cmd_addr = EXTRACT(reg, CMD_PTR_BITOFF, CMD_PTR_BITLEN);
+
+        mf->icmd.cmd_addr = EXTRACT(reg, CMD_PTR_BITOFF, mf->icmd.cmd_ptr_bitlen);
         mf->icmd.ctrl_addr = mf->icmd.cmd_addr + CTRL_OFFSET;
         break;
 
@@ -1057,7 +1080,10 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
     u_int32_t hw_id = 0x0;
 
     /* get device specific addresses */
-    MREAD4((mf), (HW_ID_ADDR), &(hw_id));
+    if (read_device_id(mf, &hw_id) != 4) {
+        return ME_ICMD_NOT_SUPPORTED;
+    }
+
     switch (hw_id & 0xffff) {
     case (CIB_HW_ID):
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CIB;
@@ -1186,7 +1212,27 @@ static int is_pci_device(mfile* mf)
 {
     return (mf->flags & MDEVS_I2CM) || (mf->flags & (MDEVS_CABLE | MDEVS_LINKX_CHIP)) || (mf->flags & MDEVS_SOFTWARE);
 }
-#endif
+
+int is_livefish_device(mfile* mf)
+{
+    if (!mf || !mf->dinfo) {
+        return 0;
+    }
+
+    unsigned int hwdevid = 0;
+
+    if (mf->tp == MST_SOFTWARE) {
+        return 1;
+    }
+    int rc = read_device_id(mf, &hwdevid);
+
+    if (rc == 4) {
+        return ((!is_gpu_pci_device(mf->dinfo->pci.dev_id)) && (mf->dinfo->pci.dev_id == hwdevid));
+    }
+    return 0;
+}
+#endif /* ifndef __FreeBSD__ */
+
 
 int icmd_open(mfile* mf)
 {
@@ -1209,9 +1255,9 @@ int icmd_open(mfile* mf)
     if (mf->functional_vsec_supp) {
         return icmd_init_vcr(mf);
     }
-    /* ugly hack avoid compiler warrnings */
-    if (0) {
-        icmd_init_cr(mf);
+
+    if (is_gpu_pci_device(mf->dinfo->pci.dev_id)) {
+        return icmd_init_cr(mf);
     }
     return ME_ICMD_NOT_SUPPORTED;
 #else
@@ -1246,51 +1292,3 @@ void icmd_close(mfile* mf)
     }
 }
 
-
-int is_livefish_device(mfile* mf)
-{
-    if (!mf || !mf->dinfo) {
-        return 0;
-    }
-    /* Make sure to update this table both in mtcr.c & mtcr_ul_com.c ! */
-    static u_int32_t live_fish_ids[][2] = {
-        {DeviceConnectX4_HwId, DeviceConnectX4_HwId},
-        {DeviceConnectX4LX_HwId, DeviceConnectX4LX_HwId},
-        {DeviceConnectX5_HwId, DeviceConnectX5_HwId},
-        {DeviceConnectX6_HwId, DeviceConnectX6_HwId},
-        {DeviceConnectX6DX_HwId, DeviceConnectX6DX_HwId},
-        {DeviceConnectX6LX_HwId, DeviceConnectX6LX_HwId},
-        {DeviceConnectX7_HwId, DeviceConnectX7_HwId},
-        {DeviceConnectX8_HwId, DeviceConnectX8_HwId},
-        {DeviceBlueField3_HwId, DeviceBlueField3_HwId},
-        {DeviceBlueField2_HwId, DeviceBlueField2_HwId},
-        {DeviceBlueField_HwId, DeviceBlueField_HwId},
-        {DeviceSwitchIB_HwId, DeviceSwitchIB_HwId},
-        {DeviceSpectrum_HwId, DeviceSpectrum_HwId},
-        {DeviceSwitchIB2_HwId, DeviceSwitchIB2_HwId},
-        {DeviceQuantum_HwId, DeviceQuantum_HwId},
-        {DeviceQuantum2_HwId, DeviceQuantum2_HwId},
-        {DeviceSpectrum2_HwId, DeviceSpectrum2_HwId},
-        {DeviceSpectrum3_HwId, DeviceSpectrum3_HwId},
-        {DeviceSpectrum4_HwId, DeviceSpectrum4_HwId},
-        {0, 0}
-    };
-    int              i = 0;
-    unsigned int     hwdevid = 0;
-
-    if (mf->tp == MST_SOFTWARE) {
-        return 1;
-    }
-    int rc = mread4(mf, 0xf0014, &hwdevid);
-
-    hwdevid &= 0xffff; /* otherwise, BF A1 will fail in the searching (0x00010211) */
-    if (rc == 4) {
-        while (live_fish_ids[i][0] != 0) {
-            if (live_fish_ids[i][0] == hwdevid) {
-                return (mf->dinfo->pci.dev_id == live_fish_ids[i][1]);
-            }
-            i++;
-        }
-    }
-    return 0;
-}

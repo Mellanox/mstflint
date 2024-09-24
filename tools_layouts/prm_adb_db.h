@@ -41,6 +41,7 @@
 
 #include <string>
 #include <exception>
+#include "dev_mgt/tools_dev_types.h"
 
 class PrmAdbDB
 {
@@ -48,7 +49,7 @@ public:
     static std::string prm_adb_db_trim(const std::string& s);
     static std::string prm_adb_db_rtrim(const std::string& s);
     static std::string prm_adb_db_ltrim(const std::string& s);
-    static std::string getDefaultDBName(bool isSwitch);
+    static std::string getDefaultDBName(dm_dev_id_t devID);
 };
 
 class PrmDBException: public std::exception

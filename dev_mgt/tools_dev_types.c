@@ -692,7 +692,7 @@ static int dm_get_device_id_inner(mfile      * mf,
             }
         }
     } else {
-        if (mread4(mf, DEVID_ADDR, &dword) != 4) {
+        if (read_device_id(mf, &dword) != 4) {
             return CRSPACE_READ_ERROR;
         }
 
@@ -948,6 +948,11 @@ int dm_is_livefish_mode(mfile* mf)
     u_int32_t swid = mf->dinfo->pci.dev_id;
 
     /* printf("-D- swid: %#x, devid: %#x\n", swid, devid); */
+
+    if (dm_is_gpu(devid_t)) {
+        return 0;
+    }
+
     if (dm_is_4th_gen(devid_t)) {
         return (devid == swid - 1);
     } else {
@@ -985,12 +990,7 @@ int dm_is_gr100(dm_dev_id_t type)
 
 int dm_is_gpu(dm_dev_id_t type)
 {
-    return (dm_is_gb100(type) || dm_is_gb100(type));
-}
-
-int dm_is_gb100(dm_dev_id_t type)
-{
-    return (type == DeviceGB100);
+    return (dm_is_gb100(type) || dm_is_gr100(type));
 }
 
 int dm_is_cx7(dm_dev_id_t type)
