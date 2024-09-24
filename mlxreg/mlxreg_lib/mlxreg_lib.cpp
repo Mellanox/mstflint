@@ -28,7 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-
+ *
  *
  */
 
@@ -56,68 +56,61 @@ MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
     _isExternal = isExternal;
     try
     {
-        if (_isExternal && extAdbFile == "")
-        {
+        if (_isExternal && (extAdbFile == "")) {
             dm_dev_id_t devID = getDevId();
-            extAdbFile = PrmAdbDB::getDefaultDBName(dm_dev_is_switch(devID));
+            extAdbFile = PrmAdbDB::getDefaultDBName(devID);
         }
         initAdb(extAdbFile);
     }
-    catch (MlxRegException& adbInitExp)
+    catch(MlxRegException & adbInitExp)
     {
-        if (_adb)
-        {
+        if (_adb) {
             delete _adb;
         }
         throw adbInitExp;
     }
     string unionNode = REG_ACCESS_UNION_NODE;
     string rootNode = unionNode + "_selector";
-    if (_isExternal)
-    {
+
+    if (_isExternal) {
         rootNode = rootNode + "_ext";
     }
 
     _regAccessRootNode = _adb->createLayout(rootNode);
-    if (!_regAccessRootNode)
-    {
+    if (!_regAccessRootNode) {
         throw MlxRegException("No supported access registers found");
     }
     _regAccessUnionNode = _regAccessRootNode->getChildByPath(unionNode);
-    if (!_regAccessUnionNode)
-    {
+    if (!_regAccessUnionNode) {
         throw MlxRegException("No supported access registers found");
     }
-    if (!_regAccessUnionNode->isUnion())
-    {
+    if (!_regAccessUnionNode->isUnion()) {
         throw MlxRegException("No supported access registers found");
     }
     try
     {
         _regAccessMap = _regAccessUnionNode->unionSelector->getEnumMap();
     }
-    catch (AdbException& exp)
+    catch(AdbException & exp)
     {
         throw MlxRegException("Failed to extract registers info. %s", exp.what());
     }
-    // Set error map
-    std::map<int, std::string> errmap;
+    /* Set error map */
+    std::map < int, std::string > errmap;
     errmap[MRLS_SUCCESS] = "Success";
     errmap[MRLS_GENERAL] = "General error";
     updateErrCodes(errmap);
 }
 
 /************************************
- * Function: ~MlxRegLib
- ************************************/
+* Function: ~MlxRegLib
+************************************/
 MlxRegLib::~MlxRegLib()
 {
-    if (_regAccessRootNode)
-    {
+    if (_regAccessRootNode) {
         delete _regAccessRootNode;
     }
-    if (_adb)
-    {
+    if (_adb) {
         delete _adb;
     }
 }
@@ -130,10 +123,10 @@ dm_dev_id_t MlxRegLib::getDevId()
 dm_dev_id_t MlxRegLib::getDevId(mfile* mf)
 {
     dm_dev_id_t devID = DeviceUnknown;
-    u_int32_t hwDevID = 0;
-    u_int32_t hwChipRev = 0;
-    if (dm_get_device_id(mf, &devID, &hwDevID, &hwChipRev))
-    {
+    u_int32_t   hwDevID = 0;
+    u_int32_t   hwChipRev = 0;
+
+    if (dm_get_device_id(mf, &devID, &hwDevID, &hwChipRev)) {
         throw MlxRegException("Failed to read device ID");
     }
     return devID;
@@ -142,71 +135,68 @@ dm_dev_id_t MlxRegLib::getDevId(mfile* mf)
 bool MlxRegLib::isDeviceSupported(mfile* mf)
 {
     dm_dev_id_t devID = getDevId(mf);
+
     return !dm_is_4th_gen(devID);
 }
 
 void MlxRegLib::initAdb(string extAdbFile)
 {
     _adb = new Adb();
-    if (extAdbFile != "")
-    {
-        if (!_adb->load(extAdbFile, false, false, false))
-        {
+    if (extAdbFile != "") {
+        if (!_adb->load(extAdbFile, false, false, false)) {
             throw MlxRegException("Failure in loading Adabe file. %s", _adb->getLastError().c_str());
         }
-    }
-    else
-    {
+    } else {
         throw MlxRegException("No Adabe was provided, please provide Adabe file to continue");
     }
 }
 
 /************************************
- * Function: findAdbNode
- ************************************/
+* Function: findAdbNode
+************************************/
 AdbInstance* MlxRegLib::findAdbNode(string name)
 {
-    if (_regAccessMap.find(name) == _regAccessMap.end())
-    {
+    if (_regAccessMap.find(name) == _regAccessMap.end()) {
         throw MlxRegException("Can't find access register name: %s", name.c_str());
     }
     return _regAccessUnionNode->getUnionSelectedNodeName(name);
 }
 
 /************************************
- * Function: showRegister
- ************************************/
-MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector<AdbInstance*>& fields)
+* Function: showRegister
+************************************/
+MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector < AdbInstance* >& fields)
 {
     AdbInstance* adbNode = findAdbNode(regName);
+
     fields = adbNode->getLeafFields(true);
     return MRLS_SUCCESS;
 }
 
 /************************************
- * Function: showRegisters
- ************************************/
-MlxRegLibStatus MlxRegLib::showRegisters(std::vector<string>& regs)
+* Function: showRegisters
+************************************/
+MlxRegLibStatus MlxRegLib::showRegisters(std::vector < string >& regs)
 {
-    for (std::map<string, u_int64_t>::iterator it = _regAccessMap.begin(); it != _regAccessMap.end(); ++it)
-    {
+    for (std::map < string, u_int64_t > ::iterator it = _regAccessMap.begin(); it != _regAccessMap.end(); ++it) {
         regs.push_back(it->first);
     }
     return MRLS_SUCCESS;
 }
 
 /************************************
- * Function: sendMaccessReg
- ************************************/
-int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t>& data)
+* Function: sendMaccessReg
+************************************/
+int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector < u_int32_t >& data)
 {
     int status = 0;
     int rc;
-    std::vector<u_int32_t> temp_data;
+
+    std::vector < u_int32_t > temp_data;
     copy(data.begin(), data.end(), back_inserter(temp_data));
     int i = RETRIES_COUNT;
-    do
-    {
+
+    do{
         rc = maccess_reg(_mf,
                          regId,
                          (maccess_reg_method_t)method,
@@ -215,8 +205,7 @@ int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t
                          (sizeof(u_int32_t) * data.size()),
                          (sizeof(u_int32_t) * data.size()),
                          &status);
-        if ((rc != ME_ICMD_STATUS_IFC_BUSY && status != ME_REG_ACCESS_BAD_PARAM) || !(_mf->flags & MDEVS_REM))
-        {
+        if (((rc != ME_ICMD_STATUS_IFC_BUSY) && (status != ME_REG_ACCESS_BAD_PARAM)) || !(_mf->flags & MDEVS_REM)) {
             break;
         }
         data.clear();
@@ -228,119 +217,116 @@ int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t
 }
 
 /************************************
- * Function: sendRegister
- ************************************/
-MlxRegLibStatus MlxRegLib::sendRegister(string regName, int method, std::vector<u_int32_t>& data)
+* Function: sendRegister
+************************************/
+MlxRegLibStatus MlxRegLib::sendRegister(string regName, int method, std::vector < u_int32_t >& data)
 {
     u_int16_t regId = (u_int16_t)_regAccessMap.find(regName)->second;
-    int rc;
+    int       rc;
+
     rc = sendMaccessReg(regId, method, data);
-    if (rc)
-    {
+    if (rc) {
         throw MlxRegException("Failed to send access register: %s", m_err2str((MError)rc));
     }
     return MRLS_SUCCESS;
 }
 
 /************************************
- * Function: sendRegister
- ************************************/
-MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, std::vector<u_int32_t>& data)
+* Function: sendRegister
+************************************/
+MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, std::vector < u_int32_t >& data)
 {
     int rc;
+
     rc = sendMaccessReg(regId, method, data);
-    if (rc)
-    {
+    if (rc) {
         throw MlxRegException("Failed send access register: %s", m_err2str((MError)rc));
     }
     return MRLS_SUCCESS;
 }
 
 /************************************
- * Function: getLastErrMsg
- ************************************/
+* Function: getLastErrMsg
+************************************/
 string MlxRegLib::getLastErrMsg()
 {
     std::stringstream sstm;
-    int lastErrCode = getLastErrCode();
-    string errCodeStr = err2Str(lastErrCode);
-    string errStr = err();
+    int               lastErrCode = getLastErrCode();
+    string            errCodeStr = err2Str(lastErrCode);
+    string            errStr = err();
+
     sstm << errCodeStr;
-    if (errStr != errCodeStr)
-    {
+    if (errStr != errCodeStr) {
         sstm << ": " << errStr;
     }
     return sstm.str();
 }
 
 /************************************
- * Function: isRegSizeSupported
- ************************************/
+* Function: isRegSizeSupported
+************************************/
 bool MlxRegLib::isRegSizeSupported(string regName)
 {
     AdbInstance* adbNode = _regAccessUnionNode->getUnionSelectedNodeName(regName);
+
     return (((adbNode->size >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_SET)) ||
             ((adbNode->size >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET)));
 }
 
 /************************************
- * Function: isAccessRegisterSupported
- ************************************/
+* Function: isAccessRegisterSupported
+************************************/
 void MlxRegLib::isAccessRegisterSupported(mfile* mf)
 {
-    int status;
+    int                                    status;
     struct icmd_hca_icmd_query_cap_general icmd_cap;
-    int i = RETRIES_COUNT;
+    int                                    i = RETRIES_COUNT;
 
     if (mf->tp == MST_FWCTL_CONTROL_DRIVER) {
         return;
     }
 
-    do
-    {
+    do{
         memset(&icmd_cap, 0, sizeof(icmd_cap));
         status = get_icmd_query_cap(mf, &icmd_cap);
-        if (!(status || icmd_cap.allow_icmd_access_reg_on_all_registers == 0))
+        if (!(status || (icmd_cap.allow_icmd_access_reg_on_all_registers == 0))) {
             break;
+        }
         msleep(SLEEP_INTERVAL);
     } while (i-- > 0);
 
-    if (status || icmd_cap.allow_icmd_access_reg_on_all_registers == 0)
-    {
+    if (status || (icmd_cap.allow_icmd_access_reg_on_all_registers == 0)) {
         throw MlxRegException("FW burnt on device does not support generic access register");
     }
 }
 /************************************
- * Function: isAccessRegisterGMPSupported
- ************************************/
+* Function: isAccessRegisterGMPSupported
+************************************/
 bool MlxRegLib::isAccessRegisterGMPSupported(maccess_reg_method_t reg_method)
 {
     return (bool)(supports_reg_access_gmp(_mf, reg_method));
 }
 
 /************************************
- * Function: isIBDevice
- ************************************/
+* Function: isIBDevice
+************************************/
 bool MlxRegLib::isIBDevice()
 {
     return (bool)(_mf->flags & MDEVS_IB);
 }
 
 /************************************
- * Function: dumpRegisterData
- ************************************/
-MlxRegLibStatus MlxRegLib::dumpRegisterData(string output_file_name, std::vector<u_int32_t>& data)
+* Function: dumpRegisterData
+************************************/
+MlxRegLibStatus MlxRegLib::dumpRegisterData(string output_file_name, std::vector < u_int32_t >& data)
 {
     FILE* outputFile = fopen(output_file_name.c_str(), "w");
-    if (outputFile)
-    {
-        for (std::vector<u_int32_t>::size_type i = 0; i != data.size(); i++)
-        {
+
+    if (outputFile) {
+        for (std::vector < u_int32_t > ::size_type i = 0; i != data.size(); i++) {
             fprintf(outputFile, "%08x\n", CPU_TO_BE32(data[i]));
         }
-    }
-    else
-    {
+    } else {
         throw MlxRegException("Failed to open file");
     }
     fclose(outputFile);
