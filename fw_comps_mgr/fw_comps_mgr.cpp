@@ -1818,7 +1818,9 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
         {
             query->security_type.dev_fw = mgir.fw_info.dev_sc;
         }
-        if (dm_dev_is_fs5(dm_device_id))
+        if (dm_dev_is_fs5(dm_device_id) && query->life_cycle.value == FS5_LC_PRE_PRODUCTION) // Other LC values returned
+                                                                                             // from MGIR are translated
+                                                                                             // to FS4 LC values.
         {
             query->life_cycle.version_field = 1;
         }
