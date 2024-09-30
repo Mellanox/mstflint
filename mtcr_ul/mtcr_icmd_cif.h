@@ -107,6 +107,8 @@ extern "C"
      **/
     int icmd_take_semaphore(mfile* mf);
 
+    int is_livefish_device(mfile* mf);
+
 #ifdef __cplusplus
 }
 #endif
