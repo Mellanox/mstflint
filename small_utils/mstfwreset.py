@@ -125,6 +125,9 @@ SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField
                 "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "BlueField4"]
 SUPP_SWITCH_DEVICES = ["Spectrum", "Spectrum-2", "Spectrum-3", "Switch-IB", "Switch-IB-2", "Quantum", "Quantum-2"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
+UNSUPPORTED_PSIDS_PER_DEV_ID = {
+    0x218: ["MT_0000001121", "MT_0000001181", "MT_0000001122", "MT_0000001182", "OMN0000000006"]  # Canoe
+}
 
 IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
 # TODO later remove mcra to the new class
@@ -1391,14 +1394,25 @@ def send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync=SyncOwner.TOO
 def is_pcie_switch_device(devid, reg_access_obj=None):
     res = False
     reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
-    devDict = getDeviceDict(devid)
-    if devDict['name'] == 'ConnectX7':
-        psid = reg_access_obj.getPSID()
-        logger.debug("ConnectX7 device with PSID: %s" % psid)
-        if psid in ALL_PSID_PCIE_SWITCH:
-            logger.debug("Found PCIE switch device")
-            res = True
+    try:
+        devDict = getDeviceDict(devid)
+        if devDict['name'] == 'ConnectX7':
+            psid = reg_access_obj.getPSID()
+            logger.debug("ConnectX7 device with PSID: %s" % psid)
+            if psid in ALL_PSID_PCIE_SWITCH:
+                logger.debug("Found PCIE switch device")
+                res = True
+    except BaseException:
+        pass
     return res
+
+
+def assert_supported_psid(devid):
+    if devid in UNSUPPORTED_PSIDS_PER_DEV_ID:
+        psid = RegAccessObj.getPSID()
+        logger.debug("{0} devid with PSID: {1}".format(devid, psid))
+        if psid in UNSUPPORTED_PSIDS_PER_DEV_ID[devid]:
+            raise Exception("Device {0} with PSID {1} is not supported by this tool".format(getDeviceDict(devid)['name'], psid))
 
 ######################################################################
 # Description: Send MFRL to FW in Multihost setup
@@ -1998,6 +2012,8 @@ def reset_flow_host(device, args, command):
     # mpcir = CmdRegMpcir(RegAccessObj)
     mcam = CmdRegMcam(RegAccessObj)
     mrsi = CmdRegMrsi(RegAccessObj)
+
+    assert_supported_psid(devid)
 
     logger.info('Check if device is livefish')
     DevMgtObj = dev_mgt.DevMgt(MstDevObj)  # check if device is in livefish
