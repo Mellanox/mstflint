@@ -145,11 +145,15 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
     _fecModeActive[FEC_MODE_STANDARD_LL_FEC_271_257] = "Standard LL RS-FEC - RS(271,257)";
     _fecModeActive[FEC_MODE_INTERLEAVED_STANDARD_RS_FEC_544_514] = "Interleaved_Standard_RS-FEC - (544,514)";
     _fecModeActive[FEC_MODE_STANDARD_RS_FEC_544_514] = "Standard_RS-FEC - (544,514)";
+    _fecModeActive[FEC_MODE_ZERO_LATENCY_FEC] = "Zero_Latency_FEC";
     _fecModeActive[FEC_MODE_RS_FEC_272_257] = "Ethernet_Consortium_LL_50G_RS_FEC- (272,257+1)";
     _fecModeActive[FEC_MODE_INTERLEAVED_RS_FEC_272_257] = "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC -(272,257+1)";
+    _fecModeActive[FEC_MODE_INTERLEAVED_RS_FEC_544_514_PLR] = "Interleaved_Standard_RS_FEC_PLR - (544,514)";
     _fecModeActive[FEC_MODE_RS_FEC_544_514_PLR] = "RS-FEC - (544,514) + PLR";
     _fecModeActive[FEC_MODE_RS_FEC_271_257_PLR] = "LL-FEC - (271,257) + PLR";
     _fecModeActive[FEC_MODE_RS_FEC_PLR_272_257] = "Ethernet_Consortium_LL_50G_RS_FEC_PLR -(272,257+1)";
+    _fecModeActive[FEC_MODE_INTERLEAVED_RS_FEC_PLR_272_257] =
+      "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC_PLR - (272,257+1)";
 
     _fecModeMask[FEC_MODE_MASK_AU] = make_pair("Auto-FEC", "AU");
     _fecModeMask[FEC_MODE_MASK_NF] = make_pair("No-FEC", "NF");
