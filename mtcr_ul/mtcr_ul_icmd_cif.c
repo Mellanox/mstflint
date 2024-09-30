@@ -44,8 +44,8 @@
 #include "packets_common.h"
 #ifndef __FreeBSD__
 #include "mtcr_ib_res_mgt.h"
-#include "tools_dev_types.h"
 #endif
+#include "tools_dev_types.h"
 
 #include "mtcr_mem_ops.h"
 #include "mtcr_ul_com.h"
@@ -1250,55 +1250,6 @@ static int is_pci_device(mfile* mf)
 {
     return (mf->flags & MDEVS_I2CM) || (mf->flags & (MDEVS_CABLE | MDEVS_LINKX_CHIP)) || (mf->flags & MDEVS_SOFTWARE);
 }
-
-static int is_livefish_device(mfile* mf)
-{
-    if (!mf || !mf->dinfo)
-    {
-        return 0;
-    }
-    // Make sure to update this table both in mtcr.c & mtcr_ul_com.c !
-    static u_int32_t live_fish_ids[][2] = {{DeviceConnectX4_HwId, DeviceConnectX4_HwId},
-                                           {DeviceConnectX4LX_HwId, DeviceConnectX4LX_HwId},
-                                           {DeviceConnectX5_HwId, DeviceConnectX5_HwId},
-                                           {DeviceConnectX6_HwId, DeviceConnectX6_HwId},
-                                           {DeviceConnectX6DX_HwId, DeviceConnectX6DX_HwId},
-                                           {DeviceConnectX6LX_HwId, DeviceConnectX6LX_HwId},
-                                           {DeviceConnectX7_HwId, DeviceConnectX7_HwId},
-                                           {DeviceConnectX8_HwId, DeviceConnectX8_HwId},
-                                           {DeviceBlueField3_HwId, DeviceBlueField3_HwId},
-                                           {DeviceBlueField2_HwId, DeviceBlueField2_HwId},
-                                           {DeviceBlueField_HwId, DeviceBlueField_HwId},
-                                           {DeviceSwitchIB_HwId, DeviceSwitchIB_HwId},
-                                           {DeviceSpectrum_HwId, DeviceSpectrum_HwId},
-                                           {DeviceSwitchIB2_HwId, DeviceSwitchIB2_HwId},
-                                           {DeviceQuantum_HwId, DeviceQuantum_HwId},
-                                           {DeviceQuantum2_HwId, DeviceQuantum2_HwId},
-                                           {DeviceSpectrum2_HwId, DeviceSpectrum2_HwId},
-                                           {DeviceSpectrum3_HwId, DeviceSpectrum3_HwId},
-                                           {DeviceSpectrum4_HwId, DeviceSpectrum4_HwId},
-                                           {0, 0}};
-    int i = 0;
-    unsigned int hwdevid = 0;
-    if (mf->tp == MST_SOFTWARE)
-    {
-        return 1;
-    }
-    int rc = mread4(mf, 0xf0014, &hwdevid);
-    hwdevid &= 0xffff; // otherwise, BF A1 will fail in the searching (0x00010211)
-    if (rc == 4)
-    {
-        while (live_fish_ids[i][0] != 0)
-        {
-            if (live_fish_ids[i][0] == hwdevid)
-            {
-                return (mf->dinfo->pci.dev_id == live_fish_ids[i][1]);
-            }
-            i++;
-        }
-    }
-    return 0;
-}
 #endif
 
 int icmd_open(mfile* mf)
@@ -1368,4 +1319,54 @@ void icmd_close(mfile* mf)
         }
         mf->icmd.icmd_opened = 0;
     }
+}
+
+
+int is_livefish_device(mfile* mf)
+{
+    if (!mf || !mf->dinfo)
+    {
+        return 0;
+    }
+    // Make sure to update this table both in mtcr.c & mtcr_ul_com.c !
+    static u_int32_t live_fish_ids[][2] = {{DeviceConnectX4_HwId, DeviceConnectX4_HwId},
+                                           {DeviceConnectX4LX_HwId, DeviceConnectX4LX_HwId},
+                                           {DeviceConnectX5_HwId, DeviceConnectX5_HwId},
+                                           {DeviceConnectX6_HwId, DeviceConnectX6_HwId},
+                                           {DeviceConnectX6DX_HwId, DeviceConnectX6DX_HwId},
+                                           {DeviceConnectX6LX_HwId, DeviceConnectX6LX_HwId},
+                                           {DeviceConnectX7_HwId, DeviceConnectX7_HwId},
+                                           {DeviceConnectX8_HwId, DeviceConnectX8_HwId},
+                                           {DeviceBlueField3_HwId, DeviceBlueField3_HwId},
+                                           {DeviceBlueField2_HwId, DeviceBlueField2_HwId},
+                                           {DeviceBlueField_HwId, DeviceBlueField_HwId},
+                                           {DeviceSwitchIB_HwId, DeviceSwitchIB_HwId},
+                                           {DeviceSpectrum_HwId, DeviceSpectrum_HwId},
+                                           {DeviceSwitchIB2_HwId, DeviceSwitchIB2_HwId},
+                                           {DeviceQuantum_HwId, DeviceQuantum_HwId},
+                                           {DeviceQuantum2_HwId, DeviceQuantum2_HwId},
+                                           {DeviceSpectrum2_HwId, DeviceSpectrum2_HwId},
+                                           {DeviceSpectrum3_HwId, DeviceSpectrum3_HwId},
+                                           {DeviceSpectrum4_HwId, DeviceSpectrum4_HwId},
+                                           {0, 0}};
+    int i = 0;
+    unsigned int hwdevid = 0;
+    if (mf->tp == MST_SOFTWARE)
+    {
+        return 1;
+    }
+    int rc = mread4(mf, 0xf0014, &hwdevid);
+    hwdevid &= 0xffff; // otherwise, BF A1 will fail in the searching (0x00010211)
+    if (rc == 4)
+    {
+        while (live_fish_ids[i][0] != 0)
+        {
+            if (live_fish_ids[i][0] == hwdevid)
+            {
+                return (mf->dinfo->pci.dev_id == live_fish_ids[i][1]);
+            }
+            i++;
+        }
+    }
+    return 0;
 }
