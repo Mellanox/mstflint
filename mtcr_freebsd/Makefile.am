@@ -55,8 +55,6 @@ libmtcr_ul_la_SOURCES = \
     $(top_srcdir)/mtcr_ul/packets_common.h\
     $(top_srcdir)/mtcr_ul/packets_layout.c \
     $(top_srcdir)/mtcr_ul/packets_layout.h \
-    $(top_srcdir)/mtcr_ul/mtcr_gpu.c \
-    $(top_srcdir)/mtcr_ul/mtcr_gpu.h \
     mtcr_mf.h \
     mtcr_ul.c \
     mtcr_ul_com_defs.h

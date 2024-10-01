@@ -76,18 +76,19 @@
 #include <sys/file.h>
 
 #define MST_VPD_DFLT_TIMEOUT 2000
-#define PCI_VPD_ADDR         0x2
-#define PCI_CAP_ID_VPD       0x3
-#define PCI_VPD_DATA         0x4
-#define HW_ID_ADDR           0xf0014
+#define PCI_VPD_ADDR 0x2
+#define PCI_CAP_ID_VPD 0x3
+#define PCI_VPD_DATA 0x4
+#define HW_ID_ADDR 0xf0014
 
 #define _PATH_DEVPCI "/dev/pci"
 
-typedef enum {
+typedef enum
+{
     Clear_Vsec_Semaphore = 0x1
 } adv_opt_t;
 
-#define FREEBSD_LOCK_FILE_DIR    "/tmp/mft_lockfiles"
+#define FREEBSD_LOCK_FILE_DIR "/tmp/mft_lockfiles"
 #define FREEBSD_LOCK_FILE_FORMAT "/tmp/mft_lockfiles/%s"
 
 #define CHECK_LOCK(rc) \
@@ -100,16 +101,20 @@ typedef enum {
 static int _flock_int(int fdlock, int operation)
 {
     int cnt = 0;
-
-    if (fdlock == 0) {
-        /* in case we failed to create the lock file we ignore the locking mechanism */
+    if (fdlock == 0)
+    {
+        // in case we failed to create the lock file we ignore the locking mechanism
         return 0;
     }
-    do{
-        if (flock(fdlock, operation | LOCK_NB) == 0) {
+    do
+    {
+        if (flock(fdlock, operation | LOCK_NB) == 0)
+        {
             return 0;
-        } else if (errno != EWOULDBLOCK) {
-            break; /* BAD! lock/free failed */
+        }
+        else if (errno != EWOULDBLOCK)
+        {
+            break; // BAD! lock/free failed
         }
         mft_usleep(10);
         cnt++;
@@ -121,21 +126,24 @@ static int _flock_int(int fdlock, int operation)
 static int _create_lock(mfile* mf, char* devname)
 {
     char fname[64] = {0};
-    int  rc;
-    int  fd = 0;
+    int rc;
+    int fd = 0;
 
     snprintf(fname, sizeof(fname) - 1, FREEBSD_LOCK_FILE_FORMAT, devname);
     rc = mkdir("/tmp", 0777);
-    if (rc && (errno != EEXIST)) {
+    if (rc && errno != EEXIST)
+    {
         goto cl_clean_up;
     }
     rc = mkdir(FREEBSD_LOCK_FILE_DIR, 0777);
-    if (rc && (errno != EEXIST)) {
+    if (rc && errno != EEXIST)
+    {
         goto cl_clean_up;
     }
 
     fd = open(fname, O_RDONLY | O_CREAT, 0777);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         goto cl_clean_up;
     }
 
@@ -151,67 +159,61 @@ cl_clean_up:
 void mtcr_connectx_flush(void* ptr, int fdlock)
 {
     u_int32_t value;
-    int       rc = _flock_int(fdlock, LOCK_EX);
-
-    if (rc) {
+    int rc = _flock_int(fdlock, LOCK_EX);
+    if (rc)
+    {
         return;
     }
     *((u_int32_t*)((char*)ptr + 0xf0380)) = 0x0;
-    do{
-        asm volatile ("" ::: "memory");
+    do
+    {
+        asm volatile("" ::: "memory");
         value = __be32_to_cpu(*((u_int32_t*)((char*)ptr + 0xf0380)));
     } while (value);
     rc = _flock_int(fdlock, LOCK_UN);
-    if (rc) {
+    if (rc)
+    {
         return;
     }
 }
 
 int read_device_id(mfile* mf, u_int32_t* device_id)
 {
-    if (!mf || !device_id) {
-        return -1;
-    }
-
-    int      rc = 0;
-    unsigned hw_id_address = mf->cr_space_offset + HW_ID_ADDR;
-
-    mf->rev_id = EXTRACT(*device_id, 16, 4);
-    *device_id = (*device_id & 0xffff);
-    mf->hw_dev_id = (*device_id & 0xffff);
-
-    return mread4(mf, hw_id_address, device_id);
+    return mread4(mf, HW_ID_ADDR, device_id);
 }
 
 int mtcr_check_signature(mfile* mf)
 {
     unsigned signature;
-    int      rc;
-
+    int rc;
     rc = read_device_id(mf, &signature);
-    if (rc != 4) {
-        if (!errno) {
+    if (rc != 4)
+    {
+        if (!errno)
+        {
             errno = EIO;
         }
         return -1;
     }
 
-    switch (signature & 0xffff) {
-    case 0x190:     /* 400 */
-        if ((signature == 0xa00190) && mf->ptr) {
-            mf->connectx_flush = 1;
-            mtcr_connectx_flush(mf->ptr, mf->fdlock);
-        }
+    switch (signature & 0xffff)
+    {
+        case 0x190: /* 400 */
+            if (signature == 0xa00190 && mf->ptr)
+            {
+                mf->connectx_flush = 1;
+                mtcr_connectx_flush(mf->ptr, mf->fdlock);
+            }
 
-    case 0x5a44:     /* 23108 */
-    case 0x6278:     /* 25208 */
-    case 0x5e8c:     /* 24204 */
-    case 0x6274:     /* 25204 */
-        return 0;
+        case 0x5a44: /* 23108 */
+        case 0x6278: /* 25208 */
+        case 0x5e8c: /* 24204 */
+        case 0x6274: /* 25204 */
+            return 0;
 
-    default:
-        errno = ENOTTY;
-        return -1;
+        default:
+            errno = ENOTTY;
+            return -1;
     }
 }
 
@@ -263,62 +265,65 @@ int mtcr_check_signature(mfile* mf)
         }                                                         \
     } while (0)
 
-#define PCI_CONF_ADDR               (0x00000058)
-#define PCI_CONF_DATA               (0x0000005c)
+#define PCI_CONF_ADDR (0x00000058)
+#define PCI_CONF_DATA (0x0000005c)
 #define MLNX_VENDOR_SPECIFIC_CAP_ID 0x9
 
 /* PCI address space related enum*/
-enum {
-    PCI_CAP_PTR        = 0x34,
-    PCI_HDR_SIZE       = 0x40,
+enum
+{
+    PCI_CAP_PTR = 0x34,
+    PCI_HDR_SIZE = 0x40,
     PCI_EXT_SPACE_ADDR = 0xff,
 
-    PCI_CTRL_OFFSET      = 0x4, /* for space / semaphore / auto-increment bit */
-    PCI_COUNTER_OFFSET   = 0x8,
+    PCI_CTRL_OFFSET = 0x4, // for space / semaphore / auto-increment bit
+    PCI_COUNTER_OFFSET = 0x8,
     PCI_SEMAPHORE_OFFSET = 0xc,
-    PCI_ADDR_OFFSET      = 0x10,
-    PCI_DATA_OFFSET      = 0x14,
+    PCI_ADDR_OFFSET = 0x10,
+    PCI_DATA_OFFSET = 0x14,
 
     PCI_FLAG_BIT_OFFS = 31,
 
     PCI_SPACE_BIT_OFFS = 0,
-    PCI_SPACE_BIT_LEN  = 16,
+    PCI_SPACE_BIT_LEN = 16,
 
     PCI_STATUS_BIT_OFFS = 29,
-    PCI_STATUS_BIT_LEN  = 3,
+    PCI_STATUS_BIT_LEN = 3,
 
     PCI_HEADER_OFFS = 0x0,
     PCI_SUBSYS_OFFS = 0x2c,
-    PCI_CLASS_OFFS  = 0x8,
+    PCI_CLASS_OFFS = 0x8,
 };
 
 /* Mellanox vendor specific enum */
-enum {
-    CAP_ID          = 0x9,
+enum
+{
+    CAP_ID = 0x9,
     IFC_MAX_RETRIES = 0x10000,
     SEM_MAX_RETRIES = 0x1000
 };
 
 /* PCI operation enum(read or write)*/
-enum {
-    READ_OP  = 0,
+enum
+{
+    READ_OP = 0,
     WRITE_OP = 1,
 };
 
 int read_config(mfile* mf, unsigned int reg, uint32_t* data, int width)
 {
     struct pci_io pi = {};
-
     pi.pi_sel = mf->sel;
     pi.pi_reg = reg;
     pi.pi_width = width;
 
-    if (ioctl(mf->fd, PCIOCREAD, &pi) < 0) {
+    if (ioctl(mf->fd, PCIOCREAD, &pi) < 0)
+    {
         errno = EIO;
         return -1;
     }
 
-    /* printf("%s:  dev:%d reg=%x width=%d data=%x\n", __FUNCTION__, pi.pi_sel.pc_dev, reg, width, pi.pi_data); */
+    // printf("%s:  dev:%d reg=%x width=%d data=%x\n", __FUNCTION__, pi.pi_sel.pc_dev, reg, width, pi.pi_data);
     *data = (pi.pi_data);
 
     return 0;
@@ -327,15 +332,15 @@ int read_config(mfile* mf, unsigned int reg, uint32_t* data, int width)
 int write_config(mfile* mf, unsigned int reg, uint32_t data, int width)
 {
     struct pci_io pi = {};
-
     pi.pi_sel = mf->sel;
     pi.pi_reg = reg;
     pi.pi_width = width;
     pi.pi_data = data;
 
-    /* printf("%s: dev:%d reg:%x width:%d data:%x\n", __FUNCTION__, pi.pi_sel.pc_dev, pi.pi_reg, pi.pi_width, */
-    /* pi.pi_data); */
-    if (ioctl(mf->fd, PCIOCWRITE, &pi) < 0) {
+    // printf("%s: dev:%d reg:%x width:%d data:%x\n", __FUNCTION__, pi.pi_sel.pc_dev, pi.pi_reg, pi.pi_width,
+    // pi.pi_data);
+    if (ioctl(mf->fd, PCIOCWRITE, &pi) < 0)
+    {
         errno = EIO;
         return -1;
     }
@@ -349,31 +354,34 @@ int write_config(mfile* mf, unsigned int reg, uint32_t data, int width)
 
 static int is_wo_pciconf_gw(mfile* mf)
 {
-    unsigned  offset = HW_ID_ADDR;
+    unsigned offset = HW_ID_ADDR;
     u_int32_t data = 0;
-    int       lock_rc;
-
+    int lock_rc;
     lock_rc = _flock_int(mf->fdlock, LOCK_EX);
-    if (lock_rc) {
+    if (lock_rc)
+    {
         return 0;
     }
     int rc = write_config(mf, PCI_CONF_ADDR, (unsigned long)offset, 4);
-
-    if (rc < 0) {
+    if (rc < 0)
+    {
         goto cleanup;
     }
     rc = read_config(mf, PCI_CONF_ADDR, &data, 4);
-    if (rc < 0) {
+    if (rc < 0)
+    {
         rc = 0;
         goto cleanup;
     }
-    /* printf("-D- Data: %#x\n", data); */
-    if (data == WO_REG_ADDR_DATA) {
+    // printf("-D- Data: %#x\n", data);
+    if (data == WO_REG_ADDR_DATA)
+    {
         rc = 1;
     }
 cleanup:
     lock_rc = _flock_int(mf->fdlock, LOCK_UN);
-    if (lock_rc) {
+    if (lock_rc)
+    {
         return rc;
     }
     return rc;
@@ -388,52 +396,60 @@ cleanup:
 /* Read Write new functions (4Bytes, Block)*/
 int pci_find_capability(mfile* mf, int cap_id)
 {
-    unsigned      offset;
+    unsigned offset;
     unsigned char visited[256] = {0}; /* Prevent infinite loops */
-    uint32_t      reg;
-    int           ret;
-    int           curr_cap;
-    int           lock_rc;
+    uint32_t reg;
+    int ret;
+    int curr_cap;
 
+    int lock_rc;
     lock_rc = _flock_int(mf->fdlock, LOCK_EX);
-    if (lock_rc) {
+    if (lock_rc)
+    {
         return 0;
     }
     ret = read_config(mf, PCI_CAP_PTR, &reg, 4);
 
-    if (ret) {
+    if (ret)
+    {
         ret = 0;
         goto cleanup;
     }
 
     offset = ((unsigned char*)&reg)[0];
-    while (1) {
-        if ((offset < PCI_HDR_SIZE) || (offset > PCI_EXT_SPACE_ADDR)) {
+    while (1)
+    {
+        if (offset < PCI_HDR_SIZE || offset > PCI_EXT_SPACE_ADDR)
+        {
             ret = 0;
             goto cleanup;
         }
         ret = read_config(mf, offset, &reg, 4);
-        if (ret) {
+        if (ret)
+        {
             ret = 0;
             goto cleanup;
         }
 
         visited[offset] = 1;
         curr_cap = ((unsigned char*)&reg)[0];
-        if (curr_cap == cap_id) {
+        if (curr_cap == cap_id)
+        {
             ret = offset;
             goto cleanup;
         }
 
         offset = ((unsigned char*)&reg)[1];
-        if (visited[offset]) {
+        if (visited[offset])
+        {
             ret = 0;
             goto cleanup;
         }
     }
 cleanup:
     lock_rc = _flock_int(mf->fdlock, LOCK_UN);
-    if (lock_rc) {
+    if (lock_rc)
+    {
         return ret;
     }
     return ret;
@@ -443,30 +459,35 @@ static int _vendor_specific_sem(mfile* mf, int state)
 {
     uint32_t lock_val;
     uint32_t counter = 0;
-    int      retries = 0;
-
-    if (!state) {
-        /* unlock */
+    int retries = 0;
+    if (!state)
+    {
+        // unlock
         WRITE4_PCI(mf, 0, mf->vsec_addr + PCI_SEMAPHORE_OFFSET, "unlock semaphore", return -1);
-    } else {
-        /* lock */
-        do{
-            if (retries > SEM_MAX_RETRIES) {
+    }
+    else
+    {
+        // lock
+        do
+        {
+            if (retries > SEM_MAX_RETRIES)
+            {
                 return -1;
             }
-            /* read semaphore untill 0x0 */
+            // read semaphore untill 0x0
             READ4_PCI(mf, &lock_val, mf->vsec_addr + PCI_SEMAPHORE_OFFSET, "read counter", return -1);
-            if (lock_val) {
-                /* semaphore is taken */
+            if (lock_val)
+            {
+                // semaphore is taken
                 retries++;
-                msleep(1); /* wait for current op to end */
+                msleep(1); // wait for current op to end
                 continue;
             }
-            /* read ticket */
+            // read ticket
             READ4_PCI(mf, &counter, mf->vsec_addr + PCI_COUNTER_OFFSET, "read counter", return -1);
-            /* write ticket to semaphore dword */
+            // write ticket to semaphore dword
             WRITE4_PCI(mf, counter, mf->vsec_addr + PCI_SEMAPHORE_OFFSET, "write counter to semaphore", return -1);
-            /* read back semaphore make sure ticket == semaphore else repeat */
+            // read back semaphore make sure ticket == semaphore else repeat
             READ4_PCI(mf, &lock_val, mf->vsec_addr + PCI_SEMAPHORE_OFFSET, "read counter", return -1);
             retries++;
         } while (counter != lock_val);
@@ -476,11 +497,12 @@ static int _vendor_specific_sem(mfile* mf, int state)
 
 static int _wait_on_flag(mfile* mf, u_int8_t expected_val)
 {
-    int      retries = 0;
+    int retries = 0;
     uint32_t flag;
-
-    do{
-        if (retries > IFC_MAX_RETRIES) {
+    do
+    {
+        if (retries > IFC_MAX_RETRIES)
+        {
             return -1;
         }
 
@@ -488,9 +510,10 @@ static int _wait_on_flag(mfile* mf, u_int8_t expected_val)
 
         flag = EXTRACT(flag, PCI_FLAG_BIT_OFFS, 1);
         retries++;
-        if ((retries & 0xf) == 0) {
-            /* dont sleep always */
-            /* usleep_range(1,5); */
+        if ((retries & 0xf) == 0)
+        {
+            // dont sleep always
+            // usleep_range(1,5);
         }
     } while (flag != expected_val);
     return 0;
@@ -498,15 +521,15 @@ static int _wait_on_flag(mfile* mf, u_int8_t expected_val)
 
 static int _set_addr_space(mfile* mf, u_int16_t space)
 {
-    /* read modify write */
+    // read modify write
     uint32_t val;
-
     READ4_PCI(mf, &val, mf->vsec_addr + PCI_CTRL_OFFSET, "read domain", return -1);
     val = MERGE(val, space, PCI_SPACE_BIT_OFFS, PCI_SPACE_BIT_LEN);
     WRITE4_PCI(mf, val, mf->vsec_addr + PCI_CTRL_OFFSET, "write domain", return -1);
-    /* read status and make sure space is supported */
+    // read status and make sure space is supported
     READ4_PCI(mf, &val, mf->vsec_addr + PCI_CTRL_OFFSET, "read status", return -1);
-    if (EXTRACT(val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0) {
+    if (EXTRACT(val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0)
+    {
         return -1;
     }
     return 0;
@@ -514,28 +537,32 @@ static int _set_addr_space(mfile* mf, u_int16_t space)
 
 static int _pciconf_rw(mfile* mf, unsigned int offset, uint32_t* data, int rw)
 {
-    int      ret = 0;
+    int ret = 0;
     uint32_t address = offset;
 
-    /* last 2 bits must be zero as we only allow 30 bits addresses */
-    if (EXTRACT(address, 30, 2)) {
+    // last 2 bits must be zero as we only allow 30 bits addresses
+    if (EXTRACT(address, 30, 2))
+    {
         return -1;
     }
 
     address = MERGE(address, (rw ? 1 : 0), PCI_FLAG_BIT_OFFS, 1);
-    if (rw == WRITE_OP) {
-        /* write data */
+    if (rw == WRITE_OP)
+    {
+        // write data
         WRITE4_PCI(mf, *data, mf->vsec_addr + PCI_DATA_OFFSET, "write value", return -1);
-        /* write address */
+        // write address
         WRITE4_PCI(mf, address, mf->vsec_addr + PCI_ADDR_OFFSET, "write offset", return -1);
-        /* wait on flag */
+        // wait on flag
         ret = _wait_on_flag(mf, 0);
-    } else {
-        /* write address */
+    }
+    else
+    {
+        // write address
         WRITE4_PCI(mf, address, mf->vsec_addr + PCI_ADDR_OFFSET, "write offset", return -1);
-        /* wait on flag */
+        // wait on flag
         ret = _wait_on_flag(mf, 1);
-        /* read data */
+        // read data
         READ4_PCI(mf, data, mf->vsec_addr + PCI_DATA_OFFSET, "read value", return -1);
     }
     return ret;
@@ -545,22 +572,24 @@ static int _send_pci_cmd_int(mfile* mf, int space, unsigned int offset, uint32_t
 {
     int ret = 0;
 
-    /* take semaphore */
+    // take semaphore
     ret = _vendor_specific_sem(mf, 1);
-    if (ret) {
-        /* printf("-D- Failed to take Semaphore!\n"); */
+    if (ret)
+    {
+        // printf("-D- Failed to take Semaphore!\n");
         return ret;
     }
-    /* set address space */
+    // set address space
     ret = _set_addr_space(mf, space);
-    if (ret) {
-        /* printf("-D- Failed to set space!\n"); */
+    if (ret)
+    {
+        // printf("-D- Failed to set space!\n");
         goto cleanup;
     }
-    /* read/write the data */
+    // read/write the data
     ret = _pciconf_rw(mf, offset, data, rw);
 cleanup:
-    /* clear semaphore */
+    // clear semaphore
     _vendor_specific_sem(mf, 0);
     return ret;
 }
@@ -570,23 +599,27 @@ static int _block_op(mfile* mf, int space, unsigned int offset, int size, uint32
     int i;
     int ret = 0;
     int wrote_or_read = size;
-
-    if (size % 4) {
+    if (size % 4)
+    {
         return -1;
     }
-    /* lock semaphore and set address space */
+    // lock semaphore and set address space
     ret = _vendor_specific_sem(mf, 1);
-    if (ret) {
+    if (ret)
+    {
         return -1;
     }
-    /* set address space */
+    // set address space
     ret = _set_addr_space(mf, space);
-    if (ret) {
+    if (ret)
+    {
         wrote_or_read = -1;
         goto cleanup;
     }
-    for (i = 0; i < size; i += 4) {
-        if (_pciconf_rw(mf, offset + i, &(data[(i >> 2)]), rw)) {
+    for (i = 0; i < size; i += 4)
+    {
+        if (_pciconf_rw(mf, offset + i, &(data[(i >> 2)]), rw))
+        {
             wrote_or_read = i;
             goto cleanup;
         }
@@ -601,7 +634,8 @@ static int mwrite4_new(mfile* mf, unsigned int offset, uint32_t data)
     int ret;
 
     ret = _send_pci_cmd_int(mf, mf->address_space, offset, &data, WRITE_OP);
-    if (ret) {
+    if (ret)
+    {
         return -1;
     }
     return 4;
@@ -612,7 +646,8 @@ static int mread4_new(mfile* mf, unsigned int offset, uint32_t* data)
     int ret;
 
     ret = _send_pci_cmd_int(mf, mf->address_space, offset, data, READ_OP);
-    if (ret) {
+    if (ret)
+    {
         return -1;
     }
     return 4;
@@ -630,17 +665,18 @@ static int mread4_block_new(mfile* mf, unsigned int offset, int size, uint32_t* 
 
 static int vsec_spaces_supported(mfile* mf)
 {
-    /* take semaphore */
+    // take semaphore
     int supported = 1;
     int ret = _vendor_specific_sem(mf, 1);
-
-    if (ret) {
+    if (ret)
+    {
         return supported;
     }
-    if (_set_addr_space(mf, AS_CR_SPACE) || _set_addr_space(mf, AS_ICMD) || _set_addr_space(mf, AS_SEMAPHORE)) {
+    if (_set_addr_space(mf, AS_CR_SPACE) || _set_addr_space(mf, AS_ICMD) || _set_addr_space(mf, AS_SEMAPHORE))
+    {
         supported = 0;
     }
-    /* clear semaphore */
+    // clear semaphore
     _vendor_specific_sem(mf, 0);
     return supported;
 }
@@ -659,45 +695,56 @@ int device_exists(const char* devname);
 #if __FreeBSD_version > 700000
 int getsel(const char* str, struct pcisel* selout)
 {
-    char        * ep = strchr(str, '@');
-    char        * epbase;
+    char* ep = strchr(str, '@');
+    char* epbase;
     struct pcisel sel;
     unsigned long selarr[4];
-    int           i;
+    int i;
+    // printf("__FreeBSD_version > 700000 detected.\n");
 
-    /* printf("__FreeBSD_version > 700000 detected.\n"); */
-
-    if (ep == NULL) {
+    if (ep == NULL)
+    {
         ep = (char*)str;
-    } else {
+    }
+    else
+    {
         ep++;
     }
 
     epbase = ep;
 
-    if (strncmp(ep, "pci", 3) == 0) {
+    if (strncmp(ep, "pci", 3) == 0)
+    {
         ep += 3;
         i = 0;
-        do{
+        do
+        {
             selarr[i++] = strtoul(ep, &ep, 10);
         } while ((*ep == ':' || *ep == '.') && *++ep != '\0' && i < 4);
 
-        if (i > 2) {
+        if (i > 2)
+        {
             sel.pc_func = selarr[--i];
-        } else {
+        }
+        else
+        {
             sel.pc_func = 0;
         }
         sel.pc_dev = selarr[--i];
         sel.pc_bus = selarr[--i];
-        if (i > 0) {
+        if (i > 0)
+        {
             sel.pc_domain = selarr[--i];
-        } else {
+        }
+        else
+        {
             sel.pc_domain = 0;
         }
     }
-    if ((*ep != '\x0') || (ep == epbase)) {
+    if (*ep != '\x0' || ep == epbase)
+    {
         return 1;
-        /* errx(1, "cannot parse selector %s ep:'%s' epbase:%s, %d", str, ep, epbase, *ep); */
+        // errx(1, "cannot parse selector %s ep:'%s' epbase:%s, %d", str, ep, epbase, *ep);
     }
 
     *selout = sel;
@@ -707,69 +754,80 @@ int getsel(const char* str, struct pcisel* selout)
 #else
 int getsel(const char* str, struct pcisel* selout)
 {
-    char        * ep = strchr(str, '@');
-    char        * epbase;
+    char* ep = strchr(str, '@');
+    char* epbase;
     struct pcisel sel;
 
-    /* printf("__FreeBSD_version < 700000 detected: %d\n", __FreeBSD_version); */
+    // printf("__FreeBSD_version < 700000 detected: %d\n", __FreeBSD_version);
 
-    if (ep == NULL) {
+    if (ep == NULL)
+    {
         ep = (char*)str;
-    } else {
+    }
+    else
+    {
         ep++;
     }
 
     epbase = ep;
 
-    if (strncmp(ep, "pci", 3) == 0) {
+    if (strncmp(ep, "pci", 3) == 0)
+    {
         ep += 3;
         sel.pc_bus = strtoul(ep, &ep, 0);
-        if (!ep || (*ep++ != ':')) {
+        if (!ep || *ep++ != ':')
+        {
             errno = EINVAL;
             return 1;
-            /* errx(1, "cannot parse selector %s", str); */
+            // errx(1, "cannot parse selector %s", str);
         }
         sel.pc_dev = strtoul(ep, &ep, 0);
-        if (!ep || (*ep != ':')) {
+        if (!ep || *ep != ':')
+        {
             sel.pc_func = 0;
-        } else {
+        }
+        else
+        {
             ep++;
             sel.pc_func = strtoul(ep, &ep, 0);
         }
-        if (*ep == ':') {
+        if (*ep == ':')
+        {
             ep++;
         }
     }
-    if ((*ep != '\x0') || (ep == epbase)) {
+    if (*ep != '\x0' || ep == epbase)
+    {
         return 1;
-        /* errx(1, "cannot parse selector %s", str); */
+        // errx(1, "cannot parse selector %s", str);
     }
 
     *selout = sel;
 
     return 0;
 }
-#endif /* if __FreeBSD_version > 700000 */
+#endif
 
 int mtcr_open_config(mfile* mf, const char* name)
 {
-    /* printf("open_config %s %s mf:%p\n", name, _PATH_DEVPCI, mf); */
+    // printf("open_config %s %s mf:%p\n", name, _PATH_DEVPCI, mf);
 
-    if (!mf) {
+    if (!mf)
+    {
         printf("Internal: Uninitialized mfile\n");
         exit(1);
     }
 
     mf->fd = open(_PATH_DEVPCI, O_RDWR, 0);
-    if (mf->fd < 0) {
+    if (mf->fd < 0)
+    {
         printf("err opening: %s", _PATH_DEVPCI);
         return -1;
     }
 
-    /* printf("open_config name:%s fd:%d\n", name, mf->fd); */
+    // printf("open_config name:%s fd:%d\n", name, mf->fd);
     int ret = getsel(name, &mf->sel);
-
-    /* printf("open_config getsel done %d\n", mf->sel.pc_dev); */
+    // printf("open_config getsel done %d\n", mf->sel.pc_dev);
     mf->tp = MST_PCICONF;
 
     return ret;
@@ -778,77 +836,89 @@ int mtcr_open_config(mfile* mf, const char* name)
 mfile* mopen_int(const char* name, u_int32_t adv_opt)
 {
     char* real_name = (char*)name;
-    int   is_cable = 0;
-
+    int is_cable = 0;
 #ifndef MST_UL
     int port = 0;
 #endif
-    if (getuid() != 0) {
+    if (getuid() != 0)
+    {
         errno = EACCES;
         return NULL;
     }
-    /* printf("%s: open %s\n", __FUNCTION__, name); */
+    // printf("%s: open %s\n", __FUNCTION__, name);
 #ifndef MST_UL
-    char  tmp_name[512] = {0};
+    char tmp_name[512] = {0};
     char* p_cable = strstr(name, "_cable");
-    if (p_cable != 0) {
+    if (p_cable != 0)
+    {
         strncpy(tmp_name, name, 512 - 1);
         tmp_name[p_cable - name] = 0;
         is_cable = 1;
         real_name = tmp_name;
 
-        /* printf("-D- splitting name: %s\n", real_name); */
-        if (strstr(p_cable + 1, "_") != NULL) {
+        // printf("-D- splitting name: %s\n", real_name);
+        if (strstr(p_cable + 1, "_") != NULL)
+        {
             p_cable += 7;
-            if (*p_cable != '\0') {
+            if (*p_cable != '\0')
+            {
                 port = atoi(p_cable);
             }
         }
     }
 #endif
-    if (!device_exists(real_name)) {
+    if (!device_exists(real_name))
+    {
         errno = ENOENT;
         return NULL;
     }
     mfile* mf = malloc(sizeof(mfile));
     memset(mf, 0, sizeof(mfile));
-    if (!mf) {
+    if (!mf)
+    {
         return NULL;
     }
     mf->sock = -1;
     mf->user_page_list.page_amount = 0;
 
     mf->flags = MDEVS_TAVOR_CR;
-    if (!mtcr_open_config(mf, real_name)) {
+    if (!mtcr_open_config(mf, real_name))
+    {
         _create_lock(mf, real_name);
         mf->wo_addr = is_wo_pciconf_gw(mf);
-        /* printf("-D- is_wo_pciconf_gw: %d\n", mf->wo_addr); */
+        // printf("-D- is_wo_pciconf_gw: %d\n", mf->wo_addr);
         mf->vsec_addr = pci_find_capability(mf, MLNX_VENDOR_SPECIFIC_CAP_ID);
         mf->vpd_cap_addr = pci_find_capability(mf, PCI_CAP_ID_VPD);
         mf->is_cable = is_cable;
         mf->vsec_supp = 0;
-        if (mf->vsec_addr) {
-            if (adv_opt & Clear_Vsec_Semaphore) {
+        if (mf->vsec_addr)
+        {
+            if (adv_opt & Clear_Vsec_Semaphore)
+            {
                 _vendor_specific_sem(mf, 0);
             }
             mf->vsec_supp = vsec_spaces_supported(mf);
             mf->address_space = AS_CR_SPACE;
         }
-        /* printf("mtcr_open_config Succeeded VSEC_SUPP: %d\n", mf->vsec_supp); */
+        // printf("mtcr_open_config Succeeded VSEC_SUPP: %d\n", mf->vsec_supp);
 #ifndef MST_UL
-        if (mf->is_cable) {
+        if (mf->is_cable)
+        {
             mf->flags = MDEVS_CABLE;
             mf->dl_context = mtcr_utils_load_dl_ctx(DL_CABLES);
             dl_handle_t* hdl = (dl_handle_t*)mf->dl_context;
-            if (!hdl || !hdl->mcables.mcables_open || hdl->mcables.mcables_open(mf, port)) {
+            if (!hdl || !hdl->mcables.mcables_open || hdl->mcables.mcables_open(mf, port))
+            {
                 mclose(mf);
                 return 0;
             }
         }
 #endif
         return mf;
-    } else {
-        /* printf("mtcr_open_config failed\n"); */
+    }
+    else
+    {
+        // printf("mtcr_open_config failed\n");
         errno = ENOENT;
         free(mf);
         return NULL;
@@ -868,11 +938,14 @@ mfile* mopend(char const* name, DType dtype)
 mfile* mopen_adv(const char* name, MType mtype)
 {
     mfile* mf = mopend(name, MST_TAVOR);
-
-    if (mf) {
-        if (mf->tp & mtype) {
+    if (mf)
+    {
+        if (mf->tp & mtype)
+        {
             return mf;
-        } else {
+        }
+        else
+        {
             errno = EPERM;
             mclose(mf);
             return NULL;
@@ -883,7 +956,7 @@ mfile* mopen_adv(const char* name, MType mtype)
 
 mfile* mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* dma_func, void* extra_data)
 {
-    /* not relevant for freebsd */
+    // not relevant for freebsd
     (void)fw_cmd_context;
     (void)fw_cmd_func;
     (void)dma_func;
@@ -897,29 +970,34 @@ mfile* mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* dma_func, voi
  */
 int mclose(mfile* mf)
 {
-    if (!mf) {
+    if (!mf)
+    {
         return 0;
     }
 #ifndef MST_UL
-    if (mf->tp == MST_CABLE) {
+    if (mf->tp == MST_CABLE)
+    {
         int ret = -1;
         CALL_DL_FUNC(mcables, mcables_close, ret, mf);
-        if (ret != -1) {
+        if (ret != -1)
+        {
             mtcr_utils_free_dl_ctx(mf->dl_context);
         }
     }
 #endif
-    /* printf("closing\n"); */
+    // printf("closing\n");
     close(mf->fd);
-    if (mf->fdlock) {
+    if (mf->fdlock)
+    {
         close(mf->fdlock);
     }
 
-    if (mf->user_page_list.page_amount) {
+    if (mf->user_page_list.page_amount)
+    {
         release_dma_pages(mf, mf->user_page_list.page_amount);
     }
 
-    /* printf("freeing\n"); */
+    // printf("freeing\n");
     free(mf);
     return 0;
 }
@@ -932,33 +1010,36 @@ int mclose(mfile* mf)
 int mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
 {
     int rc;
-
     offset = __cpu_to_le32(offset);
-    if (mf->wo_addr) {
+    if (mf->wo_addr)
+    {
         offset |= 0x1;
     }
 
     int lock_rc;
-
     lock_rc = _flock_int(mf->fdlock, LOCK_EX);
-    if (lock_rc) {
+    if (lock_rc)
+    {
         return 0;
     }
     rc = write_config(mf, PCI_CONF_ADDR, (unsigned long)offset, 4);
-    if (rc) {
+    if (rc)
+    {
         goto cleanup;
     }
 
     rc = read_config(mf, PCI_CONF_DATA, value, 4);
 
-    if (rc) {
+    if (rc)
+    {
         goto cleanup;
     }
 
     *value = __le32_to_cpu(*value);
 cleanup:
     lock_rc = _flock_int(mf->fdlock, LOCK_UN);
-    if (lock_rc || rc) {
+    if (lock_rc || rc)
+    {
         return 0;
     }
     return 4;
@@ -967,17 +1048,22 @@ cleanup:
 int mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
 #ifndef MST_UL
-    if (mf->tp == MST_CABLE) {
+    if (mf->tp == MST_CABLE)
+    {
         int rc = 0;
         CALL_DL_FUNC(mcables, mcables_read4, rc, mf, offset, value);
-        if (!rc) {
+        if (!rc)
+        {
             return 4;
-        } else {
+        }
+        else
+        {
             return -1;
         }
     }
 #endif
-    if (mf->vsec_supp) {
+    if (mf->vsec_supp)
+    {
         return mread4_new(mf, offset, value);
     }
     return mread4_old(mf, offset, value);
@@ -1007,8 +1093,8 @@ int mwrite64(mfile* mf, unsigned int offset, void* data, int length)
     return -1;
 }
 
-/* read_config(int fd, struct pcisel *sel, unsigned long reg, int width); */
-/* write_config(mf->fd, int fd, struct pcisel *sel, unsigned long reg, unsigned long data, int width) */
+// read_config(int fd, struct pcisel *sel, unsigned long reg, int width);
+// write_config(mf->fd, int fd, struct pcisel *sel, unsigned long reg, unsigned long data, int width)
 
 /*
  * Write 4 bytes, return number of succ. written bytes or -1 on failure
@@ -1021,34 +1107,42 @@ int mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
     value = __cpu_to_le32(value);
 
     int lock_rc;
-
     lock_rc = _flock_int(mf->fdlock, LOCK_EX);
-    if (lock_rc) {
+    if (lock_rc)
+    {
         return 0;
     }
-    if (mf->wo_addr) {
+    if (mf->wo_addr)
+    {
         rc = write_config(mf, PCI_CONF_DATA, (unsigned long)value, 4);
-        if (rc) {
+        if (rc)
+        {
             goto cleanup;
         }
         rc = write_config(mf, PCI_CONF_ADDR, (unsigned long)offset, 4);
-        if (rc) {
+        if (rc)
+        {
             goto cleanup;
         }
-    } else {
+    }
+    else
+    {
         rc = write_config(mf, PCI_CONF_ADDR, (unsigned long)offset, 4);
-        if (rc) {
+        if (rc)
+        {
             goto cleanup;
         }
         rc = write_config(mf, PCI_CONF_DATA, (unsigned long)value, 4);
-        if (rc) {
+        if (rc)
+        {
             goto cleanup;
         }
     }
 
 cleanup:
     lock_rc = _flock_int(mf->fdlock, LOCK_UN);
-    if (lock_rc || rc) {
+    if (lock_rc || rc)
+    {
         return 0;
     }
     return 4;
@@ -1057,33 +1151,40 @@ cleanup:
 int mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
 {
 #ifndef MST_UL
-    if (mf->tp == MST_CABLE) {
+    if (mf->tp == MST_CABLE)
+    {
         int rc = 0;
         CALL_DL_FUNC(mcables, mcables_write4, rc, mf, offset, value);
-        if (!rc) {
+        if (!rc)
+        {
             return 4;
-        } else {
+        }
+        else
+        {
             return -1;
         }
     }
 #endif
-    if (mf->vsec_supp) {
+    if (mf->vsec_supp)
+    {
         return mwrite4_new(mf, offset, value);
     }
     return mwrite4_old(mf, offset, value);
 }
-/*////////// NEW   //////////////////// */
+//////////// NEW   ////////////////////
 
 static int mread_chunk_as_multi_mread4(mfile* mf, unsigned int offset, void* data, int length)
 {
     int i;
-
-    if (length % 4) {
+    if (length % 4)
+    {
         return -EINVAL;
     }
-    for (i = 0; i < length; i += 4) {
+    for (i = 0; i < length; i += 4)
+    {
         u_int32_t value;
-        if (mread4(mf, offset + i, &value) != 4) {
+        if (mread4(mf, offset + i, &value) != 4)
+        {
             return -1;
         }
         memcpy((char*)data + i, &value, 4);
@@ -1094,14 +1195,16 @@ static int mread_chunk_as_multi_mread4(mfile* mf, unsigned int offset, void* dat
 static int mwrite_chunk_as_multi_mwrite4(mfile* mf, unsigned int offset, void* data, int length)
 {
     int i;
-
-    if (length % 4) {
+    if (length % 4)
+    {
         return -EINVAL;
     }
-    for (i = 0; i < length; i += 4) {
+    for (i = 0; i < length; i += 4)
+    {
         u_int32_t value;
         memcpy(&value, (char*)data + i, 4);
-        if (mwrite4(mf, offset + i, value) != 4) {
+        if (mwrite4(mf, offset + i, value) != 4)
+        {
             return -1;
         }
     }
@@ -1111,20 +1214,22 @@ static int mwrite_chunk_as_multi_mwrite4(mfile* mf, unsigned int offset, void* d
 int mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len)
 {
     int rc = byte_len;
-
 #ifndef MST_UL
-    if (mf->tp == MST_CABLE) {
+    if (mf->tp == MST_CABLE)
+    {
         int ret = 0;
         CALL_DL_FUNC(mcables, mcables_read4_block, ret, mf, offset, data, byte_len);
-        if (ret != 0) {
-            rc -= ret; /* Return less than byte_len to ensure error in reading */
+        if (ret != 0)
+        {
+            rc -= ret; // Return less than byte_len to ensure error in reading
         }
         return rc;
     }
 #endif
-    if (mf->vsec_supp) {
+    if (mf->vsec_supp)
+    {
         int rc = mread4_block_new(mf, offset, byte_len, data);
-        /* printf("-D- MREAD BLOCK LEN: %d, RC: %d\n", byte_len, rc); */
+        // printf("-D- MREAD BLOCK LEN: %d, RC: %d\n", byte_len, rc);
         return rc;
     }
     rc = mread_chunk_as_multi_mread4(mf, offset, data, byte_len);
@@ -1134,18 +1239,20 @@ int mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len)
 int mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len)
 {
     int rc = byte_len;
-
 #ifndef MST_UL
-    if (mf->tp == MST_CABLE) {
+    if (mf->tp == MST_CABLE)
+    {
         int ret = 0;
         CALL_DL_FUNC(mcables, mcables_write4_block, ret, mf, offset, data, byte_len);
-        if (ret != 0) {
-            rc -= ret; /* Return less than byte_len to ensure error in reading */
+        if (ret != 0)
+        {
+            rc -= ret; // Return less than byte_len to ensure error in reading
         }
         return rc;
     }
 #endif
-    if (mf->vsec_supp) {
+    if (mf->vsec_supp)
+    {
         return mwrite4_block_new(mf, offset, byte_len, data);
     }
     rc = mwrite_chunk_as_multi_mwrite4(mf, offset, data, byte_len);
@@ -1170,8 +1277,7 @@ int mi2c_detect(mfile* mf, u_int8_t slv_arr[SLV_ADDRS_NUM])
     (void)slv_arr;
     return 1;
 }
-int mread_i2cblock(mfile* mf, unsigned char i2c_slave, u_int8_t addr_width, unsigned int offset, void* data,
-                   int length)
+int mread_i2cblock(mfile* mf, unsigned char i2c_slave, u_int8_t addr_width, unsigned int offset, void* data, int length)
 {
     (void)mf;
     (void)i2c_slave;
@@ -1182,12 +1288,7 @@ int mread_i2cblock(mfile* mf, unsigned char i2c_slave, u_int8_t addr_width, unsi
     return 0;
 }
 
-int mwrite_i2cblock(mfile       * mf,
-                    unsigned char i2c_slave,
-                    u_int8_t      addr_width,
-                    unsigned int  offset,
-                    void        * data,
-                    int           length)
+int mwrite_i2cblock(mfile* mf, unsigned char i2c_slave, u_int8_t addr_width, unsigned int offset, void* data, int length)
 {
     (void)mf;
     (void)i2c_slave;
@@ -1198,22 +1299,22 @@ int mwrite_i2cblock(mfile       * mf,
     return 0;
 }
 
-/* TODO: Introduce a module to keep platform-independent routines like this one below */
+// TODO: Introduce a module to keep platform-independent routines like this one below
 void mtcr_fix_endianness(u_int32_t* buf, int len)
 {
     int i;
 
-    for (i = 0; i < (len / 4); ++i) {
-        /* printf("-D- before: buf[%d] = %#x\n", i, buf[i]); */
+    for (i = 0; i < (len / 4); ++i)
+    {
+        // printf("-D- before: buf[%d] = %#x\n", i, buf[i]);
         buf[i] = __be32_to_cpu(buf[i]);
-        /* printf("-D- before: buf[%d] = %#x\n", i, buf[i]); */
+        // printf("-D- before: buf[%d] = %#x\n", i, buf[i]);
     }
 }
 
 int mread_buffer(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len)
 {
     int rc;
-
     rc = mread4_block(mf, offset, (u_int32_t*)data, byte_len);
     mtcr_fix_endianness((u_int32_t*)data, byte_len);
     return rc;
@@ -1227,7 +1328,8 @@ int mwrite_buffer(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len)
 
 int mget_mdevs_flags(mfile* mf, u_int32_t* devs_flags)
 {
-    if ((mf == NULL) || (devs_flags == NULL)) {
+    if (mf == NULL || devs_flags == NULL)
+    {
         errno = -EINVAL;
         return 1;
     }
@@ -1238,7 +1340,8 @@ int mget_mdevs_flags(mfile* mf, u_int32_t* devs_flags)
 
 int mget_mdevs_type(mfile* mf, u_int32_t* mtype)
 {
-    if ((mf == NULL) || (mtype == NULL)) {
+    if (mf == NULL || mtype == NULL)
+    {
         errno = -EINVAL;
         return 1;
     }
@@ -1250,11 +1353,13 @@ int mget_mdevs_type(mfile* mf, u_int32_t* mtype)
 unsigned char mset_i2c_slave(mfile* mf, unsigned char new_i2c_slave)
 {
     unsigned char ret;
-
-    if (mf) {
+    if (mf)
+    {
         ret = mf->i2c_slave;
         mf->i2c_slave = new_i2c_slave;
-    } else {
+    }
+    else
+    {
         ret = 0xff;
     }
     return ret;
@@ -1262,7 +1367,8 @@ unsigned char mset_i2c_slave(mfile* mf, unsigned char new_i2c_slave)
 
 int mget_i2c_slave(mfile* mf, unsigned char* new_i2c_slave_p)
 {
-    if (mf) {
+    if (mf)
+    {
         *new_i2c_slave_p = mf->i2c_slave;
         return 0;
     }
@@ -1274,33 +1380,36 @@ int mget_i2c_slave(mfile* mf, unsigned char* new_i2c_slave_p)
 
 static int get_device_ids(const char* dev_name, dev_info* dinfo)
 {
-    mfile   * mf = mopen(dev_name);
-    int       rc = 0;
+    mfile* mf = mopen(dev_name);
+    int rc = 0;
     u_int32_t buf = 0;
-
-    if (!mf) {
+    if (!mf)
+    {
         return 1;
     }
 
     int lock_rc = _flock_int(mf->fdlock, LOCK_EX);
-
-    if (lock_rc) {
+    if (lock_rc)
+    {
         return 1;
     }
     rc = read_config(mf, PCI_HEADER_OFFS, &buf, 4);
-    if (rc) {
+    if (rc)
+    {
         goto exit;
     }
     dinfo->pci.vend_id = EXTRACT(buf, 0, 16);
     dinfo->pci.dev_id = EXTRACT(buf, 16, 16);
 
     rc = read_config(mf, PCI_CLASS_OFFS, &buf, 4);
-    if (rc) {
+    if (rc)
+    {
         goto exit;
     }
     dinfo->pci.class_id = EXTRACT(buf, 8, 24);
     rc = read_config(mf, PCI_SUBSYS_OFFS, &buf, 4);
-    if (rc) {
+    if (rc)
+    {
         goto exit;
     }
     dinfo->pci.subsys_vend_id = EXTRACT(buf, 0, 16);
@@ -1309,25 +1418,24 @@ static int get_device_ids(const char* dev_name, dev_info* dinfo)
 exit:
     lock_rc = _flock_int(mf->fdlock, LOCK_UN);
     mclose(mf);
-    if (lock_rc) {
+    if (lock_rc)
+    {
         return 1;
     }
     return rc;
 }
-static int get_dev_dbdf(const char  * dev_name,
-                        unsigned int* domain,
-                        unsigned int* bus,
-                        unsigned int* dev,
-                        unsigned int* func)
+static int
+  get_dev_dbdf(const char* dev_name, unsigned int* domain, unsigned int* bus, unsigned int* dev, unsigned int* func)
 {
     char* dbdf_str = strstr(dev_name, "pci");
-    int   rc = 0;
-
-    if (!dbdf_str) {
+    int rc = 0;
+    if (!dbdf_str)
+    {
         return 1;
     }
     rc = sscanf(dbdf_str, "pci%u:%u:%u:%u", domain, bus, dev, func);
-    if (rc != 4) {
+    if (rc != 4)
+    {
         return 1;
     }
     return 0;
@@ -1336,9 +1444,9 @@ static int get_dev_dbdf(const char  * dev_name,
 int get_device_flags(const char* name)
 {
     int mask = 0;
-
     mask = MDEVS_TAVOR_CR;
-    if (strstr(name, "cable")) {
+    if (strstr(name, "cable"))
+    {
         mask = MDEVS_CABLE;
     }
     return mask;
@@ -1366,33 +1474,37 @@ int get_device_flags(const char* name)
 
 int mdevices_v(char* buf, int len, int mask, int verbosity)
 {
-    int   i;
-    int   s, b, d, f, tmp;
-    int   rc = 0;
-    int   cnt = 0;
+    int i;
+    int s, b, d, f, tmp;
+    int rc = 0;
+    int cnt = 0;
     FILE* fp;
-    char  dev_line[1035];
+    char dev_line[1035];
     char* p = buf;
-
-    if (mask & MDEVS_TAVOR_CR) {
+    if (mask & MDEVS_TAVOR_CR)
+    {
         /* Get all Mellanox devices - this cmd will return the needed devices one in every line */
         fp =
-            popen("pciconf -lv | grep -B 1 Mellanox | grep pci | cut -f1 | cut -f2 -d \"@\" | cut -f1-4 -d \":\"",
-                  "r");
-        if (fp == NULL) {
+          popen("pciconf -lv | grep -B 1 Mellanox | grep pci | cut -f1 | cut -f2 -d \"@\" | cut -f1-4 -d \":\"", "r");
+        if (fp == NULL)
+        {
             return -1;
         }
 
         /* Read the output one line at a time */
-        while (fgets(dev_line, sizeof(dev_line) - 1, fp) != NULL) {
+        while (fgets(dev_line, sizeof(dev_line) - 1, fp) != NULL)
+        {
             tmp = sscanf(dev_line, "pci%d:%d:%d:%d\n", &s, &b, &d, &f);
-            (void)tmp; /* TODO: check sscanf ret value */
-            if (!verbosity && (f != 0)) {
+            (void)tmp; // TODO: check sscanf ret value
+            if (!verbosity && f != 0)
+            {
                 continue;
             }
-            for (i = 0; !(dev_line[i] == '\n'); i++) {
+            for (i = 0; !(dev_line[i] == '\n'); i++)
+            {
                 *p++ = dev_line[i];
-                if (++cnt >= len) {
+                if (++cnt >= len)
+                {
                     pclose(fp);
                     return -1;
                 }
@@ -1403,18 +1515,22 @@ int mdevices_v(char* buf, int len, int mask, int verbosity)
         /* close */
         pclose(fp);
     }
-    if (mask & MDEVS_CABLE) {
+    if (mask & MDEVS_CABLE)
+    {
         /*
          * Get cables
          */
-        DIR          * dir = opendir(CABLES_DIR);
+        DIR* dir = opendir(CABLES_DIR);
         struct dirent* dirent;
-        if (dir != NULL) {
+        if (dir != NULL)
+        {
             dirent = readdir(dir);
-            while (dirent != NULL) {
+            while (dirent != NULL)
+            {
                 char* name = dirent->d_name;
                 /* According to mask */
-                if (get_device_flags(name) & MDEVS_CABLE) {
+                if (get_device_flags(name) & MDEVS_CABLE)
+                {
                     PUTS(name);
                     PUTC('\0');
                     rc++;
@@ -1435,24 +1551,27 @@ int mdevices(char* buf, int len, int mask)
 static void remove_newline_chars(char* str)
 {
     int i;
-
-    for (i = strlen(str) - 1; i >= 0 && (str[i] == '\n' || str[i] == '\r'); i--) {
+    for (i = strlen(str) - 1; i >= 0 && (str[i] == '\n' || str[i] == '\r'); i--)
+    {
         str[i] = '\0';
     }
 }
 
-/* replace with a new string */
-/* free the old one */
+// replace with a new string
+// free the old one
 static char* manipulate_ib_dev_line(char* line)
 {
-    if (!line) {
+    if (!line)
+    {
         return NULL;
     }
     char* old_str = line;
     char* new_str = NULL;
 
-    while (*line != '.') {
-        if (!(*line)) {
+    while (*line != '.')
+    {
+        if (!(*line))
+        {
             goto cleanup;
         }
         line++;
@@ -1461,31 +1580,43 @@ static char* manipulate_ib_dev_line(char* line)
 
     char* end = line;
     char* num = NULL;
-    int   count_dots = 0;
-
-    while (1) {
-        if (!(*end)) {
+    int count_dots = 0;
+    while (1)
+    {
+        if (!(*end))
+        {
             goto cleanup;
-        } else if (*end == '.') {
-            if (count_dots) {
+        }
+        else if (*end == '.')
+        {
+            if (count_dots)
+            {
                 *end = '\0';
                 break;
-            } else {
+            }
+            else
+            {
                 count_dots++;
-                if (*(end + 1)) {
+                if (*(end + 1))
+                {
                     num = end + 1;
-                } else {
+                }
+                else
+                {
                     goto cleanup;
                 }
             }
-        } else if (*end == '_') {
+        }
+        else if (*end == '_')
+        {
             *(end + 1) = '\0';
         }
         end++;
     }
     line = strcat(line, num);
     new_str = (char*)malloc(strlen(line) + 1);
-    if (!new_str) {
+    if (!new_str)
+    {
         errno = ENOMEM;
         goto cleanup;
     }
@@ -1496,15 +1627,16 @@ cleanup:
     return new_str;
 }
 
-/* number_of_first_entries_to_skip should be 0 for regular array destruction */
+// number_of_first_entries_to_skip should be 0 for regular array destruction
 static void destroy_str_arr(char** arr, int number_of_first_entries_to_skip)
 {
-    if (!arr) {
+    if (!arr)
+    {
         return;
     }
     int i;
-
-    for (i = number_of_first_entries_to_skip; arr[i]; i++) {
+    for (i = number_of_first_entries_to_skip; arr[i]; i++)
+    {
         free(arr[i]);
         arr[i] = NULL;
     }
@@ -1512,27 +1644,30 @@ static void destroy_str_arr(char** arr, int number_of_first_entries_to_skip)
     arr = NULL;
 }
 
-/* copying file lines into a an array of char*, while manipulating each line with a special function (if supplied) */
-/* caller should destroy the array */
+// copying file lines into a an array of char*, while manipulating each line with a special function (if supplied)
+// caller should destroy the array
 static char** file2array(FILE* fp, char* (*string_mainpulation_func_ptr)(char*))
 {
-    char * line = NULL;
+    char* line = NULL;
     size_t len = 0;
-    int    lines_allocated = 8; /* can realloc later */
-    int    error = 0;
-    int    i = 0;
-    char** arr = (char**)malloc((lines_allocated + 1) * sizeof(char*));
+    int lines_allocated = 8; // can realloc later
+    int error = 0;
+    int i = 0;
 
-    if (!arr) {
+    char** arr = (char**)malloc((lines_allocated + 1) * sizeof(char*));
+    if (!arr)
+    {
         errno = ENOMEM;
         error = 1;
         goto cleanup;
     }
     memset(arr, 0, (lines_allocated + 1) * sizeof(char*));
 
-    while (getline(&line, &len, fp) != -1) {
+    while (getline(&line, &len, fp) != -1)
+    {
         arr[i] = (char*)malloc(len * sizeof(char));
-        if (!arr[i]) {
+        if (!arr[i])
+        {
             errno = ENOMEM;
             error = 1;
             goto cleanup;
@@ -1543,17 +1678,21 @@ static char** file2array(FILE* fp, char* (*string_mainpulation_func_ptr)(char*))
         len = 0;
 
         remove_newline_chars(arr[i]);
-        if (string_mainpulation_func_ptr) {
+        if (string_mainpulation_func_ptr)
+        {
             arr[i] = (*string_mainpulation_func_ptr)(arr[i]);
         }
-        if (!arr[i]) {
+        if (!arr[i])
+        {
             continue;
         }
         i++;
-        if (i >= lines_allocated) {
+        if (i >= lines_allocated)
+        {
             lines_allocated *= 2;
             char** tmp = realloc(arr, (lines_allocated + 1) * sizeof(char*));
-            if (!tmp) {
+            if (!tmp)
+            {
                 errno = ENOMEM;
                 error = 1;
                 goto cleanup;
@@ -1562,15 +1701,18 @@ static char** file2array(FILE* fp, char* (*string_mainpulation_func_ptr)(char*))
         }
     }
 cleanup:
-    /* This is done so the caller can free all the array cells without knowing its size */
-    /* Iterate until NULL termination */
-    if (arr) {
+    // This is done so the caller can free all the array cells without knowing its size
+    // Iterate until NULL termination
+    if (arr)
+    {
         arr[i] = NULL;
     }
-    if (line) {
+    if (line)
+    {
         free(line);
     }
-    if (error || (i == 0)) {
+    if (error || i == 0)
+    {
         destroy_str_arr(arr, 0);
         return NULL;
     }
@@ -1578,25 +1720,24 @@ cleanup:
     return arr;
 }
 
-/* Execute cmd and get output in a strings array, after desired output manipulation */
-/* via a speacial manipulation function (if supplied) */
-/* if there is relevant input to the special function pass it as well. */
+// Execute cmd and get output in a strings array, after desired output manipulation
+// via a speacial manipulation function (if supplied)
+// if there is relevant input to the special function pass it as well.
 static char** exec_cmd_get_output(char* cmd, char* (*string_mainpulation_func_ptr)(char*))
 {
     char* wrapped_cmd = (char*)malloc(strlen(cmd) + strlen(" 2>/dev/null") + 2);
-
-    if (!wrapped_cmd) {
+    if (!wrapped_cmd)
+    {
         return NULL;
     }
     sprintf(wrapped_cmd, "%s %s", cmd, " 2>/dev/null");
     FILE* fp = popen(wrapped_cmd, "r");
-
     free(wrapped_cmd);
-    if (!fp) {
+    if (!fp)
+    {
         return NULL;
     }
     char** output = file2array(fp, string_mainpulation_func_ptr);
-
     pclose(fp);
     return output;
 }
@@ -1604,8 +1745,7 @@ static char** exec_cmd_get_output(char* cmd, char* (*string_mainpulation_func_pt
 static char* exec_cmd_get_output_first_line(char* cmd, char* (*string_mainpulation_func_ptr)(char*))
 {
     char** res = exec_cmd_get_output(cmd, string_mainpulation_func_ptr);
-    char * out = res[0];
-
+    char* out = res[0];
     destroy_str_arr(res, 1);
     return out;
 }
@@ -1614,13 +1754,12 @@ static char** get_ports(char* ib_dev)
 {
     char* cmd = (char*)malloc(strlen("sysctl sys.class.infiniband..ports | awk -F. '{print $6}' | uniq | sort") +
                               strlen(ib_dev) + 1);
-
-    if (!cmd) {
+    if (!cmd)
+    {
         return NULL;
     }
     sprintf(cmd, "sysctl sys.class.infiniband.%s.ports | awk -F. '{print $6}' | uniq | sort", ib_dev);
     char** out = exec_cmd_get_output(cmd, NULL);
-
     free(cmd);
     return out;
 }
@@ -1628,14 +1767,13 @@ static char** get_ports(char* ib_dev)
 static char* get_link_layer(char* ib_dev, char* port)
 {
     char* cmd =
-        (char*)malloc(strlen("sysctl -n sys.class.infiniband..ports..link_layer") + strlen(ib_dev) + strlen(port) + 1);
-
-    if (!cmd) {
+      (char*)malloc(strlen("sysctl -n sys.class.infiniband..ports..link_layer") + strlen(ib_dev) + strlen(port) + 1);
+    if (!cmd)
+    {
         return NULL;
     }
     sprintf(cmd, "sysctl -n sys.class.infiniband.%s.ports.%s.link_layer", ib_dev, port);
     char* out = exec_cmd_get_output_first_line(cmd, NULL);
-
     free(cmd);
     return out;
 }
@@ -1644,13 +1782,12 @@ static char* get_eth_net_dev(char* ib_dev, char* port)
 {
     char* cmd = (char*)malloc(strlen("sysctl -n sysctl sys.class.infiniband..ports..gid_attrs.ndevs.0") +
                               strlen(ib_dev) + strlen(port) + 1);
-
-    if (!cmd) {
+    if (!cmd)
+    {
         return NULL;
     }
     sprintf(cmd, "sysctl -n sysctl sys.class.infiniband.%s.ports.%s.gid_attrs.ndevs.0", ib_dev, port);
     char* out = exec_cmd_get_output_first_line(cmd, NULL);
-
     free(cmd);
     return out;
 }
@@ -1665,56 +1802,67 @@ static char* get_gid(char* ib_dev, char* port)
     char* cmd = (char*)malloc(strlen("sysctl -n sys.class.infiniband..ports..gids.0 |"
                                      " cut -b 21- | sed -e 's/://g'") +
                               strlen(ib_dev) + strlen(port) + 1);
-
-    if (!cmd) {
+    if (!cmd)
+    {
         return NULL;
     }
     sprintf(cmd, "sysctl -n sys.class.infiniband.%s.ports.%s.gids.0 | cut -b 21- | sed -e 's/://g'", ib_dev, port);
     char* out = exec_cmd_get_output_first_line(cmd, NULL);
-
     free(cmd);
     return out;
 }
 
 static char* lladdr_to_gid_format(char* lladdr)
 {
-    if (!lladdr) {
+    if (!lladdr)
+    {
         return NULL;
     }
 
     int end = strlen(lladdr) - 1;
     int i;
     int dot_count = 0;
-
-    for (i = end; i >= 0; i--) {
-        if (lladdr[i] == '.') {
+    for (i = end; i >= 0; i--)
+    {
+        if (lladdr[i] == '.')
+        {
             dot_count++;
         }
-        if (dot_count == 8) {
+        if (dot_count == 8)
+        {
             lladdr = &lladdr[i];
             break;
         }
-        if (i == 0) {
+        if (i == 0)
+        {
             return NULL;
         }
     }
-    if (*(lladdr + 1) && *(lladdr + 2) && (*(lladdr + 2) != '.')) {
+    if (*(lladdr + 1) && *(lladdr + 2) && *(lladdr + 2) != '.')
+    {
         lladdr++;
     }
     char* curptr = lladdr;
-
-    while (*curptr) {
-        if (*curptr == '.') {
-            if (*(curptr + 1) && ((*(curptr + 2) == '.') || !(*(curptr + 2)))) {
+    while (*curptr)
+    {
+        if (*curptr == '.')
+        {
+            if (*(curptr + 1) && ((*(curptr + 2) == '.') || !(*(curptr + 2))))
+            {
                 *curptr = '0';
                 curptr++;
-            } else {
+            }
+            else
+            {
                 *curptr = '\0';
-                if (*(curptr + 1)) {
+                if (*(curptr + 1))
+                {
                     lladdr = strcat(lladdr, curptr + 1);
                 }
             }
-        } else {
+        }
+        else
+        {
             curptr++;
         }
     }
@@ -1724,13 +1872,12 @@ static char* lladdr_to_gid_format(char* lladdr)
 static char* get_lladdr(char* ifc)
 {
     char* cmd = (char*)malloc(strlen("ifconfig  | grep lladdr | awk '{print $2}'") + strlen(ifc) + 1);
-
-    if (!cmd) {
+    if (!cmd)
+    {
         return NULL;
     }
     sprintf(cmd, "ifconfig %s | grep lladdr | awk '{print $2}'", ifc);
     char* lladdr = exec_cmd_get_output_first_line(cmd, NULL);
-
     free(cmd);
     return lladdr_to_gid_format(lladdr);
 }
@@ -1738,20 +1885,23 @@ static char* get_lladdr(char* ifc)
 static char* get_inband_net_dev(char* ib_dev, char* port, char** ifcs)
 {
     char* gid = get_gid(ib_dev, port);
-
-    if (!gid) {
+    if (!gid)
+    {
         return NULL;
     }
     int i;
-
-    for (i = 0; ifcs[i]; i++) {
-        if (strstr(ifcs[i], "ib") == ifcs[i]) {
+    for (i = 0; ifcs[i]; i++)
+    {
+        if (strstr(ifcs[i], "ib") == ifcs[i])
+        {
             char* lladdr = get_lladdr(ifcs[i]);
-            if (!strcmp(lladdr, gid)) {
+            if (!strcmp(lladdr, gid))
+            {
                 free(lladdr);
                 free(gid);
                 char* netdev = (char*)malloc(strlen(ifcs[i]) + 1);
-                if (!netdev) {
+                if (!netdev)
+                {
                     errno = ENOMEM;
                     return NULL;
                 }
@@ -1767,58 +1917,71 @@ static char* get_inband_net_dev(char* ib_dev, char* port, char** ifcs)
 
 static char** get_net_devs(char** ib_devs)
 {
-    if (!ib_devs) {
+    if (!ib_devs)
+    {
         return NULL;
     }
     char** ifcs = get_ifcs();
-
-    if (!ifcs) {
+    if (!ifcs)
+    {
         return NULL;
     }
     char** ports = NULL;
-    char * link_layer = NULL;
-    int    i;
-    int    error = 0;
-    int    lines_allocated = 8; /* can realloc later */
-    char** net_devs = (char**)malloc((lines_allocated + 1) * sizeof(char*));
+    char* link_layer = NULL;
+    int i;
+    int error = 0;
+    int lines_allocated = 8; // can realloc later
 
-    if (!net_devs) {
+    char** net_devs = (char**)malloc((lines_allocated + 1) * sizeof(char*));
+    if (!net_devs)
+    {
         errno = ENOMEM;
         error = 1;
         goto cleanup;
     }
     memset(net_devs, 0, (lines_allocated + 1) * sizeof(char*));
     int k = 0;
-
-    for (i = 0; ib_devs[i]; i++) {
+    for (i = 0; ib_devs[i]; i++)
+    {
         ports = get_ports(ib_devs[i]);
-        if (!ports) {
+        if (!ports)
+        {
             error = 1;
             goto cleanup;
         }
         int j;
-        for (j = 0; ports[j]; j++) {
+        for (j = 0; ports[j]; j++)
+        {
             link_layer = get_link_layer(ib_devs[i], ports[j]);
-            if (!link_layer) {
+            if (!link_layer)
+            {
                 error = 1;
                 goto cleanup;
             }
             char* netdev;
-            if (!strcmp(link_layer, "Ethernet")) {
+            if (!strcmp(link_layer, "Ethernet"))
+            {
                 netdev = get_eth_net_dev(ib_devs[i], ports[j]);
-            } else if (!strcmp(link_layer, "InfiniBand")) {
+            }
+            else if (!strcmp(link_layer, "InfiniBand"))
+            {
                 netdev = get_inband_net_dev(ib_devs[i], ports[j], ifcs);
-            } else {
+            }
+            else
+            {
                 error = 1;
                 goto cleanup;
             }
-            if (netdev) {
+            if (netdev)
+            {
                 net_devs[k] = netdev;
                 k++;
-                if (k > lines_allocated) {
+                if (k > lines_allocated)
+                {
                     lines_allocated *= 2;
                     char** tmp = realloc(net_devs, (lines_allocated + 1) * sizeof(char*));
-                    if (!tmp) {
+                    if (!tmp)
+                    {
                         errno = ENOMEM;
                         error = 1;
                         goto cleanup;
@@ -1830,7 +1993,8 @@ static char** get_net_devs(char** ib_devs)
     }
     net_devs[k] = NULL;
 cleanup:
-    if (error) {
+    if (error)
+    {
         destroy_str_arr(net_devs, 0);
         net_devs = NULL;
     }
@@ -1844,13 +2008,12 @@ cleanup:
 static char** get_ib_devs(char conf_dev[512])
 {
     char* cmd = (char*)malloc(strlen("sysctl -a | grep mlx | grep pci | grep ") + strlen(conf_dev) + 1);
-
-    if (!cmd) {
+    if (!cmd)
+    {
         return NULL;
     }
     sprintf(cmd, "sysctl -a | grep mlx | grep pci | grep %s", conf_dev);
     char** ib_devs = exec_cmd_get_output(cmd, manipulate_ib_dev_line);
-
     free(cmd);
     return ib_devs;
 }
@@ -1864,18 +2027,21 @@ dev_info* mdevices_info_v(int mask, int* len, int verbosity)
 {
     char* devs = 0;
     char* dev_name;
-    int   size = 2048;
-    int   rc;
-    int   i;
+    int size = 2048;
+    int rc;
+    int i;
 
-    /* Get list of devices */
-    do{
-        if (devs) {
+    // Get list of devices
+    do
+    {
+        if (devs)
+        {
             free(devs);
         }
         size *= 2;
         devs = malloc(size);
-        if (!devs) {
+        if (!devs)
+        {
             errno = ENOMEM;
             return NULL;
         }
@@ -1883,15 +2049,16 @@ dev_info* mdevices_info_v(int mask, int* len, int verbosity)
     } while (rc == -1);
     *len = rc;
     dev_info* dev_info_arr = malloc(sizeof(dev_info) * rc);
-
-    if (!dev_info_arr) {
+    if (!dev_info_arr)
+    {
         errno = ENOMEM;
         free(devs);
         return NULL;
     }
     memset(dev_info_arr, 0, sizeof(dev_info) * rc);
     dev_name = devs;
-    for (i = 0; i < *len; i++) {
+    for (i = 0; i < *len; i++)
+    {
         unsigned int domain = 0;
         unsigned int bus = 0;
         unsigned int dev = 0;
@@ -1899,23 +2066,27 @@ dev_info* mdevices_info_v(int mask, int* len, int verbosity)
         dev_info_arr[i].type = get_device_flags(dev_name);
         strcpy(dev_info_arr[i].dev_name, dev_name);
         strcpy(dev_info_arr[i].pci.conf_dev, dev_name);
-        if (dev_info_arr[i].type & MDEVS_TAVOR_CR) {
-            if (get_dev_dbdf(dev_name, &domain, &bus, &dev, &func)) {
+        if (dev_info_arr[i].type & MDEVS_TAVOR_CR)
+        {
+            if (get_dev_dbdf(dev_name, &domain, &bus, &dev, &func))
+            {
                 goto next;
             }
             dev_info_arr[i].pci.domain = domain;
             dev_info_arr[i].pci.bus = bus;
             dev_info_arr[i].pci.dev = dev;
             dev_info_arr[i].pci.func = func;
-            if (get_device_ids(dev_name, &dev_info_arr[i])) {
+            if (get_device_ids(dev_name, &dev_info_arr[i]))
+            {
                 goto next;
             }
         }
-        if (verbosity) {
+        if (verbosity)
+        {
             dev_info_arr[i].pci.ib_devs = get_ib_devs(dev_info_arr[i].pci.conf_dev);
             dev_info_arr[i].pci.net_devs = get_net_devs(dev_info_arr[i].pci.ib_devs);
         }
-next:
+    next:
         dev_name += strlen(dev_name) + 1;
     }
     free(devs);
@@ -1926,12 +2097,16 @@ void mdevices_info_destroy(dev_info* dev_info, int len)
 {
     int i;
 
-    if (dev_info) {
-        for (i = 0; i < len; i++) {
-            if (dev_info[i].pci.ib_devs) {
+    if (dev_info)
+    {
+        for (i = 0; i < len; i++)
+        {
+            if (dev_info[i].pci.ib_devs)
+            {
                 destroy_str_arr(dev_info[i].pci.ib_devs, 0);
             }
-            if (dev_info[i].pci.net_devs) {
+            if (dev_info[i].pci.net_devs)
+            {
                 destroy_str_arr(dev_info[i].pci.net_devs, 0);
             }
         }
@@ -1941,116 +2116,122 @@ void mdevices_info_destroy(dev_info* dev_info, int len)
 }
 
 #define TLV_OPERATION_SIZE 4
-#define OP_TLV_SIZE        16
+#define OP_TLV_SIZE 16
 #define REG_TLV_HEADER_LEN 4
 
-enum {
+enum
+{
     MAD_CLASS_REG_ACCESS = 1,
 };
-enum {
-    TLV_END       = 0,
+enum
+{
+    TLV_END = 0,
     TLV_OPERATION = 1,
-    TLV_DR        = 2,
-    TLV_REG       = 3,
+    TLV_DR = 2,
+    TLV_REG = 3,
     TLV_USER_DATA = 4,
 };
 
-#define REGISTER_HEADERS_SIZE  20
-#define INBAND_MAX_REG_SIZE    44
-#define ICMD_MAX_REG_SIZE      (ICMD_MAX_CMD_SIZE - REGISTER_HEADERS_SIZE)
-#define FWCTX_MAX_REG_SIZE     16
+#define REGISTER_HEADERS_SIZE 20
+#define INBAND_MAX_REG_SIZE 44
+#define ICMD_MAX_REG_SIZE (ICMD_MAX_CMD_SIZE - REGISTER_HEADERS_SIZE)
+#define FWCTX_MAX_REG_SIZE 16
 #define TOOLS_HCR_MAX_REG_SIZE (TOOLS_HCR_MAX_MBOX - REGISTER_HEADERS_SIZE)
 
 static int supports_icmd(mfile* mf);
 static int supports_tools_cmdif_reg(mfile* mf);
 static int init_operation_tlv(struct OperationTlv* operation_tlv, u_int16_t reg_id, u_int8_t method);
 static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_icmd_size);
-static int mreg_send_raw(mfile              * mf,
-                         u_int16_t            reg_id,
+static int mreg_send_raw(mfile* mf,
+                         u_int16_t reg_id,
                          maccess_reg_method_t method,
-                         void               * reg_data,
-                         u_int32_t            reg_size,
-                         u_int32_t            r_size_reg,
-                         u_int32_t            w_size_reg,
-                         int                * reg_status);
+                         void* reg_data,
+                         u_int32_t reg_size,
+                         u_int32_t r_size_reg,
+                         u_int32_t w_size_reg,
+                         int* reg_status);
 int mget_max_reg_size(mfile* mf, maccess_reg_method_t reg_method);
 
-/* maccess_reg: Do a reg_access for the mf device. */
-/* - reg_data is both in and out */
-/* TODO: When the reg operation succeeds but the reg status is != 0, */
-/*       a specific */
+// maccess_reg: Do a reg_access for the mf device.
+// - reg_data is both in and out
+// TODO: When the reg operation succeeds but the reg status is != 0,
+//       a specific
 
-int maccess_reg(mfile              * mf,
-                u_int16_t            reg_id,
+int maccess_reg(mfile* mf,
+                u_int16_t reg_id,
                 maccess_reg_method_t reg_method,
-                void               * reg_data,
-                u_int32_t            reg_size,
-                u_int32_t            r_size_reg,
-                u_int32_t            w_size_reg,
-                int                * reg_status)
+                void* reg_data,
+                u_int32_t reg_size,
+                u_int32_t r_size_reg,
+                u_int32_t w_size_reg,
+                int* reg_status)
 {
     int rc;
-
-    if ((mf == NULL) || (reg_data == NULL) || (reg_status == NULL) || (reg_size <= 0)) {
+    if (mf == NULL || reg_data == NULL || reg_status == NULL || reg_size <= 0)
+    {
         return ME_BAD_PARAMS;
     }
-    /* check register size */
+    // check register size
     u_int32_t max_size = (u_int32_t)mget_max_reg_size(mf, reg_method);
-
-    if (reg_size > max_size) {
-        /* reg too big */
+    if (reg_size > max_size)
+    {
+        // reg too big
         return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
     }
     rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
 
-    if (rc) {
+    if (rc)
+    {
         return rc;
-    } else if (*reg_status) {
-        switch (*reg_status) {
-        case 1:
-            return ME_REG_ACCESS_DEV_BUSY;
+    }
+    else if (*reg_status)
+    {
+        switch (*reg_status)
+        {
+            case 1:
+                return ME_REG_ACCESS_DEV_BUSY;
 
-        case 2:
-            return ME_REG_ACCESS_VER_NOT_SUPP;
+            case 2:
+                return ME_REG_ACCESS_VER_NOT_SUPP;
 
-        case 3:
-            return ME_REG_ACCESS_UNKNOWN_TLV;
+            case 3:
+                return ME_REG_ACCESS_UNKNOWN_TLV;
 
-        case 4:
-            return ME_REG_ACCESS_REG_NOT_SUPP;
+            case 4:
+                return ME_REG_ACCESS_REG_NOT_SUPP;
 
-        case 5:
-            return ME_REG_ACCESS_CLASS_NOT_SUPP;
+            case 5:
+                return ME_REG_ACCESS_CLASS_NOT_SUPP;
 
-        case 6:
-            return ME_REG_ACCESS_METHOD_NOT_SUPP;
+            case 6:
+                return ME_REG_ACCESS_METHOD_NOT_SUPP;
 
-        case 7:
-            return ME_REG_ACCESS_BAD_PARAM;
+            case 7:
+                return ME_REG_ACCESS_BAD_PARAM;
 
-        case 8:
-            return ME_REG_ACCESS_RES_NOT_AVLBL;
+            case 8:
+                return ME_REG_ACCESS_RES_NOT_AVLBL;
 
-        case 9:
-            return ME_REG_ACCESS_MSG_RECPT_ACK;
+            case 9:
+                return ME_REG_ACCESS_MSG_RECPT_ACK;
 
-        case 0x22:
-            return ME_REG_ACCESS_CONF_CORRUPT;
+            case 0x22:
+                return ME_REG_ACCESS_CONF_CORRUPT;
 
-        case 0x24:
-            return ME_REG_ACCESS_LEN_TOO_SMALL;
+            case 0x24:
+                return ME_REG_ACCESS_LEN_TOO_SMALL;
 
-        case 0x20:
-            return ME_REG_ACCESS_BAD_CONFIG;
+            case 0x20:
+                return ME_REG_ACCESS_BAD_CONFIG;
 
-        case 0x21:
-            return ME_REG_ACCESS_ERASE_EXEEDED;
+            case 0x21:
+                return ME_REG_ACCESS_ERASE_EXEEDED;
 
-        case 0x70:
-            return ME_REG_ACCESS_INTERNAL_ERROR;
+            case 0x70:
+                return ME_REG_ACCESS_INTERNAL_ERROR;
 
-        default:
-            return ME_REG_ACCESS_UNKNOWN_ERR;
+            default:
+                return ME_REG_ACCESS_UNKNOWN_ERR;
         }
     }
     return ME_OK;
@@ -2068,54 +2249,60 @@ static int init_operation_tlv(struct OperationTlv* operation_tlv, u_int16_t reg_
     return 0;
 }
 
-/*/////////////////  Function that sends the register via the correct interface /////////////////////////// */
+///////////////////  Function that sends the register via the correct interface ///////////////////////////
 
 static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_icmd_size)
 {
     int rc;
-
-    if (supports_icmd(mf)) {
+    if (supports_icmd(mf))
+    {
         rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
-        if (rc) {
+        if (rc)
+        {
             return rc;
         }
-    } else if (supports_tools_cmdif_reg(mf)) {
+    }
+    else if (supports_tools_cmdif_reg(mf))
+    {
         rc = tools_cmdif_reg_access(mf, data, w_icmd_size, r_icmd_size);
-        if (rc) {
+        if (rc)
+        {
             return rc;
         }
-    } else {
+    }
+    else
+    {
         return ME_NOT_IMPLEMENTED;
     }
     return ME_OK;
 }
 
-static int mreg_send_raw(mfile              * mf,
-                         u_int16_t            reg_id,
+static int mreg_send_raw(mfile* mf,
+                         u_int16_t reg_id,
                          maccess_reg_method_t method,
-                         void               * reg_data,
-                         u_int32_t            reg_size,
-                         u_int32_t            r_size_reg,
-                         u_int32_t            w_size_reg,
-                         int                * reg_status)
+                         void* reg_data,
+                         u_int32_t reg_size,
+                         u_int32_t r_size_reg,
+                         u_int32_t w_size_reg,
+                         int* reg_status)
 {
-    /* printf("-D- reg_id = %d, reg_size = %d, r_size_reg = %d , w_size_reg = */
-    /* %d\n",reg_id,reg_size,r_size_reg,w_size_reg); */
-    int                 mad_rc, cmdif_size = 0;
+    // printf("-D- reg_id = %d, reg_size = %d, r_size_reg = %d , w_size_reg =
+    // %d\n",reg_id,reg_size,r_size_reg,w_size_reg);
+    int mad_rc, cmdif_size = 0;
     struct OperationTlv tlv;
-    struct reg_tlv      tlv_info;
-    u_int8_t            buffer[1024];
+    struct reg_tlv tlv_info;
+    u_int8_t buffer[1024];
 
     init_operation_tlv(&(tlv), reg_id, method);
-    /* Fill Reg TLV */
+    // Fill Reg TLV
     memset(&tlv_info, 0, sizeof(tlv_info));
     tlv_info.Type = TLV_REG;
-    tlv_info.len = (reg_size + REG_TLV_HEADER_LEN) >> 2; /* length is in dwords */
-    /* Pack the mad */
+    tlv_info.len = (reg_size + REG_TLV_HEADER_LEN) >> 2; // length is in dwords
+    // Pack the mad
 
     cmdif_size += OperationTlv_pack(&tlv, buffer);
     cmdif_size += reg_tlv_pack(&tlv_info, buffer + OP_TLV_SIZE);
-    /* put the reg itself into the buffer */
+    // put the reg itself into the buffer
     memcpy(buffer + OP_TLV_SIZE + REG_TLV_HEADER_LEN, reg_data, reg_size);
     cmdif_size += reg_size;
 
@@ -2126,18 +2313,18 @@ static int mreg_send_raw(mfile              * mf,
     fprintf(stdout, "\tReg Tlv\n");
     reg_tlv_dump(&tlv_info, stdout);
 #endif
-    /* printf("-D- reg_info.len = |%d, OP_TLV: %d, REG_TLV= %d, cmdif_size = %d\n", reg_info.len, OP_TLV_SIZE, */
-    /* REG_RLV_HEADER_LEN, cmdif_size); update r/w_size_reg with the size of op tlv and reg tlv as we need to read/write */
-    /* them as well */
+    // printf("-D- reg_info.len = |%d, OP_TLV: %d, REG_TLV= %d, cmdif_size = %d\n", reg_info.len, OP_TLV_SIZE,
+    // REG_RLV_HEADER_LEN, cmdif_size); update r/w_size_reg with the size of op tlv and reg tlv as we need to read/write
+    // them as well
     r_size_reg += OP_TLV_SIZE + REG_TLV_HEADER_LEN;
     w_size_reg += OP_TLV_SIZE + REG_TLV_HEADER_LEN;
-    /* printf("-D- reg_size = %d, r_size_reg = %d , w_size_reg = %d\n",reg_size,r_size_reg,w_size_reg); */
+    // printf("-D- reg_size = %d, r_size_reg = %d , w_size_reg = %d\n",reg_size,r_size_reg,w_size_reg);
 
     mad_rc = mreg_send_wrapper(mf, buffer, r_size_reg, w_size_reg);
-    /* Unpack the mad */
+    // Unpack the mad
     OperationTlv_unpack(&tlv, buffer);
     reg_tlv_unpack(&tlv_info, buffer + OP_TLV_SIZE);
-    /* copy register back from the buffer */
+    // copy register back from the buffer
     memcpy(reg_data, buffer + OP_TLV_SIZE + REG_TLV_HEADER_LEN, reg_size);
 
 #ifdef _ENABLE_DEBUG_
@@ -2147,9 +2334,10 @@ static int mreg_send_raw(mfile              * mf,
     fprintf(stdout, "\tReg Tlv\n");
     reg_tlv_dump(&tlv_info, stdout);
 #endif
-    /* Check the return value */
+    // Check the return value
     *reg_status = tlv.status;
-    if (mad_rc) {
+    if (mad_rc)
+    {
         return mad_rc;
     }
 
@@ -2157,24 +2345,27 @@ static int mreg_send_raw(mfile              * mf,
 }
 
 
-#define CONNECTX3_HW_ID     0x1f5
+
+#define CONNECTX3_HW_ID 0x1f5
 #define CONNECTX3_PRO_HW_ID 0x1f7
 
 static int supports_icmd(mfile* mf)
 {
     u_int32_t dev_id;
 
-    if (read_device_id(mf, &dev_id) != 4) {
-        /* cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd */
+    if (read_device_id(mf, &dev_id) != 4)
+    {
+        // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
         return 0;
     }
-    switch (dev_id & 0xffff) { /* that the hw device id */
-    case CONNECTX3_HW_ID:
-    case CONNECTX3_PRO_HW_ID:
-        return 0;
+    switch (dev_id & 0xffff)
+    { // that the hw device id
+        case CONNECTX3_HW_ID:
+        case CONNECTX3_PRO_HW_ID:
+            return 0;
 
-    default:
-        break;
+        default:
+            break;
     }
     return 1;
 }
@@ -2183,210 +2374,219 @@ static int supports_tools_cmdif_reg(mfile* mf)
 {
     u_int32_t dev_id;
 
-    if (read_device_id(mf, &dev_id) != 4) {
+    if (read_device_id(mf, &dev_id) != 4)
+    {
         return 0;
     }
-    switch (dev_id & 0xffff) {    /* that the hw device id */
-    case CONNECTX3_HW_ID:         /* Cx3 */
-    case CONNECTX3_PRO_HW_ID:     /* Cx3-pro */
-        if (tools_cmdif_is_supported(mf) == ME_OK) {
-            return 1;
-        }
-        return 0;
+    switch (dev_id & 0xffff)
+    {                             // that the hw device id
+        case CONNECTX3_HW_ID:     // Cx3
+        case CONNECTX3_PRO_HW_ID: // Cx3-pro
+            if (tools_cmdif_is_supported(mf) == ME_OK)
+            {
+                return 1;
+            }
+            return 0;
 
-    default:
-        return 0;
+        default:
+            return 0;
     }
 }
 
 int mget_max_reg_size(mfile* mf, maccess_reg_method_t reg_method)
 {
-    if (mf->acc_reg_params.max_reg_size[reg_method]) {
+    if (mf->acc_reg_params.max_reg_size[reg_method])
+    {
         return mf->acc_reg_params.max_reg_size[reg_method];
-    } else if (supports_icmd(mf)) {
-        /* we support icmd and we dont use IB interface -> we use icmd for reg access */
-        /* TOOD: get size dynamically from icmd_params once we have support by fw for mfba with size field greater than */
-        /* 8 bits */
+    }
+    else if (supports_icmd(mf))
+    {
+        // we support icmd and we dont use IB interface -> we use icmd for reg access
+        // TOOD: get size dynamically from icmd_params once we have support by fw for mfba with size field greater than
+        // 8 bits
         mf->acc_reg_params.max_reg_size[reg_method] = ICMD_MAX_REG_SIZE;
-    } else if (supports_tools_cmdif_reg(mf)) {
+    }
+    else if (supports_tools_cmdif_reg(mf))
+    {
         mf->acc_reg_params.max_reg_size[reg_method] = TOOLS_HCR_MAX_REG_SIZE;
     }
     return mf->acc_reg_params.max_reg_size[reg_method];
 }
 
 /************************************
-* Function: m_err2str
-************************************/
+ * Function: m_err2str
+ ************************************/
 const char* m_err2str(MError status)
 {
-    switch (status) {
-    case ME_OK:
-        return "ME_OK";
+    switch (status)
+    {
+        case ME_OK:
+            return "ME_OK";
 
-    case ME_ERROR:
-        return "General error";
+        case ME_ERROR:
+            return "General error";
 
-    case ME_BAD_PARAMS:
-        return "ME_BAD_PARAMS";
+        case ME_BAD_PARAMS:
+            return "ME_BAD_PARAMS";
 
-    case ME_CR_ERROR:
-        return "ME_CR_ERROR";
+        case ME_CR_ERROR:
+            return "ME_CR_ERROR";
 
-    case ME_NOT_IMPLEMENTED:
-        return "ME_NOT_IMPLEMENTED";
+        case ME_NOT_IMPLEMENTED:
+            return "ME_NOT_IMPLEMENTED";
 
-    case ME_SEM_LOCKED:
-        return "Semaphore locked";
+        case ME_SEM_LOCKED:
+            return "Semaphore locked";
 
-    case ME_MEM_ERROR:
-        return "ME_MEM_ERROR";
+        case ME_MEM_ERROR:
+            return "ME_MEM_ERROR";
 
-    case ME_UNSUPPORTED_OPERATION:
-        return "ME_UNSUPPORTED_OPERATION";
+        case ME_UNSUPPORTED_OPERATION:
+            return "ME_UNSUPPORTED_OPERATION";
 
-    case ME_MAD_SEND_FAILED:
-        return "ME_MAD_SEND_FAILED";
+        case ME_MAD_SEND_FAILED:
+            return "ME_MAD_SEND_FAILED";
 
-    case ME_UNKOWN_ACCESS_TYPE:
-        return "ME_UNKOWN_ACCESS_TYPE";
+        case ME_UNKOWN_ACCESS_TYPE:
+            return "ME_UNKOWN_ACCESS_TYPE";
 
-    case ME_UNSUPPORTED_ACCESS_TYPE:
-        return "ME_UNSUPPORTED_ACCESS_TYPE";
+        case ME_UNSUPPORTED_ACCESS_TYPE:
+            return "ME_UNSUPPORTED_ACCESS_TYPE";
 
-    case ME_UNSUPPORTED_DEVICE:
-        return "ME_UNSUPPORTED_DEVICE";
+        case ME_UNSUPPORTED_DEVICE:
+            return "ME_UNSUPPORTED_DEVICE";
 
-    /* Reg access errors */
-    case ME_REG_ACCESS_BAD_STATUS_ERR:
-        return "ME_REG_ACCESS_BAD_STATUS_ERR";
+        // Reg access errors
+        case ME_REG_ACCESS_BAD_STATUS_ERR:
+            return "ME_REG_ACCESS_BAD_STATUS_ERR";
 
-    case ME_REG_ACCESS_BAD_METHOD:
-        return "Bad method";
+        case ME_REG_ACCESS_BAD_METHOD:
+            return "Bad method";
 
-    case ME_REG_ACCESS_NOT_SUPPORTED:
-        return "The Register access is not supported by the device";
+        case ME_REG_ACCESS_NOT_SUPPORTED:
+            return "The Register access is not supported by the device";
 
-    case ME_REG_ACCESS_DEV_BUSY:
-        return "Device is busy";
+        case ME_REG_ACCESS_DEV_BUSY:
+            return "Device is busy";
 
-    case ME_REG_ACCESS_VER_NOT_SUPP:
-        return "Version not supported";
+        case ME_REG_ACCESS_VER_NOT_SUPP:
+            return "Version not supported";
 
-    case ME_REG_ACCESS_UNKNOWN_TLV:
-        return "Unknown TLV";
+        case ME_REG_ACCESS_UNKNOWN_TLV:
+            return "Unknown TLV";
 
-    case ME_REG_ACCESS_REG_NOT_SUPP:
-        return "Register not supported";
+        case ME_REG_ACCESS_REG_NOT_SUPP:
+            return "Register not supported";
 
-    case ME_REG_ACCESS_CLASS_NOT_SUPP:
-        return "Class not supported";
+        case ME_REG_ACCESS_CLASS_NOT_SUPP:
+            return "Class not supported";
 
-    case ME_REG_ACCESS_METHOD_NOT_SUPP:
-        return "Method not supported";
+        case ME_REG_ACCESS_METHOD_NOT_SUPP:
+            return "Method not supported";
 
-    case ME_REG_ACCESS_BAD_PARAM:
-        return "Bad parameter";
+        case ME_REG_ACCESS_BAD_PARAM:
+            return "Bad parameter";
 
-    case ME_REG_ACCESS_RES_NOT_AVLBL:
-        return "Resource unavailable";
+        case ME_REG_ACCESS_RES_NOT_AVLBL:
+            return "Resource unavailable";
 
-    case ME_REG_ACCESS_MSG_RECPT_ACK:
-        return "Message receipt ack";
+        case ME_REG_ACCESS_MSG_RECPT_ACK:
+            return "Message receipt ack";
 
-    case ME_REG_ACCESS_UNKNOWN_ERR:
-        return "Unknown register error";
+        case ME_REG_ACCESS_UNKNOWN_ERR:
+            return "Unknown register error";
 
-    case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
-        return "Register is too large";
+        case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
+            return "Register is too large";
 
-    case ME_REG_ACCESS_CONF_CORRUPT:
-        return "Config Section Corrupted";
+        case ME_REG_ACCESS_CONF_CORRUPT:
+            return "Config Section Corrupted";
 
-    case ME_REG_ACCESS_LEN_TOO_SMALL:
-        return "The given Register length is too small for the Tlv";
+        case ME_REG_ACCESS_LEN_TOO_SMALL:
+            return "The given Register length is too small for the Tlv";
 
-    case ME_REG_ACCESS_BAD_CONFIG:
-        return "The configuration is rejected";
+        case ME_REG_ACCESS_BAD_CONFIG:
+            return "The configuration is rejected";
 
-    case ME_REG_ACCESS_ERASE_EXEEDED:
-        return "The erase count exceeds its limit";
+        case ME_REG_ACCESS_ERASE_EXEEDED:
+            return "The erase count exceeds its limit";
 
-    case ME_REG_ACCESS_INTERNAL_ERROR:
-        return "Firmware internal error";
+        case ME_REG_ACCESS_INTERNAL_ERROR:
+            return "Firmware internal error";
 
-    /* ICMD access errors */
-    case ME_ICMD_STATUS_CR_FAIL:
-        return "ME_ICMD_STATUS_CR_FAIL";
+        // ICMD access errors
+        case ME_ICMD_STATUS_CR_FAIL:
+            return "ME_ICMD_STATUS_CR_FAIL";
 
-    case ME_ICMD_STATUS_SEMAPHORE_TO:
-        return "ME_ICMD_STATUS_SEMAPHORE_TO";
+        case ME_ICMD_STATUS_SEMAPHORE_TO:
+            return "ME_ICMD_STATUS_SEMAPHORE_TO";
 
-    case ME_ICMD_STATUS_EXECUTE_TO:
-        return "ME_ICMD_STATUS_EXECUTE_TO";
+        case ME_ICMD_STATUS_EXECUTE_TO:
+            return "ME_ICMD_STATUS_EXECUTE_TO";
 
-    case ME_ICMD_STATUS_IFC_BUSY:
-        return "ME_ICMD_STATUS_IFC_BUSY";
+        case ME_ICMD_STATUS_IFC_BUSY:
+            return "ME_ICMD_STATUS_IFC_BUSY";
 
-    case ME_ICMD_STATUS_ICMD_NOT_READY:
-        return "ME_ICMD_STATUS_ICMD_NOT_READY";
+        case ME_ICMD_STATUS_ICMD_NOT_READY:
+            return "ME_ICMD_STATUS_ICMD_NOT_READY";
 
-    case ME_ICMD_UNSUPPORTED_ICMD_VERSION:
-        return "ME_ICMD_UNSUPPORTED_ICMD_VERSION";
+        case ME_ICMD_UNSUPPORTED_ICMD_VERSION:
+            return "ME_ICMD_UNSUPPORTED_ICMD_VERSION";
 
-    case ME_ICMD_NOT_SUPPORTED:
-        return "ME_REG_ACCESS_ICMD_NOT_SUPPORTED";
+        case ME_ICMD_NOT_SUPPORTED:
+            return "ME_REG_ACCESS_ICMD_NOT_SUPPORTED";
 
-    case ME_ICMD_INVALID_OPCODE:
-        return "ME_ICMD_INVALID_OPCODE";
+        case ME_ICMD_INVALID_OPCODE:
+            return "ME_ICMD_INVALID_OPCODE";
 
-    case ME_ICMD_INVALID_CMD:
-        return "ME_ICMD_INVALID_CMD";
+        case ME_ICMD_INVALID_CMD:
+            return "ME_ICMD_INVALID_CMD";
 
-    case ME_ICMD_OPERATIONAL_ERROR:
-        return "ME_ICMD_OPERATIONAL_ERROR";
+        case ME_ICMD_OPERATIONAL_ERROR:
+            return "ME_ICMD_OPERATIONAL_ERROR";
 
-    case ME_ICMD_BAD_PARAM:
-        return "ME_ICMD_BAD_PARAM";
+        case ME_ICMD_BAD_PARAM:
+            return "ME_ICMD_BAD_PARAM";
 
-    case ME_ICMD_BUSY:
-        return "ME_ICMD_BUSY";
+        case ME_ICMD_BUSY:
+            return "ME_ICMD_BUSY";
 
-    case ME_ICMD_ICM_NOT_AVAIL:
-        return "ME_ICMD_ICM_NOT_AVAIL";
+        case ME_ICMD_ICM_NOT_AVAIL:
+            return "ME_ICMD_ICM_NOT_AVAIL";
 
-    case ME_ICMD_WRITE_PROTECT:
-        return "ME_ICMD_WRITE_PROTECT";
+        case ME_ICMD_WRITE_PROTECT:
+            return "ME_ICMD_WRITE_PROTECT";
 
-    case ME_ICMD_UNKNOWN_STATUS:
-        return "ME_ICMD_UNKNOWN_STATUS";
+        case ME_ICMD_UNKNOWN_STATUS:
+            return "ME_ICMD_UNKNOWN_STATUS";
 
-    case ME_ICMD_SIZE_EXCEEDS_LIMIT:
-        return "ME_ICMD_SIZE_EXCEEDS_LIMIT";
+        case ME_ICMD_SIZE_EXCEEDS_LIMIT:
+            return "ME_ICMD_SIZE_EXCEEDS_LIMIT";
 
-    /* MAD IFC errors */
-    case ME_MAD_BUSY:
-        return "Temporarily busy. MAD discarded. This is not an error";
+        // MAD IFC errors
+        case ME_MAD_BUSY:
+            return "Temporarily busy. MAD discarded. This is not an error";
 
-    case ME_MAD_REDIRECT:
-        return "Redirection. This is not an error";
+        case ME_MAD_REDIRECT:
+            return "Redirection. This is not an error";
 
-    case ME_MAD_BAD_VER:
-        return "Bad version";
+        case ME_MAD_BAD_VER:
+            return "Bad version";
 
-    case ME_MAD_METHOD_NOT_SUPP:
-        return "Method not supported";
+        case ME_MAD_METHOD_NOT_SUPP:
+            return "Method not supported";
 
-    case ME_MAD_METHOD_ATTR_COMB_NOT_SUPP:
-        return "Method and attribute combination isn't supported";
+        case ME_MAD_METHOD_ATTR_COMB_NOT_SUPP:
+            return "Method and attribute combination isn't supported";
 
-    case ME_MAD_BAD_DATA:
-        return "Bad attribute modifer or field";
+        case ME_MAD_BAD_DATA:
+            return "Bad attribute modifer or field";
 
-    case ME_MAD_GENERAL_ERR:
-        return "Unknown MAD error";
+        case ME_MAD_GENERAL_ERR:
+            return "Unknown MAD error";
 
-    default:
-        return "Unknown error code";
+        default:
+            return "Unknown error code";
     }
 }
 
@@ -2434,14 +2634,15 @@ int mget_addr_space(mfile* mf)
 }
 int mset_addr_space(mfile* mf, int space)
 {
-    switch (space) {
-    case AS_CR_SPACE:
-    case AS_ICMD:
-    case AS_SEMAPHORE:
-        break;
+    switch (space)
+    {
+        case AS_CR_SPACE:
+        case AS_ICMD:
+        case AS_SEMAPHORE:
+            break;
 
-    default:
-        return -1;
+        default:
+            return -1;
     }
     mf->address_space = space;
     return 0;
@@ -2451,27 +2652,31 @@ int device_exists(const char* devname)
 {
     char* devs = NULL;
     char* pdevs;
-    int   size = 512;
-    int   rc = 0;
-    int   i = 0;
-    int   res = 0;
-
-    /* Get list of devices */
-    do{
-        if (devs) {
+    int size = 512;
+    int rc = 0;
+    int i = 0;
+    int res = 0;
+    // Get list of devices
+    do
+    {
+        if (devs)
+        {
             free(devs);
         }
         size *= 2;
         devs = malloc(size);
-        if (!devs) {
+        if (!devs)
+        {
             errno = ENOMEM;
             return 0;
         }
         rc = mdevices_v(devs, size, MDEVS_ALL, 1);
     } while (rc == -1);
     pdevs = devs;
-    while (i < rc) {
-        if (!strcmp(devname, pdevs)) {
+    while (i < rc)
+    {
+        if (!strcmp(devname, pdevs))
+        {
             res = 1;
             goto cleanup;
         }
@@ -2479,7 +2684,8 @@ int device_exists(const char* devname)
         i++;
     }
 cleanup:
-    if (devs) {
+    if (devs)
+    {
         free(devs);
     }
     return res;
@@ -2488,13 +2694,14 @@ cleanup:
 int mclear_pci_semaphore(const char* name)
 {
     mfile* mf;
-    int    rc = ME_OK;
-
+    int rc = ME_OK;
     mf = mopen_int(name, Clear_Vsec_Semaphore);
-    if (!mf) {
+    if (!mf)
+    {
         return ME_ERROR;
     }
-    if (mf->tp != MST_PCICONF) {
+    if (mf->tp != MST_PCICONF)
+    {
         rc = ME_UNSUPPORTED_ACCESS_TYPE;
     }
     mclose(mf);
@@ -2503,57 +2710,68 @@ int mclear_pci_semaphore(const char* name)
 
 int mvpd_read4_int(mfile* mf, unsigned int offset, u_int8_t value[4])
 {
-    int      vpd_cap = mf->vpd_cap_addr;
+    int vpd_cap = mf->vpd_cap_addr;
     uint16_t write_addr;
     uint32_t read_addr;
-    int      res;
-    int      count_to_timeout;
-    int      done = 0;
+    int res;
+    int count_to_timeout;
+    int done = 0;
 
-    if (!mf || !value) {
+    if (!mf || !value)
+    {
         return ME_BAD_PARAMS;
     }
-    if (!vpd_cap) {
+    if (!vpd_cap)
+    {
         return ME_UNSUPPORTED_OPERATION;
     }
     int lock_rc = _flock_int(mf->fdlock, LOCK_EX);
-
-    if (lock_rc) {
+    if (lock_rc)
+    {
         perror("READ VPD");
         return ME_ERROR;
     }
     /* sets F bit to zero and write VPD addr */
     write_addr = (0x7fff & offset);
     res = write_config(mf, vpd_cap + PCI_VPD_ADDR, write_addr, 2);
-    if (res) {
+    if (res)
+    {
         res = ME_CR_ERROR;
         goto cleanup;
     }
 
     /* wait for data until F bit is set with one */
-    for (count_to_timeout = 0; count_to_timeout < MST_VPD_DFLT_TIMEOUT; count_to_timeout++) {
+    for (count_to_timeout = 0; count_to_timeout < MST_VPD_DFLT_TIMEOUT; count_to_timeout++)
+    {
         res = read_config(mf, vpd_cap + PCI_VPD_ADDR, &read_addr, 2);
-        if (res) {
+        if (res)
+        {
             res = ME_CR_ERROR;
             goto cleanup;
         }
-        if (read_addr & 0x8000) {
+        if (read_addr & 0x8000)
+        {
             done = 1;
             break;
         }
         sched_yield();
     }
-    if (done) {
+    if (done)
+    {
         res = read_config(mf, vpd_cap + PCI_VPD_DATA, (uint32_t*)value, 4);
-        if (res) {
+        if (res)
+        {
             res = ME_CR_ERROR;
         }
-    } else {
+    }
+    else
+    {
         res = ME_TIMEOUT;
     }
 cleanup:
     lock_rc = _flock_int(mf->fdlock, LOCK_UN);
-    if (lock_rc) {
+    if (lock_rc)
+    {
         perror("READ VPD");
         return ME_ERROR;
     }
@@ -2562,18 +2780,22 @@ cleanup:
 
 int mvpd_read4(mfile* mf, unsigned int offset, u_int8_t value[4])
 {
-    if (offset % 4) {
-        u_int8_t     qword[8] = {0};
-        int          rc = 0;
+    if (offset % 4)
+    {
+        u_int8_t qword[8] = {0};
+        int rc = 0;
         unsigned int aligned_offset = (offset / 4) * 4;
         rc = mvpd_read4_int(mf, aligned_offset, qword);
-        if (rc) {
+        if (rc)
+        {
             return rc;
         }
         rc = mvpd_read4_int(mf, aligned_offset + 4, qword + 4);
         memcpy(value, qword + (offset % 4), 4);
         return 0;
-    } else {
+    }
+    else
+    {
         return mvpd_read4_int(mf, offset, value);
     }
 }
@@ -2600,67 +2822,77 @@ int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info, int page_amount)
     int page_counter = 0;
     int ret_code = ME_OK;
 
-    /* Parameter validation. */
-    if (!mf || !page_info) {
+    // Parameter validation.
+    if (!mf || !page_info)
+    {
         return ME_BAD_PARAMS;
     }
 
-    /* Open the memory device file. */
+    // Open the memory device file.
     int file_descriptor = open("/dev/mem", O_RDWR);
 
-    /* Pin the memory in the kernel space. */
-    for (page_counter = 0; page_counter < page_amount; page_counter++) {
-        /* Allocate the buffer. */
+    // Pin the memory in the kernel space.
+    for (page_counter = 0; page_counter < page_amount; page_counter++)
+    {
+        // Allocate the buffer.
         char* current_page = aligned_alloc(PAGE_SIZE, PAGE_SIZE);
 
-        /* Page allocated ? */
-        if (!current_page) {
+        // Page allocated ?
+        if (!current_page)
+        {
             ret_code = ME_MEM_ERROR;
             break;
         }
 
         page_allocated_counter++;
 
-        if ((uintptr_t)current_page % PAGE_SIZE) {
+        if ((uintptr_t)current_page % PAGE_SIZE)
+        {
             ret_code = ME_MEM_ERROR;
             break;
         }
 
-        /* We need to call mlock after the pages allocation in order to */
-        /*   lock the virtual address space into RAM and preventing that */
-        /*   memory from being paged to the swap area. */
-        if (mlock(current_page, PAGE_SIZE)) {
+        // We need to call mlock after the pages allocation in order to
+        //   lock the virtual address space into RAM and preventing that
+        //   memory from being paged to the swap area.
+        if (mlock(current_page, PAGE_SIZE))
+        {
             ret_code = ME_MEM_ERROR;
             break;
         }
 
-        /* Save the virtual address in order to deallocate */
-        /*   the memory at the close function. */
+        // Save the virtual address in order to deallocate
+        //   the memory at the close function.
         mf->user_page_list.page_list[page_counter] = current_page;
 
-        /* Building the ioctl structure. */
+        // Building the ioctl structure.
         struct mem_extract memory_user = {};
         memory_user.me_vaddr = (uintptr_t)current_page;
 
-        /* Pin the user memory in the kernel space. */
+        // Pin the user memory in the kernel space.
         int return_code = ioctl(file_descriptor, MEM_EXTRACT_PADDR, &memory_user);
 
-        if (return_code || (memory_user.me_state != ME_STATE_MAPPED)) {
+        if (return_code || (memory_user.me_state != ME_STATE_MAPPED))
+        {
             ret_code = ME_MEM_ERROR;
             break;
         }
 
-        /* Save the PA and VA for the tool. */
+        // Save the PA and VA for the tool.
         page_info->page_addresses_array[page_counter].dma_address = memory_user.me_paddr;
         page_info->page_addresses_array[page_counter].virtual_address = (uintptr_t)current_page;
     }
 
-    /* Close the device file /dev/mem. */
+    // Close the device file /dev/mem.
     close(file_descriptor);
 
-    if (ret_code) {
+    if (ret_code)
+    {
         release_dma_pages(mf, page_allocated_counter);
-    } else {
+    }
+
+    else
+    {
         mf->user_page_list.page_amount = page_amount;
     }
 
@@ -2669,23 +2901,26 @@ int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info, int page_amount)
 
 int release_dma_pages(mfile* mf, int page_amount)
 {
-    /* Parameter validation. */
-    if (!mf) {
+    // Parameter validation.
+    if (!mf)
+    {
         return -1;
     }
 
-    /* Deallocate the pages. */
-    for (int page_counter = 0; page_counter < page_amount; page_counter++) {
-        if (!mf->user_page_list.page_list[page_counter]) {
+    // Deallocate the pages.
+    for (int page_counter = 0; page_counter < page_amount; page_counter++)
+    {
+        if (!mf->user_page_list.page_list[page_counter])
+        {
             continue;
         }
 
-        /* Unlocking the virtual address of the page, */
-        /*    so that pages in the specified virtual address range may */
-        /*    once more to be swapped out if required by the kernel memory manager. */
+        // Unlocking the virtual address of the page,
+        //    so that pages in the specified virtual address range may
+        //    once more to be swapped out if required by the kernel memory manager.
         munlock(mf->user_page_list.page_list[page_counter], PAGE_SIZE);
 
-        /* Free the user space memory. */
+        // Free the user space memory.
         free(mf->user_page_list.page_list[page_counter]);
 
         mf->user_page_list.page_list[page_counter] = NULL;
@@ -2727,26 +2962,29 @@ int read_dword_from_conf_space(mfile* mf, u_int32_t offset, u_int32_t* data)
 {
     int ret = 0;
 
-    /* Parameters validation. */
-    if (!mf || !data) {
+    // Parameters validation.
+    if (!mf || !data)
+    {
         return -1;
     }
 
-    /* take semaphore. */
+    // take semaphore.
     ret = _vendor_specific_sem(mf, 1);
-    if (ret) {
+    if (ret)
+    {
         return ret;
     }
 
-    /* set address space. */
+    // set address space.
     ret = _set_addr_space(mf, mf->address_space);
 
-    if (!ret) {
-        /* read the data. */
+    if (!ret)
+    {
+        // read the data.
         READ4_PCI(mf, data, offset, "read value", return -1);
     }
 
-    /* clear semaphore */
+    // clear semaphore
     _vendor_specific_sem(mf, 0);
 
     return ret;
@@ -2772,11 +3010,7 @@ int mcables_remote_operation_client_side(mfile* mf, u_int32_t address, u_int32_t
     return 0;
 }
 
-int mlxcables_remote_operation_client_side(mfile     * mf,
-                                           const char* device_name,
-                                           char        op,
-                                           char        flags,
-                                           const char* reg_name)
+int mlxcables_remote_operation_client_side(mfile* mf, const char* device_name, char op, char flags, const char* reg_name)
 {
     (void)mf;
     (void)device_name;
@@ -2788,7 +3022,8 @@ int mlxcables_remote_operation_client_side(mfile     * mf,
 
 int is_remote_dev(mfile* mf)
 {
-    if (mf) {
+    if (mf)
+    {
         return mf->is_remote;
     }
 
@@ -2798,33 +3033,32 @@ int is_remote_dev(mfile* mf)
 
 int is_zombiefish_device(mfile* mf)
 {
-    size_t    gis_address = 0; /* gis == global image status */
+    size_t gis_address = 0; // gis == global image status
     u_int32_t gis = 0;
-    uint32_t  gis_operational = 0; /* for NICs and HCAs */
-    u_int32_t hw_dev_id = 0;
+    uint32_t gis_operational = 0; // for NICs and HCAs
 
+    u_int32_t hw_dev_id = 0;
     if (mread4_old(mf, HW_ID_ADDR, &hw_dev_id) != 4) {
         return 0;
     }
 
-    switch (hw_dev_id & 0xffff) {
-    case DeviceConnectX8_HwId:
-        gis_address = 0xE3044;
-        break;
-
-    case DeviceQuantum3_HwId:
-        gis_operational = 0x5E;
-        gis_address = 0x152080;
-        break;
-
-    default:
-        return 0;     /* Device does not support Zombiefish mode */
+    switch (hw_dev_id & 0xffff)
+    {
+        case DeviceConnectX8_HwId:
+            gis_address = 0xE3044;
+            break;
+        case DeviceQuantum3_HwId:
+            gis_operational = 0x5E;
+            gis_address = 0x152080;
+            break;
+        default:
+            return 0; // Device does not support Zombiefish mode
     }
 
     int rc = mread4_old(mf, gis_address, &gis);
-
-    if (rc != 4) {
-        /* printf("-E- Failed to read global_image_status from CR space.\n"); */
+    if (rc != 4)
+    {
+        // printf("-E- Failed to read global_image_status from CR space.\n");
         return 0;
     }
 
