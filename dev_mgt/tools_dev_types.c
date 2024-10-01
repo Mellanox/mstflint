@@ -421,13 +421,13 @@ static struct device_info g_devs_info[] = {
         DM_LINKX                                           /* dev_type */
     },
     {
-        DeviceArcusE, /* dm_id */
-        0xb200,       /* hw_dev_id (other versions 0x6f,0x73) */
-        -1,           /* hw_rev_id */
-        -1,           /* sw_dev_id */
-        "ArcusE",     /* name */
-        -1,           /* port_num */
-        DM_RETIMER    /* dev_type */
+        DeviceArcusE, // dm_id
+        0xb200,       // hw_dev_id (other versions 0x6f,0x73)
+        -1,           // hw_rev_id
+        -1,           // sw_dev_id
+        "ArcusE",     // name
+        -1,           // port_num
+        DM_RETIMER    // dev_type
     },
     {
         DeviceSecureHost,                                      /* dm_id */
@@ -475,11 +475,11 @@ static struct device_info g_devs_info[] = {
         DM_SWITCH                                            /* dev_type */
     },
     {
-        DeviceGB100,                                      /* dm_id */
+        DeviceBW00,                                      /* dm_id */
         0x2900,                                           /* hw_dev_id */
         -1,                                               /* hw_rev_id */
         10496,                                            /* sw_dev_id */
-        "GB100",                                          /* name */
+        "BW00",                                          /* name */
         128,                                              /* port_num NEED_CHECK */
         DM_SWITCH                                         /* dev_type */
     },
@@ -688,7 +688,7 @@ static int dm_get_device_id_inner(mfile      * mf,
             }
         }
     } else {
-        if (read_device_id(mf, &dword) != 4) {
+        if (mread4(mf, DEVID_ADDR, &dword) != 4) {
             return CRSPACE_READ_ERROR;
         }
 
@@ -933,7 +933,7 @@ int dm_is_livefish_mode(mfile* mf)
         return 1;
     }
     dm_dev_id_t devid_t = DeviceUnknown;
-    u_int32_t   devid = 0; /* hw dev ID */
+    u_int32_t   devid = 0; // hw dev ID
     u_int32_t   revid = 0;
     int         rc = dm_get_device_id(mf, &devid_t, &devid, &revid);
 
@@ -944,11 +944,6 @@ int dm_is_livefish_mode(mfile* mf)
     u_int32_t swid = mf->dinfo->pci.dev_id;
 
     /* printf("-D- swid: %#x, devid: %#x\n", swid, devid); */
-
-    if (dm_is_gpu(devid_t)) {
-        return 0;
-    }
-
     if (dm_is_4th_gen(devid_t)) {
         return (devid == swid - 1);
     } else {
@@ -986,7 +981,12 @@ int dm_is_gr100(dm_dev_id_t type)
 
 int dm_is_gpu(dm_dev_id_t type)
 {
-    return (dm_is_gb100(type) || dm_is_gr100(type));
+    return (dm_is_gb100(type) || dm_is_gb100(type));
+}
+
+int dm_is_bw00(dm_dev_id_t type)
+{
+    return (type == DeviceBW00);
 }
 
 int dm_is_cx7(dm_dev_id_t type)
@@ -1002,14 +1002,14 @@ int dm_is_new_gen_switch(dm_dev_id_t type)
 int dm_dev_is_raven_family_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) &&
-            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceGB100 ||
+            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceBW00 ||
              type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceSpectrum4));
 }
 
 int dm_dev_is_ib_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 ||
-                                       type == DeviceGB100 || type == DeviceSwitchIB || type == DeviceSwitchIB2));
+                                       type == DeviceBW00 || type == DeviceSwitchIB || type == DeviceSwitchIB2));
 }
 
 int dm_dev_is_eth_switch(dm_dev_id_t type)
