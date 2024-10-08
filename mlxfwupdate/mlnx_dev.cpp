@@ -257,7 +257,17 @@ void MlnxDev::setGuidMac(fw_info_t& fw_query)
         {
             guidPortOne = (string)buff;
         }
-        if (fw_query.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
+        if (fw_query.fs3_info.fs3_uids_info.guid_format == MULTI_ASIC_GUIDS)
+        {
+            if (fw_query.fs3_info.fs3_uids_info.multi_asic_guids.image_layout_uids.base_mac.uid)
+            {
+                snprintf(buff, sizeof(buff) - 1, "%012" U64H_FMT_GEN,
+                         fw_query.fs3_info.fs3_uids_info.multi_asic_guids.image_layout_uids.base_mac.uid);
+                macPortOne = (string)buff;
+            }
+            sprintf(buff, " ");
+        }
+        else if (fw_query.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
         {
             snprintf(buff, sizeof(buff) - 1, "%012" U64H_FMT_GEN,
                      fw_query.fs3_info.fs3_uids_info.image_layout_uids.base_mac.uid);
