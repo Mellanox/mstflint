@@ -70,9 +70,9 @@ class MenuRecord:
         self.supports_all_num_of_obj2 = int(props_str[5:6], 2)
         self.supports_active_num_of_obj2 = int(props_str[4:5], 2)
 
-        self.segment_name = self.segment_name.decode("utf-8").rstrip('\x00')
-        self.segment_index1_name = self.segment_index1_name.decode("utf-8").rstrip('\x00')
-        self.segment_index2_name = self.segment_index2_name.decode("utf-8").rstrip('\x00')
+        self.segment_name = self.segment_name.decode("utf-8").replace('\x00', '')
+        self.segment_index1_name = self.segment_index1_name.decode("utf-8").replace('\x00', '')
+        self.segment_index2_name = self.segment_index2_name.decode("utf-8").replace('\x00', '')
 
     # Down goes the code that represents the Menu Record in a pretty table format:
     #                                 EXAMPLE
