@@ -80,7 +80,9 @@ class ResourceParse:
         required_args = cls._arg_parser.add_argument_group('required arguments')
         optional_args = cls._arg_parser.add_argument_group('optional arguments')
         optional_args.add_argument("-p", "--parser", dest="resource_parser", type=parser_type, nargs="?", const=PARSER_CLASSES["adb"], default=PARSER_CLASSES["adb"] if not prog else PARSER_CLASSES["raw"], help="Available options: {}. Default: 'adb'. see (Parsing methods) ".format(list(PARSER_CLASSES.keys())))
-        optional_args.add_argument("-o", "--out", help='Location of the output file')
+        output_group = optional_args.add_mutually_exclusive_group(required=False)
+        output_group.add_argument("-o", "--out", help='Location of the output file')
+        output_group.add_argument("--out-dir", help='Location of the output directory, a separate file is created for each segment')
 
         # Only args that added up until here will be included in the resourcedump help menu
 

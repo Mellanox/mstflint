@@ -60,6 +60,7 @@ class Segment(ABC):
         self.size = 0
         self._parsed_data = []  # list of strings representing lines of parsed data
         self._messages = []  # list of strings representing errors/warning/notices
+        self._name = ""
         self.raw_data = data
 
     def get_size(self):
@@ -81,6 +82,12 @@ class Segment(ABC):
         """get the segment type.
         """
         return self._segment_type_id
+
+    def get_name(self):
+        return self._name if self._name else hex(self.get_type()).lower() if self.get_type() else "UNKNOWN"
+
+    def set_name(self, name):
+        self._name = name
 
     def unpack_segment_header(self):
         return unpack_segment_header(self.raw_data, 0)

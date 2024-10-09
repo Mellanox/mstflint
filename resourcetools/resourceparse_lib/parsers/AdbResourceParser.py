@@ -59,6 +59,7 @@ class AdbResourceParser(ResourceParser):
 
         optional_named = arg_parser.add_argument_group('optional arguments')
         optional_named.add_argument("-r", "--raw", action="store_true", help='Prints the raw data in addition to the parsed data')
+        optional_named.add_argument("--hide-segment-header", action="store_true", help='Hide segment header during printing')
 
         return arg_parser
 
@@ -74,6 +75,7 @@ class AdbResourceParser(ResourceParser):
         self._adb_obj = AdbParser(self._adb_file_path)
         self._segment_map = self._adb_obj.segment_id_nodes_dict
         self._raw = parser_args.raw
+        self._hide_segment_header = parser_args.hide_segment_header
         self._manager = parser_args.manager
 
     # Segment Parsing
@@ -104,6 +106,7 @@ class AdbResourceParser(ResourceParser):
                 seg.add_parsed_data("Warning:{}".format(cs.WARNING_SIZE_DOESNT_MATCH.format(
                     (len(seg.get_data()) // cs.DWORD_SIZE) - cs.RESOURCE_SEGMENT_START_OFFSET_IN_DW,
                     math.ceil(segment_layout.size / 32))))
+            seg.set_name(segment_name)
         else:
             # reference segment is missing in the adb (this will help the user understand the type)
             if seg.get_type() == cs.RESOURCE_DUMP_SEGMENT_TYPE_REFERENCE:
@@ -111,7 +114,8 @@ class AdbResourceParser(ResourceParser):
             else:
                 segment_name = "UNKNOWN"
 
-        seg.add_parsed_data(20 * " " + "Segment - {0} ({1:#06x}){2}".format(segment_name, seg.get_type(), seg.additional_title_info()))
+        if not self._hide_segment_header:
+            seg.add_parsed_data(20 * " " + "Segment - {0} ({1:#06x}){2}".format(segment_name, seg.get_type(), seg.additional_title_info()))
 
         if is_resource_segment(seg.get_type()):
             data_start_position = cs.RESOURCE_SEGMENT_START_OFFSET_IN_BYTES
