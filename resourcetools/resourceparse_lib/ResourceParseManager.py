@@ -59,7 +59,8 @@ class ResourceParseManager:
         """
         self._verbosity = manager_args.verbose
         self._out_file = manager_args.out
-        self._printer = DataPrinter(self._verbosity, self._out_file)
+        self._out_dir = manager_args.out_dir
+        self._printer = DataPrinter(self._verbosity, self._out_file, self._out_dir)
         self._warning_counter = 0
         self._error_counter = 0
         self._notice_counter = 0
