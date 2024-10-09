@@ -127,6 +127,8 @@
 #define FILE_TO_DUMP_BUFFER_SHORT ' '
 #define FILE_IO "file_io"
 #define FILE_IO_SHORT ' '
+#define OVERWRITE_FLAG "overwrite"
+#define OVERWRITE_FLAG_SHORT 'w'
 
 using namespace mlxreg;
 
@@ -151,6 +153,7 @@ MlxRegUi::MlxRegUi() : CommandLineRequester("mlxreg OPTIONS"), _cmdParser("mlxre
     _ignore_ro = false;
     _output_file = "";
     _file_io = "";
+    _overwrite = false;
 
 #if defined(EXTERNAL) || defined(MST_UL)
     _isExternal = true;
@@ -201,6 +204,8 @@ void MlxRegUi::initCmdParser()
     AddOptions(FILE_TO_DUMP_BUFFER, FILE_TO_DUMP_BUFFER_SHORT, "OutputFile",
                "Dump buffer to file instead of sending to device");
     AddOptions(FILE_IO, FILE_IO_SHORT, "FilePath", "Work with file for IO instead of CLI flags");
+    AddOptions(OVERWRITE_FLAG, OVERWRITE_FLAG_SHORT, "",
+               "Set only specified fields, set unspecified fields to zero (only valid for SET command)");
 
     _cmdParser.AddRequester(this);
 }
@@ -257,6 +262,8 @@ void MlxRegUi::printHelp()
     printFlagLine(OP_SHOW_REG_FLAG_SHORT,   OP_SHOW_REG_FLAG,  "reg_name", "Print the fields of a given reg access (must have reg_name)");
     printFlagLine(OP_SHOW_REGS_FLAG_SHORT,  OP_SHOW_REGS_FLAG, "", "Print all available reg access'");
     printFlagLine(FORCE_FLAG_SHORT,         FORCE_FLAG,        "", "Non-interactive mode, answer yes to all questions");
+    printFlagLine(OVERWRITE_FLAG_SHORT, OVERWRITE_FLAG, "",
+                  "Set only specified fields, set unspecified fields to zero (only valid for SET command)");
 
     // print usage examples
     printf("\n");
@@ -506,6 +513,11 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
         return PARSE_OK;
     }
 #endif
+    else if (name == OVERWRITE_FLAG)
+    {
+        _overwrite = true;
+        return PARSE_OK;
+    }
     return PARSE_ERROR;
 }
 
@@ -551,6 +563,10 @@ void MlxRegUi::paramValidate()
     if (_op == CMD_SET && _dataStr == "")
     {
         throw MlxRegException("you must provide registers data string to use SET");
+    }
+    if (_op != CMD_SET && _overwrite)
+    {
+        throw MlxRegException("-w/--overwrite flag is only valid for SET command");
     }
 }
 
@@ -719,13 +735,16 @@ void MlxRegUi::run(int argc, char** argv)
             // Read current register data into buffer
             RegAccessParser parserGet(_dataStr, _indexesStr, _opsStr, regNode, _dataLen, _ignore_ro);
             buff = parserGet.genBuff();
-            if (_regName != "")
-            { // Known mode
-                _mlxRegLib->sendRegister(_regName, MACCESS_REG_METHOD_GET, buff);
-            }
-            else
-            { // Unknown mode
-                _mlxRegLib->sendRegister(_regID, MACCESS_REG_METHOD_GET, buff);
+            if (!_overwrite)
+            {
+                if (_regName != "")
+                { // Known mode
+                    _mlxRegLib->sendRegister(_regName, MACCESS_REG_METHOD_GET, buff);
+                }
+                else
+                { // Unknown mode
+                    _mlxRegLib->sendRegister(_regID, MACCESS_REG_METHOD_GET, buff);
+                }
             }
             // Update the register buffer with user inputs
             RegAccessParser parser(_dataStr, _indexesStr, _opsStr, regNode, buff, _ignore_ro);

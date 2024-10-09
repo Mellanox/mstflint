@@ -98,6 +98,7 @@ private:
     bool _ignore_ro;
     string _output_file;
     string _file_io;
+    bool _overwrite;
 };
 
 #endif /* MLXREG_UI_H */
