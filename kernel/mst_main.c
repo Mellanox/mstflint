@@ -137,6 +137,9 @@ static struct pci_device_id supported_pci_devices[] = {
 #define AS_CR_SPACE 0x2
 #define AS_SEMAPHORE 0xa
 #define AS_RECOVERY 0xc
+#define AS_PCI_ICMD 0x103
+#define AS_PCI_CRSPACE 0x102
+#define AS_PCI_SEMAPHORE 0x10a
 
 /* Mellanox VSC */
 #define MLX_VSC_TYPE_OFFSET 24
@@ -164,6 +167,11 @@ enum
 
     PCI_STATUS_BIT_OFFS = 29,
     PCI_STATUS_BIT_LEN = 3,
+
+    PCI_SYNDROME_BIT_OFFSET = 30,
+    PCI_SYNDROME_BIT_LEN = 1,
+    PCI_SYNDROME_CODE_BIT_OFFSET = 24,
+    PCI_SYNDROME_CODE_BIT_LEN = 4,
 };
 
 /* Mellanox vendor specific enum */
@@ -193,6 +201,33 @@ enum
 #define VSEC_FULLY_SUPPORTED(dev) \
     (((dev)->functional_vsc_offset) && ((dev)->spaces_support_status == SS_ALL_SPACES_SUPPORTED))
 
+int check_syndrome(struct mst_dev_data* dev)
+{
+    // In case syndrome is set, if syndrome_code is 0x3 (address_out_of_range), return the syndrome_code, so that the
+    // ioctl will fail and then we'll retry with PCI space.
+    int error = 0;
+    unsigned int syndrome = 0;
+    error = pci_read_config_dword(dev->pci_dev, dev->addr_reg, &syndrome); // addr_reg should be vsec+0x10
+    CHECK_PCI_READ_ERROR(error, dev->addr_reg); // dev->addr_reg equivalent in MFT: nnt_device->pciconf_device.address_offset
+    syndrome = EXTRACT(syndrome, PCI_SYNDROME_BIT_OFFSET, PCI_SYNDROME_BIT_LEN);
+    if (syndrome)
+    {
+        unsigned int control_offset = dev->functional_vsc_offset + PCI_CTRL_OFFSET;
+        unsigned int syndrome_code = 0;
+
+        /* Read value from control offset. */
+        error = pci_read_config_dword(dev->pci_dev, control_offset, &syndrome_code);
+        CHECK_PCI_READ_ERROR(error, control_offset);
+
+        syndrome_code = EXTRACT(syndrome_code, PCI_SYNDROME_CODE_BIT_OFFSET, PCI_SYNDROME_CODE_BIT_LEN);
+        if (syndrome_code == ADDRESS_OUT_OF_RANGE)
+        {
+            error = syndrome_code;
+        }
+    }
+ReturnOnFinished:
+    return error;
+}
 
 static int _update_vsc_type(struct mst_dev_data* dev)
 {
@@ -347,6 +382,10 @@ static int _pciconf_rw(struct mst_dev_data* dev, unsigned int offset, u32* data,
         if (ret)
             return ret;
     }
+    if (dev->pci_vsec_space_fully_supported == 1)
+    {
+        ret = check_syndrome(dev);
+    }
     return ret;
 }
 
@@ -392,10 +431,18 @@ static int _block_op(struct mst_dev_data* dev, int space, unsigned int offset, i
 
     for (i = 0; i < size; i += 4)
     {
-        if (_pciconf_rw(dev, offset + i, &(data[(i >> 2)]), rw))
+        int result = _pciconf_rw(dev, offset + i, &(data[(i >> 2)]), rw);
+        if (result != 0)
         {
-            wrote_or_read = i;
-            goto cleanup;
+            if (result == ADDRESS_OUT_OF_RANGE) // Support PCI space
+            {
+                wrote_or_read = -1;
+            }
+            else
+            {
+                wrote_or_read = i;
+            }
+            break;
         }
     }
 cleanup:
@@ -536,7 +583,7 @@ static int get_space_support_status(struct mst_dev_data* dev)
 
     if (_set_addr_space(dev, AS_RECOVERY))
     {
-        capability_support_info_message(dev, RECOVERY); // this space is supported only for ConnectX8 and Quantum3
+        capability_support_info_message(dev, RECOVERY); // this space is supported only for ConnectX8, Quantum3 and above. For recovery from Zombiefish mode.
     }
     else if (_set_addr_space(dev, AS_CR_SPACE))
     {
@@ -556,6 +603,10 @@ static int get_space_support_status(struct mst_dev_data* dev)
     else
     {
         dev->spaces_support_status = SS_ALL_SPACES_SUPPORTED;
+    }
+    if (!_set_addr_space(dev, AS_PCI_CRSPACE) && !_set_addr_space(dev, AS_PCI_ICMD) && !_set_addr_space(dev, AS_PCI_SEMAPHORE))
+    {
+        dev->pci_vsec_space_fully_supported = 1; // Support PCI space
     }
 
     // clear semaphore
