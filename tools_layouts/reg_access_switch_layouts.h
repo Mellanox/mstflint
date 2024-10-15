@@ -30,7 +30,7 @@
  */
 
 /***
-         *** This file was generated at "2024-07-15 11:27:38"
+         *** This file was generated at "2024-10-06 12:56:51"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input [REDACTED]/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o [REDACTED]/user/tools_layouts
          ***/
@@ -446,9 +446,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 568, "MDDQ slot_info Layout," on page 911
-For devices on slot query_type data - see Table 570, "MDDQ device_info Register Layout," on page 912
-For slot name query_type data - see Table 572, "MDDQ slot_name Layout," on page 914 */
+For slot information query_type data - see Table 517, "MDDQ slot_info Layout," on page 923
+For devices on slot query_type data - see Table 519, "MDDQ device_info Register Layout," on page 924
+For slot name query_type data - see Table 521, "MDDQ slot_name Layout," on page 926 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -483,9 +483,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 560, "PRM Register Payload Layout," on page 907
-For Command type payload - See Table 562, "Command Payload Layout," on page 907
-For CrSpace type payload - See Table 564, "CrSpace access Payload Layout," on page 908 */
+For PRM Register type payload - See Table 509, "PRM Register Payload Layout," on page 919
+For Command type payload - See Table 511, "Command Payload Layout," on page 919
+For CrSpace type payload - See Table 513, "CrSpace access Payload Layout," on page 920 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -705,7 +705,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 397, "NV_SWITCH_PHY_SEC_CONF Layout," on page 742 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 358, "NV_SWITCH_PHY_SEC_CONF Layout," on page 770 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -1046,7 +1046,8 @@ In case of non modular system only slot_index = 0 is available. */
 	/* access: INDEX */
 	u_int8_t slot_index;
 	/* Description - Module Reset toggle
-NOTE: setting reset while module is plugged-in will result in transition of oper_status to initialization. */
+NOTE: setting reset while module is plugged-in will result in transition of oper_status to initialization. 
+Note 2: Reset OE MCU can be done only when relevant ELS laser is turned off. */
 	/* 0x0.31 - 0x0.31 */
 	/* access: OP */
 	u_int8_t rst;
@@ -1150,7 +1151,7 @@ If this bit is cleared, the TX value is used for both RX and TX. When set, the R
 	u_int8_t rxtx;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Module SerDes for lane <i>
-Up to 8 SerDeses in a module can be mapped to a local port. */
+Up to 8 SerDes in a module can be mapped to a local port. */
 	/* 0x4.0 - 0x20.31 */
 	/* access: RW */
 	struct reg_access_switch_lane_2_module_mapping_ext lane_module_mapping[8];
@@ -1161,45 +1162,53 @@ Up to 8 SerDeses in a module can be mapped to a local port. */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x10c.31 */
-	/* access: RW */
-	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
-	/* Description -  */
 	/* 0x0.0 - 0x14.31 */
 	/* access: RW */
 	struct reg_access_switch_icam_reg_ext icam_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x10.31 */
-	/* access: RW */
-	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x18.31 */
-	/* access: RW */
-	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x5c.31 */
-	/* access: RW */
-	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mspmer_ext mspmer_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x4.31 */
 	/* access: RW */
 	struct reg_access_switch_mrsr_ext mrsr_ext;
 	/* Description -  */
+	/* 0x0.0 - 0x5c.31 */
+	/* access: RW */
+	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
 	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddq_ext mddq_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x18.31 */
+	/* access: RW */
+	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	/* access: RW */
+	struct reg_access_switch_msgi_ext msgi_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x10.31 */
+	/* access: RW */
+	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x40c.31 */
+	/* access: RW */
+	struct reg_access_switch_icsr_ext icsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x3c.31 */
 	/* access: RW */
 	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
+	/* 0x0.0 - 0x10c.31 */
 	/* access: RW */
-	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
+	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x28.31 */
 	/* access: RW */
@@ -1215,19 +1224,11 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_mddq_ext mddq_ext;
+	struct reg_access_switch_mspmer_ext mspmer_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
+	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_msgi_ext msgi_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x40c.31 */
-	/* access: RW */
-	struct reg_access_switch_icsr_ext icsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
+	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
 };
 
 
