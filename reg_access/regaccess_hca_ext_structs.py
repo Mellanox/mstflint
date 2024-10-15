@@ -33,9 +33,9 @@
 
 
 ###############################################################################
-#    This file was generated at "2024-08-13 11:28:45"
+#    This file was generated at "2024-10-08 11:27:08"
 #    by:
-#      > gen_adb_data.py -g hca_prm_projects
+#      > <REDACTED>/prm_update.py --project nic
 ###############################################################################
 
 import os
@@ -320,6 +320,7 @@ class NIC_CAP_EXT_DPA_CAP(ctypes.Structure):
 
 class NIC_CAP_EXT_DIAG_DATA_CAP(ctypes.Structure):
     _fields_ = [
+        ("producer_sample_id", ctypes.c_uint8),
         ("sample_mode_on_demand", ctypes.c_uint8),
         ("sample_mode_repetitive", ctypes.c_uint8),
         ("sample_mode_single", ctypes.c_uint8),
@@ -341,5 +342,14 @@ class NIC_CAP_EXT_REG(ctypes.Structure):
     _fields_ = [
         ("cap_group", ctypes.c_uint16),
         ("cap_data", NIC_CAP_EXT_REG_CAP_DATA_AUTO)
+    ]
+
+class MROQ_EXT(ctypes.Structure):
+    _fields_ = [
+        ("reset_trigger", ctypes.c_uint8),
+        ("reset_type", ctypes.c_uint8),
+        ("query_is_valid", ctypes.c_uint8),
+        ("pci_sync_for_fw_update_start", ctypes.c_uint8),
+        ("pci_reset_req_method", ctypes.c_uint8)
     ]
 
