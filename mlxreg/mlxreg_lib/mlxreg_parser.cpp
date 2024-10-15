@@ -421,11 +421,21 @@ void RegAccessParser::strToUint32(char* str, u_int32_t& uint)
 /************************************
  * Function: getFieldWithParents
  ************************************/
-bool RegAccessParser::checkFieldWithPath(AdbInstance* field, u_int32_t idx, std::vector<string>& fieldsChain)
+bool RegAccessParser::checkFieldWithPath(AdbInstance* field,
+                                         u_int32_t idx,
+                                         std::vector<string>& fieldsChain,
+                                         u_int32_t size)
 {
     if (idx == 0 && (field->get_field_name() == fieldsChain[0]))
     {
-        return true;
+        if (size == 0 || (size && field->size == size))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
     else if (field->get_field_name() == fieldsChain[idx])
     {
@@ -439,14 +449,14 @@ bool RegAccessParser::checkFieldWithPath(AdbInstance* field, u_int32_t idx, std:
 /************************************
  * Function: getField
  ************************************/
-AdbInstance* RegAccessParser::getField(string name)
+AdbInstance* RegAccessParser::getField(string name, u_int32_t size)
 {
     // this will allow to access the leaf field by specifying it's parent.
     std::vector<string> fieldsChain = strSplit(name, '.', false);
     std::vector<AdbInstance*> subItems = _regNode->getLeafFields(true);
     for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++)
     {
-        if (checkFieldWithPath(subItems[i], fieldsChain.size() - 1, fieldsChain))
+        if (checkFieldWithPath(subItems[i], fieldsChain.size() - 1, fieldsChain, size))
         {
             return subItems[i];
         }
@@ -529,8 +539,8 @@ void RegAccessParser::updateField(string field_name, u_int32_t value)
     updateBuffer(field->offset, field->size, value);
 }
 
-u_int32_t RegAccessParser::getFieldValue(string field_name, std::vector<u_int32_t>& buff)
+u_int32_t RegAccessParser::getFieldValue(string field_name, std::vector<u_int32_t>& buff, u_int32_t size)
 {
-    AdbInstance* field = getField(field_name);
+    AdbInstance* field = getField(field_name, size);
     return (u_int32_t)field->popBuf((u_int8_t*)&buff[0]);
 }
