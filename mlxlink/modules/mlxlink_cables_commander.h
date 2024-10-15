@@ -75,10 +75,22 @@ typedef struct
 
 #define EXTENDED_PAGES_1_2_10_11_ADDR 2
 #define EXTENDED_PAGES_1_2_10_11_MASK 0x80
+#define EXTENDED_PAGES_03_05_13_14_16_17_20_UPTO_2D_2F_ADDR 142
+#define EXTENDED_PAGES_03_MASK 0x4
+#define EXTENDED_PAGES_05_MASK 0x8
+#define EXTENDED_PAGES_13_14_MASK 0x20
+#define EXTENDED_PAGES_20_UPTO_2D_2F_MASK 0x40
+#define EXTENDED_PAGES_16_17_MASK 0x80
+#define EXTENDED_PAGES_15_ADDR 145
+#define EXTENDED_PAGES_15_MASK 0x8
 #define EXTENDED_PAGES_4_12_ADDR 155
 #define EXTENDED_PAGES_4_12_MASK 0x40
-#define EXTENDED_PAGES_13_14_ADDR 142
-#define EXTENDED_PAGES_13_14_MASK 0x20
+#define EXTENDED_PAGES_19_ADDR 162
+#define EXTENDED_PAGES_19_MASK 0x40
+#define EXTENDED_PAGES_A0_UPTO_AF_ADDR 163
+#define EXTENDED_PAGES_A0_UPTO_AF_MASK 0xf
+#define EXTENDED_PAGES_9F_ADDR 163
+#define EXTENDED_PAGES_9F_MASK 0xC0
 
 #define VOLT_UNIT 1000
 #define MILLIVOLT_UNIT 10
@@ -100,13 +112,28 @@ enum MODULE_PAGE
     PAGE_02 = 0x2,
     PAGE_03 = 0x3,
     PAGE_04 = 0x4,
+    PAGE_05 = 0x5,
     PAGE_10 = 0x10,
     PAGE_11 = 0x11,
     PAGE_12 = 0x12,
     PAGE_13 = 0x13,
     PAGE_14 = 0x14,
+    PAGE_15 = 0x15,
+    PAGE_16 = 0x16,
+    PAGE_17 = 0x17,
+    PAGE_19 = 0x19,
     PAGE_20 = 0x20,
     PAGE_21 = 0x21,
+    PAGE_2D = 0x2d,
+    PAGE_2F = 0x2f,
+    PAGE_9F = 0x9F,
+    PAGE_A0 = 0xA0,
+    PAGE_A1 = 0xA1,
+    PAGE_A2 = 0xA2,
+    PAGE_A3 = 0xA3,
+    PAGE_A7 = 0xA7,
+    PAGE_AB = 0xAB,
+    PAGE_AF = 0xAF,
     PAGE_LAST
 };
 
@@ -173,7 +200,7 @@ private:
     string getDDMThresholdRow(u_int16_t temp, u_int16_t volt, u_int16_t rxPower, u_int16_t txPower, u_int16_t txBias);
     bool readFromPage(u_int8_t* pageBuffer, u_int32_t fieldOffset, void* data, u_int32_t size = 1);
     void addPageToOutputVector(u_int8_t* pageBuffer, u_int32_t page, u_int32_t offset, u_int32_t length);
-    void checkParams(u_int16_t page, u_int16_t offset, u_int16_t length);
+    void checkParams(u_int16_t offset, u_int16_t length);
     u_int16_t getStatusBit(u_int32_t channel, u_int16_t val, u_int32_t statusMask);
 
     void getNumOfModuleLanes();
