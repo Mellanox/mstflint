@@ -405,6 +405,7 @@ public:
     virtual void showBer();
     void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
     void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
+    void prepare5nmEyeInfo(u_int32_t numOfLanesToUse);
     virtual void showEye();
     virtual void showFEC();
     virtual void showSltp();
