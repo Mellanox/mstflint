@@ -274,6 +274,7 @@ void MlxlinkAmBerCollector::init()
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
             updateField("pnat", PNAT_LOCAL);
+            updateField("module_info_ext", 1); // Use this statement to convert the electrical units to uW
             updateField("page_select", PDDR_MODULE_INFO_PAGE);
             genBuffSendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
 
@@ -793,6 +794,9 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             updateField("local_port", _localPort);
             updateField("grp", PPCNT_PHY_GROUP);
             sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
+            fields.push_back(AmberField("Link_Down", to_string(getFieldValue("link_down_events"))));
+            fields.push_back(
+              AmberField("successful_recovery_events", to_string(getFieldValue("successful_recovery_events"))));
 
             if (_isPortETH)
             {
@@ -812,10 +816,6 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
 
                 fields.push_back(AmberField("Link_Down_GB_line", to_string(getFieldValue("link_down_events"))));
             }
-
-            fields.push_back(AmberField("Link_Down", to_string(getFieldValue("link_down_events"))));
-            fields.push_back(
-              AmberField("successful_recovery_events", to_string(getFieldValue("successful_recovery_events"))));
 
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
@@ -1720,6 +1720,7 @@ vector<AmberField> MlxlinkAmBerCollector::getModuleStatus()
 
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
+            updateField("module_info_ext", 1); // Use this statement to convert the electrical units to uW
             updateField("page_select", PDDR_MODULE_INFO_PAGE);
             sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
 
@@ -2014,6 +2015,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkDownInfo()
 
     try
     {
+        string receivedTs1Opcode = "N/A";
         if (!_isPortPCIE)
         {
             sendLocalPrmReg(ACCESS_REG_PDDR, GET, "local_port=%d,page_select=%d", _localPort,
@@ -2027,7 +2029,9 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkDownInfo()
               AmberField("remote_reason_opcode", _mlxlinkMaps->_localReasonOpcode[getFieldValue("remote_reason_"
                                                                                                 "opcode")]));
             fields.push_back(AmberField("e2e_reason_opcode", getFieldStr("e2e_reason_opcode")));
+            receivedTs1Opcode = to_string(getLocalFieldValue("received_ts1_opcode"));
         }
+        fields.push_back(AmberField("received_ts1_opcode", receivedTs1Opcode, _isPortIB));
     }
     catch (const std::exception& exc)
     {
