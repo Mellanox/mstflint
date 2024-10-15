@@ -310,6 +310,7 @@ public:
     std::map<u_int32_t, std::string> _aeState;
     std::map<u_int32_t, std::string> _pllUglState;
     std::map<u_int32_t, std::string> _slrgFomMode;
+    std::map<u_int32_t, std::string> _slrgFomMode5nm;
     std::map<u_int32_t, std::string> _pcieDevStatus;
     std::map<u_int32_t, PcieErrType> _pcieErrType;
 

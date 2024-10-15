@@ -2298,6 +2298,53 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
                 (fomMeasurement & SLRG_EOM_LOWER), true, true);
 }
 
+void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
+{
+    std::vector<string> legand, initialFom, lastFom, upperFom, midFom, lowerFom;
+    u_int32_t status = 0;
+    u_int32_t fomMeasurement = SLRG_EOM_NONE;
+
+    if (!_userInput._pcie)
+    {
+        fomMeasurement = SLRG_EOM_COMPOSITE;
+        if (!isNRZSpeed(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+        {
+            fomMeasurement |= (SLRG_EOM_UPPER | SLRG_EOM_MIDDLE | SLRG_EOM_LOWER);
+        }
+    }
+    else
+    {
+        startSlrgPciScan(numOfLanesToUse);
+    }
+
+    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    {
+        status = 0;
+
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
+
+        status = getFieldValue("status");
+        initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom", (u_int32_t)16) : "N/A"));
+        lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom", (u_int32_t)16) : "N/A"));
+        upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye", (u_int32_t)16) : "N/A"));
+        midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye", (u_int32_t)16) : "N/A"));
+        lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("lower_eye", (u_int32_t)16) : "N/A"));
+
+        legand.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(lane)));
+    }
+    string fomMode = _mlxlinkMaps->_slrgFomMode5nm[getFieldValue("fom_mode")];
+    setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lane", getStringFromVector(legand), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", getStringFromVector(initialFom), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", getStringFromVector(lastFom), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_UPPER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_LOWER), true, true);
+}
+
 void MlxlinkCommander::showEye()
 {
     if (_userInput._pcie) {
@@ -2322,8 +2369,14 @@ void MlxlinkCommander::showEye()
         setPrintTitle(_eyeOpeningInfoCmd, showEyeTitle, EYE_OPENING_INFO_LAST);
         if (_productTechnology <= PRODUCT_16NM) {
             prepare40_28_16nmEyeInfo(numOfLanesToUse);
-        } else if ((_productTechnology == PRODUCT_7NM) || (_productTechnology == PRODUCT_5NM)) {
+        }
+        else if (_productTechnology == PRODUCT_7NM)
+        {
             prepare7nmEyeInfo(numOfLanesToUse);
+        }
+        else if (_productTechnology == PRODUCT_5NM)
+        {
+            prepare5nmEyeInfo(numOfLanesToUse);
         }
         cout << _eyeOpeningInfoCmd;
     }
