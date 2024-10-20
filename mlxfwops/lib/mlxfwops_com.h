@@ -101,19 +101,19 @@ typedef enum
 
 typedef enum
 {
-    PRODUCTION = 0,
-    GA_SECURED = 1,
-    GA_NON_SECURED = 2,
-    RMA = 3
-} life_cycle_fs4_t;
+    FS4_LC_PRODUCTION = 0,
+    FS4_LC_GA_SECURED = 1,
+    FS4_LC_GA_NON_SECURED = 2,
+    FS4_LC_RMA = 3
+} LifeCycleFS4;
 
 typedef enum
 {
-    BLANK_CHIP = 0,
-    PRE_PROD = 4,
-    PROD = 6,
-    FAILURE_ANALYSIS = 7
-} life_cycle_fs5_t;
+    FS5_LC_BLANK_CHIP = 0,
+    FS5_LC_PRE_PRODUCTION = 4,
+    FS5_LC_PRODUCTION = 6,
+    FS5_LC_FAILURE_ANALYSIS = 7
+} LifeCycleFS5;
 
 #define MAX_HTOC_ENTRIES_NUM 28
 #define HASHES_TABLE_TAIL_SIZE 8
