@@ -171,6 +171,11 @@ static struct device_sem_info g_dev_sem_info_db[] = {
   },
   {
     DeviceConnectX8, // dev_id
+    {0x54a80},       // hw_sem_addr
+    1,               // vsec_sem_supported
+  },
+  {
+    DeviceConnectX9, // dev_id
     {0x57680},       // hw_sem_addr
     1,               // vsec_sem_supported
   },
@@ -196,12 +201,17 @@ static struct device_sem_info g_dev_sem_info_db[] = {
   },
   {
     DeviceQuantum3, // dev_id
-    {0x154800},     // hw_sem_addr
+    {0x1550f8},     // hw_sem_addr
+    1,              // vsec_sem_supported
+  },
+  {
+    DeviceQuantum4, // dev_id
+    {0x1550f8},     // hw_sem_addr
     1,              // vsec_sem_supported
   },
   {
     DeviceArcusE, // dev_id
-    {0x145800},   // hw_sem_addr
+    {0x1478f8},   // hw_sem_addr
     0,            // vsec_sem_supported
   },
   {
@@ -211,7 +221,17 @@ static struct device_sem_info g_dev_sem_info_db[] = {
   },
   {
     DeviceSpectrum4, // dev_id
-    {0xa68f8},       // hw_sem_addr
+    {0xa52f8},       // hw_sem_addr
+    1,               // vsec_sem_supported
+  },
+  {
+    DeviceSpectrum5, // dev_id
+    {0xa52f8},       // hw_sem_addr
+    1,               // vsec_sem_supported
+  },
+  {
+    DeviceSpectrum6, // dev_id
+    {0xb50f8},       // hw_sem_addr
     1,               // vsec_sem_supported
   },
   {
