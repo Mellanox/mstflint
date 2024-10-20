@@ -124,6 +124,13 @@ int ImageAccess::queryDirPsid(string&                   path,
         fpath += "/";
         fpath += fl;
 
+        struct stat buffer;
+        stat(fpath.c_str(), &buffer);
+        if (!S_ISREG(buffer.st_mode))
+        {
+            continue;
+        }
+
         rc = this->queryPsid(fpath.c_str(), psid, selector_tag, image_type, ro);
         if (rc < 0) {
             res = -1;
