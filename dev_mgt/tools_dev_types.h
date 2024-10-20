@@ -90,10 +90,15 @@ extern "C"
         DeviceConnectX6LX,
         DeviceConnectX7,
         DeviceConnectX8,
+        DeviceConnectX9,
         DeviceSpectrum3, // Firebird
         DeviceSpectrum4, // Albatross
+        DeviceSpectrum5,
+        DeviceSpectrum6,
+        DeviceSpectrum6IB,
         DeviceQuantum2,  // Blackbird
         DeviceQuantum3,  // Sunbird
+        DeviceQuantum4,
         DeviceGearBox,
         DeviceGearBoxManager,
         DeviceAbirGearBox,
@@ -123,6 +128,7 @@ extern "C"
         DeviceConnectX6LX_HwId = 0x216,
         DeviceConnectX7_HwId = 0x218,
         DeviceConnectX8_HwId = 0x21e,
+        DeviceConnectX9_HwId = 0x225,
         DeviceBlueField_HwId = 0x211,
         DeviceBlueField2_HwId = 0x214,
         DeviceBlueField3_HwId = 0x21c,
@@ -139,6 +145,7 @@ extern "C"
         DeviceQuantum_HwId = 0x24d,
         DeviceQuantum2_HwId = 0x257,
         DeviceQuantum3_HwId = 0x25b,
+        DeviceQuantum4_HwId = 0x278,
         DeviceBW00_HwId = 0x2900,
         DeviceArdbeg_HwId = 0x6e,
         DeviceBaritone_HwId = 0x6b,
@@ -146,6 +153,9 @@ extern "C"
         DeviceSecureHost_HwId = 0xcafe,
         DeviceSpectrum3_HwId = 0x250,
         DeviceSpectrum4_HwId = 0x254,
+        DeviceSpectrum5_HwId = 0x270,
+        DeviceSpectrum6_HwId = 0x274,
+        DeviceSpectrum6IB_HwId = 0x276,
         DeviceGearBox_HwId = 0x252,
         DeviceGearBoxManager_HwId = 0x253,
         DeviceAbirGearBox_HwId = 0x256,
