@@ -2938,26 +2938,7 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
     }
 
     lifeCycle.value = getConsecutiveBits(getRegister(lifeCycleAddress), firstBit, bitLen);
-    
-    return convertToLegacy(lifeCycle);
-}
 
-life_cycle_t CRSpaceRegisters::convertToLegacy(life_cycle_t lifeCycle)
-{
-    if (lifeCycle.version_field == 1)
-    {
-        switch (lifeCycle.value)
-        {
-            case life_cycle_fs5_t::PROD:
-                lifeCycle.value = life_cycle_fs4_t::GA_SECURED;
-                break;
-            case life_cycle_fs5_t::FAILURE_ANALYSIS:
-                lifeCycle.value = life_cycle_fs4_t::RMA;
-                break;
-            default:
-                break;
-        }
-    }
     return lifeCycle;
 }
 
@@ -2965,11 +2946,11 @@ bool CRSpaceRegisters::IsLifeCycleSecured(life_cycle_t life_cycle)
 {
     if (life_cycle.version_field == 1)
     {
-        return (life_cycle.value == PRE_PROD || life_cycle.value == PROD);
+        return (life_cycle.value == FS5_LC_PRE_PRODUCTION || life_cycle.value == FS5_LC_PRODUCTION);
     }
     else
     {
-        return life_cycle.value == GA_SECURED;
+        return life_cycle.value == FS4_LC_GA_SECURED;
     }
 }
 

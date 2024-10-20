@@ -763,7 +763,6 @@ private:
     u_int32_t countSetBits(u_int32_t num);
     u_int32_t getConsecutiveBits(u_int32_t dword, u_int8_t firstBit, u_int8_t numOfBits);
     u_int32_t getRegister(u_int32_t address);
-    life_cycle_t convertToLegacy(life_cycle_t lifeCycle);
 };
 
 #endif // FW_ACCESS_H
