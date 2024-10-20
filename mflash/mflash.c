@@ -3710,21 +3710,33 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
             offset_in_address = 0;
             break;
 
-        case DeviceSpectrum4:
         case DeviceQuantum2:
-        case DeviceQuantum3:
             boot_cr_space_address = 0xf1000;
             offset_in_address = 0;
             break;
-
         case DeviceConnectX7:
         case DeviceBlueField3:
-        case DeviceConnectX8:
-        case DeviceBlueField4:
             boot_cr_space_address = 0xf2000;
             offset_in_address = 0;
             break;
-
+        case DeviceQuantum3:
+        case DeviceQuantum4:
+            boot_cr_space_address = 0xfc000;
+            offset_in_address = 0;
+            break;
+        case DeviceConnectX8:
+        case DeviceConnectX9:
+        case DeviceBlueField4:
+            boot_cr_space_address = 0xf8008;
+            offset_in_address = 0;
+            break;
+        case DeviceSpectrum4:
+        case DeviceSpectrum5:
+        case DeviceSpectrum6:
+        case DeviceSpectrum6IB:
+            boot_cr_space_address = 0xf1800;
+            offset_in_address = 0;
+            break;
         default:
             return MFE_UNSUPPORTED_DEVICE;
     }
