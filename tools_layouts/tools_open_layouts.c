@@ -997,6 +997,30 @@ void tools_open_mnvda_dump(const struct tools_open_mnvda *ptr_struct, FILE *fd)
 	tools_open_mnvda_print(ptr_struct, fd, 0);
 }
 
+void tools_open_mnvdi_pack(const struct tools_open_mnvdi *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	offset = 0;
+	tools_open_nv_hdr_fifth_gen_pack(&(ptr_struct->nv_hdr), ptr_buff + offset / 8);	
+}
+void tools_open_mnvdi_unpack(struct tools_open_mnvdi *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	offset = 0;
+	tools_open_nv_hdr_fifth_gen_unpack(&(ptr_struct->nv_hdr), ptr_buff + offset / 8);
+}
+void tools_open_mnvdi_print(const struct tools_open_mnvdi *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== tools_open_mnvdi ========\n");
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "nv_hdr:\n");
+	tools_open_nv_hdr_fifth_gen_print(&(ptr_struct->nv_hdr), fd, indent_level + 1);
+}
+unsigned int tools_open_mnvdi_size(void)
+{
+	return TOOLS_OPEN_MNVDI_SIZE;
+}
 void tools_open_mnvgn_pack(const struct tools_open_mnvgn *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;

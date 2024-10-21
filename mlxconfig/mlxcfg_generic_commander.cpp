@@ -899,6 +899,20 @@ void GenericCommander::invalidateCfg(const std::string& configName)
         {
             tlvArr.push_back(*it);
         }
+        else
+        {
+            string upper = mft_utils::to_uppercase_copy(configName);
+            auto ret = _dbManager->getMlxconfigNamePortModule(upper, _mf);
+            string mlxconfigNameNoPortModuleName = mft_utils::to_lowercase_copy(get<0>(ret));
+            u_int32_t port = get<1>(ret);
+            int32_t module = get<2>(ret);
+            (*it)->_port = port;
+            (*it)->_module = module;
+            if ((*it)->_name == mlxconfigNameNoPortModuleName)
+            {
+                tlvArr.push_back(*it);
+            }
+        }
     }
     if (tlvArr.empty())
     {

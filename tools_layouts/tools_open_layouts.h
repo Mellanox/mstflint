@@ -401,6 +401,12 @@ struct tools_open_mnvda {
 	u_int8_t data[256];
 };
 
+struct tools_open_mnvdi {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x8.31 */
+	struct tools_open_nv_hdr_fifth_gen nv_hdr;
+};
 /* Description -   */
 /* Size in bytes - 156 */
 struct tools_open_mnvgn {
@@ -1021,6 +1027,12 @@ void tools_open_mnvda_print(const struct tools_open_mnvda *ptr_struct, FILE *fd,
 unsigned int tools_open_mnvda_size(void);
 #define TOOLS_OPEN_MNVDA_SIZE    (0x10c)
 void tools_open_mnvda_dump(const struct tools_open_mnvda *ptr_struct, FILE *fd);
+/* mnvdi */
+void tools_open_mnvdi_pack(const struct tools_open_mnvdi *ptr_struct, u_int8_t *ptr_buff);
+void tools_open_mnvdi_unpack(struct tools_open_mnvdi *ptr_struct, const u_int8_t *ptr_buff);
+void tools_open_mnvdi_print(const struct tools_open_mnvdi *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mnvdi_size(void);
+#define TOOLS_OPEN_MNVDI_SIZE    (0xc)
 /* mnvgn */
 void tools_open_mnvgn_pack(const struct tools_open_mnvgn *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mnvgn_unpack(struct tools_open_mnvgn *ptr_struct, const u_int8_t *ptr_buff);

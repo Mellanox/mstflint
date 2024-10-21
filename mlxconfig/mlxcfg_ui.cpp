@@ -1114,7 +1114,17 @@ mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
     try
     {
         commander = Commander::create(dev, _mlxParams.dbName);
+        if (_mlxParams.setParams.size() == 0)
+        {
         commander->invalidateCfgs();
+        }
+        else
+        {
+            VECTOR_ITERATOR(ParamView, _mlxParams.setParams, p)
+            {
+                commander->invalidateCfg((*p).mlxconfigName);
+            }
+        }
         commander->loadConfigurationGetStr(); // why to call this? seems needless
     }
     catch (MlxcfgException& e)

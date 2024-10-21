@@ -66,6 +66,7 @@ public:
     virtual void setCfg(std::vector<ParamView>&, bool) = 0;
     virtual void clearSemaphore() = 0;
     virtual void invalidateCfgs() = 0;
+    virtual void invalidateCfg(const std::string& configName) = 0;
     virtual const char* loadConfigurationGetStr() = 0;
     virtual void setRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
     virtual std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
