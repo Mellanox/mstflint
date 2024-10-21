@@ -264,13 +264,16 @@ reg_access_status_t reg_access_mnvgc(mfile* mf, reg_access_method_t method, stru
     REG_ACCCESS(mf, method, REG_ID_MNVGC, mnvgc, mnvgc_reg_ext, reg_access_hca);
 }
 
-reg_access_status_t reg_access_mnvdi(mfile* mf, reg_access_method_t method, struct reg_access_hca_mnvdi_reg_ext* mnvdi)
+reg_access_status_t reg_access_mnvdi(mfile* mf, reg_access_method_t method, struct tools_open_mnvdi* mnvdi)
 {
+    u_int32_t reg_size = mnvdi->nv_hdr.length + tools_open_nv_hdr_fifth_gen_size();
+    u_int32_t r_size_reg = reg_size;
+    u_int32_t w_size_reg = reg_size;
     if (method != REG_ACCESS_METHOD_SET)
     { // this register supports only set method
         return ME_REG_ACCESS_BAD_METHOD;
     }
-    REG_ACCCESS(mf, method, REG_ID_MNVDI, mnvdi, mnvdi_reg_ext, reg_access_hca);
+    REG_ACCCESS_VAR(mf, method, REG_ID_MNVDI, mnvdi, mnvdi, reg_size, r_size_reg, w_size_reg, tools_open);
 }
 
 /************************************

@@ -102,7 +102,8 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-24s : %s\n", "clear_semaphore", "clear the tool semaphore.");
     printf(IDENT2 "%-24s : %s\n", "i|show_confs", "display information about all configurations.");
     printf(IDENT2 "%-24s : %s\n", "q|query", "query supported configurations.");
-    printf(IDENT2 "%-24s : %s\n", "r|reset", "reset all configurations to their default value.");
+    printf(IDENT2 "%-24s : %s\n", "r|reset",
+           "reset all configurations to their default value. Optionally, resets specific TLV if given.");
     printf(IDENT2 "%-24s : %s\n", "s|set", "set configurations to a specific device.");
     printf(IDENT2 "%-24s : %s\n", "set_raw", "set raw configuration file(5th Generation and above).");
     printf(IDENT2 "%-24s : %s\n", "get_raw", "get raw configuration (5th Generation and above).");
@@ -141,6 +142,8 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-35s: %s\n", "To set raw configuration",
            MLXCFG_NAME " -d " MST_DEV_EXAMPLE2 " -f conf_file set_raw");
     printf(IDENT2 "%-35s: %s\n", "To reset configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " reset");
+    printf(IDENT2 "%-35s: %s\n", "To reset specific configuration",
+           MLXCFG_NAME " -d " MST_DEV_EXAMPLE " reset NV_GLOBAL_PCI_CONF_4");
     printf("\n");
 }
 
@@ -584,10 +587,6 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     {
         return err(true, "missing configuration arguments. For more information please run " MLXCFG_NAME " -h|--help.");
     }
-    if (i != argc && (_mlxParams.cmd == Mc_Reset))
-    {
-        return err(true, "%s command expects no argument but %d argument received", "reset", argc - i);
-    }
 
     if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw ||
          _mlxParams.cmd == Mc_Get_Raw || _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || 
@@ -668,7 +667,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
 
     try
     {
-        if (_mlxParams.cmd == Mc_Query)
+        if (_mlxParams.cmd == Mc_Query || _mlxParams.cmd == Mc_Reset)
         {
             return extractQueryCfgArgs(argc - i, &(argv[i]));
         }
