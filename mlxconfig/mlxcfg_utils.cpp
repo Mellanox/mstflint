@@ -144,24 +144,20 @@ MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWri
 
 MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
 {
-    struct reg_access_hca_mnvdi_reg_ext nvdiTlv;
-    memset(&nvdiTlv, 0, sizeof(struct reg_access_hca_mnvdi_reg_ext));
+    struct tools_open_mnvdi mnvdiTlv;
+    memset(&mnvdiTlv, 0, sizeof(struct tools_open_mnvdi));
 
-    nvdiTlv.configuration_item_header.length = 0;
-    // nvdiTlv.configuration_item_header.rd_en = 0;
-    // nvdiTlv.configuration_item_header.over_en = 1; // ask Dan
+    mnvdiTlv.nv_hdr.rd_en = 0;
+    mnvdiTlv.nv_hdr.over_en = 1;
+    mnvdiTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG;
     // tlvType should be in the correct endianess
-    u_int32_t reversed = __be32_to_cpu(tlvType);
-    u_int8_t* ptr_buff = (u_int8_t*)&reversed;
-    reg_access_hca_config_item_type_auto_ext_pack(&nvdiTlv.configuration_item_header.type, ptr_buff);
-    int type_class = __be32_to_cpu(tlvType) & 0xF000;
-    printf("type_class = %d\n", type_class); // should be some number between 0-9
+    mnvdiTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(tlvType);
 
     MError rc;
     // "suspend" signals as we are going to take semaphores
     mft_signal_set_handling(1);
     // DEBUG_PRINT_SEND(&nvdiTlv, nvdi);
-    rc = reg_access_mnvdi(mf, REG_ACCESS_METHOD_SET, &nvdiTlv);
+    rc = reg_access_mnvdi(mf, REG_ACCESS_METHOD_SET, &mnvdiTlv);
     // DEBUG_PRINT_RECEIVE(&nvdiTlv, nvdi);
     dealWithSignal();
     if (rc)

@@ -87,9 +87,8 @@ struct tools_mjtag;
 reg_access_status_t reg_access_mjtag(mfile* mf, reg_access_method_t method, struct tools_mjtag* mjtag);
 struct tools_open_mnvda;
 reg_access_status_t reg_access_mnvda(mfile* mf, reg_access_method_t method, struct tools_open_mnvda* mnvda);
-struct reg_access_hca_mnvdi_reg_ext;
-reg_access_status_t
-  reg_access_mnvdi(mfile* mf, reg_access_method_t method, struct reg_access_hca_mnvdi_reg_ext* mnvdi);
+    struct tools_open_mnvdi;
+    reg_access_status_t reg_access_mnvdi(mfile* mf, reg_access_method_t method, struct tools_open_mnvdi* mnvdi);
 struct reg_access_hca_mnvia_reg_ext;
 reg_access_status_t
   reg_access_mnvia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mnvia_reg_ext* mnvia);
