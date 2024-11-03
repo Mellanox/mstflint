@@ -1715,6 +1715,7 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
             get_space_support_status(mf, AS_PCI_ALL_ICMD);
             get_space_support_status(mf, AS_PCI_SCAN_CRSPACE);
             get_space_support_status(mf, AS_PCI_GLOBAL_SEMAPHORE);
+            get_space_support_status(mf, AS_RECOVERY);
             mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
 
             mtcr_pciconf_cap9_sem(mf, 0);

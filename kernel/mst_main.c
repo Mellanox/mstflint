@@ -232,12 +232,13 @@ ReturnOnFinished:
 static int _update_vsc_type(struct mst_dev_data* dev)
 {
     unsigned int vsc_first_dword;
+    u_int8_t vsc_type = 0;
     int ret = pci_read_config_dword(dev->pci_dev, dev->functional_vsc_offset, &vsc_first_dword);
     if (ret)
     {
         return ret;
     }
-    u_int8_t vsc_type = EXTRACT(vsc_first_dword, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
+    vsc_type = EXTRACT(vsc_first_dword, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
     if (vsc_type == RECOVERY_VSC)
     {
         dev->recovery_vsc_offset = dev->functional_vsc_offset;
@@ -561,13 +562,13 @@ static int read4_block_vsec(struct mst_dev_data* dev, int address_space, unsigne
 
 static int get_space_support_status(struct mst_dev_data* dev)
 {
+    int ret = 0;
     // If VSC is of type RECOVERY, all the spaces are not supported
     if (dev->functional_vsc_offset == RECOVERY_VSC)
     {
         dev->spaces_support_status = SS_NOT_ALL_SPACES_SUPPORTED;
         return 0;
     }
-    int ret;
     //    printk("[MST] Checking if the Vendor CAP %d supports the SPACES in devices\n", vend_cap);
     if ((!dev->functional_vsc_offset) || (!dev->pci_dev))
         return 0;
@@ -581,10 +582,6 @@ static int get_space_support_status(struct mst_dev_data* dev)
         return 1;
     }
 
-    if (_set_addr_space(dev, AS_RECOVERY))
-    {
-        capability_support_info_message(dev, RECOVERY); // this space is supported only for ConnectX8, Quantum3 and above. For recovery from Zombiefish mode.
-    }
     else if (_set_addr_space(dev, AS_CR_SPACE))
     {
         capability_support_info_message(dev, CR_SPACE);
@@ -603,6 +600,10 @@ static int get_space_support_status(struct mst_dev_data* dev)
     else
     {
         dev->spaces_support_status = SS_ALL_SPACES_SUPPORTED;
+    }
+    if (_set_addr_space(dev, AS_RECOVERY))
+    {
+        capability_support_info_message(dev, RECOVERY); // this space is supported only for ConnectX8, Quantum3 and above. For recovery from Zombiefish mode.
     }
     if (!_set_addr_space(dev, AS_PCI_CRSPACE) && !_set_addr_space(dev, AS_PCI_ICMD) && !_set_addr_space(dev, AS_PCI_SEMAPHORE))
     {
