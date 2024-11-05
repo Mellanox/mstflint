@@ -1303,19 +1303,25 @@ void MlxlinkMaps::initCableTechnologyMapping()
     _cableTechnologyQsfp[TECHNOLOGY_850NM_VCSEL] = "850 nm VCSEL";
     _cableTechnologyQsfp[TECHNOLOGY_1310NM_VCSEL] = "1310 nm VCSEL";
     _cableTechnologyQsfp[TECHNOLOGY_1550NM_VCSEL] = "1550 nm VCSEL";
-    _cableTechnologyQsfp[TECHNOLOGY_1310NM_FP] = "1310 nm FP";
-    _cableTechnologyQsfp[TECHNOLOGY_1310NM_DFB] = "1310 nm DFB";
-    _cableTechnologyQsfp[TECHNOLOGY_1550NM_DFB] = "1550 nm DFB";
+    _cableTechnologyQsfp[TECHNOLOGY_1310NM_FP] = "1310 nm FP laser";
+    _cableTechnologyQsfp[TECHNOLOGY_1310NM_DFB] = "1310 nm DFB laser";
+    _cableTechnologyQsfp[TECHNOLOGY_1550NM_DFB] = "1550 nm DFB laser";
     _cableTechnologyQsfp[TECHNOLOGY_1310NM_EML] = "1310 nm EML";
     _cableTechnologyQsfp[TECHNOLOGY_1550NM_EML] = "1550 nm EML";
     _cableTechnologyQsfp[TECHNOLOGY_OTHERS] = "Other / Undefined";
-    _cableTechnologyQsfp[TECHNOLOGY_1490NM_DFB] = "1490 nm DFB";
-    _cableTechnologyQsfp[TECHNOLOGY_COP_UNEQ] = "Copper cable unequalized";
-    _cableTechnologyQsfp[TECHNOLOGY_COP_PASV] = "Copper cable passive equalized";
-    _cableTechnologyQsfp[TECHNOLOGY_COP_NEAR_FAR_END] = "Copper cable, near and far end limiting active equalizers";
-    _cableTechnologyQsfp[TECHNOLOGY_COP_FAR_END] = "Copper cable, far end limiting active equalizers";
-    _cableTechnologyQsfp[TECHNOLOGY_COP_NEAR_END] = "Copper cable, near end limiting active equalizers";
-    _cableTechnologyQsfp[TECHNOLOGY_COP_LINEAR] = "Copper cable, linear active equalizers";
+    _cableTechnologyQsfp[TECHNOLOGY_1490NM_DFB] = "1490 nm DFB laser";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_UNEQ] = "Copper cable, passive, unequalized";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_PASV] = "Copper cable, passive, equalized";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_NEAR_FAR_END] = "Copper cable with near and far end limiting active equalizers";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_FAR_END] = "Copper cable with far end limiting active equalizers";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_NEAR_END] = "Copper cable with near end limiting active equalizers";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_LINEAR] = "Copper cable with linear active equalizers";
+    _cableTechnologyQsfp[TECHNOLOGY_LASER_C_BAND] = "C-band tunable laser";
+    _cableTechnologyQsfp[TECHNOLOGY_LASER_L_BAND] = "B-band tunable laser";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_LINEAR_NEAR_FAR_END] =
+      "Copper cable with near end and far end linear active equalizers";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_LINEAR_FAR_END] = "Copper cable with far end linear active equalizers";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_LINEAR_NEAR_END] = "Copper cable with near end linear active equalizers";
 
     _cableTechnologySfp[0] = "N/A";
     _cableTechnologySfp[4] = "Passive";
