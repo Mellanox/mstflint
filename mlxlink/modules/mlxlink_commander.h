@@ -566,6 +566,7 @@ public:
     void getSltpRegAndLeva(u_int32_t lane);
     u_int32_t getLaneSpeed(u_int32_t lane);
     void validateNumOfParamsForNDRGen();
+    void validateNumOfParamsForXDRGen();
     void checkSltpParamsSize();
     bool isMpeinjSupported();
 
