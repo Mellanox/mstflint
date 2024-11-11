@@ -39,5 +39,5 @@ bin_PROGRAMS = mstregdump
 mstregdump_SOURCES = mstdump.c
 mstregdump_LDADD = ../crd_lib/libcrdump.a ../../dev_mgt/libdev_mgt.la ../../reg_access/libreg_access.la ../../tools_layouts/libtools_layouts.la \
 			../../${MTCR_CONF_DIR}/libmtcr_ul.la  -lm ${LDL}
-mstregdump_LDFLAGS = -static
+#mstregdump_LDFLAGS = -static
 mstregdump_CFLAGS = -DMSTDUMP_NAME=\"mstregdump\" -DDEV_EXAMPLE=\"0b:00.0\"

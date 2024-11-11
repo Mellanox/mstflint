@@ -62,4 +62,4 @@ mstreg_DEPENDENCIES = \
 
 mstreg_LDADD = $(mstreg_DEPENDENCIES) -llzma ${LDL} -lexpat
 
-mstreg_LDFLAGS = -static
+#mstreg_LDFLAGS = -static

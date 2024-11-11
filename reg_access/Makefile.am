@@ -57,7 +57,7 @@ reg_access_pylib_DATA = ${RREG_ACCESS_SO}
 dist_reg_access_pylib_DATA = regaccess.py regaccess_hca_ext_structs.py regaccess_switch_ext_structs.py
 
 ${RREG_ACCESS_SO}: libreg_access.la
-	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${RREG_ACCESS_SO} \
-	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a
+	$(CC) -g -Wall -pthread -shared ${CFLAGS} .libs/*.o -o ${RREG_ACCESS_SO} \
+	$(top_builddir)/tools_layouts/.libs/libtools_layouts.a $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.so
 
 CLEANFILES = ${RREG_ACCESS_SO}
