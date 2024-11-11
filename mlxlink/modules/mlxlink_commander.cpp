@@ -1666,9 +1666,10 @@ void MlxlinkCommander::prepareSltpEdrHdrGen(vector < vector < string >>& sltpLan
 void MlxlinkCommander::prepareSltpNdrGen(std::vector < std::vector < string >>& sltpLanes, u_int32_t laneNumber)
 {
     u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
-
-    for (auto const& param : _mlxlinkMaps->_SltpNdrParams) {
-        if (param.second.validationMask & activeSpeed) {
+    for (auto const& param : _mlxlinkMaps->_SltpNdrParams)
+    {
+        if ((param.second.validationMask & activeSpeed) || _userInput._pcie)
+        {
             sltpLanes[laneNumber].push_back(getSltpFieldStr(param.second));
         }
     }
@@ -1676,8 +1677,14 @@ void MlxlinkCommander::prepareSltpNdrGen(std::vector < std::vector < string >>& 
 
 void MlxlinkCommander::prepareSltpXdrGen(std::vector < std::vector < string >>& sltpLanes, u_int32_t laneNumber)
 {
-    (void)sltpLanes;
-    (void)laneNumber;
+    u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
+    for (auto const& param : _mlxlinkMaps->_SltpXdrParams)
+    {
+        if ((param.second.validationMask & activeSpeed) || _userInput._pcie)
+        {
+            sltpLanes[laneNumber].push_back(getSltpFieldStr(param.second));
+        }
+    }
 }
 
 template < typename T, typename Q >
@@ -2505,25 +2512,27 @@ string MlxlinkCommander::getSltpHeader()
     map < u_int32_t, PRM_FIELD > sltpParam;
     u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
 
+<<<<<<< HEAD
     switch (_productTechnology) {
     case PRODUCT_7NM:
         sltpParam = _mlxlinkMaps->_SltpNdrParams;
         break;
 
-    case PRODUCT_16NM:
-        sltpParam = _mlxlinkMaps->_SltpHdrParams;
-        break;
-
-    default:
-        sltpParam = _mlxlinkMaps->_SltpEdrParams;
-        activeSpeed = _protoActive;
-        break;
+            sltpParam = _mlxlinkMaps->_SltpNdrParams;
+            break;
+        case PRODUCT_16NM:
+            sltpParam = _mlxlinkMaps->_SltpHdrParams;
+            break;
+        default:
+            sltpParam = _mlxlinkMaps->_SltpEdrParams;
+            activeSpeed = _protoActive;
+            break;
+>>>>>>> f3db83765... [mlxlink] porting show_serdes_tx for XDR from internal to external + bug fix for not showing data in case of PCI connection.
     }
 
     for (auto const& param : sltpParam) {
         if ((param.second.validationMask & activeSpeed) || _userInput._pcie) {
             if ((param.second.fieldAccess & FIELD_ACCESS_R) ||
-                (_userInput._advancedMode && (param.second.fieldAccess & FIELD_ACCESS_ADVANCED))) {
                 sltpHeader.push_back(
                     MlxlinkRecord::addSpace(param.second.uiField, param.second.uiField.size() + 1, false));
             }
@@ -4045,6 +4054,45 @@ void MlxlinkCommander::validateNumOfParamsForNDRGen()
     }
 }
 
+void MlxlinkCommander::validateNumOfParamsForXDRGen()
+{
+    u_int32_t params;
+    string errMsg = "Invalid set of Transmitter Parameters, ";
+    errMsg += "valid parameters for the active speed are: ";
+    if (isSpeed200GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    {
+        params = SLTP_XDR_LAST; // 9 taps are valid for 200G speed + drv_amp
+        errMsg += "fir_pre6,fir_pre5,fir_pre4,fir_pre3,fir_pre2,fir_pre1,fir_main,fir_post1,fir_post2,drv_amp";
+    }
+    else if (isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    {
+        params = SLTP_NDR_LAST; // 5 taps are valid for 100G speed + drv_amp
+        errMsg += "fir_pre3,fir_pre2,fir_pre1,fir_main,fir_post1,drv_amp";
+    }
+    else if (isSpeed50GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    {
+        params = SLTP_NDR_DRV_AMP; // 4 taps are valid for 50G speed + drv_amp
+        errMsg += "fir_pre2,fir_pre1,fir_main,fir_post1,drv_amp";
+    }
+    else
+    {
+        params = SLTP_NDR_FIR_POST1; // 3 taps are valid for 25G speed + drv_amp
+        errMsg += "fir_pre1,fir_main,fir_post1,drv_amp";
+    }
+    if (_userInput._sltpParams.size() != params)
+    {
+        throw MlxRegException(errMsg);
+    }
+    for (map<u_int32_t, u_int32_t>::iterator it = _userInput._sltpParams.begin(); it != _userInput._sltpParams.end();
+         it++)
+    {
+        if (((int)it->second) > MAX_SBYTE || ((int)it->second) < MIN_SBYTE)
+        {
+            throw MlxRegException("Invalid Transmitter Parameters values");
+        }
+    }
+}
+
 void MlxlinkCommander::checkSltpParamsSize()
 {
     u_int32_t sltpParamsSize = SLTP_EDR_OB_REG;
@@ -4103,8 +4151,35 @@ string MlxlinkCommander::updateSltpNdrFields()
         paramShift = 1;
     }
 
-    for (auto const& param : _mlxlinkMaps->_SltpNdrParams) {
-        if (param.second.validationMask & activeSpeed) {
+    for (auto const& param : _mlxlinkMaps->_SltpNdrParams)
+    {
+        if ((param.second.validationMask & activeSpeed) || _userInput._pcie)
+        {
+            snprintf(paramValueBuff, sizeof(paramValueBuff), "%s=%d", param.second.prmField.c_str(),
+                     _userInput._sltpParams[param.first - paramShift]);
+            sltpParamsCmd += string(paramValueBuff);
+            sltpParamsCmd += ",";
+        }
+    }
+
+{
+    string sltpParamsCmd = "";
+    u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
+    u_int32_t paramShift = 3; // Assuming that the active speed is NRZ, so user params will represent NRZ params
+
+    if (isSpeed100GPerLane(activeSpeed, _protoActive))
+    {
+        paramShift = 1;
+    }
+    else if (isSpeed50GPerLane(activeSpeed, _protoActive))
+    {
+        paramShift = 2;
+    }
+
+    for (auto const& param : _mlxlinkMaps->_SltpXdrParams)
+    {
+        if ((param.second.validationMask & activeSpeed) || _userInput._pcie)
+        {
             snprintf(paramValueBuff, sizeof(paramValueBuff), "%s=%d", param.second.prmField.c_str(),
                      _userInput._sltpParams[param.first - paramShift]);
             sltpParamsCmd += string(paramValueBuff);
@@ -4113,11 +4188,6 @@ string MlxlinkCommander::updateSltpNdrFields()
     }
 
     return deleteLastChar(sltpParamsCmd);
-}
-
-string MlxlinkCommander::updateSltpXdrFields()
-{
-    return "";
 }
 
 string MlxlinkCommander::getSltpStatus()
