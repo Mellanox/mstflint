@@ -139,11 +139,20 @@ AC_ARG_ENABLE(fw-mgr,
              [enable_fw_mgr="no"])
 AC_MSG_RESULT($enable_fw_mgr)
 if test "x$enable_fw_mgr" = "xyes"; then
+    # Find curl using pkg-config
+    PKG_CHECK_MODULES([CURL], [libcurl], [
+        CURL_INC_DIR=$(pkg-config --cflags-only-I libcurl | sed 's/-I//')
+    ], [
+        AC_MSG_ERROR([Cannot find curl via pkg-config. Please install libcurl development files.])
+    ])
+
     AC_CHECK_HEADER(curl/curl.h,,AC_MSG_ERROR([cannot find curl/curl.h . this header is needed for compiling fw manager tool]))
+
     AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . this header is needed for compiling fw manager tool]))
     AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function.]))
     AC_CHECK_HEADER(lzma.h,,AC_MSG_ERROR([Cannot find lzma.h.]))
-    CURL_INC_DIR=/usr/include/curl/
+
+    AC_SUBST([CURL_INC_DIR])
 fi
 
 # mlxdpa
