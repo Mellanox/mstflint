@@ -187,16 +187,11 @@ AC_ARG_ENABLE(xml2,
             [enable_xml2="no"])
 AC_MSG_RESULT($enable_xml2)
 if test [ "x$enable_xml2" = "xyes" ] || [ test "x$enable_fw_mgr" = "xyes" ]; then
-    # XML2 checks
-    AC_LANG_PUSH([C++])
-        if test "x$OS" = "xFreeBSD"; then
-            CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include/libxml2"
-        else
-            CXXFLAGS="${CXXFLAGS} -isystem /usr/include/libxml2"
-        fi
-        AC_CHECK_HEADER([libxml2/libxml/xpath.h],[],[AC_MSG_ERROR([libxml2: xpath.h is not found in the system PATH. make sure libxml2 headers are installed.])])
-        AC_CHECK_LIB(xml2, xmlDocDumpFormatMemoryEnc,, AC_MSG_ERROR([cannot find xml2 xmlDocDumpFormatMemoryEnc() function. Try re-installing the library...]))
-    AC_LANG_POP([C++])
+	PKG_CHECK_MODULES(xml, [libxml-2.0])
+	AC_SUBST(xml_CFLAGS)
+	AC_SUBST(xml_LIBS)
+	CXXFLAGS="$CXXFLAGS $xml_CFLAGS"
+	CFLAGS="$CFLAGS $xml_CFLAGS"
 fi
 
 AM_CONDITIONAL(DISABLE_XML2, [test  "x$enable_xml2" = "xno"])
