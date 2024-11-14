@@ -42,7 +42,9 @@ noinst_LTLIBRARIES = libdev_mgt.la
 
 libdev_mgt_la_SOURCES = \
     tools_dev_types.c \
-    tools_dev_types.h
+    tools_dev_types.h \
+    therm_fw.c \
+    therm_fw.h
 
 dev_mgt_pylibdir = $(libdir)/mstflint/python_tools/
 

@@ -40,7 +40,8 @@ bin_PROGRAMS = \
     mstmcra \
     mstmtserver \
     mstvpd \
-    mstcongestion
+    mstcongestion \
+    mget_temp
 
 bin_SCRIPTS = mstfwreset
 
@@ -105,3 +106,12 @@ mlxpcilibdir=$(libdir)/mstflint/python_tools/mlxpci
 mlxpcilib_DATA = binary_file.py mlxpci_lib.py
 
 mstfwresetlib_DATA = $(MSTFWRESET_PYTHON_WRAPPER).py
+
+bin_PROGRAMS += mget_temp
+
+mget_temp_SOURCES = mget_temp.c mget_temp.h
+mget_temp_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+               			 $(top_builddir)/dev_mgt/libdev_mgt.la \
+ 	                     $(top_builddir)/reg_access/libreg_access.la
+mget_temp_LDADD = $(mget_temp_DEPENDENCIES) ${LDL}
+mget_temp_LDFLAGS = -static

@@ -131,6 +131,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstmtserver
 %{_bindir}/mstvpd
 %{_bindir}/mstmcra
+%{_bindir}/mget_temp
 %{_bindir}/mstconfig
 %{_bindir}/mstfwreset
 %{_bindir}/mstcongestion
