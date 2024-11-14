@@ -33,7 +33,7 @@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/dev_mgt
 
 if BUILD_DYNAMIC
-pkglib_LTLIBRARIES = libmtcr_ul.la
+lib_LTLIBRARIES = libmtcr_ul.la
 libmtcr_ul_la_LDFLAGS = -version-info 0:0:0 -no-undefined
 else
 noinst_LTLIBRARIES = libmtcr_ul.la
