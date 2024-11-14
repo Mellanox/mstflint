@@ -38,7 +38,13 @@ AM_CPPFLAGS = \
 AM_CXXFLAGS = -Wall -W  -g -MP -MD -pipe $(COMPILER_FPIC)
 AM_CXXFLAGS += -DTOOLS_CRYPTO_KEY='$(TOOLS_CRYPTO_KEY)' -DTOOLS_CRYPTO_IV='$(TOOLS_CRYPTO_IV)'
 
+if BUILD_DYNAMIC
+pkglib_LTLIBRARIES = libmlxsign.la
+libmlxsign_la_LDFLAGS = -version-info 0:0:0 -no-undefined
+else
 noinst_LTLIBRARIES = libmlxsign.la
+endif
+
 libmlxsign_la_SOURCES = mlxsign_lib.cpp mlxsign_lib.h mlxsign_com_def.h \
                        mlxsign_signer_interface.h mlxsign_signer_interface.cpp
 
