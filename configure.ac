@@ -275,6 +275,7 @@ AC_ARG_ENABLE([all_static],
     [enable_all_static="no"])
 AC_MSG_RESULT($enable_all_static)
 
+BUILD_DYNAMIC="yes"
 AS_IF([test "x$enable_all_static" = "xyes"], [
   if test "x$enable_dc" = "xyes"; then
     AC_MSG_ERROR([cannot enable all static with enable dc . add --disable-dc to remove dependency with dynamic zlib])
@@ -285,9 +286,13 @@ AS_IF([test "x$enable_all_static" = "xyes"], [
   if test "x$enable_inband" = "xyes"; then
     AC_MSG_ERROR([cannot enable all static with enable inband . add --disable-inband to remove dependency with dynamic inband])
   fi
+  BUILD_DYNAMIC="no"
   LDFLAGS="$LDFLAGS -all-static"
   CFLAGS="$CFLAGS -DSQLITE_OMIT_LOAD_EXTENSION=0 -DIBVSMAD_DLOPEN"
 ])
+
+# Define conditionals for the Makefile.am
+AM_CONDITIONAL([BUILD_DYNAMIC], [test "$BUILD_DYNAMIC" = "yes"])
 
 AC_SUBST(TOOLS_CRYPTO)
 AM_CONDITIONAL(ENABLE_OPENSSL, [test "x$enable_openssl" = "xyes" ])
