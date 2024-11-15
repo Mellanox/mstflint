@@ -351,7 +351,7 @@ typedef enum
 typedef struct vf_info_t
 {
     char dev_name[512];
-    u_int16_t domain;
+    u_int32_t domain;
     u_int8_t bus;
     u_int8_t dev;
     u_int8_t func;
@@ -369,7 +369,7 @@ typedef struct dev_info_t
     {
         struct
         {
-            u_int16_t domain;
+            u_int32_t domain;
             u_int8_t bus;
             u_int8_t dev;
             u_int8_t func;
