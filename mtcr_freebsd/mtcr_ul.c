@@ -613,7 +613,7 @@ static int _set_addr_space(mfile* mf, u_int16_t space)
     WRITE4_PCI(mf, val, mf->vsec_addr + PCI_CTRL_OFFSET, "write domain", return -1);
     // read status and make sure space is supported
     READ4_PCI(mf, &val, mf->vsec_addr + PCI_CTRL_OFFSET, "read status", return -1);
-    if (EXTRACT(val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0)
+    if (EXTRACT(val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0) // Check if the address space is supported by FW
     {
         return -1;
     }
@@ -2781,6 +2781,7 @@ int mset_addr_space(mfile* mf, int space)
         case AS_PCI_CRSPACE:
         case AS_PCI_ALL_ICMD:
         case AS_PCI_GLOBAL_SEMAPHORE:
+        case AS_RECOVERY:
             break;
 
         default:
@@ -3199,7 +3200,11 @@ static int check_zf_through_memory(mfile* mf)
 static int check_zf_through_vsc(mfile* mf)
 {
     int prev_address_space = mf->address_space;
-    mset_addr_space(mf, AS_RECOVERY);
+    // If the device is in LF mode or the recovery space is not supported, the device is not in Zombiefish mode.
+    if (is_livefish_device(mf) || mset_addr_space(mf, AS_RECOVERY) == -1)
+    {
+        return 0;
+    }
 
     uint32_t first_dword = 0;
     int rc = mread4(mf, INITIALIZING_BIT_OFFSET_IN_VSC_RECOVERY_SPACE, &first_dword);
