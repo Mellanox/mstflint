@@ -102,6 +102,7 @@ typedef long long int64_t;
 #define PXIR_SPACE_OFFSET 0x100
 
 #define CX8_HW_ID 0x21e
+#define CX9_HW_ID 0x225
 
 /*
  * MST <--> MTCR API defines
@@ -545,7 +546,7 @@ typedef struct cables_info_t
      ((mf)->vsec_cap_mask & (1 << VCC_SEMAPHORE_SPACE_SUPPORTED)))
 
 #define VSEC_PXIR_SUPPORT(mf) \
-    ((mf)->device_hw_id == CX8_HW_ID)
+    (((mf)->device_hw_id == CX8_HW_ID) || ((mf)->device_hw_id == CX9_HW_ID))
 
 // Macro for VSEC_SUPPORTED_UL
 #define VSEC_SUPPORTED_UL(mf) \
