@@ -1449,6 +1449,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"ConnectX-6LX", CX6LX_HW_ID, CT_CONNECTX6LX, CFT_HCA, 0, {4127, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-7", CX7_HW_ID, CT_CONNECTX7, CFT_HCA, 0, {4129, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-8", CX8_HW_ID, CT_CONNECTX8, CFT_HCA, 0, {4131, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"ConnectX-9", CX9_HW_ID, CT_CONNECTX9, CFT_HCA, 0, {4133, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField", BF_HW_ID, CT_BLUEFIELD, CFT_HCA, 0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField2", BF2_HW_ID, CT_BLUEFIELD2, CFT_HCA, 0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField3", BF3_HW_ID, CT_BLUEFIELD3, CFT_HCA, 0, {41690, 41691, 41692, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1481,6 +1482,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
   {"ConnectX-6LX", CX6LX_HW_ID, 0x00},
   {"ConnectX-7", CX7_HW_ID, 0x00},
   {"ConnectX-8", CX8_HW_ID, 0x00},
+  {"ConnectX-9", CX9_HW_ID, 0x00},
   {"BlueField", BF_HW_ID, 0x00},
   {"BlueField2", BF2_HW_ID, 0x00},
   {"BlueField3", BF3_HW_ID, 0x00},
@@ -2569,7 +2571,7 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
         return FS_FS4_GEN;
     }
     else if ((hwDevId == QUANTUM3_HW_ID) || (hwDevId == CX8_HW_ID) || (hwDevId == BF4_HW_ID) ||
-             (hwDevId == ARCUSE_HW_ID))
+             (hwDevId == ARCUSE_HW_ID) || (hwDevId == CX9_HW_ID))
     {
         return FS_FS5_GEN;
     }
