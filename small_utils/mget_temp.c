@@ -45,7 +45,7 @@
 void print_help()
 {
     printf("\n\n");
-    printf("     mget_temp - Get Hardware Temperature of Mellanox Technologies LTD devices\n");
+    printf("     mstmget_temp - Get Hardware Temperature of Mellanox Technologies LTD devices\n");
     printf("======================================================================================\n");
     printf("  Prints the current device temperature in degrees centigrade.\n");
     printf("\n");
@@ -91,19 +91,19 @@ int parseAndRun(int argc, char** argv)
         }
         else if (strcmp(argv[ai], "--version") == 0)
         {
-            print_version_string("mget_temp", "");
+            print_version_string("mstmget_temp", "");
             exit(0);
         }
         else
         {
-            printf("Usage : mget_temp -d <device> [OPTIONS]\n");
+            printf("Usage : mstmget_temp -d <device> [OPTIONS]\n");
             exit(1);
         }
     }
 
     if (argc == 1 || !dev_name)
     {
-        printf("Usage : mget_temp -d <device> [OPTIONS]\n");
+        printf("Usage : mstmget_temp -d <device> [OPTIONS]\n");
         exit(1);
     }
 
@@ -120,7 +120,7 @@ int parseAndRun(int argc, char** argv)
     }
     if (dm_is_livefish_mode(mf))
     {
-        printf("-E- mget_temp over device in livefish mode is not supported.\n");
+        printf("-E- mstmget_temp over device in livefish mode is not supported.\n");
         mclose(mf);
         exit(1);
     }
