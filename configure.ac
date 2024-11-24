@@ -123,7 +123,7 @@ AC_SUBST(COMPILER_FPIC)
 AC_MSG_CHECKING(--enable-dc argument)
 AC_ARG_ENABLE(dc,
 		    [  --disable-dc            Disable mstflint "dc" command. Eliminates zlib dependency],
-		    [enable_dc=$enableval],
+		    [enable_dc="$enableval"],
 		    [enable_dc="yes"])
 AC_MSG_RESULT($enable_dc)
 if test "$enable_dc" = "yes"; then
@@ -135,7 +135,7 @@ fi
 AC_MSG_CHECKING(--enable-fw-mgr argument)
 AC_ARG_ENABLE(fw-mgr,
              [  --enable-fw-mgr         Enable compiling mstfwmanager tool and features],
-             [enable_fw_mgr="yes"],
+             [enable_fw_mgr="$enableval"],
              [enable_fw_mgr="no"])
 AC_MSG_RESULT($enable_fw_mgr)
 if test "x$enable_fw_mgr" = "xyes"; then
@@ -150,7 +150,7 @@ fi
 AC_MSG_CHECKING(--enable-dpa argument)
 AC_ARG_ENABLE(dpa,
              [  --enable-dpa            Enable compiling mstdpa tool (x86_64/aarch64 Linux only, no FreeBSD support],
-             [enable_dpa="yes"],
+             [enable_dpa="$enableval"],
              [enable_dpa="no"])
 AC_MSG_RESULT($enable_dpa)
 
@@ -158,7 +158,7 @@ AC_MSG_RESULT($enable_dpa)
 AC_MSG_CHECKING(--enable-adb-generic-tools argument)
 AC_ARG_ENABLE(adb-generic-tools,
              [  --enable-adb-generic-tools        Enable compiling the following tools which depends on ADABE: mstreg and mstlink],
-             [enable_adb_generic_tools="yes"],
+             [enable_adb_generic_tools="$enableval"],
              [enable_adb_generic_tools="no"])
 AC_MSG_RESULT($enable_adb_generic_tools)
 if test "x$enable_adb_generic_tools" = "xyes"; then
@@ -183,7 +183,7 @@ AC_SUBST(ENABLE_FWMGR)
 AC_MSG_CHECKING(--enable-xml2 argument)
 AC_ARG_ENABLE(xml2,
             [  --enable-xml2           Enable mstflint libxml2 dependent features],
-            [enable_xml2="yes"],
+            [enable_xml2="$enableval"],
             [enable_xml2="no"])
 AC_MSG_RESULT($enable_xml2)
 if test [ "x$enable_xml2" = "xyes" ] || [ test "x$enable_fw_mgr" = "xyes" ]; then
@@ -208,8 +208,8 @@ AC_SUBST(ENABLE_DC)
 AC_MSG_CHECKING(--enable-inband argument)
 AC_ARG_ENABLE(inband,
 		    [  --disable-inband        Disable inband access. Prevents FW update for Mellanox SwitchX and ConnectIB devices. Eliminates infiniband/mad.h dependency],
-		    [enable_inband=$enableval],
-		    [enable_inband=$default_en_inband])
+		    [enable_inband="$enableval"],
+		    [enable_inband="$default_en_inband"])
 AC_MSG_RESULT($enable_inband)
 if test "x$enable_inband" = "xyes"; then
   AC_CHECK_HEADER(infiniband/mad.h,,AC_MSG_ERROR([cannot find infiniband/mad.h . Use --disable-inband to remove this dependency]))
@@ -225,8 +225,8 @@ AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband" = "xyes"])
 AC_MSG_CHECKING(--enable-rdmem argument)
 AC_ARG_ENABLE(rdmem,
 		    [  --enable-rdmem        Enable resource-dump memory mode. OFED libmlx5 and libibverbs dependency],
-		    [enable_rdmem=$enableval],
-		    [enable_rdmem=$default_en_rdmem])
+		    [enable_rdmem="$enableval"],
+		    [enable_rdmem="$default_en_rdmem"])
 AC_MSG_RESULT($enable_rdmem)
 if test "x$enable_rdmem" = "xyes"; then
   AC_CHECK_HEADERS(infiniband/mlx5dv.h infiniband/verbs.h,,AC_MSG_ERROR([cannot find infiniband/mlx5dv.h or infiniband/verbs.h . Use --disable-rdmem to remove this dependency]))
@@ -240,7 +240,7 @@ AM_CONDITIONAL(ENABLE_RDMEM, [test  "x$enable_rdmem" = "xyes"])
 AC_MSG_CHECKING(--enable-cs argument)
 AC_ARG_ENABLE(cs,
             [  --enable-cs             Enable mstflint "checksum" command, dependent of openssl library],
-            [enable_cs="yes"],
+            [enable_cs="$enableval"],
             [enable_cs="no"])
 AC_MSG_RESULT($enable_cs)
 if test "x$enable_cs" = "xyes"; then
@@ -251,7 +251,7 @@ fi
 AC_MSG_CHECKING(openssl argument)
 AC_ARG_ENABLE(openssl,
             [  --disable-openssl       Disable functionalities that depend on the OpenSSL library],
-            [enable_openssl=$enableval],
+            [enable_openssl="$enableval"],
             [enable_openssl="yes"])
 AC_MSG_RESULT($enable_openssl)
 if test "x$enable_openssl" = "xyes"; then
@@ -267,7 +267,7 @@ fi
 AC_MSG_CHECKING(--enable-all-static argument)
 AC_ARG_ENABLE([all_static],
     AS_HELP_STRING([--enable-all-static], [Enable creating none dynamic executables]),
-    [enable_all_static="yes"],
+    [enable_all_static="$enableval"],
     [enable_all_static="no"])
 AC_MSG_RESULT($enable_all_static)
 
