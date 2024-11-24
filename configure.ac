@@ -122,7 +122,7 @@ AC_SUBST(COMPILER_FPIC)
 
 AC_MSG_CHECKING(--enable-dc argument)
 AC_ARG_ENABLE(dc,
-		    [  --disable-dc            Disable mstflint "dc" command. Eliminates zlib dependency],
+		    AS_HELP_STRING([--disable-dc], [Disable mstflint "dc" command. Eliminates zlib dependency]),
 		    [enable_dc="$enableval"],
 		    [enable_dc="yes"])
 AC_MSG_RESULT($enable_dc)
@@ -134,7 +134,7 @@ fi
 # FWMANAGER
 AC_MSG_CHECKING(--enable-fw-mgr argument)
 AC_ARG_ENABLE(fw-mgr,
-             [  --enable-fw-mgr         Enable compiling mstfwmanager tool and features],
+             AS_HELP_STRING([--enable-fw-mgr], [Enable compiling mstfwmanager tool and features]),
              [enable_fw_mgr="$enableval"],
              [enable_fw_mgr="no"])
 AC_MSG_RESULT($enable_fw_mgr)
@@ -149,7 +149,7 @@ fi
 # mlxdpa
 AC_MSG_CHECKING(--enable-dpa argument)
 AC_ARG_ENABLE(dpa,
-             [  --enable-dpa            Enable compiling mstdpa tool (x86_64/aarch64 Linux only, no FreeBSD support],
+             AS_HELP_STRING([--enable-dpa], [Enable compiling mstdpa tool (x86_64/aarch64 Linux only, no FreeBSD support)]),
              [enable_dpa="$enableval"],
              [enable_dpa="no"])
 AC_MSG_RESULT($enable_dpa)
@@ -157,7 +157,7 @@ AC_MSG_RESULT($enable_dpa)
 # Adabe
 AC_MSG_CHECKING(--enable-adb-generic-tools argument)
 AC_ARG_ENABLE(adb-generic-tools,
-             [  --enable-adb-generic-tools        Enable compiling the following tools which depends on ADABE: mstreg and mstlink],
+             AS_HELP_STRING([--enable-adb-generic-tools], [Enable compiling the following tools which depends on ADABE: mstreg and mstlink]),
              [enable_adb_generic_tools="$enableval"],
              [enable_adb_generic_tools="no"])
 AC_MSG_RESULT($enable_adb_generic_tools)
@@ -182,7 +182,7 @@ AC_SUBST(ENABLE_FWMGR)
 # XML2
 AC_MSG_CHECKING(--enable-xml2 argument)
 AC_ARG_ENABLE(xml2,
-            [  --enable-xml2           Enable mstflint libxml2 dependent features],
+            AS_HELP_STRING([--enable-xml2], [Enable mstflint libxml2 dependent features]),
             [enable_xml2="$enableval"],
             [enable_xml2="no"])
 AC_MSG_RESULT($enable_xml2)
@@ -207,7 +207,7 @@ AC_SUBST(ENABLE_DC)
 
 AC_MSG_CHECKING(--enable-inband argument)
 AC_ARG_ENABLE(inband,
-		    [  --disable-inband        Disable inband access. Prevents FW update for Mellanox SwitchX and ConnectIB devices. Eliminates infiniband/mad.h dependency],
+		    AS_HELP_STRING([--disable-inband], [Disable inband access. Prevents FW update for Mellanox SwitchX and ConnectIB devices. Eliminates infiniband/mad.h dependency]),
 		    [enable_inband="$enableval"],
 		    [enable_inband="$default_en_inband"])
 AC_MSG_RESULT($enable_inband)
@@ -224,7 +224,7 @@ AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband" = "xyes"])
 
 AC_MSG_CHECKING(--enable-rdmem argument)
 AC_ARG_ENABLE(rdmem,
-		    [  --enable-rdmem        Enable resource-dump memory mode. OFED libmlx5 and libibverbs dependency],
+		    AS_HELP_STRING([--enable-rdmem], [Enable resource-dump memory mode. OFED libmlx5 and libibverbs dependency]),
 		    [enable_rdmem="$enableval"],
 		    [enable_rdmem="$default_en_rdmem"])
 AC_MSG_RESULT($enable_rdmem)
@@ -239,7 +239,7 @@ AM_CONDITIONAL(ENABLE_RDMEM, [test  "x$enable_rdmem" = "xyes"])
 
 AC_MSG_CHECKING(--enable-cs argument)
 AC_ARG_ENABLE(cs,
-            [  --enable-cs             Enable mstflint "checksum" command, dependent of openssl library],
+            AS_HELP_STRING([--enable-cs], [Enable mstflint "checksum" command, dependent of openssl library]),
             [enable_cs="$enableval"],
             [enable_cs="no"])
 AC_MSG_RESULT($enable_cs)
@@ -250,7 +250,7 @@ fi
 
 AC_MSG_CHECKING(openssl argument)
 AC_ARG_ENABLE(openssl,
-            [  --disable-openssl       Disable functionalities that depend on the OpenSSL library],
+            AS_HELP_STRING([--disable-openssl], [Disable functionalities that depend on the OpenSSL library]),
             [enable_openssl="$enableval"],
             [enable_openssl="yes"])
 AC_MSG_RESULT($enable_openssl)
