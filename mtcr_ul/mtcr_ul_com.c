@@ -3021,8 +3021,7 @@ int return_by_reg_status(int reg_status)
 
 int supports_reg_access_smp(mfile* mf)
 {
-    return (mf->flags & (MDEVS_IB | MDEVS_FWCTX)) ||
-           (!(mf->flags & MDEVS_IB) && (supports_icmd(mf) || supports_tools_cmdif_reg(mf)));
+    return mib_supports_reg_access_smp(mf) && (supports_icmd(mf) || supports_tools_cmdif_reg(mf));
 }
 
 
@@ -3134,7 +3133,7 @@ int maccess_reg_ul(mfile              * mf,
 
 int supports_reg_access_gmp_ul(mfile* mf, maccess_reg_method_t reg_method)
 {
-#ifndef MST_UL
+#ifndef NO_INBAND
     return mib_supports_reg_access_gmp(mf, reg_method);
 #else
     (void)mf;
@@ -3145,7 +3144,7 @@ int supports_reg_access_gmp_ul(mfile* mf, maccess_reg_method_t reg_method)
 
 int supports_reg_access_cls_a_ul(mfile* mf, maccess_reg_method_t reg_method)
 {
-#ifndef MST_UL
+#ifndef NO_INBAND
     return mib_supports_reg_access_cls_a(mf, reg_method);
 #else
     (void)mf;
@@ -3156,7 +3155,7 @@ int supports_reg_access_cls_a_ul(mfile* mf, maccess_reg_method_t reg_method)
 
 int mib_send_cls_a_access_reg_mad_ul(mfile* mf, u_int8_t* data)
 {
-#ifndef MST_UL
+#ifndef NO_INBAND
     return mib_send_cls_a_access_reg_mad(mf, data);
 #else
     (void)mf;
@@ -3172,7 +3171,7 @@ int mib_send_gmp_access_reg_mad_ul(mfile              * mf,
                                    maccess_reg_method_t reg_method,
                                    int                * reg_status)
 {
-#ifndef MST_UL
+#ifndef NO_INBAND
     return mib_send_gmp_access_reg_mad(mf, data, reg_size, reg_id, reg_method, reg_status);
 #else
     (void)mf;
@@ -3224,9 +3223,7 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_i
                 /* printf("-E- 2. Access reg mad failed with rc = %#x\n", rc); */
                 return ME_MAD_SEND_FAILED;
             }
-        }
-
-        else {
+        } else {
             return icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
         }
 #else

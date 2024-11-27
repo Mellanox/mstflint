@@ -975,12 +975,19 @@ static int icmd_init_cr(mfile* mf)
         break;
 
     case (QUANTUM2_HW_ID):
-    case (QUANTUM3_HW_ID):
     case (SPECTRUM4_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM2;
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
+        break;
+
+    case (QUANTUM3_HW_ID):
+        cmd_ptr_addr = 0x200000;
+        hcr_address = 0x200000;
+        mf->icmd.semaphore_addr = 0x1550f8;
+        mf->icmd.static_cfg_not_done_addr = 0x200010;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
         break;
 
@@ -1251,7 +1258,7 @@ int icmd_open(mfile* mf)
     if (mf->vsec_supp) {
         return icmd_init_vcr(mf);
     }
-    if (is_gpu_pci_device(mf->dinfo->pci.dev_id)) {
+    if ((mf->tp == MST_IB) || is_gpu_pci_device(mf->dinfo->pci.dev_id)) {
         return icmd_init_cr(mf);
     }
     return ME_ICMD_NOT_SUPPORTED;
