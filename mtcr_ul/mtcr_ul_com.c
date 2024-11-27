@@ -3226,6 +3226,10 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_i
         } else {
             return icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
         }
+
+        else {
+            return icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
+        }
 #else
         rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
         if (rc) {

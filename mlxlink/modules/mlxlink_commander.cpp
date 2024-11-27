@@ -2512,12 +2512,12 @@ string MlxlinkCommander::getSltpHeader()
     map < u_int32_t, PRM_FIELD > sltpParam;
     u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
 
-<<<<<<< HEAD
-    switch (_productTechnology) {
-    case PRODUCT_7NM:
-        sltpParam = _mlxlinkMaps->_SltpNdrParams;
-        break;
-
+    switch (_productTechnology)
+    {
+        case PRODUCT_5NM:
+            sltpParam = _mlxlinkMaps->_SltpXdrParams;
+            break;
+        case PRODUCT_7NM:
             sltpParam = _mlxlinkMaps->_SltpNdrParams;
             break;
         case PRODUCT_16NM:
@@ -2527,12 +2527,12 @@ string MlxlinkCommander::getSltpHeader()
             sltpParam = _mlxlinkMaps->_SltpEdrParams;
             activeSpeed = _protoActive;
             break;
->>>>>>> f3db83765... [mlxlink] porting show_serdes_tx for XDR from internal to external + bug fix for not showing data in case of PCI connection.
     }
 
     for (auto const& param : sltpParam) {
         if ((param.second.validationMask & activeSpeed) || _userInput._pcie) {
             if ((param.second.fieldAccess & FIELD_ACCESS_R) ||
+                (_userInput._advancedMode && (param.second.fieldAccess & FIELD_ACCESS_ADVANCED))) {
                 sltpHeader.push_back(
                     MlxlinkRecord::addSpace(param.second.uiField, param.second.uiField.size() + 1, false));
             }
@@ -4162,10 +4162,15 @@ string MlxlinkCommander::updateSltpNdrFields()
         }
     }
 
+    return deleteLastChar(sltpParamsCmd);
+}
+
+string MlxlinkCommander::updateSltpXdrFields()
 {
     string sltpParamsCmd = "";
     u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
     u_int32_t paramShift = 3; // Assuming that the active speed is NRZ, so user params will represent NRZ params
+    char paramValueBuff[32] = "";
 
     if (isSpeed100GPerLane(activeSpeed, _protoActive))
     {
