@@ -444,10 +444,7 @@ void MlxlinkCommander::labelToLocalPort()
             if (!_validDpns.empty()) {
                 _dpn = _validDpns[0]; /* default DPN link */
             }
-            _localPort = _dpn.pcieIndex;
-            if (_dpn.depth > 0) {
-                _localPort = _dpn.node + DBN_TO_LOCAL_PORT_BASE;
-            }
+            _localPort = getLocalPortFromMPIR(_dpn);
         }
         return;
     }
@@ -805,7 +802,9 @@ u_int32_t MlxlinkCommander::calculatePanelPort(bool ibSplitReady)
 
 void MlxlinkCommander::getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended)
 {
-    if (_protoActive == IB) {
+    std::string rxtx;
+    if (_protoActive == IB)
+    {
         sendPrmReg(ACCESS_REG_PTYS, GET, "proto_mask=%d", _protoActive);
 
         _numOfLanes = getFieldValue("ib_link_width_oper");
@@ -825,8 +824,10 @@ void MlxlinkCommander::getActualNumOfLanes(u_int32_t linkSpeedActive, bool exten
 
     sendPrmReg(ACCESS_REG_PMLP, GET);
 
-    for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
-        _moduleLanesMapping[lane] = getFieldValue("rx_lane_" + to_string(lane));
+    rxtx = getFieldValue("rxtx") == 0 ? "tx" : "rx";
+    for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
+    {
+        _moduleLanesMapping[lane] = getFieldValue(rxtx + "_lane_" + to_string(lane));
     }
 }
 
@@ -970,7 +971,7 @@ bool MlxlinkCommander::handleQTM3LocalPort(u_int32_t labelPort)
 
         if (getFieldValue("label_port") == labelPort) {
             _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, _userInput._setGroup,
-                                                    getFieldValue("ipil_num"), getFieldValue("split_num")));
+                                                    getFieldValue("ipil_num"), getFieldValue("split_num") + 1));
             isLabelPortValid = true;
         }
     }
@@ -2246,9 +2247,10 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
 
 void MlxlinkCommander::startSlrgPciScan(u_int32_t numOfLanesToUse)
 {
-    /* Start EOM measurements per lane */
-    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++) {
-        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurment=%d", lane, SLRG_EOM_COMPOSITE);
+    // Start EOM measurements per lane
+    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    {
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, SLRG_EOM_COMPOSITE);
     }
     /* For each lane, wait until process finish */
     for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++) {
@@ -2284,7 +2286,7 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
     for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++) {
         status = 0;
 
-        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurment=%d", lane, fomMeasurement);
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
 
         status = getFieldValue("status");
         initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom") : "N/A"));
