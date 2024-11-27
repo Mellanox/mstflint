@@ -63,7 +63,7 @@ except Exception as exp:
 if DEV_MGT:
     class DevMgt:
         ##########################
-        def __init__(self, dev, i2c_secondary= -1):
+        def __init__(self, dev, i2c_secondary=-1):
             self.mf = 0
             self._isLivefishModeFunc = DEV_MGT.dm_is_livefish_mode  # dm_is_livefish_mode(mfile* mf)
             self._getDeviceIdFunc = DEV_MGT.dm_get_device_id
@@ -127,8 +127,8 @@ if DEV_MGT:
             return DEV_MGT.dm_is_connectib(dm_dev_id)
 
         @classmethod
-        def is_bw00(cls, dm_dev_id):
-            return DEV_MGT.dm_is_bw00(dm_dev_id)
+        def is_gb100(cls, dm_dev_id):
+            return DEV_MGT.dm_is_gb100(dm_dev_id)
 
         @classmethod
         def is_cx7(cls, dm_dev_id):
