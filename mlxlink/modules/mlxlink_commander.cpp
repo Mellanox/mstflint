@@ -2352,6 +2352,53 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
                 (fomMeasurement & SLRG_EOM_LOWER), true, true);
 }
 
+void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
+{
+    std::vector<string> legand, initialFom, lastFom, upperFom, midFom, lowerFom;
+    u_int32_t status = 0;
+    u_int32_t fomMeasurement = SLRG_EOM_NONE;
+
+    if (!_userInput._pcie)
+    {
+        fomMeasurement = SLRG_EOM_COMPOSITE;
+        if (!isNRZSpeed(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+        {
+            fomMeasurement |= (SLRG_EOM_UPPER | SLRG_EOM_MIDDLE | SLRG_EOM_LOWER);
+        }
+    }
+    else
+    {
+        startSlrgPciScan(numOfLanesToUse);
+    }
+
+    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    {
+        status = 0;
+
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
+
+        status = getFieldValue("status");
+        initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom", (u_int32_t)16) : "N/A"));
+        lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom", (u_int32_t)16) : "N/A"));
+        upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye", (u_int32_t)16) : "N/A"));
+        midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye", (u_int32_t)16) : "N/A"));
+        lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("lower_eye", (u_int32_t)16) : "N/A"));
+
+        legand.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(lane)));
+    }
+    string fomMode = _mlxlinkMaps->_slrgFomMode5nm[getFieldValue("fom_mode")];
+    setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lane", getStringFromVector(legand), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", getStringFromVector(initialFom), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", getStringFromVector(lastFom), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_UPPER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_LOWER), true, true);
+}
+
 void MlxlinkCommander::showEye()
 {
     if (_userInput._pcie) {
@@ -4049,6 +4096,45 @@ void MlxlinkCommander::validateNumOfParamsForNDRGen()
          it != _userInput._sltpParams.end();
          it++) {
         if ((((int)it->second) > MAX_SBYTE) || (((int)it->second) < MIN_SBYTE)) {
+            throw MlxRegException("Invalid Transmitter Parameters values");
+        }
+    }
+}
+
+void MlxlinkCommander::validateNumOfParamsForXDRGen()
+{
+    u_int32_t params;
+    string errMsg = "Invalid set of Transmitter Parameters, ";
+    errMsg += "valid parameters for the active speed are: ";
+    if (isSpeed200GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    {
+        params = SLTP_XDR_LAST; // 9 taps are valid for 200G speed + drv_amp
+        errMsg += "fir_pre6,fir_pre5,fir_pre4,fir_pre3,fir_pre2,fir_pre1,fir_main,fir_post1,fir_post2,drv_amp";
+    }
+    else if (isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    {
+        params = SLTP_NDR_LAST; // 5 taps are valid for 100G speed + drv_amp
+        errMsg += "fir_pre3,fir_pre2,fir_pre1,fir_main,fir_post1,drv_amp";
+    }
+    else if (isSpeed50GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    {
+        params = SLTP_NDR_DRV_AMP; // 4 taps are valid for 50G speed + drv_amp
+        errMsg += "fir_pre2,fir_pre1,fir_main,fir_post1,drv_amp";
+    }
+    else
+    {
+        params = SLTP_NDR_FIR_POST1; // 3 taps are valid for 25G speed + drv_amp
+        errMsg += "fir_pre1,fir_main,fir_post1,drv_amp";
+    }
+    if (_userInput._sltpParams.size() != params)
+    {
+        throw MlxRegException(errMsg);
+    }
+    for (map<u_int32_t, u_int32_t>::iterator it = _userInput._sltpParams.begin(); it != _userInput._sltpParams.end();
+         it++)
+    {
+        if (((int)it->second) > MAX_SBYTE || ((int)it->second) < MIN_SBYTE)
+        {
             throw MlxRegException("Invalid Transmitter Parameters values");
         }
     }
