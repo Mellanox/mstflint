@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2024-10-06 12:56:58"
+#    This file was generated at "2024-12-02 12:38:06"
 #    by:
 #      > <REDACTED>/gen_adb_data.py -g switch_prm_projects
 ###############################################################################
@@ -45,6 +45,24 @@ import platform
 
 import mtcr
 
+
+class MPIR_EXT(ctypes.Structure):
+    _fields_ = [
+        ("host_buses", ctypes.c_uint8),
+        ("node", ctypes.c_uint8),
+        ("pcie_index", ctypes.c_uint8),
+        ("depth", ctypes.c_uint8),
+        ("sdm", ctypes.c_uint8),
+        ("subordinate_bus", ctypes.c_uint8),
+        ("secondary_bus", ctypes.c_uint8),
+        ("device", ctypes.c_uint8),
+        ("lp_msb", ctypes.c_uint8),
+        ("bus", ctypes.c_uint8),
+        ("local_port", ctypes.c_uint8),
+        ("slot_number", ctypes.c_uint16),
+        ("num_con_devices", ctypes.c_uint8),
+        ("slot_cap", ctypes.c_uint8)
+    ]
 
 class MDDQ_SLOT_INFO_EXT(ctypes.Structure):
     _fields_ = [
