@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2024-10-08 11:27:08"
+#    This file was generated at "2024-12-02 12:37:54"
 #    by:
 #      > <REDACTED>/prm_update.py --project nic
 ###############################################################################
@@ -45,6 +45,25 @@ import platform
 
 import mtcr
 
+
+class MPIR_EXT(ctypes.Structure):
+    _fields_ = [
+        ("host_buses", ctypes.c_uint8),
+        ("node", ctypes.c_uint8),
+        ("pcie_index", ctypes.c_uint8),
+        ("depth", ctypes.c_uint8),
+        ("sdm", ctypes.c_uint8),
+        ("subordinate_bus", ctypes.c_uint8),
+        ("secondary_bus", ctypes.c_uint8),
+        ("sd_group", ctypes.c_uint8),
+        ("device", ctypes.c_uint8),
+        ("lp_msb", ctypes.c_uint8),
+        ("bus", ctypes.c_uint8),
+        ("local_port", ctypes.c_uint8),
+        ("slot_number", ctypes.c_uint16),
+        ("num_con_devices", ctypes.c_uint8),
+        ("slot_cap", ctypes.c_uint8)
+    ]
 
 class MRSI_EXT(ctypes.Structure):
     _fields_ = [
