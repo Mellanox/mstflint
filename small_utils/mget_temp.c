@@ -131,7 +131,6 @@ int parseAndRun(int argc, char** argv)
     if (rc != TDFW_SUCCESS || !data)
     {
         fprintf(stderr, "Thermal diode read failed (%s)\n", td_fw_err_str);
-        td_fw_release_data(data);
         mclose(mf);
         exit(1);
     }
