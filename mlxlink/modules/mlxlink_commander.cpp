@@ -673,7 +673,8 @@ void MlxlinkCommander::labelToQtm3LocalPort()
                 throw MlxRegException("Invalid inter-port number!");
             }
 
-            if (splitIn > (u_int32_t)(1 << splitStat)) {
+            if ((splitIn - 1) > (u_int32_t)(1 << splitStat))
+            {
                 throw MlxRegException("Invalid split number!");
             }
 
