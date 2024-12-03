@@ -777,16 +777,17 @@ void MlxlinkCommander::labelToQtm3LocalPort()
                 throw MlxRegException("Invalid inter-port number!");
             }
 
-        if ((splitIn - 1) > (u_int32_t)(1 << splitStat))
-        {
-            throw MlxRegException("Invalid split number!");
-        }
+            if ((splitIn - 1) > (u_int32_t)(1 << splitStat))
+            {
+                throw MlxRegException("Invalid split number!");
+            }
 
-        if (cage_in == getFieldValue("label_port") && (ipil_stat == 0 || ipil_in == getFieldValue("ipil_num")) &&
-            (splitStat == 0 || (splitIn - 1) == getFieldValue("split_num")))
-        {
-            founded_local_port = localPort;
-            break;
+            if (cageIn == getFieldValue("label_port") && (ipilStat == 0 || ipilIn == getFieldValue("ipil_num")) &&
+                (splitStat == 0 || (splitIn - 1) == getFieldValue("split_num")))
+            {
+                founded_local_port = localPort;
+                break;
+            }
         }
     }
 
