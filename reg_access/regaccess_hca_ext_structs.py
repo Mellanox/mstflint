@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2024-12-02 12:37:54"
+#    This file was generated at "2024-12-03 14:33:40"
 #    by:
 #      > <REDACTED>/prm_update.py --project nic
 ###############################################################################
@@ -52,6 +52,7 @@ class MPIR_EXT(ctypes.Structure):
         ("node", ctypes.c_uint8),
         ("pcie_index", ctypes.c_uint8),
         ("depth", ctypes.c_uint8),
+        ("DPNv", ctypes.c_uint8),
         ("sdm", ctypes.c_uint8),
         ("subordinate_bus", ctypes.c_uint8),
         ("secondary_bus", ctypes.c_uint8),
@@ -334,6 +335,7 @@ class NIC_CAP_EXT_DPA_CAP(ctypes.Structure):
         ("max_num_dpa_eu_per_group", ctypes.c_uint16),
         ("dpa_perf_sample_type", ctypes.c_uint8),
         ("max_num_partition_vhca_id", ctypes.c_uint16),
+        ("dpa_partition_eug", ctypes.c_uint8),
         ("process_perf_cnt", ctypes.c_uint8)
     ]
 
