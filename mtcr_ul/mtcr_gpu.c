@@ -52,7 +52,8 @@ pci_id_range GR100_PCI_IDS[] = {
 
 int is_gb100_pci_device(u_int16_t pci_device_id)
 {
-    for (unsigned int i = 0; i < sizeof(GB100_PCI_IDS) / sizeof(pci_id_range); i++) {
+    unsigned int i = 0;
+    for (i = 0; i < sizeof(GB100_PCI_IDS) / sizeof(pci_id_range); i++) {
         if ((pci_device_id >= GB100_PCI_IDS[i].lower_bound) && (pci_device_id <= GB100_PCI_IDS[i].upper_bound)) {
             return true;
         }
@@ -62,7 +63,8 @@ int is_gb100_pci_device(u_int16_t pci_device_id)
 
 int is_gr100_pci_device(u_int16_t pci_device_id)
 {
-    for (unsigned int i = 0; i < sizeof(GR100_PCI_IDS) / sizeof(pci_id_range); i++) {
+    unsigned int i = 0;
+    for (i = 0; i < sizeof(GR100_PCI_IDS) / sizeof(pci_id_range); i++) {
         if ((pci_device_id >= GR100_PCI_IDS[i].lower_bound) && (pci_device_id <= GR100_PCI_IDS[i].upper_bound)) {
             return true;
         }
