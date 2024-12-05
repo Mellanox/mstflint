@@ -785,7 +785,7 @@ void MlxlinkCommander::labelToQtm3LocalPort()
             if (cageIn == getFieldValue("label_port") && (ipilStat == 0 || ipilIn == getFieldValue("ipil_num")) &&
                 (splitStat == 0 || (splitIn - 1) == getFieldValue("split_num")))
             {
-                founded_local_port = localPort;
+                foundedLocalPort = localPort;
                 break;
             }
         }
