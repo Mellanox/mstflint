@@ -1907,6 +1907,10 @@ int mib_smp_set(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod
     int       status = -1;
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
 
+    if (!h->use_smp) {
+        return ME_UNSUPPORTED_ACCESS_TYPE;
+    }
+
     /* Set the MKey. */
     set_mkey_for_smp_mad(h);
 
@@ -1936,6 +1940,10 @@ int mib_smp_get(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod
     u_int8_t* p;
     int       status = -1;
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+
+    if (!h->use_smp) {
+        return ME_UNSUPPORTED_ACCESS_TYPE;
+    }
 
     /* Set the MKey. */
     set_mkey_for_smp_mad(h);
@@ -1967,6 +1975,10 @@ int mib_semaphore_lock_smp(mfile* mf, u_int8_t* data, sem_lock_method_t method)
     u_int8_t* smp_result;
     int       status = -1;
     ibvs_mad* vs_mad = (ibvs_mad*)(mf->ctx);
+
+    if (!vs_mad->use_smp) {
+        return ME_UNSUPPORTED_ACCESS_TYPE;
+    }
 
     /* Setting MKey for this attribute caused MAD failures */
     /* and was disabled. */
