@@ -611,9 +611,28 @@ static int _set_addr_space(mfile* mf, u_int16_t space)
     READ4_PCI(mf, &val, mf->vsec_addr + PCI_CTRL_OFFSET, "read domain", return -1);
     val = MERGE(val, space, PCI_SPACE_BIT_OFFS, PCI_SPACE_BIT_LEN);
     WRITE4_PCI(mf, val, mf->vsec_addr + PCI_CTRL_OFFSET, "write domain", return -1);
+
+    /* Check if we succedded to write the space (i.e. that its MSB is not ignored by FW) */
+    u_int32_t read_val = 0;
+    READ4_PCI(mf, &read_val, mf->vsec_addr + PCI_CTRL_OFFSET, "read status", return -1);
+
+    // Extract only the first 16 bits, as we need to check what's written in "space"
+    unsigned int mask = 0xFFFF;
+    unsigned int expected_value = val & mask;
+    unsigned int actual_value = read_val & mask;
+
+    /* Check if the space written is indeed the space we attempted to write */
+    if (actual_value != expected_value)
+    {
+        // printf("actual_space_value != expected_space_value. expected_space_value: 0x%x actual_space_value: 0x%x. Meaning space: 0x%x is not supported.\n",
+        //   expected_value,
+        //   actual_value,
+        //   expected_value);
+        return ME_PCI_SPACE_NOT_SUPPORTED;
+    }
+
     // read status and make sure space is supported
-    READ4_PCI(mf, &val, mf->vsec_addr + PCI_CTRL_OFFSET, "read status", return -1);
-    if (EXTRACT(val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0) // Check if the address space is supported by FW
+    if (EXTRACT(read_val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0) // Check if the address space is supported by FW
     {
         return -1;
     }
