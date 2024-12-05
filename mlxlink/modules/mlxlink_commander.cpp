@@ -683,9 +683,9 @@ void MlxlinkCommander::labelToQtm3LocalPort()
                 throw MlxRegException("Invalid split number!");
             }
 
-            if ((cageIn == getFieldValue("label_port")) &&
-                ((ipilStat == 0) || (ipilIn == getFieldValue("ipil_num"))) &&
-                ((splitStat == 0) || (splitIn == getFieldValue("split_num") - 1))) {
+            if (cageIn == getFieldValue("label_port") && (ipilStat == 0 || ipilIn == getFieldValue("ipil_num")) &&
+                (splitStat == 0 || (splitIn - 1) == getFieldValue("split_num")))
+            {
                 foundedLocalPort = localPort;
                 break;
             }

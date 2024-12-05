@@ -1346,8 +1346,8 @@ void MlxlinkAmBerCollector::pushModuleDpPerLane(vector < AmberField >& fields, c
 {
     string dpStateStr = "N/A";
     string fieldName = str;
-    string openSquareBracket = suffix == "" ? "[" : "";
-    string closeSquareBracket = suffix == "" ? "]" : "";
+    string openSquareBracket = "[";
+    string closeSquareBracket = "]";
 
     fieldName = toLowerCase(fieldName);
 
