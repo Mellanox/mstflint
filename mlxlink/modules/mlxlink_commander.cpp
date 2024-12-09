@@ -2245,7 +2245,7 @@ void MlxlinkCommander::startSlrgPciScan(u_int32_t numOfLanesToUse)
     // Start EOM measurements per lane
     for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
     {
-        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, SLRG_EOM_COMPOSITE);
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurment=%d", lane, SLRG_EOM_COMPOSITE);
     }
     /* For each lane, wait until process finish */
     for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++) {
@@ -2281,7 +2281,7 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
     for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++) {
         status = 0;
 
-        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurment=%d", lane, fomMeasurement);
 
         status = getFieldValue("status");
         initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom") : "N/A"));
@@ -2331,7 +2331,7 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
     {
         status = 0;
 
-        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurment=%d", lane, fomMeasurement);
 
         status = getFieldValue("status");
         initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom", (u_int32_t)16) : "N/A"));
