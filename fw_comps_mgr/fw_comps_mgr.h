@@ -261,6 +261,7 @@ typedef enum
     FWCOMPS_FAIL_TO_LOCK_FLASH_SEMAPHORE,
     FWCOMPS_VERIFY_FAILED,
     FWCOMPS_DEVICE_NOT_PRESENT,
+    FWCOMPS_COMP_BLOCKED,
 
     // MCC Return codes
     FWCOMPS_MCC_ERR_CODES = 0x100,
@@ -574,6 +575,7 @@ private:
     bool isDMAAccess();
     bool fallbackToRegisterAccess();
     bool IsDevicePresent(FwComponent::comps_ids_t compType);
+    bool IsCfgComponentType(FwComponent::comps_ids_t type);
 
     std::vector<comp_query_st> _compsQueryMap;
     bool _fwSupport;
@@ -609,5 +611,6 @@ private:
 #ifndef UEFI_BUILD
     trm_ctx _trm;
 #endif
+    u_int8_t _secureHostState;
 };
 #endif /* USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_ */

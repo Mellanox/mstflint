@@ -1343,10 +1343,36 @@ bool FwCompsMgr::queryComponentStatus(u_int32_t componentIndex, comp_status_st* 
     return true;
 }
 
+bool FwCompsMgr::IsCfgComponentType(FwComponent::comps_ids_t type)
+{
+    bool res = false;
+    switch (type)
+    {
+        case FwComponent::COMPID_USER_NVCONFIG:
+        case FwComponent::COMPID_OEM_NVCONFIG:
+        case FwComponent::COMPID_MLNX_NVCONFIG:
+        case FwComponent::COMPID_CS_TOKEN:
+        case FwComponent::COMPID_DBG_TOKEN:
+        case FwComponent::COMPID_RMCS_TOKEN:
+        case FwComponent::COMPID_RMDT_TOKEN:
+        case FwComponent::COMPID_CRCS_TOKEN:
+        case FwComponent::COMPID_CRDT_TOKEN:
+        {
+            res = true;
+            break;
+        }
+        default:
+            break;
+    }
+
+    return res;
+}
+
 bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCallBackAdvSt* progressFuncAdv)
 {
     unsigned i = 0;
-
+    const u_int8_t LOCK_FW_UPDATE = 0x2;
+    const u_int8_t LOCK_HOST_CFG = 0x3;
     if (!RefreshComponentsStatus()) {
         return false;
     }
@@ -1360,7 +1386,19 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
     }
     if (_downloadTransferNeeded == true) {
         for (i = 0; i < comps.size(); i++) {
-            int component = comps[i].getType();
+            FwComponent::comps_ids_t component = comps[i].getType();
+            if (_secureHostState == LOCK_FW_UPDATE && component == FwComponent::COMPID_BOOT_IMG)
+            {
+                _lastError = FWCOMPS_COMP_BLOCKED;
+                DPRINTF(("MCC flow for component %d is blocked!\n", component));
+                return false;
+            }
+            if (_secureHostState == LOCK_HOST_CFG && IsCfgComponentType(component))
+            {
+                _lastError = FWCOMPS_COMP_BLOCKED;
+                DPRINTF(("MCC flow for component %d is blocked!\n", component));
+                return false;
+            }
             _currCompQuery = &(_compsQueryMap[component]);
             if (!_currCompQuery->valid) {
                 _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
@@ -1540,8 +1578,8 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 u_int32_t FwCompsMgr::getFwSupport()
 {
     u_int32_t devid = 0;
-
     _isDmaSupported = false;
+    _secureHostState = 0x0;
 #ifndef UEFI_BUILD
     if (getenv("FW_CTRL") != NULL) {
         return 1;
@@ -1600,20 +1638,20 @@ u_int32_t FwCompsMgr::getFwSupport()
         return 0;
     }
     _mircCaps = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 3], 2, 1);
-    int mode = 0;
+    
     struct tools_open_mlock mlock;
     memset(&mlock, 0, sizeof(mlock));
     rc = reg_access_secure_host(_mf, REG_ACCESS_METHOD_GET, &mlock);
     if (rc == ME_OK)
     {
-        mode = mlock.operation;
+        _secureHostState = mlock.operation;
     }
 
     DPRINTF((
       "getFwSupport _mircCaps = %d mcqsCap = %d mcqiCap = %d mccCap = %d mcdaCap = %d mqisCap = %d mcddCap = %d mgirCap = %d secure_host = %d\n",
-      _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, mode));
-
-    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && mode == 0)
+      _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, _secureHostState));
+    const int LOCKED = 0x1;
+    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && _secureHostState != LOCKED)
     {
         return 1;
     }
@@ -1980,6 +2018,9 @@ unsigned char* FwCompsMgr::getLastErrMsg()
 
     case FWCOMPS_FAIL_TO_CREATE_TRM_CONTEXT:
         return (unsigned char*)"Failed to create TRM context";
+
+    case FWCOMPS_COMP_BLOCKED:
+            return (unsigned char*)"Component is blocked to update";
 
     case FWCOMPS_REG_ACCESS_BAD_STATUS_ERR:
     case FWCOMPS_REG_ACCESS_BAD_METHOD:
