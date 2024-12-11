@@ -3169,7 +3169,11 @@ int return_by_reg_status(int reg_status)
 
 int supports_reg_access_smp(mfile* mf)
 {
+#ifndef NO_INBAND
     return mib_supports_reg_access_smp(mf) && (supports_icmd(mf) || supports_tools_cmdif_reg(mf));
+#endif
+    (void)mf;
+    return 0;
 }
 
 
