@@ -3212,7 +3212,8 @@ int maccess_reg_ul(mfile              * mf,
     }
 #endif
 
-    if (mf->tp == MST_FWCTL_CONTROL_DRIVER) {
+    if (mf->tp == MST_FWCTL_CONTROL_DRIVER)
+    {
         int method = (reg_method == MACCESS_REG_METHOD_GET) ? FWCTL_METHOD_READ : FWCTL_METHOD_WRITE;
         rc = fwctl_control_access_register(mf->fd, reg_data,
                                            reg_size, reg_id,
@@ -3227,66 +3228,78 @@ int maccess_reg_ul(mfile              * mf,
         return rc;
     }
 
-    if (reg_size <= INBAND_MAX_REG_SIZE) {
-        if (supports_reg_access_smp(mf)) {
-            rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-            /* support PCI space */
-            if (return_by_reg_status(*reg_status) == ME_REG_ACCESS_REG_NOT_SUPP) {
-                if (VSEC_PXIR_SUPPORT(mf)) { /* If supported - attempt to */
+    if (mf->tp != MST_IB) 
+    { // Non-IB connection
+        rc = mreg_send_raw(mf, reg_id, reg_method, (u_int32_t*)reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
+        // support PCI space
+        if (return_by_reg_status(*reg_status) == ME_REG_ACCESS_REG_NOT_SUPP)
+        {
+            if (VSEC_PXIR_SUPPORT(mf)) { /* If supported - attempt to */
                     /* send the register on PCI VSC */
                     /* space */
                     swap_pci_address_space(mf);
-                    rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg,
-                                       reg_status);
-                    DBG_PRINTF(
-                        "Entered PCI VSC space support flow. Second attempt to run mreg_send_raw with VSC address space: %d returned with rc: %d. Restoring address space back to CORE's address space\n",
-                        mf->address_space,
-                        rc);
-                }
+                rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg,
+                                    reg_status);
+                DBG_PRINTF(
+                    "Entered PCI VSC space support flow. Second attempt to run mreg_send_raw with VSC address space: %d returned with rc: %d. Restoring address space back to CORE's address space\n",
+                    mf->address_space, rc);
             }
         }
-        if ((rc == ME_OK) && (*reg_status == 0)) {
-            DBG_PRINTF("AccessRegister SMP Sent Successfully!\n");
-            return ME_OK;
-        } else {
-            DBG_PRINTF("AccessRegister Class SMP Failed!\n");
-            DBG_PRINTF("Mad Status: 0x%08x\n", rc);
-            DBG_PRINTF("Register Status: 0x%08x\n", *reg_status);
+    }
+    else 
+    { // IB connection:
+        if (reg_size <= INBAND_MAX_REG_SIZE)
+        {
+            if (supports_reg_access_smp(mf))
+            {
+                rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
+            }
+            if ((rc == ME_OK) && (*reg_status == 0))
+            {
+                DBG_PRINTF("AccessRegister SMP Sent Successfully!\n");
+                return ME_OK;
+            } 
+            else
+            {
+                DBG_PRINTF("AccessRegister Class SMP Failed!\n");
+                DBG_PRINTF("Mad Status: 0x%08x\n", rc);
+                DBG_PRINTF("Register Status: 0x%08x\n", *reg_status);
+                class_to_use = MAD_CLASS_A_REG_ACCESS;
+            }
+        }
+
+        if ((reg_size <= INBAND_MAX_REG_SIZE_CLS_A) && (supports_reg_access_cls_a_ul(mf, reg_method))) {
             class_to_use = MAD_CLASS_A_REG_ACCESS;
+            rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
+            if ((rc == ME_OK) && (*reg_status == 0)) {
+                DBG_PRINTF("AccessRegister Class 0xA Sent Successfully!\n");
+                return ME_OK;
+            } else {
+                DBG_PRINTF("AccessRegister Class 0xA Failed!\n");
+                DBG_PRINTF("Mad Status: 0x%08x\n", rc);
+                DBG_PRINTF("Register Status: 0x%08x\n", *reg_status);
+                class_to_use = MAD_CLASS_REG_ACCESS;
+            }
         }
-    }
 
-    if ((reg_size <= INBAND_MAX_REG_SIZE_CLS_A) && (supports_reg_access_cls_a_ul(mf, reg_method))) {
-        class_to_use = MAD_CLASS_A_REG_ACCESS;
-        rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-        if ((rc == ME_OK) && (*reg_status == 0)) {
-            DBG_PRINTF("AccessRegister Class 0xA Sent Successfully!\n");
-            return ME_OK;
-        } else {
-            DBG_PRINTF("AccessRegister Class 0xA Failed!\n");
+        if (supports_reg_access_gmp_ul(mf, reg_method)) {
+            rc = mib_send_gmp_access_reg_mad_ul(mf, (u_int32_t*)reg_data, reg_size, reg_id, reg_method, reg_status);
+            if ((rc == ME_OK) && (*reg_status == 0)) {
+                DBG_PRINTF("AccessRegisterGMP Sent Successfully!\n");
+                return ME_OK;
+            }
+            DBG_PRINTF("AccessRegisterGMP Failed!\n");
             DBG_PRINTF("Mad Status: 0x%08x\n", rc);
             DBG_PRINTF("Register Status: 0x%08x\n", *reg_status);
+        }
+
+        /* Fallback - Attempting SMP as last resort. */
+        if (supports_reg_access_smp(mf)) {
             class_to_use = MAD_CLASS_REG_ACCESS;
+            rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
+        } else {
+            return ME_REG_ACCESS_NOT_SUPPORTED;
         }
-    }
-
-    if (supports_reg_access_gmp_ul(mf, reg_method)) {
-        rc = mib_send_gmp_access_reg_mad_ul(mf, (u_int32_t*)reg_data, reg_size, reg_id, reg_method, reg_status);
-        if ((rc == ME_OK) && (*reg_status == 0)) {
-            ("AccessRegisterGMP Sent Successfully!\n");
-            return ME_OK;
-        }
-        DBG_PRINTF("AccessRegisterGMP Failed!\n");
-        DBG_PRINTF("Mad Status: 0x%08x\n", rc);
-        DBG_PRINTF("Register Status: 0x%08x\n", *reg_status);
-    }
-
-    /* Fallback - Attempting SMP as last resort. */
-    if (supports_reg_access_smp(mf)) {
-        class_to_use = MAD_CLASS_REG_ACCESS;
-        rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-    } else {
-        return ME_REG_ACCESS_NOT_SUPPORTED;
     }
 
     if (rc) {
