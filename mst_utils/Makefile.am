@@ -33,11 +33,11 @@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_builddir)/common -I$(top_srcdir)/dev_mgt $(COMPILER_FPIC)
 
 bin_PROGRAMS = \
-    mdevices_info
+    mstdevices_info
 
-mdevices_info_SOURCES = mdevices_info.c
-mdevices_info_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+mstdevices_info_SOURCES = mdevices_info.c
+mstdevices_info_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
                			         $(top_builddir)/dev_mgt/libdev_mgt.la \
  	                             $(top_builddir)/reg_access/libreg_access.la
-mdevices_info_LDADD = $(mdevices_info_DEPENDENCIES) ${LDL}
-mdevices_info_LDFLAGS = -static
+mstdevices_info_LDADD = $(mstdevices_info_DEPENDENCIES) ${LDL}
+mstdevices_info_LDFLAGS = -static
