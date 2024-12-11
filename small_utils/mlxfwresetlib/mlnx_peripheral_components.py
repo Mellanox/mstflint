@@ -41,6 +41,7 @@ import platform
 import re
 from .pci_device import PciDevice
 from .mlxfwreset_utils import cmdExec
+import mtcr
 
 
 class MlnxPeripheralComponents(object):
@@ -110,7 +111,10 @@ class MlnxPeripheralComponents(object):
                         RuntimeError("Unsupported OS")
 
                     pci_device = PciDevice(aliases, domain, bus, dev, fn)
-                    self.pci_devices.append(pci_device)
+                    MstDev = mtcr.MstDevice(pci_device.get_alias())
+                    if not MstDev.isGPUDevice():
+                        self.pci_devices.append(pci_device)
+                    MstDev.close()
             except BaseException:
                 raise RuntimeError("Failed to get device PCI Address")  # Why it's required??? You don't do anything in the excpetion
 
