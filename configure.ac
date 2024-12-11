@@ -557,6 +557,7 @@ AC_OUTPUT( \
     resourcetools/resourcedump_lib/src/filters/Makefile \
     resourcetools/resourcedump_lib/src/sdk/Makefile \
     small_utils/Makefile \
+    mst_utils/Makefile \
     small_utils/mlxfwresetlib/Makefile \
     tools_layouts/Makefile \
     tools_res_mgmt/Makefile \
