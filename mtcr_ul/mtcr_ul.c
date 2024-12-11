@@ -107,7 +107,7 @@ dev_info* mdevices_info(int mask, int* len)
             free(dev_info_new);
             return NULL;
         }
-        if (is_pcie_switch_device(mf))
+        if (is_pcie_switch_device(mf) && !mf->vsec_supp)
         {
             mclose(mf);
             continue;
