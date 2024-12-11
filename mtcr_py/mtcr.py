@@ -95,6 +95,7 @@ if CMTCR:
             self.mHcaResetFunc = CMTCR.mhca_reset
             self.open()
             self.is_remote_dev = CMTCR.is_remote_dev
+            self.is_gpu_device = CMTCR.is_gpu_device
 
         ##########################
         def close(self):
@@ -191,8 +192,13 @@ if CMTCR:
             CMTCR.get_pci_dev_rdma(self.mf, dev_rdma)
             rdma_str = dev_rdma.value.decode("utf-8")
             return rdma_str
+
         def is_remote_device(self):
             return self.is_remote_dev(self.mf)
+        
+        def isGPUDevice(self):
+            dev_id = self.read_device_id()
+            return self.is_gpu_device(dev_id)
         ##########################
 
 else:
