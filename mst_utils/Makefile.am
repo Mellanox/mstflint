@@ -28,14 +28,16 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-SUBDIRS = common mft_utils ext_libs $(TOOLS_CRYPTO) tools_layouts ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) reg_access cmdif $(XZ_UTILS_DIR) dev_mgt tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib mlxconfig cmdparser $(DPA) mlxfwops $(FW_MGR_TOOLS) flint small_utils mst_utils mstdump ${ADABE_TOOLS} tracers resourcetools
+# Makefile.am -- Process this file with automake to produce Makefile.in
 
-DIST_SUBDIRS = tracers
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_builddir)/common -I$(top_srcdir)/dev_mgt $(COMPILER_FPIC)
 
-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/mstfwtrace.1 man/mstlink.1 man/mstcongestion.1 man/mstfwmanager.1 man/mstfwreset.1 man/mstresourcedump.1
+bin_PROGRAMS = \
+    mdevices_info
 
-EXTRA_DIST = \
-	mstflint.spec \
-	tools_git_sha \
-	debian \
-	$(man_MANS)
+mdevices_info_SOURCES = mdevices_info.c
+mdevices_info_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+               			         $(top_builddir)/dev_mgt/libdev_mgt.la \
+ 	                             $(top_builddir)/reg_access/libreg_access.la
+mdevices_info_LDADD = $(mdevices_info_DEPENDENCIES) ${LDL}
+mdevices_info_LDFLAGS = -static
