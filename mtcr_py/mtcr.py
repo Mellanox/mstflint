@@ -193,6 +193,7 @@ if CMTCR:
             CMTCR.get_pci_dev_rdma(self.mf, dev_rdma)
             rdma_str = dev_rdma.value.decode("utf-8")
             return rdma_str
+
         def is_remote_device(self):
             return self.is_remote_dev(self.mf)
         
