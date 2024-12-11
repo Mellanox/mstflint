@@ -92,7 +92,42 @@ int mdevices(char* buf, int len, int mask)
 
 dev_info* mdevices_info(int mask, int* len)
 {
-    return mdevices_info_ul(mask, len);
+    int counter, new_length = 0;
+
+    dev_info* dev_info_all = mdevices_info_ul(mask, len);
+    dev_info* dev_info_new = (dev_info*)malloc(sizeof(dev_info) * *len);
+
+    // Remove devices without VSEC supported.
+    for (counter = 0; counter < *len; counter++)
+    {
+        mfile* mf = mopen(dev_info_all[counter].dev_name);
+        if (!mf)
+        {
+            *len = 0;
+            free(dev_info_new);
+            return NULL;
+        }
+        if (is_pcie_switch_device(mf))
+        {
+            mclose(mf);
+            continue;
+        }
+
+        memcpy(&dev_info_new[new_length], &dev_info_all[counter], sizeof(dev_info));
+        new_length++;
+        mclose(mf);
+    }
+
+    for (counter = 0; counter < new_length; counter++)
+    {
+        memcpy(&dev_info_all[counter], &dev_info_new[counter], sizeof(dev_info));
+    }
+
+    *len = new_length;
+
+    free(dev_info_new);
+    return dev_info_all;
+
 }
 
 dev_info* mdevices_info_v(int mask, int* len, int verbosity)
