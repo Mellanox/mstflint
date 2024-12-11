@@ -201,6 +201,8 @@ extern "C"
 
     int is_zombiefish_device(mfile* mf);
 
+    int is_pcie_switch_device(mfile* mf);
+
 #ifdef __cplusplus
 }
 #endif
