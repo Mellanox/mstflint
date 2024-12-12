@@ -362,7 +362,7 @@ string MlxlinkAmBerCollector::getNodeGUID()
 {
     string strGuid;
 
-    if (_isHca) {
+    if (_isHca || _devID == DeviceGB100 || _devID == DeviceGR100) {
         resetLocalParser(ACCESS_REG_PGUID);
         updateField("local_port", _localPort);
         sendRegister(ACCESS_REG_PGUID, MACCESS_REG_METHOD_GET);
@@ -440,7 +440,7 @@ vector < AmberField > MlxlinkAmBerCollector::getIndexesInfo()
     fields.push_back(AmberField("pcie_index", to_string(_pcieIndex), _isPortPCIE));
     fields.push_back(AmberField("node", to_string(_node), _isPortPCIE));
 
-    if (_productTechnology == PRODUCT_5NM) {
+    if (_productTechnology == PRODUCT_5NM && _devID != DeviceGB100 && _devID != DeviceGR100) {
         resetLocalParser(ACCESS_REG_PPCR);
         updateField("local_port", _localPort);
         sendRegister(ACCESS_REG_PPCR, MACCESS_REG_METHOD_GET);
@@ -457,7 +457,7 @@ vector < AmberField > MlxlinkAmBerCollector::getIndexesInfo()
         sendRegister(ACCESS_REG_MGIR, MACCESS_REG_METHOD_GET);
         fields.push_back(AmberField("IC_GA", getRawFieldValueStr("hw_info__ga"), _isPortIB));
 
-        if (dm_dev_is_switch((dm_dev_id_t)_devID)) {
+        if (dm_dev_is_switch((dm_dev_id_t)_devID) && _devID != DeviceGB100 && _devID != DeviceGR100) {
             resetLocalParser(ACCESS_REG_PLLP);
             updateField("local_port", _localPort);
             sendRegister(ACCESS_REG_PLLP, MACCESS_REG_METHOD_GET);
@@ -504,9 +504,12 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
 
         fields.push_back(AmberField("Device_Description", _mstDevName.c_str()));
 
-        resetLocalParser(ACCESS_REG_MSGI);
-        sendRegister(ACCESS_REG_MSGI, MACCESS_REG_METHOD_GET);
-        fields.push_back(AmberField("Device_Part_Number", getAscii("part_number", 20)));
+        if (_devID != DeviceGB100 && _devID != DeviceGR100)
+        {
+            resetLocalParser(ACCESS_REG_MSGI);
+            sendRegister(ACCESS_REG_MSGI, MACCESS_REG_METHOD_GET);
+            fields.push_back(AmberField("Device_Part_Number", getAscii("part_number", 20)));
+        }
 
         resetLocalParser(ACCESS_REG_MGIR);
         sendRegister(ACCESS_REG_MGIR, MACCESS_REG_METHOD_GET);
@@ -516,6 +519,8 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
         string tech = _mlxlinkMaps->_tech[getFieldValue("technology")];
         fields.push_back(AmberField("Device_FW_Version", fwVersion));
 
+        if (_devID != DeviceGB100 && _devID != DeviceGR100)
+        {
         resetLocalParser(ACCESS_REG_MDIR);
         sendRegister(ACCESS_REG_MDIR, MACCESS_REG_METHOD_GET);
         fields.push_back(AmberField("Device_ID", getRawFieldValueStr("device_id")));
@@ -524,6 +529,8 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
         resetLocalParser(ACCESS_REG_MVCAP);
         sendRegister(ACCESS_REG_MVCAP, MACCESS_REG_METHOD_GET);
         _isValidSensorMvcap = getFieldValue("sensor_map_lo") & 0x1;
+        }
+
         if (_isValidSensorMvcap) {
             resetLocalParser(ACCESS_REG_MVCR);
             sendRegister(ACCESS_REG_MVCR, MACCESS_REG_METHOD_GET);
@@ -548,13 +555,16 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
         }
         fields.push_back(AmberField("Chip_Temp", temp));
 
-        resetLocalParser(ACCESS_REG_MSGI);
-        sendRegister(ACCESS_REG_MSGI, MACCESS_REG_METHOD_GET);
-        fields.push_back(AmberField("Device_SN", getAscii("serial_number", 24)));
+        if (_devID != DeviceGB100 && _devID != DeviceGR100)
+        {
+            resetLocalParser(ACCESS_REG_MSGI);
+            sendRegister(ACCESS_REG_MSGI, MACCESS_REG_METHOD_GET);
+            fields.push_back(AmberField("Device_SN", getAscii("serial_number", 24)));
+        }
 
         fields.push_back(AmberField("Temp_sensor_name", sensNameTemp));
 
-        if (_productTechnology == PRODUCT_5NM) {
+        if (_productTechnology == PRODUCT_5NM && _devID != DeviceGB100 && _devID != DeviceGR100) {
             resetLocalParser(ACCESS_REG_PPCR);
             updateField("local_port", _localPort);
             sendRegister(ACCESS_REG_PPCR, MACCESS_REG_METHOD_GET);
