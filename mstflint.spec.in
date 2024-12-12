@@ -138,7 +138,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstfwtrace
 %{_bindir}/mstresourcedump
 %{_bindir}/mstresourceparse
-%{_bindir}/mdevices_info
+%{_bindir}/mstdevices_info
 %if %{enablefwmgr}
  %{_bindir}/mstfwmanager
  %{_bindir}/mstarchive
