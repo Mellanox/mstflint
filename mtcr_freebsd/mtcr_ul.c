@@ -3259,7 +3259,9 @@ int is_zombiefish_device(mfile* mf)
     {
         return 0;
     }
-    if (mf->device_hw_id != DeviceConnectX8_HwId && mf->device_hw_id != DeviceQuantum3_HwId)
+    if (mf->hw_dev_id != DeviceConnectX8_HwId && mf->hw_dev_id != DeviceQuantum3_HwId &&
+        mf->hw_dev_id != DeviceConnectX9_HwId && mf->hw_dev_id != DeviceQuantum4_HwId &&
+        mf->hw_dev_id != DeviceConnectX7_HwId && mf->hw_dev_id != DeviceBlueField3_HwId)
     {
         return 0;
     }
