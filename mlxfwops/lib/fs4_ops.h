@@ -214,18 +214,6 @@ protected:
     virtual bool GetDtocAddress(u_int32_t& dTocAddress);
     bool ParseImageInfoFromEncryptedImage();
 
-private:
-#define PRE_CRC_OUTPUT "    "
-#define FS4_DEFAULT_SECTOR_SIZE 0x1000
-#define DTOC_ASCII 0x44544f43
-
-    enum CRCTYPE
-    {
-        INITOCENTRY = 0,
-        NOCRC = 1,
-        INSECTION = 2
-    };
-
     class HTOC
     {
     public:
@@ -239,12 +227,24 @@ private:
         bool AddNewEntry(FBase* ioAccess, fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
         u_int8_t GetHtocMaxNumOfEntries() { return htoc_max_num_of_entries; };
 
-    private:
         u_int32_t static const HASHES_TABLE__HEADER_SIZE = 12;
         u_int32_t static const HASHES_TABLE__TAIL_SIZE = 8;
         u_int32_t static const HTOC__HEADER_SIZE = 16;
         u_int32_t static const HTOC__ENTRY_SIZE = 8;
     };
+
+private:
+#define PRE_CRC_OUTPUT "    "
+#define FS4_DEFAULT_SECTOR_SIZE 0x1000
+#define DTOC_ASCII 0x44544f43
+
+    enum CRCTYPE
+    {
+        INITOCENTRY = 0,
+        NOCRC = 1,
+        INSECTION = 2
+    };
+
 
 #ifndef UEFI_BUILD
     bool FwSignSection(const vector<u_int8_t>& section, const string privPemFileStr, vector<u_int8_t>& encSha);
