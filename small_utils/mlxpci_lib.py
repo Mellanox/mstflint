@@ -182,9 +182,12 @@ class PCIDeviceBase(object):
         # Set skip_offset_list based on the skip_recovery_vsec flag
         excluded_offsets = MELLANOX_PCI_SKIP_LIST if skip_recovery_vsec else None
 
+        # Set skip_offset_list based on the skip_recovery_vsec flag
+        excluded_offsets = MELLANOX_PCI_SKIP_LIST if skip_recovery_vsec else None
+
         # Read and save PCI configuration space offset from 0x0-0xfff
         # Reading the pci conf space one time to have better performance
-        cached_data = self.read(offset=0x0, size=MAX_PCI_OFFSET, skip_offset_list=MELLANOX_PCI_SKIP_LIST)
+        cached_data = self.read(offset=0x0, size=MAX_PCI_OFFSET, skip_offset_list=excluded_offsets)
         # write pci header 0x0-0x3f
         self.logger.debug("Writing PCI header [0x0-0x3f] ...")
         self.write(0x10, 24, self._pci_conf_space["pci_header_bars"])  # Restore the BAR
