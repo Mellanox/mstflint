@@ -641,7 +641,8 @@ enum PCIE_LINK_SPEED
     GEN2 = 2,
     GEN3 = 4,
     GEN4 = 16,
-    GEN5 = 32
+    GEN5 = 32,
+    GEN6 = 64
 };
 
 enum POWER_CLASS
