@@ -5801,7 +5801,7 @@ Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr, u_int
     //* calculate num_of_entries from those equations
     //* htoc_size = HTOC__HEADER_SIZE + HTOC__ENTRY_SIZE * num_of_entries
     //* hashes_table_size = HASHES_TABLE__HEADER_SIZE + htoc_size + num_of_entries * header.hash_size +
-    // HASHES_TABLE__TAIL_SIZE
+    //* HASHES_TABLE__TAIL_SIZE
     htoc_max_num_of_entries = (size - HTOC__HEADER_SIZE - HASHES_TABLE__HEADER_SIZE - HASHES_TABLE__TAIL_SIZE) /
                               (header.hash_size + HTOC__ENTRY_SIZE);
 
