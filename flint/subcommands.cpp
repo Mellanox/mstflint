@@ -4130,7 +4130,8 @@ bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
     else if (fwInfo.fs3_info.fs3_uids_info.guid_format == MULTI_ASIC_GUIDS)
     {
         printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.multi_asic_guids.image_layout_uids.base_guid,
-                            fwInfo.fs3_info.fs3_uids_info.multi_asic_guids.image_layout_uids.base_guid, "GUID", false);
+                            fwInfo.fs3_info.orig_fs3_uids_info.multi_asic_guids.image_layout_uids.base_guid, "GUID",
+                            false);
         printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.multi_asic_guids.image_layout_uids.base_mac,
                             fwInfo.fs3_info.orig_fs3_uids_info.multi_asic_guids.image_layout_uids.base_mac, "MAC",
                             false);
