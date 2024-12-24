@@ -33,6 +33,7 @@
 #define FS5_OPS_H
 
 #include "fs4_ops.h"
+#include "fs5_image_layout_layouts.h"
 
 class Fs5Operations : public Fs4Operations
 {
@@ -48,6 +49,7 @@ public:
                  bool ignoreDToc = false,
                  bool verbose = false) override;
     bool GetImageSize(u_int32_t* image_size) override;
+    bool ReadBchComponent(u_int32_t headerAddr, fs5_image_layout_boot_component_header& bchComponent);
     bool GetImageInfo(u_int8_t* buff) override;
     bool FwExtract4MBImage(vector<u_int8_t>& img,
                            bool maskMagicPatternAndDevToc,

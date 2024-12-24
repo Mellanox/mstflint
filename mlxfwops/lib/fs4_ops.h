@@ -234,10 +234,16 @@ private:
         u_int32_t htoc_start_addr;
         u_int8_t htoc_max_num_of_entries;
 
-        HTOC(vector<u_int8_t> img, u_int32_t hashes_table_start_addr);
+        HTOC(vector<u_int8_t> img, u_int32_t hashes_table_start_addr, u_int32_t size);
         bool GetEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
         bool AddNewEntry(FBase* ioAccess, fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
         u_int8_t GetHtocMaxNumOfEntries() { return htoc_max_num_of_entries; };
+
+    private:
+        u_int32_t static const HASHES_TABLE__HEADER_SIZE = 12;
+        u_int32_t static const HASHES_TABLE__TAIL_SIZE = 8;
+        u_int32_t static const HTOC__HEADER_SIZE = 16;
+        u_int32_t static const HTOC__ENTRY_SIZE = 8;
     };
 
 #ifndef UEFI_BUILD

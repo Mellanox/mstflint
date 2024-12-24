@@ -52,6 +52,7 @@
 #endif
 
 #include <signal.h>
+#include "mft_utils/crc16.h"
 #include "tools_version.h"
 
 #ifndef __WIN__
@@ -555,28 +556,6 @@ protected:
 private:
     char* _err;
     int _errCode;
-};
-
-////////////////////////////////////////////////////////////////////////
-//                                                                    //
-// ****************************************************************** //
-//                        CRC16 CALCULATION                           //
-// ****************************************************************** //
-//                                                                    //
-////////////////////////////////////////////////////////////////////////
-class Crc16
-{
-public:
-    Crc16(bool d = false) : _debug(d) { clear(); }
-    u_int16_t get() { return _crc; }
-    void clear() { _crc = 0xffff; }
-    void operator<<(u_int32_t val) { add(val); }
-    void add(u_int32_t val);
-    void finish();
-
-private:
-    u_int16_t _crc;
-    bool _debug;
 };
 
 class u_int32_ba
