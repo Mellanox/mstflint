@@ -1237,11 +1237,11 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
     return true;
 }
 
-bool FwCompsMgr::IsSecondaryHost(bool& isSecondary)
+bool FwCompsMgr::IsSecondaryHost(int moduleIndex, bool& isSecondary)
 {
     reg_access_switch_pmaos_reg_ext pmaos;
-
     memset(&pmaos, 0, sizeof(pmaos));
+    pmaos.module = moduleIndex;
     mft_signal_set_handling(1);
     reg_access_status_t rc = reg_access_pmaos(_mf, REG_ACCESS_METHOD_GET, &pmaos);
 

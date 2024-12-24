@@ -433,7 +433,7 @@ public:
     bool GetComponentInfo(FwComponent::comps_ids_t compType, u_int32_t deviceIndex, vector<u_int8_t>& data);
     void GenerateHandle();
     bool isMCDDSupported() { return _isDmaSupported; };
-    bool IsSecondaryHost(bool& isSecondary);
+    bool IsSecondaryHost(int moduleIndex, bool& isSecondary);
     bool runPGUID(reg_access_hca_pguid_reg_ext* guidsInfo,
                   u_int32_t local_port = 0,
                   u_int8_t pnat = 0,
