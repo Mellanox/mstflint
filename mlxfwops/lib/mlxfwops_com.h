@@ -533,6 +533,15 @@ typedef struct roms_info
     rom_info_t rom_info[MAX_ROMS_NUM];
 } roms_info_t;
 
+typedef enum
+{
+    BLANK = 0,
+    PRE_PROD_IPN = 1,
+    SECURE_IPN = 2,
+    PRE_PROD_OPN = 3,
+    SECURE_OPN = 4
+} device_sku;
+
 typedef struct fw_info_com
 {
     char psid[PSID_LEN + 1];
@@ -562,6 +571,7 @@ typedef struct fw_info_com
     u_int32_t burn_image_size; //! Be aware! This field is backward compatible starting from BB/CX-7
                                //! Use this field only for encrypted images
     u_int8_t dtoc_offset;
+    device_sku sku;
 } fw_info_com_t;
 
 typedef struct fw_info_ext

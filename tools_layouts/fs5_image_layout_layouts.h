@@ -82,6 +82,16 @@ struct fs5_image_layout_u8_digest {
 };
 
 /* Description -   */
+/* Size in bytes - 384 */
+struct fs5_image_layout_u8_stage1_signature {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.24 - 0x180.23 */
+	/* access: RW */
+	u_int8_t u8_dummy[384];
+};
+
+/* Description -   */
 /* Size in bytes - 1068 */
 struct fs5_image_layout_u8_stage1_res {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -180,6 +190,11 @@ struct fs5_image_layout_boot_component_header {
 	/* Description -  */
 	/* 0x4.0 - 0x40.31 */
 	struct fs5_image_layout_u8_digest u8_digest;
+/*---------------- DWORD[1600] (Offset 0x1900) ----------------*/
+	/* Description -  */
+	/* 0x1900.0 - 0x1a7c.31 */
+	/* access: RW */
+	struct fs5_image_layout_u8_stage1_signature u8_stage1_signature;
 /*---------------- DWORD[1705] (Offset 0x1aa4) ----------------*/
 	/* Description -  */
 	/* 0x1aa4.0 - 0x1ecc.31 */
@@ -315,6 +330,13 @@ void fs5_image_layout_u8_stage1_res_print(const struct fs5_image_layout_u8_stage
 unsigned int fs5_image_layout_u8_stage1_res_size(void);
 #define FS5_IMAGE_LAYOUT_U8_STAGE1_RES_SIZE    (0x42c)
 void fs5_image_layout_u8_stage1_res_dump(const struct fs5_image_layout_u8_stage1_res *ptr_struct, FILE *fd);
+/* u8_stage1_signature */
+void fs5_image_layout_u8_stage1_signature_pack(const struct fs5_image_layout_u8_stage1_signature *ptr_struct, u_int8_t *ptr_buff);
+void fs5_image_layout_u8_stage1_signature_unpack(struct fs5_image_layout_u8_stage1_signature *ptr_struct, const u_int8_t *ptr_buff);
+void fs5_image_layout_u8_stage1_signature_print(const struct fs5_image_layout_u8_stage1_signature *ptr_struct, FILE *fd, int indent_level);
+unsigned int fs5_image_layout_u8_stage1_signature_size(void);
+#define FS5_IMAGE_LAYOUT_U8_STAGE1_SIGNATURE_SIZE    (0x180)
+void fs5_image_layout_u8_stage1_signature_dump(const struct fs5_image_layout_u8_stage1_signature *ptr_struct, FILE *fd);
 /* boot_component_header */
 void fs5_image_layout_boot_component_header_pack(const struct fs5_image_layout_boot_component_header *ptr_struct, u_int8_t *ptr_buff);
 void fs5_image_layout_boot_component_header_unpack(struct fs5_image_layout_boot_component_header *ptr_struct, const u_int8_t *ptr_buff);

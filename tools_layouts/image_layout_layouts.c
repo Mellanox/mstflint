@@ -1694,6 +1694,8 @@ void image_layout_image_info_pack(const struct image_layout_image_info *ptr_stru
 	}
 	offset = 432;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->vsd_vendor_id);
+	offset = 424;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->psc_sku);
 	for (i = 0; i < 208; ++i) {
 		offset = adb2c_calc_array_field_address(472, 8, i, 8192, 1);
 		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->vsd[i]);
@@ -1792,6 +1794,8 @@ void image_layout_image_info_unpack(struct image_layout_image_info *ptr_struct, 
 		ptr_struct->psid[16] = '\0';
 	offset = 432;
 	ptr_struct->vsd_vendor_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 424;
+	ptr_struct->psc_sku = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	for (i = 0; i < 208; ++i) {
 		offset = adb2c_calc_array_field_address(472, 8, i, 8192, 1);
 		ptr_struct->vsd[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
@@ -1895,6 +1899,8 @@ void image_layout_image_info_print(const struct image_layout_image_info *ptr_str
 		fprintf(fd, "psid                 : \"%s\"\n", ptr_struct->psid);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "vsd_vendor_id        : " UH_FMT "\n", ptr_struct->vsd_vendor_id);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "psc_sku              : " UH_FMT "\n", ptr_struct->psc_sku);
 		fprintf(fd, "vsd                  : \"%s\"\n", ptr_struct->vsd);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "image_size:\n");
