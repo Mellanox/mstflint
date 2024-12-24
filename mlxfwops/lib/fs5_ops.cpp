@@ -32,6 +32,7 @@
 #include "fs5_ops.h"
 #include "calc_hw_crc.h"
 #include "fs5_image_layout_layouts.h"
+#include <algorithm>
 
 const u_int32_t Fs5Operations::BCH_SIZE_IN_BYTES = 0x2000;
 
@@ -390,6 +391,18 @@ bool Fs5Operations::NCoreQuery(fw_info_t* fwInfo)
     }
     TOCPUn(ncoreData.data(), BCH_SIZE_IN_BYTES / 4);
     fs5_image_layout_boot_component_header_unpack(&ncoreBCH, ncoreData.data());
+
+    // if there's a signature (at least one byte that's not 0x0 or 0xff), we assume that the whole image is signed
+    auto compareFunc = [](u_int8_t byte) { return byte != 0x0 && byte != 0xff; };
+    if (std::find_if(begin(ncoreBCH.u8_stage1_signature.u8_dummy), end(ncoreBCH.u8_stage1_signature.u8_dummy),
+                     compareFunc) != end(ncoreBCH.u8_stage1_signature.u8_dummy))
+    {
+        if (fwInfo->fw_info.sku == device_sku::PRE_PROD_IPN || fwInfo->fw_info.sku == device_sku::SECURE_IPN)
+        {
+            fwInfo->fs3_info.security_mode &= ~SMM_DEV_FW;
+            fwInfo->fs3_info.security_mode |= SMM_DEV_FW;
+        }
+    }
 
     string magicPattern(reinterpret_cast<const char*>(ncoreBCH.u8_header_magic), 4);
     if (magicPattern == "ADVN") // magic pattern is reversed to fit FW array parsing

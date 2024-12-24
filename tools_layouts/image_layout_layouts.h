@@ -748,6 +748,9 @@ struct image_layout_image_info {
 	/* Description -  */
 	/* 0x34.0 - 0x34.15 */
 	u_int16_t vsd_vendor_id;
+/* Description - psc flavour. It directs mlxburn which psc componenet to embed in the image ;0-blank;1-preprod ipn;2-secure ipn;3-preprod opn;4-secure opn. 0 for first section, 1 or 2 for second. 3 or 4 for third */
+	/* 0x34.16 - 0x34.23 */
+	u_int8_t psc_sku;
 /*---------------- DWORD[14] (Offset 0x38) ----------------*/
 	/* Description -  */
 	/* 0x38.24 - 0x108.23 */
