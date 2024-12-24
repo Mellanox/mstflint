@@ -269,6 +269,7 @@ void MlxlinkCommander::getProductTechnology()
                 {
                     _productTechnology = PRODUCT_28NM;
                 }
+                _userInput._pciSltpPort = i;
                 return;
             }
             catch (MlxRegException& exc)
@@ -586,9 +587,10 @@ int MlxlinkCommander::getLocalPortFromMPIR(DPN& dpn)
                               dpn.node);
     }
 
-    int localPort = -1;
+    int localPort = 0;
 
-    if (!_userInput._portSpecified && !((dpn.depth == 0) && (dpn.node == 0) && (dpn.pcieIndex == 0))) {
+    if (!_userInput._portSpecified )
+    {
         try
         {
             sendPrmReg(ACCESS_REG_MPIR, GET, "depth=%d,pcie_index=%d,node=%d", dpn.depth, dpn.pcieIndex, dpn.node);
@@ -598,10 +600,10 @@ int MlxlinkCommander::getLocalPortFromMPIR(DPN& dpn)
         catch(MlxRegException & exc)
         {
         }
-    } else if (_userInput._portSpecified) {
+    } 
+    else 
+    {
         localPort = _userInput._labelPort;
-    } else {
-        localPort = 0;
     }
 
     return localPort;
@@ -2607,7 +2609,15 @@ void MlxlinkCommander::showSltp()
         setPrintVal(_sltpInfoCmd, "Serdes TX parameters", sltpHeader, ANSI_COLOR_RESET, true, true, true);
 
         for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++) {
-            sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d,c_db=%d", lane, _userInput._db);
+            if (_userInput._pcie && _userInput._pciSltpPort != -1)
+            {
+                sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d,c_db=%d,local_port=%d", lane, _userInput._db,
+                           _userInput._pciSltpPort);
+            }
+            else
+            {
+                sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d,c_db=%d", lane, _userInput._db);
+            }
 
             switch (_productTechnology) {
             case PRODUCT_5NM:
@@ -2851,7 +2861,9 @@ void MlxlinkCommander::showPcie()
                     break;
                 }
             }
-        } else {
+        } else 
+        {
+            _localPort = getLocalPortFromMPIR(_dpn);
             showPcieState(_dpn);
         }
     }
@@ -4052,14 +4064,28 @@ void MlxlinkCommander::checkPplmCap()
 
 void MlxlinkCommander::getSltpAlevOut(u_int32_t lane)
 {
-    sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d", lane);
+    if (_userInput._pcie && _userInput._pciSltpPort != -1)
+    {
+        sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d,local_port=%d", lane, _userInput._pciSltpPort);
+    }
+    else
+    {
+        sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d", lane);
+    }
 
     _userInput._sltpParams[SLTP_HDR_OB_ALEV_OUT] = getFieldValue("ob_alev_out");
 }
 
 void MlxlinkCommander::getSltpRegAndLeva(u_int32_t lane)
 {
-    sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d", lane);
+    if (_userInput._pcie && _userInput._pciSltpPort != -1)
+    {
+        sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d,local_port=%d", lane, _userInput._pciSltpPort);
+    }
+    else
+    {
+        sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d", lane);
+    }
 
     _userInput._sltpParams[SLTP_EDR_OB_REG] = getFieldValue("ob_reg");
     _userInput._sltpParams[SLTP_EDR_OB_LEVA] = getFieldValue("ob_leva");
@@ -4067,7 +4093,14 @@ void MlxlinkCommander::getSltpRegAndLeva(u_int32_t lane)
 
 u_int32_t MlxlinkCommander::getLaneSpeed(u_int32_t lane)
 {
-    sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d", lane);
+    if (_userInput._pcie && _userInput._pciSltpPort != -1)
+    {
+        sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d,local_port=%d", lane, _userInput._pciSltpPort);
+    }
+    else
+    {
+        sendPrmReg(ACCESS_REG_SLTP, GET, "lane=%d", lane);
+    }
 
     return getFieldValue("lane_speed");
 }
@@ -4244,7 +4277,14 @@ string MlxlinkCommander::updateSltpXdrFields()
 
 string MlxlinkCommander::getSltpStatus()
 {
-    sendPrmReg(ACCESS_REG_SLTP, GET);
+    if (_userInput._pcie && _userInput._pciSltpPort != -1)
+    {
+        sendPrmReg(ACCESS_REG_SLTP, GET, "local_port=%d", _userInput._pciSltpPort);
+    }
+    else
+    {
+        sendPrmReg(ACCESS_REG_SLTP, GET);
+    }
 
     string    statusStr = "Invalid parameters";
     u_int32_t status = getFieldValue("ob_bad_stat");
