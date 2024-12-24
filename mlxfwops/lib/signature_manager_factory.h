@@ -87,7 +87,7 @@ public:
             return new RavenSwitchSignatureManager();
         }
         else if (deviceId == DeviceQuantum2 || deviceId == DeviceQuantum3 ||
-                 deviceId == DeviceSpectrum4)
+                 deviceId == DeviceSpectrum4 || deviceId == DeviceArcusE)
         {
             return new SecuredSwitchSignatureManager();
         }
