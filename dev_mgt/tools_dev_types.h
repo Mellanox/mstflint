@@ -104,7 +104,7 @@ extern "C"
         DeviceAbirGearBox,
         DeviceCableCMIS,
         DeviceCableCMISPaging,
-        DeviceBW00,    // Blackwell
+        DeviceGB100,    // Blackwell
         DeviceGB100,
         DeviceGR100,
         DeviceArcusPTC, // ArcusP Test Chip
@@ -146,7 +146,7 @@ extern "C"
         DeviceQuantum2_HwId = 0x257,
         DeviceQuantum3_HwId = 0x25b,
         DeviceQuantum4_HwId = 0x278,
-        DeviceBW00_HwId = 0x2900,
+        DeviceGB100_HwId = 0x2900,
         DeviceArdbeg_HwId = 0x6e,
         DeviceBaritone_HwId = 0x6b,
         DeviceMenhit_HwId = 0x72,
