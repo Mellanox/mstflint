@@ -3502,7 +3502,13 @@ bool Fs4Operations::UpdateHashInHashesTable(fs3_section_t section_type, vector<u
     const u_int32_t htoc_address = _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE;
     try
     {
-        HTOC htoc = HTOC(img, htoc_address);
+        u_int32_t htoc_size = 0;
+        if (!GetHashesTableSize(htoc_size))
+        {
+            return false;
+        }
+
+        HTOC htoc = HTOC(img, htoc_address, htoc_size);
 
         // TODO - move below logic to HTOC
         //* Get hash addr in hashes_table
@@ -5782,7 +5788,7 @@ Fs4Operations::TocArray::TocArray()
     memset(&tocHeader, 0, sizeof(tocHeader));
 }
 
-Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr)
+Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr, u_int32_t size)
 {
     memset(entries, 0, MAX_HTOC_ENTRIES_NUM * sizeof(image_layout_htoc_entry));
     this->htoc_start_addr = htoc_start_addr;
@@ -5792,18 +5798,12 @@ Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr)
     image_layout_htoc_header_unpack(&header, header_data.data());
     // image_layout_htoc_header_dump(&header, stdout);
 
-    if (header.version == 0)
-    {
-        htoc_max_num_of_entries = MAX_HTOC_ENTRIES_NUM;
-    }
-    else if (header.version == 1)
-    {
-        htoc_max_num_of_entries = MAX_HTOC_ENTRIES_NUM_VERSION_1;
-    }
-    else
-    {
-        throw logic_error("-E- Invalid HTOC version: " + to_string(header.version));
-    }
+    //* calculate num_of_entries from those equations
+    //* htoc_size = HTOC__HEADER_SIZE + HTOC__ENTRY_SIZE * num_of_entries
+    //* hashes_table_size = HASHES_TABLE__HEADER_SIZE + htoc_size + num_of_entries * header.hash_size +
+    // HASHES_TABLE__TAIL_SIZE
+    htoc_max_num_of_entries = (size - HTOC__HEADER_SIZE - HASHES_TABLE__HEADER_SIZE - HASHES_TABLE__TAIL_SIZE) /
+                              (header.hash_size + HTOC__ENTRY_SIZE);
 
     entries = new image_layout_htoc_entry[htoc_max_num_of_entries];
     memset(entries, 0, htoc_max_num_of_entries * sizeof(image_layout_htoc_entry));

@@ -42,5 +42,5 @@ noinst_HEADERS = mft_sig_handler.h errmsg.h hex64.h
 
 noinst_LTLIBRARIES = libmftutils.la
 
-libmftutils_la_SOURCES =  mft_sig_handler.c errmsg.cpp calc_hw_crc.c mlarge_buffer.cpp mft_utils.cpp hex64.cpp
+libmftutils_la_SOURCES =  mft_sig_handler.c errmsg.cpp calc_hw_crc.c mlarge_buffer.cpp mft_utils.cpp hex64.cpp crc16.h crc16.cpp
 
