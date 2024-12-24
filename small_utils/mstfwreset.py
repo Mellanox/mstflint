@@ -644,7 +644,7 @@ class MlnxPciOpLinux(MlnxPciOp):
 
     def loadPCIConfigurationSpace(self, devAddr, pci_device, full=True):
         if full:
-            pci_device.restore_configuration_space()
+            pci_device.restore_configuration_space(skip_recovery_vsec=False)
         else:  # OS 'remove'/'rescan' -> need to restore optimal value in "device control register" for old kernel module
             if getLinuxKernelVersion() < 4.2:
                 logger.info('old kernel')
@@ -780,7 +780,7 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
         pci_device.save_configuration_space()
 
     def loadPCIConfigurationSpace(self, devAddr, pci_device, full=True):
-        pci_device.restore_configuration_space()
+        pci_device.restore_configuration_space(skip_recovery_vsec=False)
 
 # TODO are we using this class ???
 
