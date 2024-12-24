@@ -198,6 +198,7 @@ public:
     bool openssl_engine_usage_specified;
     u_int32_t cert_chain_index;
     string component_type;
+    bool imageSizeOnly;
 };
 
 #endif
