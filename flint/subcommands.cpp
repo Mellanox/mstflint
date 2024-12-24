@@ -1672,7 +1672,7 @@ FlintStatus Extract4MBImageSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
-    if (!_imgOps->FwExtract4MBImage(img, true))
+    if (!_imgOps->FwExtract4MBImage(img, true, false, false, _flintParams.imageSizeOnly))
     {
         reportErr(true, "Extracting FW Data failed: %s.\n", _imgOps->err());
         return FLINT_FAILED;

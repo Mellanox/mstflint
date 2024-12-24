@@ -185,7 +185,8 @@ public:
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img,
                                    bool maskMagicPatternAndDevToc,
                                    bool verbose = false,
-                                   bool ignoreImageStart = false);
+                                   bool ignoreImageStart = false,
+                                   bool imageSizeOnly = false);
     virtual bool GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_t>& img);
     virtual bool FwSetPublicKeys(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);

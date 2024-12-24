@@ -195,6 +195,7 @@ public:
     u_int8_t activate_delay_sec;
     u_int32_t cert_chain_index;
     string component_type;
+    bool imageSizeOnly;
 };
 
 #endif
