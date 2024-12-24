@@ -75,7 +75,7 @@
 #define SEMAPHORE_ADDR_QUANTUM 0xa68f8
 #define SEMAPHORE_ADDR_QUANTUM2 0xa52f8
 #define SEMAPHORE_ADDR_QUANTUM3 0xa52f8 // 0x25b
-#define SEMAPHORE_ADDR_BW00 0xa52f8
+#define SEMAPHORE_ADDR_GB100 0xa52f8
 #define SEMAPHORE_ADDR_CX5 0xe74e0
 #define SEMAPHORE_ADDR_CX7 0xe5660
 #define HCR_ADDR_CIB 0x0
@@ -295,7 +295,7 @@ enum
 #define SPECTRUM3_HW_ID 592
 #define QUANTUM2_HW_ID 599
 #define QUANTUM3_HW_ID 603 // 0x25b
-#define BW00_HW_ID 0x2900
+#define GB100_HW_ID 0x2900
 #define SPECTRUM4_HW_ID 596
 #define AMOS_GBOX_HW_ID 594
 
@@ -1022,7 +1022,7 @@ static int icmd_init_cr(mfile* mf)
 
         case (QUANTUM2_HW_ID):
         case (QUANTUM3_HW_ID):
-        case (BW00_HW_ID):
+        case (GB100_HW_ID):
         case (SPECTRUM4_HW_ID):
             cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
             hcr_address = HCR_ADDR_QUANTUM;
@@ -1153,7 +1153,7 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
         case (SPECTRUM3_HW_ID):
         case (QUANTUM2_HW_ID):
         case (QUANTUM3_HW_ID):
-        case (BW00_HW_ID):
+        case (GB100_HW_ID):
         case (SPECTRUM4_HW_ID):
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
