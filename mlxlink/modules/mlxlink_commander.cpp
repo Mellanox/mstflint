@@ -236,13 +236,11 @@ u_int32_t MlxlinkCommander::getTechnologyFromMGIR()
 void MlxlinkCommander::getProductTechnology()
 {
     // Use SLTP to get the product technology, for backward compatibility
-    // The for loop was added due to PCI implementation.
-    // When accessing a non-pci flow (port), only the first iteration will run (local_port=1).
-    for (size_t i = 1; i < 0x16; i++)
+    if (!_userInput._pcie)
     {
         try
         {
-            sendPrmReg(ACCESS_REG_SLTP, GET, "local_port=%d", i);
+            sendPrmReg(ACCESS_REG_SLTP, GET);
             _productTechnology = getVersion(getFieldValue("version"));
             if (_productTechnology <= 2)
             {
@@ -252,13 +250,36 @@ void MlxlinkCommander::getProductTechnology()
         }
         catch (MlxRegException& exc)
         {
-            if (!_productTechnology && !_userInput._pcie)
+            if (!_productTechnology)
             {
                 throw MlxRegException("Unable to get product technology: %s", exc.what_s().c_str());
             }
         }
     }
-    throw MlxRegException("Unable to get product technology (for PCI connection).");
+    else
+    {
+        // The for loop was added due to PCI implementation.
+        // When accessing a pci flow we should check all the local ports for the first port to respond.
+        for (size_t i = 0; i <= 0x16; i++)
+        {
+            try
+            {
+                sendPrmReg(ACCESS_REG_SLTP, GET, "local_port=%d", i);
+                _productTechnology = getVersion(getFieldValue("version"));
+                if (_productTechnology <= 2)
+                {
+                    _productTechnology = PRODUCT_28NM;
+                }
+                return;
+            }
+            catch (MlxRegException& exc)
+            {
+                continue;
+            }
+        }
+
+        throw MlxRegException("Unable to get product technology (for PCI connection).");
+    }
 }
 
 u_int32_t MlxlinkCommander::maxLocalPort()
