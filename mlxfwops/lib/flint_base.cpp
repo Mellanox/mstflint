@@ -244,47 +244,6 @@ int FlintErrMsg::errmsgWCode(int errorCode, const char* format, ...)
     return errorCode;
 }
 
-////////////////////////////////////////////////////////////////////////
-void Crc16::add(u_int32_t o)
-{
-    if (_debug)
-    {
-        printf("Crc16::add(%08x)\n", o);
-    }
-    for (int i = 0; i < 32; i++)
-    {
-        if (_crc & 0x8000)
-        {
-            _crc = (u_int16_t)((((_crc << 1) | (o >> 31)) ^ 0x100b) & 0xffff);
-        }
-        else
-        {
-            _crc = (u_int16_t)(((_crc << 1) | (o >> 31)) & 0xffff);
-        }
-        o = (o << 1) & 0xffffffff;
-    }
-} // Crc16::add
-
-////////////////////////////////////////////////////////////////////////
-void Crc16::finish()
-{
-    for (int i = 0; i < 16; i++)
-    {
-        if (_crc & 0x8000)
-        {
-            _crc = ((_crc << 1) ^ 0x100b) & 0xffff;
-        }
-        else
-        {
-            _crc = (_crc << 1) & 0xffff;
-        }
-    }
-
-    // Revert 16 low bits
-    _crc = _crc ^ 0xffff;
-
-} // Crc16::finish
-
 #ifdef UEFI_BUILD
 
 void* operator new(size_t size)
