@@ -419,11 +419,12 @@ bool Fs5Operations::NCoreQuery(fw_info_t* fwInfo)
 bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
                                       bool maskMagicPatternAndDevToc,
                                       bool verbose,
-                                      bool ignoreImageStart)
+                                      bool ignoreImageStart,
+                                      bool imageSizeOnly)
 {
     bool res = Fs4Operations::FwExtract4MBImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
 
-    if (res)
+    if (res && !imageSizeOnly)
     {
         //* Get image size
         u_int32_t burn_image_size;

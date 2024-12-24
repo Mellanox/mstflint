@@ -242,6 +242,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "user_password", 1));
     _flags.push_back(new Flag("", "cert_chain_index", 1));
     _flags.push_back(new Flag("", "component_type", 1));
+    _flags.push_back(new Flag("", "image_size_only", 0));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -874,6 +875,7 @@ void Flint::initCmdParser()
       "section according to given index.\n"
       "This flag is relevant only for set_attestation_cert_chain command.");
     AddOptions("component_type", ' ', "<type string>", "component to query, currently only \"sync_clock\" supported.");
+    AddOptions("image_size_only", ' ', "", "indication for extract_fw_data command to not extract extra data");
 
     for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++)
     {
@@ -1358,6 +1360,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "component_type")
     {
         _flintParams.component_type = value;
+    }
+    else if (name == "image_size_only")
+    {
+        _flintParams.imageSizeOnly = true;
     }
     else
     {

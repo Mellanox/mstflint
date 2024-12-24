@@ -3536,7 +3536,8 @@ bool Fs3Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_
 bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img,
                                       bool maskMagicPatternAndDevToc,
                                       bool verbose,
-                                      bool ignoreImageStart)
+                                      bool ignoreImageStart,
+                                      bool)
 {
     u_int32_t size = 0;
 
