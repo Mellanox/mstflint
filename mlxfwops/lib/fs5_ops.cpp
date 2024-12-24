@@ -170,7 +170,7 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
     {
         return false;
     }
-    _fwImgInfo.boot2Size = __be32_to_cpu(ncoreBCH.u8_stage1_component.u32_binary_len) - hashes_table_size;
+    _fwImgInfo.boot2Size = __be32_to_cpu(ncoreBCH.stage1_components[0].u32_binary_len) - hashes_table_size;
 
     DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", _fwImgInfo.boot2Size));
     if (_fwImgInfo.boot2Size > 1048576 || _fwImgInfo.boot2Size < 4)
@@ -391,9 +391,14 @@ bool Fs5Operations::NCoreQuery(fw_info_t* fwInfo)
     TOCPUn(ncoreData.data(), BCH_SIZE_IN_BYTES / 4);
     fs5_image_layout_boot_component_header_unpack(&ncoreBCH, ncoreData.data());
 
-    fwInfo->fs3_info.security_mode &= ~SMM_DEBUG_FW;
-    fwInfo->fs3_info.security_mode |= (ncoreBCH.u8_stage1_component.flags.is_debug == 1) ? SMM_DEBUG_FW : 0;
-    fwInfo->fw_info.encrypted_fw = ncoreBCH.u8_stage1_component.flags.is_encrypted ? 2 : 0;
+    string magicPattern(reinterpret_cast<const char*>(ncoreBCH.u8_header_magic), 4);
+    if (magicPattern == "ADVN") // magic pattern is reversed to fit FW array parsing
+    {
+        DPRINTF(("Fs5Operations::NCoreQuery fetching debug and encryption indications\n"));
+        fwInfo->fs3_info.security_mode &= ~SMM_DEBUG_FW;
+        fwInfo->fs3_info.security_mode |= (ncoreBCH.stage1_components[0].flags.is_debug == 1) ? SMM_DEBUG_FW : 0;
+        fwInfo->fw_info.encrypted_fw = ncoreBCH.stage1_components[0].flags.is_encrypted ? 2 : 0;
+    }
 
     return true;
 }
