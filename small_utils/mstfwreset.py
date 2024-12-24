@@ -1894,6 +1894,12 @@ def arm_reset(reset_level, reset_type, reset_sync, mrsi, mfrl):
         raise RuntimeError("Only the reset types ARM reset (3) and ARM shut down (4) are considered valid reset types with reset level IMMEDIATE RESET (1).")
 
     logger.debug('Sending MFRL register to reset only the ARM side ')
+
+    if reset_type is CmdRegMfrl.ARM_OS_SHUTDOWN:
+        status = send_mrsi(mrsi)
+        if status is not CmdRegMrsi.OS_IS_RUNNING:
+            raise RuntimeError('The ARM side is not in a running state, ecos state number: {0}'.format(status))
+
     send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync)
     if reset_type is CmdRegMfrl.ARM_ONLY:
         print("Issuing reset to the embedded CPU completed successfully")
