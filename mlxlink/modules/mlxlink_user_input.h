@@ -59,6 +59,7 @@ public:
     u_int32_t _uniqueCableCmds;
     u_int32_t _uniquePcieCmds;
     u_int32_t _networkCmds;
+    int _pciSltpPort;
     bool _sendPrbs;
     bool _sendPprt;
     bool _sendPptt;

@@ -51,6 +51,7 @@ UserInput::UserInput()
     _networkCmds = 0;
     _uniqueCableCmds = 0;
     _uniquePcieCmds = 0;
+    _pciSltpPort = -1;
     _sendPrbs = false;
     _sendPprt = false;
     _sendPptt = false;
