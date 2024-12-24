@@ -322,17 +322,22 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
     std::vector<FwComponent> compsToBurn;
     FwCompsMgr fwCompsAccess(mfile, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
     fwCompsAccess.GenerateHandle();
-    bool isSecondary = false;
-    if (/*(mfile->flags & MDEVS_IB) && */ !fwCompsAccess.IsSecondaryHost(isSecondary)) // TODO - check if limitation
-                                                                                       // applicable to IB only
+    if (deviceIndex != 0) // device index 0 is not permitted since FW are expecting to get a label port
     {
-        printf("-E- Failed to query if device is secondary\n");
-        return FLINT_FAILED;
-    }
-    if (isSecondary)
-    {
-        printf("-E- LinkX burn is not supported by secondary.\n");
-        return FLINT_FAILED;
+        bool isSecondary = false;
+        // module index for PMAOS starts at 0, converting device index (lable port) requires substracting 1
+        if (/*dm_is_ib_access(mfile) && */ !fwCompsAccess.IsSecondaryHost(deviceIndex - 1,
+                                                                            isSecondary)) // TODO - check if limitation
+                                                                                          // applicable to IB only
+        {
+            printf("-E- Failed to query if device is secondary\n");
+            return FLINT_FAILED;
+        }
+        if (isSecondary)
+        {
+            printf("-E- LinkX burn is not supported by secondary.\n");
+            return FLINT_FAILED;
+        }
     }
     fwCompsAccess.SetIndexAndSize(deviceIndex + 1, deviceSize, linkx_auto_update, activationNeeded,
                                   downloadTransferNeeded, activate_delay_sec);
