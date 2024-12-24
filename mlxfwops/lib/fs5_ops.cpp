@@ -31,6 +31,7 @@
  */
 #include "fs5_ops.h"
 #include "calc_hw_crc.h"
+#include "fs5_image_layout_layouts.h"
 #include <algorithm>
 
 const u_int32_t Fs5Operations::BCH_SIZE_IN_BYTES = 0x2000;
@@ -162,16 +163,17 @@ bool Fs5Operations::GetHashesTableSize(u_int32_t& size)
         return errmsg("Cannot read Hashes Table from encrypted image/device\n");
     }
 
-    fs5_image_layout_boot_component_header bchComponent;
-    if (!ReadBchComponent(_ncore_bch_ptr, bchComponent))
-    {
-        return false;
-    }
-    u_int32_t payloadSize = bchComponent.stage1_components[0].u32_binary_len;
-    u_int32_t boot2Size = _hashes_table_ptr - _boot2_ptr;
-    u_int32_t htocSize = payloadSize - boot2Size;
+    vector<u_int8_t> hashes_table_header_data(IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE);
 
-    size = htocSize;
+    if (!_ioAccess->read(_hashes_table_ptr, hashes_table_header_data.data(), hashes_table_header_data.size()))
+    {
+        return errmsg("Hashes Table read error, %s\n", _ioAccess->err());
+    }
+
+    struct image_layout_hashes_table_header hashes_table_header;
+    image_layout_hashes_table_header_unpack(&hashes_table_header, hashes_table_header_data.data());
+
+    size = hashes_table_header.dw_size * 4 + HTOC::HTOC__HEADER_SIZE;
 
     return true;
 }
@@ -567,17 +569,5 @@ bool Fs5Operations::CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_in
         return errmsg("Device and Image partition size differ(0x%x/0x%x), use non failsafe (-nofs) burn flow.",
                       cntxLog2ChunkSize, imageCntxLog2ChunkSize);
     }
-    return true;
-}
-
-bool Fs5Operations::ReadBchComponent(u_int32_t headerAddr, fs5_image_layout_boot_component_header& bchComponent)
-{
-    vector<u_int8_t> bchRawData(FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE);
-    if (!_ioAccess->read(headerAddr, bchRawData.data(), FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE))
-    {
-        return errmsg("%s - read error can not read bch\n", _ioAccess->err());
-    }
-    TOCPUn(bchRawData.data(), BCH_SIZE_IN_BYTES / 4);
-    fs5_image_layout_boot_component_header_unpack(&bchComponent, bchRawData.data());
     return true;
 }
