@@ -2131,13 +2131,8 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
-    bool device_encrypted = false;
     bool image_encrypted = false;
-    if (!_fwOps->isEncrypted(device_encrypted))
-    {
-        reportErr(true, "Failed to identify if device is encrypted.\n");
-        return FLINT_FAILED;
-    }
+
     if (!_imgOps->isEncrypted(image_encrypted))
     {
         reportErr(true, "Failed to identify if image is encrypted.\n");
@@ -3346,7 +3341,7 @@ FlintStatus BurnSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
-    if (device_encrypted != image_encrypted && _fwType != FIT_FS5)
+    if (device_encrypted != image_encrypted)
     {
         reportErr(true, "Burning %sencrypted image on %sencrypted device is not allowed.\n",
                   image_encrypted ? "" : "non-", device_encrypted ? "" : "non-");
