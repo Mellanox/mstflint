@@ -322,7 +322,8 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
     std::vector<FwComponent> compsToBurn;
     FwCompsMgr fwCompsAccess(mfile, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
     fwCompsAccess.GenerateHandle();
-    if (deviceIndex != 0) // device index 0 is not permitted since FW are expecting to get a label port
+    if (IS_HCA(_devInfo.fw_info.chip_type) ||
+        (!linkx_auto_update && deviceSize == 1 && deviceIndex > 0)) // check for PCI switche and single port use cases
     {
         bool isSecondary = false;
         // module index for PMAOS starts at 0, converting device index (lable port) requires substracting 1
