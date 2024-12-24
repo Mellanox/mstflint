@@ -99,7 +99,6 @@ typedef long long int64_t;
 #define MAX_PAGES_SIZE        8
 #define SMP_SEMAPHOE_LOCK_CMD 0xff53
 #define ADDRESS_OUT_OF_RANGE 0x3 // syndrome_code value
-#define PXIR_SPACE_OFFSET 0x100
 
 #define CX8_HW_ID 0x21e
 

@@ -173,6 +173,49 @@ void mtcr_connectx_flush(void* ptr, int fdlock)
     }
 }
 
+void swap_pci_address_space(mfile* mf)
+{
+    switch (mf->address_space)
+    {
+        case AS_ICMD_EXT:
+            mf->address_space = AS_PCI_ICMD;
+            break;
+        case AS_ND_CRSPACE:
+        case AS_CR_SPACE:
+            mf->address_space = AS_PCI_CRSPACE;
+            break;
+        case AS_ICMD:
+            mf->address_space = AS_PCI_ALL_ICMD;
+            break;
+        case AS_SCAN_CRSPACE:
+            mf->address_space = AS_PCI_SCAN_CRSPACE;
+            break;
+        case AS_SEMAPHORE:
+            mf->address_space = AS_PCI_GLOBAL_SEMAPHORE;
+            break;
+        case AS_PCI_ICMD:
+            mf->address_space = AS_ICMD_EXT;
+            break;
+        case AS_PCI_CRSPACE:
+            mf->address_space = AS_CR_SPACE;
+            break;
+        case AS_PCI_ALL_ICMD:
+            mf->address_space = AS_ICMD;
+            break;
+        case AS_PCI_SCAN_CRSPACE:
+            mf->address_space = AS_SCAN_CRSPACE;
+            break;
+        case AS_PCI_GLOBAL_SEMAPHORE:
+            mf->address_space = AS_SEMAPHORE;
+            break;
+        default:
+            DBG_PRINTF("No address space found: %x\n", mf->address_space);
+            return;
+    }
+
+    DBG_PRINTF("New address space found: %x\n", mf->address_space);
+}
+
 int read_device_id(mfile* mf, u_int32_t* device_id)
 {
     if (!mf || !device_id) {
@@ -331,14 +374,7 @@ int read_config(mfile* mf, unsigned int reg, uint32_t* data, int width)
         // support PCI space
         if (VSEC_PXIR_SUPPORT(mf))
         {
-            if (mf->address_space < PXIR_SPACE_OFFSET)
-            {
-                mf->address_space += PXIR_SPACE_OFFSET;
-            }
-            else
-            {
-                mf->address_space -= PXIR_SPACE_OFFSET;
-            }
+            swap_pci_address_space(mf);
 
             if (ioctl(mf->fd, PCIOCREAD, &pi) < 0)
             {
@@ -382,14 +418,7 @@ int write_config(mfile* mf, unsigned int reg, uint32_t data, int width)
         // support PCI space
         if (VSEC_PXIR_SUPPORT(mf))
         {
-            if (mf->address_space < PXIR_SPACE_OFFSET)
-            {
-                mf->address_space += PXIR_SPACE_OFFSET;
-            }
-            else
-            {
-                mf->address_space -= PXIR_SPACE_OFFSET;
-            }
+            swap_pci_address_space(mf);
 
             if (ioctl(mf->fd, PCIOCWRITE, &pi) < 0)
             {
@@ -738,14 +767,7 @@ static int mwrite4_block_new(mfile* mf, unsigned int offset, int size, uint32_t*
         // support PCI space
         if (VSEC_PXIR_SUPPORT(mf))
         {
-            if (mf->address_space < PXIR_SPACE_OFFSET)
-            {
-                mf->address_space += PXIR_SPACE_OFFSET;
-            }
-            else
-            {
-                mf->address_space -= PXIR_SPACE_OFFSET;
-            }
+            swap_pci_address_space(mf);
             rc = _block_op(mf, mf->address_space, offset, size, data, WRITE_OP);
             // printf(
             //   "Entered VSC pci space support flow. PCI address_space now set to: %d. second attempt to run _block_op with VSC PCI address space returned with rc: %d.\n",
@@ -763,14 +785,7 @@ static int mread4_block_new(mfile* mf, unsigned int offset, int size, uint32_t* 
         // support PCI space
         if (VSEC_PXIR_SUPPORT(mf))
         {
-            if (mf->address_space < PXIR_SPACE_OFFSET)
-            {
-                mf->address_space += PXIR_SPACE_OFFSET;
-            }
-            else
-            {
-                mf->address_space -= PXIR_SPACE_OFFSET;
-            }
+            swap_pci_address_space(mf);
             rc = _block_op(mf, mf->address_space, offset, size, data, READ_OP);
             // printf(
             //   "Entered VSC pci space support flow. PCI address_space now set to: %d. second attempt to run _block_op with VSC PCI address space returned with rc: %d.\n",
