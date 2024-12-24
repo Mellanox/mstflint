@@ -2176,7 +2176,7 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
         reportErr(true, "Binary comparison failed - versions mismatch.\n");
         return FLINT_FAILED;
     }
-
+    bool device_encrypted = false;
     bool image_encrypted = false;
 
     if (!_imgOps->isEncrypted(image_encrypted))
