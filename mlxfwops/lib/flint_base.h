@@ -394,6 +394,7 @@ typedef enum fs3_section
     FS4_STRN_IRON = 0xb5,
     FS4_STRN_TILE = 0xb6,
     FS4_MAIN_DATA = 0xd3,
+    FS4_FW_DEBUG_DUMP_2 = 0xd4,
     FS3_MFG_INFO = 0xe0,
     FS3_DEV_INFO = 0xe1,
     FS3_NV_DATA1 = 0xe2,
