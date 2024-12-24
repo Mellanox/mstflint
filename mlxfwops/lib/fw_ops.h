@@ -161,7 +161,8 @@ public:
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img,
                                    bool maskMagicPatternAndDevToc,
                                    bool verbose = false,
-                                   bool ignoreImageStart = false);
+                                   bool ignoreImageStart = false,
+                                   bool imageSizeOnly = false);
     virtual bool RestoreDevToc(vector<u_int8_t>& img,
                                char* psid,
                                dm_dev_id_t devid_t,

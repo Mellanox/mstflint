@@ -52,7 +52,8 @@ public:
     bool FwExtract4MBImage(vector<u_int8_t>& img,
                            bool maskMagicPatternAndDevToc,
                            bool verbose = false,
-                           bool ignoreImageStart = false) override;
+                           bool ignoreImageStart = false,
+                           bool imageSizeOnly = false) override;
 
 protected:
     bool CheckBoot2(u_int32_t beg,
