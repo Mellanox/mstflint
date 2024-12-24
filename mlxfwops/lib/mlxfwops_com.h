@@ -116,6 +116,7 @@ typedef enum
 } LifeCycleFS5;
 
 #define MAX_HTOC_ENTRIES_NUM 28
+#define MAX_HTOC_ENTRIES_NUM_VERSION_1 64
 #define HASHES_TABLE_TAIL_SIZE 8
 #define HTOC_HASH_SIZE 64
 
