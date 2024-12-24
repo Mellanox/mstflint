@@ -1387,6 +1387,7 @@ int check_syndrome(mfile* mf)
     // fail and then we'll retry with PCI space.
     u_int32_t syndrome = 0;
     READ4_PCI(mf, &syndrome, mf->vsec_addr + PCI_ADDR_OFFSET, "read domain", return ME_PCI_READ_ERROR);
+    syndrome = EXTRACT(syndrome, PCI_SYNDROME_BIT_OFFSET, PCI_SYNDROME_BIT_LEN);
     if (syndrome)
     {
         u_int32_t syndrome_code = 0;
