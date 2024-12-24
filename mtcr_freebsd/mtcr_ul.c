@@ -2993,7 +2993,12 @@ static int check_zf_through_memory(mfile* mf)
 static int check_zf_through_vsc(mfile* mf)
 {
     int prev_address_space = mf->address_space;
-    mset_addr_space(mf, AS_RECOVERY);
+
+    // If the device is in LF mode or the recovery space is not supported, the device is not in Zombiefish mode.
+    if (is_livefish_device_int(mf) || mset_addr_space(mf, AS_RECOVERY) == -1)
+    {
+        return 0;
+    }
 
     uint32_t first_dword = 0;
     int rc = mread4(mf, INITIALIZING_BIT_OFFSET_IN_VSC_RECOVERY_SPACE, &first_dword);
