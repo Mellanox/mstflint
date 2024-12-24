@@ -209,7 +209,7 @@ protected:
                       VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL,
                       bool showItoc = false);
     bool IsDtocExists(bool& dtocExists);
-    bool GetHashesTableSize(u_int32_t& size);
+    virtual bool GetHashesTableSize(u_int32_t& size);
     bool GetImageInfo(u_int8_t* buff);
     virtual bool GetDtocAddress(u_int32_t& dTocAddress);
     bool ParseImageInfoFromEncryptedImage();
@@ -230,12 +230,14 @@ private:
     {
     public:
         struct image_layout_htoc_header header;
-        struct image_layout_htoc_entry entries[MAX_HTOC_ENTRIES_NUM];
+        struct image_layout_htoc_entry* entries;
         u_int32_t htoc_start_addr;
+        u_int8_t htoc_max_num_of_entries;
 
         HTOC(vector<u_int8_t> img, u_int32_t hashes_table_start_addr);
         bool GetEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
         bool AddNewEntry(FBase* ioAccess, fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry);
+        u_int8_t GetHtocMaxNumOfEntries() { return htoc_max_num_of_entries; };
     };
 
 #ifndef UEFI_BUILD

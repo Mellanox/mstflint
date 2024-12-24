@@ -150,6 +150,22 @@ bool Fs5Operations::GetImageSize(u_int32_t* image_size)
     return true;
 }
 
+bool Fs5Operations::GetHashesTableSize(u_int32_t& size)
+{
+    bool image_encrypted = false;
+    if (!isEncrypted(image_encrypted))
+    {
+        return false;
+    }
+
+    if (image_encrypted)
+    {
+        return errmsg("Cannot read Hashes Table from encrypted image/device\n");
+    }
+
+    return Fs4Operations::GetHashesTableSize(size);
+}
+
 bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack verifyCallBackFunc)
 {
     DPRINTF(("FwOperations::CheckBoot2\n"));
