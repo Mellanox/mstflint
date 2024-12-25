@@ -923,7 +923,8 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     if (cmd_params.use_lookup_file)
     {
         cmd_params.lookup_file = adjustRelPath(cmd_params.lookup_file, config.adjuster_path);
-        if (!isFile(cmd_params.lookup_file))
+        Filesystem::path p(cmd_params.lookup_file);
+        if (!Filesystem::is_regular_file(p))
         {
             fprintf(stderr, "-E- Can't find file %s\n", cmd_params.lookup_file.c_str());
             return false;
@@ -931,7 +932,8 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     }
     if (cmd_params.use_mfa_file)
     {
-        if (!isFile(adjustRelPath(cmd_params.mfa_file, config.adjuster_path)))
+        Filesystem::path p(adjustRelPath(cmd_params.mfa_file, config.adjuster_path));
+        if (!Filesystem::is_regular_file(p))
         {
             fprintf(stderr, "-E- Can't find file %s\n", cmd_params.mfa_file.c_str());
             return false;
@@ -940,7 +942,8 @@ bool checkCmdParams(CmdLineParams& cmd_params, config_t& config)
     if (cmd_params.onlineQueryPsids.length() || cmd_params.download || cmd_params.update_online)
     {
         cmd_params.certificate = adjustRelPath(cmd_params.certificate, config.adjuster_path);
-        if (!isFile(cmd_params.certificate))
+        Filesystem::path p(cmd_params.certificate);
+        if (!Filesystem::is_regular_file(p))
         {
             fprintf(stderr, "-E- Can't find Certificate %s\n", cmd_params.certificate.c_str());
             return false;
@@ -1601,7 +1604,7 @@ int getMFAListFromPSIDs(string mfa_path, vector<string>& psid_list, vector<PsidQ
                 errorMsg += imgacc.getlastWarning();
             }
         }
-        else if (isFile(mfa_path))
+        else if (Filesystem::is_regular_file(Filesystem::path(mfa_path)))
         {
             _FileOrDir = 2;
             rc = imgacc.queryPsid(mfa_path, psid_list[i], arch, 1, ri);
@@ -1812,7 +1815,8 @@ bool getIniParams(config_t& config)
     string file = config.exe_path;
     file += "/mlxfwmanager.ini";
 
-    if (!isFile(file))
+    Filesystem::path p(file);
+    if (!Filesystem::is_regular_file(p))
     { // If file does not exist then ignore
         return true;
     }

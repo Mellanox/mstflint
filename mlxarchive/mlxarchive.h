@@ -34,6 +34,8 @@
 
 #include <iostream>
 #include <cmdparser/cmdparser.h>
+#include "common/tools_filesystem.h"
+namespace Filesystem = mstflint::common::filesystem;
 
 namespace mlxarchive
 {

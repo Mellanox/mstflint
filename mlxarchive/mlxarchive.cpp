@@ -157,7 +157,8 @@ void Mlxarchive::paramValidate()
         {
             if (fexists(_outFile))
             {
-                if (!isFile(_outFile))
+                Filesystem::path p(_outFile);
+                if (!Filesystem::is_regular_file(p))
                 {
                     fprintf(stderr, "Output file: %s is expected to be a file\n", _outFile.c_str());
                 }
