@@ -1249,7 +1249,6 @@ ParseStatus Flint::HandleOption(string name, string value)
     {
         printf("The '--openssl_engine' flags have been deprecated.\n");
         return PARSE_OK_WITH_EXIT;
-
     }
     else if (name == "openssl_key_id")
     {
