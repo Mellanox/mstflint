@@ -193,9 +193,6 @@ public:
     std::vector<int> downstream_device_ids;
     bool download_transfer;
     u_int8_t activate_delay_sec;
-    string openssl_engine;
-    string openssl_key_id;
-    bool openssl_engine_usage_specified;
     u_int32_t cert_chain_index;
     string component_type;
 };

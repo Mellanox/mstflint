@@ -356,8 +356,8 @@ bool verifyNumOfArgs(string name, string value)
     if (name == "flash_params")
     {
         expected = 3;
-    }
-
+    } 
+    
     int actual = countArgs(value);
     if (name == "downstream_device_ids")
     {
@@ -854,17 +854,8 @@ void Flint::initCmdParser()
                false,
                false,
                1);
-
-    AddOptions(
-      "openssl_engine",
-      ' ',
-      "<string>",
-      "Name of the OpenSSL engine to used by the sign/rsa_sign commands to work with the HSM hardware via OpenSSL API");
-    AddOptions("openssl_key_id",
-               ' ',
-               "<string>",
-               "Key identification string to be used by the sign/rsa_sign commands to work with the HSM hardware via "
-               "OpenSSL API");
+    AddOptions("openssl_engine", ' ', "<string>", "deprecated");
+    AddOptions("openssl_key_id", ' ', "<string>", "deprecated");
     AddOptions("output_file", ' ', "<string>", "output file name for exporting the public key from PEM/BIN");
     AddOptions("user_password", ' ', "<string>", "the HSM user password string in order to work with HSM device");
 #ifdef __WIN__
@@ -1256,13 +1247,14 @@ ParseStatus Flint::HandleOption(string name, string value)
     }
     else if (name == "openssl_engine")
     {
-        _flintParams.openssl_engine_usage_specified = true;
-        _flintParams.openssl_engine = value;
+        printf("The '--openssl_engine' flags have been deprecated.\n");
+        return PARSE_OK_WITH_EXIT;
+
     }
     else if (name == "openssl_key_id")
     {
-        _flintParams.openssl_engine_usage_specified = true;
-        _flintParams.openssl_key_id = value;
+        printf("The '--openssl_key_id' flags have been deprecated.\n");
+        return PARSE_OK_WITH_EXIT;
     }
     else if (name == "output_file")
     {

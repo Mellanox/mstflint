@@ -1509,10 +1509,7 @@ mlxCfgStatus MlxCfg::createConf()
         commander.createConf(xml, buff);
 
         if (!_mlxParams.privPemFile.empty() && !_mlxParams.keyPairUUID.empty()) {
-            commander.sign(buff, _mlxParams.privPemFile, _mlxParams.keyPairUUID, "", "");
-        } else if (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty() &&
-                   !_mlxParams.keyPairUUID.empty()) {
-            commander.sign(buff, "", _mlxParams.keyPairUUID, _mlxParams.opensslEngine, _mlxParams.opensslKeyId);
+            commander.sign(buff, _mlxParams.privPemFile, _mlxParams.keyPairUUID);
         } else {
             commander.sign(buff);
         }

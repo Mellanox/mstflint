@@ -97,39 +97,4 @@ ErrorCode MlxSignRSAViaOpenssl::Sign(const vector<u_int8_t>& data, vector<u_int8
     return MLX_SIGN_SUCCESS;
 }
 
-#if !defined(NO_DYNAMIC_ENGINE)
-MlxSignRSAViaHSM::MlxSignRSAViaHSM(string opensslEngine, string opensslKeyID) :
-    _engineSigner(opensslEngine, opensslKeyID), _opensslEngine(opensslEngine)
-{
-}
-
-ErrorCode MlxSignRSAViaHSM::Init()
-{
-    int rc = _engineSigner.init();
-    if (rc)
-    {
-        printf("-E- Failed to initialize %s engine (rc = 0x%x)\n", _opensslEngine.c_str(), rc);
-        return MLX_SIGN_ERROR;
-    }
-    int keySize = _engineSigner.getPrivateKeySize();
-    if (keySize != KEY_SIZE_512)
-    {
-        printf("-E- The HSM key has to be 4096 bit!\n");
-        return MLX_SIGN_ERROR;
-    }
-    return MLX_SIGN_SUCCESS;
-}
-
-ErrorCode MlxSignRSAViaHSM::Sign(const vector<u_int8_t>& data, vector<u_int8_t>& signature) const
-{
-    int rc = _engineSigner.sign(data, signature);
-    if (rc)
-    {
-        printf("-E- Failed to create secured FW signature (rc = 0x%x)", rc);
-        return MLX_SIGN_ERROR;
-    }
-    return MLX_SIGN_SUCCESS;
-}
-#endif // #if !defined(NO_DYNAMIC_ENGINE)
-
 #endif // #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)

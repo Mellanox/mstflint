@@ -48,9 +48,6 @@
 #if !defined(NO_OPEN_SSL)
 #include <mlxsign_lib/mlxsign_lib.h>
 #include <mlxsign_lib/mlxsign_signer_interface.h>
-#if !defined(NO_DYNAMIC_ENGINE)
-#include <mlxsign_lib/mlxsign_openssl_engine.h>
-#endif
 #endif
 #include "mlxcfg_expression.h"
 #include "mlxcfg_generic_commander.h"
@@ -1533,12 +1530,10 @@ void GenericCommander::XML2Bin(const string& xml, vector<u_int32_t>& buff, bool 
 
 void GenericCommander::sign(vector<u_int32_t>& buff,
                             const string& privateKeyFile,
-                            const string& keyPairUUid,
-                            const string& openssl_engine,
-                            const string& openssl_key_identifier)
+                            const string& keyPairUUid)
 {
     (void)keyPairUUid;
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     vector<u_int32_t> encDigestDW;
     vector<u_int8_t> digest, encDigest, bytesBuff;
     MlxSign::SHAType shaType;
@@ -1546,7 +1541,7 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
 
     copyDwVectorToBytesVector(buff, bytesBuff);
 
-    if (openssl_key_identifier.empty() && privateKeyFile.empty())
+    if (privateKeyFile.empty())
     {
         shaType = MlxSign::SHA256;
         MlxSignSHA256 mlxSignSHA;
@@ -1555,22 +1550,8 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
         encDigest.insert(encDigest.begin(), digest.begin(), digest.end());
     }
     else
-    {
-        if (!openssl_key_identifier.empty())
-        {
-            // Sign with local HSM engine
-            shaType = MlxSign::SHA512;
-#if !defined(NO_DYNAMIC_ENGINE)
-            signer = unique_ptr<MlxSign::Signer>(new MlxSign::MlxSignRSAViaHSM(openssl_engine, openssl_key_identifier));
-#else
-            reportErr(true, "Open SSL functionality is not supported.\n");
-#endif
-        }
-        else
-        {
-            signer = unique_ptr<MlxSign::Signer>(new MlxSign::MlxSignRSAViaOpenssl(privateKeyFile));
-        }
-
+    {       
+        signer = unique_ptr<MlxSign::Signer>(new MlxSign::MlxSignRSAViaOpenssl(privateKeyFile));
         if (signer != nullptr && signer->Init() != MlxSign::MLX_SIGN_SUCCESS)
         {
             signer.reset();
@@ -1656,8 +1637,6 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
 #else
     (void)buff;
     (void)privateKeyFile;
-    (void)openssl_engine;
-    (void)openssl_key_identifier;
     throw MlxcfgException("Sign command is not implemented\n");
 #endif
 }
