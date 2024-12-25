@@ -59,6 +59,9 @@
 #include "mlxfwmanager_common.h"
 #include "menu.h"
 
+#include "common/tools_filesystem.h"
+namespace Filesystem = mstflint::common::filesystem;
+
 FILE* FLog = NULL;
 FILE* FOut = stdout;
 FILE* FErr = stderr;

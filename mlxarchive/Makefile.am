@@ -88,6 +88,7 @@ mstarchive_LDADD = libmstarchive.la \
                    $(top_builddir)/xz_utils/libxz_utils.la \
                    $(top_builddir)/ext_libs/minixz/libminixz.la \
                    $(top_builddir)/xz_utils/libxz_utils.la \
+                   $(top_builddir)/common/libcommon.la \
                    $(CURL_LIBS) \
                    -llzma -lm ${LDL}
 

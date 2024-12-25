@@ -102,6 +102,7 @@ mstfwmanager_DEPENDENCIES = \
     $(top_builddir)/tools_layouts/libtools_layouts.la \
     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+    $(top_builddir)/common/libcommon.la \
     $(JSON_LIBS) \
     $(INIPARSER_LIBS) \
     $(MUPARSER_LIBS) \
