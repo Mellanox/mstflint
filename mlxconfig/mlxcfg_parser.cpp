@@ -92,8 +92,8 @@ void MlxCfg::printHelp()
     printFlagLine("a", "all_attrs", "", "Show all attributes in the XML template");
     printFlagLine("p", "private_key", "PKEY", "pem file for private key");
     printFlagLine("u", "key_uuid", "UUID", "keypair uuid");
-    printFlagLine("eng", "openssl_engine", "ENGINE NAME", "OpenSSL engine name");
-    printFlagLine("k", "openssl_key_id", "IDENTIFIER", "OpenSSL key identifier");
+    printFlagLine("eng", "openssl_engine", "ENGINE NAME", "deprecated");
+    printFlagLine("k", "openssl_key_id", "IDENTIFIER", "deprecated");
     printFlagLine("t", "device_type", "switch/hca", "Specify the device type");
 
     // print commands
@@ -478,19 +478,11 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         }
         else if (arg == "-eng" || arg == "--openssl_engine")
         {
-            if (++i == argc)
-            {
-                return err(true, "missing OpenSSL engine");
-            }
-            _mlxParams.opensslEngine = argv[i];
+            return err(true, "The '--openssl_engine' and '-eng' flags have been deprecated.\n");
         }
         else if (arg == "-k" || arg == "--openssl_key_id")
         {
-            if (++i == argc)
-            {
-                return err(true, "missing OpenSSL key identifier");
-            }
-            _mlxParams.opensslKeyId = argv[i];
+            return err(true, "The '--openssl_key_id' and '-k' flags have been deprecated.\n");
         }
         // hidden flag --force used to ignore parameter checks
         else if (arg == "--force")
@@ -637,15 +629,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
 
     if (_mlxParams.cmd == Mc_CreateConf)
     {
-        if (!_mlxParams.privPemFile.empty() && (!_mlxParams.opensslEngine.empty() || !_mlxParams.opensslKeyId.empty()))
-        {
-            return err(true,
-                       "Please provide either private pem file or OpenSSL engine and key identifier "
-                       "but not both of them");
-        }
-
-        if (!_mlxParams.keyPairUUID.empty() ^ (!_mlxParams.privPemFile.empty() ||
-                                               (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty())))
+        if (!_mlxParams.keyPairUUID.empty() ^ (!_mlxParams.privPemFile.empty()))
         {
             return err(true,
                        "if you want to sign the configuration file you have to "

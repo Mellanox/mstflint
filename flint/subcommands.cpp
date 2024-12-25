@@ -1752,8 +1752,7 @@ SignSubCommand::SignSubCommand()
     _flagLong = "sign";
     _flagShort = "";
     _paramExp = "None";
-    _example = FLINT_NAME " -i fw_image.bin [--private_key file.pem --key_uuid uuid_string] OR [--openssl_engine "
-                          "engine --openssl_key_id identifier --key_uuid uuid_string] sign";
+    _example = FLINT_NAME " -i fw_image.bin [--private_key file.pem --key_uuid uuid_string] sign";
     _v = Wtv_Img;
     _maxCmdParamNum = 0;
     _cmdType = SC_Sign;
@@ -1772,28 +1771,6 @@ FlintStatus SignSubCommand::executeCommand()
         reportErr(true, IMAGE_SIGN_TYPE_ERROR);
         return FLINT_FAILED;
     }
-    if (_flintParams.openssl_engine_usage_specified)
-    {
-#if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
-        //* Init Signer
-        MlxSign::MlxSignRSAViaHSM signer(_flintParams.openssl_engine, _flintParams.openssl_key_id);
-        int rc = signer.Init();
-        if (rc)
-        {
-            reportErr(true, "Open SSL dynamic engine functionality is not supported.\n");
-            return FLINT_FAILED;
-        }
-
-        if (!_imgOps->SignForFwUpdate(_flintParams.privkey_uuid.c_str(), signer, MlxSign::SHA512, &verifyCbFunc))
-        {
-            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-#else
-        reportErr(true, "Open SSL functionality is not supported.\n");
-        return FLINT_FAILED;
-#endif
-    }
     else if (!_flintParams.privkey_file.empty() && !_flintParams.privkey_uuid.empty())
     {
         if (_flintParams.privkey2_specified && _flintParams.uuid2_specified)
@@ -1810,7 +1787,7 @@ FlintStatus SignSubCommand::executeCommand()
         }
         else
         {
-#if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
+#if !defined(NO_OPEN_SSL)
             //* Init Signer
             MlxSign::MlxSignRSAViaOpenssl signer(_flintParams.privkey_file.c_str());
             int rc = signer.Init();
@@ -1843,58 +1820,32 @@ FlintStatus SignSubCommand::executeCommand()
 
 bool SignSubCommand::verifyParams()
 {
-    if (_flintParams.openssl_engine_usage_specified)
+    if (_flintParams.privkey_file.empty() != _flintParams.privkey_uuid.empty())
     {
-        if (_flintParams.privkey_uuid.empty())
-        {
-            reportErr(true, "To Sign the image with OpenSSL you must provide UUID string.\n");
-            return false;
-        }
-        if (_flintParams.openssl_engine.empty() || _flintParams.openssl_key_id.empty())
-        {
-            reportErr(true, "To Sign the image with OpenSSL you must provide the engine and the key identifier.\n");
-            return false;
-        }
-        if (_flintParams.openssl_key_id.find("type=public", 0) != std::string::npos)
-        {
-            reportErr(true, "The Sign command with --openssl_key_id flag does not accept public keys\n");
-            return false;
-        }
-        if (!_flintParams.privkey_file.empty())
-        {
-            reportErr(true, "The Sign command does not accept --private_key flag with the following flags: "
-                            "--openssl_engine, --openssl_key_id\n");
-            return false;
-        }
+        reportErr(true, "To Sign the image with RSA you must provide "
+                        "private key and uuid.\n");
+        return false;
     }
-    else
+
+    if (_flintParams.privkey_file.empty() && _flintParams.privkey2_specified)
     {
-        if (_flintParams.privkey_file.empty() != _flintParams.privkey_uuid.empty())
-        {
-            reportErr(true, "To Sign the image with RSA you must provide "
-                            "private key and uuid.\n");
-            return false;
-        }
-
-        if (_flintParams.privkey_file.empty() && _flintParams.privkey2_specified)
-        {
-            reportErr(true, "Use --private_key if you want to sign with only one key.\n");
-            return false;
-        }
-
-        if (_flintParams.privkey2_specified != _flintParams.uuid2_specified)
-        {
-            reportErr(true, "To Sign the image with two RSA keys you must provide "
-                            "two private keys and two uuid.\n");
-            return false;
-        }
-
-        if (_flintParams.cmd_params.size() > 0)
-        {
-            reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
-            return false;
-        }
+        reportErr(true, "Use --private_key if you want to sign with only one key.\n");
+        return false;
     }
+
+    if (_flintParams.privkey2_specified != _flintParams.uuid2_specified)
+    {
+        reportErr(true, "To Sign the image with two RSA keys you must provide "
+                        "two private keys and two uuid.\n");
+        return false;
+    }
+
+    if (_flintParams.cmd_params.size() > 0)
+    {
+        reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
+        return false;
+    }
+
     return true;
 }
 
@@ -2248,21 +2199,8 @@ SignRSASubCommand::~SignRSASubCommand() {}
 unique_ptr<MlxSign::Signer> SignRSASubCommand::createSigner()
 {
     unique_ptr<MlxSign::Signer> signer = nullptr;
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-    if (_flintParams.openssl_engine_usage_specified)
-    {
-#if !defined(NO_DYNAMIC_ENGINE)
-        //* Init openssl engine for signing
-        signer = unique_ptr<MlxSign::Signer>(
-          new MlxSign::MlxSignRSAViaHSM(_flintParams.openssl_engine, _flintParams.openssl_key_id));
-#else
-        reportErr(true, "Open SSL functionality is not supported.\n");
-#endif
-    }
-    else
-    {
-        signer = unique_ptr<MlxSign::Signer>(new MlxSign::MlxSignRSAViaOpenssl(_flintParams.privkey_file.c_str()));
-    }
+#if !defined(UEFI_BUILD)
+    signer = unique_ptr<MlxSign::Signer>(new MlxSign::MlxSignRSAViaOpenssl(_flintParams.privkey_file.c_str()));
 #else
     reportErr(true, "RSA sign is not supported.\n");
 #endif
@@ -2336,40 +2274,17 @@ bool SignRSASubCommand::verifyParams()
         return false;
     }
 
-    if (_flintParams.openssl_engine_usage_specified)
+    if (_flintParams.privkey_file.empty())
     {
-        if (_flintParams.openssl_engine.empty() || _flintParams.openssl_key_id.empty())
-        {
-            reportErr(true, "To use OpenSSL engine you must provide the engine and the key identifier.\n");
-            return false;
-        }
-        if (_flintParams.openssl_key_id.find("type=public", 0) != std::string::npos)
-        {
-            reportErr(true, "The %s command with --openssl_key_id flag does not accept public keys\n", _name.c_str());
-            return false;
-        }
-        if (!_flintParams.privkey_file.empty())
-        {
-            reportErr(true,
-                      "The %s command does not accept --private_key flag with the following flags: "
-                      "--openssl_engine, --openssl_key_id\n",
-                      _name.c_str());
-            return false;
-        }
+        reportErr(true, "To sign the image with RSA you must provide private key.\n");
+        return false;
     }
-    else
+    else if (!is_file_exists(_flintParams.privkey_file.c_str()))
     {
-        if (_flintParams.privkey_file.empty())
-        {
-            reportErr(true, "To sign the image with RSA you must provide private key.\n");
-            return false;
-        }
-        else if (!is_file_exists(_flintParams.privkey_file.c_str()))
-        {
-            reportErr(true, SIGN_PRIVATE_KEY_NOT_FOUND, _flintParams.privkey_file.c_str());
-            return false;
-        }
+        reportErr(true, SIGN_PRIVATE_KEY_NOT_FOUND, _flintParams.privkey_file.c_str());
+        return false;
     }
+   
     return true;
 }
 
