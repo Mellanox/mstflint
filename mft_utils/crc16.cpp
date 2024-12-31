@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,48 +29,55 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-#ifndef USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_
-#define USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_
-
-#include "mlxsign_lib.h"
-#ifndef NO_OPEN_SSL
-#include <openssl/ssl.h>
-#endif
-
-using namespace std;
-
-namespace MlxSign
+#include "crc16.h"
+#include <stdlib.h>
+void Crc16::add(u_int32_t o)
 {
-/*
- * Class Signer: interface for various types of signers
- */
-
-class Signer
+    if (_debug)
+    {
+        printf("Crc16::add(%08x)\n", o);
+    }
+    for (int i = 0; i < 32; i++)
+    {
+        if (_crc & 0x8000)
+        {
+            _crc = (u_int16_t)((((_crc << 1) | (o >> 31)) ^ 0x100b) & 0xffff);
+        }
+        else
+        {
+            _crc = (u_int16_t)(((_crc << 1) | (o >> 31)) & 0xffff);
+        }
+        o = (o << 1) & 0xffffffff;
+    }
+} // Crc16::add
+////////////////////////////////////////////////////////////////////////
+void Crc16::finish()
 {
-public:
-    virtual ~Signer(){};
-    virtual MlxSign::ErrorCode Init() = 0;
-    virtual MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature) const = 0;
-};
-
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-class MlxSignRSAViaOpenssl : public Signer
+    for (int i = 0; i < 16; i++)
+    {
+        if (_crc & 0x8000)
+        {
+            _crc = ((_crc << 1) ^ 0x100b) & 0xffff;
+        }
+        else
+        {
+            _crc = (_crc << 1) & 0xffff;
+        }
+    }
+    // Revert 16 low bits
+    _crc = _crc ^ 0xffff;
+} // Crc16::finish
+////////////////////////////////////////////////////////////////////////
+void Crc16::operator<<(std::vector<u_int8_t> v)
 {
-public:
-    MlxSignRSAViaOpenssl(string privPemFileStr);
-
-    MlxSign::ErrorCode Init() override;
-    MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature) const override;
-    MlxSign::SHAType GetShaType() { return _shaType; };
-
-private:
-    string _privPemFileStr;
-    MlxSign::SHAType _shaType;
-    MlxSignRSA _rsa;
-};
-
-#endif // #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-
-} // namespace MlxSign
-#endif /* USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_ */
+    if (v.size() % 4)
+    {
+        fprintf(stderr, "Internal error: Image section size should be 4-bytes aligned");
+        exit(1);
+    }
+    for (u_int32_t i = 0; i < v.size(); i += 4)
+    {
+        u_int32_t dw_be = __cpu_to_be32(*((u_int32_t*)(&v[i])));
+        add(dw_be);
+    }
+}

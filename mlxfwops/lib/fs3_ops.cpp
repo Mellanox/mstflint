@@ -151,6 +151,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
   {FS3_DTOC, "DTOC_HEADER"},
   {FS4_HW_PTR, "HW_POINTERS"},
   {FS4_FW_DEBUG_DUMP, "FW_DEBUG_DUMP"},
+  {FS4_FW_DEBUG_DUMP_2, "FW_DEBUG_DUMP_2"},
   {FS4_RSA_PUBLIC_KEY, "RSA_PUBLIC_KEY"},
   {FS4_RSA_4096_SIGNATURES, "RSA_4096_SIGNATURES"},
   {FS4_EXCLKSYNC_INFO, "EXCLKSYNC_INFO"},
@@ -331,6 +332,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t* buff)
 
     _fwImgInfo.ext_info.burn_image_size = image_info.burn_image_size;
     _fwImgInfo.ext_info.dtoc_offset = image_info.dtoc_offset;
+    _fwImgInfo.ext_info.sku = (device_sku)image_info.psc_sku;
 
     /* assuming number of supported_hw_id < MAX_NUM_SUPP_HW_IDS */
     memcpy(_fwImgInfo.supportedHwId, image_info.supported_hw_id, sizeof(image_info.supported_hw_id));
@@ -3534,7 +3536,8 @@ bool Fs3Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_
 bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img,
                                       bool maskMagicPatternAndDevToc,
                                       bool verbose,
-                                      bool ignoreImageStart)
+                                      bool ignoreImageStart,
+                                      bool)
 {
     u_int32_t size = 0;
 

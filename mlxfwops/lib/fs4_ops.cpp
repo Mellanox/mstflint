@@ -605,7 +605,8 @@ bool Fs4Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_
 bool Fs4Operations::FwExtract4MBImage(vector<u_int8_t>& img,
                                       bool maskMagicPatternAndDevToc,
                                       bool verbose,
-                                      bool ignoreImageStart)
+                                      bool ignoreImageStart,
+                                      bool)
 {
     bool res = false;
 
@@ -3499,43 +3500,56 @@ bool Fs4Operations::UpdateHashInHashesTable(fs3_section_t section_type, vector<u
         return false;
     }
     const u_int32_t htoc_address = _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE;
-    HTOC htoc = HTOC(img, htoc_address);
-
-    // TODO - move below logic to HTOC
-    //* Get hash addr in hashes_table
-    struct image_layout_htoc_entry htoc_entry;
-    if (!htoc.GetEntryBySectionType(section_type, htoc_entry))
+    try
     {
-        DPRINTF(("Fs4Operations::UpdateHashInHashesTable Can't find section type 0x%x in htoc\n", section_type));
-        if (!htoc.AddNewEntry(_ioAccess, section_type, htoc_entry))
+        u_int32_t htoc_size = 0;
+        if (!GetHashesTableSize(htoc_size))
         {
-            return errmsg("Failed to add new entry of section type 0x%x to htoc", section_type);
+            return false;
+        }
+
+        HTOC htoc = HTOC(img, htoc_address, htoc_size);
+
+        // TODO - move below logic to HTOC
+        //* Get hash addr in hashes_table
+        struct image_layout_htoc_entry htoc_entry;
+        if (!htoc.GetEntryBySectionType(section_type, htoc_entry))
+        {
+            DPRINTF(("Fs4Operations::UpdateHashInHashesTable Can't find section type 0x%x in htoc\n", section_type));
+            if (!htoc.AddNewEntry(_ioAccess, section_type, htoc_entry))
+            {
+                return errmsg("Failed to add new entry of section type 0x%x to htoc", section_type);
+            }
+        }
+        u_int32_t hash_addr = htoc_address + htoc_entry.hash_offset;
+        u_int32_t hash_size = htoc.header.hash_size;
+
+        //* Insert hash (SHA512) to hashes_table
+        if (!_ioAccess->write(hash_addr, hash.data(), hash_size))
+        {
+            return errmsg("Failed to insert hash to hashes_table");
+        }
+
+        //* Calculate CRC on modified hashes_table
+        u_int32_t hashes_table_size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + IMAGE_LAYOUT_HTOC_HEADER_SIZE +
+                                      htoc.GetHtocMaxNumOfEntries() * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + hash_size) +
+                                      HASHES_TABLE_TAIL_SIZE;
+        u_int8_t* hashes_table_data;
+        READALLOCBUF((*_ioAccess), _hashes_table_ptr, hashes_table_data, hashes_table_size, "HASHES TABLE");
+        u_int32_t hashes_table_crc = CalcImageCRC((u_int32_t*)hashes_table_data, (hashes_table_size / 4) - 1);
+        free(hashes_table_data);
+        CPUTO1(hashes_table_crc);
+
+        //* Insert calculated CRC to last DWORD in hashes_table
+        u_int32_t hashes_table_crc_addr = _hashes_table_ptr + hashes_table_size - 4;
+        if (!_ioAccess->write(hashes_table_crc_addr, &hashes_table_crc, 4))
+        {
+            return errmsg("Failed to write hashes_table crc");
         }
     }
-    u_int32_t hash_addr = htoc_address + htoc_entry.hash_offset;
-    u_int32_t hash_size = htoc.header.hash_size;
-
-    //* Insert hash (SHA512) to hashes_table
-    if (!_ioAccess->write(hash_addr, hash.data(), hash_size))
+    catch (const std::exception& e)
     {
-        return errmsg("Failed to insert hash to hashes_table");
-    }
-
-    //* Calculate CRC on modified hashes_table
-    u_int32_t hashes_table_size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + IMAGE_LAYOUT_HTOC_HEADER_SIZE +
-                                  MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + hash_size) +
-                                  HASHES_TABLE_TAIL_SIZE;
-    u_int8_t* hashes_table_data;
-    READALLOCBUF((*_ioAccess), _hashes_table_ptr, hashes_table_data, hashes_table_size, "HASHES TABLE");
-    u_int32_t hashes_table_crc = CalcImageCRC((u_int32_t*)hashes_table_data, (hashes_table_size / 4) - 1);
-    free(hashes_table_data);
-    CPUTO1(hashes_table_crc);
-
-    //* Insert calculated CRC to last DWORD in hashes_table
-    u_int32_t hashes_table_crc_addr = _hashes_table_ptr + hashes_table_size - 4;
-    if (!_ioAccess->write(hashes_table_crc_addr, &hashes_table_crc, 4))
-    {
-        return errmsg("Failed to write hashes_table crc");
+        return errmsg("%s", e.what());
     }
 
     return true;
@@ -5221,6 +5235,7 @@ bool Fs4Operations::GetHashesTableSize(u_int32_t& size)
     }
     u_int32_t htoc_hash_size =
       HTOC_HASH_SIZE; // In case of encrypted device we can't parse HTOC header to get hash size so we use constant
+    u_int8_t htoc_max_num_of_entries = MAX_HTOC_ENTRIES_NUM;
     if (!image_encrypted)
     {
         //* Read HTOC header for hash size
@@ -5230,10 +5245,11 @@ bool Fs4Operations::GetHashesTableSize(u_int32_t& size)
         image_layout_htoc_header header;
         image_layout_htoc_header_unpack(&header, buff);
         htoc_hash_size = header.hash_size;
+        htoc_max_num_of_entries = header.version == 1 ? MAX_HTOC_ENTRIES_NUM_VERSION_1 : htoc_max_num_of_entries;
         free(buff);
     }
     u_int32_t htoc_size =
-      IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + htoc_hash_size);
+      IMAGE_LAYOUT_HTOC_HEADER_SIZE + htoc_max_num_of_entries * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + htoc_hash_size);
     size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + htoc_size + HASHES_TABLE_TAIL_SIZE;
 
     return true;
@@ -5772,7 +5788,7 @@ Fs4Operations::TocArray::TocArray()
     memset(&tocHeader, 0, sizeof(tocHeader));
 }
 
-Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr)
+Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr, u_int32_t size)
 {
     memset(entries, 0, MAX_HTOC_ENTRIES_NUM * sizeof(image_layout_htoc_entry));
     this->htoc_start_addr = htoc_start_addr;
@@ -5781,6 +5797,16 @@ Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr)
                                  img.begin() + htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE);
     image_layout_htoc_header_unpack(&header, header_data.data());
     // image_layout_htoc_header_dump(&header, stdout);
+
+    //* calculate num_of_entries from those equations
+    //* htoc_size = HTOC__HEADER_SIZE + HTOC__ENTRY_SIZE * num_of_entries
+    //* hashes_table_size = HASHES_TABLE__HEADER_SIZE + htoc_size + num_of_entries * header.hash_size +
+    //* HASHES_TABLE__TAIL_SIZE
+    htoc_max_num_of_entries = (size - HTOC__HEADER_SIZE - HASHES_TABLE__HEADER_SIZE - HASHES_TABLE__TAIL_SIZE) /
+                              (header.hash_size + HTOC__ENTRY_SIZE);
+
+    entries = new image_layout_htoc_entry[htoc_max_num_of_entries];
+    memset(entries, 0, htoc_max_num_of_entries * sizeof(image_layout_htoc_entry));
     //* Parse entries
     u_int32_t entries_start_addr = htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE;
     for (int ii = 0; ii < header.num_of_entries; ii++)
@@ -5797,13 +5823,13 @@ bool Fs4Operations::HTOC::AddNewEntry(FBase* ioAccess,
                                       struct image_layout_htoc_entry& htoc_entry)
 {
     DPRINTF(("Fs4Operations::HTOC::AddNewEntry htoc num_of_entries = %d\n", header.num_of_entries));
-    if (header.num_of_entries == MAX_HTOC_ENTRIES_NUM)
+    if (header.num_of_entries == htoc_max_num_of_entries)
     {
         return false;
     }
 
     //* Preparing new htoc entry struct
-    u_int32_t htoc_size = IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * IMAGE_LAYOUT_HTOC_ENTRY_SIZE;
+    u_int32_t htoc_size = IMAGE_LAYOUT_HTOC_HEADER_SIZE + htoc_max_num_of_entries * IMAGE_LAYOUT_HTOC_ENTRY_SIZE;
     u_int32_t htoc_entry_index = header.num_of_entries;
     htoc_entry.hash_offset = htoc_size + (htoc_entry_index * header.hash_size);
     htoc_entry.section_type = section_type;

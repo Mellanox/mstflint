@@ -242,6 +242,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "user_password", 1));
     _flags.push_back(new Flag("", "cert_chain_index", 1));
     _flags.push_back(new Flag("", "component_type", 1));
+    _flags.push_back(new Flag("", "image_size_only", 0));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -356,8 +357,8 @@ bool verifyNumOfArgs(string name, string value)
     if (name == "flash_params")
     {
         expected = 3;
-    }
-
+    } 
+    
     int actual = countArgs(value);
     if (name == "downstream_device_ids")
     {
@@ -854,17 +855,8 @@ void Flint::initCmdParser()
                false,
                false,
                1);
-
-    AddOptions(
-      "openssl_engine",
-      ' ',
-      "<string>",
-      "Name of the OpenSSL engine to used by the sign/rsa_sign commands to work with the HSM hardware via OpenSSL API");
-    AddOptions("openssl_key_id",
-               ' ',
-               "<string>",
-               "Key identification string to be used by the sign/rsa_sign commands to work with the HSM hardware via "
-               "OpenSSL API");
+    AddOptions("openssl_engine", ' ', "<string>", "deprecated");
+    AddOptions("openssl_key_id", ' ', "<string>", "deprecated");
     AddOptions("output_file", ' ', "<string>", "output file name for exporting the public key from PEM/BIN");
     AddOptions("user_password", ' ', "<string>", "the HSM user password string in order to work with HSM device");
 #ifdef __WIN__
@@ -883,6 +875,7 @@ void Flint::initCmdParser()
       "section according to given index.\n"
       "This flag is relevant only for set_attestation_cert_chain command.");
     AddOptions("component_type", ' ', "<type string>", "component to query, currently only \"sync_clock\" supported.");
+    AddOptions("image_size_only", ' ', "", "indication for extract_fw_data command to not extract extra data");
 
     for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++)
     {
@@ -1256,13 +1249,13 @@ ParseStatus Flint::HandleOption(string name, string value)
     }
     else if (name == "openssl_engine")
     {
-        _flintParams.openssl_engine_usage_specified = true;
-        _flintParams.openssl_engine = value;
+        printf("The '--openssl_engine' flags have been deprecated.\n");
+        return PARSE_OK_WITH_EXIT;
     }
     else if (name == "openssl_key_id")
     {
-        _flintParams.openssl_engine_usage_specified = true;
-        _flintParams.openssl_key_id = value;
+        printf("The '--openssl_key_id' flags have been deprecated.\n");
+        return PARSE_OK_WITH_EXIT;
     }
     else if (name == "output_file")
     {
@@ -1367,6 +1360,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "component_type")
     {
         _flintParams.component_type = value;
+    }
+    else if (name == "image_size_only")
+    {
+        _flintParams.imageSizeOnly = true;
     }
     else
     {

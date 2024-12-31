@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,48 +29,20 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-#ifndef USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_
-#define USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_
-
-#include "mlxsign_lib.h"
-#ifndef NO_OPEN_SSL
-#include <openssl/ssl.h>
-#endif
-
-using namespace std;
-
-namespace MlxSign
-{
-/*
- * Class Signer: interface for various types of signers
- */
-
-class Signer
+#pragma once
+#include "common/compatibility.h"
+#include <vector>
+class Crc16
 {
 public:
-    virtual ~Signer(){};
-    virtual MlxSign::ErrorCode Init() = 0;
-    virtual MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature) const = 0;
-};
-
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-class MlxSignRSAViaOpenssl : public Signer
-{
-public:
-    MlxSignRSAViaOpenssl(string privPemFileStr);
-
-    MlxSign::ErrorCode Init() override;
-    MlxSign::ErrorCode Sign(const vector<u_int8_t>& msg, vector<u_int8_t>& signature) const override;
-    MlxSign::SHAType GetShaType() { return _shaType; };
-
+    Crc16(bool d = false) : _debug(d) { clear(); }
+    u_int16_t get() { return _crc; }
+    void clear() { _crc = 0xffff; }
+    void operator<<(u_int32_t val) { add(val); }
+    void operator<<(std::vector<u_int8_t> v);
+    void add(u_int32_t val);
+    void finish();
 private:
-    string _privPemFileStr;
-    MlxSign::SHAType _shaType;
-    MlxSignRSA _rsa;
+    u_int16_t _crc;
+    bool _debug;
 };
-
-#endif // #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-
-} // namespace MlxSign
-#endif /* USER_MLXSIGN_LIB_MLXSIGN_SIGNER_INTERFACE_H_ */

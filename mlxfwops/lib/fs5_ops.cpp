@@ -32,6 +32,7 @@
 #include "fs5_ops.h"
 #include "calc_hw_crc.h"
 #include "fs5_image_layout_layouts.h"
+#include <algorithm>
 
 const u_int32_t Fs5Operations::BCH_SIZE_IN_BYTES = 0x2000;
 
@@ -149,6 +150,34 @@ bool Fs5Operations::GetImageSize(u_int32_t* image_size)
     return true;
 }
 
+bool Fs5Operations::GetHashesTableSize(u_int32_t& size)
+{
+    bool image_encrypted = false;
+    if (!isEncrypted(image_encrypted))
+    {
+        return false;
+    }
+
+    if (image_encrypted)
+    {
+        return errmsg("Cannot read Hashes Table from encrypted image/device\n");
+    }
+
+    vector<u_int8_t> hashes_table_header_data(IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE);
+
+    if (!_ioAccess->read(_hashes_table_ptr, hashes_table_header_data.data(), hashes_table_header_data.size()))
+    {
+        return errmsg("Hashes Table read error, %s\n", _ioAccess->err());
+    }
+
+    struct image_layout_hashes_table_header hashes_table_header;
+    image_layout_hashes_table_header_unpack(&hashes_table_header, hashes_table_header_data.data());
+
+    size = hashes_table_header.dw_size * 4 + HTOC::HTOC__HEADER_SIZE;
+
+    return true;
+}
+
 bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack verifyCallBackFunc)
 {
     DPRINTF(("FwOperations::CheckBoot2\n"));
@@ -170,7 +199,7 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
     {
         return false;
     }
-    _fwImgInfo.boot2Size = __be32_to_cpu(ncoreBCH.u8_stage1_component.u32_binary_len) - hashes_table_size;
+    _fwImgInfo.boot2Size = __be32_to_cpu(ncoreBCH.stage1_components[0].u32_binary_len) - hashes_table_size;
 
     DPRINTF(("FwOperations::CheckBoot2 size = 0x%x\n", _fwImgInfo.boot2Size));
     if (_fwImgInfo.boot2Size > 1048576 || _fwImgInfo.boot2Size < 4)
@@ -391,9 +420,26 @@ bool Fs5Operations::NCoreQuery(fw_info_t* fwInfo)
     TOCPUn(ncoreData.data(), BCH_SIZE_IN_BYTES / 4);
     fs5_image_layout_boot_component_header_unpack(&ncoreBCH, ncoreData.data());
 
-    fwInfo->fs3_info.security_mode &= ~SMM_DEBUG_FW;
-    fwInfo->fs3_info.security_mode |= (ncoreBCH.u8_stage1_component.flags.is_debug == 1) ? SMM_DEBUG_FW : 0;
-    fwInfo->fw_info.encrypted_fw = ncoreBCH.u8_stage1_component.flags.is_encrypted ? 2 : 0;
+    // if there's a signature (at least one byte that's not 0x0 or 0xff), we assume that the whole image is signed
+    auto compareFunc = [](u_int8_t byte) { return byte != 0x0 && byte != 0xff; };
+    if (std::find_if(begin(ncoreBCH.u8_stage1_signature.u8_dummy), end(ncoreBCH.u8_stage1_signature.u8_dummy),
+                     compareFunc) != end(ncoreBCH.u8_stage1_signature.u8_dummy))
+    {
+        if (fwInfo->fw_info.sku == device_sku::PRE_PROD_IPN || fwInfo->fw_info.sku == device_sku::SECURE_IPN)
+        {
+            fwInfo->fs3_info.security_mode &= ~SMM_DEV_FW;
+            fwInfo->fs3_info.security_mode |= SMM_DEV_FW;
+        }
+    }
+
+    string magicPattern(reinterpret_cast<const char*>(ncoreBCH.u8_header_magic), 4);
+    if (magicPattern == "ADVN") // magic pattern is reversed to fit FW array parsing
+    {
+        DPRINTF(("Fs5Operations::NCoreQuery fetching debug and encryption indications\n"));
+        fwInfo->fs3_info.security_mode &= ~SMM_DEBUG_FW;
+        fwInfo->fs3_info.security_mode |= (ncoreBCH.stage1_components[0].flags.is_debug == 1) ? SMM_DEBUG_FW : 0;
+        fwInfo->fw_info.encrypted_fw = ncoreBCH.stage1_components[0].flags.is_encrypted ? 2 : 0;
+    }
 
     return true;
 }
@@ -401,11 +447,12 @@ bool Fs5Operations::NCoreQuery(fw_info_t* fwInfo)
 bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
                                       bool maskMagicPatternAndDevToc,
                                       bool verbose,
-                                      bool ignoreImageStart)
+                                      bool ignoreImageStart,
+                                      bool imageSizeOnly)
 {
     bool res = Fs4Operations::FwExtract4MBImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
 
-    if (res)
+    if (res && !imageSizeOnly)
     {
         //* Get image size
         u_int32_t burn_image_size;

@@ -111,8 +111,6 @@ public:
         dbName(DB_NAME),
         privPemFile(),
         keyPairUUID(),
-        opensslEngine(),
-        opensslKeyId(),
         allAttrs(false),
         cmd(Mc_UnknownCmd),
         yes(false),
@@ -131,8 +129,6 @@ public:
     std::string dbName;
     std::string privPemFile;
     std::string keyPairUUID;
-    std::string opensslEngine;
-    std::string opensslKeyId;
     bool allAttrs;
     mlxCfgCmd cmd;
     bool yes;

@@ -52,7 +52,8 @@ public:
     bool FwExtract4MBImage(vector<u_int8_t>& img,
                            bool maskMagicPatternAndDevToc,
                            bool verbose = false,
-                           bool ignoreImageStart = false) override;
+                           bool ignoreImageStart = false,
+                           bool imageSizeOnly = false) override;
 
 protected:
     bool CheckBoot2(u_int32_t beg,
@@ -78,6 +79,7 @@ private:
                      bool verbose = false) override;
     bool IsSecureFwUpdateSigned(bool& isSigned);
     bool NCoreQuery(fw_info_t* fwInfo);
+    bool GetHashesTableSize(u_int32_t& size) override;
 
     static const u_int32_t BCH_SIZE_IN_BYTES;               
 };
