@@ -45,6 +45,7 @@
 #include <iomanip>
 #include <sys/stat.h>
 #include <map>
+#include <bitset>
 
 #include "mtcr.h"
 #include <common/compatibility.h>
@@ -64,6 +65,7 @@
 #define MODULUS_SIZE 512
 #define TOTAL_PUBLIC_KEY_SIZE 532
 #define MODULUS_OFFSET 38
+#define BP_SIZE 4
 
 #if !defined(__WIN__) && !defined(__DJGPP__) && !defined(UEFI_BUILD) && defined(HAVE_TERMIOS_H)
 // used in mygetchar
@@ -4224,6 +4226,29 @@ void QuerySubCommand::PrintLifeCycle(const life_cycle_t& lifeCycle)
     }
 }
 
+bool HwSubCommand::PrintWriteProtectedBits(const ext_flash_attr_t& attr)
+{
+    int flash_index = 0;
+    int rc = attr.mf_get_write_protect_rc_array[flash_index];
+    bool ret_val = true;
+    write_protect_info_t protect_info = attr.protect_info_array[flash_index];
+    if (rc == MFE_OK)
+    {
+        std::bitset<BP_SIZE> bp_bits(protect_info.sectors_num);
+        string tbs_bit = (protect_info.is_bottom ? "1" : "0");
+        int msb = BP_SIZE - 1;
+        std::cout << "  TBS, BP[" << msb << ":0]            " << tbs_bit << ", " << bp_bits << endl;
+    }
+    else
+    {
+        if (rc != MFE_NOT_SUPPORTED_OPERATION)
+        {
+            ret_val = false;
+        }
+    }
+    return ret_val;
+}
+
 FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 {
     DPRINTF(("QuerySubCommand::printInfo fullQuery=%d\n", fullQuery));
@@ -6621,6 +6646,15 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
     }
     printf("  JEDEC_ID                0x%06x\n",
            attr.jedec_id & 0xffffff); // JEDEC_ID is built from 3B, so we mask last byte
+    
+    if (attr.write_protect_support)
+    {
+        if (!PrintWriteProtectedBits(attr))
+        {
+            return FLINT_FAILED;
+        }
+    }
+
     return FLINT_SUCCESS;
 }
 
