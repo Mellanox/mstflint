@@ -40,7 +40,8 @@ libmtcr_ul_la_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 			mtcr_ul_icmd_cif.c mtcr_icmd_cif.h\
 			mtcr_mem_ops.c mtcr_mem_ops.h\
 			mtcr_ul_com_defs.h mtcr_mf.h\
-			mtcr_ul_com.h mtcr_ul_com.c\
+			mtcr_ul_com.h mtcr_ul_com.c \
+			mtcr_common.h mtcr_common.c \
 			packets_common.c packets_common.h\
 			packets_layout.c packets_layout.h \
 			fwctrl.c fwctrl.h fwctrl_ioctl.h
