@@ -41,7 +41,6 @@ import platform
 import re
 import time
 
-MLX5CTL_PREFIX = 'mlx5ctl-'
 
 ######################################################################
 # Description:  Execute command and get (rc, stdout-output, stderr-output)
@@ -99,20 +98,12 @@ def removeDomainFromAddress(devAddr):
     return devAddr
 
 
-def CheckIfMlx5CtlFormat(dev):
-    if dev.startswith(MLX5CTL_PREFIX):
-        prefix_length = len(MLX5CTL_PREFIX)
-        dev_new_name = dev[prefix_length:]
-        return dev_new_name
-    else:
-        return dev
-
 def isDevDBDFFormat(dev):
-    dev = CheckIfMlx5CtlFormat(dev)
     pat = r"[0-9,A-F,a-f]{4}:[0-9,A-F,a-f]{2}:[0-9,A-F,a-f]{2}\.[0-9,A-F,a-f]{1,2}"
     if re.match(pat, dev):
         return True
     return False
+
 
 def isDevBDFFormat(dev):
     pat = r"[0-9,A-F,a-f]{2}:[0-9,A-F,a-f]{2}\.[0-9,A-F,a-f]{1,2}"

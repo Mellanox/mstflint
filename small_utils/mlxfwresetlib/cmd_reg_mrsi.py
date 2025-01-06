@@ -55,6 +55,7 @@ class CmdRegMrsi():
         {11, 'FW Fault Crash Dump is complete'}
     ]
 
+    OS_IS_RUNNING = 5
     LOW_POWER_STANDBY = 6
     EMBEDDED_CPU_DEVICE = 1
 
