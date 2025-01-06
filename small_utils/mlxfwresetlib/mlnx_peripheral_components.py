@@ -41,11 +41,12 @@ import platform
 import re
 from .pci_device import PciDevice
 from .mlxfwreset_utils import cmdExec
+import mtcr
 
 
 class MlnxPeripheralComponents(object):
 
-    SD_SUPPORTED_DID = [0x21e, 0x218, 0x216, 0x212, 0x20f, 0x20d, 0x209, 0x20b, 0x21c]  # Connectx8,Connectx7,Connectx6LX,Connectx6DX,Connectx6,Connectx5 (SD device) ,Connectx4/Connectx4Lx (MH device connected as SD), BF-3
+    SD_SUPPORTED_DID = [0x225, 0x21e, 0x218, 0x216, 0x212, 0x20f, 0x20d, 0x209, 0x20b, 0x21c]  # Connectx9,Connectx8,Connectx7,Connectx6LX,Connectx6DX,Connectx6,Connectx5 (SD device) ,Connectx4/Connectx4Lx (MH device connected as SD), BF-3
 
     def __init__(self, logger):
         self.pci_devices = []
@@ -110,7 +111,10 @@ class MlnxPeripheralComponents(object):
                         RuntimeError("Unsupported OS")
 
                     pci_device = PciDevice(aliases, domain, bus, dev, fn)
-                    self.pci_devices.append(pci_device)
+                    MstDev = mtcr.MstDevice(pci_device.get_alias())
+                    if not MstDev.isGPUDevice():
+                        self.pci_devices.append(pci_device)
+                    MstDev.close()
             except BaseException:
                 raise RuntimeError("Failed to get device PCI Address")  # Why it's required??? You don't do anything in the excpetion
 
