@@ -645,10 +645,10 @@ enum {
     PCI_STATUS_BIT_OFFS = 29,
     PCI_STATUS_BIT_LEN  = 3,
 
-    PCI_SYNDROME_BIT_OFFSET = 30,
-    PCI_SYNDROME_BIT_LEN = 1,
+    PCI_SYNDROME_BIT_OFFSET      = 30,
+    PCI_SYNDROME_BIT_LEN         = 1,
     PCI_SYNDROME_CODE_BIT_OFFSET = 24,
-    PCI_SYNDROME_CODE_BIT_LEN = 4,
+    PCI_SYNDROME_CODE_BIT_LEN    = 4,
 };
 
 /* Mellanox vendor specific enum */
@@ -740,44 +740,28 @@ int mtcr_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
     memset(&r4, 0, sizeof(struct mst_read4_st));
     r4.address_space = (unsigned int)mf->address_space;
     r4.offset = offset;
-    if ((ioctl(mf->fd, PCICONF_READ4, &r4)) < 0)
-    {
+    if ((ioctl(mf->fd, PCICONF_READ4, &r4)) < 0) {
         DBG_PRINTF("PCICONF_READ4 ioctl failed when trying to access this space: %d. errno: %d\n",
-                    mf->address_space, errno);
-        // support PCI space
-        if (VSEC_PXIR_SUPPORT(mf))
-        {
-            if (mf->address_space < PXIR_SPACE_OFFSET)
-            {
-                mf->address_space += PXIR_SPACE_OFFSET;
-            }
-            else
-            {
-                mf->address_space -= PXIR_SPACE_OFFSET;
-            }
+                   mf->address_space, errno);
+        /* support PCI space */
+        if (VSEC_PXIR_SUPPORT(mf)) {
+            swap_pci_address_space(mf);
             r4.address_space = mf->address_space;
 
-            if (ioctl(mf->fd, PCICONF_READ4, &r4) < 0)
-            {
+            if (ioctl(mf->fd, PCICONF_READ4, &r4) < 0) {
                 rc = -1;
                 DBG_PRINTF(
                     "PCICONF_READ4 ioctl failed when trying to access this space: %d. errno: %d\n",
                     mf->address_space, errno);
-            }
-            else
-            {
+            } else {
                 *value = r4.data;
                 DBG_PRINTF("PCICONF_READ4 ioctl successfully accessed this space: %d\n",
-                            mf->address_space);
+                           mf->address_space);
             }
-        }
-        else
-        {
+        } else {
             rc = -1;
         }
-    }
-    else
-    {
+    } else {
         *value = r4.data;
     }
 
@@ -794,44 +778,28 @@ int mtcr_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
     r4.offset = offset;
     r4.data = value;
     r4.address_space = (unsigned int)mf->address_space;
-    if ((ioctl(mf->fd, PCICONF_WRITE4, &r4) < 0))
-    {
+    if ((ioctl(mf->fd, PCICONF_WRITE4, &r4) < 0)) {
         DBG_PRINTF("PCICONF_WRITE4 ioctl failed when trying to access this space: %d. errno: %d\n",
-                    mf->address_space, errno);
-        // support PCI space
-        if (VSEC_PXIR_SUPPORT(mf))
-        {
-            if (mf->address_space < PXIR_SPACE_OFFSET)
-            {
-                mf->address_space += PXIR_SPACE_OFFSET;
-            }
-            else
-            {
-                mf->address_space -= PXIR_SPACE_OFFSET;
-            }
+                   mf->address_space, errno);
+        /* support PCI space */
+        if (VSEC_PXIR_SUPPORT(mf)) {
+            swap_pci_address_space(mf);
             r4.address_space = mf->address_space;
 
-            if (ioctl(mf->fd, PCICONF_WRITE4, &r4) < 0)
-            {
+            if (ioctl(mf->fd, PCICONF_WRITE4, &r4) < 0) {
                 rc = -1;
                 DBG_PRINTF(
                     "PCICONF_WRITE4 ioctl failed when trying to access this space: %d. errno: %d\n",
                     mf->address_space, errno);
-            }
-            else
-            {
+            } else {
                 rc = 4;
                 DBG_PRINTF("PCICONF_WRITE4 ioctl successfully accessed this space: %d\n",
-                            mf->address_space);
+                           mf->address_space);
             }
-        }
-        else
-        {
+        } else {
             rc = -1;
         }
-    }
-    else
-    {
+    } else {
         rc = 4;
     }
 
@@ -853,13 +821,10 @@ int mtcr_fwctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
     int rc = -1;
 
-    if (offset == HW_ID_ADDR)
-    {
+    if (offset == HW_ID_ADDR) {
         *value = mf->device_hw_id;
         rc = 4;
-    }
-    else
-    {
+    } else {
         FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
     }
 
@@ -972,26 +937,16 @@ static int driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data,
             write4_buf.size = towrite;
             memcpy(write4_buf.data, dest_ptr, towrite);
             int ret = ioctl(mf->fd, PCICONF_WRITE4_BUFFER, &write4_buf);
-            if (ret < 0)
-            {
+            if (ret < 0) {
                 DBG_PRINTF("PCICONF_WRITE4_BUFFER ioctl failed when trying to access this space: %d. errno: %d\n",
-                            mf->address_space, errno);
-                // support PCI space
-                if (VSEC_PXIR_SUPPORT(mf))
-                {
-                    if (mf->address_space < PXIR_SPACE_OFFSET)
-                    {
-                        mf->address_space += PXIR_SPACE_OFFSET;
-                    }
-                    else
-                    {
-                        mf->address_space -= PXIR_SPACE_OFFSET;
-                    }
+                           mf->address_space, errno);
+                /* support PCI space */
+                if (VSEC_PXIR_SUPPORT(mf)) {
+                    swap_pci_address_space(mf);
                     write4_buf.address_space = mf->address_space;
 
                     ret = ioctl(mf->fd, PCICONF_WRITE4_BUFFER, &write4_buf);
-                    if (ret < 0)
-                    {
+                    if (ret < 0) {
                         DBG_PRINTF(
                             "PCICONF_WRITE4_BUFFER ioctl failed when trying to access this space: %d. errno: %d\n",
                             mf->address_space, errno);
@@ -1028,19 +983,13 @@ static int driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, 
             if ((ret = ioctl(mf->fd, PCICONF_READ4_BUFFER_EX, &read4_buf)) < 0) {
                 if ((ret = ioctl(mf->fd, PCICONF_READ4_BUFFER, &read4_buf)) < 0) {
                     if ((ret = ioctl(mf->fd, PCICONF_READ4_BUFFER_BC, &read4_buf)) < 0) {
-                        DBG_PRINTF("PCICONF_READ4_BUFFER_EX ioctl failed when trying to access this space: %d. errno: %d\n",
-                            mf->address_space, errno);
-                        // support PCI space
-                        if (VSEC_PXIR_SUPPORT(mf))
-                        {
-                            if (mf->address_space < PXIR_SPACE_OFFSET)
-                            {
-                                mf->address_space += PXIR_SPACE_OFFSET;
-                            }
-                            else
-                            {
-                                mf->address_space -= PXIR_SPACE_OFFSET;
-                            }
+                        DBG_PRINTF(
+                            "PCICONF_READ4_BUFFER_EX ioctl failed when trying to access this space: %d. errno: %d\n",
+                            mf->address_space,
+                            errno);
+                        /* support PCI space */
+                        if (VSEC_PXIR_SUPPORT(mf)) {
+                            swap_pci_address_space(mf);
                             read4_buf.address_space = mf->address_space;
                             if ((ret = ioctl(mf->fd, PCICONF_READ4_BUFFER_EX, &read4_buf)) < 0) {
                                 if ((ret = ioctl(mf->fd, PCICONF_READ4_BUFFER, &read4_buf)) < 0) {
@@ -1049,9 +998,7 @@ static int driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, 
                                     }
                                 }
                             }
-                        }
-                        else
-                        {
+                        } else {
                             return -1;
                         }
                     }
@@ -1345,16 +1292,15 @@ int mtcr_pciconf_wait_on_flag(mfile* mf, u_int8_t expected_val)
 
 int check_syndrome(mfile* mf)
 {
-    // in case syndrome is set, if syndrome_code is 0x3 (address_out_of_range), return error, so that the ioctl will
-    // fail and then we'll retry with PCI space.
+    /* in case syndrome is set, if syndrome_code is 0x3 (address_out_of_range), return error, so that the ioctl will */
+    /* fail and then we'll retry with PCI space. */
     u_int32_t syndrome = 0;
+
     READ4_PCI(mf, &syndrome, mf->vsec_addr + PCI_ADDR_OFFSET, "read domain", return ME_PCI_READ_ERROR);
-    if (syndrome)
-    {
+    if (syndrome) {
         u_int32_t syndrome_code = 0;
         READ4_PCI(mf, &syndrome_code, mf->vsec_addr + PCI_CTRL_OFFSET, "read domain", return ME_PCI_READ_ERROR);
-        if (EXTRACT(syndrome_code, PCI_SYNDROME_CODE_BIT_OFFSET, PCI_SYNDROME_CODE_BIT_LEN) == ADDRESS_OUT_OF_RANGE)
-        {
+        if (EXTRACT(syndrome_code, PCI_SYNDROME_CODE_BIT_OFFSET, PCI_SYNDROME_CODE_BIT_LEN) == ADDRESS_OUT_OF_RANGE) {
             return ME_ADDRESS_OUT_OF_RANGE;
         }
     }
@@ -1372,20 +1318,21 @@ int mtcr_pciconf_set_addr_space(mfile* mf, u_int16_t space)
 
     /* Check if we succedded to write the space (i.e. that its MSB is not ignored by FW) */
     u_int32_t read_val = 0;
+
     READ4_PCI(mf, &read_val, mf->vsec_addr + PCI_CTRL_OFFSET, "read status", return ME_PCI_READ_ERROR);
 
-    // Extract only the first 16 bits, as we need to check what's written in "space"
+    /* Extract only the first 16 bits, as we need to check what's written in "space" */
     unsigned int mask = 0xFFFF;
     unsigned int expected_value = val & mask;
     unsigned int actual_value = read_val & mask;
 
     /* Check if the space written is indeed the space we attempted to write */
-    if (actual_value != expected_value)
-    {
-        DBG_PRINTF("actual_space_value != expected_space_value. expected_space_value: 0x%x actual_space_value: 0x%x. Meaning space: 0x%x is not supported.\n",
-          expected_value,
-          actual_value,
-          expected_value);
+    if (actual_value != expected_value) {
+        DBG_PRINTF(
+            "actual_space_value != expected_space_value. expected_space_value: 0x%x actual_space_value: 0x%x. Meaning space: 0x%x is not supported.\n",
+            expected_value,
+            actual_value,
+            expected_value);
         return ME_PCI_SPACE_NOT_SUPPORTED;
     }
 
@@ -1425,8 +1372,7 @@ int mtcr_pciconf_rw(mfile* mf, unsigned int offset, u_int32_t* data, int rw)
         /* read data */
         READ4_PCI(mf, data, mf->vsec_addr + PCI_DATA_OFFSET, "read value", return ME_PCI_READ_ERROR);
     }
-    if (VSEC_PXIR_SUPPORT(mf))
-    {
+    if (VSEC_PXIR_SUPPORT(mf)) {
         rc = check_syndrome(mf);
     }
     return rc;
@@ -1690,6 +1636,7 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
     u_int32_t vsec_type = 0;
+
     mf->functional_vsec_supp = 0;
 
     mf->fd = -1;
@@ -1700,13 +1647,11 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
 
     mf->tp = MST_PCICONF;
 
-    if (mf->vsec_addr = pci_find_capability(mf, CAP_ID))
-    {
+    if (mf->vsec_addr = pci_find_capability(mf, CAP_ID)) {
         READ4_PCI(mf, &vsec_type, mf->vsec_addr, "read vsc type", return ME_PCI_READ_ERROR);
         mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
         DBG_PRINTF("in mtcr_pciconf_open function. mf->vsec_type: %d\n", mf->vsec_type);
-        if (mf->vsec_type == FUNCTIONAL_VSC)
-        {
+        if (mf->vsec_type == FUNCTIONAL_VSC) {
             DBG_PRINTF("FUNCTIONAL VSC Supported\n");
             mf->functional_vsec_supp = 1;
 
@@ -1739,18 +1684,16 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
 
             mtcr_pciconf_cap9_sem(mf, 0);
 
-            if (VSEC_SUPPORTED_UL(mf)) 
-            {
+            if (VSEC_SUPPORTED_UL(mf)) {
                 mf->address_space = AS_CR_SPACE;
                 ctx->mread4 = mtcr_pciconf_mread4;
                 ctx->mwrite4 = mtcr_pciconf_mwrite4;
                 ctx->mread4_block = mread4_block_pciconf;
                 ctx->mwrite4_block = mwrite4_block_pciconf;
-            } 
+            }
         }
     }
-    if (!mf->functional_vsec_supp)
-    {
+    if (!mf->functional_vsec_supp) {
         ctx->wo_addr = is_wo_pciconf_gw(mf);
         DBG_PRINTF("Write Only Address: %d\n", ctx->wo_addr);
         ctx->mread4 = mtcr_pciconf_mread4_old;
@@ -1901,7 +1844,7 @@ static MType mtcr_parse_name(const char* name,
         goto name_parsed;
     }
 
-    if(strstr(name, "fwctl")) {
+    if (strstr(name, "fwctl")) {
         return MST_FWCTL_CONTROL_DRIVER;
     }
 
@@ -3229,20 +3172,18 @@ int maccess_reg_ul(mfile              * mf,
     if (reg_size <= INBAND_MAX_REG_SIZE) {
         if (supports_reg_access_smp(mf)) {
             rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-            // support PCI space
-            if (return_by_reg_status(*reg_status) == ME_REG_ACCESS_REG_NOT_SUPP)
-            {
-                if (VSEC_PXIR_SUPPORT(mf) && (mf->address_space < PXIR_SPACE_OFFSET)) // If supported - attempt to
-                                                                                            // send the register on PCI VSC
-                                                                                            // space
-                {
-                    mf->address_space += PXIR_SPACE_OFFSET;
+            /* support PCI space */
+            if (return_by_reg_status(*reg_status) == ME_REG_ACCESS_REG_NOT_SUPP) {
+                if (VSEC_PXIR_SUPPORT(mf)) { /* If supported - attempt to */
+                    /* send the register on PCI VSC */
+                    /* space */
+                    swap_pci_address_space(mf);
                     rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg,
-                                        reg_status);
+                                       reg_status);
                     DBG_PRINTF(
                         "Entered PCI VSC space support flow. Second attempt to run mreg_send_raw with VSC address space: %d returned with rc: %d. Restoring address space back to CORE's address space\n",
-                        mf->address_space, rc);
-                    mf->address_space -= PXIR_SPACE_OFFSET; // Restore VSC space to CORE VSC space
+                        mf->address_space,
+                        rc);
                 }
             }
         }
@@ -3274,7 +3215,7 @@ int maccess_reg_ul(mfile              * mf,
     if (supports_reg_access_gmp_ul(mf, reg_method)) {
         rc = mib_send_gmp_access_reg_mad_ul(mf, (u_int32_t*)reg_data, reg_size, reg_id, reg_method, reg_status);
         if ((rc == ME_OK) && (*reg_status == 0)) {
-            DBG_PRINTF("AccessRegisterGMP Sent Successfully!\n");
+            ("AccessRegisterGMP Sent Successfully!\n");
             return ME_OK;
         }
         DBG_PRINTF("AccessRegisterGMP Failed!\n");
@@ -3952,8 +3893,7 @@ int read_dword_from_conf_space(mfile* mf, u_int32_t offset, u_int32_t* data)
 
 int is_remote_dev(mfile* mf)
 {
-    if (mf)
-    {
+    if (mf) {
         return mf->is_remote;
     }
 
@@ -3963,51 +3903,50 @@ int is_remote_dev(mfile* mf)
 
 static int check_zf_through_memory(mfile* mf)
 {
-    uint32_t gis = 0; // Global image status
-    size_t gis_address = 0;
-    switch (mf->device_hw_id)
-    {
-        case DeviceQuantum3_HwId:
-            gis_address = 0x152080;
-            break;
-        default:
-            return 0; // Device does not support Zombiefish mode
+    uint32_t gis = 0; /* Global image status */
+    size_t   gis_address = 0;
+
+    switch (mf->device_hw_id) {
+    case DeviceQuantum3_HwId:
+        gis_address = 0x152080;
+        break;
+
+    default:
+        return 0;     /* Device does not support Zombiefish mode */
     }
     int rc = mread4(mf, gis_address, &gis);
 
-    if (rc != 4)
-    {
+    if (rc != 4) {
         DBG_PRINTF("-E- Failed to read global_image_status from CR space (BAR0).\n");
         return 0;
     }
-    gis = EXTRACT(gis, 0, 16); // Extract the first 16 bits
+    gis = EXTRACT(gis, 0, 16); /* Extract the first 16 bits */
     return gis == AUTHENTICATION_FAILURE;
 }
 
 static int check_zf_through_vsc(mfile* mf)
 {
     int prev_address_space = mf->address_space;
+
     mset_addr_space(mf, AS_RECOVERY);
 
     uint32_t first_dword = 0;
-    int rc = mread4(mf, INITIALIZING_BIT_OFFSET_IN_VSC_RECOVERY_SPACE, &first_dword);
+    int      rc = mread4(mf, INITIALIZING_BIT_OFFSET_IN_VSC_RECOVERY_SPACE, &first_dword);
 
-    if (rc != 4)
-    {
+    if (rc != 4) {
         mset_addr_space(mf, prev_address_space);
         DBG_PRINTF("-E- Failed to read the first dword in VSC recovery space.\n");
         return 0;
     }
 
-    uint32_t in_recovery = EXTRACT(first_dword, 1, 1);       // Extract bit 1
-    uint32_t flash_control_vld = EXTRACT(first_dword, 2, 1); // Extract bit 2
-    uint32_t initializing = EXTRACT(first_dword, 0, 1);      // Extract bit 0
+    uint32_t in_recovery = EXTRACT(first_dword, 1, 1);       /* Extract bit 1 */
+    uint32_t flash_control_vld = EXTRACT(first_dword, 2, 1); /* Extract bit 2 */
+    uint32_t initializing = EXTRACT(first_dword, 0, 1);      /* Extract bit 0 */
 
     mf->vsc_recovery_space_flash_control_vld = flash_control_vld;
     mset_addr_space(mf, prev_address_space);
 
-    if (in_recovery && initializing)
-    {
+    if (in_recovery && initializing) {
         DBG_PRINTF("Device with HW ID: %u is in ZombieFish mode. flash_control_vld: %u\n", mf->device_hw_id,
                    flash_control_vld);
         return 1;
@@ -4018,26 +3957,25 @@ static int check_zf_through_vsc(mfile* mf)
 
 int is_zombiefish_device(mfile* mf)
 {
-    if (mread4(mf, HW_ID_ADDR, &mf->device_hw_id) != 4)
-    {
+    if (mread4(mf, HW_ID_ADDR, &mf->device_hw_id) != 4) {
         return 0;
     }
-    if (mf->device_hw_id != DeviceConnectX8_HwId && mf->device_hw_id != DeviceQuantum3_HwId &&
-        mf->device_hw_id != DeviceConnectX9_HwId && mf->device_hw_id != DeviceQuantum4_HwId &&
-        mf->device_hw_id != DeviceConnectX7_HwId && mf->device_hw_id != DeviceBlueField3_HwId)
-    {
+    if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceQuantum3_HwId) &&
+        (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceQuantum4_HwId) &&
+        (mf->device_hw_id != DeviceConnectX7_HwId) && (mf->device_hw_id != DeviceBlueField3_HwId)) {
         return 0;
     }
 
-    switch (mf->tp)
-    {
-        case MST_PCI:
-            mf->is_zombiefish = check_zf_through_memory(mf);
-            return mf->is_zombiefish;
-        case MST_PCICONF:
-            mf->is_zombiefish = check_zf_through_vsc(mf);
-            return mf->is_zombiefish;
-        default:
-            return 0;
+    switch (mf->tp) {
+    case MST_PCI:
+        mf->is_zombiefish = check_zf_through_memory(mf);
+        return mf->is_zombiefish;
+
+    case MST_PCICONF:
+        mf->is_zombiefish = check_zf_through_vsc(mf);
+        return mf->is_zombiefish;
+
+    default:
+        return 0;
     }
 }
