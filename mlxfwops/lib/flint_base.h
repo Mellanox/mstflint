@@ -415,6 +415,7 @@ typedef enum fs3_section
     FS4_LC_INI2_TABLE = 0xf0,
     FS4_LC_INI_NV_DATA = 0xf1,
     FS4_CERT_CHAIN_0 = 0xf2,
+    FS5_SECURITY_LOG = 0xd5,
     FS4_DIGITAL_CACERT_RW = 0xf3,
     FS4_CERTIFICATE_CHAINS_1 = 0xf4,
     FS4_CERTIFICATE_CHAINS_2 = 0xf5,
