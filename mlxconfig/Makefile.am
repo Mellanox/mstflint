@@ -47,7 +47,7 @@ AM_CPPFLAGS = \
 
 AM_CPPFLAGS += $(MUPARSER_CFLAGS) $(SQLITE_CFLAGS) $(COMPILER_FPIC)
 
-AM_CXXFLAGS = -pthread -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
+AM_CXXFLAGS = -pthread -Wall -W -g -MP -MD -pipe  $(JSON_CFLAGS) -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 
 bin_PROGRAMS = mstconfig
 
@@ -78,6 +78,7 @@ libmlxcfg_la_DEPENDENCIES = \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
     $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
+    $(JSON_LIBS) \
     $(MUPARSER_LIBS) \
     $(SQLITE_LIBS)
 

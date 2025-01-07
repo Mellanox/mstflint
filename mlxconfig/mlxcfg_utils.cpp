@@ -156,9 +156,9 @@ MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
     MError rc;
     // "suspend" signals as we are going to take semaphores
     mft_signal_set_handling(1);
-    // DEBUG_PRINT_SEND(&nvdiTlv, nvdi);
+    // DEBUG_PRINT_SEND(&mnvdiTlv, mnvdi);
     rc = reg_access_mnvdi(mf, REG_ACCESS_METHOD_SET, &mnvdiTlv);
-    // DEBUG_PRINT_RECEIVE(&nvdiTlv, nvdi);
+    // DEBUG_PRINT_RECEIVE(&mnvdiTlv, mnvdi);
     dealWithSignal();
     if (rc)
     {

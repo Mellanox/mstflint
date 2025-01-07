@@ -39,20 +39,22 @@
 
 #include <compatibility.h>
 #include <mtcr.h>
+#include <json/reader.h>
+#include <json/writer.h>
 
 #ifdef CABLES_SUPP
 #include <cable_access/cdb_cable_commander.h>
 #endif
 
-// #include "mlxcfg_lib.h"
+/* #include "mlxcfg_lib.h" */
 #include "mlxcfg_commander.h"
 #include "mlxcfg_view.h"
 #include "mlxcfg_utils.h"
 
 
-#define MAX_ERR_STR_LEN 1024
-#define MAX_BUF_SIZE 1024
-#define PRE_ERR_MSG "-E-"
+#define MAX_ERR_STR_LEN       1024
+#define MAX_BUF_SIZE          1024
+#define PRE_ERR_MSG           "-E-"
 #define MLNX_RAW_TLV_FILE_SIG "MLNX_RAW_TLV_FILE"
 
 #ifdef MST_UL
@@ -63,8 +65,7 @@
 
 #define DB_NAME ""
 
-typedef enum
-{
+typedef enum {
     Mc_Set,
     Mc_Query,
     Mc_Reset,
@@ -83,18 +84,17 @@ typedef enum
     Mc_UnknownCmd
 } mlxCfgCmd;
 
-typedef struct QueryOutputItem
-{
-    string mlxconfigName;
-    bool isReadOnly;
+typedef struct QueryOutputItem {
+    string    mlxconfigName;
+    bool      isReadOnly;
     u_int32_t nextVal;
-    string strNextVal;
+    string    strNextVal;
     u_int32_t currVal;
-    string strCurrVal;
+    string    strCurrVal;
     u_int32_t defVal;
-    string strDefVal;
+    string    strDefVal;
     u_int32_t setVal;
-    string strSetVal;
+    string    strSetVal;
 } QueryOutputItem;
 
 using namespace std;
@@ -113,13 +113,15 @@ public:
         keyPairUUID(),
         allAttrs(false),
         cmd(Mc_UnknownCmd),
+        isJsonOutputRequested(false),
         yes(false),
         force(false),
         enableVerbosity(false)
     {
     }
 
-    ~MlxCfgParams() {}
+    ~MlxCfgParams() {
+    }
 
     std::string device;
     Device_Type deviceType;
@@ -129,78 +131,91 @@ public:
     std::string dbName;
     std::string privPemFile;
     std::string keyPairUUID;
-    bool allAttrs;
-    mlxCfgCmd cmd;
-    bool yes;
-    std::vector<ParamView> setParams;
-    bool force; // ignore parameter checks
+    bool        allAttrs;
+    mlxCfgCmd   cmd;
+    bool        isJsonOutputRequested;
+    bool        yes;
+    std::vector < ParamView > setParams;
+    bool force;      /* ignore parameter checks */
     bool enableVerbosity;
 };
 
 class MlxCfg
 {
 public:
-    MlxCfg() : _mlxParams(), _errStr(), _devType(DeviceUnknown) {}
-    ~MlxCfg(){};
+    MlxCfg() : _mlxParams(), _errStr(), _devType(DeviceUnknown) {
+    }
+    ~MlxCfg(){
+    };
     mlxCfgStatus execute(int argc, char* argv[]);
 
 private:
-    // User interface and parsing methods
+    /* User interface and parsing methods */
     void printHelp();
     mlxCfgStatus showDevConfs();
     const char* getDeviceName(mfile* mf);
     void printVersion();
     void printUsage();
-    void printOpening(mfile* mf, const char* dev, int devIndex);
+    void printOpening(mfile* mf, const char* dev, string deviceIndex, Json::Value& oJsonValue);
     void printConfHeader(bool showDefualt, bool showNew, bool showCurrent);
     mlxCfgStatus getNumberFromString(const char* str, u_int32_t& num);
     mlxCfgStatus parseArgs(int argc, char* argv[]);
-    // Helper functions for parse args
+    /* Helper functions for parse args */
     mlxCfgStatus extractNVInputFile(int argc, char* argv[]);
     mlxCfgStatus extractNVOutputFile(int argc, char* argv[]);
     mlxCfgStatus extractSetCfgArgs(int argc, char* argv[]);
     mlxCfgStatus extractQueryCfgArgs(int argc, char* argv[]);
 
-    void removeContinuanceArray(std::vector<QueryOutputItem>& OutputItemOut,
-                                std::vector<QueryOutputItem>& OutputItemIn);
-    void
-      editAndPushItem(std::vector<QueryOutputItem>& queryOutputItemVector, QueryOutputItem& item, u_int32_t arrayIndex);
+    void removeContinuanceArray(std::vector < QueryOutputItem >& OutputItemOut,
+                                std::vector < QueryOutputItem >& OutputItemIn);
+    void editAndPushItem(std::vector < QueryOutputItem >& queryOutputItemVector,
+                         QueryOutputItem&                 item,
+                         u_int32_t                        arrayIndex);
 
     const char* getConfigWarning(const string& mlx_config_name, const string& set_val);
 
     bool tagExsists(string tag);
 
-    // Query cmd
+    /* Query cmd */
     mlxCfgStatus queryDevsCfg();
-    mlxCfgStatus
-      queryDevCfg(const char* dev, const char* pci = (const char*)NULL, int devIndex = 1, bool printNewCfg = false);
-    mlxCfgStatus queryDevCfg(Commander* commander,
-                             const char* dev,
-                             bool isWriteOperation,
+    mlxCfgStatus queryDevCfg(const char* dev,
                              const char* pci = (const char*)NULL,
-                             int devIndex = 1,
-                             bool printNewCfg = false);
+                             int         devIndex = 1,
+                             bool        printNewCfg = false);
+    mlxCfgStatus queryDevCfg(Commander * commander,
+                             const char* dev,
+                             bool        isWriteOperation,
+                             const char* pci = (const char*)NULL,
+                             int         devIndex = 1,
+                             bool        printNewCfg = false);
 
-    // Set cmd
+    /* Set cmd */
     mlxCfgStatus setDevCfg();
-    // reset Cmd
+    /* reset Cmd */
     mlxCfgStatus resetDevsCfg();
     mlxCfgStatus resetDevCfg(const char* dev);
-    // Set\Get Raw TLV file
+    /* Set\Get Raw TLV file */
     mlxCfgStatus devRawCfg(RawTlvMode mode);
     mlxCfgStatus backupCfg();
-    mlxCfgStatus tlvLine2DwVec(const std::string& tlvStringLine, std::vector<u_int32_t>& tlvVec);
+    mlxCfgStatus tlvLine2DwVec(const std::string& tlvStringLine, std::vector < u_int32_t >& tlvVec);
 
     mlxCfgStatus clrDevSem();
 
-    mlxCfgStatus readBinFile(string fileName, vector<u_int32_t>& buff);
-    mlxCfgStatus readNVInputFile(vector<u_int32_t>& buff);
+    mlxCfgStatus readBinFile(string fileName, vector < u_int32_t >& buff);
+    mlxCfgStatus readNVInputFile(vector < u_int32_t >& buff);
     mlxCfgStatus readNVInputFile(string& content);
-    mlxCfgStatus readNVInputFile(vector<string>& lines);
+    mlxCfgStatus readNVInputFile(vector < string >& lines);
 
-    mlxCfgStatus writeNVOutputFile(vector<u_int32_t> content);
+    mlxCfgStatus writeNVOutputFile(vector < u_int32_t > content);
     mlxCfgStatus writeNVOutputFile(string content);
-    mlxCfgStatus writeNVOutputFile(vector<string> lines);
+    mlxCfgStatus writeNVOutputFile(vector < string > lines);
+
+    /* write query output to json funtions */
+    mlxCfgStatus WriteSingleParam(QueryOutputItem& queryOutItem,
+                                  string           deviceIndex,
+                                  u_int8_t         verbose,
+                                  Json::Value&     oJsonValue);
+    void writeParamToJson(Json::Value& oJsonValue, string field, string param, u_int32_t val);
 
     mlxCfgStatus genTLVsFile();
     mlxCfgStatus genXMLTemplate();
@@ -212,7 +227,7 @@ private:
     mlxCfgStatus createConf();
     mlxCfgStatus apply();
 
-    // static print functions
+    /* static print functions */
     static int printParam(string param, u_int32_t val);
     static int printValue(string strVal, u_int32_t val);
     static void printSingleParam(const char* name, QueryOutputItem& queryOutItem, u_int8_t verbose, bool printNewCfg);
@@ -220,11 +235,11 @@ private:
     bool askUser(const char* question, bool add_prefix = true, bool add_suffix = true);
     mlxCfgStatus err(bool report, const char* errMsg, ...);
     void printErr();
-    // data members
+    /* data members */
 
     MlxCfgParams _mlxParams;
-    std::string _errStr;
-    dm_dev_id_t _devType;
+    std::string  _errStr;
+    dm_dev_id_t  _devType;
 };
 
 #endif /* MLXCFG_UI_H_ */

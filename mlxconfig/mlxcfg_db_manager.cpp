@@ -40,7 +40,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-//#define NDEBUG //uncomment in order to enable asserts
+// #define NDEBUG //uncomment in order to disable asserts
 #include <assert.h>
 
 #include <ext_libs/sqlite/sqlite3.h>

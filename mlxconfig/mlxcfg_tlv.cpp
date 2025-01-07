@@ -517,7 +517,6 @@ void TLVConf::mnva(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t type, reg
 {
     bool isSet = (method == REG_ACCESS_METHOD_SET);
     MError mRc = mnvaCom5thGen(mf, buff, len, type, method, qT);
-
     if (mRc)
     {
         // Todo: ask for this check:
@@ -835,7 +834,6 @@ void TLVConf::getExprVarsValues(vector<string>& vars,
     VECTOR_ITERATOR(string, vars, i)
     {
         string var = *i;
-
         // TODO: make sure: assume temp var starts with '_'
         if ((var[0] != '_' /*&& !isTempVarsExpr*/) && (var2ValMap.find(var) == var2ValMap.end()))
         {
