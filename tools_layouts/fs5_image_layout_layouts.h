@@ -184,8 +184,9 @@ struct fs5_image_layout_u8_stage1_component {
 struct fs5_image_layout_boot_component_header {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	u_int32_t u8_header_magic;
+	/* 0x0.24 - 0x4.23 */
+	/* access: RW */
+	u_int8_t u8_header_magic[4];
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
 	/* 0x4.0 - 0x40.31 */
