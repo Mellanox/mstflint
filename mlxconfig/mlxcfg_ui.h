@@ -46,15 +46,15 @@
 #include <cable_access/cdb_cable_commander.h>
 #endif
 
-/* #include "mlxcfg_lib.h" */
+// #include "mlxcfg_lib.h"
 #include "mlxcfg_commander.h"
 #include "mlxcfg_view.h"
 #include "mlxcfg_utils.h"
 
 
-#define MAX_ERR_STR_LEN       1024
-#define MAX_BUF_SIZE          1024
-#define PRE_ERR_MSG           "-E-"
+#define MAX_ERR_STR_LEN 1024
+#define MAX_BUF_SIZE 1024
+#define PRE_ERR_MSG "-E-"
 #define MLNX_RAW_TLV_FILE_SIG "MLNX_RAW_TLV_FILE"
 
 #ifdef MST_UL
@@ -149,7 +149,7 @@ public:
     mlxCfgStatus execute(int argc, char* argv[]);
 
 private:
-    /* User interface and parsing methods */
+    // User interface and parsing methods
     void printHelp();
     mlxCfgStatus showDevConfs();
     const char* getDeviceName(mfile* mf);
@@ -159,7 +159,7 @@ private:
     void printConfHeader(bool showDefualt, bool showNew, bool showCurrent);
     mlxCfgStatus getNumberFromString(const char* str, u_int32_t& num);
     mlxCfgStatus parseArgs(int argc, char* argv[]);
-    /* Helper functions for parse args */
+    // Helper functions for parse args
     mlxCfgStatus extractNVInputFile(int argc, char* argv[]);
     mlxCfgStatus extractNVOutputFile(int argc, char* argv[]);
     mlxCfgStatus extractSetCfgArgs(int argc, char* argv[]);
