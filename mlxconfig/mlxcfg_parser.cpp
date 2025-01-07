@@ -38,6 +38,7 @@
 #include <algorithm>
 #include <errno.h>
 #include <utility>
+#include <fstream>
 
 #include <common/tools_version.h>
 
@@ -88,6 +89,8 @@ void MlxCfg::printHelp()
     printFlagLine("h", "help", "", "Display help message.");
     printFlagLine("v", "version", "", "Display version info.");
     printFlagLine("e", "enable_verbosity", "", "Show default and current configurations.");
+    printFlagLine("j", "json_format", "file",
+                  "Save the query output to file in JSON format, only usable with Query command");
     printFlagLine("y", "yes", "", "Answer yes in prompt.");
     printFlagLine("a", "all_attrs", "", "Show all attributes in the XML template");
     printFlagLine("p", "private_key", "PKEY", "pem file for private key");
@@ -137,6 +140,9 @@ void MlxCfg::printHelp()
     printf("\n");
     printf(IDENT "Examples:\n");
     printf(IDENT2 "%-35s: %s\n", "To query configurations", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " query");
+    printf(IDENT2 "%-35s: %s\n", "To query in json format",
+           MLXCFG_NAME " -d " MST_DEV_EXAMPLE " -j /tmp/query.json query");
+    printf(IDENT2 "%-35s: %s\n", "To query specific parameter", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " q NUM_OF_VFS");
     printf(IDENT2 "%-35s: %s\n", "To set configuration",
            MLXCFG_NAME " -d " MST_DEV_EXAMPLE " set SRIOV_EN=1 NUM_OF_VFS=16 WOL_MAGIC_EN_P1=1");
     printf(IDENT2 "%-35s: %s\n", "To set raw configuration",
@@ -439,6 +445,15 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
                 return err(true, "missing database file name");
             }
             _mlxParams.dbName = argv[i];
+        }
+        else if (arg == "-j" || arg == "--json_format")
+        {
+            if (++i == argc)
+            {
+                return err(true, "missing .json output file");
+            }
+            _mlxParams.isJsonOutputRequested = true;
+            _mlxParams.NVOutputFile = argv[i];
         }
         else if (arg == "-y" || arg == "--yes")
         {

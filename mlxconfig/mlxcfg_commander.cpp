@@ -85,7 +85,7 @@ Commander* Commander::create(std::string device, std::string dbName, bool forceC
 Commander* Commander::create(mfile* mf, std::string dbName, Device_Type deviceType)
 {
     dm_dev_id_t deviceId = DeviceUnknown;
-    u_int32_t hwDevId, hwRevId;
+    u_int32_t hwDevId = 0, hwRevId = 0;
     Commander* commander = NULL;
     if (dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId))
     {

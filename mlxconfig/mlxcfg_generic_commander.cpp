@@ -512,7 +512,7 @@ bool GenericCommander::checkDependency(TLVConf* cTLV, string dStr)
     if (dStr.empty())
     {
         dm_dev_id_t deviceId = DeviceUnknown;
-        u_int32_t hwDevId, hwRevId;
+        u_int32_t hwDevId = 0, hwRevId = 0;
         if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId))
         {
             throw MlxcfgException("Failed to identify the device");
@@ -926,7 +926,7 @@ const char* GenericCommander::loadConfigurationGetStr()
 {
     int rc;
     dm_dev_id_t deviceId = DeviceUnknown;
-    u_int32_t hwDevId, hwRevId;
+    u_int32_t hwDevId = 0, hwRevId = 0;
     struct reg_access_hca_mfrl_reg_ext mfrl;
 
     if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId))
@@ -938,8 +938,8 @@ const char* GenericCommander::loadConfigurationGetStr()
 
     if (dm_is_5th_gen_hca(deviceId))
     {
-        // send warm boot (bit 6)
-        mfrl.reset_trigger = 1 << 6;
+        // prepare for warm boot or pci link disable (bit 6 + bit 3)
+        mfrl.reset_trigger = (1 << 6) | (1 << 3);
         mft_signal_set_handling(1);
         rc = reg_access_mfrl(_mf, REG_ACCESS_METHOD_SET, &mfrl);
         dealWithSignal();
@@ -1255,8 +1255,8 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
         while (currTlv)
         {
             IGNORE_UNUSEFUL_NODE(currTlv)
-            u_int32_t port;
-            u_int32_t u_module;
+            u_int32_t port = 0;
+            u_int32_t u_module = 0;
             int32_t module;
             TLVConf* tlvConf = nullptr;
             bool isAllPorts = false;
@@ -1770,14 +1770,15 @@ void GenericCommander::orderConfTlvs(vector<TLVConf*>& tlvs)
     }
 
     // file_applicable_to must be after the component
+    uint32_t deltaLocation = 1;
     VECTOR_ITERATOR(TLVConf*, tlvs, it)
     {
         TLVConf* tlv = *it;
         if (tlv->_name == "file_applicable_to" || tlv->_name == "file_device_id")
         {
-            *it = *(tlvs.begin() + 1);
-            *(tlvs.begin() + 1) = tlv;
-            break;
+            *it = *(tlvs.begin() + deltaLocation);
+            *(tlvs.begin() + deltaLocation) = tlv;
+            deltaLocation++;
         }
     }
 }
@@ -1974,9 +1975,9 @@ int RawCfgParams5thGen::setOnDev(mfile* mf, RawTlvMode mode)
 {
     int rc;
     mft_signal_set_handling(1);
-    DEBUG_PRINT_SEND(&_nvdaTlv, nvda);
+    DEBUG_PRINT_SEND(&_nvdaTlv, mnvda);
     rc = reg_access_mnvda(mf, mode == SET_RAW ? REG_ACCESS_METHOD_SET : REG_ACCESS_METHOD_GET, &_nvdaTlv);
-    DEBUG_PRINT_RECEIVE(&_nvdaTlv, nvda);
+    DEBUG_PRINT_RECEIVE(&_nvdaTlv, mnvda);
     dealWithSignal();
     if (rc)
     {
