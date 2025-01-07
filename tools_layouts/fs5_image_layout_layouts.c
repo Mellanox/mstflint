@@ -422,8 +422,10 @@ void fs5_image_layout_boot_component_header_pack(const struct fs5_image_layout_b
 	u_int32_t offset;
 	int i ;
 
-	offset = 0;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->u8_header_magic);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 65536, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->u8_header_magic[i]);
+	}
 	offset = 32;
 	fs5_image_layout_u8_digest_pack(&(ptr_struct->u8_digest), ptr_buff + offset / 8);
 	offset = 51200;
@@ -441,8 +443,10 @@ void fs5_image_layout_boot_component_header_unpack(struct fs5_image_layout_boot_
 	u_int32_t offset;
 	int i;
 
-	offset = 0;
-	ptr_struct->u8_header_magic = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 65536, 1);
+		ptr_struct->u8_header_magic[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	}
 	offset = 32;
 	fs5_image_layout_u8_digest_unpack(&(ptr_struct->u8_digest), ptr_buff + offset / 8);
 	offset = 51200;
@@ -463,8 +467,10 @@ void fs5_image_layout_boot_component_header_print(const struct fs5_image_layout_
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== fs5_image_layout_boot_component_header ========\n");
 
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "u8_header_magic      : " U32H_FMT "\n", ptr_struct->u8_header_magic);
+	for (i = 0; i < 4; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "u8_header_magic_%03d : " UH_FMT "\n", i, ptr_struct->u8_header_magic[i]);
+	}
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "u8_digest:\n");
 	fs5_image_layout_u8_digest_print(&(ptr_struct->u8_digest), fd, indent_level + 1);
