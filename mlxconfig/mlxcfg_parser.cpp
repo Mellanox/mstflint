@@ -595,6 +595,11 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         return err(true, "missing configuration arguments. For more information please run " MLXCFG_NAME " -h|--help.");
     }
 
+    if ((_mlxParams.cmd != Mc_Query) && _mlxParams.isJsonOutputRequested)
+    {
+        return err(true, "Json format is only supported for query command.");
+    }
+
     if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw ||
          _mlxParams.cmd == Mc_Get_Raw || _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || 
 		 _mlxParams.cmd == Mc_Apply) &&
