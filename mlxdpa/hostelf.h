@@ -45,7 +45,8 @@ public:
     HostElf(string path, string outputPath);
 
     vector<AppHandle*> GetListOfDpaApps();
-    vector<u_int8_t> GetDpaApp(const AppHandle& app);
+    vector<DevObjHandle*> GetListOfDpaArchApps(DevObjHandle* objTable, uint64_t arch_count);
+    vector<u_int8_t> GetDpaApp(const DevObjHandle& app);
     void AddSection(string sectionName, const vector<u_int8_t>& section);
     void RemoveSection(string sectionName);
 
