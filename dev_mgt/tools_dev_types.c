@@ -421,13 +421,13 @@ static struct device_info g_devs_info[] = {
         DM_LINKX                                           /* dev_type */
     },
     {
-        DeviceArcusE, // dm_id
-        0xb200,       // hw_dev_id (other versions 0x6f,0x73)
-        -1,           // hw_rev_id
-        -1,           // sw_dev_id
-        "ArcusE",     // name
-        -1,           // port_num
-        DM_RETIMER    // dev_type
+        DeviceArcusE, /* dm_id */
+        0xb200,       /* hw_dev_id (other versions 0x6f,0x73) */
+        -1,           /* hw_rev_id */
+        -1,           /* sw_dev_id */
+        "ArcusE",     /* name */
+        -1,           /* port_num */
+        DM_RETIMER    /* dev_type */
     },
     {
         DeviceSecureHost,                                      /* dm_id */
@@ -561,10 +561,9 @@ static int dm_get_device_id_inner(mfile      * mf,
                                   u_int32_t  * ptr_hw_dev_id,
                                   u_int32_t  * ptr_hw_rev)
 {
-    if (mf->is_zombiefish)
-    {
+    if (mf->is_zombiefish) {
         mset_addr_space(mf,
-                        AS_CR_SPACE); // In ZombieFish mode we use recovery space, for reading device ID need cr space.
+                        AS_CR_SPACE); /* In ZombieFish mode we use recovery space, for reading device ID need cr space. */
     }
     u_int32_t dword = 0;
     int       rc;
@@ -938,7 +937,7 @@ int dm_is_livefish_mode(mfile* mf)
         return 1;
     }
     dm_dev_id_t devid_t = DeviceUnknown;
-    u_int32_t   devid = 0; // hw dev ID
+    u_int32_t   devid = 0; /* hw dev ID */
     u_int32_t   revid = 0;
     int         rc = dm_get_device_id(mf, &devid_t, &devid, &revid);
 
