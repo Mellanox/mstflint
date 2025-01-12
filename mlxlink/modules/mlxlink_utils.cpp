@@ -288,6 +288,22 @@ string EthSupportedSpeeds2Str(u_int32_t int_mask)
 string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
 {
     string maskStr = "";
+    if (int_mask & ETH_LINK_SPEED_EXT_200GAUI_1)
+    {
+        maskStr += "200G_1X,";
+    }
+    if (int_mask & ETH_LINK_SPEED_EXT_400GAUI_2)
+    {
+        maskStr += "400G_2X,";
+    }
+    if (int_mask & ETH_LINK_SPEED_EXT_800GAUI_4)
+    {
+        maskStr += "800G_4X,";
+    }
+    if (int_mask & ETH_LINK_SPEED_EXT_1_6TAUI_8)
+    {
+        maskStr += "1600G_8X,";
+    }
     if (int_mask & ETH_LINK_SPEED_EXT_800GAUI_8)
     {
         maskStr += "800G_8X,";

@@ -4253,6 +4253,10 @@ string MlxlinkCommander::speedToFecSpeedStr(const string& speed, u_int32_t numOf
     }
     else
     {
+        if (speed == "1600G")
+        {
+            fecSpeedStrFormat = "1600g_" + numberOfLanesStr;
+        }
         if (speed == "800G")
         {
             fecSpeedStrFormat = "800g_" + numberOfLanesStr;
