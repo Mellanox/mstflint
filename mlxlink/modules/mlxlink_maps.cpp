@@ -617,6 +617,38 @@ void MlxlinkMaps::initLinkDownInfoMapping()
     _pddrLinkDownE2EReasonOpcode[128] = "Peer - MNG forced down the port";
 }
 
+void MlxlinkMaps::initLinkUpInfo()
+{
+    _upReasonPwr[UP_REASON_PWR_NO_DOWN_COMMAND] = "No down command / unknown";
+    _upReasonPwr[UP_REASON_PWR_KEEP_LINK_UP_ON_BOOT] = "Keep link up on boot";
+    _upReasonPwr[UP_REASON_PWR_KEEP_LINK_UP_ETH_IB] = "Keep link up Eth/IB";
+    _upReasonPwr[UP_REASON_PWR_KEEP_LINK_UP_ON_STANDBY] = "Keep link up on standby";
+
+    _upReasonDrv[UP_REASON_DRV_NO_DOWN_COMMAND] = "No down command / unknown";
+    _upReasonDrv[UP_REASON_DRV_UP_BY_AT_LEAST_ONE_OF_THE_HOSTS] = "Up by at least one of the hosts";
+
+    _upReasonMng[UP_REASON_MNG_NO_DOWN_COMMAND] = "No down command / unknown";
+    _upReasonMng[UP_REASON_MNG_BMC_FORCE_LINKUP] = "BMC force linkup";
+    _upReasonMng[UP_REASON_MNG_WOL_FORCE_LINKUP] = "WOL force linkup";
+    _upReasonMng[UP_REASON_MNG_ANS_FORCE_LINKUP] = "ASN.1 force link up";
+
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_UNKOWN] = "Unknown";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_FAST_LINKUP_WAS_PERFORMED] = "Fast Link-UP was performed.";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_REGULAR_LINK_UP_DUE_CABLE_CHANGE] =
+      "Regular link-up flow was performed due to changes in cable";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_REGULAR_LINK_UP_DUE_PROTOCOL_CHANGE] =
+      "Regular link-up flow was performed due to changes in protocol (speed or FEC)";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_REGULAR_LINK_UP_DUE_NON_FASTBOOT] =
+      "Regular link-up flow was performed due to a non-fastbootable FW version (PCNR is not supported)";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_REGULAR_LINK_UP_DUE_CABLE_MLPN_FLOW] =
+      "Regular link-up performed due to MLPN flow";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_REGULAR_LINK_UP_DUE_CABLE_MLPN_PCNR] =
+      "No Regular link-up performed due to PCNR.tuning_override configuration while port was in “down” state.";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_INVALID_FASTBOOT] =
+      "Invalid fastboot data struct (0xCAFECAFE magic value is not present. For example, SW reset was executed before "
+      "finish saving data during PCNR flow)";
+}
+
 void MlxlinkMaps::initSltpStatusMapping()
 {
     _SltpEdrParams[SLTP_EDR_POLARITY] = PRM_FIELD{"polarity", "Pol", FIELD_ACCESS_RW, false, LINK_SPEED_ALL};
@@ -1437,6 +1469,14 @@ void MlxlinkMaps::initEnhancedDebugMapping()
     _localReasonOpcode[LOCAL_REASON_OPCODE_RESERVED] = "N/A";
 }
 
+void MlxlinkMaps::initPprmOperationRecoveryMapping()
+{
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logcic_re-lock";
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] = "host_serdes_feq";
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_TX] = "module_tx_disable";
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_DATA_PATH] = "module_datapath_full_toggle";
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();
@@ -1446,6 +1486,7 @@ MlxlinkMaps::MlxlinkMaps()
     initPrbsMapping();
     initPpbmcAndPepcMapping();
     initLinkDownInfoMapping();
+    initLinkUpInfo();
     initSltpStatusMapping();
     initCableComplianceMapping();
     initCableTechnologyMapping();
