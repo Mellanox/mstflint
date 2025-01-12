@@ -51,10 +51,10 @@ public:
     static std::string getDefaultDBName(bool isSwitch);
 };
 
-class PrmDBException : public std::exception
+class PrmDBException: public std::exception
 {
 public:
-    // Methods
+    /* Methods */
     PrmDBException();
     PrmDBException(const char* msg, ...) __attribute__((format(__printf__, 2, 3)));
     PrmDBException(std::string msg);
