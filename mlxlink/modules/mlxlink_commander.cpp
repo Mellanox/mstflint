@@ -2521,11 +2521,11 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
         sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
 
         status = getFieldValue("status");
-        initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom") : "N/A"));
-        lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom") : "N/A"));
-        upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye") : "N/A"));
-        midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye") : "N/A"));
-        lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("lower_eye") : "N/A"));
+        initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom", (u_int32_t)8) : "N/A"));
+        lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom", (u_int32_t)8) : "N/A"));
+        upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye", (u_int32_t)8) : "N/A"));
+        midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye", (u_int32_t)8) : "N/A"));
+        lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("lower_eye", (u_int32_t)8) : "N/A"));
 
         legand.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(lane)));
     }
@@ -3604,9 +3604,18 @@ void MlxlinkCommander::clearCounters()
 {
     try
     {
-        MlxlinkRecord::printCmdLine("Clearing Counters", _jsonRoot);
-
-        sendPrmReg(ACCESS_REG_PPCNT, SET, "clr=%d,grp=%d", 1, PPCNT_ALL_GROUPS);
+        if (_mf->tp != MST_IB)
+        {
+            sendPrmReg(ACCESS_REG_PPCNT, SET, "clr=%d,grp=%d", 1, PPCNT_ALL_GROUPS);
+        }
+        else
+        {
+            // Clearing counters via GET method instead of SET due to register being too large for MADs.
+            for (auto const& group : _mlxlinkMaps->_ppcntGroups)
+            {
+                sendPrmReg(ACCESS_REG_PPCNT, GET, "clr=%d,grp=%d", 1, group.first);
+            }
+        }
     }
     catch (const std::exception& exc)
     {

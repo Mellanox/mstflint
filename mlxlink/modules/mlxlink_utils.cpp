@@ -1381,9 +1381,12 @@ bool isSpeed200GPerLane(u_int32_t speed, u_int32_t protocol)
 
 bool isNRZSpeed(u_int32_t speed, u_int32_t protocol)
 {
-    return isSpeed25GPerLane(speed, protocol) ||
-           !(isSpeed50GPerLane(speed, protocol) || isSpeed100GPerLane(speed, protocol) ||
-             isSpeed200GPerLane(speed, protocol));
+    // this twisted condition was made due to 100G per lane and 25G per lane share a mutual bit (19) and causes the 100G
+    // per lane to be recognized as 25G per lane.
+    return !isSpeed100GPerLane(speed, protocol) &&
+           (isSpeed25GPerLane(speed, protocol) ||
+            !(isSpeed50GPerLane(speed, protocol) || isSpeed100GPerLane(speed, protocol) ||
+              isSpeed200GPerLane(speed, protocol) || isSpeed25GPerLane(speed, protocol)));
 }
 
 string linkWidthMaskToStr(u_int32_t width)
