@@ -2396,7 +2396,7 @@ fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
     case ME_REG_ACCESS_UNKNOWN_ERR:
         return FWCOMPS_REG_ACCESS_UNKNOWN_ERR;
 
-    case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
+    case ME_REG_ACCESS_SIZE_EXCEEDS_LIMIT:
         return FWCOMPS_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
 
     case ME_REG_ACCESS_CONF_CORRUPT:
@@ -2408,7 +2408,7 @@ fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
     case ME_REG_ACCESS_BAD_CONFIG:
         return FWCOMPS_REG_ACCESS_BAD_CONFIG;
 
-    case ME_REG_ACCESS_ERASE_EXEEDED:
+    case ME_REG_ACCESS_ERASE_EXCEEDED:
         return FWCOMPS_REG_ACCESS_ERASE_EXEEDED;
 
     case ME_REG_ACCESS_INTERNAL_ERROR:

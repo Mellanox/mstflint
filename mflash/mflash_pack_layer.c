@@ -364,7 +364,7 @@ MfError MError2MfError(MError rc)
         case ME_REG_ACCESS_UNKNOWN_ERR:
             return MFE_REG_ACCESS_UNKNOWN_ERR;
 
-        case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
+        case ME_REG_ACCESS_SIZE_EXCEEDS_LIMIT:
             return MFE_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
 
         case ME_CMDIF_UNKN_TLV:

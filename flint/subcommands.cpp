@@ -4559,6 +4559,22 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("Geographical Address:  ASIC %x\n", fwInfo.fs3_info.geo_address);
     }
 
+    if (fwInfo.fs3_info.socket_direct)
+    {
+        printf("Socket Direct:         Yes\n");
+        if (fwInfo.fs3_info.is_aux_card_connected_valid)
+        {
+            if (fwInfo.fs3_info.aux_card_connected)
+            {
+                printf("Aux Card is Connected: Yes\n");
+            }
+            else
+            {
+                printf("Aux Card is Connected: No\n");
+            }
+        }
+    }
+
     return FLINT_SUCCESS;
 }
 
