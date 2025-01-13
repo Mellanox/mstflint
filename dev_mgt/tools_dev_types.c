@@ -1006,14 +1006,14 @@ int dm_is_new_gen_switch(dm_dev_id_t type)
 int dm_dev_is_raven_family_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) &&
-            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceGB100 ||
+            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceGB100 || type == DeviceGR100 ||
              type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceSpectrum4));
 }
 
 int dm_dev_is_ib_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 ||
-                                       type == DeviceGB100 || type == DeviceSwitchIB || type == DeviceSwitchIB2));
+                                       type == DeviceGB100 || type == DeviceGR100 || type == DeviceSwitchIB || type == DeviceSwitchIB2));
 }
 
 int dm_dev_is_eth_switch(dm_dev_id_t type)
