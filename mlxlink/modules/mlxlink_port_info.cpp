@@ -116,5 +116,5 @@ void MlxlinkPortInfo::clearHistogram()
 {
     MlxlinkRecord::printCmdLine("Clearing Histogram Counters", _jsonRoot);
 
-    sendPrmReg(ACCESS_REG_PPCNT, SET, "grp=%d,clr=%d", PPCNT_HISTOGRAM_GROUP, 1);
+    sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d,clr=%d", PPCNT_HISTOGRAM_GROUP, 1);
 }

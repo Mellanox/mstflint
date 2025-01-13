@@ -235,25 +235,26 @@ void RegAccessParser::parseAccessType(std::vector<string> tokens,
         updateBuffer(field->offset, field->size, uintVal);
     }
 
-    if (accessType == INDEX)
-    {
-        // Make sure that all the indexes are set
-        for (std::vector<std::string>::size_type i = 0; i != validTokens.size(); i++)
-        {
-            bool idxFound = false;
-            for (std::vector<std::string>::size_type j = 0; j != foundTokens.size(); j++)
-            {
-                if (validTokens[i] == foundTokens[j])
-                {
-                    idxFound = true;
-                }
-            }
-            if (!idxFound)
-            {
-                throw MlxRegException("Index: %s was not provided", validTokens[i].c_str());
-            }
-        }
-    }
+    // Per #4207832, skip checking that all indexes are set
+    // if (accessType == INDEX)
+    // {
+    //     // Make sure that all the indexes are set
+    //     for (std::vector<std::string>::size_type i = 0; i != validTokens.size(); i++)
+    //     {
+    //         bool idxFound = false;
+    //         for (std::vector<std::string>::size_type j = 0; j != foundTokens.size(); j++)
+    //         {
+    //             if (validTokens[i] == foundTokens[j])
+    //             {
+    //                 idxFound = true;
+    //             }
+    //         }
+    //         if (!idxFound)
+    //         {
+    //             throw MlxRegException("Index: %s was not provided", validTokens[i].c_str());
+    //         }
+    //     }
+    // }
 }
 
 /************************************

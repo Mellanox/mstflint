@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,33 +28,13 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-#ifndef MLXDPA_HOSTELF_H_
-#define MLXDPA_HOSTELF_H_
+#ifndef _MTCR_GPU /* guard */
+#define _MTCR_GPU
 
-#include <string>
-#include <vector>
-#include <dpa_elf/dpa_elf.h>
+int is_gpu_pci_device(u_int16_t pci_device_id);
+bool is_gpu_device(u_int16_t hw_dev_id);
 
-using namespace std;
-
-class HostElf
-{
-public:
-    HostElf(string path, string outputPath);
-
-    vector<AppHandle*> GetListOfDpaApps();
-    vector<DevObjHandle*> GetListOfDpaArchApps(DevObjHandle* objTable, uint64_t arch_count);
-    vector<u_int8_t> GetDpaApp(const DevObjHandle& app);
-    void AddSection(string sectionName, const vector<u_int8_t>& section);
-    void RemoveSection(string sectionName);
-
-private:
-    string _filePath;
-    string _outputPath;
-    vector<u_int8_t> _data;
-    AppTable _dpaAppsTable;
-};
-
-#endif /* MLXDPA_HOSTELF_H_ */
+#endif /* _MTCR_GPU guard */

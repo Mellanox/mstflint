@@ -157,6 +157,7 @@ private:
     void nvlinkSpeedMapping();
     void speedToLanesMapping();
     void initPortSpeedMapping();
+    void initPpcntGroupsMapping();
     void initPrbsMapping();
     void initPpbmcAndPepcMapping();
     void initLinkDownInfoMapping();
@@ -316,6 +317,7 @@ public:
     std::map<u_int32_t, std::string> _pcieDevStatus;
     std::map<u_int32_t, PcieErrType> _pcieErrType;
     std::map<u_int32_t, std::string> _pprmOperRecovery;
+    std::map<u_int32_t, u_int32_t> _ppcntGroups;
 
     string _sltpHeader;
     string _showErrorsTitle;

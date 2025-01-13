@@ -175,7 +175,18 @@ void mtcr_connectx_flush(void* ptr, int fdlock)
 
 int read_device_id(mfile* mf, u_int32_t* device_id)
 {
-    return mread4(mf, HW_ID_ADDR, device_id);
+    if (!mf || !device_id) {
+        return -1;
+    }
+
+    int      rc = 0;
+    unsigned hw_id_address = mf->cr_space_offset + HW_ID_ADDR;
+
+    mf->rev_id = EXTRACT(*device_id, 16, 4);
+    *device_id = (*device_id & 0xffff);
+    mf->hw_dev_id = (*device_id & 0xffff);
+
+    return mread4(mf, hw_id_address, device_id);
 }
 
 int mtcr_check_signature(mfile* mf)

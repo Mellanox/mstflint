@@ -30,7 +30,7 @@
  */
 
 /***
-         *** This file was generated at "2024-12-03 14:42:17"
+         *** This file was generated at "2025-01-12 09:53:05"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input [REDACTED]/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o [REDACTED]/user/tools_layouts
          ***/
@@ -309,6 +309,21 @@ Reserved for HCA */
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t local_port;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - [DWIP]
+Indicate whether asymmetry is enabled or not.
+
+For HCA, reserved if PPCR.asymmetry_enable_supported=0 */
+	/* 0x4.30 - 0x4.30 */
+	/* access: RO */
+	u_int8_t asymmetry_enable;
+	/* Description - [DWIP]
+Indicate whether asymmetry_enable supported or not.
+Reserved for switch.
+ */
+	/* 0x4.31 - 0x4.31 */
+	/* access: RO */
+	u_int8_t asymmetry_enable_supported;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Aggregated Port number to be reflected in MAD.
 0 means N/A
@@ -324,22 +339,6 @@ Reserved for HCA */
 	/* 0x8.16 - 0x8.18 */
 	/* access: RW */
 	u_int8_t plane;
-	/* Description - When planarized  the FW shall respond to Hierarchy Info.Split with the following split value.
-
-In this use case it represents the split of the APort.
-
-When split = 0, the FW shall send Hierarchy Info without the split field. (meaning it is NA)
-
-When Non planarized (num_of_planes = 0), Hierarchy Info.Split will reflect the actual split value, when 2X- it'll hold the location within the 4x.
-
-0: NA
-1: Split 1.
-2: Split 2.
-3-7: Reserved
-Reserved for HCA */
-	/* 0x8.24 - 0x8.26 */
-	/* access: RW */
-	u_int8_t split;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - The number of planes comprising this Aggregated port
  */
@@ -446,9 +445,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 521, "MDDQ slot_info Layout," on page 921
-For devices on slot query_type data - see Table 523, "MDDQ device_info Register Layout," on page 922
-For slot name query_type data - see Table 525, "MDDQ slot_name Layout," on page 924 */
+For slot information query_type data - see Table 575, "MDDQ slot_info Layout," on page 910
+For devices on slot query_type data - see Table 577, "MDDQ device_info Register Layout," on page 911
+For slot name query_type data - see Table 579, "MDDQ slot_name Layout," on page 913 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -483,9 +482,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 513, "PRM Register Payload Layout," on page 917
-For Command type payload - See Table 515, "Command Payload Layout," on page 917
-For CrSpace type payload - See Table 517, "CrSpace access Payload Layout," on page 918 */
+For PRM Register type payload - See Table 567, "PRM Register Payload Layout," on page 906
+For Command type payload - See Table 569, "Command Payload Layout," on page 906
+For CrSpace type payload - See Table 571, "CrSpace access Payload Layout," on page 907 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -775,7 +774,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 362, "NV_SWITCH_PHY_SEC_CONF Layout," on page 762 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 410, "NV_SWITCH_PHY_SEC_CONF Layout," on page 754 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -1088,6 +1087,12 @@ Value of 0xFFFF means field is not valid.
 	/* 0x14.0 - 0x14.15 */
 	/* access: RO */
 	u_int16_t resource_label_port;
+	/* Description - [DWIP]
+Optical engine identifier, which represents the OE index which the port is connected to.
+Value of 0xFFFF means field is not valid. */
+	/* 0x14.16 - 0x14.31 */
+	/* access: RO */
+	u_int16_t oe_identifier;
 };
 
 /* Description -   */
@@ -1109,6 +1114,8 @@ struct reg_access_switch_pmaos_reg_ext {
 3: enabled_once - if the module is active and then unplugged, or module experienced an error event, the operational status should go to "disabled" and can only be enabled upon explicit enable command.
 
 Note - To disable a module, all ports associated with the port must be disabled first.
+Note 2 - Disabling OE in QM-3 CPO will not cause to the OE to power disable. User will need to set all the modules to disable, which will cause the power enable to go down.
+Note 3- Disabling OE in QM3-CPO will cause the ELS to go down as well as part of the HW flow. Before setting the ELS back up, OE should be set to up beforehand.
  */
 	/* 0x0.8 - 0x0.11 */
 	/* access: RW */
@@ -1125,8 +1132,7 @@ In case of non modular system only slot_index = 0 is available. */
 	/* access: INDEX */
 	u_int8_t slot_index;
 	/* Description - Module Reset toggle
-NOTE: setting reset while module is plugged-in will result in transition of oper_status to initialization. 
-Note 2: Reset OE MCU can be done only when relevant ELS laser is turned off. */
+NOTE: setting reset while module is plugged-in will result in transition of oper_status to initialization. */
 	/* 0x0.31 - 0x0.31 */
 	/* access: OP */
 	u_int8_t rst;
@@ -1241,17 +1247,37 @@ Up to 8 SerDes in a module can be mapped to a local port. */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x18.31 */
-	/* access: RW */
-	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
-	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
+	struct reg_access_switch_PPCR_ext PPCR_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
+	/* 0x0.0 - 0x14.31 */
 	/* access: RW */
-	struct reg_access_switch_mrsr_ext mrsr_ext;
+	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x28.31 */
+	/* access: RW */
+	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x40c.31 */
+	/* access: RW */
+	struct reg_access_switch_icsr_ext icsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_icam_reg_ext icam_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x6c.31 */
+	/* access: RW */
+	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
@@ -1259,59 +1285,39 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_PPCR_ext PPCR_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_plib_reg_ext plib_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x6c.31 */
-	/* access: RW */
-	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_mpir_ext mpir_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_icam_reg_ext icam_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x5c.31 */
-	/* access: RW */
-	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x28.31 */
-	/* access: RW */
-	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mddq_ext mddq_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
+	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x7c.31 */
 	/* access: RW */
 	struct reg_access_switch_msgi_ext msgi_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
+	/* 0x0.0 - 0x4.31 */
 	/* access: RW */
-	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	struct reg_access_switch_mrsr_ext mrsr_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x40c.31 */
+	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_icsr_ext icsr_ext;
+	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddq_ext mddq_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x5c.31 */
+	/* access: RW */
+	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x10c.31 */
 	/* access: RW */
 	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
+	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
+	struct reg_access_switch_mpir_ext mpir_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x18.31 */
+	/* access: RW */
+	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
 };
 
 

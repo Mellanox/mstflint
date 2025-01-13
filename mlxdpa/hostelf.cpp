@@ -71,7 +71,20 @@ vector<AppHandle*> HostElf::GetListOfDpaApps()
     return apps;
 }
 
-vector<u_int8_t> HostElf::GetDpaApp(const AppHandle& app)
+vector<DevObjHandle*> HostElf::GetListOfDpaArchApps(DevObjHandle* objTable, uint64_t arch_count)
+{
+    vector<DevObjHandle*> archApps;
+
+    for (uint64_t i = 0; i < arch_count; i++)
+    {
+        archApps.push_back(objTable);
+        objTable++;
+    }
+
+    return archApps;
+}
+
+vector<u_int8_t> HostElf::GetDpaApp(const DevObjHandle& app)
 {
     auto dpaAppBegin = _data.begin() + app.offset;
     auto dpaAppEnd = dpaAppBegin + app.size;
