@@ -47,7 +47,7 @@ pci_id_range GB100_PCI_IDS[] = {
 };
 
 pci_id_range GR100_PCI_IDS[] = {
-    {0x3000, 0x30FF}, {0x3280, 0x32FF}
+    {0x3000, 0x30FF}, {0x3280, 0x32FF}, {0x3480, 0x377F}
 };
 
 int is_gb100_pci_device(u_int16_t pci_device_id)
