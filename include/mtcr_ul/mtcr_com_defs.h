@@ -177,6 +177,7 @@ typedef enum MError {
     ME_REG_ACCESS_BAD_CONFIG,
     ME_REG_ACCESS_ERASE_EXEEDED,
     ME_REG_ACCESS_INTERNAL_ERROR,
+    ME_REG_ACCESS_NOT_SUPPORTED_BY_SECONDARY,
 
     /* errors regarding ICMD */
     ME_ICMD_STATUS_CR_FAIL = 0x200, /* cr-space access failure */

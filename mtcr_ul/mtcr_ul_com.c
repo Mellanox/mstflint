@@ -3147,6 +3147,9 @@ int return_by_reg_status(int reg_status)
     case 9:
         return ME_REG_ACCESS_MSG_RECPT_ACK;
 
+    case 0xe:
+        return ME_REG_ACCESS_NOT_SUPPORTED_BY_SECONDARY;
+
     case 0x22:
         return ME_REG_ACCESS_CONF_CORRUPT;
 
@@ -3743,6 +3746,9 @@ const char* m_err2str(MError status)
 
     case ME_REG_ACCESS_INTERNAL_ERROR:
         return "Firmware internal error";
+
+    case ME_REG_ACCESS_NOT_SUPPORTED_BY_SECONDARY:
+            return "Not supported by secondary";
 
     /* ICMD access errors */
     case ME_ICMD_STATUS_CR_FAIL:
