@@ -165,7 +165,7 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(
       PTYS_FLAG_SHORT, PTYS_FLAG, "speeds",
       "Configure Speeds "
-      "[NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,800G_8X,400G_4X,200G_2X,100G_1X,400G_8X,200G_4X,100G_2X,"
+      "[XDR,NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,1600G_8X,800G_4X,400G_2X,200G_1X,800G_8X,400G_4X,200G_2X,100G_1X,400G_8X,200G_4X,100G_2X,"
       "50G_1X,100G,100G_4X,50G,50G_2X,25G,40G,10G,2.5G,1G]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
@@ -181,7 +181,7 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(FEC_SPEED_FLAG_SHORT, FEC_SPEED_FLAG, "fec_speed",
                                  "Speed to Configure FEC "
-                                 "[100G,56G,50G,40G,25G,10G,800G_8X,400G_4x,400G_8X,200G_2X,200G_4X,100G_2X,50G_1X,"
+                                 "[100G,56G,50G,40G,25G,10G,1600G_8X,800G_4X,400G_2X,200G_1X,800G_8X,400G_4x,400G_8X,200G_2X,200G_4X,100G_2X,50G_1X,"
                                  "100G_4X] (Default is Active Speed)");
     MlxlinkRecord::printFlagLine(SLTP_SET_FLAG_SHORT, SLTP_SET_FLAG, "params",
                                  "Configure Transmitter Parameters. "
@@ -224,13 +224,13 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(
       PPRT_RATE_FLAG_SHORT, PPRT_RATE_FLAG, "rx_lane_rate",
       "RX Lane Rate "
-      "[NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
+      "[XDR,NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,1600G_8X,800G_4X,400G_2X,200G_1X,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
       "2X,25G,40G,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(
       PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
       "TX Lane Rate "
-      "[NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
+      "[XDR,NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,1600G_8X,800G_4X,400G_2X,200G_1X,800G_8X,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_"
       "2X,25G,40G,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PRBS_INVERT_TX_POL_FLAG_SHORT, PRBS_INVERT_TX_POL_FLAG, "",
