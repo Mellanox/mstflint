@@ -40,6 +40,9 @@
 
 #include <vector>
 
+#define REG_ID_MPIR 0x9059
+#define REG_ID_MRSV 0x9164
+
 bool FsCtrlOperations::unsupportedOperation()
 {
     if (_fsCtrlImgInfo.security_mode & SMM_SECURE_FW)
@@ -340,6 +343,53 @@ bool FsCtrlOperations::FsIntQuery()
         memcpy(_fwImgInfo.ext_info.vsd, fwQuery.deviceVsd, VSD_LEN);
     }
     (strncpy(_fsCtrlImgInfo.image_vsd, fwQuery.imageVsd, VSD_LEN));
+
+    bool mpir_reg_supported = false;
+    rc = isRegisterValidAccordingToMcamReg(mf, REG_ID_MPIR, &mpir_reg_supported);
+    if (rc != ME_OK)
+    {
+        return errmsg("error while reading MCAM reg. reported error code: %d", rc);
+    }
+
+    bool mrsv_reg_supported = false;
+    if (mpir_reg_supported)
+    {
+        struct reg_access_hca_mpir_ext mpir;
+        memset(&mpir, 0, sizeof(mpir));
+        rc = reg_access_mpir(mf, REG_ACCESS_METHOD_GET, &mpir);
+        if (rc == ME_OK)
+        {
+            _fsCtrlImgInfo.socket_direct = mpir.sdm;
+        } // ignoring case where rc != ME_OK since for ARM side of BF-3 we have to dynamically check what are the
+          // indexes of MPIR and not use zeroes as we did - which means read of MPIR will fail
+
+        if (_fsCtrlImgInfo.socket_direct)
+        {
+            rc = isRegisterValidAccordingToMcamReg(mf, REG_ID_MRSV, &mrsv_reg_supported);
+            if (rc != ME_OK)
+            {
+                return errmsg("error while reading MCAM reg. reported error code: %d", rc);
+            }
+        }
+    }
+
+    if (_fsCtrlImgInfo.socket_direct && (mrsv_reg_supported))
+    {
+        struct reg_access_hca_MRSV_ext mrsv;
+        memset(&mrsv, 0, sizeof(mrsv));
+        rc = reg_access_mrsv(mf, REG_ACCESS_METHOD_GET, &mrsv);
+        // MRSV reg is only supported for BF-3 so this is best effort that will only work on a BF-3 device
+        if (rc != ME_OK)
+        {
+            return errmsg("error while reading MRSV reg. reported error code: %d", rc);
+        }
+        if (mrsv.v) // mrsv.v -> MRSV reg is valid
+        {
+            _fsCtrlImgInfo.aux_card_connected = mrsv.data.MRSV_CX_7_Value_ext.two_p_core_active;
+            _fsCtrlImgInfo.is_aux_card_connected_valid = true;
+        }
+    }
+
     return true;
 }
 
