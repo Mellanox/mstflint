@@ -31,6 +31,7 @@
  */
 
 #include "mlxlink_amBER_collector.h"
+#include "mlxlink_commander.h"
 #include <sys/time.h>
 
 MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(jsonRoot)
@@ -75,23 +76,24 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
 
     _mlxlinkMaps = NULL;
 
-    _baseSheetsList[AMBER_SHEET_GENERAL] = FIELDS_COUNT {4, 4, 4};
-    _baseSheetsList[AMBER_SHEET_INDEXES] = FIELDS_COUNT {8, 3, 4};
-    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT {88, 97, 6};
-    _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT {94, 110, 0};
-    _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT {19, 19, 10};
-    _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT {376, 736, 0};
-    _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT {182, 362, 406};
-    _baseSheetsList[AMBER_SHEET_SERDES_5NM] = FIELDS_COUNT {138, 0, 0};
-    _baseSheetsList[AMBER_SHEET_PORT_COUNTERS] = FIELDS_COUNT {45, 0, 50};
-    _baseSheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT {2, 2, 0};
-    _baseSheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT {18, 17, 15};
-    _baseSheetsList[AMBER_SHEET_LINK_UP_INFO] = FIELDS_COUNT {9, 9, 0};
-    _baseSheetsList[AMBER_SHEET_LINK_DOWN_INFO] = FIELDS_COUNT {11, 14, 0};
-    _baseSheetsList[AMBER_SHEET_TEST_MODE_INFO] = FIELDS_COUNT {68, 136, 0};
-    _baseSheetsList[AMBER_SHEET_TEST_MODE_MODULE_INFO] = FIELDS_COUNT {70, 110, 0};
-    _baseSheetsList[AMBER_SHEET_PHY_DEBUG_INFO] = FIELDS_COUNT {4, 4, 0};
-    _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT {76, 116, 0};
+    _baseSheetsList[AMBER_SHEET_GENERAL] = FIELDS_COUNT{6, 6, 6};
+    _baseSheetsList[AMBER_SHEET_INDEXES] = FIELDS_COUNT{8, 3, 4};
+    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{88, 97, 24};
+    _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{94, 110, 0};
+    _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{19, 19, 10};
+    _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{376, 736, 0};
+    _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{182, 362, 406};
+    _baseSheetsList[AMBER_SHEET_SERDES_5NM] = FIELDS_COUNT{147, 0, 0};
+    _baseSheetsList[AMBER_SHEET_PORT_COUNTERS] = FIELDS_COUNT{45, 0, 50};
+    _baseSheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT{2, 2, 0};
+    _baseSheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{18, 17, 15};
+    _baseSheetsList[AMBER_SHEET_LINK_UP_INFO] = FIELDS_COUNT{10, 10, 0};
+    _baseSheetsList[AMBER_SHEET_LINK_DOWN_INFO] = FIELDS_COUNT{11, 14, 0};
+    _baseSheetsList[AMBER_SHEET_TEST_MODE_INFO] = FIELDS_COUNT{68, 136, 0};
+    _baseSheetsList[AMBER_SHEET_TEST_MODE_MODULE_INFO] = FIELDS_COUNT{70, 110, 0};
+    _baseSheetsList[AMBER_SHEET_PHY_DEBUG_INFO] = FIELDS_COUNT{4, 4, 0};
+    _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{76, 116, 0};
+    _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{1, 1, 0};
 
     for_each(_baseSheetsList.begin(), _baseSheetsList.end(),
              [&](pair < AMBER_SHEET, FIELDS_COUNT > sheet) {
@@ -483,6 +485,8 @@ vector < AmberField > MlxlinkAmBerCollector::getGeneralInfo()
     fields.push_back(AmberField("TimeStamp", getCurrentTimeStamp()));
     fields.push_back(AmberField("Iteration/Sweep", to_string(_iteration)));
     fields.push_back(AmberField("Test_Description", _testMode));
+    fields.push_back(AmberField("collection_tool", "Mlxlink"));
+    fields.push_back(AmberField("collection_tool_version", PKG_VER));
 
     return fields;
 }
@@ -981,6 +985,33 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
             fields.push_back(AmberField("effective_ber_pci", berStr));
             fields.push_back(AmberField("Rx_error_pci", to_string(getFieldValue("rx_errors"))));
             fields.push_back(AmberField("Tx_error_pci", to_string(getFieldValue("tx_errors"))));
+
+            resetParser(ACCESS_REG_MPEIN);
+            updateField("pcie_index", _pcieIndex);
+            updateField("depth", _depth);
+            updateField("node", _node);
+            genBuffSendRegister(ACCESS_REG_MPEIN, MACCESS_REG_METHOD_GET);
+
+            if (getFieldValue("link_width_active") & GEN6) // relevant only in case the current active speed is PCI
+                                                           // gen-6.
+            {
+                for (size_t lane = 0; lane < _maxLanes; lane++)
+                {
+                    resetLocalParser(ACCESS_REG_MPCNT);
+                    updateField("depth", _depth);
+                    updateField("lane", lane);
+                    updateField("pcie_index", _pcieIndex);
+                    updateField("node", _node);
+                    updateField("grp", MPCNT_PERFORMANCE_GROUP);
+                    sendRegister(ACCESS_REG_MPCNT, MACCESS_REG_METHOD_GET);
+                    fields.push_back(AmberField("error_counter_lane" + to_string(lane),
+                                                to_string(getFieldValue("error_counter_lane" + to_string(lane)))));
+                }
+                fields.push_back(AmberField("fec_correctable_error_counter",
+                                            to_string(getFieldValue("fec_correctable_error_counter"))));
+                fields.push_back(AmberField("fec_uncorrectable_error_counter",
+                                            to_string(getFieldValue("fec_uncorrectable_error_counter"))));
+            }
         }
 
         if ((_productTechnology == PRODUCT_5NM) && _isPortIB && !_isHca) {
@@ -1135,9 +1166,25 @@ vector < AmberField > MlxlinkAmBerCollector::getSerdesXDR()
 
     try
     {
-        if (!_isPortPCIE) {
-            vector < vector < string >> sltpParams(SLTP_XDR_LAST, vector < string > (_maxLanes, ""));
-            for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
+        if (!_isPortPCIE)
+        {
+            vector<vector<string>> sltpParams(SLTP_XDR_LAST, vector<string>(_maxLanes, ""));
+            vector<vector<string>> slrgParams(SLRG_PARAMS_LAST, vector<string>(_maxLanes, ""));
+            // Getting 5nm SLRG information for all lanes
+            for (u_int32_t lane = 0; lane < _maxLanes; lane++)
+            {
+                resetLocalParser(ACCESS_REG_SLRG);
+                updateField("local_port", _localPort);
+                updateField("lane", lane);
+                sendRegister(ACCESS_REG_SLRG, MACCESS_REG_METHOD_GET);
+
+                slrgParams[SLRG_PARAMS_INITIAL_FOM][lane] = getFieldStr("initial_fom");
+            }
+
+            fillParamsToFields("initial_fom", slrgParams[SLRG_PARAMS_INITIAL_FOM], fields);
+
+            for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
+            {
                 resetLocalParser(ACCESS_REG_SLTP);
                 updateField("local_port", _localPort);
                 updateField("lane", lane);
@@ -1329,10 +1376,11 @@ string MlxlinkAmBerCollector::getCableBreakoutStr(u_int32_t cableBreakout, u_int
     return cableBreakoutStr;
 }
 
-void MlxlinkAmBerCollector::pushModulePerLaneField(vector < AmberField >& fields,
-                                                   string                 fieldName,
-                                                   float                  valueCorrection,
-                                                   string                 laneSep)
+void MlxlinkAmBerCollector::pushModulePerLaneField(vector<AmberField>& fields,
+                                                   string fieldName,
+                                                   float valueCorrection,
+                                                   string laneSep,
+                                                   float multiplier)
 {
     float     value = 0;
     u_int32_t lanes = MAX_NETWORK_LANES;
@@ -1346,7 +1394,8 @@ void MlxlinkAmBerCollector::pushModulePerLaneField(vector < AmberField >& fields
         if (fieldName.find("power") != string::npos) {
             value = getPower(value);
         }
-        fields.push_back(AmberField(fieldName + laneSep + to_string(lane), floatToStr(value / valueCorrection, 2)));
+        fields.push_back(AmberField(fieldName + laneSep + to_string(lane),
+                                    floatToStr(value * multiplier / valueCorrection, 2)));
     }
 }
 
@@ -1429,6 +1478,8 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector < AmberField >& fields)
     u_int32_t cableBreakout = getFieldValue("cable_breakout");
     u_int32_t cableMediaType = getFieldValue("cable_type");
     u_int32_t vendorOUI = getFieldValue("vendor_oui");
+    float txMultiplier = pow(2, getFieldValue("tx_bias_scaling_factor"));
+
     bool      passive = cableMediaType == PASSIVE;
     bool      optical = cableMediaType == OPTICAL_MODULE;
     string    ethComplianceStr = "N/A";
@@ -1494,7 +1545,7 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector < AmberField >& fields)
 
     pushModulePerLaneField(fields, "rx_power_lane");
     pushModulePerLaneField(fields, "tx_power_lane");
-    pushModulePerLaneField(fields, "tx_bias_lane", 500.0);
+    pushModulePerLaneField(fields, "tx_bias_lane", 500.0, "", txMultiplier);
 
     fields.push_back(AmberField("temperature_high_th", getTemp(getFieldValue("temperature_high_th"))));
     fields.push_back(AmberField("temperature_low_th", getTemp(getFieldValue("temperature_low_th"))));
@@ -1504,8 +1555,9 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector < AmberField >& fields)
     fields.push_back(AmberField("rx_power_low_th", to_string(getPower(getFieldValue("rx_power_low_th")))));
     fields.push_back(AmberField("tx_power_high_th", to_string(getPower(getFieldValue("tx_power_high_th")))));
     fields.push_back(AmberField("tx_power_low_th", to_string(getPower(getFieldValue("tx_power_low_th")))));
-    fields.push_back(AmberField("tx_bias_high_th", to_string(getFieldValue("tx_bias_high_th") / 500.0)));
-    fields.push_back(AmberField("tx_bias_low_th", to_string(getFieldValue("tx_bias_low_th") / 500.0)));
+    fields.push_back(
+      AmberField("tx_bias_high_th", to_string((getFieldValue("tx_bias_high_th") / 500.0) * txMultiplier)));
+    fields.push_back(AmberField("tx_bias_low_th", to_string((getFieldValue("tx_bias_low_th") / 500.0) * txMultiplier)));
     fields.push_back(AmberField("wavelength", getFieldStr("wavelength")));
 
     float waveLenTol = float(getFieldValue("wavelength_tolerance")) / 200.0;
@@ -1906,13 +1958,38 @@ vector < AmberField > MlxlinkAmBerCollector::getTroubleshootingInfo()
     return fields;
 }
 
-vector < AmberField > MlxlinkAmBerCollector::getLinkUpInfo()
+void MlxlinkAmBerCollector::getModuleLinkUpInfoPage(vector<AmberField>& fields)
+{
+    fields.push_back(AmberField("up_reason_pwr", _mlxlinkMaps->_upReasonPwr[getFieldValue("up_reason_pwr")]));
+    fields.push_back(AmberField("up_reason_drv", _mlxlinkMaps->_upReasonDrv[getFieldValue("up_reason_drv")]));
+    fields.push_back(AmberField("up_reason_mng", _mlxlinkMaps->_upReasonMng[getFieldValue("up_reason_mng")]));
+    fields.push_back(AmberField("time_to_link_up_msec", getFieldStr("time_to_link_up")));
+    fields.push_back(AmberField("fast_link_up_status", _mlxlinkMaps->_fastLinkUpStatus[getFieldValue("fast_link_up_"
+                                                                                                     "status")]));
+    fields.push_back(
+      AmberField("time_to_link_up_phy_up_to_active", getFieldStr("time_to_link_up_phy_up_to_active") + "msec"));
+    fields.push_back(AmberField("time_to_link_up_sd_to_phy_up", getFieldStr("time_to_link_up_sd_to_phy_up") + "msec"));
+    fields.push_back(AmberField("time_to_link_up_disable_to_sd", getFieldStr("time_to_link_up_disable_to_sd") + "mse"
+                                                                                                                "c"));
+    fields.push_back(
+      AmberField("time_to_link_up_disable_to_pd", getFieldStr("time_to_link_up_disable_to_pd") + "msec"));
+    fields.push_back(AmberField("time_logical_init_to_active", getFieldStr("time_logical_init_to_active")));
+}
+
+vector<AmberField> MlxlinkAmBerCollector::getLinkUpInfo()
 {
     vector < AmberField > fields;
 
     try
     {
-        /* Access regs: [PDDR.linkup_info_page] */
+        if (!_isPortPCIE && !(_devID == DeviceGB100 || _devID == DeviceGR100))
+        {
+            resetLocalParser(ACCESS_REG_PDDR);
+            updateField("local_port", _localPort);
+            updateField("page_select", PDDR_MODULE_LINK_UP_INFO_PAGE);
+            sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
+            MlxlinkAmBerCollector::getModuleLinkUpInfoPage(fields);
+        }
     }
     catch(const std::exception& exc)
     {
@@ -2177,6 +2254,32 @@ vector < AmberField > MlxlinkAmBerCollector::getExtModuleStatus()
     return fields;
 }
 
+vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
+{
+    vector<AmberField> fields;
+
+    try
+    {
+        string operRecoveryStr = "N/A";
+        if (!_isPortPCIE && !(_devID == DeviceGB100 || _devID == DeviceGR100))
+        {
+            resetLocalParser(ACCESS_REG_PPRM);
+            updateField("local_port", _localPort);
+            updateField("pnat", _pnat);
+            sendRegister(ACCESS_REG_PPRM, MACCESS_REG_METHOD_GET);
+
+            operRecoveryStr = _mlxlinkMaps->_pprmOperRecovery[getFieldValue("oper_recovery")];
+        }
+        fields.push_back(AmberField("operational_recovery", operRecoveryStr));
+    }
+    catch (const std::exception& exc)
+    {
+        throw MlxRegException("Failed to get Extended Module information: %s", exc.what());
+    }
+
+    return fields;
+}
+
 void MlxlinkAmBerCollector::groupValidIf(bool condition)
 {
     if (condition) {
@@ -2196,118 +2299,140 @@ vector < AmberField > MlxlinkAmBerCollector::collectSheet(AMBER_SHEET sheet)
 
     AmberField::reset();
 
-    switch (sheet) {
-    case AMBER_SHEET_GENERAL:
-        fields = getGeneralInfo();
-        break;
-
-    case AMBER_SHEET_INDEXES:
-        fields = getIndexesInfo();
-        break;
-
-    case AMBER_SHEET_LINK_STATUS:
-        fields = getLinkStatus();
-        break;
-
-    case AMBER_SHEET_MODULE_STATUS:
-        fields = getModuleStatus();
-        break;
-
-    case AMBER_SHEET_SYSTEM:
-        fields = getSystemInfo();
-        break;
-
-    case AMBER_SHEET_SERDES_16NM:
-        groupValidIf(_productTechnology == PRODUCT_16NM);
-        fields = getSerdesHDR();
-        break;
-
-    case AMBER_SHEET_SERDES_7NM:
-        groupValidIf(_productTechnology == PRODUCT_7NM);
-        fields = getSerdesNDR();
-        break;
-
-    case AMBER_SHEET_SERDES_5NM:
-        groupValidIf(_productTechnology == PRODUCT_5NM);
-        if (_productTechnology == PRODUCT_5NM) {
-            fields = getSerdesXDR();
-        }
-        break;
-
-    case AMBER_SHEET_PORT_COUNTERS:
-        if (!_inPRBSMode) {
-            fields = getPortCounters();
-        } else if (isIn(sheet, _sheetsToDump)) {
-            invalidSheet = true;
-        }
-        break;
-
-    case AMBER_SHEET_TROUBLESHOOTING:
-        if (!_inPRBSMode) {
-            fields = getTroubleshootingInfo();
-        } else if (isIn(sheet, _sheetsToDump)) {
-            invalidSheet = true;
-        }
-        break;
-
-    case AMBER_SHEET_PHY_OPERATION_INFO:
-        if (!_inPRBSMode) {
-            fields = getPhyOperationInfo();
-        } else if (isIn(sheet, _sheetsToDump)) {
-            invalidSheet = true;
-        }
-        break;
-
-    case AMBER_SHEET_LINK_UP_INFO:
-        if (!_inPRBSMode) {
-            fields = getLinkUpInfo();
-        } else if (isIn(sheet, _sheetsToDump)) {
-            invalidSheet = true;
-        }
-        break;
-
-    case AMBER_SHEET_LINK_DOWN_INFO:
-        if (!_inPRBSMode) {
-            fields = getLinkDownInfo();
-        } else if (isIn(sheet, _sheetsToDump)) {
-            invalidSheet = true;
-        }
-        break;
-
-    case AMBER_SHEET_TEST_MODE_INFO:
-        if (_inPRBSMode) {
-            fields = getTestModeInfo();
-        } else if (isIn(sheet, _sheetsToDump)) {
-            invalidSheet = true;
-        }
-        break;
-
-    case AMBER_SHEET_TEST_MODE_MODULE_INFO:
-        if (_inPRBSMode) {
-            fields = getTestModeModuleInfo();
-        } else if (isIn(sheet, _sheetsToDump)) {
-            invalidSheet = true;
-        }
-        break;
-
-    case AMBER_SHEET_PHY_DEBUG_INFO:
-        if (!_inPRBSMode) {
-            fields = getPhyDebugInfo();
-        } else if (isIn(sheet, _sheetsToDump)) {
-            invalidSheet = true;
-        }
-        break;
-
-    case AMBER_SHEET_EXT_MODULE_STATUS:
-        if (!_inPRBSMode) {
-            fields = getExtModuleStatus();
-        } else if (isIn(sheet, _sheetsToDump)) {
-            invalidSheet = true;
-        }
-        break;
-
-    default:
-        throw MlxRegException("Invalid amBER page index: %d", sheet);
+    switch (sheet)
+    {
+        case AMBER_SHEET_GENERAL:
+            fields = getGeneralInfo();
+            break;
+        case AMBER_SHEET_INDEXES:
+            fields = getIndexesInfo();
+            break;
+        case AMBER_SHEET_LINK_STATUS:
+            fields = getLinkStatus();
+            break;
+        case AMBER_SHEET_MODULE_STATUS:
+            fields = getModuleStatus();
+            break;
+        case AMBER_SHEET_SYSTEM:
+            fields = getSystemInfo();
+            break;
+        case AMBER_SHEET_SERDES_16NM:
+            groupValidIf(_productTechnology == PRODUCT_16NM);
+            fields = getSerdesHDR();
+            break;
+        case AMBER_SHEET_SERDES_7NM:
+            groupValidIf(_productTechnology == PRODUCT_7NM);
+            fields = getSerdesNDR();
+            break;
+        case AMBER_SHEET_SERDES_5NM:
+            groupValidIf(_productTechnology == PRODUCT_5NM);
+            if (_productTechnology == PRODUCT_5NM)
+            {
+                fields = getSerdesXDR();
+            }
+            break;
+        case AMBER_SHEET_PORT_COUNTERS:
+            if (!_inPRBSMode)
+            {
+                fields = getPortCounters();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
+        case AMBER_SHEET_TROUBLESHOOTING:
+            if (!_inPRBSMode)
+            {
+                fields = getTroubleshootingInfo();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
+        case AMBER_SHEET_PHY_OPERATION_INFO:
+            if (!_inPRBSMode)
+            {
+                fields = getPhyOperationInfo();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
+        case AMBER_SHEET_LINK_UP_INFO:
+            if (!_inPRBSMode)
+            {
+                fields = getLinkUpInfo();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
+        case AMBER_SHEET_LINK_DOWN_INFO:
+            if (!_inPRBSMode)
+            {
+                fields = getLinkDownInfo();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
+        case AMBER_SHEET_TEST_MODE_INFO:
+            if (_inPRBSMode)
+            {
+                fields = getTestModeInfo();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
+        case AMBER_SHEET_TEST_MODE_MODULE_INFO:
+            if (_inPRBSMode)
+            {
+                fields = getTestModeModuleInfo();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
+        case AMBER_SHEET_PHY_DEBUG_INFO:
+            if (!_inPRBSMode)
+            {
+                fields = getPhyDebugInfo();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
+        case AMBER_SHEET_EXT_MODULE_STATUS:
+            if (!_inPRBSMode)
+            {
+                fields = getExtModuleStatus();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
+        case AMBER_SHEET_RECOVERY_COUNTERS:
+            if (!_inPRBSMode)
+            {
+                fields = getRecoveryCounters();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
+        default:
+            throw MlxRegException("Invalid amBER page index: %d", sheet);
     }
 
     if (!_sheetsToDump.empty()) {

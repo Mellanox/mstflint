@@ -73,6 +73,7 @@ public:
     virtual vector<AmberField> getTestModeModuleInfo();
     virtual vector<AmberField> getPhyDebugInfo();
     virtual vector<AmberField> getExtModuleStatus();
+    virtual vector<AmberField> getRecoveryCounters();
 
     void getPpcntBer(u_int32_t portType, vector<AmberField>& fields);
     bool isGBValid();
@@ -158,13 +159,15 @@ protected:
     void pushModulePerLaneField(vector<AmberField>& fields,
                                 string fieldName,
                                 float valueCorrection = 1.0,
-                                string laneSep = "_");
+                                string laneSep = "_",
+                                float multiplier = 1.0);
     void pushModuleDpPerLane(vector<AmberField>& fields, const string str);
 
     // Helper functions
     virtual string getBerAndErrorTitle(u_int32_t portType);
     virtual void getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params);
     string getClRawBer();
+    virtual void getModuleLinkUpInfoPage(vector<AmberField>& fields);
 
     // Callers
 
