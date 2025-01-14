@@ -569,6 +569,7 @@ public:
     void validateNumOfParamsForXDRGen();
     void checkSltpParamsSize();
     bool isMpeinjSupported();
+    u_int32_t getRateFromPptt();
 
     // Mlxlink params
     UserInput _userInput;
@@ -588,6 +589,7 @@ public:
     u_int32_t _cableLen;
     u_int32_t _activeSpeed;
     u_int32_t _activeSpeedEx;
+    u_int32_t _laneSpeedFromPptt;
     u_int32_t _protoCapability;
     u_int32_t _deviceCapability;
     u_int32_t _protoAdmin;

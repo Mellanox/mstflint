@@ -65,6 +65,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _slotIndex = 0;
     _activeSpeed = 0;
     _activeSpeedEx = 0;
+    _laneSpeedFromPptt = 0;
     _protoCapability = 0;
     _deviceCapability = 0;
     _linkSpeed = 0;
@@ -1668,6 +1669,7 @@ void MlxlinkCommander::prepareSltpEdrHdrGen(vector < vector < string >>& sltpLan
 void MlxlinkCommander::prepareSltpNdrGen(std::vector < std::vector < string >>& sltpLanes, u_int32_t laneNumber)
 {
     u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
+    activeSpeed = activeSpeed == 0 ? _laneSpeedFromPptt : activeSpeed;
 
     for (auto const& param : _mlxlinkMaps->_SltpNdrParams) {
         if ((param.second.validationMask & activeSpeed) || _userInput._pcie) {
@@ -1679,6 +1681,7 @@ void MlxlinkCommander::prepareSltpNdrGen(std::vector < std::vector < string >>& 
 void MlxlinkCommander::prepareSltpXdrGen(std::vector < std::vector < string >>& sltpLanes, u_int32_t laneNumber)
 {
     u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
+    activeSpeed = activeSpeed == 0 ? _laneSpeedFromPptt : activeSpeed;
 
     for (auto const& param : _mlxlinkMaps->_SltpXdrParams) {
         if ((param.second.validationMask & activeSpeed) || _userInput._pcie) {
@@ -2505,6 +2508,7 @@ string MlxlinkCommander::getSltpHeader()
     vector < string > sltpHeader;
     map < u_int32_t, PRM_FIELD > sltpParam;
     u_int32_t activeSpeed = _protoActive == IB ? _activeSpeed : _activeSpeedEx;
+    activeSpeed = activeSpeed == 0 ? _laneSpeedFromPptt : activeSpeed;
 
     switch (_productTechnology) {
     case PRODUCT_5NM:
@@ -2548,6 +2552,18 @@ void MlxlinkCommander::showSltp()
         bool      valid = true;
         u_int32_t numOfLanesToUse = (_userInput._pcie) ? _numOfLanesPcie : _numOfLanes;
         std::vector < std::vector < string >> sltpLanes(numOfLanesToUse, std::vector < string > ());
+        std::vector<std::vector<string>> ppttLanes(numOfLanesToUse, std::vector<string>());
+        map<u_int32_t, u_int32_t> ppttSpeeds = _mlxlinkMaps->_ppttSpeedMapping;
+        if (_protoActive == ETH && !_isHCA)
+        {
+            // according to prm, all lanes show be configured to the same speed
+            sendPrmReg(ACCESS_REG_PPTT, GET, "lane=%d", 0);
+            map<u_int32_t, u_int32_t>::iterator pos = ppttSpeeds.find(getFieldValue("lane_rate_admin"));
+            if (pos != ppttSpeeds.end())
+            {
+                _laneSpeedFromPptt = pos->second;
+            }
+        }
         string showSltpTitle = "Serdes Tuning Transmitter Info";
         string sltpHeader = getSltpHeader();
 

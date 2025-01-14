@@ -194,6 +194,8 @@ private:
     void pcieEnumMapping();
     void initEnhancedDebugMapping();
     void initPprmOperationRecoveryMapping();
+    void initPpttParamsMapping();
+    void initPpttSpeedMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -318,6 +320,8 @@ public:
     std::map<u_int32_t, PcieErrType> _pcieErrType;
     std::map<u_int32_t, std::string> _pprmOperRecovery;
     std::map<u_int32_t, u_int32_t> _ppcntGroups;
+    std::map<u_int32_t, PRM_FIELD> _ppttParams;
+    std::map<u_int32_t, u_int32_t> _ppttSpeedMapping;
 
     string _sltpHeader;
     string _showErrorsTitle;
