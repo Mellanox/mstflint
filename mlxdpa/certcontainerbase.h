@@ -36,6 +36,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <map>
 #include "compatibility.h"
 
 using namespace std;
@@ -70,8 +71,11 @@ public:
     bool Deserialize(vector<u_int8_t> header);
     bool Deserialize(vector<u_int8_t>::const_iterator begin, vector<u_int8_t>::const_iterator end);
     StructType GetType() { return _type; }
+    const StructPriority& GetPriority() const { return _priority; }
+    u_int16_t GetLength() const { return _length; }
 
     static StructPriority ToStructPriority(string priority);
+    static string ToString(StructPriority priority);
 
     enum class StructSecurityMethod
     {
@@ -79,7 +83,8 @@ public:
         Crc16OfHeader = 0x1,
         Crc16OfHeaderAndData = 0x2
     };
-
+    
+    static const map<StructPriority, string> _metadataPriorityToString;
     static const u_int32_t HEADER_SIZE = 12;
 
 private:
@@ -100,6 +105,10 @@ public:
     virtual void Deserialize(vector<u_int8_t> buf) = 0;
     virtual u_int16_t GetSize() = 0;
     virtual CertStructHeader::StructType GetType() = 0;
+    virtual vector<u_int8_t> GetKeypairUUID();
+    virtual vector<u_int8_t> GetCertUUID();
+    virtual u_int8_t GetTargetingType();
+    virtual u_int8_t GetDpaRotEn();
 
     static const u_int32_t METADATA_SIZE = 36;
 
@@ -109,14 +118,30 @@ private:
 class CertContainerItem
 {
 public:
-    CertContainerItem(CertStructHeader::StructPriority priority, CertStructBase* data);
-    CertContainerItem(CertStructHeader header, CertStructBase* data);
+    CertContainerItem(CertStructHeader::StructPriority priority, shared_ptr<CertStructBase> data);
+    CertContainerItem(CertStructHeader header, shared_ptr<CertStructBase> data, vector<u_int8_t> cert) :
+        _header(header), _metadata(data), _cert(cert){};
+    CertContainerItem(){};
 
+    CertStructHeader GetHeader() { return _header; };
+    shared_ptr<CertStructBase> GetMetadata() { return _metadata; };
+    vector<u_int8_t> GetCert() { return _cert; };
     vector<u_int8_t> Serialize(bool toBigEndian = false);
 
 private:
     CertStructHeader _header;
-    shared_ptr<CertStructBase> _struct;
+    shared_ptr<CertStructBase> _metadata;
+    vector<u_int8_t> _cert;
+};
+
+class CertException : public exception
+{
+private:
+    string message;
+
+public:
+    CertException(const char* msg) : message(msg) {}
+    const char* what() const throw() { return message.c_str(); }
 };
 
 #endif /* MLXDPA_CACERTCONTAINER_H_ */

@@ -1472,6 +1472,10 @@ FwComponent::comps_ids_t FwComponent::getCompId(string compId)
     {
         return COMPID_CLOCK_SYNC_EEPROM;
     }
+    else if (compId == "digital_cacert")
+    {
+        return DIGITAL_CACERT;
+    }
 
     return COMPID_UNKNOWN;
 }

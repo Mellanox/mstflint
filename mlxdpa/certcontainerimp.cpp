@@ -33,19 +33,20 @@
 #include "certcontainerimp.h"
 #include "mlxdpa_utils.h"
 #include <string.h>
+#include "mft_utils/mft_utils.h"
 
 CACertMetaData::CACertMetaData(u_int32_t certUUID[4], u_int32_t keypairUUID[4]) : _dpaRotEn(1)
 {
-    memcpy(&_certUUID, certUUID, 16);
-    memcpy(&_keypairUUID, keypairUUID, 16);
+    _certUUID = mft_utils::ToVector(certUUID, 4);
+    _keypairUUID = mft_utils::ToVector(keypairUUID, 4);
 }
 
 vector<u_int8_t> CACertMetaData::Serialize()
 {
-    vector<u_int8_t> serializedData(GetSize());
-
-    memcpy(serializedData.data(), _certUUID, _certUUIDSize);
-    memcpy(serializedData.data() + GetSize() - _keypairUUIDSize, _keypairUUID, _keypairUUIDSize);
+    vector<u_int8_t> serializedData;
+    serializedData.resize(GetSize());
+    copy(_certUUID.begin(), _certUUID.end(), serializedData.begin());
+    copy(_keypairUUID.begin(), _keypairUUID.end(), serializedData.begin() + GetSize() - _keypairUUID.size());
 
     serializedData[0x12] |= (_dpaRotEn << 5); // dpa_rot_en is bit 21 at offset 0x10 -> byte 0x12, bit 5
 
@@ -54,9 +55,16 @@ vector<u_int8_t> CACertMetaData::Serialize()
 
 void CACertMetaData::Deserialize(vector<u_int8_t> buf)
 {
-    memcpy(_certUUID, buf.data(), _certUUIDSize);
-    memcpy(_keypairUUID, buf.data() + GetSize() - _keypairUUIDSize, _keypairUUIDSize);
-    _dpaRotEn = (buf[12] >> 5) & 0x1;
+    _certUUID.clear();
+    _certUUID.reserve(_certUUIDSize);
+    copy(buf.begin(), buf.begin() + _certUUIDSize, std::back_inserter(_certUUID));
+
+    _keypairUUID.clear();
+    _keypairUUID.reserve(_keypairUUIDSize);
+    copy(buf.begin() + GetSize() - _keypairUUIDSize, buf.begin() + GetSize(), std::back_inserter(_keypairUUID));
+
+    _dpaRotEn = (buf[0x11] >> 5) & 0x1;      // This key can be used for authenticating DPA app code.
+    _targetingType = (buf[0x13] >> 4) & 0xf; // type of targeting used in this certificate.
 }
 
 CACertRemove::CACertRemove(u_int32_t certUUID[4], u_int32_t keypairUUID[4], bool removeAll) : _removeAll(removeAll)
@@ -86,7 +94,7 @@ void CACertRemove::Deserialize(vector<u_int8_t> buf)
 CACert::CACert(string certPath)
 {
     const u_int32_t ALIGNMENT = 4;
-    _cert = ReadFromFile(certPath);
+    _cert = mft_utils::ReadFromFile(certPath);
     if (_cert.size() % ALIGNMENT)
     {
         u_int32_t paddingSize = ALIGNMENT - (_cert.size() % ALIGNMENT);

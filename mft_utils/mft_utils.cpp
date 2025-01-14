@@ -43,6 +43,7 @@
 #include <iostream>
 #include <fstream>
 #include <errno.h>
+#include <iomanip>
 
 #include "mft_utils.h"
 
@@ -192,6 +193,50 @@ bool askUser(const char* question, bool force)
         }
     }
     return true;
+}
+
+vector<u_int8_t> ReadFromFile(string filename)
+{
+    // open the file:
+    std::ifstream file(filename, std::ios::binary);
+    if ((file.rdstate() & std::ifstream::failbit) != 0)
+    {
+        fprintf(stderr, "Error opening '%s'\n", filename.c_str());
+        exit(1);
+    }
+
+    // read the data:
+    return vector<u_int8_t>((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+}
+
+string ToHexString(const vector<u_int8_t>& vec)
+{
+    std::ostringstream oss;
+    for (const auto& fixedValue : vec)
+    {
+        oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(fixedValue);
+    }
+    return oss.str();
+}
+
+vector<u_int8_t> ToVector(const u_int32_t* arr, size_t size)
+{
+    vector<u_int8_t> vec;
+    vec.reserve(16);
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        const u_int8_t mask = 0xFF;
+        u_int32_t value = arr[i];
+
+        for (int j = 0; j < 4; ++j)
+        {
+            u_int8_t byte = value & mask;
+            vec.push_back(byte);
+            value >>= 8;
+        }
+    }
+    return vec;
 }
 
 } // namespace mft_utils

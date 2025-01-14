@@ -323,6 +323,9 @@ public:
     FlintStatus executeCommand() override;
     bool verifyParams() override;
     FlintStatus querySyncE();
+    FlintStatus QueryCertStatus();
+private:
+    FwComponent::comps_ids_t _comp;
 };
 
 class Extract4MBImageSubCommand : public SubCommand

@@ -2840,6 +2840,11 @@ bool FwOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t d
     return errmsg("GetComponentData is not supported");
 }
 
+bool FwOperations::ReadMccComponent(vector<u_int8_t>&, FwComponent::comps_ids_t, ProgressCallBackAdvSt*)
+{
+    return errmsg("ReadMccComponent is not supported");
+}
+
 bool FwOperations::IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion)
 {
     return errmsg("IsCompatibleToDevice is not supported");

@@ -48,6 +48,7 @@
 #include <bitset>
 
 #include "mtcr.h"
+#include "mlxfwops/lib/components/fs_cert_ops.h"
 #include <common/compatibility.h>
 #include <fw_comps_mgr/fw_comps_mgr.h>
 #include <mlxfwops/lib/fw_version.h>
@@ -4756,9 +4757,11 @@ QueryComponentSubCommand::QueryComponentSubCommand()
     _flagShort = "qc";
     _param = "";
     _paramExp = "None";
-    _example = FLINT_NAME " -d /dev/mst/mt53100_pciconf0 --component_type sync_clock query_components";
+    _example =  FLINT_NAME " -d /dev/mst/mt53100_pciconf0 --component_type sync_clock query_components\n" FLINT_NAME
+                 " -d /dev/mst/mt4129_pciconf1 --component_type digital_cacert query_components /tmp/outfile\n";
     _v = Wtv_Dev;
-    _maxCmdParamNum = 0;
+    _maxCmdParamNum = 1;
+    _minCmdParamNum = 0;
     _cmdType = SC_Query_Components;
     _mccSupported = true;
 }
@@ -4773,21 +4776,23 @@ FlintStatus QueryComponentSubCommand::executeCommand()
     }
     if (_fwOps->IsFsCtrlOperations())
     {
-        bool rc = true;
-        FwComponent::comps_ids_t comp = FwComponent::getCompId(_flintParams.component_type);
-        switch (comp)
+        FlintStatus rc = FLINT_SUCCESS;
+        switch (_comp)
         {
             case FwComponent::COMPID_CLOCK_SYNC_EEPROM:
                 rc = querySyncE();
+                break;
+            case FwComponent::DIGITAL_CACERT:
+                rc = QueryCertStatus();
                 break;
             case FwComponent::COMPID_UNKNOWN:
             default:
                 reportErr(true, "Unknown component type given.\n");
                 return FLINT_FAILED;
         }
-        if (!rc)
+        if (rc != FLINT_SUCCESS)
         {
-            return FLINT_FAILED;
+            return rc;
         }
     }
     else
@@ -4801,9 +4806,15 @@ FlintStatus QueryComponentSubCommand::executeCommand()
 
 bool QueryComponentSubCommand::verifyParams()
 {
+    _comp = FwComponent::getCompId(_flintParams.component_type);
     if (_flintParams.component_type.empty())
     {
         reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "\"--component_type\"");
+        return false;
+    }
+    if (_comp == FwComponent::DIGITAL_CACERT && _flintParams.cmd_params.size() == 1 && _flintParams.cert_uuid.empty())
+    {
+        reportErr(true, "For query_components with specific output file, Please specify cert_uuid.\n");
         return false;
     }
     return true;
@@ -4835,6 +4846,33 @@ FlintStatus QueryComponentSubCommand::querySyncE()
 
     return FLINT_SUCCESS;
 }
+
+FlintStatus QueryComponentSubCommand::QueryCertStatus()
+{
+#if ENABLE_DPA
+    vector<u_int8_t> cacertRawData;
+    if (!_fwOps->ReadMccComponent(cacertRawData, FwComponent::DIGITAL_CACERT))
+    {
+        reportErr(true, "Failed to read cacert.\n");
+        return FLINT_FAILED;
+    }
+
+    unique_ptr<FsCertOperations> FsCertOps(new FsCertOperations(cacertRawData));
+
+    string outputFile = _flintParams.cmd_params.size() ? _flintParams.cmd_params[0] : "";
+    if (!FsCertOps->GetCert(_flintParams.cert_uuid, outputFile))
+    {
+        reportErr(true, "%s\n", FsCertOps->err());
+        return FLINT_FAILED;
+    }
+
+    return FLINT_SUCCESS;
+#else
+    reportErr(true, "QueryCertStatus for DPA is not supported.\n");
+    return FLINT_FAILED;
+#endif
+}
+
 
 /***********************
  * Class: ImageReactivationSubCommand

@@ -43,6 +43,7 @@
 #include "tools_layouts/cx4fw_layouts.h"
 #include "tools_layouts/image_layout_layouts.h"
 #include <mlxsign_lib/mlxsign_lib.h>
+#include "mlxdpa/certcontainerbase.h"
 #ifdef CABLES_SUPP
 #include <cable_access/cable_access.h>
 #endif
@@ -289,6 +290,9 @@ public:
     virtual bool QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data);
 	virtual bool IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion);
     virtual bool GetRSAPublicKey(vector<u_int8_t>& key);
+    virtual bool ReadMccComponent(vector<u_int8_t>& componentRawData,
+                                  FwComponent::comps_ids_t component,
+                                  ProgressCallBackAdvSt* stProgressFunc = NULL);
 
 #ifndef UEFI_BUILD
     static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);

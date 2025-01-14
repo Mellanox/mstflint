@@ -34,6 +34,7 @@
 #define FS_CERT_OPS
 
 #include "fs_comps_ops.h"
+#include "mlxdpa/certcontainerimp.h"
 
 #ifdef __WIN__
 
@@ -51,6 +52,8 @@ class MLXFWOP_API FsCertOperations : public FsCompsOperations
 {
 public:
     FsCertOperations(FImage* imageAccess);
+    FsCertOperations(const CertContainerItem& container);
+    FsCertOperations(const vector<u_int8_t>& rawDataContainer);
 
     bool FwInit() override;
     bool FwQuery(fw_info_t* fwInfo,
@@ -65,8 +68,15 @@ public:
                   bool ignoreDToc = false) override;
     const char* FwGetResetRecommandationStr() override;
     FwComponent::comps_ids_t GetComponentID() override { return _compID; }
+    vector<CertContainerItem>& GetCotainers() { return _containers; };
+    bool GetCert(string cert_uuid, string outputFile);
+    bool WriteCertToFile(CertContainerItem& container, string outputFile);
+    void PrintCertMetadata(CertContainerItem& container, ostream& os);
+    bool DeserializeCertificates(const vector<u_int8_t>& cacertRawData, vector<CertContainerItem>& certContainers);
+    bool FindContainer(string cert_uuid, CertContainerItem& container);
 
 private:
+    vector<CertContainerItem> _containers;
     FwComponent::comps_ids_t _compID;
 };
 
