@@ -686,8 +686,9 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander,
     if (_mlxParams.isJsonOutputRequested)
     {
         ifstream jsonInputStream(_mlxParams.NVOutputFile);
-        Json::Reader reader;
-        bool rc = reader.parse(jsonInputStream, oJsonValue);
+        mstflint::common::ReaderWrapper readerWrapper;
+        Json::Reader* reader = readerWrapper.getReader();
+        bool rc = reader->parse(jsonInputStream, oJsonValue);
         jsonInputStream.close();
         if (!rc)
         {
