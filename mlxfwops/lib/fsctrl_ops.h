@@ -126,14 +126,14 @@ public:
     virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
     bool GetHashesTableData(vector<u_int8_t>& data);
     virtual bool QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data);
+    virtual bool ReadMccComponent(vector<u_int8_t>& componentRawData,
+                                  FwComponent::comps_ids_t component,
+                                  ProgressCallBackAdvSt* stProgressFunc = NULL);
 
 private:
     virtual u_int32_t GetHwDevId() { return _hwDevId; }
     bool FsIntQuery();
     bool GetImageInfo(u_int8_t* buff);
-    bool ReadBootImage(void* image,
-                       u_int32_t* image_size,
-                       ProgressCallBackAdvSt* stProgressFunc = (ProgressCallBackAdvSt*)NULL);
 
     bool unsupportedOperation();
     int FwCompsErrToFwOpsErr(fw_comps_error_t err);
@@ -142,7 +142,7 @@ private:
     bool _Burn(std::vector<u_int8_t> imageOps4MData,
                ProgressCallBackAdvSt& progressCallBack,
                FwComponent::comps_ids_t ComponentId = FwComponent::COMPID_BOOT_IMG);
-    bool _createImageOps(FwOperations** imgOps);
+    bool _createImageOps(unique_ptr<FwOperations>& imageOps);
     void ExtractSwitchFWVersion(const fwInfoT& fwQuery);
     bool GetHWPointers(image_layout_hw_pointers_carmel& hw_pointers);
     bool CheckITOCSignature(u_int8_t* signature);

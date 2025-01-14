@@ -196,6 +196,7 @@ public:
     u_int32_t cert_chain_index;
     string component_type;
     bool imageSizeOnly;
+    string cert_uuid;
 };
 
 #endif

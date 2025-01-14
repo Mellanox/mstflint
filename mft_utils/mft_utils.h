@@ -49,7 +49,7 @@ namespace mft_utils
 {
 string numToStr(u_int32_t num);
 
-bool strToNum(const string& str, u_int32_t& num, int base);
+bool strToNum(const string& str, u_int32_t& num, int base = 0);
 
 void splitCommaSperatedString(string str, vector<string>& strv);
 
@@ -69,6 +69,10 @@ u_int32_t greatest_common_divisor(u_int32_t a, u_int32_t b);
 u_int32_t least_common_multiple(u_int32_t a, u_int32_t b);
 
 bool askUser(const char* question, bool force);
+
+string ToHexString(const vector<u_int8_t>& vec);
+vector<u_int8_t> ReadFromFile(string filename);
+vector<u_int8_t> ToVector(const u_int32_t* arr, size_t size);
 
 } // namespace mft_utils
 #endif /* MFT_UTILS_H_ */

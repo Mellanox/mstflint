@@ -36,19 +36,25 @@ class CACertMetaData : public CertStructBase
 {
 public:
     CACertMetaData(u_int32_t certUUID[4], u_int32_t keypairUUID[4]);
+    CACertMetaData(){};
     virtual ~CACertMetaData() {}
     vector<u_int8_t> Serialize() override;
     void Deserialize(vector<u_int8_t> buf) override;
     u_int16_t GetSize() override { return 0x24; };
     CertStructHeader::StructType GetType() override { return CertStructHeader::StructType::CacertMetadata; };
+    vector<u_int8_t> GetKeypairUUID() override { return _keypairUUID; };
+    vector<u_int8_t> GetCertUUID() override { return _certUUID; };
+    u_int8_t GetDpaRotEn() override { return _dpaRotEn; };
+    u_int8_t GetTargetingType() override { return _targetingType; };
 
 private:
     const u_int32_t _keypairUUIDSize = 16;
     const u_int32_t _certUUIDSize = 16;
 
-    u_int32_t _certUUID[4];
+    vector<u_int8_t> _certUUID;
+    vector<u_int8_t> _keypairUUID;
+    u_int8_t _targetingType;
     u_int8_t _dpaRotEn;
-    u_int32_t _keypairUUID[4];
 };
 
 class CACertRemove : public CertStructBase

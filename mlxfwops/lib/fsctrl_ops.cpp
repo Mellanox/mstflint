@@ -34,6 +34,8 @@
 #include "fsctrl_ops.h"
 #include "fw_version.h"
 #include "fs_comps_ops.h"
+#include "mft_utils/mft_utils.h"
+#include "mlxdpa/certcontainerimp.h"
 
 #include <tools_utils.h>
 #include <bit_slice.h>
@@ -525,18 +527,16 @@ bool FsCtrlOperations::FwVerifyAdv(ExtVerifyParams& verifyParams)
     }
     else
     {
-        FwOperations* imageOps = NULL;
-        if (!_createImageOps(&imageOps))
+        unique_ptr<FwOperations> imageOps = NULL;
+        if (!_createImageOps(imageOps))
         {
             return errmsg("%s", err());
         }
         if (!imageOps->FwVerify(verifyParams.verifyCallBackFunc, verifyParams.isStripedImage, verifyParams.showItoc,
                                 true))
         {
-            delete imageOps;
             return errmsg(imageOps->getErrorCode(), "%s", imageOps->err());
         }
-        delete imageOps;
     }
     return true;
 }
@@ -549,44 +549,22 @@ bool FsCtrlOperations::FwReadData(void* image, u_int32_t* image_size, bool verbo
     return errmsg("Read image is not supported");
 }
 
-bool FsCtrlOperations::ReadBootImage(void* image, u_int32_t* image_size, ProgressCallBackAdvSt* stProgressFunc)
+bool FsCtrlOperations::ReadMccComponent(vector<u_int8_t>& componentRawData,
+                                        FwComponent::comps_ids_t component,
+                                        ProgressCallBackAdvSt* stProgressFunc)
 {
-    if (image)
+    FwComponent comp;
+    if (!_fwCompsAccess->readComponent(component, comp, true, stProgressFunc))
     {
-        FwComponent bootImgComp;
-        if (!_fwCompsAccess->readComponent(FwComponent::COMPID_BOOT_IMG, bootImgComp, true,
-                                           (ProgressCallBackAdvSt*)stProgressFunc))
+        if (!_fwCompsAccess->readComponent(component, comp, false, stProgressFunc))
         {
-            if (!_fwCompsAccess->readComponent(FwComponent::COMPID_BOOT_IMG, bootImgComp, false,
-                                               (ProgressCallBackAdvSt*)stProgressFunc))
-            {
-                return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()),
-                              "Failed to read boot image, %s - RC[%d]", _fwCompsAccess->getLastErrMsg(),
-                              (int)_fwCompsAccess->getLastError());
-            }
+            return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to read component, %s - RC[%d]",
+                          _fwCompsAccess->getLastErrMsg(), (int)_fwCompsAccess->getLastError());
         }
-        *image_size = bootImgComp.getSize();
-        memcpy(image, bootImgComp.getData().data(), *image_size);
-        return true;
     }
-    else
-    {
-        std::vector<FwComponent> compsMap;
-        if (!_fwCompsAccess->getFwComponents(compsMap, false))
-        {
-            return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()),
-                          "Failed to get the FW Components MAP, err[%d]", _fwCompsAccess->getLastError());
-        }
-        for (std::vector<FwComponent>::iterator it = compsMap.begin(); it != compsMap.end(); it++)
-        {
-            if (it->getType() == FwComponent::COMPID_BOOT_IMG)
-            {
-                *image_size = it->getSize();
-                return true;
-            }
-        }
-        return errmsg("Failed to get the Boot image");
-    }
+    componentRawData.resize(comp.getData().size());
+    copy(comp.getData().begin(), comp.getData().end(), componentRawData.begin());
+    return true;
 }
 
 bool FsCtrlOperations::FwReadRom(std::vector<u_int8_t>& romSect)
@@ -676,27 +654,21 @@ bool FsCtrlOperations::VerifyAllowedParams(ExtBurnParams& burnParams, bool isSec
     return true;
 }
 
-bool FsCtrlOperations::_createImageOps(FwOperations** imageOps)
+bool FsCtrlOperations::_createImageOps(unique_ptr<FwOperations>& imageOps)
 {
-    u_int32_t imageSize = 0;
-    if (!ReadBootImage(NULL, &imageSize))
+    vector<u_int8_t> imageData;
+    if (!ReadMccComponent(imageData, FwComponent::COMPID_BOOT_IMG))
     {
         return errmsg("Failed to get boot image size");
-    }
-    std::vector<u_int8_t> imageData;
-    imageData.resize(imageSize);
-    if (!ReadBootImage((void*)imageData.data(), &imageSize))
-    {
-        return errmsg("Failed to read boot image");
     }
     fw_ops_params_t imageParams;
     memset(&imageParams, 0, sizeof(imageParams));
     imageParams.buffHndl = (u_int32_t*)imageData.data();
-    imageParams.buffSize = imageSize;
+    imageParams.buffSize = imageData.size();
     imageParams.hndlType = FHT_FW_BUFF;
     imageParams.ignoreCrcCheck = _fwParams.ignoreCrcCheck;
-    *imageOps = FwOperations::FwOperationsCreate(imageParams);
-    if (!(*imageOps))
+    imageOps = unique_ptr<FwOperations>(FwOperations::FwOperationsCreate(imageParams));
+    if (!(imageOps))
     {
         return errmsg("Failed to create image ops");
     }

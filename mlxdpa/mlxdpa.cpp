@@ -468,12 +468,13 @@ vector<CertContainerItem> MlxDpa::GetCertContainer(CertContainerType type)
 
     if (type == AddCert)
     {
-        container.push_back(CertContainerItem(_priority, new CACertMetaData(_certUUID, _keypairUUID)));
-        container.push_back(CertContainerItem(_priority, new CACert(_certificatePath)));
+        container.push_back(CertContainerItem(_priority, make_shared<CACertMetaData>(_certUUID, _keypairUUID)));
+        container.push_back(CertContainerItem(_priority, make_shared<CACert>(_certificatePath)));
     }
     else if (type == RemoveCert)
     {
-        container.push_back(CertContainerItem(_priority, new CACertRemove(_certUUID, _keypairUUID, _removeAllCerts)));
+        container.push_back(
+          CertContainerItem(_priority, make_shared<CACertRemove>(_certUUID, _keypairUUID, _removeAllCerts)));
     }
     else
     {
@@ -563,7 +564,7 @@ void MlxDpa::SignCertContainer()
         throw MlxDpaException("Signing certificate container failed with error %#x.", rc);
     }
 
-    CertContainerItem signatureItem(_priority, new CertStructSignature(signature));
+    CertContainerItem signatureItem(_priority, make_shared<CertStructSignature>(signature));
     vector<u_int8_t> serializedItem = signatureItem.Serialize(true);
     certContainer.insert(end(certContainer), begin(serializedItem), end(serializedItem));
 
@@ -599,52 +600,52 @@ void MlxDpa::SignHostElf()
     {
         vector<DevObjHandle*> dpaArchAppsList = hostElf.GetListOfDpaArchApps(app->ObjTable, app->arch_count);
         for (auto archApp : dpaArchAppsList)
-        {
-            CryptoDataSection cryptoDataSection(certChain);
+    {
+        CryptoDataSection cryptoDataSection(certChain);
 
             vector<u_int8_t> dpaAppElf = hostElf.GetDpaApp(*archApp);
 
             MLX_DPA_DPRINTF(("Generating Hash List for %s, HW version %d\n", app->name,
                              archApp->ID)); // TODO: Maybe need a function to print as string the enum archApp->ID
-            cryptoDataSection.GenerateHashListFromELF(dpaAppElf);
+        cryptoDataSection.GenerateHashListFromELF(dpaAppElf);
 
-            cryptoDataSection.Sign(*signer);
+        cryptoDataSection.Sign(*signer);
 
-            vector<u_int8_t> cryptoDataSectionByteStream = cryptoDataSection.Serialize();
-            CPUTOn(cryptoDataSectionByteStream.data(),
-                   cryptoDataSectionByteStream.size() / 4); // Converting crypto data blob to bin-endian
+        vector<u_int8_t> cryptoDataSectionByteStream = cryptoDataSection.Serialize();
+        CPUTOn(cryptoDataSectionByteStream.data(),
+               cryptoDataSectionByteStream.size() / 4); // Converting crypto data blob to bin-endian
 
-            // Add padding if required, after crypto data blob is converted to big-endian
-            if (cryptoDataSectionByteStream.size() % ALIGNMENT)
-            {
-                u_int32_t paddingSize = ALIGNMENT - (cryptoDataSectionByteStream.size() % ALIGNMENT);
-                cryptoDataSectionByteStream.resize(cryptoDataSectionByteStream.size() + paddingSize, 0xff);
-            }
+        // Add padding if required, after crypto data blob is converted to big-endian
+        if (cryptoDataSectionByteStream.size() % ALIGNMENT)
+        {
+            u_int32_t paddingSize = ALIGNMENT - (cryptoDataSectionByteStream.size() % ALIGNMENT);
+            cryptoDataSectionByteStream.resize(cryptoDataSectionByteStream.size() + paddingSize, 0xff);
+        }
 
-            // invoke 3rd party function to update metadata in host elf output file
-            FILE* outHostELF = fopen(_outputPath.c_str(), "r+");
-            if (outHostELF == NULL)
-            {
-                throw MlxDpaException("Failed to open Host ELF file with error: %s", strerror(errno));
-            }
+        // invoke 3rd party function to update metadata in host elf output file
+        FILE* outHostELF = fopen(_outputPath.c_str(), "r+");
+        if (outHostELF == NULL)
+        {
+            throw MlxDpaException("Failed to open Host ELF file with error: %s", strerror(errno));
+        }
             MLX_DPA_DPRINTF(("Calling updateSignatureData: appName %s, HW version %d, cryptoData size %lu.\n",
                              app->name, archApp->ID, (long)cryptoDataSectionByteStream.size()));
             int rc = updateSignatureData(outHostELF, app->name, archApp->ID, cryptoDataSectionByteStream.data(),
                                          cryptoDataSectionByteStream.size());
-            if (rc != 0)
-            {
+        if (rc != 0)
+        {
                 string err("Failed to add crypto data for app" + string(app->name) + "with HW version" +
                            std::to_string(archApp->ID) + ".");
                 if (rc > 0 && rc < NUM_OF_RET_VALS)
-                {
-                    err += " " + updateSigErrors[rc];
-                }
-                throw MlxDpaException(err.c_str());
-            }
-
-            if (fclose(outHostELF) != 0)
             {
-                throw MlxDpaException("Failed to close Host ELF file with error: %s", strerror(errno));
+                err += " " + updateSigErrors[rc];
+            }
+            throw MlxDpaException(err.c_str());
+        }
+
+        if (fclose(outHostELF) != 0)
+        {
+            throw MlxDpaException("Failed to close Host ELF file with error: %s", strerror(errno));
             }
         }
     }

@@ -235,6 +235,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "download_transfer", 0));
     _flags.push_back(new Flag("", "openssl_engine", 1));
     _flags.push_back(new Flag("", "openssl_key_id", 1));
+    _flags.push_back(new Flag("", "cert_uuid", 1));
 #ifdef __WIN__
     _flags.push_back(new Flag("", "cpu_util", 1));
 #endif
@@ -859,6 +860,7 @@ void Flint::initCmdParser()
     AddOptions("openssl_key_id", ' ', "<string>", "deprecated");
     AddOptions("output_file", ' ', "<string>", "output file name for exporting the public key from PEM/BIN");
     AddOptions("user_password", ' ', "<string>", "the HSM user password string in order to work with HSM device");
+    AddOptions("cert_uuid", ' ', "cert_uuid", "the uuid of the required certificate");
 #ifdef __WIN__
     AddOptions("cpu_util",
                ' ',
@@ -1105,6 +1107,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "silent" || name == "s")
     {
         _flintParams.silent = true;
+    }
+    else if (name == "cert_uuid")
+    {
+        _flintParams.cert_uuid = value;
     }
     else if (name == "yes" || name == "y")
     {

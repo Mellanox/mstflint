@@ -35,6 +35,12 @@
 #include <mft_utils.h>
 #include <iostream>
 
+const map<CertStructHeader::StructPriority, string> CertStructHeader::_metadataPriorityToString = {
+  {StructPriority::User, "USER"},
+  {StructPriority::Vendor, "OEM"},
+  {StructPriority::Nvidia, "NVIDIA"},
+  {StructPriority::Unknown, "UNKNOWN"}};
+
 CertStructHeader::CertStructHeader() :
     _length(HEADER_SIZE),
     _type(StructType::Unknown),
@@ -105,13 +111,13 @@ bool CertStructHeader::Deserialize(vector<u_int8_t>::const_iterator begin, vecto
     _type = CertStructHeader::StructType(*begin);
 
     begin++;
-    _length = *(reinterpret_cast<const u_int16_t*>(&(*begin)));
+    _length = __cpu_to_be16(*(reinterpret_cast<const u_int16_t*>(&(*begin))));
 
     begin += 2;
     _securityMethod = CertStructHeader::StructSecurityMethod((*begin >> 4) & 0x0F);
 
     begin += 4;
-    _crc = *(reinterpret_cast<const u_int16_t*>(&(*begin)));
+     _crc = __cpu_to_be16(*(reinterpret_cast<const u_int16_t*>(&(*begin))));
 
     return true;
 }
@@ -142,21 +148,21 @@ CertStructHeader::StructPriority CertStructHeader::ToStructPriority(string prior
     }
 }
 
-CertContainerItem::CertContainerItem(CertStructHeader::StructPriority priority, CertStructBase* data) :
-    _header(priority, data->GetType(), data->GetSize()), _struct(data)
+CertContainerItem::CertContainerItem(CertStructHeader::StructPriority priority, shared_ptr<CertStructBase> data) :
+    _header(priority, data->GetType(), data->GetSize()), _metadata(data)
 {
 }
 
 vector<u_int8_t> CertContainerItem::Serialize(bool toBigEndian)
 {
     vector<u_int8_t> serializedData = _header.Serialize();
-    vector<u_int8_t> structData = _struct->Serialize();
+    vector<u_int8_t> structData = _metadata->Serialize();
 
     if (toBigEndian)
     {
         CPUTOn(serializedData.data(), serializedData.size() / 4);
-        if (_struct->GetType() != CertStructHeader::StructType::Signature &&
-            _struct->GetType() != CertStructHeader::StructType::CertificateX509)
+        if (_metadata->GetType() != CertStructHeader::StructType::Signature &&
+            _metadata->GetType() != CertStructHeader::StructType::CertificateX509)
         {
             CPUTOn(structData.data(), structData.size() / 4);
         }
@@ -165,4 +171,24 @@ vector<u_int8_t> CertContainerItem::Serialize(bool toBigEndian)
     serializedData.insert(serializedData.end(), structData.cbegin(), structData.cend());
 
     return serializedData;
+}
+
+vector<u_int8_t> CertStructBase::GetCertUUID()
+{
+    throw CertException("-E- Failed does not support GetCertUUID.");
+}
+
+vector<u_int8_t> CertStructBase::GetKeypairUUID()
+{
+    throw CertException("-E- Failed does not support GetKeypairUUID.");
+}
+
+u_int8_t CertStructBase::GetTargetingType()
+{
+    throw CertException("-E- Failed does not support GetTargetingType.");
+}
+
+u_int8_t CertStructBase::GetDpaRotEn()
+{
+    throw CertException("-E- Failed does not support GetDpaRotEn.");
 }
