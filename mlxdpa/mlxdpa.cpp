@@ -606,14 +606,14 @@ void MlxDpa::SignHostElf()
             vector<u_int8_t> dpaAppElf = hostElf.GetDpaApp(*archApp);
 
             MLX_DPA_DPRINTF(("Generating Hash List for %s, HW version %d\n", app->name,
-                                archApp->ID)); // TODO: Maybe need a function to print as string the enum archApp->ID
+                             archApp->ID)); // TODO: Maybe need a function to print as string the enum archApp->ID
             cryptoDataSection.GenerateHashListFromELF(dpaAppElf);
 
             cryptoDataSection.Sign(*signer);
 
             vector<u_int8_t> cryptoDataSectionByteStream = cryptoDataSection.Serialize();
             CPUTOn(cryptoDataSectionByteStream.data(),
-                cryptoDataSectionByteStream.size() / 4); // Converting crypto data blob to bin-endian
+                   cryptoDataSectionByteStream.size() / 4); // Converting crypto data blob to bin-endian
 
             // Add padding if required, after crypto data blob is converted to big-endian
             if (cryptoDataSectionByteStream.size() % ALIGNMENT)
@@ -629,13 +629,13 @@ void MlxDpa::SignHostElf()
                 throw MlxDpaException("Failed to open Host ELF file with error: %s", strerror(errno));
             }
             MLX_DPA_DPRINTF(("Calling updateSignatureData: appName %s, HW version %d, cryptoData size %lu.\n",
-                            app->name, archApp->ID, (long)cryptoDataSectionByteStream.size()));
+                             app->name, archApp->ID, (long)cryptoDataSectionByteStream.size()));
             int rc = updateSignatureData(outHostELF, app->name, archApp->ID, cryptoDataSectionByteStream.data(),
-                                        cryptoDataSectionByteStream.size());
+                                         cryptoDataSectionByteStream.size());
             if (rc != 0)
             {
                 string err("Failed to add crypto data for app" + string(app->name) + "with HW version" +
-                        std::to_string(archApp->ID) + ".");
+                           std::to_string(archApp->ID) + ".");
                 if (rc > 0 && rc < NUM_OF_RET_VALS)
                 {
                     err += " " + updateSigErrors[rc];
