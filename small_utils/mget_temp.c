@@ -67,6 +67,9 @@ int parseAndRun(int argc, char** argv)
     char device[MAX_DEV_LEN] = {0};
     int ai;
     int i, j;
+    dm_dev_id_t dev_id = DeviceUnknown;
+    u_int32_t hw_dev_id = 0;
+    u_int32_t hw_rev_id = 0;
 
     for (ai = 1; ai < argc;)
     {
@@ -123,6 +126,16 @@ int parseAndRun(int argc, char** argv)
         printf("-E- mstmget_temp over device in livefish mode is not supported.\n");
         mclose(mf);
         exit(1);
+    }
+
+    if (!dm_get_device_id(mf, &dev_id, &hw_dev_id, &hw_rev_id))
+    {
+        if (dm_is_gpu(dev_id))
+        {
+            printf("-E- mget_temp over GPU is not supported.\n");
+            mclose(mf);
+            exit(1);
+        }
     }
 
     /* read and copy out diode data*/
