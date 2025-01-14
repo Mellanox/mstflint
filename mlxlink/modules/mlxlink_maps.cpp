@@ -740,6 +740,27 @@ void MlxlinkMaps::initSltpStatusMapping()
     _SLTPBadSetStatus2Str[SET_STATUS_UNKNOWN] = "Unknown failure status";
 }
 
+void MlxlinkMaps::initPpttParamsMapping()
+{
+    _ppttParams[LANE_RATE_ADMIN] = PRM_FIELD{"lane_rate_admin", "lane_rate_admin", FIELD_ACCESS_RW, false};
+}
+void MlxlinkMaps::initPpttSpeedMapping()
+{
+    _ppttSpeedMapping[PPTT_SDR] = ETH_LINK_SPEED_EXT_2_5GBASE_X;
+    _ppttSpeedMapping[PPTT_DDR] = ETH_LINK_SPEED_EXT_5GBASE_R;
+    _ppttSpeedMapping[PPTT_QDR] = ETH_LINK_SPEED_10M;
+    _ppttSpeedMapping[PPTT_FDR10] = ETH_LINK_SPEED_10M;
+    _ppttSpeedMapping[PPTT_FDR] = ETH_LINK_SPEED_10M;
+    _ppttSpeedMapping[PPTT_EDR] = ETH_LINK_SPEED_25G_CR | ETH_LINK_SPEED_25G_KR | ETH_LINK_SPEED_25G_SR;
+    _ppttSpeedMapping[PPTT_HDR] = ETH_LINK_SPEED_EXT_50GAUI_1;
+    _ppttSpeedMapping[PPTT_NDR] = ETH_LINK_SPEED_EXT_100GAUI_1;;
+    _ppttSpeedMapping[PPTT_XDR] = LINK_SPEED_200G_LANE;
+    _ppttSpeedMapping[PPTT_1GE] = ETH_LINK_SPEED_EXT_1000BASE_X;
+    _ppttSpeedMapping[PPTT_XAUI] = ETH_LINK_SPEED_EXT_XLAUI_4;
+    _ppttSpeedMapping[PPTT_50GE_KR4] = ETH_LINK_SPEED_50G_KR4;
+    _ppttSpeedMapping[PPTT_RESERVED] = 0;
+}
+
 void MlxlinkMaps::cmisIbComlianceMapping()
 {
     _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_SDR] = "SDR";
@@ -1539,6 +1560,8 @@ MlxlinkMaps::MlxlinkMaps()
     initEnhancedDebugMapping();
     phyHstFsmHdrStateMapping();
     initPpcntGroupsMapping();
+    initPpttParamsMapping();
+    initPpttSpeedMapping();
 }
 
 MlxlinkMaps::~MlxlinkMaps() {}
