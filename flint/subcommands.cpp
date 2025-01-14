@@ -2201,7 +2201,7 @@ SignRSASubCommand::~SignRSASubCommand() {}
 unique_ptr<MlxSign::Signer> SignRSASubCommand::createSigner()
 {
     unique_ptr<MlxSign::Signer> signer = nullptr;
-#if !defined(UEFI_BUILD)
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     signer = unique_ptr<MlxSign::Signer>(new MlxSign::MlxSignRSAViaOpenssl(_flintParams.privkey_file.c_str()));
 #else
     reportErr(true, "RSA sign is not supported.\n");
