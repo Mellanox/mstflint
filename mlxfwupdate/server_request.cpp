@@ -84,8 +84,9 @@ int ServerRequest::parseQueryResponse(string jsonTxt, vector<PsidQueryItem>& res
 #ifdef USE_CURL
     string fileTag;
     Json::Value root;
-    Json::Reader reader;
-    bool rc = reader.parse(jsonTxt, root);
+    mstflint::common::ReaderWrapper readerWrapper;
+    Json::Reader* reader = readerWrapper.getReader();
+    bool rc = reader->parse(jsonTxt, root);
     if (!rc)
     {
         setError(rc, "-E- Failed To parse server response\n");
@@ -257,10 +258,11 @@ int ServerRequest::parseDownloadFilesResponse(string jsonTxt, vector<DownloadedF
 {
 #ifdef USE_CURL
     Json::Value root;
-    Json::Reader reader;
+    mstflint::common::ReaderWrapper readerWrapper;
+    Json::Reader* reader = readerWrapper.getReader();
     string url;
     // printf("response = %s\n", jsonTxt.c_str());
-    bool rc = reader.parse(jsonTxt, root);
+    bool rc = reader->parse(jsonTxt, root);
     if (!rc)
     {
         setError(rc, "-E- Failed To parse server response\n");
@@ -458,9 +460,10 @@ int ServerRequest::parseQueryAllMFAsRespone(string jsonTxt, vector <string> &res
 {
 
     Json::Value root;
-    Json::Reader reader;
+    mstflint::common::ReaderWrapper readerWrapper;
+    Json::Reader* reader = readerWrapper.getReader();
     string url;
-    bool rc = reader.parse(jsonTxt, root);
+    bool rc = reader->parse(jsonTxt, root);
     if (!rc) {
         setError(rc, "-E- Failed To parse server response\n");
         //To be removed

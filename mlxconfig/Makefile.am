@@ -94,6 +94,7 @@ mstconfig_DEPENDENCIES = \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
     $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
+    $(top_builddir)/common/libcommon.la \
     $(MUPARSER_LIBS) \
     $(SQLITE_LIBS)
 

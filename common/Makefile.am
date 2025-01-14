@@ -32,6 +32,8 @@
 
 noinst_LTLIBRARIES = libcommon.la
 
+AM_CPPFLAGS = $(JSON_CFLAGS)
+
 libcommon_la_SOURCES = \
     bit_slice.h \
     compatibility.h \
@@ -43,7 +45,9 @@ libcommon_la_SOURCES = \
     tools_time.h \
     tools_utils.h \
     tools_utils.h \
-    tools_version.h
+    tools_version.h \
+    tools_json.cpp \
+    tools_json.h 
 
 commonincludedir = $(includedir)/mstflint/common/
 commoninclude_HEADERS = compatibility.h
