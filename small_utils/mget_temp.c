@@ -132,7 +132,7 @@ int parseAndRun(int argc, char** argv)
     {
         if (dm_is_gpu(dev_id))
         {
-            printf("-E- mget_temp over GPU is not supported.\n");
+            printf("-E- mstmget_temp over GPU is not supported.\n");
             mclose(mf);
             exit(1);
         }
