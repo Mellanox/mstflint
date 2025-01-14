@@ -3160,7 +3160,7 @@ int return_by_reg_status(int reg_status)
         return ME_REG_ACCESS_BAD_CONFIG;
 
     case 0x21:
-        return ME_REG_ACCESS_ERASE_EXEEDED;
+        return ME_REG_ACCESS_ERASE_EXCEEDED;
 
     case 0x70:
         return ME_REG_ACCESS_INTERNAL_ERROR;
@@ -3203,7 +3203,7 @@ int maccess_reg_ul(mfile              * mf,
 
     if (reg_size > (unsigned int)max_size) {
         /* reg too big */
-        return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
+        return ME_REG_ACCESS_SIZE_EXCEEDS_LIMIT;
     }
 
 #ifndef MST_UL
@@ -3729,7 +3729,7 @@ const char* m_err2str(MError status)
     case ME_REG_ACCESS_UNKNOWN_ERR:
         return "Unknown register error";
 
-    case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
+    case ME_REG_ACCESS_SIZE_EXCEEDS_LIMIT:
         return "Register is too large";
 
     case ME_REG_ACCESS_CONF_CORRUPT:
@@ -3741,7 +3741,7 @@ const char* m_err2str(MError status)
     case ME_REG_ACCESS_BAD_CONFIG:
         return "The configuration is rejected";
 
-    case ME_REG_ACCESS_ERASE_EXEEDED:
+    case ME_REG_ACCESS_ERASE_EXCEEDED:
         return "The erase count exceeds its limit";
 
     case ME_REG_ACCESS_INTERNAL_ERROR:

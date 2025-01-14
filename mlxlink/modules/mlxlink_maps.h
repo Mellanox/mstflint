@@ -161,6 +161,7 @@ private:
     void initPrbsMapping();
     void initPpbmcAndPepcMapping();
     void initLinkDownInfoMapping();
+    void initLinkUpInfo();
     void initSltpStatusMapping();
     void qsfpComlianceMapping();
     void cmisIbComlianceMapping();
@@ -192,6 +193,7 @@ private:
     void techMapping();
     void pcieEnumMapping();
     void initEnhancedDebugMapping();
+    void initPprmOperationRecoveryMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -314,6 +316,7 @@ public:
     std::map<u_int32_t, std::string> _slrgFomMode5nm;
     std::map<u_int32_t, std::string> _pcieDevStatus;
     std::map<u_int32_t, PcieErrType> _pcieErrType;
+    std::map<u_int32_t, std::string> _pprmOperRecovery;
     std::map<u_int32_t, u_int32_t> _ppcntGroups;
 
     string _sltpHeader;

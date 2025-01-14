@@ -312,16 +312,17 @@ if REG_ACCESS:
             }
 
         ##########################
-        def sendMFRL(self, method, resetLevel=None, reset_type=None, reset_sync=None):
+        def sendMFRL(self, method, resetLevel=None, reset_type=None, reset_sync=None, pci_reset_request_method=None):
 
             mfrlRegisterP = pointer(MFRL_REG_EXT())
 
             if method == REG_ACCESS_METHOD_SET:
-                if resetLevel is None or reset_type is None or reset_sync is None:
-                    raise RegAccException("Failed to sendMFRL (reset level/type/sync is None for SET command)")
+                if resetLevel is None or reset_type is None or reset_sync is None or pci_reset_request_method is None:
+                    raise RegAccException("Failed to sendMFRL (reset level/type/sync/pci_reset_request_method is None for SET command)")
                 mfrlRegisterP.contents.reset_trigger = c_uint8(resetLevel)
                 mfrlRegisterP.contents.rst_type_sel = c_uint8(reset_type)
                 mfrlRegisterP.contents.pci_sync_for_fw_update_start = c_uint8(reset_sync)
+                mfrlRegisterP.contents.pci_reset_req_method = c_uint8(pci_reset_request_method)
 
             c_method = c_uint(method)
             rc = self._reg_access_mfrl(self._mstDev.mf, c_method, mfrlRegisterP)
@@ -330,7 +331,6 @@ if REG_ACCESS:
 
             if method == REG_ACCESS_METHOD_GET:
                 return mfrlRegisterP.contents.reset_trigger, mfrlRegisterP.contents.reset_type, mfrlRegisterP.contents.pci_rescan_required, mfrlRegisterP.contents.reset_state
-
         ##########################
         def getMCAM(self, access_reg_group=0):
 

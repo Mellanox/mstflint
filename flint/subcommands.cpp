@@ -2201,7 +2201,7 @@ SignRSASubCommand::~SignRSASubCommand() {}
 unique_ptr<MlxSign::Signer> SignRSASubCommand::createSigner()
 {
     unique_ptr<MlxSign::Signer> signer = nullptr;
-#if !defined(UEFI_BUILD)
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     signer = unique_ptr<MlxSign::Signer>(new MlxSign::MlxSignRSAViaOpenssl(_flintParams.privkey_file.c_str()));
 #else
     reportErr(true, "RSA sign is not supported.\n");
@@ -4557,6 +4557,22 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     if (fwInfo.fs3_info.geo_address_valid)
     {
         printf("Geographical Address:  ASIC %x\n", fwInfo.fs3_info.geo_address);
+    }
+
+    if (fwInfo.fs3_info.socket_direct)
+    {
+        printf("Socket Direct:         Yes\n");
+        if (fwInfo.fs3_info.is_aux_card_connected_valid)
+        {
+            if (fwInfo.fs3_info.aux_card_connected)
+            {
+                printf("Aux Card is Connected: Yes\n");
+            }
+            else
+            {
+                printf("Aux Card is Connected: No\n");
+            }
+        }
     }
 
     return FLINT_SUCCESS;

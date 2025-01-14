@@ -154,6 +154,7 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
     _fecModeActive[FEC_MODE_FIRECODE_FEC] = "Firecode FEC";
     _fecModeActive[FEC_MODE_STANDARD_RS_FEC_528_514] = "Standard RS-FEC - RS(528,514)";
     _fecModeActive[FEC_MODE_STANDARD_LL_FEC_271_257] = "Standard LL RS-FEC - RS(271,257)";
+    _fecModeActive[FEC_MODE_INTERLEAVED_QUAD_RS_FEC_544_514] = "Interleaved Quad RS-FEC - (544,514)";
     _fecModeActive[FEC_MODE_INTERLEAVED_STANDARD_RS_FEC_544_514] = "Interleaved_Standard_RS-FEC - (544,514)";
     _fecModeActive[FEC_MODE_STANDARD_RS_FEC_544_514] = "Standard_RS-FEC - (544,514)";
     _fecModeActive[FEC_MODE_ZERO_LATENCY_FEC] = "Zero_Latency_FEC";
@@ -170,11 +171,17 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
     _fecModeMask[FEC_MODE_MASK_NF] = make_pair("No-FEC", "NF");
     _fecModeMask[FEC_MODE_MASK_FC] = make_pair("Firecode_FEC", "FC");
     _fecModeMask[FEC_MODE_MASK_RS_528] = make_pair("RS-FEC (528,514)", "RS");
+    _fecModeMask[FEC_MODE_MASK_RS_544_514_QUAD] = make_pair("Interleaved_Quad_RS_FEC - (544,514)", "RS-544Q");
     _fecModeMask[FEC_MODE_MASK_LL_271] = make_pair("LL_RS-FEC (271,257)", "LL");
     _fecModeMask[FEC_MODE_MASK_DF_RS] = make_pair("Interleaved_RS-FEC (544,514)", "DF-RS");
     _fecModeMask[FEC_MODE_MASK_RS_544] = make_pair("RS-FEC (544,514)", "RS-544");
     _fecModeMask[FEC_MODE_MASK_LL_272] = make_pair("LL_RS-FEC (272,257+1)", "LL-272");
     _fecModeMask[FEC_MODE_MASK_DF_LL_272] = make_pair("Interleaved_LL_RS-FEC (272,257+1)", "DF-LL");
+
+    _fecPerSpeed.push_back(make_pair("1600G_8X", ""));
+    _fecPerSpeed.push_back(make_pair("800G_4X", ""));
+    _fecPerSpeed.push_back(make_pair("400G_2X", ""));
+    _fecPerSpeed.push_back(make_pair("200G_1X", ""));
 
     _fecPerSpeed.push_back(make_pair("800G_8X", ""));
     _fecPerSpeed.push_back(make_pair("400G_4X", ""));
@@ -271,9 +278,13 @@ void MlxlinkMaps::extEthSpeedMapping()
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_100GAUI_1] = 100;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_200GAUI_4] = 200;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_200GAUI_2] = 200;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_200GAUI_1] = 200;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_400GAUI_8] = 400;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_400GAUI_4] = 400;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_400GAUI_2] = 400;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_800GAUI_8] = 800;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_800GAUI_4] = 800;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_1_6TAUI_8] = 1600;
 
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_SGMII_100M] = "100M";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_1000BASE_X] = "1G";
@@ -289,9 +300,13 @@ void MlxlinkMaps::extEthSpeedMapping()
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_100GAUI_1] = "100G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_200GAUI_4] = "200G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_200GAUI_2] = "200G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_200GAUI_1] = "200G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_8] = "400G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_4] = "400G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_2] = "400G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_800GAUI_8] = "800G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_800GAUI_4] = "800G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_1_6TAUI_8] = "1600G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_SGMII_10M] = "10M";
 }
 
@@ -378,9 +393,13 @@ void MlxlinkMaps::speedToLanesMapping()
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_100GAUI_1] = 1;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_200GAUI_4] = 4;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_200GAUI_2] = 2;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_200GAUI_1] = 1;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_8] = 8;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_4] = 4;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_2] = 2;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_800GAUI_8] = 8;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_800GAUI_4] = 4;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_1_6TAUI_8] = 8;
 }
 
 void MlxlinkMaps::initPortSpeedMapping()
@@ -490,6 +509,10 @@ void MlxlinkMaps::initPrbsMapping()
     // XDR
     _prbsLaneRate["IB-XDR"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
     _prbsLaneRate["XDR"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
+    _prbsLaneRate["200G_1X"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
+    _prbsLaneRate["400G_2X"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
+    _prbsLaneRate["800G_4X"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
+    _prbsLaneRate["1600G_8X"] = {LANE_RATE_XDR_CAP, PRBS_XDR};
 
     _prbsRxTuningStatus[0] = "PRBS mode tuning was not performed.";
     _prbsRxTuningStatus[1] = "Performing PRBS mode tuning.";
@@ -507,7 +530,7 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsLaneRateCap[LANE_RATE_50G_CAP] = "50GE-KR4/12.89G (12.89 Gb/s)";
     _prbsLaneRateCap[LANE_RATE_HDR_CAP] = "HDR/50G/100G/200G/400G (26.5625Gbd/53.125Gb/s)";
     _prbsLaneRateCap[LANE_RATE_NDR_CAP] = "NDR/100G/200G/400G/800G (53.125Gbd/106.25Gb/s)";
-    _prbsLaneRateCap[LANE_RATE_XDR_CAP] = "XDR (106.25Gbd/212.5Gb/s)";
+    _prbsLaneRateCap[LANE_RATE_XDR_CAP] = "XDR/200G/400G/800G/1600G (106.25Gbd/212.5Gb/s)";
 
     _prbsLockStatus[0] = "Not locked";
     _prbsLockStatus[1] = "Locked";
@@ -615,6 +638,38 @@ void MlxlinkMaps::initLinkDownInfoMapping()
     _pddrLinkDownE2EReasonOpcode[126] = "Peer - Current issue";
     _pddrLinkDownE2EReasonOpcode[127] = "Peer - Power budget";
     _pddrLinkDownE2EReasonOpcode[128] = "Peer - MNG forced down the port";
+}
+
+void MlxlinkMaps::initLinkUpInfo()
+{
+    _upReasonPwr[UP_REASON_PWR_NO_DOWN_COMMAND] = "No down command / unknown";
+    _upReasonPwr[UP_REASON_PWR_KEEP_LINK_UP_ON_BOOT] = "Keep link up on boot";
+    _upReasonPwr[UP_REASON_PWR_KEEP_LINK_UP_ETH_IB] = "Keep link up Eth/IB";
+    _upReasonPwr[UP_REASON_PWR_KEEP_LINK_UP_ON_STANDBY] = "Keep link up on standby";
+
+    _upReasonDrv[UP_REASON_DRV_NO_DOWN_COMMAND] = "No down command / unknown";
+    _upReasonDrv[UP_REASON_DRV_UP_BY_AT_LEAST_ONE_OF_THE_HOSTS] = "Up by at least one of the hosts";
+
+    _upReasonMng[UP_REASON_MNG_NO_DOWN_COMMAND] = "No down command / unknown";
+    _upReasonMng[UP_REASON_MNG_BMC_FORCE_LINKUP] = "BMC force linkup";
+    _upReasonMng[UP_REASON_MNG_WOL_FORCE_LINKUP] = "WOL force linkup";
+    _upReasonMng[UP_REASON_MNG_ANS_FORCE_LINKUP] = "ASN.1 force link up";
+
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_UNKOWN] = "Unknown";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_FAST_LINKUP_WAS_PERFORMED] = "Fast Link-UP was performed.";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_REGULAR_LINK_UP_DUE_CABLE_CHANGE] =
+      "Regular link-up flow was performed due to changes in cable";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_REGULAR_LINK_UP_DUE_PROTOCOL_CHANGE] =
+      "Regular link-up flow was performed due to changes in protocol (speed or FEC)";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_REGULAR_LINK_UP_DUE_NON_FASTBOOT] =
+      "Regular link-up flow was performed due to a non-fastbootable FW version (PCNR is not supported)";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_REGULAR_LINK_UP_DUE_CABLE_MLPN_FLOW] =
+      "Regular link-up performed due to MLPN flow";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_REGULAR_LINK_UP_DUE_CABLE_MLPN_PCNR] =
+      "No Regular link-up performed due to PCNR.tuning_override configuration while port was in “down” state.";
+    _fastLinkUpStatus[FAST_LINK_UP_STATUS_INVALID_FASTBOOT] =
+      "Invalid fastboot data struct (0xCAFECAFE magic value is not present. For example, SW reset was executed before "
+      "finish saving data during PCNR flow)";
 }
 
 void MlxlinkMaps::initSltpStatusMapping()
@@ -1437,6 +1492,14 @@ void MlxlinkMaps::initEnhancedDebugMapping()
     _localReasonOpcode[LOCAL_REASON_OPCODE_RESERVED] = "N/A";
 }
 
+void MlxlinkMaps::initPprmOperationRecoveryMapping()
+{
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logcic_re-lock";
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] = "host_serdes_feq";
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_TX] = "module_tx_disable";
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_DATA_PATH] = "module_datapath_full_toggle";
+}
+
 void MlxlinkMaps::initPpcntGroupsMapping()
 {
     _ppcntGroups[PPCNT_IEEE_802_3_COUNTERS_GROUP] = PPCNT_IEEE_802_3_COUNTERS_GROUP;
@@ -1468,6 +1531,7 @@ MlxlinkMaps::MlxlinkMaps()
     initPrbsMapping();
     initPpbmcAndPepcMapping();
     initLinkDownInfoMapping();
+    initLinkUpInfo();
     initSltpStatusMapping();
     initCableComplianceMapping();
     initCableTechnologyMapping();

@@ -128,7 +128,7 @@
         if ((int)t_offset + data_struct->data_size_name > max_data_size)                                              \
         {                                                                                                             \
             free(data);                                                                                               \
-            return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;                                                                 \
+            return ME_REG_ACCESS_SIZE_EXCEEDS_LIMIT;                                                                 \
         }                                                                                                             \
         memcpy(&data[t_offset], t_data, data_struct->data_size_name);                                                 \
     }                                                                                                                 \
