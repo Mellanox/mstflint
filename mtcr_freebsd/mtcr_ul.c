@@ -209,11 +209,11 @@ void swap_pci_address_space(mfile* mf)
             mf->address_space = AS_SEMAPHORE;
             break;
         default:
-            DBG_PRINTF("No address space found: %x\n", mf->address_space);
+            // printf("No address space found: %x\n", mf->address_space);
             return;
     }
 
-    DBG_PRINTF("New address space found: %x\n", mf->address_space);
+    // printf("New address space found: %x\n", mf->address_space);
 }
 
 int read_device_id(mfile* mf, u_int32_t* device_id)
@@ -301,6 +301,30 @@ int mtcr_check_signature(mfile* mf)
         }                                                         \
         rc = write_config(mf, pci_offs, val, 4);                  \
         lock_rc = _flock_int(mf->fdlock, LOCK_UN);                \
+        if (lock_rc)                                              \
+        {                                                         \
+            perror(err_prefix);                                   \
+            action_on_fail;                                       \
+        }                                                         \
+        if (rc)                                                   \
+        {                                                         \
+            return rc;                                            \
+        }                                                         \
+    } while (0)
+
+#define WRITE2_PCI(mf, val, pci_offs, err_prefix, action_on_fail) \
+    do                                                            \
+    {                                                             \
+        int rc;                                                   \
+        int lock_rc;                                              \
+        lock_rc = _flock_int(mf->fdlock, LOCK_EX);                 \
+        if (lock_rc)                                              \
+        {                                                         \
+            perror(err_prefix);                                   \
+            action_on_fail;                                       \
+        }                                                         \
+        rc = write_config(mf, pci_offs, val, 2);                  \
+        lock_rc = _flock_int(mf->fdlock, LOCK_UN);                 \
         if (lock_rc)                                              \
         {                                                         \
             perror(err_prefix);                                   \
@@ -594,10 +618,12 @@ static int _wait_on_flag(mfile* mf, u_int8_t expected_val)
     return 0;
 }
 
-int check_syndrome(mfile* mf)
+int get_syndrome_code(mfile* mf)
 {
-    // in case syndrome is set, if syndrome_code is 0x3 (address_out_of_range), return error, so that the ioctl will
-    // fail and then we'll retry with PCI space.
+    // in case syndrome is set, return the syndrome_code.
+    // syndrome_code 0x3 (address_out_of_range) indicates that we need to swap from CORE address_space to PCI
+    // address_space.
+
     uint32_t syndrome = 0;
     READ4_PCI(mf, &syndrome, mf->vsec_addr + PCI_ADDR_OFFSET, "read domain", return -1);
     syndrome = EXTRACT(syndrome, PCI_SYNDROME_BIT_OFFSET, PCI_SYNDROME_BIT_LEN);
@@ -605,45 +631,34 @@ int check_syndrome(mfile* mf)
     {
         uint32_t syndrome_code = 0;
         READ4_PCI(mf, &syndrome_code, mf->vsec_addr + PCI_CTRL_OFFSET, "read domain", return -1);
-        if (EXTRACT(syndrome_code, PCI_SYNDROME_CODE_BIT_OFFSET, PCI_SYNDROME_CODE_BIT_LEN) == ADDRESS_OUT_OF_RANGE)
-        {
-            return ME_ADDRESS_OUT_OF_RANGE;
-        }
+        syndrome_code = EXTRACT(syndrome_code, PCI_SYNDROME_CODE_BIT_OFFSET, PCI_SYNDROME_CODE_BIT_LEN);
+        return syndrome_code;
     }
     return ME_OK;
 }
 
 static int _set_addr_space(mfile* mf, u_int16_t space)
 {
-    /* read modify write */
-    uint32_t val;
-
-    READ4_PCI(mf, &val, mf->vsec_addr + PCI_CTRL_OFFSET, "read domain", return -1);
-    val = MERGE(val, space, PCI_SPACE_BIT_OFFS, PCI_SPACE_BIT_LEN);
-    WRITE4_PCI(mf, val, mf->vsec_addr + PCI_CTRL_OFFSET, "write domain", return -1);
+    WRITE2_PCI(mf, space, mf->vsec_addr + PCI_CTRL_OFFSET, "write domain", return -1);
 
     /* Check if we succedded to write the space (i.e. that its MSB is not ignored by FW) */
     u_int32_t read_val = 0;
     READ4_PCI(mf, &read_val, mf->vsec_addr + PCI_CTRL_OFFSET, "read status", return -1);
 
-    /* Extract only the first 16 bits, as we need to check what's written in "space" */
-    unsigned int mask = 0xFFFF;
-    unsigned int expected_value = val & mask;
-    unsigned int actual_value = read_val & mask;
+    u_int16_t actual_value = (uint16_t)EXTRACT(
+      read_val, 0, 16); // Extract only the first 16 bits, as we need to check what's written in "space"
 
     /* Check if the space written is indeed the space we attempted to write */
-    if (actual_value != expected_value)
+    if (actual_value != space)
     {
-        // printf("actual_space_value != expected_space_value. expected_space_value: 0x%x actual_space_value: 0x%x. Meaning space: 0x%x is not supported.\n",
-        //   expected_value,
-        //   actual_value,
-        //   expected_value);
+        // printf("VSC address space: 0x%x is not supported.\n", space);
         return ME_PCI_SPACE_NOT_SUPPORTED;
     }
 
-    /* read status and make sure space is supported */
-    if (EXTRACT(read_val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0) // Check if the address space is supported by FW
+    // read status and make sure space is supported
+    if (EXTRACT(read_val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0)
     {
+        // printf("VSC address space: 0x%x is not supported. status bit is 0.\n", space);
         return -1;
     }
     return 0;
@@ -675,9 +690,9 @@ static int _pciconf_rw(mfile* mf, unsigned int offset, uint32_t* data, int rw)
         /* read data */
         READ4_PCI(mf, data, mf->vsec_addr + PCI_DATA_OFFSET, "read value", return -1);
     }
-    if (VSEC_PXIR_SUPPORT(mf))
+    if (mf->pxir_vsec_supp)
     {
-        ret = check_syndrome(mf);
+        ret = get_syndrome_code(mf); // If syndrome is set, ret will be the syndrome_code
     }
     return ret;
 }
@@ -726,10 +741,21 @@ static int _block_op(mfile* mf, int space, unsigned int offset, int size, uint32
         wrote_or_read = -1;
         goto cleanup;
     }
-    for (i = 0; i < size; i += 4) {
-        if (_pciconf_rw(mf, offset + i, &(data[(i >> 2)]), rw)) {
-            wrote_or_read = i;
-            goto cleanup;
+    for (i = 0; i < size; i += 4)
+    {
+        ret = _pciconf_rw(mf, offset + i, &(data[(i >> 2)]), rw);
+        if (ret)
+        {
+            if (ret == ADDRESS_OUT_OF_RANGE)
+            {
+                wrote_or_read = ADDRESS_OUT_OF_RANGE; // Support PCI space
+                goto cleanup;
+            }
+            else
+            {
+                wrote_or_read = i; // Indicate where the error occurred
+                goto cleanup;
+            }
         }
     }
 cleanup:
@@ -742,8 +768,27 @@ static int mwrite4_new(mfile* mf, unsigned int offset, uint32_t data)
     int ret;
 
     ret = _send_pci_cmd_int(mf, mf->address_space, offset, &data, WRITE_OP);
-    if (ret) {
-        return -1;
+    if (ret)
+    {
+        // support PCI space
+        if (mf->pxir_vsec_supp && ret == ADDRESS_OUT_OF_RANGE)
+        {
+            swap_pci_address_space(mf);
+            ret = _send_pci_cmd_int(mf, mf->address_space, offset, &data, WRITE_OP);
+            // printf(
+              "Entered VSC pci space support flow. address_space now set to: %d. second attempt to run _send_pci_cmd_int returned with rc: %d.\n",
+              mf->address_space,
+              ret);
+            if (ret)
+            {
+                return -1;
+            }
+            return 4;
+        }
+        else
+        {
+            return -1;
+        }
     }
     return 4;
 }
@@ -753,8 +798,27 @@ static int mread4_new(mfile* mf, unsigned int offset, uint32_t* data)
     int ret;
 
     ret = _send_pci_cmd_int(mf, mf->address_space, offset, data, READ_OP);
-    if (ret) {
-        return -1;
+    if (ret)
+    {
+        // support PCI space
+        if (mf->pxir_vsec_supp && ret == ADDRESS_OUT_OF_RANGE)
+        {
+            swap_pci_address_space(mf);
+            ret = _send_pci_cmd_int(mf, mf->address_space, offset, data, READ_OP);
+            // printf(
+              "Entered VSC pci space support flow. address_space now set to: 0x%x. second attempt to run _send_pci_cmd_int returned with rc: 0x%x.\n",
+              mf->address_space,
+              ret);
+            if (ret)
+            {
+                return -1;
+            }
+            return 4;
+        }
+        else
+        {
+            return -1;
+        }
     }
     return 4;
 }
@@ -762,38 +826,44 @@ static int mread4_new(mfile* mf, unsigned int offset, uint32_t* data)
 static int mwrite4_block_new(mfile* mf, unsigned int offset, int size, uint32_t* data)
 {
     int rc = _block_op(mf, mf->address_space, offset, size, data, WRITE_OP);
-    if (rc == -1)
+    // support PCI space
+    if (mf->pxir_vsec_supp && rc == ADDRESS_OUT_OF_RANGE)
     {
-        // support PCI space
-        if (VSEC_PXIR_SUPPORT(mf))
+        swap_pci_address_space(mf);
+        rc = _block_op(mf, mf->address_space, offset, size, data, WRITE_OP);
+        // printf(
+          "Entered VSC pci space support flow. address_space now set to: 0x%x. second attempt to run _block_op returned with rc: %d.\n",
+          mf->address_space,
+          rc);
+        if (rc == ADDRESS_OUT_OF_RANGE)
         {
-            swap_pci_address_space(mf);
-            rc = _block_op(mf, mf->address_space, offset, size, data, WRITE_OP);
-            // printf(
-            //   "Entered VSC pci space support flow. PCI address_space now set to: %d. second attempt to run _block_op with VSC PCI address space returned with rc: %d.\n",
-            //   mf->address_space,
-            //   rc);
+            rc = -1; // if the address is out of range both in PCI and CORE VSC address spaces - need to exit.
         }
     }
-    return rc;}
+
+    return rc;
+}
 
 static int mread4_block_new(mfile* mf, unsigned int offset, int size, uint32_t* data)
 {
     int rc = _block_op(mf, mf->address_space, offset, size, data, READ_OP);
-    if (rc == -1)
+    // support PCI space
+    if (mf->pxir_vsec_supp && rc == ADDRESS_OUT_OF_RANGE)
     {
-        // support PCI space
-        if (VSEC_PXIR_SUPPORT(mf))
+        swap_pci_address_space(mf);
+        rc = _block_op(mf, mf->address_space, offset, size, data, READ_OP);
+        // printf(
+          "Entered VSC pci space support flow. address_space now set to: 0x%x. second attempt to run _block_op returned with rc: %d.\n",
+          mf->address_space,
+          rc);
+        if (rc == ADDRESS_OUT_OF_RANGE)
         {
-            swap_pci_address_space(mf);
-            rc = _block_op(mf, mf->address_space, offset, size, data, READ_OP);
-            // printf(
-            //   "Entered VSC pci space support flow. PCI address_space now set to: %d. second attempt to run _block_op with VSC PCI address space returned with rc: %d.\n",
-            //   mf->address_space,
-            //   rc);
+            rc = -1; // if the address is out of range both in PCI and CORE VSC address spaces - need to exit.
         }
     }
-    return rc;}
+
+    return rc;
+}
 
 static int vsec_spaces_supported(mfile* mf)
 {
@@ -808,6 +878,27 @@ static int vsec_spaces_supported(mfile* mf)
         supported = 0;
     }
     /* clear semaphore */
+    _vendor_specific_sem(mf, 0);
+    return supported;
+}
+
+static int pci_vsec_spaces_supported(mfile* mf)
+{
+    // take semaphore
+    int ret = _vendor_specific_sem(mf, 1);
+    if (ret)
+    {
+        return 0;
+    }
+
+    int supported = 1;
+    if (_set_addr_space(mf, AS_PCI_CRSPACE) || _set_addr_space(mf, AS_PCI_ALL_ICMD) ||
+        _set_addr_space(mf, AS_PCI_GLOBAL_SEMAPHORE))
+    {
+        supported = 0;
+    }
+
+    // clear semaphore
     _vendor_specific_sem(mf, 0);
     return supported;
 }
@@ -1008,10 +1099,15 @@ mfile* mopen_int(const char* name, u_int32_t adv_opt)
         {
             if (adv_opt & Clear_Vsec_Semaphore)
             {
-                _vendor_specific_sem(mf, 0);
+                _vendor_specific_sem(mf, 0); // Clear semaphore
             }
+            mf->pxir_vsec_supp = pci_vsec_spaces_supported(mf);
             mf->functional_vsec_supp = vsec_spaces_supported(mf);
             mf->address_space = AS_CR_SPACE;
+
+            // printf(
+              "MTCR: mopen_int: HW Device ID: %d mf->wo_addr:%d mf->vsec_addr:%#x mf->vsec_type:%d mf->pxir_vsec_supp:%d\n",
+              mf->hw_dev_id, mf->wo_addr, mf->vsec_addr, mf->vsec_type, mf->pxir_vsec_supp);
         }
         // printf("mtcr_open_config Succeeded FUNCTIONAL_VSEC_SUPP: %d\n", mf->functional_vsec_supp);
 #ifndef MST_UL
@@ -2615,22 +2711,34 @@ int mget_addr_space(mfile* mf)
 {
     return mf->address_space;
 }
+// Return 0 on success like linux implementation
 int mset_addr_space(mfile* mf, int space)
 {
-    switch (space)
+    if (space < 0 || space >= AS_END)
     {
-        case AS_CR_SPACE:
-        case AS_ICMD:
-        case AS_SEMAPHORE:
-        case AS_PCI_CRSPACE:
-        case AS_PCI_ALL_ICMD:
-        case AS_PCI_GLOBAL_SEMAPHORE:
-            break;
-
-    default:
         return -1;
     }
+
+    // take semaphore
+    int ret = _vendor_specific_sem(mf, 1);
+    if (ret)
+    {
+        return ret;
+    }
+
+    if (_set_addr_space(mf, space))
+    {
+        // printf("failed to set VSC address space to: %d. mf->address_space = %d\n", space, mf->address_space);
+        // clear semaphore
+        _vendor_specific_sem(mf, 0);
+        return -1;
+    }
+
+    // clear semaphore
+    _vendor_specific_sem(mf, 0);
+
     mf->address_space = space;
+    // printf("VSC address space was set successfully to: %d\n", mf->address_space);
     return 0;
 }
 
