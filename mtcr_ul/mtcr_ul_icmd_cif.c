@@ -1219,6 +1219,7 @@ static int is_pci_device(mfile* mf)
 {
     return (mf->flags & MDEVS_I2CM) || (mf->flags & (MDEVS_CABLE | MDEVS_LINKX_CHIP)) || (mf->flags & MDEVS_SOFTWARE);
 }
+#endif /* ifndef __FreeBSD__ */
 
 int is_livefish_device(mfile* mf)
 {
@@ -1238,8 +1239,6 @@ int is_livefish_device(mfile* mf)
     }
     return 0;
 }
-#endif /* ifndef __FreeBSD__ */
-
 
 int icmd_open(mfile* mf)
 {
