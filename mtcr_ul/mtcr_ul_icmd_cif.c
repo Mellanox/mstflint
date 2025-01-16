@@ -1250,7 +1250,26 @@ static int is_pci_device(mfile* mf)
 {
     return (mf->flags & MDEVS_I2CM) || (mf->flags & (MDEVS_CABLE | MDEVS_LINKX_CHIP)) || (mf->flags & MDEVS_SOFTWARE);
 }
-#endif
+#endif /* ifndef __FreeBSD__ */
+
+int is_livefish_device(mfile* mf)
+{
+    if (!mf || !mf->dinfo) {
+        return 0;
+    }
+
+    unsigned int hwdevid = 0;
+
+    if (mf->tp == MST_SOFTWARE) {
+        return 1;
+    }
+    int rc = read_device_id(mf, &hwdevid);
+
+    if (rc == 4) {
+        return ((!is_gpu_pci_device(mf->dinfo->pci.dev_id)) && (mf->dinfo->pci.dev_id == hwdevid));
+    }
+    return 0;
+}
 
 int icmd_open(mfile* mf)
 {
