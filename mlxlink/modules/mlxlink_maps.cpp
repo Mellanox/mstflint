@@ -85,7 +85,7 @@ void MlxlinkMaps::initPortStateMapping()
     _ethANFsmState[0xb] = "ETH_AN_FSM_IB_FAIL";
     _ethANFsmState[0xc] = "ETH_AN_FSM_POST_LOCK_TUNE";
 
-    _ibPhyFsmState[IB_AN_FSM_DISABLED] = "Disabled";
+    _ibPhyFsmState[IB_AN_FSM_DISABLED] = "N/A";
     _ibPhyFsmState[IB_AN_FSM_INITIALY] = "Initializing";
     _ibPhyFsmState[IB_AN_FSM_RCVR_CFG] = "Recover Config";
     _ibPhyFsmState[IB_AN_FSM_CFG_TEST] = "Config Test";
