@@ -169,7 +169,7 @@ class PCIDeviceBase(object):
             self._pci_conf_space = {}
         self.logger.info("PCI Configurations for [{0} was saved successfully]".format(self.dbdf))
 
-    def restore_configuration_space(self):
+    def restore_configuration_space(self, skip_recovery_vsec=True):
         """
         Restore PCI configuration space of the device
         """
@@ -178,6 +178,9 @@ class PCIDeviceBase(object):
             self._pci_conf_space = self._get_pci_conf_from_file()
 
         visited_capabilities = []  # Save the visited capability to avoid infinit loop
+        
+        # Set skip_offset_list based on the skip_recovery_vsec flag
+        excluded_offsets = MELLANOX_PCI_SKIP_LIST if skip_recovery_vsec else None
 
         # Read and save PCI configuration space offset from 0x0-0xfff
         # Reading the pci conf space one time to have better performance
