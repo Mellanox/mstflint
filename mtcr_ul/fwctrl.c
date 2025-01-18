@@ -183,10 +183,12 @@ int fwctl_control_access_register(int    fd,
     status = MLX5_ADDR_OF(access_register_out, out, status);
     memcpy(data_in, data, size_in);
     memcpy(&cmd_status, status, sizeof(int));
-    if (reg_id == mnvda_reg_id) {
-        *reg_status = translate_cmd_status_to_reg_status(cmd_status);
-    } else {
-        *reg_status = return_by_reg_status(cmd_status);
+    if (cmd_status) {
+        if (reg_id == mnvda_reg_id) {
+            *reg_status = translate_cmd_status_to_reg_status(cmd_status);
+        } else {
+            *reg_status = return_by_reg_status(cmd_status);
+        }
     }
 
     FWCTL_DEBUG_PRINT(mf, "register id = 0x%x, command status = 0x%x, reg status code: 0x%x, reg status: %s\n",
