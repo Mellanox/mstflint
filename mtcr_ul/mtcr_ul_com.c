@@ -3215,55 +3215,40 @@ int maccess_reg_ul(mfile              * mf,
     }
 #endif
 
-    if (mf->tp == MST_FWCTL_CONTROL_DRIVER)
-    {
+    if (mf->tp == MST_FWCTL_CONTROL_DRIVER) {
         int method = (reg_method == MACCESS_REG_METHOD_GET) ? FWCTL_METHOD_READ : FWCTL_METHOD_WRITE;
         rc = fwctl_control_access_register(mf->fd, reg_data,
                                            reg_size, reg_id,
                                            method, reg_status,
                                            mf);
-        if (*reg_status) {
-            int status = return_by_reg_status(*reg_status);
-            FWCTL_DEBUG_PRINT(mf, "reg status: %s. reg status code = %d\n", m_err2str(status), status)
-            return status;
-        }
-
-        return rc;
+        return (*reg_status) ? *reg_status : rc;
     }
 
-    if (mf->tp != MST_IB) 
-    { // Non-IB connection
+    if (mf->tp != MST_IB) { /* Non-IB connection */
         rc = mreg_send_raw(mf, reg_id, reg_method, (u_int32_t*)reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-        // support PCI space
-        if (return_by_reg_status(*reg_status) == ME_REG_ACCESS_REG_NOT_SUPP)
-        {
+        /* support PCI space */
+        if (return_by_reg_status(*reg_status) == ME_REG_ACCESS_REG_NOT_SUPP) {
             if (VSEC_PXIR_SUPPORT(mf)) { /* If supported - attempt to */
-                    /* send the register on PCI VSC */
-                    /* space */
-                    swap_pci_address_space(mf);
+                /* send the register on PCI VSC */
+                /* space */
+                swap_pci_address_space(mf);
                 rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg,
-                                    reg_status);
+                                   reg_status);
                 DBG_PRINTF(
                     "Entered PCI VSC space support flow. Second attempt to run mreg_send_raw with VSC address space: %d returned with rc: %d. Restoring address space back to CORE's address space\n",
-                    mf->address_space, rc);
+                    mf->address_space,
+                    rc);
             }
         }
-    }
-    else 
-    { // IB connection:
-        if (reg_size <= INBAND_MAX_REG_SIZE)
-        {
-            if (supports_reg_access_smp(mf))
-            {
+    } else { /* IB connection: */
+        if (reg_size <= INBAND_MAX_REG_SIZE) {
+            if (supports_reg_access_smp(mf)) {
                 rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
             }
-            if ((rc == ME_OK) && (*reg_status == 0))
-            {
+            if ((rc == ME_OK) && (*reg_status == 0)) {
                 DBG_PRINTF("AccessRegister SMP Sent Successfully!\n");
                 return ME_OK;
-            } 
-            else
-            {
+            } else {
                 DBG_PRINTF("AccessRegister Class SMP Failed!\n");
                 DBG_PRINTF("Mad Status: 0x%08x\n", rc);
                 DBG_PRINTF("Register Status: 0x%08x\n", *reg_status);
@@ -3748,7 +3733,25 @@ const char* m_err2str(MError status)
         return "Firmware internal error";
 
     case ME_REG_ACCESS_NOT_SUPPORTED_BY_SECONDARY:
-            return "Not supported by secondary";
+        return "Not supported by secondary";
+
+    case ME_REG_ACCESS_NOT_READY:
+        return "The device temporarily cannot execute the command";
+
+    case ME_REG_ACCESS_EXCEED_LIM:
+        return "Required capability exceeds device limits";
+
+    case ME_REG_ACCESS_BAD_RES_STATE:
+        return "Resource is not in the appropriate state or ownership";
+
+    case ME_REG_ACCESS_BAD_INDEX:
+        return " Index out of range";
+
+    case ME_REG_ACCESS_BAD_INPUT_LEN:
+        return "Bad command input len";
+
+    case ME_REG_ACCESS_BAD_OUTPUT_LEN:
+        return "Bad command output len";
 
     /* ICMD access errors */
     case ME_ICMD_STATUS_CR_FAIL:
