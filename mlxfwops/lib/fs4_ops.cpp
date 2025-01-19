@@ -5790,7 +5790,6 @@ Fs4Operations::TocArray::TocArray()
 
 Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr, u_int32_t size)
 {
-    memset(entries, 0, MAX_HTOC_ENTRIES_NUM * sizeof(image_layout_htoc_entry));
     this->htoc_start_addr = htoc_start_addr;
     //* Parse header
     vector<u_int8_t> header_data(img.begin() + htoc_start_addr,
