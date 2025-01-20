@@ -515,7 +515,7 @@ typedef struct cables_info_t {
      ((mf)->vsec_cap_mask & (1 << VCC_SEMAPHORE_SPACE_SUPPORTED)))
 
 #define VSEC_PXIR_SUPPORT(mf) \
-    ((mf)->device_hw_id == CX8_HW_ID)
+    (mf->pxir_vsec_supp)
 
 // Macro for VSEC_SUPPORTED_UL
 #define VSEC_SUPPORTED_UL(mf) \
