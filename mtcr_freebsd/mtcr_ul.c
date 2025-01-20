@@ -46,6 +46,7 @@
 #include <dev/pci/pcireg.h>
 #include <sched.h>
 
+#include "mtcr_common.h"
 #include "mtcr.h"
 #include "common/compatibility.h"
 #include "common/bit_slice.h"
@@ -274,14 +275,14 @@ int mtcr_check_signature(mfile* mf)
     {                                                             \
         int rc;                                                   \
         int lock_rc;                                              \
-        lock_rc = _flock_int(mf->fdlock, LOCK_EX);                 \
+        lock_rc = _flock_int(mf->fdlock, LOCK_EX);                \
         if (lock_rc)                                              \
         {                                                         \
             perror(err_prefix);                                   \
             action_on_fail;                                       \
         }                                                         \
         rc = write_config(mf, pci_offs, val, 2);                  \
-        lock_rc = _flock_int(mf->fdlock, LOCK_UN);                 \
+        lock_rc = _flock_int(mf->fdlock, LOCK_UN);                \
         if (lock_rc)                                              \
         {                                                         \
             perror(err_prefix);                                   \
@@ -343,6 +344,7 @@ enum {
 int read_config(mfile* mf, unsigned int reg, uint32_t* data, int width)
 {
     struct pci_io pi = {};
+
     memset(&pi, 0, sizeof(pi));
 
     pi.pi_sel = mf->sel;
@@ -352,22 +354,8 @@ int read_config(mfile* mf, unsigned int reg, uint32_t* data, int width)
     if (ioctl(mf->fd, PCIOCREAD, &pi) < 0) {
         /* printf("PCIOCREAD ioctl failed when trying to access this space: %d. errno: %d\n", */
         /*             mf->address_space, errno); */
-        /* support PCI space */
-        if (VSEC_PXIR_SUPPORT(mf)) {
-            swap_pci_address_space(mf);
-            if (ioctl(mf->fd, PCIOCREAD, &pi) < 0) {
-                errno = EIO;
-                /* printf( */
-                /*     "PCIOCREAD ioctl failed when trying to access this space: %d. errno: %d\n", */
-                /*     mf->address_space, errno); */
-                return -1;
-            }
-            /* printf("PCIOCREAD ioctl successfully accessed this space: %d\n", */
-            /*             mf->address_space); */
-        } else {
-            errno = EIO;
-            return -1;
-        }
+        errno = EIO;
+        return -1;
     }
 
     /* printf("%s:  dev:%d reg=%x width=%d data=%x\n", __FUNCTION__, pi.pi_sel.pc_dev, reg, width, pi.pi_data); */
@@ -379,6 +367,7 @@ int read_config(mfile* mf, unsigned int reg, uint32_t* data, int width)
 int write_config(mfile* mf, unsigned int reg, uint32_t data, int width)
 {
     struct pci_io pi = {};
+
     memset(&pi, 0, sizeof(pi));
 
     pi.pi_sel = mf->sel;
@@ -391,22 +380,8 @@ int write_config(mfile* mf, unsigned int reg, uint32_t data, int width)
     if (ioctl(mf->fd, PCIOCWRITE, &pi) < 0) {
         /* printf("PCIOCWRITE ioctl failed when trying to access this space: %d. errno: %d\n", */
         /*             mf->address_space, errno); */
-        /* support PCI space */
-        if (VSEC_PXIR_SUPPORT(mf)) {
-            swap_pci_address_space(mf);
-            if (ioctl(mf->fd, PCIOCWRITE, &pi) < 0) {
-                errno = EIO;
-                printf(
-                    "PCIOCWRITE ioctl failed when trying to access this space: %d. errno: %d\n",
-                    mf->address_space, errno);
-                return -1;
-            }
-            /* printf("PCIOCWRITE ioctl successfully accessed this space: %d\n", */
-            /*             mf->address_space); */
-        } else {
-            errno = EIO;
-            return -1;
-        }
+        errno = EIO;
+        return -1;
     }
 
     return 0;
@@ -565,21 +540,21 @@ static int _wait_on_flag(mfile* mf, u_int8_t expected_val)
     return 0;
 }
 
-int get_syndrome_code(mfile* mf)
+int get_syndrome_code(mfile* mf, u_int8_t* syndrome_code)
 {
-    // in case syndrome is set, return the syndrome_code.
-    // syndrome_code 0x3 (address_out_of_range) indicates that we need to swap from CORE address_space to PCI
-    // address_space.
+    /* in case syndrome is set, if syndrome_code is 0x3 (address_out_of_range), we need to swap from CORE address_space */
+    /* to PCI address_space. */
 
-    uint32_t syndrome = 0;
-    READ4_PCI(mf, &syndrome, mf->vsec_addr + PCI_ADDR_OFFSET, "read domain", return -1);
+    u_int32_t syndrome = 0;
+
+    *syndrome_code = 0;
+    READ4_PCI(mf, &syndrome, mf->vsec_addr + PCI_ADDR_OFFSET, "read domain", return ME_PCI_READ_ERROR);
+
     syndrome = EXTRACT(syndrome, PCI_SYNDROME_BIT_OFFSET, PCI_SYNDROME_BIT_LEN);
-    if (syndrome)
-    {
-        uint32_t syndrome_code = 0;
-        READ4_PCI(mf, &syndrome_code, mf->vsec_addr + PCI_CTRL_OFFSET, "read domain", return -1);
-        syndrome_code = EXTRACT(syndrome_code, PCI_SYNDROME_CODE_BIT_OFFSET, PCI_SYNDROME_CODE_BIT_LEN);
-        return syndrome_code;
+    if (syndrome) {
+        u_int32_t syndrome_code_dword = 0;
+        READ4_PCI(mf, &syndrome_code_dword, mf->vsec_addr + PCI_CTRL_OFFSET, "read domain", return ME_PCI_READ_ERROR);
+        *syndrome_code = EXTRACT(syndrome_code_dword, PCI_SYNDROME_CODE_BIT_OFFSET, PCI_SYNDROME_CODE_BIT_LEN);
     }
     return ME_OK;
 }
@@ -590,22 +565,21 @@ static int _set_addr_space(mfile* mf, u_int16_t space)
 
     /* Check if we succedded to write the space (i.e. that its MSB is not ignored by FW) */
     u_int32_t read_val = 0;
+
     READ4_PCI(mf, &read_val, mf->vsec_addr + PCI_CTRL_OFFSET, "read status", return -1);
 
     u_int16_t actual_value = (uint16_t)EXTRACT(
-      read_val, 0, 16); // Extract only the first 16 bits, as we need to check what's written in "space"
+        read_val, 0, 16); /* Extract only the first 16 bits, as we need to check what's written in "space" */
 
     /* Check if the space written is indeed the space we attempted to write */
-    if (actual_value != space)
-    {
-        // printf("VSC address space: 0x%x is not supported.\n", space);
+    if (actual_value != space) {
+        /* printf("VSC address space: 0x%x is not supported.\n", space); */
         return ME_PCI_SPACE_NOT_SUPPORTED;
     }
 
-    // read status and make sure space is supported
-    if (EXTRACT(read_val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0)
-    {
-        // printf("VSC address space: 0x%x is not supported. status bit is 0.\n", space);
+    /* read status and make sure space is supported */
+    if (EXTRACT(read_val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0) {
+        /* printf("VSC address space: 0x%x is not supported. status bit is 0.\n", space); */
         return -1;
     }
     return 0;
@@ -634,15 +608,11 @@ static int _pciconf_rw(mfile* mf, unsigned int offset, uint32_t* data, int rw)
         WRITE4_PCI(mf, address, mf->vsec_addr + PCI_ADDR_OFFSET, "write offset", return -1);
         /* wait on flag */
         ret = _wait_on_flag(mf, 1);
-        if (ret == -1)
-        {
-            // printf("MTCR: _pciconf_rw: _wait_on_falg failed !\n");
+        if (ret == -1) {
+            /* printf("MTCR: _pciconf_rw: _wait_on_falg failed !\n"); */
         }
         /* read data */
         READ4_PCI(mf, data, mf->vsec_addr + PCI_DATA_OFFSET, "read value", return -1);
-    }
-    if (VSEC_PXIR_SUPPORT(mf)) {
-        ret = get_syndrome_code(mf); // If syndrome is set, ret will be the syndrome_code
     }
     return ret;
 }
@@ -691,23 +661,14 @@ static int _block_op(mfile* mf, int space, unsigned int offset, int size, uint32
         wrote_or_read = -1;
         goto cleanup;
     }
-    for (i = 0; i < size; i += 4)
-    {
-        ret = _pciconf_rw(mf, offset + i, &(data[(i >> 2)]), rw);
-        if (ret)
-        {
-            if (ret == ADDRESS_OUT_OF_RANGE)
-            {
-                wrote_or_read = ADDRESS_OUT_OF_RANGE; // Support PCI space
-                goto cleanup;
-            }
-            else
-            {
-                wrote_or_read = i; // Indicate where the error occurred
-                goto cleanup;
-            }
+
+    for (i = 0; i < size; i += 4) {
+        if (_pciconf_rw(mf, offset + i, &(data[(i >> 2)]), rw)) {
+            wrote_or_read = i;
+            goto cleanup;
         }
     }
+
 cleanup:
     _vendor_specific_sem(mf, 0);
     return wrote_or_read;
@@ -715,106 +676,166 @@ cleanup:
 
 static int mwrite4_new(mfile* mf, unsigned int offset, uint32_t data)
 {
-    int ret;
+    int rc;
 
-    ret = _send_pci_cmd_int(mf, mf->address_space, offset, &data, WRITE_OP);
-    if (ret)
-    {
-        // support PCI space
-        if (mf->pxir_vsec_supp && ret == ADDRESS_OUT_OF_RANGE)
-        {
+    rc = _send_pci_cmd_int(mf, mf->address_space, offset, &data, WRITE_OP);
+
+    if (rc) { /* OPERATIONAL error */
+        return -1;
+    }
+
+    /* Support PCI space */
+    if (VSEC_PXIR_SUPPORT(mf)) {
+        u_int8_t syndrome_code = 0;
+        if (get_syndrome_code(mf, &syndrome_code) == ME_PCI_READ_ERROR) { /* OPERATIONAL failure before retry */
+            /* printf("Reading syndrome failed, aborting\n"); */
+            return -1;
+        } else if (syndrome_code == ADDRESS_OUT_OF_RANGE) { /* LOGICAL failure */
+            /* printf( */
+            /*   "mwrite4_new: mtcr_pciconf_send_pci_cmd_int failed (syndrome is set and syndrome_code is ADDRESS_OUT_OF_RANGE) when trying to access address_space: 0x%x at offset: 0x%x\n", */
+            /*   mf->address_space, offset); */
+
             swap_pci_address_space(mf);
-            ret = _send_pci_cmd_int(mf, mf->address_space, offset, &data, WRITE_OP);
-            // printf(
-            //   "Entered VSC pci space support flow. address_space now set to: %d. second attempt to run _send_pci_cmd_int returned with rc: %d.\n",
-            //   mf->address_space,
-            //   ret);
-            if (ret)
-            {
+            rc = _send_pci_cmd_int(mf, mf->address_space, offset, &data, WRITE_OP);
+
+            if (rc) { /* OPERATIONAL failure after retry */
+                /* printf( */
+                /*   "mwrite4_new: mtcr_pciconf_send_pci_cmd_int failed (OPERATIONAL error), after retry, when trying to access address_space: 0x%x at offset: 0x%x\n", */
+                /*   mf->address_space, offset); */
                 return -1;
             }
+            if (get_syndrome_code(mf, &syndrome_code) == ME_PCI_READ_ERROR) { /* OPERATIONAL failure after retry */
+                /* printf("Reading syndrome failed, aborting\n"); */
+                return -1;
+            } else if (syndrome_code == ADDRESS_OUT_OF_RANGE) { /* LOGICAL failure after retry */
+                /* printf( */
+                /*   "mwrite4_new: mtcr_pciconf_send_pci_cmd_int failed (syndrome is set and syndrome_code is ADDRESS_OUT_OF_RANGE), after retry, when trying to access address_space: 0x%x at offset: 0x%x\n", */
+                /*   mf->address_space, offset); */
+                return -1;
+            } else { /* LOGICAL and OPERATIONAL success after retry */
+                /* printf( */
+                /*   "mwrite4_new: mtcr_pciconf_send_pci_cmd_int, after retry, successfully accessed address_space: 0x%x at offset: 0x%x\n", */
+                /*   mf->address_space, offset); */
+                return 4;
+            }
+        } else { /* OPERATIONAL and LOGICAL success */
             return 4;
         }
-        else
-        {
-            return -1;
-        }
     }
-    return 4;
+
+    return 4; /* OPERATIONAL and LOGICAL success (PCI VSC address_spaces not supported) */
 }
 
 static int mread4_new(mfile* mf, unsigned int offset, uint32_t* data)
 {
-    int ret;
+    int rc;
 
-    ret = _send_pci_cmd_int(mf, mf->address_space, offset, data, READ_OP);
-    if (ret)
-    {
-        // support PCI space
-        if (mf->pxir_vsec_supp && ret == ADDRESS_OUT_OF_RANGE)
-        {
+    rc = _send_pci_cmd_int(mf, mf->address_space, offset, data, READ_OP);
+
+    if (rc) { /* OPERATIONAL error */
+        return -1;
+    }
+
+    /* Support PCI space */
+    if (VSEC_PXIR_SUPPORT(mf)) {
+        u_int8_t syndrome_code = 0;
+        if (get_syndrome_code(mf, &syndrome_code) == ME_PCI_READ_ERROR) { /* OPERATIONAL failure before retry */
+            /* printf("Reading syndrome failed, aborting\n"); */
+            return -1;
+        } else if (syndrome_code == ADDRESS_OUT_OF_RANGE) { /* LOGICAL failure */
+            /* printf( */
+            /*   "mread4_new: mtcr_pciconf_send_pci_cmd_int failed (syndrome is set and syndrome_code is ADDRESS_OUT_OF_RANGE) when trying to access address_space: 0x%x at offset: 0x%x\n", */
+            /*   mf->address_space, offset); */
+
             swap_pci_address_space(mf);
-            ret = _send_pci_cmd_int(mf, mf->address_space, offset, data, READ_OP);
-            // printf(
-            //   "Entered VSC pci space support flow. address_space now set to: 0x%x. second attempt to run _send_pci_cmd_int returned with rc: 0x%x.\n",
-            //   mf->address_space,
-            //   ret);
-            if (ret)
-            {
+            rc = _send_pci_cmd_int(mf, mf->address_space, offset, data, READ_OP);
+
+            if (rc) { /* OPERATIONAL failure after retry */
+                /* printf( */
+                /*   "mread4_new: mtcr_pciconf_send_pci_cmd_int failed (OPERATIONAL error), after retry, when trying to access address_space: 0x%x at offset: 0x%x\n", */
+                /*   mf->address_space, offset); */
                 return -1;
             }
+            if (get_syndrome_code(mf, &syndrome_code) == ME_PCI_READ_ERROR) { /* OPERATIONAL failure after retry */
+                /* printf("Reading syndrome failed, aborting\n"); */
+                return -1;
+            } else if (syndrome_code == ADDRESS_OUT_OF_RANGE) { /* LOGICAL failure after retry */
+                /* printf( */
+                /*   "mread4_new: mtcr_pciconf_send_pci_cmd_int failed (syndrome is set and syndrome_code is ADDRESS_OUT_OF_RANGE), after retry, when trying to access address_space: 0x%x at offset: 0x%x\n", */
+                /*   mf->address_space, offset); */
+                return -1;
+            } else { /* LOGICAL and OPERATIONAL success after retry */
+                /* printf( */
+                /*   "mread4_new: mtcr_pciconf_send_pci_cmd_int, after retry, successfully accessed address_space: 0x%x at offset: 0x%x\n", */
+                /*   mf->address_space, offset); */
+                return 4;
+            }
+        } else { /* OPERATIONAL and LOGICAL success */
             return 4;
         }
-        else
-        {
-            return -1;
-        }
     }
-    return 4;
+
+    return 4; /* OPERATIONAL and LOGICAL success (PCI VSC address_spaces not supported) */
 }
 
 static int mwrite4_block_new(mfile* mf, unsigned int offset, int size, uint32_t* data)
 {
-    int rc = _block_op(mf, mf->address_space, offset, size, data, WRITE_OP);
+    int bytes_written = _block_op(mf, mf->address_space, offset, size, data, WRITE_OP);
 
-    // support PCI space
-    if (mf->pxir_vsec_supp && rc == ADDRESS_OUT_OF_RANGE)
-    {
-        swap_pci_address_space(mf);
-        rc = _block_op(mf, mf->address_space, offset, size, data, WRITE_OP);
-        // printf(
-        //   "Entered VSC pci space support flow. address_space now set to: 0x%x. second attempt to run _block_op returned with rc: %d.\n",
-        //   mf->address_space,
-        //   rc);
-        if (rc == ADDRESS_OUT_OF_RANGE)
-        {
-            rc = -1; // if the address is out of range both in PCI and CORE VSC address spaces - need to exit.
+    /* Support PCI space */
+    if (VSEC_PXIR_SUPPORT(mf)) {
+        u_int8_t syndrome_code = 0;
+        if (get_syndrome_code(mf, &syndrome_code) == ME_PCI_READ_ERROR) { /* OPERATIONAL failure before retry */
+            /* printf("Reading syndrome failed. bytes_written: 0x%x\n", bytes_written); */
+        } else if (syndrome_code == ADDRESS_OUT_OF_RANGE) { /* LOGICAL failure */
+            /* printf( */
+            /*   "mwrite4_block_new: block_op_pciconf failed (syndrome is set and syndrome_code is ADDRESS_OUT_OF_RANGE) when trying to access address_space: 0x%x at offset: 0x%x. bytes_written: 0x%x\n", */
+            /*   mf->address_space, offset, bytes_written); */
+
+            swap_pci_address_space(mf);
+            bytes_written = _block_op(mf, mf->address_space, offset, size, data, WRITE_OP);
+
+            if (get_syndrome_code(mf, &syndrome_code) == ME_PCI_READ_ERROR) { /* OPERATIONAL failure after retry */
+                /* printf("Reading syndrome failed. bytes_written: 0x%x\n", bytes_written); */
+            } else if (syndrome_code == ADDRESS_OUT_OF_RANGE) { /* LOGICAL failure after retry */
+                /* printf( */
+                /*   "mwrite4_block_new: block_op_pciconf failed (syndrome is set and syndrome_code is ADDRESS_OUT_OF_RANGE) after retry. when trying to access address_space: 0x%x at offset: 0x%x. bytes_written: 0x%x\n", */
+                /*   mf->address_space, offset, bytes_written); */
+            }
         }
     }
 
-    return rc;
+    return bytes_written;
 }
 
 static int mread4_block_new(mfile* mf, unsigned int offset, int size, uint32_t* data)
 {
-    int rc = _block_op(mf, mf->address_space, offset, size, data, READ_OP);
+    int bytes_read = _block_op(mf, mf->address_space, offset, size, data, READ_OP);
 
-    // support PCI space
-    if (mf->pxir_vsec_supp && rc == ADDRESS_OUT_OF_RANGE)
-    {
-        swap_pci_address_space(mf);
-        rc = _block_op(mf, mf->address_space, offset, size, data, READ_OP);
-        // printf(
-        //   "Entered VSC pci space support flow. address_space now set to: 0x%x. second attempt to run _block_op returned with rc: %d.\n",
-        //   mf->address_space,
-        //   rc);
-        if (rc == ADDRESS_OUT_OF_RANGE)
-        {
-            rc = -1; // if the address is out of range both in PCI and CORE VSC address spaces - need to exit.
+    /* Support PCI space */
+    if (VSEC_PXIR_SUPPORT(mf)) {
+        u_int8_t syndrome_code = 0;
+        if (get_syndrome_code(mf, &syndrome_code) == ME_PCI_READ_ERROR) { /* OPERATIONAL failure before retry */
+            /* printf("Reading syndrome failed. bytes_read: 0x%x\n", bytes_read); */
+        } else if (syndrome_code == ADDRESS_OUT_OF_RANGE) { /* LOGICAL failure */
+            /* printf( */
+            /*   "mread4_block_new: block_op_pciconf failed (syndrome is set and syndrome_code is ADDRESS_OUT_OF_RANGE) when trying to access address_space: 0x%x at offset: 0x%x. bytes_read: 0x%x\n", */
+            /*   mf->address_space, offset, bytes_read); */
+
+            swap_pci_address_space(mf);
+            bytes_read = _block_op(mf, mf->address_space, offset, size, data, READ_OP);
+
+            if (get_syndrome_code(mf, &syndrome_code) == ME_PCI_READ_ERROR) { /* OPERATIONAL failure after retry */
+                /* printf("Reading syndrome failed. bytes_read: 0x%x\n", bytes_read); */
+            } else if (syndrome_code == ADDRESS_OUT_OF_RANGE) { /* LOGICAL failure after retry */
+                /* printf( */
+                /*   "mread4_block_new: block_op_pciconf failed (syndrome is set and syndrome_code is ADDRESS_OUT_OF_RANGE) after retry. when trying to access address_space: 0x%x at offset: 0x%x. bytes_read: 0x%x\n", */
+                /*   mf->address_space, offset, bytes_read); */
+            }
         }
     }
 
-    return rc;
+    return bytes_read;
 }
 
 static int vsec_spaces_supported(mfile* mf)
@@ -836,21 +857,21 @@ static int vsec_spaces_supported(mfile* mf)
 
 static int pci_vsec_spaces_supported(mfile* mf)
 {
-    // take semaphore
+    /* take semaphore */
     int ret = _vendor_specific_sem(mf, 1);
-    if (ret)
-    {
+
+    if (ret) {
         return 0;
     }
 
     int supported = 1;
+
     if (_set_addr_space(mf, AS_PCI_CRSPACE) || _set_addr_space(mf, AS_PCI_ALL_ICMD) ||
-        _set_addr_space(mf, AS_PCI_GLOBAL_SEMAPHORE))
-    {
+        _set_addr_space(mf, AS_PCI_GLOBAL_SEMAPHORE)) {
         supported = 0;
     }
 
-    // clear semaphore
+    /* clear semaphore */
     _vendor_specific_sem(mf, 0);
     return supported;
 }
@@ -1048,15 +1069,15 @@ mfile* mopen_int(const char* name, u_int32_t adv_opt)
         mf->functional_vsec_supp = 0;
         if (mf->vsec_addr && (mf->vsec_type == FUNCTIONAL_VSC)) {
             if (adv_opt & Clear_Vsec_Semaphore) {
-                _vendor_specific_sem(mf, 0); // Clear semaphore
+                _vendor_specific_sem(mf, 0); /* Clear semaphore */
             }
             mf->pxir_vsec_supp = pci_vsec_spaces_supported(mf);
             mf->functional_vsec_supp = vsec_spaces_supported(mf);
             mf->address_space = AS_CR_SPACE;
 
-            // printf(
-            //   "MTCR_UL: mopen_int: HW Device ID: %d mf->wo_addr:%d mf->vsec_addr:%#x mf->vsec_type:%d mf->pxir_vsec_supp:%d\n",
-            //   mf->hw_dev_id, mf->wo_addr, mf->vsec_addr, mf->vsec_type, mf->pxir_vsec_supp);
+            /* printf( */
+            /*   "MTCR_UL: mopen_int: HW Device ID: %d mf->wo_addr:%d mf->vsec_addr:%#x mf->vsec_type:%d mf->pxir_vsec_supp:%d\n", */
+            /*   mf->hw_dev_id, mf->wo_addr, mf->vsec_addr, mf->vsec_type, mf->pxir_vsec_supp); */
         }
         /* printf("mtcr_open_config Succeeded FUNCTIONAL_VSEC_SUPP: %d\n", mf->functional_vsec_supp); */
 #ifndef MST_UL
@@ -2226,6 +2247,19 @@ int maccess_reg(mfile              * mf,
         return ME_REG_ACCESS_SIZE_EXCEEDS_LIMIT;
     }
     rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
+    /* support PCI space */
+    if (*reg_status == ME_REG_ACCESS_REG_NOT_SUPP) {
+        if (VSEC_PXIR_SUPPORT(mf)) { /* If supported - attempt to */
+            /* send the register on PCI VSC */
+            /* space */
+            swap_pci_address_space(mf);
+            rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
+            DBG_PRINTF(
+                "Entered PCI VSC space support flow. Second attempt to run mreg_send_raw with VSC address space: %d returned with rc: %d. Restoring address space back to CORE's address space\n",
+                mf->address_space,
+                rc);
+        }
+    }
 
     if (rc) {
         return rc;
@@ -2542,7 +2576,7 @@ const char* m_err2str(MError status)
         return "Firmware internal error";
 
     case ME_REG_ACCESS_NOT_SUPPORTED_BY_SECONDARY:
-            return "Not supported by secondary";
+        return "Not supported by secondary";
 
     /* ICMD access errors */
     case ME_ICMD_STATUS_CR_FAIL:
@@ -2663,35 +2697,33 @@ int mget_addr_space(mfile* mf)
     return mf->address_space;
 }
 
-// Return 0 on success like linux implementation
+/* Return 0 on success like linux implementation */
 int mset_addr_space(mfile* mf, int space)
 {
-    if (space < 0 || space >= AS_END)
-    {
+    if ((space < 0) || (space >= AS_END)) {
         return -1;
     }
 
-    // take semaphore
+    /* take semaphore */
     int ret = _vendor_specific_sem(mf, 1);
-    if (ret)
-    {
+
+    if (ret) {
         return ret;
     }
 
-    if (_set_addr_space(mf, space))
-    {
-        // printf("failed to set VSC address space to: %d. mf->address_space = %d\n", space, mf->address_space);
+    if (_set_addr_space(mf, space)) {
+        /* printf("failed to set VSC address space to: %d. mf->address_space = %d\n", space, mf->address_space); */
 
-        // clear semaphore
+        /* clear semaphore */
         _vendor_specific_sem(mf, 0);
         return -1;
     }
 
-    // clear semaphore
+    /* clear semaphore */
     _vendor_specific_sem(mf, 0);
 
     mf->address_space = space;
-    // printf("VSC address space was set successfully to: %d\n", mf->address_space);
+    /* printf("VSC address space was set successfully to: %d\n", mf->address_space); */
     return 0;
 }
 
