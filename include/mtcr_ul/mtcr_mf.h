@@ -157,10 +157,10 @@ struct mfile_t {
 
     /* MFT core wrapper objects. */
     struct mft_core_wrapper mft_core_object;
-    char* fwctl_env_var_debug;
-    int is_remote;
-    int is_zombiefish;
-    int vsc_recovery_space_flash_control_vld;
+    char                  * fwctl_env_var_debug;
+    int                     is_remote;
+    int                     is_zombiefish;
+    int                     vsc_recovery_space_flash_control_vld;
 };
 
 #endif /* ifndef __MTCR_MF__ */
