@@ -57,7 +57,7 @@ class MlnxPeripheralComponents(object):
     def discover_pci_devices(self):
 
         if self.os == 'Linux':
-            cmd = 'mdevices_info -vv'
+            cmd = 'mstdevices_info -vv'
             pattern = r'.*\s+(\S+)\s+(([0-9A-Fa-f]{4})*:*([0-9A-Fa-f]{2}):([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{1,2})).*'
         elif self.os == 'FreeBSD':
             cmd = 'mst status -v'
