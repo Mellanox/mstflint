@@ -375,11 +375,13 @@ mlxCfgStatus
 
     oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName] = {};
     oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName]["read_only"] = queryOutItem.isReadOnly;
-    oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName]["modified"] = modified;
-
     writeParamToJson(oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName], "next_value",
                      queryOutItem.strNextVal, queryOutItem.nextVal);
 
+    if (showDefault || showCurrent)
+    {
+        oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName]["modified"] = modified;
+    }
     if (showDefault)
     {
         writeParamToJson(oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName], "default_value",
