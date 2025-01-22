@@ -2326,7 +2326,16 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
     for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++) {
         status = 0;
 
-        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
+        // Temporary WA until GPUNet PRM is updated (typo in the word "measurement")!
+        // TODO: remove this if in the future, and leave only the else branch.
+        if (_devID == DeviceGB100)
+        {
+            sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurment=%d", lane, fomMeasurement);
+        }
+        else
+        {
+            sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
+        }
 
         status = getFieldValue("status");
         initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom",
