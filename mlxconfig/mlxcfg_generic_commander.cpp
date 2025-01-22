@@ -938,8 +938,8 @@ const char* GenericCommander::loadConfigurationGetStr()
 
     if (dm_is_5th_gen_hca(deviceId))
     {
-        // prepare for warm boot or pci link disable (bit 6 + bit 3)
-        mfrl.reset_trigger = (1 << 6) | (1 << 3);
+        // send warm boot (bit 6)
+        mfrl.reset_trigger = 1 << 6;
         mft_signal_set_handling(1);
         rc = reg_access_mfrl(_mf, REG_ACCESS_METHOD_SET, &mfrl);
         dealWithSignal();
