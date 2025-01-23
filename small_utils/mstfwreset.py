@@ -110,12 +110,15 @@ MLNX_DEVICES = [
     dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX7", devid=0x218, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX8", devid=0x21e, status_config_not_done=(0xa0304, 31)),
+    dict(name="ConnectX8-RMA", devid=0x21f, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX9", devid=0x225, status_config_not_done=(0xb5f04, 31)),
+    dict(name="ConnectX9-RMA", devid=0x226, status_config_not_done=(0xb5f04, 31)),
     dict(name="Switch-IB", devid=0x247, status_config_not_done=(0x80010, 0)),
     dict(name="Switch-IB-2", devid=0x24b, status_config_not_done=(0x80010, 0)),
     dict(name="Quantum", devid=0x24d, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-2", devid=0x257, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-3", devid=0x25b, status_config_not_done=(0x200010, 0)),
+    dict(name="Quantum-3-RMA", devid=0x25c, status_config_not_done=(0x200010, 0)),
     dict(name="Quantum-4", devid=0x278, status_config_not_done=(0x200010, 0)),
     dict(name="Spectrum", devid=0x249, status_config_not_done=(0x80010, 0)),
     dict(name="Spectrum-2", devid=0x24E, status_config_not_done=(0x100010, 0)),
@@ -128,8 +131,8 @@ MLNX_DEVICES = [
 
 # Supported devices.
 SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
-                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "BlueField4",
-                "ConnectX9"]
+                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "ConnectX8-RMA", "BlueField4",
+                "ConnectX9", "ConnectX9-RMA"]
 SUPP_SWITCH_DEVICES = ["Spectrum", "Spectrum-2", "Spectrum-3", "Switch-IB", "Switch-IB-2", "Quantum", "Quantum-2"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 UNSUPPORTED_PSIDS_PER_DEV_ID = {
@@ -1662,8 +1665,8 @@ def resetFlow(device, devicesSD, reset_level, reset_type, reset_sync, pci_reset_
             if "ppc64" in platform.machine():
                 raise RuntimeError(
                     "Resetting a device that contains a PCIe switch is not supported on PPC64")
-
-        if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
+        host_reset_flow = reset_level == CmdRegMfrl.PCI_RESET and hot_reset_enabled and reset_sync is SyncOwner.FW
+        if host_reset_flow or SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
             send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync, pci_reset_request_method)
         else:
             sendResetToFWSync(mfrl, reset_level, reset_type, reset_sync, pci_reset_request_method)
@@ -2189,16 +2192,15 @@ def reset_flow_host(device, args, command):
         is_bluefield = True
     reset_type = mfrl.default_reset_type() if args.reset_type is None else args.reset_type
 
-    tool_owner_support = True
-    if platform.system() == "Linux" and is_bluefield:
-        tool_owner_support = False
-
-    mroq = CmdRegMroq(reset_type, RegAccessObj, mcam, logger, tool_owner_support)
+    mroq = CmdRegMroq(reset_type, RegAccessObj, mcam, logger)
 
     if command == "query":
         print(mfrl.query_text(is_pcie_switch_device(devid), mroq.is_hot_reset_supported()))
+        tool_owner_support = True
+        if platform.system() == "Linux" and is_bluefield:
+            tool_owner_support = False
         if mroq.mroq_is_supported():
-            mroq.print_query_text(is_pcie_switch_device(devid))
+            mroq.print_query_text(is_pcie_switch_device(devid), tool_owner_support)
         else:
             print(mcam.reset_sync_query_text(tool_owner_support))
         if mcam.is_mrsi_supported():
