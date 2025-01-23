@@ -53,7 +53,7 @@ class CmdRegMroq():
         {'method': ResetReqMethod.HOT_RESET, 'description': 'Hot reset (SBR)', 'mask': 0b10},
     ]
 
-    def __init__(self, reset_type, reg_access, mcam, logger, tool_owner_support):
+    def __init__(self, reset_type, reg_access, mcam, logger):
         self._reg_access = reg_access
         self._logger = logger
         self._mroq_is_supported = False
@@ -69,9 +69,6 @@ class CmdRegMroq():
 
             except BaseException:
                 pass
-        for sync in CmdRegMroq.pci_sync_db:
-            if sync["flow"] == CmdRegMroq.LEGACY_FLOW and not tool_owner_support:
-                self._pci_sync_for_fw_update_start = self._pci_sync_for_fw_update_start & ~sync["mask"]
 
     def _read_reg(self, reset_type):
         try:
@@ -87,7 +84,7 @@ class CmdRegMroq():
             'pci_sync_for_fw_update_start': pci_sync_for_fw_update_start,
         }
 
-    def print_query_text(self, is_pcie_switch):
+    def print_query_text(self, is_pcie_switch, tool_owner_support):
         if self._mroq_is_supported is False:
             return
 
@@ -97,6 +94,9 @@ class CmdRegMroq():
         default_found = False
         for field in CmdRegMroq.pci_sync_db:
             pci_sync_supported = (field["mask"] & self._pci_sync_for_fw_update_start) != 0
+            if field["flow"] is CmdRegMroq.LEGACY_FLOW and tool_owner_support is False:
+                pci_sync_supported = False
+
             if pci_sync_supported is True:
                 result += "{0}: {1:<62}-{2:<14}{3}\n".format(field["flow"], field["description"], "Supported", "(default)" if not default_found else "")
                 default_found = True
