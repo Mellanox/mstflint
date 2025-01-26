@@ -907,6 +907,8 @@ void MlxlinkCablesCommander::initValidPages()
                         p = page_t{page, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                         _validPages.push_back(p);
                     }
+                    p = page_t{PAGE_2F, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
+                    _validPages.push_back(p);
                 }
 
                 /*
