@@ -3498,7 +3498,9 @@ void MlxlinkCommander::handlePrbs()
 {
     try
     {
-        if (_userInput._prbsMode == "EN") {
+        if (_userInput._prbsMode == "EN")
+        {
+            checkDcCouple();
             checkPprtPptt();
             if (_prbsTestMode) {
                 sendPrbsPpaos(false);
@@ -3508,8 +3510,10 @@ void MlxlinkCommander::handlePrbs()
                 MlxlinkRecord::printCmdLine("Configuring Port to Physical Test Mode", _jsonRoot);
                 resetPprtPptt();
                 sendPprtPptt();
-                sendPrbsPpaos(true);
-            } else {
+                sendPrbsPpaos(true, _userInput._prbsDcCoupledAllow);
+            }
+            else
+            {
                 throw MlxRegException("Port is not down, unable to enter test mode");
             }
         } else if (_userInput._prbsMode == "DS") {
@@ -3652,10 +3656,43 @@ void MlxlinkCommander::checkPrbsPolCap(const string& prbsReg)
     }
 }
 
-void MlxlinkCommander::sendPrbsPpaos(bool testMode)
+void MlxlinkCommander::checkDcCouple()
 {
-    sendPrmReg(ACCESS_REG_PPAOS, SET, "phy_test_mode_admin=%d",
-               (testMode ? PPAOS_PHY_TEST_MODE : PPAOS_REGULAR_OPERATION));
+    sendPrmReg(ACCESS_REG_PPAOS, GET);
+    int dcCoupledPort = getFieldValue("dc_cpl_port");
+    if (!dcCoupledPort && _userInput._prbsDcCoupledAllow)
+    {
+        throw MlxRegException("Allowing DC coupling PRBS isn't supported to non DC coupled ports");
+    }
+    else if (dcCoupledPort && !_userInput._prbsDcCoupledAllow)
+    {
+        throw MlxRegException("When enabling test_mode in DC coupled ports, DC coupling should be allowed!");
+    }
+    else if (dcCoupledPort && _userInput._prbsDcCoupledAllow)
+    {
+        string warMsg =
+          "Warning: DC couple system must be powered on both sides of the physical link prior to enabling test mode.\n";
+        warMsg += "System may be harmed and product lifetime may shortened if not ensured.";
+        MlxlinkRecord::printWar(warMsg, _jsonRoot);
+        if (!askUser("Do you want to continue", _userInput.force))
+        {
+            throw MlxRegException("Operation canceled by user");
+        }
+    }
+}
+
+void MlxlinkCommander::sendPrbsPpaos(bool testMode, bool dc_cpl_allow)
+{
+    if (dc_cpl_allow)
+    {
+        sendPrmReg(ACCESS_REG_PPAOS, SET, "phy_test_mode_admin=%d,dc_cpl_allow=%d",
+                   (testMode ? PPAOS_PHY_TEST_MODE : PPAOS_REGULAR_OPERATION), PPAOS_DC_CPL_ALLOW);
+    }
+    else
+    {
+        sendPrmReg(ACCESS_REG_PPAOS, SET, "phy_test_mode_admin=%d",
+                   (testMode ? PPAOS_PHY_TEST_MODE : PPAOS_REGULAR_OPERATION));
+    }
 }
 
 void MlxlinkCommander::startTuning()

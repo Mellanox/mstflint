@@ -140,6 +140,8 @@
 #define PRBS_INVERT_TX_POL_FLAG_SHORT ' '
 #define PRBS_INVERT_RX_POL_FLAG "invert_rx_polarity"
 #define PRBS_INVERT_RX_POL_FLAG_SHORT ' '
+#define PRBS_DC_COUPLE_ALLOW_FLAG "dc_cpl_allow"
+#define PRBS_DC_COUPLE_ALLOW_FLAG_SHORT ' '
 #define PPRT_TUNING_TYPE_FLAG "tuning_type"
 #define PPRT_TUNING_TYPE_FLAG_SHORT ' '
 #define BER_COLLECT_FLAG "ber_collect"
@@ -541,6 +543,7 @@ public:
     void checkPrbsRegsCap(const string& prbsReg, const string& laneRate);
     void checkPrbsPolCap(const string& prbsReg);
     void checkPprtPptt();
+    void checkDcCouple();
     void checkPplrCap();
     void sendPrbsPpaos(bool);
     void startTuning();
