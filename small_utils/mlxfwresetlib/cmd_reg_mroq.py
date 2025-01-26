@@ -188,14 +188,20 @@ class CmdRegMroq():
         logger.debug("Requested reset sync '{0}' is supported".format(reset_sync))
         return True
 
-    def get_default_sync(self):
+    def get_default_sync(self, tool_owner_support):
         if self.mroq_is_supported() is False:
             raise Exception("MROQ is not supported")
 
         reset_sync = CmdRegMroq.LEGACY_FLOW
+        if tool_owner_support is False:
+            reset_sync = CmdRegMroq.SYNCED_DRIVER_FLOW
+
         for field in CmdRegMroq.pci_sync_db:
             if field["mask"] & self._pci_sync_for_fw_update_start:
-                reset_sync = field["flow"]
-                break
+                if field["flow"] is CmdRegMroq.LEGACY_FLOW and tool_owner_support is False:
+                    pass
+                else:
+                    reset_sync = field["flow"]
+                    break
 
         return reset_sync

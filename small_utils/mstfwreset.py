@@ -2193,12 +2193,12 @@ def reset_flow_host(device, args, command):
     reset_type = mfrl.default_reset_type() if args.reset_type is None else args.reset_type
 
     mroq = CmdRegMroq(reset_type, RegAccessObj, mcam, logger)
+    tool_owner_support = True
+    if platform.system() == "Linux" and is_bluefield:
+        tool_owner_support = False
 
     if command == "query":
         print(mfrl.query_text(is_pcie_switch_device(devid), mroq.is_sync2_hot_reset_supported()))
-        tool_owner_support = True
-        if platform.system() == "Linux" and is_bluefield:
-            tool_owner_support = False
         if mroq.mroq_is_supported():
             mroq.print_query_text(is_pcie_switch_device(devid), tool_owner_support)
         else:
@@ -2213,7 +2213,7 @@ def reset_flow_host(device, args, command):
         reset_sync = SyncOwner.TOOL
         if reset_level is CmdRegMfrl.PCI_RESET:
             if args.reset_sync is None:
-                reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch_device(devid))
+                reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch_device(devid), tool_owner_support)
             else:
                 try:
                     is_sync_supported = mroq.is_sync_supported(args.reset_sync, logger)
@@ -2408,10 +2408,10 @@ def reset_flow_switch(device, args, command):
 ######################################################################
 
 
-def get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch):
+def get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch, tool_owner_support):
     reset_sync = SyncOwner.TOOL
     try:
-        reset_sync = mroq.get_default_sync()
+        reset_sync = mroq.get_default_sync(tool_owner_support)
     except BaseException:
         devDict = getDeviceDict(devid)
         if platform.system() == "Linux" and reset_level != CmdRegMfrl.WARM_REBOOT and devDict.get('allowed_sync_method'):
