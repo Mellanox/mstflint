@@ -187,7 +187,7 @@ class CmdRegMfrl():
     def is_pci_rescan_required(self):
         return True if self._pci_rescan_required == 1 else False
 
-    def query_text(self, is_pcie_switch, is_hot_reset_supported):
+    def query_text(self, is_pcie_switch, is_sync2_hot_reset_supported):
         'return the text for the query operation in mlxfwreset'
         # Reset levels
         default_reset_level = self.default_reset_level()
@@ -196,7 +196,7 @@ class CmdRegMfrl():
             level = reset_level_ii['level']
             description = reset_level_ii['description']
 
-            if is_pcie_switch and is_hot_reset_supported is False:
+            if is_pcie_switch and is_sync2_hot_reset_supported is False:
                 supported = "Supported" if reset_level_ii['supported'] and reset_level_ii['level'] is CmdRegMfrl.WARM_REBOOT else "Not Supported"
                 default = "(default)" if reset_level_ii['level'] is CmdRegMfrl.WARM_REBOOT else ""
             else:

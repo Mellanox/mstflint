@@ -2195,7 +2195,7 @@ def reset_flow_host(device, args, command):
     mroq = CmdRegMroq(reset_type, RegAccessObj, mcam, logger)
 
     if command == "query":
-        print(mfrl.query_text(is_pcie_switch_device(devid), mroq.is_hot_reset_supported()))
+        print(mfrl.query_text(is_pcie_switch_device(devid), mroq.is_sync2_hot_reset_supported()))
         tool_owner_support = True
         if platform.system() == "Linux" and is_bluefield:
             tool_owner_support = False
@@ -2240,9 +2240,9 @@ def reset_flow_host(device, args, command):
         if is_pcie_switch_device(devid):
             is_pcie_swtich = True
             if args.reset_level is None:
-                if reset_level is CmdRegMfrl.PCI_RESET and mroq.is_hot_reset_supported() is False:
+                if reset_level is CmdRegMfrl.PCI_RESET and mroq.is_sync2_hot_reset_supported() is False:
                     reset_level = CmdRegMfrl.WARM_REBOOT
-            elif reset_level is CmdRegMfrl.PCI_RESET and mroq.is_hot_reset_supported() is False:
+            elif reset_level is CmdRegMfrl.PCI_RESET and mroq.is_sync2_hot_reset_supported() is False:
                 raise RuntimeError("You are going to reset pcie switch device: reset-level '{0}' is not supported when hot reset is unsupported, only reset-level 4 (reboot) is supported".format(args.reset_level))
 
             if reset_level is CmdRegMfrl.WARM_REBOOT:
@@ -2292,9 +2292,6 @@ def reset_flow_host(device, args, command):
 
         if pci_reset_request_method is ResetReqMethod.HOT_RESET and reset_level is not CmdRegMfrl.PCI_RESET:
             raise RuntimeError("Hot reset is only supported with reset level 3 (Driver restart and PCI reset)")
-
-        if pci_reset_request_method is ResetReqMethod.HOT_RESET and mroq.is_hot_reset_supported() is False:
-            raise RuntimeError("Hot reset is not supported by the FW")
 
         if pci_reset_request_method is ResetReqMethod.HOT_RESET and reset_sync == SyncOwner.TOOL:
             raise RuntimeError("Hot reset is not supported with sync 0")
@@ -2421,7 +2418,7 @@ def get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch):
             reset_sync = devDict['allowed_sync_method']
         elif reset_level == CmdRegMfrl.WARM_REBOOT:
             pass
-        elif mroq.is_hot_reset_supported() and is_pcie_switch:
+        elif mroq.is_sync2_hot_reset_supported() and is_pcie_switch:
             reset_sync = SyncOwner.FW
 
     return reset_sync
