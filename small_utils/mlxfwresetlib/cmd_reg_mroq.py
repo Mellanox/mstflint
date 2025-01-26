@@ -164,11 +164,13 @@ class CmdRegMroq():
 
         return default_method
 
-    def is_hot_reset_supported(self):
+    def is_sync2_hot_reset_supported(self):
         if self._mroq_is_supported is False:
             return False
 
-        return bool(self._pci_reset_req_method & CmdRegMroq.pci_reset_method_db[ResetReqMethod.HOT_RESET]['mask'])
+        is_hot_reset_supported = bool(self._pci_reset_req_method & CmdRegMroq.pci_reset_method_db[ResetReqMethod.HOT_RESET]['mask'])
+        is_sync_2_supported = bool(self._pci_sync_for_fw_update_start & CmdRegMroq.pci_sync_db[CmdRegMroq.SYNCED_TOOL_FLOW]['mask'])
+        return is_hot_reset_supported & is_sync_2_supported
 
     def mroq_is_supported(self):
         return self._mroq_is_supported
