@@ -3066,6 +3066,13 @@ int mlxcables_remote_operation_client_side(mfile     * mf,
     return 0;
 }
 
+int is_pcie_switch_device(mfile* mf)
+{
+    (void)mf;
+
+    return 0;
+}
+
 int is_remote_dev(mfile* mf)
 {
     if (mf) {
