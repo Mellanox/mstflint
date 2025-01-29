@@ -86,8 +86,6 @@ if REG_ACCESS:
         REG_ACCESS_FAILED_TO_AQUIRE_OWNERSHIP = 1
         REG_ACCESS_NO_OWNERSHIP_REQUIRED = 2
 
-
-
     class RegAccess:
         GET = REG_ACCESS_METHOD_GET
         SET = REG_ACCESS_METHOD_SET
@@ -102,6 +100,7 @@ if REG_ACCESS:
             self._reg_access_mtrc_stdb_warpper = REG_ACCESS.reg_access_mtrc_stdb_wrapper
             self._reg_access_mgir = REG_ACCESS.reg_access_mgir
             self._reg_access_mfrl = REG_ACCESS.reg_access_mfrl
+            self._reg_access_mroq = REG_ACCESS.reg_access_mroq
             self._reg_access_pcnr = REG_ACCESS.reg_access_pcnr
             self._reg_access_mpcir = REG_ACCESS.reg_access_mpcir
             self._reg_access_res_dump = REG_ACCESS.reg_access_res_dump
@@ -331,6 +330,17 @@ if REG_ACCESS:
 
             if method == REG_ACCESS_METHOD_GET:
                 return mfrlRegisterP.contents.reset_trigger, mfrlRegisterP.contents.reset_type, mfrlRegisterP.contents.pci_rescan_required, mfrlRegisterP.contents.reset_state
+        ##########################
+        def sendMROQ(self, reset_type):
+            mroqRegisterP = pointer(MROQ_EXT())
+            mroqRegisterP.contents.reset_type = c_uint8(reset_type)
+
+            c_method = c_uint(REG_ACCESS_METHOD_GET)
+            rc = self._reg_access_mroq(self._mstDev.mf, c_method, mroqRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register MROQ:  %s (%d)" % (self._err2str(rc), rc))
+
+            return mroqRegisterP.contents.pci_sync_for_fw_update_start, mroqRegisterP.contents.pci_reset_req_method
         ##########################
         def getMCAM(self, access_reg_group=0):
 
