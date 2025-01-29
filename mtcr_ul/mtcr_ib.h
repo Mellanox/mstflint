@@ -68,5 +68,4 @@ int mib_send_gmp_access_reg_mad(mfile              * mf,
 int mib_supports_reg_access_cls_a(mfile* mf, maccess_reg_method_t reg_method);
 int mib_send_cls_a_access_reg_mad(mfile* mf, u_int8_t* data);
 int mib_supports_reg_access_smp(mfile* mf);
-int mib_use_smp(mfile* mf);
 #endif

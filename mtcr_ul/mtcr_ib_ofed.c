@@ -2047,8 +2047,3 @@ int mib_supports_reg_access_smp(mfile* mf)
     return (mf->tp == MST_IB && ((ibvs_mad*)mf->ctx)->use_smp) && (mf->flags & (MDEVS_IB | MDEVS_FWCTX)) ||
            (!(mf->flags & MDEVS_IB));
 }
-
-int mib_use_smp(mfile* mf)
-{
-    return ((ibvs_mad*)mf->ctx)->use_smp;
-}

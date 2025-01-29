@@ -3250,15 +3250,6 @@ int supports_reg_access_smp(mfile* mf)
     return 0;
 }
 
-int should_use_smp(mfile* mf)
-{
-#ifndef NO_INBAND
-    return mib_use_smp(mf);
-#endif
-    (void)mf;
-    return 0;
-}
-
 
 int maccess_reg_ul(mfile              * mf,
                    u_int16_t            reg_id,
@@ -3365,7 +3356,7 @@ int maccess_reg_ul(mfile              * mf,
         if (supports_reg_access_smp(mf)) {
             class_to_use = MAD_CLASS_REG_ACCESS;
             rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-        } else if (should_use_smp(mf)){
+        } else {
             return ME_REG_ACCESS_NOT_SUPPORTED;
         }
     }
