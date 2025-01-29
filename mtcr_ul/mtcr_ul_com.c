@@ -712,21 +712,7 @@ enum {
     do                                                               \
     {                                                                \
         int       rc;                                                \
-        int       lock_rc;                                           \
-        ul_ctx_t* pci_ctx = mf->ul_ctx;                              \
-        lock_rc = _flock_int(pci_ctx->fdlock, LOCK_EX);              \
-        if (lock_rc)                                                 \
-        {                                                            \
-            perror(err_prefix);                                      \
-            action_on_fail;                                          \
-        }                                                            \
         rc = pread(mf->fd, val_ptr, 4, pci_offs);                    \
-        lock_rc = _flock_int(pci_ctx->fdlock, LOCK_UN);              \
-        if (lock_rc)                                                 \
-        {                                                            \
-            perror(err_prefix);                                      \
-            action_on_fail;                                          \
-        }                                                            \
         if (rc != 4)                                                 \
         {                                                            \
             if (rc < 0)                                              \
@@ -742,23 +728,9 @@ enum {
     do                                                            \
     {                                                             \
         int       rc;                                             \
-        int       lock_rc;                                        \
         u_int32_t val_le;                                         \
-        ul_ctx_t* pci_ctx = mf->ul_ctx;                           \
         val_le = __cpu_to_le32(val);                              \
-        lock_rc = _flock_int(pci_ctx->fdlock, LOCK_EX);           \
-        if (lock_rc)                                              \
-        {                                                         \
-            perror(err_prefix);                                   \
-            action_on_fail;                                       \
-        }                                                         \
         rc = pwrite(mf->fd, &val_le, 4, pci_offs);                \
-        lock_rc = _flock_int(pci_ctx->fdlock, LOCK_UN);           \
-        if (lock_rc)                                              \
-        {                                                         \
-            perror(err_prefix);                                   \
-            action_on_fail;                                       \
-        }                                                         \
         if (rc != 4)                                              \
         {                                                         \
             if (rc < 0)                                           \
