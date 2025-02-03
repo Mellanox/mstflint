@@ -360,6 +360,7 @@ public:
     void checkAllPortsStatus();
     void handlePortStr(const string& portStr);
     void labelToLocalPort();
+    void findFirstValidPort();
     void labelToHCALocalPort();
     void labeltoDSlocalPort();
     bool isDSdevice();
