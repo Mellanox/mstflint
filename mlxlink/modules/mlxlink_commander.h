@@ -359,6 +359,7 @@ public:
     bool checkPortStatus(u_int32_t localPort);
     void checkAllPortsStatus();
     void handlePortStr(const string& portStr);
+    void findFirstValidPort();
     void labelToLocalPort();
     void labelToHCALocalPort();
     void labeltoDSlocalPort();
