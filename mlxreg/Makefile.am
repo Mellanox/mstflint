@@ -60,6 +60,6 @@ mstreg_DEPENDENCIES = \
     $(top_builddir)/ext_libs/minixz/libminixz.la \
     $(top_builddir)/common/libcommon.la
 
-mstreg_LDADD = $(mstreg_DEPENDENCIES) -llzma ${LDL} -lexpat
+mstreg_LDADD = $(mstreg_DEPENDENCIES) $(liblzma_LIBS) ${LDL} $(expat_LIBS)
 
 mstreg_LDFLAGS = -static

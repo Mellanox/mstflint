@@ -74,14 +74,16 @@ LDADD_mstflint = ${LDL}
 mstflint_LDFLAGS = -static
 
 if ENABLE_DC
-LDADD_mstflint += -lz
+AM_CPPFLAGS += $(libz_CFLAGS)
+LDADD_mstflint += $(libz_LIBS)
 else
 mstflint_CXXFLAGS += -DNO_ZLIB
 endif
 
 if ENABLE_CS
+AM_CPPFLAGS += $(openssl_CFLAGS)
+LDADD_mstflint += $(openssl_LIBS)
 mstflint_DEPENDENCIES += $(top_builddir)/tools_crypto/libtools_crypto.a
-LDADD_mstflint += -lcrypto
 else
 endif
 
@@ -91,20 +93,22 @@ else
 endif
 
 if ENABLE_OPENSSL
+AM_CPPFLAGS += $(openssl_CFLAGS)
+LDADD_mstflint += $(openssl_LIBS)
 mstflint_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.la
-LDADD_mstflint += -lcrypto -lssl
 else
 mstflint_CXXFLAGS += -DNO_OPEN_SSL
 endif
 
 if ENABLE_FWMGR
+AM_CPPFLAGS += $(liblzma_CFLAGS)
+LDADD_mstflint += $(liblzma_LIBS) -lm
 mstflint_DEPENDENCIES += \
     $(top_builddir)/libmfa/libmfa.la \
     $(top_builddir)/ext_libs/minixz/libminixz.la \
     $(top_builddir)/mlxarchive/libmstarchive.la \
     $(top_builddir)/tools_layouts/libmlxarchive_layouts.la \
     $(top_builddir)/xz_utils/libxz_utils.la
-LDADD_mstflint += -llzma -lm
 else
 mstflint_CXXFLAGS += -DNO_MSTARCHIVE
 endif

@@ -36,7 +36,8 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/${MTCR_CONFIG_DIR} \
     -I$(top_srcdir)/common -I$(top_builddir)/common \
     -I$(top_srcdir)/mft_utils \
-    -I$(top_srcdir)/mlxsign_lib
+    -I$(top_srcdir)/mlxsign_lib \
+    $(openssl_CFLAGS)
 
 XML_FLAGS = -DUSE_XML -DLIBXML_STATIC
 
@@ -88,7 +89,7 @@ mstdpa_LDADD += $(srcdir)/dpa_elf/x86_64/libdpa_elf
 endif
 
 if ENABLE_OPENSSL
-mstdpa_LDADD += -lcrypto -lssl
+mstdpa_LDADD += $(openssl_LIBS)
 else
 mstdpa_CXXFLAGS += -DNO_OPEN_SSL
 endif

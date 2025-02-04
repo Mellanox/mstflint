@@ -46,7 +46,9 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/mft_utils \
     -I$(top_srcdir)/mlxfwops/lib \
     -I$(top_srcdir)/pldmlib \
-    -I$(CURL_INC_DIR)
+    $(libxml2_CFLAGS) \
+    $(libcurl_CFLAGS) \
+    $(openssl_CFLAGS)
 
 bin_PROGRAMS = mstfwmanager
 
@@ -108,20 +110,16 @@ mstfwmanager_DEPENDENCIES = \
     $(MUPARSER_LIBS) \
     $(SQLITE_LIBS)
 
-LDADD_mstfwmanager = -lm -lz ${LDL}
-# XML libs
-LDADD_mstfwmanager += -lxml2
-# curl libs
-LDADD_mstfwmanager += -lcurl  -lssl -lcrypto -lrt
+LDADD_mstfwmanager = $(libcurl_LIBS) $(libz_LIBS) $(liblzma_LIBS) $(libxml2_LIBS)
 
 if ENABLE_OPENSSL
 mstfwmanager_DEPENDENCIES += $(top_builddir)/mlxsign_lib/libmlxsign.la
-LDADD_mstfwmanager += -lcrypto -lssl
+LDADD_mstfwmanager += $(openssl_LIBS)
 endif
 
 if ENABLE_CS
 mstfwmanager_DEPENDENCIES += $(top_builddir)/tools_crypto/libtools_crypto.a
-LDADD_mstfwmanager += -lcrypto
+LDADD_mstfwmanager += $(openssl_LIBS)
 endif
 
 if ENABLE_INBAND

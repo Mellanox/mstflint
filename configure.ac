@@ -1,4 +1,4 @@
-# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,11 +28,9 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-dnl Process this file with autoconf to produce a configure script.
-
 AC_INIT(mstflint, 4.32.0, akiselman-org@exchange.nvidia.com)
 
-AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
+AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Firmware Burning and Diagnostics Tools for NVIDIA network devices.])
 AC_SUBST([PROJECT])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -45,16 +43,21 @@ AC_PROG_CC
 AC_PROG_CXX
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
-AC_CONFIG_HEADERS( config.h )
+AC_CONFIG_HEADERS(config.h)
+
+PKG_PROG_PKG_CONFIG
+if test -z "$PKG_CONFIG"; then
+  AC_MSG_ERROR([pkg-config could not be found.])
+fi
 
 # OPENSSL_VERSION_NUMBER < 0x100020bf
-#0x100020bfL = OpenSSL 1.0.2k - 26 Jan 2017
+#0x100020bfL = openssl 1.0.2k - 26 Jan 2017
 MIN_OPENSSL_VER="1.0.2k"
 AC_COMPILE_IFELSE(
       [AC_LANG_PROGRAM([[
 #include <openssl/ssl.h>
 #if OPENSSL_VERSION_NUMBER < 0x100020bf
-  ERROR: OPENSSL_VERSION_NUMBER version must be >= 0x100020bf ("OpenSSL 1.0.2k - 26 Jan 2017")
+  ERROR: OPENSSL_VERSION_NUMBER version must be >= 0x100020bf ("openssl 1.0.2k - 26 Jan 2017")
 #endif
 ]])], [OPENSSL_VERSION_VALID=yes], [OPENSSL_VERSION_VALID=no])
 OS=$(uname -s)
@@ -70,15 +73,13 @@ OFED_VERSION_CHK=0
 KERNEL_BUILD_CHK=0
 
 if test "x$OFED_EXIST" != "x$OFED_NOT_EXIST"; then
-  if test $(echo $OFED_VER 5.6 | tr " " "\n" | sort -V | tail -n 1) == $OFED_VER ; then
-      OFED_VERSION_CHK=1
-  fi
+    if test $(echo $OFED_VER 5.6 | tr " " "\n" | sort -V | tail -n 1) == $OFED_VER ; then
+        OFED_VERSION_CHK=1
+    fi
 fi
 
 AM_CONDITIONAL(OFED_BUILD,[test ${OFED_VERSION_CHK} = 1])
 AC_SUBST(OFED_BUILD)
-
-#AC_MSG_NOTICE(Kernel: ${KERNEL_VER})
 
 if test ${KERNEL_VER} \> "x5.13" ; then
     KERNEL_BUILD_CHK=1
@@ -122,193 +123,361 @@ AC_SUBST(COMPILER_FPIC)
 
 AC_MSG_CHECKING(--enable-dc argument)
 AC_ARG_ENABLE(dc,
-		    AS_HELP_STRING([--disable-dc], [Disable mstflint "dc" command. Eliminates zlib dependency]),
-		    [enable_dc="$enableval"],
-		    [enable_dc="yes"])
+    AS_HELP_STRING([--enable-dc], [enables the "dc" command in mstflint, requires zlib [default=enabled]]),
+    [enable_dc="$enableval"],
+    [enable_dc="yes"]
+)
 AC_MSG_RESULT($enable_dc)
 if test "$enable_dc" = "yes"; then
-  AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . Use --disable-dc to remove this dependency]))
-  AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function. Use --disable-dc to remove this dependency]))
+    # zlib
+    AC_ARG_WITH([zlib], AS_HELP_STRING([--with-zlib=PATH], [use zlib from the specified PATH]),
+        [
+            zlib_dir="$withval"
+            AC_MSG_NOTICE([Using zlib from $zlib_dir])
+            libz_CFLAGS="-I$zlib_dir/include"
+            libz_LIBS="-L$zlib_dir/lib -lz"
+        ],
+        [
+            AC_MSG_NOTICE([Looking for zlib headers and libraries])
+            PKG_CHECK_MODULES([libz], [zlib], [],
+                [
+                    AC_MSG_NOTICE([Looking for zlib headers and libraries manually])
+                    AC_CHECK_HEADERS([zlib.h], [], [AC_MSG_ERROR([missed zlib headers])])
+                    AC_CHECK_LIB([z], [uncompress], [], [AC_MSG_ERROR([zlib not found])])
+                    libz_CFLAGS=""
+                    libz_LIBS="-lz"
+                ]
+            )
+        ]
+    )
+    AC_MSG_NOTICE([zlib CFLAGS:'$libz_CFLAGS' LIBS:'$libz_LIBS'])
+    AC_SUBST(libz_CFLAGS)
+    AC_SUBST(libz_LIBS)
 fi
 
-# FWMANAGER
+# mstfwmanager
 AC_MSG_CHECKING(--enable-fw-mgr argument)
 AC_ARG_ENABLE(fw-mgr,
-             AS_HELP_STRING([--enable-fw-mgr], [Enable compiling mstfwmanager tool and features]),
-             [enable_fw_mgr="$enableval"],
-             [enable_fw_mgr="no"])
+    AS_HELP_STRING([--enable-fw-mgr], [enable compilation of the mstfwmanager tool, requires curl/zlib/lzma/libxml2 [default=disabled]]),
+    [enable_fw_mgr="$enableval"],
+    [enable_fw_mgr="no"]
+)
 AC_MSG_RESULT($enable_fw_mgr)
+
 if test "x$enable_fw_mgr" = "xyes"; then
-    AC_CHECK_HEADER(curl/curl.h,,AC_MSG_ERROR([cannot find curl/curl.h . this header is needed for compiling fw manager tool]))
-    AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . this header is needed for compiling fw manager tool]))
-    AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function.]))
-    AC_CHECK_HEADER(lzma.h,,AC_MSG_ERROR([Cannot find lzma.h.]))
-    CURL_INC_DIR=/usr/include/curl/
+    # libxml2
+    AC_ARG_WITH([libxml2], AS_HELP_STRING([--with-libxml2=PATH], [use libxml2 from the specified PATH]),
+        [
+            libxml2_dir="$withval"
+            AC_MSG_NOTICE([Using libxml2 from $libxml2_dir])
+            libxml2_CFLAGS="-I$libxml2_dir/include"
+            libxml2_LIBS="-L$libxml2_dir/lib -lz"
+        ],
+        [
+            AC_MSG_NOTICE([Looking for libxml2 headers and libraries])
+            PKG_CHECK_MODULES([libxml2], [libxml-2.0], [],
+                [
+                    AC_MSG_NOTICE([Looking for libxml2 headers and libraries manually])
+                    CPPFLAGS_ORIG="$CPPFLAGS"
+                    CPPFLAGS="$CPPFLAGS -I/usr/include/libxml2"
+                    AC_CHECK_HEADERS([libxml/parser.h],
+                        [libxml2_CFLAGS="-I/usr/include/libxml2"],
+                        [AC_MSG_ERROR([missed libxml2 headers])]
+                    )
+                    CPPFLAGS="$CPPFLAGS_ORIG"
+                    AC_CHECK_LIB([xml2], [xmlInitParser], [], [AC_MSG_ERROR([libxml2 not found])])
+                    libxml2_LIBS="-lxml2"
+                ]
+            )
+        ]
+    )
+    AC_MSG_NOTICE([libxml2 CFLAGS:'$libxml2_CFLAGS' LIBS:'$libxml2_LIBS'])
+    AC_SUBST(libxml2_CFLAGS)
+    AC_SUBST(libxml2_LIBS)
+    # curl
+    AC_ARG_WITH([libcurl], AS_HELP_STRING([--with-libcurl=PATH], [use libcurl from the specified PATH]),
+        [
+            libcurl_dir="$withval"
+            AC_MSG_NOTICE([Using libcurl from $libcurl_dir])
+            libcurl_CFLAGS="-I$libcurl_dir/include"
+            libcurl_LIBS="-L$libcurl_dir/lib -lcurl"
+        ],
+        [
+            AC_MSG_NOTICE([Looking for libcurl headers and libraries])
+            PKG_CHECK_MODULES([libcurl], [libcurl], [],
+                [
+                    AC_MSG_NOTICE([Looking for libcurl headers and libraries manually])
+                    AC_CHECK_HEADERS([curl/curl.h], [], [AC_MSG_ERROR([missed libcurl headers])])
+                    AC_CHECK_LIB([curl], [curl_easy_init], [], [AC_MSG_ERROR([libcurl not found])])
+                    libcurl_CFLAGS=""
+                    libcurl_LIBS="-lcurl"
+                ]
+            )
+        ]
+    )
+    AC_MSG_NOTICE([libcurl CFLAGS:'$libcurl_CFLAGS' LIBS:'$libcurl_LIBS'])
+    AC_SUBST(libcurl_CFLAGS)
+    AC_SUBST(libcurl_LIBS)
+    # zlib
+    AC_ARG_WITH([zlib], AS_HELP_STRING([--with-zlib=PATH], [use zlib from the specified PATH]),
+        [
+            zlib_dir="$withval"
+            AC_MSG_NOTICE([Using zlib from $zlib_dir])
+            libz_CFLAGS="-I$zlib_dir/include"
+            libz_LIBS="-L$zlib_dir/lib -lz"
+        ],
+        [
+            AC_MSG_NOTICE([Looking for zlib headers and libraries])
+            PKG_CHECK_MODULES([libz], [zlib], [],
+                [
+                    AC_MSG_NOTICE([Looking for zlib headers and libraries manually])
+                    AC_CHECK_HEADERS([zlib.h], [], [AC_MSG_ERROR([missed zlib headers])])
+                    AC_CHECK_LIB([z], [uncompress], [], [AC_MSG_ERROR([zlib not found])])
+                    libz_CFLAGS=""
+                    libz_LIBS="-lz"
+                ]
+            )
+        ]
+    )
+    AC_MSG_NOTICE([zlib CFLAGS:'$libz_CFLAGS' LIBS:'$libz_LIBS'])
+    AC_SUBST(libz_CFLAGS)
+    AC_SUBST(libz_LIBS)
+    # lzma
+    AC_ARG_WITH([liblzma], AS_HELP_STRING([--with-liblzma=PATH], [use liblzma from the specified PATH]),
+        [
+            liblzma_dir="$withval"
+            AC_MSG_NOTICE([Using liblzma from $liblzma_dir])
+            liblzma_CFLAGS="-I$liblzma_dir/include"
+            liblzma_LIBS="-L$liblzma_dir/lib -llzma"
+        ],
+        [
+            AC_MSG_NOTICE([Looking for liblzma headers and libraries])
+            PKG_CHECK_MODULES([liblzma], [liblzma], [liblzma_pkg_config="yes"],
+                [
+                    AC_MSG_NOTICE([Looking for liblzma headers and libraries manually])
+                    AC_CHECK_HEADERS([lzma.h], [], [AC_MSG_ERROR([missed liblzma headers])])
+                    AC_CHECK_LIB([lzma], [lzma_easy_encoder], [], [AC_MSG_ERROR([liblzma not found])])
+                    liblzma_CFLAGS=""
+                    liblzma_LIBS="-llzma"
+                ]
+            )
+        ]
+    )
+    AC_MSG_NOTICE([liblzma CFLAGS:'$liblzma_CFLAGS' LIBS:'$liblzma_LIBS'])
+    AC_SUBST(liblzma_CFLAGS)
+    AC_SUBST(liblzma_LIBS)
 fi
 
 # mlxdpa
 AC_MSG_CHECKING(--enable-dpa argument)
 AC_ARG_ENABLE(dpa,
-             AS_HELP_STRING([--enable-dpa], [Enable compiling mstdpa tool (x86_64/aarch64 Linux only, no FreeBSD support)]),
-             [enable_dpa="$enableval"],
-             [enable_dpa="no"])
+    AS_HELP_STRING([--enable-dpa], [enable compilation of the mstdpa tool (Linux x86_64/aarch64 only) [default=disabled]]),
+    [enable_dpa="$enableval"],
+    [enable_dpa="no"]
+)
 AC_MSG_RESULT($enable_dpa)
 
-# Adabe
+# adabe tools
 AC_MSG_CHECKING(--enable-adb-generic-tools argument)
 AC_ARG_ENABLE(adb-generic-tools,
-             AS_HELP_STRING([--enable-adb-generic-tools], [Enable compiling the following tools which depends on ADABE: mstreg and mstlink]),
-             [enable_adb_generic_tools="$enableval"],
-             [enable_adb_generic_tools="no"])
+    AS_HELP_STRING([--enable-adb-generic-tools], [enable compilation of tools dependent on ADABE (mstreg/mstlink), requires expat [default=disabled]]),
+    [enable_adb_generic_tools="$enableval"],
+    [enable_adb_generic_tools="no"]
+)
 AC_MSG_RESULT($enable_adb_generic_tools)
 if test "x$enable_adb_generic_tools" = "xyes"; then
-    AC_LANG_PUSH([C++])
-        AC_CHECK_LIB([expat], XML_ParserCreate_MM,
-                [AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false)],
-                have_expat=false)
-        if ! $have_expat; then
-        AC_MSG_ERROR([Expat library is missing, please install expat xml parser to continue: expat-devel.]
-                [http://expat.sourceforge.net/])
-        fi
-    AC_LANG_POP([C++])
+    # expat
+    AC_ARG_WITH([expat], AS_HELP_STRING([--with-expat=PATH], [use expat from the specified PATH]),
+        [
+            expat_dir="$withval"
+            AC_MSG_NOTICE([Using expat from $expat_dir])
+            expat_CFLAGS="-I$expat_dir/include"
+            expat_LIBS="-L$expat_dir/lib -lz"
+        ],
+        [
+            AC_MSG_NOTICE([Looking for expat headers and libraries])
+            PKG_CHECK_MODULES([expat], [expat], [],
+                [
+                    AC_MSG_NOTICE([Looking for expat headers and libraries manually])
+                    AC_CHECK_HEADERS([expat.h],
+                        [AC_MSG_ERROR([missed expat headers])]
+                    )
+                    AC_CHECK_LIB([expat], [xmlInitParser], [], [AC_MSG_ERROR([expat not found])])
+                    expat_LIBS="-lexpat"
+                ]
+            )
+        ]
+    )
+    AC_MSG_NOTICE([expat CFLAGS:'$expat_CFLAGS' LIBS:'$expat_LIBS'])
+    AC_SUBST(expat_CFLAGS)
+    AC_SUBST(expat_LIBS)
 fi
-
-AC_SUBST(CURL_INC_DIR)
-
 AM_CONDITIONAL(ENABLE_FWMGR, [test "x$enable_fw_mgr" = "xyes" ])
 AC_SUBST(ENABLE_FWMGR)
 
-AC_SUBST(ENABLE_FWMGR)
-# XML2
+# xml features
 AC_MSG_CHECKING(--enable-xml2 argument)
 AC_ARG_ENABLE(xml2,
-            AS_HELP_STRING([--enable-xml2], [Enable mstflint libxml2 dependent features]),
-            [enable_xml2="$enableval"],
-            [enable_xml2="no"])
+    AS_HELP_STRING([--enable-xml2], [enable features dependent on libxml2, requires libxml2 [default=disabled]]),
+    [enable_xml2="$enableval"],
+    [enable_xml2="no"]
+)
 AC_MSG_RESULT($enable_xml2)
 if test [ "x$enable_xml2" = "xyes" ] || [ test "x$enable_fw_mgr" = "xyes" ]; then
-    # XML2 checks
-    AC_LANG_PUSH([C++])
-        if test "x$OS" = "xFreeBSD"; then
-            CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include/libxml2"
-        else
-            CXXFLAGS="${CXXFLAGS} -isystem /usr/include/libxml2"
-        fi
-        AC_CHECK_HEADER([libxml2/libxml/xpath.h],[],[AC_MSG_ERROR([libxml2: xpath.h is not found in the system PATH. make sure libxml2 headers are installed.])])
-        AC_CHECK_LIB(xml2, xmlDocDumpFormatMemoryEnc,, AC_MSG_ERROR([cannot find xml2 xmlDocDumpFormatMemoryEnc() function. Try re-installing the library...]))
-    AC_LANG_POP([C++])
+    # libxml2
+    AC_ARG_WITH([libxml2], AS_HELP_STRING([--with-libxml2=PATH], [use libxml2 from the specified PATH]),
+        [
+            libxml2_dir="$withval"
+            AC_MSG_NOTICE([Using libxml2 from $libxml2_dir])
+            libxml2_CFLAGS="-I$libxml2_dir/include"
+            libxml2_LIBS="-L$libxml2_dir/lib -lz"
+        ],
+        [
+            AC_MSG_NOTICE([Looking for libxml2 headers and libraries])
+            PKG_CHECK_MODULES([libxml2], [libxml-2.0], [],
+                [
+                    AC_MSG_NOTICE([Looking for libxml2 headers and libraries manually])
+                    CPPFLAGS_ORIG="$CPPFLAGS"
+                    CPPFLAGS="$CPPFLAGS -I/usr/include/libxml2"
+                    AC_CHECK_HEADERS([libxml/parser.h],
+                        [libxml2_CFLAGS="-I/usr/include/libxml2"],
+                        [AC_MSG_ERROR([missed libxml2 headers])]
+                    )
+                    CPPFLAGS="$CPPFLAGS_ORIG"
+                    AC_CHECK_LIB([xml2], [xmlInitParser], [], [AC_MSG_ERROR([libxml2 not found])])
+                    libxml2_LIBS="-lxml2"
+                ]
+            )
+        ]
+    )
+    AC_MSG_NOTICE([libxml2 CFLAGS:'$libxml2_CFLAGS' LIBS:'$libxml2_LIBS'])
+    AC_SUBST(libxml2_CFLAGS)
+    AC_SUBST(libxml2_LIBS)
 fi
 
-AM_CONDITIONAL(DISABLE_XML2, [test  "x$enable_xml2" = "xno"])
+AM_CONDITIONAL(DISABLE_XML2, [test "x$enable_xml2" = "xno"])
 AC_SUBST(DISABLE_XML2)
 
-AM_CONDITIONAL(ENABLE_DC, [test  "x$enable_dc" = "xyes"])
+AM_CONDITIONAL(ENABLE_DC, [test "x$enable_dc" = "xyes"])
 AC_SUBST(ENABLE_DC)
 
 AC_MSG_CHECKING(--enable-inband argument)
 AC_ARG_ENABLE(inband,
-		    AS_HELP_STRING([--disable-inband], [Disable inband access. Prevents FW update for Mellanox SwitchX and ConnectIB devices. Eliminates infiniband/mad.h dependency]),
-		    [enable_inband="$enableval"],
-		    [enable_inband="$default_en_inband"])
+    AS_HELP_STRING([--enable-inband], [enable inband access (Linux only), requires libibmad]),
+    [enable_inband="$enableval"],
+    [enable_inband="$default_en_inband"]
+)
 AC_MSG_RESULT($enable_inband)
 if test "x$enable_inband" = "xyes"; then
-  AC_CHECK_HEADER(infiniband/mad.h,,AC_MSG_ERROR([cannot find infiniband/mad.h . Use --disable-inband to remove this dependency]))
-  MAD_IFC="mad_ifc"
+    AC_CHECK_HEADER(infiniband/mad.h, [],
+        AC_MSG_ERROR([cannot find infiniband/mad.h (--disable-inband to remove this dependency).])
+    )
+    MAD_IFC="mad_ifc"
 else
-  CXXFLAGS="$CXXFLAGS -DNO_INBAND"
-  CFLAGS="$CFLAGS -DNO_INBAND"
+    CXXFLAGS="$CXXFLAGS -DNO_INBAND"
+    CFLAGS="$CFLAGS -DNO_INBAND"
 fi
 AC_SUBST(MAD_IFC)
-
-AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband" = "xyes"])
+AM_CONDITIONAL(ENABLE_INBAND, [ test "x$enable_inband" = "xyes" ])
 
 AC_MSG_CHECKING(--enable-rdmem argument)
 AC_ARG_ENABLE(rdmem,
-		    AS_HELP_STRING([--enable-rdmem], [Enable resource-dump memory mode. OFED libmlx5 and libibverbs dependency]),
-		    [enable_rdmem="$enableval"],
-		    [enable_rdmem="$default_en_rdmem"])
+    AS_HELP_STRING([--enable-rdmem], [enable resource-dump memory mode (Linux only), requires rdma-core.]),
+    [enable_rdmem="$enableval"],
+    [enable_rdmem="$default_en_rdmem"]
+)
 AC_MSG_RESULT($enable_rdmem)
 if test "x$enable_rdmem" = "xyes"; then
-  AC_CHECK_HEADERS(infiniband/mlx5dv.h infiniband/verbs.h,,AC_MSG_ERROR([cannot find infiniband/mlx5dv.h or infiniband/verbs.h . Use --disable-rdmem to remove this dependency]))
+    AC_CHECK_HEADERS(infiniband/mlx5dv.h infiniband/verbs.h, [],
+    AC_MSG_ERROR([cannot find infiniband/mlx5dv.h or infiniband/verbs.h (--disable-rdmem to remove this dependency).]))
 else
-  CXXFLAGS="$CXXFLAGS -DNO_RDMEM"
-  CFLAGS="$CFLAGS -DNO_RDMEM"
+    CXXFLAGS="$CXXFLAGS -DNO_RDMEM"
+    CFLAGS="$CFLAGS -DNO_RDMEM"
 fi
-
-AM_CONDITIONAL(ENABLE_RDMEM, [test  "x$enable_rdmem" = "xyes"])
+AM_CONDITIONAL(ENABLE_RDMEM, [ test "x$enable_rdmem" = "xyes" ])
 
 AC_MSG_CHECKING(--enable-cs argument)
 AC_ARG_ENABLE(cs,
-            AS_HELP_STRING([--enable-cs], [Enable mstflint "checksum" command, dependent of openssl library]),
-            [enable_cs="$enableval"],
-            [enable_cs="no"])
+    AS_HELP_STRING([--enable-cs], [Enable the "checksum" command in mstflint, requires openssl [defailt=disabled]]),
+    [enable_cs="$enableval"],
+    [enable_cs="no"]
+)
 AC_MSG_RESULT($enable_cs)
 if test "x$enable_cs" = "xyes"; then
-  AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-cs to remove this dependency or install openssl]))
-  TOOLS_CRYPTO="tools_crypto"
+    AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-cs to remove this dependency or install openssl]))
+    TOOLS_CRYPTO="tools_crypto"
 fi
 
 AC_MSG_CHECKING(openssl argument)
 AC_ARG_ENABLE(openssl,
-            AS_HELP_STRING([--disable-openssl], [Disable functionalities that depend on the OpenSSL library]),
-            [enable_openssl="$enableval"],
-            [enable_openssl="yes"])
+    AS_HELP_STRING([--enable-openssl], [disable features dependent on the openssl library.]),
+    [enable_openssl="$enableval"],
+    [enable_openssl="yes"]
+)
 AC_MSG_RESULT($enable_openssl)
 if test "x$enable_openssl" = "xyes"; then
-  # check version >= 1.1.1 (not implemented)
-  AC_CHECK_HEADER(openssl/sha.h,,AC_MSG_ERROR([cannot find openssl/sha.h . remove --enable-openssl to remove this dependency or install openssl]))
-  AC_CHECK_HEADER(openssl/rsa.h,,AC_MSG_ERROR([cannot find openssl/rsa.h . remove --enable-openssl to remove this dependency or install openssl]))
-  AC_CHECK_HEADER(openssl/pem.h,,AC_MSG_ERROR([cannot find openssl/pem.h . remove --enable-openssl to remove this dependency or install openssl]))
-  AC_CHECK_HEADER(openssl/bio.h,,AC_MSG_ERROR([cannot find openssl/bio.h . remove --enable-openssl to remove this dependency or install openssl]))
-  AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-openssl to remove this dependency or install openssl]))
-  TOOLS_CRYPTO="tools_crypto mlxsign_lib"
+    # openssl
+    AC_ARG_WITH([openssl], AS_HELP_STRING([--with-openssl=PATH], [use openssl from the specified PATH]),
+        [
+            openssl_dir="$withval"
+            AC_MSG_NOTICE([Using openssl from $openssl_dir])
+            openssl_CFLAGS="-I$openssl_dir/include"
+            openssl_LIBS="-L$openssl_dir/lib -lssl -lcrypto"
+        ],
+        [
+            AC_MSG_NOTICE([Looking for openssl headers and libraries])
+            PKG_CHECK_MODULES([openssl], [openssl], [],
+                [
+                    AC_MSG_NOTICE([Looking for openssl headers and libraries manually])
+                    AC_CHECK_HEADERS([openssl/ssl.h], [],[AC_MSG_ERROR([missed openssl headers])])
+                    AC_CHECK_LIB([ssl], [OPENSSL_init_ssl], [], [AC_MSG_ERROR([libssl not found])])
+                    AC_CHECK_LIB([crypto], [OPENSSL_init], [], [AC_MSG_RESULT([libcrypto not found])])
+                    openssl_CFLAGS="-I/usr/include/openssl"
+                    openssl_LIBS="-lssl -lcrypto"
+                ]
+            )
+        ]
+    )
+    AC_MSG_NOTICE([openssl CFLAGS:'$openssl_CFLAGS' LIBS:'$openssl_LIBS'])
+    AC_SUBST(openssl_CFLAGS)
+    AC_SUBST(openssl_LIBS)
+    TOOLS_CRYPTO="tools_crypto mlxsign_lib"
 fi
 
 AC_MSG_CHECKING(--enable-all-static argument)
 AC_ARG_ENABLE([all_static],
-    AS_HELP_STRING([--enable-all-static], [Enable creating none dynamic executables]),
+    AS_HELP_STRING([--enable-all-static], [Enable the creation of static executables [default=disabled]]),
     [enable_all_static="$enableval"],
-    [enable_all_static="no"])
+    [enable_all_static="no"]
+)
 AC_MSG_RESULT($enable_all_static)
 
-AS_IF([test "x$enable_all_static" = "xyes"], [
-  if test "x$enable_dc" = "xyes"; then
-    AC_MSG_ERROR([cannot enable all static with enable dc . add --disable-dc to remove dependency with dynamic zlib])
-  fi
-  if test "x$enable_openssl" = "xyes"; then
-    AC_MSG_ERROR([cannot enable all static with enable openssl . add --disable-openssl to remove dependency with dynamic openssl])
-  fi
-  if test "x$enable_inband" = "xyes"; then
-    AC_MSG_ERROR([cannot enable all static with enable inband . add --disable-inband to remove dependency with dynamic inband])
-  fi
-  LDFLAGS="$LDFLAGS -all-static"
-  CFLAGS="$CFLAGS -DSQLITE_OMIT_LOAD_EXTENSION=0 -DIBVSMAD_DLOPEN"
-])
+AS_IF([test "x$enable_all_static" = "xyes"], 
+    [
+        if test "x$enable_dc" = "xyes"; then
+            AC_MSG_ERROR([The '--enable-all-static' flag can only be used in conjunction with '--disable-dc'.])
+        fi
+        if test "x$enable_openssl" = "xyes"; then
+            AC_MSG_ERROR([The '--enable-all-static' flag can only be used in conjunction with '--disable-openss'.])
+        fi
+        if test "x$enable_inband" = "xyes"; then
+            AC_MSG_ERROR([The '--enable-all-static' flag can only be used in conjunction with '--disable-inband'.])
+        fi
+        LDFLAGS="$LDFLAGS -all-static"
+        CFLAGS="$CFLAGS -DSQLITE_OMIT_LOAD_EXTENSION=0 -DIBVSMAD_DLOPEN"
+    ]
+)
 
 AC_SUBST(TOOLS_CRYPTO)
-AM_CONDITIONAL(ENABLE_OPENSSL, [test "x$enable_openssl" = "xyes" ])
-AM_CONDITIONAL(ENABLE_CS, [test  "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes" ])
-
-AC_ARG_ENABLE([static_libstdcpp],
-    AS_HELP_STRING([--enable-static-libstdcpp], [Enable link static to libstdc++]))
-
-AS_IF([test "x$enable_static_libstdcpp" = "xyes" -o "x$enable_all_static" = "xyes" ], [
-  CXXFLAGS="$CXXFLAGS -static-libstdc++ -static-libgcc"
-])
-
-AC_ARG_ENABLE([dynamic_ld],
-    AS_HELP_STRING([--enable-dynamic-ld], [Enable dynamic link to ld64.so]))
-
-AS_IF([test "x$enable_dynamic_ld" = "xyes"], [
-  LDFLAGS="$LDFLAGS -Wl,--dynamic-linker=/lib64/ld64.so.2"
-])
+AM_CONDITIONAL(ENABLE_OPENSSL, [test "x$enable_openssl" = "xyes"])
+AM_CONDITIONAL(ENABLE_CS, [test  "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"])
 
 AC_CHECK_HEADERS(iniparser.h, INIPARSER_SYSTEM_AVAILABLE="yes", INIPARSER_SYSTEM_AVAILABLE="no")
-
 if test "$INIPARSER_SYSTEM_AVAILABLE" = "yes"; then
-  AC_SEARCH_LIBS([iniparser_load], [iniparser], [INIPARSER_SYSTEM_AVAILABLE="yes"],[
-    INIPARSER_SYSTEM_AVAILABLE="no"
-  ])
+    AC_SEARCH_LIBS([iniparser_load], [iniparser],
+        [INIPARSER_SYSTEM_AVAILABLE="yes"],
+        [INIPARSER_SYSTEM_AVAILABLE="no"]
+    )
 fi
 
 if test "$INIPARSER_SYSTEM_AVAILABLE" = "no"; then
@@ -320,17 +489,14 @@ fi
 
 AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
 AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
-    CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"
-])
-
+    CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"])
 
 AC_SEARCH_LIBS([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
     JSON_SYSTEM_AVAILABLE="no"
     JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
     AC_SUBST(JSON_CFLAGS)
     JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
-    AC_SUBST(JSON_LIBS)
-])
+    AC_SUBST(JSON_LIBS)])
 AM_CONDITIONAL([USE_LOCAL_JSON], [test "$JSON_SYSTEM_AVAILABLE" = no])
 
 AC_SEARCH_LIBS([mupCreateVar], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[
@@ -338,9 +504,7 @@ AC_SEARCH_LIBS([mupCreateVar], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[
     MUPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/muparser'
     AC_SUBST(MUPARSER_CFLAGS)
     MUPARSER_LIBS='$(top_builddir)/ext_libs/muparser/libmuparser.la'
-
-    AC_SUBST(MUPARSER_LIBS)
-])
+    AC_SUBST(MUPARSER_LIBS)])
 AM_CONDITIONAL([USE_LOCAL_MUPARSER], [test "$MUPARSER_SYSTEM_AVAILABLE" = no])
 
 AC_SEARCH_LIBS([sqlite3_initialize], [sqlite3], [SQLITE_SYSTEM_AVAILABLE="yes"],[
@@ -348,14 +512,11 @@ AC_SEARCH_LIBS([sqlite3_initialize], [sqlite3], [SQLITE_SYSTEM_AVAILABLE="yes"],
     SQLITE_CFLAGS='-I$(top_srcdir)/ext_libs/sqlite'
     AC_SUBST(SQLITE_CFLAGS)
     SQLITE_LIBS='$(top_builddir)/ext_libs/sqlite/libsqlite3.la'
-    AC_SUBST(SQLITE_LIBS)
-])
+    AC_SUBST(SQLITE_LIBS)])
 AM_CONDITIONAL([USE_LOCAL_SQLITE], [test "$SQLITE_SYSTEM_AVAILABLE" = no])
-
 
 CFLAGS="$CFLAGS -DMST_UL"
 CXXFLAGS="$CXXFLAGS -DMST_UL"
-
 
 CCVER=`${CC} --version | grep ${CC} | grep -E -o "( )[[4-9]]\.[[0-9]]\.[[0-9]]" | head -1`
 AC_MSG_NOTICE(Compiler: ${CC}; version: ${CCVER};)
@@ -369,7 +530,7 @@ fi
 AM_CFLAGS="-Wall"
 AM_CXXFLAGS="-Wall"
 
-AC_CONFIG_FILES( mstflint.spec )
+AC_CONFIG_FILES(mstflint.spec)
 
 # We save and restore CFLAGS, after adding Wall and Werror
 # because AX_CHECK_COMPILE_FLAG doesn't work properly without it
@@ -408,36 +569,41 @@ AC_SUBST(MSTFLINT_VERSION_STR)
 AC_DEFINE([MSTFLINT_VERSION_STR], [], [The MSTFLINT version])
 AC_DEFINE_UNQUOTED(MSTFLINT_VERSION_STR, "$MSTFLINT_VERSION_STR")
 
+AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"],
+    [AC_CONFIG_FILES(tools_crypto/Makefile)]
+)
 
-AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"], [
-        AC_CONFIG_FILES(tools_crypto/Makefile)
-    ])
-
-
-AS_IF([test "x$enable_openssl" = "xyes"], [
-    AS_IF(test x"$OPENSSL_VERSION_VALID" = "xyes",
-        [AC_CONFIG_FILES(mlxsign_lib/Makefile)],
-        [AC_MSG_ERROR([Required OpenSSL version >= $MIN_OPENSSL_VER (or use --disable-openssl)])])
-])
+AS_IF([test "x$enable_openssl" = "xyes"],
+    [
+        AS_IF(test x"$OPENSSL_VERSION_VALID" = "xyes",
+           [AC_CONFIG_FILES(mlxsign_lib/Makefile)],
+           [AC_MSG_ERROR([Required openssl version >= $MIN_OPENSSL_VER (or use --disable-openssl)])]
+        )
+    ]
+)
 
 if [ test "x$enable_openssl" = "xno" ] && \
     [ test "x$enable_fw_mgr" = "xyes" ] ; then
     AC_MSG_ERROR([--enable-fw-mgr cannot be used with --disabled-openssl.])
 fi
 
-AS_IF([test "x$enable_fw_mgr" = "xyes"], [
+AS_IF([test "x$enable_fw_mgr" = "xyes"], 
+    [
         AC_CONFIG_FILES(mlxfwupdate/Makefile)
         AC_CONFIG_FILES(ext_libs/iniParser/Makefile)
         AC_CONFIG_FILES(mlxarchive/Makefile)
         FW_MGR_TOOLS="mlxfwupdate mlxarchive"
-    ])
+    ]
+)
 
 AC_SUBST(FW_MGR_TOOLS)
 
-AS_IF([test "x$enable_dpa" = "xyes"], [
-    AC_CONFIG_FILES(mlxdpa/Makefile)
-    DPA="mlxdpa"
-])
+AS_IF([test "x$enable_dpa" = "xyes"], 
+    [
+        AC_CONFIG_FILES(mlxdpa/Makefile)
+        DPA="mlxdpa"
+    ]
+)
 AM_CONDITIONAL(ENABLE_DPA, [test "x$enable_dpa" = "xyes" ])
 
 AC_SUBST(DPA)
@@ -459,15 +625,16 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(mlxlink/modules/printutil/Makefile)
         ADABE_TOOLS="adb_parser mlxreg mlxlink"
         ADABE_DBS="adb"
-        ADABE_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb adb/prm/gpu/ext/*.adb"
-    ])
+        ADABE_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb adb/prm/gpu/ext/*.adb"])
 
 AM_CONDITIONAL([ADB_GENERIC_TOOLS_ENABLED], [test "x$enable_adb_generic_tools" = "xyes"])
 
-AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"], [
+AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"],
+    [
         AC_CONFIG_FILES(xz_utils/Makefile)
         XZ_UTILS_DIR="xz_utils"
-    ])
+    ]
+)
 
 AC_SUBST(ADABE_TOOLS)
 AC_SUBST(ADABE_DBS)
