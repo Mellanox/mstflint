@@ -32,7 +32,12 @@
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/dev_mgt
 
-pkglib_LTLIBRARIES = libmtcr_ul.la
+if BUILD_DYNAMIC
+lib_LTLIBRARIES = libmtcr_ul.la
+libmtcr_ul_la_LDFLAGS = -version-info 0:0:0 -no-undefined
+else
+noinst_LTLIBRARIES = libmtcr_ul.la
+endif
 
 libmtcr_ul_la_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 			mtcr_ib_res_mgt.h mtcr_ib_res_mgt.c\
@@ -54,7 +59,3 @@ endif
 
 libraryincludedir=$(includedir)/mstflint
 libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h  $(top_srcdir)/include/mtcr_ul/mtcr_mf.h
-
-install-exec-hook:
-	rm -f $(DESTDIR)$(pkglibdir)/libmtcr_ul.so* $(DESTDIR)$(pkglibdir)/libmtcr_ul.la
-	ln -snf mstflint/libmtcr_ul.a $(DESTDIR)$(libdir)/

@@ -63,7 +63,7 @@ libraryinclude_HEADERS = \
 # if WIN_BUILD
 # MTCR_LIB = $(MTCR_DIR)/.libs/libmtcr.dll.a
 # else
-MTCR_LIB = $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a
+MTCR_LIB = $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.so
 # endif
 
 if ENABLE_RDMEM
@@ -86,7 +86,7 @@ resource_dump_sdk_so_DEPS = \
 
 # if !WIN_BUILD
 libresource_dump_sdk.so: libresource_dump_sdk.la
-	$(CC) -Wall -pthread -shared ${CFLAGS} $(COMPILER_FPIC) libresource_dump_sdk_la-resource_dump_sdk.o \
+	$(CC) -Wall -pthread -shared ${CFLAGS} $(COMPILER_FPIC) .libs/libresource_dump_sdk_la-resource_dump_sdk.o \
 	-o libresource_dump_sdk.so ${AM_LDFLAGS} $(resource_dump_sdk_so_DEPS)
 # else
 # libresource_dump_sdk.dll: libresource_dump_sdk.la

@@ -92,7 +92,7 @@ mstarchive_LDADD = libmstarchive.la \
                    $(CURL_LIBS) \
                    -llzma -lm ${LDL}
 
-mstarchive_LDFLAGS = -static
+#mstarchive_LDFLAGS = -static
 
 if ENABLE_OPENSSL
 mstarchive_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl

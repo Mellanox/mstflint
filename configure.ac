@@ -30,7 +30,7 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.31.0, akiselman-org@exchange.nvidia.com)
+AC_INIT(mstflint, 4.32.0, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
@@ -122,8 +122,8 @@ AC_SUBST(COMPILER_FPIC)
 
 AC_MSG_CHECKING(--enable-dc argument)
 AC_ARG_ENABLE(dc,
-		    [  --disable-dc            Disable mstflint "dc" command. Eliminates zlib dependency],
-		    [enable_dc=$enableval],
+		    AS_HELP_STRING([--disable-dc], [Disable mstflint "dc" command. Eliminates zlib dependency]),
+		    [enable_dc="$enableval"],
 		    [enable_dc="yes"])
 AC_MSG_RESULT($enable_dc)
 if test "$enable_dc" = "yes"; then
@@ -134,31 +134,40 @@ fi
 # FWMANAGER
 AC_MSG_CHECKING(--enable-fw-mgr argument)
 AC_ARG_ENABLE(fw-mgr,
-             [  --enable-fw-mgr         Enable compiling mstfwmanager tool and features],
-             [enable_fw_mgr="yes"],
+             AS_HELP_STRING([--enable-fw-mgr], [Enable compiling mstfwmanager tool and features]),
+             [enable_fw_mgr="$enableval"],
              [enable_fw_mgr="no"])
 AC_MSG_RESULT($enable_fw_mgr)
 if test "x$enable_fw_mgr" = "xyes"; then
+    # Find curl using pkg-config
+    PKG_CHECK_MODULES([CURL], [libcurl], [
+        CURL_INC_DIR=$(pkg-config --cflags-only-I libcurl | sed 's/-I//')
+    ], [
+        AC_MSG_ERROR([Cannot find curl via pkg-config. Please install libcurl development files.])
+    ])
+
     AC_CHECK_HEADER(curl/curl.h,,AC_MSG_ERROR([cannot find curl/curl.h . this header is needed for compiling fw manager tool]))
+
     AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . this header is needed for compiling fw manager tool]))
     AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function.]))
     AC_CHECK_HEADER(lzma.h,,AC_MSG_ERROR([Cannot find lzma.h.]))
-    CURL_INC_DIR=/usr/include/curl/
+
+    AC_SUBST([CURL_INC_DIR])
 fi
 
 # mlxdpa
 AC_MSG_CHECKING(--enable-dpa argument)
 AC_ARG_ENABLE(dpa,
-             [  --enable-dpa            Enable compiling mstdpa tool (x86_64/aarch64 Linux only, no FreeBSD support],
-             [enable_dpa="yes"],
+             AS_HELP_STRING([--enable-dpa], [Enable compiling mstdpa tool (x86_64/aarch64 Linux only, no FreeBSD support)]),
+             [enable_dpa="$enableval"],
              [enable_dpa="no"])
 AC_MSG_RESULT($enable_dpa)
 
 # Adabe
 AC_MSG_CHECKING(--enable-adb-generic-tools argument)
 AC_ARG_ENABLE(adb-generic-tools,
-             [  --enable-adb-generic-tools        Enable compiling the following tools which depends on ADABE: mstreg and mstlink],
-             [enable_adb_generic_tools="yes"],
+             AS_HELP_STRING([--enable-adb-generic-tools], [Enable compiling the following tools which depends on ADABE: mstreg and mstlink]),
+             [enable_adb_generic_tools="$enableval"],
              [enable_adb_generic_tools="no"])
 AC_MSG_RESULT($enable_adb_generic_tools)
 if test "x$enable_adb_generic_tools" = "xyes"; then
@@ -182,21 +191,16 @@ AC_SUBST(ENABLE_FWMGR)
 # XML2
 AC_MSG_CHECKING(--enable-xml2 argument)
 AC_ARG_ENABLE(xml2,
-            [  --enable-xml2           Enable mstflint libxml2 dependent features],
-            [enable_xml2="yes"],
+            AS_HELP_STRING([--enable-xml2], [Enable mstflint libxml2 dependent features]),
+            [enable_xml2="$enableval"],
             [enable_xml2="no"])
 AC_MSG_RESULT($enable_xml2)
 if test [ "x$enable_xml2" = "xyes" ] || [ test "x$enable_fw_mgr" = "xyes" ]; then
-    # XML2 checks
-    AC_LANG_PUSH([C++])
-        if test "x$OS" = "xFreeBSD"; then
-            CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include/libxml2"
-        else
-            CXXFLAGS="${CXXFLAGS} -isystem /usr/include/libxml2"
-        fi
-        AC_CHECK_HEADER([libxml2/libxml/xpath.h],[],[AC_MSG_ERROR([libxml2: xpath.h is not found in the system PATH. make sure libxml2 headers are installed.])])
-        AC_CHECK_LIB(xml2, xmlDocDumpFormatMemoryEnc,, AC_MSG_ERROR([cannot find xml2 xmlDocDumpFormatMemoryEnc() function. Try re-installing the library...]))
-    AC_LANG_POP([C++])
+	PKG_CHECK_MODULES(xml, [libxml-2.0])
+	AC_SUBST(xml_CFLAGS)
+	AC_SUBST(xml_LIBS)
+	CXXFLAGS="$CXXFLAGS $xml_CFLAGS"
+	CFLAGS="$CFLAGS $xml_CFLAGS"
 fi
 
 AM_CONDITIONAL(DISABLE_XML2, [test  "x$enable_xml2" = "xno"])
@@ -207,9 +211,9 @@ AC_SUBST(ENABLE_DC)
 
 AC_MSG_CHECKING(--enable-inband argument)
 AC_ARG_ENABLE(inband,
-		    [  --disable-inband        Disable inband access. Prevents FW update for Mellanox SwitchX and ConnectIB devices. Eliminates infiniband/mad.h dependency],
-		    [enable_inband=$enableval],
-		    [enable_inband=$default_en_inband])
+		    AS_HELP_STRING([--disable-inband], [Disable inband access. Prevents FW update for Mellanox SwitchX and ConnectIB devices. Eliminates infiniband/mad.h dependency]),
+		    [enable_inband="$enableval"],
+		    [enable_inband="$default_en_inband"])
 AC_MSG_RESULT($enable_inband)
 if test "x$enable_inband" = "xyes"; then
   AC_CHECK_HEADER(infiniband/mad.h,,AC_MSG_ERROR([cannot find infiniband/mad.h . Use --disable-inband to remove this dependency]))
@@ -224,9 +228,9 @@ AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband" = "xyes"])
 
 AC_MSG_CHECKING(--enable-rdmem argument)
 AC_ARG_ENABLE(rdmem,
-		    [  --enable-rdmem        Enable resource-dump memory mode. OFED libmlx5 and libibverbs dependency],
-		    [enable_rdmem=$enableval],
-		    [enable_rdmem=$default_en_rdmem])
+		    AS_HELP_STRING([--enable-rdmem], [Enable resource-dump memory mode. OFED libmlx5 and libibverbs dependency]),
+		    [enable_rdmem="$enableval"],
+		    [enable_rdmem="$default_en_rdmem"])
 AC_MSG_RESULT($enable_rdmem)
 if test "x$enable_rdmem" = "xyes"; then
   AC_CHECK_HEADERS(infiniband/mlx5dv.h infiniband/verbs.h,,AC_MSG_ERROR([cannot find infiniband/mlx5dv.h or infiniband/verbs.h . Use --disable-rdmem to remove this dependency]))
@@ -239,8 +243,8 @@ AM_CONDITIONAL(ENABLE_RDMEM, [test  "x$enable_rdmem" = "xyes"])
 
 AC_MSG_CHECKING(--enable-cs argument)
 AC_ARG_ENABLE(cs,
-            [  --enable-cs             Enable mstflint "checksum" command, dependent of openssl library],
-            [enable_cs="yes"],
+            AS_HELP_STRING([--enable-cs], [Enable mstflint "checksum" command, dependent of openssl library]),
+            [enable_cs="$enableval"],
             [enable_cs="no"])
 AC_MSG_RESULT($enable_cs)
 if test "x$enable_cs" = "xyes"; then
@@ -250,8 +254,8 @@ fi
 
 AC_MSG_CHECKING(openssl argument)
 AC_ARG_ENABLE(openssl,
-            [  --disable-openssl       Disable functionalities that depend on the OpenSSL library],
-            [enable_openssl=$enableval],
+            AS_HELP_STRING([--disable-openssl], [Disable functionalities that depend on the OpenSSL library]),
+            [enable_openssl="$enableval"],
             [enable_openssl="yes"])
 AC_MSG_RESULT($enable_openssl)
 if test "x$enable_openssl" = "xyes"; then
@@ -267,10 +271,11 @@ fi
 AC_MSG_CHECKING(--enable-all-static argument)
 AC_ARG_ENABLE([all_static],
     AS_HELP_STRING([--enable-all-static], [Enable creating none dynamic executables]),
-    [enable_all_static="yes"],
+    [enable_all_static="$enableval"],
     [enable_all_static="no"])
 AC_MSG_RESULT($enable_all_static)
 
+BUILD_DYNAMIC="yes"
 AS_IF([test "x$enable_all_static" = "xyes"], [
   if test "x$enable_dc" = "xyes"; then
     AC_MSG_ERROR([cannot enable all static with enable dc . add --disable-dc to remove dependency with dynamic zlib])
@@ -281,9 +286,13 @@ AS_IF([test "x$enable_all_static" = "xyes"], [
   if test "x$enable_inband" = "xyes"; then
     AC_MSG_ERROR([cannot enable all static with enable inband . add --disable-inband to remove dependency with dynamic inband])
   fi
+  BUILD_DYNAMIC="no"
   LDFLAGS="$LDFLAGS -all-static"
   CFLAGS="$CFLAGS -DSQLITE_OMIT_LOAD_EXTENSION=0 -DIBVSMAD_DLOPEN"
 ])
+
+# Define conditionals for the Makefile.am
+AM_CONDITIONAL([BUILD_DYNAMIC], [test "$BUILD_DYNAMIC" = "yes"])
 
 AC_SUBST(TOOLS_CRYPTO)
 AM_CONDITIONAL(ENABLE_OPENSSL, [test "x$enable_openssl" = "xyes" ])

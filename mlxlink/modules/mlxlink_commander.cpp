@@ -420,6 +420,28 @@ void MlxlinkCommander::updateSwControlStatus()
     }
 }
 
+void MlxlinkCommander::findFirstValidPort()
+{
+    u_int32_t minLabelPort = 0;
+    for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++)
+    {
+        try
+        {
+            sendPrmReg(ACCESS_REG_PLLP, GET, "local_port=%d", localPort);
+        }
+        catch (...)
+        {
+            continue;
+        } // access register will fail if local port does not exist
+        u_int32_t currentLabelPort = getFieldValue("label_port");
+        if (minLabelPort == 0 || currentLabelPort < minLabelPort)
+        {
+            minLabelPort = currentLabelPort;
+        }
+    }
+    _userInput._labelPort = minLabelPort;
+}
+
 void MlxlinkCommander::labelToLocalPort()
 {
     _pnat = _userInput._pcie ? PNAT_PCIE : PNAT_LOCAL;

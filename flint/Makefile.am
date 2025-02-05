@@ -71,7 +71,7 @@ mstflint_DEPENDENCIES = \
 
 LDADD_mstflint = ${LDL}
 
-mstflint_LDFLAGS = -static
+#mstflint_LDFLAGS = -static
 
 if ENABLE_DC
 LDADD_mstflint += -lz

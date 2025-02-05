@@ -69,4 +69,4 @@ mstlink_DEPENDENCIES = \
 
 mstlink_LDADD = $(mstlink_DEPENDENCIES) -llzma ${LDL} -lexpat
 
-mstlink_LDFLAGS = -static
+#mstlink_LDFLAGS = -static

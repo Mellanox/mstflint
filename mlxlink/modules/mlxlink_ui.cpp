@@ -80,6 +80,7 @@ void MlxlinkUi::initRegAccessLib()
 
 void MlxlinkUi::initPortInfo()
 {
+    _mlxlinkCommander->findFirstValidPort();
     _mlxlinkCommander->labelToLocalPort();
     _mlxlinkCommander->validatePortType(_userInput._portType);
     _mlxlinkCommander->updateSwControlStatus();
