@@ -41,7 +41,6 @@
 #include <mtcr.h>
 #include <json/reader.h>
 #include <json/writer.h>
-#include "common/tools_json.h"
 
 #ifdef CABLES_SUPP
 #include <cable_access/cdb_cable_commander.h>
