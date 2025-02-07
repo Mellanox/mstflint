@@ -48,6 +48,7 @@
 #include <tools_layouts/reg_access_hca_layouts.h>
 #include "tools_dev_types.h"
 #include "mflash/mflash_types.h"
+#include "mtcr_ul/mtcr_ul_com.h"
 
 enum dm_dev_type {
     DM_UNKNOWN = -1,
