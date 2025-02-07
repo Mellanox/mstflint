@@ -40,7 +40,9 @@
 #include <errno.h>
 #include <string.h>
 #include <stddef.h>
+#include "mtcr.h"
 #include "mtcr_mf.h"
+#include "mtcr_ul_com.h"
 #include "fwctrl.h"
 #include "fwctrl_ioctl.h"
 
