@@ -194,7 +194,7 @@ int fwctl_control_access_register(int    fd,
     }
 
     FWCTL_DEBUG_PRINT(mf, "register id = 0x%x, command status = 0x%x, reg status code: 0x%x, reg status: %s\n",
-                      reg_id, cmd_status, *reg_status, m_err2str(status));
+                      reg_id, cmd_status, *reg_status, m_err2str(*reg_status));
 out:
     free(out);
     free(in);
