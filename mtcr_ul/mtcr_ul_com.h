@@ -165,6 +165,8 @@ int mclear_pci_semaphore_ul(const char* name);
 
 int mvpd_read4_ul(mfile* mf, unsigned int offset, u_int8_t value[4]);
 
+int return_by_reg_status(int reg_status);
+
 int space_to_cap_offset(int space);
 
 int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info, int page_amount);
