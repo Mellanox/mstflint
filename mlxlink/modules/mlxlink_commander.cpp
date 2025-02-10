@@ -2357,7 +2357,7 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
 
         // Temporary WA until GPUNet PRM is updated (typo in the word "measurement")!
         // TODO: remove this if in the future, and leave only the else branch.
-        if (_devID == DeviceGB100)
+        if (_devID == DeviceGB100 || _devID == DeviceGR100)
         {
             sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurment=%d", lane, fomMeasurement);
         }
