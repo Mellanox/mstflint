@@ -453,17 +453,24 @@ void MlxlinkCommander::updateSwControlStatus()
 void MlxlinkCommander::findFirstValidPort()
 {
     u_int32_t minLabelPort = 0;
+    string regName = ACCESS_REG_PLLP, fieldToGet = "label_port";
+    if (_devID == DeviceGB100 || _devID == DeviceGR100)
+    {
+        regName = ACCESS_REG_PLIB;
+        fieldToGet = "ib_port";
+    }
+
     for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++)
     {
         try
         {
-            sendPrmReg(ACCESS_REG_PLLP, GET, "local_port=%d", localPort);
+            sendPrmReg(regName, GET, "local_port=%d", localPort);
         }
-        catch (...)
+        catch (MlxRegException& exp)
         {
             continue;
-        } // access register will fail if local port does not exist
-        u_int32_t currentLabelPort = getFieldValue("label_port");
+        }
+        u_int32_t currentLabelPort = getFieldValue(fieldToGet);
         if (minLabelPort == 0 || currentLabelPort < minLabelPort)
         {
             minLabelPort = currentLabelPort;
