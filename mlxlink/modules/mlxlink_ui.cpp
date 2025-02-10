@@ -80,7 +80,11 @@ void MlxlinkUi::initRegAccessLib()
 
 void MlxlinkUi::initPortInfo()
 {
-    _mlxlinkCommander->findFirstValidPort();
+    if (!_userInput._portSpecified && _userInput._csvBer != "")
+    {
+        _mlxlinkCommander->findFirstValidPort();
+    }
+
     _mlxlinkCommander->labelToLocalPort();
     _mlxlinkCommander->validatePortType(_userInput._portType);
     _mlxlinkCommander->updateSwControlStatus();
