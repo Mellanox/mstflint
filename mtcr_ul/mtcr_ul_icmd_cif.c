@@ -31,13 +31,13 @@
  *
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#if !defined(_MSC_VER)
 #include <unistd.h>
-#endif
+
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
 #include "mtcr_icmd_cif.h"
