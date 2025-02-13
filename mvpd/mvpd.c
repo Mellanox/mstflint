@@ -30,23 +30,17 @@
  * SOFTWARE.
  */
 
+#include "mvpd.h"
+
+#include <ctype.h>
+#include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <ctype.h>
-#include <tools_dev_types.h>
-
-#ifdef MST_UL
 #include <syslog.h>
-#endif
-#include "mvpd.h"
 
-#if defined(__MINGW32__) || defined(__MINGW64__) || defined(_MSC_VER) /* Windows */
-#define syslog(lvl, format, ...)
-#else
-#include <syslog.h>
-#endif
+#include "tools_dev_types.h"
 
 enum
 {

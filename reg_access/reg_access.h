@@ -32,17 +32,20 @@
 
 #ifndef REG_ACCESS_H
 #define REG_ACCESS_H
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+#include <stdbool.h>
+
 /* #include <tools_layouts/reg_access_hca_layouts.h> */
 /* #include <tools_layouts/reg_access_switch_layouts.h> */
 #include "reg_access_common.h"
 #include "common/bit_slice.h"
-#define MCAM_REG_GROUPS_AMOUNT 4
 
+#define MCAM_REG_GROUPS_AMOUNT 4
 
 enum { /* header lengths in bytes */
     REG_ACCESS_MFBA_HEADER_LEN = 12,

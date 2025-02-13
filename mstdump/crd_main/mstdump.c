@@ -30,7 +30,8 @@
  * SOFTWARE.
  *
  */
-//#include <stdbool.h>
+#include <stdbool.h>
+
 #include <crdump.h>
 #include <dev_mgt/tools_dev_types.h>
 #include <common/tools_version.h>

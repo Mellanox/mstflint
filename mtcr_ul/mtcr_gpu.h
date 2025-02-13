@@ -34,6 +34,11 @@
 #ifndef _MTCR_GPU /* guard */
 #define _MTCR_GPU
 
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "common/compatibility.h"
+
 int is_gpu_pci_device(u_int16_t pci_device_id);
 bool is_gpu_device(u_int16_t hw_dev_id);
 
