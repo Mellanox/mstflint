@@ -107,6 +107,8 @@
 #include "kernel/mst.h"
 #include "tools_dev_types.h"
 
+#include "gpu_driver.h"
+
 #define CX3_SW_ID    4099
 #define CX3PRO_SW_ID 4103
 #define HW_ID_ADDR   0xf0014
@@ -846,6 +848,52 @@ static int fwctl_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t*
     return -1;
 }
 
+static int mtcr_gpu_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
+{
+    (void)mf;
+    (void)offset;
+    (void)value;
+
+    DBG_PRINTF(mf, "gpu driver doesn't support VSEC access.\n");
+    
+
+    return -1;
+}
+
+static int mtcr_gpu_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
+{
+    (void)mf;
+    (void)offset;
+    (void)value;
+
+    DBG_PRINTF(mf, "gpu driver doesn't support VSEC access.\n");
+
+    return -1;
+}
+
+static int mtcr_gpu_driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
+{
+    (void)mf;
+    (void)offset;
+    (void)data;
+    (void)length;
+
+    DBG_PRINTF(mf, "gpu driver doesn't support VSEC access.\n");
+
+    return -1;
+}
+
+static int mtcr_gpu_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
+{
+    (void)mf;
+    (void)offset;
+    (void)data;
+    (void)length;
+
+    DBG_PRINTF(mf, "gpu driver doesn't support VSEC access.\n");
+
+    return -1;
+}
 
 int mtcr_driver_cr_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
@@ -984,6 +1032,26 @@ static int mtcr_driver_mclose(mfile* mf)
     return 0;
 }
 
+static int gpu_driver_open(mfile* mf, const char* name)
+{
+    ul_ctx_t* ctx = mf->ul_ctx;
+    ctx->connectx_flush = 0;
+    ctx->need_flush = 0;
+    ctx->via_driver = 0;
+    mf->fd = open(name, O_RDWR | O_SYNC);
+    if (mf->fd < 0) {
+        return mf->fd;
+    }
+    mf->tp = MST_GPU_DRIVER;
+    ctx->mread4 = mtcr_gpu_driver_mread4;
+    ctx->mwrite4 = mtcr_gpu_driver_mwrite4;
+    ctx->mread4_block = mtcr_gpu_driver_mread4_block;
+    ctx->mwrite4_block = mtcr_gpu_driver_mwrite4_block;
+    ctx->mclose = nvml_mclose;
+    mf->bar_virtual_addr = NULL;
+    //gpu_driver_get_device_id(mf);
+    return init_nvml_ifc(mf, name);
+}
 
 static int fwctrl_driver_open(mfile* mf, const char* name)
 {
@@ -1898,6 +1966,11 @@ static MType mtcr_parse_name(const char* name,
         return MST_IB;
     }
 
+    if ((strstr(name, "/dev/nvidia") != 0)) {
+        *force = 1;
+        return MST_GPU_DRIVER;
+    }
+
     if ((sscanf(name, "mthca%x",
                 &tmp) == 1) || (sscanf(name, "mlx4_%x", &tmp) == 1) || (sscanf(name, "mlx5_%x", &tmp) == 1)) {
         char  mbuf[4048] = {0};
@@ -2731,6 +2804,15 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         }
         return mf;
         break;
+    
+    case MST_GPU_DRIVER:
+    rc = gpu_driver_open(mf, name);
+    if (rc) {
+        DBG_PRINTF("Failed to open GPU mst driver device");
+        goto open_failed;
+    }
+    return mf;
+    break;
 
     default:
         break;
@@ -4136,6 +4218,11 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
 {
     if (!mf || !device_id) {
         return -1;
+    }
+
+    if (mf->tp == MST_GPU_DRIVER)
+    {
+        return nvml_get_device_id(mf);
     }
 
     unsigned hw_id_address = mf->cr_space_offset + HW_ID_ADDR;
