@@ -69,6 +69,7 @@ MTCR_CONF_DIR=""
 LDL=""
 default_en_inband=""
 default_en_rdmem="no"
+default_en_nvml="no"
 OFED_VERSION_CHK=0
 KERNEL_BUILD_CHK=0
 
@@ -379,6 +380,26 @@ else
 fi
 AC_SUBST(MAD_IFC)
 AM_CONDITIONAL(ENABLE_INBAND, [ test "x$enable_inband" = "xyes" ])
+
+# Enable NVML:
+
+AC_MSG_CHECKING(--enable-nvml argument)
+AC_ARG_ENABLE(nvml,
+    AS_HELP_STRING([--enable-nvml], [enable GPU device access using NVML library (Linux only), requires libnvidia-ml.so]),
+    [enable_nvml="$enableval"],
+    [enable_nvml="$default_en_nvml"]
+)
+AC_MSG_RESULT($enable_nvml)
+if test "x$enable_nvml" = "xyes"; then
+    AC_CHECK_HEADER(nvml.h, [], [AC_MSG_ERROR([cannot find nvml.h, please check you nvidia driver installation.])])
+    AC_CHECK_LIB([nvidia-ml], [nvmlInit_v2], [], [AC_MSG_ERROR([libnvidia-ml not found, please check you nvidia driver installation.])])
+    CXXFLAGS="$CXXFLAGS -DENABLE_NVML"
+    CFLAGS="$CFLAGS -DENABLE_NVML"
+fi
+
+AM_CONDITIONAL(ENABLE_NVML, [ test "x$enable_nvml" = "xyes" ])
+
+##
 
 AC_MSG_CHECKING(--enable-rdmem argument)
 AC_ARG_ENABLE(rdmem,

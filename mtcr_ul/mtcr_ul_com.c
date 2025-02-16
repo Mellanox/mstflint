@@ -107,7 +107,9 @@
 #include "kernel/mst.h"
 #include "tools_dev_types.h"
 
+#ifdef ENABLE_NVML
 #include "gpu_driver.h"
+#endif
 
 #define CX3_SW_ID    4099
 #define CX3PRO_SW_ID 4103
@@ -1034,6 +1036,7 @@ static int mtcr_driver_mclose(mfile* mf)
 
 static int gpu_driver_open(mfile* mf, const char* name)
 {
+#ifdef ENABLE_NVML
     ul_ctx_t* ctx = mf->ul_ctx;
     ctx->connectx_flush = 0;
     ctx->need_flush = 0;
@@ -1051,6 +1054,12 @@ static int gpu_driver_open(mfile* mf, const char* name)
     mf->bar_virtual_addr = NULL;
     //gpu_driver_get_device_id(mf);
     return init_nvml_ifc(mf, name);
+#else
+    (void)mf;
+    (void)name;
+    errno = ENOSYS;
+    return -1;
+#endif
 }
 
 static int fwctrl_driver_open(mfile* mf, const char* name)
@@ -4220,10 +4229,12 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
         return -1;
     }
 
+#ifdef ENABLE_NVML
     if (mf->tp == MST_GPU_DRIVER)
     {
         return nvml_get_device_id(mf);
     }
+#endif
 
     unsigned hw_id_address = mf->cr_space_offset + HW_ID_ADDR;
 
