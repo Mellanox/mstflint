@@ -267,7 +267,7 @@ typedef enum MType_t {
     MST_DRIVER_CR   = 0x80000,
     MST_LINKX_CHIP  = 0x100000,
     MST_BAR0_GW_PCI = 0x200000,
-    MST_GEARBOX     = 0x400000,
+    MST_GPU_DRIVER  = 0x400000,
     MST_DEFAULT     = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER & ~MST_LINKX_CHIP
 } MType;
 

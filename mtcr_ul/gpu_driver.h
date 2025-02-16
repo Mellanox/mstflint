@@ -31,16 +31,13 @@
  *
  */
 
-#ifndef _MTCR_GPU /* guard */
-#define _MTCR_GPU
+#ifndef _MTCR_GPU_DRIVER /* guard */
+#define _MTCR_GPU_DRIVER
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "mtcr.h"
 
-#include "common/compatibility.h"
+int init_nvml_ifc(mfile* mf, const char* dev_name);
+int nvml_mclose(mfile* mf);
+u_int16_t nvml_get_device_id(mfile* mf);
 
-int is_gpu_pci_device(u_int16_t pci_device_id);
-bool is_gpu_device(u_int16_t hw_dev_id);
-u_int16_t get_hw_dev_id_by_pci_id(u_int16_t pci_device_id);
-
-#endif /* _MTCR_GPU guard */
+#endif /* _MTCR_GPU_DRIVER guard */

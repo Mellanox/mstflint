@@ -52,6 +52,11 @@ if ENABLE_INBAND
 libmtcr_ul_la_SOURCES += mtcr_ib_ofed.c
 endif
 
+#if ENABLE_GPU_DRIVER
+libmtcr_ul_la_SOURCES += gpu_driver.c
+#endif
+
+
 libraryincludedir=$(includedir)/mstflint
 libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h  $(top_srcdir)/include/mtcr_ul/mtcr_mf.h
 
