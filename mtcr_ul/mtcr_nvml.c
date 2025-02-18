@@ -42,7 +42,7 @@ int init_nvml_lib_handle(mfile* mf)
         DBG_PRINTF("Failed to allocate nvml_ctx");
         return -1;
     }
-    memset(nvml_ctx, 0, sizeof(nvml_ctx));
+    memset(nvml_ctx, 0, sizeof(*nvml_ctx));
 
     nvml_ctx->dl_handle = dlopen("libnvidia-ml.so", RTLD_LAZY);
 
@@ -91,15 +91,6 @@ void free_nvml_lib_handle(mfile* mf)
 int nvml_mclose(mfile* mf)
 {
     if (mf) {
-        close_nvml_ifc(mf);
-    }
-    return 0;
-}
-
-
-void close_nvml_ifc(mfile* mf)
-{
-    if (mf) {
         nvml_dll_ctx* nvml_dll_handle = (nvml_dll_ctx*)mf->ctx;
         if (nvml_dll_handle) {
             /* Sutdown NVML SDK. */
@@ -113,6 +104,7 @@ void close_nvml_ifc(mfile* mf)
         /* Free NVML lib handle. */
         free_nvml_lib_handle(mf);
     }
+    return 0;
 }
 
 int init_nvml_ifc(mfile* mf, const char* dev_name)
