@@ -108,7 +108,7 @@
 #include "tools_dev_types.h"
 
 #ifdef ENABLE_NVML
-#include "gpu_driver.h"
+#include "mtcr_nvml.h"
 #endif
 
 #define CX3_SW_ID    4099
@@ -850,49 +850,49 @@ static int fwctl_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t*
     return -1;
 }
 
-static int mtcr_gpu_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
+static int nvml_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
     (void)mf;
     (void)offset;
     (void)value;
 
-    DBG_PRINTF(mf, "gpu driver doesn't support VSEC access.\n");
+    DBG_PRINTF(mf, "nvml doesn't support VSEC access.\n");
     
 
     return -1;
 }
 
-static int mtcr_gpu_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
+static int nvml_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
 {
     (void)mf;
     (void)offset;
     (void)value;
 
-    DBG_PRINTF(mf, "gpu driver doesn't support VSEC access.\n");
+    DBG_PRINTF(mf, "nvml doesn't support VSEC access.\n");
 
     return -1;
 }
 
-static int mtcr_gpu_driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
+static int nvml_mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
 {
     (void)mf;
     (void)offset;
     (void)data;
     (void)length;
 
-    DBG_PRINTF(mf, "gpu driver doesn't support VSEC access.\n");
+    DBG_PRINTF(mf, "nvml doesn't support VSEC access.\n");
 
     return -1;
 }
 
-static int mtcr_gpu_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
+static int nvml_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, int length)
 {
     (void)mf;
     (void)offset;
     (void)data;
     (void)length;
 
-    DBG_PRINTF(mf, "gpu driver doesn't support VSEC access.\n");
+    DBG_PRINTF(mf, "nvml doesn't support VSEC access.\n");
 
     return -1;
 }
@@ -1034,25 +1034,20 @@ static int mtcr_driver_mclose(mfile* mf)
     return 0;
 }
 
-static int gpu_driver_open(mfile* mf, const char* name)
+static int nvml_open(mfile* mf, const char* name)
 {
 #ifdef ENABLE_NVML
     ul_ctx_t* ctx = mf->ul_ctx;
     ctx->connectx_flush = 0;
     ctx->need_flush = 0;
     ctx->via_driver = 0;
-    mf->fd = open(name, O_RDWR | O_SYNC);
-    if (mf->fd < 0) {
-        return mf->fd;
-    }
-    mf->tp = MST_GPU_DRIVER;
-    ctx->mread4 = mtcr_gpu_driver_mread4;
-    ctx->mwrite4 = mtcr_gpu_driver_mwrite4;
-    ctx->mread4_block = mtcr_gpu_driver_mread4_block;
-    ctx->mwrite4_block = mtcr_gpu_driver_mwrite4_block;
+    mf->tp = MST_NVML;
+    ctx->mread4 = nvml_mread4;
+    ctx->mwrite4 = nvml_mwrite4;
+    ctx->mread4_block = nvml_mread4_block;
+    ctx->mwrite4_block = nvml_mwrite4_block;
     ctx->mclose = nvml_mclose;
     mf->bar_virtual_addr = NULL;
-    //gpu_driver_get_device_id(mf);
     return init_nvml_ifc(mf, name);
 #else
     (void)mf;
@@ -1977,7 +1972,7 @@ static MType mtcr_parse_name(const char* name,
 
     if ((strstr(name, "/dev/nvidia") != 0)) {
         *force = 1;
-        return MST_GPU_DRIVER;
+        return MST_NVML;
     }
 
     if ((sscanf(name, "mthca%x",
@@ -2814,8 +2809,8 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         return mf;
         break;
     
-    case MST_GPU_DRIVER:
-    rc = gpu_driver_open(mf, name);
+    case MST_NVML:
+    rc = nvml_open(mf, name);
     if (rc) {
         DBG_PRINTF("Failed to open GPU mst driver device");
         goto open_failed;
@@ -4230,7 +4225,7 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     }
 
 #ifdef ENABLE_NVML
-    if (mf->tp == MST_GPU_DRIVER)
+    if (mf->tp == MST_NVML)
     {
         return nvml_get_device_id(mf);
     }

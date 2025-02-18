@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 #include <nvml.h>
-#include "gpu_driver.h"
+#include "mtcr_nvml.h"
 #include "mtcr_gpu.h"
 #include "mtcr_common.h"
 
@@ -92,10 +92,6 @@ int nvml_mclose(mfile* mf)
 {
     if (mf) {
         close_nvml_ifc(mf);
-
-        if (mf->fd > 0) {
-            close(mf->fd);
-        }
     }
     return 0;
 }
