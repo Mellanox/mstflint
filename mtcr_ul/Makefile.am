@@ -53,7 +53,7 @@ libmtcr_ul_la_SOURCES += mtcr_ib_ofed.c
 endif
 
 if ENABLE_NVML
-libmtcr_ul_la_SOURCES += gpu_driver.c
+libmtcr_ul_la_SOURCES += mtcr_nvml.c
 endif
 
 
