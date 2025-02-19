@@ -402,7 +402,6 @@ mlxCfgStatus MlxCfg::getNumberFromString(const char* str, u_int32_t& num)
 
 mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
 {
-    mlxCfgStatus status = MLX_CFG_OK;
     int i = 1;
     for (; i < argc; i++)
     {
