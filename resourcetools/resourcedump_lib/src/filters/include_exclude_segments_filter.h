@@ -38,6 +38,7 @@
 #include <memory>
 #include <vector>
 #include <sstream>
+#include <cstdint>
 
 namespace mft
 {
