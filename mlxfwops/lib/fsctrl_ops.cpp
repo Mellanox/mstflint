@@ -675,7 +675,7 @@ bool FsCtrlOperations::_createImageOps(unique_ptr<FwOperations>& imageOps)
     return true;
 }
 
-bool FsCtrlOperations::GetHashesTableSize(u_int32_t hashes_table_addr, u_int32_t& size)
+bool FsCtrlOperations::GetHashesTableSize(u_int32_t, u_int32_t& size)
 {
     u_int32_t htoc_size =
       IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + HTOC_HASH_SIZE);
