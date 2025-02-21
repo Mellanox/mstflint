@@ -607,7 +607,11 @@ void usage(const char* s)
 }
 
 /* ////////////////////////////////////////////////////////////////////// */
+#ifdef __WIN__
 void mySignal()
+#else
+void mySignal(__attribute__ ((unused)) int signum)
+#endif
 {
     exit(0);
 }
