@@ -339,12 +339,12 @@ bool FsCtrlOperations::FsIntQuery()
 
     strncpy(_fsCtrlImgInfo.name, fwQuery.name, NAME_LEN);
     strncpy(_fsCtrlImgInfo.description, fwQuery.description, DESCRIPTION_LEN);
-    (strncpy(_fsCtrlImgInfo.deviceVsd, fwQuery.deviceVsd, VSD_LEN));
+    (strncpy(_fsCtrlImgInfo.deviceVsd, fwQuery.deviceVsd, sizeof(_fsCtrlImgInfo.deviceVsd)));
     if (FwType() == FIT_FS3)
     {
         memcpy(_fwImgInfo.ext_info.vsd, fwQuery.deviceVsd, VSD_LEN);
     }
-    (strncpy(_fsCtrlImgInfo.image_vsd, fwQuery.imageVsd, VSD_LEN));
+    (strncpy(_fsCtrlImgInfo.image_vsd, fwQuery.imageVsd, sizeof(_fsCtrlImgInfo.image_vsd)));
 
     bool mpir_reg_supported = false;
     rc = isRegisterValidAccordingToMcamReg(mf, REG_ID_MPIR, &mpir_reg_supported);
