@@ -286,7 +286,7 @@ struct __ibvsmad_hndl_t {
     ib_portid_t                 portid;
     int                         sock;
     int                         tp;
-    int                         i2c_slave;
+    int                         i2c_secondary;
     int                         use_smp;
     int                         use_class_a;
     u_int64_t                   mkey;

@@ -258,10 +258,10 @@ int mi2c_detect(mfile* mf, u_int8_t slv_arr[SLV_ADDRS_NUM])
     TOOLS_UNUSED(slv_arr);
     return -1;
 }
-int mread_i2cblock(mfile* mf, unsigned char i2c_slave, u_int8_t addr_width, unsigned int offset, void* data, int length)
+int mread_i2cblock(mfile* mf, unsigned char i2c_secondary, u_int8_t addr_width, unsigned int offset, void* data, int length)
 {
     TOOLS_UNUSED(mf);
-    TOOLS_UNUSED(i2c_slave);
+    TOOLS_UNUSED(i2c_secondary);
     TOOLS_UNUSED(addr_width);
     TOOLS_UNUSED(offset);
     TOOLS_UNUSED(data);
@@ -279,10 +279,10 @@ int mcables_remote_operation_server_side(mfile* mf, u_int32_t address, u_int32_t
     return 0;
 }
 
-int mwrite_i2cblock(mfile* mf, unsigned char i2c_slave, u_int8_t addr_width, unsigned int offset, void* data, int length)
+int mwrite_i2cblock(mfile* mf, unsigned char i2c_secondary, u_int8_t addr_width, unsigned int offset, void* data, int length)
 {
     TOOLS_UNUSED(mf);
-    TOOLS_UNUSED(i2c_slave);
+    TOOLS_UNUSED(i2c_secondary);
     TOOLS_UNUSED(addr_width);
     TOOLS_UNUSED(offset);
     TOOLS_UNUSED(data);

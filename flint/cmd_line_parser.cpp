@@ -233,6 +233,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "activate_delay_sec", 1));
     _flags.push_back(new Flag("", "downstream_device_ids", 1));
     _flags.push_back(new Flag("", "download_transfer", 0));
+    _flags.push_back(new Flag("", "i2c_secondary", 1));
     _flags.push_back(new Flag("", "openssl_engine", 1));
     _flags.push_back(new Flag("", "openssl_key_id", 1));
     _flags.push_back(new Flag("", "cert_uuid", 1));
@@ -856,6 +857,9 @@ void Flint::initCmdParser()
                false,
                false,
                1);
+    AddOptions("i2c_secondary", ' ', "<i2c secondary address>", "Use this flag to specify I2C secondary address", false,
+               false, 1);
+
     AddOptions("openssl_engine", ' ', "<string>", "deprecated");
     AddOptions("openssl_key_id", ' ', "<string>", "deprecated");
     AddOptions("output_file", ' ', "<string>", "output file name for exporting the public key from PEM/BIN");
@@ -1348,6 +1352,20 @@ ParseStatus Flint::HandleOption(string name, string value)
         }
         _flintParams.cableDeviceSize = cableDeviceSize;
         _flintParams.cable_device_size_specified = true;
+    }
+    else if (name == "i2c_secondary")
+    {
+        int i2cSecondaryAddr = 0;
+        if (!strToInt(value, i2cSecondaryAddr))
+        {
+            return PARSE_ERROR;
+        }
+        if (i2cSecondaryAddr < 0)
+        {
+            printf("Invalid I2C secondary address.\n");
+            return PARSE_ERROR;
+        }
+        _flintParams.i2cSecondaryAddr = i2cSecondaryAddr;
     }
     else if (name == "cert_chain_index")
     {

@@ -113,6 +113,7 @@ FlintParams::FlintParams()
     download_transfer = false;
     // if no delay specified, use minimal delay to avoid disconnection in case of activating the connect port
     activate_delay_sec = 1;
+    i2cSecondaryAddr = -1;
     imageSizeOnly = false;
     cert_uuid = "";
 }

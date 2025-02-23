@@ -70,6 +70,7 @@ LDL=""
 default_en_inband=""
 default_en_rdmem="no"
 default_en_nvml="no"
+default_en_i2c="no"
 OFED_VERSION_CHK=0
 KERNEL_BUILD_CHK=0
 
@@ -416,6 +417,21 @@ else
     CFLAGS="$CFLAGS -DNO_RDMEM"
 fi
 AM_CONDITIONAL(ENABLE_RDMEM, [ test "x$enable_rdmem" = "xyes" ])
+
+# Enable I2C:
+AC_MSG_CHECKING(--enable-i2c argument)
+AC_ARG_ENABLE(i2c,
+    AS_HELP_STRING([--enable-i2c], [enable i2c interface (supported in Linux only)]),
+    [enable_i2c="$enableval"],
+    [enable_i2c="$default_en_i2c"]
+)
+AC_MSG_RESULT($enable_i2c)
+if test "x$enable_i2c" = "xyes"; then
+    CXXFLAGS="$CXXFLAGS -DENABLE_MST_DEV_I2C"
+    CFLAGS="$CFLAGS -DENABLE_MST_DEV_I2C"
+fi
+AM_CONDITIONAL(ENABLE_MST_DEV_I2C, [ test "x$enable_i2c" = "xyes" ])
+##
 
 AC_MSG_CHECKING(--enable-cs argument)
 AC_ARG_ENABLE(cs,

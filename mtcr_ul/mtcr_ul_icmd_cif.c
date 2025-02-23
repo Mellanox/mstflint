@@ -65,6 +65,7 @@
 #define STAT_CFG_NOT_DONE_ADDR_CX5     0xb5e04
 #define STAT_CFG_NOT_DONE_ADDR_CX6     0xb5f04
 #define STAT_CFG_NOT_DONE_ADDR_CX7     0xb5f04
+#define STAT_CFG_NOT_DONE_ADDR_CX8     656132
 #define STAT_CFG_NOT_DONE_ADDR_GPU     0x3100010
 #define STAT_CFG_NOT_DONE_BITOFF_CIB   31
 #define STAT_CFG_NOT_DONE_BITOFF_CX4   31
@@ -80,6 +81,7 @@
 #define SEMAPHORE_ADDR_GB100           0xa52f8
 #define SEMAPHORE_ADDR_CX5             0xe74e0
 #define SEMAPHORE_ADDR_CX7             0xe5660
+#define SEMAPHORE_ADDR_CX8             358016
 #define SEMAPHORE_ADDR_GPU             0x308F4F8
 #define HCR_ADDR_CIB                   0x0
 #define HCR_ADDR_CX4                   HCR_ADDR_CIB
@@ -91,15 +93,18 @@
 #define ICMD_VERSION_BITOFF            24
 #define ICMD_VERSION_BITOFF_GPU        0
 #define ICMD_VERSION_BITLEN            8
+#define ICMD_VERSION_BITLEN_CX8        4
 #define CMD_PTR_ADDR_CIB               0x0
 #define CMD_PTR_ADDR_SW_IB             0x80000
 #define CMD_PTR_ADDR_QUANTUM           0x100000
 #define CMD_PTR_ADDR_CX4               CMD_PTR_ADDR_CIB
 #define CMD_PTR_ADDR_CX5               CMD_PTR_ADDR_CIB
 #define CMD_PTR_ADDR_CX7               CMD_PTR_ADDR_CIB
+#define CMD_PTR_ADDR_CX8               27262976
 #define CMD_PTR_ADDR_GPU               0x3100000
 #define CMD_PTR_BITOFF                 0
 #define CMD_PTR_BITLEN                 24
+#define CMD_PTR_BITLEN_CX8             28
 #define CMD_PTR_BITLEN_GPU             32
 #define CTRL_OFFSET                    0x3fc
 #define BUSY_BITOFF                    0
@@ -922,6 +927,7 @@ static int icmd_init_cr(mfile* mf)
 
     /* get device specific addresses */
     if (read_device_id(mf, &hw_id) != 4) {
+        DBG_PRINTF("icmd_init_cr: failed to read device ID.\n");
         return ME_ICMD_NOT_SUPPORTED;
     }
 
@@ -1015,13 +1021,23 @@ static int icmd_init_cr(mfile* mf)
 
     case (CX7_HW_ID):
     case (BF3_HW_ID):
-    case (CX8_HW_ID):
     case (BF4_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX7;
         hcr_address = HCR_ADDR_CX7;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX7;
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX7;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX7;
+        break;
+
+    case (CX8_HW_ID):
+        cmd_ptr_addr = CMD_PTR_ADDR_CX8;
+        mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN_CX8;
+        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX8;
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX8;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX7;
+        mf->icmd.version_bit_offset = CMD_PTR_BITLEN_CX8;
+        mf->icmd.version_bitlen = ICMD_VERSION_BITLEN_CX8;
+        hcr_address = CMD_PTR_ADDR_CX8; // hcr_address is "version address"
         break;
 
     case (AMOS_GBOX_HW_ID):
@@ -1261,6 +1277,13 @@ int icmd_open(mfile* mf)
     if (mf->functional_vsec_supp) {
         return icmd_init_vcr(mf);
     }
+
+#ifdef ENABLE_MST_DEV_I2C
+    if (mf->tp == MST_DEV_I2C) {
+        return icmd_init_cr(mf);
+    }
+#endif
+
     if ((mf->tp == MST_IB) || is_gpu_pci_device(mf->dinfo->pci.dev_id)) {
         return icmd_init_cr(mf);
     }

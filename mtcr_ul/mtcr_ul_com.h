@@ -180,6 +180,42 @@ void mtcr_fix_endianness(u_int32_t* buf, int len);
 int is_zombiefish_device(mfile* mf);
 
 int read_device_id(mfile* mf, u_int32_t* device_id);
+
+
+#ifdef ENABLE_MST_DEV_I2C
+void fix_endianness(u_int32_t* buf, int len, int be_mode);
+
+int mset_i2c_addr_width(mfile* mf, u_int8_t addr_width);
+int mget_i2c_addr_width(mfile* mf, u_int8_t* addr_width);
+unsigned char mget_i2c_secondary(mfile* mf);
+unsigned char mset_i2c_secondary(mfile* mf, unsigned char new_i2c_secondary);
+
+void set_force_i2c_address(int i2c_address);
+
+int mtcr_i2c_mread4(mfile* mf, unsigned int offset, u_int32_t* value);
+int mtcr_i2c_mwrite4(mfile* mf, unsigned int offset, u_int32_t value);
+int mread_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length);
+int mwrite_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length);
+int mread_i2cblock(mfile* mf,
+                            unsigned char i2c_secondary,
+                            u_int8_t addr_width,
+                            unsigned int offset,
+                            void* data,
+                            int length);
+int mwrite_i2cblock(mfile* mf,
+                             unsigned char i2c_secondary,
+                             u_int8_t addr_width,
+                             unsigned int offset,
+                             void* data,
+                             int length);
+
+int is_supported_device_id(u_int16_t dev_id);
+int is_secure_debug_access(u_int32_t dev_id);
+int try_to_read_secure_device(mfile* mf);
+int change_i2c_secondary_address(mfile* mf, DType dtype);
+#endif
+
+
 #ifdef __cplusplus
 }
 #endif

@@ -214,13 +214,6 @@ void get_pci_dev_rdma(mfile* mf, char* buf)
     }
 }
 
-unsigned char mset_i2c_slave(mfile* mf, unsigned char new_i2c_slave)
-{
-    (void)mf;
-    (void)new_i2c_slave; /* compiler warning */
-    fprintf(stderr, "Warning: libmtcr: mset_i2c_slave() is not implemented and has no effect.\n");
-    return 0;
-}
 
 int maccess_reg_mad(mfile* mf, u_int8_t* data)
 {

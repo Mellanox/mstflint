@@ -123,6 +123,11 @@ typedef struct mib_private_t {
 /*#include "mtcr_ib_private.h" */
 /*#endif */
 
+
+#define MTCR_I2C_secondary_ADDRESS 0x48
+#define SLV_ADDRS_NUM 128
+
+
 typedef enum {
     SEM_LOCK_GET = 0x0,
     SEM_LOCK_SET = 0x1
@@ -501,7 +506,7 @@ typedef struct gearbox_info_t {
     gearbox_connection_t gb_conn_type;
     char                 gb_mngr_full_name[DEV_NAME_SZ];
     char                 gearbox_full_name[DEV_NAME_SZ];
-    unsigned char        i2c_slave;
+    unsigned char        i2c_secondary;
     u_int8_t             addr_width;
     char                 device_orig_name[DEV_NAME_SZ];
     char                 device_real_name[DEV_NAME_SZ];
@@ -512,6 +517,9 @@ typedef struct gearbox_info_t {
 typedef struct cables_info_t {
     int slave_addr_additional_offset;
 } cables_info;
+
+#define HW_ID_ADDR 0xf0014
+
 
 #define VSEC_MIN_SUPPORT_UL(mf)                                     \
     (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) &&              \
