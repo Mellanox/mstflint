@@ -207,3 +207,13 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
         mstflint -d 02:00.0 q
         mstvpd 02:00.0
 
+### Development
+    Development is in the Github project:
+
+       https://github.com/Mellanox/mstflint
+
+    Development follows a roughly 3-months development cycle. At each
+    cycle, the main branch (master) is mostly frozen and development
+    happens at the branch master_devel.
+
+    Therefore pull-requests should be submitted vs. branch master_devel.
