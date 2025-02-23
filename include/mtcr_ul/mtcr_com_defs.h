@@ -100,9 +100,6 @@ typedef long long int64_t;
 #define SMP_SEMAPHOE_LOCK_CMD 0xff53
 #define ADDRESS_OUT_OF_RANGE  0x3 /* syndrome_code value */
 
-#define CX8_HW_ID 0x21e
-#define CX9_HW_ID 0x225
-
 /*
  * MST <--> MTCR API defines
  */
