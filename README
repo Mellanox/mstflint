@@ -91,15 +91,15 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
       # Use mstflint tool to query the firmware on this device
       > mstflint -d 02:00.0 q
 
-    b) When the IB driver (mlx4 or mthca) is loaded, the devices can be accessed
+    b) When the IB driver (typically mlx5) is loaded, the devices can be accessed
        by their IB device name.
        Example:
        # List the IB devices
        > ibv_devinfo | grep hca_id
-         hca_id: mlx4_0
+         hca_id: mlx5_0
 
        # Use mstvpd tool to dump the VPD of this device
-       > mstvpd mlx4_0
+       > mstvpd mlx5_0
 
     c) PCI configuration access
        In examples a and b above, the device is accessed via PCI Memory Mapping.
@@ -173,7 +173,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 	to apply an output filter.
 
 	Examples:
-	> mstvpd mlx4_0
+	> mstvpd mlx5_0
 	ID: Hawk Dual Port
 	PN: MNPH29C-XTR
 	EC: X2
@@ -183,7 +183,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 	YA: N/A
 	RW:
 
-    > mstvpd mlx4_0 -- PN ID
+    > mstvpd mlx5_0 -- PN ID
 	PN: MNPH29C-XTR
 	ID: Hawk Dual Port
 
