@@ -3,7 +3,7 @@ Mellanox Technologies - www.mellanox.com
 
 MSTFLINT Package - Firmware Burning and Diagnostics Tools
 
-1) Overview
+## Overview
     This package contains a burning tool and diagnostic tools for Mellanox
     manufactured HCA/NIC cards. It also provides access to the relevant source
     code. Please see the file LICENSE for licensing details.
@@ -25,7 +25,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
     Using the diagnostic tools is normally safe for all HCAs/NICs.
     ----------------------------------------------------------------------------
 
-2) Package Contents
+## Package Contents
     a) mstflint source code
     b) mflash lib
        This lib provides low level Flash access through Mellanox HCAs.
@@ -52,7 +52,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
     k) mstlink
        The mstlink tool is used to check and debug link status and issues related to them.
 
-3) Installation
+## Installation
     a) Build the mstflint utility. This package is built using a standard
        autotools method.
 
@@ -76,7 +76,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
        > dpkg -i ../mstflint_<version>_<arch>.deb
        > dpkg -i ../mstflint-dkms_<version>_all.deb
 
-4) Hardware Access Device Names
+## Hardware Access Device Names
    The tools in this package require a device name in the command
    line. The device name is the identifier of the target CA.
    This section describes the device name formats and the HW access flow.
@@ -145,7 +145,9 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 	   described in sub section c) above. It is recommended to use function 0 for FW update or diagnostics, E.G.:
 	   > mstflint -d /proc/bus/pci/07/00.0 q
 
-5) Usage (mstflint):
+## Usage
+
+### mstflint:
        Read mstflint usage. Enter "./mstflint -h" for a short help message, or
        "./mstflint -hh" for a detailed help message.
 
@@ -160,14 +162,14 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
        Use mstflint to burn a device according to the burning instructions in
        "mstflint -hh" and in Mellanox web site firmware page.
 
-6) Usage (mstregdump):
+### mstregdump:
        An internal register dump is displayed to the standard output.
        Please store it in a file for analysis by Mellanox.
 
        Example:
        > mstregdump mthca0 > dumpfile
 
-7) Usage (mstvpd):
+### mstvpd:
     A VPD dump is displayed to the standard output.
 	A list of keywords to dump can be supplied after the -- flag
 	to apply an output filter.
@@ -187,19 +189,13 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 	PN: MNPH29C-XTR
 	ID: Hawk Dual Port
 
-8)  Usage (mstconfig):
-    Read mstconfig usage. Enter "mstconfig -h" for a help message.
+### Others
+    For other tools (mstconfig, mstreg, mstfwtrace, mstlink) see
+    usage message from the -h parameter. e.g.
 
-9)  Usage (mstreg):
-    Read mstconfig usage. Enter "mstreg -h" for a help message.
+    > mstconfig -h
 
-10) Usage (mstfwtrace):
-    Read mstconfig usage. Enter "mstfwtrace -h" for a help message.
-
-11) Usage (mstlink):
-    Read mstconfig usage. Enter "mstlink -h" for a help message.
-
-12) Problem Reporting:
+##  Problem Reporting:
 	Please collect the following information when reporting issues:
 
 	uname -a
