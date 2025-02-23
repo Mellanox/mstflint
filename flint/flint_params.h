@@ -192,6 +192,7 @@ public:
     bool downstream_device_ids_specified;
     std::vector<int> downstream_device_ids;
     bool download_transfer;
+    int i2cSecondaryAddr;
     u_int8_t activate_delay_sec;
     u_int32_t cert_chain_index;
     string component_type;

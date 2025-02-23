@@ -123,7 +123,7 @@ int mclose(mfile* mf);
 
 void get_pci_dev_rdma(mfile* mf, char* buf);
 
-unsigned char mset_i2c_slave(mfile* mf, unsigned char new_i2c_slave);
+unsigned char mset_i2c_secondary(mfile* mf, unsigned char new_i2c_secondary);
 
 int mget_mdevs_flags(mfile* mf, u_int32_t* devs_flags);
 

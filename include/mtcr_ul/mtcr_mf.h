@@ -54,7 +54,7 @@ struct page_list_fbsd {
 #endif
 
 /*  All fields in follow structure are not supposed to be used */
-/*  or modified by user programs. Except i2c_slave that may be */
+/*  or modified by user programs. Except i2c_secondary that may be */
 /*  modified before each access to target I2C slave address */
 struct mfile_t {
     u_int16_t     hw_dev_id;
@@ -69,7 +69,7 @@ struct mfile_t {
     int           is_vm;  /*  if the machine is VM    */
     int           cr_access; /* If cr access is allowed in MLNXOS devices */
     cables_info   ext_info; /*keeps info for calculate the correct slave address (0x50 + offset) */
-    unsigned char i2c_slave;
+    unsigned char i2c_secondary;
     int           gpio_en;
     io_region   * iorw_regions; /* For LPC devices */
     int           regions_num;

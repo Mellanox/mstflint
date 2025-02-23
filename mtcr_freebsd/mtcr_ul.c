@@ -1443,6 +1443,12 @@ int mwrite_i2cblock(mfile       * mf,
     return 0;
 }
 
+int force_i2c_address = -1;
+void set_force_i2c_address(int i2c_address)
+{
+    (void)i2c_address;
+}
+
 /* TODO: Introduce a module to keep platform-independent routines like this one below */
 void mtcr_fix_endianness(u_int32_t* buf, int len)
 {
@@ -1492,23 +1498,23 @@ int mget_mdevs_type(mfile* mf, u_int32_t* mtype)
     return 0;
 }
 
-unsigned char mset_i2c_slave(mfile* mf, unsigned char new_i2c_slave)
+unsigned char mset_i2c_secondary(mfile* mf, unsigned char new_i2c_slave)
 {
     unsigned char ret;
 
     if (mf) {
-        ret = mf->i2c_slave;
-        mf->i2c_slave = new_i2c_slave;
+        ret = mf->i2c_secondary;
+        mf->i2c_secondary = new_i2c_slave;
     } else {
         ret = 0xff;
     }
     return ret;
 }
 
-int mget_i2c_slave(mfile* mf, unsigned char* new_i2c_slave_p)
+int mget_i2c_secondary(mfile* mf, unsigned char* new_i2c_slave_p)
 {
     if (mf) {
-        *new_i2c_slave_p = mf->i2c_slave;
+        *new_i2c_slave_p = mf->i2c_secondary;
         return 0;
     }
     return -1;

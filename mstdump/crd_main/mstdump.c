@@ -55,7 +55,7 @@ char correct_cmdline[] = "   Mellanox " MSTDUMP_NAME " utility, dumps device int
                          Note : be careful when using this flag, None safe addresses might be read.\n\
    -v | --version     :  Display version info\n\
    -h | --help        :  Print this help message\n\
-   i2c_slave          :   I2C slave [0-127]\n\
+   i2c_secondary          :   I2C slave [0-127]\n\
    Example :\n\
             " MSTDUMP_NAME " " DEV_EXAMPLE "\n";
 
@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
     crd_ctxt_t* context = NULL;
     u_int32_t arr_size = 0;
     char* endptr;
-    u_int8_t new_i2c_slave = 0;
+    u_int8_t new_i2c_secondary = 0;
     char device[MAX_DEV_LEN] = {0};
 #if defined(__linux__) || defined(__FreeBSD__)
     if (geteuid() != 0)
@@ -166,14 +166,14 @@ int main(int argc, char* argv[])
     }
     if (i < argc)
     {
-        new_i2c_slave = (u_int8_t)strtoul(argv[i], &endptr, 0);
+        new_i2c_secondary = (u_int8_t)strtoul(argv[i], &endptr, 0);
         if (*endptr || !*argv[i])
         {
             fprintf(stderr, "Invalid i2c-slave %s\n", argv[i]);
             mclose(mf);
             return 1;
         }
-        mset_i2c_slave(mf, new_i2c_slave);
+        mset_i2c_secondary(mf, new_i2c_secondary);
         i++;
     }
     if (i < argc)

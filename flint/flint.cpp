@@ -41,6 +41,7 @@
 #include <signal.h>
 
 #include "flint.h"
+#include "mtcr_ul/mtcr_ul_com.h"
 
 // Globals:
 Flint* gFlint = NULL;
@@ -274,6 +275,12 @@ FlintStatus Flint::run(int argc, char* argv[])
         printf("-E- FATAL: command object not found.\n");
         return FLINT_FAILED;
     }
+#ifdef ENABLE_MST_DEV_I2C
+    if (_flintParams.i2cSecondaryAddr != -1)
+    {
+        set_force_i2c_address(_flintParams.i2cSecondaryAddr);
+    }
+#endif
     _subcommands[_flintParams.cmd]->setParams(_flintParams);
     return _subcommands[_flintParams.cmd]->executeCommand();
 }

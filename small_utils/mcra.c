@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
     // Temp variable for using strtoul and then check if it's greater than UINT_MAX before assigning it to addr
     unsigned long int parsed_addr = 0;
     mfile* mf;
-    unsigned int i2c_slave = 0;
+    unsigned int i2c_secondary = 0;
     int c;
     int read_op = 0;
     int bit_offs = 0;
@@ -134,8 +134,8 @@ int main(int argc, char* argv[])
         switch (c)
         {
             case 's':
-                i2c_slave = strtoul(optarg, &endp, 0);
-                if (*endp || i2c_slave == 0 || i2c_slave > 0x7f)
+                i2c_secondary = strtoul(optarg, &endp, 0);
+                if (*endp || i2c_secondary == 0 || i2c_secondary > 0x7f)
                 {
                     fprintf(stderr, "-E- Bad slave address given (%s).Expecting a non-negative number\n", optarg);
                     exit(1);
@@ -322,9 +322,9 @@ int main(int argc, char* argv[])
         perror("mopen");
         return 1;
     }
-    if (i2c_slave)
+    if (i2c_secondary)
     {
-        mset_i2c_slave(mf, (u_int8_t)i2c_slave);
+        mset_i2c_secondary(mf, (u_int8_t)i2c_secondary);
     }
 
     if (path)
