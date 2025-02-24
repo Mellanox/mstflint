@@ -58,6 +58,7 @@ typedef nvmlReturn_t (*f_nvmlDeviceGetPciInfo_v3)(nvmlDevice_t, nvmlPciInfo_t*);
 typedef const char* (*f_nvmlErrorString)(nvmlReturn_t);
 typedef nvmlReturn_t (*f_nvmlInit_v2)(void);
 typedef nvmlReturn_t (*f_nvmlShutdown)(void);
+typedef nvmlReturn_t (*f_nvmlDeviceReadWritePRM)(nvmlDevice_t, nvmlPRMBuffer_t *);
 
 typedef struct nvml_dll_ctx_t {
     void                          * dl_handle;
@@ -66,6 +67,7 @@ typedef struct nvml_dll_ctx_t {
     f_nvmlDeviceGetHandleByIndex_v2 nvmlDeviceGetHandleByIndex_v2;
     f_nvmlDeviceGetPciInfo_v3       nvmlDeviceGetPciInfo_v3;
     f_nvmlErrorString               nvmlErrorString;
+    f_nvmlDeviceReadWritePRM        nvmlDeviceReadWritePRM;
 } nvml_dll_ctx;
 
 int init_nvml_lib_handle(mfile* mf)
@@ -92,6 +94,7 @@ int init_nvml_lib_handle(mfile* mf)
     MY_DLSYM(nvml_ctx, nvmlDeviceGetHandleByIndex_v2);
     MY_DLSYM(nvml_ctx, nvmlDeviceGetPciInfo_v3);
     MY_DLSYM(nvml_ctx, nvmlErrorString);
+    MY_DLSYM(nvml_ctx, nvmlDeviceReadWritePRM);
 
     mf->ctx = nvml_ctx;
     return 0;
@@ -143,6 +146,7 @@ int nvml_mclose(mfile* mf)
 
 int init_nvml_ifc(mfile* mf, const char* dev_name)
 {
+    int          ret = 0;
     char        *endptr;
     unsigned int device_index;
     char       * device_index_location = strstr(dev_name, "nvidia") + 6;
@@ -161,7 +165,10 @@ int init_nvml_ifc(mfile* mf, const char* dev_name)
     nvml_dll_ctx* nvml_dll_handle = (nvml_dll_ctx*)mf->ctx;
 
     /* Init NVML SDK. */
-    nvml_dll_handle->nvmlInit_v2();
+    ret = nvml_dll_handle->nvmlInit_v2();
+    if (ret) {
+        printf("Error initializing NVML SDK: %s\n", nvml_dll_handle->nvmlErrorString(ret));
+    }
 
     /* Init device handle by index (e.g. /dev/nvidiaX) */
     nvml_dll_handle->nvmlDeviceGetHandleByIndex_v2(device_index, mf->nvml_device);
@@ -171,10 +178,41 @@ int init_nvml_ifc(mfile* mf, const char* dev_name)
         return -1;
     }
 
-    return 0;
+    return ret;
 }
 
 u_int16_t nvml_get_device_id(mfile* mf)
 {
     return get_hw_dev_id_by_pci_id(nvml_get_pci_id(mf));
+}
+
+int nvml_reg_access_mgir(mfile* mf, u_int8_t* reg_data, nvmlPRMBuffer_t* prm_buffer, u_int32_t reg_size)
+{
+    int           status = 0;
+    nvml_dll_ctx* nvml_dll_handle = (nvml_dll_ctx*)mf->ctx;
+
+
+    /* Set PRM register version. */
+    prm_buffer->mgir.version = nvmlMGIR_v1;
+
+    /* Format Data as access register struct. */
+    status = nvml_dll_handle->nvmlDeviceReadWritePRM(*(nvmlDevice_t*)mf->nvml_device, prm_buffer);
+
+    if (status) {
+        printf("Error sending MGIR: %s\n", nvml_dll_handle->nvmlErrorString(status));
+    }
+
+    /* Copy back the register data. */
+    memcpy(reg_data, prm_buffer->data, reg_size);
+    return status;
+}
+
+int nvml_reg_access(mfile * mf, maccess_reg_method_t reg_method, void               * reg_data, u_int32_t reg_size)
+{
+    nvmlPRMBuffer_t prm_buffer = {0};
+
+    prm_buffer.version = nvmlPRMBuffer_v1;
+    prm_buffer.regId = NVML_GPU_PRM_MGIR;
+    prm_buffer.isWrite = reg_method == MACCESS_REG_METHOD_GET ? false : true;
+    return nvml_reg_access_mgir(mf, reg_data, &prm_buffer, reg_size);
 }

@@ -715,7 +715,7 @@ enum {
 #define READ4_PCI(mf, val_ptr, pci_offs, err_prefix, action_on_fail) \
     do                                                               \
     {                                                                \
-        int       rc;                                                \
+        int rc;                                                      \
         rc = pread(mf->fd, val_ptr, 4, pci_offs);                    \
         if (rc != 4)                                                 \
         {                                                            \
@@ -857,7 +857,7 @@ static int nvml_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
     (void)value;
 
     DBG_PRINTF(mf, "nvml doesn't support VSEC access.\n");
-    
+
 
     return -1;
 }
@@ -2808,15 +2808,15 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         }
         return mf;
         break;
-    
+
     case MST_NVML:
-    rc = nvml_open(mf, name);
-    if (rc) {
-        DBG_PRINTF("Failed to open GPU mst driver device");
-        goto open_failed;
-    }
-    return mf;
-    break;
+        rc = nvml_open(mf, name);
+        if (rc) {
+            DBG_PRINTF("Failed to open GPU mst driver device");
+            goto open_failed;
+        }
+        return mf;
+        break;
 
     default:
         break;
@@ -3380,6 +3380,11 @@ int maccess_reg_ul(mfile              * mf,
                                            mf);
         return (*reg_status) ? *reg_status : rc;
     }
+#ifdef ENABLE_NVML
+    if (mf->tp == MST_NVML) {
+        return nvml_reg_access(mf, reg_method, reg_data, reg_size);
+    }
+#endif
 
     if (mf->tp != MST_IB) { /* Non-IB connection */
         rc = mreg_send_raw(mf, reg_id, reg_method, (u_int32_t*)reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
@@ -4225,9 +4230,9 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
     }
 
 #ifdef ENABLE_NVML
-    if (mf->tp == MST_NVML)
-    {
-        return nvml_get_device_id(mf);
+    if (mf->tp == MST_NVML) {
+        *device_id = nvml_get_device_id(mf);
+        return 4;
     }
 #endif
 
@@ -4244,52 +4249,48 @@ int is_pcie_switch_device(mfile* mf)
 {
     char device_buffer[DEV_NAME_SZ];
     char device_path[DEV_NAME_SZ];
-    int counter;
-
-    struct pcie_switch_device_id
-    {
+    int  counter;
+    struct pcie_switch_device_id {
         unsigned int device_id;
     } devs[] = {
-      {0x1976}, // ConnectX6dx (Schrodinger).
-      {0x1979}  // ConnectX7 (FreysaP1011).
+        {0x1976}, /* ConnectX6dx (Schrodinger). */
+        {0x1979} /* ConnectX7 (FreysaP1011). */
     };
 
-    // take care of corrupted input
-    if (!mf || !mf->dinfo)
-    {
+    /* take care of corrupted input */
+    if (!mf || !mf->dinfo) {
         return 0;
     }
 
-    // write to device_path the linux device path
+    /* write to device_path the linux device path */
     snprintf(device_path, DEV_NAME_SZ - 1, "/sys/bus/pci/devices/%04x:%02x:%02x.%x/device", mf->dinfo->pci.domain,
              mf->dinfo->pci.bus, mf->dinfo->pci.dev, mf->dinfo->pci.func);
 
     FILE* device = fopen(device_path, "r");
-    if (!device)
-    {
+
+    if (!device) {
         return 0;
     }
 
-    // write to device_buffer the device name
+    /* write to device_buffer the device name */
     fgets(device_buffer, DEV_NAME_SZ, (FILE*)device);
     fclose(device);
 
-    char* temp = strchr(device_buffer, '\n'); // Finds first '\n'
-    if (temp)
-    {
-        // Remove '\n'
+    char* temp = strchr(device_buffer, '\n'); /* Finds first '\n' */
+
+    if (temp) {
+        /* Remove '\n' */
         *temp = '\0';
     }
 
-    // Convert id from string to integer
-    unsigned int dev_id_converted = strtoul(device_buffer, NULL, 16); // convert from hex string to decimal int
+    /* Convert id from string to integer */
+    unsigned int dev_id_converted = strtoul(device_buffer, NULL, 16); /* convert from hex string to decimal int */
 
-    // iterate over pcie_switch_devices and check if dev_id_converted is there
+    /* iterate over pcie_switch_devices and check if dev_id_converted is there */
     int num_devs = sizeof(devs) / sizeof(struct pcie_switch_device_id);
-    for (counter = 0; counter < num_devs; counter++)
-    {
-        if (devs[counter].device_id == dev_id_converted)
-        {
+
+    for (counter = 0; counter < num_devs; counter++) {
+        if (devs[counter].device_id == dev_id_converted) {
             return 1;
         }
     }

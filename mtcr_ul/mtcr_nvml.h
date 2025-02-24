@@ -39,5 +39,6 @@
 int init_nvml_ifc(mfile* mf, const char* dev_name);
 int nvml_mclose(mfile* mf);
 u_int16_t nvml_get_device_id(mfile* mf);
+int nvml_reg_access(mfile* mf, maccess_reg_method_t reg_method, void* reg_data, u_int32_t reg_size);
 
 #endif /* _MTCR_GPU_DRIVER guard */
