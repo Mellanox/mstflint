@@ -3416,6 +3416,105 @@ void MlxlinkCommander::sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown)
     }
 }
 
+bool MlxlinkCommander::checkPmaosDown()
+{
+    sendPrmReg(ACCESS_REG_PMLP, GET);
+    _moduleNumber = getFieldValue("module_0");
+    sendPrmReg(ACCESS_REG_PMAOS, GET, "module=%d", _moduleNumber);
+
+    u_int32_t paosOperStatus = getFieldValue("oper_status");
+    return (paosOperStatus == PMAOS_OPER_UNPLUGGED);
+}
+
+void MlxlinkCommander::sendPmaosCmd(PMAOS_ADMIN adminStatus)
+{
+    sendPrmReg(ACCESS_REG_PMLP, GET);
+    _moduleNumber = getFieldValue("module_0");
+    try
+    {
+        if (adminStatus == PMAOS_TOGGLE)
+        {
+            sendPrmReg(ACCESS_REG_PMAOS, SET, "module=%d,rst=%d,ase=%d", _moduleNumber, 1, 1);
+        }
+        else
+        {
+            sendPrmReg(ACCESS_REG_PMAOS, SET, "module=%d,admin_status=%d,ase=%d", _moduleNumber, adminStatus, 1);
+        }
+    }
+    catch (const std::exception& exc)
+    {
+        string portCommand = (adminStatus == PMAOS_DISABLED) ? "down" :
+                             (adminStatus == PMAOS_ENABLED)  ? "up" :
+                                                               "toggle";
+        throw MlxRegException("Sending module number: " + to_string(_moduleNumber) + " with a " + portCommand +
+                              " command failed at:" + exc.what());
+    }
+}
+
+void MlxlinkCommander::sendPmaos()
+{
+    try
+    {
+        PMAOS_CMD pmaosCmd = pmaos_to_int(_userInput._pmaosCmd);
+        switch (pmaosCmd)
+        {
+            case PMAOS_UP:
+                sendPmaosUP();
+                return;
+
+            case PMAOS_DN:
+                sendPmaosDown();
+                return;
+
+            case PMAOS_TG:
+                sendPmaosToggle();
+                return;
+
+            case PMAOS_NO:
+            default:
+                return;
+        }
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors +=
+          string("Sending PMAOS raised the following exception: ") + string(exc.what()) + string("\n");
+    }
+}
+
+void MlxlinkCommander::sendPmaosDown()
+{
+    MlxlinkRecord::printCmdLine("PMAOS: Configuring Module State (Down)", _jsonRoot);
+    sendPmaosCmd(PMAOS_DISABLED);
+    msleep(1000);
+    if (!checkPmaosDown())
+    {
+        throw MlxRegException("Module state is not unplugged, Aborting...");
+    }
+}
+
+void MlxlinkCommander::sendPmaosUP()
+{
+    MlxlinkRecord::printCmdLine("PMAOS: Configuring Module State (Up)", _jsonRoot);
+    sendPmaosCmd(PMAOS_ENABLED);
+}
+
+void MlxlinkCommander::sendPmaosToggle()
+{
+    bool pmaosToggleSupported = isPmaosResetToggleSupported();
+    if (pmaosToggleSupported)
+    {
+        MlxlinkRecord::printCmdLine("PMAOS: Configuring Module State (Reset)", _jsonRoot);
+        sendPmaosCmd(PMAOS_TOGGLE);
+    }
+    else
+    {
+        sendPmaosDown();
+        msleep(1000);
+        sendPmaosUP();
+    }
+}
+
 void MlxlinkCommander::sendPaos()
 {
     try
