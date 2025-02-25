@@ -624,7 +624,7 @@ void MlxRegUi::run(int argc, char** argv)
     {
         return;
     }
-    else if (rc == PARSE_ERROR)
+    else if (rc != PARSE_OK)
     {
         cout << _cmdParser.GetUsage();
         throw MlxRegException("failed to parse arguments. %s", _cmdParser.GetErrDesc());
