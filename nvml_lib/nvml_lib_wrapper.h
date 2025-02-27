@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,16 +29,42 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+ *
  */
 
-#ifndef _MTCR_GPU_DRIVER /* guard */
-#define _MTCR_GPU_DRIVER
+#pragma once
 
-#include "mtcr.h"
+#include <string>
+#include <nvml.h>
 
-int init_nvml_ifc(mfile* mf, const char* dev_name);
-int nvml_mclose(mfile* mf);
-u_int16_t nvml_get_device_id(mfile* mf);
-int nvml_reg_access(mfile* mf, maccess_reg_method_t reg_method, void* reg_data, u_int32_t reg_size);
+using std::string;
 
-#endif /* _MTCR_GPU_DRIVER guard */
+typedef nvmlReturn_t (*f_nvmlDeviceGetHandleByIndex_v2)(unsigned int, nvmlDevice_t*);
+typedef nvmlReturn_t (*f_nvmlDeviceGetPciInfo_v3)(nvmlDevice_t, nvmlPciInfo_t*);
+typedef const char* (*f_nvmlErrorString)(nvmlReturn_t);
+typedef nvmlReturn_t (*f_nvmlInit_v2)(void);
+typedef nvmlReturn_t (*f_nvmlShutdown)(void);
+typedef nvmlReturn_t (*f_nvmlDeviceReadWritePRM)(nvmlDevice_t, nvmlPRMBuffer_t *);
+
+class NvmlLibWrapper
+{
+public:
+    NvmlLibWrapper(const string libPath = "libnvidia-ml.so");
+    ~NvmlLibWrapper();
+    /* Dynamic functions */
+    f_nvmlDeviceGetHandleByIndex_v2 nvmlDeviceGetHandleByIndex_v2;
+    f_nvmlDeviceGetPciInfo_v3       nvmlDeviceGetPciInfo_v3;
+    f_nvmlErrorString               nvmlErrorString;
+    f_nvmlInit_v2                   nvmlInit_v2;
+    f_nvmlShutdown                  nvmlShutdown;
+    f_nvmlDeviceReadWritePRM        nvmlDeviceReadWritePRM;
+
+
+private:
+    void InitNvmlSDK();
+    void LoadDynamicFuncs();
+    void* LoadDynamicFunc(const std::string& functionName);
+
+    const string _libPath;
+    void       * _libraryHandle;
+};

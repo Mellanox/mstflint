@@ -108,7 +108,7 @@
 #include "tools_dev_types.h"
 
 #ifdef ENABLE_NVML
-#include "mtcr_nvml.h"
+#include "nvml_lib/nvml_c_wrapper.h"
 #endif
 
 #define CX3_SW_ID    4099
@@ -849,14 +849,14 @@ static int fwctl_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t*
 
     return -1;
 }
-
+#ifdef ENABLE_NVML
 static int nvml_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
     (void)mf;
     (void)offset;
     (void)value;
 
-    DBG_PRINTF(mf, "nvml doesn't support VSEC access.\n");
+    DBG_PRINTF("nvml doesn't support VSEC access.\n");
 
 
     return -1;
@@ -868,7 +868,7 @@ static int nvml_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
     (void)offset;
     (void)value;
 
-    DBG_PRINTF(mf, "nvml doesn't support VSEC access.\n");
+    DBG_PRINTF("nvml doesn't support VSEC access.\n");
 
     return -1;
 }
@@ -880,7 +880,7 @@ static int nvml_mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, in
     (void)data;
     (void)length;
 
-    DBG_PRINTF(mf, "nvml doesn't support VSEC access.\n");
+    DBG_PRINTF("nvml doesn't support VSEC access.\n");
 
     return -1;
 }
@@ -892,10 +892,29 @@ static int nvml_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, i
     (void)data;
     (void)length;
 
-    DBG_PRINTF(mf, "nvml doesn't support VSEC access.\n");
+    DBG_PRINTF("nvml doesn't support VSEC access.\n");
 
     return -1;
 }
+
+
+int nvml_mclose(mfile* mf)
+{
+    if (mf && mf->nvml_device) {
+        /* Free NVML device handle. */
+
+        destroy_nvml_device(mf->nvml_device);
+    }
+
+    return 0;
+}
+
+u_int16_t nvml_get_device_id(mfile* mf)
+{
+    return get_hw_dev_id_by_pci_id(nvml_get_pci_id(mf));
+}
+
+#endif /* ifdef ENABLE_NVML */
 
 int mtcr_driver_cr_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
@@ -1048,7 +1067,7 @@ static int nvml_open(mfile* mf, const char* name)
     ctx->mwrite4_block = nvml_mwrite4_block;
     ctx->mclose = nvml_mclose;
     mf->bar_virtual_addr = NULL;
-    return init_nvml_ifc(mf, name);
+    return init_nvml_device(name, &(mf->nvml_device));
 #else
     (void)mf;
     (void)name;
@@ -3382,7 +3401,8 @@ int maccess_reg_ul(mfile              * mf,
     }
 #ifdef ENABLE_NVML
     if (mf->tp == MST_NVML) {
-        return nvml_reg_access(mf, reg_method, reg_data, reg_size);
+        bool is_write = (reg_method == MACCESS_REG_METHOD_SET);
+        return nvml_reg_access(reg_data, reg_size, reg_id, reg_status, is_write, mf->nvml_device);
     }
 #endif
 
@@ -4231,7 +4251,7 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
 
 #ifdef ENABLE_NVML
     if (mf->tp == MST_NVML) {
-        *device_id = nvml_get_device_id(mf);
+        *device_id = nvml_get_device_id(mf->nvml_device);
         return 4;
     }
 #endif
