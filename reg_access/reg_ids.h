@@ -36,5 +36,6 @@
 
 #define REG_ID_MGIR 0x9020
 #define REG_ID_MORD 0x9153
+#define REG_ID_MCAM 0x907f
 
 #endif

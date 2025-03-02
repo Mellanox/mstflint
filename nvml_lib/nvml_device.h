@@ -55,4 +55,10 @@ private:
     int AccessRegisterMGIR(unsigned char    * registerData,
                            const unsigned int registerSize,
                            nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterMCAM(unsigned char    * registerData,
+                           const unsigned int registerSize,
+                           nvmlPRMBuffer_t &  prmBuffe);
+    int AccessRegisterMORD(unsigned char    * registerData,
+                           const unsigned int registerSize,
+                           nvmlPRMBuffer_t &  prmBuffer);
 };
