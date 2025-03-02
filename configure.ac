@@ -484,7 +484,6 @@ AS_IF([test "x$enable_all_static" = "xyes"],
         if test "x$enable_inband" = "xyes"; then
             AC_MSG_ERROR([The '--enable-all-static' flag can only be used in conjunction with '--disable-inband'.])
         fi
-        LDFLAGS="$LDFLAGS -all-static"
         CFLAGS="$CFLAGS -DSQLITE_OMIT_LOAD_EXTENSION=0 -DIBVSMAD_DLOPEN"
     ]
 )

@@ -857,8 +857,6 @@ static int nvml_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
     (void)value;
 
     DBG_PRINTF("nvml doesn't support VSEC access.\n");
-
-
     return -1;
 }
 
@@ -869,7 +867,6 @@ static int nvml_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
     (void)value;
 
     DBG_PRINTF("nvml doesn't support VSEC access.\n");
-
     return -1;
 }
 
@@ -881,7 +878,6 @@ static int nvml_mread4_block(mfile* mf, unsigned int offset, u_int32_t* data, in
     (void)length;
 
     DBG_PRINTF("nvml doesn't support VSEC access.\n");
-
     return -1;
 }
 
@@ -893,7 +889,6 @@ static int nvml_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t* data, i
     (void)length;
 
     DBG_PRINTF("nvml doesn't support VSEC access.\n");
-
     return -1;
 }
 
@@ -1842,7 +1837,8 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
 
     mf->tp = MST_PCICONF;
 
-    if (mf->vsec_addr = pci_find_capability(mf, CAP_ID)) {
+    mf->vsec_addr = pci_find_capability(mf, CAP_ID);
+    if (mf->vsec_addr) {
         READ4_PCI(mf, &vsec_type, mf->vsec_addr, "read vsc type", return ME_PCI_READ_ERROR);
         mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
         DBG_PRINTF("in mtcr_pciconf_open function. mf->vsec_type: %d\n", mf->vsec_type);
@@ -2827,6 +2823,15 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         }
         return mf;
         break;
+    
+    case MST_NVML:
+    rc = nvml_open(mf, name);
+    if (rc) {
+        DBG_PRINTF("Failed to open GPU mst driver device");
+        goto open_failed;
+    }
+    return mf;
+    break;
 
     case MST_NVML:
         rc = nvml_open(mf, name);

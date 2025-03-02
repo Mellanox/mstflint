@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,43 +28,16 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-#ifndef RESOURCE_DUMP_INCLUDE_EXCLUDE_FETCHER_H
-#define RESOURCE_DUMP_INCLUDE_EXCLUDE_FETCHER_H
+#ifndef _MTCR_GPU_DRIVER /* guard */
+#define _MTCR_GPU_DRIVER
 
-#include "filter.h"
+#include "mtcr.h"
 
-#include <cstdint>
-#include <memory>
-#include <vector>
-#include <sstream>
+int init_nvml_ifc(mfile* mf, const char* dev_name);
+int nvml_mclose(mfile* mf);
+u_int16_t nvml_get_device_id(mfile* mf);
 
-namespace mft
-{
-namespace resource_dump
-{
-namespace filters
-{
-class IncludeExcludeSegmentsFilter : public Filter
-{
-public:
-    IncludeExcludeSegmentsFilter(ResourceDumpCommand& command,
-                                 const std::vector<uint16_t> selected_segment_ids,
-                                 bool include = true);
-
-    std::string get_big_endian_string();
-
-protected:
-    FilteredView _apply() override;
-
-    const std::vector<uint16_t> _selected_segment_ids;
-    bool _include;
-    std::stringstream _filtered_stream;
-};
-
-} // namespace filters
-} // namespace resource_dump
-} // namespace mft
-
-#endif // RESOURCE_DUMP_INCLUDE_EXCLUDE_FETCHER_H
+#endif /* _MTCR_GPU_DRIVER guard */
