@@ -4308,8 +4308,7 @@ int is_pcie_switch_device(mfile* mf)
         *temp = '\0';
     }
 
-    /* Convert id from string to integer */
-    unsigned int dev_id_converted = strtoul(device_buffer, NULL, 16); /* convert from hex string to decimal int */
+    unsigned int dev_id_converted = strtoul(device_buffer, NULL, 16);
 
     /* iterate over pcie_switch_devices and check if dev_id_converted is there */
     int num_devs = sizeof(devs) / sizeof(struct pcie_switch_device_id);

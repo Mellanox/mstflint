@@ -10,13 +10,13 @@ unsigned int parse_device_name(const char* device_name)
 {
     char  *endptr;
     char   device_name_prefix[] = "/dev/nvidia";
-    char * device_index_location = strstr((char*)device_name, device_name_prefix) + 11;
+    char * device_index_location = strstr((char*)device_name, device_name_prefix);
 
     if (device_index_location == nullptr) {
         throw NvmlException("Invalid device name: %s\n", device_name);
     }
 
-    unsigned int device_index = strtoul(device_index_location, &endptr, 10);
+    unsigned int device_index = strtoul(device_index_location + (sizeof(device_name_prefix) - 1), &endptr, 10);
 
     if ((device_index == 0) && (endptr == device_name)) {
         throw NvmlException("Invalid device name: %s\n", device_name);
