@@ -6,7 +6,7 @@
 #include "nvml_exception.h"
 
 
-unsigned int parse_device_name(const char* device_name)
+unsigned int get_nvml_device_index(const char* device_name)
 {
     char  *endptr;
     char   device_name_prefix[] = "/dev/nvidia";
@@ -28,7 +28,7 @@ int init_nvml_device(const char* device_name, void** device_pointer)
 {
     try
     {
-        unsigned int device_index = parse_device_name(device_name);
+        unsigned int device_index = get_nvml_device_index(device_name);
         *device_pointer = (void*) new NvmlDevice(device_index);
         return 0;
     }
