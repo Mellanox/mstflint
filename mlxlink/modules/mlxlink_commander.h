@@ -348,6 +348,7 @@ public:
 
     void checkRegCmd();
     void validatePortToLC();
+    bool isBackplane();
     virtual void validatePortType(const string& portTypeStr);
     void updatePortType();
     void gearboxBlock(const string& option);
@@ -443,6 +444,7 @@ public:
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
     void updateSwControlStatus();
+    bool checkDPNvSupport();
 
     void showTestMode();
     void showTestModeBer();
