@@ -1,4 +1,4 @@
-# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,38 +30,22 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/dev_mgt
+AM_CPPFLAGS = \
+    -I$(srcdir) \
+    -I$(top_srcdir)
 
-pkglib_LTLIBRARIES = libmtcr_ul.la
+AM_CXXFLAGS = -Wall -W -g -MP -MD  -pipe $(COMPILER_FPIC)
 
-libmtcr_ul_la_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
-			mtcr_ib_res_mgt.h mtcr_ib_res_mgt.c\
-			mtcr_tools_cif.c mtcr_tools_cif.h\
-			mtcr_ul_icmd_cif.c mtcr_icmd_cif.h\
-			mtcr_mem_ops.c mtcr_mem_ops.h\
-			mtcr_ul_com_defs.h mtcr_mf.h\
-			mtcr_ul_com.h mtcr_ul_com.c \
-			mtcr_common.h mtcr_common.c \
-			packets_common.c packets_common.h\
-			packets_layout.c packets_layout.h \
-			fwctrl.c fwctrl.h fwctrl_ioctl.h \
-			mtcr_gpu.c mtcr_gpu.h
-libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
+noinst_LTLIBRARIES = libnvml_device.la
 
-if ENABLE_INBAND
-libmtcr_ul_la_SOURCES += mtcr_ib_ofed.c
-endif
+libnvml_device_la_SOURCES = \
+    nvml_device.cpp \
+    nvml_exception.cpp \
+    nvml_lib_wrapper.cpp \
+    nvml_c_wrapper.cpp \
+    $(top_builddir)/tools_layouts/reg_access_gpu_layouts.c \
+    $(top_builddir)/tools_layouts/reg_access_hca_layouts.c
 
-if ENABLE_NVML
-libmtcr_ul_la_DEPENDENCIES =  $(top_builddir)/$(NVML_DIR)/libnvml_device.la
-libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)
-libmtcr_ul_la_LDFLAGS = -static -lstdc++
-endif
-
-
-libraryincludedir=$(includedir)/mstflint
-libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h  $(top_srcdir)/include/mtcr_ul/mtcr_mf.h
-
-install-exec-hook:
-	rm -f $(DESTDIR)$(pkglibdir)/libmtcr_ul.so* $(DESTDIR)$(pkglibdir)/libmtcr_ul.la
-	ln -snf mstflint/libmtcr_ul.a $(DESTDIR)$(libdir)/
+libnvml_device_la_DEPENDENCIES = $(top_builddir)/tools_layouts/libadb_utils.la
+libnvml_device_la_LIBADD = $(libnvml_device_la_DEPENDENCIES)
+libnvml_device_la_LDFLAGS = -static
