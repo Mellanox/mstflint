@@ -1525,6 +1525,21 @@ bool MlxlinkCommander::checkIfModuleExtSupported()
     return isModuleExtSupported;
 }
 
+bool MlxlinkCommander::checkDPNvSupport()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_MCAM, GET);
+        // the MCAM, much like PCAM is written upside-down
+        u_int32_t capMask = getFieldValue("mng_feature_cap_mask[1]");
+        return capMask & MCAM_CAP_MASK_DPNV;
+    }
+    catch (...)
+    {
+    }
+    return false;
+}
+
 void MlxlinkCommander::showModuleInfo()
 {
     try
@@ -1810,6 +1825,13 @@ void MlxlinkCommander::operatingInfoPage()
     {
         throw MlxRegException(string(exc.what()));
     }
+}
+
+bool MlxlinkCommander::isBackplane()
+{
+    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+
+    return (getFieldValue("cable_identifier") == IDENTIFIER_BACKPLANE);
 }
 
 void MlxlinkCommander::supportedInfoPage()
@@ -4535,6 +4557,11 @@ void MlxlinkCommander::printOuptputVector(vector < MlxlinkCmdPrint >& cmdOut)
 void MlxlinkCommander::initCablesCommander()
 {
     gearboxBlock(CABLE_FLAG);
+
+    if (isBackplane())
+    {
+        throw MlxRegException("Command not supported for backplane ports!");
+    }
 
     if (_plugged && !_mngCableUnplugged) {
         _cablesCommander = new MlxlinkCablesCommander(_jsonRoot);
