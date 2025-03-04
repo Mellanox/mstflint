@@ -160,6 +160,7 @@ private:
     void initPrbsMapping();
     void initPpbmcAndPepcMapping();
     void initLinkDownInfoMapping();
+    void initPpcntGroupsMapping();
     void initSltpStatusMapping();
     void qsfpComlianceMapping();
     void cmisIbComlianceMapping();
@@ -313,6 +314,7 @@ public:
     std::map<u_int32_t, std::string> _slrgFomMode5nm;
     std::map<u_int32_t, std::string> _pcieDevStatus;
     std::map<u_int32_t, PcieErrType> _pcieErrType;
+    std::map<u_int32_t, u_int32_t> _ppcntGroups;
 
     string _sltpHeader;
     string _showErrorsTitle;

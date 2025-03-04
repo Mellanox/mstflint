@@ -235,50 +235,21 @@ u_int32_t MlxlinkCommander::getTechnologyFromMGIR()
 void MlxlinkCommander::getProductTechnology()
 {
     // Use SLTP to get the product technology, for backward compatibility
-    if (!_userInput._pcie)
+    try
     {
-        try
+        sendPrmReg(ACCESS_REG_SLTP, GET);
+        _productTechnology = getVersion(getFieldValue("version"));
+        if (_productTechnology <= 2)
         {
-            sendPrmReg(ACCESS_REG_SLTP, GET);
-            _productTechnology = getVersion(getFieldValue("version"));
-            if (_productTechnology <= 2)
-            {
-                _productTechnology = PRODUCT_28NM;
-            }
-            return;
-        }
-        catch (MlxRegException& exc)
-        {
-            if (!_productTechnology)
-            {
-                throw MlxRegException("Unable to get product technology: %s", exc.what_s().c_str());
-            }
+            _productTechnology = PRODUCT_28NM;
         }
     }
-    else
+    catch (MlxRegException& exc)
     {
-        // The for loop was added due to PCI implementation.
-        // When accessing a pci flow we should check all the local ports for the first port to respond.
-        for (size_t i = 0; i <= 0x16; i++)
+        if (!_productTechnology)
         {
-            try
-            {
-                sendPrmReg(ACCESS_REG_SLTP, GET, "local_port=%d", i);
-                _productTechnology = getVersion(getFieldValue("version"));
-                if (_productTechnology <= 2)
-                {
-                    _productTechnology = PRODUCT_28NM;
-                }
-                _userInput._pciSltpPort = i;
-                return;
-            }
-            catch (MlxRegException& exc)
-            {
-                continue;
-            }
+            throw MlxRegException("Unable to get product technology: %s", exc.what_s().c_str());
         }
-
-        throw MlxRegException("Unable to get product technology (for PCI connection).");
     }
 }
 
@@ -1562,6 +1533,21 @@ bool MlxlinkCommander::checkIfModuleExtSupported()
     return isModuleExtSupported;
 }
 
+bool MlxlinkCommander::checkDPNvSupport()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_MCAM, GET);
+        // the MCAM, much like PCAM is written upside-down
+        u_int32_t capMask = getFieldValue("mng_feature_cap_mask[1]");
+        return capMask & MCAM_CAP_MASK_DPNV;
+    }
+    catch (...)
+    {
+    }
+    return false;
+}
+
 void MlxlinkCommander::showModuleInfo()
 {
     try
@@ -1847,6 +1833,13 @@ void MlxlinkCommander::operatingInfoPage()
     {
         throw MlxRegException(string(exc.what()));
     }
+}
+
+bool MlxlinkCommander::isBackplane()
+{
+    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+
+    return (getFieldValue("cable_identifier") == IDENTIFIER_BACKPLANE);
 }
 
 void MlxlinkCommander::supportedInfoPage()
@@ -3377,13 +3370,23 @@ void MlxlinkCommander::clearCounters()
     try
     {
         MlxlinkRecord::printCmdLine("Clearing Counters", _jsonRoot);
-
-        sendPrmReg(ACCESS_REG_PPCNT, SET, "clr=%d,grp=%d", 1, PPCNT_ALL_GROUPS);
+        if (_mf->tp != MST_IB)
+        {
+            sendPrmReg(ACCESS_REG_PPCNT, SET, "clr=%d,grp=%d", 1, PPCNT_ALL_GROUPS);
+        }
+        else
+        {
+            // Clearing counters via GET method instead of SET due to register being too large for MADs.
+            for (auto const& group : _mlxlinkMaps->_ppcntGroups)
+            {
+                sendPrmReg(ACCESS_REG_PPCNT, GET, "clr=%d,grp=%d", 1, group.first);
+            }
+        }
     }
-    catch(const std::exception& exc)
+    catch (const std::exception& exc)
     {
         _allUnhandledErrors +=
-            string("Clearing counters via PPCNT raised the following exception: ") + string(exc.what()) + string("\n");
+          string("Clearing counters via PPCNT raised the following exception: ") + string(exc.what()) + string("\n");
     }
 }
 
@@ -4603,6 +4606,11 @@ void MlxlinkCommander::printOuptputVector(vector < MlxlinkCmdPrint >& cmdOut)
 void MlxlinkCommander::initCablesCommander()
 {
     gearboxBlock(CABLE_FLAG);
+
+    if (isBackplane())
+    {
+        throw MlxRegException("Command not supported for backplane ports!");
+    }
 
     if (_plugged && !_mngCableUnplugged) {
         _cablesCommander = new MlxlinkCablesCommander(_jsonRoot);

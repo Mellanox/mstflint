@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2024-10-08 11:27:08"
+#    This file was generated at "2025-03-02 12:44:18"
 #    by:
 #      > <REDACTED>/prm_update.py --project nic
 ###############################################################################
@@ -101,9 +101,11 @@ class DTOR_REG_EXT(ctypes.Structure):
 class PCNR_REG_EXT(ctypes.Structure):
     _fields_ = [
         ("tuning_override", ctypes.c_uint8),
+        ("flu_always_cap", ctypes.c_uint8),
         ("lp_msb", ctypes.c_uint8),
         ("local_port", ctypes.c_uint8),
-        ("keep_phy_setting", ctypes.c_uint8)
+        ("keep_phy_setting", ctypes.c_uint8),
+        ("flu_always", ctypes.c_uint8)
     ]
 
 class STRING_DB_PARAMETERS_EXT(ctypes.Structure):
@@ -140,8 +142,10 @@ class MGIR_HARDWARE_INFO_EXT(ctypes.Structure):
         ("num_ports", ctypes.c_uint8),
         ("ib_mad_gen", ctypes.c_uint8),
         ("hw_dev_id", ctypes.c_uint16),
+        ("module_master_fw_default", ctypes.c_uint8),
         ("ga_valid", ctypes.c_uint8),
         ("development", ctypes.c_uint8),
+        ("nic_disable", ctypes.c_uint8),
         ("manufacturing_base_mac_47_32", ctypes.c_uint16),
         ("ga", ctypes.c_uint8),
         ("chip_type", ctypes.c_uint8),

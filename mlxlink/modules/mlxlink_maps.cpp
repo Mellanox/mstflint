@@ -85,7 +85,7 @@ void MlxlinkMaps::initPortStateMapping()
     _ethANFsmState[0xb] = "ETH_AN_FSM_IB_FAIL";
     _ethANFsmState[0xc] = "ETH_AN_FSM_POST_LOCK_TUNE";
 
-    _ibPhyFsmState[IB_AN_FSM_DISABLED] = "Disabled";
+    _ibPhyFsmState[IB_AN_FSM_DISABLED] = "N/A";
     _ibPhyFsmState[IB_AN_FSM_INITIALY] = "Initializing";
     _ibPhyFsmState[IB_AN_FSM_RCVR_CFG] = "Recover Config";
     _ibPhyFsmState[IB_AN_FSM_CFG_TEST] = "Config Test";
@@ -1437,6 +1437,28 @@ void MlxlinkMaps::initEnhancedDebugMapping()
     _localReasonOpcode[LOCAL_REASON_OPCODE_RESERVED] = "N/A";
 }
 
+void MlxlinkMaps::initPpcntGroupsMapping()
+{
+    _ppcntGroups[PPCNT_IEEE_802_3_COUNTERS_GROUP] = PPCNT_IEEE_802_3_COUNTERS_GROUP;
+    _ppcntGroups[PPCNT_RFC_2863_GROUP] = PPCNT_RFC_2863_GROUP;
+    _ppcntGroups[PPCNT_RFC_2819_GROUP] = PPCNT_RFC_2819_GROUP;
+    _ppcntGroups[PPCNT_RFC_3635_GROUP] = PPCNT_RFC_3635_GROUP;
+    _ppcntGroups[PPCNT_ETHERNET_EXTENDED_GROUP] = PPCNT_ETHERNET_EXTENDED_GROUP;
+    _ppcntGroups[PPCNT_DISC_COUNTERS_GROUP] = PPCNT_DISC_COUNTERS_GROUP;
+    _ppcntGroups[PPCNT_PER_PRIORITY_COUNTERS_GROUP] = PPCNT_PER_PRIORITY_COUNTERS_GROUP;
+    _ppcntGroups[PPCNT_PER_TRAFFIC_CLASS_COUNTERS_GROUP] = PPCNT_PER_TRAFFIC_CLASS_COUNTERS_GROUP;
+    _ppcntGroups[PPCNT_PHY_GROUP] = PPCNT_PHY_GROUP;
+    _ppcntGroups[PPCNT_PER_TRAFFIC_CLASS_CONGESTION_COUNTERS_GROUP] = PPCNT_PER_TRAFFIC_CLASS_CONGESTION_COUNTERS_GROUP;
+    _ppcntGroups[PPCNT_STATISTICAL_GROUP] = PPCNT_STATISTICAL_GROUP;
+    _ppcntGroups[PPCNT_IB_PORT_COUNTERS_GROUP] = PPCNT_IB_PORT_COUNTERS_GROUP;
+    _ppcntGroups[PPCNT_EXT_IB_PORT_COUNTERS_GROUP] = PPCNT_EXT_IB_PORT_COUNTERS_GROUP;
+    _ppcntGroups[PPCNT_PLR_GROUP] = PPCNT_PLR_GROUP;
+    _ppcntGroups[PPCNT_HISTOGRAM_GROUP] = PPCNT_HISTOGRAM_GROUP;
+    _ppcntGroups[PPCNT_IB_PKTS_GROUP] = PPCNT_IB_PKTS_GROUP;
+    _ppcntGroups[PPCNT_IB_GEN_COUNTERS_GROUP] = PPCNT_IB_GEN_COUNTERS_GROUP;
+    _ppcntGroups[PPCNT_ALL_GROUPS] = PPCNT_ALL_GROUPS;
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();
@@ -1452,6 +1474,7 @@ MlxlinkMaps::MlxlinkMaps()
     initCablePowerClassMapping();
     initEnhancedDebugMapping();
     phyHstFsmHdrStateMapping();
+    initPpcntGroupsMapping();
 }
 
 MlxlinkMaps::~MlxlinkMaps() {}
