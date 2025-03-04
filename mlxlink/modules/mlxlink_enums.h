@@ -86,6 +86,7 @@
 #define ACCESS_REG_SPZR "SPZR"
 #define ACCESS_REG_MMCR "MMCR"
 #define ACCESS_REG_PPRM "PPRM"
+#define ACCESS_REG_MCAM "MCAM"
 // define all used regs above this line
 
 #define QSFP_CHANNELS 4
@@ -1922,6 +1923,11 @@ enum PPTT_SPEED_MASK
     PPTT_XAUI,
     PPTT_50GE_KR4,
     PPTT_SPEED_MASK_MAX
+};
+
+enum MCAM_CAP_MASK
+{
+    MCAM_CAP_MASK_DPNV = 0x10
 };
 
 #endif /* MLXLINK_ENUMS_H */

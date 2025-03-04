@@ -347,6 +347,7 @@ public:
     virtual ~MlxlinkCommander();
 
     void checkRegCmd();
+    bool isBackplane();
     void validatePortToLC();
     virtual void validatePortType(const string& portTypeStr);
     void updatePortType();
@@ -443,6 +444,7 @@ public:
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
     void updateSwControlStatus();
+    bool checkDPNvSupport();
 
     void showTestMode();
     void showTestModeBer();
