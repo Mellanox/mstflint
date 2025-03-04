@@ -421,8 +421,7 @@ vector < AmberField > MlxlinkAmBerCollector::getIndexesInfo()
 
     AmberField::_dataValid = true;
     string labelPortStr = to_string(_labelPort);
-    if ((_splitPort && _splitPort != 1) || (_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) ||
-        (_devID == DeviceGB100))
+    if ((_splitPort && _splitPort != 1) || (_devID == DeviceQuantum2))
     {
         /* For Quantum-2, the split notation will stand for the port in the cage
          * For other, only add the split notation if it's not 1
@@ -431,7 +430,7 @@ vector < AmberField > MlxlinkAmBerCollector::getIndexesInfo()
     }
 
     if ((_secondSplit && _secondSplit != 1) &&
-        ((_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || (_devID == DeviceGB100)))
+        ((_devID == DeviceQuantum2) || (_devID == DeviceQuantum3)))
     {
         labelPortStr += "/" + to_string(_secondSplit);
     }

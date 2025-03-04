@@ -76,6 +76,10 @@ void MlxlinkUi::initRegAccessLib()
     _mlxlinkCommander->_gvmiAddress = _userInput._gvmiAddress;
     _mlxlinkCommander->_devID = _mlxlinkCommander->_regLib->getDevId();
     _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
+    if (_mlxlinkCommander->_isHCA)
+    {
+        _mlxlinkCommander->_isDPNvSupported = _mlxlinkCommander->checkDPNvSupport();
+    }
 }
 
 void MlxlinkUi::initPortInfo()

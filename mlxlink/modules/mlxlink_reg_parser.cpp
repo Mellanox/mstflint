@@ -47,6 +47,7 @@ MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0)
 
     _isHCA = false;
     _isSwControled = false;
+    _isDPNvSupported = false;
 }
 
 MlxlinkRegParser::~MlxlinkRegParser() {}
@@ -146,6 +147,13 @@ void MlxlinkRegParser::setDefaultFields(const string& regName, const string& fie
     if (regName == ACCESS_REG_PPCNT && _localPort == 255)
     {
         updateWithDefault("lp_gl", fieldsStr, 1);
+    }
+
+    if (_isHCA && _isDPNvSupported &&
+        (regName == ACCESS_REG_MPIR || regName == ACCESS_REG_MPCNT || regName == ACCESS_REG_MPEIN ||
+         regName == ACCESS_REG_MPEINJ))
+    {
+        updateWithDefault("DPNv", fieldsStr, 1);
     }
 }
 
