@@ -199,7 +199,6 @@ FlintStatus QuerySubCommand::QueryLinkX(string deviceName, string outputFile, st
         return FLINT_FAILED;
     }
     FwComponent bootImageComponent;
-    std::vector<FwComponent> compsToBurn;
     for (unsigned int i = 0; i < deviceIds.size(); i++)
     {
         if (deviceIds[i] < 0)
@@ -349,7 +348,6 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
     }
 
     bootImageComponent.init(binaryData, binaryData.size(), FwComponent::COMPID_LINKX);
-    compsToBurn.push_back(bootImageComponent);
     if (downloadTransferNeeded)
     {
         printf("-I- Downloading FW ...\n");
@@ -363,7 +361,7 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
             }
         }
     }
-    if (!fwCompsAccess.burnComponents(compsToBurn, funcAdv))
+    if (!fwCompsAccess.burnComponents(bootImageComponent, funcAdv))
     {
         char* err_msg = (char*)fwCompsAccess.getLastErrMsg();
         bool IbError = (strcmp("Unknown MAD error", err_msg) == 0);

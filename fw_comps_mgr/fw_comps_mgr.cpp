@@ -1368,11 +1368,23 @@ bool FwCompsMgr::IsCfgComponentType(FwComponent::comps_ids_t type)
     return res;
 }
 
-bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCallBackAdvSt* progressFuncAdv)
+bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progressFuncAdv)
 {
-    unsigned i = 0;
     const u_int8_t LOCK_FW_UPDATE = 0x2;
     const u_int8_t LOCK_HOST_CFG = 0x3;
+    FwComponent::comps_ids_t component = comp.getType();
+    if (_secureHostState == LOCK_FW_UPDATE && component == FwComponent::COMPID_BOOT_IMG)
+    {
+        _lastError = FWCOMPS_COMP_BLOCKED;
+        DPRINTF(("MCC flow for component %d is blocked!\n", component));
+        return false;
+    }
+    if (_secureHostState == LOCK_HOST_CFG && IsCfgComponentType(component))
+    {
+        _lastError = FWCOMPS_COMP_BLOCKED;
+        DPRINTF(("MCC flow for component %d is blocked!\n", component));
+        return false;
+    }
     if (!RefreshComponentsStatus()) {
         return false;
     }
@@ -1384,59 +1396,52 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
         }
         return false;
     }
-    if (_downloadTransferNeeded == true) {
-        for (i = 0; i < comps.size(); i++) {
-            FwComponent::comps_ids_t component = comps[i].getType();
-            if (_secureHostState == LOCK_FW_UPDATE && component == FwComponent::COMPID_BOOT_IMG)
+    if (_downloadTransferNeeded == true)
+    {
+        _currCompQuery = &(_compsQueryMap[component]);
+        if (!_currCompQuery->valid)
+        {
+            _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
+            DPRINTF(("MCC flow for component %d is not supported!\n", component));
+            return false;
+        }
+        _componentIndex = _currCompQuery->comp_status.component_index;
+        if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comp.getSize(), FSMST_INITIALIZE, progressFuncAdv))
+        {
+            DPRINTF(("Initializing downloading FW component has failed!\n"));
+            return false;
+        }
+        _currComponentStr = FwComponent::getCompIdStr(comp.getType());
+        control_fsm_args_t fsmUpdateCommand;
+        fsmUpdateCommand.command = FSM_CMD_UPDATE_COMPONENT;
+        fsmUpdateCommand.expectedState = FSMST_DOWNLOAD;
+        fsmUpdateCommand.size = comp.getSize();
+        fsmUpdateCommand.currentState = FSMST_INITIALIZE;
+        fsmUpdateCommand.progressFuncAdv = progressFuncAdv;
+        if (!accessComponent(0, comp.getSize(), (u_int32_t*)(comp.getData().data()), MCC_WRITE_COMP, progressFuncAdv,
+                             &fsmUpdateCommand))
+        {
+            DPRINTF(("Downloading FW component has failed!\n"));
+            return false;
+        }
+        if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv))
+        {
+            DPRINTF(("Verifying FW component has failed!\n"));
+            return false;
+        }
+        if (comp.getType() == FwComponent::COMPID_LINKX ||
+            comp.getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM)
+        {
+            if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
+                            progressFuncAdv))
             {
-                _lastError = FWCOMPS_COMP_BLOCKED;
-                DPRINTF(("MCC flow for component %d is blocked!\n", component));
+                DPRINTF(("Downstream LinkX begin has failed!\n"));
                 return false;
             }
-            if (_secureHostState == LOCK_HOST_CFG && IsCfgComponentType(component))
+            if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_DOWNSTREAM_DEVICE_TRANSFER, progressFuncAdv))
             {
-                _lastError = FWCOMPS_COMP_BLOCKED;
-                DPRINTF(("MCC flow for component %d is blocked!\n", component));
+                DPRINTF(("Downstream LinkX ending has failed!\n"));
                 return false;
-            }
-            _currCompQuery = &(_compsQueryMap[component]);
-            if (!_currCompQuery->valid) {
-                _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
-                DPRINTF(("MCC flow for component %d is not supported!\n", component));
-                return false;
-            }
-            _componentIndex = _currCompQuery->comp_status.component_index;
-            if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comps[i].getSize(), FSMST_INITIALIZE,
-                            progressFuncAdv)) {
-                DPRINTF(("Initializing downloading FW component has failed!\n"));
-                return false;
-            }
-            _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
-            control_fsm_args_t fsmUpdateCommand;
-            fsmUpdateCommand.command = FSM_CMD_UPDATE_COMPONENT;
-            fsmUpdateCommand.expectedState = FSMST_DOWNLOAD;
-            fsmUpdateCommand.size = comps[i].getSize();
-            fsmUpdateCommand.currentState = FSMST_INITIALIZE;
-            fsmUpdateCommand.progressFuncAdv = progressFuncAdv;
-            if (!accessComponent(0, comps[i].getSize(), (u_int32_t*)(comps[i].getData().data()), MCC_WRITE_COMP,
-                                 progressFuncAdv, &fsmUpdateCommand)) {
-                DPRINTF(("Downloading FW component has failed!\n"));
-                return false;
-            }
-            if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
-                DPRINTF(("Verifying FW component has failed!\n"));
-                return false;
-            }
-            if (comps[i].getType() == FwComponent::COMPID_LINKX || comps[i].getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM) {
-                if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
-                                progressFuncAdv)) {
-                    DPRINTF(("Downstream LinkX begin has failed!\n"));
-                    return false;
-                }
-                if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_DOWNSTREAM_DEVICE_TRANSFER, progressFuncAdv)) {
-                    DPRINTF(("Downstream LinkX ending has failed!\n"));
-                    return false;
-                }
             }
         }
     }
