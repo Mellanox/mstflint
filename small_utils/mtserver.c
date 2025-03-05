@@ -607,7 +607,7 @@ void usage(const char* s)
 }
 
 /* ////////////////////////////////////////////////////////////////////// */
-void mySignal()
+void mySignal(int)
 {
     exit(0);
 }

@@ -58,7 +58,7 @@
 #define INSERTF64(src1, start1, src2, start2, len) MERGE64((src1), EXTRACT64((src2), (start2), (len)), (start1), (len))
 #define EXT64(src, end, start) EXTRACT64(src, start, end - start + 1)
 
-#ifndef __cplusplus
+#if !defined(__cplusplus) && (__STDC_VERSION__ < 202311L)
 enum cpp_bool
 {
     false = 0,
