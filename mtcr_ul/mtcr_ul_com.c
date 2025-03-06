@@ -2823,15 +2823,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         }
         return mf;
         break;
-    
-    case MST_NVML:
-    rc = nvml_open(mf, name);
-    if (rc) {
-        DBG_PRINTF("Failed to open GPU mst driver device");
-        goto open_failed;
-    }
-    return mf;
-    break;
 
     case MST_NVML:
         rc = nvml_open(mf, name);
