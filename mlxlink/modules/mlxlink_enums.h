@@ -86,6 +86,7 @@
 #define ACCESS_REG_SPZR "SPZR"
 #define ACCESS_REG_MMCR "MMCR"
 #define ACCESS_REG_PPRM "PPRM"
+#define ACCESS_REG_MCAM "MCAM"
 // define all used regs above this line
 
 #define QSFP_CHANNELS 4
@@ -517,6 +518,12 @@ enum PPAOS_ADMIN
 {
     PPAOS_REGULAR_OPERATION = 0,
     PPAOS_PHY_TEST_MODE = 1
+};
+
+enum PPAOS_DC_CPL_ALLOW
+{
+    PPAOS_DC_CPL_NO = 0,
+    PPAOS_DC_CPL_ALLOW = 1
 };
 
 enum TX_INDEX_SELECTOR
@@ -1922,6 +1929,11 @@ enum PPTT_SPEED_MASK
     PPTT_XAUI,
     PPTT_50GE_KR4,
     PPTT_SPEED_MASK_MAX
+};
+
+enum MCAM_CAP_MASK
+{
+    MCAM_CAP_MASK_DPNV = 0x10
 };
 
 #endif /* MLXLINK_ENUMS_H */

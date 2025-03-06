@@ -67,6 +67,6 @@ mstlink_DEPENDENCIES = \
     $(top_builddir)/common/libcommon.la \
     $(JSON_LIBS)
 
-mstlink_LDADD = $(mstlink_DEPENDENCIES) -llzma ${LDL} -lexpat
+mstlink_LDADD = $(mstlink_DEPENDENCIES) $(liblzma_LIBS) ${LDL} $(expat_LIBS)
 
 mstlink_LDFLAGS = -static

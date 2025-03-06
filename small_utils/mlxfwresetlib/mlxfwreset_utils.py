@@ -129,7 +129,7 @@ def getDevDBDF(device, logger=None):
             raise RuntimeError("Unexpected device name format")
         return device[3:]
     elif (operatingSys == "Linux"):
-        cmd = "mdevices_info -vv"
+        cmd = "mstdevices_info -vv"
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
             raise RuntimeError("Failed to get device PCI address")

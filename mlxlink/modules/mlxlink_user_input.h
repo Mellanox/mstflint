@@ -64,6 +64,7 @@ public:
     bool _sendPptt;
     bool _prbsTxInv;
     bool _prbsRxInv;
+    bool _prbsDcCoupledAllow;
     bool _sendPepc;
     bool _sendPepcForceMode;
     bool _sendPepcANMode;

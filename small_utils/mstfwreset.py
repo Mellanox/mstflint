@@ -110,12 +110,15 @@ MLNX_DEVICES = [
     dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX7", devid=0x218, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX8", devid=0x21e, status_config_not_done=(0xa0304, 31)),
+    dict(name="ConnectX8-RMA", devid=0x21f, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX9", devid=0x225, status_config_not_done=(0xb5f04, 31)),
+    dict(name="ConnectX9-RMA", devid=0x226, status_config_not_done=(0xb5f04, 31)),
     dict(name="Switch-IB", devid=0x247, status_config_not_done=(0x80010, 0)),
     dict(name="Switch-IB-2", devid=0x24b, status_config_not_done=(0x80010, 0)),
     dict(name="Quantum", devid=0x24d, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-2", devid=0x257, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-3", devid=0x25b, status_config_not_done=(0x200010, 0)),
+    dict(name="Quantum-3-RMA", devid=0x25c, status_config_not_done=(0x200010, 0)),
     dict(name="Quantum-4", devid=0x278, status_config_not_done=(0x200010, 0)),
     dict(name="Spectrum", devid=0x249, status_config_not_done=(0x80010, 0)),
     dict(name="Spectrum-2", devid=0x24E, status_config_not_done=(0x100010, 0)),
@@ -128,8 +131,8 @@ MLNX_DEVICES = [
 
 # Supported devices.
 SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
-                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "BlueField4",
-                "ConnectX9"]
+                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "ConnectX8-RMA", "BlueField4",
+                "ConnectX9", "ConnectX9-RMA"]
 SUPP_SWITCH_DEVICES = ["Spectrum", "Spectrum-2", "Spectrum-3", "Switch-IB", "Switch-IB-2", "Quantum", "Quantum-2"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 UNSUPPORTED_PSIDS_PER_DEV_ID = {
@@ -199,7 +202,7 @@ SUPPORTED_DEVICES_WITH_SWITCHES = [
 
 PSID_PCIE_SWITCH_CX7 = [
     "ABC0000000002", "CW_0000000007", "EZO0000000001", "FB_0000000049",
-    "GGL0000000001", "LNV0000000064", "MSF0000000047", "MT_0000000747",
+    "LNV0000000064", "MSF0000000047", "MT_0000000747", "WLF14TZ100601",
     "MT_0000000764", "MT_0000000891", "MT_0000000920", "MT_0000000921",
     "MT_0000000922", "MT_0000000929", "MT_0000000930", "MT_0000000937",
     "MT_0000001016", "MT_0000001019", "MT_0000001238", "MT_0000001250",
@@ -211,7 +214,7 @@ PSID_PCIE_SWITCH_CX7 = [
     "OMN0000000001", "OMN0000000003", "ORC0000000009", "ORC0000000014",
     "WLF144L100201", "WLF144L100701", "WLF144L100801", "WLF144LF000000",
     "WLF144LF001005", "WLF144LFZ10000", "WLF14TZ100101", "WLF14TZ100201",
-    "WLF14TZ100301", "WLF14TZ100601"
+    "WLF14TZ100301"
 ]
 
 PSID_PCIE_SWITCH_CX8 = [
@@ -1466,7 +1469,7 @@ def is_pcie_switch_device(devid, reg_access_obj=None):
         devDict = getDeviceDict(devid)
         if devDict['name'] in ['ConnectX7', 'ConnectX8', 'BlueField3']:
             psid = reg_access_obj.getPSID()
-            logger.debug("PCIE switch device with PSID: %s" % psid)
+            logger.debug("Checking device with PSID: %s" % psid)
             if psid in ALL_PSID_PCIE_SWITCH:
                 logger.debug("Found PCIE switch device")
                 res = True
@@ -1662,8 +1665,8 @@ def resetFlow(device, devicesSD, reset_level, reset_type, reset_sync, pci_reset_
             if "ppc64" in platform.machine():
                 raise RuntimeError(
                     "Resetting a device that contains a PCIe switch is not supported on PPC64")
-
-        if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
+        host_reset_flow = reset_level == CmdRegMfrl.PCI_RESET and hot_reset_enabled and reset_sync is SyncOwner.FW
+        if host_reset_flow or SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
             send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync, pci_reset_request_method)
         else:
             sendResetToFWSync(mfrl, reset_level, reset_type, reset_sync, pci_reset_request_method)
@@ -1761,7 +1764,6 @@ def rebootMachine():
 
 
 def hot_reset(mfrl):
-    global is_pcie_switch_hot_reset
     try:
         dtor_result = RegAccessObj.getDTOR()
         timeout = get_timeout_in_miliseconds(dtor_result, "EMBEDDED_CPU_OS_SHUTDOWN_TO") / 1000  # Approved by arch to use this dtor field.
@@ -1769,11 +1771,10 @@ def hot_reset(mfrl):
         start_time = time.time()
         while is_fw_ready_for_reset_trigger(mfrl) is False:
             check_if_elapsed_time(start_time, timeout, "The reset state did not change to 'waiting for reset trigger' state")
-        if is_pcie_switch_hot_reset:
-            bus = RegAccessObj.sendMPIR(depth=0, pcie_index=0, node=0)
-            res = MstDevObj.send_hot_reset_pcie_switch(bus)
-        else:
-            res = MstDevObj.send_hot_reset()
+        bus, device = RegAccessObj.sendMPIR(depth=0, pcie_index=0, node=0)
+        domain = int(mlxfwreset_utils.getDomain(DevDBDF), 16)
+        function = 0
+        res = MstDevObj.send_hot_reset(domain, bus, device, function)
         if res != 0:
             raise RuntimeError('Failed to reset the device (pci_reset_bus failed)'.format(res))
         else:
@@ -1867,8 +1868,8 @@ def check_if_pci_link_is_up(root_pci_device, dtor_result):
 def check_if_elapsed_time(start_time, timeout, error_msg):
     current_time = time.time()
     elapsed_time = current_time - start_time
-    logger.debug('elapsed_time = {0}'.format(elapsed_time))
     if elapsed_time >= timeout:
+        logger.debug('elapsed_time = {0}, timeout = {1}'.format(elapsed_time, timeout))
         raise RuntimeError(error_msg)
 
 
@@ -2110,14 +2111,6 @@ def reset_flow_host(device, args, command):
 
     # function takes ~330msec - TODO remove it if you need performace
     devid = isDevSupp(device)
-
-    reset_sync = args.reset_sync if args.reset_sync is not None else get_default_reset_sync(devid, args.reset_level)
-    if args.reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
-            and args.reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
-        # and it's restricted on UEFI secure boot
-        raise RuntimeError(
-            "The tool supports only reset-level 4 on UEFI Secure Boot")
-
     DevDBDF = mlxfwreset_utils.getDevDBDF(device, logger)
     logger.info('device domain:bus:dev.fn (DBDF) is {0}'.format(DevDBDF))
     SkipMstRestart = args.no_mst_restart
@@ -2193,20 +2186,21 @@ def reset_flow_host(device, args, command):
             raise re
 
     print("")
-    reset_type = mfrl.default_reset_type() if args.reset_type is None else args.reset_type
-    mroq = CmdRegMroq(reset_type, RegAccessObj, mcam, logger)
-
     devDict = getDeviceDict(devid)
     if devDict['name'] in ['BlueField2', 'BlueField3']:
         global is_bluefield
         is_bluefield = True
+    reset_type = mfrl.default_reset_type() if args.reset_type is None else args.reset_type
+
+    mroq = CmdRegMroq(reset_type, RegAccessObj, mcam, logger)
+    tool_owner_support = True
+    if platform.system() == "Linux" and is_bluefield:
+        tool_owner_support = False
+
     if command == "query":
-        print(mfrl.query_text(is_pcie_switch_device(devid), mroq.is_hot_reset_supported()))
-        tool_owner_support = True
-        if platform.system() == "Linux" and is_bluefield:
-            tool_owner_support = False
+        print(mfrl.query_text(is_pcie_switch_device(devid), mroq.is_sync2_hot_reset_supported()))
         if mroq.mroq_is_supported():
-            mroq.print_query_text(tool_owner_support, is_pcie_switch_device(devid))
+            mroq.print_query_text(is_pcie_switch_device(devid), tool_owner_support)
         else:
             print(mcam.reset_sync_query_text(tool_owner_support))
         if mcam.is_mrsi_supported():
@@ -2216,11 +2210,39 @@ def reset_flow_host(device, args, command):
         reset_level = mfrl.default_reset_level(
         ) if args.reset_level is None else args.reset_level
 
+        reset_sync = SyncOwner.TOOL
+        if reset_level is CmdRegMfrl.PCI_RESET:
+            if args.reset_sync is None:
+                reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch_device(devid), tool_owner_support)
+            else:
+                try:
+                    is_sync_supported = mroq.is_sync_supported(args.reset_sync, logger)
+                except BaseException:  # In case MROQ is not supported.
+                    if args.reset_sync is SyncOwner.TOOL:
+                        pass
+                    if args.reset_sync is SyncOwner.DRIVER:
+                        if not mcam.is_reset_by_fw_driver_sync_supported():
+                            raise RuntimeError("Requested reset sync '{0}' is not supported".format(args.reset_sync))
+                    if args.reset_sync is SyncOwner.FW:
+                        raise RuntimeError("Requested reset sync '{0}' is not supported".format(args.reset_sync))
+                else:
+                    if is_sync_supported:
+                        reset_sync = args.reset_sync
+                    else:
+                        raise RuntimeError("Requested reset sync '{0}' is not supported".format(args.reset_sync))
+
+        if reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
+                and reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
+            # and it's restricted on UEFI secure boot
+            raise RuntimeError(
+                "The tool supports only reset-level 4 on UEFI Secure Boot")
+        is_pcie_swtich = False
         if is_pcie_switch_device(devid):
+            is_pcie_swtich = True
             if args.reset_level is None:
-                if reset_level is CmdRegMfrl.PCI_RESET and mroq.is_hot_reset_supported() is False:
+                if reset_level is CmdRegMfrl.PCI_RESET and mroq.is_sync2_hot_reset_supported() is False:
                     reset_level = CmdRegMfrl.WARM_REBOOT
-            elif mroq.is_hot_reset_supported() is False and args.reset_level is not CmdRegMfrl.WARM_REBOOT:
+            elif reset_level is CmdRegMfrl.PCI_RESET and mroq.is_sync2_hot_reset_supported() is False:
                 raise RuntimeError("You are going to reset pcie switch device: reset-level '{0}' is not supported when hot reset is unsupported, only reset-level 4 (reboot) is supported".format(args.reset_level))
 
             if reset_level is CmdRegMfrl.WARM_REBOOT:
@@ -2242,9 +2264,6 @@ def reset_flow_host(device, args, command):
         if reset_level != CmdRegMfrl.IMMEDIATE_RESET and reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
             raise RuntimeError(
                 "Synchronization by driver is not supported in the current state of this device")
-        if reset_sync != SyncOwner.TOOL and reset_level not in [CmdRegMfrl.PCI_RESET, CmdRegMfrl.IMMEDIATE_RESET]:
-            raise RuntimeError(
-                "Reset-sync '{0}' is not supported with reset-level '{1}'".format(reset_sync, reset_level))
 
         print("The reset level for device, {0} is:\n".format(device))
         print("{0}: {1}".format(reset_level,
@@ -2264,16 +2283,15 @@ def reset_flow_host(device, args, command):
                 else:
                     print("The ARM side will shut down.")
 
+        pci_reset_request_method = ResetReqMethod.LINK_DISABLE
         if args.request_method is None:
-            pci_reset_request_method = mroq.get_default_method(is_pcie_switch_device(devid))
+            if reset_level is CmdRegMfrl.PCI_RESET:
+                pci_reset_request_method = mroq.get_default_method(is_pcie_swtich)
         else:
             pci_reset_request_method = args.request_method
 
         if pci_reset_request_method is ResetReqMethod.HOT_RESET and reset_level is not CmdRegMfrl.PCI_RESET:
             raise RuntimeError("Hot reset is only supported with reset level 3 (Driver restart and PCI reset)")
-
-        if pci_reset_request_method is ResetReqMethod.HOT_RESET and mroq.is_hot_reset_supported() is False:
-            raise RuntimeError("Hot reset is not supported by the FW")
 
         if pci_reset_request_method is ResetReqMethod.HOT_RESET and reset_sync == SyncOwner.TOOL:
             raise RuntimeError("Hot reset is not supported with sync 0")
@@ -2282,7 +2300,7 @@ def reset_flow_host(device, args, command):
             raise RuntimeError("Sync 2 is not supported with method 0")
 
         hot_reset_enabled = False
-        if reset_level is CmdRegMfrl.PCI_RESET and pci_reset_request_method is ResetReqMethod.HOT_RESET and reset_sync is not SyncOwner.TOOL:
+        if reset_level is CmdRegMfrl.PCI_RESET and pci_reset_request_method is ResetReqMethod.HOT_RESET:
             hot_reset_enabled = True
 
         if is_pcie_switch_device(devid) and hot_reset_enabled:
@@ -2390,11 +2408,19 @@ def reset_flow_switch(device, args, command):
 ######################################################################
 
 
-def get_default_reset_sync(devid, reset_level):
+def get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch, tool_owner_support):
     reset_sync = SyncOwner.TOOL
-    devDict = getDeviceDict(devid)
-    if platform.system() == "Linux" and reset_level != CmdRegMfrl.WARM_REBOOT and devDict.get('allowed_sync_method'):
-        reset_sync = devDict['allowed_sync_method']
+    try:
+        reset_sync = mroq.get_default_sync(tool_owner_support)
+    except BaseException:
+        devDict = getDeviceDict(devid)
+        if platform.system() == "Linux" and reset_level != CmdRegMfrl.WARM_REBOOT and devDict.get('allowed_sync_method'):
+            reset_sync = devDict['allowed_sync_method']
+        elif reset_level == CmdRegMfrl.WARM_REBOOT:
+            pass
+        elif mroq.is_sync2_hot_reset_supported() and is_pcie_switch:
+            reset_sync = SyncOwner.FW
+
     return reset_sync
 
 ######################################################################

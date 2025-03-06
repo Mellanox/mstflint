@@ -52,6 +52,13 @@ if ENABLE_INBAND
 libmtcr_ul_la_SOURCES += mtcr_ib_ofed.c
 endif
 
+if ENABLE_NVML
+libmtcr_ul_la_DEPENDENCIES =  $(top_builddir)/$(NVML_DIR)/libnvml_device.la
+libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)
+libmtcr_ul_la_LDFLAGS = -static -lstdc++
+endif
+
+
 libraryincludedir=$(includedir)/mstflint
 libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h  $(top_srcdir)/include/mtcr_ul/mtcr_mf.h
 

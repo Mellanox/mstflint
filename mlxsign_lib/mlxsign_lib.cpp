@@ -32,15 +32,7 @@
  */
 
 #ifndef NO_OPEN_SSL
-#include <openssl/sha.h>
-#include <openssl/rsa.h>
-#include <openssl/pem.h>
-#include <openssl/bio.h>
-#include <openssl/hmac.h>
-#include <openssl/engine.h>
-#include <openssl/conf.h>
-#include <openssl/err.h>
-#include <openssl/x509v3.h>
+#include <openssl/ssl.h>
 #include "mlxsign_lib.h"
 
 using namespace std;

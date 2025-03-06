@@ -31,8 +31,8 @@
  *
  *
  */
+#include "mtcr_gpu.h"
 
-#include "common/compatibility.h"
 #include "dev_mgt/tools_dev_types.h"
 
 typedef struct pci_id_range_st {

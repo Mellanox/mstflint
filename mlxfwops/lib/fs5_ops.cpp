@@ -234,7 +234,7 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
 }
 
 bool Fs5Operations::CheckBoot2(u_int32_t,
-                               u_int32_t offs,
+                               u_int32_t __attribute__ ((unused)) offs,
                                u_int32_t&,
                                bool fullRead,
                                const char* pref,

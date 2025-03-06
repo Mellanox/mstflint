@@ -140,6 +140,8 @@
 #define PRBS_INVERT_TX_POL_FLAG_SHORT ' '
 #define PRBS_INVERT_RX_POL_FLAG "invert_rx_polarity"
 #define PRBS_INVERT_RX_POL_FLAG_SHORT ' '
+#define PRBS_DC_COUPLE_ALLOW_FLAG "dc_cpl_allow"
+#define PRBS_DC_COUPLE_ALLOW_FLAG_SHORT ' '
 #define PPRT_TUNING_TYPE_FLAG "tuning_type"
 #define PPRT_TUNING_TYPE_FLAG_SHORT ' '
 #define BER_COLLECT_FLAG "ber_collect"
@@ -348,6 +350,7 @@ public:
 
     void checkRegCmd();
     void validatePortToLC();
+    bool isBackplane();
     virtual void validatePortType(const string& portTypeStr);
     void updatePortType();
     void gearboxBlock(const string& option);
@@ -360,6 +363,7 @@ public:
     void checkAllPortsStatus();
     void handlePortStr(const string& portStr);
     void labelToLocalPort();
+    void findFirstValidPort();
     void labelToHCALocalPort();
     void labeltoDSlocalPort();
     bool isDSdevice();
@@ -442,6 +446,7 @@ public:
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
     void updateSwControlStatus();
+    bool checkDPNvSupport();
 
     void showTestMode();
     void showTestModeBer();
@@ -540,6 +545,7 @@ public:
     void checkPrbsRegsCap(const string& prbsReg, const string& laneRate);
     void checkPrbsPolCap(const string& prbsReg);
     void checkPprtPptt();
+    void checkDcCouple();
     void checkPplrCap();
     void sendPrbsPpaos(bool);
     void startTuning();

@@ -45,6 +45,6 @@ libxz_utils_la_SOURCES = \
     xz_utils.h
 
 libxz_utils_la_DEPENDENCIES =
-libxz_utils_la_LIBADD = -llzma
+libxz_utils_la_LIBADD = $(liblzma_LIBS)
 
 libraryincludedir = $(includedir)/mstflint/xz_utils/

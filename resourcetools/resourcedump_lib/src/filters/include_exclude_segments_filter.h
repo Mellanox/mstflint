@@ -35,6 +35,7 @@
 
 #include "filter.h"
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 #include <sstream>

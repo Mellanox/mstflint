@@ -43,7 +43,9 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/mft_utils \
     -I$(top_srcdir)/dev_mgt \
     -I$(top_srcdir)/cmdif \
-    -I$(top_srcdir)/tools_res_mgmt
+    -I$(top_srcdir)/tools_res_mgmt \
+    $(libxml2_CFLAGS) \
+    $(openssl_CFLAGS)
 
 AM_CPPFLAGS += $(MUPARSER_CFLAGS) $(SQLITE_CFLAGS) $(COMPILER_FPIC)
 
@@ -105,8 +107,9 @@ mstconfig_LDFLAGS = -static
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2
 else
-mstconfig_LDADD += -lxml2
-libmlxcfg_la_LIBADD += -lxml2
+AM_CPPFLAGS += $(libxml2_CFLAGS)
+mstconfig_LDADD += $(libxml2_LIBS)
+libmlxcfg_la_LIBADD += $(libxml2_LIBS)
 endif
 
 if ENABLE_INBAND
@@ -116,8 +119,9 @@ else
 endif
 
 if ENABLE_OPENSSL
-mstconfig_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
-libmlxcfg_la_LIBADD += $(top_builddir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
+AM_CPPFLAGS += $(openssl_CFLAGS)
+mstconfig_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.la $(openssl_LIBS)
+libmlxcfg_la_LIBADD += $(top_builddir)/mlxsign_lib/libmlxsign.la $(openssl_LIBS)
 else
 AM_CXXFLAGS += -DNO_OPEN_SSL
 endif

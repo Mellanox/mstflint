@@ -420,6 +420,35 @@ void MlxlinkCommander::updateSwControlStatus()
     }
 }
 
+void MlxlinkCommander::findFirstValidPort()
+{
+    u_int32_t minLabelPort = 0;
+    string regName = ACCESS_REG_PLLP, fieldToGet = "label_port";
+    if (_devID == DeviceGB100 || _devID == DeviceGR100)
+    {
+        regName = ACCESS_REG_PLIB;
+        fieldToGet = "ib_port";
+    }
+
+    for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++)
+    {
+        try
+        {
+            sendPrmReg(regName, GET, "local_port=%d", localPort);
+        }
+        catch (MlxRegException& exp)
+        {
+            continue;
+        }
+        u_int32_t currentLabelPort = getFieldValue(fieldToGet);
+        if (minLabelPort == 0 || currentLabelPort < minLabelPort)
+        {
+            minLabelPort = currentLabelPort;
+        }
+    }
+    _userInput._labelPort = minLabelPort;
+}
+
 void MlxlinkCommander::labelToLocalPort()
 {
     _pnat = _userInput._pcie ? PNAT_PCIE : PNAT_LOCAL;
@@ -1496,6 +1525,21 @@ bool MlxlinkCommander::checkIfModuleExtSupported()
     return isModuleExtSupported;
 }
 
+bool MlxlinkCommander::checkDPNvSupport()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_MCAM, GET);
+        // the MCAM, much like PCAM is written upside-down
+        u_int32_t capMask = getFieldValue("mng_feature_cap_mask[1]");
+        return capMask & MCAM_CAP_MASK_DPNV;
+    }
+    catch (...)
+    {
+    }
+    return false;
+}
+
 void MlxlinkCommander::showModuleInfo()
 {
     try
@@ -1781,6 +1825,13 @@ void MlxlinkCommander::operatingInfoPage()
     {
         throw MlxRegException(string(exc.what()));
     }
+}
+
+bool MlxlinkCommander::isBackplane()
+{
+    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+
+    return (getFieldValue("cable_identifier") == IDENTIFIER_BACKPLANE);
 }
 
 void MlxlinkCommander::supportedInfoPage()
@@ -2326,7 +2377,16 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
     for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++) {
         status = 0;
 
-        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
+        // Temporary WA until GPUNet PRM is updated (typo in the word "measurement")!
+        // TODO: remove this if in the future, and leave only the else branch.
+        if (_devID == DeviceGB100 || _devID == DeviceGR100)
+        {
+            sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurment=%d", lane, fomMeasurement);
+        }
+        else
+        {
+            sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
+        }
 
         status = getFieldValue("status");
         initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom",
@@ -3460,7 +3520,9 @@ void MlxlinkCommander::handlePrbs()
 {
     try
     {
-        if (_userInput._prbsMode == "EN") {
+        if (_userInput._prbsMode == "EN")
+        {
+            checkDcCouple();
             checkPprtPptt();
             if (_prbsTestMode) {
                 sendPrbsPpaos(false);
@@ -3470,8 +3532,10 @@ void MlxlinkCommander::handlePrbs()
                 MlxlinkRecord::printCmdLine("Configuring Port to Physical Test Mode", _jsonRoot);
                 resetPprtPptt();
                 sendPprtPptt();
-                sendPrbsPpaos(true);
-            } else {
+                sendPrbsPpaos(true, _userInput._prbsDcCoupledAllow);
+            }
+            else
+            {
                 throw MlxRegException("Port is not down, unable to enter test mode");
             }
         } else if (_userInput._prbsMode == "DS") {
@@ -3614,10 +3678,43 @@ void MlxlinkCommander::checkPrbsPolCap(const string& prbsReg)
     }
 }
 
-void MlxlinkCommander::sendPrbsPpaos(bool testMode)
+void MlxlinkCommander::checkDcCouple()
 {
-    sendPrmReg(ACCESS_REG_PPAOS, SET, "phy_test_mode_admin=%d",
-               (testMode ? PPAOS_PHY_TEST_MODE : PPAOS_REGULAR_OPERATION));
+    sendPrmReg(ACCESS_REG_PPAOS, GET);
+    int dcCoupledPort = getFieldValue("dc_cpl_port");
+    if (!dcCoupledPort && _userInput._prbsDcCoupledAllow)
+    {
+        throw MlxRegException("Allowing DC coupling PRBS isn't supported to non DC coupled ports");
+    }
+    else if (dcCoupledPort && !_userInput._prbsDcCoupledAllow)
+    {
+        throw MlxRegException("When enabling test_mode in DC coupled ports, DC coupling should be allowed!");
+    }
+    else if (dcCoupledPort && _userInput._prbsDcCoupledAllow)
+    {
+        string warMsg =
+          "Warning: DC couple system must be powered on both sides of the physical link prior to enabling test mode.\n";
+        warMsg += "System may be harmed and product lifetime may shortened if not ensured.";
+        MlxlinkRecord::printWar(warMsg, _jsonRoot);
+        if (!askUser("Do you want to continue", _userInput.force))
+        {
+            throw MlxRegException("Operation canceled by user");
+        }
+    }
+}
+
+void MlxlinkCommander::sendPrbsPpaos(bool testMode, bool dc_cpl_allow)
+{
+    if (dc_cpl_allow)
+    {
+        sendPrmReg(ACCESS_REG_PPAOS, SET, "phy_test_mode_admin=%d,dc_cpl_allow=%d",
+                   (testMode ? PPAOS_PHY_TEST_MODE : PPAOS_REGULAR_OPERATION), PPAOS_DC_CPL_ALLOW);
+    }
+    else
+    {
+        sendPrmReg(ACCESS_REG_PPAOS, SET, "phy_test_mode_admin=%d",
+                   (testMode ? PPAOS_PHY_TEST_MODE : PPAOS_REGULAR_OPERATION));
+    }
 }
 
 void MlxlinkCommander::startTuning()
@@ -4497,6 +4594,11 @@ void MlxlinkCommander::printOuptputVector(vector < MlxlinkCmdPrint >& cmdOut)
 void MlxlinkCommander::initCablesCommander()
 {
     gearboxBlock(CABLE_FLAG);
+
+    if (isBackplane())
+    {
+        throw MlxRegException("Command not supported for backplane ports!");
+    }
 
     if (_plugged && !_mngCableUnplugged) {
         _cablesCommander = new MlxlinkCablesCommander(_jsonRoot);

@@ -33,7 +33,6 @@
 #ifndef BIT_SLICE_H
 #define BIT_SLICE_H
 
-// BIT Slicing macros
 #define ONES32(size) ((size) ? (0xffffffff >> (32 - (size))) : 0)
 #define MASK32(offset, size) (ONES32(size) << (offset))
 
@@ -57,14 +56,5 @@
 #define MERGE64(rsrc1, rsrc2, start, len) (((len) == 64) ? (rsrc2) : MERGE_C64(rsrc1, rsrc2, start, len))
 #define INSERTF64(src1, start1, src2, start2, len) MERGE64((src1), EXTRACT64((src2), (start2), (len)), (start1), (len))
 #define EXT64(src, end, start) EXTRACT64(src, start, end - start + 1)
-
-#ifndef __cplusplus
-enum cpp_bool
-{
-    false = 0,
-    true
-};
-typedef unsigned char bool;
-#endif
 
 #endif

@@ -76,10 +76,19 @@ void MlxlinkUi::initRegAccessLib()
     _mlxlinkCommander->_gvmiAddress = _userInput._gvmiAddress;
     _mlxlinkCommander->_devID = _mlxlinkCommander->_regLib->getDevId();
     _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
+    if (_mlxlinkCommander->_isHCA)
+    {
+        _mlxlinkCommander->_isDPNvSupported = _mlxlinkCommander->checkDPNvSupport();
+    }
 }
 
 void MlxlinkUi::initPortInfo()
 {
+    if (!_userInput._portSpecified && _userInput._csvBer != "")
+    {
+        _mlxlinkCommander->findFirstValidPort();
+    }
+
     _mlxlinkCommander->labelToLocalPort();
     _mlxlinkCommander->validatePortType(_userInput._portType);
     _mlxlinkCommander->updateSwControlStatus();
@@ -238,6 +247,9 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PRBS_INVERT_RX_POL_FLAG_SHORT, PRBS_INVERT_RX_POL_FLAG, "",
                                  "PRBS RX polarity inversion (Optional - Default No Inversion)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PRBS_DC_COUPLE_ALLOW_FLAG_SHORT, PRBS_DC_COUPLE_ALLOW_FLAG, "",
+                                 "For DC coupled ports only: This flag must be set to enter test mode");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(
       PRBS_LANES_FLAG_SHORT, PRBS_LANES_FLAG, "lanes",
@@ -573,7 +585,7 @@ void MlxlinkUi::validatePRBSParams()
 {
     bool prbsFlags = _userInput._sendPprt || _userInput._sendPptt || _userInput._pprtRate != "" ||
                      _userInput._pprtRate != "" || _userInput._prbsTxInv || _userInput._prbsRxInv ||
-                     _userInput._prbsLanesToSet.size() > 0;
+                     _userInput._prbsDcCoupledAllow || _userInput._prbsLanesToSet.size() > 0;
     if (isIn(SEND_PRBS, _sendRegFuncMap))
     {
         if (!checkPrbsCmd(_userInput._prbsMode))
@@ -994,6 +1006,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PRBS_LANES_FLAG, PRBS_LANES_FLAG_SHORT, "lanes", "PRBS lanes to set");
     AddOptions(PRBS_INVERT_TX_POL_FLAG, PRBS_INVERT_TX_POL_FLAG_SHORT, "", "PRBS TX polarity inversion");
     AddOptions(PRBS_INVERT_RX_POL_FLAG, PRBS_INVERT_RX_POL_FLAG_SHORT, "", "PRBS RX polarity inversion");
+    AddOptions(PRBS_DC_COUPLE_ALLOW_FLAG, PRBS_DC_COUPLE_ALLOW_FLAG_SHORT, "", "Allow PRBS for DC coupled ports");
 
     AddOptions(CABLE_FLAG, CABLE_FLAG_SHORT, "", "Cable operations");
     AddOptions(CABLE_DUMP_FLAG, CABLE_DUMP_FLAG_SHORT, "", "Dump cable EEPROM pages");
@@ -1393,6 +1406,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == PRBS_INVERT_RX_POL_FLAG)
     {
         _userInput._prbsRxInv = true;
+        return PARSE_OK;
+    }
+    else if (name == PRBS_DC_COUPLE_ALLOW_FLAG)
+    {
+        _userInput._prbsDcCoupledAllow = true;
         return PARSE_OK;
     }
     else if (name == BER_COLLECT_FLAG)

@@ -100,9 +100,6 @@ typedef long long int64_t;
 #define SMP_SEMAPHOE_LOCK_CMD 0xff53
 #define ADDRESS_OUT_OF_RANGE  0x3 /* syndrome_code value */
 
-#define CX8_HW_ID 0x21e
-#define CX9_HW_ID 0x225
-
 /*
  * MST <--> MTCR API defines
  */
@@ -267,7 +264,7 @@ typedef enum MType_t {
     MST_DRIVER_CR   = 0x80000,
     MST_LINKX_CHIP  = 0x100000,
     MST_BAR0_GW_PCI = 0x200000,
-    MST_GEARBOX     = 0x400000,
+    MST_NVML  = 0x400000,
     MST_DEFAULT     = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER & ~MST_LINKX_CHIP
 } MType;
 
@@ -523,7 +520,7 @@ typedef struct cables_info_t {
      ((mf)->vsec_cap_mask & (1 << VCC_SEMAPHORE_SPACE_SUPPORTED)))
 
 #define VSEC_PXIR_SUPPORT(mf) \
-    (((mf)->device_hw_id == CX8_HW_ID) || ((mf)->device_hw_id == CX9_HW_ID))
+    (mf->pxir_vsec_supp)
 
 /* Macro for VSEC_SUPPORTED_UL */
 #define VSEC_SUPPORTED_UL(mf) \

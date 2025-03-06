@@ -2488,7 +2488,7 @@ bool FwOperations::burnEncryptedImage(FwOperations*, ExtBurnParams&)
     return errmsg("Burning encrypted image not supported");
 }
 
-bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img, bool, bool , bool, bool)
+bool FwOperations::FwExtract4MBImage(vector<u_int8_t>&, bool, bool , bool, bool)
 {
     return errmsg("FwExtract4MBImage not supported");
 }
@@ -2806,7 +2806,7 @@ bool FwOperations::VerifyBranchFormat(const char* vsdString)
     return false;
 }
 
-bool FwOperations::GetDtocAddress(u_int32_t& dTocAddress)
+bool FwOperations::GetDtocAddress(u_int32_t&)
 {
     return errmsg("GetDtocAddress not supported.");
 }
@@ -2830,12 +2830,12 @@ bool FwOperations::GetImageSize(u_int32_t*)
 {
     return errmsg("GetImageSize is not supported");
 }
-bool FwOperations::GetHashesTableData(vector<u_int8_t>& data)
+bool FwOperations::GetHashesTableData(vector<u_int8_t>&)
 {
     return errmsg("GetHashesTableData is not supported");
 }
 
-bool FwOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data)
+bool FwOperations::QueryComponentData(FwComponent::comps_ids_t, u_int32_t, vector<u_int8_t>&)
 {
     return errmsg("GetComponentData is not supported");
 }
@@ -2845,7 +2845,7 @@ bool FwOperations::ReadMccComponent(vector<u_int8_t>&, FwComponent::comps_ids_t,
     return errmsg("ReadMccComponent is not supported");
 }
 
-bool FwOperations::IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVersion)
+bool FwOperations::IsCompatibleToDevice(vector<u_int8_t>&, u_int8_t)
 {
     return errmsg("IsCompatibleToDevice is not supported");
 }

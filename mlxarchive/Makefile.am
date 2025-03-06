@@ -30,8 +30,6 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-CURL_LIBS = -lcurl  -lssl -lcrypto -lrt
-
 AM_CPPFLAGS = \
     -I$(srcdir) \
     -I$(top_srcdir) \
@@ -44,7 +42,6 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/mlxfwops/lib \
     -I$(top_srcdir)/dev_mgt \
     -I$(top_srcdir)/tools_layouts
-
 
 AM_CPPFLAGS += $(JSON_CFLAGS)
 
@@ -89,24 +86,22 @@ mstarchive_LDADD = libmstarchive.la \
                    $(top_builddir)/ext_libs/minixz/libminixz.la \
                    $(top_builddir)/xz_utils/libxz_utils.la \
                    $(top_builddir)/common/libcommon.la \
-                   $(CURL_LIBS) \
-                   -llzma -lm ${LDL}
+                   $(libcurl_LIBS) \
+                   $(liblzma_LIBS) \
+                   -lm ${LDL}
 
 mstarchive_LDFLAGS = -static
 
 if ENABLE_OPENSSL
-mstarchive_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
-else
+mstarchive_LDADD += $(top_builddir)/mlxsign_lib/libmlxsign.la $(openssl_LIBS)
 endif
 
 if ENABLE_CS
-mstarchive_LDADD += $(top_builddir)/tools_crypto/libtools_crypto.a -lcrypto
-else
+mstarchive_LDADD += $(top_builddir)/tools_crypto/libtools_crypto.a $(openssl_LIBS)
 endif
 
 if ENABLE_INBAND
 mstarchive_LDADD += $(top_builddir)/mad_ifc/libmad_ifc.la
-else
 endif
 
 if ENABLE_DPA

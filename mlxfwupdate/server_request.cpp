@@ -84,12 +84,14 @@ int ServerRequest::parseQueryResponse(string jsonTxt, vector<PsidQueryItem>& res
 #ifdef USE_CURL
     string fileTag;
     Json::Value root;
-    mstflint::common::ReaderWrapper readerWrapper;
-    Json::Reader* reader = readerWrapper.getReader();
-    bool rc = reader->parse(jsonTxt, root);
+    Json::CharReaderBuilder builder;
+    const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+    JSONCPP_STRING errs;
+
+    bool rc = reader->parse(jsonTxt.c_str(), jsonTxt.c_str() + jsonTxt.length(), &root, &errs);
     if (!rc)
     {
-        setError(rc, "-E- Failed To parse server response\n");
+        setError(rc, std::string("-E- Failed To parse server response: ").append(errs).append("\n"));
         return -1;
     }
     result.clear();
@@ -258,14 +260,15 @@ int ServerRequest::parseDownloadFilesResponse(string jsonTxt, vector<DownloadedF
 {
 #ifdef USE_CURL
     Json::Value root;
-    mstflint::common::ReaderWrapper readerWrapper;
-    Json::Reader* reader = readerWrapper.getReader();
     string url;
-    // printf("response = %s\n", jsonTxt.c_str());
-    bool rc = reader->parse(jsonTxt, root);
+    Json::CharReaderBuilder builder;
+    const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+    JSONCPP_STRING errs;
+
+    bool rc = reader->parse(jsonTxt.c_str(), jsonTxt.c_str() + jsonTxt.length(), &root, &errs);
     if (!rc)
     {
-        setError(rc, "-E- Failed To parse server response\n");
+        setError(rc, std::string("-E- Failed To parse server response: ").append(errs).append("\n"));
         return -1;
     }
     for (unsigned j = 0; j < root.size(); j++)
@@ -428,56 +431,6 @@ string ServerRequest::genertDownloadUrl(string file_url)
 {
     return _Url + "/" + file_url;
 }
-
-#if 0
-int ServerRequest::queryAllMFAs(vector<string> &mfa_list)
-{
-    int res = 0;
-    vector<string> psid_list;
-    vector<dm_dev_id_t> dev_types_list;
-    vector<string> fw_version_list;
-    string response;
-    mfa_list.clear();
-    Json::Value root;
-    Json::StyledWriter writer;
-    root["psids"]    = "";
-    root["devs"]     = "";
-    root["mode"]     = 1;  // get all mfas;
-    root["versions"] = "";
-    root["key"]      = _key;
-
-    string data = writer.write( root );
-    res = curl_request_str(_WebService.c_str(), data.c_str(), response);
-    if (res) {
-        return res;
-    }
-    res = parseQueryAllMFAsRespone(response, mfa_list);
-    return res;
-}
-
-
-int ServerRequest::parseQueryAllMFAsRespone(string jsonTxt, vector <string> &result)
-{
-
-    Json::Value root;
-    mstflint::common::ReaderWrapper readerWrapper;
-    Json::Reader* reader = readerWrapper.getReader();
-    string url;
-    bool rc = reader->parse(jsonTxt, root);
-    if (!rc) {
-        setError(rc, "-E- Failed To parse server response\n");
-        //To be removed
-        return rc;
-    }
-    for (unsigned j = 0; j < root.size(); j++) {
-        if (root[j].isString()) {
-            url = root[j].asString();
-            result.push_back(_Url + url);
-        }
-    }
-    return 0;
-}
-#endif
 
 int ServerRequest::download(string url, string dest_path)
 {

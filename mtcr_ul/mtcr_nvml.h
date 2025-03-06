@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,27 +28,16 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-#pragma once
+#ifndef _MTCR_GPU_DRIVER /* guard */
+#define _MTCR_GPU_DRIVER
 
-#include "json/reader.h"
+#include "mtcr.h"
 
-namespace mstflint
-{
-namespace common
-{
-class JSON_API ReaderWrapper
-{
-public:
-    ReaderWrapper();
-    ~ReaderWrapper();
+int init_nvml_ifc(mfile* mf, const char* dev_name);
+int nvml_mclose(mfile* mf);
+u_int16_t nvml_get_device_id(mfile* mf);
 
-    Json::Reader* getReader();
-
-private:
-    Json::Reader* reader;
-};
-
-} // namespace common
-} // namespace mstflint
+#endif /* _MTCR_GPU_DRIVER guard */

@@ -375,11 +375,13 @@ mlxCfgStatus
 
     oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName] = {};
     oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName]["read_only"] = queryOutItem.isReadOnly;
-    oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName]["modified"] = modified;
-
     writeParamToJson(oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName], "next_value",
                      queryOutItem.strNextVal, queryOutItem.nextVal);
 
+    if (showDefault || showCurrent)
+    {
+        oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName]["modified"] = modified;
+    }
     if (showDefault)
     {
         writeParamToJson(oJsonValue[deviceIndex]["tlv_configuration"][queryOutItem.mlxconfigName], "default_value",
@@ -686,15 +688,16 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander,
     if (_mlxParams.isJsonOutputRequested)
     {
         ifstream jsonInputStream(_mlxParams.NVOutputFile);
-        mstflint::common::ReaderWrapper readerWrapper;
-        Json::Reader* reader = readerWrapper.getReader();
-        bool rc = reader->parse(jsonInputStream, oJsonValue);
-        jsonInputStream.close();
-        if (!rc)
-        {
-            cerr << "failed to read json file [" << _mlxParams.NVOutputFile << "]" << endl;
+        Json::CharReaderBuilder builder;
+        builder["collectComments"] = true;
+        JSONCPP_STRING errs;
+        bool rc = parseFromStream(builder, jsonInputStream, &oJsonValue, &errs);
+	jsonInputStream.close();
+	if (!rc)
+	{
+            cerr << "failed to read json file [" << _mlxParams.NVOutputFile << "] : " << errs << endl;
             return MLX_CFG_ERROR;
-        }
+	}
     }
 
     string deviceIndex = "Device #" + std::to_string(devIndex);

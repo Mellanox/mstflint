@@ -107,7 +107,7 @@ class FwTraceUtilities(object):
                 raise RuntimeError("Unexpected device name format")
             return device_name[3:]
         elif operatingSys == "Linux":
-            cmd = "mdevices_info -vv"
+            cmd = "mstdevices_info -vv"
             (rc, out, _) = FwTraceUtilities._cmd_exec(cmd)
             if rc != 0:
                 raise RuntimeError("Failed to get device PCI address")

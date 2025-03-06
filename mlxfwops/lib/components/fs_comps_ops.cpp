@@ -79,7 +79,7 @@ bool FsCompsOperations::CheckFwVersion(ComponentFwVersion currentVersion, u_int8
     return true;
 }
 
-bool FsCompsOperations::FwQuery(fw_info_t* fwInfo, bool, bool, bool, bool, bool)
+bool FsCompsOperations::FwQuery(fw_info_t*, bool, bool, bool, bool, bool)
 {
     return Unsupported(__FUNCTION__);
 }
@@ -89,63 +89,63 @@ bool FsCompsOperations::SignForSecureBoot(const char*, const char*, const MlxSig
     return Unsupported(__FUNCTION__);
 }
 
-bool FsCompsOperations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc, bool ignoreDToc)
+bool FsCompsOperations::FwVerify(VerifyCallBack, bool, bool, bool)
 {
     return Unsupported(__FUNCTION__);
 }
 
-bool FsCompsOperations::FwReadRom(std::vector<u_int8_t>& romSect)
+bool FsCompsOperations::FwReadRom(std::vector<u_int8_t>&)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwBurnRom(FImage* romImg,
-                                  bool ignoreProdIdCheck,
-                                  bool ignoreDevidCheck,
-                                  ProgressCallBack progressFunc)
+bool FsCompsOperations::FwBurnRom(FImage*,
+                                  bool,
+                                  bool,
+                                  ProgressCallBack)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progressFunc)
+bool FsCompsOperations::FwDeleteRom(bool, ProgressCallBack)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwBurn(FwOperations* imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc)
+bool FsCompsOperations::FwBurn(FwOperations*, u_int8_t, ProgressCallBack)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams)
+bool FsCompsOperations::FwBurnAdvanced(FwOperations*, ExtBurnParams&)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwBurnBlock(FwOperations* imageOps, ProgressCallBack progressFunc)
+bool FsCompsOperations::FwBurnBlock(FwOperations*, ProgressCallBack)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc, ProgressCallBack progressFunc)
+bool FsCompsOperations::FwSetGuids(sg_params_t&, PrintCallBack, ProgressCallBack)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
+bool FsCompsOperations::FwSetMFG(fs3_uid_t, PrintCallBack)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
+bool FsCompsOperations::FwSetMFG(guid_t, PrintCallBack)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, PrintCallBack printFunc)
+bool FsCompsOperations::FwSetVSD(char*, ProgressCallBack, PrintCallBack)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
+bool FsCompsOperations::FwSetVPD(char*, PrintCallBack)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc)
+bool FsCompsOperations::FwSetAccessKey(hw_key_t, ProgressCallBack)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage)
+bool FsCompsOperations::FwGetSection(u_int32_t, std::vector<u_int8_t>&, bool)
 {
     return Unsupported(__FUNCTION__);
 }
@@ -153,11 +153,11 @@ bool FsCompsOperations::FwResetNvData()
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwShiftDevData(PrintCallBack progressFunc)
+bool FsCompsOperations::FwShiftDevData(PrintCallBack)
 {
     return Unsupported(__FUNCTION__);
 }
-bool FsCompsOperations::FwCalcMD5(u_int8_t md5sum[16])
+bool FsCompsOperations::FwCalcMD5(u_int8_t[16])
 {
     return Unsupported(__FUNCTION__);
 }
