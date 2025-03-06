@@ -65,6 +65,7 @@ protected:
     bool GetDtocAddress(u_int32_t& dTocAddress) override;
     bool GetMfgInfo(u_int8_t* buff) override;
     bool CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_int32_t imageCntxLog2ChunkSize) override;
+    bool IsExtracted();
     u_int32_t _ncore_bch_ptr;
 
 private:
