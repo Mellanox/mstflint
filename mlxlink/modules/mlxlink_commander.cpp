@@ -235,18 +235,20 @@ u_int32_t MlxlinkCommander::getTechnologyFromMGIR()
 
 void MlxlinkCommander::getProductTechnology()
 {
-    /* Use SLRG to get the product technology, for backward compatibility */
+    // Use SLTP to get the product technology, for backward compatibility
     try
     {
         sendPrmReg(ACCESS_REG_SLTP, GET);
         _productTechnology = getVersion(getFieldValue("version"));
-        if (_productTechnology <= 2) {
+        if (_productTechnology <= 2)
+        {
             _productTechnology = PRODUCT_28NM;
         }
     }
-    catch(MlxRegException & exc)
+    catch (MlxRegException& exc)
     {
-        if (!_productTechnology) {
+        if (!_productTechnology)
+        {
             throw MlxRegException("Unable to get product technology: %s", exc.what_s().c_str());
         }
     }
@@ -418,6 +420,35 @@ void MlxlinkCommander::updateSwControlStatus()
     if (portMask & currentModuleControl) {
         _isSwControled = true;
     }
+}
+
+void MlxlinkCommander::findFirstValidPort()
+{
+    u_int32_t minLabelPort = 0;
+    string regName = ACCESS_REG_PLLP, fieldToGet = "label_port";
+    if (_devID == DeviceGB100 || _devID == DeviceGR100)
+    {
+        regName = ACCESS_REG_PLIB;
+        fieldToGet = "ib_port";
+    }
+
+    for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++)
+    {
+        try
+        {
+            sendPrmReg(regName, GET, "local_port=%d", localPort);
+        }
+        catch (MlxRegException& exp)
+        {
+            continue;
+        }
+        u_int32_t currentLabelPort = getFieldValue(fieldToGet);
+        if (minLabelPort == 0 || currentLabelPort < minLabelPort)
+        {
+            minLabelPort = currentLabelPort;
+        }
+    }
+    _userInput._labelPort = minLabelPort;
 }
 
 void MlxlinkCommander::labelToLocalPort()
@@ -1496,6 +1527,21 @@ bool MlxlinkCommander::checkIfModuleExtSupported()
     return isModuleExtSupported;
 }
 
+bool MlxlinkCommander::checkDPNvSupport()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_MCAM, GET);
+        // the MCAM, much like PCAM is written upside-down
+        u_int32_t capMask = getFieldValue("mng_feature_cap_mask[1]");
+        return capMask & MCAM_CAP_MASK_DPNV;
+    }
+    catch (...)
+    {
+    }
+    return false;
+}
+
 void MlxlinkCommander::showModuleInfo()
 {
     try
@@ -1781,6 +1827,13 @@ void MlxlinkCommander::operatingInfoPage()
     {
         throw MlxRegException(string(exc.what()));
     }
+}
+
+bool MlxlinkCommander::isBackplane()
+{
+    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+
+    return (getFieldValue("cable_identifier") == IDENTIFIER_BACKPLANE);
 }
 
 void MlxlinkCommander::supportedInfoPage()
@@ -3309,6 +3362,7 @@ void MlxlinkCommander::clearCounters()
 {
     try
     {
+        MlxlinkRecord::printCmdLine("Clearing Counters", _jsonRoot);
         if (_mf->tp != MST_IB)
         {
             sendPrmReg(ACCESS_REG_PPCNT, SET, "clr=%d,grp=%d", 1, PPCNT_ALL_GROUPS);
@@ -3322,10 +3376,10 @@ void MlxlinkCommander::clearCounters()
             }
         }
     }
-    catch(const std::exception& exc)
+    catch (const std::exception& exc)
     {
         _allUnhandledErrors +=
-            string("Clearing counters via PPCNT raised the following exception: ") + string(exc.what()) + string("\n");
+          string("Clearing counters via PPCNT raised the following exception: ") + string(exc.what()) + string("\n");
     }
 }
 
@@ -4506,6 +4560,11 @@ void MlxlinkCommander::printOuptputVector(vector < MlxlinkCmdPrint >& cmdOut)
 void MlxlinkCommander::initCablesCommander()
 {
     gearboxBlock(CABLE_FLAG);
+
+    if (isBackplane())
+    {
+        throw MlxRegException("Command not supported for backplane ports!");
+    }
 
     if (_plugged && !_mngCableUnplugged) {
         _cablesCommander = new MlxlinkCablesCommander(_jsonRoot);

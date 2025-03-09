@@ -75,6 +75,7 @@ public:
     int _planeInd;
     bool _isHCA;
     bool _isSwControled;
+    bool _isDPNvSupported;
 };
 
 #endif /* MLXLINK_REG_PARSER_H */
