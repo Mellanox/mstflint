@@ -263,6 +263,7 @@ typedef enum
     FWCOMPS_FAIL_TO_LOCK_FLASH_SEMAPHORE,
     FWCOMPS_VERIFY_FAILED,
     FWCOMPS_DEVICE_NOT_PRESENT,
+    FWCOMPS_COMP_BLOCKED,
 
     // MCC Return codes
     FWCOMPS_MCC_ERR_CODES = 0x100,
@@ -394,7 +395,7 @@ public:
     u_int32_t getFwSupport();
     mfile* getMfileObj() { return _mf; };
     bool fwReactivateImage();
-    bool burnComponents(std::vector<FwComponent>& comps,
+    bool burnComponents(FwComponent& comp,
                         ProgressCallBackAdvSt* progressFuncAdv = (ProgressCallBackAdvSt*)NULL);
     bool getFwComponents(std::vector<FwComponent>& comps, bool readEn = false);
     bool readComponent(FwComponent::comps_ids_t compType,
@@ -432,7 +433,7 @@ public:
     bool GetComponentInfo(FwComponent::comps_ids_t compType, u_int32_t deviceIndex, vector<u_int8_t>& data);
     void GenerateHandle();
     bool isMCDDSupported() { return _isDmaSupported; };
-    bool IsSecondaryHost(bool& isSecondary);
+    bool IsSecondaryHost(int moduleIndex, bool& isSecondary);
     bool runPGUID(reg_access_hca_pguid_reg_ext* guidsInfo,
                   u_int32_t local_port = 0,
                   u_int8_t pnat = 0,
@@ -576,6 +577,7 @@ private:
     bool isDMAAccess();
     bool fallbackToRegisterAccess();
     bool IsDevicePresent(FwComponent::comps_ids_t compType);
+    bool IsCfgComponentType(FwComponent::comps_ids_t type);
 
     std::vector<comp_query_st> _compsQueryMap;
     bool _fwSupport;
@@ -611,5 +613,6 @@ private:
 #ifndef UEFI_BUILD
     trm_ctx _trm;
 #endif
+    u_int8_t _secureHostState;
 };
 #endif /* USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_ */

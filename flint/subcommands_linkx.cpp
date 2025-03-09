@@ -199,7 +199,6 @@ FlintStatus QuerySubCommand::QueryLinkX(string deviceName, string outputFile, st
         return FLINT_FAILED;
     }
     FwComponent bootImageComponent;
-    std::vector<FwComponent> compsToBurn;
     for (unsigned int i = 0; i < deviceIds.size(); i++)
     {
         if (deviceIds[i] < 0)
@@ -322,17 +321,23 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
     std::vector<FwComponent> compsToBurn;
     FwCompsMgr fwCompsAccess(mfile, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
     fwCompsAccess.GenerateHandle();
-    bool isSecondary = false;
-    if (/*(mfile->flags & MDEVS_IB) && */ !fwCompsAccess.IsSecondaryHost(isSecondary)) // TODO - check if limitation
-                                                                                       // applicable to IB only
+    if (IS_HCA(_devInfo.fw_info.chip_type) ||
+        (!linkx_auto_update && deviceSize == 1 && deviceIndex > 0)) // check for PCI switche and single port use cases
     {
-        printf("-E- Failed to query if device is secondary\n");
-        return FLINT_FAILED;
-    }
-    if (isSecondary)
-    {
-        printf("-E- LinkX burn is not supported by secondary.\n");
-        return FLINT_FAILED;
+        bool isSecondary = false;
+        // module index for PMAOS starts at 0, converting device index (lable port) requires substracting 1
+        if (/*dm_is_ib_access(mfile) && */ !fwCompsAccess.IsSecondaryHost(deviceIndex - 1,
+                                                                            isSecondary)) // TODO - check if limitation
+                                                                                          // applicable to IB only
+        {
+            printf("-E- Failed to query if device is secondary\n");
+            return FLINT_FAILED;
+        }
+        if (isSecondary)
+        {
+            printf("-E- LinkX burn is not supported by secondary.\n");
+            return FLINT_FAILED;
+        }
     }
     fwCompsAccess.SetIndexAndSize(deviceIndex + 1, deviceSize, linkx_auto_update, activationNeeded,
                                   downloadTransferNeeded, activate_delay_sec);
@@ -343,7 +348,6 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
     }
 
     bootImageComponent.init(binaryData, binaryData.size(), FwComponent::COMPID_LINKX);
-    compsToBurn.push_back(bootImageComponent);
     if (downloadTransferNeeded)
     {
         printf("-I- Downloading FW ...\n");
@@ -357,7 +361,7 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName,
             }
         }
     }
-    if (!fwCompsAccess.burnComponents(compsToBurn, funcAdv))
+    if (!fwCompsAccess.burnComponents(bootImageComponent, funcAdv))
     {
         char* err_msg = (char*)fwCompsAccess.getLastErrMsg();
         bool IbError = (strcmp("Unknown MAD error", err_msg) == 0);

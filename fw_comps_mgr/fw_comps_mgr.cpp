@@ -1237,11 +1237,11 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
     return true;
 }
 
-bool FwCompsMgr::IsSecondaryHost(bool& isSecondary)
+bool FwCompsMgr::IsSecondaryHost(int moduleIndex, bool& isSecondary)
 {
     reg_access_switch_pmaos_reg_ext pmaos;
-
     memset(&pmaos, 0, sizeof(pmaos));
+    pmaos.module = moduleIndex;
     mft_signal_set_handling(1);
     reg_access_status_t rc = reg_access_pmaos(_mf, REG_ACCESS_METHOD_GET, &pmaos);
 
@@ -1343,10 +1343,48 @@ bool FwCompsMgr::queryComponentStatus(u_int32_t componentIndex, comp_status_st* 
     return true;
 }
 
-bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCallBackAdvSt* progressFuncAdv)
+bool FwCompsMgr::IsCfgComponentType(FwComponent::comps_ids_t type)
 {
-    unsigned i = 0;
+    bool res = false;
+    switch (type)
+    {
+        case FwComponent::COMPID_USER_NVCONFIG:
+        case FwComponent::COMPID_OEM_NVCONFIG:
+        case FwComponent::COMPID_MLNX_NVCONFIG:
+        case FwComponent::COMPID_CS_TOKEN:
+        case FwComponent::COMPID_DBG_TOKEN:
+        case FwComponent::COMPID_RMCS_TOKEN:
+        case FwComponent::COMPID_RMDT_TOKEN:
+        case FwComponent::COMPID_CRCS_TOKEN:
+        case FwComponent::COMPID_CRDT_TOKEN:
+        {
+            res = true;
+            break;
+        }
+        default:
+            break;
+    }
 
+    return res;
+}
+
+bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progressFuncAdv)
+{
+    const u_int8_t LOCK_FW_UPDATE = 0x2;
+    const u_int8_t LOCK_HOST_CFG = 0x3;
+    FwComponent::comps_ids_t component = comp.getType();
+    if (_secureHostState == LOCK_FW_UPDATE && component == FwComponent::COMPID_BOOT_IMG)
+    {
+        _lastError = FWCOMPS_COMP_BLOCKED;
+        DPRINTF(("MCC flow for component %d is blocked!\n", component));
+        return false;
+    }
+    if (_secureHostState == LOCK_HOST_CFG && IsCfgComponentType(component))
+    {
+        _lastError = FWCOMPS_COMP_BLOCKED;
+        DPRINTF(("MCC flow for component %d is blocked!\n", component));
+        return false;
+    }
     if (!RefreshComponentsStatus()) {
         return false;
     }
@@ -1358,47 +1396,52 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
         }
         return false;
     }
-    if (_downloadTransferNeeded == true) {
-        for (i = 0; i < comps.size(); i++) {
-            int component = comps[i].getType();
-            _currCompQuery = &(_compsQueryMap[component]);
-            if (!_currCompQuery->valid) {
-                _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
-                DPRINTF(("MCC flow for component %d is not supported!\n", component));
+    if (_downloadTransferNeeded == true)
+    {
+        _currCompQuery = &(_compsQueryMap[component]);
+        if (!_currCompQuery->valid)
+        {
+            _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
+            DPRINTF(("MCC flow for component %d is not supported!\n", component));
+            return false;
+        }
+        _componentIndex = _currCompQuery->comp_status.component_index;
+        if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comp.getSize(), FSMST_INITIALIZE, progressFuncAdv))
+        {
+            DPRINTF(("Initializing downloading FW component has failed!\n"));
+            return false;
+        }
+        _currComponentStr = FwComponent::getCompIdStr(comp.getType());
+        control_fsm_args_t fsmUpdateCommand;
+        fsmUpdateCommand.command = FSM_CMD_UPDATE_COMPONENT;
+        fsmUpdateCommand.expectedState = FSMST_DOWNLOAD;
+        fsmUpdateCommand.size = comp.getSize();
+        fsmUpdateCommand.currentState = FSMST_INITIALIZE;
+        fsmUpdateCommand.progressFuncAdv = progressFuncAdv;
+        if (!accessComponent(0, comp.getSize(), (u_int32_t*)(comp.getData().data()), MCC_WRITE_COMP, progressFuncAdv,
+                             &fsmUpdateCommand))
+        {
+            DPRINTF(("Downloading FW component has failed!\n"));
+            return false;
+        }
+        if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv))
+        {
+            DPRINTF(("Verifying FW component has failed!\n"));
+            return false;
+        }
+        if (comp.getType() == FwComponent::COMPID_LINKX ||
+            comp.getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM)
+        {
+            if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
+                            progressFuncAdv))
+            {
+                DPRINTF(("Downstream LinkX begin has failed!\n"));
                 return false;
             }
-            _componentIndex = _currCompQuery->comp_status.component_index;
-            if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comps[i].getSize(), FSMST_INITIALIZE,
-                            progressFuncAdv)) {
-                DPRINTF(("Initializing downloading FW component has failed!\n"));
+            if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_DOWNSTREAM_DEVICE_TRANSFER, progressFuncAdv))
+            {
+                DPRINTF(("Downstream LinkX ending has failed!\n"));
                 return false;
-            }
-            _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
-            control_fsm_args_t fsmUpdateCommand;
-            fsmUpdateCommand.command = FSM_CMD_UPDATE_COMPONENT;
-            fsmUpdateCommand.expectedState = FSMST_DOWNLOAD;
-            fsmUpdateCommand.size = comps[i].getSize();
-            fsmUpdateCommand.currentState = FSMST_INITIALIZE;
-            fsmUpdateCommand.progressFuncAdv = progressFuncAdv;
-            if (!accessComponent(0, comps[i].getSize(), (u_int32_t*)(comps[i].getData().data()), MCC_WRITE_COMP,
-                                 progressFuncAdv, &fsmUpdateCommand)) {
-                DPRINTF(("Downloading FW component has failed!\n"));
-                return false;
-            }
-            if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
-                DPRINTF(("Verifying FW component has failed!\n"));
-                return false;
-            }
-            if (comps[i].getType() == FwComponent::COMPID_LINKX || comps[i].getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM) {
-                if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
-                                progressFuncAdv)) {
-                    DPRINTF(("Downstream LinkX begin has failed!\n"));
-                    return false;
-                }
-                if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_DOWNSTREAM_DEVICE_TRANSFER, progressFuncAdv)) {
-                    DPRINTF(("Downstream LinkX ending has failed!\n"));
-                    return false;
-                }
             }
         }
     }
@@ -1544,8 +1587,8 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 u_int32_t FwCompsMgr::getFwSupport()
 {
     u_int32_t devid = 0;
-
     _isDmaSupported = false;
+    _secureHostState = 0x0;
 #ifndef UEFI_BUILD
     if (getenv("FW_CTRL") != NULL) {
         return 1;
@@ -1604,20 +1647,20 @@ u_int32_t FwCompsMgr::getFwSupport()
         return 0;
     }
     _mircCaps = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 3], 2, 1);
-    int mode = 0;
+    
     struct tools_open_mlock mlock;
     memset(&mlock, 0, sizeof(mlock));
     rc = reg_access_secure_host(_mf, REG_ACCESS_METHOD_GET, &mlock);
     if (rc == ME_OK)
     {
-        mode = mlock.operation;
+        _secureHostState = mlock.operation;
     }
 
     DPRINTF((
       "getFwSupport _mircCaps = %d mcqsCap = %d mcqiCap = %d mccCap = %d mcdaCap = %d mqisCap = %d mcddCap = %d mgirCap = %d secure_host = %d\n",
-      _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, mode));
-
-    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && mode == 0)
+      _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, _secureHostState));
+    const int LOCKED = 0x1;
+    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && _secureHostState != LOCKED)
     {
         return 1;
     }
@@ -1988,6 +2031,9 @@ unsigned char* FwCompsMgr::getLastErrMsg()
 
     case FWCOMPS_FAIL_TO_CREATE_TRM_CONTEXT:
         return (unsigned char*)"Failed to create TRM context";
+
+    case FWCOMPS_COMP_BLOCKED:
+            return (unsigned char*)"Component is blocked to update";
 
     case FWCOMPS_REG_ACCESS_BAD_STATUS_ERR:
     case FWCOMPS_REG_ACCESS_BAD_METHOD:
