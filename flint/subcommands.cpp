@@ -2131,8 +2131,13 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
+    bool device_encrypted = false;
     bool image_encrypted = false;
-
+    if (!_fwOps->isEncrypted(device_encrypted))
+    {
+        reportErr(true, "Failed to identify if device is encrypted.\n");
+        return FLINT_FAILED;
+    }
     if (!_imgOps->isEncrypted(image_encrypted))
     {
         reportErr(true, "Failed to identify if image is encrypted.\n");
@@ -3341,7 +3346,7 @@ FlintStatus BurnSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
-    if (device_encrypted != image_encrypted)
+    if (device_encrypted != image_encrypted && _fwType != FIT_FS5)
     {
         reportErr(true, "Burning %sencrypted image on %sencrypted device is not allowed.\n",
                   image_encrypted ? "" : "non-", device_encrypted ? "" : "non-");
@@ -4043,8 +4048,7 @@ bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
     else if (fwInfo.fs3_info.fs3_uids_info.guid_format == MULTI_ASIC_GUIDS)
     {
         printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.multi_asic_guids.image_layout_uids.base_guid,
-                            fwInfo.fs3_info.orig_fs3_uids_info.multi_asic_guids.image_layout_uids.base_guid, "GUID",
-                            false);
+                            fwInfo.fs3_info.fs3_uids_info.multi_asic_guids.image_layout_uids.base_guid, "GUID", false);
         printFs4OrNewerUids(fwInfo.fs3_info.fs3_uids_info.multi_asic_guids.image_layout_uids.base_mac,
                             fwInfo.fs3_info.orig_fs3_uids_info.multi_asic_guids.image_layout_uids.base_mac, "MAC",
                             false);
