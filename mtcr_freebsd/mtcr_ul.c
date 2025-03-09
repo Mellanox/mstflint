@@ -3110,8 +3110,9 @@ static int check_zf_through_vsc(mfile* mf)
 {
     int prev_address_space = mf->address_space;
 
-    /* If the device is in LF mode or the recovery space is not supported, the device is not in Zombiefish mode. */
-    if (is_livefish_device(mf) || (mset_addr_space(mf, AS_RECOVERY) == -1)) {
+    // If the device is in LF mode or the recovery space is not supported, the device is not in Zombiefish mode.
+    if (is_livefish_device_int(mf) || mset_addr_space(mf, AS_RECOVERY) == -1)
+    {
         return 0;
     }
 
