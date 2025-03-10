@@ -136,9 +136,9 @@
 
 <node name="MRFV_data_auto_ext" descr="" attr_is_union="1" size="0xc.0" >
 	<field name="MRFV_CVB_ext" descr="" subnode="MRFV_CVB_ext" offset="0x0.0" selected_by="cvb" size="0x8.0" />
+	<field name="MRFV_ULT_ext" descr="" subnode="MRFV_ULT_ext" offset="0x0.0" selected_by="ULT" size="0xc.0" />
 	<field name="MRFV_PVS_MAIN_ext" descr="" subnode="MRFV_PVS_MAIN_ext" offset="0x0.0" selected_by="pvs_main_die" size="0x4.0" />
 	<field name="MRFV_PVS_TILE_ext" descr="" subnode="MRFV_PVS_TILE_ext" offset="0x0.0" selected_by="pvs_tile_0" size="0x4.0" />
-	<field name="MRFV_ULT_ext" descr="" subnode="MRFV_ULT_ext" offset="0x0.0" selected_by="ULT" size="0xc.0" />
 </node>
 
 <node name="MRFV_ext" descr="" size="0x40.0" >
@@ -298,23 +298,29 @@
 	<field name="mgcr_reg" descr="" subnode="mgcr_reg_ext" capability="0" offset="0x0.0" selected_by="MGCR" size="0x20" />
 	<field name="mjtag" descr="" subnode="mjtag_ext" capability="0" offset="0x0.0" selected_by="MJTAG" size="0x30" />
 	<field name="MRSV" descr="" subnode="MRSV_ext" capability="0" offset="0x0.0" selected_by="MRSV" size="0x40" />
+	<field name="mtpps_reg" descr="" subnode="mtpps_reg_ext" capability="0" offset="0x0.0" selected_by="MTPPS" size="0x38" />
+	<field name="mtutc_reg" descr="" subnode="mtutc_reg_ext" capability="0" offset="0x0.0" selected_by="MTUTC" size="0x1c" />
+	<field name="mrtc_reg" descr="" subnode="mrtc_reg_ext" capability="0" offset="0x0.0" selected_by="MRTC" size="0x10" />
+	<field name="msmr" descr="" subnode="msmr_ext" capability="0" offset="0x0.0" selected_by="MSMR" size="0x10" />
+	<field name="mrtcq_reg" descr="" subnode="mrtcq_reg_ext" capability="0" offset="0x0.0" selected_by="MRTCQ" size="0x40" />
+	<field name="mtptm_reg" descr="" subnode="mtptm_reg_ext" capability="0" offset="0x0.0" selected_by="MTPTM" size="0x10" />
+	<field name="mtctr_reg" descr="" subnode="mtctr_reg_ext" capability="0" offset="0x0.0" selected_by="MTCTR" size="0x18" />
 	<field name="MSECQ_reg" descr="" subnode="MSECQ_reg_ext" capability="0" offset="0x0.0" selected_by="MSECQ" size="0x40" />
 	<field name="MSEES_reg" descr="" subnode="MSEES_reg_ext" capability="0" offset="0x0.0" selected_by="MSEES" size="0x40" />
-	<field name="PBWS_reg" descr="" subnode="PBWS_reg_ext" capability="0" offset="0x0.0" selected_by="PBWS" size="0x8" />
-	<field name="PPCR" descr="" subnode="PPCR_ext" capability="0" offset="0x0.0" selected_by="PPCR" size="0x10" />
-	<field name="credential_handle" descr="" subnode="credential_handle_ext" capability="0" offset="0x0.0" selected_by="CREDENTIAL_HANDLE" size="0x300" />
-	<field name="crypto_operational" descr="" subnode="crypto_operational_ext" capability="0" offset="0x0.0" selected_by="CRYPTO_OPERATIONAL" size="0x80" />
-	<field name="cwcam" descr="" subnode="cwcam_ext" capability="0" offset="0x0.0" selected_by="CWCAM" size="0x50" />
-	<field name="cwtp" descr="" subnode="cwtp_ext" capability="0" offset="0x0.0" selected_by="CWTP" size="0x40" />
-	<field name="cwtpm" descr="" subnode="cwtpm_ext" capability="0" offset="0x0.0" selected_by="CWTPM" size="0x44" />
-	<field name="db_threshold_register_layout" descr="" subnode="db_threshold_register_layout_ext" capability="0" offset="0x0.0" selected_by="DB_TRESHOLD" size="0x10" />
-	<field name="dcbx_app_reg" descr="" subnode="dcbx_app_reg_ext" capability="0" offset="0x0.0" selected_by="DCBX_APPLICATION" size="0x14" />
-	<field name="dcbx_param_reg" descr="" subnode="dcbx_param_reg_ext" capability="0" offset="0x0.0" selected_by="DCBX_PARAM" size="0x40" />
-	<field name="dtor_reg" descr="" subnode="dtor_reg_ext" capability="0" offset="0x0.0" selected_by="DTOR" size="0x40" />
-	<field name="fp_sl_map_arg" descr="" subnode="fp_sl_map_arg_ext" capability="0" offset="0x0.0" selected_by="FP_SL_MAP" size="0x4" />
-	<field name="hca_cap_encap" descr="" subnode="hca_cap_encap_ext" capability="0" offset="0x0.0" selected_by="HCA_CMD_ENCAP" size="0x60" />
-	<field name="import_kek_handle" descr="" subnode="import_kek_handle_ext" capability="0" offset="0x0.0" selected_by="IMPORT_KEK_HANDLE" size="0x300" />
-	<field name="mcam_reg" descr="" subnode="mcam_reg_ext" capability="0" offset="0x0.0" selected_by="MCAM" size="0x48" />
+	<field name="mcia" descr="" subnode="mcia_ext" capability="0" offset="0x0.0" selected_by="MCIA" size="0x94" />
+	<field name="mcion" descr="" subnode="mcion_ext" capability="0" offset="0x0.0" selected_by="MCION" size="0x10" />
+	<field name="pmaos_reg" descr="" subnode="pmaos_reg_ext" capability="0" offset="0x0.0" selected_by="PMAOS" size="0x10" />
+	<field name="pmtm_reg" descr="" subnode="pmtm_reg_ext" capability="0" offset="0x0.0" selected_by="PMTM" size="0x10" />
+	<field name="mtcap" descr="" subnode="mtcap_ext" capability="0" offset="0x0.0" selected_by="MTCAP" size="0x10" />
+	<field name="mtmp" descr="" subnode="mtmp_ext" capability="0" offset="0x0.0" selected_by="MTMP" size="0x20" />
+	<field name="mvcap_reg" descr="" subnode="mvcap_reg_ext" capability="0" offset="0x0.0" selected_by="MVCAP" size="0x10" />
+	<field name="mvcr" descr="" subnode="mvcr_ext" capability="0" offset="0x0.0" selected_by="MVCR" size="0x18" />
+	<field name="mpcs_reg" descr="" subnode="mpcs_reg_ext" capability="0" offset="0x0.0" selected_by="MPCS" size="0x50" />
+	<field name="mfrl_reg" descr="" subnode="mfrl_reg_ext" capability="0" offset="0x0.0" selected_by="MFRL" size="0x8" />
+	<field name="mroq" descr="" subnode="mroq_ext" capability="0" offset="0x0.0" selected_by="MROQ" size="0x20" />
+	<field name="mrsi" descr="" subnode="mrsi_ext" capability="0" offset="0x0.0" selected_by="MRSI" size="0x40" />
+	<field name="mcqs_reg" descr="" subnode="mcqs_reg_ext" capability="0" offset="0x0.0" selected_by="MCQS" size="0x10" />
+	<field name="mcqi_reg" descr="" subnode="mcqi_reg_ext" capability="0" offset="0x0.0" selected_by="MCQI" size="0x94" />
 	<field name="mcc_reg" descr="" subnode="mcc_reg_ext" capability="0" offset="0x0.0" selected_by="MCC" size="0x20" />
 	<field name="mcda_reg" descr="" subnode="mcda_reg_ext" capability="0" offset="0x0.0" selected_by="MCDA" size="0x90" />
 	<field name="mcdd_reg" descr="" subnode="mcdd_reg_ext" capability="0" offset="0x0.0" selected_by="MCDD" size="0x20" />
@@ -330,57 +336,26 @@
 	<field name="mteir_reg" descr="" subnode="mteir_reg_ext" capability="0" offset="0x0.0" selected_by="MTEIR" size="0xc" />
 	<field name="mdtr_reg" descr="" subnode="mdtr_reg_ext" capability="0" offset="0x0.0" selected_by="MDTR" size="0xb0" />
 	<field name="mdsr_reg" descr="" subnode="mdsr_reg_ext" capability="0" offset="0x0.0" selected_by="MDSR" size="0x30" />
-	<field name="mdtr_reg" descr="" subnode="mdtr_reg_ext" capability="0" offset="0x0.0" selected_by="MDTR" size="0xb0" />
-	<field name="merr" descr="" subnode="merr_ext" capability="0" offset="0x0.0" selected_by="MERR" size="0x14" />
-	<field name="mfba_reg" descr="" subnode="mfba_reg_ext" capability="0" offset="0x0.0" selected_by="MFBA" size="0x10c" />
-	<field name="mfbe_reg" descr="" subnode="mfbe_reg_ext" capability="0" offset="0x0.0" selected_by="MFBE" size="0xc" />
-	<field name="mfcdr_reg" descr="" subnode="mfcdr_reg_ext" capability="0" offset="0x0.0" selected_by="MFCDR" size="0x8" />
-	<field name="mfpa_reg" descr="" subnode="mfpa_reg_ext" capability="0" offset="0x0.0" selected_by="MFPA" size="0x20" />
-	<field name="mfrl_reg" descr="" subnode="mfrl_reg_ext" capability="0" offset="0x0.0" selected_by="MFRL" size="0x8" />
 	<field name="mfsv_reg" descr="" subnode="mfsv_reg_ext" capability="0" offset="0x0.0" selected_by="MFSV" size="0x30" />
-	<field name="mgcr_reg" descr="" subnode="mgcr_reg_ext" capability="0" offset="0x0.0" selected_by="MGCR" size="0x20" />
-	<field name="mgir" descr="" subnode="mgir_ext" capability="0" offset="0x0.0" selected_by="MGIR" size="0xa0" />
-	<field name="mgls" descr="" subnode="mgls_ext" capability="0" offset="0x0.0" selected_by="MGLS" size="0xc" />
-	<field name="mgnle_reg" descr="" subnode="mgnle_reg_ext" capability="0" offset="0x0.0" selected_by="MGNLE" size="0x20" />
-	<field name="mhmpr_reg" descr="" subnode="mhmpr_reg_ext" capability="0" offset="0x0.0" selected_by="MHMPR" size="0x14" />
-	<field name="mirc_reg" descr="" subnode="mirc_reg_ext" capability="0" offset="0x0.0" selected_by="MIRC" size="0x8" />
-	<field name="misoc_reg" descr="" subnode="misoc_reg_ext" capability="0" offset="0x0.0" selected_by="MISOC" size="0x120" />
-	<field name="mjtag" descr="" subnode="mjtag_ext" capability="0" offset="0x0.0" selected_by="MJTAG" size="0x30" />
+	<field name="mtcq_reg" descr="" subnode="mtcq_reg_ext" capability="0" offset="0x0.0" selected_by="MTCQ" size="0x70" />
+	<field name="mqdik_reg" descr="" subnode="mqdik_reg_ext" capability="0" offset="0x0.0" selected_by="MQDIK" size="0x208" />
 	<field name="mkdc_reg" descr="" subnode="mkdc_reg_ext" capability="0" offset="0x0.0" selected_by="MKDC" size="0x2c" />
-	<field name="mlcr" descr="" subnode="mlcr_ext" capability="0" offset="0x0.0" selected_by="MLCR" size="0xc" />
-	<field name="mmdio" descr="" subnode="mmdio_ext" capability="0" offset="0x0.0" selected_by="MMDIO" size="0xc" />
-	<field name="mmhi_reg" descr="" subnode="mmhi_reg_ext" capability="0" offset="0x0.0" selected_by="MMHI" size="0x80" />
+	<field name="mfcdr_reg" descr="" subnode="mfcdr_reg_ext" capability="0" offset="0x0.0" selected_by="MFCDR" size="0x8" />
+	<field name="msgcr_reg" descr="" subnode="msgcr_reg_ext" capability="0" offset="0x0.0" selected_by="MSGCR" size="0x8" />
 	<field name="mnvda_reg" descr="" subnode="mnvda_reg_ext" capability="0" offset="0x0.0" selected_by="MNVDA" size="0x10c" />
 	<field name="mnvdi_reg" descr="" subnode="mnvdi_reg_ext" capability="0" offset="0x0.0" selected_by="MNVDI" size="0xc" />
+	<field name="mnvqc_reg" descr="" subnode="mnvqc_reg_ext" capability="0" offset="0x0.0" selected_by="MNVQC" size="0x8" />
+	<field name="mnvia_reg" descr="" subnode="mnvia_reg_ext" capability="0" offset="0x0.0" selected_by="MNVIA" size="0x8" />
 	<field name="mnvgc_reg" descr="" subnode="mnvgc_reg_ext" capability="0" offset="0x0.0" selected_by="MNVGC" size="0x10" />
 	<field name="mnvgn_reg" descr="" subnode="mnvgn_reg_ext" capability="0" offset="0x0.0" selected_by="MNVGN" size="0x20" />
-	<field name="mnvia_reg" descr="" subnode="mnvia_reg_ext" capability="0" offset="0x0.0" selected_by="MNVIA" size="0x8" />
-	<field name="mnvqc_reg" descr="" subnode="mnvqc_reg_ext" capability="0" offset="0x0.0" selected_by="MNVQC" size="0x8" />
-	<field name="mpcir" descr="" subnode="mpcir_ext" capability="0" offset="0x0.0" selected_by="MPCIR" size="0xa0" />
-	<field name="mpcnt_reg" descr="" subnode="mpcnt_reg_ext" capability="0" offset="0x0.0" selected_by="MPCNT" size="0x100" />
-	<field name="mpcs_reg" descr="" subnode="mpcs_reg_ext" capability="0" offset="0x0.0" selected_by="MPCS" size="0x50" />
-	<field name="mpecs_reg" descr="" subnode="mpecs_reg_ext" capability="0" offset="0x0.0" selected_by="MPECS" size="0x20" />
-	<field name="mpegc_reg" descr="" subnode="mpegc_reg_ext" capability="0" offset="0x0.0" selected_by="MPEGC" size="0x2c" />
-	<field name="mpein_reg" descr="" subnode="mpein_reg_ext" capability="0" offset="0x0.0" selected_by="MPEIN" size="0x30" />
-	<field name="mpeinj_reg" descr="" subnode="mpeinj_reg_ext" capability="0" offset="0x0.0" selected_by="MPEINJ" size="0x20" />
-	<field name="mpir" descr="" subnode="mpir_ext" capability="0" offset="0x0.0" selected_by="MPIR" size="0x10" />
-	<field name="mqdik_reg" descr="" subnode="mqdik_reg_ext" capability="0" offset="0x0.0" selected_by="MQDIK" size="0x208" />
-	<field name="mqis_reg" descr="" subnode="mqis_reg_ext" capability="0" offset="0x0.0" selected_by="MQIS" size="0x18" />
-	<field name="mroq" descr="" subnode="mroq_ext" capability="0" offset="0x0.0" selected_by="MROQ" size="0x20" />
-	<field name="mrpr_reg" descr="" subnode="mrpr_reg_ext" capability="0" offset="0x0.0" selected_by="MRPR" size="0x108" />
-	<field name="mrsi" descr="" subnode="mrsi_ext" capability="0" offset="0x0.0" selected_by="MRSI" size="0x40" />
-	<field name="mrtc_reg" descr="" subnode="mrtc_reg_ext" capability="0" offset="0x0.0" selected_by="MRTC" size="0x10" />
-	<field name="mrtcq_reg" descr="" subnode="mrtcq_reg_ext" capability="0" offset="0x0.0" selected_by="MRTCQ" size="0x40" />
-	<field name="msci" descr="" subnode="msci_ext" capability="0" offset="0x0.0" selected_by="MSCI" size="0xc" />
-	<field name="msgcr_reg" descr="" subnode="msgcr_reg_ext" capability="0" offset="0x0.0" selected_by="MSGCR" size="0x8" />
-	<field name="msgi" descr="" subnode="msgi_ext" capability="0" offset="0x0.0" selected_by="MSGI" size="0x80" />
-	<field name="msmr" descr="" subnode="msmr_ext" capability="0" offset="0x0.0" selected_by="MSMR" size="0x10" />
-	<field name="mtcap" descr="" subnode="mtcap_ext" capability="0" offset="0x0.0" selected_by="MTCAP" size="0x10" />
-	<field name="mtcq_reg" descr="" subnode="mtcq_reg_ext" capability="0" offset="0x0.0" selected_by="MTCQ" size="0x70" />
-	<field name="mtctr_reg" descr="" subnode="mtctr_reg_ext" capability="0" offset="0x0.0" selected_by="MTCTR" size="0x18" />
-	<field name="mtdc" descr="" subnode="mtdc_ext" capability="0" offset="0x0.0" selected_by="MTDC" size="0x20" />
+	<field name="mgnle_reg" descr="" subnode="mgnle_reg_ext" capability="0" offset="0x0.0" selected_by="MGNLE" size="0x20" />
+	<field name="mgls" descr="" subnode="mgls_ext" capability="0" offset="0x0.0" selected_by="MGLS" size="0xc" />
+	<field name="mvts_reg" descr="" subnode="mvts_reg_ext" capability="0" offset="0x0.0" selected_by="MVTS" size="0x14" />
+	<field name="mtrc_cap_reg" descr="" subnode="mtrc_cap_reg_ext" capability="0" offset="0x0.0" selected_by="MTRC_CAP" size="0x84" />
+	<field name="mtrc_conf_reg" descr="" subnode="mtrc_conf_reg_ext" capability="0" offset="0x0.0" selected_by="MTRC_CONF" size="0x80" />
+	<field name="mtrc_stdb_reg" descr="" subnode="mtrc_stdb_reg_ext" capability="0" offset="0x0.0" selected_by="MTRC_STDB" size="0xc" />
+	<field name="mtrc_ctrl_reg" descr="" subnode="mtrc_ctrl_reg_ext" capability="0" offset="0x0.0" selected_by="MTRC_CTRL" size="0x40" />
 	<field name="mteim_reg" descr="" subnode="mteim_reg_ext" capability="0" offset="0x0.0" selected_by="MTEIM" size="0x30" />
-	<field name="mteir_reg" descr="" subnode="mteir_reg_ext" capability="0" offset="0x0.0" selected_by="MTEIR" size="0xc" />
 	<field name="mtie" descr="" subnode="mtie_ext" capability="0" offset="0x0.0" selected_by="MTIE" size="0x30" />
 	<field name="mtim" descr="" subnode="mtim_ext" capability="0" offset="0x0.0" selected_by="MTIM" size="0x10" />
 	<field name="mtdc" descr="" subnode="mtdc_ext" capability="0" offset="0x0.0" selected_by="MTDC" size="0x20" />
@@ -419,88 +394,9 @@
 	<field name="dtor_reg" descr="" subnode="dtor_reg_ext" capability="0" offset="0x0.0" selected_by="DTOR" size="0x40" />
 	<field name="vhca_icm_ctrl" descr="" subnode="vhca_icm_ctrl_ext" capability="0" offset="0x0.0" selected_by="VHCA_ICM_CTRL" size="0x40" />
 	<field name="nic_cap_ext_reg" descr="" subnode="nic_cap_ext_reg_ext" capability="0" offset="0x0.0" selected_by="NIC_CAP_EXT_REG" size="0x80" />
-	<field name="nic_cap_reg" descr="" subnode="nic_cap_reg_ext" capability="0" offset="0x0.0" selected_by="NIC_CAP_REG" size="0x80" />
-	<field name="nic_dpa_eu_partition_reg" descr="" subnode="nic_dpa_eu_partition_reg_ext" capability="0" offset="0x0.0" selected_by="NIC_DPA_EU_PARTITION_REG" size="0x300" />
 	<field name="nic_dpa_eug_reg" descr="" subnode="nic_dpa_eug_reg_ext" capability="0" offset="0x0.0" selected_by="NIC_DPA_EUG_REG" size="0x100" />
 	<field name="nic_dpa_perf_ctrl_reg" descr="" subnode="nic_dpa_perf_ctrl_reg_ext" capability="0" offset="0x0.0" selected_by="NIC_DPA_PERF_CTRL_REG" size="0x40" />
-	<field name="nvmf_target_pacer_defaults" descr="" subnode="nvmf_target_pacer_defaults_ext" capability="0" offset="0x0.0" selected_by="NVMF_TARGET_PACER_DEFAULTS" size="0x40" />
-	<field name="paos_reg" descr="" subnode="paos_reg_ext" capability="0" offset="0x0.0" selected_by="PAOS" size="0x10" />
-	<field name="pbmc_reg" descr="" subnode="pbmc_reg_ext" capability="0" offset="0x0.0" selected_by="PBMC" size="0x6c" />
-	<field name="pbsr_reg" descr="" subnode="pbsr_reg_ext" capability="0" offset="0x0.0" selected_by="PBSR" size="0x64" />
-	<field name="pcam_reg" descr="" subnode="pcam_reg_ext" capability="0" offset="0x0.0" selected_by="PCAM" size="0x50" />
-	<field name="pcap_reg" descr="" subnode="pcap_reg_ext" capability="0" offset="0x0.0" selected_by="PCAP" size="0x14" />
-	<field name="pcmr_reg" descr="" subnode="pcmr_reg_ext" capability="0" offset="0x0.0" selected_by="PCMR" size="0xc" />
-	<field name="pcnr_reg" descr="" subnode="pcnr_reg_ext" capability="0" offset="0x0.0" selected_by="PCNR" size="0xc" />
-	<field name="pddr_reg" descr="" subnode="pddr_reg_ext" capability="0" offset="0x0.0" selected_by="PDDR" size="0x100" />
-	<field name="peir_reg" descr="" subnode="peir_reg_ext" capability="0" offset="0x0.0" selected_by="PEIR" size="0xc" />
-	<field name="pemi" descr="" subnode="pemi_ext" capability="0" offset="0x0.0" selected_by="PEMI" size="0x100" />
-	<field name="pepc_reg" descr="" subnode="pepc_reg_ext" capability="0" offset="0x0.0" selected_by="PEPC" size="0x10" />
-	<field name="pfcc_reg" descr="" subnode="pfcc_reg_ext" capability="0" offset="0x0.0" selected_by="PFCC" size="0x20" />
-	<field name="pgmr" descr="" subnode="pgmr_ext" capability="0" offset="0x0.0" selected_by="PGMR" size="0x2c" />
-	<field name="pguid_reg" descr="" subnode="pguid_reg_ext" capability="0" offset="0x0.0" selected_by="PGUID" size="0x60" />
-	<field name="pipg_reg" descr="" subnode="pipg_reg_ext" capability="0" offset="0x0.0" selected_by="PIPG" size="0x8" />
-	<field name="pltc_reg" descr="" subnode="pltc_reg_ext" capability="0" offset="0x0.0" selected_by="PLTC" size="0x10" />
-	<field name="pmaos_reg" descr="" subnode="pmaos_reg_ext" capability="0" offset="0x0.0" selected_by="PMAOS" size="0x10" />
-	<field name="pmcr_reg" descr="" subnode="pmcr_reg_ext" capability="0" offset="0x0.0" selected_by="PMCR" size="0x2c" />
-	<field name="pmdr_reg" descr="" subnode="pmdr_reg_ext" capability="0" offset="0x0.0" selected_by="PMDR" size="0x48" />
-	<field name="pmlp_reg" descr="" subnode="pmlp_reg_ext" capability="0" offset="0x0.0" selected_by="PMLP" size="0x40" />
-	<field name="pmmp_reg" descr="" subnode="pmmp_reg_ext" capability="0" offset="0x0.0" selected_by="PMMP" size="0x40" />
-	<field name="pmpd_reg" descr="" subnode="pmpd_reg_ext" capability="0" offset="0x0.0" selected_by="PMPD" size="0x30" />
-	<field name="pmpr_reg" descr="" subnode="pmpr_reg_ext" capability="0" offset="0x0.0" selected_by="PMPR" size="0x10" />
-	<field name="pmpt_reg" descr="" subnode="pmpt_reg_ext" capability="0" offset="0x0.0" selected_by="PMPT" size="0x1c" />
-	<field name="pmscr_reg" descr="" subnode="pmscr_reg_ext" capability="0" offset="0x0.0" selected_by="PMSCR" size="0x48" />
-	<field name="pmtm_reg" descr="" subnode="pmtm_reg_ext" capability="0" offset="0x0.0" selected_by="PMTM" size="0x10" />
-	<field name="pmtu_reg" descr="" subnode="pmtu_reg_ext" capability="0" offset="0x0.0" selected_by="PMTU" size="0x10" />
-	<field name="port_state_behavior" descr="" subnode="port_state_behavior_ext" capability="0" offset="0x0.0" selected_by="PORT_STATE_BEHAVIOR" size="0x10" />
-	<field name="ppad_reg" descr="" subnode="ppad_reg_ext" capability="0" offset="0x0.0" selected_by="PPAD" size="0x10" />
-	<field name="ppaos_reg" descr="" subnode="ppaos_reg_ext" capability="0" offset="0x0.0" selected_by="PPAOS" size="0x10" />
-	<field name="ppcc_reg" descr="" subnode="ppcc_reg_ext" capability="0" offset="0x0.0" selected_by="PPCC" size="0xfc" />
-	<field name="ppcnt_reg" descr="" subnode="ppcnt_reg_ext" capability="0" offset="0x0.0" selected_by="PPCNT" size="0x100" />
-	<field name="pphcr" descr="" subnode="pphcr_ext" capability="0" offset="0x0.0" selected_by="PPHCR" size="0x50" />
-	<field name="pplm_reg" descr="" subnode="pplm_reg_ext" capability="0" offset="0x0.0" selected_by="PPLM" size="0x78" />
-	<field name="pplr_reg" descr="" subnode="pplr_reg_ext" capability="0" offset="0x0.0" selected_by="PPLR" size="0x8" />
-	<field name="pprm_reg" descr="" subnode="pprm_reg_ext" capability="0" offset="0x0.0" selected_by="PPRM" size="0x50" />
-	<field name="pprt_reg" descr="" subnode="pprt_reg_ext" capability="0" offset="0x0.0" selected_by="PPRT" size="0x24" />
-	<field name="ppsc_reg" descr="" subnode="ppsc_reg_ext" capability="0" offset="0x0.0" selected_by="PPSC" size="0x30" />
-	<field name="pptb_reg" descr="" subnode="pptb_reg_ext" capability="0" offset="0x0.0" selected_by="PPTB" size="0xc" />
-	<field name="pptt_reg" descr="" subnode="pptt_reg_ext" capability="0" offset="0x0.0" selected_by="PPTT" size="0x1c" />
-	<field name="prei_reg" descr="" subnode="prei_reg_ext" capability="0" offset="0x0.0" selected_by="PREI" size="0x18" />
-	<field name="prtl_reg" descr="" subnode="prtl_reg_ext" capability="0" offset="0x0.0" selected_by="PRTL" size="0x20" />
-	<field name="pter_reg" descr="" subnode="pter_reg_ext" capability="0" offset="0x0.0" selected_by="PTER" size="0x20" />
-	<field name="ptys_reg" descr="" subnode="ptys_reg_ext" capability="0" offset="0x0.0" selected_by="PTYS" size="0x44" />
-	<field name="pvls" descr="" subnode="pvls_ext" capability="0" offset="0x0.0" selected_by="PVLS" size="0x20" />
-	<field name="qcam" descr="" subnode="qcam_ext" capability="0" offset="0x0.0" selected_by="QCAM" size="0x48" />
-	<field name="qeec" descr="" subnode="qeec_ext" capability="0" offset="0x0.0" selected_by="QEEC" size="0x20" />
-	<field name="qetcr" descr="" subnode="qetcr_ext" capability="0" offset="0x0.0" selected_by="QETCR" size="0x50" />
-	<field name="qhll" descr="" subnode="qhll_ext" capability="0" offset="0x0.0" selected_by="QHLL" size="0xc" />
-	<field name="qpdp" descr="" subnode="qpdp_ext" capability="0" offset="0x0.0" selected_by="QPDP" size="0x8" />
-	<field name="qpdpm" descr="" subnode="qpdpm_ext" capability="0" offset="0x0.0" selected_by="QPDPM" size="0x84" />
-	<field name="qprt" descr="" subnode="qprt_ext" capability="0" offset="0x0.0" selected_by="QPRT" size="0x8" />
-	<field name="qpts" descr="" subnode="qpts_ext" capability="0" offset="0x0.0" selected_by="QPTS" size="0x8" />
-	<field name="qshr" descr="" subnode="qshr_ext" capability="0" offset="0x0.0" selected_by="QSHR" size="0x50" />
-	<field name="qspcp" descr="" subnode="qspcp_ext" capability="0" offset="0x0.0" selected_by="QSPCP" size="0xc" />
-	<field name="qspip" descr="" subnode="qspip_ext" capability="0" offset="0x0.0" selected_by="QSPIP" size="0x8" />
-	<field name="qtct" descr="" subnode="qtct_ext" capability="0" offset="0x0.0" selected_by="QTCT" size="0x8" />
-	<field name="register_host_endianness" descr="" subnode="register_host_endianness_ext" capability="0" offset="0x0.0" selected_by="HOST_ENDIANNESS" size="0x10" />
-	<field name="register_loopback_control" descr="" subnode="register_loopback_control_ext" capability="0" offset="0x0.0" selected_by="Loopback_Control_Register" size="0x10" />
-	<field name="register_misc_counters" descr="" subnode="register_misc_counters_ext" capability="0" offset="0x0.0" selected_by="MISC_COUNTERS" size="0x20" />
-	<field name="register_power_settings" descr="" subnode="register_power_settings_ext" capability="0" offset="0x0.0" selected_by="POWER_SETTINGS" size="0x10" />
-	<field name="register_unit_perf_counters_cfg" descr="" subnode="register_unit_perf_counters_cfg_ext" capability="0" offset="0x0.0" selected_by="UNIT_PERF_COUNTERS_CFG" size="0x20" />
-	<field name="register_unit_perf_counters_data" descr="" subnode="register_unit_perf_counters_data_ext" capability="0" offset="0x0.0" selected_by="UNIT_PERF_COUNTERS_DATA" size="0x20" />
-	<field name="register_unti_perf_global_ctrl" descr="" subnode="register_unti_perf_global_ctrl_ext" capability="0" offset="0x0.0" selected_by="UNIT_PERF_COUNTERS_GLOBAL_CTRL" size="0x10" />
-	<field name="resource_dump" descr="" subnode="resource_dump_ext" capability="0" offset="0x0.0" selected_by="Resource_dump_registers" size="0x100" />
-	<field name="roce_accl_reg" descr="" subnode="roce_accl_reg_ext" capability="0" offset="0x0.0" selected_by="ROCE_ACCL" size="0x40" />
-	<field name="sbcam" descr="" subnode="sbcam_ext" capability="0" offset="0x0.0" selected_by="SBCAM" size="0x4c" />
-	<field name="sbcm" descr="" subnode="sbcm_ext" capability="0" offset="0x0.0" selected_by="SBCM" size="0x28" />
-	<field name="sbpr" descr="" subnode="sbpr_ext" capability="0" offset="0x0.0" selected_by="SBPR" size="0x18" />
-	<field name="set_node_in" descr="" subnode="set_node_in_ext" capability="0" offset="0x0.0" selected_by="SET_NODE" size="0x40" />
-	<field name="slred_reg" descr="" subnode="slred_reg_ext" capability="0" offset="0x0.0" selected_by="SLRED" size="0xa8" />
-	<field name="slrg_reg" descr="" subnode="slrg_reg_ext" capability="0" offset="0x0.0" selected_by="SLRG" size="0x28" />
-	<field name="sltp_reg" descr="" subnode="sltp_reg_ext" capability="0" offset="0x0.0" selected_by="SLTP" size="0x4c" />
-	<field name="sltpv2_reg" descr="" subnode="sltpv2_reg_ext" capability="0" offset="0x0.0" selected_by="SLTPv2" size="0x10c" />
-	<field name="vhca_icm_ctrl" descr="" subnode="vhca_icm_ctrl_ext" capability="0" offset="0x0.0" selected_by="VHCA_ICM_CTRL" size="0x40" />
-	<field name="vhca_trust_level" descr="" subnode="vhca_trust_level_ext" capability="0" offset="0x0.0" selected_by="VHCA_TRUST_LEVEL" size="0x10" />
-	<field name="ztt" descr="" subnode="ztt_ext" capability="0" offset="0x0.0" selected_by="ZTT" size="0x10" />
+	<field name="nic_dpa_eu_partition_reg" descr="" subnode="nic_dpa_eu_partition_reg_ext" capability="0" offset="0x0.0" selected_by="NIC_DPA_EU_PARTITION_REG" size="0x300" />
 </node>
 
 <node name="access_reg_summary_selector_ext" descr="" attr_is_union="1" size="0x300" >
@@ -535,14 +431,14 @@
 </node>
 
 <node name="config_item_type_auto_ext" descr="" attr_is_union="1" size="0x4.0" >
-	<field name="configuration_item_type_class_file_ext" descr="" subnode="configuration_item_type_class_file_ext" offset="0x0.0" size="0x4.0" />
 	<field name="configuration_item_type_class_global_ext" descr="" subnode="configuration_item_type_class_global_ext" offset="0x0.0" size="0x4.0" />
-	<field name="configuration_item_type_class_host_ext" descr="" subnode="configuration_item_type_class_host_ext" offset="0x0.0" size="0x4.0" />
+	<field name="configuration_item_type_class_physical_port_ext" descr="" subnode="configuration_item_type_class_physical_port_ext" offset="0x0.0" size="0x4.0" />
+	<field name="configuration_item_type_class_per_host_pf_ext" descr="" subnode="configuration_item_type_class_per_host_pf_ext" offset="0x0.0" size="0x4.0" />
 	<field name="configuration_item_type_class_log_ext" descr="" subnode="configuration_item_type_class_log_ext" offset="0x0.0" size="0x4.0" />
+	<field name="configuration_item_type_class_file_ext" descr="" subnode="configuration_item_type_class_file_ext" offset="0x0.0" size="0x4.0" />
+	<field name="configuration_item_type_class_host_ext" descr="" subnode="configuration_item_type_class_host_ext" offset="0x0.0" size="0x4.0" />
 	<field name="configuration_item_type_class_module_ext" descr="" subnode="configuration_item_type_class_module_ext" offset="0x0.0" size="0x4.0" />
 	<field name="configuration_item_type_class_multi_instance_ext" descr="" subnode="configuration_item_type_class_multi_instance_ext" offset="0x0.0" size="0x4.0" />
-	<field name="configuration_item_type_class_per_host_pf_ext" descr="" subnode="configuration_item_type_class_per_host_pf_ext" offset="0x0.0" size="0x4.0" />
-	<field name="configuration_item_type_class_physical_port_ext" descr="" subnode="configuration_item_type_class_physical_port_ext" offset="0x0.0" size="0x4.0" />
 </node>
 
 <node name="configuration_item_type_class_file_ext" descr="" size="0x4.0" >
@@ -1161,11 +1057,11 @@
 </node>
 
 <node name="mcqi_reg_data_auto_ext" descr="" attr_is_union="1" size="0x7c.0" >
-	<field name="mcqi_activation_method_ext" descr="" subnode="mcqi_activation_method_ext" offset="0x0.0" selected_by="ACTIVATION_METHOD" size="0x7c.0" />
 	<field name="mcqi_cap_ext" descr="" subnode="mcqi_cap_ext" offset="0x0.0" selected_by="CAPABILITIES" size="0x7c.0" />
-	<field name="mcqi_clock_source_properties_ext" descr="" subnode="mcqi_clock_source_properties_ext" offset="0x0.0" selected_by="CLOCK_SOURCE_PROPERTIES" size="0x4.0" />
-	<field name="mcqi_linkx_properties_ext" descr="" subnode="mcqi_linkx_properties_ext" offset="0x0.0" selected_by="LINKX_PROPERTIES" size="0x7c.0" />
 	<field name="mcqi_version_ext" descr="" subnode="mcqi_version_ext" offset="0x0.0" selected_by="VERSION" size="0x7c.0" />
+	<field name="mcqi_activation_method_ext" descr="" subnode="mcqi_activation_method_ext" offset="0x0.0" selected_by="ACTIVATION_METHOD" size="0x7c.0" />
+	<field name="mcqi_linkx_properties_ext" descr="" subnode="mcqi_linkx_properties_ext" offset="0x0.0" selected_by="LINKX_PROPERTIES" size="0x7c.0" />
+	<field name="mcqi_clock_source_properties_ext" descr="" subnode="mcqi_clock_source_properties_ext" offset="0x0.0" selected_by="CLOCK_SOURCE_PROPERTIES" size="0x4.0" />
 </node>
 
 <node name="mcqi_reg_ext" descr="" size="0x94.0" >
@@ -1748,7 +1644,6 @@
 
 <node name="msci_ext" descr="" size="0xc.0" >
 	<field name="index" descr="CPLD index" access="INDEX" offset="0x0.0" size="0x0.4" />
-	<field name="version_type" descr="[DWIP]\;Version type returned in version field\;0: major\;1: minor" access="INDEX" enum="major=0x0,minor=0x1" offset="0x0.8" size="0x0.2" />
 	<field name="version" descr="CPLD version" access="RO" offset="0x4.0" size="0x4.0" />
 </node>
 
@@ -2216,15 +2111,6 @@
 	<field name="link_width_active" descr="IB link active width:\;Bit 0: 1x\;Bit 1: 2x\;Bit 2: 4x\;\;Other - reserved" access="RO" offset="0x0.16" size="0x0.16" />
 </node>
 
-<node name="pd_link_eth_enabled_ext" descr="" size="0x4.0" >
-	<field name="link_eth_active" descr="Ethernet protocols active: see PTYS.ext_eth_proto_oper" access="RO" offset="0x0.0" size="0x4.0" />
-</node>
-
-<node name="pd_link_ib_enabled_ext" descr="" size="0x4.0" >
-	<field name="link_speed_active" descr="IB link active speed:\;Bit 0: SDR\;Bit 1: DDR\;Bit 2: QDR\;Bit 3: FDR10\;Bit 4: FDR\;Bit 5: EDR\;Bit 6: HDR\;Bit 7: NDR\;Bit 8: XDR" access="RO" enum="SDR=0x1,DDR=0x2,QDR=0x4,FDR10=0x8,FDR=0x10,EDR=0x20,HDR=0x40,NDR=0x80,XDR=0x100" offset="0x0.0" size="0x0.16" />
-	<field name="link_width_active" descr="IB link active width:\;Bit 0: 1x\;Bit 1: 2x\;Bit 2: 4x\;\;Other - reserved" access="RO" offset="0x0.16" size="0x0.16" />
-</node>
-
 <node name="pddr_c2p_link_enabled_eth_ext" descr="" size="0x4.0" >
 	<field name="core_to_phy_link_eth_enabled" descr="Ethernet protocols admin state: see PTYS.ext_eth_proto_admin" access="RO" offset="0x0.0" size="0x4.0" />
 </node>
@@ -2422,11 +2308,13 @@
 </node>
 
 <node name="pddr_operation_info_page_cable_proto_cap_auto_ext" descr="" attr_is_union="1" size="0x4.0" >
+	<field name="pddr_cable_cap_ib_ext" descr="" subnode="pddr_cable_cap_ib_ext" offset="0x0.0" selected_by="InfiniBand" size="0x4.0" />
 	<field name="pddr_cable_cap_eth_ext" descr="" subnode="pddr_cable_cap_eth_ext" offset="0x0.0" selected_by="Ethernet" size="0x4.0" />
 	<field name="pddr_cable_cap_nvlink_ext" descr="" subnode="pddr_cable_cap_nvlink_ext" offset="0x0.0" selected_by="NVLink" size="0x4.0" />
 </node>
 
 <node name="pddr_operation_info_page_core_to_phy_link_enabled_auto_ext" descr="" attr_is_union="1" size="0x4.0" >
+	<field name="pddr_c2p_link_enabled_ib_ext" descr="" subnode="pddr_c2p_link_enabled_ib_ext" offset="0x0.0" selected_by="InfiniBand" size="0x4.0" />
 	<field name="pddr_c2p_link_enabled_eth_ext" descr="" subnode="pddr_c2p_link_enabled_eth_ext" offset="0x0.0" selected_by="Ethernet" size="0x4.0" />
 	<field name="pddr_c2p_link_enabled_nvlink_ext" descr="" subnode="pddr_c2p_link_enabled_nvlink_ext" offset="0x0.0" selected_by="NVLink" size="0x4.0" />
 </node>
@@ -2453,6 +2341,7 @@
 </node>
 
 <node name="pddr_operation_info_page_link_active_auto_ext" descr="" attr_is_union="1" size="0x4.0" >
+	<field name="pddr_link_active_ib_ext" descr="" subnode="pddr_link_active_ib_ext" offset="0x0.0" selected_by="InfiniBand" size="0x4.0" />
 	<field name="pddr_link_active_eth_ext" descr="" subnode="pddr_link_active_eth_ext" offset="0x0.0" selected_by="Ethernet" size="0x4.0" />
 	<field name="pddr_link_active_nvlink_ext" descr="" subnode="pddr_link_active_nvlink_ext" offset="0x0.0" selected_by="NVLink" size="0x4.0" />
 </node>
@@ -2468,6 +2357,7 @@
 </node>
 
 <node name="pddr_operation_info_page_phy_manager_link_enabled_auto_ext" descr="" attr_is_union="1" size="0x4.0" >
+	<field name="pddr_phy_manager_link_enabled_ib_ext" descr="" subnode="pddr_phy_manager_link_enabled_ib_ext" offset="0x0.0" selected_by="InfiniBand" size="0x4.0" />
 	<field name="pddr_phy_manager_link_enabled_eth_ext" descr="" subnode="pddr_phy_manager_link_enabled_eth_ext" offset="0x0.0" selected_by="Ethernet" size="0x4.0" />
 	<field name="pddr_phy_manager_link_enabled_nvlink_ext" descr="" subnode="pddr_phy_manager_link_enabled_nvlink_ext" offset="0x0.0" selected_by="NVLink" size="0x4.0" />
 </node>
@@ -3069,8 +2959,8 @@
 </node>
 
 <node name="pmmp_reg_qsfp_cable_protocol_technology_auto_ext" descr="" attr_is_union="1" size="0xc.0" >
-	<field name="pmmp_cmis_protocol_override_layout_ext" descr="" subnode="pmmp_cmis_protocol_override_layout_ext" offset="0x0.0" selected_by="Override_cable_protocols_and_technology_for_CMIS" size="0xc.0" />
 	<field name="pmmp_qsfp_protocol_override_layout_ext" descr="" subnode="pmmp_qsfp_protocol_override_layout_ext" offset="0x0.0" selected_by="Override_cable_protocols_and_technology_for_QSFP" size="0xc.0" />
+	<field name="pmmp_cmis_protocol_override_layout_ext" descr="" subnode="pmmp_cmis_protocol_override_layout_ext" offset="0x0.0" selected_by="Override_cable_protocols_and_technology_for_CMIS" size="0xc.0" />
 </node>
 
 <node name="pmmp_reg_sfp_cable_protocol_technology_auto_ext" descr="" attr_is_union="1" size="0xc.0" >
@@ -3287,21 +3177,19 @@
 </node>
 
 <node name="ppcnt_reg_counter_set_auto_ext" descr="" attr_is_union="1" size="0xf8.0" >
-	<field name="IB_long_portcntrs_attribute_grp_data_ext" descr="" subnode="IB_long_portcntrs_attribute_grp_data_ext" offset="0x0.0" selected_by="InfiniBand_Extended_Port_Counters" size="0xf8.0" />
-	<field name="IB_portcntrs_attribute_grp_data_ext" descr="" subnode="IB_portcntrs_attribute_grp_data_ext" offset="0x0.0" selected_by="InfiniBand_Port_Counters" size="0xf8.0" />
-	<field name="eth_2819_cntrs_grp_data_layout_ext" descr="" subnode="eth_2819_cntrs_grp_data_layout_ext" offset="0x0.0" selected_by="RFC_2819_Counters" size="0xf8.0" />
-	<field name="eth_2863_cntrs_grp_data_layout_ext" descr="" subnode="eth_2863_cntrs_grp_data_layout_ext" offset="0x0.0" selected_by="RFC_2863_Counters" size="0xf8.0" />
-	<field name="eth_3635_cntrs_grp_data_layout_ext" descr="" subnode="eth_3635_cntrs_grp_data_layout_ext" offset="0x0.0" selected_by="RFC_3635_Counters" size="0xf8.0" />
 	<field name="eth_802_3_cntrs_grp_data_layout_ext" descr="" subnode="eth_802_3_cntrs_grp_data_layout_ext" offset="0x0.0" selected_by="IEEE_802_3_Counters" size="0xf8.0" />
-	<field name="eth_discard_cntrs_grp_ext" descr="" subnode="eth_discard_cntrs_grp_ext" offset="0x0.0" selected_by="Ethernet_Discard_Counters" size="0xf8.0" />
+	<field name="eth_2863_cntrs_grp_data_layout_ext" descr="" subnode="eth_2863_cntrs_grp_data_layout_ext" offset="0x0.0" selected_by="RFC_2863_Counters" size="0xf8.0" />
+	<field name="eth_2819_cntrs_grp_data_layout_ext" descr="" subnode="eth_2819_cntrs_grp_data_layout_ext" offset="0x0.0" selected_by="RFC_2819_Counters" size="0xf8.0" />
+	<field name="eth_3635_cntrs_grp_data_layout_ext" descr="" subnode="eth_3635_cntrs_grp_data_layout_ext" offset="0x0.0" selected_by="RFC_3635_Counters" size="0xf8.0" />
 	<field name="eth_extended_cntrs_grp_data_layout_ext" descr="" subnode="eth_extended_cntrs_grp_data_layout_ext" offset="0x0.0" selected_by="Ethernet_Extended_Counters" size="0xf8.0" />
+	<field name="eth_discard_cntrs_grp_ext" descr="" subnode="eth_discard_cntrs_grp_ext" offset="0x0.0" selected_by="Ethernet_Discard_Counters" size="0xf8.0" />
 	<field name="eth_per_prio_grp_data_layout_ext" descr="" subnode="eth_per_prio_grp_data_layout_ext" offset="0x0.0" selected_by="Per_Priority_Counters" size="0xf8.0" />
-	<field name="eth_per_traffic_class_cong_layout_ext" descr="" subnode="eth_per_traffic_class_cong_layout_ext" offset="0x0.0" selected_by="Per_Traffic_Class_Congestion_Counters" size="0xf8.0" />
 	<field name="eth_per_traffic_class_layout_ext" descr="" subnode="eth_per_traffic_class_layout_ext" offset="0x0.0" selected_by="Per_Traffic_Class_Counters" size="0xf8.0" />
 	<field name="phys_layer_cntrs_ext" descr="" subnode="phys_layer_cntrs_ext" offset="0x0.0" selected_by="Physical_Layer_Counters" size="0xf8.0" />
+	<field name="eth_per_traffic_class_cong_layout_ext" descr="" subnode="eth_per_traffic_class_cong_layout_ext" offset="0x0.0" selected_by="Per_Traffic_Class_Congestion_Counters" size="0xf8.0" />
 	<field name="phys_layer_stat_cntrs_ext" descr="" subnode="phys_layer_stat_cntrs_ext" offset="0x0.0" selected_by="Physical_Layer_Statistical_Counters" size="0xf8.0" />
-	<field name="ppcnt_infiniband_general_counter_ext" descr="" subnode="ppcnt_infiniband_general_counter_ext" offset="0x0.0" selected_by="InfiniBand_General_Counters" size="0xf8.0" />
-	<field name="ppcnt_infiniband_packets_counter_ext" descr="" subnode="ppcnt_infiniband_packets_counter_ext" offset="0x0.0" selected_by="InfiniBand_pkts_counters" size="0xf8.0" />
+	<field name="IB_portcntrs_attribute_grp_data_ext" descr="" subnode="IB_portcntrs_attribute_grp_data_ext" offset="0x0.0" selected_by="InfiniBand_Port_Counters" size="0xf8.0" />
+	<field name="IB_long_portcntrs_attribute_grp_data_ext" descr="" subnode="IB_long_portcntrs_attribute_grp_data_ext" offset="0x0.0" selected_by="InfiniBand_Extended_Port_Counters" size="0xf8.0" />
 	<field name="ppcnt_plr_counters_ext" descr="" subnode="ppcnt_plr_counters_ext" offset="0x0.0" selected_by="PLR_counters_group" size="0xf8.0" />
 	<field name="ppcnt_rs_fec_histograms_counters_ext" descr="" subnode="ppcnt_rs_fec_histograms_counters_ext" offset="0x0.0" selected_by="RS_FEC_Histogram_group" size="0xf8.0" />
 	<field name="ppcnt_infiniband_packets_counter_ext" descr="" subnode="ppcnt_infiniband_packets_counter_ext" offset="0x0.0" selected_by="InfiniBand_pkts_counters" size="0xf8.0" />
@@ -3987,9 +3875,8 @@
 </node>
 
 <node name="slrg_reg_page_data_auto_ext" descr="" attr_is_union="1" is_conditional="1" size="0x24.0" >
-	<field name="slrg_16nm_ext" descr="" subnode="slrg_16nm_ext" condition="($(parent).port_type == Network_Port AND ($(parent).version == prod_16nm))" offset="0x0.0" size="0x24.0" />
 	<field name="slrg_40nm_28nm_ext" descr="" subnode="slrg_40nm_28nm_ext" condition="($(parent).port_type == Network_Port AND ($(parent).version == prod_40nm | $(parent).version == prod_28nm))" offset="0x0.0" size="0x24.0" />
-	<field name="slrg_5nm_ext" descr="" subnode="slrg_5nm_ext" condition="(($(parent).port_type == Network_Port | $(parent).port_type == Internal_IC_LR_Port  | $(parent).port_type == NearEnd_Port  | $(parent).port_type == FarEnd_Port) AND ($(parent).version == prod_5nm))" offset="0x0.0" size="0x18.0" />
+	<field name="slrg_16nm_ext" descr="" subnode="slrg_16nm_ext" condition="($(parent).port_type == Network_Port AND ($(parent).version == prod_16nm))" offset="0x0.0" size="0x24.0" />
 	<field name="slrg_7nm_ext" descr="" subnode="slrg_7nm_ext" condition="(($(parent).port_type == Network_Port | $(parent).port_type == NearEnd_Port  | $(parent).port_type == FarEnd_Port) AND ($(parent).version == prod_7nm))" offset="0x0.0" size="0x18.0" />
 	<field name="slrg_5nm_ext" descr="" subnode="slrg_5nm_ext" condition="(($(parent).port_type == Network_Port | $(parent).port_type == Internal_IC_LR_Port  | $(parent).port_type == NearEnd_Port  | $(parent).port_type == FarEnd_Port) AND ($(parent).version == prod_5nm))" offset="0x0.0" size="0x18.0" />
 	<field name="slrg_all_lanes_5nm_ext" descr="" subnode="slrg_all_lanes_5nm_ext" condition="(($(parent).port_type == Network_Port || $(parent).port_type == NearEnd_Port  || $(parent).port_type == FarEnd_Port) AND ($(parent).version == prod_5nm AND $(parent).all_lanes == all_lane_measurement))" offset="0x0.0" size="0x14.0" />
@@ -4139,11 +4026,11 @@
 </node>
 
 <node name="sltp_reg_page_data_auto_ext" descr="" attr_is_union="1" is_conditional="1" size="0x48.0" >
+	<field name="sltp_28nm_40nm_ext" descr="" subnode="sltp_28nm_40nm_ext" condition="($(parent).port_type == Network_Port) AND ($(parent).version == prod_40nm | $(parent).version == prod_28nm)" offset="0x0.0" size="0x48.0" />
 	<field name="sltp_16nm_ext" descr="" subnode="sltp_16nm_ext" condition="($(parent).port_type == Network_Port | $(parent).port_type == Internal_IC_LR_Port) AND ($(parent).version == prod_16nm)" offset="0x0.0" size="0x48.0" />
 	<field name="sltp_7nm_ext" descr="" subnode="sltp_7nm_ext" condition="($(parent).port_type == Network_Port | $(parent).port_type == Internal_IC_LR_Port) AND ($(parent).version == prod_7nm)" offset="0x0.0" size="0x48.0" />
 	<field name="sltp_lut_7nm_ext" descr="" subnode="sltp_lut_7nm_ext" condition="($(parent).port_type == Network_Port | $(parent).port_type == Internal_IC_LR_Port) AND ($(parent).version == prod_7nm)" offset="0x0.0" size="0x48.0" />
 	<field name="sltp_5nm_ext" descr="" subnode="sltp_5nm_ext" condition="($(parent).port_type == Network_Port | $(parent).port_type == Internal_IC_LR_Port  | $(parent).port_type == NearEnd_Port  | $(parent).port_type == FarEnd_Port) AND ($(parent).version == prod_5nm)" offset="0x0.0" size="0x48.0" />
-	<field name="sltp_7nm_ext" descr="" subnode="sltp_7nm_ext" condition="($(parent).port_type == Network_Port | $(parent).port_type == Internal_IC_LR_Port) AND ($(parent).version == prod_7nm)" offset="0x0.0" size="0x48.0" />
 </node>
 
 <node name="sltpv2_lut_5nm_ext" descr="" size="0x108.0" >
@@ -4218,3 +4105,4 @@
 	<field name="access_reg_summary_selector_ext" offset="0x0.0" size="0x300.0" subnode="access_reg_summary_selector_ext" descr="" />
 </node>
 </NodesDefinition>
+
