@@ -1442,7 +1442,7 @@ def send_reset_cmd_to_pcie_switch_devices(reset_level, reset_type, reset_sync):
             printAndFlush("-I- %-40s-" %
                           ("Sending Reset Command To Fw"), endChar="")
             logger.debug('[Timing Test] MFRL')
-            mfrl.send(reset_level, reset_type, reset_sync, ResetReqMethod.LINK_DISABLE)
+            mfrl.send(reset_level, reset_type, 0, ResetReqMethod.LINK_DISABLE)
             printAndFlush("Done")
 
 
@@ -1462,17 +1462,26 @@ def send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync, pci_reset_re
         raise e
 
 
-def is_pcie_switch_device(devid, reg_access_obj=None):
+def is_pcie_switch_device(devid, reg_access_obj=None, mroq=None):
     res = False
     reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
     try:
         devDict = getDeviceDict(devid)
-        if devDict['name'] in ['ConnectX7', 'ConnectX8', 'BlueField3']:
+        if devDict['name'] in ['ConnectX7', 'ConnectX8']:
             psid = reg_access_obj.getPSID()
             logger.debug("Checking device with PSID: %s" % psid)
             if psid in ALL_PSID_PCIE_SWITCH:
                 logger.debug("Found PCIE switch device")
                 res = True
+        elif devDict['name'] in ['BlueField2', 'BlueField3']:
+            if mroq is None:
+                mcam = CmdRegMcam(reg_access_obj)
+                mroq = CmdRegMroq(0, reg_access_obj, mcam, logger)
+            if mroq.mroq_is_supported():
+                logger.debug("{0} device with supported MROQ".format(devDict['name']))
+                if not mroq.is_sync_supported(SyncOwner.DRIVER, logger):  # In case of BF & MROQ supported & sync1 not suppprted we assume BF PCI switch
+                    logger.debug("Found {0} PCIE switch device".format(devDict['name']))
+                    res = True
     except BaseException:
         pass
     return res
@@ -2010,7 +2019,7 @@ def execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, pci_reset
     if reset_level == mfrl.LIVE_PATCH:
         send_reset_cmd_to_fw(mfrl, reset_level, reset_type, SyncOwner.TOOL, pci_reset_request_method)
     elif reset_level in [mfrl.PCI_RESET, mfrl.WARM_REBOOT]:
-        if reset_sync == SyncOwner.DRIVER:
+        if reset_sync == SyncOwner.DRIVER and reset_level is mfrl.PCI_RESET:
             if is_bluefield is True:
                 execute_driver_sync_reset_bf(mfrl, reset_level, reset_type, pci_reset_request_method)
             else:
