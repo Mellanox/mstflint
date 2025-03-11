@@ -2316,26 +2316,33 @@ void MlxlinkCommander::startSlrgPciScan(u_int32_t numOfLanesToUse)
 
 void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
 {
-    std::vector < string > legand, initialFom, lastFom, upperFom, midFom, lowerFom;
+    std::vector<string> legand, initialFom, lastFom, upperFom, midFom, lowerFom;
     u_int32_t status = 0;
     u_int32_t fomMeasurement = SLRG_EOM_NONE;
 
-    if (!_userInput._pcie) {
+    if (!_userInput._pcie)
+    {
         fomMeasurement = SLRG_EOM_COMPOSITE;
-        if (!isNRZSpeed((_protoActive == IB) ? _activeSpeed : _activeSpeedEx, _protoActive)) {
+        if (!isNRZSpeed(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+        {
             fomMeasurement |= (SLRG_EOM_UPPER | SLRG_EOM_MIDDLE | SLRG_EOM_LOWER);
         }
-    } else {
+    }
+    else
+    {
         startSlrgPciScan(numOfLanesToUse);
     }
 
-    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++) {
+    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    {
         status = 0;
 
         sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
 
         status = getFieldValue("status");
-        initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom", (u_int32_t)8) : "N/A"));
+        std::string initialFomStr = status ? getFieldStr("initial_fom", (u_int32_t)8) : "N/A";
+
+        initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(initialFomStr));
         lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom", (u_int32_t)8) : "N/A"));
         upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye", (u_int32_t)8) : "N/A"));
         midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye", (u_int32_t)8) : "N/A"));
@@ -2344,13 +2351,12 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
         legand.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(lane)));
     }
 
-    string fomMode = _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode")];
+    string fomMode = status ? _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode")] : "N/A";
 
     setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Lane", getStringFromVector(legand), ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", getStringFromVector(initialFom), ANSI_COLOR_RESET, true, true,
-                true);
-    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", getStringFromVector(lastFom), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : "N/A", ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", status ? getStringFromVector(initialFom) : "N/A", ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", status ? getStringFromVector(lastFom) : "N/A", ANSI_COLOR_RESET, true, true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
                 (fomMeasurement & SLRG_EOM_UPPER), true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
@@ -2361,25 +2367,30 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
 
 void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
 {
-    std::vector < string > legand, initialFom, lastFom, upperFom, midFom, lowerFom;
+    std::vector<string> legand, initialFom, lastFom, upperFom, midFom, lowerFom;
     u_int32_t status = 0;
     u_int32_t fomMeasurement = SLRG_EOM_NONE;
 
-    if (!_userInput._pcie) {
+    if (!_userInput._pcie)
+    {
         fomMeasurement = SLRG_EOM_COMPOSITE;
-        if (!isNRZSpeed((_protoActive == IB) ? _activeSpeed : _activeSpeedEx, _protoActive)) {
+        if (!isNRZSpeed(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+        {
             fomMeasurement |= (SLRG_EOM_UPPER | SLRG_EOM_MIDDLE | SLRG_EOM_LOWER);
         }
-    } else {
+    }
+    else
+    {
         startSlrgPciScan(numOfLanesToUse);
     }
 
-    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++) {
+    for (u_int32_t lane = 0; lane < numOfLanesToUse; lane++)
+    {
         status = 0;
 
         // Temporary WA until GPUNet PRM is updated (typo in the word "measurement")!
         // TODO: remove this if in the future, and leave only the else branch.
-        if (_devID == DeviceGB100 || _devID == DeviceGR100)
+        if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurment=%d", lane, fomMeasurement);
         }
@@ -2389,8 +2400,9 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
         }
 
         status = getFieldValue("status");
-        initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("initial_fom",
-                                                                                 (u_int32_t)16) : "N/A"));
+        std::string initialFomStr = status ? getFieldStr("initial_fom", (u_int32_t)16) : "N/A";
+
+        initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(initialFomStr));
         lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom", (u_int32_t)16) : "N/A"));
         upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye", (u_int32_t)16) : "N/A"));
         midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye", (u_int32_t)16) : "N/A"));
@@ -2398,13 +2410,15 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
 
         legand.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(lane)));
     }
-    string fomMode = _mlxlinkMaps->_slrgFomMode5nm[getFieldValue("fom_mode")];
 
+    string fomMode = status ? _mlxlinkMaps->_slrgFomMode5nm[getFieldValue("fom_mode")] : "N/A";
     setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Lane", getStringFromVector(legand), ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", getStringFromVector(initialFom), ANSI_COLOR_RESET, true, true,
-                true);
-    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", getStringFromVector(lastFom), ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : "N/A", ANSI_COLOR_RESET, true,
+                true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", status ? getStringFromVector(initialFom) : "N/A",
+                ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", status ? getStringFromVector(lastFom) : "N/A", ANSI_COLOR_RESET,
+                true, true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
                 (fomMeasurement & SLRG_EOM_UPPER), true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
