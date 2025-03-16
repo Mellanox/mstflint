@@ -69,6 +69,10 @@ public:
         {
             return new ConnectX7FwOperationsSignatureManager();
         }
+        else if (deviceId == DeviceConnectX8)
+        {
+            return new ConnectX8FwOperationsSignatureManager();
+        }
         else if (deviceId == DeviceBlueField2)
         {
             return new Bluefield2FwOperationsSignatureManager();
@@ -114,6 +118,10 @@ public:
         else if (chip == CT_CONNECTX7)
         {
             return new ConnectX7FwOperationsSignatureManager();
+        }
+        else if (chip == CT_CONNECTX8)
+        {
+            return new ConnectX8FwOperationsSignatureManager();
         }
         else if (chip == CT_BLUEFIELD2)
         {
