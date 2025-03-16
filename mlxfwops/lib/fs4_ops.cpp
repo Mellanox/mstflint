@@ -1403,6 +1403,10 @@ bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
             case CT_BLUEFIELD2:
             case CT_CONNECTX6DX:
             case CT_CONNECTX6LX:
+            case CT_QUANTUM3:
+            case CT_CONNECTX8:
+            case CT_CONNECTX9:
+            case CT_ARCUSE:
                 res = false;
                 break;
             default:
