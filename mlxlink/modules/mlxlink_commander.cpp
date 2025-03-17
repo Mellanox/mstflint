@@ -4189,8 +4189,10 @@ void MlxlinkCommander::checkSltpParamsSize()
                 throw MlxRegException("Invalid Transmitter Parameters values");
             }
         }
-    } else if (_productTechnology >= PRODUCT_7NM) {
+    } else if (_productTechnology == PRODUCT_7NM) {
         validateNumOfParamsForNDRGen();
+    } else if (_productTechnology >= PRODUCT_5NM) {
+        validateNumOfParamsForXDRGen();
     } else if (_userInput._advancedMode) {
         sltpParamsSize = SLTP_EDR_LAST;
     }
@@ -4253,7 +4255,9 @@ string MlxlinkCommander::updateSltpXdrFields()
     u_int32_t paramShift = 3; /* Assuming that the active speed is NRZ, so user params will represent NRZ params */
     char      paramValueBuff[32] = "";
 
-    if (isSpeed100GPerLane(activeSpeed, _protoActive)) {
+    if (isSpeed200GPerLane(activeSpeed, _protoActive)) {
+        paramShift = 0;
+    } else if (isSpeed100GPerLane(activeSpeed, _protoActive)) {
         paramShift = 1;
     } else if (isSpeed50GPerLane(activeSpeed, _protoActive)) {
         paramShift = 2;
