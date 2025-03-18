@@ -142,6 +142,7 @@ enum FlashConstant
     TB_OFFSET_CYPRESS_WINBOND_256 = 6,
     BP_OFFSET = 2,
     BP_4TH_BIT_OFFSET_MICRON = 6,
+    SRWD_OFFSET_ISSI = 7,
     BP_SIZE = 3,
     PROTECT_BITS_SIZE = 5
 };

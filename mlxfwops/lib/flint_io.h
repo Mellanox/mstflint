@@ -74,11 +74,15 @@ typedef struct ext_flash_attr
     int block_write;
     int command_set;
     u_int8_t quad_en_support;
+    u_int8_t srwd_support;
     u_int8_t driver_strength_support;
     u_int8_t dummy_cycles_support;
 
     u_int8_t quad_en;
     MfError mf_get_quad_en_rc;
+
+    u_int8_t srwd;
+    MfError mf_get_srwd_rc;
 
     u_int8_t driver_strength;
     MfError mf_get_driver_strength_rc;
@@ -471,6 +475,7 @@ public:
 
 // needed for printing flash status in flint hw query cmd
 #define QUAD_EN_PARAM "QuadEn"
+#define SRWD_PARAM "SRWD"
 #define DRIVER_STRENGTH_PARAM "DriverStrength"
 #define DUMMY_CYCLES_PARAM "DummyCycles"
 #define FLASH_NAME "Flash"
