@@ -848,6 +848,11 @@ MfError gen_access_commands(mflash* mfl, flash_access_commands_t* access_command
     return MFE_OK;
 }
 
+int is_srwd_supported_by_flash(u_int8_t vendor, u_int8_t type)
+{
+    return (vendor == FV_IS25LPXXX && type == FMT_IS25WPXXX);
+}
+
 int spi_fill_attr_from_params(mflash* mfl, flash_params_t* flash_params, flash_info_t* flash_info)
 {
     mfl->attr.log2_bank_size = flash_params->log2size;
@@ -867,6 +872,7 @@ int spi_fill_attr_from_params(mflash* mfl, flash_params_t* flash_params, flash_i
     mfl->attr.type_str = flash_info->name;
 
     mfl->attr.quad_en_support = flash_info->quad_en_support;
+    mfl->attr.srwd_support = is_srwd_supported_by_flash(flash_info->vendor, flash_info->type);
     mfl->attr.driver_strength_support = flash_info->driver_strength_support;
     mfl->attr.dummy_cycles_support = flash_info->dummy_cycles_support;
 
@@ -4061,6 +4067,40 @@ int mf_set_quad_en(mflash* mfl, u_int8_t quad_en)
 int mf_get_quad_en(mflash* mfl, u_int8_t* quad_en)
 {
     return mfl->f_get_quad_en(mfl, quad_en);
+}
+
+int mf_set_srwd(mflash* mfl, u_int8_t srwd)
+{
+    if (!mfl)
+    {
+        return MFE_BAD_PARAMS;
+    }
+    if (!is_srwd_supported_by_flash(mfl->attr.vendor, mfl->attr.type))
+    {
+        return MFE_NOT_SUPPORTED_OPERATION;
+    }
+
+    int bank = 0, rc = 0;
+    for (bank = 0; bank < mfl->attr.banks_num; bank++)
+    {
+        rc = mf_read_modify_status_winbond(mfl, bank, 1, srwd, SRWD_OFFSET_ISSI, 1);
+        CHECK_RC(rc);
+    }
+
+    return MFE_OK;
+}
+
+int mf_get_srwd(mflash* mfl, u_int8_t* srwd)
+{
+    if (!mfl)
+    {
+        return MFE_BAD_PARAMS;
+    }
+    if (is_srwd_supported_by_flash(mfl->attr.vendor, mfl->attr.type))
+    {
+        return mf_get_param_int(mfl, srwd, SFC_RDSR, SRWD_OFFSET_ISSI, 1, 1, 1);
+    }
+    return MFE_NOT_SUPPORTED_OPERATION;
 }
 
 int mf_to_vendor_driver_strength(u_int8_t vendor, u_int8_t value, u_int8_t* driver_strength)

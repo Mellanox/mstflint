@@ -917,12 +917,18 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     attr.block_write = _attr.block_write;
     attr.command_set = _attr.command_set;
     attr.quad_en_support = _attr.quad_en_support;
+    attr.srwd_support = _attr.srwd_support;
     attr.driver_strength_support = _attr.driver_strength_support;
     attr.dummy_cycles_support = _attr.dummy_cycles_support;
     // Quad EN query
     if (_attr.quad_en_support)
     {
         attr.mf_get_quad_en_rc = (MfError)mf_get_quad_en(_mfl, &attr.quad_en);
+    }
+    // SRWD query
+    if (_attr.srwd_support)
+    {
+        attr.mf_get_srwd_rc = (MfError)mf_get_srwd(_mfl, &attr.srwd);
     }
     // Drive-strength query
     if (_attr.driver_strength_support)
@@ -991,6 +997,21 @@ bool Flash::set_attr(char* param_name, char* param_val_str)
         if (rc != MFE_OK)
         {
             return errmsg("Setting " QUAD_EN_PARAM " failed: (%s)", mf_err2str(rc));
+        }
+    }
+    else if (!strcmp(param_name, SRWD_PARAM))
+    {
+        char* endp;
+        u_int8_t srwd_val;
+        srwd_val = strtoul(param_val_str, &endp, 0);
+        if (*endp != '\0' || srwd_val > 1)
+        {
+            return errmsg("Bad " SRWD_PARAM " value (%s), it can be 0 or 1\n", param_val_str);
+        }
+        rc = mf_set_srwd(_mfl, srwd_val);
+        if (rc != MFE_OK)
+        {
+            return errmsg("Setting " SRWD_PARAM " failed: (%s)", mf_err2str(rc));
         }
     }
     else if (!strcmp(param_name, DUMMY_CYCLES_PARAM))

@@ -229,6 +229,9 @@ int mf_get_jedec_id(mflash* mfl, u_int32_t* jedec_id);
 int mf_set_quad_en(mflash* mfl, u_int8_t quad_en);
 int mf_get_quad_en(mflash* mfl, u_int8_t* quad_en);
 
+int mf_set_srwd(mflash* mfl, u_int8_t srwd);
+int mf_get_srwd(mflash* mfl, u_int8_t* srwd);
+
 int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength);
 int mf_get_driver_strength(mflash* mfl, u_int8_t* driver_strength);
 

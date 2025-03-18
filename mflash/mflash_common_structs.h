@@ -189,6 +189,7 @@ typedef struct flash_attr
 
     u_int8_t banks_num;
     u_int8_t quad_en_support;
+    u_int8_t srwd_support;
     u_int8_t driver_strength_support;
     u_int8_t dummy_cycles_support;
     u_int8_t write_protect_support;

@@ -6709,6 +6709,33 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
         }
     }
 
+    // SRWD query
+    if (attr.srwd_support && attr.write_protect_support)
+    {
+        switch (attr.mf_get_srwd_rc)
+        {
+            case MFE_OK:
+                printf("  " SRWD_PARAM "                    %d\n", attr.srwd);
+                break;
+
+            case MFE_MISMATCH_PARAM:
+                printf("-E- There is a mismatch in the " SRWD_PARAM
+                       " attribute between the flashes attached to the device\n");
+                break;
+
+            case MFE_NOT_SUPPORTED_OPERATION:
+                printf(SRWD_PARAM " not supported operation.\n");
+                break;
+            case MFE_NOT_IMPLEMENTED:
+                printf(SRWD_PARAM "not implemented.\n");
+                break;
+            default:
+                printf("Failed to get " SRWD_PARAM " attribute: %s (%s)", errno == 0 ? "" : strerror(errno),
+                       mf_err2str(attr.mf_get_srwd_rc));
+                return FLINT_FAILED;
+        }
+    }
+
     return FLINT_SUCCESS;
 }
 
