@@ -31,11 +31,11 @@
 
  *
  */
+#include "mlxreg_parser.h"
 
 #include <sstream>
 #include <common/bit_slice.h>
 #include <common/tools_utils.h>
-#include "mlxreg_parser.h"
 #include <errno.h>
 
 using namespace mlxreg;
@@ -46,7 +46,7 @@ using namespace mlxreg;
 RegAccessParser::RegAccessParser(string data,
                                  string indexes,
                                  string ops,
-                                 AdbInstance* regNode,
+                                 AdbInstanceLegacy* regNode,
                                  std::vector<u_int32_t> buffer,
                                  bool ignore_ro)
 {
@@ -82,7 +82,7 @@ RegAccessParser::RegAccessParser(string data,
 RegAccessParser::RegAccessParser(string data,
                                  string indexes,
                                  string ops,
-                                 AdbInstance* regNode,
+                                 AdbInstanceLegacy* regNode,
                                  u_int32_t len,
                                  bool ignore_ro)
 {
@@ -106,7 +106,7 @@ RegAccessParser::RegAccessParser(string data,
     else
     {
         _parseMode = Pm_Known;
-        _len = (_regNode->size) >> 5;
+        _len = (_regNode->get_size()) >> 5;
     }
     // Resize buffer
     _buffer.resize(_len);
@@ -218,7 +218,7 @@ void RegAccessParser::parseAccessType(std::vector<string> tokens,
         string val = tokenPair[1];
         u_int32_t uintVal;
         strToUint32((char*)val.c_str(), uintVal);
-        AdbInstance* field = getField(name);
+        AdbInstanceLegacy* field = getField(name);
         // Make sure that the given field name is valid
         if (std::find(validTokens.begin(), validTokens.end(), name) != validTokens.end())
         {
@@ -232,7 +232,7 @@ void RegAccessParser::parseAccessType(std::vector<string> tokens,
         {
             throw MlxRegException("Field: %s is not a %s.", name.c_str(), this->accessTypeToString(accessType).c_str());
         }
-        updateBuffer(field->offset, field->size, uintVal);
+        updateBuffer(field->offset, field->get_size(), uintVal);
     }
 
     // Per #4207832, skip checking that all indexes are set
@@ -271,12 +271,12 @@ void RegAccessParser::parseData()
         string datVal = dat[1];
         u_int32_t uintVal;
         strToUint32((char*)datVal.c_str(), uintVal);
-        AdbInstance* field = getField(datName);
+        AdbInstanceLegacy* field = getField(datName);
         if (isRO(field))
         {
             throw MlxRegException("Field: %s is ReadOnly", datName.c_str());
         }
-        updateBuffer(field->offset, field->size, uintVal);
+        updateBuffer(field->offset, field->get_size(), uintVal);
     }
 }
 
@@ -422,14 +422,14 @@ void RegAccessParser::strToUint32(char* str, u_int32_t& uint)
 /************************************
  * Function: getFieldWithParents
  ************************************/
-bool RegAccessParser::checkFieldWithPath(AdbInstance* field,
+bool RegAccessParser::checkFieldWithPath(AdbInstanceLegacy* field,
                                          u_int32_t idx,
                                          std::vector<string>& fieldsChain,
                                          u_int32_t size)
 {
     if (idx == 0 && (field->get_field_name() == fieldsChain[0]))
     {
-        if (size == 0 || (size && field->size == size))
+        if (size == 0 || (size && field->get_size() == size))
         {
             return true;
         }
@@ -450,12 +450,12 @@ bool RegAccessParser::checkFieldWithPath(AdbInstance* field,
 /************************************
  * Function: getField
  ************************************/
-AdbInstance* RegAccessParser::getField(string name, u_int32_t size)
+AdbInstanceLegacy* RegAccessParser::getField(string name, u_int32_t size)
 {
     // this will allow to access the leaf field by specifying it's parent.
     std::vector<string> fieldsChain = strSplit(name, '.', false);
-    std::vector<AdbInstance*> subItems = _regNode->getLeafFields(true);
-    for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++)
+    std::vector<AdbInstanceLegacy*> subItems = _regNode->getLeafFields(true);
+    for (std::vector<AdbInstanceLegacy*>::size_type i = 0; i != subItems.size(); i++)
     {
         if (checkFieldWithPath(subItems[i], fieldsChain.size() - 1, fieldsChain, size))
         {
@@ -465,7 +465,7 @@ AdbInstance* RegAccessParser::getField(string name, u_int32_t size)
     throw MlxRegException("Can't find field name: \"%s\"", name.c_str());
 }
 
-string RegAccessParser::getAccess(const AdbInstance* field)
+string RegAccessParser::getAccess(const AdbInstanceLegacy* field)
 {
     string access = field->getInstanceAttr("access");
     if (access.empty())
@@ -479,12 +479,12 @@ string RegAccessParser::getAccess(const AdbInstance* field)
     return access;
 }
 
-bool RegAccessParser::checkAccess(const AdbInstance* field, const string accessStr)
+bool RegAccessParser::checkAccess(const AdbInstanceLegacy* field, const string accessStr)
 {
     return getAccess(field) == accessStr;
 }
 
-bool RegAccessParser::isRO(AdbInstance* field)
+bool RegAccessParser::isRO(AdbInstanceLegacy* field)
 {
     if (_ignore_ro)
     {
@@ -493,12 +493,12 @@ bool RegAccessParser::isRO(AdbInstance* field)
     return checkAccess(field, "RO");
 }
 
-bool RegAccessParser::isIndex(AdbInstance* field)
+bool RegAccessParser::isIndex(AdbInstanceLegacy* field)
 {
     return checkAccess(field, "INDEX");
 }
 
-bool RegAccessParser::isOP(AdbInstance* field)
+bool RegAccessParser::isOP(AdbInstanceLegacy* field)
 {
     return checkAccess(field, "OP");
 }
@@ -506,11 +506,11 @@ bool RegAccessParser::isOP(AdbInstance* field)
 /************************************
  * Function: getAllIndexes
  ************************************/
-std::vector<string> RegAccessParser::getAllIndexes(AdbInstance* node)
+std::vector<string> RegAccessParser::getAllIndexes(AdbInstanceLegacy* node)
 {
     std::vector<string> indexes;
-    std::vector<AdbInstance*> subItems = node->getLeafFields(true);
-    for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++)
+    std::vector<AdbInstanceLegacy*> subItems = node->getLeafFields(true);
+    for (std::vector<AdbInstanceLegacy*>::size_type i = 0; i != subItems.size(); i++)
     {
         if (isIndex(subItems[i]))
         {
@@ -520,11 +520,11 @@ std::vector<string> RegAccessParser::getAllIndexes(AdbInstance* node)
     return indexes;
 }
 
-std::vector<string> RegAccessParser::getAllOps(AdbInstance* node)
+std::vector<string> RegAccessParser::getAllOps(AdbInstanceLegacy* node)
 {
     std::vector<string> ops;
-    std::vector<AdbInstance*> subItems = node->getLeafFields(true);
-    for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++)
+    std::vector<AdbInstanceLegacy*> subItems = node->getLeafFields(true);
+    for (std::vector<AdbInstanceLegacy*>::size_type i = 0; i != subItems.size(); i++)
     {
         if (isOP(subItems[i]))
         {
@@ -536,12 +536,12 @@ std::vector<string> RegAccessParser::getAllOps(AdbInstance* node)
 
 void RegAccessParser::updateField(string field_name, u_int32_t value)
 {
-    AdbInstance* field = getField(field_name);
-    updateBuffer(field->offset, field->size, value);
+    AdbInstanceLegacy* field = getField(field_name);
+    updateBuffer(field->offset, field->get_size(), value);
 }
 
 u_int32_t RegAccessParser::getFieldValue(string field_name, std::vector<u_int32_t>& buff, u_int32_t size)
 {
-    AdbInstance* field = getField(field_name, size);
+    AdbInstanceLegacy* field = getField(field_name, size);
     return (u_int32_t)field->popBuf((u_int8_t*)&buff[0]);
 }

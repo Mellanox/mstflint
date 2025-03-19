@@ -31,9 +31,10 @@
  *
  *  Version: $Id$
  */
-/*************************** AdbInstance ***************************/
+
+/*************************** _AdbInstance_impl ***************************/
 /**
- * Function: AdbInstance::AdbInstance
+ * Function: _AdbInstance_impl::_AdbInstance_impl
  **/
 
 #include "adb_instance.h"
@@ -43,15 +44,14 @@
 #include "adb_exceptionHolder.h"
 #include "buf_ops.h"
 #include <string>
-
 #include <list>
-
-#include "common/tools_algorithm.h"
+#include <algorithm>
+#include <iostream>
 #include "common/tools_regex.h"
+#include "common/tools_algorithm.h"
 
-// Constants
-const char AdbInstance::path_seperator{'.'};
-const string AdbInstance::EXP_PATTERN{"\\s*([a-zA-Z0-9_]+)=((\\$\\(.*?\\)|\\S+|$)*)\\s*"};
+namespace Regex = mstflint::common::regex;
+namespace Algorithm = mstflint::common::algorithm;
 
 string addPathSuffixForArraySupport(string path)
 {
@@ -71,35 +71,35 @@ string addPathSuffixForArraySupport(string path)
     return suffix;
 }
 
-AdbInstance::AdbInstance(AdbField* i_fieldDesc,
-                         AdbNode* i_nodeDesc,
-                         u_int32_t i_arrIdx,
-                         AdbInstance* i_parent,
-                         map<string, string> vars,
-                         bool bigEndianArr,
-                         bool isExprEval,
-                         unsigned char adabe_version,
-                         bool optimize_time,
-                         bool stop_on_partition,
-                         PartitionTree* next_partition_tree) :
-    fieldDesc(i_fieldDesc),
-    nodeDesc(i_nodeDesc),
-    parent(i_parent),
-    arrIdx(i_arrIdx),
-    offset(calcArrOffset(bigEndianArr)),
-    size(i_fieldDesc->eSize())
+template<bool e, typename T_OFFSET>
+_AdbInstance_impl<e, T_OFFSET>::_AdbInstance_impl(AdbField* i_fieldDesc,
+                                                  AdbNode* i_nodeDesc,
+                                                  uint32_t i_arrIdx,
+                                                  _AdbInstance_impl<e, T_OFFSET>* i_parent,
+                                                  map<string, string> vars,
+                                                  bool bigEndianArr,
+                                                  unsigned char adabe_version,
+                                                  bool optimize_time,
+                                                  bool stop_on_partition,
+                                                  PartitionTree* next_partition_tree,
+                                                  bool path_array_wildcards) :
+    fieldDesc(i_fieldDesc), nodeDesc(i_nodeDesc), parent(i_parent), arrIdx(i_arrIdx), offset(calcArrOffset(bigEndianArr))
 {
     // Re-initializations due to packing efficiency
     string array_name_suffix{fieldDesc->isArray() ? "[" + to_string(arrIdx + fieldDesc->lowBound) + "]" : ""};
     layout_item_name = i_fieldDesc->name + array_name_suffix;
     if (optimize_time)
     {
-        full_path = parent ? parent->full_path + "." + layout_item_name : layout_item_name;
+        if (fieldDesc->isArray() && path_array_wildcards)
+        {
+            array_name_suffix = "[*]";
+        }
+        full_path = parent ? parent->full_path + "." + i_fieldDesc->name + array_name_suffix :
+                             i_fieldDesc->name + array_name_suffix;
     }
 
-
     // TODO: the whole block below looks unnecesarry
-    if (fieldDesc->offset == 0xffffffff)
+    if (fieldDesc->offset == static_cast<T_OFFSET>(-1))
     {
         if (parent->subItems.size() > 0)
         {
@@ -113,95 +113,100 @@ AdbInstance::AdbInstance(AdbField* i_fieldDesc,
 
     if (stop_on_partition)
     {
-        partition_tree = next_partition_tree;
+        partition_props = new LayoutPartitionProps(next_partition_tree);
     }
 
-    if (isExprEval)
+    if (!stop_on_partition)
     {
-        if (!stop_on_partition)
-        {
-            init_props(adabe_version);
+        init_props(adabe_version);
 
-            initInstOps();
-            eval_expressions(vars);
-        }
+        initInstOps();
+        eval_expressions(vars);
     }
 }
 
-void AdbInstance::initInstOps(bool is_root)
+// template<bool eval_expr, typename O>
+// template<bool U>
+// typename enable_if<U>::type
+// _AdbInstance_impl<eval_expr, O>::initInstOps()
+// {
+//     string value;
+//     auto found = getInstanceAttr("condition", value);
+//     if (found && parent->getInstanceAttr("is_conditional") == "1")
+//     {
+//         inst_ops_props.condition.setCondition(value);
+//     }
+
+//     found = getInstanceAttr("size_condition", value);
+//     if (found)
+//     {
+//         string cond_size = value;
+//         if (cond_size.substr(0, 10) == "$(parent).")
+//         {
+//             cond_size.erase(0, 10);
+//         }
+//         inst_ops_props.conditionalSize.setCondition(cond_size);
+//     }
+// }
+
+// template<bool eval_expr, typename O>
+// template<bool U>
+// typename enable_if<!U>::type
+// _AdbInstance_impl<eval_expr, O>::initInstOps()
+// {
+//     return;
+// }
+
+template<bool e, typename T_OFFSET>
+T_OFFSET _AdbInstance_impl<e, T_OFFSET>::calcArrOffset(bool bigEndianArr, uint8_t align)
 {
-    AttrsMap& attrs_map = is_root ? nodeDesc->attrs : fieldDesc->attrs;
-    inst_ops_props = new InstOpsProperties(attrs_map);
-
-    string value;
-    auto found = getInstanceAttr("condition", value);
-    if (found && parent->getInstanceAttr("is_conditional") == "1")
-    {
-        inst_ops_props->condition.setCondition(value);
-    }
-
-    found = getInstanceAttr("size_condition", value);
-    if (found)
-    {
-        string cond_size = value;
-        if (cond_size.substr(0, 10) == "$(parent).")
-        {
-            cond_size.erase(0, 10);
-        }
-        inst_ops_props->conditionalSize.setCondition(cond_size);
-    }
-}
-
-/**
- * Function: Adb::calcArrOffset
- **/
-u_int32_t AdbInstance::calcArrOffset(bool bigEndianArr)
-{
-    u_int32_t o_offset;
+    T_OFFSET element_offset;
+    T_OFFSET parent_offset = parent ? parent->offset : 0;
     if (fieldDesc->eSize() >= 32)
     {
         // Make sure this is dword aligned
-        if (fieldDesc->eSize() % 32 || parent->offset % 32 || fieldDesc->offset % 32)
+        if (fieldDesc->eSize() % 32 || parent_offset % 32 || fieldDesc->offset % 32)
         {
             throw AdbException("Field " + fieldDesc->name + " isn't dword aligned");
         }
-        o_offset = parent->offset + fieldDesc->offset + fieldDesc->eSize() * arrIdx;
     }
-    else
+
+    if (fieldDesc->eSize() >= 32 || !bigEndianArr || fieldDesc->array_type == AdbField::ArrayType::none ||
+        fieldDesc->array_type == AdbField::ArrayType::single_entry)
     {
-        if (bigEndianArr)
-        {
-            o_offset = (int)parent->offset + (int)fieldDesc->offset - (int)fieldDesc->eSize() * arrIdx;
-
-            int dwordDelta = abs((dword(parent->offset + fieldDesc->offset) - dword(o_offset))) / 4;
-
-            if (dwordDelta)
-            {
-                o_offset += 32 * 2 * dwordDelta;
-            }
-        }
-        else
-        {
-            o_offset = parent->offset + fieldDesc->offset + fieldDesc->eSize() * arrIdx;
-        }
+        element_offset = parent_offset + fieldDesc->offset + fieldDesc->eSize() * arrIdx;
     }
-    return o_offset;
+    else // be arrays, small elements
+    {
+        T_OFFSET array_offset = parent_offset + fieldDesc->offset;
+        T_OFFSET element_size = fieldDesc->eSize();
+        T_OFFSET array_dword_offset = array_offset / align * align;
+        T_OFFSET element_dword_offset =
+          (align - array_offset % align + ((T_OFFSET)arrIdx - 1) * element_size) / align * align;
+        T_OFFSET element_bit_offset = (array_offset + (align - (T_OFFSET)arrIdx * element_size) % align) % align;
+
+        element_offset = array_dword_offset + element_dword_offset + element_bit_offset;
+    }
+    return element_offset;
 }
 
-bool AdbInstance::stop_on_partition() const
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::stop_on_partition() const
 {
-    return partition_tree != nullptr;
+    return partition_props != nullptr;
 }
 
-void AdbInstance::eval_expressions(AttrsMap& parent_vars)
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<U>::type _AdbInstance_impl<eval_expr, O>::eval_expressions(AttrsMap& parent_vars)
 {
-    static mstflint::common::regex::regex EXP_REGEX(EXP_PATTERN);
+    static Regex::regex EXP_REGEX(EXP_PATTERN);
     try
     {
         // First add the special variables
         parent_vars["NAME"] = layout_item_name;
         parent_vars["ARR_IDX"] = to_string(arrIdx);
-        parent_vars["BN"] = "[" + to_string(offset % 32 + size - 1) + ":" + to_string(offset % 32) + "]";
+        parent_vars["BN"] = "[" + to_string(offset % 32 + get_size() - 1) + ":" + to_string(offset % 32) + "]";
         parent_vars["parent"] = "#(parent)"; // special internal name
 
         // Get variables attribute value
@@ -211,15 +216,15 @@ void AdbInstance::eval_expressions(AttrsMap& parent_vars)
         if (it != fieldDesc->attrs.end())
         {
             string& varStr = it->second;
-            mstflint::common::algorithm::trim(varStr);
-            mstflint::common::regex::match_results<string::const_iterator> what;
+            Algorithm::trim(varStr);
+            Regex::match_results<string::const_iterator> what;
             string::const_iterator start = varStr.begin();
             string::const_iterator end = varStr.end();
 
             string var;
             string exp;
 
-            while (mstflint::common::regex::regex_search(start, end, what, EXP_REGEX))
+            while (Regex::regex_search(start, end, what, EXP_REGEX))
             {
                 var = string(what[1].first, what[1].second);
                 exp = string(what[2].first, what[2].second);
@@ -236,9 +241,9 @@ void AdbInstance::eval_expressions(AttrsMap& parent_vars)
             {
                 continue;
             }
-            inst_ops_props->instAttrsMap[attr.first] = evalExpr(attr.second, &parent_vars);
+            setInstanceAttr(attr.first, evalExpr(attr.second, &parent_vars));
         }
-        inst_ops_props->varsMap = parent_vars;
+        inst_ops_props.varsMap = parent_vars;
     }
     catch (AdbException& exp)
     {
@@ -247,23 +252,29 @@ void AdbInstance::eval_expressions(AttrsMap& parent_vars)
     }
 }
 
-/**
- * Function: Adb::evalExpr
- **/
-string AdbInstance::evalExpr(string expr, AttrsMap* vars)
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<!U>::type _AdbInstance_impl<eval_expr, O>::eval_expressions(AttrsMap& parent_vars)
+{
+    (void)parent_vars;
+    return;
+}
+
+template<bool e, typename O>
+string _AdbInstance_impl<e, O>::evalExpr(string expr, AttrsMap* vars)
 {
     if (expr.find('$') == string::npos)
     {
         return expr;
     }
 
-    mstflint::common::regex::smatch what, what2;
-    mstflint::common::regex::regex singleExpr("^([^\\$]*)(\\$\\(([^)]+)\\))(.*)$");
-    while (mstflint::common::regex::regex_search(expr, what, singleExpr))
+    Regex::smatch what, what2;
+    Regex::regex singleExpr("^([^\\$]*)(\\$\\(([^)]+)\\))(.*)$");
+    while (Regex::regex_search(expr, what, singleExpr))
     {
         string vname = what[3].str();
         string vvalue;
-        mstflint::common::regex::regex singleVar("^[a-zA-Z_][a-zA-Z0-9_]*$");
+        Regex::regex singleVar("^[a-zA-Z_][a-zA-Z0-9_]*$");
 
         // Need to change to array-like initialization when we'll move to c++11
         vector<string> specialVars;
@@ -272,7 +283,7 @@ string AdbInstance::evalExpr(string expr, AttrsMap* vars)
         specialVars.push_back("BN");
         specialVars.push_back("parent");
 
-        if (mstflint::common::regex::regex_search(vname, what2, singleVar))
+        if (Regex::regex_search(vname, what2, singleVar))
         {
             if (find(specialVars.begin(), specialVars.end(), vname) == specialVars.end())
             {
@@ -291,9 +302,9 @@ string AdbInstance::evalExpr(string expr, AttrsMap* vars)
         else
         {
             string vnameCopy = vname;
-            mstflint::common::regex::regex singleVarInExpr("[a-zA-Z_][a-zA-Z0-9_]*");
-            mstflint::common::regex::smatch matches;
-            while (mstflint::common::regex::regex_search(vnameCopy, matches, singleVarInExpr))
+            Regex::regex singleVarInExpr("[a-zA-Z_][a-zA-Z0-9_]*");
+            Regex::smatch matches;
+            while (Regex::regex_search(vnameCopy, matches, singleVarInExpr))
             {
                 if (find(specialVars.begin(), specialVars.end(), matches[0]) == specialVars.end())
                 {
@@ -305,7 +316,7 @@ string AdbInstance::evalExpr(string expr, AttrsMap* vars)
             char exp[vname.size() + 1];
             char* expPtr = exp;
             strcpy(exp, vname.c_str());
-            u_int64_t res;
+            uint64_t res;
             AdbExpr adbExpr;
             adbExpr.setVars(vars);
             int status = adbExpr.expr(&expPtr, &res);
@@ -356,33 +367,80 @@ string AdbInstance::evalExpr(string expr, AttrsMap* vars)
 }
 
 /**
- * Function: AdbInstance::AdbInstance
+ * Function: _AdbInstance_impl::_AdbInstance_impl
  **/
-AdbInstance::~AdbInstance()
+template<bool e, typename O>
+_AdbInstance_impl<e, O>::~_AdbInstance_impl()
 {
     for (size_t i = 0; i < subItems.size(); i++)
     {
         delete subItems[i];
     }
 
-    if (inst_ops_props)
+    if (inst_ops_props.instAttrsMap)
     {
-        delete inst_ops_props;
+        delete inst_ops_props.instAttrsMap;
+    }
+
+    if (partition_props)
+    {
+        delete partition_props;
     }
 }
 
 /**
- * Function: AdbInstance::get_field_name
+ * Function: _AdbInstance_impl::get_field_name
  **/
-const string& AdbInstance::get_field_name()
+template<bool e, typename O>
+const string& _AdbInstance_impl<e, O>::get_field_name()
 {
     return layout_item_name;
 }
 
 /**
- * Function: AdbInstance::isLeaf
+ * Function: _AdbInstance_impl::get_size
  **/
-bool AdbInstance::isLeaf()
+template<bool e, typename T_OFFSET>
+T_OFFSET _AdbInstance_impl<e, T_OFFSET>::get_size() const
+{
+    return fieldDesc ? fieldDesc->eSize() : nodeDesc ? nodeDesc->get_size() : 0;
+}
+
+/**
+ * Function: _AdbInstance_impl::get_max_leaf_size
+ **/
+template<bool e, typename T_OFFSET>
+T_OFFSET _AdbInstance_impl<e, T_OFFSET>::get_max_leaf_size() const
+{
+    return _max_leaf ? _max_leaf->get_size() : 0;
+}
+
+/**
+ * Function: _AdbInstance_impl::get_max_leaf_size
+ **/
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::update_max_leaf()
+{
+    uint64_t esize = fieldDesc ? fieldDesc->get_size() : 0;
+    if ((fieldDesc->isLeaf() || fieldDesc->subNode == "uint64") && (esize == 16 || esize == 32 || esize == 64)) // A
+                                                                                                                // leaf
+    {
+        _max_leaf = fieldDesc;
+    }
+    if (parent)
+    {
+        if (_max_leaf && _max_leaf->get_size() > parent->get_max_leaf_size())
+        {
+            parent->_max_leaf = _max_leaf;
+        }
+    }
+}
+
+/**
+ * Function: _AdbInstance_impl::isLeaf
+ **/
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::isLeaf()
 {
     return nodeDesc == NULL;
 }
@@ -390,46 +448,68 @@ bool AdbInstance::isLeaf()
 /**
  * Function: isUnionisUnion
  **/
-bool AdbInstance::isUnion()
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::isUnion()
 {
     return isNode() && nodeDesc->isUnion;
 }
 
 /**
- * Function: AdbInstance::isStruct
+ * Function: _AdbInstance_impl::isStruct
  **/
-bool AdbInstance::isStruct()
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::isStruct()
 {
     return isNode() && !isUnion();
 }
 
 /**
- * Function: AdbInstance::isNode
+ * Function: _AdbInstance_impl::isNode
  **/
-bool AdbInstance::isNode()
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::isNode()
 {
     return !isLeaf();
 }
 
 /**
- * Function: AdbInstance::isNode
+ * Function: _AdbInstance_impl::isNode
  **/
-bool AdbInstance::isPartOfArray()
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::isPartOfArray()
 {
     return fieldDesc->isArray();
 }
 
 /**
- * Function: AdbInstance::fullName
+ * Function: _AdbInstance_impl::fullName
  **/
-string AdbInstance::fullName(size_t skipLevel)
+template<bool e, typename O>
+string _AdbInstance_impl<e, O>::fullName(size_t skipLevel)
 {
-    if (full_path.size() > 0)
+    if (!full_path.empty())
     {
-        return full_path;
+        if (skipLevel == 0)
+        {
+            return full_path;
+        }
+        else
+        {
+            size_t pos = 0;
+            for (size_t i = 0; i < skipLevel; ++i)
+            {
+                pos = full_path.find('.', pos);
+                if (pos == std::string::npos)
+                {
+                    return "";
+                }
+                ++pos;
+            }
+            return full_path.substr(pos);
+        }
     }
     list<string> fnList;
-    AdbInstance* p = parent;
+    _AdbInstance_impl<e, O>* p = parent;
 
     fnList.push_front(layout_item_name);
     while (p != NULL)
@@ -445,7 +525,7 @@ string AdbInstance::fullName(size_t skipLevel)
             fnList.pop_front();
         }
 
-        return mstflint::common::algorithm::join(fnList, ".");
+        return Algorithm::join(fnList, ".");
     }
     else
     {
@@ -453,8 +533,9 @@ string AdbInstance::fullName(size_t skipLevel)
     }
 }
 
-void AdbInstance::init_props(unsigned char adabe_version) // logic of this function is copied from devmon and it's
-                                                          // bugous
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::init_props(unsigned char adabe_version) // logic of this function is copied from devmon
+                                                                      // and it's bugous
 {
     if (!fieldDesc)
     {
@@ -467,7 +548,7 @@ void AdbInstance::init_props(unsigned char adabe_version) // logic of this funct
 
         if (!fiVal.empty() && !strideVal.empty())
         {
-            u_int32_t fi = stoul(fiVal);
+            uint32_t fi = stoul(fiVal);
             int stride = stoi(strideVal);
             if (arrIdx < fi || (arrIdx - fi) % stride != 0)
             {
@@ -550,73 +631,85 @@ void AdbInstance::init_props(unsigned char adabe_version) // logic of this funct
 }
 
 /**
- * Function: AdbInstance::fullName
+ * Function: _AdbInstance_impl::fullName
  **/
-bool AdbInstance::isReserved()
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::isReserved()
 {
     return fieldDesc->isReserved;
 }
 
-bool AdbInstance::is_valid_array_index() const
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::is_valid_array_index() const
 {
     return inst_props.valid_array_index;
 }
 
-bool AdbInstance::is_semaphore() const
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::is_semaphore() const
 {
     return inst_props.is_semaphore;
 }
 
-bool AdbInstance::is_ro() const
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::is_ro() const
 {
     return inst_props.access_r && !inst_props.access_w;
 }
 
-bool AdbInstance::is_wo() const
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::is_wo() const
 {
     return !inst_props.access_r && inst_props.access_w;
 }
 
-bool AdbInstance::is_diff() const
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::is_diff() const
 {
     return inst_props.is_diff;
 }
 
-void AdbInstance::set_is_diff(bool val)
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::set_is_diff(bool val)
 {
     inst_props.is_diff = val;
 }
 
 /**
- * Function: AdbInstance::dwordAddr
+ * Function: _AdbInstance_impl::dwordAddr
  **/
-u_int32_t AdbInstance::dwordAddr(uint8_t alignment)
+template<bool e, typename T_OFFSET>
+T_OFFSET _AdbInstance_impl<e, T_OFFSET>::dwordAddr(uint8_t alignment)
 {
     return (offset / alignment) << 2;
 }
 
 /**
- * Function: AdbInstance::startBit
+ * Function: _AdbInstance_impl::startBit
  **/
-u_int32_t AdbInstance::startBit(uint8_t alignment)
+template<bool e, typename O>
+uint32_t _AdbInstance_impl<e, O>::startBit(uint8_t alignment)
 {
     return offset % alignment;
 }
 
 /**
- * Function: AdbInstance::operator<
+ * Function: _AdbInstance_impl::operator<
  **/
-bool AdbInstance::operator<(const AdbInstance& other)
+template<bool e, typename T_OFFSET>
+bool _AdbInstance_impl<e, T_OFFSET>::operator<(const _AdbInstance_impl<e, T_OFFSET>& other)
 {
     return offset < other.offset;
 }
 
 /**
- * Function: AdbInstance::getChildByPath
+ * Function: _AdbInstance_impl::getChildByPath
  **/
-AdbInstance* AdbInstance::getChildByPath(const string& path, bool isCaseSensitive)
+template<bool e, typename O>
+_AdbInstance_impl<e, O>* _AdbInstance_impl<e, O>::getChildByPath(const string& path, bool isCaseSensitive)
 {
-    string effPath = isCaseSensitive ? path : mstflint::common::algorithm::to_lower_copy(path);
+    string effPath = isCaseSensitive ? path : Algorithm::to_lower_copy(path);
+
     if (effPath[0] == '.')
     {
         effPath.erase(0, 1);
@@ -632,11 +725,11 @@ AdbInstance* AdbInstance::getChildByPath(const string& path, bool isCaseSensitiv
     }
 
     // Search for childName
-    AdbInstance* child = NULL;
+    _AdbInstance_impl<e, O>* child = NULL;
     for (size_t i = 0; i < subItems.size(); i++)
     {
-        string subName = isCaseSensitive ? subItems[i]->layout_item_name :
-                                           mstflint::common::algorithm::to_lower_copy(subItems[i]->layout_item_name);
+        string subName =
+          isCaseSensitive ? subItems[i]->layout_item_name : Algorithm::to_lower_copy(subItems[i]->layout_item_name);
         if (subName == childName)
         {
             child = subItems[i];
@@ -654,12 +747,14 @@ AdbInstance* AdbInstance::getChildByPath(const string& path, bool isCaseSensitiv
 }
 
 /**
- * Function: AdbInstance::findChild
+ * Function: _AdbInstance_impl::findChild
  **/
-vector<AdbInstance*> AdbInstance::findChild(const string& childName, bool isCaseSensitive, bool by_inst_name)
+template<bool e, typename O>
+vector<_AdbInstance_impl<e, O>*>
+  _AdbInstance_impl<e, O>::findChild(const string& childName, bool isCaseSensitive, bool by_inst_name)
 {
-    string effName = isCaseSensitive ? childName : mstflint::common::algorithm::to_lower_copy(childName);
-    vector<AdbInstance*> childList;
+    string effName = isCaseSensitive ? childName : Algorithm::to_lower_copy(childName);
+    vector<_AdbInstance_impl<e, O>*> childList;
 
     if (by_inst_name || isLeaf())
     {
@@ -679,7 +774,7 @@ vector<AdbInstance*> AdbInstance::findChild(const string& childName, bool isCase
     // do that recursively for all child items
     for (size_t i = 0; i < subItems.size(); i++)
     {
-        vector<AdbInstance*> l = subItems[i]->findChild(effName, true);
+        vector<_AdbInstance_impl<e, O>*> l = subItems[i]->findChild(effName, true);
         childList.insert(childList.end(), l.begin(), l.end());
     }
 
@@ -687,9 +782,10 @@ vector<AdbInstance*> AdbInstance::findChild(const string& childName, bool isCase
 }
 
 /**
- * Function: AdbInstance::get_root
+ * Function: _AdbInstance_impl::get_root
  **/
-AdbInstance* AdbInstance::get_root()
+template<bool e, typename O>
+_AdbInstance_impl<e, O>* _AdbInstance_impl<e, O>::get_root()
 {
     auto current_layout_item = this;
     while (current_layout_item->parent)
@@ -700,14 +796,15 @@ AdbInstance* AdbInstance::get_root()
 }
 
 /**
- * Function: AdbInstance::getAttr
+ * Function: _AdbInstance_impl::getAttr
  **/
-string AdbInstance::getInstanceAttr(const string& attrName) const
+template<bool e, typename O>
+string _AdbInstance_impl<e, O>::getInstanceAttr(const string& attrName) const
 {
-    if (inst_ops_props)
+    if (inst_ops_props.instAttrsMap)
     {
-        LayoutItemAttrsMap::iterator it = inst_ops_props->instAttrsMap.find(attrName);
-        return it == inst_ops_props->instAttrsMap.end() ? string() : it->second;
+        LayoutItemAttrsMap::iterator it = inst_ops_props.instAttrsMap->find(attrName);
+        return it == inst_ops_props.instAttrsMap->end() ? string() : it->second;
     }
     else if (fieldDesc)
     {
@@ -723,16 +820,18 @@ string AdbInstance::getInstanceAttr(const string& attrName) const
 }
 
 /**
- * Function: AdbInstance::getAttr
+ * Function: _AdbInstance_impl::getAttr
  **/
-bool AdbInstance::getInstanceAttr(const string& attrName,
-                                  string& value) // TODO: solve this with templates or more general impl of iterator
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::getInstanceAttr(const string& attrName,
+                                              string& value) // TODO: solve this with templates or more general impl of
+                                                             // iterator
 {
     bool ret{false};
-    if (inst_ops_props)
+    if (inst_ops_props.instAttrsMap)
     {
-        LayoutItemAttrsMap::iterator it = inst_ops_props->instAttrsMap.find(attrName);
-        if (it != inst_ops_props->instAttrsMap.end())
+        LayoutItemAttrsMap::iterator it = inst_ops_props.instAttrsMap->find(attrName);
+        if (it != inst_ops_props.instAttrsMap->end())
         {
             value = it->second;
             ret = true;
@@ -760,13 +859,14 @@ bool AdbInstance::getInstanceAttr(const string& attrName,
 }
 
 /**
- * Function: AdbInstance::getInstanceAttrIterator
+ * Function: _AdbInstance_impl::getInstanceAttrIterator
  **/
-LayoutItemAttrsMap::iterator AdbInstance::getInstanceAttrIterator(const string& attrName)
+template<bool e, typename O>
+LayoutItemAttrsMap::iterator _AdbInstance_impl<e, O>::getInstanceAttrIterator(const string& attrName)
 {
-    if (inst_ops_props)
+    if (inst_ops_props.instAttrsMap)
     {
-        return inst_ops_props->instAttrsMap.find(attrName);
+        return inst_ops_props.instAttrsMap->find(attrName);
     }
     else
     {
@@ -775,79 +875,91 @@ LayoutItemAttrsMap::iterator AdbInstance::getInstanceAttrIterator(const string& 
 }
 
 /**
- * Function: AdbInstance::setInstanceAttr
+ * Function: _AdbInstance_impl::setInstanceAttr
  **/
-void AdbInstance::setInstanceAttr(const string& attrName, const string& attrValue)
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::setInstanceAttr(const string& attrName, const string& attrValue)
 {
-    if (inst_ops_props)
+    if (!inst_ops_props.instAttrsMap)
     {
-        inst_ops_props->instAttrsMap[attrName] = attrValue;
+        AttrsMap& attrs_map = !parent ? nodeDesc->attrs : fieldDesc->attrs;
+        inst_ops_props.instAttrsMap = new LayoutItemAttrsMap(attrs_map);
     }
-    else
-    {
-        throw AdbException("Setting Layout-Item attributes is illegal, when eval_expr is disabled");
-    }
+
+    (*(inst_ops_props.instAttrsMap))[attrName] = attrValue;
 }
 
 /**
- * Function: AdbInstance::setVarsMap - set an item in vars map
+ * Function: _AdbInstance_impl::setVarsMap - set an item in vars map
  **/
-void AdbInstance::setVarsMap(const string& attrName, const string& attrValue)
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<U>::type _AdbInstance_impl<eval_expr, O>::setVarsMap(const string& attrName, const string& attrValue)
 {
-    if (inst_ops_props)
-    {
-        inst_ops_props->varsMap[attrName] = attrValue;
-    }
-    else
-    {
-        throw AdbException("Setting Layout-Item vars is illegal, when eval_expr is disabled");
-    }
+    inst_ops_props.varsMap[attrName] = attrValue;
+}
+
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<!U>::type _AdbInstance_impl<eval_expr, O>::setVarsMap(const string& attrName,
+                                                                         const string& attrValue)
+{
+    (void)attrName;
+    (void)attrValue;
+    return;
 }
 
 /**
- * Function: AdbInstance::setVarsMap - set an item in vars map
+ * Function: _AdbInstance_impl::setVarsMap - set an item in vars map
  **/
-void AdbInstance::setVarsMap(const AttrsMap& AttrsMap)
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<U>::type _AdbInstance_impl<eval_expr, O>::setVarsMap(const AttrsMap& AttrsMap)
 {
-    if (inst_ops_props)
-    {
-        inst_ops_props->varsMap = AttrsMap;
-    }
-    else
-    {
-        throw AdbException("Setting Layout-Item vars is illegal, when eval_expr is disabled");
-    }
+    inst_ops_props.varsMap = AttrsMap;
+}
+
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<!U>::type _AdbInstance_impl<eval_expr, O>::setVarsMap(const AttrsMap& AttrsMap)
+{
+    (void)AttrsMap;
+    return;
+}
+
+// /**
+//  * Function: _AdbInstance_impl::setVarsMap - returns a copy of vars map
+//  **/
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<U, AttrsMap>::type _AdbInstance_impl<eval_expr, O>::getVarsMap()
+{
+    return inst_ops_props.varsMap;
+}
+
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<!U, AttrsMap>::type _AdbInstance_impl<eval_expr, O>::getVarsMap()
+{
+    return AttrsMap();
 }
 
 /**
- * Function: AdbInstance::setVarsMap - returns a copy of vars map
+ * Function: _AdbInstance_impl::isEnumExists
  **/
-AttrsMap AdbInstance::getVarsMap()
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::isEnumExists()
 {
-    if (inst_ops_props)
-    {
-        return inst_ops_props->varsMap;
-    }
-    else
-    {
-        throw AdbException("Layout-Item vars are illegal, when eval_expr is disabled");
-    }
-}
-
-/**
- * Function: AdbInstance::isEnumExists
- **/
-bool AdbInstance::isEnumExists()
-{
-    return inst_ops_props ? inst_ops_props->instAttrsMap.contains("enum") :
-           fieldDesc ? fieldDesc->attrs.count("enum") :
+    return inst_ops_props.instAttrsMap ? inst_ops_props.instAttrsMap->contains("enum") :
+           fieldDesc                   ? fieldDesc->attrs.count("enum") :
                                          false;
 }
 
 /**
- * Function: AdbInstance::enumToInt
+ * Function: _AdbInstance_impl::enumToInt
  **/
-bool AdbInstance::enumToInt(const string& name, u_int64_t& val)
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::enumToInt(const string& name, uint64_t& val)
 {
     string enums;
     bool enum_found = getInstanceAttr("enum", enums);
@@ -858,14 +970,14 @@ bool AdbInstance::enumToInt(const string& name, u_int64_t& val)
     }
 
     vector<string> enumValues;
-    mstflint::common::algorithm::split(enumValues, enums, mstflint::common::algorithm::is_any_of(string(",")));
+    Algorithm::split(enumValues, enums, Algorithm::is_any_of(","));
 
     for (size_t i = 0; i < enumValues.size(); i++)
     {
         vector<string> pair;
         string trimedEnumValues = enumValues[i];
-        mstflint::common::algorithm::trim(trimedEnumValues);
-        mstflint::common::algorithm::split(pair, trimedEnumValues, mstflint::common::algorithm::is_any_of(string("=")));
+        Algorithm::trim(trimedEnumValues);
+        Algorithm::split(pair, trimedEnumValues, Algorithm::is_any_of("="));
 
         if (pair.size() != 2)
         {
@@ -888,9 +1000,10 @@ bool AdbInstance::enumToInt(const string& name, u_int64_t& val)
 }
 
 /**
- * Function: AdbInstance::intToEnum
+ * Function: _AdbInstance_impl::intToEnum
  **/
-bool AdbInstance::intToEnum(u_int64_t val, string& valName)
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::intToEnum(uint64_t val, string& valName)
 {
     string enums;
     bool enum_found = getInstanceAttr("enum", enums);
@@ -901,14 +1014,14 @@ bool AdbInstance::intToEnum(u_int64_t val, string& valName)
     }
 
     vector<string> enumValues;
-    mstflint::common::algorithm::split(enumValues, enums, mstflint::common::algorithm::is_any_of(string(",")));
+    Algorithm::split(enumValues, enums, Algorithm::is_any_of(","));
 
     for (size_t i = 0; i < enumValues.size(); i++)
     {
         vector<string> pair;
         string trimedEnumValues = enumValues[i];
-        mstflint::common::algorithm::trim(trimedEnumValues);
-        mstflint::common::algorithm::split(pair, trimedEnumValues, mstflint::common::algorithm::is_any_of(string("=")));
+        Algorithm::trim(trimedEnumValues);
+        Algorithm::split(pair, trimedEnumValues, Algorithm::is_any_of("="));
 
         if (pair.size() != 2)
         {
@@ -916,7 +1029,7 @@ bool AdbInstance::intToEnum(u_int64_t val, string& valName)
         }
 
         char* end;
-        u_int64_t tmp = strtoul(pair[1].c_str(), &end, 0);
+        uint64_t tmp = strtoul(pair[1].c_str(), &end, 0);
         if (*end != '\0')
         {
             continue;
@@ -933,11 +1046,12 @@ bool AdbInstance::intToEnum(u_int64_t val, string& valName)
 }
 
 /**
- * Function: AdbInstance::getEnumMap
+ * Function: _AdbInstance_impl::getEnumMap
  **/
-map<string, u_int64_t> AdbInstance::getEnumMap()
+template<bool e, typename O>
+map<string, uint64_t> _AdbInstance_impl<e, O>::getEnumMap()
 {
-    map<string, u_int64_t> enumMap;
+    map<string, uint64_t> enumMap;
     string enums;
 
     bool enum_found = getInstanceAttr("enum", enums);
@@ -948,21 +1062,21 @@ map<string, u_int64_t> AdbInstance::getEnumMap()
     }
 
     vector<string> enumValues;
-    mstflint::common::algorithm::split(enumValues, enums, mstflint::common::algorithm::is_any_of(string(",")));
+    Algorithm::split(enumValues, enums, Algorithm::is_any_of(","));
 
     for (size_t i = 0; i < enumValues.size(); i++)
     {
         vector<string> pair;
         string trimedEnumValues = enumValues[i];
-        mstflint::common::algorithm::trim(trimedEnumValues);
-        mstflint::common::algorithm::split(pair, trimedEnumValues, mstflint::common::algorithm::is_any_of(string("=")));
+        Algorithm::trim(trimedEnumValues);
+        Algorithm::split(pair, trimedEnumValues, Algorithm::is_any_of("="));
         if (pair.size() != 2)
         {
             throw AdbException("Can't parse enum: " + enumValues[i]);
         }
 
         char* end;
-        u_int64_t intVal = strtoul(pair[1].c_str(), &end, 0);
+        uint64_t intVal = strtoul(pair[1].c_str(), &end, 0);
         if (*end != '\0')
         {
             throw AdbException(string("Can't evaluate enum (") + pair[0].c_str() + "): " + pair[1].c_str());
@@ -975,11 +1089,12 @@ map<string, u_int64_t> AdbInstance::getEnumMap()
 }
 
 /**
- * Function: AdbInstance::getEnumValues
+ * Function: _AdbInstance_impl::getEnumValues
  **/
-vector<u_int64_t> AdbInstance::getEnumValues()
+template<bool e, typename O>
+vector<uint64_t> _AdbInstance_impl<e, O>::getEnumValues()
 {
-    vector<u_int64_t> values;
+    vector<uint64_t> values;
     string enums;
 
     bool enum_found = getInstanceAttr("enum", enums);
@@ -989,21 +1104,21 @@ vector<u_int64_t> AdbInstance::getEnumValues()
     }
 
     vector<string> enumValues;
-    mstflint::common::algorithm::split(enumValues, enums, mstflint::common::algorithm::is_any_of(string(",")));
+    Algorithm::split(enumValues, enums, Algorithm::is_any_of(","));
 
     for (size_t i = 0; i < enumValues.size(); i++)
     {
         vector<string> pair;
         string trimedEnumValues = enumValues[i];
-        mstflint::common::algorithm::trim(trimedEnumValues);
-        mstflint::common::algorithm::split(pair, trimedEnumValues, mstflint::common::algorithm::is_any_of(string("=")));
+        Algorithm::trim(trimedEnumValues);
+        Algorithm::split(pair, trimedEnumValues, Algorithm::is_any_of("="));
         if (pair.size() != 2)
         {
             continue;
         }
 
         char* end;
-        u_int64_t intVal = strtoul(pair[1].c_str(), &end, 0);
+        uint64_t intVal = strtoul(pair[1].c_str(), &end, 0);
         if (*end != '\0')
         {
             continue;
@@ -1016,9 +1131,10 @@ vector<u_int64_t> AdbInstance::getEnumValues()
 }
 
 /**
- * Function: AdbInstance::getUnionSelectedNodeName
+ * Function: _AdbInstance_impl::getUnionSelectedNodeName
  **/
-AdbInstance* AdbInstance::getUnionSelectedNodeName(const u_int64_t& selectorVal)
+template<bool e, typename O>
+_AdbInstance_impl<e, O>* _AdbInstance_impl<e, O>::getUnionSelectedNodeName(const uint64_t& selectorVal)
 {
     if (!isUnion())
     {
@@ -1030,19 +1146,19 @@ AdbInstance* AdbInstance::getUnionSelectedNodeName(const u_int64_t& selectorVal)
         throw AdbException("Can't find selector for union: " + layout_item_name);
     }
 
-    map<string, u_int64_t> selectorValMap = unionSelector->getEnumMap();
-    string sel_by;
-    for (map<string, u_int64_t>::iterator it = selectorValMap.begin(); it != selectorValMap.end(); it++)
+    map<string, uint64_t> selectorValMap = unionSelector->getEnumMap();
+    for (map<string, uint64_t>::iterator it = selectorValMap.begin(); it != selectorValMap.end(); it++)
     {
         if (it->second == selectorVal)
         {
             const string& selectorEnum = it->first;
             // search for the sub instance with the "selected_by" attribute == selectorEnum
-            for (size_t i = 0; i < subItems.size(); i++)
+            string sel_by;
+            for (auto subItem : subItems)
             {
-                if (getInstanceAttr("selected_by", sel_by) && sel_by == selectorEnum)
+                if (subItem->getInstanceAttr("selected_by", sel_by) && sel_by == selectorEnum)
                 {
-                    return subItems[i];
+                    return subItem;
                 }
             }
             throw AdbException("Found selector value (" + selectorEnum + ") is defined for selector field (" +
@@ -1056,9 +1172,10 @@ AdbInstance* AdbInstance::getUnionSelectedNodeName(const u_int64_t& selectorVal)
 }
 
 /**
- * Function: AdbInstance::getUnionSelectedNodeName
+ * Function: _AdbInstance_impl::getUnionSelectedNodeName
  **/
-AdbInstance* AdbInstance::getUnionSelectedNodeName(const string& selectorEnum)
+template<bool e, typename O>
+_AdbInstance_impl<e, O>* _AdbInstance_impl<e, O>::getUnionSelectedNodeName(const string& selectorEnum)
 {
     if (!isUnion())
     {
@@ -1084,10 +1201,11 @@ AdbInstance* AdbInstance::getUnionSelectedNodeName(const string& selectorEnum)
 }
 
 /**
- * Function: AdbInstance::isConditionalNode
+ * Function: _AdbInstance_impl::isConditionalNode
  * Throws exception: AdbException
  **/
-bool AdbInstance::isConditionalNode()
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::isConditionalNode()
 {
     if (isNode())
     {
@@ -1099,12 +1217,13 @@ bool AdbInstance::isConditionalNode()
 }
 
 /**
- * Function: AdbInstance::isConditionValid
+ * Function: _AdbInstance_impl::isConditionValid
  * Throws exception: AdbException
  **/
-bool AdbInstance::isConditionValid(map<string, string>* valuesMap)
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::isConditionValid(map<string, string>* valuesMap)
 {
-    u_int64_t res;
+    uint64_t res;
     AdbExpr expressionChecker;
     int status = -1;
     char* condExp;
@@ -1128,10 +1247,10 @@ bool AdbInstance::isConditionValid(map<string, string>* valuesMap)
     {
         status = expressionChecker.expr(&exp, &res);
     }
-    catch (AdbException& e)
+    catch (AdbException& er)
     {
         delete[] condExp;
-        throw AdbException(string("AdbException: ") + e.what_s());
+        throw AdbException(string("AdbException: ") + er.what_s());
     }
     delete[] condExp;
 
@@ -1145,17 +1264,18 @@ bool AdbInstance::isConditionValid(map<string, string>* valuesMap)
 }
 
 /**
- * Function: AdbInstance::getLeafFields
+ * Function: _AdbInstance_impl::getLeafFields
  **/
-vector<AdbInstance*> AdbInstance::getLeafFields(bool extendenName)
+template<bool e, typename O>
+vector<_AdbInstance_impl<e, O>*> _AdbInstance_impl<e, O>::getLeafFields(bool extendenName)
 {
-    vector<AdbInstance*> fields;
+    vector<_AdbInstance_impl<e, O>*> fields;
 
     for (size_t i = 0; i < subItems.size(); i++)
     {
         if (subItems[i]->isNode())
         {
-            vector<AdbInstance*> subFields = subItems[i]->getLeafFields(extendenName);
+            vector<_AdbInstance_impl<e, O>*> subFields = subItems[i]->getLeafFields(extendenName);
             fields.insert(fields.end(), subFields.begin(), subFields.end());
         }
         else
@@ -1181,29 +1301,55 @@ vector<AdbInstance*> AdbInstance::getLeafFields(bool extendenName)
 }
 
 /**
- * Function: AdbInstance::pushBuf
+ * Function: _AdbInstance_impl::pushBuf
  **/
-void AdbInstance::pushBuf(u_int8_t* buf, u_int64_t value)
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::pushBuf(uint8_t* buf, uint64_t value)
 {
-    push_to_buf(buf, offset, size, value);
+    push_to_buf(buf, offset, get_size(), value);
 }
 
 /**
- * Function: AdbInstance::popBuf
+ * Function: _AdbInstance_impl::pushBuf
  **/
-u_int64_t AdbInstance::popBuf(u_int8_t* buf)
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::pushBufLE(uint8_t* buf, uint64_t value)
 {
-    return pop_from_buf(buf, offset, size);
+    push_to_buf_le(buf, offset, get_size(), value);
 }
 
 /**
- * Function: AdbInstance::print
+ * Function: _AdbInstance_impl::popBuf
  **/
-void AdbInstance::print(int indent)
+template<bool e, typename O>
+uint64_t _AdbInstance_impl<e, O>::popBuf(uint8_t* buf)
+{
+    return pop_from_buf(buf, offset, get_size());
+}
+
+/**
+ * Function: _AdbInstance_impl::popBufLE
+ **/
+template<bool e, typename O>
+uint64_t _AdbInstance_impl<e, O>::popBufLE(uint8_t* buf)
+{
+    bool wa = get_size() != 32 && isPartOfArray();
+    return pop_from_buf_le(buf, offset, get_size(), wa);
+}
+
+/**
+ * Function: _AdbInstance_impl::print
+ **/
+template<bool e, typename O>
+void _AdbInstance_impl<e, O>::print(int indent)
 {
     string indentStr = indentString(indent);
+    auto offset_32 = static_cast<uint32_t>(offset);
+    auto size_32 = static_cast<uint32_t>(get_size());
+
     printf("%sfullName: %s, offset: 0x%x.%d, size: 0x%x.%d, isNode:%d, isUnion:%d\n", indentStr.c_str(),
-           fullName().c_str(), (offset >> 5) << 2, offset % 32, (size >> 5) << 2, size % 32, isNode(), isUnion());
+           fullName().c_str(), (offset_32 >> 5) << 2, offset_32 % 32, (size_32 >> 5) << 2, size_32 % 32, isNode(),
+           isUnion());
 
     if (isNode())
     {
@@ -1212,7 +1358,16 @@ void AdbInstance::print(int indent)
     }
 }
 
-AdbInstance::InstOpsProperties::InstOpsProperties(AttrsMap& field_attrs) : instAttrsMap(field_attrs) {}
+template<bool e, typename O>
+_AdbInstance_impl<e, O>::LayoutPartitionProps::LayoutPartitionProps(PartitionTree* tree) : partition_tree(tree)
+{
+}
+
+template class _AdbInstance_impl<false, uint32_t>;
+template class _AdbInstance_impl<true, uint32_t>;
+
+template class _AdbInstance_impl<false, uint64_t>;
+template class _AdbInstance_impl<true, uint64_t>;
 
 LayoutItemAttrsMap::LayoutItemAttrsMap(AttrsMap& field_desc_attrs) : _field_desc_attrs(field_desc_attrs) {}
 

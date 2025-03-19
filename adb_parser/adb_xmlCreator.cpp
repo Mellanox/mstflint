@@ -35,6 +35,8 @@
 #include "adb_xmlCreator.h"
 #include "common/tools_algorithm.h"
 
+namespace Algorithm = mstflint::common::algorithm;
+
 string xmlCreator::indentString(int i)
 {
     string s;
@@ -67,8 +69,8 @@ string xmlCreator::formatAddr(u_int32_t offs, u_int32_t size)
     return str;
 }
 
-/*template <class AdbInstance>
-bool xmlCreator::compareFieldsPtr(AdbInstance *f1, AdbInstance *f2)
+/*template <class _AdbInstance_impl>
+bool xmlCreator::compareFieldsPtr(_AdbInstance_impl *f1, _AdbInstance_impl *f2)
 {
   return (*f1) < (*f2);
 }*/
@@ -112,5 +114,5 @@ string xmlCreator::encodeXml(const string& data)
 
 string xmlCreator::descNativeToXml(const string& desc)
 {
-    return mstflint::common::algorithm::replace_all_copy(desc, "\n", "\\;");
+    return Algorithm::replace_all_copy(desc, "\n", "\\;");
 }

@@ -31,7 +31,7 @@
  *
  *  Version: $Id$
  */
-/*************************** AdbNode ***************************/
+/*************************** AdbNode_impl ***************************/
 
 #ifndef ADB_NODE_H
 #define ADB_NODE_H
@@ -44,39 +44,109 @@
 using namespace std;
 using namespace xmlCreator;
 
-class AdbField;
+template<typename T_OFFSET>
+class AdbField_impl;
+
+template<typename T_OFFSET>
+class AdbFieldLarge_impl;
 
 typedef map<string, string> AttrsMap;
-typedef vector<AdbField*> FieldsList;
-class AdbNode
+
+template<typename T_OFFSET>
+class AdbNode_impl
 {
 public:
+    using AdbField = AdbField_impl<T_OFFSET>;
+    using FieldsList = vector<AdbField*>;
+
+    using short_address_t = typename AdbField::short_address_t; // for address in bits
+    using address_t = typename AdbField::address_t;             // for address in bits
+
+    constexpr static auto LEGACY_ADDRESS_SPACE = AdbField::LEGACY_ADDRESS_SPACE; // in bits
+
     // Methods
-    AdbNode();
-    ~AdbNode();
+    static AdbNode_impl<T_OFFSET>* create_AdbNode(string name,
+                                                  address_t size,
+                                                  bool is_union = false,
+                                                  string desc = "",
+                                                  string file_name = "",
+                                                  int line_num = -1);
+
+    AdbNode_impl() = default;
+    AdbNode_impl(string name,
+                 short_address_t size,
+                 bool is_union = false,
+                 string desc = "",
+                 string file_name = "",
+                 int line_num = -1);
+    virtual ~AdbNode_impl();
+
+    virtual address_t get_size() const;
+    virtual void set_size(short_address_t size);
+
+    address_t get_max_leaf_size() const;
+    void update_max_leaf(AdbField* other);
+
     string toXml(const string& addPrefix);
 
     // FOR DEBUG
     void print(int indent = 0);
 
+protected:
+    short_address_t _size{0}; // in bits
+
 public:
     // Members
     string name;
-    u_int32_t size;         // in bits
-    u_int32_t _maxLeafSize; // in bits
-    bool isUnion;
+    AdbField* _max_leaf{nullptr};
+    bool isUnion{false};
     string desc;
     FieldsList fields;
     FieldsList condFields; // Field that weren't instantiated due to not satisfied condition
     AttrsMap attrs;
-    bool inLayout;
+    bool inLayout{false};
 
     // defined in
     string fileName;
-    int lineNumber;
+    int lineNumber{-1};
 
     // FOR USER USAGE
-    void* userData;
+    void* userData{nullptr};
 };
+
+template<typename T_OFFSET>
+class AdbNodeLarge_impl : public AdbNode_impl<T_OFFSET>
+{
+public:
+    using AdbField = AdbFieldLarge_impl<T_OFFSET>;
+    using FieldsList = vector<AdbField*>;
+
+    using short_address_t = typename AdbNodeLarge_impl<T_OFFSET>::short_address_t;
+    using address_t = typename AdbNodeLarge_impl<T_OFFSET>::address_t;
+
+    constexpr static auto NUM_LOW_BITS = AdbField::NUM_LOW_BITS;
+    constexpr static auto LOW_MASK = AdbField::LOW_MASK;
+
+    AdbNodeLarge_impl() = default;
+    AdbNodeLarge_impl(string name,
+                      address_t size,
+                      bool is_union = false,
+                      string desc = "",
+                      string file_name = "",
+                      int line_num = -1);
+    ~AdbNodeLarge_impl(){};
+    address_t get_size() const override;
+    void set_size(short_address_t size) override;
+    void set_size(address_t size);
+
+private:
+    short_address_t _size_high{0};
+};
+
+using AdbNodeLegacy = AdbNode_impl<uint32_t>;
+// using AdbNode = AdbNode_impl<uint32_t>;
+using AdbNode = AdbNode_impl<uint64_t>;
+// using AdbNodeNewDevices = AdbNode_impl<uint64_t>;
+using AdbNodeLarge = AdbNodeLarge_impl<uint64_t>;
 
 #endif

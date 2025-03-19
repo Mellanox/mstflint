@@ -55,6 +55,7 @@ public:
     static ExceptionsMap getAdbExceptionsMap();
     static int getNumberOfExceptions();
     static string printAdbExceptionMap();
+    static void clearAdbExceptionMap();
 
 public:
     // VARIABLES

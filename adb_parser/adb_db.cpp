@@ -38,8 +38,10 @@
 #include <vector>
 #include <stdio.h>
 #include <string>
-#include "common/tools_algorithm.h"
 #include "adb_db.h"
+#include "common/tools_algorithm.h"
+
+namespace Algorithm = mstflint::common::algorithm;
 
 #define CHECK_FIELD(field, node_w)                                                  \
     if (((AdbInstance*)field)->isReserved())                                        \
@@ -73,7 +75,7 @@ adb_db_t* db_create()
  */
 int db_load(adb_db_t* db, const char* adb_file_path, int add_reserved)
 {
-    if (!((Adb*)db)->load(adb_file_path, add_reserved, true, false))
+    if (!((Adb*)db)->load(adb_file_path, add_reserved, false))
     {
         sprintf(err, "Failed to load adabe project: %s", ((Adb*)db)->getLastError().c_str());
         return 1;
@@ -87,7 +89,7 @@ int db_load(adb_db_t* db, const char* adb_file_path, int add_reserved)
  */
 int db_load_from_str(adb_db_t* db, const char* adb_data, int add_reserved)
 {
-    if (!((Adb*)db)->loadFromString(adb_data, add_reserved, true, false))
+    if (!((Adb*)db)->loadFromString(adb_data, add_reserved, false))
     {
         sprintf(err, "Failed to load adabe project: %s", ((Adb*)db)->getLastError().c_str());
         return 1;
@@ -128,7 +130,7 @@ adb_limits_map_t* db_create_limits_map(adb_db_t* db)
             if (attrs_map != ((Adb*)db)->configs[i]->attrs.end())
             {
                 vector<string> defVal;
-                mstflint::common::algorithm::split(defVal, attrs_map->second, mstflint::common::algorithm::is_any_of(string("=")));
+                Algorithm::split(defVal, attrs_map->second, Algorithm::is_any_of("="));
 
                 if (defVal.size() == 1)
                 {
@@ -159,7 +161,7 @@ void db_destroy_limits_map(adb_limits_map_t* limits)
 adb_node_t* db_get_node(adb_db_t* db, const char* node_name)
 {
     Adb* adb = (Adb*)db;
-    AdbInstance* node = adb->createLayout(node_name, false);
+    AdbInstance* node = adb->createLayout(node_name);
     if (!node)
     {
         sprintf(err, "Failed to create node %s: %s", node_name, adb->getLastError().c_str());
@@ -214,7 +216,7 @@ void db_node_name(adb_node_t* node, char name[])
 int db_node_size(adb_node_t* node)
 {
     struct node_wrapper* node_w = (struct node_wrapper*)node;
-    return node_w->node->size;
+    return node_w->node->get_size();
 }
 
 /**
@@ -264,8 +266,8 @@ adb_field_t* db_node_get_field_by_path(adb_node_t* node, const char* path, int i
         }
         else
         {
-            string field_name_lower = mstflint::common::algorithm::to_lower_copy(node_w->fields->at(i)->fullName(1));
-            string path_lower = mstflint::common::algorithm::to_lower_copy(fullPath);
+            string field_name_lower = Algorithm::to_lower_copy(node_w->fields->at(i)->fullName(1));
+            string path_lower = Algorithm::to_lower_copy(fullPath);
 
             if (path_lower == field_name_lower)
             {
@@ -285,7 +287,7 @@ adb_field_t* db_node_get_field_by_path(adb_node_t* node, const char* path, int i
 bool db_node_dump(adb_node_t* node, u_int8_t buf[], dump_format_t format, FILE* stream)
 {
     struct node_wrapper* node_w = (struct node_wrapper*)node;
-    return db_node_range_dump(node, 0, node_w->node->size - 1, buf, format, stream);
+    return db_node_range_dump(node, 0, node_w->node->get_size() - 1, buf, format, stream);
 }
 
 /**
@@ -299,7 +301,7 @@ bool db_node_conditional_dump(adb_node_t* node,
                               adb_limits_map_t* values_map)
 {
     struct node_wrapper* node_w = (struct node_wrapper*)node;
-    return db_node_conditional_range_dump(node, 0, node_w->node->size - 1, buf, format, stream, values_map);
+    return db_node_conditional_range_dump(node, 0, node_w->node->get_size() - 1, buf, format, stream, values_map);
 }
 
 /*
@@ -454,7 +456,7 @@ int db_field_offset(adb_field_t* field)
  */
 int db_field_size(adb_field_t* field)
 {
-    return ((AdbInstance*)field)->size;
+    return ((AdbInstance*)field)->get_size();
 }
 
 /**
@@ -503,7 +505,7 @@ void db_print_nodes(adb_db_t* db)
     int i = 0;
 
     printf("DB nodes list:\n");
-    for (NodesMap::iterator iter = ((Adb*)db)->nodesMap.begin(); iter != ((Adb*)db)->nodesMap.end(); iter++)
+    for (Adb::NodesMap::iterator iter = ((Adb*)db)->nodesMap.begin(); iter != ((Adb*)db)->nodesMap.end(); iter++)
     {
         i++;
         printf("%-5d) %s\n", i, iter->first.c_str());

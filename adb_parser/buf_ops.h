@@ -49,5 +49,11 @@
 /************************************/
 void print_raw(FILE* file, void* buff, int buff_len);
 u_int64_t pop_from_buf(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size);
+u_int64_t pop_from_buf_le(const u_int8_t* buff,
+                          u_int32_t bit_offset,
+                          u_int32_t field_size,
+                          bool small_entry_array); // This function is actually for host-endian rather than
+                                                   // little-endain
 void push_to_buf(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value);
+void push_to_buf_le(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value);
 #endif // BIT_OPS_H

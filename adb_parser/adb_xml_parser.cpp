@@ -38,34 +38,17 @@
 #include "adb_config.h"
 #include "adb_field.h"
 #include "adb_expr.h"
+#include "common/tools_filesystem.h"
+#include "common/tools_regex.h"
+#include "common/tools_algorithm.h"
 
 #include <string.h>
-#include <algorithm>
 #include <iostream>
 #include <sstream>
 
-#include "common/tools_algorithm.h"
-#include "common/tools_filesystem.h"
-#include "common/tools_regex.h"
-
-bool AdbParser::allowMultipleExceptions = false;
-const string AdbParser::TAG_NODES_DEFINITION = "NodesDefinition";
-const string AdbParser::TAG_RCS_HEADERS = "RCSheaders";
-const string AdbParser::TAG_CONFIG = "config";
-const string AdbParser::TAG_ENUM = "enum";
-const string AdbParser::TAG_INCLUDE = "include";
-const string AdbParser::TAG_INFO = "info";
-const string AdbParser::TAG_NODE = "node";
-const string AdbParser::TAG_FIELD = "field";
-const string AdbParser::TAG_INSTANCE_OPS = "instance_ops";
-const string AdbParser::TAG_INSTANCE_OP_ATTR_REPLACE = "attr_replace";
-const string AdbParser::TAG_ATTR_ENUM = "enum";
-const string AdbParser::TAG_ATTR_BIG_ENDIAN = "big_endian_arr";
-const string AdbParser::TAG_ATTR_SINGLE_ENTRY_ARR = "single_entry_arr";
-const string AdbParser::TAG_ATTR_INCLUDE_PATH = "include_path";
-const string AdbParser::TAG_ATTR_DEFINE_PATTERN = "([A-Za-z_]\\w*)=(\\w+)";
-
-typedef map<string, string> AttrsMap;
+namespace Filesystem = mstflint::common::filesystem;
+namespace Regex = mstflint::common::regex;
+namespace Algorithm = mstflint::common::algorithm;
 
 /**
  * Function: AdbParser::compareFieldsPtr
@@ -75,35 +58,35 @@ typedef map<string, string> AttrsMap;
 /**
  * Function: AdbParser::AdbParser
  **/
-AdbParser::AdbParser(string fileName,
-                     Adb* adbCtxt,
-                     string root_node_name,
-                     bool addReserved,
-                     bool evalExpr,
-                     bool strict,
-                     string includePath,
-                     bool enforceExtraChecks,
-                     bool checkDsAlign,
-                     bool enforceGuiChecks,
-                     bool force_pad_32,
-                     bool variable_alignment) :
-
+template<bool e, typename O>
+AdbParser<e, O>::AdbParser(string fileName,
+                           Adb* adbCtxt,
+                           string root_node_name,
+                           bool addReserved,
+                           bool strict,
+                           string includePath,
+                           bool enforceExtraChecks,
+                           bool checkDsAlign,
+                           bool enforceGuiChecks,
+                           bool cd_mode,
+                           bool variable_alignment) :
     _adbCtxt(adbCtxt),
     _fileName(fileName),
-     _root_node_name(root_node_name),
+    _root_node_name(root_node_name),
     _addReserved(addReserved),
-    _isExprEval(evalExpr),
     _strict(strict),
     _checkDsAlign(checkDsAlign),
     skipNode(false),
-    _support_variable_alignment(variable_alignment),
+    _support_variable_alignment(variable_alignment || cd_mode),
     _includePath(includePath),
     _currentNode(0),
     _current_node_alignment(32),
     _currentField(0),
     _currentConfig(0),
+    _instanceOps(false),
+    _nodeOps(false),
     _enforceGuiChecks(enforceGuiChecks),
-    _force_pad_32(force_pad_32),
+    _cd_mode(cd_mode),
     _nname_pattern(".*"),
     _fname_pattern(".*")
 {
@@ -112,7 +95,7 @@ AdbParser::AdbParser(string fileName,
     // add default patterns
     _nname_pattern = ".*";
     _fname_pattern = ".*";
-    _enum_pattern = "(\\s*\\w+\\s*=\\s*(0x)?[0-9a-fA-f]+\\s*(,)?)+";
+    _enum_pattern = "(\\s*\\w+\\s*=\\s*(0[xX])?[0-9a-fA-F]+\\s*(,)?)+";
 
     // add special attr names
     field_spec_attr.insert("name");
@@ -135,27 +118,27 @@ AdbParser::AdbParser(string fileName,
         adbCtxt->includePaths.push_back(
           _fileName.find(OS_PATH_SEP) == string::npos ? "." : _fileName.substr(0, _fileName.rfind(OS_PATH_SEP)));
         vector<string> path;
-        mstflint::common::algorithm::split(path, fileName, mstflint::common::algorithm::is_any_of(string(OS_PATH_SEP)));
+        Algorithm::split(path, fileName, Algorithm::is_any_of(OS_PATH_SEP));
         // IncludeFileInfo info = {fileName, "ROOT", 0};
         // _adbCtxt->includedFiles[path[path.size() - 1]] = info;
 
         _adbCtxt->add_include(path[path.size() - 1], fileName, "ROOT", 0);
     }
-    _instanceOps = false;
 }
 
-void AdbParser::addIncludePaths(Adb* adbCtxt, string includePaths)
+template<bool e, typename O>
+void AdbParser<e, O>::addIncludePaths(Adb* adbCtxt, string includePaths)
 {
     vector<string> paths;
-    mstflint::common::algorithm::split(paths, includePaths, mstflint::common::algorithm::is_any_of(string(";")));
+    Algorithm::split(paths, includePaths, Algorithm::is_any_of(";"));
     adbCtxt->includePaths.insert(adbCtxt->includePaths.end(), paths.begin(), paths.end());
 
     vector<string> relatives;
-    string projPath = mstflint::common::filesystem::path(adbCtxt->mainFileName).parent_path().string();
+    string projPath = Filesystem::path(adbCtxt->mainFileName).parent_path().string();
 
     for (vector<string>::iterator it = adbCtxt->includePaths.begin(); it != adbCtxt->includePaths.end(); it++)
     {
-        if (projPath != "" && projPath != *it && mstflint::common::filesystem::path(*it).is_relative())
+        if (projPath != "" && projPath != *it && Filesystem::path(*it).is_relative())
         {
             relatives.push_back(projPath + OS_PATH_SEP + *it);
         }
@@ -167,7 +150,8 @@ void AdbParser::addIncludePaths(Adb* adbCtxt, string includePaths)
 /**
  * Function: AdbParser::~AdbParser
  **/
-AdbParser::~AdbParser()
+template<bool e, typename O>
+AdbParser<e, O>::~AdbParser()
 {
     XML_ParserFree(_xmlParser);
 }
@@ -176,7 +160,8 @@ AdbParser::~AdbParser()
  * Function: AdbParser::setAllowMultipleExceptionsTrue
  * This function is a static function to change the value of set all exceptions to true
  **/
-void AdbParser::setAllowMultipleExceptionsTrue()
+template<bool e, typename O>
+void AdbParser<e, O>::setAllowMultipleExceptionsTrue()
 {
     AdbParser::allowMultipleExceptions = true;
 }
@@ -184,7 +169,8 @@ void AdbParser::setAllowMultipleExceptionsTrue()
 /**
  * Function: AdbParser::load
  **/
-bool AdbParser::load(bool is_main)
+template<bool e, typename O>
+bool AdbParser<e, O>::load(bool is_main)
 {
     FILE* file;
     char* data = NULL;
@@ -318,9 +304,9 @@ bool AdbParser::load(bool is_main)
             return false;
         }
     }
-    catch (std::runtime_error& e)
+    catch (std::runtime_error& er)
     {
-        _lastError = CHECK_RUNTIME_ERROR(e);
+        _lastError = CHECK_RUNTIME_ERROR(er);
         if (allowMultipleExceptions)
         {
             xmlStatus = false;
@@ -357,7 +343,8 @@ bool AdbParser::load(bool is_main)
 /**
  * Function: AdbParser::loadFromString
  **/
-bool AdbParser::loadFromString(const char* adbString)
+template<bool e, typename O>
+bool AdbParser<e, O>::loadFromString(const char* adbString)
 {
     _fileName = "\"STRING\"";
     try
@@ -386,9 +373,9 @@ bool AdbParser::loadFromString(const char* adbString)
                       (_adbCtxt->bigEndianArr ? "Big" : "Little") + " Endian Arrays\"";
         return false;
     }
-    catch (std::runtime_error& e)
+    catch (std::runtime_error& er)
     {
-        _lastError = CHECK_RUNTIME_ERROR(e);
+        _lastError = CHECK_RUNTIME_ERROR(er);
         return false;
     }
     catch (...)
@@ -406,7 +393,8 @@ bool AdbParser::loadFromString(const char* adbString)
 /**
  * Function: AdbParser::getError
  **/
-string AdbParser::getError()
+template<bool e, typename O>
+string AdbParser<e, O>::getError()
 {
     return _lastError;
 }
@@ -414,7 +402,8 @@ string AdbParser::getError()
 /**
  * Function: AdbParser::attrsCount
  **/
-int AdbParser::attrCount(const XML_Char** atts)
+template<bool e, typename O>
+int AdbParser<e, O>::attrCount(const XML_Char** atts)
 {
     int i = 0;
     while (atts[i])
@@ -427,8 +416,18 @@ int AdbParser::attrCount(const XML_Char** atts)
 /**
  * Function: AdbParser::attrValue
  **/
-string AdbParser::attrValue(const XML_Char** atts, const XML_Char* attrName)
+template<bool e, typename O>
+string AdbParser<e, O>::attrValue(const XML_Char** atts, const XML_Char* attrName, AttrsMap* override_attrs)
 {
+    if (override_attrs)
+    {
+        auto found_it = override_attrs->find(attrName);
+        if (found_it != override_attrs->end())
+        {
+            return found_it->second;
+        }
+    }
+
     int i = 0;
     while (atts[i])
     {
@@ -445,7 +444,8 @@ string AdbParser::attrValue(const XML_Char** atts, const XML_Char* attrName)
 /**
  * Function: AdbParser::checkAttrExist
  */
-bool AdbParser::checkAttrExist(const XML_Char** atts, const XML_Char* attrName)
+template<bool e, typename O>
+bool AdbParser<e, O>::checkAttrExist(const XML_Char** atts, const XML_Char* attrName)
 {
     int i = 0;
     while (atts[i])
@@ -462,7 +462,8 @@ bool AdbParser::checkAttrExist(const XML_Char** atts, const XML_Char* attrName)
 /**
  * Function: AdbParser::attrName
  **/
-string AdbParser::attrName(const XML_Char** atts, int i)
+template<bool e, typename O>
+string AdbParser<e, O>::attrName(const XML_Char** atts, int i)
 {
     return string(atts[i * 2]);
 }
@@ -470,15 +471,26 @@ string AdbParser::attrName(const XML_Char** atts, int i)
 /**
  * Function: AdbParser::attrName
  **/
-string AdbParser::attrValue(const XML_Char** atts, int i)
+template<bool e, typename O>
+string AdbParser<e, O>::attrValue(const XML_Char** atts, int i, AttrsMap* override_attrs)
 {
+    string name = string(atts[i * 2]);
+    if (override_attrs)
+    {
+        auto found_it = override_attrs->find(name);
+        if (found_it != override_attrs->end())
+        {
+            return found_it->second;
+        }
+    }
     return string(atts[i * 2 + 1]);
 }
 
 /**
  * Function: AdbParser::findFile
  **/
-string AdbParser::findFile(string fileName)
+template<bool e, typename O>
+string AdbParser<e, O>::findFile(string fileName)
 {
     FILE* f;
 
@@ -507,15 +519,16 @@ string AdbParser::findFile(string fileName)
 /**
  * Function: AdbParser::addr2int
  **/
-u_int32_t AdbParser::addr2int(string& s)
+template<bool e, typename T_OFFSET>
+unsigned long long AdbParser<e, T_OFFSET>::addr2int(string& s)
 {
     try
     {
-        u_int32_t res;
-        mstflint::common::algorithm::to_lower(s);
-        char* end;
+        unsigned long long res;
+        Algorithm::to_lower(s);
+        size_t* end{nullptr};
         vector<string> words;
-        mstflint::common::algorithm::split(words, s, mstflint::common::algorithm::is_any_of(string(".")));
+        Algorithm::split(words, s, Algorithm::is_any_of("."));
 
         // fix for cases like: 0x.16
         if (words.size() && !words[0].compare("0x"))
@@ -526,8 +539,8 @@ u_int32_t AdbParser::addr2int(string& s)
         switch (words.size())
         {
             case 1:
-                res = strtoul(words[0].c_str(), &end, 0);
-                if (*end != '\0')
+                res = stoull(words[0], end, 0);
+                if (end && words[0][*end] != '\0')
                 {
                     throw AdbException();
                 }
@@ -539,8 +552,8 @@ u_int32_t AdbParser::addr2int(string& s)
                 if (words[0].empty())
                 {
                     // .DDD form
-                    res = strtoul(words[1].c_str(), &end, 0);
-                    if (*end != '\0')
+                    res = stoull(words[1], end, 0);
+                    if (end && words[1][*end] != '\0')
                     {
                         throw AdbException();
                     }
@@ -548,14 +561,14 @@ u_int32_t AdbParser::addr2int(string& s)
                 else
                 {
                     // 0xHHHHH.DDD or DDDDD.DDD form
-                    res = strtoul(words[0].c_str(), &end, 0);
-                    if (*end != '\0')
+                    res = stoull(words[0], end, 0);
+                    if (end && words[0][*end] != '\0')
                     {
                         throw AdbException();
                     }
                     res *= 8;
-                    res += strtoul(words[1].c_str(), &end, 0);
-                    if (*end != '\0')
+                    res += stoull(words[1], end, 0);
+                    if (end && words[1][*end] != '\0')
                     {
                         throw AdbException();
                     }
@@ -577,7 +590,8 @@ u_int32_t AdbParser::addr2int(string& s)
 /**
  * Function: AdbParser::dword
  **/
-u_int32_t AdbParser::aligned_word(u_int32_t offset, uint8_t alignment)
+template<bool e, typename T_OFFSET>
+T_OFFSET AdbParser<e, T_OFFSET>::aligned_word(T_OFFSET offset, uint8_t alignment)
 {
     return offset / alignment;
 }
@@ -585,7 +599,8 @@ u_int32_t AdbParser::aligned_word(u_int32_t offset, uint8_t alignment)
 /**
  * Function: AdbParser::startBit
  **/
-u_int32_t AdbParser::startBit(u_int32_t offset, uint8_t alignment)
+template<bool e, typename T_OFFSET>
+uint32_t AdbParser<e, T_OFFSET>::startBit(T_OFFSET offset, uint8_t alignment)
 {
     return offset % alignment;
 }
@@ -593,12 +608,14 @@ u_int32_t AdbParser::startBit(u_int32_t offset, uint8_t alignment)
 /**
  * Function: AdbParser::descXmlToNative
  **/
-string AdbParser::descXmlToNative(const string& desc)
+template<bool e, typename O>
+string AdbParser<e, O>::descXmlToNative(const string& desc)
 {
-    return mstflint::common::algorithm::replace_all_copy(desc, "\\;", "\n");
+    return Algorithm::replace_all_copy(desc, "\\;", "\n");
 }
 
-bool AdbParser::is_inst_ifdef_exist_and_correct_project(const XML_Char** atts, AdbParser* adbParser)
+template<bool e, typename O>
+bool AdbParser<e, O>::is_inst_ifdef_exist_and_correct_project(const XML_Char** atts, AdbParser* adbParser)
 {
     bool cond = true;
     string definedProject = attrValue(atts, "inst_ifdef");
@@ -611,7 +628,7 @@ bool AdbParser::is_inst_ifdef_exist_and_correct_project(const XML_Char** atts, A
             if (it_def != adbParser->_adbCtxt->configs[i]->attrs.end())
             {
                 vector<string> defVal;
-                mstflint::common::algorithm::split(defVal, it_def->second, mstflint::common::algorithm::is_any_of(string("=")));
+                Algorithm::split(defVal, it_def->second, Algorithm::is_any_of("="));
 
                 if (defVal[0] == definedProject)
                 {
@@ -626,19 +643,16 @@ bool AdbParser::is_inst_ifdef_exist_and_correct_project(const XML_Char** atts, A
 }
 
 /**
- * Function: AdbParser::descNativeToXml
- **/
-
-/**
  * Function: AdbParser::includeFile
  **/
-void AdbParser::includeFile(AdbParser* adbParser, string fileName, int lineNumber)
+template<bool e, typename O>
+void AdbParser<e, O>::includeFile(AdbParser* adbParser, string fileName, int lineNumber)
 {
     // add this file to the included files map
     string filePath;
     FILE* probeFile = NULL;
 
-    if (!mstflint::common::filesystem::path(fileName).is_relative())
+    if (!Filesystem::path(fileName).is_relative())
     {
         probeFile = fopen(fileName.c_str(), "r");
     }
@@ -658,7 +672,7 @@ void AdbParser::includeFile(AdbParser* adbParser, string fileName, int lineNumbe
     }
 
     // Update filename to be only base name with extension to prevent duplications
-    mstflint::common::filesystem::path boostPath(filePath);
+    Filesystem::path boostPath(filePath);
     fileName = boostPath.filename().string();
 
     if (!adbParser->_adbCtxt->includedFiles.count(fileName))
@@ -670,8 +684,8 @@ void AdbParser::includeFile(AdbParser* adbParser, string fileName, int lineNumbe
 
         // parse the included file
         AdbParser p(filePath, adbParser->_adbCtxt, adbParser->_root_node_name, adbParser->_addReserved,
-                    adbParser->_isExprEval, adbParser->_strict, "", adbParser->_enforceExtraChecks, adbParser->_checkDsAlign,
-                    adbParser->_enforceGuiChecks, adbParser->_force_pad_32, adbParser->_support_variable_alignment);
+                    adbParser->_strict, "", adbParser->_enforceExtraChecks, adbParser->_checkDsAlign,
+                    adbParser->_enforceGuiChecks, adbParser->_cd_mode, adbParser->_support_variable_alignment);
         if (!p.load(false))
         {
             throw AdbException(p.getError());
@@ -682,35 +696,36 @@ void AdbParser::includeFile(AdbParser* adbParser, string fileName, int lineNumbe
 /**
  * Function: AdbParser::includeAllFilesInDir
  **/
-void AdbParser::includeAllFilesInDir(AdbParser* adbParser, string dirPath, int lineNumber)
+template<bool e, typename O>
+void AdbParser<e, O>::includeAllFilesInDir(AdbParser* adbParser, string dirPath, int lineNumber)
 {
     vector<string> paths;
-    mstflint::common::filesystem::path mainFile(adbParser->_fileName);
-    mstflint::common::algorithm::split(paths, dirPath, mstflint::common::algorithm::is_any_of(string(";")));
+    Filesystem::path mainFile(adbParser->_fileName);
+    Algorithm::split(paths, dirPath, Algorithm::is_any_of(";"));
     for (vector<string>::iterator pathIt = paths.begin(); pathIt != paths.end(); pathIt++)
     {
         // first look in the main file's path
-        mstflint::common::filesystem::path fsPath(mainFile.parent_path().string() + "/" + *pathIt);
-        if (!mstflint::common::filesystem::exists(fsPath))
+        Filesystem::path fsPath(mainFile.parent_path().string() + "/" + *pathIt);
+        if (!Filesystem::exists(fsPath))
         {
-            fsPath = mstflint::common::filesystem::path(*pathIt);
+            fsPath = Filesystem::path(*pathIt);
         }
 
-        if (mstflint::common::filesystem::exists(fsPath) && mstflint::common::filesystem::is_directory(fsPath))
+        if (Filesystem::exists(fsPath) && Filesystem::is_directory(fsPath))
         {
             addIncludePaths(adbParser->_adbCtxt, *pathIt);
-            mstflint::common::filesystem::directory_iterator filesIter(fsPath), dirEnd;
-            for (; filesIter!=dirEnd; ++filesIter)
+            Filesystem::directory_iterator filesIter(fsPath), dirEnd;
+            for (; filesIter != dirEnd; ++filesIter)
             {
-                if (mstflint::common::filesystem::is_regular_file(filesIter->status()) && filesIter->path().extension() == ".adb")
+                if (Filesystem::is_regular_file(filesIter->status()) && filesIter->path().extension() == ".adb")
                 {
                     try
                     {
                         includeFile(adbParser, filesIter->path().string(), lineNumber);
                     }
-                    catch (AdbException& e)
+                    catch (AdbException& er)
                     {
-                        throw(e);
+                        throw(er);
                     }
                 }
             }
@@ -721,27 +736,28 @@ void AdbParser::includeAllFilesInDir(AdbParser* adbParser, string dirPath, int l
 /**
  *  Function AdbParser::checkSpecialChars
  */
-bool AdbParser::checkSpecialChars(string tagName)
+template<bool e, typename O>
+bool AdbParser<e, O>::checkSpecialChars(string tagName)
 {
-    mstflint::common::regex::smatch match;
-    mstflint::common::regex::regex allowedCharsExpr("[^\\w\\[\\]]"); // only alphanumeric and square brackets are allowed
-    if (mstflint::common::regex::regex_search(tagName, match, allowedCharsExpr))
+    Regex::smatch match;
+    Regex::regex allowedCharsExpr("[^\\w\\[\\]]"); // only alphanumeric and square brackets are allowed
+    if (Regex::regex_search(tagName, match, allowedCharsExpr))
     {
         return false;
     }
-    mstflint::common::regex::regex checkArrayExpr("[\\[\\]]"); // this check if containing the array brackets
-    if (mstflint::common::regex::regex_search(tagName, match, checkArrayExpr))
+    Regex::regex checkArrayExpr("[\\[\\]]"); // this check if containing the array brackets
+    if (Regex::regex_search(tagName, match, checkArrayExpr))
     {
-        mstflint::common::regex::regex correctNameForArrayExpr("[_A-Za-z][\\w]*\\[[\\d]+\\]$");
-        if (!mstflint::common::regex::regex_search(tagName, match, correctNameForArrayExpr))
+        Regex::regex correctNameForArrayExpr("[_A-Za-z][\\w]*\\[[\\d]+\\]$");
+        if (!Regex::regex_search(tagName, match, correctNameForArrayExpr))
         { // check the name if correct the square brackets (array)
             return false;
         }
     }
     else
     {
-        mstflint::common::regex::regex correctNameNoneArrayExpr("[_A-Za-z][\\w]*$");
-        if (!mstflint::common::regex::regex_search(tagName, match, correctNameNoneArrayExpr))
+        Regex::regex correctNameNoneArrayExpr("[_A-Za-z][\\w]*$");
+        if (!Regex::regex_search(tagName, match, correctNameNoneArrayExpr))
         { // check the name if correct without the square brackets (not array)
             return false;
         }
@@ -749,18 +765,20 @@ bool AdbParser::checkSpecialChars(string tagName)
     return true;
 }
 
-bool AdbParser::checkHEXFormat(string addr)
+template<bool e, typename O>
+bool AdbParser<e, O>::checkHEXFormat(string addr)
 {
-    mstflint::common::regex::smatch match;
-    mstflint::common::regex::regex correctHEXExpr("^(0x[0-9A-fa-f])?[0-9A-Fa-f]*(\\.[0-9]*)?$");
-    if (!mstflint::common::regex::regex_search(addr, match, correctHEXExpr))
+    Regex::smatch match;
+    Regex::regex correctHEXExpr("^(0x[0-9A-Fa-f])?[0-9A-Fa-f]*(\\.[0-9]*)?$");
+    if (!regex_search(addr, match, correctHEXExpr))
     {
         return false;
     }
     return true;
 }
 
-bool AdbParser::checkBigger32(string num)
+template<bool e, typename O>
+bool AdbParser<e, O>::checkBigger32(string num)
 {
     std::istringstream iss(num);
     std::string token;
@@ -775,7 +793,8 @@ bool AdbParser::checkBigger32(string num)
     return false;
 }
 
-void AdbParser::startNodesDefElement(const XML_Char** atts, AdbParser* adbParser)
+template<bool e, typename O>
+void AdbParser<e, O>::startNodesDefElement(const XML_Char** atts, AdbParser<e, O>* adbParser)
 {
     if (adbParser->_adbCtxt->version == "")
     {
@@ -784,7 +803,7 @@ void AdbParser::startNodesDefElement(const XML_Char** atts, AdbParser* adbParser
             string adbVersion = attrValue(atts, 0);
             if (adbVersion != "1" && adbVersion != "1.0" && adbVersion != "2")
             {
-                throw AdbException("Requested Adb Version (%s) is not supported. Supporting only version 1 or 2",
+                throw AdbException("Requested _Adb_impl Version (%s) is not supported. Supporting only version 1 or 2",
                                    adbVersion.c_str());
             }
             if (adbVersion == "1.0")
@@ -807,7 +826,8 @@ void AdbParser::startNodesDefElement(const XML_Char** atts, AdbParser* adbParser
     }
 }
 
-void AdbParser::startEnumElement(const XML_Char** atts, AdbParser* adbParser, const int lineNumber)
+template<bool e, typename O>
+void AdbParser<e, O>::startEnumElement(const XML_Char** atts, AdbParser<e, O>* adbParser, const int lineNumber)
 {
     bool expFound = false;
     if (!adbParser->_currentConfig || !adbParser->_currentConfig->attrs.count("type") ||
@@ -844,9 +864,12 @@ void AdbParser::startEnumElement(const XML_Char** atts, AdbParser* adbParser, co
     }
 }
 
-void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, const int lineNumber)
+template<bool e, typename O>
+void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>* adbParser, const int lineNumber)
 {
     bool expFound = false;
+    bool is_field_attribute = false;
+
     if (adbParser->_currentConfig)
     {
         expFound = raiseException(allowMultipleExceptions,
@@ -858,6 +881,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
     adbParser->_currentConfig = new AdbConfig;
     for (int i = 0; i < attrCount(atts); i++)
     {
+        bool is_valid_att = true;
         // First add this config to context
         string aName = attrName(atts, i);
         string aValue = attrValue(atts, i);
@@ -869,16 +893,16 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
             // check if the attribute is mandatory
             if (!aName.compare("field_mand"))
             {
-                aValue = mstflint::common::regex::regex_replace(aValue, mstflint::common::regex::regex("\\s+"), string(""));
-                mstflint::common::algorithm::split(adbParser->field_mand_attr, aValue, mstflint::common::algorithm::is_any_of(","));
+                aValue = Regex::regex_replace(aValue, Regex::regex("\\s+"), string(""));
+                Algorithm::split(adbParser->field_mand_attr, aValue, Algorithm::is_any_of(","));
             }
 
             // check the define statement is according to format
             else if (!aName.compare("define"))
             {
-                mstflint::common::regex::smatch result;
-                mstflint::common::regex::regex pattern(TAG_ATTR_DEFINE_PATTERN);
-                if (!mstflint::common::regex::regex_match(aValue, result, pattern))
+                Regex::smatch result;
+                Regex::regex pattern(TAG_ATTR_DEFINE_PATTERN);
+                if (!Regex::regex_match(aValue, result, pattern))
                 {
                     expFound =
                       raiseException(allowMultipleExceptions,
@@ -909,6 +933,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
 
             else if (!expFound && !aName.compare("field_attr"))
             {
+                is_field_attribute = true;
                 // check that the field_attr is unique
                 if (adbParser->field_attr_names_set.find(aValue) != adbParser->field_attr_names_set.end())
                 {
@@ -924,13 +949,24 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
                 }
 
                 string attr_type = attrValue(atts, "type");
+                string field_attr = attrValue(atts, "field_attr");
+
+                // check attr 'type' is configured only when attr 'field_attr' is configured as well
+                if (field_attr.empty())
+                {
+                    expFound =
+                      raiseException(allowMultipleExceptions,
+                                     "Attribute \"type\" is supported only for attributes definition \"config\" tag",
+                                     "line: " + to_string(lineNumber),
+                                     ExceptionHolder::WARN_EXCEPTION);
+                }
 
                 // check that attr 'type' was provided and not empty
                 if (attr_type.empty())
                 {
                     expFound =
                       raiseException(allowMultipleExceptions,
-                                     string("field_attr type must be specified: \"") + aName +
+                                     string("field_attr type must be specified (not empty): \"") + aName +
                                        "\" attribute value: \"" + aValue + "\"",
                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
                                      ExceptionHolder::ERROR_EXCEPTION);
@@ -968,7 +1004,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
                     try
                     {
                         string pattern_value = attrValue(atts, "pattern");
-                        mstflint::common::regex::regex r(pattern_value);
+                        Regex::regex r(pattern_value);
                         adbParser->attr_pattern.insert(pair<string, string>(aValue, pattern_value));
                     }
                     catch (...)
@@ -990,7 +1026,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
                 try
                 {
                     string nname_pattern = attrValue(atts, "nname_pattern");
-                    mstflint::common::regex::regex r(nname_pattern);
+                    Regex::regex r(nname_pattern);
                     adbParser->_nname_pattern = nname_pattern;
                 }
                 catch (...)
@@ -1011,7 +1047,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
                 try
                 {
                     string fname_pattern = attrValue(atts, "fname_pattern");
-                    mstflint::common::regex::regex r(fname_pattern);
+                    Regex::regex r(fname_pattern);
                     adbParser->_fname_pattern = fname_pattern;
                 }
                 catch (...)
@@ -1023,6 +1059,21 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
                                      ExceptionHolder::ERROR_EXCEPTION);
                 }
+            }
+            else if (!aName.compare("type") or !aName.compare("used_for") or !aName.compare("pattern"))
+            {
+                if (!is_field_attribute)
+                {
+                    raiseException(
+                      allowMultipleExceptions,
+                      "Attribute \"" + aName + "\" is supported only for field_attr definition in \"config\" tag",
+                      " line: " + to_string(lineNumber),
+                      ExceptionHolder::WARN_EXCEPTION);
+                }
+            }
+            else if (aName.compare("sw_export") and aName.compare("disable_exports"))
+            {
+                is_valid_att = false;
             }
         }
 
@@ -1044,7 +1095,7 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
             }
         }
 
-        if (!TAG_ATTR_SINGLE_ENTRY_ARR.compare(aName))
+        else if (!TAG_ATTR_SINGLE_ENTRY_ARR.compare(aName))
         {
             try
             {
@@ -1061,21 +1112,21 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
             }
         }
 
-        if (!expFound && !TAG_ATTR_INCLUDE_PATH.compare(aName))
+        else if (!expFound && !TAG_ATTR_INCLUDE_PATH.compare(aName))
         {
             vector<string> paths;
-            mstflint::common::algorithm::split(paths, aValue, mstflint::common::algorithm::is_any_of(string(";")));
+            Algorithm::split(paths, aValue, Algorithm::is_any_of(";"));
             adbParser->_adbCtxt->includePaths.insert(adbParser->_adbCtxt->includePaths.end(), paths.begin(),
                                                      paths.end());
 
             vector<string> relatives;
-            string projPath = mstflint::common::filesystem::path(adbParser->_adbCtxt->mainFileName).parent_path().string();
+            string projPath = Filesystem::path(adbParser->_adbCtxt->mainFileName).parent_path().string();
 
             for (vector<string>::iterator it = adbParser->_adbCtxt->includePaths.begin();
                  it != adbParser->_adbCtxt->includePaths.end();
                  it++)
             {
-                if (mstflint::common::filesystem::path(*it).is_relative())
+                if (Filesystem::path(*it).is_relative())
                 {
                     relatives.push_back(projPath + OS_PATH_SEP + *it);
                 }
@@ -1084,10 +1135,18 @@ void AdbParser::startConfigElement(const XML_Char** atts, AdbParser* adbParser, 
             adbParser->_adbCtxt->includePaths.insert(adbParser->_adbCtxt->includePaths.end(), relatives.begin(),
                                                      relatives.end());
         }
+        else if (!is_valid_att)
+        {
+            raiseException(allowMultipleExceptions,
+                           "Attribute \"" + aName + "\" for config tag is not supported.",
+                           " line: " + to_string(lineNumber),
+                           ExceptionHolder::WARN_EXCEPTION);
+        }
     }
 }
 
-void AdbParser::startInfoElement(const XML_Char** atts, AdbParser* adbParser)
+template<bool e, typename O>
+void AdbParser<e, O>::startInfoElement(const XML_Char** atts, AdbParser<e, O>* adbParser)
 {
     string docName = attrValue(atts, "source_doc_name");
     string docVer = attrValue(atts, "source_doc_version");
@@ -1095,20 +1154,20 @@ void AdbParser::startInfoElement(const XML_Char** atts, AdbParser* adbParser)
     adbParser->_adbCtxt->srcDocVer = docVer;
 }
 
-void AdbParser::startIncludeElement(const XML_Char** atts, AdbParser* adbParser, const int lineNumber)
+template<bool e, typename O>
+void AdbParser<e, O>::startIncludeElement(const XML_Char** atts, AdbParser<e, O>* adbParser, const int lineNumber)
 {
     bool cond = is_inst_ifdef_exist_and_correct_project(atts, adbParser);
-
     if (cond)
     {
         string includeAttr = attrName(atts, 0);
-        mstflint::common::algorithm::trim(includeAttr);
+        Algorithm::trim(includeAttr);
 
         bool expFound = false;
         if (includeAttr == "file")
         {
             string fname = attrValue(atts, "file");
-            mstflint::common::algorithm::trim(fname);
+            Algorithm::trim(fname);
             if (fname.empty())
             {
                 expFound = raiseException(allowMultipleExceptions,
@@ -1122,7 +1181,7 @@ void AdbParser::startIncludeElement(const XML_Char** atts, AdbParser* adbParser,
         else if (includeAttr == "dir")
         {
             string includeAllDirPath = attrValue(atts, "dir");
-            mstflint::common::algorithm::trim(includeAllDirPath);
+            Algorithm::trim(includeAllDirPath);
             if (includeAllDirPath.empty())
             {
                 expFound = raiseException(allowMultipleExceptions,
@@ -1144,49 +1203,41 @@ void AdbParser::startIncludeElement(const XML_Char** atts, AdbParser* adbParser,
     }
 }
 
-void AdbParser::startInstOpAttrReplaceElement(const XML_Char** atts, AdbParser* adbParser, const int lineNumber)
+template<bool e, typename O>
+void AdbParser<e, O>::startAttrReplaceElement(const XML_Char** atts,
+                                              AdbParser<e, O>* adbParser,
+                                              const int lineNumber,
+                                              bool instance)
 {
-    if (!adbParser->_isExprEval)
-    {
-        return;
-    }
-
-    bool expFound = false;
-    if (!adbParser->_instanceOps)
-    {
-        expFound = raiseException(allowMultipleExceptions,
-                                  "Operation attr_replace must be defined within <instance_ops> element only.",
-                                  ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                  ExceptionHolder::FATAL_EXCEPTION);
-    }
-
     string path = attrValue(atts, "path");
     if (path.empty())
     {
-        expFound = raiseException(allowMultipleExceptions,
-                                  "path attribute is missing in attr_replace operation",
-                                  ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                  ExceptionHolder::ERROR_EXCEPTION);
+        raiseException(allowMultipleExceptions,
+                       "path attribute is missing in attr_replace operation",
+                       ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                       ExceptionHolder::ERROR_EXCEPTION);
+        return;
     }
 
-    if (!expFound)
+    auto& path_attrs_map = instance ? adbParser->_adbCtxt->instAttrs : adbParser->_adbCtxt->nodeAttrs;
+    path_attrs_map[path] = AttrsMap();
+    for (int i = 0; i < attrCount(atts); i++)
     {
-        adbParser->_adbCtxt->instAttrs[path] = AttrsMap();
-        for (int i = 0; i < attrCount(atts); i++)
+        string attrN = attrName(atts, i);
+        if (attrN == "path")
         {
-            string attrN = attrName(atts, i);
-            if (attrN == "path")
-            {
-                continue;
-            }
-
-            string attrV = attrValue(atts, i);
-            adbParser->_adbCtxt->instAttrs[path][attrN] = attrV;
+            continue;
         }
+
+        string attrV = attrValue(atts, i);
+        path_attrs_map[path][attrN] = attrV;
     }
 }
 
-void AdbParser::startNodeElement(const XML_Char** atts, AdbParser* adbParser, const int lineNumber)
+template<bool e, typename T_OFFSET>
+void AdbParser<e, T_OFFSET>::startNodeElement(const XML_Char** atts,
+                                              AdbParser<e, T_OFFSET>* adbParser,
+                                              const int lineNumber)
 {
     if (adbParser->_currentNode || adbParser->skipNode)
     {
@@ -1200,13 +1251,22 @@ void AdbParser::startNodeElement(const XML_Char** atts, AdbParser* adbParser, co
     if (cond)
     {
         string nodeName = attrValue(atts, "name");
-        mstflint::common::algorithm::trim(nodeName);
-        string size = attrValue(atts, "size");
+
+        AttrsMap* override_attrs{nullptr};
+
+        auto replace_attrs_it = adbParser->_adbCtxt->nodeAttrs.find(nodeName);
+        if (replace_attrs_it != adbParser->_adbCtxt->nodeAttrs.end())
+        {
+            override_attrs = &(replace_attrs_it->second);
+        }
+
+        Algorithm::trim(nodeName);
+        string size = attrValue(atts, "size", override_attrs);
 
         if (adbParser->_enforceGuiChecks)
         {
             // check the node name is compatible with the nname_pattern
-            if (!mstflint::common::regex::regex_match(nodeName, mstflint::common::regex::regex(adbParser->_nname_pattern)))
+            if (!Regex::regex_match(nodeName, Regex::regex(adbParser->_nname_pattern)))
             {
                 raiseException(allowMultipleExceptions,
                                "Illegal node name: \"" + nodeName + "\" doesn't match the given node name pattern: \"",
@@ -1248,7 +1308,7 @@ void AdbParser::startNodeElement(const XML_Char** atts, AdbParser* adbParser, co
                                ExceptionHolder::ERROR_EXCEPTION);
             }
         }
-        string desc = descXmlToNative(attrValue(atts, "descr"));
+        string desc = descXmlToNative(attrValue(atts, "descr", override_attrs));
 
         // Check for mandatory attrs
         if (nodeName.empty())
@@ -1276,21 +1336,19 @@ void AdbParser::startNodeElement(const XML_Char** atts, AdbParser* adbParser, co
                            ExceptionHolder::FATAL_EXCEPTION);
         }
 
-        adbParser->_currentNode = new AdbNode;
-        adbParser->_currentNode->name = nodeName;
-        adbParser->_currentNode->size = addr2int(size);
-        adbParser->_currentNode->desc = desc;
-        string unionAttrVal = attrValue(atts, "attr_is_union");
-        adbParser->_currentNode->isUnion = !unionAttrVal.empty() && stoi(unionAttrVal) != 0;
-        adbParser->_currentNode->fileName = adbParser->_fileName;
-        adbParser->_currentNode->lineNumber = lineNumber;
+        T_OFFSET node_size = addr2int(size);
+        string unionAttrVal = attrValue(atts, "attr_is_union", override_attrs);
+        auto is_union = !unionAttrVal.empty() && stoi(unionAttrVal) != 0;
 
-        if (adbParser->_strict && adbParser->_currentNode->isUnion && adbParser->_currentNode->size % 32)
+        adbParser->_currentNode =
+          AdbNode::create_AdbNode(nodeName, node_size, is_union, desc, adbParser->_fileName, lineNumber);
+
+        if (adbParser->_strict && adbParser->_currentNode->isUnion && adbParser->_currentNode->get_size() % 32)
         {
             // throw AdbException("union must be dword aligned");
         }
 
-        if (adbParser->_support_variable_alignment && attrValue(atts, "cr_data_wdt") == "64")
+        if (adbParser->_support_variable_alignment && attrValue(atts, "cr_data_wdt", override_attrs) == "64")
         {
             adbParser->_current_node_alignment = 64;
         }
@@ -1299,15 +1357,15 @@ void AdbParser::startNodeElement(const XML_Char** atts, AdbParser* adbParser, co
             adbParser->_current_node_alignment = 32;
         }
 
-
         // Add all node attributes
         for (int i = 0; i < attrCount(atts); i++)
         {
-            if (attrValue(atts, i) == "")
+            auto val = attrValue(atts, i, override_attrs);
+            if (val == "")
             {
                 continue;
             }
-            adbParser->_currentNode->attrs[attrName(atts, i)] = attrValue(atts, i);
+            adbParser->_currentNode->attrs[attrName(atts, i)] = val;
         }
     }
     else
@@ -1316,9 +1374,13 @@ void AdbParser::startNodeElement(const XML_Char** atts, AdbParser* adbParser, co
     }
 }
 
-void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, const int lineNumber)
+template<bool e, typename T_OFFSET>
+void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
+                                               AdbParser<e, T_OFFSET>* adbParser,
+                                               const int lineNumber)
 {
     bool expFound = false;
+    bool invalid_size = false;
     if (!adbParser->_currentNode && !adbParser->skipNode)
     {
         expFound = raiseException(allowMultipleExceptions,
@@ -1338,13 +1400,35 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
         }
 
         string fieldName = attrValue(atts, "name");
-        mstflint::common::algorithm::trim(fieldName);
-        string offset = attrValue(atts, "offset");
-        string size = attrValue(atts, "size");
+        Algorithm::trim(fieldName);
+
+        string nodeName = adbParser->_currentNode->name;
+
+        AttrsMap* override_attrs{nullptr};
+
+        auto replace_attrs_it = adbParser->_adbCtxt->nodeAttrs.find(nodeName + "." + fieldName);
+        if (replace_attrs_it != adbParser->_adbCtxt->nodeAttrs.end())
+        {
+            override_attrs = &(replace_attrs_it->second);
+        }
+
+        string offset = attrValue(atts, "offset", override_attrs);
+        string size = attrValue(atts, "size", override_attrs);
+
+        if (size.empty())
+        {
+            expFound = raiseException(allowMultipleExceptions,
+                                      "Missing field size",
+                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                                      ExceptionHolder::FATAL_EXCEPTION);
+            invalid_size = true;
+        }
+
+        T_OFFSET field_size = invalid_size ? 0 : addr2int(size);
 
         if (adbParser->_enforceExtraChecks)
         {
-            if (addr2int(size) % 32 == 0 && !AdbParser::checkHEXFormat(size))
+            if (!invalid_size && field_size % 32 == 0 && !AdbParser::checkHEXFormat(size))
             {
                 expFound = raiseException(allowMultipleExceptions,
                                           "Invalid size format",
@@ -1387,7 +1471,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
                                  ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
                                  ExceptionHolder::WARN_EXCEPTION);
             }
-            if (addr2int(size) == 0)
+            if (!invalid_size && field_size == 0)
             {
                 expFound = raiseException(allowMultipleExceptions,
                                           "Field Size is not allowed to be 0, in Field: \"" + fieldName + "\"",
@@ -1396,11 +1480,11 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
             }
         }
 
-        string desc = descXmlToNative(attrValue(atts, "descr"));
-        string lowBound = attrValue(atts, "low_bound");
-        string highBound = attrValue(atts, "high_bound");
+        string desc = descXmlToNative(attrValue(atts, "descr", override_attrs));
+        string lowBound = attrValue(atts, "low_bound", override_attrs);
+        string highBound = attrValue(atts, "high_bound", override_attrs);
 
-        if (lowBound != "" && highBound != "")
+        if (!invalid_size && lowBound != "" && highBound != "")
         {
             int low = atoi(lowBound.c_str());
             int high = 0;
@@ -1408,8 +1492,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
             {
                 high = atoi(highBound.c_str());
             }
-            int isize = addr2int(size);
-            int entrySize = isize / (high - low + 1);
+            T_OFFSET entrySize = field_size / (high - low + 1);
             if (entrySize % 8 != 0 && entrySize > 8)
             {
                 expFound = raiseException(allowMultipleExceptions,
@@ -1418,7 +1501,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
                                           ExceptionHolder::ERROR_EXCEPTION);
             }
             if (entrySize < 8 && entrySize != 4 && entrySize != 2 && entrySize != 1 &&
-                ((isize > 32 && highBound != "VARIABLE") || highBound == "VARIABLE"))
+                ((field_size > 32 && highBound != "VARIABLE") || highBound == "VARIABLE"))
             {
                 expFound = raiseException(allowMultipleExceptions,
                                           "Array with entry size 3, 5, 6 or 7 bits and array size is larger than 32bit",
@@ -1435,7 +1518,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
               ExceptionHolder::WARN_EXCEPTION);
         }
 
-        string subNode = attrValue(atts, "subnode");
+        string subNode = attrValue(atts, "subnode", override_attrs);
 
         // Check for mandatory attrs
         if (fieldName.empty())
@@ -1446,31 +1529,19 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
                                       ExceptionHolder::FATAL_EXCEPTION);
         }
 
-        if (size.empty())
-        {
-            expFound = raiseException(allowMultipleExceptions,
-                                      "Missing field size",
-                                      ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                      ExceptionHolder::FATAL_EXCEPTION);
-        }
-
         // Create new fields
-        adbParser->_currentField = new AdbField;
-
-        // Fill the new fields
-        adbParser->_currentField->name = fieldName;
-        adbParser->_currentField->desc = desc;
-        adbParser->_currentField->size = addr2int(size);
+        adbParser->_currentField =
+          AdbField::create_AdbField(fieldName, static_cast<T_OFFSET>(-1), field_size, false, subNode, desc);
 
         adbParser->_currentField->lowBound = lowBound.empty() ? 0 : stoi(lowBound);
         if (highBound == "VARIABLE")
         {
             adbParser->_currentField->highBound = 0;
-            string isDynamicArray = attrValue(atts, "arr_is_dynamic");
+            string isDynamicArray = attrValue(atts, "arr_is_dynamic", override_attrs);
             if (!isDynamicArray.empty() && stoi(isDynamicArray))
             {
                 adbParser->_currentField->array_type = AdbField::ArrayType::dynamic;
-                string conditionalSize = attrValue(atts, "size_condition");
+                string conditionalSize = attrValue(atts, "size_condition", override_attrs);
                 if (conditionalSize == "")
                 {
                     expFound =
@@ -1509,17 +1580,16 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
                 adbParser->_currentField->array_type = AdbField::ArrayType::definite;
             }
         }
-        adbParser->_currentField->subNode = subNode;
 
         // Check array element size
         if (adbParser->_currentField->array_type >= AdbField::ArrayType::definite &&
             adbParser->_currentField->array_type < AdbField::ArrayType::unlimited &&
-            adbParser->_currentField->size % (adbParser->_currentField->arrayLen()))
+            adbParser->_currentField->get_size() % (adbParser->_currentField->arrayLen()))
         {
             char exceptionTxt[1000];
             sprintf(exceptionTxt, "In field \"%s\" invalid array element size\"%0.2f\" in file: \"%s\" line: %d",
                     fieldName.c_str(),
-                    ((double)adbParser->_currentField->size / (adbParser->_currentField->arrayLen())),
+                    ((double)adbParser->_currentField->get_size() / (adbParser->_currentField->arrayLen())),
                     adbParser->_fileName.c_str(), lineNumber);
 
             expFound = raiseException(allowMultipleExceptions, exceptionTxt, "", ExceptionHolder::FATAL_EXCEPTION);
@@ -1533,7 +1603,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
             else
             {
                 AdbField* lastField = adbParser->_currentNode->fields.back();
-                adbParser->_currentField->offset = lastField->offset + lastField->size;
+                adbParser->_currentField->offset = lastField->offset + lastField->get_size();
             }
         }
         else
@@ -1544,30 +1614,25 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
         // Very tricky but works well for big endian arrays support - on endElement we will fix the address again
         if (!expFound && adbParser->_adbCtxt->bigEndianArr && adbParser->_current_node_alignment != 64)
         {
-            u_int32_t offset = adbParser->_currentField->offset;
-            u_int32_t size = adbParser->_currentField->eSize();
+            T_OFFSET offset = adbParser->_currentField->offset;
+            T_OFFSET size = adbParser->_currentField->eSize();
 
             adbParser->_currentField->offset =
-              ((offset >> 5) << 5) + ((MIN(32, adbParser->_currentNode->size) - ((offset + size) % 32)) % 32);
+              ((offset >> 5) << 5) + ((MIN(32, adbParser->_currentNode->get_size()) - ((offset + size) % 32)) % 32);
         }
 
         // workaround for 64bit registers (flip every two adjacent 32b dwords)
-        if (adbParser->_current_node_alignment == 64 && adbParser->_currentField->size <= 32)
+        if (adbParser->_current_node_alignment == 64 && adbParser->_currentField->get_size() <= 32)
         {
-            u_int32_t offset = adbParser->_currentField->offset;
+            T_OFFSET offset = adbParser->_currentField->offset;
 
-            u_int32_t in_dword_offset = offset % 32;
+            uint8_t in_dword_offset = offset % 32;
             offset = ((offset >> 5) << 5) xor 32;
             adbParser->_currentField->offset = offset + in_dword_offset;
         }
 
         // For DS alignment check
-        u_int32_t esize = adbParser->_currentField->eSize();
-        if ((adbParser->_currentField->isLeaf() || adbParser->_currentField->subNode == "uint64") &&
-            (esize == 16 || esize == 32 || esize == 64) && esize > adbParser->_currentNode->_maxLeafSize)
-        {
-            adbParser->_currentNode->_maxLeafSize = esize;
-        }
+        adbParser->_currentNode->update_max_leaf(adbParser->_currentField);
 
         if (!expFound && adbParser->_strict && adbParser->_currentNode->isUnion && adbParser->_currentField->isLeaf())
         {
@@ -1577,7 +1642,8 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
                                       ExceptionHolder::FATAL_EXCEPTION);
         }
 
-        if (!expFound && adbParser->_strict && adbParser->_currentNode->isUnion && adbParser->_currentField->size % 32)
+        if (!expFound && adbParser->_strict && adbParser->_currentNode->isUnion &&
+            adbParser->_currentField->get_size() % 32)
         {
             expFound = raiseException(allowMultipleExceptions,
                                       "Union is allowed to contains only dword aligned subnodes",
@@ -1586,7 +1652,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
         }
 
         if (!expFound && adbParser->_currentNode->isUnion &&
-            adbParser->_currentField->size > adbParser->_currentNode->size)
+            adbParser->_currentField->get_size() > adbParser->_currentNode->get_size())
         {
             expFound = raiseException(allowMultipleExceptions,
                                       "Field size is greater than the parent node size",
@@ -1595,7 +1661,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
         }
 
         if (!expFound && adbParser->_strict && !adbParser->_currentField->isArray() &&
-            adbParser->_currentField->isLeaf() && adbParser->_currentField->size > 32)
+            adbParser->_currentField->isLeaf() && adbParser->_currentField->get_size() > 32)
         {
             expFound = raiseException(allowMultipleExceptions,
                                       "Leaf fields can't be > 32 bits",
@@ -1605,7 +1671,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
 
         if (!expFound && adbParser->_checkDsAlign)
         {
-            u_int32_t esize = adbParser->_currentField->eSize();
+            T_OFFSET esize = adbParser->_currentField->eSize();
             if ((adbParser->_currentField->isLeaf() || adbParser->_currentField->subNode == "uint64") &&
                 (esize == 16 || esize == 32 || esize == 64) && adbParser->_currentField->offset % esize != 0)
             {
@@ -1635,13 +1701,22 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
             }
 
             // check if the field name is compatible with the fname pattern
-            if (!mstflint::common::regex::regex_match(adbParser->_currentField->name, mstflint::common::regex::regex(adbParser->_fname_pattern)))
+            if (!Regex::regex_match(adbParser->_currentField->name, Regex::regex(adbParser->_fname_pattern)))
             {
                 expFound = raiseException(allowMultipleExceptions,
                                           "Illegal field name: \"" + adbParser->_currentField->name +
                                             "\" doesn't match the given field name pattern",
                                           ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
                                           ExceptionHolder::WARN_EXCEPTION);
+            }
+
+            // check if the field inside a union is an array
+            if (!expFound && adbParser->_currentNode->isUnion && adbParser->_currentField->isArray())
+            {
+                expFound = raiseException(allowMultipleExceptions,
+                                          "Arrays are not allowed in unions (only subnodes)",
+                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                                          ExceptionHolder::FATAL_EXCEPTION);
             }
         }
 
@@ -1650,11 +1725,10 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
         {
             for (int i = 0; i < attrCount(atts); i++)
             {
+                string aName = attrName(atts, i);
+                string aValue = attrValue(atts, i, override_attrs);
                 if (adbParser->_enforceGuiChecks)
                 {
-                    string aName = attrName(atts, i);
-                    string aValue = attrValue(atts, i);
-
                     // check if the field contains illegal attribute
                     if (!aName.compare("inst_if") && !aName.compare("inst_ifdef") && !aName.compare("subnode") &&
                         adbParser->field_attr_names_set.find(aName) != adbParser->field_attr_names_set.end() &&
@@ -1670,7 +1744,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
                     if (!aName.compare("enum"))
                     {
                         // check the enum attribute is compatible with the enum pattern
-                        if (!mstflint::common::regex::regex_match(aValue, mstflint::common::regex::regex(adbParser->_enum_pattern)))
+                        if (!Regex::regex_match(aValue, Regex::regex(adbParser->_enum_pattern)))
                         {
                             expFound =
                               raiseException(allowMultipleExceptions,
@@ -1684,7 +1758,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
                     {
                         // check the attribute name is compatible with the attribute pattern
                         if (adbParser->attr_pattern.find(aName) != adbParser->attr_pattern.end() &&
-                            !mstflint::common::regex::regex_match(aValue, mstflint::common::regex::regex(adbParser->attr_pattern[aName])))
+                            !Regex::regex_match(aValue, Regex::regex(adbParser->attr_pattern[aName])))
                         {
                             expFound =
                               raiseException(allowMultipleExceptions,
@@ -1695,7 +1769,7 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
                         }
                     }
                 }
-                adbParser->_currentField->attrs[attrName(atts, i)] = attrValue(atts, i);
+                adbParser->_currentField->attrs[aName] = aValue;
             }
         }
     }
@@ -1704,9 +1778,10 @@ void AdbParser::startFieldElement(const XML_Char** atts, AdbParser* adbParser, c
 /**
  * Function: AdbParser::startElement
  **/
-void AdbParser::startElement(void* _adbParser, const XML_Char* name, const XML_Char** atts)
+template<bool e, typename O>
+void AdbParser<e, O>::startElement(void* _adbParser, const XML_Char* name, const XML_Char** atts)
 {
-    AdbParser* adbParser = static_cast<AdbParser*>(_adbParser);
+    AdbParser<e, O>* adbParser = static_cast<AdbParser<e, O>*>(_adbParser);
 
     int lineNumber = XML_GetCurrentLineNumber(adbParser->_xmlParser);
     adbParser->_currentTagValue = "";
@@ -1735,9 +1810,27 @@ void AdbParser::startElement(void* _adbParser, const XML_Char* name, const XML_C
     {
         adbParser->_instanceOps = true;
     }
-    else if (TAG_INSTANCE_OP_ATTR_REPLACE == name)
+    else if (TAG_NODE_OPS == name)
     {
-        startInstOpAttrReplaceElement(atts, adbParser, lineNumber);
+        adbParser->_nodeOps = true;
+    }
+    else if (TAG_ATTR_REPLACE == name)
+    {
+        if (adbParser->_instanceOps)
+        {
+            startAttrReplaceElement(atts, adbParser, lineNumber);
+        }
+        else if (adbParser->_nodeOps)
+        {
+            startAttrReplaceElement(atts, adbParser, lineNumber, false);
+        }
+        else
+        {
+            raiseException(allowMultipleExceptions,
+                           "Operation attr_replace must be defined within <instance_ops> element only.",
+                           ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                           ExceptionHolder::FATAL_EXCEPTION);
+        }
     }
     else if (TAG_NODE == name)
     {
@@ -1770,41 +1863,34 @@ void AdbParser::startElement(void* _adbParser, const XML_Char* name, const XML_C
 /**
  * Function: AdbParser::addReserved
  **/
-void AdbParser::addReserved(vector<AdbField*>& reserveds, u_int32_t offset, u_int32_t size, uint8_t alignment)
+template<bool e, typename T_OFFSET>
+void AdbParser<e, T_OFFSET>::addReserved(vector<AdbField*>& reserveds, T_OFFSET offset, T_OFFSET size, uint8_t alignment)
 {
-    u_int32_t num_aligned_words = (aligned_word(offset + size - 1, alignment) - aligned_word(offset, alignment)) + 1;
+    T_OFFSET word_span = (aligned_word(offset + size - 1, alignment) - aligned_word(offset, alignment)) + 1;
 
     // printf("==> %s\n", formatAddr(offset, size).c_str());
-    // printf("num_aligned_words = %d\n", num_aligned_words);
-    if (num_aligned_words == 1 || ((offset % alignment) == 0 && ((offset + size) % alignment) == 0))
+    // printf("word_span = %d\n", word_span);
+    bool start_aligned = (offset % alignment) == 0;
+    bool end_aligned = ((offset + size) % alignment) == 0;
+    bool full_words = start_aligned && end_aligned;
+
+    if (word_span == 1 || full_words)
     {
-        AdbField* f1 = new AdbField;
-        f1->name = "reserved";
-        f1->offset = offset;
-        f1->isReserved = true;
-        f1->size = size;
+        AdbField* f1 = AdbField::create_AdbField("reserved", offset, size, true);
         if (alignment == 64)
         {
             f1->attrs["cr_data_wdt"] = "64";
         }
 
-
         reserveds.push_back(f1);
         // printf("case1: reserved0: %s\n", formatAddr(f1->offset, f1->size).c_str());
     }
-    else if (num_aligned_words == 2)
+    else if (word_span == 2) // Partial words
     {
-        AdbField* f1 = new AdbField;
-        f1->name = "reserved";
-        f1->offset = offset;
-        f1->isReserved = true;
-        f1->size = alignment - startBit(offset, alignment);
+        AdbField* f1 = AdbField::create_AdbField("reserved", offset, alignment - startBit(offset, alignment), true);
+        AdbField* f2 = AdbField::create_AdbField("reserved", aligned_word(offset + alignment, alignment) * alignment,
+                                                 size - f1->get_size(), true);
 
-        AdbField* f2 = new AdbField;
-        f2->name = "reserved";
-        f2->offset = aligned_word(offset + alignment, alignment) * alignment;
-        f2->isReserved = true;
-        f2->size = size - f1->size;
         reserveds.push_back(f1);
         reserveds.push_back(f2);
         /*printf("case2: reserved0: %s, reserved1: %s\n",
@@ -1815,80 +1901,67 @@ void AdbParser::addReserved(vector<AdbField*>& reserveds, u_int32_t offset, u_in
             f1->attrs["cr_data_wdt"] = "64";
             f2->attrs["cr_data_wdt"] = "64";
         }
-
     }
-    else
+    else // more than two partial words
     {
-        AdbField* f1 = new AdbField;
-        f1->name = "reserved";
-        f1->offset = offset;
-        f1->isReserved = true;
-        f1->size = alignment - startBit(offset, alignment);
+        T_OFFSET offset_first = offset;
+        T_OFFSET size_first = 0;
 
-        AdbField* f2 = new AdbField;
-        f2->name = "reserved";
-        f2->offset = aligned_word(offset + alignment, alignment) * alignment;
-        f2->isReserved = true;
-        f2->size = (num_aligned_words - 2) * alignment;
+        T_OFFSET offset_middle = 0;
+        T_OFFSET size_middle = 0;
 
-        if (!((offset + size) % alignment))
+        T_OFFSET offset_end = 0;
+        T_OFFSET size_end = 0;
+
+        if (start_aligned && !end_aligned)
         {
-            f2->size = (num_aligned_words - 1) * alignment;
-            reserveds.push_back(f1);
-            reserveds.push_back(f2);
-            /*printf("case3.1: reserved0: %s, reserved1: %s\n",
-             formatAddr(f1->offset, f1->size).c_str(),
-             formatAddr(f2->offset, f2->size).c_str());*/
-        if (alignment == 64)
-        {
-            f1->attrs["cr_data_wdt"] = "64";
-            f2->attrs["cr_data_wdt"] = "64";
+            size_first = (word_span - 1) * alignment;
+            size_end = size - size_first;
         }
-            return;
+        else if (!start_aligned && end_aligned)
+        {
+            size_end = (word_span - 1) * alignment;
+            size_first = size - size_end;
+        }
+        else // start and end not aligned
+        {
+            size_first = alignment - startBit(offset, alignment);
+            size_middle = (word_span - 2) * alignment;
+            size_end = size - (size_first + size_middle);
+        }
+
+        if (!size_middle)
+        {
+            offset_end = offset + size_first;
         }
         else
         {
-            if (!(f1->size % alignment))
-            {
-                f1->size = (num_aligned_words - 1) * alignment;
-                f2->size = size - f1->size;
-                f2->offset = f1->offset + f1->size;
-                reserveds.push_back(f1);
-                reserveds.push_back(f2);
-                /*printf("case3.2: reserved0: %s, reserved1: %s\n",
-                 formatAddr(f1->offset, f1->size).c_str(),
-                 formatAddr(f2->offset, f2->size).c_str());*/
+            offset_middle = offset + size_first;
+            offset_end = offset + (size_first + size_middle);
+        }
 
-                if (alignment == 64)
-                {
-                    f1->attrs["cr_data_wdt"] = "64";
-                    f2->attrs["cr_data_wdt"] = "64";
-                }                 
-                return;
-            }
-            else
-            {
-                f2->size = (num_aligned_words - 2) * alignment;
-                AdbField* f3 = new AdbField;
-                f3->name = "reserved";
-                f3->offset = f2->offset + f2->size;
-                f3->isReserved = true;
-                f3->size = size - f1->size - f2->size;
-                reserveds.push_back(f1);
-                reserveds.push_back(f2);
-                reserveds.push_back(f3);
-                /*printf("case3.3: reserved0: %s, reserved1: %s, reserved2: %s\n",
-                 formatAddr(f1->offset, f1->size).c_str(),
-                 formatAddr(f2->offset, f2->size).c_str(),
-                 formatAddr(f3->offset, f3->size).c_str());*/
+        AdbField* reserved_first = AdbField::create_AdbField("reserved", offset_first, size_first, true);
+        reserveds.push_back(reserved_first);
+        if (alignment == 64)
+        {
+            reserved_first->attrs["cr_data_wdt"] = "64";
+        }
 
-                if (alignment == 64)
-                {
-                    f1->attrs["cr_data_wdt"] = "64";
-                    f2->attrs["cr_data_wdt"] = "64";
-                }                 
-                return;
+        if (size_middle)
+        {
+            AdbField* reserved_middle = AdbField::create_AdbField("reserved", offset_middle, size_middle, true);
+            reserveds.push_back(reserved_middle);
+            if (alignment == 64)
+            {
+                reserved_middle->attrs["cr_data_wdt"] = "64";
             }
+        }
+
+        AdbField* reserved_last = AdbField::create_AdbField("reserved", offset_end, size_end, true);
+        reserveds.push_back(reserved_last);
+        if (alignment == 64)
+        {
+            reserved_last->attrs["cr_data_wdt"] = "64";
         }
     }
 }
@@ -1896,9 +1969,10 @@ void AdbParser::addReserved(vector<AdbField*>& reserveds, u_int32_t offset, u_in
 /**
  * Function: AdbParser::endElement
  **/
-void AdbParser::endElement(void* _adbParser, const XML_Char* name)
+template<bool e, typename T_OFFSET>
+void AdbParser<e, T_OFFSET>::endElement(void* _adbParser, const XML_Char* name)
 {
-    AdbParser* adbParser = static_cast<AdbParser*>(_adbParser);
+    AdbParser<e, T_OFFSET>* adbParser = static_cast<AdbParser<e, T_OFFSET>*>(_adbParser);
     int lineNumber = XML_GetCurrentLineNumber(adbParser->_xmlParser);
     /*
      * Config
@@ -1918,6 +1992,14 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
         adbParser->_instanceOps = false;
     }
     /*
+     * Node Operations
+     * ----
+     */
+    else if (TAG_NODE_OPS == name)
+    {
+        adbParser->_nodeOps = false;
+    }
+    /*
      * Node
      * ----
      */
@@ -1932,29 +2014,77 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
         {
             if (!adbParser->_currentNode->isUnion)
             {
-                std::stable_sort(adbParser->_currentNode->fields.begin(),
+                stable_sort(adbParser->_currentNode->fields.begin(),
                             adbParser->_currentNode->fields.end(),
                             compareFieldsPtr<AdbField>);
             }
 
             // Check overlapping
             vector<AdbField*> reserveds;
-            AdbField prevFieldDummy;
-            prevFieldDummy.offset = 0;
-            prevFieldDummy.size = 0;
-            AdbField* prevField = &prevFieldDummy;
+            AdbField dummy_field;
+            dummy_field.offset = 0; // used as a trivial field to prevent iteration overflow
+            dummy_field.set_size(0);
+            AdbField* prevField = &dummy_field;
+            AdbField* prevprevField = &dummy_field;
             if (!adbParser->_currentNode->isUnion)
             {
-                for (size_t i = 0; i < adbParser->_currentNode->fields.size(); i++)
+                if (adbParser->_cd_mode)
                 {
-                    AdbField* field = adbParser->_currentNode->fields[i];
-                    long int delta = (long)field->offset - (long)(prevField->offset + prevField->size);
+                    vector<AdbField*> processed_fields;
+                    for (auto field : adbParser->_currentNode->fields)
+                    {
+                        auto found_broken = field->attrs.find("broken32");
+                        auto found_broken_prev = prevField->attrs.find("broken32");
 
-                    if (delta < 0)
+                        auto broken = found_broken != field->attrs.end() && found_broken->second == "1";
+                        auto broken_prev =
+                          found_broken_prev != prevField->attrs.end() && found_broken_prev->second == "1";
+                        auto same_qword = adbParser->_current_node_alignment > 32 &&
+                                          field->offset / adbParser->_current_node_alignment ==
+                                            prevField->offset / adbParser->_current_node_alignment;
+
+                        if (!same_qword && broken_prev)
+                        {
+                            prevField->reformat_name_bitspan(*prevprevField, *field);
+                        }
+                        if (!broken || !broken_prev || !same_qword)
+                        {
+                            processed_fields.push_back(field);
+                            prevprevField = prevField;
+                            prevField = field;
+                        }
+                        else
+                        {
+                            auto current_broken_series = processed_fields.back();
+                            current_broken_series->merge_broken(*field);
+
+                            if (adbParser->_currentNode->_max_leaf == field)
+                            {
+                                adbParser->_currentNode->_max_leaf = current_broken_series;
+                            }
+                            delete field;
+                        }
+                    }
+                    if (processed_fields.size() > 0)
+                    {
+                        AdbField& prev_for_reformat =
+                          processed_fields.size() > 1 ? *(processed_fields[processed_fields.size() - 2]) : dummy_field;
+                        AdbField& next_for_reformat = dummy_field;
+                        processed_fields.back()->reformat_name_bitspan(prev_for_reformat, next_for_reformat);
+                    }
+
+                    adbParser->_currentNode->fields = processed_fields;
+                    prevField = &dummy_field;
+                }
+
+                for (auto field : adbParser->_currentNode->fields)
+                {
+                    if (prevField->offset + prevField->get_size() > field->offset)
                     { // Overlapping
-                        string exceptionTxt = "Field: " + field->name + " " + formatAddr(field->offset, field->size) +
+                        string exceptionTxt = "Field: " + field->name + " " +
+                                              formatAddr(field->offset, field->get_size()) +
                                               " overlaps with Field: " + prevField->name + " " +
-                                              formatAddr(prevField->offset, prevField->size);
+                                              formatAddr(prevField->offset, prevField->get_size());
                         if (allowMultipleExceptions)
                         {
                             exceptionTxt = exceptionTxt + ", in file: \"" + adbParser->_fileName +
@@ -1966,13 +2096,27 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
                             throw AdbException(exceptionTxt);
                         }
                     }
+                    T_OFFSET delta = field->offset - (prevField->offset + prevField->get_size());
                     if (delta > 0 && adbParser->_addReserved)
                     { // Need reserved
-                        addReserved(reserveds, prevField->offset + prevField->size, delta,
+                        addReserved(reserveds, prevField->offset + prevField->get_size(), delta,
                                     adbParser->_current_node_alignment);
                     }
-
                     prevField = field;
+                }
+            }
+            if (adbParser->_enforceGuiChecks && adbParser->_currentNode->fields.size() != 0)
+            {
+                // check the last field doesn't continue over the node's end
+                AdbField* last_field = adbParser->_currentNode->fields[adbParser->_currentNode->fields.size() - 1];
+                if (last_field->offset + last_field->get_size() > adbParser->_currentNode->get_size())
+                {
+                    raiseException(allowMultipleExceptions,
+                                   "Node: " + adbParser->_currentNode->name + " size(" +
+                                     to_string(adbParser->_currentNode->get_size()) + ") - last field (" +
+                                     last_field->name + ") continue over the node's end",
+                                   ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                                   ExceptionHolder::ERROR_EXCEPTION);
                 }
             }
 
@@ -1982,18 +2126,20 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
             {
                 if (adbParser->_currentNode->isUnion)
                 {
-                    addReserved(reserveds, 0, adbParser->_currentNode->size, adbParser->_current_node_alignment);
+                    addReserved(reserveds, 0, adbParser->_currentNode->get_size(), adbParser->_current_node_alignment);
                 }
                 else
                 {
-                    u_int32_t effective_node_size = adbParser->_currentNode->size;
-                    if (adbParser->_force_pad_32 && effective_node_size < 32 && effective_node_size != 16 &&
+                    T_OFFSET effective_node_size = adbParser->_currentNode->get_size();
+
+                    // In Chip-Design mode force pad to 32 bit
+                    if (adbParser->_cd_mode && effective_node_size < 32 && effective_node_size != 16 &&
                         effective_node_size != 8)
                     {
                         effective_node_size = 32;
                     }
 
-                    long delta = (long)effective_node_size - (long)(prevField->offset + prevField->size);
+                    long delta = (long)effective_node_size - (long)(prevField->offset + prevField->get_size());
                     /*if (adbParser->_currentNode->name == "miss_machine_slice_info")
                     {
                     printf("Adding filler\n");
@@ -2004,7 +2150,7 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
 
                     if (delta > 0)
                     {
-                        addReserved(reserveds, prevField->offset + prevField->size, delta,
+                        addReserved(reserveds, prevField->offset + prevField->get_size(), delta,
                                     adbParser->_current_node_alignment);
                     }
                 }
@@ -2013,14 +2159,14 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
                                                        reserveds.end());
             }
 
-            if (adbParser->_checkDsAlign && adbParser->_currentNode->_maxLeafSize != 0 &&
-                adbParser->_currentNode->_maxLeafSize != 0 &&
-                adbParser->_currentNode->size % adbParser->_currentNode->_maxLeafSize != 0)
+            auto max_leaf_size = adbParser->_currentNode->get_max_leaf_size();
+            if (adbParser->_checkDsAlign && max_leaf_size != 0 &&
+                adbParser->_currentNode->get_size() % max_leaf_size != 0)
             {
                 raiseException(allowMultipleExceptions,
                                "Node: " + adbParser->_currentNode->name + " size(" +
-                                 to_string(adbParser->_currentNode->size) + ") is not aligned with largest leaf(" +
-                                 to_string(adbParser->_currentNode->_maxLeafSize) + ")",
+                                 to_string(adbParser->_currentNode->get_size()) +
+                                 ") is not aligned with largest leaf(" + to_string(max_leaf_size) + ")",
                                ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
                                ExceptionHolder::ERROR_EXCEPTION);
             }
@@ -2030,18 +2176,19 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
             {
                 for (size_t i = 0; i < adbParser->_currentNode->fields.size(); i++)
                 {
-                    u_int32_t offset = adbParser->_currentNode->fields[i]->offset;
-                    u_int32_t size = adbParser->_currentNode->fields[i]->eSize();
+                    T_OFFSET offset = adbParser->_currentNode->fields[i]->offset;
+                    T_OFFSET size = adbParser->_currentNode->fields[i]->eSize();
 
                     adbParser->_currentNode->fields[i]->offset =
-                      ((offset >> 5) << 5) + ((MIN(32, adbParser->_currentNode->size) - ((offset + size) % 32)) % 32);
+                      ((offset >> 5) << 5) +
+                      ((MIN(32, adbParser->_currentNode->get_size()) - ((offset + size) % 32)) % 32);
                 }
             }
 
             // Resort the fields by offset (since we changed offset to workaround big endian issues and added reserved)
             if (!adbParser->_currentNode->isUnion)
             {
-                std::stable_sort(adbParser->_currentNode->fields.begin(),
+                stable_sort(adbParser->_currentNode->fields.begin(),
                             adbParser->_currentNode->fields.end(),
                             compareFieldsPtr<AdbField>);
             }
@@ -2079,7 +2226,7 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
                     if (it_def != adbParser->_adbCtxt->configs[i]->attrs.end())
                     {
                         vector<string> defVal;
-                        mstflint::common::algorithm::split(defVal, it_def->second, mstflint::common::algorithm::is_any_of(string("=")));
+                        Algorithm::split(defVal, it_def->second, Algorithm::is_any_of("="));
 
                         if (defVal[0] == it->second)
                         {
@@ -2103,7 +2250,7 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
                     if (it_def != adbParser->_adbCtxt->configs[i]->attrs.end())
                     {
                         vector<string> defVal;
-                        mstflint::common::algorithm::split(defVal, it_def->second, mstflint::common::algorithm::is_any_of(string("=")));
+                        Algorithm::split(defVal, it_def->second, Algorithm::is_any_of("="));
 
                         if (defVal.size() == 1)
                         {
@@ -2125,7 +2272,7 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
                 }
                 strcpy(exp, it->second.c_str());
 
-                u_int64_t res;
+                uint64_t res;
                 adbExpr.setVars(&vars);
                 int status = adbExpr.expr(&exp, &res);
                 delete[] expOrg;
@@ -2193,7 +2340,11 @@ void AdbParser::endElement(void* _adbParser, const XML_Char* name)
 /**
  * Function: AdbParser::raiseException
  **/
-bool AdbParser::raiseException(bool allowMultipleExceptions, string exceptionTxt, string addedMsg, const string expType)
+template<bool e, typename O>
+bool AdbParser<e, O>::raiseException(bool allowMultipleExceptions,
+                                     string exceptionTxt,
+                                     string addedMsg,
+                                     const string expType)
 {
     if (allowMultipleExceptions)
     {
@@ -2205,3 +2356,9 @@ bool AdbParser::raiseException(bool allowMultipleExceptions, string exceptionTxt
         throw AdbException(exceptionTxt);
     }
 }
+
+template class AdbParser<false, uint32_t>;
+template class AdbParser<false, uint64_t>;
+
+template class AdbParser<true, uint32_t>;
+template class AdbParser<true, uint64_t>;

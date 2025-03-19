@@ -72,6 +72,11 @@ static u_int32_t calc_array_field_address(u_int32_t start_bit_offset,
     return TOOLS_MIN(32, parent_node_size) - (offs % 32) - arr_elemnt_size + ((offs >> 5) << 5);
 }
 
+static void push_integer_to_buff_le(u_int8_t* buff, u_int32_t bit_offset, u_int32_t byte_size, u_int64_t field_value)
+{
+    memcpy(buff + bit_offset / 8, (u_int8_t*)&field_value, byte_size);
+}
+
 /************************************
  * Function: push_integer_to_buff
  ************************************/
@@ -105,6 +110,27 @@ static void push_bits_to_buff(u_int8_t* buff, u_int32_t bit_offset, u_int32_t fi
     }
 }
 
+static void push_bits_to_buff_le(uint8_t* buff, uint32_t bit_offset, uint32_t field_size, uint32_t field_value)
+{
+    uint32_t byte_n = bit_offset / 8;        // byte offset
+    uint32_t byte_n_offset = bit_offset % 8; // bit offset
+    uint32_t bits_written = 0;
+
+    while (bits_written < field_size)
+    {
+        uint32_t bits_to_write = TOOLS_MIN(8 - byte_n_offset, field_size - bits_written);
+
+        buff[byte_n] |= ((EXTRACT(field_value, bits_written, bits_to_write)) << byte_n_offset);
+
+        bits_written += bits_to_write;
+        byte_n_offset = (byte_n_offset + bits_to_write) % 8;
+        if (byte_n_offset == 0)
+        {
+            byte_n++;
+        }
+    }
+}
+
 /************************************
  * Function: push_to_buf
  ************************************/
@@ -118,6 +144,18 @@ void push_to_buf(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_i
     else
     {
         push_integer_to_buff(buff, bit_offset, field_size / 8, field_value);
+    }
+}
+
+void push_to_buf_le(u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value)
+{
+    if (field_size <= 32)
+    {
+        push_bits_to_buff_le(buff, bit_offset, field_size, field_value);
+    }
+    else
+    {
+        push_integer_to_buff_le(buff, bit_offset, field_size / 8, field_value);
     }
 }
 
@@ -158,6 +196,26 @@ static u_int32_t pop_bits_from_buff(const u_int8_t* buff, u_int32_t bit_offset, 
 }
 
 /************************************
+ * Function: pop_bits_from_buff_le
+ ************************************/
+static uint32_t
+  pop_bits_from_buff_le(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, bool small_entry_array)
+{
+    small_entry_array = small_entry_array && (__BYTE_ORDER == __LITTLE_ENDIAN);
+    uint32_t dword_n = bit_offset / 32;
+    uint32_t bit_in_dword = bit_offset % 32;
+    uint32_t field_32 = 0;
+
+    uint32_t shift = small_entry_array ? 32 - (bit_in_dword + field_size) : bit_in_dword;
+
+    uint32_t source_dword = ((uint32_t*)buff)[dword_n];
+    uint32_t mask = (uint32_t)(-1);
+    mask = mask >> (32 - field_size);
+    field_32 = (source_dword >> shift) & mask;
+    return field_32;
+}
+
+/************************************
  * Function: pop_from_buf
  ************************************/
 u_int64_t pop_from_buf(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size)
@@ -171,6 +229,21 @@ u_int64_t pop_from_buf(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t fie
     else
     {
         return pop_integer_from_buff(buff, bit_offset, field_size / 8);
+    }
+}
+
+/************************************
+ * Function: pop_from_buf_le
+ ************************************/
+u_int64_t pop_from_buf_le(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, bool wa)
+{
+    if (field_size <= 32)
+    {
+        return pop_bits_from_buff_le(buff, bit_offset, field_size, wa);
+    }
+    else
+    {
+        return (uint64_t)(-1);
     }
 }
 
