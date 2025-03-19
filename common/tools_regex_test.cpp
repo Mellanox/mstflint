@@ -946,3 +946,58 @@ TEST(regex_replace, EraseSentenceAtOnce) {
   std::string output = Regex::regex_replace(input, pattern, format);
   EXPECT_TRUE(output.empty());
 }
+
+TEST(sregex_iterator, prePostInc)
+{
+    Regex::regex pattern(R"Do[\w]*");
+    std::string input = R"Do you have a Dog named Donnie?";
+
+    Regex::sregex_iterator it_end;
+    Regex::sregex_iterator it(input.begin(), input.end(), pattern);
+    EXPECT_EQ((it++)->str(), "Do");
+    EXPECT_EQ(it->str(), "Dog");
+    EXPECT_EQ((++it)->str(), "Donnie");
+    EXPECT_EQ(++it, it_end);
+}
+
+TEST(sregex_iterator, matchOne)
+{
+    Regex::regex pattern(R"Do[\w]*");
+    std::string input = R"Who has a Dog named Ronnie?";
+
+    Regex::sregex_iterator it_end;
+    Regex::sregex_iterator it(input.begin(), input.end(), pattern);
+    EXPECT_EQ((it++)->str(), "Dog");
+    EXPECT_EQ(it, it_end);
+}
+
+TEST(sregex_iterator, fullMatch)
+{
+    Regex::regex pattern(R"Do[\w]*");
+    std::string input = R"Doberman";
+
+    Regex::sregex_iterator it_end;
+    Regex::sregex_iterator it(input.begin(), input.end(), pattern);
+    EXPECT_EQ((it++)->str(), "Doberman");
+    EXPECT_EQ(it, it_end);
+}
+
+TEST(sregex_iterator, noMatch)
+{
+    Regex::regex pattern(R"Do[\w]*");
+    std::string input = R"Hoberman";
+
+    Regex::sregex_iterator it_end;
+    Regex::sregex_iterator it(input.begin(), input.end(), pattern);
+    EXPECT_EQ(it, it_end);
+}
+
+TEST(sregex_iterator, emptyString)
+{
+    Regex::regex pattern(R"Do[\w]*");
+    std::string input = R"";
+
+    Regex::sregex_iterator it_end;
+    Regex::sregex_iterator it(input.begin(), input.end(), pattern);
+    EXPECT_EQ(it, it_end);
+}
