@@ -39,7 +39,8 @@ namespace MlxSign
 enum SHAType
 {
     SHA256,
-    SHA512
+    SHA512,
+    INVALID_TYPE
 };
 
 enum ErrorCode

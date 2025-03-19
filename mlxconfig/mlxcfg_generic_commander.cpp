@@ -1536,7 +1536,7 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     vector<u_int32_t> encDigestDW;
     vector<u_int8_t> digest, encDigest, bytesBuff;
-    MlxSign::SHAType shaType;
+    MlxSign::SHAType shaType = MlxSign::INVALID_TYPE;
     unique_ptr<MlxSign::Signer> signer = nullptr;
 
     copyDwVectorToBytesVector(buff, bytesBuff);
