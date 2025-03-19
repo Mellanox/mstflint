@@ -195,7 +195,11 @@ PyObject* mtcr_read4block(PyObject* self, PyObject* args)
     data_list = PyList_New(dword_len);
     for (i = 0; i < dword_len; i++)
     {
+#if PY_MAJOR_VERSION >= 3
+        PyList_SET_ITEM(data_list, i, PyLong_FromLong((long)data_buf[i]));
+#else
         PyList_SET_ITEM(data_list, i, PyInt_FromLong((long)data_buf[i]));
+#endif
     }
 
     return data_list;
@@ -300,27 +304,65 @@ static PyMethodDef mtcr_funcs[] = {
 #define MODULE_NAME "cmtcr" STR(PY_VER)
 #define INIT_FUNC TOK_PASTE2(initcmtcr, PY_VER)
 
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    MODULE_NAME,
+    NULL,
+    -1,
+    mtcr_funcs,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+#endif
+
 /**********************************************
  * initcmtcr
  * @return
  *********************************************/
+#if PY_MAJOR_VERSION < 3
 #ifndef PyMODINIT_FUNC /* declarations for DLL import/export */
 #define PyMODINIT_FUNC void
 #endif
+#endif
 PyMODINIT_FUNC INIT_FUNC()
 {
+#if PY_MAJOR_VERSION >= 3
+    PyObject *module = PyModule_Create(&moduledef);
+    if (module == NULL)
+    {
+        return NULL;
+    }
+#else
     Py_InitModule(MODULE_NAME, mtcr_funcs);
+#endif
+
     mtcrModule = PyImport_ImportModule("mtcr");
     if (!mtcrModule)
     {
         PyErr_SetString(mtcrExceptionType, "Failed to import module");
-        return;
+#if PY_MAJOR_VERSION >= 3
+        Py_DECREF(module);
+        return NULL;
+#else
+        retrun;
+#endif
     }
 
     mtcrExceptionType = PyObject_GetAttrString(mtcrModule, "MtcrException");
     if (!mtcrExceptionType)
     {
         PyErr_SetString(PyExc_ImportError, "Failed to import MtcrException class");
+#if PY_MAJOR_VERSION >= 3
+        Py_DECREF(module);
+        return NULL;
+#else
         return;
+#endif
     }
+#if PY_MAJOR_VERSION >= 3
+    return module;
+#endif
 }
