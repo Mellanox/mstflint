@@ -110,7 +110,7 @@ void ExceptionHolder::insertNewException(const string exceptionType, string exce
 
 /**
  * Function: Adb::printAdbExceptionMap
- * This function will pring the content of the Adb Exception Map
+ * This function will print the content of the Adb Exception Map
  **/
 string ExceptionHolder::printAdbExceptionMap()
 {
@@ -131,4 +131,14 @@ string ExceptionHolder::printAdbExceptionMap()
         errorStr += "-" + ExceptionHolder::WARN_EXCEPTION + "- " + "- " + *it + ";";
     }
     return errorStr;
+}
+
+/**
+ * Function: Adb::clearAdbExceptionMap
+ * This function will clear the content of the Adb Exception Map
+ **/
+void ExceptionHolder::clearAdbExceptionMap()
+{
+    ExceptionHolder::adbExceptionMap.clear();
+    ExceptionHolder::exceptionCounter = 0;
 }

@@ -70,7 +70,7 @@ void MlxlinkRegParser::resetParser(const string& regName)
     else
     {
         _parseMode = Pm_Known;
-        _len = (_regNode->size) >> 5;
+        _len = (_regNode->get_size()) >> 5;
     }
     _buffer.resize(_len);
     for (std::vector<u_int32_t>::size_type j = 0; j < _len; j++)
@@ -235,7 +235,7 @@ u_int32_t MlxlinkRegParser::getFieldValue(string field_name, u_int32_t size)
 
 u_int32_t MlxlinkRegParser::getFieldSize(string field_name)
 {
-    return RegAccessParser::getField(field_name)->size;
+    return RegAccessParser::getField(field_name)->get_size();
 }
 
 string MlxlinkRegParser::getAscii(const string& name, u_int32_t size)

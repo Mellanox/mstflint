@@ -71,9 +71,9 @@ private:
     bool askUser(const char* question);
 
     // Print
-    void printRegFields(vector<AdbInstance*> nodeFields);
+    void printRegFields(vector<AdbInstanceLegacy*> nodeFields);
     void printRegNames(std::vector<string> regs);
-    void printAdbContext(AdbInstance* node, std::vector<u_int32_t> buff);
+    void printAdbContext(AdbInstanceLegacy* node, std::vector<u_int32_t> buff);
     void printBuff(std::vector<u_int32_t> buff);
 
     void readFromFile(string file_name, vector<u_int32_t>& buff, int len);

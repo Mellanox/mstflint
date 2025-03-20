@@ -36,8 +36,10 @@
 
 #include <stdlib.h>
 #include "adb_condition.h"
-
 #include "common/tools_regex.h"
+
+using namespace std;
+namespace Regex = mstflint::common::regex;
 
 AdbCondition::AdbCondition() {}
 
@@ -52,11 +54,11 @@ void AdbCondition::setCondition(std::string condition)
 
 void AdbCondition::splitConditionIntoVariables()
 {
-    static const mstflint::common::regex::regex EXP_PATTERN("(\\w+)\\s*==");
-    mstflint::common::regex::match_results<string::const_iterator> match;
+    static const Regex::regex EXP_PATTERN("(\\w+)\\s*==");
+    Regex::match_results<string::const_iterator> match;
     string::const_iterator start = this->condition.begin();
     string::const_iterator end = this->condition.end();
-    while (mstflint::common::regex::regex_search(start, end, match, EXP_PATTERN))
+    while (Regex::regex_search(start, end, match, EXP_PATTERN))
     {
         this->varsMap[match[0]] = CondVar();
         start = match[0].second;

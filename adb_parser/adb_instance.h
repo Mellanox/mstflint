@@ -31,7 +31,8 @@
  *
  *  Version: $Id$
  */
-/*************************** AdbInstance ***************************/
+
+/*************************** _AdbInstance_impl ***************************/
 
 #ifndef ADB_INSTANCE_H
 #define ADB_INSTANCE_H
@@ -45,13 +46,27 @@
 #include <vector>
 #include <iterator>
 
+#include <type_traits>
+
 using namespace std;
 using namespace xmlCreator;
 
 typedef map<string, string> AttrsMap;
-class AdbField;
-class AdbNode;
+
+template<typename T_OFFSET>
+class AdbField_impl;
+
+template<typename T_OFFSET>
+class AdbFieldLarge_impl;
+
+template<typename T_OFFSET>
+class AdbNode_impl;
+
+template<typename T_OFFSET>
+class AdbNodeLarge_impl;
+
 struct PartitionTree;
+
 class LayoutItemAttrsMap
 {
 public:
@@ -117,17 +132,29 @@ private:
     iterator _end{*this, _field_desc_attrs.end(), true};
 };
 
-class AdbInstance
+struct InstOpsPropertiesBasic
 {
-    struct InstOpsProperties
-    {
-        LayoutItemAttrsMap instAttrsMap; // Attributes after evaluations and array expanding
-        AttrsMap varsMap{};              // all variables relevant to this item after evaluation
-        AdbCondition condition{};
-        AdbCondition conditionalSize{}; // for dynamic arrays
+    LayoutItemAttrsMap* instAttrsMap{nullptr}; // Attributes after evaluations and array expanding
+};
 
-        InstOpsProperties(AttrsMap& field_attrs);
-    };
+struct InstOpsPropertiesExtended
+{
+    LayoutItemAttrsMap* instAttrsMap; // Attributes after evaluations and array expanding
+    AttrsMap varsMap{};               // all variables relevant to this item after evaluation
+    AdbCondition condition{};
+    AdbCondition conditionalSize{}; // for dynamic arrays
+};
+
+template<bool eval_expr = false, typename T_OFFSET = uint32_t>
+class _AdbInstance_impl
+{
+    using AdbNode = AdbNode_impl<T_OFFSET>;
+    using AdbField = AdbField_impl<T_OFFSET>;
+
+    using AdbNodeLarge = AdbNodeLarge_impl<T_OFFSET>;
+    using AdbFieldLarge = AdbFieldLarge_impl<T_OFFSET>;
+
+    using InstOpsProperties = typename conditional<eval_expr, InstOpsPropertiesExtended, InstOpsPropertiesBasic>::type;
 
     struct InstancePropertiesMask
     {
@@ -154,24 +181,34 @@ class AdbInstance
 
 public:
     // Methods
-    AdbInstance() = default;
-    AdbInstance(AdbField* i_fieldDesc,
-                AdbNode* i_nodeDesc,
-                u_int32_t i_arrIdx,
-                AdbInstance* i_parent,
-                map<string, string> vars,
-                bool bigEndianArr,
-                bool isExprEval,
-                unsigned char adabe_version = 1,
-                bool optimize_time = false,
-                bool stop_on_partition = false,
-                PartitionTree* next_partition_tree = nullptr);
-
-    ~AdbInstance();
+    _AdbInstance_impl() = default;
+    _AdbInstance_impl(AdbField* i_fieldDesc,
+                      AdbNode* i_nodeDesc,
+                      u_int32_t i_arrIdx,
+                      _AdbInstance_impl<eval_expr, T_OFFSET>* i_parent,
+                      map<string, string> vars,
+                      bool bigEndianArr,
+                      unsigned char adabe_version = 1,
+                      bool optimize_time = false,
+                      bool stop_on_partition = false,
+                      PartitionTree* next_partition_tree = nullptr,
+                      bool path_array_wildcards = false);
+    ~_AdbInstance_impl();
     void init_props(unsigned char adabe_version);
-    u_int32_t calcArrOffset(bool bigEndianArr);
+
+    T_OFFSET get_size() const;
+    T_OFFSET get_max_leaf_size() const;
+    void update_max_leaf();
+
+    T_OFFSET calcArrOffset(bool bigEndianArr, uint8_t align = 32);
     bool stop_on_partition() const;
-    void eval_expressions(AttrsMap& i_vars);
+
+    template<bool U = eval_expr>
+    typename enable_if<U>::type eval_expressions(AttrsMap& i_vars);
+
+    template<bool U = eval_expr>
+    typename enable_if<!U>::type eval_expressions(AttrsMap& i_vars);
+
     static string evalExpr(string expr, AttrsMap* vars);
     const string& get_field_name();
     bool isLeaf();
@@ -188,32 +225,57 @@ public:
     bool is_diff() const;
     void set_is_diff(bool val);
     bool isEnumExists();
-    u_int32_t dwordAddr(uint8_t alignment = 32);
-    u_int32_t startBit(uint8_t alignment = 32);
-    bool enumToInt(const string& name, u_int64_t& val); // false means no enum value found
-    bool intToEnum(u_int64_t val, string& valName);     // false means no enum name found
-    map<string, u_int64_t> getEnumMap();
-    vector<u_int64_t> getEnumValues();
-    AdbInstance* getUnionSelectedNodeName(const u_int64_t& selectorVal);
-    AdbInstance* getUnionSelectedNodeName(const string& selectorEnum);
-    bool operator<(const AdbInstance& other);
+    T_OFFSET dwordAddr(uint8_t alignment = 32);
+    uint32_t startBit(uint8_t alignment = 32);
+    bool enumToInt(const string& name, uint64_t& val); // false means no enum value found
+    bool intToEnum(uint64_t val, string& valName);     // false means no enum name found
+    map<string, uint64_t> getEnumMap();
+    vector<uint64_t> getEnumValues();
+    _AdbInstance_impl<eval_expr, T_OFFSET>* getUnionSelectedNodeName(const uint64_t& selectorVal);
+    _AdbInstance_impl<eval_expr, T_OFFSET>* getUnionSelectedNodeName(const string& selectorEnum);
+    bool operator<(const _AdbInstance_impl<eval_expr, T_OFFSET>& other);
     bool isConditionalNode();
     bool isConditionValid(map<string, string>* valuesMap);
     // DB like access methods
-    AdbInstance* getChildByPath(const string& path, bool isCaseSensitive = true);
-    vector<AdbInstance*> findChild(const string& name, bool isCaseSensitive = true, bool by_inst_name = false);
-    AdbInstance* get_root();
+    _AdbInstance_impl<eval_expr, T_OFFSET>* getChildByPath(const string& path, bool isCaseSensitive = true);
+    vector<_AdbInstance_impl<eval_expr, T_OFFSET>*>
+      findChild(const string& name, bool isCaseSensitive = true, bool by_inst_name = false);
+    _AdbInstance_impl<eval_expr, T_OFFSET>* get_root();
     string getInstanceAttr(const string& attrName) const;
     bool getInstanceAttr(const string& attrName, string& value);
     LayoutItemAttrsMap::iterator getInstanceAttrIterator(const string& attrName);
     void setInstanceAttr(const string& attrName, const string& attrValue);
-    void setVarsMap(const string& attrName, const string& attrValue);
-    void setVarsMap(const AttrsMap& AttrsMap);
-    AttrsMap getVarsMap();
-    vector<AdbInstance*> getLeafFields(bool extendedName); // Get all leaf fields
-    void pushBuf(u_int8_t* buf, u_int64_t value);
-    u_int64_t popBuf(u_int8_t* buf);
-    void initInstOps(bool is_root = false);
+
+    template<bool U = eval_expr>
+    typename enable_if<U>::type setVarsMap(const string& attrName, const string& attrValue);
+
+    template<bool U = eval_expr>
+    typename enable_if<!U>::type setVarsMap(const string& attrName, const string& attrValue);
+
+    template<bool U = eval_expr>
+    typename enable_if<U>::type setVarsMap(const AttrsMap& AttrsMap);
+
+    template<bool U = eval_expr>
+    typename enable_if<!U>::type setVarsMap(const AttrsMap& AttrsMap);
+
+    template<bool U = eval_expr>
+    typename enable_if<U, AttrsMap>::type getVarsMap();
+
+    template<bool U = eval_expr>
+    typename enable_if<!U, AttrsMap>::type getVarsMap();
+
+    vector<_AdbInstance_impl<eval_expr, T_OFFSET>*> getLeafFields(bool extendedName); // Get all leaf fields
+    void pushBuf(uint8_t* buf, uint64_t value);
+    void pushBufLE(uint8_t* buf, uint64_t value);
+    uint64_t popBuf(uint8_t* buf);
+    uint64_t popBufLE(uint8_t* buf);
+
+    template<bool U = eval_expr>
+    typename enable_if<U>::type initInstOps();
+
+    template<bool U = eval_expr>
+    typename enable_if<!U>::type initInstOps();
+
     // FOR DEBUG
     void print(int indent = 0);
 
@@ -225,18 +287,64 @@ public:
     // Members
     string layout_item_name{}; // instance name
     string full_path{};
-    vector<AdbInstance*> subItems{};
+    vector<_AdbInstance_impl<eval_expr, T_OFFSET>*> subItems{};
     AdbField* fieldDesc{nullptr};
     AdbNode* nodeDesc{nullptr};
-    AdbInstance* parent{nullptr};
-    AdbInstance* unionSelector{nullptr}; // For union instances only
-    InstOpsProperties* inst_ops_props{nullptr};
-    u_int32_t arrIdx{0};
-    u_int32_t offset{0xffffffff}; // Global offset in bits (Relative to 0)
-    u_int32_t size{0};            // in bits
-    u_int32_t maxLeafSize{0};     // in bits for DS alignment check
+    _AdbInstance_impl<eval_expr, T_OFFSET>* parent{nullptr};
+    _AdbInstance_impl<eval_expr, T_OFFSET>* unionSelector{nullptr}; // For union instances only
+    InstOpsProperties inst_ops_props{};
+    uint32_t arrIdx{0};
+    T_OFFSET offset{0xffffffff};  // Global offset in bits (Relative to 0) todo: put static cast
+    AdbField* _max_leaf{nullptr}; // for DS alignment check
     InstancePropertiesMask inst_props{};
-    PartitionTree* partition_tree{nullptr};
+    LayoutPartitionProps* partition_props{nullptr};
 };
+
+// TODO: try to move the function definition below to the cpp file, currently fails linkage
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<U>::type _AdbInstance_impl<eval_expr, O>::initInstOps()
+{
+    string value;
+    auto found = getInstanceAttr("condition", value);
+    if (found && parent->getInstanceAttr("is_conditional") == "1")
+    {
+        inst_ops_props.condition.setCondition(value);
+    }
+
+    found = getInstanceAttr("size_condition", value);
+    if (found)
+    {
+        string cond_size = value;
+        if (cond_size.substr(0, 10) == "$(parent).")
+        {
+            cond_size.erase(0, 10);
+        }
+        inst_ops_props.conditionalSize.setCondition(cond_size);
+    }
+}
+
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<!U>::type _AdbInstance_impl<eval_expr, O>::initInstOps()
+{
+    return;
+}
+
+using AdbInstanceLegacy = _AdbInstance_impl<false, uint32_t>;
+using AdbInstanceAdvLegacy = _AdbInstance_impl<true, uint32_t>;
+// using AdbInstance = _AdbInstance_impl<false, uint32_t>;
+// using AdbInstanceAdv = _AdbInstance_impl<true, uint32_t>;
+
+using AdbInstance = _AdbInstance_impl<false, uint64_t>;
+using AdbInstanceAdv = _AdbInstance_impl<true, uint64_t>;
+// using AdbInstanceNew = _AdbInstance_impl<false, uint64_t>;
+// using AdbInstanceAdvNew = _AdbInstance_impl<true, uint64_t>;
+
+// Constants Definitions
+template<bool e, typename O>
+const char _AdbInstance_impl<e, O>::path_seperator{'.'};
+template<bool e, typename O>
+const string _AdbInstance_impl<e, O>::EXP_PATTERN{"\\s*([a-zA-Z0-9_]+)=((\\$\\(.*?\\)|\\S+|$)*)\\s*"};
 
 #endif

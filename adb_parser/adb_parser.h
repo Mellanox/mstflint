@@ -31,20 +31,15 @@
  *
  *  Version: $Id$
  */
-/*************************** Adb ***************************/
+
+/*************************** _Adb_impl ***************************/
 #ifndef ADB_ADB_H
 #define ADB_ADB_H
 
 class LogFile;
 
-#include <map>
+#include <type_traits>
 #include <set>
-#include <string>
-#include <vector>
-#include <list>
-#include "adb_expr.h"
-#include "adb_xmlCreator.h"
-
 #include <string>
 #include <map>
 #include <vector>
@@ -62,7 +57,6 @@ class LogFile;
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <list>
 #include <stdexcept>
 #include "adb_xmlCreator.h"
 #include "adb_condition.h"
@@ -82,8 +76,11 @@ using namespace std;
 #define PRINTF_FORMAT printf
 #endif
 
-class AdbInstance;
-class AdbField;
+template<typename T_OFFSET>
+class AdbField_impl;
+
+template<typename T_OFFSET>
+class AdbNode_impl;
 
 using namespace xmlCreator;
 using namespace std;
@@ -91,10 +88,10 @@ using namespace std;
 struct IncludeFileInfo;
 typedef map<string, IncludeFileInfo> IncludeFileMap;
 typedef map<string, string> AttrsMap;
-typedef map<string, AdbNode*> NodesMap;
 typedef vector<AdbConfig*> ConfigList;
 typedef map<string, AttrsMap> InstanceAttrs;
-typedef map<string, vector<string> > ExceptionsMap;
+typedef map<string, AttrsMap> NodeAttrs;
+typedef map<string, vector<string>> ExceptionsMap;
 
 struct IncludeFileInfo
 {
@@ -111,12 +108,24 @@ struct PartitionTree
     vector<PartitionTree*> sub_items;
 };
 
-class Adb
+template<bool eval_expr = false, typename T_OFFSET = uint32_t>
+class _Adb_impl
 {
 public:
+    using AdbField = AdbField_impl<T_OFFSET>;
+    using AdbNode = AdbNode_impl<T_OFFSET>;
+    using AdbInstance = _AdbInstance_impl<eval_expr, T_OFFSET>;
+
+    using AdbFieldLarge = AdbFieldLarge_impl<T_OFFSET>;
+    using AdbNodeLarge = AdbNodeLarge_impl<T_OFFSET>;
+
+    using NodesMap = map<string, AdbNode*>;
+    using PathPart = pair<string, vector<uint32_t>>;
+    using SplittedPath = vector<PathPart>;
+
     // Methods
-    Adb();
-    ~Adb();
+    _Adb_impl();
+    ~_Adb_impl();
     void raiseException(bool allowMultipleExceptions, string exceptionTxt, const string expType);
     // strict union means:
     //   1- dwrod aligned unions
@@ -124,13 +133,11 @@ public:
     //   3- check node size vs instance size
     bool loadFromString(const char* adbContents,
                         bool addReserved = false,
-                        bool evalExpr = false,
                         bool strict = true,
                         bool enforceExtraChecks = false,
                         string root_node_name = "root");
     bool load(string fname,
               bool addReserved = false,
-              bool evalExpr = false,
               bool strict = true,
               string includePath = "",
               string includeDir = "",
@@ -139,7 +146,7 @@ public:
               string logFile = "",
               bool checkDsAlign = false,
               bool enforceGuiChecks = false,
-              bool force_pad_32 = false,
+              bool cd_mode = false,
               bool variable_alignment = false,
               string root_node_name = "root");
     string toXml(vector<string> nodeNames = vector<string>(),
@@ -147,24 +154,41 @@ public:
                  string rootName = "MainNode",
                  string addPrefix = "");
 
-    AdbInstance* addMissingNodes(int depth, bool allowMultipleExceptions);
+    void addMissingNodes(int depth, bool allowMultipleExceptions);
     AdbInstance* createLayout(string rootNodeName,
-                              bool isExprEval = false,
                               int depth = -1, /* -1 means instantiate full tree */
                               bool ignoreMissingNodes = false,
                               bool getAllExceptions = false,
                               bool optimize_time = false,
-                              uint32_t root_offset = 0,
+                              T_OFFSET root_offset = 0,
                               string root_display_name = "",
-                              PartitionTree* partition_tree = nullptr);
+                              PartitionTree* partition_tree = nullptr,
+                              AdbField* rootField = nullptr,
+                              bool array_path_wildcards = false,
+                              bool strict_instance_ops = true,
+                              bool enable_parse_missing_sons = false);
     vector<string> getNodeDeps(string nodeName);
     void add_include(string fileName, string filePath, string included_from, int lineNumber);
     string getLastError();
 
     string printAdbExceptionMap();
+    void clearAdbExceptionMap();
 
     // FOR DEBUG
     void print(int indent = 0);
+
+private:
+    template<bool U = eval_expr>
+    typename enable_if<!U>::type updateLayoutConditions(bool allowMultipleExceptions);
+
+    template<bool U = eval_expr>
+    typename enable_if<U>::type updateLayoutConditions(bool allowMultipleExceptions);
+
+    template<bool U = eval_expr>
+    typename enable_if<!U>::type updateConditionsLists(AdbInstance* inst);
+
+    template<bool U = eval_expr>
+    typename enable_if<U>::type updateConditionsLists(AdbInstance* inst);
 
 public:
     // Members
@@ -175,6 +199,7 @@ public:
     bool bigEndianArr;
     bool singleEntryArrSupp;
     InstanceAttrs instAttrs; // Key is instance's Adabe full path, value is attribute map
+    NodeAttrs nodeAttrs{};   // Key is node[.field], value is attribute map
     string srcDocName;
     string srcDocVer;
     LogFile* _logFile;
@@ -191,15 +216,20 @@ private:
     bool createInstance(AdbField* fieldDesc,
                         AdbInstance* parent,
                         map<string, string> vars,
-                        bool isExprEval,
                         int depth,
                         bool ignoreMissingNodes = false,
+                        bool enable_parse_missing_sons = false,
+                        vector<SplittedPath> missing_sons = vector<SplittedPath>(),
                         bool getAllExceptions = false,
                         bool optimize_time = false,
-                        PartitionTree* partition_tree = nullptr);
-    string evalExpr(string expr, AttrsMap* vars);
+                        PartitionTree* partition_tree = nullptr,
+                        bool array_path_wildcards = false);
     bool checkInstSizeConsistency(bool getAllExceptions = false);
     static PartitionTree* prune_up(PartitionTree* partition_tree);
+    static bool
+      skip_or_get_child_missing_sons(vector<SplittedPath>& missing_sons, AdbField& child_field, uint32_t array_idx);
+    vector<SplittedPath> parse_missing_sons(AdbNode& node, bool allowMultipleExceptions);
+    PathPart parse_missing_son_part(const string& part, const string& ranges, bool allowMultipleExceptions);
 
 private:
     string _lastError;
@@ -211,5 +241,11 @@ private:
     void checkInstanceOffsetValidity(AdbInstance* inst, AdbInstance* parent, bool allowMultipleExceptions);
     void throwExeption(bool allowMultipleExceptions, string exceptionTxt, string addedMsgMultiExp);
 };
+
+using AdbLegacy = _Adb_impl<false, uint32_t>;
+using AdbAdvLegacy = _Adb_impl<true, uint32_t>;
+
+using Adb = _Adb_impl<false, uint64_t>;
+using AdbAdv = _Adb_impl<true, uint64_t>;
 
 #endif

@@ -31,10 +31,10 @@
  *
  *  Version: $Id$
  */
-/*************************** AdbNode ***************************/
+/*************************** AdbNode_impl ***************************/
 
 /**
- *  * Function: AdbNode::AdbNode
+ *  * Function: AdbNode_impl::AdbNode_impl
  *   **/
 
 #include "adb_node.h"
@@ -42,12 +42,52 @@
 #include <iostream>
 #include <algorithm>
 
-AdbNode::AdbNode() : size(0), _maxLeafSize(0), isUnion(false), inLayout(false), lineNumber(-1), userData(0) {}
+/**
+ *  * Function: AdbNode_impl::create_AdbNode
+ *   **/
+template<typename T_OFFSET>
+AdbNode_impl<T_OFFSET>* AdbNode_impl<T_OFFSET>::create_AdbNode(string name,
+                                                               address_t size,
+                                                               bool is_union,
+                                                               string desc,
+                                                               string file_name,
+                                                               int line_num)
+{
+    return size <= LEGACY_ADDRESS_SPACE ?
+             new AdbNode_impl<T_OFFSET>(name, size, is_union, desc, file_name, line_num) :
+             new AdbNodeLarge_impl<T_OFFSET>(name, size, is_union, desc, file_name, line_num);
+}
+
+template<>
+AdbNode_impl<uint32_t>* AdbNode_impl<uint32_t>::create_AdbNode(string name,
+                                                               address_t size,
+                                                               bool is_union,
+                                                               string desc,
+                                                               string file_name,
+                                                               int line_num)
+{
+    return new AdbNode_impl<uint32_t>(name, size, is_union, desc, file_name, line_num);
+}
 
 /**
- *  * Function: AdbNode::~AdbNode
+ *  * Function: AdbNode_impl::AdbNode_impl
  *   **/
-AdbNode::~AdbNode()
+template<typename T_OFFSET>
+AdbNode_impl<T_OFFSET>::AdbNode_impl(string i_name,
+                                     short_address_t size,
+                                     bool is_union,
+                                     string i_desc,
+                                     string file_name,
+                                     int line_num) :
+    _size{size}, name{i_name}, isUnion{is_union}, desc{i_desc}, fileName{file_name}, lineNumber{line_num}
+{
+}
+
+/**
+ *  * Function: AdbNode_impl::~AdbNode_impl
+ *   **/
+template<typename T_OFFSET>
+AdbNode_impl<T_OFFSET>::~AdbNode_impl()
 {
     for (size_t i = 0; i < fields.size(); i++)
     {
@@ -62,9 +102,51 @@ AdbNode::~AdbNode()
 }
 
 /**
- *  * Function: AdbNode::toXml
+ * Function: AdbNode_impl::get_size
+ **/
+template<typename T_OFFSET>
+typename AdbNode_impl<T_OFFSET>::address_t AdbNode_impl<T_OFFSET>::get_size() const
+{
+    return _size;
+}
+
+/**
+ * Function: AdbNode_impl::set_size
+ **/
+template<typename T_OFFSET>
+void AdbNode_impl<T_OFFSET>::set_size(short_address_t size)
+{
+    _size = size;
+}
+
+/**
+ * Function: AdbNode_impl::get_max_leaf_size
+ **/
+template<typename T_OFFSET>
+typename AdbNode_impl<T_OFFSET>::address_t AdbNode_impl<T_OFFSET>::get_max_leaf_size() const
+{
+    return _max_leaf ? _max_leaf->get_size() : 0;
+}
+
+/**
+ * Function: AdbNode_impl::update_max_leaf
+ **/
+template<typename T_OFFSET>
+void AdbNode_impl<T_OFFSET>::update_max_leaf(AdbField* other)
+{
+    uint64_t esize = other->eSize();
+    if ((other->isLeaf() || other->subNode == "uint64") && (esize == 16 || esize == 32 || esize == 64) &&
+        esize > get_max_leaf_size())
+    {
+        _max_leaf = other;
+    }
+}
+
+/**
+ *  * Function: AdbNode_impl::toXml
  *   **/
-string AdbNode::toXml(const string& addPrefix)
+template<typename T_OFFSET>
+string AdbNode_impl<T_OFFSET>::toXml(const string& addPrefix)
 {
     string xml = "<node name=\"" + addPrefix + name + "\" descr=\"" + encodeXml(descNativeToXml(desc)) + "\"";
     for (AttrsMap::iterator it = attrs.begin(); it != attrs.end(); it++)
@@ -97,15 +179,66 @@ string AdbNode::toXml(const string& addPrefix)
 }
 
 /**
- *  * Function: AdbNode::print
+ *  * Function: AdbNode_impl::print
  *   **/
-void AdbNode::print(int indent)
+template<typename T_OFFSET>
+void AdbNode_impl<T_OFFSET>::print(int indent)
 {
     cout << indentString(indent);
-    cout << "+ Node Name: " << name << " size: 0x" << hex << size / 32 * 4 << "." << dec << size % 32
+    cout << "+ Node Name: " << name << " size: 0x" << hex << get_size() / 32 * 4 << "." << dec << get_size() % 32
          << " isUnion: " << isUnion << " Description: " << desc << endl;
 
     cout << indentString(indent) << "Fields:" << endl;
     for (size_t i = 0; i < fields.size(); i++)
         fields[i]->print(indent + 1);
 }
+
+// Explicit instantiations
+template class AdbNode_impl<uint32_t>;
+template class AdbNode_impl<uint64_t>;
+
+/**
+ * Function: AdbNodeLarge_impl::AdbNodeLarge_impl
+ **/
+template<typename T_OFFSET>
+AdbNodeLarge_impl<T_OFFSET>::AdbNodeLarge_impl(string name,
+                                               address_t size,
+                                               bool is_union,
+                                               string desc,
+                                               string file_name,
+                                               int line_num) :
+    AdbNode_impl<T_OFFSET>{name, AdbField::calculate_size_low(size), is_union, desc, file_name, line_num},
+    _size_high{AdbField::calculate_size_high(size)}
+{
+}
+
+/**
+ * Function: AdbNodeLarge_impl::get_size
+ **/
+template<typename T_OFFSET>
+typename AdbNodeLarge_impl<T_OFFSET>::address_t AdbNodeLarge_impl<T_OFFSET>::get_size() const
+{
+    return AdbField::calculate_size(this->_size, _size_high);
+}
+/**
+ * Function: AdbNodeLarge_impl::set_size
+ **/
+template<typename T_OFFSET>
+void AdbNodeLarge_impl<T_OFFSET>::set_size(address_t size)
+{
+    this->_size = AdbField::calculate_size_low(size);
+    _size_high = AdbField::calculate_size_high(size);
+}
+
+/**
+ * Function: AdbNodeLarge_impl::set_size
+ **/
+template<typename T_OFFSET>
+void AdbNodeLarge_impl<T_OFFSET>::set_size(short_address_t size)
+{
+    this->_size = size;
+    _size_high = 0;
+}
+
+// Explicit instantiations
+template class AdbNodeLarge_impl<u_int64_t>;

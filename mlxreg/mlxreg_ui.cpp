@@ -115,8 +115,6 @@
 #define OP_SHOW_REGS_FLAG_SHORT     ' '
 #define OP_SHOW_ALL_REGS_FLAG       "show_all_regs"
 #define OP_SHOW_ALL_REGS_FLAG_SHORT ' '
-#define IGNORE_CAP_CHECK_FLAG "ignore_cap_check"
-#define IGNORE_CAP_CHECK_FLAG_SHORT ' '
 #define IGNORE_REG_CHECK_FLAG "ignore_reg_check"
 #define IGNORE_REG_CHECK_FLAG_SHORT ' '
 #define FORCE_FLAG "yes"
@@ -191,7 +189,6 @@ void MlxRegUi::initCmdParser()
     AddOptions(IDXES_FLAG,        IDXES_FLAG_SHORT, "RegisterData", "Register data");
     AddOptions(OPS_FLAG,          OPS_FLAG_SHORT, "RegisterData", "Register data");
     AddOptions(REG_LEN_FLAG,      REG_LEN_FLAG_SHORT, "RegisterDataLen", "Register data length");
-    AddOptions(IGNORE_CAP_CHECK_FLAG, IGNORE_CAP_CHECK_FLAG_SHORT, "", "");
     AddOptions(IGNORE_REG_CHECK_FLAG, IGNORE_REG_CHECK_FLAG_SHORT, "", "");
     AddOptions(OP_GET_FLAG, OP_GET_FLAG_SHORT, "", "Register access GET");
     AddOptions(OP_SET_FLAG, OP_SET_FLAG_SHORT, "RegisterData", "Register access SET");
@@ -280,10 +277,10 @@ void MlxRegUi::printHelp()
 /************************************
  * Function: getLongestNodeLen
  ************************************/
-size_t getLongestNodeLen(std::vector<AdbInstance*> root)
+size_t getLongestNodeLen(std::vector<AdbInstanceLegacy*> root)
 {
     size_t len = 0;
-    for (std::vector<AdbInstance*>::size_type i = 0; i != root.size(); i++)
+    for (std::vector<AdbInstanceLegacy*>::size_type i = 0; i != root.size(); i++)
     {
         if (strlen(root[i]->get_field_name().c_str()) > len)
         {
@@ -296,20 +293,20 @@ size_t getLongestNodeLen(std::vector<AdbInstance*> root)
 /************************************
  * Function: printRegFields
  ************************************/
-void MlxRegUi::printRegFields(vector<AdbInstance*> nodeFields)
+void MlxRegUi::printRegFields(vector<AdbInstanceLegacy*> nodeFields)
 {
     int largestName = (int)getLongestNodeLen(nodeFields);
     printf("%-*s | %-10s | %-8s | %-8s | %-8s\n", largestName, "Field Name", "Address (Bytes)", "Offset (Bits)",
            "Size (Bits)", "Access");
     PRINT_LINE(58 + largestName);
-    for (std::vector<AdbInstance*>::size_type i = 0; i != nodeFields.size(); i++)
+    for (std::vector<AdbInstanceLegacy*>::size_type i = 0; i != nodeFields.size(); i++)
     {
-        printf("%-*s | 0x%08x      | %-8d      | %-8d    | %-15s\n",
+        printf("%-*s | 0x%08x      | %-8d      | %-8ld    | %-15s\n",
                largestName,
                nodeFields[i]->get_field_name().c_str(),
                (nodeFields[i]->offset >> 3) & ~0x3,
                nodeFields[i]->startBit(),
-               nodeFields[i]->fieldDesc->eSize(),
+               (unsigned long)nodeFields[i]->fieldDesc->eSize(),
                RegAccessParser::getAccess(nodeFields[i]).c_str());
     }
     PRINT_LINE(58 + largestName);
@@ -332,13 +329,13 @@ void MlxRegUi::printRegNames(std::vector<string> regs)
 /************************************
  * Function: printAdbContext
  ************************************/
-void MlxRegUi::printAdbContext(AdbInstance* node, std::vector<u_int32_t> buff)
+void MlxRegUi::printAdbContext(AdbInstanceLegacy* node, std::vector<u_int32_t> buff)
 {
-    std::vector<AdbInstance*> subItems = node->getLeafFields(true);
+    std::vector<AdbInstanceLegacy*> subItems = node->getLeafFields(true);
     int largestName = (int)getLongestNodeLen(subItems);
     printf("%-*s | %-8s\n", largestName, "Field Name", "Data");
     PRINT_LINE(largestName + 14);
-    for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++)
+    for (std::vector<AdbInstanceLegacy*>::size_type i = 0; i != subItems.size(); i++)
     {
         printf("%-*s | 0x%08x\n",
                largestName,
@@ -422,11 +419,14 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
     {
         _indexesStr = value;
         return PARSE_OK;
-    } else if (name == OPS_FLAG) {
+    }
+    else if (name == OPS_FLAG)
+    {
         _opsStr = value;
         return PARSE_OK;
     }
-    else if (name == REG_NAME_FLAG) {
+    else if (name == REG_NAME_FLAG)
+    {
         CHECK_UNIQUE_UINT(_regID);
         CHECK_UNIQUE_UINT(_dataLen);
         _regName = value;
@@ -444,13 +444,6 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
         RegAccessParser::strToUint32((char*)value.c_str(), _dataLen);
         return PARSE_OK;
     }
-#if !defined(EXTERNAL) && !defined(MST_UL)
-    else if (name == IGNORE_CAP_CHECK_FLAG)
-    {
-        _ignoreCapCheck = true;
-        return PARSE_OK;
-    }
-#endif
     else if (name == IGNORE_REG_CHECK_FLAG)
     {
         // TODO: remove IGNORE_REG_CHECK_FLAG from UI after 4.14.0 release, it's deprecated
@@ -642,29 +635,11 @@ void MlxRegUi::run(int argc, char** argv)
         throw MlxRegException("Device is not supported");
     }
 
-    if (_ignoreCapCheck == false)
-    {
-        try
-        {
-            MlxRegLib::isAccessRegisterSupported(_mf);
-        }
-        catch (MlxRegException& exp)
-        {
-#if defined(EXTERNAL) || defined(MST_UL)
-            throw exp;
-#else
-            throw MlxRegException("%s. \n   internal only: FW might be old, consider running "
-                                  "with --%s (This flag is deprecated)",
-                                  exp.what(), IGNORE_CAP_CHECK_FLAG);
-#endif
-        }
-    }
-
     _mlxRegLib = new MlxRegLib(_mf, _extAdbFile, _isExternal);
 
-    std::vector<AdbInstance*> regFields;
+    std::vector<AdbInstanceLegacy*> regFields;
     std::vector<string> regs;
-    AdbInstance* regNode = NULL;
+    AdbInstanceLegacy* regNode = NULL;
     std::vector<u_int32_t> buff;
 
     switch (_op)
@@ -694,7 +669,7 @@ void MlxRegUi::run(int argc, char** argv)
             if (_file_io != "")
             {
                 assert(_regName != "");
-                int reg_size = (_mlxRegLib->findAdbNode(_regName)->size) / 8; // in Bytes
+                int reg_size = (_mlxRegLib->findAdbNode(_regName)->get_size()) / 8; // in Bytes
                 sendCmdBasedOnFileIo(MACCESS_REG_METHOD_GET, reg_size);
                 break;
             }
@@ -723,7 +698,7 @@ void MlxRegUi::run(int argc, char** argv)
         {
             if (_file_io != "")
             {
-                int reg_size = (_mlxRegLib->findAdbNode(_regName)->size) / 8; // in Bytes
+                int reg_size = (_mlxRegLib->findAdbNode(_regName)->get_size()) / 8; // in Bytes
                 sendCmdBasedOnFileIo(MACCESS_REG_METHOD_SET, reg_size);
                 break;
             }
