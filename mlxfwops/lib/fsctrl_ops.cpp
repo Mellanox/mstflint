@@ -1024,13 +1024,6 @@ bool FsCtrlOperations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
     return unsupportedOperation();
 }
 
-bool FsCtrlOperations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc)
-{
-    (void)userKey;
-    (void)progressFunc;
-    return unsupportedOperation();
-}
-
 bool FsCtrlOperations::FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage)
 {
     (void)sectInfo;
@@ -1297,5 +1290,53 @@ bool FsCtrlOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32
     {
         return errmsg("%s", _fwCompsAccess->getLastErrMsg());
     }
+    return true;
+}
+
+bool FsCtrlOperations::GetSecureHostState(u_int8_t& state)
+{
+    state = _fwCompsAccess->GetSecureHostState();
+    return true;
+}
+
+bool FsCtrlOperations::ChangeSecureHostState(bool disable, u_int64_t key)
+{
+    struct tools_open_mlock mlock;
+    memset(&mlock, 0, sizeof(mlock));
+    mlock.operation = disable;
+    mlock.key = key;
+    int rc = reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_SET, &mlock);
+    if (rc)
+    {
+        return errmsg("secure host operation failed. reported error code: %d", rc);
+    }
+    return true;
+}
+
+bool FsCtrlOperations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack)
+{
+    struct tools_open_mlock mlock;
+    memset(&mlock, 0, sizeof(mlock));
+    int rc = (int)reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_GET, &mlock);
+    if (rc)
+    {
+        return errmsg("secure host operation failed. reported error code: %d", rc);
+    }
+    if (mlock.operation)
+    {
+        printf("-I- HW access already disabled\n");
+        return true;
+    }
+
+    u_int64_t key = ((u_int64_t)userKey.h << 32) | userKey.l;
+    memset(&mlock, 0, sizeof(mlock));
+    mlock.operation = 1;
+    mlock.key = key;
+    rc = reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_SET, &mlock);
+    if (rc)
+    {
+        return errmsg("secure host operation failed. reported error code: %d", rc);
+    }
+    printf("-I- Secure Host was enabled successfully on the device.\n");
     return true;
 }

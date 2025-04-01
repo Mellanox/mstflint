@@ -159,6 +159,7 @@ public:
                           PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
+    virtual bool GetSecureHostState(u_int8_t& state);
     virtual bool FwResetNvData();
     virtual bool FwShiftDevData(PrintCallBack progressFunc = (PrintCallBack)NULL);
     virtual const char* FwGetResetRecommandationStr();
