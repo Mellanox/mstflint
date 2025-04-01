@@ -6299,11 +6299,15 @@ bool SetKeySubCommand::getKeyInteractively()
 
 FlintStatus SetKeySubCommand::executeCommand()
 {
-    if (preFwAccess() == FLINT_FAILED)
+    _flintParams.silent = true;
+    if (preFwOps() == FLINT_FAILED)
     {
-        return FLINT_FAILED;
+        _flintParams.silent = false;
+        if (preFwAccess() == FLINT_FAILED)
+        {
+            return FLINT_FAILED;
+        }
     }
-
     if (_getKeyInter)
     {
         if (!getKeyInteractively())
@@ -6319,39 +6323,52 @@ FlintStatus SetKeySubCommand::executeCommand()
             return FLINT_FAILED;
         }
     }
-    if (((Flash*)_io)->is_fifth_gen())
+    
+    if (_fwOps != nullptr)
     {
-        if (((Flash*)_io)->get_cr_space_locked())
+        if (_fwOps->FwType() == FIT_FS2)
         {
-            printf("-I- HW access already disabled\n");
-            return FLINT_SUCCESS;
+            if (!_fwOps->FwSetAccessKey(_userKey, &setKeyCbFunc))
+            {
+                reportErr(true, FLINT_SET_KEY_ERROR, _fwOps->err());
+                return FLINT_FAILED;
+            }
+            setKeyCbFunc(101);
+            printf("\n-I- New key was updated successfully in the flash. "
+                   "In order to activate the new key you should reboot or restart the driver.\n");
         }
-        // In 5th gen treat set as disable hw access
-        u_int64_t key = ((u_int64_t)_userKey.h << 32) | _userKey.l;
-        if (!((Flash*)_io)->disable_hw_access(key))
+        else
         {
-            reportErr(true, FLINT_GEN_COMMAND_ERROR, _name.c_str(), _io->err());
-            return FLINT_FAILED;
+            if (!_fwOps->FwSetAccessKey(_userKey, &setKeyCbFunc))
+            {
+                reportErr(true, FLINT_SET_KEY_ERROR, _fwOps->err());
+                return FLINT_FAILED;
+            }
         }
-        printf("-I- Secure Host was enabled successfully on the device.\n");
     }
     else
     {
-        _io->close();
-        delete _io;
-        _io = NULL;
-        if (preFwOps() == FLINT_FAILED)
+        if (((Flash*)_io)->is_fifth_gen())
         {
+            if (((Flash*)_io)->get_cr_space_locked())
+            {
+                printf("-I- HW access already disabled\n");
+                return FLINT_SUCCESS;
+            }
+            // In 5th gen treat set as disable hw access
+            u_int64_t key = ((u_int64_t)_userKey.h << 32) | _userKey.l;
+            if (!((Flash*)_io)->disable_hw_access(key))
+            {
+                reportErr(true, FLINT_GEN_COMMAND_ERROR, _name.c_str(), _io->err());
+                return FLINT_FAILED;
+            }
+            printf("-I- Secure Host was enabled successfully on the device.\n");
+        }
+        else
+        {
+            reportErr(true, FLINT_SET_KEY_ERROR, "Unsupported operation");
             return FLINT_FAILED;
         }
-        if (!_fwOps->FwSetAccessKey(_userKey, &setKeyCbFunc))
-        {
-            reportErr(true, FLINT_SET_KEY_ERROR, _fwOps->err());
-            return FLINT_FAILED;
-        }
-        setKeyCbFunc(101);
-        printf("\n-I- New key was updated successfully in the flash. "
-               "In order to activate the new key you should reboot or restart the driver.\n");
     }
 
     return FLINT_SUCCESS;
@@ -6404,82 +6421,130 @@ bool HwAccessSubCommand::verifyParams()
 
 FlintStatus HwAccessSubCommand::disableHwAccess()
 {
-    if (((Flash*)_io)->get_cr_space_locked())
+    if (_fwOps != nullptr)
     {
-        printf("-I- HW access already disabled\n");
+        u_int8_t secureHostState = 0;
+        if (!_fwOps->GetSecureHostState(secureHostState))
+        {
+            return FLINT_SUCCESS;
+        }
+        if (secureHostState)
+        {
+            printf("-I- HW access already disabled\n");
+            return FLINT_SUCCESS;
+        }
     }
     else
     {
-        if (((Flash*)_io)->is_fifth_gen())
+        if (((Flash*)_io)->get_cr_space_locked())
         {
-            SubCommand* setKey = new SetKeySubCommand();
-            _flintParams.cmd_params.erase(_flintParams.cmd_params.begin());
-            setKey->setParams(_flintParams);
-            FlintStatus rc = setKey->executeCommand();
-            delete setKey;
-            return rc;
-        }
-        else
-        {
-            if (!((Flash*)_io)->disable_hw_access())
-            {
-                printf(FLINT_GEN_COMMAND_ERROR, _name.c_str(), _io->err());
-                return FLINT_FAILED;
-            }
+            printf("-I- HW access already disabled\n");
+            return FLINT_SUCCESS;
         }
     }
+
+    if (_fwOps != nullptr)
+    {
+        SubCommand* setKey = new SetKeySubCommand();
+        _flintParams.cmd_params.erase(_flintParams.cmd_params.begin());
+        setKey->setParams(_flintParams);
+        FlintStatus rc = setKey->executeCommand();
+        delete setKey;
+        return rc;
+    }
+    else
+    {
+        if (!((Flash*)_io)->disable_hw_access())
+        {
+            printf(FLINT_GEN_COMMAND_ERROR, _name.c_str(), _io->err());
+            return FLINT_FAILED;
+        }
+    }
+
     return FLINT_SUCCESS;
 }
 FlintStatus HwAccessSubCommand::enableHwAccess()
 {
-    u_int64_t key;
-    if (((Flash*)_io)->get_cr_space_locked() == 0)
+    if (_fwOps != nullptr)
     {
-        printf("-I- HW access already enabled\n");
+        u_int8_t secureHostState = 0;
+        if (!_fwOps->GetSecureHostState(secureHostState))
+        {
+            return FLINT_SUCCESS;
+        }
+        if (!secureHostState)
+        {
+            printf("-I- HW access already enabled\n");
+            return FLINT_SUCCESS;
+        }
     }
     else
     {
-        hw_key_t keyStruct;
-        // now we need to get the key from the user (either given in the parameters or we get it during runtime)
-        if (_flintParams.cmd_params.size() == 2)
+        if (((Flash*)_io)->get_cr_space_locked() == 0)
         {
-            if (!getGUIDFromStr(_flintParams.cmd_params[1], keyStruct,
-                                "Invalid Key syntax, it should contain only hexa numbers and of appropriate length."))
-            {
-                return FLINT_FAILED;
-            }
+            printf("-I- HW access already enabled\n");
+            return FLINT_SUCCESS;
         }
-        else
-        { // we need to get the key from user during runtime
-            char keyArr[MAX_PASSWORD_LEN + 1] = {0};
-            getPasswordFromUser("Enter Key ", keyArr);
-            if (strlen(keyArr) == 0)
-            {
-                reportErr(true, FLINT_INVALID_PASSWORD);
-                return FLINT_FAILED;
-            }
-            if (!getGUIDFromStr(keyArr, keyStruct,
-                                "Invalid Key syntax, it should contain only hexa numbers and of appropriate length."))
-            {
-                return FLINT_FAILED;
-            }
+    }
+    u_int64_t key;
+    hw_key_t keyStruct;
+    // now we need to get the key from the user (either given in the parameters or we get it during runtime)
+    if (_flintParams.cmd_params.size() == 2)
+    {
+        if (!getGUIDFromStr(_flintParams.cmd_params[1], keyStruct,
+                            "Invalid Key syntax, it should contain only hexa numbers and of appropriate length."))
+        {
+            return FLINT_FAILED;
         }
-        key = ((u_int64_t)keyStruct.h << 32) | keyStruct.l;
+    }
+    else
+    { // we need to get the key from user during runtime
+        char keyArr[MAX_PASSWORD_LEN + 1] = {0};
+        getPasswordFromUser("Enter Key ", keyArr);
+        if (strlen(keyArr) == 0)
+        {
+            reportErr(true, FLINT_INVALID_PASSWORD);
+            return FLINT_FAILED;
+        }
+        if (!getGUIDFromStr(keyArr, keyStruct,
+                            "Invalid Key syntax, it should contain only hexa numbers and of appropriate length."))
+        {
+            return FLINT_FAILED;
+        }
+    }
+
+    key = ((u_int64_t)keyStruct.h << 32) | keyStruct.l;
+
+    if (_fwOps != nullptr)
+    {
+        if (!_fwOps->ChangeSecureHostState(0, key))
+        {
+            return FLINT_SUCCESS;
+        }
+    }
+    else
+    {
         if (!((Flash*)_io)->enable_hw_access(key))
         {
             reportErr(true, FLINT_GEN_COMMAND_ERROR, _name.c_str(), _io->err());
             return FLINT_FAILED;
         }
-        printf("-I- The Secure Host was disabled successfully on the device.\n");
     }
+    printf("-I- The Secure Host was disabled successfully on the device.\n");
+
     return FLINT_SUCCESS;
 }
 
 FlintStatus HwAccessSubCommand::executeCommand()
 {
-    if (preFwAccess() == FLINT_FAILED)
+    _flintParams.silent = true;
+    if (preFwOps() == FLINT_FAILED)
     {
-        return FLINT_FAILED;
+        _flintParams.silent = false;
+        if (preFwAccess() == FLINT_FAILED)
+        {
+            return FLINT_FAILED;
+        }
     }
     if (_flintParams.cmd_params[0] == "disable")
     {

@@ -2909,9 +2909,43 @@ bool Fs3Operations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, PrintC
 
 bool Fs3Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc)
 {
-    (void)userKey;
-    (void)progressFunc;
-    return errmsg("Set access key not supported.");
+    struct tools_open_mlock mlock;
+    memset(&mlock, 0, sizeof(mlock));
+    int rc = (int)reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_GET, &mlock);
+    if (rc)
+    {
+        return errmsg("secure host operation failed. reported error code: %d", rc);
+    }
+    if (mlock.operation)
+    {
+        printf("-I- HW access already disabled\n");
+        return true;
+    }
+
+    u_int64_t key = ((u_int64_t)userKey.h << 32) | userKey.l;
+    memset(&mlock, 0, sizeof(mlock));
+    mlock.operation = 1;
+    mlock.key = key;
+    rc = reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_SET, &mlock);
+    if (rc)
+    {
+        return errmsg("secure host operation failed. reported error code: %d", rc);
+    }
+    printf("-I- Secure Host was enabled successfully on the device.\n");
+    return true;
+}
+
+bool Fs3Operations::GetSecureHostState(u_int8_t& state)
+{
+    struct tools_open_mlock mlock;
+    memset(&mlock, 0, sizeof(mlock));
+    int rc = (int)reg_access_secure_host(getMfileObj(), REG_ACCESS_METHOD_GET, &mlock);
+    if (rc)
+    {
+        return errmsg("secure host operation failed. reported error code: %d", rc);
+    }
+    state = mlock.operation;
+    return true;
 }
 
 bool Fs3Operations::FwResetNvData()
