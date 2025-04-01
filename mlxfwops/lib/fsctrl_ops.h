@@ -129,6 +129,8 @@ public:
     virtual bool ReadMccComponent(vector<u_int8_t>& componentRawData,
                                   FwComponent::comps_ids_t component,
                                   ProgressCallBackAdvSt* stProgressFunc = NULL);
+    virtual bool GetSecureHostState(u_int8_t& state);
+    virtual bool ChangeSecureHostState(bool disable, u_int64_t key);
 
 private:
     virtual u_int32_t GetHwDevId() { return _hwDevId; }

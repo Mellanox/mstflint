@@ -1544,6 +1544,7 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 u_int32_t FwCompsMgr::getFwSupport()
 {
     u_int32_t devid = 0;
+    _secureHostState = 0x0;
 
     _isDmaSupported = false;
 #ifndef UEFI_BUILD
@@ -1604,20 +1605,20 @@ u_int32_t FwCompsMgr::getFwSupport()
         return 0;
     }
     _mircCaps = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 3], 2, 1);
-    int mode = 0;
+
     struct tools_open_mlock mlock;
     memset(&mlock, 0, sizeof(mlock));
     rc = reg_access_secure_host(_mf, REG_ACCESS_METHOD_GET, &mlock);
     if (rc == ME_OK)
     {
-        mode = mlock.operation;
+        _secureHostState = mlock.operation;
     }
 
     DPRINTF((
       "getFwSupport _mircCaps = %d mcqsCap = %d mcqiCap = %d mccCap = %d mcdaCap = %d mqisCap = %d mcddCap = %d mgirCap = %d secure_host = %d\n",
-      _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, mode));
+      _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, _secureHostState));
 
-    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && mode == 0)
+    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && _secureHostState == 0)
     {
         return 1;
     }

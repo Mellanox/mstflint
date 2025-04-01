@@ -441,6 +441,7 @@ public:
                     u_int32_t local_port = 0,
                     u_int8_t pnat = 0,
                     u_int32_t lp_msb = 0);
+    u_int8_t GetSecureHostState() { return _secureHostState; }
 
 private:
     typedef enum
@@ -611,5 +612,6 @@ private:
 #ifndef UEFI_BUILD
     trm_ctx _trm;
 #endif
+    u_int8_t _secureHostState;
 };
 #endif /* USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_ */
