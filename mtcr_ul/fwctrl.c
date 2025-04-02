@@ -161,6 +161,7 @@ int fwctl_control_access_register(int    fd,
 
     rpc = (struct fwctl_rpc) {
         .size = sizeof(rpc),
+        .scope = 3,
         .in = (uintptr_t)in,
         .in_len = inlen,
         .out = (uintptr_t)out,
