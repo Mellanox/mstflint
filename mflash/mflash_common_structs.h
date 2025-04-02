@@ -81,7 +81,10 @@ typedef struct write_protect_info
 {
     u_int8_t is_subsector;
     u_int8_t is_bottom;
-    u_int8_t sectors_num; // if zero: is_subsector and is_bottom are invalid.
+    u_int16_t sectors_num; // if zero: is_subsector and is_bottom are invalid.
+    uint8_t bp_val;
+    uint8_t tbs_bit; // due to CMP bit in some flashes, TBS bit don't always reflect correctly if the WP is from Bottom
+                     // or Top
 } write_protect_info_t;
 
 ////////////////////////////////////////
@@ -188,6 +191,7 @@ typedef struct flash_attr
     int page_write;
 
     u_int8_t banks_num;
+    u_int8_t cmp_support;
     u_int8_t quad_en_support;
     u_int8_t srwd_support;
     u_int8_t driver_strength_support;

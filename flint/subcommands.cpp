@@ -4235,8 +4235,8 @@ bool HwSubCommand::PrintWriteProtectedBits(const ext_flash_attr_t& attr)
     write_protect_info_t protect_info = attr.protect_info_array[flash_index];
     if (rc == MFE_OK)
     {
-        std::bitset<BP_SIZE> bp_bits(protect_info.sectors_num);
-        string tbs_bit = (protect_info.is_bottom ? "1" : "0");
+        std::bitset<BP_SIZE> bp_bits(protect_info.bp_val); // convert bp_val to binary
+        string tbs_bit = (protect_info.tbs_bit ? "1" : "0");
         int msb = BP_SIZE - 1;
         std::cout << "  TBS, BP[" << msb << ":0]            " << tbs_bit << ", " << bp_bits << endl;
     }
@@ -4248,6 +4248,42 @@ bool HwSubCommand::PrintWriteProtectedBits(const ext_flash_attr_t& attr)
         }
     }
     return ret_val;
+}
+
+bool HwSubCommand::FillAttrIfNeeded(ext_flash_attr_t& attr, char* param_val_str, char* param_name)
+{
+    bool rc = true;
+
+    std::string param_name_str(param_name);
+    if (param_name_str.find(WRITE_PROTECT) != std::string::npos) // making sure this is a hw set WRITE_PROTECT command
+    {
+        char *tb, *num_str, *sec;
+        char* param_val_str_copy = new char[strlen(param_val_str) + 1];
+        strcpy(param_val_str_copy,
+               param_val_str); // copying param_val_str so it won't be corrupted by strtok and could be used later on
+
+        tb = strtok(param_val_str_copy, ",");
+        num_str = strtok((char*)NULL, "-");
+        sec = strtok((char*)NULL, "");
+        if (tb == NULL || num_str == NULL || sec == NULL) // we only want to set TBS so we need to initialize get_attr
+        {                                                 // which will be needed to get existing write protect data
+
+            attr.type_str = (char*)NULL;
+            if (!((Flash*)_io)->get_attr(attr))
+            {
+                reportErr(true, FLINT_HW_COMMAND_ERROR, "set", _io->err());
+                if (attr.type_str)
+                {
+                    delete[] attr.type_str;
+                }
+                rc = false;
+            }
+        }
+
+        delete[] param_val_str_copy;
+    }
+
+    return rc;
 }
 
 FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
@@ -6801,6 +6837,33 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
         }
     }
 
+    // CMP query
+    if (attr.cmp_support && attr.write_protect_support)
+    {
+        switch (attr.mf_get_cmp_rc)
+        {
+            case MFE_OK:
+                printf("  " CMP_PARAM "                     %d\n", attr.cmp);
+                break;
+
+            case MFE_MISMATCH_PARAM:
+                printf("-E- There is a mismatch in the " CMP_PARAM
+                       " attribute between the flashes attached to the device\n");
+                break;
+
+            case MFE_NOT_SUPPORTED_OPERATION:
+                printf(CMP_PARAM " not supported operation.\n");
+                break;
+            case MFE_NOT_IMPLEMENTED:
+                printf(CMP_PARAM "not implemented.\n");
+                break;
+            default:
+                printf("Failed to get " CMP_PARAM " attribute: %s (%s)", errno == 0 ? "" : strerror(errno),
+                       mf_err2str(attr.mf_get_cmp_rc));
+                return FLINT_FAILED;
+        }
+    }
+
     return FLINT_SUCCESS;
 }
 
@@ -6836,7 +6899,15 @@ FlintStatus HwSubCommand::executeCommand()
             reportErr(true, FLINT_HW_SET_ARGS_ERROR, _flintParams.cmd_params[1].c_str());
             return FLINT_FAILED;
         }
-        if (!((Flash*)_io)->set_attr(paramName, paramValStr))
+
+        ext_flash_attr_t attr;
+        memset(&attr, 0, sizeof(ext_flash_attr_t));
+        if (!FillAttrIfNeeded(attr, paramValStr, paramName))
+        {
+            delete[] cmdParam;
+            return FLINT_FAILED;
+        }
+        if (!((Flash*)_io)->set_attr(paramName, paramValStr, attr))
         {
             delete[] cmdParam;
             reportErr(true, FLINT_HW_COMMAND_ERROR, "set", _io->err());

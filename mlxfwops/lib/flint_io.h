@@ -58,6 +58,8 @@
 #include <mft_sig_handler.h>
 #endif
 
+#include <string>
+
 // external flash attr struct
 
 #define IO_MAX_BANKS_NUM 4
@@ -73,10 +75,14 @@ typedef struct ext_flash_attr
     u_int32_t sector_size; // minimal sec
     int block_write;
     int command_set;
+    u_int8_t cmp_support;
     u_int8_t quad_en_support;
     u_int8_t srwd_support;
     u_int8_t driver_strength_support;
     u_int8_t dummy_cycles_support;
+
+    u_int8_t cmp;
+    MfError mf_get_cmp_rc;
 
     u_int8_t quad_en;
     MfError mf_get_quad_en_rc;
@@ -454,7 +460,39 @@ public:
 
     bool get_attr(ext_flash_attr_t& attr);
 
-    bool set_attr(char* param_name, char* param_val_str);
+    bool set_attr(char* param_name, char* param_val_str, const ext_flash_attr_t& attr);
+    bool validate_write_protect_args(char* param_val, const ext_flash_attr_t& attr, u_int8_t bank_num);
+    bool check_and_set_sector_field(std::string& param_val_str,
+                                    std::size_t sector_or_subsector_start_loc,
+                                    std::string& sector_or_subsecto,
+                                    std::string& err_msg);
+    bool check_and_set_sector_num_field(std::string& param_val_str,
+                                        std::string& sector_num,
+                                        std::string& err_msg,
+                                        std::size_t sector_or_subsector_start_loc,
+                                        std::size_t tbs_end_loc);
+    bool check_and_set_tbs_field(std::string& param_val_str,
+                                 std::size_t tbs_end_loc,
+                                 std::string& tbs,
+                                 std::string& err_msg,
+                                 const ext_flash_attr_t& attr,
+                                 u_int8_t bank_num);
+    bool get_data_for_protect_info(const ext_flash_attr_t& attr,
+                                   u_int8_t bank_num,
+                                   char* param_val,
+                                   std::string& tbs,
+                                   std::string& sector_num,
+                                   std::string& sector_or_subsector);
+    bool set_data_in_protect_info(std::string& tbs,
+                                  std::string& sector_num,
+                                  std::string& sector_or_subsector,
+                                  const ext_flash_attr_t& attr,
+                                  u_int8_t bank_num,
+                                  write_protect_info_t* protect_info);
+    bool handle_protect_info_set_for_write_protect(char* param_val_str,
+                                                   const ext_flash_attr_t& attr,
+                                                   write_protect_info_t* protect_info,
+                                                   u_int8_t bank_num);
 
     bool flash_working_mode_supported() { return _attr.support_sub_and_sector; }
     virtual int get_flash_working_mode() { return _flash_working_mode; }
@@ -474,6 +512,7 @@ public:
     bool open_com_checks(const char* device, int rc, bool force_lock);
 
 // needed for printing flash status in flint hw query cmd
+#define CMP_PARAM "CMP"
 #define QUAD_EN_PARAM "QuadEn"
 #define SRWD_PARAM "SRWD"
 #define DRIVER_STRENGTH_PARAM "DriverStrength"

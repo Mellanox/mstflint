@@ -590,6 +590,7 @@ class HwSubCommand : public SubCommand
 private:
     FlintStatus printAttr(const ext_flash_attr_t& attr);
     bool PrintWriteProtectedBits(const ext_flash_attr_t& attr);
+    bool FillAttrIfNeeded(ext_flash_attr_t& attr, char* param_val_str, char* param_name);
 
 public:
     HwSubCommand();
