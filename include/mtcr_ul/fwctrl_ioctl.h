@@ -38,13 +38,13 @@
 
 #include <linux/types.h>
 
-#define FWCTL_METHOD_READ     1
-#define FWCTL_METHOD_WRITE    0
-#define FWCTL_ENV_VAR_DEBUG   "FWCTL_DEBUG"
+#define FWCTL_METHOD_READ   1
+#define FWCTL_METHOD_WRITE  0
+#define FWCTL_ENV_VAR_DEBUG "FWCTL_DEBUG"
 
-#define FWCTL_DEBUG_PRINT(mf, format, arg...) \
-    if (mf->fwctl_env_var_debug) {        \
-        printf("%s: %s %d: " format, FWCTL_ENV_VAR_DEBUG, __func__, __LINE__, ##arg); \
+#define FWCTL_DEBUG_PRINT(mf, format, arg ...)                                         \
+    if (mf->fwctl_env_var_debug) {                                                     \
+        printf("%s: %s %d: " format, FWCTL_ENV_VAR_DEBUG, __func__, __LINE__, ## arg); \
     }
 
 int fwctl_control_access_register(int fd, void *data_in,
@@ -81,14 +81,14 @@ void fwctl_set_device_id(mfile* mf);
  * As well as additional errnos, within specific ioctls.
  */
 enum {
-	FWCTL_CMD_BASE = 0,
-	FWCTL_CMD_INFO = 0,
-	FWCTL_CMD_RPC = 1,
+    FWCTL_CMD_BASE = 0,
+    FWCTL_CMD_INFO = 0,
+    FWCTL_CMD_RPC  = 1,
 };
 
 enum fwctl_device_type {
-	FWCTL_DEVICE_TYPE_ERROR = 0,
-	FWCTL_DEVICE_TYPE_MLX5 = 1,
+    FWCTL_DEVICE_TYPE_ERROR = 0,
+    FWCTL_DEVICE_TYPE_MLX5  = 1,
 };
 
 /**
@@ -106,11 +106,11 @@ enum fwctl_device_type {
  * is being used to define the device_data format.
  */
 struct fwctl_info {
-	__u32 size;
-	__u32 flags;
-	__u32 out_device_type;
-	__u32 device_data_len;
-	__aligned_u64 out_device_data;
+    __u32         size;
+    __u32         flags;
+    __u32         out_device_type;
+    __u32         device_data_len;
+    __aligned_u64 out_device_data;
 };
 #define FWCTL_INFO _IO(FWCTL_TYPE, FWCTL_CMD_INFO)
 
@@ -132,13 +132,13 @@ struct fwctl_info {
  * The format of the buffers matches the out_device_type from FWCTL_INFO.
  */
 struct fwctl_rpc {
-	__u32 size;
-	__u32 flags;
-	__u32 in_len;
-	__u32 out_len;
-	__aligned_u64 in;
-	__aligned_u64 out;
+    __u32         size;
+    __u32         scope;
+    __u32         in_len;
+    __u32         out_len;
+    __aligned_u64 in;
+    __aligned_u64 out;
 };
 #define FWCTL_RPC _IO(FWCTL_TYPE, FWCTL_CMD_RPC)
 
-#endif // __FWCTRL_IOCTL_H__
+#endif /* __FWCTRL_IOCTL_H__ */
