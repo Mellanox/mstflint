@@ -41,6 +41,11 @@
 #include <tools_dev_types.h>
 #include "flint_io.h"
 
+using std::to_string;
+#include <stdexcept>
+#include <new>
+#include <iostream>
+
 extern bool _no_erase;
 extern bool _no_burn;
 
@@ -916,10 +921,16 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     attr.sector_size = _attr.sector_size;
     attr.block_write = _attr.block_write;
     attr.command_set = _attr.command_set;
+    attr.cmp_support = _attr.cmp_support;
     attr.quad_en_support = _attr.quad_en_support;
     attr.srwd_support = _attr.srwd_support;
     attr.driver_strength_support = _attr.driver_strength_support;
     attr.dummy_cycles_support = _attr.dummy_cycles_support;
+    // CMP query
+    if (_attr.cmp_support)
+    {
+        attr.mf_get_cmp_rc = (MfError)mf_get_cmp(_mfl, &attr.cmp);
+    }
     // Quad EN query
     if (_attr.quad_en_support)
     {
@@ -980,7 +991,308 @@ const char* Flash::getFlashType()
         }                                                                                         \
     }
 
-bool Flash::set_attr(char* param_name, char* param_val_str)
+bool Flash::check_and_set_tbs_field(std::string& param_val_str,
+    std::size_t tbs_end_loc,
+    std::string& tbs,
+    std::string& err_msg,
+    const ext_flash_attr_t& attr,
+    u_int8_t bank_num)
+{
+    bool rc = true;
+    tbs = param_val_str.substr(0, tbs_end_loc);
+    if (tbs.compare(WP_BOTTOM_STR) && tbs.compare(WP_TOP_STR))
+    {
+        rc = false;
+    }
+
+    if (rc)
+    {
+        int ret_val = attr.mf_get_write_protect_rc_array[bank_num];
+        write_protect_info_t existing_protect_info = attr.protect_info_array[bank_num];
+        if (ret_val == MFE_OK)
+        {
+            if ((_attr.vendor == FV_MX25K16XXX || _attr.vendor == FV_IS25LPXXX) && existing_protect_info.is_bottom &&
+                !tbs.compare(WP_TOP_STR))
+            {
+                err_msg = "The data you are trying to write is OTP and have already been programmed.";
+                rc = false;
+            }
+        }
+        else // mf_get_write_protect_rc_array failed
+        {
+            if (ret_val != MFE_NOT_SUPPORTED_OPERATION)
+            {
+                // We ignore the read when operation is not supported!
+                err_msg = "Failed to get write_protected info: %s (%s)", errno == 0 ? "" : strerror(errno),
+                mf_err2str(ret_val);
+                rc = false;
+            }
+        }
+    }   
+
+    return rc;
+}
+
+bool Flash::check_and_set_sector_field(std::string& param_val_str,
+    std::size_t sector_or_subsector_start_loc,
+    std::string& sector_or_subsector,
+    std::string& err_msg)
+{
+    bool rc = true;
+    try
+    {
+        sector_or_subsector = param_val_str.substr(sector_or_subsector_start_loc + 1);
+    }
+    catch (const std::out_of_range& e)
+    {
+        rc = false;
+    }
+    catch (std::bad_alloc& ba)
+    {
+        err_msg = "bad_alloc caught: " + std::string(ba.what()) + '\n';
+        rc = false;
+    }
+    catch (const std::exception& e)
+    {
+        err_msg = "An error while verifying input: " + std::string(e.what()) + '\n';
+        rc = false;
+    }
+
+    if (rc && sector_or_subsector.compare(WP_SEC_STR) && sector_or_subsector.compare(WP_SUBSEC_STR))
+    {
+        rc = false;
+    }
+
+    return rc;
+}
+
+bool Flash::check_and_set_sector_num_field(std::string& param_val_str,
+    std::string& sector_num,
+    std::string& err_msg,
+    std::size_t start,
+    std::size_t end)
+{
+    bool rc = true;
+    try
+    {
+        sector_num = param_val_str.substr(start, end);
+    }
+    catch (const std::out_of_range& e)
+    {
+        rc = false;
+    }
+    catch (std::bad_alloc& ba)
+    {
+        err_msg = "bad_alloc caught: " + std::string(ba.what()) + '\n';
+        rc = false;
+    }
+    catch (const std::exception& e)
+    {
+        err_msg = "An error while verifying input: " + std::string(e.what()) + '\n';
+        rc = false;
+    }
+
+    if (rc)
+    {
+        char* endp;
+        u_int8_t sector_num_as_int = strtoul(sector_num.c_str(), &endp, 0); // convert given sectors number to integer
+        if (*endp != '\0')
+        {
+            err_msg = "bad argument (" + sector_num + "), only integer value is allowed.\n";
+            rc = false;
+        }
+        else if (!sector_num_as_int)
+        {
+            err_msg = "Invalid sectors number, Use \"Disabled\" instead.\n";
+            rc = false;
+        }
+    }
+
+    return rc;
+}
+
+bool Flash::get_data_for_protect_info(const ext_flash_attr_t& attr,
+    u_int8_t bank_num,
+    char* param_val,
+    std::string& tbs,
+    std::string& sector_num,
+    std::string& sector_or_subsector)
+{
+    bool valid = true;
+    std::string param_val_str(param_val);
+    std::size_t tbs_end_loc = param_val_str.find(",");
+    std::size_t sector_or_subsector_start_loc = param_val_str.find("-");
+
+    // checking for <tbs>,<sectorNum>-<Sector>
+    if (tbs_end_loc != std::string::npos && sector_or_subsector_start_loc != std::string::npos)
+    {
+        tbs = param_val_str.substr(0, tbs_end_loc);
+        sector_or_subsector = param_val_str.substr(sector_or_subsector_start_loc + 1);
+        sector_num = param_val_str.substr(tbs_end_loc + 1, sector_or_subsector_start_loc - tbs_end_loc - 1);
+    }
+
+    // checking for <tbs>
+    else if (tbs_end_loc == std::string::npos && sector_or_subsector_start_loc == std::string::npos)
+    {
+        tbs = param_val_str;
+    }
+
+    // checking for <secNum>-<Sectors or Subesctors>
+    else if (tbs_end_loc == std::string::npos && sector_or_subsector_start_loc != std::string::npos)
+    {
+        sector_or_subsector = param_val_str.substr(sector_or_subsector_start_loc + 1);
+        sector_num = param_val_str.substr(0, sector_or_subsector_start_loc);
+    }
+
+    if (tbs.empty() || sector_or_subsector.empty() || sector_num.empty())
+    {
+        int ret_val = attr.mf_get_write_protect_rc_array[bank_num];
+        write_protect_info_t existing_protect_info = attr.protect_info_array[bank_num];
+        if (ret_val == MFE_OK)
+        {
+            if (tbs.empty())
+            {
+                tbs = (existing_protect_info.is_bottom ? WP_BOTTOM_STR : WP_TOP_STR);
+            }
+            if (sector_or_subsector.empty())
+            {
+                sector_or_subsector = (existing_protect_info.is_subsector ? WP_SUBSEC_STR : WP_SEC_STR);
+            }
+            if (sector_num.empty())
+            {
+                sector_num = std::to_string(existing_protect_info.sectors_num);
+            }
+        }
+        else // mf_get_write_protect_rc_array failed
+        {
+            if (ret_val != MFE_NOT_SUPPORTED_OPERATION)
+            {
+                // We ignore the read when operation is not supported!
+                printf("Failed to get write_protected info: %s (%s)", errno == 0 ? "" : strerror(errno),
+                mf_err2str(ret_val));
+                valid = false;
+            }
+        }
+    }
+
+    return valid;
+}
+
+bool Flash::set_data_in_protect_info(std::string& tbs,
+    std::string& sector_num,
+    std::string& sector_or_subsector,
+    const ext_flash_attr_t& attr,
+    u_int8_t bank_num,
+    write_protect_info_t* protect_info)
+{
+    bool rc = true;
+    GET_IN_PARAM(tbs.c_str(), (*protect_info).is_bottom, WP_BOTTOM_STR, WP_TOP_STR);
+    GET_IN_PARAM(sector_or_subsector.c_str(), (*protect_info).is_subsector, WP_SUBSEC_STR, WP_SEC_STR);
+    char* endp;
+    (*protect_info).sectors_num = strtoul(sector_num.c_str(), &endp, 0); // convert given sectors number to integer
+
+    return rc;
+}
+
+bool Flash::validate_write_protect_args(char* param_val, const ext_flash_attr_t& attr, u_int8_t bank_num)
+{
+    bool valid = false;
+    std::string err_msg("bad argument of hw set command for " WRITE_PROTECT
+                        ". It should be in one of the formats: " WRITE_PROTECT
+                        "=<tb>,<sectors_num>-<Sectors or SubSectors> , " WRITE_PROTECT "=<tb> , " WRITE_PROTECT
+                        "=<sectors_num>-<Sectors or SubSectors>\n");
+    std::string param_val_str(param_val);
+    std::size_t tbs_end_loc = param_val_str.find(",");
+    std::size_t sector_or_subsector_start_loc = param_val_str.find("-");
+
+    std::string tbs("");
+    std::string sector_num("");
+    std::string sector_or_subsector("");
+
+    // checking for <tbs>,<sectorNum>-<Sector>
+    if (tbs_end_loc != std::string::npos && sector_or_subsector_start_loc != std::string::npos)
+    {
+        if (!check_and_set_tbs_field(param_val_str, tbs_end_loc, tbs, err_msg, attr, bank_num))
+        {
+            goto end;
+        }
+
+        if (!check_and_set_sector_field(param_val_str, sector_or_subsector_start_loc, sector_or_subsector, err_msg))
+        {
+            goto end;
+        }
+
+        if (!check_and_set_sector_num_field(param_val_str, sector_num, err_msg, tbs_end_loc + 1,
+                                            sector_or_subsector_start_loc - tbs_end_loc - 1))
+        {
+            goto end;
+        }
+    }
+
+    // checking for <tbs>
+    else if (tbs_end_loc == std::string::npos && sector_or_subsector_start_loc == std::string::npos)
+    {
+        if (!check_and_set_tbs_field(param_val_str, param_val_str.length(), tbs, err_msg, attr, bank_num))
+        {
+            goto end;
+        }
+    }
+
+    // checking for <secNum>-<Sectors or Subesctors>
+    else if (tbs_end_loc == std::string::npos && sector_or_subsector_start_loc != std::string::npos)
+    {
+        if (!check_and_set_sector_field(param_val_str, sector_or_subsector_start_loc, sector_or_subsector, err_msg))
+        {
+            goto end;
+        }
+
+        if (!check_and_set_sector_num_field(param_val_str, sector_num, err_msg, 0, sector_or_subsector_start_loc))
+        {
+            goto end;
+        }
+    }
+
+    valid = true;
+end:
+    if (!valid)
+    {
+        errmsg("%s", err_msg.c_str());
+    }
+    return valid;
+}
+
+bool Flash::handle_protect_info_set_for_write_protect(char* param_val_str,
+    const ext_flash_attr_t& attr,
+    write_protect_info_t* protect_info,
+    u_int8_t bank_num)
+{
+    bool rc = true;
+    if (!validate_write_protect_args(param_val_str, attr, bank_num))
+    {
+        rc = false;
+    }
+    else
+    {
+        std::string tbs("");
+        std::string sector_num("");
+        std::string sector_or_subsector("");
+        if (!get_data_for_protect_info(attr, bank_num, param_val_str, tbs, sector_num, sector_or_subsector))
+        {
+            rc = false;
+        }
+        else
+        {
+            if (!set_data_in_protect_info(tbs, sector_num, sector_or_subsector, attr, bank_num, protect_info))
+            {
+                rc = false;
+            }
+        }
+    }
+
+    return rc;
+}
+
+bool Flash::set_attr(char* param_name, char* param_val_str, const ext_flash_attr_t& attr)
 {
     int rc;
     // TODO: make generic function that sets params
@@ -1046,32 +1358,15 @@ bool Flash::set_attr(char* param_name, char* param_val_str)
         if (!strcmp(param_str, WRITE_PROTECT))
         {
             write_protect_info_t protect_info;
-            char *tb, *num_str, *sec;
             if (!strcmp(param_val_str, WP_DISABLED_STR))
             {
                 memset(&protect_info, 0, sizeof(protect_info));
             }
             else
             {
-                tb = strtok(param_val_str, ",");
-                num_str = strtok((char*)NULL, "-");
-                sec = strtok((char*)NULL, "");
-                if (tb == NULL || num_str == NULL || sec == NULL)
+                if (!handle_protect_info_set_for_write_protect(param_val_str, attr, &protect_info, bank_num))
                 {
-                    return errmsg("missing parameters for setting the " WRITE_PROTECT
-                                  " attribute, see help for more info.");
-                }
-                GET_IN_PARAM(tb, protect_info.is_bottom, WP_BOTTOM_STR, WP_TOP_STR);
-                GET_IN_PARAM(sec, protect_info.is_subsector, WP_SUBSEC_STR, WP_SEC_STR);
-
-                protect_info.sectors_num = strtoul(num_str, &endp, 0);
-                if (*endp != '\0')
-                {
-                    return errmsg("bad argument (%s), only integer value is allowed.", num_str);
-                }
-                if (!protect_info.sectors_num)
-                {
-                    return errmsg("Invalid sectors number, Use \"Disabled\" instead.");
+                    return false;
                 }
             }
             rc = mf_set_write_protect(_mfl, bank_num, &protect_info);

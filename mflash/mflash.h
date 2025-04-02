@@ -226,6 +226,9 @@ int mf_get_attr(mflash* mfl, flash_attr* attr);
 
 int mf_get_jedec_id(mflash* mfl, u_int32_t* jedec_id);
 
+int mf_set_cmp(mflash* mfl, u_int8_t cmp);
+int mf_get_cmp(mflash* mfl, u_int8_t* cmp);
+
 int mf_set_quad_en(mflash* mfl, u_int8_t quad_en);
 int mf_get_quad_en(mflash* mfl, u_int8_t* quad_en);
 

@@ -168,6 +168,10 @@ int cntx_sst_get_log2size(u_int8_t density, int* log2spi_size);
 
 #define SEMAP63 0xf03fc
 
+#define SECTOR_NUM_60MB_SPECIAL_CASE 960
+#define BP_ISSI_60MB_SPECIAL_CASE 13
+#define BP_WINBOND_60MB_SPECIAL_CASE 7
+
 /* InfiniHost specific */
 #define IDLE   0
 #define READ4  (1 << 29)
@@ -871,6 +875,8 @@ int spi_fill_attr_from_params(mflash* mfl, flash_params_t* flash_params, flash_i
     mfl->attr.erase_command = flash_info->erase_command;
     mfl->attr.type_str = flash_info->name;
 
+    mfl->attr.cmp_support = flash_info->vendor == FV_WINBOND && flash_info->type == FMT_WINBOND_IM &&
+                            ((flash_info->densities & (1 << FD_512)) != 0);
     mfl->attr.quad_en_support = flash_info->quad_en_support;
     mfl->attr.srwd_support = is_srwd_supported_by_flash(flash_info->vendor, flash_info->type);
     mfl->attr.driver_strength_support = flash_info->driver_strength_support;
@@ -3750,101 +3756,219 @@ int mf_get_quad_en_direct_access(mflash* mfl, u_int8_t* quad_en_p)
     return MFE_NOT_SUPPORTED_OPERATION;
 }
 
+int is_ISSI_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, uint8_t log2_bank_size)
+{
+    if (vendor == FV_IS25LPXXX && (type == FMT_IS25LPXXX || type == FMT_IS25WPXXX) && log2_bank_size == FD_512)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int is_WINBOND_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, uint8_t log2_bank_size)
+{
+    if (vendor == FV_WINBOND && type == FMT_WINBOND_IM && log2_bank_size == FD_512)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int is_60MB_bottom_protection_params(write_protect_info_t* protect_info)
+{
+    if (protect_info->sectors_num != SECTOR_NUM_60MB_SPECIAL_CASE || !protect_info->is_bottom ||
+        protect_info->is_subsector)
+    {
+        return 0;
+    }
+    return 1;
+}
+
+int get_sectors_num_for_WINBOND_60MB_bottom_protection_supported(u_int8_t bp_val, uint8_t cmp, int spec_alignment_factor)
+{
+    int all_protected = 1024;
+    int none_protected = 0;
+    if ((cmp == 0) && (bp_val == 11 || bp_val == 12 || bp_val == 13 || bp_val == 14 || bp_val == 15))
+    {
+        return all_protected;
+    }
+    if (cmp && (bp_val == 11 || bp_val == 12 || bp_val == 13 || bp_val == 14 || bp_val == 15))
+    {
+        return none_protected;
+    }
+    if (!cmp)
+    {
+        return (1 << (bp_val + spec_alignment_factor));
+    }
+    // -> cmp == 1
+    return all_protected - (1 << (bp_val + spec_alignment_factor));
+}
+
 int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_protect_info_t* protect_info)
 {
-    u_int32_t            protect_mask = 0, log2_sect_num;
-    u_int32_t            sectors_num = protect_info->sectors_num;
-    int                  rc;
+    u_int32_t protect_mask = 0, log2_sect_num;
+    u_int32_t sectors_num = protect_info->sectors_num;
+    int rc;
     write_protect_info_t cur_protect_info;
-
     memset(&cur_protect_info, 0x0, sizeof(cur_protect_info));
 
-    /* printf("-D- mf_set_write_protect: bank_num = %#x, subsec: %#x, bottom: %#x, sectors_num=%#x\n", bank_num, */
-    /*       protect_info->is_subsector, protect_info->is_bottom, protect_info->sectors_num); */
+    // printf("-D- mf_set_write_protect: bank_num = %#x, subsec: %#x, bottom: %#x, sectors_num=%#x\n", bank_num,
+    //       protect_info->is_subsector, protect_info->is_bottom, protect_info->sectors_num);
 
     WRITE_PROTECT_CHECKS(mfl, bank_num);
-    if (((protect_info->sectors_num - 1) & protect_info->sectors_num) != 0) {
-        return MFE_SECTORS_NUM_NOT_POWER_OF_TWO;
+    if (((protect_info->sectors_num - 1) & protect_info->sectors_num) != 0)
+    {
+        if (!is_ISSI_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size) &&
+            !is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+        {
+            return MFE_SECTORS_NUM_NOT_POWER_OF_TWO;
+        }
+        if (!is_60MB_bottom_protection_params(protect_info))
+        {
+            return MFE_SECTORS_NUM_NOT_POWER_OF_TWO;
+        }
     }
-    if (protect_info->sectors_num > MAX_SECTORS_NUM) {
-        return MFE_EXCEED_SECTORS_MAX_NUM;
+    if (protect_info->sectors_num > MAX_SECTORS_NUM)
+    {
+        if (!is_ISSI_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size) &&
+            !is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+        {
+            return MFE_EXCEED_SECTORS_MAX_NUM;
+        }
+        if (!is_60MB_bottom_protection_params(protect_info))
+        {
+            return MFE_EXCEED_SECTORS_MAX_NUM;
+        }
     }
-    if (((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) &&
-         (mfl->attr.log2_bank_size == FD_128)) ||
-        ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V) &&
-         (mfl->attr.log2_bank_size == FD_128))) {
-        if (!protect_info->is_subsector && ((protect_info->sectors_num == 1) || (protect_info->sectors_num == 2))) {
+    if ((mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL && mfl->attr.log2_bank_size == FD_128) ||
+        (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V && mfl->attr.log2_bank_size == FD_128))
+    {
+        if (!protect_info->is_subsector && (protect_info->sectors_num == 1 || protect_info->sectors_num == 2))
+        {
             return MFE_SECTORS_NUM_MORE_THEN_0_LESS_THEN_4;
         }
     }
-    if (protect_info->is_subsector && !mfl->attr.protect_sub_and_sector) {
+    if (protect_info->is_subsector && !mfl->attr.protect_sub_and_sector)
+    {
         return MFE_NOT_SUPPORTED_OPERATION;
     }
-    if (mfl->attr.protect_sub_and_sector && protect_info->is_subsector) {
-        if (protect_info->sectors_num > MAX_SUBSECTOR_NUM) {
+    if (mfl->attr.protect_sub_and_sector && protect_info->is_subsector)
+    {
+        if (protect_info->sectors_num > MAX_SUBSECTOR_NUM)
+        {
             return MFE_EXCEED_SUBSECTORS_MAX_NUM;
         }
     }
-    if ((mfl->attr.vendor == FV_MX25K16XXX) || (mfl->attr.vendor == FV_IS25LPXXX)) {
+    if (mfl->attr.vendor == FV_MX25K16XXX || mfl->attr.vendor == FV_IS25LPXXX)
+    {
         rc = mf_get_write_protect(mfl, bank_num, &cur_protect_info);
         CHECK_RC(rc);
-        if (cur_protect_info.is_bottom && !protect_info->is_bottom) {
-            if (protect_info->sectors_num) {
+        if (cur_protect_info.is_bottom && !protect_info->is_bottom)
+        {
+            if (protect_info->sectors_num)
+            {
                 return MFE_DATA_IS_OTP;
-            } else {
-                protect_info->is_bottom =
-                    cur_protect_info.is_bottom; /* write protect is disabled, so we don't really */
-                                                /* care about top/bottom bit. */
+            }
+            else
+            {
+                protect_info->is_bottom = cur_protect_info.is_bottom; // write protect is disabled, so we don't really
+                                                                      // care about top/bottom bit.
             }
         }
     }
 
-    for (log2_sect_num = 0; log2_sect_num < 8; log2_sect_num++) {
-        if (sectors_num == 0) {
+    for (log2_sect_num = 0; log2_sect_num < 8; log2_sect_num++)
+    {
+        if (sectors_num == 0)
+        {
             break;
         }
         sectors_num >>= 1;
     }
-    /* adrianc: at this point log2_sect_num is actually  bigger by 1(if sectors_num!=0) to fit the BP bit values in the
-     */
-    /* flash spec */
+    // adrianc: at this point log2_sect_num is actually  bigger by 1(if sectors_num!=0) to fit the BP bit values in the
+    // flash spec
 
-    if ((log2_sect_num != 0) && !protect_info->is_subsector &&
-        (((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) &&
-          (mfl->attr.log2_bank_size == FD_128)) ||
-         ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V) &&
-          (mfl->attr.log2_bank_size == FD_128)))) {
-        log2_sect_num -= 2; /* spec alignment */
+    if (log2_sect_num != 0 && !protect_info->is_subsector &&
+        ((mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL && mfl->attr.log2_bank_size == FD_128) ||
+         (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V && mfl->attr.log2_bank_size == FD_128)))
+    {
+        log2_sect_num -= 2; // spec alignment
     }
 
-    if ((mfl->attr.vendor == FV_ST) && (mfl->attr.type == FMT_N25QXXX)) {
+    if (mfl->attr.vendor == FV_ST && mfl->attr.type == FMT_N25QXXX)
+    {
         protect_mask = MERGE(protect_mask, log2_sect_num & 0x7, 0, BP_SIZE);
         protect_mask = MERGE(protect_mask, protect_info->is_bottom, BP_SIZE, 1);
         protect_mask = MERGE(protect_mask, (log2_sect_num & 0x8) >> 3, BP_SIZE + 1, 1);
         return mf_read_modify_status_winbond(mfl, bank_num, 1, protect_mask, BP_OFFSET, PROTECT_BITS_SIZE);
-    } else if ((mfl->attr.vendor == FV_MX25K16XXX) || (mfl->attr.vendor == FV_IS25LPXXX) ||
-               ((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) &&
-                (mfl->attr.log2_bank_size == FD_256)) ||
-               ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V) &&
-                (mfl->attr.log2_bank_size == FD_256))) {
-        if (mfl->attr.vendor == FV_MX25K16XXX) {
+    }
+    else if (mfl->attr.vendor == FV_MX25K16XXX || mfl->attr.vendor == FV_IS25LPXXX ||
+             (mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL &&
+              mfl->attr.log2_bank_size == FD_256) ||
+             (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V &&
+              mfl->attr.log2_bank_size == FD_256) ||
+             (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)))
+    {
+        if (mfl->attr.vendor == FV_MX25K16XXX)
+        {
             rc = mf_read_modify_status_winbond(mfl, bank_num, 0, protect_info->is_bottom, TB_OFFSET_MACRONIX, 1);
             CHECK_RC(rc);
-        } else if (mfl->attr.vendor == FV_IS25LPXXX) {
+        }
+
+        else if (mfl->attr.vendor == FV_IS25LPXXX)
+        {
             rc = mf_read_modify_status_new(mfl, bank_num, SFC_RDFR, SFC_WRFR, protect_info->is_bottom, TB_OFFSET_ISSI,
                                            1, 1);
             CHECK_RC(rc);
-        } else { /* vendor == FV_S25FLXXXX or vendor == FV_WINBOND */
-            rc = mf_read_modify_status_winbond(mfl,
-                                               bank_num,
-                                               1,
-                                               protect_info->is_bottom,
-                                               TB_OFFSET_CYPRESS_WINBOND_256,
+
+            // to support 60MB bottom protection for ISSI - we have to protect a number of sectors that is not a power
+            // of 2, and there isn't any straightforward mapping between the number of sectors and the BP bits,
+            // therefore we make sure to set BP bits manually
+            if (is_ISSI_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+            {
+                if (is_60MB_bottom_protection_params(protect_info))
+                {
+                    return mf_read_modify_status_winbond(mfl, bank_num, 1, BP_ISSI_60MB_SPECIAL_CASE, BP_OFFSET,
+                                                         BP_SIZE + 1);
+                }
+            }
+        }
+        // to support 60MB bottom protection for WINBOND - we have to protect a number of sectors that is not a power
+        // of 2. For WINBOND the workaround is by setting protection for 4MB from the top, and then set CMP bit to 1
+        // -which will protect the complement from the bottom (bottom 60MB)
+        else if (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+        {
+            if (is_60MB_bottom_protection_params(protect_info))
+            {
+                rc = mf_set_cmp(mfl, 1); // triggering 60MB protection for WINBOND
+                CHECK_RC(rc);
+                uint8_t is_bottom = 0; // CMP is set, so we need to set the bottom bit to 0 (=Top), this way when the
+                                       // complement is protected, it'd be from the Bottom, not Top
+                rc = mf_read_modify_status_winbond(mfl, bank_num, 1, is_bottom, TB_OFFSET_CYPRESS_WINBOND_256, 1);
+                CHECK_RC(rc);
+                return mf_read_modify_status_winbond(mfl, bank_num, 1, BP_WINBOND_60MB_SPECIAL_CASE, BP_OFFSET,
+                                                     BP_SIZE + 1);
+            }
+            else
+            {
+                rc = mf_set_cmp(mfl, 0); // shutting down 60MB protection for WINBOND
+                CHECK_RC(rc);
+                rc = mf_read_modify_status_winbond(mfl, bank_num, 1, protect_info->is_bottom,
+                                                   TB_OFFSET_CYPRESS_WINBOND_256, 1);
+                CHECK_RC(rc);
+            }
+        }
+        else
+        { // vendor == FV_S25FLXXXX or vendor == FV_WINBOND
+            rc = mf_read_modify_status_winbond(mfl, bank_num, 1, protect_info->is_bottom, TB_OFFSET_CYPRESS_WINBOND_256,
                                                1);
             CHECK_RC(rc);
         }
+
         return mf_read_modify_status_winbond(mfl, bank_num, 1, log2_sect_num, BP_OFFSET, 4);
-    } else {
+    }
+    else
+    {
         u_int8_t modify_size = 0;
 
         protect_mask = MERGE(protect_mask, log2_sect_num, 0, BP_SIZE);
@@ -3852,7 +3976,8 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
 
         protect_mask = MERGE(protect_mask, protect_info->is_bottom, BP_SIZE, 1);
         modify_size += 1;
-        if (mfl->attr.protect_sub_and_sector) {
+        if (mfl->attr.protect_sub_and_sector)
+        {
             protect_mask = MERGE(protect_mask, protect_info->is_subsector, BP_SIZE + 1, 1);
             modify_size += 1;
         }
@@ -3862,53 +3987,104 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
 
 int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_protect_info_t* protect_info)
 {
-    int      rc = 0;
+    int rc = 0;
     u_int8_t status = 0;
     u_int8_t tb_offset = TB_OFFSET;
-    int      spec_alignment_factor;
+    int spec_alignment_factor;
 
     WRITE_PROTECT_CHECKS(mfl, bank_num);
     rc = set_bank_int(mfl, bank_num);
     CHECK_RC(rc);
-    protect_info->is_subsector = 0; /* Defaultly no support for subsector protection */
-    if (mfl->attr.vendor == FV_MX25K16XXX) {
+    protect_info->is_subsector = 0; // Defaultly no support for subsector protection
+    if (mfl->attr.vendor == FV_MX25K16XXX)
+    {
         rc = mfl->f_spi_status(mfl, SFC_RDCR, &status);
         CHECK_RC(rc);
         protect_info->is_bottom = EXTRACT(status, TB_OFFSET_MACRONIX, 1);
-    } else if (mfl->attr.vendor == FV_IS25LPXXX) {
+        protect_info->tbs_bit = protect_info->is_bottom;
+    }
+    else if (mfl->attr.vendor == FV_IS25LPXXX)
+    {
         rc = mfl->f_spi_status(mfl, SFC_RDFR, &status);
         CHECK_RC(rc);
         protect_info->is_bottom = EXTRACT(status, TB_OFFSET_ISSI, 1);
-    } else {
-        if (((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) &&
-             (mfl->attr.log2_bank_size == FD_256)) ||
-            ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V) &&
-             (mfl->attr.log2_bank_size == FD_256))) {
+        protect_info->tbs_bit = protect_info->is_bottom;
+    }
+    else
+    {
+        if ((mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL &&
+             mfl->attr.log2_bank_size == FD_256) ||
+            (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V && mfl->attr.log2_bank_size == FD_256) ||
+            (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)))
+        {
             tb_offset = TB_OFFSET_CYPRESS_WINBOND_256;
         }
         rc = mfl->f_spi_status(mfl, SFC_RDSR, &status);
         CHECK_RC(rc);
         protect_info->is_bottom = EXTRACT(status, tb_offset, 1);
-        if (mfl->attr.protect_sub_and_sector) {
+        protect_info->tbs_bit = protect_info->is_bottom;
+        if (mfl->attr.protect_sub_and_sector)
+        {
             protect_info->is_subsector = EXTRACT(status, SEC_OFFSET, 1);
-        } else {
+        }
+        else
+        {
             protect_info->is_subsector = 0;
         }
     }
     rc = mfl->f_spi_status(mfl, SFC_RDSR, &status);
     CHECK_RC(rc);
-    if (EXTRACT(status, BP_OFFSET, BP_SIZE) == 0) {
+
+    if (EXTRACT(status, BP_OFFSET, BP_SIZE) == 0)
+    {
         protect_info->sectors_num = 0;
-    } else {
+        protect_info->bp_val = 0;
+    }
+    else
+    {
         spec_alignment_factor =
-            ((mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL &&
-              mfl->attr.log2_bank_size == FD_128) ||
-             (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V &&
-              mfl->attr.log2_bank_size == FD_128)) &&
-            !protect_info->is_subsector ?
+          ((mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL && mfl->attr.log2_bank_size == FD_128) ||
+           (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V && mfl->attr.log2_bank_size == FD_128)) &&
+              !protect_info->is_subsector ?
             1 :
             -1;
-        protect_info->sectors_num = 1 << (EXTRACT(status, BP_OFFSET, BP_SIZE) + spec_alignment_factor);
+        protect_info->bp_val = EXTRACT(status, BP_OFFSET, BP_SIZE);
+
+        if (is_ISSI_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+        {
+            if (protect_info->bp_val == BP_ISSI_60MB_SPECIAL_CASE && protect_info->is_bottom &&
+                !protect_info->is_subsector)
+            {
+                protect_info->sectors_num = SECTOR_NUM_60MB_SPECIAL_CASE;
+            }
+            else
+            {
+                protect_info->sectors_num = 1 << (protect_info->bp_val + spec_alignment_factor);
+            }
+        }
+        else if (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type,
+                                                             mfl->attr.log2_bank_size)) // WINBOND 60MB WP support
+        {
+            int is_bottom = EXTRACT(status, TB_OFFSET_CYPRESS_WINBOND_256, 1);
+            uint8_t cmp = 0;
+            rc = mf_get_cmp(mfl, &cmp); // protect_info->bp_val == BP_WINBOND_60MB_SPECIAL_CASE && !is_bottom -> happens
+                                        // for CMP=1 and CMP=0, when CMP is set, it's the special 60MB protection mode,
+                                        // and the one we're looking for
+            CHECK_RC(rc);
+            protect_info->sectors_num = get_sectors_num_for_WINBOND_60MB_bottom_protection_supported(
+              protect_info->bp_val, cmp, spec_alignment_factor);
+            if (cmp)
+            {
+                protect_info->tbs_bit = is_bottom;
+                protect_info->is_bottom =
+                  !(protect_info->tbs_bit); // CMP =1 -> if tbs_bit==1(Bottom), top part is protected
+                // else (tbs_bit==0) -> Bottom part is protected
+            }
+        }
+        else
+        {
+            protect_info->sectors_num = 1 << (protect_info->bp_val + spec_alignment_factor);
+        }
     }
 
     return MFE_OK;
@@ -4063,6 +4239,41 @@ int mf_set_quad_en(mflash* mfl, u_int8_t quad_en)
     }
     return mfl->f_set_quad_en(mfl, quad_en);
 }
+
+int mf_set_cmp(mflash* mfl, u_int8_t cmp)
+{
+    if (!mfl)
+    {
+        return MFE_BAD_PARAMS;
+    }
+    if (!is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+    {
+        return MFE_NOT_SUPPORTED_OPERATION;
+    }
+
+    int bank = 0, rc = 0;
+    for (bank = 0; bank < mfl->attr.banks_num; bank++)
+    {
+        rc = mf_read_modify_status_new(mfl, bank, SFC_RDSR2, SFC_WRSR2, cmp, COMPLEMENT_PROTECT_OFFSET_WINBOND, 1, 1);
+        CHECK_RC(rc);
+    }
+
+    return MFE_OK;
+}
+
+int mf_get_cmp(mflash* mfl, u_int8_t* cmp)
+{
+    if (!mfl)
+    {
+        return MFE_BAD_PARAMS;
+    }
+    if (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+    {
+        return mf_get_param_int(mfl, cmp, SFC_RDSR2, COMPLEMENT_PROTECT_OFFSET_WINBOND, 1, 1, 1);
+    }
+    return MFE_NOT_SUPPORTED_OPERATION;
+}
+
 
 int mf_get_quad_en(mflash* mfl, u_int8_t* quad_en)
 {
