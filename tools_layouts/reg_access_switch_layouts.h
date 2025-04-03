@@ -30,7 +30,7 @@
  */
 
 /***
-         *** This file was generated at "2025-01-12 09:53:05"
+         *** This file was generated at "2025-03-25 15:13:37"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input [REDACTED]/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o [REDACTED]/user/tools_layouts
          ***/
@@ -224,17 +224,26 @@ struct reg_access_switch_prm_register_payload_ext {
 /* Size in bytes - 4 */
 struct reg_access_switch_lane_2_module_mapping_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Module number */
+	/* Description - Module field is considered as Label index when mod_lab_map = label_mapping_selected (= 1)
+Module or Label number */
 	/* 0x0.0 - 0x0.7 */
 	/* access: RW */
 	u_int8_t module;
-	/* Description - Reserved for HCA 
+	/* Description - Reserved for HCA.
 Slot_index 
 Slot_index = 0 represent the onboard (motherboard). 
 In case of non modular system only slot_index = 0 is available. */
 	/* 0x0.8 - 0x0.11 */
 	/* access: RW */
 	u_int8_t slot_index;
+	/* Description - Indicates start offset of rx_lane, tx_lane inside the modules lanes in 8x granularity. relevant for modules with more than 8 lanes. such as OE.
+0: lanes_0-7
+1: lanes_8_15
+2: lanes_16_23
+3: lanes_24_31 */
+	/* 0x0.12 - 0x0.15 */
+	/* access: RW */
+	u_int8_t sub_module;
 	/* Description - TX lane. 
 When m_lane_m field is set, this field is ignored (Reserved). 
 When rxtx field is cleared, this field is used for RX as well. */
@@ -247,6 +256,16 @@ When rxtx field is clreared, for set operation this field is ignored and for get
 	/* 0x0.24 - 0x0.27 */
 	/* access: RW */
 	u_int8_t rx_lane;
+	/* Description - Supported if PCAM.feature_cap_mask bit 116 is set, otherwise field is not valid.
+Relevant for Bidi port only, Simplex port should ignore.
+indicates if module lane Tx or Rx is used.
+0: module_rx_lane_valid - Bidi lane uses module rx lane. 
+tx lane value is not valid should be ignored
+1: module_tx_lane_valid - Bidi lane uses module tx lane. 
+rx lane value is not valid should be ignored */
+	/* 0x0.30 - 0x0.30 */
+	/* access: RO */
+	u_int8_t bidi_map;
 };
 
 /* Description -   */
@@ -339,6 +358,21 @@ Reserved for HCA */
 	/* 0x8.16 - 0x8.18 */
 	/* access: RW */
 	u_int8_t plane;
+	/* Description - When planarized  the FW shall respond to Hierarchy Info.Split with the following split value.
+In this use case it represents the split of the APort.
+
+When split = 0, the FW shall send Hierarchy Info without the split field. (meaning it is NA)
+
+When Non planarized (num_of_planes = 0), Hierarchy Info.Split will reflect the actual split value, when 2X- it'll hold the location within the 4x.
+
+0: NA
+1: Split 1.
+2: Split 2.
+3-7: Reserved
+Reserved for HCA */
+	/* 0x8.24 - 0x8.26 */
+	/* access: RW */
+	u_int8_t split;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - The number of planes comprising this Aggregated port
  */
@@ -445,9 +479,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 575, "MDDQ slot_info Layout," on page 910
-For devices on slot query_type data - see Table 577, "MDDQ device_info Register Layout," on page 911
-For slot name query_type data - see Table 579, "MDDQ slot_name Layout," on page 913 */
+For slot information query_type data - see Table 542, "MDDQ slot_info Layout," on page 954
+For devices on slot query_type data - see Table 544, "MDDQ device_info Register Layout," on page 955
+For slot name query_type data - see Table 546, "MDDQ slot_name Layout," on page 957 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -482,9 +516,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 567, "PRM Register Payload Layout," on page 906
-For Command type payload - See Table 569, "Command Payload Layout," on page 906
-For CrSpace type payload - See Table 571, "CrSpace access Payload Layout," on page 907 */
+For PRM Register type payload - See Table 534, "PRM Register Payload Layout," on page 950
+For Command type payload - See Table 536, "Command Payload Layout," on page 950
+For CrSpace type payload - See Table 538, "CrSpace access Payload Layout," on page 951 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -522,7 +556,8 @@ Note: Status might be '0' even when debug query is not allowed and additional_in
 3: RMCS token
 4: RMDT token 
 5: CRCS token 
-6: CRDT token */
+6: CRDT token
+ */
 	/* 0x0.24 - 0x0.31 */
 	/* access: INDEX */
 	u_int8_t type_of_token;
@@ -658,6 +693,12 @@ struct reg_access_switch_mpir_ext {
 	/* 0x0.24 - 0x0.29 */
 	/* access: INDEX */
 	u_int8_t depth;
+	/* Description - DPN version
+0: multi_topology_unaware_sw
+1: multi_topology_aware_sw */
+	/* 0x0.30 - 0x0.30 */
+	/* access: INDEX */
+	u_int8_t DPNv;
 	/* Description - Socket-Direct mode indication.
 0: non-Socket-Direct mode (single host or multi-host)
 1: Socket-Direct mode, for querying host */
@@ -701,6 +742,10 @@ Default value of '0' in case it is not a switch port. */
 	/* 0xc.16 - 0xc.23 */
 	/* access: RO */
 	u_int8_t num_con_devices;
+	/* Description - Host index associated with the pcie_inex */
+	/* 0xc.24 - 0xc.30 */
+	/* access: RO */
+	u_int8_t host_index;
 	/* Description - If set to '1', slot_number field is supported. */
 	/* 0xc.31 - 0xc.31 */
 	/* access: RO */
@@ -717,7 +762,7 @@ struct reg_access_switch_mrsr_ext {
 6: reset_at_pci_disable - reset will be done at PCI_DISABLE. See MCAM bit48. Note: when no PCI (e.g. unmanaged switches or for Retimers) will do reset without waiting for PCI_DISABLE
 7: fw_link_reset_at_pci_disable - PCIe FW Link Reset, core is up [DWIP] */
 	/* 0x0.0 - 0x0.3 */
-	/* access: WO */
+	/* access: RW */
 	u_int8_t command;
 };
 
@@ -774,7 +819,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 410, "NV_SWITCH_PHY_SEC_CONF Layout," on page 754 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 371, "NV_SWITCH_PHY_SEC_CONF Layout," on page 790 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -1112,10 +1157,12 @@ struct reg_access_switch_pmaos_reg_ext {
 1: enabled
 2: disabled_by_configuration
 3: enabled_once - if the module is active and then unplugged, or module experienced an error event, the operational status should go to "disabled" and can only be enabled upon explicit enable command.
+0xe: disconnect_cable
 
-Note - To disable a module, all ports associated with the port must be disabled first.
-Note 2 - Disabling OE in QM-3 CPO will not cause to the OE to power disable. User will need to set all the modules to disable, which will cause the power enable to go down.
-Note 3- Disabling OE in QM3-CPO will cause the ELS to go down as well as part of the HW flow. Before setting the ELS back up, OE should be set to up beforehand.
+Note - To disable a module, all ports associated with the port must be disabled first. 
+Note 2 - disconnect cable will shut down the optical module in ungraceful manner. Not supported for OE/ELS.
+Note 3 - Disabling OE in QM-3 CPO will not cause to the OE to power disable. User will need to set all the modules to disable, which will cause the power enable to go down.
+Note 4 - Disabling OE in QM3-CPO will cause the ELS to go down as well as part of the HW flow. Before setting the ELS back up, OE should be set to up beforehand.
  */
 	/* 0x0.8 - 0x0.11 */
 	/* access: RW */
@@ -1160,6 +1207,8 @@ Not supported by secondary ASICs. */
 [DWIP] 0xf: Boot_error
 [DWIP] 0x10: Recovery_error
 [DWIP] 0x11: Submodule_failure
+
+
 Valid only when oper_status = 4'b0011 */
 	/* 0x4.8 - 0x4.12 */
 	/* access: RO */
@@ -1189,6 +1238,419 @@ Not supported by secondary ASICs. */
 	/* 0x4.31 - 0x4.31 */
 	/* access: WO */
 	u_int8_t ase;
+};
+
+/* Description -   */
+/* Size in bytes - 72 */
+struct reg_access_switch_pmdr_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Local port number [9:8] */
+	/* 0x0.0 - 0x0.1 */
+	/* access: INDEX */
+	u_int8_t lp_msb;
+	/* Description - Reserved for non-planarized port.
+Plane port index of the aggregated port. A value of 0 refers to the aggregated port only. */
+	/* 0x0.4 - 0x0.7 */
+	/* access: INDEX */
+	u_int8_t plane_ind;
+	/* Description - 0 if there is no MCM tile arch */
+	/* 0x0.12 - 0x0.12 */
+	/* access: RO */
+	u_int8_t mcm_tile_valid;
+	/* Description - 0 if there is no Gearbox/Retimer arch */
+	/* 0x0.13 - 0x0.13 */
+	/* access: RO */
+	u_int8_t gb_valid;
+	/* Description - Port number access type. determines the way local_port is interpreted:
+0 - Local port number
+1 - IB port number
+3 - Out of band / PCI */
+	/* 0x0.14 - 0x0.15 */
+	/* access: INDEX */
+	u_int8_t pnat;
+	/* Description - [7:0] bits for Local port number. */
+	/* 0x0.16 - 0x0.23 */
+	/* access: INDEX */
+	u_int8_t local_port;
+	/* Description - 0 - 40nm products
+1 - 28nm products
+3 - 16nm products
+4 - 7nm products */
+	/* 0x0.24 - 0x0.27 */
+	/* access: RO */
+	u_int8_t version;
+	/* Description - 0 - Invalid
+1 - Valid
+2 - Bad Param (Values are not ready yet - during polling)
+3 - Invalid index of local_port or label_port */
+	/* 0x0.28 - 0x0.31 */
+	/* access: RO */
+	u_int8_t status;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - [9:8] pport bits */
+	/* 0x4.6 - 0x4.7 */
+	/* access: RO */
+	u_int8_t pport_msb;
+	/* Description - Logical cluster number */
+	/* 0x4.8 - 0x4.14 */
+	/* access: RO */
+	u_int8_t cluster;
+	/* Description -  */
+	/* 0x4.16 - 0x4.23 */
+	/* access: RO */
+	u_int8_t module;
+	/* Description -  */
+	/* 0x4.24 - 0x4.31 */
+	/* access: RO */
+	u_int8_t pport;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 0x8.0 - 0x8.7 */
+	/* access: RO */
+	u_int8_t ib_port;
+	/* Description - lane mask of active lanes on module */
+	/* 0x8.8 - 0x8.15 */
+	/* access: RO */
+	u_int8_t module_lane_mask;
+	/* Description -  */
+	/* 0x8.16 - 0x8.23 */
+	/* access: RO */
+	u_int8_t swid;
+	/* Description - Number of ports the label port is split to.
+0 - split to 1
+1 - split to 2
+2 - split to 4
+3 - split to 8 */
+	/* 0x8.24 - 0x8.26 */
+	/* access: RO */
+	u_int8_t split;
+	/* Description - DataPath number in GB/Retimer of the port */
+	/* 0x8.27 - 0x8.31 */
+	/* access: RO */
+	u_int8_t gb_dp_num;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - MSB Local port bits [9:8] index for the label port chosen (in case pnat field is '1'). */
+	/* 0xc.0 - 0xc.1 */
+	/* access: RO */
+	u_int8_t lp_query_msb;
+	/* Description - MSB Label port bits [9:8] index. */
+	/* 0xc.2 - 0xc.3 */
+	/* access: RO */
+	u_int8_t lbp_query_msb;
+	/* Description - MSB tile_pport bits [7:6] index. */
+	/* 0xc.4 - 0xc.5 */
+	/* access: RO */
+	u_int8_t tile_pport_msb;
+	/* Description - LSB Local port bits [7:0] index for the label port chosen (in case pnat field is '1'). */
+	/* 0xc.16 - 0xc.23 */
+	/* access: RO */
+	u_int8_t local_port_query;
+	/* Description - Label port index for the local port chosen (in case pnat field is '0'). */
+	/* 0xc.24 - 0xc.31 */
+	/* access: RO */
+	u_int8_t label_port_query;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Number of the Gearbox/Retimer the local_port is related to.
+valid only when gb_valid is 1 */
+	/* 0x10.0 - 0x10.6 */
+	/* access: RO */
+	u_int8_t gearbox_die_num;
+	/* Description -  */
+	/* 0x10.8 - 0x10.12 */
+	/* access: RO */
+	u_int8_t tile_pport;
+	/* Description - Number of common PLLs mapped to port rx lanes. */
+	/* 0x10.13 - 0x10.15 */
+	/* access: RO */
+	u_int8_t pll_cnt_rx;
+	/* Description - Number of the MCM Tile the local_port is related to.
+valid only when mcm_tile_valid is 1
+ */
+	/* 0x10.16 - 0x10.23 */
+	/* access: RO */
+	u_int8_t mcm_tile_num;
+	/* Description -  */
+	/* 0x10.24 - 0x10.27 */
+	/* access: RO */
+	u_int8_t tile_cluster;
+	/* Description - Reserved for HCA 
+Slot_index 
+Slot_index = 0 represent the onboard (motherboard). 
+In case of non modular system only slot_index = 0 is available. */
+	/* 0x10.28 - 0x10.31 */
+	/* access: RO */
+	u_int8_t slot_index;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - LSB [2:0] bits for logical lane<i> to physical rx lane mapping */
+	/* 0x14.0 - 0x14.2 */
+	/* access: RO */
+	u_int8_t lane0_physical_rx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical rx lane mapping */
+	/* 0x14.3 - 0x14.5 */
+	/* access: RO */
+	u_int8_t lane1_physical_rx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical rx lane mapping */
+	/* 0x14.6 - 0x14.8 */
+	/* access: RO */
+	u_int8_t lane2_physical_rx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical rx lane mapping */
+	/* 0x14.9 - 0x14.11 */
+	/* access: RO */
+	u_int8_t lane3_physical_rx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical rx lane mapping */
+	/* 0x14.12 - 0x14.14 */
+	/* access: RO */
+	u_int8_t lane4_physical_rx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical rx lane mapping */
+	/* 0x14.15 - 0x14.17 */
+	/* access: RO */
+	u_int8_t lane5_physical_rx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical rx lane mapping */
+	/* 0x14.18 - 0x14.20 */
+	/* access: RO */
+	u_int8_t lane6_physical_rx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical rx lane mapping */
+	/* 0x14.21 - 0x14.23 */
+	/* access: RO */
+	u_int8_t lane7_physical_rx;
+	/* Description - Number of common PLLs mapped to port for tx lanes. */
+	/* 0x14.24 - 0x14.26 */
+	/* access: RO */
+	u_int8_t pll_cnt_tx;
+	/* Description - largest VL number of the port.
+for e.g if vl_num = 3
+VL<0-3>_lane_map are only valid */
+	/* 0x14.27 - 0x14.31 */
+	/* access: RO */
+	u_int8_t vl_num;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - LSB [2:0] bits for logical lane<i> to physical tx lane mapping */
+	/* 0x18.0 - 0x18.2 */
+	/* access: RO */
+	u_int8_t lane0_physical_tx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical tx lane mapping */
+	/* 0x18.3 - 0x18.5 */
+	/* access: RO */
+	u_int8_t lane1_physical_tx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical tx lane mapping */
+	/* 0x18.6 - 0x18.8 */
+	/* access: RO */
+	u_int8_t lane2_physical_tx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical tx lane mapping */
+	/* 0x18.9 - 0x18.11 */
+	/* access: RO */
+	u_int8_t lane3_physical_tx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical tx lane mapping */
+	/* 0x18.12 - 0x18.14 */
+	/* access: RO */
+	u_int8_t lane4_physical_tx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical tx lane mapping */
+	/* 0x18.15 - 0x18.17 */
+	/* access: RO */
+	u_int8_t lane5_physical_tx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical tx lane mapping */
+	/* 0x18.18 - 0x18.20 */
+	/* access: RO */
+	u_int8_t lane6_physical_tx;
+	/* Description - LSB [2:0] bits for logical lane<i> to physical tx lane mapping */
+	/* 0x18.21 - 0x18.23 */
+	/* access: RO */
+	u_int8_t lane7_physical_tx;
+	/* Description - minimal index of pll group of pll that port uses for tx lanes.
+For all common pll's that are mapped to the port: [pll_index, pll_index+ 1, ... pll_index + pll_cnt] */
+	/* 0x18.24 - 0x18.31 */
+	/* access: RO */
+	u_int8_t pll_index;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x1c.0 - 0x1c.3 */
+	/* access: RO */
+	u_int8_t VL0_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x1c.4 - 0x1c.7 */
+	/* access: RO */
+	u_int8_t VL1_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x1c.8 - 0x1c.11 */
+	/* access: RO */
+	u_int8_t VL2_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x1c.12 - 0x1c.15 */
+	/* access: RO */
+	u_int8_t VL3_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x1c.16 - 0x1c.19 */
+	/* access: RO */
+	u_int8_t VL4_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x1c.20 - 0x1c.23 */
+	/* access: RO */
+	u_int8_t VL5_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x1c.24 - 0x1c.27 */
+	/* access: RO */
+	u_int8_t VL6_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x1c.28 - 0x1c.31 */
+	/* access: RO */
+	u_int8_t VL7_lane_map;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x20.0 - 0x20.3 */
+	/* access: RO */
+	u_int8_t VL8_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x20.4 - 0x20.7 */
+	/* access: RO */
+	u_int8_t VL9_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x20.8 - 0x20.11 */
+	/* access: RO */
+	u_int8_t VL10_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x20.12 - 0x20.15 */
+	/* access: RO */
+	u_int8_t VL11_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x20.16 - 0x20.19 */
+	/* access: RO */
+	u_int8_t VL12_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x20.20 - 0x20.23 */
+	/* access: RO */
+	u_int8_t VL13_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x20.24 - 0x20.27 */
+	/* access: RO */
+	u_int8_t VL14_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x20.28 - 0x20.31 */
+	/* access: RO */
+	u_int8_t VL15_lane_map;
+/*---------------- DWORD[9] (Offset 0x24) ----------------*/
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x24.0 - 0x24.3 */
+	/* access: RO */
+	u_int8_t VL16_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x24.4 - 0x24.7 */
+	/* access: RO */
+	u_int8_t VL17_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x24.8 - 0x24.11 */
+	/* access: RO */
+	u_int8_t VL18_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x24.12 - 0x24.15 */
+	/* access: RO */
+	u_int8_t VL19_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x24.16 - 0x24.19 */
+	/* access: RO */
+	u_int8_t VL20_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x24.20 - 0x24.23 */
+	/* access: RO */
+	u_int8_t VL21_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x24.24 - 0x24.27 */
+	/* access: RO */
+	u_int8_t VL22_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x24.28 - 0x24.31 */
+	/* access: RO */
+	u_int8_t VL23_lane_map;
+/*---------------- DWORD[10] (Offset 0x28) ----------------*/
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x28.0 - 0x28.3 */
+	/* access: RO */
+	u_int8_t VL24_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x28.4 - 0x28.7 */
+	/* access: RO */
+	u_int8_t VL25_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x28.8 - 0x28.11 */
+	/* access: RO */
+	u_int8_t VL26_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x28.12 - 0x28.15 */
+	/* access: RO */
+	u_int8_t VL27_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x28.16 - 0x28.19 */
+	/* access: RO */
+	u_int8_t VL28_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x28.20 - 0x28.23 */
+	/* access: RO */
+	u_int8_t VL29_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x28.24 - 0x28.27 */
+	/* access: RO */
+	u_int8_t VL30_lane_map;
+	/* Description - logical lane number that maps to VL_x lane */
+	/* 0x28.28 - 0x28.31 */
+	/* access: RO */
+	u_int8_t VL31_lane_map;
+/*---------------- DWORD[15] (Offset 0x3c) ----------------*/
+	/* Description - Module extension for MSB */
+	/* 0x3c.24 - 0x3c.31 */
+	/* access: RO */
+	u_int8_t module_lane_mask_msb;
+/*---------------- DWORD[16] (Offset 0x40) ----------------*/
+	/* Description - OE optical lane to ELS logical laser mapping */
+	/* 0x40.0 - 0x40.3 */
+	/* access: RO */
+	u_int8_t oe_lane7_to_els_logical_laser;
+	/* Description - OE optical lane to ELS logical laser mapping */
+	/* 0x40.4 - 0x40.7 */
+	/* access: RO */
+	u_int8_t oe_lane6_to_els_logical_laser;
+	/* Description - OE optical lane to ELS logical laser mapping */
+	/* 0x40.8 - 0x40.11 */
+	/* access: RO */
+	u_int8_t oe_lane5_to_els_logical_laser;
+	/* Description - OE optical lane to ELS logical laser mapping */
+	/* 0x40.12 - 0x40.15 */
+	/* access: RO */
+	u_int8_t oe_lane4_to_els_logical_laser;
+	/* Description - OE optical lane to ELS logical laser mapping */
+	/* 0x40.16 - 0x40.19 */
+	/* access: RO */
+	u_int8_t oe_lane3_to_els_logical_laser;
+	/* Description - OE optical lane to ELS logical laser mapping */
+	/* 0x40.20 - 0x40.23 */
+	/* access: RO */
+	u_int8_t oe_lane2_to_els_logical_laser;
+	/* Description - OE optical lane to ELS logical laser mapping */
+	/* 0x40.24 - 0x40.27 */
+	/* access: RO */
+	u_int8_t oe_lane1_to_els_logical_laser;
+	/* Description - OE optical lane to ELS logical laser mapping */
+	/* 0x40.28 - 0x40.31 */
+	/* access: RO */
+	u_int8_t oe_lane0_to_els_logical_laser;
+/*---------------- DWORD[17] (Offset 0x44) ----------------*/
+	/* Description - ELS access index */
+	/* 0x44.0 - 0x44.7 */
+	/* access: RO */
+	u_int8_t els_access_index;
+	/* Description - ELS label index */
+	/* 0x44.10 - 0x44.15 */
+	/* access: RO */
+	u_int8_t els_index;
+	/* Description - Optical engine MCU index */
+	/* 0x44.24 - 0x44.30 */
+	/* access: RO */
+	u_int8_t oe_mcu_index;
+	/* Description - CPO indication:
+0 - not CPO
+1 - CPO
+ */
+	/* 0x44.31 - 0x44.31 */
+	/* access: RO */
+	u_int8_t cpo_indication;
 };
 
 /* Description -   */
@@ -1229,6 +1691,14 @@ PMLP.lane<i>_module_mapping.rx_lane */
 	/* 0x0.28 - 0x0.28 */
 	/* access: OP */
 	u_int8_t m_lane_m;
+	/* Description - Supported only if PCAM.feature_cap_mask bit 112 is set
+On set operation, indicates ports lane mapping configuration if it should be taken from module mappings or label mappings.
+0: module_mapping_selected - port lanes are mapped according to module lanes from lane_module_mapping[0-7] fields. Module field is considered as module index.
+1: label_mapping_selected - port lanes are mapped according to label lanes from lane_module_mapping[0-7] fields. Module field is considered as Label index.
+ */
+	/* 0x0.29 - 0x0.29 */
+	/* access: INDEX */
+	u_int8_t mod_lab_map;
 	/* Description - Use different configuration for RX and TX.
 If this bit is cleared, the TX value is used for both RX and TX. When set, the RX configuration is taken from the separate field. This is to enable backward compatible implementation. */
 	/* 0x0.31 - 0x0.31 */
@@ -1247,77 +1717,81 @@ Up to 8 SerDes in a module can be mapped to a local port. */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_PPCR_ext PPCR_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
-	/* Description -  */
 	/* 0x0.0 - 0x28.31 */
 	/* access: RW */
 	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	/* access: RW */
-	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x40c.31 */
-	/* access: RW */
-	struct reg_access_switch_icsr_ext icsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_icam_reg_ext icam_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x6c.31 */
-	/* access: RW */
-	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mspmer_ext mspmer_ext;
-	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
-	/* access: RW */
-	struct reg_access_switch_msgi_ext msgi_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct reg_access_switch_mrsr_ext mrsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_plib_reg_ext plib_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mddq_ext mddq_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x5c.31 */
-	/* access: RW */
-	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x10c.31 */
-	/* access: RW */
-	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	struct reg_access_switch_PPCR_ext PPCR_ext;
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
 	struct reg_access_switch_mpir_ext mpir_ext;
 	/* Description -  */
+	/* 0x0.0 - 0x44.31 */
+	/* access: RW */
+	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_icam_reg_ext icam_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	/* access: RW */
+	struct reg_access_switch_mrsr_ext mrsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mspmer_ext mspmer_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddq_ext mddq_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	/* access: RW */
+	struct reg_access_switch_msgi_ext msgi_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x40c.31 */
+	/* access: RW */
+	struct reg_access_switch_icsr_ext icsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x6c.31 */
+	/* access: RW */
+	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x18.31 */
 	/* access: RW */
 	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x10c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x5c.31 */
+	/* access: RW */
+	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
 };
 
 
@@ -1511,6 +1985,13 @@ void reg_access_switch_pmaos_reg_ext_print(const struct reg_access_switch_pmaos_
 unsigned int reg_access_switch_pmaos_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_PMAOS_REG_EXT_SIZE    (0x10)
 void reg_access_switch_pmaos_reg_ext_dump(const struct reg_access_switch_pmaos_reg_ext *ptr_struct, FILE *fd);
+/* pmdr_reg_ext */
+void reg_access_switch_pmdr_reg_ext_pack(const struct reg_access_switch_pmdr_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_pmdr_reg_ext_unpack(struct reg_access_switch_pmdr_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_pmdr_reg_ext_print(const struct reg_access_switch_pmdr_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_pmdr_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_PMDR_REG_EXT_SIZE    (0x48)
+void reg_access_switch_pmdr_reg_ext_dump(const struct reg_access_switch_pmdr_reg_ext *ptr_struct, FILE *fd);
 /* pmlp_reg_ext */
 void reg_access_switch_pmlp_reg_ext_pack(const struct reg_access_switch_pmlp_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_pmlp_reg_ext_unpack(struct reg_access_switch_pmlp_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
