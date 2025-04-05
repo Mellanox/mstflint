@@ -217,10 +217,13 @@ static void swap_pci_address_space(int* address_space)
     switch (*address_space) {
     case AS_ICMD_EXT:
         *address_space = AS_PCI_ICMD;
+        fallthrough;
 
     case AS_ND_CRSPACE:
+        fallthrough;
     case AS_CR_SPACE:
         *address_space = AS_PCI_CRSPACE;
+        fallthrough;
 
     case AS_ICMD:
         *address_space = AS_PCI_ALL_ICMD;
