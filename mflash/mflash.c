@@ -4035,7 +4035,17 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     rc = mfl->f_spi_status(mfl, SFC_RDSR, &status);
     CHECK_RC(rc);
 
-    if (EXTRACT(status, BP_OFFSET, BP_SIZE) == 0)
+    // determine BP_SIZE since in some flashes it's 3 bits and in some it's 4
+    uint8_t flash_specific_bp_size = BP_SIZE;
+    if (mfl->attr.vendor == FV_MX25K16XXX || mfl->attr.vendor == FV_IS25LPXXX ||
+        (mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL && mfl->attr.log2_bank_size == FD_256) ||
+        (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V && mfl->attr.log2_bank_size == FD_256) ||
+        (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)))
+    {
+        flash_specific_bp_size = BP_SIZE + 1;
+    }
+
+    if (EXTRACT(status, BP_OFFSET, flash_specific_bp_size) == 0)
     {
         protect_info->sectors_num = 0;
         protect_info->bp_val = 0;
@@ -4048,7 +4058,7 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
               !protect_info->is_subsector ?
             1 :
             -1;
-        protect_info->bp_val = EXTRACT(status, BP_OFFSET, BP_SIZE);
+        protect_info->bp_val = EXTRACT(status, BP_OFFSET, flash_specific_bp_size);
 
         if (is_ISSI_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
         {
