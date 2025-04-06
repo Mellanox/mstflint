@@ -364,7 +364,7 @@ string MlxlinkAmBerCollector::getNodeGUID()
 {
     string strGuid;
 
-    if (_isHca || _devID == DeviceGB100 || _devID == DeviceGR100) {
+    if (_isHca || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))){
         resetLocalParser(ACCESS_REG_PGUID);
         updateField("local_port", _localPort);
         sendRegister(ACCESS_REG_PGUID, MACCESS_REG_METHOD_GET);
@@ -439,7 +439,7 @@ vector < AmberField > MlxlinkAmBerCollector::getIndexesInfo()
     fields.push_back(AmberField("pcie_index", to_string(_pcieIndex), _isPortPCIE));
     fields.push_back(AmberField("node", to_string(_node), _isPortPCIE));
 
-    if (_productTechnology == PRODUCT_5NM && _devID != DeviceGB100 && _devID != DeviceGR100) {
+    if (_productTechnology == PRODUCT_5NM && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
         resetLocalParser(ACCESS_REG_PPCR);
         updateField("local_port", _localPort);
         sendRegister(ACCESS_REG_PPCR, MACCESS_REG_METHOD_GET);
@@ -456,7 +456,7 @@ vector < AmberField > MlxlinkAmBerCollector::getIndexesInfo()
         sendRegister(ACCESS_REG_MGIR, MACCESS_REG_METHOD_GET);
         fields.push_back(AmberField("IC_GA", getRawFieldValueStr("hw_info__ga"), _isPortIB));
 
-        if (dm_dev_is_switch((dm_dev_id_t)_devID) && _devID != DeviceGB100 && _devID != DeviceGR100) {
+        if (dm_dev_is_switch(static_cast<dm_dev_id_t>(_devID)) && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
             resetLocalParser(ACCESS_REG_PLLP);
             updateField("local_port", _localPort);
             sendRegister(ACCESS_REG_PLLP, MACCESS_REG_METHOD_GET);
@@ -505,7 +505,7 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
 
         fields.push_back(AmberField("Device_Description", _mstDevName.c_str()));
 
-        if (_devID != DeviceGB100 && _devID != DeviceGR100)
+        if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             resetLocalParser(ACCESS_REG_MSGI);
             sendRegister(ACCESS_REG_MSGI, MACCESS_REG_METHOD_GET);
@@ -520,7 +520,7 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
         string tech = _mlxlinkMaps->_tech[getFieldValue("technology")];
         fields.push_back(AmberField("Device_FW_Version", fwVersion));
 
-        if (_devID != DeviceGB100 && _devID != DeviceGR100)
+        if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
         resetLocalParser(ACCESS_REG_MDIR);
         sendRegister(ACCESS_REG_MDIR, MACCESS_REG_METHOD_GET);
@@ -556,7 +556,7 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
         }
         fields.push_back(AmberField("Chip_Temp", temp));
 
-        if (_devID != DeviceGB100 && _devID != DeviceGR100)
+        if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             resetLocalParser(ACCESS_REG_MSGI);
             sendRegister(ACCESS_REG_MSGI, MACCESS_REG_METHOD_GET);
@@ -565,7 +565,7 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
 
         fields.push_back(AmberField("Temp_sensor_name", sensNameTemp));
 
-        if (_productTechnology == PRODUCT_5NM && _devID != DeviceGB100 && _devID != DeviceGR100) {
+        if (_productTechnology == PRODUCT_5NM && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
             resetLocalParser(ACCESS_REG_PPCR);
             updateField("local_port", _localPort);
             sendRegister(ACCESS_REG_PPCR, MACCESS_REG_METHOD_GET);
@@ -798,10 +798,6 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
 
                 fields.push_back(AmberField("Link_Down_GB_line", to_string(getFieldValue("link_down_events"))));
             }
-
-            fields.push_back(AmberField("Link_Down", to_string(getFieldValue("link_down_events"))));
-            fields.push_back(
-                AmberField("successful_recovery_events", to_string(getFieldValue("successful_recovery_events"))));
 
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
@@ -1981,7 +1977,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkUpInfo()
 
     try
     {
-        if (!_isPortPCIE && !(_devID == DeviceGB100 || _devID == DeviceGR100))
+        if (!_isPortPCIE && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
@@ -2260,7 +2256,7 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
     try
     {
         string operRecoveryStr = "N/A";
-        if (!_isPortPCIE && !(_devID == DeviceGB100 || _devID == DeviceGR100))
+        if (!_isPortPCIE && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             resetLocalParser(ACCESS_REG_PPRM);
             updateField("local_port", _localPort);
