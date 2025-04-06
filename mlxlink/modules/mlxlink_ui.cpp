@@ -96,7 +96,10 @@ void MlxlinkUi::initPortInfo()
     {
         _mlxlinkCommander->checkValidFW();
     }
-    _mlxlinkCommander->getProductTechnology();
+    if (!(_mlxlinkCommander->_mf->tp == MST_PCICONF && (dm_is_gpu(static_cast<dm_dev_id_t>(_mlxlinkCommander->_devID)))))
+    {
+        _mlxlinkCommander->getProductTechnology();
+    }
     if (!_userInput._pcie)
     {
         _mlxlinkCommander->_prbsTestMode = _mlxlinkCommander->inPrbsTestMode();
