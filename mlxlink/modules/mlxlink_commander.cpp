@@ -2082,6 +2082,15 @@ void MlxlinkCommander::prepareBerInfo()
         setPrintVal(_berInfoCmd, "Link Error Recovery Counter", to_string(linkRecoveryCounter), ANSI_COLOR_RESET, true,
                     _linkUP);
     }
+    
+    if (_productTechnology >= PRODUCT_7NM && !dm_is_gpu((dm_dev_id_t)_devID))
+    {
+        sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_STATISTICAL_GROUP);
+        string rawBer = AmberField::getValueFromFields(_ppcntFields, "Raw_BER_lane", false);
+        findAndReplace(rawBer, "_", ",");
+        rawBer = getValuesOfActiveLanes(rawBer);
+        setPrintVal(_berInfoCmd, "Raw Physical BER Per Lane", rawBer, ANSI_COLOR_RESET, true, _linkUP, true);
+    }
 }
 
 void MlxlinkCommander::prepareBerInfoEDR()
