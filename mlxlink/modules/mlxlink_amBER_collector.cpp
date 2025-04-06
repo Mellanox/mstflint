@@ -781,6 +781,23 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
             fields.push_back(
                 AmberField("successful_recovery_events", to_string(getFieldValue("successful_recovery_events"))));
 
+            resetLocalParser(ACCESS_REG_PPCNT);
+            updateField("local_port", _localPort);
+            updateField("grp", PPCNT_STATISTICAL_GROUP);
+            updateField("lp_gl", (u_int32_t)(_localPort == 255));
+            sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
+            string val = "";
+            for (u_int32_t lane = 0; lane < MAX_NETWORK_LANES; lane++)
+            {
+                val = "N/A";
+                if (lane < _numOfLanes)
+                {
+                    val = getFieldStr("raw_ber_coef_lane" + to_string(lane)) + "E-" +
+                          getFieldStr("raw_ber_magnitude_lane" + to_string(lane));
+                }
+                fields.push_back(AmberField("Raw_BER_lane" + to_string(lane), val));
+            }
+
             if (_isPortETH) {
                 resetLocalParser(ACCESS_REG_PPCNT);
                 updateField("local_port", _localPort);
