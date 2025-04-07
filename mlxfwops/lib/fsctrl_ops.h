@@ -35,6 +35,7 @@
 #include "aux_tlv_ops.h"
 #include "fw_comps_mgr/fw_comps_mgr.h"
 #include "fw_comps_mgr/fw_comps_mgr_dma_access.h"
+#include "tools_layouts/fs5_image_layout_layouts.h"
 
 class FsCtrlOperations : public FwOperations
 {
@@ -150,6 +151,11 @@ private:
     bool CheckITOCSignature(u_int8_t* signature);
     bool GetHashesTableAddr(u_int32_t& addr);
     bool GetHashesTableSize(u_int32_t hashes_table_addr, u_int32_t& size);
+    bool GetNcoreData(vector<u_int8_t>& ncoreData);
+    bool GetFS5HWPointers(fs5_image_layout_hw_pointers_gilboa& hw_pointers);
+    bool GetNcoreBCHAddr(u_int32_t& ncoreBchAddr);
+    bool GetNcoreSize(u_int32_t ncoreBchAddr, u_int32_t& size);
+
 
     fs3_info_t _fsCtrlImgInfo;
     FwCompsMgr* _fwCompsAccess;

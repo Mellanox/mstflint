@@ -2860,6 +2860,11 @@ bool FwOperations::ChangeSecureHostState(bool, u_int64_t)
     return errmsg("ChangeSecureHostState is not supported");
 }
 
+bool FwOperations::GetNcoreData(vector<u_int8_t>&)
+{
+    return errmsg("GetNcoreData is not supported");
+}
+
 bool FwOperations::IsExtendedGuidNumSupported()
 {
     bool isSupported = false;

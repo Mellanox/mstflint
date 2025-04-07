@@ -675,6 +675,72 @@ bool FsCtrlOperations::_createImageOps(unique_ptr<FwOperations>& imageOps)
     return true;
 }
 
+
+bool FsCtrlOperations::GetNcoreData(vector<u_int8_t>& ncoreData)
+{
+    u_int32_t ncoreBchAddr = 0;
+    if (!GetNcoreBCHAddr(ncoreBchAddr))
+    {
+        return errmsg("%s", err());
+    }
+
+    u_int32_t ncoreSize = 0;
+    if (!GetNcoreSize(ncoreBchAddr, ncoreSize))
+    {
+        return errmsg("%s", err());
+    }
+
+    u_int32_t ncoreAddr = ncoreBchAddr + FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE;
+    if (!FwReadBlock(ncoreAddr, ncoreSize, ncoreData))
+    {
+        return errmsg("%s", err());
+    }
+
+    return true;
+}
+
+bool FsCtrlOperations::GetNcoreBCHAddr(u_int32_t& ncoreBchAddr)
+{
+    struct fs5_image_layout_hw_pointers_gilboa cx8_hw_pointers;
+    if (!GetFS5HWPointers(cx8_hw_pointers))
+    {
+        return false;
+    }
+    ncoreBchAddr = cx8_hw_pointers.ncore_bch_pointer.ptr;
+    return true;
+}
+
+bool FsCtrlOperations::GetNcoreSize(u_int32_t ncoreBchAddr, u_int32_t& size)
+{
+    vector<u_int8_t> bch(FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE);
+    if (!FwReadBlock(ncoreBchAddr, bch.size(), bch))
+    {
+        return errmsg("Failed to read BCH NCORE from flash");
+    }
+    struct fs5_image_layout_boot_component_header ncoreBCH;
+    memset(&ncoreBCH, 0, sizeof(ncoreBCH));
+
+    TOCPUn(bch.data(), FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE / 4);
+    fs5_image_layout_boot_component_header_unpack(&ncoreBCH, bch.data());
+    size = ncoreBCH.stage1_components[0].u32_binary_len;
+    return true;
+}
+
+bool FsCtrlOperations::GetFS5HWPointers(fs5_image_layout_hw_pointers_gilboa& hw_pointers)
+{
+    if (FwType() != FIT_FS5)
+    {
+        return errmsg("Failed. GetFS5HWPointers supported only for FS5 images/devices.");
+    }
+    vector<u_int8_t> buff(FS5_IMAGE_LAYOUT_HW_POINTERS_GILBOA_SIZE);
+    if (!FwReadBlock(FS4_HW_PTR_START, buff.size(), buff))
+    {
+        return errmsg("Failed to read HW pointers from flash");
+    }
+    fs5_image_layout_hw_pointers_gilboa_unpack(&hw_pointers, buff.data());
+    return true;
+}
+
 bool FsCtrlOperations::GetHashesTableSize(u_int32_t, u_int32_t& size)
 {
     u_int32_t htoc_size =
