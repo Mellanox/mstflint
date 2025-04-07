@@ -776,6 +776,7 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
             resetLocalParser(ACCESS_REG_PPCNT);
             updateField("local_port", _localPort);
             updateField("grp", PPCNT_PHY_GROUP);
+            updateField("lp_gl", (u_int32_t)(_localPort == 255));
             sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
             fields.push_back(AmberField("Link_Down", to_string(getFieldValue("link_down_events"))));
             fields.push_back(
@@ -786,6 +787,7 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
                 updateField("local_port", _localPort);
                 updateField("port_type", NETWORK_PORT_TYPE_NEAR);
                 updateField("grp", PPCNT_PHY_GROUP);
+                updateField("lp_gl", (u_int32_t)(_localPort == 255));
                 sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
 
                 fields.push_back(AmberField("Link_Down_GB_host", to_string(getFieldValue("link_down_events"))));
@@ -794,6 +796,7 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
                 updateField("local_port", _localPort);
                 updateField("port_type", NETWORK_PORT_TYPE_FAR);
                 updateField("grp", PPCNT_PHY_GROUP);
+                updateField("lp_gl", (u_int32_t)(_localPort == 255));
                 sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
 
                 fields.push_back(AmberField("Link_Down_GB_line", to_string(getFieldValue("link_down_events"))));
@@ -841,6 +844,7 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
                 updateField("port_type", NETWORK_PORT_TYPE_TILE_USR);
             }
             updateField("grp", PPCNT_PHY_GROUP);
+            updateField("lp_gl", (u_int32_t)(_localPort == 255));
             sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
             if (!_isMCMSysValid) {
                 AmberField::_dataValid = false;
@@ -853,6 +857,7 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
                 updateField("port_type", NETWORK_PORT_TYPE_MAIN_USR);
             }
             updateField("grp", PPCNT_PHY_GROUP);
+            updateField("lp_gl", (u_int32_t)(_localPort == 255));
             sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
             if (!_isMCMSysValid) {
                 AmberField::_dataValid = false;

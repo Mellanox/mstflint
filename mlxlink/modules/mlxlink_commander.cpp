@@ -403,19 +403,33 @@ void MlxlinkCommander::updateSwControlStatus()
 {
     try
     {
+        sendPrmReg(ACCESS_REG_MGIR, GET);
+        u_int32_t moduleMasterFwDefault = getFieldValue("module_master_fw_default");
+        if (moduleMasterFwDefault == MGIR_MODULE_MASTER_FW_DEFAULT_STAND_ALONE)
+        {
+            _isSwControled = true;
+            return;
+        }
+    }
+    catch (MlxRegException& exc)
+    {
+    }
+
+    try
+    {
         sendPrmReg(ACCESS_REG_MMCR, GET);
     }
-    catch(MlxRegException & exc)
+    catch (MlxRegException& exc)
     {
         _isSwControled = false;
         return;
     }
     u_int32_t currentModuleControl =
-        getFieldValue("curr_module_control[" + to_string((_userInput._labelPort - 1) / 32) + "]");
+      getFieldValue("curr_module_control[" + to_string((_userInput._labelPort - 1) / 32) + "]");
     u_int32_t portMask = 0;
-
     portMask = portMask | 1 << ((_userInput._labelPort - 1) % 32);
-    if (portMask & currentModuleControl) {
+    if (portMask & currentModuleControl)
+    {
         _isSwControled = true;
     }
 }
@@ -1829,9 +1843,17 @@ void MlxlinkCommander::operatingInfoPage()
 
 bool MlxlinkCommander::isBackplane()
 {
-    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+    bool isBackplane = false;
+    try
+    {
+        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+        isBackplane = (getFieldValue("cable_identifier") == IDENTIFIER_BACKPLANE);
+    }
+    catch (const std::exception& e)
+    {
+    }
 
-    return (getFieldValue("cable_identifier") == IDENTIFIER_BACKPLANE);
+    return isBackplane;
 }
 
 void MlxlinkCommander::supportedInfoPage()
