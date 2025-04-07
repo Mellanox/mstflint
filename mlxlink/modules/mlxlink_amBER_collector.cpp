@@ -1955,20 +1955,29 @@ vector < AmberField > MlxlinkAmBerCollector::getTroubleshootingInfo()
 
 void MlxlinkAmBerCollector::getModuleLinkUpInfoPage(vector<AmberField>& fields)
 {
-    fields.push_back(AmberField("up_reason_pwr", _mlxlinkMaps->_upReasonPwr[getFieldValue("up_reason_pwr")]));
-    fields.push_back(AmberField("up_reason_drv", _mlxlinkMaps->_upReasonDrv[getFieldValue("up_reason_drv")]));
-    fields.push_back(AmberField("up_reason_mng", _mlxlinkMaps->_upReasonMng[getFieldValue("up_reason_mng")]));
-    fields.push_back(AmberField("time_to_link_up_msec", getFieldStr("time_to_link_up")));
-    fields.push_back(AmberField("fast_link_up_status", _mlxlinkMaps->_fastLinkUpStatus[getFieldValue("fast_link_up_"
-                                                                                                     "status")]));
-    fields.push_back(
-      AmberField("time_to_link_up_phy_up_to_active", getFieldStr("time_to_link_up_phy_up_to_active") + "msec"));
-    fields.push_back(AmberField("time_to_link_up_sd_to_phy_up", getFieldStr("time_to_link_up_sd_to_phy_up") + "msec"));
-    fields.push_back(AmberField("time_to_link_up_disable_to_sd", getFieldStr("time_to_link_up_disable_to_sd") + "mse"
-                                                                                                                "c"));
-    fields.push_back(
-      AmberField("time_to_link_up_disable_to_pd", getFieldStr("time_to_link_up_disable_to_pd") + "msec"));
-    fields.push_back(AmberField("time_logical_init_to_active", getFieldStr("time_logical_init_to_active")));
+    string timeLogicalInitToActive = "N/A";
+
+    // This is A workaround until we update GPUNet PRM and those fields will be external.
+    if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+    {
+        timeLogicalInitToActive = getFieldStr("time_logical_init_to_active");
+        fields.push_back(AmberField("up_reason_pwr", _mlxlinkMaps->_upReasonPwr[getFieldValue("up_reason_pwr")]));
+        fields.push_back(AmberField("up_reason_drv", _mlxlinkMaps->_upReasonDrv[getFieldValue("up_reason_drv")]));
+        fields.push_back(AmberField("up_reason_mng", _mlxlinkMaps->_upReasonMng[getFieldValue("up_reason_mng")]));
+        fields.push_back(AmberField("time_to_link_up_msec", getFieldStr("time_to_link_up")));
+        fields.push_back(AmberField("fast_link_up_status", _mlxlinkMaps->_fastLinkUpStatus[getFieldValue("fast_link_up_"
+                                                                                                         "status")]));
+        fields.push_back(
+          AmberField("time_to_link_up_phy_up_to_active", getFieldStr("time_to_link_up_phy_up_to_active") + "msec"));
+        fields.push_back(
+          AmberField("time_to_link_up_sd_to_phy_up", getFieldStr("time_to_link_up_sd_to_phy_up") + "msec"));
+        fields.push_back(AmberField("time_to_link_up_disable_to_sd", getFieldStr("time_to_link_up_disable_to_sd") +
+                                                                       "mse"
+                                                                       "c"));
+        fields.push_back(
+          AmberField("time_to_link_up_disable_to_pd", getFieldStr("time_to_link_up_disable_to_pd") + "msec"));
+    }
+    fields.push_back(AmberField("time_logical_init_to_active", timeLogicalInitToActive));
 }
 
 vector<AmberField> MlxlinkAmBerCollector::getLinkUpInfo()
