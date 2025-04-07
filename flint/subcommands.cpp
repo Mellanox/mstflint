@@ -4904,8 +4904,12 @@ FlintStatus QueryComponentSubCommand::QueryCertStatus()
 
     unique_ptr<FsCertOperations> FsCertOps(new FsCertOperations(cacertRawData));
 
+    string certUuid;
+    copy_if(_flintParams.cert_uuid.begin(), _flintParams.cert_uuid.end(), std::back_inserter(certUuid),
+            [](char ch) { return ch != '-'; });
+
     string outputFile = _flintParams.cmd_params.size() ? _flintParams.cmd_params[0] : "";
-    if (!FsCertOps->GetCert(_flintParams.cert_uuid, outputFile))
+    if (!FsCertOps->GetCert(certUuid, outputFile))
     {
         reportErr(true, "%s\n", FsCertOps->err());
         return FLINT_FAILED;
