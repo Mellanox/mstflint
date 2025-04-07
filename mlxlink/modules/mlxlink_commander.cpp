@@ -5191,6 +5191,7 @@ void MlxlinkCommander::prepareJsonOut()
     _linkBlameInfoCmd.toJsonFormat(_jsonRoot);
     _validPcieLinks.toJsonFormat(_jsonRoot);
     _portGroupMapping.toJsonFormat(_jsonRoot);
+    _plrInfoCmd.toJsonFormat(_jsonRoot);
 
     bool errorExist = _allUnhandledErrors != "";
 
@@ -5200,4 +5201,20 @@ void MlxlinkCommander::prepareJsonOut()
     if (!_jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION]) {
         _jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION] = "N/A";
     }
+}
+
+void MlxlinkCommander::showPlr()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_PPLM, GET);
+        setPrintTitle(_plrInfoCmd, HEADER_PLR_INFO, PLR_INFO_LAST);
+        setPrintVal(_plrInfoCmd, "PLR Reject Mode", _mlxlinkMaps->_plrRejectMode[getFieldValue("plr_reject_mode")]);
+        setPrintVal(_plrInfoCmd, "PLR Margin Threshold", to_string(getFieldValue("plr_margin_th")));
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("PLR is not supported for the current device!");
+    }
+    cout << _plrInfoCmd;
 }

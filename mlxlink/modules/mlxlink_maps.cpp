@@ -1543,6 +1543,13 @@ void MlxlinkMaps::initPpcntGroupsMapping()
     _ppcntGroups[PPCNT_ALL_GROUPS] = PPCNT_ALL_GROUPS;
 }
 
+void MlxlinkMaps::initPlrRejectModeMapping()
+{
+    _plrRejectMode[PLR_REJECT_MODE_PLR_MARGIN] = "rejection based on PLR margin";
+    _plrRejectMode[PLR_REJECT_MODE_CRC_AND_CS] = "rejection based on CRC and CS";
+    _plrRejectMode[PLR_REJECT_MODE_CS] = "rejection based on CS";
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();
@@ -1562,6 +1569,7 @@ MlxlinkMaps::MlxlinkMaps()
     initPpcntGroupsMapping();
     initPpttParamsMapping();
     initPpttSpeedMapping();
+    initPlrRejectModeMapping();
 }
 
 MlxlinkMaps::~MlxlinkMaps() {}
