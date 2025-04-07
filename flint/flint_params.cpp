@@ -103,6 +103,7 @@ FlintParams::FlintParams()
     use_cpu_utilization = false;
     hsm_password_specified = false;
     linkx_control = false;
+    linkx_els_control = false;
     cableDeviceIndex = -1;
     cableDeviceSize = -1;
     cable_device_size_specified = false;

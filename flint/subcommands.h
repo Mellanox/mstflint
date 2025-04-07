@@ -253,7 +253,8 @@ private:
                           bool activationNeeded,
                           bool downloadTransferNeeded,
                           int activate_delay_sec,
-                          ProgressCallBackAdvSt* ProgressFuncAdv);
+                          ProgressCallBackAdvSt* ProgressFuncAdv,
+                          FwComponent::comps_ids_t fwComponent);
 
 public:
     BurnSubCommand();

@@ -652,8 +652,12 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
         _lastFsmCtrl.update_handle = _updateHandle;
         if (_linkXFlow && (command == FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER || command == FSM_CMD_ACTIVATE_ALL))
         {
-            _lastFsmCtrl.component_index =
-                0; /* This the FW need - for downstream need to work with 0/device_id or auto_update */
+            comp_query_st compQuery = _compsQueryMap[FwComponent::COMPID_LINKX];
+            if (compQuery.comp_status.component_index == _componentIndex)
+            {
+                _lastFsmCtrl.component_index =
+                  0; // This the FW need - for downstream need to work with 0/device_id or auto_update
+            }
             if (_autoUpdate) {
                 _lastFsmCtrl.auto_update = 1;
                 _lastFsmCtrl.device_index_size = 0;
@@ -1168,16 +1172,32 @@ void FwCompsMgr::GenerateHandle()
     }
 }
 
-const char* CompNames[] = {"NO_COMPONENT 1",          "COMPID_BOOT_IMG",
-                           "COMPID_RUNTIME_IMG",      "COMPID_USER_NVCONFIG",
-                           "COMPID_OEM_NVCONFIG",     "COMPID_MLNX_NVCONFIG",
-                           "COMPID_CS_TOKEN",         "COMPID_DBG_TOKEN",
-                           "COMPID_DEV_INFO",         "NO_COMPONENT 2",
-                           "COMPID_GEARBOX",          "COMPID_CONGESTION_CONTROL",
-                           "COMPID_LINKX_PROPERTIES", "COMPID_CRYPTO_TO_COMMISSIONING",
-                           "COMPID_RMCS_TOKEN",       "COMPID_RMDT_TOKEN",
-                           "COMPID_CRCS_TOKEN",       "COMPID_CRDT_TOKEN",
-                           "COMPID_CLOCK_SYNC_EEPROM"};
+const char* CompNames[] = {"NO_COMPONENT 1",
+                           "COMPID_BOOT_IMG",
+                           "COMPID_RUNTIME_IMG",
+                           "COMPID_USER_NVCONFIG",
+                           "COMPID_OEM_NVCONFIG",
+                           "COMPID_MLNX_NVCONFIG",
+                           "COMPID_CS_TOKEN",
+                           "COMPID_DBG_TOKEN",
+                           "COMPID_DEV_INFO",
+                           "NO_COMPONENT 2",
+                           "COMPID_GEARBOX",
+                           "COMPID_CONGESTION_CONTROL",
+                           "COMPID_LINKX_PROPERTIES",
+                           "COMPID_CRYPTO_TO_COMMISSIONING",
+                           "COMPID_RMCS_TOKEN",
+                           "COMPID_RMDT_TOKEN",
+                           "COMPID_CRCS_TOKEN",
+                           "COMPID_CRDT_TOKEN",
+                           "COMPID_CLOCK_SYNC_EEPROM",
+                           "NO_COMPONENT 3",
+                           "NO_COMPONENT 4",
+                           "COMPID_DIGITAL_CACERT_CHAIN",
+                           "COMPID_DIGITAL_CACERT_REMOVAL",
+                           "COMPID_DIGITAL_CACERT_CHAIN_REMOVAL",
+                           "NO_COMPONENT 4",
+                           "COMPID_LINKX_ELS"};
 
 bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
 {
@@ -1196,9 +1216,8 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
         memset(&compStatus, 0, sizeof(comp_query_st));
         if (queryComponentStatus(compIdx, &(compStatus.comp_status))) {
             compStatus.comp_status.component_index = compIdx;
-            if ((ComponentStatus != NULL) && (compStatus.comp_status.identifier == FwComponent::COMPID_LINKX)) {
-                memcpy(ComponentStatus, &compStatus.comp_status, sizeof(compStatus.comp_status));
-            }
+            if (ComponentStatus != NULL && (compStatus.comp_status.identifier == FwComponent::COMPID_LINKX ||
+                                            compStatus.comp_status.identifier == FwComponent::COMPID_LINKX_ELS))
             /* */
             u_int32_t capSt[DEFAULT_SIZE] = {0};
             if (queryComponentInfo(compIdx, 1, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
@@ -1389,9 +1408,12 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
                 DPRINTF(("Verifying FW component has failed!\n"));
                 return false;
             }
-            if (comps[i].getType() == FwComponent::COMPID_LINKX || comps[i].getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM) {
-                if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
-                                progressFuncAdv)) {
+            if (comps[i].getType() == FwComponent::COMPID_LINKX || 
+                comps[i].getType() == FwComponent::COMPID_LINKX_ELS || 
+                comps[i].getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM) 
+                {
+                    if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
+                                    progressFuncAdv)) {
                     DPRINTF(("Downstream LinkX begin has failed!\n"));
                     return false;
                 }
@@ -1534,8 +1556,8 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
             return "DIGITAL_CACERT_CHAIN";
         case DIGITAL_CACERT_REMOVAL:
             return "DIGITAL_CACERT_REMOVAL";
-        case DIGITAL_CACERT_CHAIN_REMOVAL:
-            return "DIGITAL_CACERT_CHAIN_REMOVAL";
+        case COMPID_LINKX_ELS:
+            return "COMPID_LINKX_ELS";
     default:
         return "UNKNOWN_COMPONENT";
     }
