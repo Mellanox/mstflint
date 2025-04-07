@@ -1218,6 +1218,9 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
             compStatus.comp_status.component_index = compIdx;
             if (ComponentStatus != NULL && (compStatus.comp_status.identifier == FwComponent::COMPID_LINKX ||
                                             compStatus.comp_status.identifier == FwComponent::COMPID_LINKX_ELS))
+            {
+                memcpy(ComponentStatus, &compStatus.comp_status, sizeof(compStatus.comp_status));
+            }
             /* */
             u_int32_t capSt[DEFAULT_SIZE] = {0};
             if (queryComponentInfo(compIdx, 1, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
