@@ -91,6 +91,7 @@ UserInput::UserInput()
     _logFile = "";
     _portType = "NETWORK";
     _paosCmd = "";
+    _pmaosCmd = "";
     _pplmFec = "";
     _speedFec = "";
     _pplrLB = "";
