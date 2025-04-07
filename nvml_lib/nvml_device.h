@@ -51,14 +51,53 @@ public:
 private:
     std::unique_ptr < NvmlLibWrapper > _nvmlLibWrapper;
     nvmlDevice_t _nvmlDevice;
-
+    int TranslateNvStatus(unsigned int uNvStatus);
     int AccessRegisterMGIR(unsigned char    * registerData,
                            const unsigned int registerSize,
                            nvmlPRMBuffer_t &  prmBuffer);
-    int AccessRegisterMCAM(unsigned char    * registerData,
-                           const unsigned int registerSize,
-                           nvmlPRMBuffer_t &  prmBuffe);
-    int AccessRegisterMORD(unsigned char    * registerData,
+    int AccessRegisterPLIB(unsigned char    * registerData,
                            const unsigned int registerSize,
                            nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterPPSLS(unsigned char    * registerData,
+                            const unsigned int registerSize,
+                            nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterMTCAP(unsigned char    * registerData,
+                            const unsigned int registerSize,
+                            nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterPAOS(unsigned char    * registerData,
+                           const unsigned int registerSize,
+                           nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterPDDR(unsigned char    * registerData,
+                           const unsigned int registerSize,
+                           nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterPGUID(unsigned char    * registerData,
+                            const unsigned int registerSize,
+                            nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterPMAOS(unsigned char    * registerData,
+                            const unsigned int registerSize,
+                            nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterPMLP(unsigned char    * registerData,
+                           const unsigned int registerSize,
+                           nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterPPAOS(unsigned char    * registerData,
+                            const unsigned int registerSize,
+                            nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterPPCNT(unsigned char    * registerData,
+                            const unsigned int registerSize,
+                            nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterPPHCR(unsigned char    * registerData,
+                            const unsigned int registerSize,
+                            nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterPTYS(unsigned char    * registerData,
+                           const unsigned int registerSize,
+                           nvmlPRMBuffer_t &  prmBuffer);
+    int AccessRegisterSLTP(unsigned char    * registerData,
+                           const unsigned int registerSize,
+                           nvmlPRMBuffer_t &  prmBuffer);
+    /* int AccessRegisterMCAM(unsigned char    * registerData, */
+    /*                        const unsigned int registerSize, */
+    /*                        nvmlPRMBuffer_t &  prmBuffe); */
+    /* int AccessRegisterMORD(unsigned char    * registerData, */
+    /*                        const unsigned int registerSize, */
+    /*                        nvmlPRMBuffer_t &  prmBuffer); */
 };
