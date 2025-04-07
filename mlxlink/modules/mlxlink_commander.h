@@ -108,6 +108,8 @@
 
 #define PAOS_FLAG "port_state"
 #define PAOS_FLAG_SHORT 'a'
+#define PMAOS_FLAG "module_state"
+#define PMAOS_FLAG_SHORT ' '
 #define PTYS_FLAG "speeds"
 #define PTYS_FLAG_SHORT 's'
 #define PPLR_FLAG "loopback"
@@ -312,6 +314,7 @@ enum OPTION_TYPE
     SEND_BER_COLLECT,
     SEND_AMBER_COLLECT,
     SEND_PAOS,
+    SEND_PMAOS,
     SEND_PTYS,
     SEND_PPLM,
     SEND_PPLR,
@@ -523,6 +526,7 @@ public:
     // Mlxlink config functions
     void clearCounters();
     void sendPaos();
+    void sendPmaos();
     virtual void handlePrbs();
     void sendPtys();
     virtual void sendPplm();
@@ -535,12 +539,18 @@ public:
 
     // Config helper functions
     bool isForceDownSupported();
+    bool isPmaosResetToggleSupported();
     bool isPPHCRSupported();
     void sendGBPaosCmd(PAOS_ADMIN adminStatus, bool forceDown);
     void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
     void sendPaosDown(bool toggleCommand = false);
     void sendPaosUP();
     void sendPaosToggle();
+    void sendPmaosDown();
+    void sendPmaosUP();
+    void sendPmaosToggle();
+    void sendPmaosCmd(PMAOS_ADMIN adminStatus);
+    bool checkPmaosDown();
     void checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMask);
     void checkPrbsRegsCap(const string& prbsReg, const string& laneRate);
     void checkPrbsPolCap(const string& prbsReg);

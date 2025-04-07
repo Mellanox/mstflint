@@ -100,6 +100,7 @@ public:
     string _extAdbFile;
     string _portType;
     string _paosCmd;
+    string _pmaosCmd;
     string _pplmFec;
     string _speedFec;
     string _pplrLB;

@@ -174,6 +174,8 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT "COMMANDS:\n");
     MlxlinkRecord::printFlagLine(PAOS_FLAG_SHORT, PAOS_FLAG, "port_state",
                                  "Configure Port State [UP(up)/DN(down)/TG(toggle)]");
+    MlxlinkRecord::printFlagLine(PMAOS_FLAG_SHORT, PMAOS_FLAG, "module_state",
+                                "Configure Module State [UP(up)/DN(down)/TG(toggle)]");
     MlxlinkRecord::printFlagLine(
       PTYS_FLAG_SHORT, PTYS_FLAG, "speeds",
       "Configure Speeds "
@@ -564,6 +566,10 @@ void MlxlinkUi::validateGeneralCmdsParams()
     if (isIn(SEND_PAOS, _sendRegFuncMap) && !checkPaosCmd(_userInput._paosCmd))
     {
         throw MlxRegException("Please provide a valid paos command [UP(up)/DN(down)/TG(toggle)]");
+    }
+    if (isIn(SEND_PMAOS, _sendRegFuncMap) && !checkPmaosCmd(_userInput._pmaosCmd))
+    {
+        throw MlxRegException("Please provide a valid pmaos command [UP(up)/DN(down)/TG(toggle)]");
     }
     if (!isIn(SEND_PPLM, _sendRegFuncMap) && _userInput._speedFec != "")
     {
@@ -992,6 +998,7 @@ void MlxlinkUi::initCmdParser()
 
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
+    AddOptions(PMAOS_FLAG, PMAOS_FLAG_SHORT, "PMAOS", "Send PMAOS");
     AddOptions(PTYS_FLAG, PTYS_FLAG_SHORT, "PTYS", "Send PTYS");
     AddOptions(PTYS_LINK_MODE_FORCE_FLAG, PTYS_LINK_MODE_FORCE_FLAG_SHORT, "", "Set Link Mode Force");
     AddOptions(PPLM_FLAG, PPLM_FLAG_SHORT, "PPLM", "Send PPLM");
@@ -1128,6 +1135,9 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SEND_PAOS:
                 _mlxlinkCommander->sendPaos();
+                break;
+            case SEND_PMAOS:
+                _mlxlinkCommander->sendPmaos();
                 break;
             case SEND_PTYS:
                 _mlxlinkCommander->sendPtys();
@@ -1338,6 +1348,13 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SEND_PAOS);
         _userInput._paosCmd = toUpperCase(value);
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == PMAOS_FLAG)
+    {
+        addCmd(SEND_PMAOS);
+        _userInput._pmaosCmd = toUpperCase(value);
         _userInput._uniqueCmds++;
         return PARSE_OK;
     }
