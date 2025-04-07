@@ -2850,6 +2850,21 @@ bool FwOperations::IsCompatibleToDevice(vector<u_int8_t>& data, u_int8_t forceVe
     return errmsg("IsCompatibleToDevice is not supported");
 }
 
+bool FwOperations::GetSecureHostState(u_int8_t&)
+{
+    return errmsg("GetSecureHostState is not supported");
+}
+
+bool FwOperations::ChangeSecureHostState(bool, u_int64_t)
+{
+    return errmsg("ChangeSecureHostState is not supported");
+}
+
+bool FwOperations::GetNcoreData(vector<u_int8_t>&)
+{
+    return errmsg("GetNcoreData is not supported");
+}
+
 bool FwOperations::IsExtendedGuidNumSupported()
 {
     bool isSupported = false;

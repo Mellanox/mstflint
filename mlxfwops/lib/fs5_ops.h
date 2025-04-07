@@ -79,6 +79,7 @@ private:
                      bool verbose = false) override;
     bool IsSecureFwUpdateSigned(bool& isSigned);
     bool NCoreQuery(fw_info_t* fwInfo);
+    bool GetNcoreData(vector<u_int8_t>& imgBuff) override;
     bool GetHashesTableSize(u_int32_t& size) override;
 
     static const u_int32_t BCH_SIZE_IN_BYTES;               
