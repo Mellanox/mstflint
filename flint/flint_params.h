@@ -182,6 +182,7 @@ public:
     bool hsm_password_specified;
     string hsm_password;
     bool linkx_control;
+    bool linkx_els_control;
     int cableDeviceIndex;
     int cableDeviceSize;
     bool cable_device_index_specified;

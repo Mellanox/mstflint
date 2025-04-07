@@ -198,6 +198,8 @@ public:
         DIGITAL_CACERT_CHAIN = 0x16,
         DIGITAL_CACERT_REMOVAL = 0x17,
         DIGITAL_CACERT_CHAIN_REMOVAL = 0x18,
+        COMPID_LINKX_ELS = 0x1a,
+        COMPID_LAST_IDX = 0x1a,
         COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 

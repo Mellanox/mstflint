@@ -776,7 +776,7 @@ bool SubCommand::basicVerifyParams()
             break;
 
         case Wtv_Dev_And_Img:
-            if (_flintParams.linkx_control == false)
+            if (_flintParams.linkx_control == false  && _flintParams.linkx_els_control == false)
             {
                 if ((_flintParams.image_specified == false) || (_flintParams.device_specified == false))
                 {
@@ -827,14 +827,15 @@ FlintStatus SubCommand::preFwOps(bool ignoreSecurityAttributes, bool ignoreDToc)
     {
         return FLINT_FAILED;
     }
-    if (_flintParams.linkx_control != true)
+    if (_flintParams.linkx_control != true && _flintParams.linkx_els_control != true)
     {
         if (!verifyParams())
         {
             return FLINT_FAILED;
         }
     }
-    if (_flintParams.mfa2_specified || _flintParams.congestion_control || _flintParams.linkx_control == true)
+    if (_flintParams.mfa2_specified || _flintParams.congestion_control || _flintParams.linkx_control == true ||
+        _flintParams.linkx_els_control == true)
     {
         bool saved_value = _flintParams.image_specified;
         _flintParams.image_specified = false;
@@ -2381,7 +2382,12 @@ bool BurnSubCommand::verifyParams()
     {
         return true;
     }
-    else if (_flintParams.linkx_control == true)
+    else if (_flintParams.linkx_control == true && _flintParams.linkx_els_control == true)
+    {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--linkx", "--linkx_els");
+        return false;
+    }
+    else if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true)
     {
         if (_flintParams.device_specified == false)
         {
@@ -3169,7 +3175,7 @@ void BurnSubCommand::cleanInterruptedCommand()
 
 FlintStatus BurnSubCommand::executeCommand()
 {
-    if (_flintParams.linkx_control == true)
+    if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true)
     {
         if (!verifyParams())
         {
@@ -3179,9 +3185,12 @@ FlintStatus BurnSubCommand::executeCommand()
         ProgressCallBackAdvSt ProgressFuncAdv;
         ProgressFuncAdv.func = (f_prog_func_adv)&advProgressFunc;
         ProgressFuncAdv.opaque = &opaque;
+        FwComponent::comps_ids_t fwComponent =
+          _flintParams.linkx_control ? FwComponent::COMPID_LINKX : FwComponent::COMPID_LINKX_ELS;
         return BurnLinkX(_flintParams.device, _flintParams.cableDeviceIndex, _flintParams.cableDeviceSize,
                          _flintParams.image, _flintParams.linkx_auto_update, _flintParams.activate,
-                         _flintParams.download_transfer, _flintParams.activate_delay_sec, &ProgressFuncAdv);
+                         _flintParams.download_transfer, _flintParams.activate_delay_sec, &ProgressFuncAdv,
+                         fwComponent);
     }
 #ifndef NO_MSTARCHIVE
     string mfa2file = _flintParams.image;
