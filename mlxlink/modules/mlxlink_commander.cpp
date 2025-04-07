@@ -2220,26 +2220,60 @@ void MlxlinkCommander::showTestModeBer()
 
 void MlxlinkCommander::getPcieNdrCounters()
 {
-    if (_productTechnology >= PRODUCT_16NM) {
+    // This field is supported from cx8 and above.
+    if (_productTechnology >= PRODUCT_5NM)
+    {
+        string berStr = to_string(getFieldValue("fber_coef")) + "E-" + to_string(getFieldValue("fber_magnitude"));
+        setPrintVal(_mpcntPerfInfCmd, "First BER (FBER)", berStr);
+    }
+
+    if (_productTechnology >= PRODUCT_16NM)
+    {
         string berStr =
-            to_string(getFieldValue("effective_ber_coef")) + "E-" +
-            to_string(getFieldValue("effective_ber_magnitude"));
+          to_string(getFieldValue("effective_ber_coef")) + "E-" + to_string(getFieldValue("effective_ber_magnitude"));
         setPrintVal(_mpcntPerfInfCmd, "Effective ber", berStr);
     }
 }
 
 void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
 {
-    sendPrmReg(ACCESS_REG_MPCNT, GET, "depth=%d,pcie_index=%d,node=%d,grp=%d", dpn.depth, dpn.pcieIndex, dpn.node,
-               MPCNT_PERFORMANCE_GROUP);
+    uint32_t flitActive = 0, recordsNum = MPCNT_PERFORMANCE_INFO_LAST + 3;
+    try
+    {
+        sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", _dpn.depth, _dpn.pcieIndex, _dpn.node);
+        flitActive = getFieldValue("flit_active");
+        recordsNum += flitActive ? 3 : 0;
+    }
+    catch (const std::exception& e)
+    {
+        // For backward compatibility, we will not throw an exception here.
+    }
 
-    setPrintTitle(_mpcntPerfInfCmd, "Management PCIe Performance Counters Info", MPCNT_PERFORMANCE_INFO_LAST + 2);
-    setPrintVal(_mpcntPerfInfCmd, "RX Errors", getFieldStr("rx_errors"));
-    setPrintVal(_mpcntPerfInfCmd, "TX Errors", getFieldStr("tx_errors"));
-    setPrintVal(_mpcntPerfInfCmd, "CRC Error dllp", getFieldStr("crc_error_dllp"));
-    setPrintVal(_mpcntPerfInfCmd, "CRC Error tlp", getFieldStr("crc_error_tlp"));
+    try
+    {
+        sendPrmReg(ACCESS_REG_MPCNT, GET, "depth=%d,pcie_index=%d,node=%d,grp=%d", dpn.depth, dpn.pcieIndex, dpn.node,
+                   MPCNT_PERFORMANCE_GROUP);
 
-    getPcieNdrCounters();
+        setPrintTitle(_mpcntPerfInfCmd, "Management PCIe Performance Counters Info", recordsNum);
+        setPrintVal(_mpcntPerfInfCmd, "RX Errors", getFieldStr("rx_errors"));
+        setPrintVal(_mpcntPerfInfCmd, "TX Errors", getFieldStr("tx_errors"));
+        setPrintVal(_mpcntPerfInfCmd, "CRC Error dllp", getFieldStr("crc_error_dllp"));
+        setPrintVal(_mpcntPerfInfCmd, "CRC Error tlp", getFieldStr("crc_error_tlp"));
+
+        if (flitActive)
+        {
+            setPrintVal(_mpcntPerfInfCmd, "FEC Correctable Error count", getFieldStr("fec_correctable_error_counter"));
+            setPrintVal(_mpcntPerfInfCmd, "FEC Uncorrectable Error count",
+                        getFieldStr("fec_uncorrectable_error_counter"));
+        }
+
+        getPcieNdrCounters();
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors +=
+          string("Showing BER via MPCNT raised the following exception: ") + string(exc.what()) + string("\n");
+    }
 
     cout << _mpcntPerfInfCmd;
 }
