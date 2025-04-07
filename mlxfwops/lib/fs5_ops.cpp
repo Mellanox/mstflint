@@ -150,6 +150,26 @@ bool Fs5Operations::GetImageSize(u_int32_t* image_size)
     return true;
 }
 
+bool Fs5Operations::GetNcoreData(vector<u_int8_t>& imgBuff)
+{
+    fs5_image_layout_boot_component_header bchComponent;
+    vector<u_int8_t> bchRawData(FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE);
+    if (!_ioAccess->read(_ncore_bch_ptr, bchRawData.data(), FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE))
+    {
+        return errmsg("%s - read error can not read bch\n", _ioAccess->err());
+    }
+    TOCPUn(bchRawData.data(), BCH_SIZE_IN_BYTES / 4);
+    fs5_image_layout_boot_component_header_unpack(&bchComponent, bchRawData.data());
+  
+    u_int32_t payloadSize = bchComponent.stage1_components[0].u32_binary_len;
+    imgBuff.resize(payloadSize);
+    if (!_ioAccess->read(_ncore_bch_ptr + FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE, imgBuff.data(), payloadSize))
+    {
+        return errmsg("%s - read error can not read bch\n", _ioAccess->err());
+    }
+    return true;
+}
+
 bool Fs5Operations::GetHashesTableSize(u_int32_t& size)
 {
     bool image_encrypted = false;
