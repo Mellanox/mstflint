@@ -515,9 +515,8 @@ int get_log2size_by_vendor_type_density(u_int8_t vendor, u_int8_t type, u_int8_t
     if ((type == FMT_SST_25) && (vendor == FV_SST)) {
         return cntx_sst_get_log2size(density, log2size);
     }
-    if (((((type == FMT_WINBOND) || (type == FMT_WINBOND_3V)) && (vendor == FV_WINBOND)) ||
-         ((type == FMT_N25QXXX) && (vendor == FV_ST)) || ((type == FMT_IS25WPXXX) && (vendor == FV_IS25LPXXX))) &&
-        (density == 0x20)) {
+    // In some flashes, the value is 20, but the correct value should be 0x1A. It cannot be 0x20 because 2^20 would overflow an integer.
+    if(density == 0x20) {
         *log2size = 0x1a;
     } else {
         *log2size = density;
