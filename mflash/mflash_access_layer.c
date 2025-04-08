@@ -43,6 +43,7 @@
 #include "mflash_types.h"
 #include "mflash_pack_layer.h"
 #include "mflash_access_layer.h"
+#include "flash_int_defs.h"
 
 extern flash_info_t g_flash_info_arr[];
 
@@ -424,6 +425,27 @@ int sx_set_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* p
     return MFE_OK;
 }
 
+uint8_t sx_get_bp_val(mflash* mfl, write_protect_info_t* protect_info)
+{
+    u_int32_t sectors_num = protect_info->sectors_num;
+    u_int32_t log2_sect_num = 0;
+    for (; log2_sect_num < 8; log2_sect_num++)
+    {
+        if (sectors_num == 0)
+        {
+            break;
+        }
+        sectors_num >>= 1;
+    }
+    if (log2_sect_num != 0 && !protect_info->is_subsector &&
+        ((mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL && mfl->attr.log2_bank_size == FD_128) ||
+         (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V && mfl->attr.log2_bank_size == FD_128)))
+    {
+        log2_sect_num -= 2; // spec alignment
+    }
+    return log2_sect_num;
+}
+
 int sx_get_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* protect_info)
 {
     int rc = 0;
@@ -444,8 +466,10 @@ int sx_get_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* p
     CHECK_RC(rc);
 
     protect_info->is_bottom = 0; // no support for bottom
+    protect_info->tbs_bit = 0;
     protect_info->is_subsector = mfmc.block_size == 0;
     protect_info->sectors_num = mfmc.wrp_en ? 1 << mfmc.wrp_block_count : 0;
+    protect_info->bp_val = sx_get_bp_val(mfl, protect_info);
     return MFE_OK;
 }
 
