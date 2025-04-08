@@ -2126,7 +2126,7 @@ int mtcr_i2c_mwrite4(mfile* mf, unsigned int offset, u_int32_t value) {
         return bytes_written;
     }
 
-    printf("mtcr_i2c_mwrite4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_written: %d\n", mf->i2c_secondary,
+    DBG_PRINTF("mtcr_i2c_mwrite4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_written: %d\n", mf->i2c_secondary,
            offset, value, bytes_written);
 
     return bytes_written;
