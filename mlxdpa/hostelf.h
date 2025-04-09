@@ -43,6 +43,7 @@ class HostElf
 {
 public:
     HostElf(string path, string outputPath);
+    ~HostElf();
 
     vector<AppHandle*> GetListOfDpaApps();
     vector<DevObjHandle*> GetListOfDpaArchApps(DevObjHandle* objTable, uint64_t arch_count);

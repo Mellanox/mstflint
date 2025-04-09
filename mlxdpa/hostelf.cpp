@@ -52,9 +52,14 @@ HostElf::HostElf(string path, string outputPath) : _filePath(path), _outputPath(
     {
         throw MlxDpaException("Failed to open Host ELF file with error: %s", strerror(errno));
     }
-    // TODO should i release resources in _dpaAppsTable?
+    
     _dpaAppsTable = getAppList(hostELF);
     fclose(hostELF);
+}
+
+HostElf::~HostElf()
+{
+    freeAppList(_dpaAppsTable);
 }
 
 vector<AppHandle*> HostElf::GetListOfDpaApps()
