@@ -403,19 +403,33 @@ void MlxlinkCommander::updateSwControlStatus()
 {
     try
     {
+        sendPrmReg(ACCESS_REG_MGIR, GET);
+        u_int32_t moduleMasterFwDefault = getFieldValue("module_master_fw_default");
+        if (moduleMasterFwDefault == MGIR_MODULE_MASTER_FW_DEFAULT_STAND_ALONE)
+        {
+            _isSwControled = true;
+            return;
+        }
+    }
+    catch (MlxRegException& exc)
+    {
+    }
+
+    try
+    {
         sendPrmReg(ACCESS_REG_MMCR, GET);
     }
-    catch(MlxRegException & exc)
+    catch (MlxRegException& exc)
     {
         _isSwControled = false;
         return;
     }
     u_int32_t currentModuleControl =
-        getFieldValue("curr_module_control[" + to_string((_userInput._labelPort - 1) / 32) + "]");
+      getFieldValue("curr_module_control[" + to_string((_userInput._labelPort - 1) / 32) + "]");
     u_int32_t portMask = 0;
-
     portMask = portMask | 1 << ((_userInput._labelPort - 1) % 32);
-    if (portMask & currentModuleControl) {
+    if (portMask & currentModuleControl)
+    {
         _isSwControled = true;
     }
 }
@@ -424,7 +438,7 @@ void MlxlinkCommander::findFirstValidPort()
 {
     u_int32_t minLabelPort = 0;
     string regName = ACCESS_REG_PLLP, fieldToGet = "label_port";
-    if (_devID == DeviceGB100 || _devID == DeviceGR100)
+    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
     {
         regName = ACCESS_REG_PLIB;
         fieldToGet = "ib_port";
@@ -494,7 +508,7 @@ void MlxlinkCommander::labelToLocalPort()
             labelToSpectLocalPort();
         }
     } else if (dm_dev_is_ib_switch(_devID)) {
-        if ((_devID == DeviceQuantum3) || (_devID == DeviceGB100) || (_devID == DeviceGR100)) {
+        if ((_devID == DeviceQuantum3) || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
             labelToQtm3LocalPort();
         } else {
             labelToIBLocalPort();
@@ -664,7 +678,7 @@ void MlxlinkCommander::labelToQtm3LocalPort()
 {
     u_int32_t foundedLocalPort = 0;
 
-    if (_devID == DeviceGB100 || _devID == DeviceGR100) {
+    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
         if (_userInput._splitProvided || _userInput._secondSplitProvided) {
             throw MlxRegException("Invalid port number!");
         }
@@ -736,7 +750,7 @@ void MlxlinkCommander::labelToIBLocalPort()
                              maxLocalPort();
 
     if ((labelPort > maxLabelPort) ||
-        (_userInput._secondSplitProvided && (_devID != DeviceQuantum2) && (_devID != DeviceGB100) && (_devID != DeviceGR100)) ||
+        (_userInput._secondSplitProvided && (_devID != DeviceQuantum2) && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) ||
         (_userInput._splitPort > 2)) {
         throw MlxRegException("Invalid port number!");
     }
@@ -1211,7 +1225,7 @@ void MlxlinkCommander::handleLabelPorts(std::vector < string > labelPortsStr, bo
             isLabelPortValid = handleEthLocalPort(labelPort, spect2WithGb);
         } else if ((_devID == DeviceQuantum) || (_devID == DeviceQuantum2)) {
             isLabelPortValid = handleIBLocalPort(labelPort, ibSplitReady);
-        } else if ((_devID == DeviceQuantum3) || (_devID == DeviceGB100) || (_devID == DeviceGR100)) {
+        } else if ((_devID == DeviceQuantum3) || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
             isLabelPortValid = handleQTM3LocalPort(labelPort);
         }
         if (!isLabelPortValid && !skipException) {
@@ -1829,9 +1843,17 @@ void MlxlinkCommander::operatingInfoPage()
 
 bool MlxlinkCommander::isBackplane()
 {
-    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+    bool isBackplane = false;
+    try
+    {
+        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
+        isBackplane = (getFieldValue("cable_identifier") == IDENTIFIER_BACKPLANE);
+    }
+    catch (const std::exception& e)
+    {
+    }
 
-    return (getFieldValue("cable_identifier") == IDENTIFIER_BACKPLANE);
+    return isBackplane;
 }
 
 void MlxlinkCommander::supportedInfoPage()
@@ -2082,6 +2104,15 @@ void MlxlinkCommander::prepareBerInfo()
         setPrintVal(_berInfoCmd, "Link Error Recovery Counter", to_string(linkRecoveryCounter), ANSI_COLOR_RESET, true,
                     _linkUP);
     }
+    
+    if (_productTechnology >= PRODUCT_7NM && !dm_is_gpu((dm_dev_id_t)_devID))
+    {
+        sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_STATISTICAL_GROUP);
+        string rawBer = AmberField::getValueFromFields(_ppcntFields, "Raw_BER_lane", false);
+        findAndReplace(rawBer, "_", ",");
+        rawBer = getValuesOfActiveLanes(rawBer);
+        setPrintVal(_berInfoCmd, "Raw Physical BER Per Lane", rawBer, ANSI_COLOR_RESET, true, _linkUP, true);
+    }
 }
 
 void MlxlinkCommander::prepareBerInfoEDR()
@@ -2198,26 +2229,60 @@ void MlxlinkCommander::showTestModeBer()
 
 void MlxlinkCommander::getPcieNdrCounters()
 {
-    if (_productTechnology >= PRODUCT_16NM) {
+    // This field is supported from cx8 and above.
+    if (_productTechnology >= PRODUCT_5NM)
+    {
+        string berStr = to_string(getFieldValue("fber_coef")) + "E-" + to_string(getFieldValue("fber_magnitude"));
+        setPrintVal(_mpcntPerfInfCmd, "First BER (FBER)", berStr);
+    }
+
+    if (_productTechnology >= PRODUCT_16NM)
+    {
         string berStr =
-            to_string(getFieldValue("effective_ber_coef")) + "E-" +
-            to_string(getFieldValue("effective_ber_magnitude"));
+          to_string(getFieldValue("effective_ber_coef")) + "E-" + to_string(getFieldValue("effective_ber_magnitude"));
         setPrintVal(_mpcntPerfInfCmd, "Effective ber", berStr);
     }
 }
 
 void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
 {
-    sendPrmReg(ACCESS_REG_MPCNT, GET, "depth=%d,pcie_index=%d,node=%d,grp=%d", dpn.depth, dpn.pcieIndex, dpn.node,
-               MPCNT_PERFORMANCE_GROUP);
+    uint32_t flitActive = 0, recordsNum = MPCNT_PERFORMANCE_INFO_LAST + 3;
+    try
+    {
+        sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", _dpn.depth, _dpn.pcieIndex, _dpn.node);
+        flitActive = getFieldValue("flit_active");
+        recordsNum += flitActive ? 3 : 0;
+    }
+    catch (const std::exception& e)
+    {
+        // For backward compatibility, we will not throw an exception here.
+    }
 
-    setPrintTitle(_mpcntPerfInfCmd, "Management PCIe Performance Counters Info", MPCNT_PERFORMANCE_INFO_LAST + 2);
-    setPrintVal(_mpcntPerfInfCmd, "RX Errors", getFieldStr("rx_errors"));
-    setPrintVal(_mpcntPerfInfCmd, "TX Errors", getFieldStr("tx_errors"));
-    setPrintVal(_mpcntPerfInfCmd, "CRC Error dllp", getFieldStr("crc_error_dllp"));
-    setPrintVal(_mpcntPerfInfCmd, "CRC Error tlp", getFieldStr("crc_error_tlp"));
+    try
+    {
+        sendPrmReg(ACCESS_REG_MPCNT, GET, "depth=%d,pcie_index=%d,node=%d,grp=%d", dpn.depth, dpn.pcieIndex, dpn.node,
+                   MPCNT_PERFORMANCE_GROUP);
 
-    getPcieNdrCounters();
+        setPrintTitle(_mpcntPerfInfCmd, "Management PCIe Performance Counters Info", recordsNum);
+        setPrintVal(_mpcntPerfInfCmd, "RX Errors", getFieldStr("rx_errors"));
+        setPrintVal(_mpcntPerfInfCmd, "TX Errors", getFieldStr("tx_errors"));
+        setPrintVal(_mpcntPerfInfCmd, "CRC Error dllp", getFieldStr("crc_error_dllp"));
+        setPrintVal(_mpcntPerfInfCmd, "CRC Error tlp", getFieldStr("crc_error_tlp"));
+
+        if (flitActive)
+        {
+            setPrintVal(_mpcntPerfInfCmd, "FEC Correctable Error count", getFieldStr("fec_correctable_error_counter"));
+            setPrintVal(_mpcntPerfInfCmd, "FEC Uncorrectable Error count",
+                        getFieldStr("fec_uncorrectable_error_counter"));
+        }
+
+        getPcieNdrCounters();
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors +=
+          string("Showing BER via MPCNT raised the following exception: ") + string(exc.what()) + string("\n");
+    }
 
     cout << _mpcntPerfInfCmd;
 }
@@ -2769,7 +2834,7 @@ void MlxlinkCommander::showExternalPhy()
         gearboxBlock(PEPC_SHOW_FLAG);
 
         if (_isHCA || (_devID == DeviceSwitchIB) || (_devID == DeviceSwitchIB2) || (_devID == DeviceQuantum) ||
-            (_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || (_devID == DeviceGB100) || (_devID == DeviceGR100)) {
+            (_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
             throw MlxRegException("\"--" PEPC_SHOW_FLAG "\" option is not supported for HCA and InfiniBand switches");
         }
 
@@ -2947,18 +3012,18 @@ void MlxlinkCommander::collectAMBER()
                 /* If port provided, collect one port only */
                 if (_userInput._portSpecified) {
                     PortGroup pg {_localPort, _userInput._labelPort, 0, _userInput._splitPort};
-                    if ((_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || (_devID == DeviceGB100) || (_devID == DeviceGR100)) {
+                    if ((_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
                         pg.secondSplit = _userInput._secondSplitProvided ? _userInput._secondSplitPort : 0;
                     }
                     _amberCollector->_localPorts.push_back(pg);
-                } else if (_devID != DeviceGB100 && _devID != DeviceGR100) {
+                } else if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
                     /* collect all ports info if the port flag wasn't provided */
                     u_int32_t numOfPorts = 0;
 
                     vector < string > labelPorts;
                     _ignorePortStatus = false;
 
-                    if ((_devID == DeviceGB100) || (_devID == DeviceGR100) || (_devID == DeviceSpectrum3) || (_devID == DeviceQuantum3)) {
+                    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)) || (_devID == DeviceSpectrum3) || (_devID == DeviceQuantum3)) {
                         sendPrmReg(ACCESS_REG_MGIR, GET);
                         numOfPorts = getFieldValue("num_ports");
                     } else {
@@ -3123,7 +3188,7 @@ void MlxlinkCommander::showTxGroupMapping()
     try
     {
         if ((_devID != DeviceSpectrum2) && (_devID != DeviceQuantum) && (_devID != DeviceQuantum2) &&
-            (_devID != DeviceQuantum3) && (_devID != DeviceGB100) && (_devID != DeviceGR100)) {
+            (_devID != DeviceQuantum3) && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
             throw MlxRegException("Port group mapping supported for Spectrum-2 and Quantum switches only!");
         }
 
@@ -3394,6 +3459,18 @@ void MlxlinkCommander::clearCounters()
     }
 }
 
+bool MlxlinkCommander::isPmaosResetToggleSupported()
+{
+    bool supported = false;
+    // checking force_down cap
+    u_int64_t fdCapMask = PCAM_PMAOS_RESET_TOGGLE_CAP_MASK; // feature_cap_mask.Bit 14 (feature_cap_mask[0].bit 14)
+
+    sendPrmReg(ACCESS_REG_PCAM, GET);
+
+    supported = getFieldValue("feature_cap_mask[0]") & fdCapMask;
+    return supported;
+}
+
 bool MlxlinkCommander::isForceDownSupported()
 {
     bool supported = false;
@@ -3449,6 +3526,105 @@ void MlxlinkCommander::sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown)
         string portCommand = (adminStatus == PAOS_DOWN) ? "down" : "up";
 
         throw MlxRegException("Sending port " + portCommand + " command failed");
+    }
+}
+
+bool MlxlinkCommander::checkPmaosDown()
+{
+    sendPrmReg(ACCESS_REG_PMLP, GET);
+    _moduleNumber = getFieldValue("module_0");
+    sendPrmReg(ACCESS_REG_PMAOS, GET, "module=%d", _moduleNumber);
+
+    u_int32_t paosOperStatus = getFieldValue("oper_status");
+    return (paosOperStatus == PMAOS_OPER_UNPLUGGED);
+}
+
+void MlxlinkCommander::sendPmaosCmd(PMAOS_ADMIN adminStatus)
+{
+    sendPrmReg(ACCESS_REG_PMLP, GET);
+    _moduleNumber = getFieldValue("module_0");
+    try
+    {
+        if (adminStatus == PMAOS_TOGGLE)
+        {
+            sendPrmReg(ACCESS_REG_PMAOS, SET, "module=%d,rst=%d,ase=%d", _moduleNumber, 1, 1);
+        }
+        else
+        {
+            sendPrmReg(ACCESS_REG_PMAOS, SET, "module=%d,admin_status=%d,ase=%d", _moduleNumber, adminStatus, 1);
+        }
+    }
+    catch (const std::exception& exc)
+    {
+        string portCommand = (adminStatus == PMAOS_DISABLED) ? "down" :
+                             (adminStatus == PMAOS_ENABLED)  ? "up" :
+                                                               "toggle";
+        throw MlxRegException("Sending module number: " + to_string(_moduleNumber) + " with a " + portCommand +
+                              " command failed at:" + exc.what());
+    }
+}
+
+void MlxlinkCommander::sendPmaos()
+{
+    try
+    {
+        PMAOS_CMD pmaosCmd = pmaos_to_int(_userInput._pmaosCmd);
+        switch (pmaosCmd)
+        {
+            case PMAOS_UP:
+                sendPmaosUP();
+                return;
+
+            case PMAOS_DN:
+                sendPmaosDown();
+                return;
+
+            case PMAOS_TG:
+                sendPmaosToggle();
+                return;
+
+            case PMAOS_NO:
+            default:
+                return;
+        }
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors +=
+          string("Sending PMAOS raised the following exception: ") + string(exc.what()) + string("\n");
+    }
+}
+
+void MlxlinkCommander::sendPmaosDown()
+{
+    MlxlinkRecord::printCmdLine("PMAOS: Configuring Module State (Down)", _jsonRoot);
+    sendPmaosCmd(PMAOS_DISABLED);
+    msleep(1000);
+    if (!checkPmaosDown())
+    {
+        throw MlxRegException("Module state is not unplugged, Aborting...");
+    }
+}
+
+void MlxlinkCommander::sendPmaosUP()
+{
+    MlxlinkRecord::printCmdLine("PMAOS: Configuring Module State (Up)", _jsonRoot);
+    sendPmaosCmd(PMAOS_ENABLED);
+}
+
+void MlxlinkCommander::sendPmaosToggle()
+{
+    bool pmaosToggleSupported = isPmaosResetToggleSupported();
+    if (pmaosToggleSupported)
+    {
+        MlxlinkRecord::printCmdLine("PMAOS: Configuring Module State (Reset)", _jsonRoot);
+        sendPmaosCmd(PMAOS_TOGGLE);
+    }
+    else
+    {
+        sendPmaosDown();
+        msleep(1000);
+        sendPmaosUP();
     }
 }
 
@@ -4366,7 +4542,7 @@ void MlxlinkCommander::sendSltp()
     try
     {
         if (((_devID == DeviceSpectrum2) || (_devID == DeviceQuantum) || (_devID == DeviceQuantum2) ||
-             (_devID == DeviceQuantum3) || (_devID == DeviceGB100) || (_devID == DeviceGR100)) &&
+             (_devID == DeviceQuantum3) || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) &&
             _userInput._db) {
             u_int32_t portGroup = getPortGroup(_localPort);
             MlxlinkRecord::printWar("Port " + to_string(_userInput._labelPort) + " is mapped to group " +
@@ -4501,7 +4677,7 @@ void MlxlinkCommander::sendPepc()
         gearboxBlock(PEPC_SET_FLAG);
 
         if (_isHCA || (_devID == DeviceSwitchIB) || (_devID == DeviceSwitchIB2) || (_devID == DeviceQuantum) ||
-            (_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || (_devID == DeviceGB100) || (_devID == DeviceGR100)) {
+            (_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
             throw MlxRegException("\"--" PEPC_SET_FLAG "\" option is not supported for HCA and InfiniBand switches");
         }
         MlxlinkRecord::printCmdLine("Configuring External PHY", _jsonRoot);
@@ -4541,7 +4717,7 @@ void MlxlinkCommander::setTxGroupMapping()
     try
     {
         if ((_devID != DeviceSpectrum2) && (_devID != DeviceQuantum) && (_devID != DeviceQuantum2) &&
-            (_devID != DeviceQuantum3) && (_devID != DeviceGB100) && (_devID != DeviceGR100)) {
+            (_devID != DeviceQuantum3) && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
             throw MlxRegException("Port group mapping supported for Spectrum-2 and Quantum switches only!");
         }
 
@@ -4930,7 +5106,7 @@ bool MlxlinkCommander::isPPHCRSupported()
 
     try
     {
-        sendPrmReg(ACCESS_REG_PPHCR, GET, "local_port=1,pnat=%d", pnat);
+        sendPrmReg(ACCESS_REG_PPHCR, GET, "pnat=%d", pnat);
     }
     catch(MlxRegException & exc)
     {
@@ -5024,6 +5200,7 @@ void MlxlinkCommander::prepareJsonOut()
     _linkBlameInfoCmd.toJsonFormat(_jsonRoot);
     _validPcieLinks.toJsonFormat(_jsonRoot);
     _portGroupMapping.toJsonFormat(_jsonRoot);
+    _plrInfoCmd.toJsonFormat(_jsonRoot);
 
     bool errorExist = _allUnhandledErrors != "";
 
@@ -5033,4 +5210,20 @@ void MlxlinkCommander::prepareJsonOut()
     if (!_jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION]) {
         _jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION] = "N/A";
     }
+}
+
+void MlxlinkCommander::showPlr()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_PPLM, GET);
+        setPrintTitle(_plrInfoCmd, HEADER_PLR_INFO, PLR_INFO_LAST);
+        setPrintVal(_plrInfoCmd, "PLR Reject Mode", _mlxlinkMaps->_plrRejectMode[getFieldValue("plr_reject_mode")]);
+        setPrintVal(_plrInfoCmd, "PLR Margin Threshold", to_string(getFieldValue("plr_margin_th")));
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("PLR is not supported for the current device!");
+    }
+    cout << _plrInfoCmd;
 }

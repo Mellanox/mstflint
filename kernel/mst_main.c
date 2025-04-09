@@ -1505,7 +1505,7 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
 
         dev->hw_addr = ioremap(resource_start, MST_MEMORY_SIZE);
 
-        if (dev->hw_addr <= 0) {
+        if (!dev->hw_addr) {
             mst_err("could not map device memory\n");
             res = -EFAULT;
             goto fin;
@@ -1783,7 +1783,7 @@ static struct mst_dev_data* mst_device_create(enum dev_type type, struct pci_dev
         dev->data_reg = 0;     /* invalid */
         dev->bar = 0;
         dev->hw_addr = ioremap(pci_resource_start(pdev, dev->bar), MST_MEMORY_SIZE);
-        if (dev->hw_addr <= 0) {
+        if (!dev->hw_addr) {
             mst_err("could not map device memory, BAR: %x\n", dev->bar);
             goto out;
         }

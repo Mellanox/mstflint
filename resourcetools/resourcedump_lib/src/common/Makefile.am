@@ -41,5 +41,9 @@ noinst_LTLIBRARIES = libresource_dump_common.la
 
 libresource_dump_common_la_SOURCES =    resource_dump_error_handling.h \
                                         resource_dump_error_handling.cpp resource_dump_constants.h
-libresource_dump_common_la_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC)
-libresource_dump_common_la_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC)
+libresource_dump_common_la_CFLAGS = $(AM_CFLAGS) $(COMPILER_FPIC) -I$(top_srcdir)/include/mtcr_ul
+libresource_dump_common_la_CXXFLAGS = $(AM_CXXFLAGS) $(COMPILER_FPIC) -I$(top_srcdir)/include/mtcr_ul
+
+
+libresource_dump_common_la_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
+libresource_dump_common_la_LIBADD = $(libresource_dump_common_la_DEPENDENCIES)

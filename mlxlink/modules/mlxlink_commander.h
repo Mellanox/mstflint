@@ -102,12 +102,16 @@
 #define BER_MONITOR_INFO_FLAG_SHORT ' '
 #define PEPC_SHOW_FLAG "show_external_phy"
 #define PEPC_SHOW_FLAG_SHORT ' '
+#define PLR_INFO_FLAG "show_plr"
+#define PLR_INFO_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink COMMANDS Flags
 
 #define PAOS_FLAG "port_state"
 #define PAOS_FLAG_SHORT 'a'
+#define PMAOS_FLAG "module_state"
+#define PMAOS_FLAG_SHORT ' '
 #define PTYS_FLAG "speeds"
 #define PTYS_FLAG_SHORT 's'
 #define PPLR_FLAG "loopback"
@@ -312,6 +316,7 @@ enum OPTION_TYPE
     SEND_BER_COLLECT,
     SEND_AMBER_COLLECT,
     SEND_PAOS,
+    SEND_PMAOS,
     SEND_PTYS,
     SEND_PPLM,
     SEND_PPLR,
@@ -326,6 +331,8 @@ enum OPTION_TYPE
     RS_FEC_HISTOGRAM,
     SLRG_TEST,
     PCIE_ERROR_INJ,
+    SHOW_PLR,
+
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
 };
@@ -421,6 +428,7 @@ public:
     virtual void collectAMBER();
     void collectBER();
     void showTxGroupMapping();
+    void showPlr();
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
@@ -519,10 +527,11 @@ public:
     MlxlinkCmdPrint _cableDumpRawCmd;
     MlxlinkCmdPrint _cableDDMCmd;
     MlxlinkCmdPrint _portGroupMapping;
-
+    MlxlinkCmdPrint _plrInfoCmd;
     // Mlxlink config functions
     void clearCounters();
     void sendPaos();
+    void sendPmaos();
     virtual void handlePrbs();
     void sendPtys();
     virtual void sendPplm();
@@ -535,12 +544,18 @@ public:
 
     // Config helper functions
     bool isForceDownSupported();
+    bool isPmaosResetToggleSupported();
     bool isPPHCRSupported();
     void sendGBPaosCmd(PAOS_ADMIN adminStatus, bool forceDown);
     void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
     void sendPaosDown(bool toggleCommand = false);
     void sendPaosUP();
     void sendPaosToggle();
+    void sendPmaosDown();
+    void sendPmaosUP();
+    void sendPmaosToggle();
+    void sendPmaosCmd(PMAOS_ADMIN adminStatus);
+    bool checkPmaosDown();
     void checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMask);
     void checkPrbsRegsCap(const string& prbsReg, const string& laneRate);
     void checkPrbsPolCap(const string& prbsReg);

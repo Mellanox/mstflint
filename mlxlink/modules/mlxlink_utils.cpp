@@ -713,6 +713,15 @@ bool checkPaosCmd(const string& paosCmd)
     return true;
 }
 
+bool checkPmaosCmd(const string& pmaosCmd)
+{
+    if (pmaosCmd != "UP" && pmaosCmd != "DN" && pmaosCmd != "TG")
+    {
+        return false;
+    }
+    return true;
+}
+
 bool checkPepcForceMode(const string& forceMode)
 {
     if (forceMode != "MA" && forceMode != "SL")
@@ -830,6 +839,23 @@ bool checkTestMode(const string& testMode)
         return false;
     }
     return true;
+}
+
+PMAOS_CMD pmaos_to_int(const string& cmd)
+{
+    if (cmd == "UP")
+    {
+        return PMAOS_UP;
+    }
+    if (cmd == "DN")
+    {
+        return PMAOS_DN;
+    }
+    if (cmd == "TG")
+    {
+        return PMAOS_TG;
+    }
+    return PMAOS_NO;
 }
 
 PAOS_CMD paos_to_int(const string& cmd)

@@ -83,7 +83,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{19, 19, 10};
     _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{376, 736, 0};
     _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{182, 362, 406};
-    _baseSheetsList[AMBER_SHEET_SERDES_5NM] = FIELDS_COUNT{147, 0, 0};
+    _baseSheetsList[AMBER_SHEET_SERDES_5NM] = FIELDS_COUNT{147, 147, 0};
     _baseSheetsList[AMBER_SHEET_PORT_COUNTERS] = FIELDS_COUNT{45, 0, 50};
     _baseSheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT{2, 2, 0};
     _baseSheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{18, 17, 15};
@@ -364,7 +364,7 @@ string MlxlinkAmBerCollector::getNodeGUID()
 {
     string strGuid;
 
-    if (_isHca || _devID == DeviceGB100 || _devID == DeviceGR100) {
+    if (_isHca || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))){
         resetLocalParser(ACCESS_REG_PGUID);
         updateField("local_port", _localPort);
         sendRegister(ACCESS_REG_PGUID, MACCESS_REG_METHOD_GET);
@@ -439,7 +439,7 @@ vector < AmberField > MlxlinkAmBerCollector::getIndexesInfo()
     fields.push_back(AmberField("pcie_index", to_string(_pcieIndex), _isPortPCIE));
     fields.push_back(AmberField("node", to_string(_node), _isPortPCIE));
 
-    if (_productTechnology == PRODUCT_5NM && _devID != DeviceGB100 && _devID != DeviceGR100) {
+    if (_productTechnology == PRODUCT_5NM && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
         resetLocalParser(ACCESS_REG_PPCR);
         updateField("local_port", _localPort);
         sendRegister(ACCESS_REG_PPCR, MACCESS_REG_METHOD_GET);
@@ -456,7 +456,7 @@ vector < AmberField > MlxlinkAmBerCollector::getIndexesInfo()
         sendRegister(ACCESS_REG_MGIR, MACCESS_REG_METHOD_GET);
         fields.push_back(AmberField("IC_GA", getRawFieldValueStr("hw_info__ga"), _isPortIB));
 
-        if (dm_dev_is_switch((dm_dev_id_t)_devID) && _devID != DeviceGB100 && _devID != DeviceGR100) {
+        if (dm_dev_is_switch(static_cast<dm_dev_id_t>(_devID)) && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
             resetLocalParser(ACCESS_REG_PLLP);
             updateField("local_port", _localPort);
             sendRegister(ACCESS_REG_PLLP, MACCESS_REG_METHOD_GET);
@@ -505,7 +505,7 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
 
         fields.push_back(AmberField("Device_Description", _mstDevName.c_str()));
 
-        if (_devID != DeviceGB100 && _devID != DeviceGR100)
+        if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             resetLocalParser(ACCESS_REG_MSGI);
             sendRegister(ACCESS_REG_MSGI, MACCESS_REG_METHOD_GET);
@@ -520,7 +520,7 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
         string tech = _mlxlinkMaps->_tech[getFieldValue("technology")];
         fields.push_back(AmberField("Device_FW_Version", fwVersion));
 
-        if (_devID != DeviceGB100 && _devID != DeviceGR100)
+        if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
         resetLocalParser(ACCESS_REG_MDIR);
         sendRegister(ACCESS_REG_MDIR, MACCESS_REG_METHOD_GET);
@@ -556,7 +556,7 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
         }
         fields.push_back(AmberField("Chip_Temp", temp));
 
-        if (_devID != DeviceGB100 && _devID != DeviceGR100)
+        if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             resetLocalParser(ACCESS_REG_MSGI);
             sendRegister(ACCESS_REG_MSGI, MACCESS_REG_METHOD_GET);
@@ -565,7 +565,7 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
 
         fields.push_back(AmberField("Temp_sensor_name", sensNameTemp));
 
-        if (_productTechnology == PRODUCT_5NM && _devID != DeviceGB100 && _devID != DeviceGR100) {
+        if (_productTechnology == PRODUCT_5NM && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
             resetLocalParser(ACCESS_REG_PPCR);
             updateField("local_port", _localPort);
             sendRegister(ACCESS_REG_PPCR, MACCESS_REG_METHOD_GET);
@@ -776,16 +776,35 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
             resetLocalParser(ACCESS_REG_PPCNT);
             updateField("local_port", _localPort);
             updateField("grp", PPCNT_PHY_GROUP);
+            updateField("lp_gl", (u_int32_t)(_localPort == 255));
             sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
             fields.push_back(AmberField("Link_Down", to_string(getFieldValue("link_down_events"))));
             fields.push_back(
                 AmberField("successful_recovery_events", to_string(getFieldValue("successful_recovery_events"))));
+
+            resetLocalParser(ACCESS_REG_PPCNT);
+            updateField("local_port", _localPort);
+            updateField("grp", PPCNT_STATISTICAL_GROUP);
+            updateField("lp_gl", (u_int32_t)(_localPort == 255));
+            sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
+            string val = "";
+            for (u_int32_t lane = 0; lane < MAX_NETWORK_LANES; lane++)
+            {
+                val = "N/A";
+                if (lane < _numOfLanes)
+                {
+                    val = getFieldStr("raw_ber_coef_lane" + to_string(lane)) + "E-" +
+                          getFieldStr("raw_ber_magnitude_lane" + to_string(lane));
+                }
+                fields.push_back(AmberField("Raw_BER_lane" + to_string(lane), val));
+            }
 
             if (_isPortETH) {
                 resetLocalParser(ACCESS_REG_PPCNT);
                 updateField("local_port", _localPort);
                 updateField("port_type", NETWORK_PORT_TYPE_NEAR);
                 updateField("grp", PPCNT_PHY_GROUP);
+                updateField("lp_gl", (u_int32_t)(_localPort == 255));
                 sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
 
                 fields.push_back(AmberField("Link_Down_GB_host", to_string(getFieldValue("link_down_events"))));
@@ -794,14 +813,11 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
                 updateField("local_port", _localPort);
                 updateField("port_type", NETWORK_PORT_TYPE_FAR);
                 updateField("grp", PPCNT_PHY_GROUP);
+                updateField("lp_gl", (u_int32_t)(_localPort == 255));
                 sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
 
                 fields.push_back(AmberField("Link_Down_GB_line", to_string(getFieldValue("link_down_events"))));
             }
-
-            fields.push_back(AmberField("Link_Down", to_string(getFieldValue("link_down_events"))));
-            fields.push_back(
-                AmberField("successful_recovery_events", to_string(getFieldValue("successful_recovery_events"))));
 
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
@@ -845,6 +861,7 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
                 updateField("port_type", NETWORK_PORT_TYPE_TILE_USR);
             }
             updateField("grp", PPCNT_PHY_GROUP);
+            updateField("lp_gl", (u_int32_t)(_localPort == 255));
             sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
             if (!_isMCMSysValid) {
                 AmberField::_dataValid = false;
@@ -857,6 +874,7 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkStatus()
                 updateField("port_type", NETWORK_PORT_TYPE_MAIN_USR);
             }
             updateField("grp", PPCNT_PHY_GROUP);
+            updateField("lp_gl", (u_int32_t)(_localPort == 255));
             sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
             if (!_isMCMSysValid) {
                 AmberField::_dataValid = false;
@@ -1959,20 +1977,29 @@ vector < AmberField > MlxlinkAmBerCollector::getTroubleshootingInfo()
 
 void MlxlinkAmBerCollector::getModuleLinkUpInfoPage(vector<AmberField>& fields)
 {
-    fields.push_back(AmberField("up_reason_pwr", _mlxlinkMaps->_upReasonPwr[getFieldValue("up_reason_pwr")]));
-    fields.push_back(AmberField("up_reason_drv", _mlxlinkMaps->_upReasonDrv[getFieldValue("up_reason_drv")]));
-    fields.push_back(AmberField("up_reason_mng", _mlxlinkMaps->_upReasonMng[getFieldValue("up_reason_mng")]));
-    fields.push_back(AmberField("time_to_link_up_msec", getFieldStr("time_to_link_up")));
-    fields.push_back(AmberField("fast_link_up_status", _mlxlinkMaps->_fastLinkUpStatus[getFieldValue("fast_link_up_"
-                                                                                                     "status")]));
-    fields.push_back(
-      AmberField("time_to_link_up_phy_up_to_active", getFieldStr("time_to_link_up_phy_up_to_active") + "msec"));
-    fields.push_back(AmberField("time_to_link_up_sd_to_phy_up", getFieldStr("time_to_link_up_sd_to_phy_up") + "msec"));
-    fields.push_back(AmberField("time_to_link_up_disable_to_sd", getFieldStr("time_to_link_up_disable_to_sd") + "mse"
-                                                                                                                "c"));
-    fields.push_back(
-      AmberField("time_to_link_up_disable_to_pd", getFieldStr("time_to_link_up_disable_to_pd") + "msec"));
-    fields.push_back(AmberField("time_logical_init_to_active", getFieldStr("time_logical_init_to_active")));
+    string timeLogicalInitToActive = "N/A";
+
+    // This is A workaround until we update GPUNet PRM and those fields will be external.
+    if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+    {
+        timeLogicalInitToActive = getFieldStr("time_logical_init_to_active");
+        fields.push_back(AmberField("up_reason_pwr", _mlxlinkMaps->_upReasonPwr[getFieldValue("up_reason_pwr")]));
+        fields.push_back(AmberField("up_reason_drv", _mlxlinkMaps->_upReasonDrv[getFieldValue("up_reason_drv")]));
+        fields.push_back(AmberField("up_reason_mng", _mlxlinkMaps->_upReasonMng[getFieldValue("up_reason_mng")]));
+        fields.push_back(AmberField("time_to_link_up_msec", getFieldStr("time_to_link_up")));
+        fields.push_back(AmberField("fast_link_up_status", _mlxlinkMaps->_fastLinkUpStatus[getFieldValue("fast_link_up_"
+                                                                                                         "status")]));
+        fields.push_back(
+          AmberField("time_to_link_up_phy_up_to_active", getFieldStr("time_to_link_up_phy_up_to_active") + "msec"));
+        fields.push_back(
+          AmberField("time_to_link_up_sd_to_phy_up", getFieldStr("time_to_link_up_sd_to_phy_up") + "msec"));
+        fields.push_back(AmberField("time_to_link_up_disable_to_sd", getFieldStr("time_to_link_up_disable_to_sd") +
+                                                                       "mse"
+                                                                       "c"));
+        fields.push_back(
+          AmberField("time_to_link_up_disable_to_pd", getFieldStr("time_to_link_up_disable_to_pd") + "msec"));
+    }
+    fields.push_back(AmberField("time_logical_init_to_active", timeLogicalInitToActive));
 }
 
 vector<AmberField> MlxlinkAmBerCollector::getLinkUpInfo()
@@ -1981,7 +2008,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkUpInfo()
 
     try
     {
-        if (!_isPortPCIE && !(_devID == DeviceGB100 || _devID == DeviceGR100))
+        if (!_isPortPCIE && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
@@ -2260,7 +2287,7 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
     try
     {
         string operRecoveryStr = "N/A";
-        if (!_isPortPCIE && !(_devID == DeviceGB100 || _devID == DeviceGR100))
+        if (!_isPortPCIE && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             resetLocalParser(ACCESS_REG_PPRM);
             updateField("local_port", _localPort);

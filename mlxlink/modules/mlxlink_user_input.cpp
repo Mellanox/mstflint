@@ -85,12 +85,14 @@ UserInput::UserInput()
     _ddm = false;
     _write = false;
     _read = false;
+    _showPlr = false;
 
     _device = "";
     _extAdbFile = "";
     _logFile = "";
     _portType = "NETWORK";
     _paosCmd = "";
+    _pmaosCmd = "";
     _pplmFec = "";
     _speedFec = "";
     _pplrLB = "";

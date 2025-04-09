@@ -165,6 +165,7 @@ int sx_set_driver_strength(mflash* mfl, u_int8_t driver_strength);
 int sx_get_driver_strength(mflash* mfl, u_int8_t* driver_strength);
 int sx_set_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* protect_info);
 int sx_get_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* protect_info);
+uint8_t sx_get_bp_val(mflash* mfl, write_protect_info_t* protect_info);
 int sx_set_dummy_cycles(mflash* mfl, u_int8_t num_of_cycles);
 int sx_get_dummy_cycles(mflash* mfl, u_int8_t* num_of_cycles);
 int gw_wait_ready(mflash* mfl, const char* msg);
