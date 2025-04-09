@@ -1963,12 +1963,29 @@ static int mtcr_inband_open(mfile* mf, const char* name)
 int mread_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
 {
     u_int8_t addr_width = 0;
+    int      chunk_size = MAX_TRANS_SIZE;
+    int      left_size = 0;
+    int      bytes = 0;
+    void   * dest_ptr = data;
+    int      rc = length;
 
     mget_i2c_addr_width(mf, &addr_width);
-    int rc = mread_i2cblock(mf, mf->i2c_secondary, addr_width, offset, data, length);
+
+    for (left_size = length; left_size > 0; left_size -= chunk_size) {
+        int toread;
+        toread = (left_size >= chunk_size) ? chunk_size : left_size;
+        bytes = mread_i2cblock(mf, mf->i2c_secondary, addr_width, offset, dest_ptr, toread);
+        if (bytes != toread) {
+            rc = length - left_size;
+            break;
+        }
+
+        offset += chunk_size;
+        dest_ptr += chunk_size;
+    }
 
     if (rc != length) {
-        return rc; /* The value the ioctl which failed returned. */
+        return rc;     /* The value the ioctl which failed returned. */
     }
     fix_endianness((u_int32_t*)data, length, 1);
     return length;
@@ -2009,6 +2026,7 @@ void fix_endianness(u_int32_t* buf, int len, int be_mode)
 
 
 static int force_i2c_address = -1;
+
 void set_force_i2c_address(int i2c_address)
 {
     force_i2c_address = i2c_address;
@@ -2055,7 +2073,7 @@ static inline int prepare_i2c_data(unsigned char* buf, DType dtype, u_int32_t of
 
 int mtcr_i2c_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
-    int                        bytes_read = 4; /* Indicates success */
+    int                        bytes_read = 4;     /* Indicates success */
     struct i2c_rdwr_ioctl_data i2c_rdwr;
     struct i2c_msg             i2c_msg[2];
     char                       maddr[4];
@@ -2098,14 +2116,14 @@ int mtcr_i2c_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 
 int mtcr_i2c_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
 {
-    int                        bytes_written = 4; /* Indicates success */
+    int                        bytes_written = 4;     /* Indicates success */
     struct i2c_rdwr_ioctl_data i2c_rdwr;
     struct i2c_msg             i2c_msg[1];
-    unsigned char              data[8]; /* Buffer for I2C data */
+    unsigned char              data[8];     /* Buffer for I2C data */
 
     memset(data, 0, sizeof(data));
 
-    i2c_msg[0].addr = mf->i2c_secondary; /* Device address */
+    i2c_msg[0].addr = mf->i2c_secondary;     /* Device address */
     i2c_msg[0].flags = 0;               /* Write operation */
     i2c_msg[0].buf = data;              /* Pointer to the data buffer */
 
@@ -2230,9 +2248,9 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
     ul_ctx_t* ctx = mf->ul_ctx;
 
     mf->tp = MST_DEV_I2C;
-    mf->dtype = MST_TAVOR; /* In MFT devices are opened as MST_TAVOR, this is to ensure correct address_width for the I2C transactions. */
+    mf->dtype = MST_TAVOR;     /* In MFT devices are opened as MST_TAVOR, this is to ensure correct address_width for the I2C transactions. */
     mf->flags |= MDEVS_DEV_I2C;
-    mf->i2c_secondary = 0x48; /* Livefish devices and non-secure generation functional devices. */
+    mf->i2c_secondary = 0x48;     /* Livefish devices and non-secure generation functional devices. */
 
 
     ctx->mread4 = mtcr_i2c_mread4;
@@ -2255,23 +2273,26 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
     return 0;
 }
 
-u_int32_t secured_devices[] = {DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId};
+u_int32_t secured_devices[] =
+{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId};
+
 #define SECURED_DEVICE_ID_TABLE_SIZE (sizeof(secured_devices) / sizeof(u_int32_t))
 
-u_int32_t supported_device_ids[] = {DeviceConnectX3_HwId,        DeviceConnectIB_HwId,      DeviceConnectX3Pro_HwId,
-                                    DeviceSwitchIB_HwId,         DeviceSpectrum_HwId,       DeviceConnectX4_HwId,
-                                    DeviceConnectX4LX_HwId,      DeviceConnectX5_HwId,      DeviceConnectX6_HwId,
-                                    DeviceConnectX6DX_HwId,      DeviceConnectX6LX_HwId,    DeviceConnectX7_HwId,
-                                    DeviceConnectX8_HwId,        DeviceBlueField_HwId,      DeviceBlueField2_HwId,
-                                    DeviceBlueField3_HwId,       DeviceBlueField4_HwId,     DeviceSwitchIB2_HwId,
-                                    DeviceCableQSFP_HwId,        DeviceCableQSFPaging_HwId, DeviceCableCMIS_HwId,
-                                    DeviceCableCMISPaging_HwId,  DeviceCableSFP_HwId,       DeviceCableSFP51_HwId,
-                                    DeviceCableSFP51Paging_HwId, DeviceSpectrum2_HwId,      DeviceQuantum_HwId,
-                                    DeviceQuantum2_HwId,         DeviceQuantum3_HwId,       DeviceArdbeg_HwId,
-                                    DeviceBaritone_HwId,         DeviceMenhit_HwId,         DeviceArcusPTC_HwId,
-                                    DeviceArcusP_HwId,           DeviceArcusE_HwId,         DeviceSecureHost_HwId,
-                                    DeviceSpectrum3_HwId,        DeviceSpectrum4_HwId,      DeviceGearBox_HwId,
-                                    DeviceGearBoxManager_HwId,   DeviceAbirGearBox_HwId,    DeviceGB100_HwId};
+u_int32_t supported_device_ids[] =
+{DeviceConnectX3_HwId,        DeviceConnectIB_HwId,      DeviceConnectX3Pro_HwId,
+ DeviceSwitchIB_HwId,         DeviceSpectrum_HwId,       DeviceConnectX4_HwId,
+ DeviceConnectX4LX_HwId,      DeviceConnectX5_HwId,      DeviceConnectX6_HwId,
+ DeviceConnectX6DX_HwId,      DeviceConnectX6LX_HwId,    DeviceConnectX7_HwId,
+ DeviceConnectX8_HwId,        DeviceBlueField_HwId,      DeviceBlueField2_HwId,
+ DeviceBlueField3_HwId,       DeviceBlueField4_HwId,     DeviceSwitchIB2_HwId,
+ DeviceCableQSFP_HwId,        DeviceCableQSFPaging_HwId, DeviceCableCMIS_HwId,
+ DeviceCableCMISPaging_HwId,  DeviceCableSFP_HwId,       DeviceCableSFP51_HwId,
+ DeviceCableSFP51Paging_HwId, DeviceSpectrum2_HwId,      DeviceQuantum_HwId,
+ DeviceQuantum2_HwId,         DeviceQuantum3_HwId,       DeviceArdbeg_HwId,
+ DeviceBaritone_HwId,         DeviceMenhit_HwId,         DeviceArcusPTC_HwId,
+ DeviceArcusP_HwId,           DeviceArcusE_HwId,         DeviceSecureHost_HwId,
+ DeviceSpectrum3_HwId,        DeviceSpectrum4_HwId,      DeviceGearBox_HwId,
+ DeviceGearBoxManager_HwId,   DeviceAbirGearBox_HwId,    DeviceGB100_HwId};
 #define SUPPORTED_DEVICE_ID_TABLE_SIZE (sizeof(supported_device_ids) / sizeof(u_int32_t))
 
 int is_supported_device_id(u_int16_t dev_id)
@@ -2365,7 +2386,7 @@ int change_i2c_secondary_address(mfile* mf, DType dtype)
         return 0;
     }
 
-    do{
+    do {
         if (counter == 100) {
             return 1;
         }
