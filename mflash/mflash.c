@@ -1444,6 +1444,7 @@ int is4_flash_lock(mflash* mfl, int lock_state)
     }
     /* Obtain GPIO Semaphore */
     static u_int32_t cnt;
+    uint32_t badacce6 = 3134901478; // this is the return value of gw_cmd_register when trying to read CR space on a secured device
     u_int32_t        word = 0;
     u_int32_t        lock_status = 0;
 
@@ -1458,6 +1459,12 @@ int is4_flash_lock(mflash* mfl, int lock_state)
                 return MFE_SEM_LOCKED;
             }
             MREAD4(mfl->gw_cmd_register_addr, &word);
+
+            if (badacce6 == word)
+            {
+                return MFE_NO_FLASH_DETECTED;
+            }
+
             lock_status = EXTRACT(word, HBO_LOCK, 1);
             if (lock_status) {
                 msleep(1);
