@@ -65,7 +65,6 @@
     } while (0)
 
 
-
 #ifdef ENABLE_MST_DEV_I2C
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
@@ -74,7 +73,6 @@
 #ifndef MAX_TRANS_SIZE
 #define MAX_TRANS_SIZE 64
 #endif
-
 
 
 #include <stdio.h>
@@ -1965,12 +1963,12 @@ static int mtcr_inband_open(mfile* mf, const char* name)
 int mread_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
 {
     u_int8_t addr_width = 0;
+
     mget_i2c_addr_width(mf, &addr_width);
     int rc = mread_i2cblock(mf, mf->i2c_secondary, addr_width, offset, data, length);
 
-    if (rc != length)
-    {
-        return rc; // The value the ioctl which failed returned.
+    if (rc != length) {
+        return rc; /* The value the ioctl which failed returned. */
     }
     fix_endianness((u_int32_t*)data, length, 1);
     return length;
@@ -1982,11 +1980,11 @@ int mwrite_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
     fix_endianness((u_int32_t*)data, length, 1);
 
     u_int8_t addr_width = 0;
+
     mget_i2c_addr_width(mf, &addr_width);
     int rc = mwrite_i2cblock(mf, mf->i2c_secondary, addr_width, offset, data, length);
 
-    if (rc != length)
-    {
+    if (rc != length) {
         return rc;
     }
     return length;
@@ -1996,19 +1994,15 @@ void fix_endianness(u_int32_t* buf, int len, int be_mode)
 {
     int i;
 
-    for (i = 0; i < (len / 4); ++i)
-    {
-        if (be_mode)
-        {
-            // printf("-D- before: buf[%d] = %#x\n", i, buf[i]);
+    for (i = 0; i < (len / 4); ++i) {
+        if (be_mode) {
+            /* printf("-D- before: buf[%d] = %#x\n", i, buf[i]); */
             buf[i] = __be32_to_cpu(buf[i]);
-            // printf("-D- before: buf[%d] = %#x\n", i, buf[i]);
-        }
-        else
-        {
-            // printf("-D- before: buf[%d] = %#x\n", i, buf[i]);
+            /* printf("-D- before: buf[%d] = %#x\n", i, buf[i]); */
+        } else {
+            /* printf("-D- before: buf[%d] = %#x\n", i, buf[i]); */
             buf[i] = __cpu_to_be32(buf[i]);
-            // printf("-D- before: buf[%d] = %#x\n", i, buf[i]);
+            /* printf("-D- before: buf[%d] = %#x\n", i, buf[i]); */
         }
     }
 }
@@ -2022,38 +2016,38 @@ void set_force_i2c_address(int i2c_address)
 
 static int prepare_i2c_buf(void* maddr, DType dtype, u_int32_t offset)
 {
-    switch (dtype)
+    switch (dtype) {
+    case MST_TAVOR:
     {
-        case MST_TAVOR:
-        {
-            u_int32_t offs = __cpu_to_be32(offset);
-            memcpy(maddr, &offs, 4);
-            return 4;
-        }
+        u_int32_t offs = __cpu_to_be32(offset);
+        memcpy(maddr, &offs, 4);
+        return 4;
+    }
 
-        case MST_GAMLA:
-        {
-            u_int16_t offs = offset & 0xffff;
-            offs = __cpu_to_be16(offs);
-            memcpy(maddr, &offs, 2);
-            return 2;
-        }
+    case MST_GAMLA:
+    {
+        u_int16_t offs = offset & 0xffff;
+        offs = __cpu_to_be16(offs);
+        memcpy(maddr, &offs, 2);
+        return 2;
+    }
 
-        case MST_DIMM:
-        {
-            u_int8_t offs1 = offset & 0xff;
-            memcpy(maddr, &offs1, 1);
-            return 1;
-        }
+    case MST_DIMM:
+    {
+        u_int8_t offs1 = offset & 0xff;
+        memcpy(maddr, &offs1, 1);
+        return 1;
+    }
 
-        default:
-            return 0;
+    default:
+        return 0;
     }
 }
 
 static inline int prepare_i2c_data(unsigned char* buf, DType dtype, u_int32_t offset, void* data, int data_length)
 {
     int len;
+
     len = prepare_i2c_buf(buf, dtype, offset);
     memcpy(buf + len, data, data_length);
     return data_length + len;
@@ -2061,11 +2055,11 @@ static inline int prepare_i2c_data(unsigned char* buf, DType dtype, u_int32_t of
 
 int mtcr_i2c_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 {
-    int bytes_read = 4; // Indicates success
+    int                        bytes_read = 4; /* Indicates success */
     struct i2c_rdwr_ioctl_data i2c_rdwr;
-    struct i2c_msg i2c_msg[2];
-    char maddr[4];
-    char data[4];
+    struct i2c_msg             i2c_msg[2];
+    char                       maddr[4];
+    char                       data[4];
 
     i2c_msg[0].addr = mf->i2c_secondary;
     i2c_msg[0].flags = 0;
@@ -2079,84 +2073,91 @@ int mtcr_i2c_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
 
     i2c_msg[0].len = prepare_i2c_buf(maddr, mf->dtype, offset);
 
-    if (!i2c_msg[0].len)
-    {
+    if (!i2c_msg[0].len) {
         i2c_msg[0].flags = I2C_M_RD;
         i2c_msg[0].len = 4;
         i2c_msg[0].buf = (unsigned char*)data;
         i2c_rdwr.nmsgs = 1;
     }
     int int_rc = ioctl(mf->fd, I2C_RDWR, &i2c_rdwr);
-    if (int_rc < 0)
-    {
+
+    if (int_rc < 0) {
         bytes_read = -1;
         DBG_PRINTF("function: %s. I2C ioctl failed: %s\n", __FUNCTION__, strerror(errno));
     }
     BYTES_TO_DWORD_BE(value, data);
 
-    DBG_PRINTF("mtcr_i2c_mread4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_read: %d\n", mf->i2c_secondary,
-           offset, value, bytes_read);
+    DBG_PRINTF("mtcr_i2c_mread4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_read: %d\n",
+               mf->i2c_secondary,
+               offset,
+               value,
+               bytes_read);
 
     return bytes_read;
 }
 
-int mtcr_i2c_mwrite4(mfile* mf, unsigned int offset, u_int32_t value) {
-    int bytes_written = 4; // Indicates success
+int mtcr_i2c_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
+{
+    int                        bytes_written = 4; /* Indicates success */
     struct i2c_rdwr_ioctl_data i2c_rdwr;
-    struct i2c_msg i2c_msg[1];
-    unsigned char data[8]; // Buffer for I2C data
+    struct i2c_msg             i2c_msg[1];
+    unsigned char              data[8]; /* Buffer for I2C data */
+
     memset(data, 0, sizeof(data));
 
-    i2c_msg[0].addr = mf->i2c_secondary; // Device address
-    i2c_msg[0].flags = 0;               // Write operation
-    i2c_msg[0].buf = data;              // Pointer to the data buffer
+    i2c_msg[0].addr = mf->i2c_secondary; /* Device address */
+    i2c_msg[0].flags = 0;               /* Write operation */
+    i2c_msg[0].buf = data;              /* Pointer to the data buffer */
 
     value = __cpu_to_be32(value);
     int len = prepare_i2c_data(data, mf->dtype, offset, &value, sizeof(value));
+
     i2c_msg[0].len = len;
 
-    // Set up the ioctl structure
+    /* Set up the ioctl structure */
     i2c_rdwr.msgs = i2c_msg;
     i2c_rdwr.nmsgs = 1;
 
     int int_rc = ioctl(mf->fd, I2C_RDWR, &i2c_rdwr);
+
     if (int_rc < 0) {
         bytes_written = -1;
         DBG_PRINTF("function: %s. I2C ioctl failed: %s\n", __FUNCTION__, strerror(errno));
         return bytes_written;
     }
 
-    printf("mtcr_i2c_mwrite4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_written: %d\n", mf->i2c_secondary,
-           offset, value, bytes_written);
+    printf("mtcr_i2c_mwrite4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_written: %d\n",
+           mf->i2c_secondary,
+           offset,
+           value,
+           bytes_written);
 
     return bytes_written;
 }
 
-int mread_i2cblock(mfile* mf,
-                            unsigned char i2c_secondary,
-                            u_int8_t addr_width,
-                            unsigned int offset,
-                            void* data,
-                            int length)
+int mread_i2cblock(mfile       * mf,
+                   unsigned char i2c_secondary,
+                   u_int8_t      addr_width,
+                   unsigned int  offset,
+                   void        * data,
+                   int           length)
 {
     int rc;
 
-    if (length > MAX_TRANS_SIZE)
-    {
+    if (length > MAX_TRANS_SIZE) {
         errno = EINVAL;
         return -1;
     }
 
-    if (mset_i2c_addr_width(mf, addr_width))
-    {
+    if (mset_i2c_addr_width(mf, addr_width)) {
         errno = EINVAL;
         return -1;
     }
     mf->i2c_secondary = i2c_secondary;
 
-    char maddr[4];
+    char                       maddr[4];
     struct i2c_rdwr_ioctl_data i2c_rdwr;
-    struct i2c_msg i2c_msg[2];
+    struct i2c_msg             i2c_msg[2];
 
     i2c_msg[0].addr = mf->i2c_secondary;
     i2c_msg[0].flags = 0;
@@ -2169,47 +2170,44 @@ int mread_i2cblock(mfile* mf,
     i2c_rdwr.nmsgs = 2;
     i2c_msg[0].len = prepare_i2c_buf(maddr, mf->dtype, offset);
 
-    if (!i2c_msg[0].len)
-    {
+    if (!i2c_msg[0].len) {
         i2c_msg[0].flags = I2C_M_RD;
         i2c_msg[0].len = length;
         i2c_msg[0].buf = (unsigned char*)data;
         i2c_rdwr.nmsgs = 1;
     }
     rc = ioctl(mf->fd, I2C_RDWR, &i2c_rdwr);
-    if (rc < 0)
-    {
+    if (rc < 0) {
         DBG_PRINTF("function: %s. I2C ioctl failed: %s\n", __FUNCTION__, strerror(errno));
         return rc;
     }
     return length;
 }
 
-int mwrite_i2cblock(mfile* mf,
+int mwrite_i2cblock(mfile       * mf,
                     unsigned char i2c_secondary,
-                    u_int8_t addr_width,
-                    unsigned int offset,
-                    void* data,
-                    int length)
+                    u_int8_t      addr_width,
+                    unsigned int  offset,
+                    void        * data,
+                    int           length)
 {
     int rc;
 
-    if (length > MAX_TRANS_SIZE)
-    {
+    if (length > MAX_TRANS_SIZE) {
         errno = EINVAL;
         return -1;
     }
 
-    if (mset_i2c_addr_width(mf, addr_width))
-    {
+    if (mset_i2c_addr_width(mf, addr_width)) {
         errno = EINVAL;
         return -1;
     }
     mf->i2c_secondary = i2c_secondary;
 
     struct i2c_rdwr_ioctl_data i2c_rdwr;
-    struct i2c_msg i2c_msg[1];
-    unsigned char buf[64 + 4];
+    struct i2c_msg             i2c_msg[1];
+    unsigned char              buf[64 + 4];
+
     i2c_msg[0].addr = mf->i2c_secondary;
     i2c_msg[0].flags = 0;
     i2c_msg[0].buf = buf;
@@ -2230,10 +2228,11 @@ int mwrite_i2cblock(mfile* mf,
 static int mtcr_i2c_open(mfile* mf, const char* name)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
+
     mf->tp = MST_DEV_I2C;
-    mf->dtype = MST_TAVOR; // In MFT devices are opened as MST_TAVOR, this is to ensure correct address_width for the I2C transactions.
+    mf->dtype = MST_TAVOR; /* In MFT devices are opened as MST_TAVOR, this is to ensure correct address_width for the I2C transactions. */
     mf->flags |= MDEVS_DEV_I2C;
-    mf->i2c_secondary = 0x48; // Livefish devices and non-secure generation functional devices.
+    mf->i2c_secondary = 0x48; /* Livefish devices and non-secure generation functional devices. */
 
 
     ctx->mread4 = mtcr_i2c_mread4;
@@ -2241,16 +2240,14 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
     ctx->mread4_block = mread_i2c_chunk;
     ctx->mwrite4_block = mwrite_i2c_chunk;
 
-    if ((mf->fd = open(name, O_RDWR | O_SYNC)) < 0)
-    {
+    if ((mf->fd = open(name, O_RDWR | O_SYNC)) < 0) {
         safe_free(&mf);
         DBG_PRINTF("mtcr_i2c_open: failed to open %s: %s\n", name, strerror(errno));
         return -1;
     }
 
-    // Support functional devices from secure generation (CX7, Quantum2 and above)
-    if (change_i2c_secondary_address(mf, mf->dtype))
-    {
+    /* Support functional devices from secure generation (CX7, Quantum2 and above) */
+    if (change_i2c_secondary_address(mf, mf->dtype)) {
         DBG_PRINTF("mtcr_i2c_open: failed to determine i2c secondary address\n");
         return -1;
     }
@@ -2280,22 +2277,24 @@ u_int32_t supported_device_ids[] = {DeviceConnectX3_HwId,        DeviceConnectIB
 int is_supported_device_id(u_int16_t dev_id)
 {
     int counter;
-    for (counter = 0; counter < SUPPORTED_DEVICE_ID_TABLE_SIZE; counter++)
-        if (supported_device_ids[counter] == dev_id)
-        {
+
+    for (counter = 0; counter < SUPPORTED_DEVICE_ID_TABLE_SIZE; counter++) {
+        if (supported_device_ids[counter] == dev_id) {
             return 1;
         }
+    }
     return 0;
 }
 
 int is_secure_debug_access(u_int32_t dev_id)
 {
     int counter;
-    for (counter = 0; counter < SECURED_DEVICE_ID_TABLE_SIZE; counter++)
-        if (secured_devices[counter] == dev_id)
-        {
+
+    for (counter = 0; counter < SECURED_DEVICE_ID_TABLE_SIZE; counter++) {
+        if (secured_devices[counter] == dev_id) {
             return 1;
         }
+    }
     return 0;
 }
 
@@ -2306,13 +2305,11 @@ int try_to_read_secure_device(mfile* mf)
 
     mf->i2c_secondary = 0x47;
 
-    if (read_device_id(mf, &dev_id_0x47) != 4)
-    {
+    if (read_device_id(mf, &dev_id_0x47) != 4) {
         return 1;
     }
 
-    if (!is_secure_debug_access(dev_id_0x47))
-    {
+    if (!is_secure_debug_access(dev_id_0x47)) {
         return 1;
     }
 
@@ -2328,73 +2325,64 @@ int change_i2c_secondary_address(mfile* mf, DType dtype)
 #if !defined(__VMKERNEL_UW_NATIVE__)
     u_int32_t dev_id_0x48 = 0xffff;
     u_int32_t dev_id_0x47 = 0xffff;
-    int counter = 0;
+    int       counter = 0;
 
-    switch (mf->tp)
-    {
-        case MST_DEV_I2C:
-            break;
-        default:
-            return 0;
+    switch (mf->tp) {
+    case MST_DEV_I2C:
+        break;
+
+    default:
+        return 0;
     }
 
-    if (force_i2c_address != -1)
-    {
+    if (force_i2c_address != -1) {
         mf->i2c_secondary = force_i2c_address;
         return 0;
     }
 
     DBG_PRINTF("trying to read from 0x48 to make sure this is the correct secondary address\n");
-    if (read_device_id(mf, &dev_id_0x48) != 4)
-    {
+    if (read_device_id(mf, &dev_id_0x48) != 4) {
         return 1;
     }
 
-    if (!is_supported_device_id(dev_id_0x48))
-    {
+    if (!is_supported_device_id(dev_id_0x48)) {
         DBG_PRINTF("Not supported device, trying to read from 0x47\n");
         return try_to_read_secure_device(mf);
     }
 
-    if (!is_secure_debug_access(dev_id_0x48))
-    {
+    if (!is_secure_debug_access(dev_id_0x48)) {
         return 0;
     }
 
     mf->i2c_secondary = 0x47;
     DBG_PRINTF("I2C secondary set to 0x47\n");
 
-    if (read_device_id(mf, &dev_id_0x47) != 4)
-    {
+    if (read_device_id(mf, &dev_id_0x47) != 4) {
         return 1;
     }
 
-    if (dev_id_0x48 == dev_id_0x47)
-    {
+    if (dev_id_0x48 == dev_id_0x47) {
         return 0;
     }
 
-    do
-    {
-        if (counter == 100)
-        {
+    do{
+        if (counter == 100) {
             return 1;
         }
         counter++;
         msleep(10);
 
-        if (read_device_id(mf, &dev_id_0x47) != 4)
-        {
+        if (read_device_id(mf, &dev_id_0x47) != 4) {
             return 1;
         }
     } while (dev_id_0x48 != dev_id_0x47);
 
     return 0;
-#endif
+#endif /* if !defined(__VMKERNEL_UW_NATIVE__) */
 
     return 0;
 }
-#endif
+#endif /* ifdef ENABLE_MST_DEV_I2C */
 
 
 static MType mtcr_parse_name(const char* name,
@@ -2612,7 +2600,8 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xcf80, /* Spectrum4 */
                                    0x1976, /* Schrodinger */
                                    0x1979, /* Freysa */
-                                   0x2900, /* BW-00 */
+                                   0x197d, /* Connect-X8 Bridge */
+                                   0x2900, /* GB100 */
                                    0xd2f4, /* Sunbird */
                                    -1};
 
@@ -3183,7 +3172,6 @@ void mpci_change_ul(mfile* mf)
     if (mf->res_tp == MST_PCICONF) {
         mf->res_tp = MST_PCI;
         mf->tp = MST_PCICONF;
-
     } else if (mf->res_tp == MST_PCI) {
         mf->res_tp = MST_PCICONF;
         mf->tp = MST_PCI;
@@ -3298,8 +3286,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
 #ifdef ENABLE_MST_DEV_I2C
     case MST_DEV_I2C:
         rc = mtcr_i2c_open(mf, name);
-        if (rc)
-        {
+        if (rc) {
             DBG_PRINTF("Failed to open I2C device: %s\n", name);
             goto open_failed;
         }
@@ -4280,232 +4267,6 @@ int mvpd_read4_ul(mfile* mf, unsigned int offset, u_int8_t value[4])
     }
 }
 
-/************************************
-* Function: m_err2str
-************************************/
-const char* m_err2str(MError status)
-{
-    switch (status) {
-    case ME_OK:
-        return "ME_OK";
-
-    case ME_ERROR:
-        return "General error";
-
-    case ME_BAD_PARAMS:
-        return "ME_BAD_PARAMS";
-
-    case ME_CR_ERROR:
-        return "ME_CR_ERROR";
-
-    case ME_NOT_IMPLEMENTED:
-        return "ME_NOT_IMPLEMENTED";
-
-    case ME_SEM_LOCKED:
-        return "Semaphore locked";
-
-    case ME_MEM_ERROR:
-        return "ME_MEM_ERROR";
-
-    case ME_UNSUPPORTED_OPERATION:
-        return "ME_UNSUPPORTED_OPERATION";
-
-    case ME_GMP_MAD_UNSUPPORTED_OPERATION:
-        return "Sending GMP MAD supports only Get() method, and you are trying to send Set() method\n"
-               "to a register which is not small enough to send with SMP MAD.";
-
-    case ME_MAD_SEND_FAILED:
-        return "ME_MAD_SEND_FAILED";
-
-    case ME_UNKOWN_ACCESS_TYPE:
-        return "ME_UNKOWN_ACCESS_TYPE";
-
-    case ME_UNSUPPORTED_ACCESS_TYPE:
-        return "ME_UNSUPPORTED_ACCESS_TYPE";
-
-    case ME_UNSUPPORTED_DEVICE:
-        return "ME_UNSUPPORTED_DEVICE";
-
-    /* Reg access errors */
-    case ME_REG_ACCESS_BAD_STATUS_ERR:
-        return "ME_REG_ACCESS_BAD_STATUS_ERR";
-
-    case ME_REG_ACCESS_BAD_METHOD:
-        return "Bad method";
-
-    case ME_REG_ACCESS_NOT_SUPPORTED:
-        return "The Register access is not supported by the device";
-
-    case ME_REG_ACCESS_DEV_BUSY:
-        return "Device is busy";
-
-    case ME_REG_ACCESS_VER_NOT_SUPP:
-        return "Version not supported";
-
-    case ME_REG_ACCESS_UNKNOWN_TLV:
-        return "Unknown TLV";
-
-    case ME_REG_ACCESS_REG_NOT_SUPP:
-        return "Register not supported";
-
-    case ME_REG_ACCESS_CLASS_NOT_SUPP:
-        return "Class not supported";
-
-    case ME_REG_ACCESS_METHOD_NOT_SUPP:
-        return "Method not supported";
-
-    case ME_REG_ACCESS_BAD_PARAM:
-        return "Bad parameter";
-
-    case ME_REG_ACCESS_RES_NOT_AVLBL:
-        return "Resource unavailable";
-
-    case ME_REG_ACCESS_MSG_RECPT_ACK:
-        return "Message receipt ack";
-
-    case ME_REG_ACCESS_UNKNOWN_ERR:
-        return "Unknown register error";
-
-    case ME_REG_ACCESS_SIZE_EXCEEDS_LIMIT:
-        return "Register is too large";
-
-    case ME_REG_ACCESS_CONF_CORRUPT:
-        return "Config Section Corrupted";
-
-    case ME_REG_ACCESS_LEN_TOO_SMALL:
-        return "The given Register length is too small for the Tlv";
-
-    case ME_REG_ACCESS_BAD_CONFIG:
-        return "The configuration is rejected";
-
-    case ME_REG_ACCESS_ERASE_EXCEEDED:
-        return "The erase count exceeds its limit";
-
-    case ME_REG_ACCESS_INTERNAL_ERROR:
-        return "Firmware internal error";
-
-    case ME_REG_ACCESS_NOT_SUPPORTED_BY_SECONDARY:
-        return "Not supported by secondary";
-
-    case ME_REG_ACCESS_NOT_READY:
-        return "The device temporarily cannot execute the command";
-
-    case ME_REG_ACCESS_EXCEED_LIM:
-        return "Required capability exceeds device limits";
-
-    case ME_REG_ACCESS_BAD_RES_STATE:
-        return "Resource is not in the appropriate state or ownership";
-
-    case ME_REG_ACCESS_BAD_INDEX:
-        return " Index out of range";
-
-    case ME_REG_ACCESS_BAD_INPUT_LEN:
-        return "Bad command input len";
-
-    case ME_REG_ACCESS_BAD_OUTPUT_LEN:
-        return "Bad command output len";
-
-    /* ICMD access errors */
-    case ME_ICMD_STATUS_CR_FAIL:
-        return "ME_ICMD_STATUS_CR_FAIL";
-
-    case ME_ICMD_STATUS_SEMAPHORE_TO:
-        return "ME_ICMD_STATUS_SEMAPHORE_TO";
-
-    case ME_ICMD_STATUS_EXECUTE_TO:
-        return "ME_ICMD_STATUS_EXECUTE_TO";
-
-    case ME_ICMD_STATUS_IFC_BUSY:
-        return "ME_ICMD_STATUS_IFC_BUSY";
-
-    case ME_ICMD_STATUS_ICMD_NOT_READY:
-        return "ME_ICMD_STATUS_ICMD_NOT_READY";
-
-    case ME_ICMD_UNSUPPORTED_ICMD_VERSION:
-        return "ME_ICMD_UNSUPPORTED_ICMD_VERSION";
-
-    case ME_ICMD_NOT_SUPPORTED:
-        return "ME_REG_ACCESS_ICMD_NOT_SUPPORTED";
-
-    case ME_ICMD_INVALID_OPCODE:
-        return "ME_ICMD_INVALID_OPCODE";
-
-    case ME_ICMD_INVALID_CMD:
-        return "ME_ICMD_INVALID_CMD";
-
-    case ME_ICMD_OPERATIONAL_ERROR:
-        return "ME_ICMD_OPERATIONAL_ERROR";
-
-    case ME_ICMD_BAD_PARAM:
-        return "ME_ICMD_BAD_PARAM";
-
-    case ME_ICMD_BUSY:
-        return "ME_ICMD_BUSY";
-
-    case ME_ICMD_ICM_NOT_AVAIL:
-        return "ME_ICMD_ICM_NOT_AVAIL";
-
-    case ME_ICMD_WRITE_PROTECT:
-        return "ME_ICMD_WRITE_PROTECT";
-
-    case ME_ICMD_UNKNOWN_STATUS:
-        return "ME_ICMD_UNKNOWN_STATUS";
-
-    case ME_ICMD_SIZE_EXCEEDS_LIMIT:
-        return "ME_ICMD_SIZE_EXCEEDS_LIMIT";
-
-    /* TOOLS HCR access errors */
-    case ME_CMDIF_BUSY:
-        return "Tools HCR busy";
-
-    case ME_CMDIF_TOUT:
-        return "Tools HCR time out.";
-
-    case ME_CMDIF_BAD_OP:
-        return "Operation not supported";
-
-    case ME_CMDIF_NOT_SUPP:
-        return "Tools HCR not supported";
-
-    case ME_CMDIF_BAD_SYS:
-        return "bad system status (driver may be down or Fw does not support this operation)";
-
-    case ME_CMDIF_UNKN_TLV:
-        return "Unknown TLV";
-
-    case ME_CMDIF_RES_STATE:
-        return "Bad reset state";
-
-    case ME_CMDIF_UNKN_STATUS:
-        return "Unknown status";
-
-    /* MAD IFC errors */
-    case ME_MAD_BUSY:
-        return "Temporarily busy. MAD discarded. This is not an error";
-
-    case ME_MAD_REDIRECT:
-        return "Redirection. This is not an error";
-
-    case ME_MAD_BAD_VER:
-        return "Bad version";
-
-    case ME_MAD_METHOD_NOT_SUPP:
-        return "Method not supported";
-
-    case ME_MAD_METHOD_ATTR_COMB_NOT_SUPP:
-        return "Method and attribute combination isn't supported";
-
-    case ME_MAD_BAD_DATA:
-        return "Bad attribute modifier or field";
-
-    case ME_MAD_GENERAL_ERR:
-        return "Unknown MAD error";
-
-    default:
-        return "Unknown error code";
-    }
-}
-
 int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info, int page_amount)
 {
 #if !defined(__VMKERNEL_UW_NATIVE__)
@@ -4744,7 +4505,8 @@ int is_pcie_switch_device(mfile* mf)
         unsigned int device_id;
     } devs[] = {
         {0x1976}, /* ConnectX6dx (Schrodinger). */
-        {0x1979} /* ConnectX7 (FreysaP1011). */
+        {0x1979}, /* ConnectX7 (FreysaP1011). */
+        {0x197d}  /* ConnectX8 Bridge. */
     };
 
     /* take care of corrupted input */
@@ -4789,36 +4551,30 @@ int is_pcie_switch_device(mfile* mf)
 
 void safe_free(mfile** pmf)
 {
-    if ((*pmf) != NULL)
-    {
+    if ((*pmf) != NULL) {
         free(*pmf);
         (*pmf) = NULL;
     }
 }
 
 
-
-
-
-
-
 #define DATA_WIDTHS_NUM 4
 
-typedef struct width2dtype
-{
+typedef struct width2dtype {
     u_int8_t addr_width;
-    DType dtype;
+    DType    dtype;
 } width2dtype_t;
 
-width2dtype_t width2dtype_arr[DATA_WIDTHS_NUM] = {{0, MST_NOADDR}, {1, MST_DIMM}, {2, MST_GAMLA}, {4, MST_TAVOR}};
+width2dtype_t width2dtype_arr[DATA_WIDTHS_NUM] = {
+    {0, MST_NOADDR}, {1, MST_DIMM}, {2, MST_GAMLA}, {4, MST_TAVOR}
+};
 
 int mset_i2c_addr_width(mfile* mf, u_int8_t addr_width)
 {
     int i;
-    for (i = 0; i < DATA_WIDTHS_NUM; i++)
-    {
-        if (width2dtype_arr[i].addr_width == addr_width)
-        {
+
+    for (i = 0; i < DATA_WIDTHS_NUM; i++) {
+        if (width2dtype_arr[i].addr_width == addr_width) {
             mf->dtype = width2dtype_arr[i].dtype;
             return 0;
         }
@@ -4829,10 +4585,9 @@ int mset_i2c_addr_width(mfile* mf, u_int8_t addr_width)
 int mget_i2c_addr_width(mfile* mf, u_int8_t* addr_width)
 {
     int i;
-    for (i = 0; i < DATA_WIDTHS_NUM; i++)
-    {
-        if (width2dtype_arr[i].dtype == mf->dtype)
-        {
+
+    for (i = 0; i < DATA_WIDTHS_NUM; i++) {
+        if (width2dtype_arr[i].dtype == mf->dtype) {
             *addr_width = width2dtype_arr[i].addr_width;
             return 0;
         }
@@ -4843,13 +4598,11 @@ int mget_i2c_addr_width(mfile* mf, u_int8_t* addr_width)
 unsigned char mset_i2c_secondary(mfile* mf, unsigned char new_i2c_secondary)
 {
     unsigned char ret;
-    if (mf)
-    {
+
+    if (mf) {
         ret = mf->i2c_secondary;
         mf->i2c_secondary = new_i2c_secondary;
-    }
-    else
-    {
+    } else {
         ret = 0xff;
     }
     return ret;
@@ -4857,8 +4610,7 @@ unsigned char mset_i2c_secondary(mfile* mf, unsigned char new_i2c_secondary)
 
 unsigned char mget_i2c_secondary(mfile* mf)
 {
-    if (mf)
-    {
+    if (mf) {
         return mf->i2c_secondary;
     }
     return 0;

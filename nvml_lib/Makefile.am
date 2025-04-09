@@ -35,6 +35,7 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD  -pipe $(COMPILER_FPIC)
+AM_CFLAGS = -Wall -W -g -MP -MD  -pipe $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libnvml_device.la
 

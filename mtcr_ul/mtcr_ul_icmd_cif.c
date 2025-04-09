@@ -265,6 +265,12 @@ int MREAD4_SEMAPHORE(mfile* mf, int offset, u_int32_t* ptr)
         return ME_ICMD_STATUS_CR_FAIL;
     }
     RESTORE_SPACE(mf);
+
+    /* icmd semaphore lock in non-vsec cr-space is only the last bit in the DWORD. */
+    if (!mf->functional_vsec_supp) {
+        *ptr = EXTRACT(*ptr, 31, 1);
+    }
+
     return ME_OK;
 }
 
@@ -1037,7 +1043,7 @@ static int icmd_init_cr(mfile* mf)
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX7;
         mf->icmd.version_bit_offset = CMD_PTR_BITLEN_CX8;
         mf->icmd.version_bitlen = ICMD_VERSION_BITLEN_CX8;
-        hcr_address = CMD_PTR_ADDR_CX8; // hcr_address is "version address"
+        hcr_address = CMD_PTR_ADDR_CX8; /* hcr_address is "version address" */
         break;
 
     case (AMOS_GBOX_HW_ID):
@@ -1319,4 +1325,3 @@ void icmd_close(mfile* mf)
         mf->icmd.icmd_opened = 0;
     }
 }
-
