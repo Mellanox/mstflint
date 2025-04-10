@@ -139,6 +139,7 @@ typedef struct
     u_int32_t ini_file_version;
     u_int8_t geo_address;
     bool geo_address_valid;
+    uint8_t independent_module;
 
 } fwInfoT;
 
