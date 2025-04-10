@@ -45,6 +45,7 @@
 #include <map>
 #include "mlxcfg_view.h"
 #include "mlxcfg_db_items.h"
+#include <memory>
 
 using namespace std;
 using namespace DB;
@@ -56,6 +57,7 @@ public:
     ParamValue(u_int32_t size) : _size(size) {}
 
     virtual string getVal() = 0;
+    virtual string getValFormatted();
     virtual void setVal(string s) = 0;
     virtual void setVal(u_int32_t);
     virtual void setVal(vector<string>);
@@ -120,6 +122,7 @@ public:
     BinaryParamValue(u_int32_t size) : UnsignedParamValue(size){};
 
     string getVal();
+    string getValFormatted();
     void setVal(string val);
     void parseValue(string, u_int32_t&, string&);
 
@@ -145,6 +148,7 @@ public:
     BytesParamValue(u_int32_t size) : ParamValue(size) {}
     using ParamValue::setVal;
     string getVal();
+    string getValFormatted();
     void setVal(string val);
     void setVal(const vector<u_int32_t>& buffVal);
     void parseValue(string, u_int32_t&, string&);
@@ -164,11 +168,13 @@ public:
     ArrayParamValue(string size, u_int32_t count, enum ParamType paramType);
     ~ArrayParamValue();
     using ParamValue::setVal;
+    using ParamValue::getValFormatted;
     string getVal();
     void setVal(string val);
     void setVal(vector<string> vals);
-    string getVal(u_int32_t index);
     void setVal(string val, u_int32_t index);
+    string getVal(u_int32_t index);
+    string getValFormatted(u_int32_t index);
     u_int32_t getIntVal();
     vector<u_int32_t> getIntVals();
     vector<string> getStrVals();
@@ -178,13 +184,34 @@ public:
 
 protected:
     u_int32_t _elementSizeInBits;
-    vector<ParamValue*> _values;
+    vector<std::shared_ptr<ParamValue>> _values;
 };
 
 class EnumArrayParamValue : public ArrayParamValue
 {
 public:
     EnumArrayParamValue(string size, u_int32_t count, enum ParamType paramType, map<string, u_int32_t> textualValues);
+};
+
+class BytesArrayParamVal : public ParamValue
+{
+public:
+    BytesArrayParamVal(u_int32_t numOfBytes);
+    virtual ~BytesArrayParamVal();
+
+    void setVal(string val) override;
+    void setVal(vector<string> vals) override;
+    void setVal(u_int32_t val) override;
+    void setVal(u_int32_t val, u_int32_t offset);
+    void setVal(const vector<u_int32_t>& buffVal);
+    string getVal() override;
+    vector<u_int32_t> getIntVals();
+    vector<string> getStrVals();
+    void pack(u_int8_t* buff, u_int32_t offset) override;
+    void unpack(u_int8_t* buff, u_int32_t offset) override;
+
+    bool isEmpty;
+    vector<uint8_t> _bytes;
 };
 
 class Param
@@ -197,7 +224,7 @@ private:
 public:
     string _name;
     string _tlvName;
-    Offset* _offset;
+    shared_ptr<Offset> _offset;
     string _size;
     enum ParamType _type;
     string _description;
@@ -212,7 +239,7 @@ public:
     string _regex;
     u_int32_t _port;
     int32_t _module;
-    ParamValue* _value;
+    shared_ptr<ParamValue> _value;
     u_int32_t _supportedFromVersion;
     u_int32_t _arrayLength;
 

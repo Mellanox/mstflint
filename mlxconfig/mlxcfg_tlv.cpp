@@ -178,29 +178,27 @@ TLVConf::TLVConf(int columnsCount, char** dataRow, char** headerRow) :
     _isReadOnly = false;
 }
 
-TLVConf::~TLVConf()
-{
-    VECTOR_ITERATOR(std::shared_ptr<Param>, this->_params, param)
-    {
-        param->reset();
-    }
-}
+TLVConf::~TLVConf() {}
 
 int TLVConf::getMaxPort(mfile* mf)
 {
-    reg_access_status_t rc;
-    struct reg_access_hca_mgir_ext mgir;
-    memset(&mgir, 0, sizeof(mgir));
-    rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
-    if (rc == ME_OK)
+    static int maxPort = 0;
+    if (maxPort == 0)
     {
-        return mgir.hw_info.num_ports;
+        reg_access_status_t rc;
+        struct reg_access_hca_mgir_ext mgir;
+        memset(&mgir, 0, sizeof(mgir));
+        rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
+        if (rc == ME_OK)
+        {
+            maxPort = mgir.hw_info.num_ports;
+        }
+        else
+        {
+            maxPort = 8;
+        }
     }
-    else
-    {
-        /*TODO adding implementation of mst device class*/
-        return 8;
-    }
+    return maxPort;
 }
 
 int TLVConf::getMaxModule()
@@ -547,18 +545,18 @@ void TLVConf::parseParamValue(string paramMlxconfigName,
     p->_value->parseValue(valToParse, val, strVal);
 }
 
-vector<pair<ParamView, string> > TLVConf::query(mfile* mf, QueryType qT)
+vector<pair<ParamView, string>> TLVConf::query(mfile* mf, QueryType qT)
 {
     bool defaultQueried = false;
     bool getDefault = (qT == QueryDefault);
-    vector<pair<ParamView, string> > queryResult;
+    vector<pair<ParamView, string>> queryResult;
     vector<u_int8_t> defaultBuff(_size, 0);
 
     mnva(mf, _buff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_GET, qT);
 
     unpack(_buff.data());
 
-    VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
+    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
     {
         ParamView paramView;
         std::shared_ptr<Param> p = *(it);
@@ -641,7 +639,7 @@ void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, 
 void TLVConf::updateParamByName(string paramName, string val)
 {
     std::shared_ptr<Param> p = NULL;
-    VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
+    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
     {
         if (paramName == (*it)->_name)
         {
@@ -664,7 +662,7 @@ void TLVConf::updateParamByName(string paramName, string val)
 void TLVConf::updateParamByName(string paramName, vector<string> vals)
 {
     std::shared_ptr<Param> p = NULL;
-    VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
+    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
     {
         if (paramName == (*it)->_name)
         {
@@ -759,7 +757,7 @@ std::shared_ptr<Param> TLVConf::getParamByName(string n)
 
 std::shared_ptr<Param> TLVConf::findParamByMlxconfigName(string mlxconfigname)
 {
-    VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
+    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
     {
         if (mlxconfigname == (*it)->_mlxconfigName)
         {
@@ -771,7 +769,7 @@ std::shared_ptr<Param> TLVConf::findParamByMlxconfigName(string mlxconfigname)
 
 std::shared_ptr<Param> TLVConf::findParamByMlxconfigNamePortModule(string mlxconfigname, u_int32_t port, int32_t module)
 {
-    VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
+    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
     {
         if ((mlxconfigname == (*it)->_mlxconfigName) && (port == (*it)->_port) && (module == (*it)->_module))
         {
@@ -783,7 +781,7 @@ std::shared_ptr<Param> TLVConf::findParamByMlxconfigNamePortModule(string mlxcon
 
 std::shared_ptr<Param> TLVConf::findParamByName(string name)
 {
-    VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
+    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
     {
         if (name == (*it)->_name)
         {
@@ -825,7 +823,7 @@ void evalExpr(string expr, string var, u_int32_t& varVal, u_int32_t& exprResult)
 }
 
 void TLVConf::getExprVarsValues(vector<string>& vars,
-                                vector<TLVConf*> ruleTLVs,
+                                std::vector<std::shared_ptr<TLVConf>> ruleTLVs,
                                 map<string, u_int32_t>& var2ValMap,
                                 string expr)
 {
@@ -846,7 +844,7 @@ void TLVConf::getExprVarsValues(vector<string>& vars,
             else
             {
                 string tlvName = var.substr(0, pos);
-                VECTOR_ITERATOR(TLVConf*, ruleTLVs, k)
+                for (std::vector<std::shared_ptr<TLVConf>>::iterator k = ruleTLVs.begin(); k != ruleTLVs.end(); ++k)
                 {
                     if ((*k)->_name == tlvName)
                     {
@@ -912,7 +910,9 @@ void substituteVarsValues(string orgExpr,
     // eval temp vars values and update the map:
 }
 
-void TLVConf::evalTempVars(std::shared_ptr<Param> p, vector<TLVConf*> ruleTLVs, map<string, u_int32_t>& var2ValMap)
+void TLVConf::evalTempVars(std::shared_ptr<Param> p,
+                           std::vector<std::shared_ptr<TLVConf>> ruleTLVs,
+                           map<string, u_int32_t>& var2ValMap)
 {
     vector<string> vars;
 
@@ -933,7 +933,7 @@ void TLVConf::evalTempVars(std::shared_ptr<Param> p, vector<TLVConf*> ruleTLVs, 
 
 u_int32_t TLVConf::evalRule(std::shared_ptr<Param> p,
                             string rule,
-                            vector<TLVConf*>& ruleTLVs,
+                            std::vector<std::shared_ptr<TLVConf>>& ruleTLVs,
                             map<string, u_int32_t>& var2ValMap)
 {
     string expr = "";
@@ -951,9 +951,9 @@ u_int32_t TLVConf::evalRule(std::shared_ptr<Param> p,
     return r;
 }
 
-void TLVConf::checkRules(vector<TLVConf*> ruleTLVs)
+void TLVConf::checkRules(std::vector<std::shared_ptr<TLVConf>> ruleTLVs)
 {
-    VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
+    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
     {
         std::shared_ptr<Param> p = *it;
         map<string, u_int32_t> var2ValMap;
@@ -1069,7 +1069,7 @@ void TLVConf::genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, b
     }
     xmlTemplate += ">\n\n";
 
-    VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
+    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
     {
         string paramXMLTemplate;
         (*it)->genXMLTemplate(paramXMLTemplate, withVal);

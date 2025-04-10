@@ -135,12 +135,15 @@ public:
     std::shared_ptr<Param> findParamByName(std::string n);
     void CheckModuleAndPortMatchClass(int32_t module, u_int32_t port, std::string mlxconfigName);
     void getExprVarsValues(std::vector<std::string>&,
-                           std::vector<TLVConf*>,
+                           std::vector<std::shared_ptr<TLVConf>>,
                            std::map<std::string, u_int32_t>&,
                            std::string);
-    void evalTempVars(std::shared_ptr<Param>, std::vector<TLVConf*>, std::map<std::string, u_int32_t>&);
-    u_int32_t evalRule(std::shared_ptr<Param>, std::string, std::vector<TLVConf*>&, std::map<std::string, u_int32_t>&);
-    void checkRules(std::vector<TLVConf*> ruleTLVs);
+    void evalTempVars(std::shared_ptr<Param>, std::vector<std::shared_ptr<TLVConf>>, std::map<std::string, u_int32_t>&);
+    u_int32_t evalRule(std::shared_ptr<Param>,
+                       std::string,
+                       std::vector<std::shared_ptr<TLVConf>>&,
+                       std::map<std::string, u_int32_t>&);
+    void checkRules(std::vector<std::shared_ptr<TLVConf>>);
     void setOnDevice(mfile* mf);
     void getRuleTLVs(std::set<std::string>& result);
     void parseParamValue(std::string, std::string, u_int32_t&, std::string&, u_int32_t index);
