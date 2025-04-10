@@ -37,11 +37,12 @@
  *      Author: ahmads
  */
 
-#include <sstream>
 #include <iostream>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <iomanip>
 
 #include "../tools_layouts/adb_to_c_utils.h"
 #include "../common/compatibility.h"
@@ -120,7 +121,7 @@ Param::Param(int columnsCount, char** dataRow, char** headerRow) :
     _supportedFromVersion(0),
     _arrayLength(0)
 {
-    _offset = (Offset*)NULL;
+    _offset = NULL;
     for (int i = 0; i < columnsCount; i++)
     {
         if (strcmp(headerRow[i], PARAM_NAME_HEADER) == 0)
@@ -144,9 +145,12 @@ Param::Param(int columnsCount, char** dataRow, char** headerRow) :
             CHECKFIELD(dataRow[i], headerRow[i])
             if (_offset)
             {
-                delete _offset;
+                _offset.reset(new Offset(dataRow[i]));
             }
-            _offset = new Offset(dataRow[i]);
+            else
+            {
+                _offset = make_shared<Offset>(dataRow[i]);
+            }
             _isOffsetFound = true;
         }
         else if (strcmp(headerRow[i], PARAM_SIZE_HEADER) == 0)
@@ -259,17 +263,17 @@ Param::Param(int columnsCount, char** dataRow, char** headerRow) :
     switch (_type)
     {
         case BOOLEAN_TYPE:
-            _value = new BoolParamValue(_size);
+            _value = make_shared<BoolParamValue>(_size);
             break;
 
         case ENUM:
             if (_arrayLength == 0)
             {
-                _value = new EnumParamValue(_size, _textualValues);
+                _value = make_shared<EnumParamValue>(_size, _textualValues);
             }
             else
             {
-                _value = new EnumArrayParamValue(_size, _arrayLength, ENUM, _textualValues);
+                _value = make_shared<EnumArrayParamValue>(_size, _arrayLength, ENUM, _textualValues);
             }
             break;
 
@@ -277,31 +281,31 @@ Param::Param(int columnsCount, char** dataRow, char** headerRow) :
         case UNSIGNED:
             if (_arrayLength == 0)
             {
-                _value = new UnsignedParamValue(_size);
+                _value = make_shared<UnsignedParamValue>(_size);
             }
             else
             {
-                _value = new ArrayParamValue(_size, _arrayLength, UNSIGNED);
+                _value = make_shared<ArrayParamValue>(_size, _arrayLength, UNSIGNED);
             }
             break;
 
         case BINARY:
             if (_arrayLength == 0)
             {
-                _value = new BinaryParamValue(_size);
+                _value = make_shared<BinaryParamValue>(_size);
             }
             else
             {
-                _value = new ArrayParamValue(_size, _arrayLength, BINARY);
+                _value = make_shared<ArrayParamValue>(_size, _arrayLength, BINARY);
             }
             break;
 
         case STRING:
-            _value = new StringParamValue(_arrayLength);
+            _value = make_shared<StringParamValue>(_arrayLength);
             break;
 
         case BYTES:
-            _value = new BytesParamValue(_arrayLength);
+            _value = make_shared<BytesArrayParamVal>(_arrayLength);
             break;
 
         default:
@@ -309,18 +313,14 @@ Param::Param(int columnsCount, char** dataRow, char** headerRow) :
     }
 }
 
-Param::~Param()
-{
-    delete _value;
-    delete _offset;
-}
+Param::~Param() {}
 
-void Param::pack(u_int8_t* buff)
+void Param::pack(uint8_t* buff)
 {
     _value->pack(buff, _offset->toBigEndian(getSizeInBits(_size), _arrayLength == 0));
 }
 
-void Param::unpack(u_int8_t* buff)
+void Param::unpack(uint8_t* buff)
 {
     _value->unpack(buff, _offset->toBigEndian(getSizeInBits(_size), _arrayLength == 0));
 }
@@ -344,7 +344,7 @@ void Param::setVal(string val, u_int32_t index)
     {
         throw MlxcfgException("Operation not supported for this type of parameters");
     }
-    ((ArrayParamValue*)_value)->setVal(val, index);
+    dynamic_pointer_cast<ArrayParamValue>(_value)->setVal(val, index);
 }
 
 void Param::setVal(vector<string> vals)
@@ -363,7 +363,7 @@ string Param::getVal(u_int32_t index)
     {
         throw MlxcfgException("Operation not supported for this type of parameters");
     }
-    return ((ArrayParamValue*)_value)->getVal(index);
+    return dynamic_pointer_cast<ArrayParamValue>(_value)->getVal(index);
 }
 
 void Param::getView(ParamView& paramView)
@@ -387,12 +387,20 @@ void Param::getView(ParamView& paramView)
         strVal += numToStr(_arrayLength - 1) + "]";
         paramView.strVal = strVal;
         paramView.val = 0x0;
-        paramView.arrayVal = ((ArrayParamValue*)_value)->getIntVals();
-        paramView.strArrayVal = ((ArrayParamValue*)_value)->getStrVals();
+        if (_type == BYTES)
+        {
+            paramView.arrayVal = dynamic_pointer_cast<BytesArrayParamVal>(_value)->getIntVals();
+            paramView.strArrayVal = dynamic_pointer_cast<BytesArrayParamVal>(_value)->getStrVals();
+        }
+        else
+        {
+            paramView.arrayVal = dynamic_pointer_cast<ArrayParamValue>(_value)->getIntVals();
+            paramView.strArrayVal = dynamic_pointer_cast<ArrayParamValue>(_value)->getStrVals();
+        }
     }
     else
     {
-        paramView.val = ((UnsignedParamValue*)_value)->_value;
+        paramView.val = dynamic_pointer_cast<UnsignedParamValue>(_value)->_value;
         paramView.strVal = _value->getVal();
     }
 }
@@ -620,6 +628,11 @@ u_int32_t ParamValue::getIntVal()
     throw MlxcfgException(OPERATION_NOT_SUPPORTED);
 }
 
+string ParamValue::getValFormatted()
+{
+    return getVal();
+}
+
 void ParamValue::setVal(u_int32_t)
 {
     throw MlxcfgException(OPERATION_NOT_SUPPORTED);
@@ -659,12 +672,12 @@ void UnsignedParamValue::setVal(const u_int32_t value)
     _value = value;
 }
 
-void UnsignedParamValue::pack(u_int8_t* buff, u_int32_t bitOffset)
+void UnsignedParamValue::pack(uint8_t* buff, u_int32_t bitOffset)
 {
     adb2c_push_bits_to_buff(buff, bitOffset, _size, _value);
 }
 
-void UnsignedParamValue::unpack(u_int8_t* buff, u_int32_t bitOffset)
+void UnsignedParamValue::unpack(uint8_t* buff, u_int32_t bitOffset)
 {
     _value = adb2c_pop_bits_from_buff(buff, bitOffset, _size);
 }
@@ -801,6 +814,11 @@ string BinaryParamValue::getVal()
     return numToStr(_value, true);
 }
 
+string BinaryParamValue::getValFormatted()
+{
+    return numToStrFormatted(_value, true);
+}
+
 void BinaryParamValue::setVal(string val)
 {
     string tmpStr = val;
@@ -849,7 +867,7 @@ void StringParamValue::setVal(string val)
     _value = val;
 }
 
-void StringParamValue::pack(u_int8_t* buff, u_int32_t bitOffset)
+void StringParamValue::pack(uint8_t* buff, u_int32_t bitOffset)
 {
     unsigned int i = 0;
     u_int32_t byteOffset = bitOffset / 8;
@@ -864,7 +882,7 @@ void StringParamValue::pack(u_int8_t* buff, u_int32_t bitOffset)
     }
 }
 
-void StringParamValue::unpack(u_int8_t* buff, u_int32_t bitOffset)
+void StringParamValue::unpack(uint8_t* buff, u_int32_t bitOffset)
 {
     u_int32_t byteOffset = bitOffset / 8;
 
@@ -883,7 +901,22 @@ string BytesParamValue::getVal()
 {
     string strVal = "";
 
-    VECTOR_ITERATOR(BinaryParamValue, _bytes, binary) { strVal += binary->getVal(); }
+    VECTOR_ITERATOR(BinaryParamValue, _bytes, binary)
+    {
+        strVal += binary->getVal();
+    }
+
+    return strVal;
+}
+
+string BytesParamValue::getValFormatted()
+{
+    string strVal = "";
+
+    VECTOR_ITERATOR(BinaryParamValue, _bytes, binary)
+    {
+        strVal += binary->getValFormatted();
+    }
 
     return strVal;
 }
@@ -919,7 +952,7 @@ void BytesParamValue::parseValue(string, u_int32_t&, string&)
     throw MlxcfgException("Not supported for BYTES types\n");
 }
 
-void BytesParamValue::pack(u_int8_t* buff, u_int32_t bitOffset)
+void BytesParamValue::pack(uint8_t* buff, u_int32_t bitOffset)
 {
     VECTOR_ITERATOR(BinaryParamValue, _bytes, binary)
     {
@@ -928,7 +961,7 @@ void BytesParamValue::pack(u_int8_t* buff, u_int32_t bitOffset)
     }
 }
 
-void BytesParamValue::unpack(u_int8_t* buff, u_int32_t bitOffset)
+void BytesParamValue::unpack(uint8_t* buff, u_int32_t bitOffset)
 {
     VECTOR_ITERATOR(BinaryParamValue, _bytes, binary)
     {
@@ -960,15 +993,18 @@ ArrayParamValue::ArrayParamValue(string size, u_int32_t count, enum ParamType pa
     }
     for (u_int32_t i = 0; i < count; i++)
     {
-        ParamValue* t;
+        std::shared_ptr<ParamValue> t;
         switch (paramType)
         {
             case UNSIGNED:
-                t = new UnsignedParamValue(_elementSizeInBits);
+                t = make_shared<UnsignedParamValue>(_elementSizeInBits);
                 break;
 
             case BINARY:
-                t = new BinaryParamValue(_elementSizeInBits);
+                t = make_shared<BinaryParamValue>(_elementSizeInBits);
+                break;
+            case BYTES:
+                t = make_shared<BinaryParamValue>(_elementSizeInBits);
                 break;
 
             default:
@@ -980,16 +1016,7 @@ ArrayParamValue::ArrayParamValue(string size, u_int32_t count, enum ParamType pa
     }
 };
 
-ArrayParamValue::~ArrayParamValue()
-{
-    for (u_int32_t i = 0; i < _values.size(); i++)
-    {
-        if (_values[i] != NULL)
-        {
-            delete _values[i];
-        }
-    }
-}
+ArrayParamValue::~ArrayParamValue() {}
 
 u_int32_t ArrayParamValue::getIntVal()
 {
@@ -1053,15 +1080,15 @@ u_int32_t ArrayParamValue::offsetToBigEndian(u_int32_t offset)
     }
 }
 
-void ArrayParamValue::pack(u_int8_t* buff, u_int32_t offset)
+void ArrayParamValue::pack(uint8_t* buff, u_int32_t offset)
 {
     /* The FW expect a big endian buffer for both the order of the elements in the array
      * and the values of each element. So if elementsInDW = 2, _values[0] will point to buff[16..31]
      * To understand this piece of code, try to think about these cases:
      * elementsInDW = 1, 2, 4
      */
-    vector<ParamValue*>::iterator j;
-    for (vector<ParamValue*>::iterator it = _values.begin(); it != _values.end();)
+    vector<std::shared_ptr<ParamValue>>::iterator j;
+    for (vector<std::shared_ptr<ParamValue>>::iterator it = _values.begin(); it != _values.end();)
     {
         int elementsInDW = 32 / _elementSizeInBits;
         j = it + elementsInDW - 1;
@@ -1077,10 +1104,10 @@ void ArrayParamValue::pack(u_int8_t* buff, u_int32_t offset)
     }
 }
 
-void ArrayParamValue::unpack(u_int8_t* buff, u_int32_t offset)
+void ArrayParamValue::unpack(uint8_t* buff, u_int32_t offset)
 {
-    vector<ParamValue*>::iterator j;
-    for (vector<ParamValue*>::iterator it = _values.begin(); it != _values.end();)
+    vector<std::shared_ptr<ParamValue>>::iterator j;
+    for (vector<std::shared_ptr<ParamValue>>::iterator it = _values.begin(); it != _values.end();)
     {
         int elementsInDW = 32 / _elementSizeInBits;
         j = it + elementsInDW - 1;
@@ -1104,7 +1131,7 @@ void ArrayParamValue::parseValue(string strToParse, u_int32_t& val, string& strV
 vector<u_int32_t> ArrayParamValue::getIntVals()
 {
     vector<u_int32_t> v;
-    for (vector<ParamValue*>::iterator it = _values.begin(); it != _values.end(); it++)
+    for (vector<std::shared_ptr<ParamValue>>::iterator it = _values.begin(); it != _values.end(); it++)
     {
         v.push_back((*it)->getIntVal());
     }
@@ -1114,7 +1141,7 @@ vector<u_int32_t> ArrayParamValue::getIntVals()
 vector<string> ArrayParamValue::getStrVals()
 {
     vector<string> v;
-    for (vector<ParamValue*>::iterator it = _values.begin(); it != _values.end(); it++)
+    for (vector<std::shared_ptr<ParamValue>>::iterator it = _values.begin(); it != _values.end(); it++)
     {
         v.push_back((*it)->getVal());
     }
@@ -1129,7 +1156,158 @@ EnumArrayParamValue::EnumArrayParamValue(string size,
 {
     for (u_int32_t i = 0; i < count; i++)
     {
-        ParamValue* t = new EnumParamValue(_elementSizeInBits, textualValues);
+        std::shared_ptr<ParamValue> t = make_shared<EnumParamValue>(_elementSizeInBits, textualValues);
         _values.push_back(t);
     }
+}
+
+BytesArrayParamVal::BytesArrayParamVal(u_int32_t numOfBytes) : ParamValue(numOfBytes), isEmpty(true)
+{
+    for (u_int32_t i = 0; i < numOfBytes; i++)
+    {
+        _bytes.push_back(0);
+    }
+}
+
+BytesArrayParamVal::~BytesArrayParamVal() {}
+
+void BytesArrayParamVal::setVal(string val)
+{
+    BinaryParamValue::trimHexString(val);
+
+    // check if DW aligned:
+    if (val.length() % 8)
+    {
+        throw MlxcfgException("Value is not Dword aligned");
+    }
+
+    if (val.length() / 2 > _bytes.size())
+    {
+        throw MlxcfgException("Value size %d bytes is larger than max size: %d bytes", val.length() / 2, _bytes.size());
+    }
+
+    u_int32_t i = 0;
+    string s = "";
+    try
+    {
+        for (; i < val.length(); i += 2)
+        {
+            s = val.substr(i, 2); // every byte is 2 hex charecters
+            _bytes[i / 2] = stoi(s, nullptr, 16);
+        }
+    }
+    catch (exception& e)
+    {
+        throw MlxcfgException("Failed to convert value %s to a number, position %d in value %s", s.c_str(), i,
+                              val.c_str());
+    }
+    isEmpty = false;
+}
+
+void BytesArrayParamVal::setVal(u_int32_t val)
+{
+    // setVal(val, 0);
+    (void)val;
+    throw MlxcfgException(OPERATION_NOT_SUPPORTED);
+}
+
+void BytesArrayParamVal::setVal(u_int32_t val, u_int32_t offset)
+{
+    // Unpack the 32-bit integer into four bytes
+    _bytes[offset] = (val >> 24) & 0xFF; // Most significant byte
+    _bytes[offset + 1] = (val >> 16) & 0xFF;
+    _bytes[offset + 2] = (val >> 8) & 0xFF;
+    _bytes[offset + 3] = val & 0xFF; // Least significant byte
+}
+
+void BytesArrayParamVal::setVal(const vector<u_int32_t>& buffVal)
+{
+    // each element in the uint32_t is 4 elements in uint8_t _bytes
+    if (buffVal.size() * 4 > _bytes.size())
+    {
+        throw MlxcfgException("Value size %d bytes is larger than max size: %d bytes", buffVal.size() * 4,
+                              _bytes.size());
+    }
+
+    u_int32_t i = 0;
+    for (const auto& singleVal : buffVal)
+    {
+        setVal(singleVal, i);
+        i += 4;
+    }
+    isEmpty = false;
+}
+
+void BytesArrayParamVal::setVal(vector<string> vals)
+{
+    stringstream ss;
+    for (string v : vals)
+    {
+        ss << v;
+    }
+    setVal(ss.str());
+}
+
+string BytesArrayParamVal::getVal()
+{
+    if (isEmpty)
+    {
+        return "";
+    }
+    stringstream ss;
+    ss << std::uppercase << std::hex;
+    for (vector<uint8_t>::iterator b = _bytes.begin(); b != _bytes.end(); ++b)
+    {
+        ss << std::setfill('0') << std::setw(2) << (static_cast<uint32_t>(*b));
+    }
+    return ss.str();
+}
+
+void BytesArrayParamVal::pack(uint8_t* buff, u_int32_t offset)
+{
+    for (vector<uint8_t>::iterator b = _bytes.begin(); b != _bytes.end(); b++)
+    {
+        adb2c_push_bits_to_buff(buff, offset, 8, *b);
+        offset += 8;
+    }
+}
+
+void BytesArrayParamVal::unpack(uint8_t* buff, u_int32_t offset)
+{
+    for (vector<uint8_t>::iterator b = _bytes.begin(); b != _bytes.end(); b++)
+    {
+        *b = adb2c_pop_bits_from_buff(buff, offset, 8);
+        offset += 8;
+    }
+    isEmpty = false;
+}
+
+vector<u_int32_t> BytesArrayParamVal::getIntVals()
+{
+    vector<u_int32_t> uintVector;
+    if (!isEmpty)
+    {
+        for (std::vector<uint8_t>::iterator b = _bytes.begin(); b != _bytes.end(); b++)
+        {
+            uintVector.push_back(*b);
+        }
+    }
+
+    return uintVector;
+}
+
+vector<string> BytesArrayParamVal::getStrVals()
+{
+    vector<string> strVector;
+    if (!isEmpty)
+    {
+        for (std::vector<uint8_t>::iterator b = _bytes.begin(); b != _bytes.end(); b++)
+        {
+            stringstream ss;
+            ss << std::uppercase << std::hex << "0x" << std::setfill('0') << std::setw(2)
+               << (static_cast<uint32_t>(*b));
+            strVector.push_back(ss.str());
+        }
+    }
+    return strVector;
 }

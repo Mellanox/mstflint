@@ -74,7 +74,10 @@ MlxcfgDBManager::MlxcfgDBManager(string dbName) :
 
 MlxcfgDBManager::~MlxcfgDBManager()
 {
-    VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it) { delete *it; }
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = fetchedTLVs.begin(); it != fetchedTLVs.end(); ++it)
+    {
+        it->reset();
+    }
 
     if (!_db)
     {
@@ -157,7 +160,7 @@ int MlxcfgDBManager::selectTLVCallBack(void* object, int argc, char** argv, char
 
     try
     {
-        TLVConf* tlv = new TLVConf(argc, argv, azColName);
+        std::shared_ptr<TLVConf> tlv = make_shared<TLVConf>(argc, argv, azColName);
         dbManager->fetchedTLVs.push_back(tlv);
     }
     catch (MlxcfgException& e)
@@ -276,66 +279,65 @@ void MlxcfgDBManager::getAllTLVs()
     _isAllFetched = true;
 }
 
-TLVConf* MlxcfgDBManager::getTLVByNameAux(string tlv_name, u_int32_t port, int32_t module)
+std::shared_ptr<TLVConf> MlxcfgDBManager::getTLVByNameAux(string tlv_name, u_int32_t port, int32_t module)
 {
-    VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it)
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = fetchedTLVs.begin(); it != fetchedTLVs.end(); ++it)
     {
-        TLVConf* t = *it;
-        if (t->_name == tlv_name && t->_port == port && t->_module == module)
+        if ((*it)->_name == tlv_name && (*it)->_port == port && (*it)->_module == module)
         {
-            return t;
+            return (*it);
         }
     }
     return NULL;
 }
 
-TLVConf* MlxcfgDBManager::getAndSetTLVByNameAuxNotInitialized(string tlv_name, u_int32_t port, int32_t module)
+std::shared_ptr<TLVConf>
+  MlxcfgDBManager::getAndSetTLVByNameAuxNotInitialized(string tlv_name, u_int32_t port, int32_t module)
 {
-    VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it)
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = fetchedTLVs.begin(); it != fetchedTLVs.end(); ++it)
     {
-        TLVConf* tlv = *it;
-        if (tlv->_name == tlv_name && tlv->_port == 0 && tlv->_module == -1)
+        if ((*it)->_name == tlv_name && (*it)->_port == 0 && (*it)->_module == -1)
         {
             if (port != 0)
             {
-                tlv->_port = port;
+                (*it)->_port = port;
             }
             else if (module != -1)
             {
-                tlv->_module = module;
+                (*it)->_module = module;
             }
-            return tlv;
+            return (*it);
         }
     }
     return NULL;
 }
 
-void MlxcfgDBManager::fillInRelevantParamsOfTlv(TLVConf* tlv, u_int32_t port, int32_t module)
+void MlxcfgDBManager::fillInRelevantParamsOfTlv(std::shared_ptr<TLVConf> tlv, u_int32_t port, int32_t module)
 {
-    VECTOR_ITERATOR(std::shared_ptr<Param>, fetchedParams, p)
+    for (vector<std::shared_ptr<Param>>::iterator it = fetchedParams.begin(); it != fetchedParams.end(); ++it)
     {
-        if ((*p)->_tlvName == tlv->_name && (*p)->_port == port && (*p)->_module == module)
+        if ((*it)->_tlvName == tlv->_name && (*it)->_port == port && (*it)->_module == module)
         {
-            tlv->_params.push_back(*p);
+            tlv->_params.push_back(*it);
         }
-        else if ((*p)->_tlvName == tlv->_name && (*p)->_port == 0 && (*p)->_module == -1)
+        else if ((*it)->_tlvName == tlv->_name && (*it)->_port == 0 && (*it)->_module == -1)
         {
             if (port != 0)
             {
-                (*p)->_port = port;
+                (*it)->_port = port;
             }
             if (module != -1)
             {
-                (*p)->_module = module;
+                (*it)->_module = module;
             }
-            tlv->_params.push_back(*p);
+            tlv->_params.push_back(*it);
         }
     }
 }
 
-TLVConf* MlxcfgDBManager::fetchTLVByName(string tlvName, u_int32_t port, int32_t module)
+std::shared_ptr<TLVConf> MlxcfgDBManager::fetchTLVByName(string tlvName, u_int32_t port, int32_t module)
 {
-    TLVConf* tlv;
+    std::shared_ptr<TLVConf> tlv;
     const char* nc = tlvName.c_str();
 
     execSQL(selectTLVCallBack, this, SQL_SELECT_TLV_BY_NAME, nc);
@@ -356,85 +358,83 @@ TLVConf* MlxcfgDBManager::fetchTLVByName(string tlvName, u_int32_t port, int32_t
     return tlv;
 }
 
-TLVConf* MlxcfgDBManager::fetchTLVByIndexAndClass(u_int32_t id, TLVClass c)
+std::shared_ptr<TLVConf> MlxcfgDBManager::fetchTLVByIndexAndClass(u_int32_t id, TLVClass c)
 {
-    TLVConf* t;
     execSQL(selectTLVCallBack, this, SQL_SELECT_TLV_BY_INDEX_AND_CLASS, id, c);
-    t = getTLVByIndexAndClassAux(id, c);
-    if (!t)
+    std::shared_ptr<TLVConf> tlv = getTLVByIndexAndClassAux(id, c);
+    if (!tlv)
     {
         throw MlxcfgException("The TLV configuration with index 0x%x and class 0x%x was not found", id, c);
     }
 
     // fetch the parameters
-    execSQL(selectParamCallBack, this, SQL_SELECT_PARAMS_BY_TLV_NAME, t->_name.c_str());
+    execSQL(selectParamCallBack, this, SQL_SELECT_PARAMS_BY_TLV_NAME, tlv->_name.c_str());
 
     // fill in params vector of the tlv
-    VECTOR_ITERATOR(std::shared_ptr<Param>, fetchedParams, p)
+    for (vector<std::shared_ptr<Param>>::iterator it = fetchedParams.begin(); it != fetchedParams.end(); ++it)
     {
-        if ((*p)->_tlvName == t->_name && (*p)->_port == t->_port)
+        if ((*it)->_tlvName == tlv->_name && (*it)->_port == tlv->_port)
         {
-            t->_params.push_back(*p);
+            tlv->_params.push_back(*it);
         }
     }
 
-    return t;
+    return tlv;
 }
 
-TLVConf* MlxcfgDBManager::getAndCreateTLVByName(string tlvName, u_int32_t port, int32_t module)
+std::shared_ptr<TLVConf> MlxcfgDBManager::getAndCreateTLVByName(string tlvName, u_int32_t port, int32_t module)
 {
-    TLVConf* tlv = NULL;
+    TLVConf* rtlv = NULL;
+    // std::shared_ptr<TLVConf> tlv = NULL;
     const char* nc = tlvName.c_str();
 
-    execSQL(selectAndCreateNewTLVCallBack, &tlv, SQL_SELECT_TLV_BY_NAME, nc);
-    if (!tlv)
+    execSQL(selectAndCreateNewTLVCallBack, &rtlv, SQL_SELECT_TLV_BY_NAME, nc);
+    if (!rtlv)
     {
         throw MlxcfgTLVNotFoundException(nc);
     }
     if (port != 0)
     {
-        tlv->_port = port;
+        rtlv->_port = port;
     }
     else if (module != -1)
     {
-        tlv->_module = module;
+        rtlv->_module = module;
     }
 
     // fetch the parameters
-    execSQL(selectAndCreateParamCallBack, tlv, SQL_SELECT_PARAMS_BY_TLV_NAME, nc);
-    VECTOR_ITERATOR(std::shared_ptr<Param>, tlv->_params, p)
+    execSQL(selectAndCreateParamCallBack, rtlv, SQL_SELECT_PARAMS_BY_TLV_NAME, nc);
+    std::shared_ptr<TLVConf> tlv(rtlv);
+    for (vector<std::shared_ptr<Param>>::iterator it = tlv->_params.begin(); it != tlv->_params.end(); ++it)
     {
-        (*p)->_port = port;
+        (*it)->_port = port;
         if (port != 0)
         {
-            (*p)->_port = port;
+            (*it)->_port = port;
         }
         else if (module != -1)
         {
-            (*p)->_module = module;
+            (*it)->_module = module;
         }
     }
     return tlv;
 }
 
-TLVConf* MlxcfgDBManager::getTLVByNameOnlyAux(string tlv_name)
+std::shared_ptr<TLVConf> MlxcfgDBManager::getTLVByNameOnlyAux(string tlv_name)
 {
-    VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it)
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = fetchedTLVs.begin(); it != fetchedTLVs.end(); ++it)
     {
-        TLVConf* t = *it;
-        if (t->_name == tlv_name)
+        if ((*it)->_name == tlv_name)
         {
-            return t;
+            return (*it);
         }
     }
     return NULL;
 }
 
-TLVConf* MlxcfgDBManager::getTLVByName(string tlvName, u_int32_t port, int32_t module)
+std::shared_ptr<TLVConf> MlxcfgDBManager::getTLVByName(string tlvName, u_int32_t port, int32_t module)
 {
-    TLVConf* tlv = NULL;
-
-    tlv = getTLVByNameAux(tlvName, port, module);
+    std::shared_ptr<TLVConf> tlv = getTLVByNameAux(tlvName, port, module);
     if (!tlv)
     {
         tlv = fetchTLVByName(tlvName, port, module);
@@ -443,9 +443,9 @@ TLVConf* MlxcfgDBManager::getTLVByName(string tlvName, u_int32_t port, int32_t m
     return tlv;
 }
 
-TLVConf* MlxcfgDBManager::getDependencyTLVByName(string tlvName, u_int32_t cTLVPort, int32_t cTLVModule)
+std::shared_ptr<TLVConf> MlxcfgDBManager::getDependencyTLVByName(string tlvName, u_int32_t cTLVPort, int32_t cTLVModule)
 {
-    TLVConf* dependendTLV = getTLVByNameOnlyAux(tlvName);
+    std::shared_ptr<TLVConf> dependendTLV = getTLVByNameOnlyAux(tlvName);
     if (!dependendTLV)
     {
         getAllTLVs();
@@ -466,14 +466,13 @@ TLVConf* MlxcfgDBManager::getDependencyTLVByName(string tlvName, u_int32_t cTLVP
     }
 }
 
-TLVConf* MlxcfgDBManager::getTLVByIndexAndClassAux(u_int32_t id, TLVClass c)
+std::shared_ptr<TLVConf> MlxcfgDBManager::getTLVByIndexAndClassAux(u_int32_t id, TLVClass c)
 {
-    VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it)
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = fetchedTLVs.begin(); it != fetchedTLVs.end(); ++it)
     {
-        TLVConf* t = *it;
-        if (t->_id == id && t->_tlvClass == c)
+        if ((*it)->_id == id && (*it)->_tlvClass == c)
         {
-            return t;
+            return (*it);
         }
     }
     return NULL;
@@ -536,13 +535,13 @@ tuple<string, int> MlxcfgDBManager::splitMlxcfgNameAndPortOrModule(std::string m
     return make_tuple(mlxconfigName, minNum);
 }
 
-TLVConf* MlxcfgDBManager::findTLVInExisting(std::string mlxconfigName,
-                                            std::string noPortModuleMlxcfgName,
-                                            u_int32_t port,
-                                            u_int32_t index,
-                                            int32_t module)
+std::shared_ptr<TLVConf> MlxcfgDBManager::findTLVInExisting(std::string mlxconfigName,
+                                                            std::string noPortModuleMlxcfgName,
+                                                            u_int32_t port,
+                                                            u_int32_t index,
+                                                            int32_t module)
 {
-    VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it)
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = fetchedTLVs.begin(); it != fetchedTLVs.end(); ++it)
     {
         if (((port != 0 || module != -1) &&
              (*it)->findParamByMlxconfigNamePortModule(noPortModuleMlxcfgName, port, module)) ||
@@ -606,7 +605,8 @@ tuple<string, int, int> MlxcfgDBManager::getMlxconfigNamePortModule(string mlxco
     return make_tuple(mlxconfigName, port, module);
 }
 
-TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string mlxconfigName, u_int32_t index, mfile* mf)
+std::shared_ptr<TLVConf>
+  MlxcfgDBManager::getTLVByParamMlxconfigName(std::string mlxconfigName, u_int32_t index, mfile* mf)
 {
     string tlvName = "";
 
@@ -614,7 +614,8 @@ TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string mlxconfigName, 
     string mlxconfigNameNoPortModuleName = get<0>(ret);
     u_int32_t port = get<1>(ret);
     int32_t module = get<2>(ret);
-    TLVConf* existingTlv = findTLVInExisting(mlxconfigName, mlxconfigNameNoPortModuleName, port, index, module);
+    std::shared_ptr<TLVConf> existingTlv =
+      findTLVInExisting(mlxconfigName, mlxconfigNameNoPortModuleName, port, index, module);
     if (existingTlv != NULL && existingTlv->_port == port && existingTlv->_module == module)
     {
         return existingTlv;
@@ -625,16 +626,14 @@ TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string mlxconfigName, 
     tlvName = _paramSqlResult->_tlvName;
     _paramSqlResult.reset();
     _paramSqlResult = NULL;
-    TLVConf* tlv = fetchTLVByName(tlvName, port, module);
+    std::shared_ptr<TLVConf> tlv = fetchTLVByName(tlvName, port, module);
     tlv->CheckModuleAndPortMatchClass(module, port, mlxconfigName);
     return tlv;
 }
 
-TLVConf* MlxcfgDBManager::getTLVByIndexAndClass(u_int32_t id, TLVClass c)
+std::shared_ptr<TLVConf> MlxcfgDBManager::getTLVByIndexAndClass(u_int32_t id, TLVClass c)
 {
-    TLVConf* t = NULL;
-
-    t = getTLVByIndexAndClassAux(id, c);
+    std::shared_ptr<TLVConf> t = getTLVByIndexAndClassAux(id, c);
     if (!t)
     {
         t = fetchTLVByIndexAndClass(id, c);

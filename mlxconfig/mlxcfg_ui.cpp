@@ -530,7 +530,7 @@ void MlxCfg::printConfHeader(bool showDefualt, bool showNew, bool showCurrent)
 
 void prepareSetInput(vector<QueryOutputItem>& output, vector<ParamView>& params)
 {
-    VECTOR_ITERATOR(ParamView, params, p)
+    for (std::vector<ParamView>::iterator p = params.begin(); p != params.end(); ++p)
     {
         QueryOutputItem o;
         o.mlxconfigName = p->mlxconfigName;
@@ -545,10 +545,10 @@ void prepareSetInput(vector<QueryOutputItem>& output, vector<ParamView>& params)
 
 void prepareQueryOutput(vector<QueryOutputItem>& output, vector<ParamView>& params, QueryType qT)
 {
-    VECTOR_ITERATOR(ParamView, params, p)
+    for (std::vector<ParamView>::iterator p = params.begin(); p != params.end(); ++p)
     {
         bool found = false;
-        VECTOR_ITERATOR(QueryOutputItem, output, o)
+        for (std::vector<QueryOutputItem>::iterator o = output.begin(); o != output.end(); ++o)
         {
             if (p->mlxconfigName == o->mlxconfigName)
             {
@@ -1064,7 +1064,7 @@ mlxCfgStatus MlxCfg::devRawCfg(RawTlvMode mode)
             delete commander;
             return err(true, "Failed to open file: %s", _mlxParams.rawTlvFile.c_str());
         }
-        std::vector<std::vector<u_int32_t> > rawTlvsAsDw;
+        std::vector<std::vector<u_int32_t>> rawTlvsAsDw;
         rawTlvsAsDw.resize(0);
         // Check file Sig
         std::string startLine;
@@ -1097,7 +1097,7 @@ mlxCfgStatus MlxCfg::devRawCfg(RawTlvMode mode)
         int tlvIdx = 1;
         if (mode == SET_RAW)
         {
-            for (std::vector<std::vector<u_int32_t> >::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end();
+            for (std::vector<std::vector<u_int32_t>>::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end();
                  it++, tlvIdx++)
             {
                 commander->dumpRawCfg(*it, dumpStr);
@@ -1119,7 +1119,7 @@ mlxCfgStatus MlxCfg::devRawCfg(RawTlvMode mode)
         tlvIdx = 1;
         // set each of the raw TLVs
         std::vector<u_int32_t> queryData;
-        for (std::vector<std::vector<u_int32_t> >::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end();
+        for (std::vector<std::vector<u_int32_t>>::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end();
              it++, tlvIdx++)
         {
             if (mode == SET_RAW)

@@ -58,17 +58,18 @@ private:
 
     void supportsNVData();
     void printEnums(const ParamView& p, string& s);
-    bool checkDependency(TLVConf* cTLV, string dStr);
-    void filterByDependency(TLVConf* cTLV,
-                            const vector<pair<ParamView, string> >& dependencyTable,
+    bool checkDependency(std::shared_ptr<TLVConf> cTLV, string dStr);
+    void filterByDependency(std::shared_ptr<TLVConf> cTLV,
+                            const vector<pair<ParamView, string>>& dependencyTable,
                             vector<ParamView>& result);
-    void queryTLV(TLVConf* conf, std::vector<ParamView>& paramsConf, bool isWriteOperation, QueryType qt);
+    void
+      queryTLV(std::shared_ptr<TLVConf> conf, std::vector<ParamView>& paramsConf, bool isWriteOperation, QueryType qt);
     void getAllConfigurations(std::vector<TLVConfView>& confs);
     void excludeDuplicatedTLVs(vector<TLVConfView>& s, vector<TLVConfView>& d);
     void printTLVConfViews(FILE* f, vector<TLVConfView>& v);
     void printParamViews(FILE* f, vector<ParamView>& v);
     void genXMLTemplateAux(vector<string> tlvs, string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal);
-    void removeSignatureTlvs(vector<TLVConf*>& tlvs);
+    void removeSignatureTlvs(vector<std::shared_ptr<TLVConf>>& tlvs);
 
 public:
     GenericCommander(mfile* mf, string dbName, Device_Type deviceType = Device_Type::HCA);
@@ -94,16 +95,18 @@ public:
 
     void genTLVsList(vector<string>& tlvs);
     void genXMLTemplate(vector<string> tlvs, string& xmlTemplate, bool allAttrs);
-    void XML2TLVConf(const string& xmlContent, vector<TLVConf*>& tlvs);
+    void genXMLFromTLVConf(vector<std::shared_ptr<TLVConf>>& tlvsConfs, string& xmlTemplate, bool allAttrs);
+    void TLVs2TLVConfs(const vector<string>& tlvs, vector<std::shared_ptr<TLVConf>>& tlvsConfs);
+    void XML2TLVConf(const string& xmlContent, vector<std::shared_ptr<TLVConf>>& tlvs);
     void binTLV2XML(const vector<u_int32_t>& binTLV, string& xml);
-    void binTLV2TLVConf(const vector<u_int32_t>& binTLV, TLVConf*& tlv);
-    void bin2TLVConfs(const vector<u_int32_t>& tlvsBin, vector<TLVConf*>& tlvs);
+    void binTLV2TLVConf(const vector<u_int32_t>& binTLV, std::shared_ptr<TLVConf>& tlv);
+    void bin2TLVConfs(const vector<u_int32_t>& tlvsBin, vector<std::shared_ptr<TLVConf>>& tlvs);
     void raw2XML(const vector<string>& lines, string& xml);
     void XML2Raw(const string& xml, string& raw);
     void XML2Bin(const string& xml, vector<u_int32_t>& buff, bool withHeader = true);
-    void TLVConf2Bin(const vector<TLVConf*>& tlvs, vector<u_int32_t>& buff, bool withHeader = true);
-    void checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::comps_ids_t& compsId);
-    void orderConfTlvs(vector<TLVConf*>& tlvs);
+    void TLVConf2Bin(const vector<std::shared_ptr<TLVConf>>& tlvs, vector<u_int32_t>& buff, bool withHeader = true);
+    void checkConfTlvs(const vector<std::shared_ptr<TLVConf>>& tlvs, FwComponent::comps_ids_t& compsId);
+    void orderConfTlvs(vector<std::shared_ptr<TLVConf>>& tlvs);
     void createConf(const string& xml, vector<u_int32_t>& buff);
     void sign(vector<u_int32_t>& buff,
               const string& privateKeyFile = "",
