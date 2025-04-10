@@ -1405,10 +1405,25 @@ bool Flash::set_attr(char* param_name, char* param_val_str, const ext_flash_attr
         }
         else if (_attr.vendor == FV_MX25K16XXX)
         {
-            if (*endp != '\0' || (driver_strength_val != 41 && driver_strength_val != 70 && driver_strength_val != 83 &&
-                                  driver_strength_val != 100))
+            if (_attr.type == FMT_SST_25 && (((1 << FD_256) & (1 << _attr.log2_bank_size)) != 0))
             {
-                return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [41,70,83,100]\n", param_val_str);
+                if (*endp != '\0' ||
+                    (driver_strength_val != 24 && driver_strength_val != 26 && driver_strength_val != 30 &&
+                     driver_strength_val != 34 && driver_strength_val != 41 && driver_strength_val != 52 &&
+                     driver_strength_val != 76 && driver_strength_val != 146))
+                {
+                    return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [24,26,30,34,41,52,76,146]\n",
+                                  param_val_str);
+                }
+            }
+            else
+            {
+                if (*endp != '\0' || (driver_strength_val != 41 && driver_strength_val != 70 &&
+                                      driver_strength_val != 83 && driver_strength_val != 100))
+                {
+                    return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [41,70,83,100]\n",
+                                  param_val_str);
+                }
             }
         }
         else
