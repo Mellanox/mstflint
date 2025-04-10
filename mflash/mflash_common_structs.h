@@ -113,8 +113,8 @@ typedef enum StFlashCommand
     SFC_RDSR3_WINBOND = 0x15,           // Read status register 3 (WINBOND)
     SFC_SERPNV_ISSI = 0x85,             // write status extended read register
     SFC_RDERP_ISSI = 0x81,              // read status extended read register
-    SFC_WRSR3_MICRON_MX25K16XXX = 0x11, // Write status register 3 (MICRON)
-    SFC_RDSR3_MICRON_MX25K16XXX = 0x15, // Read status register 3 (MICRON)
+    SFC_WRSR3_MACRONIX_MX25K16XXX = 0x11, // Write status register 3 (MACRONIX)
+    SFC_RDSR3_MACRONIX_MX25K16XXX = 0x15, // Read status register 3 (MACRONIX)
     SFC_WREN = 0x06,                    // Write enable
     SFC_RDNVR = 0xB5,
     SFC_RDCR = 0x15,                    // Read configuration register

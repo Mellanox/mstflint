@@ -471,7 +471,7 @@ flash_info_t g_flash_info_arr[] = {
     {ISSI_3V_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
     {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_32), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
     {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_28, (1 << FD_32), MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
-    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
+    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
     {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_512), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
     /* added by edwardg 06/09/2020 */
     {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
@@ -3450,6 +3450,15 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
     }
 }
 
+int is_macronix_special_case_for_driver_strength(uint8_t vendor, uint16_t type, uint8_t log2_bank_size)
+{
+    if (vendor == FV_MX25K16XXX && type == FMT_SST_25 && (((1 << FD_256) & (1 << log2_bank_size)) != 0))
+    {
+        return 1;
+    }
+    return 0;
+}
+
 int mf_read_modify_status_winbond(mflash * mfl,
                                   u_int8_t bank_num,
                                   u_int8_t is_first_status_reg,
@@ -3467,7 +3476,8 @@ int mf_read_modify_status_winbond(mflash * mfl,
     if (((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND)) ||
         ((mfl->attr.vendor == FV_S25FLXXXX) &&
          ((mfl->attr.type == FMT_S25FL116K) || (mfl->attr.type == FMT_S25FLXXXL))) ||
-        ((mfl->attr.vendor == FV_MX25K16XXX) && (mfl->attr.type == FMT_MX25K16XXX))) {
+        ((mfl->attr.vendor == FV_MX25K16XXX) && (mfl->attr.type == FMT_MX25K16XXX)) ||
+        (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))) {
         /*
          * if we have 2 status registers, winbond are allowing us to write both of them
          * in a single command WRSR  status_reg1 located in MSB, status_reg2 after status_reg1
@@ -3636,13 +3646,25 @@ int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength)
                 DRIVER_STRENGTH_BIT_LEN_MICRON, 2); /* driver-strength bit length, status-register byte len */
             CHECK_RC(rc);
         } else if (mfl->attr.vendor == FV_MX25K16XXX) {
-            rc = mf_read_modify_status_new(
-                mfl, bank, SFC_RDSR3_MICRON_MX25K16XXX, /* mflash, bank num, nonvolatile-configuration-register read cmd */
-                SFC_WRSR3_MICRON_MX25K16XXX,
-                driver_strength, /* nonvolatile-configuration-register write cmd, driver-strength new val */
-                DRIVER_STRENGTH_OFFSET_MICRON_MX25K16XXX,    /* driver-strength bit offset */
-                DRIVER_STRENGTH_BIT_LEN_MICRON_MX25K16XXX, 1); /* driver-strength bit length, status-register byte len */
-            CHECK_RC(rc);
+            if (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+            {
+                rc =
+                  mf_read_modify_status_winbond(mfl, bank, 0, driver_strength, DRIVER_STRENGTH_OFFSET_MACRONIX_MX25UXXX,
+                                                DRIVER_STRENGTH_BIT_LEN_MACRONIX);
+                CHECK_RC(rc);
+            }
+            else
+            {
+                rc = mf_read_modify_status_new(
+                  mfl, bank,
+                  SFC_RDSR3_MACRONIX_MX25K16XXX, // mflash, bank num, nonvolatile-configuration-register read cmd
+                  SFC_WRSR3_MACRONIX_MX25K16XXX,
+                  driver_strength, // nonvolatile-configuration-register write cmd, driver-strength new val
+                  DRIVER_STRENGTH_OFFSET_MACRONIX_MX25K16XXX, // driver-strength bit offset
+                  DRIVER_STRENGTH_BIT_LEN_MACRONIX_MX25K16XXX,
+                  1); // driver-strength bit length, status-register byte len
+                CHECK_RC(rc);
+            }
         } else if (mfl->attr.vendor == FV_IS25LPXXX) { /* issi */
             rc = mf_read_modify_status_new(
                 mfl, bank, SFC_RDERP_ISSI,      /* mflash, bank num, nonvolatile-configuration-register read cmd */
@@ -3680,18 +3702,30 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
                               DRIVER_STRENGTH_OFFSET_MICRON,  /* driver-strength bit offset */
                               DRIVER_STRENGTH_BIT_LEN_MICRON, /* driver-strength bit length */
                               2, 0);                          /* status-register byte len, don't-care */
-    } else if (mfl->attr.vendor == FV_MX25K16XXX) { /* micron */
-        rc = mf_get_param_int(mfl, driver_strength_p,                    /* mflash, output pointer, */
-                              SFC_RDSR3_MICRON_MX25K16XXX,               /* nonvolatile-configuration-register read cmd */
-                              DRIVER_STRENGTH_OFFSET_MICRON_MX25K16XXX,  /* driver-strength bit offset */
-                              DRIVER_STRENGTH_BIT_LEN_MICRON_MX25K16XXX, /* driver-strength bit length */
-                              1, 0);                                     /* status-register byte len, don't-care */
+    } else if (mfl->attr.vendor == FV_MX25K16XXX) // macronix
+    {
+        if (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+        {
+            u_int8_t status = 0;
+            rc = mfl->f_spi_status(mfl, SFC_RDCR, &status);
+            CHECK_RC(rc);
+            *driver_strength_p =
+              EXTRACT(status, DRIVER_STRENGTH_OFFSET_MACRONIX_MX25UXXX, DRIVER_STRENGTH_BIT_LEN_MACRONIX);
+        }
+        else
+        {
+            rc = mf_get_param_int(mfl, driver_strength_p,        // mflash, output pointer,
+                                  SFC_RDSR3_MACRONIX_MX25K16XXX, // nonvolatile-configuration-register read cmd
+                                  DRIVER_STRENGTH_OFFSET_MACRONIX_MX25K16XXX,  // driver-strength bit offset
+                                  DRIVER_STRENGTH_BIT_LEN_MACRONIX_MX25K16XXX, // driver-strength bit length
+                                  1, 0);                                       // status-register byte len, don't-care
+        }                                   /* status-register byte len, don't-care */
     } else if (mfl->attr.vendor == FV_IS25LPXXX) { /* issi */
-        rc = mf_get_param_int(mfl, driver_strength_p,         /* mflash, output pointer, */
-                              SFC_RDERP_ISSI,                 /* nonvolatile-configuration-register read cmd */
-                              DRIVER_STRENGTH_OFFSET_ISSI,    /* driver-strength bit offset */
-                              DRIVER_STRENGTH_BIT_LEN_MICRON, /* driver-strength bit length */
-                              1, 0);                          /* status-register byte len, don't-care */
+        rc = mf_get_param_int(mfl, driver_strength_p,       // mflash, output pointer,
+                              SFC_RDERP_ISSI,               // nonvolatile-configuration-register read cmd
+                              DRIVER_STRENGTH_OFFSET_ISSI,  // driver-strength bit offset
+                              DRIVER_STRENGTH_BIT_LEN_ISSI, // driver-strength bit length
+                              1, 0);                                /* status-register byte len, don't-care */
     } else {
         rc = MFE_NOT_IMPLEMENTED;
     }
@@ -4309,19 +4343,19 @@ int mf_to_vendor_driver_strength(u_int8_t vendor, u_int8_t value, u_int8_t* driv
     } else if (vendor == FV_MX25K16XXX) {
         switch (value) {
         case 100:
-            *driver_strength = DRIVER_STRENGTH_VAL_120_MICRON_MX25K16XXX;
+            *driver_strength = DRIVER_STRENGTH_VAL_120_MACRONIX_MX25K16XXX;
             break;
 
         case 83:
-            *driver_strength = DRIVER_STRENGTH_VAL_100_MICRON_MX25K16XXX;
+            *driver_strength = DRIVER_STRENGTH_VAL_100_MACRONIX_MX25K16XXX;
             break;
 
         case 70:
-            *driver_strength = DRIVER_STRENGTH_VAL_85_MICRON_MX25K16XXX;
+            *driver_strength = DRIVER_STRENGTH_VAL_85_MACRONIX_MX25K16XXX;
             break;
 
         case 41:
-            *driver_strength = DRIVER_STRENGTH_VAL_50_MICRON_MX25K16XXX;
+            *driver_strength = DRIVER_STRENGTH_VAL_50_MACRONIX_MX25K16XXX;
             break;
 
         default:
@@ -4441,19 +4475,19 @@ int mf_from_vendor_driver_strength(u_int8_t vendor, u_int8_t vendor_driver_stren
         }
     } else if (vendor == FV_MX25K16XXX) {
         switch (vendor_driver_strength) {
-        case DRIVER_STRENGTH_VAL_120_MICRON_MX25K16XXX:
+        case DRIVER_STRENGTH_VAL_120_MACRONIX_MX25K16XXX:
             *value = 100;
             break;
 
-        case DRIVER_STRENGTH_VAL_100_MICRON_MX25K16XXX:
+        case DRIVER_STRENGTH_VAL_100_MACRONIX_MX25K16XXX:
             *value = 83;
             break;
 
-        case DRIVER_STRENGTH_VAL_85_MICRON_MX25K16XXX:
+        case DRIVER_STRENGTH_VAL_85_MACRONIX_MX25K16XXX:
             *value = 70;
             break;
 
-        case DRIVER_STRENGTH_VAL_50_MICRON_MX25K16XXX:
+        case DRIVER_STRENGTH_VAL_50_MACRONIX_MX25K16XXX:
             *value = 41;
             break;
 
@@ -4485,11 +4519,86 @@ int mf_from_vendor_driver_strength(u_int8_t vendor, u_int8_t vendor_driver_stren
     return MFE_OK;
 }
 
+int mf_from_vendor_driver_strength_for_mx25uxxx(u_int8_t vendor_driver_strength, u_int8_t* value)
+{
+    switch (vendor_driver_strength)
+    {
+        case DRIVER_STRENGTH_VAL_146_MACRONIX_MX25UXXX:
+            *value = 146;
+            break;
+        case DRIVER_STRENGTH_VAL_76_MACRONIX_MX25UXXX:
+            *value = 76;
+            break;
+        case DRIVER_STRENGTH_VAL_52_MACRONIX_MX25UXXX:
+            *value = 52;
+            break;
+        case DRIVER_STRENGTH_VAL_41_MACRONIX_MX25UXXX:
+            *value = 41;
+            break;
+        case DRIVER_STRENGTH_VAL_34_MACRONIX_MX25UXXX:
+            *value = 34;
+            break;
+        case DRIVER_STRENGTH_VAL_30_MACRONIX_MX25UXXX:
+            *value = 30;
+            break;
+        case DRIVER_STRENGTH_VAL_26_MACRONIX_MX25UXXX:
+            *value = 26;
+            break;
+        case DRIVER_STRENGTH_VAL_24_MACRONIX_MX25UXXX:
+            *value = 24;
+            break;
+        default:
+            return MFE_BAD_PARAMS;
+    }
+    return MFE_OK;
+}
+
+int mf_to_vendor_driver_strength_for_mx25uxxx(u_int8_t value, u_int8_t* driver_strength)
+{
+    switch (value)
+    {
+        case 146:
+            *driver_strength = DRIVER_STRENGTH_VAL_146_MACRONIX_MX25UXXX;
+            break;
+        case 76:
+            *driver_strength = DRIVER_STRENGTH_VAL_76_MACRONIX_MX25UXXX;
+            break;
+        case 52:
+            *driver_strength = DRIVER_STRENGTH_VAL_52_MACRONIX_MX25UXXX;
+            break;
+        case 41:
+            *driver_strength = DRIVER_STRENGTH_VAL_41_MACRONIX_MX25UXXX;
+            break;
+        case 34:
+            *driver_strength = DRIVER_STRENGTH_VAL_34_MACRONIX_MX25UXXX;
+            break;
+        case 30:
+            *driver_strength = DRIVER_STRENGTH_VAL_30_MACRONIX_MX25UXXX;
+            break;
+        case 26:
+            *driver_strength = DRIVER_STRENGTH_VAL_26_MACRONIX_MX25UXXX;
+            break;
+        case 24:
+            *driver_strength = DRIVER_STRENGTH_VAL_24_MACRONIX_MX25UXXX;
+            break;
+        default:
+            return MFE_BAD_PARAMS;
+    }
+    return MFE_OK;
+}
+
 int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength)
 {
     u_int8_t vendor_driver_strength = 0;
-    int      rc = mf_to_vendor_driver_strength(mfl->attr.vendor, driver_strength, &vendor_driver_strength);
-
+    int rc = MFE_OK;
+    if (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+    {
+        rc = mf_to_vendor_driver_strength_for_mx25uxxx(driver_strength, &vendor_driver_strength);
+    }
+    else
+    {
+        rc = mf_to_vendor_driver_strength(mfl->attr.vendor, driver_strength, &vendor_driver_strength);
+    }
     CHECK_RC(rc);
     return mfl->f_set_driver_strength(mfl, vendor_driver_strength);
 }
@@ -4498,9 +4607,15 @@ int mf_get_driver_strength(mflash* mfl, u_int8_t* driver_strength)
 {
     u_int8_t value = 0;
     int      rc = mfl->f_get_driver_strength(mfl, &value);
-
     CHECK_RC(rc);
-    rc = mf_from_vendor_driver_strength(mfl->attr.vendor, value, driver_strength);
+    if ((is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)))
+    {
+        rc = mf_from_vendor_driver_strength_for_mx25uxxx(value, driver_strength);
+    }
+    else
+    {
+        rc = mf_from_vendor_driver_strength(mfl->attr.vendor, value, driver_strength);
+    }
     return rc;
 }
 
