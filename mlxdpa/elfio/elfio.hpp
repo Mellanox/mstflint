@@ -127,8 +127,7 @@ class elfio
     //------------------------------------------------------------------------------
     bool load( const std::string& file_name )
     {
-        std::ifstream stream;
-        stream.open( file_name.c_str(), std::ios::in | std::ios::binary );
+        std::ifstream stream(file_name.c_str(), std::ios::in | std::ios::binary);
         if ( !stream ) {
             return false;
         }
