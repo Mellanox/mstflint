@@ -199,6 +199,16 @@ const char* dm_dev_hw_id2str(unsigned int hw_dev_id);
 dm_dev_id_t dm_dev_str2type(const char* str);
 
 /**
+ * Returns dev type
+*/
+dm_dev_id_t dm_dev_sw_id2type(int sw_dev_id);
+
+/**
+ * Returns the HW device id of the given SW device id.
+ */
+u_int16_t dm_dev_sw_id2hw_dev_id(u_int16_t sw_dev_id);
+
+/**
  * A predicate returning if the device is an hca
  */
 int dm_dev_is_hca(dm_dev_id_t type);

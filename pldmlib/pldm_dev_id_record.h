@@ -37,6 +37,7 @@
 
 #ifndef _PLDM_DEV_ID_RECORD_HDR_
 #define _PLDM_DEV_ID_RECORD_HDR_
+#include <vector>
 
 class PldmRecordDescriptor;
 
@@ -47,8 +48,10 @@ public:
     virtual ~PldmDevIdRecord();
     bool unpack(PldmBuffer& buff);
     int getComponentImageIndex() const;
+    std::vector<u_int8_t> getComponentsIndexes() const;
     std::string getDevicePsid() const;
     std::string getDescription() const;
+    bool getDescriptor(u_int16_t type, u_int16_t& descriptor) const;
     void print(FILE* fp);
 
 private:

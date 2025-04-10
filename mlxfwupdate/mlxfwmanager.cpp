@@ -43,6 +43,12 @@
 #include <algorithm>
 #include <set>
 
+#include "pldmlib/pldm_utils.h"
+
+#define TUPLE_POS_COMPID 0
+#define TUPLE_POS_BUFF_PTR 1
+#define TUPLE_POS_BUFF_SIZE 2
+
 int main(int argc, char* argv[])
 {
     try
@@ -54,6 +60,11 @@ int main(int argc, char* argv[])
         fprintf(stderr, "-E- %s\n", e.what());
         return ERR_CODE_SERVER_RETRIEVE_FAIL;
     }
+    catch (const PLDMException& e)
+    {
+        fprintf(stderr, "-E- %s\n", e._err.c_str());
+        return ERR_CODE_INVALID_PLDM_COMPONENT;
+    }
 }
 int mainEntry(int argc, char* argv[])
 {
@@ -62,6 +73,7 @@ int mainEntry(int argc, char* argv[])
     bool early_cleanup = true;
     bool os_valid;
     int rc, rc0;
+    bool pldmFlow = false;
     vector<string> dev_names;
     vector<MlnxDev*> devs;
     CmdLineParams cmd_params;
@@ -71,6 +83,7 @@ int mainEntry(int argc, char* argv[])
     int require_update_cnt = 0;
     vector<string> status_strings;
     map<string, PsidQueryItem> psidUpdateInfo;
+    map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>> psidPldmComponents;
     vector<string> psid_list;
     vector<string> fw_version_list;
     vector<dm_dev_id_t> dev_types_list;
@@ -345,6 +358,10 @@ int mainEntry(int argc, char* argv[])
     {
         psidLookupDB.readFile(adjustRelPath(cmd_params.lookup_file, config.adjuster_path));
     }
+    if (ImageAccess::getFileSignature(config.mfa_path) == IMG_SIG_TYPE_PLDM)
+    {
+        pldmFlow = true;
+    }
 
     // Query all Devs
     print_out("Querying Mellanox devices firmware ...\n");
@@ -438,8 +455,17 @@ int mainEntry(int argc, char* argv[])
         {
             mpath = adjustRelPath(cmd_params.mfa_file, config.adjuster_path);
         }
-        rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg,
-                       fw_version_list);
+
+        if (pldmFlow)
+        {
+            rc = queryPLDM(cmd_params.mfa_file, psid_list, psidUpdateInfo, psidPldmComponents);
+        }
+        else
+        {
+            rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg,
+                           fw_version_list);
+        }
+
         if (rc < 0)
         {
             // print_err("-E- No relevant image files or info could be found\n");
@@ -577,7 +603,7 @@ int mainEntry(int argc, char* argv[])
         burn_cnt++;
         string mfa_file = config.mfa_path;
         string tmp = psidUpdateInfo[devs[i]->getPsid()].url;
-        if (!cmd_params.use_mfa_file)
+        if (!cmd_params.use_mfa_file && !pldmFlow)
         {
             size_t pos = tmp.rfind("/");
             if (pos != string::npos)
@@ -625,6 +651,21 @@ int mainEntry(int argc, char* argv[])
             if (isTimeConsumingFixesNeeded)
             {
                 print_out("Preparing...\n");
+            }
+            if (pldmFlow)
+            {
+                for (auto comps : (psidPldmComponents[devs[i]->getPsid()]))
+                {
+                    if (std::get<TUPLE_POS_COMPID>(comps) == FwComponent::comps_ids_t::COMPID_BFB)
+                    {
+                        if (devs[i]->isBFBSupported())
+                        {
+                            devs[i]->burnPLDMComponent(std::get<TUPLE_POS_COMPID>(comps),
+                                                       std::get<TUPLE_POS_BUFF_PTR>(comps),
+                                                       std::get<TUPLE_POS_BUFF_SIZE>(comps));
+                        }
+                    }
+                }
             }
             rc0 = devs[i]->burn(imageWasCached);
             if (!rc0)
@@ -786,86 +827,134 @@ int extract_image(CmdLineParams& cmd_params, config_t& config, ServerRequest* sr
     u_int8_t* filebuf = NULL;
     ImageAccess imgacc(CompareFFV);
 
-    if (cmd_params.psid == "")
+    if (ImageAccess::getFileSignature(config.mfa_path) == IMG_SIG_TYPE_PLDM)
     {
-        print_err("-E- Need to provide PSID for extraction.\n");
-        res = ERR_CODE_BAD_CMD_ARGS;
-        return res;
-    }
-
-    psid_list.push_back(cmd_params.psid);
-    mpath = config.mfa_path;
-
-    if (cmd_params.use_mfa_file)
-    {
-        mpath = adjustRelPath(cmd_params.mfa_file, config.adjuster_path);
-    }
-
-    rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg,
-                   fw_version_list);
-    if (rc < 0)
-    {
-        print_err("-E- Failed while reading file(s)\n");
-        res = ERR_CODE_IMG_NOT_FOUND;
-        return res;
-    }
-    config.mfa_path = mpath;
-    int cnt = psidUpdateInfo.size();
-    ssize_t sza = 0;
-    if (cnt == 1)
-    {
-        string srcFile = psidUpdateInfo[cmd_params.psid].url;
-        string tag = psidUpdateInfo[cmd_params.psid].selector_tag;
-        sza = imgacc.getImage(srcFile.c_str(), cmd_params.psid, tag, 1, &filebuf);
-        if (sza > 0)
+        if (cmd_params.psid == "")
         {
-            string targetFile = cmd_params.target_file;
-            if (generateProductionName(targetFile, psidUpdateInfo[cmd_params.psid]))
-            {
-                res = ERR_CODE_WRITE_FILE_FAIL;
-                goto clean_up;
-            }
+            print_err("-E- Need to provide PSID for extraction.\n");
+            res = ERR_CODE_BAD_CMD_ARGS;
+            return res;
+        }
+        ComponentIdentifier compIdentifier = ComponentIdentifier::Identifier_Not_Valid;
+        StringToComponentIdentifier(cmd_params.component_type, compIdentifier);
 
-            if (useExtractDir)
+        u_int32_t buffSize;
+        if (!imgacc.loadPldmPkg(config.mfa_path))
+        {
+            print_err("-E- Can't parse PLDM package.\n");
+            res = ERR_CODE_INVALID_PLDM_FORMAT;
+            return res;
+        }
+        if (!imgacc.getPldmComponentByPsid(cmd_params.psid, compIdentifier, &filebuf, buffSize))
+        {
+            print_err("-E- The component wasn't found in the PLDM package.\n");
+            res = ERR_CODE_INVALID_PLDM_COMPONENT;
+            return res;
+        }
+        string targetFile = cmd_params.target_file;
+
+        FILE* f = fopen(targetFile.c_str(), "wb");
+        u_int32_t sz = 0;
+        if (f != NULL)
+        {
+            sz = fwrite(filebuf, 1, buffSize, f);
+            fclose(f);
+            if (sz < buffSize)
             {
-                targetFile = cmd_params.extract_dir + (string)PATH_SEPARATOR + targetFile;
-            }
-            targetFile = adjustRelPath(targetFile, config.adjuster_path);
-            print_out("Extracting image for psid: %s to %s  ...\n", cmd_params.psid.c_str(), targetFile.c_str());
-            FILE* f = fopen(targetFile.c_str(), "wb");
-            int sz = 0;
-            if (f != NULL)
-            {
-                sz = fwrite(filebuf, 1, sza, f);
-                fclose(f);
-                if (sz < sza)
-                {
-                    print_err("-E- Failed while writing to file.\n");
-                    res = ERR_CODE_WRITE_FILE_FAIL;
-                }
-            }
-            else
-            {
-                print_err("-E- Failed to open %s for writing.\n", targetFile.c_str());
+                print_err("-E- Failed while writing to file.\n");
                 res = ERR_CODE_WRITE_FILE_FAIL;
             }
-            print_out("Done!\n");
         }
         else
         {
-            print_err("-E- Failed to extract image, MFA file might not have requested PSID\n");
-            res = ERR_CODE_INTERNAL_ERR;
+            print_err("-E- Failed to open %s for writing.\n", targetFile.c_str());
+            res = ERR_CODE_WRITE_FILE_FAIL;
         }
-    }
-    else if (cnt > 1)
-    {
-        print_err("-E- More than one relevant image found. Not performing extraction!\n");
-        res = ERR_CODE_IMG_NOT_FOUND;
+        print_out("Done!\n");
     }
     else
     {
-        print_err("-E- NO mfa file found!\n");
-        res = ERR_CODE_IMG_NOT_FOUND;
+        if (cmd_params.psid == "")
+        {
+            print_err("-E- Need to provide PSID for extraction.\n");
+            res = ERR_CODE_BAD_CMD_ARGS;
+            return res;
+        }
+
+        psid_list.push_back(cmd_params.psid);
+        mpath = config.mfa_path;
+
+        if (cmd_params.use_mfa_file)
+        {
+            mpath = adjustRelPath(cmd_params.mfa_file, config.adjuster_path);
+        }
+
+        rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg,
+                    fw_version_list);
+        if (rc < 0)
+        {
+            print_err("-E- Failed while reading file(s)\n");
+            res = ERR_CODE_IMG_NOT_FOUND;
+            return res;
+        }
+        config.mfa_path = mpath;
+        int cnt = psidUpdateInfo.size();
+        ssize_t sza = 0;
+        if (cnt == 1)
+        {
+            string srcFile = psidUpdateInfo[cmd_params.psid].url;
+            string tag = psidUpdateInfo[cmd_params.psid].selector_tag;
+            sza = imgacc.getImage(srcFile.c_str(), cmd_params.psid, tag, 1, &filebuf);
+            if (sza > 0)
+            {
+                string targetFile = cmd_params.target_file;
+                if (generateProductionName(targetFile, psidUpdateInfo[cmd_params.psid]))
+                {
+                    res = ERR_CODE_WRITE_FILE_FAIL;
+                    goto clean_up;
+                }
+
+                if (useExtractDir)
+                {
+                    targetFile = cmd_params.extract_dir + (string)PATH_SEPARATOR + targetFile;
+                }
+                targetFile = adjustRelPath(targetFile, config.adjuster_path);
+                print_out("Extracting image for psid: %s to %s  ...\n", cmd_params.psid.c_str(), targetFile.c_str());
+                FILE* f = fopen(targetFile.c_str(), "wb");
+                int sz = 0;
+                if (f != NULL)
+                {
+                    sz = fwrite(filebuf, 1, sza, f);
+                    fclose(f);
+                    if (sz < sza)
+                    {
+                        print_err("-E- Failed while writing to file.\n");
+                        res = ERR_CODE_WRITE_FILE_FAIL;
+                    }
+                }
+                else
+                {
+                    print_err("-E- Failed to open %s for writing.\n", targetFile.c_str());
+                    res = ERR_CODE_WRITE_FILE_FAIL;
+                }
+                print_out("Done!\n");
+            }
+            else
+            {
+                print_err("-E- Failed to extract image, MFA file might not have requested PSID\n");
+                res = ERR_CODE_INTERNAL_ERR;
+            }
+        }
+        else if (cnt > 1)
+        {
+            print_err("-E- More than one relevant image found. Not performing extraction!\n");
+            res = ERR_CODE_IMG_NOT_FOUND;
+        }
+        else
+        {
+            print_err("-E- NO mfa file found!\n");
+            res = ERR_CODE_IMG_NOT_FOUND;
+        }
     }
 
 clean_up:
@@ -1569,6 +1658,72 @@ int isDirectory(string path)
     return (S_ISDIR(st.st_mode));
 }
 
+int getPLDMImgListFromPSIDs(string file, vector<string>& psid_list, vector<PsidQueryItem>& results)
+{
+    int rc = 0;
+    ImageAccess imgacc(CompareFFV);
+    vector<PsidQueryItem> comps;
+    imgacc.loadPldmPkg(file);
+    imgacc.getPldmContent(comps, ComponentIdentifier::Identifier_NIC_FW_Comp);
+    for (auto& comp : comps)
+    {
+        for (string psid : psid_list)
+        {
+            if (comp.psid == psid)
+            {
+                u_int16_t swDevId = 0;
+                if (!imgacc.getPldmDescriptorByPsid(psid, DEV_ID_TYPE, swDevId))
+                {
+                    print_out("-E- can't extract DEVICE ID from PLDM package.\n");
+                }
+                comp.swDevId = swDevId;
+                string arch = "";
+                u_int8_t* buff;
+                u_int32_t buffSize = 0;
+                if (!imgacc.getPldmComponentByPsid(psid, ComponentIdentifier::Identifier_NIC_FW_Comp, &buff, buffSize))
+                {
+                    return -1;
+                }
+                rc = imgacc.queryPsid(file, psid, arch, IMAGE_PLDM_TYPE, comp, swDevId, (u_int32_t*)buff, buffSize);
+                delete[] buff;
+                results.push_back(comp);
+            }
+        }
+    }
+    return rc;
+}
+
+int getPLDMCompsListFromPSIDs(string file,
+                              vector<string>& psid_list,
+                              vector<tuple<PsidQueryItem, u_int8_t*, u_int32_t>>& results,
+                              ComponentIdentifier compIdentifier)
+{
+    int rc = 0;
+    ImageAccess imgacc(CompareFFV);
+    vector<PsidQueryItem> comps;
+    imgacc.loadPldmPkg(file);
+    imgacc.getPldmContent(comps, compIdentifier);
+    for (auto& comp : comps)
+    {
+        for (string psid : psid_list)
+        {
+            if (comp.psid == psid)
+            {
+                u_int8_t* buff;
+                u_int32_t buffSize = 0;
+                if (!imgacc.getPldmComponentByPsid(psid, compIdentifier, &buff, buffSize))
+                {
+                    print_out("-E- can't extract component data from PLDM package.\n");
+                    rc = -1;
+                }
+                comp.compId = imgacc.ToCompId(compIdentifier);
+                results.push_back(std::make_tuple(comp, buff, buffSize));
+            }
+        }
+    }
+    return rc;
+}
+
 int isFile(string path)
 {
     int status;
@@ -1652,6 +1807,30 @@ int getMFAListFromPSIDs(string mfa_path, vector<string>& psid_list, vector<PsidQ
         {
             results.push_back(ri);
         }
+    }
+    return 0;
+}
+
+int queryPLDM(string file,
+              vector<string>& psid_list,
+              map<string, PsidQueryItem>& psidUpdateInfo,
+              map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>>& psidPldmComponents)
+{
+    vector<PsidQueryItem> imgResults;
+    getPLDMImgListFromPSIDs(file, psid_list, imgResults);
+    for (unsigned i = 0; i < imgResults.size(); i++)
+    {
+        psidUpdateInfo[imgResults[i].psid] = imgResults[i];
+    }
+
+    vector<tuple<PsidQueryItem, u_int8_t*, u_int32_t>> pldmCompsResults;
+    getPLDMCompsListFromPSIDs(file, psid_list, pldmCompsResults, ComponentIdentifier::Identifier_BFB_Comp);
+    for (unsigned i = 0; i < pldmCompsResults.size(); i++)
+    {
+        tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t> compTuple =
+          std::make_tuple(get<TUPLE_POS_COMPID>(pldmCompsResults[i]).compId,
+                          get<TUPLE_POS_BUFF_PTR>(pldmCompsResults[i]), get<TUPLE_POS_BUFF_SIZE>(pldmCompsResults[i]));
+        psidPldmComponents[get<0>(pldmCompsResults[i]).psid].push_back(compTuple);
     }
     return 0;
 }
@@ -1943,7 +2122,7 @@ int list_files_content(config_t& config)
         }
         else
         {
-            display_file_listing(items, config.psid, show_titles);
+            display_file_listing(items, config.psid, show_titles, ImageAccess::getFileSignature(fpath));
         }
     }
     else
@@ -1995,7 +2174,7 @@ int list_files_content(config_t& config)
                 printf("Supported Boards in File: %s\n", fpath.c_str());
                 show_titles = true;
             }
-            display_file_listing(items, config.psid, show_titles);
+            display_file_listing(items, config.psid, show_titles, ImageAccess::getFileSignature(fpath));
             items.clear();
             show_titles = false;
             displayed_files_cnt++;
@@ -2031,7 +2210,7 @@ void display_field_str(string field, int size, string display_if_empty = "")
     print_out(fmt, f.c_str());
 }
 
-void display_file_listing(vector<PsidQueryItem>& items, string psid, bool show_titles)
+void display_file_listing(vector<PsidQueryItem>& items, string psid, bool show_titles, int signature)
 {
     int max_pn_length = 25;
     int tmpLen = 0;
@@ -2063,8 +2242,16 @@ void display_file_listing(vector<PsidQueryItem>& items, string psid, bool show_t
         }
         print_out("\n");
     }
+
+    vector<PsidQueryItem> notNicComps;
+    bool pldmFile = signature == IMG_SIG_TYPE_PLDM;
     for (unsigned i = 0; i < items.size(); i++)
     {
+        if (pldmFile && !items[i].isNicComp)
+        {
+            notNicComps.push_back(items[i]);
+            continue;
+        }
         if (psid.length())
         {
             if (psid.compare(items[i].psid))
@@ -2083,6 +2270,10 @@ void display_file_listing(vector<PsidQueryItem>& items, string psid, bool show_t
         if ((imv = (ImgVersion*)items[i].findImageVersion("FW")))
         {
             display_field_str(imv->getPrintableVersion(0), 28);
+        }
+        else if (pldmFile)
+        {
+            display_field_str(items[i].type, 28);
         }
         else
         {
@@ -2114,6 +2305,32 @@ void display_file_listing(vector<PsidQueryItem>& items, string psid, bool show_t
         if (breakFlag)
         {
             break;
+        }
+    }
+
+    print_out("\n");
+    if (signature == IMG_SIG_TYPE_PLDM && notNicComps.size() > 0)
+    {
+        if (show_titles)
+        {
+            display_field_str("Type", max_pn_length);
+            print_out(" ");
+            display_field_str("Version", 28);
+            print_out(" ");
+            print_out("\n");
+            for (int i = 0; i < 110; i++)
+            {
+                print_out("-");
+            }
+            print_out("\n");
+        }
+        for (unsigned i = 0; i < notNicComps.size(); i++)
+        {
+            display_field_str(notNicComps[i].name, max_pn_length, "N/A");
+            print_out(" ");
+            display_field_str(notNicComps[i].type, 18);
+            print_out(" ");
+            print_out("\n");
         }
     }
 }

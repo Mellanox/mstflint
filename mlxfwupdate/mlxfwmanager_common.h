@@ -76,6 +76,9 @@ const char* SafeGetEnv(const char* var);
 
 using namespace std;
 
+#define IMAGE_MFA_TYPE 1
+#define IMAGE_PLDM_TYPE 2
+
 inline string getLogDir(string toolName)
 {
 #if defined(__WIN__)

@@ -214,24 +214,30 @@ bool Fs4Operations::CheckDevInfoSignature(u_int32_t* buff)
 bool Fs4Operations::getImgStart()
 {
     DPRINTF(("Fs4Operations::getImgStart\n"));
-    u_int32_t cntx_image_start[CNTX_START_POS_SIZE] = {0};
-    u_int32_t cntx_image_num = 0;
-
-    FindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num, _fs4_magic_pattern);
-
-    if (cntx_image_num == 0)
+    if (GetIsStripedImage())
     {
-        return errmsg(MLXFW_NO_VALID_IMAGE_ERR,
-                      "\nNo valid FS4 image found. Check the flash parameters, if specified.");
+        _fwImgInfo.imgStart = 0;
     }
-    if (cntx_image_num > 1)
+    else
     {
-        return errmsg(MLXFW_MULTIPLE_VALID_IMAGES_ERR,
-                      "More than one FS4 image found on %s",
-                      this->_ioAccess->is_flash() ? "Device" : "image");
-    }
+        u_int32_t cntx_image_start[CNTX_START_POS_SIZE] = {0};
+        u_int32_t cntx_image_num = 0;
 
-    _fwImgInfo.imgStart = cntx_image_start[0];
+        FindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num, _fs4_magic_pattern);
+
+        if (cntx_image_num == 0)
+        {
+            return errmsg(MLXFW_NO_VALID_IMAGE_ERR,
+                          "\nNo valid FS4 image found. Check the flash parameters, if specified.");
+        }
+        if (cntx_image_num > 1)
+        {
+            return errmsg(MLXFW_MULTIPLE_VALID_IMAGES_ERR,
+                          "More than one FS4 image found on %s",
+                          this->_ioAccess->is_flash() ? "Device" : "image");
+        }
+        _fwImgInfo.imgStart = cntx_image_start[0];
+    }
     DPRINTF(("Fs4Operations::getImgStart - _fwImgInfo.imgStart = 0x%x\n", _fwImgInfo.imgStart));
 
     return true;
@@ -1083,17 +1089,25 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
 
 bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc, bool ignoreDToc)
 {
+    if (isStripedImage)
+    {
+        ignoreDToc = true;
+        SetIsStripedImage(true);
+    }
     bool image_encrypted = false;
     if (!isEncrypted(image_encrypted))
     {
         return errmsg(getErrorCode(), "%s", err());
     }
-    if (!ignoreDToc && image_encrypted)
+    if (image_encrypted)
     {
         //* Verify DTOC CRCs only
-        if (!ParseDevData(false, false, verifyCallBackFunc, showItoc))
+        if (!ignoreDToc)
         {
-            return errmsg("%s", err());
+            if (!ParseDevData(false, false, verifyCallBackFunc, showItoc))
+            {
+                return errmsg("%s", err());
+            }
         }
         return true;
     }
@@ -1334,7 +1348,12 @@ bool Fs4Operations::FwQuery(fw_info_t* fwInfo,
                             bool verbose)
 {
     DPRINTF(("Fs4Operations::FwQuery\n"));
-
+    if (isStripedImage)
+    {
+        SetIsStripedImage(true);
+        ignoreDToc = true;
+    }
+    
     bool image_encrypted = false;
     if (!isEncrypted(image_encrypted))
     {

@@ -39,6 +39,7 @@ AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  $(COMPILER_FPIC) -DPLDMLIB_EXPORT
 noinst_LTLIBRARIES = libpldm.la
 
 libpldm_la_SOURCES = \
+    pldm_utils.cpp pldm_utils.h\
     pldm_buff.cpp pldm_buff.h\
     pldm_record_descriptor.cpp pldm_record_descriptor.h\
     pldm_dev_id_record.cpp pldm_dev_id_record.h\

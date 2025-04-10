@@ -40,6 +40,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <cstring>
 
 #include "pldm_buff.h"
 #include "pldm_pkg_hdr.h"
@@ -51,7 +52,7 @@
 const u_int8_t PldmPkg::UUID[] = {0xF0, 0x18, 0x87, 0x8C, 0xCB, 0x7D, 0x49, 0x43,
                                   0x98, 0x00, 0xA0, 0x2F, 0x05, 0x9A, 0xCA, 0x02};
 
-PldmPkg::PldmPkg() : deviceIDRecordCount(0) {}
+PldmPkg::PldmPkg() : deviceIDRecordCount(0), componentImageCount(0) {}
 
 PldmPkg::~PldmPkg()
 {
@@ -82,6 +83,7 @@ bool PldmPkg::unpack(PldmBuffer& buff)
         deviceIDRecord->unpack(buff);
         deviceIDRecords.push_back(deviceIDRecord);
         psidImageMap[deviceIDRecord->getDevicePsid()] = deviceIDRecord->getComponentImageIndex();
+        psidComponentsMap[deviceIDRecord->getDevicePsid()] = deviceIDRecord->getComponentsIndexes();
     }
     buff.read(componentImageCount);
     for (i = 0; i < componentImageCount; i++)
@@ -123,4 +125,67 @@ const PldmComponenetImage* PldmPkg::getImageByPsid(const std::string& psid) cons
     if (location == -1 || location >= componentImageCount)
         return NULL;
     return componentImages[location];
+}
+
+bool PldmPkg::getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_t& descriptor) const
+{
+    bool found = false;
+    for (auto devIdRec : deviceIDRecords)
+    {
+        if (devIdRec->getDevicePsid() == psid)
+        {
+            devIdRec->getDescriptor(type, descriptor);
+            found = true;
+            break;
+        }
+    }
+    return found;
+}
+
+bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
+                                     std::string psid,
+                                     u_int8_t** buff,
+                                     u_int32_t& buffSize)
+{
+    bool found = false;
+    for (auto devIdRec : deviceIDRecords)
+    {
+        if (devIdRec->getDevicePsid() == psid)
+        {
+            u_int16_t comps_count = getComponentImageCount();
+            std::vector<u_int8_t> appliedComponents = devIdRec->getComponentsIndexes();
+            for (u_int16_t i = 0; i < comps_count; i++)
+            {
+                // the current DeviceRecord doesn't contain this component.
+                if (appliedComponents[i] == 0)
+                {
+                    continue;
+                }
+
+                PldmComponenetImage* ComponentImage = getComponentByIndex(i);
+                ComponentIdentifier identifier =
+                  static_cast<ComponentIdentifier>(ComponentImage->getComponentIdentifier());
+                if (identifier == compIdentifier ||
+                    (isNicFwComponent(compIdentifier) && isNicFwComponent(identifier))) // 2 components for nic image
+                                                                                        // FW, NIC_FW
+                {
+                    buffSize = ComponentImage->getComponentSize();
+                    *buff = new u_int8_t[buffSize];
+                    if (buff == nullptr)
+                    {
+                        return false;
+                    }
+                    memcpy(*buff, ComponentImage->getComponentData(), buffSize);
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (found)
+        {
+            break;
+        }
+    }
+    (void)buff;
+    return found;
 }

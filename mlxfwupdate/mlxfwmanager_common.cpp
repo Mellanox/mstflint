@@ -354,6 +354,9 @@ string getErrStr(int rc)
     err_msg[ERR_CODE_INVALID_CHOICE] = ERR_MSG_IVALID_CHOICE;
     err_msg[ERR_CODE_NONE_FAIL_SAFE] = ERR_MSG_NONE_FAIL_SAFE;
     err_msg[ERR_CODE_SERVER_QUERY_FAILED] = ERR_MSG_SERVER_QUERY;
+    err_msg[ERR_CODE_INVALID_PLDM_COMPONENT] = ERR_MSG_PLDM_COMPONENT;
+    err_msg[ERR_CODE_INVALID_PLDM_FORMAT] = ERR_MSG_INVALID_PLDM_FORMAT;
+
     if (err_msg.find(rc) != err_msg.end())
     {
         return err_msg[rc];

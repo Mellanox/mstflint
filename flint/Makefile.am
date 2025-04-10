@@ -57,7 +57,8 @@ mstflint_CXXFLAGS = -Wall -pthread -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPI
                     -DUNIX -DOS_UNIX -DOS_LINUX
 
 mstflint_DEPENDENCIES = \
-     $(top_builddir)/mlxfwops/lib/libmlxfwops.a  \
+     $(top_builddir)/pldmlib/libpldm.la \
+     $(top_builddir)/mlxfwops/lib/libmlxfwops.a  \ 
      $(top_builddir)/cmdparser/libcmdparser.a \
      $(top_builddir)/mflash/libmflash.la \
      $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \

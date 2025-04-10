@@ -45,6 +45,7 @@
 #include <string.h>
 #include "image_access.h"
 #include "mvpd/mvpd.h"
+#include "pldmlib/pldm_utils.h"
 
 #if !defined(__WIN__) && !defined(__FreeBSD__)
 #include <sys/socket.h>
@@ -137,6 +138,7 @@ void MlnxDev::_MlnxDevInit(int compare_ffv)
     _preBurnInit = false;
     _uniqueId = "NA";
     _unknowProgress = 0;
+    _bfbSupported = false;
     initUniqueId();
     setDeviceType();
 }
@@ -519,7 +521,7 @@ int MlnxDev::isQuerySuccess()
     return _querySuccess;
 }
 
-bool MlnxDev::openImg(u_int32_t* fileBuffer, u_int32_t bufferSize)
+bool MlnxDev::openImg(u_int32_t* fileBuffer, u_int32_t bufferSize, u_int16_t swDevId)
 {
     memset(_errBuff, 0, sizeof(_errBuff));
     _imgFwParams.errBuff = _errBuff;
@@ -529,6 +531,7 @@ bool MlnxDev::openImg(u_int32_t* fileBuffer, u_int32_t bufferSize)
     _imgFwParams.buffHndl = fileBuffer;
     _imgFwParams.buffSize = bufferSize;
     _imgFwParams.shortErrors = true;
+    _imgFwParams.swDevId = swDevId;
     _imgFwOps = FwOperations::FwOperationsCreate(_imgFwParams);
     if (_imgFwOps == NULL)
     {
@@ -549,13 +552,45 @@ int MlnxDev::preBurn(string mfa_file,
     string cmd;
     int rc;
     u_int8_t* filebuf = NULL;
+    u_int16_t swDevId = 0;
+    int sza;
     ImageAccess imgacc(_compareFFV);
     fw_info_t dev_fw_query;
     fw_info_t img_fw_query;
     memset(&dev_fw_query, 0, sizeof(dev_fw_query));
     memset(&img_fw_query, 0, sizeof(img_fw_query));
     _burnSuccess = 0;
-    int sza = imgacc.getImage(mfa_file, &filebuf);
+    bool isStripedImage = false;
+    bool pldmFlow = false;
+
+    if (ImageAccess::getFileSignature(mfa_file) == IMG_SIG_TYPE_PLDM)
+    {
+        pldmFlow = true;
+        isStripedImage = true;
+    }
+
+    if (pldmFlow)
+    {
+        if (!imgacc.loadPldmPkg(mfa_file))
+        {
+            return -1;
+        }
+        if (!imgacc.getPldmDescriptorByPsid(_psid, DEV_ID_TYPE, swDevId))
+        {
+            _errMsg = "-E- Can't extract DEVICE ID from PLDM package.\n";
+        }
+        u_int32_t buffSize;
+        if (!imgacc.getPldmComponentByPsid(_psid, ComponentIdentifier::Identifier_NIC_FW_Comp, &filebuf, buffSize))
+        {
+            _errMsg = "-E- The component was not found in the PLDM.\n";
+        }
+        sza = static_cast<int>(buffSize);
+    }
+    else
+    {
+        sza = imgacc.getImage(mfa_file, &filebuf);
+    }
+
     if (sza < 0)
     {
         _errMsg = imgacc.getLastErrMsg();
@@ -563,9 +598,14 @@ int MlnxDev::preBurn(string mfa_file,
         return -1;
     }
 
-    if (!openImg((u_int32_t*)filebuf, (u_int32_t)sza))
+    if (!openImg((u_int32_t*)filebuf, (u_int32_t)sza, swDevId))
     {
         goto clean_up_on_error;
+    }
+
+    if (isStripedImage)
+    {
+        _imgFwOps->SetIsStripedImage(true);
     }
 
     if (!_imgFwOps->isEncrypted(_imageEncrypted))
@@ -575,7 +615,7 @@ int MlnxDev::preBurn(string mfa_file,
         goto clean_up_on_error;
     }
 
-    rc = _imgFwOps->FwQuery(&img_fw_query);
+    rc = _imgFwOps->FwQuery(&img_fw_query, true, isStripedImage);
     if (!rc)
     {
         _errMsg = "Failed to query the image, " + (string)_imgFwOps->err();
@@ -590,6 +630,31 @@ int MlnxDev::preBurn(string mfa_file,
     if (!OpenDev())
     {
         goto clean_up_on_error;
+    }
+
+    if (pldmFlow)
+    {
+        if (!_devFwOps->IsFsCtrlOperations())
+        {
+            _errMsg = "FW doesn't support update using PLDM.\n";
+            rc = -1;
+            goto clean_up_on_error;
+        }
+        else
+        {
+            if (_devFwOps->IsComponentSupported(FwComponent::comps_ids_t::COMPID_BFB))
+            {
+                _bfbSupported = true;
+            }
+        }
+        
+        dm_dev_id_t imageType = dm_dev_sw_id2type(swDevId);
+        if (_deviceType != imageType)
+        {
+            _errMsg = "PCI Device ID in PLDM is not compatible with the Device ID on the device.\n";
+            rc = -1;
+            goto clean_up_on_error;
+        }
     }
 
     if (!_devFwOps->isEncrypted(_deviceEncrypted))
@@ -758,6 +823,33 @@ clean_up:
         _imgFwOps->FwCleanUp();
         delete _imgFwOps;
         _imgFwOps = NULL;
+    }
+    return res;
+}
+
+bool MlnxDev::burnPLDMComponent(FwComponent::comps_ids_t compId, u_int8_t* buff, u_int32_t buffSize)
+{
+    bool rc, res = true;
+    if (!_devFwOps->IsFsCtrlOperations())
+    {
+        _errMsg = "FW doesn't support Burning PLDM components using MCC.";
+        return false;
+    }
+    vector<u_int8_t> compData(*buff, *buff + buffSize);
+    rc = _devFwOps->FwBurnAdvanced(compData, _burnParams, compId);
+    if (!rc)
+    {
+        if (_devFwOps->err() != NULL)
+        {
+            _errMsg = _devFwOps->err();
+        }
+        else
+        {
+            _errMsg = "Failed to burn, unknown reason";
+        }
+        _log += _errMsg;
+        res = false;
+        UnlockDevice(_devFwOps);
     }
     return res;
 }

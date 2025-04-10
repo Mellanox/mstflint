@@ -61,6 +61,48 @@ void mft_signal_set_handling(int isOn)
 
 ////////////////////////////////////////////////////////////////////////
 //
+// FPldm Class Implementation
+//
+////////////////////////////////////////////////////////////////////////
+bool FPldm::open(const char* fname, bool read_only, bool advErr)
+{
+    int fsize;
+    FILE* fh;
+
+    (void)read_only; // FImage can be opened only for read so we ignore compiler warnings
+    _advErrors = advErr;
+
+    fh = fopen(fname, "rb");
+
+    if (!fh)
+    {
+        return errmsg("Can not open file \"%s\" - %s", fname, strerror(errno));
+    }
+
+    // Get the file size:
+    if (fseek(fh, 0, SEEK_END) < 0)
+    {
+        fclose(fh);
+        return errmsg("Can not get file size for \"%s\" - %s", fname, strerror(errno));
+    }
+
+    fsize = ftell(fh);
+    if (fsize < 0)
+    {
+        fclose(fh);
+        return errmsg("Can not get file size for \"%s\" - %s", fname, strerror(errno));
+    }
+    rewind(fh);
+
+    _fname = fname;
+    _len = fsize;
+    _isFile = true;
+    fclose(fh);
+    return true;
+} // FImage::open
+
+////////////////////////////////////////////////////////////////////////
+//
 // FImage Class Implementation
 //
 ////////////////////////////////////////////////////////////////////////

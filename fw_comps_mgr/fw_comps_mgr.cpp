@@ -2167,6 +2167,10 @@ bool FwCompsMgr::IsDevicePresent(FwComponent::comps_ids_t compType)
 {
     comp_status_st query;
     memset(&query, 0, sizeof(query));
+    if (_compsQueryMap.empty())
+    {
+        RefreshComponentsStatus();
+    }
     if (_compsQueryMap[compType].valid)
     {
         if (!queryComponentStatus(_compsQueryMap[compType].comp_status.component_index, &query))

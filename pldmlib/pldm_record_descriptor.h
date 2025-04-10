@@ -51,6 +51,7 @@ public:
     u_int16_t getDescriptorLength() const { return descriptorLength; }
     const u_int8_t* getDescriptorData() const { return descriptorData; }
     std::string getDescription() const;
+    u_int16_t getDescriptorType() const { return descriptorType; }
 
 private:
     u_int16_t descriptorType;

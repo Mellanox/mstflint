@@ -199,7 +199,8 @@ public:
         DIGITAL_CACERT_REMOVAL = 0x17,
         DIGITAL_CACERT_CHAIN_REMOVAL = 0x18,
         COMPID_LINKX_ELS = 0x1a,
-        COMPID_LAST_IDX = 0x1a,
+        COMPID_BFB = 0x1b,
+        COMPID_LAST_IDX = 0x1b,
         COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 
@@ -444,6 +445,7 @@ public:
                     u_int8_t pnat = 0,
                     u_int32_t lp_msb = 0);
     u_int8_t GetSecureHostState() { return _secureHostState; }
+    bool IsDevicePresent(FwComponent::comps_ids_t compType);
 
 private:
     typedef enum
@@ -578,7 +580,6 @@ private:
     void extractRomInfo(mgirReg* mgir, fwInfoT* fwQuery);
     bool isDMAAccess();
     bool fallbackToRegisterAccess();
-    bool IsDevicePresent(FwComponent::comps_ids_t compType);
 
     std::vector<comp_query_st> _compsQueryMap;
     bool _fwSupport;

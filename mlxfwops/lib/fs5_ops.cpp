@@ -439,12 +439,13 @@ bool Fs5Operations::IsExtracted()
     return false;
 }
 
-bool Fs5Operations::FwQuery(fw_info_t* fwInfo, bool, bool, bool quickQuery, bool ignoreDToc, bool verbose)
+bool Fs5Operations::FwQuery(fw_info_t* fwInfo, bool, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs5Operations::FwQuery\n"));
-    if (IsExtracted())
+    if (isStripedImage || IsExtracted())
     {
         ignoreDToc = true;
+        SetIsStripedImage(true);
     }
     if (!encryptedFwQuery(fwInfo, quickQuery, ignoreDToc, verbose))
     {
@@ -500,6 +501,7 @@ bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
      bool res;
      if (IsExtracted())
     {
+        SetIsStripedImage(true);
         res = FwExtractEncryptedImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
     }
     else

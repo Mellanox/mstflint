@@ -210,6 +210,9 @@ using namespace mft_utils;
 #define NO_FW_CTRL_L "no_fw_ctrl"
 #define NO_FW_CTRL_S ' '
 
+#define COMP_TYPE_L "component_type"
+#define COMP_TYPE_S ' '
+
 string toolName = "";
 /************************************
  * Function: CmdLineParser
@@ -455,6 +458,8 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(NO_EXTRACT_LIST_L, NO_EXTRACT_LIST_S, "", "Do not extract or list binaries",
                      true); // Hidden
+    
+    this->AddOptions(COMP_TYPE_L, COMP_TYPE_S, "componentName", "Specify the PLDM component type to extract");
 }
 
 bool csvSplit(string str, vector<string>& strv)
@@ -653,6 +658,11 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
     else if (name == EXTRACT_FILE_L)
     {
         _cmdLineParams->target_file = value;
+        return PARSE_OK;
+    }
+    else if (name == COMP_TYPE_L)
+    {
+        _cmdLineParams->component_type = value;
         return PARSE_OK;
     }
     else if (name == QUERY_L)

@@ -127,7 +127,10 @@ string getline();
 // void    displayFilesToBeDownloaded(filesOPtions filterOPtions, CmdLineParams cmd_params);
 int displayReleaseNoteFiles(const filesOPtions& filterOPtions, const CmdLineParams& cmd_params);
 void displayReleaseNoteMFAs(map<string, PsidQueryItem> psidUpdateInfo, vector<MlnxDev*> devs, int deviceIndex);
-void display_file_listing(vector<PsidQueryItem>& items, string psid, bool show_titles);
+void display_file_listing(vector<PsidQueryItem>& items,
+                          string psid,
+                          bool show_titles,
+                          int signature = IMG_SIG_TYPE_UNKNOWN);
 int getLocalDevices(dev_info** devs);
 void getUniquePsidList(vector<MlnxDev*>& devs,
                        vector<string>& psid_list,
@@ -146,6 +149,15 @@ int queryMFAs(ServerRequest* srq,
               int online_update,
               string& errorMsg,
               vector<string>& fw_version_list);
+int getPLDMImgListFromPSIDs(string file, vector<string>& psid_list, vector<PsidQueryItem>& results);
+int getPLDMCompsListFromPSIDs(string file,
+                              vector<string>& psid_list,
+                              vector<tuple<PsidQueryItem, u_int8_t*, u_int32_t>>& results,
+                              ComponentIdentifier compId);
+int queryPLDM(string file,
+              vector<string>& psid_list,
+              map<string, PsidQueryItem>& psidUpdateInfo,
+              map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>>& psidPldmComponents);
 int download(ServerRequest* srq,
              vector<string>& url,
              vector<string>& fileNames,

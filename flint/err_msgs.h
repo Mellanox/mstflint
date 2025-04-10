@@ -115,6 +115,7 @@ typedef enum
 #define FLINT_FS3_BB_ERROR \
     "bb command is not supported anymore in FS3/FS4 images, please use b for burning FS3/FS4 images.\n"
 #define FLINT_FSX_BURN_ERROR "Burning %s image failed: %s\n"
+#define FLINT_FSPLDM_BURN_ERROR "Burning %s pldm component failed: %s\n"
 #define FLINT_FS2_BURN_ERROR "Burning FS2 image failed: %s\n"
 #define FLINT_PSID_ERROR "PSID mismatch. The PSID on flash (%s) differs from the PSID in the given image (%s).\n"
 #define FLINT_FS2_STRIPED_ERROR "The -striped_image cannot be used with the burn command\n"

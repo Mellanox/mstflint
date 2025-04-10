@@ -68,6 +68,8 @@ enum
     ERR_CODE_INVALID_CHOICE = 26,
     ERR_CODE_NONE_FAIL_SAFE = 27,
     ERR_CODE_SERVER_QUERY_FAILED = 28,
+    ERR_CODE_INVALID_PLDM_COMPONENT = 29,
+    ERR_CODE_INVALID_PLDM_FORMAT = 30,
     ERR_CODES_NUM
 };
 
@@ -99,5 +101,7 @@ enum
 #define ERR_MSG_IVALID_CHOICE "Select choice is invalid"
 #define ERR_MSG_NONE_FAIL_SAFE "Burn is fail safe, None fail safe required"
 #define ERR_MSG_SERVER_QUERY "Failed to query PSIDs from server"
+#define ERR_MSG_PLDM_COMPONENT "Not valid PLDM component type"
+#define ERR_MSG_INVALID_PLDM_FORMAT "Can't parse PLDM format"
 
 #endif

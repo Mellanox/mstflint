@@ -468,7 +468,6 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo,
                                bool ignoreDToc,
                                bool verbose)
 {
-    (void)isStripedImage;
     (void)readRom;
     (void)quickQuery;
     (void)ignoreDToc;
@@ -477,6 +476,11 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo,
     memcpy(&(fwInfo->fs3_info), &(_fsCtrlImgInfo), sizeof(fs3_info_t));
     fwInfo->fs3_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
     fwInfo->fw_type = FwType();
+    if (isStripedImage)
+    {
+        SetIsStripedImage(true);
+        ignoreDToc = true;
+    }
 
     if (isMultiAsicSystemComponent())
     {
@@ -885,7 +889,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
     }
     fw_info_t fw_query;
     memset(&fw_query, 0, sizeof(fw_info_t));
-    if (!imageOps->FwQuery(&fw_query, true))
+    if (!imageOps->FwQuery(&fw_query, true, imageOps->GetIsStripedImage()))
     {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to query the image\n");
     }
@@ -1405,4 +1409,9 @@ bool FsCtrlOperations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack)
     }
     printf("-I- Secure Host was enabled successfully on the device.\n");
     return true;
+}
+
+bool FsCtrlOperations::IsComponentSupported(FwComponent::comps_ids_t component)
+{
+    return _fwCompsAccess->IsDevicePresent(component);
 }
