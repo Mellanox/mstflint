@@ -743,8 +743,11 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr,
 
 bool Fs3Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc, bool ignoreDToc)
 {
-    /* dummy assignment to avoid compiler warrning (isStripedImage is not used in fs3) */
-    (void)isStripedImage;
+    if (isStripedImage)
+    {
+        ignoreDToc = true;
+        SetIsStripedImage(true);
+    }
 
     struct QueryOptions queryOptions;
 
@@ -767,7 +770,16 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
     u_int8_t binVerMajor = 0, binVerMinor = 0;
     bool bad_signature;
 
-    FindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
+    if (GetIsStripedImage())
+    {
+        cntx_image_start[0] = 0;
+        cntx_image_num = 1;
+        ignoreDToc = true;
+    }
+    else
+    {
+        FindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
+    }
     if (cntx_image_num == 0)
     {
         return errmsg(MLXFW_NO_VALID_IMAGE_ERR,
@@ -990,13 +1002,18 @@ reg_access_status_t Fs3Operations::getGI(mfile* mf, struct reg_access_hca_mgir_e
 
 bool Fs3Operations::FwQuery(fw_info_t* fwInfo,
                             bool readRom,
-                            bool /*isStripedImage*/,
+                            bool isStripedImage,
                             bool quickQuery,
                             bool ignoreDToc,
                             bool verbose)
 {
     /* isStripedImage flag is not needed in FS3 image format */
     DPRINTF(("Fs3Operations::FwQuery\n"));
+    if (isStripedImage)
+    {
+        ignoreDToc = true;
+        SetIsStripedImage(true);
+    }
     reg_access_status_t rc = ME_ERROR;
     struct reg_access_hca_mgir_ext mgir;
 
@@ -3575,8 +3592,12 @@ bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img,
                                       bool)
 {
     u_int32_t size = 0;
-
-    if (!FsIntQueryAux(true, false, false, verbose))
+    bool ignoreDToc = false;
+    if (GetIsStripedImage())
+    {
+        ignoreDToc = true;
+    }
+    if (!FsIntQueryAux(true, false, ignoreDToc, verbose))
     {
         return false;
     }

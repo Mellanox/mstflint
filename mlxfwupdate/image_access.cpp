@@ -50,6 +50,7 @@
 #else
 #include <tools_layouts/connectx4_layouts.h>
 #endif
+#include "pldmlib/pldm_utils.h"
 
 using namespace std;
 
@@ -153,7 +154,12 @@ clean_up:
     return res;
 }
 
-bool ImageAccess::openImg(fw_hndl_type_t hndlType, char* psid, char* fileHndl)
+bool ImageAccess::openImg(fw_hndl_type_t hndlType,
+                          char* psid,
+                          char* fileHndl,
+                          u_int16_t swDevId,
+                          u_int32_t* data,
+                          u_int32_t dataSize)
 {
     memset(_errBuff, 0, sizeof(_errBuff));
     _imgFwParams.errBuff = _errBuff;
@@ -162,6 +168,12 @@ bool ImageAccess::openImg(fw_hndl_type_t hndlType, char* psid, char* fileHndl)
     _imgFwParams.psid = psid;
     _imgFwParams.fileHndl = fileHndl;
     _imgFwParams.shortErrors = true;
+    if (dataSize)
+    {
+        _imgFwParams.buffHndl = data;
+        _imgFwParams.buffSize = dataSize;
+        _imgFwParams.swDevId = swDevId;
+    }
     _imgFwOps = FwOperations::FwOperationsCreate(_imgFwParams);
     if (_imgFwOps == NULL) {
         _errMsg = "-E- " + (string)_errBuff + "\n";
@@ -180,7 +192,10 @@ int ImageAccess::queryPsid(const string&  fname,
                            const string&  psid,
                            string&        selector_tag,
                            int            image_type,
-                           PsidQueryItem& ri)
+                           PsidQueryItem& ri,
+                           u_int16_t      swDevId,
+                           u_int32_t*     data,
+                           u_int32_t      dataSize)
 {
     int       res = 0;
     mfa_desc* mfa_d = NULL;
@@ -189,16 +204,33 @@ int ImageAccess::queryPsid(const string&  fname,
 
     vector < u_int8_t > sect; /* to get fw configuration. */
     vector < u_int8_t > dest;
+    bool isStripedImage = false;
 
-    if (!openImg(FHT_FW_FILE, (char*)psid.c_str(), (char*)fname.c_str())) {
+    if (image_type == IMAGE_PLDM_TYPE)
+    {
+        if (!openImg(FHT_FW_BUFF, (char*)psid.c_str(), nullptr, swDevId, data, dataSize))
+        {
+            _errMsg = "Unable to open the PLDM buffer component.";
+            res = -1;
+            goto clean_up;
+        }
+        if (_imgFwOps->FwType() != FIT_FS4 && _imgFwOps->FwType() != FIT_FS5)
+        {
+            _errMsg = "Update FW using PLDM is applicable only for FS4 and FS5 images.";
+            res = -1;
+            goto clean_up;
+        }
+    }
+    else if (!openImg(FHT_FW_FILE, (char*)psid.c_str(), (char*)fname.c_str())) {
         return 0;
     }
 
     ri.psid = psid;
     ri.found = 0;
 
+    isStripedImage = image_type == IMAGE_PLDM_TYPE ? true : false;
     memset(&img_query, 0, sizeof(img_query));
-    if (!_imgFwOps->FwQuery(&img_query, true)) {
+    if (!_imgFwOps->FwQuery(&img_query, true, isStripedImage)) {
         _errMsg = "Failed to query " + (string)_imgFwOps->err();
         _log += _errMsg;
         goto clean_up;
@@ -420,7 +452,7 @@ int ImageAccess::get_bin_content(const string& fname, vector < PsidQueryItem >& 
     if (!openImg(FHT_FW_FILE, NULL, (char*)fname.c_str())) {
         return -1;
     }
-
+    
     memset(&img_query, 0, sizeof(img_query));
     if (!_imgFwOps->FwQuery(&img_query, true)) {
         _errMsg = "Failed to query " + (string)_imgFwOps->err();
@@ -632,31 +664,6 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, 
     return 0;
 }
 
-int ImageAccess::get_pldm_content(const string& fname, vector < PsidQueryItem >& riv)
-{
-    PldmBuffer pldm_buff;
-
-    pldm_buff.loadFile(fname);
-    PldmPkg pldm;
-
-    pldm.unpack(pldm_buff);
-
-    u_int8_t dev_count = pldm.getDeviceIDRecordCount();
-
-    for (u_int8_t i = 0; i < dev_count; i++) {
-        PldmDevIdRecord* rec = pldm.getDeviceIDRecord(i);
-        PsidQueryItem    item;
-        item.psid = rec->getDevicePsid();
-        item.description = rec->getDescription();
-        int                  image_index = rec->getComponentImageIndex();
-        PldmComponenetImage* image_obj = pldm.getComponentImage(image_index);
-        extract_pldm_image_info(image_obj->getComponentData(), image_obj->getComponentSize(), item);
-        riv.push_back(item);
-    }
-
-    return 0;
-}
-
 int ImageAccess::get_file_content(const string& fname, vector < PsidQueryItem >& riv)
 {
     int type = getFileSignature(fname);
@@ -672,7 +679,11 @@ int ImageAccess::get_file_content(const string& fname, vector < PsidQueryItem >&
         break;
 
     case IMG_SIG_TYPE_PLDM:
-        res = get_pldm_content(fname, riv);
+        if (!loadPldmPkg(fname))
+        {
+            return res;
+        }
+        res = getPldmContent(riv);
         break;
     }
     return res;
@@ -691,4 +702,85 @@ string ImageAccess::getlastWarning()
 string ImageAccess::getLog()
 {
     return _log;
+}
+
+/**********************
+ PLDM suport functions
+***********************/
+bool ImageAccess::loadPldmPkg(const string& fname)
+{
+    if (_pldm_buff.loadFile(fname))
+    {
+        return false;
+    }
+    if (!_pldmPkg.unpack(_pldm_buff))
+    {
+        return false;
+    }
+    return true;
+}
+
+FwComponent::comps_ids_t ImageAccess::ToCompId(ComponentIdentifier compIdentifier)
+{
+    if (compIdentifier == ComponentIdentifier::Identifier_BFB_Comp)
+    {
+        return FwComponent::comps_ids_t::COMPID_BFB;
+    }
+    return FwComponent::comps_ids_t::COMPID_UNKNOWN;
+}
+
+bool ImageAccess::getPldmDescriptorByPsid(string psid, u_int16_t type, u_int16_t& descriptor)
+{
+    return _pldmPkg.getPldmDescriptorByPsid(psid, type, descriptor);
+}
+
+int ImageAccess::getPldmComponentByPsid(string psid,
+                                        ComponentIdentifier compIdentifier,
+                                        u_int8_t** buff,
+                                        u_int32_t& buffSize)
+{
+    return _pldmPkg.getComponentDataByPsid(compIdentifier, psid, buff, buffSize);
+}
+
+// get all components Or get all component with specific identifier
+int ImageAccess::getPldmContent(vector<PsidQueryItem>& riv, ComponentIdentifier compIdentifier)
+{
+    if (!isValidComponent(compIdentifier))
+    {
+        _errMsg = "Invalid component identifier.";
+        return -1;
+    }
+    u_int8_t dev_count = _pldmPkg.getDeviceIDRecordCount();
+    for (u_int8_t i = 0; i < dev_count; i++)
+    {
+        PldmDevIdRecord* rec = _pldmPkg.getDeviceIDRecord(i);
+        vector<u_int8_t> componentsIndexes = rec->getComponentsIndexes();
+        for (size_t index = 0; index < componentsIndexes.size(); index++)
+        {
+            if (componentsIndexes[index])
+            {
+               PldmComponenetImage* getComponentImage = _pldmPkg.getComponentByIndex(index);
+                ComponentIdentifier identifier = static_cast<ComponentIdentifier>(getComponentImage->getComponentIdentifier());
+
+                PsidQueryItem item;
+                ComponentIdentifierToStringValue(identifier, COMPONENT_NAME, item.name);
+                item.type = getComponentImage->getcomponentVersionString();
+                item.psid = rec->getDevicePsid();
+                item.isNicComp = false;
+                if ((isNicFwComponent(identifier) &&
+                     ((compIdentifier == ComponentIdentifier::Identifier_General) || isNicFwComponent(compIdentifier))))
+                {
+                    item.isNicComp = true;
+                    extract_pldm_image_info(
+                      getComponentImage->getComponentData(), getComponentImage->getComponentSize(), item);
+                }
+                else if (identifier != compIdentifier && compIdentifier != ComponentIdentifier::Identifier_General)
+                {
+                    continue;
+                }
+                riv.push_back(item);
+            }
+        }
+    }
+    return 0;
 }

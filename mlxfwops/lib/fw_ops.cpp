@@ -42,9 +42,12 @@
 #include "fs4_ops.h"
 #include "fs3_ops.h"
 #include "fs2_ops.h"
+#include "fs_pldm.h"
 #include "fsctrl_ops.h"
 #include "fs_comps_factory.h"
 #include "dev_mgt/tools_dev_types.h"
+#include "pldmlib/pldm_pkg.h"
+#include "pldmlib/pldm_utils.h"
 
 #ifdef CABLES_SUPP
 #include "cablefw_ops.h"
@@ -106,6 +109,10 @@ int FwOperations::getFileSignature(const char* fname)
     if (!strncmp((char*)tmpb, "MFAR", 4))
     {
         res = IMG_SIG_TYPE_MFA;
+    }
+    if (std::memcmp(tmpb, expectedHeaderIdentifier, sizeof(expectedHeaderIdentifier)) == 0)
+    {
+        res = IMG_SIG_TYPE_PLDM;
     }
     if (!strncmp((char*)tmpb, "MTCF", 4))
     {
@@ -472,7 +479,7 @@ bool FwOperations::GetSectData(std::vector<u_int8_t>& file_sect, const u_int32_t
     return true;
 }
 
-bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP)
+bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, u_int16_t swDevId)
 {
     DPRINTF(("FwOperations::FwAccessCreate\n"));
     if (fwParams.hndlType == FHT_FW_FILE)
@@ -487,6 +494,16 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP)
         if (sig == IMG_SIG_TYPE_BIN || sig == IMG_SIG_TYPE_CF)
         {
             *ioAccessP = new FImage;
+            if (!(*ioAccessP)->open(fwParams.fileHndl, false, !fwParams.shortErrors))
+            {
+                WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
+                delete *ioAccessP;
+                return false;
+            }
+        }
+        else if (sig == IMG_SIG_TYPE_PLDM)
+        {
+            *ioAccessP = new FPldm;
             if (!(*ioAccessP)->open(fwParams.fileHndl, false, !fwParams.shortErrors))
             {
                 WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
@@ -533,7 +550,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP)
         u_int32_t numInfo = fwParams.buffSize;
 #ifndef NO_MFA_SUPPORT
         int sig = getBufferSignature((u_int8_t*)fwParams.buffHndl, numInfo);
-        if (sig == IMG_SIG_TYPE_BIN)
+        if (sig == IMG_SIG_TYPE_BIN || swDevId != 0)
         {
             *ioAccessP = new FImage;
             if (!((FImage*)*ioAccessP)->open(fwParams.buffHndl, (u_int32_t)numInfo, !fwParams.shortErrors))
@@ -705,18 +722,37 @@ u_int8_t FwOperations::IsFSCompsImage(FBase& f)
     return FS_UNKNOWN_IMG;
 }
 
-u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg)
+u_int8_t FwOperations::IsPLDM(FBase& f)
+{
+    static const u_int32_t PLDM_HEADER_IDENTIFIER_LENGTH = 16;
+    u_int8_t data[PLDM_HEADER_IDENTIFIER_LENGTH] = {0};
+    f.read(0, data, PLDM_HEADER_IDENTIFIER_LENGTH, false, NULL);
+    if (!strncmp((const char*)data, (const char*)expectedHeaderIdentifier, PLDM_HEADER_IDENTIFIER_LENGTH))
+    {
+        return FS_PLDM_1_0;
+    }
+    return FS_UNKNOWN_IMG;
+}
+
+u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg, u_int16_t swDevId)
 {
     DPRINTF(("FwOperations::CheckFwFormat\n"));
     u_int8_t v;
     u_int32_t found_images = 0;
 
-    if (f.is_flash() && !getFwFormatFromImg)
+    if (((f.is_flash() && !getFwFormatFromImg) || swDevId != 0))
     {
-        return GetFwFormatFromHwDevID(f.get_dev_id());
+        u_int32_t hwDevId = swDevId ? dm_dev_sw_id2hw_dev_id(swDevId) : f.get_dev_id();
+        return GetFwFormatFromHwDevID(hwDevId);
     }
     else
     {
+        v = IsPLDM(f);
+        if (v != FS_UNKNOWN_IMG)
+        {
+            return v;
+        }
+
         v = IsCableImage(f);
         if (v != FS_UNKNOWN_IMG)
         {
@@ -784,6 +820,7 @@ FwOperations* FwOperations::FwOperationsCreate(void* fwHndl,
     fwParams.errBuffSize = buffSize;
     fwParams.ignoreCrcCheck = ignore_crc_check;
     fwParams.shortErrors = true;
+    fwParams.swDevId = 0;
 
     if (hndlType == FHT_FW_FILE)
     {
@@ -850,7 +887,7 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams,
         return false;
     }
     if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false &&
-        (*imgFwOps)->FwType() != FIT_COMPS)
+         (*imgFwOps)->FwType() != FIT_COMPS && (*imgFwOps)->FwType() != FIT_PLDM_1_0)
     {
         devParams.noFwCtrl = true;
     }
@@ -1074,7 +1111,7 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                 }
             }
         }
-        if (!FwAccessCreate(fwParams, &ioAccess))
+        if (!FwAccessCreate(fwParams, &ioAccess, fwParams.swDevId))
         {
             return (FwOperations*)NULL;
         }
@@ -1084,7 +1121,7 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             getFwFormatFromImg = true;
         }
 
-        fwFormat = CheckFwFormat(*ioAccess, getFwFormatFromImg);
+        fwFormat = CheckFwFormat(*ioAccess, getFwFormatFromImg, fwParams.swDevId);
     init_fwops:
         switch (fwFormat)
         {
@@ -1134,6 +1171,18 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                 DPRINTF(("FSCTRL ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
                 fwops = new FsCtrlOperations(fwCompsAccess);
                 break;
+            }
+            case FS_PLDM_1_0:
+            {
+                DPRINTF(("FS_PLDM_1_0 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
+                fwops = new FsPldmOperations(ioAccess);
+                if (!fwops->FwInit())
+                {
+                    WriteToErrBuff(fwParams.errBuff, (char*)"FwInit has failed!", fwParams.errBuffSize);
+                    delete fwops;
+                    return NULL;
+                }
+                return fwops;
             }
 
 #ifdef CABLES_SUPP
@@ -2212,7 +2261,11 @@ bool FwOperations::FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, P
     return true;
 };
 
-bool FwOperations::CreateBasicImageFromData(u_int32_t* data, u_int32_t dataSize, FwOperations** newImgOps)
+bool FwOperations::CreateBasicImageFromData(u_int32_t* data,
+                                            u_int32_t dataSize,
+                                            FwOperations** newImgOps,
+                                            u_int16_t swDevId,
+                                            bool isStripedImage)
 {
     fwOpsParams imgOpsParams;
     memset(&imgOpsParams, 0, sizeof(imgOpsParams));
@@ -2224,13 +2277,13 @@ bool FwOperations::CreateBasicImageFromData(u_int32_t* data, u_int32_t dataSize,
     imgOpsParams.errBuff = errBuff;
     imgOpsParams.errBuffSize = 1024;
     imgOpsParams.hndlType = FHT_FW_BUFF;
-
+    imgOpsParams.swDevId = swDevId;
     *newImgOps = FwOperationsCreate(imgOpsParams);
     if (*newImgOps == NULL)
     {
         return errmsg("Internal error: Failed to create modified image: %s", errBuff);
     }
-    if (!(*newImgOps)->FwVerify((VerifyCallBack)NULL))
+    if (!(*newImgOps)->FwVerify((VerifyCallBack)NULL, isStripedImage))
     {
         errmsg("Internal error: Modified image failed to verify: %s", (*newImgOps)->err());
         (*newImgOps)->FwCleanUp();
@@ -2863,6 +2916,11 @@ bool FwOperations::ChangeSecureHostState(bool, u_int64_t)
 bool FwOperations::GetNcoreData(vector<u_int8_t>&)
 {
     return errmsg("GetNcoreData is not supported");
+}
+
+bool FwOperations::IsComponentSupported(FwComponent::comps_ids_t)
+{
+    return errmsg("IsComponentSupported is not supported");
 }
 
 bool FwOperations::IsExtendedGuidNumSupported()

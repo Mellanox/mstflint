@@ -80,6 +80,7 @@ CmdLineParams::CmdLineParams()
     dl = false;
     no_extract_list = false;
     numberOfRetrials = 5;
+    component_type = "";
 
 #ifdef __WIN__
     char execName[1024];

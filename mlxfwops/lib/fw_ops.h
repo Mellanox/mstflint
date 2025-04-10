@@ -84,7 +84,8 @@ public:
         IMG_SIG_TYPE_MFA = 2,
         IMG_SIG_TYPE_CF = 3,
         IMG_SIG_TYPE_CC = 4,
-        IMG_SIG_OPEN_FILE_FAILED = 5
+        IMG_SIG_TYPE_PLDM = 5,
+        IMG_SIG_OPEN_FILE_FAILED = 6
     };
     FwOperations(FBase* ioAccess) :
         _ioAccess(ioAccess),
@@ -97,7 +98,8 @@ public:
         _minBinMajorVer(0),
         _maxBinMajorVer(0),
         _signatureMngr((ISignatureManager*)NULL),
-        _internalQueryPerformed(false)
+        _internalQueryPerformed(false),
+        _isStripedImage(false)
     {
         memset(_sectionsToRead, 0, sizeof(_sectionsToRead));
         memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
@@ -146,6 +148,8 @@ public:
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
     virtual u_int32_t GetPublicKeySecureBootPtr();
     virtual bool FwReactivateImage() { return errmsg("Operation not supported."); }
+    virtual bool GetIsStripedImage() { return _isStripedImage; }
+    virtual void SetIsStripedImage(bool isStripedImage) { _isStripedImage = isStripedImage; }
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool SignForFwUpdate(const char* uuid,
                                  const MlxSign::Signer& signer,
@@ -296,7 +300,8 @@ public:
     virtual bool GetNcoreData(vector<u_int8_t>& ncoreData);
     virtual bool GetSecureHostState(u_int8_t& state);
     virtual bool ChangeSecureHostState(bool disable, u_int64_t key);
-
+    virtual bool IsComponentSupported(FwComponent::comps_ids_t component);
+    
 #ifndef UEFI_BUILD
     static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);
 #endif
@@ -464,6 +469,7 @@ public:
         bool canSkipFwCtrl;
         bool ignoreCrcCheck;
         u_int32_t deviceIndex;
+        u_int16_t swDevId;
     };
 
     struct sgParams
@@ -529,6 +535,7 @@ protected:
         FS_FSCTRL_GEN,
         FS_FS5_GEN,
         FS_COMPS_GEN,
+        FS_PLDM_1_0,
         FS_UNKNOWN_IMG
     };
 
@@ -600,7 +607,11 @@ protected:
     {
         return errmsg("Align device sections is not supported");
     }
-    bool CreateBasicImageFromData(u_int32_t* data, u_int32_t dataSize, FwOperations** newImgOps);
+    bool CreateBasicImageFromData(u_int32_t* data,
+                                  u_int32_t dataSize,
+                                  FwOperations** newImgOps,
+                                  u_int16_t swDevId = 0,
+                                  bool isStripedImage = false);
     virtual bool
       storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
                                          vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
@@ -671,7 +682,7 @@ protected:
     bool ReadBinFile(const char* fimage, u_int8_t*& file_data, int& file_size);
     bool FwBurnData(u_int32_t* data, u_int32_t dataSize, ProgressCallBack progressFunc);
     bool FwBurnData(burnDataParamsT& burnDataParams);
-    static bool FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP);
+    static bool FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, u_int16_t swDevId = 0);
     bool CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor);
 
     static u_int8_t GetFwFormatFromHwDevID(u_int32_t hwDevId);
@@ -703,6 +714,7 @@ protected:
     u_int8_t _maxBinMajorVer;
     ISignatureManager* _signatureMngr;
     bool _internalQueryPerformed;
+    bool _isStripedImage;
 
 private:
     // Static Methods
@@ -719,8 +731,9 @@ private:
 #endif
 
     static int getBufferSignature(u_int8_t* buf, u_int32_t size);
-    static u_int8_t CheckFwFormat(FBase& f, bool getFwFormatFromImg = false);
+    static u_int8_t CheckFwFormat(FBase& f, bool getFwFormatFromImg = false, u_int16_t swDevId = 0);
     static bool GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset, u_int8_t& image_format_version);
+    static u_int8_t IsPLDM(FBase& f);
     static u_int8_t IsFS4OrFS5Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsFS3OrFS2Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsCableImage(FBase& f);

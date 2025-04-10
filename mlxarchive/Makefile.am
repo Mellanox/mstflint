@@ -69,6 +69,7 @@ mstarchive_CXXFLAGS =
 
 mstarchive_LDADD = libmstarchive.la \
                    $(top_builddir)/mlxfwops/lib/libmlxfwops.a \
+                   $(top_builddir)/pldmlib/libpldm.la \
                    $(top_builddir)/libmfa/libmfa.la \
                    $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
                    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \

@@ -47,6 +47,9 @@ public:
     void print(FILE* fp);
     u_int32_t getComponentSize() const { return componentSize; }
     const u_int8_t* getComponentData() const { return componentData; }
+    u_int16_t getComponentIdentifier() const { return componentIdentifier; }
+    std::string getcomponentVersionString() const { return componentVersionString; }
+
 
 private:
     bool readComponentData(PldmBuffer& buff);

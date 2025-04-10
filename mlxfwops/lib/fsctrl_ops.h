@@ -132,6 +132,8 @@ public:
                                   ProgressCallBackAdvSt* stProgressFunc = NULL);
     virtual bool GetSecureHostState(u_int8_t& state);
     virtual bool ChangeSecureHostState(bool disable, u_int64_t key);
+    virtual bool IsComponentSupported(FwComponent::comps_ids_t component);
+
 
 private:
     virtual u_int32_t GetHwDevId() { return _hwDevId; }

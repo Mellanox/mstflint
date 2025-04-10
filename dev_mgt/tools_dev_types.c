@@ -776,6 +776,20 @@ dm_dev_id_t dm_dev_str2type(const char* str)
     return DeviceUnknown;
 }
 
+u_int16_t dm_dev_sw_id2hw_dev_id(u_int16_t sw_dev_id)
+{
+    const struct device_info* p = g_devs_info;
+    while (p->dm_id != DeviceUnknown)
+    {
+        if (sw_dev_id == p->sw_dev_id)
+        {
+            return p->hw_dev_id;
+        }
+        p++;
+    }
+    return 0;
+}
+
 dm_dev_id_t dm_dev_aproxstr2type(const char* str)
 {
     const struct device_info* p = g_devs_info;

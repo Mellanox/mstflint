@@ -37,6 +37,7 @@
 #define __PSID_QUERY_ITEM_H__
 
 #include <img_version.h>
+#include "fw_comps_mgr/fw_comps_mgr.h"
 #include <string>
 #include <vector>
 
@@ -45,7 +46,14 @@ using namespace std;
 class PsidQueryItem
 {
 public:
-    PsidQueryItem() : devId(0), revId(0), found(0), isFailSafe(true){};
+    PsidQueryItem() :
+        devId(0),
+        revId(0),
+        found(0),
+        isFailSafe(true),
+        isNicComp(true),
+        swDevId(0),
+        compId(FwComponent::comps_ids_t::COMPID_UNKNOWN){};
     virtual ~PsidQueryItem() {}
     const ImgVersion* findImageVersion(string type);
     string psid;
@@ -64,6 +72,9 @@ public:
     vector<ImgVersion> imgVers;
     bool isFailSafe;
     string branch;
+    bool isNicComp;
+    u_int16_t swDevId;
+    FwComponent::comps_ids_t compId;
 };
 
 #endif

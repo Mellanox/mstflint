@@ -100,6 +100,7 @@ public:
     bool no_extract_list;
     int numberOfRetrials;
     bool no_fw_ctrl;
+    string component_type;
 };
 
 #endif

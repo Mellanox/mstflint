@@ -67,6 +67,7 @@ public:
                 vector<string>& questions,
                 f_prog_func_adv stage_prog = (f_prog_func_adv)NULL);
     int burn(bool&);
+    bool burnPLDMComponent(FwComponent::comps_ids_t compId, u_int8_t* buff, u_int32_t buffSize);
     bool clearSemaphore();
     int isBurnSuccess();
     int isQuerySuccess();
@@ -94,6 +95,7 @@ public:
 
     bool checkExistence(vector<MlnxDev*>& devs);
     string getUniqueId() { return _uniqueId; };
+    bool isBFBSupported() { return _bfbSupported; };
 
 public:
     string guidPortOne;
@@ -119,6 +121,7 @@ private:
     int getImageIndex(string type);
     int queryFwops();
     bool OpenDev();
+    bool openImg(u_int32_t* fileBuffer, u_int32_t bufferSize, u_int16_t swDevId = 0);
     bool openImg(u_int32_t* fileBuffer, u_int32_t bufferSize);
     port_type_t findPortType(int port);
     void initUniqueId();
@@ -167,6 +170,8 @@ private:
 
     bool _preBurnInit;
     int _unknowProgress;
+    bool _bfbSupported;
+
 #ifdef __WIN__
     ToolsSync m_ToolsSync;
 #endif

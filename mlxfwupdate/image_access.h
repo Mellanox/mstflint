@@ -42,6 +42,8 @@
 #include "psid_query_item.h"
 #include "mlxfwmanager_common.h"
 #include "mlnx_dev.h"
+#include "pldmlib/pldm_utils.h"
+#include "pldmlib/pldm_pkg.h"
 
 using namespace std;
 #define MLNX_ERR_BUFF_SIZE 1024
@@ -59,10 +61,26 @@ public:
     ImageAccess(int compareFFV);
     ~ImageAccess();
     int queryDirPsid(string& path, string& psid, string& selector_tag, int image_type, vector<PsidQueryItem>& riv);
-    int queryPsid(const string& fname, const string& psid, string& selector_tag, int image_type, PsidQueryItem& ri);
+    int queryPsid(const string& fname,
+                const string& psid,
+                string& selector_tag,
+                int image_type,
+                PsidQueryItem& ri,
+                u_int16_t swDevId = 0,
+                u_int32_t* data = nullptr,
+                u_int32_t dataSize = 0);
     int getImage(const string& fname, u_int8_t** filebuf);
     int getImage(const string& fname, const string& psid, string& selector_tag, int image_type, u_int8_t** filebuf);
     int get_file_content(const string& fname, vector<PsidQueryItem>& riv);
+
+    // PLDM functions
+    bool loadPldmPkg(const string& fname);
+    bool getPldmDescriptorByPsid(string psid, u_int16_t type, u_int16_t& descriptor);
+    int getPldmComponentByPsid(string psid, ComponentIdentifier compIdentifier, u_int8_t** buff, u_int32_t& buffSize);
+    int getPldmContent(vector<PsidQueryItem>& riv,
+                       ComponentIdentifier compIdentifier = ComponentIdentifier::Identifier_General);
+    FwComponent::comps_ids_t ToCompId(ComponentIdentifier compIdentifier);
+
     static int getFileSignature(const string& fname);
     static bool hasMFAs(string dir);
     string getLastErrMsg();
@@ -77,12 +95,16 @@ private:
     int checkImgSignature(const char* fname);
 
     int get_mfa_content(const string& fname, vector<PsidQueryItem>& riv);
-    int get_pldm_content(const string& fname, vector<PsidQueryItem>& riv);
     int get_bin_content(const string& fname, vector<PsidQueryItem>& riv);
     bool extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, PsidQueryItem& ri);
     void parse_image_info_data(u_int8_t* image_info_data, PsidQueryItem& query_item);
     static int getBufferSignature(u_int8_t* buf, u_int32_t size);
-    bool openImg(fw_hndl_type_t hndlType, char* psid, char* fileHndl);
+    bool openImg(fw_hndl_type_t hndlType,
+                char* psid,
+                char* fileHndl,
+                u_int16_t swDevId = 0,
+                u_int32_t* data = nullptr,
+                u_int32_t dataSize = 0);
     char _errBuff[MLNX_ERR_BUFF_SIZE];
     int _compareFFV;
     string _log;
@@ -90,6 +112,8 @@ private:
     string _warning;
     FwOperations::fw_ops_params_t _imgFwParams;
     FwOperations* _imgFwOps;
+    PldmBuffer _pldm_buff;
+    PldmPkg _pldmPkg;
 };
 
 #endif

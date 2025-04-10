@@ -44,6 +44,7 @@
 
 #include "pldm_buff.h"
 #include "pldm_pkg_hdr.h"
+#include "pldm_utils.h"
 
 class PldmDevIdRecord;
 class PldmComponenetImage;
@@ -62,13 +63,23 @@ public:
     static const u_int8_t UUID[];
 
     u_int8_t getDeviceIDRecordCount() const { return deviceIDRecordCount; }
+    u_int16_t getComponentImageCount() const { return componentImageCount; }
     PldmDevIdRecord* getDeviceIDRecord(u_int8_t index) const { return deviceIDRecords[index]; }
-    PldmComponenetImage* getComponentImage(u_int16_t index) const { return componentImages[index]; }
+    PldmComponenetImage* getComponentByIndex(u_int16_t index) const { return componentImages[index]; }
     void getDeviceComponentImages(u_int8_t dev_index, std::vector<PldmComponenetImage*> images_list) const;
+    bool getComponentDataByPsid(ComponentIdentifier compIdentifier,
+                                std::string psid,
+                                u_int8_t** buff,
+                                u_int32_t& buffSize);
+    bool getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_t& descriptor) const;
+
 
 private:
     typedef std::map<std::string, int> PsidImageMap;
     PsidImageMap psidImageMap;
+
+    typedef std::map<std::string, std::vector<u_int8_t>> PsidComponentsMap;
+    PsidComponentsMap psidComponentsMap;
 
     PldmPkgHdr packageHeader;
     u_int8_t deviceIDRecordCount;

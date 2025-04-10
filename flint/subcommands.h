@@ -51,6 +51,8 @@
 #include "mlxfwops/lib/fw_ops.h"
 #include "mlxfwops/lib/fs_checks.h"
 #include "err_msgs.h"
+#include "mlxfwops/lib/fs_pldm.h"
+
 using namespace std;
 
 #ifndef NO_MSTARCHIVE
@@ -229,6 +231,7 @@ private:
     bool _devQueryRes;
     int _unknownProgress; // used to trace the progress of unknown progress.
     FwCompsMgr* fwCompsAccess;
+    FlintStatus burnPldmComp(u_int8_t** buff, u_int32_t& buffSize, FsPldmOperations* pldmOps);
     FlintStatus burnFs3();
     FlintStatus burnFs2();
     bool checkFwVersion(bool CreateFromImgInfo = true,

@@ -126,6 +126,7 @@ void PldmDevIdRecord::print(FILE* fp)
     }
 }
 
+// return the first component in devRecord - using only for pldmlib_test.
 int PldmDevIdRecord::getComponentImageIndex() const
 {
     u_int8_t applicableComponentsLen = componentBitmapBitLength / 8;
@@ -146,6 +147,25 @@ int PldmDevIdRecord::getComponentImageIndex() const
             break;
     }
     return index;
+}
+
+std::vector<u_int8_t> PldmDevIdRecord::getComponentsIndexes() const
+{
+    u_int8_t applicableComponentsLen = componentBitmapBitLength / 8;
+    std::vector<u_int8_t> indexes(componentBitmapBitLength, 0);
+    static const u_int8_t indexes_map[] = {0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80};
+    for (u_int8_t i = 0; i < applicableComponentsLen; i++)
+    {
+        u_int8_t flags = applicableComponents[i];
+        for (u_int8_t j = 0; j < 8; j++)
+        {
+            if (flags & indexes_map[j])
+            {
+                indexes[i * 8 + j] = 1;
+            }
+        }
+    }
+    return indexes;
 }
 
 std::string PldmDevIdRecord::getDevicePsid() const
@@ -172,4 +192,20 @@ std::string PldmDevIdRecord::getDescription() const
         description += recordDescriptors[descriptorCount - 1]->getDescription();
     }
     return description;
+}
+
+bool PldmDevIdRecord::getDescriptor(u_int16_t type, u_int16_t& descriptor) const
+{
+    bool found = false;
+    std::string description;
+    for (u_int8_t i = 0; i < descriptorCount - 1; i++)
+    {
+        if (type == recordDescriptors[i]->getDescriptorType())
+        {
+            descriptor =
+              (recordDescriptors[i]->getDescriptorData()[1] << 8) | recordDescriptors[i]->getDescriptorData()[0];
+            found = true;
+        }
+    }
+    return found;
 }

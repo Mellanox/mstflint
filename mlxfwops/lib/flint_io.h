@@ -262,7 +262,7 @@ protected:
 class MLXFWOP_API FImage : public FBase
 {
 public:
-    FImage() : FBase(false), _fname(0), _buf(), _isFile(false), _len(0) {}
+    FImage() : FBase(false), _fname(0), _isFile(false), _len(0), _buf() {}
     virtual ~FImage() { close(); }
 
     u_int32_t* getBuf();
@@ -351,14 +351,24 @@ public:
     }
     virtual bool is_fifth_gen() { return false; }
 
+protected:
+    const char* _fname;
+    bool _isFile;
+    u_int32_t _len;
 private:
     bool readFileGetBuffer(std::vector<u_int8_t>& dataBuf);
     bool writeEntireFile(std::vector<u_int8_t>& fileContent);
     bool getFileSize(int& fileSize);
-    const char* _fname;
     std::vector<u_int8_t> _buf;
-    bool _isFile;
-    u_int32_t _len;
+};
+
+class MLXFWOP_API FPldm : public FImage
+{
+public:
+    FPldm() : FImage() {}
+    virtual ~FPldm() { close(); }
+    virtual bool open(const char* fname, bool read_only, bool advErr);
+    virtual const char* get_fname() { return _fname; }
 };
 
 //
