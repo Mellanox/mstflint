@@ -244,6 +244,7 @@ bool FsCtrlOperations::FsIntQuery()
     _fsCtrlImgInfo.ini_file_version = fwQuery.ini_file_version;
     _fsCtrlImgInfo.geo_address = fwQuery.geo_address;
     _fsCtrlImgInfo.geo_address_valid = fwQuery.geo_address_valid;
+    _fsCtrlImgInfo.independent_module = fwQuery.independent_module;
     std::vector<FwComponent> compsMap;
     if (!_fwCompsAccess->getFwComponents(compsMap, false))
     {

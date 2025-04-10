@@ -497,7 +497,8 @@ typedef struct fs3_info_ext
     bool socket_direct;
     bool aux_card_connected;
     bool is_aux_card_connected_valid;
-
+    
+    uint8_t independent_module;
 } fs3_info_t;
 
 // typedef struct fs3_info_ext fs4_info_t;

@@ -4612,6 +4612,22 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         }
     }
 
+    if (fwInfo.fs3_info.independent_module)
+    {
+        std::string independent_module_str = "";
+        if (fwInfo.fs3_info.independent_module != 1 && fwInfo.fs3_info.independent_module != 2)
+        {
+            independent_module_str = "Unknown";
+        }
+        else
+        {
+            independent_module_str =
+              fwInfo.fs3_info.independent_module == 1 ? "Independent Mode Supported" : "Standalone Mode Supported";
+        }
+
+        printf("Independent Module:    %s\n", independent_module_str.c_str());
+    }
+
     return FLINT_SUCCESS;
 }
 

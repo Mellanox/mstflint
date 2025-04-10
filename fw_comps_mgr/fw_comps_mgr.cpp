@@ -1813,6 +1813,7 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     query->ini_file_version = mgir.fw_info.ini_file_version;
     query->geo_address = mgir.hw_info.ga;
     query->geo_address_valid = mgir.hw_info.ga_valid;
+    query->independent_module = mgir.hw_info.module_master_fw_default;
 
     /* Since in switches MGIR 'dev' field is used to indicate dev-branch instead of the original purpose for dev-secure, */
     /* we now read from a new field called 'dev_sc' to determine if the switch is dev-secure */
