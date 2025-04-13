@@ -40,6 +40,7 @@
 #include <errno.h>
 #include <time.h>
 #include <iostream>
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <iomanip>
