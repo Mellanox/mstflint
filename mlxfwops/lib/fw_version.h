@@ -85,6 +85,7 @@ public:
     std::string get_fw_version(const std::string& master_format = "%d.%d.%d",
                                bool even_subminor = false,
                                const std::string& not_set = NOT_SET_VERSION) const;
+    virtual std::string get_primary_version(const std::string& format, bool even_subminor = false) const;
     bool is_set() const;
     bool are_same_branch(const FwVersion&) const;
     int compare_master_version(const FwVersion&) const;

@@ -1127,6 +1127,18 @@ void GenericCommander::genXMLTemplateAux(vector<string> tlvs,
     xmlTemplate += XML_DOCUMENT_END;
 }
 
+void GenericCommander::genXMLFromTLVConf(vector<std::shared_ptr<TLVConf>>& tlvsConfs, string& xmlTemplate, bool allAttrs)
+{
+    xmlTemplate = XML_DOCUMENT_START;
+    for (auto tlvConf = tlvsConfs.begin(); tlvConf != tlvsConfs.end(); ++tlvConf)
+    {
+        string tlvTemplate;
+        (*tlvConf)->genXMLTemplate(tlvTemplate, allAttrs, true, true, true);
+        xmlTemplate += "\n" + tlvTemplate + "\n";
+    }
+    xmlTemplate += XML_DOCUMENT_END;
+}
+
 void GenericCommander::genXMLTemplate(vector<string> tlvs, string& xmlTemplate, bool allAttrs)
 {
     genXMLTemplateAux(tlvs, xmlTemplate, allAttrs, false, true);

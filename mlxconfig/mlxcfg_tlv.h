@@ -148,7 +148,7 @@ public:
     void getRuleTLVs(std::set<std::string>& result);
     void parseParamValue(std::string, std::string, u_int32_t&, std::string&, u_int32_t index);
     void unpack(u_int8_t* buff);
-    void genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal);
+    void genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal, bool confFormat = false);
     void genRaw(string& raw);
     void genBin(vector<u_int32_t>& buff, bool withHeader = true);
     bool isAStringParam(string paramName);
@@ -159,6 +159,7 @@ public:
     void setAttr(string attr, string val);
     void invalidate(mfile* mf);
     static void unpackTLVType(TLVClass tlvClass, tools_open_tlv_type& type, u_int32_t& id);
+    bool areParamsEqual(const TLVConf& rhsTLV);
 };
 
 int PriorityStrToNum(string priority);

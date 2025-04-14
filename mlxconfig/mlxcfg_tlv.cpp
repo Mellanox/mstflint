@@ -1036,7 +1036,7 @@ void TLVConf::getRuleTLVs(std::set<string>& result)
     return;
 }
 
-void TLVConf::genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal)
+void TLVConf::genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal, bool confFormat)
 {
     map<string, string> attrs;
 
@@ -1072,7 +1072,7 @@ void TLVConf::genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, b
     for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
     {
         string paramXMLTemplate;
-        (*it)->genXMLTemplate(paramXMLTemplate, withVal);
+        (*it)->genXMLTemplate(paramXMLTemplate, withVal, confFormat);
         vector<string> lines = splitStr(paramXMLTemplate, '\n');
         VECTOR_ITERATOR(string, lines, line)
         {
@@ -1257,4 +1257,27 @@ void TLVConf::genBin(vector<u_int32_t>& buff, bool withHeader)
         buff.resize(_size >> 2);
         pack((u_int8_t*)buff.data());
     }
+}
+
+bool TLVConf::areParamsEqual(const TLVConf& rhsTLV)
+{
+    if (_params.size() != rhsTLV._params.size())
+    {
+        return false;
+    }
+
+    for (auto param : _params)
+    {
+        auto rhsParam =
+          std::find_if(rhsTLV._params.begin(), rhsTLV._params.end(),
+                       [param](shared_ptr<Param> rhsTLVParam) { return param->_name == rhsTLVParam->_name; });
+
+        if (rhsParam == rhsTLV._params.end() ||
+            mft_utils::to_lowercase_copy(param->getVal()) != mft_utils::to_lowercase_copy((*rhsParam)->getVal()))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }

@@ -51,6 +51,7 @@
 #include <tools_layouts/reg_access_switch_layouts.h>
 #include "mlxcfg_ui.h"
 #include "mlxcfg_generic_commander.h"
+#include "common/tools_json.h"
 
 #define DISABLE_SLOT_POWER_LIMITER "DISABLE_SLOT_POWER_LIMITER"
 #define DISABLE_SLOT_POWER_LIMITER_WARN                                                                                \
@@ -688,16 +689,15 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander,
     if (_mlxParams.isJsonOutputRequested)
     {
         ifstream jsonInputStream(_mlxParams.NVOutputFile);
-        Json::CharReaderBuilder builder;
-        builder["collectComments"] = true;
-        JSONCPP_STRING errs;
-        bool rc = parseFromStream(builder, jsonInputStream, &oJsonValue, &errs);
-	jsonInputStream.close();
-	if (!rc)
-	{
-            cerr << "failed to read json file [" << _mlxParams.NVOutputFile << "] : " << errs << endl;
+        mstflint::common::ReaderWrapper readerWrapper;
+        Json::Reader* reader = readerWrapper.getReader();
+        bool rc = reader->parse(jsonInputStream, oJsonValue);
+        jsonInputStream.close();
+        if (!rc)
+        {
+            cerr << "failed to read json file [" << _mlxParams.NVOutputFile << "]" << endl;
             return MLX_CFG_ERROR;
-	}
+        }
     }
 
     string deviceIndex = "Device #" + std::to_string(devIndex);
@@ -1706,6 +1706,133 @@ mlxCfgStatus MlxCfg::apply()
     return rc;
 }
 
+mlxCfgStatus MlxCfg::getChallenge()
+{
+    mlxCfgStatus rc = MLX_CFG_OK;
+    Commander* commander = nullptr;
+    try
+    {
+        commander = Commander::create(_mlxParams.device, _mlxParams.dbName, true, _mlxParams.deviceType);
+        MlxCfgToken token(commander->mf());
+
+        token.GetAndPrintChallenge(_mlxParams.tokenChallengeID, false);
+    }
+    catch (MlxcfgException& e)
+    {
+        cerr << "-E- " << e._err.c_str() << endl;
+        rc = MLX_CFG_ERROR;
+    }
+    if (commander)
+    {
+        delete commander;
+    }
+    return rc;
+}
+
+mlxCfgStatus MlxCfg::remoteTokenKeepAlive()
+{
+    mlxCfgStatus rc = MLX_CFG_OK;
+    Commander* commander = nullptr;
+    try
+    {
+        commander = Commander::create(_mlxParams.device, _mlxParams.dbName);
+
+        if (dm_is_ib_access(commander->mf()) == 0) // not IB device
+        {
+            throw MlxcfgException("specified device is not an IB device");
+        }
+
+        MlxCfgToken token(commander->mf());
+        token.RemoteTokenKeepAlive(_mlxParams.sessionId,
+                                   _mlxParams.sessionTimeInSec,
+                                   _mlxParams.isSleepTimeBetweenCommandsInput,
+                                   _mlxParams.keepAliveSleepTimeBetweenCommands,
+                                   _mlxParams.isSleepTimeOnCommandTOInput,
+                                   _mlxParams.keepAliveSleepTimeOnCommandTO);
+
+        printf("Keep alive session has ended successfully.\n");
+    }
+    catch (MlxcfgException& e)
+    {
+        cerr << "-E- " << e._err.c_str() << endl;
+        rc = MLX_CFG_ERROR;
+    }
+    if (commander)
+    {
+        delete commander;
+    }
+
+    return rc;
+}
+
+mlxCfgStatus MlxCfg::queryTokenSupport()
+{
+    mlxCfgStatus rc = MLX_CFG_OK;
+    Commander* commander = nullptr;
+    try
+    {
+        commander = Commander::create(_mlxParams.device, _mlxParams.dbName, false, _mlxParams.deviceType);
+
+        MlxCfgToken token(commander->mf());
+        token.QueryTokenSupport();
+    }
+    catch (MlxcfgException& e)
+    {
+        cerr << "-E- " << e._err.c_str() << endl;
+        rc = MLX_CFG_ERROR;
+    }
+    if (commander)
+    {
+        delete commander;
+    }
+    return rc;
+}
+
+mlxCfgStatus MlxCfg::queryTokenSession()
+{
+    mlxCfgStatus rc = MLX_CFG_OK;
+    Commander* commander = nullptr;
+    try
+    {
+        commander = Commander::create(_mlxParams.device, _mlxParams.dbName, false, _mlxParams.deviceType);
+        MlxCfgToken token(commander->mf());
+        token.QueryTokenSession(_mlxParams.tokenStatusID);
+    }
+    catch (MlxcfgException& e)
+    {
+        cerr << "-E- " << e._err.c_str() << endl;
+        rc = MLX_CFG_ERROR;
+    }
+    if (commander)
+    {
+        delete commander;
+    }
+    return rc;
+}
+
+mlxCfgStatus MlxCfg::endTokenSession()
+{
+    mlxCfgStatus rc = MLX_CFG_OK;
+    Commander* commander = nullptr;
+    try
+    {
+        commander = Commander::create(_mlxParams.device, _mlxParams.dbName, false, _mlxParams.deviceType);
+        MlxCfgToken token(commander->mf());
+        token.EndTokenSession(_mlxParams.tokenStatusID);
+    }
+    catch (MlxcfgException& e)
+    {
+        cerr << "-E- " << e._err.c_str() << endl;
+        rc = MLX_CFG_ERROR;
+    }
+    if (commander)
+    {
+        delete commander;
+    }
+
+    return rc;
+}
+
 mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
 {
     mlxCfgStatus rc = parseArgs(argc, argv);
@@ -1782,7 +1909,21 @@ mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
         case Mc_Apply:
             ret = apply();
             break;
-
+        case Mc_RemoteTokenKeepAlive:
+            ret = remoteTokenKeepAlive();
+            break;
+        case Mc_ChallengeRequest:
+            ret = getChallenge();
+            break;
+        case Mc_TokenSupported:
+            ret = queryTokenSupport();
+            break;
+        case Mc_QueryTokenSession:
+            ret = queryTokenSession();
+            break;
+        case Mc_EndTokenSession:
+            ret = endTokenSession();
+            break;
         default:
             // should not reach here.
             return err(true, "invalid command.");
