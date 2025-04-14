@@ -42,15 +42,11 @@
 #include <json/reader.h>
 #include <json/writer.h>
 
-#ifdef CABLES_SUPP
-#include <cable_access/cdb_cable_commander.h>
-#endif
-
 // #include "mlxcfg_lib.h"
 #include "mlxcfg_commander.h"
 #include "mlxcfg_view.h"
 #include "mlxcfg_utils.h"
-
+#include "mlxcfg_ui_tokens.h"
 
 #define MAX_ERR_STR_LEN 1024
 #define MAX_BUF_SIZE 1024
@@ -82,6 +78,11 @@ typedef enum
     Mc_XML2Bin,
     Mc_CreateConf,
     Mc_Apply,
+    Mc_RemoteTokenKeepAlive,
+    Mc_ChallengeRequest,
+    Mc_TokenSupported,
+    Mc_QueryTokenSession,
+    Mc_EndTokenSession,
     Mc_UnknownCmd
 } mlxCfgCmd;
 
@@ -118,7 +119,20 @@ public:
         isJsonOutputRequested(false),
         yes(false),
         force(false),
-        enableVerbosity(false)
+        enableVerbosity(false),
+        tokenName(""),
+        tokenChallengeID(McTokenTypeUnknown),
+        tokenStatusID(McTokenStatusTypeCS),
+        sessionId(0),
+        isSessionIDGiven(false),
+        i2cSecondary(0),
+        isI2cSecondaryGiven(false),
+        sessionTimeInSec(60 * 60 * 24 * 7), // default session time is a week
+        isSessionTimeGiven(false),
+        keepAliveSleepTimeBetweenCommands(0),
+        isSleepTimeBetweenCommandsInput(false),
+        keepAliveSleepTimeOnCommandTO(0),
+        isSleepTimeOnCommandTOInput(false)
     {
     }
 
@@ -139,6 +153,19 @@ public:
     std::vector<ParamView> setParams;
     bool force; // ignore parameter checks
     bool enableVerbosity;
+    string tokenName;
+    MlxCfgTokenType tokenChallengeID;
+    MlxCfgTokenStatusType tokenStatusID;
+    u_int32_t sessionId;
+    bool isSessionIDGiven;
+    u_int32_t i2cSecondary;
+    bool isI2cSecondaryGiven;
+    u_int32_t sessionTimeInSec;
+    bool isSessionTimeGiven;
+    u_int32_t keepAliveSleepTimeBetweenCommands;
+    bool isSleepTimeBetweenCommandsInput;
+    u_int32_t keepAliveSleepTimeOnCommandTO;
+    bool isSleepTimeOnCommandTOInput;
 };
 
 class MlxCfg
@@ -220,6 +247,12 @@ private:
     mlxCfgStatus XML2Bin();
     mlxCfgStatus createConf();
     mlxCfgStatus apply();
+
+    mlxCfgStatus remoteTokenKeepAlive();
+    mlxCfgStatus getChallenge();
+    mlxCfgStatus queryTokenSupport();
+    mlxCfgStatus queryTokenSession();
+    mlxCfgStatus endTokenSession();
 
     // static print functions
     static int printParam(string param, u_int32_t val);

@@ -254,12 +254,12 @@ public:
     void setVal(string val);
     void setVal(string val, u_int32_t index);
     void setVal(vector<string> vals);
-    string getVal();
+    string getVal(bool confFormat = false);
     string getVal(u_int32_t index);
     void extractVars(vector<string>& rulesVars, string rule);
     void getRulesTLV(vector<string>& rulesTlvs);
-    void genXMLTemplate(string& xmlTemplate, bool withVal);
-    void genXMLTemplateAux(string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index);
+    void genXMLTemplate(string& xmlTemplate, bool withVal, bool confFormat);
+    void genXMLTemplateAux(string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index, bool confFormat);
 
     static enum ParamType str2ParamType(const char* s);
     static string paramType2Str(enum ParamType);
