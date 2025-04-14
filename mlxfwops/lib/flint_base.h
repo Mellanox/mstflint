@@ -482,11 +482,11 @@ struct GPH
 
 #define MAX_SECTION_SIZE 0x400000
 
-#define REBOOT_REQUIRED_STR "To load new FW run reboot machine."
+#define REBOOT_REQUIRED_STR "To load new FW, issue system-level reset."
 #ifndef MST_UL
-#define REBOOT_OR_FWRESET_REQUIRED_STR "To load new FW run mlxfwreset or reboot machine."
+#define REBOOT_OR_FWRESET_REQUIRED_STR "To load new FW, issue system-level reset or use mlxfwreset where applicable."
 #else
-#define REBOOT_OR_FWRESET_REQUIRED_STR "To load new FW run mstfwreset or reboot machine."
+#define REBOOT_OR_FWRESET_REQUIRED_STR "To load new FW, issue system-level reset or use mstfwreset where applicable."
 #endif
 
 void report(const char* format, ...);
