@@ -698,6 +698,7 @@ void MlxlinkMaps::initSltpStatusMapping()
     _SltpNdrParams[SLTP_NDR_FIR_PRE1] = PRM_FIELD{"fir_pre1", "fir_pre1", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
     _SltpNdrParams[SLTP_NDR_FIR_MAIN] = PRM_FIELD{"fir_main", "fir_main", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
     _SltpNdrParams[SLTP_NDR_FIR_POST1] = PRM_FIELD{"fir_post1", "fir_post1", FIELD_ACCESS_RW, true, LINK_SPEED_ALL};
+    _SltpNdrParams[SLTP_NDR_DRV_AMP] = PRM_FIELD{"drv_amp", "drv_amp", FIELD_ACCESS_R, false, LINK_SPEED_ALL};
 
     _SltpXdrParams[SLTP_XDR_TAP0] = PRM_FIELD{"tap0", "fir_pre4", FIELD_ACCESS_RW, true, LINK_SPEED_200G_LANE};
     _SltpXdrParams[SLTP_XDR_TAP1] =
