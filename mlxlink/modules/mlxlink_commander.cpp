@@ -5122,11 +5122,11 @@ void MlxlinkCommander::initPortInfo()
         if (_prbsTestMode) {
             throw MlxRegException("FEC Histogram is valid with normal link operation only");
         }
-        if (!isPPHCRSupported()) {
-            throw MlxRegException("FEC Histogram is not supported for the current device");
-        }
         if (_userInput._pcie) {
             throw MlxRegException("FEC Histogram is not available for PCIe links");
+        }
+        if (!isPPHCRSupported()) {
+            throw MlxRegException("FEC Histogram is not supported for the current device");
         }
         if (!_linkUP) {
             throw MlxRegException("FEC Histogram is valid with active link operation only");
