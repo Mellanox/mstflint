@@ -352,9 +352,16 @@ void Param::setVal(vector<string> vals)
     _value->setVal(vals);
 }
 
-string Param::getVal()
+string Param::getVal(bool confFormat)
 {
-    return _value->getVal();
+    if (confFormat)
+    {
+        return _value->getValFormatted();
+    }
+    else
+    {
+        return _value->getVal();
+    }
 }
 
 string Param::getVal(u_int32_t index)
@@ -571,7 +578,7 @@ void Param::str2TextualValuesMap(const char* s, map<string, u_int32_t>& m)
     }
 }
 
-void Param::genXMLTemplateAux(std::string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index)
+void Param::genXMLTemplateAux(std::string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index, bool confFormat)
 {
     if (_type == ENUM)
     {
@@ -590,22 +597,22 @@ void Param::genXMLTemplateAux(std::string& xmlTemplate, bool withVal, bool isPar
         xmlTemplate += "<!-- Legal Values: " DISABLED "/" ENABLED " -->\n";
     }
     xmlTemplate += "<" + _name + (isPartOfArray ? (" index='" + numToStr(index) + "' ") : "") + ">" +
-                   (withVal ? (isPartOfArray ? getVal(index) : getVal()) : "") + "</" + _name + ">";
+                   (withVal ? (isPartOfArray ? getVal(index) : getVal(confFormat)) : "") + "</" + _name + ">";
     xmlTemplate += isPartOfArray ? "\n" : "";
 }
 
-void Param::genXMLTemplate(std::string& xmlTemplate, bool withVal)
+void Param::genXMLTemplate(std::string& xmlTemplate, bool withVal, bool confFormat)
 {
     if (_arrayLength != 0 && _type != STRING && _type != BYTES)
     {
         for (u_int32_t i = 0; i < _arrayLength; i++)
         {
-            genXMLTemplateAux(xmlTemplate, withVal, true, i);
+            genXMLTemplateAux(xmlTemplate, withVal, true, i, confFormat);
         }
     }
     else
     {
-        genXMLTemplateAux(xmlTemplate, withVal, false, 0);
+        genXMLTemplateAux(xmlTemplate, withVal, false, 0, confFormat);
     }
 }
 
@@ -618,6 +625,11 @@ ParamValue::ParamValue(string size)
 u_int32_t ParamValue::getIntVal()
 {
     throw MlxcfgException(OPERATION_NOT_SUPPORTED);
+}
+
+string ParamValue::getValFormatted()
+{
+    return getVal();
 }
 
 void ParamValue::setVal(u_int32_t)
@@ -801,6 +813,11 @@ string BinaryParamValue::getVal()
     return numToStr(_value, true);
 }
 
+string BinaryParamValue::getValFormatted()
+{
+    return numToStrFormatted(_value, true);
+}
+
 void BinaryParamValue::setVal(string val)
 {
     string tmpStr = val;
@@ -884,6 +901,18 @@ string BytesParamValue::getVal()
     string strVal = "";
 
     VECTOR_ITERATOR(BinaryParamValue, _bytes, binary) { strVal += binary->getVal(); }
+
+    return strVal;
+}
+
+string BytesParamValue::getValFormatted()
+{
+    string strVal = "";
+
+    VECTOR_ITERATOR(BinaryParamValue, _bytes, binary)
+    {
+        strVal += binary->getValFormatted();
+    }
 
     return strVal;
 }

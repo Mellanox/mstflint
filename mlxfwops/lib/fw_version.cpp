@@ -109,6 +109,13 @@ std::string FwVersion::get_master_version(const std::string& format, bool even_s
     return buff;
 }
 
+std::string FwVersion::get_primary_version(const std::string& format, bool even_subminor) const
+{
+    char buff[MAX_VERSION_LENGTH + 1];
+    snprintf(buff, sizeof(buff), format.c_str(), _major, _minor, _subminor - (even_subminor ? _subminor % 2 : 0));
+    return buff;
+}
+
 bool FwVersion::is_set() const
 {
     return _major || _minor || _subminor || !_devBranchTag.empty();

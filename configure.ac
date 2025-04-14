@@ -537,6 +537,7 @@ AC_OUTPUT( \
     mflash/Makefile \
     mft_utils/Makefile \
     mlxconfig/Makefile \
+    mlxtokengenerator/Makefile \
     mlxconfig/mlxconfig_dbs/Makefile \
     mlxfwops/Makefile \
     mlxfwops/lib/Makefile \

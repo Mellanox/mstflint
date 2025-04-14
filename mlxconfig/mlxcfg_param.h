@@ -56,6 +56,7 @@ public:
     ParamValue(u_int32_t size) : _size(size) {}
 
     virtual string getVal() = 0;
+    virtual string getValFormatted();
     virtual void setVal(string s) = 0;
     virtual void setVal(u_int32_t);
     virtual void setVal(vector<string>);
@@ -120,6 +121,7 @@ public:
     BinaryParamValue(u_int32_t size) : UnsignedParamValue(size){};
 
     string getVal();
+    string getValFormatted();
     void setVal(string val);
     void parseValue(string, u_int32_t&, string&);
 
@@ -145,6 +147,7 @@ public:
     BytesParamValue(u_int32_t size) : ParamValue(size) {}
     using ParamValue::setVal;
     string getVal();
+    string getValFormatted();
     void setVal(string val);
     void setVal(const vector<u_int32_t>& buffVal);
     void parseValue(string, u_int32_t&, string&);
@@ -164,10 +167,12 @@ public:
     ArrayParamValue(string size, u_int32_t count, enum ParamType paramType);
     ~ArrayParamValue();
     using ParamValue::setVal;
+    using ParamValue::getValFormatted;
     string getVal();
     void setVal(string val);
     void setVal(vector<string> vals);
     string getVal(u_int32_t index);
+    string getValFormatted(u_int32_t index);
     void setVal(string val, u_int32_t index);
     u_int32_t getIntVal();
     vector<u_int32_t> getIntVals();
@@ -227,12 +232,12 @@ public:
     void setVal(string val);
     void setVal(string val, u_int32_t index);
     void setVal(vector<string> vals);
-    string getVal();
+    string getVal(bool confFormat = false);
     string getVal(u_int32_t index);
     void extractVars(vector<string>& rulesVars, string rule);
     void getRulesTLV(vector<string>& rulesTlvs);
-    void genXMLTemplate(string& xmlTemplate, bool withVal);
-    void genXMLTemplateAux(string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index);
+    void genXMLTemplate(string& xmlTemplate, bool withVal, bool confFormat);
+    void genXMLTemplateAux(string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index, bool confFormat);
 
     static enum ParamType str2ParamType(const char* s);
     static string paramType2Str(enum ParamType);

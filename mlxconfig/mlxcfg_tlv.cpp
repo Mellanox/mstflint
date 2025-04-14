@@ -825,7 +825,7 @@ void evalExpr(string expr, string var, u_int32_t& varVal, u_int32_t& exprResult)
 }
 
 void TLVConf::getExprVarsValues(vector<string>& vars,
-                                vector<TLVConf*> ruleTLVs,
+                                vector<std::shared_ptr<TLVConf>> ruleTLVs,
                                 map<string, u_int32_t>& var2ValMap,
                                 string expr)
 {
@@ -846,7 +846,7 @@ void TLVConf::getExprVarsValues(vector<string>& vars,
             else
             {
                 string tlvName = var.substr(0, pos);
-                VECTOR_ITERATOR(TLVConf*, ruleTLVs, k)
+                for (std::vector<std::shared_ptr<TLVConf>>::iterator k = ruleTLVs.begin(); k != ruleTLVs.end(); ++k)
                 {
                     if ((*k)->_name == tlvName)
                     {
@@ -912,7 +912,7 @@ void substituteVarsValues(string orgExpr,
     // eval temp vars values and update the map:
 }
 
-void TLVConf::evalTempVars(std::shared_ptr<Param> p, vector<TLVConf*> ruleTLVs, map<string, u_int32_t>& var2ValMap)
+void TLVConf::evalTempVars(std::shared_ptr<Param> p, vector<std::shared_ptr<TLVConf>> ruleTLVs, map<string, u_int32_t>& var2ValMap)
 {
     vector<string> vars;
 
@@ -933,7 +933,7 @@ void TLVConf::evalTempVars(std::shared_ptr<Param> p, vector<TLVConf*> ruleTLVs, 
 
 u_int32_t TLVConf::evalRule(std::shared_ptr<Param> p,
                             string rule,
-                            vector<TLVConf*>& ruleTLVs,
+                            std::vector<std::shared_ptr<TLVConf>>& ruleTLVs,
                             map<string, u_int32_t>& var2ValMap)
 {
     string expr = "";
@@ -951,7 +951,7 @@ u_int32_t TLVConf::evalRule(std::shared_ptr<Param> p,
     return r;
 }
 
-void TLVConf::checkRules(vector<TLVConf*> ruleTLVs)
+void TLVConf::checkRules(std::vector<std::shared_ptr<TLVConf>>ruleTLVs)
 {
     VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
     {
@@ -1036,7 +1036,7 @@ void TLVConf::getRuleTLVs(std::set<string>& result)
     return;
 }
 
-void TLVConf::genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal)
+void TLVConf::genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal, bool confFormat)
 {
     map<string, string> attrs;
 
@@ -1072,7 +1072,7 @@ void TLVConf::genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, b
     VECTOR_ITERATOR(std::shared_ptr<Param>, _params, it)
     {
         string paramXMLTemplate;
-        (*it)->genXMLTemplate(paramXMLTemplate, withVal);
+        (*it)->genXMLTemplate(paramXMLTemplate, withVal, confFormat);
         vector<string> lines = splitStr(paramXMLTemplate, '\n');
         VECTOR_ITERATOR(string, lines, line)
         {
@@ -1257,4 +1257,27 @@ void TLVConf::genBin(vector<u_int32_t>& buff, bool withHeader)
         buff.resize(_size >> 2);
         pack((u_int8_t*)buff.data());
     }
+}
+
+bool TLVConf::areParamsEqual(const TLVConf& rhsTLV)
+{
+    if (_params.size() != rhsTLV._params.size())
+    {
+        return false;
+    }
+
+    for (auto param : _params)
+    {
+        auto rhsParam =
+          std::find_if(rhsTLV._params.begin(), rhsTLV._params.end(),
+                       [param](shared_ptr<Param> rhsTLVParam) { return param->_name == rhsTLVParam->_name; });
+
+        if (rhsParam == rhsTLV._params.end() ||
+            mft_utils::to_lowercase_copy(param->getVal()) != mft_utils::to_lowercase_copy((*rhsParam)->getVal()))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
