@@ -3439,6 +3439,7 @@ void MlxlinkCommander::clearCounters()
 {
     try
     {
+        MlxlinkRecord::printCmdLine("Clearing Counters", _jsonRoot);
         if (_mf->tp != MST_IB)
         {
             sendPrmReg(ACCESS_REG_PPCNT, SET, "clr=%d,grp=%d", 1, PPCNT_ALL_GROUPS);
@@ -4343,27 +4344,33 @@ u_int32_t MlxlinkCommander::getLaneSpeed(u_int32_t lane)
 void MlxlinkCommander::validateNumOfParamsForNDRGen()
 {
     u_int32_t params;
-    string    errMsg = "Invalid set of Transmitter Parameters, ";
-
+    string errMsg = "Invalid set of Transmitter Parameters, ";
     errMsg += "valid parameters for the active speed are: ";
-    if ((!_activeSpeed && (_devID == DeviceSpectrum4)) ||
-        isSpeed100GPerLane((_protoActive == IB) ? _activeSpeed : _activeSpeedEx, _protoActive)) {
+    if ((!_linkSpeed && _devID == DeviceSpectrum4) ||
+        isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    {
         params = SLTP_NDR_LAST;
-        errMsg += "fir_pre3,fir_pre2,fir_pre1,fir_main,fir_post1";
-    } else if (isSpeed50GPerLane((_protoActive == IB) ? _activeSpeed : _activeSpeedEx, _protoActive)) {
-        params = SLTP_NDR_FIR_POST1;
-        errMsg += "fir_pre2,fir_pre1,fir_main,fir_post1";
-    } else {
-        params = SLTP_NDR_FIR_MAIN;
-        errMsg += "fir_pre1,fir_main,fir_post1";
+        errMsg += "fir_pre3,fir_pre2,fir_pre1,fir_main,fir_post1,drv_amp";
     }
-    if (_userInput._sltpParams.size() != params) {
+    else if (isSpeed50GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
+    {
+        params = SLTP_NDR_DRV_AMP;
+        errMsg += "fir_pre2,fir_pre1,fir_main,fir_post1,drv_amp";
+    }
+    else
+    {
+        params = SLTP_NDR_FIR_POST1;
+        errMsg += "fir_pre1,fir_main,fir_post1,drv_amp";
+    }
+    if (_userInput._sltpParams.size() != params)
+    {
         throw MlxRegException(errMsg);
     }
-    for (map < u_int32_t, u_int32_t > ::iterator it = _userInput._sltpParams.begin();
-         it != _userInput._sltpParams.end();
-         it++) {
-        if ((((int)it->second) > MAX_SBYTE) || (((int)it->second) < MIN_SBYTE)) {
+    for (map<u_int32_t, u_int32_t>::iterator it = _userInput._sltpParams.begin(); it != _userInput._sltpParams.end();
+         it++)
+    {
+        if (((int)it->second) > MAX_SBYTE || ((int)it->second) < MIN_SBYTE)
+        {
             throw MlxRegException("Invalid Transmitter Parameters values");
         }
     }
