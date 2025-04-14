@@ -68,8 +68,8 @@ private:
     void openDB();
     void checkDBVersion();
     inline bool isDBFileExists(const std::string& name);
-    TLVConf* fetchTLVByName(std::string tlvName, u_int32_t port, int32_t module);
-    TLVConf* fetchTLVByIndexAndClass(u_int32_t id, TLVClass c);
+    std::shared_ptr<TLVConf> fetchTLVByName(std::string tlvName, u_int32_t port, int32_t module);
+    std::shared_ptr<TLVConf> fetchTLVByIndexAndClass(u_int32_t id, TLVClass c);
 
 public:
     MlxcfgDBManager(std::string dbName);
@@ -78,25 +78,25 @@ public:
     bool _isAllFetched;
     bool isParamMlxconfigNameExist(std::string mlxconfigName);
     std::shared_ptr<Param> _paramSqlResult;
-    std::vector<TLVConf*> fetchedTLVs;
+    std::vector<std::shared_ptr<TLVConf>> fetchedTLVs;
     std::vector<std::shared_ptr<Param>> fetchedParams;
     void getAllTLVs();
-    TLVConf* getTLVByNameAux(std::string tlvName, u_int32_t port, int32_t module);
-    TLVConf* getTLVByNameOnlyAux(std::string tlvName);
-    TLVConf* getAndSetTLVByNameAuxNotInitialized(string tlv_name, u_int32_t port, int32_t module);
-    TLVConf* getTLVByIndexAndClassAux(u_int32_t id, TLVClass c);
-    TLVConf* getTLVByName(std::string tlvName, u_int32_t port, int32_t module);
-    TLVConf* getDependencyTLVByName(string tlvName, u_int32_t cTLVPort, int32_t cTLVModule);
-    TLVConf* getAndCreateTLVByName(std::string tlvName, u_int32_t port, int32_t module);
-    TLVConf* getTLVByParamMlxconfigName(std::string mlxconfigName, u_int32_t index, mfile* mf);
-    TLVConf* findTLVInExisting(std::string mlxconfigName,
+    std::shared_ptr<TLVConf> getTLVByNameAux(std::string tlvName, u_int32_t port, int32_t module);
+    std::shared_ptr<TLVConf> getTLVByNameOnlyAux(std::string tlvName);
+    std::shared_ptr<TLVConf> getAndSetTLVByNameAuxNotInitialized(string tlv_name, u_int32_t port, int32_t module);
+    std::shared_ptr<TLVConf> getTLVByIndexAndClassAux(u_int32_t id, TLVClass c);
+    std::shared_ptr<TLVConf> getTLVByName(std::string tlvName, u_int32_t port, int32_t module);
+    std::shared_ptr<TLVConf> getDependencyTLVByName(string tlvName, u_int32_t cTLVPort, int32_t cTLVModule);
+    std::shared_ptr<TLVConf> getAndCreateTLVByName(std::string tlvName, u_int32_t port, int32_t module);
+    std::shared_ptr<TLVConf> getTLVByParamMlxconfigName(std::string mlxconfigName, u_int32_t index, mfile* mf);
+    std::shared_ptr<TLVConf> findTLVInExisting(std::string mlxconfigName,
                                std::string noPortModuleMlxcfgName,
                                u_int32_t port,
                                u_int32_t index,
                                int32_t module);
     void findTLVInDB(std::string mlxconfigName, u_int32_t index);
-    TLVConf* getTLVByIndexAndClass(u_int32_t id, TLVClass c);
-    void fillInRelevantParamsOfTlv(TLVConf* tlv, u_int32_t port, int32_t module);
+    std::shared_ptr<TLVConf> getTLVByIndexAndClass(u_int32_t id, TLVClass c);
+    void fillInRelevantParamsOfTlv(std::shared_ptr<TLVConf> tlv, u_int32_t port, int32_t module);
     static tuple<string, int, int> getMlxconfigNamePortModule(std::string mlxconfigName, mfile* mf);
     static tuple<string, int> splitMlxcfgNameAndPortOrModule(std::string mlxconfigName, SPLITBY splitBy, mfile* mf);
     void execSQL(sqlite3_callback f, void* obj, const char* stat, ...);
