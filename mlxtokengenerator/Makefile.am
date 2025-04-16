@@ -70,9 +70,15 @@ msttokengenerator_DEPENDENCIES = \
                                 $(JSON_LIBS) \
                                 $(MTCR_LIB)
 
-msttokengenerator_LDADD = $(msttokengenerator_DEPENDENCIES) ${LDL}
 
 msttokengenerator_LDFLAGS = -static
+
+if ENABLE_FWMGR
+msttokengenerator_DEPENDENCIES += \
+    $(top_builddir)/ext_libs/minixz/libminixz.la
+endif
+
+msttokengenerator_LDADD = $(msttokengenerator_DEPENDENCIES) ${LDL}
 
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2
@@ -86,4 +92,3 @@ msttokengenerator_LDADD += $(openssl_LIBS)
 msttokengenerator_DEPENDENCIES += $(top_builddir)/tools_crypto/libtools_crypto.a
 else
 endif
-
