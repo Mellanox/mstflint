@@ -928,18 +928,6 @@ string BytesParamValue::getValFormatted()
     return strVal;
 }
 
-string BytesParamValue::getValFormatted()
-{
-    string strVal = "";
-
-    VECTOR_ITERATOR(BinaryParamValue, _bytes, binary)
-    {
-        strVal += binary->getValFormatted();
-    }
-
-    return strVal;
-}
-
 void BytesParamValue::setVal(string val)
 {
     BinaryParamValue::trimHexString(val);

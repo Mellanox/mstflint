@@ -51,7 +51,6 @@
 #include <tools_layouts/reg_access_switch_layouts.h>
 #include "mlxcfg_ui.h"
 #include "mlxcfg_generic_commander.h"
-#include "common/tools_json.h"
 
 #define DISABLE_SLOT_POWER_LIMITER "DISABLE_SLOT_POWER_LIMITER"
 #define DISABLE_SLOT_POWER_LIMITER_WARN                                                                                \
@@ -689,9 +688,10 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander,
     if (_mlxParams.isJsonOutputRequested)
     {
         ifstream jsonInputStream(_mlxParams.NVOutputFile);
-        mstflint::common::ReaderWrapper readerWrapper;
-        Json::Reader* reader = readerWrapper.getReader();
-        bool rc = reader->parse(jsonInputStream, oJsonValue);
+        Json::CharReaderBuilder builder;
+        builder["collectComments"] = true;
+        JSONCPP_STRING errs;
+        bool rc = parseFromStream(builder, jsonInputStream, &oJsonValue, &errs);
         jsonInputStream.close();
         if (!rc)
         {
