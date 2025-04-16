@@ -133,6 +133,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstmcra
 %{_bindir}/mstmget_temp
 %{_bindir}/mstconfig
+%{_bindir}/msttokengenerator
 %{_bindir}/mstfwreset
 %{_bindir}/mstcongestion
 %{_bindir}/mstprivhost
