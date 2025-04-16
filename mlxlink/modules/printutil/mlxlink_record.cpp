@@ -221,6 +221,39 @@ void MlxlinkRecord::printFlagLine(const char flag_s,
     printf(IDENT3 ": %-30s\n", desc.c_str());
 }
 
+
+void MlxlinkRecord::printFlagLineWithAcronym(const char flag_s,
+                                             const std::string& flag_l,
+                                             const char flag_acr_s,
+                                             const std::string& flag_acr_l,
+                                             const std::string& param,
+                                             const std::string& desc)
+{
+    std::string sflags_s(1, flag_s);
+    std::string sflags_acr_s(1, flag_acr_s);
+    if (sflags_s != " " || sflags_acr_s != " ")
+    {
+        printf(IDENT2 "-%-2s|-%-2s|--%-10s|--%-10s",
+               sflags_s.c_str(),
+               sflags_acr_s.c_str(),
+               flag_l.c_str(),
+               flag_acr_l.c_str());
+    }
+    else
+    {
+        printf(IDENT2 "--%s |--%-10s", flag_l.c_str(), flag_acr_l.c_str());
+    }
+    if (param.length())
+    {
+        printf(" <%s>", param.c_str());
+    }
+    else
+    {
+        printf("\t");
+    }
+    printf(IDENT3 ": %-30s\n", desc.c_str());
+}
+
 std::string MlxlinkRecord::addSpace(const std::string& str, u_int32_t size, bool right)
 {
     if (MlxlinkRecord::jsonFormat)
