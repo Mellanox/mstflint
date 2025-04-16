@@ -67,6 +67,21 @@ void MlxlinkMaps::initPortStateMapping()
     _pmFsmState[PHY_MNGR_TRAINING] = "Training";
     _pmFsmState[PHY_MNGR_SUB_FSM_ACTIVE] = "SubFSM active";
 
+    _phyMgrStateForTableDisplay[PHY_MNGR_DISABLED] = "DIS";
+    _phyMgrStateForTableDisplay[PHY_MNGR_OPEN_PORT] = "OPEN";
+    _phyMgrStateForTableDisplay[PHY_MNGR_POLLING] = "POL";
+    _phyMgrStateForTableDisplay[PHY_MNGR_ACTIVE_LINKUP] = "ACT";
+    _phyMgrStateForTableDisplay[PHY_MNGR_CLOSE_PORT] = "CLOSE";
+    _phyMgrStateForTableDisplay[PHY_MNGR_PHYSICAL_LINKUP] = "PHY_UP";
+    _phyMgrStateForTableDisplay[PHY_MNGR_SLEEP] = "SLEEP";
+    _phyMgrStateForTableDisplay[PHY_MNGR_RX_DISABLE] = "RX_DISABLE";
+    _phyMgrStateForTableDisplay[PHY_MNGR_SIGNAL_DETECT] = "SIGNAL_DETECT";
+    _phyMgrStateForTableDisplay[PHY_MNGR_RECEIVER_DETECT] = "RECEIVER_DETECT";
+    _phyMgrStateForTableDisplay[PHY_MNGR_SYNC_PEER] = "SYNC_PEER";
+    _phyMgrStateForTableDisplay[PHY_MNGR_NEGOTIATION] = "NEGOTIATION";
+    _phyMgrStateForTableDisplay[PHY_MNGR_TRAINING] = "TRAINING";
+    _phyMgrStateForTableDisplay[PHY_MNGR_SUB_FSM_ACTIVE] = "SUBFSM_ACTIVE";
+
     _networkProtocols[IB] = "InfiniBand";
     _networkProtocols[ETH] = "Ethernet";
     _networkProtocols[NVLINK] = "NVLink";
@@ -166,6 +181,22 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
     _fecModeActive[FEC_MODE_RS_FEC_PLR_272_257] = "Ethernet_Consortium_LL_50G_RS_FEC_PLR -(272,257+1)";
     _fecModeActive[FEC_MODE_INTERLEAVED_RS_FEC_PLR_272_257] =
       "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC_PLR - (272,257+1)";
+
+    _fecModeActiveForTableDispaly[FEC_MODE_NO_FEC] = "NO_FEC";
+    _fecModeActiveForTableDispaly[FEC_MODE_FIRECODE_FEC] = "FC_FEC";
+    _fecModeActiveForTableDispaly[FEC_MODE_STANDARD_RS_FEC_528_514] = "KR4_FEC";
+    _fecModeActiveForTableDispaly[FEC_MODE_STANDARD_LL_FEC_271_257] = "LL_FEC";
+    _fecModeActiveForTableDispaly[FEC_MODE_INTERLEAVED_QUAD_RS_FEC_544_514] = "Quad_KP4_FEC";
+    _fecModeActiveForTableDispaly[FEC_MODE_INTERLEAVED_STANDARD_RS_FEC_544_514] = "Int_KP4_FEC";
+    _fecModeActiveForTableDispaly[FEC_MODE_STANDARD_RS_FEC_544_514] = "KP4_FEC";
+    _fecModeActiveForTableDispaly[FEC_MODE_ZERO_LATENCY_FEC] = "ZL_FEC";
+    _fecModeActiveForTableDispaly[FEC_MODE_RS_FEC_272_257] = "ELL_FEC";
+    _fecModeActiveForTableDispaly[FEC_MODE_INTERLEAVED_RS_FEC_272_257] = "Int_ELL_FEC";
+    _fecModeActiveForTableDispaly[FEC_MODE_INTERLEAVED_RS_FEC_544_514_PLR] = "Int_KP4_FEC_PLR";
+    _fecModeActiveForTableDispaly[FEC_MODE_RS_FEC_544_514_PLR] = "Int_KP4_FEC_PLR";
+    _fecModeActiveForTableDispaly[FEC_MODE_RS_FEC_271_257_PLR] = "Int_KP4_FEC_PLR";
+    _fecModeActiveForTableDispaly[FEC_MODE_RS_FEC_PLR_272_257] = "ELL_FEC_PLR";
+    _fecModeActiveForTableDispaly[FEC_MODE_INTERLEAVED_RS_FEC_PLR_272_257] = "Int_ELL_FEC_PLR";
 
     _fecModeMask[FEC_MODE_MASK_AU] = make_pair("Auto-FEC", "AU");
     _fecModeMask[FEC_MODE_MASK_NF] = make_pair("No-FEC", "NF");
@@ -1551,6 +1582,39 @@ void MlxlinkMaps::initPlrRejectModeMapping()
     _plrRejectMode[PLR_REJECT_MODE_CS] = "rejection based on CS";
 }
 
+void MlxlinkMaps::initCableTypeForTableView()
+{
+    _cableTypeForTableDisplay[UNIDENTIFIED] = "UNIDENT";
+    _cableTypeForTableDisplay[ACTIVE] = "AOC/ACC";
+    _cableTypeForTableDisplay[OPTICAL_MODULE] = "AOM";
+    _cableTypeForTableDisplay[PASSIVE] = "DAC";
+    _cableTypeForTableDisplay[UNPLUGGED] = "UNPLUGD";
+}
+
+void MlxlinkMaps::initTableHeaders()
+{
+    _multiPortInfoTableHeader = {{"port", SHIFT_8},
+                                 {"State", SHIFT_8},
+                                 {"Speed", SHIFT_8},
+                                 {"FEC", SHIFT_15},
+                                 {"Cable Type/LEN", SHIFT_20},
+                                 {"TTLU", SHIFT_15},
+                                 {"Time Since Clear/CL", SHIFT_20},
+                                 {"FOM", SHIFT_20},
+                                 {"Net BER", SHIFT_20},
+                                 {"Link Down", SHIFT_10},
+                                 {"F. C. Zero Hist", SHIFT_20}};
+    // Need to add here localPort string, done when used in mlxlinkCommander
+    _multiPortModuleInfoTableHeader = { {"Cable S/N", SHIFT_15},
+                                        {"Cable P/N", SHIFT_20},
+                                        {"Cable Len", SHIFT_15},
+                                        {"Cable Type", SHIFT_15},
+                                        {"State", SHIFT_15},
+                                        {"Speed", SHIFT_8},
+                                        {"FEC", SHIFT_15},
+                                        {"Net BER", SHIFT_20}};
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();
@@ -1564,6 +1628,7 @@ MlxlinkMaps::MlxlinkMaps()
     initSltpStatusMapping();
     initCableComplianceMapping();
     initCableTechnologyMapping();
+    initCableTypeForTableView();
     initCablePowerClassMapping();
     initEnhancedDebugMapping();
     phyHstFsmHdrStateMapping();
@@ -1571,6 +1636,7 @@ MlxlinkMaps::MlxlinkMaps()
     initPpttParamsMapping();
     initPpttSpeedMapping();
     initPlrRejectModeMapping();
+    initTableHeaders();
 }
 
 MlxlinkMaps::~MlxlinkMaps() {}
