@@ -1144,6 +1144,25 @@ void GenericCommander::genXMLTemplate(vector<string> tlvs, string& xmlTemplate, 
     genXMLTemplateAux(tlvs, xmlTemplate, allAttrs, false, true);
 }
 
+void GenericCommander::TLVs2TLVConfs(const vector<string>& tlvs, vector<std::shared_ptr<TLVConf>>& tlvsConfs)
+{
+    for (auto tlvString = tlvs.begin(); tlvString != tlvs.end(); ++tlvString)
+    {
+        std::shared_ptr<TLVConf> tlv = NULL;
+        try
+        { // user didn't tell us if it is a per port tlv
+            // so try port==0
+            tlv = _dbManager->getAndCreateTLVByName(*tlvString, 0, -1);
+        }
+        catch (MlxcfgException&)
+        {
+            // or port==1
+            tlv = _dbManager->getAndCreateTLVByName(*tlvString, 1, -1);
+        }
+        tlvsConfs.push_back(tlv);
+    }
+}
+
 void GenericCommander::binTLV2TLVConf(const vector<u_int32_t>& binTLV, std::shared_ptr<TLVConf>& tlv)
 {
     u_int32_t id;
