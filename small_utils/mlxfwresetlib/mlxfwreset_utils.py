@@ -125,11 +125,11 @@ def getDevDBDF(device, logger=None):
 
     operatingSys = platform.system()
     if (operatingSys == "FreeBSD"):
-        if not(device.startswith("pci")):
+        if not (device.startswith("pci")):
             raise RuntimeError("Unexpected device name format")
         return device[3:]
     elif (operatingSys == "Linux"):
-        cmd = "mstdevices_info -vv"
+        cmd = "mdevices_info -vv"
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
             raise RuntimeError("Failed to get device PCI address")
@@ -160,7 +160,7 @@ def getDevDBDF(device, logger=None):
         raise RuntimeError("Unsupported OS")
 
 
-def is_in_internal_host():
+def is_in_internal_host(logger=None):
     '''
     The function checks if the tool is running on the BlueField's internal host (ARM)
     The function will return true is the OS is Linux and PCIe root-port 00:00.0 is Mellanox
@@ -173,6 +173,8 @@ def is_in_internal_host():
     if platform.system() == "Linux":
         cmd = "setpci -s 00:00.0 0x0.w"
         rc, out, _ = cmdExec(cmd)
+        if logger:
+            logger.info('is_in_internal_host: RC={0}, setpci output: {1}'.format(rc, out))
         if rc == 0 and out.strip() == "15b3":
             is_in_internal_host.result = True
         else:

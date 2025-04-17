@@ -53,7 +53,7 @@ class CmdRegMroq():
         {'method': ResetReqMethod.HOT_RESET, 'description': 'Hot reset (SBR)', 'mask': 0b10},
     ]
 
-    def __init__(self, reset_type, reg_access, mcam, logger):
+    def __init__(self, reset_type, reg_access, mcam, logger, mst_driver_is_loaded):
         self._reg_access = reg_access
         self._logger = logger
         self._mroq_is_supported = False
@@ -66,6 +66,9 @@ class CmdRegMroq():
                 if platform.system() == "Windows":
                     self._pci_reset_req_method = self._pci_reset_req_method & ~CmdRegMroq.pci_reset_method_db[ResetReqMethod.HOT_RESET]['mask']
                     self._pci_sync_for_fw_update_start = self._pci_sync_for_fw_update_start & ~CmdRegMroq.pci_sync_db[CmdRegMroq.SYNCED_TOOL_FLOW]['mask']
+                elif platform.system() == "Linux":
+                    if mst_driver_is_loaded is False:
+                        self._pci_sync_for_fw_update_start = self._pci_sync_for_fw_update_start & ~CmdRegMroq.pci_sync_db[CmdRegMroq.SYNCED_TOOL_FLOW]['mask']
 
             except BaseException:
                 pass
@@ -86,6 +89,9 @@ class CmdRegMroq():
 
     def print_query_text(self, is_pcie_switch, tool_owner_support):
         if self._mroq_is_supported is False:
+            return
+
+        if self.is_any_sync_supported(tool_owner_support) is False:
             return
 
         result = ""
@@ -174,6 +180,15 @@ class CmdRegMroq():
 
     def mroq_is_supported(self):
         return self._mroq_is_supported
+
+    def is_any_sync_supported(self, tool_owner_support):
+        pci_sync_for_fw_update_start = self._pci_sync_for_fw_update_start
+
+        if not tool_owner_support:
+            pci_sync_for_fw_update_start &= ~CmdRegMroq.pci_sync_db[CmdRegMroq.LEGACY_FLOW]['mask']
+
+        return pci_sync_for_fw_update_start != 0
+
     def is_sync_supported(self, reset_sync, logger):
         if self.mroq_is_supported() is False:
             raise Exception("MROQ is not supported")
