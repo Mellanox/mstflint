@@ -58,6 +58,7 @@ struct PortGroup
         groupId = 0;
         split = 0;
         secondSplit = 0;
+        isFnm = false;
     }
     PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split)
     {
@@ -66,6 +67,7 @@ struct PortGroup
         groupId = _groupId;
         split = _split;
         secondSplit = 0;
+        isFnm = false;
     }
     PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split, u_int32_t _secondSplit)
     {
@@ -74,12 +76,28 @@ struct PortGroup
         groupId = _groupId;
         split = _split;
         secondSplit = _secondSplit;
+        isFnm = false;
+    }
+    PortGroup(u_int32_t _localPort,
+              u_int32_t _labelPort,
+              u_int32_t _groupId,
+              u_int32_t _split,
+              u_int32_t _secondSplit,
+              bool _isFnm)
+    {
+        localPort = _localPort;
+        labelPort = _labelPort;
+        groupId = _groupId;
+        split = _split;
+        secondSplit = _secondSplit;
+        isFnm = _isFnm;
     }
     u_int32_t localPort;
     u_int32_t labelPort;
     u_int32_t groupId;
     u_int32_t split;
     u_int32_t secondSplit;
+    bool isFnm;
 };
 
 struct CAP_VALUE
@@ -197,6 +215,8 @@ private:
     void initPpttParamsMapping();
     void initPpttSpeedMapping();
     void initPlrRejectModeMapping();
+    void initCableTypeForTableView();
+    void initTableHeaders();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -324,6 +344,12 @@ public:
     std::map<u_int32_t, u_int32_t> _ppcntGroups;
     std::map<u_int32_t, PRM_FIELD> _ppttParams;
     std::map<u_int32_t, u_int32_t> _ppttSpeedMapping;
+    std::map<u_int32_t, std::string> _fecModeActiveForTableDispaly;
+    std::map<u_int32_t, std::string> _cableTypeForTableDisplay;
+    std::map<u_int32_t, std::string> _phyMgrStateForTableDisplay;
+    // Vectors
+    std::vector<std::pair<std::string, u_int32_t>> _multiPortInfoTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _multiPortModuleInfoTableHeader;
 
     string _sltpHeader;
     string _showErrorsTitle;
