@@ -46,6 +46,10 @@
 #include "mlxtkngenerator_utils.h"
 #include <tools_layouts/reg_access_switch_layouts.h>
 
+#ifdef ENABLE_MST_DEV_I2C
+#include "mtcr_ul/mtcr_ul_com.h"
+#endif
+
 #include <dirent.h>
 
 #define INDENT "    "
