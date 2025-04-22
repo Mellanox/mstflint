@@ -1459,7 +1459,7 @@ def is_pcie_switch_device(devid, reg_access_obj=None, dbdf=None):
             else:
                 dev_dbdf_bus = int(dbdf.split(':')[1], 16)  # dbdf is a string variable in base 16
             logger.debug('MPIR bus: 0x{0:X}, dbdf: {1}, dev_dbdf_bus: 0x{2:X}, sdm: {3}'.format(bus, dbdf, dev_dbdf_bus, sdm))
-            if bus != dev_dbdf_bus and sdm == 0:
+            if bus != dev_dbdf_bus:
                 logger.debug("Found a PCIE switch device")
                 res = True
     except BaseException:
