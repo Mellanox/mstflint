@@ -73,6 +73,11 @@ msttokengenerator_DEPENDENCIES = \
 
 msttokengenerator_LDFLAGS = -static
 
+if ENABLE_OPENSSL
+else
+AM_CXXFLAGS += -DNO_OPEN_SSL
+endif
+
 if ENABLE_FWMGR
 msttokengenerator_DEPENDENCIES += \
     $(top_builddir)/ext_libs/minixz/libminixz.la
