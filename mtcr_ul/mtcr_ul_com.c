@@ -68,11 +68,13 @@
 #ifdef ENABLE_MST_DEV_I2C
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
+#define MAX_CHUNK_SIZE 32
 #endif
 
 #ifndef MAX_TRANS_SIZE
 #define MAX_TRANS_SIZE 64
 #endif
+
 
 
 #include <stdio.h>
@@ -1960,23 +1962,23 @@ static int mtcr_inband_open(mfile* mf, const char* name)
 
 
 #ifdef ENABLE_MST_DEV_I2C
-int mread_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
+/* split the data into 64 byte chunks and read each chunk. */
+int mtcr_i2c_mread_chunks(mfile* mf, unsigned int offset, void* data, int length)
 {
     u_int8_t addr_width = 0;
-    int      chunk_size = MAX_TRANS_SIZE;
     int      left_size = 0;
     int      bytes = 0;
     void   * dest_ptr = data;
-    int      rc = length;
+    int      bytes_read = length;
 
-    mget_i2c_addr_width(mf, &addr_width);
+    int      chunk_size = MAX_TRANS_SIZE;
 
     for (left_size = length; left_size > 0; left_size -= chunk_size) {
         int toread;
         toread = (left_size >= chunk_size) ? chunk_size : left_size;
-        bytes = mread_i2cblock(mf, mf->i2c_secondary, addr_width, offset, dest_ptr, toread);
+        bytes = mread_i2c_chunk(mf, offset, dest_ptr, toread);
         if (bytes != toread) {
-            rc = length - left_size;
+            bytes_read = length - left_size;
             break;
         }
 
@@ -1984,11 +1986,60 @@ int mread_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
         dest_ptr += chunk_size;
     }
 
+    if (bytes_read != length)
+    {
+        DBG_PRINTF("mtcr_i2c_mread_chunks: address: 0x%06x num_bytes attempted to read: %d bytes_read: %d\n", offset, length, bytes_read);
+    }
+    return bytes_read;
+}
+
+int mread_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
+{
+    u_int8_t addr_width = 0;
+    mget_i2c_addr_width(mf, &addr_width);
+
+    int rc = mread_i2cblock(mf, mf->i2c_secondary, addr_width, offset, data, length);
+
     if (rc != length) {
         return rc;     /* The value the ioctl which failed returned. */
     }
+
     fix_endianness((u_int32_t*)data, length, 1);
     return length;
+}
+
+/* split the data to chunks of 32 bytes and write each chunk. */
+int mtcr_i2c_mwrite_chunks(mfile* mf, unsigned int offset, void* data, int length)
+{
+    int chunk_size;
+    int left_size;
+    int bytes;
+    void* dest_ptr = data;
+    int bytes_written = length;
+
+    chunk_size = MAX_CHUNK_SIZE;
+
+    for (left_size = length; left_size > 0; left_size -= chunk_size)
+    {
+        int towrite;
+        towrite = (left_size >= chunk_size) ? chunk_size : left_size;
+        bytes = mwrite_i2c_chunk(mf, offset, dest_ptr, towrite);
+        if (bytes != towrite)
+        {
+            bytes_written = length - left_size;
+            break;
+        }
+
+        offset += chunk_size;
+        dest_ptr += chunk_size;
+    }
+
+    if (bytes_written != length)
+    {
+        DBG_PRINTF("mtcr_i2c_mwrite_chunks: address: 0x%06x num_bytes attempted to write: %d bytes_written: %d\n", offset, length, bytes_written);
+    }
+
+    return bytes_written;
 }
 
 
@@ -1997,12 +2048,12 @@ int mwrite_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
     fix_endianness((u_int32_t*)data, length, 1);
 
     u_int8_t addr_width = 0;
-
     mget_i2c_addr_width(mf, &addr_width);
+
     int rc = mwrite_i2cblock(mf, mf->i2c_secondary, addr_width, offset, data, length);
 
     if (rc != length) {
-        return rc;
+        return rc; /* The value the ioctl which failed returned. */
     }
     return length;
 }
@@ -2150,6 +2201,7 @@ int mtcr_i2c_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
     return bytes_written;
 }
 
+/* reads up to 64 bytes */
 int mread_i2cblock(mfile       * mf,
                    unsigned char i2c_secondary,
                    u_int8_t      addr_width,
@@ -2199,6 +2251,7 @@ int mread_i2cblock(mfile       * mf,
     return length;
 }
 
+/* writes up to 64 bytes */
 int mwrite_i2cblock(mfile       * mf,
                     unsigned char i2c_secondary,
                     u_int8_t      addr_width,
@@ -2252,8 +2305,8 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
 
     ctx->mread4 = mtcr_i2c_mread4;
     ctx->mwrite4 = mtcr_i2c_mwrite4;
-    ctx->mread4_block = mread_i2c_chunk;
-    ctx->mwrite4_block = mwrite_i2c_chunk;
+    ctx->mread4_block = mtcr_i2c_mread_chunks;
+    ctx->mwrite4_block = mtcr_i2c_mwrite_chunks;
 
     if ((mf->fd = open(name, O_RDWR | O_SYNC)) < 0) {
         safe_free(&mf);

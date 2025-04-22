@@ -194,6 +194,8 @@ void set_force_i2c_address(int i2c_address);
 
 int mtcr_i2c_mread4(mfile* mf, unsigned int offset, u_int32_t* value);
 int mtcr_i2c_mwrite4(mfile* mf, unsigned int offset, u_int32_t value);
+int mtcr_i2c_mread_chunks(mfile* mf, unsigned int offset, void* data, int length);
+int mtcr_i2c_mwrite_chunks(mfile* mf, unsigned int offset, void* data, int length);
 int mread_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length);
 int mwrite_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length);
 int mread_i2cblock(mfile* mf,
