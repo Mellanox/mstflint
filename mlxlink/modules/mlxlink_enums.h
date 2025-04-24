@@ -116,11 +116,6 @@
 #define SHIFT_13 13
 #define SHIFT_14 14
 #define SHIFT_15 15
-#define SHIFT_16 16
-#define SHIFT_17 17
-#define SHIFT_18 18
-#define SHIFT_19 19
-#define SHIFT_20 20
 /*
  * QSFP Paging, Page 0 Low
  */

@@ -158,17 +158,4 @@ string getStrByMaskFromPair(u_int32_t bitmask,
                             map<u_int32_t, pair<string, string>> maskMap,
                             const string& fieldSeparator = ",",
                             u_int32_t pairIndex = 0);
-std::string centerString(const std::string& str, int width, char fillChar = ' ');
-std::string generateTableRow(const std::vector<std::pair<std::string, u_int32_t>>& columns,
-                             const std::string& delimiter);
-int getStringLengthWOColorCodes(const std::string& s);
-void printMlxlinkTable(const std::vector<std::string>& tableData,
-                       const std::vector<std::pair<std::string, u_int32_t>>& tableHeader);
-void updateColumnWidthPopulateTable(std::vector<std::pair<std::string, u_int32_t>>& vectorToAmend,
-                                    const u_int32_t locationInVector,
-                                    std::vector<std::string>& tableData,
-                                    const std::string& valToAdd,
-                                    u_int32_t unformattedStrLen,
-                                    bool isActive = true);
-void fillFomDataForTableView(std::vector<string>& initialFom, const std::string& initialFomStr, std::string& fomStr);
 #endif

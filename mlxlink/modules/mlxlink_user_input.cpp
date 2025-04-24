@@ -86,8 +86,6 @@ UserInput::UserInput()
     _write = false;
     _read = false;
     _showPlr = false;
-    _showMultiPortInfo = false;
-    _showMultiPortModuleInfo = false;
 
     _device = "";
     _extAdbFile = "";

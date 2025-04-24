@@ -104,14 +104,6 @@
 #define PEPC_SHOW_FLAG_SHORT ' '
 #define PLR_INFO_FLAG "show_plr"
 #define PLR_INFO_FLAG_SHORT ' '
-#define MULTI_PORT_MODULE_INFO_FLAG "show_multi_port_module_info"
-#define MULTI_PORT_MODULE_INFO_FLAG_SHORT ' '
-#define MULTI_PORT_MODULE_INFO_ACRONYM_FLAG "smpmi"
-#define MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT ' '
-#define MULTI_PORT_INFO_FLAG "show_multi_port_info"
-#define MULTI_PORT_INFO_FLAG_SHORT ' '
-#define MULTI_PORT_INFO_ACRONYM_FLAG "smpi"
-#define MULTI_PORT_INFO_ACRONYM_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink COMMANDS Flags
@@ -340,8 +332,6 @@ enum OPTION_TYPE
     SLRG_TEST,
     PCIE_ERROR_INJ,
     SHOW_PLR,
-    SHOW_MULTI_PORT_INFO,
-    SHOW_MULTI_PORT_MODULE_INFO,
 
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
@@ -439,7 +429,6 @@ public:
     void collectBER();
     void showTxGroupMapping();
     void showPlr();
-    void getPddrOperInfo();
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
@@ -466,7 +455,6 @@ public:
     string fecMaskToStr(u_int32_t mask);
     void updateSwControlStatus();
     bool checkDPNvSupport();
-    u_int32_t getNumberOfPorts();
 
     void showTestMode();
     void showTestModeBer();
@@ -603,11 +591,6 @@ public:
     void checkSltpParamsSize();
     bool isMpeinjSupported();
     u_int32_t getRateFromPptt();
-    void showMultiPortInfo();
-    void showMultiPortModuleInfo();
-    string getBerString();
-    void updateLocalPortGroup();
-    std::string getSpeedStrForTableView();
 
     // Mlxlink params
     UserInput _userInput;
@@ -619,7 +602,6 @@ public:
     u_int32_t _cableMediaType;
     u_int32_t _fecActive;
     u_int32_t _protoActive;
-    int _phyMngrFsmState;
     u_int32_t _anDisable;
     u_int32_t _speedBerCsv;
     u_int32_t _cableIdentifier;
@@ -638,7 +620,6 @@ public:
     u_int32_t _slotIndex;
     u_int32_t _linkSpeed;
     u_int32_t _groupOpcode;
-    u_int32_t _loopbackMode;
     string _extAdbFile;
     string _fwVersion;
     string _speedStrG;
@@ -674,16 +655,9 @@ public:
     MlxlinkErrInjCommander* _errInjector;
     MlxlinkPortInfo* _portInfo;
     MlxlinkAmBerCollector* _amberCollector;
-    string _fomStr;
 
 protected:
     vector<AmberField> _ppcntFields;
-
-    // New helper functions for port info display
-    string getLabelPortString(const PortGroup& portInfo);
-    void updatePortModuleInfo(vector<string>& tableData, const PortGroup& portInfo, u_int32_t& posToUpdateWidthInVector);
-    void updatePortInfo(vector<string>& tableData, const PortGroup& portInfo, u_int32_t& posToUpdateWidthInVector);
-    void updatePortStatisticalInfo(vector<string>& tableData, u_int32_t& posToUpdateWidthInVector);
 };
 
 #endif /* MLXLINK_COMMANDER_H */

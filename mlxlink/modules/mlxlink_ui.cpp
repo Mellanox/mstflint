@@ -84,8 +84,7 @@ void MlxlinkUi::initRegAccessLib()
 
 void MlxlinkUi::initPortInfo()
 {
-    if ((!_userInput._portSpecified && _userInput._csvBer != "") ||
-        (_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo))
+    if (!_userInput._portSpecified && _userInput._csvBer != "")
     {
         _mlxlinkCommander->findFirstValidPort();
     }
@@ -169,12 +168,6 @@ void MlxlinkUi::printSynopsisQueries()
                                  "Show BER Monitor Info (not supported for HCA)");
     MlxlinkRecord::printFlagLine(PEPC_SHOW_FLAG_SHORT, PEPC_SHOW_FLAG, "",
                                  "Show External PHY Info (for Ethernet switches only)");
-    MlxlinkRecord::printFlagLineWithAcronym(MULTI_PORT_INFO_FLAG_SHORT, MULTI_PORT_INFO_FLAG,
-                                            MULTI_PORT_INFO_ACRONYM_FLAG_SHORT, MULTI_PORT_INFO_ACRONYM_FLAG, "",
-                                            "Show Multi Port Info Table");
-    MlxlinkRecord::printFlagLineWithAcronym(
-      MULTI_PORT_MODULE_INFO_FLAG_SHORT, MULTI_PORT_MODULE_INFO_FLAG, MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT,
-      MULTI_PORT_MODULE_INFO_ACRONYM_FLAG, "", "Show Multi Port Module Info Table");
 }
 
 void MlxlinkUi::printSynopsisCommands()
@@ -1004,11 +997,6 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PEPC_SHOW_FLAG, PEPC_SHOW_FLAG_SHORT, "", "Show External PHY Info");
     AddOptions(PRINT_JSON_OUTPUT_FLAG, PRINT_JSON_OUTPUT_FLAG_SHORT, "", "Print the output in json format");
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
-    AddOptions(MULTI_PORT_INFO_FLAG, MULTI_PORT_INFO_FLAG_SHORT, "", "Show multi ports info table");
-    AddOptions(MULTI_PORT_INFO_ACRONYM_FLAG, MULTI_PORT_INFO_ACRONYM_FLAG_SHORT, "", "Show multi port info table");
-    AddOptions(MULTI_PORT_MODULE_INFO_FLAG, MULTI_PORT_MODULE_INFO_FLAG_SHORT, "", "Show multi port module info table");
-    AddOptions(MULTI_PORT_MODULE_INFO_ACRONYM_FLAG, MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT, "",
-               "Show multi port module info table");
 
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
@@ -1212,12 +1200,6 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SHOW_PLR:
                 _mlxlinkCommander->showPlr();
-                break;
-            case SHOW_MULTI_PORT_INFO:
-                _mlxlinkCommander->showMultiPortInfo();
-                break;
-            case SHOW_MULTI_PORT_MODULE_INFO:
-                _mlxlinkCommander->showMultiPortModuleInfo();
                 break;
             default:
                 break;
@@ -1798,18 +1780,6 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == MPEINJ_DBDF_FLAG)
     {
         _userInput.dbdf = value;
-        return PARSE_OK;
-    }
-    else if (name == MULTI_PORT_INFO_ACRONYM_FLAG || name == MULTI_PORT_INFO_FLAG)
-    {
-        addCmd(SHOW_MULTI_PORT_INFO);
-        _userInput._showMultiPortInfo = true;
-        return PARSE_OK;
-    }
-    else if (name == MULTI_PORT_MODULE_INFO_ACRONYM_FLAG || name == MULTI_PORT_MODULE_INFO_FLAG)
-    {
-        addCmd(SHOW_MULTI_PORT_MODULE_INFO);
-        _userInput._showMultiPortModuleInfo = true;
         return PARSE_OK;
     }
     return PARSE_ERROR;
