@@ -86,7 +86,6 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _speedBerCsv = 0;
     _fecActive = 0;
     _protoActive = 0;
-    _phyMngrFsmState = -1;
     _productTechnology = 0;
     _allUnhandledErrors = "";
     _mlxlinkMaps = MlxlinkMaps::getInstance();
@@ -96,8 +95,6 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _portInfo = NULL;
     _amberCollector = NULL;
     _groupOpcode = MONITOR_OPCODE;
-    _loopbackMode = 0;
-    _fomStr = "";
 }
 
 MlxlinkCommander::~MlxlinkCommander()
@@ -1777,12 +1774,14 @@ void MlxlinkCommander::operatingInfoPage()
 {
     try
     {
-        getPddrOperInfo();
-        int loopbackMode = (_phyMngrFsmState != PHY_MNGR_DISABLED) ? _loopbackMode : -1;
+        sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_OPERATIONAL_INFO_PAGE);
+        u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
+        int       loopbackMode = (phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode") : -1;
         u_int32_t ethAnFsmState = getFieldValue("eth_an_fsm_state");
         u_int32_t ib_phy_fsm_state = getFieldValue("ib_phy_fsm_state");
         string    color =
-            MlxlinkRecord::state2Color(_phyMngrFsmState == PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)_phyMngrFsmState);
+            MlxlinkRecord::state2Color(phyMngrFsmState ==
+                                       PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)phyMngrFsmState);
         _protoActive = getFieldValue("proto_active");
         if (_protoActive == NVLINK) {
             _isNVLINK = true;
@@ -1790,15 +1789,15 @@ void MlxlinkCommander::operatingInfoPage()
         }
         _fecActive = getFieldValue("fec_mode_active");
 
-        _linkUP = (_phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
-        _portPolling = _phyMngrFsmState == PHY_MNGR_POLLING;
+        _linkUP = (phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
+        _portPolling = phyMngrFsmState == PHY_MNGR_POLLING;
         _protoCapability = getFieldValue("cable_ext_eth_proto_cap");
 
         if (_protoActive == IB) {
             _protoCapability = getFieldValue("cable_link_speed_cap");
             _activeSpeed = getFieldValue("link_speed_active");
-            _protoAdmin = (_phyMngrFsmState != 0) ? getFieldValue("core_to_phy_link_proto_enabled") :
-                                                    getFieldValue("phy_manager_link_proto_enabled");
+            _protoAdmin = (phyMngrFsmState != 0) ? getFieldValue("core_to_phy_link_proto_enabled") :
+                          getFieldValue("phy_manager_link_proto_enabled");
         }
 
         getPtys();
@@ -1811,7 +1810,7 @@ void MlxlinkCommander::operatingInfoPage()
 
         setPrintTitle(_operatingInfoCmd, "Operational Info", PDDR_OPERATIONAL_INFO_LAST, !_prbsTestMode);
 
-        setPrintVal(_operatingInfoCmd, "State", getStrByValue(_phyMngrFsmState, _mlxlinkMaps->_pmFsmState), color, true,
+        setPrintVal(_operatingInfoCmd, "State", getStrByValue(phyMngrFsmState, _mlxlinkMaps->_pmFsmState), color, true,
                     !_prbsTestMode);
         setPrintVal(_operatingInfoCmd, "Physical state",
                     _protoActive == ETH ? getStrByValue(ethAnFsmState, _mlxlinkMaps->_ethANFsmState) :
@@ -1952,9 +1951,7 @@ void MlxlinkCommander::showPddr()
         runningVersion();
         if (_prbsTestMode) {
             showTestMode();
-        } 
-        else if (!_userInput._showMultiPortInfo && !_userInput._showMultiPortModuleInfo)
-        {
+        } else {
             std::cout << _operatingInfoCmd;
             std::cout << _supportedInfoCmd;
             std::cout << _troubInfoCmd;
@@ -1988,14 +1985,6 @@ void MlxlinkCommander::getPtys()
         u_int32_t val = _protoAdminEx ? _protoAdminEx : _protoAdmin;
         _speedForce = " - " + SupportedSpeeds2Str(_protoActive, val, (bool)_protoAdminEx);
     }
-}
-
-void MlxlinkCommander::getPddrOperInfo()
-{
-    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_OPERATIONAL_INFO_PAGE);
-    _phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
-    _loopbackMode = getFieldValue("loopback_mode");
-    _fecActive = getFieldValue("fec_mode_active");
 }
 
 void MlxlinkCommander::showTestMode()
@@ -2350,22 +2339,22 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
             } else {
                 phaseEONegStr = to_string(phaseEOPos + phaseEONeg);
             }
-
-            _fomStr += physicalGrades.back() + " ";
         }
         heightLengths.push_back(MlxlinkRecord::addSpaceForSlrg(offsetEONegStr));
         phaseWidths.push_back(MlxlinkRecord::addSpaceForSlrg(phaseEONegStr));
     }
 
-    if (!_userInput._showMultiPortInfo && !_userInput._showMultiPortModuleInfo)
-    {
-        setPrintVal(_eyeOpeningInfoCmd, "Physical Grade", getStringFromVector(physicalGrades), ANSI_COLOR_RESET, true,
-                    true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Height Eye Opening [mV]", getStringFromVector(heightLengths), ANSI_COLOR_RESET,
-                    true, true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Phase  Eye Opening [psec]", getStringFromVector(phaseWidths), ANSI_COLOR_RESET,
-                    true, true, true);
-    }
+    setPrintVal(_eyeOpeningInfoCmd,
+                "Physical Grade",
+                getStringFromVector(physicalGrades),
+                ANSI_COLOR_RESET,
+                true,
+                true,
+                true);
+    setPrintVal(_eyeOpeningInfoCmd, "Height Eye Opening [mV]", getStringFromVector(heightLengths), ANSI_COLOR_RESET,
+                true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Phase  Eye Opening [psec]", getStringFromVector(phaseWidths), ANSI_COLOR_RESET,
+                true, true, true);
 }
 
 void MlxlinkCommander::startSlrgPciScan(u_int32_t numOfLanesToUse)
@@ -2417,31 +2406,28 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
 
         status = getFieldValue("status");
         std::string initialFomStr = status ? getFieldStr("initial_fom", (u_int32_t)8) : "N/A";
+
         initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(initialFomStr));
         lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom", (u_int32_t)8) : "N/A"));
         upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye", (u_int32_t)8) : "N/A"));
         midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye", (u_int32_t)8) : "N/A"));
         lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("lower_eye", (u_int32_t)8) : "N/A"));
-        
-        fillFomDataForTableView(initialFom, initialFomStr, _fomStr);
+
         legand.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(lane)));
     }
 
-    if (!_userInput._showMultiPortInfo && !_userInput._showMultiPortModuleInfo)
-    {
-        string fomMode = _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode")];
-        setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Lane", getStringFromVector(legand), ANSI_COLOR_RESET, true, true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", getStringFromVector(initialFom), ANSI_COLOR_RESET, true, true,
-                    true);
-        setPrintVal(_eyeOpeningInfoCmd, "Last FOM", getStringFromVector(lastFom), ANSI_COLOR_RESET, true, true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
-                    (fomMeasurement & SLRG_EOM_UPPER), true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
-                    (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET,
-                    (fomMeasurement & SLRG_EOM_LOWER), true, true);
-    }
+    string fomMode = status ? _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode")] : "N/A";
+
+    setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : "N/A", ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", status ? getStringFromVector(initialFom) : "N/A", ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", status ? getStringFromVector(lastFom) : "N/A", ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_UPPER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_LOWER), true, true);
 }
 
 void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
@@ -2480,31 +2466,30 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
 
         status = getFieldValue("status");
         std::string initialFomStr = status ? getFieldStr("initial_fom", (u_int32_t)16) : "N/A";
+
         initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(initialFomStr));
         lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("last_fom", (u_int32_t)16) : "N/A"));
         upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("upper_eye", (u_int32_t)16) : "N/A"));
         midFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("mid_eye", (u_int32_t)16) : "N/A"));
         lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(status ? getFieldStr("lower_eye", (u_int32_t)16) : "N/A"));
-        
-        fillFomDataForTableView(initialFom, initialFomStr, _fomStr);
+
         legand.push_back(MlxlinkRecord::addSpaceForSlrg(to_string(lane)));
     }
 
-    if (!_userInput._showMultiPortInfo && !_userInput._showMultiPortModuleInfo)
-    {
-        string fomMode = _mlxlinkMaps->_slrgFomMode5nm[getFieldValue("fom_mode")];
-        setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Lane", getStringFromVector(legand), ANSI_COLOR_RESET, true, true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", getStringFromVector(initialFom), ANSI_COLOR_RESET, true, true,
-                    true);
-        setPrintVal(_eyeOpeningInfoCmd, "Last FOM", getStringFromVector(lastFom), ANSI_COLOR_RESET, true, true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
-                    (fomMeasurement & SLRG_EOM_UPPER), true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
-                    (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
-        setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET,
-                    (fomMeasurement & SLRG_EOM_LOWER), true, true);
-    }
+    string fomMode = status ? _mlxlinkMaps->_slrgFomMode5nm[getFieldValue("fom_mode")] : "N/A";
+    setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : "N/A", ANSI_COLOR_RESET, true,
+                true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", status ? getStringFromVector(initialFom) : "N/A",
+                ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", status ? getStringFromVector(lastFom) : "N/A", ANSI_COLOR_RESET,
+                true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_UPPER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET,
+                (fomMeasurement & SLRG_EOM_LOWER), true, true);
 }
 
 void MlxlinkCommander::showEye()
@@ -3033,7 +3018,7 @@ void MlxlinkCommander::collectAMBER()
                     _amberCollector->_localPorts.push_back(pg);
                 } else if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
                     /* collect all ports info if the port flag wasn't provided */
-                    u_int32_t numOfPorts = getNumberOfPorts();;
+                    u_int32_t numOfPorts = 0;
 
                     vector < string > labelPorts;
                     _ignorePortStatus = false;
@@ -3233,223 +3218,6 @@ void MlxlinkCommander::showTxGroupMapping()
                                       "following exception: ") +
                                string(exc.what()) + string("\n");
     }
-}
-
-string MlxlinkCommander::getLabelPortString(const PortGroup& portInfo)
-{
-    string labelPortStr = " " + to_string(portInfo.labelPort);
-    // Add split port information if applicable
-    bool shouldAddSplit = (portInfo.split && portInfo.split != 1) || (_devID == DeviceQuantum2) ||
-                          (_devID == DeviceQuantum3) || (_devID == DeviceQuantum4) ||
-                          dm_is_gpu(static_cast<dm_dev_id_t>(_devID));
-    if (shouldAddSplit)
-    {
-        labelPortStr += "/" + to_string(portInfo.split);
-    }
-    // Add second split information if applicable
-    bool shouldAddSecondSplit =
-      (portInfo.secondSplit && portInfo.secondSplit != 1) &&
-      ((_devID == DeviceQuantum2) || (_devID == DeviceQuantum3) || (_devID == DeviceQuantum4));
-    if (shouldAddSecondSplit)
-    {
-        labelPortStr += "/" + to_string(portInfo.secondSplit);
-    }
-    labelPortStr += "(" + to_string(portInfo.localPort) + ")";
-    // Add IB port information if applicable
-    if (_protoActive == IB && !_isHCA)
-    {
-        sendPrmReg(ACCESS_REG_PLIB, GET);
-        labelPortStr += " " + std::to_string(getFieldValue("ib_port"));
-    }
-    if (portInfo.isFnm)
-    {
-        labelPortStr += "(FNM)";
-    }
-    return labelPortStr;
-}
-
-void MlxlinkCommander::updatePortModuleInfo(vector<string>& tableData,
-                                            const PortGroup& portInfo,
-                                            u_int32_t& posToUpdateWidthInVector)
-{
-    // Update local port and get cable parameters
-    _localPort = portInfo.localPort;
-    if (!_isSwControled)
-    {
-        getCableParams();
-    }
-    // Get cable information strings
-    std::string cableLenStr = getCableLengthStr(_cableLen, _cmisCable) + "m";
-    std::string cableTypeStr = _isSwControled ? "sw cntrld" : _mlxlinkMaps->_cableTypeForTableDisplay[_cableMediaType];
-    // Get speed and color information
-    std::string speedStr = getSpeedStrForTableView();
-    string color =
-      MlxlinkRecord::state2Color(_phyMngrFsmState == PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)_phyMngrFsmState);
-    string resetColor = MlxlinkRecord::state2Color(RESET);
-    // Update table with cable information
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortModuleInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   _cableSN, _cableSN.length(), !_isSwControled);
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortModuleInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   _cablePN, _cablePN.length(), !_isSwControled);
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortModuleInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   cableLenStr, cableLenStr.length(), !_isSwControled);
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortModuleInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   cableTypeStr, cableTypeStr.length());
-    // Update table with port state and speed information
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortModuleInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   color + _mlxlinkMaps->_phyMgrStateForTableDisplay[_phyMngrFsmState] + resetColor,
-                                   _mlxlinkMaps->_phyMgrStateForTableDisplay[_phyMngrFsmState].length());
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortModuleInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   speedStr, speedStr.length());
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortModuleInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   _mlxlinkMaps->_fecModeActiveForTableDispaly[_fecActive],
-                                   _mlxlinkMaps->_fecModeActiveForTableDispaly[_fecActive].length(),
-                                   _phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
-    // Update table with BER information
-    std::string berStr = getBerString();
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortModuleInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   berStr, berStr.length());
-}
-
-
-void MlxlinkCommander::showMultiPortModuleInfo()
-{
-    // Set up table header with appropriate label
-    string label_port = (_protoActive == IB) ? "Label(Pport)IBport" : "Label(Pport)";
-    _mlxlinkMaps->_multiPortModuleInfoTableHeader.insert(_mlxlinkMaps->_multiPortModuleInfoTableHeader.begin(),
-                                                         std::make_pair(label_port, label_port.length()));
-    std::vector<std::string> tableData = {};
-    updateLocalPortGroup();
-    // Process each port group
-    for (const auto& portInfo : _localPortsPerGroup)
-    {
-        u_int32_t posToUpdateWidthInVector = 0;
-        // Get and update label port string
-        string labelPortStr = getLabelPortString(portInfo);
-        updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortModuleInfoTableHeader, posToUpdateWidthInVector++,
-                                       tableData, labelPortStr, labelPortStr.length());
-        // Update port information in table
-        updatePortModuleInfo(tableData, portInfo, posToUpdateWidthInVector);
-    }
-    // Print the final table
-    printMlxlinkTable(tableData, _mlxlinkMaps->_multiPortModuleInfoTableHeader);
-}
-
-void MlxlinkCommander::updatePortInfo(vector<string>& tableData,
-                                      const PortGroup& portInfo,
-                                      u_int32_t& posToUpdateWidthInVector)
-{
-    _localPort = portInfo.localPort;
-    _fomStr = "";
-    string labelPortStr = getLabelPortString(portInfo);
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   labelPortStr, labelPortStr.length());
-    std::string speedStr = getSpeedStrForTableView();
-    getPddrOperInfo();
-    string color =
-      MlxlinkRecord::state2Color(_phyMngrFsmState == PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)_phyMngrFsmState);
-    string resetColor = MlxlinkRecord::state2Color(RESET);
-    // Update state and speed info
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   color + _mlxlinkMaps->_phyMgrStateForTableDisplay[_phyMngrFsmState] + resetColor,
-                                   _mlxlinkMaps->_phyMgrStateForTableDisplay[_phyMngrFsmState].length());
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   speedStr, speedStr.length());
-    // Update FEC info
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   _mlxlinkMaps->_fecModeActiveForTableDispaly[_fecActive],
-                                   _mlxlinkMaps->_fecModeActiveForTableDispaly[_fecActive].length(),
-                                   _phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
-
-    // Update cable info
-    if (!_isSwControled)
-    {
-        getCableParams();
-    }
-    std::string cableInfoStr = _isSwControled ? "sw cntrld" :
-                                                _mlxlinkMaps->_cableTypeForTableDisplay[_cableMediaType] + "/" +
-                                                  getCableLengthStr(_cableLen, _cmisCable) + "m";
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   cableInfoStr, cableInfoStr.length(), _cableMediaType == UNPLUGGED);
-    // Update time to link up info
-    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_LINK_UP_INFO_PAGE);
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(3) << ((float)getFieldValue("time_to_link_up") / 1000) << " sec";
-    string ttluStr = ss.str();
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   ttluStr, ttluStr.length(), _phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
-    // Update statistical info
-    updatePortStatisticalInfo(tableData, posToUpdateWidthInVector);
-    // Update eye info
-    if (_productTechnology <= PRODUCT_16NM)
-    {
-        prepare40_28_16nmEyeInfo(_numOfLanes);
-    }
-    else if (_productTechnology == PRODUCT_7NM)
-    {
-        prepare7nmEyeInfo(_numOfLanes);
-    }
-    else if (_productTechnology == PRODUCT_5NM)
-    {
-        prepare5nmEyeInfo(_numOfLanes);
-    }
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   _fomStr, _fomStr.length());
-    // Update BER info
-    std::string berStr = getBerString();
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   color + berStr + resetColor, berStr.length());
-    // Update link down and FC zero info
-    sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
-    std::string linkDownStr = getFieldStr("link_down_events");
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   linkDownStr, linkDownStr.length(), _phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
-    sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_STATISTICAL_GROUP);
-    std::string fcZeroHist = to_string(getFieldValue("fc_zero_hist"));
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   fcZeroHist, fcZeroHist.length(), _phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
-}
-
-
-void MlxlinkCommander::updatePortStatisticalInfo(vector<string>& tableData, u_int32_t& posToUpdateWidthInVector)
-{
-    sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
-    char buff[64];
-    double val =
-      (double)add32BitTo64(getFieldValue("time_since_last_clear_high"), getFieldValue("time_since_last_clear_low")) /
-      60000.0;
-    sprintf(buff, "%.01f min", val);
-    sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_STATISTICAL_GROUP);
-    double rawBerCoef = getFieldValue("raw_ber_coef");
-    double rawBerMag = getFieldValue("raw_ber_magnitude");
-    double rawBer = rawBerCoef * std::pow(10, -rawBerMag);
-    double timeSinceLinkUp =
-      ((double)add32BitTo64(getFieldValue("time_since_last_clear_high"), getFieldValue("time_since_last_clear_low"))) /
-      1000.0;
-    double activeRate =
-      _protoActive == IB ? _mlxlinkMaps->_IBSpeed2gNum[_activeSpeed] : _mlxlinkMaps->_EthExtSpeed2gNum[_activeSpeed];
-    double rateBerLane = (activeRate / _numOfLanes) * pow(10.0, 9);
-    double clBer = 0;
-    char clBerStr[128];
-    if (activeRate)
-    {
-        clBer = 1 - exp(-1 * rateBerLane * timeSinceLinkUp * rawBer);
-    }
-    sprintf(clBerStr, "%s/%.1E%%", buff, clBer);
-    updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortInfoTableHeader, posToUpdateWidthInVector++, tableData,
-                                   clBerStr, strlen(clBerStr));
-}
-
-void MlxlinkCommander::showMultiPortInfo()
-{
-    std::vector<std::string> tableData = {};
-    updateLocalPortGroup();
-    for (const auto& portInfo : _localPortsPerGroup)
-    {
-        u_int32_t posToUpdateWidthInVector = 0;
-        updatePortInfo(tableData, portInfo, posToUpdateWidthInVector);
-    }
-    printMlxlinkTable(tableData, _mlxlinkMaps->_multiPortInfoTableHeader);
 }
 
 std::map < string, string > MlxlinkCommander::getRawEffectiveErrorsinTestMode()
@@ -5465,88 +5233,4 @@ void MlxlinkCommander::showPlr()
         throw MlxRegException("PLR is not supported for the current device!");
     }
     cout << _plrInfoCmd;
-}
-
-u_int32_t MlxlinkCommander::getNumberOfPorts()
-{
-    int numOfPorts = 0;
-    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)) || _devID == DeviceSpectrum3 || _devID == DeviceQuantum3 || _isHCA)
-    {
-        sendPrmReg(ACCESS_REG_MGIR, GET);
-        numOfPorts = getFieldValue("num_ports");
-    }
-    else
-    {
-        sendPrmReg(ACCESS_REG_MGPIR, GET);
-        numOfPorts = getFieldValue("num_of_modules");
-    }
-    return numOfPorts;
-}
-
-string MlxlinkCommander::getBerString()
-{
-    string berString = "";
-    if (_phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP)
-    {
-        sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_STATISTICAL_GROUP);
-        string symBer = (_protoActive == ETH) ? "N/A" : 
-            (getFieldStr("symbol_ber_coef") + "E-" + getFieldStr("symbol_ber_magnitude"));
-        std::stringstream ss;
-        ss << symBer << "/"
-           << getFieldValue("effective_ber_coef") << "E-"
-           << getFieldValue("effective_ber_magnitude") << "/"
-           << getFieldValue("raw_ber_coef") << "E-"
-           << getFieldValue("raw_ber_magnitude");
-        
-        berString = ss.str();
-    }
-    return berString;
-}
-
-void MlxlinkCommander::updateLocalPortGroup()
-{
-    u_int32_t numOfPorts = getNumberOfPorts();
-    vector<string> localPorts;
-    localPorts.reserve(numOfPorts); // Reserve memory to size 'numOfPorts'
-    for (u_int32_t localPort = 1; localPort <= numOfPorts; localPort++)
-    {
-        localPorts.push_back(to_string(localPort));
-    }
-    if (_isHCA)
-    {
-        // NICs have only one port
-        _localPortsPerGroup.push_back(PortGroup(1, 1, 0, 0));
-    }
-    else
-    {
-        handleLabelPorts(localPorts, true);
-    }
-}
-
-std::string MlxlinkCommander::getSpeedStrForTableView()
-{
-    std::string speedStr = "";
-    if (_protoActive == IB)
-    {
-        getPddrOperInfo(); // fsm_state + fec
-        _activeSpeed = getFieldValue("link_speed_active");
-    }
-    else
-    {
-        getPtys(); // get port speed
-        _activeSpeed =
-          _productTechnology >= PRODUCT_16NM ? getFieldValue("ext_eth_proto_oper") : getFieldValue("eth_proto_oper");
-        getPddrOperInfo(); // fsm_state + fec
-    }
-    _linkUP = (_phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
-    bool extended = _activeSpeedEx && _protoAdminEx;
-    _linkSpeed = extended ? _activeSpeedEx : _activeSpeed;
-    _isPam4Speed = isPAM4Speed(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive, extended);
-    _speedStrG = activeSpeed2Str(_linkSpeed, extended);
-    getActualNumOfLanes(_linkSpeed, extended);
-    if (_phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP)
-    {
-        speedStr = _speedStrG + "_" + std::to_string(_numOfLanes);
-    }
-    return speedStr;
 }

@@ -202,7 +202,6 @@ void MlxlinkAmBerCollector::startCollector()
         _labelPort = it->labelPort;
         _splitPort = it->split;
         _secondSplit = it->secondSplit;
-        _isFnmPort = it->isFnm;
 
         init();
         collect();
@@ -435,8 +434,7 @@ vector < AmberField > MlxlinkAmBerCollector::getIndexesInfo()
         ((_devID == DeviceQuantum2) || (_devID == DeviceQuantum3))) {
         labelPortStr += "/" + to_string(_secondSplit);
     }
-    fields.push_back(AmberField(
-      "Port_Number", labelPortStr + "(" + to_string(_localPort) + ")" + (_isFnmPort ? "(FNM)" : ""), !_isPortPCIE));
+    fields.push_back(AmberField("Port_Number", labelPortStr + "(" + to_string(_localPort) + ")", !_isPortPCIE));
     fields.push_back(AmberField("depth", to_string(_depth), _isPortPCIE));
     fields.push_back(AmberField("pcie_index", to_string(_pcieIndex), _isPortPCIE));
     fields.push_back(AmberField("node", to_string(_node), _isPortPCIE));
