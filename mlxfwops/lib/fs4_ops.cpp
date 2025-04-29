@@ -1269,6 +1269,18 @@ bool Fs4Operations::ParseDevData(bool quickQuery, bool verbose, VerifyCallBack v
     }
     if (dtocExists)
     {
+        if (!InitHwPtrs())
+        {
+            DPRINTF(("Fs4Operations::encryptedFwQuery HW pointers not found"));
+            return false;
+        }
+
+        if (!ParseImageInfoFromEncryptedImage())
+        {
+            DPRINTF(("Fs4Operations::GetEncryptedImageSizeFromImageInfo Failed to read IMAGE_INFO section"));
+            return false;
+        }
+
         // We have a DTOC to parse
         _ioAccess->set_address_convertor(0, 0);
         // Parse DTOC header:
