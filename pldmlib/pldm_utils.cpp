@@ -13,6 +13,7 @@
 #include <sys/time.h>
 #include <algorithm>
 #include <cstdarg>
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <sstream>
