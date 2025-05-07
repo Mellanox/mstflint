@@ -98,7 +98,6 @@ LIST_HEAD(mst_devices);
 #define GB100_PCI_ID 10496
 #define GR100_PCI_ID 12288
 #define GR150_PCI_ID 13440
-#define ARCUSEE_RMA_PCI_ID 643
 
 static struct pci_device_id mst_livefish_pci_table[] = {
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 0x01f6)}, /* MT27500 Family [ConnectX-3 Flash Recovery] */
@@ -182,7 +181,6 @@ static struct pci_device_id supported_pci_devices[] = {
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, GB100_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, GR100_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, GR150_PCI_ID)},
-    {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, ARCUSEE_RMA_PCI_ID)},
     {0}
 };
 
