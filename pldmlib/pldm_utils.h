@@ -13,6 +13,7 @@
 #ifndef PLDM_UTILS_H_
 #define PLDM_UTILS_H_
 
+#include <sys/types.h>
 #include <memory>
 #include <string>
 #include <vector>
