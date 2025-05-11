@@ -30,10 +30,10 @@
  * SOFTWARE.
  */
 
-#include "resource_dump_error_handling.h"
-#include "include/mtcr_ul/mtcr.h"
 #include <string>
 
+#include "mtcr.h"
+#include "resource_dump_error_handling.h"
 
 namespace mft
 {
