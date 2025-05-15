@@ -45,6 +45,8 @@ libcommon_la_SOURCES = \
     tools_time.h \
     tools_utils.h \
     tools_utils.h \
+    tools_json.cpp \
+    tools_json.h \
     tools_version.h
 
 commonincludedir = $(includedir)/mstflint/common/
