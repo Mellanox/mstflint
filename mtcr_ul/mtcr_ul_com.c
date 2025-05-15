@@ -121,6 +121,7 @@
 #include "fwctrl_ioctl.h"
 #include "kernel/mst.h"
 #include "tools_dev_types.h"
+#include "vfio_driver_access/VFIODriverAccessWrapperC.h"
 
 #ifdef ENABLE_NVML
 #include "nvml_lib/nvml_c_wrapper.h"
@@ -1838,6 +1839,84 @@ static int get_space_support_status(mfile* mf, u_int16_t space)
     return status;
 }
 
+static int
+  mtcr_vfio_device_open(mfile* mf, unsigned domain, unsigned bus, unsigned dev, unsigned func, u_int32_t adv_opt)
+{
+    ul_ctx_t* ctx = mf->ul_ctx;
+    u_int32_t vsec_type = 0;
+    mf->fd = -1;
+    mf->tp = MST_PCICONF;
+    if (GetVSECStartOffset(domain, bus, dev, func, &mf->vsec_addr, &mf->fd) != 0)
+    {
+        return -1;
+    }
+
+    if (mf->vsec_addr)
+    {
+        READ4_PCI(mf, &vsec_type, mf->vsec_addr, "read vsc type", return ME_PCI_READ_ERROR);
+        mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
+        if (mf->vsec_type == FUNCTIONAL_VSC)
+        {
+            DBG_PRINTF("FUNCTIONAL VSC Supported\n");
+            mf->functional_vsec_supp = 1;
+            // check if the needed spaces are supported
+            if (adv_opt & Clear_Vsec_Semaphore)
+            {
+                mtcr_pciconf_cap9_sem(mf, 0);
+            }
+            if (mtcr_pciconf_cap9_sem(mf, 1))
+            {
+                close(mf->fd);
+                errno = EBUSY;
+                return -1;
+            }
+
+            get_space_support_status(mf, AS_ICMD);
+            get_space_support_status(mf, AS_NODNIC_INIT_SEG);
+            get_space_support_status(mf, AS_EXPANSION_ROM);
+            get_space_support_status(mf, AS_ND_CRSPACE);
+            get_space_support_status(mf, AS_SCAN_CRSPACE);
+            get_space_support_status(mf, AS_MAC);
+            get_space_support_status(mf, AS_ICMD_EXT);
+            get_space_support_status(mf, AS_SEMAPHORE);
+            get_space_support_status(mf, AS_CR_SPACE);
+            get_space_support_status(mf, AS_PCI_ICMD);
+            get_space_support_status(mf, AS_PCI_CRSPACE);
+            get_space_support_status(mf, AS_PCI_ALL_ICMD);
+            get_space_support_status(mf, AS_PCI_SCAN_CRSPACE);
+            get_space_support_status(mf, AS_PCI_GLOBAL_SEMAPHORE);
+            get_space_support_status(mf, AS_RECOVERY);
+            mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
+
+            mtcr_pciconf_cap9_sem(mf, 0);
+
+            if (VSEC_SUPPORTED_UL(mf))
+            {
+                mf->address_space = AS_CR_SPACE;
+                ctx->mread4 = mtcr_pciconf_mread4;
+                ctx->mwrite4 = mtcr_pciconf_mwrite4;
+                ctx->mread4_block = mread4_block_pciconf;
+                ctx->mwrite4_block = mwrite4_block_pciconf;
+            }
+
+            mf->pxir_vsec_supp = 0;
+            if ((mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_CRSPACE))) &&
+                (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_ALL_ICMD))) &&
+                (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_GLOBAL_SEMAPHORE))))
+            {
+                mf->pxir_vsec_supp = 1;
+            }
+            DBG_PRINTF("mf->pxir_vsec_supp: %d\n", mf->pxir_vsec_supp);
+        }
+    }
+    else
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
@@ -2476,6 +2555,26 @@ static MType mtcr_parse_name(const char* name,
     char     driver_conf_name[40];
     unsigned len = strlen(name);
     unsigned tmp;
+
+        // vfio0-<dbdf/bdf>
+    if (strstr(name, "vfio-") != 0)
+    {
+        scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+        if (scnt != 4)
+        {
+            my_domain = 0;
+            scnt = sscanf(name, "vfio-%x:%x.%x", &my_bus, &my_dev, &my_func);
+            if (scnt != 3)
+            {
+                return MST_ERROR;
+            }
+        }
+        *domain_p = my_domain;
+        *bus_p = my_bus;
+        *dev_p = my_dev;
+        *func_p = my_func;
+        return MST_VFIO_DEVICE;
+    }
 
     if ((len >= sizeof config) && !strcmp(config, name + len + 1 - sizeof config)) {
         *force = 1;
@@ -3349,6 +3448,12 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         rc = nvml_open(mf, name);
         if (rc) {
             DBG_PRINTF("Failed to open GPU mst driver device");
+            goto open_failed;
+        }
+    case MST_VFIO_DEVICE:
+        rc = mtcr_vfio_device_open(mf, domain, bus, dev, func, adv_opt);
+        if (rc)
+        {
             goto open_failed;
         }
         return mf;

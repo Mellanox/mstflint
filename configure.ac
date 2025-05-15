@@ -775,4 +775,5 @@ AC_OUTPUT( \
     tools_res_mgmt/Makefile \
     tracers/Makefile \
     tracers/fwtrace/Makefile \
+    vfio_driver_access/Makefile \
  )
