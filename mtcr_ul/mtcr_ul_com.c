@@ -3450,6 +3450,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
             DBG_PRINTF("Failed to open GPU mst driver device");
             goto open_failed;
         }
+        break;
     case MST_VFIO_DEVICE:
         rc = mtcr_vfio_device_open(mf, domain, bus, dev, func, adv_opt);
         if (rc)
@@ -3457,7 +3458,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
             goto open_failed;
         }
         return mf;
-        break;
 
 #ifdef ENABLE_MST_DEV_I2C
     case MST_DEV_I2C:
