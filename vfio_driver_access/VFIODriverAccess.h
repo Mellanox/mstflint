@@ -17,13 +17,12 @@
 class VFIODriverAccess
 {
 public:
-    static void CreateVfioMstDevice(const std::string& dbdf, const std::string& hwDevId);
-    static void GetVSECStartOffset(const std::string& dbdf, uint64_t& vsecOffset, int& vfioFD);
-    static void DestroyVFIODevices();
+    static void OpenVFIODevices(const std::string& dbdf, int& deviceFD);
+    static void CloseVFIODevices(int deviceFD);
+    static void GetVSECStartOffset(int deviceFD, uint64_t& vsecOffset);
     static bool CheckifKernelLockdownIsEnabled();
 
 private:
-    static std::string GetIOMMUGroupFromJson(const std::string& dbdf);
     static void bindDeviceToVfioPciDriver(const std::string& hwDevId);
     static void CreateJsonDevice(const std::string& dbdf);
     static std::string FindIOMMUGroupByDBDF(const std::string& dbdf);
@@ -34,5 +33,4 @@ private:
     static void AttachGroupToContainer(int groupID, int vfioID);
     static void EnableIOMMU(int vfioID);
     static int GetDeviceFD(int groupID, const std::string& dbdf);
-    static uint64_t LocateVSCOffset(int deviceFD);
 };

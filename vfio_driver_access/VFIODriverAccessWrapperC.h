@@ -20,8 +20,9 @@ extern "C"
 {
 #endif
 
-    int GetVSECStartOffset(unsigned domain, unsigned bus, unsigned dev, unsigned func, uint64_t* vsecOffset, int* vfioFD);
-
+    int OpenVFIODevices(unsigned domain, unsigned bus, unsigned dev, unsigned func, int* deviceFD);
+    int CloseVFIODevices(int deviceFD);
+    int GetVSECStartOffset(int deviceFD, uint64_t* vsecOffset);
 #ifdef __cplusplus
 }
 #endif

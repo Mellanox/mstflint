@@ -28,6 +28,5 @@
 #define VFIO_PCI_DRIVER_NEW_ID_PATH "/sys/bus/pci/drivers/vfio-pci/new_id"
 #define DBDF_STRING "VFIO_DEVICE_DBDF"
 #define IOMMU_GROUP_HEX "IOMMU_GROUP_HEX"
-#define MST_DEVICE_VFIO_JSON_FILE_NAME "/dev/mst/mst_vfio_devices.json"
 #define PCI_CAPABILITY_LIST 0x34
 #define PCI_CAP_ID_VSC 0x09

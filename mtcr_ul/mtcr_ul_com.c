@@ -1846,7 +1846,13 @@ static int
     u_int32_t vsec_type = 0;
     mf->fd = -1;
     mf->tp = MST_PCICONF;
-    if (GetVSECStartOffset(domain, bus, dev, func, &mf->vsec_addr, &mf->fd) != 0)
+
+    if (OpenVFIODevices(domain, bus, dev, func, &mf->fd) != 0)
+    {
+        return -1;
+    }
+
+    if (GetVSECStartOffset(mf->fd, &mf->vsec_addr) != 0)
     {
         return -1;
     }

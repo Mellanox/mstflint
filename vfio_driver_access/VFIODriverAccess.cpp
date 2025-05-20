@@ -13,7 +13,6 @@
 #include "VFIODriverAccessWrapperC.h"
 #include "VFIODriverAccess.h"
 #include "VFIODriverAccessDefs.h"
-#include "common/tools_json.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -24,20 +23,94 @@
 #include <fstream>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <json/json.h>
 
-void VFIODriverAccess::CreateVfioMstDevice(const std::string& dbdf, const std::string& hwDevId)
+void VFIODriverAccess::OpenVFIODevices(const std::string& dbdf, int& deviceFD)
 {
     try
     {
-        VFIODriverAccess::bindDeviceToVfioPciDriver(hwDevId);
-        VFIODriverAccess::CreateJsonDevice(dbdf);
+        // Bind the device to the vfio-pci driver.
+        VFIODriverAccess::bindDeviceToVfioPciDriver(dbdf);
+
+        // Open the main VFIO control device (/dev/vfio/vfio).
+        // This is needed to access the VFIO API and manage containers.
+        int vfioFD = OpenVFIODevice();
+
+        // Find the IOMMU group number that this PCI device belongs to.
+        std::string iommuGroup = FindIOMMUGroupByDBDF(dbdf);
+
+        // Open the VFIO group device (/dev/vfio/<group>) for this IOMMU group.
+        int groupFD = OpenVFIOGroup(iommuGroup);
+
+        // Check if the VFIO group is viable (not bound to other drivers, ready for use).
+        CheckVFIOGroupViability(groupFD);
+
+        // Attach the VFIO group to the main VFIO control device.
+        AttachGroupToContainer(groupFD, vfioFD);
+
+        // Enable IOMMU for the main VFIO control device.
+        EnableIOMMU(vfioFD);
+
+        // Get the device file descriptor for the PCI device.
+        // This allows direct interaction, W/R PCI config space.
+        deviceFD = GetDeviceFD(groupFD, dbdf);
+
+        close(groupFD);
     }
     catch (const std::exception& e)
     {
-        std::cout << "Error: " << e.what() << std::endl;
         return;
     }
+}
+
+void VFIODriverAccess::CloseVFIODevices(int deviceFD)
+{
+
+}
+
+void VFIODriverAccess::GetVSECStartOffset(int deviceFD, uint64_t& vsecOffset)
+{
+        struct vfio_region_info region;
+    region.argsz = sizeof(region);
+    region.index = VFIO_PCI_CONFIG_REGION_INDEX;
+
+    if (ioctl(deviceFD, VFIO_DEVICE_GET_REGION_INFO, &region) < 0)
+    {
+        throw std::runtime_error("Failed to get PCI config region info: " + std::string(strerror(errno)));
+    }
+
+    DBG_PRINTF("PCI config region size: 0x%llx, offset: 0x%llx\n", region.size, region.offset);
+
+    uint8_t cap_offset = 0;
+    if (pread(deviceFD, &cap_offset, sizeof(cap_offset), region.offset + PCI_CAPABILITY_LIST) != sizeof(cap_offset))
+    {
+        throw std::runtime_error("Failed to read PCI capability list pointer: " + std::string(strerror(errno)));
+    }
+
+    DBG_PRINTF("Initial Capability List Pointer: %d\n", static_cast<int>(cap_offset));
+
+    uint8_t cap_id = 0;
+    uint8_t next_offset = cap_offset;
+
+    while (next_offset && next_offset < 0xFF)
+    {
+        if (pread(deviceFD, &cap_id, sizeof(cap_id), region.offset + next_offset) != sizeof(cap_id))
+        {
+            throw std::runtime_error("Failed to read PCI capability ID: " + std::string(strerror(errno)));
+        }
+
+        if (cap_id == PCI_CAP_ID_VSC)
+        {
+            DBG_PRINTF("VSEC capability starts at PCI config space offset: 0x%lx\n", vsecOffset);
+            vsecOffset = region.offset + next_offset;
+        }
+
+        if (pread(deviceFD, &next_offset, sizeof(next_offset), region.offset + next_offset + 1) != sizeof(next_offset))
+        {
+            throw std::runtime_error("Failed to read next PCI capability pointer: " + std::string(strerror(errno)));
+        }
+    }
+
+    throw std::runtime_error("VSC not found in PCI config space.");
 }
 
 void VFIODriverAccess::bindDeviceToVfioPciDriver(const std::string& hwDevId)
@@ -55,93 +128,6 @@ void VFIODriverAccess::bindDeviceToVfioPciDriver(const std::string& hwDevId)
     }
 
     DBG_PRINTF("Device bound to vfio-pci successfully: %s\n", VFIO_PCI_DRIVER_NEW_ID_PATH);
-}
-
-void VFIODriverAccess::CreateJsonDevice(const std::string& dbdf)
-{
-    Json::StreamWriterBuilder builder;
-    std::fstream MSTDeviceFile(MST_DEVICE_VFIO_JSON_FILE_NAME, std::ios::in | std::ios::out | std::ios::app);
-
-    if (!MSTDeviceFile.is_open())
-    {
-        throw std::runtime_error("Failed to open the device");
-    }
-
-    // Read existing content of the file
-    Json::Value root;
-    MSTDeviceFile.seekg(0, std::ios::beg);  // Move to the start of the file
-    Json::CharReaderBuilder readerBuilder;
-    std::string errs;
-
-    if (MSTDeviceFile.peek() != std::ifstream::traits_type::eof())  // Check if the file is not empty
-    {
-        // Try to parse the existing content (it should be an array)
-        if (!Json::parseFromStream(readerBuilder, MSTDeviceFile, &root, &errs))
-        {
-            throw std::runtime_error("Failed to parse existing JSON content: " + errs);
-        }
-    }
-    else
-    {
-        // If the file is empty, initialize it as an array
-        root = Json::arrayValue;
-    }
-
-    // Create the new JSON object to append
-    Json::Value newDevice;
-    newDevice[DBDF_STRING] = dbdf;
-    newDevice[IOMMU_GROUP_HEX] = FindIOMMUGroupByDBDF(dbdf);
-
-    // Append the new device object
-    root.append(newDevice);
-
-    // Close the file and reopen it for writing (truncate and rewrite)
-    MSTDeviceFile.close();
-    std::ofstream outFile(MST_DEVICE_VFIO_JSON_FILE_NAME, std::ios::out | std::ios::trunc);
-    if (!outFile.is_open())
-    {
-        throw std::runtime_error("Failed to open the device file for writing");
-    }
-
-    outFile << Json::writeString(builder, root);
-    outFile.close();
-
-    DBG_PRINTF("Device added to the JSON file successfully.\n");
-}
-
-std::string VFIODriverAccess::GetIOMMUGroupFromJson(const std::string& dbdf)
-{
-    nbu::mft::common::ReaderWrapper readerWrapper;
-    Json::Reader* reader = readerWrapper.getReader();
-    Json::Value mstJsonFile;
-    std::ifstream file(MST_DEVICE_VFIO_JSON_FILE_NAME);
-    if (!file.is_open())
-    {
-        throw std::runtime_error(std::string("Failed to open the file:") + MST_DEVICE_VFIO_JSON_FILE_NAME);
-    }
-    std::string jsonFileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    file.close();
-    if (!reader->parse(jsonFileContent, mstJsonFile))
-    {
-        throw std::runtime_error(std::string("Failed to parse redfish json file"));
-    }
-
-    // Check if the root is an array
-    if (!mstJsonFile.isArray())
-    {
-        throw std::runtime_error("JSON file is not in expected array format");
-    }
-
-    // Iterate through the array
-    for (const auto& device : mstJsonFile)
-    {
-        if (device.isObject() && device[DBDF_STRING].asString() == dbdf)
-        {
-            DBG_PRINTF("IOMMU group found for DBDF: %s\n", dbdf.c_str());
-            return device[IOMMU_GROUP_HEX].asString();
-        }
-    }
-    throw std::runtime_error("IOMMU group not found for DBDF: " + dbdf);
 }
 
 bool VFIODriverAccess::CheckifKernelLockdownIsEnabled()
@@ -171,17 +157,6 @@ bool VFIODriverAccess::CheckifKernelLockdownIsEnabled()
     DBG_PRINTF("Unexpected format in lockdown file: %s\n", line.c_str());
     return false;
 
-}
-
-void VFIODriverAccess::DestroyVFIODevices()
-{
-    /*
-    std::vector<std::pair<std::string, int>> vfioDevices;
-    for (const auto& vfioDevice : vfioDevices)
-    {
-        CleanupVFIODevice(vfioDevice.first, vfioDevice.second);
-    }
-    */
 }
 
 void VFIODriverAccess::CleanupVFIODevice(const std::string& dbdf, const int iommuGroup)
@@ -260,47 +235,6 @@ std::string VFIODriverAccess::FindIOMMUGroupByDBDF(const std::string& dbdf)
     throw std::runtime_error("IOMMU group not found for DBDF: " + dbdf);
 }
 
-void VFIODriverAccess::GetVSECStartOffset(const std::string& dbdf, uint64_t& vsecOffset, int& deviceFD)
-{
-    try
-    {
-        // Open the main VFIO control device (/dev/vfio/vfio).
-        // This is needed to access the VFIO API and manage containers.
-        int vfioFD = OpenVFIODevice();
-
-        // Find the IOMMU group number that this PCI device belongs to.
-        std::string iommuGroup = GetIOMMUGroupFromJson(dbdf);
-
-        // Open the VFIO group device (/dev/vfio/<group>) for this IOMMU group.
-        int groupFD = OpenVFIOGroup(iommuGroup);
-
-        // Check if the VFIO group is viable (not bound to other drivers, ready for use).
-        CheckVFIOGroupViability(groupFD);
-
-        // Attach the VFIO group to the main VFIO control device.
-        AttachGroupToContainer(groupFD, vfioFD);
-
-        // Enable IOMMU for the main VFIO control device.
-        EnableIOMMU(vfioFD);
-
-        // Get the device file descriptor for the PCI device.
-        // This allows direct interaction, W/R PCI config space.
-        deviceFD = GetDeviceFD(groupFD, dbdf);
-
-        // Locate the VSEC capability offset in the PCI config space.
-        // This is the offset of the VSEC capability in the PCI config space.
-        vsecOffset = LocateVSCOffset(deviceFD);
-
-        DBG_PRINTF("VSEC capability starts at PCI config space offset: 0x%lx IOMMU group: %s\n", vsecOffset, iommuGroup.c_str());
-
-        close(groupFD);
-    }
-    catch (const std::exception& e)
-    {
-        return;
-    }
-}
-
 int VFIODriverAccess::OpenVFIODevice()
 {
     int fd = open(VFIO_DEVICE_PATH, O_RDWR);
@@ -377,50 +311,4 @@ int VFIODriverAccess::GetDeviceFD(int groupID, const std::string& dbdf)
         throw std::runtime_error("Failed to get VFIO device FD: " + std::string(strerror(errno)));
     }
     return fd;
-}
-
-uint64_t VFIODriverAccess::LocateVSCOffset(int deviceFD)
-{
-    struct vfio_region_info region;
-    region.argsz = sizeof(region);
-    region.index = VFIO_PCI_CONFIG_REGION_INDEX;
-
-    if (ioctl(deviceFD, VFIO_DEVICE_GET_REGION_INFO, &region) < 0)
-    {
-        throw std::runtime_error("Failed to get PCI config region info: " + std::string(strerror(errno)));
-    }
-
-    DBG_PRINTF("PCI config region size: 0x%llx, offset: 0x%llx\n", region.size, region.offset);
-
-    uint8_t cap_offset = 0;
-    if (pread(deviceFD, &cap_offset, sizeof(cap_offset), region.offset + PCI_CAPABILITY_LIST) != sizeof(cap_offset))
-    {
-        throw std::runtime_error("Failed to read PCI capability list pointer: " + std::string(strerror(errno)));
-    }
-
-    DBG_PRINTF("Initial Capability List Pointer: %d\n", static_cast<int>(cap_offset));
-
-    uint8_t cap_id = 0;
-    uint8_t next_offset = cap_offset;
-
-    while (next_offset && next_offset < 0xFF)
-    {
-        if (pread(deviceFD, &cap_id, sizeof(cap_id), region.offset + next_offset) != sizeof(cap_id))
-        {
-            throw std::runtime_error("Failed to read PCI capability ID: " + std::string(strerror(errno)));
-        }
-
-        if (cap_id == PCI_CAP_ID_VSC)
-        {
-            DBG_PRINTF("Found VSC at offset: 0x%x\n", static_cast<uint8_t>(next_offset));
-            return region.offset + next_offset;
-        }
-
-        if (pread(deviceFD, &next_offset, sizeof(next_offset), region.offset + next_offset + 1) != sizeof(next_offset))
-        {
-            throw std::runtime_error("Failed to read next PCI capability pointer: " + std::string(strerror(errno)));
-        }
-    }
-
-    throw std::runtime_error("VSC not found in PCI config space.");
 }
