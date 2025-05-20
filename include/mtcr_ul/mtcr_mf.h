@@ -120,7 +120,7 @@ struct mfile_t {
     unsigned int pxir_vsec_supp;
     u_int8_t       vsec_type;
     mtcr_status_e  icmd_support;
-    unsigned int   vsec_addr;
+    u_int64_t   vsec_addr;
     u_int32_t      vsec_cap_mask;
     int            address_space;
     int            multifunction;
