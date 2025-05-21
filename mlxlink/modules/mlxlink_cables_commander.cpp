@@ -470,7 +470,7 @@ void MlxlinkCablesCommander::prepareSFPDdmInfo()
 {
     u_int32_t tempVal = 0;
     u_int8_t* sfp51Page = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
-    loadEEPRMPage(PAGE_01, LOWER_PAGE_OFFSET, sfp51Page, I2C_ADDR_HIGH);
+    loadEEPRMPage(PAGE_A2, LOWER_PAGE_OFFSET, sfp51Page, I2C_ADDR_HIGH);
 
     getDdmValuesFromPddr();
 
@@ -561,7 +561,7 @@ void MlxlinkCablesCommander::readCableDDMInfo()
         case IDENTIFIER_SFP:
         case IDENTIFIER_QSA:
             prepareSFPDdmInfo();
-            loadEEPRMPage(PAGE_01, LOWER_PAGE_OFFSET, thresholdPage, I2C_ADDR_HIGH);
+            loadEEPRMPage(PAGE_A2, LOWER_PAGE_OFFSET, thresholdPage, I2C_ADDR_HIGH);
             prepareThresholdInfo(thresholdPage);
             break;
         case IDENTIFIER_SFP_DD:
@@ -790,7 +790,7 @@ void MlxlinkCablesCommander::initValidPages()
     }
     if (_sfp51Paging)
     {
-        p = page_t{PAGE_01, LOWER_PAGE_OFFSET, I2C_ADDR_HIGH};
+        p = page_t{PAGE_A2, LOWER_PAGE_OFFSET, I2C_ADDR_HIGH};
         _validPages.push_back(p);
     }
     if (qsfpCable && !_passiveQsfp)
@@ -1082,7 +1082,7 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page, u_int16_t 
     u_int8_t* pageH = NULL;
     u_int32_t i2cAddress = I2C_ADDR_LOW;
     // if SFP51 paging is supported, then we use i2c 0x51 to Access page 1
-    if (_sfp51Paging && page == PAGE_01)
+    if (_sfp51Paging && (page >= PAGE_01 || offset >= CABLE_PAGE_SIZE))
     {
         i2cAddress = I2C_ADDR_HIGH;
     }
