@@ -64,11 +64,11 @@
 using namespace std;
 using namespace mlxcfg;
 
-#define TLVCLASS_OFFSET      24
-#define TLVCLASS_SIZE        8
+#define TLVCLASS_OFFSET 24
+#define TLVCLASS_SIZE 8
 #define RAW_FILE_FINGERPRINT "MLNX_RAW_TLV_FILE"
-#define XMLNS                "http://www.mellanox.com/config"
-#define XML_ROOT             "config"
+#define XMLNS "http://www.mellanox.com/config"
+#define XML_ROOT "config"
 
 #define XML_DOCUMENT_START                         \
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
@@ -111,10 +111,11 @@ using namespace mlxcfg;
         XMLFREE_AND_SET_NULL(attrVal);                   \
     }
 
-#define EQ_STR     "=="
+#define EQ_STR "=="
 #define NOT_EQ_STR "!="
 
-enum OP {
+enum OP
+{
     EQUAL,
     NOT_EQUAL
 };
@@ -123,13 +124,13 @@ enum OP {
 
 #define IGNORE_DEPENDENCY_STR "ignore_dependency"
 
-const u_int8_t  debugTokenId = 0x5;
-const u_int8_t  csTokenId = 0x7;
-const u_int8_t  btcTokenId = 0x8;
-const u_int8_t  macAddrListId = 0x9;
-const u_int8_t  rmcsTokenId = 0x10;
-const u_int8_t  rmdtTokenId = 0x11;
-const u_int8_t  frcTokenId = 0x17;
+const u_int8_t debugTokenId = 0x5;
+const u_int8_t csTokenId = 0x7;
+const u_int8_t btcTokenId = 0x8;
+const u_int8_t macAddrListId = 0x9;
+const u_int8_t rmcsTokenId = 0x10;
+const u_int8_t rmdtTokenId = 0x11;
+const u_int8_t frcTokenId = 0x17;
 const u_int32_t idMlnxId = 0x10e;
 const u_int32_t idVendorId = 0x10f;
 
@@ -144,16 +145,19 @@ void GenericCommander::supportsNVData()
     mft_signal_set_handling(1);
     rc = reg_access_mnvqc(_mf, REG_ACCESS_METHOD_GET, &nvqcTlv);
     dealWithSignal();
-    if ((rc == ME_REG_ACCESS_BAD_PARAM) || (rc == ME_REG_ACCESS_INTERNAL_ERROR)) {
+    if ((rc == ME_REG_ACCESS_BAD_PARAM) || (rc == ME_REG_ACCESS_INTERNAL_ERROR))
+    {
         throw MlxcfgException("Cannot access NV register. Either FW does not "
                               "support NV access register, "
                               "or HW access is disabled.");
     }
-    if (rc == ME_REG_ACCESS_REG_NOT_SUPP) {
+    if (rc == ME_REG_ACCESS_REG_NOT_SUPP)
+    {
         throw MlxcfgException("NVQC access register is not supported."
                               " Try a different type of access to the device.");
     }
-    if (rc) {
+    if (rc)
+    {
         throw MlxcfgException("Error when trying to check if NV access registers are supported");
     }
     return;
@@ -161,13 +165,14 @@ void GenericCommander::supportsNVData()
 
 GenericCommander::GenericCommander(mfile* mf, string dbName, Device_Type deviceType) : Commander(mf), _dbManager(NULL)
 {
-    if ((_mf != NULL) && (deviceType != Device_Type::Retimer)) {
+    if ((_mf != NULL) && (deviceType != Device_Type::Retimer))
+    {
         supportsNVData();
     }
 
-    if (dbName.empty()) {
-        dbName = Commander::getDefaultDBName(deviceType == Device_Type::Switch || deviceType == Device_Type::Retimer ||
-                                             deviceType == Device_Type::LinkX);
+    if (dbName.empty())
+    {
+        dbName = Commander::getDefaultDBName(deviceType == Device_Type::Switch || deviceType == Device_Type::Retimer || deviceType == Device_Type::LinkX);
     }
 
     _dbManager = new MlxcfgDBManager(dbName);
@@ -183,34 +188,39 @@ bool sortParamView(const ParamView& a, const ParamView& b)
     return a.mlxconfigName < b.mlxconfigName;
 }
 
-void GenericCommander::excludeDuplicatedTLVs(vector < TLVConfView >& s, vector < TLVConfView >& d)
+void GenericCommander::excludeDuplicatedTLVs(vector<TLVConfView>& s, vector<TLVConfView>& d)
 {
-    for (vector < TLVConfView > ::iterator it = s.begin(); it != s.end(); ++it) {
+    for (vector<TLVConfView>::iterator it = s.begin(); it != s.end(); ++it)
+    {
         bool found = false;
-        for (vector < TLVConfView > ::reverse_iterator rIt = d.rbegin(); rIt != d.rend(); rIt++) {
-            if ((*it).name == (*rIt).name) {
-                for (vector < ParamView > ::iterator p = (*it).params.begin(); p != (*it).params.end(); ++p) {
+        for (vector<TLVConfView>::reverse_iterator rIt = d.rbegin(); rIt != d.rend(); rIt++)
+        {
+            if ((*it).name == (*rIt).name)
+            {
+                for (vector<ParamView>::iterator p = (*it).params.begin(); p != (*it).params.end(); ++p)
+                {
                     (*rIt).params.push_back(*p);
                 }
                 found = true;
                 break;
             }
         }
-        if (!found) {
+        if (!found)
+        {
             d.push_back(*it);
         }
     }
 }
 
-void GenericCommander::getAllConfigurations(vector < TLVConfView >& confs)
+void GenericCommander::getAllConfigurations(vector<TLVConfView>& confs)
 {
     _dbManager->getAllTLVs();
 
-    for (std::vector < std::shared_ptr < TLVConf >> ::iterator it = _dbManager->fetchedTLVs.begin();
-         it != _dbManager->fetchedTLVs.end();
-         ++it) {
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = _dbManager->fetchedTLVs.begin(); it != _dbManager->fetchedTLVs.end(); ++it)
+    {
         TLVConfView tlvConfView;
-        if (((*it)->_cap == 0) && ((*it)->isMlxconfigSupported() == true)) {
+        if (((*it)->_cap == 0) && ((*it)->isMlxconfigSupported() == true))
+        {
             (*it)->getView(tlvConfView, _mf);
             confs.push_back(tlvConfView);
         }
@@ -219,155 +229,186 @@ void GenericCommander::getAllConfigurations(vector < TLVConfView >& confs)
     return;
 }
 
-void GenericCommander::queryConfigViews(std::vector < TLVConfView >& confs, const std::string& configName,
-                                        QueryType qt)
+void GenericCommander::queryConfigViews(std::vector<TLVConfView>& confs, const std::string& configName, QueryType qt)
 {
     bool added = false;
     bool config_found = false;
 
-    std::map < std::string, size_t > tlvViewMap;
+    std::map<std::string, size_t> tlvViewMap;
 
     _dbManager->getAllTLVs();
-    for (std::vector < std::shared_ptr < TLVConf >> ::iterator it = _dbManager->fetchedTLVs.begin();
-         it != _dbManager->fetchedTLVs.end();
-         ++it) {
-        if (((*it)->_cap != 0) || ((*it)->isMlxconfigSupported() == false)) {
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = _dbManager->fetchedTLVs.begin(); it != _dbManager->fetchedTLVs.end(); ++it)
+    {
+        if (((*it)->_cap != 0) || ((*it)->isMlxconfigSupported() == false))
+        {
             continue;
         }
-        if (!configName.empty()) {
-            if (configName != (*it)->_mlxconfigName) {
+        if (!configName.empty())
+        {
+            if (configName != (*it)->_mlxconfigName)
+            {
                 continue;
             }
         }
-        vector < ParamView > result;
-        if ((*it)->isPortTargetClass()) {
-            for (int i = 1; i <= (*it)->getMaxPort(_mf); i++) {
+        vector<ParamView> result;
+        if ((*it)->isPortTargetClass())
+        {
+            for (int i = 1; i <= (*it)->getMaxPort(_mf); i++)
+            {
                 (*it)->_port = i;
                 (*it)->_module = -1;
                 queryTLV((*it), result, false, qt);
             }
-        } else if ((*it)->isModuleTargetClass()) {
-            for (int i = 0; i <= (*it)->getMaxModule(); i++) {
+        }
+        else if ((*it)->isModuleTargetClass())
+        {
+            for (int i = 0; i <= (*it)->getMaxModule(); i++)
+            {
                 (*it)->_port = 0;
                 (*it)->_module = i;
                 queryTLV((*it), result, false, qt);
             }
-        } else {
+        }
+        else
+        {
             (*it)->_port = 0;
             (*it)->_module = -1;
             queryTLV((*it), result, false, qt);
         }
-        std::map < std::string, size_t > ::iterator map_it = tlvViewMap.find((*it)->_mlxconfigName);
-        if (map_it != tlvViewMap.end()) {
+        std::map<std::string, size_t>::iterator map_it = tlvViewMap.find((*it)->_mlxconfigName);
+        if (map_it != tlvViewMap.end())
+        {
             size_t index = (*map_it).second;
-            for (vector < ParamView > ::iterator p = result.begin(); p != result.end(); ++p) {
+            for (vector<ParamView>::iterator p = result.begin(); p != result.end(); ++p)
+            {
                 confs[index].params.push_back(*p);
             }
-        } else {
+        }
+        else
+        {
             config_found = true;
             TLVConfView tlvConfView;
             (*it)->getView(tlvConfView, _mf);
             tlvConfView.params.clear();
-            for (vector < ParamView > ::iterator p = result.begin(); p != result.end(); ++p) {
+            for (vector<ParamView>::iterator p = result.begin(); p != result.end(); ++p)
+            {
                 tlvConfView.params.push_back(*p);
             }
-            if (tlvConfView.params.size() > 0) {
+            if (tlvConfView.params.size() > 0)
+            {
                 confs.push_back(tlvConfView);
                 tlvViewMap[(*it)->_mlxconfigName] = confs.size() - 1;
                 added = true;
             }
         }
     }
-    if (!configName.empty()) {
+    if (!configName.empty())
+    {
         const char* msg = NULL;
-        if (!config_found) {
+        if (!config_found)
+        {
             msg = "The configuration %s was not found";
-        } else if (!added) {
+        }
+        else if (!added)
+        {
             msg = "The configuration %s is empty";
         }
-        if (msg != NULL) {
+        if (msg != NULL)
+        {
             throw MlxcfgException(msg, configName.c_str());
         }
     }
 }
 
-void GenericCommander::getConfigViews(std::vector < TLVConfView >& confs, const std::string& configName)
+void GenericCommander::getConfigViews(std::vector<TLVConfView>& confs, const std::string& configName)
 {
-    std::map < std::string, size_t > tlvViewMap;
+    std::map<std::string, size_t> tlvViewMap;
 
     _dbManager->getAllTLVs();
-    for (std::vector < std::shared_ptr < TLVConf >> ::iterator it = _dbManager->fetchedTLVs.begin();
-         it != _dbManager->fetchedTLVs.end();
-         ++it) {
-        if (((*it)->_cap != 0) || ((*it)->isMlxconfigSupported() == false)) {
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = _dbManager->fetchedTLVs.begin(); it != _dbManager->fetchedTLVs.end(); ++it)
+    {
+        if (((*it)->_cap != 0) || ((*it)->isMlxconfigSupported() == false))
+        {
             continue;
         }
-        if (!configName.empty()) {
-            if (configName != (*it)->_mlxconfigName) {
+        if (!configName.empty())
+        {
+            if (configName != (*it)->_mlxconfigName)
+            {
                 continue;
             }
         }
-        std::map < std::string, size_t > ::iterator map_it = tlvViewMap.find((*it)->_mlxconfigName);
-        if (map_it != tlvViewMap.end()) {
-            size_t      index = (*map_it).second;
+        std::map<std::string, size_t>::iterator map_it = tlvViewMap.find((*it)->_mlxconfigName);
+        if (map_it != tlvViewMap.end())
+        {
+            size_t index = (*map_it).second;
             TLVConfView tlvConfView;
             (*it)->getView(tlvConfView, _mf);
 
-            for (vector < ParamView > ::iterator p = tlvConfView.params.begin(); p != tlvConfView.params.end(); ++p) {
+            for (vector<ParamView>::iterator p = tlvConfView.params.begin(); p != tlvConfView.params.end(); ++p)
+            {
                 confs[index].params.push_back(*p);
             }
-        } else {
+        }
+        else
+        {
             TLVConfView tlvConfView;
             (*it)->getView(tlvConfView, _mf);
             confs.push_back(tlvConfView);
             tlvViewMap[(*it)->_mlxconfigName] = confs.size() - 1;
         }
     }
-    if (tlvViewMap.empty() && !configName.empty()) {
+    if (tlvViewMap.empty() && !configName.empty())
+    {
         throw MlxcfgException("The configuration %s was not found", configName.c_str());
     }
 }
 
-void GenericCommander::printParamViews(FILE* f, vector < ParamView >& v)
+void GenericCommander::printParamViews(FILE* f, vector<ParamView>& v)
 {
-    for (vector < ParamView > ::iterator pIt = v.begin(); pIt != v.end(); ++pIt) {
+    for (vector<ParamView>::iterator pIt = v.begin(); pIt != v.end(); ++pIt)
+    {
         string s = (*pIt).mlxconfigName + "=<";
-        switch ((*pIt).type) {
-        case BOOLEAN_TYPE:
-            s += "False|True>";
-            break;
+        switch ((*pIt).type)
+        {
+            case BOOLEAN_TYPE:
+                s += "False|True>";
+                break;
 
-        case UNSIGNED:
-            s += "NUM>";
-            break;
+            case UNSIGNED:
+                s += "NUM>";
+                break;
 
-        case INTEGER:
-            s += "NUM>";     /* todo talk with Dan regarding this??? */
-            break;
+            case INTEGER:
+                s += "NUM>"; /* todo talk with Dan regarding this??? */
+                break;
 
-        case ENUM:
-            printEnums(*pIt, s);
-            break;
+            case ENUM:
+                printEnums(*pIt, s);
+                break;
 
-        case STRING:
-            s += "STRING>";
-            break;
+            case STRING:
+                s += "STRING>";
+                break;
 
-        case BINARY:
-            s += "BINARY>";
-            break;
+            case BINARY:
+                s += "BINARY>";
+                break;
 
-        case BYTES:
-            s += "BYTES>";
-            break;
+            case BYTES:
+                s += "BYTES>";
+                break;
         }
         size_t len = (*pIt).mlxconfigName.length();
         /* dont print description for parms _P2 - _P8 */
-        if ((*pIt).mlxconfigName.rfind("_P1") == std::string::npos) {
+        if ((*pIt).mlxconfigName.rfind("_P1") == std::string::npos)
+        {
             size_t posP = (*pIt).mlxconfigName.rfind("_P");
-            if (posP == len - 3) {
+            if (posP == len - 3)
+            {
                 char charP = (*pIt).mlxconfigName[posP + 2];
-                if ((charP >= '2') && (charP <= '8')) {
+                if ((charP >= '2') && (charP <= '8'))
+                {
                     fprintf(f, "%20s%-40s\n", " ", s.c_str());
                     continue;
                 }
@@ -377,22 +418,26 @@ void GenericCommander::printParamViews(FILE* f, vector < ParamView >& v)
         size_t pos = (*pIt).description.find("\\;", 0);
         fprintf(f, "%20s%-40s", " ", s.c_str());
         fprintf(f, "%s\n", (*pIt).description.substr(0, pos).c_str());
-        while (pos != std::string::npos) {
+        while (pos != std::string::npos)
+        {
             prevPos = pos + 2;
             pos = (*pIt).description.find("\\;", prevPos);
-            if (pos == std::string::npos) {
-                fprintf(f, "%60s%s\n", " ",
-                        (*pIt).description.substr(prevPos, ((*pIt).description.length() + 1) - prevPos).c_str());
-            } else {
+            if (pos == std::string::npos)
+            {
+                fprintf(f, "%60s%s\n", " ", (*pIt).description.substr(prevPos, ((*pIt).description.length() + 1) - prevPos).c_str());
+            }
+            else
+            {
                 fprintf(f, "%60s%s\n", " ", (*pIt).description.substr(prevPos, pos - prevPos).c_str());
             }
         }
     }
 }
 
-void GenericCommander::printTLVConfViews(FILE* f, vector < TLVConfView >& v)
+void GenericCommander::printTLVConfViews(FILE* f, vector<TLVConfView>& v)
 {
-    for (vector < TLVConfView > ::iterator it = v.begin(); it != v.end(); ++it) {
+    for (vector<TLVConfView>::iterator it = v.begin(); it != v.end(); ++it)
+    {
         TLVConfView tv = (*it);
         fprintf(f, "\t\t%s:%s\n", tv.name.c_str(), tv.description.c_str());
         /* sort the params */
@@ -402,7 +447,7 @@ void GenericCommander::printTLVConfViews(FILE* f, vector < TLVConfView >& v)
 }
 void GenericCommander::printLongDesc(FILE* f)
 {
-    vector < TLVConfView > allConfs, confsForPrint;
+    vector<TLVConfView> allConfs, confsForPrint;
 
     getAllConfigurations(allConfs);
 
@@ -413,16 +458,17 @@ void GenericCommander::printLongDesc(FILE* f)
 
 void GenericCommander::printEnums(const ParamView& p, string& s)
 {
-    std::map < string, u_int32_t > ::const_iterator it;
+    std::map<string, u_int32_t>::const_iterator it;
 
     it = p.textualVals.begin();
-    if (it == p.textualVals.end()) {
-        throw MlxcfgException("The type of the parameter %s is ENUM, but enums were not found",
-                              p.mlxconfigName.c_str());
+    if (it == p.textualVals.end())
+    {
+        throw MlxcfgException("The type of the parameter %s is ENUM, but enums were not found", p.mlxconfigName.c_str());
     }
     s += it->first;
     it++;
-    for (; it != p.textualVals.end(); ++it) {
+    for (; it != p.textualVals.end(); ++it)
+    {
         s += "|" + it->first;
     }
     s += ">";
@@ -436,61 +482,77 @@ void parseDependency(string d, string& t, string& p, u_int32_t& v, OP& op)
     opPos = d.find(EQ_STR);
     opStrLen = strlen(EQ_STR);
     op = EQUAL;
-    if (opPos == string::npos) {
+    if (opPos == string::npos)
+    {
         opPos = d.find(NOT_EQ_STR);
         opStrLen = strlen(NOT_EQ_STR);
         op = NOT_EQUAL;
-        if (opPos == string::npos) {
+        if (opPos == string::npos)
+        {
             throw MlxcfgException("There is no '" EQ_STR "' nor '" NOT_EQ_STR "' in the dependency %s", d.c_str());
         }
     }
     dotPos = d.find('.');
-    if (dotPos == string::npos) {
+    if (dotPos == string::npos)
+    {
         /* dependency is in the same tlv */
         t = "";
         p = d.substr(0, opPos);
-    } else {
+    }
+    else
+    {
         t = d.substr(0, dotPos);
         p = d.substr(dotPos + 1, opPos - dotPos - 1);
     }
     v = atoi(d.substr(opPos + opStrLen, d.length() - opPos - opStrLen).c_str());
 }
 
-bool GenericCommander::checkDependency(std::shared_ptr < TLVConf > cTLV, string dStr)
+bool GenericCommander::checkDependency(std::shared_ptr<TLVConf> cTLV, string dStr)
 {
-    if (dStr.empty()) {
+    if (dStr.empty())
+    {
         dm_dev_id_t deviceId = DeviceUnknown;
-        u_int32_t   hwDevId = 0, hwRevId = 0;
-        if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId)) {
+        u_int32_t hwDevId = 0, hwRevId = 0;
+        if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId))
+        {
             throw MlxcfgException("Failed to identify the device");
         }
-        if (dm_dev_is_switch(deviceId)) {
+        if (dm_dev_is_switch(deviceId))
+        {
             return true;
         }
         return false;
-    } else {
+    }
+    else
+    {
         string lower = mft_utils::to_lowercase_copy(dStr);
-        if (lower.compare(IGNORE_DEPENDENCY_STR) == 0) {
+        if (lower.compare(IGNORE_DEPENDENCY_STR) == 0)
+        {
             return true;
         }
     }
 
     Expression expression(dStr);
-    vector < string > vars;
+    vector<string> vars;
     expression.getVars(vars);
-    for (vector < string > ::iterator it = vars.begin(); it != vars.end(); ++it) {
+    for (vector<string>::iterator it = vars.begin(); it != vars.end(); ++it)
+    {
         const size_t dotPos = (*it).find('.');
-        if (dotPos == string::npos) { /* parameter of current tlv */
+        if (dotPos == string::npos)
+        { /* parameter of current tlv */
             expression.setVarVal((*it), cTLV->getParamValueByName((*it).replace(0, 1, "")));
-        } else {
+        }
+        else
+        {
             string dTLVName = (*it).substr(0, dotPos).replace(0, 1, "");
             string dParamName = (*it).substr(dotPos + 1);
-            std::shared_ptr < TLVConf >
-            dTLV = _dbManager->getDependencyTLVByName(dTLVName, cTLV->_port, cTLV->_module);
-            if (dTLV == NULL) {
+            std::shared_ptr<TLVConf> dTLV = _dbManager->getDependencyTLVByName(dTLVName, cTLV->_port, cTLV->_module);
+            if (dTLV == NULL)
+            {
                 throw MlxcfgTLVNotFoundException(dTLVName.c_str());
             }
-            if (!dTLV->isFWSupported(_mf, false)) {
+            if (!dTLV->isFWSupported(_mf, false))
+            {
                 return false;
             }
             dTLV->query(_mf, QueryNext);
@@ -501,100 +563,110 @@ bool GenericCommander::checkDependency(std::shared_ptr < TLVConf > cTLV, string 
     return (expression.evaluate() != 0);
 }
 
-void GenericCommander::filterByDependency(std::shared_ptr < TLVConf > cTLV,
-                                          const vector < pair <       ParamView,
-                                          string >>&                  dependencyTable,
-                                          vector < ParamView >&       result)
+void GenericCommander::filterByDependency(std::shared_ptr<TLVConf> cTLV, const vector<pair<ParamView, string>>& dependencyTable, vector<ParamView>& result)
 {
-    for (size_t i = 0; i < dependencyTable.size(); i++) {
+    for (size_t i = 0; i < dependencyTable.size(); i++)
+    {
         if ((checkDependency(cTLV, dependencyTable[i].second)) ||
-            (dependencyTable[i].second.empty() &&
-             (!dependencyTable[i].first.rule.empty() || (dependencyTable[i].first.supportedFromVersion > 0))) ||
-            (!dependencyTable[i].first.arrayVal.empty())) {
+            (dependencyTable[i].second.empty() && (!dependencyTable[i].first.rule.empty() || (dependencyTable[i].first.supportedFromVersion > 0))) || (!dependencyTable[i].first.arrayVal.empty()))
+        {
             result.push_back(dependencyTable[i].first);
         }
     }
 }
 
-void GenericCommander::queryTLV(std::shared_ptr < TLVConf > tlv,
-                                vector < ParamView >&       paramsConf,
-                                bool                        isWriteOperation,
-                                QueryType                   qt)
+void GenericCommander::queryTLV(std::shared_ptr<TLVConf> tlv, vector<ParamView>& paramsConf, bool isWriteOperation, QueryType qt)
 {
-    if (!tlv->_cap && tlv->isMlxconfigSupported() && tlv->isFWSupported(_mf, isWriteOperation)) {
-        vector < pair < ParamView, string >> dependencyTable = tlv->query(_mf, qt);
+    if (!tlv->_cap && tlv->isMlxconfigSupported() && tlv->isFWSupported(_mf, isWriteOperation))
+    {
+        vector<pair<ParamView, string>> dependencyTable = tlv->query(_mf, qt);
         filterByDependency(tlv, dependencyTable, paramsConf);
-        for (auto& p : paramsConf) {
+        for (auto& p : paramsConf)
+        {
             p.isReadOnlyParam = tlv->_isReadOnly;
         }
     }
     return;
 }
 
-void GenericCommander::queryParamViews(vector < ParamView >& params, bool isWriteOperation, QueryType qt)
+void GenericCommander::queryParamViews(vector<ParamView>& params, bool isWriteOperation, QueryType qt)
 {
-    vector < ParamView > pc;
-    std::set < std::shared_ptr < TLVConf >> uniqueTLVs;
-    map < string, string > arrayStrs;
+    vector<ParamView> pc;
+    std::set<std::shared_ptr<TLVConf>> uniqueTLVs;
+    map<string, string> arrayStrs;
 
-    for (std::vector < ParamView > ::iterator p = params.begin(); p != params.end(); ++p) {
+    for (std::vector<ParamView>::iterator p = params.begin(); p != params.end(); ++p)
+    {
         unsigned int index = 0;
-        bool         isIndexed = false;
-        bool         isStartFromOneSupported = false;
-        string       mlxconfigName = (*p).mlxconfigName;
-        if (isIndexedMlxconfigName(mlxconfigName)) {
+        bool isIndexed = false;
+        bool isStartFromOneSupported = false;
+        string mlxconfigName = (*p).mlxconfigName;
+        if (isIndexedMlxconfigName(mlxconfigName))
+        {
             parseIndexedMlxconfigName(mlxconfigName, mlxconfigName, index);
             isIndexed = true;
         }
         isStartFromOneSupported = isIndexedStartFromOneSupported(mlxconfigName);
-        std::shared_ptr < TLVConf > tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index, _mf);
+        std::shared_ptr<TLVConf> tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index, _mf);
         uniqueTLVs.insert(tlv);
         /* if not indexed and has suffix (its continuance array) need to get next */
         /* tlv and change the array length (for query) */
-        if (!isIndexed && (getArraySuffix(tlv->_name).size() > 0) && (getArraySuffix(mlxconfigName).size() == 0)) {
-            while (_dbManager->isParamMlxconfigNameExist(mlxconfigName +
-                                                         getArraySuffixByInterval(((++index) * MAX_ARRAY_SIZE)))) {
+        if (!isIndexed && (getArraySuffix(tlv->_name).size() > 0) && (getArraySuffix(mlxconfigName).size() == 0))
+        {
+            while (_dbManager->isParamMlxconfigNameExist(mlxconfigName + getArraySuffixByInterval(((++index) * MAX_ARRAY_SIZE))))
+            {
             }
-            if (isStartFromOneSupported) {
+            if (isStartFromOneSupported)
+            {
                 arrayStrs[mlxconfigName] = "Array[1.." + numToStr((index * MAX_ARRAY_SIZE)) + "]";
-            } else {
+            }
+            else
+            {
                 arrayStrs[mlxconfigName] = "Array[0.." + numToStr((index * MAX_ARRAY_SIZE) - 1) + "]";
             }
             index = 0;
         }
     }
-    for (std::set < std::shared_ptr < TLVConf >> ::iterator it = uniqueTLVs.begin(); it != uniqueTLVs.end(); ++it) {
+    for (std::set<std::shared_ptr<TLVConf>>::iterator it = uniqueTLVs.begin(); it != uniqueTLVs.end(); ++it)
+    {
         queryTLV(*it, pc, isWriteOperation, qt);
     }
 
-    for (vector < ParamView > ::iterator i = params.begin(); i != params.end(); ++i) {
+    for (vector<ParamView>::iterator i = params.begin(); i != params.end(); ++i)
+    {
         bool found = false;
-        for (vector < ParamView > ::iterator j = pc.begin(); j != pc.end(); ++j) {
-            bool         isIIndexed = false;
+        for (vector<ParamView>::iterator j = pc.begin(); j != pc.end(); ++j)
+        {
+            bool isIIndexed = false;
             unsigned int iIndex = 0;
-            string       mlxconfigNameI = (*i).mlxconfigName;
-            if (isIndexedMlxconfigName(mlxconfigNameI)) {
+            string mlxconfigNameI = (*i).mlxconfigName;
+            if (isIndexedMlxconfigName(mlxconfigNameI))
+            {
                 parseIndexedMlxconfigName(mlxconfigNameI, mlxconfigNameI, iIndex);
                 isIIndexed = true;
             }
 
             string mlxconfigNameJ = (*j).mlxconfigName;
-            if ((mlxconfigNameI == mlxconfigNameJ) ||
-                ((mlxconfigNameI + getArraySuffixByInterval(iIndex)) == mlxconfigNameJ)) {
+            if ((mlxconfigNameI == mlxconfigNameJ) || ((mlxconfigNameI + getArraySuffixByInterval(iIndex)) == mlxconfigNameJ))
+            {
                 i->isReadOnlyParam = j->isReadOnlyParam;
-                if (isIIndexed) {
-                    if ((iIndex >= j->arrayVal.size()) &&
-                        ((mlxconfigNameI + getArraySuffixByInterval(iIndex)) != mlxconfigNameJ)) {
+                if (isIIndexed)
+                {
+                    if ((iIndex >= j->arrayVal.size()) && ((mlxconfigNameI + getArraySuffixByInterval(iIndex)) != mlxconfigNameJ))
+                    {
                         throw MlxcfgException("Index %d of the parameter %s is out of "
                                               "range. Maximal index is %d",
                                               iIndex, mlxconfigNameI.c_str(), int(j->arrayVal.size()) - 1);
                     }
                     i->val = j->arrayVal[iIndex % MAX_ARRAY_SIZE];
                     i->strVal = j->strArrayVal[iIndex % MAX_ARRAY_SIZE];
-                } else {
+                }
+                else
+                {
                     i->val = j->val;
                     i->strVal = j->strVal;
-                    if (!arrayStrs[mlxconfigNameI].empty()) {
+                    if (!arrayStrs[mlxconfigNameI].empty())
+                    {
                         i->strVal = arrayStrs[mlxconfigNameI];
                     }
                 }
@@ -602,43 +674,50 @@ void GenericCommander::queryParamViews(vector < ParamView >& params, bool isWrit
                 break;
             }
         }
-        if (!found) {
+        if (!found)
+        {
             throw MlxcfgException("The Device doesn't support %s parameter", i->mlxconfigName.c_str());
         }
     }
 }
 
-void GenericCommander::queryAll(vector < ParamView >& params, vector < string >& failedTLVs, QueryType qt)
+void GenericCommander::queryAll(vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt)
 {
     _dbManager->getAllTLVs();
-    for (std::vector < std::shared_ptr < TLVConf >> ::iterator it = _dbManager->fetchedTLVs.begin();
-         it != _dbManager->fetchedTLVs.end();
-         ++it) {
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = _dbManager->fetchedTLVs.begin(); it != _dbManager->fetchedTLVs.end(); ++it)
+    {
         try
         {
-            vector < ParamView > result;
-            if ((*it)->isPortTargetClass()) {
-                for (int i = 1; i <= (*it)->getMaxPort(_mf); i++) {
-                    std::shared_ptr < TLVConf > qtlv = make_shared < TLVConf > (*(*it));
+            vector<ParamView> result;
+            if ((*it)->isPortTargetClass())
+            {
+                for (int i = 1; i <= (*it)->getMaxPort(_mf); i++)
+                {
+                    std::shared_ptr<TLVConf> qtlv = make_shared<TLVConf>(*(*it));
                     qtlv->_port = i;
                     qtlv->_module = -1;
                     queryTLV(qtlv, result, false, qt);
                 }
-            } else if ((*it)->isModuleTargetClass()) {
-                for (int i = 0; i <= (*it)->getMaxModule(); i++) {
-                    std::shared_ptr < TLVConf > qtlv = make_shared < TLVConf > (*(*it));
+            }
+            else if ((*it)->isModuleTargetClass())
+            {
+                for (int i = 0; i <= (*it)->getMaxModule(); i++)
+                {
+                    std::shared_ptr<TLVConf> qtlv = make_shared<TLVConf>(*(*it));
                     qtlv->_port = 0;
                     qtlv->_module = i;
                     queryTLV(qtlv, result, false, qt);
                 }
-            } else {
+            }
+            else
+            {
                 (*it)->_port = 0;
                 (*it)->_module = -1;
                 queryTLV((*it), result, false, qt);
             }
             params.insert(params.end(), result.begin(), result.end());
         }
-        catch(MlxcfgException & e)
+        catch (MlxcfgException& e)
         {
             failedTLVs.push_back((*it)->_name);
         }
@@ -647,14 +726,16 @@ void GenericCommander::queryAll(vector < ParamView >& params, vector < string >&
 
 void GenericCommander::getCfg(ParamView& pv, QueryType qt)
 {
-    vector < ParamView > pc;
+    vector<ParamView> pc;
 
-    std::shared_ptr < TLVConf > tlv = _dbManager->getTLVByParamMlxconfigName(pv.mlxconfigName, 0, _mf);
+    std::shared_ptr<TLVConf> tlv = _dbManager->getTLVByParamMlxconfigName(pv.mlxconfigName, 0, _mf);
     queryTLV(tlv, pc, false, qt);
 
-    for (vector < ParamView > ::iterator j = pc.begin(); j != pc.end(); ++j) {
+    for (vector<ParamView>::iterator j = pc.begin(); j != pc.end(); ++j)
+    {
         /* printf("-D- pc[j]=%s\n", j->mlxconfigName.c_str()); */
-        if (pv.mlxconfigName == j->mlxconfigName) {
+        if (pv.mlxconfigName == j->mlxconfigName)
+        {
             pv.val = j->val;
             pv.strVal = j->strVal;
             break;
@@ -662,43 +743,51 @@ void GenericCommander::getCfg(ParamView& pv, QueryType qt)
     }
 }
 
-void GenericCommander::setCfg(vector < ParamView >& params, bool force)
+void GenericCommander::setCfg(vector<ParamView>& params, bool force)
 {
-    std::set < std::shared_ptr < TLVConf >> uniqueTLVs;
-    map < string, std::shared_ptr < TLVConf >> tlvMap;
+    std::set<std::shared_ptr<TLVConf>> uniqueTLVs;
+    map<string, std::shared_ptr<TLVConf>> tlvMap;
 
-    for (std::vector < ParamView > ::iterator p = params.begin(); p != params.end(); ++p) {
+    for (std::vector<ParamView>::iterator p = params.begin(); p != params.end(); ++p)
+    {
         unsigned int index = 0;
-        string       mlxconfigName = (*p).mlxconfigName;
-        bool         isIndexed = false;
-        if (isIndexedMlxconfigName(mlxconfigName)) {
+        string mlxconfigName = (*p).mlxconfigName;
+        bool isIndexed = false;
+        if (isIndexedMlxconfigName(mlxconfigName))
+        {
             parseIndexedMlxconfigName(mlxconfigName, mlxconfigName, index);
             isIndexed = true;
         }
-        std::shared_ptr < TLVConf > tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index, _mf);
+        std::shared_ptr<TLVConf> tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index, _mf);
         tlvMap[mlxconfigName] = tlv;
         uniqueTLVs.insert(tlv);
 
-        if (isIndexed) {
+        if (isIndexed)
+        {
             tlvMap[mlxconfigName]->updateParamByMlxconfigName(mlxconfigName, (*p).strVal, index);
-        } else {
+        }
+        else
+        {
             tlvMap[(*p).mlxconfigName]->updateParamByMlxconfigName(mlxconfigName, (*p).strVal, _mf);
         }
     }
 
     /* prepare ruleTLVs,and check rules */
-    if (!force) {
+    if (!force)
+    {
         /* printf("-D- do not force!\n"); */
-        for (std::set < std::shared_ptr < TLVConf >> ::iterator it = uniqueTLVs.begin(); it != uniqueTLVs.end();
-             ++it) {
-            std::shared_ptr < TLVConf > tlv = *it;
-            std::set < string > strRuleTLVs;
+        for (std::set<std::shared_ptr<TLVConf>>::iterator it = uniqueTLVs.begin(); it != uniqueTLVs.end(); ++it)
+        {
+            std::shared_ptr<TLVConf> tlv = *it;
+            std::set<string> strRuleTLVs;
             tlv->getRuleTLVs(strRuleTLVs);
-            std::vector < std::shared_ptr < TLVConf >> ruleTLVs;
-            for (std::set < string > ::iterator j = strRuleTLVs.begin(); j != strRuleTLVs.end(); ++j) {
+            std::vector<std::shared_ptr<TLVConf>> ruleTLVs;
+            for (std::set<string>::iterator j = strRuleTLVs.begin(); j != strRuleTLVs.end(); ++j)
+            {
                 string strRuleTLV = *j;
-                std::shared_ptr < TLVConf > ruleTLV = _dbManager->getTLVByName(strRuleTLV, tlv->_port, tlv->_module);
-                if (!ruleTLV->isFWSupported(_mf, false)) {
+                std::shared_ptr<TLVConf> ruleTLV = _dbManager->getTLVByName(strRuleTLV, tlv->_port, tlv->_module);
+                if (!ruleTLV->isFWSupported(_mf, false))
+                {
                     throw MlxcfgException("The Rule TLV configuration %s is not supported by FW", strRuleTLV.c_str());
                     break;
                 }
@@ -710,7 +799,8 @@ void GenericCommander::setCfg(vector < ParamView >& params, bool force)
     }
 
     /* set the tlv on the device */
-    for (std::set < std::shared_ptr < TLVConf >> ::iterator it = uniqueTLVs.begin(); it != uniqueTLVs.end(); ++it) {
+    for (std::set<std::shared_ptr<TLVConf>>::iterator it = uniqueTLVs.begin(); it != uniqueTLVs.end(); ++it)
+    {
         /* printf("-D- t=%s\n", (*it)->_name.c_str()); */
         (*it)->setOnDevice(_mf);
     }
@@ -728,9 +818,12 @@ bool GenericCommander::isDefaultSupported()
     mft_signal_set_handling(1);
     rc = reg_access_mnvgc(_mf, REG_ACCESS_METHOD_GET, &mnvgc_reg);
     dealWithSignal();
-    if ((rc == ME_REG_ACCESS_BAD_PARAM) || (rc == ME_REG_ACCESS_INTERNAL_ERROR)) {
+    if ((rc == ME_REG_ACCESS_BAD_PARAM) || (rc == ME_REG_ACCESS_INTERNAL_ERROR))
+    {
         return false;
-    } else if (rc == ME_OK) {
+    }
+    else if (rc == ME_OK)
+    {
         return mnvgc_reg.nvda_read_factory_settings;
     }
     throw MlxcfgException("Error when checked if Firmware supports querying "
@@ -748,9 +841,12 @@ bool GenericCommander::isCurrentSupported()
     mft_signal_set_handling(1);
     rc = reg_access_mnvgc(_mf, REG_ACCESS_METHOD_GET, &mnvgc_reg);
     dealWithSignal();
-    if ((rc == ME_REG_ACCESS_BAD_PARAM) || (rc == ME_REG_ACCESS_INTERNAL_ERROR)) {
+    if ((rc == ME_REG_ACCESS_BAD_PARAM) || (rc == ME_REG_ACCESS_INTERNAL_ERROR))
+    {
         return false;
-    } else if (rc == ME_OK) {
+    }
+    else if (rc == ME_OK)
+    {
         return mnvgc_reg.nvda_read_current_settings;
     }
     throw MlxcfgException("Error when checked if Firmware supports "
@@ -762,16 +858,17 @@ void GenericCommander::clearSemaphore()
 {
     int rc = icmd_clear_semaphore(_mf);
 
-    if (rc) {
+    if (rc)
+    {
         throw MlxcfgException("Failed to unlock semaphore: %s.", m_err2str((MError)rc));
     }
 }
 
 void GenericCommander::invalidateCfgs()
 {
-    int                                 rc;
+    int rc;
     struct reg_access_hca_mnvia_reg_ext nviaTlv;
-    u_int8_t                            buffer[REG_ACCESS_HCA_MNVIA_REG_EXT_SIZE] = {0};
+    u_int8_t buffer[REG_ACCESS_HCA_MNVIA_REG_EXT_SIZE] = {0};
 
     memset(&nviaTlv, 0, sizeof(struct reg_access_hca_mnvia_reg_ext));
     reg_access_hca_mnvia_reg_ext_pack(&nviaTlv, buffer);
@@ -779,62 +876,71 @@ void GenericCommander::invalidateCfgs()
     rc = reg_access_mnvia(_mf, REG_ACCESS_METHOD_SET, &nviaTlv);
     dealWithSignal();
 
-    if (rc) {
+    if (rc)
+    {
         throw MlxcfgException("Failed to invalidate configurations: %s.", m_err2str((MError)rc));
     }
 }
 
 void GenericCommander::invalidateCfg(const std::string& configName)
 {
-    std::vector < std::shared_ptr < TLVConf >> tlvArr;
+    std::vector<std::shared_ptr<TLVConf>> tlvArr;
     _dbManager->getAllTLVs();
-    for (std::vector < std::shared_ptr < TLVConf >> ::iterator it = _dbManager->fetchedTLVs.begin();
-         it != _dbManager->fetchedTLVs.end();
-         ++it) {
-        if ((*it)->_mlxconfigName == configName) {
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = _dbManager->fetchedTLVs.begin(); it != _dbManager->fetchedTLVs.end(); ++it)
+    {
+        if ((*it)->_mlxconfigName == configName)
+        {
             tlvArr.push_back(*it);
-        } else {
-            string    upper = mft_utils::to_uppercase_copy(configName);
-            auto      ret = _dbManager->getMlxconfigNamePortModule(upper, _mf);
-            string    mlxconfigNameNoPortModuleName = mft_utils::to_lowercase_copy(get < 0 > (ret));
-            u_int32_t port = get < 1 > (ret);
-            int32_t   module = get < 2 > (ret);
+        }
+        else
+        {
+            string upper = mft_utils::to_uppercase_copy(configName);
+            auto ret = _dbManager->getMlxconfigNamePortModule(upper, _mf);
+            string mlxconfigNameNoPortModuleName = mft_utils::to_lowercase_copy(get<0>(ret));
+            u_int32_t port = get<1>(ret);
+            int32_t module = get<2>(ret);
             (*it)->_port = port;
             (*it)->_module = module;
-            if ((*it)->_name == mlxconfigNameNoPortModuleName) {
+            if ((*it)->_name == mlxconfigNameNoPortModuleName)
+            {
                 tlvArr.push_back(*it);
             }
         }
     }
-    if (tlvArr.empty()) {
+    if (tlvArr.empty())
+    {
         throw MlxcfgException("The configuration %s was not found", configName.c_str());
     }
 
-    for (std::vector < std::shared_ptr < TLVConf >> ::iterator it = tlvArr.begin(); it != tlvArr.end(); ++it) {
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = tlvArr.begin(); it != tlvArr.end(); ++it)
+    {
         (*it)->invalidate(_mf);
     }
 }
 
 const char* GenericCommander::loadConfigurationGetStr()
 {
-    int                                rc;
-    dm_dev_id_t                        deviceId = DeviceUnknown;
-    u_int32_t                          hwDevId = 0, hwRevId = 0;
+    int rc;
+    dm_dev_id_t deviceId = DeviceUnknown;
+    u_int32_t hwDevId = 0, hwRevId = 0;
     struct reg_access_hca_mfrl_reg_ext mfrl;
 
-    if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId)) {
+    if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId))
+    {
         throw MlxcfgException("Failed to identify the device");
     }
 
     memset(&mfrl, 0, sizeof(mfrl));
 
-    if (dm_is_5th_gen_hca(deviceId)) {
+    if (dm_is_5th_gen_hca(deviceId))
+    {
         /* prepare for warm boot or pci link disable (bit 6 + bit 3) */
         mfrl.reset_trigger = (1 << 6) | (1 << 3);
         mft_signal_set_handling(1);
         rc = reg_access_mfrl(_mf, REG_ACCESS_METHOD_SET, &mfrl);
         dealWithSignal();
-        if (rc) {
+        if (rc)
+        {
             return "Please power cycle machine to load new configurations.";
         }
     }
@@ -842,79 +948,93 @@ const char* GenericCommander::loadConfigurationGetStr()
     return "Please reboot machine to load new configurations.";
 }
 
-void GenericCommander::setRawCfg(std::vector < u_int32_t > rawTlvVec)
+void GenericCommander::setRawCfg(std::vector<u_int32_t> rawTlvVec)
 {
     RawCfgParams5thGen rawTlv;
 
-    if (rawTlv.setRawData(rawTlvVec)) {
+    if (rawTlv.setRawData(rawTlvVec))
+    {
         throw MlxcfgException(rawTlv.err());
     }
 
-    if (rawTlv.setOnDev(_mf, SET_RAW)) {
+    if (rawTlv.setOnDev(_mf, SET_RAW))
+    {
         throw MlxcfgException(rawTlv.err());
     }
 }
 
-std::vector < u_int32_t > GenericCommander::getRawCfg(std::vector < u_int32_t > rawTlvVec)
+std::vector<u_int32_t> GenericCommander::getRawCfg(std::vector<u_int32_t> rawTlvVec)
 {
     RawCfgParams5thGen rawTlv;
 
-    if (rawTlv.setRawData(rawTlvVec)) {
+    if (rawTlv.setRawData(rawTlvVec))
+    {
         throw MlxcfgException(rawTlv.err());
     }
 
-    if (rawTlv.setOnDev(_mf, GET_RAW)) {
+    if (rawTlv.setOnDev(_mf, GET_RAW))
+    {
         throw MlxcfgException(rawTlv.err());
     }
 
-    std::vector < u_int32_t > getRawTlvVec;
+    std::vector<u_int32_t> getRawTlvVec;
     getRawTlvVec = rawTlv.getRawData();
-    if (getRawTlvVec.empty()) {
+    if (getRawTlvVec.empty())
+    {
         throw MlxcfgException(rawTlv.err());
     }
 
     return getRawTlvVec;
 }
 
-void GenericCommander::dumpRawCfg(std::vector < u_int32_t > rawTlvVec, std::string& tlvDump)
+void GenericCommander::dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump)
 {
     RawCfgParams5thGen rawTlv;
 
-    if (rawTlv.setRawData(rawTlvVec)) {
+    if (rawTlv.setRawData(rawTlvVec))
+    {
         throw MlxcfgException(rawTlv.err());
     }
     tlvDump = rawTlv.dumpTlv();
 }
 
-void GenericCommander::backupCfgs(vector < BackupView >& views)
+void GenericCommander::backupCfgs(vector<BackupView>& views)
 {
-    int                     rc;
-    int                     status = 0;
-    u_int32_t               ptr = 0;
+    int rc;
+    int status = 0;
+    u_int32_t ptr = 0;
     struct tools_open_mnvgn mnvgnTlv;
 
-    do{
+    do
+    {
         memset(&mnvgnTlv, 0, sizeof(struct tools_open_mnvgn));
         mnvgnTlv.nv_pointer = ptr;
         mft_signal_set_handling(1);
         rc = reg_access_mnvgn(_mf, REG_ACCESS_METHOD_GET, &mnvgnTlv, &status);
         dealWithSignal();
-        if (rc) {
-            if (status == ME_NOT_IMPLEMENTED) {
+        if (rc)
+        {
+            if (status == ME_NOT_IMPLEMENTED)
+            {
                 throw MlxcfgException("Firmware does not support backup command");
-            } else if (rc == ME_REG_ACCESS_RES_NOT_AVLBL) {
+            }
+            else if (rc == ME_REG_ACCESS_RES_NOT_AVLBL)
+            {
                 throw MlxcfgException("NV data area may be empty, nothing to backup.");
-            } else {
+            }
+            else
+            {
                 throw MlxcfgException("Failed to backup configurations: %s.", m_err2str((MError)rc));
             }
         }
         ptr = mnvgnTlv.nv_pointer;
-        if (ptr != 0) {
+        if (ptr != 0)
+        {
             BackupView view;
             view.type = mnvgnTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw;
             view.writerId = mnvgnTlv.nv_hdr.writer_id;
             view.writerHostId = mnvgnTlv.nv_hdr.writer_host_id;
-            vector < u_int8_t > v;
+            vector<u_int8_t> v;
             v.resize(TOOLS_OPEN_NV_HDR_FIFTH_GEN_SIZE + mnvgnTlv.nv_hdr.length);
             /* Copy header: */
             tools_open_nv_hdr_fifth_gen_pack(&mnvgnTlv.nv_hdr, v.data());
@@ -929,52 +1049,56 @@ void GenericCommander::backupCfgs(vector < BackupView >& views)
 void GenericCommander::updateParamViewValue(ParamView& p, string v)
 {
     unsigned int index = 0;
-    string       mlxconfigName = p.mlxconfigName;
+    string mlxconfigName = p.mlxconfigName;
 
-    if (isIndexedMlxconfigName(mlxconfigName)) {
+    if (isIndexedMlxconfigName(mlxconfigName))
+    {
         parseIndexedMlxconfigName(mlxconfigName, mlxconfigName, index);
     }
-    std::shared_ptr < TLVConf > tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index, _mf);
-    if (tlv->_port != 0) {
+    std::shared_ptr<TLVConf> tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index, _mf);
+    if (tlv->_port != 0)
+    {
         auto res = _dbManager->splitMlxcfgNameAndPortOrModule(mlxconfigName, PORT, _mf);
-        mlxconfigName = get < 0 > (res);
-    } else if (tlv->_module != -1) {
+        mlxconfigName = get<0>(res);
+    }
+    else if (tlv->_module != -1)
+    {
         auto res = _dbManager->splitMlxcfgNameAndPortOrModule(mlxconfigName, MODULE, _mf);
-        mlxconfigName = get < 0 > (res);
+        mlxconfigName = get<0>(res);
     }
     p.port = tlv->_port;
     p.module = tlv->_module;
     tlv->parseParamValue(mlxconfigName, v, p.val, p.strVal, index);
 }
 
-void GenericCommander::genTLVsList(vector < string >& tlvs)
+void GenericCommander::genTLVsList(vector<string>& tlvs)
 {
     _dbManager->getAllTLVs();
-    for (std::vector < std::shared_ptr < TLVConf >> ::iterator it = _dbManager->fetchedTLVs.begin();
-         it != _dbManager->fetchedTLVs.end();
-         ++it) {
-        if (find(tlvs.begin(), tlvs.end(), (*it)->_name) == tlvs.end()) {
+    for (std::vector<std::shared_ptr<TLVConf>>::iterator it = _dbManager->fetchedTLVs.begin(); it != _dbManager->fetchedTLVs.end(); ++it)
+    {
+        if (find(tlvs.begin(), tlvs.end(), (*it)->_name) == tlvs.end())
+        {
             tlvs.push_back((*it)->_name);
         }
     }
 }
 
-void GenericCommander::genXMLTemplateAux(vector < string > tlvs,
-                                         string&           xmlTemplate,
-                                         bool              allAttrs,
-                                         bool              withVal,
-                                         bool              defaultAttrVal)
+void GenericCommander::genXMLTemplateAux(vector<string> tlvs, string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal)
 {
     xmlTemplate = XML_DOCUMENT_START;
 
-    for (vector < string > ::iterator it = tlvs.begin(); it != tlvs.end(); ++it) {
+    for (vector<string>::iterator it = tlvs.begin(); it != tlvs.end(); ++it)
+    {
         string tlvTemplate;
         /* user didn't tell us if it is a per port tlv */
         /* so try port==0 */
-        std::shared_ptr < TLVConf > tlv = _dbManager->getTLVByName(*it, 0, -1);
-        if (tlv && tlv->isPortTargetClass()) {
+        std::shared_ptr<TLVConf> tlv = _dbManager->getTLVByName(*it, 0, -1);
+        if (tlv && tlv->isPortTargetClass())
+        {
             tlv->_port = 1;
-        } else if (tlv && tlv->isModuleTargetClass()) {
+        }
+        else if (tlv && tlv->isModuleTargetClass())
+        {
             tlv->_module = 0;
         }
         tlv->genXMLTemplate(tlvTemplate, allAttrs, withVal, defaultAttrVal);
@@ -984,12 +1108,11 @@ void GenericCommander::genXMLTemplateAux(vector < string > tlvs,
     xmlTemplate += XML_DOCUMENT_END;
 }
 
-void GenericCommander::genXMLFromTLVConf(vector < std::shared_ptr < TLVConf >>& tlvsConfs,
-                                         string&                                xmlTemplate,
-                                         bool                                   allAttrs)
+void GenericCommander::genXMLFromTLVConf(vector<std::shared_ptr<TLVConf>>& tlvsConfs, string& xmlTemplate, bool allAttrs)
 {
     xmlTemplate = XML_DOCUMENT_START;
-    for (auto tlvConf = tlvsConfs.begin(); tlvConf != tlvsConfs.end(); ++tlvConf) {
+    for (auto tlvConf = tlvsConfs.begin(); tlvConf != tlvsConfs.end(); ++tlvConf)
+    {
         string tlvTemplate;
         (*tlvConf)->genXMLTemplate(tlvTemplate, allAttrs, true, true, true);
         xmlTemplate += "\n" + tlvTemplate + "\n";
@@ -997,21 +1120,22 @@ void GenericCommander::genXMLFromTLVConf(vector < std::shared_ptr < TLVConf >>& 
     xmlTemplate += XML_DOCUMENT_END;
 }
 
-void GenericCommander::genXMLTemplate(vector < string > tlvs, string& xmlTemplate, bool allAttrs)
+void GenericCommander::genXMLTemplate(vector<string> tlvs, string& xmlTemplate, bool allAttrs)
 {
     genXMLTemplateAux(tlvs, xmlTemplate, allAttrs, false, true);
 }
 
-void GenericCommander::TLVs2TLVConfs(const vector < string >& tlvs, vector < std::shared_ptr < TLVConf >>& tlvsConfs)
+void GenericCommander::TLVs2TLVConfs(const vector<string>& tlvs, vector<std::shared_ptr<TLVConf>>& tlvsConfs)
 {
-    for (auto tlvString = tlvs.begin(); tlvString != tlvs.end(); ++tlvString) {
-        std::shared_ptr < TLVConf > tlv = NULL;
+    for (auto tlvString = tlvs.begin(); tlvString != tlvs.end(); ++tlvString)
+    {
+        std::shared_ptr<TLVConf> tlv = NULL;
         try
         { /* user didn't tell us if it is a per port tlv */
             /* so try port==0 */
             tlv = _dbManager->getAndCreateTLVByName(*tlvString, 0, -1);
         }
-        catch(MlxcfgException&)
+        catch (MlxcfgException&)
         {
             /* or port==1 */
             tlv = _dbManager->getAndCreateTLVByName(*tlvString, 1, -1);
@@ -1020,33 +1144,38 @@ void GenericCommander::TLVs2TLVConfs(const vector < string >& tlvs, vector < std
     }
 }
 
-void GenericCommander::binTLV2TLVConf(const vector < u_int32_t >& binTLV, std::shared_ptr < TLVConf >& tlv)
+void GenericCommander::binTLV2TLVConf(const vector<u_int32_t>& binTLV, std::shared_ptr<TLVConf>& tlv)
 {
-    u_int32_t                   id;
+    u_int32_t id;
     tools_open_nv_hdr_fifth_gen hdr;
 
     tools_open_nv_hdr_fifth_gen_unpack(&hdr, (u_int8_t*)binTLV.data());
 
     /* verify TLV length */
-    if (hdr.length != (binTLV.size() - 3) * 4) {
+    if (hdr.length != (binTLV.size() - 3) * 4)
+    {
         throw MlxcfgException("TLV size mismatch. reported length in TLV header: "
                               "0x%x. actual length: 0x%x",
                               hdr.length, (binTLV.size() - 3) * 4);
     }
 
-    TLVClass            tlvClass = (TLVClass)EXTRACT(hdr.type.tlv_type_dw.tlv_type_dw, TLVCLASS_OFFSET, TLVCLASS_SIZE);
-    TLVClass            tlvClassTemp;
+    TLVClass tlvClass = (TLVClass)EXTRACT(hdr.type.tlv_type_dw.tlv_type_dw, TLVCLASS_OFFSET, TLVCLASS_SIZE);
+    TLVClass tlvClassTemp;
     tools_open_tlv_type type;
 
     type.tlv_type_dw.tlv_type_dw = binTLV[1];
 
     TLVConf::unpackTLVType(tlvClass, type, id);
-    if (tlvClass == Physical_Port_Common) {
+    if (tlvClass == Physical_Port_Common)
+    {
         tlvClassTemp = Physical_Port;
-    } else if ((tlvClass == Per_Host_All_Functions) || (tlvClass == All_Hosts_Per_Function) ||
-               (tlvClass == All_Hosts_All_Functions)) {
+    }
+    else if ((tlvClass == Per_Host_All_Functions) || (tlvClass == All_Hosts_Per_Function) || (tlvClass == All_Hosts_All_Functions))
+    {
         tlvClassTemp = Per_Host_Per_Function;
-    } else {
+    }
+    else
+    {
         tlvClassTemp = tlvClass;
     }
     tlv = _dbManager->getTLVByIndexAndClass(id, tlvClassTemp);
@@ -1055,46 +1184,59 @@ void GenericCommander::binTLV2TLVConf(const vector < u_int32_t >& binTLV, std::s
     tlv->_attrs[RD_EN_ATTR] = numToStr(hdr.rd_en);
     tlv->_attrs[OVR_EN_ATTR] = numToStr(hdr.over_en);
     tlv->_attrs[PRIORITY_ATTR] = PriorityNumToStr(hdr.priority);
-    if (tlvClass == Physical_Port) {
+    if (tlvClass == Physical_Port)
+    {
         tlv->_attrs[PORT_ATTR] = numToStr(type.per_port.port);
-    } else if (tlvClass == Physical_Port_Common) {
+    }
+    else if (tlvClass == Physical_Port_Common)
+    {
         tlv->_attrs[PORT_ATTR] = ALL_ATTR_VAL;
-    } else if (tlvClass == Per_Host_All_Functions) {
+    }
+    else if (tlvClass == Per_Host_All_Functions)
+    {
         tlv->_attrs[HOST_ATTR] = numToStr(type.per_host.host);
         tlv->_attrs[FUNC_ATTR] = ALL_ATTR_VAL;
-    } else if (tlvClass == Per_Host_Per_Function) {
+    }
+    else if (tlvClass == Per_Host_Per_Function)
+    {
         tlv->_attrs[HOST_ATTR] = numToStr(type.per_host.host);
         tlv->_attrs[FUNC_ATTR] = numToStr(type.per_host.function);
-    } else if (tlvClass == All_Hosts_All_Functions) {
+    }
+    else if (tlvClass == All_Hosts_All_Functions)
+    {
         tlv->_attrs[HOST_ATTR] = ALL_ATTR_VAL;
         tlv->_attrs[FUNC_ATTR] = ALL_ATTR_VAL;
-    } else if (tlvClass == All_Hosts_Per_Function) {
+    }
+    else if (tlvClass == All_Hosts_Per_Function)
+    {
         tlv->_attrs[HOST_ATTR] = ALL_ATTR_VAL;
         tlv->_attrs[FUNC_ATTR] = numToStr(type.per_host.function);
     }
     tlv->unpack((u_int8_t*)(binTLV.data() + 3)); /* the header size is 3dws */
 }
 
-void GenericCommander::binTLV2XML(const vector < u_int32_t >& binTLV, string& xmlTemplate)
+void GenericCommander::binTLV2XML(const vector<u_int32_t>& binTLV, string& xmlTemplate)
 {
-    std::shared_ptr < TLVConf > tlv = NULL;
+    std::shared_ptr<TLVConf> tlv = NULL;
     binTLV2TLVConf(binTLV, tlv);
     tlv->genXMLTemplate(xmlTemplate, true, true, false);
 }
 
-void GenericCommander::bin2TLVConfs(const vector < u_int32_t >& tlvsBin, vector < std::shared_ptr < TLVConf >>& tlvs)
+void GenericCommander::bin2TLVConfs(const vector<u_int32_t>& tlvsBin, vector<std::shared_ptr<TLVConf>>& tlvs)
 {
     size_t size = 0;
     size_t hdrSize = (tools_open_nv_hdr_fifth_gen_size() >> 2);
 
-    while (hdrSize + size < tlvsBin.size()) {
-        std::shared_ptr < TLVConf > tlv = NULL;
-        vector < u_int32_t > tmpBuff;
+    while (hdrSize + size < tlvsBin.size())
+    {
+        std::shared_ptr<TLVConf> tlv = NULL;
+        vector<u_int32_t> tmpBuff;
         tools_open_nv_hdr_fifth_gen hdr;
         tools_open_nv_hdr_fifth_gen_unpack(&hdr, (u_int8_t*)(tlvsBin.data() + size));
 
         size_t tlvSize = hdrSize + (hdr.length >> 2);
-        if (tlvSize > (tlvsBin.size() - size)) {
+        if (tlvSize > (tlvsBin.size() - size))
+        {
             throw MlxcfgException("Invalid Configuration buffer");
         }
         tmpBuff.insert(tmpBuff.begin(), tlvsBin.begin() + size, tlvsBin.begin() + +size + tlvSize);
@@ -1103,43 +1245,48 @@ void GenericCommander::bin2TLVConfs(const vector < u_int32_t >& tlvsBin, vector 
         size += tlvSize;
     }
 
-    if (size != tlvsBin.size()) {
+    if (size != tlvsBin.size())
+    {
         throw MlxcfgException("Invalid Configuration buffer");
     }
 }
 
-void GenericCommander::XML2TLVConf(const string& xmlContent, vector < std::shared_ptr < TLVConf >>& tlvs)
+void GenericCommander::XML2TLVConf(const string& xmlContent, vector<std::shared_ptr<TLVConf>>& tlvs)
 {
 #if !defined(DISABLE_XML2)
-    xmlDocPtr  doc;
+    xmlDocPtr doc;
     xmlNodePtr root, currTlv, currParam;
-    xmlChar   *portAttr = NULL, *moduleAttr = NULL, *hostAttr = NULL, *funcAttr = NULL, *rdEnAttr = NULL,
-              *priorityAttr = NULL, *ovrEnAttr = NULL, *xmlVal = NULL, *indexAttr = NULL, *writerIdAttr = NULL;
+    xmlChar *portAttr = NULL, *moduleAttr = NULL, *hostAttr = NULL, *funcAttr = NULL, *rdEnAttr = NULL, *priorityAttr = NULL, *ovrEnAttr = NULL, *xmlVal = NULL, *indexAttr = NULL,
+            *writerIdAttr = NULL;
 
     doc = xmlReadMemory(xmlContent.c_str(), xmlContent.size(), "noname.xml", NULL, 0);
-    if (!doc) {
+    if (!doc)
+    {
         throw MlxcfgException("Failed to parse the XML document\n");
     }
 
     try
     {
         root = xmlDocGetRootElement(doc);
-        if (!root || xmlStrcmp(root->name, (const xmlChar*)XML_ROOT)) {
+        if (!root || xmlStrcmp(root->name, (const xmlChar*)XML_ROOT))
+        {
             throw MlxcfgException("The XML root node must be " XML_ROOT);
         }
 
         /* check fingerprint */
-        if (!root->ns || xmlStrcmp(root->ns->href, (const xmlChar*)XMLNS)) {
+        if (!root->ns || xmlStrcmp(root->ns->href, (const xmlChar*)XMLNS))
+        {
             throw MlxcfgException("The XML Fingerprint " XMLNS " is missing or incorrect");
         }
 
         currTlv = root->xmlChildrenNode;
-        while (currTlv) {
+        while (currTlv)
+        {
             IGNORE_UNUSEFUL_NODE(currTlv)
             u_int32_t port = 0;
             u_int32_t u_module = 0;
-            int32_t   module;
-            std::shared_ptr < TLVConf > tlvConf = nullptr;
+            int32_t module;
+            std::shared_ptr<TLVConf> tlvConf = nullptr;
             bool isAllPorts = false;
             bool isAllModules = false;
 
@@ -1147,35 +1294,47 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector < std::share
             portAttr = xmlGetProp(currTlv, (const xmlChar*)PORT_ATTR);
             moduleAttr = xmlGetProp(currTlv, (const xmlChar*)MODULE_ATTR);
 
-            if (!portAttr) {
+            if (!portAttr)
+            {
                 port = 0;
-            } else if (!xmlStrcasecmp(portAttr, (const xmlChar*)ALL_ATTR_VAL)) {
+            }
+            else if (!xmlStrcasecmp(portAttr, (const xmlChar*)ALL_ATTR_VAL))
+            {
                 isAllPorts = true;
                 port = 1;
-            } else if (!strToNum((const char*)portAttr, port) ||
-                       !((1 <= port) && ((int32_t)port <= tlvConf->getMaxPort(_mf)))) {
+            }
+            else if (!strToNum((const char*)portAttr, port) || !((1 <= port) && ((int32_t)port <= tlvConf->getMaxPort(_mf))))
+            {
                 throw MlxcfgException("Illegal value of port attribute %s", (const char*)portAttr);
             }
 
-            if (!moduleAttr) {
+            if (!moduleAttr)
+            {
                 module = -1;
-            } else if (!xmlStrcasecmp(moduleAttr, (const xmlChar*)ALL_ATTR_VAL)) {
+            }
+            else if (!xmlStrcasecmp(moduleAttr, (const xmlChar*)ALL_ATTR_VAL))
+            {
                 isAllModules = true;
                 module = 0;
-            } else if (!strToNum((const char*)moduleAttr,
-                                 u_module) || !(u_module <= (u_int32_t)tlvConf->getMaxModule())) {
+            }
+            else if (!strToNum((const char*)moduleAttr, u_module) || !(u_module <= (u_int32_t)tlvConf->getMaxModule()))
+            {
                 throw MlxcfgException("Illegal value of module attribute %s", (const char*)portAttr);
-            } else {
+            }
+            else
+            {
                 module = u_module;
             }
 
             tlvConf = _dbManager->getAndCreateTLVByName((char*)currTlv->name, port, module);
             try
             {
-                if (isAllPorts) {
+                if (isAllPorts)
+                {
                     tlvConf->setAttr(PORT_ATTR, ALL_ATTR_VAL);
                 }
-                if (isAllModules) {
+                if (isAllModules)
+                {
                     tlvConf->setAttr(MODULE_ATTR, ALL_ATTR_VAL);
                 }
                 GET_AND_SET_ATTR(writerIdAttr, currTlv, WRITER_ID_ATTR)
@@ -1186,37 +1345,48 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector < std::share
                 GET_AND_SET_ATTR(funcAttr, currTlv, FUNC_ATTR)
 
                 /* loop over the parameters list */
-                vector < string > collectedParams;
+                vector<string> collectedParams;
                 currParam = currTlv->xmlChildrenNode;
-                map < string, map < u_int32_t, string >> arrayValues;
-                while (currParam) {
+                map<string, map<u_int32_t, string>> arrayValues;
+                while (currParam)
+                {
                     IGNORE_UNUSEFUL_NODE(currParam)
                     xmlVal = xmlNodeListGetString(doc, currParam->xmlChildrenNode, 1);
                     indexAttr = xmlGetProp(currParam, (const xmlChar*)INDEX_ATTR);
-                    if (xmlVal && *xmlVal) {
-                        if (indexAttr) {
+                    if (xmlVal && *xmlVal)
+                    {
+                        if (indexAttr)
+                        {
                             string indexAttrStr = (const char*)indexAttr;
-                            vector < u_int32_t > indexes;
+                            vector<u_int32_t> indexes;
                             extractIndexes(indexAttrStr, indexes);
-                            for (vector < u_int32_t > ::iterator it = indexes.begin(); it != indexes.end(); ++it) {
+                            for (vector<u_int32_t>::iterator it = indexes.begin(); it != indexes.end(); ++it)
+                            {
                                 arrayValues[(char*)currParam->name][*it] = (char*)xmlVal;
                             }
-                        } else {
-                            if (find(collectedParams.begin(), collectedParams.end(), (char*)currParam->name) !=
-                                collectedParams.end()) {
+                        }
+                        else
+                        {
+                            if (find(collectedParams.begin(), collectedParams.end(), (char*)currParam->name) != collectedParams.end())
+                            {
                                 throw MlxcfgException("Duplicate use of same parameter: %s\n", (char*)currParam->name);
                             }
                             collectedParams.push_back((char*)currParam->name);
                             tlvConf->updateParamByName((char*)currParam->name, (char*)xmlVal);
                         }
-                    } else {
-                        if (tlvConf->isAStringParam((char*)currParam->name)) {
+                    }
+                    else
+                    {
+                        if (tlvConf->isAStringParam((char*)currParam->name))
+                        {
                             tlvConf->updateParamByName((char*)currParam->name, "");
-                        } else {
+                        }
+                        else
+                        {
                             throw MlxcfgException("The Parameter %s of the configuration %s "
                                                   "does not have value",
                                                   (char*)currParam->name,
-                                                  tlvConf->_name.   c_str());
+                                                  tlvConf->_name.c_str());
                         }
                     }
                     XMLFREE_AND_SET_NULL(xmlVal);
@@ -1224,19 +1394,19 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector < std::share
                     currParam = currParam->next;
                 }
                 /* process arrayValues */
-                for (map < string, map < u_int32_t, string >> ::iterator p = arrayValues.begin();
-                     p != arrayValues.end();
-                     ++p) {
+                for (map<string, map<u_int32_t, string>>::iterator p = arrayValues.begin(); p != arrayValues.end(); ++p)
+                {
                     /* TODO check validity of indices */
                     string paramName = p->first;
-                    vector < string > vals(p->second.size());
-                    for (map < u_int32_t, string > ::iterator v = p->second.begin(); v != p->second.end(); ++v) {
+                    vector<string> vals(p->second.size());
+                    for (map<u_int32_t, string>::iterator v = p->second.begin(); v != p->second.end(); ++v)
+                    {
                         vals[v->first] = v->second;
                     }
                     tlvConf->updateParamByName(paramName, vals);
                 }
             }
-            catch(MlxcfgException & e)
+            catch (MlxcfgException& e)
             {
                 throw e;
             }
@@ -1245,11 +1415,12 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector < std::share
             XMLFREE_AND_SET_NULL(portAttr)
             XMLFREE_AND_SET_NULL(moduleAttr)
         }
-        if (tlvs.size() == 0) {
+        if (tlvs.size() == 0)
+        {
             throw MlxcfgException("No TLV configurations were found in the XML");
         }
     }
-    catch(MlxcfgException & e)
+    catch (MlxcfgException& e)
     {
         XMLFREE_AND_SET_NULL(writerIdAttr)
         XMLFREE_AND_SET_NULL(portAttr)
@@ -1283,31 +1454,39 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector < std::share
 
 void GenericCommander::XML2Raw(const string& xmlContent, string& raw)
 {
-    vector < std::shared_ptr < TLVConf >> tlvs;
+    vector<std::shared_ptr<TLVConf>> tlvs;
 
     XML2TLVConf(xmlContent, tlvs);
 
     raw = RAW_FILE_FINGERPRINT;
     int i = 0;
 
-    for (vector < std::shared_ptr < TLVConf >> ::iterator tlvConf = tlvs.begin(); tlvConf != tlvs.end(); ++tlvConf) {
-        if ((*tlvConf)->_attrs[PORT_ATTR] == ALL_ATTR_VAL) {
-            for (i = 1; i <= (*tlvConf)->getMaxPort(_mf); i++) {
+    for (vector<std::shared_ptr<TLVConf>>::iterator tlvConf = tlvs.begin(); tlvConf != tlvs.end(); ++tlvConf)
+    {
+        if ((*tlvConf)->_attrs[PORT_ATTR] == ALL_ATTR_VAL)
+        {
+            for (i = 1; i <= (*tlvConf)->getMaxPort(_mf); i++)
+            {
                 (*tlvConf)->_attrs[PORT_ATTR] = i;
                 (*tlvConf)->_port = i;
                 string rawTLV;
                 (*tlvConf)->genRaw(rawTLV);
                 raw += '\n' + rawTLV + '\n';
             }
-        } else if ((*tlvConf)->_attrs[MODULE_ATTR] == ALL_ATTR_VAL) {
-            for (i = 0; i <= (*tlvConf)->getMaxModule(); i++) {
+        }
+        else if ((*tlvConf)->_attrs[MODULE_ATTR] == ALL_ATTR_VAL)
+        {
+            for (i = 0; i <= (*tlvConf)->getMaxModule(); i++)
+            {
                 (*tlvConf)->_attrs[MODULE_ATTR] = i;
                 (*tlvConf)->_module = i;
                 string rawTLV;
                 (*tlvConf)->genRaw(rawTLV);
                 raw += '\n' + rawTLV + '\n';
             }
-        } else {
+        }
+        else
+        {
             string rawTLV;
             (*tlvConf)->genRaw(rawTLV);
             raw += '\n' + rawTLV + '\n';
@@ -1315,111 +1494,124 @@ void GenericCommander::XML2Raw(const string& xmlContent, string& raw)
     }
 }
 
-void GenericCommander::TLVConf2Bin(const vector < std::shared_ptr < TLVConf >>& tlvs,
-                                   vector < u_int32_t >&                        buff,
-                                   bool                                         withHeader)
+void GenericCommander::TLVConf2Bin(const vector<std::shared_ptr<TLVConf>>& tlvs, vector<u_int32_t>& buff, bool withHeader)
 {
     int i = 0;
 
-    for (vector < std::shared_ptr < TLVConf >> ::const_iterator tlvConf = tlvs.begin();
-         tlvConf != tlvs.end();
-         ++tlvConf) {
-        if ((*tlvConf)->_attrs[PORT_ATTR] == ALL_ATTR_VAL) {
-            for (i = 1; i <= (*tlvConf)->getMaxPort(_mf); i++) {
+    for (vector<std::shared_ptr<TLVConf>>::const_iterator tlvConf = tlvs.begin(); tlvConf != tlvs.end(); ++tlvConf)
+    {
+        if ((*tlvConf)->_attrs[PORT_ATTR] == ALL_ATTR_VAL)
+        {
+            for (i = 1; i <= (*tlvConf)->getMaxPort(_mf); i++)
+            {
                 (*tlvConf)->_attrs[PORT_ATTR] = i;
                 (*tlvConf)->_port = i;
-                vector < u_int32_t > tmpBuff;
+                vector<u_int32_t> tmpBuff;
                 (*tlvConf)->genBin(tmpBuff, withHeader);
                 buff.insert(buff.end(), tmpBuff.begin(), tmpBuff.end());
             }
-        } else if ((*tlvConf)->_attrs[MODULE_ATTR] == ALL_ATTR_VAL) {
-            for (i = 0; i <= (*tlvConf)->getMaxModule(); i++) {
+        }
+        else if ((*tlvConf)->_attrs[MODULE_ATTR] == ALL_ATTR_VAL)
+        {
+            for (i = 0; i <= (*tlvConf)->getMaxModule(); i++)
+            {
                 (*tlvConf)->_attrs[MODULE_ATTR] = i;
                 (*tlvConf)->_module = i;
-                vector < u_int32_t > tmpBuff;
+                vector<u_int32_t> tmpBuff;
                 (*tlvConf)->genBin(tmpBuff, withHeader);
                 buff.insert(buff.end(), tmpBuff.begin(), tmpBuff.end());
             }
-        } else {
-            vector < u_int32_t > tmpBuff;
+        }
+        else
+        {
+            vector<u_int32_t> tmpBuff;
             (*tlvConf)->genBin(tmpBuff, withHeader);
             buff.insert(buff.end(), tmpBuff.begin(), tmpBuff.end());
         }
     }
 }
 
-void GenericCommander::XML2Bin(const string& xml, vector < u_int32_t >& buff, bool withHeader)
+void GenericCommander::XML2Bin(const string& xml, vector<u_int32_t>& buff, bool withHeader)
 {
-    vector < std::shared_ptr < TLVConf >> tlvs;
+    vector<std::shared_ptr<TLVConf>> tlvs;
 
     XML2TLVConf(xml, tlvs);
 
     TLVConf2Bin(tlvs, buff, withHeader);
 }
 
-void GenericCommander::sign(vector < u_int32_t >& buff, const string& privateKeyFile, const string& keyPairUUid)
+void GenericCommander::sign(vector<u_int32_t>& buff, const string& privateKeyFile, const string& keyPairUUid)
 {
     (void)keyPairUUid;
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-    vector < u_int32_t > encDigestDW;
-    vector < u_int8_t > digest, encDigest, bytesBuff;
+    vector<u_int32_t> encDigestDW;
+    vector<u_int8_t> digest, encDigest, bytesBuff;
     MlxSign::SHAType shaType;
-    unique_ptr < MlxSign::Signer > signer = nullptr;
+    unique_ptr<MlxSign::Signer> signer = nullptr;
 
     copyDwVectorToBytesVector(buff, bytesBuff);
 
-    if (privateKeyFile.empty()) {
+    if (privateKeyFile.empty())
+    {
         shaType = MlxSign::SHA256;
         MlxSignSHA256 mlxSignSHA;
         mlxSignSHA << bytesBuff;
         mlxSignSHA.getDigest(digest);
         encDigest.insert(encDigest.begin(), digest.begin(), digest.end());
-    } else {
-        signer = unique_ptr < MlxSign::Signer > (new MlxSign::MlxSignRSAViaOpenssl(privateKeyFile));
-        if ((signer != nullptr) && (signer->Init() != MlxSign::MLX_SIGN_SUCCESS)) {
+    }
+    else
+    {
+        signer = unique_ptr<MlxSign::Signer>(new MlxSign::MlxSignRSAViaOpenssl(privateKeyFile));
+        if ((signer != nullptr) && (signer->Init() != MlxSign::MLX_SIGN_SUCCESS))
+        {
             signer.reset();
             throw MlxcfgException("Failed to initialize signer.\n");
         }
 
-        if (signer->Sign(bytesBuff, encDigest) != MlxSign::MLX_SIGN_SUCCESS) {
+        if (signer->Sign(bytesBuff, encDigest) != MlxSign::MLX_SIGN_SUCCESS)
+        {
             throw MlxcfgException("Failed to sign configuration.\n");
         }
-        shaType = dynamic_cast < MlxSign::MlxSignRSAViaOpenssl * > (signer.get())->GetShaType();
+        shaType = dynamic_cast<MlxSign::MlxSignRSAViaOpenssl*>(signer.get())->GetShaType();
     }
 
     /* fetch the signature tlv from the database and fill in the data */
-    if (shaType == MlxSign::SHA256) {
-        vector < u_int32_t > signTlvBin;
-        std::shared_ptr < TLVConf > signTLV = _dbManager->getTLVByName("file_signature", 0, -1);
+    if (shaType == MlxSign::SHA256)
+    {
+        vector<u_int32_t> signTlvBin;
+        std::shared_ptr<TLVConf> signTLV = _dbManager->getTLVByName("file_signature", 0, -1);
 
-        std::shared_ptr < Param > keyPairUUidParam = signTLV->findParamByName("keypair_uuid");
-        dynamic_pointer_cast < BytesArrayParamVal > (keyPairUUidParam->_value)->setVal(keyPairUUid);
+        std::shared_ptr<Param> keyPairUUidParam = signTLV->findParamByName("keypair_uuid");
+        dynamic_pointer_cast<BytesArrayParamVal>(keyPairUUidParam->_value)->setVal(keyPairUUid);
 
-        std::shared_ptr < Param > signatureParam = signTLV->findParamByName("signature");
-        if (NULL == signatureParam) {
+        std::shared_ptr<Param> signatureParam = signTLV->findParamByName("signature");
+        if (NULL == signatureParam)
+        {
             throw MlxcfgException("The signature parameter was not found\n");
         }
         copyBytesVectorToDwVector(encDigest, encDigestDW);
         VECTOR_BE32_TO_CPU(encDigestDW)
-        dynamic_pointer_cast < BytesArrayParamVal > (signatureParam->_value)->setVal(encDigestDW);
+        dynamic_pointer_cast<BytesArrayParamVal>(signatureParam->_value)->setVal(encDigestDW);
 
         signTLV->genBin(signTlvBin);
 
         buff.insert(buff.end(), signTlvBin.begin(), signTlvBin.end());
-    } else {
-        std::shared_ptr < TLVConf > signTLV1 = _dbManager->getTLVByName("file_signature_4096_a", 0, -1);
-        std::shared_ptr < TLVConf > signTLV2 = _dbManager->getTLVByName("file_signature_4096_b", 0, -1);
+    }
+    else
+    {
+        std::shared_ptr<TLVConf> signTLV1 = _dbManager->getTLVByName("file_signature_4096_a", 0, -1);
+        std::shared_ptr<TLVConf> signTLV2 = _dbManager->getTLVByName("file_signature_4096_b", 0, -1);
 
-        std::shared_ptr < Param > keyPairUUidParam1 = signTLV1->findParamByName("keypair_uuid");
-        dynamic_pointer_cast < BytesArrayParamVal > (keyPairUUidParam1->_value)->setVal(keyPairUUid);
-        std::shared_ptr < Param > keyPairUUidParam2 = signTLV2->findParamByName("keypair_uuid");
-        dynamic_pointer_cast < BytesArrayParamVal > (keyPairUUidParam2->_value)->setVal(keyPairUUid);
+        std::shared_ptr<Param> keyPairUUidParam1 = signTLV1->findParamByName("keypair_uuid");
+        dynamic_pointer_cast<BytesArrayParamVal>(keyPairUUidParam1->_value)->setVal(keyPairUUid);
+        std::shared_ptr<Param> keyPairUUidParam2 = signTLV2->findParamByName("keypair_uuid");
+        dynamic_pointer_cast<BytesArrayParamVal>(keyPairUUidParam2->_value)->setVal(keyPairUUid);
 
         copyBytesVectorToDwVector(encDigest, encDigestDW);
         VECTOR_BE32_TO_CPU(encDigestDW)
 
-        std::shared_ptr < Param > signatureParam1 = signTLV1->findParamByName("signature");
-        std::shared_ptr < Param > signatureParam2 = signTLV2->findParamByName("signature");
+        std::shared_ptr<Param> signatureParam1 = signTLV1->findParamByName("signature");
+        std::shared_ptr<Param> signatureParam2 = signTLV2->findParamByName("signature");
 
         /* For Debug: */
         /*for(unsigned int i = 0; i < encDigestDW.size(); i++) {
@@ -1429,13 +1621,14 @@ void GenericCommander::sign(vector < u_int32_t >& buff, const string& privateKey
 
         /* split encDigestDW */
         unsigned int middleOfEncDigestDW = encDigestDW.size() / 2;
-        vector < u_int32_t > encDigestDW1(middleOfEncDigestDW), encDigestDW2(middleOfEncDigestDW);
-        for (unsigned int i = 0; i < middleOfEncDigestDW; i++) {
+        vector<u_int32_t> encDigestDW1(middleOfEncDigestDW), encDigestDW2(middleOfEncDigestDW);
+        for (unsigned int i = 0; i < middleOfEncDigestDW; i++)
+        {
             encDigestDW1[i] = encDigestDW[i];
             encDigestDW2[i] = encDigestDW[encDigestDW.size() / 2 + i];
         }
-        dynamic_pointer_cast < BytesArrayParamVal > (signatureParam1->_value)->setVal(encDigestDW1);
-        dynamic_pointer_cast < BytesArrayParamVal > (signatureParam2->_value)->setVal(encDigestDW2);
+        dynamic_pointer_cast<BytesArrayParamVal>(signatureParam1->_value)->setVal(encDigestDW1);
+        dynamic_pointer_cast<BytesArrayParamVal>(signatureParam2->_value)->setVal(encDigestDW2);
 
         /* For Debug: */
         /*for(unsigned int i = 0; i < encDigestDW1.size(); i++) {
@@ -1447,11 +1640,11 @@ void GenericCommander::sign(vector < u_int32_t >& buff, const string& privateKey
          *  }
          *  printf("\n");*/
 
-        vector < u_int32_t > signTlvBin1;
+        vector<u_int32_t> signTlvBin1;
         signTLV1->genBin(signTlvBin1);
         buff.insert(buff.end(), signTlvBin1.begin(), signTlvBin1.end());
 
-        vector < u_int32_t > signTlvBin2;
+        vector<u_int32_t> signTlvBin2;
         signTLV2->genBin(signTlvBin2);
         buff.insert(buff.end(), signTlvBin2.begin(), signTlvBin2.end());
     }
@@ -1462,8 +1655,7 @@ void GenericCommander::sign(vector < u_int32_t >& buff, const string& privateKey
 #endif /* if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL) */
 }
 
-void GenericCommander::checkConfTlvs(const vector < std::shared_ptr < TLVConf >>& tlvs,
-                                     FwComponent::comps_ids_t&                    compsId)
+void GenericCommander::checkConfTlvs(const vector<std::shared_ptr<TLVConf>>& tlvs, FwComponent::comps_ids_t& compsId)
 {
     bool dbgCompFound = false;
     bool csCompFound = false;
@@ -1481,84 +1673,116 @@ void GenericCommander::checkConfTlvs(const vector < std::shared_ptr < TLVConf >>
 
     mget_mdevs_type(_mf, &type);
 
-    for (vector < std::shared_ptr < TLVConf >> ::const_iterator it = tlvs.begin(); it != tlvs.end(); ++it) {
-        const std::shared_ptr < TLVConf > tlv = *it;
-        if ((tlv->_tlvClass == NVFile) && (tlv->_id == debugTokenId)) {
+    for (vector<std::shared_ptr<TLVConf>>::const_iterator it = tlvs.begin(); it != tlvs.end(); ++it)
+    {
+        const std::shared_ptr<TLVConf> tlv = *it;
+        if ((tlv->_tlvClass == NVFile) && (tlv->_id == debugTokenId))
+        {
             dbgCompFound = true;
             compsId = FwComponent::COMPID_DBG_TOKEN;
-        } else if ((tlv->_tlvClass == NVFile) && (tlv->_id == csTokenId)) {
+        }
+        else if ((tlv->_tlvClass == NVFile) && (tlv->_id == csTokenId))
+        {
             csCompFound = true;
             compsId = FwComponent::COMPID_CS_TOKEN;
-        } else if ((tlv->_tlvClass == NVFile) && (tlv->_id == frcTokenId)) {
+        }
+        else if ((tlv->_tlvClass == NVFile) && (tlv->_id == frcTokenId))
+        {
             frcCompFound = true;
-        } else if ((tlv->_tlvClass == NVFile) && (tlv->_id == btcTokenId)) {
+        }
+        else if ((tlv->_tlvClass == NVFile) && (tlv->_id == btcTokenId))
+        {
             csCompFound = true;
             compsId = FwComponent::COMPID_CRYPTO_TO_COMMISSIONING;
-        } else if ((tlv->_tlvClass == NVFile) && (tlv->_id == rmcsTokenId)) {
+        }
+        else if ((tlv->_tlvClass == NVFile) && (tlv->_id == rmcsTokenId))
+        {
             rmcsCompFound = true;
             compsId = FwComponent::COMPID_RMCS_TOKEN;
-        } else if ((tlv->_tlvClass == NVFile) && (tlv->_id == rmdtTokenId)) {
+        }
+        else if ((tlv->_tlvClass == NVFile) && (tlv->_id == rmdtTokenId))
+        {
             rmdtCompFound = true;
             compsId = FwComponent::COMPID_RMDT_TOKEN;
-        } else if ((tlv->_tlvClass == 0x0) && (tlv->_id == idMlnxId)) {
+        }
+        else if ((tlv->_tlvClass == 0x0) && (tlv->_id == idMlnxId))
+        {
             idMlnxCompFound = true;
             compsId = FwComponent::COMPID_MLNX_NVCONFIG;
-        } else if ((tlv->_tlvClass == 0x0) && (tlv->_id == idVendorId)) {
+        }
+        else if ((tlv->_tlvClass == 0x0) && (tlv->_id == idVendorId))
+        {
             idVendorCompFound = true;
             compsId = FwComponent::COMPID_OEM_NVCONFIG;
-        } else if (tlv->_name == "file_applicable_to") {
+        }
+        else if (tlv->_name == "file_applicable_to")
+        {
             foundApplicableTLV = true;
-        } else if (tlv->_name == "file_device_id") {
+        }
+        else if (tlv->_name == "file_device_id")
+        {
             foundFileDeviceID = true;
-        } else if (tlv->_name == "file_device_unique") {
+        }
+        else if (tlv->_name == "file_device_unique")
+        {
             deviceUniqueFound = true;
         }
 
-        if ((type & (MST_USB_DIMAX)) && (compsId == FwComponent::COMPID_UNKNOWN)) { /* MST_USB tlv's must have component */
+        if ((type & (MST_USB_DIMAX)) && (compsId == FwComponent::COMPID_UNKNOWN))
+        { /* MST_USB tlv's must have component */
             throw MlxcfgException("MTUSB device is not supported.");
         }
     }
 
-    if (deviceUniqueFound) {
-        if (compsId == FwComponent::COMPID_CS_TOKEN) {
+    if (deviceUniqueFound)
+    {
+        if (compsId == FwComponent::COMPID_CS_TOKEN)
+        {
             compsId = FwComponent::COMPID_CRCS_TOKEN;
-        } else if (compsId == FwComponent::COMPID_DBG_TOKEN) {
+        }
+        else if (compsId == FwComponent::COMPID_DBG_TOKEN)
+        {
             compsId = FwComponent::COMPID_CRDT_TOKEN;
         }
     }
 
-    u_int32_t numOfCompsFound = (dbgCompFound ? 1 : 0) + (csCompFound ? 1 : 0) + (rmcsCompFound ? 1 : 0) +
-                                (rmdtCompFound ? 1 : 0) + (idMlnxCompFound ? 1 : 0) + (idVendorCompFound ? 1 : 0) +
-                                (frcCompFound ? 1 : 0);
+    u_int32_t numOfCompsFound =
+      (dbgCompFound ? 1 : 0) + (csCompFound ? 1 : 0) + (rmcsCompFound ? 1 : 0) + (rmdtCompFound ? 1 : 0) + (idMlnxCompFound ? 1 : 0) + (idVendorCompFound ? 1 : 0) + (frcCompFound ? 1 : 0);
 
-    if (numOfCompsFound == 0) {
+    if (numOfCompsFound == 0)
+    {
         throw MlxcfgException("Unsupported device: No debug tokens or CS tokens or "
                               "MLNX/Vendor ID Components were found for "
                               "this device");
     }
 
-    if (numOfCompsFound > 1) {
+    if (numOfCompsFound > 1)
+    {
         throw MlxcfgException("Only one component is allowed");
     }
 
     /* At least one TLV must be file_applicable_to or file_device_id */
-    if (!(foundApplicableTLV || foundFileDeviceID)) {
+    if (!(foundApplicableTLV || foundFileDeviceID))
+    {
         throw MlxcfgException("At least one file_applicable_to or file_device_id tlv must be in the "
                               "configuration file");
     }
 
     /* both file_applicable_to and file_device_id can't exist in the same file */
-    if (foundApplicableTLV && foundFileDeviceID) {
+    if (foundApplicableTLV && foundFileDeviceID)
+    {
         throw MlxcfgException("Both file_applicable_to and file_device_id tlv must not be in the "
                               "configuration file");
     }
 }
-void GenericCommander::orderConfTlvs(vector < std::shared_ptr < TLVConf >>& tlvs)
+void GenericCommander::orderConfTlvs(vector<std::shared_ptr<TLVConf>>& tlvs)
 {
     bool isRemoteToken = false;
 
-    for (std::shared_ptr < TLVConf > tlv : tlvs) {
-        if ((tlv->_tlvClass == NVFile) && ((tlv->_id == rmcsTokenId) || (tlv->_id == rmdtTokenId))) {
+    for (std::shared_ptr<TLVConf> tlv : tlvs)
+    {
+        if ((tlv->_tlvClass == NVFile) && ((tlv->_id == rmcsTokenId) || (tlv->_id == rmdtTokenId)))
+        {
             isRemoteToken = true;
             break;
         }
@@ -1566,21 +1790,27 @@ void GenericCommander::orderConfTlvs(vector < std::shared_ptr < TLVConf >>& tlvs
 
     /* only for RMCS & RMDT the FW expects different order where mac is first, */
     /* in other tokens mac tlv is not expect by FW to be first. */
-    if (isRemoteToken) {
-        for (vector < std::shared_ptr < TLVConf >> ::iterator it = tlvs.begin(); it != tlvs.end(); ++it) {
-            std::shared_ptr < TLVConf > tlv = *it;
-            if ((tlv->_tlvClass == NVFile) && (tlv->_id == macAddrListId)) {
+    if (isRemoteToken)
+    {
+        for (vector<std::shared_ptr<TLVConf>>::iterator it = tlvs.begin(); it != tlvs.end(); ++it)
+        {
+            std::shared_ptr<TLVConf> tlv = *it;
+            if ((tlv->_tlvClass == NVFile) && (tlv->_id == macAddrListId))
+            {
                 *it = tlvs.front();
                 tlvs.front() = tlv;
                 break;
             }
         }
-    } else {
-        for (vector < std::shared_ptr < TLVConf >> ::iterator it = tlvs.begin(); it != tlvs.end(); ++it) {
-            std::shared_ptr < TLVConf > tlv = *it;
-            if (((tlv->_tlvClass == NVFile) &&
-                 ((tlv->_id == debugTokenId) || (tlv->_id == csTokenId) || (tlv->_id == btcTokenId))) ||
-                ((tlv->_tlvClass == Global) && ((tlv->_id == idMlnxId) || (tlv->_id == idVendorId)))) {
+    }
+    else
+    {
+        for (vector<std::shared_ptr<TLVConf>>::iterator it = tlvs.begin(); it != tlvs.end(); ++it)
+        {
+            std::shared_ptr<TLVConf> tlv = *it;
+            if (((tlv->_tlvClass == NVFile) && ((tlv->_id == debugTokenId) || (tlv->_id == csTokenId) || (tlv->_id == btcTokenId))) ||
+                ((tlv->_tlvClass == Global) && ((tlv->_id == idMlnxId) || (tlv->_id == idVendorId))))
+            {
                 *it = tlvs.front();
                 tlvs.front() = tlv;
                 break;
@@ -1591,10 +1821,11 @@ void GenericCommander::orderConfTlvs(vector < std::shared_ptr < TLVConf >>& tlvs
     /* file_applicable_to must be after the component */
     uint32_t deltaLocation = 1;
 
-    for (vector < std::shared_ptr < TLVConf >> ::iterator it = tlvs.begin(); it != tlvs.end(); ++it) {
-        std::shared_ptr < TLVConf > tlv = *it;
-        if (((tlv->_name == "file_applicable_to") || (tlv->_name == "file_device_id")) &&
-            (deltaLocation < tlvs.size())) {
+    for (vector<std::shared_ptr<TLVConf>>::iterator it = tlvs.begin(); it != tlvs.end(); ++it)
+    {
+        std::shared_ptr<TLVConf> tlv = *it;
+        if (((tlv->_name == "file_applicable_to") || (tlv->_name == "file_device_id")) && (deltaLocation < tlvs.size()))
+        {
             *it = *(tlvs.begin() + deltaLocation);
             *(tlvs.begin() + deltaLocation) = tlv;
             deltaLocation++;
@@ -1602,15 +1833,16 @@ void GenericCommander::orderConfTlvs(vector < std::shared_ptr < TLVConf >>& tlvs
     }
 }
 
-void GenericCommander::createConf(const string& xml, vector < u_int32_t >& buff)
+void GenericCommander::createConf(const string& xml, vector<u_int32_t>& buff)
 {
-    vector < std::shared_ptr < TLVConf >> tlvs;
-    vector < u_int32_t > tlvsBuff;
+    vector<std::shared_ptr<TLVConf>> tlvs;
+    vector<u_int32_t> tlvsBuff;
     FwComponent::comps_ids_t compsId;
 
     /* Add the fingerprint */
     string fingerPrint(BIN_FILE_FINGERPRINT);
-    for (unsigned int i = 0; i < fingerPrint.length(); i += 4) {
+    for (unsigned int i = 0; i < fingerPrint.length(); i += 4)
+    {
         buff.push_back(*(u_int32_t*)(fingerPrint.c_str() + i));
     }
 
@@ -1627,23 +1859,26 @@ void GenericCommander::createConf(const string& xml, vector < u_int32_t >& buff)
     buff.insert(buff.end(), tlvsBuff.begin(), tlvsBuff.end());
 }
 
-void GenericCommander::apply(const vector < u_int8_t >& buff)
+void GenericCommander::apply(const vector<u_int8_t>& buff)
 {
     FwComponent comp;
 
-    vector < std::shared_ptr < TLVConf >> tlvs;
-    vector < u_int32_t > dwBuff;
+    vector<std::shared_ptr<TLVConf>> tlvs;
+    vector<u_int32_t> dwBuff;
     FwCompsMgr fwCompsAccess(_mf);
-    vector < FwComponent > compsToBurn;
+    vector<FwComponent> compsToBurn;
     FwComponent::comps_ids_t compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
-    size_t                   fingerPrintLength = strlen(BIN_FILE_FINGERPRINT);
+    size_t fingerPrintLength = strlen(BIN_FILE_FINGERPRINT);
 
     /* Check if there is a fingerprint: */
-    if (buff.size() < fingerPrintLength) {
+    if (buff.size() < fingerPrintLength)
+    {
         throw MlxcfgException("Invalid Configuration file");
     }
-    for (unsigned int i = 0; i < fingerPrintLength; i += 4) {
-        if (buff[i] != BIN_FILE_FINGERPRINT[i]) {
+    for (unsigned int i = 0; i < fingerPrintLength; i += 4)
+    {
+        if (buff[i] != BIN_FILE_FINGERPRINT[i])
+        {
             throw MlxcfgException("Fingerprint is missing in the Configuration file");
         }
     }
@@ -1654,50 +1889,60 @@ void GenericCommander::apply(const vector < u_int8_t >& buff)
 
     checkConfTlvs(tlvs, compsId);
 
-    if (!fwCompsAccess.getFwSupport()) {
+    if (!fwCompsAccess.getFwSupport())
+    {
         throw MlxcfgException("Firmware does not support applying configurations files");
     }
 
     comp.init(buff, buff.size(), compsId);
     compsToBurn.push_back(comp);
-    if (!fwCompsAccess.burnComponents(compsToBurn)) {
+    if (!fwCompsAccess.burnComponents(compsToBurn))
+    {
         throw MlxcfgException("Error applying the component: %s", fwCompsAccess.getLastErrMsg());
     }
 }
 
-void GenericCommander::raw2XML(const vector < string >& lines, string& xmlTemplate)
+void GenericCommander::raw2XML(const vector<string>& lines, string& xmlTemplate)
 {
     bool foundTlv = false;
 
     xmlTemplate = XML_DOCUMENT_START;
 
     /* check fingerprint in first line */
-    vector < string > ::const_iterator it = lines.begin();
-    if ((it == lines.end()) || (*it != RAW_FILE_FINGERPRINT)) {
+    vector<string>::const_iterator it = lines.begin();
+    if ((it == lines.end()) || (*it != RAW_FILE_FINGERPRINT))
+    {
         throw MlxcfgException("Raw Content Fingerprint " RAW_FILE_FINGERPRINT " is missing or incorrect");
     }
 
     it++;
 
-    for (; it != lines.end(); it++) {
+    for (; it != lines.end(); it++)
+    {
         string tlvXMLTemplate;
-        if ((*it)[0] == '%') { /* a FILE_COMMENT tlv */
-                               /* TODO */
-        } else {
+        if ((*it)[0] == '%')
+        { /* a FILE_COMMENT tlv */
+            /* TODO */
+        }
+        else
+        {
             /* printf("-D- line=%s\n", it->c_str()); */
             char* p = NULL;
-            vector < u_int32_t > binTLV;
-            vector < string > dws = splitStr(*it, ' ');
-            for (vector < string > ::iterator s = dws.begin(); s != dws.end(); ++s) {
+            vector<u_int32_t> binTLV;
+            vector<string> dws = splitStr(*it, ' ');
+            for (vector<string>::iterator s = dws.begin(); s != dws.end(); ++s)
+            {
                 /* printf("s=%s\n", s->c_str()); */
                 u_int32_t dw = __cpu_to_be32(strtoul((*s).c_str(), &p, 0));
                 /* printf("-D- s=%s dw=0x%x\n", s->c_str(), dw); */
-                if (!p) {
+                if (!p)
+                {
                     throw MlxcfgException("Input is not an unsigned number: %s", (*s).c_str());
                 }
                 binTLV.push_back(dw);
             }
-            if (!binTLV.empty()) {
+            if (!binTLV.empty())
+            {
                 binTLV2XML(binTLV, tlvXMLTemplate);
                 xmlTemplate += '\n' + tlvXMLTemplate + '\n';
                 foundTlv = true;
@@ -1705,7 +1950,8 @@ void GenericCommander::raw2XML(const vector < string >& lines, string& xmlTempla
         }
     }
 
-    if (!foundTlv) {
+    if (!foundTlv)
+    {
         throw MlxcfgException("No TLV configurations were found in the raw file");
     }
 
@@ -1713,14 +1959,18 @@ void GenericCommander::raw2XML(const vector < string >& lines, string& xmlTempla
     /* printf("xmlTemplate=\n%s", xmlTemplate.c_str()); */
 }
 
-void GenericCommander::removeSignatureTlvs(vector < std::shared_ptr < TLVConf >>& tlvs)
+void GenericCommander::removeSignatureTlvs(vector<std::shared_ptr<TLVConf>>& tlvs)
 {
     auto tlv = tlvs.begin();
 
-    while (tlv != tlvs.end()) {
-        if ((*tlv)->_name == "file_signature") {
+    while (tlv != tlvs.end())
+    {
+        if ((*tlv)->_name == "file_signature")
+        {
             tlv = tlvs.erase(tlv);
-        } else {
+        }
+        else
+        {
             ++tlv;
         }
     }
@@ -1734,9 +1984,10 @@ RawCfgParams5thGen::RawCfgParams5thGen()
     memset(&_nvdaTlv, 0, sizeof(tools_open_mnvda));
 }
 
-int RawCfgParams5thGen::setRawData(const std::vector < u_int32_t >& tlvBuff)
+int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff)
 {
-    if (tlvBuff.size() * 4 > TOOLS_OPEN_MNVDA_SIZE) {
+    if (tlvBuff.size() * 4 > TOOLS_OPEN_MNVDA_SIZE)
+    {
         return errmsg(MCE_BAD_PARAM_VAL,
                       "TLV size exceeds maximal limit. Maximum size is 0x%x bytes, "
                       "actual length is 0x%x bytes",
@@ -1744,11 +1995,12 @@ int RawCfgParams5thGen::setRawData(const std::vector < u_int32_t >& tlvBuff)
     }
     _tlvBuff = tlvBuff;
     memset(&_nvdaTlv, 0, sizeof(struct tools_open_mnvda));
-    std::vector < u_int32_t > tlvBuffBe = _tlvBuff;
+    std::vector<u_int32_t> tlvBuffBe = _tlvBuff;
     tlvBuffBe.resize(TOOLS_OPEN_MNVDA_SIZE >> 2);
     memset(&tlvBuffBe[0], 0, TOOLS_OPEN_MNVDA_SIZE);
     tlvBuffBe.insert(tlvBuffBe.begin(), _tlvBuff.begin(), _tlvBuff.end());
-    for (std::vector < u_int32_t > ::iterator it = tlvBuffBe.begin(); it != tlvBuffBe.end(); it++) {
+    for (std::vector<u_int32_t>::iterator it = tlvBuffBe.begin(); it != tlvBuffBe.end(); it++)
+    {
         *it = __cpu_to_be32(*it);
     }
     tools_open_mnvda_unpack(&_nvdaTlv, ((u_int8_t*)(&tlvBuffBe[0])));
@@ -1756,13 +2008,14 @@ int RawCfgParams5thGen::setRawData(const std::vector < u_int32_t >& tlvBuff)
     return verifyTlv();
 }
 
-std::vector < u_int32_t > RawCfgParams5thGen::getRawData()
+std::vector<u_int32_t> RawCfgParams5thGen::getRawData()
 {
-    std::vector < u_int32_t > tlvBuff;
+    std::vector<u_int32_t> tlvBuff;
     tlvBuff.resize(TOOLS_OPEN_MNVDA_SIZE >> 2);
     memset(&tlvBuff[0], 0, TOOLS_OPEN_MNVDA_SIZE >> 2);
     tools_open_mnvda_pack(&_nvdaTlv, ((u_int8_t*)(&tlvBuff[0])));
-    for (std::vector < u_int32_t > ::iterator it = tlvBuff.begin(); it != tlvBuff.end(); it++) {
+    for (std::vector<u_int32_t>::iterator it = tlvBuff.begin(); it != tlvBuff.end(); it++)
+    {
         *it = __be32_to_cpu(*it);
     }
     /* Truncate to the correct data size */
@@ -1779,7 +2032,8 @@ int RawCfgParams5thGen::setOnDev(mfile* mf, RawTlvMode mode)
     rc = reg_access_mnvda(mf, mode == SET_RAW ? REG_ACCESS_METHOD_SET : REG_ACCESS_METHOD_GET, &_nvdaTlv);
     DEBUG_PRINT_RECEIVE(&_nvdaTlv, mnvda);
     dealWithSignal();
-    if (rc) {
+    if (rc)
+    {
         return errmsg("Failed to set raw TLV: %s", m_err2str((MError)rc));
     }
     return MCE_SUCCESS;
@@ -1789,9 +2043,10 @@ std::string RawCfgParams5thGen::dumpTlv()
 {
     char str[1024] = {0};
 
-    snprintf(str, 1024, "Length: 0x%x\nVersion: %d\nOverrideEn: %d\nType: 0x%08x\nData: ", _nvdaTlv.nv_hdr.length,
-             _nvdaTlv.nv_hdr.version, _nvdaTlv.nv_hdr.over_en, _nvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw);
-    for (size_t i = 3; i < _tlvBuff.size(); i++) {
+    snprintf(str, 1024, "Length: 0x%x\nVersion: %d\nOverrideEn: %d\nType: 0x%08x\nData: ", _nvdaTlv.nv_hdr.length, _nvdaTlv.nv_hdr.version, _nvdaTlv.nv_hdr.over_en,
+             _nvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw);
+    for (size_t i = 3; i < _tlvBuff.size(); i++)
+    {
         char numStr[64] = {0};
         snprintf(numStr, 64, "0x%08x ", _tlvBuff[i]);
         strcat(str, numStr);
@@ -1805,7 +2060,8 @@ int RawCfgParams5thGen::verifyTlv()
     /* check TLV length */
     int tlvLength = (_tlvBuff.size() - 3) << 2;
 
-    if (tlvLength != _nvdaTlv.nv_hdr.length) {
+    if (tlvLength != _nvdaTlv.nv_hdr.length)
+    {
         return errmsg(MCE_BAD_PARAM_VAL,
                       "TLV size mismatch. reported length in TLV header: 0x%x. "
                       "actual length: 0x%x",
