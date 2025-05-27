@@ -34,6 +34,11 @@ int GetVSECStartOffset(unsigned domain, unsigned bus, unsigned dev, unsigned fun
     return 0;
 }
 
+bool CheckifKernelLockdownIsEnabled()
+{
+    return VFIODriverAccess::CheckifKernelLockdownIsEnabled();
+}
+
 int CloseVFIODevices(int deviceFD)
 {
     try

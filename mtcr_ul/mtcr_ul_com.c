@@ -2558,16 +2558,30 @@ static MType mtcr_parse_name(const char* name,
     unsigned len = strlen(name);
     unsigned tmp;
 
-    /* vfio0-<dbdf/bdf> */
-    if (strstr(name, "vfio-") != 0) {
-        scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
-        if (scnt != 4) {
-            my_domain = 0;
-            scnt = sscanf(name, "vfio-%x:%x.%x", &my_bus, &my_dev, &my_func);
-            if (scnt != 3) {
-                return MST_ERROR;
+    int is_vfio = strstr(name, "vfio-") != NULL;
+    int lockdown_enabled = CheckifKernelLockdownIsEnabled();
+
+    if (is_vfio || lockdown_enabled) {
+        if (is_vfio) {
+            scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+            if (scnt != 4) {
+                my_domain = 0;
+                scnt = sscanf(name, "vfio-%x:%x.%x", &my_bus, &my_dev, &my_func);
+                if (scnt != 3) {
+                    return MST_ERROR;
+                }
+            }
+        } else {
+            scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+            if (scnt != 4) {
+                my_domain = 0;
+                scnt = sscanf(name, "%x:%x.%x", &my_bus, &my_dev, &my_func);
+                if (scnt != 3) {
+                    return MST_ERROR;
+                }
             }
         }
+
         *domain_p = my_domain;
         *bus_p = my_bus;
         *dev_p = my_dev;
