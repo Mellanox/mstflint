@@ -22,6 +22,7 @@ extern "C"
 
 int GetVSECStartOffset(unsigned domain, unsigned bus, unsigned dev, unsigned func, int* deviceFD,
                        uint64_t* vsecOffset);
+bool CheckifKernelLockdownIsEnabled();
 int CloseVFIODevices(int deviceFD);
 #ifdef __cplusplus
 }
