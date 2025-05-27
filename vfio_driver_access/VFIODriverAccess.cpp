@@ -14,6 +14,7 @@
 #include "VFIODriverAccess.h"
 #include "VFIODriverAccessDefs.h"
 #include <fcntl.h>
+#include <stdexcept>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/vfio.h>
