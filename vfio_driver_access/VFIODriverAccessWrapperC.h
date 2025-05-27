@@ -20,11 +20,11 @@ extern "C"
 {
 #endif
 
-    int OpenVFIODevices(unsigned domain, unsigned bus, unsigned dev, unsigned func, int* deviceFD);
-    int CloseVFIODevices(int deviceFD);
-    int GetVSECStartOffset(int deviceFD, uint64_t* vsecOffset);
+int GetVSECStartOffset(unsigned domain, unsigned bus, unsigned dev, unsigned func, int* deviceFD,
+                       uint64_t* vsecOffset);
+int CloseVFIODevices(int deviceFD);
 #ifdef __cplusplus
 }
 #endif
 
-#endif // VFIO_DRIVER_ACCESS_WRAPPER_C_H
+#endif /* VFIO_DRIVER_ACCESS_WRAPPER_C_H */

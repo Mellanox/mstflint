@@ -16,7 +16,7 @@
 #include <iomanip>
 #include <sstream>
 
-int OpenVFIODevices(unsigned domain, unsigned bus, unsigned dev, unsigned func, int* deviceFD)
+int GetVSECStartOffset(unsigned domain, unsigned bus, unsigned dev, unsigned func, int* deviceFD, uint64_t* vsecOffset)
 {
     try
     {
@@ -25,9 +25,9 @@ int OpenVFIODevices(unsigned domain, unsigned bus, unsigned dev, unsigned func, 
             << bus << ":" << std::setw(2) << std::setfill('0') << dev << "." << func;
 
         std::string dbdf = oss.str();
-        VFIODriverAccess::OpenVFIODevices(dbdf, *deviceFD);
+        VFIODriverAccess::OpenVFIODevices(dbdf, *deviceFD, *vsecOffset);
     }
-    catch (const std::exception& e)
+    catch(const std::exception& e)
     {
         return -1;
     }
@@ -40,20 +40,7 @@ int CloseVFIODevices(int deviceFD)
     {
         VFIODriverAccess::CloseVFIODevices(deviceFD);
     }
-    catch (const std::exception& e)
-    {
-        return -1;
-    }
-    return 0;
-}
-
-int GetVSECStartOffset(int deviceFD, uint64_t* vsecOffset)
-{
-    try
-    {
-        VFIODriverAccess::GetVSECStartOffset(deviceFD, *vsecOffset);
-    }
-    catch (const std::exception& e)
+    catch(const std::exception& e)
     {
         return -1;
     }

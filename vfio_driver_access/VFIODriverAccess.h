@@ -13,17 +13,23 @@
 #pragma once
 
 #include <string>
+#include <map>
+#include <string>
+#include <utility>
+#include <unordered_map>
+#include "VFIODriverAccessDefs.h"
 
 class VFIODriverAccess
 {
 public:
-    static void OpenVFIODevices(const std::string& dbdf, int& deviceFD);
+    static void OpenVFIODevices(const std::string& dbdf, int& deviceFD, uint64_t& vsecOffset);
     static void CloseVFIODevices(int deviceFD);
-    static void GetVSECStartOffset(int deviceFD, uint64_t& vsecOffset);
     static bool CheckifKernelLockdownIsEnabled();
 
 private:
-    static void bindDeviceToVfioPciDriver(const std::string& hwDevId);
+    static void GetVSECStartOffset(int deviceFD, uint64_t& vsecOffset);
+    static bool isDeviceBoundToVfioPci(const std::string& dbdf);
+    static void bindDeviceToVfioPciDriver(const std::string& dbdf);
     static void CreateJsonDevice(const std::string& dbdf);
     static std::string FindIOMMUGroupByDBDF(const std::string& dbdf);
     static void CleanupVFIODevice(const std::string& dbdf, const int iommuGroup);
@@ -33,4 +39,36 @@ private:
     static void AttachGroupToContainer(int groupID, int vfioID);
     static void EnableIOMMU(int vfioID);
     static int GetDeviceFD(int groupID, const std::string& dbdf);
+};
+
+class VFIODeviceRegistry
+{
+public:
+    static VFIODeviceRegistry& GetInstance()
+    {
+        static VFIODeviceRegistry inst;
+
+        return inst;
+    }
+
+    bool Contains(const std::string& dbdf) const
+    {
+        return deviceMap.count(dbdf) > 0;
+    }
+
+    VFIODeviceInfo GetDeviceInfo(const std::string& dbdf) const
+    {
+        return deviceMap.at(dbdf);
+    }
+
+    void InsertDeviceInfo(const std::string& dbdf, int fd, uint64_t vsecOffset)
+    {
+        deviceMap[dbdf] = {fd, vsecOffset};
+    }
+
+private:
+    VFIODeviceRegistry() = default;
+    ~VFIODeviceRegistry() = default;
+
+    std::unordered_map < std::string, VFIODeviceInfo > deviceMap;
 };
