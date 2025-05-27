@@ -76,7 +76,6 @@
 #endif
 
 
-
 #include <stdio.h>
 #include <dirent.h>
 #include <string.h>
@@ -1839,39 +1838,34 @@ static int get_space_support_status(mfile* mf, u_int16_t space)
     return status;
 }
 
-static int
-  mtcr_vfio_device_open(mfile* mf, unsigned domain, unsigned bus, unsigned dev, unsigned func, u_int32_t adv_opt)
+static int mtcr_vfio_device_open(mfile   * mf,
+                                 unsigned  domain,
+                                 unsigned  bus,
+                                 unsigned  dev,
+                                 unsigned  func,
+                                 u_int32_t adv_opt)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
     u_int32_t vsec_type = 0;
+
     mf->fd = -1;
     mf->tp = MST_PCICONF;
 
-    if (OpenVFIODevices(domain, bus, dev, func, &mf->fd) != 0)
-    {
+    if (GetVSECStartOffset(domain, bus, dev, func, &mf->fd, &mf->vsec_addr) != 0) {
         return -1;
     }
 
-    if (GetVSECStartOffset(mf->fd, &mf->vsec_addr) != 0)
-    {
-        return -1;
-    }
-
-    if (mf->vsec_addr)
-    {
+    if (mf->vsec_addr) {
         READ4_PCI(mf, &vsec_type, mf->vsec_addr, "read vsc type", return ME_PCI_READ_ERROR);
         mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
-        if (mf->vsec_type == FUNCTIONAL_VSC)
-        {
+        if (mf->vsec_type == FUNCTIONAL_VSC) {
             DBG_PRINTF("FUNCTIONAL VSC Supported\n");
             mf->functional_vsec_supp = 1;
-            // check if the needed spaces are supported
-            if (adv_opt & Clear_Vsec_Semaphore)
-            {
+            /* check if the needed spaces are supported */
+            if (adv_opt & Clear_Vsec_Semaphore) {
                 mtcr_pciconf_cap9_sem(mf, 0);
             }
-            if (mtcr_pciconf_cap9_sem(mf, 1))
-            {
+            if (mtcr_pciconf_cap9_sem(mf, 1)) {
                 close(mf->fd);
                 errno = EBUSY;
                 return -1;
@@ -1896,8 +1890,7 @@ static int
 
             mtcr_pciconf_cap9_sem(mf, 0);
 
-            if (VSEC_SUPPORTED_UL(mf))
-            {
+            if (VSEC_SUPPORTED_UL(mf)) {
                 mf->address_space = AS_CR_SPACE;
                 ctx->mread4 = mtcr_pciconf_mread4;
                 ctx->mwrite4 = mtcr_pciconf_mwrite4;
@@ -1908,15 +1901,12 @@ static int
             mf->pxir_vsec_supp = 0;
             if ((mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_CRSPACE))) &&
                 (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_ALL_ICMD))) &&
-                (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_GLOBAL_SEMAPHORE))))
-            {
+                (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_GLOBAL_SEMAPHORE)))) {
                 mf->pxir_vsec_supp = 1;
             }
             DBG_PRINTF("mf->pxir_vsec_supp: %d\n", mf->pxir_vsec_supp);
         }
-    }
-    else
-    {
+    } else {
         return -1;
     }
 
@@ -2055,7 +2045,6 @@ int mtcr_i2c_mread_chunks(mfile* mf, unsigned int offset, void* data, int length
     int      bytes = 0;
     void   * dest_ptr = data;
     int      bytes_read = length;
-
     int      chunk_size = MAX_TRANS_SIZE;
 
     for (left_size = length; left_size > 0; left_size -= chunk_size) {
@@ -2071,9 +2060,11 @@ int mtcr_i2c_mread_chunks(mfile* mf, unsigned int offset, void* data, int length
         dest_ptr += chunk_size;
     }
 
-    if (bytes_read != length)
-    {
-        DBG_PRINTF("mtcr_i2c_mread_chunks: address: 0x%06x num_bytes attempted to read: %d bytes_read: %d\n", offset, length, bytes_read);
+    if (bytes_read != length) {
+        DBG_PRINTF("mtcr_i2c_mread_chunks: address: 0x%06x num_bytes attempted to read: %d bytes_read: %d\n",
+                   offset,
+                   length,
+                   bytes_read);
     }
     return bytes_read;
 }
@@ -2081,6 +2072,7 @@ int mtcr_i2c_mread_chunks(mfile* mf, unsigned int offset, void* data, int length
 int mread_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
 {
     u_int8_t addr_width = 0;
+
     mget_i2c_addr_width(mf, &addr_width);
 
     int rc = mread_i2cblock(mf, mf->i2c_secondary, addr_width, offset, data, length);
@@ -2096,21 +2088,19 @@ int mread_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
 /* split the data to chunks of 32 bytes and write each chunk. */
 int mtcr_i2c_mwrite_chunks(mfile* mf, unsigned int offset, void* data, int length)
 {
-    int chunk_size;
-    int left_size;
-    int bytes;
+    int   chunk_size;
+    int   left_size;
+    int   bytes;
     void* dest_ptr = data;
-    int bytes_written = length;
+    int   bytes_written = length;
 
     chunk_size = MAX_CHUNK_SIZE;
 
-    for (left_size = length; left_size > 0; left_size -= chunk_size)
-    {
+    for (left_size = length; left_size > 0; left_size -= chunk_size) {
         int towrite;
         towrite = (left_size >= chunk_size) ? chunk_size : left_size;
         bytes = mwrite_i2c_chunk(mf, offset, dest_ptr, towrite);
-        if (bytes != towrite)
-        {
+        if (bytes != towrite) {
             bytes_written = length - left_size;
             break;
         }
@@ -2119,9 +2109,11 @@ int mtcr_i2c_mwrite_chunks(mfile* mf, unsigned int offset, void* data, int lengt
         dest_ptr += chunk_size;
     }
 
-    if (bytes_written != length)
-    {
-        DBG_PRINTF("mtcr_i2c_mwrite_chunks: address: 0x%06x num_bytes attempted to write: %d bytes_written: %d\n", offset, length, bytes_written);
+    if (bytes_written != length) {
+        DBG_PRINTF("mtcr_i2c_mwrite_chunks: address: 0x%06x num_bytes attempted to write: %d bytes_written: %d\n",
+                   offset,
+                   length,
+                   bytes_written);
     }
 
     return bytes_written;
@@ -2133,6 +2125,7 @@ int mwrite_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
     fix_endianness((u_int32_t*)data, length, 1);
 
     u_int8_t addr_width = 0;
+
     mget_i2c_addr_width(mf, &addr_width);
 
     int rc = mwrite_i2cblock(mf, mf->i2c_secondary, addr_width, offset, data, length);
@@ -2280,8 +2273,11 @@ int mtcr_i2c_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
         return bytes_written;
     }
 
-    DBG_PRINTF("mtcr_i2c_mwrite4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_written: %d\n", mf->i2c_secondary,
-           offset, value, bytes_written);
+    DBG_PRINTF("mtcr_i2c_mwrite4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_written: %d\n",
+               mf->i2c_secondary,
+               offset,
+               value,
+               bytes_written);
 
     return bytes_written;
 }
@@ -2562,16 +2558,13 @@ static MType mtcr_parse_name(const char* name,
     unsigned len = strlen(name);
     unsigned tmp;
 
-        // vfio0-<dbdf/bdf>
-    if (strstr(name, "vfio-") != 0)
-    {
+    /* vfio0-<dbdf/bdf> */
+    if (strstr(name, "vfio-") != 0) {
         scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
-        if (scnt != 4)
-        {
+        if (scnt != 4) {
             my_domain = 0;
             scnt = sscanf(name, "vfio-%x:%x.%x", &my_bus, &my_dev, &my_func);
-            if (scnt != 3)
-            {
+            if (scnt != 3) {
                 return MST_ERROR;
             }
         }
@@ -3457,10 +3450,10 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
             goto open_failed;
         }
         break;
+
     case MST_VFIO_DEVICE:
         rc = mtcr_vfio_device_open(mf, domain, bus, dev, func, adv_opt);
-        if (rc)
-        {
+        if (rc) {
             goto open_failed;
         }
         return mf;
