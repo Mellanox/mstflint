@@ -121,6 +121,7 @@ struct mfile_t {
     u_int8_t       vsec_type;
     mtcr_status_e  icmd_support;
     u_int64_t   vsec_addr;
+    u_int64_t   address_region_addr;
     u_int32_t      vsec_cap_mask;
     int            address_space;
     int            multifunction;

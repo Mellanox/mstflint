@@ -25,17 +25,19 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-void VFIODriverAccess::OpenVFIODevices(const std::string& dbdf, int& deviceFD, uint64_t& vsecOffset)
+void VFIODriverAccess::OpenVFIODevices(const std::string& dbdf, int& deviceFD, uint64_t& vsecOffset, uint64_t& addressRegionOffset)
 {
     try
     {
         if (VFIODeviceRegistry::GetInstance().Contains(dbdf)) {
             deviceFD = VFIODeviceRegistry::GetInstance().GetDeviceInfo(dbdf).deviceFD;
             vsecOffset = VFIODeviceRegistry::GetInstance().GetDeviceInfo(dbdf).vsecOffset;
-            DBG_PRINTF("Device %s already opened, returning existing FD: %d, VSEC offset: %lx\n",
+            addressRegionOffset = VFIODeviceRegistry::GetInstance().GetDeviceInfo(dbdf).addressRegionOffset;
+            DBG_PRINTF("Device %s already opened, returning existing FD: %d, VSEC offset: %lx, Address region offset: %lx\n",
                        dbdf.c_str(),
                        deviceFD,
-                       vsecOffset);
+                       vsecOffset,
+                       addressRegionOffset);
             return;
         }
 
@@ -66,10 +68,10 @@ void VFIODriverAccess::OpenVFIODevices(const std::string& dbdf, int& deviceFD, u
         deviceFD = GetDeviceFD(groupFD, dbdf);
 
         /* Get the VSEC start offset. */
-        GetVSECStartOffset(deviceFD, vsecOffset);
+        GetStartOffsets(deviceFD, vsecOffset, addressRegionOffset);
 
         /* Insert the device info into the registry. */
-        VFIODeviceRegistry::GetInstance().InsertDeviceInfo(dbdf, deviceFD, vsecOffset);
+        VFIODeviceRegistry::GetInstance().InsertDeviceInfo(dbdf, deviceFD, vsecOffset, addressRegionOffset);
 
         close(groupFD);
     }
@@ -85,7 +87,7 @@ void VFIODriverAccess::CloseVFIODevices(int deviceFD)
     (void)deviceFD;
 }
 
-void VFIODriverAccess::GetVSECStartOffset(int deviceFD, uint64_t& vsecOffset)
+void VFIODriverAccess::GetStartOffsets(int deviceFD, uint64_t& vsecOffset, uint64_t& addressRegionOffset)
 {
     struct vfio_region_info region;
 
@@ -109,6 +111,8 @@ void VFIODriverAccess::GetVSECStartOffset(int deviceFD, uint64_t& vsecOffset)
     uint8_t cap_id = 0;
     uint8_t next_offset = cap_offset;
 
+    vsecOffset = 0;
+    addressRegionOffset = region.offset;
     while (next_offset && next_offset < 0xFF) {
         if (pread(deviceFD, &cap_id, sizeof(cap_id), region.offset + next_offset) != sizeof(cap_id)) {
             throw std::runtime_error("Failed to read PCI capability ID: " + std::string(strerror(errno)));
@@ -116,7 +120,7 @@ void VFIODriverAccess::GetVSECStartOffset(int deviceFD, uint64_t& vsecOffset)
 
         if (cap_id == PCI_CAP_ID_VSC) {
             DBG_PRINTF("VSEC capability starts at PCI config space offset: 0x%lx\n", vsecOffset);
-            vsecOffset = region.offset + next_offset;
+            vsecOffset = next_offset;
             return;
         }
 
@@ -126,14 +130,14 @@ void VFIODriverAccess::GetVSECStartOffset(int deviceFD, uint64_t& vsecOffset)
         }
     }
 
-    throw std::runtime_error("VSC not found in PCI config space.");
+    DBG_PRINTF("VSC not found in PCI config space.\n");
 }
 
 bool VFIODriverAccess::isDeviceBoundToVfioPci(const std::string& dbdf)
 {
     std::string linkPath = "/sys/bus/pci/devices/" + dbdf + "/driver";
-    char        resolvedPath[PATH_MAX] = {0};
-    ssize_t     len = readlink(linkPath.c_str(), resolvedPath, sizeof(resolvedPath) - 1);
+    char resolvedPath[PATH_MAX] = {0};
+    ssize_t len = readlink(linkPath.c_str(), resolvedPath, sizeof(resolvedPath) - 1);
 
     if (len == -1) {
         return false; /* No driver bound or error */
@@ -143,19 +147,40 @@ bool VFIODriverAccess::isDeviceBoundToVfioPci(const std::string& dbdf)
     return target.find("vfio-pci") != std::string::npos;
 }
 
+std::string VFIODriverAccess::getDeviceId(const std::string& dbdf)
+{
+    std::string path = "/sys/bus/pci/devices/" + dbdf + "/device";
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open: " + path);
+    }
+
+    std::string value;
+    file >> value;
+
+    /* Remove leading "0x" */
+    if (value.rfind("0x", 0) == 0) {
+        value = value.substr(2);
+    }
+
+    return value;
+}
+
 void VFIODriverAccess::bindDeviceToVfioPciDriver(const std::string& dbdf)
 {
-    /*if (isDeviceBoundToVfioPci(dbdf)) { */
-    /*    DBG_PRINTF("Device %s is already bound to vfio-pci\n", dbdf.c_str()); */
-    /*    return; */
-    /*} */
+    if (isDeviceBoundToVfioPci(dbdf)) {
+        DBG_PRINTF("Device %s is already bound to vfio-pci\n", dbdf.c_str());
+        return;
+    }
+
+    std::string deviceId = getDeviceId(dbdf);
 
     std::ofstream new_id_file(VFIO_PCI_DRIVER_NEW_ID_PATH);
     if (!new_id_file) {
         throw std::runtime_error(std::string("Failed to open new_id file: ") + VFIO_PCI_DRIVER_NEW_ID_PATH);
     }
 
-    new_id_file << "15b3 " + dbdf << std::endl;
+    new_id_file << "15b3 " + deviceId << std::endl;
     if (!new_id_file) {
         throw std::runtime_error(std::string("Failed to write to ") + VFIO_PCI_DRIVER_NEW_ID_PATH);
     }
