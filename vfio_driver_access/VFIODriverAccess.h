@@ -1,14 +1,35 @@
 /*
  * Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
- * This software product is a proprietary product of Nvidia Corporation and its affiliates
- * (the "Company") and all right, title, and interest in and to the software
- * product, including all associated intellectual property rights, are and
- * shall remain exclusively with the Company.
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- * This software product is governed by the End User License Agreement
- * provided with the software product.
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
+
 
 #pragma once
 
@@ -22,12 +43,13 @@
 class VFIODriverAccess
 {
 public:
-    static void OpenVFIODevices(const std::string& dbdf, int& deviceFD, uint64_t& vsecOffset);
+    static void OpenVFIODevices(const std::string& dbdf, int& deviceFD, uint64_t& vsecOffset, uint64_t& addressRegionOffset);
     static void CloseVFIODevices(int deviceFD);
     static bool CheckifKernelLockdownIsEnabled();
 
 private:
-    static void GetVSECStartOffset(int deviceFD, uint64_t& vsecOffset);
+    static std::string getDeviceId(const std::string& dbdf);
+    static void GetStartOffsets(int deviceFD, uint64_t& vsecOffset, uint64_t& addressRegionOffset);
     static bool isDeviceBoundToVfioPci(const std::string& dbdf);
     static void bindDeviceToVfioPciDriver(const std::string& dbdf);
     static void CreateJsonDevice(const std::string& dbdf);
@@ -61,9 +83,9 @@ public:
         return deviceMap.at(dbdf);
     }
 
-    void InsertDeviceInfo(const std::string& dbdf, int fd, uint64_t vsecOffset)
+    void InsertDeviceInfo(const std::string& dbdf, int fd, uint64_t vsecOffset, uint64_t addressRegionOffset)
     {
-        deviceMap[dbdf] = {fd, vsecOffset};
+        deviceMap[dbdf] = {fd, vsecOffset, addressRegionOffset};
     }
 
 private:

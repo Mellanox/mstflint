@@ -1213,12 +1213,12 @@ static int is_wo_pciconf_gw(mfile* mf)
 {
     unsigned  offset = DEVID_OFFSET;
     u_int32_t data = 0;
-    int       rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
+    int       rc = pwrite(mf->fd, &offset, 4, mf->address_region_addr + PCICONF_ADDR_OFF);
 
     if (rc < 0) {
         return 0;
     }
-    rc = pread(mf->fd, &data, 4, PCICONF_ADDR_OFF);
+    rc = pread(mf->fd, &data, 4, mf->address_region_addr + PCICONF_ADDR_OFF);
     if (rc < 0) {
         return 0;
     }
@@ -1687,7 +1687,7 @@ int mtcr_pciconf_mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
     if (rc) {
         goto pciconf_read_cleanup;
     }
-    rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
+    rc = pwrite(mf->fd, &offset, 4, mf->address_region_addr + PCICONF_ADDR_OFF);
     if (rc < 0) {
         perror("write offset");
         goto pciconf_read_cleanup;
@@ -1697,7 +1697,7 @@ int mtcr_pciconf_mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
         goto pciconf_read_cleanup;
     }
 
-    rc = pread(mf->fd, value, 4, PCICONF_DATA_OFF);
+    rc = pread(mf->fd, value, 4, mf->address_region_addr + PCICONF_DATA_OFF);
     if (rc < 0) {
         perror("read value");
         goto pciconf_read_cleanup;
@@ -1723,7 +1723,7 @@ int mtcr_pciconf_mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
         goto pciconf_write_cleanup;
     }
     if (ctx->wo_addr) {
-        rc = pwrite(mf->fd, &value, 4, PCICONF_DATA_OFF);
+        rc = pwrite(mf->fd, &value, 4, mf->address_region_addr + PCICONF_DATA_OFF);
         if (rc < 0) {
             perror("write value");
             goto pciconf_write_cleanup;
@@ -1732,13 +1732,13 @@ int mtcr_pciconf_mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
             rc = 0;
             goto pciconf_write_cleanup;
         }
-        rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
+        rc = pwrite(mf->fd, &offset, 4, mf->address_region_addr + PCICONF_ADDR_OFF);
         if (rc < 0) {
             perror("write offset");
             goto pciconf_write_cleanup;
         }
     } else {
-        rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
+        rc = pwrite(mf->fd, &offset, 4, mf->address_region_addr + PCICONF_ADDR_OFF);
         if (rc < 0) {
             perror("write offset");
             goto pciconf_write_cleanup;
@@ -1747,7 +1747,7 @@ int mtcr_pciconf_mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
             rc = 0;
             goto pciconf_write_cleanup;
         }
-        rc = pwrite(mf->fd, &value, 4, PCICONF_DATA_OFF);
+        rc = pwrite(mf->fd, &value, 4, mf->address_region_addr + PCICONF_DATA_OFF);
         if (rc < 0) {
             perror("write value");
             goto pciconf_write_cleanup;
@@ -1838,7 +1838,28 @@ static int get_space_support_status(mfile* mf, u_int16_t space)
     return status;
 }
 
+static void init_vsec_cap_mask(mfile* mf)
+{
+    get_space_support_status(mf, AS_ICMD);
+    get_space_support_status(mf, AS_NODNIC_INIT_SEG);
+    get_space_support_status(mf, AS_EXPANSION_ROM);
+    get_space_support_status(mf, AS_ND_CRSPACE);
+    get_space_support_status(mf, AS_SCAN_CRSPACE);
+    get_space_support_status(mf, AS_MAC);
+    get_space_support_status(mf, AS_ICMD_EXT);
+    get_space_support_status(mf, AS_SEMAPHORE);
+    get_space_support_status(mf, AS_CR_SPACE);
+    get_space_support_status(mf, AS_PCI_ICMD);
+    get_space_support_status(mf, AS_PCI_CRSPACE);
+    get_space_support_status(mf, AS_PCI_ALL_ICMD);
+    get_space_support_status(mf, AS_PCI_SCAN_CRSPACE);
+    get_space_support_status(mf, AS_PCI_GLOBAL_SEMAPHORE);
+    get_space_support_status(mf, AS_RECOVERY);
+    mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
+}
+
 static int mtcr_vfio_device_open(mfile   * mf,
+                                 const char* name,
                                  unsigned  domain,
                                  unsigned  bus,
                                  unsigned  dev,
@@ -1851,64 +1872,61 @@ static int mtcr_vfio_device_open(mfile   * mf,
     mf->fd = -1;
     mf->tp = MST_PCICONF;
 
-    if (GetVSECStartOffset(domain, bus, dev, func, &mf->fd, &mf->vsec_addr) != 0) {
+    if (GetStartOffsets(domain, bus, dev, func, &mf->fd, &mf->vsec_addr, &mf->address_region_addr) != 0) {
         return -1;
     }
 
     if (mf->vsec_addr) {
+        DBG_PRINTF("VSEC address: 0x%lx\n", mf->vsec_addr);
+        DBG_PRINTF("Address region address: 0x%lx\n", mf->address_region_addr);
+        mf->vsec_addr += mf->address_region_addr;
         READ4_PCI(mf, &vsec_type, mf->vsec_addr, "read vsc type", return ME_PCI_READ_ERROR);
         mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
+        DBG_PRINTF("VSC type: %d\n", mf->vsec_type);
         if (mf->vsec_type == FUNCTIONAL_VSC) {
             DBG_PRINTF("FUNCTIONAL VSC Supported\n");
             mf->functional_vsec_supp = 1;
-            /* check if the needed spaces are supported */
-            if (adv_opt & Clear_Vsec_Semaphore) {
-                mtcr_pciconf_cap9_sem(mf, 0);
-            }
-            if (mtcr_pciconf_cap9_sem(mf, 1)) {
-                close(mf->fd);
-                errno = EBUSY;
-                return -1;
-            }
-
-            get_space_support_status(mf, AS_ICMD);
-            get_space_support_status(mf, AS_NODNIC_INIT_SEG);
-            get_space_support_status(mf, AS_EXPANSION_ROM);
-            get_space_support_status(mf, AS_ND_CRSPACE);
-            get_space_support_status(mf, AS_SCAN_CRSPACE);
-            get_space_support_status(mf, AS_MAC);
-            get_space_support_status(mf, AS_ICMD_EXT);
-            get_space_support_status(mf, AS_SEMAPHORE);
-            get_space_support_status(mf, AS_CR_SPACE);
-            get_space_support_status(mf, AS_PCI_ICMD);
-            get_space_support_status(mf, AS_PCI_CRSPACE);
-            get_space_support_status(mf, AS_PCI_ALL_ICMD);
-            get_space_support_status(mf, AS_PCI_SCAN_CRSPACE);
-            get_space_support_status(mf, AS_PCI_GLOBAL_SEMAPHORE);
-            get_space_support_status(mf, AS_RECOVERY);
-            mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
-
-            mtcr_pciconf_cap9_sem(mf, 0);
-
-            if (VSEC_SUPPORTED_UL(mf)) {
-                mf->address_space = AS_CR_SPACE;
-                ctx->mread4 = mtcr_pciconf_mread4;
-                ctx->mwrite4 = mtcr_pciconf_mwrite4;
-                ctx->mread4_block = mread4_block_pciconf;
-                ctx->mwrite4_block = mwrite4_block_pciconf;
-            }
-
-            mf->pxir_vsec_supp = 0;
-            if ((mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_CRSPACE))) &&
-                (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_ALL_ICMD))) &&
-                (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_GLOBAL_SEMAPHORE)))) {
-                mf->pxir_vsec_supp = 1;
-            }
-            DBG_PRINTF("mf->pxir_vsec_supp: %d\n", mf->pxir_vsec_supp);
         }
+        /* check if the needed spaces are supported */
+        if (adv_opt & Clear_Vsec_Semaphore) {
+            mtcr_pciconf_cap9_sem(mf, 0);
+        }
+        if (mtcr_pciconf_cap9_sem(mf, 1)) {
+            close(mf->fd);
+            errno = EBUSY;
+            return -1;
+        }
+
+        init_vsec_cap_mask(mf);
+        mtcr_pciconf_cap9_sem(mf, 0);
+
+        if (VSEC_SUPPORTED_UL(mf)) {
+            mf->address_space = AS_CR_SPACE;
+            ctx->mread4 = mtcr_pciconf_mread4;
+            ctx->mwrite4 = mtcr_pciconf_mwrite4;
+            ctx->mread4_block = mread4_block_pciconf;
+            ctx->mwrite4_block = mwrite4_block_pciconf;
+        }
+
+        mf->pxir_vsec_supp = 0;
+        if ((mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_CRSPACE))) &&
+            (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_ALL_ICMD))) &&
+            (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_GLOBAL_SEMAPHORE)))) {
+            mf->pxir_vsec_supp = 1;
+        }
+        DBG_PRINTF("mf->pxir_vsec_supp: %d\n", mf->pxir_vsec_supp);
     } else {
-        return -1;
+        ctx->wo_addr = is_wo_pciconf_gw(mf);
+        DBG_PRINTF("Write Only Address: %d\n", ctx->wo_addr);
+        ctx->mread4 = mtcr_pciconf_mread4_old;
+        ctx->mwrite4 = mtcr_pciconf_mwrite4_old;
+        ctx->mread4_block = mread_chunk_as_multi_mread4;
+        ctx->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
     }
+
+    if (init_dev_info_ul(mf, name, domain, bus, dev, func)) {
+        return -1;
+}
 
     return 0;
 }
@@ -1948,22 +1966,7 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
                 return -1;
             }
 
-            get_space_support_status(mf, AS_ICMD);
-            get_space_support_status(mf, AS_NODNIC_INIT_SEG);
-            get_space_support_status(mf, AS_EXPANSION_ROM);
-            get_space_support_status(mf, AS_ND_CRSPACE);
-            get_space_support_status(mf, AS_SCAN_CRSPACE);
-            get_space_support_status(mf, AS_MAC);
-            get_space_support_status(mf, AS_ICMD_EXT);
-            get_space_support_status(mf, AS_SEMAPHORE);
-            get_space_support_status(mf, AS_CR_SPACE);
-            get_space_support_status(mf, AS_PCI_ICMD);
-            get_space_support_status(mf, AS_PCI_CRSPACE);
-            get_space_support_status(mf, AS_PCI_ALL_ICMD);
-            get_space_support_status(mf, AS_PCI_SCAN_CRSPACE);
-            get_space_support_status(mf, AS_PCI_GLOBAL_SEMAPHORE);
-            get_space_support_status(mf, AS_RECOVERY);
-            mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
+            init_vsec_cap_mask(mf);
 
             mtcr_pciconf_cap9_sem(mf, 0);
 
@@ -3466,7 +3469,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         break;
 
     case MST_VFIO_DEVICE:
-        rc = mtcr_vfio_device_open(mf, domain, bus, dev, func, adv_opt);
+        rc = mtcr_vfio_device_open(mf, name,domain, bus, dev, func, adv_opt);
         if (rc) {
             goto open_failed;
         }
