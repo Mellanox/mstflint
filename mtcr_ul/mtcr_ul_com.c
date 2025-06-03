@@ -1863,8 +1863,7 @@ static int mtcr_vfio_device_open(mfile   * mf,
                                  unsigned  domain,
                                  unsigned  bus,
                                  unsigned  dev,
-                                 unsigned  func,
-                                 u_int32_t adv_opt)
+                                 unsigned  func)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
     u_int32_t vsec_type = 0;
@@ -1887,18 +1886,8 @@ static int mtcr_vfio_device_open(mfile   * mf,
             DBG_PRINTF("FUNCTIONAL VSC Supported\n");
             mf->functional_vsec_supp = 1;
         }
-        /* check if the needed spaces are supported */
-        if (adv_opt & Clear_Vsec_Semaphore) {
-            mtcr_pciconf_cap9_sem(mf, 0);
-        }
-        if (mtcr_pciconf_cap9_sem(mf, 1)) {
-            close(mf->fd);
-            errno = EBUSY;
-            return -1;
-        }
 
         init_vsec_cap_mask(mf);
-        mtcr_pciconf_cap9_sem(mf, 0);
 
         if (VSEC_SUPPORTED_UL(mf)) {
             mf->address_space = AS_CR_SPACE;
@@ -3469,7 +3458,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         break;
 
     case MST_VFIO_DEVICE:
-        rc = mtcr_vfio_device_open(mf, name,domain, bus, dev, func, adv_opt);
+        rc = mtcr_vfio_device_open(mf, name,domain, bus, dev, func);
         if (rc) {
             goto open_failed;
         }
