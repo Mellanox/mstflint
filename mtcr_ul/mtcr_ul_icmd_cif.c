@@ -54,6 +54,8 @@
 #define ICMD_QUERY_CAP_CMD_ID        0x8400
 #define ICMD_QUERY_CAP_CMD_SZ        0x8
 #define ICMD_QUERY_CAP_EXMB_ICMD_OFF 0x8
+#define SEMAPHORE_62_LOCKED_INDICATOR 0x1
+
 
 /* _DEBUG_MODE   // un-comment this to enable debug prints */
 
@@ -266,8 +268,10 @@ int MREAD4_SEMAPHORE(mfile* mf, int offset, u_int32_t* ptr)
     }
     RESTORE_SPACE(mf);
 
-    /* icmd semaphore lock in non-vsec cr-space is only the last bit in the DWORD. */
-    if (!mf->functional_vsec_supp) {
+    // When accessing directly to the device configuration space, the semaphore lock is the last bit in the DWORD.
+    // When accessing via VSC GW or BAR0 GW, the semaphore lock is the whole dword.
+    if (!is_gw_access(mf))
+    {
         *ptr = EXTRACT(*ptr, 31, 1);
     }
 
@@ -641,12 +645,28 @@ static int icmd_take_semaphore_com(mfile* mf, u_int32_t expected_read_val)
         } else
 #endif
         {
-            if (mf->functional_vsec_supp) {
-                /* write expected val before reading it */
-                MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, expected_read_val);
+            if (mf->functional_vsec_supp)
+            {
+                DBG_PRINTF("ICMD_SEMAPHORE: Writing expected_read_val=0x%x to semaphore\n", expected_read_val);
+                MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr,
+                                  expected_read_val); // Attempt to take the semaphore by writing the PID
             }
             MREAD4_SEMAPHORE(mf, mf->icmd.semaphore_addr, &read_val);
-            if (read_val == expected_read_val) {
+            DBG_PRINTF("ICMD_SEMAPHORE: read_val=0x%x expected_read_val=0x%x\n", read_val, expected_read_val);
+            if (read_val == expected_read_val) // Semaphore was free (PID if VSC, 0 if non-VSC)
+            {
+                if (!is_gw_access(mf))
+                {
+                    // Verify HW has set the semaphore to locked state
+                    MREAD4_SEMAPHORE(mf, mf->icmd.semaphore_addr, &read_val);
+                    if (read_val != SEMAPHORE_62_LOCKED_INDICATOR)
+                    {
+                        printf("Failed to take ICMD semaphore (semaphore 62). "
+                               "Semaphore was free (0) but HW failed to set it to locked state when we took it."
+                               "This might indicate a FW or HW issue.\n");
+                        return ME_ICMD_UNABLE_TO_TAKE_SEMAOHORE;
+                    }
+                }
                 break;
             }
         }
