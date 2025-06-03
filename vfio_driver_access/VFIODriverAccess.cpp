@@ -1,13 +1,33 @@
 /*
  * Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
- * This software product is a proprietary product of Nvidia Corporation and its affiliates
- * (the "Company") and all right, title, and interest in and to the software
- * product, including all associated intellectual property rights, are and
- * shall remain exclusively with the Company.
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- * This software product is governed by the End User License Agreement
- * provided with the software product.
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "VFIODriverAccessWrapperC.h"
@@ -24,6 +44,9 @@
 #include <fstream>
 #include <dirent.h>
 #include <sys/stat.h>
+#include "common/tools_filesystem.h"
+
+namespace fs_path = mstflint::common::filesystem;
 
 void VFIODriverAccess::OpenVFIODevices(const std::string& dbdf, int& deviceFD, uint64_t& vsecOffset, uint64_t& addressRegionOffset)
 {
@@ -215,7 +238,7 @@ bool VFIODriverAccess::CheckifKernelLockdownIsEnabled()
     return false;
 }
 
-void VFIODriverAccess::CleanupVFIODevice(const std::string& dbdf, const int iommuGroup)
+void VFIODriverAccess::CleanupVFIODevice(const std::string& dbdf, int iommuGroup)
 {
     /* Step 1: Close group FD */
     if (iommuGroup >= 0) {
@@ -243,45 +266,27 @@ void VFIODriverAccess::CleanupVFIODevice(const std::string& dbdf, const int iomm
 std::string VFIODriverAccess::FindIOMMUGroupByDBDF(const std::string& dbdf)
 {
     const std::string iommu_path = "/sys/kernel/iommu_groups/";
-    DIR             * iommu_dir = opendir(iommu_path.c_str());
+    mstflint::common::filesystem::path iommu_dir_path(iommu_path);
 
-    if (!iommu_dir) {
-        perror("opendir");
-        return "";
-    }
-
-    struct dirent* group_entry;
-
-    while ((group_entry = readdir(iommu_dir)) != nullptr) {
-        if (group_entry->d_type != DT_DIR) {
+    for (fs_path::directory_iterator it(iommu_dir_path); it != fs_path::directory_iterator(); ++it) {
+        if (!fs_path::is_directory(it->path())) {
             continue;
         }
 
-        std::string group_name = group_entry->d_name;
+        std::string group_name = it->path().filename().string();
         if ((group_name == ".") || (group_name == "..")) {
             continue;
         }
 
-        std::string devices_path = iommu_path + group_name + "/devices/";
-        DIR       * dev_dir = opendir(devices_path.c_str());
-        if (!dev_dir) {
-            continue;
-        }
-
-        struct dirent* dev_entry;
-        while ((dev_entry = readdir(dev_dir)) != nullptr) {
-            if (dbdf == dev_entry->d_name) {
-                closedir(dev_dir);
-                closedir(iommu_dir);
+        fs_path::path devices_path(it->path().string() + "/devices");
+        for (fs_path::directory_iterator dev_it(devices_path); dev_it != fs_path::directory_iterator(); ++dev_it) {
+            if (dbdf == dev_it->path().filename().string()) {
                 DBG_PRINTF("Found IOMMU group: %s\n", group_name.c_str());
-                return group_name; /* Found! */
+                return group_name;
             }
         }
-
-        closedir(dev_dir);
     }
 
-    closedir(iommu_dir);
     throw std::runtime_error("IOMMU group not found for DBDF: " + dbdf);
 }
 

@@ -54,7 +54,7 @@ private:
     static void bindDeviceToVfioPciDriver(const std::string& dbdf);
     static void CreateJsonDevice(const std::string& dbdf);
     static std::string FindIOMMUGroupByDBDF(const std::string& dbdf);
-    static void CleanupVFIODevice(const std::string& dbdf, const int iommuGroup);
+    static void CleanupVFIODevice(const std::string& dbdf, int iommuGroup);
     static int OpenVFIODevice();
     static int OpenVFIOGroup(const std::string& iommuGroup);
     static void CheckVFIOGroupViability(int groupID);
