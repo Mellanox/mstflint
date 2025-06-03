@@ -561,7 +561,7 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
     switch ((int)res)
     {
         case TRM_RES_ICMD:
-            if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf))
+            if (trm->dev_sem_info->vsec_sem_supported && is_gw_access(trm->mf))
             {
                 return lock_icommand_gateway_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_ICMD], max_retries);
 #if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
@@ -579,7 +579,7 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
             break;
 
         case TRM_RES_FLASH_PROGRAMING:
-            if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf))
+            if (trm->dev_sem_info->vsec_sem_supported && is_gw_access(trm->mf))
             {
                 return lock_icommand_gateway_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING], max_retries);
 #if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
@@ -637,7 +637,7 @@ trm_sts trm_unlock(trm_ctx trm, trm_resourse res)
     switch ((int)res)
     {
         case TRM_RES_ICMD:
-            if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf))
+            if (trm->dev_sem_info->vsec_sem_supported && is_gw_access(trm->mf))
             {
                 return unlock_icommand_gateway_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_ICMD]);
 #if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
@@ -655,7 +655,7 @@ trm_sts trm_unlock(trm_ctx trm, trm_resourse res)
             break;
 
         case TRM_RES_FLASH_PROGRAMING:
-            if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf))
+            if (trm->dev_sem_info->vsec_sem_supported && is_gw_access(trm->mf))
             {
                 return unlock_icommand_gateway_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING]);
 #if !defined(__FreeBSD__) && !defined(UEFI_BUILD)

@@ -500,7 +500,7 @@ void get_devices_list(int con)
         }
     }
 }
-int mget_vsec_supp(mfile* mf)
+int is_gw_access(mfile* mf)
 {
     TOOLS_UNUSED(mf);
     return 0;
@@ -937,7 +937,7 @@ int main(int ac, char* av[])
 #endif
                             // write Recv buffer
                             char res_buf[16];
-                            snprintf(res_buf, 16, "O %d", mget_vsec_supp(mf));
+                            snprintf(res_buf, 16, "O %d", is_gw_access(mf));
                             writes_deb(con, res_buf);
                         }
                         else

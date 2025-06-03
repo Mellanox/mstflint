@@ -175,7 +175,7 @@ const char* m_err2str(MError status);
 int mread_buffer(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len);
 int mwrite_buffer(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len);
 
-int mget_vsec_supp(mfile* mf);
+int is_gw_access(mfile* mf);
 
 int mget_addr_space(mfile* mf);
 int mset_addr_space(mfile* mf, int space);

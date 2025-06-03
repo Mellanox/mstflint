@@ -272,8 +272,12 @@ int supports_reg_access_gmp(mfile* mf, maccess_reg_method_t reg_method)
     return supports_reg_access_gmp_ul(mf, reg_method);
 }
 
-int mget_vsec_supp(mfile* mf)
+int is_gw_access(mfile* mf)
 {
+    if (mf->tp == MST_BAR0_GW_PCI)
+    {
+        return 1;
+    }
     return mf->functional_vsec_supp;
 }
 
