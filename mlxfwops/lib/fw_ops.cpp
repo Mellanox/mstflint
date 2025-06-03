@@ -1336,7 +1336,9 @@ bool FwOperations::writeImageEx(ProgressCallBackEx progressFuncEx,
         // Report
         if (progressFunc != NULL || progressFuncEx != NULL)
         {
-            u_int32_t curr_percent = ((cnt - towrite + alreadyWrittenSz) * 100) / totalSz;
+            double written = cnt - towrite + alreadyWrittenSz;
+            double curr_percent_double = (written / totalSz) * 100;
+            u_int32_t curr_percent = (u_int32_t)curr_percent_double;
             if (last_percent != curr_percent)
             {
                 last_percent = curr_percent;
