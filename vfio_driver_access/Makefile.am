@@ -30,7 +30,7 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CXXFLAGS = -I$(srcdir) -I$(top_srcdir) $(JSON_CFLAGS) \
+AM_CXXFLAGS = -I$(srcdir) -I$(top_srcdir) $(JSON_CFLAGS) -I$(top_srcdir)/common -I$(top_builddir)/common \
               -Wall -W -g -MP -MD  -pipe $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libvfio_access_driver.la
@@ -38,6 +38,6 @@ noinst_LTLIBRARIES = libvfio_access_driver.la
 libvfio_access_driver_la_SOURCES = VFIODriverAccess.cpp VFIODriverAccess.h VFIODriverAccessDefs.h \
                                    VFIODriverAccessWrapperC.cpp VFIODriverAccessWrapperC.h
 
-libvfio_access_driver_la_DEPENDENCIES =
+libvfio_access_driver_la_DEPENDENCIES = $(top_builddir)/common/libcommon.la
 libvfio_access_driver_la_LIBADD = $(libvfio_access_driver_la_DEPENDENCIES)
 libvfio_access_driver_la_LDFLAGS = -static
