@@ -455,7 +455,7 @@ public:
     void checkPCIeValidity();
     virtual void prepareBerInfo();
     virtual void prepareBerInfoEDR();
-    virtual void getPcieNdrCounters();
+    virtual void getPcieNdrCounters(u_int32_t flitActive = 0);
     virtual vector<AmberField> getBerFields();
 
     std::map<std::string, std::string> getPprt();
