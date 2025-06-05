@@ -4916,7 +4916,7 @@ bool MlxlinkCommander::isPPHCRSupported()
 
     try
     {
-        sendPrmReg(ACCESS_REG_PPHCR, GET, "local_port=1,pnat=%d", pnat);
+        sendPrmReg(ACCESS_REG_PPHCR, GET, "pnat=%d", pnat);
     }
     catch(MlxRegException & exc)
     {
