@@ -86,6 +86,7 @@ UserInput::UserInput()
     _read = false;
     _showPlr = false;
     _showKr = false;
+    _showRxRecoveryCounters = false;
 
     _device = "";
     _extAdbFile = "";

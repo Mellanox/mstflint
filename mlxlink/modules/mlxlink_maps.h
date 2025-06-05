@@ -194,6 +194,9 @@ private:
     void pcieEnumMapping();
     void initEnhancedDebugMapping();
     void initPprmOperationRecoveryMapping();
+    void initPprmRecoveryStatusMapping();
+    void initCableTypeForTableView();
+    void initTableHeaders();
     void initPpttParamsMapping();
     void initPpttSpeedMapping();
     void initPlrRejectModeMapping();
@@ -324,6 +327,7 @@ public:
     std::map<u_int32_t, std::string> _pcieDevStatus;
     std::map<u_int32_t, PcieErrType> _pcieErrType;
     std::map<u_int32_t, std::string> _pprmOperRecovery;
+    std::map<u_int32_t, std::string> _pprmRecoveryStatus;
     std::map<u_int32_t, u_int32_t> _ppcntGroups;
     std::map<u_int32_t, PRM_FIELD> _ppttParams;
     std::map<u_int32_t, u_int32_t> _ppttSpeedMapping;

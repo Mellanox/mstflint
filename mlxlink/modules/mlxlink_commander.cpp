@@ -96,6 +96,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _portInfo = NULL;
     _amberCollector = NULL;
     _groupOpcode = MONITOR_OPCODE;
+    _rxRecoveryCountersCmd.setLineLen(RX_RECOVERY_COUNTERS_LINE_LEN);
 }
 
 MlxlinkCommander::~MlxlinkCommander()
@@ -5030,6 +5031,7 @@ void MlxlinkCommander::prepareJsonOut()
     _portGroupMapping.toJsonFormat(_jsonRoot);
     _plrInfoCmd.toJsonFormat(_jsonRoot);
     _krInfoCmd.toJsonFormat(_jsonRoot);
+    _rxRecoveryCountersCmd.toJsonFormat(_jsonRoot);
 
     bool errorExist = _allUnhandledErrors != "";
 
@@ -5086,4 +5088,72 @@ void MlxlinkCommander::showKr()
         throw MlxRegException("KR is not supported for the current device!");
     }
     cout << _krInfoCmd;
+}
+
+void MlxlinkCommander::showRxRecoveryCounters()
+{
+    if (_userInput._showRxRecoveryCounters && (_isHCA || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))))
+    {
+        throw MlxRegException("Rx Recovery counters are not supported for the current device!");
+    }
+
+    try
+    {
+        try
+        {
+            setPrintTitle(_rxRecoveryCountersCmd, HEADER_RX_RECOVERY_COUNTERS, RX_RECOVERY_COUNTERS_LAST);
+
+            sendPrmReg(ACCESS_REG_PPRM, GET);
+            string operRecoveryStatus =
+              getStrByValue(getFieldValue(_mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES]),
+                            _mlxlinkMaps->_pprmRecoveryStatus);
+            setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Status", operRecoveryStatus);
+
+            string operTimeHostSerdesFeq = to_string(getFieldValue("oper_time_host_serdes_feq") * 10);
+            setPrintVal(_rxRecoveryCountersCmd, "Oper Time Host Serdes Feq [msec]", operTimeHostSerdesFeq);
+        }
+        catch (MlxRegException& exc)
+        {
+            throw MlxRegException("Querying PPRM failed with the following exception: %s", exc.what());
+        }
+        try
+        {
+            sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHYSICAL_LAYER_RECOVERY_COUNTERS);
+            string totalSuccessfulRecoveryEvents = to_string(getFieldValue("total_successful_recovery_events"));
+            setPrintVal(_rxRecoveryCountersCmd, "Total Successful Recovery Events", totalSuccessfulRecoveryEvents);
+
+            string timeInLastHostLogicalRecovery = to_string(getFieldValue("time_in_last_host_logical_recovery"));
+            setPrintVal(_rxRecoveryCountersCmd, "Time in Last Host Logical Recovery [msec]",
+                        timeInLastHostLogicalRecovery);
+
+            string timeInLastHostSerdesFeqRecovery = to_string(getFieldValue("time_in_last_host_serdes_feq_recovery"));
+            setPrintVal(_rxRecoveryCountersCmd, "Time in Last Host Serdes Feq Recovery [msec]",
+                        timeInLastHostSerdesFeqRecovery);
+
+            string timeSinceLastRecovery = to_string(getFieldValue("time_since_last_recovery"));
+            setPrintVal(_rxRecoveryCountersCmd, "Time Since Last Recovery [msec]", timeSinceLastRecovery);
+
+            string lastHostLogicalRecoveryAttemptsCount =
+              to_string(getFieldValue("last_host_logical_recovery_attempts_count"));
+            setPrintVal(_rxRecoveryCountersCmd, "Last Host Logical Recovery Attempts Count",
+                        lastHostLogicalRecoveryAttemptsCount);
+
+            string lastHostSerdesFeqAttemptsCount = to_string(getFieldValue("last_host_serdes_feq_attempts_count"));
+            setPrintVal(_rxRecoveryCountersCmd, "Last Host Serdes Feq Attempts Count", lastHostSerdesFeqAttemptsCount);
+
+            u_int32_t timeBetweenLast2Recoveries = getFieldValue("time_between_last_2_recoveries");
+            setPrintVal(
+              _rxRecoveryCountersCmd, "Time Between Last 2 Recoveries [msec]",
+              timeBetweenLast2Recoveries != 65536 ? to_string(timeBetweenLast2Recoveries) : "More than 1 min");
+        }
+        catch (MlxRegException& exc)
+        {
+            throw MlxRegException("Querying PPCNT failed with the following exception: %s", exc.what());
+        }
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Showing rx recovery counters raised the following exception:\n" + string(exc.what()));
+    }
+    cout << _rxRecoveryCountersCmd;
 }

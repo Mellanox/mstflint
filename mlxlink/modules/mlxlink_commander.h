@@ -106,6 +106,8 @@
 #define PLR_INFO_FLAG_SHORT ' '
 #define KR_INFO_FLAG "show_kr"
 #define KR_INFO_FLAG_SHORT ' '
+#define RX_RECOVERY_COUNTERS_FLAG "show_rx_recovery_counters"
+#define RX_RECOVERY_COUNTERS_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink COMMANDS Flags
@@ -330,6 +332,7 @@ enum OPTION_TYPE
     PCIE_ERROR_INJ,
     SHOW_PLR,
     SHOW_KR,
+    SHOW_RX_RECOVERY_COUNTERS,
 
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
@@ -428,6 +431,7 @@ public:
     void showTxGroupMapping();
     void showPlr();
     void showKr();
+    void showRxRecoveryCounters();
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
@@ -528,6 +532,7 @@ public:
     MlxlinkCmdPrint _portGroupMapping;
     MlxlinkCmdPrint _plrInfoCmd;
     MlxlinkCmdPrint _krInfoCmd;
+    MlxlinkCmdPrint _rxRecoveryCountersCmd;
 
     // Mlxlink config functions
     void clearCounters();

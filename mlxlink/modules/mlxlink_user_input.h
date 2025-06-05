@@ -96,6 +96,7 @@ public:
     bool autoCsvName;
     bool _showPlr;
     bool _showKr;
+    bool _showRxRecoveryCounters;
 
     string _device;
     string _extAdbFile;

@@ -37,9 +37,15 @@
 MlxlinkCmdPrint::MlxlinkCmdPrint()
 {
     lastInsertedRow = 0;
+    lineLen = PDDR_LINE_LEN;
 }
 
 MlxlinkCmdPrint::~MlxlinkCmdPrint() {}
+
+void MlxlinkCmdPrint::setLineLen(int lineLen)
+{
+    this->lineLen = lineLen;
+}
 
 void MlxlinkCmdPrint::initRecords(int size)
 {
