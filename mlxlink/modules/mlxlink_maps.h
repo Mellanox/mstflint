@@ -196,6 +196,7 @@ private:
     void initPprmOperationRecoveryMapping();
     void initPpttParamsMapping();
     void initPpttSpeedMapping();
+    void initPlrRejectModeMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -252,6 +253,7 @@ public:
     std::map<u_int32_t, PRM_FIELD> _SltpXdrParams;
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
+    std::map<u_int32_t, std::string> _plrRejectMode;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
     std::vector<pair<string, string>> _fecPerSpeed;
     std::map<u_int32_t, pair<string, string>> _loopbackModeList;

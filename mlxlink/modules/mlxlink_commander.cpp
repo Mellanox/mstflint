@@ -2198,7 +2198,7 @@ void MlxlinkCommander::showTestModeBer()
     cout << _testModeBerInfoCmd;
 }
 
-void MlxlinkCommander::getPcieNdrCounters(u_int32_t flitActive = 0)
+void MlxlinkCommander::getPcieNdrCounters(u_int32_t flitActive)
 {
     // This field is supported from cx8 and above.
     if (_productTechnology >= PRODUCT_5NM && flitActive)
@@ -4932,11 +4932,11 @@ void MlxlinkCommander::initPortInfo()
         if (_prbsTestMode) {
             throw MlxRegException("FEC Histogram is valid with normal link operation only");
         }
-        if (!isPPHCRSupported()) {
-            throw MlxRegException("FEC Histogram is not supported for the current device");
-        }
         if (_userInput._pcie) {
             throw MlxRegException("FEC Histogram is not available for PCIe links");
+        }
+        if (!isPPHCRSupported()) {
+            throw MlxRegException("FEC Histogram is not supported for the current device");
         }
         if (!_linkUP) {
             throw MlxRegException("FEC Histogram is valid with active link operation only");
@@ -5010,6 +5010,7 @@ void MlxlinkCommander::prepareJsonOut()
     _linkBlameInfoCmd.toJsonFormat(_jsonRoot);
     _validPcieLinks.toJsonFormat(_jsonRoot);
     _portGroupMapping.toJsonFormat(_jsonRoot);
+    _plrInfoCmd.toJsonFormat(_jsonRoot);
 
     bool errorExist = _allUnhandledErrors != "";
 
@@ -5019,4 +5020,20 @@ void MlxlinkCommander::prepareJsonOut()
     if (!_jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION]) {
         _jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION] = "N/A";
     }
+}
+
+void MlxlinkCommander::showPlr()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_PPLM, GET);
+        setPrintTitle(_plrInfoCmd, HEADER_PLR_INFO, PLR_INFO_LAST);
+        setPrintVal(_plrInfoCmd, "PLR Reject Mode", _mlxlinkMaps->_plrRejectMode[getFieldValue("plr_reject_mode")]);
+        setPrintVal(_plrInfoCmd, "PLR Margin Threshold", to_string(getFieldValue("plr_margin_th")));
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("PLR is not supported for the current device!");
+    }
+    cout << _plrInfoCmd;
 }

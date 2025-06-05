@@ -63,6 +63,7 @@
  */
 #define HEADER_SUPPORTED_INFO "Supported Info"
 #define HEADER_FEC_INFO "FEC Capability Info"
+#define HEADER_PLR_INFO "PLR Info"
 
 #define PRINT_UNDER_TITLE(len)    \
     for (int i = 0; i < len; i++) \
@@ -124,6 +125,7 @@ enum STATUS_DDM_FLAGS_TYPE
 #define LINK_DOWN_BLAME_INFO_LAST 2
 #define MODULE_PMPT_INFO_LAST 8
 #define MODULE_PMPD_INFO_LAST 6
+#define PLR_INFO_LAST 2
 
 class MlxlinkRecord
 {

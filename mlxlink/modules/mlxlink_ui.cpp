@@ -151,6 +151,7 @@ void MlxlinkUi::printSynopsisQueries()
 {
     printf(IDENT "QUERIES:\n");
     MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "", "Show valid PCIe links (PCIE only)");
+    MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "", "Show Eye Opening Info");
@@ -1179,6 +1180,9 @@ void MlxlinkUi::commandsCaller()
             case PCIE_ERROR_INJ:
                 _mlxlinkCommander->handlePCIeErrInj();
                 break;
+            case SHOW_PLR:
+                _mlxlinkCommander->showPlr();
+                break;
             default:
                 break;
         }
@@ -1240,6 +1244,12 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_EYE);
         _userInput._showEyeInfo = true;
+        return PARSE_OK;
+    }
+    else if (name == PLR_INFO_FLAG)
+    {
+        addCmd(SHOW_PLR);
+        _userInput._showPlr = true;
         return PARSE_OK;
     }
     else if (name == SLTP_SHOW_FLAG)
