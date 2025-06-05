@@ -146,6 +146,7 @@ class BytesParamValue : public ParamValue
 public:
     BytesParamValue(u_int32_t size) : ParamValue(size) {}
     using ParamValue::setVal;
+    u_int32_t getIntVal();
     string getVal();
     string getValFormatted();
     void setVal(string val);
@@ -180,6 +181,7 @@ public:
     void parseValue(string, u_int32_t&, string&);
     void pack(u_int8_t* buff, u_int32_t offset);
     void unpack(u_int8_t* buff, u_int32_t offset);
+    BytesParamValue* convertBinaryToByteParam();
 
 protected:
     u_int32_t _elementSizeInBits;
