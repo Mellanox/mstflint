@@ -110,15 +110,12 @@ MLNX_DEVICES = [
     dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX7", devid=0x218, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX8", devid=0x21e, status_config_not_done=(0xa0304, 31)),
-    dict(name="ConnectX8-RMA", devid=0x21f, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX9", devid=0x225, status_config_not_done=(0xb5f04, 31)),
-    dict(name="ConnectX9-RMA", devid=0x226, status_config_not_done=(0xb5f04, 31)),
     dict(name="Switch-IB", devid=0x247, status_config_not_done=(0x80010, 0)),
     dict(name="Switch-IB-2", devid=0x24b, status_config_not_done=(0x80010, 0)),
     dict(name="Quantum", devid=0x24d, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-2", devid=0x257, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-3", devid=0x25b, status_config_not_done=(0x200010, 0)),
-    dict(name="Quantum-3-RMA", devid=0x25c, status_config_not_done=(0x200010, 0)),
     dict(name="Quantum-4", devid=0x278, status_config_not_done=(0x200010, 0)),
     dict(name="Spectrum", devid=0x249, status_config_not_done=(0x80010, 0)),
     dict(name="Spectrum-2", devid=0x24E, status_config_not_done=(0x100010, 0)),
@@ -131,8 +128,8 @@ MLNX_DEVICES = [
 
 # Supported devices.
 SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
-                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "ConnectX8-RMA", "BlueField4",
-                "ConnectX9", "ConnectX9-RMA"]
+                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "BlueField4",
+                "ConnectX9"]
 SUPP_SWITCH_DEVICES = ["Spectrum", "Spectrum-2", "Spectrum-3", "Switch-IB", "Switch-IB-2", "Quantum", "Quantum-2"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 UNSUPPORTED_PSIDS_PER_DEV_ID = {
@@ -202,7 +199,7 @@ SUPPORTED_DEVICES_WITH_SWITCHES = [
 
 PSID_PCIE_SWITCH_CX7 = [
     "ABC0000000002", "CW_0000000007", "EZO0000000001", "FB_0000000049",
-    "LNV0000000064", "MSF0000000047", "MT_0000000747", "WLF14TZ100601",
+    "LNV0000000064", "MSF0000000047", "MT_0000000747",
     "MT_0000000764", "MT_0000000891", "MT_0000000920", "MT_0000000921",
     "MT_0000000922", "MT_0000000929", "MT_0000000930", "MT_0000000937",
     "MT_0000001016", "MT_0000001019", "MT_0000001238", "MT_0000001250",
@@ -214,7 +211,7 @@ PSID_PCIE_SWITCH_CX7 = [
     "OMN0000000001", "OMN0000000003", "ORC0000000009", "ORC0000000014",
     "WLF144L100201", "WLF144L100701", "WLF144L100801", "WLF144LF000000",
     "WLF144LF001005", "WLF144LFZ10000", "WLF14TZ100101", "WLF14TZ100201",
-    "WLF14TZ100301"
+    "WLF14TZ100301", "WLF14TZ100601"
 ]
 
 PSID_PCIE_SWITCH_CX8 = [
@@ -226,7 +223,7 @@ PSID_PCIE_SWITCH_CX8 = [
 ]
 
 PSID_PCIE_SWITCH_BF3 = [
-    "NVD0000000045", "MT_0000000884"
+    "NVD0000000045"
 ]
 
 ALL_PSID_PCIE_SWITCH = PSID_PCIE_SWITCH_CX7 + PSID_PCIE_SWITCH_CX8 + PSID_PCIE_SWITCH_BF3
@@ -1462,14 +1459,14 @@ def send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync, pci_reset_re
         raise e
 
 
-def is_pcie_switch_device(devid, reg_access_obj=None, mroq=None):
+def is_pcie_switch_device(devid, reg_access_obj=None):
     res = False
     reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
     try:
         devDict = getDeviceDict(devid)
         if devDict['name'] in ['ConnectX7', 'ConnectX8']:
             psid = reg_access_obj.getPSID()
-            logger.debug("Checking device with PSID: %s" % psid)
+            logger.debug("{0} device with PSID: {1}".format(devDict['name'], psid))
             if psid in ALL_PSID_PCIE_SWITCH:
                 logger.debug("Found PCIE switch device")
                 res = True
@@ -1479,7 +1476,7 @@ def is_pcie_switch_device(devid, reg_access_obj=None, mroq=None):
                 mroq = CmdRegMroq(0, reg_access_obj, mcam, logger)
             if mroq.mroq_is_supported():
                 logger.debug("{0} device with supported MROQ".format(devDict['name']))
-                if not mroq.is_sync_supported(SyncOwner.DRIVER, logger):  # In case of BF & MROQ supported & sync1 not suppprted we assume BF PCI switch
+                if not mroq.is_sync_supported(SyncOwner.DRIVER):  # In case of BF & MROQ supported & sync1 not suppprted we assume BF PCI switch
                     logger.debug("Found {0} PCIE switch device".format(devDict['name']))
                     res = True
     except BaseException:
