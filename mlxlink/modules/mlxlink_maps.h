@@ -197,7 +197,7 @@ private:
     void initPpttParamsMapping();
     void initPpttSpeedMapping();
     void initPlrRejectModeMapping();
-    void initKrExtOperMapping();
+    void initKrMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -256,6 +256,7 @@ public:
     std::map<u_int32_t, std::string> _fecModeActive;
     std::map<u_int32_t, std::string> _plrRejectMode;
     std::map<u_int32_t, std::string> _krExtOper;
+    std::map<u_int32_t, std::string> _krPrbsType;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
     std::vector<pair<string, string>> _fecPerSpeed;
     std::map<u_int32_t, pair<string, string>> _loopbackModeList;

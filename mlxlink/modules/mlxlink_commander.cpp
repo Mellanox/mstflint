@@ -5078,8 +5078,8 @@ void MlxlinkCommander::showKr()
                     getFieldStr("ber_target_coef_oper") + "E-" + getFieldStr("ber_target_magnitude_oper"),
                     ANSI_COLOR_RESET, true, berTargetSupported);
         bool prbsTypeSupported = getFieldValue("prbs_type_cap") != 0;
-        setPrintVal(_krInfoCmd, "PRBS Type", to_string(getFieldValue("prbs_type_oper")), ANSI_COLOR_RESET, true,
-                    prbsTypeSupported);
+        setPrintVal(_krInfoCmd, "PRBS Type", getStrByValue(getFieldValue("prbs_type_oper"), _mlxlinkMaps->_krPrbsType),
+                    ANSI_COLOR_RESET, true, prbsTypeSupported);
     }
     catch (MlxRegException& exc)
     {
