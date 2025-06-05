@@ -1983,7 +1983,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkUpInfo()
 
     try
     {
-        if (!_isPortPCIE && !(_devID == DeviceGB100 || _devID == DeviceGR100))
+        if (!_isPortPCIE)
         {
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
@@ -2262,7 +2262,7 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
     try
     {
         string operRecoveryStr = "N/A";
-        if (!_isPortPCIE && !(_devID == DeviceGB100 || _devID == DeviceGR100))
+        if (!_isPortPCIE)
         {
             resetLocalParser(ACCESS_REG_PPRM);
             updateField("local_port", _localPort);
