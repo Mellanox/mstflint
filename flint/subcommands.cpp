@@ -2019,15 +2019,35 @@ bool BinaryCompareSubCommand::CompareEncryptedFwOpsViaMCC(bool& res)
 
     std::vector<u_int8_t> deviceBuff;
     std::vector<u_int8_t> imgBuff;
-    if (!_fwOps->GetHashesTableData(deviceBuff))
+   if (_imgOps->FwType() == FIT_FS5)
     {
-        return false;
+        //* Compare Ncore
+        if (!_fwOps->GetNcoreData(deviceBuff))
+        {
+            reportErr(true, _fwOps->err());
+            return false;
+        }
+        if (!_imgOps->GetNcoreData(imgBuff))
+        {
+            reportErr(true, _imgOps->err());
+            return false;
+        }
     }
-    if (!_imgOps->GetHashesTableData(imgBuff))
+    else
     {
-        return false;
+        //* Compare hashes table
+        if (!_fwOps->GetHashesTableData(deviceBuff))
+        {
+            reportErr(true, _fwOps->err());
+            return false;
+        }
+        if (!_imgOps->GetHashesTableData(imgBuff))
+        {
+            reportErr(true, _imgOps->err());
+            return false;
+        }
     }
-
+    
     if (deviceBuff == imgBuff)
     {
         res = true;

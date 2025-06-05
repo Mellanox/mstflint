@@ -788,8 +788,16 @@ bool FwCompsMgr::runMCQI(u_int32_t componentIndex,
         setLastRegisterAccessStatus(rc);
         ret = false;
     }
-    if (data && dataSize) {
-        if (!rc) {
+    if (data && dataSize)
+    {
+        if (!rc)
+        {
+            if (_currCompInfo.info_size > reg_access_hca_mcqi_reg_data_auto_ext_size())
+            {
+                DPRINTF(("-E- got unexpected info size from MCQI: %u\n", _currCompInfo.info_size));
+                _lastError = FWCOMPS_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
+                return false;
+            }
             memcpy(data, &_currCompInfo.data, _currCompInfo.info_size);
         }
     }

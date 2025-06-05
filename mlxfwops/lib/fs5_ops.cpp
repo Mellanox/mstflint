@@ -150,6 +150,26 @@ bool Fs5Operations::GetImageSize(u_int32_t* image_size)
     return true;
 }
 
+bool Fs5Operations::GetNcoreData(vector<u_int8_t>& imgBuff)
+{
+    fs5_image_layout_boot_component_header bchComponent;
+    vector<u_int8_t> bchRawData(FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE);
+    if (!_ioAccess->read(_ncore_bch_ptr, bchRawData.data(), FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE))
+    {
+        return errmsg("%s - read error can not read bch\n", _ioAccess->err());
+    }
+    TOCPUn(bchRawData.data(), BCH_SIZE_IN_BYTES / 4);
+    fs5_image_layout_boot_component_header_unpack(&bchComponent, bchRawData.data());
+  
+    u_int32_t payloadSize = bchComponent.stage1_components[0].u32_binary_len;
+    imgBuff.resize(payloadSize);
+    if (!_ioAccess->read(_ncore_bch_ptr + FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE, imgBuff.data(), payloadSize))
+    {
+        return errmsg("%s - read error can not read bch\n", _ioAccess->err());
+    }
+    return true;
+}
+
 bool Fs5Operations::GetHashesTableSize(u_int32_t& size)
 {
     bool image_encrypted = false;
@@ -396,9 +416,36 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
     return true;
 }
 
+bool Fs5Operations::IsExtracted()
+{
+    u_int32_t image_size;
+    // Calculate the size from the start to the end of the iTOCs.
+    if (!GetImageSize(&image_size))
+    {
+        return errmsg("Can't get image size.\n");
+    }
+    u_int32_t readbleSize = _ioAccess->get_size();
+    if (readbleSize < image_size)
+    {
+        return errmsg("-E- iTOCs size smaller than the image (image problem).\n");
+    }
+    u_int32_t gapSize = readbleSize - image_size;
+    // If the image contains an encapsulation header, this will represent the gap (equal to the encapsulation header
+    // size, which matches the BCH size).
+    if (gapSize == 0 || gapSize == BCH_SIZE_IN_BYTES)
+    {
+        return true;
+    }
+    return false;
+}
+
 bool Fs5Operations::FwQuery(fw_info_t* fwInfo, bool, bool, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs5Operations::FwQuery\n"));
+    if (IsExtracted())
+    {
+        ignoreDToc = true;
+    }
     if (!encryptedFwQuery(fwInfo, quickQuery, ignoreDToc, verbose))
     {
         return errmsg("%s", err());
@@ -450,7 +497,15 @@ bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
                                       bool ignoreImageStart,
                                       bool imageSizeOnly)
 {
-    bool res = Fs4Operations::FwExtract4MBImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
+     bool res;
+     if (IsExtracted())
+    {
+        res = FwExtractEncryptedImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
+    }
+    else
+    {
+        res = Fs4Operations::FwExtract4MBImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
+    }
 
     if (res && !imageSizeOnly)
     {

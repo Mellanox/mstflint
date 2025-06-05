@@ -249,13 +249,13 @@ int ImageAccess::queryPsid(const string&  fname,
             imgv.setVersion("FW", 3, img_query.fw_info.fw_ver, img_query.fw_info.branch_ver);
             ri.imgVers.push_back(imgv);
         } else {
-            u_int16_t fwVer[4];
+            u_int16_t fwVer[3];
             fwVer[0] = img_query.fw_info.fw_ver[0];
             fwVer[1] = img_query.fw_info.fw_ver[1];
-            fwVer[2] = img_query.fw_info.fw_ver[2] / 100;
-            fwVer[3] = img_query.fw_info.fw_ver[2] % 100;
+            fwVer[2] = img_query.fw_info.fw_ver[2];
+
             ImgVersion imgv;
-            imgv.setVersion("FW", 4, fwVer);
+            imgv.setVersion("FW", 3, fwVer);
             ri.imgVers.push_back(imgv);
         }
         for (int i = 0; i < img_query.fw_info.roms_info.num_of_exp_rom; i++) {
