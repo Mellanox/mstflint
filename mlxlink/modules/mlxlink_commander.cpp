@@ -86,6 +86,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _speedBerCsv = 0;
     _fecActive = 0;
     _protoActive = 0;
+    _phyMngrFsmState = -1;
     _productTechnology = 0;
     _allUnhandledErrors = "";
     _mlxlinkMaps = MlxlinkMaps::getInstance();
@@ -865,14 +866,19 @@ u_int32_t MlxlinkCommander::activeSpeed2gNum(u_int32_t mask, bool extended)
     return (_protoActive == IB) ? _mlxlinkMaps->_IBSpeed2gNum[mask] : _mlxlinkMaps->_ETHSpeed2gNum[mask];
 }
 
-string MlxlinkCommander::activeSpeed2Str(u_int32_t mask, bool extended)
+string MlxlinkCommander::activeSpeed2Str(u_int32_t mask, bool extended, bool isXdrSlowActive)
 {
-    if (extended) {
+    if (isXdrSlowActive)
+    {
+        return "NVLink-NDR";
+    }
+    if (extended)
+    {
         return _mlxlinkMaps->_EthExtSpeed2Str[mask];
     }
     return (_isNVLINK) ? _mlxlinkMaps->_NVLINKSpeed2Str[mask] :
            (_protoActive == IB) ? _mlxlinkMaps->_IBSpeed2Str[mask] :
-           _mlxlinkMaps->_ETHSpeed2Str[mask];
+                                  _mlxlinkMaps->_ETHSpeed2Str[mask];
 }
 
 void MlxlinkCommander::getCableParams()
@@ -1763,13 +1769,13 @@ void MlxlinkCommander::operatingInfoPage()
     try
     {
         sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_OPERATIONAL_INFO_PAGE);
-        u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
-        int       loopbackMode = (phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode") : -1;
+        _phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
+        int loopbackMode = (_phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode") : -1;
         u_int32_t ethAnFsmState = getFieldValue("eth_an_fsm_state");
         u_int32_t ib_phy_fsm_state = getFieldValue("ib_phy_fsm_state");
         string    color =
-            MlxlinkRecord::state2Color(phyMngrFsmState ==
-                                       PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)phyMngrFsmState);
+            MlxlinkRecord::state2Color(_phyMngrFsmState ==
+                                       PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)_phyMngrFsmState);
         _protoActive = getFieldValue("proto_active");
         if (_protoActive == NVLINK) {
             _isNVLINK = true;
@@ -1777,14 +1783,14 @@ void MlxlinkCommander::operatingInfoPage()
         }
         _fecActive = getFieldValue("fec_mode_active");
 
-        _linkUP = (phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
-        _portPolling = phyMngrFsmState == PHY_MNGR_POLLING;
+        _linkUP = (_phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
+        _portPolling = _phyMngrFsmState == PHY_MNGR_POLLING;
         _protoCapability = getFieldValue("cable_ext_eth_proto_cap");
 
         if (_protoActive == IB) {
             _protoCapability = getFieldValue("cable_link_speed_cap");
             _activeSpeed = getFieldValue("link_speed_active");
-            _protoAdmin = (phyMngrFsmState != 0) ? getFieldValue("core_to_phy_link_proto_enabled") :
+            _protoAdmin = (_phyMngrFsmState != 0) ? getFieldValue("core_to_phy_link_proto_enabled") :
                           getFieldValue("phy_manager_link_proto_enabled");
         }
 
@@ -1793,12 +1799,12 @@ void MlxlinkCommander::operatingInfoPage()
         _isPam4Speed = isPAM4Speed(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive, extended);
         _linkSpeed = extended ? _activeSpeedEx : _activeSpeed;
         _speedBerCsv = activeSpeed2gNum(_linkSpeed, extended);
-        _speedStrG = activeSpeed2Str(_linkSpeed, extended);
+        _speedStrG = activeSpeed2Str(_linkSpeed, extended, _isXdrSlowActive);
         getActualNumOfLanes(_linkSpeed, extended);
 
         setPrintTitle(_operatingInfoCmd, "Operational Info", PDDR_OPERATIONAL_INFO_LAST, !_prbsTestMode);
 
-        setPrintVal(_operatingInfoCmd, "State", getStrByValue(phyMngrFsmState, _mlxlinkMaps->_pmFsmState), color, true,
+        setPrintVal(_operatingInfoCmd, "State", getStrByValue(_phyMngrFsmState, _mlxlinkMaps->_pmFsmState), color, true,
                     !_prbsTestMode);
         setPrintVal(_operatingInfoCmd, "Physical state",
                     _protoActive == ETH ? getStrByValue(ethAnFsmState, _mlxlinkMaps->_ethANFsmState) :
@@ -1841,9 +1847,9 @@ void MlxlinkCommander::supportedInfoPage()
     try
     {
         setPrintTitle(_supportedInfoCmd, HEADER_SUPPORTED_INFO, PDDR_SUPPORTED_INFO_LAST, !_prbsTestMode);
-        u_int32_t    speeds_mask = _protoAdminEx ? _protoAdminEx : _protoAdmin;
-        string       supported_speeds = SupportedSpeeds2Str(_protoActive, speeds_mask, (bool)_protoAdminEx);
-        string       color = MlxlinkRecord::supported2Color(supported_speeds);
+        u_int32_t speeds_mask = _protoAdminEx ? _protoAdminEx : _protoAdmin;
+        string supported_speeds = SupportedSpeeds2Str(_protoActive, speeds_mask, (bool)_protoAdminEx, _isXdrSlowActive);
+        string color = MlxlinkRecord::supported2Color(supported_speeds);
         stringstream value;
         value << "0x" << std::hex << setfill('0') << setw(8) << speeds_mask << " (" << supported_speeds << ")"
               << setfill(' ');
@@ -1958,6 +1964,18 @@ void MlxlinkCommander::getPtys()
             _protoCapabilityEx ? getFieldValue("ext_eth_proto_capability") : getFieldValue("eth_proto_capability");
     } else {
         _deviceCapability = getFieldValue("ib_proto_capability");
+        try
+        {
+            if (getStrByValue(_phyMngrFsmState, _mlxlinkMaps->_pmFsmState) == "Active" &&
+                getFieldValue("xdr_2x_slow_active"))
+            {
+                _isXdrSlowActive = true;
+            }
+        }
+        catch (const std::exception& e)
+        {
+            // _isXdrSlowActive = false;
+        }
     }
 
     _anDisable = getFieldValue("an_disable_admin");

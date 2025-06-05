@@ -380,8 +380,12 @@ string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
     return deleteLastChar(maskStr);
 }
 
-string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended)
+string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended, bool isXdrSlowActive)
 {
+    if (isXdrSlowActive)
+    {
+        return "NDR";
+    }
     switch (proto_active)
     {
         case IB:

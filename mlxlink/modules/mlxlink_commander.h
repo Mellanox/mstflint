@@ -378,7 +378,7 @@ public:
     void checkStrLength(const string& str);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
     u_int32_t activeSpeed2gNum(u_int32_t mask, bool extended);
-    string activeSpeed2Str(u_int32_t mask, bool extended);
+    string activeSpeed2Str(u_int32_t mask, bool extended, bool isXdrSlowActive = false);
     void getCableParams();
     bool inPrbsTestMode();
     bool checkGBPpaosDown();
@@ -590,6 +590,7 @@ public:
     u_int32_t _cableMediaType;
     u_int32_t _fecActive;
     u_int32_t _protoActive;
+    u_int32_t _phyMngrFsmState;
     u_int32_t _anDisable;
     u_int32_t _speedBerCsv;
     u_int32_t _cableIdentifier;
@@ -598,6 +599,7 @@ public:
     u_int32_t _cableLen;
     u_int32_t _activeSpeed;
     u_int32_t _activeSpeedEx;
+    bool _isXdrSlowActive;
     u_int32_t _laneSpeedFromPptt;
     u_int32_t _protoCapability;
     u_int32_t _deviceCapability;
