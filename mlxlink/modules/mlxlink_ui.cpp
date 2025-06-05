@@ -152,6 +152,7 @@ void MlxlinkUi::printSynopsisQueries()
     printf(IDENT "QUERIES:\n");
     MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "", "Show valid PCIe links (PCIE only)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
+    MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "", "Show Eye Opening Info");
@@ -984,6 +985,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(BER_MONITOR_INFO_FLAG, BER_MONITOR_INFO_FLAG_SHORT, "", "Show BER Monitor Info");
     AddOptions(PEPC_SHOW_FLAG, PEPC_SHOW_FLAG_SHORT, "", "Show External PHY Info");
     AddOptions(PRINT_JSON_OUTPUT_FLAG, PRINT_JSON_OUTPUT_FLAG_SHORT, "", "Print the output in json format");
+    AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
+    AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
 
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
@@ -1183,6 +1186,9 @@ void MlxlinkUi::commandsCaller()
             case SHOW_PLR:
                 _mlxlinkCommander->showPlr();
                 break;
+            case SHOW_KR:
+                _mlxlinkCommander->showKr();
+                break;
             default:
                 break;
         }
@@ -1250,6 +1256,12 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_PLR);
         _userInput._showPlr = true;
+        return PARSE_OK;
+    }
+    else if (name == KR_INFO_FLAG)
+    {
+        addCmd(SHOW_KR);
+        _userInput._showKr = true;
         return PARSE_OK;
     }
     else if (name == SLTP_SHOW_FLAG)

@@ -102,8 +102,10 @@
 #define BER_MONITOR_INFO_FLAG_SHORT ' '
 #define PEPC_SHOW_FLAG "show_external_phy"
 #define PEPC_SHOW_FLAG_SHORT ' '
-#define PLR_INFO_FLAG "show_plr_info"
+#define PLR_INFO_FLAG "show_plr"
 #define PLR_INFO_FLAG_SHORT ' '
+#define KR_INFO_FLAG "show_kr"
+#define KR_INFO_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink COMMANDS Flags
@@ -327,6 +329,7 @@ enum OPTION_TYPE
     SLRG_TEST,
     PCIE_ERROR_INJ,
     SHOW_PLR,
+    SHOW_KR,
 
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
@@ -424,6 +427,7 @@ public:
     void collectBER();
     void showTxGroupMapping();
     void showPlr();
+    void showKr();
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
@@ -523,6 +527,7 @@ public:
     MlxlinkCmdPrint _cableDDMCmd;
     MlxlinkCmdPrint _portGroupMapping;
     MlxlinkCmdPrint _plrInfoCmd;
+    MlxlinkCmdPrint _krInfoCmd;
 
     // Mlxlink config functions
     void clearCounters();
