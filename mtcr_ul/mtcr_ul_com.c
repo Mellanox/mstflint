@@ -2553,6 +2553,10 @@ static MType mtcr_parse_name(const char* name,
     int is_vfio = strstr(name, "vfio-") != NULL;
     int lockdown_enabled = CheckifKernelLockdownIsEnabled();
 
+    if (strstr(name, "fwctl")) {
+        return MST_FWCTL_CONTROL_DRIVER;
+    }
+
     if (is_vfio || lockdown_enabled) {
         if (is_vfio) {
             scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
@@ -2663,10 +2667,6 @@ static MType mtcr_parse_name(const char* name,
     if (scnt == 4) {
         force_config = 1;
         goto name_parsed;
-    }
-
-    if (strstr(name, "fwctl")) {
-        return MST_FWCTL_CONTROL_DRIVER;
     }
 
 #ifdef ENABLE_MST_DEV_I2C
