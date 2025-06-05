@@ -653,6 +653,14 @@ void TLVConf::updateParamByName(string paramName, string val)
     {
         throw MlxcfgException("Unknown parameter %s of the configuration %s", paramName.c_str(), _name.c_str());
     }
+    if (p->_name == "customization_number")
+    {
+        ArrayParamValue* rawP = (ArrayParamValue*)(p->_value);
+        BytesParamValue* convertedRawP = rawP->convertBinaryToByteParam();
+        delete rawP;
+        p->_value = convertedRawP;
+    }
+
     p->setVal(val);
     // check if there is a valid bit
     if (!p->_validBit.empty())

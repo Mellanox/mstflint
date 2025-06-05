@@ -301,7 +301,14 @@ Param::Param(int columnsCount, char** dataRow, char** headerRow) :
             break;
 
         case BYTES:
-            _value = new BytesParamValue(_arrayLength);
+            if (_arrayLength > 0 && _name == "customization_number")
+            {
+                _value = new ArrayParamValue(_size, _arrayLength, BINARY);
+            }
+            else
+            {
+                _value = new BytesParamValue(_arrayLength);
+            }
             break;
 
         default:
@@ -896,11 +903,28 @@ void StringParamValue::unpack(u_int8_t* buff, u_int32_t bitOffset)
 }
 
 /* BytesParamValue Class */
+
+u_int32_t BytesParamValue::getIntVal()
+{
+    if (_bytes.size() == 0)
+    {
+        return 0;
+    }
+    if (_bytes.size() != 1)
+    {
+        throw MlxcfgException("getIntVal is not supported for BYTES with array size (%d) > 1\n", _bytes.size());
+    }
+    return _bytes[0].getIntVal();
+}
+
 string BytesParamValue::getVal()
 {
     string strVal = "";
 
-    VECTOR_ITERATOR(BinaryParamValue, _bytes, binary) { strVal += binary->getVal(); }
+    VECTOR_ITERATOR(BinaryParamValue, _bytes, binary)
+    {
+        strVal += binary->getVal();
+    }
 
     return strVal;
 }
@@ -943,9 +967,10 @@ void BytesParamValue::setVal(string val)
     }
 }
 
-void BytesParamValue::parseValue(string, u_int32_t&, string&)
+void BytesParamValue::parseValue(string strToParse, u_int32_t& value, string& strValue)
 {
-    throw MlxcfgException("Not supported for BYTES types\n");
+    value = strToParse.size();
+    strValue = strToParse;
 }
 
 void BytesParamValue::pack(u_int8_t* buff, u_int32_t bitOffset)
@@ -999,6 +1024,9 @@ ArrayParamValue::ArrayParamValue(string size, u_int32_t count, enum ParamType pa
             case BINARY:
                 t = new BinaryParamValue(_elementSizeInBits);
                 break;
+            case BYTES:
+                t = new BytesParamValue(_elementSizeInBits);
+                break;
 
             default:
                 throw MlxcfgException("% is not supported in Array parameters!",
@@ -1008,6 +1036,12 @@ ArrayParamValue::ArrayParamValue(string size, u_int32_t count, enum ParamType pa
         _values.push_back(t);
     }
 };
+
+BytesParamValue* ArrayParamValue::convertBinaryToByteParam()
+{
+    BytesParamValue* converted = new BytesParamValue(_values.size());
+    return converted;
+}
 
 ArrayParamValue::~ArrayParamValue()
 {

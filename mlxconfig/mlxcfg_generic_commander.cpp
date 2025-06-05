@@ -1587,7 +1587,11 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
             throw MlxcfgException("Failed to initialize signer.\n");
         }
 
-        signer->Sign(bytesBuff, encDigest);
+        if (signer->Sign(bytesBuff, encDigest) != MlxSign::MLX_SIGN_SUCCESS)
+        {
+            throw MlxcfgException("Failed to sign configuration.\n");
+        }
+        shaType = dynamic_cast<MlxSign::MlxSignRSAViaOpenssl*>(signer.get())->GetShaType();
     }
 
     // fetch the signature tlv from the database and fill in the data
