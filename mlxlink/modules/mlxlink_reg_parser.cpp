@@ -166,6 +166,33 @@ void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t me
     genBuffSendRegister(regName, method);
 }
 
+void MlxlinkRegParser::sendPrmRegWithoutReset(const string& regName,
+                                              maccess_reg_method_t method,
+                                              const char* fields,
+                                              ...)
+{
+    char fieldsCstr[MAX_FIELDS_BUFFER];
+    va_list args;
+    va_start(args, fields);
+    vsnprintf(fieldsCstr, MAX_FIELDS_BUFFER, fields, args);
+    va_end(args);
+
+    string fieldsStr = string(fieldsCstr);
+    auto vectorOffields = MlxlinkRecord::split(fieldsStr, ",");
+
+    for (const auto& token : vectorOffields)
+    {
+        auto fieldToken = MlxlinkRecord::split(token, "=");
+        string fieldName = fieldToken[0];
+        u_int32_t fieldValue = stoi(fieldToken[1], nullptr, 0);
+
+        updateField(fieldName, fieldValue);
+    }
+    setDefaultFields(regName, fieldsStr);
+
+    genBuffSendRegister(regName, method);
+}
+
 void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...)
 {
     char fieldsCstr[MAX_FIELDS_BUFFER];

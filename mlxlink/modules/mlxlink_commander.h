@@ -166,6 +166,10 @@
 #define PEPC_AN_MODE_FLAG_SHORT ' '
 #define PTYS_LINK_MODE_FORCE_FLAG "link_mode_force"
 #define PTYS_LINK_MODE_FORCE_FLAG_SHORT ' '
+#define PHY_RECOVERY_FLAG "phy_recovery"
+#define PHY_RECOVERY_FLAG_SHORT ' '
+#define PHY_RECOVERY_TYPE_FLAG "recovery_type"
+#define PHY_RECOVERY_TYPE_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink Cable info flags
@@ -333,6 +337,7 @@ enum OPTION_TYPE
     SHOW_PLR,
     SHOW_KR,
     SHOW_RX_RECOVERY_COUNTERS,
+    SEND_PHY_RECOVERY,
 
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
@@ -546,6 +551,7 @@ public:
     void setTxGroupMapping();
     void handleRxErrInj();
     void handlePCIeErrInj();
+    void handlePhyRecovery();
 
     // Config helper functions
     bool isForceDownSupported();

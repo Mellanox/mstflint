@@ -117,6 +117,10 @@ UserInput::UserInput()
     _setGroup = -1;
     _showGroup = -1;
     _slrgTestIterations = -1;
+    _phyRecovery = "";
+    _phyRecoveryType = "";
+    _wdTimer = 10; // 10msec intervals, default WD timer value is 100msec (10 * 10msec)
+    _wdTimerSpecified = false;
 
     autoCsvName = false;
     eyeSelect = "";

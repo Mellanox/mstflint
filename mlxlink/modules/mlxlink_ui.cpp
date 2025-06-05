@@ -218,6 +218,11 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(TX_GROUP_PORTS_FLAG_SHORT, TX_GROUP_PORTS_FLAG, "ports",
                                  "Ports to be mapped [1,2,3,4,...,128]");
+    MlxlinkRecord::printFlagLine(PHY_RECOVERY_FLAG_SHORT, PHY_RECOVERY_FLAG, "phy_recovery",
+                                 "PHY Recovery [EN(enable)/DS(disable)]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PHY_RECOVERY_TYPE_FLAG_SHORT, PHY_RECOVERY_TYPE_FLAG, "recovery_type",
+                                 "PHY Recovery Type [host_serdes_feq/host_logic_re_lock]");
     MlxlinkRecord::printFlagLine(PRBS_MODE_FLAG_SHORT, PRBS_MODE_FLAG, "prbs_mode",
                                  "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
@@ -604,6 +609,53 @@ void MlxlinkUi::validatePRBSParams()
     else if (prbsFlags)
     { // add check for lanes flag to work with PRBS and eye scan only
         throw MlxRegException("PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
+    }
+}
+
+void MlxlinkUi::validatePhyRecoveryParams()
+{
+    bool phyRecoveryFlags =
+      _userInput._phyRecovery != "" || _userInput._phyRecoveryType != "" || _userInput._wdTimerSpecified;
+    if (isIn(SEND_PHY_RECOVERY, _sendRegFuncMap))
+    {
+        if (!checkPhyRecoveryCmd(_userInput._phyRecovery))
+        {
+            throw MlxRegException("Please provide a valid phy recovery command [EN/DS]");
+        }
+        else if (_userInput._phyRecovery == "EN")
+        {
+            if (_userInput._phyRecoveryType == "")
+            {
+                throw MlxRegException("recovery_type flag should be provided for phy_recovery EN command");
+            }
+            else if (_userInput._phyRecoveryType != "uphy" && _userInput._phyRecoveryType != "plu")
+            {
+                throw MlxRegException("Invalid Recovery Type!");
+            }
+            if (_userInput._wdTimerSpecified && _userInput._wdTimer <= 0)
+            {
+                throw MlxRegException("wd_timer flag must be greater than 0");
+            }
+        }
+        else if (_userInput._phyRecovery == "DS")
+        {
+            if (_userInput._phyRecoveryType == "")
+            {
+                throw MlxRegException("recovery_type flag should be provided for PHY Recovery DS command");
+            }
+            else if (_userInput._phyRecoveryType != "uphy" && _userInput._phyRecoveryType != "plu")
+            {
+                throw MlxRegException("Invalid PHY Recovery Type!");
+            }
+            if (_userInput._wdTimerSpecified)
+            {
+                throw MlxRegException("WD Timer flag should not be provided for PHY Recovery DS command");
+            }
+        }
+    }
+    else if (phyRecoveryFlags)
+    {
+        throw MlxRegException("PHY Recovery flag should be provided!");
     }
 }
 

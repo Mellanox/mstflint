@@ -827,6 +827,15 @@ bool checkPrbsCmd(const string& prbsCmd)
     return true;
 }
 
+bool checkPhyRecoveryCmd(const string& phyRecoveryCmd)
+{
+    if (phyRecoveryCmd != "EN" && phyRecoveryCmd != "DS")
+    {
+        return false;
+    }
+    return true;
+}
+
 bool checkTestMode(const string& testMode)
 {
     if (testMode != "Nominal" && testMode != "NOMINAL" && testMode != "CORNER" && testMode != "DRIFT" && testMode != "")
