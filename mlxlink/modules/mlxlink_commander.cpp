@@ -5099,23 +5099,41 @@ void MlxlinkCommander::showRxRecoveryCounters()
 
     try
     {
-        string operRecoveryStatus = "N/A";
+        string hostSerdesFeqStatus = "N/A", hostLogicReLockStatus = "N/A", operRecoveryType = "N/A",
+               operRecoveryStatus = "N/A";
         try
         {
             setPrintTitle(_rxRecoveryCountersCmd, HEADER_RX_RECOVERY_COUNTERS, RX_RECOVERY_COUNTERS_LAST);
 
             sendPrmReg(ACCESS_REG_PPRM, GET);
 
-            setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Type", "PHY");
-            operRecoveryStatus =
+            hostSerdesFeqStatus =
               getStrByValue(getFieldValue(_mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES]),
                             _mlxlinkMaps->_pprmRecoveryStatus);
-            setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Status", operRecoveryStatus);
-
-            setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Type", "PLU");
-            operRecoveryStatus =
+            hostLogicReLockStatus =
               getStrByValue(getFieldValue(_mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG]),
                             _mlxlinkMaps->_pprmRecoveryStatus);
+            if (hostSerdesFeqStatus != _mlxlinkMaps->_pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE] &&
+                hostSerdesFeqStatus !=
+                  _mlxlinkMaps->_pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION])
+            {
+                operRecoveryType = _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES];
+                operRecoveryStatus = hostSerdesFeqStatus;
+            }
+            else if (hostLogicReLockStatus != _mlxlinkMaps->_pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE] &&
+                     hostLogicReLockStatus !=
+                       _mlxlinkMaps->_pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION])
+            {
+                operRecoveryType = _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG];
+                operRecoveryStatus = hostLogicReLockStatus;
+            }
+            else
+            {
+                // operRecoveryType = "N/A";
+                operRecoveryStatus = _mlxlinkMaps->_pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE];
+            }
+
+            setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Type", operRecoveryType);
             setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Status", operRecoveryStatus);
 
             string operTimeHostSerdesFeq = to_string(getFieldValue("oper_time_host_serdes_feq") * 10);
@@ -5182,7 +5200,7 @@ void MlxlinkCommander::handlePhyRecovery()
             }
             if (_userInput._phyRecoveryType == "uphy")
             {
-                if ((recoveryTypeCap & PHY_RECOVERY_TYPE_HOST_SERDES_FEQ) == 0)
+                if ((recoveryTypeCap & PPRM_OPERATION_RECOVERY_HOST_SERDES) == 0)
                 {
                     throw MlxRegException("Host Serdes Feq Recovery Type is not supported for the current device!");
                 }
@@ -5194,7 +5212,7 @@ void MlxlinkCommander::handlePhyRecovery()
             }
             else if (_userInput._phyRecoveryType == "plu")
             {
-                if ((recoveryTypeCap & PHY_RECOVERY_TYPE_HOST_LOGIC_RE_LOCK) == 0)
+                if ((recoveryTypeCap & PPRM_OPERATION_RECOVERY_HOST_LOG) == 0)
                 {
                     throw MlxRegException("Host Logic Re-Lock Recovery Type is not supported for the current device!");
                 }
@@ -5239,5 +5257,50 @@ void MlxlinkCommander::handlePhyRecovery()
     catch (MlxRegException& exc)
     {
         throw MlxRegException("Handling PHY Recovery command raised the following exception:\n" + string(exc.what()));
+    }
+}
+
+void MlxlinkCommander::handleLinkTraining()
+{
+    try
+    {
+        string cmdArgs = "";
+        sendPrmReg(ACCESS_REG_PTASv2, GET);
+        if (_userInput._linkTraining == "EN" || _userInput._linkTraining == "EN_EXT")
+        {
+            if (getFieldValue("xdr_lt_cap") == 0 || getFieldValue("kr_ext_cap") == 0)
+            {
+                throw MlxRegException("Link Training is not supported for the current device!");
+            }
+            cmdArgs += "xdr_lt_c2c_en=" + to_string(XDR_LT_C2C_EN_XDR_LT_C2C_ENABLED_LT);
+
+            if (_userInput._linkTraining == "EN_EXT")
+            {
+                cmdArgs += ",kr_ext_req=" + to_string(KR_EXT_REQ_KR_EXT_ENABLED_ADVANCED_ALGO);
+            }
+            else
+            {
+                cmdArgs += ",kr_ext_req=" + to_string(KR_EXT_REQ_KR_EXT_REGULAR_LT);
+            }
+            sendPaosDown();
+            MlxlinkRecord::printCmdLine("Enabling Link Training", _jsonRoot);
+            sendPrmReg(ACCESS_REG_PTASv2, GET);
+            sendPrmRegWithoutReset(ACCESS_REG_PTASv2, SET, cmdArgs.c_str());
+            sendPaosUP();
+        }
+        else if (_userInput._linkTraining == "DS")
+        {
+            cmdArgs = "xdr_lt_c2c_en=" + to_string(XDR_LT_C2C_EN_XDR_LT_C2C_DISABLED_LT) +
+                      ",kr_ext_req=" + to_string(KR_EXT_REQ_FW_DEFAULT);
+            sendPaosDown();
+            MlxlinkRecord::printCmdLine("Disabling Link Training", _jsonRoot);
+            sendPrmReg(ACCESS_REG_PTASv2, GET);
+            sendPrmRegWithoutReset(ACCESS_REG_PTASv2, SET, cmdArgs.c_str());
+            sendPaosUP();
+        }
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Handling Link Training command raised the following exception:\n" + string(exc.what()));
     }
 }

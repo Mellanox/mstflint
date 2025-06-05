@@ -836,6 +836,15 @@ bool checkPhyRecoveryCmd(const string& phyRecoveryCmd)
     return true;
 }
 
+bool checkLinkTrainingCmd(const string& linkTrainingCmd)
+{
+    if (linkTrainingCmd != "EN" && linkTrainingCmd != "DS" && linkTrainingCmd != "EN_EXT")
+    {
+        return false;
+    }
+    return true;
+}
+
 bool checkTestMode(const string& testMode)
 {
     if (testMode != "Nominal" && testMode != "NOMINAL" && testMode != "CORNER" && testMode != "DRIFT" && testMode != "")

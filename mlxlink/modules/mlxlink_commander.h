@@ -170,6 +170,8 @@
 #define PHY_RECOVERY_FLAG_SHORT ' '
 #define PHY_RECOVERY_TYPE_FLAG "recovery_type"
 #define PHY_RECOVERY_TYPE_FLAG_SHORT ' '
+#define LINK_TRAINING_FLAG "link_training"
+#define LINK_TRAINING_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink Cable info flags
@@ -338,6 +340,7 @@ enum OPTION_TYPE
     SHOW_KR,
     SHOW_RX_RECOVERY_COUNTERS,
     SEND_PHY_RECOVERY,
+    SEND_LINK_TRAINING,
 
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
@@ -552,6 +555,7 @@ public:
     void handleRxErrInj();
     void handlePCIeErrInj();
     void handlePhyRecovery();
+    void handleLinkTraining();
 
     // Config helper functions
     bool isForceDownSupported();

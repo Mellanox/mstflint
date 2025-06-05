@@ -101,6 +101,7 @@ string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse);
 bool checkPrbsCmd(const string& prbsCmd);
 bool checkTestMode(const string& testMode);
 bool checkPhyRecoveryCmd(const string& phyRecoveryCmd);
+bool checkLinkTrainingCmd(const string& linkTrainingCmd);
 string FEC2Str(const string& fecShort, const string& speedStrG);
 string speedToFecSpeedStr(const string& speed, u_int32_t numOfLanes);
 PAOS_CMD paos_to_int(const string& cmd);
