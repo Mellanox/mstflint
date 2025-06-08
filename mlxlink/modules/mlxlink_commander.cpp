@@ -5108,7 +5108,7 @@ void MlxlinkCommander::showKr()
     {
         sendPrmReg(ACCESS_REG_PTASv2, GET);
         setPrintTitle(_krInfoCmd, HEADER_KR_INFO, KR_INFO_LAST);
-        bool krExtSupported = getFieldValue("kr_ext_cap") != 0;
+        bool krExtSupported = getFieldValue("xdr_lt_cap") != 0;
         setPrintVal(_krInfoCmd, "Support Non-Standard Training Flow",
                     getStrByValue(getFieldValue("kr_ext_oper"), _mlxlinkMaps->_krExtOper), ANSI_COLOR_RESET, true,
                     krExtSupported);
