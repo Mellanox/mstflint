@@ -83,7 +83,7 @@ string getAnDisableColor(u_int32_t anDisable);
 string IBSupportedSpeeds2Str(u_int32_t mask);
 string EthSupportedSpeeds2Str(u_int32_t int_mask);
 string EthExtSupportedSpeeds2Str(u_int32_t int_mask);
-string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended = false);
+string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended = false, bool isXdrSlowActive = false);
 string getOui(u_int32_t oui);
 int getBitvalue(u_int32_t mask, int idx);
 string getPowerClass(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass, u_int32_t maxPower);
