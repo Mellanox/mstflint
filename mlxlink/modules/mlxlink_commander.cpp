@@ -2417,11 +2417,13 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
     }
 
     string fomMode = status ? _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode")] : "N/A";
-
     setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : "N/A", ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", status ? getStringFromVector(initialFom) : "N/A", ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", status ? getStringFromVector(lastFom) : "N/A", ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : "N/A", ANSI_COLOR_RESET, true,
+                true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", status ? getStringFromVector(initialFom) : "N/A",
+                ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", status ? getStringFromVector(lastFom) : "N/A", ANSI_COLOR_RESET,
+                true, true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
                 (fomMeasurement & SLRG_EOM_UPPER), true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
