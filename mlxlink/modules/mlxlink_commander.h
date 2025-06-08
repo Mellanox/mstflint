@@ -580,7 +580,7 @@ public:
     void checkPrbsPolCap(const string& prbsReg);
     void checkPprtPptt();
     void checkPplrCap();
-    void sendPrbsPpaos(bool);
+    void sendPrbsPpaos(bool testMode, bool dc_cpl_allow = false);
     void startTuning();
     void prbsConfiguration(const string& prbsReg,
                            bool enable,
