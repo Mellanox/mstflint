@@ -117,6 +117,7 @@ FlintParams::FlintParams()
     i2cSecondaryAddr = -1;
     imageSizeOnly = false;
     cert_uuid = "";
+    skip_if_same = false;
 }
 
 FlintParams::~FlintParams() {}

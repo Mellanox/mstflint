@@ -51,6 +51,7 @@ public:
     int update_fw;
     int use_mfa_file;
     int use_mfa_dir;
+    bool skip_if_same;
 
     string mfa_dir;
     string mfa_file;
