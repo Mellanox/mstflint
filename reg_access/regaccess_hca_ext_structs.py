@@ -33,9 +33,9 @@
 
 
 ###############################################################################
-#    This file was generated at "2025-04-01 17:37:31"
+#    This file was generated at "2025-06-03 10:49:45"
 #    by:
-#      > <REDACTED>/prm_update.py --project nic
+#      > prm_update.py --project Nic
 ###############################################################################
 
 import os
@@ -122,11 +122,16 @@ class DTOR_REG_EXT(ctypes.Structure):
 class PCNR_REG_EXT(ctypes.Structure):
     _fields_ = [
         ("tuning_override", ctypes.c_uint8),
-        ("flu_always_cap", ctypes.c_uint8),
+        ("flua_cap", ctypes.c_uint8),
+        ("flua_we_mask", ctypes.c_uint8),
         ("lp_msb", ctypes.c_uint8),
         ("local_port", ctypes.c_uint8),
         ("keep_phy_setting", ctypes.c_uint8),
-        ("flu_always", ctypes.c_uint8)
+        ("flua_en", ctypes.c_uint8),
+        ("flua_oper", ctypes.c_uint8),
+        ("flua_allowed_ber", ctypes.c_uint8),
+        ("flua_polling_sec", ctypes.c_uint8),
+        ("flua_guar_sec", ctypes.c_uint8)
     ]
 
 class STRING_DB_PARAMETERS_EXT(ctypes.Structure):
@@ -164,9 +169,10 @@ class MGIR_HARDWARE_INFO_EXT(ctypes.Structure):
         ("ib_mad_gen", ctypes.c_uint8),
         ("hw_dev_id", ctypes.c_uint16),
         ("module_master_fw_default", ctypes.c_uint8),
+        ("cpo_indication", ctypes.c_uint8),
         ("ga_valid", ctypes.c_uint8),
         ("development", ctypes.c_uint8),
-        ("nic_disable", ctypes.c_uint8),
+        ("pci_switch_only_mode", ctypes.c_uint8),
         ("manufacturing_base_mac_47_32", ctypes.c_uint16),
         ("ga", ctypes.c_uint8),
         ("chip_type", ctypes.c_uint8),
@@ -202,7 +208,8 @@ class MGIR_FW_INFO_EXT(ctypes.Structure):
         ("encryption", ctypes.c_uint8),
         ("life_cycle_msb", ctypes.c_uint8),
         ("issu_able", ctypes.c_uint8),
-        ("pds", ctypes.c_uint8)
+        ("pds", ctypes.c_uint8),
+        ("ec_offload_engine_disabled", ctypes.c_uint8)
     ]
 
 class ROM_VERSION_EXT(ctypes.Structure):
@@ -379,5 +386,33 @@ class MROQ_EXT(ctypes.Structure):
         ("query_is_valid", ctypes.c_uint8),
         ("pci_sync_for_fw_update_start", ctypes.c_uint8),
         ("pci_reset_req_method", ctypes.c_uint8)
+    ]
+
+class MPEIN_REG_EXT(ctypes.Structure):
+    _fields_ = [
+        ("node", ctypes.c_uint8),
+        ("pcie_index", ctypes.c_uint8),
+        ("depth", ctypes.c_uint8),
+        ("DPNv", ctypes.c_uint8),
+        ("link_speed_enabled", ctypes.c_uint16),
+        ("link_width_enabled", ctypes.c_uint8),
+        ("link_speed_active", ctypes.c_uint16),
+        ("link_width_active", ctypes.c_uint8),
+        ("lane0_physical_position", ctypes.c_uint8),
+        ("num_of_vfs", ctypes.c_uint16),
+        ("num_of_pfs", ctypes.c_uint16),
+        ("bdf0", ctypes.c_uint16),
+        ("lane_reversal", ctypes.c_uint8),
+        ("port_type", ctypes.c_uint8),
+        ("pwr_status", ctypes.c_uint8),
+        ("max_payload_size", ctypes.c_uint8),
+        ("max_read_request_size", ctypes.c_uint8),
+        ("pci_power", ctypes.c_uint16),
+        ("link_peer_max_speed", ctypes.c_uint16),
+        ("flit_sup", ctypes.c_uint8),
+        ("precode_sup", ctypes.c_uint8),
+        ("flit_active", ctypes.c_uint8),
+        ("precode_active", ctypes.c_uint8),
+        ("device_status", ctypes.c_uint16)
     ]
 

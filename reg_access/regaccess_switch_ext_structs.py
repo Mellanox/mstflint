@@ -33,9 +33,9 @@
 
 
 ###############################################################################
-#    This file was generated at "2025-03-25 15:13:54"
+#    This file was generated at "2025-06-08 09:43:31"
 #    by:
-#      > <REDACTED>/gen_adb_data.py -g switch_prm_projects
+#      > /tmp/jenkins/workspace/automatic_prm_update/scripts/prm_update.py --project switch
 ###############################################################################
 
 import os
@@ -142,5 +142,33 @@ class MFMC_REG_EXT(ctypes.Structure):
         ("sector_protect_size", ctypes.c_uint8),
         ("quad_en", ctypes.c_uint8),
         ("dummy_clock_cycles", ctypes.c_uint8)
+    ]
+
+class MPEIN_REG_EXT(ctypes.Structure):
+    _fields_ = [
+        ("node", ctypes.c_uint8),
+        ("pcie_index", ctypes.c_uint8),
+        ("depth", ctypes.c_uint8),
+        ("DPNv", ctypes.c_uint8),
+        ("link_speed_enabled", ctypes.c_uint16),
+        ("link_width_enabled", ctypes.c_uint8),
+        ("link_speed_active", ctypes.c_uint16),
+        ("link_width_active", ctypes.c_uint8),
+        ("lane0_physical_position", ctypes.c_uint8),
+        ("num_of_vfs", ctypes.c_uint16),
+        ("num_of_pfs", ctypes.c_uint16),
+        ("bdf0", ctypes.c_uint16),
+        ("lane_reversal", ctypes.c_uint8),
+        ("port_type", ctypes.c_uint8),
+        ("pwr_status", ctypes.c_uint8),
+        ("max_payload_size", ctypes.c_uint8),
+        ("max_read_request_size", ctypes.c_uint8),
+        ("pci_power", ctypes.c_uint16),
+        ("link_peer_max_speed", ctypes.c_uint16),
+        ("flit_sup", ctypes.c_uint8),
+        ("precode_sup", ctypes.c_uint8),
+        ("flit_active", ctypes.c_uint8),
+        ("precode_active", ctypes.c_uint8),
+        ("device_status", ctypes.c_uint16)
     ]
 
