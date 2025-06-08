@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2025-03-02 12:44:18"
+#    This file was generated at "2025-05-27 14:10:17"
 #    by:
 #      > <REDACTED>/prm_update.py --project nic
 ###############################################################################
@@ -63,6 +63,7 @@ class MPIR_EXT(ctypes.Structure):
         ("local_port", ctypes.c_uint8),
         ("slot_number", ctypes.c_uint16),
         ("num_con_devices", ctypes.c_uint8),
+        ("host_index", ctypes.c_uint8),
         ("slot_cap", ctypes.c_uint8)
     ]
 
@@ -159,7 +160,7 @@ class MGIR_HARDWARE_INFO_EXT(ctypes.Structure):
         ("device_hw_revision", ctypes.c_uint16),
         ("pvs", ctypes.c_uint8),
         ("technology", ctypes.c_uint8),
-        ("num_ports", ctypes.c_uint8),
+        ("num_ports", ctypes.c_uint16),
         ("ib_mad_gen", ctypes.c_uint8),
         ("hw_dev_id", ctypes.c_uint16),
         ("module_master_fw_default", ctypes.c_uint8),
@@ -316,8 +317,10 @@ class MTEIM_REG_EXT(ctypes.Structure):
 class NIC_DPA_EUG_REG_EXT(ctypes.Structure):
     _fields_ = [
         ("eug_id", ctypes.c_uint16),
+        ("partition_id_valid", ctypes.c_uint8),
         ("operation", ctypes.c_uint8),
         ("modify_field_select", ctypes.c_uint32),
+        ("partition_id", ctypes.c_uint16),
         ("eug_name", ctypes.c_uint32 * 4),
         ("member_mask", ctypes.c_uint32 * 32)
     ]

@@ -30,7 +30,7 @@
  */
 
 /***
-         *** This file was generated at "2025-01-12 09:53:05"
+         *** This file was generated at "2025-04-29 17:50:05"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input [REDACTED]/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o [REDACTED]/user/tools_layouts
          ***/
@@ -224,17 +224,26 @@ struct reg_access_switch_prm_register_payload_ext {
 /* Size in bytes - 4 */
 struct reg_access_switch_lane_2_module_mapping_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Module number */
+	/* Description - Module field is considered as Label index when mod_lab_map = label_mapping_selected (= 1)
+Module or Label number */
 	/* 0x0.0 - 0x0.7 */
 	/* access: RW */
 	u_int8_t module;
-	/* Description - Reserved for HCA 
+	/* Description - Reserved for HCA.
 Slot_index 
 Slot_index = 0 represent the onboard (motherboard). 
 In case of non modular system only slot_index = 0 is available. */
 	/* 0x0.8 - 0x0.11 */
 	/* access: RW */
 	u_int8_t slot_index;
+	/* Description - Indicates start offset of rx_lane, tx_lane inside the modules lanes in 8x granularity. relevant for modules with more than 8 lanes. such as OE.
+0: lanes_0-7
+1: lanes_8_15
+2: lanes_16_23
+3: lanes_24_31 */
+	/* 0x0.12 - 0x0.15 */
+	/* access: RW */
+	u_int8_t sub_module;
 	/* Description - TX lane. 
 When m_lane_m field is set, this field is ignored (Reserved). 
 When rxtx field is cleared, this field is used for RX as well. */
@@ -247,6 +256,16 @@ When rxtx field is clreared, for set operation this field is ignored and for get
 	/* 0x0.24 - 0x0.27 */
 	/* access: RW */
 	u_int8_t rx_lane;
+	/* Description - Supported if PCAM.feature_cap_mask bit 116 is set, otherwise field is not valid.
+Relevant for Bidi port only, Simplex port should ignore.
+indicates if module lane Tx or Rx is used.
+0: module_rx_lane_valid - Bidi lane uses module rx lane. 
+tx lane value is not valid should be ignored
+1: module_tx_lane_valid - Bidi lane uses module tx lane. 
+rx lane value is not valid should be ignored */
+	/* 0x0.30 - 0x0.30 */
+	/* access: RO */
+	u_int8_t bidi_map;
 };
 
 /* Description -   */
@@ -339,6 +358,21 @@ Reserved for HCA */
 	/* 0x8.16 - 0x8.18 */
 	/* access: RW */
 	u_int8_t plane;
+	/* Description - When planarized  the FW shall respond to Hierarchy Info.Split with the following split value.
+In this use case it represents the split of the APort.
+
+When split = 0, the FW shall send Hierarchy Info without the split field. (meaning it is NA)
+
+When Non planarized (num_of_planes = 0), Hierarchy Info.Split will reflect the actual split value, when 2X- it'll hold the location within the 4x.
+
+0: NA
+1: Split 1.
+2: Split 2.
+3-7: Reserved
+Reserved for HCA */
+	/* 0x8.24 - 0x8.26 */
+	/* access: RW */
+	u_int8_t split;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - The number of planes comprising this Aggregated port
  */
@@ -445,9 +479,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 575, "MDDQ slot_info Layout," on page 910
-For devices on slot query_type data - see Table 577, "MDDQ device_info Register Layout," on page 911
-For slot name query_type data - see Table 579, "MDDQ slot_name Layout," on page 913 */
+For slot information query_type data - see Table 546, "MDDQ slot_info Layout," on page 981
+For devices on slot query_type data - see Table 548, "MDDQ device_info Register Layout," on page 982
+For slot name query_type data - see Table 550, "MDDQ slot_name Layout," on page 984 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -482,9 +516,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 567, "PRM Register Payload Layout," on page 906
-For Command type payload - See Table 569, "Command Payload Layout," on page 906
-For CrSpace type payload - See Table 571, "CrSpace access Payload Layout," on page 907 */
+For PRM Register type payload - See Table 538, "PRM Register Payload Layout," on page 977
+For Command type payload - See Table 540, "Command Payload Layout," on page 977
+For CrSpace type payload - See Table 542, "CrSpace access Payload Layout," on page 978 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -522,7 +556,8 @@ Note: Status might be '0' even when debug query is not allowed and additional_in
 3: RMCS token
 4: RMDT token 
 5: CRCS token 
-6: CRDT token */
+6: CRDT token
+ */
 	/* 0x0.24 - 0x0.31 */
 	/* access: INDEX */
 	u_int8_t type_of_token;
@@ -658,6 +693,12 @@ struct reg_access_switch_mpir_ext {
 	/* 0x0.24 - 0x0.29 */
 	/* access: INDEX */
 	u_int8_t depth;
+	/* Description - DPN version
+0: multi_topology_unaware_sw
+1: multi_topology_aware_sw */
+	/* 0x0.30 - 0x0.30 */
+	/* access: INDEX */
+	u_int8_t DPNv;
 	/* Description - Socket-Direct mode indication.
 0: non-Socket-Direct mode (single host or multi-host)
 1: Socket-Direct mode, for querying host */
@@ -701,6 +742,10 @@ Default value of '0' in case it is not a switch port. */
 	/* 0xc.16 - 0xc.23 */
 	/* access: RO */
 	u_int8_t num_con_devices;
+	/* Description - Host index associated with the pcie_inex */
+	/* 0xc.24 - 0xc.30 */
+	/* access: RO */
+	u_int8_t host_index;
 	/* Description - If set to '1', slot_number field is supported. */
 	/* 0xc.31 - 0xc.31 */
 	/* access: RO */
@@ -717,7 +762,7 @@ struct reg_access_switch_mrsr_ext {
 6: reset_at_pci_disable - reset will be done at PCI_DISABLE. See MCAM bit48. Note: when no PCI (e.g. unmanaged switches or for Retimers) will do reset without waiting for PCI_DISABLE
 7: fw_link_reset_at_pci_disable - PCIe FW Link Reset, core is up [DWIP] */
 	/* 0x0.0 - 0x0.3 */
-	/* access: WO */
+	/* access: RW */
 	u_int8_t command;
 };
 
@@ -774,7 +819,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 410, "NV_SWITCH_PHY_SEC_CONF Layout," on page 754 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 373, "NV_SWITCH_PHY_SEC_CONF Layout," on page 813 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -1112,10 +1157,12 @@ struct reg_access_switch_pmaos_reg_ext {
 1: enabled
 2: disabled_by_configuration
 3: enabled_once - if the module is active and then unplugged, or module experienced an error event, the operational status should go to "disabled" and can only be enabled upon explicit enable command.
+0xe: disconnect_cable
 
-Note - To disable a module, all ports associated with the port must be disabled first.
-Note 2 - Disabling OE in QM-3 CPO will not cause to the OE to power disable. User will need to set all the modules to disable, which will cause the power enable to go down.
-Note 3- Disabling OE in QM3-CPO will cause the ELS to go down as well as part of the HW flow. Before setting the ELS back up, OE should be set to up beforehand.
+Note - To disable a module, all ports associated with the port must be disabled first. 
+Note 2 - disconnect cable will shut down the optical module in ungraceful manner. Not supported for OE/ELS.
+Note 3 - Disabling OE in QM-3 CPO will not cause to the OE to power disable. User will need to set all the modules to disable, which will cause the power enable to go down.
+Note 4 - Disabling OE in QM3-CPO will cause the ELS to go down as well as part of the HW flow. Before setting the ELS back up, OE should be set to up beforehand.
  */
 	/* 0x0.8 - 0x0.11 */
 	/* access: RW */
@@ -1160,6 +1207,8 @@ Not supported by secondary ASICs. */
 [DWIP] 0xf: Boot_error
 [DWIP] 0x10: Recovery_error
 [DWIP] 0x11: Submodule_failure
+
+
 Valid only when oper_status = 4'b0011 */
 	/* 0x4.8 - 0x4.12 */
 	/* access: RO */
@@ -1229,6 +1278,14 @@ PMLP.lane<i>_module_mapping.rx_lane */
 	/* 0x0.28 - 0x0.28 */
 	/* access: OP */
 	u_int8_t m_lane_m;
+	/* Description - Supported only if PCAM.feature_cap_mask bit 112 is set
+On set operation, indicates ports lane mapping configuration if it should be taken from module mappings or label mappings.
+0: module_mapping_selected - port lanes are mapped according to module lanes from lane_module_mapping[0-7] fields. Module field is considered as module index.
+1: label_mapping_selected - port lanes are mapped according to label lanes from lane_module_mapping[0-7] fields. Module field is considered as Label index.
+ */
+	/* 0x0.29 - 0x0.29 */
+	/* access: INDEX */
+	u_int8_t mod_lab_map;
 	/* Description - Use different configuration for RX and TX.
 If this bit is cleared, the TX value is used for both RX and TX. When set, the RX configuration is taken from the separate field. This is to enable backward compatible implementation. */
 	/* 0x0.31 - 0x0.31 */
@@ -1247,37 +1304,21 @@ Up to 8 SerDes in a module can be mapped to a local port. */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
+	/* 0x0.0 - 0x4.31 */
 	/* access: RW */
-	struct reg_access_switch_PPCR_ext PPCR_ext;
+	struct reg_access_switch_mrsr_ext mrsr_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
+	/* 0x0.0 - 0x5c.31 */
 	/* access: RW */
-	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x28.31 */
 	/* access: RW */
 	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
+	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x40c.31 */
-	/* access: RW */
-	struct reg_access_switch_icsr_ext icsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_icam_reg_ext icam_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x6c.31 */
-	/* access: RW */
-	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
+	struct reg_access_switch_mpir_ext mpir_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
@@ -1285,27 +1326,27 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
-	/* access: RW */
-	struct reg_access_switch_msgi_ext msgi_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct reg_access_switch_mrsr_ext mrsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
 	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_icam_reg_ext icam_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x40c.31 */
+	/* access: RW */
+	struct reg_access_switch_icsr_ext icsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x6c.31 */
+	/* access: RW */
+	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_mddq_ext mddq_ext;
+	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x5c.31 */
+	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
+	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x10c.31 */
 	/* access: RW */
@@ -1313,11 +1354,27 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_mpir_ext mpir_ext;
+	struct reg_access_switch_PPCR_ext PPCR_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x18.31 */
 	/* access: RW */
 	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	/* access: RW */
+	struct reg_access_switch_msgi_ext msgi_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddq_ext mddq_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
 };
 
 
