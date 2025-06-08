@@ -2178,8 +2178,12 @@ void MlxlinkCommander::showBer()
 
             setPrintVal(_berInfoCmd, "Link Down Counter", getFieldStr("link_downed_counter"), ANSI_COLOR_RESET, true,
                         _linkUP);
-            setPrintVal(_berInfoCmd, "Link Error Recovery Counter", getFieldStr("link_error_recovery_counter"),
-                        ANSI_COLOR_RESET, true, _linkUP);
+
+            sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
+
+            u_int32_t linkRecoveryCounter = getFieldValue("successful_recovery_events");
+            setPrintVal(_berInfoCmd, "Link Error Recovery Counter", to_string(linkRecoveryCounter), ANSI_COLOR_RESET,
+                        true, _linkUP);
         }
 
         cout << _berInfoCmd;
