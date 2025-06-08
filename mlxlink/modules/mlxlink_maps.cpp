@@ -1551,11 +1551,15 @@ void MlxlinkMaps::initPlrRejectModeMapping()
     _plrRejectMode[PLR_REJECT_MODE_CS] = "rejection based on CS";
 }
 
-void MlxlinkMaps::initKrExtOperMapping()
+void MlxlinkMaps::initKrMapping()
 {
-    _krExtOper[KR_EXT_OPER_FW_DEFAULT] = "Auto (FW Default)";
-    _krExtOper[KR_EXT_OPER_DISABLED_LT] = "Disable KR Ext";
-    _krExtOper[KR_EXT_OPER_ENABLED_LT] = "Enable KR Ext in Async Mode";
+    // According to arch - the enums here are based on "xdr_lt_cap" instead of kr_ext_cap.
+    _krExtOper[KR_EXT_OPER_LT_DISABLED] = "LT is Disabled";
+    _krExtOper[KR_EXT_OPER_LT_ENABLED_REGULAR_KR] = "LT Enabled Regular KR";
+    _krExtOper[KR_EXT_OPER_LT_ENABLED_EXT_KR_ASYNC] = "LT Enabled Ext KR Async Mode";
+
+    _krPrbsType[KR_PRBS_TYPE_PRBS13] = "PRBS13";
+    _krPrbsType[KR_PRBS_TYPE_PRBS31] = "PRBS31";
 }
 
 MlxlinkMaps::MlxlinkMaps()
@@ -1578,7 +1582,7 @@ MlxlinkMaps::MlxlinkMaps()
     initPpttParamsMapping();
     initPpttSpeedMapping();
     initPlrRejectModeMapping();
-    initKrExtOperMapping();
+    initKrMapping();
 }
 
 MlxlinkMaps::~MlxlinkMaps() {}
