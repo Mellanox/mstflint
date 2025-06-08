@@ -1551,6 +1551,13 @@ void MlxlinkMaps::initPlrRejectModeMapping()
     _plrRejectMode[PLR_REJECT_MODE_CS] = "rejection based on CS";
 }
 
+void MlxlinkMaps::initKrExtOperMapping()
+{
+    _krExtOper[KR_EXT_OPER_FW_DEFAULT] = "Auto (FW Default)";
+    _krExtOper[KR_EXT_OPER_DISABLED_LT] = "Disable KR Ext";
+    _krExtOper[KR_EXT_OPER_ENABLED_LT] = "Enable KR Ext in Async Mode";
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();
@@ -1571,6 +1578,7 @@ MlxlinkMaps::MlxlinkMaps()
     initPpttParamsMapping();
     initPpttSpeedMapping();
     initPlrRejectModeMapping();
+    initKrExtOperMapping();
 }
 
 MlxlinkMaps::~MlxlinkMaps() {}
