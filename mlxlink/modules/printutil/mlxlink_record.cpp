@@ -50,6 +50,7 @@ MlxlinkRecord::MlxlinkRecord()
     visible = true;
     arrayValue = false;
     colorKey = false;
+    lineLen = PDDR_LINE_LEN;
 }
 
 MlxlinkRecord::~MlxlinkRecord() {}

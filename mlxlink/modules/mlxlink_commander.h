@@ -102,6 +102,14 @@
 #define BER_MONITOR_INFO_FLAG_SHORT ' '
 #define PEPC_SHOW_FLAG "show_external_phy"
 #define PEPC_SHOW_FLAG_SHORT ' '
+#define PLR_INFO_FLAG "show_plr"
+#define PLR_INFO_FLAG_SHORT ' '
+#define KR_INFO_FLAG "show_kr"
+#define KR_INFO_FLAG_SHORT ' '
+#define RX_RECOVERY_COUNTERS_FLAG "show_rx_recovery_counters"
+#define RX_RECOVERY_COUNTERS_FLAG_SHORT ' '
+#define PERIODIC_EQ_FLAG "show_peq"
+#define PERIODIC_EQ_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink COMMANDS Flags
@@ -160,6 +168,14 @@
 #define PEPC_AN_MODE_FLAG_SHORT ' '
 #define PTYS_LINK_MODE_FORCE_FLAG "link_mode_force"
 #define PTYS_LINK_MODE_FORCE_FLAG_SHORT ' '
+#define PHY_RECOVERY_FLAG "phy_recovery"
+#define PHY_RECOVERY_FLAG_SHORT ' '
+#define PHY_RECOVERY_TYPE_FLAG "recovery_type"
+#define PHY_RECOVERY_TYPE_FLAG_SHORT ' '
+#define LINK_TRAINING_FLAG "link_training"
+#define LINK_TRAINING_FLAG_SHORT ' '
+#define SET_LINK_PEQ_FLAG "set_link_peq"
+#define SET_LINK_PEQ_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink Cable info flags
@@ -324,6 +340,14 @@ enum OPTION_TYPE
     RS_FEC_HISTOGRAM,
     SLRG_TEST,
     PCIE_ERROR_INJ,
+    SHOW_PLR,
+    SHOW_KR,
+    SHOW_RX_RECOVERY_COUNTERS,
+    SEND_PHY_RECOVERY,
+    SEND_LINK_TRAINING,
+    SHOW_PERIODIC_EQ,
+    SET_PERIODIC_EQ,
+
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
 };
@@ -374,7 +398,7 @@ public:
     void checkStrLength(const string& str);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
     u_int32_t activeSpeed2gNum(u_int32_t mask, bool extended);
-    string activeSpeed2Str(u_int32_t mask, bool extended);
+    string activeSpeed2Str(u_int32_t mask, bool extended, bool isXdrSlowActive = false);
     void getCableParams();
     bool inPrbsTestMode();
     bool checkGBPpaosDown();
@@ -419,6 +443,11 @@ public:
     virtual void collectAMBER();
     void collectBER();
     void showTxGroupMapping();
+    void showPlr();
+    void showKr();
+    void showRxRecoveryCounters();
+    void showPeriodicEq();
+    void setPeriodicEq();
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
@@ -444,6 +473,7 @@ public:
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
     void updateSwControlStatus();
+    u_int32_t getNumberOfPorts();
     bool checkDPNvSupport();
 
     void showTestMode();
@@ -455,7 +485,7 @@ public:
     void checkPCIeValidity();
     virtual void prepareBerInfo();
     virtual void prepareBerInfoEDR();
-    virtual void getPcieNdrCounters();
+    virtual void getPcieNdrCounters(u_int32_t flitActive = 0);
     virtual vector<AmberField> getBerFields();
 
     std::map<std::string, std::string> getPprt();
@@ -517,6 +547,10 @@ public:
     MlxlinkCmdPrint _cableDumpRawCmd;
     MlxlinkCmdPrint _cableDDMCmd;
     MlxlinkCmdPrint _portGroupMapping;
+    MlxlinkCmdPrint _plrInfoCmd;
+    MlxlinkCmdPrint _krInfoCmd;
+    MlxlinkCmdPrint _rxRecoveryCountersCmd;
+    MlxlinkCmdPrint _periodicEqInfoCmd;
 
     // Mlxlink config functions
     void clearCounters();
@@ -530,6 +564,8 @@ public:
     void setTxGroupMapping();
     void handleRxErrInj();
     void handlePCIeErrInj();
+    void handlePhyRecovery();
+    void handleLinkTraining();
 
     // Config helper functions
     bool isForceDownSupported();
@@ -573,6 +609,11 @@ public:
     void checkSltpParamsSize();
     bool isMpeinjSupported();
     u_int32_t getRateFromPptt();
+    string getBerString();
+    void updateLocalPortGroup();
+    std::string getSpeedStrForTableView();
+    bool checkAllPortsDown();
+    void configurePeqForAllPorts(bool brLanesCap);
 
     // Mlxlink params
     UserInput _userInput;
@@ -584,6 +625,7 @@ public:
     u_int32_t _cableMediaType;
     u_int32_t _fecActive;
     u_int32_t _protoActive;
+    u_int32_t _phyMngrFsmState;
     u_int32_t _anDisable;
     u_int32_t _speedBerCsv;
     u_int32_t _cableIdentifier;
@@ -592,6 +634,7 @@ public:
     u_int32_t _cableLen;
     u_int32_t _activeSpeed;
     u_int32_t _activeSpeedEx;
+    bool _isXdrSlowActive;
     u_int32_t _laneSpeedFromPptt;
     u_int32_t _protoCapability;
     u_int32_t _deviceCapability;

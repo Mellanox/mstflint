@@ -33,6 +33,7 @@
  */
 
 #include "mlxlink_reg_parser.h"
+#include <common/tools_utils.h>
 
 MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0)
 {
@@ -166,6 +167,38 @@ void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t me
     genBuffSendRegister(regName, method);
 }
 
+void MlxlinkRegParser::sendPrmRegWithoutReset(const string& regName,
+                                              maccess_reg_method_t method,
+                                              const char* fields,
+                                              ...)
+{
+    char fieldsCstr[MAX_FIELDS_BUFFER];
+    va_list args;
+    va_start(args, fields);
+    vsnprintf(fieldsCstr, MAX_FIELDS_BUFFER, fields, args);
+    va_end(args);
+
+    string fieldsStr = string(fieldsCstr);
+    auto vectorOffields = MlxlinkRecord::split(fieldsStr, ",");
+
+    for (std::vector<u_int32_t>::size_type j = 0; j < _buffer.size(); j++)
+    {
+        _buffer[j] = CPU_TO_BE32((_buffer[j]));
+    }
+
+    for (const auto& token : vectorOffields)
+    {
+        auto fieldToken = MlxlinkRecord::split(token, "=");
+        string fieldName = fieldToken[0];
+        u_int32_t fieldValue = stoi(fieldToken[1], nullptr, 0);
+
+        updateField(fieldName, fieldValue);
+    }
+    setDefaultFields(regName, fieldsStr);
+
+    genBuffSendRegister(regName, method);
+}
+
 void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...)
 {
     char fieldsCstr[MAX_FIELDS_BUFFER];
@@ -193,9 +226,10 @@ void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t me
     genBuffSendRegister(regName, method);
 }
 
-string MlxlinkRegParser::getFieldStr(const string& field, const u_int32_t size)
+string
+  MlxlinkRegParser::getFieldStr(const string& field, const u_int32_t size, const u_int32_t offset, bool offsetSpecified)
 {
-    return to_string(getFieldValue(field, size));
+    return to_string(getFieldValue(field, size, offset, offsetSpecified));
 }
 
 string MlxlinkRegParser::getRawFieldValueStr(const string fieldName)
@@ -228,9 +262,10 @@ string MlxlinkRegParser::getRawFieldValueStr(const string fieldName)
     return fullStr;
 }
 
-u_int32_t MlxlinkRegParser::getFieldValue(string field_name, u_int32_t size)
+u_int32_t MlxlinkRegParser::getFieldValue(string field_name, u_int32_t size, u_int32_t offset, bool offsetSpecified)
 {
-    return RegAccessParser::getFieldValue(field_name, _buffer, size);
+    u_int32_t field_Val = RegAccessParser::getFieldValue(field_name, _buffer, size, offset, offsetSpecified);
+    return field_Val;
 }
 
 u_int32_t MlxlinkRegParser::getFieldSize(string field_name)

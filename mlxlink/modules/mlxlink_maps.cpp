@@ -1515,10 +1515,18 @@ void MlxlinkMaps::initEnhancedDebugMapping()
 
 void MlxlinkMaps::initPprmOperationRecoveryMapping()
 {
-    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logcic_re-lock";
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logcic_re_lock";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] = "host_serdes_feq";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_TX] = "module_tx_disable";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_DATA_PATH] = "module_datapath_full_toggle";
+}
+
+void MlxlinkMaps::initPprmRecoveryStatusMapping()
+{
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_FW_DEFAULT] = "FW Default";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_ENABLE] = "Enable";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE] = "Disable";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION] = "Disable Support In Negotiation";
 }
 
 void MlxlinkMaps::initPpcntGroupsMapping()
@@ -1543,6 +1551,24 @@ void MlxlinkMaps::initPpcntGroupsMapping()
     _ppcntGroups[PPCNT_ALL_GROUPS] = PPCNT_ALL_GROUPS;
 }
 
+void MlxlinkMaps::initPlrRejectModeMapping()
+{
+    _plrRejectMode[PLR_REJECT_MODE_PLR_MARGIN] = "rejection based on PLR margin";
+    _plrRejectMode[PLR_REJECT_MODE_CRC_AND_CS] = "rejection based on CRC and CS";
+    _plrRejectMode[PLR_REJECT_MODE_CS] = "rejection based on CS";
+}
+
+void MlxlinkMaps::initKrMapping()
+{
+    // According to arch - the enums here are based on "xdr_lt_cap" instead of kr_ext_cap.
+    _krExtOper[KR_EXT_OPER_LT_DISABLED] = "LT is Disabled";
+    _krExtOper[KR_EXT_OPER_LT_ENABLED_REGULAR_KR] = "LT Enabled Regular KR";
+    _krExtOper[KR_EXT_OPER_LT_ENABLED_EXT_KR_ASYNC] = "LT Enabled Ext KR Async Mode";
+
+    _krPrbsType[KR_PRBS_TYPE_PRBS13] = "PRBS13";
+    _krPrbsType[KR_PRBS_TYPE_PRBS31] = "PRBS31";
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();
@@ -1562,6 +1588,10 @@ MlxlinkMaps::MlxlinkMaps()
     initPpcntGroupsMapping();
     initPpttParamsMapping();
     initPpttSpeedMapping();
+    initPlrRejectModeMapping();
+    initKrMapping();
+    initPprmOperationRecoveryMapping();
+    initPprmRecoveryStatusMapping();
 }
 
 MlxlinkMaps::~MlxlinkMaps() {}

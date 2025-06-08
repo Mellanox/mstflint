@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2024-12-02 12:38:06"
+#    This file was generated at "2025-04-29 17:50:19"
 #    by:
 #      > <REDACTED>/gen_adb_data.py -g switch_prm_projects
 ###############################################################################
@@ -52,6 +52,7 @@ class MPIR_EXT(ctypes.Structure):
         ("node", ctypes.c_uint8),
         ("pcie_index", ctypes.c_uint8),
         ("depth", ctypes.c_uint8),
+        ("DPNv", ctypes.c_uint8),
         ("sdm", ctypes.c_uint8),
         ("subordinate_bus", ctypes.c_uint8),
         ("secondary_bus", ctypes.c_uint8),
@@ -61,6 +62,7 @@ class MPIR_EXT(ctypes.Structure):
         ("local_port", ctypes.c_uint8),
         ("slot_number", ctypes.c_uint16),
         ("num_con_devices", ctypes.c_uint8),
+        ("host_index", ctypes.c_uint8),
         ("slot_cap", ctypes.c_uint8)
     ]
 
