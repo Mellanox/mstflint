@@ -5488,7 +5488,7 @@ void MlxlinkCommander::configurePeqForAllPorts(bool brLanesCap)
 
         for (const auto& portInfo : _localPortsPerGroup)
         {
-            cmdArgs = "peq_cap=1,peq_interval_period=" + to_string(_userInput._setPeriodicEqInterval);
+            cmdArgs = "peq_cap=1,peq_interval_period=" + to_string(_userInput._setPeriodicEqInterval / 10);
             _localPort = portInfo.localPort;
             if (brLanesCap)
             {
@@ -5497,10 +5497,12 @@ void MlxlinkCommander::configurePeqForAllPorts(bool brLanesCap)
             }
             else
             {
-                cmdArgs += ",lane=0";
-                sendPrmReg(ACCESS_REG_SLLM, SET, cmdArgs.c_str());
-                cmdArgs += ",lane=1";
-                sendPrmReg(ACCESS_REG_SLLM, SET, cmdArgs.c_str());
+                string locCmdArgs = cmdArgs;
+                locCmdArgs += ",lane=0";
+                sendPrmReg(ACCESS_REG_SLLM, SET, locCmdArgs.c_str());
+                locCmdArgs = cmdArgs;
+                locCmdArgs += ",lane=1";
+                sendPrmReg(ACCESS_REG_SLLM, SET, locCmdArgs.c_str());
             }
             printProgressBar(currentPortIndex * 100 / totalPortsNum, "Setting Periodic EQ Interval", "");
             currentPortIndex++;
