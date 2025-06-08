@@ -87,6 +87,7 @@
 #define ACCESS_REG_MMCR "MMCR"
 #define ACCESS_REG_PPRM "PPRM"
 #define ACCESS_REG_MCAM "MCAM"
+#define ACCESS_REG_PTASv2 "PTASv2"
 // define all used regs above this line
 
 #define QSFP_CHANNELS 4
@@ -1978,6 +1979,13 @@ enum PLR_REJECT_MODE
     PLR_REJECT_MODE_CRC_AND_CS,
     PLR_REJECT_MODE_CS,
     PLR_REJECT_MODE_RESERVED
+};
+
+enum KR_EXT_OPER
+{
+    KR_EXT_OPER_FW_DEFAULT,
+    KR_EXT_OPER_DISABLED_LT,
+    KR_EXT_OPER_ENABLED_LT,
 };
 
 #endif /* MLXLINK_ENUMS_H */

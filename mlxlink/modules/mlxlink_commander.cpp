@@ -5226,6 +5226,7 @@ void MlxlinkCommander::prepareJsonOut()
     _validPcieLinks.toJsonFormat(_jsonRoot);
     _portGroupMapping.toJsonFormat(_jsonRoot);
     _plrInfoCmd.toJsonFormat(_jsonRoot);
+    _krInfoCmd.toJsonFormat(_jsonRoot);
 
     bool errorExist = _allUnhandledErrors != "";
 
@@ -5243,7 +5244,8 @@ void MlxlinkCommander::showPlr()
     {
         sendPrmReg(ACCESS_REG_PPLM, GET);
         setPrintTitle(_plrInfoCmd, HEADER_PLR_INFO, PLR_INFO_LAST);
-        setPrintVal(_plrInfoCmd, "PLR Reject Mode", _mlxlinkMaps->_plrRejectMode[getFieldValue("plr_reject_mode")]);
+        setPrintVal(_plrInfoCmd, "PLR Reject Mode",
+                    getStrByValue(getFieldValue("plr_reject_mode"), _mlxlinkMaps->_plrRejectMode));
         setPrintVal(_plrInfoCmd, "PLR Margin Threshold", to_string(getFieldValue("plr_margin_th")));
     }
     catch (MlxRegException& exc)
@@ -5251,4 +5253,34 @@ void MlxlinkCommander::showPlr()
         throw MlxRegException("PLR is not supported for the current device!");
     }
     cout << _plrInfoCmd;
+}
+
+void MlxlinkCommander::showKr()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_PTASv2, GET);
+        setPrintTitle(_krInfoCmd, HEADER_KR_INFO, KR_INFO_LAST);
+        bool krExtSupported = getFieldValue("kr_ext_cap") != 0;
+        setPrintVal(_krInfoCmd, "Support Non-Standard Training Flow",
+                    getStrByValue(getFieldValue("kr_ext_oper"), _mlxlinkMaps->_krExtOper), ANSI_COLOR_RESET, true,
+                    krExtSupported);
+        bool iterSupported = getFieldValue("iterations_cap") != 0;
+        setPrintVal(_krInfoCmd, "Number of Iterations", to_string(getFieldValue("num_of_iter_oper")), ANSI_COLOR_RESET,
+                    true, iterSupported);
+        setPrintVal(_krInfoCmd, "Time for Iteration", to_string(getFieldValue("iter_time_oper")), ANSI_COLOR_RESET,
+                    true, iterSupported);
+        bool berTargetSupported = getFieldValue("ber_target_cap") != 0;
+        setPrintVal(_krInfoCmd, "BER Target",
+                    getFieldStr("ber_target_coef_oper") + "E-" + getFieldStr("ber_target_magnitude_oper"),
+                    ANSI_COLOR_RESET, true, berTargetSupported);
+        bool prbsTypeSupported = getFieldValue("prbs_type_cap") != 0;
+        setPrintVal(_krInfoCmd, "PRBS Type", to_string(getFieldValue("prbs_type_oper")), ANSI_COLOR_RESET, true,
+                    prbsTypeSupported);
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("KR is not supported for the current device!");
+    }
+    cout << _krInfoCmd;
 }

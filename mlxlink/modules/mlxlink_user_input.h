@@ -96,6 +96,7 @@ public:
     bool gradeScanPerLane;
     bool autoCsvName;
     bool _showPlr;
+    bool _showKr;
 
     string _device;
     string _extAdbFile;
