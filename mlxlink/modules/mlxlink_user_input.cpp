@@ -120,7 +120,10 @@ UserInput::UserInput()
     _linkTraining = "";
     _phyRecovery = "";
     _phyRecoveryType = "";
-    _wdTimer = 10; // 10msec intervals, default WD timer value is 100msec (10 * 10msec)
+    _showPeriodicEq = false;
+    _periodicEqIntervalSpecified = false;
+    _setPeriodicEqInterval = -1; // 10uS granularity
+    _wdTimer = 10;               // 10msec intervals, default WD timer value is 100msec (10 * 10msec)
     _wdTimerSpecified = false;
 
     autoCsvName = false;

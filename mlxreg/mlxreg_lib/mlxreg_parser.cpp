@@ -425,11 +425,14 @@ void RegAccessParser::strToUint32(char* str, u_int32_t& uint)
 bool RegAccessParser::checkFieldWithPath(AdbInstance* field,
                                          u_int32_t idx,
                                          std::vector<string>& fieldsChain,
-                                         u_int32_t size)
+                                         u_int32_t size,
+                                         u_int32_t offset,
+                                         bool offsetSpecified)
 {
     if (idx == 0 && (field->get_field_name() == fieldsChain[0]))
     {
-        if (size == 0 || (size && field->size == size))
+        if (size == 0 || (!offsetSpecified && size && field->size == size) ||
+            (offsetSpecified && offset % 32 == field->offset % 32 && size && field->size == size))
         {
             return true;
         }
@@ -450,14 +453,14 @@ bool RegAccessParser::checkFieldWithPath(AdbInstance* field,
 /************************************
  * Function: getField
  ************************************/
-AdbInstance* RegAccessParser::getField(string name, u_int32_t size)
+AdbInstance* RegAccessParser::getField(string name, u_int32_t size, u_int32_t offset, bool offsetSpecified)
 {
     // this will allow to access the leaf field by specifying it's parent.
     std::vector<string> fieldsChain = strSplit(name, '.', false);
     std::vector<AdbInstance*> subItems = _regNode->getLeafFields(true);
     for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++)
     {
-        if (checkFieldWithPath(subItems[i], fieldsChain.size() - 1, fieldsChain, size))
+        if (checkFieldWithPath(subItems[i], fieldsChain.size() - 1, fieldsChain, size, offset, offsetSpecified))
         {
             return subItems[i];
         }
@@ -540,8 +543,12 @@ void RegAccessParser::updateField(string field_name, u_int32_t value)
     updateBuffer(field->offset, field->size, value);
 }
 
-u_int32_t RegAccessParser::getFieldValue(string field_name, std::vector<u_int32_t>& buff, u_int32_t size)
+u_int32_t RegAccessParser::getFieldValue(string field_name,
+                                         std::vector<u_int32_t>& buff,
+                                         u_int32_t size,
+                                         u_int32_t offset,
+                                         bool offsetSpecified)
 {
-    AdbInstance* field = getField(field_name, size);
+    AdbInstance* field = getField(field_name, size, offset, offsetSpecified);
     return (u_int32_t)field->popBuf((u_int8_t*)&buff[0]);
 }

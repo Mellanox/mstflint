@@ -87,13 +87,22 @@ protected:
     void parseOps();
     void parseData();
     void parseUnknown();
-    bool checkFieldWithPath(AdbInstance* field, u_int32_t idx, std::vector<string>& fieldsChain, u_int32_t size = 0);
-    AdbInstance* getField(string name, u_int32_t size = 0);
+    bool checkFieldWithPath(AdbInstance* field,
+                            u_int32_t idx,
+                            std::vector<string>& fieldsChain,
+                            u_int32_t size = 0,
+                            u_int32_t offset = 0,
+                            bool offsetSpecified = false);
+    AdbInstance* getField(string name, u_int32_t size = 0, u_int32_t offset = 0, bool offsetSpecified = false);
     std::vector<string> strSplit(string str, char delimiter, bool forcePairs);
     void updateBuffer(u_int32_t offset, u_int32_t size, u_int32_t val);
     void updateBufferUnknwon(std::vector<string> fieldTokens);
     void updateField(string field_name, u_int32_t value);
-    u_int32_t getFieldValue(string field_name, std::vector<u_int32_t>& buff, u_int32_t size = 0);
+    u_int32_t getFieldValue(string field_name,
+                            std::vector<u_int32_t>& buff,
+                            u_int32_t size = 0,
+                            u_int32_t offset = 0,
+                            bool offsetSpecified = false);
     bool isRO(AdbInstance* field);
     bool isIndex(AdbInstance* field);
     bool isOP(AdbInstance* field);

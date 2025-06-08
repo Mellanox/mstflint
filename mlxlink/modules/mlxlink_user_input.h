@@ -119,6 +119,9 @@ public:
     string _linkTraining;
     string _phyRecovery;
     string _phyRecoveryType;
+    bool _showPeriodicEq;
+    bool _periodicEqIntervalSpecified;
+    int _setPeriodicEqInterval;
     int _wdTimer;
     bool _wdTimerSpecified;
     double _testTime;

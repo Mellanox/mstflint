@@ -220,9 +220,10 @@ void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t me
     genBuffSendRegister(regName, method);
 }
 
-string MlxlinkRegParser::getFieldStr(const string& field, const u_int32_t size)
+string
+  MlxlinkRegParser::getFieldStr(const string& field, const u_int32_t size, const u_int32_t offset, bool offsetSpecified)
 {
-    return to_string(getFieldValue(field, size));
+    return to_string(getFieldValue(field, size, offset, offsetSpecified));
 }
 
 string MlxlinkRegParser::getRawFieldValueStr(const string fieldName)
@@ -255,9 +256,10 @@ string MlxlinkRegParser::getRawFieldValueStr(const string fieldName)
     return fullStr;
 }
 
-u_int32_t MlxlinkRegParser::getFieldValue(string field_name, u_int32_t size)
+u_int32_t MlxlinkRegParser::getFieldValue(string field_name, u_int32_t size, u_int32_t offset, bool offsetSpecified)
 {
-    return RegAccessParser::getFieldValue(field_name, _buffer, size);
+    u_int32_t field_Val = RegAccessParser::getFieldValue(field_name, _buffer, size, offset, offsetSpecified);
+    return field_Val;
 }
 
 u_int32_t MlxlinkRegParser::getFieldSize(string field_name)
