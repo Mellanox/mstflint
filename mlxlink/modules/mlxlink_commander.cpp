@@ -86,6 +86,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _speedBerCsv = 0;
     _fecActive = 0;
     _protoActive = 0;
+    _phyMngrFsmState = -1;
     _productTechnology = 0;
     _allUnhandledErrors = "";
     _mlxlinkMaps = MlxlinkMaps::getInstance();
@@ -1780,13 +1781,13 @@ void MlxlinkCommander::operatingInfoPage()
     try
     {
         sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_OPERATIONAL_INFO_PAGE);
-        u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
-        int       loopbackMode = (phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode") : -1;
+        _phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
+        int       loopbackMode = (_phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode") : -1;
         u_int32_t ethAnFsmState = getFieldValue("eth_an_fsm_state");
         u_int32_t ib_phy_fsm_state = getFieldValue("ib_phy_fsm_state");
         string    color =
-            MlxlinkRecord::state2Color(phyMngrFsmState ==
-                                       PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)phyMngrFsmState);
+            MlxlinkRecord::state2Color(_phyMngrFsmState ==
+                                       PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)_phyMngrFsmState);
         _protoActive = getFieldValue("proto_active");
         if (_protoActive == NVLINK) {
             _isNVLINK = true;
@@ -1794,14 +1795,14 @@ void MlxlinkCommander::operatingInfoPage()
         }
         _fecActive = getFieldValue("fec_mode_active");
 
-        _linkUP = (phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
-        _portPolling = phyMngrFsmState == PHY_MNGR_POLLING;
+        _linkUP = (_phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
+        _portPolling = _phyMngrFsmState == PHY_MNGR_POLLING;
         _protoCapability = getFieldValue("cable_ext_eth_proto_cap");
 
         if (_protoActive == IB) {
             _protoCapability = getFieldValue("cable_link_speed_cap");
             _activeSpeed = getFieldValue("link_speed_active");
-            _protoAdmin = (phyMngrFsmState != 0) ? getFieldValue("core_to_phy_link_proto_enabled") :
+            _protoAdmin = (_phyMngrFsmState != 0) ? getFieldValue("core_to_phy_link_proto_enabled") :
                           getFieldValue("phy_manager_link_proto_enabled");
         }
 
@@ -1815,7 +1816,7 @@ void MlxlinkCommander::operatingInfoPage()
 
         setPrintTitle(_operatingInfoCmd, "Operational Info", PDDR_OPERATIONAL_INFO_LAST, !_prbsTestMode);
 
-        setPrintVal(_operatingInfoCmd, "State", getStrByValue(phyMngrFsmState, _mlxlinkMaps->_pmFsmState), color, true,
+        setPrintVal(_operatingInfoCmd, "State", getStrByValue(_phyMngrFsmState, _mlxlinkMaps->_pmFsmState), color, true,
                     !_prbsTestMode);
         setPrintVal(_operatingInfoCmd, "Physical state",
                     _protoActive == ETH ? getStrByValue(ethAnFsmState, _mlxlinkMaps->_ethANFsmState) :
@@ -5261,7 +5262,8 @@ void MlxlinkCommander::showKr()
     {
         sendPrmReg(ACCESS_REG_PTASv2, GET);
         setPrintTitle(_krInfoCmd, HEADER_KR_INFO, KR_INFO_LAST);
-        bool krExtSupported = getFieldValue("kr_ext_cap") != 0;
+        // According to arch, the xdr_lt_cap field will reflect the kr_ext_oper capability.
+        bool krExtSupported = getFieldValue("xdr_lt_cap") != 0;
         setPrintVal(_krInfoCmd, "Support Non-Standard Training Flow",
                     getStrByValue(getFieldValue("kr_ext_oper"), _mlxlinkMaps->_krExtOper), ANSI_COLOR_RESET, true,
                     krExtSupported);
@@ -5275,8 +5277,8 @@ void MlxlinkCommander::showKr()
                     getFieldStr("ber_target_coef_oper") + "E-" + getFieldStr("ber_target_magnitude_oper"),
                     ANSI_COLOR_RESET, true, berTargetSupported);
         bool prbsTypeSupported = getFieldValue("prbs_type_cap") != 0;
-        setPrintVal(_krInfoCmd, "PRBS Type", to_string(getFieldValue("prbs_type_oper")), ANSI_COLOR_RESET, true,
-                    prbsTypeSupported);
+        setPrintVal(_krInfoCmd, "PRBS Type", getStrByValue(getFieldValue("prbs_type_oper"), _mlxlinkMaps->_krPrbsType),
+                    ANSI_COLOR_RESET, true, prbsTypeSupported);
     }
     catch (MlxRegException& exc)
     {

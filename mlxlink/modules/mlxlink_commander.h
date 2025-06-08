@@ -608,6 +608,7 @@ public:
     u_int32_t _cableMediaType;
     u_int32_t _fecActive;
     u_int32_t _protoActive;
+    int _phyMngrFsmState;
     u_int32_t _anDisable;
     u_int32_t _speedBerCsv;
     u_int32_t _cableIdentifier;
