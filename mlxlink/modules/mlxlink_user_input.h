@@ -118,6 +118,7 @@ public:
     string _forceMode;
     string _anMode;
     string _logFile;
+    string _linkTraining;
     string _phyRecovery;
     string _phyRecoveryType;
     int _wdTimer;
