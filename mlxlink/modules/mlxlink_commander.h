@@ -421,7 +421,7 @@ public:
     void handleLabelPorts(std::vector<string> labelPortsStr, bool skipException = false);
     vector<string> localToPortsPerGroup(vector<u_int32_t> localPorts);
     u_int32_t getPortGroup(u_int32_t localPort);
-    string getValuesOfActiveLanes(const string& row);
+    string getValuesOfActiveLanes(const string& row, bool isSnr = false);
     bool checkIfModuleExtSupported();
 
     // Mlxlink query functions
