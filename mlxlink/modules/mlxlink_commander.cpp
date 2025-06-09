@@ -2248,10 +2248,10 @@ void MlxlinkCommander::showTestModeBer()
     cout << _testModeBerInfoCmd;
 }
 
-void MlxlinkCommander::getPcieNdrCounters()
+void MlxlinkCommander::getPcieNdrCounters(uint32_t flitActive)
 {
     // This field is supported from cx8 and above.
-    if (_productTechnology >= PRODUCT_5NM)
+    if (_productTechnology >= PRODUCT_5NM && flitActive)
     {
         string berStr = to_string(getFieldValue("fber_coef")) + "E-" + to_string(getFieldValue("fber_magnitude"));
         setPrintVal(_mpcntPerfInfCmd, "First BER (FBER)", berStr);
@@ -2297,7 +2297,7 @@ void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
                         getFieldStr("fec_uncorrectable_error_counter"));
         }
 
-        getPcieNdrCounters();
+        getPcieNdrCounters(flitActive);
     }
     catch (const std::exception& exc)
     {
