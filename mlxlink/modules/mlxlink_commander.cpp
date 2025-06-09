@@ -2442,12 +2442,12 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
                 ANSI_COLOR_RESET, true, true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Last FOM", status ? getStringFromVector(lastFom) : "N/A", ANSI_COLOR_RESET,
                 true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
-                (fomMeasurement & SLRG_EOM_UPPER), true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
-                (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET,
-                (fomMeasurement & SLRG_EOM_LOWER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", status ? getStringFromVector(upperFom) : "N/A",
+                ANSI_COLOR_RESET, (fomMeasurement & SLRG_EOM_UPPER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", status ? getStringFromVector(midFom) : "N/A", ANSI_COLOR_RESET,
+                    (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", status ? getStringFromVector(lowerFom) : "N/A",
+                ANSI_COLOR_RESET, (fomMeasurement & SLRG_EOM_LOWER), true, true);
 }
 
 void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
@@ -2504,12 +2504,12 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
                 ANSI_COLOR_RESET, true, true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Last FOM", status ? getStringFromVector(lastFom) : "N/A", ANSI_COLOR_RESET,
                 true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
-                (fomMeasurement & SLRG_EOM_UPPER), true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", status ? getStringFromVector(upperFom) : "N/A",
+                ANSI_COLOR_RESET, (fomMeasurement & SLRG_EOM_UPPER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", status ? getStringFromVector(midFom) : "N/A", ANSI_COLOR_RESET,
                 (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET,
-                (fomMeasurement & SLRG_EOM_LOWER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", status ? getStringFromVector(lowerFom) : "N/A",
+                ANSI_COLOR_RESET, (fomMeasurement & SLRG_EOM_LOWER), true, true);
 }
 
 void MlxlinkCommander::showEye()
