@@ -68,6 +68,7 @@ protected:
     virtual void validatePortInfoParams();
     virtual void validatePhyRecoveryParams();
     virtual void validateLinkTrainingParams();
+    virtual void validatePeriodicEqParams();
     virtual void paramValidate();
     virtual void createMlxlinkCommander();
     virtual void initRegAccessLib();

@@ -67,6 +67,7 @@
 #define HEADER_PLR_INFO "PLR Info"
 #define HEADER_KR_INFO "KR Info"
 #define HEADER_RX_RECOVERY_COUNTERS "Rx Recovery Counters"
+#define HEADER_PERIODIC_EQ "PEQ info"
 
 #define PRINT_UNDER_TITLE(len)    \
     for (int i = 0; i < len; i++) \
@@ -131,6 +132,7 @@ enum STATUS_DDM_FLAGS_TYPE
 #define PLR_INFO_LAST 2
 #define KR_INFO_LAST 5
 #define RX_RECOVERY_COUNTERS_LAST 10
+#define PERIODIC_EQ_INFO_LAST 2
 
 class MlxlinkRecord
 {

@@ -1619,3 +1619,23 @@ bool askUser(const char* question, bool force)
 
     return ret;
 }
+
+void printProgressBar(int completion, const std::string& preStr, const std::string& endStr)
+{
+    if (completion < 100)
+    {
+        std::cout << "\r" << preStr << std::setw(3) << completion << "%" << std::flush;
+    }
+    else if (completion == 100)
+    {
+        std::cout << "\r" << preStr << " DONE\n" << std::flush;
+    }
+    else
+    { // printing endStr
+        if (!endStr.empty())
+        {
+            std::cout << "\r" << endStr << std::endl;
+        }
+    }
+    std::cout << std::flush;
+}
