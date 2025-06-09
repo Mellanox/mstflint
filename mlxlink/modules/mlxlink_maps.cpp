@@ -1516,10 +1516,19 @@ void MlxlinkMaps::initEnhancedDebugMapping()
 
 void MlxlinkMaps::initPprmOperationRecoveryMapping()
 {
-    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logcic_re-lock";
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logcic_re_lock";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] = "host_serdes_feq";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_TX] = "module_tx_disable";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_DATA_PATH] = "module_datapath_full_toggle";
+}
+
+void MlxlinkMaps::initPprmRecoveryStatusMapping()
+{
+    // Relevant for "host_logic_re_lock", "host_serdes_feq", "module_tx_disable", "module_datapath_full_toggle"
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_FW_DEFAULT] = "FW Default";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_ENABLE] = "Enable";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE] = "Disable";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION] = "Disable Support In Negotiation";
 }
 
 void MlxlinkMaps::initPpcntGroupsMapping()
@@ -1583,6 +1592,8 @@ MlxlinkMaps::MlxlinkMaps()
     initPpttSpeedMapping();
     initPlrRejectModeMapping();
     initKrMapping();
+    initPprmOperationRecoveryMapping();
+    initPprmRecoveryStatusMapping();
 }
 
 MlxlinkMaps::~MlxlinkMaps() {}
