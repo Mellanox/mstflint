@@ -1427,10 +1427,29 @@ void MlxlinkCommander::prepareDDMSection(bool valid, bool isModuleExtSupported)
 string MlxlinkCommander::getValuesOfActiveLanes(const string& row)
 {
     string newValue = row;
-    auto   valuesPerLane = MlxlinkRecord::split(newValue, ",");
 
-    if (valuesPerLane.size() > 1) {
-        valuesPerLane.erase(valuesPerLane.begin() + _numOfLanes, valuesPerLane.end());
+    auto valuesPerLane = MlxlinkRecord::split(newValue, ",");
+
+    if (valuesPerLane.size() > 1)
+    {
+        // Remove all "0" (invalid lanes) values
+        valuesPerLane.erase(
+          std::remove_if(valuesPerLane.begin(), valuesPerLane.end(), [](const string& value) { return value == "0"; }),
+          valuesPerLane.end());
+
+        // If all lanes are invalid, set all lanes to 0
+        if (valuesPerLane.empty())
+        {
+            for (u_int32_t i = 0; i < _numOfLanes; i++)
+            {
+                valuesPerLane.push_back(to_string(0));
+            }
+        }
+        else
+        {
+            // Remove all lanes that are not in the valuesPerLane vector
+            valuesPerLane.erase(valuesPerLane.begin() + _numOfLanes, valuesPerLane.end());
+        }
         newValue = getStringFromVector(valuesPerLane);
     }
 
