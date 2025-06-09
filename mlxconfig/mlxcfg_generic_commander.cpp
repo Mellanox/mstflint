@@ -1425,7 +1425,6 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<std::shared_
             }
             catch (MlxcfgException& e)
             {
-                delete tlvConf;
                 throw e;
             }
             tlvs.push_back(tlvConf);
