@@ -60,6 +60,7 @@ public:
     void setDefaultFields(const string& regName, const string& fieldsStr);
     void sendPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...);
     void sendPrmReg(const string& regName, maccess_reg_method_t method);
+    void sendPrmRegWithoutReset(const string& regName, maccess_reg_method_t method, const char* fields, ...);
     virtual u_int32_t getFieldValue(string field_name, u_int32_t size = 0);
     string getFieldStr(const string& field, const u_int32_t size = 0);
     string getRawFieldValueStr(const string fieldName);

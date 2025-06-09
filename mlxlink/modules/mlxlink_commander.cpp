@@ -5297,15 +5297,22 @@ void MlxlinkCommander::showRxRecoveryCounters()
 
     try
     {
+        string operRecoveryStatus = "N/A";
         try
         {
             setPrintTitle(_rxRecoveryCountersCmd, HEADER_RX_RECOVERY_COUNTERS, RX_RECOVERY_COUNTERS_LAST);
 
             sendPrmReg(ACCESS_REG_PPRM, GET);
-            // string operRecoveryType = getStrByValue(getFieldValue("oper_recovery"), _mlxlinkMaps->_pprmOperRecovery);
-            // setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Type", operRecoveryType);
-            string operRecoveryStatus =
+
+            setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Type", "PHY");
+            operRecoveryStatus =
               getStrByValue(getFieldValue(_mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES]),
+                            _mlxlinkMaps->_pprmRecoveryStatus);
+            setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Status", operRecoveryStatus);
+
+            setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Type", "PLU");
+            operRecoveryStatus =
+              getStrByValue(getFieldValue(_mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG]),
                             _mlxlinkMaps->_pprmRecoveryStatus);
             setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Status", operRecoveryStatus);
 
@@ -5344,7 +5351,7 @@ void MlxlinkCommander::showRxRecoveryCounters()
             u_int32_t timeBetweenLast2Recoveries = getFieldValue("time_between_last_2_recoveries");
             setPrintVal(
               _rxRecoveryCountersCmd, "Time Between Last 2 Recoveries [msec]",
-              timeBetweenLast2Recoveries != 65536 ? to_string(timeBetweenLast2Recoveries) : "More than 1 min");
+              timeBetweenLast2Recoveries != 65535 ? to_string(timeBetweenLast2Recoveries) : "More than 1 min");
         }
         catch (MlxRegException& exc)
         {
@@ -5356,4 +5363,84 @@ void MlxlinkCommander::showRxRecoveryCounters()
         throw MlxRegException("Showing rx recovery counters raised the following exception:\n" + string(exc.what()));
     }
     cout << _rxRecoveryCountersCmd;
+}
+
+void MlxlinkCommander::handlePhyRecovery()
+{
+    string cmdArgs = "";
+    try
+    {
+        sendPrmReg(ACCESS_REG_PPRM, GET);
+        if (_userInput._phyRecovery == "EN")
+        {
+            u_int32_t recoveryTypeCap = getFieldValue("recovery_types_cap");
+            if (recoveryTypeCap == 0)
+            {
+                throw MlxRegException("PHY Recovery Type is not supported for the current device!");
+            }
+            if (_userInput._phyRecoveryType == "uphy")
+            {
+                if ((recoveryTypeCap & PHY_RECOVERY_TYPE_HOST_SERDES_FEQ) == 0)
+                {
+                    throw MlxRegException("Host Serdes Feq Recovery Type is not supported for the current device!");
+                }
+                MlxlinkRecord::printCmdLine("Configuring PHY Recovery Type: " +
+                                              _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES],
+                                            _jsonRoot);
+                // cmdArgs = _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] +
+                //                  string("=") + string(to_string(PPRM_RECOVERY_STATUS_ENABLE)) +
+                //                  string(",wd_") +
+                //                  _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] + string("=") +
+                //                  string(to_string(_userInput._wdTimer));
+                cmdArgs = _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] + string("=") +
+                          string(to_string(PPRM_RECOVERY_STATUS_ENABLE));
+            }
+            else if (_userInput._phyRecoveryType == "plu")
+            {
+                if ((recoveryTypeCap & PHY_RECOVERY_TYPE_HOST_LOGIC_RE_LOCK) == 0)
+                {
+                    throw MlxRegException("Host Logic Re-Lock Recovery Type is not supported for the current device!");
+                }
+                MlxlinkRecord::printCmdLine(
+                  "Configuring PHY Recovery Type: " + _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG],
+                  _jsonRoot);
+                cmdArgs = _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] + string("=") +
+                          string(to_string(PPRM_RECOVERY_STATUS_ENABLE));
+            }
+            else
+            {
+                throw MlxRegException("Invalid PHY Recovery Type!");
+            }
+            sendPrmRegWithoutReset(ACCESS_REG_PPRM, SET, cmdArgs.c_str());
+        }
+        else if (_userInput._phyRecovery == "DS")
+        {
+            if (_userInput._phyRecoveryType == "uphy")
+            {
+                MlxlinkRecord::printCmdLine("Disabling PHY Recovery Type: " +
+                                              _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES],
+                                            _jsonRoot);
+                cmdArgs = _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] + string("=") +
+                          string(to_string(PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION));
+            }
+            else if (_userInput._phyRecoveryType == "plu")
+            {
+                MlxlinkRecord::printCmdLine(
+                  "Disabling PHY Recovery Type: " + _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG],
+                  _jsonRoot);
+                cmdArgs = _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] + string("=") +
+                          string(to_string(PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION));
+            }
+            else
+            {
+                throw MlxRegException("Invalid PHY Recovery Type!");
+            }
+            sendPrmRegWithoutReset(ACCESS_REG_PPRM, SET, cmdArgs.c_str());
+        }
+        sendPaosToggle();
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Handling PHY Recovery command raised the following exception:\n" + string(exc.what()));
+    }
 }
