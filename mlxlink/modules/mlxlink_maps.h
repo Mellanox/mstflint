@@ -198,6 +198,7 @@ private:
     void initPpttSpeedMapping();
     void initPlrRejectModeMapping();
     void initKrMapping();
+    void initPprmRecoveryStatusMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -324,6 +325,7 @@ public:
     std::map<u_int32_t, std::string> _pcieDevStatus;
     std::map<u_int32_t, PcieErrType> _pcieErrType;
     std::map<u_int32_t, std::string> _pprmOperRecovery;
+    std::map<u_int32_t, std::string> _pprmRecoveryStatus;
     std::map<u_int32_t, u_int32_t> _ppcntGroups;
     std::map<u_int32_t, PRM_FIELD> _ppttParams;
     std::map<u_int32_t, u_int32_t> _ppttSpeedMapping;
