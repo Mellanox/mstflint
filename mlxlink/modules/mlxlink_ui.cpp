@@ -223,6 +223,10 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(TX_GROUP_PORTS_FLAG_SHORT, TX_GROUP_PORTS_FLAG, "ports",
                                  "Ports to be mapped [1,2,3,4,...,128]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(LINK_TRAINING_FLAG_SHORT, LINK_TRAINING_FLAG, "link_training",
+                                 "Link Training [EN(enable)/DS(disable)/EN_EXT(enable_extra)]");
+    printf(IDENT);
     MlxlinkRecord::printFlagLine(PHY_RECOVERY_FLAG_SHORT, PHY_RECOVERY_FLAG, "phy_recovery",
                                  "PHY Recovery [EN(enable)/DS(disable)]");
     printf(IDENT);
@@ -671,6 +675,21 @@ void MlxlinkUi::validatePhyRecoveryParams()
     }
 }
 
+void MlxlinkUi::validateLinkTrainingParams()
+{
+    if (isIn(SEND_LINK_TRAINING, _sendRegFuncMap))
+    {
+        if (!checkLinkTrainingCmd(_userInput._linkTraining))
+        {
+            throw MlxRegException("Please provide a valid link training command [EN/DS/EN_EXT]");
+        }
+    }
+    else if (!_userInput._linkTraining.empty())
+    {
+        throw MlxRegException("Link Training flag should be provided!");
+    }
+}
+
 void MlxlinkUi::validateModulePRBSParams()
 {
     if (!_userInput.isPrbsSelProvided &&
@@ -1023,6 +1042,8 @@ void MlxlinkUi::paramValidate()
     validatePCIeParams();
     validateGeneralCmdsParams();
     validatePRBSParams();
+    validatePhyRecoveryParams();
+    validateLinkTrainingParams();
     validateSpeedAndCSVBerParams();
     validateCableParams();
     validateModulePRBSParams();
@@ -1054,6 +1075,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
     AddOptions(RX_RECOVERY_COUNTERS_FLAG, RX_RECOVERY_COUNTERS_FLAG_SHORT, "", "Show Rx Recovery Counters");
+    AddOptions(LINK_TRAINING_FLAG, LINK_TRAINING_FLAG_SHORT, "Mode", "Enable/Disable/Enable_Extra Link Training");
 
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
@@ -1206,6 +1228,12 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SEND_PPLR:
                 _mlxlinkCommander->sendPplr();
+                break;
+            case SEND_PHY_RECOVERY:
+                _mlxlinkCommander->handlePhyRecovery();
+                break;
+            case SEND_LINK_TRAINING:
+                _mlxlinkCommander->handleLinkTraining();
                 break;
             case SEND_PRBS:
                 _mlxlinkCommander->handlePrbs();
@@ -1467,6 +1495,25 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SEND_PPLR);
         _userInput._pplrLB = toUpperCase(value);
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == PHY_RECOVERY_FLAG)
+    {
+        addCmd(SEND_PHY_RECOVERY);
+        _userInput._phyRecovery = toUpperCase(value);
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == PHY_RECOVERY_TYPE_FLAG)
+    {
+        _userInput._phyRecoveryType = value;
+        return PARSE_OK;
+    }
+    else if (name == LINK_TRAINING_FLAG)
+    {
+        addCmd(SEND_LINK_TRAINING);
+        _userInput._linkTraining = toUpperCase(value);
         _userInput._uniqueCmds++;
         return PARSE_OK;
     }
