@@ -683,11 +683,15 @@ enum NETWORK_PORT_TYPE
 
 enum CABLE_TYPE
 {
-    UNIDENTIFIED,
-    ACTIVE,
-    OPTICAL_MODULE,
-    PASSIVE,
-    UNPLUGGED
+    UNIDENTIFIED = 0,
+    ACTIVE = 1,
+    OPTICAL_MODULE = 2,
+    PASSIVE = 3,
+    UNPLUGGED = 4,
+    TWISTED_PAIR = 5,
+    CPO = 6,
+    OE = 7,
+    ELS = 8
 };
 
 enum PCIE_LINK_SPEED
