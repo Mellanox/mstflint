@@ -118,6 +118,10 @@ public:
     string _forceMode;
     string _anMode;
     string _logFile;
+    string _phyRecovery;
+    string _phyRecoveryType;
+    int _wdTimer;
+    bool _wdTimerSpecified;
     double _testTime;
     u_int32_t _feedbackIndex;
     u_int32_t _feedbackData;
