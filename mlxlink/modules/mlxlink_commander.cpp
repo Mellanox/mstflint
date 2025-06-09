@@ -5426,40 +5426,12 @@ void MlxlinkCommander::handlePhyRecovery()
 {
     string cmdArgs = "";
     u_int32_t hostSerdesFeqStatus = 0, hostLogicReLockStatus = 0;
-    u_int32_t ovrdNoNegBhvr = 0, noNegBhvr = 0, moduleDatapathFullToggle = 0;
-    u_int32_t moduleTxDisable = 0, linkDownTimeout = 0, drainingTimeout = 0;
-    u_int32_t wdModuleFullToggle = 0, wdModuleTxDisable = 0, wdHostSerdesFeq = 0, wdHostLogicReLock = 0;
     try
     {
         sendPrmReg(ACCESS_REG_PPRM, GET);
         hostSerdesFeqStatus = getFieldValue(_mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES]);
         hostLogicReLockStatus = getFieldValue(_mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG]);
-        try
-        {
-            ovrdNoNegBhvr = getFieldValue("ovrd_no_neg_bhvr");
-            noNegBhvr = getFieldValue("no_neg_bhvr");
-            moduleDatapathFullToggle = getFieldValue("module_datapath_full_toggle");
-            moduleTxDisable = getFieldValue("module_tx_disable");
-            linkDownTimeout = getFieldValue("link_down_timeout");
-            drainingTimeout = getFieldValue("draining_timeout");
-            wdModuleFullToggle = getFieldValue("wd_module_full_toggle");
-            wdModuleTxDisable = getFieldValue("wd_module_tx_disable");
-            wdHostSerdesFeq = getFieldValue("wd_host_serdes_feq");
-            wdHostLogicReLock = getFieldValue("wd_host_logic_re_lock");
-            cmdArgs = "ovrd_no_neg_bhvr=" + to_string(ovrdNoNegBhvr) + "," + "no_neg_bhvr=" + to_string(noNegBhvr) +
-                      "," + "module_datapath_full_toggle=" + to_string(moduleDatapathFullToggle) + "," +
-                      "module_tx_disable=" + to_string(moduleTxDisable) + "," +
-                      "link_down_timeout=" + to_string(linkDownTimeout) + "," +
-                      "draining_timeout=" + to_string(drainingTimeout) + "," +
-                      "wd_module_full_toggle=" + to_string(wdModuleFullToggle) + "," +
-                      "wd_module_tx_disable=" + to_string(wdModuleTxDisable) + "," +
-                      "wd_host_serdes_feq=" + to_string(wdHostSerdesFeq) + "," +
-                      "wd_host_logic_re_lock=" + to_string(wdHostLogicReLock) + ",";
-        }
-        catch (MlxRegException& exc)
-        {
-            // Do nothing
-        }
+
         if (_userInput._phyRecovery == "EN")
         {
             u_int32_t recoveryTypeCap = getFieldValue("recovery_types_cap");
@@ -5476,9 +5448,8 @@ void MlxlinkCommander::handlePhyRecovery()
                 MlxlinkRecord::printCmdLine("Configuring PHY Recovery Type: " +
                                               _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES],
                                             _jsonRoot);
-                cmdArgs += _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] + "=" +
-                           to_string(hostLogicReLockStatus) + "," +
-                           _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] + string("=") +
+
+                cmdArgs += _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] + string("=") +
                            string(to_string(PPRM_RECOVERY_STATUS_ENABLE));
             }
             else if (_userInput._phyRecoveryType == _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG])
@@ -5490,9 +5461,8 @@ void MlxlinkCommander::handlePhyRecovery()
                 MlxlinkRecord::printCmdLine(
                   "Configuring PHY Recovery Type: " + _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG],
                   _jsonRoot);
-                cmdArgs += _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] + "=" +
-                           to_string(hostSerdesFeqStatus) + "," +
-                           _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] + string("=") +
+
+                cmdArgs += _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] + string("=") +
                            string(to_string(PPRM_RECOVERY_STATUS_ENABLE));
             }
             else
@@ -5542,34 +5512,6 @@ void MlxlinkCommander::handleLinkTraining()
     try
     {
         string cmdArgs = "";
-        u_int32_t xdrLtC2mEn = 0, ltExtNegType = 0, ltExtTimeoutAdmin = 0, prbsTypeAdmin = 0, berCntMlsdDis = 0,
-                  numOfIterAdmin = 0, berTargetCoefAdmin = 0, berTargetMagnitudeAdmin = 0, iterTimeAdmin = 0;
-
-        sendPrmReg(ACCESS_REG_PTASv2, GET);
-        try
-        {
-            xdrLtC2mEn = getFieldValue("xdr_lt_c2m_en");
-            ltExtNegType = getFieldValue("lt_ext_neg_type");
-            ltExtTimeoutAdmin = getFieldValue("lt_ext_timeout_admin");
-            prbsTypeAdmin = getFieldValue("prbs_type_admin");
-            berCntMlsdDis = getFieldValue("ber_cnt_mlsd_dis");
-            numOfIterAdmin = getFieldValue("num_of_iter_admin");
-            berTargetCoefAdmin = getFieldValue("ber_target_coef_admin");
-            berTargetMagnitudeAdmin = getFieldValue("ber_target_magnitude_admin");
-            iterTimeAdmin = getFieldValue("iter_time_admin");
-            cmdArgs = "xdr_lt_c2m_en=" + to_string(xdrLtC2mEn) + "," + "lt_ext_neg_type=" + to_string(ltExtNegType) +
-                      "," + "lt_ext_timeout_admin=" + to_string(ltExtTimeoutAdmin) + "," +
-                      "prbs_type_admin=" + to_string(prbsTypeAdmin) + "," +
-                      "ber_cnt_mlsd_dis=" + to_string(berCntMlsdDis) + "," +
-                      "num_of_iter_admin=" + to_string(numOfIterAdmin) + "," +
-                      "ber_target_coef_admin=" + to_string(berTargetCoefAdmin) + "," +
-                      "ber_target_magnitude_admin=" + to_string(berTargetMagnitudeAdmin) + "," +
-                      "iter_time_admin=" + to_string(iterTimeAdmin) + ",";
-        }
-        catch (const std::exception& e)
-        {
-            // Do nothing
-        }
 
         if (_userInput._linkTraining == "EN" || _userInput._linkTraining == "EN_EXT")
         {

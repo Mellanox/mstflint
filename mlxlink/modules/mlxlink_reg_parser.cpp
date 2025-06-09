@@ -33,6 +33,7 @@
  */
 
 #include "mlxlink_reg_parser.h"
+#include <common/tools_utils.h>
 
 MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0)
 {
@@ -179,6 +180,11 @@ void MlxlinkRegParser::sendPrmRegWithoutReset(const string& regName,
 
     string fieldsStr = string(fieldsCstr);
     auto vectorOffields = MlxlinkRecord::split(fieldsStr, ",");
+
+    for (std::vector<u_int32_t>::size_type j = 0; j < _buffer.size(); j++)
+    {
+        _buffer[j] = CPU_TO_BE32((_buffer[j]));
+    }
 
     for (const auto& token : vectorOffields)
     {
