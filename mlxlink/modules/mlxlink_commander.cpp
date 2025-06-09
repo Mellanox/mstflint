@@ -5506,6 +5506,7 @@ void MlxlinkCommander::handleLinkTraining()
     try
     {
         string cmdArgs = "";
+        sendPrmReg(ACCESS_REG_PTASv2, GET);
 
         if (_userInput._linkTraining == "EN" || _userInput._linkTraining == "EN_EXT")
         {
