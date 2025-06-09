@@ -1424,7 +1424,7 @@ void MlxlinkCommander::prepareDDMSection(bool valid, bool isModuleExtSupported)
                 ANSI_COLOR_RESET, true, valid);
 }
 
-string MlxlinkCommander::getValuesOfActiveLanes(const string& row)
+string MlxlinkCommander::getValuesOfActiveLanes(const string& row, bool isSnr)
 {
     string newValue = row;
 
@@ -1432,17 +1432,20 @@ string MlxlinkCommander::getValuesOfActiveLanes(const string& row)
 
     if (valuesPerLane.size() > 1)
     {
-        // Remove all "0" (invalid lanes) values
-        valuesPerLane.erase(
-          std::remove_if(valuesPerLane.begin(), valuesPerLane.end(), [](const string& value) { return value == "0"; }),
-          valuesPerLane.end());
-
-        // If all lanes are invalid, set all lanes to 0
-        if (valuesPerLane.empty())
+        if (isSnr)
         {
-            for (u_int32_t i = 0; i < _numOfLanes; i++)
+            // Remove all "0" (invalid lanes) values
+            valuesPerLane.erase(std::remove_if(valuesPerLane.begin(), valuesPerLane.end(),
+                                               [](const string& value) { return value == "0"; }),
+                                valuesPerLane.end());
+
+            // If all lanes are invalid, set all lanes to 0
+            if (valuesPerLane.empty())
             {
-                valuesPerLane.push_back(to_string(0));
+                for (u_int32_t i = 0; i < _numOfLanes; i++)
+                {
+                    valuesPerLane.push_back(to_string(0));
+                }
             }
         }
         else
@@ -1450,6 +1453,7 @@ string MlxlinkCommander::getValuesOfActiveLanes(const string& row)
             // Remove all lanes that are not in the valuesPerLane vector
             valuesPerLane.erase(valuesPerLane.begin() + _numOfLanes, valuesPerLane.end());
         }
+
         newValue = getStringFromVector(valuesPerLane);
     }
 
@@ -1472,14 +1476,14 @@ void MlxlinkCommander::pushSnrModuleInfoFields(bool valid)
             snrMediaLanes = "N/A";
         } else {
             findAndReplace(snrMediaLanes, "_", ",");
-            snrMediaLanes = getValuesOfActiveLanes(snrMediaLanes);
+            snrMediaLanes = getValuesOfActiveLanes(snrMediaLanes, true);
         }
 
         if (snrHostLanes.find("N/A") != string::npos) {
             snrHostLanes = "N/A";
         } else {
             findAndReplace(snrHostLanes, "_", ",");
-            snrHostLanes = getValuesOfActiveLanes(snrHostLanes);
+            snrHostLanes = getValuesOfActiveLanes(snrHostLanes, true);
         }
     }
     catch(MlxRegException & excep)

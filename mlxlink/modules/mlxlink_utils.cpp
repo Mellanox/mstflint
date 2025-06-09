@@ -1033,6 +1033,22 @@ string getCableType(u_int32_t cableType)
             cableTypeStr = "Cable unplugged";
             break;
 
+        case TWISTED_PAIR:
+            cableTypeStr = "Twisted Pair";
+            break;
+
+        case CPO:
+            cableTypeStr = "CPO";
+            break;
+
+        case OE:
+            cableTypeStr = "OE";
+            break;
+
+        case ELS:
+            cableTypeStr = "ELS";
+            break;
+
         default:
             cableTypeStr = "Unidentified";
             break;
