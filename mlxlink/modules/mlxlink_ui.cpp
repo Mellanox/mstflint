@@ -161,6 +161,8 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "", "Show Eye Opening Info");
     MlxlinkRecord::printFlagLine(FEC_DATA_FLAG_SHORT, FEC_DATA_FLAG, "", "Show FEC Capabilities");
     MlxlinkRecord::printFlagLine(SLTP_SHOW_FLAG_SHORT, SLTP_SHOW_FLAG, "", "Show Transmitter Info");
+    MlxlinkRecord::printFlagLine(RX_RECOVERY_COUNTERS_FLAG_SHORT, RX_RECOVERY_COUNTERS_FLAG, "",
+                                 "Show Rx Recovery Counters");
     MlxlinkRecord::printFlagLine(
       SHOW_TX_GROUP_MAP_FLAG_SHORT, SHOW_TX_GROUP_MAP_FLAG, "group_num",
       "Display all label ports mapped to group <group_num> (for Spectrum-2 and Quantum devices)");
@@ -999,6 +1001,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PRINT_JSON_OUTPUT_FLAG, PRINT_JSON_OUTPUT_FLAG_SHORT, "", "Print the output in json format");
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
+    AddOptions(RX_RECOVERY_COUNTERS_FLAG, RX_RECOVERY_COUNTERS_FLAG_SHORT, "", "Show Rx Recovery Counters");
 
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
@@ -1206,6 +1209,9 @@ void MlxlinkUi::commandsCaller()
             case SHOW_KR:
                 _mlxlinkCommander->showKr();
                 break;
+            case SHOW_RX_RECOVERY_COUNTERS:
+                _mlxlinkCommander->showRxRecoveryCounters();
+                break;
             default:
                 break;
         }
@@ -1279,6 +1285,12 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_KR);
         _userInput._showKr = true;
+        return PARSE_OK;
+    }
+    else if (name == RX_RECOVERY_COUNTERS_FLAG)
+    {
+        addCmd(SHOW_RX_RECOVERY_COUNTERS);
+        _userInput._showRxRecoveryCounters = true;
         return PARSE_OK;
     }
     else if (name == SLTP_SHOW_FLAG)

@@ -43,7 +43,8 @@
 #include <common/compatibility.h>
 #include <json/json.h>
 
-#define PDDR_LINE_LEN 34
+#define PDDR_LINE_LEN 37
+#define RX_RECOVERY_COUNTERS_LINE_LEN 46
 
 /*
  * Json output objects name
@@ -65,6 +66,7 @@
 #define HEADER_FEC_INFO "FEC Capability Info"
 #define HEADER_PLR_INFO "PLR Info"
 #define HEADER_KR_INFO "KR Info"
+#define HEADER_RX_RECOVERY_COUNTERS "Rx Recovery Counters"
 
 #define PRINT_UNDER_TITLE(len)    \
     for (int i = 0; i < len; i++) \
@@ -128,6 +130,7 @@ enum STATUS_DDM_FLAGS_TYPE
 #define MODULE_PMPD_INFO_LAST 6
 #define PLR_INFO_LAST 2
 #define KR_INFO_LAST 5
+#define RX_RECOVERY_COUNTERS_LAST 9
 
 class MlxlinkRecord
 {
@@ -160,6 +163,7 @@ public:
     bool visible;
     bool arrayValue;
     bool colorKey;
+    int lineLen;
     static bool jsonFormat;
     static std::ostream* cOut;
     static FILE* stdOut;

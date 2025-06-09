@@ -1366,6 +1366,7 @@ void setPrintVal(MlxlinkCmdPrint& mlxlinkCmdPrint,
     mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].visible = print;
     mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].arrayValue = arrayValue;
     mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].colorKey = colorKey;
+    mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].lineLen = mlxlinkCmdPrint.lineLen;
     mlxlinkCmdPrint.lastInsertedRow++;
 }
 
