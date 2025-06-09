@@ -88,6 +88,7 @@
 #define ACCESS_REG_PPRM "PPRM"
 #define ACCESS_REG_MCAM "MCAM"
 #define ACCESS_REG_PTASv2 "PTASv2"
+#define ACCESS_REG_SLLM "SLLM"
 // define all used regs above this line
 
 #define QSFP_CHANNELS 4

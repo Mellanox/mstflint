@@ -156,6 +156,8 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "", "Show valid PCIe links (PCIE only)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
     MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
+    MlxlinkRecord::printFlagLine(PERIODIC_EQ_FLAG_SHORT, PERIODIC_EQ_FLAG, "",
+                                 "Show Link PEQ (Periodic Equalization) Info");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "", "Show Eye Opening Info");
@@ -226,6 +228,9 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(LINK_TRAINING_FLAG_SHORT, LINK_TRAINING_FLAG, "link_training",
                                  "Link Training [EN(enable)/DS(disable)/EN_EXT(enable_extra)]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(SET_LINK_PEQ_FLAG_SHORT, SET_LINK_PEQ_FLAG, "",
+                                 "Set link PEQ (Periodic Equalization) interval [10-40000]uS. 0 means FW-Default");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PHY_RECOVERY_FLAG_SHORT, PHY_RECOVERY_FLAG, "phy_recovery",
                                  "PHY Recovery [EN(enable)/DS(disable)]");
@@ -692,6 +697,21 @@ void MlxlinkUi::validateLinkTrainingParams()
     }
 }
 
+void MlxlinkUi::validatePeriodicEqParams()
+{
+    if (_userInput._periodicEqIntervalSpecified)
+    {
+        if (_userInput._setPeriodicEqInterval < 0 || _userInput._setPeriodicEqInterval > 40000)
+        {
+            throw MlxRegException("Periodic EQ interval should be in range [0-40000]");
+        }
+        if (_userInput._setPeriodicEqInterval % 10 != 0)
+        {
+            throw MlxRegException("Periodic EQ interval should be a multiple of 10");
+        }
+    }
+}
+
 void MlxlinkUi::validateModulePRBSParams()
 {
     if (!_userInput.isPrbsSelProvided &&
@@ -1046,6 +1066,7 @@ void MlxlinkUi::paramValidate()
     validatePRBSParams();
     validatePhyRecoveryParams();
     validateLinkTrainingParams();
+    validatePeriodicEqParams();
     validateSpeedAndCSVBerParams();
     validateCableParams();
     validateModulePRBSParams();
@@ -1076,9 +1097,11 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PRINT_JSON_OUTPUT_FLAG, PRINT_JSON_OUTPUT_FLAG_SHORT, "", "Print the output in json format");
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
+    AddOptions(PERIODIC_EQ_FLAG, PERIODIC_EQ_FLAG_SHORT, "", "Show Link PEQ (Periodic Equalization) Info");
     AddOptions(RX_RECOVERY_COUNTERS_FLAG, RX_RECOVERY_COUNTERS_FLAG_SHORT, "", "Show Rx Recovery Counters");
     AddOptions(LINK_TRAINING_FLAG, LINK_TRAINING_FLAG_SHORT, "Mode", "Enable/Disable/Enable_Extra Link Training");
 
+    AddOptions(SET_LINK_PEQ_FLAG, SET_LINK_PEQ_FLAG_SHORT, "PEQ_TIME", "Set Link PEQ (Periodic Equalization)");
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
     AddOptions(PMAOS_FLAG, PMAOS_FLAG_SHORT, "PMAOS", "Send PMAOS");
@@ -1294,6 +1317,12 @@ void MlxlinkUi::commandsCaller()
             case SHOW_RX_RECOVERY_COUNTERS:
                 _mlxlinkCommander->showRxRecoveryCounters();
                 break;
+            case SHOW_PERIODIC_EQ:
+                _mlxlinkCommander->showPeriodicEq();
+                break;
+            case SET_PERIODIC_EQ:
+                _mlxlinkCommander->setPeriodicEq();
+                break;
             default:
                 break;
         }
@@ -1373,6 +1402,20 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_RX_RECOVERY_COUNTERS);
         _userInput._showRxRecoveryCounters = true;
+        return PARSE_OK;
+    }
+    else if (name == PERIODIC_EQ_FLAG)
+    {
+        addCmd(SHOW_PERIODIC_EQ);
+        _userInput._showPeriodicEq = true;
+        return PARSE_OK;
+    }
+    else if (name == SET_LINK_PEQ_FLAG)
+    {
+        addCmd(SET_PERIODIC_EQ);
+        _userInput._periodicEqIntervalSpecified = true;
+        _userInput._setPeriodicEqInterval = stoi(value, nullptr, 0);
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == SLTP_SHOW_FLAG)

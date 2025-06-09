@@ -5229,6 +5229,8 @@ void MlxlinkCommander::prepareJsonOut()
     _portGroupMapping.toJsonFormat(_jsonRoot);
     _plrInfoCmd.toJsonFormat(_jsonRoot);
     _krInfoCmd.toJsonFormat(_jsonRoot);
+    _rxRecoveryCountersCmd.toJsonFormat(_jsonRoot);
+    _periodicEqInfoCmd.toJsonFormat(_jsonRoot);
 
     bool errorExist = _allUnhandledErrors != "";
 
@@ -5237,6 +5239,43 @@ void MlxlinkCommander::prepareJsonOut()
 
     if (!_jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION]) {
         _jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION] = "N/A";
+    }
+}
+
+u_int32_t MlxlinkCommander::getNumberOfPorts()
+{
+    int numOfPorts = 0;
+    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)) || _devID == DeviceSpectrum3 || _devID == DeviceQuantum3 || _isHCA)
+    {
+        sendPrmReg(ACCESS_REG_MGIR, GET);
+        numOfPorts = getFieldValue("num_ports");
+    }
+    else
+    {
+        sendPrmReg(ACCESS_REG_MGPIR, GET);
+        numOfPorts = getFieldValue("num_of_modules");
+    }
+    return numOfPorts;
+}
+
+void MlxlinkCommander::updateLocalPortGroup()
+{
+    u_int32_t numOfPorts = getNumberOfPorts();
+    vector<string> localPorts;
+    localPorts.reserve(numOfPorts); // Reserve memory to size 'numOfPorts'
+
+    for (u_int32_t localPort = 1; localPort <= numOfPorts; localPort++)
+    {
+        localPorts.push_back(to_string(localPort));
+    }
+    if (_isHCA)
+    {
+        // NICs have only one port
+        _localPortsPerGroup.push_back(PortGroup(1, 1, 0, 0));
+    }
+    else
+    {
+        handleLabelPorts(localPorts, true);
     }
 }
 
@@ -5389,6 +5428,7 @@ void MlxlinkCommander::handlePhyRecovery()
     u_int32_t hostSerdesFeqStatus = 0, hostLogicReLockStatus = 0;
     u_int32_t ovrdNoNegBhvr = 0, noNegBhvr = 0, moduleDatapathFullToggle = 0;
     u_int32_t moduleTxDisable = 0, linkDownTimeout = 0, drainingTimeout = 0;
+    u_int32_t wdModuleFullToggle = 0, wdModuleTxDisable = 0, wdHostSerdesFeq = 0, wdHostLogicReLock = 0;
     try
     {
         sendPrmReg(ACCESS_REG_PPRM, GET);
@@ -5402,11 +5442,19 @@ void MlxlinkCommander::handlePhyRecovery()
             moduleTxDisable = getFieldValue("module_tx_disable");
             linkDownTimeout = getFieldValue("link_down_timeout");
             drainingTimeout = getFieldValue("draining_timeout");
+            wdModuleFullToggle = getFieldValue("wd_module_full_toggle");
+            wdModuleTxDisable = getFieldValue("wd_module_tx_disable");
+            wdHostSerdesFeq = getFieldValue("wd_host_serdes_feq");
+            wdHostLogicReLock = getFieldValue("wd_host_logic_re_lock");
             cmdArgs = "ovrd_no_neg_bhvr=" + to_string(ovrdNoNegBhvr) + "," + "no_neg_bhvr=" + to_string(noNegBhvr) +
                       "," + "module_datapath_full_toggle=" + to_string(moduleDatapathFullToggle) + "," +
                       "module_tx_disable=" + to_string(moduleTxDisable) + "," +
                       "link_down_timeout=" + to_string(linkDownTimeout) + "," +
-                      "draining_timeout=" + to_string(drainingTimeout) + ",";
+                      "draining_timeout=" + to_string(drainingTimeout) + "," +
+                      "wd_module_full_toggle=" + to_string(wdModuleFullToggle) + "," +
+                      "wd_module_tx_disable=" + to_string(wdModuleTxDisable) + "," +
+                      "wd_host_serdes_feq=" + to_string(wdHostSerdesFeq) + "," +
+                      "wd_host_logic_re_lock=" + to_string(wdHostLogicReLock) + ",";
         }
         catch (MlxRegException& exc)
         {
@@ -5559,5 +5607,109 @@ void MlxlinkCommander::handleLinkTraining()
     catch (MlxRegException& exc)
     {
         throw MlxRegException("Handling Link Training command raised the following exception:\n" + string(exc.what()));
+    }
+}
+
+void MlxlinkCommander::showPeriodicEq()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_SLLM, GET);
+        setPrintTitle(_periodicEqInfoCmd, HEADER_PERIODIC_EQ, PERIODIC_EQ_INFO_LAST);
+        setPrintVal(_periodicEqInfoCmd, "PEQ Interval Applied [uS]",
+                    to_string(getFieldValue("peq_interval_period", (u_int32_t)12, (u_int32_t)0, true) * 10));
+        setPrintVal(_periodicEqInfoCmd, "PEQ Interval Oper [uS]",
+                    to_string(getFieldValue("peq_interval_period_oper") * 10));
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Periodic EQ is not supported for the current device!\n" + string(exc.what()));
+    }
+    cout << _periodicEqInfoCmd;
+}
+
+void MlxlinkCommander::setPeriodicEq()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_SLLM, GET);
+
+        // WA until FW supports this field
+        // sendPrmReg(ACCESS_REG_SLLM, SET, "peq_cap=1");
+
+        bool brLanesCap = getFieldValue("br_lanes_cap") != 0;
+        bool periodicEqIntervalSupported = getFieldValue("peq_cap") != 0;
+        if (!periodicEqIntervalSupported)
+        {
+            throw MlxRegException("Periodic EQ is not supported for the current device!");
+        }
+        // make sure all ports are down before setting the periodic eq interval
+        if (!checkAllPortsDown())
+        {
+            throw MlxRegException("All ports must be down before setting the PEQ interval!");
+        }
+        configurePeqForAllPorts(brLanesCap);
+    }
+    catch (const std::exception& exc)
+    {
+        throw MlxRegException("Setting Periodic EQ raised the following exception:\n" + string(exc.what()));
+    }
+}
+
+bool MlxlinkCommander::checkAllPortsDown()
+{
+    cout << "\nChecking all ports are down";
+    try
+    {
+        updateLocalPortGroup();
+
+        for (const auto& portInfo : _localPortsPerGroup)
+        {
+            _localPort = portInfo.localPort;
+            if (!checkPaosDown())
+            {
+                return false;
+            }
+        }
+        cout << " DONE" << endl;
+        return true;
+    }
+    catch (const std::exception& exc)
+    {
+        throw MlxRegException("Setting Periodic EQ raised the following exception:\n" + string(exc.what()));
+    }
+}
+
+void MlxlinkCommander::configurePeqForAllPorts(bool brLanesCap)
+{
+    string cmdArgs = "";
+    try
+    {
+        int totalPortsNum = _localPortsPerGroup.size();
+        int currentPortIndex = 1;
+
+        for (const auto& portInfo : _localPortsPerGroup)
+        {
+            cmdArgs = "peq_cap=1,peq_interval_period=" + to_string(_userInput._setPeriodicEqInterval);
+            _localPort = portInfo.localPort;
+            if (brLanesCap)
+            {
+                cmdArgs += ",br_lanes=1";
+                sendPrmReg(ACCESS_REG_SLLM, SET, cmdArgs.c_str());
+            }
+            else
+            {
+                cmdArgs += ",lane=0";
+                sendPrmReg(ACCESS_REG_SLLM, SET, cmdArgs.c_str());
+                cmdArgs += ",lane=1";
+                sendPrmReg(ACCESS_REG_SLLM, SET, cmdArgs.c_str());
+            }
+            printProgressBar(currentPortIndex * 100 / totalPortsNum, "Setting Periodic EQ Interval", "");
+            currentPortIndex++;
+        }
+    }
+    catch (const std::exception& exc)
+    {
+        throw MlxRegException("Setting Periodic EQ raised the following exception:\n" + string(exc.what()));
     }
 }
