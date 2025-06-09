@@ -2476,16 +2476,7 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
     {
         status = 0;
 
-        // Temporary WA until GPUNet PRM is updated (typo in the word "measurement")!
-        // TODO: remove this if in the future, and leave only the else branch.
-        if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
-        {
-            sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurment=%d", lane, fomMeasurement);
-        }
-        else
-        {
-            sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
-        }
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
 
         status = getFieldValue("status");
         std::string initialFomStr = status ? getFieldStr("initial_fom", (u_int32_t)16) : "N/A";
@@ -5332,7 +5323,7 @@ void MlxlinkCommander::showKr()
 
 void MlxlinkCommander::showRxRecoveryCounters()
 {
-    if (_userInput._showRxRecoveryCounters && (_isHCA || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))))
+    if (_userInput._showRxRecoveryCounters && _isHCA)
     {
         throw MlxRegException("Rx Recovery counters are not supported for the current device!");
     }
