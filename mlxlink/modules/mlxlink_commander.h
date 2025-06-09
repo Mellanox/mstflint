@@ -108,6 +108,8 @@
 #define KR_INFO_FLAG_SHORT ' '
 #define RX_RECOVERY_COUNTERS_FLAG "show_rx_recovery_counters"
 #define RX_RECOVERY_COUNTERS_FLAG_SHORT ' '
+#define PERIODIC_EQ_FLAG "show_peq"
+#define PERIODIC_EQ_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink COMMANDS Flags
@@ -176,6 +178,8 @@
 #define PHY_RECOVERY_TYPE_FLAG_SHORT ' '
 #define LINK_TRAINING_FLAG "link_training"
 #define LINK_TRAINING_FLAG_SHORT ' '
+#define SET_LINK_PEQ_FLAG "set_link_peq"
+#define SET_LINK_PEQ_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink Cable info flags
@@ -346,6 +350,8 @@ enum OPTION_TYPE
     SHOW_RX_RECOVERY_COUNTERS,
     SEND_PHY_RECOVERY,
     SEND_LINK_TRAINING,
+    SHOW_PERIODIC_EQ,
+    SET_PERIODIC_EQ,
 
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
@@ -381,6 +387,7 @@ public:
     u_int32_t getTechnologyFromMGIR();
     void getProductTechnology();
     bool checkPortStatus(u_int32_t localPort);
+    void updateLocalPortGroup();
     void checkAllPortsStatus();
     void handlePortStr(const string& portStr);
     void labelToLocalPort();
@@ -445,6 +452,8 @@ public:
     void showPlr();
     void showKr();
     void showRxRecoveryCounters();
+    void showPeriodicEq();
+    void setPeriodicEq();
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
@@ -470,6 +479,7 @@ public:
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
     void updateSwControlStatus();
+    u_int32_t getNumberOfPorts();
     bool checkDPNvSupport();
 
     void showTestMode();
@@ -546,6 +556,7 @@ public:
     MlxlinkCmdPrint _plrInfoCmd;
     MlxlinkCmdPrint _krInfoCmd;
     MlxlinkCmdPrint _rxRecoveryCountersCmd;
+    MlxlinkCmdPrint _periodicEqInfoCmd;
 
     // Mlxlink config functions
     void clearCounters();
@@ -612,6 +623,8 @@ public:
     void checkSltpParamsSize();
     bool isMpeinjSupported();
     u_int32_t getRateFromPptt();
+    bool checkAllPortsDown();
+    void configurePeqForAllPorts(bool brLanesCap);
 
     // Mlxlink params
     UserInput _userInput;

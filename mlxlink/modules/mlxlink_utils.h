@@ -160,4 +160,5 @@ string getStrByMaskFromPair(u_int32_t bitmask,
                             map<u_int32_t, pair<string, string>> maskMap,
                             const string& fieldSeparator = ",",
                             u_int32_t pairIndex = 0);
+void printProgressBar(int completion, const std::string& preStr, const std::string& endStr);
 #endif
