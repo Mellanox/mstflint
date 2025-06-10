@@ -74,6 +74,7 @@ int mainEntry(int argc, char* argv[])
     bool os_valid;
     int rc, rc0;
     bool pldmFlow = false;
+    bool shouldSkip = false;
     vector<string> dev_names;
     vector<MlnxDev*> devs;
     CmdLineParams cmd_params;
@@ -473,7 +474,8 @@ int mainEntry(int argc, char* argv[])
         }
 
         // Get required list of MFAs to download/burn
-        getUniqueMFAList(devs, psidUpdateInfo, cmd_params.force_update, mfa_list, downloaded_files_names);
+        getUniqueMFAList(devs, psidUpdateInfo, cmd_params.force_update, mfa_list, downloaded_files_names,
+                         cmd_params.skip_if_same);
     }
 
     rc = checkAndDisplayDeviceQuery1D(devs,
@@ -546,6 +548,14 @@ int mainEntry(int argc, char* argv[])
             err_continue++;
             continue;
         }
+
+        shouldSkip = cmd_params.skip_if_same && isSameVersion(devs[i], psidUpdateInfo[devs[i]->getPsid()]);
+        if (shouldSkip)
+        {
+            status_strings[i] = "Skipped (same version)";
+            continue;
+        }
+
         if (!cmd_params.force_update)
         {
             if (!devs[i]->doesDevNeedUpdate())
@@ -1247,6 +1257,7 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*>& devs,
     string print_err_str = "";
     string xml_output = "";
     string tmpstr;
+    bool shouldSkip = false;
     print_out("\n");
     if (devs.size() > 0)
     {
@@ -1417,7 +1428,12 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*>& devs,
             }
             else if (imgFound)
             {
-                if ((nUpdateReasons > 0) && (nKeepReasons == 0))
+                shouldSkip = cmd_params.skip_if_same && isSameVersion(devs[i], psidUpdateInfo[devs[i]->getPsid()]);
+                if (shouldSkip)
+                {
+                    statusStr = "Skipped (same version)";
+                }
+                else if ((nUpdateReasons > 0) && (nKeepReasons == 0))
                 {
                     statusStr = "Update required";
                     devs[i]->setDevToNeedUpdate();
@@ -1611,13 +1627,27 @@ void getUniquePsidList(vector<MlnxDev*>& devs,
     }
 }
 
+// helper function to check if the current firmware version matches the target version
+bool isSameVersion(MlnxDev* dev, PsidQueryItem& psidUpdateInfo)
+{
+    ImgVersion* fwImgVer = (ImgVersion*)psidUpdateInfo.findImageVersion("FW");
+    if (fwImgVer != NULL && dev->compareFWVer(*fwImgVer) == 0)
+    {
+        return true;
+    }
+    return false;
+}
+
 void getUniqueMFAList(vector<MlnxDev*>& devs,
                       map<string, PsidQueryItem>& psidUpdateInfo,
                       int force_update,
                       vector<string>& mfa_list,
-                      vector<string>& mfa_base_name_list)
+                      vector<string>& mfa_base_name_list,
+                      bool skip_if_same)
 {
     map<string, int> mfa2download;
+    bool shouldSkip = false;
+
     for (int i = 0; i < (int)devs.size(); i++)
     {
         if (!devs[i]->isQuerySuccess())
@@ -1632,6 +1662,15 @@ void getUniqueMFAList(vector<MlnxDev*>& devs,
         {
             continue;
         }
+
+        shouldSkip = skip_if_same && isSameVersion(devs[i], psidUpdateInfo[devs[i]->getPsid()]);
+        if (shouldSkip)
+        {
+            printf("Device %s: Current firmware version matches target version. Skipping update.\n",
+                   devs[i]->getDevName().c_str());
+            continue;
+        }
+
         if (force_update || (devs[i]->compareFWVer(psidUpdateInfo[devs[i]->getPsid()].imgVers[0]) < 0))
         {
             if (mfa2download.count(psidUpdateInfo[devs[i]->getPsid()].url) == 0)

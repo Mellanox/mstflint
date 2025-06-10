@@ -199,6 +199,7 @@ public:
     string component_type;
     bool imageSizeOnly;
     string cert_uuid;
+    bool skip_if_same;
 };
 
 #endif

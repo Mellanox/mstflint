@@ -2684,6 +2684,13 @@ bool BurnSubCommand::checkFwVersion(bool CreateFromImgInfo, u_int16_t fw_ver0, u
             printf("\n    Note: The new FW version is %s the current FW"
                    " version on flash.\n",
                    current == new_version ? "the same as" : "older than");
+
+            if (current == new_version && _flintParams.skip_if_same)
+            {
+                printf("\n    Skipping burn because firmware versions match and --skip_if_same flag is set.\n");
+                return false;
+            }
+
             if (!askUser())
             {
                 return false;

@@ -246,6 +246,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "cert_chain_index", 1));
     _flags.push_back(new Flag("", "component_type", 1));
     _flags.push_back(new Flag("", "image_size_only", 0));
+    _flags.push_back(new Flag("", "skip_if_same", 0));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -735,6 +736,9 @@ void Flint::initCmdParser()
 
     AddOptions("no_fw_ctrl", ' ', "", "Do not attempt to work with the FW Ctrl update commands");
 
+    AddOptions("skip_if_same", ' ', "",
+               "Skip burning if the firmware version matches the current version on the device");
+
     AddOptions("use_dev_img_info",
                ' ',
                "",
@@ -1156,6 +1160,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "no_fw_ctrl")
     {
         _flintParams.no_fw_ctrl = true;
+    }
+    else if (name == "skip_if_same")
+    {
+        _flintParams.skip_if_same = true;
     }
     else if (name == "dual_image")
     {
