@@ -3136,3 +3136,8 @@ u_int32_t CRSpaceRegisters::getRegister(u_int32_t address)
 
     return crSpaceReg;
 }
+
+bool FwOperations::getBFBComponentsVersions(std::map<std::string, std::string>& name_to_version, bool pending)
+{
+    return errmsg("getBFBComponentsVersions is not supported");
+}

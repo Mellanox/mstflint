@@ -301,6 +301,7 @@ public:
     virtual bool GetSecureHostState(u_int8_t& state);
     virtual bool ChangeSecureHostState(bool disable, u_int64_t key);
     virtual bool IsComponentSupported(FwComponent::comps_ids_t component);
+    virtual bool getBFBComponentsVersions(std::map<std::string, std::string>& name_to_version, bool pending);
     
 #ifndef UEFI_BUILD
     static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);

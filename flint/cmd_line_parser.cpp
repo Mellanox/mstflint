@@ -126,6 +126,7 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("", "rsa_sign", SC_RSA_Sign));
     _sCmds.push_back(new SubCmd("", "export_public_key", SC_Export_Public_Key));
     _sCmds.push_back(new SubCmd("qc", "query_components", SC_Query_Components));
+    _sCmds.push_back(new SubCmd("qbfb", "query_bfb_components", SC_Query_Bfb_Components));
 }
 
 SubCmdMetaData::~SubCmdMetaData()
@@ -245,7 +246,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "user_password", 1));
     _flags.push_back(new Flag("", "cert_chain_index", 1));
     _flags.push_back(new Flag("", "component_type", 1));
-    _flags.push_back(new Flag("", "image_size_only", 0));
+    _flags.push_back(new Flag("", "pending", 0));
     _flags.push_back(new Flag("", "skip_if_same", 0));
 }
 
@@ -667,6 +668,12 @@ void Flint::initCmdParser()
                "",
                "When specified, only flashed fw version is fetched\n"
                "Commands affected: query");
+
+    AddOptions("pending",
+               ' ',
+               "",
+               "When specified, shows the versions of the pending BFB components\n"
+               "Commands affected: query_bfb_components");
 
     AddOptions("nofs", ' ', "", "Burn image in a non failsafe manner.");
 
@@ -1404,6 +1411,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     else if (name == "image_size_only")
     {
         _flintParams.imageSizeOnly = true;
+    }
+    else if (name == "pending")
+    {
+        _flintParams.pending = true;
     }
     else
     {

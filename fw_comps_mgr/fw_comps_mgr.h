@@ -43,6 +43,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 #include "reg_access/reg_access.h"
 #include "mlxfwops/uefi_c/mft_uefi_common.h"
 #include "mlxfwops/lib/mlxfwops_com.h"
@@ -447,6 +448,8 @@ public:
                     u_int32_t lp_msb = 0);
     u_int8_t GetSecureHostState() { return _secureHostState; }
     bool IsDevicePresent(FwComponent::comps_ids_t compType);
+    bool queryMISOC(std::string& version, u_int32_t type, u_int32_t query_pending);
+    bool runMISOC(reg_access_hca_misoc_reg_ext* bfb_component, u_int32_t type, u_int32_t query_pending);
 
 private:
     typedef enum

@@ -113,6 +113,7 @@
 #define REG_ID_MROQ  0x902F
 #define REG_ID_MPIR  0x9059
 #define REG_ID_MRSV  0x9164
+#define REG_ID_MISOC 0x9026
 
 /* For mstdump oob feature: */
 #define REG_ID_ICAM 0x387F
@@ -840,6 +841,14 @@ reg_access_status_t reg_access_mpir(mfile* mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mrsv(mfile* mf, reg_access_method_t method, struct reg_access_hca_MRSV_ext* mrsv)
 {
     REG_ACCCESS(mf, method, REG_ID_MRSV, mrsv, MRSV_ext, reg_access_hca);
+}
+
+/************************************
+ * Function: reg_access_misoc
+ ************************************/
+reg_access_status_t reg_access_misoc(mfile* mf, reg_access_method_t method, struct reg_access_hca_misoc_reg_ext* misoc)
+{
+    REG_ACCCESS(mf, method, REG_ID_MISOC, misoc, misoc_reg_ext, reg_access_hca);
 }
 
 reg_access_status_t getIndexOfRegGroup(unsigned int reg_id, int* idx)
