@@ -993,47 +993,141 @@ bool MlxlinkCommander::handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady)
     return isLabelPortValid;
 }
 
-bool MlxlinkCommander::handleQTM3LocalPort(u_int32_t labelPort)
+void MlxlinkCommander::handleAllGPULocalPorts(std::vector<string> labelPortsStr, bool skipException)
 {
-    bool isLabelPortValid = false;
+    u_int32_t labelPort = 0;
+    std::vector<int> markLabelPorts(labelPortsStr.size(), 0);
+    bool missingLabelPort = 0;
+    u_int32_t i = 0;
+    for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++)
+    {
+        try
+        {
+            sendPrmReg(ACCESS_REG_PLIB, GET, "local_port=%d", localPort);
+        }
+        catch (MlxRegException& exp)
+        {
+            continue;
+        }
+        auto it = std::find(labelPortsStr.begin(), labelPortsStr.end(), to_string(getFieldValue("ib_port")));
+        if (it != labelPortsStr.end())
+        {
+            _localPortsPerGroup.push_back(PortGroup(localPort, getFieldValue("ib_port"), _userInput._setGroup, 0));
+            markLabelPorts[std::distance(labelPortsStr.begin(), it)] = 1;
+        }
+    }
+    for (i = 0; i < markLabelPorts.size(); i++)
+    {
+        if (markLabelPorts[i] == 0)
+        {
+            missingLabelPort = 1;
+            break;
+        }
+    }
+    if (!skipException && missingLabelPort)
+    {
+        strToUint32((char*)(labelPortsStr[i]).c_str(), labelPort);
+        throw MlxRegException("Invalid port number %d!\n", labelPort);
+    }
+    sort(_localPortsPerGroup.begin(), _localPortsPerGroup.end());
+}
 
-    for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++) {
+void MlxlinkCommander::handleAllQTM3LocalPorts(std::vector<string> labelPortsStr, bool skipException)
+{
+    u_int32_t labelPort = 0;
+    std::vector<int> markLabelPorts(labelPortsStr.size(), 0);
+    bool missingLabelPort = 0;
+    u_int32_t i = 0;
+    for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++)
+    {
         try
         {
             sendPrmReg(ACCESS_REG_PLLP, GET, "local_port=%d", localPort);
         }
-        catch(MlxRegException & exp)
+        catch (MlxRegException& exp)
         {
             continue;
         }
+        auto it = std::find(labelPortsStr.begin(), labelPortsStr.end(), to_string(getFieldValue("label_port")));
+        if (it != labelPortsStr.end())
+        {
+            bool isFnmPort = false;
+            try
+            {
+                isFnmPort = getFieldValue("is_fnm");
+            }
+            catch (...)
+            {
+            }
 
-        if (getFieldValue("label_port") == labelPort) {
-            _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, _userInput._setGroup,
-                                                    getFieldValue("ipil_num"), getFieldValue("split_num") + 1));
-            isLabelPortValid = true;
+            _localPortsPerGroup.push_back(PortGroup(localPort, getFieldValue("label_port"), _userInput._setGroup,
+                                                    getFieldValue("ipil_num"), getFieldValue("split_num") + 1,
+                                                    isFnmPort));
+            markLabelPorts[std::distance(labelPortsStr.begin(), it)] = 1;
         }
     }
-    return isLabelPortValid;
-}
-
-bool MlxlinkCommander::handleEthLocalPort(u_int32_t labelPort, bool spect2WithGb)
-{
-    bool isLabelPortValid = false;
-
-    for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++) {
-        sendPrmReg(ACCESS_REG_PMLP, GET, "local_port=%d", localPort);
-
-        if (getFieldValue("width") == 0) {
-            continue;
-        }
-
-        if (getFieldValue("module_0") + 1 == labelPort) {
-            isLabelPortValid = true;
-            fillEthPortGroupMap(localPort, labelPort, _userInput._setGroup, getFieldValue("width"), spect2WithGb);
+    for (i = 0; i < markLabelPorts.size(); i++)
+    {
+        if (markLabelPorts[i] == 0)
+        {
+            missingLabelPort = 1;
             break;
         }
     }
-    return isLabelPortValid;
+    if (!skipException && missingLabelPort)
+    {
+        strToUint32((char*)(labelPortsStr[i]).c_str(), labelPort);
+        throw MlxRegException("Invalid port number %d!\n", labelPort);
+    }
+    sort(_localPortsPerGroup.begin(), _localPortsPerGroup.end());
+}
+
+void MlxlinkCommander::handleAllEthLocalPorts(std::vector<string> labelPortsStr, bool spect2WithGb, bool skipException)
+{
+    u_int32_t labelPort = 0;
+    std::vector<int> markLabelPorts(labelPortsStr.size(), 0);
+    u_int32_t ind = 0;
+    bool missingLabelPort = 0;
+    u_int32_t i = 0;
+
+    for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++)
+    {
+        try
+        {
+            sendPrmReg(ACCESS_REG_PMLP, GET, "local_port=%d", localPort);
+
+            if (getFieldValue("width") == 0)
+            {
+                continue;
+            }
+        }
+        catch (...)
+        {
+            break;
+        }
+        auto it = std::find(labelPortsStr.begin(), labelPortsStr.end(), to_string(getFieldValue("module_0") + 1));
+        ind = std::distance(labelPortsStr.begin(), it);
+        if (it != labelPortsStr.end() && !markLabelPorts[ind])
+        {
+            fillEthPortGroupMap(localPort, getFieldValue("module_0") + 1, _userInput._setGroup, getFieldValue("width"),
+                                spect2WithGb);
+            markLabelPorts[std::distance(labelPortsStr.begin(), it)] = 1;
+        }
+    }
+    for (i = 0; i < markLabelPorts.size(); i++)
+    {
+        if (markLabelPorts[i] == 0)
+        {
+            missingLabelPort = 1;
+            break;
+        }
+    }
+    if (!skipException && missingLabelPort)
+    {
+        strToUint32((char*)(labelPortsStr[i]).c_str(), labelPort);
+        throw MlxRegException("Invalid port number %d!\n", labelPort);
+    }
+    sort(_localPortsPerGroup.begin(), _localPortsPerGroup.end());
 }
 
 void MlxlinkCommander::fillEthPortGroupMap(u_int32_t localPort,
@@ -1208,28 +1302,42 @@ vector < string > MlxlinkCommander::localToPortsPerGroup(vector < u_int32_t > lo
     return labelPortsStr;
 }
 
-void MlxlinkCommander::handleLabelPorts(std::vector < string > labelPortsStr, bool skipException)
+void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr, bool skipException)
 {
     u_int32_t labelPort = 0;
-    bool      isLabelPortValid = false;
-
-    if ((labelPortsStr.size() > maxLocalPort()) && !skipException) {
+    bool isLabelPortValid = false;
+    if (labelPortsStr.size() > maxLocalPort() && !skipException)
+    {
         throw MlxRegException("The number of ports is invalid");
     }
     bool ibSplitReady = (_devID == DeviceQuantum || _devID == DeviceQuantum2) ? isIBSplitReady() : false;
     bool spect2WithGb = (_devID == DeviceSpectrum2) ? isSpect2WithGb() : false;
-
-    for (vector < string > ::iterator it = labelPortsStr.begin(); it != labelPortsStr.end(); ++it) {
-        strToUint32((char*)(*it).c_str(), labelPort);
-        if ((_devID == DeviceSpectrum2) || (_devID == DeviceSpectrum3) || (_devID == DeviceSpectrum4)) {
-            isLabelPortValid = handleEthLocalPort(labelPort, spect2WithGb);
-        } else if ((_devID == DeviceQuantum) || (_devID == DeviceQuantum2)) {
+    if (_devID == DeviceQuantum || _devID == DeviceQuantum2)
+    {
+        for (vector<string>::iterator it = labelPortsStr.begin(); it != labelPortsStr.end(); ++it)
+        {
+            strToUint32((char*)(*it).c_str(), labelPort);
             isLabelPortValid = handleIBLocalPort(labelPort, ibSplitReady);
-        } else if ((_devID == DeviceQuantum3) || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
-            isLabelPortValid = handleQTM3LocalPort(labelPort);
+            if (!isLabelPortValid && !skipException)
+            {
+                throw MlxRegException("Invalid port number %d!\n", labelPort);
+            }
         }
-        if (!isLabelPortValid && !skipException) {
-            throw MlxRegException("Invalid port number %d!\n", labelPort);
+    }
+    else
+    {
+        if (_devID == DeviceSpectrum2 || _devID == DeviceSpectrum3 || _devID == DeviceSpectrum4 ||
+            _devID == DeviceSpectrum5)
+        {
+            handleAllEthLocalPorts(labelPortsStr, spect2WithGb, skipException);
+        }
+        else if (_devID == DeviceQuantum3 || _devID == DeviceQuantum4)
+        {
+            handleAllQTM3LocalPorts(labelPortsStr, skipException);
+        }
+        else if (_devID == DeviceGB100 || _devID == DeviceGR100)
+        {
+            handleAllGPULocalPorts(labelPortsStr, skipException);
         }
     }
 }
@@ -3016,7 +3124,7 @@ void MlxlinkCommander::collectAMBER()
                         pg.secondSplit = _userInput._secondSplitProvided ? _userInput._secondSplitPort : 0;
                     }
                     _amberCollector->_localPorts.push_back(pg);
-                } else if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) {
+                } else {
                     /* collect all ports info if the port flag wasn't provided */
                     u_int32_t numOfPorts = 0;
 
@@ -5109,11 +5217,9 @@ void MlxlinkCommander::handlePCIeErrInj()
 bool MlxlinkCommander::isPPHCRSupported()
 {
     bool supported = true;
-    int  pnat = _protoActive == ETH ? 0 : 1;
-
     try
     {
-        sendPrmReg(ACCESS_REG_PPHCR, GET, "pnat=%d", pnat);
+        sendPrmReg(ACCESS_REG_PPHCR, GET);
     }
     catch(MlxRegException & exc)
     {
