@@ -1057,6 +1057,7 @@ static int icmd_init_cr(mfile* mf)
         break;
 
     case (CX8_HW_ID):
+    case (CX9_HW_ID):
     case (CX8_PURE_PCIE_SWITCH_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX8;
         mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN_CX8;

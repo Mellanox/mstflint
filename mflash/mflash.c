@@ -3321,6 +3321,7 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
     case DeviceConnectX7:
     case DeviceBlueField3:
     case DeviceConnectX8:
+    case DeviceConnectX9:
     case DeviceConnectX8PurePcieSwitch:
     case DeviceBlueField4:
     case DeviceSpectrum4:

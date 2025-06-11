@@ -3002,6 +3002,7 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
             bitLen = 2;
             break;
         case CT_CONNECTX8:
+        case CT_CONNECTX9:
         case CT_CONNECTX8_PURE_PCIE_SWITCH:
         case CT_QUANTUM3:
         case CT_ARCUSE:
@@ -3053,7 +3054,6 @@ int CRSpaceRegisters::getGlobalImageStatus()
             global_image_status_address = 0xE3044;
             break;
         case CT_CONNECTX8:
-        case CT_CONNECTX8_PURE_PCIE_SWITCH:
             global_image_status_address = 0x55084;
             break;
         case CT_QUANTUM2:
