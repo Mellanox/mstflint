@@ -233,6 +233,15 @@ static struct device_info g_devs_info[] = {
         DM_HCA                                                /* dev_type */
     },
     {
+        DeviceConnectX9,                                      /* dm_id */
+        0x224,                                                /* hw_dev_id */
+        -1,                                                   /* hw_rev_id */
+        4133,                                                 /* sw_dev_id */
+        "ConnectX9",                                          /* name */
+        4,                                                    /* port_num */
+        DM_HCA                                                /* dev_type */
+    },
+    {
         DeviceConnectX8PurePcieSwitch,                        /* dm_id */
         0x222,                                                /* hw_dev_id */
         -1,                                                   /* hw_rev_id */

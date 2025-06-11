@@ -73,6 +73,14 @@ public:
         {
             return new ConnectX8FwOperationsSignatureManager();
         }
+        else if (deviceId == DeviceConnectX9)
+        {
+            return new ConnectX9FwOperationsSignatureManager();
+        }
+        else if (deviceId == DeviceConnectX8PurePcieSwitch)
+        {
+            return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
+        }
         else if (deviceId == DeviceConnectX8PurePcieSwitch)
         {
             return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
@@ -126,10 +134,6 @@ public:
         else if (chip == CT_CONNECTX8)
         {
             return new ConnectX8FwOperationsSignatureManager();
-        }
-        else if (chip == CT_CONNECTX8_PURE_PCIE_SWITCH)
-        {
-            return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
         }
         else if (chip == CT_BLUEFIELD2)
         {

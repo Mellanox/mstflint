@@ -2397,7 +2397,7 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
 }
 
 u_int32_t secured_devices[] =
-{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceConnectX8PurePcieSwitch_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId};
+{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceConnectX9_HwId, DeviceConnectX8PurePcieSwitch_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId};
 
 #define SECURED_DEVICE_ID_TABLE_SIZE (sizeof(secured_devices) / sizeof(u_int32_t))
 
@@ -2406,7 +2406,7 @@ u_int32_t supported_device_ids[] =
  DeviceSwitchIB_HwId,         DeviceSpectrum_HwId,       DeviceConnectX4_HwId,
  DeviceConnectX4LX_HwId,      DeviceConnectX5_HwId,      DeviceConnectX6_HwId,
  DeviceConnectX6DX_HwId,      DeviceConnectX6LX_HwId,    DeviceConnectX7_HwId,
- DeviceConnectX8_HwId,        DeviceConnectX8PurePcieSwitch_HwId, DeviceBlueField_HwId,      DeviceBlueField2_HwId,
+ DeviceConnectX8_HwId,        DeviceBlueField_HwId,      DeviceBlueField2_HwId,
  DeviceBlueField3_HwId,       DeviceBlueField4_HwId,     DeviceSwitchIB2_HwId,
  DeviceCableQSFP_HwId,        DeviceCableQSFPaging_HwId, DeviceCableCMIS_HwId,
  DeviceCableCMISPaging_HwId,  DeviceCableSFP_HwId,       DeviceCableSFP51_HwId,
@@ -2415,7 +2415,8 @@ u_int32_t supported_device_ids[] =
  DeviceBaritone_HwId,         DeviceMenhit_HwId,         DeviceArcusPTC_HwId,
  DeviceArcusP_HwId,           DeviceArcusE_HwId,         DeviceSecureHost_HwId,
  DeviceSpectrum3_HwId,        DeviceSpectrum4_HwId,      DeviceGearBox_HwId,
- DeviceGearBoxManager_HwId,   DeviceAbirGearBox_HwId,    DeviceGB100_HwId};
+ DeviceGearBoxManager_HwId,   DeviceAbirGearBox_HwId,    DeviceGB100_HwId,
+ DeviceConnectX8PurePcieSwitch_HwId, DeviceConnectX9_HwId};
 #define SUPPORTED_DEVICE_ID_TABLE_SIZE (sizeof(supported_device_ids) / sizeof(u_int32_t))
 
 int is_supported_device_id(u_int16_t dev_id)

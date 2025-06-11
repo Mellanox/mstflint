@@ -138,6 +138,13 @@ public:
     virtual ~ConnectX8FwOperationsSignatureManager() {}
 };
 
+class ConnectX9FwOperationsSignatureManager : public ConnectX8FwOperationsSignatureManager
+{
+public:
+    ConnectX9FwOperationsSignatureManager() : ConnectX8FwOperationsSignatureManager() {}
+    virtual ~ConnectX9FwOperationsSignatureManager() {}
+};
+
 class ConnectX8PurePCIESwitchFwOperationsSignatureManager : public ConnectX7FwOperationsSignatureManager
 {
 public:
