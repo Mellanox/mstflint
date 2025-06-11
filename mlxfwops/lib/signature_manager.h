@@ -138,6 +138,13 @@ public:
     virtual ~ConnectX8FwOperationsSignatureManager() {}
 };
 
+class ConnectX8PurePCIESwitchFwOperationsSignatureManager : public ConnectX7FwOperationsSignatureManager
+{
+public:
+    ConnectX8PurePCIESwitchFwOperationsSignatureManager() : ConnectX7FwOperationsSignatureManager() {}
+    virtual ~ConnectX8PurePCIESwitchFwOperationsSignatureManager() {}
+};
+
 class Bluefield2FwOperationsSignatureManager : public ConnectX6DXFwOperationsSignatureManager
 {
 public:

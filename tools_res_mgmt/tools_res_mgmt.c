@@ -175,6 +175,11 @@ static struct device_sem_info g_dev_sem_info_db[] = {
     1,               // vsec_sem_supported
   },
   {
+    DeviceConnectX8PurePcieSwitch, // dev_id
+    {0x54a80},                     // hw_sem_addr
+    1,                             // vsec_sem_supported
+  },
+  {
     DeviceConnectX9, // dev_id
     {0x57680},       // hw_sem_addr
     1,               // vsec_sem_supported

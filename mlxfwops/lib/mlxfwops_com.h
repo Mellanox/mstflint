@@ -80,6 +80,7 @@
 #define CX6LX_HW_ID 534
 #define CX7_HW_ID 536
 #define CX8_HW_ID 542
+#define CX8_PURE_PCIE_SWITCH_HW_ID 546
 #define CX9_HW_ID 548
 #define BF_HW_ID 529
 #define BF2_HW_ID 532
@@ -314,6 +315,7 @@ typedef enum chip_type
     CT_CONNECTX6LX,
     CT_CONNECTX7,
     CT_CONNECTX8,
+    CT_CONNECTX8_PURE_PCIE_SWITCH,
     CT_CONNECTX9,
     CT_SPECTRUM3,
     CT_BLUEFIELD2,
