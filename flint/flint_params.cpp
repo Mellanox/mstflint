@@ -118,6 +118,7 @@ FlintParams::FlintParams()
     imageSizeOnly = false;
     cert_uuid = "";
     skip_if_same = false;
+    pending = false;
 }
 
 FlintParams::~FlintParams() {}

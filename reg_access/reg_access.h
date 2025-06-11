@@ -284,6 +284,10 @@ reg_access_status_t reg_access_mpir(mfile* mf, reg_access_method_t method, struc
 struct reg_access_hca_MRSV_ext;
 reg_access_status_t reg_access_mrsv(mfile* mf, reg_access_method_t method, struct reg_access_hca_MRSV_ext* mrsv);
 
+struct reg_access_hca_misoc_reg_ext;
+    reg_access_status_t
+      reg_access_misoc(mfile* mf, reg_access_method_t method, struct reg_access_hca_misoc_reg_ext* misoc);
+
 /* MCAM - functions and constants to extract valid bit in a more generic way */
 static const unsigned int REG_ACCESS_BASE_GROUP_0_ID = 0x9000;
 static const unsigned int REG_ACCESS_BASE_GROUP_1_ID = 0x9080;

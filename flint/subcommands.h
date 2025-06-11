@@ -44,6 +44,7 @@
 
 #include <string>
 #include <memory>
+#include <map>
 
 #include <tools_layouts/tools_open_layouts.h>
 #include "tools_layouts/image_layout_layouts.h"
@@ -330,6 +331,23 @@ public:
     FlintStatus QueryCertStatus();
 private:
     FwComponent::comps_ids_t _comp;
+};
+
+
+class QueryBfbComponentsSubCommand : public SubCommand
+{
+public:
+    QueryBfbComponentsSubCommand();
+    ~QueryBfbComponentsSubCommand();
+    bool verifyParams() override;
+    FlintStatus executeCommand() override;
+
+private:
+    bool _pending;
+    std::map<std::string, std::string> _name_to_version;
+
+    bool isDeviceSupported();
+    void printComponents();
 };
 
 class Extract4MBImageSubCommand : public SubCommand

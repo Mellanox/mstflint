@@ -92,7 +92,8 @@ typedef enum
     SC_RSA_Sign,
     SC_Binary_Compare,
     SC_Export_Public_Key,
-    SC_Query_Components
+    SC_Query_Components,
+    SC_Query_Bfb_Components
 } sub_cmd_t;
 
 class FlintParams
@@ -200,6 +201,7 @@ public:
     bool imageSizeOnly;
     string cert_uuid;
     bool skip_if_same;
+    bool pending;
 };
 
 #endif
