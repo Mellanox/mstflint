@@ -5043,11 +5043,9 @@ void MlxlinkCommander::handlePCIeErrInj()
 bool MlxlinkCommander::isPPHCRSupported()
 {
     bool supported = true;
-    int  pnat = _protoActive == ETH ? 0 : 1;
-
     try
     {
-        sendPrmReg(ACCESS_REG_PPHCR, GET, "pnat=%d", pnat);
+        sendPrmReg(ACCESS_REG_PPHCR, GET);
     }
     catch(MlxRegException & exc)
     {
