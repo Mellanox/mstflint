@@ -1,38 +1,44 @@
-/* Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+
+/*
+* Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+*
+* This software is available to you under a choice of one of two
+* licenses.  You may choose to be licensed under the terms of the GNU
+* General Public License (GPL) Version 2, available from the file
+* COPYING in the main directory of this source tree, or the
+* OpenIB.org BSD license below:
+*
+*     Redistribution and use in source and binary forms, with or
+*     without modification, are permitted provided that the following
+*     conditions are met:
+*
+*      - Redistributions of source code must retain the above
+*        copyright notice, this list of conditions and the following
+*        disclaimer.
+*
+*      - Redistributions in binary form must reproduce the above
+*        copyright notice, this list of conditions and the following
+*        disclaimer in the documentation and/or other materials
+*        provided with the distribution.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*
+*  Version: $Id$
+*
+*/
+ 
 
 /***
-         *** This file was generated at "2025-03-25 15:13:37"
+         *** This file was generated at "2025-06-08 09:43:14"
          *** by:
-         ***    > [REDACTED]/adb2pack.py --input [REDACTED]/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o [REDACTED]/user/tools_layouts
+         ***    > /auto/mswg/release/tools/a-me/a-me-1.2.9/a-me-1.2.9-8/adabe_plugins/adb2c/adb2pack.py --input /tmp/jenkins/workspace/automatic_prm_update/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o /tmp/jenkins/workspace/automatic_prm_update/user/tools_layouts
          ***/
 #ifndef REG_ACCESS_SWITCH_LAYOUTS_H
 #define REG_ACCESS_SWITCH_LAYOUTS_H
@@ -479,9 +485,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 542, "MDDQ slot_info Layout," on page 954
-For devices on slot query_type data - see Table 544, "MDDQ device_info Register Layout," on page 955
-For slot name query_type data - see Table 546, "MDDQ slot_name Layout," on page 957 */
+For slot information query_type data - see Table 548, "MDDQ slot_info Layout," on page 975
+For devices on slot query_type data - see Table 550, "MDDQ device_info Register Layout," on page 976
+For slot name query_type data - see Table 552, "MDDQ slot_name Layout," on page 978 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -516,9 +522,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 534, "PRM Register Payload Layout," on page 950
-For Command type payload - See Table 536, "Command Payload Layout," on page 950
-For CrSpace type payload - See Table 538, "CrSpace access Payload Layout," on page 951 */
+For PRM Register type payload - See Table 540, "PRM Register Payload Layout," on page 971
+For Command type payload - See Table 542, "Command Payload Layout," on page 971
+For CrSpace type payload - See Table 544, "CrSpace access Payload Layout," on page 972 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -673,6 +679,178 @@ Other values are Reserved. */
 };
 
 /* Description -   */
+/* Size in bytes - 48 */
+struct reg_access_switch_mpein_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - the node within each depth. */
+	/* 0x0.8 - 0x0.15 */
+	/* access: INDEX */
+	u_int8_t node;
+	/* Description - PCIe index number (Internal domain index)
+Reserved when access is from the host, but can be used when operating in Socket-Direct mode. */
+	/* 0x0.16 - 0x0.23 */
+	/* access: INDEX */
+	u_int8_t pcie_index;
+	/* Description - depth level of the DUT of some hierarchy */
+	/* 0x0.24 - 0x0.29 */
+	/* access: INDEX */
+	u_int8_t depth;
+	/* Description - DPN version
+0: multi_topology_unaware_sw
+1: multi_topology_aware_sw */
+	/* 0x0.30 - 0x0.30 */
+	/* access: INDEX */
+	u_int8_t DPNv;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Max Link Speed:
+Bit 0: 2.5G - (Gen1)
+Bit 1: 5G - (Gen2)
+Bit 2: 8G - (Gen3)
+Bit 4: 16G - (Gen4)
+Bit 5: 32G (Gen5)
+Bit 6: 32G PAM-4 (Gen6) */
+	/* 0x8.0 - 0x8.15 */
+	/* access: RO */
+	u_int16_t link_speed_enabled;
+	/* Description - Maximum Link Width enabled:
+1: 1x
+2: 2x
+4: 4x
+8: 8x
+16: 16x */
+	/* 0x8.16 - 0x8.23 */
+	/* access: RO */
+	u_int8_t link_width_enabled;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Current Link Speed:
+Bit 0: 2.5G (Gen1)
+Bit 1: 5G (Gen2)
+Bit 2: 8G (Gen3)
+Bit 4: 16G (Gen4)
+Bit 5: 32G (Gen5)
+Bit 6: 32G PAM-4 (Gen6) */
+	/* 0xc.0 - 0xc.15 */
+	/* access: RO */
+	u_int16_t link_speed_active;
+	/* Description - Negotiated Link Width, pcie_link_width active:
+1: 1x
+2: 2x
+4: 4x
+8: 8x
+16: 16x */
+	/* 0xc.16 - 0xc.23 */
+	/* access: RO */
+	u_int8_t link_width_active;
+	/* Description - The physical lane position of logical lane0 */
+	/* 0xc.24 - 0xc.31 */
+	/* access: RO */
+	u_int8_t lane0_physical_position;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Number of Total Virtual Functions (for all PFs) */
+	/* 0x10.0 - 0x10.15 */
+	/* access: RO */
+	u_int16_t num_of_vfs;
+	/* Description - Number of Physical Functions (PFs) */
+	/* 0x10.16 - 0x10.31 */
+	/* access: RO */
+	u_int16_t num_of_pfs;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Bus Device Function - only for function0 */
+	/* 0x14.16 - 0x14.31 */
+	/* access: RO */
+	u_int16_t bdf0;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - Reversal mode of the link:
+0 - straight 
+1 - reversal
+
+Note: together with lane0_physical_position provide the physical lane. */
+	/* 0x18.0 - 0x18.0 */
+	/* access: RO */
+	u_int8_t lane_reversal;
+	/* Description - Indicates the specific type of this PCI Express Function. Note that different Functions in a multi-Function device can generally be of different types.
+0 - PCI Express Endpoint port
+4 - Root Port of PCI Express Root Complex
+5 - PCI Express Upstream port
+6 - PCI Express Downstream port */
+	/* 0x18.12 - 0x18.15 */
+	/* access: RO */
+	u_int8_t port_type;
+	/* Description - Indicates the status of PCI power consumption limitations.
+0: PCI power report could not be read.
+1: Sufficient power reported.
+2: Insufficient power reported.
+3-7: Reserved */
+	/* 0x18.16 - 0x18.18 */
+	/* access: RO */
+	u_int8_t pwr_status;
+	/* Description - Max payload size in bytes:
+0 - 128B
+1 - 256B
+2 - 512B
+3 - 1024B
+4 - 2048B
+5 - 4096B */
+	/* 0x18.24 - 0x18.27 */
+	/* access: RO */
+	u_int8_t max_payload_size;
+	/* Description - Max read request size in bytes:
+0 - 128B
+1 - 256B
+2 - 512B
+3 - 1024B
+4 - 2048B
+5 - 4096B */
+	/* 0x18.28 - 0x18.31 */
+	/* access: RO */
+	u_int8_t max_read_request_size;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description - Power reported by the PCI device. The units are in Watts.
+0: Power is unknown. */
+	/* 0x1c.0 - 0x1c.11 */
+	/* access: RO */
+	u_int16_t pci_power;
+	/* Description - Peer Max Link Speed:
+Bit 0: 2.5G - (Gen1)
+Bit 1: 5G - (Gen2)
+Bit 2: 8G - (Gen3)
+Bit 4: 16G - (Gen4)
+Bit 5: 32G (Gen5)
+Bit 6: 32G PAM-4 (Gen6) */
+	/* 0x1c.16 - 0x1c.31 */
+	/* access: RO */
+	u_int16_t link_peer_max_speed;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description - FLIT is supported for the current active speed */
+	/* 0x20.0 - 0x20.0 */
+	/* access: RO */
+	u_int8_t flit_sup;
+	/* Description - Precoding is supported for the current active speed */
+	/* 0x20.1 - 0x20.1 */
+	/* access: RO */
+	u_int8_t precode_sup;
+	/* Description - FLIT is active for the current speed */
+	/* 0x20.8 - 0x20.8 */
+	/* access: RO */
+	u_int8_t flit_active;
+	/* Description - precoding is active for the current speed */
+	/* 0x20.9 - 0x20.9 */
+	/* access: RO */
+	u_int8_t precode_active;
+/*---------------- DWORD[9] (Offset 0x24) ----------------*/
+	/* Description - device_status bit mask:
+Bit 0: Correctable_error
+Bit 1: Non_Fatal_Error_detection
+Bit 2: Fatal_Error_detected
+Bit 3: Unsupported_request_detected
+Bit 4: AUX_power 
+Bit 5: Transaction_Pending */
+	/* 0x24.16 - 0x24.31 */
+	/* access: RO */
+	u_int16_t device_status;
+};
+
+/* Description -   */
 /* Size in bytes - 16 */
 struct reg_access_switch_mpir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -819,7 +997,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 371, "NV_SWITCH_PHY_SEC_CONF Layout," on page 790 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 373, "NV_SWITCH_PHY_SEC_CONF Layout," on page 810 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -884,6 +1062,8 @@ For cables, the index represents the module index starting at index 1 while inde
 1: RMDT
 2: CRCS - supported from Spectrum-4 and above
 3: CRDT - supported from Spectrum-4 and above
+
+5: MTDT
 Other: Reserved */
 	/* 0x0.24 - 0x0.31 */
 	/* access: INDEX */
@@ -1595,9 +1775,9 @@ For all common pll's that are mapped to the port: [pll_index, pll_index+ 1, ... 
 	u_int8_t VL31_lane_map;
 /*---------------- DWORD[15] (Offset 0x3c) ----------------*/
 	/* Description - Module extension for MSB */
-	/* 0x3c.24 - 0x3c.31 */
+	/* 0x3c.8 - 0x3c.31 */
 	/* access: RO */
-	u_int8_t module_lane_mask_msb;
+	u_int32_t module_lane_mask_msb;
 /*---------------- DWORD[16] (Offset 0x40) ----------------*/
 	/* Description - OE optical lane to ELS logical laser mapping */
 	/* 0x40.0 - 0x40.3 */
@@ -1632,10 +1812,10 @@ For all common pll's that are mapped to the port: [pll_index, pll_index+ 1, ... 
 	/* access: RO */
 	u_int8_t oe_lane0_to_els_logical_laser;
 /*---------------- DWORD[17] (Offset 0x44) ----------------*/
-	/* Description - ELS access index */
+	/* Description - ELS module index */
 	/* 0x44.0 - 0x44.7 */
 	/* access: RO */
-	u_int8_t els_access_index;
+	u_int8_t els_module_index;
 	/* Description - ELS label index */
 	/* 0x44.10 - 0x44.15 */
 	/* access: RO */
@@ -1717,25 +1897,61 @@ Up to 8 SerDes in a module can be mapped to a local port. */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mspmer_ext mspmer_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x6c.31 */
+	/* access: RW */
+	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x28.31 */
 	/* access: RW */
 	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_PPCR_ext PPCR_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_mpir_ext mpir_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x44.31 */
 	/* access: RW */
 	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
+	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_icam_reg_ext icam_reg_ext;
+	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_mpir_ext mpir_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x18.31 */
+	/* access: RW */
+	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddq_ext mddq_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mpein_reg_ext mpein_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_PPCR_ext PPCR_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x40c.31 */
+	/* access: RW */
+	struct reg_access_switch_icsr_ext icsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x10c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x4.31 */
 	/* access: RW */
@@ -1743,55 +1959,23 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_mspmer_ext mspmer_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mddq_ext mddq_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
-	/* access: RW */
-	struct reg_access_switch_msgi_ext msgi_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x40c.31 */
-	/* access: RW */
-	struct reg_access_switch_icsr_ext icsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
+	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x14.31 */
 	/* access: RW */
 	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
+	/* 0x0.0 - 0x7c.31 */
 	/* access: RW */
-	struct reg_access_switch_plib_reg_ext plib_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x6c.31 */
-	/* access: RW */
-	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	/* access: RW */
-	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x18.31 */
-	/* access: RW */
-	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x10c.31 */
-	/* access: RW */
-	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	struct reg_access_switch_msgi_ext msgi_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x5c.31 */
 	/* access: RW */
 	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_icam_reg_ext icam_reg_ext;
 };
 
 
@@ -1922,6 +2106,13 @@ void reg_access_switch_mkdc_reg_ext_print(const struct reg_access_switch_mkdc_re
 unsigned int reg_access_switch_mkdc_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MKDC_REG_EXT_SIZE    (0x2c)
 void reg_access_switch_mkdc_reg_ext_dump(const struct reg_access_switch_mkdc_reg_ext *ptr_struct, FILE *fd);
+/* mpein_reg_ext */
+void reg_access_switch_mpein_reg_ext_pack(const struct reg_access_switch_mpein_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mpein_reg_ext_unpack(struct reg_access_switch_mpein_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mpein_reg_ext_print(const struct reg_access_switch_mpein_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mpein_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_MPEIN_REG_EXT_SIZE    (0x30)
+void reg_access_switch_mpein_reg_ext_dump(const struct reg_access_switch_mpein_reg_ext *ptr_struct, FILE *fd);
 /* mpir_ext */
 void reg_access_switch_mpir_ext_pack(const struct reg_access_switch_mpir_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mpir_ext_unpack(struct reg_access_switch_mpir_ext *ptr_struct, const u_int8_t *ptr_buff);

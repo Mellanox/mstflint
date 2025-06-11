@@ -48,11 +48,13 @@ public:
     void initRecords(int size);
     void toJsonFormat(Json::Value& jsonRoot);
     u_int32_t getCurrRow();
+    void setLineLen(int lineLen);
 
     std::string title;
     std::vector<MlxlinkRecord> mlxlinkRecords;
     bool visible;
     u_int32_t lastInsertedRow;
+    int lineLen;
 };
 
 #endif /* MLXLINK_CMD_PRINT_H */

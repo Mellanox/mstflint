@@ -380,8 +380,12 @@ string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
     return deleteLastChar(maskStr);
 }
 
-string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended)
+string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended, bool isXdrSlowActive)
 {
+    if (isXdrSlowActive)
+    {
+        return "NDR";
+    }
     switch (proto_active)
     {
         case IB:
@@ -832,6 +836,24 @@ bool checkPrbsCmd(const string& prbsCmd)
     return true;
 }
 
+bool checkPhyRecoveryCmd(const string& phyRecoveryCmd)
+{
+    if (phyRecoveryCmd != "EN" && phyRecoveryCmd != "DS")
+    {
+        return false;
+    }
+    return true;
+}
+
+bool checkLinkTrainingCmd(const string& linkTrainingCmd)
+{
+    if (linkTrainingCmd != "EN" && linkTrainingCmd != "DS" && linkTrainingCmd != "EN_EXT")
+    {
+        return false;
+    }
+    return true;
+}
+
 bool checkTestMode(const string& testMode)
 {
     if (testMode != "Nominal" && testMode != "NOMINAL" && testMode != "CORNER" && testMode != "DRIFT" && testMode != "")
@@ -1009,6 +1031,22 @@ string getCableType(u_int32_t cableType)
 
         case UNPLUGGED:
             cableTypeStr = "Cable unplugged";
+            break;
+
+        case TWISTED_PAIR:
+            cableTypeStr = "Twisted Pair";
+            break;
+
+        case CPO:
+            cableTypeStr = "CPO";
+            break;
+
+        case OE:
+            cableTypeStr = "OE";
+            break;
+
+        case ELS:
+            cableTypeStr = "ELS";
             break;
 
         default:
@@ -1362,6 +1400,7 @@ void setPrintVal(MlxlinkCmdPrint& mlxlinkCmdPrint,
     mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].visible = print;
     mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].arrayValue = arrayValue;
     mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].colorKey = colorKey;
+    mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].lineLen = mlxlinkCmdPrint.lineLen;
     mlxlinkCmdPrint.lastInsertedRow++;
 }
 
@@ -1595,4 +1634,24 @@ bool askUser(const char* question, bool force)
     signal(SIGINT, old);
 
     return ret;
+}
+
+void printProgressBar(int completion, const std::string& preStr, const std::string& endStr)
+{
+    if (completion < 100)
+    {
+        std::cout << "\r" << preStr << std::setw(3) << completion << "%" << std::flush;
+    }
+    else if (completion == 100)
+    {
+        std::cout << "\r" << preStr << " DONE\n" << std::flush;
+    }
+    else
+    { // printing endStr
+        if (!endStr.empty())
+        {
+            std::cout << "\r" << endStr << std::endl;
+        }
+    }
+    std::cout << std::flush;
 }
