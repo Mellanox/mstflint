@@ -73,6 +73,10 @@ public:
         {
             return new ConnectX8FwOperationsSignatureManager();
         }
+        else if (deviceId == DeviceConnectX8_Pure_PCIe_Switch)
+        {
+            return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
+        }
         else if (deviceId == DeviceBlueField2)
         {
             return new Bluefield2FwOperationsSignatureManager();
@@ -122,6 +126,10 @@ public:
         else if (chip == CT_CONNECTX8)
         {
             return new ConnectX8FwOperationsSignatureManager();
+        }
+        else if (chip == CT_CONNECTX8_PURE_PCIE_SWITCH)
+        {
+            return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
         }
         else if (chip == CT_BLUEFIELD2)
         {
