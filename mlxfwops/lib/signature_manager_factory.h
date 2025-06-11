@@ -73,7 +73,7 @@ public:
         {
             return new ConnectX8FwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceConnectX8_Pure_PCIe_Switch)
+        else if (deviceId == DeviceConnectX8PurePcieSwitch)
         {
             return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
         }
