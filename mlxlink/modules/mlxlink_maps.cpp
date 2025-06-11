@@ -1515,7 +1515,7 @@ void MlxlinkMaps::initEnhancedDebugMapping()
 
 void MlxlinkMaps::initPprmOperationRecoveryMapping()
 {
-    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logcic_re_lock";
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logic_re_lock";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] = "host_serdes_feq";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_TX] = "module_tx_disable";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_DATA_PATH] = "module_datapath_full_toggle";
