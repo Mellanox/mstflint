@@ -1498,6 +1498,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"ConnectX-6LX", CX6LX_HW_ID, CT_CONNECTX6LX, CFT_HCA, 0, {4127, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-7", CX7_HW_ID, CT_CONNECTX7, CFT_HCA, 0, {4129, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-8", CX8_HW_ID, CT_CONNECTX8, CFT_HCA, 0, {4131, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"ConnectX-8 PCIe Bridge", CX8_HW_ID, CT_CONNECTX8, CFT_HCA, 0, {6525, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-9", CX9_HW_ID, CT_CONNECTX9, CFT_HCA, 0, {4133, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField", BF_HW_ID, CT_BLUEFIELD, CFT_HCA, 0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField2", BF2_HW_ID, CT_BLUEFIELD2, CFT_HCA, 0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
