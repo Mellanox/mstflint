@@ -108,6 +108,8 @@ static struct pci_device_id supported_pci_devices[] = {
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 4125)}, /* MT2892 Family [ConnectX-6DX] */
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 4127)}, /* MT2894 Family [ConnectX-6LX] */
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 4129)}, /* MT2910 Family [ConnectX-7] */
+    {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 4131)}, /* [ConnectX-8] */
+    {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 6525)}, /* [ConnectX-8 PCIe bridge] */
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 41682)}, /* MT416842 Family BlueField integrated ConnectX-5 network controller */
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 41686)}, /* MT42822 Family BlueField2 integrated ConnectX-6 DX network controller
                                                    */

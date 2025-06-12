@@ -2657,6 +2657,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0x101f, /* Connect-X6LX */
                                    0x1021, /* Connect-X7 */
                                    0x1023, /* Connect-X8 */
+                                   0x197d, /* Connect-X8 PCIe bridge */
                                    0xcb20, /* Switch-IB */
                                    0xcb84, /* Spectrum */
                                    0xcf08, /* Switch-IB2 */
