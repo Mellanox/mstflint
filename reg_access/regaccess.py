@@ -114,7 +114,6 @@ if REG_ACCESS:
             self._reg_access_mrsr = REG_ACCESS.reg_access_mrsr
             self._reg_access_dtor = REG_ACCESS.reg_access_dtor
             self._reg_access_mrsi = REG_ACCESS.reg_access_mrsi
-            self._reg_access_mpir = REG_ACCESS.reg_access_mpir
 
         def _err2str(self, rc):
             err2str = REG_ACCESS.reg_access_err2str
@@ -331,18 +330,6 @@ if REG_ACCESS:
 
             if method == REG_ACCESS_METHOD_GET:
                 return mfrlRegisterP.contents.reset_trigger, mfrlRegisterP.contents.reset_type, mfrlRegisterP.contents.pci_rescan_required, mfrlRegisterP.contents.reset_state
-        ##########################
-        def sendMPIR(self, depth, pcie_index, node):
-            from regaccess_hca_ext_structs import MPIR_EXT as MPIR_EXT_HCA
-            mpirRegisterP = pointer(MPIR_EXT_HCA())
-            mpirRegisterP.contents.depth = depth
-            mpirRegisterP.contents.pcie_index = pcie_index
-            mpirRegisterP.contents.node = node
-            rc = self._reg_access_mpir(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mpirRegisterP)
-            if rc:
-                raise RegAccException("Failed to send Register MPIR: %s (%d)" % (self._err2str(rc), rc))
-
-            return mpirRegisterP.contents.bus, mpirRegisterP.contents.device, mpirRegisterP.contents.sdm
         ##########################
         def sendMROQ(self, reset_type):
             mroqRegisterP = pointer(MROQ_EXT())
