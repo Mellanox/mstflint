@@ -1986,7 +1986,7 @@ bool BinaryCompareSubCommand::ReadFwOpsImageData(vector<u_int8_t>& deviceBuff, v
     }
     deviceBuff.resize(imgSize);
     // on second call we fill it
-    if (!_fwOps->FwReadData((void*)(&deviceBuff[0]), &imgSize, _flintParams.silent == false))
+    if (!_fwOps->FwReadData((void*)(&deviceBuff[0]), &imgSize, _flintParams.silent == false, false, true))
     {
         reportErr(true, FLINT_IMAGE_READ_ERROR, _fwOps->err());
         return false;
