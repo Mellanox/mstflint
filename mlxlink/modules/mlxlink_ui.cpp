@@ -1114,6 +1114,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(AMBER_COLLECT_FLAG, AMBER_COLLECT_FLAG_SHORT, "AMBERCollectFile", "AMBER Collection csv file");
     AddOptions(BER_LIMIT_FLAG, BER_LIMIT_FLAG_SHORT, "Mode", "Test Mode of Ber Collect (Nominal/Corner/Drift)");
     AddOptions(ITERATION_FLAG, ITERATION_FLAG_SHORT, "Iteration", "Iteration of BER Collect");
+    AddOptions(PHY_RECOVERY_FLAG, PHY_RECOVERY_FLAG_SHORT, "Recovery", "Enable/Disable PHY Recovery");
+    AddOptions(PHY_RECOVERY_TYPE_FLAG, PHY_RECOVERY_TYPE_FLAG_SHORT, "Recovery_Type", "Recovery Type");
     AddOptions(PRBS_MODE_FLAG, PRBS_MODE_FLAG_SHORT, "PRBS", "Enable/Disable PRBS Test Mode");
     AddOptions(PPRT_PRBS_FLAG, PPRT_PRBS_FLAG_SHORT, "PPRT", "PPRT Mode");
     AddOptions(PPTT_PRBS_FLAG, PPTT_PRBS_FLAG_SHORT, "PPTT", "PPTT Mode");

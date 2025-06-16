@@ -65,6 +65,7 @@ public:
     virtual void unpack(u_int8_t* buff, u_int32_t offset) = 0;
     virtual u_int32_t getIntVal();
     virtual void parseValue(string, u_int32_t&, string&);
+    bool isEmpty;
 
     virtual ~ParamValue(){};
 

@@ -42,7 +42,7 @@ static char* s_interrupt_message = NULL;
 #ifdef __WIN__
 static int signals_array[] = {SIGINT};
 #else
-static int signals_array[] = {SIGINT, SIGQUIT, SIGTERM, SIGUSR1};
+static int signals_array[] = {SIGINT, SIGQUIT, SIGTERM, SIGUSR1, SIGHUP};
 #endif
 
 static void (*prev_handlers[sizeof(signals_array) / sizeof(signals_array[0])])(int sig);
