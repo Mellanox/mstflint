@@ -86,6 +86,8 @@ UserInput::UserInput()
     _write = false;
     _read = false;
     _showPlr = false;
+    _showKr = false;
+    _showRxRecoveryCounters = false;
 
     _device = "";
     _extAdbFile = "";
@@ -117,6 +119,14 @@ UserInput::UserInput()
     _setGroup = -1;
     _showGroup = -1;
     _slrgTestIterations = -1;
+    _linkTraining = "";
+    _phyRecovery = "";
+    _phyRecoveryType = "";
+    _showPeriodicEq = false;
+    _periodicEqIntervalSpecified = false;
+    _setPeriodicEqInterval = -1; // 10uS granularity
+    _wdTimer = 10;               // 10msec intervals, default WD timer value is 100msec (10 * 10msec)
+    _wdTimerSpecified = false;
 
     autoCsvName = false;
     eyeSelect = "";

@@ -86,6 +86,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _speedBerCsv = 0;
     _fecActive = 0;
     _protoActive = 0;
+    _phyMngrFsmState = -1;
     _productTechnology = 0;
     _allUnhandledErrors = "";
     _mlxlinkMaps = MlxlinkMaps::getInstance();
@@ -95,6 +96,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _portInfo = NULL;
     _amberCollector = NULL;
     _groupOpcode = MONITOR_OPCODE;
+    _rxRecoveryCountersCmd.setLineLen(RX_RECOVERY_COUNTERS_LINE_LEN);
 }
 
 MlxlinkCommander::~MlxlinkCommander()
@@ -877,14 +879,19 @@ u_int32_t MlxlinkCommander::activeSpeed2gNum(u_int32_t mask, bool extended)
     return (_protoActive == IB) ? _mlxlinkMaps->_IBSpeed2gNum[mask] : _mlxlinkMaps->_ETHSpeed2gNum[mask];
 }
 
-string MlxlinkCommander::activeSpeed2Str(u_int32_t mask, bool extended)
+string MlxlinkCommander::activeSpeed2Str(u_int32_t mask, bool extended, bool isXdrSlowActive)
 {
-    if (extended) {
+    if (isXdrSlowActive)
+    {
+        return "NVLink-NDR";
+    }
+    if (extended)
+    {
         return _mlxlinkMaps->_EthExtSpeed2Str[mask];
     }
-    return (_isNVLINK) ? _mlxlinkMaps->_NVLINKSpeed2Str[mask] :
+    return (_isNVLINK)          ? _mlxlinkMaps->_NVLINKSpeed2Str[mask] :
            (_protoActive == IB) ? _mlxlinkMaps->_IBSpeed2Str[mask] :
-           _mlxlinkMaps->_ETHSpeed2Str[mask];
+                                  _mlxlinkMaps->_ETHSpeed2Str[mask];
 }
 
 void MlxlinkCommander::getCableParams()
@@ -1525,13 +1532,36 @@ void MlxlinkCommander::prepareDDMSection(bool valid, bool isModuleExtSupported)
                 ANSI_COLOR_RESET, true, valid);
 }
 
-string MlxlinkCommander::getValuesOfActiveLanes(const string& row)
+string MlxlinkCommander::getValuesOfActiveLanes(const string& row, bool isSnr)
 {
     string newValue = row;
-    auto   valuesPerLane = MlxlinkRecord::split(newValue, ",");
 
-    if (valuesPerLane.size() > 1) {
-        valuesPerLane.erase(valuesPerLane.begin() + _numOfLanes, valuesPerLane.end());
+    auto valuesPerLane = MlxlinkRecord::split(newValue, ",");
+
+    if (valuesPerLane.size() > 1)
+    {
+        if (isSnr)
+        {
+            // Remove all "0" (invalid lanes) values
+            valuesPerLane.erase(std::remove_if(valuesPerLane.begin(), valuesPerLane.end(),
+                                               [](const string& value) { return value == "0"; }),
+                                valuesPerLane.end());
+
+            // If all lanes are invalid, set all lanes to 0
+            if (valuesPerLane.empty())
+            {
+                for (u_int32_t i = 0; i < _numOfLanes; i++)
+                {
+                    valuesPerLane.push_back(to_string(0));
+                }
+            }
+        }
+        else
+        {
+            // Remove all lanes that are not in the valuesPerLane vector
+            valuesPerLane.erase(valuesPerLane.begin() + _numOfLanes, valuesPerLane.end());
+        }
+
         newValue = getStringFromVector(valuesPerLane);
     }
 
@@ -1554,14 +1584,14 @@ void MlxlinkCommander::pushSnrModuleInfoFields(bool valid)
             snrMediaLanes = "N/A";
         } else {
             findAndReplace(snrMediaLanes, "_", ",");
-            snrMediaLanes = getValuesOfActiveLanes(snrMediaLanes);
+            snrMediaLanes = getValuesOfActiveLanes(snrMediaLanes, true);
         }
 
         if (snrHostLanes.find("N/A") != string::npos) {
             snrHostLanes = "N/A";
         } else {
             findAndReplace(snrHostLanes, "_", ",");
-            snrHostLanes = getValuesOfActiveLanes(snrHostLanes);
+            snrHostLanes = getValuesOfActiveLanes(snrHostLanes, true);
         }
     }
     catch(MlxRegException & excep)
@@ -1883,13 +1913,13 @@ void MlxlinkCommander::operatingInfoPage()
     try
     {
         sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_OPERATIONAL_INFO_PAGE);
-        u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
-        int       loopbackMode = (phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode") : -1;
+        _phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
+        int       loopbackMode = (_phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode") : -1;
         u_int32_t ethAnFsmState = getFieldValue("eth_an_fsm_state");
         u_int32_t ib_phy_fsm_state = getFieldValue("ib_phy_fsm_state");
         string    color =
-            MlxlinkRecord::state2Color(phyMngrFsmState ==
-                                       PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)phyMngrFsmState);
+            MlxlinkRecord::state2Color(_phyMngrFsmState ==
+                                       PHY_MNGR_RX_DISABLE ? YELLOW : (STATUS_COLOR)_phyMngrFsmState);
         _protoActive = getFieldValue("proto_active");
         if (_protoActive == NVLINK) {
             _isNVLINK = true;
@@ -1897,14 +1927,14 @@ void MlxlinkCommander::operatingInfoPage()
         }
         _fecActive = getFieldValue("fec_mode_active");
 
-        _linkUP = (phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
-        _portPolling = phyMngrFsmState == PHY_MNGR_POLLING;
+        _linkUP = (_phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP);
+        _portPolling = _phyMngrFsmState == PHY_MNGR_POLLING;
         _protoCapability = getFieldValue("cable_ext_eth_proto_cap");
 
         if (_protoActive == IB) {
             _protoCapability = getFieldValue("cable_link_speed_cap");
             _activeSpeed = getFieldValue("link_speed_active");
-            _protoAdmin = (phyMngrFsmState != 0) ? getFieldValue("core_to_phy_link_proto_enabled") :
+            _protoAdmin = (_phyMngrFsmState != 0) ? getFieldValue("core_to_phy_link_proto_enabled") :
                           getFieldValue("phy_manager_link_proto_enabled");
         }
 
@@ -1913,12 +1943,12 @@ void MlxlinkCommander::operatingInfoPage()
         _isPam4Speed = isPAM4Speed(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive, extended);
         _linkSpeed = extended ? _activeSpeedEx : _activeSpeed;
         _speedBerCsv = activeSpeed2gNum(_linkSpeed, extended);
-        _speedStrG = activeSpeed2Str(_linkSpeed, extended);
+        _speedStrG = activeSpeed2Str(_linkSpeed, extended, _isXdrSlowActive);
         getActualNumOfLanes(_linkSpeed, extended);
 
         setPrintTitle(_operatingInfoCmd, "Operational Info", PDDR_OPERATIONAL_INFO_LAST, !_prbsTestMode);
 
-        setPrintVal(_operatingInfoCmd, "State", getStrByValue(phyMngrFsmState, _mlxlinkMaps->_pmFsmState), color, true,
+        setPrintVal(_operatingInfoCmd, "State", getStrByValue(_phyMngrFsmState, _mlxlinkMaps->_pmFsmState), color, true,
                     !_prbsTestMode);
         setPrintVal(_operatingInfoCmd, "Physical state",
                     _protoActive == ETH ? getStrByValue(ethAnFsmState, _mlxlinkMaps->_ethANFsmState) :
@@ -1970,7 +2000,7 @@ void MlxlinkCommander::supportedInfoPage()
     {
         setPrintTitle(_supportedInfoCmd, HEADER_SUPPORTED_INFO, PDDR_SUPPORTED_INFO_LAST, !_prbsTestMode);
         u_int32_t    speeds_mask = _protoAdminEx ? _protoAdminEx : _protoAdmin;
-        string       supported_speeds = SupportedSpeeds2Str(_protoActive, speeds_mask, (bool)_protoAdminEx);
+        string supported_speeds = SupportedSpeeds2Str(_protoActive, speeds_mask, (bool)_protoAdminEx, _isXdrSlowActive);
         string       color = MlxlinkRecord::supported2Color(supported_speeds);
         stringstream value;
         value << "0x" << std::hex << setfill('0') << setw(8) << speeds_mask << " (" << supported_speeds << ")"
@@ -2086,6 +2116,17 @@ void MlxlinkCommander::getPtys()
             _protoCapabilityEx ? getFieldValue("ext_eth_proto_capability") : getFieldValue("eth_proto_capability");
     } else {
         _deviceCapability = getFieldValue("ib_proto_capability");
+        try
+        {
+            if (getStrByValue(_phyMngrFsmState, _mlxlinkMaps->_pmFsmState) == "Active" &&
+                getFieldValue("xdr_2x_slow_active"))
+            {
+                _isXdrSlowActive = true;
+            }
+        }
+        catch (const std::exception& e)
+        {
+        }
     }
 
     _anDisable = getFieldValue("an_disable_admin");
@@ -2296,8 +2337,11 @@ void MlxlinkCommander::showBer()
 
             setPrintVal(_berInfoCmd, "Link Down Counter", getFieldStr("link_downed_counter"), ANSI_COLOR_RESET, true,
                         _linkUP);
-            setPrintVal(_berInfoCmd, "Link Error Recovery Counter", getFieldStr("link_error_recovery_counter"),
-                        ANSI_COLOR_RESET, true, _linkUP);
+            sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHY_GROUP);
+
+            u_int32_t linkRecoveryCounter = getFieldValue("successful_recovery_events");
+            setPrintVal(_berInfoCmd, "Link Error Recovery Counter", to_string(linkRecoveryCounter), ANSI_COLOR_RESET,
+                        true, _linkUP);
         }
 
         cout << _berInfoCmd;
@@ -2335,10 +2379,10 @@ void MlxlinkCommander::showTestModeBer()
     cout << _testModeBerInfoCmd;
 }
 
-void MlxlinkCommander::getPcieNdrCounters()
+void MlxlinkCommander::getPcieNdrCounters(uint32_t flitActive)
 {
     // This field is supported from cx8 and above.
-    if (_productTechnology >= PRODUCT_5NM)
+    if (_productTechnology >= PRODUCT_5NM && flitActive)
     {
         string berStr = to_string(getFieldValue("fber_coef")) + "E-" + to_string(getFieldValue("fber_magnitude"));
         setPrintVal(_mpcntPerfInfCmd, "First BER (FBER)", berStr);
@@ -2384,7 +2428,7 @@ void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
                         getFieldStr("fec_uncorrectable_error_counter"));
         }
 
-        getPcieNdrCounters();
+        getPcieNdrCounters(flitActive);
     }
     catch (const std::exception& exc)
     {
@@ -2525,17 +2569,19 @@ void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
     }
 
     string fomMode = status ? _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode")] : "N/A";
-
     setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode, ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : "N/A", ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", status ? getStringFromVector(initialFom) : "N/A", ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", status ? getStringFromVector(lastFom) : "N/A", ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
-                (fomMeasurement & SLRG_EOM_UPPER), true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
-                (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET,
-                (fomMeasurement & SLRG_EOM_LOWER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lane", status ? getStringFromVector(legand) : "N/A", ANSI_COLOR_RESET, true,
+                true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", status ? getStringFromVector(initialFom) : "N/A",
+                ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", status ? getStringFromVector(lastFom) : "N/A", ANSI_COLOR_RESET,
+                true, true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", status ? getStringFromVector(upperFom) : "N/A",
+                ANSI_COLOR_RESET, (fomMeasurement & SLRG_EOM_UPPER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", status ? getStringFromVector(midFom) : "N/A", ANSI_COLOR_RESET,
+                    (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", status ? getStringFromVector(lowerFom) : "N/A",
+                ANSI_COLOR_RESET, (fomMeasurement & SLRG_EOM_LOWER), true, true);
 }
 
 void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
@@ -2561,16 +2607,7 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
     {
         status = 0;
 
-        // Temporary WA until GPUNet PRM is updated (typo in the word "measurement")!
-        // TODO: remove this if in the future, and leave only the else branch.
-        if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
-        {
-            sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurment=%d", lane, fomMeasurement);
-        }
-        else
-        {
-            sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
-        }
+        sendPrmReg(ACCESS_REG_SLRG, GET, "lane=%d,fom_measurement=%d", lane, fomMeasurement);
 
         status = getFieldValue("status");
         std::string initialFomStr = status ? getFieldStr("initial_fom", (u_int32_t)16) : "N/A";
@@ -2592,12 +2629,12 @@ void MlxlinkCommander::prepare5nmEyeInfo(u_int32_t numOfLanesToUse)
                 ANSI_COLOR_RESET, true, true, true);
     setPrintVal(_eyeOpeningInfoCmd, "Last FOM", status ? getStringFromVector(lastFom) : "N/A", ANSI_COLOR_RESET,
                 true, true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom), ANSI_COLOR_RESET,
-                (fomMeasurement & SLRG_EOM_UPPER), true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom), ANSI_COLOR_RESET,
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", status ? getStringFromVector(upperFom) : "N/A",
+                ANSI_COLOR_RESET, (fomMeasurement & SLRG_EOM_UPPER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", status ? getStringFromVector(midFom) : "N/A", ANSI_COLOR_RESET,
                 (fomMeasurement & SLRG_EOM_MIDDLE), true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom), ANSI_COLOR_RESET,
-                (fomMeasurement & SLRG_EOM_LOWER), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", status ? getStringFromVector(lowerFom) : "N/A",
+                ANSI_COLOR_RESET, (fomMeasurement & SLRG_EOM_LOWER), true, true);
 }
 
 void MlxlinkCommander::showEye()
@@ -5314,6 +5351,9 @@ void MlxlinkCommander::prepareJsonOut()
     _validPcieLinks.toJsonFormat(_jsonRoot);
     _portGroupMapping.toJsonFormat(_jsonRoot);
     _plrInfoCmd.toJsonFormat(_jsonRoot);
+    _krInfoCmd.toJsonFormat(_jsonRoot);
+    _rxRecoveryCountersCmd.toJsonFormat(_jsonRoot);
+    _periodicEqInfoCmd.toJsonFormat(_jsonRoot);
 
     bool errorExist = _allUnhandledErrors != "";
 
@@ -5325,13 +5365,51 @@ void MlxlinkCommander::prepareJsonOut()
     }
 }
 
+u_int32_t MlxlinkCommander::getNumberOfPorts()
+{
+    int numOfPorts = 0;
+    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)) || _devID == DeviceSpectrum3 || _devID == DeviceQuantum3 || _isHCA)
+    {
+        sendPrmReg(ACCESS_REG_MGIR, GET);
+        numOfPorts = getFieldValue("num_ports");
+    }
+    else
+    {
+        sendPrmReg(ACCESS_REG_MGPIR, GET);
+        numOfPorts = getFieldValue("num_of_modules");
+    }
+    return numOfPorts;
+}
+
+void MlxlinkCommander::updateLocalPortGroup()
+{
+    u_int32_t numOfPorts = getNumberOfPorts();
+    vector<string> localPorts;
+    localPorts.reserve(numOfPorts); // Reserve memory to size 'numOfPorts'
+
+    for (u_int32_t localPort = 1; localPort <= numOfPorts; localPort++)
+    {
+        localPorts.push_back(to_string(localPort));
+    }
+    if (_isHCA)
+    {
+        // NICs have only one port
+        _localPortsPerGroup.push_back(PortGroup(1, 1, 0, 0));
+    }
+    else
+    {
+        handleLabelPorts(localPorts, true);
+    }
+}
+
 void MlxlinkCommander::showPlr()
 {
     try
     {
         sendPrmReg(ACCESS_REG_PPLM, GET);
         setPrintTitle(_plrInfoCmd, HEADER_PLR_INFO, PLR_INFO_LAST);
-        setPrintVal(_plrInfoCmd, "PLR Reject Mode", _mlxlinkMaps->_plrRejectMode[getFieldValue("plr_reject_mode")]);
+        setPrintVal(_plrInfoCmd, "PLR Reject Mode",
+                    getStrByValue(getFieldValue("plr_reject_mode"), _mlxlinkMaps->_plrRejectMode));
         setPrintVal(_plrInfoCmd, "PLR Margin Threshold", to_string(getFieldValue("plr_margin_th")));
     }
     catch (MlxRegException& exc)
@@ -5339,4 +5417,367 @@ void MlxlinkCommander::showPlr()
         throw MlxRegException("PLR is not supported for the current device!");
     }
     cout << _plrInfoCmd;
+}
+
+void MlxlinkCommander::showKr()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_PTASv2, GET);
+        setPrintTitle(_krInfoCmd, HEADER_KR_INFO, KR_INFO_LAST);
+        // According to arch, the xdr_lt_cap field will reflect the kr_ext_oper capability.
+        bool krExtSupported = getFieldValue("xdr_lt_cap") != 0;
+        setPrintVal(_krInfoCmd, "Support Non-Standard Training Flow",
+                    getStrByValue(getFieldValue("kr_ext_oper"), _mlxlinkMaps->_krExtOper), ANSI_COLOR_RESET, true,
+                    krExtSupported);
+        bool iterSupported = getFieldValue("iterations_cap") != 0;
+        setPrintVal(_krInfoCmd, "Number of Iterations", to_string(getFieldValue("num_of_iter_oper")), ANSI_COLOR_RESET,
+                    true, iterSupported);
+        setPrintVal(_krInfoCmd, "Time for Iteration", to_string(getFieldValue("iter_time_oper")), ANSI_COLOR_RESET,
+                    true, iterSupported);
+        bool berTargetSupported = getFieldValue("ber_target_cap") != 0;
+        setPrintVal(_krInfoCmd, "BER Target",
+                    getFieldStr("ber_target_coef_oper") + "E-" + getFieldStr("ber_target_magnitude_oper"),
+                    ANSI_COLOR_RESET, true, berTargetSupported);
+        bool prbsTypeSupported = getFieldValue("prbs_type_cap") != 0;
+        setPrintVal(_krInfoCmd, "PRBS Type", getStrByValue(getFieldValue("prbs_type_oper"), _mlxlinkMaps->_krPrbsType),
+                    ANSI_COLOR_RESET, true, prbsTypeSupported);
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("KR is not supported for the current device!");
+    }
+    cout << _krInfoCmd;
+}
+
+void MlxlinkCommander::showRxRecoveryCounters()
+{
+    if (_userInput._showRxRecoveryCounters && _isHCA)
+    {
+        throw MlxRegException("Rx Recovery counters are not supported for the current device!");
+    }
+
+    try
+    {
+        string hostSerdesFeqStatus = "N/A", hostLogicReLockStatus = "N/A", operRecoveryType = "N/A",
+               operRecoveryStatus = "N/A";
+        try
+        {
+            setPrintTitle(_rxRecoveryCountersCmd, HEADER_RX_RECOVERY_COUNTERS, RX_RECOVERY_COUNTERS_LAST);
+
+            sendPrmReg(ACCESS_REG_PPRM, GET);
+
+            hostSerdesFeqStatus =
+              getStrByValue(getFieldValue(_mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES]),
+                            _mlxlinkMaps->_pprmRecoveryStatus);
+            hostLogicReLockStatus =
+              getStrByValue(getFieldValue(_mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG]),
+                            _mlxlinkMaps->_pprmRecoveryStatus);
+            if (hostSerdesFeqStatus != _mlxlinkMaps->_pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE] &&
+                hostSerdesFeqStatus !=
+                  _mlxlinkMaps->_pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION])
+            {
+                operRecoveryType = _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES];
+                operRecoveryStatus = hostSerdesFeqStatus;
+            }
+            else if (hostLogicReLockStatus != _mlxlinkMaps->_pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE] &&
+                     hostLogicReLockStatus !=
+                       _mlxlinkMaps->_pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION])
+            {
+                operRecoveryType = _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG];
+                operRecoveryStatus = hostLogicReLockStatus;
+            }
+            else
+            {
+                // operRecoveryType = "N/A";
+                operRecoveryStatus = _mlxlinkMaps->_pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE];
+            }
+
+            setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Type", operRecoveryType);
+            setPrintVal(_rxRecoveryCountersCmd, "Operational Recovery Status", operRecoveryStatus);
+
+            string operTimeHostSerdesFeq = to_string(getFieldValue("oper_time_host_serdes_feq") * 10);
+            setPrintVal(_rxRecoveryCountersCmd, "Oper Time Host Serdes Feq [msec]", operTimeHostSerdesFeq);
+        }
+        catch (MlxRegException& exc)
+        {
+            throw MlxRegException("Querying PPRM failed with the following exception: %s", exc.what());
+        }
+        try
+        {
+            sendPrmReg(ACCESS_REG_PPCNT, GET, "grp=%d", PPCNT_PHYSICAL_LAYER_RECOVERY_COUNTERS);
+            string totalSuccessfulRecoveryEvents = to_string(getFieldValue("total_successful_recovery_events"));
+            setPrintVal(_rxRecoveryCountersCmd, "Total Successful Recovery Events", totalSuccessfulRecoveryEvents);
+
+            string timeInLastHostLogicalRecovery = to_string(getFieldValue("time_in_last_host_logical_recovery"));
+            setPrintVal(_rxRecoveryCountersCmd, "Time in Last Host Logical Recovery [msec]",
+                        timeInLastHostLogicalRecovery);
+
+            string timeInLastHostSerdesFeqRecovery = to_string(getFieldValue("time_in_last_host_serdes_feq_recovery"));
+            setPrintVal(_rxRecoveryCountersCmd, "Time in Last Host Serdes Feq Recovery [msec]",
+                        timeInLastHostSerdesFeqRecovery);
+
+            string timeSinceLastRecovery = to_string(getFieldValue("time_since_last_recovery"));
+            setPrintVal(_rxRecoveryCountersCmd, "Time Since Last Recovery [msec]", timeSinceLastRecovery);
+
+            string lastHostLogicalRecoveryAttemptsCount =
+              to_string(getFieldValue("last_host_logical_recovery_attempts_count"));
+            setPrintVal(_rxRecoveryCountersCmd, "Last Host Logical Recovery Attempts Count",
+                        lastHostLogicalRecoveryAttemptsCount);
+
+            string lastHostSerdesFeqAttemptsCount = to_string(getFieldValue("last_host_serdes_feq_attempts_count"));
+            setPrintVal(_rxRecoveryCountersCmd, "Last Host Serdes Feq Attempts Count", lastHostSerdesFeqAttemptsCount);
+
+            u_int32_t timeBetweenLast2Recoveries = getFieldValue("time_between_last_2_recoveries");
+            setPrintVal(
+              _rxRecoveryCountersCmd, "Time Between Last 2 Recoveries [msec]",
+              timeBetweenLast2Recoveries != 65535 ? to_string(timeBetweenLast2Recoveries) : "More than 1 min");
+        }
+        catch (MlxRegException& exc)
+        {
+            throw MlxRegException("Querying PPCNT failed with the following exception: %s", exc.what());
+        }
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Showing rx recovery counters raised the following exception:\n" + string(exc.what()));
+    }
+    cout << _rxRecoveryCountersCmd;
+}
+
+void MlxlinkCommander::handlePhyRecovery()
+{
+    string cmdArgs = "";
+    u_int32_t hostSerdesFeqStatus = 0, hostLogicReLockStatus = 0;
+    try
+    {
+        sendPrmReg(ACCESS_REG_PPRM, GET);
+        hostSerdesFeqStatus = getFieldValue(_mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES]);
+        hostLogicReLockStatus = getFieldValue(_mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG]);
+
+        if (_userInput._phyRecovery == "EN")
+        {
+            u_int32_t recoveryTypeCap = getFieldValue("recovery_types_cap");
+            if (recoveryTypeCap == 0)
+            {
+                throw MlxRegException("PHY Recovery Type is not supported for the current device!");
+            }
+            if (_userInput._phyRecoveryType == _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES])
+            {
+                if ((recoveryTypeCap & PPRM_OPERATION_RECOVERY_HOST_SERDES) == 0)
+                {
+                    throw MlxRegException("Host Serdes Feq Recovery Type is not supported for the current device!");
+                }
+                MlxlinkRecord::printCmdLine("Configuring PHY Recovery Type: " +
+                                              _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES],
+                                            _jsonRoot);
+
+                cmdArgs += _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] + string("=") +
+                           string(to_string(PPRM_RECOVERY_STATUS_ENABLE));
+            }
+            else if (_userInput._phyRecoveryType == _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG])
+            {
+                if ((recoveryTypeCap & PPRM_OPERATION_RECOVERY_HOST_LOG) == 0)
+                {
+                    throw MlxRegException("Host Logic Re-Lock Recovery Type is not supported for the current device!");
+                }
+                MlxlinkRecord::printCmdLine(
+                  "Configuring PHY Recovery Type: " + _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG],
+                  _jsonRoot);
+
+                cmdArgs += _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] + string("=") +
+                           string(to_string(PPRM_RECOVERY_STATUS_ENABLE));
+            }
+            else
+            {
+                throw MlxRegException("Invalid PHY Recovery Type!");
+            }
+            sendPrmRegWithoutReset(ACCESS_REG_PPRM, SET, cmdArgs.c_str());
+        }
+        else if (_userInput._phyRecovery == "DS")
+        {
+            if (_userInput._phyRecoveryType == _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES])
+            {
+                MlxlinkRecord::printCmdLine("Disabling PHY Recovery Type: " +
+                                              _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES],
+                                            _jsonRoot);
+                cmdArgs += _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] + "=" +
+                           to_string(hostLogicReLockStatus) + "," +
+                           _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] + string("=") +
+                           string(to_string(PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION));
+            }
+            else if (_userInput._phyRecoveryType == _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG])
+            {
+                MlxlinkRecord::printCmdLine(
+                  "Disabling PHY Recovery Type: " + _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG],
+                  _jsonRoot);
+                cmdArgs += _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] + "=" +
+                           to_string(hostSerdesFeqStatus) + "," +
+                           _mlxlinkMaps->_pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] + string("=") +
+                           string(to_string(PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION));
+            }
+            else
+            {
+                throw MlxRegException("Invalid PHY Recovery Type!");
+            }
+            sendPrmRegWithoutReset(ACCESS_REG_PPRM, SET, cmdArgs.c_str());
+        }
+        sendPaosToggle();
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Handling PHY Recovery command raised the following exception:\n" + string(exc.what()));
+    }
+}
+
+void MlxlinkCommander::handleLinkTraining()
+{
+    try
+    {
+        string cmdArgs = "";
+        sendPrmReg(ACCESS_REG_PTASv2, GET);
+
+        if (_userInput._linkTraining == "EN" || _userInput._linkTraining == "EN_EXT")
+        {
+            if (getFieldValue("xdr_lt_cap") == 0 || getFieldValue("kr_ext_cap") == 0)
+            {
+                throw MlxRegException("Link Training is not supported for the current device!");
+            }
+            cmdArgs += "xdr_lt_c2c_en=" + to_string(XDR_LT_C2C_EN_XDR_LT_C2C_ENABLED_LT);
+
+            if (_userInput._linkTraining == "EN_EXT")
+            {
+                cmdArgs += ",kr_ext_req=" + to_string(KR_EXT_REQ_KR_EXT_ENABLED_ADVANCED_ALGO);
+            }
+            else
+            {
+                cmdArgs += ",kr_ext_req=" + to_string(KR_EXT_REQ_KR_EXT_REGULAR_LT);
+            }
+            sendPaosDown();
+            MlxlinkRecord::printCmdLine("Enabling Link Training", _jsonRoot);
+            sendPrmReg(ACCESS_REG_PTASv2, GET);
+            sendPrmRegWithoutReset(ACCESS_REG_PTASv2, SET, cmdArgs.c_str());
+            sendPaosUP();
+        }
+        else if (_userInput._linkTraining == "DS")
+        {
+            cmdArgs += "xdr_lt_c2c_en=" + to_string(XDR_LT_C2C_EN_XDR_LT_C2C_DISABLED_LT) +
+                       ",kr_ext_req=" + to_string(KR_EXT_REQ_FW_DEFAULT);
+            sendPaosDown();
+            MlxlinkRecord::printCmdLine("Disabling Link Training", _jsonRoot);
+            sendPrmReg(ACCESS_REG_PTASv2, GET);
+            sendPrmRegWithoutReset(ACCESS_REG_PTASv2, SET, cmdArgs.c_str());
+            sendPaosUP();
+        }
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Handling Link Training command raised the following exception:\n" + string(exc.what()));
+    }
+}
+
+void MlxlinkCommander::showPeriodicEq()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_SLLM, GET);
+        setPrintTitle(_periodicEqInfoCmd, HEADER_PERIODIC_EQ, PERIODIC_EQ_INFO_LAST);
+        setPrintVal(_periodicEqInfoCmd, "PEQ Interval Applied [uS]",
+                    to_string(getFieldValue("peq_interval_period", (u_int32_t)12, (u_int32_t)0, true) * 10));
+        setPrintVal(_periodicEqInfoCmd, "PEQ Interval Oper [uS]",
+                    to_string(getFieldValue("peq_interval_period_oper") * 10));
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Periodic EQ is not supported for the current device!\n" + string(exc.what()));
+    }
+    cout << _periodicEqInfoCmd;
+}
+
+void MlxlinkCommander::setPeriodicEq()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_SLLM, GET);
+
+        // WA until FW supports this field
+        // sendPrmReg(ACCESS_REG_SLLM, SET, "peq_cap=1");
+
+        bool brLanesCap = getFieldValue("br_lanes_cap") != 0;
+        bool periodicEqIntervalSupported = getFieldValue("peq_cap") != 0;
+        if (!periodicEqIntervalSupported)
+        {
+            throw MlxRegException("Periodic EQ is not supported for the current device!");
+        }
+        // make sure all ports are down before setting the periodic eq interval
+        if (!checkAllPortsDown())
+        {
+            throw MlxRegException("All ports must be down before setting the PEQ interval!");
+        }
+        configurePeqForAllPorts(brLanesCap);
+    }
+    catch (const std::exception& exc)
+    {
+        throw MlxRegException("Setting Periodic EQ raised the following exception:\n" + string(exc.what()));
+    }
+}
+
+bool MlxlinkCommander::checkAllPortsDown()
+{
+    cout << "\nChecking all ports are down";
+    try
+    {
+        updateLocalPortGroup();
+
+        for (const auto& portInfo : _localPortsPerGroup)
+        {
+            _localPort = portInfo.localPort;
+            if (!checkPaosDown())
+            {
+                return false;
+            }
+        }
+        cout << " DONE" << endl;
+        return true;
+    }
+    catch (const std::exception& exc)
+    {
+        throw MlxRegException("Setting Periodic EQ raised the following exception:\n" + string(exc.what()));
+    }
+}
+
+void MlxlinkCommander::configurePeqForAllPorts(bool brLanesCap)
+{
+    string cmdArgs = "";
+    try
+    {
+        int totalPortsNum = _localPortsPerGroup.size();
+        int currentPortIndex = 1;
+
+        for (const auto& portInfo : _localPortsPerGroup)
+        {
+            cmdArgs = "peq_cap=1,peq_interval_period=" + to_string(_userInput._setPeriodicEqInterval / 10);
+            _localPort = portInfo.localPort;
+            if (brLanesCap)
+            {
+                cmdArgs += ",br_lanes=1";
+                sendPrmReg(ACCESS_REG_SLLM, SET, cmdArgs.c_str());
+            }
+            else
+            {
+                string locCmdArgs = cmdArgs;
+                locCmdArgs += ",lane=0";
+                sendPrmReg(ACCESS_REG_SLLM, SET, locCmdArgs.c_str());
+                locCmdArgs = cmdArgs;
+                locCmdArgs += ",lane=1";
+                sendPrmReg(ACCESS_REG_SLLM, SET, locCmdArgs.c_str());
+            }
+            printProgressBar(currentPortIndex * 100 / totalPortsNum, "Setting Periodic EQ Interval", "");
+            currentPortIndex++;
+        }
+    }
+    catch (const std::exception& exc)
+    {
+        throw MlxRegException("Setting Periodic EQ raised the following exception:\n" + string(exc.what()));
+    }
 }

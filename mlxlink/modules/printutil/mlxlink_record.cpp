@@ -50,6 +50,7 @@ MlxlinkRecord::MlxlinkRecord()
     visible = true;
     arrayValue = false;
     colorKey = false;
+    lineLen = PDDR_LINE_LEN;
 }
 
 MlxlinkRecord::~MlxlinkRecord() {}
@@ -293,7 +294,7 @@ std::ostream& operator<<(std::ostream& out, const MlxlinkRecord& mlxlinkRecord)
         return out;
     }
     bool changeColor = mlxlinkRecord.color != ANSI_COLOR_RESET;
-    out << mlxlinkRecord.key << std::setw(PDDR_LINE_LEN - mlxlinkRecord.key.length()) << ": ";
+    out << mlxlinkRecord.key << std::setw(mlxlinkRecord.lineLen - mlxlinkRecord.key.length()) << ": ";
     if (changeColor)
     {
         MlxlinkRecord::changeColorOS(mlxlinkRecord.color);

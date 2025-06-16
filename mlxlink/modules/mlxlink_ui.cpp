@@ -155,11 +155,16 @@ void MlxlinkUi::printSynopsisQueries()
     printf(IDENT "QUERIES:\n");
     MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "", "Show valid PCIe links (PCIE only)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
+    MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
+    MlxlinkRecord::printFlagLine(PERIODIC_EQ_FLAG_SHORT, PERIODIC_EQ_FLAG, "",
+                                 "Show Link PEQ (Periodic Equalization) Info");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "", "Show Eye Opening Info");
     MlxlinkRecord::printFlagLine(FEC_DATA_FLAG_SHORT, FEC_DATA_FLAG, "", "Show FEC Capabilities");
     MlxlinkRecord::printFlagLine(SLTP_SHOW_FLAG_SHORT, SLTP_SHOW_FLAG, "", "Show Transmitter Info");
+    MlxlinkRecord::printFlagLine(RX_RECOVERY_COUNTERS_FLAG_SHORT, RX_RECOVERY_COUNTERS_FLAG, "",
+                                 "Show Rx Recovery Counters");
     MlxlinkRecord::printFlagLine(
       SHOW_TX_GROUP_MAP_FLAG_SHORT, SHOW_TX_GROUP_MAP_FLAG, "group_num",
       "Display all label ports mapped to group <group_num> (for Spectrum-2 and Quantum devices)");
@@ -220,6 +225,18 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(TX_GROUP_PORTS_FLAG_SHORT, TX_GROUP_PORTS_FLAG, "ports",
                                  "Ports to be mapped [1,2,3,4,...,128]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(LINK_TRAINING_FLAG_SHORT, LINK_TRAINING_FLAG, "link_training",
+                                 "Link Training [EN(enable)/DS(disable)/EN_EXT(enable_extra)]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(SET_LINK_PEQ_FLAG_SHORT, SET_LINK_PEQ_FLAG, "",
+                                 "Set link PEQ (Periodic Equalization) interval [10-40000]uS. 0 means FW-Default");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PHY_RECOVERY_FLAG_SHORT, PHY_RECOVERY_FLAG, "phy_recovery",
+                                 "PHY Recovery [EN(enable)/DS(disable)]");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PHY_RECOVERY_TYPE_FLAG_SHORT, PHY_RECOVERY_TYPE_FLAG, "recovery_type",
+                                 "PHY Recovery Type [host_serdes_feq/host_logic_re_lock]");
     MlxlinkRecord::printFlagLine(PRBS_MODE_FLAG_SHORT, PRBS_MODE_FLAG, "prbs_mode",
                                  "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
@@ -616,6 +633,85 @@ void MlxlinkUi::validatePRBSParams()
     }
 }
 
+void MlxlinkUi::validatePhyRecoveryParams()
+{
+    bool phyRecoveryFlags =
+      _userInput._phyRecovery != "" || _userInput._phyRecoveryType != "" || _userInput._wdTimerSpecified;
+    if (isIn(SEND_PHY_RECOVERY, _sendRegFuncMap))
+    {
+        if (!checkPhyRecoveryCmd(_userInput._phyRecovery))
+        {
+            throw MlxRegException("Please provide a valid phy recovery command [EN/DS]");
+        }
+        else if (_userInput._phyRecovery == "EN")
+        {
+            if (_userInput._phyRecoveryType == "")
+            {
+                throw MlxRegException("recovery_type flag should be provided for phy_recovery EN command");
+            }
+            else if (_userInput._phyRecoveryType != "host_serdes_feq" &&
+                     _userInput._phyRecoveryType != "host_logic_re_lock")
+            {
+                throw MlxRegException("Invalid Recovery Type!");
+            }
+            if (_userInput._wdTimerSpecified && _userInput._wdTimer <= 0)
+            {
+                throw MlxRegException("wd_timer flag must be greater than 0");
+            }
+        }
+        else if (_userInput._phyRecovery == "DS")
+        {
+            if (_userInput._phyRecoveryType == "")
+            {
+                throw MlxRegException("recovery_type flag should be provided for PHY Recovery DS command");
+            }
+            else if (_userInput._phyRecoveryType != "host_serdes_feq" &&
+                     _userInput._phyRecoveryType != "host_logic_re_lock")
+            {
+                throw MlxRegException("Invalid PHY Recovery Type!");
+            }
+            if (_userInput._wdTimerSpecified)
+            {
+                throw MlxRegException("WD Timer flag should not be provided for PHY Recovery DS command");
+            }
+        }
+    }
+    else if (phyRecoveryFlags)
+    {
+        throw MlxRegException("PHY Recovery flag should be provided!");
+    }
+}
+
+void MlxlinkUi::validateLinkTrainingParams()
+{
+    if (isIn(SEND_LINK_TRAINING, _sendRegFuncMap))
+    {
+        if (!checkLinkTrainingCmd(_userInput._linkTraining))
+        {
+            throw MlxRegException("Please provide a valid link training command [EN/DS/EN_EXT]");
+        }
+    }
+    else if (!_userInput._linkTraining.empty())
+    {
+        throw MlxRegException("Link Training flag should be provided!");
+    }
+}
+
+void MlxlinkUi::validatePeriodicEqParams()
+{
+    if (_userInput._periodicEqIntervalSpecified)
+    {
+        if (_userInput._setPeriodicEqInterval < 0 || _userInput._setPeriodicEqInterval > 40000)
+        {
+            throw MlxRegException("Periodic EQ interval should be in range [0-40000]");
+        }
+        if (_userInput._setPeriodicEqInterval % 10 != 0)
+        {
+            throw MlxRegException("Periodic EQ interval should be a multiple of 10");
+        }
+    }
+}
+
 void MlxlinkUi::validateModulePRBSParams()
 {
     if (!_userInput.isPrbsSelProvided &&
@@ -968,6 +1064,9 @@ void MlxlinkUi::paramValidate()
     validatePCIeParams();
     validateGeneralCmdsParams();
     validatePRBSParams();
+    validatePhyRecoveryParams();
+    validateLinkTrainingParams();
+    validatePeriodicEqParams();
     validateSpeedAndCSVBerParams();
     validateCableParams();
     validateModulePRBSParams();
@@ -997,7 +1096,12 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PEPC_SHOW_FLAG, PEPC_SHOW_FLAG_SHORT, "", "Show External PHY Info");
     AddOptions(PRINT_JSON_OUTPUT_FLAG, PRINT_JSON_OUTPUT_FLAG_SHORT, "", "Print the output in json format");
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
+    AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
+    AddOptions(PERIODIC_EQ_FLAG, PERIODIC_EQ_FLAG_SHORT, "", "Show Link PEQ (Periodic Equalization) Info");
+    AddOptions(RX_RECOVERY_COUNTERS_FLAG, RX_RECOVERY_COUNTERS_FLAG_SHORT, "", "Show Rx Recovery Counters");
+    AddOptions(LINK_TRAINING_FLAG, LINK_TRAINING_FLAG_SHORT, "Mode", "Enable/Disable/Enable_Extra Link Training");
 
+    AddOptions(SET_LINK_PEQ_FLAG, SET_LINK_PEQ_FLAG_SHORT, "PEQ_TIME", "Set Link PEQ (Periodic Equalization)");
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
     AddOptions(PMAOS_FLAG, PMAOS_FLAG_SHORT, "PMAOS", "Send PMAOS");
@@ -1152,6 +1256,12 @@ void MlxlinkUi::commandsCaller()
             case SEND_PPLR:
                 _mlxlinkCommander->sendPplr();
                 break;
+            case SEND_PHY_RECOVERY:
+                _mlxlinkCommander->handlePhyRecovery();
+                break;
+            case SEND_LINK_TRAINING:
+                _mlxlinkCommander->handleLinkTraining();
+                break;
             case SEND_PRBS:
                 _mlxlinkCommander->handlePrbs();
                 break;
@@ -1202,6 +1312,18 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SHOW_PLR:
                 _mlxlinkCommander->showPlr();
+                break;
+            case SHOW_KR:
+                _mlxlinkCommander->showKr();
+                break;
+            case SHOW_RX_RECOVERY_COUNTERS:
+                _mlxlinkCommander->showRxRecoveryCounters();
+                break;
+            case SHOW_PERIODIC_EQ:
+                _mlxlinkCommander->showPeriodicEq();
+                break;
+            case SET_PERIODIC_EQ:
+                _mlxlinkCommander->setPeriodicEq();
                 break;
             default:
                 break;
@@ -1270,6 +1392,32 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_PLR);
         _userInput._showPlr = true;
+        return PARSE_OK;
+    }
+    else if (name == KR_INFO_FLAG)
+    {
+        addCmd(SHOW_KR);
+        _userInput._showKr = true;
+        return PARSE_OK;
+    }
+    else if (name == RX_RECOVERY_COUNTERS_FLAG)
+    {
+        addCmd(SHOW_RX_RECOVERY_COUNTERS);
+        _userInput._showRxRecoveryCounters = true;
+        return PARSE_OK;
+    }
+    else if (name == PERIODIC_EQ_FLAG)
+    {
+        addCmd(SHOW_PERIODIC_EQ);
+        _userInput._showPeriodicEq = true;
+        return PARSE_OK;
+    }
+    else if (name == SET_LINK_PEQ_FLAG)
+    {
+        addCmd(SET_PERIODIC_EQ);
+        _userInput._periodicEqIntervalSpecified = true;
+        _userInput._setPeriodicEqInterval = stoi(value, nullptr, 0);
+        _userInput._uniqueCmds++;
         return PARSE_OK;
     }
     else if (name == SLTP_SHOW_FLAG)
@@ -1394,6 +1542,25 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SEND_PPLR);
         _userInput._pplrLB = toUpperCase(value);
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == PHY_RECOVERY_FLAG)
+    {
+        addCmd(SEND_PHY_RECOVERY);
+        _userInput._phyRecovery = toUpperCase(value);
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == PHY_RECOVERY_TYPE_FLAG)
+    {
+        _userInput._phyRecoveryType = value;
+        return PARSE_OK;
+    }
+    else if (name == LINK_TRAINING_FLAG)
+    {
+        addCmd(SEND_LINK_TRAINING);
+        _userInput._linkTraining = toUpperCase(value);
         _userInput._uniqueCmds++;
         return PARSE_OK;
     }

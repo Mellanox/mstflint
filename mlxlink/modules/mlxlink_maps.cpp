@@ -1538,6 +1538,15 @@ void MlxlinkMaps::initPprmOperationRecoveryMapping()
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_DATA_PATH] = "module_datapath_full_toggle";
 }
 
+void MlxlinkMaps::initPprmRecoveryStatusMapping()
+{
+    // Relevant for "host_logic_re_lock", "host_serdes_feq", "module_tx_disable", "module_datapath_full_toggle"
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_FW_DEFAULT] = "FW Default";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_ENABLE] = "Enable";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE] = "Disable";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION] = "Disable Support In Negotiation";
+}
+
 void MlxlinkMaps::initPpcntGroupsMapping()
 {
     _ppcntGroups[PPCNT_IEEE_802_3_COUNTERS_GROUP] = PPCNT_IEEE_802_3_COUNTERS_GROUP;
@@ -1567,6 +1576,17 @@ void MlxlinkMaps::initPlrRejectModeMapping()
     _plrRejectMode[PLR_REJECT_MODE_CS] = "rejection based on CS";
 }
 
+void MlxlinkMaps::initKrMapping()
+{
+    // According to arch - the enums here are based on "xdr_lt_cap" instead of kr_ext_cap.
+    _krExtOper[KR_EXT_OPER_LT_DISABLED] = "LT is Disabled";
+    _krExtOper[KR_EXT_OPER_LT_ENABLED_REGULAR_KR] = "LT Enabled Regular KR";
+    _krExtOper[KR_EXT_OPER_LT_ENABLED_EXT_KR_ASYNC] = "LT Enabled Ext KR Async Mode";
+
+    _krPrbsType[KR_PRBS_TYPE_PRBS13] = "PRBS13";
+    _krPrbsType[KR_PRBS_TYPE_PRBS31] = "PRBS31";
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();
@@ -1587,6 +1607,9 @@ MlxlinkMaps::MlxlinkMaps()
     initPpttParamsMapping();
     initPpttSpeedMapping();
     initPlrRejectModeMapping();
+    initKrMapping();
+    initPprmOperationRecoveryMapping();
+    initPprmRecoveryStatusMapping();
 }
 
 MlxlinkMaps::~MlxlinkMaps() {}

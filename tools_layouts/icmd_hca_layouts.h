@@ -1,41 +1,44 @@
 
-/* Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
+/*
+* Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+*
+* This software is available to you under a choice of one of two
+* licenses.  You may choose to be licensed under the terms of the GNU
+* General Public License (GPL) Version 2, available from the file
+* COPYING in the main directory of this source tree, or the
+* OpenIB.org BSD license below:
+*
+*     Redistribution and use in source and binary forms, with or
+*     without modification, are permitted provided that the following
+*     conditions are met:
+*
+*      - Redistributions of source code must retain the above
+*        copyright notice, this list of conditions and the following
+*        disclaimer.
+*
+*      - Redistributions in binary form must reproduce the above
+*        copyright notice, this list of conditions and the following
+*        disclaimer in the documentation and/or other materials
+*        provided with the distribution.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*
+*  Version: $Id$
+*
+*/
  
 
 /***
-         *** This file was generated at "2025-04-01 17:37:30"
+         *** This file was generated at "2025-06-03 10:49:36"
          *** by:
-         ***    > adb2pack.py --input adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils -o user/tools_layouts
+         ***    > /auto/mswg/release/tools/a-me/a-me-1.2.9/a-me-1.2.9-8/adabe_plugins/adb2c/adb2pack.py --input /.autodirect/swgwork/ttubi/workspace/master4.33/mft/user/tools_layouts/adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils -o /.autodirect/swgwork/ttubi/workspace/master4.33/mft/user/tools_layouts
          ***/
 #ifndef ICMD_HCA_LAYOUTS_H
 #define ICMD_HCA_LAYOUTS_H
@@ -142,13 +145,13 @@ struct icmd_hca_debug_cap {
 	/* access: RW */
 	u_int8_t log_min_resource_dump_eq;
 	/* Description - If set, Resource_dump register is supported.
-See Table  1635, "RESOURCE_DUMP Register Layout," on page  1906 */
+See Table  1665, "RESOURCE_DUMP Register Layout," on page  1973 */
 	/* 0x0.22 - 0x0.22 */
 	/* access: RW */
 	u_int8_t resource_dump;
 	/* Description - Log(base 2) of the size in granularity of 4KB to be allocated by host in order to accommodate cr_dump.
 0 means feature is not supported.
-See Table  1633, "CORE_DUMP Register Layout," on page  1904 */
+See Table  1663, "CORE_DUMP Register Layout," on page  1971 */
 	/* 0x0.23 - 0x0.27 */
 	/* access: RW */
 	u_int8_t log_cr_dump_to_mem_size;
@@ -171,7 +174,7 @@ See Table  1633, "CORE_DUMP Register Layout," on page  1904 */
 	/* access: RW */
 	u_int8_t diag_counter_tracer_dump;
 	/* Description - If set, health monitoring for rx path activity is supported.
-See Table  29.5.1, "RX Path Activity," on page  1792 */
+See Table  29.5.1, "RX Path Activity," on page  1860 */
 	/* 0x4.29 - 0x4.29 */
 	/* access: RW */
 	u_int8_t health_mon_rx_activity;
@@ -261,7 +264,7 @@ struct icmd_hca_icmd_query_cap_general {
 	/* access: RW */
 	u_int8_t nic_cap_reg;
 	/* Description - If set, port_state_behavior register is supported.
-See Section 30.2.27, "PORT_STATE_BEHAVIOR Register", on page 1917 */
+See Section 30.2.27, "PORT_STATE_BEHAVIOR Register", on page 1984 */
 	/* 0x0.14 - 0x0.14 */
 	/* access: RW */
 	u_int8_t port_state_behavior;
@@ -273,11 +276,11 @@ See Section 30.2.27, "PORT_STATE_BEHAVIOR Register", on page 1917 */
 	/* 0x0.16 - 0x0.16 */
 	/* access: RW */
 	u_int8_t ncfg_reg;
-	/* Description - If set, CWCAM register is supported. Table 2357, "CWCAM - Congestion WRED Capabilities Mask Register Layout," on page 2705 */
+	/* Description - If set, CWCAM register is supported. Table 2411, "CWCAM - Congestion WRED Capabilities Mask Register Layout," on page 2827 */
 	/* 0x0.17 - 0x0.17 */
 	/* access: RW */
 	u_int8_t cwcam_reg;
-	/* Description - If set, SBCAM register is supported. See Table 2419, "SBCAM - Shared Buffer Capabilities Mask Register Layout," on page 2756 */
+	/* Description - If set, SBCAM register is supported. See Table 2473, "SBCAM - Shared Buffer Capabilities Mask Register Layout," on page 2878 */
 	/* 0x0.18 - 0x0.18 */
 	/* access: RW */
 	u_int8_t sbcam_reg;
@@ -297,19 +300,19 @@ See Section 30.2.27, "PORT_STATE_BEHAVIOR Register", on page 1917 */
 	/* 0x0.24 - 0x0.24 */
 	/* access: RW */
 	u_int8_t capi;
-	/* Description - If set, QCAM register is supported. Table  1095, "QCAM - QoS Capabilities Mask Register Layout," on page  1407. */
+	/* Description - If set, QCAM register is supported. Table  1123, "QCAM - QoS Capabilities Mask Register Layout," on page  1441. */
 	/* 0x0.25 - 0x0.25 */
 	/* access: RW */
 	u_int8_t qcam_reg;
-	/* Description - If set, MCAM register is supported. Table  2696, "MCAM - Management Capabilities Mask Register Layout," on page  2979. */
+	/* Description - If set, MCAM register is supported. Table  2754, "MCAM - Management Capabilities Mask Register Layout," on page  3118. */
 	/* 0x0.26 - 0x0.26 */
 	/* access: RW */
 	u_int8_t mcam_reg;
-	/* Description - If set, PCAM register is supported. Table  1698, "PCAM - Ports Capabilities Mask Register Layout," on page  1958 */
+	/* Description - If set, PCAM register is supported. Table  1728, "PCAM - Ports Capabilities Mask Register Layout," on page  2025 */
 	/* 0x0.27 - 0x0.27 */
 	/* access: RW */
 	u_int8_t pcam_reg;
-	/* Description - When set, multi-host synchronization through the device is supported. Section  32.4.3, "ICMD_MH_SYNC - Multi-Host Synchronization," on page  3935. */
+	/* Description - When set, multi-host synchronization through the device is supported. Section  32.4.3, "ICMD_MH_SYNC - Multi-Host Synchronization," on page  4091. */
 	/* 0x0.28 - 0x0.28 */
 	/* access: RW */
 	u_int8_t mh_sync;
@@ -393,12 +396,12 @@ other values are reserved. */
 /* Size in bytes - 16 */
 struct icmd_hca_icmd_query_diagnostic_cntrs_in {
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - The sample_index is the first sample index. The sample index shall be in the range of 0    2^HCA_CAP.log_number_of_samples. See Section  31.3.4.11, "Debug Capabilities," on page  3281. */
+	/* Description - The sample_index is the first sample index. The sample index shall be in the range of 0    2^HCA_CAP.log_number_of_samples. See Section  31.3.4.11, "Debug Capabilities," on page  3423. */
 	/* 0x8.0 - 0x8.15 */
 	/* access: RW */
 	u_int16_t sample_index;
 	/* Description - The number of samples to return. 
-Device might return up to the configured value HCA_CAP.log_number_of_samples. (See Section  31.3.4.11, "Debug Capabilities," on page  3281).
+Device might return up to the configured value HCA_CAP.log_number_of_samples. (See Section  31.3.4.11, "Debug Capabilities," on page  3423).
 Note that the device can perform roll over when reaching number_of_samples. For example: if the user asks for 256 samples starting from index 128, the result will be: 128,   ,255,0,   ,127. */
 	/* 0x8.16 - 0x8.31 */
 	/* access: RW */
@@ -410,7 +413,7 @@ Note that the device can perform roll over when reaching number_of_samples. For 
 struct icmd_hca_icmd_query_diagnostic_params_out {
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Diagnostic parameters context.
-Table  4091, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  3851 */
+Table  4177, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  4004 */
 	/* 0x8.0 - 0x20.31 */
 	/* access: RW */
 	struct icmd_hca_diagnostic_params_context diagnostic_params_context;
@@ -421,7 +424,7 @@ Table  4091, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  3851 *
 struct icmd_hca_icmd_set_diagnostic_params_in {
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Diagnostic parameters context.
-Table  4091, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  3851 */
+Table  4177, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  4004 */
 	/* 0x8.0 - 0x20.31 */
 	/* access: RW */
 	struct icmd_hca_diagnostic_params_context diagnostic_params_context;
@@ -432,21 +435,17 @@ Table  4091, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  3851 *
 union icmd_hca_icmd_hca_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x20.31 */
+	/* 0x0.0 - 0x8.31 */
 	/* access: RW */
-	struct icmd_hca_icmd_query_diagnostic_params_out icmd_query_diagnostic_params_out;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct icmd_hca_icmd_query_diagnostic_cntrs_in icmd_query_diagnostic_cntrs_in;
+	struct icmd_hca_icmd_mh_sync_out icmd_mh_sync_out;
 	/* Description -  */
 	/* 0x0.0 - 0x0.31 */
 	/* access: RW */
 	struct icmd_hca_icmd_mh_sync_in icmd_mh_sync_in;
 	/* Description -  */
-	/* 0x0.0 - 0x8.31 */
+	/* 0x0.0 - 0x0.31 */
 	/* access: RW */
-	struct icmd_hca_icmd_mh_sync_out icmd_mh_sync_out;
+	struct icmd_hca_icmd_query_cap_in icmd_query_cap_in;
 	/* Description -  */
 	/* 0x0.0 - 0x4.31 */
 	/* access: RW */
@@ -456,13 +455,17 @@ union icmd_hca_icmd_hca_Nodes {
 	/* access: RW */
 	struct icmd_hca_debug_cap debug_cap;
 	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	/* access: RW */
-	struct icmd_hca_icmd_query_cap_in icmd_query_cap_in;
-	/* Description -  */
 	/* 0x0.0 - 0x20.31 */
 	/* access: RW */
 	struct icmd_hca_icmd_set_diagnostic_params_in icmd_set_diagnostic_params_in;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct icmd_hca_icmd_query_diagnostic_cntrs_in icmd_query_diagnostic_cntrs_in;
+	/* Description -  */
+	/* 0x0.0 - 0x20.31 */
+	/* access: RW */
+	struct icmd_hca_icmd_query_diagnostic_params_out icmd_query_diagnostic_params_out;
 };
 
 
