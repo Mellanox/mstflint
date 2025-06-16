@@ -63,9 +63,8 @@ class CmdRegMroq():
                 self._mroq_is_supported = True
                 self._pci_sync_for_fw_update_start = reg['pci_sync_for_fw_update_start']
                 self._pci_reset_req_method = reg['pci_reset_req_method']
-                if platform.system() == "Windows":
-                    self._pci_reset_req_method = self._pci_reset_req_method & ~CmdRegMroq.pci_reset_method_db[ResetReqMethod.HOT_RESET]['mask']
-                    self._pci_sync_for_fw_update_start = self._pci_sync_for_fw_update_start & ~CmdRegMroq.pci_sync_db[CmdRegMroq.SYNCED_TOOL_FLOW]['mask']
+                self._pci_reset_req_method = self._pci_reset_req_method & ~CmdRegMroq.pci_reset_method_db[ResetReqMethod.HOT_RESET]['mask']
+                self._pci_sync_for_fw_update_start = self._pci_sync_for_fw_update_start & ~CmdRegMroq.pci_sync_db[CmdRegMroq.SYNCED_TOOL_FLOW]['mask']
 
             except BaseException:
                 pass

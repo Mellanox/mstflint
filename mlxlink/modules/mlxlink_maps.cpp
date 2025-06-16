@@ -1509,13 +1509,29 @@ void MlxlinkMaps::initEnhancedDebugMapping()
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_EFFECTIVE_BER] = "Fast_recovery_effective_ber";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_SYMBOL_BER] = "Fast_recovery_symbol_ber";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_CREDIT_WATCHDOG] = "Fast_recovery_credit_watchdog";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_TO_SLEEP_STATE] = "Peer_side_down_to_sleep_state";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_TO_DISABLE_STATE] = "Peer_side_down_to_disable_state";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_TO_DISABLE_AND_PORT_LOCK] =
+      "Peer_side_down_to_disable_and_port_lock";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_DUE_TO_THERMAL_EVENT] = "Peer_side_down_due_to_thermal_event";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_DUE_TO_FORCE_EVENT] = "Peer_side_down_due_to_force_event";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_DUE_TO_RESET_EVENT] = "Peer_side_down_due_to_reset_event";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_RESET_NO_POWER_CYCLE] = "Reset_no_power_cycle";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_TX_PLR_TRIGGER] = "Fast_recovery_tx_plr_trigger";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_DUE_TO_HW_FORCE_EVENT] = "Down_due_to_hw_force_event";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_L1_EXIT_FAILURE] = "L1_exit_failure";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_TOO_MANY_LINK_ERROR_RECOVERIES] = "Too_many_link_error_recoveries";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_DUE_TO_CONTAIN_MODE] = "Down_due_to_contain_mode";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_BW_LOSS_THRESHOLD_EXCEEDED] = "BW_loss_threshold_exceeded";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_ELS_LASER_FAULT] = "ELS_laser_fault";
+    
     _localReasonOpcode[LOCAL_REASON_OPCODE_TIMEOUT] = "Timeout";
     _localReasonOpcode[LOCAL_REASON_OPCODE_RESERVED] = "N/A";
 }
 
 void MlxlinkMaps::initPprmOperationRecoveryMapping()
 {
-    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logcic_re_lock";
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logic_re_lock";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] = "host_serdes_feq";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_TX] = "module_tx_disable";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_DATA_PATH] = "module_datapath_full_toggle";
