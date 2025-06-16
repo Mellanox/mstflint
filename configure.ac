@@ -101,7 +101,15 @@ else
         default_en_rdmem="yes"
     fi
 fi
+
+if test "x$OS" = "xFreeBSD"; then
+    VFIO_DRIVER_DIR=""
+else
+    VFIO_DRIVER_DIR="vfio_driver_access"
+fi
+
 AC_SUBST(MTCR_CONF_DIR)
+AC_SUBST(VFIO_DRIVER_DIR)
 AC_SUBST(LDL)
 AC_SUBST(default_en_inband)
 
