@@ -1728,7 +1728,7 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
         /* TODO - fix for QTM3/CX8/ArcusE/BF4 */
         /* Read the Cache replacement offset and cmd fields */
         if ((devid_t == DeviceQuantum2) || (devid_t == DeviceQuantum3) || (devid_t == DeviceSpectrum4) ||
-            (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8)) {
+            (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8) || (devid_t == DeviceConnectX8PurePcieSwitch)) {
             MREAD4(CACHE_REP_OFF_NEW_GW_ADDR, &data);
             off = data;
             MREAD4(CACHE_REP_CMD_NEW_GW_ADDR, &data);
@@ -1946,7 +1946,7 @@ void update_seventh_gen_addrs(mflash* mfl)
             mfl->gw_data_size_register_addr = mfl->gw_data_size_register_addr - HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR +
                                               VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
         }
-    } else if (mfl->dm_dev_id == DeviceConnectX8) {
+    } else if (mfl->dm_dev_id == DeviceConnectX8 || mfl->dm_dev_id == DeviceConnectX8PurePcieSwitch) {
         mfl->gw_cmd_register_addr = HCR_7GEN_CX8_FLASH_CMD;
         mfl->gw_data_field_addr = HCR_7GEN_CX8_FLASH_DATA;
         mfl->gcm_en_addr = HCR_7GEN_CX8_GCM_EN_ADDR;
@@ -1964,7 +1964,7 @@ void update_seventh_gen_addrs(mflash* mfl)
             mfl->gw_data_size_register_addr = mfl->gw_data_size_register_addr - HCR_7GEN_CX8_FLASH_GW_BASE_ADDR +
                                               VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
         }
-    } else if (mfl->dm_dev_id == DeviceArcusE) {
+    }  else if (mfl->dm_dev_id == DeviceArcusE) {
         mfl->gw_cmd_register_addr = HCR_7GEN_ARCUSE_FLASH_CMD;
         mfl->gw_data_field_addr = HCR_7GEN_ARCUSE_FLASH_DATA;
         mfl->gcm_en_addr = HCR_7GEN_ARCUSE_GCM_EN_ADDR;
@@ -3321,6 +3321,7 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
     case DeviceConnectX7:
     case DeviceBlueField3:
     case DeviceConnectX8:
+    case DeviceConnectX8PurePcieSwitch:
     case DeviceBlueField4:
     case DeviceSpectrum4:
     case DeviceAbirGearBox:
@@ -3419,6 +3420,7 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
         break;
 
     case DeviceConnectX8:
+    case DeviceConnectX8PurePcieSwitch:
     case DeviceConnectX9:
     case DeviceBlueField4:
         boot_cr_space_address = 0xf8008;

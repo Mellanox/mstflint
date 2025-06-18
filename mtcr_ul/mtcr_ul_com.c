@@ -2324,7 +2324,7 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
 }
 
 u_int32_t secured_devices[] =
-{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId};
+{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceConnectX8PurePcieSwitch_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId};
 
 #define SECURED_DEVICE_ID_TABLE_SIZE (sizeof(secured_devices) / sizeof(u_int32_t))
 
@@ -2333,7 +2333,7 @@ u_int32_t supported_device_ids[] =
  DeviceSwitchIB_HwId,         DeviceSpectrum_HwId,       DeviceConnectX4_HwId,
  DeviceConnectX4LX_HwId,      DeviceConnectX5_HwId,      DeviceConnectX6_HwId,
  DeviceConnectX6DX_HwId,      DeviceConnectX6LX_HwId,    DeviceConnectX7_HwId,
- DeviceConnectX8_HwId,        DeviceBlueField_HwId,      DeviceBlueField2_HwId,
+ DeviceConnectX8_HwId,        DeviceConnectX8PurePcieSwitch_HwId, DeviceBlueField_HwId,      DeviceBlueField2_HwId,
  DeviceBlueField3_HwId,       DeviceBlueField4_HwId,     DeviceSwitchIB2_HwId,
  DeviceCableQSFP_HwId,        DeviceCableQSFPaging_HwId, DeviceCableCMIS_HwId,
  DeviceCableCMISPaging_HwId,  DeviceCableSFP_HwId,       DeviceCableSFP51_HwId,
@@ -4526,9 +4526,10 @@ int is_zombiefish_device(mfile* mf)
     if (mread4(mf, HW_ID_ADDR, &mf->device_hw_id) != 4) {
         return 0;
     }
-    if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceQuantum3_HwId) &&
-        (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceQuantum4_HwId) &&
-        (mf->device_hw_id != DeviceConnectX7_HwId) && (mf->device_hw_id != DeviceBlueField3_HwId)) {
+    if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8PurePcieSwitch_HwId) &&
+        (mf->device_hw_id != DeviceQuantum3_HwId) && (mf->device_hw_id != DeviceConnectX9_HwId) &&
+        (mf->device_hw_id != DeviceQuantum4_HwId) && (mf->device_hw_id != DeviceConnectX7_HwId) &&
+        (mf->device_hw_id != DeviceBlueField3_HwId)) {
         return 0;
     }
 
