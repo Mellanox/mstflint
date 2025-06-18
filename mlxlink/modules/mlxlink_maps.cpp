@@ -71,6 +71,16 @@ void MlxlinkMaps::initPortStateMapping()
     _networkProtocols[ETH] = "Ethernet";
     _networkProtocols[NVLINK] = "NVLink";
 
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_IB_SPEC] = "IB spec / legacy";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_INTERNAL_PORTS] = "Internal ports (Backplane)";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_PASSIVE_COPPER_SHORT] = "Passive copper - Short";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_PASSIVE_COPPER_MEDIUM] = "Passive copper - Medium";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_PASSIVE_COPPER_LONG] = "Passive copper - Long";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_ACTIVE_OPTICS] = "Active optics / copper short reach (<20m)";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_OPTICS_LONG_REACH] = "Optics long reach (>20m)";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_NO_FEC] = "NO-FEC";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_FEC_ON] = "FEC-ON";
+
     _ethANFsmState[0x0] = "ETH_AN_FSM_ENABLE";
     _ethANFsmState[0x1] = "ETH_AN_FSM_XMIT_DISABLE";
     _ethANFsmState[0x2] = "ETH_AN_FSM_ABILITY_DETECT";
