@@ -2777,6 +2777,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0x1976, /* Schrodinger */
                                    0x1979, /* Freysa */
                                    0x197d, /* Connect-X8 Bridge */
+                                   0x197e, /* Connect-X9 Bridge */
                                    0x2900, /* GB100 */
                                    0xd2f4, /* Sunbird */
                                    -1};
@@ -4689,7 +4690,8 @@ int is_pcie_switch_device(mfile* mf)
     } devs[] = {
         {0x1976}, /* ConnectX6dx (Schrodinger). */
         {0x1979}, /* ConnectX7 (FreysaP1011). */
-        {0x197d}  /* ConnectX8 Bridge. */
+        {0x197d},  /* ConnectX8 Bridge. */
+        {0x197e}  /* ConnectX9 Bridge. */
     };
 
     /* take care of corrupted input */
