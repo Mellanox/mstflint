@@ -182,6 +182,7 @@ protected:
     bool _isValidSensorMvcap;
     bool _isValidSensorMtcap;
     bool _inPRBSMode;
+    u_int32_t _pllGroup;
     u_int32_t _moduleHostSt;
     u_int32_t _moduleMediaSt;
 

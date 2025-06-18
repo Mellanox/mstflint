@@ -57,6 +57,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _devID = 0;
     _moduleIndex = 0;
     _slotIndex = 0;
+    _pllGroup = 0;
 
     _isPortIB = false;
     _isPortETH = false;
@@ -219,6 +220,14 @@ void MlxlinkAmBerCollector::init()
     try
     {
         _isPortPCIE = (_pnat == PNAT_PCIE);
+
+        resetLocalParser(ACCESS_REG_PMDR);
+        updateField("local_port", _localPort);
+        sendRegister(ACCESS_REG_PMDR, MACCESS_REG_METHOD_GET);
+
+        _isMCMSysValid = getFieldValue("mcm_tile_valid");
+        _isGBSysValid = getFieldValue("gb_valid");
+        _pllGroup = getFieldValue("pll_index");
 
         if (!_isPortPCIE) {
             resetLocalParser(ACCESS_REG_PDDR);
@@ -505,6 +514,44 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
         string sensNameTemp = "N/A";
         string temp = "N/A";
         string numPlanes = "N/A";
+        string tileNum = "N/A";
+        string slotIndex = "N/A";
+        string retimerValid = "N/A";
+        string retimerDpNum = "N/A";
+        string retimerDieNum = "N/A";
+        u_int32_t tileNumInt = 0;
+
+        if (!_isPortPCIE)
+        {
+            resetLocalParser(ACCESS_REG_PMDR);
+            updateField("local_port", _localPort);
+            sendRegister(ACCESS_REG_PMDR, MACCESS_REG_METHOD_GET);
+            if (_isMCMSysValid)
+            {
+                tileNumInt = getFieldValue("mcm_tile_num");
+                tileNum = to_string(tileNumInt);
+            }
+            slotIndex = getFieldStr("slot_index");
+
+            fields.push_back(AmberField("MCM_system", to_string(_isMCMSysValid)));
+            fields.push_back(AmberField("Tile_Num", tileNum));
+            fields.push_back(AmberField("slot_index", slotIndex));
+            fields.push_back(AmberField("Module_Lanes_Used", getBitmaskPerLaneStr(getFieldValue("module_lane_mask"))));
+            fields.push_back(AmberField("PLL_Index", to_string(_pllGroup)));
+
+            if (_productTechnology == PRODUCT_5NM && _isPortIB)
+            {
+                retimerValid = getFieldStr("gb_valid");
+                retimerDpNum = getFieldStr("gb_dp_num");
+                if (retimerValid != "0")
+                {
+                    retimerDieNum = getFieldStr("gearbox_die_num");
+                }
+            }
+            fields.push_back(AmberField("Retimer_valid", retimerValid));
+            fields.push_back(AmberField("Retimer_dp_num", retimerDpNum));
+            fields.push_back(AmberField("Retimer_die_num", retimerDieNum));
+        }
 
         fields.push_back(AmberField("Device_Description", _mstDevName.c_str()));
 
@@ -680,6 +727,11 @@ vector < AmberField > MlxlinkAmBerCollector::getPhyOperationInfo()
             fields.push_back(
                 AmberField("device_status",
                            getStrByMask(getFieldValue("device_status"), _mlxlinkMaps->_pcieDevStatus)));
+        }
+        else
+        {
+            fields.push_back(
+              AmberField("profile_fec_in_use", _mlxlinkMaps->_proFileFecInUse[getFieldValue("profile_fec_in_use")]));
         }
     }
     catch(const std::exception& exc)
@@ -1998,6 +2050,8 @@ void MlxlinkAmBerCollector::getModuleLinkUpInfoPage(vector<AmberField>& fields)
                                                                     "c"));
     fields.push_back(
         AmberField("time_to_link_up_disable_to_pd", getFieldStr("time_to_link_up_disable_to_pd") + "msec"));
+    fields.push_back(AmberField("time_of_module_conf_done_up", getFieldStr("time_of_module_conf_done_up")));
+    fields.push_back(AmberField("time_of_module_conf_done_down", getFieldStr("time_of_module_conf_done_down")));
     fields.push_back(AmberField("time_logical_init_to_active", timeLogicalInitToActive));
 }
 
@@ -2024,6 +2078,11 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkUpInfo()
     return fields;
 }
 
+string calculateBer(string berCoef, string berMagnitude)
+{
+    return (berCoef + "E-" + berMagnitude);
+}
+
 vector < AmberField > MlxlinkAmBerCollector::getLinkDownInfo()
 {
     vector < AmberField > fields;
@@ -2044,6 +2103,35 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkDownInfo()
                                                                                                   "opcode")]));
             fields.push_back(AmberField("e2e_reason_opcode", getFieldStr("e2e_reason_opcode")));
             receivedTs1Opcode = to_string(getLocalFieldValue("received_ts1_opcode"));
+            fields.push_back(AmberField("time_to_link_down_to_disable",
+                                        to_string(getLocalFieldValue("time_to_link_down_to_disable"))));
+            fields.push_back(AmberField("time_to_link_down_to_rx_loss",
+                                        to_string(getLocalFieldValue("time_to_link_down_to_rx_loss"))));
+            fields.push_back(
+              AmberField("num_of_raw_ber_alarms", to_string(getLocalFieldValue("num_of_raw_ber_alarms"))));
+            fields.push_back(
+              AmberField("num_of_symbol_ber_alarms", to_string(getLocalFieldValue("num_of_symbol_ber_alarms"))));
+            fields.push_back(
+              AmberField("num_of_eff_ber_alarms", to_string(getLocalFieldValue("num_of_eff_ber_alarms"))));
+
+            fields.push_back(AmberField(
+              "last_raw_ber", calculateBer(getFieldStr("last_raw_ber_coef"), getFieldStr("last_raw_ber_magnitude"))));
+            fields.push_back(AmberField(
+              "last_eff_ber", calculateBer(getFieldStr("last_eff_ber_coef"), getFieldStr("last_eff_ber_magnitude"))));
+            fields.push_back(AmberField("last_symbol_ber", calculateBer(getFieldStr("last_symbol_ber_coef"),
+                                                                        getFieldStr("last_symbol_ber_magnitude"))));
+            fields.push_back(AmberField(
+              "max_raw_ber", calculateBer(getFieldStr("max_raw_ber_coef"), getFieldStr("max_raw_ber_magnitude"))));
+            fields.push_back(AmberField("max_effective_ber", calculateBer(getFieldStr("max_eff_ber_coef"),
+                                                                          getFieldStr("max_eff_ber_magnitude"))));
+            fields.push_back(AmberField("max_symbol_ber", calculateBer(getFieldStr("max_symbol_ber_coef"),
+                                                                       getFieldStr("max_symbol_ber_magnitude"))));
+            fields.push_back(AmberField(
+              "min_raw_ber", calculateBer(getFieldStr("min_raw_ber_coef"), getFieldStr("min_raw_ber_magnitude"))));
+            fields.push_back(AmberField("min_effective_ber", calculateBer(getFieldStr("min_eff_ber_coef"),
+                                                                          getFieldStr("min_eff_ber_magnitude"))));
+            fields.push_back(AmberField("min_symbol_ber", calculateBer(getFieldStr("min_symbol_ber_coef"),
+                                                                       getFieldStr("min_symbol_ber_magnitude"))));
         }
         fields.push_back(AmberField("received_ts1_opcode", receivedTs1Opcode, _isPortIB));
     }
