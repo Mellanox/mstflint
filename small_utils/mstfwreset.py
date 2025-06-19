@@ -2260,10 +2260,10 @@ def reset_flow_host(device, args, command):
                         raise RuntimeError("Requested reset sync '{0}' is not supported".format(args.reset_sync))
 
         if reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
-                and reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
+                and reset_level not in [CmdRegMfrl.WARM_REBOOT, CmdRegMfrl.IMMEDIATE_RESET]:                                 # The tool is using sysfs to access PCI config
             # and it's restricted on UEFI secure boot
             raise RuntimeError(
-                "The tool supports only reset-level 4 on UEFI Secure Boot")
+                "The tool supports only reset-level {0} or {1} on UEFI Secure Boot".format(CmdRegMfrl.WARM_REBOOT, CmdRegMfrl.IMMEDIATE_RESET))
         is_pcie_swtich = False
         if is_pcie_switch_device(devid):
             is_pcie_swtich = True
