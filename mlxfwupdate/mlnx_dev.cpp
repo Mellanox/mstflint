@@ -863,6 +863,11 @@ bool MlnxDev::InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams)
     devFwParams.hndlType = FHT_MST_DEV;
     char* deviceName = (char*)devName.c_str();
     int length = ((strlen(deviceName) + 1) * sizeof(char));
+    if (devFwParams.mstHndl)
+    {
+        delete[] devFwParams.mstHndl;
+        devFwParams.mstHndl = NULL;
+    }
     devFwParams.mstHndl = new char[length];
     if (devFwParams.mstHndl == NULL)
     {
@@ -890,6 +895,13 @@ bool MlnxDev::OpenDev()
     if (!InitDevFWParams(_devFwParams))
     {
         return false;
+    }
+
+    if (_devFwOps)
+    {
+        _devFwOps->FwCleanUp();
+        delete _devFwOps;
+        _devFwOps = NULL;
     }
     _devFwOps = FwOperations::FwOperationsCreate(_devFwParams);
     delete[] _devFwParams.mstHndl;
