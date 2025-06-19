@@ -115,6 +115,8 @@ typedef enum StFlashCommand
     SFC_RDERP_ISSI = 0x81,              // read status extended read register
     SFC_WRSR3_MACRONIX_MX25K16XXX = 0x11, // Write status register 3 (MACRONIX)
     SFC_RDSR3_MACRONIX_MX25K16XXX = 0x15, // Read status register 3 (MACRONIX)
+    SFC_RDSR4_MACRONIX_MX25UXXX = 0xBE,   // Read status register 4 (MACRONIX)
+    SFC_WRSR4_MACRONIX_MX25UXXX = 0xBF,   // Write status register 4 (MACRONIX)
     SFC_WREN = 0x06,                    // Write enable
     SFC_RDNVR = 0xB5,
     SFC_RDCR = 0x15,                    // Read configuration register
