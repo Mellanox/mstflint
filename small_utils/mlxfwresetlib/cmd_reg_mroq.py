@@ -87,6 +87,13 @@ class CmdRegMroq():
             'pci_sync_for_fw_update_start': pci_sync_for_fw_update_start,
         }
 
+    def is_method_supported(self, method):
+        for field in CmdRegMroq.pci_reset_method_db:
+            if method == field["method"]:
+                return (field["mask"] & self._pci_reset_req_method) != 0
+        raise Exception("Method {} is not in the list of supported methods".format(method))
+
+    
     def print_query_text(self, is_pcie_switch, tool_owner_support):
         if self._mroq_is_supported is False:
             return
