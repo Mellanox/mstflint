@@ -70,6 +70,7 @@ try:
     from mlxfwresetlib.cmd_reg_mcam import CmdRegMcam
     from mlxfwresetlib.cmd_reg_mroq import CmdRegMroq
     from mlxfwresetlib.cmd_reg_mrsi import CmdRegMrsi
+    from mlxfwresetlib.gpu_drivers_safety_check import GpuDriverSafetyCheckManager
     if os.name != 'nt':
         if not getattr(sys, 'frozen', False):
             sys.path.append(os.sep.join(
@@ -238,6 +239,16 @@ class WarningException(Exception):
 class NoPciBridgeException(Exception):
     pass
 
+
+######################################################################
+# Description:  Operation Terminated
+# OS Support :  Linux/FreeBSD/Windows.
+######################################################################
+
+
+class OperationTerminated(Exception):
+    pass
+
 ######################################################################
 # Description:  Get device dictionary from MLNX_DEVICES
 ######################################################################
@@ -378,40 +389,11 @@ def AskUser(question, autoYes=False):
     raise RuntimeError("Aborted by user")
 
 
-def check_gpu_drivers_loaded():
-    drivers = [
-        "nvidia-persistenced", "dcgm-exporter", "dcgm", "nvidia-dcgm",
-        "nvidia-fabricmanager", "xorg-setup", "lightdm", "xcp-rrdd-gpumon",
-        "kubelet", "bmc-watchdog", "nvidia_vgpu_vfio", "nvidia-uvm",
-        "nvidia-drm", "nvidia-modeset", "nv_peer_mem", "nvidia_peermem",
-        "nvidia_fs", "gdrdrv", "nvidia", "i2c_nvidia_gpu"
-    ]
-
-    cmd = "lsmod | grep -E '{}'".format("|".join(drivers))
-    (rc, output, stderr) = cmdExec(cmd)
-
-    # If rc is 1, it means no matches were found, which is not an error
-    if rc == 0:
-        if output.strip():
-            print("Some drivers attached to the GPU are still loaded, please unload them.")
-            print("Here is the lsmod output:")
-            print(output.strip())
-            return True
-        else:
-            return False
-    elif rc == 1:
-        return False  # No drivers found
-    else:
-        raise RuntimeError(str(stderr))
-
-
-def AskUserPCIESwitchHotReset():
+def AskUserPCIESwitchHotReset(ignore_list):
     print("You are going to reset PCIE Switch device:")
 
-    if check_gpu_drivers_loaded():
-        print("")
-        print("Exit..")
-        sys.exit()
+    if GpuDriverSafetyCheckManager.check_gpu_drivers_loaded(ignore_list):
+        raise OperationTerminated("\nExit..")
     else:
         print("No drivers attached to the GPU were found. Please ensure they are not loaded during the reset process.")
         print("Continue with the reset..")
@@ -2258,8 +2240,7 @@ def reset_flow_host(device, args, command):
             hot_reset_enabled = True
 
         if is_pcie_switch_device(devid) and hot_reset_enabled:
-            AskUserPCIESwitchHotReset()
-
+            AskUserPCIESwitchHotReset(args.ignore_list)
         else:
             AskUser("Continue with reset", args.yes)
 
@@ -2452,6 +2433,12 @@ def main():
                                '-h',
                                help=':  show this help message and exit',
                                action="help")
+    
+    # hidden flag for skipping provided drivers
+    options_group.add_argument('--ignore_list',
+                               type=GpuDriverSafetyCheckManager.validate_ignore_list,
+                               help=argparse.SUPPRESS,
+                               default=[])
 
     # hidden flag for skipping mst restart when performing pci reset
     options_group.add_argument('--no_mst_restart',
@@ -2532,6 +2519,8 @@ if __name__ == '__main__':
         print("-I- %s." % str(e))
     except WarningException as e:
         print("-W- %s." % str(e))
+    except OperationTerminated as e:  # adding nothing to the print
+        print(e)
     except Exception as e:
         if os.environ.get("MFT_PYTHON_TRACEBACK"):
             import traceback
