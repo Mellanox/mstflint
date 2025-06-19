@@ -39,6 +39,7 @@
 
 #include <tools_utils.h>
 #include <bit_slice.h>
+#include "common/mcam_capabilities.h"
 
 #include <vector>
 
@@ -391,6 +392,12 @@ bool FsCtrlOperations::FsIntQuery()
             _fsCtrlImgInfo.aux_card_connected = mrsv.data.MRSV_CX_7_Value_ext.two_p_core_active;
             _fsCtrlImgInfo.is_aux_card_connected_valid = true;
         }
+    }
+
+    _fsCtrlImgInfo.pci_switch_only_mode_valid = fwQuery.pci_switch_only_mode_valid;
+    if (fwQuery.pci_switch_only_mode_valid)
+    {
+        _fsCtrlImgInfo.pci_switch_only_mode = fwQuery.pci_switch_only_mode;
     }
 
     return true;
