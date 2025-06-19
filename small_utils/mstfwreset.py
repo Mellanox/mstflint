@@ -59,7 +59,7 @@ try:
     import cmdif
     from mlxfwresetlib import mlxfwreset_utils
     from mlxfwresetlib.mlxfwreset_utils import cmdExec
-    from mlxfwresetlib.mlxfwreset_utils import is_in_internal_host, is_uefi_secureboot
+    from mlxfwresetlib.mlxfwreset_utils import is_in_internal_host, is_uefi_secureboot, get_timeout_in_miliseconds
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriver
     from mlxfwresetlib.mlxfwreset_mlnxdriver import DriverUnknownMode
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriverFactory, MlnxDriverLinux
@@ -147,6 +147,10 @@ IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
 MCRA = 'mcra'
 if IS_MSTFLINT:
     MCRA = "mstmcra"
+
+MLXCONFIG = "mlxconfig"
+if IS_MSTFLINT:
+    MLXCONFIG = "mstconfig"
 
 PROG = 'mlxfwreset'
 if IS_MSTFLINT:
@@ -420,6 +424,75 @@ def mcraWrite(device, addr, offset, length, value):
     if rc:
         raise RuntimeError(str(stderr))
 
+
+######################################################################
+# Description:  Parse mlxconfig output to get the number in parentheses from the Current column
+# OS Support :  Linux/Windows.
+
+# Example:
+# Configurations:                                          Default             Current         Next Boot
+#       INTERNAL_CPU_OFFLOAD_ENGINE                 DISABLED(1)          ENABLED(0)           ENABLED(0)
+# parameter_name = "INTERNAL_CPU_OFFLOAD_ENGINE", column_name = "Current" -> return 0 (since the value in the parentheses is 0: ENABLED(0))
+######################################################################
+
+
+def getMlxconfigValue(output_text, parameter_name, column_name):
+    try:
+        # Split the output into lines
+        lines = output_text.strip().split('\n')
+
+        # find the index of the column_name, in parameter_name line we will find the needed value in the same index
+        param_index = None
+        for line in lines:
+            if column_name in line:
+                # Split the line by whitespace and filter out empty strings
+                parts = [part for part in line.split() if part]
+                for i, part in enumerate(parts):
+                    if column_name in part:
+                        param_index = i
+                        break
+
+        if param_index is None:
+            raise RuntimeError("Failed to find %s in the %s output:\n%s" % (column_name, MLXCONFIG, output_text))
+
+        # find the value of the parameter_name in the same index
+        current_value = None
+        for line in lines:
+            if parameter_name in line:
+                line = line[line.find(parameter_name):]  # removing suffix to allign number of parameters in line to number of columns (otherwise param_index won't reach correct current_value)
+                parts = [part for part in line.split() if part]
+                current_value = parts[param_index]
+
+        if current_value is None:
+            raise RuntimeError("%s output is not as expected:\n%s" % (MLXCONFIG, output_text))
+
+        # Extract the number from parentheses
+        number = current_value[current_value.index('(') + 1: current_value.index(')')]
+
+    except Exception as e:
+        raise RuntimeError(f"Error parsing %s output: {e}" % MLXCONFIG)
+
+    return int(number)
+
+######################################################################
+# Description:  Check if the device is a Bluefield NIC
+# OS Support :  Linux/Windows.
+######################################################################
+
+
+def isBluefieldNicMode(device_path):
+    if not is_bluefield:
+        return False
+
+    parameter_name = "INTERNAL_CPU_OFFLOAD_ENGINE"
+    column_name = "Current"
+
+    # Run mlxconfig command
+    cmd = "%s -d %s -e q %s" % (MLXCONFIG, device_path, parameter_name)
+    (rc, stdout, stderr) = cmdExec(cmd)
+    if rc:
+        raise RuntimeError(f"Error while checking Bluefield NIC mode during run of: %s: {str(stderr)}" % cmd)
+    return getMlxconfigValue(stdout, parameter_name, column_name)
 
 ######################################################################
 # Description:  Get Linux kernel version
@@ -1644,7 +1717,7 @@ def resetFlow(device, devicesSD, reset_level, reset_type, reset_sync, pci_reset_
                 "-E- Please make sure the driver is down, and re-run the tool with --skip_driver")
             raise e
 
-        if hot_reset_enabled and reset_sync is SyncOwner.FW and is_bluefield is False:
+        if hot_reset_enabled and reset_sync is SyncOwner.FW and isBluefieldNicMode(device):
             stopDriver(driverObj)
 
         host_reset_flow = reset_level == CmdRegMfrl.PCI_RESET and hot_reset_enabled and reset_sync is SyncOwner.FW
