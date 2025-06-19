@@ -42,6 +42,7 @@
 #include "fw_comps_mgr_dma_access.h"
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
+#include "common/mcam_capabilities.h"
 #include <signal.h>
 #include <iostream>
 
@@ -1894,6 +1895,20 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     }
     if (getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_DEVICE_VSD, deviceVsd)) {
         strncpy(query->deviceVsd, (char*)deviceVsd.data(), VSD_LEN);
+    }
+
+    query->pci_switch_only_mode_valid = 0;
+    bool is_hca = dm_dev_is_hca(dm_device_id);
+    if (is_hca)
+    {
+        bool is_mgir_pci_switch_only_mode_supported = false;
+        rc = isCapabilitySupportedAccordingToMcamReg(_mf, MCAM_CAP_MGIR_PCI_SWITCH_ONLY_MODE, is_hca,
+                                                     &is_mgir_pci_switch_only_mode_supported);
+        if (rc == ME_OK && is_mgir_pci_switch_only_mode_supported)
+        {
+            query->pci_switch_only_mode_valid = 1;
+            query->pci_switch_only_mode = mgir.hw_info.pci_switch_only_mode;
+        }
     }
 
     return true;

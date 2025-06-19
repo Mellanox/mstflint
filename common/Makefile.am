@@ -45,7 +45,9 @@ libcommon_la_SOURCES = \
     tools_time.h \
     tools_utils.h \
     tools_utils.h \
-    tools_version.h
+    tools_version.h \ 
+    mcam_capabilities.cpp \
+    mcam_capabilities.h
 
 commonincludedir = $(includedir)/mstflint/common/
 commoninclude_HEADERS = compatibility.h
