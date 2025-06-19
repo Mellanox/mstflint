@@ -4756,6 +4756,12 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("Independent Module:    %s\n", independent_module_str.c_str());
     }
 
+    if (fwInfo.fs3_info.pci_switch_only_mode_valid)
+    {
+        std::string switch_mode_only = fwInfo.fs3_info.pci_switch_only_mode ? "Enabled" : "Disabled";
+        printf("PCIe switch mode only: %s\n", switch_mode_only.c_str());
+    }
+
     return FLINT_SUCCESS;
 }
 

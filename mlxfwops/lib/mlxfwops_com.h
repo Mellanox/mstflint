@@ -501,6 +501,9 @@ typedef struct fs3_info_ext
     bool is_aux_card_connected_valid;
     
     uint8_t independent_module;
+    
+    uint8_t pci_switch_only_mode;
+    uint8_t pci_switch_only_mode_valid;
 } fs3_info_t;
 
 // typedef struct fs3_info_ext fs4_info_t;

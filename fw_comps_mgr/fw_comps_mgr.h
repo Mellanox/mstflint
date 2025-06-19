@@ -141,6 +141,8 @@ typedef struct
     u_int8_t geo_address;
     bool geo_address_valid;
     uint8_t independent_module;
+    uint8_t pci_switch_only_mode;
+    uint8_t pci_switch_only_mode_valid;
 
 } fwInfoT;
 

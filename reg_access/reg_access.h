@@ -45,8 +45,6 @@ extern "C"
 #include "reg_access_common.h"
 #include "common/bit_slice.h"
 
-#define MCAM_REG_GROUPS_AMOUNT 4
-
 enum { /* header lengths in bytes */
     REG_ACCESS_MFBA_HEADER_LEN = 12,
 };
@@ -287,17 +285,6 @@ reg_access_status_t reg_access_mrsv(mfile* mf, reg_access_method_t method, struc
 struct reg_access_hca_misoc_reg_ext;
     reg_access_status_t
       reg_access_misoc(mfile* mf, reg_access_method_t method, struct reg_access_hca_misoc_reg_ext* misoc);
-
-/* MCAM - functions and constants to extract valid bit in a more generic way */
-static const unsigned int REG_ACCESS_BASE_GROUP_0_ID = 0x9000;
-static const unsigned int REG_ACCESS_BASE_GROUP_1_ID = 0x9080;
-static const unsigned int REG_ACCESS_BASE_GROUP_2_ID = 0x9100;
-static const unsigned int REG_ACCESS_BASE_GROUP_3_ID = 0x9180;
-static const unsigned int MAX_REG_ACCESS_ID = 0x91FF;
-static const unsigned int REG_GROUP_LEN = 0x80;
-
-reg_access_status_t getIndexOfRegGroup(unsigned int reg_id, int* idx);
-reg_access_status_t isRegisterValidAccordingToMcamReg(mfile* mf, unsigned int reg_id, bool* is_reg_valid);
 
 #ifdef __cplusplus
 }
