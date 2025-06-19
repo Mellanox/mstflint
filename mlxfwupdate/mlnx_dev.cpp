@@ -973,8 +973,6 @@ int MlnxDev::queryFwops()
     if (!_description.size() || !_partNumber.size())
     { // take missing from ini
         setMccSupport(false);
-        _devFwOps->FwCleanUp();
-        delete _devFwOps;
         if (!OpenDev())
         {
             return -1;
