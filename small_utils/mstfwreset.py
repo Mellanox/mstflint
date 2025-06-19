@@ -1996,6 +1996,18 @@ def map2DevPath(device):
         "Can not find path of the provided mst device: " + device)
 
 ######################################################################
+# Description: in case mroq isn't supported, validating sync and method
+######################################################################
+
+
+def validate_args_for_unsupported_mroq(args):
+    if args.reset_sync is SyncOwner.FW:
+        raise RuntimeError("sync: {0} is not supported. Check query for more info".format(args.reset_sync))
+    if args.request_method is ResetReqMethod.HOT_RESET:
+        raise RuntimeError("method: {0} is not supported. Check query for more info".format(ResetReqMethod.HOT_RESET))
+
+
+######################################################################
 # Description: provide host/nic reset flow
 ######################################################################
 
@@ -2149,6 +2161,8 @@ def reset_flow_host(device, args, command):
             if args.reset_sync is None:
                 reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch_device(devid), tool_owner_support)
             else:
+                if mroq.mroq_is_supported() is False:
+                    validate_args_for_unsupported_mroq(args)
                 if args.reset_sync == SyncOwner.FW and mst_driver_is_loaded is False:
                     raise RuntimeError("Sync 2 is only relevant when the MST driver is loaded (run 'mst start')")
                 try:
