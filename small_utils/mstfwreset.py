@@ -2327,7 +2327,7 @@ def reset_flow_host(device, args, command):
         if pci_reset_request_method is ResetReqMethod.LINK_DISABLE and reset_sync == SyncOwner.FW:
             raise RuntimeError("Sync 2 is not supported with method 0")
         
-        if mroq.mroq_is_supported() and not mroq.is_method_supported(pci_reset_request_method):
+        if reset_level == CmdRegMfrl.PCI_RESET and mroq.mroq_is_supported() and not mroq.is_method_supported(pci_reset_request_method):
             raise RuntimeError("Reset method {0} is not supported".format(pci_reset_request_method))
 
         hot_reset_enabled = False
