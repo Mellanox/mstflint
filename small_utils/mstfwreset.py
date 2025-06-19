@@ -1850,7 +1850,7 @@ def is_fw_ready_for_reset_trigger(mfrl):
 ######################################################################
 
 
-def monitor_uptime(mfrl, DevDBDF, dtor_result):
+def monitor_uptime(dtor_result):
     timeout_in_milliseconds = get_timeout_in_miliseconds(dtor_result, "DRIVER_UNLOAD_AND_RESET_TO")
     timeout = timeout_in_milliseconds / 1000
     start_time = time.time()
@@ -1951,7 +1951,7 @@ def execute_driver_sync_reset_bf(mfrl, reset_level, reset_type, pci_reset_reques
         if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
             if mfrl_error and "Method not supported" in mfrl_error:
                 raise Exception(mfrl_error)
-            monitor_uptime(mfrl, DevDBDF, dtor_result)
+            monitor_uptime(dtor_result)
         elif mfrl_error:
             logger.debug("MFRL sync 1 worked although MFRL returned with error: {0}".format(mfrl_error))
 
