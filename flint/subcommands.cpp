@@ -3359,6 +3359,12 @@ FlintStatus BurnSubCommand::executeCommand()
             return FLINT_FAILED;
         }
 
+        if (strlen(_devInfo.fw_info.psid) == 0)
+        {
+            reportErr(true, "-E- Can't extract Image from PLDM package, Can't get the device PSID.\n");
+            return FLINT_FAILED;
+        }
+
         u_int8_t* buff;
         u_int32_t buffSize = 0;
         FsPldmOperations* pldmOps = dynamic_cast<FsPldmOperations*>(_imgOps);
@@ -3368,7 +3374,9 @@ FlintStatus BurnSubCommand::executeCommand()
             reportErr(true, "Failed to load PLDM package.\n");
             return FLINT_FAILED;
         }
-        if (!pldmOps->GetPldmComponentData(_flintParams.component_type, _devInfo.fw_info.psid, &buff, buffSize))
+        std::string psid(_devInfo.fw_info.psid);
+
+        if (!pldmOps->GetPldmComponentData(_flintParams.component_type, psid, &buff, buffSize))
         {
             if (pldmOps->err())
             {
@@ -3384,7 +3392,8 @@ FlintStatus BurnSubCommand::executeCommand()
         if (_flintParams.component_type == "FW")
         {
             u_int16_t swDevId = 0;
-            pldmOps->GetPldmDescriptor(_devInfo.fw_info.psid, DEV_ID_TYPE, swDevId);
+            std::string psid(_devInfo.fw_info.psid);
+            pldmOps->GetPldmDescriptor(psid, DEV_ID_TYPE, swDevId);
 
             mfile* mf = _fwOps->getMfileObj();
             dm_dev_id_t devid_t = DeviceUnknown;
@@ -3406,6 +3415,7 @@ FlintStatus BurnSubCommand::executeCommand()
 
             FwOperations* newImageOps = NULL;
             pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true);
+            delete _imgOps;
             _imgOps = newImageOps;
             delete[] buff;
         }
@@ -4895,6 +4905,49 @@ FlintStatus QuerySubCommand::executeCommand()
     if (preFwOps() == FLINT_FAILED)
     {
         return FLINT_FAILED;
+    }
+
+
+    if (_flintParams.image_specified && _imgOps->FwType() == FIT_PLDM_1_0)
+    {
+        u_int8_t* buff;
+        u_int32_t buffSize = 0;
+        FsPldmOperations* pldmOps = dynamic_cast<FsPldmOperations*>(_imgOps);
+
+        if (!pldmOps->LoadPldmPackage())
+        {
+            reportErr(true, "Failed to load PLDM package.\n");
+            return FLINT_FAILED;
+        }
+
+        std::string componentType("FW");
+        if (!pldmOps->GetPldmComponentData(componentType, _flintParams.psid, &buff, buffSize))
+        {
+            if (pldmOps->err())
+            {
+                reportErr(true, "%s\n", pldmOps->err());
+            }
+            else
+            {
+                reportErr(true, "The component was not found in the PLDM.\n");
+            }
+            return FLINT_FAILED;
+        }
+
+        u_int16_t swDevId = 0;
+        if (!pldmOps->GetPldmDescriptor(_flintParams.psid, DEV_ID_TYPE, swDevId))
+        {
+            reportErr(true, "-E- DEVICE ID descriptor is not found in the PLDM.\n");
+            delete[] buff;
+            return FLINT_FAILED;
+        }
+        FwOperations* newImageOps = NULL;
+        pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true);
+        delete _imgOps;
+        _imgOps = newImageOps;
+        delete[] buff;
+
+        _flintParams.striped_image = true;
     }
 
     fw_info_t fwInfo;

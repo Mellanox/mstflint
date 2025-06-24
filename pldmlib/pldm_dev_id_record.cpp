@@ -197,7 +197,6 @@ std::string PldmDevIdRecord::getDescription() const
 bool PldmDevIdRecord::getDescriptor(u_int16_t type, u_int16_t& descriptor) const
 {
     bool found = false;
-    std::string description;
     for (u_int8_t i = 0; i < descriptorCount - 1; i++)
     {
         if (type == recordDescriptors[i]->getDescriptorType())

@@ -571,6 +571,11 @@ int MlnxDev::preBurn(string mfa_file,
 
     if (pldmFlow)
     {
+        if (_psid.empty())
+        {
+            _errMsg = "-E- Can't extract Image from PLDM package, PSID missing in the device.\n";
+            return -1;
+        }
         if (!imgacc.loadPldmPkg(mfa_file))
         {
             return -1;
