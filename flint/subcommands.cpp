@@ -2857,14 +2857,17 @@ FlintStatus BurnSubCommand::burnPldmComp(u_int8_t** buff, u_int32_t& buffSize, F
     if (compId == FwComponent::COMPID_UNKNOWN || !_fwOps->IsComponentSupported(compId))
     {
         reportErr(true, "Component type %s is not supported by the device.\n", _flintParams.component_type.c_str());
+        delete[] * buff;
         return FLINT_FAILED;
     }
     vector<u_int8_t> compData(*buff, *buff + buffSize);
     if (!_fwOps->FwBurnAdvanced(compData, _burnParams, compId))
     {
         reportErr(true, FLINT_FSPLDM_BURN_ERROR, _flintParams.component_type.c_str(), _fwOps->err());
+        delete[] * buff;
         return FLINT_FAILED;
     }
+    delete[] * buff;
     return FLINT_SUCCESS;
 }
 
