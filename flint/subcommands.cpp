@@ -2857,14 +2857,17 @@ FlintStatus BurnSubCommand::burnPldmComp(u_int8_t** buff, u_int32_t& buffSize, F
     if (compId == FwComponent::COMPID_UNKNOWN || !_fwOps->IsComponentSupported(compId))
     {
         reportErr(true, "Component type %s is not supported by the device.\n", _flintParams.component_type.c_str());
+        delete[] * buff;
         return FLINT_FAILED;
     }
     vector<u_int8_t> compData(*buff, *buff + buffSize);
     if (!_fwOps->FwBurnAdvanced(compData, _burnParams, compId))
     {
         reportErr(true, FLINT_FSPLDM_BURN_ERROR, _flintParams.component_type.c_str(), _fwOps->err());
+        delete[] * buff;
         return FLINT_FAILED;
     }
+    delete[] * buff;
     return FLINT_SUCCESS;
 }
 
@@ -3356,6 +3359,12 @@ FlintStatus BurnSubCommand::executeCommand()
             return FLINT_FAILED;
         }
 
+        if (strlen(_devInfo.fw_info.psid) == 0)
+        {
+            reportErr(true, "-E- Can't extract Image from PLDM package, Can't get the device PSID.\n");
+            return FLINT_FAILED;
+        }
+
         u_int8_t* buff;
         u_int32_t buffSize = 0;
         FsPldmOperations* pldmOps = dynamic_cast<FsPldmOperations*>(_imgOps);
@@ -3365,7 +3374,9 @@ FlintStatus BurnSubCommand::executeCommand()
             reportErr(true, "Failed to load PLDM package.\n");
             return FLINT_FAILED;
         }
-        if (!pldmOps->GetPldmComponentData(_flintParams.component_type, _devInfo.fw_info.psid, &buff, buffSize))
+        std::string psid(_devInfo.fw_info.psid);
+
+        if (!pldmOps->GetPldmComponentData(_flintParams.component_type, psid, &buff, buffSize))
         {
             if (pldmOps->err())
             {
@@ -3381,7 +3392,8 @@ FlintStatus BurnSubCommand::executeCommand()
         if (_flintParams.component_type == "FW")
         {
             u_int16_t swDevId = 0;
-            pldmOps->GetPldmDescriptor(_devInfo.fw_info.psid, DEV_ID_TYPE, swDevId);
+            std::string psid(_devInfo.fw_info.psid);
+            pldmOps->GetPldmDescriptor(psid, DEV_ID_TYPE, swDevId);
 
             mfile* mf = _fwOps->getMfileObj();
             dm_dev_id_t devid_t = DeviceUnknown;
@@ -3403,6 +3415,7 @@ FlintStatus BurnSubCommand::executeCommand()
 
             FwOperations* newImageOps = NULL;
             pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true);
+            delete _imgOps;
             _imgOps = newImageOps;
             delete[] buff;
         }
@@ -4154,9 +4167,9 @@ static inline void
     }
 }
 
-bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
+bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo, bool isStripedImage)
 {
-    if (fwInfo.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
+    if (fwInfo.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS || isStripedImage)
     {
         // new GUIDs format
         printf("Description:           UID                GuidsNumber\n");
@@ -4417,7 +4430,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     FwOperations* ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);
     FwVersion running_version = FwOperations::createRunningFwVersion(&fwInfo.fw_info);
-
+    bool isStripedImage = ops->GetIsStripedImage();
     printf("Image type:            %s\n", fwImgTypeToStr(fwInfo.fw_type));
     if (fwInfo.fw_info.isfu_major)
     {
@@ -4549,7 +4562,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     if (!isFs2)
     {
         /*i.e its fs3/fs4*/
-        if (!displayFs3Uids(fwInfo))
+        if (!displayFs3Uids(fwInfo, isStripedImage))
         {
             return FLINT_FAILED;
         }
@@ -4594,7 +4607,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
             printf("Image VSD:             %s\n", imageVSD);
             printf("Device VSD:            %s\n", deviceVSD);
             printf("PSID:                  %s\n", fwInfo.fw_info.psid);
-            if (strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0)
+            if (strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0 && !isStripedImage)
             {
                 if (strlen(fwInfo.fs3_info.orig_psid))
                 {
@@ -4892,6 +4905,49 @@ FlintStatus QuerySubCommand::executeCommand()
     if (preFwOps() == FLINT_FAILED)
     {
         return FLINT_FAILED;
+    }
+
+
+    if (_flintParams.image_specified && _imgOps->FwType() == FIT_PLDM_1_0)
+    {
+        u_int8_t* buff;
+        u_int32_t buffSize = 0;
+        FsPldmOperations* pldmOps = dynamic_cast<FsPldmOperations*>(_imgOps);
+
+        if (!pldmOps->LoadPldmPackage())
+        {
+            reportErr(true, "Failed to load PLDM package.\n");
+            return FLINT_FAILED;
+        }
+
+        std::string componentType("FW");
+        if (!pldmOps->GetPldmComponentData(componentType, _flintParams.psid, &buff, buffSize))
+        {
+            if (pldmOps->err())
+            {
+                reportErr(true, "%s\n", pldmOps->err());
+            }
+            else
+            {
+                reportErr(true, "The component was not found in the PLDM.\n");
+            }
+            return FLINT_FAILED;
+        }
+
+        u_int16_t swDevId = 0;
+        if (!pldmOps->GetPldmDescriptor(_flintParams.psid, DEV_ID_TYPE, swDevId))
+        {
+            reportErr(true, "-E- DEVICE ID descriptor is not found in the PLDM.\n");
+            delete[] buff;
+            return FLINT_FAILED;
+        }
+        FwOperations* newImageOps = NULL;
+        pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true);
+        delete _imgOps;
+        _imgOps = newImageOps;
+        delete[] buff;
+
+        _flintParams.striped_image = true;
     }
 
     fw_info_t fwInfo;
