@@ -35,9 +35,13 @@ BuildRequires: pkgconfig
 %if 0%{?suse_version}
 %define openssl_devel_lib libopenssl-devel
 %define expat_devel_lib libexpat-devel
+%define libcurl_devel_lib libcurl-devel
+%define libxml2_devel_lib libxml2-devel
 %else
 %define openssl_devel_lib openssl-devel
 %define expat_devel_lib expat-devel
+%define libcurl_devel_lib libcurl-devel
+%define libxml2_devel_lib libxml2-devel
 %endif
 
 %if "%{nopenssl}" == "0"
@@ -47,6 +51,11 @@ BuildRequires: %{openssl_devel_lib}
 %if "%{enableadbgenerictools}" == "1"
 BuildRequires: %{expat_devel_lib}
 BuildRequires: xz-devel
+%endif
+
+%if "%{enablefwmgr}" == "1"
+BuildRequires: %{libcurl_devel_lib}
+BuildRequires: %{libxml2_devel_lib}
 %endif
 
 BuildRequires: zlib-devel %{ibmadlib}
