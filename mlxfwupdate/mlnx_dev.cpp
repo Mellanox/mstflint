@@ -904,7 +904,7 @@ bool MlnxDev::OpenDev()
         _devFwOps = NULL;
     }
     _devFwOps = FwOperations::FwOperationsCreate(_devFwParams);
-    delete[] _devFwParams.mstHndl;
+    
     if (_devFwOps == NULL)
     {
         _errMsg = _errBuff;
