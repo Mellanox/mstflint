@@ -189,6 +189,9 @@ const char* m_err2str(MError status)
     case ME_REG_ACCESS_NOT_SUPPORTED_BY_SECONDARY:
         return "Register Access not supported by secondary";
 
+    case ME_REG_ACCESS_INSUFFICIENT_PERMISSIONS:
+            return "Unable to send PRM Register due to permission issue, debug token might be needed.";
+
     /* ICMD access errors */
     case ME_ICMD_STATUS_CR_FAIL:
         return "ICMD failed due to CRSpace access failure";
