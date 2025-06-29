@@ -43,10 +43,6 @@ libnvml_device_la_SOURCES = \
     nvml_device.cpp \
     nvml_exception.cpp \
     nvml_lib_wrapper.cpp \
-    nvml_c_wrapper.cpp \
-    $(top_builddir)/tools_layouts/reg_access_gpu_layouts.c \
-    $(top_builddir)/tools_layouts/reg_access_hca_layouts.c
+    nvml_c_wrapper.cpp 
 
-libnvml_device_la_DEPENDENCIES = $(top_builddir)/tools_layouts/libadb_utils.la
-libnvml_device_la_LIBADD = $(libnvml_device_la_DEPENDENCIES)
 libnvml_device_la_LDFLAGS = -static
