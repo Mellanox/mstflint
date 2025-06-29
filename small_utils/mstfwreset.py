@@ -59,7 +59,7 @@ try:
     import cmdif
     from mlxfwresetlib import mlxfwreset_utils
     from mlxfwresetlib.mlxfwreset_utils import cmdExec
-    from mlxfwresetlib.mlxfwreset_utils import is_in_internal_host, is_uefi_secureboot
+    from mlxfwresetlib.mlxfwreset_utils import is_in_internal_host, is_uefi_secureboot, get_timeout_in_miliseconds
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriver
     from mlxfwresetlib.mlxfwreset_mlnxdriver import DriverUnknownMode
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriverFactory, MlnxDriverLinux
@@ -70,6 +70,7 @@ try:
     from mlxfwresetlib.cmd_reg_mcam import CmdRegMcam
     from mlxfwresetlib.cmd_reg_mroq import CmdRegMroq
     from mlxfwresetlib.cmd_reg_mrsi import CmdRegMrsi
+    from mlxfwresetlib.gpu_drivers_safety_check import GpuDriverSafetyCheckManager
     if os.name != 'nt':
         if not getattr(sys, 'frozen', False):
             sys.path.append(os.sep.join(
@@ -146,6 +147,10 @@ IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
 MCRA = 'mcra'
 if IS_MSTFLINT:
     MCRA = "mstmcra"
+
+MLXCONFIG = "mlxconfig"
+if IS_MSTFLINT:
+    MLXCONFIG = "mstconfig"
 
 PROG = 'mlxfwreset'
 if IS_MSTFLINT:
@@ -236,6 +241,16 @@ class WarningException(Exception):
 
 
 class NoPciBridgeException(Exception):
+    pass
+
+
+######################################################################
+# Description:  Operation Terminated
+# OS Support :  Linux/FreeBSD/Windows.
+######################################################################
+
+
+class OperationTerminated(Exception):
     pass
 
 ######################################################################
@@ -378,40 +393,11 @@ def AskUser(question, autoYes=False):
     raise RuntimeError("Aborted by user")
 
 
-def check_gpu_drivers_loaded():
-    drivers = [
-        "nvidia-persistenced", "dcgm-exporter", "dcgm", "nvidia-dcgm",
-        "nvidia-fabricmanager", "xorg-setup", "lightdm", "xcp-rrdd-gpumon",
-        "kubelet", "bmc-watchdog", "nvidia_vgpu_vfio", "nvidia-uvm",
-        "nvidia-drm", "nvidia-modeset", "nv_peer_mem", "nvidia_peermem",
-        "nvidia_fs", "gdrdrv", "nvidia", "i2c_nvidia_gpu"
-    ]
-
-    cmd = "lsmod | grep -E '{}'".format("|".join(drivers))
-    (rc, output, stderr) = cmdExec(cmd)
-
-    # If rc is 1, it means no matches were found, which is not an error
-    if rc == 0:
-        if output.strip():
-            print("Some drivers attached to the GPU are still loaded, please unload them.")
-            print("Here is the lsmod output:")
-            print(output.strip())
-            return True
-        else:
-            return False
-    elif rc == 1:
-        return False  # No drivers found
-    else:
-        raise RuntimeError(str(stderr))
-
-
-def AskUserPCIESwitchHotReset():
+def AskUserPCIESwitchHotReset(ignore_list):
     print("You are going to reset PCIE Switch device:")
 
-    if check_gpu_drivers_loaded():
-        print("")
-        print("Exit..")
-        sys.exit()
+    if GpuDriverSafetyCheckManager.check_gpu_drivers_loaded(ignore_list):
+        raise OperationTerminated("\nExit..")
     else:
         print("No drivers attached to the GPU were found. Please ensure they are not loaded during the reset process.")
         print("Continue with the reset..")
@@ -438,6 +424,75 @@ def mcraWrite(device, addr, offset, length, value):
     if rc:
         raise RuntimeError(str(stderr))
 
+
+######################################################################
+# Description:  Parse mlxconfig output to get the number in parentheses from the Current column
+# OS Support :  Linux/Windows.
+
+# Example:
+# Configurations:                                          Default             Current         Next Boot
+#       INTERNAL_CPU_OFFLOAD_ENGINE                 DISABLED(1)          ENABLED(0)           ENABLED(0)
+# parameter_name = "INTERNAL_CPU_OFFLOAD_ENGINE", column_name = "Current" -> return 0 (since the value in the parentheses is 0: ENABLED(0))
+######################################################################
+
+
+def getMlxconfigValue(output_text, parameter_name, column_name):
+    try:
+        # Split the output into lines
+        lines = output_text.strip().split('\n')
+
+        # find the index of the column_name, in parameter_name line we will find the needed value in the same index
+        param_index = None
+        for line in lines:
+            if column_name in line:
+                # Split the line by whitespace and filter out empty strings
+                parts = [part for part in line.split() if part]
+                for i, part in enumerate(parts):
+                    if column_name in part:
+                        param_index = i
+                        break
+
+        if param_index is None:
+            raise RuntimeError("Failed to find %s in the %s output:\n%s" % (column_name, MLXCONFIG, output_text))
+
+        # find the value of the parameter_name in the same index
+        current_value = None
+        for line in lines:
+            if parameter_name in line:
+                line = line[line.find(parameter_name):]  # removing suffix to allign number of parameters in line to number of columns (otherwise param_index won't reach correct current_value)
+                parts = [part for part in line.split() if part]
+                current_value = parts[param_index]
+
+        if current_value is None:
+            raise RuntimeError("%s output is not as expected:\n%s" % (MLXCONFIG, output_text))
+
+        # Extract the number from parentheses
+        number = current_value[current_value.index('(') + 1: current_value.index(')')]
+
+    except Exception as e:
+        raise RuntimeError(f"Error parsing %s output: {e}" % MLXCONFIG)
+
+    return int(number)
+
+######################################################################
+# Description:  Check if the device is a Bluefield NIC
+# OS Support :  Linux/Windows.
+######################################################################
+
+
+def isBluefieldNicMode(device_path):
+    if not is_bluefield:
+        return False
+
+    parameter_name = "INTERNAL_CPU_OFFLOAD_ENGINE"
+    column_name = "Current"
+
+    # Run mlxconfig command
+    cmd = "%s -d %s -e q %s" % (MLXCONFIG, device_path, parameter_name)
+    (rc, stdout, stderr) = cmdExec(cmd)
+    if rc:
+        raise RuntimeError(f"Error while checking Bluefield NIC mode during run of: %s: {str(stderr)}" % cmd)
+    return getMlxconfigValue(stdout, parameter_name, column_name)
 
 ######################################################################
 # Description:  Get Linux kernel version
@@ -1662,7 +1717,7 @@ def resetFlow(device, devicesSD, reset_level, reset_type, reset_sync, pci_reset_
                 "-E- Please make sure the driver is down, and re-run the tool with --skip_driver")
             raise e
 
-        if hot_reset_enabled and reset_sync is SyncOwner.FW and is_bluefield is False:
+        if hot_reset_enabled and reset_sync is SyncOwner.FW and isBluefieldNicMode(device):
             stopDriver(driverObj)
 
         host_reset_flow = reset_level == CmdRegMfrl.PCI_RESET and hot_reset_enabled and reset_sync is SyncOwner.FW
@@ -1795,7 +1850,7 @@ def is_fw_ready_for_reset_trigger(mfrl):
 ######################################################################
 
 
-def monitor_uptime(mfrl, DevDBDF, dtor_result):
+def monitor_uptime(dtor_result):
     timeout_in_milliseconds = get_timeout_in_miliseconds(dtor_result, "DRIVER_UNLOAD_AND_RESET_TO")
     timeout = timeout_in_milliseconds / 1000
     start_time = time.time()
@@ -1896,7 +1951,7 @@ def execute_driver_sync_reset_bf(mfrl, reset_level, reset_type, pci_reset_reques
         if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
             if mfrl_error and "Method not supported" in mfrl_error:
                 raise Exception(mfrl_error)
-            monitor_uptime(mfrl, DevDBDF, dtor_result)
+            monitor_uptime(dtor_result)
         elif mfrl_error:
             logger.debug("MFRL sync 1 worked although MFRL returned with error: {0}".format(mfrl_error))
 
@@ -2012,6 +2067,18 @@ def map2DevPath(device):
             return d
     raise RuntimeError(
         "Can not find path of the provided mst device: " + device)
+
+######################################################################
+# Description: in case mroq isn't supported, validating sync and method
+######################################################################
+
+
+def validate_args_for_unsupported_mroq(args):
+    if args.reset_sync is SyncOwner.FW:
+        raise RuntimeError("sync: {0} is not supported. Check query for more info".format(args.reset_sync))
+    if args.request_method is ResetReqMethod.HOT_RESET:
+        raise RuntimeError("method: {0} is not supported. Check query for more info".format(ResetReqMethod.HOT_RESET))
+
 
 ######################################################################
 # Description: provide host/nic reset flow
@@ -2159,14 +2226,21 @@ def reset_flow_host(device, args, command):
             print(mrsi.query_text(is_bluefield))
 
     elif command == "reset":
-        reset_level = mfrl.default_reset_level(
-        ) if args.reset_level is None else args.reset_level
+        if mroq.mroq_is_supported():
+            is_any_sync_supported = mroq.is_any_sync_supported(tool_owner_support)
+            skip_pci_reset = False
+        else:
+            is_any_sync_supported = None
+            skip_pci_reset = True
+        reset_level = mfrl.default_reset_level(is_any_sync_supported, skip_pci_reset) if args.reset_level is None else args.reset_level
 
         reset_sync = SyncOwner.TOOL
         if reset_level is CmdRegMfrl.PCI_RESET:
             if args.reset_sync is None:
                 reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch_device(devid), tool_owner_support)
             else:
+                if mroq.mroq_is_supported() is False:
+                    validate_args_for_unsupported_mroq(args)
                 if args.reset_sync == SyncOwner.FW and mst_driver_is_loaded is False:
                     raise RuntimeError("Sync 2 is only relevant when the MST driver is loaded (run 'mst start')")
                 try:
@@ -2186,10 +2260,10 @@ def reset_flow_host(device, args, command):
                         raise RuntimeError("Requested reset sync '{0}' is not supported".format(args.reset_sync))
 
         if reset_sync == SyncOwner.TOOL and command == "reset" and is_uefi_secureboot() \
-                and reset_level != CmdRegMfrl.WARM_REBOOT:                                 # The tool is using sysfs to access PCI config
+                and reset_level not in [CmdRegMfrl.WARM_REBOOT, CmdRegMfrl.IMMEDIATE_RESET]:                                 # The tool is using sysfs to access PCI config
             # and it's restricted on UEFI secure boot
             raise RuntimeError(
-                "The tool supports only reset-level 4 on UEFI Secure Boot")
+                "The tool supports only reset-level {0} or {1} on UEFI Secure Boot".format(CmdRegMfrl.WARM_REBOOT, CmdRegMfrl.IMMEDIATE_RESET))
         is_pcie_swtich = False
         if is_pcie_switch_device(devid):
             is_pcie_swtich = True
@@ -2252,14 +2326,16 @@ def reset_flow_host(device, args, command):
 
         if pci_reset_request_method is ResetReqMethod.LINK_DISABLE and reset_sync == SyncOwner.FW:
             raise RuntimeError("Sync 2 is not supported with method 0")
+        
+        if reset_level == CmdRegMfrl.PCI_RESET and mroq.mroq_is_supported() and not mroq.is_method_supported(pci_reset_request_method):
+            raise RuntimeError("Reset method {0} is not supported".format(pci_reset_request_method))
 
         hot_reset_enabled = False
         if reset_level is CmdRegMfrl.PCI_RESET and pci_reset_request_method is ResetReqMethod.HOT_RESET:
             hot_reset_enabled = True
 
         if is_pcie_switch_device(devid) and hot_reset_enabled:
-            AskUserPCIESwitchHotReset()
-
+            AskUserPCIESwitchHotReset(args.ignore_list)
         else:
             AskUser("Continue with reset", args.yes)
 
@@ -2452,6 +2528,12 @@ def main():
                                '-h',
                                help=':  show this help message and exit',
                                action="help")
+    
+    # hidden flag for skipping provided drivers
+    options_group.add_argument('--ignore_list',
+                               type=GpuDriverSafetyCheckManager.validate_ignore_list,
+                               help=argparse.SUPPRESS,
+                               default=[])
 
     # hidden flag for skipping mst restart when performing pci reset
     options_group.add_argument('--no_mst_restart',
@@ -2532,6 +2614,8 @@ if __name__ == '__main__':
         print("-I- %s." % str(e))
     except WarningException as e:
         print("-W- %s." % str(e))
+    except OperationTerminated as e:  # adding nothing to the print
+        print(e)
     except Exception as e:
         if os.environ.get("MFT_PYTHON_TRACEBACK"):
             import traceback

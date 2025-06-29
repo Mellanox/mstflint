@@ -233,6 +233,24 @@ static struct device_info g_devs_info[] = {
         DM_HCA                                                /* dev_type */
     },
     {
+        DeviceConnectX9,                                      /* dm_id */
+        0x224,                                                /* hw_dev_id */
+        -1,                                                   /* hw_rev_id */
+        4133,                                                 /* sw_dev_id */
+        "ConnectX9",                                          /* name */
+        4,                                                    /* port_num */
+        DM_HCA                                                /* dev_type */
+    },
+    {
+        DeviceConnectX8PurePcieSwitch,                        /* dm_id */
+        0x222,                                                /* hw_dev_id */
+        -1,                                                   /* hw_rev_id */
+        4132,                                                 /* sw_dev_id */
+        "CX8_PCIe_Switch",                                    /* name */
+        4,                                                    /* port_num */
+        DM_SWITCH                                             /* dev_type */
+    },
+    {
         DeviceBlueField,                                      /* dm_id */
         0x211,                                                /* hw_dev_id */
         -1,                                                   /* hw_rev_id */
@@ -1054,7 +1072,7 @@ int dm_dev_is_fs4(dm_dev_id_t type)
 
 int dm_dev_is_fs5(dm_dev_id_t type)
 {
-    return type == DeviceConnectX8 || type == DeviceQuantum3 || type == DeviceBlueField4;
+    return type == DeviceConnectX8 || type == DeviceConnectX8PurePcieSwitch || type == DeviceQuantum3 || type == DeviceBlueField4;
 }
 
 int dm_is_ib_access(mfile* mf)

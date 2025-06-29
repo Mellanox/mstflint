@@ -121,6 +121,12 @@ EXTERN_C_START
 #endif
 
 #define MAX_FLASH_FREQ 90 // MHz
+
+#define MAX_NUM_OF_CYCLES 15
+#define MIN_NUM_OF_CYCLES 1
+#define MAX_NUM_OF_CYCLES_FOR_MX25UXXX 3
+#define MIN_NUM_OF_CYCLES_FOR_MX25UXXX 0
+
 typedef struct gpio_toggle_conf_cx6
 {
     u_int32_t lock_addr;
@@ -246,6 +252,7 @@ int mf_get_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* p
 
 int mf_set_dummy_cycles(mflash* mfl, u_int8_t num_of_cycles);
 int mf_get_dummy_cycles(mflash* mfl, u_int8_t* num_of_cycles);
+int is_macronix_special_case_for_dummy_cycles(mflash* mfl);
 
 //
 // Set/Get for some options.

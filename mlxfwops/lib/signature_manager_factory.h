@@ -73,6 +73,18 @@ public:
         {
             return new ConnectX8FwOperationsSignatureManager();
         }
+        else if (deviceId == DeviceConnectX9)
+        {
+            return new ConnectX9FwOperationsSignatureManager();
+        }
+        else if (deviceId == DeviceConnectX8PurePcieSwitch)
+        {
+            return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
+        }
+        else if (deviceId == DeviceConnectX8PurePcieSwitch)
+        {
+            return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
+        }
         else if (deviceId == DeviceBlueField2)
         {
             return new Bluefield2FwOperationsSignatureManager();

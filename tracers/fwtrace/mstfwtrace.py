@@ -268,6 +268,24 @@ DEV_INFO_DB = [
         # list of (trace type name, start_bit)
         "mask_classes": [("class1", 0), ("class2", 1)],
     },
+    {
+        "name": "ConnectX8",
+        "dev_id": [0x21e],
+        "chip_rev": -1,
+        "maskable": True,
+        "mask_addr": None,
+        # list of (trace type name, start_bit)
+        "mask_classes": list(HCA_MASK_CLASSES),
+    },
+    {
+        "name": "ConnectX9",
+        "dev_id": [0x224],
+        "chip_rev": -1,
+        "maskable": True,
+        "mask_addr": None,
+        # list of (trace type name, start_bit)
+        "mask_classes": list(HCA_MASK_CLASSES),
+    },
 ]
 MST_DEVICE = None
 CMDIFDEV = None

@@ -205,6 +205,7 @@ typedef enum MError {
     ME_ICMD_ICM_NOT_AVAIL,
     ME_ICMD_WRITE_PROTECT,
     ME_ICMD_SIZE_EXCEEDS_LIMIT,
+    ME_ICMD_UNABLE_TO_TAKE_SEMAOHORE,
 
     /* errors regarding Tools CMDIF */
     ME_CMDIF_BUSY = 0x300,
@@ -269,7 +270,8 @@ typedef enum MType_t {
     MST_DRIVER_CR   = 0x80000,
     MST_LINKX_CHIP  = 0x100000,
     MST_BAR0_GW_PCI = 0x200000,
-    MST_NVML  = 0x400000,
+    MST_NVML        = 0x400000,
+    MST_VFIO_DEVICE = 0x800000,
     MST_DEFAULT     = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER & ~MST_LINKX_CHIP
 } MType;
 

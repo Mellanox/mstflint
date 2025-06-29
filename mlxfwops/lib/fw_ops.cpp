@@ -1336,7 +1336,9 @@ bool FwOperations::writeImageEx(ProgressCallBackEx progressFuncEx,
         // Report
         if (progressFunc != NULL || progressFuncEx != NULL)
         {
-            u_int32_t curr_percent = ((cnt - towrite + alreadyWrittenSz) * 100) / totalSz;
+            double written = cnt - towrite + alreadyWrittenSz;
+            double curr_percent_double = (written / totalSz) * 100;
+            u_int32_t curr_percent = (u_int32_t)curr_percent_double;
             if (last_percent != curr_percent)
             {
                 last_percent = curr_percent;
@@ -1498,6 +1500,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"ConnectX-6LX", CX6LX_HW_ID, CT_CONNECTX6LX, CFT_HCA, 0, {4127, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-7", CX7_HW_ID, CT_CONNECTX7, CFT_HCA, 0, {4129, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-8", CX8_HW_ID, CT_CONNECTX8, CFT_HCA, 0, {4131, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"ConnectX-8 Pure PCIe Switch", CX8_PURE_PCIE_SWITCH_HW_ID, CT_CONNECTX8_PURE_PCIE_SWITCH, CFT_SWITCH, 0, {6525, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-9", CX9_HW_ID, CT_CONNECTX9, CFT_HCA, 0, {4133, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField", BF_HW_ID, CT_BLUEFIELD, CFT_HCA, 0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField2", BF2_HW_ID, CT_BLUEFIELD2, CFT_HCA, 0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1531,6 +1534,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
   {"ConnectX-6LX", CX6LX_HW_ID, 0x00},
   {"ConnectX-7", CX7_HW_ID, 0x00},
   {"ConnectX-8", CX8_HW_ID, 0x00},
+  {"ConnectX-8 Pure PCIe Switch", CX8_PURE_PCIE_SWITCH_HW_ID, 0x00},
   {"ConnectX-9", CX9_HW_ID, 0x00},
   {"BlueField", BF_HW_ID, 0x00},
   {"BlueField2", BF2_HW_ID, 0x00},
@@ -2190,7 +2194,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
              (chipType == CT_SPECTRUM3) || (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) ||
              (chipType == CT_QUANTUM3) || (chipType == CT_SPECTRUM4) || (chipType == CT_BLUEFIELD) ||
              (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3) || (chipType == CT_CONNECTX8) ||
-             (chipType == CT_BLUEFIELD4);
+             (chipType == CT_CONNECTX8_PURE_PCIE_SWITCH) || (chipType == CT_BLUEFIELD4);
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN)
     {
@@ -2616,8 +2620,8 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
     {
         return FS_FS4_GEN;
     }
-    else if ((hwDevId == QUANTUM3_HW_ID) || (hwDevId == CX8_HW_ID) || (hwDevId == BF4_HW_ID) ||
-             (hwDevId == ARCUSE_HW_ID) || (hwDevId == CX9_HW_ID))
+    else if ((hwDevId == QUANTUM3_HW_ID) || (hwDevId == CX8_HW_ID) || (hwDevId == CX8_PURE_PCIE_SWITCH_HW_ID) ||
+             (hwDevId == BF4_HW_ID) || (hwDevId == ARCUSE_HW_ID) || (hwDevId == CX9_HW_ID))
     {
         return FS_FS5_GEN;
     }
@@ -2998,6 +3002,8 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
             bitLen = 2;
             break;
         case CT_CONNECTX8:
+        case CT_CONNECTX9:
+        case CT_CONNECTX8_PURE_PCIE_SWITCH:
         case CT_QUANTUM3:
         case CT_ARCUSE:
             lifeCycleAddress = 0xf0000;
@@ -3133,4 +3139,9 @@ u_int32_t CRSpaceRegisters::getRegister(u_int32_t address)
     }
 
     return crSpaceReg;
+}
+
+bool FwOperations::getBFBComponentsVersions(std::map<std::string, std::string>& name_to_version, bool pending)
+{
+    return errmsg("getBFBComponentsVersions is not supported");
 }

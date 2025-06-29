@@ -81,7 +81,7 @@ CmdLineParams::CmdLineParams()
     no_extract_list = false;
     numberOfRetrials = 5;
     component_type = "";
-
+    skip_if_same = false;
 #ifdef __WIN__
     char execName[1024];
     char certificatPath[1024];

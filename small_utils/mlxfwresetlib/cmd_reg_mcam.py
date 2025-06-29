@@ -65,7 +65,7 @@ class CmdRegMcam():
             pci_rescan_required_sup = 0
         else:
             # bit 45 is bit 13 in 2nd DWORD.
-            # due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order
+            # due to FW bug in NICs only, MCAM mng_feature_cap_mask dwords are set in reversed order
             # so we actually access the 3rd DWORD (index 2)
             pci_rescan_required_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3 - 1], 13, 1)
         return True if pci_rescan_required_sup == 1 else False
@@ -80,7 +80,7 @@ class CmdRegMcam():
             pci_sync_for_fw_update_sup = 0
         else:
             # bit 19 in 1st DWORD.
-            # due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order
+            # due to FW bug in NICs only, MCAM mng_feature_cap_mask dwords are set in reversed order
             # so we actually access the 4th DWORD (index 3)
             pci_sync_for_fw_update_sup = extractField(mcam_get_result["mng_feature_cap_mask"][3 - 0], 19, 1)
         return True if pci_sync_for_fw_update_sup == 1 else False
@@ -96,7 +96,7 @@ class CmdRegMcam():
             mrsi_sup = 0
         else:
             # bit 42 is bit 10 in 2nd DWORD.
-            # due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order
+            # due to FW bug, MCAM mng_access_reg_cap_mask  dwords are set in reversed order
             # so we actually access the 3rd DWORD (index 2)
             mrsi_sup = extractField(mcam_get_result["mng_access_reg_cap_mask"][3 - 1], 10, 1)
         return True if mrsi_sup == 1 else False
@@ -112,7 +112,7 @@ class CmdRegMcam():
             mroq_sup = 0
         else:
             # bit 47 is bit 14 in 2nd DWORD.
-            # due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order
+            # due to FW bug, MCAM mng_access_reg_cap_mask  dwords are set in reversed order
             # so we actually access the 3rd DWORD (index 2)
             mroq_sup = extractField(mcam_get_result["mng_access_reg_cap_mask"][3 - 1], 15, 1)
         return True if mroq_sup == 1 else False

@@ -41,6 +41,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _labelPort = _localPort;
     _splitPort = 0;
     _secondSplit = 0;
+    _isFnmPort = false;
     _numOfLanes = 0;
     _maxLanes = MAX_NETWORK_LANES;
     _csvFileName = "";
@@ -56,6 +57,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _devID = 0;
     _moduleIndex = 0;
     _slotIndex = 0;
+    _pllGroup = 0;
 
     _isPortIB = false;
     _isPortETH = false;
@@ -202,6 +204,7 @@ void MlxlinkAmBerCollector::startCollector()
         _labelPort = it->labelPort;
         _splitPort = it->split;
         _secondSplit = it->secondSplit;
+        _isFnmPort = it->isFnm;
 
         init();
         collect();
@@ -217,6 +220,14 @@ void MlxlinkAmBerCollector::init()
     try
     {
         _isPortPCIE = (_pnat == PNAT_PCIE);
+
+        resetLocalParser(ACCESS_REG_PMDR);
+        updateField("local_port", _localPort);
+        sendRegister(ACCESS_REG_PMDR, MACCESS_REG_METHOD_GET);
+
+        _isMCMSysValid = getFieldValue("mcm_tile_valid");
+        _isGBSysValid = getFieldValue("gb_valid");
+        _pllGroup = getFieldValue("pll_index");
 
         if (!_isPortPCIE) {
             resetLocalParser(ACCESS_REG_PDDR);
@@ -434,7 +445,8 @@ vector < AmberField > MlxlinkAmBerCollector::getIndexesInfo()
         ((_devID == DeviceQuantum2) || (_devID == DeviceQuantum3))) {
         labelPortStr += "/" + to_string(_secondSplit);
     }
-    fields.push_back(AmberField("Port_Number", labelPortStr + "(" + to_string(_localPort) + ")", !_isPortPCIE));
+    fields.push_back(AmberField(
+      "Port_Number", labelPortStr + "(" + to_string(_localPort) + ")" + (_isFnmPort ? "(FNM)" : ""), !_isPortPCIE));
     fields.push_back(AmberField("depth", to_string(_depth), _isPortPCIE));
     fields.push_back(AmberField("pcie_index", to_string(_pcieIndex), _isPortPCIE));
     fields.push_back(AmberField("node", to_string(_node), _isPortPCIE));
@@ -502,6 +514,44 @@ vector < AmberField > MlxlinkAmBerCollector::getSystemInfo()
         string sensNameTemp = "N/A";
         string temp = "N/A";
         string numPlanes = "N/A";
+        string tileNum = "N/A";
+        string slotIndex = "N/A";
+        string retimerValid = "N/A";
+        string retimerDpNum = "N/A";
+        string retimerDieNum = "N/A";
+        u_int32_t tileNumInt = 0;
+
+        if (!_isPortPCIE)
+        {
+            resetLocalParser(ACCESS_REG_PMDR);
+            updateField("local_port", _localPort);
+            sendRegister(ACCESS_REG_PMDR, MACCESS_REG_METHOD_GET);
+            if (_isMCMSysValid)
+            {
+                tileNumInt = getFieldValue("mcm_tile_num");
+                tileNum = to_string(tileNumInt);
+            }
+            slotIndex = getFieldStr("slot_index");
+
+            fields.push_back(AmberField("MCM_system", to_string(_isMCMSysValid)));
+            fields.push_back(AmberField("Tile_Num", tileNum));
+            fields.push_back(AmberField("slot_index", slotIndex));
+            fields.push_back(AmberField("Module_Lanes_Used", getBitmaskPerLaneStr(getFieldValue("module_lane_mask"))));
+            fields.push_back(AmberField("PLL_Index", to_string(_pllGroup)));
+
+            if (_productTechnology == PRODUCT_5NM && _isPortIB)
+            {
+                retimerValid = getFieldStr("gb_valid");
+                retimerDpNum = getFieldStr("gb_dp_num");
+                if (retimerValid != "0")
+                {
+                    retimerDieNum = getFieldStr("gearbox_die_num");
+                }
+            }
+            fields.push_back(AmberField("Retimer_valid", retimerValid));
+            fields.push_back(AmberField("Retimer_dp_num", retimerDpNum));
+            fields.push_back(AmberField("Retimer_die_num", retimerDieNum));
+        }
 
         fields.push_back(AmberField("Device_Description", _mstDevName.c_str()));
 
@@ -677,6 +727,11 @@ vector < AmberField > MlxlinkAmBerCollector::getPhyOperationInfo()
             fields.push_back(
                 AmberField("device_status",
                            getStrByMask(getFieldValue("device_status"), _mlxlinkMaps->_pcieDevStatus)));
+        }
+        else
+        {
+            fields.push_back(
+              AmberField("profile_fec_in_use", _mlxlinkMaps->_proFileFecInUse[getFieldValue("profile_fec_in_use")]));
         }
     }
     catch(const std::exception& exc)
@@ -1979,26 +2034,24 @@ void MlxlinkAmBerCollector::getModuleLinkUpInfoPage(vector<AmberField>& fields)
 {
     string timeLogicalInitToActive = "N/A";
 
-    // This is A workaround until we update GPUNet PRM and those fields will be external.
-    if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
-    {
-        timeLogicalInitToActive = getFieldStr("time_logical_init_to_active");
-        fields.push_back(AmberField("up_reason_pwr", _mlxlinkMaps->_upReasonPwr[getFieldValue("up_reason_pwr")]));
-        fields.push_back(AmberField("up_reason_drv", _mlxlinkMaps->_upReasonDrv[getFieldValue("up_reason_drv")]));
-        fields.push_back(AmberField("up_reason_mng", _mlxlinkMaps->_upReasonMng[getFieldValue("up_reason_mng")]));
-        fields.push_back(AmberField("time_to_link_up_msec", getFieldStr("time_to_link_up")));
-        fields.push_back(AmberField("fast_link_up_status", _mlxlinkMaps->_fastLinkUpStatus[getFieldValue("fast_link_up_"
-                                                                                                         "status")]));
-        fields.push_back(
-          AmberField("time_to_link_up_phy_up_to_active", getFieldStr("time_to_link_up_phy_up_to_active") + "msec"));
-        fields.push_back(
-          AmberField("time_to_link_up_sd_to_phy_up", getFieldStr("time_to_link_up_sd_to_phy_up") + "msec"));
-        fields.push_back(AmberField("time_to_link_up_disable_to_sd", getFieldStr("time_to_link_up_disable_to_sd") +
-                                                                       "mse"
-                                                                       "c"));
-        fields.push_back(
-          AmberField("time_to_link_up_disable_to_pd", getFieldStr("time_to_link_up_disable_to_pd") + "msec"));
-    }
+    timeLogicalInitToActive = getFieldStr("time_logical_init_to_active");
+    fields.push_back(AmberField("up_reason_pwr", _mlxlinkMaps->_upReasonPwr[getFieldValue("up_reason_pwr")]));
+    fields.push_back(AmberField("up_reason_drv", _mlxlinkMaps->_upReasonDrv[getFieldValue("up_reason_drv")]));
+    fields.push_back(AmberField("up_reason_mng", _mlxlinkMaps->_upReasonMng[getFieldValue("up_reason_mng")]));
+    fields.push_back(AmberField("time_to_link_up_msec", getFieldStr("time_to_link_up")));
+    fields.push_back(AmberField("fast_link_up_status", _mlxlinkMaps->_fastLinkUpStatus[getFieldValue("fast_link_up_"
+                                                                                                        "status")]));
+    fields.push_back(
+        AmberField("time_to_link_up_phy_up_to_active", getFieldStr("time_to_link_up_phy_up_to_active") + "msec"));
+    fields.push_back(
+        AmberField("time_to_link_up_sd_to_phy_up", getFieldStr("time_to_link_up_sd_to_phy_up") + "msec"));
+    fields.push_back(AmberField("time_to_link_up_disable_to_sd", getFieldStr("time_to_link_up_disable_to_sd") +
+                                                                    "mse"
+                                                                    "c"));
+    fields.push_back(
+        AmberField("time_to_link_up_disable_to_pd", getFieldStr("time_to_link_up_disable_to_pd") + "msec"));
+    fields.push_back(AmberField("time_of_module_conf_done_up", getFieldStr("time_of_module_conf_done_up")));
+    fields.push_back(AmberField("time_of_module_conf_done_down", getFieldStr("time_of_module_conf_done_down")));
     fields.push_back(AmberField("time_logical_init_to_active", timeLogicalInitToActive));
 }
 
@@ -2025,6 +2078,11 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkUpInfo()
     return fields;
 }
 
+string calculateBer(string berCoef, string berMagnitude)
+{
+    return (berCoef + "E-" + berMagnitude);
+}
+
 vector < AmberField > MlxlinkAmBerCollector::getLinkDownInfo()
 {
     vector < AmberField > fields;
@@ -2045,6 +2103,35 @@ vector < AmberField > MlxlinkAmBerCollector::getLinkDownInfo()
                                                                                                   "opcode")]));
             fields.push_back(AmberField("e2e_reason_opcode", getFieldStr("e2e_reason_opcode")));
             receivedTs1Opcode = to_string(getLocalFieldValue("received_ts1_opcode"));
+            fields.push_back(AmberField("time_to_link_down_to_disable",
+                                        to_string(getLocalFieldValue("time_to_link_down_to_disable"))));
+            fields.push_back(AmberField("time_to_link_down_to_rx_loss",
+                                        to_string(getLocalFieldValue("time_to_link_down_to_rx_loss"))));
+            fields.push_back(
+              AmberField("num_of_raw_ber_alarms", to_string(getLocalFieldValue("num_of_raw_ber_alarms"))));
+            fields.push_back(
+              AmberField("num_of_symbol_ber_alarms", to_string(getLocalFieldValue("num_of_symbol_ber_alarms"))));
+            fields.push_back(
+              AmberField("num_of_eff_ber_alarms", to_string(getLocalFieldValue("num_of_eff_ber_alarms"))));
+
+            fields.push_back(AmberField(
+              "last_raw_ber", calculateBer(getFieldStr("last_raw_ber_coef"), getFieldStr("last_raw_ber_magnitude"))));
+            fields.push_back(AmberField(
+              "last_eff_ber", calculateBer(getFieldStr("last_eff_ber_coef"), getFieldStr("last_eff_ber_magnitude"))));
+            fields.push_back(AmberField("last_symbol_ber", calculateBer(getFieldStr("last_symbol_ber_coef"),
+                                                                        getFieldStr("last_symbol_ber_magnitude"))));
+            fields.push_back(AmberField(
+              "max_raw_ber", calculateBer(getFieldStr("max_raw_ber_coef"), getFieldStr("max_raw_ber_magnitude"))));
+            fields.push_back(AmberField("max_effective_ber", calculateBer(getFieldStr("max_eff_ber_coef"),
+                                                                          getFieldStr("max_eff_ber_magnitude"))));
+            fields.push_back(AmberField("max_symbol_ber", calculateBer(getFieldStr("max_symbol_ber_coef"),
+                                                                       getFieldStr("max_symbol_ber_magnitude"))));
+            fields.push_back(AmberField(
+              "min_raw_ber", calculateBer(getFieldStr("min_raw_ber_coef"), getFieldStr("min_raw_ber_magnitude"))));
+            fields.push_back(AmberField("min_effective_ber", calculateBer(getFieldStr("min_eff_ber_coef"),
+                                                                          getFieldStr("min_eff_ber_magnitude"))));
+            fields.push_back(AmberField("min_symbol_ber", calculateBer(getFieldStr("min_symbol_ber_coef"),
+                                                                       getFieldStr("min_symbol_ber_magnitude"))));
         }
         fields.push_back(AmberField("received_ts1_opcode", receivedTs1Opcode, _isPortIB));
     }
@@ -2286,8 +2373,30 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
 
     try
     {
-        string operRecoveryStr = "N/A";
-        if (!_isPortPCIE && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+        string operRecoveryStr = "N/A", successfulRecoveryEvents = "N/A";
+        string unintentionalLinkDownEvents = "N/A";
+        string intentionalLinkDownEvents = "N/A";
+        string timeInLastHostLogicalRecovery = "N/A";
+        string timeInLastHostSerdesFeqRecovery = "N/A";
+        string timeInLastModuleTxDisableRecovery = "N/A";
+        string timeInLastModuleDatapathFullToggleRecovery = "N/A";
+        string totalTimeInHostLogicalRecovery = "N/A";
+        string totalTimeInHostSerdesFeqRecovery = "N/A";
+        string totalTimeInModuleDatapathFullToggleRecovery = "N/A";
+        string hostLogicalRecoveryCount = "N/A";
+        string hostSerdesFeqRecoveryCount = "N/A";
+        string moduleTxDisableRecoveryCount = "N/A";
+        string moduleDatapathFullToggleRecoveryCount = "N/A";
+        string hostLogicalSuccesfulRecoveryCount = "N/A";
+        string hostSerdesFeqSuccesfulRecoveryCount = "N/A";
+        string moduleTxDisableSuccesfulRecoveryCount = "N/A";
+        string moduleDatapathFullToggleSuccesfulRecoveryCount = "N/A";
+        string timeSinceLastRecovery = "N/A";
+        string lastHostLogicalRecoveryAttemptsCount = "N/A";
+        string lastHostSerdesFeqAttemptsCount = "N/A";
+        string timeBetweenLast2Recoveries = "N/A";
+
+        if (!_isPortPCIE)
         {
             resetLocalParser(ACCESS_REG_PPRM);
             updateField("local_port", _localPort);
@@ -2295,12 +2404,85 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
             sendRegister(ACCESS_REG_PPRM, MACCESS_REG_METHOD_GET);
 
             operRecoveryStr = _mlxlinkMaps->_pprmOperRecovery[getFieldValue("oper_recovery")];
+
+            resetLocalParser(ACCESS_REG_PPCNT);
+            updateField("local_port", _localPort);
+            updateField("grp", PPCNT_PHYSICAL_LAYER_RECOVERY_COUNTERS);
+            updateField("lp_gl", (u_int32_t)(_localPort == 255));
+            sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
+
+            try
+            {
+                successfulRecoveryEvents = to_string(getLocalFieldValue("total_successful_recovery_events"));
+            }
+            catch (const std::exception& exc)
+            {
+                successfulRecoveryEvents = to_string(getLocalFieldValue("successful_recovery_events"));
+            }
+
+            unintentionalLinkDownEvents = to_string(getLocalFieldValue("unintentional_link_down_events"));
+            intentionalLinkDownEvents = to_string(getLocalFieldValue("intentional_link_down_events"));
+            timeInLastHostLogicalRecovery = to_string(getLocalFieldValue("time_in_last_host_logical_recovery"));
+            timeInLastHostSerdesFeqRecovery = to_string(getLocalFieldValue("time_in_last_host_serdes_feq_recovery"));
+            timeInLastModuleTxDisableRecovery =
+              to_string(getLocalFieldValue("time_in_last_module_tx_disable_recovery"));
+            timeInLastModuleDatapathFullToggleRecovery =
+              to_string(getLocalFieldValue("time_in_last_module_datapath_full_toggle_recovery"));
+            totalTimeInHostLogicalRecovery = to_string(getLocalFieldValue("total_time_in_host_logical_recovery"));
+            totalTimeInHostSerdesFeqRecovery = to_string(getLocalFieldValue("total_time_in_host_serdes_feq_recovery"));
+            totalTimeInModuleDatapathFullToggleRecovery =
+              to_string(getLocalFieldValue("total_time_in_module_datapath_full_toggle_recovery"));
+            hostLogicalRecoveryCount = to_string(getLocalFieldValue("host_logical_recovery_count"));
+            hostSerdesFeqRecoveryCount = to_string(getLocalFieldValue("host_serdes_feq_recovery_count"));
+            moduleTxDisableRecoveryCount = to_string(getLocalFieldValue("module_tx_disable_recovery_count"));
+            moduleDatapathFullToggleRecoveryCount =
+              to_string(getLocalFieldValue("module_datapath_full_toggle_recovery_count"));
+            hostLogicalSuccesfulRecoveryCount = to_string(getLocalFieldValue("host_logical_succesful_recovery_count"));
+            hostSerdesFeqSuccesfulRecoveryCount =
+              to_string(getLocalFieldValue("host_serdes_feq_succesful_recovery_count"));
+            moduleTxDisableSuccesfulRecoveryCount =
+              to_string(getLocalFieldValue("module_tx_disable_succesful_recovery_count"));
+            moduleDatapathFullToggleSuccesfulRecoveryCount =
+              to_string(getLocalFieldValue("module_datapath_full_toggle_succesful_recovery_count"));
+            timeSinceLastRecovery = to_string(getLocalFieldValue("time_since_last_recovery"));
+            lastHostLogicalRecoveryAttemptsCount =
+              to_string(getLocalFieldValue("last_host_logical_recovery_attempts_count"));
+            lastHostSerdesFeqAttemptsCount = to_string(getLocalFieldValue("last_host_serdes_feq_attempts_count"));
+            timeBetweenLast2Recoveries = to_string(getLocalFieldValue("time_between_last_2_recoveries"));
         }
         fields.push_back(AmberField("operational_recovery", operRecoveryStr));
+        fields.push_back(AmberField("total_successful_recovery_events", successfulRecoveryEvents));
+        fields.push_back(AmberField("successful_recovery_events_cnt", successfulRecoveryEvents));
+        fields.push_back(AmberField("unintentional_link_down_events", unintentionalLinkDownEvents));
+        fields.push_back(AmberField("intentional_link_down_events", intentionalLinkDownEvents));
+        fields.push_back(AmberField("time_in_last_host_logical_recovery", timeInLastHostLogicalRecovery));
+        fields.push_back(AmberField("time_in_last_host_serdes_feq_recovery", timeInLastHostSerdesFeqRecovery));
+        fields.push_back(AmberField("time_in_last_module_tx_disable_recovery", timeInLastModuleTxDisableRecovery));
+        fields.push_back(
+          AmberField("time_in_last_module_datapath_full_toggle_recovery", timeInLastModuleDatapathFullToggleRecovery));
+        fields.push_back(AmberField("total_time_in_host_logical_recovery", totalTimeInHostLogicalRecovery));
+        fields.push_back(AmberField("total_time_in_host_serdes_feq_recovery", totalTimeInHostSerdesFeqRecovery));
+        fields.push_back(AmberField("total_time_in_module_datapath_full_toggle_recovery",
+                                    totalTimeInModuleDatapathFullToggleRecovery));
+        fields.push_back(AmberField("host_logical_recovery_count", hostLogicalRecoveryCount));
+        fields.push_back(AmberField("host_serdes_feq_recovery_count", hostSerdesFeqRecoveryCount));
+        fields.push_back(AmberField("module_tx_disable_recovery_count", moduleTxDisableRecoveryCount));
+        fields.push_back(
+          AmberField("module_datapath_full_toggle_recovery_count", moduleDatapathFullToggleRecoveryCount));
+        fields.push_back(AmberField("host_logical_succesful_recovery_count", hostLogicalSuccesfulRecoveryCount));
+        fields.push_back(AmberField("host_serdes_feq_succesful_recovery_count", hostSerdesFeqSuccesfulRecoveryCount));
+        fields.push_back(
+          AmberField("module_tx_disable_succesful_recovery_count", moduleTxDisableSuccesfulRecoveryCount));
+        fields.push_back(AmberField("module_datapath_full_toggle_succesful_recovery_count",
+                                    moduleDatapathFullToggleSuccesfulRecoveryCount));
+        fields.push_back(AmberField("time_since_last_recovery", timeSinceLastRecovery));
+        fields.push_back(AmberField("last_host_logical_recovery_attempts_count", lastHostLogicalRecoveryAttemptsCount));
+        fields.push_back(AmberField("last_host_serdes_feq_attempts_count", lastHostSerdesFeqAttemptsCount));
+        fields.push_back(AmberField("time_between_last_2_recoveries", timeBetweenLast2Recoveries));
     }
     catch (const std::exception& exc)
     {
-        throw MlxRegException("Failed to get Extended Module information: %s", exc.what());
+        throw MlxRegException("Failed to get Recovery Counters information: %s", exc.what());
     }
 
     return fields;

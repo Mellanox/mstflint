@@ -1992,7 +1992,7 @@ bool BinaryCompareSubCommand::ReadFwOpsImageData(vector<u_int8_t>& deviceBuff, v
         return false;
     }
 
-    if (!_imgOps->FwExtract4MBImage(imgBuff, false, (_flintParams.silent == false)))
+    if (!_imgOps->FwExtract4MBImage(imgBuff, false, (_flintParams.silent == false), false, true))
     {
         reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
         return false;
@@ -2684,6 +2684,13 @@ bool BurnSubCommand::checkFwVersion(bool CreateFromImgInfo, u_int16_t fw_ver0, u
             printf("\n    Note: The new FW version is %s the current FW"
                    " version on flash.\n",
                    current == new_version ? "the same as" : "older than");
+
+            if (current == new_version && _flintParams.skip_if_same)
+            {
+                printf("\n    Skipping burn because firmware versions match and --skip_if_same flag is set.\n");
+                return false;
+            }
+
             if (!askUser())
             {
                 return false;
@@ -4747,6 +4754,12 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         }
 
         printf("Independent Module:    %s\n", independent_module_str.c_str());
+    }
+
+    if (fwInfo.fs3_info.pci_switch_only_mode_valid)
+    {
+        std::string switch_mode_only = fwInfo.fs3_info.pci_switch_only_mode ? "Enabled" : "Disabled";
+        printf("PCIe switch mode only: %s\n", switch_mode_only.c_str());
     }
 
     return FLINT_SUCCESS;
@@ -8463,3 +8476,114 @@ FlintStatus ExportPublicSubCommand::executeCommand()
     return FLINT_SUCCESS;
 }
 #endif
+
+
+/***********************
+ * Class: QueryBfbComponentsSubCommand
+ ***********************/
+QueryBfbComponentsSubCommand::QueryBfbComponentsSubCommand()
+{
+    _name = "query_bfb_components";
+    _desc = "Query BFB components version";
+    _extendedDesc = "Query and display information about BFB components in the device";
+    _flagLong = "query_bfb_components";
+    _flagShort = "qbfb";
+    _param = "";
+    _paramExp = "";
+    _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " query_bfb_components";
+    _v = Wtv_Dev;
+    _maxCmdParamNum = 0;
+    _cmdType = SC_Query_Bfb_Components;
+    _mccSupported = true;
+    _pending = false;
+};
+
+QueryBfbComponentsSubCommand::~QueryBfbComponentsSubCommand() {}
+
+FlintStatus QueryBfbComponentsSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED)
+    {
+        return FLINT_FAILED;
+    }
+
+    if (!_fwOps->getBFBComponentsVersions(_name_to_version, _pending))
+    {
+        return FLINT_FAILED;
+    }
+
+    printComponents();
+    return FLINT_SUCCESS;
+}
+
+bool QueryBfbComponentsSubCommand::verifyParams()
+{
+    _pending = _flintParams.pending;
+
+    if (!_flintParams.device_specified)
+    {
+        reportErr(true, FLINT_NO_DEVICE_ERROR);
+        return false;
+    }
+
+    if (!_flintParams.cmd_params.empty())
+    {
+        reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 0, (int)_flintParams.cmd_params.size());
+        return false;
+    }
+
+    return isDeviceSupported();
+}
+
+bool QueryBfbComponentsSubCommand::isDeviceSupported()
+{
+    mfile* mf = mopen(_flintParams.device.c_str());
+    if (!mf)
+    {
+        reportErr(true, "Failed to open device: %s\n", _flintParams.device.c_str());
+        return false;
+    }
+
+    dm_dev_id_t devid_type = DeviceUnknown;
+    u_int32_t devid = 0, revid = 0;
+    int rc = dm_get_device_id(mf, &devid_type, &devid, &revid);
+    mclose(mf);
+
+    if (rc != 0)
+    {
+        reportErr(true, "Can't get device ID.\n");
+        return false;
+    }
+
+    if (devid_type != DeviceBlueField3)
+    {
+        reportErr(true, "query_bfb_components sub-command is supported for BlueField3 only. Device provided: %s\n",
+                  dm_dev_type2str(devid_type));
+        return false;
+    }
+
+    return true;
+}
+
+void QueryBfbComponentsSubCommand::printComponents()
+{
+    printf("{\n\n");
+    printf(
+      "    \"//\": \"This JSON represents a Redfish Software Inventory collection containing multiple software components.\",\n\n");
+    printf("    \"Name\": \"BFB File Content\",\n\n");
+    printf("    \"Members\": [\n");
+
+    size_t id = 1;
+    for (const auto& name_version_pair : _name_to_version)
+    {
+        printf("        {\n");
+        printf("            \"Id\": \"%zu\",\n", id++);
+        printf("            \"Name\": \"%s\",\n", name_version_pair.first.c_str());
+        printf("            \"Version\": \"%s\",\n", name_version_pair.second.c_str());
+        printf("        }%s\n", (id <= _name_to_version.size()) ? "," : "");
+    }
+
+    printf("    ],\n\n");
+    printf("    \"Members@odata.count\": %zu\n", _name_to_version.size());
+    printf("}\n");
+}

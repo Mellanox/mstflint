@@ -238,21 +238,25 @@ int print_rdma_bond_dev(char* net_dev_secondary, char* net_dev_primary)
 }
 void print_pci_info(dev_info* dev, int domain_needed)
 {
+    char dbdf[16384] = {0};
     char fmt[16384] = {0};
 
     /* Add PCI info */
     if (domain_needed) {
-        sprintf(fmt, "%04x:%02x:%02x.%x", dev->pci.domain, dev->pci.bus, dev->pci.dev, dev->pci.func);
-        printf("%-16s", fmt);
+        sprintf(dbdf, "%04x:%02x:%02x.%x", dev->pci.domain, dev->pci.bus, dev->pci.dev, dev->pci.func);
+        printf("%-16s", dbdf);
     } else {
-        sprintf(fmt, "%02x:%02x.%x", dev->pci.bus, dev->pci.dev, dev->pci.func);
-        printf("%-10s", fmt);
+        sprintf(dbdf, "%02x:%02x.%x", dev->pci.bus, dev->pci.dev, dev->pci.func);
+        printf("%-10s", dbdf);
     }
 
     int hasIB = fmt_ib_dev(dev, fmt);
 
     if (hasIB) {
         printf("%-16s", fmt);
+    }
+    else {
+        printf("%-16s", " ");
     }
 
     /* Add NET devices info */
@@ -283,6 +287,8 @@ void print_pci_info(dev_info* dev, int domain_needed)
 
     /* Add NUMA node */
     printf("%-6s", dev->pci.numa_node);
+
+    printf("vfio-%-6s", dbdf);
 
     printf("\n");
 }
@@ -385,16 +391,16 @@ int main(int argc, char** argv)
         if (verbose) {
             if (domain_needed) {
                 if (ul_mode) {
-                    printf("%-24s%-9s%-16s%-16s%-40s%-6s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA");
+                    printf("%-24s%-9s%-16s%-16s%-40s%-6s%-16s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA", "VFIO");
                 } else {
-                    printf("%-24s%-30s%-16s%-16s%-40s%-6s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA");
+                    printf("%-24s%-30s%-16s%-16s%-40s%-6s%-16s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA", "VFIO");
                 }
                 /* printf("%-30s%-16s%-16s%-8s%-20s\n", "---", "-----------", "---", "----", "---"); */
             } else {
                 if (ul_mode) {
-                    printf("%-24s%-9s%-10s%-16s%-40s%-6s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA");
+                    printf("%-24s%-9s%-10s%-16s%-40s%-6s%-16s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA", "VFIO");
                 } else {
-                    printf("%-24s%-30s%-10s%-16s%-40s%-6s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA");
+                    printf("%-24s%-30s%-10s%-16s%-40s%-6s%-16s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA", "VFIO");
                 }
                 /* printf("%-30s%-16s%-10s%-8s%-20s\n", "---", "-----------", "---", "----", "---"); */
             }

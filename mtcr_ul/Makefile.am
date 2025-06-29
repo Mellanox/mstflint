@@ -52,11 +52,15 @@ if ENABLE_INBAND
 libmtcr_ul_la_SOURCES += mtcr_ib_ofed.c
 endif
 
+libmtcr_ul_la_DEPENDENCIES = $(top_builddir)/vfio_driver_access/libvfio_access_driver.la
+libmtcr_ul_la_LDFLAGS = -lstdc++
+
 if ENABLE_NVML
-libmtcr_ul_la_DEPENDENCIES =  $(top_builddir)/$(NVML_DIR)/libnvml_device.la
-libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)
-libmtcr_ul_la_LDFLAGS = -static -lstdc++
+libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/$(NVML_DIR)/libnvml_device.la
+libmtcr_ul_la_LDFLAGS += -static
 endif
+
+libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)
 
 
 libraryincludedir=$(includedir)/mstflint

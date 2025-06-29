@@ -213,6 +213,9 @@ using namespace mft_utils;
 #define COMP_TYPE_L "component_type"
 #define COMP_TYPE_S ' '
 
+#define SKIP_IF_SAME_L "skip_if_same"
+#define SKIP_IF_SAME_S ' '
+
 string toolName = "";
 /************************************
  * Function: CmdLineParser
@@ -460,6 +463,8 @@ void CmdLineParser::initOptions()
                      true); // Hidden
     
     this->AddOptions(COMP_TYPE_L, COMP_TYPE_S, "componentName", "Specify the PLDM component type to extract");
+
+    this->AddOptions(SKIP_IF_SAME_L, SKIP_IF_SAME_S, "", "Skip firmware update if current and new versions match");
 }
 
 bool csvSplit(string str, vector<string>& strv)
@@ -821,6 +826,11 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
             cout << "-E- Negative value is not allowed " << value << "\n";
             return PARSE_ERROR;
         }
+        return PARSE_OK;
+    }
+    else if (name == SKIP_IF_SAME_L)
+    {
+        _cmdLineParams->skip_if_same = true;
         return PARSE_OK;
     }
     else

@@ -2514,8 +2514,12 @@ int mset_cr_access(mfile* mf, int access)
     return -1;
 }
 
-int mget_vsec_supp(mfile* mf)
+int is_gw_access(mfile* mf)
 {
+    if (mf->tp == MST_BAR0_GW_PCI)
+    {
+        return 1;
+    }
     return mf->functional_vsec_supp;
 }
 
@@ -2974,9 +2978,10 @@ int is_zombiefish_device(mfile* mf)
     if (read_device_id(mf, &dev_id) != 4) {
         return 0;
     }
-    if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceQuantum3_HwId) &&
-        (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceQuantum4_HwId) &&
-        (mf->device_hw_id != DeviceConnectX7_HwId) && (mf->device_hw_id != DeviceBlueField3_HwId)) {
+    if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8PurePcieSwitch_HwId) &&
+        (mf->device_hw_id != DeviceQuantum3_HwId) && (mf->device_hw_id != DeviceConnectX9_HwId) &&
+        (mf->device_hw_id != DeviceQuantum4_HwId) && (mf->device_hw_id != DeviceConnectX7_HwId) &&
+        (mf->device_hw_id != DeviceBlueField3_HwId)) {
         return 0;
     }
 

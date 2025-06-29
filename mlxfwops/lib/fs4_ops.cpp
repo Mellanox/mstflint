@@ -1436,6 +1436,7 @@ bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
             case CT_CONNECTX6LX:
             case CT_QUANTUM3:
             case CT_CONNECTX8:
+            case CT_CONNECTX8_PURE_PCIE_SWITCH:
             case CT_CONNECTX9:
             case CT_ARCUSE:
                 res = false;
@@ -4567,6 +4568,8 @@ bool Fs4Operations::getBootRecordSize(u_int32_t& boot_record_size)
             boot_record_size = 0x260; // Actual size is 0x264
             return true;
         case CT_CONNECTX8:
+        case CT_CONNECTX9:
+        case CT_CONNECTX8_PURE_PCIE_SWITCH:
             boot_record_size = 0x2a0; // Actual size is 0x2a4
             return true;
 

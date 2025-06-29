@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT(mstflint, 4.32.0, akiselman-org@exchange.nvidia.com)
+AC_INIT(mstflint, 4.33.0, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Firmware Burning and Diagnostics Tools for NVIDIA network devices.])
 AC_SUBST([PROJECT])
@@ -101,7 +101,15 @@ else
         default_en_rdmem="yes"
     fi
 fi
+
+if test "x$OS" = "xFreeBSD"; then
+    VFIO_DRIVER_DIR=""
+else
+    VFIO_DRIVER_DIR="vfio_driver_access"
+fi
+
 AC_SUBST(MTCR_CONF_DIR)
+AC_SUBST(VFIO_DRIVER_DIR)
 AC_SUBST(LDL)
 AC_SUBST(default_en_inband)
 
@@ -775,4 +783,5 @@ AC_OUTPUT( \
     tools_res_mgmt/Makefile \
     tracers/Makefile \
     tracers/fwtrace/Makefile \
+    vfio_driver_access/Makefile \
  )

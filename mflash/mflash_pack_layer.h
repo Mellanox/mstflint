@@ -90,6 +90,7 @@ typedef void* trm_ctx;
 #define CX6_HW_ID           0x20f
 #define CX7_HW_ID           0x218
 #define CX8_HW_ID           0x21e
+#define CX8_PURE_PCIE_SWITCH_HW_ID  0x222
 #define CX6DX_HW_ID         0x212
 #define CX6LX_HW_ID         0x216
 #define BLUEFIELD_HW_ID     0x211
@@ -124,6 +125,8 @@ typedef void* trm_ctx;
 #define IS_CONNECTX5(dev_id)               ((dev_id) == CX5_HW_ID)
 #define IS_CONNECTX7(dev_id)               ((dev_id) == CX7_HW_ID)
 #define IS_CONNECTX8(dev_id)               ((dev_id) == CX8_HW_ID)
+#define IS_CONNECTX9(dev_id)               ((dev_id) == CX9_HW_ID)
+#define IS_CONNECTX8_PURE_PCIE_SWITCH(dev_id) ((dev_id) == CX8_PURE_PCIE_SWITCH_HW_ID)
 #define IS_CONNECTX6(dev_id)               ((dev_id) == CX6_HW_ID)
 #define IS_CONNECTX6DX(dev_id)             ((dev_id) == CX6DX_HW_ID)
 #define IS_CONNECTX6LX(dev_id)             ((dev_id) == CX6LX_HW_ID)

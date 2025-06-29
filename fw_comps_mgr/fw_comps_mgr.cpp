@@ -42,6 +42,7 @@
 #include "fw_comps_mgr_dma_access.h"
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
+#include "common/mcam_capabilities.h"
 #include <signal.h>
 #include <iostream>
 
@@ -1890,6 +1891,20 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
         strncpy(query->deviceVsd, (char*)deviceVsd.data(), VSD_LEN);
     }
 
+    query->pci_switch_only_mode_valid = 0;
+    bool is_hca = dm_dev_is_hca(dm_device_id);
+    if (is_hca)
+    {
+        bool is_mgir_pci_switch_only_mode_supported = false;
+        rc = isCapabilitySupportedAccordingToMcamReg(_mf, MCAM_CAP_MGIR_PCI_SWITCH_ONLY_MODE, is_hca,
+                                                     &is_mgir_pci_switch_only_mode_supported);
+        if (rc == ME_OK && is_mgir_pci_switch_only_mode_supported)
+        {
+            query->pci_switch_only_mode_valid = 1;
+            query->pci_switch_only_mode = mgir.hw_info.pci_switch_only_mode;
+        }
+    }
+
     return true;
 }
 
@@ -2542,4 +2557,73 @@ fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
     default:
         return FWCOMPS_GENERAL_ERR;
     }
+}
+
+
+bool FwCompsMgr::runMISOC(reg_access_hca_misoc_reg_ext* bfb_component, u_int32_t type, u_int32_t query_pending)
+{
+    // check via MCAM if MISOC supported
+    int misoc_reg_supported = 0;
+    reg_access_hca_mcam_reg_ext mcam;
+    memset(&mcam, 0, sizeof(mcam));
+    mcam.access_reg_group = 0; // group 0 for IDs 0x9001 to 0x907F
+    reg_access_status_t rc = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
+    if (rc == ME_OK)
+    {
+        // MISOC is bit 38s
+        // DWORD select logic: 3 - (38 / 32)
+        // bit select logic: 38 % 32
+        misoc_reg_supported = EXTRACT(mcam.mng_access_reg_cap_mask[3 - 1], 6, 1);
+    }
+    DPRINTF(("misoc_reg_supported = %d\n", misoc_reg_supported));
+    if (!misoc_reg_supported)
+    {
+        _lastError = FWCOMPS_REG_ACCESS_REG_NOT_SUPP;
+        return false;
+    }
+
+    bool ret = true;
+    mft_signal_set_handling(1);
+    bfb_component->type = EXTRACT(type, 0, 4);
+    bfb_component->query_pending = EXTRACT(query_pending, 0, 1);
+
+    DPRINTF(("-D- MISOC: type %u query_pending %u"
+             "\n",
+             type, query_pending));
+    rc = reg_access_misoc(_mf, REG_ACCESS_METHOD_GET, bfb_component);
+    deal_with_signal();
+    if (rc)
+    {
+        _lastError = regErrTrans(rc);
+        setLastRegisterAccessStatus(rc);
+        ret = false;
+    }
+
+    return ret;
+}
+
+bool FwCompsMgr::queryMISOC(std::string& version, u_int32_t type, u_int32_t query_pending)
+{
+    struct reg_access_hca_misoc_reg_ext bfb_component;
+    memset(&bfb_component, 0, sizeof(bfb_component));
+
+    if (!runMISOC(&bfb_component, type, query_pending))
+    {
+        DPRINTF(("Error in reading MISOC register.\n"));
+        return false;
+    }
+
+    if (bfb_component.query_not_available)
+    {
+        version = "Info not available";
+    }
+    else
+    {
+        char version_str[257];
+        memset(version_str, 0, sizeof(version_str));
+        memcpy(version_str, bfb_component.version, 256);
+        version = version_str;
+    }
+
+    return true;
 }

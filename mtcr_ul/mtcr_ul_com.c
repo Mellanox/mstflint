@@ -76,7 +76,6 @@
 #endif
 
 
-
 #include <stdio.h>
 #include <dirent.h>
 #include <string.h>
@@ -121,6 +120,7 @@
 #include "fwctrl_ioctl.h"
 #include "kernel/mst.h"
 #include "tools_dev_types.h"
+#include "vfio_driver_access/VFIODriverAccessWrapperC.h"
 
 #ifdef ENABLE_NVML
 #include "nvml_lib/nvml_c_wrapper.h"
@@ -1213,12 +1213,12 @@ static int is_wo_pciconf_gw(mfile* mf)
 {
     unsigned  offset = DEVID_OFFSET;
     u_int32_t data = 0;
-    int       rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
+    int       rc = pwrite(mf->fd, &offset, 4, mf->address_region_addr + PCICONF_ADDR_OFF);
 
     if (rc < 0) {
         return 0;
     }
-    rc = pread(mf->fd, &data, 4, PCICONF_ADDR_OFF);
+    rc = pread(mf->fd, &data, 4, mf->address_region_addr + PCICONF_ADDR_OFF);
     if (rc < 0) {
         return 0;
     }
@@ -1687,7 +1687,7 @@ int mtcr_pciconf_mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
     if (rc) {
         goto pciconf_read_cleanup;
     }
-    rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
+    rc = pwrite(mf->fd, &offset, 4, mf->address_region_addr + PCICONF_ADDR_OFF);
     if (rc < 0) {
         perror("write offset");
         goto pciconf_read_cleanup;
@@ -1697,7 +1697,7 @@ int mtcr_pciconf_mread4_old(mfile* mf, unsigned int offset, u_int32_t* value)
         goto pciconf_read_cleanup;
     }
 
-    rc = pread(mf->fd, value, 4, PCICONF_DATA_OFF);
+    rc = pread(mf->fd, value, 4, mf->address_region_addr + PCICONF_DATA_OFF);
     if (rc < 0) {
         perror("read value");
         goto pciconf_read_cleanup;
@@ -1723,7 +1723,7 @@ int mtcr_pciconf_mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
         goto pciconf_write_cleanup;
     }
     if (ctx->wo_addr) {
-        rc = pwrite(mf->fd, &value, 4, PCICONF_DATA_OFF);
+        rc = pwrite(mf->fd, &value, 4, mf->address_region_addr + PCICONF_DATA_OFF);
         if (rc < 0) {
             perror("write value");
             goto pciconf_write_cleanup;
@@ -1732,13 +1732,13 @@ int mtcr_pciconf_mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
             rc = 0;
             goto pciconf_write_cleanup;
         }
-        rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
+        rc = pwrite(mf->fd, &offset, 4, mf->address_region_addr + PCICONF_ADDR_OFF);
         if (rc < 0) {
             perror("write offset");
             goto pciconf_write_cleanup;
         }
     } else {
-        rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
+        rc = pwrite(mf->fd, &offset, 4, mf->address_region_addr + PCICONF_ADDR_OFF);
         if (rc < 0) {
             perror("write offset");
             goto pciconf_write_cleanup;
@@ -1747,7 +1747,7 @@ int mtcr_pciconf_mwrite4_old(mfile* mf, unsigned int offset, u_int32_t value)
             rc = 0;
             goto pciconf_write_cleanup;
         }
-        rc = pwrite(mf->fd, &value, 4, PCICONF_DATA_OFF);
+        rc = pwrite(mf->fd, &value, 4, mf->address_region_addr + PCICONF_DATA_OFF);
         if (rc < 0) {
             perror("write value");
             goto pciconf_write_cleanup;
@@ -1838,6 +1838,88 @@ static int get_space_support_status(mfile* mf, u_int16_t space)
     return status;
 }
 
+static void init_vsec_cap_mask(mfile* mf)
+{
+    get_space_support_status(mf, AS_ICMD);
+    get_space_support_status(mf, AS_NODNIC_INIT_SEG);
+    get_space_support_status(mf, AS_EXPANSION_ROM);
+    get_space_support_status(mf, AS_ND_CRSPACE);
+    get_space_support_status(mf, AS_SCAN_CRSPACE);
+    get_space_support_status(mf, AS_MAC);
+    get_space_support_status(mf, AS_ICMD_EXT);
+    get_space_support_status(mf, AS_SEMAPHORE);
+    get_space_support_status(mf, AS_CR_SPACE);
+    get_space_support_status(mf, AS_PCI_ICMD);
+    get_space_support_status(mf, AS_PCI_CRSPACE);
+    get_space_support_status(mf, AS_PCI_ALL_ICMD);
+    get_space_support_status(mf, AS_PCI_SCAN_CRSPACE);
+    get_space_support_status(mf, AS_PCI_GLOBAL_SEMAPHORE);
+    get_space_support_status(mf, AS_RECOVERY);
+    mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
+}
+
+static int mtcr_vfio_device_open(mfile   * mf,
+                                 const char* name,
+                                 unsigned  domain,
+                                 unsigned  bus,
+                                 unsigned  dev,
+                                 unsigned  func)
+{
+    ul_ctx_t* ctx = mf->ul_ctx;
+    u_int32_t vsec_type = 0;
+
+    mf->fd = -1;
+    mf->tp = MST_PCICONF;
+
+    if (GetStartOffsets(domain, bus, dev, func, &mf->fd, &mf->vsec_addr, &mf->address_region_addr) != 0) {
+        return -1;
+    }
+
+    if (mf->vsec_addr) {
+        DBG_PRINTF("VSEC address: 0x%lx\n", mf->vsec_addr);
+        DBG_PRINTF("Address region address: 0x%lx\n", mf->address_region_addr);
+        mf->vsec_addr += mf->address_region_addr;
+        READ4_PCI(mf, &vsec_type, mf->vsec_addr, "read vsc type", return ME_PCI_READ_ERROR);
+        mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
+        DBG_PRINTF("VSC type: %d\n", mf->vsec_type);
+        if (mf->vsec_type == FUNCTIONAL_VSC) {
+            DBG_PRINTF("FUNCTIONAL VSC Supported\n");
+            mf->functional_vsec_supp = 1;
+        }
+
+        init_vsec_cap_mask(mf);
+
+        if (VSEC_SUPPORTED_UL(mf)) {
+            mf->address_space = AS_CR_SPACE;
+            ctx->mread4 = mtcr_pciconf_mread4;
+            ctx->mwrite4 = mtcr_pciconf_mwrite4;
+            ctx->mread4_block = mread4_block_pciconf;
+            ctx->mwrite4_block = mwrite4_block_pciconf;
+        }
+
+        mf->pxir_vsec_supp = 0;
+        if ((mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_CRSPACE))) &&
+            (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_ALL_ICMD))) &&
+            (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_GLOBAL_SEMAPHORE)))) {
+            mf->pxir_vsec_supp = 1;
+        }
+        DBG_PRINTF("mf->pxir_vsec_supp: %d\n", mf->pxir_vsec_supp);
+    } else {
+        ctx->wo_addr = is_wo_pciconf_gw(mf);
+        DBG_PRINTF("Write Only Address: %d\n", ctx->wo_addr);
+        ctx->mread4 = mtcr_pciconf_mread4_old;
+        ctx->mwrite4 = mtcr_pciconf_mwrite4_old;
+        ctx->mread4_block = mread_chunk_as_multi_mread4;
+        ctx->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
+    }
+
+    if (init_dev_info_ul(mf, name, domain, bus, dev, func)) {
+        return -1;
+}
+
+    return 0;
+}
+
 static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
@@ -1873,22 +1955,7 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
                 return -1;
             }
 
-            get_space_support_status(mf, AS_ICMD);
-            get_space_support_status(mf, AS_NODNIC_INIT_SEG);
-            get_space_support_status(mf, AS_EXPANSION_ROM);
-            get_space_support_status(mf, AS_ND_CRSPACE);
-            get_space_support_status(mf, AS_SCAN_CRSPACE);
-            get_space_support_status(mf, AS_MAC);
-            get_space_support_status(mf, AS_ICMD_EXT);
-            get_space_support_status(mf, AS_SEMAPHORE);
-            get_space_support_status(mf, AS_CR_SPACE);
-            get_space_support_status(mf, AS_PCI_ICMD);
-            get_space_support_status(mf, AS_PCI_CRSPACE);
-            get_space_support_status(mf, AS_PCI_ALL_ICMD);
-            get_space_support_status(mf, AS_PCI_SCAN_CRSPACE);
-            get_space_support_status(mf, AS_PCI_GLOBAL_SEMAPHORE);
-            get_space_support_status(mf, AS_RECOVERY);
-            mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
+            init_vsec_cap_mask(mf);
 
             mtcr_pciconf_cap9_sem(mf, 0);
 
@@ -1970,7 +2037,6 @@ int mtcr_i2c_mread_chunks(mfile* mf, unsigned int offset, void* data, int length
     int      bytes = 0;
     void   * dest_ptr = data;
     int      bytes_read = length;
-
     int      chunk_size = MAX_TRANS_SIZE;
 
     for (left_size = length; left_size > 0; left_size -= chunk_size) {
@@ -1986,9 +2052,11 @@ int mtcr_i2c_mread_chunks(mfile* mf, unsigned int offset, void* data, int length
         dest_ptr += chunk_size;
     }
 
-    if (bytes_read != length)
-    {
-        DBG_PRINTF("mtcr_i2c_mread_chunks: address: 0x%06x num_bytes attempted to read: %d bytes_read: %d\n", offset, length, bytes_read);
+    if (bytes_read != length) {
+        DBG_PRINTF("mtcr_i2c_mread_chunks: address: 0x%06x num_bytes attempted to read: %d bytes_read: %d\n",
+                   offset,
+                   length,
+                   bytes_read);
     }
     return bytes_read;
 }
@@ -1996,6 +2064,7 @@ int mtcr_i2c_mread_chunks(mfile* mf, unsigned int offset, void* data, int length
 int mread_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
 {
     u_int8_t addr_width = 0;
+
     mget_i2c_addr_width(mf, &addr_width);
 
     int rc = mread_i2cblock(mf, mf->i2c_secondary, addr_width, offset, data, length);
@@ -2011,21 +2080,19 @@ int mread_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
 /* split the data to chunks of 32 bytes and write each chunk. */
 int mtcr_i2c_mwrite_chunks(mfile* mf, unsigned int offset, void* data, int length)
 {
-    int chunk_size;
-    int left_size;
-    int bytes;
+    int   chunk_size;
+    int   left_size;
+    int   bytes;
     void* dest_ptr = data;
-    int bytes_written = length;
+    int   bytes_written = length;
 
     chunk_size = MAX_CHUNK_SIZE;
 
-    for (left_size = length; left_size > 0; left_size -= chunk_size)
-    {
+    for (left_size = length; left_size > 0; left_size -= chunk_size) {
         int towrite;
         towrite = (left_size >= chunk_size) ? chunk_size : left_size;
         bytes = mwrite_i2c_chunk(mf, offset, dest_ptr, towrite);
-        if (bytes != towrite)
-        {
+        if (bytes != towrite) {
             bytes_written = length - left_size;
             break;
         }
@@ -2034,9 +2101,11 @@ int mtcr_i2c_mwrite_chunks(mfile* mf, unsigned int offset, void* data, int lengt
         dest_ptr += chunk_size;
     }
 
-    if (bytes_written != length)
-    {
-        DBG_PRINTF("mtcr_i2c_mwrite_chunks: address: 0x%06x num_bytes attempted to write: %d bytes_written: %d\n", offset, length, bytes_written);
+    if (bytes_written != length) {
+        DBG_PRINTF("mtcr_i2c_mwrite_chunks: address: 0x%06x num_bytes attempted to write: %d bytes_written: %d\n",
+                   offset,
+                   length,
+                   bytes_written);
     }
 
     return bytes_written;
@@ -2048,6 +2117,7 @@ int mwrite_i2c_chunk(mfile* mf, unsigned int offset, void* data, int length)
     fix_endianness((u_int32_t*)data, length, 1);
 
     u_int8_t addr_width = 0;
+
     mget_i2c_addr_width(mf, &addr_width);
 
     int rc = mwrite_i2cblock(mf, mf->i2c_secondary, addr_width, offset, data, length);
@@ -2195,8 +2265,11 @@ int mtcr_i2c_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
         return bytes_written;
     }
 
-    DBG_PRINTF("mtcr_i2c_mwrite4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_written: %d\n", mf->i2c_secondary,
-           offset, value, bytes_written);
+    DBG_PRINTF("mtcr_i2c_mwrite4: mf->i2c_secondary: 0x%x offset: 0x%x. value: 0x%x. bytes_written: %d\n",
+               mf->i2c_secondary,
+               offset,
+               value,
+               bytes_written);
 
     return bytes_written;
 }
@@ -2324,7 +2397,7 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
 }
 
 u_int32_t secured_devices[] =
-{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId};
+{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceConnectX9_HwId, DeviceConnectX8PurePcieSwitch_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId};
 
 #define SECURED_DEVICE_ID_TABLE_SIZE (sizeof(secured_devices) / sizeof(u_int32_t))
 
@@ -2342,7 +2415,8 @@ u_int32_t supported_device_ids[] =
  DeviceBaritone_HwId,         DeviceMenhit_HwId,         DeviceArcusPTC_HwId,
  DeviceArcusP_HwId,           DeviceArcusE_HwId,         DeviceSecureHost_HwId,
  DeviceSpectrum3_HwId,        DeviceSpectrum4_HwId,      DeviceGearBox_HwId,
- DeviceGearBoxManager_HwId,   DeviceAbirGearBox_HwId,    DeviceGB100_HwId};
+ DeviceGearBoxManager_HwId,   DeviceAbirGearBox_HwId,    DeviceGB100_HwId,
+ DeviceConnectX8PurePcieSwitch_HwId, DeviceConnectX9_HwId};
 #define SUPPORTED_DEVICE_ID_TABLE_SIZE (sizeof(supported_device_ids) / sizeof(u_int32_t))
 
 int is_supported_device_id(u_int16_t dev_id)
@@ -2477,6 +2551,41 @@ static MType mtcr_parse_name(const char* name,
     unsigned len = strlen(name);
     unsigned tmp;
 
+    int is_vfio = strstr(name, "vfio-") != NULL;
+    int lockdown_enabled = CheckifKernelLockdownIsEnabled();
+
+    if (strstr(name, "fwctl")) {
+        return MST_FWCTL_CONTROL_DRIVER;
+    }
+
+    if (is_vfio || lockdown_enabled) {
+        if (is_vfio) {
+            scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+            if (scnt != 4) {
+                my_domain = 0;
+                scnt = sscanf(name, "vfio-%x:%x.%x", &my_bus, &my_dev, &my_func);
+                if (scnt != 3) {
+                    return MST_ERROR;
+                }
+            }
+        } else {
+            scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+            if (scnt != 4) {
+                my_domain = 0;
+                scnt = sscanf(name, "%x:%x.%x", &my_bus, &my_dev, &my_func);
+                if (scnt != 3) {
+                    return MST_ERROR;
+                }
+            }
+        }
+
+        *domain_p = my_domain;
+        *bus_p = my_bus;
+        *dev_p = my_dev;
+        *func_p = my_func;
+        return MST_VFIO_DEVICE;
+    }
+
     if ((len >= sizeof config) && !strcmp(config, name + len + 1 - sizeof config)) {
         *force = 1;
         return MST_PCICONF;
@@ -2559,10 +2668,6 @@ static MType mtcr_parse_name(const char* name,
     if (scnt == 4) {
         force_config = 1;
         goto name_parsed;
-    }
-
-    if (strstr(name, "fwctl")) {
-        return MST_FWCTL_CONTROL_DRIVER;
     }
 
 #ifdef ENABLE_MST_DEV_I2C
@@ -2672,6 +2777,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0x1976, /* Schrodinger */
                                    0x1979, /* Freysa */
                                    0x197d, /* Connect-X8 Bridge */
+                                   0x197e, /* Connect-X9 Bridge */
                                    0x2900, /* GB100 */
                                    0xd2f4, /* Sunbird */
                                    -1};
@@ -3351,8 +3457,14 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
             DBG_PRINTF("Failed to open GPU mst driver device");
             goto open_failed;
         }
-        return mf;
         break;
+
+    case MST_VFIO_DEVICE:
+        rc = mtcr_vfio_device_open(mf, name,domain, bus, dev, func);
+        if (rc) {
+            goto open_failed;
+        }
+        return mf;
 
 #ifdef ENABLE_MST_DEV_I2C
     case MST_DEV_I2C:
@@ -4525,9 +4637,10 @@ int is_zombiefish_device(mfile* mf)
     if (mread4(mf, HW_ID_ADDR, &mf->device_hw_id) != 4) {
         return 0;
     }
-    if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceQuantum3_HwId) &&
-        (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceQuantum4_HwId) &&
-        (mf->device_hw_id != DeviceConnectX7_HwId) && (mf->device_hw_id != DeviceBlueField3_HwId)) {
+    if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8PurePcieSwitch_HwId) &&
+        (mf->device_hw_id != DeviceQuantum3_HwId) && (mf->device_hw_id != DeviceConnectX9_HwId) &&
+        (mf->device_hw_id != DeviceQuantum4_HwId) && (mf->device_hw_id != DeviceConnectX7_HwId) &&
+        (mf->device_hw_id != DeviceBlueField3_HwId)) {
         return 0;
     }
 
@@ -4577,7 +4690,8 @@ int is_pcie_switch_device(mfile* mf)
     } devs[] = {
         {0x1976}, /* ConnectX6dx (Schrodinger). */
         {0x1979}, /* ConnectX7 (FreysaP1011). */
-        {0x197d}  /* ConnectX8 Bridge. */
+        {0x197d},  /* ConnectX8 Bridge. */
+        {0x197e}  /* ConnectX9 Bridge. */
     };
 
     /* take care of corrupted input */

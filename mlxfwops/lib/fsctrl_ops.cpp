@@ -39,6 +39,7 @@
 
 #include <tools_utils.h>
 #include <bit_slice.h>
+#include "common/mcam_capabilities.h"
 
 #include <vector>
 
@@ -391,6 +392,12 @@ bool FsCtrlOperations::FsIntQuery()
             _fsCtrlImgInfo.aux_card_connected = mrsv.data.MRSV_CX_7_Value_ext.two_p_core_active;
             _fsCtrlImgInfo.is_aux_card_connected_valid = true;
         }
+    }
+
+    _fsCtrlImgInfo.pci_switch_only_mode_valid = fwQuery.pci_switch_only_mode_valid;
+    if (fwQuery.pci_switch_only_mode_valid)
+    {
+        _fsCtrlImgInfo.pci_switch_only_mode = fwQuery.pci_switch_only_mode;
     }
 
     return true;
@@ -937,7 +944,7 @@ bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams&
 
 bool FsCtrlOperations::isMultiAsicSystemComponent()
 {
-    if (_hwDevId == QUANTUM3_HW_ID || _hwDevId == CX8_HW_ID ||  _hwDevId == CX9_HW_ID)
+    if (_hwDevId == QUANTUM3_HW_ID || _hwDevId == CX8_HW_ID || _hwDevId == CX8_PURE_PCIE_SWITCH_HW_ID || _hwDevId == CX9_HW_ID)
     {
         return true;
     }
@@ -1415,4 +1422,54 @@ bool FsCtrlOperations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack)
 bool FsCtrlOperations::IsComponentSupported(FwComponent::comps_ids_t component)
 {
     return _fwCompsAccess->IsDevicePresent(component);
+}
+
+
+bool FsCtrlOperations::getBFBComponentsVersions(std::map<std::string, std::string>& name_to_version, bool pending)
+{
+    DPRINTF(("Getting BFB components versions (pending=%d)...\n", pending));
+
+    const std::map<u_int32_t, std::string> MISOC_TYPE_TO_NAME = {
+      {0x0, "BF3_ATF"},
+      {0x1, "BF3_UEFI"},
+      {0x2, "BF3_BMC_FW"},
+      {0x3, "BF3_CEC_FW"},
+    };
+
+    std::string version;
+    fw_info_t fwQuery;
+    memset(&fwQuery, 0, sizeof(fwQuery));
+
+    // Get versions of all components available in MISOC
+    for (const auto& pair : MISOC_TYPE_TO_NAME)
+    {
+        version.clear(); // Clear any previous version
+        DPRINTF(("Querying MISOC type 0x%x (%s)...\n", pair.first, pair.second.c_str()));
+        if (!_fwCompsAccess->queryMISOC(version, pair.first, pending))
+        {
+            DPRINTF(("Failed to query MISOC type 0x%x\n", pair.first));
+            name_to_version[pair.second] = "Info not available";
+        }
+        else
+        {
+            DPRINTF(("Got version: %s\n", version.c_str()));
+            name_to_version[pair.second] = version;
+        }
+    }
+
+    // Get NIC FW version from MGIR
+    DPRINTF(("Querying NIC firmware version...\n"));
+    if (pending)
+    {
+        FwVersion pending_fw_version = FwOperations::createFwVersion(&_fwImgInfo.ext_info);
+        name_to_version["BF3_NIC_FW"] = pending_fw_version.get_fw_version();
+    }
+    else
+    {
+        FwVersion running_fw_version = FwOperations::createRunningFwVersion(&_fwImgInfo.ext_info);
+        name_to_version["BF3_NIC_FW"] = running_fw_version.get_fw_version();
+    }
+    DPRINTF(("Got NIC FW version: %s\n", name_to_version["BF3_NIC_FW"].c_str()));
+
+    return true;
 }

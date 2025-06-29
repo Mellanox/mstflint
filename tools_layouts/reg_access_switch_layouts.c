@@ -1,38 +1,44 @@
-/* Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+
+/*
+* Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+*
+* This software is available to you under a choice of one of two
+* licenses.  You may choose to be licensed under the terms of the GNU
+* General Public License (GPL) Version 2, available from the file
+* COPYING in the main directory of this source tree, or the
+* OpenIB.org BSD license below:
+*
+*     Redistribution and use in source and binary forms, with or
+*     without modification, are permitted provided that the following
+*     conditions are met:
+*
+*      - Redistributions of source code must retain the above
+*        copyright notice, this list of conditions and the following
+*        disclaimer.
+*
+*      - Redistributions in binary form must reproduce the above
+*        copyright notice, this list of conditions and the following
+*        disclaimer in the documentation and/or other materials
+*        provided with the distribution.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+* BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+* ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
+*
+*  Version: $Id$
+*
+*/
+ 
 
 /***
-         *** This file was generated at "2025-03-25 15:13:37"
+         *** This file was generated at "2025-06-08 09:43:14"
          *** by:
-         ***    > [REDACTED]/adb2pack.py --input [REDACTED]/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o [REDACTED]/user/tools_layouts
+         ***    > /auto/mswg/release/tools/a-me/a-me-1.2.9/a-me-1.2.9-8/adabe_plugins/adb2c/adb2pack.py --input /tmp/jenkins/workspace/automatic_prm_update/user/tools_layouts/adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o /tmp/jenkins/workspace/automatic_prm_update/user/tools_layouts
          ***/
 #include "reg_access_switch_layouts.h"
 
@@ -578,7 +584,7 @@ void reg_access_switch_uint64_unpack(u_int64_t *ptr_struct, const u_int8_t *ptr_
 	u_int32_t offset;
 
 	offset = 0;
-	*ptr_struct = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
+	*ptr_struct = (u_int64_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
 }
 
 void reg_access_switch_uint64_print(const u_int64_t *ptr_struct, FILE *fd, int indent_level)
@@ -1216,6 +1222,179 @@ void reg_access_switch_mkdc_reg_ext_dump(const struct reg_access_switch_mkdc_reg
 	reg_access_switch_mkdc_reg_ext_print(ptr_struct, fd, 0);
 }
 
+void reg_access_switch_mpein_reg_ext_pack(const struct reg_access_switch_mpein_reg_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->node);
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->pcie_index);
+	offset = 2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 6, (u_int32_t)ptr_struct->depth);
+	offset = 1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->DPNv);
+	offset = 80;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->link_speed_enabled);
+	offset = 72;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->link_width_enabled);
+	offset = 112;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->link_speed_active);
+	offset = 104;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->link_width_active);
+	offset = 96;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->lane0_physical_position);
+	offset = 144;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_of_vfs);
+	offset = 128;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_of_pfs);
+	offset = 160;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->bdf0);
+	offset = 223;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->lane_reversal);
+	offset = 208;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->port_type);
+	offset = 205;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->pwr_status);
+	offset = 196;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->max_payload_size);
+	offset = 192;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->max_read_request_size);
+	offset = 244;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->pci_power);
+	offset = 224;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->link_peer_max_speed);
+	offset = 287;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->flit_sup);
+	offset = 286;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->precode_sup);
+	offset = 279;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->flit_active);
+	offset = 278;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->precode_active);
+	offset = 288;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->device_status);
+}
+
+void reg_access_switch_mpein_reg_ext_unpack(struct reg_access_switch_mpein_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	ptr_struct->node = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 8;
+	ptr_struct->pcie_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 2;
+	ptr_struct->depth = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 6);
+	offset = 1;
+	ptr_struct->DPNv = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 80;
+	ptr_struct->link_speed_enabled = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 72;
+	ptr_struct->link_width_enabled = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 112;
+	ptr_struct->link_speed_active = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 104;
+	ptr_struct->link_width_active = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 96;
+	ptr_struct->lane0_physical_position = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 144;
+	ptr_struct->num_of_vfs = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 128;
+	ptr_struct->num_of_pfs = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 160;
+	ptr_struct->bdf0 = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 223;
+	ptr_struct->lane_reversal = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 208;
+	ptr_struct->port_type = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 205;
+	ptr_struct->pwr_status = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
+	offset = 196;
+	ptr_struct->max_payload_size = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 192;
+	ptr_struct->max_read_request_size = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 244;
+	ptr_struct->pci_power = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
+	offset = 224;
+	ptr_struct->link_peer_max_speed = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 287;
+	ptr_struct->flit_sup = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 286;
+	ptr_struct->precode_sup = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 279;
+	ptr_struct->flit_active = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 278;
+	ptr_struct->precode_active = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 288;
+	ptr_struct->device_status = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+}
+
+void reg_access_switch_mpein_reg_ext_print(const struct reg_access_switch_mpein_reg_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_switch_mpein_reg_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "node                 : " UH_FMT "\n", ptr_struct->node);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "pcie_index           : " UH_FMT "\n", ptr_struct->pcie_index);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "depth                : " UH_FMT "\n", ptr_struct->depth);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "DPNv                 : %s (" UH_FMT ")\n", (ptr_struct->DPNv == 0 ? ("multi_topology_unaware_sw") : ((ptr_struct->DPNv == 1 ? ("multi_topology_aware_sw") : ("unknown")))), ptr_struct->DPNv);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "link_speed_enabled   : " UH_FMT "\n", ptr_struct->link_speed_enabled);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "link_width_enabled   : " UH_FMT "\n", ptr_struct->link_width_enabled);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "link_speed_active    : " UH_FMT "\n", ptr_struct->link_speed_active);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "link_width_active    : " UH_FMT "\n", ptr_struct->link_width_active);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "lane0_physical_position : " UH_FMT "\n", ptr_struct->lane0_physical_position);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "num_of_vfs           : " UH_FMT "\n", ptr_struct->num_of_vfs);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "num_of_pfs           : " UH_FMT "\n", ptr_struct->num_of_pfs);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "bdf0                 : " UH_FMT "\n", ptr_struct->bdf0);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "lane_reversal        : " UH_FMT "\n", ptr_struct->lane_reversal);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "port_type            : " UH_FMT "\n", ptr_struct->port_type);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "pwr_status           : " UH_FMT "\n", ptr_struct->pwr_status);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "max_payload_size     : " UH_FMT "\n", ptr_struct->max_payload_size);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "max_read_request_size : " UH_FMT "\n", ptr_struct->max_read_request_size);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "pci_power            : " UH_FMT "\n", ptr_struct->pci_power);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "link_peer_max_speed  : " UH_FMT "\n", ptr_struct->link_peer_max_speed);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "flit_sup             : " UH_FMT "\n", ptr_struct->flit_sup);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "precode_sup          : " UH_FMT "\n", ptr_struct->precode_sup);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "flit_active          : " UH_FMT "\n", ptr_struct->flit_active);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "precode_active       : " UH_FMT "\n", ptr_struct->precode_active);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "device_status        : %s (" UH_FMT ")\n", (ptr_struct->device_status == 1 ? ("Correctable_error") : ((ptr_struct->device_status == 2 ? ("Non_Fatal_Error_detection") : ((ptr_struct->device_status == 4 ? ("Fatal_Error_detected") : ((ptr_struct->device_status == 8 ? ("Unsupported_request_detected") : ((ptr_struct->device_status == 16 ? ("AUX_power") : ((ptr_struct->device_status == 32 ? ("Transaction_Pending") : ("unknown")))))))))))), ptr_struct->device_status);
+}
+
+unsigned int reg_access_switch_mpein_reg_ext_size(void)
+{
+	return REG_ACCESS_SWITCH_MPEIN_REG_EXT_SIZE;
+}
+
+void reg_access_switch_mpein_reg_ext_dump(const struct reg_access_switch_mpein_reg_ext *ptr_struct, FILE *fd)
+{
+	reg_access_switch_mpein_reg_ext_print(ptr_struct, fd, 0);
+}
+
 void reg_access_switch_mpir_ext_pack(const struct reg_access_switch_mpir_ext *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -1589,7 +1768,7 @@ void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext
 		ptr_struct->keypair_uuid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	}
 	offset = 160;
-	ptr_struct->base_mac = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
+	ptr_struct->base_mac = (u_int64_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
 	for (i = 0; i < 4; ++i) {
 		offset = adb2c_calc_array_field_address(224, 32, i, 896, 1);
 		ptr_struct->psid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
@@ -2198,7 +2377,7 @@ void reg_access_switch_pmdr_reg_ext_pack(const struct reg_access_switch_pmdr_reg
 	offset = 320;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->VL31_lane_map);
 	offset = 480;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->module_lane_mask_msb);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->module_lane_mask_msb);
 	offset = 540;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->oe_lane7_to_els_logical_laser);
 	offset = 536;
@@ -2216,7 +2395,7 @@ void reg_access_switch_pmdr_reg_ext_pack(const struct reg_access_switch_pmdr_reg
 	offset = 512;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->oe_lane0_to_els_logical_laser);
 	offset = 568;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->els_access_index);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->els_module_index);
 	offset = 560;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 6, (u_int32_t)ptr_struct->els_index);
 	offset = 545;
@@ -2388,7 +2567,7 @@ void reg_access_switch_pmdr_reg_ext_unpack(struct reg_access_switch_pmdr_reg_ext
 	offset = 320;
 	ptr_struct->VL31_lane_map = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 480;
-	ptr_struct->module_lane_mask_msb = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	ptr_struct->module_lane_mask_msb = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
 	offset = 540;
 	ptr_struct->oe_lane7_to_els_logical_laser = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 536;
@@ -2406,7 +2585,7 @@ void reg_access_switch_pmdr_reg_ext_unpack(struct reg_access_switch_pmdr_reg_ext
 	offset = 512;
 	ptr_struct->oe_lane0_to_els_logical_laser = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 568;
-	ptr_struct->els_access_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	ptr_struct->els_module_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 560;
 	ptr_struct->els_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 6);
 	offset = 545;
@@ -2597,7 +2776,7 @@ void reg_access_switch_pmdr_reg_ext_print(const struct reg_access_switch_pmdr_re
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "oe_lane0_to_els_logical_laser : " UH_FMT "\n", ptr_struct->oe_lane0_to_els_logical_laser);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "els_access_index     : " UH_FMT "\n", ptr_struct->els_access_index);
+	fprintf(fd, "els_module_index     : " UH_FMT "\n", ptr_struct->els_module_index);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "els_index            : " UH_FMT "\n", ptr_struct->els_index);
 	adb2c_add_indentation(fd, indent_level);
@@ -2720,62 +2899,65 @@ void reg_access_switch_reg_access_switch_Nodes_print(const union reg_access_swit
 	fprintf(fd, "======== reg_access_switch_reg_access_switch_Nodes ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mkdc_reg_ext:\n");
-	reg_access_switch_mkdc_reg_ext_print(&(ptr_struct->mkdc_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "PPCR_ext:\n");
-	reg_access_switch_PPCR_ext_print(&(ptr_struct->PPCR_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mpir_ext:\n");
-	reg_access_switch_mpir_ext_print(&(ptr_struct->mpir_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pmdr_reg_ext:\n");
-	reg_access_switch_pmdr_reg_ext_print(&(ptr_struct->pmdr_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "icam_reg_ext:\n");
-	reg_access_switch_icam_reg_ext_print(&(ptr_struct->icam_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mrsr_ext:\n");
-	reg_access_switch_mrsr_ext_print(&(ptr_struct->mrsr_ext), fd, indent_level + 1);
+	fprintf(fd, "plib_reg_ext:\n");
+	reg_access_switch_plib_reg_ext_print(&(ptr_struct->plib_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mspmer_ext:\n");
 	reg_access_switch_mspmer_ext_print(&(ptr_struct->mspmer_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mddq_ext:\n");
-	reg_access_switch_mddq_ext_print(&(ptr_struct->mddq_ext), fd, indent_level + 1);
+	fprintf(fd, "mtcq_reg_ext:\n");
+	reg_access_switch_mtcq_reg_ext_print(&(ptr_struct->mtcq_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "msgi_ext:\n");
-	reg_access_switch_msgi_ext_print(&(ptr_struct->msgi_ext), fd, indent_level + 1);
+	fprintf(fd, "mkdc_reg_ext:\n");
+	reg_access_switch_mkdc_reg_ext_print(&(ptr_struct->mkdc_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "icsr_ext:\n");
-	reg_access_switch_icsr_ext_print(&(ptr_struct->icsr_ext), fd, indent_level + 1);
+	fprintf(fd, "pmdr_reg_ext:\n");
+	reg_access_switch_pmdr_reg_ext_print(&(ptr_struct->pmdr_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "pmaos_reg_ext:\n");
 	reg_access_switch_pmaos_reg_ext_print(&(ptr_struct->pmaos_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pllp_reg_ext:\n");
-	reg_access_switch_pllp_reg_ext_print(&(ptr_struct->pllp_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "plib_reg_ext:\n");
-	reg_access_switch_plib_reg_ext_print(&(ptr_struct->plib_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mtcq_reg_ext:\n");
-	reg_access_switch_mtcq_reg_ext_print(&(ptr_struct->mtcq_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pmlp_reg_ext:\n");
-	reg_access_switch_pmlp_reg_ext_print(&(ptr_struct->pmlp_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mdsr_reg_ext:\n");
-	reg_access_switch_mdsr_reg_ext_print(&(ptr_struct->mdsr_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mpir_ext:\n");
+	reg_access_switch_mpir_ext_print(&(ptr_struct->mpir_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mfmc_reg_ext:\n");
 	reg_access_switch_mfmc_reg_ext_print(&(ptr_struct->mfmc_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mddq_ext:\n");
+	reg_access_switch_mddq_ext_print(&(ptr_struct->mddq_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mpein_reg_ext:\n");
+	reg_access_switch_mpein_reg_ext_print(&(ptr_struct->mpein_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "PPCR_ext:\n");
+	reg_access_switch_PPCR_ext_print(&(ptr_struct->PPCR_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "icsr_ext:\n");
+	reg_access_switch_icsr_ext_print(&(ptr_struct->icsr_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mddt_reg_ext:\n");
 	reg_access_switch_mddt_reg_ext_print(&(ptr_struct->mddt_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "pmlp_reg_ext:\n");
+	reg_access_switch_pmlp_reg_ext_print(&(ptr_struct->pmlp_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mrsr_ext:\n");
+	reg_access_switch_mrsr_ext_print(&(ptr_struct->mrsr_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mdsr_reg_ext:\n");
+	reg_access_switch_mdsr_reg_ext_print(&(ptr_struct->mdsr_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "pllp_reg_ext:\n");
+	reg_access_switch_pllp_reg_ext_print(&(ptr_struct->pllp_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "msgi_ext:\n");
+	reg_access_switch_msgi_ext_print(&(ptr_struct->msgi_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "pguid_reg_ext:\n");
 	reg_access_switch_pguid_reg_ext_print(&(ptr_struct->pguid_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "icam_reg_ext:\n");
+	reg_access_switch_icam_reg_ext_print(&(ptr_struct->icam_reg_ext), fd, indent_level + 1);
 }
 
 unsigned int reg_access_switch_reg_access_switch_Nodes_size(void)

@@ -58,6 +58,7 @@ struct PortGroup
         groupId = 0;
         split = 0;
         secondSplit = 0;
+        isFnm = false;
     }
     PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split)
     {
@@ -66,6 +67,7 @@ struct PortGroup
         groupId = _groupId;
         split = _split;
         secondSplit = 0;
+        isFnm = false;
     }
     PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split, u_int32_t _secondSplit)
     {
@@ -74,12 +76,45 @@ struct PortGroup
         groupId = _groupId;
         split = _split;
         secondSplit = _secondSplit;
+        isFnm = false;
+    }
+    PortGroup(u_int32_t _localPort,
+              u_int32_t _labelPort,
+              u_int32_t _groupId,
+              u_int32_t _split,
+              u_int32_t _secondSplit,
+              bool _isFnm)
+    {
+        localPort = _localPort;
+        labelPort = _labelPort;
+        groupId = _groupId;
+        split = _split;
+        secondSplit = _secondSplit;
+        isFnm = _isFnm;
     }
     u_int32_t localPort;
     u_int32_t labelPort;
     u_int32_t groupId;
     u_int32_t split;
     u_int32_t secondSplit;
+    bool isFnm;
+
+    bool operator<(const PortGroup& b) const
+    {
+        if (labelPort < b.labelPort)
+        {
+            return true;
+        }
+        if (labelPort == b.labelPort && split < b.split)
+        {
+            return true;
+        }
+        if (labelPort == b.labelPort && split == b.split && secondSplit < b.secondSplit)
+        {
+            return true;
+        }
+        return false;
+    }
 };
 
 struct CAP_VALUE
@@ -197,6 +232,8 @@ private:
     void initPpttParamsMapping();
     void initPpttSpeedMapping();
     void initPlrRejectModeMapping();
+    void initKrMapping();
+    void initPprmRecoveryStatusMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -254,6 +291,8 @@ public:
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
     std::map<u_int32_t, std::string> _plrRejectMode;
+    std::map<u_int32_t, std::string> _krExtOper;
+    std::map<u_int32_t, std::string> _krPrbsType;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
     std::vector<pair<string, string>> _fecPerSpeed;
     std::map<u_int32_t, pair<string, string>> _loopbackModeList;
@@ -321,6 +360,7 @@ public:
     std::map<u_int32_t, std::string> _pcieDevStatus;
     std::map<u_int32_t, PcieErrType> _pcieErrType;
     std::map<u_int32_t, std::string> _pprmOperRecovery;
+    std::map<u_int32_t, std::string> _pprmRecoveryStatus;
     std::map<u_int32_t, u_int32_t> _ppcntGroups;
     std::map<u_int32_t, PRM_FIELD> _ppttParams;
     std::map<u_int32_t, u_int32_t> _ppttSpeedMapping;

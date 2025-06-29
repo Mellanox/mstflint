@@ -144,6 +144,7 @@ private:
     u_int32_t _labelPort;
     u_int32_t _splitPort;
     u_int32_t _secondSplit;
+    bool _isFnmPort;
     map<AMBER_SHEET, vector<AmberField>> _amberCollection;
     map<AMBER_SHEET, FIELDS_COUNT> _baseSheetsList;
 
@@ -181,6 +182,7 @@ protected:
     bool _isValidSensorMvcap;
     bool _isValidSensorMtcap;
     bool _inPRBSMode;
+    u_int32_t _pllGroup;
     u_int32_t _moduleHostSt;
     u_int32_t _moduleMediaSt;
 

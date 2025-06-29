@@ -154,6 +154,7 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Qrom] = new RomQuerySubCommand();
     cmdMap[SC_Bb] = new BbSubCommand();
     cmdMap[SC_Sg] = new SgSubCommand();
+    cmdMap[SC_Query_Bfb_Components] = new QueryBfbComponentsSubCommand();
 #ifndef EXTERNAL
     cmdMap[SC_Smg] = new SmgSubCommand();
     cmdMap[SC_Set_Vpd] = new SetVpdSubCommand();

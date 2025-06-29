@@ -83,7 +83,7 @@ string getAnDisableColor(u_int32_t anDisable);
 string IBSupportedSpeeds2Str(u_int32_t mask);
 string EthSupportedSpeeds2Str(u_int32_t int_mask);
 string EthExtSupportedSpeeds2Str(u_int32_t int_mask);
-string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended = false);
+string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended = false, bool isXdrSlowActive = false);
 string getOui(u_int32_t oui);
 int getBitvalue(u_int32_t mask, int idx);
 string getPowerClass(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass, u_int32_t maxPower);
@@ -101,6 +101,8 @@ u_int32_t prbsMaskToRateNum(u_int32_t mask);
 string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse);
 bool checkPrbsCmd(const string& prbsCmd);
 bool checkTestMode(const string& testMode);
+bool checkPhyRecoveryCmd(const string& phyRecoveryCmd);
+bool checkLinkTrainingCmd(const string& linkTrainingCmd);
 string FEC2Str(const string& fecShort, const string& speedStrG);
 string speedToFecSpeedStr(const string& speed, u_int32_t numOfLanes);
 PAOS_CMD paos_to_int(const string& cmd);
@@ -158,4 +160,5 @@ string getStrByMaskFromPair(u_int32_t bitmask,
                             map<u_int32_t, pair<string, string>> maskMap,
                             const string& fieldSeparator = ",",
                             u_int32_t pairIndex = 0);
+void printProgressBar(int completion, const std::string& preStr, const std::string& endStr);
 #endif

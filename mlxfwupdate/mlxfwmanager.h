@@ -140,7 +140,8 @@ void getUniqueMFAList(vector<MlnxDev*>& devs,
                       map<string, PsidQueryItem>& psidUpdateInfo,
                       int force_update,
                       vector<string>& mfa_list,
-                      vector<string>& mfa_base_name_list);
+                      vector<string>& mfa_base_name_list,
+                      bool skip_if_same);
 int queryMFAs(ServerRequest* srq,
               string& mfa_path,
               vector<string>& psid_list,
@@ -243,6 +244,7 @@ void filterFiles(vector<DownloadedFileProperties> files,
                  int family);
 
 int generateProductionName(string& targetFile, PsidQueryItem ri);
+bool isSameVersion(MlnxDev* dev, PsidQueryItem& psidUpdateInfo);
 
 int abort_request = 0;
 int CompareFFV = 0;

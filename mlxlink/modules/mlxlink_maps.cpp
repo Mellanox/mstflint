@@ -71,6 +71,16 @@ void MlxlinkMaps::initPortStateMapping()
     _networkProtocols[ETH] = "Ethernet";
     _networkProtocols[NVLINK] = "NVLink";
 
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_IB_SPEC] = "IB spec / legacy";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_INTERNAL_PORTS] = "Internal ports (Backplane)";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_PASSIVE_COPPER_SHORT] = "Passive copper - Short";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_PASSIVE_COPPER_MEDIUM] = "Passive copper - Medium";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_PASSIVE_COPPER_LONG] = "Passive copper - Long";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_ACTIVE_OPTICS] = "Active optics / copper short reach (<20m)";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_OPTICS_LONG_REACH] = "Optics long reach (>20m)";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_NO_FEC] = "NO-FEC";
+    _proFileFecInUse[PRO_FILE_FEC_IN_USE_FEC_ON] = "FEC-ON";
+
     _ethANFsmState[0x0] = "ETH_AN_FSM_ENABLE";
     _ethANFsmState[0x1] = "ETH_AN_FSM_XMIT_DISABLE";
     _ethANFsmState[0x2] = "ETH_AN_FSM_ABILITY_DETECT";
@@ -1510,16 +1520,41 @@ void MlxlinkMaps::initEnhancedDebugMapping()
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_EFFECTIVE_BER] = "Fast_recovery_effective_ber";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_SYMBOL_BER] = "Fast_recovery_symbol_ber";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_CREDIT_WATCHDOG] = "Fast_recovery_credit_watchdog";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_TO_SLEEP_STATE] = "Peer_side_down_to_sleep_state";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_TO_DISABLE_STATE] = "Peer_side_down_to_disable_state";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_TO_DISABLE_AND_PORT_LOCK] =
+      "Peer_side_down_to_disable_and_port_lock";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_DUE_TO_THERMAL_EVENT] = "Peer_side_down_due_to_thermal_event";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_DUE_TO_FORCE_EVENT] = "Peer_side_down_due_to_force_event";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PEER_SIDE_DOWN_DUE_TO_RESET_EVENT] = "Peer_side_down_due_to_reset_event";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_RESET_NO_POWER_CYCLE] = "Reset_no_power_cycle";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FAST_RECOVERY_TX_PLR_TRIGGER] = "Fast_recovery_tx_plr_trigger";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_DUE_TO_HW_FORCE_EVENT] = "Down_due_to_hw_force_event";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_L1_EXIT_FAILURE] = "L1_exit_failure";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_TOO_MANY_LINK_ERROR_RECOVERIES] = "Too_many_link_error_recoveries";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_DUE_TO_CONTAIN_MODE] = "Down_due_to_contain_mode";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_BW_LOSS_THRESHOLD_EXCEEDED] = "BW_loss_threshold_exceeded";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_ELS_LASER_FAULT] = "ELS_laser_fault";
+    
     _localReasonOpcode[LOCAL_REASON_OPCODE_TIMEOUT] = "Timeout";
     _localReasonOpcode[LOCAL_REASON_OPCODE_RESERVED] = "N/A";
 }
 
 void MlxlinkMaps::initPprmOperationRecoveryMapping()
 {
-    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logcic_re-lock";
+    _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_LOG] = "host_logic_re_lock";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_HOST_SERDES] = "host_serdes_feq";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_TX] = "module_tx_disable";
     _pprmOperRecovery[PPRM_OPERATION_RECOVERY_MODULE_DATA_PATH] = "module_datapath_full_toggle";
+}
+
+void MlxlinkMaps::initPprmRecoveryStatusMapping()
+{
+    // Relevant for "host_logic_re_lock", "host_serdes_feq", "module_tx_disable", "module_datapath_full_toggle"
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_FW_DEFAULT] = "FW Default";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_ENABLE] = "Enable";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE] = "Disable";
+    _pprmRecoveryStatus[PPRM_RECOVERY_STATUS_DISABLE_SUPPORT_IN_NEGOTIATION] = "Disable Support In Negotiation";
 }
 
 void MlxlinkMaps::initPpcntGroupsMapping()
@@ -1551,6 +1586,17 @@ void MlxlinkMaps::initPlrRejectModeMapping()
     _plrRejectMode[PLR_REJECT_MODE_CS] = "rejection based on CS";
 }
 
+void MlxlinkMaps::initKrMapping()
+{
+    // According to arch - the enums here are based on "xdr_lt_cap" instead of kr_ext_cap.
+    _krExtOper[KR_EXT_OPER_LT_DISABLED] = "LT is Disabled";
+    _krExtOper[KR_EXT_OPER_LT_ENABLED_REGULAR_KR] = "LT Enabled Regular KR";
+    _krExtOper[KR_EXT_OPER_LT_ENABLED_EXT_KR_ASYNC] = "LT Enabled Ext KR Async Mode";
+
+    _krPrbsType[KR_PRBS_TYPE_PRBS13] = "PRBS13";
+    _krPrbsType[KR_PRBS_TYPE_PRBS31] = "PRBS31";
+}
+
 MlxlinkMaps::MlxlinkMaps()
 {
     initPublicStrings();
@@ -1571,6 +1617,9 @@ MlxlinkMaps::MlxlinkMaps()
     initPpttParamsMapping();
     initPpttSpeedMapping();
     initPlrRejectModeMapping();
+    initKrMapping();
+    initPprmOperationRecoveryMapping();
+    initPprmRecoveryStatusMapping();
 }
 
 MlxlinkMaps::~MlxlinkMaps() {}

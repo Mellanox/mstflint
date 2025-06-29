@@ -96,6 +96,8 @@ public:
     bool gradeScanPerLane;
     bool autoCsvName;
     bool _showPlr;
+    bool _showKr;
+    bool _showRxRecoveryCounters;
 
     string _device;
     string _extAdbFile;
@@ -116,6 +118,14 @@ public:
     string _forceMode;
     string _anMode;
     string _logFile;
+    string _linkTraining;
+    string _phyRecovery;
+    string _phyRecoveryType;
+    bool _showPeriodicEq;
+    bool _periodicEqIntervalSpecified;
+    int _setPeriodicEqInterval;
+    int _wdTimer;
+    bool _wdTimerSpecified;
     double _testTime;
     u_int32_t _feedbackIndex;
     u_int32_t _feedbackData;
