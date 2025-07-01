@@ -190,7 +190,10 @@ class CmdRegMfrl():
     def query_text(self, is_any_sync_supported=None):
         'return the text for the query operation in mlxfwreset'
         # Reset levels
-        default_reset_level = self.default_reset_level()
+        skip_pci_reset = False
+        if is_any_sync_supported is None:
+            skip_pci_reset = True
+        default_reset_level = self.default_reset_level(is_any_sync_supported, skip_pci_reset)
         result = "Reset-levels:\n"
         for reset_level_ii in self._reset_levels:
             level = reset_level_ii['level']
@@ -246,9 +249,11 @@ class CmdRegMfrl():
         else:
             return False
 
-    def default_reset_level(self):
+    def default_reset_level(self, is_any_sync_supported, skip_pci_reset):
         'Return the default reset-level (minimal supported reset-level)'
         for reset_level_ii, is_default in CmdRegMfrl.reset_levels_default():
+            if reset_level_ii == CmdRegMfrl.PCI_RESET and not skip_pci_reset and not is_any_sync_supported:
+                continue
             if self.is_reset_level_supported(reset_level_ii) and is_default:
                 return reset_level_ii
         raise CmdNotSupported("There is no supported reset-level")

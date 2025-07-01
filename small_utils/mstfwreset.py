@@ -2159,8 +2159,13 @@ def reset_flow_host(device, args, command):
             print(mrsi.query_text(is_bluefield))
 
     elif command == "reset":
-        reset_level = mfrl.default_reset_level(
-        ) if args.reset_level is None else args.reset_level
+        if mroq.mroq_is_supported():
+            is_any_sync_supported = mroq.is_any_sync_supported(tool_owner_support)
+            skip_pci_reset = False
+        else:
+            is_any_sync_supported = None
+            skip_pci_reset = True
+        reset_level = mfrl.default_reset_level(is_any_sync_supported, skip_pci_reset) if args.reset_level is None else args.reset_level
 
         reset_sync = SyncOwner.TOOL
         if reset_level is CmdRegMfrl.PCI_RESET:
