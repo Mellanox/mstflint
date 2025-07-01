@@ -65,6 +65,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _slotIndex = 0;
     _activeSpeed = 0;
     _activeSpeedEx = 0;
+    _isXdrSlowActive = false;
     _laneSpeedFromPptt = 0;
     _protoCapability = 0;
     _deviceCapability = 0;
