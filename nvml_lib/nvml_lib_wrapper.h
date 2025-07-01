@@ -39,12 +39,13 @@
 
 using std::string;
 
+typedef nvmlReturn_t (*f_nvmlDeviceGetCount_v2)(unsigned int*);
 typedef nvmlReturn_t (*f_nvmlDeviceGetHandleByIndex_v2)(unsigned int, nvmlDevice_t*);
 typedef nvmlReturn_t (*f_nvmlDeviceGetPciInfo_v3)(nvmlDevice_t, nvmlPciInfo_t*);
 typedef const char* (*f_nvmlErrorString)(nvmlReturn_t);
 typedef nvmlReturn_t (*f_nvmlInit_v2)(void);
 typedef nvmlReturn_t (*f_nvmlShutdown)(void);
-typedef nvmlReturn_t (*f_nvmlDeviceReadWritePRM)(nvmlDevice_t, nvmlPRMBuffer_t *);
+typedef nvmlReturn_t (*f_nvmlDeviceReadWritePRM)(nvmlDevice_t, nvmlPRMTLV_v1_t*);
 
 class NvmlLibWrapper
 {
@@ -52,18 +53,21 @@ public:
     NvmlLibWrapper(const string libPath = "libnvidia-ml.so");
     ~NvmlLibWrapper();
     /* Dynamic functions */
-    f_nvmlDeviceGetHandleByIndex_v2 nvmlDeviceGetHandleByIndex_v2;
-    f_nvmlDeviceGetPciInfo_v3       nvmlDeviceGetPciInfo_v3;
-    f_nvmlErrorString               nvmlErrorString;
-    f_nvmlInit_v2                   nvmlInit_v2;
-    f_nvmlShutdown                  nvmlShutdown;
-    f_nvmlDeviceReadWritePRM        nvmlDeviceReadWritePRM;
+    f_nvmlDeviceGetHandleByIndex_v2 nvmlDeviceGetHandleByIndex;
+    f_nvmlDeviceGetPciInfo_v3 nvmlDeviceGetPciInfo;
+    f_nvmlErrorString nvmlErrorString;
+    f_nvmlInit_v2 nvmlInit;
+    f_nvmlShutdown nvmlShutdown;
+    f_nvmlDeviceReadWritePRM nvmlDeviceReadWritePRM;
+    f_nvmlDeviceGetCount_v2 nvmlDeviceGetCount;
 
 
 private:
     void InitNvmlSDK();
     void LoadDynamicFuncs();
     void* LoadDynamicFunc(const std::string& functionName);
+    void LoadDynamicLib();
+    void FreeDynamicLib();
 
     const string _libPath;
     void       * _libraryHandle;

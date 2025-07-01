@@ -4294,8 +4294,13 @@ static int mreg_send_raw(mfile              * mf,
     fprintf(stdout, "\tReg Tlv\n");
     reg_tlv_dump(&tlv_info, stdout);
 #endif
-    /* Check the return value */
-    *reg_status = tlv.status;
+    // Update the return status.
+    // in RM Driver, TLV is not returned with updated status and the register status is already handled in RM Driver
+    // reg access function.
+    if (mf->tp != MST_NVML)
+    {
+        *reg_status = tlv.status;
+    }
     if (mad_rc) {
         return mad_rc;
     }

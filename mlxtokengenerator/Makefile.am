@@ -68,7 +68,7 @@ msttokengenerator_DEPENDENCIES = \
                                 $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
                                 $(SQLITE_LIBS) \
                                 $(JSON_LIBS) \
-                                $(MTCR_LIB)
+                                $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
 
 
 msttokengenerator_LDFLAGS = -static
