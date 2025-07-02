@@ -282,6 +282,10 @@ reg_access_status_t reg_access_mpir(mfile* mf, reg_access_method_t method, struc
 struct reg_access_hca_MRSV_ext;
 reg_access_status_t reg_access_mrsv(mfile* mf, reg_access_method_t method, struct reg_access_hca_MRSV_ext* mrsv);
 
+struct reg_access_hca_mpein_reg_ext;
+    reg_access_status_t
+      reg_access_mpein(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpein_reg_ext* mpein);
+
 #ifdef __cplusplus
 }
 #endif
