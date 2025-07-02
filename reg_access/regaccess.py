@@ -115,6 +115,7 @@ if REG_ACCESS:
             self._reg_access_dtor = REG_ACCESS.reg_access_dtor
             self._reg_access_mrsi = REG_ACCESS.reg_access_mrsi
             self._reg_access_mpir = REG_ACCESS.reg_access_mpir
+            self._reg_access_mpein = REG_ACCESS.reg_access_mpein
 
         def _err2str(self, rc):
             err2str = REG_ACCESS.reg_access_err2str
@@ -345,6 +346,18 @@ if REG_ACCESS:
 
             return mpirRegisterP.contents.bus, mpirRegisterP.contents.device, mpirRegisterP.contents.sdm
 
+        ##########################
+        def sendMPEIN(self, depth, pcie_index, node):
+            mpeinRegisterP = pointer(MPEIN_REG_EXT())
+            mpeinRegisterP.contents.depth = depth
+            mpeinRegisterP.contents.pcie_index = pcie_index
+            mpeinRegisterP.contents.node = node
+            rc = self._reg_access_mpein(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mpeinRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register MPEIN: %s (%d)" % (self._err2str(rc), rc))
+
+            return mpeinRegisterP.contents.port_type
+        
         ##########################
         def sendMROQ(self, reset_type):
             mroqRegisterP = pointer(MROQ_EXT())

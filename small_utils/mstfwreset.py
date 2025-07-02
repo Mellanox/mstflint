@@ -141,6 +141,9 @@ UNSUPPORTED_PSIDS_PER_DEV_ID = {
     0x218: ["MT_0000001121", "MT_0000001181", "MT_0000001122", "MT_0000001182", "OMN0000000006"]  # Canoe
 }
 
+BLUEFIELD_DEVICES = ['BlueField2', 'BlueField3']
+PCIE_SWITCH_DEVICES_ALL = BLUEFIELD_DEVICES + ['ConnectX7', 'ConnectX8', 'ConnectX9', 'ConnectX10']
+
 IS_MSTFLINT = os.path.basename(__file__) == "mstfwreset.py"
 # TODO later remove mcra to the new class
 MCRA = 'mcra'
@@ -169,6 +172,8 @@ SYNC_STATE_IDLE = 0x0
 SYNC_STATE_GET_READY = 0x1
 SYNC_STATE_GO = 0x2
 SYNC_STATE_DONE = 0x3
+
+PCI_EXPRESS_UPSTREAM_PORT = 0x5
 
 # reg access Object
 RegAccessObj = None
@@ -1412,7 +1417,7 @@ def send_reset_cmd_to_pcie_switch_devices(reset_level, reset_type, reset_sync):
         logger.debug("Creating regaccess obj for device %s" % pci_device.get_alias())
         pci_device_mst = mtcr.MstDevice(pci_device.get_alias())
         pci_device_reg_access = regaccess.RegAccess(pci_device_mst)
-        if is_pcie_switch_device(pci_device.get_cfg_did(), pci_device_reg_access, mlxfwreset_utils.getDevDBDF(pci_device.get_alias(), logger)):
+        if is_pcie_switch_device(pci_device.get_cfg_did(), pci_device_reg_access):
             # Create MFRL for each PCIE switch device.
             logger.debug("Creating MFRL for device %s" % pci_device.get_alias())
             mfrl = CmdRegMfrl(pci_device_reg_access, logger)
@@ -1440,30 +1445,20 @@ def send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync, pci_reset_re
         raise e
 
 
-def is_pcie_switch_device(devid, reg_access_obj=None, dbdf=None):
+def is_pcie_switch_device(devid, reg_access_obj=None):
     res = False
-    dbdf = DevDBDF if dbdf is None else dbdf
-    reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
     try:
         devDict = getDeviceDict(devid)
-        if devDict['name'] in ['BlueField2', 'BlueField3'] and platform.system() == "Linux":
-            logger.debug('is_pcie_switch_device: Found a BF device')
-            if is_in_internal_host(logger):
-                return res
-        if devDict['name'] in ['ConnectX7', 'ConnectX8', 'BlueField2', 'BlueField3']:
-            bus, device, sdm = reg_access_obj.sendMPIR(depth=0, pcie_index=0, node=0)  # bus is a int variable in base 10.
-            if not isinstance(bus, int):
-                bus = int(bus, 16)
-            if platform.system() == "FreeBSD":
-                dev_dbdf_bus = int(dbdf.split(':')[1], 10)  # dbdf is a string variable in base 10
-            else:
-                dev_dbdf_bus = int(dbdf.split(':')[1], 16)  # dbdf is a string variable in base 16
-            logger.debug('MPIR bus: 0x{0:X}, dbdf: {1}, dev_dbdf_bus: 0x{2:X}, sdm: {3}'.format(bus, dbdf, dev_dbdf_bus, sdm))
-            if bus != dev_dbdf_bus and sdm == 0:
-                logger.debug("Found a PCIE switch device")
+        if devDict['name'] in PCIE_SWITCH_DEVICES_ALL:
+            reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
+            port_type = reg_access_obj.sendMPEIN(depth=0, pcie_index=0, node=0)
+            if port_type == PCI_EXPRESS_UPSTREAM_PORT:
                 res = True
-    except BaseException:
-        pass
+                if devDict['name'] in BLUEFIELD_DEVICES and platform.system() == "Linux" and is_in_internal_host(logger):
+                    res = False
+        logger.debug('is_pcie_switch_device: device {0} is{1} a pcie switch device'.format(devDict['name'], '' if res else 'NOT '))
+    except BaseException as e:
+        logger.debug('is_pcie_switch_device failed: {0}'.format(e))
     return res
 
 
@@ -2148,10 +2143,11 @@ def reset_flow_host(device, args, command):
     if platform.system() == "Linux" and is_bluefield:
         tool_owner_support = False
 
+    is_pcie_switch = is_pcie_switch_device(devid)
     if command == "query":
         if mroq.mroq_is_supported():
             print(mfrl.query_text(mroq.is_any_sync_supported(tool_owner_support)))
-            mroq.print_query_text(is_pcie_switch_device(devid), tool_owner_support)
+            mroq.print_query_text(is_pcie_switch, tool_owner_support)
         else:
             print(mfrl.query_text())
             print(mcam.reset_sync_query_text(tool_owner_support))
@@ -2170,7 +2166,7 @@ def reset_flow_host(device, args, command):
         reset_sync = SyncOwner.TOOL
         if reset_level is CmdRegMfrl.PCI_RESET:
             if args.reset_sync is None:
-                reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch_device(devid), tool_owner_support)
+                reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch, tool_owner_support)
             else:
                 if args.reset_sync == SyncOwner.FW and mst_driver_is_loaded is False:
                     raise RuntimeError("Sync 2 is only relevant when the MST driver is loaded (run 'mst start')")
@@ -2195,9 +2191,7 @@ def reset_flow_host(device, args, command):
             # and it's restricted on UEFI secure boot
             raise RuntimeError(
                 "The tool supports only reset-level 4 on UEFI Secure Boot")
-        is_pcie_swtich = False
-        if is_pcie_switch_device(devid):
-            is_pcie_swtich = True
+        if is_pcie_switch:
             if args.reset_level is None:
                 if reset_level is CmdRegMfrl.PCI_RESET and mroq.is_sync2_hot_reset_supported() is False:
                     reset_level = CmdRegMfrl.WARM_REBOOT
@@ -2245,7 +2239,7 @@ def reset_flow_host(device, args, command):
         pci_reset_request_method = ResetReqMethod.LINK_DISABLE
         if args.request_method is None:
             if reset_level is CmdRegMfrl.PCI_RESET:
-                pci_reset_request_method = mroq.get_default_method(is_pcie_swtich)
+                pci_reset_request_method = mroq.get_default_method(is_pcie_switch)
         else:
             pci_reset_request_method = args.request_method
 
@@ -2262,7 +2256,7 @@ def reset_flow_host(device, args, command):
         if reset_level is CmdRegMfrl.PCI_RESET and pci_reset_request_method is ResetReqMethod.HOT_RESET:
             hot_reset_enabled = True
 
-        if is_pcie_switch_device(devid) and hot_reset_enabled:
+        if is_pcie_switch and hot_reset_enabled:
             AskUserPCIESwitchHotReset()
 
         else:
