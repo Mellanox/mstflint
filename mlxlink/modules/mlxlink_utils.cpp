@@ -1185,7 +1185,11 @@ string getCableMedia(u_int32_t cableType)
 string pcieSpeedStr(u_int32_t linkSpeedActive)
 {
     string linkSpeedActiveStr;
-    if (linkSpeedActive & GEN5)
+    if (linkSpeedActive & GEN6)
+    {
+        linkSpeedActiveStr = "32G PAM-4 Gen6";
+    }
+    else if (linkSpeedActive & GEN5)
     {
         linkSpeedActiveStr = "32G-Gen 5";
     }
