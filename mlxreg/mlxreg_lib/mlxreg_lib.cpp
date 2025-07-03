@@ -274,32 +274,6 @@ bool MlxRegLib::isRegSizeSupported(string regName)
 }
 
 /************************************
-* Function: isAccessRegisterSupported
-************************************/
-void MlxRegLib::isAccessRegisterSupported(mfile* mf)
-{
-    int                                    status;
-    struct icmd_hca_icmd_query_cap_general icmd_cap;
-    int                                    i = RETRIES_COUNT;
-
-    if (mf->tp == MST_FWCTL_CONTROL_DRIVER) {
-        return;
-    }
-
-    do{
-        memset(&icmd_cap, 0, sizeof(icmd_cap));
-        status = get_icmd_query_cap(mf, &icmd_cap);
-        if (!(status || (icmd_cap.allow_icmd_access_reg_on_all_registers == 0))) {
-            break;
-        }
-        msleep(SLEEP_INTERVAL);
-    } while (i-- > 0);
-
-    if (status || (icmd_cap.allow_icmd_access_reg_on_all_registers == 0)) {
-        throw MlxRegException("FW burnt on device does not support generic access register");
-    }
-}
-/************************************
 * Function: isAccessRegisterGMPSupported
 ************************************/
 bool MlxRegLib::isAccessRegisterGMPSupported(maccess_reg_method_t reg_method)

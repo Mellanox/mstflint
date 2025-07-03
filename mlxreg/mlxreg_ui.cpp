@@ -115,8 +115,6 @@
 #define OP_SHOW_REGS_FLAG_SHORT     ' '
 #define OP_SHOW_ALL_REGS_FLAG       "show_all_regs"
 #define OP_SHOW_ALL_REGS_FLAG_SHORT ' '
-#define IGNORE_CAP_CHECK_FLAG "ignore_cap_check"
-#define IGNORE_CAP_CHECK_FLAG_SHORT ' '
 #define IGNORE_REG_CHECK_FLAG "ignore_reg_check"
 #define IGNORE_REG_CHECK_FLAG_SHORT ' '
 #define FORCE_FLAG "yes"
@@ -191,7 +189,6 @@ void MlxRegUi::initCmdParser()
     AddOptions(IDXES_FLAG,        IDXES_FLAG_SHORT, "RegisterData", "Register data");
     AddOptions(OPS_FLAG,          OPS_FLAG_SHORT, "RegisterData", "Register data");
     AddOptions(REG_LEN_FLAG,      REG_LEN_FLAG_SHORT, "RegisterDataLen", "Register data length");
-    AddOptions(IGNORE_CAP_CHECK_FLAG, IGNORE_CAP_CHECK_FLAG_SHORT, "", "");
     AddOptions(IGNORE_REG_CHECK_FLAG, IGNORE_REG_CHECK_FLAG_SHORT, "", "");
     AddOptions(OP_GET_FLAG, OP_GET_FLAG_SHORT, "", "Register access GET");
     AddOptions(OP_SET_FLAG, OP_SET_FLAG_SHORT, "RegisterData", "Register access SET");
@@ -444,13 +441,6 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
         RegAccessParser::strToUint32((char*)value.c_str(), _dataLen);
         return PARSE_OK;
     }
-#if !defined(EXTERNAL) && !defined(MST_UL)
-    else if (name == IGNORE_CAP_CHECK_FLAG)
-    {
-        _ignoreCapCheck = true;
-        return PARSE_OK;
-    }
-#endif
     else if (name == IGNORE_REG_CHECK_FLAG)
     {
         // TODO: remove IGNORE_REG_CHECK_FLAG from UI after 4.14.0 release, it's deprecated
@@ -640,24 +630,6 @@ void MlxRegUi::run(int argc, char** argv)
     if (!MlxRegLib::isDeviceSupported(_mf))
     {
         throw MlxRegException("Device is not supported");
-    }
-
-    if (_ignoreCapCheck == false)
-    {
-        try
-        {
-            MlxRegLib::isAccessRegisterSupported(_mf);
-        }
-        catch (MlxRegException& exp)
-        {
-#if defined(EXTERNAL) || defined(MST_UL)
-            throw exp;
-#else
-            throw MlxRegException("%s. \n   internal only: FW might be old, consider running "
-                                  "with --%s (This flag is deprecated)",
-                                  exp.what(), IGNORE_CAP_CHECK_FLAG);
-#endif
-        }
     }
 
     _mlxRegLib = new MlxRegLib(_mf, _extAdbFile, _isExternal);
