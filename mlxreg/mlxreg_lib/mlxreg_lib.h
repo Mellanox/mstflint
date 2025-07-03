@@ -72,7 +72,6 @@ public:
     dm_dev_id_t getDevId();
     static dm_dev_id_t getDevId(mfile* mf);
     static bool isDeviceSupported(mfile* mf);
-    static void isAccessRegisterSupported(mfile* mf);
     bool isAccessRegisterGMPSupported(maccess_reg_method_t reg_method);
     bool isIBDevice();
     MlxRegLibStatus dumpRegisterData(string output_file_name, std::vector<u_int32_t>& data);
