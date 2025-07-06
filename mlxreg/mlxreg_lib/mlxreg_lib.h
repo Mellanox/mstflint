@@ -58,15 +58,15 @@ public:
     /* * * * * * * * * * * * * *
      * library Getters/Setters *
      * * * * * * * * * * * * * */
-    AdbInstanceLegacy* findAdbNode(string name);
-    AdbInstanceLegacy* getAdbTable() { return _regAccessRootNode; };
+    AdbInstanceAdvLegacy* findAdbNode(string name);
+    AdbInstanceAdvLegacy* getAdbTable() { return _regAccessRootNode; };
     /* * * * * * * *
      * library API *
      * * * * * * * */
     string getLastErrMsg();
     MlxRegLibStatus showRegisters(std::vector<string>& regs); // Return all available register names
     MlxRegLibStatus showRegister(string regName,
-                                 std::vector<AdbInstanceLegacy*>& fields); // Return all fields of given register
+                                 std::vector<AdbInstanceAdvLegacy*>& fields); // Return all fields of given register
     MlxRegLibStatus sendRegister(string regName, int method, std::vector<u_int32_t>& data);  // Send register by name
     MlxRegLibStatus sendRegister(u_int16_t regId, int method, std::vector<u_int32_t>& data); // Send register by ID
     dm_dev_id_t getDevId();
@@ -85,12 +85,12 @@ protected:
 
     /* Data Members */
     mfile* _mf;
-    static map<dm_dev_id_t, AdbLegacy*> _adbDBs;
+    static map<dm_dev_id_t, AdbAdvLegacy*> _adbDBs;
     static const int RETRIES_COUNT;
     static const int SLEEP_INTERVAL;
-    AdbLegacy* _adb;
-    AdbInstanceLegacy* _regAccessRootNode;
-    AdbInstanceLegacy* _regAccessUnionNode;
+    AdbAdvLegacy* _adb;
+    AdbInstanceAdvLegacy* _regAccessRootNode;
+    AdbInstanceAdvLegacy* _regAccessUnionNode;
     std::map<string, u_int64_t> _regAccessMap;
     bool _isExternal;
 };

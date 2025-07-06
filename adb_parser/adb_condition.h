@@ -39,25 +39,60 @@
 
 #include <map>
 #include <string>
-#include "adb_expr.h"
+#include <array>
 #include "adb_condVar.h"
+#include "expr.h"
 
-class CondVar;
+using namespace std;
+template<typename T_OFFSET>
+class _AdbCondVar_impl;
 
-class AdbCondition
+template<typename T_OFFSET>
+class _AdbCondition_impl
 {
+    using AdbCondVar = _AdbCondVar_impl<T_OFFSET>;
 public:
-    AdbCondition();
-    map<string, CondVar>& getVarsMap();
-    ~AdbCondition() = default;
-    void setCondition(std::string);
-    std::string getCondition();
+    _AdbCondition_impl() = default;
+    ~_AdbCondition_impl() = default;
+    void init(string& condition_str);
+    map<string, AdbCondVar>& get_vars_map();
+    const std::string& get_condition() const;
+    void update_enum(const std::string& var_name);
+    uint64_t evaluate(uint8_t* buffer);
 
 private:
-    void splitConditionIntoVariables();
-    AdbExpr evaluatedCondition;
-    std::string condition;
-    map<string, CondVar> varsMap;
+    void init_variables();
+    void modify_condition_names();
+    std::string find_enclosing_parenthesis(size_t var_pos);
+    std::string _condition_str;
+    map<string, AdbCondVar> _vars_map;
+    static const size_t MAX_CONDITION_SIZE;
+    static const string DOLLAR;
+    static const string DUNDER;
+    static const string VARIABLE_PATTERN;
+    static const string SIMPLE_NAME_PATTERN;
+    static const std::array<const char*, 42> OPERATOR_STRINGS;
 };
 
+using AdbConditionLegacy = _AdbCondition_impl<uint32_t>;
+using AdbCondition = _AdbCondition_impl<uint64_t>;
+template<typename T_OFFSET>
+class ConditionExpr : public Expr
+{
+private:
+    map<string, _AdbCondVar_impl<T_OFFSET>>& _vars_map;
+public:
+    ConditionExpr(map<string, _AdbCondVar_impl<T_OFFSET>>& vars) : _vars_map(vars) {}
+    int ResolveName(char* name, u_int64_t* val) override
+    {
+        auto it = _vars_map.find(string(name));
+        if (it != _vars_map.end())
+        {
+            *val = static_cast<u_int64_t>(it->second.get_value());
+            return 0;
+        }
+        return -1; // Name not found
+    }
+    void Error(const std::string& msg) override;
+};
 #endif // ADB_CONDITION_Hs

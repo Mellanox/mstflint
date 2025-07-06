@@ -149,7 +149,7 @@ bool MlxRegLib::isDeviceSupported(mfile* mf)
 
 void MlxRegLib::initAdb(string extAdbFile)
 {
-    _adb = new AdbLegacy();
+    _adb = new AdbAdvLegacy();
     if (extAdbFile != "")
     {
         if (!_adb->load(extAdbFile, false, false))
@@ -166,7 +166,7 @@ void MlxRegLib::initAdb(string extAdbFile)
 /************************************
  * Function: findAdbNode
  ************************************/
-AdbInstanceLegacy* MlxRegLib::findAdbNode(string name)
+AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(string name)
 {
     if (_regAccessMap.find(name) == _regAccessMap.end())
     {
@@ -178,9 +178,9 @@ AdbInstanceLegacy* MlxRegLib::findAdbNode(string name)
 /************************************
  * Function: showRegister
  ************************************/
-MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector<AdbInstanceLegacy*>& fields)
+MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector<AdbInstanceAdvLegacy*>& fields)
 {
-    AdbInstanceLegacy* adbNode = findAdbNode(regName);
+    AdbInstanceAdvLegacy* adbNode = findAdbNode(regName);
     fields = adbNode->getLeafFields(true);
     return MRLS_SUCCESS;
 }
@@ -279,7 +279,7 @@ string MlxRegLib::getLastErrMsg()
  ************************************/
 bool MlxRegLib::isRegSizeSupported(string regName)
 {
-    AdbInstanceLegacy* adbNode = _regAccessUnionNode->getUnionSelectedNodeName(regName);
+    AdbInstanceAdvLegacy* adbNode = _regAccessUnionNode->getUnionSelectedNodeName(regName);
     return (((adbNode->get_size() >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_SET)) ||
             ((adbNode->get_size() >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET)));
 }

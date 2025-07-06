@@ -68,6 +68,7 @@ AdbParser<e, O>::AdbParser(string fileName,
                            bool enforceExtraChecks,
                            bool checkDsAlign,
                            bool enforceGuiChecks,
+                           bool force_dword_align,
                            bool cd_mode,
                            bool variable_alignment) :
     _adbCtxt(adbCtxt),
@@ -86,6 +87,7 @@ AdbParser<e, O>::AdbParser(string fileName,
     _instanceOps(false),
     _nodeOps(false),
     _enforceGuiChecks(enforceGuiChecks),
+    _force_dword_align(force_dword_align),
     _cd_mode(cd_mode),
     _nname_pattern(".*"),
     _fname_pattern(".*")
@@ -304,6 +306,11 @@ bool AdbParser<e, O>::load(bool is_main)
             return false;
         }
     }
+    catch (AdbStopException& er)
+    {
+        free(data);
+        return false;
+    }
     catch (std::runtime_error& er)
     {
         _lastError = CHECK_RUNTIME_ERROR(er);
@@ -520,71 +527,121 @@ string AdbParser<e, O>::findFile(string fileName)
  * Function: AdbParser::addr2int
  **/
 template<bool e, typename T_OFFSET>
-unsigned long long AdbParser<e, T_OFFSET>::addr2int(string& s)
+bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
+                                        T_OFFSET& res,
+                                        AdbParser<e, T_OFFSET>* adbParser,
+                                        bool size_or_offset,
+                                        bool node_or_field)
 {
-    try
-    {
-        unsigned long long res;
-        Algorithm::to_lower(s);
-        size_t* end{nullptr};
-        vector<string> words;
-        Algorithm::split(words, s, Algorithm::is_any_of("."));
+    string attribute_name{size_or_offset ? "size" : "offset"};
+    string tag_name{node_or_field ? "Node" : "Field"};
+    int lineNumber = XML_GetCurrentLineNumber(adbParser->_xmlParser);
 
-        // fix for cases like: 0x.16
-        if (words.size() && !words[0].compare("0x"))
+    bool exception_raised = false;
+
+    Regex::smatch match;
+    Regex::regex correctHEXExpr("^\\s*((0[xX])?[0-9A-Fa-f]*)(\\.([0-9]*))?\\s*$");
+    if (!regex_match(s, match, correctHEXExpr))
         {
-            words[0] = "0";
+        exception_raised = raiseException(allowMultipleExceptions,
+                                          "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " +
+                                            "invalid format, valid formats are: \"0xH.D\", \"D.D\", \"0xH\", \".D\".",
+                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                                          ExceptionHolder::FATAL_EXCEPTION);
+        res = static_cast<T_OFFSET>(-1);
+        return false;
         }
 
-        switch (words.size())
+    auto num_bytes_str = match[1].str();
+    Algorithm::to_lower(num_bytes_str);
+    auto num_bits_str = match[4].str();
+    unsigned long long num_bytes = 0;
+    unsigned long long num_bits = 0;
+    if (num_bytes_str == "0x")
         {
-            case 1:
-                res = stoull(words[0], end, 0);
-                if (end && words[0][*end] != '\0')
+        if (adbParser->_enforceExtraChecks)
                 {
-                    throw AdbException();
+            exception_raised = raiseException(
+              allowMultipleExceptions,
+              "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " + "invalid format, \"0x.D\".",
+              ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+              ExceptionHolder::ERROR_EXCEPTION);
                 }
+        num_bytes_str = "0";
+    }
 
-                res *= 8;
-                break;
-
-            case 2:
-                if (words[0].empty())
+    size_t end;
+    try
+    {
+        if (!num_bytes_str.empty())
                 {
                     // .DDD form
-                    res = stoull(words[1], end, 0);
-                    if (end && words[1][*end] != '\0')
+            num_bytes = stoull(num_bytes_str, &end, 0);
+            if (end != num_bytes_str.size())
                     {
-                        throw AdbException();
+                throw std::invalid_argument("");
                     }
                 }
                 else
                 {
-                    // 0xHHHHH.DDD or DDDDD.DDD form
-                    res = stoull(words[0], end, 0);
-                    if (end && words[0][*end] != '\0')
+            num_bytes = 0;
+        }
+        if (!num_bits_str.empty())
+        {
+            num_bits = stoull(num_bits_str, &end, 10);
+            if (end != num_bits_str.size())
                     {
-                        throw AdbException();
+                throw std::invalid_argument("");
                     }
-                    res *= 8;
-                    res += stoull(words[1], end, 0);
-                    if (end && words[1][*end] != '\0')
+        }
+        else
                     {
-                        throw AdbException();
+            num_bits = 0;
                     }
                 }
-                break;
-
-            default:
-                throw AdbException("Invalid size: " + s);
-        }
-
-        return res;
-    }
-    catch (AdbException& exp)
+    catch (std::invalid_argument&)
     {
-        throw AdbException("Failed to retrieve integer from string: " + exp.what_s());
+        exception_raised = raiseException(allowMultipleExceptions,
+                                          "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " +
+                                            "invalid format, valid formats are: \"0xH.D\", \"D.D\", \"0xH\", \".D\".",
+                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                                          ExceptionHolder::FATAL_EXCEPTION);
+        res = static_cast<T_OFFSET>(-1);
+        return false;
+        }
+    catch (std::out_of_range&)
+    {
+        exception_raised =
+          raiseException(allowMultipleExceptions,
+                         "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " + "out of range.",
+                         ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                         ExceptionHolder::FATAL_EXCEPTION);
+        res = static_cast<T_OFFSET>(-1);
+        return false;
     }
+    if (adbParser->_enforceExtraChecks)
+    {
+        if (num_bytes % 4 != 0)
+        {
+            exception_raised =
+              raiseException(allowMultipleExceptions,
+                             "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " +
+                               "invalid format, address part must be dword aligned, while given, " + num_bytes_str,
+                             ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                             ExceptionHolder::WARN_EXCEPTION);
+        }
+        if (num_bits > 31)
+        {
+            exception_raised =
+              raiseException(allowMultipleExceptions,
+                             "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " +
+                               "invalid format, offset part must in range [0,31], while given, " + num_bits_str,
+                             ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                             ExceptionHolder::WARN_EXCEPTION);
+        }
+    }
+    res = num_bytes * 8 + num_bits;
+    return !exception_raised;
 }
 
 /**
@@ -685,7 +742,8 @@ void AdbParser<e, O>::includeFile(AdbParser* adbParser, string fileName, int lin
         // parse the included file
         AdbParser p(filePath, adbParser->_adbCtxt, adbParser->_root_node_name, adbParser->_addReserved,
                     adbParser->_strict, "", adbParser->_enforceExtraChecks, adbParser->_checkDsAlign,
-                    adbParser->_enforceGuiChecks, adbParser->_cd_mode, adbParser->_support_variable_alignment);
+                    adbParser->_enforceGuiChecks, adbParser->_force_dword_align, adbParser->_cd_mode,
+                    adbParser->_support_variable_alignment);
         if (!p.load(false))
         {
             throw AdbException(p.getError());
@@ -748,7 +806,7 @@ bool AdbParser<e, O>::checkSpecialChars(string tagName)
     Regex::regex checkArrayExpr("[\\[\\]]"); // this check if containing the array brackets
     if (Regex::regex_search(tagName, match, checkArrayExpr))
     {
-        Regex::regex correctNameForArrayExpr("[_A-Za-z][\\w]*\\[[\\d]+\\]$");
+        Regex::regex correctNameForArrayExpr("[_A-Za-z]\\w*\\[\\d+\\]$");
         if (!Regex::regex_search(tagName, match, correctNameForArrayExpr))
         { // check the name if correct the square brackets (array)
             return false;
@@ -756,41 +814,15 @@ bool AdbParser<e, O>::checkSpecialChars(string tagName)
     }
     else
     {
-        Regex::regex correctNameNoneArrayExpr("[_A-Za-z][\\w]*$");
+        Regex::regex correctNameNoneArrayExpr("[_A-Za-z]\\w*$");
         if (!Regex::regex_search(tagName, match, correctNameNoneArrayExpr))
         { // check the name if correct without the square brackets (not array)
             return false;
         }
     }
     return true;
-}
 
-template<bool e, typename O>
-bool AdbParser<e, O>::checkHEXFormat(string addr)
-{
-    Regex::smatch match;
-    Regex::regex correctHEXExpr("^(0x[0-9A-Fa-f])?[0-9A-Fa-f]*(\\.[0-9]*)?$");
-    if (!regex_search(addr, match, correctHEXExpr))
-    {
-        return false;
-    }
-    return true;
-}
 
-template<bool e, typename O>
-bool AdbParser<e, O>::checkBigger32(string num)
-{
-    std::istringstream iss(num);
-    std::string token;
-    std::getline(iss, token, '.');
-    if (std::getline(iss, token, '.'))
-    { // the second part of the size after the . max to be 32 0x0.0
-        if (addr2int(token) / 8 >= 32)
-        {
-            return true;
-        }
-    }
-    return false;
 }
 
 template<bool e, typename O>
@@ -1261,7 +1293,6 @@ void AdbParser<e, T_OFFSET>::startNodeElement(const XML_Char** atts,
         }
 
         Algorithm::trim(nodeName);
-        string size = attrValue(atts, "size", override_attrs);
 
         if (adbParser->_enforceGuiChecks)
         {
@@ -1276,6 +1307,16 @@ void AdbParser<e, T_OFFSET>::startNodeElement(const XML_Char** atts,
             }
         }
 
+        string size = attrValue(atts, "size", override_attrs);
+        T_OFFSET node_size = 0;
+        parse_size(size, node_size, adbParser, true, true);
+        if (node_size == 0)
+        {
+            raiseException(allowMultipleExceptions,
+                           "Node size is not allowed to be 0, in Node: \"" + nodeName + "\"",
+                           ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
+                           ExceptionHolder::FATAL_EXCEPTION);
+        }
         if (adbParser->_enforceExtraChecks)
         {
             if (!AdbParser::checkSpecialChars(nodeName))
@@ -1285,28 +1326,7 @@ void AdbParser<e, T_OFFSET>::startNodeElement(const XML_Char** atts,
                                ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
                                ExceptionHolder::WARN_EXCEPTION);
             }
-            if (AdbParser::checkBigger32(size))
-            { // the second part of the size after the . max to be 32 0x0.0
-                raiseException(allowMultipleExceptions,
-                               "Invalid size format, valid format 0x0.0 not allowed to be more than 0x0.31",
-                               ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                               ExceptionHolder::WARN_EXCEPTION);
-            }
-            if (!AdbParser::checkHEXFormat(size))
-            {
-                raiseException(allowMultipleExceptions,
-                               "Invalid size format",
-                               ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                               ExceptionHolder::WARN_EXCEPTION);
-            }
 
-            if (addr2int(size) == 0)
-            {
-                raiseException(allowMultipleExceptions,
-                               "Node Size is not allowed to be 0, in Node: \"" + nodeName + "\"",
-                               ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                               ExceptionHolder::ERROR_EXCEPTION);
-            }
         }
         string desc = descXmlToNative(attrValue(atts, "descr", override_attrs));
 
@@ -1315,13 +1335,6 @@ void AdbParser<e, T_OFFSET>::startNodeElement(const XML_Char** atts,
         {
             raiseException(allowMultipleExceptions,
                            "Missing node name",
-                           ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                           ExceptionHolder::FATAL_EXCEPTION);
-        }
-        if (size.empty())
-        {
-            raiseException(allowMultipleExceptions,
-                           "Missing node size",
                            ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
                            ExceptionHolder::FATAL_EXCEPTION);
         }
@@ -1336,7 +1349,6 @@ void AdbParser<e, T_OFFSET>::startNodeElement(const XML_Char** atts,
                            ExceptionHolder::FATAL_EXCEPTION);
         }
 
-        T_OFFSET node_size = addr2int(size);
         string unionAttrVal = attrValue(atts, "attr_is_union", override_attrs);
         auto is_union = !unionAttrVal.empty() && stoi(unionAttrVal) != 0;
 
@@ -1381,6 +1393,8 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
 {
     bool expFound = false;
     bool invalid_size = false;
+    bool invalid_offset = false;
+    bool default_offset = false;
     if (!adbParser->_currentNode && !adbParser->skipNode)
     {
         expFound = raiseException(allowMultipleExceptions,
@@ -1415,33 +1429,31 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
         string offset = attrValue(atts, "offset", override_attrs);
         string size = attrValue(atts, "size", override_attrs);
 
-        if (size.empty())
+        T_OFFSET field_size = 0;
+        expFound = !parse_size(size, field_size, adbParser, true, false);
+        invalid_size = field_size == static_cast<T_OFFSET>(-1);
+        if (field_size == 0)
         {
             expFound = raiseException(allowMultipleExceptions,
-                                      "Missing field size",
+                                      "Missing or zero field size, in field: \"" + fieldName + "\"",
                                       ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
                                       ExceptionHolder::FATAL_EXCEPTION);
             invalid_size = true;
         }
 
-        T_OFFSET field_size = invalid_size ? 0 : addr2int(size);
-
-        if (adbParser->_enforceExtraChecks)
+        Algorithm::trim(offset);
+        if (offset.empty())
         {
-            if (!invalid_size && field_size % 32 == 0 && !AdbParser::checkHEXFormat(size))
+            default_offset = true;
+        }
+        T_OFFSET field_offset = 0;
+        if (!default_offset)
             {
-                expFound = raiseException(allowMultipleExceptions,
-                                          "Invalid size format",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::WARN_EXCEPTION);
+            expFound = expFound || !parse_size(offset, field_offset, adbParser, false, false);
             }
-            if (!AdbParser::checkHEXFormat(offset))
+        invalid_offset = field_offset == static_cast<T_OFFSET>(-1);
+        if (adbParser->_enforceExtraChecks)
             {
-                expFound = raiseException(allowMultipleExceptions,
-                                          "Invalid offset format",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::WARN_EXCEPTION);
-            }
             if (!AdbParser::checkSpecialChars(fieldName))
             {
                 expFound = raiseException(allowMultipleExceptions,
@@ -1449,32 +1461,10 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
                                           ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
                                           ExceptionHolder::WARN_EXCEPTION);
             }
-            if (!expFound && adbParser->_currentNode->isUnion && addr2int(offset) != 0)
+            if (!expFound && adbParser->_currentNode->isUnion && !default_offset && field_offset != 0)
             {
                 expFound = raiseException(allowMultipleExceptions,
                                           "Offset must be 0x0.0 in Union fields",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::WARN_EXCEPTION);
-            }
-            if (AdbParser::checkBigger32(size))
-            { // the second part of the size after the . max to be 32 0x0.0
-                expFound = raiseException(allowMultipleExceptions,
-                                          "Invalid size format, valid format 0x0.0 not allowed to be more than 0x0.31",
-                                          ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                          ExceptionHolder::WARN_EXCEPTION);
-            }
-            if (AdbParser::checkBigger32(offset))
-            { // the second part of the size after the . max to be 32 0x0.0
-                expFound =
-                  raiseException(allowMultipleExceptions,
-                                 "Invalid offset format, valid format 0x0.0 not allowed to be more than 0x0.31",
-                                 ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                 ExceptionHolder::WARN_EXCEPTION);
-            }
-            if (!invalid_size && field_size == 0)
-            {
-                expFound = raiseException(allowMultipleExceptions,
-                                          "Field Size is not allowed to be 0, in Field: \"" + fieldName + "\"",
                                           ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
                                           ExceptionHolder::WARN_EXCEPTION);
             }
@@ -1581,6 +1571,10 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
             }
         }
 
+        if ((invalid_size || invalid_offset) && adbParser->allowMultipleExceptions)
+        {
+            throw AdbStopException();
+        }
         // Check array element size
         if (adbParser->_currentField->array_type >= AdbField::ArrayType::definite &&
             adbParser->_currentField->array_type < AdbField::ArrayType::unlimited &&
@@ -1594,7 +1588,7 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
 
             expFound = raiseException(allowMultipleExceptions, exceptionTxt, "", ExceptionHolder::FATAL_EXCEPTION);
         }
-        if (offset.empty())
+        if (default_offset)
         {
             if (adbParser->_currentNode->fields.empty())
             {
@@ -1608,7 +1602,7 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
         }
         else
         {
-            adbParser->_currentField->offset = addr2int(offset);
+            adbParser->_currentField->offset = field_offset;
         }
 
         // Very tricky but works well for big endian arrays support - on endElement we will fix the address again
@@ -2133,7 +2127,7 @@ void AdbParser<e, T_OFFSET>::endElement(void* _adbParser, const XML_Char* name)
                     T_OFFSET effective_node_size = adbParser->_currentNode->get_size();
 
                     // In Chip-Design mode force pad to 32 bit
-                    if (adbParser->_cd_mode && effective_node_size < 32 && effective_node_size != 16 &&
+                    if (adbParser->_force_dword_align && effective_node_size < 32 && effective_node_size != 16 &&
                         effective_node_size != 8)
                     {
                         effective_node_size = 32;

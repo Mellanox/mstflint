@@ -101,6 +101,7 @@ public:
               bool enforceExtraChecks = false,
               bool checkDsAlign = false,
               bool enforceGuiChecks = false,
+              bool force_dword_align = false,
               bool cd_mode = false,
               bool variable_alignment = false);
     ~AdbParser();
@@ -112,8 +113,6 @@ public:
     static string descNativeToXml(const string& desc);
     static void includeAllFilesInDir(AdbParser* adbParser, string dirPath, int lineNumber = -1);
     static bool checkSpecialChars(string tagName);
-    static bool checkBigger32(string num);
-    static bool checkHEXFormat(string addr);
     static bool checkAttrExist(const XML_Char** atts, const XML_Char* name);
     static void setAllowMultipleExceptionsTrue();
 
@@ -144,7 +143,8 @@ private:
     static string attrName(const XML_Char** atts, int i);
     static string attrValue(const XML_Char** atts, int i, AttrsMap* override_attrs = nullptr);
     static bool is_inst_ifdef_exist_and_correct_project(const XML_Char** atts, AdbParser* adbParser);
-    static unsigned long long addr2int(string& s);
+    static bool
+      parse_size(const string& s, T_OFFSET& res, AdbParser* adbParser, bool size_or_offset, bool node_or_field);
     static T_OFFSET aligned_word(T_OFFSET offset, uint8_t alignment = 32);
     static uint32_t startBit(T_OFFSET offset, uint8_t alignment = 32);
     static bool raiseException(bool allowMultipleExceptions, string exceptionTxt, string addedMsg, const string expType);
@@ -171,6 +171,7 @@ private:
     bool _nodeOps;
     bool _enforceExtraChecks;
     bool _enforceGuiChecks;
+    bool _force_dword_align;
     bool _cd_mode;
     string _nname_pattern;
     string _fname_pattern;

@@ -64,8 +64,21 @@ DumpCommand::DumpCommand(device_attributes device_attrs,
     _allocated_ostream = true;
 }
 
+DumpCommand::DumpCommand(mfile_t* mf,
+                         device_attributes device_attrs,
+                         dump_request segment_params,
+                         uint32_t depth,
+                         bool is_textual) :
+    ResourceDumpCommand{mf, device_attrs, segment_params, depth, is_textual}
+{
+    init_streams();
+}
 DumpCommand::DumpCommand(device_attributes device_attrs, dump_request segment_params, uint32_t depth, bool is_textual) :
     ResourceDumpCommand{device_attrs, segment_params, depth, is_textual}
+{
+    init_streams();
+}
+void DumpCommand::init_streams()
 {
     auto ss = make_shared<stringstream>();
     _ostream = ss;

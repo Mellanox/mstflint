@@ -56,19 +56,19 @@ public:
     RegAccessParser(string data,
                     string indexes,
                     string ops,
-                    AdbInstanceLegacy* regNode,
+                    AdbInstanceAdvLegacy* regNode,
                     std::vector<u_int32_t> buffer,
                     bool ignore_ro = false);
     RegAccessParser(string data,
                     string indexes,
                     string ops,
-                    AdbInstanceLegacy* regNode,
+                    AdbInstanceAdvLegacy* regNode,
                     u_int32_t len,
                     bool ignore_ro = false);
     std::vector<u_int32_t> genBuff();
     u_int32_t getDataLen() { return _len; };
     static void strToUint32(char* str, u_int32_t& uint);
-    static string getAccess(const AdbInstanceLegacy* field);
+    static string getAccess(const AdbInstanceAdvLegacy* field);
     enum access_type_t
     {
         INDEX,
@@ -80,7 +80,7 @@ protected:
     string _indexes;
     string _ops;
     u_int32_t _len;
-    AdbInstanceLegacy* _regNode;
+    AdbInstanceAdvLegacy* _regNode;
     parseMode _parseMode;
     string output_file;
     std::vector<u_int32_t> _buffer;
@@ -92,13 +92,13 @@ protected:
     void parseOps();
     void parseData();
     void parseUnknown();
-    bool checkFieldWithPath(AdbInstanceLegacy* field,
+    bool checkFieldWithPath(AdbInstanceAdvLegacy* field,
                             u_int32_t idx,
                             std::vector<string>& fieldsChain,
                             u_int32_t size = 0,
                             u_int32_t offset = 0,
                             bool offsetSpecified = false);
-    AdbInstanceLegacy* getField(string name, u_int32_t size = 0, u_int32_t offset = 0, bool offsetSpecified = false);
+    AdbInstanceAdvLegacy* getField(string name, u_int32_t size = 0, u_int32_t offset = 0, bool offsetSpecified = false);
     std::vector<string> strSplit(string str, char delimiter, bool forcePairs);
     void updateBuffer(u_int32_t offset, u_int32_t size, u_int32_t val);
     void updateBufferUnknwon(std::vector<string> fieldTokens);
@@ -108,15 +108,15 @@ protected:
                             u_int32_t size = 0,
                             u_int32_t offset = 0,
                             bool offsetSpecified = false);
-    bool isRO(AdbInstanceLegacy* field);
-    bool isIndex(AdbInstanceLegacy* field);
-    bool isOP(AdbInstanceLegacy* field);
-    std::vector<string> getAllIndexes(AdbInstanceLegacy* node);
-    std::vector<string> getAllOps(AdbInstanceLegacy* node);
+    bool isRO(AdbInstanceAdvLegacy* field);
+    bool isIndex(AdbInstanceAdvLegacy* field);
+    bool isOP(AdbInstanceAdvLegacy* field);
+    std::vector<string> getAllIndexes(AdbInstanceAdvLegacy* node);
+    std::vector<string> getAllOps(AdbInstanceAdvLegacy* node);
     const std::string accessTypeToString(access_type_t accessType);
 
 private:
-    bool checkAccess(const AdbInstanceLegacy* field, const string accessStr);
+    bool checkAccess(const AdbInstanceAdvLegacy* field, const string accessStr);
 };
 
 } // namespace mlxreg

@@ -119,6 +119,8 @@ public:
     using AdbFieldLarge = AdbFieldLarge_impl<T_OFFSET>;
     using AdbNodeLarge = AdbNodeLarge_impl<T_OFFSET>;
 
+    using AdbCondition = _AdbCondition_impl<T_OFFSET>;
+    using AdbCondVar = _AdbCondVar_impl<T_OFFSET>;
     using NodesMap = map<string, AdbNode*>;
     using PathPart = pair<string, vector<uint32_t>>;
     using SplittedPath = vector<PathPart>;
@@ -146,6 +148,7 @@ public:
               string logFile = "",
               bool checkDsAlign = false,
               bool enforceGuiChecks = false,
+              bool force_dword_align = false,
               bool cd_mode = false,
               bool variable_alignment = false,
               string root_node_name = "root");
@@ -164,6 +167,7 @@ public:
                               string root_display_name = "",
                               PartitionTree* partition_tree = nullptr,
                               AdbField* rootField = nullptr,
+                              string ancestor_path = "",
                               bool array_path_wildcards = false,
                               bool strict_instance_ops = true,
                               bool enable_parse_missing_sons = false);
@@ -235,6 +239,8 @@ private:
     string _lastError;
     bool _checkDsAlign;
     bool _enforceGuiChecks;
+    bool _force_dword_align;
+    bool _cd_mode;
     list<AdbInstance*> _unionSelectorEvalDeffered;
     list<AdbInstance*> _conditionInstances;
     list<AdbInstance*> _conditionalArrays;

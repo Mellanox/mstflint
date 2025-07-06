@@ -89,8 +89,8 @@ typedef struct notice_segment_data
 
 typedef struct command_segment_data
 {
-    uint16_t segment_called;
     uint16_t vhca_id;
+    uint16_t segment_called;
     segment_params_data_t segment_params;
 } command_segment_data_t;
 

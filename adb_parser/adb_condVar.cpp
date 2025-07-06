@@ -35,30 +35,69 @@
  */
 
 #include "adb_condVar.h"
+#include "adb_exceptionHolder.h"
+#include "adb_instance.h"
 
-bool CondVar::isScalar()
+using namespace std;
+template<typename T_OFFSET>
+_AdbCondVar_impl<T_OFFSET>::_AdbCondVar_impl(string original_name) : _original_name(original_name)
 {
-    return this->is_scalar;
 }
 
-void CondVar::setScalar(int value)
+template<typename T_OFFSET>
+void _AdbCondVar_impl<T_OFFSET>::set_value(int value)
 {
-    this->is_scalar = true;
-    this->value = value;
+    this->_evaluated = true;
+    this->_value = value;
 }
 
-bool CondVar::isEvaluated()
+template<typename T_OFFSET>
+bool _AdbCondVar_impl<T_OFFSET>::is_evaluated() const
 {
-    return this->evaluated;
+    return this->_evaluated;
 }
 
-void CondVar::setEvaluated(int value)
+template<typename T_OFFSET>
+bool _AdbCondVar_impl<T_OFFSET>::is_name_modified() const
 {
-    this->evaluated = true;
-    this->value = value;
+    return !this->_original_name.empty();
+}
+template<typename T_OFFSET>
+void _AdbCondVar_impl<T_OFFSET>::set_instance(AdbInstance* instance)
+{
+    this->_instance = instance;
+}
+template<typename T_OFFSET>
+int _AdbCondVar_impl<T_OFFSET>::get_value() const
+{
+    return this->_value;
+}
+template<typename T_OFFSET>
+const string& _AdbCondVar_impl<T_OFFSET>::get_original_name() const
+{
+    return this->_original_name;
 }
 
-int CondVar::getValue()
+template<typename T_OFFSET>
+typename _AdbCondVar_impl<T_OFFSET>::AdbInstance* _AdbCondVar_impl<T_OFFSET>::get_instance() const
 {
-    return this->value;
+    return this->_instance;
 }
+template<typename T_OFFSET>
+void _AdbCondVar_impl<T_OFFSET>::evaluate(uint8_t* buffer)
+{
+    if (!is_evaluated())
+    {
+        if (this->_instance)
+        {
+            uint64_t value = this->_instance->popBuf(buffer);
+            set_value(static_cast<int>(value));
+        }
+        else
+        {
+            throw AdbException("Variable has no instance and cannot be evaluated");
+        }
+    }
+}
+template class _AdbCondVar_impl<uint32_t>;
+template class _AdbCondVar_impl<uint64_t>;
