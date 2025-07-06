@@ -57,11 +57,25 @@ ResourceDumpCommand::ResourceDumpCommand(device_attributes device_attrs,
     {
         throw ResourceDumpException(ResourceDumpException::Reason::OPEN_DEVICE_FAILED);
     }
+    _mf_opened = true;
 }
 
+ResourceDumpCommand::ResourceDumpCommand(mfile_t* mf,
+                                         device_attributes device_attrs,
+                                         dump_request dump_request,
+                                         uint32_t depth,
+                                         bool is_textual) :
+    _mf(mf), _fetcher{fetchers::create_fetcher(_mf, device_attrs, dump_request, depth)}, _is_textual{is_textual}
+{
+    if (_mf == nullptr)
+    {
+        throw ResourceDumpException(ResourceDumpException::Reason::OPEN_DEVICE_FAILED);
+    }
+    _mf_opened = false;
+}
 ResourceDumpCommand::~ResourceDumpCommand()
 {
-    if (_mf)
+    if (_mf && _mf_opened)
     {
         mclose(_mf);
     }

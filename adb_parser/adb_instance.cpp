@@ -796,6 +796,104 @@ _AdbInstance_impl<e, O>* _AdbInstance_impl<e, O>::get_root()
 }
 
 /**
+ * Function: _AdbInstance_impl::get_layout_item_by_path
+ **/
+template<bool e, typename T_OFFSET>
+_AdbInstance_impl<e, T_OFFSET>* _AdbInstance_impl<e, T_OFFSET>::get_layout_item_by_path(const std::string& path)
+{
+    size_t separator_index = path.find(".");
+    _AdbInstance_impl<e, T_OFFSET>* root_item = nullptr;
+
+    // If There's a parent or segment prefix search path according to the prefix
+    if (separator_index != std::string::npos)
+    {
+        std::string prefix = path.substr(0, separator_index);
+        // Parent prefix list: "#(parent)", "$(parent)"
+        if (prefix == "#(parent)" || prefix == "$(parent)")
+        {
+            root_item = this->parent;
+            if (root_item && root_item->isUnion())
+            {
+                root_item = root_item->parent;
+            }
+            return root_item ? root_item->getChildByPath(path.substr(separator_index + 1)) : nullptr;
+        }
+        // Segment prefix: "$(segment)" todo: implement get_segment
+        // else if (prefix == "$(segment)")
+        // {
+        //     root_item = this->get_segment();
+        //     return root_item ? root_item->getChildByPath(path.substr(separator_index + 1)) : nullptr;
+        // }
+    }
+
+    // If no relevant prefix
+    else
+    {
+        root_item = this->parent;
+        if (!root_item)
+        {
+            return nullptr;
+        }
+
+        // Try searching from parent
+        _AdbInstance_impl<e, T_OFFSET>* found_item = root_item->getChildByPath(path);
+        if (found_item)
+        {
+            return found_item;
+        }
+
+        // Try searching from segment root
+        root_item = this->get_root();
+        found_item = root_item->getChildByPath(path);
+        if (found_item)
+        {
+            return found_item;
+        }
+
+        // Finally, try searching by DFS from segment root
+        return root_item->find_layout_item_dfs(path);
+    }
+
+    return nullptr;
+}
+
+/**
+ * Function: _AdbInstance_impl::_find_layout_item_dfs
+ **/
+template<bool e, typename T_OFFSET>
+_AdbInstance_impl<e, T_OFFSET>* _AdbInstance_impl<e, T_OFFSET>::find_layout_item_dfs(const std::string& path)
+{
+    // Use a stack for DFS (equivalent to Python's deque)
+    std::vector<_AdbInstance_impl<e, T_OFFSET>*> dfs_stack;
+
+    // Add all subItems in reverse order to stack (equivalent to reversed(this->subItems))
+    for (int i = this->subItems.size() - 1; i >= 0; --i)
+    {
+        dfs_stack.push_back(this->subItems[i]);
+    }
+
+    while (!dfs_stack.empty())
+    {
+        _AdbInstance_impl<e, T_OFFSET>* current_item = dfs_stack.back();
+        dfs_stack.pop_back();
+
+        _AdbInstance_impl<e, T_OFFSET>* found_item = current_item->getChildByPath(path);
+        if (found_item)
+        {
+            return found_item;
+        }
+
+        // Add all subItems in reverse order to stack
+        for (int i = current_item->subItems.size() - 1; i >= 0; --i)
+        {
+            dfs_stack.push_back(current_item->subItems[i]);
+        }
+    }
+
+    return nullptr;
+}
+
+/**
  * Function: _AdbInstance_impl::getAttr
  **/
 template<bool e, typename O>
@@ -944,6 +1042,20 @@ typename enable_if<!U, AttrsMap>::type _AdbInstance_impl<eval_expr, O>::getVarsM
     return AttrsMap();
 }
 
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<U, _AdbCondition_impl<O>*>::type _AdbInstance_impl<eval_expr, O>::getCondition()
+{
+    return &(inst_ops_props.condition);
+}
+
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<!U, _AdbCondition_impl<O>*>::type _AdbInstance_impl<eval_expr, O>::getCondition()
+{
+    return nullptr;
+}
+
 /**
  * Function: _AdbInstance_impl::isEnumExists
  **/
@@ -1072,14 +1184,24 @@ map<string, uint64_t> _AdbInstance_impl<e, O>::getEnumMap()
         Algorithm::split(pair, trimedEnumValues, Algorithm::is_any_of("="));
         if (pair.size() != 2)
         {
-            throw AdbException("Can't parse enum: " + enumValues[i]);
+            continue;
+            // (1)
+            // throw AdbException("Can't parse enum: " + enums);
         }
 
+        if (pair[0].empty())
+        {
+            continue;
+            // (1)
+            // throw AdbException("Can't parse enum: " + enums + ", " + enumValues[i] + ", empty key");
+        }
         char* end;
         uint64_t intVal = strtoul(pair[1].c_str(), &end, 0);
         if (*end != '\0')
         {
-            throw AdbException(string("Can't evaluate enum (") + pair[0].c_str() + "): " + pair[1].c_str());
+            continue;
+            // (1)
+            // throw AdbException(string("Can't evaluate enum (") + pair[0].c_str() + "): " + pair[1].c_str());
         }
 
         enumMap[pair[0]] = intVal;
@@ -1211,6 +1333,15 @@ bool _AdbInstance_impl<e, O>::isConditionalNode()
     {
         string is_conditional;
         bool found = getInstanceAttr("is_conditional", is_conditional);
+        if (!found)
+        {
+            const auto& it = nodeDesc->attrs.find("is_conditional");
+            if (it != nodeDesc->attrs.end())
+            {
+                is_conditional = it->second;
+                found = true;
+            }
+        }
         return (found && is_conditional == "1");
     }
     return false;
@@ -1369,6 +1500,10 @@ template class _AdbInstance_impl<true, uint32_t>;
 template class _AdbInstance_impl<false, uint64_t>;
 template class _AdbInstance_impl<true, uint64_t>;
 
+template typename enable_if<true, _AdbCondition_impl<uint32_t>*>::type
+  _AdbInstance_impl<true, uint32_t>::getCondition<true>();
+template typename enable_if<true, _AdbCondition_impl<uint64_t>*>::type
+  _AdbInstance_impl<true, uint64_t>::getCondition<true>();
 LayoutItemAttrsMap::LayoutItemAttrsMap(AttrsMap& field_desc_attrs) : _field_desc_attrs(field_desc_attrs) {}
 
 LayoutItemAttrsMap& LayoutItemAttrsMap::operator=(const LayoutItemAttrsMap& other)

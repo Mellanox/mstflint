@@ -43,11 +43,14 @@ namespace mft
 
         ResourceDumpException::ResourceDumpException(Reason r, uint32_t m) : reason{r}, minor{m}
         {
-            switch (reason) {
+    switch (reason)
+    {
             case Reason::OPEN_DEVICE_FAILED:
                 message = "Failed openning device.";
                 break;
-
+        case Reason::DEVICE_TYPE_UNSUPPORTED:
+            message = "Device interface or type is unsupported.";
+            break;
             case Reason::TEXT_DATA_UNAVAILABLE:
                 message = "Command is not in textual mode or data has not fetched.";
                 break;
@@ -70,12 +73,12 @@ namespace mft
 
             case Reason::MEM_MODE_NOT_SUPPORTED:
                 message =
-                    "Mem Mode is either not supported for this OS, or the driver is down, or the driver's version is not supported.";
+              "Mem Mode is not supported, unsopported OS or device, or the driver is down, or the driver's version is not supported.";
                 break;
 
             case Reason::SEND_REG_ACCESS_FAILED:
-                message = string("Access register request to device failed. FW error code: ") +
-                          string(m_err2str((MError)minor));
+            message =
+              string("Access register request to device failed. FW error code: ") + string(m_err2str((MError)minor));
                 break;
 
             case Reason::WRONG_SEQUENCE_NUMBER:

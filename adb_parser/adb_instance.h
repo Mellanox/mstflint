@@ -132,6 +132,14 @@ private:
     iterator _end{*this, _field_desc_attrs.end(), true};
 };
 
+template<bool eval_expr = false, typename T_OFFSET = uint32_t>
+class _AdbInstance_impl
+{
+    using AdbNode = AdbNode_impl<T_OFFSET>;
+    using AdbField = AdbField_impl<T_OFFSET>;
+    using AdbNodeLarge = AdbNodeLarge_impl<T_OFFSET>;
+    using AdbFieldLarge = AdbFieldLarge_impl<T_OFFSET>;
+    using AdbCondition = _AdbCondition_impl<T_OFFSET>;
 struct InstOpsPropertiesBasic
 {
     LayoutItemAttrsMap* instAttrsMap{nullptr}; // Attributes after evaluations and array expanding
@@ -139,20 +147,13 @@ struct InstOpsPropertiesBasic
 
 struct InstOpsPropertiesExtended
 {
-    LayoutItemAttrsMap* instAttrsMap; // Attributes after evaluations and array expanding
+        LayoutItemAttrsMap* instAttrsMap{nullptr}; // Attributes after evaluations and array expanding
     AttrsMap varsMap{};               // all variables relevant to this item after evaluation
     AdbCondition condition{};
     AdbCondition conditionalSize{}; // for dynamic arrays
 };
 
-template<bool eval_expr = false, typename T_OFFSET = uint32_t>
-class _AdbInstance_impl
-{
-    using AdbNode = AdbNode_impl<T_OFFSET>;
-    using AdbField = AdbField_impl<T_OFFSET>;
 
-    using AdbNodeLarge = AdbNodeLarge_impl<T_OFFSET>;
-    using AdbFieldLarge = AdbFieldLarge_impl<T_OFFSET>;
 
     using InstOpsProperties = typename conditional<eval_expr, InstOpsPropertiesExtended, InstOpsPropertiesBasic>::type;
 
@@ -238,6 +239,7 @@ public:
     bool isConditionValid(map<string, string>* valuesMap);
     // DB like access methods
     _AdbInstance_impl<eval_expr, T_OFFSET>* getChildByPath(const string& path, bool isCaseSensitive = true);
+    _AdbInstance_impl<eval_expr, T_OFFSET>* get_layout_item_by_path(const std::string& path);
     vector<_AdbInstance_impl<eval_expr, T_OFFSET>*>
       findChild(const string& name, bool isCaseSensitive = true, bool by_inst_name = false);
     _AdbInstance_impl<eval_expr, T_OFFSET>* get_root();
@@ -263,6 +265,10 @@ public:
 
     template<bool U = eval_expr>
     typename enable_if<!U, AttrsMap>::type getVarsMap();
+    template<bool U = eval_expr>
+    typename enable_if<U, AdbCondition*>::type getCondition();
+    template<bool U = eval_expr>
+    typename enable_if<!U, AdbCondition*>::type getCondition();
 
     vector<_AdbInstance_impl<eval_expr, T_OFFSET>*> getLeafFields(bool extendedName); // Get all leaf fields
     void pushBuf(uint8_t* buf, uint64_t value);
@@ -298,6 +304,8 @@ public:
     AdbField* _max_leaf{nullptr}; // for DS alignment check
     InstancePropertiesMask inst_props{};
     LayoutPartitionProps* partition_props{nullptr};
+private:
+    _AdbInstance_impl<eval_expr, T_OFFSET>* find_layout_item_dfs(const std::string& path);
 };
 
 // TODO: try to move the function definition below to the cpp file, currently fails linkage
@@ -307,9 +315,13 @@ typename enable_if<U>::type _AdbInstance_impl<eval_expr, O>::initInstOps()
 {
     string value;
     auto found = getInstanceAttr("condition", value);
-    if (found && parent->getInstanceAttr("is_conditional") == "1")
+    if (found && parent && parent->nodeDesc)
     {
-        inst_ops_props.condition.setCondition(value);
+        auto is_conditional = parent->nodeDesc->attrs.find("is_conditional");
+        if (is_conditional != parent->nodeDesc->attrs.end() && is_conditional->second == "1")
+    {
+            inst_ops_props.condition.init(value);
+        }
     }
 
     found = getInstanceAttr("size_condition", value);
@@ -320,7 +332,7 @@ typename enable_if<U>::type _AdbInstance_impl<eval_expr, O>::initInstOps()
         {
             cond_size.erase(0, 10);
         }
-        inst_ops_props.conditionalSize.setCondition(cond_size);
+        inst_ops_props.conditionalSize.init(cond_size);
     }
 }
 
