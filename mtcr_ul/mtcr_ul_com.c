@@ -2608,7 +2608,7 @@ static MType mtcr_parse_name(const char* name,
     }
 
     if ((strstr(name, "/dev/nvidia") != 0)) {
-        *force = 1;
+        *force = 0;
         return MST_NVML;
     }
 
@@ -3457,6 +3457,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
             DBG_PRINTF("Failed to open GPU mst driver device");
             goto open_failed;
         }
+        return mf;
         break;
 
     case MST_VFIO_DEVICE:
@@ -4039,12 +4040,6 @@ int maccess_reg_ul(mfile              * mf,
                                            mf);
         return (*reg_status) ? *reg_status : rc;
     }
-#ifdef ENABLE_NVML
-    if (mf->tp == MST_NVML) {
-        bool is_write = (reg_method == MACCESS_REG_METHOD_SET);
-        return nvml_reg_access(reg_data, reg_size, reg_id, reg_status, is_write, mf->nvml_device);
-    }
-#endif
 
     if (mf->tp != MST_IB) { /* Non-IB connection */
         rc = mreg_send_raw(mf, reg_id, reg_method, (u_int32_t*)reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
@@ -4278,6 +4273,10 @@ static int mreg_send_raw(mfile              * mf,
 
     if (class_to_use == MAD_CLASS_A_REG_ACCESS) {
         mad_rc = mib_send_cls_a_access_reg_mad_ul(mf, buffer);
+#ifdef ENABLE_NVML
+    } else if (mf->tp == MST_NVML) {
+        mad_rc = nvml_reg_access(buffer, reg_size + OP_TLV_SIZE + REG_TLV_HEADER_LEN, reg_id, reg_status, method == MACCESS_REG_METHOD_SET, mf->nvml_device);
+#endif
     } else {
         mad_rc = mreg_send_wrapper(mf, buffer, r_size_reg, w_size_reg);
     }
