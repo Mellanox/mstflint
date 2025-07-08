@@ -2121,6 +2121,7 @@ bool Fs3Operations::UpdateImageAfterInsert(struct toc_info* tocArr,
         u_int8_t sectType = currItoc->toc_entry.type;
         u_int32_t sectAddr = currItoc->toc_entry.flash_addr << 2;
         u_int32_t sectSize = currItoc->toc_entry.size * 4;
+        //struct toc_info* currItoc11 = currItoc->section_data;
         /* Some checks */
         if (sectAddr + sectSize > newImageSize)
         {
@@ -2136,13 +2137,13 @@ bool Fs3Operations::UpdateImageAfterInsert(struct toc_info* tocArr,
         if (!newImgData)
         {
             Fs3UpdateImgCache(currItoc->data, itocOffset, CIBFW_ITOC_ENTRY_SIZE);
-            Fs3UpdateImgCache(&currItoc->section_data[0], sectAddr, sectSize);
+            Fs3UpdateImgCache(currItoc->section_data.data(), sectAddr, sectSize); 
         }
         else
         {
             memcpy(&newImgData[itocOffset], currItoc->data, CIBFW_ITOC_ENTRY_SIZE);
 
-            memcpy(&newImgData[sectAddr], &currItoc->section_data[0], sectSize);
+            memcpy(&newImgData[sectAddr], currItoc->section_data.data(), sectSize);
         }
     }
     u_int32_t lastItocSect = _fs3ImgInfo.itocAddr + CIBFW_ITOC_HEADER_SIZE + numOfItocs * CIBFW_ITOC_ENTRY_SIZE;
