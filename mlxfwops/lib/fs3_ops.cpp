@@ -2136,13 +2136,13 @@ bool Fs3Operations::UpdateImageAfterInsert(struct toc_info* tocArr,
         if (!newImgData)
         {
             Fs3UpdateImgCache(currItoc->data, itocOffset, CIBFW_ITOC_ENTRY_SIZE);
-            Fs3UpdateImgCache(&currItoc->section_data[0], sectAddr, sectSize);
+            Fs3UpdateImgCache(currItoc->section_data.data(), sectAddr, sectSize); 
         }
         else
         {
             memcpy(&newImgData[itocOffset], currItoc->data, CIBFW_ITOC_ENTRY_SIZE);
 
-            memcpy(&newImgData[sectAddr], &currItoc->section_data[0], sectSize);
+            memcpy(&newImgData[sectAddr], currItoc->section_data.data(), sectSize);
         }
     }
     u_int32_t lastItocSect = _fs3ImgInfo.itocAddr + CIBFW_ITOC_HEADER_SIZE + numOfItocs * CIBFW_ITOC_ENTRY_SIZE;
