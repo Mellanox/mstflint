@@ -2088,7 +2088,7 @@ void MlxlinkCommander::showPddr()
         supportedInfoPage();
         troubInfoPage();
         runningVersion();
-        if (_prbsTestMode) {
+        if (_prbsTestMode && !_userInput._showMultiPortInfo) {
             showTestMode();
         } else {
             std::cout << _operatingInfoCmd;
