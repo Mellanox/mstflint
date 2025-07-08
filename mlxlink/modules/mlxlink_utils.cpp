@@ -432,38 +432,79 @@ int getBitvalue(u_int32_t mask, int idx)
     return (1 & (mask >> (idx - 1)));
 }
 
-string getPowerClass(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass, u_int32_t maxPower)
+string getMaxPowerStr(u_int32_t maxPower)
 {
-    string powerClassStr = "N/A";
-    string val = "";
     float maxPowerValue = maxPower * 0.25;
-    float powerClassVal = 0;
 
+    char frmtValue[64];
+    sprintf(frmtValue, "%.1f W max", maxPowerValue);
+    return string(frmtValue);
+}
+
+string getPowerClassStringValue(u_int32_t cableIdentifier, u_int32_t powerClass, MlxlinkMaps* mlxlinkMaps)
+{
     switch (cableIdentifier)
     {
         case IDENTIFIER_SFP_DD:
-            val = mlxlinkMaps->_sfpddPowerClass[powerClass];
-            powerClassVal = mlxlinkMaps->_sfpddPowerClassToValue[powerClass];
-            break;
+            return mlxlinkMaps->_sfpddPowerClass[powerClass];
         case IDENTIFIER_QSFP_DD:
         case IDENTIFIER_OSFP:
-            val = mlxlinkMaps->_qsfpddOsfpPowerClass[powerClass];
-            powerClassVal = mlxlinkMaps->_qsfpddPowerClassToValue[powerClass];
-            break;
+            return mlxlinkMaps->_qsfpddOsfpPowerClass[powerClass];
         default:
-            val = mlxlinkMaps->_sfpQsfpPowerClass[powerClass];
+            try
+            {
+                return mlxlinkMaps->_sfpQsfpPowerClass[powerClass];
+            }
+            catch (const std::exception& e)
+            {
+                return "N/A";
+            }
     }
+}
+
+float getPowerClassValue(u_int32_t cableIdentifier, u_int32_t powerClass, MlxlinkMaps* mlxlinkMaps)
+{
+    switch (cableIdentifier)
+    {
+        case IDENTIFIER_SFP_DD:
+            return mlxlinkMaps->_sfpddPowerClassToValue[powerClass];
+        case IDENTIFIER_QSFP_DD:
+        case IDENTIFIER_OSFP:
+            return mlxlinkMaps->_qsfpddPowerClassToValue[powerClass];
+        default:
+            return 0;
+    }
+}
+
+string getPowerClassStr(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass)
+{
+    string powerClassStr = "N/A";
+    string val = getPowerClassStringValue(cableIdentifier, powerClass, mlxlinkMaps);
+
+    if (!val.empty())
+    {
+        powerClassStr = std::to_string(powerClass) + " (" + val + ")";
+    }
+
+    return powerClassStr;
+}
+
+string getPowerClass(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass, u_int32_t maxPower)
+{
+    string powerClassStr = "N/A";
+    float maxPowerValue = maxPower * 0.25;
+    string val = getPowerClassStringValue(cableIdentifier, powerClass, mlxlinkMaps);
+    float powerClassVal = getPowerClassValue(cableIdentifier, powerClass, mlxlinkMaps);
 
     if ((maxPowerValue > powerClassVal) || (powerClass == POWER_CLASS8))
     {
-        char frmtValue[64];
-        sprintf(frmtValue, "%.1f W max", maxPowerValue);
-        powerClassStr = string(frmtValue);
+        powerClassStr = getMaxPowerStr(maxPower);
     }
     else if (!val.empty())
     {
         powerClassStr = val;
     }
+
     return powerClassStr;
 }
 

@@ -1442,27 +1442,35 @@ void MlxlinkCommander::preparePowerAndCdrSection(bool valid)
     string rxCdrState = "N/A";
     string txCdrState = "N/A";
     string powerClassStr = "N/A";
+    string maxPowerStr = "N/A";
+    if (!_isSwControled)
+    {
+        if (!_isCpo)
+        {
+            if (getFieldValue("rx_cdr_cap") > 0)
+            {
+                rxCdrState = getRxTxCDRState(getFieldValue("rx_cdr_state"), _numOfLanes);
+            }
+            if (getFieldValue("tx_cdr_cap") > 0)
+            {
+                txCdrState = getRxTxCDRState(getFieldValue("tx_cdr_state"), _numOfLanes);
+            }
+        }
 
-    if (!_isSwControled) {
-        if (getFieldValue("rx_cdr_cap") > 0) {
-            rxCdrState = getRxTxCDRState(getFieldValue("rx_cdr_state"), _numOfLanes);
-        }
-        if (getFieldValue("tx_cdr_cap") > 0) {
-            txCdrState = getRxTxCDRState(getFieldValue("tx_cdr_state"), _numOfLanes);
-        }
-        powerClassStr =
-            getPowerClass(_mlxlinkMaps,
-                          _cableIdentifier,
-                          getFieldValue("cable_power_class"),
-                          getFieldValue("max_power"));
+        powerClassStr = getPowerClassStr(_mlxlinkMaps, _cableIdentifier, getFieldValue("cable_power_class"));
+        maxPowerStr = getMaxPowerStr(getFieldValue("max_power"));
     }
 
-    setPrintVal(_moduleInfoCmd, "Digital Diagnostic Monitoring", _ddmSupported ? "Yes" : "No", ANSI_COLOR_RESET, true,
-                valid);
+    setPrintVal(_moduleInfoCmd, "Digital Diagnostic Monitoring", _ddmSupported && !_userInput._isEls ? "Yes" : "No",
+                ANSI_COLOR_RESET, true, valid);
     setPrintVal(_moduleInfoCmd, "Power Class", (_plugged && _cableMediaType != PASSIVE) ? powerClassStr : "N/A",
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "MAX Power", (_plugged && _cableMediaType != PASSIVE) ? maxPowerStr : "N/A",
                 ANSI_COLOR_RESET, true, valid);
     setPrintVal(_moduleInfoCmd, "CDR RX", _plugged ? rxCdrState : "N/A", ANSI_COLOR_RESET, true, valid, true);
     setPrintVal(_moduleInfoCmd, "CDR TX", _plugged ? txCdrState : "N/A", ANSI_COLOR_RESET, true, valid, true);
+
+    // This statement is here for backward compatibility purposes only
     setPrintVal(_moduleInfoCmd, "LOS Alarm", "N/A", ANSI_COLOR_RESET, true, valid);
 }
 
@@ -1614,7 +1622,6 @@ void MlxlinkCommander::prepareBerModuleInfo(bool valid, const vector < AmberFiel
     fieldsToQuery.push_back(MODULE_FIELD {"Linear Direct Drive", "linear_direct_drive", false, false, false});
     fieldsToQuery.push_back(MODULE_FIELD {"Cable Breakout", "cable_breakout", true, false, false});
     fieldsToQuery.push_back(MODULE_FIELD {"SMF Length", "smf_length", false, false, false});
-    fieldsToQuery.push_back(MODULE_FIELD {"MAX Power", "max_power", false, false, false});
     fieldsToQuery.push_back(MODULE_FIELD {"Cable Rx AMP", "cable_rx_amp", false, false, false});
     fieldsToQuery.push_back(MODULE_FIELD {"Cable Rx Emphasis", "cable_rx_pre_emphasis", false, false, false});
     fieldsToQuery.push_back(MODULE_FIELD {"Cable Rx Post Emphasis", "cable_rx_post_emphasis", false, false, false});
