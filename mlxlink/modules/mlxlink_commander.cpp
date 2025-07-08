@@ -500,7 +500,7 @@ void MlxlinkCommander::labelToLocalPort()
         labelToHCALocalPort();
         return;
     } else if (_userInput._pcie) {
-        throw MlxRegException("No PCIE in Switch!");
+        throw MlxRegException("No PCIE in this device!");
     }
 
     if ((_devID == DeviceSpectrum) || (_devID == DeviceSpectrum2) || (_devID == DeviceSpectrum3) ||
