@@ -99,7 +99,7 @@ private:
     string _output_file;
     string _file_io;
     bool _overwrite;
-    bool _legacy_view;
+    bool _full_path;
 };
 
 #endif /* MLXREG_UI_H */
