@@ -70,8 +70,6 @@ reg_access_status_t reg_access_paos(mfile* mf, reg_access_method_t method, struc
 
 struct reg_access_hca_ptys_reg_ext;
 reg_access_status_t reg_access_ptys(mfile* mf, reg_access_method_t method, struct reg_access_hca_ptys_reg_ext* ptys);
-struct reg_access_hca_mcia_ext;
-reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia);
 struct reg_access_hca_mtmp_ext;
 reg_access_status_t reg_access_mtmp(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtmp_ext* mtmp);
 struct reg_access_hca_mtcap_ext;

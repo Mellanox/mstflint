@@ -126,9 +126,15 @@
 #include "nvml_lib/nvml_c_wrapper.h"
 #endif
 
+#ifdef CABLES_SUPPORT
+#include "mtcr_cables.h"
+#endif
+
 #define CX3_SW_ID    4099
 #define CX3PRO_SW_ID 4103
 #define HW_ID_ADDR   0xf0014
+
+const char* cable_device_str = "_cable_";
 
 typedef enum {
     Clear_Vsec_Semaphore = 0x1,
@@ -721,11 +727,6 @@ enum {
     IFC_MAX_RETRIES  = 2048
 };
 
-/* PCI operation enum(read or write)*/
-enum {
-    READ_OP  = 0,
-    WRITE_OP = 1,
-};
 
 #define READ4_PCI(mf, val_ptr, pci_offs, err_prefix, action_on_fail) \
     do                                                               \
@@ -1838,6 +1839,115 @@ static int get_space_support_status(mfile* mf, u_int16_t space)
     return status;
 }
 
+static void init_vsec_cap_mask(mfile* mf)
+{
+    get_space_support_status(mf, AS_ICMD);
+    get_space_support_status(mf, AS_NODNIC_INIT_SEG);
+    get_space_support_status(mf, AS_EXPANSION_ROM);
+    get_space_support_status(mf, AS_ND_CRSPACE);
+    get_space_support_status(mf, AS_SCAN_CRSPACE);
+    get_space_support_status(mf, AS_MAC);
+    get_space_support_status(mf, AS_ICMD_EXT);
+    get_space_support_status(mf, AS_SEMAPHORE);
+    get_space_support_status(mf, AS_CR_SPACE);
+    get_space_support_status(mf, AS_PCI_ICMD);
+    get_space_support_status(mf, AS_PCI_CRSPACE);
+    get_space_support_status(mf, AS_PCI_ALL_ICMD);
+    get_space_support_status(mf, AS_PCI_SCAN_CRSPACE);
+    get_space_support_status(mf, AS_PCI_GLOBAL_SEMAPHORE);
+    get_space_support_status(mf, AS_RECOVERY);
+    mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
+}
+
+static int mtcr_vfio_device_open(mfile     * mf,
+                                 const char* name,
+                                 unsigned    domain,
+                                 unsigned    bus,
+                                 unsigned    dev,
+                                 unsigned    func)
+{
+    ul_ctx_t* ctx = mf->ul_ctx;
+    u_int32_t vsec_type = 0;
+
+    mf->fd = -1;
+    mf->tp = MST_PCICONF;
+
+    if (GetStartOffsets(domain, bus, dev, func, &mf->fd, &mf->vsec_addr, &mf->address_region_addr) != 0) {
+        return -1;
+    }
+
+    if (mf->vsec_addr) {
+        DBG_PRINTF("VSEC address: 0x%lx\n", mf->vsec_addr);
+        DBG_PRINTF("Address region address: 0x%lx\n", mf->address_region_addr);
+        mf->vsec_addr += mf->address_region_addr;
+        READ4_PCI(mf, &vsec_type, mf->vsec_addr, "read vsc type", return ME_PCI_READ_ERROR);
+        mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
+        DBG_PRINTF("VSC type: %d\n", mf->vsec_type);
+        if (mf->vsec_type == FUNCTIONAL_VSC) {
+            DBG_PRINTF("FUNCTIONAL VSC Supported\n");
+            mf->functional_vsec_supp = 1;
+        }
+
+        init_vsec_cap_mask(mf);
+
+        if (VSEC_SUPPORTED_UL(mf)) {
+            mf->address_space = AS_CR_SPACE;
+            ctx->mread4 = mtcr_pciconf_mread4;
+            ctx->mwrite4 = mtcr_pciconf_mwrite4;
+            ctx->mread4_block = mread4_block_pciconf;
+            ctx->mwrite4_block = mwrite4_block_pciconf;
+        }
+
+        mf->pxir_vsec_supp = 0;
+        if ((mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_CRSPACE))) &&
+            (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_ALL_ICMD))) &&
+            (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_GLOBAL_SEMAPHORE)))) {
+            mf->pxir_vsec_supp = 1;
+        }
+        DBG_PRINTF("mf->pxir_vsec_supp: %d\n", mf->pxir_vsec_supp);
+    } else {
+        ctx->wo_addr = is_wo_pciconf_gw(mf);
+        DBG_PRINTF("Write Only Address: %d\n", ctx->wo_addr);
+        ctx->mread4 = mtcr_pciconf_mread4_old;
+        ctx->mwrite4 = mtcr_pciconf_mwrite4_old;
+        ctx->mread4_block = mread_chunk_as_multi_mread4;
+        ctx->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
+    }
+
+    if (init_dev_info_ul(mf, name, domain, bus, dev, func)) {
+        return -1;
+    }
+
+    return 0;
+}
+
+bool is_cable_device(const char* name)
+{
+    if (!name) {
+        return false;
+    }
+    if (strlen(name) < sizeof(cable_device_str)) {
+        return false;
+    }
+    return strstr(name, cable_device_str) != NULL;
+}
+
+int get_cable_port(const char* name)
+{
+    char* cable_name_ptr = strstr(name, cable_device_str);
+
+    if (cable_name_ptr) {
+        char* endptr;
+        int   port = strtol(cable_name_ptr + (sizeof(cable_device_str)), &endptr, 10);
+        if ((*endptr != '\0') || (port < 0)) {
+            DBG_PRINTF("Invalid cable port: %s\n", name);
+            return -1;
+        }
+        return port;
+    }
+    return -1;
+}
+
 static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
@@ -1918,6 +2028,17 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
         ctx->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
     }
     ctx->mclose = mtcr_pciconf_mclose;
+
+    #ifdef CABLES_SUPPORT
+    if (is_cable_device(mf->dev_name)) {
+        int cable_port = get_cable_port(mf->dev_name);
+        if ((cable_port != -1) && (mcables_open(mf, cable_port) != 0)) {
+            printf("Failed to open cable device: %s\n", mf->dev_name);
+            return -1;
+        }
+    }
+    #endif
+
     return 0;
 }
 #else  /* if CONFIG_ENABLE_PCICONF */
@@ -2324,7 +2445,8 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
 }
 
 u_int32_t secured_devices[] =
-{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceConnectX8PurePcieSwitch_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId};
+{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceConnectX9_HwId, DeviceConnectX8PurePcieSwitch_HwId,
+ DeviceQuantum2_HwId, DeviceQuantum3_HwId};
 
 #define SECURED_DEVICE_ID_TABLE_SIZE (sizeof(secured_devices) / sizeof(u_int32_t))
 
@@ -2476,6 +2598,40 @@ static MType mtcr_parse_name(const char* name,
     char     driver_conf_name[40];
     unsigned len = strlen(name);
     unsigned tmp;
+    int      is_vfio = strstr(name, "vfio-") != NULL;
+    int      lockdown_enabled = CheckifKernelLockdownIsEnabled();
+
+    if (strstr(name, "fwctl")) {
+        return MST_FWCTL_CONTROL_DRIVER;
+    }
+
+    if (is_vfio || lockdown_enabled) {
+        if (is_vfio) {
+            scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+            if (scnt != 4) {
+                my_domain = 0;
+                scnt = sscanf(name, "vfio-%x:%x.%x", &my_bus, &my_dev, &my_func);
+                if (scnt != 3) {
+                    return MST_ERROR;
+                }
+            }
+        } else {
+            scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+            if (scnt != 4) {
+                my_domain = 0;
+                scnt = sscanf(name, "%x:%x.%x", &my_bus, &my_dev, &my_func);
+                if (scnt != 3) {
+                    return MST_ERROR;
+                }
+            }
+        }
+
+        *domain_p = my_domain;
+        *bus_p = my_bus;
+        *dev_p = my_dev;
+        *func_p = my_func;
+        return MST_VFIO_DEVICE;
+    }
 
     if ((len >= sizeof config) && !strcmp(config, name + len + 1 - sizeof config)) {
         *force = 1;
@@ -3298,6 +3454,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     char     pcidev[99] = "XXXX:XX:XX.X";
     int      err;
     int      rc;
+    int      cable_port = 0;
 
     if (geteuid() != 0) {
         errno = EACCES;
@@ -3350,6 +3507,14 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         rc = nvml_open(mf, name);
         if (rc) {
             DBG_PRINTF("Failed to open GPU mst driver device");
+            goto open_failed;
+        }
+        return mf;
+        break;
+
+    case MST_VFIO_DEVICE:
+        rc = mtcr_vfio_device_open(mf, name, domain, bus, dev, func);
+        if (rc) {
             goto open_failed;
         }
         return mf;
@@ -3423,6 +3588,15 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         }
 
         if (0 == rc) {
+#ifdef CABLES_SUPPORT
+            if (is_cable_device(name)) {
+                cable_port = get_cable_port(name);
+                rc = mcables_open(mf, cable_port);
+                if (rc) {
+                    goto open_failed;
+                }
+            }
+#endif
             return mf;
         }
         goto open_failed;
@@ -4167,6 +4341,15 @@ static int mreg_send_raw(mfile              * mf,
 
     if (class_to_use == MAD_CLASS_A_REG_ACCESS) {
         mad_rc = mib_send_cls_a_access_reg_mad_ul(mf, buffer);
+#ifdef ENABLE_NVML
+    } else if (mf->tp == MST_NVML) {
+        mad_rc = nvml_reg_access(buffer,
+                                 reg_size + OP_TLV_SIZE + REG_TLV_HEADER_LEN,
+                                 reg_id,
+                                 reg_status,
+                                 method == MACCESS_REG_METHOD_SET,
+                                 mf->nvml_device);
+#endif
     } else {
         mad_rc = mreg_send_wrapper(mf, buffer, r_size_reg, w_size_reg);
     }
@@ -4183,8 +4366,12 @@ static int mreg_send_raw(mfile              * mf,
     fprintf(stdout, "\tReg Tlv\n");
     reg_tlv_dump(&tlv_info, stdout);
 #endif
-    /* Check the return value */
-    *reg_status = tlv.status;
+    /* Update the return status. */
+    /* in RM Driver, TLV is not returned with updated status and the register status is already handled in RM Driver */
+    /* reg access function. */
+    if (mf->tp != MST_NVML) {
+        *reg_status = tlv.status;
+    }
     if (mad_rc) {
         return mad_rc;
     }
@@ -4687,4 +4874,23 @@ unsigned char mget_i2c_secondary(mfile* mf)
         return mf->i2c_secondary;
     }
     return 0;
+}
+
+void switch_access_funcs(mfile* mf)
+{
+    ul_ctx_t* ctx = mf->ul_ctx;
+
+    if (mf->tp == MST_CABLE) {
+        ctx->mread4 = mcables_read4;
+        ctx->mwrite4 = mcables_write4;
+        ctx->mread4_block = mcables_read4_block;
+        ctx->mwrite4_block = mcables_write4_block;
+        ctx->mclose = mcables_close;
+    } else {
+        ctx->mread4 = mtcr_pciconf_mread4;
+        ctx->mwrite4 = mtcr_pciconf_mwrite4;
+        ctx->mread4_block = mread4_block_pciconf;
+        ctx->mwrite4_block = mwrite4_block_pciconf;
+        ctx->mclose = mtcr_pciconf_mclose;
+    }
 }
