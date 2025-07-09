@@ -1158,11 +1158,15 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
     case (BF3_HW_ID):
     case (CX7_HW_ID):
     case (BF4_HW_ID):
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5;     /* same bit offset as CX5 */
+        break;
+
     case (CX8_HW_ID):
     case (CX8_PURE_PCIE_SWITCH_HW_ID):
     case (CX9_HW_ID):
-        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
-        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5;     /* same bit offset as CX5 */
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX8;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX7;
         break;
 
     case (AMOS_GBOX_HW_ID):
