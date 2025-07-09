@@ -161,7 +161,28 @@ static std::vector<AdbInstanceAdvLegacy*> getRelevantField(AdbInstanceAdvLegacy*
         u_int32_t selectorValue = node->unionSelector->popBuf((u_int8_t*)&buff[0]);
 
         // Get the selected union field using getUnionSelectedNodeName
-        AdbInstanceAdvLegacy* selectedNode = node->getUnionSelectedNodeName(selectorValue);
+        AdbInstanceAdvLegacy* selectedNode = nullptr;
+        try
+        {
+            selectedNode = node->getUnionSelectedNodeName(selectorValue);
+        }
+        catch (const AdbException& e)
+        {
+            // If getUnionSelectedNodeName throws an exception, treat as a regular non-union node
+            // and process all children
+            std::cerr << "-W- Field - " << node->get_field_name()
+                      << " with union selector failed treating as regular node and processing all children\n"
+                      << e.what() << std::endl;
+            for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin();
+                 it != node->subItems.end();
+                 ++it)
+            {
+                std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantField(*it, buff);
+                result.insert(result.end(), subResult.begin(), subResult.end());
+            }
+            return result;
+        }
+
         if (selectedNode)
         {
             // Recursively get relevant fields from the selected union field
