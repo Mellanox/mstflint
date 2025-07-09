@@ -43,7 +43,6 @@
 #define REG_ID_PAOS          0x5006
 #define REG_ID_PTYS          0x5004
 #define REG_ID_PMAOS         0x5012
-#define REG_ID_MCIA          0x9014
 #define REG_ID_MTMP          0x900a
 #define REG_ID_MTCAP         0x9009
 #define REG_ID_MIRC          0x9162
@@ -225,14 +224,6 @@ reg_access_status_t reg_access_pmaos(mfile                                 * mf,
 reg_access_status_t reg_access_ptys(mfile* mf, reg_access_method_t method, struct reg_access_hca_ptys_reg_ext* ptys)
 {
     REG_ACCCESS(mf, method, REG_ID_PTYS, ptys, ptys_reg_ext, reg_access_hca);
-}
-
-/************************************
-* Function: reg_access_mcia
-************************************/
-reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia)
-{
-    REG_ACCCESS(mf, method, REG_ID_MCIA, mcia, mcia_ext, reg_access_hca);
 }
 
 /************************************
@@ -844,8 +835,8 @@ reg_access_status_t reg_access_mrsv(mfile* mf, reg_access_method_t method, struc
 }
 
 /************************************
- * Function: reg_access_misoc
- ************************************/
+* Function: reg_access_misoc
+************************************/
 reg_access_status_t reg_access_misoc(mfile* mf, reg_access_method_t method, struct reg_access_hca_misoc_reg_ext* misoc)
 {
     REG_ACCCESS(mf, method, REG_ID_MISOC, misoc, misoc_reg_ext, reg_access_hca);

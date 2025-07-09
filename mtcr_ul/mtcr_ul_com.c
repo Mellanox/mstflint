@@ -126,9 +126,15 @@
 #include "nvml_lib/nvml_c_wrapper.h"
 #endif
 
+#ifdef CABLES_SUPPORT
+#include "mtcr_cables.h"
+#endif
+
 #define CX3_SW_ID    4099
 #define CX3PRO_SW_ID 4103
 #define HW_ID_ADDR   0xf0014
+
+const char* cable_device_str = "_cable_";
 
 typedef enum {
     Clear_Vsec_Semaphore = 0x1,
@@ -721,11 +727,6 @@ enum {
     IFC_MAX_RETRIES  = 2048
 };
 
-/* PCI operation enum(read or write)*/
-enum {
-    READ_OP  = 0,
-    WRITE_OP = 1,
-};
 
 #define READ4_PCI(mf, val_ptr, pci_offs, err_prefix, action_on_fail) \
     do                                                               \
@@ -1858,12 +1859,12 @@ static void init_vsec_cap_mask(mfile* mf)
     mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
 }
 
-static int mtcr_vfio_device_open(mfile   * mf,
+static int mtcr_vfio_device_open(mfile     * mf,
                                  const char* name,
-                                 unsigned  domain,
-                                 unsigned  bus,
-                                 unsigned  dev,
-                                 unsigned  func)
+                                 unsigned    domain,
+                                 unsigned    bus,
+                                 unsigned    dev,
+                                 unsigned    func)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
     u_int32_t vsec_type = 0;
@@ -1915,9 +1916,36 @@ static int mtcr_vfio_device_open(mfile   * mf,
 
     if (init_dev_info_ul(mf, name, domain, bus, dev, func)) {
         return -1;
-}
+    }
 
     return 0;
+}
+
+bool is_cable_device(const char* name)
+{
+    if (!name) {
+        return false;
+    }
+    if (strlen(name) < sizeof(cable_device_str)) {
+        return false;
+    }
+    return strstr(name, cable_device_str) != NULL;
+}
+
+int get_cable_port(const char* name)
+{
+    char* cable_name_ptr = strstr(name, cable_device_str);
+
+    if (cable_name_ptr) {
+        char* endptr;
+        int   port = strtol(cable_name_ptr + (sizeof(cable_device_str)), &endptr, 10);
+        if ((*endptr != '\0') || (port < 0)) {
+            DBG_PRINTF("Invalid cable port: %s\n", name);
+            return -1;
+        }
+        return port;
+    }
+    return -1;
 }
 
 static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
@@ -1985,6 +2013,17 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
         ctx->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
     }
     ctx->mclose = mtcr_pciconf_mclose;
+
+    #ifdef CABLES_SUPPORT
+    if (is_cable_device(mf->dev_name)) {
+        int cable_port = get_cable_port(mf->dev_name);
+        if ((cable_port != -1) && (mcables_open(mf, cable_port) != 0)) {
+            printf("Failed to open cable device: %s\n", mf->dev_name);
+            return -1;
+        }
+    }
+    #endif
+
     return 0;
 }
 #else  /* if CONFIG_ENABLE_PCICONF */
@@ -2397,7 +2436,8 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
 }
 
 u_int32_t secured_devices[] =
-{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceConnectX9_HwId, DeviceConnectX8PurePcieSwitch_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId};
+{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceConnectX9_HwId, DeviceConnectX8PurePcieSwitch_HwId,
+ DeviceQuantum2_HwId, DeviceQuantum3_HwId};
 
 #define SECURED_DEVICE_ID_TABLE_SIZE (sizeof(secured_devices) / sizeof(u_int32_t))
 
@@ -2550,9 +2590,8 @@ static MType mtcr_parse_name(const char* name,
     char     driver_conf_name[40];
     unsigned len = strlen(name);
     unsigned tmp;
-
-    int is_vfio = strstr(name, "vfio-") != NULL;
-    int lockdown_enabled = CheckifKernelLockdownIsEnabled();
+    int      is_vfio = strstr(name, "vfio-") != NULL;
+    int      lockdown_enabled = CheckifKernelLockdownIsEnabled();
 
     if (strstr(name, "fwctl")) {
         return MST_FWCTL_CONTROL_DRIVER;
@@ -3403,6 +3442,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     char     pcidev[99] = "XXXX:XX:XX.X";
     int      err;
     int      rc;
+    int      cable_port = 0;
 
     if (geteuid() != 0) {
         errno = EACCES;
@@ -3461,11 +3501,12 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         break;
 
     case MST_VFIO_DEVICE:
-        rc = mtcr_vfio_device_open(mf, name,domain, bus, dev, func);
+        rc = mtcr_vfio_device_open(mf, name, domain, bus, dev, func);
         if (rc) {
             goto open_failed;
         }
         return mf;
+        break;
 
 #ifdef ENABLE_MST_DEV_I2C
     case MST_DEV_I2C:
@@ -3535,6 +3576,15 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         }
 
         if (0 == rc) {
+#ifdef CABLES_SUPPORT
+            if (is_cable_device(name)) {
+                cable_port = get_cable_port(name);
+                rc = mcables_open(mf, cable_port);
+                if (rc) {
+                    goto open_failed;
+                }
+            }
+#endif
             return mf;
         }
         goto open_failed;
@@ -4275,7 +4325,12 @@ static int mreg_send_raw(mfile              * mf,
         mad_rc = mib_send_cls_a_access_reg_mad_ul(mf, buffer);
 #ifdef ENABLE_NVML
     } else if (mf->tp == MST_NVML) {
-        mad_rc = nvml_reg_access(buffer, reg_size + OP_TLV_SIZE + REG_TLV_HEADER_LEN, reg_id, reg_status, method == MACCESS_REG_METHOD_SET, mf->nvml_device);
+        mad_rc = nvml_reg_access(buffer,
+                                 reg_size + OP_TLV_SIZE + REG_TLV_HEADER_LEN,
+                                 reg_id,
+                                 reg_status,
+                                 method == MACCESS_REG_METHOD_SET,
+                                 mf->nvml_device);
 #endif
     } else {
         mad_rc = mreg_send_wrapper(mf, buffer, r_size_reg, w_size_reg);
@@ -4293,11 +4348,10 @@ static int mreg_send_raw(mfile              * mf,
     fprintf(stdout, "\tReg Tlv\n");
     reg_tlv_dump(&tlv_info, stdout);
 #endif
-    // Update the return status.
-    // in RM Driver, TLV is not returned with updated status and the register status is already handled in RM Driver
-    // reg access function.
-    if (mf->tp != MST_NVML)
-    {
+    /* Update the return status. */
+    /* in RM Driver, TLV is not returned with updated status and the register status is already handled in RM Driver */
+    /* reg access function. */
+    if (mf->tp != MST_NVML) {
         *reg_status = tlv.status;
     }
     if (mad_rc) {
@@ -4803,4 +4857,23 @@ unsigned char mget_i2c_secondary(mfile* mf)
         return mf->i2c_secondary;
     }
     return 0;
+}
+
+void switch_access_funcs(mfile* mf)
+{
+    ul_ctx_t* ctx = mf->ul_ctx;
+
+    if (mf->tp == MST_CABLE) {
+        ctx->mread4 = mcables_read4;
+        ctx->mwrite4 = mcables_write4;
+        ctx->mread4_block = mcables_read4_block;
+        ctx->mwrite4_block = mcables_write4_block;
+        ctx->mclose = mcables_close;
+    } else {
+        ctx->mread4 = mtcr_pciconf_mread4;
+        ctx->mwrite4 = mtcr_pciconf_mwrite4;
+        ctx->mread4_block = mread4_block_pciconf;
+        ctx->mwrite4_block = mwrite4_block_pciconf;
+        ctx->mclose = mtcr_pciconf_mclose;
+    }
 }

@@ -408,6 +408,22 @@ fi
 
 AM_CONDITIONAL(ENABLE_NVML, [ test "x$enable_nvml" = "xyes" ])
 
+# Enable Cables:
+
+AC_MSG_CHECKING(--enable-cables argument)
+AC_ARG_ENABLE(cables,
+    AS_HELP_STRING([--enable-cables], [enable cable access (Linux only)]),
+    [enable_cables="$enableval"],
+    [enable_cables="$default_en_cables"]
+)
+AC_MSG_RESULT($enable_cables)
+if test "x$enable_cables" = "xyes"; then
+    CXXFLAGS="$CXXFLAGS -DCABLES_SUPPORT"
+    CFLAGS="$CFLAGS -DCABLES_SUPPORT"
+fi
+
+AM_CONDITIONAL(ENABLE_CABLES, [ test "x$enable_cables" = "xyes" ])
+
 ##
 
 AC_MSG_CHECKING(--enable-rdmem argument)

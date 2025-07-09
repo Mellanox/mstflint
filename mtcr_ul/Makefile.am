@@ -60,6 +60,10 @@ libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/$(NVML_DIR)/libnvml_device.la
 libmtcr_ul_la_LDFLAGS += -static
 endif
 
+if ENABLE_CABLES
+libmtcr_ul_la_SOURCES += mtcr_cables.c mtcr_cables.h
+endif
+
 libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)
 
 

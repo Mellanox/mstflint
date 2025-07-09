@@ -90,7 +90,7 @@ struct device_info {
 #define ARCUS_P_REV0_DEVID      0x80
 #define ARCUS_E_REV0_DEVID      0x81
 
-#ifdef CABLES_SUPP
+#ifdef CABLES_SUPPORT
 enum dm_dev_type getCableType(u_int8_t id)
 {
     switch (id) {
@@ -105,6 +105,8 @@ enum dm_dev_type getCableType(u_int8_t id)
 
     case 0x18:
     case 0x19:     /* Stallion2 */
+    case 0x80:
+    case 0x22:
     case 0x1e:
         return DM_CMIS_CABLE;
 
@@ -588,7 +590,7 @@ static int dm_get_device_id_inner(mfile      * mf,
     int       rc;
     u_int32_t dev_flags;
 
-#ifdef CABLES_SUPP
+#ifdef CABLES_SUPPORT
     if (mf->tp == MST_LINKX_CHIP) {
         switch (mf->linkx_chip_devid) {
         case ARDBEG_REV0_DEVID:
@@ -680,7 +682,7 @@ static int dm_get_device_id_inner(mfile      * mf,
         }
         return GET_DEV_ID_SUCCESS;
     }
-#endif /* ifdef CABLES_SUPP */
+#endif /* ifdef CABLES_SUPPORT */
 
     rc = mget_mdevs_flags(mf, &dev_flags);
     if (rc) {
@@ -797,10 +799,9 @@ dm_dev_id_t dm_dev_str2type(const char* str)
 u_int16_t dm_dev_sw_id2hw_dev_id(u_int16_t sw_dev_id)
 {
     const struct device_info* p = g_devs_info;
-    while (p->dm_id != DeviceUnknown)
-    {
-        if (sw_dev_id == p->sw_dev_id)
-        {
+
+    while (p->dm_id != DeviceUnknown) {
+        if (sw_dev_id == p->sw_dev_id) {
             return p->hw_dev_id;
         }
         p++;
@@ -1039,14 +1040,16 @@ int dm_is_new_gen_switch(dm_dev_id_t type)
 int dm_dev_is_raven_family_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) &&
-            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceGB100 || type == DeviceGR100 ||
+            (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceGB100 ||
+             type == DeviceGR100 ||
              type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceSpectrum4));
 }
 
 int dm_dev_is_ib_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 ||
-                                       type == DeviceGB100 || type == DeviceGR100 || type == DeviceSwitchIB || type == DeviceSwitchIB2));
+                                       type == DeviceGB100 || type == DeviceGR100 || type == DeviceSwitchIB ||
+                                       type == DeviceSwitchIB2));
 }
 
 int dm_dev_is_eth_switch(dm_dev_id_t type)
@@ -1072,7 +1075,8 @@ int dm_dev_is_fs4(dm_dev_id_t type)
 
 int dm_dev_is_fs5(dm_dev_id_t type)
 {
-    return type == DeviceConnectX8 || type == DeviceConnectX8PurePcieSwitch || type == DeviceQuantum3 || type == DeviceBlueField4;
+    return type == DeviceConnectX8 || type == DeviceConnectX8PurePcieSwitch || type == DeviceQuantum3 ||
+           type == DeviceBlueField4;
 }
 
 int dm_is_ib_access(mfile* mf)
