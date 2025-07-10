@@ -1,5 +1,5 @@
- #ifndef _CABLE_ACCESS_
- #define _CABLE_ACCESS_
+#ifndef _CABLE_ACCESS_
+#define _CABLE_ACCESS_
 
 
 #include <string>
@@ -266,10 +266,16 @@
  class cableAccess
  {
  public:
-     cableAccess();
-     cableAccess(const char* mstDevName, mfile* mf = NULL);
-     ~cableAccess();
-     bool init();
+    cableAccess();
+    cableAccess(const char* mstDevName, mfile* mf = NULL);
+    ~cableAccess();
+    bool init();
+
+    bool read(u_int32_t addr, u_int32_t len, u_int8_t* data);
+    bool write(u_int32_t addr, u_int32_t len, u_int8_t* data);
+
+    string getLastErrMsg();
+    void setBurnFlow(bool isBurnFlow);
  
  private:
  

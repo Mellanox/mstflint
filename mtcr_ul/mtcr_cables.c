@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dlfcn.h>
+#include <stdbool.h>
 #include "mtcr_cables.h"
 #include "mtcr_int_defs.h"
 #include "mtcr_common.h"
@@ -20,6 +21,7 @@
 #define SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR 92
 #define SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR              64
 
+bool is_cable_burn_flow = false;
 
 reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia)
 {
@@ -114,9 +116,9 @@ int cable_access_reg_rw(mfile    * mf,
     }
     if (_rw == READ_OP) {
         copy_data((u_int8_t*)data, (u_int8_t*)cbl_reg_t.dword, size, 1);
-        printf("MCIA read: page: %#x, offset: %#x, size: %d\n", page_num, page_off, size);
+        DBG_PRINTF("MCIA read: page: %#x, offset: %#x, size: %d\n", page_num, page_off, size);
         for (int ii = 0; ii < size; ii++) {
-            printf("MCIA read: data[%d] = %#x \n", ii, cbl_reg_t.dword[ii]);
+            DBG_PRINTF("MCIA read: data[%d] = %#x \n", ii, cbl_reg_t.dword[ii]);
         }
     }
 /* printf("-D- RW: %d offset: %#x, Len: %#x\n", _rw, page_off, size); */
@@ -193,11 +195,12 @@ int mtcr_pciconf_mclose(mfile* mf);
 int mcables_open(mfile* mf, int port)
 {
     cable_ctx* cbl;
+    mf->cable_ctx = NULL;
 
     /* int semaphore_num_of_resources = 1; */
 
     if (!mf || (port < 0) || (port > MAX_PORT_NUM)) {
-        printf("unable to open cable, invalid args\n");
+        DBG_PRINTF("unable to open cable, invalid args\n");
         return MCABLES_BAD_PARAMS;
     }
     cbl = (cable_ctx*)malloc(sizeof(cable_ctx));
@@ -246,7 +249,7 @@ int mcables_open(mfile* mf, int port)
     int       rw_result = cable_access_rw(mf, 0, 1, (u_int32_t*)&id, READ_OP);
 
     if (rw_result || (id == 0)) {
-        printf("Failed to read ID from device or id is not supported: id 0x%04x rc %d:\n", id, rw_result);
+        DBG_PRINTF("Failed to read ID from device or id is not supported: id 0x%04x rc %d:\n", id, rw_result);
         mcables_close(mf);
 
         return MCABLES_ACCESS_ERROR;
@@ -255,11 +258,11 @@ int mcables_open(mfile* mf, int port)
     u_int32_t devid = 0;
     int       rc = get_cable_id(mf, &(cbl->cable_type), &devid);
 
-    printf("cable type: %d\n", cbl->cable_type);
-    printf("devid: %d\n", devid);
+    DBG_PRINTF("cable type: %d\n", cbl->cable_type);
+    DBG_PRINTF("devid: %d\n", devid);
 
     if (rc) {
-        printf("Failed to get dev_mgt device id\n");
+        DBG_PRINTF("Failed to get dev_mgt device id\n");
         mcables_close(mf);
         return MCABLES_ACCESS_ERROR;
     }
@@ -281,7 +284,7 @@ int mcables_open(mfile* mf, int port)
     /*     return MCABLES_SEM_UNLOCK_FAILED; */
     /* } */
 
-    printf("mcables_open finished\n");
+    DBG_PRINTF("mcables_open finished\n");
     return MCABLES_OK;
 }
 
@@ -297,6 +300,7 @@ int mcables_close(mfile* mf)
     if (mf && mf->cable_ctx) {
         mf->tp = cbl->src_tp;
         free(mf->cable_ctx);
+        mf->cable_ctx = NULL;
     }
     return MCABLES_OK;
 }
@@ -356,6 +360,25 @@ int mcables_write4_block(mfile* mf, u_int32_t offset, u_int32_t* value, int byte
     if (!rc) {
         rc = byte_len;
     }
+    return rc;
+}
+
+int mcables_read_bytes(mfile* mf, u_int32_t offset, u_int8_t* value, int byte_len)
+{
+    if (!mf || !value)
+    {
+        return (int)MCABLES_BAD_PARAMS;
+    }
+    return (int)cable_access_rw(mf, offset, byte_len, (u_int32_t*)value, READ_OP);
+}
+
+int mcables_write_bytes(mfile* mf, u_int32_t offset, u_int8_t* value, int byte_len)
+{
+    if (!mf || !value)
+    {
+        return (int)MCABLES_BAD_PARAMS;
+    }
+    int rc = (int)cable_access_rw(mf, offset, byte_len, (u_int32_t*)value, WRITE_OP);
     return rc;
 }
 
@@ -446,4 +469,9 @@ int get_cable_id(mfile* mf, u_int32_t* ptr_hw_dev_id, dm_dev_id_t* ptr_dm_dev_id
         *ptr_dm_dev_id = DeviceUnknown;
     }
     return GET_DEV_ID_SUCCESS;
+}
+
+void mcables_set_burn_flow(bool burn_flow)
+{
+    is_cable_burn_flow = burn_flow;
 }

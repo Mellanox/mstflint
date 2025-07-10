@@ -134,8 +134,6 @@
 #define CX3PRO_SW_ID 4103
 #define HW_ID_ADDR   0xf0014
 
-const char* cable_device_str = "_cable_";
-
 typedef enum {
     Clear_Vsec_Semaphore = 0x1,
 } adv_opt_t;
@@ -1926,19 +1924,19 @@ bool is_cable_device(const char* name)
     if (!name) {
         return false;
     }
-    if (strlen(name) < sizeof(cable_device_str)) {
+    if (strlen(name) < sizeof(CABLE_DEVICE_STR)) {
         return false;
     }
-    return strstr(name, cable_device_str) != NULL;
+    return strstr(name, CABLE_DEVICE_STR) != NULL;
 }
 
 int get_cable_port(const char* name)
 {
-    char* cable_name_ptr = strstr(name, cable_device_str);
+    char* cable_name_ptr = strstr(name, CABLE_DEVICE_STR);
 
     if (cable_name_ptr) {
         char* endptr;
-        int   port = strtol(cable_name_ptr + (sizeof(cable_device_str)), &endptr, 10);
+        int   port = strtol(cable_name_ptr + (sizeof(CABLE_DEVICE_STR)), &endptr, 10);
         if ((*endptr != '\0') || (port < 0)) {
             DBG_PRINTF("Invalid cable port: %s\n", name);
             return -1;
@@ -2018,7 +2016,7 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
     if (is_cable_device(mf->dev_name)) {
         int cable_port = get_cable_port(mf->dev_name);
         if ((cable_port != -1) && (mcables_open(mf, cable_port) != 0)) {
-            printf("Failed to open cable device: %s\n", mf->dev_name);
+            DBG_PRINTF("Failed to open cable device: %s\n", mf->dev_name);
             return -1;
         }
     }
