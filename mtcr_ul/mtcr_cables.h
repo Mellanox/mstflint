@@ -4,10 +4,6 @@
 #include "mtcr.h"
 #include "mtcr_com_defs.h"
 #include "dev_mgt/tools_dev_types.h"
-#include "reg_access/reg_access.h"
-#include "tools_layouts/reg_access_hca_layouts.h"
-
-typedef reg_access_status_t (*f_reg_access_mcia)(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia);
 
 typedef enum {
     MCABLES_OK = 0,
@@ -44,7 +40,6 @@ typedef struct {
     unsigned char       i2c_addr;
     dm_dev_id_t         cable_type;
     void              * semaphore_handle;
-    f_reg_access_mcia reg_access_mcia;
 } cable_ctx;
 
 
@@ -105,5 +100,14 @@ int mcables_read4_block(mfile* mf, u_int32_t offset, u_int32_t* value, int byte_
  * @return 0 in Success, otherwise in failure
  */
 int mcables_write4_block(mfile* mf, u_int32_t offset, u_int32_t* value, int byte_len);
+
+ /*
+* @brief mcables_get_dm: Cable get cable type
+* @effect Get the dev mgt type of the cable
+* @param[in] mf - mfile pointer of the device
+*/
+dm_dev_id_t mcables_get_dm(mfile* mf);
+
+int get_cable_id(mfile* m, u_int32_t* ptr_hw_dev_id, dm_dev_id_t* ptr_dm_dev_id);
 
 #endif /* _MTCR_CABLES_H */
