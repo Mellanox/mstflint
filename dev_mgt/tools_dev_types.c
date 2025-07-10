@@ -50,19 +50,6 @@
 #include "mflash/mflash_types.h"
 #include "mtcr_ul/mtcr_ul_com.h"
 
-enum dm_dev_type {
-    DM_UNKNOWN = -1,
-    DM_HCA,
-    DM_SWITCH,
-    DM_BRIDGE,
-    DM_QSFP_CABLE,
-    DM_CMIS_CABLE,
-    DM_SFP_CABLE,
-    DM_LINKX, /* linkx chip */
-    DM_GEARBOX,
-    DM_RETIMER
-};
-
 struct device_info {
     dm_dev_id_t      dm_id;
     u_int16_t        hw_dev_id;
@@ -74,9 +61,7 @@ struct device_info {
 };
 
 #define DEVID_ADDR                                         0xf0014
-#define CABLEID_ADDR                                       0x0
-#define SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR 92
-#define SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR              64
+
 
 #define ARDBEG_REV0_DEVID       0x6e
 #define ARDBEG_REV1_DEVID       0x7e
@@ -89,32 +74,6 @@ struct device_info {
 #define ARCUS_P_TC_DEVID        0x7f
 #define ARCUS_P_REV0_DEVID      0x80
 #define ARCUS_E_REV0_DEVID      0x81
-
-#ifdef CABLES_SUPPORT
-enum dm_dev_type getCableType(u_int8_t id)
-{
-    switch (id) {
-    case 0xd:
-    case 0x11:
-    case 0xe:
-    case 0xc:
-        return DM_QSFP_CABLE;
-
-    case 0x3:
-        return DM_SFP_CABLE;
-
-    case 0x18:
-    case 0x19:     /* Stallion2 */
-    case 0x80:
-    case 0x22:
-    case 0x1e:
-        return DM_CMIS_CABLE;
-
-    default:
-        return DM_UNKNOWN;
-    }
-}
-#endif
 
 static struct device_info g_devs_info[] = {
     {
@@ -570,13 +529,6 @@ static const struct device_info* get_entry_by_dev_rev_id(u_int32_t hw_dev_id, u_
     return p;
 }
 
-typedef enum get_dev_id_error_t {
-    GET_DEV_ID_SUCCESS,
-    GET_DEV_ID_ERROR,
-    CRSPACE_READ_ERROR,
-    CHECK_PTR_DEV_ID,
-} dev_id_error;
-
 static int dm_get_device_id_inner(mfile      * mf,
                                   dm_dev_id_t* ptr_dm_dev_id,
                                   u_int32_t  * ptr_hw_dev_id,
@@ -631,56 +583,7 @@ static int dm_get_device_id_inner(mfile      * mf,
     }
 
     if (mf->tp == MST_CABLE) {
-        /* printf("-D- Getting cable ID\n"); */
-        if (mread4(mf, CABLEID_ADDR, &dword) != 4) {
-            /* printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno)); */
-            return GET_DEV_ID_ERROR;
-        }
-        /* dword = __cpu_to_le32(dword); // Cable pages are read in LE, no need to swap */
-        *ptr_hw_dev_id = 0xffff;
-        u_int8_t         id = EXTRACT(dword, 0, 8);
-        enum dm_dev_type cbl_type = getCableType(id);
-        *ptr_hw_dev_id = id;
-        u_int8_t paging;
-        if (cbl_type == DM_QSFP_CABLE) {
-            /* Get Byte 2 bit 2 ~ bit 18 (flat_mem : upper memory flat or paged. 0=paging, 1=page 0 only) */
-            paging = EXTRACT(dword, 18, 1);
-            /* printf("DWORD: %#x, paging: %d\n", dword, paging); */
-            if (paging == 0) {
-                *ptr_dm_dev_id = DeviceCableQSFPaging;
-            } else {
-                *ptr_dm_dev_id = DeviceCableQSFP;
-            }
-        } else if (cbl_type == DM_SFP_CABLE) {
-            *ptr_dm_dev_id = DeviceCableSFP;
-            if (mread4(mf, SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR, &dword) != 4) {
-                /* printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno)); */
-                return GET_DEV_ID_ERROR;
-            }
-            u_int8_t byte = EXTRACT(dword, 6, 1); /* Byte 92 bit 6 (digital diagnostic monitoring implemented) */
-            if (byte) {
-                *ptr_dm_dev_id = DeviceCableSFP51;
-                if (mread4(mf, SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR, &dword) != 4) {
-                    /* printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno)); */
-                    return GET_DEV_ID_ERROR;
-                }
-                byte = EXTRACT(dword, 4, 1); /* Byte 64 bit 4 (paging implemented indicator) */
-                if (byte) {
-                    *ptr_dm_dev_id = DeviceCableSFP51Paging;
-                }
-            }
-        } else if (cbl_type == DM_CMIS_CABLE) {
-            /* Get Byte 2 bit 7 ~ bit 23 (flat_mem : upper memory flat or paged. 0=paging, 1=page 0 only) */
-            paging = EXTRACT(dword, 23, 1);
-            if (paging == 0) {
-                *ptr_dm_dev_id = DeviceCableCMISPaging;
-            } else {
-                *ptr_dm_dev_id = DeviceCableCMIS;
-            }
-        } else {
-            *ptr_dm_dev_id = DeviceUnknown;
-        }
-        return GET_DEV_ID_SUCCESS;
+        return get_cable_id(mf, ptr_hw_dev_id, ptr_dm_dev_id);
     }
 #endif /* ifdef CABLES_SUPPORT */
 

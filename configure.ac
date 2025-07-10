@@ -67,6 +67,7 @@ OFED_EXIST=`ofed_info -s`
 OFED_NOT_EXIST="ofed_info: command not found"
 MTCR_CONF_DIR=""
 LDL=""
+LDFLAGS="$LDFLAGS -lstdc++"
 default_en_inband=""
 default_en_rdmem="no"
 default_en_nvml="no"

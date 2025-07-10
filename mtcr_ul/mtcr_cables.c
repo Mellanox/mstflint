@@ -5,7 +5,7 @@
 #include "mtcr_int_defs.h"
 #include "mtcr_common.h"
 #include "reg_access/reg_access.h"
-#include "tools_layouts/reg_access_hca_layouts.h"
+#include "tools_layouts/cables_layouts.h"
 #include "mtcr_ul_com.h"
 
 
@@ -16,6 +16,9 @@
 #define NUM_OF_WRITE_PAGE_RETRIES 5
 #define CBLINFO_MAX_SIZE          48
 #define REG_ID_MCIA               0x9014
+#define CABLEID_ADDR                                       0x0
+#define SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR 92
+#define SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR              64
 
 
 reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia)
@@ -250,8 +253,7 @@ int mcables_open(mfile* mf, int port)
     }
 
     u_int32_t devid = 0;
-    u_int32_t revid = 0;
-    int       rc = dm_get_device_id(mf, &(cbl->cable_type), &devid, &revid);
+    int       rc = get_cable_id(mf, &(cbl->cable_type), &devid);
 
     printf("cable type: %d\n", cbl->cable_type);
     printf("devid: %d\n", devid);
@@ -355,4 +357,93 @@ int mcables_write4_block(mfile* mf, u_int32_t offset, u_int32_t* value, int byte
         rc = byte_len;
     }
     return rc;
+}
+
+dm_dev_id_t mcables_get_dm(mfile* mf)
+{
+    if (mf && mf->cable_ctx)
+    {
+        return ((cable_ctx*)(mf->cable_ctx))->cable_type;
+    }
+    return DeviceUnknown;
+}
+
+enum dm_dev_type getCableType(u_int8_t id)
+{
+    switch (id) {
+    case 0xd:
+    case 0x11:
+    case 0xe:
+    case 0xc:
+        return DM_QSFP_CABLE;
+
+    case 0x3:
+        return DM_SFP_CABLE;
+
+    case 0x18:
+    case 0x19:     /* Stallion2 */
+    case 0x80:
+    case 0x22:
+    case 0x1e:
+        return DM_CMIS_CABLE;
+
+    default:
+        return DM_UNKNOWN;
+    }
+}
+
+
+int get_cable_id(mfile* mf, u_int32_t* ptr_hw_dev_id, dm_dev_id_t* ptr_dm_dev_id)
+{
+    u_int32_t dword = 0;  
+    /* printf("-D- Getting cable ID\n"); */
+    if (mread4(mf, CABLEID_ADDR, &dword) != 4) {
+        /* printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno)); */
+        return GET_DEV_ID_ERROR;
+    }
+    /* dword = __cpu_to_le32(dword); // Cable pages are read in LE, no need to swap */
+    *ptr_hw_dev_id = 0xffff;
+    u_int8_t         id = EXTRACT(dword, 0, 8);
+    enum dm_dev_type cbl_type = getCableType(id);
+    *ptr_hw_dev_id = id;
+    u_int8_t paging;
+    if (cbl_type == DM_QSFP_CABLE) {
+        /* Get Byte 2 bit 2 ~ bit 18 (flat_mem : upper memory flat or paged. 0=paging, 1=page 0 only) */
+        paging = EXTRACT(dword, 18, 1);
+        /* printf("DWORD: %#x, paging: %d\n", dword, paging); */
+        if (paging == 0) {
+            *ptr_dm_dev_id = DeviceCableQSFPaging;
+        } else {
+            *ptr_dm_dev_id = DeviceCableQSFP;
+        }
+    } else if (cbl_type == DM_SFP_CABLE) {
+        *ptr_dm_dev_id = DeviceCableSFP;
+        if (mread4(mf, SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR, &dword) != 4) {
+            /* printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno)); */
+            return GET_DEV_ID_ERROR;
+        }
+        u_int8_t byte = EXTRACT(dword, 6, 1); /* Byte 92 bit 6 (digital diagnostic monitoring implemented) */
+        if (byte) {
+            *ptr_dm_dev_id = DeviceCableSFP51;
+            if (mread4(mf, SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR, &dword) != 4) {
+                /* printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno)); */
+                return GET_DEV_ID_ERROR;
+            }
+            byte = EXTRACT(dword, 4, 1); /* Byte 64 bit 4 (paging implemented indicator) */
+            if (byte) {
+                *ptr_dm_dev_id = DeviceCableSFP51Paging;
+            }
+        }
+    } else if (cbl_type == DM_CMIS_CABLE) {
+        /* Get Byte 2 bit 7 ~ bit 23 (flat_mem : upper memory flat or paged. 0=paging, 1=page 0 only) */
+        paging = EXTRACT(dword, 23, 1);
+        if (paging == 0) {
+            *ptr_dm_dev_id = DeviceCableCMISPaging;
+        } else {
+            *ptr_dm_dev_id = DeviceCableCMIS;
+        }
+    } else {
+        *ptr_dm_dev_id = DeviceUnknown;
+    }
+    return GET_DEV_ID_SUCCESS;
 }
