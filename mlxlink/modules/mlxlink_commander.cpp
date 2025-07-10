@@ -1445,23 +1445,20 @@ void MlxlinkCommander::preparePowerAndCdrSection(bool valid)
     string maxPowerStr = "N/A";
     if (!_isSwControled)
     {
-        if (!_isCpo)
+        if (getFieldValue("rx_cdr_cap") > 0)
         {
-            if (getFieldValue("rx_cdr_cap") > 0)
-            {
-                rxCdrState = getRxTxCDRState(getFieldValue("rx_cdr_state"), _numOfLanes);
-            }
-            if (getFieldValue("tx_cdr_cap") > 0)
-            {
-                txCdrState = getRxTxCDRState(getFieldValue("tx_cdr_state"), _numOfLanes);
-            }
+            rxCdrState = getRxTxCDRState(getFieldValue("rx_cdr_state"), _numOfLanes);
+        }
+        if (getFieldValue("tx_cdr_cap") > 0)
+        {
+            txCdrState = getRxTxCDRState(getFieldValue("tx_cdr_state"), _numOfLanes);
         }
 
         powerClassStr = getPowerClassStr(_mlxlinkMaps, _cableIdentifier, getFieldValue("cable_power_class"));
         maxPowerStr = getMaxPowerStr(getFieldValue("max_power"));
     }
 
-    setPrintVal(_moduleInfoCmd, "Digital Diagnostic Monitoring", _ddmSupported && !_userInput._isEls ? "Yes" : "No",
+    setPrintVal(_moduleInfoCmd, "Digital Diagnostic Monitoring", _ddmSupported ? "Yes" : "No",
                 ANSI_COLOR_RESET, true, valid);
     setPrintVal(_moduleInfoCmd, "Power Class", (_plugged && _cableMediaType != PASSIVE) ? powerClassStr : "N/A",
                 ANSI_COLOR_RESET, true, valid);
@@ -2095,7 +2092,7 @@ void MlxlinkCommander::showPddr()
         supportedInfoPage();
         troubInfoPage();
         runningVersion();
-        if (_prbsTestMode && !_userInput._showMultiPortInfo) {
+        if (_prbsTestMode) {
             showTestMode();
         } else {
             std::cout << _operatingInfoCmd;
