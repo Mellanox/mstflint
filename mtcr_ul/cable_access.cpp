@@ -57,3 +57,74 @@ bool cableAccess::init()
     _deviceOpened = true;
     return true;
 }
+
+cableAccess::~cableAccess()
+{
+    if (_fwUpPageOpened)
+    {
+        closeFwUpgradePage();
+    }
+    if (_GwNode)
+    {
+        delete _GwNode;
+    }
+    if (_PageNode)
+    {
+        delete _PageNode;
+    }
+    if (_adb)
+    {
+        delete _adb;
+    }
+    if (_cableCrspaceAdb)
+    {
+        delete _cableCrspaceAdb;
+    }
+    if (_mf && _mfCreatedInClass)
+    {
+        mclose(_mf);
+    }
+}
+
+string cableAccess::getLastErrMsg()
+{
+    return _errMsg;
+}
+
+bool cableAccess::rw(u_int32_t addr, u_int32_t len, u_int8_t* data, int _rw)
+{
+    int rc = 0;
+    if (_rw)
+    {
+        rc = mcables_write_bytes(_mf, addr, data, len);
+    }
+    else
+    {
+        rc = mcables_read_bytes(_mf, addr, data, len);
+    }
+    // printf("-D- RW RC[%d]\n", rc);
+    //    printf("-D- RW: %d, addr: %#x, len: %#x, bytes[0]: %02x\n", _rw, addr, len, data[0]);
+    if (rc)
+    {
+        ostringstream ss;
+        ss << "Cable access R/W failed status: " << rc << ". ";
+        _errMsg += ss.str();
+        return false;
+    }
+    return true;
+}
+
+bool cableAccess::read(u_int32_t addr, u_int32_t len, u_int8_t* data)
+{
+    return rw(addr, len, data, 0);
+}
+
+bool cableAccess::write(u_int32_t addr, u_int32_t len, u_int8_t* data)
+{
+    return rw(addr, len, data, 1);
+}
+
+void cableAccess::setBurnFlow(bool isBurnFlow)
+{
+    mcables_set_burn_flow(isBurnFlow);
+}
