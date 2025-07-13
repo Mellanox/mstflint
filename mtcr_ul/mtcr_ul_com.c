@@ -1921,6 +1921,7 @@ static int mtcr_vfio_device_open(mfile     * mf,
 
 bool is_cable_device(const char* name)
 {
+#ifdef CABLES_SUPPORT
     if (!name) {
         return false;
     }
@@ -1928,10 +1929,16 @@ bool is_cable_device(const char* name)
         return false;
     }
     return strstr(name, CABLE_DEVICE_STR) != NULL;
+#else
+    (void)name;
+    return false;
+#endif
 }
+
 
 int get_cable_port(const char* name)
 {
+#ifdef CABLES_SUPPORT
     char* cable_name_ptr = strstr(name, CABLE_DEVICE_STR);
 
     if (cable_name_ptr) {
@@ -1944,6 +1951,10 @@ int get_cable_port(const char* name)
         return port;
     }
     return -1;
+#else
+    (void)name;
+    return -1;
+#endif
 }
 
 static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
@@ -4859,6 +4870,7 @@ unsigned char mget_i2c_secondary(mfile* mf)
 
 void switch_access_funcs(mfile* mf)
 {
+#ifdef CABLES_SUPPORT
     ul_ctx_t* ctx = mf->ul_ctx;
 
     if (mf->tp == MST_CABLE) {
@@ -4874,4 +4886,7 @@ void switch_access_funcs(mfile* mf)
         ctx->mwrite4_block = mwrite4_block_pciconf;
         ctx->mclose = mtcr_pciconf_mclose;
     }
+#else
+    (void)mf;
+#endif
 }

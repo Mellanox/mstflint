@@ -425,6 +425,12 @@ fi
 
 AM_CONDITIONAL(ENABLE_CABLES, [ test "x$enable_cables" = "xyes" ])
 
+AS_IF([test "x$enable_cables" = "xyes"],
+    [
+        AC_CONFIG_FILES(cable_access/Makefile)
+        CABLE_ACCESS_DIR="cable_access"
+    ]
+)
 ##
 
 AC_MSG_CHECKING(--enable-rdmem argument)
@@ -709,6 +715,7 @@ AC_SUBST(ADABE_DBS)
 AC_SUBST(ADABE_DBS_EXTRA_DIST)
 AC_SUBST(XZ_UTILS_DIR)
 AC_SUBST(NVML_DIR)
+AC_SUBST(CABLE_ACCESS_DIR)
 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD MTCR)

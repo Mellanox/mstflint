@@ -475,3 +475,13 @@ void mcables_set_burn_flow(bool burn_flow)
 {
     is_cable_burn_flow = burn_flow;
 }
+
+MType mcables_get_tp(mfile* mf)
+{
+    cable_ctx* ctx = (cable_ctx*)(mf->cable_ctx);
+    if (!ctx)
+    {
+        return 0;
+    }
+    return ctx->src_tp;
+}

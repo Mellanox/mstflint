@@ -44,14 +44,15 @@
  * Flint Status Code
  *********************/
 
-typedef enum
-{
-    FLINT_SUCCESS = 0,
-    FLINT_FAILED = 1,
-    FLINT_QUERY_ERROR = 2,
-    FLINT_BURN_ABORTED = 7
-} FlintStatus;
-
+ typedef enum
+ {
+     FLINT_SUCCESS = 0,
+     FLINT_FAILED = 1,
+     FLINT_QUERY_ERROR = 2,
+     FLINT_BURN_ABORTED = 7,
+     FLINT_BURN_TO = 8,
+     FLINT_BURN_ERROR = 9
+ } FlintStatus;
 /***********************
  * Flint Error Messages
  **********************/

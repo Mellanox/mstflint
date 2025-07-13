@@ -1,8 +1,8 @@
 #ifndef _MTCR_CABLES_H
 #define _MTCR_CABLES_H
 
-#include "mtcr.h"
-#include "mtcr_com_defs.h"
+#include "include/mtcr_ul/mtcr.h"
+#include "include/mtcr_ul/mtcr_com_defs.h"
 #include "dev_mgt/tools_dev_types.h"
 
 #define CABLE_DEVICE_STR "_cable_"
@@ -137,4 +137,5 @@ int get_cable_id(mfile* m, u_int32_t* ptr_hw_dev_id, dm_dev_id_t* ptr_dm_dev_id)
 
 void mcables_set_burn_flow(bool burn_flow);
 
+MType mcables_get_tp(mfile* mf);
 #endif /* _MTCR_CABLES_H */
