@@ -132,22 +132,6 @@ void CmisCdbAccess::InnerInit()
         }
         u_int8_t cmis = (u_int8_t)(ReadDWord(CDB_CMIS_REVISION_ADDRESS) & 0xff);
         _cmisVersion = ToCMISVersion(cmis);
-
-        // bool is2ndSource = false;
-        // if (!_cableAccess.is2ndSourceCable(is2ndSource))
-        // {
-        //     throw CmisCdbAccessException("Failed identifying the cable.");
-        // }
-        // if (is2ndSource)
-        // {
-        //     second_source_device_info deviceInfo;
-        //     if (!_cableAccess.get2ndSourceData(deviceInfo))
-        //     {
-        //         throw CmisCdbAccessException("Failed getting data from the cable.");
-        //     }
-        //     _isIgnoreCompletionTimeOut = (deviceInfo.vendorByte == 0x10);
-        // }
-
         _isInitDone = true;
     }
 }

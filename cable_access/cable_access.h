@@ -3,7 +3,8 @@
 
 
 #include <string>
-#include "mtcr.h"
+#include "include/mtcr_ul/mtcr.h"
+#include "include/mtcr_ul/mtcr_com_defs.h"
 #include "dev_mgt/tools_dev_types.h"
  
  using namespace std;
@@ -12,6 +13,16 @@
  #define CMIS_FIRST_8_APP_LEN 32
  #define CMIS_LAST_7_APP_LEN 28
  #define CABLE_PAGE_SIZE 0x100
+ #define PAOS_SLEEP 5000
+ #define MAX_LOCALS 2
+
+ typedef enum
+{
+    PAOS_DOWN = 2,
+    PMAOS_DOWN = 0xe,
+    PAOS_UP = 1,
+    PMAOS_UP = PAOS_UP,
+} paos_actions_t;
  
  typedef enum
  {
@@ -276,8 +287,13 @@
 
     string getLastErrMsg();
     void setBurnFlow(bool isBurnFlow);
+    bool resetCable();
  
  private:
+    bool resetCableModule(bool verbose);
+    bool isBurnSupported();
+    bool isResetSupported();
+    bool rw(u_int32_t addr, u_int32_t len, u_int8_t* data, int _rw);
  
      mfile* _mf;
      bool _mfCreatedInClass;
