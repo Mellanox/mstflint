@@ -10,13 +10,13 @@
 #include "mtcr_ul_com.h"
 
 
-#define MAX_PORT_NUM              128
-#define CABLE_I2C_DEVICE_ADDR     0x50
-#define SECOND_SFP_I2C_ADDR       0x51
-#define CABLE_PAGE_SIZE           256
-#define NUM_OF_WRITE_PAGE_RETRIES 5
-#define CBLINFO_MAX_SIZE          48
-#define REG_ID_MCIA               0x9014
+#define MAX_PORT_NUM                                       128
+#define CABLE_I2C_DEVICE_ADDR                              0x50
+#define SECOND_SFP_I2C_ADDR                                0x51
+#define CABLE_PAGE_SIZE                                    256
+#define NUM_OF_WRITE_PAGE_RETRIES                          5
+#define CBLINFO_MAX_SIZE                                   48
+#define REG_ID_MCIA                                        0x9014
 #define CABLEID_ADDR                                       0x0
 #define SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR 92
 #define SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR              64
@@ -111,7 +111,7 @@ int cable_access_reg_rw(mfile    * mf,
     reg_access_status_t rc = reg_access_mcia(mf, op, &cbl_reg_t);
 
     if (rc) {
-        DBG_PRINTF("-D- MCIA Failed with rc: %s\n", rc);
+        DBG_PRINTF("-D- MCIA Failed with rc: %d\n", (int)rc);
         return MCABLES_REG_FAILED;
     }
     if (_rw == READ_OP) {
@@ -195,6 +195,7 @@ int mtcr_pciconf_mclose(mfile* mf);
 int mcables_open(mfile* mf, int port)
 {
     cable_ctx* cbl;
+
     mf->cable_ctx = NULL;
 
     /* int semaphore_num_of_resources = 1; */
@@ -365,8 +366,7 @@ int mcables_write4_block(mfile* mf, u_int32_t offset, u_int32_t* value, int byte
 
 int mcables_read_bytes(mfile* mf, u_int32_t offset, u_int8_t* value, int byte_len)
 {
-    if (!mf || !value)
-    {
+    if (!mf || !value) {
         return (int)MCABLES_BAD_PARAMS;
     }
     return (int)cable_access_rw(mf, offset, byte_len, (u_int32_t*)value, READ_OP);
@@ -374,18 +374,17 @@ int mcables_read_bytes(mfile* mf, u_int32_t offset, u_int8_t* value, int byte_le
 
 int mcables_write_bytes(mfile* mf, u_int32_t offset, u_int8_t* value, int byte_len)
 {
-    if (!mf || !value)
-    {
+    if (!mf || !value) {
         return (int)MCABLES_BAD_PARAMS;
     }
     int rc = (int)cable_access_rw(mf, offset, byte_len, (u_int32_t*)value, WRITE_OP);
+
     return rc;
 }
 
 dm_dev_id_t mcables_get_dm(mfile* mf)
 {
-    if (mf && mf->cable_ctx)
-    {
+    if (mf && mf->cable_ctx) {
         return ((cable_ctx*)(mf->cable_ctx))->cable_type;
     }
     return DeviceUnknown;
@@ -418,7 +417,8 @@ enum dm_dev_type getCableType(u_int8_t id)
 
 int get_cable_id(mfile* mf, u_int32_t* ptr_hw_dev_id, dm_dev_id_t* ptr_dm_dev_id)
 {
-    u_int32_t dword = 0;  
+    u_int32_t dword = 0;
+
     /* printf("-D- Getting cable ID\n"); */
     if (mread4(mf, CABLEID_ADDR, &dword) != 4) {
         /* printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno)); */
@@ -428,8 +428,10 @@ int get_cable_id(mfile* mf, u_int32_t* ptr_hw_dev_id, dm_dev_id_t* ptr_dm_dev_id
     *ptr_hw_dev_id = 0xffff;
     u_int8_t         id = EXTRACT(dword, 0, 8);
     enum dm_dev_type cbl_type = getCableType(id);
+
     *ptr_hw_dev_id = id;
     u_int8_t paging;
+
     if (cbl_type == DM_QSFP_CABLE) {
         /* Get Byte 2 bit 2 ~ bit 18 (flat_mem : upper memory flat or paged. 0=paging, 1=page 0 only) */
         paging = EXTRACT(dword, 18, 1);
@@ -479,8 +481,8 @@ void mcables_set_burn_flow(bool burn_flow)
 MType mcables_get_tp(mfile* mf)
 {
     cable_ctx* ctx = (cable_ctx*)(mf->cable_ctx);
-    if (!ctx)
-    {
+
+    if (!ctx) {
         return 0;
     }
     return ctx->src_tp;
