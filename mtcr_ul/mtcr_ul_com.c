@@ -2822,6 +2822,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xa2de, /* BF4 Family BlueField4 integrated ConnectX-8 network controller */
                                    0xcf70, /* Spectrum3 */
                                    0xcf80, /* Spectrum4 */
+                                   0xcf82, /* Spectrum5 */
                                    0x1976, /* Schrodinger */
                                    0x1979, /* Freysa */
                                    0x197d, /* Connect-X8 Bridge */
