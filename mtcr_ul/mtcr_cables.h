@@ -1,6 +1,11 @@
 #ifndef _MTCR_CABLES_H
 #define _MTCR_CABLES_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "include/mtcr_ul/mtcr.h"
 #include "include/mtcr_ul/mtcr_com_defs.h"
 #include "dev_mgt/tools_dev_types.h"
@@ -105,32 +110,32 @@ int mcables_write4_block(mfile* mf, u_int32_t offset, u_int32_t* value, int byte
 
 
 /*
-* @brief mcables_read_bytes: General function to read bytes
-* @effect Read bytes from the cable pages, the address contain page number and offset
-* @param[in]  mf - mfile pointer of the device
-* @param[in]  offset - The address from it to read (0x<PAGE_NUM><PAGE_OFFSET>)
-* @param[out] value - a pointer for dword where the data will be read into it
-* @param[in] byte_len - The length of the data
-* @return 0 in Success, otherwise in failure
-*/
+ * @brief mcables_read_bytes: General function to read bytes
+ * @effect Read bytes from the cable pages, the address contain page number and offset
+ * @param[in]  mf - mfile pointer of the device
+ * @param[in]  offset - The address from it to read (0x<PAGE_NUM><PAGE_OFFSET>)
+ * @param[out] value - a pointer for dword where the data will be read into it
+ * @param[in] byte_len - The length of the data
+ * @return 0 in Success, otherwise in failure
+ */
 int mcables_read_bytes(mfile* mf, u_int32_t offset, u_int8_t* value, int byte_len);
 
 /*
-* @brief mcables_write_bytes: write bytes to the cable
-* @effect Write bytes to the cable pages, the address contain page number and offset
-* @param[in]  mf - mfile pointer of the device
-* @param[in]  offset - The address to it will be written (0x<PAGE_NUM><PAGE_OFFSET>)
-* @param[out] value - a dword to the written data
-* @param[in] byte_len - The length of the data
-* @return 0 in Success, otherwise in failure
-*/
+ * @brief mcables_write_bytes: write bytes to the cable
+ * @effect Write bytes to the cable pages, the address contain page number and offset
+ * @param[in]  mf - mfile pointer of the device
+ * @param[in]  offset - The address to it will be written (0x<PAGE_NUM><PAGE_OFFSET>)
+ * @param[out] value - a dword to the written data
+ * @param[in] byte_len - The length of the data
+ * @return 0 in Success, otherwise in failure
+ */
 int mcables_write_bytes(mfile* mf, u_int32_t offset, u_int8_t* value, int byte_len);
 
- /*
-* @brief mcables_get_dm: Cable get cable type
-* @effect Get the dev mgt type of the cable
-* @param[in] mf - mfile pointer of the device
-*/
+/*
+ * @brief mcables_get_dm: Cable get cable type
+ * @effect Get the dev mgt type of the cable
+ * @param[in] mf - mfile pointer of the device
+ */
 dm_dev_id_t mcables_get_dm(mfile* mf);
 
 int get_cable_id(mfile* m, u_int32_t* ptr_hw_dev_id, dm_dev_id_t* ptr_dm_dev_id);
@@ -139,3 +144,6 @@ void mcables_set_burn_flow(bool burn_flow);
 
 MType mcables_get_tp(mfile* mf);
 #endif /* _MTCR_CABLES_H */
+#ifdef __cplusplus
+}
+#endif

@@ -59,9 +59,8 @@ endif
 
 if ENABLE_CABLES
 libmtcr_ul_la_SOURCES += mtcr_cables.c mtcr_cables.h
-libmtcr_ul_la_CXXFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/tools_layouts/libcables_layouts.la
-libmtcr_ul_la_LDFLAGS += -static -lstdc++
+libmtcr_ul_la_LDFLAGS += -static 
 endif
 
 libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)
