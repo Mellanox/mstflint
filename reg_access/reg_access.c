@@ -251,6 +251,14 @@ reg_access_status_t reg_access_pmlp(mfile* mf, reg_access_method_t method, struc
 }
 
 /************************************
+* Function: reg_access_paos
+************************************/
+reg_access_status_t reg_access_paos(mfile* mf, reg_access_method_t method, struct reg_access_hca_paos_reg_ext* paos)
+{
+    REG_ACCCESS(mf, method, REG_ID_PAOS, paos, paos_reg_ext, reg_access_hca);
+}
+
+/************************************
 * Function: reg_access_mnvgc
 ************************************/
 reg_access_status_t reg_access_mnvgc(mfile* mf, reg_access_method_t method, struct reg_access_hca_mnvgc_reg_ext* mnvgc)
