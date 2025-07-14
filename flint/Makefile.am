@@ -63,9 +63,7 @@ mstflint_DEPENDENCIES = \
      $(top_builddir)/mflash/libmflash.la \
      $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
      $(top_builddir)/cmdif/libcmdif.la \
-     $(top_builddir)/reg_access/libreg_access.la  \
      $(top_builddir)/dev_mgt/libdev_mgt.la \
-     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
      $(top_builddir)/tools_layouts/libtools_layouts.la \
      $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
      $(top_builddir)/mft_utils/libmftutils.la
@@ -73,6 +71,8 @@ mstflint_DEPENDENCIES = \
 if ENABLE_CABLES
 mstflint_DEPENDENCIES += $(top_builddir)/${CABLE_ACCESS_DIR}/libcable_access.la
 endif
+
+mstflint_DEPENDENCIES += $(top_builddir)/reg_access/libreg_access.la $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la 
 
 LDADD_mstflint = ${LDL}
 
