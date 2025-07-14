@@ -3373,7 +3373,7 @@ FlintStatus BurnSubCommand::PerformBurn(std::vector<u_int8_t>& fwImage, std::vec
 #if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
     try
     {
-        FwManagementCdbCommander cableCommander(_flintParams.device, _flintParams.clear_completion_flag);
+        FwManagementCdbCommander cableCommander(_flintParams.device,false);
 
         if (!_flintParams.modulePassword.empty())
         {
