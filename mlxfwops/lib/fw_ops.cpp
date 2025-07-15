@@ -273,7 +273,7 @@ void FwOperations::GetFwParams(fw_ops_params_t& fwParams)
     fwParams = _fwParams;
 }
 
-void FwOperations::getSupporteHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum)
+void FwOperations::getSupportedHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum)
 {
     *supportedHwId = _fwImgInfo.supportedHwId;
     supportedHwIdNum = _fwImgInfo.supportedHwIdNum;

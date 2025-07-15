@@ -229,39 +229,9 @@ int ImageAccess::queryPsid(const string&  fname,
     ri.found = 0;
 
     isStripedImage = image_type == IMAGE_PLDM_TYPE ? true : false;
-    memset(&img_query, 0, sizeof(img_query));
-    if (!_imgFwOps->FwQuery(&img_query, true, isStripedImage)) {
-        _errMsg = "Failed to query " + (string)_imgFwOps->err();
-        _log += _errMsg;
-        goto clean_up;
-    }
-
-    if (!psid.compare(img_query.fw_info.psid)) {
-        u_int32_t* supporteHwId;
-        u_int32_t  supporteHwIdNum;
-        _imgFwOps->getSupporteHwId(&supporteHwId, supporteHwIdNum);
-        ri.found = 1;
-        ri.url = fname;
+    if (_imgFwOps->FwType() == FIT_PLDM_1_0)
+    {
         ri.pns = "";
-        ri.devId = (supporteHwIdNum > 0) ? supporteHwId[0] : 0;
-        ri.revId = (ri.devId >> 16) & 0xffff;
-        ri.devId = ri.devId & 0xffff;
-        ri.isFailSafe = img_query.fw_info.is_failsafe;
-        if (_imgFwOps->FwGetSection(H_FW_CONF, sect)) {
-            if (unzipDataFile(sect, dest, "Fw Configuration")) {
-                char* ptr = strstr((char*)&dest[0], "Name =");
-                int   counter = 7;
-                while (ptr && *ptr != '\n' && *ptr != '\r') {
-                    if (counter-- > 0) {
-                        ptr++;
-                        continue;
-                    }
-                    iniName += *ptr;
-                    ptr++;
-                }
-            }
-        }
-        ri.iniName = iniName;
         if (!mfa_open_file(&mfa_d, (char*)fname.c_str())) {
             char* pn = mfa_get_board_metadata(mfa_d, (char*)psid.c_str(), (char*)"PN");
             if (pn != NULL) {
@@ -274,34 +244,141 @@ int ImageAccess::queryPsid(const string&  fname,
                 ri.description = desc;
                 free(desc);
             }
-            mfa_close(mfa_d);
-        }
-        if (!_compareFFV) {
-            ImgVersion imgv;
-            imgv.setVersion("FW", 3, img_query.fw_info.fw_ver, img_query.fw_info.branch_ver);
-            ri.imgVers.push_back(imgv);
-        } else {
+            // Get FW version from MFA:
+            map_entry_hdr* map_entry = mfa_get_map_entry(mfa_d, (char*)psid.c_str());
+            if (map_entry == NULL)
+            {
+                goto clean_up;
+            }
+
+            map_image_entry* map_img = mfa_get_map_image(map_entry, 0); // Assuming single PLDM (image) per map entry
+            toc_entry* toc = mfa_get_image_toc(mfa_d, map_img);
             u_int16_t fwVer[4];
-            fwVer[0] = img_query.fw_info.fw_ver[0];
-            fwVer[1] = img_query.fw_info.fw_ver[1];
-            fwVer[2] = img_query.fw_info.fw_ver[2] / 100;
-            fwVer[3] = img_query.fw_info.fw_ver[2] % 100;
+            fwVer[0] = toc->version[0];
+            fwVer[1] = toc->version[1];
+            fwVer[2] = toc->version[2] / 100;
+            fwVer[3] = toc->version[2] % 100;
             ImgVersion imgv;
             imgv.setVersion("FW", 4, fwVer);
             ri.imgVers.push_back(imgv);
-        }
-        for (int i = 0; i < img_query.fw_info.roms_info.num_of_exp_rom; i++) {
-            ImgVersion  imgVer;
-            const char* tpc = _imgFwOps->expRomType2Str(img_query.fw_info.roms_info.rom_info[i].exp_rom_product_id);
-            if (tpc == NULL) {
-                /* imgVer.setExpansionRomtoUnknown(); */
-                tpc = "UNKNOWN_ROM";
+            // Determine device type based on FW version major
+            switch (fwVer[0])
+            {
+                case 35:
+                {
+                    ri.devId = 0x25b;
+                    ri.revId = 0x0;
+                    break;
+                }
+                default:
+                {
+                    printf("-E- MFA support for PLDM/fwpkg applicable only to Quantum3 FW images\n"); // Adding print
+                                                                                                      // here until
+                                                                                                      // errors
+                                                                                                      // propagation is
+                                                                                                      // fixed.
+                    _errMsg = "MFA support for PLDM/fwpkg applicable only to Quantum3 FW images";
+                    _log += _errMsg;
+                    goto clean_up;
+                }
             }
-            int sz = img_query.fw_info.roms_info.rom_info[i].exp_rom_num_ver_fields;
-            imgVer.setVersion(tpc, sz, img_query.fw_info.roms_info.rom_info[i].exp_rom_ver);
-            ri.imgVers.push_back(imgVer);
+
+            mfa_close(mfa_d);
         }
+        ri.url = fname;
+        ri.found = 1;
         res = 1;
+    }
+    else
+    {
+        memset(&img_query, 0, sizeof(img_query));
+        if (!_imgFwOps->FwQuery(&img_query, true))
+        {
+            _errMsg = "Failed to query " + (string)_imgFwOps->err();
+            _log += _errMsg;
+            goto clean_up;
+        }
+
+        if (!psid.compare(img_query.fw_info.psid))
+        {
+            u_int32_t* supporteHwId;
+            u_int32_t supporteHwIdNum;
+            _imgFwOps->getSupportedHwId(&supporteHwId, supporteHwIdNum);
+            ri.found = 1;
+            ri.url = fname;
+            ri.pns = "";
+            ri.devId = (supporteHwIdNum > 0) ? supporteHwId[0] : 0;
+            ri.revId = (ri.devId >> 16) & 0xffff;
+            ri.devId = ri.devId & 0xffff;
+            ri.isFailSafe = img_query.fw_info.is_failsafe;
+            if (_imgFwOps->FwGetSection(H_FW_CONF, sect))
+            {
+                if (unzipDataFile(sect, dest, "Fw Configuration"))
+                {
+                    char* ptr = strstr((char*)&dest[0], "Name =");
+                    int counter = 7;
+                    while (ptr && *ptr != '\n' && *ptr != '\r')
+                    {
+                        if (counter-- > 0)
+                        {
+                            ptr++;
+                            continue;
+                        }
+                        iniName += *ptr;
+                        ptr++;
+                    }
+                }
+            }
+            ri.iniName = iniName;
+            if (!mfa_open_file(&mfa_d, (char*)fname.c_str()))
+            {
+                char* pn = mfa_get_board_metadata(mfa_d, (char*)psid.c_str(), (char*)"PN");
+                if (pn != NULL)
+                {
+                    ri.pns = pn;
+                    free(pn);
+                }
+                char* desc =
+                  mfa_get_board_metadata(mfa_d, (char*)psid.c_str(), (char*)"DESCRIPTION"); // TODO: Make more efficient
+                if (desc != NULL)
+                {
+                    ri.description = desc;
+                    free(desc);
+                }
+                mfa_close(mfa_d);
+            }
+            if (!_compareFFV)
+            {
+                ImgVersion imgv;
+                imgv.setVersion("FW", 3, img_query.fw_info.fw_ver, img_query.fw_info.branch_ver);
+                ri.imgVers.push_back(imgv);
+            }
+            else
+            {
+                u_int16_t fwVer[4];
+                fwVer[0] = img_query.fw_info.fw_ver[0];
+                fwVer[1] = img_query.fw_info.fw_ver[1];
+                fwVer[2] = img_query.fw_info.fw_ver[2] / 100;
+                fwVer[3] = img_query.fw_info.fw_ver[2] % 100;
+                ImgVersion imgv;
+                imgv.setVersion("FW", 4, fwVer);
+                ri.imgVers.push_back(imgv);
+            }
+            for (int i = 0; i < img_query.fw_info.roms_info.num_of_exp_rom; i++)
+            {
+                ImgVersion imgVer;
+                const char* tpc = _imgFwOps->expRomType2Str(img_query.fw_info.roms_info.rom_info[i].exp_rom_product_id);
+                if (tpc == NULL)
+                {
+                    // imgVer.setExpansionRomtoUnknown();
+                    tpc = "UNKNOWN_ROM";
+                }
+                int sz = img_query.fw_info.roms_info.rom_info[i].exp_rom_num_ver_fields;
+                imgVer.setVersion(tpc, sz, img_query.fw_info.roms_info.rom_info[i].exp_rom_ver);
+                ri.imgVers.push_back(imgVer);
+            }
+            res = 1;
+        }
     }
 
 clean_up:

@@ -63,6 +63,7 @@ extern "C"
     char* mfa_get_map_entry_metadata(map_entry_hdr* map_entry, char* key);
     map_entry_hdr* mfa_get_next_mentry(mfa_desc* mfa_d, map_entry_hdr* curr_me);
     map_image_entry* mfa_get_map_image(map_entry_hdr* me, int image_index);
+    map_entry_hdr* mfa_get_map_entry(mfa_desc* mfa_d, char* board_type_id);
     toc_entry* mfa_get_image_toc(mfa_desc* mfa_d, map_image_entry* img_e);
 
 #ifdef __cplusplus

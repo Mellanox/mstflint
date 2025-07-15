@@ -279,7 +279,7 @@ public:
     virtual bool IsLifeCycleSupported();
     virtual bool IsEncryptionSupported();
     void GetFwParams(fw_ops_params_t&);
-    void getSupporteHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum);
+    void getSupportedHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum);
 
     static FwVersion createFwVersion(const fw_info_com_t*);
     static FwVersion createFwVersion(u_int16_t fw_ver0, u_int16_t fw_ver1, u_int16_t fw_ver2);
