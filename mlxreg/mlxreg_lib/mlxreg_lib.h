@@ -60,6 +60,8 @@ public:
      * * * * * * * * * * * * * */
     AdbInstanceAdvLegacy* findAdbNode(string name);
     AdbInstanceAdvLegacy* getAdbTable() { return _regAccessRootNode; };
+    AdbInstanceAdvLegacy* get_current_node() { return _currentNode; };
+    void set_current_node(string name) { _currentNode = findAdbNode(name); };
     /* * * * * * * *
      * library API *
      * * * * * * * */
@@ -92,6 +94,7 @@ protected:
     AdbInstanceAdvLegacy* _regAccessRootNode;
     AdbInstanceAdvLegacy* _regAccessUnionNode;
     std::map<string, u_int64_t> _regAccessMap;
+    AdbInstanceAdvLegacy* _currentNode;
     bool _isExternal;
 };
 

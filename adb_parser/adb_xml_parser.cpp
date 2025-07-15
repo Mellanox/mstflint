@@ -540,7 +540,7 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
     bool exception_raised = false;
 
     Regex::smatch match;
-    Regex::regex correctHEXExpr("^\\s*((0[xX])?[0-9A-Fa-f]*)(\\.([0-9]*))?\\s*$");
+    static Regex::regex correctHEXExpr("^\\s*((0[xX])?[0-9A-Fa-f]*)(\\.([0-9]*))?\\s*$");
     if (!regex_match(s, match, correctHEXExpr))
         {
         exception_raised = raiseException(allowMultipleExceptions,
@@ -798,15 +798,15 @@ template<bool e, typename O>
 bool AdbParser<e, O>::checkSpecialChars(string tagName)
 {
     Regex::smatch match;
-    Regex::regex allowedCharsExpr("[^\\w\\[\\]]"); // only alphanumeric and square brackets are allowed
+    static Regex::regex allowedCharsExpr("[^\\w\\[\\]]"); // only alphanumeric and square brackets are allowed
     if (Regex::regex_search(tagName, match, allowedCharsExpr))
     {
         return false;
     }
-    Regex::regex checkArrayExpr("[\\[\\]]"); // this check if containing the array brackets
+    static Regex::regex checkArrayExpr("[\\[\\]]"); // this check if containing the array brackets
     if (Regex::regex_search(tagName, match, checkArrayExpr))
     {
-        Regex::regex correctNameForArrayExpr("[_A-Za-z]\\w*\\[\\d+\\]$");
+        static Regex::regex correctNameForArrayExpr("[_A-Za-z]\\w*\\[\\d+\\]$");
         if (!Regex::regex_search(tagName, match, correctNameForArrayExpr))
         { // check the name if correct the square brackets (array)
             return false;
@@ -814,7 +814,7 @@ bool AdbParser<e, O>::checkSpecialChars(string tagName)
     }
     else
     {
-        Regex::regex correctNameNoneArrayExpr("[_A-Za-z]\\w*$");
+        static Regex::regex correctNameNoneArrayExpr("[_A-Za-z]\\w*$");
         if (!Regex::regex_search(tagName, match, correctNameNoneArrayExpr))
         { // check the name if correct without the square brackets (not array)
             return false;
@@ -933,7 +933,7 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
             else if (!aName.compare("define"))
             {
                 Regex::smatch result;
-                Regex::regex pattern(TAG_ATTR_DEFINE_PATTERN);
+                static Regex::regex pattern(TAG_ATTR_DEFINE_PATTERN);
                 if (!Regex::regex_match(aValue, result, pattern))
                 {
                     expFound =
@@ -1036,7 +1036,7 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
                     try
                     {
                         string pattern_value = attrValue(atts, "pattern");
-                        Regex::regex r(pattern_value);
+                        static Regex::regex r(pattern_value);
                         adbParser->attr_pattern.insert(pair<string, string>(aValue, pattern_value));
                     }
                     catch (...)
@@ -1058,7 +1058,7 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
                 try
                 {
                     string nname_pattern = attrValue(atts, "nname_pattern");
-                    Regex::regex r(nname_pattern);
+                    static Regex::regex r(nname_pattern);
                     adbParser->_nname_pattern = nname_pattern;
                 }
                 catch (...)
@@ -1079,7 +1079,7 @@ void AdbParser<e, O>::startConfigElement(const XML_Char** atts, AdbParser<e, O>*
                 try
                 {
                     string fname_pattern = attrValue(atts, "fname_pattern");
-                    Regex::regex r(fname_pattern);
+                    static Regex::regex r(fname_pattern);
                     adbParser->_fname_pattern = fname_pattern;
                 }
                 catch (...)

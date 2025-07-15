@@ -78,7 +78,7 @@ MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
         rootNode = rootNode + "_ext";
     }
 
-    _regAccessRootNode = _adb->createLayout(rootNode);
+    _regAccessRootNode = _adb->createLayout(rootNode, 2);
     if (!_regAccessRootNode)
     {
         throw MlxRegException("No supported access registers found");
@@ -172,7 +172,10 @@ AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(string name)
     {
         throw MlxRegException("Can't find access register name: %s", name.c_str());
     }
-    return _regAccessUnionNode->getUnionSelectedNodeName(name);
+    auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(name);
+
+    found_node = _adb->createLayout(found_node->nodeDesc->name);
+    return found_node;
 }
 
 /************************************

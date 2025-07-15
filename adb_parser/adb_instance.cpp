@@ -269,12 +269,12 @@ string _AdbInstance_impl<e, O>::evalExpr(string expr, AttrsMap* vars)
     }
 
     Regex::smatch what, what2;
-    Regex::regex singleExpr("^([^\\$]*)(\\$\\(([^)]+)\\))(.*)$");
+    static Regex::regex singleExpr("^([^\\$]*)(\\$\\(([^)]+)\\))(.*)$");
     while (Regex::regex_search(expr, what, singleExpr))
     {
         string vname = what[3].str();
         string vvalue;
-        Regex::regex singleVar("^[a-zA-Z_][a-zA-Z0-9_]*$");
+        static Regex::regex singleVar("^[a-zA-Z_][a-zA-Z0-9_]*$");
 
         // Need to change to array-like initialization when we'll move to c++11
         vector<string> specialVars;
@@ -302,7 +302,7 @@ string _AdbInstance_impl<e, O>::evalExpr(string expr, AttrsMap* vars)
         else
         {
             string vnameCopy = vname;
-            Regex::regex singleVarInExpr("[a-zA-Z_][a-zA-Z0-9_]*");
+            static Regex::regex singleVarInExpr("[a-zA-Z_][a-zA-Z0-9_]*");
             Regex::smatch matches;
             while (Regex::regex_search(vnameCopy, matches, singleVarInExpr))
             {
@@ -1413,7 +1413,7 @@ vector<_AdbInstance_impl<e, O>*> _AdbInstance_impl<e, O>::getLeafFields(bool ext
         {
             if (extendenName && !subItems[i]->inst_props.is_name_extended)
             {
-                if (subItems[i]->parent->fieldDesc->subNode == "uint64")
+                if (subItems[i]->parent->fieldDesc && subItems[i]->parent->fieldDesc->subNode == "uint64")
                 {
                     subItems[i]->layout_item_name =
                       subItems[i]->parent->layout_item_name + "_" + subItems[i]->layout_item_name;

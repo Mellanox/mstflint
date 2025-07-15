@@ -491,7 +491,7 @@ template<bool e, typename O>
 vector<typename _Adb_impl<e, O>::SplittedPath> _Adb_impl<e, O>::parse_missing_sons(AdbNode& node,
                                                                                    bool allowMultipleExceptions)
 {
-    Regex::regex path_part_pattern("(\\.)?(\\w+)(\\[([^\\]]*)\\])?(@\\([^\\)]*\\))?");
+    static Regex::regex path_part_pattern("(\\.)?(\\w+)(\\[([^\\]]*)\\])?(@\\([^\\)]*\\))?");
     vector<SplittedPath> missing_sons;
     auto found_it = node.attrs.find("missing_sons");
     if (found_it != node.attrs.end() && !found_it->second.empty())
