@@ -10,6 +10,7 @@
 %{!?enablexml2: %define enablexml2 0}
 %{!?enablefwmgr: %define enablefwmgr 0}
 %{!?enableadbgenerictools: %define enableadbgenerictools 1}
+%{!?enablecables: %define enablecables 0}
 %{!?enablei2c: %define enablei2c 0}
 %{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
 
@@ -101,6 +102,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{enablei2c}
     config_flags="$config_flags --enable-i2c"
+%endif
+
+if %{enablecables}
+   config_flags="$config_flags --enable-cables"
 %endif
 
 %if %{buildtype} == "ppc"

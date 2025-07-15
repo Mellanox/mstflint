@@ -33,8 +33,7 @@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_builddir)/common -I$(top_srcdir)/dev_mgt $(COMPILER_FPIC)
 
 bin_PROGRAMS = \
-    mstdevices_info \
-    mstcable_discovery
+    mstdevices_info
 
 mstdevices_info_SOURCES = mdevices_info.c
 mstdevices_info_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
@@ -44,6 +43,7 @@ mstdevices_info_LDADD = $(mstdevices_info_DEPENDENCIES) ${LDL}
 mstdevices_info_LDFLAGS = -static
 
 if ENABLE_CABLES
+bin_PROGRAMS += mstcable_discovery
 mstcable_discovery_SOURCES = cable_discovery.cpp
 mstcable_discovery_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
                			         $(top_builddir)/dev_mgt/libdev_mgt.la \
