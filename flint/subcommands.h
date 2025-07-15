@@ -298,7 +298,7 @@ private:
     string printSecurityAttrInfo(u_int32_t m);
     FlintStatus printInfo(const fw_info_t& fwInfo, bool fullQuery);
     bool displayFs4Uids(const fw_info_t& fwInfo);
-    bool displayFs3Uids(const fw_info_t& fwInfo);
+    bool displayFs3Uids(const fw_info_t& fwInfo, bool isStripedImage);
     bool displayFs2Uids(const fw_info_t& fwInfo);
     bool checkMac(u_int64_t mac, string& warrStr);
     FlintStatus queryMFA2();
