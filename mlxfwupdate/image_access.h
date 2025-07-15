@@ -65,20 +65,19 @@ public:
                 const string& psid,
                 string& selector_tag,
                 int image_type,
-                PsidQueryItem& ri,
-                u_int16_t swDevId = 0,
-                u_int32_t* data = nullptr,
-                u_int32_t dataSize = 0);
+                PsidQueryItem& ri);
     int getImage(const string& fname, u_int8_t** filebuf);
     int getImage(const string& fname, const string& psid, string& selector_tag, int image_type, u_int8_t** filebuf);
     int get_file_content(const string& fname, vector<PsidQueryItem>& riv);
 
     // PLDM functions
     bool loadPldmPkg(const string& fname);
+    int getPldmImage(const string& fname, const string& psid);
     bool getPldmDescriptorByPsid(string psid, u_int16_t type, u_int16_t& descriptor);
     int getPldmComponentByPsid(string psid, ComponentIdentifier compIdentifier, u_int8_t** buff, u_int32_t& buffSize);
     int getPldmContent(vector<PsidQueryItem>& riv,
                        ComponentIdentifier compIdentifier = ComponentIdentifier::Identifier_General);
+    bool isPsidInPldm(string psid);
     FwComponent::comps_ids_t ToCompId(ComponentIdentifier compIdentifier);
 
     static int getFileSignature(const string& fname);

@@ -56,6 +56,11 @@ PldmPkg::PldmPkg() : deviceIDRecordCount(0), componentImageCount(0) {}
 
 PldmPkg::~PldmPkg()
 {
+    reset();
+}
+
+void PldmPkg::reset()
+{
     while (!deviceIDRecords.empty())
     {
         delete deviceIDRecords.back();
@@ -66,6 +71,9 @@ PldmPkg::~PldmPkg()
         delete componentImages.back();
         componentImages.pop_back();
     }
+    deviceIDRecordCount = 0;
+    componentImageCount = 0;
+    packageHeader.reset();
 }
 
 bool PldmPkg::unpack(PldmBuffer& buff)
@@ -140,6 +148,19 @@ bool PldmPkg::getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_
         {
             found = devIdRec->getDescriptor(type, descriptor);
             break;
+        }
+    }
+    return found;
+}
+
+bool PldmPkg::isPsidInPldm(std::string psid) const
+{
+    bool found = false;
+    for (auto devIdRec : deviceIDRecords)
+    {
+        if (devIdRec->getDevicePsid() == psid)
+        {
+            return true;
         }
     }
     return found;

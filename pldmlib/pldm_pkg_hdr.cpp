@@ -64,6 +64,16 @@ PldmPkgHdr::PldmPkgHdr() :
 
 PldmPkgHdr::~PldmPkgHdr() {}
 
+void PldmPkgHdr::reset()
+{
+    packageHeaderFormatRevision = 0;
+    packageHeaderSize = 0;
+    componentBitmapBitLength = 0;
+    packageVersionStringType = 0;
+    packageVersionStringLength = 0;
+}
+
+
 bool PldmPkgHdr::unpack(PldmBuffer& buff)
 {
     for (int i = 0; i < ID_COUNT; i++)

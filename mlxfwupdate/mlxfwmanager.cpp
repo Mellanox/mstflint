@@ -459,13 +459,11 @@ int mainEntry(int argc, char* argv[])
 
         if (pldmFlow)
         {
-            rc = queryPLDM(cmd_params.mfa_file, psid_list, psidUpdateInfo, psidPldmComponents);
+            rc = queryPLDM(cmd_params.mfa_file, psid_list, psidPldmComponents);
         }
-        else
-        {
-            rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg,
-                           fw_version_list);
-        }
+
+        rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg,
+                       fw_version_list);
 
         if (rc < 0)
         {
@@ -1697,41 +1695,6 @@ int isDirectory(string path)
     return (S_ISDIR(st.st_mode));
 }
 
-int getPLDMImgListFromPSIDs(string file, vector<string>& psid_list, vector<PsidQueryItem>& results)
-{
-    int rc = 0;
-    ImageAccess imgacc(CompareFFV);
-    vector<PsidQueryItem> comps;
-    imgacc.loadPldmPkg(file);
-    imgacc.getPldmContent(comps, ComponentIdentifier::Identifier_NIC_FW_Comp);
-    for (auto& comp : comps)
-    {
-        for (string psid : psid_list)
-        {
-            if (comp.psid == psid)
-            {
-                u_int16_t swDevId = 0;
-                if (!imgacc.getPldmDescriptorByPsid(psid, DEV_ID_TYPE, swDevId))
-                {
-                    print_out("-E- can't extract DEVICE ID from PLDM package.\n");
-                }
-                comp.swDevId = swDevId;
-                string arch = "";
-                u_int8_t* buff;
-                u_int32_t buffSize = 0;
-                if (!imgacc.getPldmComponentByPsid(psid, ComponentIdentifier::Identifier_NIC_FW_Comp, &buff, buffSize))
-                {
-                    return -1;
-                }
-                rc = imgacc.queryPsid(file, psid, arch, IMAGE_PLDM_TYPE, comp, swDevId, (u_int32_t*)buff, buffSize);
-                delete[] buff;
-                results.push_back(comp);
-            }
-        }
-    }
-    return rc;
-}
-
 int getPLDMCompsListFromPSIDs(string file,
                               vector<string>& psid_list,
                               vector<tuple<PsidQueryItem, u_int8_t*, u_int32_t>>& results,
@@ -1852,16 +1815,8 @@ int getMFAListFromPSIDs(string mfa_path, vector<string>& psid_list, vector<PsidQ
 
 int queryPLDM(string file,
               vector<string>& psid_list,
-              map<string, PsidQueryItem>& psidUpdateInfo,
               map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>>& psidPldmComponents)
 {
-    vector<PsidQueryItem> imgResults;
-    getPLDMImgListFromPSIDs(file, psid_list, imgResults);
-    for (unsigned i = 0; i < imgResults.size(); i++)
-    {
-        psidUpdateInfo[imgResults[i].psid] = imgResults[i];
-    }
-
     vector<tuple<PsidQueryItem, u_int8_t*, u_int32_t>> pldmCompsResults;
     getPLDMCompsListFromPSIDs(file, psid_list, pldmCompsResults, ComponentIdentifier::Identifier_BFB_Comp);
     for (unsigned i = 0; i < pldmCompsResults.size(); i++)

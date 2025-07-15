@@ -47,6 +47,7 @@ public:
     virtual ~PldmBuffer();
 
     bool loadFile(const std::string& fname);
+    void reset();
 
     void read(u_int8_t& val);
     void read(u_int16_t& val);

@@ -192,10 +192,7 @@ int ImageAccess::queryPsid(const string&  fname,
                            const string&  psid,
                            string&        selector_tag,
                            int            image_type,
-                           PsidQueryItem& ri,
-                           u_int16_t      swDevId,
-                           u_int32_t*     data,
-                           u_int32_t      dataSize)
+                           PsidQueryItem& ri)
 {
     int       res = 0;
     mfa_desc* mfa_d = NULL;
@@ -204,32 +201,25 @@ int ImageAccess::queryPsid(const string&  fname,
 
     vector < u_int8_t > sect; /* to get fw configuration. */
     vector < u_int8_t > dest;
-    bool isStripedImage = false;
+    bool isPldmFile = false;
 
-    if (image_type == IMAGE_PLDM_TYPE)
+    if (getFileSignature(fname) == IMG_SIG_TYPE_PLDM)
     {
-        if (!openImg(FHT_FW_BUFF, (char*)psid.c_str(), nullptr, swDevId, data, dataSize))
-        {
-            _errMsg = "Unable to open the PLDM buffer component.";
-            res = -1;
-            goto clean_up;
-        }
-        if (_imgFwOps->FwType() != FIT_FS4 && _imgFwOps->FwType() != FIT_FS5)
-        {
-            _errMsg = "Update FW using PLDM is applicable only for FS4 and FS5 images.";
-            res = -1;
-            goto clean_up;
-        }
+        isPldmFile = true;
     }
-    else if (!openImg(FHT_FW_FILE, (char*)psid.c_str(), (char*)fname.c_str())) {
-        return 0;
+
+    if (!isPldmFile)
+    {
+        if (!openImg(FHT_FW_FILE, (char*)psid.c_str(), (char*)fname.c_str()))
+        {
+            return 0;
+        }
     }
 
     ri.psid = psid;
     ri.found = 0;
 
-    isStripedImage = image_type == IMAGE_PLDM_TYPE ? true : false;
-    if (_imgFwOps->FwType() == FIT_PLDM_1_0)
+    if (getFileSignature(fname) == IMG_SIG_TYPE_MFA && _imgFwOps->FwType() == FIT_PLDM_1_0)
     {
         ri.pns = "";
         if (!mfa_open_file(&mfa_d, (char*)fname.c_str())) {
@@ -291,8 +281,18 @@ int ImageAccess::queryPsid(const string&  fname,
     }
     else
     {
+        bool isStripedImage = false;
+        if (isPldmFile)
+        {
+            res = getPldmImage(fname, psid);
+            if (res != 1)
+            {
+                goto clean_up;
+            }
+            isStripedImage = true;
+        }
         memset(&img_query, 0, sizeof(img_query));
-        if (!_imgFwOps->FwQuery(&img_query, true))
+        if (!_imgFwOps->FwQuery(&img_query, true, isStripedImage))
         {
             _errMsg = "Failed to query " + (string)_imgFwOps->err();
             _log += _errMsg;
@@ -390,6 +390,48 @@ clean_up:
     _imgFwOps = NULL;
 
     return res;
+}
+
+int ImageAccess::getPldmImage(const string& fname, const string& psid)
+{
+    if (!loadPldmPkg(fname))
+    {
+        _errMsg = "-E- Failed to load PLDM package from file: " + fname;
+        return -1;
+    }
+    u_int16_t swDevId = 0;
+    if (!_pldmPkg.isPsidInPldm(psid))
+    {
+        return 0;
+    }
+    else if (!getPldmDescriptorByPsid(psid, DEV_ID_TYPE, swDevId))
+    {
+        _errMsg = "-E- No swId found for psid: " + psid + " in file: " + fname;
+        return -1;
+    }
+    u_int8_t* buff;
+    u_int32_t buffSize = 0;
+    if (!getPldmComponentByPsid(psid, ComponentIdentifier::Identifier_NIC_FW_Comp, &buff, buffSize))
+    {
+        _errMsg = "-E- Nic FW component not found for psid: " + psid + " in file: " + fname;
+        return -1;
+    }
+    if (!openImg(FHT_FW_BUFF, (char*)psid.c_str(), nullptr, swDevId, (u_int32_t*)buff, buffSize))
+    {
+        _errMsg = "Unable to open the PLDM buffer component.";
+        return -1;
+    }
+    if (_imgFwOps->FwType() != FIT_FS4 && _imgFwOps->FwType() != FIT_FS5)
+    {
+        _errMsg = "Update FW using PLDM is applicable only for FS4 and FS5 images.";
+        if (buff)
+        {
+            delete[] buff;
+        }
+        return -1;
+    }
+    delete[] buff;
+    return 1;
 }
 
 int ImageAccess::getImage(const string& fname,
@@ -786,10 +828,12 @@ string ImageAccess::getLog()
 ***********************/
 bool ImageAccess::loadPldmPkg(const string& fname)
 {
+    _pldm_buff.reset();
     if (_pldm_buff.loadFile(fname))
     {
         return false;
     }
+    _pldmPkg.reset();
     if (!_pldmPkg.unpack(_pldm_buff))
     {
         return false;
@@ -809,6 +853,11 @@ FwComponent::comps_ids_t ImageAccess::ToCompId(ComponentIdentifier compIdentifie
 bool ImageAccess::getPldmDescriptorByPsid(string psid, u_int16_t type, u_int16_t& descriptor)
 {
     return _pldmPkg.getPldmDescriptorByPsid(psid, type, descriptor);
+}
+
+bool ImageAccess::isPsidInPldm(string psid)
+{
+    return _pldmPkg.isPsidInPldm(psid);
 }
 
 int ImageAccess::getPldmComponentByPsid(string psid,

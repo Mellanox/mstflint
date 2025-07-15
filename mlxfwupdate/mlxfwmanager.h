@@ -157,7 +157,6 @@ int getPLDMCompsListFromPSIDs(string file,
                               ComponentIdentifier compId);
 int queryPLDM(string file,
               vector<string>& psid_list,
-              map<string, PsidQueryItem>& psidUpdateInfo,
               map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>>& psidPldmComponents);
 int download(ServerRequest* srq,
              vector<string>& url,
