@@ -764,7 +764,7 @@ void MlxRegUi::run(int argc, char** argv)
     AdbInstanceAdvLegacy* regNode = NULL;
     std::vector<u_int32_t> buff;
 
-    if (_op == CMD_GET || _op == CMD_SET)
+    if (_regName != "" && (_op == CMD_GET || _op == CMD_SET))
     {
         _mlxRegLib->set_current_node(_regName);
     }
