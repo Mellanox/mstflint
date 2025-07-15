@@ -92,7 +92,10 @@ bool PldmDevIdRecord::unpack(PldmBuffer& buff)
     for (u_int8_t i = 0; i < descriptorCount; i++)
     {
         PldmRecordDescriptor* descriptor = new PldmRecordDescriptor();
-        descriptor->unpack(buff);
+        if (!descriptor->unpack(buff))
+        {
+            return false;
+        }
         recordDescriptors.push_back(descriptor);
     }
     if (firmwareDevicePackageDataLength)
