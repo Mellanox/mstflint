@@ -43,18 +43,18 @@ reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struc
     reg_access_hca_mcia_ext_pack(mcia, data);
     ;
 
-    // printf("=======mcia before: ==========\n");
-    // reg_access_hca_mcia_ext_dump(mcia, stdout);
-    // printf("==============================\n");
+    /* printf("=======mcia before: ==========\n"); */
+    /* reg_access_hca_mcia_ext_dump(mcia, stdout); */
+    /* printf("==============================\n"); */
 
     rc = maccess_reg(mf, REG_ID_MCIA, (maccess_reg_method_t)method, data, data_size, data_size, data_size, &status);
     if (rc && 0) {
         free(data);
     } else {
         reg_access_hca_mcia_ext_unpack(mcia, data);
-        // printf("=======mcia after: ==========\n");
-        // reg_access_hca_mcia_ext_dump(mcia, stdout);
-        // printf("==============================\n");
+        /* printf("=======mcia after: ==========\n"); */
+        /* reg_access_hca_mcia_ext_dump(mcia, stdout); */
+        /* printf("==============================\n"); */
         free(data);
         ;
     } if (rc || status) {
@@ -201,6 +201,7 @@ int mcables_open(mfile* mf, int port)
 {
     cable_ctx* cbl;
 
+    mf->flags = MDEVS_CABLE;
     mf->cable_ctx = NULL;
 
     /* int semaphore_num_of_resources = 1; */

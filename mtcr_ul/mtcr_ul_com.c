@@ -1943,7 +1943,7 @@ int get_cable_port(const char* name)
 
     if (cable_name_ptr) {
         char* endptr;
-        int   port = strtol(cable_name_ptr + (sizeof(CABLE_DEVICE_STR)-1), &endptr, 10);
+        int   port = strtol(cable_name_ptr + (sizeof(CABLE_DEVICE_STR) - 1), &endptr, 10);
         if ((*endptr != '\0') || (port < 0)) {
             DBG_PRINTF("Invalid cable port: %s\n", name);
             return -1;
@@ -2965,6 +2965,36 @@ int mdevices_v_ul(char* buf, int len, int mask, int verbosity)
         fclose(f);
     }
     closedir(d);
+
+    if (mask & (MDEVS_CABLE)) {
+        DIR          * mstflint_dir;
+        struct dirent* mstflint_entry;
+
+        mstflint_dir = opendir("/dev/mstflint");
+        if (mstflint_dir != NULL) {
+            while ((mstflint_entry = readdir(mstflint_dir)) != NULL) {
+                if (mstflint_entry->d_name[0] == '.') {
+                    continue;
+                }
+
+                if (strstr(mstflint_entry->d_name, "cable_") != NULL) {
+                    int sz = strlen(mstflint_entry->d_name);
+                    int rsz = sz + 1; /* dev name size + place for Null char */
+
+                    if ((pos + rsz) > len) {
+                        ndevs = -1;
+                        closedir(mstflint_dir);
+                        return ndevs;
+                    }
+
+                    memcpy(&buf[pos], mstflint_entry->d_name, rsz);
+                    pos += rsz;
+                    ndevs++;
+                }
+            }
+            closedir(mstflint_dir);
+        }
+    }
 
     return ndevs;
 

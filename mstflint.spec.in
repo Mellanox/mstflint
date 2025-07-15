@@ -157,6 +157,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstresourcedump
 %{_bindir}/mstresourceparse
 %{_bindir}/mstdevices_info
+%{_bindir}/mstcable_discovery
 %if %{enablefwmgr}
  %{_bindir}/mstfwmanager
  %{_bindir}/mstarchive
