@@ -90,6 +90,7 @@ bool PldmPkg::unpack(PldmBuffer& buff)
         PldmDevIdRecord* deviceIDRecord = new PldmDevIdRecord(componentBitmapBitLength);
         if (!deviceIDRecord->unpack(buff))
         {
+            reset();
             return false;
         }
         deviceIDRecords.push_back(deviceIDRecord);

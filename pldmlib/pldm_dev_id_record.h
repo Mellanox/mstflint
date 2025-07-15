@@ -53,6 +53,7 @@ public:
     std::string getDescription() const;
     bool getDescriptor(u_int16_t type, u_int16_t& descriptor) const;
     void print(FILE* fp);
+    void reset();
 
 private:
     u_int8_t componentBitmapBitLength;
@@ -63,10 +64,10 @@ private:
     u_int8_t componentImageSetVersionStringType;
     u_int8_t componentImageSetVersionStringLength;
     u_int16_t firmwareDevicePackageDataLength;
-    u_int8_t* applicableComponents;
+    std::vector<u_int8_t> applicableComponents;
     std::string componentImageSetVersionString;
     std::vector<PldmRecordDescriptor*> recordDescriptors;
-    u_int8_t* firmwareDevicePackageData;
+    std::vector<u_int8_t> firmwareDevicePackageData;
 };
 
 #endif /* _PLDM_DEV_ID_RECORD_HDR_ */

@@ -51,28 +51,24 @@ PldmDevIdRecord::PldmDevIdRecord(u_int8_t bitmapBitLength) :
     deviceUpdateOptionFlags(0),
     componentImageSetVersionStringType(0),
     componentImageSetVersionStringLength(0),
-    firmwareDevicePackageDataLength(0),
-    applicableComponents(NULL),
-    firmwareDevicePackageData(NULL)
+    firmwareDevicePackageDataLength(0)
 {
 }
 
 PldmDevIdRecord::~PldmDevIdRecord()
 {
-    if (applicableComponents)
-    {
-        delete[] applicableComponents;
-    }
-    if (firmwareDevicePackageData)
-    {
-        delete[] firmwareDevicePackageData;
-    }
+    reset();
+}
+
+void PldmDevIdRecord::reset()
+{
     while (!recordDescriptors.empty())
     {
         delete recordDescriptors.back();
         recordDescriptors.pop_back();
     }
 }
+
 
 bool PldmDevIdRecord::unpack(PldmBuffer& buff)
 {
@@ -85,8 +81,8 @@ bool PldmDevIdRecord::unpack(PldmBuffer& buff)
     if (componentBitmapBitLength)
     {
         u_int8_t applicableComponentsLen = componentBitmapBitLength / 8;
-        applicableComponents = new u_int8_t[applicableComponentsLen];
-        buff.read(applicableComponents, applicableComponentsLen);
+        applicableComponents.resize(applicableComponentsLen);
+        buff.read(applicableComponents.data(), applicableComponentsLen);
     }
     buff.read(componentImageSetVersionString, componentImageSetVersionStringLength);
     for (u_int8_t i = 0; i < descriptorCount; i++)
@@ -94,13 +90,15 @@ bool PldmDevIdRecord::unpack(PldmBuffer& buff)
         PldmRecordDescriptor* descriptor = new PldmRecordDescriptor();
         if (!descriptor->unpack(buff))
         {
+            reset();
             return false;
         }
         recordDescriptors.push_back(descriptor);
     }
     if (firmwareDevicePackageDataLength)
     {
-        buff.read(firmwareDevicePackageData, firmwareDevicePackageDataLength);
+        firmwareDevicePackageData.resize(firmwareDevicePackageDataLength);
+        buff.read(firmwareDevicePackageData.data(), firmwareDevicePackageDataLength);
     }
     return true;
 }
