@@ -195,7 +195,28 @@ static std::vector<AdbInstanceAdvLegacy*> getRelevantField(AdbInstanceAdvLegacy*
         AdbConditionLegacy* condition = node->getCondition();
         if (condition)
         {
-            uint64_t cond_val = condition->evaluate((u_int8_t*)&buff[0]);
+            uint64_t cond_val = 0;
+            try
+            {
+                cond_val = condition->evaluate((u_int8_t*)&buff[0]);
+            }
+            catch (const AdbException& e)
+            {
+                // If condition evaluation throws an exception, treat as a regular non-union node
+                // and process all children
+                std::cerr << "-W- Field - " << node->get_field_name()
+                          << " with condition, evaluation failed, treating as regular node and processing all children\n"
+                          << e.what() << std::endl;
+                for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin();
+                     it != node->subItems.end();
+                     ++it)
+                {
+                    std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantField(*it, buff);
+                    result.insert(result.end(), subResult.begin(), subResult.end());
+                }
+                return result;
+            }
+
             if (!cond_val)
             {
                 return result;
