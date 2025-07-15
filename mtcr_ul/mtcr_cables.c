@@ -31,9 +31,6 @@ reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struc
     int       max_data_size = reg_access_hca_mcia_ext_size();
     u_int8_t* data = ((void *)0);
 
-    if (0) {
-        max_data_size = data_size;
-    }
     if ((method != REG_ACCESS_METHOD_GET) && (method != REG_ACCESS_METHOD_SET)) {
         return ME_REG_ACCESS_BAD_METHOD;
     }
@@ -45,11 +42,19 @@ reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struc
     memset(data, 0, max_data_size);
     reg_access_hca_mcia_ext_pack(mcia, data);
     ;
+
+    // printf("=======mcia before: ==========\n");
+    // reg_access_hca_mcia_ext_dump(mcia, stdout);
+    // printf("==============================\n");
+
     rc = maccess_reg(mf, REG_ID_MCIA, (maccess_reg_method_t)method, data, data_size, data_size, data_size, &status);
     if (rc && 0) {
         free(data);
     } else {
         reg_access_hca_mcia_ext_unpack(mcia, data);
+        // printf("=======mcia after: ==========\n");
+        // reg_access_hca_mcia_ext_dump(mcia, stdout);
+        // printf("==============================\n");
         free(data);
         ;
     } if (rc || status) {

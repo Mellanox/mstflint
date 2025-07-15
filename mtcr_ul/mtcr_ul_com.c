@@ -1943,7 +1943,7 @@ int get_cable_port(const char* name)
 
     if (cable_name_ptr) {
         char* endptr;
-        int   port = strtol(cable_name_ptr + (sizeof(CABLE_DEVICE_STR)), &endptr, 10);
+        int   port = strtol(cable_name_ptr + (sizeof(CABLE_DEVICE_STR)-1), &endptr, 10);
         if ((*endptr != '\0') || (port < 0)) {
             DBG_PRINTF("Invalid cable port: %s\n", name);
             return -1;
