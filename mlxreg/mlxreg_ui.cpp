@@ -398,7 +398,7 @@ size_t getLongestNodeLen(std::vector<AdbInstanceAdvLegacy*> root, bool full_path
     size_t len = 0;
     for (std::vector<AdbInstanceAdvLegacy*>::size_type i = 0; i != root.size(); i++)
     {
-        auto name = full_path ? root[i]->fullName(3) : root[i]->get_field_name();
+        auto name = full_path ? root[i]->fullName(1) : root[i]->get_field_name();
         if (name.size() > len)
         {
             len = name.size();
@@ -420,7 +420,7 @@ void MlxRegUi::printRegFields(vector<AdbInstanceAdvLegacy*> nodeFields)
     {
         printf("%-*s | 0x%08x      | %-8d      | %-8ld    | %-15s\n",
                largestName,
-               _full_path ? nodeFields[i]->fullName(2).c_str() : nodeFields[i]->get_field_name().c_str(),
+               _full_path ? nodeFields[i]->fullName(1).c_str() : nodeFields[i]->get_field_name().c_str(),
                (nodeFields[i]->offset >> 3) & ~0x3,
                nodeFields[i]->startBit(),
                (unsigned long)nodeFields[i]->fieldDesc->eSize(),
@@ -456,7 +456,7 @@ void MlxRegUi::printAdbContext(AdbInstanceAdvLegacy* node, std::vector<u_int32_t
     {
         printf("%-*s | 0x%08x\n",
                largestName,
-               _full_path ? subItems[i]->fullName(2).c_str() : subItems[i]->get_field_name().c_str(),
+               _full_path ? subItems[i]->fullName(1).c_str() : subItems[i]->get_field_name().c_str(),
                (unsigned int)subItems[i]->popBuf((u_int8_t*)&buff[0]));
     }
     PRINT_LINE(largestName + 14);
