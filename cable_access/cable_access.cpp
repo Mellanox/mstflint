@@ -6,6 +6,7 @@
 
 #include "cable_access.h"
 #include "mtcr_cables.h"
+#include "mtcr_ul/mtcr_ul_com.h"
 #include "tools_layouts/reg_access_switch_layouts.h"
 #include "tools_layouts/reg_access_hca_layouts.h"
 #include "reg_access/reg_access.h"
@@ -23,11 +24,13 @@ dm_dev_id_t mcables_get_connected_device_type(mfile* mf)
     }
     MType tmp_tp = mf->tp;
     mf->tp = ctx->src_tp;
+    switch_access_funcs(mf);
     if (dm_get_device_id(mf, &devid, &hwid, &revid))
     {
         devid = DeviceUnknown;
     }
     mf->tp = tmp_tp;
+    switch_access_funcs(mf);
     return devid;
 }
 
@@ -42,6 +45,7 @@ int send_paos(mfile* mf, int state, int local_ports[], int num_ports, bool verbo
     }
     MType tmp_tp = mf->tp;
     mf->tp = ctx->src_tp;
+    switch_access_funcs(mf);
     if (verbose)
     {
         printf("-I- Changing %d local port/s state to %s\n", num_ports, state == 1 ? "UP" : "DOWN");
@@ -60,6 +64,7 @@ int send_paos(mfile* mf, int state, int local_ports[], int num_ports, bool verbo
         }
     }
     mf->tp = tmp_tp;
+    switch_access_funcs(mf);
     return ret;
 }
 
@@ -74,6 +79,7 @@ int send_pmaos(mfile* mf, int state, bool verbose)
     }
     MType tmp_tp = mf->tp;
     mf->tp = ctx->src_tp;
+    switch_access_funcs(mf);
     struct reg_access_switch_pmaos_reg_ext pmaos;
     memset(&pmaos, 0, sizeof(pmaos));
     pmaos.ase = 1;
@@ -90,6 +96,7 @@ int send_pmaos(mfile* mf, int state, bool verbose)
         ret = MCABLES_REG_FAILED;
     }
     mf->tp = tmp_tp;
+    switch_access_funcs(mf);
     return ret;
 }
 
@@ -112,6 +119,7 @@ void get_all_local_ports(mfile* mf, dm_dev_id_t dm, int module, int local_ports[
     }
     MType tmp_tp = mf->tp;
     mf->tp = ctx->src_tp;
+    switch_access_funcs(mf);
     if (verbose)
     {
         printf("-I- Locating local ports ...\n");
@@ -131,6 +139,7 @@ void get_all_local_ports(mfile* mf, dm_dev_id_t dm, int module, int local_ports[
         }
     }
     mf->tp = tmp_tp;
+    switch_access_funcs(mf);
 }
 
 int mcables_reset_module(mfile* mf, bool verbose)

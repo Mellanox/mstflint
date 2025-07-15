@@ -215,9 +215,8 @@ int is_supported_device_id(u_int16_t dev_id);
 int is_secure_debug_access(u_int32_t dev_id);
 int try_to_read_secure_device(mfile* mf);
 int change_i2c_secondary_address(mfile* mf, DType dtype);
-void switch_access_funcs(mfile* mf);
 #endif
-
+void switch_access_funcs(mfile* mf);
 
 #ifdef __cplusplus
 }

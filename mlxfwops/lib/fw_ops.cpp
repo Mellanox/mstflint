@@ -644,6 +644,23 @@ bool FwOperations::GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset
     DPRINTF(("FwOperations::GetImageFormatVersion image_format_version = %d\n", image_format_version));
     return true;
 }
+
+#define MAGIC_NUMBER_LENGTH (8)
+#define LINKX_MAGIC_PATTERN_STRING "NvXcvrFW"
+
+u_int8_t FwOperations::IsLinkXImage(FBase& f)
+{
+    char data[MAGIC_NUMBER_LENGTH] = {0};
+    f.read(0, data, MAGIC_NUMBER_LENGTH, false, NULL);
+
+    if (!strncmp(data, LINKX_MAGIC_PATTERN_STRING, MAGIC_NUMBER_LENGTH))
+    {
+        return FS_LINKX_GEN;
+    }
+
+    return FS_UNKNOWN_IMG;
+}
+
 u_int8_t FwOperations::IsFS4OrFS5Image(FBase& f, u_int32_t* found_images)
 {
     DPRINTF(("FwOperations::IsFS4OrFS5Image\n"));
@@ -747,6 +764,11 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg, u_int16_
     }
     else
     {
+        v = IsLinkXImage(f);
+        if (v != FS_UNKNOWN_IMG)
+        {
+            return v;
+        }
         v = IsPLDM(f);
         if (v != FS_UNKNOWN_IMG)
         {
