@@ -986,3 +986,8 @@ int dm_is_ib_access(mfile* mf)
 {
     return (mf->flags & MDEVS_IB);
 }
+
+int dm_is_bluefield(dm_dev_id_t type)
+{
+    return (type == DeviceBlueField || type == DeviceBlueField2 || type == DeviceBlueField3 || type == DeviceBlueField4);
+}
