@@ -57,14 +57,15 @@ void CreateDirectoryIfNotExist(const std::string& poNewDirectory)
 
 int main(int argc, char* argv[])
 {
-    dev_info* devs = NULL;
-    int       device_count = 0;
-    int       num_ports = 0;
-    int       verbose = 0;
-    int       domain_needed = 0;
-    int       ul_mode = 0;
+    dev_info   * devs = NULL;
+    int          device_count = 0;
+    int          num_ports = -1;
+    int          verbose = 0;
+    int          domain_needed = 0;
+    int          ul_mode = 0;
+    unsigned int cable_count = 0;
 
-    devs = mdevices_info_v(0xffffffff, &device_count, 0);
+    devs = mdevices_info_v(0xffffffff, &device_count, 1);
 
     if (!device_count || !devs) {
         printf("\nNo supported PCIe devices were found.\n");
@@ -86,17 +87,15 @@ int main(int argc, char* argv[])
         }
 
 
-        if (dm_is_5th_gen_hca(devid_type)) {
+        if (dm_is_5th_gen_hca(devid_type) && !dm_is_bluefield(devid_type)) {
             num_ports = 1;
             if (checkModule(mf, num_ports) == -1) {
                 mclose(mf);
                 continue;
             }
-        } else {
+        } else if (dm_dev_is_switch(devid_type) && !dm_is_gpu(devid_type)) {
             num_ports = dm_get_hw_ports_num(devid_type);
-        }
-
-        if (num_ports == -1) {
+        } else {
             mclose(mf);
             continue;
         }
@@ -112,7 +111,7 @@ int main(int argc, char* argv[])
                 CreateDirectoryIfNotExist(MSTFLINT_DEV_DIR);
                 std::ofstream mstDeviceFile(MSTFLINT_DEV_DIR + cable_name, std::ios::out | std::ios::trunc);
                 mstDeviceFile.close();
-                printf("Cable %s found\n", cable_name.c_str());
+                cable_count++;
             }
 
             mclose(cable_mf);
@@ -122,6 +121,12 @@ int main(int argc, char* argv[])
 cleanup:
     if (devs) {
         free(devs);
+    }
+
+    if (cable_count == 0) {
+        printf("\nNo supported NVIDIA cables were found.\n");
+    } else {
+        printf("Added %d NVIDIA cable devices.\n", cable_count);
     }
 
     return 0;

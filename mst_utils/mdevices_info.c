@@ -529,7 +529,7 @@ int main(int argc, char** argv)
     for (i = 0; i < len; i++) {
         if (devs[i].dev_name && (strstr(devs[i].dev_name, "cable_") != NULL)) {
             if (cable_found == 0) {
-                printf("Cable devices:\n");
+                printf("\nCable devices:\n");
                 printf("---------------\n");
                 cable_found = 1;
             }

@@ -337,6 +337,8 @@ int dm_dev_is_eth_switch(dm_dev_id_t type);
 int dm_is_livefish_mode(mfile* mf);
 
 int dm_is_ib_access(mfile* mf);
+
+int dm_is_bluefield(dm_dev_id_t type);
 #ifdef __cplusplus
 } /* end of 'extern "C"' */
 #endif
