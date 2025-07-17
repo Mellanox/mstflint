@@ -195,7 +195,7 @@ void MlxlinkCablesCommander::getDdmValuesFromPddr()
         string laneStr = "";
         for (int lane = 0; lane < _cableDdm.channels; lane++)
         {
-            laneStr = to_string(lane);
+            laneStr = to_string(_moduleLanesMapping[lane]);
             _cableDdm.rx_power[lane].val = getPower(getFieldValue("rx_power_lane" + laneStr));
             _cableDdm.tx_power[lane].val = getPower(getFieldValue("tx_power_lane" + laneStr));
             _cableDdm.tx_bias[lane].val = getFieldValue("tx_bias_lane" + laneStr);
@@ -1535,7 +1535,7 @@ void MlxlinkCablesCommander::showControlParams()
         rxPostEmph = getFieldValue("cable_rx_post_emphasis");
         rxAmp = getFieldValue("cable_rx_amp");
     }
-    
+
     bool isCmis = _cableIdentifier >= IDENTIFIER_SFP_DD;
 
     sendPrmReg(ACCESS_REG_PMCR, GET);

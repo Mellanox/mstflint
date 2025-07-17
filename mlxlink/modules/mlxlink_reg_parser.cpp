@@ -150,6 +150,11 @@ void MlxlinkRegParser::setDefaultFields(const string& regName, const string& fie
         updateWithDefault("lp_gl", fieldsStr, 1);
     }
 
+    if (_isHCA && _planeInd >= 0)
+    {
+        updateWithDefault("plane_ind", fieldsStr, static_cast<u_int32_t>(_planeInd));
+    }
+
     if (_isHCA && _isDPNvSupported &&
         (regName == ACCESS_REG_MPIR || regName == ACCESS_REG_MPCNT || regName == ACCESS_REG_MPEIN ||
          regName == ACCESS_REG_MPEINJ))
