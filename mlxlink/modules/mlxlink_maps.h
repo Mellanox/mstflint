@@ -228,12 +228,14 @@ private:
     void techMapping();
     void pcieEnumMapping();
     void initEnhancedDebugMapping();
-    void initPprmOperationRecoveryMapping();
     void initPpttParamsMapping();
     void initPpttSpeedMapping();
+    void initPprmOperationRecoveryMapping();
+    void initPprmRecoveryStatusMapping();
+    void initCableTypeForTableView();
+    void initTableHeaders();
     void initPlrRejectModeMapping();
     void initKrMapping();
-    void initPprmRecoveryStatusMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -359,11 +361,18 @@ public:
     std::map<u_int32_t, std::string> _slrgFomMode5nm;
     std::map<u_int32_t, std::string> _pcieDevStatus;
     std::map<u_int32_t, PcieErrType> _pcieErrType;
+    std::map<u_int32_t, PRM_FIELD> _ppttParams;
+    std::map<u_int32_t, u_int32_t> _ppttSpeedMapping;
     std::map<u_int32_t, std::string> _pprmOperRecovery;
     std::map<u_int32_t, std::string> _pprmRecoveryStatus;
     std::map<u_int32_t, u_int32_t> _ppcntGroups;
-    std::map<u_int32_t, PRM_FIELD> _ppttParams;
-    std::map<u_int32_t, u_int32_t> _ppttSpeedMapping;
+    std::map<u_int32_t, std::string> _fecModeActiveForTableDispaly;
+    std::map<u_int32_t, std::string> _cableTypeForTableDisplay;
+    std::map<u_int32_t, std::string> _phyMgrStateForTableDisplay;
+
+    // Vectors
+    std::vector<std::pair<std::string, u_int32_t>> _multiPortInfoTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _multiPortModuleInfoTableHeader;
 
     string _sltpHeader;
     string _showErrorsTitle;

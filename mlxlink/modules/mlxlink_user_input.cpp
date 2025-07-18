@@ -42,6 +42,7 @@ UserInput::UserInput()
     _labelPort = 1;
     _splitPort = 1;
     _secondSplitPort = 1;
+    _forceSplitValue = -1;
     _depth = 0;
     _pcieIndex = 0;
     _node = 0;
@@ -51,6 +52,8 @@ UserInput::UserInput()
     _networkCmds = 0;
     _uniqueCableCmds = 0;
     _uniquePcieCmds = 0;
+    _pciSltpPort = -1;
+    _showModule = false;
     _sendPrbs = false;
     _sendPprt = false;
     _sendPptt = false;
@@ -80,11 +83,14 @@ UserInput::UserInput()
     _portSpecified = false;
     _splitProvided = false;
     _secondSplitProvided = false;
+    _forceSplit = false;
     _cable = false;
     _dump = false;
     _ddm = false;
     _write = false;
     _read = false;
+    _showMultiPortInfo = false;
+    _showMultiPortModuleInfo = false;
     _showPlr = false;
     _showKr = false;
     _showRxRecoveryCounters = false;
