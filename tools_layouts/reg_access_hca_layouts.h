@@ -4448,10 +4448,6 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* access: RW */
 	struct reg_access_hca_mrsi_ext mrsi_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x90.31 */
-	/* access: RW */
-	struct reg_access_hca_mcia_ext mcia_ext;
-	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
 	struct reg_access_hca_mpein_reg_ext mpein_reg_ext;

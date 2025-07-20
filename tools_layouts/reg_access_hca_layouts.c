@@ -6349,9 +6349,6 @@ void reg_access_hca_reg_access_hca_Nodes_print(const union reg_access_hca_reg_ac
 	fprintf(fd, "mrsi_ext:\n");
 	reg_access_hca_mrsi_ext_print(&(ptr_struct->mrsi_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mcia_ext:\n");
-	reg_access_hca_mcia_ext_print(&(ptr_struct->mcia_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mpein_reg_ext:\n");
 	reg_access_hca_mpein_reg_ext_print(&(ptr_struct->mpein_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);

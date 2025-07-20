@@ -103,6 +103,9 @@ using namespace mfa2;
 FILE* flint_log_fh = NULL;
 
 #define BURN_INTERRUPTED 0x1234
+#define CABLE_BURN_TIMEOUT_MAX 10
+#define CABLE_BURN_RESET_MAX 3 
+#define CABLE_BURN_INIT_MAX 120
 
 static int is_arm()
 {
@@ -3255,10 +3258,6 @@ FlintStatus BurnSubCommand::BurnCMISCable()
 
     if (!_flintParams.image.empty())
     {
-        char errBuff[ERR_BUFF_SIZE] = {0};
-        _imgOps = FwOperations::FwOperationsCreate((void*)_flintParams.image.c_str(), NULL, NULL, FHT_FW_FILE, errBuff,
-                                                   1024, _flintParams.ignore_crc_check);
-
         if (burnFlow == CableBurnFlow::Burn3rdParty)
         {
             if (!readFromFile(_flintParams.image, fwImage))
@@ -3289,8 +3288,7 @@ FlintStatus BurnSubCommand::BurnCMISCable()
 
     FlintStatus rc = FLINT_FAILED;
 
-    // TODO: need retries?
-    while (countResets < 3 && countRetry < 10 && rc != FLINT_SUCCESS)
+    while (countResets < CABLE_BURN_RESET_MAX && countRetry < CABLE_BURN_TIMEOUT_MAX && rc != FLINT_SUCCESS)
     {
         rc = PerformBurn(fwImage, vendorData);
 
@@ -3353,14 +3351,14 @@ FlintStatus BurnSubCommand::WaitForModuleInit(string device)
 #if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
     u_int32_t counter = 0;
     cableAccess cblAccess((char*)device.c_str());
-    while (!cblAccess.init() && counter < 120)
+    while (!cblAccess.init() && counter < CABLE_BURN_INIT_MAX)
     {
         msleep(1000);
         ++counter;
     }
-    if (counter >= 120)
+    if (counter >= CABLE_BURN_INIT_MAX)
     {
-        cout << "cable init failed!" << endl;
+        reportErr(true, "cable initialization failed after reset!\n");
         return FLINT_FAILED;
     }
 
@@ -3415,7 +3413,6 @@ FlintStatus BurnSubCommand::PerformBurn(std::vector<u_int8_t>& fwImage, std::vec
             cableCommander.CommitImage();
         }
     }
-    // TODO: error handling corresponds to retry mechanism. should we export this?
     catch (const std::exception& e)
     {
         DPRINTF(("BurnSubCommand::PerformBurn cable burn failed with erro =%s\n", e.what()));

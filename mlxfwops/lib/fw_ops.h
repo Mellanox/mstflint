@@ -739,7 +739,6 @@ private:
     static u_int8_t IsFS4OrFS5Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsFS3OrFS2Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsCableImage(FBase& f);
-    static u_int8_t IsLinkXImage(FBase& f);
     static u_int8_t IsFSCompsImage(FBase& f);
     static bool FindMagicPattern(FBase* ioAccess, u_int32_t addr, u_int32_t const cntx_magic_pattern[]);
     static bool CntxEthOnly(u_int32_t devid);
