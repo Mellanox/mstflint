@@ -69,7 +69,9 @@ int main(int argc, char* argv[])
 
     if (!device_count || !devs) {
         printf("\nNo supported PCIe devices were found.\n");
-        goto cleanup;
+        if (devs) {
+            free(devs);
+        }
     }
 
     for (int i = 0; i < device_count; i++) {
@@ -116,11 +118,6 @@ int main(int argc, char* argv[])
 
             mclose(cable_mf);
         }
-    }
-
-cleanup:
-    if (devs) {
-        free(devs);
     }
 
     if (cable_count == 0) {
