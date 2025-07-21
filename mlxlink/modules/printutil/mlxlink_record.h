@@ -148,6 +148,12 @@ public:
     static short unsigned int getWinColor(const std::string& color);
     static void
       printFlagLine(const char sflag_s, const std::string& flag_l, const std::string& param, const std::string& desc);
+    static void printFlagLineWithAcronym(const char flag_s,
+                                         const std::string& flag_l,
+                                         const char flag_acr_s,
+                                         const std::string& flag_acr_l,
+                                         const std::string& param,
+                                         const std::string& desc);
     static std::string addSpace(const std::string& str, u_int32_t size, bool right = true);
     static std::string addSpaceForDDM(const std::string& str);
     static std::string addSpaceForSlrg(const std::string& str);
