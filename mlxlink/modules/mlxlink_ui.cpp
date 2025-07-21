@@ -175,6 +175,12 @@ void MlxlinkUi::printSynopsisQueries()
                                  "Show BER Monitor Info (not supported for HCA)");
     MlxlinkRecord::printFlagLine(PEPC_SHOW_FLAG_SHORT, PEPC_SHOW_FLAG, "",
                                  "Show External PHY Info (for Ethernet switches only)");
+    MlxlinkRecord::printFlagLineWithAcronym(MULTI_PORT_INFO_FLAG_SHORT, MULTI_PORT_INFO_FLAG,
+                                            MULTI_PORT_INFO_ACRONYM_FLAG_SHORT, MULTI_PORT_INFO_ACRONYM_FLAG, "",
+                                            "Show Multi Port Info Table");
+    MlxlinkRecord::printFlagLineWithAcronym(
+      MULTI_PORT_MODULE_INFO_FLAG_SHORT, MULTI_PORT_MODULE_INFO_FLAG, MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT,
+      MULTI_PORT_MODULE_INFO_ACRONYM_FLAG, "", "Show Multi Port Module Info Table");
 }
 
 void MlxlinkUi::printSynopsisCommands()
@@ -443,6 +449,7 @@ void MlxlinkUi::printSynopsisCommands()
 
     MlxlinkRecord::printFlagLine(FORCE_YES_FLAG_SHORT, FORCE_YES_FLAG, "",
                                  "Non-interactive mode, answer yes to all questions");
+    MlxlinkRecord::printFlagLine(PLANE_FLAG_SHORT, PLANE_FLAG, "plane", "Plane port access, starts from 1");
 }
 
 void MlxlinkUi::printSynopsis()
