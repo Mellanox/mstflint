@@ -44,7 +44,9 @@ libreg_access_la_SOURCES = \
     reg_access.c \
     reg_access.h \
     reg_access_common.h \
-    reg_access_macros.h
+    reg_access_macros.h \
+    mcam_capabilities.cpp \
+    mcam_capabilities.h
 
 libreg_access_la_DEPENDENCIES = $(top_builddir)/tools_layouts/libtools_layouts.la
 
