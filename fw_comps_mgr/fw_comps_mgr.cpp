@@ -42,7 +42,7 @@
 #include "fw_comps_mgr_dma_access.h"
 #include "common/bit_slice.h"
 #include "common/tools_time.h"
-#include "common/mcam_capabilities.h"
+#include "reg_access/mcam_capabilities.h"
 #include <signal.h>
 #include <iostream>
 

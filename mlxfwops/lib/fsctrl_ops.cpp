@@ -39,7 +39,7 @@
 
 #include <tools_utils.h>
 #include <bit_slice.h>
-#include "common/mcam_capabilities.h"
+#include "reg_access/mcam_capabilities.h"
 
 #include <vector>
 

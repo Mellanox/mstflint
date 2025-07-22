@@ -59,7 +59,7 @@ try:
     import cmdif
     from mlxfwresetlib import mlxfwreset_utils
     from mlxfwresetlib.mlxfwreset_utils import cmdExec
-    from mlxfwresetlib.mlxfwreset_utils import is_in_internal_host, is_uefi_secureboot, get_timeout_in_miliseconds
+    from mlxfwresetlib.mlxfwreset_utils import is_in_internal_host, is_uefi_secureboot
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriver
     from mlxfwresetlib.mlxfwreset_mlnxdriver import DriverUnknownMode
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriverFactory, MlnxDriverLinux
