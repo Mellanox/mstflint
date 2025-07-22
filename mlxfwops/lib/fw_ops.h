@@ -534,6 +534,7 @@ protected:
         FS_FS4_GEN,
         FS_FC1_GEN,
         FS_FSCTRL_GEN,
+        FS_LINKX_GEN,
         FS_FS5_GEN,
         FS_COMPS_GEN,
         FS_PLDM_1_0,

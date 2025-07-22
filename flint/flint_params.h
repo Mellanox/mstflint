@@ -190,6 +190,8 @@ public:
     bool cable_device_size_specified;
     bool linkx_auto_update;
     bool activate;
+    bool run_module_image;
+    bool commit_module_image;
     bool download_downstream_specified;
     bool downstream_device_ids_specified;
     std::vector<int> downstream_device_ids;
@@ -197,6 +199,9 @@ public:
     int i2cSecondaryAddr;
     u_int8_t activate_delay_sec;
     u_int32_t cert_chain_index;
+    std::string modulePassword;
+    std::string moduleCommandTimeout;
+    std::string moduleVendorDataFile;
     string component_type;
     bool imageSizeOnly;
     string cert_uuid;

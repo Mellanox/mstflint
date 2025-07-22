@@ -254,8 +254,7 @@ void print_pci_info(dev_info* dev, int domain_needed)
 
     if (hasIB) {
         printf("%-16s", fmt);
-    }
-    else {
+    } else {
         printf("%-16s", " ");
     }
 
@@ -391,16 +390,44 @@ int main(int argc, char** argv)
         if (verbose) {
             if (domain_needed) {
                 if (ul_mode) {
-                    printf("%-24s%-9s%-16s%-16s%-40s%-6s%-16s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA", "VFIO");
+                    printf("%-24s%-9s%-16s%-16s%-40s%-6s%-16s\n",
+                           "DEVICE_TYPE",
+                           "MST",
+                           "PCI",
+                           "RDMA",
+                           "NET",
+                           "NUMA",
+                           "VFIO");
                 } else {
-                    printf("%-24s%-30s%-16s%-16s%-40s%-6s%-16s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA", "VFIO");
+                    printf("%-24s%-30s%-16s%-16s%-40s%-6s%-16s\n",
+                           "DEVICE_TYPE",
+                           "MST",
+                           "PCI",
+                           "RDMA",
+                           "NET",
+                           "NUMA",
+                           "VFIO");
                 }
                 /* printf("%-30s%-16s%-16s%-8s%-20s\n", "---", "-----------", "---", "----", "---"); */
             } else {
                 if (ul_mode) {
-                    printf("%-24s%-9s%-10s%-16s%-40s%-6s%-16s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA", "VFIO");
+                    printf("%-24s%-9s%-10s%-16s%-40s%-6s%-16s\n",
+                           "DEVICE_TYPE",
+                           "MST",
+                           "PCI",
+                           "RDMA",
+                           "NET",
+                           "NUMA",
+                           "VFIO");
                 } else {
-                    printf("%-24s%-30s%-10s%-16s%-40s%-6s%-16s\n", "DEVICE_TYPE", "MST", "PCI", "RDMA", "NET", "NUMA", "VFIO");
+                    printf("%-24s%-30s%-10s%-16s%-40s%-6s%-16s\n",
+                           "DEVICE_TYPE",
+                           "MST",
+                           "PCI",
+                           "RDMA",
+                           "NET",
+                           "NUMA",
+                           "VFIO");
                 }
                 /* printf("%-30s%-16s%-10s%-8s%-20s\n", "---", "-----------", "---", "----", "---"); */
             }
@@ -409,7 +436,7 @@ int main(int argc, char** argv)
         /* dev_lst = devs; */
         /* dev_lst_len = len; */
         for (i = 0; i < len; i++) {
-            if (devs[i].type == MDEVS_TAVOR_CR) {
+            if ((devs[i].type == MDEVS_TAVOR_CR) && (strstr(devs[i].dev_name, "cable_") == NULL)) {
                 mfile* mf = mopen(devs[i].dev_name);
 
                 if (is_pcie_switch_device(mf)) {
@@ -498,6 +525,21 @@ int main(int argc, char** argv)
                 printf("%s\n", devs[i].dev_name);
             }
         }
+        printf("\n");
+    }
+
+    int cable_found = 0;
+    for (i = 0; i < len; i++) {
+        if (devs[i].dev_name && (strstr(devs[i].dev_name, "cable_") != NULL)) {
+            if (cable_found == 0) {
+                printf("\nCable devices:\n");
+                printf("---------------\n");
+                cable_found = 1;
+            }
+            printf("%s\n", devs[i].dev_name);
+        }
+    }
+    if (cable_found) {
         printf("\n");
     }
 

@@ -56,6 +56,7 @@
 #include "mlxfwops/lib/components/fs_synce_ops.h"
 #include "hex64.h"
 #include "dev_mgt/tools_dev_types.h"
+#include "common/tools_time.h"
 
 #ifndef NO_ZLIB
 #include <zlib.h>
@@ -84,6 +85,12 @@
 #include "subcommands.h"
 #include "tools_layouts/cx4fw_layouts.h"
 #include "tools_layouts/image_layout_layouts.h"
+
+
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+#include "cable_access/cdb_cable_commander.h"
+#endif
+
 using namespace std;
 #ifndef NO_MSTARCHIVE
 using namespace mfa2;
@@ -96,6 +103,9 @@ using namespace mfa2;
 FILE* flint_log_fh = NULL;
 
 #define BURN_INTERRUPTED 0x1234
+#define CABLE_BURN_TIMEOUT_MAX 10
+#define CABLE_BURN_RESET_MAX 3 
+#define CABLE_BURN_INIT_MAX 120
 
 static int is_arm()
 {
@@ -3224,6 +3234,216 @@ void BurnSubCommand::cleanInterruptedCommand()
     }
 }
 
+FlintStatus BurnSubCommand::BurnCMISCable()
+{
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+    DPRINTF(("BurnSubCommand::BurnCMISCable\n"));
+    CableBurnFlow burnFlow(CableBurnFlow::Burn3rdParty);
+    std::vector<u_int8_t> fwImage;
+    std::vector<u_int8_t> vendorData;
+
+
+    if (_flintParams.image.empty() && !_flintParams.activate && !_flintParams.commit_module_image &&
+        !_flintParams.run_module_image)
+    {
+        reportErr(true, "Must provide an image or activate an image.\n");
+        return FLINT_FAILED;
+    }
+
+    if (_flintParams.activate && (_flintParams.commit_module_image || _flintParams.run_module_image))
+    {
+        reportErr(true, "Cannot specify activate command with run_module_image or commit_module_image.\n");
+        return FLINT_FAILED;
+    }
+
+    if (!_flintParams.image.empty())
+    {
+        if (burnFlow == CableBurnFlow::Burn3rdParty)
+        {
+            if (!readFromFile(_flintParams.image, fwImage))
+            {
+                return FLINT_FAILED;
+            }
+            if (!_flintParams.moduleVendorDataFile.empty())
+            {
+                if (!readFromFile(_flintParams.moduleVendorDataFile, vendorData))
+                {
+                    return FLINT_FAILED;
+                }
+            }
+            if (_flintParams.moduleCommandTimeout.empty())
+            {
+                _flintParams.moduleCommandTimeout = "10000";
+            }
+        }
+        else
+        {
+            reportErr(true, "Provided cable and image are not supported.\n");
+            return FLINT_BURN_ABORTED;
+        }
+    }
+
+    u_int8_t countResets = 0;
+    u_int8_t countRetry = 0;
+
+    FlintStatus rc = FLINT_FAILED;
+
+    while (countResets < CABLE_BURN_RESET_MAX && countRetry < CABLE_BURN_TIMEOUT_MAX && rc != FLINT_SUCCESS)
+    {
+        rc = PerformBurn(fwImage, vendorData);
+
+        if (rc != FLINT_SUCCESS)
+        {
+            if (rc == FLINT_BURN_ERROR)
+            {
+                if (ResetModule(_flintParams.device))
+                {
+                    return FLINT_FAILED;
+                }
+                DPRINTF(("BurnSubCommand::BurnCMISCable retry burn after reset, counter = %d.\n", countResets));
+                countResets++;
+            }
+            else if (rc == FLINT_BURN_TO)
+            {
+                DPRINTF(("BurnSubCommand::BurnCMISCable retry burn after to, counter = %d.\n", countRetry));
+                countRetry++;
+            }
+            else
+            {
+                return rc;
+            }
+        }
+    }
+
+    return rc;
+
+#else
+    reportErr(true, "FW update on cables is not supported.\n");
+    return FLINT_FAILED;
+#endif
+}
+
+FlintStatus BurnSubCommand::ResetModule(string device)
+{
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+    cableAccess cblAccess((char*)device.c_str());
+    if (!cblAccess.init())
+    {
+        reportErr(true, "%s", cblAccess.getLastErrMsg().c_str());
+        return FLINT_FAILED;
+    }
+    if (!cblAccess.resetCable())
+    {
+        reportErr(true, "%s", cblAccess.getLastErrMsg().c_str());
+        return FLINT_FAILED;
+    }
+
+    return WaitForModuleInit(device);
+#else
+    (void)device;
+    reportErr(true, "FW update on cables is not supported.\n");
+    return FLINT_FAILED;
+#endif
+}
+
+FlintStatus BurnSubCommand::WaitForModuleInit(string device)
+{
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+    u_int32_t counter = 0;
+    cableAccess cblAccess((char*)device.c_str());
+    while (!cblAccess.init() && counter < CABLE_BURN_INIT_MAX)
+    {
+        msleep(1000);
+        ++counter;
+    }
+    if (counter >= CABLE_BURN_INIT_MAX)
+    {
+        reportErr(true, "cable initialization failed after reset!\n");
+        return FLINT_FAILED;
+    }
+
+    return FLINT_SUCCESS;
+#else
+    (void)device;
+    reportErr(true, "FW update on cables is not supported.\n");
+    return FLINT_FAILED;
+#endif
+}
+
+FlintStatus BurnSubCommand::PerformBurn(std::vector<u_int8_t>& fwImage, std::vector<u_int8_t>& vendorData)
+{
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+    try
+    {
+        FwManagementCdbCommander cableCommander(_flintParams.device,false);
+
+        if (!_flintParams.modulePassword.empty())
+        {
+            cableCommander.SetPassword(_flintParams.modulePassword);
+        }
+
+        if (!_flintParams.moduleCommandTimeout.empty())
+        {
+            cableCommander.SetCommandWaitingTime(_flintParams.moduleCommandTimeout);
+        }
+
+        if (!_flintParams.image.empty())
+        {
+            cableCommander.DownloadFWImage(
+              fwImage, vendorData,
+              [](int completion) { return CbCommon(completion, (char*)"FW update progress: ", (char*)"completed "); });
+        }
+
+        if (_flintParams.activate)
+        {
+            cableCommander.ActivateImage();
+            if (ResetModule(_flintParams.device))
+            {
+                return FLINT_FAILED;
+            }
+        }
+
+        if (_flintParams.run_module_image)
+        {
+            cableCommander.RunImage();
+        }
+
+        if (_flintParams.commit_module_image)
+        {
+            cableCommander.CommitImage();
+        }
+    }
+    catch (const std::exception& e)
+    {
+        DPRINTF(("BurnSubCommand::PerformBurn cable burn failed with erro =%s\n", e.what()));
+        string err = "got unknown status (0x43) in response to cdb command.";
+        string err2 = "time out while waiting for command completion.";
+        string err3 = "Cable access R/W failed status: 4. ";
+        if (e.what() == err || e.what() == err3)
+        {
+            return FLINT_BURN_ERROR;
+        }
+        if (e.what() == err2)
+        {
+            return FLINT_BURN_TO;
+        }
+        cerr << e.what() << endl;
+        return FLINT_FAILED;
+    }
+    catch (...)
+    {
+        return FLINT_FAILED;
+    }
+
+    return FLINT_SUCCESS;
+#else
+    (void)fwImage;
+    (void)vendorData;
+    reportErr(true, "FW update on cables is not supported.\n");
+    return FLINT_FAILED;
+#endif
+}
+
 FlintStatus BurnSubCommand::executeCommand()
 {
     if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true)
@@ -3243,6 +3463,19 @@ FlintStatus BurnSubCommand::executeCommand()
                          _flintParams.download_transfer, _flintParams.activate_delay_sec, &ProgressFuncAdv,
                          fwComponent);
     }
+
+    if (_flintParams.device.find("_cable") != string::npos && _flintParams.device.find("_rt") == string::npos)
+    {
+        FlintStatus rc = FLINT_SUCCESS;
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+        rc = BurnCMISCable();
+#else
+        reportErr(true, "FW update on cables is not supported.\n");
+        rc = FLINT_FAILED;
+#endif
+        return rc;
+    }
+
 #ifndef NO_MSTARCHIVE
     string mfa2file = _flintParams.image;
     _mfa2Pkg = MFA2::LoadMFA2Package(mfa2file);
