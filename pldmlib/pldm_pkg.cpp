@@ -132,10 +132,10 @@ bool PldmPkg::getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_
     bool found = false;
     for (auto devIdRec : deviceIDRecords)
     {
-        if (devIdRec->getDevicePsid() == psid)
+        // if psid is empty, we will return the descriptor for the first device record
+        if (devIdRec->getDevicePsid() == psid || psid.empty())
         {
-            devIdRec->getDescriptor(type, descriptor);
-            found = true;
+            found = devIdRec->getDescriptor(type, descriptor);
             break;
         }
     }
@@ -150,7 +150,7 @@ bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
     bool found = false;
     for (auto devIdRec : deviceIDRecords)
     {
-        if (devIdRec->getDevicePsid() == psid)
+        if (devIdRec->getDevicePsid() == psid || psid.empty())
         {
             u_int16_t comps_count = getComponentImageCount();
             std::vector<u_int8_t> appliedComponents = devIdRec->getComponentsIndexes();
@@ -186,6 +186,5 @@ bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
             break;
         }
     }
-    (void)buff;
     return found;
 }

@@ -98,8 +98,8 @@ public:
     bool FwShiftDevData(PrintCallBack progressFunc = (PrintCallBack)NULL) override;
     const char* FwGetResetRecommandationStr() override;
     bool FwCalcMD5(u_int8_t md5sum[16]) override;
-    bool GetPldmComponentData(string component, char* psid, u_int8_t** buff, u_int32_t& buffSize);
-    bool GetPldmDescriptor(char* psid, u_int16_t type, u_int16_t& descriptor);
+    bool GetPldmComponentData(string component, string psid, u_int8_t** buff, u_int32_t& buffSize);
+    bool GetPldmDescriptor(string psid, u_int16_t type, u_int16_t& descriptor);
     bool CreateFwOpsImage(u_int32_t* buff,
                           u_int32_t buffSize,
                           FwOperations** newImageOps,
