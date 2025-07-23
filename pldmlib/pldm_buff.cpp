@@ -48,11 +48,18 @@ PldmBuffer::PldmBuffer() : m_buff(NULL), m_pos(0), m_size(0) {}
 
 PldmBuffer::~PldmBuffer()
 {
+    reset();
+}
+
+void PldmBuffer::reset()
+{
     if (m_buff)
     {
         delete[] m_buff;
         m_buff = NULL;
     }
+    m_pos = 0;
+    m_size = 0;
 }
 
 bool PldmBuffer::loadFile(const std::string& fname)
