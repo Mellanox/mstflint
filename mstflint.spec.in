@@ -104,7 +104,7 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
     config_flags="$config_flags --enable-i2c"
 %endif
 
-if %{enablecables}
+%if %{enablecables}
    config_flags="$config_flags --enable-cables"
 %endif
 
