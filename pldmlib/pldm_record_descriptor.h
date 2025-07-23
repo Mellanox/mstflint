@@ -59,8 +59,9 @@ private:
     u_int8_t* descriptorData;
 
     std::string psid;
+    u_int32_t apsku;
 
-    void extractPsid();
+    bool extractVendorDefined();
     enum
     {
         PCI_Vendor_ID = 0x0000,

@@ -80,7 +80,10 @@ bool PldmPkg::unpack(PldmBuffer& buff)
     for (i = 0; i < deviceIDRecordCount; i++)
     {
         PldmDevIdRecord* deviceIDRecord = new PldmDevIdRecord(componentBitmapBitLength);
-        deviceIDRecord->unpack(buff);
+        if (!deviceIDRecord->unpack(buff))
+        {
+            return false;
+        }
         deviceIDRecords.push_back(deviceIDRecord);
         psidImageMap[deviceIDRecord->getDevicePsid()] = deviceIDRecord->getComponentImageIndex();
         psidComponentsMap[deviceIDRecord->getDevicePsid()] = deviceIDRecord->getComponentsIndexes();
