@@ -2810,6 +2810,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0x101f, /* Connect-X6LX */
                                    0x1021, /* Connect-X7 */
                                    0x1023, /* Connect-X8 */
+                                   0x1025, /* Connect-X9 */
                                    0xcb20, /* Switch-IB */
                                    0xcb84, /* Spectrum */
                                    0xcf08, /* Switch-IB2 */
@@ -2838,6 +2839,7 @@ static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24b, 0x24d, 0x24e,
                                        0x216, /* Connect-X6LX */
                                        0x218, /* Connect-X7 */
                                        0x21e, /* Connect-X8 */
+                                       0x224, /* Connect-X9 */
                                        0x21C, /* BlueField3 */
                                        0x220, /* BlueField4 */
                                        0x250, /* Spectrum3 */
