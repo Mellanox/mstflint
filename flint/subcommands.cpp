@@ -4403,9 +4403,9 @@ static inline void
     }
 }
 
-bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
+bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo, bool isStripedImage)
 {
-    if (fwInfo.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
+    if (fwInfo.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS || isStripedImage)
     {
         // new GUIDs format
         printf("Description:           UID                GuidsNumber\n");
@@ -4666,6 +4666,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     FwOperations* ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);
     FwVersion running_version = FwOperations::createRunningFwVersion(&fwInfo.fw_info);
+    bool isStripedImage = ops->GetIsStripedImage();
 
     printf("Image type:            %s\n", fwImgTypeToStr(fwInfo.fw_type));
     if (fwInfo.fw_info.isfu_major)
@@ -4798,7 +4799,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     if (!isFs2)
     {
         /*i.e its fs3/fs4*/
-        if (!displayFs3Uids(fwInfo))
+        if (!displayFs3Uids(fwInfo, isStripedImage))
         {
             return FLINT_FAILED;
         }
@@ -4843,7 +4844,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
             printf("Image VSD:             %s\n", imageVSD);
             printf("Device VSD:            %s\n", deviceVSD);
             printf("PSID:                  %s\n", fwInfo.fw_info.psid);
-            if (strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0)
+            if (!isStripedImage && strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0)
             {
                 if (strlen(fwInfo.fs3_info.orig_psid))
                 {
