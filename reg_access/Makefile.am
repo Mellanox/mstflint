@@ -37,6 +37,7 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/tools_layouts
 
 AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
+AM_CXXFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libreg_access.la
 
