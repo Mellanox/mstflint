@@ -4758,26 +4758,39 @@ int is_zombiefish_device(mfile* mf)
     }
 }
 
+
 int read_device_id(mfile* mf, u_int32_t* device_id)
 {
+
     if (!mf || !device_id) {
         return -1;
     }
-
+    int rc = 0;
+    unsigned hw_id_address = mf->cr_space_offset + HW_ID_ADDR;
 #ifdef ENABLE_NVML
     if (mf->tp == MST_NVML) {
         *device_id = nvml_get_device_id(mf->nvml_device);
+        mf->hw_dev_id = (*device_id & 0xffff);
         return 4;
     }
 #endif
 
-    unsigned hw_id_address = mf->cr_space_offset + HW_ID_ADDR;
-
+    rc = mread4(mf, hw_id_address, device_id);
     mf->rev_id = EXTRACT(*device_id, 16, 4);
     *device_id = (*device_id & 0xffff);
-    mf->hw_dev_id = (*device_id & 0xffff);
 
-    return mread4(mf, hw_id_address, device_id);
+    // Accesing GPU Devices directly via PCIe is not always possible,
+    // so we need to get the HW device ID from the PCI device ID in case of failure.
+    if (mf->dinfo && is_gpu_pci_device(mf->dinfo->pci.dev_id) && !is_gpu_device(*device_id))
+    {
+        mf->rev_id = 0;
+        *device_id = get_hw_dev_id_by_pci_id(mf->dinfo->pci.dev_id);
+        rc = 4;
+    }
+
+    mf->hw_dev_id = (*device_id & 0xffff);
+    DBG_PRINTF("MTCR:read_device_id: mf->hw_dev_id:0x%x\n", mf->hw_dev_id);
+    return rc;
 }
 
 int is_pcie_switch_device(mfile* mf)

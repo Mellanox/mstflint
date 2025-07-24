@@ -609,12 +609,38 @@ int icmd_clear_semaphore(mfile* mf)
     return icmd_clear_semaphore_com(mf);
 }
 
-/*
- * icmd_take_semaphore
- */
-/*
- * icmd_take_semaphore
- */
+bool device_supports_sem_lock_verify(unsigned int hw_dev_id)
+{
+    switch (hw_dev_id)
+    {
+        case DeviceConnectX3_HwId:
+        case DeviceConnectIB_HwId:
+        case DeviceConnectX3Pro_HwId:
+        case DeviceSwitchIB_HwId:
+        case DeviceSpectrum_HwId:
+        case DeviceConnectX4_HwId:
+        case DeviceConnectX4LX_HwId:
+        case DeviceConnectX5_HwId:
+        case DeviceConnectX6_HwId:
+        case DeviceConnectX6DX_HwId:
+        case DeviceConnectX6LX_HwId:
+        case DeviceConnectX7_HwId:
+        case DeviceBlueField_HwId:
+        case DeviceBlueField2_HwId:
+        case DeviceBlueField3_HwId:
+        case DeviceSwitchIB2_HwId:
+        case DeviceQuantum_HwId:
+        case DeviceQuantum2_HwId:
+        case DeviceQuantum3_HwId:
+        case DeviceGB100_HwId:
+        case DeviceSpectrum2_HwId:
+        case DeviceSpectrum3_HwId:
+        case DeviceSpectrum4_HwId:
+        case DeviceArcusE_HwId:
+            return false;
+    }
+    return true;
+}
 
 static int icmd_take_semaphore_com(mfile* mf, u_int32_t expected_read_val)
 {
@@ -662,10 +688,13 @@ static int icmd_take_semaphore_com(mfile* mf, u_int32_t expected_read_val)
                     MREAD4_SEMAPHORE(mf, mf->icmd.semaphore_addr, &read_val);
                     if (read_val != SEMAPHORE_62_LOCKED_INDICATOR)
                     {
-                        printf("Failed to take ICMD semaphore (semaphore 62). "
-                               "Semaphore was free (0) but HW failed to set it to locked state when we took it."
-                               "This might indicate a FW or HW issue.\n");
-                        return ME_ICMD_UNABLE_TO_TAKE_SEMAOHORE;
+                        DBG_PRINTF("Failed to take ICMD semaphore (semaphore 62). "
+                                   "Semaphore was free (0) but HW failed to set it to locked state when we took it."
+                                   "This might indicate a FW or HW issue.\n");
+                        if (device_supports_sem_lock_verify(mf->hw_dev_id))
+                        {
+                            return ME_ICMD_UNABLE_TO_TAKE_SEMAOHORE;
+                        }
                     }
                 }
                 break;
