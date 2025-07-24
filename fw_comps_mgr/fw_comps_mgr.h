@@ -181,6 +181,7 @@ class FwComponent
 public:
     typedef enum
     {
+        COMPID_FIRST_IDX = 0x1,
         COMPID_BOOT_IMG = 0x1,
         COMPID_RUNTIME_IMG = 0x2,
         COMPID_USER_NVCONFIG = 0x3,
@@ -205,7 +206,7 @@ public:
         COMPID_LINKX_ELS = 0x1a,
         COMPID_BFB = 0x1b,
         COMPID_LAST_IDX = 0x1b,
-        COMPID_UNKNOWN = 0xff,
+        COMPID_UNKNOWN = 0xFFFF,
     } comps_ids_t;
 
     typedef enum
