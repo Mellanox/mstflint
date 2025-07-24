@@ -89,6 +89,7 @@ bool PldmDevIdRecord::unpack(PldmBuffer& buff)
         PldmRecordDescriptor* descriptor = new PldmRecordDescriptor();
         if (!descriptor->unpack(buff))
         {
+            delete descriptor;
             reset();
             return false;
         }

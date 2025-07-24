@@ -63,6 +63,8 @@ bool PldmRecordDescriptor::unpack(PldmBuffer& buff)
         if (!extractVendorDefined())
         {
             printf("unknown vendor defined descriptor\n");
+            delete[] descriptorData;
+            descriptorData = NULL;
             return false;
         }
     }
