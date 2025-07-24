@@ -102,7 +102,7 @@ bool FsPldmOperations::FwReadData(void* image, u_int32_t*, bool)
     return true;
 }
 
-bool FsPldmOperations::GetPldmComponentData(string component, char* psid, u_int8_t** buff, u_int32_t& buffSize)
+bool FsPldmOperations::GetPldmComponentData(string component, string psid, u_int8_t** buff, u_int32_t& buffSize)
 {
     std::string strPsid(psid);
     ComponentIdentifier compIdentifier;
@@ -118,10 +118,9 @@ bool FsPldmOperations::GetPldmComponentData(string component, char* psid, u_int8
     return rc;
 }
 
-bool FsPldmOperations::GetPldmDescriptor(char* psid, u_int16_t type, u_int16_t& descriptor)
+bool FsPldmOperations::GetPldmDescriptor(string psid, u_int16_t type, u_int16_t& descriptor)
 {
-    std::string strPsid(psid);
-    return _pkg.getPldmDescriptorByPsid(strPsid, type, descriptor);
+    return _pkg.getPldmDescriptorByPsid(psid, type, descriptor);
 }
 
 bool FsPldmOperations::CreateFwOpsImage(u_int32_t* buff,

@@ -56,6 +56,11 @@ PldmPkg::PldmPkg() : deviceIDRecordCount(0), componentImageCount(0) {}
 
 PldmPkg::~PldmPkg()
 {
+    reset();
+}
+
+void PldmPkg::reset()
+{
     while (!deviceIDRecords.empty())
     {
         delete deviceIDRecords.back();
@@ -66,6 +71,9 @@ PldmPkg::~PldmPkg()
         delete componentImages.back();
         componentImages.pop_back();
     }
+    deviceIDRecordCount = 0;
+    componentImageCount = 0;
+    packageHeader.reset();
 }
 
 bool PldmPkg::unpack(PldmBuffer& buff)
@@ -80,7 +88,11 @@ bool PldmPkg::unpack(PldmBuffer& buff)
     for (i = 0; i < deviceIDRecordCount; i++)
     {
         PldmDevIdRecord* deviceIDRecord = new PldmDevIdRecord(componentBitmapBitLength);
-        deviceIDRecord->unpack(buff);
+        if (!deviceIDRecord->unpack(buff))
+        {
+            reset();
+            return false;
+        }
         deviceIDRecords.push_back(deviceIDRecord);
         psidImageMap[deviceIDRecord->getDevicePsid()] = deviceIDRecord->getComponentImageIndex();
         psidComponentsMap[deviceIDRecord->getDevicePsid()] = deviceIDRecord->getComponentsIndexes();
@@ -132,11 +144,24 @@ bool PldmPkg::getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_
     bool found = false;
     for (auto devIdRec : deviceIDRecords)
     {
+        // if psid is empty, we will return the descriptor for the first device record
+        if (devIdRec->getDevicePsid() == psid || psid.empty())
+        {
+            found = devIdRec->getDescriptor(type, descriptor);
+            break;
+        }
+    }
+    return found;
+}
+
+bool PldmPkg::isPsidInPldm(std::string psid) const
+{
+    bool found = false;
+    for (auto devIdRec : deviceIDRecords)
+    {
         if (devIdRec->getDevicePsid() == psid)
         {
-            devIdRec->getDescriptor(type, descriptor);
-            found = true;
-            break;
+            return true;
         }
     }
     return found;
@@ -150,7 +175,7 @@ bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
     bool found = false;
     for (auto devIdRec : deviceIDRecords)
     {
-        if (devIdRec->getDevicePsid() == psid)
+        if (devIdRec->getDevicePsid() == psid || psid.empty())
         {
             u_int16_t comps_count = getComponentImageCount();
             std::vector<u_int8_t> appliedComponents = devIdRec->getComponentsIndexes();
@@ -186,6 +211,5 @@ bool PldmPkg::getComponentDataByPsid(ComponentIdentifier compIdentifier,
             break;
         }
     }
-    (void)buff;
     return found;
 }

@@ -60,22 +60,39 @@ bool PldmRecordDescriptor::unpack(PldmBuffer& buff)
     {
         descriptorData = new u_int8_t[descriptorLength];
         buff.read(descriptorData, descriptorLength);
-        extractPsid();
+        if (!extractVendorDefined())
+        {
+            printf("unknown vendor defined descriptor\n");
+            return false;
+        }
     }
     return true;
 }
 
-void PldmRecordDescriptor::extractPsid()
+bool PldmRecordDescriptor::extractVendorDefined()
 {
     if (descriptorType == Vendor_Defined)
     {
-        u_int8_t* psidptr = descriptorData;
-        psidptr++;
-        u_int8_t prefixlen = *psidptr;
-        psidptr++;
-        psidptr += prefixlen;
-        psid = std::string(reinterpret_cast<const char*>(psidptr));
+        u_int8_t* vendoreDefinedPtr = descriptorData;
+        vendoreDefinedPtr++;
+        u_int8_t prefixlen = *vendoreDefinedPtr;
+        std::string descriptorName((char*)vendoreDefinedPtr + 1, prefixlen);
+        vendoreDefinedPtr++;
+        vendoreDefinedPtr += prefixlen;
+        if (descriptorName == "PSID")
+        {
+            psid = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr));
+        }
+        else if (descriptorName == "APSKU")
+        {
+            apsku = __cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
+        }
+        else
+        {
+            return false;
+        }
     }
+    return true;
 }
 
 void PldmRecordDescriptor::print(FILE* fp)
