@@ -1223,33 +1223,42 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
                 memcpy(ComponentStatus, &compStatus.comp_status, sizeof(compStatus.comp_status));
             }
             /* */
-            u_int32_t capSt[DEFAULT_SIZE] = {0};
-            if (queryComponentInfo(compIdx, 1, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
-                if (queryComponentInfo(compIdx, 0, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
-                    /*_lastError = FWCOMPS_REG_FAILED; */
-                    DPRINTF(("-D- Found component: %#x name %s MCQI failed \n", compStatus.comp_status.identifier,
-                             CompNames[compStatus.comp_status.identifier]));
-                    return false;
-                }
+            if (compStatus.comp_status.identifier > FwComponent::COMPID_LAST_IDX ||
+                compStatus.comp_status.identifier < FwComponent::COMPID_FIRST_IDX)
+            {
+                DPRINTF(("-D- queryComponentStatus, unknown component identifier %d !!\n",
+                         compStatus.comp_status.identifier));
             }
-            compStatus.valid = 1;
-            compStatus.comp_cap.supported_info_bitmask = _currCompInfo.data.mcqi_cap_ext.supported_info_bitmask;
-            compStatus.comp_cap.component_size = _currCompInfo.data.mcqi_cap_ext.component_size;
-            compStatus.comp_cap.max_component_size = _currCompInfo.data.mcqi_cap_ext.max_component_size;
-            compStatus.comp_cap.mcda_max_write_size = _currCompInfo.data.mcqi_cap_ext.mcda_max_write_size;
-            compStatus.comp_cap.log_mcda_word_size = _currCompInfo.data.mcqi_cap_ext.log_mcda_word_size;
-            compStatus.comp_cap.match_base_guid_mac = _currCompInfo.data.mcqi_cap_ext.match_base_guid_mac;
-            compStatus.comp_cap.check_user_timestamp = _currCompInfo.data.mcqi_cap_ext.check_user_timestamp;
-            compStatus.comp_cap.match_psid = _currCompInfo.data.mcqi_cap_ext.match_psid;
-            compStatus.comp_cap.match_chip_id = _currCompInfo.data.mcqi_cap_ext.match_chip_id;
-            compStatus.comp_cap.signed_updates_only = _currCompInfo.data.mcqi_cap_ext.signed_updates_only;
-            compStatus.comp_cap.rd_en = _currCompInfo.data.mcqi_cap_ext.rd_en;
-            memcpy(&(_compsQueryMap[compStatus.comp_status.identifier]), &compStatus, sizeof(compStatus));
-            // reg_access_hca_mcqi_cap_ext_ext_print(&(compStatus.comp_cap), stdout, 3);
+            else
+            {
+                u_int32_t capSt[DEFAULT_SIZE] = {0};
+                if (queryComponentInfo(compIdx, 1, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
+                    if (queryComponentInfo(compIdx, 0, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
+                        /*_lastError = FWCOMPS_REG_FAILED; */
+                        DPRINTF(("-D- Found component: %#x name %s MCQI failed \n", compStatus.comp_status.identifier,
+                                CompNames[compStatus.comp_status.identifier]));
+                        return false;
+                    }
+                }
+                compStatus.valid = 1;
+                compStatus.comp_cap.supported_info_bitmask = _currCompInfo.data.mcqi_cap_ext.supported_info_bitmask;
+                compStatus.comp_cap.component_size = _currCompInfo.data.mcqi_cap_ext.component_size;
+                compStatus.comp_cap.max_component_size = _currCompInfo.data.mcqi_cap_ext.max_component_size;
+                compStatus.comp_cap.mcda_max_write_size = _currCompInfo.data.mcqi_cap_ext.mcda_max_write_size;
+                compStatus.comp_cap.log_mcda_word_size = _currCompInfo.data.mcqi_cap_ext.log_mcda_word_size;
+                compStatus.comp_cap.match_base_guid_mac = _currCompInfo.data.mcqi_cap_ext.match_base_guid_mac;
+                compStatus.comp_cap.check_user_timestamp = _currCompInfo.data.mcqi_cap_ext.check_user_timestamp;
+                compStatus.comp_cap.match_psid = _currCompInfo.data.mcqi_cap_ext.match_psid;
+                compStatus.comp_cap.match_chip_id = _currCompInfo.data.mcqi_cap_ext.match_chip_id;
+                compStatus.comp_cap.signed_updates_only = _currCompInfo.data.mcqi_cap_ext.signed_updates_only;
+                compStatus.comp_cap.rd_en = _currCompInfo.data.mcqi_cap_ext.rd_en;
+                memcpy(&(_compsQueryMap[compStatus.comp_status.identifier]), &compStatus, sizeof(compStatus));
+                // reg_access_hca_mcqi_cap_ext_ext_print(&(compStatus.comp_cap), stdout, 3);
+                DPRINTF(("-D- Found component with identifier=%#x index=%u name=%s supported_info_bitmask=0x%x \n",
+                        compStatus.comp_status.identifier, compIdx, CompNames[compStatus.comp_status.identifier],
+                        compStatus.comp_cap.supported_info_bitmask));
+            }
             last_index_flag = compStatus.comp_status.last_index_flag;
-            DPRINTF(("-D- Found component with identifier=%#x index=%u name=%s supported_info_bitmask=0x%x \n",
-                     compStatus.comp_status.identifier, compIdx, CompNames[compStatus.comp_status.identifier],
-                     compStatus.comp_cap.supported_info_bitmask));
         } else {
             DPRINTF(("-D- queryComponentStatus failed for component index %d !!\n", compIdx));
             return false;
