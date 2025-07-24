@@ -322,6 +322,7 @@ private:
                          char* delimeter,
                          bool isCSV);
     FlintStatus QueryLinkX(string deviceName, string outputFile, std::vector<int> deviceIds);
+    FlintStatus QueryCableAttributes();
     void PrintLifeCycle(const life_cycle_t& lifeCycle);
 
 public:
