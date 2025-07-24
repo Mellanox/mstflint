@@ -5097,6 +5097,26 @@ FlintStatus QuerySubCommand::queryMFA2()
     return FLINT_SUCCESS;
 }
 
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+FlintStatus QuerySubCommand::QueryCableAttributes()
+{
+    DPRINTF(("QuerySubCommand::QueryCableAttributes\n"));
+
+    try
+    {
+        FwManagementCdbCommander cableCommander(_flintParams.device.c_str());
+        cout << cableCommander.GetCmisFWIndicationStrings();
+    }
+    catch (const std::exception& e)
+    {
+        reportErr(true, "FW Info query failed, %s\n", e.what());
+        return FLINT_FAILED;
+    }
+
+    return FLINT_SUCCESS;
+}
+#endif
+
 FlintStatus QuerySubCommand::executeCommand()
 {
     DPRINTF(("QuerySubCommand::executeCommand\n"));
@@ -5114,6 +5134,18 @@ FlintStatus QuerySubCommand::executeCommand()
             return FLINT_FAILED;
         }
         return QueryLinkX(_flintParams.device, _flintParams.output_file, _flintParams.downstream_device_ids);
+    }
+    if (_flintParams.device.find("_cable") != string::npos && _flintParams.device.find("_rt") == string::npos)
+    {
+        FlintStatus rc = FLINT_SUCCESS;
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+        rc = QueryCableAttributes();
+#else
+        reportErr(true, "Query on cable devices is not supported.\n");
+        rc = FLINT_FAILED;
+#endif
+
+        return rc;
     }
     if (_flintParams.image_specified)
     {

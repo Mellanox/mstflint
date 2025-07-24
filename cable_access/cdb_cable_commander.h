@@ -38,11 +38,29 @@
 
 typedef int (*f_prog_func)(int completion);
 
+struct CmisFWVersion
+{
+    u_int8_t major;
+    u_int8_t minor;
+    u_int16_t build;
+    u_int8_t extraString[32];
+};
+
+struct FirmwareInfoReply
+{
+    u_int8_t firmwareStatus;
+    u_int8_t imageInformation;
+    CmisFWVersion imageAFwVersion;
+    CmisFWVersion imageBFwVersion;
+    CmisFWVersion factoryFwVersion;
+};
+
 class FwManagementCdbCommander
 {
 public:
     explicit FwManagementCdbCommander(string mstDevName, bool clearCompletionFlag = false);
 
+    string GetCmisFWIndicationStrings();
     void DownloadFWImage(const vector<u_int8_t>& image, const vector<u_int8_t>& vendorData, f_prog_func progressFunc);
     void SetPassword(string password);
     void SetCommandWaitingTime(string waitTime);
@@ -71,6 +89,8 @@ private:
         u_int8_t firmwareDownloadAllowed;
     };
 
+    FirmwareInfoReply GetCmisFWIndication();
+    string ParseCmisFWVersion(const CmisFWVersion& fwVersion, string fwImage);
     void QueryStatus();
     void EnterPassword();
     bool IsActivationNeeded();
