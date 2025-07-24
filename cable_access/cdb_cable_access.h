@@ -195,7 +195,8 @@ public:
         CDB_COMPLETE_FW_DOWNLOAD = 0x0701,
         CDB_RUN_FW_IMAGE = 0x0901,
         CDB_COMMIT_FW_IMAGE = 0x0A01,
-        CDB_QUERY_STATUS = 0x0
+        CDB_QUERY_STATUS = 0x0,
+        CDB_GET_FW_INFO = 0x0001
     } FWManagedCdbCommand;
 
     struct FWMngFeatures

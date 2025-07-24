@@ -64,6 +64,80 @@ FwManagementCdbCommander::FwManagementCdbCommander(string mstDevName, bool clear
 {
 }
 
+FirmwareInfoReply FwManagementCdbCommander::GetCmisFWIndication()
+{
+    struct FirmwareInfoReply fwInfo;
+    vector<u_int8_t> lplReplyBuf(sizeof(fwInfo), 0);
+
+    _fwMngCableAccess.Init(vector<u_int8_t>());
+    _fwMngCableAccess.SetForegroundCommand();
+
+    lplReplyBuf = _fwMngCableAccess.SendCommand(FWManagementCdbAccess::FWManagedCdbCommand::CDB_GET_FW_INFO, CmisCdbAccess::LPL, sizeof(fwInfo));
+
+    memset(&fwInfo, 0, sizeof(fwInfo));
+    memcpy(&fwInfo, lplReplyBuf.data(), sizeof(fwInfo));
+    return fwInfo;
+}
+
+string FwManagementCdbCommander::GetCmisFWIndicationStrings()
+{
+    FirmwareInfoReply fwInfo = GetCmisFWIndication();
+
+    const static u_int8_t OPERATIONAL_STATUS_BIT = 0x0;
+    const static u_int8_t ADMINISTRATIVE_STATUS_BIT = 0x1;
+    const static u_int8_t VALIDITY_STATUS_BIT = 0x2;
+    const static u_int8_t BANK_A_OFFSET = 0x0;
+    const static u_int8_t BANK_B_OFFSET = 0x4;
+    const static u_int8_t IMAGE_A_INFO_BIT = 0x1;
+    const static u_int8_t IMAGE_B_INFO_BIT = 0x2;
+    const static u_int8_t FACTORY_IMAGE_INFO_BIT = 0x4;
+    u_int8_t firmwareBankStatus = 0;
+    ostringstream ss;
+
+    ss << left;
+    firmwareBankStatus = EXTRACT(fwInfo.firmwareStatus, BANK_A_OFFSET, 3);
+    ss << std::setw(40) << "Image A FW Status:  "
+       << ((EXTRACT(firmwareBankStatus, OPERATIONAL_STATUS_BIT, 1) == 1) ? "Running,     " : "Not Running, ")
+       << ((EXTRACT(firmwareBankStatus, ADMINISTRATIVE_STATUS_BIT, 1) == 1) ? "Committed,   " : "Uncommitted, ")
+       << ((EXTRACT(firmwareBankStatus, VALIDITY_STATUS_BIT, 1) == 1) ? "Invalid" : "Valid") << endl;
+
+    firmwareBankStatus = EXTRACT(fwInfo.firmwareStatus, BANK_B_OFFSET, 3);
+    ss << std::setw(40) << "Image B FW Status:  "
+       << ((EXTRACT(firmwareBankStatus, OPERATIONAL_STATUS_BIT, 1) == 1) ? "Running,     " : "Not Running, ")
+       << ((EXTRACT(firmwareBankStatus, ADMINISTRATIVE_STATUS_BIT, 1) == 1) ? "Committed,   " : "Uncommitted, ")
+       << ((EXTRACT(firmwareBankStatus, VALIDITY_STATUS_BIT, 1) == 1) ? "Invalid" : "Valid") << endl;
+
+    if (fwInfo.imageInformation & IMAGE_A_INFO_BIT)
+    {
+        ss << ParseCmisFWVersion(fwInfo.imageAFwVersion, "Image A");
+    }
+    if (fwInfo.imageInformation & IMAGE_B_INFO_BIT)
+    {
+        ss << ParseCmisFWVersion(fwInfo.imageBFwVersion, "Image B");
+    }
+    if (fwInfo.imageInformation & FACTORY_IMAGE_INFO_BIT)
+    {
+        ss << ParseCmisFWVersion(fwInfo.factoryFwVersion, "Factory Boot");
+    }
+
+    return ss.str();
+}
+
+string FwManagementCdbCommander::ParseCmisFWVersion(const CmisFWVersion& fwVersion, string fwImage)
+{
+    ostringstream ss;
+
+    ss << std::setw(40) << left << fwImage + " FW Version:";
+    ss << right << (unsigned)fwVersion.major << "." << (unsigned)fwVersion.minor << "." << std::setfill('0')
+       << std::setw(4) << __be16_to_cpu(fwVersion.build) << endl;
+
+    ss << std::setfill(' ') << std::setw(40) << left << fwImage + " Additional Info:"
+       << string((const char*)fwVersion.extraString, sizeof(fwVersion.extraString))
+       << endl;
+
+    return ss.str();
+}
+
 void FwManagementCdbCommander::SendFwChunk(CmisCdbAccess::PayloadMethod payloadMethod,
                                            vector<u_int8_t>::const_iterator fwData,
                                            u_int32_t fwChunkSize,
