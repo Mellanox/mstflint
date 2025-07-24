@@ -2269,6 +2269,7 @@ def reset_flow_host(device, args, command):
                     if args.reset_sync is SyncOwner.DRIVER:
                         if not mcam.is_reset_by_fw_driver_sync_supported():
                             raise RuntimeError("Requested reset sync '{0}' is not supported".format(args.reset_sync))
+                        reset_sync = SyncOwner.DRIVER
 
         if reset_sync == SyncOwner.TOOL and is_uefi_secureboot() \
                 and reset_level not in [CmdRegMfrl.WARM_REBOOT, CmdRegMfrl.IMMEDIATE_RESET]:                                 # The tool is using sysfs to access PCI config
