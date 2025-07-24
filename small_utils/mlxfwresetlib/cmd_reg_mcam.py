@@ -96,7 +96,7 @@ class CmdRegMcam():
             mrsi_sup = 0
         else:
             # bit 42 is bit 10 in 2nd DWORD.
-            # due to FW bug, MCAM mng_access_reg_cap_mask  dwords are set in reversed order
+            # due to FW bug, MCAM mng_access_reg_cap_mask dwords are set in reversed order
             # so we actually access the 3rd DWORD (index 2)
             mrsi_sup = extractField(mcam_get_result["mng_access_reg_cap_mask"][3 - 1], 10, 1)
         return True if mrsi_sup == 1 else False
@@ -112,7 +112,7 @@ class CmdRegMcam():
             mroq_sup = 0
         else:
             # bit 47 is bit 14 in 2nd DWORD.
-            # due to FW bug, MCAM mng_access_reg_cap_mask  dwords are set in reversed order
+            # due to FW bug, MCAM mng_access_reg_cap_mask dwords are set in reversed order
             # so we actually access the 3rd DWORD (index 2)
             mroq_sup = extractField(mcam_get_result["mng_access_reg_cap_mask"][3 - 1], 15, 1)
         return True if mroq_sup == 1 else False

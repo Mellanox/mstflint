@@ -194,3 +194,40 @@ def is_uefi_secureboot():
             return True
 
     return False
+
+
+def get_timeout_in_miliseconds(dtor_result, timeout):
+    timeout_value = dtor_result[timeout].to_value
+    timeout_multiplier = dtor_result[timeout].to_multiplier
+
+    if timeout_multiplier == 0x0:  # Time in milliseconds.
+        return timeout_value
+    elif timeout_multiplier == 0x1:  # Time in seconds.
+        return (timeout_value * 1000)
+    elif timeout_multiplier == 0x2:  # Time in minutes.
+        return (timeout_value * 60 * 1000)
+    elif timeout_multiplier == 0x3:  # Time in hours.
+        return (timeout_value * 60 * 60 * 1000)
+    else:
+        raise RuntimeError("Unknown timeout multiplier, exit..")
+
+
+def check_if_elapsed_time(start_time, timeout, error_msg):
+    current_time = time.time()
+    elapsed_time = current_time - start_time
+    if elapsed_time >= timeout:
+        raise RuntimeError(error_msg)
+
+
+def split_dbdf(dev_dbdf, logger):
+    logger.debug('dev_dbdf: {0}'.format(dev_dbdf))
+    domain, bus, device_function = dev_dbdf.split(':')
+    device, function = device_function.split('.')
+    res = {
+        "domain": int(domain, 16),
+        "bus": int(bus, 16),
+        "device": int(device, 16),
+        "function": int(function, 16)
+    }
+    logger.debug('domain: 0x{0:X}, bus: 0x{1:X}, device: 0x{2:X}, function: 0x{3:X}'.format(res["domain"], res["bus"], res["device"], res["function"]))
+    return res
