@@ -84,12 +84,12 @@ bool PldmPkg::unpack(PldmBuffer& buff)
     }
     buff.read(deviceIDRecordCount);
     u_int8_t componentBitmapBitLength = packageHeader.getComponentBitmapBitLength();
-    u_int8_t i;
-    for (i = 0; i < deviceIDRecordCount; i++)
+    for (u_int8_t i = 0; i < deviceIDRecordCount; i++)
     {
         PldmDevIdRecord* deviceIDRecord = new PldmDevIdRecord(componentBitmapBitLength);
         if (!deviceIDRecord->unpack(buff))
         {
+            delete deviceIDRecord;
             reset();
             return false;
         }
@@ -98,7 +98,7 @@ bool PldmPkg::unpack(PldmBuffer& buff)
         psidComponentsMap[deviceIDRecord->getDevicePsid()] = deviceIDRecord->getComponentsIndexes();
     }
     buff.read(componentImageCount);
-    for (i = 0; i < componentImageCount; i++)
+    for (u_int8_t i = 0; i < componentImageCount; i++)
     {
         PldmComponenetImage* componentImage = new PldmComponenetImage();
         componentImage->unpack(buff);
