@@ -46,7 +46,7 @@ import mtcr
 
 class MlnxPeripheralComponents(object):
 
-    SD_SUPPORTED_DID = [0x224, 0x21e, 0x218, 0x216, 0x212, 0x20f, 0x20d, 0x209, 0x20b, 0x21c]  # Connectx9,Connectx8,Connectx7,Connectx6LX,Connectx6DX,Connectx6,Connectx5 (SD device) ,Connectx4/Connectx4Lx (MH device connected as SD), BF-3
+    SD_SUPPORTED_DID = [0x226, 0x224, 0x21e, 0x218, 0x216, 0x212, 0x20f, 0x20d, 0x209, 0x20b, 0x21c, 0x222, 0x223]  # Connectx10, Connectx9,Connectx8,Connectx7,Connectx6LX,Connectx6DX,Connectx6,Connectx5 (SD device) ,Connectx4/Connectx4Lx (MH device connected as SD), BF-3, ConnectX8-Pure-PCIe-Switch, ConnectX8-Pure-PCIe-Switch-RMA
 
     def __init__(self, logger):
         self.pci_devices = []
