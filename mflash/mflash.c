@@ -1970,6 +1970,12 @@ void update_seventh_gen_addrs(mflash* mfl)
         mfl->gcm_en_addr = HCR_7GEN_ARCUSE_GCM_EN_ADDR;
         mfl->gw_addr_field_addr = HCR_7GEN_ARCUSE_FLASH_ADDR;
         mfl->gw_data_size_register_addr = HCR_7GEN_ARCUSE_FLASH_DATA_SIZE;
+    } else if (mfl->dm_dev_id == DeviceSpectrum6) {
+        mfl->gw_cmd_register_addr = HCR_7GEN_QTM4_FLASH_CMD;
+        mfl->gw_data_field_addr = HCR_7GEN_QTM4_FLASH_DATA;
+        mfl->gcm_en_addr = HCR_7GEN_QTM4_GCM_EN_ADDR;
+        mfl->gw_addr_field_addr = HCR_7GEN_QTM4_FLASH_ADDR;
+        mfl->gw_data_size_register_addr = HCR_7GEN_QTM4_FLASH_DATA_SIZE;
     }
 
     /* Fields bit offsets and lengths */
