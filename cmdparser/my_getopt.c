@@ -510,7 +510,8 @@ int _getopt_internal(int argc,
                      const char* optstring,
                      const struct option* longopts,
                      int* longind,
-                     int long_only)
+                     int long_only,
+                     int longOptSize)
 {
     tools_optarg = NULL;
 
@@ -661,7 +662,8 @@ int _getopt_internal(int argc,
 
         /* Test all long options for either exact match
            or abbreviated matches.  */
-        for (p = longopts, option_index = 0; p->name; p++, option_index++)
+           for (p = longopts, option_index = 0;
+            (longOptSize != LONG_OPTS_SIZE_DEFAULT && option_index < longOptSize) && p->name; p++, option_index++)
             if (!strncmp(p->name, nextchar, nameend - nextchar))
             {
                 if ((unsigned int)(nameend - nextchar) == (unsigned int)strlen(p->name))
@@ -1015,21 +1017,22 @@ int _getopt_internal(int argc,
 
 int tools_getopt(int argc, char* const* argv, const char* optstring)
 {
-    return _getopt_internal(argc, argv, optstring, (const struct option*)0, (int*)0, 0);
+    return _getopt_internal(argc, argv, optstring, (const struct option*)0, (int*)0, 0, LONG_OPTS_SIZE_DEFAULT);
 }
 
 int tools_getopt_long(int argc, char* const* argv, const char* optstring, const struct option* longopts, int* longindex)
 {
-    return _getopt_internal(argc, argv, optstring, longopts, longindex, 0);
+    return _getopt_internal(argc, argv, optstring, longopts, longindex, 0, LONG_OPTS_SIZE_DEFAULT);
 }
 
 int tools_getopt_long_only(int argc,
                            char* const* argv,
                            const char* optstring,
                            const struct option* longopts,
-                           int* longindex)
+                           int* longindex,
+                           int longOptSize)
 {
-    return _getopt_internal(argc, argv, optstring, longopts, longindex, 1);
+    return _getopt_internal(argc, argv, optstring, longopts, longindex, 1, longOptSize);
 }
 
 #ifdef TEST
