@@ -20,6 +20,8 @@
 #ifndef _TOOLS_GETOPT_H
 #define _TOOLS_GETOPT_H
 
+#define LONG_OPTS_SIZE_DEFAULT -1
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -106,7 +108,8 @@ extern "C"
                                char* const* argv,
                                const char* shortopts,
                                const struct option* longopts,
-                               int* longind);
+                               int* longind,
+                               int longOptSize);
 
 #ifdef __cplusplus
 }

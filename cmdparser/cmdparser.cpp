@@ -608,7 +608,7 @@ ParseStatus CommandLineParser::ParseOptions(int argc,
 
     ParseStatus curr_result;
     while ((option_type =
-              tools_getopt_long_only(argc, internal_argv, options_str.c_str(), options_arr, &option_index)) != -1)
+              tools_getopt_long_only(argc, internal_argv, options_str.c_str(), options_arr, &option_index, i)) != -1)
     {
         // printf("option_type=\'%c\'\n", option_type);
 
