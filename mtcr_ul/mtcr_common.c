@@ -240,6 +240,9 @@ const char* m_err2str(MError status)
 
     case ME_ICMD_SIZE_EXCEEDS_LIMIT:
         return "ICMD size exceeds limit";
+    
+    case ME_ICMD_UNABLE_TO_TAKE_SEMAOHORE:
+            return "Failed to take ICMD semaphore (semaphore 62). Semaphore was free (0) but HW failed to set it to locked state when we took it.\nThis might indicate a FW or HW issue.\n";
 
     /* TOOLS HCR access errors */
     case ME_CMDIF_BUSY:
