@@ -2350,6 +2350,7 @@ BurnSubCommand::BurnSubCommand()
     _fwType = 0;
     _devQueryRes = 0;
     _mccSupported = true;
+    _shouldSkip = false;
     memset(&_devInfo, 0, sizeof(_devInfo));
     memset(&_imgInfo, 0, sizeof(_imgInfo));
     _unknownProgress = 0;
@@ -2698,6 +2699,7 @@ bool BurnSubCommand::checkFwVersion(bool CreateFromImgInfo, u_int16_t fw_ver0, u
             if (current == new_version && _flintParams.skip_if_same)
             {
                 printf("\n    Skipping burn because firmware versions match and --skip_if_same flag is set.\n");
+                _shouldSkip = true;
                 return false;
             }
 
@@ -2740,6 +2742,7 @@ bool BurnSubCommand::checkPSID()
 
 FlintStatus BurnSubCommand::burnFs3()
 {
+    _shouldSkip = false;
     bool printPreparing = false;
     if (_devQueryRes)
     {
@@ -2786,6 +2789,10 @@ FlintStatus BurnSubCommand::burnFs3()
     // check FwVersion
     if (!checkFwVersion())
     {
+        if (_shouldSkip)
+        {
+            return FLINT_SUCCESS;
+        }
         return FLINT_BURN_ABORTED;
     }
     // check Psid
@@ -2887,6 +2894,7 @@ FlintStatus BurnSubCommand::burnPldmComp(u_int8_t** buff, u_int32_t& buffSize, F
 
 FlintStatus BurnSubCommand::burnFs2()
 {
+    _shouldSkip = false;
     if (_flintParams.striped_image)
     {
         reportErr(true, FLINT_FS2_STRIPED_ERROR);
@@ -2956,6 +2964,10 @@ FlintStatus BurnSubCommand::burnFs2()
     // check versions
     if (!checkFwVersion())
     {
+        if (_shouldSkip)
+        {
+            return FLINT_SUCCESS;
+        }
         return FLINT_BURN_ABORTED;
     }
     // check Psid
