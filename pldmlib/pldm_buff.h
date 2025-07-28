@@ -45,6 +45,7 @@ class PldmBuffer
 public:
     PldmBuffer();
     virtual ~PldmBuffer();
+    void reset();
 
     bool loadFile(const std::string& fname);
 

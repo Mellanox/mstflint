@@ -54,6 +54,7 @@ class PldmPkg
 public:
     PldmPkg();
     virtual ~PldmPkg();
+    void reset();
 
     bool unpack(PldmBuffer& buff);
     void print(FILE* fp);
@@ -72,6 +73,7 @@ public:
                                 u_int8_t** buff,
                                 u_int32_t& buffSize);
     bool getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_t& descriptor) const;
+    bool isPsidInPldm(std::string psid) const;
 
 
 private:

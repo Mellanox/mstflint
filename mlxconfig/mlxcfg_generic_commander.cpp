@@ -130,7 +130,7 @@ const u_int8_t btcTokenId = 0x8;
 const u_int8_t macAddrListId = 0x9;
 const u_int8_t rmcsTokenId = 0x10;
 const u_int8_t rmdtTokenId = 0x11;
-const u_int8_t frcTokenId = 0x17;
+const u_int8_t frcTokenId = 0x13;
 const u_int32_t idMlnxId = 0x10e;
 const u_int32_t idVendorId = 0x10f;
 

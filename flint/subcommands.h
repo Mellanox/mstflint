@@ -237,6 +237,7 @@ private:
     fw_info_t _imgInfo;
     FwOperations::ExtBurnParams _burnParams;
     bool _devQueryRes;
+    bool _shouldSkip;
     int _unknownProgress; // used to trace the progress of unknown progress.
     FwCompsMgr* fwCompsAccess;
     FlintStatus burnPldmComp(u_int8_t** buff, u_int32_t& buffSize, FsPldmOperations* pldmOps);
@@ -309,7 +310,7 @@ private:
     string printSecurityAttrInfo(u_int32_t m);
     FlintStatus printInfo(const fw_info_t& fwInfo, bool fullQuery);
     bool displayFs4Uids(const fw_info_t& fwInfo);
-    bool displayFs3Uids(const fw_info_t& fwInfo);
+    bool displayFs3Uids(const fw_info_t& fwInfo, bool isStripedImage);
     bool displayFs2Uids(const fw_info_t& fwInfo);
     bool checkMac(u_int64_t mac, string& warrStr);
     FlintStatus queryMFA2();
@@ -322,6 +323,7 @@ private:
                          char* delimeter,
                          bool isCSV);
     FlintStatus QueryLinkX(string deviceName, string outputFile, std::vector<int> deviceIds);
+    FlintStatus QueryCableAttributes();
     void PrintLifeCycle(const life_cycle_t& lifeCycle);
 
 public:

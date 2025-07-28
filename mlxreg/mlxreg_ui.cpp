@@ -190,12 +190,33 @@ static std::vector<AdbInstanceAdvLegacy*> getRelevantField(AdbInstanceAdvLegacy*
             result.insert(result.end(), subResult.begin(), subResult.end());
         }
     }
-    else if (node->parent->isConditionalNode())
+    else if (node->parent && node->parent->isConditionalNode())
     {
         AdbConditionLegacy* condition = node->getCondition();
         if (condition)
         {
-            uint64_t cond_val = condition->evaluate((u_int8_t*)&buff[0]);
+            uint64_t cond_val = 0;
+            try
+            {
+                cond_val = condition->evaluate((u_int8_t*)&buff[0]);
+            }
+            catch (const AdbException& e)
+            {
+                // If condition evaluation throws an exception, treat as a regular non-union node
+                // and process all children
+                std::cerr << "-W- Field - " << node->get_field_name()
+                          << " with condition, evaluation failed, treating as regular node and processing all children\n"
+                          << e.what() << std::endl;
+                for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin();
+                     it != node->subItems.end();
+                     ++it)
+                {
+                    std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantField(*it, buff);
+                    result.insert(result.end(), subResult.begin(), subResult.end());
+                }
+                return result;
+            }
+
             if (!cond_val)
             {
                 return result;
@@ -377,7 +398,7 @@ size_t getLongestNodeLen(std::vector<AdbInstanceAdvLegacy*> root, bool full_path
     size_t len = 0;
     for (std::vector<AdbInstanceAdvLegacy*>::size_type i = 0; i != root.size(); i++)
     {
-        auto name = full_path ? root[i]->fullName(3) : root[i]->get_field_name();
+        auto name = full_path ? root[i]->fullName(1) : root[i]->get_field_name();
         if (name.size() > len)
         {
             len = name.size();
@@ -399,7 +420,7 @@ void MlxRegUi::printRegFields(vector<AdbInstanceAdvLegacy*> nodeFields)
     {
         printf("%-*s | 0x%08x      | %-8d      | %-8ld    | %-15s\n",
                largestName,
-               _full_path ? nodeFields[i]->fullName(3).c_str() : nodeFields[i]->get_field_name().c_str(),
+               _full_path ? nodeFields[i]->fullName(1).c_str() : nodeFields[i]->get_field_name().c_str(),
                (nodeFields[i]->offset >> 3) & ~0x3,
                nodeFields[i]->startBit(),
                (unsigned long)nodeFields[i]->fieldDesc->eSize(),
@@ -435,7 +456,7 @@ void MlxRegUi::printAdbContext(AdbInstanceAdvLegacy* node, std::vector<u_int32_t
     {
         printf("%-*s | 0x%08x\n",
                largestName,
-               _full_path ? subItems[i]->fullName(3).c_str() : subItems[i]->get_field_name().c_str(),
+               _full_path ? subItems[i]->fullName(1).c_str() : subItems[i]->get_field_name().c_str(),
                (unsigned int)subItems[i]->popBuf((u_int8_t*)&buff[0]));
     }
     PRINT_LINE(largestName + 14);
@@ -743,6 +764,11 @@ void MlxRegUi::run(int argc, char** argv)
     AdbInstanceAdvLegacy* regNode = NULL;
     std::vector<u_int32_t> buff;
 
+    if (_regName != "" && (_op == CMD_GET || _op == CMD_SET))
+    {
+        _mlxRegLib->set_current_node(_regName);
+    }
+
     switch (_op)
     {
         case CMD_SHOW_REG:
@@ -770,14 +796,14 @@ void MlxRegUi::run(int argc, char** argv)
             if (_file_io != "")
             {
                 assert(_regName != "");
-                int reg_size = (_mlxRegLib->findAdbNode(_regName)->get_size()) / 8; // in Bytes
+                int reg_size = (_mlxRegLib->get_current_node()->get_size()) / 8; // in Bytes
                 sendCmdBasedOnFileIo(MACCESS_REG_METHOD_GET, reg_size);
                 break;
             }
 
             if (_regName != "")
             {
-                regNode = _mlxRegLib->findAdbNode(_regName);
+                regNode = _mlxRegLib->get_current_node();
             }
             RegAccessParser parser(_dataStr, _indexesStr, _opsStr, regNode, _dataLen);
             buff = parser.genBuff();
@@ -799,14 +825,14 @@ void MlxRegUi::run(int argc, char** argv)
         {
             if (_file_io != "")
             {
-                int reg_size = (_mlxRegLib->findAdbNode(_regName)->get_size()) / 8; // in Bytes
+                int reg_size = (_mlxRegLib->get_current_node()->get_size()) / 8; // in Bytes
                 sendCmdBasedOnFileIo(MACCESS_REG_METHOD_SET, reg_size);
                 break;
             }
 
             if (_regName != "")
             {
-                regNode = _mlxRegLib->findAdbNode(_regName);
+                regNode = _mlxRegLib->get_current_node();
             }
             // Read current register data into buffer
             RegAccessParser parserGet(_dataStr, _indexesStr, _opsStr, regNode, _dataLen, _ignore_ro);
