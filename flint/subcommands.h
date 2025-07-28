@@ -237,6 +237,7 @@ private:
     fw_info_t _imgInfo;
     FwOperations::ExtBurnParams _burnParams;
     bool _devQueryRes;
+    bool _shouldSkip;
     int _unknownProgress; // used to trace the progress of unknown progress.
     FwCompsMgr* fwCompsAccess;
     FlintStatus burnPldmComp(u_int8_t** buff, u_int32_t& buffSize, FsPldmOperations* pldmOps);
