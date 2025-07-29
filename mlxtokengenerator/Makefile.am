@@ -66,11 +66,13 @@ msttokengenerator_DEPENDENCIES = \
                                 $(top_builddir)/cmdif/libcmdif.la \
 							    $(top_builddir)/dev_mgt/libdev_mgt.la \
                                 $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
-                                $(top_builddir)/mlxdpa/libmstdpa.a \
                                 $(SQLITE_LIBS) \
                                 $(JSON_LIBS) \
                                 $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la
 
+if ENABLE_DPA
+msttokengenerator_DEPENDENCIES += $(top_builddir)/mlxdpa/libmstdpa.a
+endif
 
 msttokengenerator_LDFLAGS = -static
 
