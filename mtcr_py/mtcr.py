@@ -74,7 +74,7 @@ try:
         except BaseException:
             CMTCR = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "cmtcr.so"), use_errno=True)
 except BaseException as e:
-    print(f"Error loading CMTCR: {e}")
+    print("Error loading CMTCR: {0}".format(e))
     CMTCR = None
 
 if CMTCR:
