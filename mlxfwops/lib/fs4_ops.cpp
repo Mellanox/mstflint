@@ -2848,7 +2848,7 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations& imageOps, ExtBurnParams& burnPar
                               burnParams.progressUserData,
                               burnParams.progressFunc,
                               toc_entry->flash_addr << 2,
-                              &(itoc_info_p->section_data[0]),
+                              itoc_info_p->section_data.data(),
                               itoc_info_p->section_data.size(),
                               true,
                               true,
