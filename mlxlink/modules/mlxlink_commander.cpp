@@ -1492,14 +1492,25 @@ void MlxlinkCommander::prepareDDMSection(bool valid, bool isModuleExtSupported)
         txPowerLowTH = convertFloatPrec(txPowerLowTH);
     }
 
-    float biasLowTH = getFieldValue("tx_bias_low_th") / 500.0;
-    float biasHighTH = getFieldValue("tx_bias_high_th") / 500.0;
+    float txMultiplier = 1;
+    try
+    {
+        txMultiplier = pow(2, getFieldValue("tx_bias_scaling_factor"));
+    }
+    catch (const std::exception& e)
+    {
+        // If the field does not exist, set the multiplier to 1
+        // txMultiplier = 1;
+    }
+
+    float biasLowTH = getFieldValue("tx_bias_low_th") * txMultiplier / 500.0;
+    float biasHighTH = getFieldValue("tx_bias_high_th") * txMultiplier / 500.0;
 
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
         string laneStr = to_string(_moduleLanesMapping[lane]);
         rxPowerLane.push_back(getPower(getFieldValue("rx_power_lane" + laneStr), isModuleExtSupported));
         txPowerLane.push_back(getPower(getFieldValue("tx_power_lane" + laneStr), isModuleExtSupported));
-        biasCurrentLane.push_back(getFieldValue("tx_bias_lane" + laneStr) / 500.0);
+        biasCurrentLane.push_back(getFieldValue("tx_bias_lane" + laneStr) * txMultiplier / 500.0);
     }
 
     setPrintVal(_moduleInfoCmd,
