@@ -191,6 +191,16 @@ void MlxlinkCablesCommander::getDdmValuesFromPddr()
         _cableDdm.channels = _numOfLanes;
         _cableDdm.temperature.val = getFieldValue("temperature") / 256;
         _cableDdm.voltage.val = getFieldValue("voltage") / MILLIVOLT_UNIT;
+        float txMultiplier = 1;
+        try
+        {
+            txMultiplier = pow(2, getFieldValue("tx_bias_scaling_factor"));
+        }
+        catch (const std::exception& e)
+        {
+            // If the field does not exist, set the multiplier to 1
+            // txMultiplier = 1;
+        }
 
         string laneStr = "";
         for (int lane = 0; lane < _cableDdm.channels; lane++)
@@ -198,7 +208,7 @@ void MlxlinkCablesCommander::getDdmValuesFromPddr()
             laneStr = to_string(_moduleLanesMapping[lane]);
             _cableDdm.rx_power[lane].val = getPower(getFieldValue("rx_power_lane" + laneStr));
             _cableDdm.tx_power[lane].val = getPower(getFieldValue("tx_power_lane" + laneStr));
-            _cableDdm.tx_bias[lane].val = getFieldValue("tx_bias_lane" + laneStr);
+            _cableDdm.tx_bias[lane].val = getFieldValue("tx_bias_lane" + laneStr) * txMultiplier;
         }
     }
 }
