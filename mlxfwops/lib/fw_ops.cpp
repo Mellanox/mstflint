@@ -644,6 +644,7 @@ bool FwOperations::GetImageFormatVersion(FBase& f, u_int32_t boot_version_offset
     DPRINTF(("FwOperations::GetImageFormatVersion image_format_version = %d\n", image_format_version));
     return true;
 }
+
 u_int8_t FwOperations::IsFS4OrFS5Image(FBase& f, u_int32_t* found_images)
 {
     DPRINTF(("FwOperations::IsFS4OrFS5Image\n"));

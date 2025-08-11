@@ -56,19 +56,28 @@ mstflint_SOURCES = \
 mstflint_CXXFLAGS = -Wall -pthread -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC) \
                     -DUNIX -DOS_UNIX -DOS_LINUX
 
-mstflint_DEPENDENCIES = \
-     $(top_builddir)/mlxfwops/lib/libmlxfwops.a  \ 
+
+mstflint_DEPENDENCIES = 
+
+if ENABLE_CABLES
+mstflint_DEPENDENCIES += $(top_builddir)/${CABLE_ACCESS_DIR}/libcable_access.la
+endif
+
+
+
+mstflint_DEPENDENCIES += \
+     $(top_builddir)/mlxfwops/lib/libmlxfwops.a  \
      $(top_builddir)/pldmlib/libpldm.la \
      $(top_builddir)/cmdparser/libcmdparser.a \
      $(top_builddir)/mflash/libmflash.la \
      $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
      $(top_builddir)/cmdif/libcmdif.la \
-     $(top_builddir)/reg_access/libreg_access.la  \
      $(top_builddir)/dev_mgt/libdev_mgt.la \
-     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
      $(top_builddir)/tools_layouts/libtools_layouts.la \
      $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
-     $(top_builddir)/mft_utils/libmftutils.la
+     $(top_builddir)/mft_utils/libmftutils.la \
+     $(top_builddir)/reg_access/libreg_access.la \
+     $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a
 
 LDADD_mstflint = ${LDL}
 

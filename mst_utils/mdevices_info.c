@@ -253,6 +253,8 @@ void print_pci_info(dev_info* dev, int domain_needed)
 
     if (hasIB) {
         printf("%-16s", fmt);
+    } else {
+        printf("%-16s", " ");
     }
 
     /* Add NET devices info */
@@ -403,7 +405,7 @@ int main(int argc, char** argv)
         /* dev_lst = devs; */
         /* dev_lst_len = len; */
         for (i = 0; i < len; i++) {
-            if (devs[i].type == MDEVS_TAVOR_CR) {
+            if ((devs[i].type == MDEVS_TAVOR_CR) && (strstr(devs[i].dev_name, "cable_") == NULL)) {
                 mfile* mf = mopen(devs[i].dev_name);
 
                 if (is_pcie_switch_device(mf)) {
@@ -492,6 +494,21 @@ int main(int argc, char** argv)
                 printf("%s\n", devs[i].dev_name);
             }
         }
+        printf("\n");
+    }
+
+    int cable_found = 0;
+    for (i = 0; i < len; i++) {
+        if (devs[i].dev_name && (strstr(devs[i].dev_name, "cable_") != NULL)) {
+            if (cable_found == 0) {
+                printf("\nCable devices:\n");
+                printf("---------------\n");
+                cable_found = 1;
+            }
+            printf("%s\n", devs[i].dev_name);
+        }
+    }
+    if (cable_found) {
         printf("\n");
     }
 

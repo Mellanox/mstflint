@@ -52,6 +52,26 @@ extern "C"
 #include <common/compatibility.h>
 #include "include/mtcr_ul/mtcr.h"
 
+typedef enum get_dev_id_error_t {
+    GET_DEV_ID_SUCCESS,
+    GET_DEV_ID_ERROR,
+    CRSPACE_READ_ERROR,
+    CHECK_PTR_DEV_ID,
+} dev_id_error;
+
+enum dm_dev_type {
+    DM_UNKNOWN = -1,
+    DM_HCA,
+    DM_SWITCH,
+    DM_BRIDGE,
+    DM_QSFP_CABLE,
+    DM_CMIS_CABLE,
+    DM_SFP_CABLE,
+    DM_LINKX, /* linkx chip */
+    DM_GEARBOX,
+    DM_RETIMER
+};
+
 enum dm_dev_id {
     DeviceUnknown     = -1,    /* Dummy Device - Marker for indicating error. */
     DeviceStartMarker = 0,     /* Dummy Device - Marker for first device */
@@ -317,6 +337,8 @@ int dm_dev_is_eth_switch(dm_dev_id_t type);
 int dm_is_livefish_mode(mfile* mf);
 
 int dm_is_ib_access(mfile* mf);
+
+int dm_is_bluefield(dm_dev_id_t type);
 #ifdef __cplusplus
 } /* end of 'extern "C"' */
 #endif

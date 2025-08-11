@@ -110,10 +110,15 @@ FlintParams::FlintParams()
     cable_device_index_specified = false;
     linkx_auto_update = false;
     activate = false;
+    run_module_image = false;
+    commit_module_image = false;
     downstream_device_ids_specified = false;
     download_transfer = false;
     // if no delay specified, use minimal delay to avoid disconnection in case of activating the connect port
     activate_delay_sec = 1;
+    modulePassword = "";
+    moduleCommandTimeout = "";
+    moduleVendorDataFile = "";
     i2cSecondaryAddr = -1;
     imageSizeOnly = false;
     cert_uuid = "";

@@ -41,3 +41,13 @@ mstdevices_info_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
  	                             $(top_builddir)/reg_access/libreg_access.la
 mstdevices_info_LDADD = $(mstdevices_info_DEPENDENCIES) ${LDL}
 mstdevices_info_LDFLAGS = -static
+
+if ENABLE_CABLES
+bin_PROGRAMS += mstcable_discovery
+mstcable_discovery_SOURCES = cable_discovery.cpp
+mstcable_discovery_DEPENDENCIES = $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+               			         $(top_builddir)/dev_mgt/libdev_mgt.la \
+								 $(top_builddir)/reg_access/libreg_access.la
+    mstcable_discovery_LDADD = $(mstcable_discovery_DEPENDENCIES) ${LDL}
+    mstcable_discovery_LDFLAGS = -static
+endif

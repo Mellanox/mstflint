@@ -39,6 +39,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <errno.h>
+#include <algorithm>
 // Flint includes
 #include "flint.h"
 #include <common/tools_version.h>
@@ -232,6 +233,8 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "linkx_auto_update", 0));
     _flags.push_back(new Flag("", "activate", 0));
     _flags.push_back(new Flag("", "activate_delay_sec", 1));
+    _flags.push_back(new Flag("", "run_module_image", 0));
+    _flags.push_back(new Flag("", "commit_module_image", 0));
     _flags.push_back(new Flag("", "downstream_device_ids", 1));
     _flags.push_back(new Flag("", "download_transfer", 0));
     _flags.push_back(new Flag("", "i2c_secondary", 1));
@@ -834,6 +837,22 @@ void Flint::initCmdParser()
                false,
                1);
 
+    AddOptions("run_module_image",
+               ' ',
+               "",
+               "Use this flag to switch FW banks on the module. By default, the command is not performed.",
+               false,
+               false,
+               1);
+ 
+    AddOptions("commit_module_image",
+               ' ',
+               "",
+               "Use this flag to switch committed bank on the module. By default, the command is not performed.",
+               false,
+               false,
+               1);
+
     AddOptions(
       "activate_delay_sec",
       ' ',
@@ -1305,6 +1324,16 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.activate = true;
     }
 
+    else if (name == "run_module_image")
+    {
+        _flintParams.run_module_image = true;
+    }
+
+    else if (name == "commit_module_image")
+    {
+        _flintParams.commit_module_image = true;
+    }
+
     else if (name == "activate_delay_sec")
     {
         u_int64_t activate_delay_sec = 0;
@@ -1388,6 +1417,43 @@ ParseStatus Flint::HandleOption(string name, string value)
             return PARSE_ERROR;
         }
         _flintParams.cert_chain_index = cert_chain_index;
+    }
+    else if (name == "module_password")
+    {
+        if (value[0] == '0' && tolower(value[1]) == 'x')
+        {
+            value = value.substr(2);
+        }
+        if (value.length() != 8)
+        {
+            printf("module password length must be 4 bytes in hex.\n");
+            return PARSE_ERROR;
+        }
+        if (!std::all_of(value.begin(), value.end(), [](unsigned char c) { return std::isxdigit(c); }))
+        {
+            printf("module password must be in hex.\n");
+            return PARSE_ERROR;
+        }
+        _flintParams.modulePassword = value;
+    }
+    else if (name == "module_command_timeout")
+    {
+        if (!std::all_of(value.begin(), value.end(), [](unsigned char c) { return std::isdigit(c); }))
+        {
+            printf("module command timeout must be decimal.\n");
+            return PARSE_ERROR;
+        }
+        if (value.length() > 5)
+        {
+            printf("module command timeout value range is 0-99999.\n");
+            return PARSE_ERROR;
+        }
+
+        _flintParams.moduleCommandTimeout = value;
+    }
+    else if (name == "module_vendor_data")
+    {
+        _flintParams.moduleVendorDataFile = value;
     }
     else if (name == "component_type")
     {

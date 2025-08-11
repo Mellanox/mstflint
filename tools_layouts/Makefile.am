@@ -37,7 +37,7 @@ AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)\"
 
 SUBDIRS = ${ADABE_DBS}
 
-noinst_LTLIBRARIES = libadb_utils.la libtools_layouts.la libmlxarchive_layouts.la
+noinst_LTLIBRARIES = libadb_utils.la libtools_layouts.la libmlxarchive_layouts.la libcables_layouts.la
 
 toolslayoutsincludedir = $(includedir)/mstflint/tools_layouts/
 
@@ -64,5 +64,9 @@ libtools_layouts_la_DEPENDENCIES = libadb_utils.la
 libmlxarchive_layouts_la_DEPENDENCIES = $(libtools_layouts_la_DEPENDENCIES)
 libmlxarchive_layouts_la_LIBADD = $(libtools_layouts_la_LIBADD)
 libmlxarchive_layouts_la_SOURCES = mlxarchive_layouts.h mlxarchive_layouts.c
+
+libcables_layouts_la_SOURCES = cables_layouts.h cables_layouts.c
+libcables_layouts_la_DEPENDENCIES = $(libtools_layouts_la_DEPENDENCIES)
+libcables_layouts_la_LIBADD = $(libtools_layouts_la_DEPENDENCIES)
 
 EXTRA_DIST = ${ADABE_DBS_EXTRA_DIST}
