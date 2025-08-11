@@ -1857,67 +1857,6 @@ static void init_vsec_cap_mask(mfile* mf)
     mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
 }
 
-static int mtcr_vfio_device_open(mfile     * mf,
-                                 const char* name,
-                                 unsigned    domain,
-                                 unsigned    bus,
-                                 unsigned    dev,
-                                 unsigned    func)
-{
-    ul_ctx_t* ctx = mf->ul_ctx;
-    u_int32_t vsec_type = 0;
-
-    mf->fd = -1;
-    mf->tp = MST_PCICONF;
-
-    if (GetStartOffsets(domain, bus, dev, func, &mf->fd, &mf->vsec_addr, &mf->address_region_addr) != 0) {
-        return -1;
-    }
-
-    if (mf->vsec_addr) {
-        DBG_PRINTF("VSEC address: 0x%lx\n", mf->vsec_addr);
-        DBG_PRINTF("Address region address: 0x%lx\n", mf->address_region_addr);
-        mf->vsec_addr += mf->address_region_addr;
-        READ4_PCI(mf, &vsec_type, mf->vsec_addr, "read vsc type", return ME_PCI_READ_ERROR);
-        mf->vsec_type = EXTRACT(vsec_type, MLX_VSC_TYPE_OFFSET, MLX_VSC_TYPE_LEN);
-        DBG_PRINTF("VSC type: %d\n", mf->vsec_type);
-        if (mf->vsec_type == FUNCTIONAL_VSC) {
-            DBG_PRINTF("FUNCTIONAL VSC Supported\n");
-            mf->functional_vsec_supp = 1;
-        }
-
-        init_vsec_cap_mask(mf);
-
-        if (VSEC_SUPPORTED_UL(mf)) {
-            mf->address_space = AS_CR_SPACE;
-            ctx->mread4 = mtcr_pciconf_mread4;
-            ctx->mwrite4 = mtcr_pciconf_mwrite4;
-            ctx->mread4_block = mread4_block_pciconf;
-            ctx->mwrite4_block = mwrite4_block_pciconf;
-        }
-
-        mf->pxir_vsec_supp = 0;
-        if ((mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_CRSPACE))) &&
-            (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_ALL_ICMD))) &&
-            (mf->vsec_cap_mask & (1 << space_to_cap_offset(AS_PCI_GLOBAL_SEMAPHORE)))) {
-            mf->pxir_vsec_supp = 1;
-        }
-        DBG_PRINTF("mf->pxir_vsec_supp: %d\n", mf->pxir_vsec_supp);
-    } else {
-        ctx->wo_addr = is_wo_pciconf_gw(mf);
-        DBG_PRINTF("Write Only Address: %d\n", ctx->wo_addr);
-        ctx->mread4 = mtcr_pciconf_mread4_old;
-        ctx->mwrite4 = mtcr_pciconf_mwrite4_old;
-        ctx->mread4_block = mread_chunk_as_multi_mread4;
-        ctx->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
-    }
-
-    if (init_dev_info_ul(mf, name, domain, bus, dev, func)) {
-        return -1;
-    }
-
-    return 0;
-}
 
 bool is_cable_device(const char* name)
 {
@@ -2607,40 +2546,20 @@ static MType mtcr_parse_name(const char* name,
     char     driver_conf_name[40];
     unsigned len = strlen(name);
     unsigned tmp;
-    int      is_vfio = strstr(name, "vfio-") != NULL;
-    int      lockdown_enabled = CheckifKernelLockdownIsEnabled();
 
     if (strstr(name, "fwctl")) {
         return MST_FWCTL_CONTROL_DRIVER;
     }
 
-    if (is_vfio || lockdown_enabled) {
-        if (is_vfio) {
-            scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
-            if (scnt != 4) {
-                my_domain = 0;
-                scnt = sscanf(name, "vfio-%x:%x.%x", &my_bus, &my_dev, &my_func);
-                if (scnt != 3) {
-                    return MST_ERROR;
-                }
-            }
-        } else {
-            scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
-            if (scnt != 4) {
-                my_domain = 0;
-                scnt = sscanf(name, "%x:%x.%x", &my_bus, &my_dev, &my_func);
-                if (scnt != 3) {
-                    return MST_ERROR;
-                }
-            }
+    scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+    if (scnt != 4) {
+        my_domain = 0;
+        scnt = sscanf(name, "%x:%x.%x", &my_bus, &my_dev, &my_func);
+        if (scnt != 3) {
+            return MST_ERROR;
         }
-
-        *domain_p = my_domain;
-        *bus_p = my_bus;
-        *dev_p = my_dev;
-        *func_p = my_func;
-        return MST_VFIO_DEVICE;
     }
+
 
     if ((len >= sizeof config) && !strcmp(config, name + len + 1 - sizeof config)) {
         *force = 1;
@@ -3552,13 +3471,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         return mf;
         break;
 
-    case MST_VFIO_DEVICE:
-        rc = mtcr_vfio_device_open(mf, name, domain, bus, dev, func);
-        if (rc) {
-            goto open_failed;
-        }
-        return mf;
-        break;
 
 #ifdef ENABLE_MST_DEV_I2C
     case MST_DEV_I2C:
