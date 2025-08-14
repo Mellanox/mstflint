@@ -439,7 +439,7 @@ int main(int argc, char** argv)
             if ((devs[i].type == MDEVS_TAVOR_CR) && (strstr(devs[i].dev_name, "cable_") == NULL)) {
                 mfile* mf = mopen(devs[i].dev_name);
 
-                if (is_pcie_switch_device(mf)) {
+                if (is_pcie_switch_device(mf) && !mf->functional_vsec_supp) {
                     mclose(mf);
                     continue;
                 }
