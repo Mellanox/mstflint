@@ -129,6 +129,8 @@ def getDevDBDF(device, logger=None):
             raise RuntimeError("Unexpected device name format")
         return device[3:]
     elif (operatingSys == "Linux"):
+        if device.startswith("vfio-"):
+            device = device[5:]
         cmd = "mdevices_info -vv"
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
