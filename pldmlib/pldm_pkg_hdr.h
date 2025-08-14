@@ -43,6 +43,7 @@ class PldmPkgHdr
 public:
     PldmPkgHdr();
     virtual ~PldmPkgHdr();
+    void reset();
 
     bool unpack(PldmBuffer& buff);
     void print(FILE* fp);

@@ -82,6 +82,9 @@ private:
     string _msg;
 };
 
+class AdbStopException : public std::exception
+{
+};
 /**
  * Function: ExceptionHolder::getNumberOfExceptions
  * This function return the number of exceptions found

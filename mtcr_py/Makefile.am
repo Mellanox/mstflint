@@ -35,6 +35,6 @@ mtcr_pylibdir = $(libdir)/mstflint/python_tools/
 mtcr_pylib_DATA = cmtcr.so
 dist_mtcr_pylib_DATA = mtcr.py
 cmtcr.so:
-	$(CC) -g -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} -o cmtcr.so -Wl,--whole-archive $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a -Wl,--no-whole-archive
+	$(CC) -g -Wall -pthread -shared ${CFLAGS} ${LDFLAGS} -o cmtcr.so -Wl,--whole-archive $(top_builddir)/${MTCR_CONF_DIR}/.libs/libmtcr_ul.a -Wl,--no-whole-archive -lstdc++
 
 CLEANFILES = cmtcr.so

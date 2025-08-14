@@ -68,6 +68,7 @@ class CmdRegMroq():
                     self._pci_sync_for_fw_update_start = self._pci_sync_for_fw_update_start & ~CmdRegMroq.pci_sync_db[CmdRegMroq.SYNCED_TOOL_FLOW]['mask']
                 elif platform.system() == "Linux":
                     if mst_driver_is_loaded is False:
+                        self._logger.debug("MST driver is not loaded, disabling sync 2")
                         self._pci_sync_for_fw_update_start = self._pci_sync_for_fw_update_start & ~CmdRegMroq.pci_sync_db[CmdRegMroq.SYNCED_TOOL_FLOW]['mask']
 
             except BaseException:
@@ -86,6 +87,15 @@ class CmdRegMroq():
             'pci_reset_req_method': pci_reset_req_method,
             'pci_sync_for_fw_update_start': pci_sync_for_fw_update_start,
         }
+
+    def is_method_supported(self, method):
+        for field in CmdRegMroq.pci_reset_method_db:
+            if method == field["method"]:
+                return (field["mask"] & self._pci_reset_req_method) != 0
+        raise Exception("Method {} is not in the list of supported methods".format(method))
+
+    def is_tool_owner_support(self):
+        return self._pci_sync_for_fw_update_start & CmdRegMroq.pci_sync_db[CmdRegMroq.LEGACY_FLOW]['mask'] != 0
 
     def print_query_text(self, is_pcie_switch, tool_owner_support):
         if self._mroq_is_supported is False:

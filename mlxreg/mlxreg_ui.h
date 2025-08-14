@@ -71,9 +71,9 @@ private:
     bool askUser(const char* question);
 
     // Print
-    void printRegFields(vector<AdbInstanceLegacy*> nodeFields);
+    void printRegFields(vector<AdbInstanceAdvLegacy*> nodeFields);
     void printRegNames(std::vector<string> regs);
-    void printAdbContext(AdbInstanceLegacy* node, std::vector<u_int32_t> buff);
+    void printAdbContext(AdbInstanceAdvLegacy* node, std::vector<u_int32_t> buff);
     void printBuff(std::vector<u_int32_t> buff);
 
     void readFromFile(string file_name, vector<u_int32_t>& buff, int len);
@@ -99,6 +99,7 @@ private:
     string _output_file;
     string _file_io;
     bool _overwrite;
+    bool _full_path;
 };
 
 #endif /* MLXREG_UI_H */

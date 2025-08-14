@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -86,6 +86,10 @@ string EthExtSupportedSpeeds2Str(u_int32_t int_mask);
 string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended = false, bool isXdrSlowActive = false);
 string getOui(u_int32_t oui);
 int getBitvalue(u_int32_t mask, int idx);
+string getMaxPowerStr(u_int32_t maxPower);
+string getPowerClassStringValue(u_int32_t cableIdentifier, u_int32_t powerClass, MlxlinkMaps* mlxlinkMaps);
+float getPowerClassValue(u_int32_t cableIdentifier, u_int32_t powerClass, MlxlinkMaps* mlxlinkMaps);
+string getPowerClassStr(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass);
 string getPowerClass(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass, u_int32_t maxPower);
 int ptysSpeedToExtMaskETH(const string& speed);
 int ptysSpeedToMaskETH(const string& speed);
@@ -117,7 +121,7 @@ bool isQsfpCable(u_int32_t identifier);
 string getCmisCableType(u_int32_t cableType, u_int32_t cableLength);
 string getCableType(u_int32_t cableType);
 string getTemp(u_int32_t temp, int celsParam = 256);
-float getPower(u_int16_t power, bool isModuleExtSupported = false);
+float getPower(u_int16_t power);
 int getHeight(u_int16_t height);
 int getPhase(u_int8_t phase);
 int getVersion(u_int8_t version);
@@ -160,5 +164,20 @@ string getStrByMaskFromPair(u_int32_t bitmask,
                             map<u_int32_t, pair<string, string>> maskMap,
                             const string& fieldSeparator = ",",
                             u_int32_t pairIndex = 0);
+
+std::string centerString(const std::string& str, int width, char fillChar = ' ');
+std::string generateTableRow(const std::vector<std::pair<std::string, u_int32_t>>& columns,
+                             const std::string& delimiter);
+int getStringLengthWOColorCodes(const std::string& s);
+void printMlxlinkTable(const std::vector<std::string>& tableData,
+                       const std::vector<std::pair<std::string, u_int32_t>>& tableHeader);
+void updateColumnWidthPopulateTable(std::vector<std::pair<std::string, u_int32_t>>& vectorToAmend,
+                                    const u_int32_t locationInVector,
+                                    std::vector<std::string>& tableData,
+                                    const std::string& valToAdd,
+                                    u_int32_t unformattedStrLen,
+                                    bool isActive = true);
 void printProgressBar(int completion, const std::string& preStr, const std::string& endStr);
+std::string string_format(const char* format, ...);
+
 #endif

@@ -56,6 +56,7 @@
 #include "mlxfwops/lib/components/fs_synce_ops.h"
 #include "hex64.h"
 #include "dev_mgt/tools_dev_types.h"
+#include "common/tools_time.h"
 
 #ifndef NO_ZLIB
 #include <zlib.h>
@@ -84,6 +85,12 @@
 #include "subcommands.h"
 #include "tools_layouts/cx4fw_layouts.h"
 #include "tools_layouts/image_layout_layouts.h"
+
+
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+#include "cable_access/cdb_cable_commander.h"
+#endif
+
 using namespace std;
 #ifndef NO_MSTARCHIVE
 using namespace mfa2;
@@ -96,6 +103,9 @@ using namespace mfa2;
 FILE* flint_log_fh = NULL;
 
 #define BURN_INTERRUPTED 0x1234
+#define CABLE_BURN_TIMEOUT_MAX 10
+#define CABLE_BURN_RESET_MAX 3 
+#define CABLE_BURN_INIT_MAX 120
 
 static int is_arm()
 {
@@ -1986,13 +1996,13 @@ bool BinaryCompareSubCommand::ReadFwOpsImageData(vector<u_int8_t>& deviceBuff, v
     }
     deviceBuff.resize(imgSize);
     // on second call we fill it
-    if (!_fwOps->FwReadData((void*)(&deviceBuff[0]), &imgSize, _flintParams.silent == false, false, true))
+    if (!_fwOps->FwReadData((void*)(&deviceBuff[0]), &imgSize, _flintParams.silent == false))
     {
         reportErr(true, FLINT_IMAGE_READ_ERROR, _fwOps->err());
         return false;
     }
 
-    if (!_imgOps->FwExtract4MBImage(imgBuff, false, (_flintParams.silent == false)))
+    if (!_imgOps->FwExtract4MBImage(imgBuff, false, (_flintParams.silent == false), false, true))
     {
         reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
         return false;
@@ -2340,6 +2350,7 @@ BurnSubCommand::BurnSubCommand()
     _fwType = 0;
     _devQueryRes = 0;
     _mccSupported = true;
+    _shouldSkip = false;
     memset(&_devInfo, 0, sizeof(_devInfo));
     memset(&_imgInfo, 0, sizeof(_imgInfo));
     _unknownProgress = 0;
@@ -2688,6 +2699,7 @@ bool BurnSubCommand::checkFwVersion(bool CreateFromImgInfo, u_int16_t fw_ver0, u
             if (current == new_version && _flintParams.skip_if_same)
             {
                 printf("\n    Skipping burn because firmware versions match and --skip_if_same flag is set.\n");
+                _shouldSkip = true;
                 return false;
             }
 
@@ -2730,6 +2742,7 @@ bool BurnSubCommand::checkPSID()
 
 FlintStatus BurnSubCommand::burnFs3()
 {
+    _shouldSkip = false;
     bool printPreparing = false;
     if (_devQueryRes)
     {
@@ -2776,6 +2789,10 @@ FlintStatus BurnSubCommand::burnFs3()
     // check FwVersion
     if (!checkFwVersion())
     {
+        if (_shouldSkip)
+        {
+            return FLINT_SUCCESS;
+        }
         return FLINT_BURN_ABORTED;
     }
     // check Psid
@@ -2877,6 +2894,7 @@ FlintStatus BurnSubCommand::burnPldmComp(u_int8_t** buff, u_int32_t& buffSize, F
 
 FlintStatus BurnSubCommand::burnFs2()
 {
+    _shouldSkip = false;
     if (_flintParams.striped_image)
     {
         reportErr(true, FLINT_FS2_STRIPED_ERROR);
@@ -2946,6 +2964,10 @@ FlintStatus BurnSubCommand::burnFs2()
     // check versions
     if (!checkFwVersion())
     {
+        if (_shouldSkip)
+        {
+            return FLINT_SUCCESS;
+        }
         return FLINT_BURN_ABORTED;
     }
     // check Psid
@@ -3224,6 +3246,216 @@ void BurnSubCommand::cleanInterruptedCommand()
     }
 }
 
+FlintStatus BurnSubCommand::BurnCMISCable()
+{
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+    DPRINTF(("BurnSubCommand::BurnCMISCable\n"));
+    CableBurnFlow burnFlow(CableBurnFlow::Burn3rdParty);
+    std::vector<u_int8_t> fwImage;
+    std::vector<u_int8_t> vendorData;
+
+
+    if (_flintParams.image.empty() && !_flintParams.activate && !_flintParams.commit_module_image &&
+        !_flintParams.run_module_image)
+    {
+        reportErr(true, "Must provide an image or activate an image.\n");
+        return FLINT_FAILED;
+    }
+
+    if (_flintParams.activate && (_flintParams.commit_module_image || _flintParams.run_module_image))
+    {
+        reportErr(true, "Cannot specify activate command with run_module_image or commit_module_image.\n");
+        return FLINT_FAILED;
+    }
+
+    if (!_flintParams.image.empty())
+    {
+        if (burnFlow == CableBurnFlow::Burn3rdParty)
+        {
+            if (!readFromFile(_flintParams.image, fwImage))
+            {
+                return FLINT_FAILED;
+            }
+            if (!_flintParams.moduleVendorDataFile.empty())
+            {
+                if (!readFromFile(_flintParams.moduleVendorDataFile, vendorData))
+                {
+                    return FLINT_FAILED;
+                }
+            }
+            if (_flintParams.moduleCommandTimeout.empty())
+            {
+                _flintParams.moduleCommandTimeout = "10000";
+            }
+        }
+        else
+        {
+            reportErr(true, "Provided cable and image are not supported.\n");
+            return FLINT_BURN_ABORTED;
+        }
+    }
+
+    u_int8_t countResets = 0;
+    u_int8_t countRetry = 0;
+
+    FlintStatus rc = FLINT_FAILED;
+
+    while (countResets < CABLE_BURN_RESET_MAX && countRetry < CABLE_BURN_TIMEOUT_MAX && rc != FLINT_SUCCESS)
+    {
+        rc = PerformBurn(fwImage, vendorData);
+
+        if (rc != FLINT_SUCCESS)
+        {
+            if (rc == FLINT_BURN_ERROR)
+            {
+                if (ResetModule(_flintParams.device))
+                {
+                    return FLINT_FAILED;
+                }
+                DPRINTF(("BurnSubCommand::BurnCMISCable retry burn after reset, counter = %d.\n", countResets));
+                countResets++;
+            }
+            else if (rc == FLINT_BURN_TO)
+            {
+                DPRINTF(("BurnSubCommand::BurnCMISCable retry burn after to, counter = %d.\n", countRetry));
+                countRetry++;
+            }
+            else
+            {
+                return rc;
+            }
+        }
+    }
+
+    return rc;
+
+#else
+    reportErr(true, "FW update on cables is not supported.\n");
+    return FLINT_FAILED;
+#endif
+}
+
+FlintStatus BurnSubCommand::ResetModule(string device)
+{
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+    cableAccess cblAccess((char*)device.c_str());
+    if (!cblAccess.init())
+    {
+        reportErr(true, "%s", cblAccess.getLastErrMsg().c_str());
+        return FLINT_FAILED;
+    }
+    if (!cblAccess.resetCable())
+    {
+        reportErr(true, "%s", cblAccess.getLastErrMsg().c_str());
+        return FLINT_FAILED;
+    }
+
+    return WaitForModuleInit(device);
+#else
+    (void)device;
+    reportErr(true, "FW update on cables is not supported.\n");
+    return FLINT_FAILED;
+#endif
+}
+
+FlintStatus BurnSubCommand::WaitForModuleInit(string device)
+{
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+    u_int32_t counter = 0;
+    cableAccess cblAccess((char*)device.c_str());
+    while (!cblAccess.init() && counter < CABLE_BURN_INIT_MAX)
+    {
+        msleep(1000);
+        ++counter;
+    }
+    if (counter >= CABLE_BURN_INIT_MAX)
+    {
+        reportErr(true, "cable initialization failed after reset!\n");
+        return FLINT_FAILED;
+    }
+
+    return FLINT_SUCCESS;
+#else
+    (void)device;
+    reportErr(true, "FW update on cables is not supported.\n");
+    return FLINT_FAILED;
+#endif
+}
+
+FlintStatus BurnSubCommand::PerformBurn(std::vector<u_int8_t>& fwImage, std::vector<u_int8_t>& vendorData)
+{
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+    try
+    {
+        FwManagementCdbCommander cableCommander(_flintParams.device,false);
+
+        if (!_flintParams.modulePassword.empty())
+        {
+            cableCommander.SetPassword(_flintParams.modulePassword);
+        }
+
+        if (!_flintParams.moduleCommandTimeout.empty())
+        {
+            cableCommander.SetCommandWaitingTime(_flintParams.moduleCommandTimeout);
+        }
+
+        if (!_flintParams.image.empty())
+        {
+            cableCommander.DownloadFWImage(
+              fwImage, vendorData,
+              [](int completion) { return CbCommon(completion, (char*)"FW update progress: ", (char*)"completed "); });
+        }
+
+        if (_flintParams.activate)
+        {
+            cableCommander.ActivateImage();
+            if (ResetModule(_flintParams.device))
+            {
+                return FLINT_FAILED;
+            }
+        }
+
+        if (_flintParams.run_module_image)
+        {
+            cableCommander.RunImage();
+        }
+
+        if (_flintParams.commit_module_image)
+        {
+            cableCommander.CommitImage();
+        }
+    }
+    catch (const std::exception& e)
+    {
+        DPRINTF(("BurnSubCommand::PerformBurn cable burn failed with erro =%s\n", e.what()));
+        string err = "got unknown status (0x43) in response to cdb command.";
+        string err2 = "time out while waiting for command completion.";
+        string err3 = "Cable access R/W failed status: 4. ";
+        if (e.what() == err || e.what() == err3)
+        {
+            return FLINT_BURN_ERROR;
+        }
+        if (e.what() == err2)
+        {
+            return FLINT_BURN_TO;
+        }
+        cerr << e.what() << endl;
+        return FLINT_FAILED;
+    }
+    catch (...)
+    {
+        return FLINT_FAILED;
+    }
+
+    return FLINT_SUCCESS;
+#else
+    (void)fwImage;
+    (void)vendorData;
+    reportErr(true, "FW update on cables is not supported.\n");
+    return FLINT_FAILED;
+#endif
+}
+
 FlintStatus BurnSubCommand::executeCommand()
 {
     if (_flintParams.linkx_control == true || _flintParams.linkx_els_control == true)
@@ -3243,6 +3475,19 @@ FlintStatus BurnSubCommand::executeCommand()
                          _flintParams.download_transfer, _flintParams.activate_delay_sec, &ProgressFuncAdv,
                          fwComponent);
     }
+
+    if (_flintParams.device.find("_cable") != string::npos && _flintParams.device.find("_rt") == string::npos)
+    {
+        FlintStatus rc = FLINT_SUCCESS;
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+        rc = BurnCMISCable();
+#else
+        reportErr(true, "FW update on cables is not supported.\n");
+        rc = FLINT_FAILED;
+#endif
+        return rc;
+    }
+
 #ifndef NO_MSTARCHIVE
     string mfa2file = _flintParams.image;
     _mfa2Pkg = MFA2::LoadMFA2Package(mfa2file);
@@ -3363,6 +3608,12 @@ FlintStatus BurnSubCommand::executeCommand()
             return FLINT_FAILED;
         }
 
+        if (strlen(_devInfo.fw_info.psid) == 0)
+        {
+            reportErr(true, "-E- Can't extract Image from PLDM package, Can't get the device PSID.\n");
+            return FLINT_FAILED;
+        }
+
         u_int8_t* buff;
         u_int32_t buffSize = 0;
         FsPldmOperations* pldmOps = dynamic_cast<FsPldmOperations*>(_imgOps);
@@ -3372,7 +3623,8 @@ FlintStatus BurnSubCommand::executeCommand()
             reportErr(true, "Failed to load PLDM package.\n");
             return FLINT_FAILED;
         }
-        if (!pldmOps->GetPldmComponentData(_flintParams.component_type, _devInfo.fw_info.psid, &buff, buffSize))
+        std::string psid(_devInfo.fw_info.psid);
+        if (!pldmOps->GetPldmComponentData(_flintParams.component_type, psid, &buff, buffSize))
         {
             if (pldmOps->err())
             {
@@ -3388,7 +3640,8 @@ FlintStatus BurnSubCommand::executeCommand()
         if (_flintParams.component_type == "FW")
         {
             u_int16_t swDevId = 0;
-            pldmOps->GetPldmDescriptor(_devInfo.fw_info.psid, DEV_ID_TYPE, swDevId);
+            std::string psid(_devInfo.fw_info.psid);
+            pldmOps->GetPldmDescriptor(psid, DEV_ID_TYPE, swDevId);
 
             mfile* mf = _fwOps->getMfileObj();
             dm_dev_id_t devid_t = DeviceUnknown;
@@ -3410,6 +3663,7 @@ FlintStatus BurnSubCommand::executeCommand()
 
             FwOperations* newImageOps = NULL;
             pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true);
+            delete _imgOps;
             _imgOps = newImageOps;
             delete[] buff;
         }
@@ -4161,9 +4415,9 @@ static inline void
     }
 }
 
-bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
+bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo, bool isStripedImage)
 {
-    if (fwInfo.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS)
+    if (fwInfo.fs3_info.fs3_uids_info.guid_format == IMAGE_LAYOUT_UIDS || isStripedImage)
     {
         // new GUIDs format
         printf("Description:           UID                GuidsNumber\n");
@@ -4424,6 +4678,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     FwOperations* ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);
     FwVersion running_version = FwOperations::createRunningFwVersion(&fwInfo.fw_info);
+    bool isStripedImage = ops->GetIsStripedImage();
 
     printf("Image type:            %s\n", fwImgTypeToStr(fwInfo.fw_type));
     if (fwInfo.fw_info.isfu_major)
@@ -4556,7 +4811,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     if (!isFs2)
     {
         /*i.e its fs3/fs4*/
-        if (!displayFs3Uids(fwInfo))
+        if (!displayFs3Uids(fwInfo, isStripedImage))
         {
             return FLINT_FAILED;
         }
@@ -4601,7 +4856,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
             printf("Image VSD:             %s\n", imageVSD);
             printf("Device VSD:            %s\n", deviceVSD);
             printf("PSID:                  %s\n", fwInfo.fw_info.psid);
-            if (strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0)
+            if (!isStripedImage && strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0)
             {
                 if (strlen(fwInfo.fs3_info.orig_psid))
                 {
@@ -4756,6 +5011,12 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("Independent Module:    %s\n", independent_module_str.c_str());
     }
 
+    if (fwInfo.fs3_info.pci_switch_only_mode_valid)
+    {
+        std::string switch_mode_only = fwInfo.fs3_info.pci_switch_only_mode ? "Enabled" : "Disabled";
+        printf("PCIe switch mode only: %s\n", switch_mode_only.c_str());
+    }
+
     return FLINT_SUCCESS;
 }
 
@@ -4852,6 +5113,26 @@ FlintStatus QuerySubCommand::queryMFA2()
     return FLINT_SUCCESS;
 }
 
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+FlintStatus QuerySubCommand::QueryCableAttributes()
+{
+    DPRINTF(("QuerySubCommand::QueryCableAttributes\n"));
+
+    try
+    {
+        FwManagementCdbCommander cableCommander(_flintParams.device.c_str());
+        cout << cableCommander.GetCmisFWIndicationStrings();
+    }
+    catch (const std::exception& e)
+    {
+        reportErr(true, "FW Info query failed, %s\n", e.what());
+        return FLINT_FAILED;
+    }
+
+    return FLINT_SUCCESS;
+}
+#endif
+
 FlintStatus QuerySubCommand::executeCommand()
 {
     DPRINTF(("QuerySubCommand::executeCommand\n"));
@@ -4869,6 +5150,18 @@ FlintStatus QuerySubCommand::executeCommand()
             return FLINT_FAILED;
         }
         return QueryLinkX(_flintParams.device, _flintParams.output_file, _flintParams.downstream_device_ids);
+    }
+    if (_flintParams.device.find("_cable") != string::npos && _flintParams.device.find("_rt") == string::npos)
+    {
+        FlintStatus rc = FLINT_SUCCESS;
+#if defined(CABLES_SUPPORT) && !defined(MST_CPU_armv7l_umbriel)
+        rc = QueryCableAttributes();
+#else
+        reportErr(true, "Query on cable devices is not supported.\n");
+        rc = FLINT_FAILED;
+#endif
+
+        return rc;
     }
     if (_flintParams.image_specified)
     {
@@ -4893,6 +5186,48 @@ FlintStatus QuerySubCommand::executeCommand()
     if (preFwOps() == FLINT_FAILED)
     {
         return FLINT_FAILED;
+    }
+
+    if (_flintParams.image_specified && _imgOps->FwType() == FIT_PLDM_1_0)
+    {
+        u_int8_t* buff;
+        u_int32_t buffSize = 0;
+        FsPldmOperations* pldmOps = dynamic_cast<FsPldmOperations*>(_imgOps);
+
+        if (!pldmOps->LoadPldmPackage())
+        {
+            reportErr(true, "Failed to load PLDM package.\n");
+            return FLINT_FAILED;
+        }
+
+        std::string componentType("FW");
+        if (!pldmOps->GetPldmComponentData(componentType, _flintParams.psid, &buff, buffSize))
+        {
+            if (pldmOps->err())
+            {
+                reportErr(true, "%s\n", pldmOps->err());
+            }
+            else
+            {
+                reportErr(true, "The component was not found in the PLDM.\n");
+            }
+            return FLINT_FAILED;
+        }
+
+        u_int16_t swDevId = 0;
+        if (!pldmOps->GetPldmDescriptor(_flintParams.psid, DEV_ID_TYPE, swDevId))
+        {
+            reportErr(true, "-E- DEVICE ID descriptor is not found in the PLDM.\n");
+            delete[] buff;
+            return FLINT_FAILED;
+        }
+        FwOperations* newImageOps = NULL;
+        pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true);
+        delete _imgOps;
+        _imgOps = newImageOps;
+        delete[] buff;
+
+        _flintParams.striped_image = true;
     }
 
     fw_info_t fwInfo;

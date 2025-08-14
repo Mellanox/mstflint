@@ -52,6 +52,7 @@ public:
     u_int32_t _labelPort;
     u_int32_t _splitPort;
     u_int32_t _secondSplitPort;
+    u_int32_t _forceSplitValue;
     u_int32_t _depth;
     u_int32_t _pcieIndex;
     u_int32_t _node;
@@ -59,6 +60,8 @@ public:
     u_int32_t _uniqueCableCmds;
     u_int32_t _uniquePcieCmds;
     u_int32_t _networkCmds;
+    int _pciSltpPort;
+    bool _showModule;
     bool _sendPrbs;
     bool _sendPprt;
     bool _sendPptt;
@@ -84,6 +87,7 @@ public:
     bool _portSpecified;
     bool _splitProvided;
     bool _secondSplitProvided;
+    bool _forceSplit;
     bool _showSltp;
     bool _showSlrp;
     bool _showCounters;
@@ -95,6 +99,8 @@ public:
     bool _read;
     bool gradeScanPerLane;
     bool autoCsvName;
+    bool _showMultiPortInfo;
+    bool _showMultiPortModuleInfo;
     bool _showPlr;
     bool _showKr;
     bool _showRxRecoveryCounters;

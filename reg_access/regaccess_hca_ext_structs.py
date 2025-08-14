@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2025-06-03 10:49:45"
+#    This file was generated at "2025-07-08 11:28:45"
 #    by:
 #      > prm_update.py --project Nic
 ###############################################################################
@@ -207,9 +207,11 @@ class MGIR_FW_INFO_EXT(ctypes.Structure):
         ("sec_boot", ctypes.c_uint8),
         ("encryption", ctypes.c_uint8),
         ("life_cycle_msb", ctypes.c_uint8),
+        ("dev_state", ctypes.c_uint8),
         ("issu_able", ctypes.c_uint8),
         ("pds", ctypes.c_uint8),
-        ("ec_offload_engine_disabled", ctypes.c_uint8)
+        ("ec_offload_engine_disabled", ctypes.c_uint8),
+        ("dev_counter", ctypes.c_uint8)
     ]
 
 class ROM_VERSION_EXT(ctypes.Structure):

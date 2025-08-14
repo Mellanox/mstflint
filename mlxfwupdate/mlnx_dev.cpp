@@ -571,6 +571,11 @@ int MlnxDev::preBurn(string mfa_file,
 
     if (pldmFlow)
     {
+        if (_psid.empty())
+        {
+            _errMsg = "-E- Can't extract Image from PLDM package, PSID missing in the device.\n";
+            return -1;
+        }
         if (!imgacc.loadPldmPkg(mfa_file))
         {
             return -1;
@@ -863,6 +868,11 @@ bool MlnxDev::InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams)
     devFwParams.hndlType = FHT_MST_DEV;
     char* deviceName = (char*)devName.c_str();
     int length = ((strlen(deviceName) + 1) * sizeof(char));
+    if (devFwParams.mstHndl)
+    {
+        delete[] devFwParams.mstHndl;
+        devFwParams.mstHndl = NULL;
+    }
     devFwParams.mstHndl = new char[length];
     if (devFwParams.mstHndl == NULL)
     {
@@ -891,8 +901,15 @@ bool MlnxDev::OpenDev()
     {
         return false;
     }
+
+    if (_devFwOps)
+    {
+        _devFwOps->FwCleanUp();
+        delete _devFwOps;
+        _devFwOps = NULL;
+    }
     _devFwOps = FwOperations::FwOperationsCreate(_devFwParams);
-    delete[] _devFwParams.mstHndl;
+    
     if (_devFwOps == NULL)
     {
         _errMsg = _errBuff;
@@ -961,8 +978,6 @@ int MlnxDev::queryFwops()
     if (!_description.size() || !_partNumber.size())
     { // take missing from ini
         setMccSupport(false);
-        _devFwOps->FwCleanUp();
-        delete _devFwOps;
         if (!OpenDev())
         {
             return -1;

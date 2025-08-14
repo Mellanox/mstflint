@@ -125,13 +125,19 @@ typedef struct mib_private_t {
 
 
 #define MTCR_I2C_secondary_ADDRESS 0x48
-#define SLV_ADDRS_NUM 128
+#define SLV_ADDRS_NUM              128
 
 
 typedef enum {
     SEM_LOCK_GET = 0x0,
     SEM_LOCK_SET = 0x1
 } sem_lock_method_t;
+
+/* PCI operation enum(read or write)*/
+typedef enum {
+    READ_OP  = 0,
+    WRITE_OP = 1,
+} rw_op_t;
 
 typedef enum MError {
     ME_OK = 0,
@@ -180,6 +186,7 @@ typedef enum MError {
     ME_REG_ACCESS_ERASE_EXCEEDED,
     ME_REG_ACCESS_INTERNAL_ERROR,
     ME_REG_ACCESS_NOT_SUPPORTED_BY_SECONDARY,
+    ME_REG_ACCESS_INSUFFICIENT_PERMISSIONS,
     ME_REG_ACCESS_NOT_READY,
     ME_REG_ACCESS_EXCEED_LIM,
     ME_REG_ACCESS_BAD_RES_STATE,

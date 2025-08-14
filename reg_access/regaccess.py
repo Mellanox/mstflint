@@ -115,6 +115,7 @@ if REG_ACCESS:
             self._reg_access_dtor = REG_ACCESS.reg_access_dtor
             self._reg_access_mrsi = REG_ACCESS.reg_access_mrsi
             self._reg_access_mpir = REG_ACCESS.reg_access_mpir
+            self._reg_access_mpein = REG_ACCESS.reg_access_mpein
 
         def _err2str(self, rc):
             err2str = REG_ACCESS.reg_access_err2str
@@ -312,7 +313,7 @@ if REG_ACCESS:
             }
 
         ##########################
-        def sendMFRL(self, method, resetLevel=None, reset_type=None, reset_sync=None, pci_reset_request_method=None):
+        def sendMFRL(self, method, resetLevel=None, reset_type=None, reset_sync=None, pci_reset_request_method=None):  
 
             mfrlRegisterP = pointer(MFRL_REG_EXT())
 
@@ -323,12 +324,12 @@ if REG_ACCESS:
                 mfrlRegisterP.contents.rst_type_sel = c_uint8(reset_type)
                 mfrlRegisterP.contents.pci_sync_for_fw_update_start = c_uint8(reset_sync)
                 mfrlRegisterP.contents.pci_reset_req_method = c_uint8(pci_reset_request_method)
-
+                
             c_method = c_uint(method)
             rc = self._reg_access_mfrl(self._mstDev.mf, c_method, mfrlRegisterP)
             if rc:
                 raise RegAccException("Failed to send Register MFRL: %s (%d)" % (self._err2str(rc), rc))
-
+            
             if method == REG_ACCESS_METHOD_GET:
                 return mfrlRegisterP.contents.reset_trigger, mfrlRegisterP.contents.reset_type, mfrlRegisterP.contents.pci_rescan_required, mfrlRegisterP.contents.reset_state
 
@@ -344,6 +345,18 @@ if REG_ACCESS:
                 raise RegAccException("Failed to send Register MPIR: %s (%d)" % (self._err2str(rc), rc))
 
             return mpirRegisterP.contents.bus, mpirRegisterP.contents.device, mpirRegisterP.contents.sdm
+        
+        ##########################
+        def sendMPEIN(self, depth, pcie_index, node):
+            mpeinRegisterP = pointer(MPEIN_REG_EXT())
+            mpeinRegisterP.contents.depth = depth
+            mpeinRegisterP.contents.pcie_index = pcie_index
+            mpeinRegisterP.contents.node = node
+            rc = self._reg_access_mpein(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mpeinRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register MPEIN: %s (%d)" % (self._err2str(rc), rc))
+
+            return mpeinRegisterP.contents.port_type
 
         ##########################
         def sendMROQ(self, reset_type):

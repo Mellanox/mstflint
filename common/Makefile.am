@@ -32,7 +32,7 @@
 
 noinst_LTLIBRARIES = libcommon.la
 
-AM_CPPFLAGS = $(JSON_CFLAGS)
+AM_CPPFLAGS = $(JSON_CFLAGS) -I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul
 
 libcommon_la_SOURCES = \
     bit_slice.h \

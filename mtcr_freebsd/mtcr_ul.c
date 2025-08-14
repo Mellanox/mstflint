@@ -180,7 +180,6 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
         return -1;
     }
 
-    int      rc = 0;
     unsigned hw_id_address = mf->cr_space_offset + HW_ID_ADDR;
 
     mf->rev_id = EXTRACT(*device_id, 16, 4);
@@ -333,12 +332,6 @@ enum {
     CAP_ID          = 0x9,
     IFC_MAX_RETRIES = 0x10000,
     SEM_MAX_RETRIES = 0x1000
-};
-
-/* PCI operation enum(read or write)*/
-enum {
-    READ_OP  = 0,
-    WRITE_OP = 1,
 };
 
 int read_config(mfile* mf, unsigned int reg, uint32_t* data, int width)
@@ -2516,8 +2509,7 @@ int mset_cr_access(mfile* mf, int access)
 
 int is_gw_access(mfile* mf)
 {
-    if (mf->tp == MST_BAR0_GW_PCI)
-    {
+    if (mf->tp == MST_BAR0_GW_PCI) {
         return 1;
     }
     return mf->functional_vsec_supp;

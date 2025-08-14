@@ -37,6 +37,7 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/tools_layouts
 
 AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
+AM_CXXFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libreg_access.la
 
@@ -44,7 +45,9 @@ libreg_access_la_SOURCES = \
     reg_access.c \
     reg_access.h \
     reg_access_common.h \
-    reg_access_macros.h
+    reg_access_macros.h \
+    mcam_capabilities.cpp \
+    mcam_capabilities.h
 
 libreg_access_la_DEPENDENCIES = $(top_builddir)/tools_layouts/libtools_layouts.la
 

@@ -1970,6 +1970,12 @@ void update_seventh_gen_addrs(mflash* mfl)
         mfl->gcm_en_addr = HCR_7GEN_ARCUSE_GCM_EN_ADDR;
         mfl->gw_addr_field_addr = HCR_7GEN_ARCUSE_FLASH_ADDR;
         mfl->gw_data_size_register_addr = HCR_7GEN_ARCUSE_FLASH_DATA_SIZE;
+    } else if (mfl->dm_dev_id == DeviceSpectrum6) {
+        mfl->gw_cmd_register_addr = HCR_7GEN_QTM4_FLASH_CMD;
+        mfl->gw_data_field_addr = HCR_7GEN_QTM4_FLASH_DATA;
+        mfl->gcm_en_addr = HCR_7GEN_QTM4_GCM_EN_ADDR;
+        mfl->gw_addr_field_addr = HCR_7GEN_QTM4_FLASH_ADDR;
+        mfl->gw_data_size_register_addr = HCR_7GEN_QTM4_FLASH_DATA_SIZE;
     }
 
     /* Fields bit offsets and lengths */
@@ -3462,6 +3468,16 @@ int is_macronix_special_case_for_driver_strength(uint8_t vendor, uint16_t type, 
     return 0;
 }
 
+int is_macronix_special_case_for_dummy_cycles(mflash* mfl)
+{
+    if (mfl->attr.vendor == FV_MX25K16XXX && mfl->attr.type == FMT_SST_25 &&
+        (((1 << FD_512) & (1 << mfl->attr.log2_bank_size)) != 0))
+    {
+        return 1;
+    }
+    return 0;
+}
+
 int mf_read_modify_status_winbond(mflash * mfl,
                                   u_int8_t bank_num,
                                   u_int8_t is_first_status_reg,
@@ -3597,7 +3613,12 @@ int mf_get_param_int(mflash  * mfl,
 
 int mf_set_dummy_cycles_direct_access(mflash* mfl, u_int8_t num_of_cycles)
 {
-    if (!mfl || (num_of_cycles < 1) || (num_of_cycles > 15)) {
+    u_int8_t lower_bound =
+      is_macronix_special_case_for_dummy_cycles(mfl) ? MIN_NUM_OF_CYCLES_FOR_MX25UXXX : MIN_NUM_OF_CYCLES;
+    u_int8_t upper_bound =
+      is_macronix_special_case_for_dummy_cycles(mfl) ? MAX_NUM_OF_CYCLES_FOR_MX25UXXX : MAX_NUM_OF_CYCLES;
+    if (!mfl || num_of_cycles < lower_bound || num_of_cycles > upper_bound)
+    {
         return MFE_BAD_PARAMS;
     }
     int bank = 0, rc = 0;
@@ -3606,8 +3627,19 @@ int mf_set_dummy_cycles_direct_access(mflash* mfl, u_int8_t num_of_cycles)
         return MFE_NOT_SUPPORTED_OPERATION;
     }
     for (bank = 0; bank < mfl->attr.banks_num; bank++) {
-        rc = mf_read_modify_status_new(mfl, bank, SFC_RDNVR, SFC_WRNVR, num_of_cycles, DUMMY_CYCLES_OFFSET_ST, 4, 2);
-        CHECK_RC(rc);
+        if (is_macronix_special_case_for_dummy_cycles(mfl))
+        {
+            rc = mf_read_modify_status_new(mfl, bank, SFC_RDSR4_MACRONIX_MX25UXXX, SFC_WRSR4_MACRONIX_MX25UXXX,
+                                           num_of_cycles, DUMMY_CYCLES_OFFSET_MACRONIX_MX25UXXX,
+                                           DUMMY_CYCLES_BIT_LEN_MACRONIX_MX25UXXX, 1);
+            CHECK_RC(rc);
+        }
+        else
+        {
+            rc =
+              mf_read_modify_status_new(mfl, bank, SFC_RDNVR, SFC_WRNVR, num_of_cycles, DUMMY_CYCLES_OFFSET_ST, 4, 2);
+            CHECK_RC(rc);
+        }
     }
     return MFE_OK;
 }
@@ -3620,7 +3652,19 @@ int mf_get_dummy_cycles_direct_access(mflash* mfl, u_int8_t* dummy_cycles_p)
     if (!(mfl->attr.dummy_cycles_support && mfl->supp_sr_mod)) {
         return MFE_NOT_SUPPORTED_OPERATION;
     }
-    return mf_get_param_int(mfl, dummy_cycles_p, SFC_RDNVR, DUMMY_CYCLES_OFFSET_ST, 4, 2, 0);
+    
+    int rc = ME_OK;
+    if (is_macronix_special_case_for_dummy_cycles(mfl))
+    {
+        rc = mf_get_param_int(mfl, dummy_cycles_p, SFC_RDSR4_MACRONIX_MX25UXXX, DUMMY_CYCLES_OFFSET_MACRONIX_MX25UXXX,
+                              DUMMY_CYCLES_BIT_LEN_MACRONIX_MX25UXXX, 1, 0);
+    }
+    else
+    {
+        rc = mf_get_param_int(mfl, dummy_cycles_p, SFC_RDNVR, DUMMY_CYCLES_OFFSET_ST, 4, 2, 0);
+    }
+
+    return rc;
 }
 
 int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength)

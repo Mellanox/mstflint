@@ -78,7 +78,7 @@ MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
         rootNode = rootNode + "_ext";
     }
 
-    _regAccessRootNode = _adb->createLayout(rootNode);
+    _regAccessRootNode = _adb->createLayout(rootNode, 2);
     if (!_regAccessRootNode)
     {
         throw MlxRegException("No supported access registers found");
@@ -149,7 +149,7 @@ bool MlxRegLib::isDeviceSupported(mfile* mf)
 
 void MlxRegLib::initAdb(string extAdbFile)
 {
-    _adb = new AdbLegacy();
+    _adb = new AdbAdvLegacy();
     if (extAdbFile != "")
     {
         if (!_adb->load(extAdbFile, false, false))
@@ -166,21 +166,24 @@ void MlxRegLib::initAdb(string extAdbFile)
 /************************************
  * Function: findAdbNode
  ************************************/
-AdbInstanceLegacy* MlxRegLib::findAdbNode(string name)
+AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(string name)
 {
     if (_regAccessMap.find(name) == _regAccessMap.end())
     {
         throw MlxRegException("Can't find access register name: %s", name.c_str());
     }
-    return _regAccessUnionNode->getUnionSelectedNodeName(name);
+    auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(name);
+
+    found_node = _adb->createLayout(found_node->nodeDesc->name);
+    return found_node;
 }
 
 /************************************
  * Function: showRegister
  ************************************/
-MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector<AdbInstanceLegacy*>& fields)
+MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector<AdbInstanceAdvLegacy*>& fields)
 {
-    AdbInstanceLegacy* adbNode = findAdbNode(regName);
+    AdbInstanceAdvLegacy* adbNode = findAdbNode(regName);
     fields = adbNode->getLeafFields(true);
     return MRLS_SUCCESS;
 }
@@ -279,7 +282,7 @@ string MlxRegLib::getLastErrMsg()
  ************************************/
 bool MlxRegLib::isRegSizeSupported(string regName)
 {
-    AdbInstanceLegacy* adbNode = _regAccessUnionNode->getUnionSelectedNodeName(regName);
+    AdbInstanceAdvLegacy* adbNode = _regAccessUnionNode->getUnionSelectedNodeName(regName);
     return (((adbNode->get_size() >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_SET)) ||
             ((adbNode->get_size() >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET)));
 }

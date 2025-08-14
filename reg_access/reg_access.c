@@ -43,7 +43,6 @@
 #define REG_ID_PAOS          0x5006
 #define REG_ID_PTYS          0x5004
 #define REG_ID_PMAOS         0x5012
-#define REG_ID_MCIA          0x9014
 #define REG_ID_MTMP          0x900a
 #define REG_ID_MTCAP         0x9009
 #define REG_ID_MIRC          0x9162
@@ -114,6 +113,8 @@
 #define REG_ID_MPIR  0x9059
 #define REG_ID_MRSV  0x9164
 #define REG_ID_MISOC 0x9026
+#define REG_ID_MPEIN 0x9050
+
 
 /* For mstdump oob feature: */
 #define REG_ID_ICAM 0x387F
@@ -228,14 +229,6 @@ reg_access_status_t reg_access_ptys(mfile* mf, reg_access_method_t method, struc
 }
 
 /************************************
-* Function: reg_access_mcia
-************************************/
-reg_access_status_t reg_access_mcia(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcia_ext* mcia)
-{
-    REG_ACCCESS(mf, method, REG_ID_MCIA, mcia, mcia_ext, reg_access_hca);
-}
-
-/************************************
 * Function: reg_access_mtmp
 ************************************/
 reg_access_status_t reg_access_mtmp(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtmp_ext* mtmp)
@@ -257,6 +250,14 @@ reg_access_status_t reg_access_mtcap(mfile* mf, reg_access_method_t method, stru
 reg_access_status_t reg_access_pmlp(mfile* mf, reg_access_method_t method, struct reg_access_hca_pmlp_reg_ext* pmlp)
 {
     REG_ACCCESS(mf, method, REG_ID_PMLP, pmlp, pmlp_reg_ext, reg_access_hca);
+}
+
+/************************************
+* Function: reg_access_paos
+************************************/
+reg_access_status_t reg_access_paos(mfile* mf, reg_access_method_t method, struct reg_access_hca_paos_reg_ext* paos)
+{
+    REG_ACCCESS(mf, method, REG_ID_PAOS, paos, paos_reg_ext, reg_access_hca);
 }
 
 /************************************
@@ -844,52 +845,14 @@ reg_access_status_t reg_access_mrsv(mfile* mf, reg_access_method_t method, struc
 }
 
 /************************************
- * Function: reg_access_misoc
- ************************************/
+* Function: reg_access_misoc
+************************************/
 reg_access_status_t reg_access_misoc(mfile* mf, reg_access_method_t method, struct reg_access_hca_misoc_reg_ext* misoc)
 {
     REG_ACCCESS(mf, method, REG_ID_MISOC, misoc, misoc_reg_ext, reg_access_hca);
 }
 
-reg_access_status_t getIndexOfRegGroup(unsigned int reg_id, int* idx)
+reg_access_status_t reg_access_mpein(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpein_reg_ext* mpein)
 {
-    reg_access_status_t rc = ME_OK;
-
-    if ((reg_id >= REG_ACCESS_BASE_GROUP_0_ID) && (reg_id <= MAX_REG_ACCESS_ID)) {
-        *idx = (reg_id - REG_ACCESS_BASE_GROUP_0_ID) / REG_GROUP_LEN;
-    } else {
-        rc = ME_BAD_PARAMS;
-    }
-
-    return rc;
-}
-
-reg_access_status_t isRegisterValidAccordingToMcamReg(mfile* mf, unsigned int reg_id, bool* is_reg_valid)
-{
-    *is_reg_valid = false;
-    int                 reg_group_index = 0;
-    reg_access_status_t rc = getIndexOfRegGroup(reg_id, &reg_group_index);
-
-    if (rc == ME_OK) {
-        struct reg_access_hca_mcam_reg_ext mcam;
-        memset(&mcam, 0, sizeof(mcam));
-        mcam.access_reg_group = reg_group_index;
-        rc = reg_access_mcam(mf, REG_ACCESS_METHOD_GET, &mcam);
-
-        if (rc == ME_OK) {
-            unsigned int reg_group_to_base_address[MCAM_REG_GROUPS_AMOUNT] = {
-                REG_ACCESS_BASE_GROUP_0_ID, REG_ACCESS_BASE_GROUP_1_ID, REG_ACCESS_BASE_GROUP_2_ID,
-                REG_ACCESS_BASE_GROUP_3_ID
-            };
-            unsigned int base_address = reg_group_to_base_address[reg_group_index];
-            unsigned int relative_loc = reg_id - base_address;
-            int          dword_length = 32;
-            int          dword_index = 3 - (relative_loc / dword_length);
-            unsigned int offset = relative_loc % dword_length;
-            int          bits_amount = 1;
-            *is_reg_valid = EXTRACT(mcam.mng_access_reg_cap_mask[dword_index], offset, bits_amount);
-        }
-    }
-
-    return rc;
+    REG_ACCCESS(mf, method, REG_ID_MPEIN, mpein, mpein_reg_ext, reg_access_hca);
 }

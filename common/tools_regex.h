@@ -46,9 +46,12 @@
 #include <regex>
 #endif
 
-namespace mstflint {
-namespace common {
-namespace regex {
+namespace mstflint
+{
+namespace common
+{
+namespace regex
+{
 #if defined USE_BOOST_REGEX
 using boost::match_results;
 using boost::regex;
@@ -62,257 +65,288 @@ using boost::sregex_iterator;
 
 const size_t REGEX_MAX_SUBEXPRESSIONS = 16;
 
-class regex_error : public std::runtime_error {
+class regex_error : public std::runtime_error
+{
 public:
-  regex_error() = delete;
-  ~regex_error() = default;
-  explicit regex_error(const std::string &message)
-      : std::runtime_error(message) {}
-  regex_error &operator=(const regex_error &) = delete;
+    regex_error() = delete;
+    ~regex_error() = default;
+    explicit regex_error(const std::string& message) : std::runtime_error(message) {}
+    regex_error& operator=(const regex_error&) = delete;
 };
 
-class regex {
+class regex
+{
 public:
-  regex() : regex_() {
-    // Initialize regex_ to an empty regex
-    int ret = regcomp(&regex_, "", REG_EXTENDED);
-    if (0 != ret) {
-      size_t error_string_size = regerror(
-          ret, &regex_, static_cast<char *>(nullptr), static_cast<size_t>(0));
-      std::vector<char> error_string_buf(error_string_size);
-      regerror(ret, &regex_, error_string_buf.data(), error_string_buf.size());
-      throw regex_error(
-          std::string(error_string_buf.begin(), error_string_buf.end()));
+    regex() : regex_()
+    {
+        // Initialize regex_ to an empty regex
+        int ret = regcomp(&regex_, "", REG_EXTENDED);
+        if (0 != ret)
+        {
+            size_t error_string_size = regerror(ret, &regex_, static_cast<char*>(nullptr), static_cast<size_t>(0));
+            std::vector<char> error_string_buf(error_string_size);
+            regerror(ret, &regex_, error_string_buf.data(), error_string_buf.size());
+            throw regex_error(std::string(error_string_buf.begin(), error_string_buf.end()));
+        }
     }
-  }
-  ~regex() { regfree(&regex_); };
-  regex(const regex &other) : pattern_(other.pattern_) {
-    int ret = regcomp(&regex_, other.pattern_.c_str(), REG_EXTENDED);
-    if (0 != ret) {
-      size_t error_string_size = regerror(
-          ret, &regex_, static_cast<char *>(nullptr), static_cast<size_t>(0));
-      std::vector<char> error_string_buf(error_string_size);
-      regerror(ret, &regex_, error_string_buf.data(), error_string_buf.size());
-      throw regex_error(
-          std::string(error_string_buf.begin(), error_string_buf.end()));
+    ~regex() { regfree(&regex_); };
+    regex(const regex& other) : pattern_(other.pattern_)
+    {
+        int ret = regcomp(&regex_, other.pattern_.c_str(), REG_EXTENDED);
+        if (0 != ret)
+        {
+            size_t error_string_size = regerror(ret, &regex_, static_cast<char*>(nullptr), static_cast<size_t>(0));
+            std::vector<char> error_string_buf(error_string_size);
+            regerror(ret, &regex_, error_string_buf.data(), error_string_buf.size());
+            throw regex_error(std::string(error_string_buf.begin(), error_string_buf.end()));
+        }
     }
-  }
-  regex(regex &&other) noexcept : pattern_(std::move(other.pattern_)), regex_(other.regex_) {
-    other.regex_.re_nsub = 0; // Invalidate the moved-from regex object
-  }
-  explicit regex(const std::string &pattern) : pattern_(pattern) {
-    int ret = regcomp(&regex_, pattern.c_str(), REG_EXTENDED);
-    if (0 != ret) {
-      size_t error_string_size = regerror(
-          ret, &regex_, static_cast<char *>(nullptr), static_cast<size_t>(0));
-      std::vector<char> error_string_buf(error_string_size);
-      regerror(ret, &regex_, error_string_buf.data(), error_string_buf.size());
-      throw regex_error(
-          std::string(error_string_buf.begin(), error_string_buf.end()));
+    regex(regex&& other) noexcept : pattern_(std::move(other.pattern_)), regex_(other.regex_)
+    {
+        other.regex_.re_nsub = 0; // Invalidate the moved-from regex object
     }
-  }
-  regex &operator=(const regex &other) {
-    if (this != &other) {
-      regfree(&regex_);
-      pattern_ = other.pattern_;
-      int ret = regcomp(&regex_, other.pattern_.c_str(), REG_EXTENDED);
-      if (0 != ret) {
-        size_t error_string_size = regerror(
-            ret, &regex_, static_cast<char *>(nullptr), static_cast<size_t>(0));
-        std::vector<char> error_string_buf(error_string_size);
-        regerror(ret, &regex_, error_string_buf.data(), error_string_buf.size());
-        throw regex_error(
-            std::string(error_string_buf.begin(), error_string_buf.end()));
-      }
+    explicit regex(const std::string& pattern) : pattern_(pattern)
+    {
+        int ret = regcomp(&regex_, pattern.c_str(), REG_EXTENDED);
+        if (0 != ret)
+        {
+            size_t error_string_size = regerror(ret, &regex_, static_cast<char*>(nullptr), static_cast<size_t>(0));
+            std::vector<char> error_string_buf(error_string_size);
+            regerror(ret, &regex_, error_string_buf.data(), error_string_buf.size());
+            throw regex_error(std::string(error_string_buf.begin(), error_string_buf.end()));
+        }
     }
-    return *this;
-  }
-  regex &operator=(regex &&other) noexcept {
-    if (this != &other) {
-      regfree(&regex_);
-      pattern_ = std::move(other.pattern_);
-      regex_ = other.regex_;
-      other.regex_.re_nsub = 0; // Invalidate the moved-from regex object
+    regex& operator=(const regex& other)
+    {
+        if (this != &other)
+        {
+            regfree(&regex_);
+            pattern_ = other.pattern_;
+            int ret = regcomp(&regex_, other.pattern_.c_str(), REG_EXTENDED);
+            if (0 != ret)
+            {
+                size_t error_string_size = regerror(ret, &regex_, static_cast<char*>(nullptr), static_cast<size_t>(0));
+                std::vector<char> error_string_buf(error_string_size);
+                regerror(ret, &regex_, error_string_buf.data(), error_string_buf.size());
+                throw regex_error(std::string(error_string_buf.begin(), error_string_buf.end()));
+            }
+        }
+        return *this;
     }
-    return *this;
-  }
+    regex& operator=(regex&& other) noexcept
+    {
+        if (this != &other)
+        {
+            regfree(&regex_);
+            pattern_ = std::move(other.pattern_);
+            regex_ = other.regex_;
+            other.regex_.re_nsub = 0; // Invalidate the moved-from regex object
+        }
+        return *this;
+    }
 
 public:
-  std::string pattern_;
-  regex_t regex_;
+    std::string pattern_;
+    regex_t regex_;
 };
 
-template <class BiDiIterator>
-class sub_match : public std::pair<BiDiIterator, BiDiIterator> {
+template<class BiDiIterator>
+class sub_match : public std::pair<BiDiIterator, BiDiIterator>
+{
 public:
-  sub_match() = default; // TODO delete - hint scoped_ptr prefix/suffix
-  ~sub_match() = default;
-  sub_match(const sub_match &) = default;
-  sub_match(const BiDiIterator &first, const BiDiIterator &second)
-      : std::pair<BiDiIterator, BiDiIterator>(first, second) {}
-  operator std::string() const {
-    return std::string(this->first, this->second);
-  }
-  std::string str() const { return std::string(this->first, this->second); }
-  sub_match &operator=(const sub_match &) =
-      default; // TODO delete - hint scoped_ptr prefix/suffix
+    sub_match() = default; // TODO delete - hint scoped_ptr prefix/suffix
+    ~sub_match() = default;
+    sub_match(const sub_match&) = default;
+    sub_match(const BiDiIterator& first, const BiDiIterator& second) :
+        std::pair<BiDiIterator, BiDiIterator>(first, second), matched(true)
+    {
+    }
+    sub_match(const BiDiIterator& first, const BiDiIterator& second, bool is_matched) :
+        std::pair<BiDiIterator, BiDiIterator>(first, second), matched(is_matched)
+    {
+    }
+    operator std::string() const { return std::string(this->first, this->second); }
+    std::string str() const { return std::string(this->first, this->second); }
+    sub_match& operator=(const sub_match&) = default; // TODO delete - hint scoped_ptr prefix/suffix
+    bool matched{false};
 };
 
-template <class BiDiIterator>
-bool operator==(const std::string &lhs, sub_match<BiDiIterator> rhs) {
-  return lhs == std::string(rhs);
+template<class BiDiIterator>
+bool operator==(const std::string& lhs, sub_match<BiDiIterator> rhs)
+{
+    return lhs == std::string(rhs);
 }
 
-template <class BiDiIterator> class match_results {
+template<class BiDiIterator>
+class match_results
+{
 public:
-  match_results() = default;
-  ~match_results() = default;
-  match_results(const match_results &) = delete;
-  match_results &operator=(const match_results &) = delete;
+    match_results() = default;
+    ~match_results() = default;
+    match_results(const match_results&) = delete;
+    match_results& operator=(const match_results&) = delete;
 
-  typedef sub_match<BiDiIterator> value_type;
-  typedef std::vector<value_type> vector_type;
-  typedef typename vector_type::const_iterator const_iterator;
-  typedef typename vector_type::const_reference const_reference;
-  typedef typename std::iterator_traits<BiDiIterator>::difference_type difference_type;
+    typedef sub_match<BiDiIterator> value_type;
+    typedef std::vector<value_type> vector_type;
+    typedef typename vector_type::const_iterator const_iterator;
+    typedef typename vector_type::const_reference const_reference;
+    typedef typename std::iterator_traits<BiDiIterator>::difference_type difference_type;
 
-  const_iterator begin() const { return subs_.begin(); }
-  const_iterator end() const { return subs_.end(); }
-  size_t size() const { return subs_.size(); }
-  bool empty() const { return subs_.empty(); }
-  void clear() { subs_.clear(); }
-  void append(BiDiIterator first, BiDiIterator second) {
-    subs_.push_back({first, second});
-  }
-  const_reference operator[](size_t i) { return subs_[i]; }
-  const_reference operator[](size_t i) const { return subs_[i]; }
-  const_reference prefix() { return prefix_; }
-  const_reference suffix() { return suffix_; }
-
-  void set_prefix(BiDiIterator first, BiDiIterator second) { // TODO friend?
-    prefix_ = {first, second};
-  }
-  void set_suffix(BiDiIterator first, BiDiIterator second) {
-    suffix_ = {first, second};
-  }
-  std::string str() const { return subs_[0]; }
-
-  difference_type position(size_t i = 0) const {
-    if (i >= subs_.size()) {
-      throw std::out_of_range("Index out of range in match_results::position");
+    const_iterator begin() const { return subs_.begin(); }
+    const_iterator end() const { return subs_.end(); }
+    size_t size() const { return matched_count_; }
+    size_t max_size() const { return subs_.size(); }
+    bool empty() const { return matched_count_ == 0; }
+    void clear()
+    {
+        subs_.clear();
+        matched_count_ = 0;
     }
-    return std::distance(prefix_.second, subs_[i].first);
-  }
-
-  difference_type length(size_t i = 0) const {
-    if (i >= subs_.size()) {
-      throw std::out_of_range("Index out of range in match_results::length");
+    const_reference operator[](size_t i) { return subs_[i]; }
+    const_reference operator[](size_t i) const { return subs_[i]; }
+    const_reference prefix() { return prefix_; }
+    const_reference suffix() { return suffix_; }
+    void append(BiDiIterator first, BiDiIterator second, bool is_matched)
+    {
+        subs_.push_back({first, second, is_matched});
+        matched_count_ += is_matched;
     }
-    return std::distance(subs_[i].first, subs_[i].second);
-  }
+
+    void set_prefix(BiDiIterator first, BiDiIterator second)
+    { // TODO friend?
+        prefix_ = {first, second};
+    }
+    void set_suffix(BiDiIterator first, BiDiIterator second) { suffix_ = {first, second}; }
+    std::string str() const { return subs_[0]; }
+
+    difference_type position(size_t i = 0) const
+    {
+        if (i >= subs_.size() || !subs_[i].matched)
+        {
+            return -1;
+        }
+        return std::distance(prefix_.second, subs_[i].first);
+    }
+
+    difference_type length(size_t i = 0) const
+    {
+        if (i >= subs_.size() || !subs_[i].matched)
+        {
+            return -1;
+        }
+        return std::distance(subs_[i].first, subs_[i].second);
+    }
 
 private:
-  vector_type subs_;
-  value_type prefix_;
-  value_type suffix_;
+    vector_type subs_;
+    value_type prefix_;
+    value_type suffix_;
+    size_t matched_count_{0};
 };
 
 typedef match_results<std::string::const_iterator> smatch;
 
 bool regex_search(std::string::const_iterator first,
                   std::string::const_iterator last,
-                  match_results<std::string::const_iterator> &m,
-                  const regex &e);
+                  match_results<std::string::const_iterator>& m,
+                  const regex& e);
 
 // Best effort to prevent unsafe attempts to get match_results from a temporary
 // string.
-template <class ST, class SA, class charT>
-bool regex_search(const std::basic_string<charT, ST, SA> &s,
-                  match_results<std::string::const_iterator> &m,
-                  const regex &e) {
-  regmatch_t matches[REGEX_MAX_SUBEXPRESSIONS + 1];
-  for (size_t i = 0; i < sizeof(matches) / sizeof(matches[0]); ++i) {
-    matches[i].rm_so = -1;
-    matches[i].rm_eo = -1;
-  }
-  int ret = regexec(&e.regex_, s.c_str(), sizeof(matches) / sizeof(matches[0]),
-                    static_cast<regmatch_t *>(&matches[0]), 0);
-  if (-1 != matches[REGEX_MAX_SUBEXPRESSIONS].rm_so) {
-    throw regex_error("Max number of subexpressions is reached");
-  }
-  m.clear();
-  for (size_t i = 0;
-       i < sizeof(matches) / sizeof(matches[0]) && -1 != matches[i].rm_so;
-       ++i) {
-    m.append(s.begin() + matches[i].rm_so, s.begin() + matches[i].rm_eo);
-  }
-  if (0 == ret) {
-    m.set_prefix(s.begin(), m[0].first);
-    m.set_suffix(m[0].second, s.end());
-    return true;
-  }
-  return false;
+template<class ST, class SA, class charT>
+bool regex_search(const std::basic_string<charT, ST, SA>& s,
+                  match_results<std::string::const_iterator>& m,
+                  const regex& e)
+{
+    regmatch_t matches[REGEX_MAX_SUBEXPRESSIONS + 1];
+    for (size_t i = 0; i < sizeof(matches) / sizeof(matches[0]); ++i)
+    {
+        matches[i].rm_so = -1;
+        matches[i].rm_eo = -1;
+    }
+    int ret =
+      regexec(&e.regex_, s.c_str(), sizeof(matches) / sizeof(matches[0]), static_cast<regmatch_t*>(&matches[0]), 0);
+    if (-1 != matches[REGEX_MAX_SUBEXPRESSIONS].rm_so)
+    {
+        throw regex_error("Max number of subexpressions is reached");
+    }
+    m.clear();
+    for (size_t i = 0; i < sizeof(matches) / sizeof(matches[0]); ++i)
+    {
+        m.append(s.begin() + matches[i].rm_so, s.begin() + matches[i].rm_eo, -1 != matches[i].rm_so);
+    }
+    if (0 == ret)
+    {
+        m.set_prefix(s.begin(), m[0].first);
+        m.set_suffix(m[0].second, s.end());
+        return true;
+    }
+    return false;
 }
 
-bool regex_match(const std::string &s, const regex &e);
+bool regex_match(const std::string& s, const regex& e);
 
 // Best effort to prevent unsafe attempts to get match_results from a temporary
 // string.
-template <class ST, class SA, class charT>
-bool regex_match(const std::basic_string<charT, ST, SA> &s, smatch &m,
-                 const regex &e) {
-  bool ret = regex_search(s, m, e);
-  if (ret && m.prefix().first == s.begin() && m.prefix().second == s.begin() &&
-      m.suffix().first == s.end() && m.suffix().second == s.end()) {
-    return true;
-  }
-  return false;
+template<class ST, class SA, class charT>
+bool regex_match(const std::basic_string<charT, ST, SA>& s, smatch& m, const regex& e)
+{
+    bool ret = regex_search(s, m, e);
+    if (ret && m.prefix().first == s.begin() && m.prefix().second == s.begin() && m.suffix().first == s.end() &&
+        m.suffix().second == s.end())
+    {
+        return true;
+    }
+    return false;
 }
 
-std::string regex_replace(const std::string &s, const regex &e,
-                          const std::string &fmt);
+std::string regex_replace(const std::string& s, const regex& e, const std::string& fmt);
 
-class sregex_iterator {
+class sregex_iterator
+{
 public:
-  sregex_iterator() : search_done_(true) {}
-  sregex_iterator(std::string::const_iterator begin,
-                  std::string::const_iterator end, const regex &re)
-      : begin_(begin), end_(end), re_(re), search_done_(false) {
-    ++(*this);
-  }
-
-  bool operator==(const sregex_iterator &other) const {
-    return search_done_ == other.search_done_ &&
-           (search_done_ || (begin_ == other.begin_ && end_ == other.end_));
-  }
-
-  bool operator!=(const sregex_iterator &other) const {
-    return !(*this == other);
-  }
-
-  const smatch &operator*() const { return match_; }
-  const smatch *operator->() const { return &match_; }
-
-  sregex_iterator &operator++() {
-    if (search_done_) {
-      return *this;
+    sregex_iterator() : search_done_(true) {}
+    sregex_iterator(std::string::const_iterator begin, std::string::const_iterator end, const regex& re) :
+        begin_(begin), end_(end), re_(re), search_done_(false)
+    {
+        ++(*this);
     }
 
-    if (regex_search(begin_, end_, match_, re_)) {
-      begin_ = match_[0].second;
-    } else {
-      search_done_ = true;
+    bool operator==(const sregex_iterator& other) const
+    {
+        return search_done_ == other.search_done_ && (search_done_ || (begin_ == other.begin_ && end_ == other.end_));
     }
 
-    return *this;
-  }
+    bool operator!=(const sregex_iterator& other) const { return !(*this == other); }
+
+    const smatch& operator*() const { return match_; }
+    const smatch* operator->() const { return &match_; }
+
+    sregex_iterator& operator++()
+    {
+        if (search_done_)
+        {
+            return *this;
+        }
+
+        if (regex_search(begin_, end_, match_, re_))
+        {
+            begin_ = match_[0].second;
+        }
+        else
+        {
+            search_done_ = true;
+        }
+
+        return *this;
+    }
 
 private:
-  std::string::const_iterator begin_;
-  std::string::const_iterator end_;
-  regex re_;
-  smatch match_;
-  bool search_done_;
+    std::string::const_iterator begin_;
+    std::string::const_iterator end_;
+    regex re_;
+    smatch match_;
+    bool search_done_;
 };
 
 #else

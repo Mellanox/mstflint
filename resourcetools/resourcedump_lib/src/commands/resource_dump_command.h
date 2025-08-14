@@ -62,6 +62,11 @@ public:
 protected:
     ResourceDumpCommand() = default;
     ResourceDumpCommand(device_attributes device_attrs, dump_request dump_request, uint32_t depth, bool is_textual);
+    ResourceDumpCommand(mfile_t* mf,
+                        device_attributes device_attrs,
+                        dump_request dump_request,
+                        uint32_t depth,
+                        bool is_textual);
     virtual ~ResourceDumpCommand();
 
     virtual bool validate() = 0;
@@ -80,6 +85,7 @@ protected:
     size_t _dumped_size{0};
 
     std::vector<size_t> _segment_offsets;
+    bool _mf_opened{false};
 };
 } // namespace resource_dump
 } // namespace mft

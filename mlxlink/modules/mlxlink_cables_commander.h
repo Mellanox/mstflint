@@ -164,6 +164,7 @@ public:
     bool _sfp51Paging;
     bool _passiveQsfp;
     u_int32_t _numOfLanes;
+    vector<u_int32_t> _moduleLanesMapping;
     MlxlinkMaps* _mlxlinkMaps;
     map<ModulePrbs_t, string> _modulePrbsParams;
 
@@ -236,8 +237,8 @@ private:
     u_int32_t _prbsMode;
     bool _prbsInv;
     bool _prbsSwap;
-    u_int32_t _prbsLanes;
     bool _swControlMode;
+    u_int32_t _prbsLanes;
     map<ControlParam, pair<string, string>> _modulePMCRParams;
 };
 

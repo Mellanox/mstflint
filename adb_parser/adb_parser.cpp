@@ -177,6 +177,7 @@ bool _Adb_impl<e, O>::load(string fname,
                            string logFileStr,
                            bool checkDsAlign,
                            bool enforceGuiChecks,
+                           bool force_dword_align,
                            bool cd_mode,
                            bool variable_alignment,
                            string root_node_name)
@@ -191,9 +192,11 @@ bool _Adb_impl<e, O>::load(string fname,
         }
         _logFile->init(logFileStr, allowMultipleExceptions);
         AdbParser<e, O> p(fname, this, root_node_name, addReserved, strict, includePath, enforceExtraChecks,
-                          checkDsAlign, enforceGuiChecks, cd_mode, variable_alignment);
+                          checkDsAlign, enforceGuiChecks, force_dword_align, cd_mode, variable_alignment);
         _checkDsAlign = checkDsAlign;
         _enforceGuiChecks = enforceGuiChecks;
+        _force_dword_align = force_dword_align;
+        _cd_mode = cd_mode;
         if (!p.load())
         {
             _lastError = p.getError();
@@ -230,6 +233,10 @@ bool _Adb_impl<e, O>::load(string fname,
         {
             ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
         }
+        return false;
+    }
+    catch (AdbStopException& er)
+    {
         return false;
     }
     catch (...)
@@ -271,6 +278,10 @@ bool _Adb_impl<e, O>::loadFromString(const char* adbContents,
     catch (AdbException& er)
     {
         _lastError = er.what_s();
+        return false;
+    }
+    catch (AdbStopException& er)
+    {
         return false;
     }
 }
@@ -480,7 +491,7 @@ template<bool e, typename O>
 vector<typename _Adb_impl<e, O>::SplittedPath> _Adb_impl<e, O>::parse_missing_sons(AdbNode& node,
                                                                                    bool allowMultipleExceptions)
 {
-    Regex::regex path_part_pattern("(?:\\.)?(\\w+)(?:\\[([^\\]]*)\\])?(?:@\\([^\\)]*\\))?");
+    static Regex::regex path_part_pattern("(\\.)?(\\w+)(\\[([^\\]]*)\\])?(@\\([^\\)]*\\))?");
     vector<SplittedPath> missing_sons;
     auto found_it = node.attrs.find("missing_sons");
     if (found_it != node.attrs.end() && !found_it->second.empty())
@@ -506,8 +517,8 @@ vector<typename _Adb_impl<e, O>::SplittedPath> _Adb_impl<e, O>::parse_missing_so
                     }
                     prev_end = match.position() + match.length();
 
-                    auto& part = match[1];
-                    auto& ranges = match[2];
+                    auto& part = match[2];
+                    auto& ranges = match[4];
 
                     splitted_missing_son.push_back(
                       parse_missing_son_part(part.str(), ranges.str(), allowMultipleExceptions));
@@ -577,6 +588,7 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
                                                string root_display_name,
                                                PartitionTree* partition_tree,
                                                AdbField* rootField,
+                                               string ancestor_path,
                                                bool array_path_wildcards,
                                                bool strict_instance_ops,
                                                bool enable_parse_missing_sons)
@@ -596,7 +608,7 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
         AdbInstance* rootItem = new AdbInstance();
         rootItem->fieldDesc = rootField;
         rootItem->nodeDesc = nodeDesc;
-        rootItem->parent = NULL;
+        rootItem->parent = nullptr;
         rootItem->layout_item_name = root_display_name.size() > 0 ? root_display_name : nodeDesc->name;
         if (optimize_time)
         {
@@ -638,12 +650,35 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
         nodeDesc->inLayout = false;
 
         // Now set the instance attributes (override field attrs), only if this is root node instantiation
-        if (rootNodeName == rootNode && depth == -1)
+        if (depth == -1 && (rootNodeName == rootNode || !ancestor_path.empty()))
         {
+            string path_prefix = string();
+            if (!ancestor_path.empty())
+            {
+                size_t first_dot = ancestor_path.find('.');
+                if (first_dot != string::npos)
+                {
+                    path_prefix = ancestor_path.substr(first_dot + 1);
+                }
+                path_prefix =
+                  path_prefix.empty() ? rootItem->get_field_name() : path_prefix + "." + rootItem->get_field_name();
+            }
             for (InstanceAttrs::iterator it = instAttrs.begin(); it != instAttrs.end(); it++)
             {
-                size_t idx = it->first.find(".");
-                string path = idx == string::npos ? string() : it->first.substr(idx + 1);
+                string path = it->first;
+                size_t idx = path.find(".");
+                if (idx != string::npos)
+                {
+                    path = path.substr(idx + 1);
+                }
+                if (!path_prefix.empty() && path.compare(0, path_prefix.length(), path_prefix) == 0)
+                {
+                    path = path.substr(path_prefix.length());
+                    if (!path.empty() && path[0] == '.')
+                    {
+                        path = path.substr(1);
+                    }
+                }
 
                 AdbInstance* inst = rootItem->getChildByPath(path);
                 if (!inst)
@@ -806,13 +841,17 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
         {
             ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
         }
-        return NULL;
+        return nullptr;
+    }
+    catch (AdbStopException& er)
+    {
+        return nullptr;
     }
     catch (...)
     {
         _lastError = "Unknown error occurred in create layout";
         ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -822,27 +861,37 @@ typename enable_if<U>::type _Adb_impl<eval_expr, O>::updateLayoutConditions(bool
 {
     for (typename list<AdbInstance*>::iterator it = _conditionInstances.begin(); it != _conditionInstances.end(); it++)
     {
-        map<string, CondVar> variables = (*it)->inst_ops_props.condition.getVarsMap();
-        for (map<string, CondVar>::iterator it2 = variables.begin(); it2 != variables.end(); it2++)
+        map<string, AdbCondVar>& variables = (*it)->inst_ops_props.condition.get_vars_map();
+        for (typename map<string, AdbCondVar>::iterator it2 = variables.begin(); it2 != variables.end(); it2++)
         {
             string currentName = it2->first;
-            CondVar* currentVar = &(it2->second);
+            AdbCondVar* currentVar = &(it2->second);
             map<string, string>::iterator currentDefine = defines_map.find(currentName);
             if (currentDefine != defines_map.end())
             {
-                currentVar->setScalar(std::stoi(currentDefine->second));
+                currentVar->set_value(std::stoi(currentDefine->second));
             }
-            // else // if it's a conditional variable
-            // {
-            //     //TODO: to be evaluated later!
+            else // if it's a conditional variable
+            {
+                auto& search_path = currentVar->is_name_modified() ? currentVar->get_original_name() : currentName;
             // }
+                AdbInstance* reffered_layout_item = (*it)->get_layout_item_by_path(search_path);
+                if (reffered_layout_item)
+                {
+                    currentVar->set_instance(reffered_layout_item);
+                    if (reffered_layout_item->isEnumExists())
+                    {
+                        (*it)->inst_ops_props.condition.update_enum(currentName);
+                    }
+                }
+            }
         }
     }
 
     // validate size condition
     for (typename list<AdbInstance*>::iterator it = _conditionalArrays.begin(); it != _conditionalArrays.end(); it++)
     {
-        string condSize = (*it)->inst_ops_props.conditionalSize.getCondition();
+        string condSize = (*it)->inst_ops_props.conditionalSize.get_condition();
 
         if ((*it)->parent->getChildByPath(condSize) == nullptr)
         {
@@ -868,13 +917,13 @@ template<bool U>
 typename enable_if<U>::type _Adb_impl<eval_expr, O>::updateConditionsLists(AdbInstance* inst)
 {
     // if the field has a condition attribute
-    if (!inst->inst_ops_props.condition.getCondition().empty())
+    if (!inst->inst_ops_props.condition.get_condition().empty())
     {
         _conditionInstances.push_back(inst);
     }
 
     // if the layout item has a conditional array
-    if (!inst->inst_ops_props.conditionalSize.getCondition().empty())
+    if (!inst->inst_ops_props.conditionalSize.get_condition().empty())
     {
         _conditionalArrays.push_back(inst);
     }
@@ -1004,7 +1053,7 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
 
             updateConditionsLists(inst);
 
-            if (field->isStruct() && !inst->nodeDesc->fields.empty() && (depth == -1 || depth > 0))
+            if (field->isStruct() && inst->nodeDesc && !inst->nodeDesc->fields.empty() && (depth == -1 || depth > 0))
             {
                 if (inst->nodeDesc->inLayout)
                 {
@@ -1136,17 +1185,17 @@ bool _Adb_impl<e, O>::checkInstSizeConsistency(bool allowMultipleExceptions)
                 AdbNode* node = nodesMap[it->second->fields[i]->subNode];
                 if (node->get_size() != it->second->fields[i]->get_size() / it->second->fields[i]->arrayLen())
                 {
-                    char tmp[256];
-                    sprintf(tmp, "Node (%s) size 0x%lx.%ld is not consistent with the instance (%s->%s) size 0x%lx.%ld",
-                            node->name.c_str(), (long)((node->get_size() >> 5) << 2), (long)node->get_size() % 32,
-                            it->second->name.c_str(), it->second->fields[i]->name.c_str(),
-                            (long)(it->second->fields[i]->get_size() >> 5) << 2,
-                            (long)it->second->fields[i]->get_size() % 32);
-                    _lastError = tmp;
+                    stringstream err_stream;
+                    err_stream << "Node (" << node->name << ") size 0x" << std::hex << ((node->get_size() >> 5) << 2)
+                               << "." << node->get_size() % 32 << " is not consistent with the instance ("
+                               << it->second->name << "->" << it->second->fields[i]->name << ") size 0x" << std::hex
+                               << ((it->second->fields[i]->get_size() >> 5) << 2) << "."
+                               << it->second->fields[i]->get_size() % 32;
+                    _lastError = err_stream.str();
                     if (allowMultipleExceptions)
                     {
                         status = false;
-                        ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, tmp);
+                        ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, _lastError);
                     }
                     else
                     {

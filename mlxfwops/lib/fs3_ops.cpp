@@ -143,6 +143,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
   {FS4_LC_INI_NV_DATA, "LC_INI_NV_DATA"},
   {FS4_CERT_CHAIN_0, "CERT_CHAIN_0"},
   {FS5_SECURITY_LOG, "SECURITY_LOG"},
+  {FS5_CPO_CALIBRATION_DATA, "CPO_CALIBRATION_DATA"},
   {FS4_DIGITAL_CACERT_RW, "DIGITAL_CACERT_RW"},
   {FS4_CERTIFICATE_CHAINS_1, "CERTIFICATE_CHAINS_1"},
   {FS4_CERTIFICATE_CHAINS_2, "CERTIFICATE_CHAINS_2"},
@@ -2135,13 +2136,13 @@ bool Fs3Operations::UpdateImageAfterInsert(struct toc_info* tocArr,
         if (!newImgData)
         {
             Fs3UpdateImgCache(currItoc->data, itocOffset, CIBFW_ITOC_ENTRY_SIZE);
-            Fs3UpdateImgCache(&currItoc->section_data[0], sectAddr, sectSize);
+            Fs3UpdateImgCache(currItoc->section_data.data(), sectAddr, sectSize); 
         }
         else
         {
             memcpy(&newImgData[itocOffset], currItoc->data, CIBFW_ITOC_ENTRY_SIZE);
 
-            memcpy(&newImgData[sectAddr], &currItoc->section_data[0], sectSize);
+            memcpy(&newImgData[sectAddr], currItoc->section_data.data(), sectSize);
         }
     }
     u_int32_t lastItocSect = _fs3ImgInfo.itocAddr + CIBFW_ITOC_HEADER_SIZE + numOfItocs * CIBFW_ITOC_ENTRY_SIZE;

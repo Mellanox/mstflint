@@ -75,10 +75,18 @@ public:
     virtual vector<AmberField> getExtModuleStatus();
     virtual vector<AmberField> getRecoveryCounters();
 
+    // Auxiliary functions
+    virtual void getPemiLaserMonitors(vector<AmberField>& fields, bool isGroupSupported);
+    void getPemiModuleStatus(vector<AmberField>& fields, bool isGroupSupported);
+    void getPemiPreFecBer(vector<AmberField>& fields, bool isGroupSupported);
+    void getMTMGFields(vector<AmberField>& fields);
+    void getMTMRFields(vector<AmberField>& fields);
+
     void getPpcntBer(u_int32_t portType, vector<AmberField>& fields);
     bool isGBValid();
     bool isMCMValid();
 
+    string getClRawBer();
     void startCollector();
 
     u_int32_t _pnat;
@@ -140,7 +148,6 @@ private:
     bool _isQsfpCable;
     bool _isSfpCable;
     bool _cablePlugged;
-    bool _invalidate;
     u_int32_t _labelPort;
     u_int32_t _splitPort;
     u_int32_t _secondSplit;
@@ -161,13 +168,14 @@ protected:
                                 string fieldName,
                                 float valueCorrection = 1.0,
                                 string laneSep = "_",
-                                float multiplier = 1.0);
-    void pushModuleDpPerLane(vector<AmberField>& fields, const string str);
+                                string suffix = "",
+                                float multiplier = 1.0,
+                                string displayName = "");
+    void pushModuleDpPerLane(vector<AmberField>& fields, const string str, string suffix = "");
 
     // Helper functions
     virtual string getBerAndErrorTitle(u_int32_t portType);
     virtual void getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params);
-    string getClRawBer();
     virtual void getModuleLinkUpInfoPage(vector<AmberField>& fields);
 
     // Callers
@@ -182,6 +190,7 @@ protected:
     bool _isValidSensorMvcap;
     bool _isValidSensorMtcap;
     bool _inPRBSMode;
+    u_int32_t _pllGroup;
     u_int32_t _moduleHostSt;
     u_int32_t _moduleMediaSt;
 

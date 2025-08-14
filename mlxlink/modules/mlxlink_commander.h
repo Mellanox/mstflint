@@ -102,6 +102,14 @@
 #define BER_MONITOR_INFO_FLAG_SHORT ' '
 #define PEPC_SHOW_FLAG "show_external_phy"
 #define PEPC_SHOW_FLAG_SHORT ' '
+#define MULTI_PORT_MODULE_INFO_FLAG "show_multi_port_module_info"
+#define MULTI_PORT_MODULE_INFO_FLAG_SHORT ' '
+#define MULTI_PORT_MODULE_INFO_ACRONYM_FLAG "smpmi"
+#define MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT ' '
+#define MULTI_PORT_INFO_FLAG "show_multi_port_info"
+#define MULTI_PORT_INFO_FLAG_SHORT ' '
+#define MULTI_PORT_INFO_ACRONYM_FLAG "smpi"
+#define MULTI_PORT_INFO_ACRONYM_FLAG_SHORT ' '
 #define PLR_INFO_FLAG "show_plr"
 #define PLR_INFO_FLAG_SHORT ' '
 #define KR_INFO_FLAG "show_kr"
@@ -180,6 +188,8 @@
 #define LINK_TRAINING_FLAG_SHORT ' '
 #define SET_LINK_PEQ_FLAG "set_link_peq"
 #define SET_LINK_PEQ_FLAG_SHORT ' '
+#define PLANE_FLAG "plane"
+#define PLANE_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink Cable info flags
@@ -345,6 +355,8 @@ enum OPTION_TYPE
     RS_FEC_HISTOGRAM,
     SLRG_TEST,
     PCIE_ERROR_INJ,
+    SHOW_MULTI_PORT_INFO,
+    SHOW_MULTI_PORT_MODULE_INFO,
     SHOW_PLR,
     SHOW_KR,
     SHOW_RX_RECOVERY_COUNTERS,
@@ -358,13 +370,18 @@ enum OPTION_TYPE
 };
 
 ///////////
-struct MODULE_FIELD
+class ModuleField
 {
+public:
+    ModuleField(string uiName, string amberName, bool multiVal, bool perLane, bool requireDdm, bool supported = true);
+    ~ModuleField() = default;
+
     string uiName;
     string amberName;
     bool multiVal;
     bool perLane;
     bool requireDdm;
+    bool supported;
 };
 
 using namespace std;
@@ -376,8 +393,8 @@ public:
     virtual ~MlxlinkCommander();
 
     void checkRegCmd();
-    void validatePortToLC();
     bool isBackplane();
+    void validatePortToLC();
     virtual void validatePortType(const string& portTypeStr);
     void updatePortType();
     void gearboxBlock(const string& option);
@@ -387,7 +404,6 @@ public:
     u_int32_t getTechnologyFromMGIR();
     void getProductTechnology();
     bool checkPortStatus(u_int32_t localPort);
-    void updateLocalPortGroup();
     void checkAllPortsStatus();
     void handlePortStr(const string& portStr);
     void labelToLocalPort();
@@ -427,18 +443,12 @@ public:
 
     // Mlxlink query functions
     virtual void showModuleInfo();
-    void prepareBerModuleInfo(bool valid, const vector<AmberField>& moduleInfoFields);
-    void pushSnrModuleInfoFields(bool valid);
-    void runningVersion();
     virtual void operatingInfoPage();
     virtual void supportedInfoPage();
     virtual void troubInfoPage();
     void showPddr();
     void getPtys();
     virtual void showBer();
-    void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
-    void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
-    void prepare5nmEyeInfo(u_int32_t numOfLanesToUse);
     virtual void showEye();
     virtual void showFEC();
     virtual void showSltp();
@@ -482,6 +492,13 @@ public:
     void updateSwControlStatus();
     u_int32_t getNumberOfPorts();
     bool checkDPNvSupport();
+    void prepareBerModuleInfo(bool valid, const vector<AmberField>& moduleInfoFields);
+    void pushSnrModuleInfoFields(bool valid);
+    void runningVersion();
+    void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
+    void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
+    void prepare5nmEyeInfo(u_int32_t numOfLanesToUse);
+    void getPddrOperInfo();
 
     void showTestMode();
     void showTestModeBer();
@@ -624,8 +641,14 @@ public:
     void checkSltpParamsSize();
     bool isMpeinjSupported();
     u_int32_t getRateFromPptt();
+    void showMultiPortInfo();
+    void showMultiPortModuleInfo();
+    string getBerString();
+    void updateLocalPortGroup();
+    std::string getSpeedStrForTableView();
     bool checkAllPortsDown();
     void configurePeqForAllPorts(bool brLanesCap);
+    void setPlaneIndex(int planeIndex);
 
     // Mlxlink params
     UserInput _userInput;
@@ -657,6 +680,7 @@ public:
     u_int32_t _slotIndex;
     u_int32_t _linkSpeed;
     u_int32_t _groupOpcode;
+    u_int32_t _loopbackMode;
     string _extAdbFile;
     string _fwVersion;
     string _speedStrG;
@@ -692,9 +716,16 @@ public:
     MlxlinkErrInjCommander* _errInjector;
     MlxlinkPortInfo* _portInfo;
     MlxlinkAmBerCollector* _amberCollector;
+    string _fomStr;
 
 protected:
     vector<AmberField> _ppcntFields;
+
+    // New helper functions for port info display
+    string getLabelPortString(const PortGroup& portInfo);
+    void updatePortModuleInfo(vector<string>& tableData, const PortGroup& portInfo, u_int32_t& posToUpdateWidthInVector);
+    void updatePortInfo(vector<string>& tableData, const PortGroup& portInfo, u_int32_t& posToUpdateWidthInVector);
+    void updatePortStatisticalInfo(vector<string>& tableData, u_int32_t& posToUpdateWidthInVector);
 };
 
 #endif /* MLXLINK_COMMANDER_H */

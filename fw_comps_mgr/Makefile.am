@@ -68,7 +68,8 @@ libfw_comps_mgr_la_DEPENDENCIES = \
     $(top_builddir)/reg_access/libreg_access.la \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/tools_res_mgmt/libtools_res_mgmt.la \
-    $(top_builddir)/mft_utils/libmftutils.la
+    $(top_builddir)/mft_utils/libmftutils.la \
+    $(top_builddir)/common/libcommon.la
 
 
 if ENABLE_INBAND

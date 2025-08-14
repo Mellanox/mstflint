@@ -1,3 +1,36 @@
+/*
+ * Copyright(c) 2025 NVIDIA CORPORATION & AFFILIATES.All rights reserved.
+ *
+ * This software is available to you under a choice of one of two
+ * licenses.You may choose to be licensed under the terms of the GNU
+ * General Public License(GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
+ *
+ * Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ * -Redistributions of source code must retain the above
+ * copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ * -Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and / or other materials
+ * provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ */
+
 #include "mtcr_common.h"
 
 void swap_pci_address_space(mfile* mf)
@@ -156,6 +189,9 @@ const char* m_err2str(MError status)
     case ME_REG_ACCESS_NOT_SUPPORTED_BY_SECONDARY:
         return "Register Access not supported by secondary";
 
+    case ME_REG_ACCESS_INSUFFICIENT_PERMISSIONS:
+            return "Unable to send PRM Register due to permission issue, debug token might be needed.";
+
     /* ICMD access errors */
     case ME_ICMD_STATUS_CR_FAIL:
         return "ICMD failed due to CRSpace access failure";
@@ -204,6 +240,9 @@ const char* m_err2str(MError status)
 
     case ME_ICMD_SIZE_EXCEEDS_LIMIT:
         return "ICMD size exceeds limit";
+    
+    case ME_ICMD_UNABLE_TO_TAKE_SEMAOHORE:
+            return "Failed to take ICMD semaphore (semaphore 62). Semaphore was free (0) but HW failed to set it to locked state when we took it.\nThis might indicate a FW or HW issue.\n";
 
     /* TOOLS HCR access errors */
     case ME_CMDIF_BUSY:

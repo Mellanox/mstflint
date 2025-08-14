@@ -79,12 +79,14 @@ void MlxlinkUi::initRegAccessLib()
     if (_mlxlinkCommander->_isHCA)
     {
         _mlxlinkCommander->_isDPNvSupported = _mlxlinkCommander->checkDPNvSupport();
+        dynamic_cast<MlxlinkCommander*>(_mlxlinkCommander)->setPlaneIndex(_userInput.planeIndex);
     }
 }
 
 void MlxlinkUi::initPortInfo()
 {
-    if (!_userInput._portSpecified && _userInput._csvBer != "")
+    if ((!_userInput._portSpecified && _userInput._csvBer != "") ||
+        (_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo))
     {
         _mlxlinkCommander->findFirstValidPort();
     }
@@ -173,6 +175,12 @@ void MlxlinkUi::printSynopsisQueries()
                                  "Show BER Monitor Info (not supported for HCA)");
     MlxlinkRecord::printFlagLine(PEPC_SHOW_FLAG_SHORT, PEPC_SHOW_FLAG, "",
                                  "Show External PHY Info (for Ethernet switches only)");
+    MlxlinkRecord::printFlagLineWithAcronym(MULTI_PORT_INFO_FLAG_SHORT, MULTI_PORT_INFO_FLAG,
+                                            MULTI_PORT_INFO_ACRONYM_FLAG_SHORT, MULTI_PORT_INFO_ACRONYM_FLAG, "",
+                                            "Show Multi Port Info Table");
+    MlxlinkRecord::printFlagLineWithAcronym(
+      MULTI_PORT_MODULE_INFO_FLAG_SHORT, MULTI_PORT_MODULE_INFO_FLAG, MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT,
+      MULTI_PORT_MODULE_INFO_ACRONYM_FLAG, "", "Show Multi Port Module Info Table");
 }
 
 void MlxlinkUi::printSynopsisCommands()
@@ -441,6 +449,7 @@ void MlxlinkUi::printSynopsisCommands()
 
     MlxlinkRecord::printFlagLine(FORCE_YES_FLAG_SHORT, FORCE_YES_FLAG, "",
                                  "Non-interactive mode, answer yes to all questions");
+    MlxlinkRecord::printFlagLine(PLANE_FLAG_SHORT, PLANE_FLAG, "plane", "Plane port access, starts from 1");
 }
 
 void MlxlinkUi::printSynopsis()
@@ -956,6 +965,15 @@ void MlxlinkUi::validatePortInfoParams()
     }
 }
 
+void MlxlinkUi::validateMultiPortInfoParams()
+{
+    if ((_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo) && _userInput._portSpecified)
+    {
+        throw MlxRegException("When using " MULTI_PORT_INFO_FLAG " or " MULTI_PORT_MODULE_INFO_FLAG " flags, "
+                              "the port flag must not be specified!");
+    }
+}
+
 void MlxlinkUi::strToInt32(char* str, u_int32_t& value)
 {
     char* endp;
@@ -1095,6 +1113,11 @@ void MlxlinkUi::initCmdParser()
     AddOptions(BER_MONITOR_INFO_FLAG, BER_MONITOR_INFO_FLAG_SHORT, "", "Show BER Monitor Info");
     AddOptions(PEPC_SHOW_FLAG, PEPC_SHOW_FLAG_SHORT, "", "Show External PHY Info");
     AddOptions(PRINT_JSON_OUTPUT_FLAG, PRINT_JSON_OUTPUT_FLAG_SHORT, "", "Print the output in json format");
+    AddOptions(MULTI_PORT_INFO_FLAG, MULTI_PORT_INFO_FLAG_SHORT, "", "Show multi ports info table");
+    AddOptions(MULTI_PORT_INFO_ACRONYM_FLAG, MULTI_PORT_INFO_ACRONYM_FLAG_SHORT, "", "Show multi port info table");
+    AddOptions(MULTI_PORT_MODULE_INFO_FLAG, MULTI_PORT_MODULE_INFO_FLAG_SHORT, "", "Show multi port module info table");
+    AddOptions(MULTI_PORT_MODULE_INFO_ACRONYM_FLAG, MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT, "",
+               "Show multi port module info table");
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
     AddOptions(PERIODIC_EQ_FLAG, PERIODIC_EQ_FLAG_SHORT, "", "Show Link PEQ (Periodic Equalization) Info");
@@ -1114,6 +1137,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(AMBER_COLLECT_FLAG, AMBER_COLLECT_FLAG_SHORT, "AMBERCollectFile", "AMBER Collection csv file");
     AddOptions(BER_LIMIT_FLAG, BER_LIMIT_FLAG_SHORT, "Mode", "Test Mode of Ber Collect (Nominal/Corner/Drift)");
     AddOptions(ITERATION_FLAG, ITERATION_FLAG_SHORT, "Iteration", "Iteration of BER Collect");
+    AddOptions(PHY_RECOVERY_FLAG, PHY_RECOVERY_FLAG_SHORT, "Recovery", "Enable/Disable PHY Recovery");
+    AddOptions(PHY_RECOVERY_TYPE_FLAG, PHY_RECOVERY_TYPE_FLAG_SHORT, "Recovery_Type", "Recovery Type");
     AddOptions(PRBS_MODE_FLAG, PRBS_MODE_FLAG_SHORT, "PRBS", "Enable/Disable PRBS Test Mode");
     AddOptions(PPRT_PRBS_FLAG, PPRT_PRBS_FLAG_SHORT, "PPRT", "PPRT Mode");
     AddOptions(PPTT_PRBS_FLAG, PPTT_PRBS_FLAG_SHORT, "PPTT", "PPTT Mode");
@@ -1190,6 +1215,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPHCR_FEC_HIST_FLAG, PPHCR_FEC_HIST_FLAG_SHORT, "", "Provide histogram of FEC errors");
     AddOptions(PPHCR_SHOW_FEC_HIST_FLAG, PPHCR_SHOW_FEC_HIST_FLAG_SHORT, "", "Show FEC errors histograms");
     AddOptions(PPHCR_CLEAR_HISTOGRAM_FLAG, PPHCR_CLEAR_HISTOGRAM_FLAG_SHORT, "", "Clears FEC errors histograms");
+    AddOptions(PLANE_FLAG, PLANE_FLAG_SHORT, "plane", "plane index");
 
     _cmdParser.AddRequester(this);
 }
@@ -1308,6 +1334,12 @@ void MlxlinkUi::commandsCaller()
             case PCIE_ERROR_INJ:
                 _mlxlinkCommander->handlePCIeErrInj();
                 break;
+            case SHOW_MULTI_PORT_INFO:
+                _mlxlinkCommander->showMultiPortInfo();
+                break;
+            case SHOW_MULTI_PORT_MODULE_INFO:
+                _mlxlinkCommander->showMultiPortModuleInfo();
+                break;
             case SHOW_PLR:
                 _mlxlinkCommander->showPlr();
                 break;
@@ -1347,6 +1379,12 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         MlxlinkRecord::stdOut = stderr;
         return PARSE_OK;
     }
+    else if (name == PLANE_FLAG)
+    {
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)(_userInput.planeIndex));
+        return PARSE_OK;
+    }
     else if (name == HELP_FLAG)
     {
         printHelp();
@@ -1365,6 +1403,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == MODULE_INFO_FLAG)
     {
         addCmd(SHOW_MODULE);
+        _userInput._showModule = true;
         _userInput._networkCmds++;
         return PARSE_OK;
     }
@@ -1949,6 +1988,20 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput.dbdf = value;
         return PARSE_OK;
     }
+    else if (name == MULTI_PORT_INFO_ACRONYM_FLAG || name == MULTI_PORT_INFO_FLAG)
+    {
+        addCmd(SHOW_MULTI_PORT_INFO);
+        _userInput._showMultiPortInfo = true;
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == MULTI_PORT_MODULE_INFO_ACRONYM_FLAG || name == MULTI_PORT_MODULE_INFO_FLAG)
+    {
+        addCmd(SHOW_MULTI_PORT_MODULE_INFO);
+        _userInput._showMultiPortModuleInfo = true;
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
     return PARSE_ERROR;
 }
 
@@ -1967,6 +2020,12 @@ int MlxlinkUi::run(int argc, char** argv)
     else if ((rc == PARSE_ERROR) || (rc == PARSE_ERROR_SHOW_USAGE))
     {
         throw MlxRegException("failed to parse arguments. " + string(_cmdParser.GetErrDesc()));
+    }
+
+    if (_userInput._forceSplit && !_userInput._secondSplitProvided)
+    {
+        _userInput._secondSplitProvided = _userInput._forceSplit;
+        _userInput._secondSplitPort = _userInput._forceSplitValue;
     }
 
     paramValidate();

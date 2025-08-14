@@ -53,6 +53,11 @@ public:
 
     // Buffer Stream c'tor
     DumpCommand(device_attributes device_attrs, dump_request segment_params, uint32_t depth, bool is_textual = false);
+    DumpCommand(mfile_t* mf,
+                device_attributes device_attrs,
+                dump_request segment_params,
+                uint32_t depth,
+                bool is_textual = false);
 
     std::string get_big_endian_string();
     void reverse_fstream_endianess();
@@ -67,6 +72,7 @@ public:
     const std::string to_string() const override;
 
 private:
+    void init_streams();
     bool _allocated_ostream{false};
 };
 } // namespace resource_dump

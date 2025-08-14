@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -432,38 +432,79 @@ int getBitvalue(u_int32_t mask, int idx)
     return (1 & (mask >> (idx - 1)));
 }
 
-string getPowerClass(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass, u_int32_t maxPower)
+string getMaxPowerStr(u_int32_t maxPower)
 {
-    string powerClassStr = "N/A";
-    string val = "";
     float maxPowerValue = maxPower * 0.25;
-    float powerClassVal = 0;
 
+    char frmtValue[64];
+    sprintf(frmtValue, "%.1f W max", maxPowerValue);
+    return string(frmtValue);
+}
+
+string getPowerClassStringValue(u_int32_t cableIdentifier, u_int32_t powerClass, MlxlinkMaps* mlxlinkMaps)
+{
     switch (cableIdentifier)
     {
         case IDENTIFIER_SFP_DD:
-            val = mlxlinkMaps->_sfpddPowerClass[powerClass];
-            powerClassVal = mlxlinkMaps->_sfpddPowerClassToValue[powerClass];
-            break;
+            return mlxlinkMaps->_sfpddPowerClass[powerClass];
         case IDENTIFIER_QSFP_DD:
         case IDENTIFIER_OSFP:
-            val = mlxlinkMaps->_qsfpddOsfpPowerClass[powerClass];
-            powerClassVal = mlxlinkMaps->_qsfpddPowerClassToValue[powerClass];
-            break;
+            return mlxlinkMaps->_qsfpddOsfpPowerClass[powerClass];
         default:
-            val = mlxlinkMaps->_sfpQsfpPowerClass[powerClass];
+            try
+            {
+                return mlxlinkMaps->_sfpQsfpPowerClass[powerClass];
+            }
+            catch (const std::exception& e)
+            {
+                return "N/A";
+            }
     }
+}
+
+float getPowerClassValue(u_int32_t cableIdentifier, u_int32_t powerClass, MlxlinkMaps* mlxlinkMaps)
+{
+    switch (cableIdentifier)
+    {
+        case IDENTIFIER_SFP_DD:
+            return mlxlinkMaps->_sfpddPowerClassToValue[powerClass];
+        case IDENTIFIER_QSFP_DD:
+        case IDENTIFIER_OSFP:
+            return mlxlinkMaps->_qsfpddPowerClassToValue[powerClass];
+        default:
+            return 0;
+    }
+}
+
+string getPowerClassStr(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass)
+{
+    string powerClassStr = "N/A";
+    string val = getPowerClassStringValue(cableIdentifier, powerClass, mlxlinkMaps);
+
+    if (!val.empty())
+    {
+        powerClassStr = std::to_string(powerClass) + " (" + val + ")";
+    }
+
+    return powerClassStr;
+}
+
+string getPowerClass(MlxlinkMaps* mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass, u_int32_t maxPower)
+{
+    string powerClassStr = "N/A";
+    float maxPowerValue = maxPower * 0.25;
+    string val = getPowerClassStringValue(cableIdentifier, powerClass, mlxlinkMaps);
+    float powerClassVal = getPowerClassValue(cableIdentifier, powerClass, mlxlinkMaps);
 
     if ((maxPowerValue > powerClassVal) || (powerClass == POWER_CLASS8))
     {
-        char frmtValue[64];
-        sprintf(frmtValue, "%.1f W max", maxPowerValue);
-        powerClassStr = string(frmtValue);
+        powerClassStr = getMaxPowerStr(maxPower);
     }
     else if (!val.empty())
     {
         powerClassStr = val;
     }
+
     return powerClassStr;
 }
 
@@ -1066,27 +1107,13 @@ string getTemp(u_int32_t temp, int celsParam)
     return to_string(temp / celsParam);
 }
 
-float getPower(u_int16_t power, bool isModuleExtSupported)
+float getPower(u_int16_t power)
 {
-    double result = -40;
-
-    if (isModuleExtSupported)
+    if (power & 0x8000)
     {
-        if (power != 0)
-        {
-            result = 10 * log10(float(power) / 1000.0);
-        }
-
-        return result;
+        return -((~power & 0xFFFF) + 1);
     }
-    else
-    {
-        if (power & 0x8000)
-        {
-            return -((~power & 0xFFFF) + 1);
-        }
-        return power;
-    }
+    return power;
 }
 
 int getHeight(u_int16_t height)
@@ -1185,7 +1212,11 @@ string getCableMedia(u_int32_t cableType)
 string pcieSpeedStr(u_int32_t linkSpeedActive)
 {
     string linkSpeedActiveStr;
-    if (linkSpeedActive & GEN5)
+    if (linkSpeedActive & GEN6)
+    {
+        linkSpeedActiveStr = "32G PAM-4 Gen6";
+    }
+    else if (linkSpeedActive & GEN5)
     {
         linkSpeedActiveStr = "32G-Gen 5";
     }
@@ -1425,6 +1456,7 @@ void setPrintTitle(MlxlinkCmdPrint& mlxlinkCmdPrint, string title, u_int32_t siz
     mlxlinkCmdPrint.title = title;
     mlxlinkCmdPrint.visible = print;
     mlxlinkCmdPrint.initRecords(size);
+    mlxlinkCmdPrint.lastInsertedRow = 0;
 }
 
 bool isSpeed25GPerLane(u_int32_t speed, u_int32_t protocol)
@@ -1504,8 +1536,8 @@ string getBDFStr(u_int32_t bdf)
 {
     char bdfBuff[128];
 
-    snprintf(
-      bdfBuff, sizeof(bdfBuff), "%02x:%02x.%x", (u_int8_t)(bdf >> 8), (u_int8_t)(bdf >> 3) & 0x1f, (u_int8_t)(bdf)&7);
+    snprintf(bdfBuff, sizeof(bdfBuff), "%02x:%02x.%x", (u_int8_t)(bdf >> 8), (u_int8_t)(bdf >> 3) & 0x1f,
+             (u_int8_t)(bdf)&7);
 
     return string(bdfBuff);
 }
@@ -1636,6 +1668,122 @@ bool askUser(const char* question, bool force)
     return ret;
 }
 
+std::string centerString(const std::string& str, int width, char fillChar)
+{
+    int strLen = getStringLengthWOColorCodes(str);
+    if (width <= strLen)
+    {
+        return str;
+    }
+
+    int padding = (width - strLen) / 2;
+    int remainingPadding = width - strLen - padding;
+
+    std::string leftPadding(padding, fillChar);
+    std::string rightPadding(remainingPadding, fillChar);
+
+    return leftPadding + str + rightPadding;
+}
+
+std::string generateTableRow(const std::vector<std::pair<std::string, u_int32_t>>& columns,
+                             const std::string& delimiter)
+{
+    std::stringstream tableRow("");
+    if (columns.empty())
+    {
+        return "";
+    }
+    for (const auto& column : columns)
+    {
+        tableRow << delimiter << centerString(column.first, column.second);
+    }
+    tableRow << delimiter;
+    return tableRow.str();
+}
+
+int getStringLengthWOColorCodes(const std::string& s)
+{
+    int length = 0;
+    size_t i = 0;
+    while (i < s.size())
+    {
+        if (s[i] == '\033' && i + 1 < s.size() && s[i + 1] == '[')
+        {
+            // Skip the escape sequence until 'm' is found
+            size_t j = i + 2;
+            while (j < s.size() && s[j] != 'm')
+            {
+                j++;
+            }
+            if (j < s.size())
+            {
+                i = j + 1; // Skip the entire escape sequence including 'm'
+            }
+            else
+            {
+                // If 'm' is not found, length is the rest of the string.
+                length += (s.size() - i);
+                break;
+            }
+        }
+        else
+        {
+            length++;
+            i++;
+        }
+    }
+    return length;
+}
+
+void printMlxlinkTable(const std::vector<std::string>& tableData,
+                       const std::vector<std::pair<std::string, u_int32_t>>& tableHeader)
+{
+    u_int32_t numCols = tableHeader.size();
+    std::string tableHeaderRow = generateTableRow(tableHeader, "|");
+    std::string underscoreRow(tableHeaderRow.length() - 2, '-');
+    std::cout << "|" << underscoreRow << "|" << std::endl;
+    std::cout << tableHeaderRow << std::endl;
+    std::cout << "|" << underscoreRow << "|" << std::endl;
+    for (u_int32_t i = 0; i < tableData.size() / numCols; i++)
+    {
+        std::vector<std::pair<std::string, u_int32_t>> rowData = {};
+        for (u_int32_t j = 0; j < numCols; j++)
+        {
+            rowData.push_back(std::make_pair(tableData[i * numCols + j], tableHeader[j].second));
+        }
+        std::cout << generateTableRow(rowData, "|") << std::endl;
+    }
+}
+
+void updateColumnWidthPopulateTable(std::vector<std::pair<std::string, u_int32_t>>& vectorToAmend,
+                                    const u_int32_t locationInVector,
+                                    std::vector<std::string>& tableData,
+                                    const std::string& valToAdd,
+                                    u_int32_t unformattedStrLen,
+                                    bool isActive)
+{
+    if (locationInVector < vectorToAmend.size())
+    {
+        if (unformattedStrLen > vectorToAmend[locationInVector].second)
+        {
+            vectorToAmend[locationInVector].second = unformattedStrLen;
+        }
+    }
+    else
+    {
+        throw std::out_of_range(
+          string("Showing Multi Port Info Table raised the following exception: Location in vector is out of bounds"));
+    }
+    if (isActive && valToAdd != "N/A")
+    {
+        tableData.push_back(valToAdd);
+    }
+    else
+    {
+        tableData.push_back("");
+    }
+}
+
 void printProgressBar(int completion, const std::string& preStr, const std::string& endStr)
 {
     if (completion < 100)
@@ -1654,4 +1802,68 @@ void printProgressBar(int completion, const std::string& preStr, const std::stri
         }
     }
     std::cout << std::flush;
+}
+
+static void string_appendv(std::string& out, const char* format, va_list args)
+{
+    static const int FIT_MOST_OF_THE_CASES = 1024;
+    char buffer[FIT_MOST_OF_THE_CASES];
+    size_t length = sizeof(buffer);
+
+    va_list tmp_args;
+    va_copy(tmp_args, args);
+    int bytes_written = ::std::vsnprintf(buffer, length, format, tmp_args);
+    va_end(tmp_args);
+
+    if (bytes_written >= 0 && static_cast<size_t>(bytes_written) < length)
+    {
+        out.append(buffer, bytes_written);
+        return;
+    }
+
+    if (bytes_written < 0)
+    {
+        out.append("encoding error formatting string :");
+        out.append(format);
+        return;
+    }
+
+    // if we reached this point than "bytes_written" represents the number of characters
+    // that would have been written if buffer had been sufficiently large, not counting
+    // the terminating null character
+
+    length = bytes_written + 1;
+
+    char* rubber_buffer(new char[length]);
+    va_copy(tmp_args, args);
+    bytes_written = ::std::vsnprintf(rubber_buffer, length, format, tmp_args);
+    va_end(tmp_args);
+
+    if (bytes_written >= 0 && static_cast<size_t>(bytes_written) < length)
+    {
+        out.append(rubber_buffer, bytes_written);
+        delete[] rubber_buffer;
+        return;
+    }
+
+    if (bytes_written < 0)
+    {
+        out.append("encoding error formatting string");
+        out.append(format);
+        delete[] rubber_buffer;
+        return;
+    }
+
+    delete[] rubber_buffer;
+    return;
+}
+
+std::string string_format(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    std::string out;
+    string_appendv(out, format, args);
+    va_end(args);
+    return out;
 }
