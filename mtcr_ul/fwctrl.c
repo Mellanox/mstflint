@@ -148,7 +148,6 @@ int fwctl_control_access_register(int    fd,
     __aligned_u64   *out = NULL;
     __aligned_u64   *in = NULL;
     void            *data;
-    void            *status;
 
     in = malloc(inlen);
     out = malloc(outlen);
@@ -178,23 +177,30 @@ int fwctl_control_access_register(int    fd,
 
     err = ioctl(fd, FWCTL_RPC, &rpc);
     if (err) {
-        FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMDRPC failed: %d errno(%d): %s\n", err, errno, strerror(errno));
+        FWCTL_DEBUG_PRINT(mf,"FWCTL_IOCTL_CMD_RPC ioctl() failed: err=%d, errno=%d (%s)\n", err, errno, strerror(errno));
         return err;
     }
 
     data = MLX5_ADDR_OF(access_register_out, out, register_data);
-    status = MLX5_ADDR_OF(access_register_out, out, status);
     memcpy(data_in, data, size_in);
-    memcpy(&cmd_status, status, sizeof(int));
+
+    cmd_status = MLX5_GET(access_register_out, out, status);
     if (cmd_status) {
+        FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC returned error from FW: reg_id=0x%x, method=0x%x, cmd_status=0x%x, syndrome=0x%x\n",
+                          reg_id, method, cmd_status, MLX5_GET(access_register_out, out, syndrome));
+
         if (reg_id == mnvda_reg_id) {
             *reg_status = translate_cmd_status_to_reg_status(cmd_status);
         } else {
             *reg_status = return_by_reg_status(cmd_status);
         }
+        FWCTL_DEBUG_PRINT(mf, "Mapped FW cmd_status=0x%x to reg_status=0x%x (%s)\n", cmd_status, *reg_status, m_err2str(*reg_status));
+    } else {
+        *reg_status = 0;
+        FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC succeeded: reg_id=0x%x, method=0x%x\n", reg_id, method);
     }
 
-    FWCTL_DEBUG_PRINT(mf, "register id = 0x%x, command status = 0x%x, reg status code: 0x%x, reg status: %s\n",
+    FWCTL_DEBUG_PRINT(mf, "Final result: reg_id=0x%x, cmd_status=0x%x, reg_status=0x%x (%s)\n",
                       reg_id, cmd_status, *reg_status, m_err2str(*reg_status));
 out:
     free(out);
