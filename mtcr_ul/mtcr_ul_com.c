@@ -1090,7 +1090,18 @@ static int fwctrl_driver_open(mfile* mf, const char* name)
 {
     char full_path_name[60];
 
-    sprintf(full_path_name, "/dev/fwctl/%s", name);
+    if (strstr(name, "/dev/fwctl/") == NULL)
+    {
+        // Name is just the device name, construct full path.
+        sprintf(full_path_name, "/dev/fwctl/%s", name);
+    }
+    else
+    {
+        // Name is already a full path, use it as is.
+        strncpy(full_path_name, name, sizeof(full_path_name) - 1);
+        full_path_name[sizeof(full_path_name) - 1] = '\0';
+    }
+    DBG_PRINTF("fwctrl: opening device: %s\n", full_path_name);
     ul_ctx_t* ctx = mf->ul_ctx;
 
     ctx->connectx_flush = 0;
