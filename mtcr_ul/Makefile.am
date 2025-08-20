@@ -61,7 +61,9 @@ libmtcr_ul_la_LDFLAGS += -static
 endif
 
 if ENABLE_CABLES
-libmtcr_ul_la_SOURCES += mtcr_cables.c mtcr_cables.h ../tools_layouts/cables_layouts.c ../tools_layouts/cables_layouts.h ../tools_layouts/adb_to_c_utils.c ../tools_layouts/adb_to_c_utils.h
+libmtcr_ul_la_SOURCES += mtcr_cables.c mtcr_cables.h
+libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/tools_layouts/libcables_layouts.la
+libmtcr_ul_la_LDFLAGS += -static
 endif
 
 libmtcr_ul_la_LIBADD = $(libmtcr_ul_la_DEPENDENCIES)
