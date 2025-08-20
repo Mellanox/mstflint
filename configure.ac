@@ -67,6 +67,7 @@ OFED_EXIST=`ofed_info -s`
 OFED_NOT_EXIST="ofed_info: command not found"
 MTCR_CONF_DIR=""
 LDL=""
+LDFLAGS="$LDFLAGS -lstdc++"
 default_en_inband=""
 default_en_rdmem="no"
 default_en_nvml="no"
@@ -400,6 +401,28 @@ fi
 
 AM_CONDITIONAL(ENABLE_NVML, [ test "x$enable_nvml" = "xyes" ])
 
+# Enable Cables:
+
+AC_MSG_CHECKING(--enable-cables argument)
+AC_ARG_ENABLE(cables,
+    AS_HELP_STRING([--enable-cables], [enable cable access (Linux only)]),
+    [enable_cables="$enableval"],
+    [enable_cables="$default_en_cables"]
+)
+AC_MSG_RESULT($enable_cables)
+if test "x$enable_cables" = "xyes"; then
+    CXXFLAGS="$CXXFLAGS -DCABLES_SUPPORT"
+    CFLAGS="$CFLAGS -DCABLES_SUPPORT"
+fi
+
+AM_CONDITIONAL(ENABLE_CABLES, [ test "x$enable_cables" = "xyes" ])
+
+AS_IF([test "x$enable_cables" = "xyes"],
+    [
+        AC_CONFIG_FILES(cable_access/Makefile)
+        CABLE_ACCESS_DIR="cable_access"
+    ]
+)
 ##
 
 AC_MSG_CHECKING(--enable-rdmem argument)
@@ -684,6 +707,7 @@ AC_SUBST(ADABE_DBS)
 AC_SUBST(ADABE_DBS_EXTRA_DIST)
 AC_SUBST(XZ_UTILS_DIR)
 AC_SUBST(NVML_DIR)
+AC_SUBST(CABLE_ACCESS_DIR)
 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD MTCR)

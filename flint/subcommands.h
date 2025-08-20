@@ -136,7 +136,7 @@ protected:
     static int dromCbFunc(int completion);
     static int wbCbFunc(int completion);
     static int resetCfgCbFunc(int completion);
-
+    
     bool printGuidLine(guid_t* new_guids, guid_t* old_guids, int guid_index);
     bool printMacLine(guid_t* new_guids, guid_t* old_guids, int mac_index);
     bool printGUIDsFunc(guid_t guids[GUIDS],
@@ -180,7 +180,7 @@ protected:
     bool getFileSize(const string& filePath, long& fileSize);
     bool writeToFile(string filePath, const std::vector<u_int8_t>& buff);
     FlintStatus writeImageToFile(const char* file_name, u_int8_t* data, u_int32_t length);
-
+    
     bool dumpFile(const char* confFile, std::vector<u_int8_t>& data, const char* sectionName);
     bool unzipDataFile(std::vector<u_int8_t> data, std::vector<u_int8_t>& newData, const char* sectionName);
     const char* fwImgTypeToStr(u_int8_t fwImgType);
@@ -224,6 +224,13 @@ public:
 class BurnSubCommand : public SubCommand
 {
 private:
+
+    enum class CableBurnFlow
+    {
+        Burn3rdParty,
+        Unknown
+    };
+
     u_int8_t _fwType;
     fw_info_t _devInfo;
     fw_info_t _imgInfo;
@@ -258,6 +265,10 @@ private:
                           int activate_delay_sec,
                           ProgressCallBackAdvSt* ProgressFuncAdv,
                           FwComponent::comps_ids_t fwComponent);
+    FlintStatus BurnCMISCable();
+    FlintStatus ResetModule(string device);
+    FlintStatus WaitForModuleInit(string device);
+    FlintStatus PerformBurn(std::vector<u_int8_t>& fwImage, std::vector<u_int8_t>& vendorData);
 
 public:
     BurnSubCommand();
@@ -310,6 +321,7 @@ private:
                          char* delimeter,
                          bool isCSV);
     FlintStatus QueryLinkX(string deviceName, string outputFile, std::vector<int> deviceIds);
+    FlintStatus QueryCableAttributes();
     void PrintLifeCycle(const life_cycle_t& lifeCycle);
 
 public:
