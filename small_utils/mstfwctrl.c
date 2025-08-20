@@ -166,7 +166,18 @@ int main(int argc, char* argv[])
 
     char* device_name = argv[1];
 
-    sprintf(full_path_name, "/dev/fwctl/%s", device_name);
+	if (strstr(device_name, "/dev/fwctl/") == NULL)
+    {
+        // Name is just the device name, construct full path.
+        sprintf(full_path_name, "/dev/fwctl/%s", device_name);
+    }
+    else
+    {
+        // Name is already a full path, use it as is.
+        strncpy(full_path_name, device_name, sizeof(full_path_name) - 1);
+        full_path_name[sizeof(full_path_name) - 1] = '\0';
+    }
+
     int fd = open(full_path_name, O_RDWR | O_SYNC);
     if (fd < 0)
     {
