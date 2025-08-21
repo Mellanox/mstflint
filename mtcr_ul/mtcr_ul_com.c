@@ -2573,6 +2573,12 @@ static MType mtcr_parse_name(const char* name,
         return MST_NVML;
     }
 
+#ifdef ENABLE_MST_DEV_I2C
+    if (strstr(name, "/dev/i2c")) {
+        return MST_DEV_I2C;
+    }
+#endif
+
     scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
     if (scnt != 4) {
         my_domain = 0;
@@ -2659,12 +2665,6 @@ static MType mtcr_parse_name(const char* name,
     if (strstr(name, "fwctl")) {
         return MST_FWCTL_CONTROL_DRIVER;
     }
-
-#ifdef ENABLE_MST_DEV_I2C
-    if (strstr(name, "/dev/i2c")) {
-        return MST_DEV_I2C;
-    }
-#endif
 
 parse_error:
     fprintf(stderr, "Unable to parse device name %s\n", name);
