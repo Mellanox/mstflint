@@ -12,6 +12,7 @@
 %{!?enableadbgenerictools: %define enableadbgenerictools 1}
 %{!?enablecables: %define enablecables 0}
 %{!?enablei2c: %define enablei2c 0}
+%{!?enablenvml: %define enablenvml 0}
 %{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
 
 %define mstflint_python_tools %{_libdir}/mstflint/python_tools
@@ -102,6 +103,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{enablei2c}
     config_flags="$config_flags --enable-i2c"
+%endif
+
+%if %{enablenvml}
+    config_flags="$config_flags --enable-nvml"
 %endif
 
 %if %{enablecables}
