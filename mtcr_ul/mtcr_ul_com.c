@@ -2617,6 +2617,23 @@ static MType mtcr_parse_name(const char* name,
         return MST_FWCTL_CONTROL_DRIVER;
     }
 
+    if ((sscanf(name, "lid-%x", &tmp) == 1) || (sscanf(name, "ibdr-%x", &tmp) == 1) || (strstr(name, "lid-") != 0) ||
+    (strstr(name, "ibdr-") != 0)) {
+        *force = 1;
+        return MST_IB;
+    }
+
+    if ((strstr(name, "/dev/nvidia") != 0)) {
+        *force = 0;
+        return MST_NVML;
+    }
+
+#ifdef ENABLE_MST_DEV_I2C
+    if (strstr(name, "/dev/i2c")) {
+        return MST_DEV_I2C;
+    }
+#endif
+
     if (is_vfio || lockdown_enabled) {
         if (is_vfio) {
             scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
@@ -2658,17 +2675,6 @@ static MType mtcr_parse_name(const char* name,
     if (!strncmp(name, "/proc/bus/pci/", sizeof procbuspci - 1)) {
         *force = 1;
         return MST_PCICONF;
-    }
-
-    if ((sscanf(name, "lid-%x", &tmp) == 1) || (sscanf(name, "ibdr-%x", &tmp) == 1) || (strstr(name, "lid-") != 0) ||
-        (strstr(name, "ibdr-") != 0)) {
-        *force = 1;
-        return MST_IB;
-    }
-
-    if ((strstr(name, "/dev/nvidia") != 0)) {
-        *force = 0;
-        return MST_NVML;
     }
 
     if ((sscanf(name, "mthca%x",
@@ -2728,12 +2734,6 @@ static MType mtcr_parse_name(const char* name,
         force_config = 1;
         goto name_parsed;
     }
-
-#ifdef ENABLE_MST_DEV_I2C
-    if (strstr(name, "/dev/i2c")) {
-        return MST_DEV_I2C;
-    }
-#endif
 
 parse_error:
     fprintf(stderr, "Unable to parse device name %s\n", name);
