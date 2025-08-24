@@ -240,8 +240,18 @@ MlxRegLibStatus MlxRegLib::sendRegister(string regName, int method, std::vector<
     u_int16_t regId = (u_int16_t)_regAccessMap.find(regName)->second;
     int rc;
     rc = sendMaccessReg(regId, method, data);
-    if (rc) {
-        throw MlxRegException("Failed to send access register: %s", m_err2str((MError)rc));
+    if (rc)
+    {
+        char error_msg[200];
+        snprintf(error_msg, sizeof(error_msg), "Failed to send access register: %s", m_err2str((MError)rc));
+        if (_mf->icmd.syndrome)
+        {
+            snprintf(error_msg + strlen(error_msg),
+                     sizeof(error_msg) - strlen(error_msg),
+                     " and the syndrome number is: 0x%X",
+                     (_mf->icmd.syndrome));
+        }
+        throw MlxRegException(error_msg);
     }
     return MRLS_SUCCESS;
 }
@@ -255,7 +265,16 @@ MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, std::vector
     rc = sendMaccessReg(regId, method, data);
     if (rc)
     {
-        throw MlxRegException("Failed send access register: %s", m_err2str((MError)rc));
+        char error_msg[200];
+        snprintf(error_msg, sizeof(error_msg), "Failed to send access register: %s", m_err2str((MError)rc));
+        if (_mf->icmd.syndrome)
+        {
+            snprintf(error_msg + strlen(error_msg),
+                     sizeof(error_msg) - strlen(error_msg),
+                     " and the syndrome number is: 0x%X",
+                     (_mf->icmd.syndrome));
+        }
+        throw MlxRegException(error_msg);
     }
     return MRLS_SUCCESS;
 }
