@@ -2456,8 +2456,8 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
 }
 
 u_int32_t secured_devices[] =
-{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceConnectX9_HwId, DeviceConnectX8PurePcieSwitch_HwId,
- DeviceQuantum2_HwId, DeviceQuantum3_HwId};
+{DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceConnectX9_HwId, DeviceConnectX8_Pure_PCIe_Switch_HwId,
+ DeviceQuantum2_HwId, DeviceQuantum3_HwId, DeviceConnectX9_Pure_PCIe_Switch_HwId};
 
 #define SECURED_DEVICE_ID_TABLE_SIZE (sizeof(secured_devices) / sizeof(u_int32_t))
 
@@ -2476,7 +2476,7 @@ u_int32_t supported_device_ids[] =
  DeviceArcusP_HwId,           DeviceArcusE_HwId,         DeviceSecureHost_HwId,
  DeviceSpectrum3_HwId,        DeviceSpectrum4_HwId,      DeviceGearBox_HwId,
  DeviceGearBoxManager_HwId,   DeviceAbirGearBox_HwId,    DeviceGB100_HwId,
- DeviceConnectX8PurePcieSwitch_HwId, DeviceConnectX9_HwId};
+ DeviceConnectX8_Pure_PCIe_Switch_HwId, DeviceConnectX9_HwId, DeviceConnectX9_Pure_PCIe_Switch_HwId};
 #define SUPPORTED_DEVICE_ID_TABLE_SIZE (sizeof(supported_device_ids) / sizeof(u_int32_t))
 
 int is_supported_device_id(u_int16_t dev_id)
@@ -4748,10 +4748,10 @@ int is_zombiefish_device(mfile* mf)
     if (mread4(mf, HW_ID_ADDR, &mf->device_hw_id) != 4) {
         return 0;
     }
-    if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8PurePcieSwitch_HwId) &&
+    if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8_Pure_PCIe_Switch_HwId) &&
         (mf->device_hw_id != DeviceQuantum3_HwId) && (mf->device_hw_id != DeviceConnectX9_HwId) &&
         (mf->device_hw_id != DeviceQuantum4_HwId) && (mf->device_hw_id != DeviceConnectX7_HwId) &&
-        (mf->device_hw_id != DeviceBlueField3_HwId)) {
+        (mf->device_hw_id != DeviceBlueField3_HwId) && (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId)) {
         return 0;
     }
 

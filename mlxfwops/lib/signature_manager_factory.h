@@ -77,13 +77,13 @@ public:
         {
             return new ConnectX9FwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceConnectX8PurePcieSwitch)
+        else if (deviceId == DeviceConnectX8_Pure_PCIe_Switch)
         {
             return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceConnectX8PurePcieSwitch)
+        else if (deviceId == DeviceConnectX9_Pure_PCIe_Switch)
         {
-            return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
+            return new ConnectX9PurePCIESwitchFwOperationsSignatureManager();
         }
         else if (deviceId == DeviceBlueField2)
         {
