@@ -127,6 +127,7 @@ typedef void* trm_ctx;
 #define IS_CONNECTX8(dev_id)               ((dev_id) == CX8_HW_ID)
 #define IS_CONNECTX9(dev_id)               ((dev_id) == CX9_HW_ID)
 #define IS_CONNECTX8_PURE_PCIE_SWITCH(dev_id) ((dev_id) == CX8_PURE_PCIE_SWITCH_HW_ID)
+#define IS_CONNECTX9_PURE_PCIE_SWITCH(dev_id) ((dev_id) == CX9_PURE_PCIE_SWITCH_HW_ID)
 #define IS_CONNECTX6(dev_id)               ((dev_id) == CX6_HW_ID)
 #define IS_CONNECTX6DX(dev_id)             ((dev_id) == CX6DX_HW_ID)
 #define IS_CONNECTX6LX(dev_id)             ((dev_id) == CX6LX_HW_ID)
@@ -356,6 +357,14 @@ enum CntxCrConstants {
     HCR_7GEN_CX8_GCM_EN_ADDR        = 0x8a1028,
     HCR_7GEN_CX8_FLASH_ADDR         = 0x8a103c,
     HCR_7GEN_CX8_FLASH_DATA_SIZE    = 0x8a1044,
+    // CX9:
+    HCR_7GEN_CX9_FLASH_GW_BASE_ADDR = HCR_7GEN_CX8_FLASH_GW_BASE_ADDR,
+    HCR_7GEN_CX9_FLASH_CMD = HCR_7GEN_CX9_FLASH_GW_BASE_ADDR,
+    HCR_7GEN_CX9_FLASH_DATA = HCR_7GEN_CX8_FLASH_DATA,
+    HCR_7GEN_CX9_GCM_EN_ADDR = HCR_7GEN_CX8_GCM_EN_ADDR,
+    HCR_7GEN_CX9_FLASH_ADDR = HCR_7GEN_CX8_FLASH_ADDR,
+    HCR_7GEN_CX9_FLASH_DATA_SIZE = HCR_7GEN_CX8_FLASH_DATA_SIZE,
+
 
     /* Flash GW fields offsets and lengths */
     HBO_READ_OP      = 0,

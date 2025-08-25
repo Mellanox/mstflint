@@ -152,6 +152,13 @@ public:
     virtual ~ConnectX8PurePCIESwitchFwOperationsSignatureManager() {}
 };
 
+class ConnectX9PurePCIESwitchFwOperationsSignatureManager : public ConnectX7FwOperationsSignatureManager
+{
+public:
+    ConnectX9PurePCIESwitchFwOperationsSignatureManager() : ConnectX7FwOperationsSignatureManager() {}
+    virtual ~ConnectX9PurePCIESwitchFwOperationsSignatureManager() {}
+};
+
 class Bluefield2FwOperationsSignatureManager : public ConnectX6DXFwOperationsSignatureManager
 {
 public:

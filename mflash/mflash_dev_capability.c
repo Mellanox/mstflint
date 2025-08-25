@@ -66,7 +66,8 @@ int is_four_byte_address_needed(mflash* mfl, MfError* status)
         case DeviceConnectX7:
         case DeviceConnectX8:
         case DeviceConnectX9:
-        case DeviceConnectX8PurePcieSwitch:
+        case DeviceConnectX8_Pure_PCIe_Switch:
+        case DeviceConnectX9_Pure_PCIe_Switch:
         case DeviceConnectX6DX:
         case DeviceConnectX6LX:
         case DeviceSpectrum2:
