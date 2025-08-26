@@ -109,7 +109,8 @@ enum dm_dev_id {
     DeviceConnectX6LX,
     DeviceConnectX7,
     DeviceConnectX8,
-    DeviceConnectX8PurePcieSwitch,
+    DeviceConnectX8_Pure_PCIe_Switch,
+    DeviceConnectX9_Pure_PCIe_Switch,
     DeviceConnectX9,
     DeviceSpectrum3,     /* Firebird */
     DeviceSpectrum4,     /* Albatross */
@@ -146,8 +147,9 @@ enum hw_dev_id {
     DeviceConnectX6LX_HwId      = 0x216,
     DeviceConnectX7_HwId        = 0x218,
     DeviceConnectX8_HwId        = 0x21e,
-    DeviceConnectX8PurePcieSwitch_HwId = 0x222,
+    DeviceConnectX8_Pure_PCIe_Switch_HwId = 0x222,
     DeviceConnectX9_HwId        = 0x224,
+    DeviceConnectX9_Pure_PCIe_Switch_HwId = 0x228,
     DeviceBlueField_HwId        = 0x211,
     DeviceBlueField2_HwId       = 0x214,
     DeviceBlueField3_HwId       = 0x21c,

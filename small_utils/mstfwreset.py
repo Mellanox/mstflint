@@ -120,6 +120,8 @@ MLNX_DEVICES = [
     dict(name="ConnectX8-Pure-PCIe-Switch-RMA", devid=0x223, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX9", devid=0x224, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX9-RMA", devid=0x225, status_config_not_done=(0xb5f04, 31)),
+    dict(name="ConnectX9-Pure-PCIe-Switch", devid=0x228, status_config_not_done=(0xb5f04, 31)),
+    dict(name="ConnectX9-Pure-PCIe-Switch-RMA", devid=0x229, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX10", devid=0x226, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX10-RMA", devid=0x227, status_config_not_done=(0xb5f04, 31)),
     dict(name="Switch-IB", devid=0x247, status_config_not_done=(0x80010, 0)),

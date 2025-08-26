@@ -1728,7 +1728,7 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
         /* TODO - fix for QTM3/CX8/ArcusE/BF4 */
         /* Read the Cache replacement offset and cmd fields */
         if ((devid_t == DeviceQuantum2) || (devid_t == DeviceQuantum3) || (devid_t == DeviceSpectrum4) ||
-            (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8) || (devid_t == DeviceConnectX8PurePcieSwitch)) {
+            (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8) || (devid_t == DeviceConnectX8_Pure_PCIe_Switch) || (devid_t == DeviceConnectX9_Pure_PCIe_Switch)) {
             MREAD4(CACHE_REP_OFF_NEW_GW_ADDR, &data);
             off = data;
             MREAD4(CACHE_REP_CMD_NEW_GW_ADDR, &data);
@@ -1946,7 +1946,7 @@ void update_seventh_gen_addrs(mflash* mfl)
             mfl->gw_data_size_register_addr = mfl->gw_data_size_register_addr - HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR +
                                               VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
         }
-    } else if (mfl->dm_dev_id == DeviceConnectX8 || mfl->dm_dev_id == DeviceConnectX8PurePcieSwitch) {
+    } else if (mfl->dm_dev_id == DeviceConnectX8 || mfl->dm_dev_id == DeviceConnectX8_Pure_PCIe_Switch) {
         mfl->gw_cmd_register_addr = HCR_7GEN_CX8_FLASH_CMD;
         mfl->gw_data_field_addr = HCR_7GEN_CX8_FLASH_DATA;
         mfl->gcm_en_addr = HCR_7GEN_CX8_GCM_EN_ADDR;
@@ -1962,6 +1962,25 @@ void update_seventh_gen_addrs(mflash* mfl)
             mfl->gw_addr_field_addr =
                 mfl->gw_addr_field_addr - HCR_7GEN_CX8_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
             mfl->gw_data_size_register_addr = mfl->gw_data_size_register_addr - HCR_7GEN_CX8_FLASH_GW_BASE_ADDR +
+                                              VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+        }
+    }
+    else if (mfl->dm_dev_id == DeviceConnectX9 || mfl->dm_dev_id == DeviceConnectX9_Pure_PCIe_Switch) {
+        mfl->gw_cmd_register_addr = HCR_7GEN_CX9_FLASH_CMD;
+        mfl->gw_data_field_addr = HCR_7GEN_CX9_FLASH_DATA;
+        mfl->gcm_en_addr = HCR_7GEN_CX9_GCM_EN_ADDR;
+        mfl->gw_addr_field_addr = HCR_7GEN_CX9_FLASH_ADDR;
+        mfl->gw_data_size_register_addr = HCR_7GEN_CX9_FLASH_DATA_SIZE;
+        if (is_zombiefish_device(mfl->mf)) {
+            mfl->gw_cmd_register_addr =
+                mfl->gw_cmd_register_addr - HCR_7GEN_CX9_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_data_field_addr =
+                mfl->gw_data_field_addr - HCR_7GEN_CX9_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gcm_en_addr =
+                mfl->gcm_en_addr - HCR_7GEN_CX9_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_addr_field_addr =
+                mfl->gw_addr_field_addr - HCR_7GEN_CX9_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_data_size_register_addr = mfl->gw_data_size_register_addr - HCR_7GEN_CX9_FLASH_GW_BASE_ADDR +
                                               VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
         }
     }  else if (mfl->dm_dev_id == DeviceArcusE) {
@@ -3328,7 +3347,8 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
     case DeviceBlueField3:
     case DeviceConnectX8:
     case DeviceConnectX9:
-    case DeviceConnectX8PurePcieSwitch:
+    case DeviceConnectX8_Pure_PCIe_Switch:
+    case DeviceConnectX9_Pure_PCIe_Switch:
     case DeviceBlueField4:
     case DeviceSpectrum4:
     case DeviceAbirGearBox:
@@ -3427,8 +3447,9 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
         break;
 
     case DeviceConnectX8:
-    case DeviceConnectX8PurePcieSwitch:
+    case DeviceConnectX8_Pure_PCIe_Switch:
     case DeviceConnectX9:
+    case DeviceConnectX9_Pure_PCIe_Switch:
     case DeviceBlueField4:
         boot_cr_space_address = 0xf8008;
         offset_in_address = 0;
