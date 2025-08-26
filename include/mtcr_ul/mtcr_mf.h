@@ -163,7 +163,6 @@ struct mfile_t {
     int                     is_zombiefish;
     int                     vsc_recovery_space_flash_control_vld;
     void*                   nvml_device; /* libnvml device object. */
-    u_int32_t               syndrome; /* syndrome from last access register */
 };
 
 #endif /* ifndef __MTCR_MF__ */

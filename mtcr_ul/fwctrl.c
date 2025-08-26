@@ -188,7 +188,7 @@ int fwctl_control_access_register(int    fd,
     memcpy(&cmd_status, status, sizeof(int));
     if (cmd_status) {
         u_int32_t syndrome = MLX5_GET(access_register_out, out, syndrome);
-        mf->syndrome = syndrome;
+        mf->icmd.syndrome = syndrome;
         FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC returned error from FW: reg_id=0x%x, method=0x%x, cmd_status=0x%x, syndrome=0x%x\n",
                           reg_id, method, cmd_status, syndrome);
 
@@ -198,7 +198,9 @@ int fwctl_control_access_register(int    fd,
             *reg_status = return_by_reg_status(cmd_status);
         }
         FWCTL_DEBUG_PRINT(mf, "Mapped FW cmd_status=0x%x to reg_status=0x%x (%s)\n", cmd_status, *reg_status, m_err2str(*reg_status));
-        mf->syndrome = 0;
+    } else {
+        *reg_status = 0;
+        mf->icmd.syndrome = 0;
         FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC succeeded: reg_id=0x%x, method=0x%x\n", reg_id, method);
     }
 

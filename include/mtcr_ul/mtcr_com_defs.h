@@ -446,6 +446,7 @@ typedef struct icmd_params_t {
     u_int32_t     dma_size;
     int           dma_icmd;
     mtcr_status_e icmd_ready;
+    u_int32_t     syndrome;
 } icmd_params;
 
 typedef struct ctx_params_t {
