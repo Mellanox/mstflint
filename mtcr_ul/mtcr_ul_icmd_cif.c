@@ -121,6 +121,11 @@
 #define VCR_SEMAPHORE62                0x0 /* semaphore Domain */
 #define VCR_CMD_ADDR                   0x100000 /* mailbox addr */
 #define VCR_CMD_SIZE_ADDR              0x1000 /* mailbox size */
+#define VCR_SYNDROME_OFFSET            0x1008
+#define SYNDROME_OFFSET                0x3f8
+#define SYNDROME_BITOFF                0
+#define SYNDROME_BITLEN                24
+
 
 #define EXT_MBOX_DMA_OFF 0x8
 
@@ -357,6 +362,15 @@ static MError set_busy_bit(mfile* mf, u_int32_t* reg, int busy_bit_offset)
 {
     *reg = MERGE(*reg, 1, busy_bit_offset, BUSY_BITLEN);
     return MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, *reg);
+}
+
+static MError get_syndrome(mfile* mf, u_int32_t* reg, int syndrome_bit_offset, int syndrome_bit_len)
+{
+    DBG_PRINTF("Reading syndrome from addr=0x%x\n", mf->icmd.syndrome_addr);
+    int rc = MREAD4_ICMD(mf, mf->icmd.syndrome_addr, reg);
+    CHECK_RC(rc);
+
+    return EXTRACT((*reg), syndrome_bit_offset, syndrome_bit_len);
 }
 
 static int set_sleep()
@@ -801,6 +815,12 @@ static int icmd_send_command_com(mfile     * mf,
 
     /* get status */
     ret = translate_status(EXTRACT(reg, STATUS_BITOFF, STATUS_BITLEN));
+
+    if (ret != ME_OK)
+    {
+        mf->icmd.syndrome = get_syndrome(mf, &reg, SYNDROME_BITOFF, SYNDROME_BITLEN);
+    }
+
     CHECK_RC_GO_TO(ret, cleanup);
 
     DBG_PRINTF("-D- Reading command from mailbox");
@@ -976,6 +996,7 @@ static int icmd_init_cr(mfile* mf)
     u_int32_t cmd_ptr_addr;
     u_int32_t reg = 0x0;
     u_int32_t hw_id = 0x0;
+    mf->icmd.syndrome = 0;
 
 #ifndef __FreeBSD__
     u_int32_t dev_type = 0;
@@ -1135,6 +1156,8 @@ static int icmd_init_cr(mfile* mf)
 
         mf->icmd.cmd_addr = EXTRACT(reg, CMD_PTR_BITOFF, mf->icmd.cmd_ptr_bitlen);
         mf->icmd.ctrl_addr = mf->icmd.cmd_addr + CTRL_OFFSET;
+        mf->icmd.syndrome_addr = mf->icmd.cmd_addr + SYNDROME_OFFSET;
+        DBG_PRINTF("-D- iCMD syndrom addr: 0x%x\n", mf->icmd.syndrome_addr);
         break;
 
     case ME_ICMD_STATUS_CR_FAIL:
@@ -1243,6 +1266,8 @@ static int icmd_init_vcr(mfile* mf)
     mf->icmd.cmd_addr = VCR_CMD_ADDR;
     mf->icmd.ctrl_addr = VCR_CTRL_ADDR;
     mf->icmd.semaphore_addr = VCR_SEMAPHORE62;
+    mf->icmd.syndrome_addr = VCR_SYNDROME_OFFSET;
+    mf->icmd.syndrome = 0;
     DBG_PRINTF("-D- Getting VCR_CMD_SIZE_ADDR\n");
 
     rc = icmd_take_semaphore_com(mf, pid);
@@ -1262,6 +1287,7 @@ static int icmd_init_vcr(mfile* mf)
     mf->icmd.icmd_opened = 1;
     DBG_PRINTF("-D- iCMD command addr: 0x%x\n", mf->icmd.cmd_addr);
     DBG_PRINTF("-D- iCMD ctrl addr: 0x%x\n", mf->icmd.ctrl_addr);
+    DBG_PRINTF("-D- iCMD syndrom addr: 0x%x\n", mf->icmd.syndrome_addr);
     DBG_PRINTF("-D- iCMD semaphore addr(semaphore space): 0x%x\n", mf->icmd.semaphore_addr);
     DBG_PRINTF("-D- iCMD max mailbox size: 0x%x  size %d\n", mf->icmd.max_cmd_size, size);
     DBG_PRINTF("-D- iCMD stat_cfg_not_done addr: 0x%x:%d\n", mf->icmd.static_cfg_not_done_addr,
