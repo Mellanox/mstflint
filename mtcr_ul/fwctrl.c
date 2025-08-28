@@ -203,7 +203,7 @@ int fwctl_control_access_register(int    fd,
         mf->icmd.syndrome = 0;
         FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC succeeded: reg_id=0x%x, method=0x%x\n", reg_id, method);
     }
-
+    FWCTL_DEBUG_PRINT(mf, "register id = 0x%x, command status = 0x%x, reg status code: 0x%x, reg status: %s\n",
                       reg_id, cmd_status, *reg_status, m_err2str(*reg_status));
 out:
     free(out);
