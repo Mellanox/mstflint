@@ -56,6 +56,7 @@ public:
         _mf = mf;
         _manager = manager;
         _lastFwError = FWCOMPS_SUCCESS;
+        _lastRegisterAccessStatus = ME_REG_ACCESS_OK;
     }
     virtual ~AbstractComponentAccess() {}
 
