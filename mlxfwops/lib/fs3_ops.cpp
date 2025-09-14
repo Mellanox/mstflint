@@ -2925,7 +2925,7 @@ bool Fs3Operations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, PrintC
     return true;
 }
 
-bool Fs3Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc)
+bool Fs3Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack)
 {
     struct tools_open_mlock mlock;
     memset(&mlock, 0, sizeof(mlock));

@@ -451,7 +451,7 @@ struct reg_access_switch_mtcq_reg_ext MlxCfgToken::GetChallengeFromSwitchOrHCA(M
     return mtcq_reg;
 }
 
-void MlxCfgToken::GetAndPrintChallenge(MlxCfgTokenType token, bool nestedToken)
+void MlxCfgToken::GetAndPrintChallenge(MlxCfgTokenType token, bool)
 {
     if (token == McTokenTypeRMCS || token == McTokenTypeRMDT)
     {
