@@ -1223,8 +1223,8 @@ bool Flash::get_data_for_protect_info(const ext_flash_attr_t& attr,
 bool Flash::set_data_in_protect_info(std::string& tbs,
     std::string& sector_num,
     std::string& sector_or_subsector,
-    const ext_flash_attr_t& attr,
-    u_int8_t bank_num,
+    const ext_flash_attr_t&,
+    u_int8_t,
     write_protect_info_t* protect_info)
 {
     bool rc = true;
