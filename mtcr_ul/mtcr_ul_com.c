@@ -4830,6 +4830,8 @@ int is_pcie_switch_device(mfile* mf)
     char device_buffer[DEV_NAME_SZ];
     char device_path[DEV_NAME_SZ];
     int  counter;
+    char* fgets_output;
+
     struct pcie_switch_device_id {
         unsigned int device_id;
     } devs[] = {
@@ -4855,8 +4857,11 @@ int is_pcie_switch_device(mfile* mf)
     }
 
     /* write to device_buffer the device name */
-    fgets(device_buffer, DEV_NAME_SZ, (FILE*)device);
+    fgets_output = fgets(device_buffer, DEV_NAME_SZ, (FILE*)device);
     fclose(device);
+    if (!fgets_output) {
+        return 0;
+    }
 
     char* temp = strchr(device_buffer, '\n'); /* Finds first '\n' */
 
