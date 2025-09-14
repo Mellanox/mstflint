@@ -3495,7 +3495,6 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
     char     pcidev[99] = "XXXX:XX:XX.X";
     int      err;
     int      rc;
-    int      cable_port = 0;
 
     if (geteuid() != 0) {
         errno = EACCES;
@@ -3631,7 +3630,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         if (0 == rc) {
 #ifdef CABLES_SUPPORT
             if (is_cable_device(name)) {
-                cable_port = get_cable_port(name);
+                int cable_port = get_cable_port(name);
                 rc = mcables_open(mf, cable_port);
                 if (rc) {
                     goto open_failed;
