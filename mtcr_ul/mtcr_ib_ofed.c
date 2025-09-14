@@ -2044,6 +2044,6 @@ int mib_supports_reg_access_cls_a(mfile* mf, maccess_reg_method_t reg_method)
 
 int mib_supports_reg_access_smp(mfile* mf)
 {
-    return (mf->tp == MST_IB && ((ibvs_mad*)mf->ctx)->use_smp) && (mf->flags & (MDEVS_IB | MDEVS_FWCTX)) ||
+    return ((mf->tp == MST_IB && ((ibvs_mad*)mf->ctx)->use_smp) && (mf->flags & (MDEVS_IB | MDEVS_FWCTX))) ||
            (!(mf->flags & MDEVS_IB));
 }
