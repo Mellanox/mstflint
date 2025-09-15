@@ -2611,7 +2611,6 @@ static MType mtcr_parse_name(const char* name,
     unsigned len = strlen(name);
     unsigned tmp;
     int      is_vfio = strstr(name, "vfio-") != NULL;
-    int      lockdown_enabled = CheckifKernelLockdownIsEnabled();
 
     if (strstr(name, "fwctl")) {
         return MST_FWCTL_CONTROL_DRIVER;
@@ -2634,24 +2633,16 @@ static MType mtcr_parse_name(const char* name,
     }
 #endif
 
-    if (is_vfio || lockdown_enabled) {
-        if (is_vfio) {
-            scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
-            if (scnt != 4) {
-                my_domain = 0;
-                scnt = sscanf(name, "vfio-%x:%x.%x", &my_bus, &my_dev, &my_func);
-                if (scnt != 3) {
-                    return MST_ERROR;
-                }
-            }
-        } else {
-            scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
-            if (scnt != 4) {
-                my_domain = 0;
-                scnt = sscanf(name, "%x:%x.%x", &my_bus, &my_dev, &my_func);
-                if (scnt != 3) {
-                    return MST_ERROR;
-                }
+    if (is_vfio)
+    {
+        scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+        if (scnt != 4)
+        {
+            my_domain = 0;
+            scnt = sscanf(name, "vfio-%x:%x.%x", &my_bus, &my_dev, &my_func);
+            if (scnt != 3)
+            {
+                return MST_ERROR;
             }
         }
 
@@ -2660,6 +2651,25 @@ static MType mtcr_parse_name(const char* name,
         *dev_p = my_dev;
         *func_p = my_func;
         return MST_VFIO_DEVICE;
+    }
+
+    if (CheckifKernelLockdownIsEnabled() && CheckifVfioPciDriverIsLoaded())
+    {
+        scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+        if (scnt != 4)
+        {
+            my_domain = 0;
+            scnt = sscanf(name, "%x:%x.%x", &my_bus, &my_dev, &my_func);
+        }
+
+        if (scnt == 4 || scnt == 3)
+        {
+            *domain_p = my_domain;
+            *bus_p = my_bus;
+            *dev_p = my_dev;
+            *func_p = my_func;
+            return MST_VFIO_DEVICE;
+        }
     }
 
     if ((len >= sizeof config) && !strcmp(config, name + len + 1 - sizeof config)) {

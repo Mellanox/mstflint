@@ -59,6 +59,11 @@ bool CheckifKernelLockdownIsEnabled()
     return VFIODriverAccess::CheckifKernelLockdownIsEnabled();
 }
 
+bool CheckifVfioPciDriverIsLoaded()
+{
+    return VFIODriverAccess::CheckifVfioPciDriverIsLoaded();
+}
+
 int CloseVFIODevices(int deviceFD)
 {
     try

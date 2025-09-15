@@ -38,10 +38,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
+#include <stdbool.h>
 #include "mtcr.h"
 #include "dev_mgt/tools_dev_types.h"
 #ifdef __linux__
 #include <linux/limits.h>
+#include "vfio_driver_access/VFIODriverAccessWrapperC.h"
 #endif
 #ifndef __FreeBSD__
 #include "mtcr_ul/mtcr_ul_com.h"
@@ -54,6 +56,11 @@ mfile* mopen_ul(const char* name)
 {
     (void)name;
     return 0;
+}
+
+static inline bool CheckifVfioPciDriverIsLoaded(void)
+{
+    return false;
 }
 #endif
 
@@ -287,7 +294,14 @@ void print_pci_info(dev_info* dev, int domain_needed)
     /* Add NUMA node */
     printf("%-6s", dev->pci.numa_node);
 
-    printf("vfio-%-6s", dbdf);
+    if (CheckifVfioPciDriverIsLoaded())
+    {
+        printf("vfio-%-6s", dbdf);
+    }
+    else
+    {
+        printf(" ");
+    }
 
     printf("\n");
 }
