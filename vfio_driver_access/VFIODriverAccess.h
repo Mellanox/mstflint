@@ -44,6 +44,7 @@ class VFIODriverAccess
 {
 public:
     static void OpenVFIODevices(const std::string& dbdf, int& deviceFD, uint64_t& vsecOffset, uint64_t& addressRegionOffset);
+    static bool CheckifVfioPciDriverIsLoaded();
     static void CloseVFIODevices(int deviceFD);
     static bool CheckifKernelLockdownIsEnabled();
 

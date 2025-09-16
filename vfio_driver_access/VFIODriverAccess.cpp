@@ -364,3 +364,22 @@ int VFIODriverAccess::GetDeviceFD(int groupID, const std::string& dbdf)
     }
     return fd;
 }
+
+bool VFIODriverAccess::CheckifVfioPciDriverIsLoaded()
+{
+    std::ifstream modulesFile("/proc/modules");
+    if (!modulesFile)
+    {
+        return false;
+    }
+
+    std::string line;
+    while (std::getline(modulesFile, line))
+    {
+        if (line.rfind("vfio_pci ", 0) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}

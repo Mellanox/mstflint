@@ -35,6 +35,7 @@
 #define VFIO_DRIVER_ACCESS_WRAPPER_C_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -46,6 +47,7 @@ int GetStartOffsets(unsigned domain, unsigned bus,
                     int* deviceFD, uint64_t* vsecOffset,
                     uint64_t* addressRegionOffset);
 bool CheckifKernelLockdownIsEnabled();
+bool CheckifVfioPciDriverIsLoaded();
 int CloseVFIODevices(int deviceFD);
 #ifdef __cplusplus
 }
