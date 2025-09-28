@@ -239,9 +239,9 @@ void FwManagementCdbCommander::DownloadFWImageData(CmisCdbAccess::PayloadMethod 
     {
         mft_signal_set_handling(1); // Ignoring signals during CMIS download flow
         SendFwChunk(payloadMethod, fwData, remainingImageData, blockAddress);
-        progressFunc(100);
         DealWithSignalDuringBurn();
     }
+    progressFunc(100);
 }
 
 void FwManagementCdbCommander::StartFWDownload(const vector<u_int8_t>& image, const vector<u_int8_t>& vendorData)
