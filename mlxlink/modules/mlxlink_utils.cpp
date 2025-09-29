@@ -1107,13 +1107,29 @@ string getTemp(u_int32_t temp, int celsParam)
     return to_string(temp / celsParam);
 }
 
-float getPower(u_int16_t power)
+float getPower(u_int16_t power, bool isModuleExtSupported)
 {
-    if (power & 0x8000)
+    // FW reports dbm values as integers, we read values in uw and convert manually to dbm to have more accuracy
+    // this function is used to convert the power values from UW to dBm
+    double result = -40;
+
+    if (isModuleExtSupported)
     {
-        return -((~power & 0xFFFF) + 1);
+        if (power != 0)
+        {
+            result = 10 * log10(float(power) / 1000.0);
+        }
+
+        return result;
     }
-    return power;
+    else
+    {
+        if (power & 0x8000)
+        {
+            return -((~power & 0xFFFF) + 1);
+        }
+        return power;
+    }
 }
 
 int getHeight(u_int16_t height)

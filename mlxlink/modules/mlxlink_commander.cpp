@@ -1677,10 +1677,10 @@ void MlxlinkCommander::prepareDDMSection(bool valid, bool isModuleExtSupported)
     float voltageHighTH = getFieldValue("voltage_high_th") / 10.0;
     float voltageLowTH = getFieldValue("voltage_low_th") / 10.0;
 
-    rxPowerHighTH = getPower(getFieldValue("rx_power_high_th"));
-    rxPowerLowTH = getPower(getFieldValue("rx_power_low_th"));
-    txPowerHighTH = getPower(getFieldValue("tx_power_high_th"));
-    txPowerLowTH = getPower(getFieldValue("tx_power_low_th"));
+    rxPowerHighTH = getPower(getFieldValue("rx_power_high_th"), isModuleExtSupported);
+    rxPowerLowTH = getPower(getFieldValue("rx_power_low_th"), isModuleExtSupported);
+    txPowerHighTH = getPower(getFieldValue("tx_power_high_th"), isModuleExtSupported);
+    txPowerLowTH = getPower(getFieldValue("tx_power_low_th"), isModuleExtSupported);
     if (isModuleExtSupported)
     {
         rxPowerHighTH = convertFloatPrec(rxPowerHighTH);
@@ -1706,8 +1706,8 @@ void MlxlinkCommander::prepareDDMSection(bool valid, bool isModuleExtSupported)
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
     {
         string laneStr = to_string(_moduleLanesMapping[lane]);
-        rxPowerLane.push_back(getPower(getFieldValue("rx_power_lane" + laneStr)));
-        txPowerLane.push_back(getPower(getFieldValue("tx_power_lane" + laneStr)));
+        rxPowerLane.push_back(getPower(getFieldValue("rx_power_lane" + laneStr), isModuleExtSupported));
+        txPowerLane.push_back(getPower(getFieldValue("tx_power_lane" + laneStr), isModuleExtSupported));
         biasCurrentLane.push_back(getFieldValue("tx_bias_lane" + laneStr) * txMultiplier / 500.0);
     }
 
@@ -1727,37 +1727,27 @@ void MlxlinkCommander::prepareDDMSection(bool valid, bool isModuleExtSupported)
     setPrintVal(_moduleInfoCmd, "Tx Power Current [dBm]", txPowerStr, ANSI_COLOR_RESET, true, valid);
 }
 
-string MlxlinkCommander::getValuesOfActiveLanes(const string& row, bool isSnr)
+string MlxlinkCommander::getValuesOfActiveLanes(const string& row, bool moduleLanes)
 {
     string newValue = row;
 
     auto valuesPerLane = MlxlinkRecord::split(newValue, ",");
-
+    vector<string> validValues;
     if (valuesPerLane.size() > 1)
     {
-        if (isSnr)
+        for (u_int32_t i = 0; i < _numOfLanes; i++)
         {
-            // Remove all "0" (invalid lanes) values
-            valuesPerLane.erase(std::remove_if(valuesPerLane.begin(), valuesPerLane.end(),
-                                               [](const string& value) { return value == "0"; }),
-                                valuesPerLane.end());
-
-            // If all lanes are invalid, set all lanes to 0
-            if (valuesPerLane.empty())
+            if (moduleLanes)
             {
-                for (u_int32_t i = 0; i < _numOfLanes; i++)
-                {
-                    valuesPerLane.push_back(to_string(0));
-                }
+                validValues.push_back(valuesPerLane[_moduleLanesMapping[i]]);
+            }
+            else
+            {
+                validValues.push_back(valuesPerLane[i]);
             }
         }
-        else
-        {
-            // Remove all lanes that are not in the valuesPerLane vector
-            valuesPerLane.erase(valuesPerLane.begin() + _numOfLanes, valuesPerLane.end());
-        }
 
-        newValue = getStringFromVector(valuesPerLane);
+        newValue = getStringFromVector(validValues);
     }
 
     return newValue;
@@ -1852,7 +1842,7 @@ void MlxlinkCommander::prepareBerModuleInfo(bool valid, const vector<AmberField>
         }
         if (it->perLane)
         {
-            fieldValue = getValuesOfActiveLanes(fieldValue);
+            fieldValue = getValuesOfActiveLanes(fieldValue, true);
         }
 
         if ((it->uiName == "Cable Rx Emphasis") && _cmisCable)
@@ -1868,11 +1858,11 @@ bool MlxlinkCommander::checkIfModuleExtSupported()
 {
     bool isModuleExtSupported = false;
 
-    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d , module_info_ext=1", PDDR_MODULE_INFO_PAGE);
-    float rxPowerHighTH_fst = getFieldValue("rx_power_high_th");
-
     sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d , module_info_ext=0", PDDR_MODULE_INFO_PAGE);
     float rxPowerHighTH_sec = getFieldValue("rx_power_high_th");
+
+    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d , module_info_ext=1", PDDR_MODULE_INFO_PAGE);
+    float rxPowerHighTH_fst = getFieldValue("rx_power_high_th");
 
     if (rxPowerHighTH_sec != rxPowerHighTH_fst)
     {

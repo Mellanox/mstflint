@@ -121,7 +121,7 @@ bool isQsfpCable(u_int32_t identifier);
 string getCmisCableType(u_int32_t cableType, u_int32_t cableLength);
 string getCableType(u_int32_t cableType);
 string getTemp(u_int32_t temp, int celsParam = 256);
-float getPower(u_int16_t power);
+float getPower(u_int16_t power, bool isModuleExtSupported = false);
 int getHeight(u_int16_t height);
 int getPhase(u_int8_t phase);
 int getVersion(u_int8_t version);
