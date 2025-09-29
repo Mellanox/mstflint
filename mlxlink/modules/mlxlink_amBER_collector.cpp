@@ -2606,7 +2606,7 @@ vector<AmberField> MlxlinkAmBerCollector::getExtModuleStatus()
     {
         if (!_isPortPCIE)
         {
-            sendLocalPrmReg(ACCESS_REG_PEMI, GET, "local_port=%d", _localPort);
+            sendPrmReg(ACCESS_REG_PEMI, GET, "local_port=%d,page_select=%d", _localPort, PEMI_GROUP_SEL_SNR_SAMPLES);
 
             u_int32_t groupCapMask = getLocalFieldValue("group_cap_mask");
 
