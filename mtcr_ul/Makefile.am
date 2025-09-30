@@ -47,12 +47,15 @@ libmtcr_ul_la_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 			fwctrl.c fwctrl.h fwctrl_ioctl.h \
 			mtcr_gpu.c mtcr_gpu.h
 libmtcr_ul_la_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
+libmtcr_ul_la_DEPENDENCIES = 
 
 if ENABLE_INBAND
 libmtcr_ul_la_SOURCES += mtcr_ib_ofed.c
 endif
 
-libmtcr_ul_la_DEPENDENCIES = $(top_builddir)/vfio_driver_access/libvfio_access_driver.la
+if ENABLE_VFIO
+libmtcr_ul_la_DEPENDENCIES += $(top_builddir)/vfio_driver_access/libvfio_access_driver.la
+endif
 libmtcr_ul_la_LDFLAGS = -lstdc++
 
 if ENABLE_NVML

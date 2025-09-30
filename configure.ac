@@ -71,6 +71,7 @@ LDFLAGS="$LDFLAGS -lstdc++"
 default_en_inband=""
 default_en_rdmem="no"
 default_en_nvml="no"
+default_en_vfio="no"
 default_en_i2c="no"
 OFED_VERSION_CHK=0
 KERNEL_BUILD_CHK=0
@@ -103,11 +104,6 @@ else
     fi
 fi
 
-if test "x$OS" = "xFreeBSD"; then
-    VFIO_DRIVER_DIR=""
-else
-    VFIO_DRIVER_DIR="vfio_driver_access"
-fi
 
 AC_SUBST(MTCR_CONF_DIR)
 AC_SUBST(VFIO_DRIVER_DIR)
@@ -431,6 +427,31 @@ AS_IF([test "x$enable_cables" = "xyes"],
         CABLE_ACCESS_DIR="cable_access"
     ]
 )
+
+# Enable VFIO:
+
+AC_MSG_CHECKING(--enable-vfio argument)
+AC_ARG_ENABLE(vfio,
+    AS_HELP_STRING([--enable-vfio], [enable VFIO driver access (Linux only), requires VFIO driver]),
+    [enable_vfio="$enableval"],
+    [enable_vfio="$default_en_vfio"]
+)
+AC_MSG_RESULT($enable_vfio)
+if test "x$enable_vfio" = "xyes"; then
+    CXXFLAGS="$CXXFLAGS -DENABLE_VFIO"
+    CFLAGS="$CFLAGS -DENABLE_VFIO"
+fi
+
+AM_CONDITIONAL(ENABLE_VFIO, [ test "x$enable_vfio" = "xyes" ])
+
+# Set VFIO_DRIVER_DIR based on enable_vfio flag
+if test "x$enable_vfio" = "xyes"; then
+    if test "x$OS" != "xFreeBSD"; then
+        VFIO_DRIVER_DIR="vfio_driver_access"
+    fi
+else
+    VFIO_DRIVER_DIR=""
+fi
 ##
 
 AC_MSG_CHECKING(--enable-rdmem argument)

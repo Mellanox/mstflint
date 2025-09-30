@@ -278,7 +278,9 @@ typedef enum MType_t {
     MST_LINKX_CHIP  = 0x100000,
     MST_BAR0_GW_PCI = 0x200000,
     MST_NVML        = 0x400000,
+#ifdef ENABLE_VFIO
     MST_VFIO_DEVICE = 0x800000,
+#endif
     MST_DEFAULT     = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER & ~MST_LINKX_CHIP
 } MType;
 

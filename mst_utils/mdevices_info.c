@@ -43,7 +43,9 @@
 #include "dev_mgt/tools_dev_types.h"
 #ifdef __linux__
 #include <linux/limits.h>
+#ifdef ENABLE_VFIO
 #include "vfio_driver_access/VFIODriverAccessWrapperC.h"
+#endif
 #endif
 #ifndef __FreeBSD__
 #include "mtcr_ul/mtcr_ul_com.h"
@@ -58,10 +60,12 @@ mfile* mopen_ul(const char* name)
     return 0;
 }
 
+#ifdef ENABLE_VFIO
 static inline bool CheckifVfioPciDriverIsLoaded(void)
 {
     return false;
 }
+#endif
 #endif
 
 int is_type_exist(dev_info* devs, int len, Mdevs type)
@@ -293,7 +297,7 @@ void print_pci_info(dev_info* dev, int domain_needed)
 
     /* Add NUMA node */
     printf("%-6s", dev->pci.numa_node);
-
+#ifdef ENABLE_VFIO
     if (CheckifVfioPciDriverIsLoaded())
     {
         printf("vfio-%-6s", dbdf);
@@ -302,6 +306,9 @@ void print_pci_info(dev_info* dev, int domain_needed)
     {
         printf(" ");
     }
+#else  
+    printf(" ");
+#endif
 
     printf("\n");
 }
@@ -411,7 +418,11 @@ int main(int argc, char** argv)
                            "RDMA",
                            "NET",
                            "NUMA",
+#ifdef ENABLE_VFIO
                            "VFIO");
+#else
+                           "");
+#endif
                 } else {
                     printf("%-24s%-30s%-16s%-16s%-40s%-6s%-16s\n",
                            "DEVICE_TYPE",
@@ -420,7 +431,11 @@ int main(int argc, char** argv)
                            "RDMA",
                            "NET",
                            "NUMA",
+#ifdef ENABLE_VFIO
                            "VFIO");
+#else
+                           "");
+#endif
                 }
                 /* printf("%-30s%-16s%-16s%-8s%-20s\n", "---", "-----------", "---", "----", "---"); */
             } else {
@@ -432,7 +447,11 @@ int main(int argc, char** argv)
                            "RDMA",
                            "NET",
                            "NUMA",
+#ifdef ENABLE_VFIO
                            "VFIO");
+#else
+                           "");
+#endif
                 } else {
                     printf("%-24s%-30s%-10s%-16s%-40s%-6s%-16s\n",
                            "DEVICE_TYPE",
@@ -441,7 +460,11 @@ int main(int argc, char** argv)
                            "RDMA",
                            "NET",
                            "NUMA",
+#ifdef ENABLE_VFIO
                            "VFIO");
+#else
+                           "");
+#endif
                 }
                 /* printf("%-30s%-16s%-10s%-8s%-20s\n", "---", "-----------", "---", "----", "---"); */
             }
