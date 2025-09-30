@@ -120,7 +120,9 @@
 #include "fwctrl_ioctl.h"
 #include "kernel/mst.h"
 #include "tools_dev_types.h"
+#ifdef ENABLE_VFIO
 #include "vfio_driver_access/VFIODriverAccessWrapperC.h"
+#endif
 
 #ifdef ENABLE_NVML
 #include "nvml_lib/nvml_c_wrapper.h"
@@ -1868,6 +1870,7 @@ static void init_vsec_cap_mask(mfile* mf)
     mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
 }
 
+#ifdef ENABLE_VFIO
 static int mtcr_vfio_device_open(mfile     * mf,
                                  const char* name,
                                  unsigned    domain,
@@ -1929,6 +1932,7 @@ static int mtcr_vfio_device_open(mfile     * mf,
 
     return 0;
 }
+#endif /* ENABLE_VFIO */
 
 bool is_cable_device(const char* name)
 {
@@ -2610,7 +2614,11 @@ static MType mtcr_parse_name(const char* name,
     char     driver_conf_name[40];
     unsigned len = strlen(name);
     unsigned tmp;
+#ifdef ENABLE_VFIO
     int      is_vfio = strstr(name, "vfio-") != NULL;
+#else
+    int      is_vfio = 0;
+#endif
 
     if (strstr(name, "fwctl")) {
         return MST_FWCTL_CONTROL_DRIVER;
@@ -2633,6 +2641,7 @@ static MType mtcr_parse_name(const char* name,
     }
 #endif
 
+#ifdef ENABLE_VFIO
     if (is_vfio)
     {
         scnt = sscanf(name, "vfio-%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
@@ -2671,6 +2680,7 @@ static MType mtcr_parse_name(const char* name,
             return MST_VFIO_DEVICE;
         }
     }
+#endif /* ENABLE_VFIO */
 
     if ((len >= sizeof config) && !strcmp(config, name + len + 1 - sizeof config)) {
         *force = 1;
@@ -3563,6 +3573,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         return mf;
         break;
 
+#ifdef ENABLE_VFIO
     case MST_VFIO_DEVICE:
         rc = mtcr_vfio_device_open(mf, name, domain, bus, dev, func);
         if (rc) {
@@ -3570,6 +3581,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         }
         return mf;
         break;
+#endif
 
 #ifdef ENABLE_MST_DEV_I2C
     case MST_DEV_I2C:
