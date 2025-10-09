@@ -914,7 +914,12 @@ void Flint::initCmdParser()
       "In case index=0 certificate chain will be stored at CERT_CHAIN_0 section, otherwise at DIGITAL_CERT_RW "
       "section according to given index.\n"
       "This flag is relevant only for set_attestation_cert_chain command.");
-    AddOptions("component_type", ' ', "<type string>", "component to query, currently only \"sync_clock\" supported.");
+    AddOptions(
+        "component_type",
+        ' ',
+        "<type string>",
+        "For Query: component to query - \"sync_clock\", \"digital_cacert\", \"dpa_component\".\n"
+        "For PLDM burning: component to burn - \"Fw\", \"BFB\".");
     AddOptions("image_size_only", ' ', "", "indication for extract_fw_data command to not extract extra data");
 
     for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++)
