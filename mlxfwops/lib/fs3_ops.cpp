@@ -747,7 +747,7 @@ bool Fs3Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     if (isStripedImage)
     {
         ignoreDToc = true;
-        SetIsStripedImage(true);
+        SetIsReducedImage(true);
     }
 
     struct QueryOptions queryOptions;
@@ -771,7 +771,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
     u_int8_t binVerMajor = 0, binVerMinor = 0;
     bool bad_signature;
 
-    if (GetIsStripedImage())
+    if (GetIsReducedImage())
     {
         cntx_image_start[0] = 0;
         cntx_image_num = 1;
@@ -1013,7 +1013,7 @@ bool Fs3Operations::FwQuery(fw_info_t* fwInfo,
     if (isStripedImage)
     {
         ignoreDToc = true;
-        SetIsStripedImage(true);
+        SetIsReducedImage(true);
     }
     reg_access_status_t rc = ME_ERROR;
     struct reg_access_hca_mgir_ext mgir;
@@ -3593,11 +3593,7 @@ bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img,
                                       bool)
 {
     u_int32_t size = 0;
-    bool ignoreDToc = false;
-    if (GetIsStripedImage())
-    {
-        ignoreDToc = true;
-    }
+    bool ignoreDToc = GetIsReducedImage();
     if (!FsIntQueryAux(true, false, ignoreDToc, verbose))
     {
         return false;

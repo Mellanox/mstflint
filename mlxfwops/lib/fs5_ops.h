@@ -33,7 +33,7 @@
 #define FS5_OPS_H
 
 #include "fs4_ops.h"
-
+#define BCH_SIZE_IN_BYTES u_int32_t(FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE)
 class Fs5Operations : public Fs4Operations
 {
 public:
@@ -65,6 +65,7 @@ protected:
     bool GetDtocAddress(u_int32_t& dTocAddress) override;
     bool GetMfgInfo(u_int8_t* buff) override;
     bool CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_int32_t imageCntxLog2ChunkSize) override;
+    virtual bool IsValidGapImageSize(u_int32_t imageGapSize) override;
     bool IsExtracted();
     u_int32_t _ncore_bch_ptr;
 
@@ -83,7 +84,6 @@ private:
     bool GetNcoreData(vector<u_int8_t>& imgBuff) override;
     bool GetHashesTableSize(u_int32_t& size) override;
 
-    static const u_int32_t BCH_SIZE_IN_BYTES;               
 };
 
 #endif /* FS5_OPS_H */

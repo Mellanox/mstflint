@@ -3602,12 +3602,6 @@ FlintStatus BurnSubCommand::executeCommand()
     _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
     if (_imgOps->FwType() == FIT_PLDM_1_0)
     {
-        if (!_fwOps->IsFsCtrlOperations())
-        {
-            reportErr(true, "FW doesn't support burning PLDM components.\n");
-            return FLINT_FAILED;
-        }
-
         if (strlen(_devInfo.fw_info.psid) == 0)
         {
             reportErr(true, "-E- Can't extract Image from PLDM package, Can't get the device PSID.\n");
@@ -3740,6 +3734,13 @@ FlintStatus BurnSubCommand::executeCommand()
     {
         UnlockDevice(_fwOps);
         reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
+        return FLINT_FAILED;
+    }
+
+    if (_imgOps->GetIsReducedImage() && _burnParams.useImgDevData)
+    {
+        // useImgDevData indicator is initialized by the --ignore_dev_data flag
+        reportErr(true, "ignore_dev_data flag is not applicable with the given reduced image.\n");
         return FLINT_FAILED;
     }
 
@@ -4678,7 +4679,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     FwOperations* ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);
     FwVersion running_version = FwOperations::createRunningFwVersion(&fwInfo.fw_info);
-    bool isStripedImage = ops->GetIsStripedImage();
+    bool isStripedImage = ops->GetIsReducedImage();
 
     printf("Image type:            %s\n", fwImgTypeToStr(fwInfo.fw_type));
     if (fwInfo.fw_info.isfu_major)

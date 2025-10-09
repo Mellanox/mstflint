@@ -214,7 +214,7 @@ bool Fs4Operations::CheckDevInfoSignature(u_int32_t* buff)
 bool Fs4Operations::getImgStart()
 {
     DPRINTF(("Fs4Operations::getImgStart\n"));
-    if (GetIsStripedImage())
+    if (GetIsReducedImage())
     {
         _fwImgInfo.imgStart = 0;
     }
@@ -241,6 +241,39 @@ bool Fs4Operations::getImgStart()
     DPRINTF(("Fs4Operations::getImgStart - _fwImgInfo.imgStart = 0x%x\n", _fwImgInfo.imgStart));
 
     return true;
+}
+
+bool Fs4Operations::CheckAndSetIsReducedImage()
+{
+    if (_ioAccess->is_flash())
+    {
+        SetIsReducedImage(false);
+        return true;
+    }
+
+    u_int32_t image_size = 0;
+    // Calculate the size from the start to the end of the iTOCs.
+    if (!GetImageSize(&image_size))
+    {
+        return errmsg("Can't get image size.\n");
+    }
+    u_int32_t readbleSize = _ioAccess->get_size();
+    if (readbleSize < image_size)
+    {
+        return errmsg("Image size is larger than image buffer size.\n");
+    }
+    u_int32_t imageGapSize = readbleSize - image_size;
+    // If the image contains an encapsulation header, this will represent the gap (equal to the encapsulation header
+    // size, which matches the BCH size).
+    bool isReducedImage = IsValidGapImageSize(imageGapSize);
+    SetIsReducedImage(isReducedImage);
+
+    return true;
+}
+
+bool Fs4Operations::IsValidGapImageSize(u_int32_t imageGapSize)
+{
+    return imageGapSize == 0;
 }
 
 bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc,
@@ -1092,7 +1125,7 @@ bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     if (isStripedImage)
     {
         ignoreDToc = true;
-        SetIsStripedImage(true);
+        SetIsReducedImage(true);
     }
     bool image_encrypted = false;
     if (!isEncrypted(image_encrypted))
@@ -1362,7 +1395,7 @@ bool Fs4Operations::FwQuery(fw_info_t* fwInfo,
     DPRINTF(("Fs4Operations::FwQuery\n"));
     if (isStripedImage)
     {
-        SetIsStripedImage(true);
+        SetIsReducedImage(true);
         ignoreDToc = true;
     }
     
@@ -2951,7 +2984,8 @@ bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
         return false;
     }
     // For image we execute full verify to bring all the information needed for ROM Patch
-    if (!imageOps.FsIntQueryAux(true, false))
+    bool ignoreDToc = imageOps.GetIsReducedImage();
+    if (!imageOps.FsIntQueryAux(true, false, ignoreDToc))
     {
         return false;
     }
