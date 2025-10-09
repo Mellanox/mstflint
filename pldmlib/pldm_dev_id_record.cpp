@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "pldm_buff.h"
 #include "pldm_record_descriptor.h"
@@ -169,16 +170,17 @@ std::vector<u_int8_t> PldmDevIdRecord::getComponentsIndexes() const
     return indexes;
 }
 
-std::string PldmDevIdRecord::getDevicePsid() const
+std::string PldmDevIdRecord::GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType type) const
 {
-    std::string psid;
-    for (u_int8_t i = 0; i < descriptorCount; i++)
+    std::string vendorDefinedValue = "";
+    auto it =
+      std::find_if(recordDescriptors.begin(), recordDescriptors.end(),
+                   [&](PldmRecordDescriptor* descriptor) { return descriptor->GetVendorDefinedType() == type; });
+    if (it != recordDescriptors.end())
     {
-        psid = recordDescriptors[i]->getPsid();
-        if (psid != "")
-            break;
+        vendorDefinedValue = (*it)->GetVendorDefinedValue();
     }
-    return psid;
+    return vendorDefinedValue;
 }
 
 std::string PldmDevIdRecord::getDescription() const

@@ -806,7 +806,7 @@ int ImageAccess::getPldmContent(vector<PsidQueryItem>& riv, ComponentIdentifier 
                 PsidQueryItem item;
                 ComponentIdentifierToStringValue(identifier, COMPONENT_NAME, item.name);
                 item.type = getComponentImage->getcomponentVersionString();
-                item.psid = rec->getDevicePsid();
+                item.psid = rec->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID);
                 item.isNicComp = false;
                 if ((isNicFwComponent(identifier) &&
                      ((compIdentifier == ComponentIdentifier::Identifier_General) || isNicFwComponent(compIdentifier))))

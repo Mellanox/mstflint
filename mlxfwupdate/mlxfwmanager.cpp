@@ -836,12 +836,6 @@ int extract_image(CmdLineParams& cmd_params, config_t& config, ServerRequest* sr
 
     if (ImageAccess::getFileSignature(config.mfa_path) == IMG_SIG_TYPE_PLDM)
     {
-        if (cmd_params.psid == "")
-        {
-            print_err("-E- Need to provide PSID for extraction.\n");
-            res = ERR_CODE_BAD_CMD_ARGS;
-            return res;
-        }
         ComponentIdentifier compIdentifier = ComponentIdentifier::Identifier_Not_Valid;
         StringToComponentIdentifier(cmd_params.component_type, compIdentifier);
 

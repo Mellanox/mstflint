@@ -38,16 +38,28 @@
 #ifndef _PLDM_RECORD_DESCRIPTOR_HDR_
 #define _PLDM_RECORD_DESCRIPTOR_HDR_
 
+
+
+
 class PldmRecordDescriptor
 {
 public:
+    enum class VendorDefinedType
+    {
+        NOT_VENDOR_DEFINED = 0x0000,
+        PSID = 0x0001,
+        APSKU = 0x0002,
+        RECOVERY = 0x0003,
+    };
+    
     PldmRecordDescriptor();
     virtual ~PldmRecordDescriptor();
 
     bool unpack(PldmBuffer& buff);
     void print(FILE* fp);
 
-    const std::string& getPsid() const { return psid; }
+    const std::string& GetVendorDefinedValue() const { return vendorDefinedValue; }
+    VendorDefinedType GetVendorDefinedType() const { return vendorDefinedType; }
     u_int16_t getDescriptorLength() const { return descriptorLength; }
     const u_int8_t* getDescriptorData() const { return descriptorData; }
     std::string getDescription() const;
@@ -58,7 +70,8 @@ private:
     u_int16_t descriptorLength;
     u_int8_t* descriptorData;
 
-    std::string psid;
+    VendorDefinedType vendorDefinedType;
+    std::string vendorDefinedValue;
     u_int32_t apsku;
 
     bool extractVendorDefined();
