@@ -240,7 +240,7 @@ private:
     bool _shouldSkip;
     int _unknownProgress; // used to trace the progress of unknown progress.
     FwCompsMgr* fwCompsAccess;
-    FlintStatus burnPldmComp(u_int8_t** buff, u_int32_t& buffSize, FsPldmOperations* pldmOps);
+    FlintStatus burnPldmComp(FsPldmOperations* pldmOps, string& componentType);
     FlintStatus burnFs3();
     FlintStatus burnFs2();
     bool checkFwVersion(bool CreateFromImgInfo = true,
@@ -271,6 +271,7 @@ private:
     FlintStatus ResetModule(string device);
     FlintStatus WaitForModuleInit(string device);
     FlintStatus PerformBurn(std::vector<u_int8_t>& fwImage, std::vector<u_int8_t>& vendorData);
+    FlintStatus PldmToFwOps(FsPldmOperations* pldmOps);
 
 public:
     BurnSubCommand();

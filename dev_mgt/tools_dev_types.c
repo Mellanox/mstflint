@@ -802,6 +802,11 @@ int dm_is_menhit(dm_dev_id_t type)
     return type == DeviceMenhit || type == DeviceArcusPTC || type == DeviceArcusP || type == DeviceArcusE;
 }
 
+int dm_dev_type2sw_id(dm_dev_id_t type)
+{
+    return get_entry(type)->sw_dev_id;
+}
+
 int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type)
 {
     bool isBlueField = (type == DeviceBlueField || type == DeviceBlueField2 || type == DeviceBlueField3);
