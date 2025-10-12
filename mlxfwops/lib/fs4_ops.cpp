@@ -4975,7 +4975,7 @@ bool Fs4Operations::StoreImagePublicKeyInPublicKeys2(const image_layout_file_pub
     image_layout_public_keys_2_unpack(&public_keys_2, itocEntry->section_data.data());
 
     // Convert public_keys_3 to public_keys_2
-    image_layout_file_public_keys_2 new_public_key_2 = {{0, 0, 0, 0, 0, 0, 0, 0}, 0, {0, 0, 0, 0}, {0}};;
+    image_layout_file_public_keys_2 new_public_key_2 = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0, {0, 0, 0, 0}, {0}};;
     PublicKey3ToPublicKey2(public_key, new_public_key_2);
 
     u_int32_t slot_of_given_key_in_image = 0;

@@ -80,6 +80,10 @@ void image_layout_component_authentication_configuration_pack(const struct image
 
 	offset = 24;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->auth_type);
+	offset = 9;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mlnx_cert_en);
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->vendor_cert_en);
 	offset = 6;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->c_r_token_en);
 	offset = 5;
@@ -102,6 +106,10 @@ void image_layout_component_authentication_configuration_unpack(struct image_lay
 
 	offset = 24;
 	ptr_struct->auth_type = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 9;
+	ptr_struct->mlnx_cert_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 8;
+	ptr_struct->vendor_cert_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 6;
 	ptr_struct->c_r_token_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 5;
@@ -125,6 +133,10 @@ void image_layout_component_authentication_configuration_print(const struct imag
 
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "auth_type            : " UH_FMT "\n", ptr_struct->auth_type);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mlnx_cert_en         : " UH_FMT "\n", ptr_struct->mlnx_cert_en);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "vendor_cert_en       : " UH_FMT "\n", ptr_struct->vendor_cert_en);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "c_r_token_en         : " UH_FMT "\n", ptr_struct->c_r_token_en);
 	adb2c_add_indentation(fd, indent_level);
