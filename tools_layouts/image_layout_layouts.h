@@ -59,36 +59,45 @@ struct image_layout_uint64 {
 /* Size in bytes - 4 */
 struct image_layout_component_authentication_configuration {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - 0-FW_BURN_NONE, 1-FW_BURN_SHA256_DIGEST, 2-FW_BURN_SHA512_DIGEST,3-FW_BURN_2048BIT_RSASSA_PKCS1_V1_5_WITH_SHA256, 4-FW_BURN_4096BIT_RSASSA_PKCS1_V1_5_WITH_SHA512 */
+	/* Description - 0-NULL, 1-SHA256Digest, 3-2048 bit RSA */
 	/* 0x0.0 - 0x0.7 */
+	/* access: RW */
 	u_int8_t auth_type;
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - used for authenticating certificates at MLNX level. */
+	/* 0x0.22 - 0x0.22 */
+	/* access: RW */
+	u_int8_t mlnx_cert_en;
+	/* Description - used for authenticating certificates at OEM level. */
+	/* 0x0.23 - 0x0.23 */
+	/* access: RW */
+	u_int8_t vendor_cert_en;
 	/* Description - used for authenticating challenge-response based tokens */
 	/* 0x0.25 - 0x0.25 */
+	/* access: RW */
 	u_int8_t c_r_token_en;
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - used for authenticating Back to commissioning tokens */
 	/* 0x0.26 - 0x0.26 */
+	/* access: RW */
 	u_int8_t btc_token_en;
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - used for authenticating Factory Re-COnfiguration Responses */
 	/* 0x0.27 - 0x0.27 */
+	/* access: RW */
 	u_int8_t frc_en;
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - used for signing NVCONFIG at MLNX level */
 	/* 0x0.28 - 0x0.28 */
+	/* access: RW */
 	u_int8_t mlnx_nvconfig_en;
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - used for authenticating NVCONFIG at OEM level */
 	/* 0x0.29 - 0x0.29 */
+	/* access: RW */
 	u_int8_t vendor_nvconfig_en;
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - used for authenticating CS tokens at OEM level */
 	/* 0x0.30 - 0x0.30 */
+	/* access: RW */
 	u_int8_t cs_token_en;
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Used for authenticating firmware, DBG_FW, DBG Tokens */
 	/* 0x0.31 - 0x0.31 */
+	/* access: RW */
 	u_int8_t fw_en;
 };
 
