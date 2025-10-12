@@ -29,7 +29,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 # --
-
+import os
 import regaccess
 
 
@@ -286,21 +286,23 @@ class CmdRegMfrl():
     def is_default_reset_type(self, reset_type):
         return reset_type == self.default_reset_type()
 
-    def is_reset_state_in_error(self):
-        self.logger.debug("reset_state_error={}".format(self._reset_state))
-        if self._reset_state in CmdRegMfrl.RESET_STATE_ERRORS:
-            raise Exception(CmdRegMfrl.RESET_STATE_ERRORS[self._reset_state])
+    def check_reset_state_and_fail_on_error(self):
+        self.logger.debug("reset_state={}".format(self._reset_state))
 
-    def is_reset_state_waiting_for_reset_trigger(self):
-        self.logger.debug("reset state={}".format(self._reset_state))
+        # Ready for reset trigger.
         if self._reset_state == CmdRegMfrl.RESET_STATE_WAITING_FOR_RESET_TRIGGER:
             return True
 
-        self.is_reset_state_in_error()
-        return False
+        # Check for error.
+        if self._reset_state in CmdRegMfrl.RESET_STATE_ERRORS:
+            if self._reset_state == CmdRegMfrl.RESET_STATE_ARM_OS_IS_UP_PLEASE_SHUT_DOWN and \
+                    not os.environ.get("MLXFWRESET_EXIT_ON_ARM_SHUTDOWN_NOT_COMPLETED"):
+                print("Please note that ARM shutdown was not completed")
+                return True  # According to arch decision, we don't fail on this error.
+            raise Exception(CmdRegMfrl.RESET_STATE_ERRORS[self._reset_state])
 
-    def is_reset_state_in_progress(self):
-        return True if self._reset_state == CmdRegMfrl.RESET_STATE_ARM_OS_SHUTDOWN_IN_PROGRESS else False
+        # Need to keep waiting for the FW state to change.
+        return False
 
     def read(self):
         # Read register ('get' command) from device

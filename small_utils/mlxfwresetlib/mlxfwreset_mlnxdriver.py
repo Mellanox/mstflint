@@ -99,12 +99,17 @@ class LinuxRshimUserSpaceDriver:
         for rshim_driver_name in rshim_drivers_names:
             rshim_pci_device_name, rshim_drop_mode = None, None
             rshim_misc_file = DRIVERS_PATH + rshim_driver_name + "/misc"
-            with open(rshim_misc_file) as f:
-                for line in f:
-                    if "DEV_NAME" in line:
-                        rshim_pci_device_name = line.split()[1]
-                    if "DROP_MODE" in line:  # Exist only in BL2
-                        rshim_drop_mode = int(line.split()[1][0])
+            try:
+                with open(rshim_misc_file, 'r', errors='ignore') as f:
+                    for line in f:
+                        if "DEV_NAME" in line:
+                            rshim_pci_device_name = line.split()[1]
+                        if "DROP_MODE" in line:  # Exist only in BL2
+                            rshim_drop_mode = int(line.split()[1][0])
+            except (UnicodeDecodeError, IOError, OSError) as e:
+                # Skip files that can't be read as text
+                self.logger.debug("Skipping {0}: {1}".format(rshim_misc_file, e))
+                continue
             if rshim_pci_device_name is not None and rshim_drop_mode is not None:
                 result.append((rshim_misc_file, rshim_pci_device_name, rshim_drop_mode))
         return result
@@ -142,6 +147,7 @@ class MlnxDriverLinux(MlnxDriver):
     # blocklist_file_path = '/etc/modprobe.d/mlxfwreset.conf'
     PCI_DRIVERS_PATH = '/sys/bus/pci/drivers'
     mlnx_drivers = ['mlx5_core', 'rshim_pcie', 'nvme']
+    white_list_drivers = ['pcieport']
 
     def __init__(self, devices, logger, skip):  # devices : 1 physical function per card
 
@@ -196,7 +202,7 @@ class MlnxDriverLinux(MlnxDriver):
                     if self.rshim_driver is not None and self.rshim_driver.pci_device_name == dbdf and driver_name in ["vfio-pci", "uio_pci_generic"]:
                         logger.info("skip on vfio/uio driver (rshim user-space driver will stop it)")
                         continue
-                    if driver_name not in MlnxDriverLinux.mlnx_drivers:
+                    if driver_name not in MlnxDriverLinux.mlnx_drivers and driver_name not in MlnxDriverLinux.white_list_drivers:
                         raise RuntimeError("mlxfwreset doesn't support 3rd party driver ({0})!\nPlease, stop the driver manually and resume operation with --skip_driver".format(driver_name))
                     self.drivers_dbdf.append((dbdf, driver_name))
 
