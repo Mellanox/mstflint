@@ -1905,7 +1905,7 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
     if (is_hca)
     {
         bool is_mgir_pci_switch_only_mode_supported = false;
-        rc = isCapabilitySupportedAccordingToMcamReg(_mf, MCAM_CAP_MGIR_PCI_SWITCH_ONLY_MODE, is_hca,
+        rc = isCapabilitySupportedAccordingToMcamReg(_mf, MCAM_CAP_MGIR_PCI_SWITCH_ONLY_MODE, dm_dev_is_mcam_dword_swap_needed(dm_device_id),
                                                      &is_mgir_pci_switch_only_mode_supported);
         if (rc == ME_OK && is_mgir_pci_switch_only_mode_supported)
         {

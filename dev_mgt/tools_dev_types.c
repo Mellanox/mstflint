@@ -1005,3 +1005,8 @@ int dm_is_bluefield(dm_dev_id_t type)
 {
     return (type == DeviceBlueField || type == DeviceBlueField2 || type == DeviceBlueField3 || type == DeviceBlueField4);
 }
+
+int dm_dev_is_mcam_dword_swap_needed(dm_dev_id_t type)
+{
+    return dm_dev_is_hca(type) || dm_dev_is_retimer(type);
+}

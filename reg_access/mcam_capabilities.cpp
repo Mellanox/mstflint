@@ -41,7 +41,7 @@ bool is_valid_mcam_capability(mcam_capability_t cap)
 
 reg_access_status_t isCapabilitySupportedAccordingToMcamReg(mfile* mf,
                                                             mcam_capability_t capability_number,
-                                                            bool is_hca,
+                                                            bool dword_swap_needed,
                                                             bool* is_capability_supported)
 {
     if (!mf || !is_capability_supported || !is_valid_mcam_capability(capability_number))
@@ -58,7 +58,7 @@ reg_access_status_t isCapabilitySupportedAccordingToMcamReg(mfile* mf,
     if (rc == ME_OK)
     {
         int dword_length = 32;
-        if (is_hca)
+        if (dword_swap_needed)
         {
             // due to FW bug, MCAM mng_feature_cap_mask dwords are set in reversed order for NICs
             u_int32_t temp = mcam.mng_feature_cap_mask[0];

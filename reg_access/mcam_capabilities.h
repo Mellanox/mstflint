@@ -59,7 +59,7 @@ bool is_valid_mcam_capability(mcam_capability_t cap);
 // Helper function to check if a capability is supported according to MCAM register
 reg_access_status_t isCapabilitySupportedAccordingToMcamReg(mfile* mf,
                                                             mcam_capability_t capability_number,
-                                                            bool is_hca,
+                                                            bool dword_swap_needed,
                                                             bool* is_capability_supported);
 
 // Helper function to get the right group index of a register - the registers are grouped into 4 groups in
