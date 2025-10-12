@@ -97,6 +97,29 @@ class CmdRegMroq():
     def is_tool_owner_support(self):
         return self._pci_sync_for_fw_update_start & CmdRegMroq.pci_sync_db[CmdRegMroq.LEGACY_FLOW]['mask'] != 0
 
+    def is_sync2_only_supported(self, tool_owner_support):
+        supported_syncs = []
+        for field in CmdRegMroq.pci_sync_db:
+            pci_sync_supported = (field["mask"] & self._pci_sync_for_fw_update_start) != 0
+            if field["flow"] is CmdRegMroq.LEGACY_FLOW and tool_owner_support is False:
+                pci_sync_supported = False
+
+            if pci_sync_supported is True:
+                supported_syncs.append(field["flow"])
+
+        is_sync_2_only = CmdRegMroq.SYNCED_TOOL_FLOW in supported_syncs and len(supported_syncs) == 1
+        return is_sync_2_only
+
+    def apply_sync2_only_restrictions(self, tool_owner_support, disable_method):
+        is_sync_2_only = self.is_sync2_only_supported(tool_owner_support)
+
+        if is_sync_2_only:
+            for field in CmdRegMroq.pci_reset_method_db:
+                if field["method"] == disable_method:
+                    self._pci_reset_req_method &= ~field["mask"]
+                    self._logger.debug("Disabled reset method {0} because only sync {1} is supported".format(disable_method, CmdRegMroq.SYNCED_TOOL_FLOW))
+                    break
+
     def print_query_text(self, is_pcie_switch, tool_owner_support):
         if self._mroq_is_supported is False:
             return
@@ -124,7 +147,7 @@ class CmdRegMroq():
         result += "Reset request method (relevant only for reset-level 3):"
         result += "\n"
 
-        default_method = self.get_default_method(is_pcie_switch)
+        default_method = self.get_default_method(is_pcie_switch, tool_owner_support)
 
         for field in CmdRegMroq.pci_reset_method_db:
             pci_sync_supported = (field["mask"] & self._pci_reset_req_method) != 0
@@ -139,10 +162,11 @@ class CmdRegMroq():
 
         print(result)
 
-    def get_default_method(self, is_pcie_switch):
+    def get_default_method(self, is_pcie_switch, tool_owner_support):
         if self._mroq_is_supported is False:
             return ResetReqMethod.LINK_DISABLE
 
+        self.apply_sync2_only_restrictions(tool_owner_support, ResetReqMethod.LINK_DISABLE)
         # Determine default method based on conditions
         default_method = None
 

@@ -61,7 +61,7 @@ class HotResetFlow():
             mfrl.read()
         except Exception:
             return False
-        return mfrl.is_reset_state_waiting_for_reset_trigger()
+        return mfrl.check_reset_state_and_fail_on_error()
 
     @staticmethod
     def _prepare_prime_dbdf_for_hot_reset(RegAccessObj, dev_dbdf, logger):
@@ -134,7 +134,7 @@ class HotResetFlow():
             if dbdf_aux_str:
                 res = HotResetFlow.get_upstream_port_aux_device(dbdf_aux_str, logger, RegAccessObj)
         except Exception as error:
-            logger.warning("Failed to retrieve hidden socket DBDF: {0}".format(error))
+            raise HotResetError("Failed to retrieve hidden socket DBDF: {0}".format(error))
         return res
 
     @staticmethod
@@ -159,6 +159,7 @@ class HotResetFlow():
                 mlxfwreset_utils.check_if_elapsed_time(start_time, timeout, "The reset state did not change to 'waiting for reset trigger' state")
 
             dbdf_prime_dict = HotResetFlow._prepare_prime_dbdf_for_hot_reset(RegAccessObj, dev_dbdf, logger)
+            logger.debug('dbdf_prime_dict: {0}'.format(dbdf_prime_dict))
             dbdf_aux_dict = {}
 
             logger.debug('reset_flow: {0}'.format(reset_flow))
@@ -166,8 +167,24 @@ class HotResetFlow():
                 pass
             elif reset_flow == HotResetFlow.SOCKET_DIRECT:
                 dbdf_aux_dict = HotResetFlow._get_dbdf_aux_device(devices_sd, logger)
+                logger.debug('dbdf_aux_dict: {0}'.format(dbdf_aux_dict))
+                if dbdf_prime_dict == dbdf_aux_dict:
+                    logger.debug('dbdf_prime_dict is equal to dbdf_aux_dict, checking if fix is needed')
+
+                    dbdf_aux_candidate_dict = HotResetFlow.get_upstream_port_aux_device(dev_dbdf, logger, RegAccessObj)
+                    logger.debug('dbdf_aux__candidate_dict: {0}'.format(dbdf_aux_candidate_dict))
+
+                    dbdf_prime_candidate_dict = HotResetFlow._prepare_prime_dbdf_for_hot_reset(RegAccessObj, mlxfwreset_utils.getDevDBDF(devices_sd[0], logger), logger)
+                    logger.debug('dbdf_prime_candidate_dict: {0}'.format(dbdf_prime_candidate_dict))
+
+                    if dbdf_prime_candidate_dict == dbdf_aux_candidate_dict:
+                        logger.debug("no need to fix prime and aux dbdf")  # maybe add a chack we're in PCIe switch case since the only valid case for this if both primary and auc are under the same upstream port ?
+                    else:
+                        logger.debug("fixing prime and aux dbdf")
+                        dbdf_aux_dict = dbdf_aux_candidate_dict
+                        dbdf_prime_dict = dbdf_prime_candidate_dict
             elif reset_flow == HotResetFlow.HIDDEN_SOCKET_DIRECT:
-                dbdf_aux_dict = HotResetFlow._get_hidden_socket_direct_dbdf_for_reset(dev_dbdf, logger, RegAccessObj)
+                dbdf_aux_dict = HotResetFlow._get_hidden_socket_direct_dbdf_for_reset(dev_dbdf, logger, RegAccessObj)  # no need to correct domain of dbdf_prime_dict, provided device argument is the primary device in this flow
             else:
                 raise HotResetError("Unknown reset type: {0}".format(reset_flow))
 

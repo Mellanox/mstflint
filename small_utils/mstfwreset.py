@@ -59,7 +59,7 @@ try:
     import cmdif
     from mlxfwresetlib import mlxfwreset_utils
     from mlxfwresetlib.mlxfwreset_utils import cmdExec
-    from mlxfwresetlib.mlxfwreset_utils import is_in_internal_host, is_uefi_secureboot
+    from mlxfwresetlib.mlxfwreset_utils import is_in_internal_host, is_uefi_secureboot, get_timeout_in_miliseconds
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriver
     from mlxfwresetlib.mlxfwreset_mlnxdriver import DriverUnknownMode
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriverFactory, MlnxDriverLinux
@@ -426,7 +426,6 @@ def AskUserPCIESwitchHotReset(ignore_list):
         raise OperationTerminated("\nExit..")
     else:
         print("No drivers attached to the downstream devices were found. Please ensure they are not loaded during the reset process.")
-        print("Continue with the reset..")
 
 ######################################################################
 # Description:  Mcra Read/Write functions
@@ -792,11 +791,27 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
     def __init__(self):
         super(MlnxPciOpFreeBSD, self).__init__()
         self.pciConfSpaceMap = {}
+        self.linuxToFreeBSDWidth = {
+            'B': '-b',  # byte
+            'W': '-h',  # 16-bit
+            'L': '',    # 32-bit default in FreeBSD (no flag)
+            'Q': ''   # no direct 64-bit support in pciconf, need to add special handling foor it if needed in the future
+        }
 
     def read(self, devAddr, addr, width="L"):
         if not (devAddr.startswith("pci")):
             devAddr = "pci" + devAddr
-        cmd = "pciconf -r %s 0x%x" % (devAddr, addr)
+
+        if width in self.linuxToFreeBSDWidth:
+            freebsd_width = self.linuxToFreeBSDWidth[width]
+        else:
+            freebsd_width = ''
+
+        if width == 'Q':
+            logger.warning("64-bit read requested, but pciconf does not support it. Using 32-bit read instead")
+
+        logger.debug("width = {0}, freebsd_width = {1}".format(width, freebsd_width))
+        cmd = "pciconf -r %s %s 0x%x" % (freebsd_width, devAddr, addr)
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
             raise RuntimeError(
@@ -806,7 +821,17 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
     def write(self, devAddr, addr, val, width="L"):
         if not (devAddr.startswith("pci")):
             devAddr = "pci" + devAddr
-        cmd = "pciconf -w %s 0x%x 0x%x" % (devAddr, addr, val)
+
+        if width in self.linuxToFreeBSDWidth:
+            freebsd_width = self.linuxToFreeBSDWidth[width]
+        else:
+            freebsd_width = ''
+
+        if width == 'Q':
+            logger.warning("64-bit write requested, but pciconf does not support it. Using 32-bit write instead")
+
+        logger.debug("width = {0}, freebsd_width = {1}".format(width, freebsd_width))
+        cmd = "pciconf -w %s %s 0x%x 0x%x" % (freebsd_width, devAddr, addr, val)
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
             raise RuntimeError(
@@ -1003,7 +1028,7 @@ def mstRestart(lspci_valdation):
             raise RuntimeError("The device is not appearing in lspci output!")
 
     ignore_signals()
-    cmd = "/etc/init.d/mst restart %s" % MstFlags
+    cmd = "mst restart %s" % MstFlags
     logger.debug('Execute {0}'.format(cmd))
     (rc, stdout, stderr) = cmdExec(cmd)
     if rc != 0:
@@ -1211,9 +1236,40 @@ def enablePci(bridgeDev, disableAddr, oldCapDw, width):
 
 
 ######################################################################
+# Description:  verify if devices are functional
+# need to check if device is functional since disablePci followed by Enable Pci might change the state of some of the device's physical functions and keep its pci config space invalidated
+# OS Support : Linux, FreeBSD, Windows
+######################################################################
+
+def verifyDeviceIsFunctional(pciDev):
+    vendor_id = PciOpsObj.read(pciDev, 0, "W")  # Read 16-bit word at offset 0
+    device_id = PciOpsObj.read(pciDev, 2, "W")  # Read 16-bit word at offset 2
+    if vendor_id == 0xffff and device_id == 0xffff:
+        logger.warning("PCI device {0} not functional".format(pciDev))
+
+
+######################################################################
+# Description:  print pci config space, for debug purposes
+# OS Support : Linux, FreeBSD, Windows
+######################################################################
+
+def printPciConfigSpace(pciList):
+    print("--------------------------------")
+    print("------- PCI config space -------")
+    for pciDev in pciList:
+        lspci_cmd = "lspci -s {0} -xxx".format(pciDev)
+        (rc, lspci_out, lspci_err) = cmdExec(lspci_cmd)
+        if rc == 0:
+            print("PCI config space for {0}:\n{1}".format(pciDev, lspci_out))
+        else:
+            print("Failed to get PCI config for {0}: {1}".format(pciDev, lspci_err))
+    print("--------------------------------\n\n")
+
+######################################################################
 # Description:  reset PCI of a certain device
 # OS Support : Linux, FreeBSD, Windows
 ######################################################################
+
 
 def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
 
@@ -1416,6 +1472,7 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
             logger.debug(
                 'PPC : indication for re-enumeration by MSE bit on each PCI device')
             for pciDev in devList + devListsSD:
+                verifyDeviceIsFunctional(pciDev)
                 pci_device_object = pci_device_dict[pciDev]
                 command_reg = PciOpsObj.read(pciDev, COMMAND_ADDR, "W")
                 logger.debug('command_reg for [{0}]is {1:x}.'.format(
@@ -1438,6 +1495,7 @@ def resetPciAddr(device, devicesSD, driverObj, cmdLineArgs):
                 root_pci_devices[0].hotplug_interrupt_enable))
             logger.debug('to_restore_pci_conf={0}'.format(to_restore_pci_conf))
             for pciDev in devList + devListsSD:
+                verifyDeviceIsFunctional(pciDev)
                 pci_device_object = pci_device_dict[pciDev]
                 if to_restore_pci_conf:
                     PciOpsObj.loadPCIConfigurationSpace(
@@ -1801,6 +1859,8 @@ def resetFlow(device, reset_level, reset_type, reset_sync, pci_reset_request_met
             rebootMachine()
 
         post_reset_flow(driverObj, device, driverStat)
+
+        logger.debug('end critical time (start to load driver)')
 
     except Exception as e:
         reset_fsm_register()
@@ -2252,26 +2312,23 @@ def reset_flow_host(device, args, command):
         reset_level = mfrl.default_reset_level(is_any_sync_supported, skip_pci_reset) if args.reset_level is None else args.reset_level
 
         if reset_level != CmdRegMfrl.PCI_RESET and args.reset_sync is not None:
-            raise RuntimeError("Reset sync is not supported with reset level {0}".format(reset_level))
+            print("-I- reset sync argument is ignored when reset level is not PCI_RESET")
 
-        reset_sync = SyncOwner.TOOL
         if reset_level is CmdRegMfrl.PCI_RESET:
             if args.reset_sync is None:
                 reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch, tool_owner_support)
             else:
+                reset_sync = args.reset_sync
                 if mroq.mroq_is_supported():
-                    if mroq.is_sync_supported(args.reset_sync, logger):
-                        reset_sync = args.reset_sync
-                    else:
-                        raise RuntimeError("Requested reset sync '{0}' is not supported".format(args.reset_sync))
+                    if mroq.is_sync_supported(reset_sync, logger) is False:
+                        raise RuntimeError("Requested reset sync '{0}' is not supported".format(reset_sync))
                 else:
                     validate_args_for_unsupported_mroq(args)
-                    if args.reset_sync is SyncOwner.TOOL:
-                        pass
-                    if args.reset_sync is SyncOwner.DRIVER:
+                    if reset_sync is SyncOwner.DRIVER:
                         if not mcam.is_reset_by_fw_driver_sync_supported():
-                            raise RuntimeError("Requested reset sync '{0}' is not supported".format(args.reset_sync))
-                        reset_sync = SyncOwner.DRIVER
+                            raise RuntimeError("Requested reset sync '{0}' is not supported".format(reset_sync))
+        else:
+            reset_sync = SyncOwner.TOOL  # in case reset level != PCI_RESET, we'll send default sync (0) in MFRL
 
         if reset_sync == SyncOwner.TOOL and is_uefi_secureboot() \
                 and reset_level not in [CmdRegMfrl.WARM_REBOOT, CmdRegMfrl.IMMEDIATE_RESET]:                                 # The tool is using sysfs to access PCI config
@@ -2302,7 +2359,7 @@ def reset_flow_host(device, args, command):
             raise RuntimeError(
                 "Reset-level '{0}' is not supported with reset-type '{1}'".format(reset_level, reset_type))
 
-        if reset_level != CmdRegMfrl.IMMEDIATE_RESET and reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
+        if reset_level == CmdRegMfrl.PCI_RESET and reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
             raise RuntimeError(
                 "Synchronization by driver is not supported in the current state of this device")
 
@@ -2327,7 +2384,7 @@ def reset_flow_host(device, args, command):
         pci_reset_request_method = ResetReqMethod.LINK_DISABLE
         if args.request_method is None:
             if reset_level is CmdRegMfrl.PCI_RESET:
-                pci_reset_request_method = mroq.get_default_method(is_pcie_switch)
+                pci_reset_request_method = mroq.get_default_method(is_pcie_switch, tool_owner_support)
         else:
             pci_reset_request_method = args.request_method
 
@@ -2349,8 +2406,7 @@ def reset_flow_host(device, args, command):
         if is_pcie_switch and hot_reset_flow:
             AskUserPCIESwitchHotReset(args.ignore_list)
 
-        else:
-            AskUser("Continue with reset", args.yes)
+        AskUser("Continue with reset", args.yes)
 
         print("Reset level: " + str(reset_level) + ", Reset type: " + str(reset_type) + ", Reset sync: " + str(reset_sync) + ", Reset method: " + str(pci_reset_request_method))
         execResLvl(device, reset_level,
