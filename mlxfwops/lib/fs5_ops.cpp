@@ -34,7 +34,6 @@
 #include "fs5_image_layout_layouts.h"
 #include <algorithm>
 
-const u_int32_t Fs5Operations::BCH_SIZE_IN_BYTES = 0x2000;
 
 u_int8_t Fs5Operations::FwType()
 {
@@ -416,43 +415,29 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
     return true;
 }
 
-bool Fs5Operations::IsExtracted()
-{
-    u_int32_t image_size;
-    // Calculate the size from the start to the end of the iTOCs.
-    if (!GetImageSize(&image_size))
-    {
-        return errmsg("Can't get image size.\n");
-    }
-    u_int32_t readbleSize = _ioAccess->get_size();
-    if (readbleSize < image_size)
-    {
-        return errmsg("-E- iTOCs size smaller than the image (image problem).\n");
-    }
-    u_int32_t gapSize = readbleSize - image_size;
-    // If the image contains an encapsulation header, this will represent the gap (equal to the encapsulation header
-    // size, which matches the BCH size).
-    if (gapSize == 0 || gapSize == BCH_SIZE_IN_BYTES)
-    {
-        return true;
-    }
-    return false;
-}
-
 bool Fs5Operations::FwQuery(fw_info_t* fwInfo, bool, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs5Operations::FwQuery\n"));
-    if (isStripedImage || IsExtracted())
+    if (isStripedImage)
     {
-        ignoreDToc = true;
-        SetIsStripedImage(true);
+        SetIsReducedImage(true);
     }
+    else if (!CheckAndSetIsReducedImage())
+    {
+        return errmsg("%s", err());
+    }
+    ignoreDToc = GetIsReducedImage();
     if (!encryptedFwQuery(fwInfo, quickQuery, ignoreDToc, verbose))
     {
         return errmsg("%s", err());
     }
 
     return NCoreQuery(fwInfo);
+}
+
+bool Fs5Operations::IsValidGapImageSize(u_int32_t imageGapSize)
+{
+    return (Fs4Operations::IsValidGapImageSize(imageGapSize) || imageGapSize == BCH_SIZE_IN_BYTES);
 }
 
 bool Fs5Operations::NCoreQuery(fw_info_t* fwInfo)
@@ -498,16 +483,8 @@ bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
                                       bool ignoreImageStart,
                                       bool imageSizeOnly)
 {
-     bool res;
-     if (IsExtracted())
-    {
-        SetIsStripedImage(true);
-        res = FwExtractEncryptedImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
-    }
-    else
-    {
-        res = Fs4Operations::FwExtract4MBImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
-    }
+     
+    bool res = Fs4Operations::FwExtract4MBImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
 
     if (res && !imageSizeOnly)
     {

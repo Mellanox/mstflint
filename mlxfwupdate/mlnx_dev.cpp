@@ -610,7 +610,7 @@ int MlnxDev::preBurn(string mfa_file,
 
     if (isStripedImage)
     {
-        _imgFwOps->SetIsStripedImage(true);
+        _imgFwOps->SetIsReducedImage(true);
     }
 
     if (!_imgFwOps->isEncrypted(_imageEncrypted))

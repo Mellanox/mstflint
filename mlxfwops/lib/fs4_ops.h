@@ -147,6 +147,7 @@ public:
     virtual bool GetImageSize(u_int32_t* image_size);
     bool GetHashesTableData(vector<u_int8_t>& data);
     bool GetRSAPublicKey(vector<u_int8_t>& key);
+    bool CheckAndSetIsReducedImage();
 
 protected:
     struct fs4_toc_info
@@ -186,6 +187,7 @@ protected:
     u_int32_t _hashes_table_ptr;
     Fs4ImgInfo _fs4ImgInfo;
 
+    virtual bool IsValidGapImageSize(u_int32_t imageGapSize);
     bool GetEncryptedImageSizeFromImageInfo(u_int32_t* imageSize);
     bool verifyToolsArea(VerifyCallBack verifyCallBackFunc);
     bool verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBack verifyCallBackFunc);

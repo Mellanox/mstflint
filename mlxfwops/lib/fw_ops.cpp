@@ -2546,6 +2546,11 @@ bool FwOperations::burnEncryptedImage(FwOperations*, ExtBurnParams&)
     return errmsg("Burning encrypted image not supported");
 }
 
+bool FwOperations::CheckAndSetIsReducedImage()
+{
+    return errmsg("CheckAndSetIsReducedImage not supported");
+}
+
 bool FwOperations::FwExtract4MBImage(vector<u_int8_t>&, bool, bool , bool, bool)
 {
     return errmsg("FwExtract4MBImage not supported");

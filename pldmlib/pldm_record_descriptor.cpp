@@ -42,7 +42,15 @@
 #include "pldm_buff.h"
 #include "pldm_record_descriptor.h"
 
-PldmRecordDescriptor::PldmRecordDescriptor() : descriptorType(0), descriptorLength(0), descriptorData(NULL) {}
+PldmRecordDescriptor::PldmRecordDescriptor() :
+    descriptorType(0),
+    descriptorLength(0),
+    descriptorData(NULL),
+    vendorDefinedType(VendorDefinedType::NOT_VENDOR_DEFINED),
+    vendorDefinedValue(""),
+    apsku(0)
+{
+}
 
 PldmRecordDescriptor::~PldmRecordDescriptor()
 {
@@ -83,11 +91,18 @@ bool PldmRecordDescriptor::extractVendorDefined()
         vendoreDefinedPtr += prefixlen;
         if (descriptorName == "PSID")
         {
-            psid = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr));
+            vendorDefinedValue = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr));
+            vendorDefinedType = VendorDefinedType::PSID;
+        }
+        else if (descriptorName == "recovery")
+        {
+            vendorDefinedValue = std::string(reinterpret_cast<const char*>(vendoreDefinedPtr));
+            vendorDefinedType = VendorDefinedType::RECOVERY;
         }
         else if (descriptorName == "APSKU")
         {
             apsku = __cpu_to_le32(*reinterpret_cast<u_int32_t*>(vendoreDefinedPtr));
+            vendorDefinedType = VendorDefinedType::APSKU;
         }
         else
         {
@@ -122,7 +137,18 @@ std::string PldmRecordDescriptor::getDescription() const
             sprintf(description, "PCI Subsystem ID: 0x%02x%02x", descriptorData[1], descriptorData[0]);
             break;
         case Vendor_Defined:
-            sprintf(description, "PSID: %s", psid.c_str());
+            if (vendorDefinedType == VendorDefinedType::PSID)
+            {
+                sprintf(description, "PSID: %s", vendorDefinedValue.c_str());
+            }
+            else if (vendorDefinedType == VendorDefinedType::RECOVERY)
+            {
+                sprintf(description, "RECOVERY: %s", vendorDefinedValue.c_str());
+            }
+            else if (vendorDefinedType == VendorDefinedType::APSKU)
+            {
+                sprintf(description, "APSKU: 0x%08X", apsku);
+            }
             break;
     }
     return description;

@@ -486,7 +486,7 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo,
     fwInfo->fw_type = FwType();
     if (isStripedImage)
     {
-        SetIsStripedImage(true);
+        SetIsReducedImage(true);
         ignoreDToc = true;
     }
 
@@ -897,7 +897,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& bur
     }
     fw_info_t fw_query;
     memset(&fw_query, 0, sizeof(fw_info_t));
-    if (!imageOps->FwQuery(&fw_query, true, imageOps->GetIsStripedImage()))
+    if (!imageOps->FwQuery(&fw_query, true, imageOps->GetIsReducedImage()))
     {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to query the image\n");
     }

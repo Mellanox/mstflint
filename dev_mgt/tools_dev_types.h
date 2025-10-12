@@ -243,6 +243,11 @@ int dm_dev_is_hca(dm_dev_id_t type);
 int dm_dev_is_gearbox(dm_dev_id_t type);
 
 /**
+ * A predicate returning the software device id
+ */
+int dm_dev_type2sw_id(dm_dev_id_t type);
+
+/**
  * A predicate returning if the device is menhit
  */
 int dm_is_menhit(dm_dev_id_t type);

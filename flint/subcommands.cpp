@@ -2874,21 +2874,114 @@ FlintStatus BurnSubCommand::burnFs3()
     return FLINT_SUCCESS;
 }
 
-FlintStatus BurnSubCommand::burnPldmComp(u_int8_t** buff, u_int32_t& buffSize, FsPldmOperations* pldmOps)
+FlintStatus BurnSubCommand::burnPldmComp(FsPldmOperations* pldmOps, string& componentType)
 {
+    u_int8_t* buff;
+    u_int32_t buffSize = 0;
+    if (!pldmOps->GetPldmComponentData(componentType, _devInfo.fw_info.psid, &buff, buffSize))
+    {
+        reportErr(true, "Failed to get PLDM component data.\n");
+        return FLINT_FAILED;
+    }
+
     // TODO: Update the component support check to be in the fwctrl burn function
     FwComponent::comps_ids_t compId = pldmOps->ToCompId(_flintParams.component_type);
     if (compId == FwComponent::COMPID_UNKNOWN || !_fwOps->IsComponentSupported(compId))
     {
         reportErr(true, "Component type %s is not supported by the device.\n", _flintParams.component_type.c_str());
+        delete[] buff;
+        UnlockDevice(_fwOps);
         return FLINT_FAILED;
     }
     vector<u_int8_t> compData(*buff, *buff + buffSize);
     if (!_fwOps->FwBurnAdvanced(compData, _burnParams, compId))
     {
         reportErr(true, FLINT_FSPLDM_BURN_ERROR, _flintParams.component_type.c_str(), _fwOps->err());
+        delete[] buff;
+        UnlockDevice(_fwOps);
         return FLINT_FAILED;
     }
+
+    UnlockDevice(_fwOps);
+    return FLINT_SUCCESS;
+}
+
+FlintStatus BurnSubCommand::PldmToFwOps(FsPldmOperations* pldmOps)
+{
+    std::string psid(_devInfo.fw_info.psid);
+    u_int8_t* buff;
+    u_int32_t buffSize = 0;
+    // if psid empty in fwpkg the first component will be extracted
+    if (!pldmOps->GetPldmComponentData("FW", psid, &buff, buffSize))
+    {
+        if (pldmOps->err())
+        {
+            reportErr(true, "%s\n", pldmOps->err());
+            return FLINT_FAILED;
+        }
+        else
+        {
+            psid = "";
+            if (!pldmOps->GetPldmComponentData("FW", psid, &buff, buffSize))
+            {
+                reportErr(true, "The component was not found in the PLDM fwpkg.\n");
+                return FLINT_FAILED;
+            }
+        }
+    }
+
+    // extract devid from device
+    mfile* mf = _fwOps->getMfileObj();
+    dm_dev_id_t devid_t = DeviceUnknown;
+    u_int32_t devid = 0, revid = 0;
+    int rc = dm_get_device_id(mf, &devid_t, &devid, &revid);
+    if (rc != 0)
+    {
+        reportErr(true, "Can not detect the device type.\n");
+        return FLINT_FAILED;
+    }
+
+    // extract devid from fwpkg
+    u_int16_t swDevId = 0;
+    if (!psid.empty())
+    {
+        if (!pldmOps->GetPldmDescriptor(psid, DEV_ID_TYPE, swDevId))
+        {
+            reportErr(true, "DEVICE ID descriptor is not found in the PLDM fwpkg for PSID: %s.\n", psid.c_str());
+            delete[] buff;
+            return FLINT_FAILED;
+        }
+    }
+    else
+    {
+        swDevId = dm_dev_type2sw_id(devid_t);
+    }
+
+    // create new image ops
+    FwOperations* newImageOps = NULL;
+    if (!pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true))
+    {
+        reportErr(true, "Failed to use image from PLDM fwpkg. %s\n", pldmOps->err());
+        return FLINT_FAILED;
+    }
+    delete _imgOps;
+    _imgOps = newImageOps;
+    delete[] buff;
+
+    // query the image to get the device id and check if it is compatible with the device
+    if (!_imgOps->FwQuery(&_imgInfo))
+    {
+        reportErr(true, "Failed to query the PLDM fwpkg image.\n");
+        return FLINT_FAILED;
+    }
+
+    dm_dev_id_t imageType = dm_dev_sw_id2type(_imgInfo.fw_info.pci_device_id);
+    if (devid_t != imageType)
+    {
+        reportErr(true, "PCI Device ID in PLDM fwpkg is not compatible with the Device ID on the device.\n");
+        return FLINT_FAILED;
+    }
+
     return FLINT_SUCCESS;
 }
 
@@ -3600,79 +3693,39 @@ FlintStatus BurnSubCommand::executeCommand()
 
     // query both image and device (deviceQuery can fail but we save rc)
     _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
+    
     if (_imgOps->FwType() == FIT_PLDM_1_0)
     {
-        if (!_fwOps->IsFsCtrlOperations())
+        string component_type = _flintParams.component_type.empty() ? "FW" : _flintParams.component_type;
+        FsPldmOperations* pldmOps = dynamic_cast<FsPldmOperations*>(_imgOps);
+        if (pldmOps == nullptr)
         {
-            reportErr(true, "FW doesn't support burning PLDM components.\n");
+            reportErr(true, "Failed to create PLDM operations.\n");
+            return FLINT_FAILED;
+        }
+        if (!pldmOps->LoadPldmPackage())
+        {
+            reportErr(true, "Failed to load PLDM fwpkg.\n");
             return FLINT_FAILED;
         }
 
         if (strlen(_devInfo.fw_info.psid) == 0)
         {
-            reportErr(true, "-E- Can't extract Image from PLDM package, Can't get the device PSID.\n");
+            reportErr(true, "-E- Cant get psid from Device.\n");
             return FLINT_FAILED;
         }
 
-        u_int8_t* buff;
-        u_int32_t buffSize = 0;
-        FsPldmOperations* pldmOps = dynamic_cast<FsPldmOperations*>(_imgOps);
-
-        if (!pldmOps->LoadPldmPackage())
+        if (component_type == "FW")
         {
-            reportErr(true, "Failed to load PLDM package.\n");
-            return FLINT_FAILED;
-        }
-        std::string psid(_devInfo.fw_info.psid);
-        if (!pldmOps->GetPldmComponentData(_flintParams.component_type, psid, &buff, buffSize))
-        {
-            if (pldmOps->err())
+            if (PldmToFwOps(pldmOps) == FLINT_FAILED)
             {
-                reportErr(true, "%s\n", pldmOps->err());
-            }
-            else
-            {
-                reportErr(true, "The component was not found in the PLDM.\n");
-            }
-            return FLINT_FAILED;
-        }
-
-        if (_flintParams.component_type == "FW")
-        {
-            u_int16_t swDevId = 0;
-            std::string psid(_devInfo.fw_info.psid);
-            pldmOps->GetPldmDescriptor(psid, DEV_ID_TYPE, swDevId);
-
-            mfile* mf = _fwOps->getMfileObj();
-            dm_dev_id_t devid_t = DeviceUnknown;
-            u_int32_t devid = 0, revid = 0;
-            int rc = dm_get_device_id(mf, &devid_t, &devid, &revid);
-            if (rc != 0)
-            {
-                reportErr(true, "Can not detect the device type.\n");
-                delete[] buff;
+                reportErr(true, "%s", pldmOps->err());
                 return FLINT_FAILED;
             }
-            dm_dev_id_t imageType = dm_dev_sw_id2type(swDevId);
-            if (devid_t != imageType)
-            {
-                reportErr(true, "PCI Device ID in PLDM is not compatible with the Device ID on the device.\n");
-                delete[] buff;
-                return FLINT_FAILED;
-            }
-
-            FwOperations* newImageOps = NULL;
-            pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true);
-            delete _imgOps;
-            _imgOps = newImageOps;
-            delete[] buff;
         }
         else
         {
-            FlintStatus res = burnPldmComp(&buff, buffSize, pldmOps);
-            delete[] buff;
-            UnlockDevice(_fwOps);
-            return res;
+            return burnPldmComp(pldmOps, component_type);
         }
     }
 
@@ -3740,6 +3793,13 @@ FlintStatus BurnSubCommand::executeCommand()
     {
         UnlockDevice(_fwOps);
         reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
+        return FLINT_FAILED;
+    }
+
+    if (_imgOps->GetIsReducedImage() && _burnParams.useImgDevData)
+    {
+        // useImgDevData indicator is initialized by the --ignore_dev_data flag
+        reportErr(true, "ignore_dev_data flag is not applicable with the given reduced image.\n");
         return FLINT_FAILED;
     }
 
@@ -4678,7 +4738,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     FwOperations* ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);
     FwVersion running_version = FwOperations::createRunningFwVersion(&fwInfo.fw_info);
-    bool isStripedImage = ops->GetIsStripedImage();
+    bool isStripedImage = ops->GetIsReducedImage();
 
     printf("Image type:            %s\n", fwImgTypeToStr(fwInfo.fw_type));
     if (fwInfo.fw_info.isfu_major)
@@ -5217,7 +5277,7 @@ FlintStatus QuerySubCommand::executeCommand()
         u_int16_t swDevId = 0;
         if (!pldmOps->GetPldmDescriptor(_flintParams.psid, DEV_ID_TYPE, swDevId))
         {
-            reportErr(true, "-E- DEVICE ID descriptor is not found in the PLDM.\n");
+            reportErr(true, "DEVICE ID descriptor is not found in the PLDM.\n");
             delete[] buff;
             return FLINT_FAILED;
         }

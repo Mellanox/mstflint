@@ -99,7 +99,7 @@ public:
         _maxBinMajorVer(0),
         _signatureMngr((ISignatureManager*)NULL),
         _internalQueryPerformed(false),
-        _isStripedImage(false)
+        _isReducedImage(false)
     {
         memset(_sectionsToRead, 0, sizeof(_sectionsToRead));
         memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
@@ -148,8 +148,8 @@ public:
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
     virtual u_int32_t GetPublicKeySecureBootPtr();
     virtual bool FwReactivateImage() { return errmsg("Operation not supported."); }
-    virtual bool GetIsStripedImage() { return _isStripedImage; }
-    virtual void SetIsStripedImage(bool isStripedImage) { _isStripedImage = isStripedImage; }
+    virtual bool GetIsReducedImage() { return _isReducedImage; }
+    virtual void SetIsReducedImage(bool isReducedImage) { _isReducedImage = isReducedImage; }
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool SignForFwUpdate(const char* uuid,
                                  const MlxSign::Signer& signer,
@@ -246,6 +246,7 @@ public:
     virtual void FwCleanUp();
     virtual bool FwInit() = 0;
     bool FwSetPrint(PrintCallBack PrintFunc);
+    virtual bool CheckAndSetIsReducedImage();
 
     virtual bool UpdateSection(void* new_info,
                                fs3_section_t sect_type = FS3_DEV_INFO,
@@ -716,7 +717,7 @@ protected:
     u_int8_t _maxBinMajorVer;
     ISignatureManager* _signatureMngr;
     bool _internalQueryPerformed;
-    bool _isStripedImage;
+    bool _isReducedImage;
 
 private:
     // Static Methods
