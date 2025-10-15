@@ -640,7 +640,7 @@ void MlxlinkUi::validatePRBSParams()
             throw MlxRegException("you must provide a valid PRBS test mode [DS/EN/TU]");
         }
     }
-    else if (prbsFlags)
+    if (_userInput._prbsMode != "EN" && prbsFlags)
     { // add check for lanes flag to work with PRBS and eye scan only
         throw MlxRegException("PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
     }
