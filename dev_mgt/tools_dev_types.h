@@ -331,6 +331,10 @@ int dm_is_5th_gen_hca(dm_dev_id_t type);
 
 int dm_is_connectib(dm_dev_id_t type);
 
+int dm_is_cx8(dm_dev_id_t type);
+
+int dm_is_cx9(dm_dev_id_t type);
+
 int dm_is_new_gen_switch(dm_dev_id_t type);
 
 int dm_dev_is_raven_family_switch(dm_dev_id_t type);

@@ -49,10 +49,13 @@
 #include <cmdif/cib_cif.h>
 #endif
 #include "mlxreg_ui.h"
+#include "mlxreg_lib/mlxreg_parser.h"
 
 #define IDENT "    "
 #define IDENT2 IDENT IDENT
 #define IDENT3 "\t\t"
+#define COLUMNS_SPACE 3
+#define VALUE_COLUMN_LINE_LEN 14
 #ifdef MST_UL
 #define MLXREG_EXEC "mstreg"
 #else
@@ -131,118 +134,6 @@
 #define FULL_PATH_FLAG_SHORT ' '
 
 using namespace mlxreg;
-
-/************************************
- * Function: getRelevantField
- * Description: Traverses ADB instance tree and returns relevant leaf fields.
- * For union selectors and conditional nodes, only returns the selected union field or the node based on buffer value.
- ************************************/
-static std::vector<AdbInstanceAdvLegacy*> getRelevantField(AdbInstanceAdvLegacy* node,
-                                                           const std::vector<u_int32_t>& buff)
-{
-    std::vector<AdbInstanceAdvLegacy*> result;
-
-    if (!node)
-    {
-        return result;
-    }
-
-    // If this is a leaf node (no children), add it to result
-    if (node->subItems.empty())
-    {
-        result.push_back(node);
-        return result;
-    }
-
-    // Check if this is a union selector
-    if (node->isUnion() && node->unionSelector)
-    { // TODO: add isUnionSelector() function to AdbInstance
-        // Get the selector value from buffer
-        u_int32_t selectorValue = node->unionSelector->popBuf((u_int8_t*)&buff[0]);
-
-        // Get the selected union field using getUnionSelectedNodeName
-        AdbInstanceAdvLegacy* selectedNode = nullptr;
-        try
-        {
-            selectedNode = node->getUnionSelectedNodeName(selectorValue);
-        }
-        catch (const AdbException& e)
-        {
-            // If getUnionSelectedNodeName throws an exception, treat as a regular non-union node
-            // and process all children
-            std::cerr << "-W- Field - " << node->get_field_name()
-                      << " with union selector failed treating as regular node and processing all children\n"
-                      << e.what() << std::endl;
-            for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin();
-                 it != node->subItems.end();
-                 ++it)
-            {
-                std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantField(*it, buff);
-                result.insert(result.end(), subResult.begin(), subResult.end());
-            }
-            return result;
-        }
-
-        if (selectedNode)
-        {
-            // Recursively get relevant fields from the selected union field
-            std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantField(selectedNode, buff);
-            result.insert(result.end(), subResult.begin(), subResult.end());
-        }
-    }
-    else if (node->parent && node->parent->isConditionalNode())
-    {
-        AdbConditionLegacy* condition = node->getCondition();
-        if (condition)
-        {
-            uint64_t cond_val = 0;
-            try
-            {
-                cond_val = condition->evaluate((u_int8_t*)&buff[0]);
-            }
-            catch (const AdbException& e)
-            {
-                // If condition evaluation throws an exception, treat as a regular non-union node
-                // and process all children
-                std::cerr << "-W- Field - " << node->get_field_name()
-                          << " with condition, evaluation failed, treating as regular node and processing all children\n"
-                          << e.what() << std::endl;
-                for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin();
-                     it != node->subItems.end();
-                     ++it)
-                {
-                    std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantField(*it, buff);
-                    result.insert(result.end(), subResult.begin(), subResult.end());
-                }
-                return result;
-            }
-
-            if (!cond_val)
-            {
-                return result;
-            }
-        }
-        // Recursively get relevant fields from the selected union field
-        for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin(); it != node->subItems.end();
-             ++it)
-        {
-            std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantField(*it, buff);
-            result.insert(result.end(), subResult.begin(), subResult.end());
-        }
-    }
-    else
-    {
-        // For non-union nodes, recursively process all children
-        for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin(); it != node->subItems.end();
-             ++it)
-        {
-            std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantField(*it, buff);
-            result.insert(result.end(), subResult.begin(), subResult.end());
-        }
-    }
-
-    return result;
-}
 
 /************************************
  * Function: MlxRegUi
@@ -404,7 +295,23 @@ size_t getLongestNodeLen(std::vector<AdbInstanceAdvLegacy*> root, bool full_path
             len = name.size();
         }
     }
-    return (len + 3);
+    return (len + COLUMNS_SPACE);
+}
+
+/************************************
+ * Function: getLongestNodeLen
+ ************************************/
+size_t getLongestNodeLen(std::vector<std::tuple<std::string, uint64_t>> parsed_fields)
+{
+    size_t len = 0;
+    for (auto field : parsed_fields)
+    {
+        if (std::get<0>(field).size() > len)
+        {
+            len = std::get<0>(field).size();
+        }
+    }
+    return (len + COLUMNS_SPACE);
 }
 
 /************************************
@@ -448,22 +355,39 @@ void MlxRegUi::printRegNames(std::vector<string> regs)
  ************************************/
 void MlxRegUi::printAdbContext(AdbInstanceAdvLegacy* node, std::vector<u_int32_t> buff)
 {
-    std::vector<AdbInstanceAdvLegacy*> subItems = getRelevantField(node, buff);
-    int largestName = (int)getLongestNodeLen(subItems, _full_path);
+    _mlxRegLib->getAdb().traverse_layout(node, "", 0, (uint8_t*)&buff[0], buff.size() * sizeof(u_int32_t),
+                                         MlxRegUi::_on_traverse_save_field_data, (void*)this, true, false, _full_path);
+    int largestName = (int)getLongestNodeLen(_parsed_fields);
     printf("%-*s | %-8s\n", largestName, "Field Name", "Data");
-    PRINT_LINE(largestName + 14);
-    for (std::vector<AdbInstanceAdvLegacy*>::size_type i = 0; i != subItems.size(); i++)
+    PRINT_LINE(largestName + VALUE_COLUMN_LINE_LEN);
+    for (auto& pair : _parsed_fields)
     {
-        printf("%-*s | 0x%08x\n",
-               largestName,
-               _full_path ? subItems[i]->fullName(1).c_str() : subItems[i]->get_field_name().c_str(),
-               (unsigned int)subItems[i]->popBuf((u_int8_t*)&buff[0]));
+        std::string name;
+        uint32_t value;
+        std::tie(name, value) = pair;
+        printf("%-*s | 0x%08x\n", largestName, name.c_str(), value);
     }
-    PRINT_LINE(largestName + 14);
+    PRINT_LINE(largestName + VALUE_COLUMN_LINE_LEN);
 }
 
 /************************************
- * Function: printAdbContext
+ * Function: _on_traverse_save_field_data
+ ************************************/
+void MlxRegUi::_on_traverse_save_field_data(const string& calculated_path,
+                                            uint64_t calculated_offset,
+                                            uint64_t calculated_value,
+                                            AdbInstanceAdvLegacy* instance,
+                                            void* context)
+{
+    (void)instance;
+    (void)calculated_offset;
+
+    MlxRegUi* ui = (MlxRegUi*)context;
+    ui->_parsed_fields.push_back(std::make_tuple(calculated_path, (uint32_t)calculated_value));
+}
+
+/************************************
+ * Function: printBuff
  ************************************/
 void MlxRegUi::printBuff(std::vector<u_int32_t> buff)
 {
@@ -675,6 +599,17 @@ void MlxRegUi::paramValidate()
             }
         }
     }
+    else // CMD_SHOW_REG, CMD_SHOW_REGS, CMD_SHOW_ALL_REGS
+    {
+        if (!_indexesStr.empty())
+        {
+            throw MlxRegException("indexes flag is only valid for SET/GET commands");
+        }
+        if (!_opsStr.empty())
+        {
+            throw MlxRegException("ops flag is only valid for SET/GET commands");
+        }
+    }
     if (_op == CMD_SET && _dataStr == "")
     {
         throw MlxRegException("you must provide registers data string to use SET");
@@ -805,7 +740,9 @@ void MlxRegUi::run(int argc, char** argv)
             {
                 regNode = _mlxRegLib->get_current_node();
             }
-            RegAccessParser parser(_dataStr, _indexesStr, _opsStr, regNode, _dataLen);
+            RegAccessParser parser(_dataStr, _indexesStr, _opsStr, &_mlxRegLib->getAdb(), regNode,
+                                   _dataLen ? _dataLen : mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET), false,
+                                   _full_path);
             buff = parser.genBuff();
             printf("Sending access register...\n\n");
             if (_regName != "")
@@ -835,7 +772,9 @@ void MlxRegUi::run(int argc, char** argv)
                 regNode = _mlxRegLib->get_current_node();
             }
             // Read current register data into buffer
-            RegAccessParser parserGet(_dataStr, _indexesStr, _opsStr, regNode, _dataLen, _ignore_ro);
+            RegAccessParser parserGet(_dataStr, _indexesStr, _opsStr, &_mlxRegLib->getAdb(), regNode,
+                                      _dataLen ? _dataLen : mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET), _ignore_ro,
+                                      _full_path);
             buff = parserGet.genBuff();
             if (!_overwrite)
             {
@@ -849,7 +788,8 @@ void MlxRegUi::run(int argc, char** argv)
                 }
             }
             // Update the register buffer with user inputs
-            RegAccessParser parser(_dataStr, _indexesStr, _opsStr, regNode, buff, _ignore_ro);
+            RegAccessParser parser(_dataStr, _indexesStr, _opsStr, &_mlxRegLib->getAdb(), regNode, buff, _ignore_ro,
+                                   _full_path);
             buff = parser.genBuff();
             if (_output_file != "")
             {

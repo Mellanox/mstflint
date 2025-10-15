@@ -87,7 +87,7 @@ public:
     address_t get_max_leaf_size() const;
     void update_max_leaf(AdbField* other);
 
-    string toXml(const string& addPrefix);
+    string toXml(const string& addPrefix, bool bigEndian = false);
 
     // FOR DEBUG
     void print(int indent = 0);

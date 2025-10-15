@@ -56,19 +56,24 @@ public:
     RegAccessParser(string data,
                     string indexes,
                     string ops,
+                    AdbAdvLegacy* adb,
                     AdbInstanceAdvLegacy* regNode,
                     std::vector<u_int32_t> buffer,
-                    bool ignore_ro = false);
+                    bool ignore_ro = false,
+                    bool full_path = false);
     RegAccessParser(string data,
                     string indexes,
                     string ops,
+                    AdbAdvLegacy* adb,
                     AdbInstanceAdvLegacy* regNode,
                     u_int32_t len,
-                    bool ignore_ro = false);
+                    bool ignore_ro = false,
+                    bool full_path = false);
     std::vector<u_int32_t> genBuff();
     u_int32_t getDataLen() { return _len; };
     static void strToUint32(char* str, u_int32_t& uint);
     static string getAccess(const AdbInstanceAdvLegacy* field);
+    static string get_legacy_path(AdbInstanceAdvLegacy& instance);
     enum access_type_t
     {
         INDEX,
@@ -80,11 +85,20 @@ protected:
     string _indexes;
     string _ops;
     u_int32_t _len;
+    AdbAdvLegacy* _adb;
     AdbInstanceAdvLegacy* _regNode;
     parseMode _parseMode;
     string output_file;
     std::vector<u_int32_t> _buffer;
     bool _ignore_ro;
+    bool _full_path;
+    std::map<string, uint32_t> _data_map;
+
+    static void _on_traverse_update_buffer(const string& calculated_path,
+                                           uint64_t calculated_offset,
+                                           uint64_t calculated_value,
+                                           AdbInstanceAdvLegacy* instance,
+                                           void* context);
     std::vector<u_int32_t> genBuffUnknown();
     std::vector<u_int32_t> genBuffKnown();
     void parseAccessType(std::vector<string> tokens, std::vector<string> validTokens, access_type_t accessType);
@@ -98,7 +112,11 @@ protected:
                             u_int32_t size = 0,
                             u_int32_t offset = 0,
                             bool offsetSpecified = false);
-    AdbInstanceAdvLegacy* getField(string name, u_int32_t size = 0, u_int32_t offset = 0, bool offsetSpecified = false);
+    AdbInstanceAdvLegacy* getField(string name,
+                                   u_int32_t size = 0,
+                                   u_int32_t offset = 0,
+                                   bool offsetSpecified = false,
+                                   bool is_buffer_full = false);
     std::vector<string> strSplit(string str, char delimiter, bool forcePairs);
     void updateBuffer(u_int32_t offset, u_int32_t size, u_int32_t val);
     void updateBufferUnknwon(std::vector<string> fieldTokens);
@@ -107,13 +125,18 @@ protected:
                             std::vector<u_int32_t>& buff,
                             u_int32_t size = 0,
                             u_int32_t offset = 0,
-                            bool offsetSpecified = false);
+                            bool offsetSpecified = false,
+                            bool is_buffer_full = false);
     bool isRO(AdbInstanceAdvLegacy* field);
     bool isIndex(AdbInstanceAdvLegacy* field);
     bool isOP(AdbInstanceAdvLegacy* field);
     std::vector<string> getAllIndexes(AdbInstanceAdvLegacy* node);
     std::vector<string> getAllOps(AdbInstanceAdvLegacy* node);
     const std::string accessTypeToString(access_type_t accessType);
+
+public:
+    static std::vector<AdbInstanceAdvLegacy*> getRelevantFields(AdbInstanceAdvLegacy* node,
+                                                                const std::vector<u_int32_t>& buff);
 
 private:
     bool checkAccess(const AdbInstanceAdvLegacy* field, const string accessStr);

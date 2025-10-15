@@ -128,7 +128,7 @@ string ExceptionHolder::printAdbExceptionMap()
     vector<string> warnings = ExceptionHolder::adbExceptionMap[ExceptionHolder::WARN_EXCEPTION];
     for (vector<string>::iterator it = warnings.begin(); it != warnings.end(); ++it)
     {
-        errorStr += "-" + ExceptionHolder::WARN_EXCEPTION + "- " + "- " + *it + ";";
+        errorStr += "-" + ExceptionHolder::WARN_EXCEPTION + "- " + *it + ";";
     }
     return errorStr;
 }
