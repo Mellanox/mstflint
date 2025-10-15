@@ -4812,7 +4812,7 @@ void MlxlinkCommander::prbsConfiguration(const string& prbsReg,
             cmd << ",p=1";
         }
         // Handle modulation field
-        if (modulation != PRBS_MODULATION_NRZ)
+        if (modulation != PRBS_MODULATION_DEFAULT)
         {
             // User specified modulation
             cmd << ",modulation=" << modulation;
@@ -4822,6 +4822,12 @@ void MlxlinkCommander::prbsConfiguration(const string& prbsReg,
             // Default behavior for high-speed rates
             cmd << ",modulation=" << PRBS_MODULATION_PAM4_ENCODING;
         }
+        else
+        {
+            // Default behavior for low-speed rates
+            cmd << ",modulation=" << PRBS_MODULATION_NRZ;
+        }
+
 
         cmd << ",e=" << enable << "," << rateToUpdate << "=" << laneRate << ",prbs_mode_admin=" << prbsMode;
         return cmd.str();
@@ -4854,10 +4860,10 @@ void MlxlinkCommander::sendPprtPptt()
 
     u_int32_t rxModulation = !_userInput._pprtModulation.empty() ?
                                _mlxlinkMaps->_prbsModulationValue[_userInput._pprtModulation] :
-                               (u_int32_t)PRBS_MODULATION_NRZ;
+                               (u_int32_t)PRBS_MODULATION_DEFAULT;
     u_int32_t txModulation = !_userInput._ppttModulation.empty() ?
                                _mlxlinkMaps->_prbsModulationValue[_userInput._ppttModulation] :
-                               (u_int32_t)PRBS_MODULATION_NRZ;
+                               (u_int32_t)PRBS_MODULATION_DEFAULT;
 
     prbsConfiguration("PPRT", true, rxRate, prbsModeToMask(_userInput._pprtMode), perLaneConfig, _userInput._prbsRxInv, rxModulation);
     prbsConfiguration("PPTT", true, txRate, prbsModeToMask(_userInput._ppttMode), perLaneConfig, _userInput._prbsTxInv, txModulation);
@@ -4869,8 +4875,8 @@ void MlxlinkCommander::resetPprtPptt()
     {
         if (_prbsTestMode)
         {
-            prbsConfiguration("PPRT", false, PRBS_EDR, PRBS31, false, false, PRBS_MODULATION_NRZ);
-            prbsConfiguration("PPTT", false, PRBS_EDR, PRBS31, false, false, PRBS_MODULATION_NRZ);
+            prbsConfiguration("PPRT", false, PRBS_EDR, PRBS31, false, false, PRBS_MODULATION_DEFAULT);
+            prbsConfiguration("PPTT", false, PRBS_EDR, PRBS31, false, false, PRBS_MODULATION_DEFAULT);
         }
     }
     catch (MlxRegException& exc)

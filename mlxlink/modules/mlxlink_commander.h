@@ -625,7 +625,7 @@ public:
                            u_int32_t prbsMode,
                            bool perLaneConfig,
                            bool prbsPolInv,
-                           u_int32_t modulation = PRBS_MODULATION_NRZ);
+                           u_int32_t modulation = PRBS_MODULATION_DEFAULT);
     void sendPprtPptt();
     void resetPprtPptt();
     u_int32_t ptysSpeedToMask(const string& speed);
