@@ -484,6 +484,12 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsModesList[27] = "SQUARE_WAVE13";
     _prbsModesList[28] = "SQUARE_WAVE30";
 
+    // Initialize PRBS modulation mapping
+    _prbsModulationValue["NRZ"] = PRBS_MODULATION_NRZ;
+    _prbsModulationValue["PAM4"] = PRBS_MODULATION_PAM4_ENCODING;
+    _prbsModulationValue["PAM4_PRECODING"] = PRBS_MODULATION_PAM4_PRECODING;
+    _prbsModulationValue["PAM4_NO_GRAY"] = PRBS_MODULATION_PAM4_NO_GRAY;
+
     _prbsLaneRateList[0] = "2.5G";
     _prbsLaneRateList[1] = "5G";
     _prbsLaneRateList[2] = "10G";
@@ -582,11 +588,10 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsPStatus[0] = "No polarity inversion";
     _prbsPStatus[1] = "PRBS RX polarity inversion.";
 
-    _prbsModulation[0] = "NRZ test pattern";
-    _prbsModulation[1] = "PAM4 encoding";
-    _prbsModulation[2] = "PAM4 with precoding";
-    _prbsModulation[3] = "PAM4 without gray no precoding";
-    _prbsModulation[4] = "PAM4 without gray with precoding";
+    _prbsModulation[PRBS_MODULATION_NRZ] = "NRZ test pattern";
+    _prbsModulation[PRBS_MODULATION_PAM4_ENCODING] = "PAM4 encoding";
+    _prbsModulation[PRBS_MODULATION_PAM4_PRECODING] = "PAM4 with precoding";
+    _prbsModulation[PRBS_MODULATION_PAM4_NO_GRAY] = "PAM4 without gray no precoding";
 }
 
 void MlxlinkMaps::initPpbmcAndPepcMapping()
