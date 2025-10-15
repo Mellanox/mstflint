@@ -211,6 +211,7 @@ public:
     typename enable_if<!U>::type eval_expressions(AttrsMap& i_vars);
 
     static string evalExpr(string expr, AttrsMap* vars);
+    static string addPathSuffixForArraySupport(string path);
     const string& get_field_name();
     bool isLeaf();
     bool isUnion();
@@ -236,6 +237,7 @@ public:
     _AdbInstance_impl<eval_expr, T_OFFSET>* getUnionSelectedNodeName(const string& selectorEnum);
     bool operator<(const _AdbInstance_impl<eval_expr, T_OFFSET>& other);
     bool isConditionalNode();
+    bool containsDynamicArray();
     bool isConditionValid(map<string, string>* valuesMap);
     // DB like access methods
     _AdbInstance_impl<eval_expr, T_OFFSET>* getChildByPath(const string& path, bool isCaseSensitive = true);
@@ -269,6 +271,12 @@ public:
     typename enable_if<U, AdbCondition*>::type getCondition();
     template<bool U = eval_expr>
     typename enable_if<!U, AdbCondition*>::type getCondition();
+
+    template<bool U = eval_expr>
+    typename enable_if<U, AdbCondition*>::type getArraySizeCondition();
+
+    template<bool U = eval_expr>
+    typename enable_if<!U, AdbCondition*>::type getArraySizeCondition();
 
     vector<_AdbInstance_impl<eval_expr, T_OFFSET>*> getLeafFields(bool extendedName); // Get all leaf fields
     void pushBuf(uint8_t* buf, uint64_t value);
@@ -314,8 +322,8 @@ template<bool U>
 typename enable_if<U>::type _AdbInstance_impl<eval_expr, O>::initInstOps()
 {
     string value;
-    auto found = getInstanceAttr("condition", value);
-    if (found && parent && parent->nodeDesc)
+    auto found_inst_condition = getInstanceAttr("condition", value);
+    if (found_inst_condition && parent && parent->nodeDesc)
     {
         auto is_conditional = parent->nodeDesc->attrs.find("is_conditional");
         if (is_conditional != parent->nodeDesc->attrs.end() && is_conditional->second == "1")
@@ -323,16 +331,10 @@ typename enable_if<U>::type _AdbInstance_impl<eval_expr, O>::initInstOps()
             inst_ops_props.condition.init(value);
         }
     }
-
-    found = getInstanceAttr("size_condition", value);
-    if (found)
+    auto found_size_condition = getInstanceAttr("size_condition", value);
+    if (found_size_condition)
     {
-        string cond_size = value;
-        if (cond_size.substr(0, 10) == "$(parent).")
-        {
-            cond_size.erase(0, 10);
-        }
-        inst_ops_props.conditionalSize.init(cond_size);
+        inst_ops_props.conditionalSize.init(value);
     }
 }
 

@@ -76,6 +76,7 @@
 
 // Scratchpad 2
 #define CRD_SP2_TLV_FIRST_ADDRESS 0x18         /* This first tlv address is valid only for HCA */
+#define CRD_SP2_TLV_FIRST_ADDRESS_CX8 0x1A00018 /* This first tlv address is valid only for CX8 and up */
 #define CRD_SP2_TLV_SIGNATURE_VALUE 0x54306F6C /* signature value is T0ol */
 
 typedef struct crd_sp2_tlv
@@ -124,6 +125,7 @@ static int crd_get_csv_path(IN dm_dev_id_t dev_type,
  */
 static int crd_count_double_word(IN mfile* mf,
                                  IN char* csv_file_path,
+                                 IN dm_dev_id_t dev_type,
                                  OUT u_int32_t* number_of_dwords,
                                  OUT crd_parsed_csv_t blocks[],
                                  IN int is_full,
@@ -150,7 +152,10 @@ static int crd_update_csv_path(IN OUT char* csv_file_path, IN const char* db_pat
 
 static int crd_count_blocks(IN char* csv_file_path, OUT u_int32_t* block_count, u_int8_t read_single_dword);
 
-static int crd_count_tlv_blocks_and_dwords(IN mfile* mf, OUT u_int32_t* block_count, OUT u_int32_t* number_of_dwords);
+static int crd_count_tlv_blocks_and_dwords(IN mfile* mf,
+                                           IN u_int32_t tlv_start_address,
+                                           OUT u_int32_t* block_count,
+                                           OUT u_int32_t* number_of_dwords);
 
 static int crd_get_tlv_from_address(IN mfile* mf, IN u_int32_t address, OUT crd_sp2_tlv_t* crd_sp2_tlv);
 
@@ -158,7 +163,12 @@ static int crd_is_tlv_signature_valid(IN u_int32_t signature);
 
 static int crd_is_tlv_address_valid(IN u_int32_t address);
 
-static int crd_set_tlv_blocks(IN mfile* mf, OUT crd_parsed_csv_t blocks[], IN u_int32_t sp2_start_block);
+static int crd_set_tlv_blocks(IN mfile* mf,
+                              IN dm_dev_id_t dev_type,
+                              OUT crd_parsed_csv_t blocks[],
+                              IN u_int32_t sp2_start_block);
+
+static uint32_t crd_get_sp2_start_block(IN dm_dev_id_t dev_type);
 
 #if !defined(__WIN__) && !defined(MST_UL)
 static char* crd_trim(char* s);
@@ -232,7 +242,8 @@ int crd_init(OUT crd_ctxt_t** context,
     if (dm_dev_is_hca(dev_type))
     {
         with_sp2 = 1;
-        rc = crd_count_tlv_blocks_and_dwords(mf, &sp2_block_count, &sp2_number_of_dwords);
+        uint32_t tlv_start_address = crd_get_sp2_start_block(dev_type);
+        rc = crd_count_tlv_blocks_and_dwords(mf, tlv_start_address, &sp2_block_count, &sp2_number_of_dwords);
         if (rc)
         {
             return rc;
@@ -255,8 +266,8 @@ int crd_init(OUT crd_ctxt_t** context,
         return CRD_MEM_ALLOCATION_ERR;
     }
 
-    rc = crd_count_double_word(mf, csv_file_path, &number_of_dwords, (*context)->blocks, is_full, read_single_dword,
-                               with_sp2);
+    rc = crd_count_double_word(mf, csv_file_path, dev_type, &number_of_dwords, (*context)->blocks, is_full,
+                               read_single_dword, with_sp2);
     if (rc)
     {
         goto Cleanup;
@@ -563,7 +574,10 @@ static int crd_is_tlv_address_valid(IN u_int32_t address)
     return is_address_valid;
 }
 
-static int crd_count_tlv_blocks_and_dwords(IN mfile* mf, OUT u_int32_t* block_count, OUT u_int32_t* number_of_dwords)
+static int crd_count_tlv_blocks_and_dwords(IN mfile* mf,
+                                           IN u_int32_t tlv_start_address,
+                                           OUT u_int32_t* block_count,
+                                           OUT u_int32_t* number_of_dwords)
 {
     int rc = 0;
     crd_sp2_tlv_t current_tlv;
@@ -571,7 +585,7 @@ static int crd_count_tlv_blocks_and_dwords(IN mfile* mf, OUT u_int32_t* block_co
     u_int32_t tlv_address = 0;
     *block_count = 0;
     *number_of_dwords = 0;
-    rc = crd_get_tlv_from_address(mf, CRD_SP2_TLV_FIRST_ADDRESS, &current_tlv);
+    rc = crd_get_tlv_from_address(mf, tlv_start_address, &current_tlv);
     if (rc)
     {
         return rc;
@@ -595,15 +609,17 @@ static int crd_count_tlv_blocks_and_dwords(IN mfile* mf, OUT u_int32_t* block_co
     return CRD_OK;
 }
 
-static int crd_set_tlv_blocks(IN mfile* mf, OUT crd_parsed_csv_t blocks[], IN u_int32_t sp2_start_block)
+static int
+  crd_set_tlv_blocks(IN mfile* mf, IN dm_dev_id_t dev_type, OUT crd_parsed_csv_t blocks[], IN u_int32_t sp2_start_block)
 {
     int rc = 0;
     crd_sp2_tlv_t current_tlv;
     u_int32_t tlv_signature = 0;
     u_int32_t tlv_address = 0;
     u_int32_t block_number = sp2_start_block;
+    uint32_t tlv_start_address = crd_get_sp2_start_block(dev_type);
 
-    rc = crd_get_tlv_from_address(mf, CRD_SP2_TLV_FIRST_ADDRESS, &current_tlv);
+    rc = crd_get_tlv_from_address(mf, tlv_start_address, &current_tlv);
     if (rc)
     {
         return rc;
@@ -674,6 +690,23 @@ static int crd_get_tlv_from_address(IN mfile* mf, IN u_int32_t address, OUT crd_
     return CRD_OK;
 }
 
+static uint32_t crd_get_sp2_start_block(IN dm_dev_id_t dev_type)
+{
+    uint32_t sp2_start_block = 0;
+
+    if (dm_dev_is_hca(dev_type))
+    {
+        if (dm_is_cx8(dev_type) || dm_is_cx9(dev_type))
+        {
+            sp2_start_block = CRD_SP2_TLV_FIRST_ADDRESS_CX8;
+        }
+        else
+        {
+            sp2_start_block = CRD_SP2_TLV_FIRST_ADDRESS;
+        }
+    }
+    return sp2_start_block;
+}
 static int crd_count_blocks(IN char* csv_file_path, OUT u_int32_t* block_count, u_int8_t read_single_dword)
 {
     char tmp[1024] = {0x0};
@@ -728,6 +761,7 @@ static int crd_count_blocks(IN char* csv_file_path, OUT u_int32_t* block_count, 
 
 static int crd_count_double_word(IN mfile* mf,
                                  IN char* csv_file_path,
+                                 IN dm_dev_id_t dev_type,
                                  OUT u_int32_t* number_of_dwords,
                                  OUT crd_parsed_csv_t blocks[],
                                  IN int is_full,
@@ -829,7 +863,7 @@ static int crd_count_double_word(IN mfile* mf,
 
     if (with_sp2)
     {
-        rc = crd_set_tlv_blocks(mf, blocks, block_count);
+        rc = crd_set_tlv_blocks(mf, dev_type, blocks, block_count);
         if (rc)
         {
             return rc;

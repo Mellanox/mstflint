@@ -58,7 +58,7 @@ public:
     map<string, AdbCondVar>& get_vars_map();
     const std::string& get_condition() const;
     void update_enum(const std::string& var_name);
-    uint64_t evaluate(uint8_t* buffer);
+    uint64_t evaluate(uint8_t* buffer, T_OFFSET offset_shift = 0);
 
 private:
     void init_variables();

@@ -130,7 +130,10 @@ _Adb_impl<e, O>::~_Adb_impl()
  * Function: _Adb_impl::raiseException
  **/
 template<bool e, typename O>
-void _Adb_impl<e, O>::raiseException(bool allowMultipleExceptions, string exceptionTxt, const string expType)
+void _Adb_impl<e, O>::raiseException(bool allowMultipleExceptions,
+                                     string exceptionTxt,
+                                     const string expType,
+                                     bool raise_warnings)
 {
     if (allowMultipleExceptions)
     {
@@ -138,9 +141,15 @@ void _Adb_impl<e, O>::raiseException(bool allowMultipleExceptions, string except
     }
     else
     {
-        throw AdbException(exceptionTxt);
+        if (!raise_warnings && expType == ExceptionHolder::WARN_EXCEPTION)
+        {
+            cerr << "-WARNING-: " << exceptionTxt << endl;
+    	}
+    	else
+    	{
+            throw AdbException(exceptionTxt);
+    	}
     }
-    return;
 }
 
 /**
@@ -290,7 +299,8 @@ bool _Adb_impl<e, O>::loadFromString(const char* adbContents,
  * Function: _Adb_impl::toXml
  **/
 template<bool e, typename O>
-string _Adb_impl<e, O>::toXml(vector<string> nodeNames, bool addRootNode, string rootName, string addPrefix)
+string
+  _Adb_impl<e, O>::toXml(vector<string> nodeNames, bool addRootNode, string rootName, string addPrefix, bool bigEndian)
 {
     try
     {
@@ -326,7 +336,7 @@ string _Adb_impl<e, O>::toXml(vector<string> nodeNames, bool addRootNode, string
             for (typename NodesMap::iterator it = nodesMap.begin(); it != nodesMap.end(); it++)
             {
                 AdbNode* node = it->second;
-                xml += node->toXml(addPrefix) + "\n";
+                xml += node->toXml(addPrefix, bigEndian) + "\n";
             }
         }
         else
@@ -342,7 +352,7 @@ string _Adb_impl<e, O>::toXml(vector<string> nodeNames, bool addRootNode, string
                 }
 
                 AdbNode* node = it->second;
-                xml += node->toXml(addPrefix) + "\n\n";
+                xml += node->toXml(addPrefix, bigEndian) + "\n\n";
 
                 maxSize = TOOLS_MAX(node->get_size(), maxSize);
             }
@@ -825,7 +835,8 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
             }
         }
 
-        updateLayoutConditions(allowMultipleExceptions);
+        updateLayoutConditions(false); // Process condition instances
+        updateLayoutConditions(true);  // Process conditional arrays
 
         if (allowMultipleExceptions && ExceptionHolder::getNumberOfExceptions() > 0)
         {
@@ -857,11 +868,21 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
 
 template<bool eval_expr, typename O>
 template<bool U>
-typename enable_if<U>::type _Adb_impl<eval_expr, O>::updateLayoutConditions(bool allowMultipleExceptions)
+typename enable_if<U>::type _Adb_impl<eval_expr, O>::updateLayoutConditions(bool useConditionalArrays)
 {
-    for (typename list<AdbInstance*>::iterator it = _conditionInstances.begin(); it != _conditionInstances.end(); it++)
+    // Choose which list to iterate based on the flag
+    const list<AdbInstance*>& instances = useConditionalArrays ? _conditionalArrays : _conditionInstances;
+
+    for (typename list<AdbInstance*>::const_iterator it = instances.begin(); it != instances.end(); it++)
     {
-        map<string, AdbCondVar>& variables = (*it)->inst_ops_props.condition.get_vars_map();
+        // Choose which condition object to use based on the flag
+        map<string, AdbCondVar>& variables = useConditionalArrays ?
+                                               (*it)->inst_ops_props.conditionalSize.get_vars_map() :
+                                               (*it)->inst_ops_props.condition.get_vars_map();
+
+        AdbCondition& conditionObj =
+          useConditionalArrays ? (*it)->inst_ops_props.conditionalSize : (*it)->inst_ops_props.condition;
+
         for (typename map<string, AdbCondVar>::iterator it2 = variables.begin(); it2 != variables.end(); it2++)
         {
             string currentName = it2->first;
@@ -881,34 +902,19 @@ typename enable_if<U>::type _Adb_impl<eval_expr, O>::updateLayoutConditions(bool
                     currentVar->set_instance(reffered_layout_item);
                     if (reffered_layout_item->isEnumExists())
                     {
-                        (*it)->inst_ops_props.condition.update_enum(currentName);
+                        conditionObj.update_enum(currentName);
                     }
                 }
             }
         }
     }
-
-    // validate size condition
-    for (typename list<AdbInstance*>::iterator it = _conditionalArrays.begin(); it != _conditionalArrays.end(); it++)
-    {
-        string condSize = (*it)->inst_ops_props.conditionalSize.get_condition();
-
-        if ((*it)->parent->getChildByPath(condSize) == nullptr)
-        {
-            raiseException(allowMultipleExceptions,
-                           "The size_condition path doesn't exist. In instance: \"" + (*it)->fullName() + "\"" +
-                             "field name: \"" + (*it)->fieldDesc->name + "\"",
-                           ExceptionHolder::FATAL_EXCEPTION);
-        }
-    }
-    return;
 }
 
 template<bool eval_expr, typename O>
 template<bool U>
-typename enable_if<!U>::type _Adb_impl<eval_expr, O>::updateLayoutConditions(bool allowMultipleExceptions)
+typename enable_if<!U>::type _Adb_impl<eval_expr, O>::updateLayoutConditions(bool useConditionalArrays)
 {
-    (void)allowMultipleExceptions;
+    (void)useConditionalArrays;
     return;
 }
 
@@ -1272,6 +1278,276 @@ PartitionTree* _Adb_impl<e, O>::prune_up(PartitionTree* partition_tree)
         } while (parent_tree && current_tree && current_tree->sub_items.size() == 0);
     }
     return partition_tree;
+}
+
+template<bool eval_expr, typename T_OFFSET>
+uint64_t _Adb_impl<eval_expr, T_OFFSET>::_trvrs_calc_cond_num_elements(AdbInstance* instance,
+                                                                       T_OFFSET offset_shift,
+                                                                       const uint8_t* buffer,
+                                                                       uint32_t buffer_size,
+                                                                       bool evaluate_conditions,
+                                                                       bool allow_multiple_exceptions)
+{
+    uint64_t num_elements = 1;
+    auto* array_size_condition = instance->getArraySizeCondition();
+    if (array_size_condition)
+    {
+        if (evaluate_conditions)
+        {
+            try
+            {
+                // Evaluate the conditional size to get the number of elements
+                num_elements = array_size_condition->evaluate(const_cast<uint8_t*>(buffer), offset_shift);
+            }
+            catch (const AdbException& e)
+            {
+                // If conditional size evaluation fails, default to 1 element
+                num_elements = 1;
+                raiseException(
+                  allow_multiple_exceptions,
+                  "Field " + instance->get_field_name() +
+                    " with array size condition, evaluation failed, treating as regular node and processing all children\n" +
+                    e.what(),
+                  ExceptionHolder::WARN_EXCEPTION, false);
+            }
+        }
+        else
+        {
+            // Calculate maximum number of elements that fit in the remaining buffer
+            T_OFFSET current_bit_offset = instance->offset + offset_shift;
+            T_OFFSET current_byte_offset = current_bit_offset / 8;
+            T_OFFSET remaining_bytes = (buffer_size > current_byte_offset) ? (buffer_size - current_byte_offset) : 0;
+            T_OFFSET remaining_bits = remaining_bytes * 8;
+            T_OFFSET element_size_bits = instance->get_size();
+
+            if (element_size_bits > 0 && remaining_bits >= element_size_bits)
+            {
+                num_elements = remaining_bits / element_size_bits;
+            }
+            else
+            {
+                num_elements = 0; // No space for even one element
+            }
+        }
+    }
+    return num_elements;
+}
+
+template<bool eval_expr, typename T_OFFSET>
+string _Adb_impl<eval_expr, T_OFFSET>::_trvrs_get_element_array_suffix(uint64_t i, AdbInstance* instance, bool full_path)
+{
+    string array_index = "";
+    string array_suffix = "";
+
+    if (instance->fieldDesc && instance->fieldDesc->array_type == AdbField::ArrayType::dynamic)
+    {
+        array_index = to_string(i);
+    }
+    else if (instance->fieldDesc && instance->fieldDesc->array_type >= AdbField::ArrayType::definite &&
+             instance->fieldDesc->array_type < AdbField::ArrayType::dynamic)
+    {
+        array_index = to_string(instance->arrIdx);
+    }
+    if (!array_index.empty())
+    {
+        array_suffix =
+          full_path || !instance->isNode() || (instance->fieldDesc && instance->fieldDesc->subNode == "uint64") ?
+            "[" + array_index + "]" :
+            "_" + array_index;
+    }
+    return array_suffix;
+}
+
+template<bool eval_expr, typename T_OFFSET>
+void _Adb_impl<eval_expr, T_OFFSET>::_trvrs_handle_enums(
+  AdbInstance* instance,
+  const string& element_path,
+  T_OFFSET element_offset_shift,
+  const uint8_t* buffer,
+  void (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
+  void* context)
+{
+    T_OFFSET field_offset = instance->offset + element_offset_shift;
+    uint64_t enum_value =
+      pop_from_buf(buffer, static_cast<uint32_t>(field_offset), static_cast<uint32_t>(instance->get_size()));
+
+    string enum_string;
+    if (instance->intToEnum(enum_value, enum_string))
+    {
+        // For enums, we could call func with enum string info, but for simplicity use numeric value
+        func(element_path, field_offset, enum_value, instance, context);
+    }
+    else
+    {
+        func(element_path, field_offset, enum_value, instance, context);
+    }
+}
+
+template<bool eval_expr, typename T_OFFSET>
+typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
+  _Adb_impl<eval_expr, T_OFFSET>::_trvrs_get_selected_node(AdbInstance* instance,
+                                                           T_OFFSET element_offset_shift,
+                                                           const uint8_t* buffer)
+{
+    u_int32_t selectorValue =
+      pop_from_buf(buffer, static_cast<uint32_t>(instance->unionSelector->offset + element_offset_shift),
+                   static_cast<uint32_t>(instance->unionSelector->get_size()));
+
+    return instance->getUnionSelectedNodeName(selectorValue);
+}
+
+template<bool eval_expr, typename T_OFFSET>
+void _Adb_impl<eval_expr, T_OFFSET>::traverse_layout(
+  AdbInstance* instance,
+  const string& path,
+  T_OFFSET offset_shift,
+  const uint8_t* buffer,
+  uint32_t buffer_size, // TODO: validate correct type size
+  void (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
+  void* context,
+  bool evaluate_conditions,
+  bool handle_enums,
+  bool full_path,
+  bool allow_multiple_exceptions,
+  string suffix)
+{
+    if (!instance || !func)
+    {
+        return;
+    }
+
+    evaluate_conditions = evaluate_conditions && buffer && buffer_size > 0;
+    handle_enums = handle_enums && buffer && buffer_size > 0;
+
+    auto* condition = instance->getCondition();
+    if (evaluate_conditions && condition && !condition->get_condition().empty())
+    {
+        try
+        {
+            // Use the condition's evaluate method with the buffer
+            uint64_t condition_result = condition->evaluate(const_cast<uint8_t*>(buffer), offset_shift);
+            if (condition_result == 0)
+            {
+                return; // Skip this field if condition evaluates to false
+            }
+        }
+        catch (const AdbException& e)
+        {
+            // failed to evaluate condition, continue with the layout traversal
+            raiseException(
+              allow_multiple_exceptions,
+              "Field " + instance->get_field_name() +
+                " with condition, evaluation failed, treating as regular node and processing all children\n" + e.what(),
+              ExceptionHolder::WARN_EXCEPTION, false);
+        }
+    }
+
+    // Handle conditional arrays - evaluate conditional size to get num_elements
+    uint64_t num_elements = _trvrs_calc_cond_num_elements(instance, offset_shift, buffer, buffer_size,
+                                                          evaluate_conditions, allow_multiple_exceptions);
+
+    string previous_suffix = suffix;
+    for (uint64_t i = 0; i < num_elements; i++)
+    {
+        string path_suffix = _trvrs_get_element_array_suffix(i, instance, full_path);
+        string element_path = full_path ? path + path_suffix : path;
+        if (!full_path && !path_suffix.empty())
+        {
+            suffix = instance->isNode() ? previous_suffix + path_suffix : path_suffix;
+        }
+
+        string sep = element_path.empty() ? "" : ".";
+        T_OFFSET element_offset_shift = offset_shift + (instance->get_size() * i);
+
+        // Handle enum fields - similar to _parse_enum_field, but only if handle_enums is true
+        if (handle_enums && instance->isEnumExists())
+        {
+            _trvrs_handle_enums(instance, element_path, element_offset_shift, buffer, func, context);
+        }
+        // Handle nodes with sub-items (structs/unions) - similar to field.subItems handling
+        else if (instance->isNode() && !instance->subItems.empty())
+        {
+            // For unions, handle selected items (simplified version of _get_union_selected_items)
+            if (evaluate_conditions && instance->isUnion() && instance->unionSelector)
+            {
+                AdbInstance* selectedNode = nullptr;
+                try
+                {
+                    selectedNode = _trvrs_get_selected_node(instance, element_offset_shift, buffer);
+                }
+                catch (const AdbException& e)
+                {
+                    // If getUnionSelectedNodeName throws an exception, treat as a regular non-union node
+                    // and process all children
+                    raiseException(
+                      allow_multiple_exceptions,
+                      "Field " + instance->get_field_name() +
+                        " with union selector failed treating as regular node and processing all children\n" + e.what(),
+                      ExceptionHolder::WARN_EXCEPTION, false);
+                    for (auto sub_item : instance->subItems)
+                    {
+                        string sub_item_path =
+                          full_path ? element_path + sep + sub_item->fieldDesc->name : sub_item->fieldDesc->name;
+                        traverse_layout(sub_item, sub_item_path, element_offset_shift, buffer, buffer_size, func,
+                                        context, evaluate_conditions, handle_enums, full_path,
+                                        allow_multiple_exceptions, suffix);
+                    }
+                    return;
+                }
+                string selected_node_path =
+                  full_path ? element_path + sep + selectedNode->fieldDesc->name : selectedNode->fieldDesc->name;
+                traverse_layout(selectedNode, selected_node_path, element_offset_shift, buffer, buffer_size, func,
+                                context, evaluate_conditions, handle_enums, full_path, allow_multiple_exceptions,
+                                suffix);
+            }
+            else
+            {
+                for (auto sub_item : instance->subItems)
+                {
+                    string sub_item_path =
+                      full_path ? element_path + sep + sub_item->fieldDesc->name : sub_item->fieldDesc->name;
+                    traverse_layout(sub_item, sub_item_path, element_offset_shift, buffer, buffer_size, func, context,
+                                    evaluate_conditions, handle_enums, full_path, allow_multiple_exceptions, suffix);
+                }
+            }
+        }
+        // Handle leaf fields - similar to the final else clause in _parse_seg_field
+        else
+        {
+            T_OFFSET field_offset = instance->offset + element_offset_shift;
+            uint64_t value = 0;
+            if (buffer)
+            {
+                if (buffer_size >= (field_offset + instance->get_size()) / 8)
+                {
+                    value = pop_from_buf(buffer, static_cast<uint32_t>(field_offset),
+                                         static_cast<uint32_t>(instance->get_size()));
+                }
+                else
+                {
+                    raiseException(allow_multiple_exceptions,
+                                   "On layout traversal, trying to evaluate field, " + instance->get_field_name() +
+                                     ", with offset, " + to_string(field_offset) + ",overflowing the buffer size, " +
+                                     to_string(buffer_size) + "\n",
+                                   ExceptionHolder::ERROR_EXCEPTION);
+                }
+            }
+            if (!full_path)
+            {
+                bool is_uint64 =
+                  instance->parent && instance->parent->fieldDesc && instance->parent->fieldDesc->subNode == "uint64";
+                if (is_uint64)
+                {
+                    element_path = instance->parent->fieldDesc->name + suffix + "_" + element_path;
+                }
+                else if (!suffix.empty())
+                {
+                    element_path += suffix;
+                }
+            }
+            func(element_path, field_offset, value, instance, context);
+        }
+    }
 }
 
 template class _Adb_impl<false, uint32_t>;

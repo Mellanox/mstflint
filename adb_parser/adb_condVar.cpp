@@ -39,6 +39,9 @@
 #include "adb_instance.h"
 
 using namespace std;
+
+u_int64_t pop_from_buf(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size);
+
 template<typename T_OFFSET>
 _AdbCondVar_impl<T_OFFSET>::_AdbCondVar_impl(string original_name) : _original_name(original_name)
 {
@@ -84,13 +87,13 @@ typename _AdbCondVar_impl<T_OFFSET>::AdbInstance* _AdbCondVar_impl<T_OFFSET>::ge
     return this->_instance;
 }
 template<typename T_OFFSET>
-void _AdbCondVar_impl<T_OFFSET>::evaluate(uint8_t* buffer)
+void _AdbCondVar_impl<T_OFFSET>::evaluate(uint8_t* buffer, T_OFFSET offset_shift)
 {
     if (!is_evaluated())
     {
         if (this->_instance)
         {
-            uint64_t value = this->_instance->popBuf(buffer);
+            uint64_t value = pop_from_buf(buffer, this->_instance->offset + offset_shift, this->_instance->get_size());
             set_value(static_cast<int>(value));
         }
         else

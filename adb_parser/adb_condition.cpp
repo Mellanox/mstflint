@@ -248,7 +248,7 @@ void _AdbCondition_impl<T_OFFSET>::update_enum(const string& var_name)
     }
 }
 template<typename T_OFFSET>
-uint64_t _AdbCondition_impl<T_OFFSET>::evaluate(uint8_t* buffer)
+uint64_t _AdbCondition_impl<T_OFFSET>::evaluate(uint8_t* buffer, T_OFFSET offset_shift)
 {
     for (auto& pair : _vars_map)
     {
@@ -256,7 +256,7 @@ uint64_t _AdbCondition_impl<T_OFFSET>::evaluate(uint8_t* buffer)
         auto& cond_var = pair.second;
         try
         {
-            cond_var.evaluate(buffer);
+            cond_var.evaluate(buffer, offset_shift);
         }
         catch (const AdbException& e)
         {
@@ -264,7 +264,8 @@ uint64_t _AdbCondition_impl<T_OFFSET>::evaluate(uint8_t* buffer)
         }
     }
     ConditionExpr<T_OFFSET> expr_evaluator(_vars_map);
-    char condition_str_cpy[MAX_CONDITION_SIZE];
+
+    char condition_str_cpy[MAX_CONDITION_SIZE + 1];
     char* condition_str_ptr = condition_str_cpy;
     strncpy(condition_str_cpy, _condition_str.c_str(), MAX_CONDITION_SIZE);
     uint64_t result = 0;
