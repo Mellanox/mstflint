@@ -3840,6 +3840,7 @@ void MlxlinkCommander::showMultiPortModuleInfo()
         u_int32_t posToUpdateWidthInVector = 0;
 
         // Get and update label port string
+        _localPort = portInfo.localPort;
         string labelPortStr = getLabelPortString(portInfo);
         updateColumnWidthPopulateTable(_mlxlinkMaps->_multiPortModuleInfoTableHeader, posToUpdateWidthInVector++,
                                        tableData, labelPortStr, labelPortStr.length());
