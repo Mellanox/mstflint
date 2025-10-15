@@ -107,6 +107,8 @@ UserInput::UserInput()
     _prbsMode = "";
     _pprtMode = "PRBS31";
     _ppttMode = "PRBS31";
+    _pprtModulation = "";
+    _ppttModulation = "";
     _pprtRate = "";
     _ppttRate = "";
     _pprtTuningType = "";

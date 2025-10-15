@@ -220,6 +220,10 @@ void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t me
 
     for (const auto& token : vectorOffields)
     {
+        if (token.empty())
+        {
+            continue;
+        }
         auto fieldToken = MlxlinkRecord::split(token, "=");
         string fieldName = fieldToken[0];
         u_int32_t fieldValue = stoi(fieldToken[1], nullptr, 0);

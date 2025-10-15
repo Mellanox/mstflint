@@ -2398,6 +2398,8 @@ void MlxlinkCommander::showTestMode()
     setPrintVal(_testModeInfoCmd, "TX PRBS Mode", ppttMap["ppttPrbsMode"]);
     setPrintVal(_testModeInfoCmd, "RX Lane Rate", pprtMap["pprtLaneRate"]);
     setPrintVal(_testModeInfoCmd, "TX Lane Rate", ppttMap["ppttLaneRate"]);
+    setPrintVal(_testModeInfoCmd, "RX Modulation", pprtMap["pprtModulation"]);
+    setPrintVal(_testModeInfoCmd, "TX Modulation", ppttMap["ppttModulation"]);
     setPrintVal(_testModeInfoCmd, "Tuning Status", pprtMap["pprtTuningStatus"]);
     setPrintVal(_testModeInfoCmd, "Lock Status", pprtMap["pprtLockStatus"]);
 
@@ -2448,6 +2450,7 @@ std::map<std::string, std::string> MlxlinkCommander::getPprt()
 
     pprtMap["pprtPrbsMode"] = prbsMaskToMode(getFieldValue("prbs_mode_admin"), PRBS_RX);
     pprtMap["pprtLaneRate"] = getStrByValue(getFieldValue("lane_rate_oper"), _mlxlinkMaps->_prbsLaneRateList);
+    pprtMap["pprtModulation"] = getStrByValue(getFieldValue("modulation"), _mlxlinkMaps->_prbsModulation);
     pprtMap["pprtTuningStatus"] =
       getStrByValue(getFieldValue("prbs_rx_tuning_status"), _mlxlinkMaps->_prbsRxTuningStatus);
     pprtMap["pprtLockStatus"] = prbsMaskToLockStatus(statusMask, _numOfLanes);
@@ -2463,6 +2466,7 @@ std::map<std::string, std::string> MlxlinkCommander::getPptt()
 
     ppttMap["ppttPrbsMode"] = prbsMaskToMode(getFieldValue("prbs_mode_admin"), PRBS_TX);
     ppttMap["ppttLaneRate"] = getStrByValue(getFieldValue("lane_rate_admin"), _mlxlinkMaps->_prbsLaneRateList);
+    ppttMap["ppttModulation"] = getStrByValue(getFieldValue("modulation"), _mlxlinkMaps->_prbsModulation);
 
     return ppttMap;
 }
@@ -4695,6 +4699,9 @@ void MlxlinkCommander::checkPprtPptt()
         }
     }
 
+    checkPrbsModulation("PPRT");
+    checkPrbsModulation("PPTT");
+
     checkPrbsRegsCap("PPRT", _userInput._pprtRate);
     checkPrbsRegsCap("PPTT", _userInput._ppttRate);
 
@@ -4705,6 +4712,24 @@ void MlxlinkCommander::checkPprtPptt()
     if (_userInput._prbsRxInv)
     {
         checkPrbsPolCap("PPRT");
+    }
+}
+
+void MlxlinkCommander::checkPrbsModulation(const string& prbsReg)
+{
+    string modulation = prbsReg == "PPRT" ? _userInput._pprtModulation : _userInput._ppttModulation;
+    string invalidModulation = prbsReg == "PPRT" ? "RX" : "TX";
+
+    if (!modulation.empty() && _mlxlinkMaps->_prbsModulationValue.count(modulation) == 0)
+    {
+        vector<string> modulationKeys;
+
+        // transform the map to a vector of strings
+        std::transform(_mlxlinkMaps->_prbsModulationValue.begin(), _mlxlinkMaps->_prbsModulationValue.end(),
+                       std::back_inserter(modulationKeys), [](const pair<string, uint32_t>& p) { return p.first; });
+        string valid_modulations = getStringFromVector(modulationKeys);
+        throw MlxRegException("Invalid %s modulation: %s, valid values are: %s", invalidModulation.c_str(),
+                              modulation.c_str(), valid_modulations.c_str());
     }
 }
 
@@ -4773,7 +4798,8 @@ void MlxlinkCommander::prbsConfiguration(const string& prbsReg,
                                          u_int32_t laneRate,
                                          u_int32_t prbsMode,
                                          bool perLaneConfig,
-                                         bool prbsPolInv)
+                                         bool prbsPolInv,
+                                         u_int32_t modulation)
 {
     const string rateToUpdate = (prbsReg == "PPRT") ? "lane_rate_oper" : "lane_rate_admin";
 
@@ -4784,10 +4810,18 @@ void MlxlinkCommander::prbsConfiguration(const string& prbsReg,
         {
             cmd << ",p=1";
         }
-        if (laneRate >= PRBS_HDR && laneRate <= PRBS_XDR)
+        // Handle modulation field
+        if (modulation != PRBS_MODULATION_NRZ)
         {
-            cmd << ",modulation=" << PRBS_PAM4_ENCODING;
+            // User specified modulation
+            cmd << ",modulation=" << modulation;
         }
+        else if (laneRate >= PRBS_HDR && laneRate <= PRBS_XDR)
+        {
+            // Default behavior for high-speed rates
+            cmd << ",modulation=" << PRBS_MODULATION_PAM4_ENCODING;
+        }
+
         cmd << ",e=" << enable << "," << rateToUpdate << "=" << laneRate << ",prbs_mode_admin=" << prbsMode;
         return cmd.str();
     };
@@ -4816,8 +4850,16 @@ void MlxlinkCommander::sendPprtPptt()
     u_int32_t txRate = _mlxlinkMaps->_prbsLaneRate[_userInput._ppttRate].capMask ?
                          _mlxlinkMaps->_prbsLaneRate[_userInput._ppttRate].value :
                          (u_int32_t)PRBS_EDR;
-    prbsConfiguration("PPRT", true, rxRate, prbsModeToMask(_userInput._pprtMode), perLaneConfig, _userInput._prbsRxInv);
-    prbsConfiguration("PPTT", true, txRate, prbsModeToMask(_userInput._ppttMode), perLaneConfig, _userInput._prbsTxInv);
+
+    u_int32_t rxModulation = !_userInput._pprtModulation.empty() ?
+                               _mlxlinkMaps->_prbsModulationValue[_userInput._pprtModulation] :
+                               (u_int32_t)PRBS_MODULATION_NRZ;
+    u_int32_t txModulation = !_userInput._ppttModulation.empty() ?
+                               _mlxlinkMaps->_prbsModulationValue[_userInput._ppttModulation] :
+                               (u_int32_t)PRBS_MODULATION_NRZ;
+
+    prbsConfiguration("PPRT", true, rxRate, prbsModeToMask(_userInput._pprtMode), perLaneConfig, _userInput._prbsRxInv, rxModulation);
+    prbsConfiguration("PPTT", true, txRate, prbsModeToMask(_userInput._ppttMode), perLaneConfig, _userInput._prbsTxInv, txModulation);
 }
 
 void MlxlinkCommander::resetPprtPptt()
@@ -4826,8 +4868,8 @@ void MlxlinkCommander::resetPprtPptt()
     {
         if (_prbsTestMode)
         {
-            prbsConfiguration("PPRT", false, PRBS_EDR, PRBS31, false, false);
-            prbsConfiguration("PPTT", false, PRBS_EDR, PRBS31, false, false);
+            prbsConfiguration("PPRT", false, PRBS_EDR, PRBS31, false, false, PRBS_MODULATION_NRZ);
+            prbsConfiguration("PPTT", false, PRBS_EDR, PRBS31, false, false, PRBS_MODULATION_NRZ);
         }
     }
     catch (MlxRegException& exc)

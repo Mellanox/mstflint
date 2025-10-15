@@ -116,6 +116,8 @@ public:
     string _prbsMode;
     string _pprtMode;
     string _ppttMode;
+    string _pprtModulation;
+    string _ppttModulation;
     string _pprtRate;
     string _ppttRate;
     string _pprtTuningType;

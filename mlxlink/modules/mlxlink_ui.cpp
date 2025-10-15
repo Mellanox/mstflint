@@ -254,6 +254,13 @@ void MlxlinkUi::printSynopsisCommands()
                                  "PRBS9/IDLE/SQUARE_WAVEA/SQUARE_WAVEB/SQUARE_WAVEC/SQUARE_WAVED/PRBS13A/PRBS13B/"
                                  "PRBS13C/PRBS13D/SSPR/SSPRQ/LT_frames/PRBS15/PRBS28] (Optional - Default PRBS31)");
     printf(IDENT);
+    MlxlinkRecord::printFlagLine(PPRT_MODULATION_FLAG_SHORT, PPRT_MODULATION_FLAG, "rx_modulation",
+                                 "RX Modulation [NRZ/PAM4/PAM4_PRECODING/PAM4_NO_GRAY] (Optional - Default based on lane rate)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(
+      PPTT_MODULATION_FLAG_SHORT, PPTT_MODULATION_FLAG, "tx_modulation",
+      "TX Modulation [NRZ/PAM4/PAM4_PRECODING/PAM4_NO_GRAY] (Optional - Default based on lane rate)");
+    printf(IDENT);
     MlxlinkRecord::printFlagLine(
       PPTT_PRBS_FLAG_SHORT, PPTT_PRBS_FLAG, "tx_prbs_mode",
       "TX PRBS Mode "
@@ -479,9 +486,11 @@ void MlxlinkUi::printHelp()
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Port Speeds",
            MLXLINK_EXEC " -d <device> -p <port_number> --speeds 25G,50G,100G");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure FEC", MLXLINK_EXEC " -d <device> -p <port_number> --fec RS");
-    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Port for Physical Test Mode",
-           MLXLINK_EXEC " -d <device> -p <port_number> --test_mode EN (--rx_prbs PRBS31 --rx_rate 25G --tx_prbs PRBS7 "
-                        "--tx_rate 10G)");
+    printf(
+           IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Port for Physical Test Mode",
+           MLXLINK_EXEC
+           " -d <device> -p <port_number> --test_mode EN (--rx_prbs PRBS31 --rx_rate 25G --rx_modulation PAM4_PRECODING --tx_prbs PRBS7 --tx_modulation NRZ "
+           "--tx_rate 10G)");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Perform PRBS Tuning",
            MLXLINK_EXEC " -d <device> -p <port_number> --test_mode TU");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Cable operations", MLXLINK_EXEC " -d <device> --cable options");
@@ -621,19 +630,14 @@ void MlxlinkUi::validatePRBSParams()
 {
     bool prbsFlags = _userInput._sendPprt || _userInput._sendPptt || _userInput._pprtRate != "" ||
                      _userInput._pprtRate != "" || _userInput._prbsTxInv || _userInput._prbsRxInv ||
-                     _userInput._prbsDcCoupledAllow || _userInput._prbsLanesToSet.size() > 0;
+                     _userInput._prbsDcCoupledAllow ||
+                     _userInput._prbsLanesToSet.size() > 0 || !_userInput._pprtModulation.empty() ||
+                     !_userInput._ppttModulation.empty();
     if (isIn(SEND_PRBS, _sendRegFuncMap))
     {
         if (!checkPrbsCmd(_userInput._prbsMode))
         {
             throw MlxRegException("you must provide a valid PRBS test mode [DS/EN/TU]");
-        }
-        if (_userInput._prbsMode == "DS" || _userInput._prbsMode == "TU")
-        {
-            if (prbsFlags)
-            {
-                throw MlxRegException("PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
-            }
         }
     }
     else if (prbsFlags)
@@ -1142,6 +1146,10 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PRBS_MODE_FLAG, PRBS_MODE_FLAG_SHORT, "PRBS", "Enable/Disable PRBS Test Mode");
     AddOptions(PPRT_PRBS_FLAG, PPRT_PRBS_FLAG_SHORT, "PPRT", "PPRT Mode");
     AddOptions(PPTT_PRBS_FLAG, PPTT_PRBS_FLAG_SHORT, "PPTT", "PPTT Mode");
+    AddOptions(PPRT_MODULATION_FLAG, PPRT_MODULATION_FLAG_SHORT, "PPRT_MODULATION",
+               "PPRT Modulation (NRZ/PAM4/PAM4_PRECODING/PAM4_NO_GRAY)");
+    AddOptions(PPTT_MODULATION_FLAG, PPTT_MODULATION_FLAG_SHORT, "PPTT_MODULATION",
+              "PPTT Modulation (NRZ/PAM4/PAM4_PRECODING/PAM4_NO_GRAY)");
     AddOptions(PPRT_RATE_FLAG, PPRT_RATE_FLAG_SHORT, "PPRT_RATE", "PPRT Lane Rate");
     AddOptions(PPTT_RATE_FLAG, PPTT_RATE_FLAG_SHORT, "PPTT_RATE", "PPTT Lane Rate");
     AddOptions(PRBS_LANES_FLAG, PRBS_LANES_FLAG_SHORT, "lanes", "PRBS lanes to set");
@@ -1618,6 +1626,16 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         _userInput._sendPptt = true;
         _userInput._ppttMode = toUpperCase(value);
+        return PARSE_OK;
+    }
+    else if (name == PPRT_MODULATION_FLAG)
+    {
+        _userInput._pprtModulation = toUpperCase(value);
+        return PARSE_OK;
+    }
+    else if (name == PPTT_MODULATION_FLAG)
+    {
+        _userInput._ppttModulation = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == PPRT_RATE_FLAG)
