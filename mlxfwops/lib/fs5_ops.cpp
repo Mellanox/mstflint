@@ -605,3 +605,55 @@ bool Fs5Operations::CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_in
     }
     return true;
 }
+
+bool Fs5Operations::GetLivefishIndicationAddr(uint32_t& lfIndicationAddr)
+{
+    switch (_fwImgInfo.supportedHwId[0])
+    {
+        case DeviceConnectX8_HwId:
+        case DeviceConnectX9_HwId:
+            lfIndicationAddr = 0xf813c;
+            break;
+
+        case DeviceQuantum3_HwId:
+        case DeviceQuantum4_HwId:
+            lfIndicationAddr = 0xfc13c;
+            break;
+
+        default:
+            return false;
+    }
+
+    return true;
+}
+
+bool Fs5Operations::ClearLivefishfIndication(Flash* flashAccess)
+{
+    // Clear LF indication by writing zero to CR space address (4th gen: 0xf813c, 0xfc13c)
+    // This tells the firmware that the device is no longer in LF
+    // and enables broader support like mlxfwreset without requiring power cycle
+    DPRINTF(("Fs5Operations::ClearLivefishfIndication\n"));
+
+    if (flashAccess->is_flash()) // we only support clearing LF indication for device, not image
+    {
+        u_int32_t lfIndicationAddr = 0;
+        if (!GetLivefishIndicationAddr(lfIndicationAddr))
+        {
+            return true; // LF indication is not supported for this device
+        }
+
+        DPRINTF(("Fs5Operations::ClearLivefishfIndication - Clearing LF indication at 0x%x\n", lfIndicationAddr));
+        const u_int32_t zeroValue = 0;
+
+        int rc = mwrite4(flashAccess->getMfileObj(), lfIndicationAddr, zeroValue);
+        if (rc != 4)
+        {
+            return errmsg("Failed to clear LF indication at CR space address 0x%x", lfIndicationAddr);
+        }
+
+        DPRINTF(
+          ("Fs5Operations::ClearLivefishfIndication - Successfully cleared LF indication at 0x%x\n", lfIndicationAddr));
+    }
+
+    return true;
+}
