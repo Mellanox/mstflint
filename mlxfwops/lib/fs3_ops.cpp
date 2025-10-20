@@ -4563,8 +4563,21 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
     {
         report_warn("Failed to update FW boot address. Power cycle the device in order to load the new FW.\n");
     }
+
+    if (!ClearLivefishfIndication(flash_access))
+    {
+        return false;
+    }
+
     return true;
 }
+
+bool Fs3Operations::ClearLivefishfIndication(Flash*)
+{
+    DPRINTF(("Fs3Operations::ClearLivefishfIndication\n"));
+    return true;
+}
+
 bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature,
                                             const char* uuid,
                                             MlxSign::SHAType shaType,

@@ -269,6 +269,7 @@ protected:
                          Flash* flash_access,
                          u_int32_t new_image_start,
                          u_int8_t is_curr_image_in_odd_chunks);
+    virtual bool ClearLivefishfIndication(Flash* flashAccess);
     bool CreateDtoc(vector<u_int8_t>& img,
                     u_int8_t* SectionData,
                     u_int32_t section_size,
