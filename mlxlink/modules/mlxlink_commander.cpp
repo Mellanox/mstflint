@@ -82,6 +82,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _linkSpeed = 0;
     _protoCapabilityEx = false;
     _ddmSupported = false;
+    _temperature = 0;
     _cmisCable = false;
     _qsfpCable = false;
     _mngCableUnplugged = false;
@@ -2193,8 +2194,9 @@ void MlxlinkCommander::operatingInfoPage()
                                 _userInput.isPrbsSelProvided || _userInput._csvBer != ""))
         {
             sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_MODULE_INFO_PAGE);
-
-            _ddmSupported = getFieldValue("temperature") && _numOfLanes;
+            
+            _temperature = getFieldValue("temperature");
+            _ddmSupported = bool(_numOfLanes);
         }
     }
     catch (const std::exception& exc)
@@ -5837,7 +5839,7 @@ bool MlxlinkCommander::isSFP51Paging()
     // TODO check page 0 byte 64 bit 4, if set, then SFP51, else SFP.
     bool sfpQsaCable = (_cableIdentifier == IDENTIFIER_SFP || _cableIdentifier == IDENTIFIER_QSA);
     bool readSfp51 = false;
-    if (_ddmSupported && sfpQsaCable)
+    if (_ddmSupported && sfpQsaCable && _temperature != 0)
     {
         readSfp51 = true;
     }

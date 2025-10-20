@@ -701,6 +701,7 @@ public:
     bool _linkModeForce;
     bool _useExtAdb;
     bool _ddmSupported;
+    u_int32_t _temperature;
     bool _cmisCable;
     bool _qsfpCable;
     bool _portPolling;
