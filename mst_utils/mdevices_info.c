@@ -264,9 +264,9 @@ void print_pci_info(dev_info* dev, int domain_needed)
     int hasIB = fmt_ib_dev(dev, fmt);
 
     if (hasIB) {
-        printf("%-16s", fmt);
+        printf("%-16s ", fmt);
     } else {
-        printf("%-16s", " ");
+        printf("%-16s ", " ");
     }
 
     /* Add NET devices info */
