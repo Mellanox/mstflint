@@ -85,6 +85,7 @@
 #define SEMAPHORE_ADDR_CX7             0xe5660
 #define SEMAPHORE_ADDR_CX8             358016
 #define SEMAPHORE_ADDR_GPU             0x308F4F8
+#define SEMAPHORE_ADDR_GR100           0x30938F8
 #define HCR_ADDR_CIB                   0x0
 #define HCR_ADDR_CX4                   HCR_ADDR_CIB
 #define HCR_ADDR_CX5                   HCR_ADDR_CIB
@@ -1078,7 +1079,7 @@ static int icmd_init_cr(mfile* mf)
     case (GR100_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_GPU;
         hcr_address = HCR_ADDR_GPU;
-        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_GPU;
+        mf->icmd.semaphore_addr = hw_id == GR100_HW_ID ? SEMAPHORE_ADDR_GR100 : SEMAPHORE_ADDR_GPU;
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_GPU;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
         mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN_GPU;

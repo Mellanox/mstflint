@@ -473,6 +473,15 @@ static struct device_info g_devs_info[] = {
         DM_SWITCH                                         /* dev_type */
     },
     {
+        DeviceGR100,                                      /* dm_id */
+        0x3000,                                           /* hw_dev_id */
+        -1,                                               /* hw_rev_id */
+        12288,                                            /* sw_dev_id */
+        "GR100",                                          /* name */
+        128,                                              /* port_num NEED_CHECK */
+        DM_SWITCH                                         /* dev_type */
+    },
+    {
         DeviceGearBox,                                      /* dm_id */
         0x252,                                              /* hw_dev_id */
         -1,                                                 /* hw_rev_id */
