@@ -949,6 +949,16 @@ int dm_is_cx7(dm_dev_id_t type)
     return (type == DeviceConnectX7);
 }
 
+int dm_is_cx8(dm_dev_id_t type)
+{
+    return (type == DeviceConnectX8 || type == DeviceConnectX8_Pure_PCIe_Switch);
+}
+
+int dm_is_cx9(dm_dev_id_t type)
+{
+    return (type == DeviceConnectX9);
+}
+
 int dm_is_new_gen_switch(dm_dev_id_t type)
 {
     return dm_dev_is_switch(type);

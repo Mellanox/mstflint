@@ -252,6 +252,7 @@ public:
     std::map<u_int32_t, std::string> _retranModeActive;
     std::map<u_int32_t, std::string> _groupMap;
     std::map<u_int32_t, std::string> _prbsModesList;
+    std::map<std::string, u_int32_t> _prbsModulationValue;
     std::map<u_int32_t, std::string> _prbsLaneRateList;
     std::map<std::string, CAP_VALUE> _prbsLaneRate;
     std::map<u_int32_t, std::string> _prbsLaneRateCap;

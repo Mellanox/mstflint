@@ -452,6 +452,22 @@ string AdbField_impl<T_OFFSET>::toXml(const string& addPrefix)
     return xml;
 }
 
+template<typename T_OFFSET>
+bool AdbField_impl<T_OFFSET>::compareFieldsForXmlOutput(AdbField_impl<T_OFFSET>* f1, AdbField_impl<T_OFFSET>* f2)
+{
+    AdbField_impl<T_OFFSET> first = *f1;
+    AdbField_impl<T_OFFSET> second = *f2;
+    if (first.offset / 32 < second.offset / 32)
+    {
+        return true;
+    }
+    else if (first.offset / 32 == second.offset / 32)
+    {
+        return first.offset > second.offset;
+    }
+    return false;
+}
+
 // Explicit instantiations
 template class AdbField_impl<u_int32_t>;
 template class AdbField_impl<u_int64_t>;

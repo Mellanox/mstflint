@@ -58,7 +58,7 @@ public:
     int get_value() const;
     AdbInstance* get_instance() const;
     const string& get_original_name() const;
-    void evaluate(uint8_t* buffer);
+    void evaluate(uint8_t* buffer, T_OFFSET offset_shift = 0);
 
 private:
     bool _evaluated{false};

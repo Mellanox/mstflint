@@ -63,6 +63,11 @@ public:
     ~MlxRegUi();
     ParseStatus HandleOption(string name, string value);
     void run(int agc, char** argv);
+    static void _on_traverse_save_field_data(const string& field_name,
+                                             uint64_t field_offset,
+                                             uint64_t field_value,
+                                             AdbInstanceAdvLegacy* instance,
+                                             void* context);
 
 private:
     void initCmdParser();
@@ -100,6 +105,7 @@ private:
     string _file_io;
     bool _overwrite;
     bool _full_path;
+    std::vector<std::tuple<std::string, uint64_t>> _parsed_fields;
 };
 
 #endif /* MLXREG_UI_H */

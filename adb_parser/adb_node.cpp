@@ -146,7 +146,7 @@ void AdbNode_impl<T_OFFSET>::update_max_leaf(AdbField* other)
  *  * Function: AdbNode_impl::toXml
  *   **/
 template<typename T_OFFSET>
-string AdbNode_impl<T_OFFSET>::toXml(const string& addPrefix)
+string AdbNode_impl<T_OFFSET>::toXml(const string& addPrefix, bool bigEndian)
 {
     string xml = "<node name=\"" + addPrefix + name + "\" descr=\"" + encodeXml(descNativeToXml(desc)) + "\"";
     for (AttrsMap::iterator it = attrs.begin(); it != attrs.end(); it++)
@@ -162,7 +162,8 @@ string AdbNode_impl<T_OFFSET>::toXml(const string& addPrefix)
 
     FieldsList allFields = fields;
     allFields.insert(allFields.end(), condFields.begin(), condFields.end());
-    std::stable_sort(allFields.begin(), allFields.end(), compareFieldsPtr<AdbField>);
+    std::stable_sort(
+      allFields.begin(), allFields.end(), bigEndian ? AdbField::compareFieldsForXmlOutput : compareFieldsPtr<AdbField>);
 
     for (size_t i = 0; i < allFields.size(); i++)
     {

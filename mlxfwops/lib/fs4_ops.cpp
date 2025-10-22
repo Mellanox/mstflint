@@ -2545,6 +2545,12 @@ bool Fs4Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
     {
         report_warn("Failed to update FW boot address. Power cycle the device in order to load the new FW.\n");
     }
+
+    if (!ClearLivefishfIndication(flash_access))
+    {
+        return false;
+    }
+    
     return true;
 }
 

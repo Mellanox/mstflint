@@ -35,7 +35,7 @@
 #include "mlxlink_reg_parser.h"
 #include <common/tools_utils.h>
 
-MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, 0)
+MlxlinkRegParser::MlxlinkRegParser() : RegAccessParser("", "", "", NULL, NULL, false, false)
 {
     _mf = nullptr;
     _regLib = nullptr;
@@ -220,6 +220,10 @@ void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t me
 
     for (const auto& token : vectorOffields)
     {
+        if (token.empty())
+        {
+            continue;
+        }
         auto fieldToken = MlxlinkRecord::split(token, "=");
         string fieldName = fieldToken[0];
         u_int32_t fieldValue = stoi(fieldToken[1], nullptr, 0);
@@ -268,9 +272,14 @@ string MlxlinkRegParser::getRawFieldValueStr(const string fieldName)
     return fullStr;
 }
 
-u_int32_t MlxlinkRegParser::getFieldValue(string field_name, u_int32_t size, u_int32_t offset, bool offsetSpecified)
+u_int32_t MlxlinkRegParser::getFieldValue(string field_name,
+                                          u_int32_t size,
+                                          u_int32_t offset,
+                                          bool offsetSpecified,
+                                          bool processDynamicFields)
 {
-    u_int32_t field_Val = RegAccessParser::getFieldValue(field_name, _buffer, size, offset, offsetSpecified);
+    u_int32_t field_Val =
+        RegAccessParser::getFieldValue(field_name, _buffer, size, offset, offsetSpecified, processDynamicFields);
 
     return field_Val;
 }

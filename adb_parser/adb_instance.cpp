@@ -53,24 +53,6 @@
 namespace Regex = mstflint::common::regex;
 namespace Algorithm = mstflint::common::algorithm;
 
-string addPathSuffixForArraySupport(string path)
-{
-    if (path[path.length() - 1] == ']')
-    { // Won't add suffix if leaf is in Array
-        return "";
-    }
-    size_t pos = 0;
-    string suffix = "";
-    while ((pos = path.find("[")) != std::string::npos)
-    { // Add array index number in path to suffix.
-        size_t end_pos = path.find("]");
-        size_t len = end_pos - pos - 1;
-        suffix = suffix + "_" + path.substr(pos + 1, len);
-        path.erase(0, end_pos + 1);
-    }
-    return suffix;
-}
-
 template<bool e, typename T_OFFSET>
 _AdbInstance_impl<e, T_OFFSET>::_AdbInstance_impl(AdbField* i_fieldDesc,
                                                   AdbNode* i_nodeDesc,
@@ -367,6 +349,28 @@ string _AdbInstance_impl<e, O>::evalExpr(string expr, AttrsMap* vars)
 }
 
 /**
+ * Function: _AdbInstance_impl::addPathSuffixForArraySupport
+ **/
+template<bool e, typename O>
+string _AdbInstance_impl<e, O>::addPathSuffixForArraySupport(string path)
+{
+    if (path[path.length() - 1] == ']')
+    { // Won't add suffix if leaf is in Array
+        return "";
+    }
+    size_t pos = 0;
+    string suffix = "";
+    while ((pos = path.find("[")) != std::string::npos)
+    { // Add array index number in path to suffix.
+        size_t end_pos = path.find("]");
+        size_t len = end_pos - pos - 1;
+        suffix = suffix + "_" + path.substr(pos + 1, len);
+        path.erase(0, end_pos + 1);
+    }
+    return suffix;
+}
+
+/**
  * Function: _AdbInstance_impl::_AdbInstance_impl
  **/
 template<bool e, typename O>
@@ -541,6 +545,37 @@ void _AdbInstance_impl<e, O>::init_props(unsigned char adabe_version) // logic o
     {
         return;
     }
+
+    if (parent)
+    {
+        if (!parent->inst_props.valid_array_index)
+        {
+            inst_props.valid_array_index = 0;
+        }
+
+        if (!inst_props.valid_array_index)
+        {
+            inst_props.access_r = 1;
+            inst_props.access_w = 1;
+            inst_props.is_semaphore = 0;
+        }
+        else
+        {
+            if (!parent->inst_props.access_w)
+            {
+                inst_props.access_w = 0;
+            }
+            if (!parent->inst_props.access_r)
+            {
+                inst_props.access_r = 0;
+            }
+            if (parent->inst_props.is_semaphore)
+            {
+                inst_props.is_semaphore = 1;
+            }
+        }
+    }
+
     if (isPartOfArray())
     {
         string fiVal = getInstanceAttr("valid_first_index");
@@ -579,6 +614,10 @@ void _AdbInstance_impl<e, O>::init_props(unsigned char adabe_version) // logic o
     {
         sem = getInstanceAttr("sem");
         access_type = getInstanceAttr("rw");
+        if (access_type.empty())
+        {
+            access_type = getInstanceAttr("access");
+        }
         if (!sem.empty())
         {
             inst_props.is_semaphore = stoi(sem) > 0;
@@ -586,10 +625,17 @@ void _AdbInstance_impl<e, O>::init_props(unsigned char adabe_version) // logic o
         if (access_type == "WO")
         {
             inst_props.access_r = 0;
+            inst_props.access_w = 1;
         }
         else if (access_type == "RO")
         {
             inst_props.access_w = 0;
+            inst_props.access_r = 1;
+        }
+        else if (access_type == "RW")
+        {
+            inst_props.access_r = 1;
+            inst_props.access_w = 1;
         }
     }
 
@@ -597,36 +643,6 @@ void _AdbInstance_impl<e, O>::init_props(unsigned char adabe_version) // logic o
     if (!sem.empty())
     {
         inst_props.is_semaphore = stoi(sem) > 0;
-    }
-
-    if (parent)
-    {
-        if (!parent->inst_props.valid_array_index)
-        {
-            inst_props.valid_array_index = 0;
-        }
-
-        if (!inst_props.valid_array_index)
-        {
-            inst_props.access_r = 1;
-            inst_props.access_w = 1;
-            inst_props.is_semaphore = 0;
-        }
-        else
-        {
-            // if (parent->inst_ops.access_r && !parent->inst_ops.access_w)
-            // {
-            //     inst_ops.access_w = 0;
-            // }
-            // if (!parent->inst_ops.access_r && parent->inst_ops.access_w)
-            // {
-            //     inst_ops.access_r = 0;
-            // }
-            if (parent->inst_props.is_semaphore)
-            {
-                inst_props.is_semaphore = 1;
-            }
-        }
     }
 }
 
@@ -1046,12 +1062,26 @@ template<bool eval_expr, typename O>
 template<bool U>
 typename enable_if<U, _AdbCondition_impl<O>*>::type _AdbInstance_impl<eval_expr, O>::getCondition()
 {
-    return &(inst_ops_props.condition);
+    return inst_ops_props.condition.get_condition().empty() ? nullptr : &(inst_ops_props.condition);
 }
 
 template<bool eval_expr, typename O>
 template<bool U>
 typename enable_if<!U, _AdbCondition_impl<O>*>::type _AdbInstance_impl<eval_expr, O>::getCondition()
+{
+    return nullptr;
+}
+
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<U, _AdbCondition_impl<O>*>::type _AdbInstance_impl<eval_expr, O>::getArraySizeCondition()
+{
+    return inst_ops_props.conditionalSize.get_condition().empty() ? nullptr : &(inst_ops_props.conditionalSize);
+}
+
+template<bool eval_expr, typename O>
+template<bool U>
+typename enable_if<!U, _AdbCondition_impl<O>*>::type _AdbInstance_impl<eval_expr, O>::getArraySizeCondition()
 {
     return nullptr;
 }
@@ -1290,7 +1320,7 @@ _AdbInstance_impl<e, O>* _AdbInstance_impl<e, O>::getUnionSelectedNodeName(const
     }
 
     throw AdbException("Union selector field (" + unionSelector->layout_item_name +
-                       ") doesn't define selector value (" + to_string(selectorVal));
+                       ") doesn't define selector value (" + to_string(selectorVal) + ")");
 }
 
 /**
@@ -1343,6 +1373,30 @@ bool _AdbInstance_impl<e, O>::isConditionalNode()
             }
         }
         return (found && is_conditional == "1");
+    }
+    return false;
+}
+
+/**
+ * Function: _AdbInstance_impl::containsDynamicArray
+ **/
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::containsDynamicArray()
+{
+    if (!isNode())
+    {
+        return false;
+    }
+
+    _AdbInstance_impl<e, O>* last = nullptr;
+    last = subItems.back();
+    while (last)
+    {
+        if (last->fieldDesc->array_type >= AdbField_impl<O>::ArrayType::unlimited)
+        {
+            return true;
+        }
+        last = last->isNode() ? last->subItems.back() : nullptr;
     }
     return false;
 }
@@ -1420,7 +1474,8 @@ vector<_AdbInstance_impl<e, O>*> _AdbInstance_impl<e, O>::getLeafFields(bool ext
                 }
                 else
                 {
-                    subItems[i]->layout_item_name += addPathSuffixForArraySupport(subItems[i]->fullName());
+                    subItems[i]->layout_item_name +=
+                      _AdbInstance_impl<e, O>::addPathSuffixForArraySupport(subItems[i]->fullName());
                 }
                 subItems[i]->inst_props.is_name_extended = true;
             }
@@ -1504,6 +1559,22 @@ template typename enable_if<true, _AdbCondition_impl<uint32_t>*>::type
   _AdbInstance_impl<true, uint32_t>::getCondition<true>();
 template typename enable_if<true, _AdbCondition_impl<uint64_t>*>::type
   _AdbInstance_impl<true, uint64_t>::getCondition<true>();
+
+template typename enable_if<!false, _AdbCondition_impl<uint32_t>*>::type
+  _AdbInstance_impl<false, uint32_t>::getCondition<false>();
+template typename enable_if<!false, _AdbCondition_impl<uint64_t>*>::type
+  _AdbInstance_impl<false, uint64_t>::getCondition<false>();
+
+template typename enable_if<true, _AdbCondition_impl<uint32_t>*>::type
+  _AdbInstance_impl<true, uint32_t>::getArraySizeCondition<true>();
+template typename enable_if<true, _AdbCondition_impl<uint64_t>*>::type
+  _AdbInstance_impl<true, uint64_t>::getArraySizeCondition<true>();
+
+template typename enable_if<!false, _AdbCondition_impl<uint32_t>*>::type
+  _AdbInstance_impl<false, uint32_t>::getArraySizeCondition<false>();
+template typename enable_if<!false, _AdbCondition_impl<uint64_t>*>::type
+  _AdbInstance_impl<false, uint64_t>::getArraySizeCondition<false>();
+
 LayoutItemAttrsMap::LayoutItemAttrsMap(AttrsMap& field_desc_attrs) : _field_desc_attrs(field_desc_attrs) {}
 
 LayoutItemAttrsMap& LayoutItemAttrsMap::operator=(const LayoutItemAttrsMap& other)

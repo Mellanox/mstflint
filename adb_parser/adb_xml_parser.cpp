@@ -524,7 +524,7 @@ string AdbParser<e, O>::findFile(string fileName)
 }
 
 /**
- * Function: AdbParser::addr2int
+ * Function: AdbParser::parse_size
  **/
 template<bool e, typename T_OFFSET>
 bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
@@ -534,7 +534,7 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
                                         bool node_or_field)
 {
     string attribute_name{size_or_offset ? "size" : "offset"};
-    string tag_name{node_or_field ? "Node" : "Field"};
+    string tag_name{node_or_field ? "node" : "field"};
     int lineNumber = XML_GetCurrentLineNumber(adbParser->_xmlParser);
 
     bool exception_raised = false;
@@ -563,9 +563,9 @@ bool AdbParser<e, T_OFFSET>::parse_size(const string& s,
                 {
             exception_raised = raiseException(
               allowMultipleExceptions,
-              "Failed parsing " + tag_name + " " + attribute_name + ", " + s + "\", " + "invalid format, \"0x.D\".",
+              "Invalid format of " + tag_name + "'s " + attribute_name + ", \"" + s + "\". 0x.D is an invalid format.",
               ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-              ExceptionHolder::ERROR_EXCEPTION);
+              ExceptionHolder::WARN_EXCEPTION);
                 }
         num_bytes_str = "0";
     }
@@ -1527,19 +1527,10 @@ void AdbParser<e, T_OFFSET>::startFieldElement(const XML_Char** atts,
         if (highBound == "VARIABLE")
         {
             adbParser->_currentField->highBound = 0;
-            string isDynamicArray = attrValue(atts, "arr_is_dynamic", override_attrs);
-            if (!isDynamicArray.empty() && stoi(isDynamicArray))
+            string size_condition_str = attrValue(atts, "size_condition", override_attrs);
+            if (!size_condition_str.empty())
             {
                 adbParser->_currentField->array_type = AdbField::ArrayType::dynamic;
-                string conditionalSize = attrValue(atts, "size_condition", override_attrs);
-                if (conditionalSize == "")
-                {
-                    expFound =
-                      raiseException(allowMultipleExceptions,
-                                     "Missing size_condition attribute",
-                                     ", in file: \"" + adbParser->_fileName + "\" line: " + to_string(lineNumber),
-                                     ExceptionHolder::FATAL_EXCEPTION);
-                }
             }
             else
             {

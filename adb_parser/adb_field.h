@@ -125,6 +125,10 @@ public:
     string condition; // field's visibility dynamic condition
 
     // FOR USER USAGE
+    // (BigEndian)
+    static bool compareFieldsForXmlOutput(AdbField_impl<T_OFFSET>* f1, AdbField_impl<T_OFFSET>* f2);
+
+    // FOR USER USAGE
     void* userData{nullptr};
 };
 

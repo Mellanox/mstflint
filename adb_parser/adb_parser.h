@@ -128,7 +128,10 @@ public:
     // Methods
     _Adb_impl();
     ~_Adb_impl();
-    void raiseException(bool allowMultipleExceptions, string exceptionTxt, const string expType);
+    void raiseException(bool allowMultipleExceptions,
+                        string exceptionTxt,
+                        const string expType,
+                        bool raise_warnings = true);
     // strict union means:
     //   1- dwrod aligned unions
     //   2- contains nodes only
@@ -155,7 +158,8 @@ public:
     string toXml(vector<string> nodeNames = vector<string>(),
                  bool addRootNode = false,
                  string rootName = "MainNode",
-                 string addPrefix = "");
+                 string addPrefix = "",
+                 bool bigEndian = false);
 
     void addMissingNodes(int depth, bool allowMultipleExceptions);
     AdbInstance* createLayout(string rootNodeName,
@@ -175,6 +179,20 @@ public:
     void add_include(string fileName, string filePath, string included_from, int lineNumber);
     string getLastError();
 
+    // Layout traversal function
+    void traverse_layout(AdbInstance* instance,
+                         const string& path,
+                         T_OFFSET offset_shift,
+                         const uint8_t* buffer,
+                         uint32_t buffer_size,
+                         void (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
+                         void* context,
+                         bool evaluate_conditions = true,
+                         bool handle_enums = false,
+                         bool full_path = true,
+                         bool allow_multiple_exceptions = false,
+                         string suffix = ""); // internal argument for legacy array support
+
     string printAdbExceptionMap();
     void clearAdbExceptionMap();
 
@@ -183,10 +201,10 @@ public:
 
 private:
     template<bool U = eval_expr>
-    typename enable_if<!U>::type updateLayoutConditions(bool allowMultipleExceptions);
+    typename enable_if<!U>::type updateLayoutConditions(bool useConditionalArrays);
 
     template<bool U = eval_expr>
-    typename enable_if<U>::type updateLayoutConditions(bool allowMultipleExceptions);
+    typename enable_if<U>::type updateLayoutConditions(bool useConditionalArrays);
 
     template<bool U = eval_expr>
     typename enable_if<!U>::type updateConditionsLists(AdbInstance* inst);
@@ -246,6 +264,22 @@ private:
     list<AdbInstance*> _conditionalArrays;
     void checkInstanceOffsetValidity(AdbInstance* inst, AdbInstance* parent, bool allowMultipleExceptions);
     void throwExeption(bool allowMultipleExceptions, string exceptionTxt, string addedMsgMultiExp);
+
+    // Helper functions for traverse_layout
+    uint64_t _trvrs_calc_cond_num_elements(AdbInstance* instance,
+                                           T_OFFSET offset_shift,
+                                           const uint8_t* buffer,
+                                           uint32_t buffer_size,
+                                           bool evaluate_conditions,
+                                           bool allow_multiple_exceptions);
+    string _trvrs_get_element_array_suffix(uint64_t i, AdbInstance* instance, bool full_path);
+    void _trvrs_handle_enums(AdbInstance* instance,
+                             const string& element_path,
+                             T_OFFSET element_offset_shift,
+                             const uint8_t* buffer,
+                             void (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
+                             void* context);
+    AdbInstance* _trvrs_get_selected_node(AdbInstance* instance, T_OFFSET element_offset_shift, const uint8_t* buffer);
 };
 
 using AdbLegacy = _Adb_impl<false, uint32_t>;

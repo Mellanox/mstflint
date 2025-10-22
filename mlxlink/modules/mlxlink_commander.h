@@ -152,6 +152,10 @@
 #define PPRT_RATE_FLAG_SHORT ' '
 #define PPTT_RATE_FLAG "tx_rate"
 #define PPTT_RATE_FLAG_SHORT ' '
+#define PPRT_MODULATION_FLAG "rx_modulation"
+#define PPRT_MODULATION_FLAG_SHORT ' '
+#define PPTT_MODULATION_FLAG "tx_modulation"
+#define PPTT_MODULATION_FLAG_SHORT ' '
 #define PRBS_LANES_FLAG "lanes"
 #define PRBS_LANES_FLAG_SHORT ' '
 #define PRBS_INVERT_TX_POL_FLAG "invert_tx_polarity"
@@ -608,6 +612,7 @@ public:
     bool checkPmaosDown();
     void checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMask);
     void checkPrbsRegsCap(const string& prbsReg, const string& laneRate);
+    void checkPrbsModulation(const string& prbsReg);
     void checkPrbsPolCap(const string& prbsReg);
     void checkPprtPptt();
     void checkDcCouple();
@@ -619,7 +624,8 @@ public:
                            u_int32_t laneRate,
                            u_int32_t prbsMode,
                            bool perLaneConfig,
-                           bool prbsPolInv);
+                           bool prbsPolInv,
+                           u_int32_t modulation = PRBS_MODULATION_DEFAULT);
     void sendPprtPptt();
     void resetPprtPptt();
     u_int32_t ptysSpeedToMask(const string& speed);
@@ -695,6 +701,7 @@ public:
     bool _linkModeForce;
     bool _useExtAdb;
     bool _ddmSupported;
+    u_int32_t _temperature;
     bool _cmisCable;
     bool _qsfpCable;
     bool _portPolling;

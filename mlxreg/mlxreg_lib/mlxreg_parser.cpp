@@ -34,9 +34,12 @@
 #include "mlxreg_parser.h"
 
 #include <sstream>
+#include <iostream>
 #include <common/bit_slice.h>
 #include <common/tools_utils.h>
 #include <errno.h>
+#include <adb_parser/adb_instance.h>
+#include <mtcr.h>
 
 using namespace mlxreg;
 
@@ -46,15 +49,19 @@ using namespace mlxreg;
 RegAccessParser::RegAccessParser(string data,
                                  string indexes,
                                  string ops,
+                                 AdbAdvLegacy* adb,
                                  AdbInstanceAdvLegacy* regNode,
                                  std::vector<u_int32_t> buffer,
-                                 bool ignore_ro)
+                                 bool ignore_ro,
+                                 bool full_path)
 {
     _data = data;
     _indexes = indexes;
     _ops = ops;
+    _adb = adb;
     _regNode = regNode;
     _ignore_ro = ignore_ro;
+    _full_path = full_path;
     output_file = "";
     if (!regNode)
     {
@@ -82,15 +89,19 @@ RegAccessParser::RegAccessParser(string data,
 RegAccessParser::RegAccessParser(string data,
                                  string indexes,
                                  string ops,
+                                 AdbAdvLegacy* adb,
                                  AdbInstanceAdvLegacy* regNode,
                                  u_int32_t len,
-                                 bool ignore_ro)
+                                 bool ignore_ro,
+                                 bool full_path)
 {
     _data = data;
     _indexes = indexes;
     _ops = ops;
+    _adb = adb;
     _regNode = regNode;
     _ignore_ro = ignore_ro;
+    _full_path = full_path;
     output_file = "";
     _len = len;
     // Set parsing method
@@ -106,7 +117,8 @@ RegAccessParser::RegAccessParser(string data,
     else
     {
         _parseMode = Pm_Known;
-        _len = (_regNode->get_size()) >> 5;
+
+        _len = _regNode->containsDynamicArray() ? len >> 2 : (_regNode->get_size()) >> 5;
     }
     // Resize buffer
     _buffer.resize(_len);
@@ -257,6 +269,37 @@ void RegAccessParser::parseAccessType(std::vector<string> tokens,
     // }
 }
 
+void RegAccessParser::_on_traverse_update_buffer(const string& calculated_path,
+                                                 uint64_t calculated_offset,
+                                                 uint64_t calculated_value,
+                                                 AdbInstanceAdvLegacy* instance,
+                                                 void* context)
+{
+    (void)context;
+    (void)calculated_value;
+
+    RegAccessParser* parser = (RegAccessParser*)context;
+    string path_to_compare = parser->_full_path ? calculated_path : get_legacy_path(*instance);
+
+    for (const auto& entry : parser->_data_map)
+    {
+        const string& key = entry.first;
+        const uint32_t value = entry.second;
+        if (path_to_compare.length() >= key.length() &&
+            path_to_compare.substr(path_to_compare.length() - key.length()) == key &&
+            (path_to_compare.length() == key.length() ||
+             path_to_compare[path_to_compare.length() - key.length() - 1] == '.'))
+        {
+            if (!parser->_ignore_ro && instance->is_ro())
+            {
+                throw MlxRegException("Field: %s is ReadOnly", calculated_path.c_str());
+            }
+            parser->updateBuffer((uint32_t)calculated_offset, (uint32_t)instance->get_size(), value);
+            parser->_data_map.erase(key);
+            break;
+        }
+    }
+}
 /************************************
  * Function: parseData
  ************************************/
@@ -271,12 +314,23 @@ void RegAccessParser::parseData()
         string datVal = dat[1];
         u_int32_t uintVal;
         strToUint32((char*)datVal.c_str(), uintVal);
-        AdbInstanceAdvLegacy* field = getField(datName);
-        if (isRO(field))
+        _data_map[datName] = uintVal;
+    }
+
+    _adb->traverse_layout(_regNode,
+                          "",
+                          0,
+                          (uint8_t*)&(_buffer[0]),
+                          _buffer.size() * sizeof(uint32_t),
+                          RegAccessParser::_on_traverse_update_buffer,
+                          (void*)this,
+                          false,
+                          false,
+                          _full_path);
+    if (_data_map.size() > 0)
         {
-            throw MlxRegException("Field: %s is ReadOnly", datName.c_str());
-        }
-        updateBuffer(field->offset, field->get_size(), uintVal);
+        auto unfound_name = _data_map.begin()->first; // for backward compatibility, only prints one unfound name
+        throw MlxRegException("Can't find field name: \"%s\"", unfound_name.c_str());
     }
 }
 
@@ -453,11 +507,23 @@ bool RegAccessParser::checkFieldWithPath(AdbInstanceAdvLegacy* field,
 /************************************
  * Function: getField
  ************************************/
-AdbInstanceAdvLegacy* RegAccessParser::getField(string name, u_int32_t size, u_int32_t offset, bool offsetSpecified)
+AdbInstanceAdvLegacy*
+  RegAccessParser::getField(string name, u_int32_t size, u_int32_t offset, bool offsetSpecified, bool is_buffer_full)
 {
     // this will allow to access the leaf field by specifying it's parent.
     std::vector<string> fieldsChain = strSplit(name, '.', false);
-    std::vector<AdbInstanceAdvLegacy*> subItems = _regNode->getLeafFields(true);
+    std::vector<AdbInstanceAdvLegacy*> subItems;
+
+    if (!is_buffer_full)
+    {
+        subItems = _regNode->getLeafFields(true);
+    }
+    else
+    {
+        subItems = RegAccessParser::getRelevantFields(
+          _regNode, _buffer); // todo: refactor this function to  use traverse instead of getRelevantFields
+    }
+
     for (std::vector<AdbInstanceAdvLegacy*>::size_type i = 0; i != subItems.size(); i++)
     {
         if (checkFieldWithPath(subItems[i], fieldsChain.size() - 1, fieldsChain, size, offset, offsetSpecified))
@@ -547,8 +613,145 @@ u_int32_t RegAccessParser::getFieldValue(string field_name,
                                          std::vector<u_int32_t>& buff,
                                          u_int32_t size,
                                          u_int32_t offset,
-                                         bool offsetSpecified)
+                                         bool offsetSpecified,
+                                         bool is_buffer_full)
 {
-    AdbInstanceAdvLegacy* field = getField(field_name, size, offset, offsetSpecified);
+    AdbInstanceAdvLegacy* field = getField(field_name, size, offset, offsetSpecified, is_buffer_full);
     return (u_int32_t)field->popBuf((u_int8_t*)&buff[0]);
+}
+
+/************************************
+ * Function: getRelevantFields
+ * Description: Traverses ADB instance tree and returns relevant leaf fields.
+ * For union selectors and conditional nodes, only returns the selected union field or the node based on buffer value.
+ ************************************/
+std::vector<AdbInstanceAdvLegacy*> RegAccessParser::getRelevantFields(AdbInstanceAdvLegacy* node,
+                                                                      const std::vector<u_int32_t>& buff)
+{
+    std::vector<AdbInstanceAdvLegacy*> result;
+
+    if (!node)
+    {
+        return result;
+    }
+
+    // If this is a leaf node (no children), add it to result
+    if (node->subItems.empty())
+    {
+        result.push_back(node);
+        return result;
+    }
+
+    // Check if this is a union selector
+    if (node->isUnion() && node->unionSelector)
+    { // TODO: add isUnionSelector() function to AdbInstance
+        // Get the selector value from buffer
+        u_int32_t selectorValue = node->unionSelector->popBuf((u_int8_t*)&buff[0]);
+
+        // Get the selected union field using getUnionSelectedNodeName
+        AdbInstanceAdvLegacy* selectedNode = nullptr;
+        try
+        {
+            selectedNode = node->getUnionSelectedNodeName(selectorValue);
+        }
+        catch (const AdbException& e)
+        {
+            // If getUnionSelectedNodeName throws an exception, treat as a regular non-union node
+            // and process all children
+            std::cerr << "-W- Field - " << node->get_field_name()
+                      << " with union selector failed treating as regular node and processing all children\n"
+                      << e.what() << std::endl;
+            for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin();
+                 it != node->subItems.end();
+                 ++it)
+            {
+                std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantFields(*it, buff);
+                result.insert(result.end(), subResult.begin(), subResult.end());
+            }
+            return result;
+        }
+
+        if (selectedNode)
+        {
+            // Recursively get relevant fields from the selected union field
+            std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantFields(selectedNode, buff);
+            result.insert(result.end(), subResult.begin(), subResult.end());
+        }
+    }
+    else if (node->parent && node->parent->isConditionalNode())
+    {
+        AdbConditionLegacy* condition = node->getCondition();
+        if (condition)
+        {
+            uint64_t cond_val = 0;
+            try
+            {
+                cond_val = condition->evaluate((u_int8_t*)&buff[0]);
+            }
+            catch (const AdbException& e)
+            {
+                // If condition evaluation throws an exception, treat as a regular non-union node
+                // and process all children
+                std::cerr << "-W- Field - " << node->get_field_name()
+                          << " with condition, evaluation failed, treating as regular node and processing all children\n"
+                          << e.what() << std::endl;
+                for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin();
+                     it != node->subItems.end();
+                     ++it)
+                {
+                    std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantFields(*it, buff);
+                    result.insert(result.end(), subResult.begin(), subResult.end());
+                }
+                return result;
+            }
+
+            if (!cond_val)
+            {
+                return result;
+            }
+        }
+        // Recursively get relevant fields from the selected union field
+        for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin(); it != node->subItems.end();
+             ++it)
+        {
+            std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantFields(*it, buff);
+            result.insert(result.end(), subResult.begin(), subResult.end());
+        }
+    }
+    else
+    {
+        // For non-union nodes, recursively process all children
+        for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin(); it != node->subItems.end();
+             ++it)
+        {
+            std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantFields(*it, buff);
+            result.insert(result.end(), subResult.begin(), subResult.end());
+        }
+    }
+
+    return result;
+}
+
+/************************************
+ * Function: get_legacy_path
+ ************************************/
+string RegAccessParser::get_legacy_path(AdbInstanceAdvLegacy& instance)
+{
+    string path = instance.fullName(1);
+    size_t last_dot = path.rfind('.');
+    string parent_path = (last_dot != string::npos) ? path.substr(0, last_dot) : "";
+
+    if (instance.parent->fieldDesc && instance.parent->fieldDesc->subNode == "uint64")
+    {
+        path = parent_path + "_" + instance.fieldDesc->name;
+    }
+    else
+    {
+        if (path[path.length() - 1] != ']')
+        {
+            path = parent_path + "." + instance.fieldDesc->name +
+                   _AdbInstance_impl<true, uint32_t>::addPathSuffixForArraySupport(path);
+        }
+    }
+    return path;
 }

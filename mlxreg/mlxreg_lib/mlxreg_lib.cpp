@@ -179,6 +179,23 @@ AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(string name)
 }
 
 /************************************
+ * Function: findAdbNode
+ ************************************/
+AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(uint64_t id)
+{
+    try
+    {
+        auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(id);
+        found_node = _adb->createLayout(found_node->nodeDesc->name);
+        return found_node;
+    }
+    catch (AdbException& er)
+    {
+        throw MlxRegException("Can't find access register with id: %d", id);
+    }
+}
+
+/************************************
  * Function: showRegister
  ************************************/
 MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector<AdbInstanceAdvLegacy*>& fields)
@@ -233,6 +250,26 @@ int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t
 }
 
 /************************************
+ * Function: sendMaccessReg
+ ************************************/
+int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, void* data, uint32_t size)
+{
+    int status = 0;
+    int rc = -1;
+    int i = RETRIES_COUNT;
+    do
+    {
+        rc = maccess_reg(_mf, regId, (maccess_reg_method_t)method, (u_int32_t*)data, size, size, size, &status);
+        if ((rc != ME_ICMD_STATUS_IFC_BUSY && status != ME_REG_ACCESS_BAD_PARAM) || !(_mf->flags & MDEVS_REM))
+        {
+            break;
+        }
+        msleep(SLEEP_INTERVAL);
+    } while (i-- > 0);
+    return rc;
+}
+
+/************************************
  * Function: sendRegister
  ************************************/
 MlxRegLibStatus MlxRegLib::sendRegister(string regName, int method, std::vector<u_int32_t>& data)
@@ -265,16 +302,21 @@ MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, std::vector
     rc = sendMaccessReg(regId, method, data);
     if (rc)
     {
-        char error_msg[200];
-        snprintf(error_msg, sizeof(error_msg), "Failed to send access register: %s", m_err2str((MError)rc));
-        if (_mf->icmd.syndrome)
+        throw MlxRegException("Failed send access register: %s", m_err2str((MError)rc));
+    }
+    return MRLS_SUCCESS;
+}
+
+/************************************
+ * Function: sendRegister
+ ************************************/
+MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, void* data, uint32_t size)
         {
-            snprintf(error_msg + strlen(error_msg),
-                     sizeof(error_msg) - strlen(error_msg),
-                     " and the syndrome number is: 0x%X",
-                     (_mf->icmd.syndrome));
-        }
-        throw MlxRegException(error_msg);
+    int rc;
+    rc = sendMaccessReg(regId, method, data, size);
+    if (rc)
+    {
+        throw MlxRegException("Failed send access register: %s", m_err2str((MError)rc));
     }
     return MRLS_SUCCESS;
 }
@@ -309,27 +351,38 @@ bool MlxRegLib::isRegSizeSupported(string regName)
 /************************************
  * Function: isAccessRegisterSupported
  ************************************/
-void MlxRegLib::isAccessRegisterSupported(mfile* mf)
+ void MlxRegLib::isAccessRegisterSupported(mfile* mf)
+ {
+     int                                    status;
+     struct icmd_hca_icmd_query_cap_general icmd_cap;
+     int                                    i = RETRIES_COUNT;
+ 
+     if ((mf->tp == MST_FWCTL_CONTROL_DRIVER) || (mf->tp == MST_NVML)) {
+         return;
+     }
+ 
+     do{
+         memset(&icmd_cap, 0, sizeof(icmd_cap));
+         status = get_icmd_query_cap(mf, &icmd_cap);
+         if (!(status || (icmd_cap.allow_icmd_access_reg_on_all_registers == 0))) {
+             break;
+         }
+         msleep(SLEEP_INTERVAL);
+     } while (i-- > 0);
+ 
+     if (status || (icmd_cap.allow_icmd_access_reg_on_all_registers == 0)) {
+         throw MlxRegException("FW burnt on device does not support generic access register");
+     }
+ }
+
+/************************************
+ * Function: handle_buffer_endianness
+ ************************************/
+void MlxRegLib::handle_buffer_endianness(void* buffer, uint32_t size)
 {
-    int                                    status;
-    struct icmd_hca_icmd_query_cap_general icmd_cap;
-    int                                    i = RETRIES_COUNT;
-
-    if ((mf->tp == MST_FWCTL_CONTROL_DRIVER) || (mf->tp == MST_NVML)) {
-        return;
-    }
-
-    do{
-        memset(&icmd_cap, 0, sizeof(icmd_cap));
-        status = get_icmd_query_cap(mf, &icmd_cap);
-        if (!(status || (icmd_cap.allow_icmd_access_reg_on_all_registers == 0))) {
-            break;
-        }
-        msleep(SLEEP_INTERVAL);
-    } while (i-- > 0);
-
-    if (status || (icmd_cap.allow_icmd_access_reg_on_all_registers == 0)) {
-        throw MlxRegException("FW burnt on device does not support generic access register");
+    for (uint32_t* addr = (uint32_t*)buffer; addr < (uint32_t*)buffer + size / sizeof(uint32_t); ++addr)
+    {
+        *addr = __cpu_to_be32(*addr);
     }
 }
 /************************************
