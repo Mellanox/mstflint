@@ -1,0 +1,32 @@
+#Scalar tests
+---
+key: foo
+     bar
+
+---
+key: "val\"ue"
+
+---
+key: "value\""
+
+---
+foo
+bar
+
+---
+"foo
+bar"
+
+---
+"foo\"
+\"bar"
+
+---
+foo
+    bar
+
+---
+|
+ foo
+ bar
+

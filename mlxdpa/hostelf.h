@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -35,9 +35,13 @@
 
 #include <string>
 #include <vector>
+
+#include <tuple>
 #include <dpa_elf/dpa_elf.h>
 
 using namespace std;
+using appArchDataHandle = DevObjHandle*;
+using appArchManifestHandle = DevObjHandle*;
 
 class HostElf
 {
@@ -46,8 +50,12 @@ public:
     ~HostElf();
 
     vector<AppHandle*> GetListOfDpaApps();
-    vector<DevObjHandle*> GetListOfDpaArchApps(DevObjHandle* objTable, uint64_t arch_count);
+    vector<std::tuple<appArchDataHandle, appArchManifestHandle>>
+      GetListOfDpaArchApps(appArchDataHandle objTable,
+                           uint64_t arch_count,
+                          appArchManifestHandle procAttrsTable = nullptr);
     vector<u_int8_t> GetDpaApp(const DevObjHandle& app);
+    vector<u_int8_t> GetManifestDpaApp(const DevObjHandle& app);
     void AddSection(string sectionName, const vector<u_int8_t>& section);
     void RemoveSection(string sectionName);
 

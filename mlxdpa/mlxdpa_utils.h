@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,14 +30,13 @@
  * SOFTWARE.
  */
 
-#ifndef MLXDPA_UTILS_H_
-#define MLXDPA_UTILS_H_
-
-#include <string>
+ #ifndef MLXDPA_UTILS_H_
+ #define MLXDPA_UTILS_H_
+ 
 #include <exception>
+#include <string>
 #include <vector>
 #include <stdarg.h>
-
 #define MLX_DPA_DPRINTF(args)                      \
     do                                             \
     {                                              \
@@ -69,6 +68,7 @@ const string updateSigErrors[NUM_OF_RET_VALS] = {"Successfully updated signature
                                                  "File not accessible.",
                                                  "Signature section not found.",
                                                  "Invalid multi arch signature section."};
+                                             
 void RunCommand(string cmd, string errorMsg);
 
 string OpenTempFile(string path, ofstream& f);
@@ -78,22 +78,6 @@ vector<u_int8_t> ReadFromFile(string filename);
 bool strToNum(const string& str, u_int32_t& num, int base);
 
 bool ParseUUID(string uuidStr, u_int32_t uuid[]);
-
-class Crc16
-{
-public:
-    Crc16(bool d = false) : _debug(d) { clear(); }
-    u_int16_t get() { return _crc; }
-    void clear() { _crc = 0xffff; }
-    void operator<<(u_int32_t val) { add(val); }
-    void operator<<(std::vector<u_int8_t> v);
-    void add(u_int32_t val);
-    void finish();
-
-private:
-    u_int16_t _crc;
-    bool _debug;
-};
 
 class MlxDpaException : public exception
 {

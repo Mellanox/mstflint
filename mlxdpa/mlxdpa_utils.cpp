@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,14 +29,18 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+ #include "mlxdpa_utils.h"
 
-#include "mlxdpa_utils.h"
-#include <stdlib.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <fstream>
-#include <cstring>
-#include <algorithm>
+ #include <dirent.h>
+ #include <stdarg.h>
+ #include <unistd.h>
+ 
+ #include <algorithm>
+ #include <cstdlib>
+ #include <cstring>
+ #include <fstream>
+ #include <vector>
+ 
 #include "compatibility.h"
 
 void RunCommand(string cmd, string errorMsg)
@@ -126,58 +130,6 @@ bool ParseUUID(string uuidStr, u_int32_t uuid[])
     }
 
     return true;
-}
-
-void Crc16::operator<<(std::vector<u_int8_t> v)
-{
-    if (v.size() % 4)
-    {
-        fprintf(stderr, "Internal error: Image section size should be 4-bytes aligned");
-        exit(1);
-    }
-    for (u_int32_t i = 0; i < v.size(); i += 4)
-    {
-        u_int32_t dw_be = __cpu_to_be32(*((u_int32_t*)(&v[i])));
-        add(dw_be);
-    }
-}
-
-void Crc16::add(u_int32_t o)
-{
-    if (_debug)
-    {
-        printf("Crc16::add(%08x)\n", o);
-    }
-    for (int i = 0; i < 32; i++)
-    {
-        if (_crc & 0x8000)
-        {
-            _crc = (((_crc << 1) | (o >> 31)) ^ 0x100b) & 0xffff;
-        }
-        else
-        {
-            _crc = ((_crc << 1) | (o >> 31)) & 0xffff;
-        }
-        o = (o << 1) & 0xffffffff;
-    }
-}
-
-void Crc16::finish()
-{
-    for (int i = 0; i < 16; i++)
-    {
-        if (_crc & 0x8000)
-        {
-            _crc = ((_crc << 1) ^ 0x100b) & 0xffff;
-        }
-        else
-        {
-            _crc = (_crc << 1) & 0xffff;
-        }
-    }
-
-    // Revert 16 low bits
-    _crc = _crc ^ 0xffff;
 }
 
 MlxDpaException::MlxDpaException(const char* fmt, ...)
