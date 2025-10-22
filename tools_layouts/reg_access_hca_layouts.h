@@ -2420,6 +2420,22 @@ This field is only valid for Address + Read and Address + Write operations, prov
 };
 
 /* Description -   */
+/* Size in bytes - 128 */
+struct reg_access_hca_mmhi_reg_ext {
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Identifier for the host used to access the register */
+	/* 0x4.0 - 0x4.7 */
+	/* access: RO */
+	u_int8_t host_number;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Bit per Host, when set indicating this host is present in the current Multi-Host configuration.
+Value 0x0 indicates this field in not valid. */
+	/* 0x8.0 - 0x8.15 */
+	/* access: RO */
+	u_int16_t host_en;
+};
+
+/* Description -   */
 /* Size in bytes - 12 */
 struct reg_access_hca_mnvdi_reg_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -2871,6 +2887,86 @@ Value 0x0 indicates no grouping */
 	/* 0xc.31 - 0xc.31 */
 	/* access: RO */
 	u_int8_t slot_cap;
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct reg_access_hca_mpqd_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Node for the query */
+	/* 0x0.8 - 0x0.15 */
+	/* access: INDEX */
+	u_int8_t node;
+	/* Description - pcie_index for the query */
+	/* 0x0.16 - 0x0.23 */
+	/* access: INDEX */
+	u_int8_t pcie_index;
+	/* Description - Depth level for the query */
+	/* 0x0.24 - 0x0.29 */
+	/* access: INDEX */
+	u_int8_t depth;
+	/* Description - DPN version
+0: multi_topology_unaware_sw
+1: multi_topology_aware_sw
+For MPQD SW must set the DPNv bit */
+	/* 0x0.30 - 0x0.30 */
+	/* access: INDEX */
+	u_int8_t DPNv;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - The pcie_index associated with the querying host */
+	/* 0x4.0 - 0x4.7 */
+	/* access: RO */
+	u_int8_t requester_pcie_index;
+	/* Description - Max available pcie_index */
+	/* 0x4.8 - 0x4.15 */
+	/* access: RO */
+	u_int8_t max_valid_pcie_index;
+	/* Description - Max depth for the querying pcie_index */
+	/* 0x4.16 - 0x4.23 */
+	/* access: RO */
+	u_int8_t max_exist_depth;
+	/* Description - pcie_index is an internal host PCIe tree
+0: pcie_index is an external host PCIe tree
+1: pcie_index is an internal host PCIe tree */
+	/* 0x4.31 - 0x4.31 */
+	/* access: RO */
+	u_int8_t is_internal;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Number of nodes on querying depth - node numbers are 0 to (number_of_nodes - 1)
+when 0 - no valid nodes on that querying depth in querying pcie_index */
+	/* 0x8.0 - 0x8.7 */
+	/* access: RO */
+	u_int8_t number_of_nodes;
+	/* Description - Querying node in querying depth and querying pcie_index a physical node
+0: the node is a virtual node
+1: the node is a physical node */
+	/* 0x8.8 - 0x8.8 */
+	/* access: RO */
+	u_int8_t node_phy;
+	/* Description - Querying pcie_index valid
+0 : pcie_index is not a valid index
+1: pcie_index is a valid index */
+	/* 0x8.31 - 0x8.31 */
+	/* access: RO */
+	u_int8_t valid_index;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Is querying node valid
+0: querying node is not a valid node
+1: querying node is valid */
+	/* 0xc.0 - 0xc.0 */
+	/* access: RW */
+	u_int8_t valid_node;
+	/* Description - Is querying node a downstream port
+0: node is upstream port
+1: node is downstream port */
+	/* 0xc.1 - 0xc.1 */
+	/* access: RO */
+	u_int8_t DSP_node;
+	/* Description - Parent node number for the querying node, depth and pcie_index in the parent depth (depth - 1). 
+When querying depth is 0 the parent node is invalid. */
+	/* 0xc.8 - 0xc.15 */
+	/* access: RO */
+	u_int8_t parent_node_number;
 };
 
 /* Description -   */
@@ -4516,6 +4612,14 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* access: RW */
 	struct reg_access_hca_mfbe_reg_ext mfbe_reg_ext;
 	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	/* access: RW */
+	struct reg_access_hca_mmhi_reg_ext mmhi_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_hca_mpqd_reg_ext mpqd_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x4.31 */
 	/* access: RW */
 	struct reg_access_hca_mnvqc_reg_ext mnvqc_reg_ext;
@@ -4998,6 +5102,13 @@ void reg_access_hca_mmdio_ext_print(const struct reg_access_hca_mmdio_ext *ptr_s
 unsigned int reg_access_hca_mmdio_ext_size(void);
 #define REG_ACCESS_HCA_MMDIO_EXT_SIZE    (0xc)
 void reg_access_hca_mmdio_ext_dump(const struct reg_access_hca_mmdio_ext *ptr_struct, FILE *fd);
+/* mmhi_reg_ext */
+void reg_access_hca_mmhi_reg_ext_pack(const struct reg_access_hca_mmhi_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_mmhi_reg_ext_unpack(struct reg_access_hca_mmhi_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_mmhi_reg_ext_print(const struct reg_access_hca_mmhi_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_mmhi_reg_ext_size(void);
+#define REG_ACCESS_HCA_MMHI_REG_EXT_SIZE    (0x80)
+void reg_access_hca_mmhi_reg_ext_dump(const struct reg_access_hca_mmhi_reg_ext *ptr_struct, FILE *fd);
 /* mnvdi_reg_ext */
 void reg_access_hca_mnvdi_reg_ext_pack(const struct reg_access_hca_mnvdi_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mnvdi_reg_ext_unpack(struct reg_access_hca_mnvdi_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -5054,6 +5165,13 @@ void reg_access_hca_mpir_ext_print(const struct reg_access_hca_mpir_ext *ptr_str
 unsigned int reg_access_hca_mpir_ext_size(void);
 #define REG_ACCESS_HCA_MPIR_EXT_SIZE    (0x10)
 void reg_access_hca_mpir_ext_dump(const struct reg_access_hca_mpir_ext *ptr_struct, FILE *fd);
+/* mpqd_reg_ext */
+void reg_access_hca_mpqd_reg_ext_pack(const struct reg_access_hca_mpqd_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_mpqd_reg_ext_unpack(struct reg_access_hca_mpqd_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_mpqd_reg_ext_print(const struct reg_access_hca_mpqd_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_mpqd_reg_ext_size(void);
+#define REG_ACCESS_HCA_MPQD_REG_EXT_SIZE    (0x10)
+void reg_access_hca_mpqd_reg_ext_dump(const struct reg_access_hca_mpqd_reg_ext *ptr_struct, FILE *fd);
 /* mqis_reg_ext */
 void reg_access_hca_mqis_reg_ext_pack(const struct reg_access_hca_mqis_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mqis_reg_ext_unpack(struct reg_access_hca_mqis_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
