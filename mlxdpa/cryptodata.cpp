@@ -29,12 +29,15 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-#include <sstream>
-#include <iterator>
-#include "elfio/elfio.hpp"
-#include "mlxdpa_utils.h"
 #include "cryptodata.h"
+
+#include <iterator>
+#include <sstream>
+
+#include "elfio/elfio.hpp"
+#include "mft_utils.h"
+#include "mlxdpa_utils.h"
+#include "mlxfwops/lib/flint_base.h"
 #include "mlxsign_lib.h"
 
 /********************************************************************************************************************/
@@ -46,42 +49,45 @@
 CryptoDataSection::HashListTable::HashListTable() :
     _magicPattern{'H', 'S', 'A', 'H',
                   'T', 'S', 'I', 'L'}, // magic-pattern will be converted to "HASHLIST" once swapped to big-endian
-    _numOfSegments(0),
+    _numOfExtHashFields(0),
     _numOfSections(0)
 {
+    memset(&_elfHeaderHash, 0x0, sizeof(_elfHeaderHash));
+    memset(&_programHeadersHash, 0x0, sizeof(_programHeadersHash));
+    memset(&_sectionHeadersHash, 0x0, sizeof(_sectionHeadersHash));
     memset(&_reserved, 0xff, sizeof(_reserved));
     memset(&_reserved2, 0xff, sizeof(_reserved2));
 }
 
-void CryptoDataSection::HashListTable::AddHash(EntryType type, const vector<u_int8_t>& data)
+void CryptoDataSection::HashListTable::AddHash(EntryType type, const vector<u_int8_t>& data, const u_int32_t isPresent)
 {
     MlxSignSHA256 mlxSignSHA;
     mlxSignSHA << data;
     vector<u_int8_t> sha;
     mlxSignSHA.getDigest(sha);
     CPUTOn(sha.data(), sha.size() / 4); // Converting SHA (which is big-endian) to platform endianness
-
     switch (type)
     {
         case EntryType::dpaApp:
             _dpaAppElfHash = sha;
             break;
         case EntryType::elfHeader:
-            _elfHeaderHash = sha;
             break;
         case EntryType::programHeaders:
-            _programHeadersHash = sha;
             break;
         case EntryType::programData:
-            _programsHashes.push_back(sha);
-            _numOfSegments++;
             break;
         case EntryType::sectionHeaders:
-            _sectionHeadersHash = sha;
             break;
         case EntryType::sectionData:
-            _sectionsHashes.push_back(sha);
-            _numOfSections++;
+            break;
+        case EntryType::sectionAppMetadata:
+            _hashOfAppMetadata = (isPresent == 1) ? sha : std::vector<u_int8_t>(0x20, 0x0);
+            _numOfExtHashFields++;
+            break;
+        case EntryType::sectionAppManifest:
+            _hashOfAppManifest = (isPresent == 1) ? sha : std::vector<u_int8_t>(0x20, 0x0);
+            _numOfExtHashFields++;
             break;
         default:
             throw MlxDpaException("Unknown hash entry type");
@@ -94,23 +100,19 @@ vector<u_int8_t> CryptoDataSection::HashListTable::Serialize()
     vector<u_int8_t> rawData;
 
     rawData.insert(rawData.end(), begin(_magicPattern), end(_magicPattern));
-    rawData.push_back(_numOfSegments);
+    rawData.push_back(_numOfExtHashFields);
     rawData.insert(rawData.end(), begin(_reserved), end(_reserved));
     rawData.push_back(_numOfSections);
     rawData.insert(rawData.end(), begin(_reserved2), end(_reserved2));
-
     rawData.insert(end(rawData), begin(_dpaAppElfHash), end(_dpaAppElfHash));
     rawData.insert(end(rawData), begin(_elfHeaderHash), end(_elfHeaderHash));
     rawData.insert(end(rawData), begin(_programHeadersHash), end(_programHeadersHash));
-    for (auto hash : _programsHashes)
+    if (_numOfExtHashFields > 0)
     {
-        rawData.insert(end(rawData), begin(hash), end(hash));
+        rawData.insert(end(rawData), begin(_hashOfAppMetadata), end(_hashOfAppMetadata));
+        rawData.insert(end(rawData), begin(_hashOfAppManifest), end(_hashOfAppManifest));
     }
     rawData.insert(end(rawData), begin(_sectionHeadersHash), end(_sectionHeadersHash));
-    for (auto hash : _sectionsHashes)
-    {
-        rawData.insert(end(rawData), begin(hash), end(hash));
-    }
 
     return rawData;
 }
@@ -174,13 +176,20 @@ void CryptoDataSection::CertChain::AddCertificates(string path)
 /*                                                                                                                  */
 /*                                          CryptoDataSection                                                       */
 /*                                                                                                                  */
-/********************************************************************************************************************/
-
+/********************************************************************************************************************/ 
 CryptoDataSection::CryptoDataSection(CertChain certChain)
 {
     memset(&_metadata, 0x0, sizeof(_metadata)); // TODO - temp until we have a definition on how to set metadata fields
-    _metadata._signatureType = (u_int32_t)SignatureType::None;
+    _metadata._signatureType = (u_int16_t)CryptoDataSection::SignatureType::Reserved0;
+    _metadata._encParamsPresent = 0; // ENC PARAMS is not available in the current release
+    _metadata._appMetadataPresent = 0;
     _certChain = certChain;
+    _isHostElf = true;
+}
+
+void CryptoDataSection::SetSingleElfState()
+{
+    _isHostElf = false;
 }
 
 vector<u_int8_t> CryptoDataSection::Serialize()
@@ -201,56 +210,57 @@ vector<u_int8_t> CryptoDataSection::Serialize()
     return cryptoDataBlob;
 }
 
-void CryptoDataSection::GenerateHashListFromELF(const vector<u_int8_t>& elf)
+void CryptoDataSection::SetAppMetadataPresent(const u_int32_t value)
 {
-    ELFIO::elfio reader;
-    stringstream ioss;
-
-    std::copy(elf.cbegin(), elf.cend(), ostream_iterator<u_int8_t>(ioss));
-    if (!reader.load(ioss))
-    {
-        throw MlxDpaException("Failed loading DPA app ELF");
-    }
-
-    _hashList.AddHash(HashListTable::EntryType::dpaApp, elf);
-
-    vector<u_int8_t> data(elf.cbegin(), elf.cbegin() + reader.get_header_size());
-    _hashList.AddHash(HashListTable::EntryType::elfHeader, data);
-
-    // program(segment) headers consists of number of entries, one after the other.
-    // each header points to the segment data in the file.
-    auto programHeaderIter = elf.cbegin() + reader.get_segments_offset();
-    // reader.segments.size() is number of segments entries
-    auto programHeaderSize = reader.segments.size() * reader.get_segment_entry_size();
-    data.assign(programHeaderIter, programHeaderIter + programHeaderSize);
-    _hashList.AddHash(HashListTable::EntryType::programHeaders, data);
-
-    // segments list contains segments data (not headers)
-    for (auto it = reader.segments.begin(); it < reader.segments.end(); ++it)
-    {
-        data.assign((*it)->get_data(), (*it)->get_data() + (*it)->get_file_size());
-        _hashList.AddHash(HashListTable::EntryType::programData, data);
-    }
-
-    // section headers consists of number of entries, one after the other.
-    // each header points to the section data in the file, if exists.
-    auto sectionHeaderIter = elf.cbegin() + reader.get_sections_offset();
-    // reader.sections.size() is number of sections entries
-    auto sectionHeaderSize = reader.sections.size() * reader.get_section_entry_size();
-    data.assign(sectionHeaderIter, sectionHeaderIter + sectionHeaderSize);
-    _hashList.AddHash(HashListTable::EntryType::sectionHeaders, data);
-
-    // sections list contains segments data (not headers)
-    for (auto it = reader.sections.begin(); it < reader.sections.end(); ++it)
-    {
-        if ((*it)->get_data() != nullptr)
-        {
-            data.assign((*it)->get_data(), (*it)->get_data() + (*it)->get_size());
-            _hashList.AddHash(HashListTable::EntryType::sectionData, data);
-        }
-    }
+    _metadata._appMetadataPresent = value;
 }
 
+void CryptoDataSection::SetManifestPresent(const u_int32_t value)
+{
+    _metadata._manifestPresent = value;
+}
+
+void CryptoDataSection::SetEncParamsPresent(const u_int32_t value)
+{
+    _metadata._encParamsPresent = value;
+}
+ 
+ u_int32_t CryptoDataSection::GetAppMetadataPresent() const
+ {
+     return _metadata._appMetadataPresent;
+ }
+ 
+ u_int32_t CryptoDataSection::GetManifestPresent() const
+ {
+     return _metadata._manifestPresent;
+ }
+ 
+ vector<u_int8_t> CryptoDataSection::GetAppMetaData() const
+ {
+     return _appMetadata;
+ }
+ 
+ void CryptoDataSection::SetAppMetadata(const vector<u_int8_t>& appMetadata)
+ {
+     _appMetadata = appMetadata;
+ }
+ 
+ void CryptoDataSection::SetManifest(const vector<u_int8_t>& manifest)
+ {
+     _manifest = manifest;
+ }
+ 
+ void CryptoDataSection::GenerateHashListFromELF(const vector<u_int8_t>& elf)
+ {
+     _hashList.AddHash(HashListTable::EntryType::dpaApp, elf);
+ 
+     // app metadata section
+     _hashList.AddHash(HashListTable::EntryType::sectionAppMetadata, _appMetadata, GetAppMetadataPresent());
+ 
+     // manifest section
+     _hashList.AddHash(HashListTable::EntryType::sectionAppManifest, _manifest, GetManifestPresent());
+ }
+ 
 void CryptoDataSection::Sign(const MlxSign::Signer& signer)
 {
     vector<u_int8_t> hashListBytes = _hashList.Serialize();

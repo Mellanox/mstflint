@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2025 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -33,10 +33,11 @@
 #ifndef MLXDPA_CRYPTODATA_H_
 #define MLXDPA_CRYPTODATA_H_
 
-#include <vector>
 #include <memory>
-#include "include/mtcr_ul/mtcr_com_defs.h"
+#include <vector>
+
 #include "mlxsign_signer_interface.h"
+#include "include/mtcr_ul/mtcr_com_defs.h"
 
 using namespace std;
 
@@ -53,25 +54,27 @@ public:
             programHeaders,
             programData,
             sectionHeaders,
-            sectionData
+            sectionData,
+            sectionAppMetadata,
+            sectionAppManifest
         };
 
         HashListTable();
         vector<u_int8_t> Serialize();
-        void AddHash(EntryType type, const vector<u_int8_t>& data);
+        void AddHash(EntryType type, const vector<u_int8_t>& data, const u_int32_t isPresent = 0);
 
     private:
         u_int8_t _magicPattern[8];
-        u_int8_t _numOfSegments;
+        u_int8_t _numOfExtHashFields; // old name _numOfSegments
         u_int8_t _reserved[3];
-        u_int8_t _numOfSections;
+        u_int8_t _numOfSections; // changed to reserved that must be 0
         u_int8_t _reserved2[19];
         vector<u_int8_t> _dpaAppElfHash;
-        vector<u_int8_t> _elfHeaderHash;
-        vector<u_int8_t> _programHeadersHash;
-        vector<vector<u_int8_t>> _programsHashes;
-        vector<u_int8_t> _sectionHeadersHash;
-        vector<vector<u_int8_t>> _sectionsHashes;
+        u_int8_t _elfHeaderHash[32];      // changed to reserved that must be 0
+        u_int8_t _programHeadersHash[32]; // changed to reserved that must be 0
+        vector<u_int8_t> _hashOfAppMetadata;
+        vector<u_int8_t> _hashOfAppManifest;
+        u_int8_t _sectionHeadersHash[32]; // changed to reserved that must be 0
     };
 
     class CertChain
@@ -107,31 +110,62 @@ public:
         vector<u_int8_t> _certificates;
     };
 
+    enum class SignatureType : u_int16_t
+     {
+         Reserved0 = 0,
+         Reserved1 = 1,
+         RsaSha512 = 2,
+         Reserved
+     };
+ 
     struct Metadata
     {
-        u_int32_t _metadataVersion;
-        u_int32_t _dpaFwType;
+        u_int32_t _metadataVersion : 16;
+        u_int32_t _reserved0 : 16;
+        u_int32_t _reserved1 : 8;
+        u_int32_t _dpaFwType : 8;
+        u_int32_t _reserved2 : 13;
+        u_int32_t _manifestPresent : 1;
+        u_int32_t _appMetadataPresent : 1;
+        u_int32_t _encParamsPresent : 1;
         u_int8_t _reserved[52];
-        u_int32_t _signatureType;
+        u_int16_t _signatureType;
     };
 
-    enum class SignatureType : u_int16_t
+    enum class AppMetadataType : u_int8_t
     {
-        RsaSha512 = 2,
-        None = 0xffff
+        APU_APP_EXTERNAL = 0,
+        Reserved1 = 1,
+        Reserved2 = 2,
+        Reserved3 = 3,
+        APU_APP_PCC = 4,
+        APU_APP_DLL = 5,
+        APU_APP_KERNEL = 6,
+        Reserved
     };
 
     CryptoDataSection(CertChain certChain);
-
     void GenerateHashListFromELF(const vector<u_int8_t>& elf);
+    void SetAppMetadata(const vector<u_int8_t>& appMetadata);
+    void SetManifest(const vector<u_int8_t>& manifest);
+    void SetManifestPresent(u_int32_t value);
+    void SetAppMetadataPresent(u_int32_t value);
+    u_int32_t GetAppMetadataPresent() const;
+    u_int32_t GetManifestPresent() const;
+    void SetEncParamsPresent(u_int32_t value);
     void Sign(const MlxSign::Signer& signer);
+    void SetSingleElfState();
     vector<u_int8_t> Serialize();
+    vector<u_int8_t> GetAppMetaData() const;
 
 private:
     Metadata _metadata;
     HashListTable _hashList;
     vector<u_int8_t> _cryptoSignature;
     CertChain _certChain;
+    vector<u_int8_t> _appMetadata;
+    vector<u_int8_t> _manifest;
+    bool _isHostElf;
 };
 
 #endif /* MLXDPA_CRYPTODATA_H_ */

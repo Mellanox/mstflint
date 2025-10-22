@@ -36,13 +36,14 @@
 #include "fs_comps_ops.h"
 #include "fs_synce_ops.h"
 #include "fs_cert_ops.h"
+#include "fs_dpa_app_ops.h"
 
 class FsCompsFactory
 {
 public:
     static bool IsFsCompsFingerPrint(u_int8_t fingerPrint[])
     {
-        if (IsSyncEOpsFingerPrint(fingerPrint) || IsCertOpsFingerPrint(fingerPrint))
+        if (IsSyncEOpsFingerPrint(fingerPrint) || IsCertOpsFingerPrint(fingerPrint)|| IsDpaAppFingerPrint(fingerPrint))
         {
             return true;
         }
@@ -69,6 +70,10 @@ public:
         {
             return new FsCertOperations(imageAccess);
         }
+        else if (IsDpaAppFingerPrint(fingerPrint))
+        {
+            return new FsDpaAppOperations(imageAccess);
+        }
 
         throw FsCompsException("Couldn't identify component in given io access");
     }
@@ -90,6 +95,14 @@ private:
         const u_int8_t expectedfingerPrint[CERT_FP_LENGTH + 1] = "CERTIFICATE.BIN!";
 
         return strncmp((const char*)fingerPrint, (const char*)expectedfingerPrint, CERT_FP_LENGTH) == 0;
+    }
+    
+    static bool IsDpaAppFingerPrint(const u_int8_t fingerPrint[])
+    {
+        static const u_int32_t DPA_APP_FP_LENGTH = 16;
+        const u_int8_t expectedfingerPrint[DPA_APP_FP_LENGTH + 1] = "NV_DPA_APP.BIN!!";
+
+        return strncmp((const char*)fingerPrint, (const char*)expectedfingerPrint, DPA_APP_FP_LENGTH) == 0;
     }
 };
 

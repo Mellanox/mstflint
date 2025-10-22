@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,11 +29,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+ #include "hostelf.h"
 
-#include <iostream>
-#include <fstream>
-#include <cstring>
-#include "hostelf.h"
+ #include <cstring>
+ #include <fstream>
+ #include <iostream>
+ 
 #include "mlxdpa_utils.h"
 
 HostElf::HostElf(string path, string outputPath) : _filePath(path), _outputPath(outputPath)
@@ -76,14 +77,16 @@ vector<AppHandle*> HostElf::GetListOfDpaApps()
     return apps;
 }
 
-vector<DevObjHandle*> HostElf::GetListOfDpaArchApps(DevObjHandle* objTable, uint64_t arch_count)
+vector<std::tuple<appArchDataHandle, appArchManifestHandle>>
+ HostElf::GetListOfDpaArchApps(appArchDataHandle objTable, uint64_t arch_count, appArchManifestHandle procAttrsTable)
 {
-    vector<DevObjHandle*> archApps;
+    vector<std::tuple<appArchDataHandle, appArchManifestHandle>> archApps;
 
     for (uint64_t i = 0; i < arch_count; i++)
     {
-        archApps.push_back(objTable);
+        archApps.push_back(std::make_tuple(objTable, procAttrsTable));
         objTable++;
+        procAttrsTable++;
     }
 
     return archApps;
@@ -94,6 +97,13 @@ vector<u_int8_t> HostElf::GetDpaApp(const DevObjHandle& app)
     auto dpaAppBegin = _data.begin() + app.offset;
     auto dpaAppEnd = dpaAppBegin + app.size;
     return vector<u_int8_t>(dpaAppBegin, dpaAppEnd);
+}
+
+vector<u_int8_t> HostElf::GetManifestDpaApp(const DevObjHandle& app)
+{
+    auto manifestDpaAppBegin = _data.begin() + app.offset;
+    auto manifestDpaAppEnd = manifestDpaAppBegin + app.size;
+    return vector<u_int8_t>(manifestDpaAppBegin, manifestDpaAppEnd);
 }
 
 void HostElf::AddSection(string sectionName, const vector<u_int8_t>& section)

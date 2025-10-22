@@ -35,17 +35,20 @@
  *      Author: Ahmad Soboh
  */
 
-#include <cstring>
-#include <string>
-#include <stdlib.h>
-#include <stdio.h>
-#include <sstream>
-#include <iostream>
-#include <fstream>
-#include <errno.h>
-#include <iomanip>
-
 #include "mft_utils.h"
+#include <cstring>
+#include <errno.h>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <sys/stat.h>
+#include <dirent.h>
+
+#define APSKU_LEN 8
 
 using namespace std;
 
@@ -194,6 +197,66 @@ bool askUser(const char* question, bool force)
     }
     return true;
 }
+ 
+bool IsFileEmpty(const std::string& filePath, bool isBin)
+{
+     std::ifstream file(filePath, isBin ? std::ios::binary : std::ios::in);
+     if (!file.is_open())
+     {
+         throw runtime_error("Can not open " + filePath + ": " + string(strerror(errno)));
+     }
+     file.seekg(0, std::ios::end);
+     return file.tellg() == 0;
+ }
+ 
+ vector<u_int8_t> ReadBinFile(string file)
+ {
+     FILE* fh;
+ 
+     if ((fh = fopen(file.c_str(), "rb")) == NULL)
+     {
+         throw runtime_error("Can not open " + file + ": " + string(strerror(errno)));
+     }
+ 
+     if (fseek(fh, 0, SEEK_END) < 0)
+     {
+         fclose(fh);
+         throw runtime_error("Failed to get size of the file " + file + ": " + string(strerror(errno)));
+     }
+ 
+     int read_file_size = ftell(fh);
+     if (read_file_size < 0)
+     {
+         fclose(fh);
+         throw runtime_error("Failed to get size of the file " + file + ": " + string(strerror(errno)));
+     }
+     rewind(fh);
+ 
+     vector<u_int8_t> buf(read_file_size);
+     if (fread(buf.data(), 1, read_file_size, fh) != (size_t)read_file_size)
+     {
+         fclose(fh);
+         throw runtime_error("Failed to read from " + file + ": " + string(strerror(errno)));
+     }
+     fclose(fh);
+ 
+     return buf;
+ }
+ 
+ void WriteToBinFile(string filePath, const std::vector<u_int8_t>& buff)
+ {
+     FILE* fh = fopen(filePath.c_str(), "wb");
+     if (fh == NULL)
+     {
+         throw runtime_error("Can not open " + filePath + ": " + string(strerror(errno)));
+     }
+     if (fwrite(&buff[0], 1, buff.size(), fh) != buff.size())
+     {
+         fclose(fh);
+         throw runtime_error("Failed to write to " + filePath + ": " + string(strerror(errno)));
+     }
+     fclose(fh);
+}
 
 vector<u_int8_t> ReadFromFile(string filename)
 {
@@ -209,6 +272,47 @@ vector<u_int8_t> ReadFromFile(string filename)
     return vector<u_int8_t>((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 }
 
+ std::vector<uint8_t> HexStringToBytes(const std::vector<uint8_t>& keyBytes)
+ {
+     std::vector<uint8_t> bytes;
+ 
+     if (keyBytes.size() % 2 != 0)
+     {
+         throw runtime_error("Key data has an odd length.");
+     }
+ 
+     for (size_t i = 0; i < keyBytes.size(); i += 2)
+     {
+         std::string byteString{static_cast<char>(keyBytes[i]), static_cast<char>(keyBytes[i + 1])};
+         uint8_t byte = static_cast<uint8_t>(std::stoul(byteString, nullptr, 16));
+         bytes.push_back(byte);
+     }
+ 
+     return bytes;
+ }
+ 
+ vector<u_int8_t> HexStringToBytes(const string& str)
+ {
+     vector<u_int8_t> bytes;
+     if (str.length() % 2)
+     {
+         throw runtime_error("given string is not a valid hex number");
+     }
+     for (size_t i = 0; i < str.length(); i += 2)
+     {
+         u_int8_t byte = static_cast<u_int8_t>(std::stoul(str.substr(i, 2).c_str(), nullptr, 16));
+         bytes.push_back(byte);
+     }
+     return bytes;
+ }
+ 
+ string ToHexString(u_int32_t value, u_int8_t width)
+ {
+     std::stringstream ss;
+     ss << "0x" << std::hex << std::setw(width) << std::setfill('0') << value;
+     return ss.str();
+ }
+ 
 string ToHexString(const vector<u_int8_t>& vec)
 {
     std::ostringstream oss;
@@ -218,7 +322,39 @@ string ToHexString(const vector<u_int8_t>& vec)
     }
     return oss.str();
 }
-
+ 
+ std::string ToString(const uint32_t* data, size_t wordCount, bool stayInHex)
+ {
+     std::ostringstream oss;
+ 
+     for (size_t i = 0; i < wordCount; ++i)
+     {
+         uint32_t num = data[i];
+ 
+         uint8_t bytes[4] = {static_cast<uint8_t>((num >> 24) & 0xFF), static_cast<uint8_t>((num >> 16) & 0xFF),
+                             static_cast<uint8_t>((num >> 8) & 0xFF), static_cast<uint8_t>(num & 0xFF)};
+ 
+         for (int k = 0; k < 4; ++k)
+         {
+             uint8_t b = bytes[k];
+             if (stayInHex)
+             {
+                 oss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(b);
+             }
+             else
+             {
+                 if (b == 0)
+                     continue;
+                 oss << static_cast<char>(b);
+             }
+         }
+     }
+ 
+     if (stayInHex)
+         oss << std::dec;
+     return oss.str();
+ }
+ 
 vector<u_int8_t> ToVector(const u_int32_t* arr, size_t size)
 {
     vector<u_int8_t> vec;
@@ -237,6 +373,36 @@ vector<u_int8_t> ToVector(const u_int32_t* arr, size_t size)
         }
     }
     return vec;
+}
+
+bool ToVector(string& str, vector<u_int8_t>& vec)
+ {
+     if (str.length() % 2 != 0)
+     {
+         return false;
+     }
+ 
+     vec.clear();
+     for (size_t i = 0; i < str.length(); i += 2)
+     {
+         string byteString = str.substr(i, 2);
+         uint8_t byte = static_cast<uint8_t>(std::stoi(byteString, nullptr, 16));
+         vec.push_back(byte);
+     }
+     return true;
+ }
+ 
+ std::vector<u_int32_t> Uuid2Dword(const std::string& uuid_str)
+ {
+     std::vector<u_int32_t> uuid;
+     uuid.resize(4);
+ 
+     for (int i = 0; i < 4; ++i)
+     {
+         std::string chunk = uuid_str.substr(i * 8, 8);
+         uuid[i] = (u_int32_t)strtoul(chunk.c_str(), nullptr, 16);
+     }
+     return uuid;
 }
 
 } // namespace mft_utils

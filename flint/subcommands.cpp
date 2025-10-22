@@ -54,6 +54,7 @@
 #include <fw_comps_mgr/fw_comps_mgr.h>
 #include <mlxfwops/lib/fw_version.h>
 #include "mlxfwops/lib/components/fs_synce_ops.h"
+#include "mlxfwops/lib/components/fs_dpa_app_ops.h"
 #include "hex64.h"
 #include "dev_mgt/tools_dev_types.h"
 #include "common/tools_time.h"
@@ -5333,6 +5334,7 @@ QueryComponentSubCommand::QueryComponentSubCommand()
     _param = "";
     _paramExp = "None";
     _example =  FLINT_NAME " -d /dev/mst/mt53100_pciconf0 --component_type sync_clock query_components\n" FLINT_NAME
+                           " -d /dev/mst/mt53100_pciconf0 --component_type dpa_component query_components\n"
                  " -d /dev/mst/mt4129_pciconf1 --component_type digital_cacert query_components /tmp/outfile\n";
     _v = Wtv_Dev;
     _maxCmdParamNum = 1;
@@ -5359,6 +5361,9 @@ FlintStatus QueryComponentSubCommand::executeCommand()
                 break;
             case FwComponent::DIGITAL_CACERT:
                 rc = QueryCertStatus();
+                break;
+            case FwComponent::DPA_COMPONENT:
+                rc = QueryDpaApps();
                 break;
             case FwComponent::COMPID_UNKNOWN:
             default:
@@ -5419,6 +5424,29 @@ FlintStatus QueryComponentSubCommand::querySyncE()
     FsSyncEOperations::PrintComponentData(firstDeviceData, 1);
     FsSyncEOperations::PrintComponentData(secondDeviceData, 2);
 
+    return FLINT_SUCCESS;
+}
+
+FlintStatus QueryComponentSubCommand::QueryDpaApps()
+{
+#ifndef MST_CPU_armv7l_umbriel // {
+
+    vector<u_int8_t> dpaAppsRawData;
+    u_int32_t dpaAppIndex = 0;
+    if (!_fwOps->QueryComponentData(FwComponent::DPA_COMPONENT, dpaAppIndex, dpaAppsRawData))
+    {
+        reportErr(true, "Failed to query DPA component data.\n");
+        return FLINT_FAILED;
+    }
+    unique_ptr<FsDpaAppOperations> FsDpaAppOps(new FsDpaAppOperations(dpaAppsRawData));
+
+    if (!FsDpaAppOps->PrintQuery())
+    {
+        reportErr(true, "%s\n", FsDpaAppOps->err());
+        return FLINT_FAILED;
+    }
+
+#endif // } MST_CPU_armv7l_umbriel
     return FLINT_SUCCESS;
 }
 

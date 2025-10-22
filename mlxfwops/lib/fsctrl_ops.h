@@ -158,7 +158,12 @@ private:
     bool GetFS5HWPointers(fs5_image_layout_hw_pointers_gilboa& hw_pointers);
     bool GetNcoreBCHAddr(u_int32_t& ncoreBchAddr);
     bool GetNcoreSize(u_int32_t ncoreBchAddr, u_int32_t& size);
-
+    bool GetAllDpaAppsMetadataFromMcqi(FwComponent::comps_ids_t comp,
+        vector<u_int8_t>& data,
+        const u_int32_t firstDpaAppIndex);
+    bool QueryDpaAppMetadataFromMcqi(FwComponent::comps_ids_t comp,
+      reg_access_hca_mcqi_dpa_apps_info_ext& mcqiDpaApps,
+      const u_int32_t deviceIndex);
 
     fs3_info_t _fsCtrlImgInfo;
     FwCompsMgr* _fwCompsAccess;

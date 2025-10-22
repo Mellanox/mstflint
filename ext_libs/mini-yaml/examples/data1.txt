@@ -1,0 +1,36 @@
+server:
+    max_connections:       512
+    com_port:              230
+services:
+    - enabled:             true
+      name:                service 1
+      protocol:            tcp
+      host:                127.0.0.1
+      port:                80
+      balancing:           round robin
+      max_connections:     5
+      session:             24s
+      buffer:
+            size:          8000
+            count:         128
+      nodes:
+          - name:          example.com
+            protocol:      tcp
+            host:          93.184.216.34
+            port:          80
+
+          - name:          example.org
+            protocol:      tcp
+            host:          93.184.216.34
+            port:          80
+    - name:                service 2
+      protocol:            tcp
+      host:                127.0.0.1
+      port:                8080
+      nodes:
+          - name:          example.com
+            protocol:      tcp
+            host:          93.184.216.34
+            port:          80
+
+            
