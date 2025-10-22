@@ -2479,7 +2479,7 @@ u_int32_t supported_device_ids[] =
  DeviceBaritone_HwId,         DeviceMenhit_HwId,         DeviceArcusPTC_HwId,
  DeviceArcusP_HwId,           DeviceArcusE_HwId,         DeviceSecureHost_HwId,
  DeviceSpectrum3_HwId,        DeviceSpectrum4_HwId,      DeviceGearBox_HwId,
- DeviceGearBoxManager_HwId,   DeviceAbirGearBox_HwId,    DeviceGB100_HwId,
+ DeviceGearBoxManager_HwId,   DeviceAbirGearBox_HwId,    DeviceGB100_HwId, DeviceGR100_HwId,
  DeviceConnectX8_Pure_PCIe_Switch_HwId, DeviceConnectX9_HwId, DeviceConnectX9_Pure_PCIe_Switch_HwId};
 #define SUPPORTED_DEVICE_ID_TABLE_SIZE (sizeof(supported_device_ids) / sizeof(u_int32_t))
 
@@ -2860,6 +2860,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0x197d, /* Connect-X8 Bridge */
                                    0x197e, /* Connect-X9 Bridge */
                                    0x2900, /* GB100 */
+                                   0x3000, /* GR100 */
                                    0xd2f4, /* Sunbird */
                                    -1};
 
