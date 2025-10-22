@@ -116,25 +116,29 @@ typedef enum
 
 /*
  * Debug print MACRO of the NV Tlvs:
+ * do { ... } while (0) makes multi-statement macros safer
  */
-// #define _ENABLE_DEBUG_
-#ifdef _ENABLE_DEBUG_
-#define DEBUG_PRINT_SEND(data_struct, struct_name) \
-    printf("-I- Data Sent:\n");                    \
-    tools_open_##struct_name##_print(data_struct, stdout, 1)
-#define DEBUG_PRINT_RECEIVE(data_struct, struct_name) \
-    printf("-I- Data Received:\n");                   \
-    tools_open_##struct_name##_print(data_struct, stdout, 1)
-#else
-#define DEBUG_PRINT_SEND(data_struct, struct_name)
-#define DEBUG_PRINT_RECEIVE(data_struct, struct_name)
-#endif
+bool mlxcfg_is_debug_enabled();
 
-#define CHECK_RC(rc) \
-    if (rc)          \
-    {                \
-        return rc;   \
-    }
+#define DEBUG_PRINT_SEND(data_struct, struct_name)                    \
+    do                                                                \
+    {                                                                 \
+        if (mlxcfg_is_debug_enabled())                                \
+        {                                                             \
+            printf("-I- Data Sent:\n");                               \
+            tools_open_##struct_name##_print(data_struct, stdout, 1); \
+        }                                                             \
+    } while (0)
+
+#define DEBUG_PRINT_RECEIVE(data_struct, struct_name)                 \
+    do                                                                \
+    {                                                                 \
+        if (mlxcfg_is_debug_enabled())                                \
+        {                                                             \
+            printf("-I- Data Received:\n");                           \
+            tools_open_##struct_name##_print(data_struct, stdout, 1); \
+        }                                                             \
+    } while (0)
 
 #define MLXCFG_UNKNOWN 0xffffffff
 
@@ -151,11 +155,12 @@ MError mnvaCom5thGen(mfile* mf,
                      u_int16_t len,
                      u_int32_t tlvType,
                      reg_access_method_t method,
-                     QueryType qT = QueryNext);
+                     QueryType qT = QueryNext,
+                     bool is_host_id_valid = false);
 
 MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite, u_int32_t& version);
 
-MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType);
+MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType, bool is_host_id_valid = false);
 
 bool strToNum(std::string str, u_int32_t& num, int base = 0);
 

@@ -436,7 +436,8 @@ void MlnxDev::setDeviceType(void)
     {
         try
         {
-            _commander = Commander::create(mf, "");
+            string dbName = "";
+            _commander = Commander::create(mf, dbName);
         }
         catch (MlxcfgException& e)
         {

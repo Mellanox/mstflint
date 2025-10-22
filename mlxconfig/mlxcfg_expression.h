@@ -51,11 +51,11 @@ namespace mlxcfg
 class Expression
 {
 private:
-    string _expression;
     vector<string> _vars;
     map<string, double> _varsVal;
 
 public:
+    string _expression;
     explicit Expression(const string& expression);
     void getVars(vector<string>& vars) const;
     double getVarVal(const string& var) const;

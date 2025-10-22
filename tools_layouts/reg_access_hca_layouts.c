@@ -3630,6 +3630,47 @@ void reg_access_hca_mmdio_ext_dump(const struct reg_access_hca_mmdio_ext *ptr_st
 	reg_access_hca_mmdio_ext_print(ptr_struct, fd, 0);
 }
 
+void reg_access_hca_mmhi_reg_ext_pack(const struct reg_access_hca_mmhi_reg_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 56;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->host_number);
+	offset = 80;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->host_en);
+}
+
+void reg_access_hca_mmhi_reg_ext_unpack(struct reg_access_hca_mmhi_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 56;
+	ptr_struct->host_number = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 80;
+	ptr_struct->host_en = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+}
+
+void reg_access_hca_mmhi_reg_ext_print(const struct reg_access_hca_mmhi_reg_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_mmhi_reg_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "host_number          : " UH_FMT "\n", ptr_struct->host_number);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "host_en              : " UH_FMT "\n", ptr_struct->host_en);
+}
+
+unsigned int reg_access_hca_mmhi_reg_ext_size(void)
+{
+	return REG_ACCESS_HCA_MMHI_REG_EXT_SIZE;
+}
+
+void reg_access_hca_mmhi_reg_ext_dump(const struct reg_access_hca_mmhi_reg_ext *ptr_struct, FILE *fd)
+{
+	reg_access_hca_mmhi_reg_ext_print(ptr_struct, fd, 0);
+}
+
 void reg_access_hca_mnvdi_reg_ext_pack(const struct reg_access_hca_mnvdi_reg_ext *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -4265,6 +4306,118 @@ void reg_access_hca_mpir_ext_dump(const struct reg_access_hca_mpir_ext *ptr_stru
 	reg_access_hca_mpir_ext_print(ptr_struct, fd, 0);
 }
 
+void reg_access_hca_mpqd_reg_ext_pack(const struct reg_access_hca_mpqd_reg_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->node);
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->pcie_index);
+	offset = 2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 6, (u_int32_t)ptr_struct->depth);
+	offset = 1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->DPNv);
+	offset = 56;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->requester_pcie_index);
+	offset = 48;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->max_valid_pcie_index);
+	offset = 40;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->max_exist_depth);
+	offset = 32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->is_internal);
+	offset = 88;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->number_of_nodes);
+	offset = 87;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->node_phy);
+	offset = 64;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->valid_index);
+	offset = 127;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->valid_node);
+	offset = 126;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->DSP_node);
+	offset = 112;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->parent_node_number);
+}
+
+void reg_access_hca_mpqd_reg_ext_unpack(struct reg_access_hca_mpqd_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	ptr_struct->node = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 8;
+	ptr_struct->pcie_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 2;
+	ptr_struct->depth = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 6);
+	offset = 1;
+	ptr_struct->DPNv = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 56;
+	ptr_struct->requester_pcie_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 48;
+	ptr_struct->max_valid_pcie_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 40;
+	ptr_struct->max_exist_depth = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 32;
+	ptr_struct->is_internal = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 88;
+	ptr_struct->number_of_nodes = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 87;
+	ptr_struct->node_phy = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 64;
+	ptr_struct->valid_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 127;
+	ptr_struct->valid_node = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 126;
+	ptr_struct->DSP_node = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 112;
+	ptr_struct->parent_node_number = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+}
+
+void reg_access_hca_mpqd_reg_ext_print(const struct reg_access_hca_mpqd_reg_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_mpqd_reg_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "node                 : " UH_FMT "\n", ptr_struct->node);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "pcie_index           : " UH_FMT "\n", ptr_struct->pcie_index);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "depth                : " UH_FMT "\n", ptr_struct->depth);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "DPNv                 : %s (" UH_FMT ")\n", (ptr_struct->DPNv == 0 ? ("multi_topology_unaware_sw") : ((ptr_struct->DPNv == 1 ? ("multi_topology_aware_sw") : ("unknown")))), ptr_struct->DPNv);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "requester_pcie_index : " UH_FMT "\n", ptr_struct->requester_pcie_index);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "max_valid_pcie_index : " UH_FMT "\n", ptr_struct->max_valid_pcie_index);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "max_exist_depth      : " UH_FMT "\n", ptr_struct->max_exist_depth);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "is_internal          : " UH_FMT "\n", ptr_struct->is_internal);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "number_of_nodes      : " UH_FMT "\n", ptr_struct->number_of_nodes);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "node_phy             : " UH_FMT "\n", ptr_struct->node_phy);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "valid_index          : " UH_FMT "\n", ptr_struct->valid_index);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "valid_node           : " UH_FMT "\n", ptr_struct->valid_node);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "DSP_node             : " UH_FMT "\n", ptr_struct->DSP_node);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "parent_node_number   : " UH_FMT "\n", ptr_struct->parent_node_number);
+}
+
+unsigned int reg_access_hca_mpqd_reg_ext_size(void)
+{
+	return REG_ACCESS_HCA_MPQD_REG_EXT_SIZE;
+}
+
+void reg_access_hca_mpqd_reg_ext_dump(const struct reg_access_hca_mpqd_reg_ext *ptr_struct, FILE *fd)
+{
+	reg_access_hca_mpqd_reg_ext_print(ptr_struct, fd, 0);
+}
 void reg_access_hca_mqis_reg_ext_pack(const struct reg_access_hca_mqis_reg_ext *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;

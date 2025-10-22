@@ -55,6 +55,18 @@
 
 #include "common/tools_regex.h"
 using namespace std;
+#include <cstdlib>
+
+bool mlxcfg_is_debug_enabled()
+{
+    static int debug_enabled = -1;
+    if (debug_enabled == -1)
+    {
+        const char* env_val = getenv("MLXCONFIG_DEBUG");
+        debug_enabled = (env_val != NULL) && (env_val[0] != '\0') && (env_val[0] != '0') ? 1 : 0;
+    }
+    return debug_enabled;
+}
 
 typedef struct reg_access_hca_mqis_reg_ext mqisReg;
 #define MAX_REG_DATA 128
@@ -76,8 +88,13 @@ void dealWithSignal()
     return;
 }
 
-MError
-  mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, QueryType qT)
+MError mnvaCom5thGen(mfile* mf,
+                     u_int8_t* buff,
+                     u_int16_t len,
+                     u_int32_t tlvType,
+                     reg_access_method_t method,
+                     QueryType qT,
+                     bool is_host_id_valid)
 {
     struct tools_open_mnvda mnvaTlv;
     memset(&mnvaTlv, 0, sizeof(struct tools_open_mnvda));
@@ -93,6 +110,7 @@ MError
     mnvaTlv.nv_hdr.rd_en = 0;
     mnvaTlv.nv_hdr.over_en = 1;
     mnvaTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG;
+    mnvaTlv.nv_hdr.writer_host_id = is_host_id_valid ? 1 : 0;
     if (qT == QueryDefault)
     {
         mnvaTlv.nv_hdr.default_ = 1;
@@ -107,9 +125,9 @@ MError
     MError rc;
     // "suspend" signals as we are going to take semaphores
     mft_signal_set_handling(1);
-    // DEBUG_PRINT_SEND(&mnvaTlv, nvda);
+    DEBUG_PRINT_SEND(&mnvaTlv, mnvda);
     rc = reg_access_mnvda(mf, method, &mnvaTlv);
-    // DEBUG_PRINT_RECEIVE(&mnvaTlv, nvda);
+    DEBUG_PRINT_RECEIVE(&mnvaTlv, mnvda);
     dealWithSignal();
     if (rc)
     {
@@ -138,11 +156,12 @@ MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWri
     suppRead = nvqcTlv.support_rd;
     suppWrite = nvqcTlv.support_wr;
     version = nvqcTlv.version;
+
     // printf("-D- nvqcTlv.support_rd=%d nvqcTlv.support_wr=%d\n", nvqcTlv.support_rd, nvqcTlv.support_wr);
     return ME_OK;
 }
 
-MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
+MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType, bool is_host_id_valid)
 {
     struct tools_open_mnvdi mnvdiTlv;
     memset(&mnvdiTlv, 0, sizeof(struct tools_open_mnvdi));
@@ -150,15 +169,16 @@ MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
     mnvdiTlv.nv_hdr.rd_en = 0;
     mnvdiTlv.nv_hdr.over_en = 1;
     mnvdiTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG;
+    mnvdiTlv.nv_hdr.writer_host_id = is_host_id_valid ? 1 : 0;
     // tlvType should be in the correct endianess
     mnvdiTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(tlvType);
 
     MError rc;
     // "suspend" signals as we are going to take semaphores
     mft_signal_set_handling(1);
-    // DEBUG_PRINT_SEND(&mnvdiTlv, mnvdi);
+    DEBUG_PRINT_SEND(&mnvdiTlv, mnvdi);
     rc = reg_access_mnvdi(mf, REG_ACCESS_METHOD_SET, &mnvdiTlv);
-    // DEBUG_PRINT_RECEIVE(&mnvdiTlv, mnvdi);
+    DEBUG_PRINT_RECEIVE(&mnvdiTlv, mnvdi);
     dealWithSignal();
     if (rc)
     {
