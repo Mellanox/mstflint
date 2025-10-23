@@ -36,14 +36,20 @@
 #include "fs_comps_ops.h"
 #include "fs_synce_ops.h"
 #include "fs_cert_ops.h"
+#if ENABLE_DPA
 #include "fs_dpa_app_ops.h"
+#endif
 
 class FsCompsFactory
 {
 public:
     static bool IsFsCompsFingerPrint(u_int8_t fingerPrint[])
     {
-        if (IsSyncEOpsFingerPrint(fingerPrint) || IsCertOpsFingerPrint(fingerPrint)|| IsDpaAppFingerPrint(fingerPrint))
+        if (IsSyncEOpsFingerPrint(fingerPrint) || IsCertOpsFingerPrint(fingerPrint)
+        #if ENABLE_DPA
+                || IsDpaAppFingerPrint(fingerPrint)
+        #endif
+               )        
         {
             return true;
         }
@@ -70,10 +76,12 @@ public:
         {
             return new FsCertOperations(imageAccess);
         }
+        #if ENABLE_DPA
         else if (IsDpaAppFingerPrint(fingerPrint))
         {
             return new FsDpaAppOperations(imageAccess);
         }
+        #endif
 
         throw FsCompsException("Couldn't identify component in given io access");
     }
@@ -97,6 +105,7 @@ private:
         return strncmp((const char*)fingerPrint, (const char*)expectedfingerPrint, CERT_FP_LENGTH) == 0;
     }
     
+    #if ENABLE_DPA
     static bool IsDpaAppFingerPrint(const u_int8_t fingerPrint[])
     {
         static const u_int32_t DPA_APP_FP_LENGTH = 16;
@@ -104,6 +113,7 @@ private:
 
         return strncmp((const char*)fingerPrint, (const char*)expectedfingerPrint, DPA_APP_FP_LENGTH) == 0;
     }
+    #endif
 };
 
 #endif /* FS_COMPS_FACTORY */
