@@ -2246,7 +2246,7 @@ void MlxlinkCommander::supportedInfoPage()
         value << "0x" << std::hex << setfill('0') << setw(8) << _protoCapability << " (" << supported_speeds << ")"
               << setfill(' ');
         title = "Supported Cable Speed" + extStr;
-        if (isBackplane())
+        if (isBackplane() || _isSwControled)
         {
             setPrintVal(_supportedInfoCmd, title, "N/A", ANSI_COLOR_RED, true, !_prbsTestMode, true);
         }
