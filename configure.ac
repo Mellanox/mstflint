@@ -791,6 +791,8 @@ AC_OUTPUT( \
     dev_mgt/Makefile \
     ext_libs/Makefile \
     ext_libs/json/Makefile \
+    ext_libs/mini-yaml/Makefile \
+    ext_libs/sole/Makefile \
     ext_libs/minixz/Makefile \
     ext_libs/muparser/Makefile \
     ext_libs/sqlite/Makefile \

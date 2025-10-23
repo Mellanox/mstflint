@@ -5362,9 +5362,11 @@ FlintStatus QueryComponentSubCommand::executeCommand()
             case FwComponent::DIGITAL_CACERT:
                 rc = QueryCertStatus();
                 break;
+            #if ENABLE_DPA
             case FwComponent::DPA_COMPONENT:
                 rc = QueryDpaApps();
                 break;
+            #endif
             case FwComponent::COMPID_UNKNOWN:
             default:
                 reportErr(true, "Unknown component type given.\n");
@@ -5429,6 +5431,7 @@ FlintStatus QueryComponentSubCommand::querySyncE()
 
 FlintStatus QueryComponentSubCommand::QueryDpaApps()
 {
+#if ENABLE_DPA
 #ifndef MST_CPU_armv7l_umbriel // {
 
     vector<u_int8_t> dpaAppsRawData;
@@ -5447,6 +5450,10 @@ FlintStatus QueryComponentSubCommand::QueryDpaApps()
     }
 
 #endif // } MST_CPU_armv7l_umbriel
+#else
+    reportErr(true, "DPA support is not enabled in this build.\n");
+    return FLINT_FAILED;
+#endif // ENABLE_DPA
     return FLINT_SUCCESS;
 }
 
