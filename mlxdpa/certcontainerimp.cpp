@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,13 +30,13 @@
  * SOFTWARE.
  */
 
-#include "certcontainerimp.h"
-#include "mlxdpa_utils.h"
 #include <string.h>
+#include "certcontainerimp.h"
 #include "mft_utils/mft_utils.h"
 
-CACertMetaData::CACertMetaData(u_int32_t certUUID[4], u_int32_t keypairUUID[4]) : _dpaRotEn(1)
+CACertMetaData::CACertMetaData(u_int32_t certUUID[4], u_int32_t keypairUUID[4], u_int8_t keepSig) : _dpaRotEn(1)
 {
+    _keep_sig = keepSig;
     _certUUID = mft_utils::ToVector(certUUID, 4);
     _keypairUUID = mft_utils::ToVector(keypairUUID, 4);
 }
@@ -49,6 +49,7 @@ vector<u_int8_t> CACertMetaData::Serialize()
     copy(_keypairUUID.begin(), _keypairUUID.end(), serializedData.begin() + GetSize() - _keypairUUID.size());
 
     serializedData[0x12] |= (_dpaRotEn << 5); // dpa_rot_en is bit 21 at offset 0x10 -> byte 0x12, bit 5
+    serializedData[0x10] |= (_keep_sig << 4); // keep_sig is bit 4 at offset 0x10 -> byte 0x11, bit 3
 
     return serializedData;
 }
@@ -63,7 +64,8 @@ void CACertMetaData::Deserialize(vector<u_int8_t> buf)
     _keypairUUID.reserve(_keypairUUIDSize);
     copy(buf.begin() + GetSize() - _keypairUUIDSize, buf.begin() + GetSize(), std::back_inserter(_keypairUUID));
 
-    _dpaRotEn = (buf[0x11] >> 5) & 0x1;      // This key can be used for authenticating DPA app code.
+    _dpaRotEn = (buf[0x11] >> 5) & 0x1; // This key can be used for authenticating DPA app code.
+    _keep_sig = (buf[0x13] >> 4) & 0x1;
     _targetingType = (buf[0x13] >> 4) & 0xf; // type of targeting used in this certificate.
 }
 

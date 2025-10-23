@@ -109,5 +109,8 @@ libmlxfwops_a_SOURCES = \
 
 if ENABLE_DPA
 AM_CXXFLAGS += -DENABLE_DPA
+libmlxfwops_a_SOURCES += \
+    components/fs_dpa_app_ops.cpp \
+    components/fs_dpa_app_ops.h
 libmlxfwops_a_DEPENDENCIES = $(top_builddir)/mlxdpa/libmstdpa.a
 endif

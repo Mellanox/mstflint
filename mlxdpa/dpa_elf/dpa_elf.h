@@ -1,34 +1,16 @@
 /*
- * Copyright(c) 2025 NVIDIA CORPORATION & AFFILIATES.All rights reserved.
+ * NVIDIA_COPYRIGHT_BEGIN
  *
- * This software is available to you under a choice of one of two
- * licenses.You may choose to be licensed under the terms of the GNU
- * General Public License(GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ * Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
+ * NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+ * property and proprietary rights in and to this material, related
+ * documentation and any modifications thereto. Any use, reproduction,
+ * disclosure or distribution of this material and related documentation
+ * without an express license agreement from NVIDIA CORPORATION or
+ * its affiliates is strictly prohibited.
  *
- * -Redistributions of source code must retain the above
- * copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- * -Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and / or other materials
- * provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
+ * NVIDIA_COPYRIGHT_END
  */
 
 #include <stdio.h>
@@ -37,6 +19,7 @@
 #define DPA_OBJ_SECTION_NAME          ".dpa_obj"
 #define DPA_BIN_SECTION_PREFIX        ".dpa_bin_"
 #define DPA_SIG_SECTION_PREFIX        ".dpa_sig_"
+#define DPA_PROC_ATTR_SECTION_PREFIX  ".dpa_proc_attr_"
 
 
 #define DPA_SIG_SECTION_DEFAULT_LEN 65536
@@ -68,6 +51,9 @@ typedef struct {
   char*         name;
   uint64_t      arch_count;
   DevObjHandle* ObjTable;
+  // List of process attributes blobs for each architecture.
+  // It shall be NULL if the process attributes are not present in the file.
+  DevObjHandle* ProcAttrsTable;
 } AppHandle;
 
 typedef struct {

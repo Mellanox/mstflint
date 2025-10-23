@@ -582,6 +582,22 @@ int ptysSpeedToExtMaskETH(const string& speed)
     {
         return ETH_LINK_SPEED_EXT_800GAUI_8;
     }
+    if (speed == "200G_1X")
+    {
+        return ETH_LINK_SPEED_EXT_200GAUI_1;
+    }
+    if (speed == "400G_2X")
+    {
+        return ETH_LINK_SPEED_EXT_400GAUI_2;
+    }
+    if (speed == "800G_4X")
+    {
+        return ETH_LINK_SPEED_EXT_800GAUI_4;
+    }
+    if (speed == "1600G_8X")
+    {
+        return ETH_LINK_SPEED_EXT_1_6TAUI_8;
+    }
     return 0x0;
 }
 

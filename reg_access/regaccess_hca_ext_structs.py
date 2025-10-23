@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2025-07-08 11:28:45"
+#    This file was generated at "2025-09-25 10:03:58"
 #    by:
 #      > prm_update.py --project Nic
 ###############################################################################
@@ -45,6 +45,24 @@ import platform
 
 import mtcr
 
+
+class MPQD_REG_EXT(ctypes.Structure):
+    _fields_ = [
+        ("node", ctypes.c_uint8),
+        ("pcie_index", ctypes.c_uint8),
+        ("depth", ctypes.c_uint8),
+        ("DPNv", ctypes.c_uint8),
+        ("requester_pcie_index", ctypes.c_uint8),
+        ("max_valid_pcie_index", ctypes.c_uint8),
+        ("max_exist_depth", ctypes.c_uint8),
+        ("is_internal", ctypes.c_uint8),
+        ("number_of_nodes", ctypes.c_uint8),
+        ("node_phy", ctypes.c_uint8),
+        ("valid_index", ctypes.c_uint8),
+        ("valid_node", ctypes.c_uint8),
+        ("DSP_node", ctypes.c_uint8),
+        ("parent_node_number", ctypes.c_uint8)
+    ]
 
 class MPIR_EXT(ctypes.Structure):
     _fields_ = [
@@ -351,6 +369,7 @@ class NIC_CAP_EXT_DPA_CAP(ctypes.Structure):
         ("max_num_dpa_eu_per_group", ctypes.c_uint16),
         ("dpa_perf_sample_type", ctypes.c_uint8),
         ("max_num_partition_vhca_id", ctypes.c_uint16),
+        ("nic_dpa_self_host_app_mgmt", ctypes.c_uint8),
         ("dpa_partition_eug", ctypes.c_uint8),
         ("process_perf_cnt", ctypes.c_uint8)
     ]
@@ -366,7 +385,8 @@ class NIC_CAP_EXT_DIAG_DATA_CAP(ctypes.Structure):
         ("data_clear", ctypes.c_uint8),
         ("max_log_num_sample", ctypes.c_uint8),
         ("log_max_num_data_id", ctypes.c_uint8),
-        ("data_timestamp_source", ctypes.c_uint8)
+        ("data_timestamp_source", ctypes.c_uint8),
+        ("diag_data_domain_max", ctypes.c_uint8)
     ]
 
 class NIC_CAP_EXT_REG_CAP_DATA_AUTO(ctypes.Union):

@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2025-07-06 09:51:35"
+         *** This file was generated at "2025-08-31 12:57:04"
          *** by:
          ***    > adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o tools_layouts
          ***/
@@ -134,7 +134,7 @@ Note: this bit is not an indication to validity of the fields related to the spe
 	u_int8_t max_cmd_read_size_supp;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Device type ASCII name. Up to 8 chars
- */
+	*/
 	/* 0x10.24 - 0x18.23 */
 	/* access: RO */
 	u_int8_t device_type_name[8];
@@ -180,7 +180,7 @@ Valid only when active or lc_ready are '1'. */
 0x00: Buffalo 4x400G
 0x01: Buffalo 8x200G
 0x02: Buffalo 16x100G
- */
+	*/
 	/* 0x8.0 - 0x8.7 */
 	/* access: RO */
 	u_int8_t card_type;
@@ -191,7 +191,7 @@ Valid only when active or lc_ready are '1'. */
 struct reg_access_switch_mddq_slot_name_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Slot's ASCII name. Up to 20 chars
- */
+	*/
 	/* 0x0.24 - 0x14.23 */
 	/* access: RO */
 	u_int8_t slot_ascii_name[20];
@@ -310,6 +310,77 @@ union reg_access_switch_mddt_reg_payload_auto_ext {
 };
 
 /* Description -   */
+/* Size in bytes - 32 */
+struct reg_access_switch_mgpir_hw_info_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Number of devices of device_type. 
+	*/
+	/* 0x0.0 - 0x0.7 */
+	/* access: RO */
+	u_int8_t num_of_devices;
+	/* Description - Total number of modules within the specific ASIC.
+
+Note: 
+For multi ASIC platforms, this field will provide the total number of modules for all ASICs combined together.
+For single ASIC platforms, the value will be the same as numfer_of_modules
+For QM-3 CPO (Taipan), return the total num of ELS and OE_MCU together. First indexes represent the OE and the higher indexes are assigned to ELS modules. */
+	/* 0x0.8 - 0x0.15 */
+	/* access: RO */
+	u_int8_t num_of_modules_per_system;
+	/* Description - Number of devices of device_type per flash. 
+	*/
+	/* 0x0.16 - 0x0.23 */
+	/* access: RO */
+	u_int8_t devices_per_flash;
+	/* Description - Device type.
+0: No devices on system of that type.
+1: Gearbox 
+2: Tiles
+3: No Info Available
+4: XM */
+	/* 0x0.24 - 0x0.27 */
+	/* access: RO */
+	u_int8_t device_type;
+	/* Description - Slot index
+0: Main board */
+	/* 0x0.28 - 0x0.31 */
+	/* access: INDEX */
+	u_int8_t slot_index;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Number of modules within the specific ASIC.
+	*/
+	/* 0x4.0 - 0x4.7 */
+	/* access: RO */
+	u_int8_t num_of_modules;
+	/* Description - Number of slots in the system. To eliminate receiving 'bad param' status, the user should query that field with slot_index set to 0. */
+	/* 0x4.8 - 0x4.15 */
+	/* access: RO */
+	u_int8_t num_of_slots;
+	/* Description - Maximum number of modules that can be connected per slot. Includes internal and external modules. */
+	/* 0x4.16 - 0x4.23 */
+	/* access: RO */
+	u_int8_t max_modules_per_slot;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Num of Resource Modules. 
+Value of 0xff..ff means not valid.
+	*/
+	/* 0x8.0 - 0x8.7 */
+	/* access: RO */
+	u_int8_t num_of_resource_modules;
+	/* Description - Maximum lane count per submodule */
+	/* 0x8.16 - 0x8.19 */
+	/* access: RO */
+	u_int8_t num_lanes_per_sub_module;
+	/* Description - The maximum submodule index.
+0: Only one submodule 3: Four submodules
+
+Other values are reserved */
+	/* 0x8.24 - 0x8.27 */
+	/* access: RO */
+	u_int8_t max_sub_modules_index;
+};
+
+/* Description -   */
 /* Size in bytes - 8 */
 struct reg_access_switch_uint64 {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -317,6 +388,56 @@ struct reg_access_switch_uint64 {
 	/* 0x0.0 - 0x4.31 */
 	/* access: RW */
 	u_int64_t uint64;
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct reg_access_switch_MMAM_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - (Global) Module number
+Switch: Range 0 .. MGPIR.max_modules_per_slot -1
+	*/
+	/* 0x0.16 - 0x0.23 */
+	/* access: INDEX */
+	u_int8_t module;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Geographical Address of the ASIC which controls the module
+
+Reserved when module type is chip2chip or backplane. */
+	/* 0x4.0 - 0x4.3 */
+	/* access: RO */
+	u_int8_t ga;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Local module number */
+	/* 0x8.0 - 0x8.7 */
+	/* access: RO */
+	u_int8_t local_module;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - module_type:
+0: Backplane_with_4_lanes
+1: QSFP
+2: SFP
+3: No_Cage
+4: Backplane_with_single_lane
+8: Backplane_with_two_lanes
+10: Chip2Chip4x
+11: Chip2Chip2x
+12: Chip2Chip1x
+14: QSFP_DD
+15: OSFP
+16: SFP_DD
+17: DSFP
+18: Chip2Chip8x
+19: Twisted_Pair
+20: Backplane_with_8_lanes
+21: Loopback 
+22: OE_16x
+23: OSFP_ELS
+24: QSFP_2x
+25: CPO_32x */
+	/* 0xc.0 - 0xc.7 */
+	/* access: RO */
+	u_int8_t module_type;
 };
 
 /* Description -   */
@@ -329,7 +450,7 @@ Reserved for HCA */
 	/* access: INDEX */
 	u_int8_t lp_msb;
 	/* Description - Local port number.
- */
+	*/
 	/* 0x0.16 - 0x0.23 */
 	/* access: INDEX */
 	u_int8_t local_port;
@@ -344,7 +465,7 @@ For HCA, reserved if PPCR.asymmetry_enable_supported=0 */
 	/* Description - [DWIP]
 Indicate whether asymmetry_enable supported or not.
 Reserved for switch.
- */
+	*/
 	/* 0x4.31 - 0x4.31 */
 	/* access: RO */
 	u_int8_t asymmetry_enable_supported;
@@ -380,7 +501,7 @@ Reserved for HCA */
 	u_int8_t split;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - The number of planes comprising this Aggregated port
- */
+	*/
 	/* 0xc.0 - 0xc.7 */
 	/* access: RW */
 	u_int8_t num_of_planes;
@@ -484,9 +605,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 548, "MDDQ slot_info Layout," on page 997
-For devices on slot query_type data - see Table 550, "MDDQ device_info Register Layout," on page 998
-For slot name query_type data - see Table 552, "MDDQ slot_name Layout," on page 1000 */
+For slot information query_type data - see Table 554, "MDDQ slot_info Layout," on page 1054
+For devices on slot query_type data - see Table 556, "MDDQ device_info Register Layout," on page 1055
+For slot name query_type data - see Table 558, "MDDQ slot_name Layout," on page 1057 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -521,9 +642,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 540, "PRM Register Payload Layout," on page 993
-For Command type payload - See Table 542, "Command Payload Layout," on page 993
-For CrSpace type payload - See Table 544, "CrSpace access Payload Layout," on page 994 */
+For PRM Register type payload - See Table 546, "PRM Register Payload Layout," on page 1050
+For Command type payload - See Table 548, "Command Payload Layout," on page 1050
+For CrSpace type payload - See Table 550, "CrSpace access Payload Layout," on page 1051 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -562,7 +683,7 @@ Note: Status might be '0' even when debug query is not allowed and additional_in
 4: RMDT token 
 5: CRCS token 
 6: CRDT token
- */
+	*/
 	/* 0x0.24 - 0x0.31 */
 	/* access: INDEX */
 	u_int8_t type_of_token;
@@ -645,6 +766,16 @@ Reserved if not supported by the device */
 	/* 0x18.0 - 0x18.3 */
 	/* access: RW */
 	u_int8_t dummy_clock_cycles;
+};
+
+/* Description -   */
+/* Size in bytes - 160 */
+struct reg_access_switch_mgpir_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Hardware Information, see Table 564, "Hardware Info Layout," on page 1059 */
+	/* 0x0.0 - 0x1c.31 */
+	/* access: RW */
+	struct reg_access_switch_mgpir_hw_info_ext hw_info;
 };
 
 /* Description -   */
@@ -974,7 +1105,7 @@ struct reg_access_switch_mspmer_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Device Index
 0: Main_board_or_NIC
- */
+	*/
 	/* 0x0.0 - 0x0.3 */
 	/* access: INDEX */
 	u_int8_t device_index;
@@ -996,7 +1127,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 373, "NV_SWITCH_PHY_SEC_CONF Layout," on page 832 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 373, "NV_SWITCH_PHY_SEC_CONF Layout," on page 880 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -1006,7 +1137,7 @@ In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 373, "N
 29: SCPM - Secure Canary Path Monitor
 0: General 
 
- */
+	*/
 	/* 0xc.0 - 0xc.31 */
 	/* access: RO */
 	u_int32_t supported_physical_monitor;
@@ -1235,7 +1366,7 @@ The local_port status is:
 1: split to 2
 2: split to 4
 3: split to 8
- */
+	*/
 	/* 0x4.16 - 0x4.19 */
 	/* access: RO */
 	u_int8_t split_stat;
@@ -1299,7 +1430,7 @@ Supported from Quantum-3 and above. */
 3: NVLink
 4: IBg2Eth
 Supported from Quantum-3 and above
- */
+	*/
 	/* 0x10.0 - 0x10.2 */
 	/* access: RO */
 	u_int8_t protocol;
@@ -1308,7 +1439,7 @@ Supported from Quantum-3 and above
 Resource label port 
 The label port for the resource module.
 Value of 0xFFFF means field is not valid.
- */
+	*/
 	/* 0x14.0 - 0x14.15 */
 	/* access: RO */
 	u_int16_t resource_label_port;
@@ -1343,7 +1474,7 @@ Note - To disable a module, all ports associated with the port must be disabled 
 Note 2 - disconnect cable will shut down the optical module in ungraceful manner. Not supported for OE/ELS.
 Note 3 - Disabling OE in QM-3 CPO will not cause to the OE to power disable. User will need to set all the modules to disable, which will cause the power enable to go down.
 Note 4 - Disabling OE in QM3-CPO will cause the ELS to go down as well as part of the HW flow. Before setting the ELS back up, OE should be set to up beforehand.
- */
+	*/
 	/* 0x0.8 - 0x0.11 */
 	/* access: RW */
 	u_int8_t admin_status;
@@ -1388,7 +1519,7 @@ Not supported by secondary ASICs. */
 [DWIP] 0x10: Recovery_error
 [DWIP] 0x11: Submodule_failure
 
-
+[DWIP] 0x13: els_critical_indication
 Valid only when oper_status = 4'b0011 */
 	/* 0x4.8 - 0x4.12 */
 	/* access: RO */
@@ -1433,6 +1564,10 @@ Plane port index of the aggregated port. A value of 0 refers to the aggregated p
 	/* 0x0.4 - 0x0.7 */
 	/* access: INDEX */
 	u_int8_t plane_ind;
+	/* Description - When set, port_width field value is valid. otherwise ignored */
+	/* 0x0.10 - 0x0.10 */
+	/* access: RO */
+	u_int8_t width_valid;
 	/* Description - 0 if there is no MCM tile arch */
 	/* 0x0.12 - 0x0.12 */
 	/* access: RO */
@@ -1521,6 +1656,12 @@ Plane port index of the aggregated port. A value of 0 refers to the aggregated p
 	/* 0xc.4 - 0xc.5 */
 	/* access: RO */
 	u_int8_t tile_pport_msb;
+	/* Description - Port width of logical lanes.
+According to number of port width, indicates how many lanes shall be considered in lane<i>_physical_tx/rx
+0 - port is unmapped */
+	/* 0xc.6 - 0xc.9 */
+	/* access: RO */
+	u_int8_t port_width;
 	/* Description - LSB Local port bits [7:0] index for the label port chosen (in case pnat field is '1'). */
 	/* 0xc.16 - 0xc.23 */
 	/* access: RO */
@@ -1545,7 +1686,7 @@ valid only when gb_valid is 1 */
 	u_int8_t pll_cnt_rx;
 	/* Description - Number of the MCM Tile the local_port is related to.
 valid only when mcm_tile_valid is 1
- */
+	*/
 	/* 0x10.16 - 0x10.23 */
 	/* access: RO */
 	u_int8_t mcm_tile_num;
@@ -1827,7 +1968,7 @@ For all common pll's that are mapped to the port: [pll_index, pll_index+ 1, ... 
 	/* Description - CPO indication:
 0 - not CPO
 1 - CPO
- */
+	*/
 	/* 0x44.31 - 0x44.31 */
 	/* access: RO */
 	u_int8_t cpo_indication;
@@ -1889,25 +2030,9 @@ Up to 8 SerDes in a module can be mapped to a local port. */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
+	/* 0x0.0 - 0x5c.31 */
 	/* access: RW */
-	struct reg_access_switch_mddq_ext mddq_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mspmer_ext mspmer_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_plib_reg_ext plib_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_icam_reg_ext icam_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x10c.31 */
-	/* access: RW */
-	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x28.31 */
 	/* access: RW */
@@ -1915,7 +2040,39 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
+	struct reg_access_switch_PPCR_ext PPCR_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mpein_reg_ext mpein_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_icam_reg_ext icam_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	/* access: RW */
+	struct reg_access_switch_mrsr_ext mrsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x10c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x6c.31 */
+	/* access: RW */
+	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
 	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x44.31 */
+	/* access: RW */
+	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x18.31 */
 	/* access: RW */
@@ -1923,19 +2080,11 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_PPCR_ext PPCR_ext;
+	struct reg_access_switch_MMAM_ext MMAM_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x6c.31 */
+	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct reg_access_switch_mrsr_ext mrsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	struct reg_access_switch_mddq_ext mddq_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
@@ -1945,29 +2094,29 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* access: RW */
 	struct reg_access_switch_msgi_ext msgi_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x40c.31 */
+	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_icsr_ext icsr_ext;
+	struct reg_access_switch_mspmer_ext mspmer_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x5c.31 */
+	/* 0x0.0 - 0x9c.31 */
 	/* access: RW */
-	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
+	struct reg_access_switch_mgpir_ext mgpir_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x3c.31 */
 	/* access: RW */
 	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mpein_reg_ext mpein_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x44.31 */
-	/* access: RW */
-	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
-	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
 	struct reg_access_switch_mpir_ext mpir_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x40c.31 */
+	/* access: RW */
+	struct reg_access_switch_icsr_ext icsr_ext;
 };
 
 
@@ -2035,6 +2184,13 @@ void reg_access_switch_mddt_reg_payload_auto_ext_print(const union reg_access_sw
 unsigned int reg_access_switch_mddt_reg_payload_auto_ext_size(void);
 #define REG_ACCESS_SWITCH_MDDT_REG_PAYLOAD_AUTO_EXT_SIZE    (0x104)
 void reg_access_switch_mddt_reg_payload_auto_ext_dump(const union reg_access_switch_mddt_reg_payload_auto_ext *ptr_struct, FILE *fd);
+/* mgpir_hw_info_ext */
+void reg_access_switch_mgpir_hw_info_ext_pack(const struct reg_access_switch_mgpir_hw_info_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mgpir_hw_info_ext_unpack(struct reg_access_switch_mgpir_hw_info_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mgpir_hw_info_ext_print(const struct reg_access_switch_mgpir_hw_info_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mgpir_hw_info_ext_size(void);
+#define REG_ACCESS_SWITCH_MGPIR_HW_INFO_EXT_SIZE    (0x20)
+void reg_access_switch_mgpir_hw_info_ext_dump(const struct reg_access_switch_mgpir_hw_info_ext *ptr_struct, FILE *fd);
 /* uint64 */
 void reg_access_switch_uint64_pack(const u_int64_t *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_uint64_unpack(u_int64_t *ptr_struct, const u_int8_t *ptr_buff);
@@ -2042,6 +2198,13 @@ void reg_access_switch_uint64_print(const u_int64_t *ptr_struct, FILE *fd, int i
 unsigned int reg_access_switch_uint64_size(void);
 #define REG_ACCESS_SWITCH_UINT64_SIZE    (0x8)
 void reg_access_switch_uint64_dump(const u_int64_t *ptr_struct, FILE *fd);
+/* MMAM_ext */
+void reg_access_switch_MMAM_ext_pack(const struct reg_access_switch_MMAM_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_MMAM_ext_unpack(struct reg_access_switch_MMAM_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_MMAM_ext_print(const struct reg_access_switch_MMAM_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_MMAM_ext_size(void);
+#define REG_ACCESS_SWITCH_MMAM_EXT_SIZE    (0x10)
+void reg_access_switch_MMAM_ext_dump(const struct reg_access_switch_MMAM_ext *ptr_struct, FILE *fd);
 /* PPCR_ext */
 void reg_access_switch_PPCR_ext_pack(const struct reg_access_switch_PPCR_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_PPCR_ext_unpack(struct reg_access_switch_PPCR_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -2091,6 +2254,13 @@ void reg_access_switch_mfmc_reg_ext_print(const struct reg_access_switch_mfmc_re
 unsigned int reg_access_switch_mfmc_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MFMC_REG_EXT_SIZE    (0x1c)
 void reg_access_switch_mfmc_reg_ext_dump(const struct reg_access_switch_mfmc_reg_ext *ptr_struct, FILE *fd);
+/* mgpir_ext */
+void reg_access_switch_mgpir_ext_pack(const struct reg_access_switch_mgpir_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mgpir_ext_unpack(struct reg_access_switch_mgpir_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mgpir_ext_print(const struct reg_access_switch_mgpir_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mgpir_ext_size(void);
+#define REG_ACCESS_SWITCH_MGPIR_EXT_SIZE    (0xa0)
+void reg_access_switch_mgpir_ext_dump(const struct reg_access_switch_mgpir_ext *ptr_struct, FILE *fd);
 /* mkdc_reg_ext */
 void reg_access_switch_mkdc_reg_ext_pack(const struct reg_access_switch_mkdc_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mkdc_reg_ext_unpack(struct reg_access_switch_mkdc_reg_ext *ptr_struct, const u_int8_t *ptr_buff);

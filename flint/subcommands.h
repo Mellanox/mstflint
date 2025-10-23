@@ -343,6 +343,7 @@ public:
     bool verifyParams() override;
     FlintStatus querySyncE();
     FlintStatus QueryCertStatus();
+    FlintStatus QueryDpaApps();
 private:
     FwComponent::comps_ids_t _comp;
 };

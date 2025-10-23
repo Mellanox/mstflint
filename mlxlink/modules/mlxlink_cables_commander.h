@@ -240,6 +240,7 @@ private:
     bool _swControlMode;
     u_int32_t _prbsLanes;
     map<ControlParam, pair<string, string>> _modulePMCRParams;
+    float _txBiasMultiplier;
 };
 
 #endif /* MLXLINK_CABLES_COMMANDER_H */

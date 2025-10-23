@@ -34,9 +34,11 @@
 #ifndef REG_IDS_H
 #define REG_IDS_H
 
+#define REG_ID_MMHI 0x904A
 #define REG_ID_MGIR  0x9020
 #define REG_ID_MORD  0x9153
 #define REG_ID_MCAM  0x907f
+#define REG_ID_MPQD 0x9700
 #define REG_ID_PLIB  0x500a
 #define REG_ID_PMLP  0x5002
 #define REG_ID_PTYS  0x5004

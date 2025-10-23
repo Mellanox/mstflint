@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2025-07-06 09:51:51"
+#    This file was generated at "2025-08-31 12:57:19"
 #    by:
 #      > /tmp/jenkins/workspace/automatic_prm_update/scripts/prm_update.py --project switch
 ###############################################################################
@@ -45,6 +45,34 @@ import platform
 
 import mtcr
 
+
+class MMAM_EXT(ctypes.Structure):
+    _fields_ = [
+        ("module", ctypes.c_uint8),
+        ("ga", ctypes.c_uint8),
+        ("local_module", ctypes.c_uint8),
+        ("module_type", ctypes.c_uint8)
+    ]
+
+class MGPIR_HW_INFO_EXT(ctypes.Structure):
+    _fields_ = [
+        ("num_of_devices", ctypes.c_uint8),
+        ("num_of_modules_per_system", ctypes.c_uint8),
+        ("devices_per_flash", ctypes.c_uint8),
+        ("device_type", ctypes.c_uint8),
+        ("slot_index", ctypes.c_uint8),
+        ("num_of_modules", ctypes.c_uint8),
+        ("num_of_slots", ctypes.c_uint8),
+        ("max_modules_per_slot", ctypes.c_uint8),
+        ("num_of_resource_modules", ctypes.c_uint8),
+        ("num_lanes_per_sub_module", ctypes.c_uint8),
+        ("max_sub_modules_index", ctypes.c_uint8)
+    ]
+
+class MGPIR_EXT(ctypes.Structure):
+    _fields_ = [
+        ("hw_info", MGPIR_HW_INFO_EXT)
+    ]
 
 class MPIR_EXT(ctypes.Structure):
     _fields_ = [

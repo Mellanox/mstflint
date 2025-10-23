@@ -38,10 +38,13 @@
 #ifndef MFT_UTILS_H_
 #define MFT_UTILS_H_
 
+#if __cplusplus
+
 #include <string>
 #include <vector>
+#include <stdexcept>
 
-#include <compatibility.h>
+#include "compatibility.h"
 
 using namespace std;
 
@@ -69,10 +72,24 @@ u_int32_t greatest_common_divisor(u_int32_t a, u_int32_t b);
 u_int32_t least_common_multiple(u_int32_t a, u_int32_t b);
 
 bool askUser(const char* question, bool force);
-
+std::vector<uint8_t> HexStringToBytes(const std::vector<uint8_t>& keyBytes);
+vector<u_int8_t> HexStringToBytes(const string& str);
+string ToHexString(u_int32_t value, u_int8_t width = 8);
 string ToHexString(const vector<u_int8_t>& vec);
-vector<u_int8_t> ReadFromFile(string filename);
+std::string ToString(const uint32_t* data, size_t wordCount, bool stayInHex);
 vector<u_int8_t> ToVector(const u_int32_t* arr, size_t size);
 
+vector<u_int8_t> ReadBinFile(string file);
+vector<u_int8_t> ReadFromFile(string filename);
+bool IsFileEmpty(const std::string& filePath, bool isBin);
+void WriteToBinFile(string filePath, const std::vector<u_int8_t>& buff);
+
+bool ToVector(string& str, vector<u_int8_t>& vec);
+
+int IsDirectory(const string& path);
+std::vector<u_int32_t> Uuid2Dword(const std::string& uuid_str);
+
 } // namespace mft_utils
+
+#endif //__cplusplus
 #endif /* MFT_UTILS_H_ */
