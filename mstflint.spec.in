@@ -185,6 +185,9 @@ rm -rf $RPM_BUILD_ROOT
  %{_bindir}/mstarchive
 %{CONF_DIR}/ca-bundle.crt
 %endif
+%if %{enabledpa}
+ %{_bindir}/mstdpa
+%endif
 %if %{enableadbgenerictools}
  %{_bindir}/mstreg
  %{_bindir}/mstlink
