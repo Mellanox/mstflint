@@ -1890,6 +1890,12 @@ bool MlxlinkCommander::checkDPNvSupport()
 
 void MlxlinkCommander::showModuleInfo()
 {
+    if (_isSwControled)
+    {
+        _allUnhandledErrors += string("No plugged cable detected\n");
+        return;
+    }
+
     try
     {
         gearboxBlock(MODULE_INFO_FLAG);
@@ -3287,8 +3293,13 @@ void MlxlinkCommander::showBerMonitorInfo()
         sendPrmReg(ACCESS_REG_PPBMC, GET);
 
         monitor_state = _mlxlinkMaps->_ppbmcBerMonitorState[getFieldValue("monitor_state")];
-        u_int32_t monitor_type_int = getFieldValue("monitor_type");
-        monitor_type = _mlxlinkMaps->_ppbmcBerMonitorType[monitor_type_int];
+        u_int32_t monitor_type_cap = getFieldValue("monitor_type_cap");
+
+        if (monitor_type_cap)
+        {
+            u_int32_t monitor_type_int = getFieldValue("monitor_type");
+            monitor_type = _mlxlinkMaps->_ppbmcBerMonitorType[monitor_type_int];
+        }
 
         setPrintTitle(_showBerMonitorInfo, "BER Monitor Info", BER_MONITOR_INFO_LAST);
         setPrintVal(_showBerMonitorInfo, "BER Monitor State", monitor_state);
@@ -3305,6 +3316,12 @@ void MlxlinkCommander::showBerMonitorInfo()
 
 void MlxlinkCommander::showExternalPhy()
 {
+    if (_isSwControled)
+    {
+        _allUnhandledErrors += string("No plugged cable detected\n");
+        return;
+    }
+
     try
     {
         gearboxBlock(PEPC_SHOW_FLAG);
@@ -4358,6 +4375,12 @@ void MlxlinkCommander::sendPmaosCmd(PMAOS_ADMIN adminStatus)
 
 void MlxlinkCommander::sendPmaos()
 {
+    if (_isSwControled)
+    {
+        _allUnhandledErrors += string("No plugged cable detected\n");
+        return;
+    }
+
     try
     {
         PMAOS_CMD pmaosCmd = pmaos_to_int(_userInput._pmaosCmd);
@@ -4540,6 +4563,12 @@ void MlxlinkCommander::setPlaneIndex(int planeIndex)
 
 void MlxlinkCommander::handlePrbs()
 {
+    if (_isSwControled)
+    {
+        _allUnhandledErrors += string("No plugged cable detected\n");
+        throw MlxRegException("PRBS test mode is not supported for the current port!\nNo plugged cable detected");
+    }
+
     try
     {
         if (_userInput._prbsMode == "EN")
@@ -5571,6 +5600,12 @@ string MlxlinkCommander::getSltpStatus()
 
 void MlxlinkCommander::sendSltp()
 {
+    if (_isSwControled)
+    {
+        _allUnhandledErrors += string("No plugged cable detected\n");
+        return;
+    }
+
     string sltpParamsCmd = "";
     MlxlinkRecord::printCmdLine("Configuring Port Transmitter Parameters", _jsonRoot);
 
@@ -5735,6 +5770,12 @@ u_int32_t MlxlinkCommander::getLoopbackMode(const string& lb)
 
 void MlxlinkCommander::sendPepc()
 {
+    if (_isSwControled)
+    {
+        _allUnhandledErrors += string("No plugged cable detected\n");
+        return;
+    }
+
     try
     {
         gearboxBlock(PEPC_SET_FLAG);
@@ -6568,7 +6609,16 @@ void MlxlinkCommander::showRxRecoveryCounters()
         }
         catch (MlxRegException& exc)
         {
-            throw MlxRegException("Querying PPCNT failed with the following exception: %s", exc.what());
+            string errorMsg = "";
+            if (_isSwControled)
+            {
+                errorMsg = string("No plugged cable detected");
+            }
+            else
+            {
+                errorMsg = string("Querying PPCNT failed with the following exception: ") + string(exc.what());
+            }
+            throw MlxRegException(errorMsg);
         }
     }
     catch (MlxRegException& exc)
