@@ -8,6 +8,7 @@
 %{!?enablecs: %define enablecs 0}
 %{!?nopenssl: %define nopenssl 0}
 %{!?enablexml2: %define enablexml2 0}
+%{!?enabledpa: %define enabledpa 0}
 %{!?enablefwmgr: %define enablefwmgr 0}
 %{!?enableadbgenerictools: %define enableadbgenerictools 1}
 %{!?enablecables: %define enablecables 0}
@@ -88,6 +89,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{enablecs}
     config_flags="$config_flags --enable-cs"
+%endif
+
+%if %{enabledpa}
+   config_flags="$config_flags --enable-dpa"
 %endif
 
 %if %{enablexml2}
