@@ -1728,7 +1728,7 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
         /* TODO - fix for QTM3/CX8/ArcusE/BF4 */
         /* Read the Cache replacement offset and cmd fields */
         if ((devid_t == DeviceQuantum2) || (devid_t == DeviceQuantum3) || (devid_t == DeviceSpectrum4) ||
-            (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8) || (devid_t == DeviceConnectX8_Pure_PCIe_Switch) || (devid_t == DeviceConnectX9_Pure_PCIe_Switch)) {
+            (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8) || (devid_t == DeviceConnectX8_Pure_PCIe_Switch) || || (devid_t == DeviceConnectX9) (devid_t == DeviceConnectX9_Pure_PCIe_Switch)) {
             MREAD4(CACHE_REP_OFF_NEW_GW_ADDR, &data);
             off = data;
             MREAD4(CACHE_REP_CMD_NEW_GW_ADDR, &data);

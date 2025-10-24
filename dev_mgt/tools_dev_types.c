@@ -965,7 +965,7 @@ int dm_is_cx8(dm_dev_id_t type)
 
 int dm_is_cx9(dm_dev_id_t type)
 {
-    return (type == DeviceConnectX9);
+    return (type == DeviceConnectX9 || type == DeviceConnectX9_Pure_PCIe_Switch);
 }
 
 int dm_is_new_gen_switch(dm_dev_id_t type)
@@ -1012,7 +1012,7 @@ int dm_dev_is_fs4(dm_dev_id_t type)
 int dm_dev_is_fs5(dm_dev_id_t type)
 {
     return type == DeviceConnectX8 || type == DeviceConnectX8_Pure_PCIe_Switch || type == DeviceQuantum3 ||
-           type == DeviceBlueField4 || type == DeviceConnectX9_Pure_PCIe_Switch;
+           type == DeviceBlueField4 || type == DeviceConnectX9 || type == DeviceConnectX9_Pure_PCIe_Switch;
 }
 
 int dm_is_ib_access(mfile* mf)
