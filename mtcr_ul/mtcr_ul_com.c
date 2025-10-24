@@ -648,8 +648,8 @@ static int mtcr_pcicr_open(mfile* mf, const char* name, char* conf_name, off_t o
 
     ctx->mread4 = mtcr_pcicr_mread4;
     ctx->mwrite4 = mtcr_pcicr_mwrite4;
-    ctx->mread4_block = mread_chunk_as_multi_mread4;
-    ctx->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
+    ctx->mread4_block = (f_mread4_block)mread_chunk_as_multi_mread4;
+    ctx->mwrite4_block = (f_mwrite4_block)mwrite_chunk_as_multi_mwrite4;
     ctx->mclose = mtcr_pcicr_mclose;
 
     mf->bar_virtual_addr = NULL;
@@ -678,8 +678,8 @@ end:
             ctx->res_fdlock = conf_ctx->fdlock;
             ctx->res_mread4 = conf_ctx->mread4;
             ctx->res_mwrite4 = conf_ctx->mwrite4;
-            ctx->res_mread4_block = conf_ctx->mread4_block;
-            ctx->res_mwrite4_block = conf_ctx->mwrite4_block;
+            ctx->res_mread4_block = (f_mread4_block)conf_ctx->mread4_block;
+            ctx->res_mwrite4_block = (f_mwrite4_block)conf_ctx->mwrite4_block;
             free(conf_mf);
         }
     }
@@ -1074,8 +1074,8 @@ static int nvml_open(mfile* mf, const char* name)
     mf->tp = MST_NVML;
     ctx->mread4 = nvml_mread4;
     ctx->mwrite4 = nvml_mwrite4;
-    ctx->mread4_block = nvml_mread4_block;
-    ctx->mwrite4_block = nvml_mwrite4_block;
+    ctx->mread4_block = (f_mread4_block)nvml_mread4_block;
+    ctx->mwrite4_block = (f_mwrite4_block)nvml_mwrite4_block;
     ctx->mclose = nvml_mclose;
     mf->bar_virtual_addr = NULL;
     return init_nvml_device(name, &(mf->nvml_device));
@@ -1115,8 +1115,8 @@ static int fwctrl_driver_open(mfile* mf, const char* name)
     mf->tp = MST_FWCTL_CONTROL_DRIVER;
     ctx->mread4 = mtcr_fwctl_driver_mread4;
     ctx->mwrite4 = mtcr_fwctl_driver_mwrite4;
-    ctx->mread4_block = fwctl_driver_mread4_block;
-    ctx->mwrite4_block = fwctl_driver_mwrite4_block;
+    ctx->mread4_block = (f_mread4_block)fwctl_driver_mread4_block;
+    ctx->mwrite4_block = (f_mwrite4_block)fwctl_driver_mwrite4_block;
     ctx->mclose = mtcr_driver_mclose;
     mf->bar_virtual_addr = NULL;
     fwctl_set_device_id(mf);
@@ -1157,8 +1157,8 @@ static int mtcr_driver_open(mfile  * mf,
         mf->tp = MST_PCI;
         ctx->mread4 = mtcr_driver_cr_mread4;
         ctx->mwrite4 = mtcr_driver_cr_mwrite4;
-        ctx->mread4_block = driver_mread4_block;
-        ctx->mwrite4_block = driver_mwrite4_block;
+        ctx->mread4_block = (f_mread4_block)driver_mread4_block;
+        ctx->mwrite4_block = (f_mwrite4_block)driver_mwrite4_block;
         ctx->mclose = mtcr_driver_mclose;
         mf->bar_virtual_addr = NULL;
         unsigned int slot_num;
@@ -1185,8 +1185,8 @@ end:
         mf->res_tp = MST_PCICONF;
         ctx->res_mread4 = mtcr_driver_mread4;
         ctx->res_mwrite4 = mtcr_driver_mwrite4;
-        ctx->res_mread4_block = driver_mread_chunk_as_multi_mread4;
-        ctx->res_mwrite4_block = driver_mwrite_chunk_as_multi_mwrite4;
+        ctx->res_mread4_block = (f_mread4_block)driver_mread_chunk_as_multi_mread4;
+        ctx->res_mwrite4_block = (f_mwrite4_block)driver_mwrite_chunk_as_multi_mwrite4;
     }
 
     if (!cr_valid) {
@@ -1212,8 +1212,8 @@ end:
 
         ctx->mread4 = mtcr_driver_mread4;
         ctx->mwrite4 = mtcr_driver_mwrite4;
-        ctx->mread4_block = driver_mread4_block;
-        ctx->mwrite4_block = driver_mwrite4_block;
+        ctx->mread4_block = (f_mread4_block)driver_mread4_block;
+        ctx->mwrite4_block = (f_mwrite4_block)driver_mwrite4_block;
         ctx->mclose = mtcr_driver_mclose;
         init_dev_info_ul(mf, driver_conf_name, domain_p, bus_p, dev_p, func_p);
     }
@@ -1906,8 +1906,8 @@ static int mtcr_vfio_device_open(mfile     * mf,
             mf->address_space = AS_CR_SPACE;
             ctx->mread4 = mtcr_pciconf_mread4;
             ctx->mwrite4 = mtcr_pciconf_mwrite4;
-            ctx->mread4_block = mread4_block_pciconf;
-            ctx->mwrite4_block = mwrite4_block_pciconf;
+            ctx->mread4_block = (f_mread4_block)mread4_block_pciconf;
+            ctx->mwrite4_block = (f_mwrite4_block)mwrite4_block_pciconf;
         }
 
         mf->pxir_vsec_supp = 0;
@@ -1922,8 +1922,8 @@ static int mtcr_vfio_device_open(mfile     * mf,
         DBG_PRINTF("Write Only Address: %d\n", ctx->wo_addr);
         ctx->mread4 = mtcr_pciconf_mread4_old;
         ctx->mwrite4 = mtcr_pciconf_mwrite4_old;
-        ctx->mread4_block = mread_chunk_as_multi_mread4;
-        ctx->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
+        ctx->mread4_block = (f_mread4_block)mread_chunk_as_multi_mread4;
+        ctx->mwrite4_block = (f_mwrite4_block)mwrite_chunk_as_multi_mwrite4;
     }
 
     if (init_dev_info_ul(mf, name, domain, bus, dev, func)) {
@@ -2015,8 +2015,8 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
                 mf->address_space = AS_CR_SPACE;
                 ctx->mread4 = mtcr_pciconf_mread4;
                 ctx->mwrite4 = mtcr_pciconf_mwrite4;
-                ctx->mread4_block = mread4_block_pciconf;
-                ctx->mwrite4_block = mwrite4_block_pciconf;
+                ctx->mread4_block = (f_mread4_block)mread4_block_pciconf;
+                ctx->mwrite4_block = (f_mwrite4_block)mwrite4_block_pciconf;
             }
 
             mf->pxir_vsec_supp = 0;
@@ -2033,8 +2033,8 @@ static int mtcr_pciconf_open(mfile* mf, const char* name, u_int32_t adv_opt)
         DBG_PRINTF("Write Only Address: %d\n", ctx->wo_addr);
         ctx->mread4 = mtcr_pciconf_mread4_old;
         ctx->mwrite4 = mtcr_pciconf_mwrite4_old;
-        ctx->mread4_block = mread_chunk_as_multi_mread4;
-        ctx->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
+        ctx->mread4_block = (f_mread4_block)mread_chunk_as_multi_mread4;
+        ctx->mwrite4_block = (f_mwrite4_block)mwrite_chunk_as_multi_mwrite4;
     }
     ctx->mclose = mtcr_pciconf_mclose;
 
@@ -2069,8 +2069,8 @@ static int mtcr_inband_open(mfile* mf, const char* name)
     mf->flags |= MDEVS_IB;
     ctx->mread4 = mib_read4;
     ctx->mwrite4 = mib_write4;
-    ctx->mread4_block = mib_readblock;
-    ctx->mwrite4_block = mib_writeblock;
+    ctx->mread4_block = (f_mread4_block)mib_readblock;
+    ctx->mwrite4_block = (f_mwrite4_block)mib_writeblock;
     ctx->maccess_reg = mib_acces_reg_mad;
     ctx->mclose = mib_close;
     char* p;
@@ -2429,6 +2429,14 @@ int mwrite_i2cblock(mfile       * mf,
     return length;
 }
 
+void safe_free(mfile** pmf)
+{
+    if ((*pmf) != NULL) {
+        free(*pmf);
+        (*pmf) = NULL;
+    }
+}
+
 static int mtcr_i2c_open(mfile* mf, const char* name)
 {
     ul_ctx_t* ctx = mf->ul_ctx;
@@ -2441,8 +2449,8 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
 
     ctx->mread4 = mtcr_i2c_mread4;
     ctx->mwrite4 = mtcr_i2c_mwrite4;
-    ctx->mread4_block = mtcr_i2c_mread_chunks;
-    ctx->mwrite4_block = mtcr_i2c_mwrite_chunks;
+    ctx->mread4_block = (f_mread4_block)mtcr_i2c_mread_chunks;
+    ctx->mwrite4_block = (f_mwrite4_block)mtcr_i2c_mwrite_chunks;
 
     if ((mf->fd = open(name, O_RDWR | O_SYNC)) < 0) {
         safe_free(&mf);
@@ -3482,12 +3490,12 @@ void mpci_change_ul(mfile* mf)
 
     f_mread4_block tmp_mread4_block = ctx->mread4_block;
 
-    ctx->mread4_block = ctx->res_mread4_block;
+    ctx->mread4_block = (f_mread4_block)(f_mread4_block)ctx->res_mread4_block;
     ctx->res_mread4_block = tmp_mread4_block;
 
     f_mwrite4_block tmp_mwrite4_block = ctx->mwrite4_block;
 
-    ctx->mwrite4_block = ctx->res_mwrite4_block;
+    ctx->mwrite4_block = (f_mwrite4_block)ctx->res_mwrite4_block;
     ctx->res_mwrite4_block = tmp_mwrite4_block;
 
     /***** Switching FD LOCKs ******/
@@ -4885,15 +4893,6 @@ int is_pcie_switch_device(mfile* mf)
 }
 
 
-void safe_free(mfile** pmf)
-{
-    if ((*pmf) != NULL) {
-        free(*pmf);
-        (*pmf) = NULL;
-    }
-}
-
-
 #define DATA_WIDTHS_NUM 4
 
 typedef struct width2dtype {
@@ -4960,14 +4959,14 @@ void switch_access_funcs(mfile* mf)
     if (mf->tp == MST_CABLE) {
         ctx->mread4 = mcables_read4;
         ctx->mwrite4 = mcables_write4;
-        ctx->mread4_block = mcables_read4_block;
-        ctx->mwrite4_block = mcables_write4_block;
+        ctx->mread4_block = (f_mread4_block)(f_mread4_block)mcables_read4_block;
+        ctx->mwrite4_block = (f_mwrite4_block)mcables_write4_block;
         ctx->mclose = mcables_close;
     } else {
         ctx->mread4 = mtcr_pciconf_mread4;
         ctx->mwrite4 = mtcr_pciconf_mwrite4;
-        ctx->mread4_block = mread4_block_pciconf;
-        ctx->mwrite4_block = mwrite4_block_pciconf;
+        ctx->mread4_block = (f_mread4_block)mread4_block_pciconf;
+        ctx->mwrite4_block = (f_mwrite4_block)mwrite4_block_pciconf;
         ctx->mclose = mtcr_pciconf_mclose;
     }
 #else
