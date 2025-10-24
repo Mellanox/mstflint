@@ -38,8 +38,8 @@
 
 typedef int (*f_mread4)(mfile* mf, unsigned int offset, u_int32_t* value);
 typedef int (*f_mwrite4)(mfile* mf, unsigned int offset, u_int32_t value);
-typedef int (*f_mread4_block)(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len);
-typedef int (*f_mwrite4_block)(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len);
+typedef int (*f_mread4_block)(mfile* mf, unsigned int offset, void* data, int byte_len);
+typedef int (*f_mwrite4_block)(mfile* mf, unsigned int offset, void* data, int byte_len);
 typedef int (*f_maccess_reg)(mfile* mf, u_int8_t* data);
 typedef int (*f_mclose)(mfile* mf);
 
