@@ -3490,7 +3490,7 @@ void mpci_change_ul(mfile* mf)
 
     f_mread4_block tmp_mread4_block = ctx->mread4_block;
 
-    ctx->mread4_block = (f_mread4_block)(f_mread4_block)ctx->res_mread4_block;
+    ctx->mread4_block = (f_mread4_block)ctx->res_mread4_block;
     ctx->res_mread4_block = tmp_mread4_block;
 
     f_mwrite4_block tmp_mwrite4_block = ctx->mwrite4_block;
@@ -4959,7 +4959,7 @@ void switch_access_funcs(mfile* mf)
     if (mf->tp == MST_CABLE) {
         ctx->mread4 = mcables_read4;
         ctx->mwrite4 = mcables_write4;
-        ctx->mread4_block = (f_mread4_block)(f_mread4_block)mcables_read4_block;
+        ctx->mread4_block = (f_mread4_block)mcables_read4_block;
         ctx->mwrite4_block = (f_mwrite4_block)mcables_write4_block;
         ctx->mclose = mcables_close;
     } else {
