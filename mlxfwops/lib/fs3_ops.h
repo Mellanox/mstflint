@@ -65,7 +65,7 @@
     (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || \
      chip_type == CT_CONNECTX5 || chip_type == CT_CONNECTX6 || chip_type == CT_CONNECTX6DX ||   \
      chip_type == CT_CONNECTX6LX || chip_type == CT_CONNECTX7 || chip_type == CT_CONNECTX8 ||   \
-     chip_type == CT_CONNECTX8_PURE_PCIE_SWITCH || chip_type == CT_BLUEFIELD ||                 \
+     chip_type == CT_CONNECTX8_PURE_PCIE_SWITCH || chip_type == CT_CONNECTX9 || chip_type == CT_BLUEFIELD ||                 \
      chip_type == CT_BLUEFIELD2 || chip_type == CT_BLUEFIELD3 ||                               \
      chip_type == CT_BLUEFIELD4)
 
