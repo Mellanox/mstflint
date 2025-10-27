@@ -135,6 +135,10 @@ public:
         {
             return new ConnectX8FwOperationsSignatureManager();
         }
+        else if (chip == CT_CONNECTX9)
+        {
+            return new ConnectX9FwOperationsSignatureManager();
+        }
         else if (chip == CT_BLUEFIELD2)
         {
             return new Bluefield2FwOperationsSignatureManager();

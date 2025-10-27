@@ -367,7 +367,7 @@ typedef enum chip_type
     (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) ||     \
      ((chipType) == CT_CONNECTX4_LX) || ((chipType) == CT_CONNECTX5) || ((chipType) == CT_CONNECTX6) ||  \
      ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || ((chipType) == CT_CONNECTX7) || \
-     ((chipType) == CT_CONNECTX8) || ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_BLUEFIELD2) ||    \
+     ((chipType) == CT_CONNECTX8) || ((chipType) == CT_CONNECTX9) || ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_BLUEFIELD2) ||    \
      ((chipType) == CT_BLUEFIELD3) || ((chipType) == CT_BLUEFIELD4))
 
 typedef enum chip_family_type

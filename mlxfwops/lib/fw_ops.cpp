@@ -2195,7 +2195,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
              (chipType == CT_SPECTRUM3) || (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) ||
              (chipType == CT_QUANTUM3) || (chipType == CT_SPECTRUM4) || (chipType == CT_BLUEFIELD) ||
              (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3) || (chipType == CT_CONNECTX8) ||
-             (chipType == CT_CONNECTX8_PURE_PCIE_SWITCH) || (chipType == CT_BLUEFIELD4);
+             (chipType == CT_CONNECTX8_PURE_PCIE_SWITCH) ||  (chipType == CT_CONNECTX9) ||(chipType == CT_BLUEFIELD4);
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN)
     {
@@ -3060,6 +3060,8 @@ int CRSpaceRegisters::getGlobalImageStatus()
             global_image_status_address = 0xE3044;
             break;
         case CT_CONNECTX8:
+        case CT_CONNECTX8_PURE_PCIE_SWITCH:
+        case CT_CONNECTX9:
             global_image_status_address = 0x55084;
             break;
         case CT_QUANTUM2:
