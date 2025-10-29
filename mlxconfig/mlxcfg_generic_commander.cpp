@@ -980,40 +980,14 @@ bool GenericCommander::shouldSkipPrepareReset()
     {
         return false;
     }
-    int rc = 0;
+
     uint32_t is_DPU_enabled = isDPUEnabled();
     // skip can only happen in DPU mode, if DPU isnt enabled , dont skip.
     if (!is_DPU_enabled)
     {
         return false;
     }
-    // if we reach here we are in DPU mode.
-    struct reg_access_hca_mmhi_reg_ext mmhi;
-    memset(&mmhi, 0, sizeof(mmhi));
-    rc = reg_access_mmhi(_mf, REG_ACCESS_METHOD_GET, &mmhi);
-    if (rc)
-    {
-        return false;
-    }
-    u_int8_t host_number = mmhi.host_number;
-
-    struct reg_access_hca_mpqd_reg_ext mpqd;
-    memset(&mpqd, 0, sizeof(mpqd));
-    mpqd.pcie_index = host_number;
-    rc = reg_access_mpqd(_mf, REG_ACCESS_METHOD_GET, &mpqd);
-    if (rc)
-    {
-        return false;
-    }
-    uint32_t is_internal = mpqd.is_internal;
-
-    // if is internal we can send MFRL , dont skip
-    if (is_internal)
-    {
-        return false;
-    }
-
-    // if we reached here we are on DPU and external host, so skip.
+    // if we reach here we are in DPU mode so skip.
     return true;
 }
 
