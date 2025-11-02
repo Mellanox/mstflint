@@ -263,7 +263,7 @@ int mcables_open(mfile* mf, int port)
     }
 
     u_int32_t devid = 0;
-    int       rc = get_cable_id(mf, &(cbl->cable_type), &devid);
+    int       rc = get_cable_id(mf, &devid, &(cbl->cable_type));
 
     DBG_PRINTF("cable type: %d\n", cbl->cable_type);
     DBG_PRINTF("devid: %d\n", devid);
