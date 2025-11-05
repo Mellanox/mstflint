@@ -82,6 +82,7 @@
 #define CX8_HW_ID 542
 #define CX8_PURE_PCIE_SWITCH_HW_ID 546
 #define CX9_HW_ID 548
+#define CX9_PURE_PCIE_SWITCH_HW_ID 552
 #define BF_HW_ID 529
 #define BF2_HW_ID 532
 #define BF3_HW_ID 540
@@ -349,6 +350,7 @@ typedef enum chip_type
     CT_CONNECTX8,
     CT_CONNECTX8_PURE_PCIE_SWITCH,
     CT_CONNECTX9,
+    CT_CONNECTX9_PURE_PCIE_SWITCH,
     CT_SPECTRUM3,
     CT_BLUEFIELD2,
     CT_BLUEFIELD3,
@@ -367,7 +369,9 @@ typedef enum chip_type
     (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) ||     \
      ((chipType) == CT_CONNECTX4_LX) || ((chipType) == CT_CONNECTX5) || ((chipType) == CT_CONNECTX6) ||  \
      ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || ((chipType) == CT_CONNECTX7) || \
-     ((chipType) == CT_CONNECTX8) || ((chipType) == CT_CONNECTX9) || ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_BLUEFIELD2) ||    \
+     ((chipType) == CT_CONNECTX8) || ((chipType) == CT_CONNECTX8_PURE_PCIE_SWITCH) || \
+     ((chipType) == CT_CONNECTX9) || ((chipType) == CT_CONNECTX9_PURE_PCIE_SWITCH) || \
+     ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_BLUEFIELD2) ||    \
      ((chipType) == CT_BLUEFIELD3) || ((chipType) == CT_BLUEFIELD4))
 
 typedef enum chip_family_type

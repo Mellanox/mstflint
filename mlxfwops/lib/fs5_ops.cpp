@@ -612,6 +612,8 @@ bool Fs5Operations::GetLivefishIndicationAddr(uint32_t& lfIndicationAddr)
     {
         case DeviceConnectX8_HwId:
         case DeviceConnectX9_HwId:
+        case DeviceConnectX8_Pure_PCIe_Switch_HwId:
+        case DeviceConnectX9_Pure_PCIe_Switch_HwId:
             lfIndicationAddr = 0xf813c;
             break;
 

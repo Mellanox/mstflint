@@ -306,6 +306,8 @@ enum {
 #define CX7_HW_ID       536
 #define CX8_HW_ID       542
 #define CX9_HW_ID       548
+#define CX8_PURE_PCIE_SWITCH_HW_ID       546
+#define CX9_PURE_PCIE_SWITCH_HW_ID       552
 #define BF_HW_ID        529
 #define BF2_HW_ID       532
 #define BF3_HW_ID       540
@@ -322,7 +324,6 @@ enum {
 #define GR100_HW_ID     0x3000
 #define SPECTRUM4_HW_ID 596
 #define AMOS_GBOX_HW_ID 594
-#define CX8_PURE_PCIE_SWITCH_HW_ID       0x222
 
 /***** GLOBALS *****/
 int increase_poll_time = 0;
@@ -1110,6 +1111,7 @@ static int icmd_init_cr(mfile* mf)
     case (CX8_HW_ID):
     case (CX9_HW_ID):
     case (CX8_PURE_PCIE_SWITCH_HW_ID):
+    case (CX9_PURE_PCIE_SWITCH_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX8;
         mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN_CX8;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX8;
@@ -1239,6 +1241,7 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
     case (CX8_HW_ID):
     case (CX8_PURE_PCIE_SWITCH_HW_ID):
     case (CX9_HW_ID):
+    case (CX9_PURE_PCIE_SWITCH_HW_ID):
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX8;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX7;
         break;
