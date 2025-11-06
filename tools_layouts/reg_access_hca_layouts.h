@@ -4867,10 +4867,6 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* access: RW */
 	struct reg_access_hca_mcqi_reg_ext mcqi_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x90.31 */
-	/* access: RW */
-	struct reg_access_hca_mcia_ext mcia_ext;
-	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
 	/* access: RW */
 	struct reg_access_hca_mcc_reg_ext mcc_reg_ext;
@@ -5348,13 +5344,6 @@ void reg_access_hca_mcda_reg_ext_print(const struct reg_access_hca_mcda_reg_ext 
 unsigned int reg_access_hca_mcda_reg_ext_size(void);
 #define REG_ACCESS_HCA_MCDA_REG_EXT_SIZE    (0x90)
 void reg_access_hca_mcda_reg_ext_dump(const struct reg_access_hca_mcda_reg_ext *ptr_struct, FILE *fd);
-/* mcia_ext */
-void reg_access_hca_mcia_ext_pack(const struct reg_access_hca_mcia_ext *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_hca_mcia_ext_unpack(struct reg_access_hca_mcia_ext *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_hca_mcia_ext_print(const struct reg_access_hca_mcia_ext *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_hca_mcia_ext_size(void);
-#define REG_ACCESS_HCA_MCIA_EXT_SIZE    (0x94)
-void reg_access_hca_mcia_ext_dump(const struct reg_access_hca_mcia_ext *ptr_struct, FILE *fd);
 /* mcqi_reg_ext */
 void reg_access_hca_mcqi_reg_ext_pack(const struct reg_access_hca_mcqi_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mcqi_reg_ext_unpack(struct reg_access_hca_mcqi_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
