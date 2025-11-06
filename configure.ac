@@ -249,7 +249,9 @@ if test "x$enable_fw_mgr" = "xyes"; then
     AC_MSG_NOTICE([zlib CFLAGS:'$libz_CFLAGS' LIBS:'$libz_LIBS'])
     AC_SUBST(libz_CFLAGS)
     AC_SUBST(libz_LIBS)
-    # lzma
+fi
+
+if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"; then
     AC_ARG_WITH([liblzma], AS_HELP_STRING([--with-liblzma=PATH], [use liblzma from the specified PATH]),
         [
             liblzma_dir="$withval"
