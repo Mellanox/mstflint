@@ -139,6 +139,14 @@ public:
         {
             return new ConnectX9FwOperationsSignatureManager();
         }
+        else if (chip == CT_CONNECTX8_PURE_PCIE_SWITCH)
+        {
+            return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
+        }
+        else if (chip == CT_CONNECTX9_PURE_PCIE_SWITCH)
+        {
+            return new ConnectX9PurePCIESwitchFwOperationsSignatureManager();
+        }
         else if (chip == CT_BLUEFIELD2)
         {
             return new Bluefield2FwOperationsSignatureManager();

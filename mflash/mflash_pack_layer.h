@@ -91,6 +91,8 @@ typedef void* trm_ctx;
 #define CX7_HW_ID           0x218
 #define CX8_HW_ID           0x21e
 #define CX8_PURE_PCIE_SWITCH_HW_ID  0x222
+#define CX9_HW_ID           0x224
+#define CX9_PURE_PCIE_SWITCH_HW_ID  0x228
 #define CX6DX_HW_ID         0x212
 #define CX6LX_HW_ID         0x216
 #define BLUEFIELD_HW_ID     0x211
