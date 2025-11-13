@@ -53,6 +53,9 @@
 #include "mtcr_ul/mtcr_cables.h"
 #endif
 
+/* Forward declaration to ensure read_device_id is visible */
+int read_device_id(mfile* mf, u_int32_t* device_id);
+
 struct device_info {
     dm_dev_id_t      dm_id;
     u_int16_t        hw_dev_id;
