@@ -49,6 +49,9 @@
 #include "tools_dev_types.h"
 #include "mflash/mflash_types.h"
 #include "mtcr_ul/mtcr_ul_com.h"
+#ifdef CABLES_SUPPORT
+#include "mtcr_ul/mtcr_cables.h"
+#endif
 
 struct device_info {
     dm_dev_id_t      dm_id;
