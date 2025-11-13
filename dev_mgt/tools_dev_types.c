@@ -49,6 +49,12 @@
 #include "tools_dev_types.h"
 #include "mflash/mflash_types.h"
 #include "mtcr_ul/mtcr_ul_com.h"
+#ifdef CABLES_SUPPORT
+#include "mtcr_ul/mtcr_cables.h"
+#endif
+
+/* Forward declaration to ensure read_device_id is visible */
+int read_device_id(mfile* mf, u_int32_t* device_id);
 
 struct device_info {
     dm_dev_id_t      dm_id;
@@ -203,13 +209,22 @@ static struct device_info g_devs_info[] = {
         DM_HCA                                                /* dev_type */
     },
     {
-        DeviceConnectX8PurePcieSwitch,                        /* dm_id */
-        0x222,                                                /* hw_dev_id */
-        -1,                                                   /* hw_rev_id */
-        4132,                                                 /* sw_dev_id */
-        "CX8_PCIe_Switch",                                    /* name */
-        4,                                                    /* port_num */
-        DM_SWITCH                                             /* dev_type */
+        DeviceConnectX8_Pure_PCIe_Switch, // dm_id
+        0x222,                            // hw_dev_id
+        -1,                               // hw_rev_id
+        6525,                             // sw_dev_id
+        "ConnectX8_Pure_PCIe_Switch",     // name
+        4,                                // port_num
+        DM_HCA                            // dev_type
+    },
+    {
+        DeviceConnectX9_Pure_PCIe_Switch, // dm_id
+        0x228,                            // hw_dev_id
+        -1,                               // hw_rev_id
+        6526,                             // sw_dev_id
+        "ConnectX9_Pure_PCIe_Switch",     // name
+        4,                                // port_num
+        DM_HCA                            // dev_type
     },
     {
         DeviceBlueField,                                      /* dm_id */
@@ -460,6 +475,15 @@ static struct device_info g_devs_info[] = {
         -1,                                               /* hw_rev_id */
         10496,                                            /* sw_dev_id */
         "GB100",                                          /* name */
+        128,                                              /* port_num NEED_CHECK */
+        DM_SWITCH                                         /* dev_type */
+    },
+    {
+        DeviceGR100,                                      /* dm_id */
+        0x3000,                                           /* hw_dev_id */
+        -1,                                               /* hw_rev_id */
+        12288,                                            /* sw_dev_id */
+        "GR100",                                          /* name */
         128,                                              /* port_num NEED_CHECK */
         DM_SWITCH                                         /* dev_type */
     },
@@ -793,6 +817,11 @@ int dm_is_menhit(dm_dev_id_t type)
     return type == DeviceMenhit || type == DeviceArcusPTC || type == DeviceArcusP || type == DeviceArcusE;
 }
 
+int dm_dev_type2sw_id(dm_dev_id_t type)
+{
+    return get_entry(type)->sw_dev_id;
+}
+
 int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type)
 {
     bool isBlueField = (type == DeviceBlueField || type == DeviceBlueField2 || type == DeviceBlueField3);
@@ -935,6 +964,16 @@ int dm_is_cx7(dm_dev_id_t type)
     return (type == DeviceConnectX7);
 }
 
+int dm_is_cx8(dm_dev_id_t type)
+{
+    return (type == DeviceConnectX8 || type == DeviceConnectX8_Pure_PCIe_Switch);
+}
+
+int dm_is_cx9(dm_dev_id_t type)
+{
+    return (type == DeviceConnectX9 || type == DeviceConnectX9_Pure_PCIe_Switch);
+}
+
 int dm_is_new_gen_switch(dm_dev_id_t type)
 {
     return dm_dev_is_switch(type);
@@ -978,8 +1017,8 @@ int dm_dev_is_fs4(dm_dev_id_t type)
 
 int dm_dev_is_fs5(dm_dev_id_t type)
 {
-    return type == DeviceConnectX8 || type == DeviceConnectX8PurePcieSwitch || type == DeviceQuantum3 ||
-           type == DeviceBlueField4;
+    return type == DeviceConnectX8 || type == DeviceConnectX8_Pure_PCIe_Switch || type == DeviceQuantum3 ||
+           type == DeviceBlueField4 || type == DeviceConnectX9 || type == DeviceConnectX9_Pure_PCIe_Switch;
 }
 
 int dm_is_ib_access(mfile* mf)
@@ -990,4 +1029,9 @@ int dm_is_ib_access(mfile* mf)
 int dm_is_bluefield(dm_dev_id_t type)
 {
     return (type == DeviceBlueField || type == DeviceBlueField2 || type == DeviceBlueField3 || type == DeviceBlueField4);
+}
+
+int dm_dev_is_mcam_dword_swap_needed(dm_dev_id_t type)
+{
+    return dm_dev_is_hca(type) || dm_dev_is_retimer(type);
 }
