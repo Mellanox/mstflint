@@ -49,6 +49,12 @@
 #include "tools_dev_types.h"
 #include "mflash/mflash_types.h"
 #include "mtcr_ul/mtcr_ul_com.h"
+#ifdef CABLES_SUPPORT
+#include "mtcr_ul/mtcr_cables.h"
+#endif
+
+/* Forward declaration to ensure read_device_id is visible */
+int read_device_id(mfile* mf, u_int32_t* device_id);
 
 struct device_info {
     dm_dev_id_t      dm_id;
