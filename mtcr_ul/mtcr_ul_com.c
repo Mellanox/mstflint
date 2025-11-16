@@ -2626,6 +2626,7 @@ static MType mtcr_parse_name(const char* name,
     int      is_vfio = strstr(name, "vfio-") != NULL;
 #else
     int      is_vfio = 0;
+    (void)is_vfio;
 #endif
 
     if (strstr(name, "fwctl")) {
@@ -4595,7 +4596,7 @@ int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info, int page_amount)
 {
 #if !defined(__VMKERNEL_UW_NATIVE__)
     int page_size = sysconf(_SC_PAGESIZE);
-    int pages_size = page_amount * page_size;
+    int size_to_allocate = page_amount * page_size;
     int page_counter;
     int ret_value;
 
@@ -4606,38 +4607,51 @@ int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info, int page_amount)
 
     /* Save the page amount. */
     page_info->page_amount = page_amount;
-
-    /* Allocate user buffer. */
-    mf->user_page_list.page_list = memalign(page_size, pages_size);
-    if (!mf->user_page_list.page_list) {
-        return -1;
-    }
-
-    /* We need to call mlock after the pages allocation in order to */
-    /*   lock the virtual address space into RAM and preventing that */
-    /*   memory from being paged to the swap area. */
-    mlock(mf->user_page_list.page_list, pages_size);
-
     mf->user_page_list.page_amount = page_amount;
 
-    /* Save the start buffer pointer as an integer. */
-    page_info->page_pointer_start = (unsigned long)mf->user_page_list.page_list;
+    if (mf->tp == MST_FWCTL_CONTROL_DRIVER) {
+        mf->umem_buff = mlx5lib_alloc_umem_mkey_buff(mf, size_to_allocate, page_size);
+        if (!mf->umem_buff) {
+            fprintf(stderr, "Failed to allocate umem buffer\n");
+            return -1;
+        }
+        /* Keep the real buffer pointer for user-space access */
+        mf->user_page_list.page_list = (char*)mf->umem_buff->buff;
+        mf->umem_id = mf->umem_buff->umem_id;
+    
+        page_info->page_pointer_start = (uint64_t)(uintptr_t)mf->user_page_list.page_list;
+    }
+    else {
+        /* Allocate user buffer. */
+        mf->user_page_list.page_list = memalign(page_size, size_to_allocate);
+        if (!mf->user_page_list.page_list) {
+            return -1;
+        }
 
-    /* Save the virtual address. */
-    for (page_counter = 0; page_counter < page_amount; page_counter++) {
-        int current_offest = (page_size * page_counter);
-        page_info->page_addresses_array[page_counter].virtual_address =
-            (u_int64_t)(mf->user_page_list.page_list + current_offest);
+        /* We need to call mlock after the pages allocation in order to */
+        /*   lock the virtual address space into RAM and preventing that */
+        /*   memory from being paged to the swap area. */
+        mlock(mf->user_page_list.page_list, size_to_allocate);
+
+        /* Save the start buffer pointer as an integer. */
+        page_info->page_pointer_start = (unsigned long)mf->user_page_list.page_list;
+
+        /* Pin the memory in the kernel space. */
+        ret_value = ioctl(mf->fd, PCICONF_GET_DMA_PAGES, page_info);
+
+        if (ret_value) {
+            /* Failed to get dma address. */
+            /* Release the memory. */
+            release_dma_pages(mf, page_counter);
+            return -1;
+        }
     }
 
-    /* Pin the memory in the kernel space. */
-    ret_value = ioctl(mf->fd, PCICONF_GET_DMA_PAGES, page_info);
-
-    if (ret_value) {
-        /* Failed to get dma address. */
-        /* Release the memory. */
-        release_dma_pages(mf, page_counter);
-        return -1;
+    /* Save virtual addresses and read 100 bytes from each page */
+    for (int i = 0; i < page_amount; ++i) {
+        size_t offset = (size_t)i * page_size;
+        void* vptr = (void*)(mf->user_page_list.page_list + offset);
+        page_info->page_addresses_array[i].virtual_address = (uint64_t)(uintptr_t)vptr;
     }
 
     return 0;
@@ -4662,14 +4676,20 @@ int release_dma_pages(mfile* mf, int page_amount)
         return -1;
     }
 
-    page_info.page_amount = page_amount;
+    if (mf->tp == MST_FWCTL_CONTROL_DRIVER) {
+        mlx5lib_free_umem_mkey_buff(mf);
+    }
+    else
+    {
+        page_info.page_amount = page_amount;
+        ioctl(mf->fd, PCICONF_RELEASE_DMA_PAGES, &page_info);
+        free(mf->user_page_list.page_list);
+    }
 
-    ioctl(mf->fd, PCICONF_RELEASE_DMA_PAGES, &page_info);
-
-    /* Free the user space memory. */
-    free(mf->user_page_list.page_list);
     mf->user_page_list.page_list = NULL;
     mf->user_page_list.page_amount = 0;
+    mf->umem_buff = NULL;
+    mf->umem_id = 0;
 
     return 0;
 
