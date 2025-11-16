@@ -144,7 +144,7 @@ int flash_init_fw_access(mflash* mfl, flash_params_t* flash_params);
 int mf_get_secure_host(mflash* mfl, int* mode);
 int mf_secure_host_op(mflash* mfl, u_int64_t key, int op);
 int cntx_sst_get_log2size(u_int8_t density, int* log2spi_size);
-void cntx_mx25k16xxx_get_log2size(u_int8_t density, int* log2spi_size);
+int cntx_mx25k16xxx_get_log2size(u_int8_t density, int* log2spi_size);
 /* NOTE: This macro returns ... not nice. */
 #define CHECK_RC(rc)   \
     do                 \
@@ -511,11 +511,12 @@ int cntx_sst_get_log2size(u_int8_t density, int* log2spi_size)
     return 0;
 }
 
-void cntx_mx25k16xxx_get_log2size(u_int8_t density, int* log2spi_size)
+int cntx_mx25k16xxx_get_log2size(u_int8_t density, int* log2spi_size)
 {
     switch (density)
     {
         case 0x3a:
+        case 0x20:
             *log2spi_size = 0x1a;
             break;
 
@@ -523,6 +524,7 @@ void cntx_mx25k16xxx_get_log2size(u_int8_t density, int* log2spi_size)
             *log2spi_size = density;
             break;
     }
+    return MFE_OK;
 }
 
 
@@ -533,7 +535,7 @@ int get_log2size_by_vendor_type_density(u_int8_t vendor, u_int8_t type, u_int8_t
     }
     if (type == FMT_SST_25 && vendor == FV_MX25K16XXX)
     {
-        cntx_mx25k16xxx_get_log2size(density, log2size);
+        return cntx_mx25k16xxx_get_log2size(density, log2size);
     }
     // In some flashes, the value is 20, but the correct value should be 0x1A. It cannot be 0x20 because 2^20 would overflow an integer.
     if(density == 0x20) {
