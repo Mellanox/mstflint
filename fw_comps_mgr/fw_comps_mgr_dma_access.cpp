@@ -111,15 +111,24 @@ bool DMAComponentAccess::prepareParameters(u_int32_t updateHandle,
                                            int access,
                                            int leftSize,
                                            mtcr_page_addresses page,
-                                           mtcr_page_addresses mailbox_page)
+                                           mtcr_page_addresses mailbox_page,
+                                           int data_page_number)
 {
     accessData->update_handle = updateHandle;
     accessData->offset = offset;
     accessData->size = leftSize > PAGE_SIZE ? PAGE_SIZE : leftSize;
-    accessData->data_page_phys_addr_lsb = EXTRACT64(page.dma_address, 0, 32);
-    accessData->data_page_phys_addr_msb = EXTRACT64(page.dma_address, 32, 32);
-    accessData->mailbox_page_phys_addr_lsb = EXTRACT64(mailbox_page.dma_address, 0, 32);
-    accessData->mailbox_page_phys_addr_msb = EXTRACT64(mailbox_page.dma_address, 32, 32);
+    if (_mf->tp == MST_FWCTL_CONTROL_DRIVER) {
+        accessData->data_page_phys_addr_lsb = data_page_number;
+        accessData->data_page_phys_addr_msb = 0;
+        accessData->mailbox_page_phys_addr_lsb = _mf->umem_id;
+        accessData->mailbox_page_phys_addr_msb = 0;
+    }
+    else {
+        accessData->data_page_phys_addr_lsb = EXTRACT64(page.dma_address, 0, 32);
+        accessData->data_page_phys_addr_msb = EXTRACT64(page.dma_address, 32, 32);
+        accessData->mailbox_page_phys_addr_lsb = EXTRACT64(mailbox_page.dma_address, 0, 32);
+        accessData->mailbox_page_phys_addr_msb = EXTRACT64(mailbox_page.dma_address, 32, 32);
+    }
     int currentOffset = data_size - leftSize;
     if (access == MCC_WRITE_COMP)
     {
@@ -169,18 +178,22 @@ bool DMAComponentAccess::isBMESet(mfile* mf)
     (void)mf;
     res = true; // mst64 (system service that is loaded in mtcr::open()) will set the BME
 #else
-    int COMMAND_REG_OFFSET = 0x4;
-    int BME_MASK = 0x00000004;
-
-    u_int32_t bme_dword = 0;
-    int rc = read_dword_from_conf_space(mf, COMMAND_REG_OFFSET, &bme_dword);
-
-    if ((rc == 0) && (bme_dword & BME_MASK))
-    {
+    if (mf->tp == MST_FWCTL_CONTROL_DRIVER) {
         res = true;
     }
-#endif
+    else {
+        int COMMAND_REG_OFFSET = 0x4;
+        int BME_MASK = 0x00000004;
 
+        u_int32_t bme_dword = 0;
+        int rc = read_dword_from_conf_space(mf, COMMAND_REG_OFFSET, &bme_dword);
+
+        if ((rc == 0) && (bme_dword & BME_MASK))
+        {
+            res = true;
+        }
+    }
+#endif
     DPRINTF(("DMAComponentAccess::isBMESet res = %s\n", res ? "TRUE" : "FALSE"));
     return res;
 }
@@ -255,7 +268,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
             memset(data, 0, data_size);
         }
         prepareParameters(updateHandle, &accessData, offset + (data_size - leftSize), data, data_size, access, leftSize,
-                          page, mailboxPage);
+                          page, mailboxPage, CurrentPage);
         int nIteration = 0;
         while (leftSize > 0)
         {
@@ -290,7 +303,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
                     page = _allocatedListVect[CurrentPage];
                     currentOffset = offset + (data_size - leftSize);
                     prepareParameters(updateHandle, &accessData, currentOffset, data, data_size, access, leftSize, page,
-                                      mailboxPage);
+                                      mailboxPage, CurrentPage);
                 }
             }
 
@@ -357,7 +370,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle,
                     CurrentPage == FMPT_FIRST_PAGE ? CurrentPage = FMPT_SECOND_PAGE : CurrentPage = FMPT_FIRST_PAGE;
                     page = _allocatedListVect[CurrentPage]; // change the page
                     prepareParameters(updateHandle, &accessData, offset + (data_size - leftSize), data, data_size,
-                                      access, leftSize, page, mailboxPage);
+                                      access, leftSize, page, mailboxPage, CurrentPage);
                     // prepare auxilary data for next iteration
                 }
             }

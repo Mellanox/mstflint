@@ -163,6 +163,8 @@ struct mfile_t {
     int                     is_zombiefish;
     int                     vsc_recovery_space_flash_control_vld;
     void*                   nvml_device; /* libnvml device object. */
+    unsigned int            umem_id;
+    struct mlx5_umem_buff*  umem_buff;
 };
 
 #endif /* ifndef __MTCR_MF__ */
