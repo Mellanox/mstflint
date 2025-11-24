@@ -5413,7 +5413,8 @@ void MlxlinkCommander::validateNumOfParamsForXDRGen()
     if (isSpeed200GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
     {
         params = SLTP_XDR_LAST; // 9 taps are valid for 200G speed + drv_amp
-        errMsg += "fir_pre6,fir_pre5,fir_pre4,fir_pre3,fir_pre2,fir_pre1,fir_main,fir_post1,fir_post2,drv_amp";
+        errMsg +=
+        "fir_pre4 ,fir_pre3 ,fir_pre2 ,fir_pre1 ,fir_main ,fir_post1 ,fir_post2 ,fir_post3 ,fir_post4 ,fir_post5 ,fir_post6 ,fir_post7 ,drv_amp";
     }
     else if (isSpeed100GPerLane(_protoActive == IB ? _activeSpeed : _activeSpeedEx, _protoActive))
     {
