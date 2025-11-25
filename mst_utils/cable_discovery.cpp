@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    devs = mdevices_info_v(0xffffffff, &device_count, 1);
+    devs = mdevices_info_v(MDEVS_TAVOR, &device_count, 1);
 
     if (!device_count || !devs) {
         std::cout << "No supported PCIe devices were found." << std::endl;
