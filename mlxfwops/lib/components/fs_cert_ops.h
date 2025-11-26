@@ -73,10 +73,12 @@ public:
     bool WriteCertToFile(CertContainerItem& container, string outputFile);
     void PrintCertMetadata(CertContainerItem& container, ostream& os);
     bool DeserializeCertificates(const vector<u_int8_t>& cacertRawData, vector<CertContainerItem>& certContainers);
+    bool CheckNvidiaSignedOemPriority(CertStructHeader header, CertStructHeader certHeader);
     bool FindContainer(string cert_uuid, CertContainerItem& container);
 
 private:
     vector<CertContainerItem> _containers;
+    vector<string> _nvidiaSignedOemCertUUIDs;
     FwComponent::comps_ids_t _compID;
 };
 
