@@ -279,6 +279,16 @@ public:
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
     virtual bool IsEncryptionSupported();
+    virtual bool checkAndDisableFlashWpIfRequired()
+    {
+        DPRINTF(("FwOperations::checkAndDisableFlashWpIfRequired\n"));
+        return true;
+    }; // relevant for FS5 only for now
+    virtual bool restoreWriteProtectInfo()
+    {
+        DPRINTF(("FwOperations::restoreWriteProtectInfo\n"));
+        return true;
+    }; // relevant for FS5 only for now
     void GetFwParams(fw_ops_params_t&);
     void getSupporteHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum);
 

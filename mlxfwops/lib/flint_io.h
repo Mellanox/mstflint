@@ -509,6 +509,10 @@ public:
     virtual bool set_flash_working_mode(int mode = FBase::Fwm_Default);
     virtual bool set_flash_utilization(bool, int);
     bool is_flash_write_protected();
+    bool disable_flash_write_protection_if_required(); // if the protection is from the top, no disable is needed
+    bool check_and_disable_flash_wp_if_required();
+    bool backup_write_protect_info(write_protect_info_backup_t& protect_info_backup);
+    bool restore_write_protect_info(write_protect_info_backup_t& protect_info_backup);
     static void deal_with_signal();
 
     mfile* getMfileObj() { return mf_get_mfile(_mfl); }

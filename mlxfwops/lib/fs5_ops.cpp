@@ -657,3 +657,43 @@ bool Fs5Operations::ClearLivefishfIndication(Flash* flashAccess)
 
     return true;
 }
+
+bool Fs5Operations::checkAndDisableFlashWpIfRequired()
+{
+    DPRINTF(("Fs5Operations::checkAndDisableFlashWpIfRequired\n"));
+    bool rc = true;
+    if (_ioAccess->is_flash())
+    {
+        if (((Flash*)_ioAccess)->get_ignore_cache_replacment())
+        {
+            DPRINTF(("check and disable flash wp if from bottom for selected flashes\n"));
+            Flash* flash = (Flash*)_ioAccess;
+            rc = flash->backup_write_protect_info(_protect_info_backup);
+            if (!rc)
+            {
+                return errmsg("Failed to backup write protect information");
+            }
+            rc = flash->check_and_disable_flash_wp_if_required();
+        }
+    }
+    return rc;
+}
+
+bool Fs5Operations::restoreWriteProtectInfo()
+{
+    DPRINTF(("Fs5Operations::restoreWriteProtectInfo\n"));
+    bool rc = true;
+    if (_ioAccess->is_flash())
+    {
+        if (((Flash*)_ioAccess)->get_ignore_cache_replacment())
+        {
+            if (_protect_info_backup.backup_success)
+            {
+                DPRINTF(("restoring write protect info..\n"));
+                Flash* flash = (Flash*)_ioAccess;
+                rc = flash->restore_write_protect_info(_protect_info_backup);
+            }
+        }
+    }
+    return rc;
+}

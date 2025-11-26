@@ -4371,6 +4371,19 @@ int mf_get_cmp(mflash* mfl, u_int8_t* cmp)
     return MFE_NOT_SUPPORTED_OPERATION;
 }
 
+int mf_disable_cmp_if_supported(mflash* mfl)
+{
+    if (!mfl)
+    {
+        return MFE_BAD_PARAMS;
+    }
+    if (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+    {
+        return mf_set_cmp(mfl, 0);
+    }
+    return MFE_OK;
+}
+
 
 int mf_get_quad_en(mflash* mfl, u_int8_t* quad_en)
 {

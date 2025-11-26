@@ -87,6 +87,13 @@ typedef struct write_protect_info
                      // or Top
 } write_protect_info_t;
 
+typedef struct write_protect_info_backup
+{
+    write_protect_info_t protect_info;
+    uint8_t cmp;
+    uint8_t backup_success;
+} write_protect_info_backup_t;
+
 ////////////////////////////////////////
 //
 // ST SPI functions - common for InfiniHostIIILx and ConnectX
