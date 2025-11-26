@@ -7458,6 +7458,11 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
         }
     }
 
+    if (attr.series_code_support)
+    {
+        printf("  " SERIES_CODE_PARAM "              0x%02X\n", attr.series_code);
+    }
+
     return FLINT_SUCCESS;
 }
 

@@ -289,6 +289,12 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
 int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength);
 int mf_get_dummy_cycles_direct_access(mflash* mfl, u_int8_t* dummy_cycles_p);
 int mf_set_dummy_cycles_direct_access(mflash* mfl, u_int8_t num_of_cycles);
+
+int identify_macronix_flash(mflash* mfl, MacronixSeriesCode* series_code);
+int modify_flash_info_if_needed(mflash* mfl, flash_info_t* f_info);
+int mf_read_sfdp_table(mflash* mfl, uint32_t address, uint8_t bytes_num, bool swap, uint32_t* data);
+int is_macronix_mx25u51245g(mflash* mfl);
+int is_macronix_mx25u51294g_mx25u51294gxdi08(mflash* mfl);
 EXTERN_C_END
 
 #endif // MFLASH_H

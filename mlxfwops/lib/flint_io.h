@@ -81,6 +81,9 @@ typedef struct ext_flash_attr
     u_int8_t driver_strength_support;
     u_int8_t dummy_cycles_support;
 
+    u_int8_t series_code_support;
+    MacronixSeriesCode series_code;
+
     u_int8_t cmp;
     MfError mf_get_cmp_rc;
 
@@ -531,6 +534,7 @@ public:
 #define SRWD_PARAM "SRWD"
 #define DRIVER_STRENGTH_PARAM "DriverStrength"
 #define DUMMY_CYCLES_PARAM "DummyCycles"
+#define SERIES_CODE_PARAM "SeriesCode"
 #define FLASH_NAME "Flash"
 #define WRITE_PROTECT "WriteProtected"
 #define WP_TOP_STR "Top"
