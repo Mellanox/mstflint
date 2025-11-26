@@ -332,13 +332,13 @@ typedef enum {
     VCC_ND_CRSPACE_SPACE_SUPPORTED           = 0x6,
     VCC_SCAN_CRSPACE_SPACE_SUPPORTED         = 0x7,
     VCC_SEMAPHORE_SPACE_SUPPORTED            = 0x8,
-    VCC_MAC_SPACE_SUPPORTED                  = 0x9,
-    VCC_PCI_ICMD_SPACE_SUPPORTED             = 0xa,
-    VCC_PCI_CRSPACE_SPACE_SUPPORTED          = 0xb,
-    VCC_PCI_ALL_ICMD_SPACE_SUPPORTED         = 0xc,
-    VCC_PCI_SCAN_CRSPACE_SPACE_SUPPORTED     = 0xd,
-    VCC_PCI_GLOBAL_SEMAPHORE_SPACE_SUPPORTED = 0xe,
-    VCC_RECOVERY_SPACE_SUPPORTED             = 0xf
+    VCC_RECOVERY_SPACE_SUPPORTED             = 0x9,
+    VCC_MAC_SPACE_SUPPORTED                  = 0xa,
+    VCC_PCI_ICMD_SPACE_SUPPORTED             = 0xb,
+    VCC_PCI_CRSPACE_SPACE_SUPPORTED          = 0xc,
+    VCC_PCI_ALL_ICMD_SPACE_SUPPORTED         = 0xd,
+    VCC_PCI_SCAN_CRSPACE_SPACE_SUPPORTED     = 0xe,
+    VCC_PCI_GLOBAL_SEMAPHORE_SPACE_SUPPORTED = 0xf,
 } VSCCapCom;
 
 typedef enum {
@@ -350,7 +350,7 @@ typedef enum {
     AS_ND_CRSPACE           = 0x6,
     AS_SCAN_CRSPACE         = 0x7,
     AS_SEMAPHORE            = 0xa,
-    AS_RECOVERY             = 0Xc,
+    AS_RECOVERY             = 0xc,
     AS_MAC                  = 0xf,
     AS_PCI_ICMD             = 0x101,
     AS_PCI_CRSPACE          = 0x102,
