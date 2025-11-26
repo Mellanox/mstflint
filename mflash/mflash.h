@@ -234,6 +234,7 @@ int mf_get_jedec_id(mflash* mfl, u_int32_t* jedec_id);
 
 int mf_set_cmp(mflash* mfl, u_int8_t cmp);
 int mf_get_cmp(mflash* mfl, u_int8_t* cmp);
+int mf_disable_cmp_if_supported(mflash* mfl);
 
 int mf_set_quad_en(mflash* mfl, u_int8_t quad_en);
 int mf_get_quad_en(mflash* mfl, u_int8_t* quad_en);
@@ -253,6 +254,8 @@ int mf_get_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* p
 int mf_set_dummy_cycles(mflash* mfl, u_int8_t num_of_cycles);
 int mf_get_dummy_cycles(mflash* mfl, u_int8_t* num_of_cycles);
 int is_macronix_special_case_for_dummy_cycles(mflash* mfl);
+int is_WINBOND_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, uint8_t log2_bank_size);
+int is_ISSI_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, uint8_t log2_bank_size);
 
 //
 // Set/Get for some options.
