@@ -2848,10 +2848,17 @@ FlintStatus BurnSubCommand::burnFs3()
         return FLINT_FAILED;
     }
 
+    if (!_fwOps->checkAndDisableFlashWpIfRequired())
+    {
+        reportErr(true, "Failed to disable flash write protection if from bottom.\n");
+        return FLINT_FAILED;
+    }
+
     if (device_encrypted && image_encrypted)
     {
         if (!_fwOps->burnEncryptedImage(_imgOps, _burnParams))
         {
+            _fwOps->restoreWriteProtectInfo();
             reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
             return FLINT_FAILED;
         }
@@ -2860,11 +2867,13 @@ FlintStatus BurnSubCommand::burnFs3()
     {
         if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams))
         {
+            _fwOps->restoreWriteProtectInfo();
             reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
             return FLINT_FAILED;
         }
     }
 
+    _fwOps->restoreWriteProtectInfo();
     PRINT_PROGRESS(_burnParams.progressFunc, 101);
     write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
     const char* resetRec = _fwOps->FwGetResetRecommandationStr();
@@ -3337,6 +3346,7 @@ void BurnSubCommand::cleanInterruptedCommand()
     if (_flintParams.device_specified)
     {
         UnlockDevice(_fwOps);
+        _fwOps->restoreWriteProtectInfo();
     }
 }
 
@@ -4043,6 +4053,11 @@ FlintStatus BurnSubCommand::burnMFA2LiveFish(dm_dev_id_t devid_t)
         {
             componentBuffer[i] = fs3_image_signature[i];
         }
+    }
+    else if (_fwType == FIT_FS5)
+    {
+        reportErr(true, "burning MFA2 in livefish mode is not supported for FS5 and FS6");
+        return FLINT_FAILED;
     }
 
     string fileName = "/tmp/temp.bin"; // Get temp name
@@ -7441,6 +7456,11 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
                        mf_err2str(attr.mf_get_cmp_rc));
                 return FLINT_FAILED;
         }
+    }
+
+    if (attr.series_code_support)
+    {
+        printf("  " SERIES_CODE_PARAM "              0x%02X\n", attr.series_code);
     }
 
     return FLINT_SUCCESS;
