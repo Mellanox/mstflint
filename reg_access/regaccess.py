@@ -358,6 +358,21 @@ if REG_ACCESS:
 
             return mpeinRegisterP.contents.port_type
 
+        
+         ##########################
+        def sendMPQD(self, depth, node, DPNv, pcie_index):
+            mpqdRegisterP = pointer(MPQD_REG_EXT())
+            mpqdRegisterP.contents.depth = depth
+            mpqdRegisterP.contents.pcie_index = pcie_index
+            mpqdRegisterP.contents.node = node
+            mpqdRegisterP.contents.DPNv = DPNv
+
+            rc = self._reg_access_mpqd(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mpqdRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register MPQD: %s (%d)" % (self._err2str(rc), rc))
+
+            return mpqdRegisterP.contents.requester_pcie_index
+
         ##########################
         def sendMROQ(self, reset_type):
             mroqRegisterP = pointer(MROQ_EXT())
