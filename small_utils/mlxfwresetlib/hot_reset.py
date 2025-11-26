@@ -87,26 +87,31 @@ class HotResetFlow():
                 logger.debug(f"Failed with pcie_index {pcie_index}: {str(e)}")
                 continue
 
-        raise HotResetError(f"Failed to send MPQD after trying pcie_index 0-{max_pcie_index}: {str(last_error)}")
+        else:
+            raise HotResetError(f"Failed to send MPQD after trying pcie_index 0-{max_pcie_index}: {str(last_error)}")
 
     @staticmethod
-    def _prepare_dbdf_for_hot_reset(dev_dbdf, logger):
+    def _prepare_dbdf_for_hot_reset(dev_dbdf, logger, RegAccessObjArg=None):
         try:
-            MstDevObj = mtcr.MstDevice(mlxfwreset_utils.getDevDBDF(dev_dbdf, logger))
-            RegAccessObj = regaccess.RegAccess(MstDevObj)
+            if RegAccessObjArg is None:
+                MstDevObj = mtcr.MstDevice(mlxfwreset_utils.getDevDBDF(dev_dbdf, logger))
+                RegAccessObj = regaccess.RegAccess(MstDevObj)
+            else:
+                RegAccessObj = RegAccessObjArg
             requester_pcie_index = HotResetFlow._send_mpqd_with_retry(dev_dbdf, RegAccessObj, logger)
             logger.debug('DevDBDF: {0}, requester_pcie_index: {1}'.format(mlxfwreset_utils.getDevDBDF(dev_dbdf, logger), requester_pcie_index))
-            domain_prime = mlxfwreset_utils.split_dbdf(mlxfwreset_utils.getDevDBDF(dev_dbdf, logger), logger)[HotResetFlow.DOMAIN]
-            bus_prime, device_prime, _ = RegAccessObj.sendMPIR(depth=0, pcie_index=requester_pcie_index, node=0)
-            function_prime = 0
+            domain = mlxfwreset_utils.split_dbdf(mlxfwreset_utils.getDevDBDF(dev_dbdf, logger), logger)[HotResetFlow.DOMAIN]
+            bus, device, _ = RegAccessObj.sendMPIR(depth=0, pcie_index=requester_pcie_index, node=0)
+            function = 0
         finally:
-            MstDevObj.close()
+            if RegAccessObjArg is None:  # we created the MstDevObj, so we need to close it
+                MstDevObj.close()
 
         return {
-            HotResetFlow.DOMAIN: domain_prime,
-            HotResetFlow.BUS: bus_prime,
-            HotResetFlow.DEVICE: device_prime,
-            HotResetFlow.FUNCTION: function_prime
+            HotResetFlow.DOMAIN: domain,
+            HotResetFlow.BUS: bus,
+            HotResetFlow.DEVICE: device,
+            HotResetFlow.FUNCTION: function
         }
 
     @staticmethod
@@ -192,7 +197,7 @@ class HotResetFlow():
             while not HotResetFlow.is_fw_ready_for_reset_trigger(mfrl):
                 mlxfwreset_utils.check_if_elapsed_time(start_time, timeout, "The reset state did not change to 'waiting for reset trigger' state")
 
-            dbdf_target_device_dict = HotResetFlow._prepare_dbdf_for_hot_reset(dev_dbdf, logger)
+            dbdf_target_device_dict = HotResetFlow._prepare_dbdf_for_hot_reset(dev_dbdf, logger, RegAccessObj)
             logger.debug('dbdf_target_device_dict : {0}'.format(dbdf_target_device_dict))
             dbdf_sd_partner_dict = {}
 
