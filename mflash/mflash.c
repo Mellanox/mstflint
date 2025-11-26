@@ -1949,7 +1949,7 @@ int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 void update_seventh_gen_addrs(mflash* mfl)
 {
     /* Registers addresses */
-    if (mfl->dm_dev_id == DeviceQuantum3) {
+    if (mfl->dm_dev_id == DeviceQuantum3 || mfl->dm_dev_id == DeviceQuantum4) {
         mfl->gw_cmd_register_addr = HCR_7GEN_QTM3_FLASH_CMD;
         mfl->gw_data_field_addr = HCR_7GEN_QTM3_FLASH_DATA;
         mfl->gcm_en_addr = HCR_7GEN_QTM3_GCM_EN_ADDR;
@@ -2012,11 +2012,11 @@ void update_seventh_gen_addrs(mflash* mfl)
         mfl->gw_addr_field_addr = HCR_7GEN_ARCUSE_FLASH_ADDR;
         mfl->gw_data_size_register_addr = HCR_7GEN_ARCUSE_FLASH_DATA_SIZE;
     } else if (mfl->dm_dev_id == DeviceSpectrum6) {
-        mfl->gw_cmd_register_addr = HCR_7GEN_QTM4_FLASH_CMD;
-        mfl->gw_data_field_addr = HCR_7GEN_QTM4_FLASH_DATA;
-        mfl->gcm_en_addr = HCR_7GEN_QTM4_GCM_EN_ADDR;
-        mfl->gw_addr_field_addr = HCR_7GEN_QTM4_FLASH_ADDR;
-        mfl->gw_data_size_register_addr = HCR_7GEN_QTM4_FLASH_DATA_SIZE;
+        mfl->gw_cmd_register_addr = HCR_7GEN_QTM3_FLASH_CMD;
+        mfl->gw_data_field_addr = HCR_7GEN_QTM3_FLASH_DATA;
+        mfl->gcm_en_addr = HCR_7GEN_QTM3_GCM_EN_ADDR;
+        mfl->gw_addr_field_addr = HCR_7GEN_QTM3_FLASH_ADDR;
+        mfl->gw_data_size_register_addr = HCR_7GEN_QTM3_FLASH_DATA_SIZE;
     }
 
     /* Fields bit offsets and lengths */
