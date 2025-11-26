@@ -4045,7 +4045,7 @@ enum {
     TLV_USER_DATA = 4,
 };
 
-#define REGISTER_HEADERS_SIZE     12
+#define REGISTER_HEADERS_SIZE     20
 #define INBAND_MAX_REG_SIZE       44
 #define INBAND_MAX_REG_SIZE_CLS_A 204
 #define INBAND_MAX_GMP_DWORDS_NUM 55
@@ -4649,7 +4649,7 @@ int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info, int page_amount)
 
     /* Save virtual addresses and read 100 bytes from each page */
     for (page_counter = 0; page_counter < page_amount; page_counter++) {
-        size_t offset = (size_t)i * page_size;
+        size_t offset = (size_t)page_counter * page_size;
         void* vptr = (void*)(mf->user_page_list.page_list + offset);
         page_info->page_addresses_array[page_counter].virtual_address = (uint64_t)(uintptr_t)vptr;
     }
