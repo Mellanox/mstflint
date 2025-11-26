@@ -174,6 +174,9 @@ class HotResetFlow():
                 res = HotResetFlow.get_upstream_port_aux_device(dbdf_aux_str, logger, RegAccessObj)
         except Exception as error:
             raise HotResetError("Failed to retrieve hidden socket DBDF: {0}".format(error))
+
+        if not res:  # we search for hidden aux as last resort - us not finding it means we couldn't track down the aux device and can't continue with the reset flow
+            raise HotResetError("failed to find aux device both as hidden and as discovered")
         return res
 
     @staticmethod
