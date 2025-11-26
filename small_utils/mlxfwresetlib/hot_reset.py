@@ -64,15 +64,27 @@ class HotResetFlow():
         return mfrl.check_reset_state_and_fail_on_error()
 
     @staticmethod
-    def _prepare_prime_dbdf_for_hot_reset(RegAccessObj, dev_dbdf, logger):
-        domain_prime = mlxfwreset_utils.split_dbdf(dev_dbdf, logger)[HotResetFlow.DOMAIN]
-        bus_prime, device_prime, _ = RegAccessObj.sendMPIR(depth=0, pcie_index=0, node=0)
-        function_prime = 0
+    def _prepare_dbdf_for_hot_reset(dev_dbdf, logger, RegAccessObjArg=None):
+        try:
+            if RegAccessObjArg is None:
+                MstDevObj = mtcr.MstDevice(mlxfwreset_utils.getDevDBDF(dev_dbdf, logger))
+                RegAccessObj = regaccess.RegAccess(MstDevObj)
+            else:
+                RegAccessObj = RegAccessObjArg
+            requester_pcie_index = RegAccessObj.sendMPQD(depth=0, node=0, DPNv=1, pcie_index=0)
+            logger.debug('DevDBDF: {0}, requester_pcie_index: {1}'.format(mlxfwreset_utils.getDevDBDF(dev_dbdf, logger), requester_pcie_index))
+            domain = mlxfwreset_utils.split_dbdf(mlxfwreset_utils.getDevDBDF(dev_dbdf, logger), logger)[HotResetFlow.DOMAIN]
+            bus, device, _ = RegAccessObj.sendMPIR(depth=0, pcie_index=requester_pcie_index, node=0)
+            function = 0
+        finally:
+            if RegAccessObjArg is None:  # we created the MstDevObj, so we need to close it
+                MstDevObj.close()
+
         return {
-            HotResetFlow.DOMAIN: domain_prime,
-            HotResetFlow.BUS: bus_prime,
-            HotResetFlow.DEVICE: device_prime,
-            HotResetFlow.FUNCTION: function_prime
+            HotResetFlow.DOMAIN: domain,
+            HotResetFlow.BUS: bus,
+            HotResetFlow.DEVICE: device,
+            HotResetFlow.FUNCTION: function
         }
 
     @staticmethod
@@ -135,6 +147,9 @@ class HotResetFlow():
                 res = HotResetFlow.get_upstream_port_aux_device(dbdf_aux_str, logger, RegAccessObj)
         except Exception as error:
             raise HotResetError("Failed to retrieve hidden socket DBDF: {0}".format(error))
+
+        if not res:  # we search for hidden aux as last resort - us not finding it means we couldn't track down the aux device and can't continue with the reset flow
+            raise HotResetError("failed to find aux device both as hidden and as discovered")
         return res
 
     @staticmethod
@@ -158,42 +173,27 @@ class HotResetFlow():
             while not HotResetFlow.is_fw_ready_for_reset_trigger(mfrl):
                 mlxfwreset_utils.check_if_elapsed_time(start_time, timeout, "The reset state did not change to 'waiting for reset trigger' state")
 
-            dbdf_prime_dict = HotResetFlow._prepare_prime_dbdf_for_hot_reset(RegAccessObj, dev_dbdf, logger)
-            logger.debug('dbdf_prime_dict: {0}'.format(dbdf_prime_dict))
-            dbdf_aux_dict = {}
+            dbdf_target_device_dict = HotResetFlow._prepare_dbdf_for_hot_reset(dev_dbdf, logger, RegAccessObj)
+            logger.debug('dbdf_target_device_dict : {0}'.format(dbdf_target_device_dict))
+            dbdf_sd_partner_dict = {}
 
             logger.debug('reset_flow: {0}'.format(reset_flow))
             if reset_flow == HotResetFlow.SINGLE_DEVICE:
                 pass
             elif reset_flow == HotResetFlow.SOCKET_DIRECT:
-                dbdf_aux_dict = HotResetFlow._get_dbdf_aux_device(devices_sd, logger)
-                logger.debug('dbdf_aux_dict: {0}'.format(dbdf_aux_dict))
-                if dbdf_prime_dict == dbdf_aux_dict:
-                    logger.debug('dbdf_prime_dict is equal to dbdf_aux_dict, checking if fix is needed')
-
-                    dbdf_aux_candidate_dict = HotResetFlow.get_upstream_port_aux_device(dev_dbdf, logger, RegAccessObj)
-                    logger.debug('dbdf_aux__candidate_dict: {0}'.format(dbdf_aux_candidate_dict))
-
-                    dbdf_prime_candidate_dict = HotResetFlow._prepare_prime_dbdf_for_hot_reset(RegAccessObj, mlxfwreset_utils.getDevDBDF(devices_sd[0], logger), logger)
-                    logger.debug('dbdf_prime_candidate_dict: {0}'.format(dbdf_prime_candidate_dict))
-
-                    if dbdf_prime_candidate_dict == dbdf_aux_candidate_dict:
-                        logger.debug("no need to fix prime and aux dbdf")  # maybe add a chack we're in PCIe switch case since the only valid case for this if both primary and auc are under the same upstream port ?
-                    else:
-                        logger.debug("fixing prime and aux dbdf")
-                        dbdf_aux_dict = dbdf_aux_candidate_dict
-                        dbdf_prime_dict = dbdf_prime_candidate_dict
+                dbdf_sd_partner_dict = HotResetFlow._prepare_dbdf_for_hot_reset(devices_sd[0], logger)
+                logger.debug('dbdf_sd_partner_dict: {0}'.format(dbdf_sd_partner_dict))
             elif reset_flow == HotResetFlow.HIDDEN_SOCKET_DIRECT:
-                dbdf_aux_dict = HotResetFlow._get_hidden_socket_direct_dbdf_for_reset(dev_dbdf, logger, RegAccessObj)  # no need to correct domain of dbdf_prime_dict, provided device argument is the primary device in this flow
+                dbdf_sd_partner_dict = HotResetFlow._get_hidden_socket_direct_dbdf_for_reset(dev_dbdf, logger, RegAccessObj)
             else:
                 raise HotResetError("Unknown reset type: {0}".format(reset_flow))
 
-            is_socket_direct = 0 if not dbdf_aux_dict else 1
+            is_socket_direct = 0 if not dbdf_sd_partner_dict else 1
 
-            logger.debug('send_hot_reset | domain_prime: 0x{0:x}, bus_prime: 0x{1:x}, device_prime: 0x{2:x}, function_prime: 0x{3:x}, is_socket_direct: {4}, domain_aux: 0x{5:x}, bus_aux: 0x{6:x}, device_aux: 0x{7:x}, function_aux: 0x{8:x}'.format(
-                dbdf_prime_dict[HotResetFlow.DOMAIN], dbdf_prime_dict[HotResetFlow.BUS], dbdf_prime_dict[HotResetFlow.DEVICE], dbdf_prime_dict[HotResetFlow.FUNCTION], is_socket_direct, dbdf_aux_dict.get(HotResetFlow.DOMAIN, 0), dbdf_aux_dict.get(HotResetFlow.BUS, 0), dbdf_aux_dict.get(HotResetFlow.DEVICE, 0), dbdf_aux_dict.get(HotResetFlow.FUNCTION, 0)))
+            logger.debug('send_hot_reset | domain_target: 0x{0:x}, bus_target: 0x{1:x}, device_target: 0x{2:x}, function_target: 0x{3:x}, is_socket_direct: {4}, domain_sd_partner: 0x{5:x}, bus_sd_partner: 0x{6:x}, device_sd_partner: 0x{7:x}, function_sd_partner: 0x{8:x}'.format(
+                dbdf_target_device_dict[HotResetFlow.DOMAIN], dbdf_target_device_dict[HotResetFlow.BUS], dbdf_target_device_dict[HotResetFlow.DEVICE], dbdf_target_device_dict[HotResetFlow.FUNCTION], is_socket_direct, dbdf_sd_partner_dict.get(HotResetFlow.DOMAIN, 0), dbdf_sd_partner_dict.get(HotResetFlow.BUS, 0), dbdf_sd_partner_dict.get(HotResetFlow.DEVICE, 0), dbdf_sd_partner_dict.get(HotResetFlow.FUNCTION, 0)))
 
-            res = mst_dev.send_hot_reset(is_socket_direct, dbdf_prime_dict[HotResetFlow.DOMAIN], dbdf_prime_dict[HotResetFlow.BUS], dbdf_prime_dict[HotResetFlow.DEVICE], dbdf_prime_dict[HotResetFlow.FUNCTION], dbdf_aux_dict.get(HotResetFlow.DOMAIN, 0), dbdf_aux_dict.get(HotResetFlow.BUS, 0), dbdf_aux_dict.get(HotResetFlow.DEVICE, 0), dbdf_aux_dict.get(HotResetFlow.FUNCTION, 0))  # Using get() with default 0 for aux values when device is not socket direct (then dbdf_aux_dict is empty)
+            res = mst_dev.send_hot_reset(is_socket_direct, dbdf_target_device_dict[HotResetFlow.DOMAIN], dbdf_target_device_dict[HotResetFlow.BUS], dbdf_target_device_dict[HotResetFlow.DEVICE], dbdf_target_device_dict[HotResetFlow.FUNCTION], dbdf_sd_partner_dict.get(HotResetFlow.DOMAIN, 0), dbdf_sd_partner_dict.get(HotResetFlow.BUS, 0), dbdf_sd_partner_dict.get(HotResetFlow.DEVICE, 0), dbdf_sd_partner_dict.get(HotResetFlow.FUNCTION, 0))  # Using get() with default 0 for dbdf_sd_partner_dict values when device is not socket direct (then dbdf_sd_partner_dict is empty)
 
             if res != 0:
                 raise HotResetError('Failed to reset the device (pci_reset_bus failed)')

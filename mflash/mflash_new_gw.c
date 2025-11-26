@@ -45,6 +45,7 @@
 #include "flash_int_defs.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef __WIN__
 //
@@ -569,5 +570,88 @@ int new_gw_st_spi_block_read_ex(mflash* mfl,
     {
         *(u_int32_t*)(data + i) = __be32_to_cpu(*(u_int32_t*)(data + i));
     }
+    return MFE_OK;
+}
+
+/**
+ * Read data (no more than 4 bytes) from SFDP table using RDSFDP command (0x5A)
+ */
+int new_gw_spi_read_sfdp(mflash* mfl, uint32_t sfdp_addr, uint8_t* data, uint8_t bytes_num)
+{
+    int rc = 0;
+    uint32_t flash_data[2] = {0, 0};
+
+    if (!mfl || !data || bytes_num == 0 || bytes_num > 4)
+    {
+        return MFE_BAD_PARAMS;
+    }
+
+    rc = mfl_com_lock(mfl);
+    CHECK_RC(rc);
+
+    // Write address to gateway
+    if (mwrite4(mfl->mf, mfl->gw_addr_field_addr, sfdp_addr) != 4)
+    {
+        release_semaphore(mfl, 0);
+        return MFE_CR_ERROR;
+    }
+
+    // Build gateway command for SFDP read with explicit 3-byte addressing
+    uint32_t gw_cmd = 0;
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_rw_bit_offset, 1);         // Read operation
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_cmd_phase_bit_offset, 1);  // Enable command phase
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_addr_phase_bit_offset, 1); // Enable address phase
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1); // Enable data phase
+    gw_cmd = MERGE(gw_cmd, 0, mfl->gw_addr_size_bit_offset, 1);  // 3-byte addressing (0=3-byte, 1=4-byte)
+
+    // CRITICAL: Read 5 bytes (1 dummy + 4 data) to account for SFDP dummy byte
+    rc = set_gw_data_size(mfl, 5, &gw_cmd);
+    if (rc != MFE_OK)
+    {
+        release_semaphore(mfl, 0);
+        return rc;
+    }
+
+    gw_cmd = MERGE(gw_cmd, SFC_SFDP, mfl->gw_cmd_bit_offset, mfl->gw_cmd_bit_len);        // SFDP command (0x5A)
+    gw_cmd = MERGE(gw_cmd, 1, 31, 1);                                                     // Lock bit
+    gw_cmd = MERGE(gw_cmd, 1, mfl->gw_busy_bit_offset, 1);                                // Busy bit
+    gw_cmd = MERGE(gw_cmd, (u_int32_t)mfl->curr_bank, mfl->gw_chip_select_bit_offset, 1); // Bank select
+
+    DPRINTF(("new_gw_spi_read_sfdp: addr=0x%06x final_gw_cmd=0x%08x\n", sfdp_addr, gw_cmd));
+
+    // Write command directly to gateway register
+    MWRITE4(mfl->gw_cmd_register_addr, gw_cmd);
+
+    rc = gw_wait_ready(mfl, "SFDP Read");
+    if (rc != MFE_OK)
+    {
+        release_semaphore(mfl, 0);
+        return rc;
+    }
+
+    // Read 5 bytes = 2 dwords from gateway
+    if (mread4_block(mfl->mf, mfl->gw_data_field_addr, flash_data, 8) != 8)
+    {
+        release_semaphore(mfl, 0);
+        return MFE_CR_ERROR;
+    }
+
+    release_semaphore(mfl, 0);
+
+    DPRINTF(("new_gw_spi_read_sfdp: flash_data[0]=0x%08x flash_data[1]=0x%08x\n", flash_data[0], flash_data[1]));
+
+    // Convert to big-endian byte array
+    // Gateway returns data in little-endian, but SPI data is big-endian
+    uint32_t be_data[2];
+    be_data[0] = __cpu_to_be32(flash_data[0]);
+    be_data[1] = __cpu_to_be32(flash_data[1]);
+
+    uint8_t* raw = (uint8_t*)be_data;
+    DPRINTF(
+      ("new_gw_spi_read_sfdp: raw bytes (BE): %02x %02x %02x %02x %02x\n", raw[0], raw[1], raw[2], raw[3], raw[4]));
+
+    // Skip first byte (dummy at position 0), copy next bytes_num bytes
+    memcpy(data, &raw[1], bytes_num);
+
     return MFE_OK;
 }
