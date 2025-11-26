@@ -968,6 +968,8 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     attr.srwd_support = _attr.srwd_support;
     attr.driver_strength_support = _attr.driver_strength_support;
     attr.dummy_cycles_support = _attr.dummy_cycles_support;
+    attr.series_code_support = _attr.series_code_support;
+    attr.series_code = _attr.series_code;
     // CMP query
     if (_attr.cmp_support)
     {
@@ -1461,6 +1463,26 @@ bool Flash::set_attr(char* param_name, char* param_val_str, const ext_flash_attr
                      driver_strength_val != 76 && driver_strength_val != 146))
                 {
                     return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [24,26,30,34,41,52,76,146]\n",
+                                  param_val_str);
+                }
+            }
+            else if (is_macronix_mx25u51245g(_mfl))
+            {
+                if (*endp != '\0' ||
+                    (driver_strength_val != 24 && driver_strength_val != 26 && driver_strength_val != 30 &&
+                     driver_strength_val != 34 && driver_strength_val != 41 && driver_strength_val != 52 &&
+                     driver_strength_val != 76 && driver_strength_val != 146))
+                {
+                    return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [24,26,30,34,41,52,76,146]\n",
+                                  param_val_str);
+                }
+            }
+            else if (is_macronix_mx25u51294g_mx25u51294gxdi08(_mfl))
+            {
+                if (*endp != '\0' || (driver_strength_val != 120 && driver_strength_val != 100 &&
+                                      driver_strength_val != 85 && driver_strength_val != 50))
+                {
+                    return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [120,100,85,50]\n",
                                   param_val_str);
                 }
             }
