@@ -360,6 +360,8 @@ if REG_ACCESS:
 
         
          ##########################
+        # [ConnectX FW PCI - Design] Bug SW #4739922: [Access Registers] MPQD Returns a Syndrome for Invalid PCIe Indexes
+        # the above bug causes this read to fail if pcie_index=0 is one the querying host in not privileged to - once it's solve this read will succeed ALWAYS
         def sendMPQD(self, depth, node, DPNv, pcie_index):
             mpqdRegisterP = pointer(MPQD_REG_EXT())
             mpqdRegisterP.contents.depth = depth

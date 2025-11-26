@@ -63,33 +63,6 @@ class HotResetFlow():
             return False
         return mfrl.check_reset_state_and_fail_on_error()
 
-        @staticmethod
-    def _send_mpqd_with_retry(dev_dbdf, RegAccessObj, logger, max_pcie_index=5):
-        """
-        Try sending MPQD register with pcie_index from 0 to max_pcie_index until success.
-
-        Returns:
-            requester_pcie_index on success
-
-        Raises:
-            HotResetError if all attempts fail
-        """
-        last_error = None
-
-        for pcie_index in range(max_pcie_index + 1):
-            try:
-                logger.debug(f"Trying MPQD with pcie_index: {pcie_index}")
-                requester_pcie_index = RegAccessObj.sendMPQD(depth=0, node=0, DPNv=1, pcie_index=pcie_index)
-                logger.debug(f"Success with pcie_index: {pcie_index}, requester_pcie_index: {requester_pcie_index}")
-                return requester_pcie_index
-            except regaccess.RegAccException as e:
-                last_error = e
-                logger.debug(f"Failed with pcie_index {pcie_index}: {str(e)}")
-                continue
-
-        else:
-            raise HotResetError(f"Failed to send MPQD after trying pcie_index 0-{max_pcie_index}: {str(last_error)}")
-
     @staticmethod
     def _prepare_dbdf_for_hot_reset(dev_dbdf, logger, RegAccessObjArg=None):
         try:
@@ -98,7 +71,7 @@ class HotResetFlow():
                 RegAccessObj = regaccess.RegAccess(MstDevObj)
             else:
                 RegAccessObj = RegAccessObjArg
-            requester_pcie_index = HotResetFlow._send_mpqd_with_retry(dev_dbdf, RegAccessObj, logger)
+            requester_pcie_index = RegAccessObj.sendMPQD(depth=0, node=0, DPNv=1, pcie_index=0)
             logger.debug('DevDBDF: {0}, requester_pcie_index: {1}'.format(mlxfwreset_utils.getDevDBDF(dev_dbdf, logger), requester_pcie_index))
             domain = mlxfwreset_utils.split_dbdf(mlxfwreset_utils.getDevDBDF(dev_dbdf, logger), logger)[HotResetFlow.DOMAIN]
             bus, device, _ = RegAccessObj.sendMPIR(depth=0, pcie_index=requester_pcie_index, node=0)
