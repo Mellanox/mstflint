@@ -1423,6 +1423,26 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
     if (!RefreshComponentsStatus()) {
         return false;
     }
+    for (i = 0; i < comps.size(); i++) {
+        int component = comps[i].getType();
+        _currCompQuery = &(_compsQueryMap[component]);
+        if (_currCompQuery->valid)
+        {
+            if (component == FwComponent::DPA_COMPONENT)
+            {
+                DPRINTF(
+                  ("FwCompsMgr::burnComponents() - max_component_size = %d\n", _currCompQuery->comp_cap.max_component_size));
+                DPRINTF(("FwCompsMgr::burnComponents() - comp.getSize() = %d\n", comps[i].getSize()));
+                if (_currCompQuery->comp_cap.max_component_size < comps[i].getSize())
+                {
+                    printf("-E- The dpa app container size is too large! max_component_size is %d bytes.\n",
+                           _currCompQuery->comp_cap.max_component_size);
+                    return false;
+                }
+            }
+        }
+    }
+
     GenerateHandle();
     if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
         DPRINTF(("Cannot lock the handle!\n"));
