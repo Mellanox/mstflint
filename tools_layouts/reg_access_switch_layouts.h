@@ -36,9 +36,9 @@
  
 
 /***
-         *** This file was generated at "2025-08-31 12:57:04"
+         *** This file was generated at "2025-11-23 10:33:37"
          *** by:
-         ***    > adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o tools_layouts
+         ***    > [REDACTED]/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
          ***/
 #ifndef REG_ACCESS_SWITCH_LAYOUTS_H
 #define REG_ACCESS_SWITCH_LAYOUTS_H
@@ -262,15 +262,15 @@ When rxtx field is clreared, for set operation this field is ignored and for get
 	/* access: RW */
 	u_int8_t rx_lane;
 	/* Description - Supported if PCAM.feature_cap_mask bit 116 is set, otherwise field is not valid.
-Relevant for Bidi port only, Simplex port should ignore.
+Relevant for Mode B port only, Mode A port should ignore.
 indicates if module lane Tx or Rx is used.
-0: module_rx_lane_valid - Bidi lane uses module rx lane. 
+0: module_rx_lane_valid - Mode B lane uses module rx lane. 
 tx lane value is not valid should be ignored
-1: module_tx_lane_valid - Bidi lane uses module tx lane. 
+1: module_tx_lane_valid - Mode B lane uses module tx lane. 
 rx lane value is not valid should be ignored */
 	/* 0x0.30 - 0x0.30 */
 	/* access: RO */
-	u_int8_t bidi_map;
+	u_int8_t mode_b_map;
 };
 
 /* Description -   */
@@ -605,9 +605,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 554, "MDDQ slot_info Layout," on page 1054
-For devices on slot query_type data - see Table 556, "MDDQ device_info Register Layout," on page 1055
-For slot name query_type data - see Table 558, "MDDQ slot_name Layout," on page 1057 */
+For slot information query_type data - see Table 563, "MDDQ slot_info Layout," on page 1077
+For devices on slot query_type data - see Table 565, "MDDQ device_info Register Layout," on page 1078
+For slot name query_type data - see Table 567, "MDDQ slot_name Layout," on page 1080 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -642,9 +642,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 546, "PRM Register Payload Layout," on page 1050
-For Command type payload - See Table 548, "Command Payload Layout," on page 1050
-For CrSpace type payload - See Table 550, "CrSpace access Payload Layout," on page 1051 */
+For PRM Register type payload - See Table 555, "PRM Register Payload Layout," on page 1073
+For Command type payload - See Table 557, "Command Payload Layout," on page 1073
+For CrSpace type payload - See Table 559, "CrSpace access Payload Layout," on page 1074 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -683,7 +683,8 @@ Note: Status might be '0' even when debug query is not allowed and additional_in
 4: RMDT token 
 5: CRCS token 
 6: CRDT token
-	*/
+
+8: MTFA token */
 	/* 0x0.24 - 0x0.31 */
 	/* access: INDEX */
 	u_int8_t type_of_token;
@@ -772,7 +773,7 @@ Reserved if not supported by the device */
 /* Size in bytes - 160 */
 struct reg_access_switch_mgpir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see Table 564, "Hardware Info Layout," on page 1059 */
+	/* Description - Hardware Information, see Table 573, "Hardware Info Layout," on page 1082 */
 	/* 0x0.0 - 0x1c.31 */
 	/* access: RW */
 	struct reg_access_switch_mgpir_hw_info_ext hw_info;
@@ -1127,7 +1128,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 373, "NV_SWITCH_PHY_SEC_CONF Layout," on page 880 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 374, "NV_SWITCH_PHY_SEC_CONF Layout," on page 899 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -1188,12 +1189,14 @@ For cables, the index represents the module index starting at index 1 while inde
 	/* access: RO */
 	u_int8_t status;
 	/* Description - The token which a challenge is generated for.
-0: RMCS
-1: RMDT
-2: CRCS - supported from Spectrum-4 and above
-3: CRDT - supported from Spectrum-4 and above
+0: RMCS - (ReMote Customer Support)
+1: RMDT - (ReMote Debug Token)
+2: CRCS - (Challenge-Response Customer Support) - supported from Spectrum-4 and above
+3: CRDT - (Challenge-Response Debug Token) - supported from Spectrum-4 and above
 
 5: MTDT
+6: FRC - (Factory ReCustomization)
+7: MTFA
 Other: Reserved */
 	/* 0x0.24 - 0x0.31 */
 	/* access: INDEX */
@@ -1236,7 +1239,8 @@ Valid only for RMCS. */
 	/* 0x44.0 - 0x44.15 */
 	/* access: RO */
 	u_int16_t session_id;
-	/* Description - Version of the challenge format. */
+	/* Description - Version of the challenge format.
+	*/
 	/* 0x44.24 - 0x44.31 */
 	/* access: RO */
 	u_int8_t challenge_version;
@@ -1590,7 +1594,9 @@ Plane port index of the aggregated port. A value of 0 refers to the aggregated p
 	/* Description - 0 - 40nm products
 1 - 28nm products
 3 - 16nm products
-4 - 7nm products */
+4 - 7nm products
+5 - 5nm products SerDes Gen7.0/ 7.5
+6 - 5nm products SerDes Gen8.0 */
 	/* 0x0.24 - 0x0.27 */
 	/* access: RO */
 	u_int8_t version;
@@ -2030,33 +2036,65 @@ Up to 8 SerDes in a module can be mapped to a local port. */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x5c.31 */
+	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
+	struct reg_access_switch_plib_reg_ext plib_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	/* access: RW */
+	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x28.31 */
 	/* access: RW */
 	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
 	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_icam_reg_ext icam_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_PPCR_ext PPCR_ext;
+	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x7c.31 */
+	/* access: RW */
+	struct reg_access_switch_msgi_ext msgi_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x18.31 */
+	/* access: RW */
+	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x9c.31 */
+	/* access: RW */
+	struct reg_access_switch_mgpir_ext mgpir_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	/* access: RW */
+	struct reg_access_switch_mspmer_ext mspmer_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x10c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x5c.31 */
+	/* access: RW */
+	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
 	struct reg_access_switch_mpein_reg_ext mpein_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
+	/* 0x0.0 - 0x40c.31 */
 	/* access: RW */
-	struct reg_access_switch_icam_reg_ext icam_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct reg_access_switch_mrsr_ext mrsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x10c.31 */
-	/* access: RW */
-	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	struct reg_access_switch_icsr_ext icsr_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x6c.31 */
 	/* access: RW */
@@ -2064,59 +2102,27 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x44.31 */
-	/* access: RW */
-	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x18.31 */
-	/* access: RW */
-	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_MMAM_ext MMAM_ext;
+	struct reg_access_switch_mpir_ext mpir_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
 	struct reg_access_switch_mddq_ext mddq_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
+	/* 0x0.0 - 0x44.31 */
 	/* access: RW */
-	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
+	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
+	/* 0x0.0 - 0x4.31 */
 	/* access: RW */
-	struct reg_access_switch_msgi_ext msgi_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	/* access: RW */
-	struct reg_access_switch_mspmer_ext mspmer_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x9c.31 */
-	/* access: RW */
-	struct reg_access_switch_mgpir_ext mgpir_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	/* access: RW */
-	struct reg_access_switch_pmlp_reg_ext pmlp_reg_ext;
+	struct reg_access_switch_mrsr_ext mrsr_ext;
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_mpir_ext mpir_ext;
+	struct reg_access_switch_MMAM_ext MMAM_ext;
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	/* access: RW */
-	struct reg_access_switch_plib_reg_ext plib_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x40c.31 */
-	/* access: RW */
-	struct reg_access_switch_icsr_ext icsr_ext;
+	struct reg_access_switch_PPCR_ext PPCR_ext;
 };
 
 
