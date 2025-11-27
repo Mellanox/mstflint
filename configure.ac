@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT(mstflint, 4.34.0, akiselman-org@exchange.nvidia.com)
+AC_INIT(mstflint, 4.34.1, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Firmware Burning and Diagnostics Tools for NVIDIA network devices.])
 AC_SUBST([PROJECT])

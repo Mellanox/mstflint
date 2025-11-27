@@ -22,7 +22,7 @@
 %global _name kernel-mstflint
 %endif
 
-%{!?version: %global version 4.34.0}
+%{!?version: %global version 4.34.1}
 %{!?_release: %global _release 1}
 %global _kmp_rel %{_release}%{?_kmp_build_num}%{?_dist}
 
