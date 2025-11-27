@@ -132,7 +132,7 @@ class CmdRegMfrl():
     def __init__(self, reg_access, logger):
         self._reg_access = reg_access
         self.logger = logger
-
+        self._warning_printed = False
         self._reset_levels = CmdRegMfrl.reset_levels_db[:]  # copy
         self._reset_types = CmdRegMfrl.reset_types_db[:]   # copy
 
@@ -297,8 +297,10 @@ class CmdRegMfrl():
         if self._reset_state in CmdRegMfrl.RESET_STATE_ERRORS:
             if self._reset_state == CmdRegMfrl.RESET_STATE_ARM_OS_IS_UP_PLEASE_SHUT_DOWN and \
                     not os.environ.get("MLXFWRESET_EXIT_ON_ARM_SHUTDOWN_NOT_COMPLETED"):
-                print("Please note that ARM shutdown was not completed")
-                return True  # According to arch decision, we don't fail on this error.
+                if not self._warning_printed:
+                    print("Please note that ARM shutdown was not completed")
+                    # According to arch decision, we don't fail on this error and contiue waiting for the FW state to change to 8.
+                    self._warning_printed = True  # Don't print the warning again.
             raise Exception(CmdRegMfrl.RESET_STATE_ERRORS[self._reset_state])
 
         # Need to keep waiting for the FW state to change.
