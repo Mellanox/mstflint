@@ -532,8 +532,7 @@ public:
     u_int32_t getFwSupport();
     mfile* getMfileObj() { return _mf; };
     bool fwReactivateImage();
-    bool burnComponents(std::vector<FwComponent>& comps,
-                        ProgressCallBackAdvSt* progressFuncAdv = (ProgressCallBackAdvSt*)NULL);
+    bool burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progressFuncAdv = (ProgressCallBackAdvSt*)NULL);
     bool getFwComponents(std::vector<FwComponent>& comps, bool readEn = false);
     bool readComponent(FwComponent::comps_ids_t compType,
                        FwComponent& fwComp,

@@ -1937,7 +1937,6 @@ void GenericCommander::apply(const vector<u_int8_t>& buff)
     vector<std::shared_ptr<TLVConf>> tlvs;
     vector<u_int32_t> dwBuff;
     FwCompsMgr fwCompsAccess(_mf);
-    vector<FwComponent> compsToBurn;
     FwComponent::comps_ids_t compsId = FwComponent::comps_ids_t::COMPID_UNKNOWN;
     size_t fingerPrintLength = strlen(BIN_FILE_FINGERPRINT);
 
@@ -1966,8 +1965,7 @@ void GenericCommander::apply(const vector<u_int8_t>& buff)
     }
 
     comp.init(buff, buff.size(), compsId);
-    compsToBurn.push_back(comp);
-    if (!fwCompsAccess.burnComponents(compsToBurn))
+    if (!fwCompsAccess.burnComponents(comp))
     {
         throw MlxcfgException("Error applying the component: %s", fwCompsAccess.getLastErrMsg());
     }
