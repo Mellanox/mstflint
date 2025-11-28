@@ -1416,9 +1416,36 @@ bool FwCompsMgr::queryComponentStatus(u_int32_t componentIndex, comp_status_st* 
     return true;
 }
 
+bool FwCompsMgr::IsCfgComponentType(FwComponent::comps_ids_t type)
+{
+    bool res = false;
+    switch (type)
+    {
+        case FwComponent::COMPID_USER_NVCONFIG:
+        case FwComponent::COMPID_OEM_NVCONFIG:
+        case FwComponent::COMPID_MLNX_NVCONFIG:
+        case FwComponent::COMPID_CS_TOKEN:
+        case FwComponent::COMPID_DBG_TOKEN:
+        case FwComponent::COMPID_RMCS_TOKEN:
+        case FwComponent::COMPID_RMDT_TOKEN:
+        case FwComponent::COMPID_CRCS_TOKEN:
+        case FwComponent::COMPID_CRDT_TOKEN:
+        {
+            res = true;
+            break;
+        }
+        default:
+            break;
+    }
+
+    return res;
+}
+
 bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCallBackAdvSt* progressFuncAdv)
 {
     unsigned i = 0;
+    const u_int8_t LOCK_FW_UPDATE = 0x2;
+    const u_int8_t LOCK_HOST_CFG = 0x3;
 
     if (!RefreshComponentsStatus()) {
         return false;
@@ -1453,7 +1480,19 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
     }
     if (_downloadTransferNeeded == true) {
         for (i = 0; i < comps.size(); i++) {
-            int component = comps[i].getType();
+            FwComponent::comps_ids_t component = comps[i].getType();
+            if (_secureHostState == LOCK_FW_UPDATE && component == FwComponent::COMPID_BOOT_IMG)
+            {
+                _lastError = FWCOMPS_COMP_BLOCKED;
+                DPRINTF(("MCC flow for component %d is blocked!\n", component));
+                return false;
+            }
+            if (_secureHostState == LOCK_HOST_CFG && IsCfgComponentType(component))
+            {
+                _lastError = FWCOMPS_COMP_BLOCKED;
+                DPRINTF(("MCC flow for component %d is blocked!\n", component));
+                return false;
+            }
             _currCompQuery = &(_compsQueryMap[component]);
             if (!_currCompQuery->valid) {
                 _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
@@ -1730,7 +1769,7 @@ u_int32_t FwCompsMgr::getFwSupport()
       "getFwSupport _mircCaps = %d mcqsCap = %d mcqiCap = %d mccCap = %d mcdaCap = %d mqisCap = %d mcddCap = %d mgirCap = %d secure_host = %d\n",
       _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, _secureHostState));
 
-    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && _secureHostState == 0)
+    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && _secureHostState != LOCKED)
     {
         return 1;
     }
