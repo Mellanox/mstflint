@@ -1521,11 +1521,11 @@ void MlxlinkMaps::initEnhancedDebugMapping()
 
     _localReasonOpcode[LOCAL_REASON_OPCODE_NO_LINK_DOWN_INDICAION] = "No_link_down_indication";
     _localReasonOpcode[LOCAL_REASON_OPCODE_UNKWON_REASON] = "Unknown_reason";
-    _localReasonOpcode[LOCAL_REASON_OPCODE_HI_SER_OR_HI_BER] = "Hi_SER_or_Hi_BER";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_HI_BER] = "Hi_BER";
     _localReasonOpcode[LOCAL_REASON_OPCODE_BLOCK_LOCK_LOSS] = "Block_Lock_loss";
     _localReasonOpcode[LOCAL_REASON_OPCODE_ALIGNMENT_LOSS] = "Alignment_loss";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FEC_SYNC_LOSS] = "FEC_sync_loss";
-    _localReasonOpcode[LOCAL_REASON_OPCODE_PLL_SYNC_LOSS] = "PLL_lock_loss";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PLL_LOCK_LOSS] = "PLL_lock_loss";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FIFO_OVERFLOW] = "FIFO_overflow";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FALSE_SKIP_CONDITION] = "false_SKIP_condition";
     _localReasonOpcode[LOCAL_REASON_OPCODE_MINOR_ERROR_THRESHOLD_EXCEEDED] = "Minor_Error_threshold_exceeded";
@@ -1573,8 +1573,13 @@ void MlxlinkMaps::initEnhancedDebugMapping()
     _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_DUE_TO_CONTAIN_MODE] = "Down_due_to_contain_mode";
     _localReasonOpcode[LOCAL_REASON_OPCODE_BW_LOSS_THRESHOLD_EXCEEDED] = "BW_loss_threshold_exceeded";
     _localReasonOpcode[LOCAL_REASON_OPCODE_ELS_LASER_FAULT] = "ELS_laser_fault";
-
-    _localReasonOpcode[LOCAL_REASON_OPCODE_TIMEOUT] = "Timeout";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_HI_SER] = "Hi_SER";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_BY_NMX_ADMINSTATE_CMD] = "Down_by_nmx_adminstate_cmd";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FLUA_BER_BELOW_THRESHOLD_IN_GUARD_TIME] =
+      "FLUA_BER_below_threshold_in_guard_time";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_RECEIVED_LOCAL_FAULT] = "Received_local_fault";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_RECEIVED_LINK_INTERRUPTION] = "Received_link_interruption";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_MANUAL_DEBUG_MODE] = "Manual_debug_mode";
     _localReasonOpcode[LOCAL_REASON_OPCODE_RESERVED] = "N/A";
 }
 
