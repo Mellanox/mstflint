@@ -95,6 +95,7 @@ int cable_access_reg_rw(mfile    * mf,
                         u_int32_t* data,
                         rw_op_t    _rw)
 {
+    int ii = 0;
     reg_access_method_t            op = REG_ACCESS_METHOD_GET;
     struct reg_access_hca_mcia_ext cbl_reg_t;
 
@@ -122,7 +123,7 @@ int cable_access_reg_rw(mfile    * mf,
     if (_rw == READ_OP) {
         copy_data((u_int8_t*)data, (u_int8_t*)cbl_reg_t.dword, size, 1);
         DBG_PRINTF("MCIA read: page: %#x, offset: %#x, size: %d\n", page_num, page_off, size);
-        for (int ii = 0; ii < size; ii++) {
+        for (ii = 0; ii < size; ii++) {
             DBG_PRINTF("MCIA read: data[%d] = %#x \n", ii, cbl_reg_t.dword[ii]);
         }
     }
