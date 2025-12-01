@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <iostream>
+#include <stdexcept>
 #include "include/mtcr_ul/mtcr.h"
 #include "mtcr_ul/mtcr_cables.h"
 #include "dev_mgt/tools_dev_types.h"
