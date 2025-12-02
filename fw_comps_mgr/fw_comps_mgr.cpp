@@ -2098,6 +2098,12 @@ unsigned char* FwCompsMgr::getLastErrMsg()
  
     case FWCOMPS_MCC_FW_BURN_REJECTED_NO_PLACE:
         return (unsigned char*)"FW burn rejected: No place available";
+
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_1:
+        return (unsigned char*)"FW burn rejected: Internal error 1";
+
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_2:
+        return (unsigned char*)"FW burn rejected: Internal error 2";
  
     case FWCOMPS_MCC_FW_BURN_REJECTED_NUM_OF_SWAP:
         return (unsigned char*)"FW burn rejected: Number of swap error";
@@ -2192,8 +2198,12 @@ unsigned char* FwCompsMgr::getLastErrMsg()
     case FWCOMPS_MCC_REJECTED_TOKEN_ALREADY_APPLIED:
         return (unsigned char*)"Token already applied";
 
-        case FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
-            return (unsigned char*)"DRAM not available";
+    case FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
+        return (unsigned char*)"DRAM not available";
+
+    case FWCOMPS_MCC_FW_BURN_REJECTED_FLASH_WRITE_PROTECTED:
+        return (unsigned char*)"Flash is write protected";
+    
     case FWCOMPS_UNSUPPORTED_DEVICE:
         return (unsigned char*)"Unsupported device";
 
