@@ -1,0 +1,16 @@
+Source: ibdump
+Section: net
+Priority: optional
+Maintainer: Tzafrir Cohen <mellanox@cohens.org.il>
+Build-Depends: debhelper (>= 9.0.0),
+# mft-devel,
+ libibverbs-dev,
+Standards-Version: 4.1.4
+Homepage: https://github.com/Mellanox/ibdump
+
+Package: ibdump
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Mellanox packets sniffer tool
+ This package contains sniffer tool for IB packets.
+ ibdump is a sniffer that like tcpdump can produce pcap files.
