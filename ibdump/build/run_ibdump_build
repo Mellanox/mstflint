@@ -1,0 +1,65 @@
+
+#!/bin/bash
+
+g_ibdump_build_script=0
+g_checkout_only=0
+g_default_build=0
+
+g_utils_tmp_dir="/mswg/tmp/ibdump_build_rc_wrapper.`whoami`"
+g_ibdump_build_script="${g_utils_tmp_dir}/build_ibdump_wrapper.py"
+g_git_branch="HEAD"
+
+
+function prepare_env {
+    echo "-I- Creating temporary ibdump build utils dir $g_utils_tmp_dir ..."
+    if [ ! -d $g_utils_tmp_dir ]; then
+        mkdir $g_utils_tmp_dir
+    fi
+}
+
+function check_out_linux_build_utils {
+    echo "-I- Checking out ibdump build utils into $g_utils_tmp_dir (from branch ${g_git_branch})..."
+    git_url=ssh://builder@l-gerrit.mtl.labs.mlnx:29418/tools/sniffer
+    cd ${g_utils_tmp_dir}
+    tempfile=`mktemp`
+    #git archive --remote=${git_url} ${g_git_branch}:build 2>${tempfile}| tar -x &>/dev/null
+    tmp_fld=`mktemp -d --tmpdir=${PWD}` && git clone ${git_url} ${tmp_fld} 2>tempfile && cp -rf  ${tmp_fld}/build/* . && rm -rf ${tmp_fld}
+    if [ $? -ne 0 ]; then
+        echo "-E- Could not export files from branch ${g_git_branch}. Got output:" >&2
+        cat ${tempfile}
+        rm -rf ${tempfile}
+        exit 1
+    fi
+    echo "-I- Replacing build ibdump script"
+    rm -rf /mswg/projects/mft/bin/build_ibdump.py
+    cp build_ibdump.py /mswg/projects/mft/bin
+    rm -rf ${tempfile}
+    cd - > /dev/null
+}
+
+function cleanup {
+    if [ -d $g_utils_tmp_dir ]; then
+        echo "-I- Removing ibdump build utils directory and content ..."
+        rm -rf $g_utils_tmp_dir
+        rc=$?
+        if [ $rc -ne 0 ]; then
+            echo "-E- Failed to cleanup ibdump build utils directory"
+            exit $rc
+        fi
+    fi
+}
+
+prepare_env
+
+check_out_linux_build_utils; echo
+
+sudo -u builder $g_ibdump_build_script $*
+rc=$?
+if [ $rc -ne 0 ]; then
+    echo "-E- Build Failed !"
+    exit $rc
+fi
+
+cleanup
+
+exit 0
