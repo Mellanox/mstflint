@@ -2848,17 +2848,10 @@ FlintStatus BurnSubCommand::burnFs3()
         return FLINT_FAILED;
     }
 
-    if (!_fwOps->checkAndDisableFlashWpIfRequired())
-    {
-        reportErr(true, "Failed to disable flash write protection if from bottom.\n");
-        return FLINT_FAILED;
-    }
-
     if (device_encrypted && image_encrypted)
     {
         if (!_fwOps->burnEncryptedImage(_imgOps, _burnParams))
         {
-            _fwOps->restoreWriteProtectInfo();
             reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
             return FLINT_FAILED;
         }
@@ -2867,13 +2860,11 @@ FlintStatus BurnSubCommand::burnFs3()
     {
         if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams))
         {
-            _fwOps->restoreWriteProtectInfo();
             reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
             return FLINT_FAILED;
         }
     }
 
-    _fwOps->restoreWriteProtectInfo();
     PRINT_PROGRESS(_burnParams.progressFunc, 101);
     write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
     const char* resetRec = _fwOps->FwGetResetRecommandationStr();

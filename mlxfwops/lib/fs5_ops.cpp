@@ -660,42 +660,46 @@ bool Fs5Operations::ClearLivefishfIndication(Flash* flashAccess)
     return true;
 }
 
-bool Fs5Operations::checkAndDisableFlashWpIfRequired()
+bool Fs5Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
-    DPRINTF(("Fs5Operations::checkAndDisableFlashWpIfRequired\n"));
-    bool rc = true;
-    if (_ioAccess->is_flash())
+    if (!checkAndDisableFlashWpIfRequired())
     {
-        if (((Flash*)_ioAccess)->get_ignore_cache_replacment())
-        {
-            DPRINTF(("check and disable flash wp if from bottom for selected flashes\n"));
-            Flash* flash = (Flash*)_ioAccess;
-            rc = flash->backup_write_protect_info(_protect_info_backup);
-            if (!rc)
-            {
-                return errmsg("Failed to backup write protect information");
-            }
-            rc = flash->check_and_disable_flash_wp_if_required();
-        }
+        return errmsg("Failed to check and disable flash write protection if from bottom.\n");
     }
-    return rc;
+
+    bool success = Fs4Operations::burnEncryptedImage(imageOps, burnParams);
+    if (!success)
+    {
+        restoreWriteProtectInfo();
+        return errmsg("burnEncryptedImage failed: %s", err());
+    }
+
+    if (!restoreWriteProtectInfo())
+    {
+        return errmsg("Post-burn operation failed: Failed to restore flash write protection if from bottom.\n");
+    }
+
+    return true;
 }
 
-bool Fs5Operations::restoreWriteProtectInfo()
+bool Fs5Operations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
-    DPRINTF(("Fs5Operations::restoreWriteProtectInfo\n"));
-    bool rc = true;
-    if (_ioAccess->is_flash())
+    if (!checkAndDisableFlashWpIfRequired())
     {
-        if (((Flash*)_ioAccess)->get_ignore_cache_replacment())
-        {
-            if (_protect_info_backup.backup_success)
-            {
-                DPRINTF(("restoring write protect info..\n"));
-                Flash* flash = (Flash*)_ioAccess;
-                rc = flash->restore_write_protect_info(_protect_info_backup);
-            }
-        }
+        return errmsg("Failed to check and disable flash write protection if from bottom.\n");
     }
-    return rc;
+
+    bool success = Fs3Operations::FwBurnAdvanced(imageOps, burnParams);
+    if (!success)
+    {
+        restoreWriteProtectInfo();
+        return errmsg("FwBurnAdvanced failed: %s", err());
+    }
+
+    if (!restoreWriteProtectInfo())
+    {
+        return errmsg("Post-burn operation failed: Failed to restore flash write protection if from bottom.\n");
+    }
+
+    return true;
 }

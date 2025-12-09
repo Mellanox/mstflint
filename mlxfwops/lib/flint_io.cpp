@@ -1477,7 +1477,7 @@ bool Flash::set_attr(char* param_name, char* param_val_str, const ext_flash_attr
                                   param_val_str);
                 }
             }
-            else if (is_macronix_mx25u51294g_mx25u51294gxdi08(_mfl))
+            else if (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(_mfl))
             {
                 if (*endp != '\0' || (driver_strength_val != 120 && driver_strength_val != 100 &&
                                       driver_strength_val != 85 && driver_strength_val != 50))
@@ -1561,7 +1561,8 @@ bool Flash::disable_flash_write_protection_if_required()
             return errmsg("Failed to get write protect information for bank %d: (%s)", bank, mf_err2str(rc));
         }
 
-        if (is_WINBOND_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size))
+        if (is_WINBOND_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size) ||
+            is_macronix_mx25u51294g_mx25u51294gxdi08(_attr.vendor, _attr.type, _attr.log2_bank_size, _attr.series_code))
         {
             uint8_t cmp = 0;
             rc = mf_get_cmp(_mfl, &cmp);
@@ -1611,8 +1612,7 @@ bool Flash::disable_flash_write_protection_if_required()
 bool Flash::check_and_disable_flash_wp_if_required()
 {
     bool rc = true;
-    if (is_WINBOND_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size) ||
-        is_ISSI_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size))
+    if (is_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size, _attr.series_code))
     {
         rc = disable_flash_write_protection_if_required();
     }
@@ -1626,8 +1626,7 @@ bool Flash::backup_write_protect_info(write_protect_info_backup_t& protect_info_
     int bank = 0;
     if (_attr.write_protect_support)
     {
-        if (is_WINBOND_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size) ||
-            is_ISSI_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size))
+        if (is_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size, _attr.series_code))
         {
             rc = mf_get_cmp(_mfl, &protect_info_backup.cmp);
             if (rc != MFE_OK)
@@ -1654,8 +1653,7 @@ bool Flash::restore_write_protect_info(write_protect_info_backup_t& protect_info
     int bank = 0;
     if (_attr.write_protect_support)
     {
-        if (is_WINBOND_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size) ||
-            is_ISSI_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size))
+        if (is_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size, _attr.series_code))
         {
             rc = mf_set_cmp(_mfl, protect_info_backup.cmp);
             if (rc != MFE_OK && rc != MFE_NOT_SUPPORTED_OPERATION)

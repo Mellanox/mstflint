@@ -2467,6 +2467,60 @@ bool FwOperations::FwBurnAdvanced(FwOperations* imageOps,
     return errmsg("FwBurnAdvanced not supported.");
 }
 
+bool FwOperations::checkAndDisableFlashWpIfRequired()
+{
+    u_int8_t fwType = this->FwType();
+    if (fwType != FIT_FS5)
+    {
+        DPRINTF(("FwOperations::checkAndDisableFlashWpIfRequired not supported for fw type %d\n", fwType));
+        return true; // only supported for FS5 and FS6
+    }
+
+    DPRINTF(("FwOperations::checkAndDisableFlashWpIfRequired\n"));
+    bool rc = true;
+    if (_ioAccess->is_flash())
+    {
+        if (((Flash*)_ioAccess)->get_ignore_cache_replacment())
+        {
+            DPRINTF(("check and disable flash wp if from bottom for selected flashes\n"));
+            Flash* flash = (Flash*)_ioAccess;
+            rc = flash->backup_write_protect_info(_protect_info_backup);
+            if (!rc)
+            {
+                return errmsg("Failed to backup write protect information");
+            }
+            rc = flash->check_and_disable_flash_wp_if_required();
+        }
+    }
+    return rc;
+}
+
+bool FwOperations::restoreWriteProtectInfo()
+{
+    DPRINTF(("FwOperations::restoreWriteProtectInfo\n"));
+    u_int8_t fwType = this->FwType();
+    if (fwType != FIT_FS5)
+    {
+        DPRINTF(("FwOperations::restoreWriteProtectInfo not supported for fw type %d\n", fwType));
+        return true; // only supported for FS5 and FS6
+    }
+
+    int rc = true;
+    if (_ioAccess->is_flash())
+    {
+        if (((Flash*)_ioAccess)->get_ignore_cache_replacment())
+        {
+            if (_protect_info_backup.backup_success)
+            {
+                DPRINTF(("restoring write protect info..\n"));
+                Flash* flash = (Flash*)_ioAccess;
+                rc = flash->restore_write_protect_info(_protect_info_backup);
+            }
+        }
+    }
+    return rc;
+}
+
 bool FwOperations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
 {
     (void)critical;

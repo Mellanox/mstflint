@@ -37,11 +37,7 @@
 class Fs5Operations : public Fs4Operations
 {
 public:
-    Fs5Operations(FBase* ioAccess) : Fs4Operations(ioAccess)
-    {
-        memset(&_protect_info_backup, 0x0, sizeof(_protect_info_backup));
-    };
-
+    Fs5Operations(FBase* ioAccess) : Fs4Operations(ioAccess){};
     ~Fs5Operations(){};
     u_int8_t FwType() override;
     bool FwQuery(fw_info_t* fwInfo,
@@ -57,8 +53,8 @@ public:
                            bool verbose = false,
                            bool ignoreImageStart = false,
                            bool imageSizeOnly = false) override;
-    bool checkAndDisableFlashWpIfRequired() override;
-    bool restoreWriteProtectInfo() override;
+    virtual bool burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams) override;
+    virtual bool FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams) override;
 
 protected:
     bool CheckBoot2(u_int32_t beg,
@@ -89,9 +85,7 @@ private:
     bool IsSecureFwUpdateSigned(bool& isSigned);
     bool NCoreQuery(fw_info_t* fwInfo);
     bool GetNcoreData(vector<u_int8_t>& imgBuff) override;
-    bool GetHashesTableSize(u_int32_t& size) override;
-    
-    write_protect_info_backup_t _protect_info_backup;
+    bool GetHashesTableSize(u_int32_t& size) override;  
 };
 
 #endif /* FS5_OPS_H */
