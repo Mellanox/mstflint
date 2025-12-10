@@ -1,8 +1,3 @@
-The ibdump repository will be removed by the end of 2025.
-You can use ibdump from the mstflint project:
-https://github.com/Mellanox/mstflint
-
-
 ## Mellanox Technologies - ibdump HCA Sniffing Utility
 Project owner: Itay Avraham, itayavr@mellanox.com
 
