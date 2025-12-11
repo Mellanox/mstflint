@@ -52,7 +52,7 @@
 #include <signal.h>
 
 #if defined(WITH_MFT) || defined(WITH_MSTFLINT)
-    #include <mtcr/mtcr.h>
+    #include <mtcr.h>
 #ifdef WITH_MFT
     #include "ibd_hw_access.h"
 #endif
