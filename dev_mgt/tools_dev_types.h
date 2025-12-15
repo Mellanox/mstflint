@@ -213,6 +213,11 @@ int dm_is_device_supported(dm_dev_id_t type);
 const char* dm_dev_type2str(dm_dev_id_t type);
 
 /**
+ * Returns the external device name as a "const char*"
+ */
+const char* dm_dev_type2str_external(dm_dev_id_t type);
+
+/**
  * Returns the device name as a "const char*"
  */
 const char* dm_dev_hw_id2str(unsigned int hw_dev_id);

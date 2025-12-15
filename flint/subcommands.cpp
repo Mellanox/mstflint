@@ -5731,7 +5731,7 @@ bool SwResetSubCommand::IsDeviceSupported(dm_dev_id_t dev_id)
         return true;
     }
 
-    reportErr(true, "Device %s doesn't support swreset command.\n", dm_dev_type2str(dev_id));
+    reportErr(true, "Device %s doesn't support swreset command.\n", dm_dev_type2str_external(dev_id));
     return false;
 }
 
@@ -8993,7 +8993,7 @@ bool QueryBfbComponentsSubCommand::isDeviceSupported()
     if (devid_type != DeviceBlueField3)
     {
         reportErr(true, "query_bfb_components sub-command is supported for BlueField3 only. Device provided: %s\n",
-                  dm_dev_type2str(devid_type));
+                  dm_dev_type2str_external(devid_type));
         return false;
     }
 

@@ -461,7 +461,7 @@ void MlnxDev::setDeviceType(void)
     {
         mclose(mf);
     }
-    _deviceTypeStr = (string)dm_dev_type2str(ptr_dm_dev_id);
+    _deviceTypeStr = (string)dm_dev_type2str_external(ptr_dm_dev_id);
     _deviceType = ptr_dm_dev_id;
 }
 
