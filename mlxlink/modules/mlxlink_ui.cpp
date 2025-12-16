@@ -61,7 +61,7 @@ void MlxlinkUi::initRegAccessLib()
     _mlxlinkCommander->_mf = _mf;
 
     _mlxlinkCommander->_regLib =
-      new MlxRegLib(_mlxlinkCommander->_mf, _mlxlinkCommander->_extAdbFile, _mlxlinkCommander->_useExtAdb);
+      new MlxRegLib(_mlxlinkCommander->_mf, _mlxlinkCommander->_extAdbFile, _mlxlinkCommander->_useExtAdb, true);
 
     _mlxlinkCommander->_userInput = _userInput;
 
@@ -1026,7 +1026,7 @@ std::map<u_int32_t, bool> MlxlinkUi::getprbsLanesFromParams(const string& params
     vector<string>::iterator it = prbsLanesParams.begin();
     while (it != prbsLanesParams.end())
     {
-        RegAccessParser::RegAccessParser::strToUint32((char*)(*it).c_str(), lane);
+        mlxreg::RegAccessParser::strToUint32((char*)(*it).c_str(), lane);
         prbsLanesToSet[lane] = true;
         it++;
     }
@@ -1054,12 +1054,12 @@ void MlxlinkUi::handlePortStr(UserInput& userInput, const string& portStr)
      */
     if (portParts.size() > 1)
     {
-        RegAccessParser::RegAccessParser::strToUint32((char*)portParts[1].c_str(), userInput._splitPort);
+        mlxreg::RegAccessParser::strToUint32((char*)portParts[1].c_str(), userInput._splitPort);
         userInput._splitProvided = true;
         if (portParts.size() > SECOND_LEVEL_PORT_ACCESS)
         {
             // it's the split part of Quantum-2 (xx/xx/split)
-            RegAccessParser::RegAccessParser::strToUint32((char*)portParts[2].c_str(), userInput._secondSplitPort);
+            mlxreg::RegAccessParser::strToUint32((char*)portParts[2].c_str(), userInput._secondSplitPort);
             userInput._secondSplitProvided = true;
         }
         else if (portParts.size() > THIRD_LEVEL_PORT_ACCESS)
@@ -1068,7 +1068,7 @@ void MlxlinkUi::handlePortStr(UserInput& userInput, const string& portStr)
         }
     }
 
-    RegAccessParser::RegAccessParser::strToUint32((char*)portParts[0].c_str(), userInput._labelPort);
+    mlxreg::RegAccessParser::strToUint32((char*)portParts[0].c_str(), userInput._labelPort);
     userInput._portSpecified = true;
 }
 

@@ -42,6 +42,7 @@
 #include <fstream>
 #include <assert.h>
 #include <common/tools_utils.h>
+#include "common/tools_algorithm.h"
 #include <common/tools_version.h>
 #include <mft_utils/mft_sig_handler.h>
 #ifndef MST_UL
@@ -132,8 +133,11 @@
 #define OVERWRITE_FLAG_SHORT 'w'
 #define FULL_PATH_FLAG "full_path"
 #define FULL_PATH_FLAG_SHORT ' '
+#define NO_DYNAMIC_FLAG "no_dynamic"
+#define NO_DYNAMIC_FLAG_SHORT ' '
 
 using namespace mlxreg;
+namespace Algorithm = mstflint::common::algorithm;
 
 /************************************
  * Function: MlxRegUi
@@ -151,12 +155,13 @@ MlxRegUi::MlxRegUi() : CommandLineRequester("mlxreg OPTIONS"), _cmdParser("mlxre
     _dataLen = 0;
     _ignoreCapCheck = false;
     _op = CMD_UNKNOWN;
-    _mlxRegLib = NULL;
     _force = false;
     _ignore_ro = false;
     _output_file = "";
     _file_io = "";
     _overwrite = false;
+    _full_path = false;
+    _use_dynamic = true;
     _full_path = false;
 
 #if defined(EXTERNAL) || defined(MST_UL)
@@ -174,10 +179,6 @@ MlxRegUi::~MlxRegUi()
     if (_mf)
     {
         mclose(_mf);
-    }
-    if (_mlxRegLib)
-    {
-        delete _mlxRegLib;
     }
 }
 
@@ -210,6 +211,8 @@ void MlxRegUi::initCmdParser()
     AddOptions(OVERWRITE_FLAG, OVERWRITE_FLAG_SHORT, "",
                "Set only specified fields, set unspecified fields to zero (only valid for SET command)");
     AddOptions(FULL_PATH_FLAG, FULL_PATH_FLAG_SHORT, "", "Show field names with full hierarchical path");
+    AddOptions(NO_DYNAMIC_FLAG, NO_DYNAMIC_FLAG_SHORT, "",
+               "Disable dynamic ADB features, conditional unions and arrays");
     _cmdParser.AddRequester(this);
 }
 
@@ -269,6 +272,8 @@ void MlxRegUi::printHelp()
     printFlagLine(OVERWRITE_FLAG_SHORT, OVERWRITE_FLAG, "",
                   "Set only specified fields, set unspecified fields to zero (only valid for SET command)");
     printFlagLine(FULL_PATH_FLAG_SHORT, FULL_PATH_FLAG, "", "Show field names with full hierarchical path");
+    printFlagLine(NO_DYNAMIC_FLAG_SHORT, NO_DYNAMIC_FLAG, "",
+                  "Disable dynamic ADB features, conditional unions and arrays");
     // print usage examples
     printf("\n");
     printf(IDENT "Examples:\n");
@@ -284,24 +289,7 @@ void MlxRegUi::printHelp()
 /************************************
  * Function: getLongestNodeLen
  ************************************/
-size_t getLongestNodeLen(std::vector<AdbInstanceAdvLegacy*> root, bool full_path)
-{
-    size_t len = 0;
-    for (std::vector<AdbInstanceAdvLegacy*>::size_type i = 0; i != root.size(); i++)
-    {
-        auto name = full_path ? root[i]->fullName(1) : root[i]->get_field_name();
-        if (name.size() > len)
-        {
-            len = name.size();
-        }
-    }
-    return (len + COLUMNS_SPACE);
-}
-
-/************************************
- * Function: getLongestNodeLen
- ************************************/
-size_t getLongestNodeLen(std::vector<std::tuple<std::string, uint64_t>> parsed_fields)
+size_t MlxRegUi::getLongestNodeLen(std::vector<std::tuple<std::string, uint64_t>> parsed_fields)
 {
     size_t len = 0;
     for (auto field : parsed_fields)
@@ -314,28 +302,6 @@ size_t getLongestNodeLen(std::vector<std::tuple<std::string, uint64_t>> parsed_f
     return (len + COLUMNS_SPACE);
 }
 
-/************************************
- * Function: printRegFields
- ************************************/
-void MlxRegUi::printRegFields(vector<AdbInstanceAdvLegacy*> nodeFields)
-{
-    int largestName = (int)getLongestNodeLen(nodeFields, _full_path);
-    printf("%-*s | %-10s | %-8s | %-8s | %-8s\n", largestName, "Field Name", "Address (Bytes)", "Offset (Bits)",
-           "Size (Bits)", "Access");
-    PRINT_LINE(58 + largestName);
-    for (std::vector<AdbInstanceAdvLegacy*>::size_type i = 0; i != nodeFields.size(); i++)
-    {
-        printf("%-*s | 0x%08x      | %-8d      | %-8ld    | %-15s\n",
-               largestName,
-               _full_path ? nodeFields[i]->fullName(1).c_str() : nodeFields[i]->get_field_name().c_str(),
-               (nodeFields[i]->offset >> 3) & ~0x3,
-               nodeFields[i]->startBit(),
-               (unsigned long)nodeFields[i]->fieldDesc->eSize(),
-               RegAccessParser::getAccess(nodeFields[i]).c_str());
-    }
-    PRINT_LINE(58 + largestName);
-    ;
-}
 
 /************************************
  * Function: printRegNames
@@ -350,41 +316,6 @@ void MlxRegUi::printRegNames(std::vector<string> regs)
     }
 }
 
-/************************************
- * Function: printAdbContext
- ************************************/
-void MlxRegUi::printAdbContext(AdbInstanceAdvLegacy* node, std::vector<u_int32_t> buff)
-{
-    _mlxRegLib->getAdb().traverse_layout(node, "", 0, (uint8_t*)&buff[0], buff.size() * sizeof(u_int32_t),
-                                         MlxRegUi::_on_traverse_save_field_data, (void*)this, true, false, _full_path);
-    int largestName = (int)getLongestNodeLen(_parsed_fields);
-    printf("%-*s | %-8s\n", largestName, "Field Name", "Data");
-    PRINT_LINE(largestName + VALUE_COLUMN_LINE_LEN);
-    for (auto& pair : _parsed_fields)
-    {
-        std::string name;
-        uint32_t value;
-        std::tie(name, value) = pair;
-        printf("%-*s | 0x%08x\n", largestName, name.c_str(), value);
-    }
-    PRINT_LINE(largestName + VALUE_COLUMN_LINE_LEN);
-}
-
-/************************************
- * Function: _on_traverse_save_field_data
- ************************************/
-void MlxRegUi::_on_traverse_save_field_data(const string& calculated_path,
-                                            uint64_t calculated_offset,
-                                            uint64_t calculated_value,
-                                            AdbInstanceAdvLegacy* instance,
-                                            void* context)
-{
-    (void)instance;
-    (void)calculated_offset;
-
-    MlxRegUi* ui = (MlxRegUi*)context;
-    ui->_parsed_fields.push_back(std::make_tuple(calculated_path, (uint32_t)calculated_value));
-}
 
 /************************************
  * Function: printBuff
@@ -557,6 +488,11 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
         _full_path = true;
         return PARSE_OK;
     }
+    else if (name == NO_DYNAMIC_FLAG)
+    {
+        _use_dynamic = false;
+        return PARSE_OK;
+    }
     return PARSE_ERROR;
 }
 
@@ -649,20 +585,258 @@ void MlxRegUi::writeToFile(string file_name, vector<u_int32_t> buff)
     file.close();
 }
 
-void MlxRegUi::sendCmdBasedOnFileIo(maccess_reg_method_t cmd, int reg_size)
+// Implementation of MlxRegUiImpl template functions
+
+// Constructor
+template<bool dynamic>
+MlxRegUi::MlxRegUiImpl<dynamic>::MlxRegUiImpl(MlxRegUi* ui) : _ui(ui)
+{
+}
+
+// getLongestNodeLen implementation
+template<bool dynamic>
+size_t MlxRegUi::MlxRegUiImpl<dynamic>::getLongestNodeLen(const std::vector<AdbInstance*>& root, bool full_path)
+{
+    size_t len = 0;
+    for (typename std::vector<AdbInstance*>::const_iterator it = root.begin(); it != root.end(); ++it)
+    {
+        std::string name = full_path ? (*it)->fullName(1) : (*it)->get_field_name();
+        if (name.size() > len)
+        {
+            len = name.size();
+        }
+    }
+    return (len + COLUMNS_SPACE);
+}
+
+// printRegFields implementation
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::printRegFields(const std::vector<AdbInstance*>& nodeFields)
+{
+    int largestName = (int)getLongestNodeLen(nodeFields, _ui->_full_path);
+    printf("%-*s | %-10s | %-8s | %-8s | %-8s\n", largestName, "Field Name", "Address (Bytes)", "Offset (Bits)",
+           "Size (Bits)", "Access");
+    PRINT_LINE(58 + largestName);
+    for (typename std::vector<AdbInstance*>::const_iterator it = nodeFields.begin(); it != nodeFields.end(); ++it)
+    {
+        printf("%-*s | 0x%08x      | %-8d      | %-8ld    | %-15s\n",
+               largestName,
+               _ui->_full_path ? (*it)->fullName(1).c_str() : (*it)->get_field_name().c_str(),
+               ((*it)->offset >> 3) & ~0x3,
+               (*it)->startBit(),
+               (unsigned long)(*it)->fieldDesc->eSize(),
+               RegAccessParser::getAccess(*it).c_str());
+    }
+    PRINT_LINE(58 + largestName);
+}
+
+// onTraverseSaveFieldData implementation
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::onTraverseSaveFieldData(const string& calculated_path,
+                                                              uint64_t calculated_offset,
+                                                              uint64_t calculated_value,
+                                                              AdbInstance* instance,
+                                                              void* context)
+{
+    (void)instance;
+    (void)calculated_offset;
+    MlxRegUi* ui = (MlxRegUi*)context;
+    ui->_parsed_fields.push_back(std::make_tuple(calculated_path, calculated_value));
+}
+
+// printAdbContext implementation
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::printAdbContext(AdbInstance* node,
+                                                      const std::vector<u_int32_t>& buff,
+                                                      MlxRegLib* mlxRegLib)
+{
+    _ui->_parsed_fields.clear();
+    mlxRegLib->getAdb().traverse_layout(node, "", 0, (uint8_t*)&buff[0], buff.size() * sizeof(u_int32_t),
+                                        onTraverseSaveFieldData, (void*)_ui, true, false, _ui->_full_path);
+    int largestName = (int)_ui->getLongestNodeLen(_ui->_parsed_fields);
+    printf("%-*s | %-8s\n", largestName, "Field Name", "Data");
+    PRINT_LINE(largestName + VALUE_COLUMN_LINE_LEN);
+    for (std::vector<std::tuple<std::string, uint64_t>>::const_iterator it = _ui->_parsed_fields.begin();
+         it != _ui->_parsed_fields.end();
+         ++it)
+    {
+        printf("%-*s | 0x%08x\n", largestName, std::get<0>(*it).c_str(), (uint32_t)std::get<1>(*it));
+    }
+    PRINT_LINE(largestName + VALUE_COLUMN_LINE_LEN);
+}
+
+// sendCmdBasedOnFileIo implementation
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::sendCmdBasedOnFileIo(maccess_reg_method_t cmd, int reg_size, MlxRegLib* mlxRegLib)
 {
     std::vector<u_int32_t> buff;
 
     //* read input from file
-    readFromFile(_file_io, buff, reg_size);
+    _ui->readFromFile(_ui->_file_io, buff, reg_size);
 
     //* Send GET command
-    _mlxRegLib->sendRegister(_regName, cmd, buff);
+    mlxRegLib->sendRegister(_ui->_regName, cmd, buff);
 
     //* Write output to file (for GET)
     if (cmd == MACCESS_REG_METHOD_GET)
     {
-        writeToFile(_file_io, buff);
+        _ui->writeToFile(_ui->_file_io, buff);
+    }
+}
+
+// run implementation
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::run()
+{
+    typename MlxRegUiImpl<dynamic>::MlxRegLib* mlxRegLib = NULL;
+
+    _ui->_mf = mopen(_ui->_device.c_str());
+    if (!_ui->_mf)
+    {
+        throw MlxRegException("Failed to open device: \"" + _ui->_device + "\", " + strerror(errno));
+    }
+
+    if (!MlxRegUiImpl<dynamic>::MlxRegLib::isDeviceSupported(_ui->_mf))
+    {
+        throw MlxRegException("Device is not supported");
+    }
+
+    mlxRegLib = new typename MlxRegUiImpl<dynamic>::MlxRegLib(_ui->_mf, _ui->_extAdbFile, _ui->_isExternal);
+    std::vector<typename MlxRegUiImpl<dynamic>::AdbInstance*> regFields;
+    std::vector<string> regs;
+    typename MlxRegUiImpl<dynamic>::AdbInstance* regNode = NULL;
+    std::vector<u_int32_t> buff;
+
+    if (_ui->_regName != "" && (_ui->_op == CMD_GET || _ui->_op == CMD_SET))
+    {
+        mlxRegLib->set_current_node(_ui->_regName);
+    }
+
+    switch (_ui->_op)
+    {
+        case CMD_SHOW_REG:
+            mlxRegLib->showRegister(_ui->_regName, regFields);
+            printRegFields(regFields);
+            break;
+
+        case CMD_SHOW_REGS:
+            mlxRegLib->showRegisters(regs);
+            _ui->printRegNames(regs);
+            break;
+
+        case CMD_SHOW_ALL_REGS:
+            // TODO: remove CMD_SHOW_ALL_REGS from UI after 4.14.0 release, it's deprecated
+            cout << endl
+                 << "-W- The option --" << OP_SHOW_ALL_REGS_FLAG << " is deprecated and will be removed, please use --"
+                 << OP_SHOW_REGS_FLAG << " instead." << endl
+                 << endl;
+            mlxRegLib->showRegisters(regs);
+            _ui->printRegNames(regs);
+            break;
+
+        case CMD_GET:
+        {
+            if (_ui->_file_io != "")
+            {
+                assert(_ui->_regName != "");
+                int reg_size = (mlxRegLib->get_current_node()->get_size()) / 8; // in Bytes
+                sendCmdBasedOnFileIo(MACCESS_REG_METHOD_GET, reg_size, mlxRegLib);
+                break;
+            }
+
+            if (_ui->_regName != "")
+            {
+                regNode = mlxRegLib->get_current_node();
+            }
+            typename MlxRegUiImpl<dynamic>::RegAccessParser parser(
+              _ui->_dataStr, _ui->_indexesStr, _ui->_opsStr, &mlxRegLib->getAdb(), regNode,
+              _ui->_dataLen ? _ui->_dataLen : mget_max_reg_size(_ui->_mf, MACCESS_REG_METHOD_GET), false, _ui->_full_path);
+            buff = parser.genBuff();
+            printf("Sending access register...\n\n");
+            if (_ui->_regName != "")
+            { // Known mode
+                mlxRegLib->sendRegister(_ui->_regName, MACCESS_REG_METHOD_GET, buff);
+                printAdbContext(regNode, buff, mlxRegLib);
+            }
+            else
+            { // Unknown mode
+                mlxRegLib->sendRegister(_ui->_regID, MACCESS_REG_METHOD_GET, buff);
+                _ui->printBuff(buff);
+            }
+        }
+        break;
+
+        case CMD_SET:
+        {
+            if (_ui->_file_io != "")
+            {
+                int reg_size = (mlxRegLib->get_current_node()->get_size()) / 8; // in Bytes
+                sendCmdBasedOnFileIo(MACCESS_REG_METHOD_SET, reg_size, mlxRegLib);
+                break;
+            }
+
+            if (_ui->_regName != "")
+            {
+                regNode = mlxRegLib->get_current_node();
+            }
+            // Read current register data into buffer
+            typename MlxRegUiImpl<dynamic>::RegAccessParser parserGet(
+              _ui->_dataStr, _ui->_indexesStr, _ui->_opsStr, &mlxRegLib->getAdb(), regNode,
+              _ui->_dataLen ? _ui->_dataLen : mget_max_reg_size(_ui->_mf, MACCESS_REG_METHOD_GET), _ui->_ignore_ro, _ui->_full_path);
+            buff = parserGet.genBuff();
+            if (!_ui->_overwrite)
+            {
+                if (_ui->_regName != "")
+                { // Known mode
+                    mlxRegLib->sendRegister(_ui->_regName, MACCESS_REG_METHOD_GET, buff);
+                }
+                else
+                { // Unknown mode
+                    mlxRegLib->sendRegister(_ui->_regID, MACCESS_REG_METHOD_GET, buff);
+                }
+            }
+            // Update the register buffer with user inputs
+            typename MlxRegUiImpl<dynamic>::RegAccessParser parser(_ui->_dataStr, _ui->_indexesStr, _ui->_opsStr,
+                                                                   &mlxRegLib->getAdb(), regNode, buff, _ui->_ignore_ro,
+                                                                   _ui->_full_path);
+            buff = parser.genBuff();
+            if (_ui->_output_file != "")
+            {
+                printAdbContext(regNode, buff, mlxRegLib);
+                mlxRegLib->dumpRegisterData(_ui->_output_file, buff);
+                break;
+            }
+            if (_ui->_regName != "")
+            { // Known mode
+                printf("You are about to send access register: %s with the following data:\n",
+                       _ui->_regName.c_str());
+                printAdbContext(regNode, buff, mlxRegLib);
+                if (_ui->askUser("Do you want to continue"))
+                {
+                    printf(" Sending access register...\n");
+                    mlxRegLib->sendRegister(_ui->_regName, MACCESS_REG_METHOD_SET, buff);
+                }
+            }
+            else
+            { // Unknown mode
+                printf("You are about to send access register id: 0x%x with the following data:\n", _ui->_regID);
+                _ui->printBuff(buff);
+                if (_ui->askUser("Do you want to continue"))
+                {
+                    printf(" Sending access register...\n");
+                    mlxRegLib->sendRegister(_ui->_regID, MACCESS_REG_METHOD_SET, buff);
+                }
+            }
+        }
+        break;
+
+        default:
+            break;
+    }
+
+    if (mlxRegLib)
+    {
+        delete mlxRegLib;
     }
 }
 
@@ -680,148 +854,17 @@ void MlxRegUi::run(int argc, char** argv)
         throw MlxRegException("failed to parse arguments. %s", _cmdParser.GetErrDesc());
     }
     paramValidate();
-    // Init device
-    _mf = mopen(_device.c_str());
-    if (!_mf)
+
+    // Runtime dispatch based on --no_dynamic flag (dynamic by default)
+    if (_use_dynamic)
     {
-        throw MlxRegException("Failed to open device: \"" + _device + "\", " + strerror(errno));
+        MlxRegUiImpl<true> impl(this);
+        impl.run();
     }
-
-    if (!MlxRegLib::isDeviceSupported(_mf))
+    else
     {
-        throw MlxRegException("Device is not supported");
-    }
-
-    _mlxRegLib = new MlxRegLib(_mf, _extAdbFile, _isExternal);
-
-    std::vector<AdbInstanceAdvLegacy*> regFields;
-    std::vector<string> regs;
-    AdbInstanceAdvLegacy* regNode = NULL;
-    std::vector<u_int32_t> buff;
-
-    if (_regName != "" && (_op == CMD_GET || _op == CMD_SET))
-    {
-        _mlxRegLib->set_current_node(_regName);
-    }
-
-    switch (_op)
-    {
-        case CMD_SHOW_REG:
-            _mlxRegLib->showRegister(_regName, regFields);
-            printRegFields(regFields);
-            break;
-
-        case CMD_SHOW_REGS:
-            _mlxRegLib->showRegisters(regs);
-            printRegNames(regs);
-            break;
-
-        case CMD_SHOW_ALL_REGS:
-            // TODO: remove CMD_SHOW_ALL_REGS from UI after 4.14.0 release, it's deprecated
-            cout << endl
-                 << "-W- The option --" << OP_SHOW_ALL_REGS_FLAG << " is deprecated and will be removed, please use --"
-                 << OP_SHOW_REGS_FLAG << " instead." << endl
-                 << endl;
-            _mlxRegLib->showRegisters(regs);
-            printRegNames(regs);
-            break;
-
-        case CMD_GET:
-        {
-            if (_file_io != "")
-            {
-                assert(_regName != "");
-                int reg_size = (_mlxRegLib->get_current_node()->get_size()) / 8; // in Bytes
-                sendCmdBasedOnFileIo(MACCESS_REG_METHOD_GET, reg_size);
-                break;
-            }
-
-            if (_regName != "")
-            {
-                regNode = _mlxRegLib->get_current_node();
-            }
-            RegAccessParser parser(_dataStr, _indexesStr, _opsStr, &_mlxRegLib->getAdb(), regNode,
-                                   _dataLen ? _dataLen : mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET), false,
-                                   _full_path);
-            buff = parser.genBuff();
-            printf("Sending access register...\n\n");
-            if (_regName != "")
-            { // Known mode
-                _mlxRegLib->sendRegister(_regName, MACCESS_REG_METHOD_GET, buff);
-                printAdbContext(regNode, buff);
-            }
-            else
-            { // Unknown mode
-                _mlxRegLib->sendRegister(_regID, MACCESS_REG_METHOD_GET, buff);
-                printBuff(buff);
-            }
-        }
-        break;
-
-        case CMD_SET:
-        {
-            if (_file_io != "")
-            {
-                int reg_size = (_mlxRegLib->get_current_node()->get_size()) / 8; // in Bytes
-                sendCmdBasedOnFileIo(MACCESS_REG_METHOD_SET, reg_size);
-                break;
-            }
-
-            if (_regName != "")
-            {
-                regNode = _mlxRegLib->get_current_node();
-            }
-            // Read current register data into buffer
-            RegAccessParser parserGet(_dataStr, _indexesStr, _opsStr, &_mlxRegLib->getAdb(), regNode,
-                                      _dataLen ? _dataLen : mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET), _ignore_ro,
-                                      _full_path);
-            buff = parserGet.genBuff();
-            if (!_overwrite)
-            {
-                if (_regName != "")
-                { // Known mode
-                    _mlxRegLib->sendRegister(_regName, MACCESS_REG_METHOD_GET, buff);
-                }
-                else
-                { // Unknown mode
-                    _mlxRegLib->sendRegister(_regID, MACCESS_REG_METHOD_GET, buff);
-                }
-            }
-            // Update the register buffer with user inputs
-            RegAccessParser parser(_dataStr, _indexesStr, _opsStr, &_mlxRegLib->getAdb(), regNode, buff, _ignore_ro,
-                                   _full_path);
-            buff = parser.genBuff();
-            if (_output_file != "")
-            {
-                printAdbContext(regNode, buff);
-                _mlxRegLib->dumpRegisterData(_output_file, buff);
-                break;
-            }
-            if (_regName != "")
-            { // Known mode
-                printf("You are about to send access register: %s with the following data:\n", _regName.c_str());
-                printAdbContext(regNode, buff);
-                if (askUser("Do you want to continue"))
-                {
-                    printf(" Sending access register...\n");
-                    _mlxRegLib->sendRegister(_regName, MACCESS_REG_METHOD_SET, buff);
-                }
-            }
-            else
-            { // Unknown mode
-                printf("You are about to send access register id: 0x%x with the following data:\n", _regID);
-                printBuff(buff);
-                if (askUser("Do you want to continue"))
-                {
-                    printf(" Sending access register...\n");
-                    _mlxRegLib->sendRegister(_regID, MACCESS_REG_METHOD_SET, buff);
-                }
-            }
-        }
-        break;
-
-        default:
-            break;
+        MlxRegUiImpl<false> impl(this);
+        impl.run();
     }
 }
 
@@ -854,3 +897,7 @@ int main(int argc, char** argv)
     }
     return 0;
 }
+
+// Explicit template instantiations
+template class MlxRegUi::MlxRegUiImpl<false>;
+template class MlxRegUi::MlxRegUiImpl<true>;
