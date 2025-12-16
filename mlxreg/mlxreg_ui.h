@@ -63,11 +63,6 @@ public:
     ~MlxRegUi();
     ParseStatus HandleOption(string name, string value);
     void run(int agc, char** argv);
-    static void _on_traverse_save_field_data(const string& field_name,
-                                             uint64_t field_offset,
-                                             uint64_t field_value,
-                                             AdbInstanceAdvLegacy* instance,
-                                             void* context);
 
 private:
     void initCmdParser();
@@ -75,15 +70,43 @@ private:
     void paramValidate();
     bool askUser(const char* question);
 
+    // Helper class template for ADB-dependent operations
+    template<bool dynamic>
+    class MlxRegUiImpl
+    {
+    public:
+        // Type aliases for this template instantiation
+        using MlxRegLib = _MlxRegLib_impl<dynamic>;
+        using RegAccessParser = _RegAccessParser_impl<dynamic>;
+        using AdbInstance = typename MlxRegLib::AdbInstance;
+        using Adb = typename MlxRegLib::Adb;
+
+    private:
+        MlxRegUi* _ui;
+
+    public:
+        MlxRegUiImpl(MlxRegUi* ui);
+
+        size_t getLongestNodeLen(const std::vector<AdbInstance*>& root, bool full_path);
+        void printRegFields(const std::vector<AdbInstance*>& nodeFields);
+        static void onTraverseSaveFieldData(const string& calculated_path,
+                                            uint64_t calculated_offset,
+                                            uint64_t calculated_value,
+                                            AdbInstance* instance,
+                                            void* context);
+        void printAdbContext(AdbInstance* node, const std::vector<u_int32_t>& buff, MlxRegLib* mlxRegLib);
+        void sendCmdBasedOnFileIo(maccess_reg_method_t cmd, int reg_size, MlxRegLib* mlxRegLib);
+        void run();
+    };
+
+    size_t getLongestNodeLen(std::vector<std::tuple<std::string, uint64_t>> parsed_fields);
+
     // Print
-    void printRegFields(vector<AdbInstanceAdvLegacy*> nodeFields);
     void printRegNames(std::vector<string> regs);
-    void printAdbContext(AdbInstanceAdvLegacy* node, std::vector<u_int32_t> buff);
     void printBuff(std::vector<u_int32_t> buff);
 
     void readFromFile(string file_name, vector<u_int32_t>& buff, int len);
     void writeToFile(string file_name, vector<u_int32_t> buff);
-    void sendCmdBasedOnFileIo(maccess_reg_method_t cmd, int reg_size);
 
     CommandLineParser _cmdParser;
     string _device;
@@ -98,13 +121,13 @@ private:
     bool _ignoreCapCheck;
     MlxRegOper _op;
     bool _force;
-    MlxRegLib* _mlxRegLib;
     bool _isExternal;
     bool _ignore_ro;
     string _output_file;
     string _file_io;
     bool _overwrite;
     bool _full_path;
+    bool _use_dynamic;
     std::vector<std::tuple<std::string, uint64_t>> _parsed_fields;
 };
 
