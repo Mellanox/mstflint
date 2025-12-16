@@ -50,10 +50,12 @@ using namespace mlxreg;
 const int MlxRegLib::RETRIES_COUNT = 3;
 const int MlxRegLib::SLEEP_INTERVAL = 100;
 
-MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
+MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal, bool batch_reg)
 {
     _mf = mf;
     _isExternal = isExternal;
+    _batch_reg = batch_reg;
+    _currentNode = nullptr;
     try
     {
         if (_isExternal && extAdbFile == "")
@@ -78,7 +80,15 @@ MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
         rootNode = rootNode + "_ext";
     }
 
-    _regAccessRootNode = _adb->createLayout(rootNode, 2);
+    _regAccessRootNode = nullptr;
+    if (!_batch_reg)
+    {
+        _regAccessRootNode = _adb->createLayout(rootNode, 2);
+    }
+    else
+    {
+        _regAccessRootNode = _adb->createLayout(rootNode);
+    }
     if (!_regAccessRootNode)
     {
         throw MlxRegException("No supported access registers found");
@@ -112,6 +122,10 @@ MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
  ************************************/
 MlxRegLib::~MlxRegLib()
 {
+    if (!_batch_reg && _currentNode != nullptr)
+    {
+        delete _currentNode;
+    }
     if (_regAccessRootNode)
     {
         delete _regAccessRootNode;
@@ -174,7 +188,11 @@ AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(string name)
     }
     auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(name);
 
-    found_node = _adb->createLayout(found_node->nodeDesc->name);
+    if (!_batch_reg)
+    {
+        found_node = _adb->createLayout(found_node->nodeDesc->name);
+    }
+
     return found_node;
 }
 
@@ -186,7 +204,11 @@ AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(uint64_t id)
     try
     {
         auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(id);
-        found_node = _adb->createLayout(found_node->nodeDesc->name);
+        if (!_batch_reg)
+        {
+            found_node = _adb->createLayout(found_node->nodeDesc->name);
+        }
+
         return found_node;
     }
     catch (AdbException& er)
