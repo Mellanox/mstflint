@@ -112,6 +112,10 @@ MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
  ************************************/
 MlxRegLib::~MlxRegLib()
 {
+    if (_currentNode)
+    {
+        delete _currentNode;
+    }
     if (_regAccessRootNode)
     {
         delete _regAccessRootNode;
