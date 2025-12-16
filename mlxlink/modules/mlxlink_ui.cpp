@@ -61,7 +61,7 @@ void MlxlinkUi::initRegAccessLib()
     _mlxlinkCommander->_mf = _mf;
 
     _mlxlinkCommander->_regLib =
-      new MlxRegLib(_mlxlinkCommander->_mf, _mlxlinkCommander->_extAdbFile, _mlxlinkCommander->_useExtAdb);
+      new MlxRegLib(_mlxlinkCommander->_mf, _mlxlinkCommander->_extAdbFile, _mlxlinkCommander->_useExtAdb, true);
 
     _mlxlinkCommander->_userInput = _userInput;
 

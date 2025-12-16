@@ -53,7 +53,7 @@ typedef enum
 class MlxRegLib : public ErrMsg
 {
 public:
-    MlxRegLib(mfile* mf, string extAdbFile, bool isExternal = true);
+    MlxRegLib(mfile* mf, string extAdbFile, bool isExternal = true, bool batch_reg = false);
     ~MlxRegLib(); // Dto'r
     /* * * * * * * * * * * * * *
      * library Getters/Setters *
@@ -62,7 +62,7 @@ public:
     AdbInstanceAdvLegacy* findAdbNode(uint64_t id);
     AdbInstanceAdvLegacy* getAdbTable() { return _regAccessRootNode; };
     AdbInstanceAdvLegacy* get_current_node() { return _currentNode; };
-    void set_current_node(string name) { _currentNode = findAdbNode(name); };
+    void set_current_node(string name) { _currentNode = findAdbNode(name); }
     AdbAdvLegacy& getAdb() { return *_adb; };
     /* * * * * * * *
      * library API *
@@ -102,6 +102,7 @@ protected:
     std::map<string, u_int64_t> _regAccessMap;
     AdbInstanceAdvLegacy* _currentNode;
     bool _isExternal;
+    bool _batch_reg;
 };
 
 } // namespace mlxreg
