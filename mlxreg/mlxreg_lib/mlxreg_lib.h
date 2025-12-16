@@ -100,7 +100,7 @@ protected:
     AdbInstanceAdvLegacy* _regAccessRootNode;
     AdbInstanceAdvLegacy* _regAccessUnionNode;
     std::map<string, u_int64_t> _regAccessMap;
-    AdbInstanceAdvLegacy* _currentNode;
+    AdbInstanceAdvLegacy* _currentNode{nullptr};
     bool _isExternal;
 };
 
