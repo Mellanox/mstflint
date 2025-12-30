@@ -87,8 +87,8 @@ reg_access_status_t reg_access_mnvgc(mfile* mf, reg_access_method_t method,
                                      struct reg_access_hca_mnvgc_reg_ext* mnvgc);
 struct reg_access_hca_mmdio_ext;
 reg_access_status_t reg_access_mmdio(mfile* mf, reg_access_method_t method, struct reg_access_hca_mmdio_ext* mmdio);
-    struct reg_access_hca_mpqd_reg_ext;
-    reg_access_status_t reg_access_mpqd(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpqd_reg_ext* mpqd);
+struct reg_access_hca_mpqd_reg_ext;
+reg_access_status_t reg_access_mpqd(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpqd_reg_ext* mpqd);
 struct tools_mjtag;
 reg_access_status_t reg_access_mjtag(mfile* mf, reg_access_method_t method, struct tools_mjtag* mjtag);
 struct tools_open_mnvda;
