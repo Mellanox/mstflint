@@ -76,6 +76,8 @@ int is_four_byte_address_needed(mflash* mfl, MfError* status)
         case DeviceQuantum3:
         case DeviceArcusE:
         case DeviceSpectrum4:
+        case DeviceSpectrum5:
+        case DeviceSpectrum6:
         case DeviceBlueField2:
         case DeviceBlueField3:
         case DeviceBlueField4:
@@ -146,6 +148,8 @@ int is_icmdif_supported(mflash* mfl, MfError* status)
         case DeviceQuantum3:
         case DeviceArcusE:
         case DeviceSpectrum4:
+        case DeviceSpectrum5:
+        case DeviceSpectrum6:
         case DeviceConnectX7:
         case DeviceConnectX8:
         case DeviceConnectX9:
@@ -167,6 +171,8 @@ FlashGen get_flash_gen(mflash* mfl)
     {
         case DeviceQuantum2:
         case DeviceSpectrum4:
+        case DeviceSpectrum5:
+        case DeviceSpectrum6:
         case DeviceConnectX7:
         case DeviceBlueField3:
         case DeviceAbirGearBox:

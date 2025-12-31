@@ -109,6 +109,8 @@ typedef void* trm_ctx;
 #define QUANTUM2_HW_ID      0x257
 #define QUANTUM3_HW_ID      0x25b
 #define SPECTRUM4_HW_ID     0x254
+#define SPECTRUM5_HW_ID     0x270
+#define SPECTRUM6_HW_ID     0x274
 #define INBAND_MAX_REG_SIZE 44
 
 #define VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS 0x10
@@ -143,6 +145,8 @@ typedef void* trm_ctx;
 #define IS_QUANTUM2(dev_id)                ((dev_id) == QUANTUM2_HW_ID)
 #define IS_QUANTUM3(dev_id)                ((dev_id) == QUANTUM3_HW_ID)
 #define IS_SPECTRUM4(dev_id)               ((dev_id) == SPECTRUM4_HW_ID)
+#define IS_SPECTRUM5(dev_id)               ((dev_id) == SPECTRUM5_HW_ID)
+#define IS_SPECTRUM6(dev_id)               ((dev_id) == SPECTRUM6_HW_ID)
 
 #define HAS_TOOLS_CMDIF(dev_id) ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))
 

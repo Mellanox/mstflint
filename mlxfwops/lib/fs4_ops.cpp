@@ -4603,6 +4603,7 @@ bool Fs4Operations::getBootRecordSize(u_int32_t& boot_record_size)
             boot_record_size = 0x4d0; // Actual size is 0x4d4
             return true;
         case CT_SPECTRUM4:
+        case CT_SPECTRUM5:
             boot_record_size = 0x660; // Actual size is 0x664
             return true;
         case CT_ABIR_GEARBOX:
