@@ -30,11 +30,7 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-USER_DIR = $(top_srcdir)
-MFT_CORE_DIR = $(USER_DIR)/mft_core
-OS_DIR = $(MFT_CORE_DIR)/mft_core_utils/operating_system_api
-LOG_DIR = $(MFT_CORE_DIR)/mft_core_utils/logger
-AM_CPPFLAGS = -I. -I$(OS_DIR) -I$(LOG_DIR)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
@@ -42,5 +38,5 @@ noinst_LTLIBRARIES = libmftexceptions.la
 
 libmftexceptions_la_SOURCES = MftGeneralException.h MftGeneralException.cpp
 
-libmftexceptions_la_DEPENDENCIES = $(OS_DIR)/lib_os_api.la
+libmftexceptions_la_DEPENDENCIES = ../operating_system_api/lib_os_api.la
 libmftexceptions_la_LIBADD = $(LIBSTD_CPP_SO) $(libmftexceptions_la_DEPENDENCIES)
