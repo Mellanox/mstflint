@@ -542,6 +542,7 @@ protected:
         FS_FSCTRL_GEN,
         FS_LINKX_GEN,
         FS_FS5_GEN,
+        FS_FS6_GEN,
         FS_COMPS_GEN,
         FS_PLDM_1_0,
         FS_UNKNOWN_IMG

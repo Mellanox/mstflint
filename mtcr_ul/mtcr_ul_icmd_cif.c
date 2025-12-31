@@ -323,6 +323,8 @@ enum {
 #define GB100_HW_ID     0x2900
 #define GR100_HW_ID     0x3000
 #define SPECTRUM4_HW_ID 596
+#define SPECTRUM5_HW_ID 624
+#define SPECTRUM6_HW_ID 628
 #define AMOS_GBOX_HW_ID 594
 
 /***** GLOBALS *****/
@@ -652,6 +654,8 @@ bool device_supports_sem_lock_verify(unsigned int hw_dev_id)
         case DeviceSpectrum2_HwId:
         case DeviceSpectrum3_HwId:
         case DeviceSpectrum4_HwId:
+        case DeviceSpectrum5_HwId:
+        case DeviceSpectrum6_HwId:
         case DeviceArcusE_HwId:
             return false;
     }
@@ -1061,6 +1065,8 @@ static int icmd_init_cr(mfile* mf)
 
     case (QUANTUM2_HW_ID):
     case (SPECTRUM4_HW_ID):
+    case (SPECTRUM5_HW_ID):
+    case (SPECTRUM6_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM2;
@@ -1223,6 +1229,8 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
     case (QUANTUM3_HW_ID):
     case (GB100_HW_ID):
     case (SPECTRUM4_HW_ID):
+    case (SPECTRUM5_HW_ID):
+    case (SPECTRUM6_HW_ID):
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
         break;

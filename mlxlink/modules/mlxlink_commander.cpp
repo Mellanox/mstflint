@@ -324,6 +324,9 @@ u_int32_t MlxlinkCommander::maxLocalPort()
         case DeviceSpectrum5:
             return MAX_LOCAL_PORT_SPECTRUM5;
 
+        case DeviceSpectrum6:
+            return MAX_LOCAL_PORT_SPECTRUM6;
+
         default:
             return 0;
     }
@@ -579,7 +582,8 @@ void MlxlinkCommander::labelToLocalPort()
     }
 
     if (_devID == DeviceSpectrum || _devID == DeviceSpectrum2 || _devID == DeviceSpectrum3 ||
-        _devID == DeviceSpectrum4 || _devID == DeviceSpectrum5)
+        _devID == DeviceSpectrum4 || _devID == DeviceSpectrum5 || 
+        _devID == DeviceSpectrum6)
     {
         if (isDSdevice())
         {
@@ -1517,7 +1521,7 @@ void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr, bool 
     else
     {
         if (_devID == DeviceSpectrum2 || _devID == DeviceSpectrum3 || _devID == DeviceSpectrum4 ||
-            _devID == DeviceSpectrum5)
+            _devID == DeviceSpectrum5 || _devID == DeviceSpectrum6)
         {
             handleAllEthLocalPorts(labelPortsStr, spect2WithGb, skipException);
         }

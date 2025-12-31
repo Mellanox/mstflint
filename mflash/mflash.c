@@ -1764,7 +1764,7 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
 
         /* TODO - fix for QTM3/CX8/ArcusE/BF4 */
         /* Read the Cache replacement offset and cmd fields */
-        if ((devid_t == DeviceQuantum2) || (devid_t == DeviceQuantum3) || (devid_t == DeviceSpectrum4) ||
+        if ((devid_t == DeviceQuantum2) || (devid_t == DeviceQuantum3) || (devid_t == DeviceSpectrum4) || (devid_t == DeviceSpectrum5) || (devid_t == DeviceSpectrum6) ||
             (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8) || (devid_t == DeviceConnectX8_Pure_PCIe_Switch) || (devid_t == DeviceConnectX9) || (devid_t == DeviceConnectX9_Pure_PCIe_Switch)) {
             MREAD4(CACHE_REP_OFF_NEW_GW_ADDR, &data);
             off = data;
@@ -1964,7 +1964,7 @@ int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 void update_seventh_gen_addrs(mflash* mfl)
 {
     /* Registers addresses */
-    if (mfl->dm_dev_id == DeviceQuantum3 || mfl->dm_dev_id == DeviceQuantum4) {
+    if (mfl->dm_dev_id == DeviceQuantum3 || mfl->dm_dev_id == DeviceQuantum4 || mfl->dm_dev_id == DeviceSpectrum5 || mfl->dm_dev_id == DeviceSpectrum6) {
         mfl->gw_cmd_register_addr = HCR_7GEN_QTM3_FLASH_CMD;
         mfl->gw_data_field_addr = HCR_7GEN_QTM3_FLASH_DATA;
         mfl->gcm_en_addr = HCR_7GEN_QTM3_GCM_EN_ADDR;
@@ -3388,6 +3388,8 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
     case DeviceConnectX9_Pure_PCIe_Switch:
     case DeviceBlueField4:
     case DeviceSpectrum4:
+    case DeviceSpectrum5:
+    case DeviceSpectrum6:
     case DeviceAbirGearBox:
         return MFE_OK;
 
