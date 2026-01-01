@@ -850,4 +850,9 @@ AC_OUTPUT( \
     tracers/Makefile \
     tracers/fwtrace/Makefile \
     vfio_driver_access/Makefile \
+    mft_core/Makefile \
+    mft_core/mft_core_utils/Makefile \
+    mft_core/mft_core_utils/logger/Makefile \
+    mft_core/mft_core_utils/operating_system_api/Makefile \
+    mft_core/mft_core_utils/mft_exceptions/Makefile \
  )

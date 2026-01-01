@@ -1,6 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,31 +28,37 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-#ifndef REG_IDS_H
-#define REG_IDS_H
+#pragma once
 
-#define REG_ID_MMHI 0x904A
-#define REG_ID_MGIR  0x9020
-#define REG_ID_MORD  0x9153
-#define REG_ID_MCAM  0x907f
-#define REG_ID_MPQD 0x9700
-#define REG_ID_PLIB  0x500a
-#define REG_ID_PMLP  0x5002
-#define REG_ID_PTYS  0x5004
-#define REG_ID_PAOS  0x5006
-#define REG_ID_PPCNT 0x5008
-#define REG_ID_PMAOS 0x5012
-#define REG_ID_SLTP  0x5027
-#define REG_ID_PDDR  0x5031
-#define REG_ID_PPHCR 0x503e
-#define REG_ID_PPAOS 0x5040
-#define REG_ID_PGUID 0x5066
-#define REG_ID_PPSLS 0x50e3
-#define REG_ID_MTCAP 0x9009
-#define REG_ID_MPEGC 0x9056
-#define REG_ID_MPIR 0x9059
+#include <cstdint>
+#include <string>
 
+#include "OperatingSystemAPIDefs.h"
 
-#endif
+class OperatingSystemAPI
+{
+public:
+    OperatingSystemAPI() = default;
+    virtual ~OperatingSystemAPI() = default;
+
+    // These pure virtual functions should be implemented
+    // by the specific OS API.
+    virtual int GetPID() = 0;
+    virtual int SuppressStderr();
+    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) = 0;
+    virtual const std::string GetExecutableName() = 0;
+    virtual const std::string GetExecutableDir() = 0;
+    virtual const std::string GetLogDirectory() = 0;
+    virtual void RestoreStderr(const int iFd);
+    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) = 0;
+    virtual void CreateDirectoryIfNotExist(const std::string& oNewDirectory) = 0;
+    virtual void MilliSecondsSleep(int iMilliseconds) = 0;
+    virtual void GetHostName(char* pcHostName) = 0;
+    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) = 0;
+    virtual bool FileExists(const std::string& sFilePath);
+    virtual uint32_t get_page_size() = 0;
+    virtual std::pair<int, std::string> execCommand(const std::string& cmd) = 0;
+};
