@@ -191,6 +191,36 @@ const char* m_err2str(MError status)
 
     case ME_REG_ACCESS_INSUFFICIENT_PERMISSIONS:
             return "Unable to send PRM Register due to permission issue, debug token might be needed.";
+    
+    case ME_REG_ACCESS_BAD_QP_STATE:
+        return "Register access bad QP state";
+
+    case ME_REG_ACCESS_BAD_PKT:
+        return "Register access bad packet";
+
+    case ME_REG_ACCESS_BAD_SIZE_OUTS_CQES:
+        return "Register access bad size outs CQES";
+
+    case ME_REG_ACCESS_BAD_SYS_STATE:
+        return "Register access bad system state";
+
+    case ME_REG_ACCESS_EXCEED_LIM:
+        return "Register access exceed limit";
+
+    case ME_REG_ACCESS_BAD_RES_STATE:
+        return "Register access bad resource state";
+
+    case ME_REG_ACCESS_BAD_INDEX:
+        return "Register access bad index";
+
+    case ME_REG_ACCESS_BAD_INPUT_LEN:
+        return "Register access bad input length";
+
+    case ME_REG_ACCESS_BAD_OUTPUT_LEN:
+        return "Register access bad output length";
+
+    case ME_REG_ACCESS_NOT_READY:
+        return "Register access not ready";
 
     /* ICMD access errors */
     case ME_ICMD_STATUS_CR_FAIL:
