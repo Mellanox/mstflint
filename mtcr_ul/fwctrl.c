@@ -286,7 +286,9 @@ int mlx5u_fwctl_rsc_destroy(mfile* mf, uint32_t rsc_id)
 void mlx5lib_free_umem_mkey_buff(mfile* mf)
 {
     struct mlx5_umem_buff* umem_buff = mf->umem_buff;
-	mlx5u_fwctl_rsc_destroy(mf, umem_buff->rsc_id);
-	free(umem_buff->buff);
-	free(umem_buff);
+    if (umem_buff) {    // if umem_buff is not NULL, destroy the resource
+        mlx5u_fwctl_rsc_destroy(mf, umem_buff->rsc_id);
+        free(umem_buff->buff);
+        free(umem_buff);
+    }
 }
