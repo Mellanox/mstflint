@@ -277,6 +277,8 @@ if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"
     AC_SUBST(liblzma_LIBS)
 fi
 
+
+
 # mlxdpa
 AC_MSG_CHECKING(--enable-dpa argument)
 AC_ARG_ENABLE(dpa,
@@ -679,6 +681,21 @@ AC_DEFINE_UNQUOTED(MSTFLINT_VERSION_STR, "$MSTFLINT_VERSION_STR")
 AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"],
     [AC_CONFIG_FILES(tools_crypto/Makefile)]
 )
+
+AC_MSG_CHECKING(--enable-nvfwreset argument)
+AC_ARG_ENABLE(nvfwreset,
+    AS_HELP_STRING([--enable-nvfwreset], [enable compilation of the nvfwreset tool [default=disabled]]),
+    [enable_nvfwreset="$enableval"],
+    [enable_nvfwreset="no"]
+)
+AC_MSG_RESULT($enable_nvfwreset)
+AS_IF([test "x$enable_nvfwreset" = "xyes"], [
+    AC_CONFIG_FILES(nvfwreset/Makefile)
+    NVFWRESET_DIR="nvfwreset"
+])
+AM_CONDITIONAL(ENABLE_NVFWRESET, [test "x$enable_nvfwreset" = "xyes" ])
+AC_SUBST(enable_nvfwreset)
+AC_SUBST(NVFWRESET_DIR)
 
 AS_IF([test "x$enable_openssl" = "xyes"],
     [

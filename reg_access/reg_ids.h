@@ -54,6 +54,7 @@
 #define REG_ID_MTCAP 0x9009
 #define REG_ID_MPEGC 0x9056
 #define REG_ID_MPIR 0x9059
+#define REG_ID_MROQ 0x902F
 
 
 #endif

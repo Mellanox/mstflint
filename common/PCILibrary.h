@@ -47,11 +47,11 @@ class PCILibrary
 {
 public:
     static void SetPCIDomain(int& failedToSetSegmentBase);
+    static std::string GetV3FieldFromVPD(const std::string& dbdf);
+    static void FindDirectNicDevice(std::map<std::string, std::uint32_t>& directNicDevice);
 
 private:
     static void CheckPCIRegistersSupported(mfile* mf);
-    static std::string GetV3FieldFromVPD(const std::string& dbdf);
-    static void FindDirectNicDevice(std::map<std::string, std::uint32_t>& directNicDevice);
 };
 
 #endif
