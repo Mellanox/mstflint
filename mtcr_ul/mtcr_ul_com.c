@@ -1346,6 +1346,7 @@ int mtcr_pciconf_wait_on_flag(mfile* mf, u_int8_t expected_val)
 
     do{
         if (retries > IFC_MAX_RETRIES) {
+            DBG_PRINTF("wait on flag bit finished with timeout after %d retries.\n", retries);
             return ME_PCI_IFC_TOUT;
         }
         READ4_PCI(mf, &flag, mf->vsec_addr + PCI_ADDR_OFFSET, "read flag", return ME_PCI_READ_ERROR);
