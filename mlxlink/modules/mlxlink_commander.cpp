@@ -91,6 +91,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _ignorePortStatus = true;
     _isGboxPort = false;
     _isSwControled = false;
+    _isSwControledStandAlone = false;
     _ignoreIbFECCheck = true;
     _isNVLINK = false;
     _protoAdmin = 0;
@@ -476,6 +477,7 @@ void MlxlinkCommander::updateSwControlStatus()
         if (moduleMasterFwDefault == MGIR_MODULE_MASTER_FW_DEFAULT_STAND_ALONE)
         {
             _isSwControled = true;
+            _isSwControledStandAlone = true;
             return;
         }
     }
@@ -3420,6 +3422,36 @@ void MlxlinkCommander::initValidDPNList()
     }
 }
 
+void MlxlinkCommander::updateDPNDomain()
+{
+    static bool updated = false;
+    if (updated)
+    {
+        return;
+    }
+    updated = true;
+    for (u_int32_t i = 0; i < _validDpns.size(); i++)
+    {
+        try
+        {
+            sendPrmReg(ACCESS_REG_MPIR, GET, "DPNv=1,depth=%d,pcie_index=%d,node=%d", _validDpns[i].depth,
+                       _validDpns[i].pcieIndex, _validDpns[i].node);
+            u_int32_t seg_valid = getFieldValue("segment_valid");
+            u_int32_t segment_base = getFieldValue("segment_base");
+            if (seg_valid)
+            {
+                char seg_buf[5];
+                snprintf(seg_buf, sizeof(seg_buf), "%04x", segment_base);
+                _validDpns[i].bdf = string(seg_buf) + ":" + _validDpns[i].bdf;
+            }
+        }
+        catch (const std::exception& exc)
+        {
+            continue;
+        }
+    }
+}
+
 void MlxlinkCommander::showPcieLinks()
 {
     try
@@ -3705,7 +3737,6 @@ u_int32_t MlxlinkCommander::readBitFromField(const string& fieldName, u_int32_t 
 {
     char blockName[128];
     u_int32_t blockSelector = bitIndex / MAX_DWORD_BLOCK_SIZE;
-
     sprintf(blockName, "%s[%d]", fieldName.c_str(), blockSelector);
 
     u_int32_t bitMask = (u_int32_t)pow(2.0, (int)(bitIndex - (blockSelector * MAX_DWORD_BLOCK_SIZE)));
@@ -3719,7 +3750,8 @@ void MlxlinkCommander::showTxGroupMapping()
     try
     {
         if (_devID != DeviceSpectrum2 && _devID != DeviceQuantum && _devID != DeviceQuantum2 &&
-            _devID != DeviceQuantum3 && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+            _devID != DeviceQuantum3 && _devID != DeviceQuantum4 && 
+            !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             throw MlxRegException("Port group mapping supported for Spectrum-2 and Quantum switches only!");
         }
@@ -4565,12 +4597,79 @@ void MlxlinkCommander::setPlaneIndex(int planeIndex)
     }
 }
 
+bool MlxlinkCommander::isTransmitAllowed(u_int32_t localPort, u_int32_t protoActive)
+{
+    // the mlxlink_reg_parser already handles lp_msb when localPort is provided
+    sendPrmReg(ACCESS_REG_PTYS, GET, "local_port=%d,proto_mask=%d", localPort, protoActive);
+    u_int32_t txAllowed = getFieldValue("transmit_allowed");
+    return txAllowed;
+}
+
+void MlxlinkCommander::handlePrbsSWControlledChecks()
+{
+    string modulePath = _userInput._sysfsPath;
+    bool modulePresent = isModulePresent(modulePath);
+    if (modulePresent)
+    {
+        if (_mf->tp == MST_REMOTE)
+        {
+            throw MlxRegException("SW controlled PRBS test mode is not supported for remote connection.");
+        }
+        if (!(_userInput._skipPowerGoodCheck || isModulePoweredOn(modulePath)))
+        {
+            throw MlxRegException(
+              "PRBS test mode is not supported for the current port!\nmodule <%s> is not powered on",
+              modulePath.c_str());
+        }
+
+        if (!isTransmitAllowed(_localPort, _protoActive))
+        {
+            if (_userInput._forceTxAllowed)
+            {
+                string warMsg =
+                  "Transmission is not allowed, but force_tx_allowed is set. Tool will attempt to set it now.";
+                MlxlinkRecord::printWar(warMsg, _jsonRoot);
+                if (!askUser("Do you want to continue", _userInput.force))
+                {
+                    throw MlxRegException("Operation canceled by user");
+                }
+                // set tx_allowed per user request.
+                sendPrmReg(ACCESS_REG_PTYS, SET, "local_port=%d,proto_mask=%d,transmit_allowed=%d", _localPort,
+                           _protoActive, 1);
+            }
+            else
+            {
+                throw MlxRegException("PRBS test mode is not supported for the current port!\nTransmit not allowed");
+            }
+        }
+    }
+    else
+    {
+        string warMsg =
+          "module <" + modulePath +
+          "> was not found, if you are sure the module is set correctly you can skip SW controlled checks and continue to set PRBS test mode\n";
+        MlxlinkRecord::printWar(warMsg, _jsonRoot);
+        if (!askUser("Do you want to continue with PRBS test mode", _userInput.force))
+        {
+            throw MlxRegException("Operation canceled by user after module was not found");
+        }
+    }
+}
+
 void MlxlinkCommander::handlePrbs()
 {
-    if (_isSwControled)
+    if (_isSwControled && _userInput._prbsMode == "EN") // this covers both SW controlled and independent module.
     {
-        _allUnhandledErrors += string("No plugged cable detected\n");
-        throw MlxRegException("PRBS test mode is not supported for the current port!\nNo plugged cable detected");
+        handlePrbsSWControlledChecks();
+    }
+    else
+    {
+        // at this point we know we are running PRBS on a FW controlled module, need to throw error if the user used one
+        // of the SW controlled flags.
+        if (_userInput._skipPowerGoodCheck || _userInput._forceTxAllowed || !_userInput._sysfsPath.empty())
+        {
+            throw MlxRegException("SW controlled flags are not supported for FW controlled modules");
+        }
     }
 
     try

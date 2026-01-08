@@ -1899,3 +1899,28 @@ std::string string_format(const char* format, ...)
     va_end(args);
     return out;
 }
+/* SW controlled module utilities */
+bool readBoolFromSysFs(const string& sysfsPath)
+{
+    std::ifstream f(sysfsPath);
+    char ch;
+    if (f.is_open() && f.get(ch) && ch == '1')
+    {
+        return true;
+    }
+    return false;
+}
+
+bool isModulePresent(const string& modulePath)
+{
+    string sysfsHwPresent = modulePath + "/" + HW_PRESENT;
+    return readBoolFromSysFs(sysfsHwPresent);
+}
+
+bool isModulePoweredOn(const string& modulePath)
+{
+    string sysfsPowerOn = modulePath + "/" + POWER_ON;
+    return readBoolFromSysFs(sysfsPowerOn);
+}
+
+/*end*/

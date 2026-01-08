@@ -187,6 +187,9 @@ public:
     vector<string> parameters;
 
     int planeIndex;
+    bool _forceTxAllowed;
+    bool _skipPowerGoodCheck;
+    string _sysfsPath;
 };
 
 #endif /* MLXLINK_USER_INPUT_H */

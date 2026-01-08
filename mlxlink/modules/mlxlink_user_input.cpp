@@ -169,4 +169,7 @@ UserInput::UserInput()
     dbdf = "";
 
     planeIndex = -1;
+    _forceTxAllowed = false;
+    _skipPowerGoodCheck = false;
+    _sysfsPath = "";
 }
