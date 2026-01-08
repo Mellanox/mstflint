@@ -91,9 +91,9 @@ public:
     // public methods
     void getAllTLVs();
     void updateMapWithHostPF(u_int8_t hostId, u_int8_t pfIndex);
-    std::shared_ptr<TLVConf> getTLVByNameAux(std::string tlvName, u_int32_t port, int32_t module);
-    std::shared_ptr<TLVConf> getTLVByName(std::string tlvName, u_int32_t port, int32_t module);
-    std::shared_ptr<TLVConf> getCloneTLVByName(std::string tlvName, u_int32_t port, int32_t module);
+    std::shared_ptr<TLVConf> getTLVByNameAux(std::string tlvName, u_int32_t port, int32_t tlvModule);
+    std::shared_ptr<TLVConf> getTLVByName(std::string tlvName, u_int32_t port, int32_t tlvModule);
+    std::shared_ptr<TLVConf> getCloneTLVByName(std::string tlvName, u_int32_t port, int32_t tlvModule);
     std::shared_ptr<TLVConf> getFetchedTLVByName(std::string tlvName);
     std::shared_ptr<TLVConf> getDependencyTLVByName(string tlvName, u_int32_t cTLVPort, int32_t cTLVModule);
     std::shared_ptr<TLVConf> getTLVByParamMlxconfigName(std::string mlxconfigName, mfile* mf);

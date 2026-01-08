@@ -338,22 +338,22 @@ void MlxcfgDBManager::getAllTLVs()
     _isAllFetched = true;
 }
 
-std::shared_ptr<TLVConf> MlxcfgDBManager::getTLVByName(string tlv_name, u_int32_t port, int32_t module)
+std::shared_ptr<TLVConf> MlxcfgDBManager::getTLVByName(string tlv_name, u_int32_t port, int32_t tlvModule)
 {
-    auto tlvKey = make_tuple(tlv_name, port, module);
+    auto tlvKey = make_tuple(tlv_name, port, tlvModule);
     if (_tlvMap.count(tlvKey) == 0) {
         throw MlxcfgException("TLV with name '%s', port %d, module %d does not exist", 
-                              tlv_name.c_str(), port, module);
+                              tlv_name.c_str(), port, tlvModule);
     }
     return _tlvMap[tlvKey];
 }
 
-std::shared_ptr<TLVConf> MlxcfgDBManager::getCloneTLVByName(string tlv_name, u_int32_t port, int32_t module)
+std::shared_ptr<TLVConf> MlxcfgDBManager::getCloneTLVByName(string tlv_name, u_int32_t port, int32_t tlvModule)
 {
-    auto tlvKey = make_tuple(tlv_name, port, module);
+    auto tlvKey = make_tuple(tlv_name, port, tlvModule);
     if (_tlvMap.count(tlvKey) == 0) {
         throw MlxcfgException("TLV with name '%s', port %d, module %d does not exist", 
-                              tlv_name.c_str(), port, module);
+                              tlv_name.c_str(), port, tlvModule);
     }
     return _tlvMap[tlvKey]->cloneDeep();
 }
@@ -468,7 +468,7 @@ tuple<string, int> MlxcfgDBManager::splitMlxcfgNameAndPortOrModule(std::string m
 tuple<string, int, int> MlxcfgDBManager::getMlxconfigNamePortModule(string mlxconfigName, mfile* mf)
 {
     u_int32_t port = 0;
-    int32_t module = -1;
+    int32_t tlvModule = -1;
     auto namePortTuple = splitMlxcfgNameAndPortOrModule(mlxconfigName, PORT, mf);
     auto nameModuleTuple = splitMlxcfgNameAndPortOrModule(mlxconfigName, MODULE, mf);
     if (get<1>(namePortTuple) != 0)
@@ -478,11 +478,11 @@ tuple<string, int, int> MlxcfgDBManager::getMlxconfigNamePortModule(string mlxco
     }
     else if (get<1>(nameModuleTuple) != -1)
     {
-        module = get<1>(nameModuleTuple);
+        tlvModule = get<1>(nameModuleTuple);
         mlxconfigName = get<0>(nameModuleTuple);
     }
 
-    return make_tuple(mlxconfigName, port, module);
+    return make_tuple(mlxconfigName, port, tlvModule);
 }
 
 std::shared_ptr<TLVConf>
@@ -492,13 +492,13 @@ std::shared_ptr<TLVConf>
     auto ret = this->getMlxconfigNamePortModule(mlxconfigName, mf);
     string mlxconfigNameNoPortModuleName = get<0>(ret);
     u_int32_t port = get<1>(ret);
-    int32_t module = get<2>(ret);
+    int32_t tlvModule = get<2>(ret);
 
     if(_mlxconfigNameToTlv.find(mlxconfigNameNoPortModuleName) != _mlxconfigNameToTlv.end())
     {
-        return getTLVByName(_mlxconfigNameToTlv[mlxconfigNameNoPortModuleName], port, module);
+        return getTLVByName(_mlxconfigNameToTlv[mlxconfigNameNoPortModuleName], port, tlvModule);
     }
-    throw MlxcfgException("Failed to find Param / TLV with name '%s' port %d module %d", mlxconfigName.c_str(), port, module);
+    throw MlxcfgException("Failed to find Param / TLV with name '%s' port %d module %d", mlxconfigName.c_str(), port, tlvModule);
 }
 
 
