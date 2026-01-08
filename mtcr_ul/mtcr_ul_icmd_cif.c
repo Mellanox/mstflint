@@ -112,6 +112,7 @@
 #define CTRL_OFFSET                    0x3fc
 #define BUSY_BITOFF                    0
 #define BUSY_BITLEN                    1
+#define BUSY_BIT_DOWN 0
 #define EXMB_BITOFF                    1
 #define EXMB_BITLEN                    1
 #define OPCODE_BITOFF                  16
@@ -352,14 +353,13 @@ static int get_version(mfile* mf, u_int32_t hcr_address)
     return reg;
 }
 
-static MError check_busy_bit(mfile* mf, int busy_bit_offset, u_int32_t* reg)
+static int check_busy_bit(mfile* mf, int busy_bit_offset, u_int32_t* reg)
 {
     DBG_PRINTF("Check Go bit\n");
     int rc = MREAD4_ICMD(mf, mf->icmd.ctrl_addr, reg);
-
     CHECK_RC(rc);
-
-    return EXTRACT((*reg), busy_bit_offset, BUSY_BITLEN);
+    int busy_bit = EXTRACT((*reg), busy_bit_offset, BUSY_BITLEN);
+    return busy_bit;
 }
 
 static MError set_busy_bit(mfile* mf, u_int32_t* reg, int busy_bit_offset)
@@ -812,7 +812,8 @@ static int icmd_send_command_com(mfile     * mf,
     u_int32_t reg = 0x0;
 
     /* check go bit down */
-    ret = check_busy_bit(mf, BUSY_BITOFF, &reg);
+    int busy_bit = check_busy_bit(mf, BUSY_BITOFF, &reg);
+    ret = (busy_bit == BUSY_BIT_DOWN) ? ME_OK : ME_ICMD_STATUS_IFC_BUSY;
     CHECK_RC(ret);
 
     /* set go bit + poll + returned status */
