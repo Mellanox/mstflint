@@ -230,10 +230,10 @@ const char* m_err2str(MError status)
         return "Timed out trying to take the ICMD semaphore";
 
     case ME_ICMD_STATUS_EXECUTE_TO:
-        return "Timed out trying to take the ICMD busy-bit";
+        return "Timed out polling on the ICMD busy-bit to clear";
 
     case ME_ICMD_STATUS_IFC_BUSY:
-        return "ICMD interface busy";
+        return "ICMD interface busy with prior request, please wait for it to complete and try again";
 
     case ME_ICMD_STATUS_ICMD_NOT_READY:
         return "ICMD interface not ready, please check static_config_not_done bit";
