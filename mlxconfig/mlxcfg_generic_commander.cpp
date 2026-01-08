@@ -44,6 +44,7 @@
 #include <mtcr.h>
 #include <set>
 #include <tools_dev_types.h>
+#include <unordered_set>
 #include <iostream>
 
 #if !defined(NO_OPEN_SSL)

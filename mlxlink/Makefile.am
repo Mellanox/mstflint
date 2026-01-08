@@ -64,6 +64,9 @@ mstlink_DEPENDENCIES = \
     $(top_builddir)/tools_layouts/libtools_layouts.la \
     $(top_builddir)/xz_utils/libxz_utils.la \
     $(top_builddir)/ext_libs/minixz/libminixz.la \
+    $(top_builddir)/mft_core/mft_core_utils/operating_system_api/lib_os_api.la \
+    $(top_builddir)/mft_core/mft_core_utils/logger/liblogger.la \
+    $(top_builddir)/mft_core/mft_core_utils/mft_exceptions/libmftexceptions.la \
     $(top_builddir)/common/libcommon.la \
     $(JSON_LIBS)
 

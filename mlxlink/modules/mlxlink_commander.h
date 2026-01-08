@@ -164,6 +164,12 @@
 #define PRBS_INVERT_RX_POL_FLAG_SHORT ' '
 #define PRBS_DC_COUPLE_ALLOW_FLAG "dc_cpl_allow"
 #define PRBS_DC_COUPLE_ALLOW_FLAG_SHORT ' '
+#define FORCE_TX_ALLOWED_FLAG "force_tx_allowed"
+#define FORCE_TX_ALLOWED_FLAG_SHORT ' '
+#define SKIP_POWER_GOOD_CHECK_FLAG "skip_power_good_check"
+#define SKIP_POWER_GOOD_CHECK_FLAG_SHORT ' '
+#define SYSFS_PATH_FLAG "sysfs_path"
+#define SYSFS_PATH_FLAG_SHORT ' '
 #define PPRT_TUNING_TYPE_FLAG "tuning_type"
 #define PPRT_TUNING_TYPE_FLAG_SHORT ' '
 #define BER_COLLECT_FLAG "ber_collect"
@@ -489,11 +495,13 @@ public:
     virtual string getSltpHeader();
     void startSlrgPciScan(u_int32_t numOfLanesToUse);
     void initValidDPNList();
+    void updateDPNDomain();
     u_int32_t readBitFromField(const string& fieldName, u_int32_t bitIndex);
     string getSupportedFecForSpeed(const string& speed);
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
     void updateSwControlStatus();
+    void initSwControledModule();
     u_int32_t getNumberOfPorts();
     bool checkDPNvSupport();
     void prepareBerModuleInfo(bool valid, const vector<AmberField>& moduleInfoFields);
@@ -503,6 +511,7 @@ public:
     void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
     void prepare5nmEyeInfo(u_int32_t numOfLanesToUse);
     void getPddrOperInfo();
+    bool isTransmitAllowed(u_int32_t localPort, u_int32_t protoActive);
 
     void showTestMode();
     void showTestModeBer();
@@ -585,6 +594,7 @@ public:
     void sendPaos();
     void sendPmaos();
     virtual void handlePrbs();
+    virtual void handlePrbsSWControlledChecks();
     void sendPtys();
     virtual void sendPplm();
     virtual void sendSltp();
@@ -711,6 +721,7 @@ public:
     bool _ignorePortStatus;
     bool _isGboxPort;
     bool _isSwControled;
+    bool _isSwControledStandAlone;
     bool _ignoreIbFECCheck;
     bool _isNVLINK;
     std::vector<PortGroup> _localPortsPerGroup;

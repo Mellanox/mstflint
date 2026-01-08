@@ -34,7 +34,7 @@
 
 #include "mlxlink_ui.h"
 #include <mlxreg/mlxreg_lib/mlxreg_parser.h>
-
+#include <common/PCILibrary.h>
 MlxlinkUi::MlxlinkUi() : CommandLineRequester(MLXLINK_EXEC " OPTIONS"), _cmdParser(MLXLINK_EXEC)
 {
     _mlxlinkCommander = nullptr;
@@ -83,12 +83,31 @@ void MlxlinkUi::initRegAccessLib()
     }
 }
 
+bool MlxlinkUi::isSwitch()
+{
+    return !_mlxlinkCommander->_isHCA;
+}
+
+void MlxlinkUi::updateSysFsPath(string& sysfsPath)
+{
+    if (sysfsPath.empty())
+    {
+        // based on arch only asic0 is possible at the moment : "/sys/module/sx_core/asic0/module#/".
+        sysfsPath = SW_CONTROLLED_MODULE_PATH + to_string(_mlxlinkCommander->_moduleNumber);
+    }
+}
 void MlxlinkUi::initPortInfo()
 {
-    if ((!_userInput._portSpecified && _userInput._csvBer != "") ||
-        (_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo))
+    if (isSwitch() && ((!_userInput._portSpecified && _userInput._csvBer != "") ||
+                       (_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo)))
     {
         _mlxlinkCommander->findFirstValidPort();
+    }
+
+    // only init PCI domain for "--port_type PCIE --show_links" command.
+    if (_userInput._pcie && _userInput._links && !isSwitch())
+    {
+        initPCIDomain();
     }
 
     _mlxlinkCommander->labelToLocalPort();
@@ -112,11 +131,16 @@ void MlxlinkUi::initPortInfo()
         {
             _mlxlinkCommander->getCableParams();
         }
+        if (_mlxlinkCommander->_isSwControled && _userInput._sysfsPath.empty())
+        {
+            updateSysFsPath(_mlxlinkCommander->_userInput._sysfsPath);
+        }
     }
     else if (!_userInput._sendDpn)
     {
         _mlxlinkCommander->initValidDPNList();
     }
+    _mlxlinkCommander->updateDPNDomain();
 }
 
 void MlxlinkUi::initMlxlinkCommander()
@@ -289,7 +313,15 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PRBS_DC_COUPLE_ALLOW_FLAG_SHORT, PRBS_DC_COUPLE_ALLOW_FLAG, "",
                                  "For DC coupled ports only: This flag must be set to enter test mode");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(
+    MlxlinkRecord::printFlagLine(FORCE_TX_ALLOWED_FLAG_SHORT, FORCE_TX_ALLOWED_FLAG, "",
+                                 "Force TX allowed for PRBS test mode");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(SKIP_POWER_GOOD_CHECK_FLAG_SHORT, SKIP_POWER_GOOD_CHECK_FLAG, "",
+                                 "Skip power good check for PRBS test mode");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(SYSFS_PATH_FLAG_SHORT, SYSFS_PATH_FLAG, "path", "Full path to sysfs files");
+    printf(IDENT);
+   MlxlinkRecord::printFlagLine(
       PRBS_LANES_FLAG_SHORT, PRBS_LANES_FLAG, "lanes",
       "PRBS lanes to set (one or more lane separated by comma)[0,1,2,...,7] (Optional - Default all lanes)");
     MlxlinkRecord::printFlagLine(BER_COLLECT_FLAG_SHORT, BER_COLLECT_FLAG, "csv_file",
@@ -1156,6 +1188,10 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PRBS_INVERT_TX_POL_FLAG, PRBS_INVERT_TX_POL_FLAG_SHORT, "", "PRBS TX polarity inversion");
     AddOptions(PRBS_INVERT_RX_POL_FLAG, PRBS_INVERT_RX_POL_FLAG_SHORT, "", "PRBS RX polarity inversion");
     AddOptions(PRBS_DC_COUPLE_ALLOW_FLAG, PRBS_DC_COUPLE_ALLOW_FLAG_SHORT, "", "Allow PRBS for DC coupled ports");
+    AddOptions(FORCE_TX_ALLOWED_FLAG, FORCE_TX_ALLOWED_FLAG_SHORT, "", "Force TX allowed for PRBS test mode");
+    AddOptions(SKIP_POWER_GOOD_CHECK_FLAG, SKIP_POWER_GOOD_CHECK_FLAG_SHORT, "",
+               "Skip power good check for PRBS test mode");
+    AddOptions(SYSFS_PATH_FLAG, SYSFS_PATH_FLAG_SHORT, "path", "Full path to sysfs files");
 
     AddOptions(CABLE_FLAG, CABLE_FLAG_SHORT, "", "Cable operations");
     AddOptions(CABLE_DUMP_FLAG, CABLE_DUMP_FLAG_SHORT, "", "Dump cable EEPROM pages");
@@ -1668,6 +1704,21 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._prbsDcCoupledAllow = true;
         return PARSE_OK;
     }
+    else if (name == FORCE_TX_ALLOWED_FLAG)
+    {
+        _userInput._forceTxAllowed = true;
+        return PARSE_OK;
+    }
+    else if (name == SKIP_POWER_GOOD_CHECK_FLAG)
+    {
+        _userInput._skipPowerGoodCheck = true;
+        return PARSE_OK;
+    }
+    else if (name == SYSFS_PATH_FLAG)
+    {
+        _userInput._sysfsPath = value;
+        return PARSE_OK;
+    }
     else if (name == BER_COLLECT_FLAG)
     {
         addCmd(SEND_BER_COLLECT);
@@ -2082,4 +2133,21 @@ int MlxlinkUi::run(int argc, char** argv)
 
     cout << endl;
     return exit_code;
+}
+
+// SetPCIDomain should not throw exceptions, even if failed to set domain.
+// we use try/catch to cover any unexpected errors.
+void MlxlinkUi::initPCIDomain()
+{
+    try
+    {
+        int failedToSetSegmentBase = 0;
+        PCILibrary::SetPCIDomain(failedToSetSegmentBase);
+    }
+    catch (const std::exception& exc)
+    {
+        MlxlinkRecord::printWar(
+          "Warning: Failed to set one or more PCI domains, use \"export MFT_PRINT_LOG=1\" to get more details.",
+          _mlxlinkCommander->_jsonRoot);
+    }
 }
