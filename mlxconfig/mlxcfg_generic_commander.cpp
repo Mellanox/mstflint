@@ -403,7 +403,7 @@ void GenericCommander::printParamViews(FILE* f, vector<ParamView>& v)
                 break;
         }
         size_t len = (*pIt).mlxconfigName.length();
-        // dont print description for parms _P2 - _P8
+        // don't print description for params _P2 - _P8
         if ((*pIt).mlxconfigName.rfind("_P1") == std::string::npos)
         {
             size_t posP = (*pIt).mlxconfigName.rfind("_P");
@@ -911,6 +911,24 @@ void GenericCommander::invalidateCfgs()
     }
 }
 
+// invalidate each different TLV separately.
+void GenericCommander::invalidateCfg(const std::vector<ParamView>& params)
+{
+    std::unordered_set<std::string> invalidatedTLVs;
+    for (ParamView param : params)
+    {
+        std::shared_ptr<TLVConf> tlv = _dbManager->getTLVByParamMlxconfigName(param.mlxconfigName, _mf);
+        std::string tlvKey = tlv->_name + "_P" + to_string(tlv->_port) + "_M" + to_string(tlv->_module);
+        if (invalidatedTLVs.find(tlvKey) == invalidatedTLVs.end())
+        {
+            invalidatedTLVs.insert(tlvKey);
+            tlv->invalidate(_mf);
+            tlv->invalidateParamsQueried();
+        }
+    }
+}
+
+// TODO re-visit this flow, it can probably be done better.
 void GenericCommander::invalidateCfg(const std::string& configName)
 {
     std::vector<std::shared_ptr<TLVConf>> tlvArr;
@@ -929,9 +947,9 @@ void GenericCommander::invalidateCfg(const std::string& configName)
             auto ret = _dbManager->getMlxconfigNamePortModule(upper, _mf);
             string mlxconfigNameNoPortModuleName = mft_utils::to_lowercase_copy(get<0>(ret));
             u_int32_t port = get<1>(ret);
-            int32_t module = get<2>(ret);
+            int32_t tlvModule = get<2>(ret);
             tlv->_port = port;
-            tlv->_module = module;
+            tlv->_module = tlvModule;
             if (tlv->_name == mlxconfigNameNoPortModuleName)
             {
                 tlvArr.push_back(tlv);
@@ -946,6 +964,7 @@ void GenericCommander::invalidateCfg(const std::string& configName)
     for (std::vector<std::shared_ptr<TLVConf>>::iterator it = tlvArr.begin(); it != tlvArr.end(); ++it)
     {
         (*it)->invalidate(_mf);
+        (*it)->invalidateParamsQueried();
     }
 }
 
@@ -980,7 +999,6 @@ bool GenericCommander::shouldSkipPrepareReset()
     {
         return false;
     }
-
     uint32_t is_DPU_enabled = isDPUEnabled();
     // skip can only happen in DPU mode, if DPU isnt enabled , dont skip.
     if (!is_DPU_enabled)
@@ -1130,7 +1148,7 @@ void GenericCommander::updateParamViewValue(ParamView& p, string v, QueryType qt
     }
     std::shared_ptr<TLVConf> tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, _mf);
     p.port = tlv->_port;
-    p.module = tlv->_module;
+    p._module = tlv->_module;
     tlv->parseParamValue(mlxconfigName, v, p.val, p.strVal, index, qt);
 }
 
@@ -1349,7 +1367,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<std::shared_
             IGNORE_UNUSEFUL_NODE(currTlv)
             u_int32_t port = 0;
             u_int32_t u_module = 0;
-            int32_t module;
+            int32_t tlvModule;
             std::shared_ptr<TLVConf> tlvConf = nullptr;
             bool isAllPorts = false;
             bool isAllModules = false;
@@ -1375,12 +1393,12 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<std::shared_
 
             if (!moduleAttr)
             {
-                module = -1;
+                tlvModule = -1;
             }
             else if (!xmlStrcasecmp(moduleAttr, (const xmlChar*)ALL_ATTR_VAL))
             {
                 isAllModules = true;
-                module = 0;
+                tlvModule = 0;
             }
             else if (!strToNum((const char*)moduleAttr, u_module) || !(u_module <= (u_int32_t)tlvConf->getMaxModule()))
             {
@@ -1388,10 +1406,10 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<std::shared_
             }
             else
             {
-                module = u_module;
+                tlvModule = u_module;
             }
 
-            tlvConf = _dbManager->getCloneTLVByName((char*)currTlv->name, port, module);
+            tlvConf = _dbManager->getCloneTLVByName((char*)currTlv->name, port, tlvModule);
             try
             {
                 if (isAllPorts)
