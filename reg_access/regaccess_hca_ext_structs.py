@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2025-11-25 08:56:17"
+#    This file was generated at "2026-01-07 11:57:16"
 #    by:
 #      > prm_update.py --project Nic
 ###############################################################################
@@ -75,8 +75,8 @@ class MPIR_EXT(ctypes.Structure):
         ("subordinate_bus", ctypes.c_uint8),
         ("secondary_bus", ctypes.c_uint8),
         ("segment_base", ctypes.c_uint8),
-        ("seg_valid", ctypes.c_uint8),
-        ("seg_cap", ctypes.c_uint8),
+        ("segment_valid", ctypes.c_uint8),
+        ("segment_cap", ctypes.c_uint8),
         ("sd_group", ctypes.c_uint8),
         ("device", ctypes.c_uint8),
         ("lp_msb", ctypes.c_uint8),
@@ -430,6 +430,7 @@ class MPEIN_REG_EXT(ctypes.Structure):
         ("num_of_pfs", ctypes.c_uint16),
         ("bdf0", ctypes.c_uint16),
         ("lane_reversal", ctypes.c_uint8),
+        ("cmn_clk_mode", ctypes.c_uint8),
         ("port_type", ctypes.c_uint8),
         ("pwr_status", ctypes.c_uint8),
         ("max_payload_size", ctypes.c_uint8),
