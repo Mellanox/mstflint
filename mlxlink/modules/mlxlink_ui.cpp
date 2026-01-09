@@ -2141,8 +2141,7 @@ void MlxlinkUi::initPCIDomain()
 {
     try
     {
-        int failedToSetSegmentBase = 0;
-        PCILibrary::SetPCIDomain(failedToSetSegmentBase);
+        PCILibrary::SetPCIDomain();
     }
     catch (const std::exception& exc)
     {
