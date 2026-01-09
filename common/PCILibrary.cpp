@@ -188,7 +188,7 @@
              continue;
          }
          mpegc.segment_base = pciDevices[count].pci.domain;
-         mpegc.seg_valid = 1;
+         mpegc.segment_valid = 1;
          mpegc.pcie_index = mpqd.requester_pcie_index;
          mpegc.DPNv = 1;
          mpegc.field_select = field_select;
@@ -210,7 +210,7 @@
              {
                  memset(&mpegc, 0, sizeof(struct reg_access_hca_mpegc_reg_ext));
                  mpegc.segment_base = directNicDevice[endPointV3];
-                 mpegc.seg_valid = 1;
+                 mpegc.segment_valid = 1;
                  mpegc.field_select = field_select;
                  // According to arch (Oren S), when its direct nic, pci index < 1
                  if (mpqd.requester_pcie_index > 1)
