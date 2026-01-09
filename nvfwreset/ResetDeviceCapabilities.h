@@ -31,27 +31,34 @@
  *
  */
 
-#pragma once
+#ifndef RESET_DEVICE_CAPABILITIES_H
+#define RESET_DEVICE_CAPABILITIES_H
 
-#include "OperatingSystemAPI.h"
+#include <set>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <iostream>
+#include "NVFWresetParams.h"
+#include "ResetParameterDefs.h"
+#include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
+#include "reg_access/reg_access.h"
+#include "tools_layouts/reg_access_hca_layouts.h"
 
-class Linux : public OperatingSystemAPI
+class ResetDeviceCapabilities
 {
 public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
+    ResetDeviceCapabilities(mfile* mf, NVFWresetParams& params);
+    const ResetDeviceParam& getResetDeviceParam() const { return _resetDeviceParam; }
+
+private:
+    struct ResetDeviceParam _resetDeviceParam;
+    reg_access_hca_mroq_ext sendMroqCommand(mfile* mf, NVFWresetParams& params);
+    bool isMroqSupported(mfile* mf);
+    void parseResetLevels(reg_access_hca_mroq_ext& mroq);
+    void parseResetSyncTypes(reg_access_hca_mroq_ext& mroq);
+    void parseResetTypes(reg_access_hca_mroq_ext& mroq);
+    void parseResetMethods(reg_access_hca_mroq_ext& mroq);
 };
+
+#endif // RESET_DEVICE_CAPABILITIES_H

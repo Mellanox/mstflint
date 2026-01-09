@@ -31,27 +31,45 @@
  *
  */
 
-#pragma once
+#ifndef RESET_PLATFORM_INTERFACE_H
+#define RESET_PLATFORM_INTERFACE_H
 
-#include "OperatingSystemAPI.h"
+#include "mtcr.h"
+#include "ResetParameterDefs.h"
+#include <vector>
+#include <string>
 
-class Linux : public OperatingSystemAPI
+class ResetPlatformInterface
 {
 public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
+    ResetPlatformInterface(mfile* mf,
+                           const ResetFlowParameters& resetParams,
+                           const std::vector<std::string>& asicDBDFTargets) :
+        _mf(mf), _resetParams(resetParams), _asicDBDFTargets(asicDBDFTargets)
+    {
+    }
+    virtual ~ResetPlatformInterface() {}
+    static std::string ShowResetFlowSteps();
+    virtual void StopNicDriver() = 0;
+    virtual void DisableLinks() = 0;
+    virtual void SendMFRL() = 0;
+    virtual void HotReset() = 0;
+    virtual void LinkDisableReset() = 0;
+    virtual void PciReset() = 0;
+    virtual void StartNicDriver() = 0;
+    virtual void WaitForReady() = 0;
+    virtual void MSTRestart() = 0;
+    virtual void SaveUptimeBeforeReset() = 0;
+    virtual void CheckUptimeAfterReset() = 0;
+    virtual void PreConditionForHotReset(const std::vector<std::string>& ignoreList) = 0;
+
+protected:
+    mfile* _mf;
+    unsigned long long _uptimeBeforeReset;
+    const ResetFlowParameters _resetParams;
+    const std::vector<std::string> _asicDBDFTargets;
+    void PrintStartResetFlowMessage(ResetFlowStep step);
+    void PrintEndResetFlowMessage();
 };
+
+#endif // RESET_PLATFORM_INTERFACE_H

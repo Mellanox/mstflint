@@ -31,27 +31,28 @@
  *
  */
 
-#pragma once
+#ifndef COMMON_RESET_PLATFORM_H
+#define COMMON_RESET_PLATFORM_H
 
-#include "OperatingSystemAPI.h"
+#include <memory>
+#include <map>
+#include "ResetPlatformInterface.h"
+#include "mft_core/mft_core_utils/operating_system_api/FactoryOperatingSystemAPI.h"
+#include "ResetParameterDefs.h"
 
-class Linux : public OperatingSystemAPI
+class CommonResetPlatform : public ResetPlatformInterface
 {
 public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
+    CommonResetPlatform(mfile* mf,
+                        const ResetFlowParameters& resetParams,
+                        const std::vector<std::string>& asicDBDFTargets);
+    virtual void SendMFRL() override;
+    virtual void SaveUptimeBeforeReset() override;
+    virtual void CheckUptimeAfterReset() override;
+
+protected:
+    std::map<std::string, NicDriverState> _nicDriverState;
+    std::unique_ptr<OperatingSystemAPI> _operatingSystemAPI;
 };
+
+#endif // COMMON_RESET_PLATFORM_H

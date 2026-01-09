@@ -174,6 +174,8 @@ reg_access_status_t reg_access_mfpa_new(mfile* mf, reg_access_method_t method,
                                         struct reg_access_hca_mfpa_reg_ext* mfpa);
 struct reg_access_hca_mcam_reg_ext;
 reg_access_status_t reg_access_mcam(mfile* mf, reg_access_method_t method, struct reg_access_hca_mcam_reg_ext* mcam);
+struct reg_access_hca_mroq_ext;
+reg_access_status_t reg_access_mroq(mfile* mf, reg_access_method_t method, struct reg_access_hca_mroq_ext* mroq);
 struct tools_open_mlock;
 reg_access_status_t reg_access_secure_host(mfile* mf, reg_access_method_t method, struct tools_open_mlock* mlock);
 /*

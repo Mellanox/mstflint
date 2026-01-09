@@ -31,27 +31,21 @@
  *
  */
 
-#pragma once
+#include "NVFWresetParams.h"
+#include "ResetParameterDefs.h"
 
-#include "OperatingSystemAPI.h"
-
-class Linux : public OperatingSystemAPI
+NVFWresetParams::NVFWresetParams() :
+    cmdType(ResetCommandType::UNKNOWN),
+    device(""),
+    resetLevel(ResetLevel::UNKNOWN),
+    resetType(ResetType::UNKNOWN),
+    method(ResetMethod::UNKNOWN),
+    resetSync(ResetSync::UNKNOWN),
+    answerYes(false),
+    skipDriver(false),
+    resetFlowSteps({}),
+    driverIgnoreList({}),
+    skipMstRestart(false),
+    logLevel("")
 {
-public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
-};
+}

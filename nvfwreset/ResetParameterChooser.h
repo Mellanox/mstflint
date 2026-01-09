@@ -31,27 +31,30 @@
  *
  */
 
-#pragma once
+#ifndef PARAMETER_CHOOSER_H
+#define PARAMETER_CHOOSER_H
 
-#include "OperatingSystemAPI.h"
+#include <vector>
+#include <string>
+#include "ResetParameterDefs.h"
+#include "NVFWresetParams.h"
+#include "ResetDeviceCapabilities.h"
+#include "DeviceTypeDetector.h"
+#include "mtcr.h"
 
-class Linux : public OperatingSystemAPI
+class ResetParameterChooser
 {
 public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
+    ResetParameterChooser(const mfile* mf, NVFWresetParams& params) :
+        _resetDeviceCapabilities(const_cast<mfile*>(mf), params)
+    {
+    }
+
+    ResetFlowParameters getResetFlowParameters(const mfile* mf, std::vector<std::string>& asicDBDFTargets) const;
+
+private:
+    ResetFlowParameters PrepareResetFlowParameters() const;
+    ResetDeviceCapabilities _resetDeviceCapabilities;
 };
+
+#endif // PARAMETER_CHOOSER_H

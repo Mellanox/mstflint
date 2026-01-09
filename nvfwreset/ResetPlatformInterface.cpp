@@ -31,27 +31,41 @@
  *
  */
 
-#pragma once
+#include <iostream>
+#include <map>
+#include "ResetPlatformInterface.h"
+#include "ResetParameterDefs.h"
 
-#include "OperatingSystemAPI.h"
+std::map<ResetFlowStep, std::string> ResetFlowStepToStringMap = {
+  {ResetFlowStep::StopNicDriver, "Stopping NIC driver"},
+  {ResetFlowStep::DisableLinks, "Disabling links"},
+  {ResetFlowStep::SendMFRL, "Sending MFRL"},
+  {ResetFlowStep::PreConditionForHotReset, "Pre-condition for Hot Reset"},
+  {ResetFlowStep::HotReset, "Performing Hot Reset"},
+  {ResetFlowStep::LinkDisableReset, "Performing Link Disable Reset"},
+  {ResetFlowStep::PciReset, "Performing PCI Reset"},
+  {ResetFlowStep::StartNicDriver, "Starting NIC driver"},
+  {ResetFlowStep::WaitForReady, "Waiting for ready"},
+  {ResetFlowStep::MSTRestart, "Restarting MST"},
+  {ResetFlowStep::SaveUptimeBeforeReset, "Saving reset uptime before reset"},
+  {ResetFlowStep::CheckUptimeAfterReset, "Checking reset uptime after reset"}};
 
-class Linux : public OperatingSystemAPI
+void ResetPlatformInterface::PrintStartResetFlowMessage(ResetFlowStep step)
 {
-public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
-};
+    std::cout << ResetFlowStepToStringMap.at(step) << " - ";
+}
+
+void ResetPlatformInterface::PrintEndResetFlowMessage()
+{
+    std::cout << "Completed successfully" << std::endl;
+}
+
+std::string ResetPlatformInterface::ShowResetFlowSteps()
+{
+    std::string steps = "";
+    for (const auto& entry : ResetFlowStepToStringMap)
+    {
+        steps += std::to_string(static_cast<int>(entry.first)) + ": " + entry.second + "\n";
+    }
+    return steps;
+}

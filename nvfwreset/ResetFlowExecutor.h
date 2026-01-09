@@ -31,27 +31,34 @@
  *
  */
 
-#pragma once
+#ifndef RESET_FLOW_EXECUTOR_H
+#define RESET_FLOW_EXECUTOR_H
 
-#include "OperatingSystemAPI.h"
+#include <string>
+#include <vector>
+#include <map>
+#include "ResetParameterDefs.h"
+#include "ResetPlatformInterface.h"
+#include "NVFWresetParams.h"
+#include "mtcr.h"
 
-class Linux : public OperatingSystemAPI
+class ResetFlowExecutor
 {
 public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
+    ResetFlowExecutor(mfile* mf,
+                      const ResetFlowParameters& resetParams,
+                      const std::vector<std::string>& asicDBDFTargets);
+    void RunResetFlow(const NVFWresetParams& params) const;
+
+private:
+    mfile* _mf;
+    const ResetFlowParameters& _resetParams;
+    ResetPlatformInterface* _resetPlatform;
+
+    std::map<ResetKey, std::vector<ResetFlowStep>> BuildResetFlow(const std::vector<unsigned int>& resetFlowSteps) const;
+    std::vector<ResetFlowStep> FindFlowSteps(std::map<ResetKey, std::vector<ResetFlowStep>>& resetFlowMap) const;
+    void ExecuteResetSteps(std::vector<ResetFlowStep>& flowSteps,
+                           const std::vector<std::string>& driverIgnoreList) const;
 };
+
+#endif // RESET_FLOW_EXECUTOR_H

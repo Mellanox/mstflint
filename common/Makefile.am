@@ -46,6 +46,8 @@ libcommon_la_SOURCES = \
     tools_utils.h \
     tools_utils.h \
     tools_version.h \
+    tools_string.h \
+    tools_string.cpp \
     PCILibrary.cpp \
     PCILibrary.h
 

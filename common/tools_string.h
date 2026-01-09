@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,30 +28,40 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 #pragma once
 
-#include "OperatingSystemAPI.h"
+#include <string>
 
-class Linux : public OperatingSystemAPI
+namespace nbu
 {
-public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
-};
+namespace mft
+{
+namespace common
+{
+/**
+ * @brief Format a string using printf-style formatting.
+ * @param format A C-style format string, similar to that used in printf.
+ * @param ... Additional arguments to be formatted into the resulting string.
+ *            These arguments should correspond to the format specifiers in the
+ *            format string.
+ * @return A std::string containing the formatted string.
+ *
+ * This function behaves similarly to sprintf but returns a std::string instead
+ * of writing to a character array. It accepts a format string and additional
+ * arguments which are formatted according to the format specifier in the format
+ * string.
+ *
+ * Example usage:
+ * @code
+ * std::string formatted = string_format("Hello, %s! The answer to the Ultimate Question of Life, the Universe, and
+ * Everything is %d.", "%Username%", 42); std::cout << formatted << std::endl;  // Output: Hello, %Username%! The answer
+ * to the Ultimate Question of Life, the Universe, and Everything is 42.
+ * @endcode
+ */
+::std::string string_format(const char* format, ...);
+
+} // namespace common
+} // namespace mft
+} // namespace nbu

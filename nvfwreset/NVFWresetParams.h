@@ -31,27 +31,31 @@
  *
  */
 
-#pragma once
+#ifndef NVFWRESET_PARAMS_H
+#define NVFWRESET_PARAMS_H
 
-#include "OperatingSystemAPI.h"
+#include <string>
+#include <vector>
+#include "ResetParameterDefs.h"
 
-class Linux : public OperatingSystemAPI
+class NVFWresetParams
 {
 public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
+    NVFWresetParams();
+    ~NVFWresetParams(){};
+
+    ResetCommandType cmdType;
+    std::string device;
+    ResetLevel resetLevel;
+    ResetType resetType;
+    ResetMethod method;
+    ResetSync resetSync;
+    bool answerYes;
+    bool skipDriver;
+    std::vector<unsigned int> resetFlowSteps;
+    std::vector<std::string> driverIgnoreList;
+    bool skipMstRestart;
+    std::string logLevel;
 };
+
+#endif // NVFWRESET_PARAMS_H

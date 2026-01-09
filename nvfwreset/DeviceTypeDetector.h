@@ -31,27 +31,24 @@
  *
  */
 
-#pragma once
+#ifndef DEVICE_TYPE_DETECTOR_H
+#define DEVICE_TYPE_DETECTOR_H
 
-#include "OperatingSystemAPI.h"
+#include <string>
+#include <vector>
+#include "mtcr.h"
+#include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
 
-class Linux : public OperatingSystemAPI
+class DeviceTypeDetector
 {
 public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
+    static bool IsPCIESwitchDevice(const mfile* mf);
+    static void AddSocketDirectDevices(const mfile* mf, std::vector<std::string>& asicDBDFTargets);
+    static bool IsInInternalHost();
+
+private:
+    static bool IsUpstreamPortType(const mfile* mf, int pcieIndex);
+    static std::string GetMacAddress(const mfile* mf);
 };
+
+#endif // DEVICE_TYPE_DETECTOR_H

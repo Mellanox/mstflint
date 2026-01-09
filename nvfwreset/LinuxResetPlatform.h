@@ -31,27 +31,37 @@
  *
  */
 
-#pragma once
+#ifndef LINUX_RESET_PLATFORM_H
+#define LINUX_RESET_PLATFORM_H
 
-#include "OperatingSystemAPI.h"
+#include <map>
+#include "ResetPlatformInterface.h"
+#include "CommonResetPlatform.h"
+#include "HotResetManager.h"
+#include "mft_core/mft_core_utils/operating_system_api/FactoryOperatingSystemAPI.h"
 
-class Linux : public OperatingSystemAPI
+class LinuxResetPlatform : public CommonResetPlatform
 {
 public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
+    LinuxResetPlatform(mfile* mf,
+                       const ResetFlowParameters& resetParams,
+                       const std::vector<std::string>& asicDBDFTargets);
+    virtual ~LinuxResetPlatform() override;
+    virtual void StopNicDriver() override;
+    virtual void StartNicDriver() override;
+    virtual void DisableLinks() override;
+    virtual void HotReset() override;
+    virtual void LinkDisableReset() override;
+    virtual void PciReset() override;
+    virtual void WaitForReady() override;
+    virtual void MSTRestart() override;
+    virtual void PreConditionForHotReset(const std::vector<std::string>& ignoreList) override;
+
+private:
+    HotResetManager _hotResetManager;
+    std::unique_ptr<OperatingSystemAPI> _operatingSystemAPI;
+    void ToggleNicDriver(const std::string& asicDBDFTarget, bool unbind);
+    bool IsNicDriverBound(const std::string& asicDBDFTarget);
 };
+
+#endif // LINUX_RESET_PLATFORM_H

@@ -31,27 +31,31 @@
  *
  */
 
-#pragma once
+#ifndef NVFWRESET_PARSER_H
+#define NVFWRESET_PARSER_H
 
-#include "OperatingSystemAPI.h"
+#include <string>
+#include <memory>
+#include "cmdparser/cmdparser.h"
+#include "NVFWresetParams.h"
+#include "common/tools_version.h"
 
-class Linux : public OperatingSystemAPI
+class NVFWresetParser : public CommandLineRequester
 {
 public:
-    Linux() = default;
-    virtual ~Linux() = default;
-    virtual int GetPID() override;
-    virtual const std::string GetExecutableName() override;
-    virtual const std::string GetExecutablePath();
-    virtual const std::string GetExecutableDir() override;
-    virtual const std::string GetLogDirectory() override;
-    virtual const std::string GetFilePath(const std::string& oDirName, const std::string& oFileName) override;
-    virtual void LittleToBig32(uint32_t& uLittleEndianBuffer, const int iLength) override;
-    virtual void CreateDirectoryIfNotExist(const std::string& poNewDirectory) override;
-    virtual void MilliSecondsSleep(int iMilliseconds) override;
-    virtual void GetHostName(char* pcHostName) override;
-    virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
-    virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
-    class FactoryOperatingSystemAPI;
+    NVFWresetParser();
+    ~NVFWresetParser(){};
+    ParseStatus Parse(int argc, char** argv);
+    NVFWresetParams* getParsedParams() const { return _parsedParams.get(); }
+    virtual ParseStatus HandleOption(std::string name, std::string value);
+
+protected:
+    CommandLineParser _cmdParser;
+    ParseStatus ParseCommand(std::string command);
+    virtual void initOptions();
+
+private:
+    std::unique_ptr<NVFWresetParams> _parsedParams;
 };
+
+#endif // NVFWRESET_PARSER_H
