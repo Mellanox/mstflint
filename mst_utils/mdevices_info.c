@@ -247,7 +247,7 @@ int print_rdma_bond_dev(char* net_dev_secondary, char* net_dev_primary)
     /* no secondary dev found */
     return 0;
 }
-void print_pci_info(dev_info* dev, int domain_needed)
+void print_pci_info(dev_info* dev, int domain_needed, mfile* mf)
 {
     char dbdf[16384] = {0};
     char fmt[16384] = {0};
@@ -309,6 +309,16 @@ void print_pci_info(dev_info* dev, int domain_needed)
 #else  
     printf(" ");
 #endif
+
+    // Add STATE
+    if (mf && (is_zombiefish_device(mf) || dm_is_livefish_mode(mf)))
+    {
+        printf("%-12s", "recovery");
+    }
+    else
+    {
+        printf("%-12s", " ");
+    }
 
     printf("\n");
 }
@@ -411,7 +421,7 @@ int main(int argc, char** argv)
         if (verbose) {
             if (domain_needed) {
                 if (ul_mode) {
-                    printf("%-24s%-9s%-16s%-16s%-40s%-6s%-16s\n",
+                    printf("%-24s%-9s%-16s%-16s%-40s%-6s%-16s%-12s\n",
                            "DEVICE_TYPE",
                            "MST",
                            "PCI",
@@ -419,12 +429,14 @@ int main(int argc, char** argv)
                            "NET",
                            "NUMA",
 #ifdef ENABLE_VFIO
-                           "VFIO");
+                           "VFIO",
 #else
-                           "");
+                           "",
 #endif
+                           "STATE");
+
                 } else {
-                    printf("%-24s%-30s%-16s%-16s%-40s%-6s%-16s\n",
+                    printf("%-24s%-30s%-16s%-16s%-40s%-6s%-16s%-12s\n",
                            "DEVICE_TYPE",
                            "MST",
                            "PCI",
@@ -432,15 +444,17 @@ int main(int argc, char** argv)
                            "NET",
                            "NUMA",
 #ifdef ENABLE_VFIO
-                           "VFIO");
+                           "VFIO",
 #else
-                           "");
+                           "",
 #endif
+                           "STATE");
+
                 }
                 /* printf("%-30s%-16s%-16s%-8s%-20s\n", "---", "-----------", "---", "----", "---"); */
             } else {
                 if (ul_mode) {
-                    printf("%-24s%-9s%-10s%-16s%-40s%-6s%-16s\n",
+                    printf("%-24s%-9s%-10s%-16s%-40s%-6s%-16s%-12s\n",
                            "DEVICE_TYPE",
                            "MST",
                            "PCI",
@@ -448,12 +462,14 @@ int main(int argc, char** argv)
                            "NET",
                            "NUMA",
 #ifdef ENABLE_VFIO
-                           "VFIO");
+                           "VFIO",
 #else
-                           "");
+                           "",
 #endif
+                           "STATE");
+
                 } else {
-                    printf("%-24s%-30s%-10s%-16s%-40s%-6s%-16s\n",
+                    printf("%-24s%-30s%-10s%-16s%-40s%-6s%-16s%-12s\n",
                            "DEVICE_TYPE",
                            "MST",
                            "PCI",
@@ -461,10 +477,12 @@ int main(int argc, char** argv)
                            "NET",
                            "NUMA",
 #ifdef ENABLE_VFIO
-                           "VFIO");
+                           "VFIO",
 #else
-                           "");
+                           "",
 #endif
+                           "STATE");
+
                 }
                 /* printf("%-30s%-16s%-10s%-8s%-20s\n", "---", "-----------", "---", "----", "---"); */
             }
@@ -495,9 +513,6 @@ int main(int argc, char** argv)
                 } else {
                     snprintf(dev_type, 128, "%s(rev:%x)", dm_dev_type2str_external(dev_id), hw_rev);
                 }
-                if (mf) {
-                    mclose(mf);
-                }
                 /* printf("-D- CF: %s, CR: %s\n", devs[i].pci.conf_dev, devs[i].pci.cr_dev); */
                 int conf_exist = devs[i].pci.conf_dev[0];
                 int cr_exist = devs[i].pci.cr_dev[0];
@@ -513,12 +528,12 @@ int main(int argc, char** argv)
                         } else {
                             printf("%-30s", devs[i].pci.conf_dev);
                         }
-                        print_pci_info(&devs[i], domain_needed);
+                        print_pci_info(&devs[i], domain_needed, mf);
                     }
                     if (cr_exist) {
                         printf("%-24s", dev_type);
                         printf("%-30s", devs[i].pci.cr_dev);
-                        print_pci_info(&devs[i], domain_needed);
+                        print_pci_info(&devs[i], domain_needed, mf);
                     }
                 } else {
                     /* printf("-D- NOT VERBOS\n"); */
@@ -536,7 +551,7 @@ int main(int argc, char** argv)
                     }
                     if (cr_exist) {
                         if (conf_exist) {
-                            print_pci_info(&devs[i], domain_needed);
+                            print_pci_info(&devs[i], domain_needed, mf);
                             printf("\n");
                         }
                         printf("%-24s", dev_type);
@@ -544,10 +559,13 @@ int main(int argc, char** argv)
                     }
 
                     if (verbose) {
-                        print_pci_info(&devs[i], domain_needed);
+                        print_pci_info(&devs[i], domain_needed, mf);
                     }
                 }
                 printf("\n");
+                if (mf) {
+                    mclose(mf);
+                }
             }
         }
     }
