@@ -119,6 +119,7 @@ public:
         {
             delete _signatureMngr;
         }
+        FwCleanUp();
     };
     // virtual void print_type() {};
     virtual mfile* getMfileObj()
