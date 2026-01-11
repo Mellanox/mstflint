@@ -2032,6 +2032,19 @@ void update_seventh_gen_addrs(mflash* mfl)
         mfl->gcm_en_addr = HCR_7GEN_QTM3_GCM_EN_ADDR;
         mfl->gw_addr_field_addr = HCR_7GEN_QTM3_FLASH_ADDR;
         mfl->gw_data_size_register_addr = HCR_7GEN_QTM3_FLASH_DATA_SIZE;
+        if (is_zombiefish_device(mfl->mf))
+        {
+            mfl->gw_cmd_register_addr =
+              mfl->gw_cmd_register_addr - HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_data_field_addr =
+              mfl->gw_data_field_addr - HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gcm_en_addr =
+              mfl->gcm_en_addr - HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_addr_field_addr =
+              mfl->gw_addr_field_addr - HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_data_size_register_addr = mfl->gw_data_size_register_addr - HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR +
+                                              VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+        }
     }
 
     /* Fields bit offsets and lengths */

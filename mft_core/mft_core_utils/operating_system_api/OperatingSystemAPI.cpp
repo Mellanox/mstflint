@@ -27,7 +27,8 @@ int OperatingSystemAPI::SuppressStderr()
 {
     fflush(stderr);
     int fd = dup(STDERR_FILENO);
-    freopen("/dev/null", "w", stderr);
+    FILE* result = freopen("/dev/null", "w", stderr);
+    (void)result; // Suppress unused variable warning
     return fd;
 }
 
