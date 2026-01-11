@@ -247,7 +247,54 @@ int print_rdma_bond_dev(char* net_dev_secondary, char* net_dev_primary)
     /* no secondary dev found */
     return 0;
 }
-void print_pci_info(dev_info* dev, int domain_needed, mfile* mf)
+
+// Calculate the NET string length for a single device
+int calculate_net_string_length(dev_info* dev)
+{
+    int length = 1;
+
+    if (dev->pci.net_devs)
+    {
+        char map_eth[BUF_MAX];
+        for (int i = 0; dev->pci.net_devs[i]; i++)
+        {
+            char* net_dev = map_eth_bond_name(dev->pci.net_devs[i], map_eth, sizeof(map_eth));
+            if (net_dev == NULL)
+            {
+                net_dev = dev->pci.net_devs[i];
+            }
+            length += strlen("net-") + strlen(net_dev);
+            if (dev->pci.net_devs[i + 1])
+            {
+                length += 1; // for comma
+            }
+        }
+    }
+
+    return length;
+}
+
+// Calculate max NET column width
+int get_max_net_column_width(dev_info* devs, int len)
+{
+    int max_width = 0;
+    for (int i = 0; i < len; i++)
+    {
+        if (devs[i].type == MDEVS_TAVOR_CR)
+        {
+            int width = calculate_net_string_length(&devs[i]);
+            if (width > max_width)
+            {
+                max_width = width;
+            }
+        }
+    }
+
+    return max_width + 1; // +1 for space
+}
+
+
+void print_pci_info(dev_info* dev, int domain_needed, mfile* mf, int net_width)
 {
     char dbdf[16384] = {0};
     char fmt[16384] = {0};
@@ -264,9 +311,9 @@ void print_pci_info(dev_info* dev, int domain_needed, mfile* mf)
     int hasIB = fmt_ib_dev(dev, fmt);
 
     if (hasIB) {
-        printf("%-16s ", fmt);
+        printf("%-16s", fmt);
     } else {
-        printf("%-16s ", " ");
+        printf("%-16s", " ");
     }
 
     /* Add NET devices info */
@@ -275,25 +322,27 @@ void print_pci_info(dev_info* dev, int domain_needed, mfile* mf)
         int  last = 0;
         char map_eth[BUF_MAX];
         int  done = 0;
-        for (j = 0; dev->pci.net_devs[j]; j++) {
-            if (!done) {
-                char* net_dev = map_eth_bond_name(dev->pci.net_devs[j], map_eth, sizeof(map_eth));
-                if (net_dev == NULL) {
-                    net_dev = dev->pci.net_devs[j];
-                } else if (hasIB == 0) {
-                    hasIB = print_rdma_bond_dev(dev->pci.net_devs[j], net_dev);
-                }
-                last += snprintf(fmt + last, BUF_MAX, "net-%s", net_dev);
-                if (dev->pci.net_devs[j + 1]) {
-                    last += sprintf(fmt + last, ",");
-                    done = j > 1;
-                }
+        for (j = 0; dev->pci.net_devs[j]; j++)
+        {
+            char* net_dev = map_eth_bond_name(dev->pci.net_devs[j], map_eth, sizeof(map_eth));
+            if (net_dev == NULL)
+            {
+                net_dev = dev->pci.net_devs[j];
+            }
+            else if (hasIB == 0)
+            {
+                hasIB = print_rdma_bond_dev(dev->pci.net_devs[j], net_dev);
+            }
+            last += snprintf(fmt + last, BUF_MAX, "net-%s", net_dev);
+            if (dev->pci.net_devs[j + 1])
+            {
+                last += sprintf(fmt + last, ",");
             }
         }
     } else {
         sprintf(fmt, " ");
     }
-    printf("%-40s", fmt);
+    printf("%-*s", net_width, fmt);
 
     /* Add NUMA node */
     printf("%-6s", dev->pci.numa_node);
@@ -418,14 +467,18 @@ int main(int argc, char** argv)
 #ifndef __FreeBSD__
         ul_mode = devs[0].ul_mode;
 #endif
+        int net_width = 0;
         if (verbose) {
+            // Calculate dynamic NET column width
+            net_width = get_max_net_column_width(devs, len);
             if (domain_needed) {
                 if (ul_mode) {
-                    printf("%-24s%-9s%-16s%-16s%-40s%-6s%-16s%-12s\n",
+                    printf("%-24s%-9s%-16s%-16s%-*s%-6s%-11s%-12s\n",
                            "DEVICE_TYPE",
                            "MST",
                            "PCI",
-                           "RDMA",
+                           "RDMA", 
+                           net_width,
                            "NET",
                            "NUMA",
 #ifdef ENABLE_VFIO
@@ -436,11 +489,12 @@ int main(int argc, char** argv)
                            "STATE");
 
                 } else {
-                    printf("%-24s%-30s%-16s%-16s%-40s%-6s%-16s%-12s\n",
+                    printf("%-24s%-30s%-16s%-16s%-*s%-6s%-11s%-12s\n",
                            "DEVICE_TYPE",
                            "MST",
                            "PCI",
                            "RDMA",
+                           net_width,
                            "NET",
                            "NUMA",
 #ifdef ENABLE_VFIO
@@ -454,11 +508,12 @@ int main(int argc, char** argv)
                 /* printf("%-30s%-16s%-16s%-8s%-20s\n", "---", "-----------", "---", "----", "---"); */
             } else {
                 if (ul_mode) {
-                    printf("%-24s%-9s%-10s%-16s%-40s%-6s%-16s%-12s\n",
+                    printf("%-24s%-9s%-10s%-16s%-*s%-6s%-11s%-12s\n",
                            "DEVICE_TYPE",
                            "MST",
                            "PCI",
                            "RDMA",
+                           net_width,
                            "NET",
                            "NUMA",
 #ifdef ENABLE_VFIO
@@ -469,11 +524,12 @@ int main(int argc, char** argv)
                            "STATE");
 
                 } else {
-                    printf("%-24s%-30s%-10s%-16s%-40s%-6s%-16s%-12s\n",
+                    printf("%-24s%-30s%-10s%-16s%-*s%-6s%-11s%-12s\n",
                            "DEVICE_TYPE",
                            "MST",
                            "PCI",
                            "RDMA",
+                           net_width,
                            "NET",
                            "NUMA",
 #ifdef ENABLE_VFIO
@@ -528,12 +584,12 @@ int main(int argc, char** argv)
                         } else {
                             printf("%-30s", devs[i].pci.conf_dev);
                         }
-                        print_pci_info(&devs[i], domain_needed, mf);
+                        print_pci_info(&devs[i], domain_needed, mf, net_width);
                     }
                     if (cr_exist) {
                         printf("%-24s", dev_type);
                         printf("%-30s", devs[i].pci.cr_dev);
-                        print_pci_info(&devs[i], domain_needed, mf);
+                        print_pci_info(&devs[i], domain_needed, mf, net_width);
                     }
                 } else {
                     /* printf("-D- NOT VERBOS\n"); */
@@ -551,7 +607,7 @@ int main(int argc, char** argv)
                     }
                     if (cr_exist) {
                         if (conf_exist) {
-                            print_pci_info(&devs[i], domain_needed, mf);
+                            print_pci_info(&devs[i], domain_needed, mf, net_width);
                             printf("\n");
                         }
                         printf("%-24s", dev_type);
@@ -559,7 +615,7 @@ int main(int argc, char** argv)
                     }
 
                     if (verbose) {
-                        print_pci_info(&devs[i], domain_needed, mf);
+                        print_pci_info(&devs[i], domain_needed, mf, net_width);
                     }
                 }
                 printf("\n");
