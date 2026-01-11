@@ -89,57 +89,58 @@ typedef long long int64_t;
 
 #include <sys/types.h>
 #define MTCR_API
-#define LOCK_FILE_DIR                "/tmp/mstflint_lockfiles"
-#define LOCK_FILE_FORMAT             "/tmp/mstflint_lockfiles/%04x:%02x:%02x.%x_%s"
+#define LOCK_FILE_DIR "/tmp/mstflint_lockfiles"
+#define LOCK_FILE_FORMAT "/tmp/mstflint_lockfiles/%04x:%02x:%02x.%x_%s"
 #define LOCK_VIRTUAL_PCI_FILE_FORMAT "/tmp/mstflint_lockfiles/%s_%s"
-#define MAX_RETRY_CNT                4096
+#define MAX_RETRY_CNT 4096
 #endif /* ifdef __WIN__ */
 
-#define DEV_NAME_SZ           512
-#define MAX_PAGES_SIZE        8
+#define DEV_NAME_SZ 512
+#define MAX_PAGES_SIZE 8
 #define SMP_SEMAPHOE_LOCK_CMD 0xff53
-#define ADDRESS_OUT_OF_RANGE  0x3 /* syndrome_code value */
+#define ADDRESS_OUT_OF_RANGE 0x3 /* syndrome_code value */
 
 /*
  * MST <--> MTCR API defines
  */
-#define MST_HEADER_VERSION              1
-#define MST_META_DATA_MAJOR             1
-#define MST_META_DATA_MINOR             0
+#define MST_HEADER_VERSION 1
+#define MST_META_DATA_MAJOR 1
+#define MST_META_DATA_MINOR 0
 #define MTCR_SUPP_MST_API_MAJOR_VERSION 1
 
 /* Service name. */
 #define MST_PREFIX_64_BIT "mst64_"
 #define MST_PREFIX_32_BIT "mst32_"
 #define MST_SUFFIX_MAXLEN 11
-#define MST_SERVICE_NAME_SIZE \
-    (sizeof(MST_PREFIX_64_BIT) + sizeof(MFT_VERSION_STR) + MST_SUFFIX_MAXLEN + 9) /* 9 is just in case reserve */
+#define MST_SERVICE_NAME_SIZE (sizeof(MST_PREFIX_64_BIT) + sizeof(MFT_VERSION_STR) + MST_SUFFIX_MAXLEN + 9) /* 9 is just in case reserve */
 
 /*#ifndef USE_IB_MGT */
-typedef struct mib_private_t {
+typedef struct mib_private_t
+{
     int dummy;
 } MIB_Private;
 /*#else */
 /*#include "mtcr_ib_private.h" */
 /*#endif */
 
-
 #define MTCR_I2C_secondary_ADDRESS 0x48
-#define SLV_ADDRS_NUM              128
+#define SLV_ADDRS_NUM 128
 
-
-typedef enum {
+typedef enum
+{
     SEM_LOCK_GET = 0x0,
     SEM_LOCK_SET = 0x1
 } sem_lock_method_t;
 
 /* PCI operation enum(read or write)*/
-typedef enum {
-    READ_OP  = 0,
+typedef enum
+{
+    READ_OP = 0,
     WRITE_OP = 1,
 } rw_op_t;
 
-typedef enum MError {
+typedef enum MError
+{
     ME_OK = 0,
     ME_ERROR,
     ME_BAD_PARAMS,
@@ -165,7 +166,7 @@ typedef enum MError {
     ME_GMP_MAD_UNSUPPORTED_OPERATION,
 
     /* errors regarding REG_ACCESS */
-    ME_REG_ACCESS_OK             = 0,
+    ME_REG_ACCESS_OK = 0,
     ME_REG_ACCESS_BAD_STATUS_ERR = 0x100,
     ME_REG_ACCESS_BAD_METHOD,
     ME_REG_ACCESS_NOT_SUPPORTED,
@@ -254,41 +255,43 @@ typedef enum MError {
 #ifdef UEFI_BUILD
 #include <mft_uefi_common.h>
 #endif
-typedef enum MType_t {
-    MST_ERROR   = 0x0,
-    MST_FPGA    = 0x1, /* Unsupported */
-    MST_MLNXOS  = 0x2,
-    MST_LPC     = 0x4,
-    MST_PCI     = 0x8,
+typedef enum MType_t
+{
+    MST_ERROR = 0x0,
+    MST_FPGA = 0x1, /* Unsupported */
+    MST_MLNXOS = 0x2,
+    MST_LPC = 0x4,
+    MST_PCI = 0x8,
     MST_PCICONF = 0x10,
     /*MST_CALBR,*/
-    MST_USB                  = 0x20,
-    MST_IB                   = 0x40,
+    MST_USB = 0x20,
+    MST_IB = 0x40,
     MST_FWCTL_CONTROL_DRIVER = 0x80,
-    MST_PPC                  = 0x100,
-    MST_USB_DIMAX            = 0x200,
-    MST_FWCTX                = 0x400,
-    MST_REMOTE               = 0x800,
+    MST_PPC = 0x100,
+    MST_USB_DIMAX = 0x200,
+    MST_FWCTX = 0x400,
+    MST_REMOTE = 0x800,
 #ifdef ENABLE_MST_DEV_I2C
     MST_DEV_I2C = 0x1000,
 #endif
-    MST_CALBR       = 0x2000,
-    MST_FPGA_ICMD   = 0x4000, /* Unsupported */
-    MST_CABLE       = 0x8000,
+    MST_CALBR = 0x2000,
+    MST_FPGA_ICMD = 0x4000, /* Unsupported */
+    MST_CABLE = 0x8000,
     MST_FPGA_DRIVER = 0x10000, /* Unsupported */
-    MST_SOFTWARE    = 0x20000,
+    MST_SOFTWARE = 0x20000,
     MST_DRIVER_CONF = 0x40000,
-    MST_DRIVER_CR   = 0x80000,
-    MST_LINKX_CHIP  = 0x100000,
+    MST_DRIVER_CR = 0x80000,
+    MST_LINKX_CHIP = 0x100000,
     MST_BAR0_GW_PCI = 0x200000,
-    MST_NVML        = 0x400000,
+    MST_NVML = 0x400000,
 #ifdef ENABLE_VFIO
     MST_VFIO_DEVICE = 0x800000,
 #endif
-    MST_DEFAULT     = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER & ~MST_LINKX_CHIP
+    MST_DEFAULT = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER & ~MST_LINKX_CHIP
 } MType;
 
-typedef enum DType_t {
+typedef enum DType_t
+{
     MST_GAMLA,
     MST_TAVOR,
     MST_DIMM,
@@ -296,208 +299,232 @@ typedef enum DType_t {
 } DType;
 #define MST_ANAFA2 MST_TAVOR
 #define MST_EEPROM MST_GAMLA
-typedef enum Mdevs_t {
-    MDEVS_GAMLA       = 0x01,   /*  Each device that actually is a Gamla */
-    MDEVS_I2CM        = 0x02,   /*  Each device that can work as I2C master */
-    MDEVS_MEM         = 0x04,   /*  Each device that is a memory driver (vtop) */
-    MDEVS_TAVOR_DDR   = 0x08,   /*  Each device that maps to DDR */
-    MDEVS_TAVOR_UAR   = 0x10,   /*  Each device that maps to UAR */
-    MDEVS_TAVOR_CR    = 0x20,   /*  Each device that maps to CR */
-    MDEVS_REM         = 0x80,   /*  Remote devices */
-    MDEVS_PPC         = 0x100,  /*  PPC devices */
-    MDEVS_DEV_I2C     = 0x200,  /* Generic linux kernel i2c device */
-    MDEVS_IB          = 0x400,  /* Cr access over IB Mads */
-    MDEVS_MLNX_OS     = 0x800,  /* access by CmdIf in MlnxOS */
-    MDEVS_FWCTX       = 0x900,  /* access by func/context (like UEFI) */
-    MDEVS_LPC         = 0x1000, /* Access LPC region */
-    MDEVS_FPGA        = 0x2000, /* Access LPC region - DEPRECATED */
+typedef enum Mdevs_t
+{
+    MDEVS_GAMLA = 0x01,         /*  Each device that actually is a Gamla */
+    MDEVS_I2CM = 0x02,          /*  Each device that can work as I2C master */
+    MDEVS_MEM = 0x04,           /*  Each device that is a memory driver (vtop) */
+    MDEVS_TAVOR_DDR = 0x08,     /*  Each device that maps to DDR */
+    MDEVS_TAVOR_UAR = 0x10,     /*  Each device that maps to UAR */
+    MDEVS_TAVOR_CR = 0x20,      /*  Each device that maps to CR */
+    MDEVS_REM = 0x80,           /*  Remote devices */
+    MDEVS_PPC = 0x100,          /*  PPC devices */
+    MDEVS_DEV_I2C = 0x200,      /* Generic linux kernel i2c device */
+    MDEVS_IB = 0x400,           /* Cr access over IB Mads */
+    MDEVS_MLNX_OS = 0x800,      /* access by CmdIf in MlnxOS */
+    MDEVS_FWCTX = 0x900,        /* access by func/context (like UEFI) */
+    MDEVS_LPC = 0x1000,         /* Access LPC region */
+    MDEVS_FPGA = 0x2000,        /* Access LPC region - DEPRECATED */
     MDEVS_FPGA_NEWTON = 0x4000, /* Access LPC region - DEPRECATED */
-    MDEVS_CABLE       = 0x8000,
-    MDEVS_SOFTWARE    = 0x10000, /* Software system char dev */
-    MDEVS_LINKX_CHIP  = 0x200000,
-    MDEVS_GBOX        = 0x400000,
-    MDEVS_TAVOR       = (MDEVS_TAVOR_DDR | MDEVS_TAVOR_UAR | MDEVS_TAVOR_CR),
-    MDEVS_ALL         = 0xffffffff
+    MDEVS_CABLE = 0x8000,
+    MDEVS_SOFTWARE = 0x10000, /* Software system char dev */
+    MDEVS_LINKX_CHIP = 0x200000,
+    MDEVS_GBOX = 0x400000,
+    MDEVS_TAVOR = (MDEVS_TAVOR_DDR | MDEVS_TAVOR_UAR | MDEVS_TAVOR_CR),
+    MDEVS_ALL = 0xffffffff
 } Mdevs;
 
-typedef enum {
-    MACCESS_REG_METHOD_GET  = 1,
-    MACCESS_REG_METHOD_SET  = 2,
+typedef enum
+{
+    MACCESS_REG_METHOD_GET = 1,
+    MACCESS_REG_METHOD_SET = 2,
     MACCESS_LAST_REG_METHOD = 3
 } maccess_reg_method_t;
 
-typedef enum {
-    VCC_INITIALIZED                          = 0x0,
-    VCC_ICMD_EXT_SPACE_SUPPORTED             = 0x1,
-    VCC_CRSPACE_SPACE_SUPPORTED              = 0x2,
-    VCC_ICMD_SPACE_SUPPORTED                 = 0x3,
-    VCC_NODNIC_INIT_SEG_SPACE_SUPPORTED      = 0x4,
-    VCC_EXPANSION_ROM_SPACE_SUPPORTED        = 0x5,
-    VCC_ND_CRSPACE_SPACE_SUPPORTED           = 0x6,
-    VCC_SCAN_CRSPACE_SPACE_SUPPORTED         = 0x7,
-    VCC_SEMAPHORE_SPACE_SUPPORTED            = 0x8,
-    VCC_RECOVERY_SPACE_SUPPORTED             = 0x9,
-    VCC_MAC_SPACE_SUPPORTED                  = 0xa,
-    VCC_PCI_ICMD_SPACE_SUPPORTED             = 0xb,
-    VCC_PCI_CRSPACE_SPACE_SUPPORTED          = 0xc,
-    VCC_PCI_ALL_ICMD_SPACE_SUPPORTED         = 0xd,
-    VCC_PCI_SCAN_CRSPACE_SPACE_SUPPORTED     = 0xe,
+typedef enum
+{
+    VCC_INITIALIZED = 0x0,
+    VCC_ICMD_EXT_SPACE_SUPPORTED = 0x1,
+    VCC_CRSPACE_SPACE_SUPPORTED = 0x2,
+    VCC_ICMD_SPACE_SUPPORTED = 0x3,
+    VCC_NODNIC_INIT_SEG_SPACE_SUPPORTED = 0x4,
+    VCC_EXPANSION_ROM_SPACE_SUPPORTED = 0x5,
+    VCC_ND_CRSPACE_SPACE_SUPPORTED = 0x6,
+    VCC_SCAN_CRSPACE_SPACE_SUPPORTED = 0x7,
+    VCC_SEMAPHORE_SPACE_SUPPORTED = 0x8,
+    VCC_RECOVERY_SPACE_SUPPORTED = 0x9,
+    VCC_MAC_SPACE_SUPPORTED = 0xa,
+    VCC_PCI_ICMD_SPACE_SUPPORTED = 0xb,
+    VCC_PCI_CRSPACE_SPACE_SUPPORTED = 0xc,
+    VCC_PCI_ALL_ICMD_SPACE_SUPPORTED = 0xd,
+    VCC_PCI_SCAN_CRSPACE_SPACE_SUPPORTED = 0xe,
     VCC_PCI_GLOBAL_SEMAPHORE_SPACE_SUPPORTED = 0xf,
 } VSCCapCom;
 
-typedef enum {
-    AS_ICMD_EXT             = 0x1,
-    AS_CR_SPACE             = 0x2,
-    AS_ICMD                 = 0x3,
-    AS_NODNIC_INIT_SEG      = 0x4,
-    AS_EXPANSION_ROM        = 0x5,
-    AS_ND_CRSPACE           = 0x6,
-    AS_SCAN_CRSPACE         = 0x7,
-    AS_SEMAPHORE            = 0xa,
-    AS_RECOVERY             = 0xc,
-    AS_MAC                  = 0xf,
-    AS_PCI_ICMD             = 0x101,
-    AS_PCI_CRSPACE          = 0x102,
-    AS_PCI_ALL_ICMD         = 0x103,
-    AS_PCI_SCAN_CRSPACE     = 0x107,
+typedef enum
+{
+    AS_ICMD_EXT = 0x1,
+    AS_CR_SPACE = 0x2,
+    AS_ICMD = 0x3,
+    AS_NODNIC_INIT_SEG = 0x4,
+    AS_EXPANSION_ROM = 0x5,
+    AS_ND_CRSPACE = 0x6,
+    AS_SCAN_CRSPACE = 0x7,
+    AS_SEMAPHORE = 0xa,
+    AS_RECOVERY = 0xc,
+    AS_MAC = 0xf,
+    AS_PCI_ICMD = 0x101,
+    AS_PCI_CRSPACE = 0x102,
+    AS_PCI_ALL_ICMD = 0x103,
+    AS_PCI_SCAN_CRSPACE = 0x107,
     AS_PCI_GLOBAL_SEMAPHORE = 0x10a,
     AS_END
 } address_space_t;
 
-typedef struct vf_info_t {
-    char      dev_name[512];
+typedef struct vf_info_t
+{
+    char dev_name[512];
     u_int16_t domain;
-    u_int8_t  bus;
-    u_int8_t  dev;
-    u_int8_t  func;
-    char   ** net_devs; /* Null terminated array */
-    char   ** ib_devs; /* Null terminated array */
+    u_int8_t bus;
+    u_int8_t dev;
+    u_int8_t func;
+    char** net_devs; /* Null terminated array */
+    char** ib_devs;  /* Null terminated array */
 } vf_info;
 
-typedef struct dev_info_t {
+typedef struct dev_info_t
+{
     Mdevs type;
-    char  dev_name[512];
-    int   ul_mode;
+    char dev_name[512];
+    int ul_mode;
 
-    union {
-        struct {
+    union
+    {
+        struct
+        {
             u_int16_t domain;
-            u_int8_t  bus;
-            u_int8_t  dev;
-            u_int8_t  func;
+            u_int8_t bus;
+            u_int8_t dev;
+            u_int8_t func;
             u_int16_t dev_id;
             u_int16_t vend_id;
             u_int32_t class_id;
             u_int16_t subsys_id;
             u_int16_t subsys_vend_id;
-            char      cr_dev[512];
-            char      conf_dev[512];
-            char   ** net_devs;   /* Null terminated array */
-            char   ** ib_devs;    /* Null terminated array */
-            char      numa_node[4096]; /* */
-            vf_info * virtfn_arr;
+            char cr_dev[512];
+            char conf_dev[512];
+            char** net_devs;      /* Null terminated array */
+            char** ib_devs;       /* Null terminated array */
+            char numa_node[4096]; /* */
+            vf_info* virtfn_arr;
             u_int16_t virtfn_count;
+            char fwctl_dev[DEV_NAME_SZ]; // fwctl device path
         } pci;
 
-        struct {
+        struct
+        {
             u_int32_t mtusb_serial;
             u_int32_t TBD;
         } usb;
 
-        struct {
+        struct
+        {
             u_int32_t TBD;
         } ib;
 
-        struct {
+        struct
+        {
             char remote_device_name[512];
         } remote;
     };
 } dev_info;
 
-typedef enum {
+typedef enum
+{
     RA_MFPA = 0x9010,
     RA_MFBA = 0x9011,
     RA_MFBE = 0x9012,
 } reg_access_t;
 typedef struct dma_lib_hdl_t dma_lib_hdl;
 
-typedef enum {
-    GEARBPX_OVER_MTUSB          = 1,
-    GEARBPX_OVER_I2C            = 2,
-    GEARBPX_OVER_SWITCH         = 3,
+typedef enum
+{
+    GEARBPX_OVER_MTUSB = 1,
+    GEARBPX_OVER_I2C = 2,
+    GEARBPX_OVER_SWITCH = 3,
     GEARBPXO_UNKNOWN_CONNECTION = 0
 } gearbox_connection_t;
-typedef enum {
+typedef enum
+{
     MTCR_STATUS_UNKNOWN,
     MTCR_STATUS_TRUE,
     MTCR_STATUS_FALSE,
 } mtcr_status_e;
 
-typedef struct icmd_params_t {
-    int           icmd_opened;
-    int           took_semaphore;
-    int           ctrl_addr;
-    int           cmd_addr;
-    int           cmd_ptr_bitlen;
-    int           version_addr;
-    int           version_bit_offset;
-    int           version_bitlen;
-    u_int32_t     max_cmd_size;
-    int           semaphore_addr;
-    int           static_cfg_not_done_addr;
-    int           static_cfg_not_done_offs;
-    u_int32_t     lock_key;
-    int           ib_semaphore_lock_supported;
-    u_int64_t     dma_pa;
-    u_int32_t     dma_size;
-    int           dma_icmd;
+typedef struct icmd_params_t
+{
+    int icmd_opened;
+    int took_semaphore;
+    int ctrl_addr;
+    int cmd_addr;
+    int cmd_ptr_bitlen;
+    int version_addr;
+    int version_bit_offset;
+    int version_bitlen;
+    u_int32_t max_cmd_size;
+    int semaphore_addr;
+    int static_cfg_not_done_addr;
+    int static_cfg_not_done_offs;
+    u_int32_t lock_key;
+    int ib_semaphore_lock_supported;
+    u_int64_t dma_pa;
+    u_int32_t dma_size;
+    int dma_icmd;
     mtcr_status_e icmd_ready;
-    int           syndrome;
-    int           syndrome_addr;
+    int syndrome;
+    int syndrome_addr;
 } icmd_params;
 
-typedef struct ctx_params_t {
+typedef struct ctx_params_t
+{
     void* fw_cmd_context;
     void* fw_cmd_func;
     void* fw_cmd_dma;
 } ctx_params;
 
-typedef struct io_region_t {
+typedef struct io_region_t
+{
     unsigned int start;
     unsigned int end;
 } io_region;
 
-typedef struct tools_hcr_params_t {
+typedef struct tools_hcr_params_t
+{
     int supp_cr_mbox; /* 1: mbox supported , -1: mbox not supported */
 } tools_hcr_params;
 
 /* max_reg_size depends on the desired method operated on the register. */
 /* max_reg_size[<method_enum_value>] will give the relevant max_reg_size. */
 /* For example max_reg_size[MACCESS_REG_METHOD_GET] will give max_reg_size for Get() method. */
-typedef struct access_reg_params_t {
+typedef struct access_reg_params_t
+{
     int max_reg_size[MACCESS_LAST_REG_METHOD];
 } access_reg_params;
 
 typedef struct mfile_t mfile;
 
-struct mtcr_page_addresses {
+struct mtcr_page_addresses
+{
     u_int64_t dma_address;
     u_int64_t virtual_address;
 };
 
-struct page_list {
+struct page_list
+{
     /* User space buffer page aligned. */
     char* page_list;
-    int   page_amount;
+    int page_amount;
 };
 
-struct mtcr_page_info {
-    unsigned int               page_amount;
-    unsigned long              page_pointer_start;
+struct mtcr_page_info
+{
+    unsigned int page_amount;
+    unsigned long page_pointer_start;
     struct mtcr_page_addresses page_addresses_array[MAX_PAGES_SIZE];
 };
 
-struct mtcr_read_dword_from_config_space {
+struct mtcr_read_dword_from_config_space
+{
     unsigned int offset;
     unsigned int data;
 };
@@ -508,48 +535,45 @@ typedef void (*f_mpci_change)(mfile* mf);
 #define GEARBOX_SLAVE_ADDR 0x48
 #define GB_MNGR_SLAVE_ADDR 0x33
 
-typedef enum {
+typedef enum
+{
     GB_UNKNOWN = 0,
     GB_AMOS,
     GB_ABIR
 } gearbox_type;
 
-typedef struct gearbox_info_t {
-    gearbox_type         gb_type;
-    u_int8_t             is_gearbox;
-    u_int8_t             is_gb_mngr;
-    int                  gearbox_index;
-    int                  ilne_card_id;
+typedef struct gearbox_info_t
+{
+    gearbox_type gb_type;
+    u_int8_t is_gearbox;
+    u_int8_t is_gb_mngr;
+    int gearbox_index;
+    int ilne_card_id;
     gearbox_connection_t gb_conn_type;
-    char                 gb_mngr_full_name[DEV_NAME_SZ];
-    char                 gearbox_full_name[DEV_NAME_SZ];
-    unsigned char        i2c_secondary;
-    u_int8_t             addr_width;
-    char                 device_orig_name[DEV_NAME_SZ];
-    char                 device_real_name[DEV_NAME_SZ];
-    u_int32_t            data_req_addr;
-    u_int32_t            data_res_addr;
+    char gb_mngr_full_name[DEV_NAME_SZ];
+    char gearbox_full_name[DEV_NAME_SZ];
+    unsigned char i2c_secondary;
+    u_int8_t addr_width;
+    char device_orig_name[DEV_NAME_SZ];
+    char device_real_name[DEV_NAME_SZ];
+    u_int32_t data_req_addr;
+    u_int32_t data_res_addr;
 } gearbox_info;
 
-typedef struct cables_info_t {
+typedef struct cables_info_t
+{
     int slave_addr_additional_offset;
 } cables_info;
 
 #define HW_ID_ADDR 0xf0014
 
-
-#define VSEC_MIN_SUPPORT_UL(mf)                                     \
-    (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) &&              \
-     ((mf)->vsec_cap_mask & (1 << VCC_CRSPACE_SPACE_SUPPORTED)) &&  \
-     ((mf)->vsec_cap_mask & (1 << VCC_ICMD_EXT_SPACE_SUPPORTED)) && \
+#define VSEC_MIN_SUPPORT_UL(mf)                                                                                                                                                     \
+    (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) && ((mf)->vsec_cap_mask & (1 << VCC_CRSPACE_SPACE_SUPPORTED)) && ((mf)->vsec_cap_mask & (1 << VCC_ICMD_EXT_SPACE_SUPPORTED)) && \
      ((mf)->vsec_cap_mask & (1 << VCC_SEMAPHORE_SPACE_SUPPORTED)))
 
-#define VSEC_PXIR_SUPPORT(mf) \
-    (mf->pxir_vsec_supp)
+#define VSEC_PXIR_SUPPORT(mf) (mf->pxir_vsec_supp)
 
 /* Macro for VSEC_SUPPORTED_UL */
-#define VSEC_SUPPORTED_UL(mf) \
-    ((mf)->functional_vsec_supp && (VSEC_MIN_SUPPORT_UL(mf) || VSEC_PXIR_SUPPORT(mf)))
-
+#define VSEC_SUPPORTED_UL(mf) ((mf)->functional_vsec_supp && (VSEC_MIN_SUPPORT_UL(mf) || VSEC_PXIR_SUPPORT(mf)))
 
 #endif /* ifndef _MTCR_COM_DEFS_H */
