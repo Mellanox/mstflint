@@ -49,6 +49,9 @@
 #define TUPLE_POS_BUFF_PTR 1
 #define TUPLE_POS_BUFF_SIZE 2
 
+// Function from fw_comps_mgr to set log file for library logging
+extern "C" void fwcomps_set_log_file(FILE* log_file);
+
 int main(int argc, char* argv[])
 {
     try
@@ -305,6 +308,7 @@ int mainEntry(int argc, char* argv[])
             res = ERR_CODE_CREATE_LOG_FAIL;
             goto early_err_clean_up;
         }
+        fwcomps_set_log_file(FLog);
         // Print the command line to the log file
         fprintf(FLog, "CMD: %s ", toolName.c_str());
         for (int i = 1; i < argc; i++)
