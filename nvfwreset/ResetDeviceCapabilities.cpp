@@ -82,8 +82,8 @@ bool ResetDeviceCapabilities::isMroqSupported(mfile* mf)
 {
     bool mroqSupported = false;
     reg_access_status_t rc = ME_OK;
-    std::string dbdf = std::to_string(mf->dinfo->pci.domain) + ":" + std::to_string(mf->dinfo->pci.bus) + ":" +
-                       std::to_string(mf->dinfo->pci.dev) + "." + std::to_string(mf->dinfo->pci.func);
+    char dbdf[20];
+    snprintf(dbdf, sizeof(dbdf), "%04x:%02x:%02x.%x", mf->dinfo->pci.domain, mf->dinfo->pci.bus, mf->dinfo->pci.dev, mf->dinfo->pci.func);
     rc = isRegisterValidAccordingToMcamReg(mf, REG_ID_MROQ, &mroqSupported);
     if (rc != ME_OK)
     {

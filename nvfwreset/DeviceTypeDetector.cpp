@@ -33,6 +33,7 @@
 
 #include <fstream>
 #include <algorithm>
+#include <cstdint>
 #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
 #include "reg_access/reg_access.h"
 #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
