@@ -237,9 +237,9 @@ void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t me
 }
 
 string
-  MlxlinkRegParser::getFieldStr(const string& field, const u_int32_t size, const u_int32_t offset, bool offsetSpecified)
+  MlxlinkRegParser::getFieldStr(const string& field, const u_int32_t size, const u_int32_t offset, bool offsetSpecified, bool processDynamicFields)
 {
-    return to_string(getFieldValue(field, size, offset, offsetSpecified));
+    return to_string(getFieldValue(field, size, offset, offsetSpecified, processDynamicFields));
 }
 
 string MlxlinkRegParser::getRawFieldValueStr(const string fieldName)

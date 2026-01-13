@@ -4448,36 +4448,10 @@ int mwrite_buffer_ul(mfile* mf, unsigned int offset, u_int8_t* data, int byte_le
 #define OP_TLV_SIZE 16
 #define REG_TLV_HEADER_LEN 4
 
-enum
-{
-    MAD_CLASS_REG_ACCESS = 1,
-    MAD_CLASS_A_REG_ACCESS = 0x0A,
-};
-
-u_int8_t class_to_use = MAD_CLASS_REG_ACCESS;
-
-enum
-{
-    TLV_END = 0,
-    TLV_OPERATION = 1,
-    TLV_DR = 2,
-    TLV_REG = 3,
-    TLV_USER_DATA = 4,
-};
-
-#define REGISTER_HEADERS_SIZE 20
-#define INBAND_MAX_REG_SIZE 44
-#define INBAND_MAX_REG_SIZE_CLS_A 204
-#define INBAND_MAX_GMP_DWORDS_NUM 55
-#define INBAND_MAX_GMP_BLOCKS 16
-#define INBAND_MAX_GMP_REG_SIZE INBAND_MAX_GMP_BLOCKS* INBAND_MAX_GMP_DWORDS_NUM * 4
-#define ICMD_MAX_REG_SIZE (ICMD_MAX_CMD_SIZE - REGISTER_HEADERS_SIZE)
-#define FWCTX_MAX_REG_SIZE 16
-#define TOOLS_HCR_MAX_REG_SIZE (TOOLS_HCR_MAX_MBOX - REGISTER_HEADERS_SIZE)
+u_int8_t class_to_use = MAD_CLASS_1_REG_ACCESS;
 
 static int supports_icmd(mfile* mf);
 static int supports_tools_cmdif_reg(mfile* mf);
-static int init_operation_tlv(struct OperationTlv* operation_tlv, u_int16_t reg_id, u_int8_t method);
 static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_icmd_size);
 static int mreg_send_raw(mfile* mf, u_int16_t reg_id, maccess_reg_method_t method, void* reg_data, u_int32_t reg_size, u_int32_t r_size_reg, u_int32_t w_size_reg, int* reg_status);
 
@@ -4551,7 +4525,7 @@ int maccess_reg_ul(mfile* mf, u_int16_t reg_id, maccess_reg_method_t reg_method,
     DBG_PRINTF("Register Size: %d bytes\n", reg_size);
     int rc = -1;
 
-    class_to_use = MAD_CLASS_REG_ACCESS;
+    class_to_use = MAD_CLASS_1_REG_ACCESS;
     if ((mf == NULL) || (reg_data == NULL) || (reg_status == NULL) || (reg_size <= 0))
     {
         return ME_BAD_PARAMS;
@@ -4638,7 +4612,7 @@ int maccess_reg_ul(mfile* mf, u_int16_t reg_id, maccess_reg_method_t reg_method,
                 DBG_PRINTF("AccessRegister Class 0xA Failed!\n");
                 DBG_PRINTF("Mad Status: 0x%08x\n", rc);
                 DBG_PRINTF("Register Status: 0x%08x\n", *reg_status);
-                class_to_use = MAD_CLASS_REG_ACCESS;
+                class_to_use = MAD_CLASS_1_REG_ACCESS;
             }
         }
 
@@ -4658,7 +4632,7 @@ int maccess_reg_ul(mfile* mf, u_int16_t reg_id, maccess_reg_method_t reg_method,
         /* Fallback - Attempting SMP as last resort. */
         if (supports_reg_access_smp(mf))
         {
-            class_to_use = MAD_CLASS_REG_ACCESS;
+            class_to_use = MAD_CLASS_1_REG_ACCESS;
             rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
         }
         else
@@ -4726,17 +4700,6 @@ int mib_send_gmp_access_reg_mad_ul(mfile* mf, u_int32_t* data, u_int32_t reg_siz
 #endif
 }
 
-static int init_operation_tlv(struct OperationTlv* operation_tlv, u_int16_t reg_id, u_int8_t method)
-{
-    memset(operation_tlv, 0, sizeof(*operation_tlv));
-
-    operation_tlv->Type = TLV_OPERATION;
-    operation_tlv->class = class_to_use;
-    operation_tlv->len = TLV_OPERATION_SIZE;
-    operation_tlv->method = method;
-    operation_tlv->register_id = reg_id;
-    return 0;
-}
 
 /*/////////////////  Function that sends the register via the correct interface /////////////////////////// */
 

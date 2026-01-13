@@ -37,6 +37,7 @@
 
 #include <vector>
 #include <iostream>
+#include <type_traits>
 #include <common/compatibility.h>
 #include <cmdparser/cmdparser.h>
 #include <mtcr.h>
@@ -81,29 +82,61 @@ private:
         using AdbInstance = typename MlxRegLib::AdbInstance;
         using Adb = typename MlxRegLib::Adb;
 
+        struct FieldBase
+        {
+            string name;
+            static bool on_traverse(const string& calculated_path,
+                                    uint64_t calculated_offset,
+                                    uint64_t calculated_value,
+                                    AdbInstance* instance,
+                                    void* context) = delete;
+        };
+
+        struct SentField : FieldBase
+        {
+            uint64_t value;
+            static bool on_traverse(const string& calculated_path,
+                                    uint64_t calculated_offset,
+                                    uint64_t calculated_value,
+                                    AdbInstance* instance,
+                                    void* context);
+        };
+
+        struct QueryField : FieldBase
+        {
+            uint64_t offset;
+            uint64_t size;
+            string access;
+            static bool on_traverse(const string& calculated_path,
+                                    uint64_t calculated_offset,
+                                    uint64_t calculated_value,
+                                    AdbInstance* instance,
+                                    void* context);
+        };
+
     private:
         MlxRegUi* _ui;
+        MlxRegLib* _mlxRegLib{nullptr};
+
+        std::vector<SentField> _parsed_fields;
+        std::vector<QueryField> _query_fields;
 
     public:
         MlxRegUiImpl(MlxRegUi* ui);
+        ~MlxRegUiImpl();
 
-        size_t getLongestNodeLen(const std::vector<AdbInstance*>& root, bool full_path);
-        void printRegFields(const std::vector<AdbInstance*>& nodeFields);
-        static void onTraverseSaveFieldData(const string& calculated_path,
-                                            uint64_t calculated_offset,
-                                            uint64_t calculated_value,
-                                            AdbInstance* instance,
-                                            void* context);
-        void printAdbContext(AdbInstance* node, const std::vector<u_int32_t>& buff, MlxRegLib* mlxRegLib);
-        void sendCmdBasedOnFileIo(maccess_reg_method_t cmd, int reg_size, MlxRegLib* mlxRegLib);
+        template<typename T, typename = typename std::enable_if<std::is_base_of<FieldBase, T>::value>::type>
+        size_t getLongestNodeLen(std::vector<T>& parsed_fields);
+        void printRegFields(AdbInstance* node);
+        void printAdbContext(AdbInstance* node, const std::vector<u_int32_t>& buff);
+        void sendCmdBasedOnFileIo(maccess_reg_method_t cmd, int reg_size);
         void run();
     };
-
-    size_t getLongestNodeLen(std::vector<std::tuple<std::string, uint64_t>> parsed_fields);
 
     // Print
     void printRegNames(std::vector<string> regs);
     void printBuff(std::vector<u_int32_t> buff);
+    void printRawBuffer(std::vector<u_int32_t> buff);
 
     void readFromFile(string file_name, vector<u_int32_t>& buff, int len);
     void writeToFile(string file_name, vector<u_int32_t> buff);
@@ -128,7 +161,7 @@ private:
     bool _overwrite;
     bool _full_path;
     bool _use_dynamic;
-    std::vector<std::tuple<std::string, uint64_t>> _parsed_fields;
+    std::string _gen_cmd_buffer_device_type;
 };
 
 #endif /* MLXREG_UI_H */

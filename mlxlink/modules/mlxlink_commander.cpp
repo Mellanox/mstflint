@@ -34,6 +34,7 @@
 
 #include "mlxlink_commander.h"
 #include "common/tools_time.h"
+#include <sstream>
 
 using namespace mlxreg;
 
@@ -2069,10 +2070,10 @@ string MlxlinkCommander::getComplianceLabel(u_int32_t compliance, u_int32_t extC
 
 string MlxlinkCommander::getSltpFieldStr(const PRM_FIELD& field)
 {
-    string fieldStr = getFieldStr(field.prmField);
+    string fieldStr = getFieldStr(field.prmField, 0, 0, false, true);
     if (field.isSigned)
     {
-        fieldStr = to_string(readSigned(getFieldValue(field.prmField), getFieldSize(field.prmField)));
+        fieldStr = to_string(readSigned(getFieldValue(field.prmField, 0, 0, false, true), getFieldSize(field.prmField)));
     }
     return MlxlinkRecord::addSpace(fieldStr, field.uiField.size() + 1, false);
 }
@@ -3240,6 +3241,351 @@ void MlxlinkCommander::showSltp()
     {
         _allUnhandledErrors +=
           string("Showing SLTP raised the following exception: ") + string(exc.what()) + string("\n");
+    }
+}
+
+void MlxlinkCommander::queryBkvCaps(uint8_t& numGroups, uint8_t groupId)
+{
+    uint8_t numEntries = 0;
+    return queryBkvCaps(numGroups, numEntries, groupId);
+}
+
+void MlxlinkCommander::queryBkvCaps(uint8_t& numGroups, uint8_t& numEntries, uint8_t groupId, uint8_t entryId)
+{
+    numGroups = 0;
+    numEntries = 0;
+
+    try
+    {
+        sendPrmReg(ACCESS_REG_PSCD, GET, "lane=%d, page_select=%d", _userInput._lane, PSCD_PAGE_CAPABILITIES);
+        numGroups = getFieldValue("total_num_of_groups");
+
+        // If groupId is not -1, validate it and get entries count
+        if (groupId != (u_int8_t)-1)
+        {
+            if (groupId >= numGroups)
+            {
+                throw MlxRegException("Invalid group ID: " + to_string(groupId) + ". Valid range is 0-" +
+                                      to_string(numGroups - 1) + "\n");
+            }
+
+            // Get number of entries for this specific group
+            string numEntriesField = "num_of_supported_entries_" + to_string(groupId);
+            numEntries = getFieldValue(numEntriesField);
+
+            // If entryId is not -1, validate it against the entry count
+            if (entryId != (u_int8_t)-1)
+            {
+                if (entryId >= numEntries)
+                {
+                    throw MlxRegException("Invalid entry ID: " + to_string(entryId) + " for group " +
+                                          to_string(groupId) + ". Valid range is 0-" + to_string(numEntries - 1) +
+                                          "\n");
+                }
+            }
+        }
+    }
+    catch (const std::exception& exc)
+    {
+        throw MlxRegException(string("Getting BKV Groups capabilities raised the following exception: ") +
+                              string(exc.what()) + string("\n"));
+    }
+}
+
+void MlxlinkCommander::showBkv()
+{
+    uint8_t numGroups = 0;
+
+    queryBkvCaps(numGroups);
+
+    try
+    {
+        std::vector<std::string> tableData = {};
+        MlxlinkCmdPrint showBkvCmd;
+
+        // Collect data for each group and populate table
+        for (uint32_t group = 0; group < numGroups; group++)
+        {
+            uint32_t posToUpdateWidthInVector = 0;
+
+            try
+            {
+                // Get data for this group using indexed field names
+                string numEntriesField = "num_of_supported_entries_" + to_string(group);
+                string filledIndicationField = "filled_indication_" + to_string(group);
+
+                u_int32_t numSupportedEntries = getFieldValue(numEntriesField);
+                u_int32_t filledIndication = getFieldValue(filledIndicationField);
+
+                // Update table with group number
+                string groupNum = to_string(group);
+                updateColumnWidthPopulateTable(_mlxlinkMaps->_bkvGroupsTableHeader, posToUpdateWidthInVector++,
+                                               tableData, groupNum, groupNum.length());
+
+                // Update table with supported entries count
+                string supportedEntriesStr = to_string(numSupportedEntries);
+                updateColumnWidthPopulateTable(_mlxlinkMaps->_bkvGroupsTableHeader, posToUpdateWidthInVector++,
+                                               tableData, supportedEntriesStr, supportedEntriesStr.length());
+
+                // Update table with filled indication
+                string filledIndicationStr = filledIndication ? "Yes" : "No";
+                updateColumnWidthPopulateTable(_mlxlinkMaps->_bkvGroupsTableHeader, posToUpdateWidthInVector++,
+                                               tableData, filledIndicationStr, filledIndicationStr.length());
+            }
+            catch (const std::exception& exc)
+            {
+                // If we can't get data for this group, add empty entries
+                updateColumnWidthPopulateTable(_mlxlinkMaps->_bkvGroupsTableHeader, posToUpdateWidthInVector++,
+                                               tableData, to_string(group), to_string(group).length());
+                updateColumnWidthPopulateTable(_mlxlinkMaps->_bkvGroupsTableHeader, posToUpdateWidthInVector++,
+                                               tableData, "N/A", 3, false);
+                updateColumnWidthPopulateTable(_mlxlinkMaps->_bkvGroupsTableHeader, posToUpdateWidthInVector++,
+                                               tableData, "N/A", 3, false);
+            }
+        }
+
+        // Print title and table
+        setPrintTitle(showBkvCmd, "BKV Groups Info", numGroups + 1);
+        cout << showBkvCmd;
+        printMlxlinkTable(tableData, _mlxlinkMaps->_bkvGroupsTableHeader);
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors +=
+          string("Processing BKV Groups raised the following exception: ") + string(exc.what()) + string("\n");
+    }
+}
+
+void MlxlinkCommander::showBkvGroup(bool showEntries, u_int32_t entryFilter)
+{
+    uint8_t numGroups = 0;
+    uint8_t numEntries = 0;
+
+    uint32_t rateMask = 0;
+    uint32_t roleMask = 0;
+    uint32_t modeBRoleMask = 0;
+
+    // First validate the group ID by getting capabilities
+    queryBkvCaps(numGroups, numEntries, _userInput._bkvGroupId, (uint8_t)-1);
+
+    try
+    {
+        // Get group configuration data
+        sendPrmReg(ACCESS_REG_PSCD, GET, "lane=%d, page_select=%d, select_group=%d", _userInput._lane,
+                   PSCD_PAGE_CONFIGURATIONS, _userInput._bkvGroupId);
+
+        rateMask = getFieldValue("rate_mask");
+        roleMask = getFieldValue("role_mask");
+        modeBRoleMask = getFieldValue("mode_b_role_mask");
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors += string("Getting BKV Group configuration raised the following exception: ") +
+                               string(exc.what()) + string("\n");
+    }
+
+    // Section 1: BKV Group Properties
+    MlxlinkCmdPrint showBkvGroupPropertiesCmd;
+
+    stringstream value;
+
+    setPrintTitle(showBkvGroupPropertiesCmd, "BKV Group Properties", 4);
+
+    value << "0x" << std::hex << setfill('0') << setw(4) << rateMask << " ("
+          << getStrByMask(rateMask, _mlxlinkMaps->_PSCDRateMask2Str, ",") << ")";
+    setPrintVal(showBkvGroupPropertiesCmd, "Rate Mask", value.str(), ANSI_COLOR_RESET, true, true);
+
+    value.str("");
+    value.clear();
+    value << "0x" << std::hex << setfill('0') << setw(2) << roleMask << " ("
+          << getStrByMask(roleMask, _mlxlinkMaps->_PSCDRoleMask2Str, ",") << ")";
+    setPrintVal(showBkvGroupPropertiesCmd, "Role Mask", value.str(), ANSI_COLOR_RESET, true, true);
+
+    value.str("");
+    value.clear();
+    value << "0x" << std::hex << setfill('0') << setw(1) << modeBRoleMask << " ("
+          << getStrByMask(modeBRoleMask, _mlxlinkMaps->_PSCDModeBRoleMask2Str, ",") << ")";
+    setPrintVal(showBkvGroupPropertiesCmd, "Mode B Role Mask", value.str(), ANSI_COLOR_RESET, true, true);
+
+    cout << showBkvGroupPropertiesCmd;
+
+    if (showEntries)
+    {
+        // Section 2: BKV Group Entries Table
+        MlxlinkCmdPrint showBkvGroupEntriesCmd;
+        std::vector<std::string> tableData = {};
+
+        uint32_t startEntry = (entryFilter == (uint32_t)-1) ? 0 : entryFilter;
+        uint32_t endEntry = (entryFilter == (uint32_t)-1) ? numEntries : entryFilter + 1;
+        uint32_t displayedEntries = 0;
+
+        uint32_t address = 0;
+        uint32_t wdata = 0;
+        uint32_t wmask = 0;
+
+        for (uint32_t entry = startEntry; entry < endEntry; entry++)
+        {
+            uint32_t posToUpdateWidthInVector = 0;
+            displayedEntries++;
+
+            try
+            {
+                // Get entry data using indexed field names
+                string addressField = "address_" + to_string(entry);
+                string wdataField = "wdata_" + to_string(entry);
+                string wmaskField = "wmask_" + to_string(entry);
+
+                address = getFieldValue(addressField);
+                wdata = getFieldValue(wdataField);
+                wmask = getFieldValue(wmaskField);
+            }
+            catch (const std::exception& exc)
+            {
+                _allUnhandledErrors += string("Getting BKV Group entries raised the following exception: ") +
+                                       string(exc.what()) + string("\n");
+            }
+
+            // Update table with entry ID
+            string entryIdStr = to_string(entry);
+            updateColumnWidthPopulateTable(_mlxlinkMaps->_bkvGroupEntriesTableHeader, posToUpdateWidthInVector++,
+                                           tableData, entryIdStr, entryIdStr.length());
+            stringstream value;
+
+            // Update table with address
+            value << "0x" << std::hex << setfill('0') << setw(4) << address;
+            string addressStr = value.str();
+            updateColumnWidthPopulateTable(_mlxlinkMaps->_bkvGroupEntriesTableHeader, posToUpdateWidthInVector++,
+                                           tableData, addressStr, addressStr.length());
+
+            // Update table with wdata
+            value.str("");
+            value.clear();
+            value << "0x" << std::hex << setfill('0') << setw(4) << wdata;
+            string wdataStr = value.str();
+            updateColumnWidthPopulateTable(_mlxlinkMaps->_bkvGroupEntriesTableHeader, posToUpdateWidthInVector++,
+                                           tableData, wdataStr, wdataStr.length());
+            // Update table with wmask
+            value.str("");
+            value.clear();
+            value << "0x" << std::hex << setfill('0') << setw(4) << wmask;
+            string wmaskStr = value.str();
+            updateColumnWidthPopulateTable(_mlxlinkMaps->_bkvGroupEntriesTableHeader, posToUpdateWidthInVector++,
+                                           tableData, wmaskStr, wmaskStr.length());
+        }
+
+        setPrintTitle(showBkvGroupEntriesCmd, "BKV Group Entries", displayedEntries + 1);
+        cout << showBkvGroupEntriesCmd;
+        printMlxlinkTable(tableData, _mlxlinkMaps->_bkvGroupEntriesTableHeader);
+    }
+}
+
+void MlxlinkCommander::setBkvGroup()
+{
+    uint8_t numGroups = 0;
+    uint32_t rateMask = 0;
+    uint32_t roleMask = 0;
+    uint32_t modeBRoleMask = 0;
+
+    // First validate the group ID by getting capabilities
+    queryBkvCaps(numGroups, _userInput._bkvGroupId);
+    {
+        return;
+    }
+
+    try
+    {
+        string setParams = "lane=" + to_string(_userInput._lane) +
+                           ", page_select=" + to_string(PSCD_PAGE_CONFIGURATIONS) +
+                           ", select_group=" + to_string(_userInput._bkvGroupId);
+
+        if (_userInput._bkvRates.size() > 0)
+        {
+            for (const string& rate : _userInput._bkvRates)
+            {
+                auto rate_it = _mlxlinkMaps->_PSCDRateStr2Mask.find(rate);
+                if (rate_it == _mlxlinkMaps->_PSCDRateStr2Mask.end())
+                {
+                    throw MlxRegException("Invalid rate: " + rate);
+                }
+                rateMask |= rate_it->second;
+            }
+            setParams += ", rate_mask=" + to_string(rateMask);
+        }
+        if (_userInput._bkvRoles.size() > 0)
+        {
+            for (const string& role : _userInput._bkvRoles)
+            {
+                auto role_it = _mlxlinkMaps->_PSCDRoleStr2Mask.find(role);
+                if (role_it == _mlxlinkMaps->_PSCDRoleStr2Mask.end())
+                {
+                    throw MlxRegException("Invalid role: " + role);
+                }
+                roleMask |= role_it->second;
+            }
+            setParams += ", role_mask=" + to_string(roleMask);
+        }
+        if (_userInput._bkvModeBRoles.size() > 0)
+        {
+            for (const string& modeBRole : _userInput._bkvModeBRoles)
+            {
+                auto modeBRole_it = _mlxlinkMaps->_PSCDModeBRoleStr2Mask.find(modeBRole);
+                if (modeBRole_it == _mlxlinkMaps->_PSCDModeBRoleStr2Mask.end())
+                {
+                    throw MlxRegException("Invalid mode B role: " + modeBRole);
+                }
+                modeBRoleMask |= modeBRole_it->second;
+            }
+            setParams += ", mode_b_role_mask=" + to_string(modeBRoleMask);
+        }
+
+        sendPrmReg(ACCESS_REG_PSCD, SET, setParams.c_str());
+
+        // Show the updated properties
+        showBkvGroup(false, (u_int8_t)-1);
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors +=
+          string("Setting BKV Group masks raised the following exception: ") + string(exc.what()) + string("\n");
+    }
+}
+
+void MlxlinkCommander::setBkvEntry()
+{
+    uint8_t numGroups = 0;
+    uint8_t numEntries = 0;
+
+    // First validate the group ID and entry ID by getting capabilities
+    queryBkvCaps(numGroups, numEntries, _userInput._bkvGroupId, _userInput._bkvEntry);
+
+    try
+    {
+        string setParams = "lane=" + to_string(_userInput._lane) +
+                           ", page_select=" + to_string(PSCD_PAGE_CONFIGURATIONS) +
+                           ", select_group=" + to_string(_userInput._bkvGroupId);
+
+        if (_userInput._bkvAddressSpecified)
+        {
+            setParams += ", address_" + to_string(_userInput._bkvEntry) + "=" + to_string(_userInput._bkvAddress);
+        }
+        if (_userInput._bkvWdataSpecified)
+        {
+            setParams += ", wdata_" + to_string(_userInput._bkvEntry) + "=" + to_string(_userInput._bkvWdata);
+        }
+        if (_userInput._bkvWmaskSpecified)
+        {
+            setParams += ", wmask_" + to_string(_userInput._bkvEntry) + "=" + to_string(_userInput._bkvWmask);
+        }
+
+        sendPrmReg(ACCESS_REG_PSCD, SET, setParams.c_str());
+
+        // Show the updated group with both sections, entries section filtered to specific entry
+        showBkvGroup(true, _userInput._bkvEntry);
+    }
+    catch (const std::exception& exc)
+    {
+        _allUnhandledErrors +=
+          string("Setting BKV Group entry raised the following exception: ") + string(exc.what()) + string("\n");
     }
 }
 
@@ -6870,7 +7216,7 @@ void MlxlinkCommander::showPeriodicEq()
         sendPrmReg(ACCESS_REG_SLLM, GET);
         setPrintTitle(_periodicEqInfoCmd, HEADER_PERIODIC_EQ, PERIODIC_EQ_INFO_LAST);
         setPrintVal(_periodicEqInfoCmd, "PEQ Interval Applied [uS]",
-                    to_string(getFieldValue("peq_interval_period", (u_int32_t)12, (u_int32_t)0, true) * 10));
+                    to_string(getFieldValue("peq_interval_period", 0, 0, true) * 10));
         setPrintVal(_periodicEqInfoCmd, "PEQ Interval Oper [uS]",
                     to_string(getFieldValue("peq_interval_period_oper") * 10));
     }

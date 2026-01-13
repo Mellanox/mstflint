@@ -751,6 +751,7 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(tools_layouts/adb/prm/gpu/Makefile)
         AC_CONFIG_FILES(tools_layouts/adb/prm/gpu/ext/Makefile)
         AC_CONFIG_FILES(mlxreg/Makefile)
+        AC_CONFIG_FILES(mlxreg/scripts/Makefile)
         AC_CONFIG_FILES(mlxreg/mlxreg_lib/Makefile)
         AC_CONFIG_FILES(mlxlink/Makefile)
         AC_CONFIG_FILES(mlxlink/modules/Makefile)
