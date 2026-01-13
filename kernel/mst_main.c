@@ -473,12 +473,21 @@ int hot_reset_pcie_switch(struct hot_reset_pcie_switch* info)
     struct pci_dev* pdev_bus_device_1;
     struct pci_dev* pdev_bus_device_2;
 
+    printk(KERN_INFO "msflint_access driver | got hot reset ioctl request");
+    printk(KERN_INFO "msflint_access driver | device_1: %4.4x:%2.2x:%2.2x.%1.1x\n",
+           info->device_1.domain, info->device_1.bus, info->device_1.device, info->device_1.function);
+    if (info->in_parallel)
+    {
+        printk(KERN_INFO "msflint_access driver | device_2: %4.4x:%2.2x:%2.2x.%1.1x\n",
+               info->device_2.domain, info->device_2.bus, info->device_2.device, info->device_2.function);
+    }
+
     // Retrieve the PCI device corresponding to info.bus
     pdev_bus_device_1 = pci_get_domain_bus_and_slot(info->device_1.domain, info->device_1.bus,
                                                  PCI_DEVFN(info->device_1.device, info->device_1.function));
     if (!pdev_bus_device_1)
     {
-        printk(KERN_ERR "mst_pciconf | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_1.domain,
+        printk(KERN_ERR "msflint_access driver | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_1.domain,
                info->device_1.bus, info->device_1.device, info->device_1.function);
         return -ENODEV;
     }
@@ -489,7 +498,7 @@ int hot_reset_pcie_switch(struct hot_reset_pcie_switch* info)
           pci_get_domain_bus_and_slot(info->device_2.domain, info->device_2.bus, PCI_DEVFN(info->device_2.device, info->device_2.function));
         if (!pdev_bus_device_2)
         {
-            printk(KERN_ERR "mst_pciconf | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_2.domain,
+            printk(KERN_ERR "msflint_access driver | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_2.domain,
                    info->device_2.bus, info->device_2.device, info->device_2.function);
             return -ENODEV;
         }
@@ -1939,6 +1948,16 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
             goto fin;
         }
 
+        break;
+    }
+    case PCICONF_HOT_RESET:
+    {
+        struct hot_reset_pcie_switch hot_reset;
+        if (copy_from_user(&hot_reset, user_buf, sizeof(struct hot_reset_pcie_switch))) {
+            res = -EFAULT;
+            goto fin;
+        }
+        res = hot_reset_pcie_switch(&hot_reset);
         break;
     }
 

@@ -43,6 +43,7 @@
 #include "mft_core/mft_core_utils/operating_system_api/FactoryOperatingSystemAPI.h"
 #include "DeviceTypeDetector.h"
 #include "common/tools_filesystem.h"
+#include "common/tools_time.h"
 
 namespace Filesystem = mstflint::common::filesystem;
 using namespace mft_core;
@@ -163,10 +164,12 @@ void LinuxResetPlatform::PciReset()
     PrintEndResetFlowMessage();
 }
 
-void LinuxResetPlatform::WaitForReady()
+void LinuxResetPlatform::WaitForFWReady()
 {
-    PrintStartResetFlowMessage(ResetFlowStep::WaitForReady);
-    LOG.Debug("LinuxResetPlatform::WaitForReady");
+    PrintStartResetFlowMessage(ResetFlowStep::WaitForFWReady);
+    LOG.Debug("LinuxResetPlatform::WaitForFWReady");
+    msleep(2000);
+    LOG.Debug("LinuxResetPlatform::WaitForFWReady: FW is ready");
     PrintEndResetFlowMessage();
 }
 
