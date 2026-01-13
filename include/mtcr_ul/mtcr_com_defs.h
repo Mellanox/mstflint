@@ -35,6 +35,28 @@
 #ifndef _MTCR_COM_DEFS_H
 #define _MTCR_COM_DEFS_H
 
+// Flash and TLV register access definitions
+#define FLASH_REG_ACCESS 0x9001
+#define REG_ACCESS_STRING_TLV 0x9003
+#define ICMD_MAX_CMD_SIZE 0x340 // max mailbox size
+
+// Max register size definitions
+#define REGISTER_HEADERS_SIZE 20
+#define INBAND_MAX_REG_SIZE 44
+#define INBAND_MAX_REG_SIZE_CLS_A 204
+#define INBAND_MAX_GMP_DWORDS_NUM 55
+#define INBAND_MAX_GMP_BLOCKS 16
+#define INBAND_MAX_GMP_REG_SIZE INBAND_MAX_GMP_BLOCKS* INBAND_MAX_GMP_DWORDS_NUM * 4
+#define ICMD_MAX_REG_SIZE (ICMD_MAX_CMD_SIZE - REGISTER_HEADERS_SIZE)
+#define FWCTX_MAX_REG_SIZE        16
+#define TOOLS_HCR_MAX_REG_SIZE (TOOLS_HCR_MAX_MBOX - REGISTER_HEADERS_SIZE)
+
+
+enum {
+    MAD_CLASS_1_REG_ACCESS   = 1,
+    MAD_CLASS_A_REG_ACCESS = 0x0A,
+};
+
 #ifdef __WIN__
 
 #include <winsock2.h>

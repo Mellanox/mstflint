@@ -30,36 +30,13 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-SUBDIRS = mlxreg_lib scripts
+bin_SCRIPTS = generate_pgcb_commands
 
-AM_CPPFLAGS = \
-    -I$(srcdir) \
-    -I$(top_srcdir) \
-    -I$(top_srcdir)/${MTCR_CONF_DIR} \
-    -I$(top_srcdir)/include/mtcr_ul \
-    -I$(top_srcdir)/mft_utils \
-    -I$(top_srcdir)/mlxreg
+PYTHON_WRAPPER_SCRIPT = ../../common/python_wrapper
 
-AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe
+GEN_PGCB_PYTHON_WRAPPER=generate_pgcb_commands
+${GEN_PGCB_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
+	cp $(PYTHON_WRAPPER_SCRIPT) $@
+generate_pgcb_commandslibdir=$(libdir)/mstflint/python_tools/$(GEN_PGCB_PYTHON_WRAPPER)
 
-mstreg_SOURCES = mlxreg_ui.cpp mlxreg_ui.h
-
-bin_PROGRAMS = mstreg
-
-mstreg_DEPENDENCIES = \
-    $(top_builddir)/mlxreg/mlxreg_lib/libmstreg_lib.la \
-    $(top_builddir)/cmdparser/libcmdparser.a \
-    $(top_builddir)/mft_utils/libmftutils.la \
-    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
-    $(top_builddir)/adb_parser/libadb_parser.la \
-    $(top_builddir)/cmdif/libcmdif.la \
-    $(top_builddir)/dev_mgt/libdev_mgt.la \
-    $(top_builddir)/reg_access/libreg_access.la \
-    $(top_builddir)/tools_layouts/libtools_layouts.la \
-    $(top_builddir)/xz_utils/libxz_utils.la \
-    $(top_builddir)/ext_libs/minixz/libminixz.la \
-    $(top_builddir)/common/libcommon.la
-
-mstreg_LDADD = $(mstreg_DEPENDENCIES) $(liblzma_LIBS) ${LDL} $(expat_LIBS)
-
-mstreg_LDFLAGS = -static
+generate_pgcb_commandslib_DATA = $(GEN_PGCB_PYTHON_WRAPPER).py

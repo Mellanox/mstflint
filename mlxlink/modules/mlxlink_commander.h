@@ -116,6 +116,28 @@
 #define KR_INFO_FLAG_SHORT ' '
 #define RX_RECOVERY_COUNTERS_FLAG "show_rx_recovery_counters"
 #define RX_RECOVERY_COUNTERS_FLAG_SHORT ' '
+#define BKV_GROUPS_FLAG "show_bkv_groups"
+#define BKV_GROUPS_FLAG_SHORT ' '
+#define BKV_GROUP_FLAG "show_bkv_group"
+#define BKV_GROUP_FLAG_SHORT ' '
+#define SET_BKV_GROUP_FLAG "set_bkv_group"
+#define SET_BKV_GROUP_FLAG_SHORT ' '
+#define BKV_RATES_FLAG "bkv_rates"
+#define BKV_RATES_FLAG_SHORT ' '
+#define BKV_ROLES_FLAG "bkv_roles"
+#define BKV_ROLES_FLAG_SHORT ' '
+#define BKV_MODE_B_ROLES_FLAG "bkv_mode_b_roles"
+#define BKV_MODE_B_ROLES_FLAG_SHORT ' '
+#define SET_BKV_ENTRY_FLAG "set_bkv_entry"
+#define SET_BKV_ENTRY_FLAG_SHORT ' '
+#define BKV_ENTRY_FLAG "bkv_entry"
+#define BKV_ENTRY_FLAG_SHORT ' '
+#define BKV_ADDRESS_FLAG "bkv_address"
+#define BKV_ADDRESS_FLAG_SHORT ' '
+#define BKV_WDATA_FLAG "wdata"
+#define BKV_WDATA_FLAG_SHORT ' '
+#define BKV_WMASK_FLAG "wmask"
+#define BKV_WMASK_FLAG_SHORT ' '
 #define PERIODIC_EQ_FLAG "show_peq"
 #define PERIODIC_EQ_FLAG_SHORT ' '
 
@@ -334,6 +356,10 @@ enum OPTION_TYPE
     SHOW_EYE,
     SHOW_FEC,
     SHOW_SLTP,
+    SHOW_BKV,
+    SHOW_BKV_GROUP,
+    SET_BKV_GROUP,
+    SET_BKV_ENTRY,
     SHOW_SLRP,
     SHOW_MODULE,
     SHOW_DEVICE,
@@ -462,6 +488,15 @@ public:
     virtual void showEye();
     virtual void showFEC();
     virtual void showSltp();
+    virtual void showBkv();
+    virtual void showBkvGroup(bool showEntries = true, u_int32_t entryFilter = (u_int32_t)-1);
+    virtual void setBkvGroup();
+    virtual void setBkvEntry();
+    void queryBkvCaps(uint8_t& numGroups, uint8_t groupId = (uint8_t)-1);
+    void queryBkvCaps(uint8_t& numGroups,
+                      uint8_t& numEntries,
+                      uint8_t groupId = (uint8_t)-1,
+                      uint8_t entryId = (uint8_t)-1);
     void showDeviceData();
     void showBerMonitorInfo();
     void showExternalPhy();

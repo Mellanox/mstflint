@@ -787,6 +787,45 @@ void MlxlinkMaps::initSltpStatusMapping()
     _SLTPBadSetStatus2Str[SET_STATUS_UNKNOWN] = "Unknown failure status";
 }
 
+void MlxlinkMaps::initPSCDRateMaskMapping()
+{
+    _PSCDRateMask2Str[PSCD_RATE_MASK_312P5_MBPS] = "312.5M";
+    _PSCDRateStr2Mask[_PSCDRateMask2Str[PSCD_RATE_MASK_312P5_MBPS]] = PSCD_RATE_MASK_312P5_MBPS;
+
+    _PSCDRateMask2Str[PSCD_RATE_MASK_53P125_GBPS] = "53.125G";
+    _PSCDRateStr2Mask[_PSCDRateMask2Str[PSCD_RATE_MASK_53P125_GBPS]] = PSCD_RATE_MASK_53P125_GBPS;
+
+    _PSCDRateMask2Str[PSCD_RATE_MASK_106P25_GBPS] = "106.25G";
+    _PSCDRateStr2Mask[_PSCDRateMask2Str[PSCD_RATE_MASK_106P25_GBPS]] = PSCD_RATE_MASK_106P25_GBPS;
+
+    _PSCDRateMask2Str[PSCD_RATE_MASK_200_GBPS] = "200G";
+    _PSCDRateStr2Mask[_PSCDRateMask2Str[PSCD_RATE_MASK_200_GBPS]] = PSCD_RATE_MASK_200_GBPS;
+
+    _PSCDRateMask2Str[PSCD_RATE_MASK_212P5_GBPS] = "212.5G";
+    _PSCDRateStr2Mask[_PSCDRateMask2Str[PSCD_RATE_MASK_212P5_GBPS]] = PSCD_RATE_MASK_212P5_GBPS;
+}
+
+void MlxlinkMaps::initPSCDRoleMaskMapping()
+{
+    _PSCDRoleMask2Str[PSCD_ROLE_MASK_TLM] = "TLM";
+    _PSCDRoleStr2Mask[_PSCDRoleMask2Str[PSCD_ROLE_MASK_TLM]] = PSCD_ROLE_MASK_TLM;
+
+    _PSCDRoleMask2Str[PSCD_ROLE_MASK_RLM] = "RLM";
+    _PSCDRoleStr2Mask[_PSCDRoleMask2Str[PSCD_ROLE_MASK_RLM]] = PSCD_ROLE_MASK_RLM;
+
+    _PSCDRoleMask2Str[PSCD_ROLE_MASK_TCLM] = "TCLM";
+    _PSCDRoleStr2Mask[_PSCDRoleMask2Str[PSCD_ROLE_MASK_TCLM]] = PSCD_ROLE_MASK_TCLM;
+}
+
+void MlxlinkMaps::initPSCDModeBRoleMaskMapping()
+{
+    _PSCDModeBRoleMask2Str[PSCD_MODE_B_ROLE_MASK_PRIMARY] = "PRIMARY";
+    _PSCDModeBRoleStr2Mask[_PSCDModeBRoleMask2Str[PSCD_MODE_B_ROLE_MASK_PRIMARY]] = PSCD_MODE_B_ROLE_MASK_PRIMARY;
+
+    _PSCDModeBRoleMask2Str[PSCD_MODE_B_ROLE_MASK_SECONDARY] = "SECONDARY";
+    _PSCDModeBRoleStr2Mask[_PSCDModeBRoleMask2Str[PSCD_MODE_B_ROLE_MASK_SECONDARY]] = PSCD_MODE_B_ROLE_MASK_SECONDARY;
+}
+
 void MlxlinkMaps::initPpttParamsMapping()
 {
     _ppttParams[LANE_RATE_ADMIN] = PRM_FIELD{"lane_rate_admin", "lane_rate_admin", FIELD_ACCESS_RW, false};
@@ -1653,6 +1692,11 @@ void MlxlinkMaps::initTableHeaders()
     _multiPortModuleInfoTableHeader = {{"Cable S/N", SHIFT_15},  {"Cable P/N", SHIFT_20}, {"Cable Len", SHIFT_15},
                                        {"Cable Type", SHIFT_15}, {"State", SHIFT_15},     {"Speed", SHIFT_8},
                                        {"FEC", SHIFT_15},        {"Net BER", SHIFT_20}};
+
+    _bkvGroupsTableHeader = {{"Group #", SHIFT_10}, {"Supported Entries", SHIFT_20}, {"Filled Indication", SHIFT_20}};
+
+    _bkvGroupEntriesTableHeader = {
+      {"Entry ID", SHIFT_10}, {"Address", SHIFT_15}, {"WData", SHIFT_15}, {"WMask", SHIFT_15}};
 }
 
 void MlxlinkMaps::initPlrRejectModeMapping()
@@ -1684,6 +1728,9 @@ MlxlinkMaps::MlxlinkMaps()
     initLinkDownInfoMapping();
     initLinkUpInfo();
     initSltpStatusMapping();
+    initPSCDRateMaskMapping();
+    initPSCDRoleMaskMapping();
+    initPSCDModeBRoleMaskMapping();
     initCableComplianceMapping();
     initCableTechnologyMapping();
     initCableTypeForTableView();
