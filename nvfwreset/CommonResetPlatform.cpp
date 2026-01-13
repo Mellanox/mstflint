@@ -69,7 +69,6 @@ void CommonResetPlatform::CheckUptimeAfterReset()
 {
     PrintStartResetFlowMessage(ResetFlowStep::CheckUptimeAfterReset);
     LOG.Debug("CommonResetPlatform::CheckUptimeAfterReset");
-
     reg_access_hca_mgir_ext mgir;
     memset(&mgir, 0, sizeof(mgir));
     reg_access_status_t status = reg_access_mgir(_mf, REG_ACCESS_METHOD_GET, &mgir);
@@ -78,6 +77,8 @@ void CommonResetPlatform::CheckUptimeAfterReset()
         throw mft_core::MftGeneralException(
           nbu::mft::common::string_format("Failed to send %s: %s", "MGIR", reg_access_err2str(status)));
     }
+    LOG.Debug("CommonResetPlatform::CheckUptimeAfterReset - MGIR.uptime=" + std::to_string(mgir.hw_info.uptime));
+    LOG.Debug("CommonResetPlatform::CheckUptimeAfterReset - uptime before reset: " + std::to_string(_uptimeBeforeReset));
     if (mgir.hw_info.uptime < _uptimeBeforeReset)
     {
         throw mft_core::MftGeneralException(
@@ -92,9 +93,15 @@ void CommonResetPlatform::SendMFRL()
     PrintStartResetFlowMessage(ResetFlowStep::SendMFRL);
     struct reg_access_hca_mfrl_reg_ext mfrl;
     memset(&mfrl, 0, sizeof(mfrl));
-    mfrl.reset_trigger = static_cast<u_int8_t>(_resetParams.level);
+    if (_resetParams.level != ResetLevel::PCI_RESET || _resetParams.sync != ResetSync::FW_FLOW)
+    {
+        throw mft_core::MftGeneralException(
+          nbu::mft::common::string_format("Reset level or reset sync is not supported"));
+    }
+
+    mfrl.reset_trigger = static_cast<u_int8_t>(ResetLevelBitmask::PCI_RESET);
+    mfrl.pci_sync_for_fw_update_start = static_cast<u_int8_t>(ResetSyncBitmask::FW_FLOW);
     mfrl.rst_type_sel = static_cast<u_int8_t>(_resetParams.type);
-    mfrl.pci_sync_for_fw_update_start = static_cast<u_int8_t>(_resetParams.sync);
     mfrl.pci_reset_req_method = static_cast<u_int8_t>(_resetParams.method);
     LOG.Info("CommonResetPlatform::SendMFRL: reset_trigger: " + std::to_string(mfrl.reset_trigger) +
              ", rst_type_sel: " + std::to_string(mfrl.rst_type_sel) +

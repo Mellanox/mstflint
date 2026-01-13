@@ -108,8 +108,8 @@ enum class ResetFlowStep
     HotReset,
     LinkDisableReset,
     PciReset,
+    WaitForFWReady,
     StartNicDriver,
-    WaitForReady,
     MSTRestart,
     SaveUptimeBeforeReset,
     CheckUptimeAfterReset

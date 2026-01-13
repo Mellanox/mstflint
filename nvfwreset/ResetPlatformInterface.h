@@ -57,7 +57,7 @@ public:
     virtual void LinkDisableReset() = 0;
     virtual void PciReset() = 0;
     virtual void StartNicDriver() = 0;
-    virtual void WaitForReady() = 0;
+    virtual void WaitForFWReady() = 0;
     virtual void MSTRestart() = 0;
     virtual void SaveUptimeBeforeReset() = 0;
     virtual void CheckUptimeAfterReset() = 0;

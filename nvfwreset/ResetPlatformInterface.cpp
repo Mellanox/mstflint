@@ -45,7 +45,7 @@ std::map<ResetFlowStep, std::string> ResetFlowStepToStringMap = {
   {ResetFlowStep::LinkDisableReset, "Performing Link Disable Reset"},
   {ResetFlowStep::PciReset, "Performing PCI Reset"},
   {ResetFlowStep::StartNicDriver, "Starting NIC driver"},
-  {ResetFlowStep::WaitForReady, "Waiting for ready"},
+  {ResetFlowStep::WaitForFWReady, "Waiting for FW to be ready"},
   {ResetFlowStep::MSTRestart, "Restarting MST"},
   {ResetFlowStep::SaveUptimeBeforeReset, "Saving reset uptime before reset"},
   {ResetFlowStep::CheckUptimeAfterReset, "Checking reset uptime after reset"}};

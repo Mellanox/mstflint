@@ -46,6 +46,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include "common/tools_time.h"
 
 namespace Filesystem = mstflint::common::algorithm;
 
@@ -388,24 +389,48 @@ void HotResetManager::ExecuteHotResetFlow()
     struct hot_reset_pcie_switch info;
     info.in_parallel = false;
 
+    LOG.Info("HotResetManager::ExecuteHotResetFlow: asicDBDFTarget 1: " + _asicDBDFTargets[0]);
+    if (_asicDBDFTargets.size() > 1)
+    {
+        LOG.Info("HotResetManager::ExecuteHotResetFlow: asicDBDFTarget 2: " + _asicDBDFTargets[1]);
+    }
+
     if (info.device_1.domain == info.device_2.domain && info.device_1.bus == info.device_2.bus &&
         info.device_1.device == info.device_2.device && info.device_1.function == info.device_2.function)
     {
         info.in_parallel = true;
-        info.device_2.domain = std::stoi(_asicDBDFTargets[1].substr(0, 4));
-        info.device_2.bus = std::stoi(_asicDBDFTargets[1].substr(5, 2));
-        info.device_2.device = std::stoi(_asicDBDFTargets[1].substr(8, 2));
+        info.device_2.domain = std::stoi(_asicDBDFTargets[1].substr(0, 4), nullptr, 16);
+        info.device_2.bus = std::stoi(_asicDBDFTargets[1].substr(5, 2), nullptr, 16);
+        info.device_2.device = std::stoi(_asicDBDFTargets[1].substr(8, 2), nullptr, 16);
         info.device_2.function = 0;
+        std::ostringstream device2_os;
+        device2_os << "HotResetManager::ExecuteHotResetFlow: device_2: "
+                   << std::setfill('0') << std::setw(4) << std::hex << info.device_2.domain << ":"
+                   << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(info.device_2.bus) << ":"
+                   << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(info.device_2.device) << "."
+                   << std::dec << static_cast<int>(info.device_2.function);
+        LOG.Info(device2_os.str());
     }
 
-    info.device_1.domain = std::stoi(_asicDBDFTargets[0].substr(0, 4));
-    info.device_1.bus = std::stoi(_asicDBDFTargets[0].substr(5, 2));
-    info.device_1.device = std::stoi(_asicDBDFTargets[0].substr(8, 2));
-    info.device_1.function = std::stoi(_asicDBDFTargets[0].substr(11, 1));
+    info.device_1.domain = std::stoi(_asicDBDFTargets[0].substr(0, 4), nullptr, 16);
+    info.device_1.bus = std::stoi(_asicDBDFTargets[0].substr(5, 2), nullptr, 16);
+    info.device_1.device = std::stoi(_asicDBDFTargets[0].substr(8, 2), nullptr, 16);
+    info.device_1.function = std::stoi(_asicDBDFTargets[0].substr(11, 1), nullptr, 16);
+    std::ostringstream device1_os;
+    device1_os << "HotResetManager::ExecuteHotResetFlow: device_1: "
+                << std::setfill('0') << std::setw(4) << std::hex << info.device_1.domain << ":"
+                << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(info.device_1.bus) << ":"
+                << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(info.device_1.device) << "."
+                << std::dec << static_cast<int>(info.device_1.function);
+    LOG.Info(device1_os.str());
     int status = ioctl(_mf->fd, PCICONF_HOT_RESET, &info);
     if (status != 0)
     {
         throw mft_core::MftGeneralException(std::string("Failed to send Hot Reset, check dmesg for more details."));
     }
+
+    // Sleep for 2 seconds after sending hot reset
+    nbu::mft::common::mft_msleep(2000);
+
     LOG.Info("HotResetManager::ExecuteHotResetFlow: Hot reset sent successfully");
 }
