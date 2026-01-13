@@ -41,6 +41,8 @@
 #include <linux/pci.h>
 #include <linux/fs.h>
 #include <linux/delay.h>
+#include <linux/completion.h>
+#include <linux/kthread.h>
 #include "mst_kernel.h"
 
 /****************************************************/
@@ -56,8 +58,16 @@ static const char mst_driver_string[] = "Mellanox Technologies Software Tools Dr
 
 /* Forward declarations */
 int pci_reset_bus_in_parallel(struct pci_dev* pci_device_prime, struct pci_dev* pci_device_aux);
+int nnt_pci_reset_bus_in_parallel(struct pci_dev* pci_device_1, struct pci_dev* pci_device_2);
 int hot_reset_pcie_switch(struct hot_reset_pcie_switch* info);
 static int hot_reset_thread_fn(void* data);
+
+struct reset_thread_data
+{
+    struct pci_dev* pdev;
+    int error;
+    struct completion done;
+};
 
 LIST_HEAD(mst_devices);
 
@@ -460,35 +470,35 @@ static int hot_reset_thread_fn(void* data)
 
 int hot_reset_pcie_switch(struct hot_reset_pcie_switch* info)
 {
-    struct pci_dev* pdev_bus_prime;
-    struct pci_dev* pdev_bus_aux;
+    struct pci_dev* pdev_bus_device_1;
+    struct pci_dev* pdev_bus_device_2;
 
     // Retrieve the PCI device corresponding to info.bus
-    pdev_bus_prime = pci_get_domain_bus_and_slot(info->prime.domain, info->prime.bus,
-                                                 PCI_DEVFN(info->prime.device, info->prime.function));
-    if (!pdev_bus_prime)
+    pdev_bus_device_1 = pci_get_domain_bus_and_slot(info->device_1.domain, info->device_1.bus,
+                                                 PCI_DEVFN(info->device_1.device, info->device_1.function));
+    if (!pdev_bus_device_1)
     {
-        printk(KERN_ERR "mst_pciconf | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->prime.domain,
-               info->prime.bus, info->prime.device, info->prime.function);
+        printk(KERN_ERR "mst_pciconf | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_1.domain,
+               info->device_1.bus, info->device_1.device, info->device_1.function);
         return -ENODEV;
     }
 
-    if (info->is_socket_direct)
+    if (info->in_parallel)
     {
-        pdev_bus_aux =
-          pci_get_domain_bus_and_slot(info->aux.domain, info->aux.bus, PCI_DEVFN(info->aux.device, info->aux.function));
-        if (!pdev_bus_aux)
+        pdev_bus_device_2 =
+          pci_get_domain_bus_and_slot(info->device_2.domain, info->device_2.bus, PCI_DEVFN(info->device_2.device, info->device_2.function));
+        if (!pdev_bus_device_2)
         {
-            printk(KERN_ERR "mst_pciconf | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->aux.domain,
-                   info->aux.bus, info->aux.device, info->aux.function);
+            printk(KERN_ERR "mst_pciconf | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_2.domain,
+                   info->device_2.bus, info->device_2.device, info->device_2.function);
             return -ENODEV;
         }
 
-        return nnt_pci_reset_bus_sd(pdev_bus_prime, pdev_bus_aux);
+        return nnt_pci_reset_bus_in_parallel(pdev_bus_device_1, pdev_bus_device_2);
     }
     else
     {
-        return nnt_pci_reset_bus(pdev_bus_prime);
+        return nnt_pci_reset_bus(pdev_bus_device_1);
     }
 }
 
