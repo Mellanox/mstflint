@@ -758,10 +758,8 @@ int main(int argc, char** argv)
                     continue;
 #endif
                     snprintf(dev_type, 128, "NA");
-                }
-                else
-                {
-                    snprintf(dev_type, 128, "%s(rev:%x)", dm_dev_type2str_external(dev_id), hw_rev);
+                } else {
+                    snprintf(dev_type, 128, "%s(rev:%x)", dm_dev_type2str(dev_id), hw_rev);
                 }
                 /* printf("-D- CF: %s, CR: %s\n", devs[i].pci.conf_dev, devs[i].pci.cr_dev); */
                 int conf_exist = devs[i].pci.conf_dev[0];

@@ -119,11 +119,6 @@ if DEV_MGT:
             return DEV_MGT.dm_dev_type2str(dm_dev_id).decode("utf-8")
 
         @classmethod
-        def type2str_external(cls, dm_dev_id):
-            DEV_MGT.dm_dev_type2str.restype = ctypes.c_char_p
-            return DEV_MGT.dm_dev_type2str_external(dm_dev_id).decode("utf-8")
-
-        @classmethod
         def is_ib_switch(cls, dm_dev_id):
             return DEV_MGT.dm_dev_is_ib_switch(dm_dev_id)
 

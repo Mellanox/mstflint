@@ -455,7 +455,7 @@ const char* MlxCfg::getDeviceName(mfile* mf)
     {
         return "";
     }
-    return dm_dev_type2str_external(_devType);
+    return dm_dev_type2str(_devType);
 }
 
 void MlxCfg::printOpening(mfile* mf, const char* dev, string deviceIndex, Json::Value& oJsonValue)

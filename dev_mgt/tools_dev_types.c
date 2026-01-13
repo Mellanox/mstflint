@@ -62,7 +62,6 @@ struct device_info {
     int              hw_rev_id; /* -1 means all revisions match this record */
     int              sw_dev_id; /* -1 means all hw ids  match this record */
     const char     * name;
-    const char* external_name;
     int              port_num;
     enum dm_dev_type dev_type;
 };
@@ -89,7 +88,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         -1,                                                   /* sw_dev_id */
         "ConnectX3",                                          /* name */
-        "ConnectX3",                                          /* external_name */
         2,                                                    /* port_num */
         DM_HCA                                                /* dev_type */
     },
@@ -99,7 +97,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         4113,                                                 /* sw_dev_id */
         "ConnectIB",                                          /* name */
-        "ConnectIB",                                          /* external_name */
         2,                                                    /* port_num */
         DM_HCA                                                /* dev_type */
     },
@@ -109,7 +106,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                      /* hw_rev_id */
         4103,                                                    /* sw_dev_id */
         "ConnectX3Pro",                                          /* name */
-        "ConnectX3Pro",                                          /* external_name */
         2,                                                       /* port_num */
         DM_HCA                                                   /* dev_type */
     },
@@ -119,7 +115,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                  /* hw_rev_id */
         52000,                                               /* sw_dev_id */
         "SwitchIB",                                          /* name */
-        "SwitchIB",                                          /* external_name */
         36,                                                  /* port_num */
         DM_SWITCH                                            /* dev_type */
     },
@@ -129,7 +124,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                  /* hw_rev_id */
         52100,                                               /* sw_dev_id */
         "Spectrum",                                          /* name */
-        "Spectrum",                                          /* external_name */
         64,                                                  /* port_num */
         DM_SWITCH                                            /* dev_type */
     },
@@ -139,7 +133,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         4115,                                                 /* sw_dev_id */
         "ConnectX4",                                          /* name */
-        "ConnectX4",                                          /* external_name */
         2,                                                    /* port_num */
         DM_HCA                                                /* dev_type */
     },
@@ -149,7 +142,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                     /* hw_rev_id */
         4117,                                                   /* sw_dev_id */
         "ConnectX4LX",                                          /* name */
-        "ConnectX4LX",                                          /* external_name */
         2,                                                      /* port_num */
         DM_HCA                                                  /* dev_type */
     },
@@ -159,7 +151,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         4119,                                                 /* sw_dev_id */
         "ConnectX5",                                          /* name */
-        "ConnectX5",                                          /* external_name */
         2,                                                    /* port_num */
         DM_HCA                                                /* dev_type */
     },
@@ -169,7 +160,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         4123,                                                 /* sw_dev_id */
         "ConnectX6",                                          /* name */
-        "ConnectX6",                                          /* external_name */
         2,                                                    /* port_num */
         DM_HCA                                                /* dev_type */
     },
@@ -179,7 +169,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                     /* hw_rev_id */
         4125,                                                   /* sw_dev_id */
         "ConnectX6DX",                                          /* name */
-        "ConnectX6DX",                                          /* external_name */
         2,                                                      /* port_num */
         DM_HCA                                                  /* dev_type */
     },
@@ -189,7 +178,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                     /* hw_rev_id */
         4127,                                                   /* sw_dev_id */
         "ConnectX6LX",                                          /* name */
-        "ConnectX6LX",                                          /* external_name */
         2,                                                      /* port_num */
         DM_HCA                                                  /* dev_type */
     },
@@ -199,7 +187,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         4129,                                                 /* sw_dev_id */
         "ConnectX7",                                          /* name */
-        "ConnectX7",                                          /* external_name */
         4,                                                    /* port_num */
         DM_HCA                                                /* dev_type */
     },
@@ -209,7 +196,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         4131,                                                 /* sw_dev_id */
         "ConnectX8",                                          /* name */
-        "ConnectX8",                                          /* external_name */
         4,                                                    /* port_num */
         DM_HCA                                                /* dev_type */
     },
@@ -219,7 +205,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         4133,                                                 /* sw_dev_id */
         "ConnectX9",                                          /* name */
-        "ConnectX9",                                          /* external_name */
         4,                                                    /* port_num */
         DM_HCA                                                /* dev_type */
     },
@@ -229,7 +214,6 @@ static struct device_info g_devs_info[] = {
         -1,                               // hw_rev_id
         6525,                             // sw_dev_id
         "ConnectX8_Pure_PCIe_Switch",     // name
-        "ConnectX8_Pure_PCIe_Switch",     // external_name
         4,                                // port_num
         DM_HCA                            // dev_type
     },
@@ -239,7 +223,6 @@ static struct device_info g_devs_info[] = {
         -1,                               // hw_rev_id
         6526,                             // sw_dev_id
         "ConnectX9_Pure_PCIe_Switch",     // name
-        "ConnectX9_Pure_PCIe_Switch",     // external_name
         4,                                // port_num
         DM_HCA                            // dev_type
     },
@@ -249,7 +232,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         41682,                                                /* sw_dev_id */
         "BlueField",                                          /* name */
-        "BlueField",                                          /* external_name */
         2,                                                    /* port_num */
         DM_HCA                                                /* dev_type */
     },
@@ -259,7 +241,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                    /* hw_rev_id */
         41686,                                                 /* sw_dev_id */
         "BlueField2",                                          /* name */
-        "BlueField2",                                          /* external_name */
         2,                                                     /* port_num */
         DM_HCA                                                 /* dev_type */
     },
@@ -269,7 +250,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                    /* hw_rev_id */
         41692,                                                 /* sw_dev_id */
         "BlueField3",                                          /* name */
-        "BlueField3",                                          /* external_name */
         4,                                                     /* port_num */
         DM_HCA                                                 /* dev_type */
     },
@@ -279,7 +259,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                    /* hw_rev_id */
         41694,                                                 /* sw_dev_id */
         "BlueField4",                                          /* name */
-        "BlueField4",                                          /* external_name */
         4,                                                     /* port_num */
         DM_HCA                                                 /* dev_type */
     },
@@ -289,7 +268,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         53000,                                                /* sw_dev_id */
         "SwitchIB2",                                          /* name */
-        "SwitchIB2",                                          /* external_name */
         36,                                                   /* port_num */
         DM_SWITCH                                             /* dev_type */
     },
@@ -299,7 +277,6 @@ static struct device_info g_devs_info[] = {
         0,                                                    /* hw_rev_id */
         -1,                                                   /* sw_dev_id */
         "CableQSFP",                                          /* name */
-        "CableQSFP",                                          /* external_name */
         -1,                                                   /* port_num */
         DM_QSFP_CABLE                                         /* dev_type */
     },
@@ -309,7 +286,6 @@ static struct device_info g_devs_info[] = {
         0xab,                                                      /* hw_rev_id */
         -1,                                                        /* sw_dev_id */
         "CableQSFPaging",                                          /* name */
-        "CableQSFPaging",                                          /* external_name */
         -1,                                                        /* port_num */
         DM_QSFP_CABLE                                              /* dev_type */
     },
@@ -319,7 +295,6 @@ static struct device_info g_devs_info[] = {
         0,                                                    /* hw_rev_id */
         -1,                                                   /* sw_dev_id */
         "CableCMIS",                                          /* name */
-        "CableCMIS",                                          /* external_name */
         -1,                                                   /* port_num */
         DM_CMIS_CABLE                                         /* dev_type */
     },
@@ -329,7 +304,6 @@ static struct device_info g_devs_info[] = {
         0xab,                                                       /* hw_rev_id */
         -1,                                                         /* sw_dev_id */
         "CableCMISPaging",                                          /* name */
-        "CableCMISPaging",                                          /* external_name */
         -1,                                                         /* port_num */
         DM_CMIS_CABLE                                               /* dev_type */
     },
@@ -339,7 +313,6 @@ static struct device_info g_devs_info[] = {
         1,                                                   /* hw_rev_id */
         -1,                                                  /* sw_dev_id */
         "CableSFP",                                          /* name */
-        "CableSFP",                                          /* external_name */
         -1,                                                  /* port_num */
         DM_SFP_CABLE                                         /* dev_type */
     },
@@ -349,7 +322,6 @@ static struct device_info g_devs_info[] = {
         1,                                                     /* hw_rev_id */
         -1,                                                    /* sw_dev_id */
         "CableSFP51",                                          /* name */
-        "CableSFP51",                                          /* external_name */
         -1,                                                    /* port_num */
         DM_SFP_CABLE                                           /* dev_type */
     },
@@ -359,7 +331,6 @@ static struct device_info g_devs_info[] = {
         1,                                                           /* hw_rev_id */
         -1,                                                          /* sw_dev_id */
         "CableSFP51Paging",                                          /* name */
-        "CableSFP51Paging",                                          /* external_name */
         -1,                                                          /* port_num */
         DM_SFP_CABLE                                                 /* dev_type */
     },
@@ -369,7 +340,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         53100,                                                /* sw_dev_id */
         "Spectrum2",                                          /* name */
-        "Spectrum2",                                          /* external_name */
         128,                                                  /* port_num */
         DM_SWITCH                                             /* dev_type */
     },
@@ -379,7 +349,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                 /* hw_rev_id */
         -1,                                                 /* sw_dev_id */
         "DummyDevice",                                      /* name */
-        "DummyDevice",                                      /* external_name */
         2,                                                  /* port_num */
         DM_HCA                                              /* dev_type */
     },
@@ -389,7 +358,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                 /* hw_rev_id */
         54000,                                              /* sw_dev_id */
         "Quantum",                                          /* name */
-        "Quantum",                                          /* external_name */
         80,                                                 /* port_num */
         DM_SWITCH                                           /* dev_type */
     },
@@ -399,7 +367,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                /* hw_rev_id */
         -1,                                                /* sw_dev_id */
         "Ardbeg",                                          /* name */
-        "Ardbeg",                                          /* external_name */
         -1,                                                /* port_num */
         DM_LINKX                                           /* dev_type */
     },
@@ -409,7 +376,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                  /* hw_rev_id */
         -1,                                                  /* sw_dev_id */
         "Baritone",                                          /* name */
-        "Baritone",                                          /* external_name */
         -1,                                                  /* port_num */
         DM_LINKX                                             /* dev_type */
     },
@@ -419,7 +385,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                /* hw_rev_id */
         -1,                                                /* sw_dev_id */
         "Menhit",                                          /* name */
-        "Menhit",                                          /* external_name */
         -1,                                                /* port_num */
         DM_LINKX                                           /* dev_type */
     },
@@ -429,7 +394,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                      /* hw_rev_id */
         -1,                                                      /* sw_dev_id */
         "ArcusP Test-Chip",                                      /* name */
-        "ArcusP Test-Chip",                                      /* external_name */
         -1,                                                      /* port_num */
         DM_LINKX                                                 /* dev_type */
     },
@@ -439,7 +403,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                /* hw_rev_id */
         -1,                                                /* sw_dev_id */
         "ArcusP",                                          /* name */
-        "ArcusP",                                          /* external_name */
         -1,                                                /* port_num */
         DM_LINKX                                           /* dev_type */
     },
@@ -449,7 +412,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                /* hw_rev_id */
         -1,                                                /* sw_dev_id */
         "ArcusE",                                          /* name */
-        "ArcusE",                                          /* external_name */
         -1,                                                /* port_num */
         DM_LINKX                                           /* dev_type */
     },
@@ -459,7 +421,6 @@ static struct device_info g_devs_info[] = {
         -1,           /* hw_rev_id */
         -1,           /* sw_dev_id */
         "ArcusE",     /* name */
-        "ArcusE",     /* external_name */
         -1,           /* port_num */
         DM_RETIMER    /* dev_type */
     },
@@ -469,7 +430,6 @@ static struct device_info g_devs_info[] = {
         0xd0,                                                  /* hw_rev_id */
         0,                                                     /* sw_dev_id */
         "Unknown Device",                                      /* name */
-        "Unknown Device",                                      /* external_name */
         -1,                                                    /* port_num */
         DM_UNKNOWN                                             /* dev_type */
     },
@@ -479,7 +439,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         53104,                                                /* sw_dev_id */
         "Spectrum3",                                          /* name */
-        "Spectrum3",                                          /* external_name */
         128,                                                  /* port_num NEED_CHECK */
         DM_SWITCH                                             /* dev_type */
     },
@@ -489,7 +448,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         53120,                                                /* sw_dev_id */
         "Spectrum4",                                          /* name */
-        "Spectrum4",                                          /* external_name */
         128,                                                  /* port_num NEED_CHECK */
         DM_SWITCH                                             /* dev_type */
     },
@@ -520,7 +478,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                  /* hw_rev_id */
         54002,                                               /* sw_dev_id */
         "Quantum2",                                          /* name */
-        "Quantum2",                                          /* external_name */
         128,                                                 /* port_num NEED_CHECK */
         DM_SWITCH                                            /* dev_type */
     },
@@ -530,17 +487,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                  /* hw_rev_id */
         54004,                                               /* sw_dev_id */
         "Quantum3",                                          /* name */
-        "Quantum3",                                          /* external_name */
-        128,                                                 /* port_num NEED_CHECK */
-        DM_SWITCH                                            /* dev_type */
-    },
-    {
-        DeviceQuantum4,                                      /* dm_id */
-        0x278,                                              /* hw_dev_id */
-        -1,                                                  /* hw_rev_id */
-        54008,                                               /* sw_dev_id */
-        "Quantum3",                                          /* name */
-        "NVLink6_Switch_ASIC",                                          /* external_name */
         128,                                                 /* port_num NEED_CHECK */
         DM_SWITCH                                            /* dev_type */
     },
@@ -550,7 +496,6 @@ static struct device_info g_devs_info[] = {
         -1,                                               /* hw_rev_id */
         10496,                                            /* sw_dev_id */
         "GB100",                                          /* name */
-        "GB100",                                          /* external_name */
         128,                                              /* port_num NEED_CHECK */
         DM_SWITCH                                         /* dev_type */
     },
@@ -560,7 +505,6 @@ static struct device_info g_devs_info[] = {
         -1,                                               /* hw_rev_id */
         12288,                                            /* sw_dev_id */
         "GR100",                                          /* name */
-        "GR100",                                          /* external_name */
         128,                                              /* port_num NEED_CHECK */
         DM_SWITCH                                         /* dev_type */
     },
@@ -570,7 +514,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                 /* hw_rev_id */
         53108,                                              /* sw_dev_id */
         "AmosGearBox",                                      /* name */
-        "AmosGearBox",                                      /* external_name */
         128,                                                /* port_num NEED_CHECK */
         DM_GEARBOX                                          /* dev_type */
     },
@@ -580,7 +523,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                        /* hw_rev_id */
         -1,                                                        /* sw_dev_id */
         "AmosGearBoxManager",                                      /* name */
-        "AmosGearBoxManager",                                      /* external_name */
         -1,                                                        /* port_num NEED_CHECK */
         DM_GEARBOX                                                 /* dev_type */
     },
@@ -590,7 +532,6 @@ static struct device_info g_devs_info[] = {
         -1,                                                     /* hw_rev_id */
         -1,                                                     /* sw_dev_id */
         "AbirGearBox",                                          /* name */
-        "AbirGearBox",                                          /* external_name */
         -1,                                                     /* port_num NEED_CHECK */
         DM_GEARBOX                                              /* dev_type */
     },
@@ -600,7 +541,6 @@ static struct device_info g_devs_info[] = {
         0,                                                     /* hw_rev_id */
         0,                                                     /* sw_dev_id */
         "Unknown Device",                                      /* name */
-        "Unknown Device",                                      /* external_name */
         -1,                                                    /* port_num */
         DM_UNKNOWN                                             /* dev_type */
     }
@@ -786,11 +726,6 @@ int dm_get_device_id_offline(u_int32_t devid, u_int32_t chip_rev, dm_dev_id_t* p
 const char* dm_dev_type2str(dm_dev_id_t type)
 {
     return get_entry(type)->name;
-}
-
-const char* dm_dev_type2str_external(dm_dev_id_t type)
-{
-    return get_entry(type)->external_name;
 }
 
 dm_dev_id_t dm_dev_str2type(const char* str)
