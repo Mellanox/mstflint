@@ -44,7 +44,7 @@
 
 using namespace std;
 
-Commander* Commander::create(std::string device, std::string dbName, bool forceCreate, Device_Type deviceType)
+Commander* Commander::create(std::string device, std::string& dbName, bool forceCreate, Device_Type deviceType)
 {
     mfile* mf;
     int rc;
@@ -82,7 +82,7 @@ Commander* Commander::create(std::string device, std::string dbName, bool forceC
     return cmdr;
 }
 
-Commander* Commander::create(mfile* mf, std::string dbName, Device_Type deviceType)
+Commander* Commander::create(mfile* mf, std::string& dbName, Device_Type deviceType)
 {
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId = 0, hwRevId = 0;
@@ -99,6 +99,12 @@ Commander* Commander::create(mfile* mf, std::string dbName, Device_Type deviceTy
 
     if (dm_dev_is_switch(deviceId)  || dm_is_5th_gen_hca(deviceId) || dm_dev_is_retimer(deviceId))
     {
+        if (deviceType == UNSUPPORTED_DEVICE)
+        {
+            deviceType = dm_dev_is_switch(deviceId)  ? Device_Type::Switch :
+                         dm_is_5th_gen_hca(deviceId) ? Device_Type::HCA :
+                                                       Device_Type::UNSUPPORTED_DEVICE;
+        }
         if (dbName.empty())
         { // take internal db file
             dbName = getDefaultDBName(dm_dev_is_switch(deviceId));
@@ -119,6 +125,13 @@ Commander::~Commander()
     {
         mclose(_mf);
     }
+}
+
+void Commander::setHostFunctionParams(u_int8_t hostId, u_int8_t pfIndex, bool valid)
+{
+    _userHostId = hostId;
+    _userPfIndex = pfIndex;
+    _userHostIdPfValid = valid;
 }
 
 string Commander::getDefaultDBName(bool isSwitch)

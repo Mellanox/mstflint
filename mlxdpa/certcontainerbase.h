@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -38,10 +38,11 @@
 #include <memory>
 #include <map>
 #include "compatibility.h"
+#include "baseHeader.h"
 
 using namespace std;
 
-class CertStructHeader
+class CertStructHeader : public BaseHeader
 {
 public:
     enum class StructType
@@ -56,26 +57,15 @@ public:
         Unknown
     };
 
-    enum class StructPriority
-    {
-        User = 0x0,
-        Vendor = 0x1,
-        Nvidia = 0x3,
-        Unknown
-    };
-
     CertStructHeader();
-    CertStructHeader(StructPriority priority, StructType type, u_int16_t structLength);
-
+    CertStructHeader(BaseHeader::StructPriority priority, StructType type, u_int16_t structLength);
+    bool ValidateNvidiaSignedOemPriority();
+    static BaseHeader::StructPriority GetPriorityNvidiaSignedOem(StructType type);
     vector<u_int8_t> Serialize();
     bool Deserialize(vector<u_int8_t> header);
     bool Deserialize(vector<u_int8_t>::const_iterator begin, vector<u_int8_t>::const_iterator end);
     StructType GetType() { return _type; }
-    const StructPriority& GetPriority() const { return _priority; }
     u_int16_t GetLength() const { return _length; }
-
-    static StructPriority ToStructPriority(string priority);
-    static string ToString(StructPriority priority);
 
     enum class StructSecurityMethod
     {
@@ -83,15 +73,13 @@ public:
         Crc16OfHeader = 0x1,
         Crc16OfHeaderAndData = 0x2
     };
-    
-    static const map<StructPriority, string> _metadataPriorityToString;
+    static const map<BaseHeader::StructPriority, string> _metadataPriorityToString;
     static const u_int32_t HEADER_SIZE = 12;
 
 private:
     u_int16_t _length;
     StructType _type;
     u_int8_t _version;
-    StructPriority _priority;
     u_int8_t _valid;
     StructSecurityMethod _securityMethod;
     u_int16_t _crc;
@@ -118,7 +106,7 @@ private:
 class CertContainerItem
 {
 public:
-    CertContainerItem(CertStructHeader::StructPriority priority, shared_ptr<CertStructBase> data);
+    CertContainerItem(BaseHeader::StructPriority priority, shared_ptr<CertStructBase> data);
     CertContainerItem(CertStructHeader header, shared_ptr<CertStructBase> data, vector<u_int8_t> cert) :
         _header(header), _metadata(data), _cert(cert){};
     CertContainerItem(){};

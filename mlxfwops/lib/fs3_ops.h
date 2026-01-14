@@ -65,8 +65,8 @@
     (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || \
      chip_type == CT_CONNECTX5 || chip_type == CT_CONNECTX6 || chip_type == CT_CONNECTX6DX ||   \
      chip_type == CT_CONNECTX6LX || chip_type == CT_CONNECTX7 || chip_type == CT_CONNECTX8 ||   \
-     chip_type == CT_CONNECTX8_PURE_PCIE_SWITCH || chip_type == CT_BLUEFIELD ||                 \
-     chip_type == CT_BLUEFIELD2 || chip_type == CT_BLUEFIELD3 ||                               \
+     chip_type == CT_CONNECTX8_PURE_PCIE_SWITCH || chip_type == CT_CONNECTX9 || chip_type == CT_BLUEFIELD ||                 \
+     chip_type == CT_BLUEFIELD2 || chip_type == CT_BLUEFIELD3 || CT_CONNECTX9_PURE_PCIE_SWITCH ||                             \
      chip_type == CT_BLUEFIELD4)
 
 #define FAIL_NO_OCR(str)                                                                        \
@@ -269,6 +269,7 @@ protected:
                          Flash* flash_access,
                          u_int32_t new_image_start,
                          u_int8_t is_curr_image_in_odd_chunks);
+    virtual bool ClearLivefishfIndication(Flash* flashAccess);
     bool CreateDtoc(vector<u_int8_t>& img,
                     u_int8_t* SectionData,
                     u_int32_t section_size,

@@ -2189,25 +2189,11 @@ void mdevices_info_destroy(dev_info* dev_info, int len)
 #define REG_TLV_HEADER_LEN 4
 
 enum {
-    MAD_CLASS_REG_ACCESS = 1,
+    MAD_CLASS_1_REG_ACCESS = 1,
 };
-enum {
-    TLV_END       = 0,
-    TLV_OPERATION = 1,
-    TLV_DR        = 2,
-    TLV_REG       = 3,
-    TLV_USER_DATA = 4,
-};
-
-#define REGISTER_HEADERS_SIZE  20
-#define INBAND_MAX_REG_SIZE    44
-#define ICMD_MAX_REG_SIZE      (ICMD_MAX_CMD_SIZE - REGISTER_HEADERS_SIZE)
-#define FWCTX_MAX_REG_SIZE     16
-#define TOOLS_HCR_MAX_REG_SIZE (TOOLS_HCR_MAX_MBOX - REGISTER_HEADERS_SIZE)
 
 static int supports_icmd(mfile* mf);
 static int supports_tools_cmdif_reg(mfile* mf);
-static int init_operation_tlv(struct OperationTlv* operation_tlv, u_int16_t reg_id, u_int8_t method);
 static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_icmd_size);
 static int mreg_send_raw(mfile              * mf,
                          u_int16_t            reg_id,
@@ -2314,18 +2300,6 @@ int maccess_reg(mfile              * mf,
         }
     }
     return ME_OK;
-}
-
-static int init_operation_tlv(struct OperationTlv* operation_tlv, u_int16_t reg_id, u_int8_t method)
-{
-    memset(operation_tlv, 0, sizeof(*operation_tlv));
-
-    operation_tlv->Type = TLV_OPERATION;
-    operation_tlv->class = MAD_CLASS_REG_ACCESS;
-    operation_tlv->len = TLV_OPERATION_SIZE;
-    operation_tlv->method = method;
-    operation_tlv->register_id = reg_id;
-    return 0;
 }
 
 /*/////////////////  Function that sends the register via the correct interface /////////////////////////// */

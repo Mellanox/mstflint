@@ -60,11 +60,14 @@ mstlink_DEPENDENCIES = \
     $(top_builddir)/adb_parser/libadb_parser.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
-    $(top_builddir)/reg_access/libreg_access.la \
     $(top_builddir)/tools_layouts/libtools_layouts.la \
     $(top_builddir)/xz_utils/libxz_utils.la \
     $(top_builddir)/ext_libs/minixz/libminixz.la \
     $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/reg_access/libreg_access.la \
+    $(top_builddir)/mft_core/mft_core_utils/operating_system_api/lib_os_api.la \
+    $(top_builddir)/mft_core/mft_core_utils/logger/liblogger.la \
+    $(top_builddir)/mft_core/mft_core_utils/mft_exceptions/libmftexceptions.la \
     $(JSON_LIBS)
 
 mstlink_LDADD = $(mstlink_DEPENDENCIES) $(liblzma_LIBS) ${LDL} $(expat_LIBS)

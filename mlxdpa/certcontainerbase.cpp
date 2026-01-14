@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,34 +29,34 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 #include "certcontainerbase.h"
 #include "mlxdpa_utils.h"
 #include <mft_utils.h>
+#include "baseHeader.h"
 #include <iostream>
 
-const map<CertStructHeader::StructPriority, string> CertStructHeader::_metadataPriorityToString = {
-  {StructPriority::User, "USER"},
-  {StructPriority::Vendor, "OEM"},
-  {StructPriority::Nvidia, "NVIDIA"},
-  {StructPriority::Unknown, "UNKNOWN"}};
+const map<BaseHeader::StructPriority, string> CertStructHeader::_metadataPriorityToString = {
+  {BaseHeader::StructPriority::User, "USER"},
+  {BaseHeader::StructPriority::Vendor, "OEM"},
+  {BaseHeader::StructPriority::Nvidia, "NVIDIA"},
+  {BaseHeader::StructPriority::Unknown, "UNKNOWN"}};
 
 CertStructHeader::CertStructHeader() :
+    BaseHeader(),
     _length(HEADER_SIZE),
     _type(StructType::Unknown),
     _version(0),
-    _priority(StructPriority::Unknown),
     _valid(0),
     _securityMethod(StructSecurityMethod::None),
     _crc(0x0)
 {
 }
 
-CertStructHeader::CertStructHeader(StructPriority priority, StructType type, u_int16_t structLength) :
+CertStructHeader::CertStructHeader(BaseHeader::StructPriority priority, StructType type, u_int16_t structLength) :
+    BaseHeader(priority),
     _length(HEADER_SIZE + structLength),
     _type(type),
     _version(0),
-    _priority(priority),
     _valid(0b10),
     _securityMethod(StructSecurityMethod::None),
     _crc(0x0)
@@ -77,6 +77,27 @@ CertStructHeader::CertStructHeader(StructPriority priority, StructType type, u_i
         default:
             _securityMethod = StructSecurityMethod::None;
     }
+}
+
+BaseHeader::StructPriority CertStructHeader::GetPriorityNvidiaSignedOem(StructType type)
+{
+    switch (type)
+    {
+        case StructType::CertificateX509:
+            return BaseHeader::StructPriority::Vendor;
+        case StructType::CacertMetadata:
+            return BaseHeader::StructPriority::Nvidia;
+        case StructType::Signature:
+            return BaseHeader::StructPriority::Nvidia;
+        default:
+            return BaseHeader::StructPriority::Unknown;
+    }
+}
+
+bool CertStructHeader::ValidateNvidiaSignedOemPriority()
+{
+    BaseHeader::StructPriority priorityToCheck = GetPriorityNvidiaSignedOem(_type);
+    return priorityToCheck == _priority;
 }
 
 vector<u_int8_t> CertStructHeader::Serialize()
@@ -104,7 +125,7 @@ bool CertStructHeader::Deserialize(vector<u_int8_t>::const_iterator begin, vecto
     }
 
     _version = (*begin & 0x0F);
-    _priority = CertStructHeader::StructPriority((*begin >> 4) & 0x03);
+    _priority = BaseHeader::StructPriority((*begin >> 4) & 0x03);
     _valid = ((*begin >> 6) & 0x03);
 
     begin++;
@@ -127,28 +148,7 @@ bool CertStructHeader::Deserialize(vector<u_int8_t> header)
     return Deserialize(header.cbegin(), header.cend());
 }
 
-CertStructHeader::StructPriority CertStructHeader::ToStructPriority(string priority)
-{
-    mft_utils::to_lowercase(priority);
-    if (priority == "user")
-    {
-        return StructPriority::User;
-    }
-    else if (priority == "vendor" || priority == "oem")
-    {
-        return StructPriority::Vendor;
-    }
-    else if (priority == "nvidia")
-    {
-        return StructPriority::Nvidia;
-    }
-    else
-    {
-        return StructPriority::Unknown;
-    }
-}
-
-CertContainerItem::CertContainerItem(CertStructHeader::StructPriority priority, shared_ptr<CertStructBase> data) :
+CertContainerItem::CertContainerItem(BaseHeader::StructPriority priority, shared_ptr<CertStructBase> data) :
     _header(priority, data->GetType(), data->GetSize()), _metadata(data)
 {
 }

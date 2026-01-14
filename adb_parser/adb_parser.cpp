@@ -1311,7 +1311,7 @@ uint64_t _Adb_impl<eval_expr, T_OFFSET>::_trvrs_calc_cond_num_elements(AdbInstan
                   ExceptionHolder::WARN_EXCEPTION, false);
             }
         }
-        else
+        else if (buffer_size > 0)
         {
             // Calculate maximum number of elements that fit in the remaining buffer
             T_OFFSET current_bit_offset = instance->offset + offset_shift;
@@ -1338,15 +1338,16 @@ string _Adb_impl<eval_expr, T_OFFSET>::_trvrs_get_element_array_suffix(uint64_t 
 {
     string array_index = "";
     string array_suffix = "";
+    uint32_t low_bound = instance->fieldDesc ? instance->fieldDesc->lowBound : 0;
 
     if (instance->fieldDesc && instance->fieldDesc->array_type == AdbField::ArrayType::dynamic)
     {
-        array_index = to_string(i);
+        array_index = to_string(i + low_bound);
     }
     else if (instance->fieldDesc && instance->fieldDesc->array_type >= AdbField::ArrayType::definite &&
              instance->fieldDesc->array_type < AdbField::ArrayType::dynamic)
     {
-        array_index = to_string(instance->arrIdx);
+        array_index = to_string(instance->arrIdx + low_bound);
     }
     if (!array_index.empty())
     {
@@ -1364,7 +1365,7 @@ void _Adb_impl<eval_expr, T_OFFSET>::_trvrs_handle_enums(
   const string& element_path,
   T_OFFSET element_offset_shift,
   const uint8_t* buffer,
-  void (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
+  bool (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
   void* context)
 {
     T_OFFSET field_offset = instance->offset + element_offset_shift;
@@ -1403,15 +1404,36 @@ void _Adb_impl<eval_expr, T_OFFSET>::traverse_layout(
   T_OFFSET offset_shift,
   const uint8_t* buffer,
   uint32_t buffer_size, // TODO: validate correct type size
-  void (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
+  bool (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
   void* context,
   bool evaluate_conditions,
   bool handle_enums,
   bool full_path,
-  bool allow_multiple_exceptions,
-  string suffix)
+  bool allow_multiple_exceptions)
 {
-    if (!instance || !func)
+    string suffix = "";
+    bool stop = false;
+    traverse_layout(instance, path, offset_shift, buffer, buffer_size, func, context, suffix, stop, evaluate_conditions,
+                    handle_enums, full_path, allow_multiple_exceptions);
+}
+
+template<bool eval_expr, typename T_OFFSET>
+void _Adb_impl<eval_expr, T_OFFSET>::traverse_layout(
+  AdbInstance* instance,
+  const string& path,
+  T_OFFSET offset_shift,
+  const uint8_t* buffer,
+  uint32_t buffer_size, // TODO: validate correct type size
+  bool (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
+  void* context,
+  string suffix,
+  bool& stop,
+  bool evaluate_conditions,
+  bool handle_enums,
+  bool full_path,
+  bool allow_multiple_exceptions)
+{
+    if (stop || !instance || !func)
     {
         return;
     }
@@ -1449,6 +1471,11 @@ void _Adb_impl<eval_expr, T_OFFSET>::traverse_layout(
     string previous_suffix = suffix;
     for (uint64_t i = 0; i < num_elements; i++)
     {
+        if (stop)
+        {
+            return;
+        }
+
         string path_suffix = _trvrs_get_element_array_suffix(i, instance, full_path);
         string element_path = full_path ? path + path_suffix : path;
         if (!full_path && !path_suffix.empty())
@@ -1486,28 +1513,37 @@ void _Adb_impl<eval_expr, T_OFFSET>::traverse_layout(
                       ExceptionHolder::WARN_EXCEPTION, false);
                     for (auto sub_item : instance->subItems)
                     {
+                        if (stop)
+                        {
+                            return;
+                        }
                         string sub_item_path =
                           full_path ? element_path + sep + sub_item->fieldDesc->name : sub_item->fieldDesc->name;
                         traverse_layout(sub_item, sub_item_path, element_offset_shift, buffer, buffer_size, func,
-                                        context, evaluate_conditions, handle_enums, full_path,
-                                        allow_multiple_exceptions, suffix);
+                                        context, suffix, stop, evaluate_conditions, handle_enums, full_path,
+                                        allow_multiple_exceptions);
                     }
                     return;
                 }
                 string selected_node_path =
                   full_path ? element_path + sep + selectedNode->fieldDesc->name : selectedNode->fieldDesc->name;
                 traverse_layout(selectedNode, selected_node_path, element_offset_shift, buffer, buffer_size, func,
-                                context, evaluate_conditions, handle_enums, full_path, allow_multiple_exceptions,
-                                suffix);
+                                context, suffix, stop, evaluate_conditions, handle_enums, full_path,
+                                allow_multiple_exceptions);
             }
             else
             {
                 for (auto sub_item : instance->subItems)
                 {
+                    if (stop)
+                    {
+                        return;
+                    }
                     string sub_item_path =
                       full_path ? element_path + sep + sub_item->fieldDesc->name : sub_item->fieldDesc->name;
                     traverse_layout(sub_item, sub_item_path, element_offset_shift, buffer, buffer_size, func, context,
-                                    evaluate_conditions, handle_enums, full_path, allow_multiple_exceptions, suffix);
+                                    suffix, stop, evaluate_conditions, handle_enums, full_path,
+                                    allow_multiple_exceptions);
                 }
             }
         }
@@ -1545,7 +1581,7 @@ void _Adb_impl<eval_expr, T_OFFSET>::traverse_layout(
                     element_path += suffix;
                 }
             }
-            func(element_path, field_offset, value, instance, context);
+            stop = func(element_path, field_offset, value, instance, context);
         }
     }
 }

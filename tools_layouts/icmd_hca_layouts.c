@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2025-07-08 11:28:44"
+         *** This file was generated at "2026-01-07 11:57:14"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils
          ***/
@@ -773,17 +773,20 @@ void icmd_hca_icmd_hca_Nodes_print(const union icmd_hca_icmd_hca_Nodes *ptr_stru
 	fprintf(fd, "======== icmd_hca_icmd_hca_Nodes ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "icmd_mh_sync_out:\n");
-	icmd_hca_icmd_mh_sync_out_print(&(ptr_struct->icmd_mh_sync_out), fd, indent_level + 1);
+	fprintf(fd, "icmd_query_cap_general:\n");
+	icmd_hca_icmd_query_cap_general_print(&(ptr_struct->icmd_query_cap_general), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "icmd_query_cap_in:\n");
 	icmd_hca_icmd_query_cap_in_print(&(ptr_struct->icmd_query_cap_in), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "icmd_query_diagnostic_cntrs_in:\n");
-	icmd_hca_icmd_query_diagnostic_cntrs_in_print(&(ptr_struct->icmd_query_diagnostic_cntrs_in), fd, indent_level + 1);
+	fprintf(fd, "icmd_query_diagnostic_params_out:\n");
+	icmd_hca_icmd_query_diagnostic_params_out_print(&(ptr_struct->icmd_query_diagnostic_params_out), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "debug_cap:\n");
 	icmd_hca_debug_cap_print(&(ptr_struct->debug_cap), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "icmd_query_diagnostic_cntrs_in:\n");
+	icmd_hca_icmd_query_diagnostic_cntrs_in_print(&(ptr_struct->icmd_query_diagnostic_cntrs_in), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "icmd_set_diagnostic_params_in:\n");
 	icmd_hca_icmd_set_diagnostic_params_in_print(&(ptr_struct->icmd_set_diagnostic_params_in), fd, indent_level + 1);
@@ -791,11 +794,8 @@ void icmd_hca_icmd_hca_Nodes_print(const union icmd_hca_icmd_hca_Nodes *ptr_stru
 	fprintf(fd, "icmd_mh_sync_in:\n");
 	icmd_hca_icmd_mh_sync_in_print(&(ptr_struct->icmd_mh_sync_in), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "icmd_query_diagnostic_params_out:\n");
-	icmd_hca_icmd_query_diagnostic_params_out_print(&(ptr_struct->icmd_query_diagnostic_params_out), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "icmd_query_cap_general:\n");
-	icmd_hca_icmd_query_cap_general_print(&(ptr_struct->icmd_query_cap_general), fd, indent_level + 1);
+	fprintf(fd, "icmd_mh_sync_out:\n");
+	icmd_hca_icmd_mh_sync_out_print(&(ptr_struct->icmd_mh_sync_out), fd, indent_level + 1);
 }
 
 unsigned int icmd_hca_icmd_hca_Nodes_size(void)

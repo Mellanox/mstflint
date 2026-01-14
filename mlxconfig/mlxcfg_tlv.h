@@ -81,20 +81,20 @@ class TLVConf
 private:
     bool _isNameFound, _isIdFound, _isSizeFound, _isCapFound, _isTargetFound, _isClassFound, _isVersion,
       _isDescriptionFound, _isMlxconfigNameFound;
-    std::shared_ptr<Param> getParamByName(std::string n);
-    void pack(u_int8_t* buff);
+    std::shared_ptr<Param> getParamByName(std::string n, QueryType qt);
+    void pack(u_int8_t* buff, QueryType qt);
     u_int32_t getGlobalTypeBe();
     u_int32_t getPhysicalPortTypeBe();
     u_int32_t getPerHostFunctionTypeBe();
     u_int32_t getPerHostTypeBe();
     u_int32_t getModuleTypeBe();
     u_int32_t getTlvTypeBe();
-    void mnva(mfile* mf,
-              u_int8_t* buff,
-              u_int16_t len,
-              u_int32_t type,
-              reg_access_method_t method,
-              QueryType qT = QueryNext);
+    bool mnvda(mfile* mf,
+               u_int8_t* buff,
+               u_int16_t len,
+               u_int32_t type,
+               reg_access_method_t method,
+               QueryType qT = QueryNext);
     static TLVTarget str2TLVTarget(char* s);
     static TLVClass str2TLVClass(char* s);
 
@@ -107,10 +107,18 @@ public:
     TLVClass _tlvClass;
     u_int32_t _version;
     std::string _description;
-    std::vector<std::shared_ptr<Param>> _params;
+    std::vector<std::shared_ptr<Param>> _paramsDefault;
+    std::vector<std::shared_ptr<Param>> _paramsCurrent;
+    std::vector<std::shared_ptr<Param>> _paramsNext;
+    bool _paramsDefaultQueried;
+    bool _paramsCurrentQueried;
+    bool _paramsNextQueried;
     std::string _mlxconfigName;
     u_int32_t _port;
     int32_t _module;
+    u_int8_t _hostId;
+    u_int8_t _pfIndex;
+    bool _isHostIdValid;
     bool _alreadyQueried;
     map<string, string> _attrs;
     vector<u_int8_t> _buff;
@@ -120,46 +128,58 @@ public:
     TLVConf(int columnsCount, char** dataRow, char** headerRow);
     ~TLVConf();
     bool isMlxconfigSupported();
-    void getView(TLVConfView& tlvConfView, mfile* mf);
+    std::vector<std::shared_ptr<Param>>* getParams(QueryType qt);
+    void invalidateParamsQueried();
+    bool* getParamsQueried(QueryType qt);
+    void getView(TLVConfView& tlvConfView, QueryType qt);
     bool isFWSupported(mfile* mf, bool isWriteOperation);
-    std::shared_ptr<Param> getValidBitParam(std::string n);
-    bool checkParamValidBit(std::shared_ptr<Param> p);
+    std::shared_ptr<Param> getValidBitParam(std::string n, QueryType qt);
+    bool checkParamValidBit(std::shared_ptr<Param> p, QueryType qt);
     std::vector<std::pair<ParamView, std::string>> query(mfile* mf, QueryType qT);
-    void updateParamByMlxconfigName(std::string param, std::string val, mfile* mf);
-    void updateParamByMlxconfigName(std::string param, std::string val, u_int32_t index);
-    void updateParamByName(string param, string val);
-    void updateParamByName(string paramName, vector<string> vals);
-    u_int32_t getParamValueByName(std::string n);
-    std::shared_ptr<Param> findParamByMlxconfigName(std::string mlxconfigName);
-    std::shared_ptr<Param> findParamByMlxconfigNamePortModule(std::string mlxconfigName, u_int32_t port, int32_t module);
-    std::shared_ptr<Param> findParamByName(std::string n);
-    void CheckModuleAndPortMatchClass(int32_t module, u_int32_t port, std::string mlxconfigName);
+    void updateParamByMlxconfigName(std::string param, std::string val, mfile* mf, QueryType qt);
+    void updateParamByMlxconfigName(std::string param, std::string val, u_int32_t index, QueryType qt);
+    void updateParamByName(string param, string val, QueryType qt);
+    void updateParamByName(string paramName, vector<string> vals, QueryType qt);
+    u_int32_t getParamValueByName(std::string n, QueryType qt);
+    std::shared_ptr<Param> findParamByMlxconfigName(std::string mlxconfigName, QueryType qt);
+    std::shared_ptr<Param>
+      findParamByMlxconfigNamePortModule(std::string mlxconfigName, u_int32_t port, int32_t tlvModule, QueryType qt);
+    std::shared_ptr<Param> findParamByName(std::string n, QueryType qt);
+    void CheckModuleAndPortMatchClass(int32_t tlvModule, u_int32_t port, std::string mlxconfigName);
     void getExprVarsValues(std::vector<std::string>&,
                            std::vector<std::shared_ptr<TLVConf>>,
                            std::map<std::string, u_int32_t>&,
-                           std::string);
-    void evalTempVars(std::shared_ptr<Param>, std::vector<std::shared_ptr<TLVConf>>, std::map<std::string, u_int32_t>&);
+                           std::string,
+                           QueryType qt);
+    void evalTempVars(std::shared_ptr<Param>,
+                      std::vector<std::shared_ptr<TLVConf>>,
+                      std::map<std::string, u_int32_t>&,
+                      QueryType qt);
     u_int32_t evalRule(std::shared_ptr<Param>,
                        std::string,
                        std::vector<std::shared_ptr<TLVConf>>&,
-                       std::map<std::string, u_int32_t>&);
-    void checkRules(std::vector<std::shared_ptr<TLVConf>>);
+                       std::map<std::string, u_int32_t>&,
+                       QueryType qt);
+    void checkRules(std::vector<std::shared_ptr<TLVConf>>, QueryType qt);
     void setOnDevice(mfile* mf);
     void getRuleTLVs(std::set<std::string>& result);
-    void parseParamValue(std::string, std::string, u_int32_t&, std::string&, u_int32_t index);
-    void unpack(u_int8_t* buff);
+    void parseParamValue(std::string, std::string, u_int32_t&, std::string&, u_int32_t index, QueryType qt);
+    void unpack(u_int8_t* buff, QueryType qt);
     void genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, bool defaultAttrVal, bool confFormat = false);
     void genRaw(string& raw);
-    void genBin(vector<u_int32_t>& buff, bool withHeader = true);
+    void genBin(vector<u_int32_t>& buff, bool withHeader = true, QueryType qt = QueryNext);
     bool isAStringParam(string paramName);
     bool isPortTargetClass();
     bool isModuleTargetClass();
+    bool isHostTargetClass();
+    // Create a deep copy of TLVConf, including deep copies of parameter vectors
+    std::shared_ptr<TLVConf> cloneDeep() const;
     static int getMaxPort(mfile* mf);
     static int getMaxModule();
     void setAttr(string attr, string val);
     void invalidate(mfile* mf);
     static void unpackTLVType(TLVClass tlvClass, tools_open_tlv_type& type, u_int32_t& id);
-    bool areParamsEqual(const TLVConf& rhsTLV);
+    bool areParamsEqual(TLVConf& rhsTLV, QueryType qt);
 };
 
 int PriorityStrToNum(string priority);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -35,7 +35,7 @@
 class CACertMetaData : public CertStructBase
 {
 public:
-    CACertMetaData(u_int32_t certUUID[4], u_int32_t keypairUUID[4]);
+    CACertMetaData(u_int32_t certUUID[4], u_int32_t keypairUUID[4], u_int8_t keepSig);
     CACertMetaData(){};
     virtual ~CACertMetaData() {}
     vector<u_int8_t> Serialize() override;
@@ -55,6 +55,7 @@ private:
     vector<u_int8_t> _keypairUUID;
     u_int8_t _targetingType;
     u_int8_t _dpaRotEn;
+   u_int8_t _keep_sig;
 };
 
 class CACertRemove : public CertStructBase

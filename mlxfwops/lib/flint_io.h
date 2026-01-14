@@ -81,6 +81,9 @@ typedef struct ext_flash_attr
     u_int8_t driver_strength_support;
     u_int8_t dummy_cycles_support;
 
+    u_int8_t series_code_support;
+    MacronixSeriesCode series_code;
+
     u_int8_t cmp;
     MfError mf_get_cmp_rc;
 
@@ -509,6 +512,10 @@ public:
     virtual bool set_flash_working_mode(int mode = FBase::Fwm_Default);
     virtual bool set_flash_utilization(bool, int);
     bool is_flash_write_protected();
+    bool disable_flash_write_protection_if_required(); // if the protection is from the top, no disable is needed
+    bool check_and_disable_flash_wp_if_required();
+    bool backup_write_protect_info(write_protect_info_backup_t& protect_info_backup);
+    bool restore_write_protect_info(write_protect_info_backup_t& protect_info_backup);
     static void deal_with_signal();
 
     mfile* getMfileObj() { return mf_get_mfile(_mfl); }
@@ -527,6 +534,7 @@ public:
 #define SRWD_PARAM "SRWD"
 #define DRIVER_STRENGTH_PARAM "DriverStrength"
 #define DUMMY_CYCLES_PARAM "DummyCycles"
+#define SERIES_CODE_PARAM "SeriesCode"
 #define FLASH_NAME "Flash"
 #define WRITE_PROTECT "WriteProtected"
 #define WP_TOP_STR "Top"

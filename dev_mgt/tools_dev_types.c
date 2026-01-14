@@ -49,6 +49,12 @@
 #include "tools_dev_types.h"
 #include "mflash/mflash_types.h"
 #include "mtcr_ul/mtcr_ul_com.h"
+#ifdef CABLES_SUPPORT
+#include "mtcr_ul/mtcr_cables.h"
+#endif
+
+/* Forward declaration to ensure read_device_id is visible */
+int read_device_id(mfile* mf, u_int32_t* device_id);
 
 struct device_info {
     dm_dev_id_t      dm_id;
@@ -446,6 +452,25 @@ static struct device_info g_devs_info[] = {
         DM_SWITCH                                             /* dev_type */
     },
     {
+        DeviceSpectrum5,                                      /* dm_id */
+        0x270,                                                /* hw_dev_id */
+        -1,                                                   /* hw_rev_id */
+        53122,                                                /* sw_dev_id */
+        "Spectrum5",                                          /* name */
+        515,                                                  /* port_num NEED_CHECK */
+        DM_SWITCH                                             /* dev_type */
+    },
+
+    {
+        DeviceSpectrum6,                                      /* dm_id */
+        0x274,                                                /* hw_dev_id */
+        -1,                                                   /* hw_rev_id */
+        53124,                                                /* sw_dev_id */
+        "Spectrum6",                                          /* name */
+        516,                                                  /* port_num NEED_CHECK */
+        DM_SWITCH                                             /* dev_type */
+    },
+    {
         DeviceQuantum2,                                      /* dm_id */
         0x257,                                               /* hw_dev_id */
         -1,                                                  /* hw_rev_id */
@@ -469,6 +494,15 @@ static struct device_info g_devs_info[] = {
         -1,                                               /* hw_rev_id */
         10496,                                            /* sw_dev_id */
         "GB100",                                          /* name */
+        128,                                              /* port_num NEED_CHECK */
+        DM_SWITCH                                         /* dev_type */
+    },
+    {
+        DeviceGR100,                                      /* dm_id */
+        0x3000,                                           /* hw_dev_id */
+        -1,                                               /* hw_rev_id */
+        12288,                                            /* sw_dev_id */
+        "GR100",                                          /* name */
         128,                                              /* port_num NEED_CHECK */
         DM_SWITCH                                         /* dev_type */
     },
@@ -956,7 +990,7 @@ int dm_is_cx8(dm_dev_id_t type)
 
 int dm_is_cx9(dm_dev_id_t type)
 {
-    return (type == DeviceConnectX9);
+    return (type == DeviceConnectX9 || type == DeviceConnectX9_Pure_PCIe_Switch);
 }
 
 int dm_is_new_gen_switch(dm_dev_id_t type)
@@ -969,7 +1003,7 @@ int dm_dev_is_raven_family_switch(dm_dev_id_t type)
     return (dm_dev_is_switch(type) &&
             (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceQuantum3 || type == DeviceGB100 ||
              type == DeviceGR100 ||
-             type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceSpectrum4));
+             type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceSpectrum4 || type == DeviceSpectrum5 || type == DeviceSpectrum6));
 }
 
 int dm_dev_is_ib_switch(dm_dev_id_t type)
@@ -982,7 +1016,7 @@ int dm_dev_is_ib_switch(dm_dev_id_t type)
 int dm_dev_is_eth_switch(dm_dev_id_t type)
 {
     return (dm_dev_is_switch(type) &&
-            (type == DeviceSpectrum || type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceSpectrum4));
+            (type == DeviceSpectrum || type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceSpectrum4 || type == DeviceSpectrum5 || type == DeviceSpectrum6));
 }
 
 int dm_dev_is_fs3(dm_dev_id_t type)
@@ -996,14 +1030,19 @@ int dm_dev_is_fs4(dm_dev_id_t type)
     return type == DeviceConnectX5 || type == DeviceConnectX6 || type == DeviceConnectX6DX ||
            type == DeviceConnectX6LX || type == DeviceConnectX7 || type == DeviceBlueField ||
            type == DeviceBlueField2 || type == DeviceBlueField3 || type == DeviceQuantum || type == DeviceQuantum2 ||
-           type == DeviceSpectrum4 || type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceGearBox ||
+           type == DeviceSpectrum5 || type == DeviceSpectrum4 || type == DeviceSpectrum2 || type == DeviceSpectrum3 || type == DeviceGearBox ||
            type == DeviceGearBoxManager;
 }
 
 int dm_dev_is_fs5(dm_dev_id_t type)
 {
     return type == DeviceConnectX8 || type == DeviceConnectX8_Pure_PCIe_Switch || type == DeviceQuantum3 ||
-           type == DeviceBlueField4 || type == DeviceConnectX9_Pure_PCIe_Switch;
+           type == DeviceBlueField4 || type == DeviceConnectX9 || type == DeviceConnectX9_Pure_PCIe_Switch;
+}
+
+int dm_dev_is_fs6(dm_dev_id_t type)
+{
+    return type == DeviceSpectrum6;
 }
 
 int dm_is_ib_access(mfile* mf)

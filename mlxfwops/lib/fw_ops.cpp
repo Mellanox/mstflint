@@ -1501,8 +1501,9 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"ConnectX-6LX", CX6LX_HW_ID, CT_CONNECTX6LX, CFT_HCA, 0, {4127, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-7", CX7_HW_ID, CT_CONNECTX7, CFT_HCA, 0, {4129, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-8", CX8_HW_ID, CT_CONNECTX8, CFT_HCA, 0, {4131, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"ConnectX-8 Pure PCIe Switch", CX8_PURE_PCIE_SWITCH_HW_ID, CT_CONNECTX8_PURE_PCIE_SWITCH, CFT_SWITCH, 0, {6525, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"ConnectX-8 Pure PCIe Switch", CX8_PURE_PCIE_SWITCH_HW_ID, CT_CONNECTX8_PURE_PCIE_SWITCH, CFT_HCA, 0, {6525, 0}, {{UNKNOWN_BIN, {0}}}},
   {"ConnectX-9", CX9_HW_ID, CT_CONNECTX9, CFT_HCA, 0, {4133, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"ConnectX-9 Pure PCIe Switch", CX9_PURE_PCIE_SWITCH_HW_ID, CT_CONNECTX9_PURE_PCIE_SWITCH, CFT_HCA, 0, {6526, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField", BF_HW_ID, CT_BLUEFIELD, CFT_HCA, 0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField2", BF2_HW_ID, CT_BLUEFIELD2, CFT_HCA, 0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
   {"BlueField3", BF3_HW_ID, CT_BLUEFIELD3, CFT_HCA, 0, {41690, 41691, 41692, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1515,6 +1516,8 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"Quantum2", QUANTUM2_HW_ID, CT_QUANTUM2, CFT_SWITCH, 0, {54002, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Quantum3", QUANTUM3_HW_ID, CT_QUANTUM3, CFT_SWITCH, 0, {54004, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum4", SPECTRUM4_HW_ID, CT_SPECTRUM4, CFT_SWITCH, 0, {53120, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"Spectrum5", SPECTRUM5_HW_ID, CT_SPECTRUM5, CFT_SWITCH, 0, {53122, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"Spectrum6", SPECTRUM6_HW_ID, CT_SPECTRUM6, CFT_SWITCH, 0, {53124, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Gearbox", GEARBOX_HW_ID, CT_GEARBOX, CFT_GEARBOX, 0, {0, 0}, {{UNKNOWN_BIN, {0}}}},
   {"GearboxManager", GB_MANAGER_HW_ID, CT_GEARBOX_MGR, CFT_GEARBOX, 0, {0, 0}, {{UNKNOWN_BIN, {0}}}},
   {"AbirGearbox", ABIR_GB_HW_ID, CT_ABIR_GEARBOX, CFT_GEARBOX, 0, {0, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1537,6 +1540,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
   {"ConnectX-8", CX8_HW_ID, 0x00},
   {"ConnectX-8 Pure PCIe Switch", CX8_PURE_PCIE_SWITCH_HW_ID, 0x00},
   {"ConnectX-9", CX9_HW_ID, 0x00},
+  {"ConnectX-9 Pure PCIe Switch", CX9_PURE_PCIE_SWITCH_HW_ID, 0x00},
   {"BlueField", BF_HW_ID, 0x00},
   {"BlueField2", BF2_HW_ID, 0x00},
   {"BlueField3", BF3_HW_ID, 0x00},
@@ -1551,6 +1555,8 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
   {"Quantum2 A0", QUANTUM2_HW_ID, 0x00},
   {"Quantum3 A0", QUANTUM3_HW_ID, 0x00},
   {"Spectrum4 A0", SPECTRUM4_HW_ID, 0x00},
+  {"Spectrum5 A0", SPECTRUM5_HW_ID, 0x00},
+  {"Spectrum6 A0", SPECTRUM6_HW_ID, 0x00},
   {(char*)NULL, (u_int32_t)0, (u_int8_t)0x00}, // zero device ID terminator
 };
 
@@ -2193,9 +2199,9 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
              (chipType == CT_CONNECTX5) || (chipType == CT_CONNECTX6) || (chipType == CT_CONNECTX6DX) ||
              (chipType == CT_CONNECTX6LX) || (chipType == CT_SPECTRUM) || (chipType == CT_SPECTRUM2) ||
              (chipType == CT_SPECTRUM3) || (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) ||
-             (chipType == CT_QUANTUM3) || (chipType == CT_SPECTRUM4) || (chipType == CT_BLUEFIELD) ||
+             (chipType == CT_QUANTUM3) || (chipType == CT_SPECTRUM4) || (chipType == CT_SPECTRUM5) || (chipType == CT_SPECTRUM6) || (chipType == CT_BLUEFIELD) ||
              (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3) || (chipType == CT_CONNECTX8) ||
-             (chipType == CT_CONNECTX8_PURE_PCIE_SWITCH) || (chipType == CT_BLUEFIELD4);
+             (chipType == CT_CONNECTX8_PURE_PCIE_SWITCH) ||  (chipType == CT_CONNECTX9) || (chipType == CT_CONNECTX9_PURE_PCIE_SWITCH) ||(chipType == CT_BLUEFIELD4);
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN)
     {
@@ -2465,6 +2471,60 @@ bool FwOperations::FwBurnAdvanced(FwOperations* imageOps,
     return errmsg("FwBurnAdvanced not supported.");
 }
 
+bool FwOperations::checkAndDisableFlashWpIfRequired()
+{
+    u_int8_t fwType = this->FwType();
+    if (fwType != FIT_FS5)
+    {
+        DPRINTF(("FwOperations::checkAndDisableFlashWpIfRequired not supported for fw type %d\n", fwType));
+        return true; // only supported for FS5 and FS6
+    }
+
+    DPRINTF(("FwOperations::checkAndDisableFlashWpIfRequired\n"));
+    bool rc = true;
+    if (_ioAccess->is_flash())
+    {
+        if (((Flash*)_ioAccess)->get_ignore_cache_replacment())
+        {
+            DPRINTF(("check and disable flash wp if from bottom for selected flashes\n"));
+            Flash* flash = (Flash*)_ioAccess;
+            rc = flash->backup_write_protect_info(_protect_info_backup);
+            if (!rc)
+            {
+                return errmsg("Failed to backup write protect information");
+            }
+            rc = flash->check_and_disable_flash_wp_if_required();
+        }
+    }
+    return rc;
+}
+
+bool FwOperations::restoreWriteProtectInfo()
+{
+    DPRINTF(("FwOperations::restoreWriteProtectInfo\n"));
+    u_int8_t fwType = this->FwType();
+    if (fwType != FIT_FS5)
+    {
+        DPRINTF(("FwOperations::restoreWriteProtectInfo not supported for fw type %d\n", fwType));
+        return true; // only supported for FS5 and FS6
+    }
+
+    int rc = true;
+    if (_ioAccess->is_flash())
+    {
+        if (((Flash*)_ioAccess)->get_ignore_cache_replacment())
+        {
+            if (_protect_info_backup.backup_success)
+            {
+                DPRINTF(("restoring write protect info..\n"));
+                Flash* flash = (Flash*)_ioAccess;
+                rc = flash->restore_write_protect_info(_protect_info_backup);
+            }
+        }
+    }
+    return rc;
+}
+
 bool FwOperations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
 {
     (void)critical;
@@ -2622,14 +2682,18 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
              hwDevId == CX7_HW_ID || hwDevId == BF_HW_ID || hwDevId == BF2_HW_ID || hwDevId == BF3_HW_ID ||
              hwDevId == BF4_HW_ID || hwDevId == QUANTUM_HW_ID || hwDevId == QUANTUM2_HW_ID ||
              hwDevId == SPECTRUM4_HW_ID || hwDevId == SPECTRUM3_HW_ID || hwDevId == SPECTRUM2_HW_ID ||
-             hwDevId == GEARBOX_HW_ID || hwDevId == GB_MANAGER_HW_ID || hwDevId == ABIR_GB_HW_ID)
+             hwDevId == SPECTRUM5_HW_ID || hwDevId == GEARBOX_HW_ID || hwDevId == GB_MANAGER_HW_ID || hwDevId == ABIR_GB_HW_ID)
     {
         return FS_FS4_GEN;
     }
     else if ((hwDevId == QUANTUM3_HW_ID) || (hwDevId == CX8_HW_ID) || (hwDevId == CX8_PURE_PCIE_SWITCH_HW_ID) ||
-             (hwDevId == BF4_HW_ID) || (hwDevId == ARCUSE_HW_ID) || (hwDevId == CX9_HW_ID))
+             (hwDevId == BF4_HW_ID) || (hwDevId == ARCUSE_HW_ID) || (hwDevId == CX9_HW_ID) || (hwDevId == CX9_PURE_PCIE_SWITCH_HW_ID))
     {
         return FS_FS5_GEN;
+    }
+    else if ((hwDevId == SPECTRUM6_HW_ID))
+    {
+        return FS_FS6_GEN;
     }
     return FS_UNKNOWN_IMG;
 }
@@ -2939,6 +3003,8 @@ bool FwOperations::IsExtendedGuidNumSupported()
     switch (_fwImgInfo.supportedHwId[0])
     {
         case SPECTRUM4_HW_ID:
+        case SPECTRUM5_HW_ID:
+        case SPECTRUM6_HW_ID:
         case QUANTUM3_HW_ID:
             isSupported = true;
             break;
@@ -3003,13 +3069,20 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
         case CT_BLUEFIELD3:
         case CT_BLUEFIELD4:
         case CT_SPECTRUM4:
+        case CT_SPECTRUM5:
             lifeCycleAddress = 0xf0000;
             firstBit = 4;
             bitLen = 2;
             break;
+        case CT_SPECTRUM6:
+            lifeCycleAddress = 0xf0000;
+            firstBit = 16;
+            bitLen = 5;
+            break;
         case CT_CONNECTX8:
         case CT_CONNECTX9:
         case CT_CONNECTX8_PURE_PCIE_SWITCH:
+        case CT_CONNECTX9_PURE_PCIE_SWITCH:
         case CT_QUANTUM3:
         case CT_ARCUSE:
             lifeCycleAddress = 0xf0000;
@@ -3060,6 +3133,9 @@ int CRSpaceRegisters::getGlobalImageStatus()
             global_image_status_address = 0xE3044;
             break;
         case CT_CONNECTX8:
+        case CT_CONNECTX8_PURE_PCIE_SWITCH:
+        case CT_CONNECTX9:
+        case CT_CONNECTX9_PURE_PCIE_SWITCH:
             global_image_status_address = 0x55084;
             break;
         case CT_QUANTUM2:
@@ -3067,7 +3143,11 @@ int CRSpaceRegisters::getGlobalImageStatus()
             global_image_status_address = 0x152080;
             break;
         case CT_SPECTRUM4:
+        case CT_SPECTRUM5:
             global_image_status_address = 0xa1844;
+            break;
+        case CT_SPECTRUM6:
+            global_image_status_address = 0x155004;
             break;
         default:
             throw logic_error("-E- global_image_status query is not implemented for the current device.");
@@ -3097,6 +3177,8 @@ u_int32_t CRSpaceRegisters::getSecurityVersion()
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf4338), 4, 8);
             break;
         case CT_SPECTRUM4:
+        case CT_SPECTRUM5:
+        case CT_SPECTRUM6:
             rollbackMSB = getRegister(0xf4348);
             rollbackLSB = getRegister(0xf434c);
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf4338), 0, 8);

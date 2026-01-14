@@ -98,6 +98,7 @@ public:
     bool _write;
     bool _read;
     bool gradeScanPerLane;
+    bool laneSpecified;
     bool autoCsvName;
     bool _showMultiPortInfo;
     bool _showMultiPortModuleInfo;
@@ -142,6 +143,18 @@ public:
     std::vector<std::string> _ptysSpeeds;
     std::vector<string> _amberPagesStr;
     u_int32_t _lane;
+    u_int32_t _bkvGroupId;
+    std::vector<std::string> _bkvRates;
+    std::vector<std::string> _bkvRoles;
+    std::vector<std::string> _bkvModeBRoles;
+    u_int32_t _bkvEntry;
+    u_int32_t _bkvAddress;
+    u_int32_t _bkvWdata;
+    u_int32_t _bkvWmask;
+    bool _bkvEntrySpecified;
+    bool _bkvAddressSpecified;
+    bool _bkvWdataSpecified;
+    bool _bkvWmaskSpecified;
     u_int32_t _gvmiAddress;
     vector<string> _bytesToWrite;
     int _page;
@@ -187,6 +200,9 @@ public:
     vector<string> parameters;
 
     int planeIndex;
+    bool _forceTxAllowed;
+    bool _skipPowerGoodCheck;
+    string _sysfsPath;
 };
 
 #endif /* MLXLINK_USER_INPUT_H */

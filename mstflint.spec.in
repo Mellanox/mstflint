@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.34.0}
+%{!?version: %define version 4.35.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -8,6 +8,7 @@
 %{!?enablecs: %define enablecs 0}
 %{!?nopenssl: %define nopenssl 0}
 %{!?enablexml2: %define enablexml2 0}
+%{!?enabledpa: %define enabledpa 0}
 %{!?enablefwmgr: %define enablefwmgr 0}
 %{!?enableadbgenerictools: %define enableadbgenerictools 1}
 %{!?enablecables: %define enablecables 0}
@@ -88,6 +89,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{enablecs}
     config_flags="$config_flags --enable-cs"
+%endif
+
+%if %{enabledpa}
+   config_flags="$config_flags --enable-dpa"
 %endif
 
 %if %{enablexml2}
@@ -180,8 +185,12 @@ rm -rf $RPM_BUILD_ROOT
  %{_bindir}/mstarchive
 %{CONF_DIR}/ca-bundle.crt
 %endif
+%if %{enabledpa}
+ %{_bindir}/mstdpa
+%endif
 %if %{enableadbgenerictools}
  %{_bindir}/mstreg
+ %{_bindir}/generate_pgcb_commands
  %{_bindir}/mstlink
 %endif
 
@@ -236,6 +245,10 @@ rm -rf $RPM_BUILD_ROOT
 %{mstflint_python_tools}/resourcetools/resourceparse_lib/parsers/*.py
 %{mstflint_python_tools}/resourcetools/resourceparse_lib/resource_data/*.py
 %{mstflint_python_tools}/resourcetools/resourceparse_lib/utils/*.py
+
+%if %{enableadbgenerictools}
+ %{mstflint_python_tools}/generate_pgcb_commands.py
+%endif
 
 %{_datadir}/mstflint
 %{_mandir}/man1/*

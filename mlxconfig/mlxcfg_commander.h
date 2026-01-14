@@ -50,30 +50,33 @@ class Commander
 {
 public:
     static Commander* create(std::string device,
-                             std::string dbName,
+                             std::string& dbName,
                              bool forceCreate = false,
                              Device_Type deviceType = Device_Type::HCA); // clients can force create skiping any support
                                                                          // check, and move the responsebility to the
                                                                          // client.
-    static Commander* create(mfile* mf, std::string dbName, Device_Type deviceType = Device_Type::HCA);
+    static Commander* create(mfile* mf, std::string& dbName, Device_Type deviceType = Device_Type::HCA);
     virtual void printLongDesc(FILE*) = 0;
-    virtual bool isDefaultSupported() = 0;
-    virtual bool isCurrentSupported() = 0;
+    virtual void
+      getGlobalCapabilities(bool& isDefaultSupported, bool& isCurrentSupported, bool& isPrivNvOtherHostSupported) = 0;
+    virtual void updateDBWithHostPF(u_int8_t hostId, u_int8_t pfIndex) = 0;
     virtual void
       queryParamViews(std::vector<ParamView>& paramsToQuery, bool isWriteOperation, QueryType qt = QueryNext) = 0;
-    virtual void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt = QueryNext) = 0;
+    virtual void queryAll(vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt) = 0;
     virtual void getCfg(ParamView& cfgParam, QueryType qt = QueryNext) = 0;
     virtual void setCfg(std::vector<ParamView>&, bool) = 0;
     virtual void clearSemaphore() = 0;
     virtual void invalidateCfgs() = 0;
     virtual void invalidateCfg(const std::string& configName) = 0;
+    virtual void invalidateCfg(const std::vector<ParamView>& params) = 0;
     virtual const char* loadConfigurationGetStr() = 0;
     virtual void setRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
     virtual std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
     virtual void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) = 0;
     virtual void backupCfgs(vector<BackupView>& views) = 0;
-    virtual void updateParamViewValue(ParamView&, std::string val) = 0;
+    virtual void updateParamViewValue(ParamView&, std::string val, QueryType qt) = 0;
     void setExtResourceType(bool extT) { _extResource = extT; }
+    virtual void setHostFunctionParams(u_int8_t hostId, u_int8_t pfIndex, bool valid);
     static string getDefaultDBName(bool isSwitch);
     mfile* mf() { return _mf; }
     Commander(mfile* mf) : _mf(mf), _extResource(true), _isSwitch(false){};
@@ -83,5 +86,8 @@ protected:
     mfile* _mf;
     bool _extResource;
     bool _isSwitch;
+    u_int8_t _userHostId = 0;
+    u_int8_t _userPfIndex = 0;
+    bool _userHostIdPfValid = false;
 };
 #endif /* MLXCFG_COMMANDER_H_ */

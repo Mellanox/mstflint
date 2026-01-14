@@ -3728,7 +3728,15 @@ bool Fs3Operations::RemoveWriteProtection()
     memset(&protect_info, 0, sizeof(protect_info));
     for (unsigned int i = 0; i < attr.banks_num; i++)
     {
-        int rc = mf_set_write_protect(mfl, i, &protect_info);
+        int rc = mf_disable_cmp_if_supported(mfl);
+        if (rc != MFE_OK)
+        {
+            errmsg("Failed to disable CMP for bank %d: (%s)", i, mf_err2str(rc));
+            delete[] attr.type_str;
+            return false;
+        }
+
+        rc = mf_set_write_protect(mfl, i, &protect_info);
         if (rc != MFE_OK)
         {
             errmsg("Failed to disable flash write protection: %s", mf_err2str(rc));
@@ -4563,8 +4571,21 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
     {
         report_warn("Failed to update FW boot address. Power cycle the device in order to load the new FW.\n");
     }
+
+    if (!ClearLivefishfIndication(flash_access))
+    {
+        return false;
+    }
+
     return true;
 }
+
+bool Fs3Operations::ClearLivefishfIndication(Flash*)
+{
+    DPRINTF(("Fs3Operations::ClearLivefishfIndication\n"));
+    return true;
+}
+
 bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature,
                                             const char* uuid,
                                             MlxSign::SHAType shaType,

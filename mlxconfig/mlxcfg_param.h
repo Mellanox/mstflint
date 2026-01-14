@@ -68,6 +68,9 @@ public:
 
     virtual ~ParamValue(){};
 
+    // Create a deep copy of the concrete ParamValue instance
+    virtual std::shared_ptr<ParamValue> clone() const = 0;
+
 protected:
     u_int32_t _size;
 };
@@ -78,13 +81,14 @@ public:
     UnsignedParamValue(string size) : ParamValue(size), _value(0x0) {}
     UnsignedParamValue(u_int32_t size) : ParamValue(size), _value(0x0) {}
 
-    virtual string getVal();
-    virtual void setVal(string s);
-    virtual void setVal(const u_int32_t);
-    void pack(u_int8_t* buff, u_int32_t offset);
-    void unpack(u_int8_t* buff, u_int32_t offset);
-    u_int32_t getIntVal();
-    virtual void parseValue(string, u_int32_t&, string&);
+    virtual string getVal() override;
+    virtual void setVal(string s) override;
+    virtual void setVal(const u_int32_t) override;
+    void pack(u_int8_t* buff, u_int32_t offset) override;
+    void unpack(u_int8_t* buff, u_int32_t offset) override;
+    u_int32_t getIntVal() override;
+    virtual void parseValue(string, u_int32_t&, string&) override;
+    virtual std::shared_ptr<ParamValue> clone() const override;
 
     u_int32_t _value;
 
@@ -98,10 +102,11 @@ public:
     EnumParamValue(string size, map<string, u_int32_t> textualValues);
     EnumParamValue(u_int32_t size, map<string, u_int32_t> textualValues);
 
-    string getVal();
-    void setVal(string strVal);
-    void setVal(u_int32_t val);
-    void parseValue(string, u_int32_t&, string&);
+    string getVal() override;
+    void setVal(string strVal) override;
+    void setVal(u_int32_t val) override;
+    void parseValue(string, u_int32_t&, string&) override;
+    virtual std::shared_ptr<ParamValue> clone() const override;
 
     map<string, u_int32_t> _textualValues;
 };
@@ -110,6 +115,7 @@ class BoolParamValue : public EnumParamValue
 {
 public:
     BoolParamValue(string size);
+    virtual std::shared_ptr<ParamValue> clone() const override;
 
 private:
     static map<string, u_int32_t> initBoolTextualValues();
@@ -121,10 +127,11 @@ public:
     BinaryParamValue(string size) : UnsignedParamValue(size){};
     BinaryParamValue(u_int32_t size) : UnsignedParamValue(size){};
 
-    string getVal();
-    string getValFormatted();
-    void setVal(string val);
-    void parseValue(string, u_int32_t&, string&);
+    string getVal() override;
+    string getValFormatted() override;
+    void setVal(string val) override;
+    void parseValue(string, u_int32_t&, string&) override;
+    virtual std::shared_ptr<ParamValue> clone() const override;
 
     static void trimHexString(string& s);
 };
@@ -132,12 +139,13 @@ public:
 class StringParamValue : public ParamValue
 {
 public:
-    StringParamValue(u_int32_t size) : ParamValue(size) {}
+    StringParamValue(u_int32_t size) : ParamValue(size) { _value = ""; }
 
-    string getVal();
-    void setVal(string s);
-    void pack(u_int8_t* buff, u_int32_t bitOffset);
-    void unpack(u_int8_t* buff, u_int32_t bitOffset);
+    string getVal() override;
+    void setVal(string s) override;
+    void pack(u_int8_t* buff, u_int32_t bitOffset) override;
+    void unpack(u_int8_t* buff, u_int32_t bitOffset) override;
+    virtual std::shared_ptr<ParamValue> clone() const override;
 
     string _value;
 };
@@ -145,15 +153,16 @@ public:
 class BytesParamValue : public ParamValue
 {
 public:
-    BytesParamValue(u_int32_t size) : ParamValue(size) {}
+    BytesParamValue(u_int32_t size) : ParamValue(size) { _bytes = vector<BinaryParamValue>(); }
     using ParamValue::setVal;
-    string getVal();
-    string getValFormatted();
-    void setVal(string val);
+    string getVal() override;
+    string getValFormatted() override;
+    void setVal(string val) override;
     void setVal(const vector<u_int32_t>& buffVal);
-    void parseValue(string, u_int32_t&, string&);
-    void pack(u_int8_t* buff, u_int32_t offset);
-    void unpack(u_int8_t* buff, u_int32_t offset);
+    void parseValue(string, u_int32_t&, string&) override;
+    void pack(u_int8_t* buff, u_int32_t offset) override;
+    void unpack(u_int8_t* buff, u_int32_t offset) override;
+    virtual std::shared_ptr<ParamValue> clone() const override;
 
 private:
     vector<BinaryParamValue> _bytes;
@@ -169,18 +178,19 @@ public:
     ~ArrayParamValue();
     using ParamValue::setVal;
     using ParamValue::getValFormatted;
-    string getVal();
-    void setVal(string val);
-    void setVal(vector<string> vals);
+    string getVal() override;
+    void setVal(string val) override;
+    void setVal(vector<string> vals) override;
     void setVal(string val, u_int32_t index);
     string getVal(u_int32_t index);
     string getValFormatted(u_int32_t index);
-    u_int32_t getIntVal();
+    u_int32_t getIntVal() override;
     vector<u_int32_t> getIntVals();
     vector<string> getStrVals();
-    void parseValue(string, u_int32_t&, string&);
-    void pack(u_int8_t* buff, u_int32_t offset);
-    void unpack(u_int8_t* buff, u_int32_t offset);
+    void parseValue(string, u_int32_t&, string&) override;
+    void pack(u_int8_t* buff, u_int32_t offset) override;
+    void unpack(u_int8_t* buff, u_int32_t offset) override;
+    virtual std::shared_ptr<ParamValue> clone() const override;
 
 protected:
     u_int32_t _elementSizeInBits;
@@ -191,6 +201,7 @@ class EnumArrayParamValue : public ArrayParamValue
 {
 public:
     EnumArrayParamValue(string size, u_int32_t count, enum ParamType paramType, map<string, u_int32_t> textualValues);
+    virtual std::shared_ptr<ParamValue> clone() const override;
 };
 
 class BytesArrayParamVal : public ParamValue
@@ -209,6 +220,7 @@ public:
     vector<string> getStrVals();
     void pack(u_int8_t* buff, u_int32_t offset) override;
     void unpack(u_int8_t* buff, u_int32_t offset) override;
+    virtual std::shared_ptr<ParamValue> clone() const override;
 
     bool isEmpty;
     vector<uint8_t> _bytes;
@@ -261,9 +273,13 @@ public:
     void genXMLTemplate(string& xmlTemplate, bool withVal, bool confFormat);
     void genXMLTemplateAux(string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index, bool confFormat);
 
+    // Create a deep copy of Param, including a deep copy of _value
+    std::shared_ptr<Param> cloneDeep() const;
+
     static enum ParamType str2ParamType(const char* s);
     static string paramType2Str(enum ParamType);
     static void str2TextualValuesMap(const char* s, map<string, u_int32_t>& m);
 };
 
+bool isParamViewInList(const ParamView& param, const vector<ParamView>& list);
 #endif

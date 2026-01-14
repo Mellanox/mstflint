@@ -85,6 +85,7 @@
 #define SEMAPHORE_ADDR_CX7             0xe5660
 #define SEMAPHORE_ADDR_CX8             358016
 #define SEMAPHORE_ADDR_GPU             0x308F4F8
+#define SEMAPHORE_ADDR_GR100           0x30938F8
 #define HCR_ADDR_CIB                   0x0
 #define HCR_ADDR_CX4                   HCR_ADDR_CIB
 #define HCR_ADDR_CX5                   HCR_ADDR_CIB
@@ -111,6 +112,7 @@
 #define CTRL_OFFSET                    0x3fc
 #define BUSY_BITOFF                    0
 #define BUSY_BITLEN                    1
+#define BUSY_BIT_DOWN 0
 #define EXMB_BITOFF                    1
 #define EXMB_BITLEN                    1
 #define OPCODE_BITOFF                  16
@@ -305,6 +307,8 @@ enum {
 #define CX7_HW_ID       536
 #define CX8_HW_ID       542
 #define CX9_HW_ID       548
+#define CX8_PURE_PCIE_SWITCH_HW_ID       546
+#define CX9_PURE_PCIE_SWITCH_HW_ID       552
 #define BF_HW_ID        529
 #define BF2_HW_ID       532
 #define BF3_HW_ID       540
@@ -320,8 +324,9 @@ enum {
 #define GB100_HW_ID     0x2900
 #define GR100_HW_ID     0x3000
 #define SPECTRUM4_HW_ID 596
+#define SPECTRUM5_HW_ID 624
+#define SPECTRUM6_HW_ID 628
 #define AMOS_GBOX_HW_ID 594
-#define CX8_PURE_PCIE_SWITCH_HW_ID       0x222
 
 /***** GLOBALS *****/
 int increase_poll_time = 0;
@@ -348,14 +353,13 @@ static int get_version(mfile* mf, u_int32_t hcr_address)
     return reg;
 }
 
-static MError check_busy_bit(mfile* mf, int busy_bit_offset, u_int32_t* reg)
+static int check_busy_bit(mfile* mf, int busy_bit_offset, u_int32_t* reg)
 {
     DBG_PRINTF("Check Go bit\n");
     int rc = MREAD4_ICMD(mf, mf->icmd.ctrl_addr, reg);
-
     CHECK_RC(rc);
-
-    return EXTRACT((*reg), busy_bit_offset, BUSY_BITLEN);
+    int busy_bit = EXTRACT((*reg), busy_bit_offset, BUSY_BITLEN);
+    return busy_bit;
 }
 
 static MError set_busy_bit(mfile* mf, u_int32_t* reg, int busy_bit_offset)
@@ -650,6 +654,8 @@ bool device_supports_sem_lock_verify(unsigned int hw_dev_id)
         case DeviceSpectrum2_HwId:
         case DeviceSpectrum3_HwId:
         case DeviceSpectrum4_HwId:
+        case DeviceSpectrum5_HwId:
+        case DeviceSpectrum6_HwId:
         case DeviceArcusE_HwId:
             return false;
     }
@@ -806,7 +812,8 @@ static int icmd_send_command_com(mfile     * mf,
     u_int32_t reg = 0x0;
 
     /* check go bit down */
-    ret = check_busy_bit(mf, BUSY_BITOFF, &reg);
+    int busy_bit = check_busy_bit(mf, BUSY_BITOFF, &reg);
+    ret = (busy_bit == BUSY_BIT_DOWN) ? ME_OK : ME_ICMD_STATUS_IFC_BUSY;
     CHECK_RC(ret);
 
     /* set go bit + poll + returned status */
@@ -1059,6 +1066,8 @@ static int icmd_init_cr(mfile* mf)
 
     case (QUANTUM2_HW_ID):
     case (SPECTRUM4_HW_ID):
+    case (SPECTRUM5_HW_ID):
+    case (SPECTRUM6_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM2;
@@ -1078,7 +1087,7 @@ static int icmd_init_cr(mfile* mf)
     case (GR100_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_GPU;
         hcr_address = HCR_ADDR_GPU;
-        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_GPU;
+        mf->icmd.semaphore_addr = hw_id == GR100_HW_ID ? SEMAPHORE_ADDR_GR100 : SEMAPHORE_ADDR_GPU;
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_GPU;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
         mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN_GPU;
@@ -1109,6 +1118,7 @@ static int icmd_init_cr(mfile* mf)
     case (CX8_HW_ID):
     case (CX9_HW_ID):
     case (CX8_PURE_PCIE_SWITCH_HW_ID):
+    case (CX9_PURE_PCIE_SWITCH_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX8;
         mf->icmd.cmd_ptr_bitlen = CMD_PTR_BITLEN_CX8;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX8;
@@ -1220,6 +1230,8 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
     case (QUANTUM3_HW_ID):
     case (GB100_HW_ID):
     case (SPECTRUM4_HW_ID):
+    case (SPECTRUM5_HW_ID):
+    case (SPECTRUM6_HW_ID):
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
         break;
@@ -1238,6 +1250,7 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
     case (CX8_HW_ID):
     case (CX8_PURE_PCIE_SWITCH_HW_ID):
     case (CX9_HW_ID):
+    case (CX9_PURE_PCIE_SWITCH_HW_ID):
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX8;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX7;
         break;

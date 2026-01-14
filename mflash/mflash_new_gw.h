@@ -61,4 +61,5 @@ int new_gw_st_spi_block_read_ex(mflash* mfl,
                                 u_int8_t is_last,
                                 bool verbose);
 int new_gw_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num);
+int new_gw_spi_read_sfdp(mflash* mfl, uint32_t sfdp_addr, uint8_t* data, uint8_t bytes_num);
 #endif

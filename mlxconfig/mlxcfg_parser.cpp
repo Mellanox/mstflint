@@ -92,7 +92,12 @@ void MlxCfg::printHelp()
     printFlagLine("j", "json_format", "file",
                   "Save the query output to file in JSON format, only usable with Query command");
     printFlagLine("y", "yes", "", "Answer yes in prompt.");
+    printFlagLine(
+      "", "with_default", "",
+      "set command will fill any missing parameters with default values. if the final configurations matches the current no set will be done");
     printFlagLine("a", "all_attrs", "", "Show all attributes in the XML template");
+    printFlagLine("", "host_id", "", "Specify host id for Per-Host TLV (class 3)");
+    printFlagLine("", "pf_index", "", "Specify PF index for Per-Host TLV (class 3)");
     printFlagLine("p", "private_key", "PKEY", "pem file for private key");
     printFlagLine("u", "key_uuid", "UUID", "keypair uuid");
     printFlagLine("eng", "openssl_engine", "ENGINE NAME", "deprecated");
@@ -156,6 +161,10 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-35s: %s\n", "To reset configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " reset");
     printf(IDENT2 "%-35s: %s\n", "To reset specific configuration",
            MLXCFG_NAME " -d " MST_DEV_EXAMPLE " reset NV_GLOBAL_PCI_CONF_4");
+    printf(IDENT2 "%-35s: %s\n", "To generate tlvs file",
+           MLXCFG_NAME " -t HCA gen_tlvs_file <file_path> tlvs.txt");
+    printf(IDENT2 "%-35s: %s\n", "To generate xml from tlvs file",
+           MLXCFG_NAME " -t HCA gen_xml_template  <file_path> tlvs.txt  <file_path> template.xml");
     printf("\n");
 }
 
@@ -307,7 +316,7 @@ mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char* argv[])
         {
             return err(true, "Invalid Configuration argument %s", argv[i]);
         }
-        tag = ptr; // hopefully its calling copy function.
+        tag = ptr;
         // get the val
         ptr = strtok(NULL, "=");
         if (!ptr)
@@ -408,6 +417,7 @@ mlxCfgStatus MlxCfg::getNumberFromString(const char* str, u_int32_t& num)
 
 mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
 {
+    mlxCfgStatus status = MLX_CFG_OK;
     int i = 1;
     for (; i < argc; i++)
     {
@@ -479,6 +489,48 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         else if (arg == "-a" || arg == "--all_attrs")
         {
             _mlxParams.allAttrs = true;
+        }
+        else if (arg == "--host_id")
+        {
+            if (++i == argc)
+            {
+                return err(true, "missing host id value");
+            }
+            u_int32_t hostIdNum = 0;
+            status = getNumberFromString(argv[i], hostIdNum);
+            if (status != MLX_CFG_OK)
+            {
+                return status;
+            }
+            if (hostIdNum > 63)
+            {
+                return err(true, "host_id out of range (0..63)");
+            }
+            _mlxParams.userHostIdParam = (u_int8_t)hostIdNum;
+            _mlxParams.userHostIdPfValid = true;
+        }
+        else if (arg == "--pf_index")
+        {
+            if (++i == argc)
+            {
+                return err(true, "missing pf index value");
+            }
+            u_int32_t pfIdxNum = 0;
+            status = getNumberFromString(argv[i], pfIdxNum);
+            if (status != MLX_CFG_OK)
+            {
+                return status;
+            }
+            if (pfIdxNum > 255)
+            {
+                return err(true, "pf_index out of range (0..255)");
+            }
+            _mlxParams.userPfIndexParam = (u_int8_t)pfIdxNum;
+            _mlxParams.userHostIdPfValid = true;
+        }
+        else if (arg == "--with_default")
+        {
+            _mlxParams.completeSetWithDefault = true;
         }
         else if (arg == "-p" || arg == "--private_key")
         {
@@ -636,6 +688,11 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     if ((_mlxParams.cmd != Mc_Query) && _mlxParams.isJsonOutputRequested)
     {
         return err(true, "Json format is only supported for query command.");
+    }
+
+    if ((_mlxParams.cmd != Mc_Set) && _mlxParams.completeSetWithDefault)
+    {
+        return err(true, "with_default is only supported for set command.");
     }
 
     if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw ||

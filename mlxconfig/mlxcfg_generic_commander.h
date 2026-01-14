@@ -55,6 +55,7 @@ class GenericCommander : public Commander
 {
 private:
     MlxcfgDBManager* _dbManager;
+    Device_Type _deviceType;
 
     void supportsNVData();
     void printEnums(const ParamView& p, string& s);
@@ -72,26 +73,35 @@ private:
     void removeSignatureTlvs(vector<std::shared_ptr<TLVConf>>& tlvs);
 
 public:
-    GenericCommander(mfile* mf, string dbName, Device_Type deviceType = Device_Type::HCA);
-    ~GenericCommander();
-    void printLongDesc(FILE*);
-    void queryParamViews(std::vector<ParamView>& paramsToQuery, bool isWriteOperation, QueryType qt = QueryNext);
-    void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt = QueryNext);
-    void getCfg(ParamView& cfgParam, QueryType qt = QueryNext);
-    void setCfg(std::vector<ParamView>& params, bool force);
-    bool isDefaultSupported();
-    bool isCurrentSupported();
-    void clearSemaphore();
-    void invalidateCfgs();
-    void invalidateCfg(const std::string& configName);
-    const char* loadConfigurationGetStr();
-    void setRawCfg(std::vector<u_int32_t> rawTlvVec);
-    std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec);
-    void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump);
-    void backupCfgs(vector<BackupView>& view);
-    void updateParamViewValue(ParamView&, std::string);
+    GenericCommander(mfile* mf, string& dbName, Device_Type deviceType = Device_Type::HCA);
+    ~GenericCommander() override;
+    void printLongDesc(FILE*) override;
+    void setHostFunctionParams(u_int8_t hostId, u_int8_t pfIndex, bool valid) override;
+    void updateDBWithHostPF(u_int8_t hostId, u_int8_t pfIndex) override;
+    void
+      queryParamViews(std::vector<ParamView>& paramsToQuery, bool isWriteOperation, QueryType qt = QueryNext) override;
+    void queryAll(vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt) override;
+    void getCfg(ParamView& cfgParam, QueryType qt = QueryNext) override;
+    void setCfg(std::vector<ParamView>& params, bool force) override;
+    void getGlobalCapabilities(bool& isDefaultSupported,
+                               bool& isCurrentSupported,
+                               bool& isPrivNvOtherHostSupported) override;
+    void clearSemaphore() override;
+    void invalidateCfgs() override;
+    void invalidateCfg(const std::string& configName) override;
+    void invalidateCfg(const std::vector<ParamView>& params) override;
+    bool isDPUEnabled();
+    bool shouldSkipPrepareReset();
+    const char* loadConfigurationGetStr() override;
+    void setRawCfg(std::vector<u_int32_t> rawTlvVec) override;
+    std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) override;
+    void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) override;
+    void backupCfgs(vector<BackupView>& view) override;
+    void updateParamViewValue(ParamView& p, std::string v, QueryType qt) override;
     void queryConfigViews(std::vector<TLVConfView>& confs, const std::string& configName = "", QueryType qt = QueryNext);
-    void getConfigViews(std::vector<TLVConfView>& confs, const std::string& configName = "");
+
+    void
+      getConfigViews(std::vector<TLVConfView>& confs, const std::string& configName = "", QueryType qt = QueryCurrent);
 
     void genTLVsList(vector<string>& tlvs);
     void genXMLTemplate(vector<string> tlvs, string& xmlTemplate, bool allAttrs);

@@ -83,7 +83,7 @@ typedef struct ParamView
         type(BOOLEAN_TYPE),
         val(MLXCFG_UNKNOWN),
         port(0),
-        module(-1),
+        _module(-1),
         strVal(""),
         setVal(""),
         rule(""),
@@ -95,7 +95,7 @@ typedef struct ParamView
     std::map<std::string, u_int32_t> textualVals;
     u_int32_t val;
     u_int32_t port;
-    int32_t module;
+    int32_t _module;
     std::string strVal;
     std::string setVal;
     std::vector<u_int32_t> arrayVal;

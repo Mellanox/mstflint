@@ -144,6 +144,7 @@ int flash_init_fw_access(mflash* mfl, flash_params_t* flash_params);
 int mf_get_secure_host(mflash* mfl, int* mode);
 int mf_secure_host_op(mflash* mfl, u_int64_t key, int op);
 int cntx_sst_get_log2size(u_int8_t density, int* log2spi_size);
+int cntx_mx25k16xxx_get_log2size(u_int8_t density, int* log2spi_size);
 /* NOTE: This macro returns ... not nice. */
 #define CHECK_RC(rc)   \
     do                 \
@@ -170,7 +171,7 @@ int cntx_sst_get_log2size(u_int8_t density, int* log2spi_size);
 
 #define SECTOR_NUM_60MB_SPECIAL_CASE 960
 #define BP_ISSI_60MB_SPECIAL_CASE    13
-#define BP_WINBOND_60MB_SPECIAL_CASE 7
+#define BP_WINBOND_MACRONIX_60MB_SPECIAL_CASE 7
 
 /* InfiniHost specific */
 #define IDLE   0
@@ -444,45 +445,48 @@ int write_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
 #define FD_LEGACY (1 << FD_8) | (1 << FD_16) | (1 << FD_32) | (1 << FD_64) | (1 << FD_128)
 
 flash_info_t g_flash_info_arr[] = {
-    {"M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 0, 0, 0, 0, 0},
-    {"M25Pxx", FV_ST, FMT_ST_M25P, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0},
-    {"N25Q0XX", FV_ST, FMT_N25QXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 1, 0},
-    /*{MICRON_3V_NAME, FV_ST, FMT_N25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 0}, */
-    {MICRON_3V_NAME, FV_ST, FMT_N25QXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 1},
-    {MICRON_1V8_NAME, FV_ST, FMT_N25QUXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 1},
-    {SST_FLASH_NAME, FV_SST, FMT_SST_25, FD_LEGACY, MCS_SSTSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0},
-    {WINBOND_NAME, FV_WINBOND, FMT_WINBOND, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0},
-    {WINBOND_W25X, FV_WINBOND, FMT_WINBOND_W25X, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0},
-    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_3V, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 1},
-    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_3V, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
-    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
-    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
-    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IQ, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
-    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IM, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
-    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IQ, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
-    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IM, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
-    {ATMEL_NAME, FV_ATMEL, FMT_ATMEL, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0},
-    {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0},
-    {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0},
-    {MACRONIX_NAME, FV_MX25K16XXX, FMT_MX25K16XXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
-    {MACRONIX_3V_NAME, FV_MX25K16XXX, FMT_MX25K16XXX, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
-    {CYPRESS_3V_NAME, FV_S25FLXXXX, FMT_S25FLXXXL, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0},
-    /*{CYPRESS_3V_NAME, FV_S25FLXXXX, FMT_S25FLXXXL, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB,  1, 1, 1, 0, 0, 0}, */
-    {ISSI_3V_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
-    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_32), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
-    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_28, (1 << FD_32), MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0},
-    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
-    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_512), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1},
+    {"M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 0, 0, 0, 0, 0, 0, 0},
+    {"M25Pxx", FV_ST, FMT_ST_M25P, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0, 0, 0},
+    {"N25Q0XX", FV_ST, FMT_N25QXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 1, 0, 0, 0},
+    /*{MICRON_3V_NAME, FV_ST, FMT_N25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 0, 0, 0}, */
+    {MICRON_3V_NAME, FV_ST, FMT_N25QXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 1, 0, 0},
+    {MICRON_1V8_NAME, FV_ST, FMT_N25QUXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 1, 0, 0},
+    {SST_FLASH_NAME, FV_SST, FMT_SST_25, FD_LEGACY, MCS_SSTSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0, 0, 0},
+    {WINBOND_NAME, FV_WINBOND, FMT_WINBOND, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0, 0, 0},
+    {WINBOND_W25X, FV_WINBOND, FMT_WINBOND_W25X, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0, 0, 0},
+    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_3V, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 1, 0, 0},
+    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_3V, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IQ, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IM, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IQ, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+    {WINBOND_3V_NAME, FV_WINBOND, FMT_WINBOND_IM, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+    {ATMEL_NAME, FV_ATMEL, FMT_ATMEL, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 0, 0, 0, 0, 0, 0, 0, 0},
+    {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP, FD_LEGACY, MCS_STSPI, SFC_SE, FSS_64KB, 0, 0, 0, 0, 0, 0, 0, 0},
+    {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0, 0, 0},
+    {MACRONIX_NAME, FV_MX25K16XXX, FMT_MX25K16XXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0, 0, 0},
+    {MACRONIX_3V_NAME, FV_MX25K16XXX, FMT_MX25K16XXX, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0, 0, 0},
+    {CYPRESS_3V_NAME, FV_S25FLXXXX, FMT_S25FLXXXL, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0, 0, 0, 0},
+    /*{CYPRESS_3V_NAME, FV_S25FLXXXX, FMT_S25FLXXXL, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB,  1, 1, 1, 0, 0, 0, 0, 0}, */
+    {ISSI_3V_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0, 0, 0},
+    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_32), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 0, 0, 0},
+    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_28, (1 << FD_32), MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 0, 0, 0},
+    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+    
+    // MX25U51294GXDI08 (MX25U51294G) and MX25U51245G both have jedec id 0x3a25c2 so they support SFDP Series Code
+    // capability to tell them apart.
+    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_512), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 1, 1, 0},
     /* added by edwardg 06/09/2020 */
-    {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
-    {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
+    {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0},
+    {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0},
     /* https://www.issi.com/WW/pdf/25LP-WP512MG.pdf */
-    {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 1},
+    {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 1, 0, 0},
 
-    {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
-    {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0},
+    {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0},
+    {GIGA_3V_NAME, FV_GD25QXXX, FVT_GD25QXXX, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0},
     /* https://www.gigadevice.com.cn/Public/Uploads/uploadfile/files/20231213/DS-01012-GD25LB512MF-Rev1.0.pdf */
-    {GIGA_1V8_NAME, FV_GD25QXXX, FVT_GD25LBXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0}
+    {GIGA_1V8_NAME, FV_GD25QXXX, FVT_GD25LBXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0}
 };
 
 int cntx_sst_get_log2size(u_int8_t density, int* log2spi_size)
@@ -510,10 +514,31 @@ int cntx_sst_get_log2size(u_int8_t density, int* log2spi_size)
     return 0;
 }
 
+int cntx_mx25k16xxx_get_log2size(u_int8_t density, int* log2spi_size)
+{
+    switch (density)
+    {
+        case 0x3a:
+        case 0x20:
+            *log2spi_size = 0x1a;
+            break;
+
+        default:
+            *log2spi_size = density;
+            break;
+    }
+    return MFE_OK;
+}
+
+
 int get_log2size_by_vendor_type_density(u_int8_t vendor, u_int8_t type, u_int8_t density, int* log2size)
 {
     if ((type == FMT_SST_25) && (vendor == FV_SST)) {
         return cntx_sst_get_log2size(density, log2size);
+    }
+    if (type == FMT_SST_25 && vendor == FV_MX25K16XXX)
+    {
+        return cntx_mx25k16xxx_get_log2size(density, log2size);
     }
     // In some flashes, the value is 20, but the correct value should be 0x1A. It cannot be 0x20 because 2^20 would overflow an integer.
     if(density == 0x20) {
@@ -683,6 +708,11 @@ int cntx_get_flash_info(mflash* mfl, flash_info_t* f_info, int* log2size, u_int8
     if (((mfl->dm_dev_id == DeviceConnectX4LX) || (mfl->dm_dev_id == DeviceConnectX5)) &&
         (f_info->vendor == FV_GD25QXXX)) {
         f_info->erase_command = SFC_SSE;
+    }
+
+    if (f_info->series_code_support)
+    {
+        rc = modify_flash_info_if_needed(mfl, f_info);
     }
 
     return rc;
@@ -874,12 +904,19 @@ int spi_fill_attr_from_params(mflash* mfl, flash_params_t* flash_params, flash_i
     mfl->attr.erase_command = flash_info->erase_command;
     mfl->attr.type_str = flash_info->name;
 
-    mfl->attr.cmp_support = flash_info->vendor == FV_WINBOND && flash_info->type == FMT_WINBOND_IM &&
-                            ((flash_info->densities & (1 << FD_512)) != 0);
     mfl->attr.quad_en_support = flash_info->quad_en_support;
     mfl->attr.srwd_support = is_srwd_supported_by_flash(flash_info->vendor, flash_info->type);
     mfl->attr.driver_strength_support = flash_info->driver_strength_support;
     mfl->attr.dummy_cycles_support = flash_info->dummy_cycles_support;
+
+    mfl->attr.series_code_support = flash_info->series_code_support;
+    mfl->attr.series_code = flash_info->series_code;
+
+    mfl->attr.cmp_support =
+    ((flash_info->vendor == FV_WINBOND && flash_info->type == FMT_WINBOND_IM &&
+      ((flash_info->densities & (1 << FD_512)) != 0)) ||
+     is_macronix_mx25u51294g_mx25u51294gxdi08(flash_info->vendor, flash_info->type, mfl->attr.log2_bank_size,
+                                              flash_info->series_code));
 
     mfl->attr.write_protect_support = flash_info->write_protected_support;
     mfl->attr.protect_sub_and_sector = flash_info->protect_sub_and_sector;
@@ -1727,8 +1764,8 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
 
         /* TODO - fix for QTM3/CX8/ArcusE/BF4 */
         /* Read the Cache replacement offset and cmd fields */
-        if ((devid_t == DeviceQuantum2) || (devid_t == DeviceQuantum3) || (devid_t == DeviceSpectrum4) ||
-            (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8) || (devid_t == DeviceConnectX8_Pure_PCIe_Switch) || (devid_t == DeviceConnectX9_Pure_PCIe_Switch)) {
+        if ((devid_t == DeviceQuantum2) || (devid_t == DeviceQuantum3) || (devid_t == DeviceSpectrum4) || (devid_t == DeviceSpectrum5) || (devid_t == DeviceSpectrum6) ||
+            (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8) || (devid_t == DeviceConnectX8_Pure_PCIe_Switch) || (devid_t == DeviceConnectX9) || (devid_t == DeviceConnectX9_Pure_PCIe_Switch)) {
             MREAD4(CACHE_REP_OFF_NEW_GW_ADDR, &data);
             off = data;
             MREAD4(CACHE_REP_CMD_NEW_GW_ADDR, &data);
@@ -1927,7 +1964,7 @@ int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 void update_seventh_gen_addrs(mflash* mfl)
 {
     /* Registers addresses */
-    if (mfl->dm_dev_id == DeviceQuantum3) {
+    if (mfl->dm_dev_id == DeviceQuantum3 || mfl->dm_dev_id == DeviceQuantum4 || mfl->dm_dev_id == DeviceSpectrum5 || mfl->dm_dev_id == DeviceSpectrum6) {
         mfl->gw_cmd_register_addr = HCR_7GEN_QTM3_FLASH_CMD;
         mfl->gw_data_field_addr = HCR_7GEN_QTM3_FLASH_DATA;
         mfl->gcm_en_addr = HCR_7GEN_QTM3_GCM_EN_ADDR;
@@ -1990,11 +2027,24 @@ void update_seventh_gen_addrs(mflash* mfl)
         mfl->gw_addr_field_addr = HCR_7GEN_ARCUSE_FLASH_ADDR;
         mfl->gw_data_size_register_addr = HCR_7GEN_ARCUSE_FLASH_DATA_SIZE;
     } else if (mfl->dm_dev_id == DeviceSpectrum6) {
-        mfl->gw_cmd_register_addr = HCR_7GEN_QTM4_FLASH_CMD;
-        mfl->gw_data_field_addr = HCR_7GEN_QTM4_FLASH_DATA;
-        mfl->gcm_en_addr = HCR_7GEN_QTM4_GCM_EN_ADDR;
-        mfl->gw_addr_field_addr = HCR_7GEN_QTM4_FLASH_ADDR;
-        mfl->gw_data_size_register_addr = HCR_7GEN_QTM4_FLASH_DATA_SIZE;
+        mfl->gw_cmd_register_addr = HCR_7GEN_QTM3_FLASH_CMD;
+        mfl->gw_data_field_addr = HCR_7GEN_QTM3_FLASH_DATA;
+        mfl->gcm_en_addr = HCR_7GEN_QTM3_GCM_EN_ADDR;
+        mfl->gw_addr_field_addr = HCR_7GEN_QTM3_FLASH_ADDR;
+        mfl->gw_data_size_register_addr = HCR_7GEN_QTM3_FLASH_DATA_SIZE;
+        if (is_zombiefish_device(mfl->mf))
+        {
+            mfl->gw_cmd_register_addr =
+              mfl->gw_cmd_register_addr - HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_data_field_addr =
+              mfl->gw_data_field_addr - HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gcm_en_addr =
+              mfl->gcm_en_addr - HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_addr_field_addr =
+              mfl->gw_addr_field_addr - HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR + VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+            mfl->gw_data_size_register_addr = mfl->gw_data_size_register_addr - HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR +
+                                              VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS;
+        }
     }
 
     /* Fields bit offsets and lengths */
@@ -3351,6 +3401,8 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
     case DeviceConnectX9_Pure_PCIe_Switch:
     case DeviceBlueField4:
     case DeviceSpectrum4:
+    case DeviceSpectrum5:
+    case DeviceSpectrum6:
     case DeviceAbirGearBox:
         return MFE_OK;
 
@@ -3499,6 +3551,40 @@ int is_macronix_special_case_for_dummy_cycles(mflash* mfl)
     return 0;
 }
 
+int is_macronix_mx25u51245g(mflash* mfl)
+{
+    if (mfl->attr.vendor == FV_MX25K16XXX && mfl->attr.type == FMT_SST_25 &&
+        (((1 << FD_512) & (1 << mfl->attr.log2_bank_size)) != 0))
+    {
+        if (mfl->attr.series_code == MACRONIX_MX25U51245G)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mflash* mfl)
+{
+    return is_macronix_mx25u51294g_mx25u51294gxdi08(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size,
+                                                    mfl->attr.series_code);
+}
+
+int is_macronix_mx25u51294g_mx25u51294gxdi08(uint8_t vendor,
+                                             uint16_t type,
+                                             uint32_t log2_bank_size,
+                                             MacronixSeriesCode series_code)
+{
+    if (vendor == FV_MX25K16XXX && type == FMT_SST_25 && (((1 << FD_512) & (1 << log2_bank_size)) != 0))
+    {
+        if (series_code == MACRONIX_MX25U51294G_MX25U51294GXDI08)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int mf_read_modify_status_winbond(mflash * mfl,
                                   u_int8_t bank_num,
                                   u_int8_t is_first_status_reg,
@@ -3517,7 +3603,8 @@ int mf_read_modify_status_winbond(mflash * mfl,
         ((mfl->attr.vendor == FV_S25FLXXXX) &&
          ((mfl->attr.type == FMT_S25FL116K) || (mfl->attr.type == FMT_S25FLXXXL))) ||
         ((mfl->attr.vendor == FV_MX25K16XXX) && (mfl->attr.type == FMT_MX25K16XXX)) ||
-        (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))) {
+        (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) ||
+        (is_macronix_mx25u51245g(mfl))) {
         /*
          * if we have 2 status registers, winbond are allowing us to write both of them
          * in a single command WRSR  status_reg1 located in MSB, status_reg2 after status_reg1
@@ -3648,11 +3735,17 @@ int mf_set_dummy_cycles_direct_access(mflash* mfl, u_int8_t num_of_cycles)
         return MFE_NOT_SUPPORTED_OPERATION;
     }
     for (bank = 0; bank < mfl->attr.banks_num; bank++) {
-        if (is_macronix_special_case_for_dummy_cycles(mfl))
+        if (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl))
         {
             rc = mf_read_modify_status_new(mfl, bank, SFC_RDSR4_MACRONIX_MX25UXXX, SFC_WRSR4_MACRONIX_MX25UXXX,
                                            num_of_cycles, DUMMY_CYCLES_OFFSET_MACRONIX_MX25UXXX,
                                            DUMMY_CYCLES_BIT_LEN_MACRONIX_MX25UXXX, 1);
+            CHECK_RC(rc);
+        }
+        else if (is_macronix_mx25u51245g(mfl))
+        {
+            rc = mf_read_modify_status_winbond(mfl, bank, 0, num_of_cycles, DUMMY_CYCLES_OFFSET_MX25U51245G,
+                                               DUMMY_CYCLES_BIT_LEN_MACRONIX_MX25UXXX);
             CHECK_RC(rc);
         }
         else
@@ -3675,10 +3768,17 @@ int mf_get_dummy_cycles_direct_access(mflash* mfl, u_int8_t* dummy_cycles_p)
     }
     
     int rc = ME_OK;
-    if (is_macronix_special_case_for_dummy_cycles(mfl))
+    if (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl))
     {
         rc = mf_get_param_int(mfl, dummy_cycles_p, SFC_RDSR4_MACRONIX_MX25UXXX, DUMMY_CYCLES_OFFSET_MACRONIX_MX25UXXX,
                               DUMMY_CYCLES_BIT_LEN_MACRONIX_MX25UXXX, 1, 0);
+    }
+    else if (is_macronix_mx25u51245g(mfl))
+    {
+        u_int8_t status = 0;
+        rc = mfl->f_spi_status(mfl, SFC_RDCR, &status);
+        CHECK_RC(rc);
+        *dummy_cycles_p = EXTRACT(status, DUMMY_CYCLES_OFFSET_MX25U51245G, DUMMY_CYCLES_BIT_LEN_MACRONIX_MX25UXXX);
     }
     else
     {
@@ -3714,7 +3814,9 @@ int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength)
                 DRIVER_STRENGTH_BIT_LEN_MICRON, 2); /* driver-strength bit length, status-register byte len */
             CHECK_RC(rc);
         } else if (mfl->attr.vendor == FV_MX25K16XXX) {
-            if (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+            if (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type,
+                                                             mfl->attr.log2_bank_size) ||
+                is_macronix_mx25u51245g(mfl))
             {
                 rc =
                   mf_read_modify_status_winbond(mfl, bank, 0, driver_strength, DRIVER_STRENGTH_OFFSET_MACRONIX_MX25UXXX,
@@ -3772,7 +3874,8 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
                               2, 0);                          /* status-register byte len, don't-care */
     } else if (mfl->attr.vendor == FV_MX25K16XXX) // macronix
     {
-        if (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+        if (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size) ||
+            is_macronix_mx25u51245g(mfl))
         {
             u_int8_t status = 0;
             rc = mfl->f_spi_status(mfl, SFC_RDCR, &status);
@@ -3831,7 +3934,7 @@ int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
         } else if (mfl->attr.vendor == FV_ST) {
             rc = mf_read_modify_status_new(mfl, bank, SFC_RDNVR, SFC_WRNVR, !quad_en, QUAD_EN_OFFSET_MICRON, 1, 2);
             CHECK_RC(rc);
-        } else if ((mfl->attr.vendor == FV_IS25LPXXX) || (mfl->attr.vendor == FV_MX25K16XXX)) {
+        } else if ((mfl->attr.vendor == FV_IS25LPXXX) || (mfl->attr.vendor == FV_MX25K16XXX && !is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl))) {
             rc = mf_read_modify_status_winbond(mfl, bank, 1, quad_en, QUAD_EN_OFFSET_ISSI_MACRONIX, 1);
             CHECK_RC(rc);
         } else if (mfl->attr.vendor == FV_GD25QXXX) {
@@ -3856,12 +3959,35 @@ int mf_get_quad_en_direct_access(mflash* mfl, u_int8_t* quad_en_p)
         return mf_get_param_int(mfl, quad_en_p, SFC_RDSR2, QUAD_EN_OFFSET_WINBOND_CYPRESS, 1, 1, 1);
     } else if (mfl->attr.vendor == FV_ST) {
         return mf_get_param_int(mfl, quad_en_p, SFC_RDNVR, QUAD_EN_OFFSET_MICRON, 1, 2, 0);
-    } else if ((mfl->attr.vendor == FV_IS25LPXXX) || (mfl->attr.vendor == FV_MX25K16XXX)) {
+    } else if ((mfl->attr.vendor == FV_IS25LPXXX) || (mfl->attr.vendor == FV_MX25K16XXX && !is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl))) {
         return mf_get_param_int(mfl, quad_en_p, SFC_RDSR, QUAD_EN_OFFSET_ISSI_MACRONIX, 1, 1, 1);
     } else if (mfl->attr.vendor == FV_GD25QXXX) {
         return mf_get_param_int(mfl, quad_en_p, SFC_RDSR2, QUAD_EN_OFFSET_GIGABYTE, 1, 2, 1);
     }
     return MFE_NOT_SUPPORTED_OPERATION;
+}
+
+int is_60MB_bottom_protection_supported_wrapper(mflash* mfl)
+{
+    return is_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size,
+                                               mfl->attr.series_code);
+}
+
+int is_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, uint8_t log2_bank_size, uint8_t series_code)
+{
+    if (is_ISSI_60MB_bottom_protection_supported(vendor, type, log2_bank_size) ||
+        is_WINBOND_60MB_bottom_protection_supported(vendor, type, log2_bank_size) ||
+        is_macronix_mx25u51294g_mx25u51294gxdi08(vendor, type, log2_bank_size, series_code))
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int is_60MB_bottom_protection_supported_using_cmp(mflash* mfl)
+{
+    return is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size) ||
+           is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl);
 }
 
 int is_ISSI_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, uint8_t log2_bank_size)
@@ -3890,7 +4016,7 @@ int is_60MB_bottom_protection_params(write_protect_info_t* protect_info)
     return 1;
 }
 
-int get_sectors_num_for_WINBOND_60MB_bottom_protection_supported(u_int8_t bp_val,
+int get_sectors_num_for_WINBOND_MACRONIX_60MB_bottom_protection_supported(u_int8_t bp_val,
                                                                  uint8_t  cmp,
                                                                  int      spec_alignment_factor)
 {
@@ -3924,8 +4050,7 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
 
     WRITE_PROTECT_CHECKS(mfl, bank_num);
     if (((protect_info->sectors_num - 1) & protect_info->sectors_num) != 0) {
-        if (!is_ISSI_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size) &&
-            !is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) {
+        if (!is_60MB_bottom_protection_supported_wrapper(mfl)) {
             return MFE_SECTORS_NUM_NOT_POWER_OF_TWO;
         }
         if (!is_60MB_bottom_protection_params(protect_info)) {
@@ -3933,8 +4058,7 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
         }
     }
     if (protect_info->sectors_num > MAX_SECTORS_NUM) {
-        if (!is_ISSI_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size) &&
-            !is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) {
+        if (!is_60MB_bottom_protection_supported_wrapper(mfl)) {
             return MFE_EXCEED_SECTORS_MAX_NUM;
         }
         if (!is_60MB_bottom_protection_params(protect_info)) {
@@ -3957,7 +4081,8 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
             return MFE_EXCEED_SUBSECTORS_MAX_NUM;
         }
     }
-    if ((mfl->attr.vendor == FV_MX25K16XXX) || (mfl->attr.vendor == FV_IS25LPXXX)) {
+    if ((mfl->attr.vendor == FV_MX25K16XXX && !is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl)) ||
+        mfl->attr.vendor == FV_IS25LPXXX) {
         rc = mf_get_write_protect(mfl, bank_num, &cur_protect_info);
         CHECK_RC(rc);
         if (cur_protect_info.is_bottom && !protect_info->is_bottom) {
@@ -4004,9 +4129,10 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
                 (mfl->attr.log2_bank_size == FD_256)) ||
                (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type,
                                                             mfl->attr.log2_bank_size))) {
-        if (mfl->attr.vendor == FV_MX25K16XXX) {
+        
+        if (mfl->attr.vendor == FV_MX25K16XXX && !is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl)) {
             rc = mf_read_modify_status_winbond(mfl, bank_num, 0, protect_info->is_bottom, TB_OFFSET_MACRONIX, 1);
-            CHECK_RC(rc);
+            CHECK_RC(rc);                                              
         } else if (mfl->attr.vendor == FV_IS25LPXXX) {
             rc = mf_read_modify_status_new(mfl, bank_num, SFC_RDFR, SFC_WRFR, protect_info->is_bottom, TB_OFFSET_ISSI,
                                            1, 1);
@@ -4025,22 +4151,21 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
         /* to support 60MB bottom protection for WINBOND - we have to protect a number of sectors that is not a power */
         /* of 2. For WINBOND the workaround is by setting protection for 4MB from the top, and then set CMP bit to 1 */
         /* -which will protect the complement from the bottom (bottom 60MB) */
-        else if (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type,
-                                                             mfl->attr.log2_bank_size)) {
+        else if (is_60MB_bottom_protection_supported_using_cmp(mfl)) {
             if (is_60MB_bottom_protection_params(protect_info)) {
                 rc = mf_set_cmp(mfl, 1); /* triggering 60MB protection for WINBOND */
                 CHECK_RC(rc);
                 uint8_t is_bottom = 0; /* CMP is set, so we need to set the bottom bit to 0 (=Top), this way when the */
                                        /* complement is protected, it'd be from the Bottom, not Top */
-                rc = mf_read_modify_status_winbond(mfl, bank_num, 1, is_bottom, TB_OFFSET_CYPRESS_WINBOND_256, 1);
+                rc = mf_read_modify_status_winbond(mfl, bank_num, 1, is_bottom, TB_OFFSET_CYPRESS_WINBOND_MACRONIX_256, 1);
                 CHECK_RC(rc);
-                return mf_read_modify_status_winbond(mfl, bank_num, 1, BP_WINBOND_60MB_SPECIAL_CASE, BP_OFFSET,
-                                                     BP_SIZE + 1);
+                return mf_read_modify_status_winbond(mfl, bank_num, 1, BP_WINBOND_MACRONIX_60MB_SPECIAL_CASE, BP_OFFSET,
+                    BP_SIZE + 1);
             } else {
                 rc = mf_set_cmp(mfl, 0); /* shutting down 60MB protection for WINBOND */
                 CHECK_RC(rc);
                 rc = mf_read_modify_status_winbond(mfl, bank_num, 1, protect_info->is_bottom,
-                                                   TB_OFFSET_CYPRESS_WINBOND_256, 1);
+                                                TB_OFFSET_CYPRESS_WINBOND_MACRONIX_256, 1);
                 CHECK_RC(rc);
             }
         } else { /* vendor == FV_S25FLXXXX or vendor == FV_WINBOND */
@@ -4048,7 +4173,7 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
                                                bank_num,
                                                1,
                                                protect_info->is_bottom,
-                                               TB_OFFSET_CYPRESS_WINBOND_256,
+                                               TB_OFFSET_CYPRESS_WINBOND_MACRONIX_256,
                                                1);
             CHECK_RC(rc);
         }
@@ -4081,7 +4206,7 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     rc = set_bank_int(mfl, bank_num);
     CHECK_RC(rc);
     protect_info->is_subsector = 0; /* Defaultly no support for subsector protection */
-    if (mfl->attr.vendor == FV_MX25K16XXX) {
+    if (mfl->attr.vendor == FV_MX25K16XXX && !is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl) ) {
         rc = mfl->f_spi_status(mfl, SFC_RDCR, &status);
         CHECK_RC(rc);
         protect_info->is_bottom = EXTRACT(status, TB_OFFSET_MACRONIX, 1);
@@ -4097,8 +4222,8 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
             ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V) &&
              (mfl->attr.log2_bank_size == FD_256)) ||
             (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type,
-                                                         mfl->attr.log2_bank_size))) {
-            tb_offset = TB_OFFSET_CYPRESS_WINBOND_256;
+                   mfl->attr.log2_bank_size))|| (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl))) {
+            tb_offset = TB_OFFSET_CYPRESS_WINBOND_MACRONIX_256;
         }
         rc = mfl->f_spi_status(mfl, SFC_RDSR, &status);
         CHECK_RC(rc);
@@ -4145,16 +4270,16 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
             } else {
                 protect_info->sectors_num = 1 << (protect_info->bp_val + spec_alignment_factor);
             }
-        } else if (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type,
-                                                               mfl->attr.log2_bank_size)) { /* WINBOND 60MB WP support */
-            int     is_bottom = EXTRACT(status, TB_OFFSET_CYPRESS_WINBOND_256, 1);
+        } else if (is_60MB_bottom_protection_supported_using_cmp(mfl)) // WINBOND and Macronix 60MB WP support
+        {
+            int is_bottom = EXTRACT(status, TB_OFFSET_CYPRESS_WINBOND_MACRONIX_256, 1);
             uint8_t cmp = 0;
-            rc = mf_get_cmp(mfl, &cmp); /* protect_info->bp_val == BP_WINBOND_60MB_SPECIAL_CASE && !is_bottom -> happens */
-                                        /* for CMP=1 and CMP=0, when CMP is set, it's the special 60MB protection mode, */
-                                        /* and the one we're looking for */
+            rc = mf_get_cmp(mfl, &cmp); // protect_info->bp_val == BP_WINBOND_MACRONIX_60MB_SPECIAL_CASE && !is_bottom
+                                        // -> happens for CMP=1 and CMP=0, when CMP is set, it's the special 60MB
+                                        // protection mode, and the one we're looking for
             CHECK_RC(rc);
-            protect_info->sectors_num = get_sectors_num_for_WINBOND_60MB_bottom_protection_supported(
-                protect_info->bp_val, cmp, spec_alignment_factor);
+            protect_info->sectors_num = get_sectors_num_for_WINBOND_MACRONIX_60MB_bottom_protection_supported(
+              protect_info->bp_val, cmp, spec_alignment_factor);
             if (cmp) {
                 protect_info->tbs_bit = is_bottom;
                 protect_info->is_bottom =
@@ -4324,14 +4449,14 @@ int mf_set_cmp(mflash* mfl, u_int8_t cmp)
     if (!mfl) {
         return MFE_BAD_PARAMS;
     }
-    if (!is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) {
+    if (!is_60MB_bottom_protection_supported_using_cmp(mfl)) {
         return MFE_NOT_SUPPORTED_OPERATION;
     }
 
     int bank = 0, rc = 0;
 
     for (bank = 0; bank < mfl->attr.banks_num; bank++) {
-        rc = mf_read_modify_status_new(mfl, bank, SFC_RDSR2, SFC_WRSR2, cmp, COMPLEMENT_PROTECT_OFFSET_WINBOND, 1, 1);
+        rc = mf_read_modify_status_new(mfl, bank, SFC_RDSR2, SFC_WRSR2, cmp, COMPLEMENT_PROTECT_OFFSET_WINBOND_MACRONIX, 1, 1);
         CHECK_RC(rc);
     }
 
@@ -4343,10 +4468,23 @@ int mf_get_cmp(mflash* mfl, u_int8_t* cmp)
     if (!mfl) {
         return MFE_BAD_PARAMS;
     }
-    if (is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)) {
-        return mf_get_param_int(mfl, cmp, SFC_RDSR2, COMPLEMENT_PROTECT_OFFSET_WINBOND, 1, 1, 1);
+    if (is_60MB_bottom_protection_supported_using_cmp(mfl)) {
+        return mf_get_param_int(mfl, cmp, SFC_RDSR2, COMPLEMENT_PROTECT_OFFSET_WINBOND_MACRONIX, 1, 1, 1);
     }
     return MFE_NOT_SUPPORTED_OPERATION;
+}
+
+int mf_disable_cmp_if_supported(mflash* mfl)
+{
+    if (!mfl)
+    {
+        return MFE_BAD_PARAMS;
+    }
+    if (is_60MB_bottom_protection_supported_using_cmp(mfl))
+    {
+        return mf_set_cmp(mfl, 0);
+    }
+    return MFE_OK;
 }
 
 
@@ -4621,6 +4759,50 @@ int mf_from_vendor_driver_strength_for_mx25uxxx(u_int8_t vendor_driver_strength,
     return MFE_OK;
 }
 
+int mf_from_vendor_driver_strength_for_mx25u51294g_mx25u51294gxdi08(u_int8_t value, u_int8_t* driver_strength)
+{
+    switch (value)
+    {
+        case DRIVER_STRENGTH_VAL_120_MACRONIX_MX25K16XXX:
+            *driver_strength = 120;
+            break;
+        case DRIVER_STRENGTH_VAL_100_MACRONIX_MX25K16XXX:
+            *driver_strength = 100;
+            break;
+        case DRIVER_STRENGTH_VAL_85_MACRONIX_MX25K16XXX:
+            *driver_strength = 85;
+            break;
+        case DRIVER_STRENGTH_VAL_50_MACRONIX_MX25K16XXX:
+            *driver_strength = 50;
+            break;
+        default:
+            return MFE_BAD_PARAMS;
+    }
+    return MFE_OK;
+}
+
+int mf_to_vendor_driver_strength_for_mx25u51294g_mx25u51294gxdi08(u_int8_t value, u_int8_t* driver_strength)
+{
+    switch (value)
+    {
+        case 120:
+            *driver_strength = DRIVER_STRENGTH_VAL_120_MACRONIX_MX25K16XXX;
+            break;
+        case 100:
+            *driver_strength = DRIVER_STRENGTH_VAL_100_MACRONIX_MX25K16XXX;
+            break;
+        case 85:
+            *driver_strength = DRIVER_STRENGTH_VAL_85_MACRONIX_MX25K16XXX;
+            break;
+        case 50:
+            *driver_strength = DRIVER_STRENGTH_VAL_50_MACRONIX_MX25K16XXX;
+            break;
+        default:
+            return MFE_BAD_PARAMS;
+    }
+    return MFE_OK;
+}
+
 int mf_to_vendor_driver_strength_for_mx25uxxx(u_int8_t value, u_int8_t* driver_strength)
 {
     switch (value)
@@ -4659,9 +4841,14 @@ int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength)
 {
     u_int8_t vendor_driver_strength = 0;
     int rc = MFE_OK;
-    if (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+    if (is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size) ||
+        is_macronix_mx25u51245g(mfl))
     {
         rc = mf_to_vendor_driver_strength_for_mx25uxxx(driver_strength, &vendor_driver_strength);
+    }
+    else if (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl))
+    {
+        rc = mf_to_vendor_driver_strength_for_mx25u51294g_mx25u51294gxdi08(driver_strength, &vendor_driver_strength);
     }
     else
     {
@@ -4676,9 +4863,14 @@ int mf_get_driver_strength(mflash* mfl, u_int8_t* driver_strength)
     u_int8_t value = 0;
     int      rc = mfl->f_get_driver_strength(mfl, &value);
     CHECK_RC(rc);
-    if ((is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size)))
+    if ((is_macronix_special_case_for_driver_strength(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size) ||
+         is_macronix_mx25u51245g(mfl)))
     {
         rc = mf_from_vendor_driver_strength_for_mx25uxxx(value, driver_strength);
+    }
+    else if (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl))
+    {
+        rc = mf_from_vendor_driver_strength_for_mx25u51294g_mx25u51294gxdi08(value, driver_strength);
     }
     else
     {
@@ -4705,4 +4897,113 @@ int mf_set_dummy_cycles(mflash* mfl, u_int8_t num_of_cycles)
 int mf_get_dummy_cycles(mflash* mfl, u_int8_t* num_of_cycles)
 {
     return mfl->f_get_dummy_cycles(mfl, num_of_cycles);
+}
+
+int modify_flash_info_if_needed(mflash* mfl, flash_info_t* f_info) // TODO: add seriesCode capability support for the
+                                                                   // supported flashes
+{
+    MacronixSeriesCode series_code = MACRONIX_UNKNOWN;
+    int rc = identify_macronix_flash(mfl, &series_code);
+    CHECK_RC(rc);
+
+    switch (series_code)
+    {
+        case MACRONIX_MX25U51245G:
+            break;
+        case MACRONIX_MX25U51294G_MX25U51294GXDI08:
+            DPRINTF(("for this series code, quad enable is non-configurable setting\n"));
+            f_info->quad_en_support = 0;
+            break;
+        default:
+            DPRINTF(("Unknown Macronix series code: 0x%02X\n", series_code));
+            rc = MFE_UNSUPPORTED_FLASH_TYPE;
+            break;
+    }
+    CHECK_RC(rc);
+
+    f_info->series_code = series_code;
+    return rc;
+}
+
+/**
+ * Identify Macronix flash using SFDP Series Code at address 0x1F2
+ */
+int identify_macronix_flash(mflash* mfl, MacronixSeriesCode* series_code)
+{
+    int rc = MFE_OK;
+
+    if (!mfl || !series_code)
+    {
+        return MFE_BAD_PARAMS;
+    }
+
+    // check if SFDP is supported by the flash
+    uint32_t sfdp_signature = 0;
+    rc = mf_read_sfdp_table(mfl, 0x00, 4, false, &sfdp_signature);
+    if (rc != MFE_OK)
+    {
+        DPRINTF(("Failed to read SFDP signature: %s", mf_err2str(rc)));
+        return MFE_ERROR;
+    }
+    DPRINTF(("SFDP Signature: 0x%08X (should be 0x50444653)\n", sfdp_signature));
+    if (sfdp_signature == 0x50444653) // SFDP is supported by the flash
+    {
+        // get series code from SFDP, this differentiates flashes that have same JEDEC id
+        *series_code = MACRONIX_UNKNOWN;
+        rc = mf_read_sfdp_table(mfl, 0x1F2, 1, false, (uint32_t*)series_code);
+        if (rc != MFE_OK)
+        {
+            DPRINTF(("Failed to read Series Code SFDP: %s", mf_err2str(rc)));
+            return MFE_ERROR;
+        }
+        DPRINTF(("Series Code SFDP: 0x%02X\n", *series_code));
+    }
+
+    // check if the series code is supported
+    switch (*series_code)
+    {
+        case MACRONIX_MX25U51294G_MX25U51294GXDI08:
+        case MACRONIX_MX25U51245G:
+            break;
+        default:
+            DPRINTF(("Unknown Macronix series code: 0x%02X\n", *series_code));
+            rc = MFE_UNSUPPORTED_FLASH_TYPE;
+            break;
+    }
+
+    return rc;
+}
+
+// wrapper for reading byte_num bytes from the given address in the SFDP table
+int mf_read_sfdp_table(mflash* mfl, uint32_t address, uint8_t bytes_num, bool swap, uint32_t* data)
+{
+    int rc = MFE_OK;
+    if (!mfl || bytes_num == 0 || bytes_num > 4)
+    {
+        return MFE_BAD_PARAMS;
+    }
+
+    uint8_t data_buffer[4] = {0};
+
+    rc = new_gw_spi_read_sfdp(mfl, address, data_buffer, bytes_num);
+    if (rc != MFE_OK)
+    {
+        return rc;
+    }
+
+    memcpy(data, data_buffer, bytes_num);
+
+    if (swap)
+    {
+        // Endian swap
+        uint32_t swapped = 0;
+        int i = 0;
+        for (; i < (int)bytes_num; i++)
+        {
+            ((uint8_t*)&swapped)[bytes_num - 1 - i] = data_buffer[i];
+        }
+        *data = swapped;
+    }
+
+    return rc;
 }

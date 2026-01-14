@@ -1471,6 +1471,7 @@ bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
             case CT_CONNECTX8:
             case CT_CONNECTX8_PURE_PCIE_SWITCH:
             case CT_CONNECTX9:
+            case CT_CONNECTX9_PURE_PCIE_SWITCH:
             case CT_ARCUSE:
                 res = false;
                 break;
@@ -2545,6 +2546,12 @@ bool Fs4Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
     {
         report_warn("Failed to update FW boot address. Power cycle the device in order to load the new FW.\n");
     }
+
+    if (!ClearLivefishfIndication(flash_access))
+    {
+        return false;
+    }
+    
     return true;
 }
 
@@ -4596,6 +4603,7 @@ bool Fs4Operations::getBootRecordSize(u_int32_t& boot_record_size)
             boot_record_size = 0x4d0; // Actual size is 0x4d4
             return true;
         case CT_SPECTRUM4:
+        case CT_SPECTRUM5:
             boot_record_size = 0x660; // Actual size is 0x664
             return true;
         case CT_ABIR_GEARBOX:
@@ -4604,6 +4612,7 @@ bool Fs4Operations::getBootRecordSize(u_int32_t& boot_record_size)
         case CT_CONNECTX8:
         case CT_CONNECTX9:
         case CT_CONNECTX8_PURE_PCIE_SWITCH:
+        case CT_CONNECTX9_PURE_PCIE_SWITCH:
             boot_record_size = 0x2a0; // Actual size is 0x2a4
             return true;
 

@@ -865,7 +865,9 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps,
         _fwCompsAccess->SetActivationStep(false);
     }
     else if (componentId == FwComponent::comps_ids_t::DIGITAL_CACERT ||
-             componentId == FwComponent::comps_ids_t::DIGITAL_CACERT_REMOVAL)
+             componentId == FwComponent::comps_ids_t::DIGITAL_CACERT_REMOVAL ||
+             componentId == FwComponent::comps_ids_t::DPA_COMPONENT ||
+             componentId == FwComponent::comps_ids_t::DPA_COMPONENT_REMOVAL)
     {
         _fwCompsAccess->SetActivationStep(false);
     }
@@ -944,7 +946,7 @@ bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams&
 
 bool FsCtrlOperations::isMultiAsicSystemComponent()
 {
-    if (_hwDevId == QUANTUM3_HW_ID || _hwDevId == CX8_HW_ID || _hwDevId == CX8_PURE_PCIE_SWITCH_HW_ID || _hwDevId == CX9_HW_ID)
+    if (_hwDevId == QUANTUM3_HW_ID || _hwDevId == CX8_HW_ID || _hwDevId == CX8_PURE_PCIE_SWITCH_HW_ID || _hwDevId == CX9_HW_ID || _hwDevId == CX9_PURE_PCIE_SWITCH_HW_ID)
     {
         return true;
     }
@@ -959,10 +961,8 @@ bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData,
     progressCallBack.uefi_func
 #endif
     FwComponent bootImageComponent;
-    std::vector<FwComponent> compsToBurn;
 
     bootImageComponent.init(imageOps4MData, imageOps4MData.size(), ComponentId);
-    compsToBurn.push_back(bootImageComponent);
     if (!_fwCompsAccess->lock_flash_semaphore())
     {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
@@ -976,7 +976,7 @@ bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData,
             DPRINTF(("-W- DMA access is not supported due to BME is unset (Bus primary Enable).\n"));
         }
     }
-    if (!_fwCompsAccess->burnComponents(compsToBurn, &progressCallBack))
+    if (!_fwCompsAccess->burnComponents(bootImageComponent, &progressCallBack))
     {
         _fwCompsAccess->unlock_flash_semaphore();
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
@@ -1237,9 +1237,105 @@ int FsCtrlOperations::FwCompsErrToFwOpsErr(fw_comps_error_t err)
             fwOpsErr = MLXFW_MEM_ERR;
             break;
 
-        case FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
-            fwOpsErr = MLXFW_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION;
+        case FWCOMPS_MCC_REJECTED_REBURN_RUNNING_AND_RETRY:
+            fwOpsErr = MLXFW_REJECTED_REBURN_RUNNING_AND_RETRY;
             break;
+
+        case FWCOMPS_MCC_REJECTED_LINKX_TYPE_NOT_SUPPORTED:
+            fwOpsErr = MLXFW_REJECTED_LINKX_TYPE_NOT_SUPPORTED;
+
+        case FWCOMPS_MCC_REJECTED_HOST_STORAGE_IN_USE:
+            fwOpsErr = MLXFW_REJECTED_HOST_STORAGE_IN_USE;
+
+        case FWCOMPS_MCC_REJECTED_LINKX_TRANSFER:
+            fwOpsErr = MLXFW_REJECTED_LINKX_TRANSFER;
+
+        case FWCOMPS_MCC_REJECTED_LINKX_ACTIVATE:
+            fwOpsErr = MLXFW_REJECTED_LINKX_ACTIVATE;
+
+        case FWCOMPS_MCC_REJECTED_INCOMPATIBLE_FLASH:
+            fwOpsErr = MLXFW_REJECTED_INCOMPATIBLE_FLASH;
+
+        case FWCOMPS_MCC_REJECTED_TOKEN_ALREADY_APPLIED:
+            fwOpsErr = MLXFW_REJECTED_TOKEN_ALREADY_APPLIED;
+
+        case FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
+            fwOpsErr = MLXFW_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INVALID_SECURITY_VERSION:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INVALID_SECURITY_VERSION;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_CERT_CER509:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_CERT_CER509;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_CERT_SIGNATURE:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_CERT_SIGNATURE;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_CERT_METADATA:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_CERT_METADATA;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_0:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_0;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_NO_PLACE:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_NO_PLACE;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_REMOVAL_NO_MATCH_UIDD:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_REMOVAL_NO_MATCH_UIDD;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_1:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_1;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_2:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_2;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_NUM_OF_SWAP:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_NUM_OF_SWAP;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_3:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_3;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_4:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_4;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_NOT_ALLOWED_SAME_UIDD:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_NOT_ALLOWED_SAME_UIDD;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_5:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_5;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_6:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_6;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_FLASH_WRITE_PROTECTED:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_FLASH_WRITE_PROTECTED;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_7:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_7;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_8:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_8;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_9:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_9;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_DPA_ELF:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_DPA_ELF;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_DPA_CRYPTO_BLOB:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_DPA_CRYPTO_BLOB;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_DPA_APP_METADATA:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_DPA_APP_METADATA;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_DPA_REMOVAL_SIGNATURE:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_DPA_REMOVAL_SIGNATURE;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_DPA_CONTAINER_VERIFY:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_DPA_CONTAINER_VERIFY;
+
+        case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_10:
+            fwOpsErr = MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_10;
 
         default:
             if (err != FWCOMPS_SUCCESS)
@@ -1360,9 +1456,71 @@ bool FsCtrlOperations::IsSecurityVersionViolated(u_int32_t image_security_versio
     return (imageSecurityVersion < deviceEfuseSecurityVersion);
 }
 
+bool FsCtrlOperations::QueryDpaAppMetadataFromMcqi(FwComponent::comps_ids_t comp,
+    reg_access_hca_mcqi_dpa_apps_info_ext& mcqiDpaApps,
+    const u_int32_t deviceIndex)
+{
+vector<u_int8_t> data;
+if (!_fwCompsAccess->GetComponentInfo(comp, deviceIndex, data))
+{
+return errmsg("%s", _fwCompsAccess->getLastErrMsg());
+}
+
+memcpy(&mcqiDpaApps, data.data(), sizeof(mcqiDpaApps));
+return true;
+}
+
+bool FsCtrlOperations::GetAllDpaAppsMetadataFromMcqi(FwComponent::comps_ids_t comp,
+                                                     vector<u_int8_t>& data,
+                                                     const u_int32_t firstDpaAppIndex)
+{
+#ifdef MST_CPU_armv7l_umbriel // {
+    return errmsg("Not supported");
+#else
+    u_int32_t dpaAppIndex = firstDpaAppIndex;
+    reg_access_hca_mcqi_dpa_apps_info_ext mcqiDpaApps;
+    u_int8_t totalSize;
+    if (!QueryDpaAppMetadataFromMcqi(comp, mcqiDpaApps, dpaAppIndex))
+    {
+        return errmsg("%s", _fwCompsAccess->getLastErrMsg());
+    }
+    totalSize = mcqiDpaApps.total_number_of_entries;
+    if (totalSize > 0)
+    {
+        vector<u_int8_t> dpaAppMetadataData(REG_ACCESS_HCA_MCQI_DPA_METADATA_EXT_SIZE);
+        reg_access_hca_mcqi_dpa_metadata_ext_pack(&mcqiDpaApps.dpa_app_metadata, dpaAppMetadataData.data());
+        data.insert(data.end(), dpaAppMetadataData.begin(), dpaAppMetadataData.end());
+        dpaAppIndex++;
+        while (dpaAppIndex < totalSize)
+        {
+            if (!QueryDpaAppMetadataFromMcqi(comp, mcqiDpaApps, dpaAppIndex))
+            {
+                return errmsg("%s", _fwCompsAccess->getLastErrMsg());
+            }
+            reg_access_hca_mcqi_dpa_metadata_ext_pack(&mcqiDpaApps.dpa_app_metadata, dpaAppMetadataData.data());
+            data.insert(data.end(), dpaAppMetadataData.begin(), dpaAppMetadataData.end());
+            dpaAppIndex++;
+        }
+    }
+    return true;
+#endif // } MST_CPU_armv7l_umbriel
+}
+
 bool FsCtrlOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32_t deviceIndex, vector<u_int8_t>& data)
 {
     DPRINTF(("QueryComponentData - %X\n", comp));
+    if (comp == FwComponent::DPA_COMPONENT)
+    {
+#ifdef MST_CPU_armv7l_umbriel // {
+        return errmsg("Not supported");
+#else
+        if (!GetAllDpaAppsMetadataFromMcqi(comp, data, deviceIndex))
+        {
+            return errmsg("%s", _fwCompsAccess->getLastErrMsg());
+        }
+        return true;
+#endif // } MST_CPU_armv7l_umbriel
+    }
     if (!_fwCompsAccess->GetComponentInfo(comp, deviceIndex, data) &&
         _fwCompsAccess->getLastError() != FWCOMPS_DEVICE_NOT_PRESENT)
     {

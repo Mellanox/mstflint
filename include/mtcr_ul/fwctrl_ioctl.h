@@ -52,6 +52,8 @@ int fwctl_control_access_register(int fd, void *data_in,
                                   int method, int *reg_status,
                                   mfile* mf);
 void fwctl_set_device_id(mfile* mf);
+struct mlx5_umem_buff* mlx5lib_alloc_umem_mkey_buff(mfile* mf, size_t size, int page_size);
+void mlx5lib_free_umem_mkey_buff(mfile* mf);
 
 #define FWCTL_TYPE 0x9A
 
@@ -81,9 +83,11 @@ void fwctl_set_device_id(mfile* mf);
  * As well as additional errnos, within specific ioctls.
  */
 enum {
-    FWCTL_CMD_BASE = 0,
-    FWCTL_CMD_INFO = 0,
-    FWCTL_CMD_RPC  = 1,
+	FWCTL_CMD_BASE = 0,
+	FWCTL_CMD_INFO = 0,
+	FWCTL_CMD_RPC = 1,
+	FWCTL_CMD_RSC_DESTROY = 2,
+	FWCTL_CMD_RSC_UMEM_REG = 3,
 };
 
 enum fwctl_device_type {
@@ -131,6 +135,12 @@ struct fwctl_info {
  *
  * The format of the buffers matches the out_device_type from FWCTL_INFO.
  */
+
+ enum fwctl_umem_flags {
+	FWCTL_UMEM_FLAG_MKEY = 1 << 0, /* Create Memory key */
+	FWCTL_UMEM_FLAG_MCDD = 1 << 1, /* Create Memory key with DMA Device Direct */
+};
+
 struct fwctl_rpc {
     __u32         size;
     __u32         scope;
@@ -139,6 +149,34 @@ struct fwctl_rpc {
     __aligned_u64 in;
     __aligned_u64 out;
 };
+
+struct mlx5_umem_buff {
+	void *buff;
+	size_t size;
+	__uint32_t umem_id;
+	__uint32_t umem_mkey;
+	__uint32_t rsc_id;
+};
+
+struct fwctl_rsc_umem_reg {
+	__u32 size;
+	__aligned_u64 flags;
+	__aligned_u64 addr; /* user address */
+	__aligned_u64 len; /* user buffer length */
+	__u32 umem_id; /* returned device's umem ID */
+	__u32 mkey_id; /* returned device's mkey ID */
+	__u32 rsc_id; /* fwctl resource id */
+};
+
+struct fwctl_rsc_destroy {
+	__u32 size;
+	__aligned_u64 flags; /* TODO remove */
+	__u32 type; /* enum fwctl_rsc_type */
+	__u32 rsc_id; /* fwctl resource id */
+};
+
+#define FWCTL_RSC_UMEM_REG _IO(FWCTL_TYPE, FWCTL_CMD_RSC_UMEM_REG)
+#define FWCTL_RSC_DESTROY _IO(FWCTL_TYPE, FWCTL_CMD_RSC_DESTROY)
 #define FWCTL_RPC _IO(FWCTL_TYPE, FWCTL_CMD_RPC)
 
 #endif /* __FWCTRL_IOCTL_H__ */

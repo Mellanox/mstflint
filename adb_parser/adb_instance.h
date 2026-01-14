@@ -160,7 +160,7 @@ struct InstOpsPropertiesExtended
     struct InstancePropertiesMask
     {
         unsigned char is_semaphore : 1, access_r : 1, access_w : 1, valid_array_index : 1, is_diff : 1,
-          is_name_extended : 1;
+          is_name_extended : 1, is_index : 1, is_op : 1;
 
         InstancePropertiesMask()
         {
@@ -170,6 +170,8 @@ struct InstOpsPropertiesExtended
             valid_array_index = 1;
             is_diff = 0;
             is_name_extended = 0;
+            is_index = 0;
+            is_op = 0;
         }
     };
 
@@ -224,6 +226,8 @@ public:
     bool is_semaphore() const;
     bool is_ro() const;
     bool is_wo() const;
+    bool is_index() const;
+    bool is_op() const;
     bool is_diff() const;
     void set_is_diff(bool val);
     bool isEnumExists();

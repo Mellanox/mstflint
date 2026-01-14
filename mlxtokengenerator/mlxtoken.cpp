@@ -49,7 +49,8 @@ MlxToken::MlxToken(Device_Type deviceType, string aggregatableTLV, vector<string
 void MlxToken::LoadFromXMLFile(string filePath)
 {
     vector<u_int8_t> token = ReadFromFile(filePath);
-    GenericCommander commander(nullptr, "", _deviceType);
+    string dbName = "";
+    GenericCommander commander(nullptr, dbName, _deviceType);
 
     _tlvs.clear();
 
@@ -67,7 +68,8 @@ void MlxToken::LoadFromXMLFile(string filePath)
 
 void MlxToken::LoadFromParams(const vector<TLVParamsData>& paramsData)
 {
-    GenericCommander commander(nullptr, "", _deviceType);
+    string dbName = "";
+    GenericCommander commander(nullptr, dbName, _deviceType);
     _tlvs.clear();
 
     commander.TLVs2TLVConfs(_requiredTLVs, _tlvs);
@@ -78,7 +80,7 @@ void MlxToken::LoadFromParams(const vector<TLVParamsData>& paramsData)
                            [dataEntry](std::shared_ptr<TLVConf> tlv) { return tlv->_name == dataEntry._tlv; });
         if (tlv != _tlvs.end())
         {
-            (*tlv)->updateParamByName(dataEntry._param, dataEntry._data);
+            (*tlv)->updateParamByName(dataEntry._param, dataEntry._data, QueryNext);
         }
         else
         {
@@ -108,7 +110,7 @@ void MlxToken::Aggregate(const MlxToken& token)
 
 void MlxToken::Aggregate(const std::shared_ptr<TLVConf> tlvConf)
 {
-    for (auto param : tlvConf->_params)
+    for (auto param : tlvConf->_paramsNext)
     {
         if (!param->getVal().empty() && std::isdigit(param->_name.back()))
         {
@@ -127,11 +129,11 @@ shared_ptr<Param> MlxToken::FindNextFreeSlot(string tlvName, string paramName)
         paramName.pop_back();
     }
 
-    auto emptyParam = find_if(tlv->_params.begin(), tlv->_params.end(),
+    auto emptyParam = find_if(tlv->_paramsNext.begin(), tlv->_paramsNext.end(),
                               [paramName](shared_ptr<Param> param)
                               { return (param->_name.find(paramName) != string::npos && param->getVal().empty()); });
 
-    if (emptyParam == tlv->_params.end())
+    if (emptyParam == tlv->_paramsNext.end())
     {
         throw MlxTknGeneratorException("Couldn't find an empty field for %s, aggregated token is full.",
                                        paramName.c_str());
@@ -182,7 +184,8 @@ const std::shared_ptr<TLVConf> MlxToken::GetTlvConf(string tlvName) const
 
 string MlxToken::ToXML()
 {
-    GenericCommander commander(nullptr, "", _deviceType);
+    string dbName = "";
+    GenericCommander commander(nullptr, dbName, _deviceType);
     string tokenXML("");
     commander.genXMLFromTLVConf(_tlvs, tokenXML, false);
     return tokenXML;
@@ -195,7 +198,7 @@ void MlxToken::VerifySharedTlvs(const MlxToken& token)
         if (tlv->_name != _aggregatableTLV)
         {
             const std::shared_ptr<TLVConf> sharedTLV = token.GetTlvConf(tlv->_name);
-            if (!tlv->areParamsEqual(*sharedTLV))
+            if (!tlv->areParamsEqual(*sharedTLV, QueryNext))
             {
                 throw MlxTknGeneratorException("data in %s tlv must be identical in all given tokens.",
                                                tlv->_name.c_str());
@@ -212,12 +215,12 @@ const u_int8_t MlxChallengeBasedToken::_maxNumOfDeviceUniquePairs = 12;
 
 void MlxChallengeBasedToken::DeleteEmptyParams(std::shared_ptr<TLVConf> tlvConf)
 {
-    auto param = tlvConf->_params.begin();
-    while (param != tlvConf->_params.end())
+    auto param = tlvConf->_paramsNext.begin();
+    while (param != tlvConf->_paramsNext.end())
     {
         if ((*param)->getVal().empty())
         {
-            param = tlvConf->_params.erase(param);
+            param = tlvConf->_paramsNext.erase(param);
         }
         else
         {
@@ -231,13 +234,13 @@ void MlxChallengeBasedToken::UpdateNumberOfEntries()
     auto deviceUniqueTLV = GetTlvConf("file_device_unique");
 
     u_int8_t validEntries =
-      std::count_if(deviceUniqueTLV->_params.begin(), deviceUniqueTLV->_params.end(),
+      std::count_if(deviceUniqueTLV->_paramsNext.begin(), deviceUniqueTLV->_paramsNext.end(),
                     [](shared_ptr<Param> param) { return param->_name.find("device_unique_id") != string::npos; });
 
-    auto validEntriesParam = find_if(deviceUniqueTLV->_params.begin(), deviceUniqueTLV->_params.end(),
+    auto validEntriesParam = find_if(deviceUniqueTLV->_paramsNext.begin(), deviceUniqueTLV->_paramsNext.end(),
                                      [](shared_ptr<Param> param) { return (param->_name == "valid_entries"); });
 
-    if (validEntriesParam == deviceUniqueTLV->_params.end())
+    if (validEntriesParam == deviceUniqueTLV->_paramsNext.end())
     {
         throw MlxTknGeneratorException("Missing valid_entries field in token");
     }
@@ -253,7 +256,7 @@ void MlxChallengeBasedToken::VerifyTokenContent()
     bool deviceUniqueIdFound[_maxNumOfDeviceUniquePairs] = {false};
     bool nonceFound[_maxNumOfDeviceUniquePairs] = {false};
 
-    for (auto param : deviceUniqueTLV->_params)
+    for (auto param : deviceUniqueTLV->_paramsNext)
     {
         if (param->_name.find("device_unique_id") != string::npos && std::isdigit(param->_name.back()) &&
             !param->getVal().empty())

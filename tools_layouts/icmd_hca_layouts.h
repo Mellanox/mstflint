@@ -36,9 +36,9 @@
  
 
 /***
-         *** This file was generated at "2025-07-08 11:28:44"
+         *** This file was generated at "2026-01-07 11:57:14"
          *** by:
-         ***    > adb2pack.py --input icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils -o tools_layouts
+         ***    > [REDACTED]/adb2pack.py --input adb/tools/icmd_hca.adb --file-prefix icmd_hca --prefix icmd_hca_ --no-adb-utils
          ***/
 #ifndef ICMD_HCA_LAYOUTS_H
 #define ICMD_HCA_LAYOUTS_H
@@ -79,7 +79,7 @@ struct icmd_hca_diagnostic_params_context {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - The number of samples to store on the device's sampling buffer is 2^ log_number_of_samples. Range is 1   floor(DIAG_CNT_CAP. log_max_samples_mul_counters /DIAG_CNT_SET. num_of_counters)
 Note that modifying this field will cause resetting the sampling buffer.
- */
+	*/
 	/* 0x0.0 - 0x0.7 */
 	/* access: RW */
 	u_int8_t log_num_of_samples;
@@ -145,18 +145,18 @@ struct icmd_hca_debug_cap {
 	/* access: RW */
 	u_int8_t log_min_resource_dump_eq;
 	/* Description - If set, Resource_dump register is supported.
-See Table  1693, "RESOURCE_DUMP Register Layout," on page  2010 */
+See Table  1809, "RESOURCE_DUMP Register Layout," on page  2124 */
 	/* 0x0.22 - 0x0.22 */
 	/* access: RW */
 	u_int8_t resource_dump;
 	/* Description - Log(base 2) of the size in granularity of 4KB to be allocated by host in order to accommodate cr_dump.
 0 means feature is not supported.
-See Table  1691, "CORE_DUMP Register Layout," on page  2008 */
+See Table  1807, "CORE_DUMP Register Layout," on page  2122 */
 	/* 0x0.23 - 0x0.27 */
 	/* access: RW */
 	u_int8_t log_cr_dump_to_mem_size;
 	/* Description - If set, Core dump of type of specific QP is supported.
- */
+	*/
 	/* 0x0.30 - 0x0.30 */
 	/* access: RW */
 	u_int8_t core_dump_qp;
@@ -174,7 +174,7 @@ See Table  1691, "CORE_DUMP Register Layout," on page  2008 */
 	/* access: RW */
 	u_int8_t diag_counter_tracer_dump;
 	/* Description - If set, health monitoring for rx path activity is supported.
-See Table  29.5.1, "RX Path Activity," on page  1897 */
+See Table  29.5.1, "RX Path Activity," on page  2010 */
 	/* 0x4.29 - 0x4.29 */
 	/* access: RW */
 	u_int8_t health_mon_rx_activity;
@@ -264,7 +264,7 @@ struct icmd_hca_icmd_query_cap_general {
 	/* access: RW */
 	u_int8_t nic_cap_reg;
 	/* Description - If set, port_state_behavior register is supported.
-See Section 30.2.27, "PORT_STATE_BEHAVIOR Register", on page 2021 */
+See Section 30.2.27, "PORT_STATE_BEHAVIOR Register", on page 2135 */
 	/* 0x0.14 - 0x0.14 */
 	/* access: RW */
 	u_int8_t port_state_behavior;
@@ -276,11 +276,11 @@ See Section 30.2.27, "PORT_STATE_BEHAVIOR Register", on page 2021 */
 	/* 0x0.16 - 0x0.16 */
 	/* access: RW */
 	u_int8_t ncfg_reg;
-	/* Description - If set, CWCAM register is supported. Table 2465, "CWCAM - Congestion WRED Capabilities Mask Register Layout," on page 2885 */
+	/* Description - If set, CWCAM register is supported. Table 2687, "CWCAM - Congestion WRED Capabilities Mask Register Layout," on page 3105 */
 	/* 0x0.17 - 0x0.17 */
 	/* access: RW */
 	u_int8_t cwcam_reg;
-	/* Description - If set, SBCAM register is supported. See Table 2527, "SBCAM - Shared Buffer Capabilities Mask Register Layout," on page 2936 */
+	/* Description - If set, SBCAM register is supported. See Table 2704, "SBCAM - Shared Buffer Capabilities Mask Register Layout," on page 3133 */
 	/* 0x0.18 - 0x0.18 */
 	/* access: RW */
 	u_int8_t sbcam_reg;
@@ -300,19 +300,19 @@ See Section 30.2.27, "PORT_STATE_BEHAVIOR Register", on page 2021 */
 	/* 0x0.24 - 0x0.24 */
 	/* access: RW */
 	u_int8_t capi;
-	/* Description - If set, QCAM register is supported. Table  1147, "QCAM - QoS Capabilities Mask Register Layout," on page  1468. */
+	/* Description - If set, QCAM register is supported. Table  1260, "QCAM - QoS Capabilities Mask Register Layout," on page  1607. */
 	/* 0x0.25 - 0x0.25 */
 	/* access: RW */
 	u_int8_t qcam_reg;
-	/* Description - If set, MCAM register is supported. Table  2812, "MCAM - Management Capabilities Mask Register Layout," on page  3176. */
+	/* Description - If set, MCAM register is supported. Table  3046, "MCAM - Management Capabilities Mask Register Layout," on page  3405. */
 	/* 0x0.26 - 0x0.26 */
 	/* access: RW */
 	u_int8_t mcam_reg;
-	/* Description - If set, PCAM register is supported. Table  1756, "PCAM - Ports Capabilities Mask Register Layout," on page  2062 */
+	/* Description - If set, PCAM register is supported. Table  1868, "PCAM - Ports Capabilities Mask Register Layout," on page  2175 */
 	/* 0x0.27 - 0x0.27 */
 	/* access: RW */
 	u_int8_t pcam_reg;
-	/* Description - When set, multi-host synchronization through the device is supported. Section  32.4.3, "ICMD_MH_SYNC - Multi-Host Synchronization," on page  4157. */
+	/* Description - When set, multi-host synchronization through the device is supported. Section  32.4.3, "ICMD_MH_SYNC - Multi-Host Synchronization," on page  4401. */
 	/* 0x0.28 - 0x0.28 */
 	/* access: RW */
 	u_int8_t mh_sync;
@@ -396,12 +396,12 @@ other values are reserved. */
 /* Size in bytes - 16 */
 struct icmd_hca_icmd_query_diagnostic_cntrs_in {
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - The sample_index is the first sample index. The sample index shall be in the range of 0    2^HCA_CAP.log_number_of_samples. See Section  31.3.4.11, "Debug Capabilities," on page  3487. */
+	/* Description - The sample_index is the first sample index. The sample index shall be in the range of 0    2^HCA_CAP.log_number_of_samples. See Section  31.3.4.11, "Debug Capabilities," on page  3727. */
 	/* 0x8.0 - 0x8.15 */
 	/* access: RW */
 	u_int16_t sample_index;
 	/* Description - The number of samples to return. 
-Device might return up to the configured value HCA_CAP.log_number_of_samples. (See Section  31.3.4.11, "Debug Capabilities," on page  3487).
+Device might return up to the configured value HCA_CAP.log_number_of_samples. (See Section  31.3.4.11, "Debug Capabilities," on page  3727).
 Note that the device can perform roll over when reaching number_of_samples. For example: if the user asks for 256 samples starting from index 128, the result will be: 128,   ,255,0,   ,127. */
 	/* 0x8.16 - 0x8.31 */
 	/* access: RW */
@@ -413,7 +413,7 @@ Note that the device can perform roll over when reaching number_of_samples. For 
 struct icmd_hca_icmd_query_diagnostic_params_out {
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Diagnostic parameters context.
-Table  4249, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  4073 */
+Table  4471, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  4314 */
 	/* 0x8.0 - 0x20.31 */
 	/* access: RW */
 	struct icmd_hca_diagnostic_params_context diagnostic_params_context;
@@ -424,7 +424,7 @@ Table  4249, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  4073 *
 struct icmd_hca_icmd_set_diagnostic_params_in {
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Diagnostic parameters context.
-Table  4249, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  4073 */
+Table  4471, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  4314 */
 	/* 0x8.0 - 0x20.31 */
 	/* access: RW */
 	struct icmd_hca_diagnostic_params_context diagnostic_params_context;
@@ -435,21 +435,25 @@ Table  4249, "DIAGNOSTIC_PARAMS_CONTEXT Input Structure Layout," on page  4073 *
 union icmd_hca_icmd_hca_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x8.31 */
+	/* 0x0.0 - 0x4.31 */
 	/* access: RW */
-	struct icmd_hca_icmd_mh_sync_out icmd_mh_sync_out;
+	struct icmd_hca_icmd_query_cap_general icmd_query_cap_general;
 	/* Description -  */
 	/* 0x0.0 - 0x0.31 */
 	/* access: RW */
 	struct icmd_hca_icmd_query_cap_in icmd_query_cap_in;
 	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
+	/* 0x0.0 - 0x20.31 */
 	/* access: RW */
-	struct icmd_hca_icmd_query_diagnostic_cntrs_in icmd_query_diagnostic_cntrs_in;
+	struct icmd_hca_icmd_query_diagnostic_params_out icmd_query_diagnostic_params_out;
 	/* Description -  */
 	/* 0x0.0 - 0x40.31 */
 	/* access: RW */
 	struct icmd_hca_debug_cap debug_cap;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct icmd_hca_icmd_query_diagnostic_cntrs_in icmd_query_diagnostic_cntrs_in;
 	/* Description -  */
 	/* 0x0.0 - 0x20.31 */
 	/* access: RW */
@@ -459,13 +463,9 @@ union icmd_hca_icmd_hca_Nodes {
 	/* access: RW */
 	struct icmd_hca_icmd_mh_sync_in icmd_mh_sync_in;
 	/* Description -  */
-	/* 0x0.0 - 0x20.31 */
+	/* 0x0.0 - 0x8.31 */
 	/* access: RW */
-	struct icmd_hca_icmd_query_diagnostic_params_out icmd_query_diagnostic_params_out;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct icmd_hca_icmd_query_cap_general icmd_query_cap_general;
+	struct icmd_hca_icmd_mh_sync_out icmd_mh_sync_out;
 };
 
 

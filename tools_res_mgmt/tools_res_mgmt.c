@@ -230,6 +230,11 @@ static struct device_sem_info g_dev_sem_info_db[] = {
     1,           // vsec_sem_supported
   },
   {
+    DeviceGR100, // dev_id
+    {0xe74e0},   // hw_sem_addr find correct one for 0x3000
+    1,           // vsec_sem_supported
+  },
+  {
     DeviceSpectrum4, // dev_id
     {0xa52f8},       // hw_sem_addr
     1,               // vsec_sem_supported

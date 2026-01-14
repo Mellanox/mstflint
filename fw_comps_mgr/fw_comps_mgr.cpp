@@ -63,6 +63,27 @@ static void mft_signal_set_handling(int isOn)
 #include <errno.h>
 #include "mft_utils.h"
 
+static FILE* g_fwcomps_log_file = NULL;
+
+// Set log file for fw_comps_mgr library so it can write to log from external callers
+extern "C" void fwcomps_set_log_file(FILE* log_file)
+{
+    g_fwcomps_log_file = log_file;
+}
+
+// Print to stdout and if log file is set, log to file as well
+#define FWCOMPS_PRINT(...)                            \
+    do                                                \
+    {                                                 \
+        printf(__VA_ARGS__);                          \
+        if (g_fwcomps_log_file != NULL)               \
+        {                                             \
+            fprintf(g_fwcomps_log_file, __VA_ARGS__); \
+            fflush(g_fwcomps_log_file);               \
+        }                                             \
+    } while (0)
+
+
 static mfile* mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* dma_func, void* extra_data)
 {
     if ((fw_cmd_context == NULL) || (fw_cmd_func == NULL) || (extra_data == NULL)) {
@@ -538,7 +559,7 @@ bool FwCompsMgr::accessComponent(u_int32_t              offset,
         _accessObj->accessComponent(_updateHandle, offset, size, data, access, _currComponentStr, progressFuncAdv);
 
     if (!bRes && (lastFsmCommandArgs != NULL) && isDMAAccess()) {
-        printf("\nDMA access has failed, switching to Register-Access burn.\n");
+        FWCOMPS_PRINT("\nDMA access has failed, switching to Register-Access burn.\n");
         bRes = fallbackToRegisterAccess();
 
         if (bRes) {
@@ -613,6 +634,21 @@ const char* FwCompsMgr::commandToStr(fsm_command_t cmd)
     }
 }
 
+ string FwCompsMgr::warningCodeToString(fw_comps_warning_t warning)
+ {
+     switch (warning)
+     {
+         case FWCOMPS_MCC_WARNING_OK:
+             return "No warning";
+         case FWCOMPS_MCC_WARNING_DPA_API_OS_INCOMPATIBLE:
+             return "Warning DPA API OS incompatible";
+         case FWCOMPS_MCC_WARNING_DPA_API_FW_INCOMPATIBLE:
+             return "Warning DPA API FW incompatible";
+         default:
+             return "Unknown warning";
+     }
+ }
+ 
 bool FwCompsMgr::controlFsm(fsm_command_t          command,
                             fsm_state_t            expectedState,
                             u_int32_t              size,
@@ -676,7 +712,13 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
         /* add here auto_update + device_index_size */
         deal_with_signal();
     } while (rc == ME_REG_ACCESS_RES_NOT_AVLBL && count++ < reg_access_timeout);
-    if (rc) {
+ 
+     if (_lastFsmCtrl.warning_code && !rc)
+     {
+         std::cout << "-W- " << warningCodeToString((fw_comps_warning_t)_lastFsmCtrl.warning_code) << "." << std::endl;
+     }
+ 
+     if (rc) {
         if (_lastFsmCtrl.error_code) {
             _lastError = mccErrTrans(_lastFsmCtrl.error_code);
             if (((currentState == FSMST_LOCKED) && (expectedState == FSMST_DOWNSTREAM_DEVICE_TRANSFER)) ||
@@ -769,7 +811,8 @@ bool FwCompsMgr::runMCQI(u_int32_t componentIndex,
                          u_int32_t infoType,
                          u_int32_t dataSize,
                          u_int32_t offset,
-                         u_int32_t* data)
+                         u_int32_t* data,
+                         u_int32_t deviceIndex)
 {
     bool ret = true;
     mft_signal_set_handling(1);
@@ -779,12 +822,12 @@ bool FwCompsMgr::runMCQI(u_int32_t componentIndex,
     _currCompInfo.offset = offset;
     _currCompInfo.data_size = dataSize;
     _currCompInfo.component_index = componentIndex;
-    _currCompInfo.device_index = _deviceIndex;
+    _currCompInfo.device_index = deviceIndex;
     _currCompInfo.device_type = _deviceType;
     DPRINTF((
-                "-D- MCQI: read_pending_component %u infoType %u offset %u dataSize %u, componentIndex %u _deviceIndex %u "
+                "-D- MCQI: read_pending_component %u infoType %u offset %u dataSize %u, componentIndex %u deviceIndex %u "
                 "\n",
-                readPending, infoType, offset, dataSize, componentIndex, _deviceIndex));
+                readPending, infoType, offset, dataSize, componentIndex, deviceIndex));
     reg_access_status_t rc = reg_access_mcqi(_mf, REG_ACCESS_METHOD_GET, &_currCompInfo);
 
     deal_with_signal();
@@ -912,33 +955,36 @@ bool FwCompsMgr::queryPGUID(fw_info_t* fwInfo,
     return true;
 }
 
-bool FwCompsMgr::queryComponentInfo(u_int32_t  componentIndex,
-                                    u_int8_t   readPending,
-                                    u_int32_t  infoType,
-                                    u_int32_t  dataSize,
-                                    u_int32_t* data)
+bool FwCompsMgr::queryComponentInfo(u_int32_t componentIndex,
+                                    u_int8_t readPending,
+                                    u_int32_t infoType,
+                                    u_int32_t dataSize,
+                                    u_int32_t* data,
+                                    u_int32_t deviceIndex)
 {
     u_int32_t maxDataSize = mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET) - sizeof(_currCompInfo);
-
-    if (maxDataSize > MAX_REG_DATA) {
+    if (maxDataSize > MAX_REG_DATA)
+    {
         maxDataSize = MAX_REG_DATA;
     }
-    if (!runMCQI(componentIndex, readPending, infoType, maxDataSize, 0, data))
+    if (!runMCQI(componentIndex, readPending, infoType, maxDataSize, 0, data, deviceIndex))
     {
         return false;
     }
     u_int32_t compInfoSize = _currCompInfo.info_size;
     u_int32_t tOffset = maxDataSize;
-
-    if (tOffset >= compInfoSize) {
+    if (tOffset >= compInfoSize)
+    {
         return true;
     }
-    if (dataSize < compInfoSize) {
+    if (dataSize < compInfoSize)
+    {
         compInfoSize = dataSize;
     }
-    while (tOffset < compInfoSize) {
+    while (tOffset < compInfoSize)
+    {
         u_int32_t toRead = compInfoSize - tOffset > maxDataSize ? maxDataSize : compInfoSize - tOffset;
-        if (!runMCQI(componentIndex, readPending, infoType, toRead, tOffset, data + tOffset))
+        if (!runMCQI(componentIndex, readPending, infoType, toRead, tOffset, data + tOffset, deviceIndex))
         {
             return false;
         }
@@ -1198,24 +1244,29 @@ const char* CompNames[] = {"NO_COMPONENT 1",
                            "COMPID_DIGITAL_CACERT_REMOVAL",
                            "COMPID_DIGITAL_CACERT_CHAIN_REMOVAL",
                            "NO_COMPONENT 4",
-                           "COMPID_LINKX_ELS"};
+                           "COMPID_LINKX_ELS",
+                           "COMPID_DPA_COMPONENT",
+                           "COMPID_DPA_COMPONENT_REMOVAL"};
 
 bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
 {
-    u_int16_t     compIdx = 0;
-    int           last_index_flag = 0;
+    u_int16_t compIdx = 0;
+    int last_index_flag = 0;
     comp_query_st compStatus;
-
-    if (_refreshed) {
+    if (_refreshed)
+    {
         return true;
     }
-    if (_compsQueryMap.size()) {
+    if (_compsQueryMap.size())
+    {
         _compsQueryMap.clear();
     }
     _compsQueryMap.resize((unsigned)(FwComponent::COMPID_UNKNOWN));
-    while (!last_index_flag) {
+    while (!last_index_flag)
+    {
         memset(&compStatus, 0, sizeof(comp_query_st));
-        if (queryComponentStatus(compIdx, &(compStatus.comp_status))) {
+        if (queryComponentStatus(compIdx, &(compStatus.comp_status)))
+        {
             compStatus.comp_status.component_index = compIdx;
             if (ComponentStatus != NULL && (compStatus.comp_status.identifier == FwComponent::COMPID_LINKX ||
                                             compStatus.comp_status.identifier == FwComponent::COMPID_LINKX_ELS))
@@ -1232,11 +1283,14 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
             else
             {
                 u_int32_t capSt[DEFAULT_SIZE] = {0};
-                if (queryComponentInfo(compIdx, 1, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
-                    if (queryComponentInfo(compIdx, 0, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
-                        /*_lastError = FWCOMPS_REG_FAILED; */
+                if (queryComponentInfo(compIdx, 1, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt, _deviceIndex) == false)
+                {
+                    if (queryComponentInfo(compIdx, 0, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt, _deviceIndex) ==
+                        false)
+                    {
+                        //_lastError = FWCOMPS_REG_FAILED;
                         DPRINTF(("-D- Found component: %#x name %s MCQI failed \n", compStatus.comp_status.identifier,
-                                CompNames[compStatus.comp_status.identifier]));
+                                 CompNames[compStatus.comp_status.identifier]));
                         return false;
                     }
                 }
@@ -1255,11 +1309,13 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
                 memcpy(&(_compsQueryMap[compStatus.comp_status.identifier]), &compStatus, sizeof(compStatus));
                 // reg_access_hca_mcqi_cap_ext_ext_print(&(compStatus.comp_cap), stdout, 3);
                 DPRINTF(("-D- Found component with identifier=%#x index=%u name=%s supported_info_bitmask=0x%x \n",
-                        compStatus.comp_status.identifier, compIdx, CompNames[compStatus.comp_status.identifier],
-                        compStatus.comp_cap.supported_info_bitmask));
+                         compStatus.comp_status.identifier, compIdx, CompNames[compStatus.comp_status.identifier],
+                         compStatus.comp_cap.supported_info_bitmask));
             }
             last_index_flag = compStatus.comp_status.last_index_flag;
-        } else {
+        }
+        else
+        {
             DPRINTF(("-D- queryComponentStatus failed for component index %d !!\n", compIdx));
             return false;
         }
@@ -1332,30 +1388,36 @@ bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType,
     return true;
 }
 
-bool FwCompsMgr::readComponentInfo(FwComponent::comps_ids_t   compType,
-                                   comp_info_t                infoType,
-                                   std::vector < u_int32_t >& retData,
-                                   bool                       readPending)
+bool FwCompsMgr::readComponentInfo(FwComponent::comps_ids_t compType,
+                                   comp_info_t infoType,
+                                   std::vector<u_int32_t>& retData,
+                                   bool readPending)
 {
-    if (!RefreshComponentsStatus()) {
+    if (!RefreshComponentsStatus())
+    {
         return false;
     }
     _currCompQuery = &(_compsQueryMap[compType]);
     _componentIndex = _currCompQuery->comp_status.component_index;
 
-    if (!queryComponentInfo(_componentIndex, (readPending == true), infoType, 0, 0)) {
+    if (!queryComponentInfo(_componentIndex, readPending == true, infoType, 0, 0, _deviceIndex))
+    {
         return false;
     }
-    if (_currCompQuery->comp_cap.supported_info_bitmask & (1 << infoType)) {
+    if (_currCompQuery->comp_cap.supported_info_bitmask & (1 << infoType))
+    {
         u_int32_t size = _currCompInfo.info_size;
         retData.resize(size);
-        queryComponentInfo(_componentIndex, readPending == true, infoType, size, (u_int32_t*)(retData.data()));
+        queryComponentInfo(_componentIndex, readPending == true, infoType, size, (u_int32_t*)(retData.data()),
+                           _deviceIndex);
         return true;
-    } else {
+    }
+    else
+    {
         _lastError = FWCOMPS_INFO_TYPE_NOT_SUPPORTED;
         return false;
     }
-    /* return true; */
+    // return true;
 }
 
 bool FwCompsMgr::queryComponentStatus(u_int32_t componentIndex, comp_status_st* query)
@@ -1375,65 +1437,113 @@ bool FwCompsMgr::queryComponentStatus(u_int32_t componentIndex, comp_status_st* 
     return true;
 }
 
-bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCallBackAdvSt* progressFuncAdv)
+bool FwCompsMgr::IsCfgComponentType(FwComponent::comps_ids_t type)
+{
+    bool res = false;
+    switch (type)
+    {
+        case FwComponent::COMPID_USER_NVCONFIG:
+        case FwComponent::COMPID_OEM_NVCONFIG:
+        case FwComponent::COMPID_MLNX_NVCONFIG:
+        case FwComponent::COMPID_CS_TOKEN:
+        case FwComponent::COMPID_DBG_TOKEN:
+        case FwComponent::COMPID_RMCS_TOKEN:
+        case FwComponent::COMPID_RMDT_TOKEN:
+        case FwComponent::COMPID_CRCS_TOKEN:
+        case FwComponent::COMPID_CRDT_TOKEN:
+        {
+            res = true;
+            break;
+        }
+        default:
+            break;
+    }
+
+    return res;
+}
+
+bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progressFuncAdv)
 {
     unsigned i = 0;
-
+    const u_int8_t LOCK_FW_UPDATE = 0x2;
+    const u_int8_t LOCK_HOST_CFG = 0x3;
+    FwComponent::comps_ids_t component = comp.getType();
+    if (_secureHostState == LOCK_FW_UPDATE && component == FwComponent::COMPID_BOOT_IMG)
+    {
+        _lastError = FWCOMPS_COMP_BLOCKED;
+        DPRINTF(("MCC flow for component %d is blocked!\n", component));
+        return false;
+    }
+    if (_secureHostState == LOCK_HOST_CFG && IsCfgComponentType(component))
+    {
+        _lastError = FWCOMPS_COMP_BLOCKED;
+        DPRINTF(("MCC flow for component %d is blocked!\n", component));
+        return false;
+    }
     if (!RefreshComponentsStatus()) {
         return false;
+    }
+    _currCompQuery = &(_compsQueryMap[component]);
+    if (component == FwComponent::DPA_COMPONENT)
+    {
+        DPRINTF(
+            ("FwCompsMgr::burnComponents() - max_component_size = %d\n", _currCompQuery->comp_cap.max_component_size));
+        DPRINTF(("FwCompsMgr::burnComponents() - comp.getSize() = %d\n", comp.getSize()));
+        if (_currCompQuery->comp_cap.max_component_size < comp.getSize())
+        {
+            FWCOMPS_PRINT("-E- The dpa app container size is too large! max_component_size is %d bytes.\n",
+                    _currCompQuery->comp_cap.max_component_size);
+            return false;
+        }
     }
     GenerateHandle();
     if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
         DPRINTF(("Cannot lock the handle!\n"));
         if (forceRelease() == false) {
-            printf("FSM is locked.\n");
+            FWCOMPS_PRINT("FSM is locked.\n");
         }
         return false;
     }
-    if (_downloadTransferNeeded == true) {
-        for (i = 0; i < comps.size(); i++) {
-            int component = comps[i].getType();
-            _currCompQuery = &(_compsQueryMap[component]);
-            if (!_currCompQuery->valid) {
-                _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
-                DPRINTF(("MCC flow for component %d is not supported!\n", component));
+    if (_downloadTransferNeeded == true)
+    {
+        if (!_currCompQuery->valid) {
+            _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
+            DPRINTF(("MCC flow for component %d is not supported!\n", component));
+            return false;
+        }
+        _componentIndex = _currCompQuery->comp_status.component_index;
+        if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comp.getSize(), FSMST_INITIALIZE,
+                        progressFuncAdv)) {
+            DPRINTF(("Initializing downloading FW component has failed!\n"));
+            return false;
+        }
+        _currComponentStr = FwComponent::getCompIdStr(comp.getType());
+        control_fsm_args_t fsmUpdateCommand;
+        fsmUpdateCommand.command = FSM_CMD_UPDATE_COMPONENT;
+        fsmUpdateCommand.expectedState = FSMST_DOWNLOAD;
+        fsmUpdateCommand.size = comp.getSize();
+        fsmUpdateCommand.currentState = FSMST_INITIALIZE;
+        fsmUpdateCommand.progressFuncAdv = progressFuncAdv;
+        if (!accessComponent(0, comp.getSize(), (u_int32_t*)(comp.getData().data()), MCC_WRITE_COMP,
+                                progressFuncAdv, &fsmUpdateCommand)) {
+            DPRINTF(("Downloading FW component has failed!\n"));
+            return false;
+        }
+        if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
+            DPRINTF(("Verifying FW component has failed!\n"));
+            return false;
+        }
+        if (comp.getType() == FwComponent::COMPID_LINKX || comp.getType() == FwComponent::COMPID_LINKX_ELS || 
+            comp.getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM) 
+            {
+                if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
+                                progressFuncAdv)) {
+                DPRINTF(("Downstream LinkX begin has failed!\n"));
                 return false;
             }
-            _componentIndex = _currCompQuery->comp_status.component_index;
-            if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comps[i].getSize(), FSMST_INITIALIZE,
-                            progressFuncAdv)) {
-                DPRINTF(("Initializing downloading FW component has failed!\n"));
+            if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_DOWNSTREAM_DEVICE_TRANSFER, progressFuncAdv)) {
+                DPRINTF(("Downstream LinkX ending has failed!\n"));
                 return false;
-            }
-            _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
-            control_fsm_args_t fsmUpdateCommand;
-            fsmUpdateCommand.command = FSM_CMD_UPDATE_COMPONENT;
-            fsmUpdateCommand.expectedState = FSMST_DOWNLOAD;
-            fsmUpdateCommand.size = comps[i].getSize();
-            fsmUpdateCommand.currentState = FSMST_INITIALIZE;
-            fsmUpdateCommand.progressFuncAdv = progressFuncAdv;
-            if (!accessComponent(0, comps[i].getSize(), (u_int32_t*)(comps[i].getData().data()), MCC_WRITE_COMP,
-                                 progressFuncAdv, &fsmUpdateCommand)) {
-                DPRINTF(("Downloading FW component has failed!\n"));
-                return false;
-            }
-            if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
-                DPRINTF(("Verifying FW component has failed!\n"));
-                return false;
-            }
-            if (comps[i].getType() == FwComponent::COMPID_LINKX || 
-                comps[i].getType() == FwComponent::COMPID_LINKX_ELS || 
-                comps[i].getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM) 
-                {
-                    if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
-                                    progressFuncAdv)) {
-                    DPRINTF(("Downstream LinkX begin has failed!\n"));
-                    return false;
-                }
-                if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_DOWNSTREAM_DEVICE_TRANSFER, progressFuncAdv)) {
-                    DPRINTF(("Downstream LinkX ending has failed!\n"));
-                    return false;
-                }
             }
         }
     }
@@ -1450,7 +1560,7 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
             // In case of activation delay, FW will set FSM to LOCKED
             if (!_isDelayedActivationCommandSent)
             {
-                printf("Please wait while activating the transceiver(s) FW ...\n");
+                FWCOMPS_PRINT("Please wait while activating the transceiver(s) FW ...\n");
                 if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_ACTIVATE, progressFuncAdv))
                 {
                     DPRINTF(("Moving from activate state to locked state has failed!\n"));
@@ -1512,6 +1622,15 @@ FwComponent::comps_ids_t FwComponent::getCompId(string compId)
         return DIGITAL_CACERT;
     }
 
+     if (compId == "dpa_component")
+     {
+         return DPA_COMPONENT;
+     }
+     if (compId == "dpa_component_removal")
+     {
+         return DPA_COMPONENT_REMOVAL;
+    }
+
     return COMPID_UNKNOWN;
 }
 
@@ -1571,6 +1690,13 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
             return "DIGITAL_CACERT_REMOVAL";
         case COMPID_LINKX_ELS:
             return "COMPID_LINKX_ELS";
+ 
+         case DPA_COMPONENT:
+             return "DPA_COMPONENT";
+ 
+         case DPA_COMPONENT_REMOVAL:
+             return "DPA_COMPONENT_REMOVAL";
+ 
     default:
         return "UNKNOWN_COMPONENT";
     }
@@ -1652,8 +1778,8 @@ u_int32_t FwCompsMgr::getFwSupport()
     DPRINTF((
       "getFwSupport _mircCaps = %d mcqsCap = %d mcqiCap = %d mccCap = %d mcdaCap = %d mqisCap = %d mcddCap = %d mgirCap = %d secure_host = %d\n",
       _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, _secureHostState));
-
-    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && _secureHostState == 0)
+    const int LOCKED = 0x1;
+    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && _secureHostState != LOCKED)
     {
         return 1;
     }
@@ -1916,7 +2042,6 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query, bool next_boot_fw_ver)
 
     return true;
 }
-
 unsigned char* FwCompsMgr::getLastErrMsg()
 {
     static unsigned char bufferErr[512] = {0};
@@ -1977,6 +2102,75 @@ unsigned char* FwCompsMgr::getLastErrMsg()
     case FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION:
         return (unsigned char*)"Forbidden version rejected";
 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INVALID_SECURITY_VERSION:
+        return (unsigned char*)"FW burn rejected: Invalid security version";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_CERT_CER509:
+        return (unsigned char*)"FW burn rejected: Certificate CER509";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_CERT_SIGNATURE:
+        return (unsigned char*)"FW burn rejected: Certificate signature";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_CERT_METADATA:
+        return (unsigned char*)"FW burn rejected: Certificate metadata";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_0:
+        return (unsigned char*)"FW burn rejected: Internal error 0";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_NO_PLACE:
+        return (unsigned char*)"FW burn rejected: No place available";
+
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_1:
+        return (unsigned char*)"FW burn rejected: Internal error 1";
+
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_2:
+        return (unsigned char*)"FW burn rejected: Internal error 2";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_NUM_OF_SWAP:
+        return (unsigned char*)"FW burn rejected: Number of swap error";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_3:
+        return (unsigned char*)"FW burn rejected: Internal error 3";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_4:
+        return (unsigned char*)"FW burn rejected: Internal error 4";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_NOT_ALLOWED_SAME_UIDD:
+        return (unsigned char*)"FW burn rejected: Not allowed same UUID";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_5:
+        return (unsigned char*)"FW burn rejected: Internal error 5";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_6:
+        return (unsigned char*)"FW burn rejected: Internal error 6";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_7:
+        return (unsigned char*)"FW burn rejected: Internal error 7";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_8:
+        return (unsigned char*)"FW burn rejected: Internal error 8";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_9:
+        return (unsigned char*)"FW burn rejected: Internal error 9";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_DPA_ELF:
+        return (unsigned char*)"FW burn rejected: DPA ELF";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_DPA_CRYPTO_BLOB:
+        return (unsigned char*)"FW burn rejected: DPA crypto blob";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_DPA_APP_METADATA:
+        return (unsigned char*)"FW burn rejected: DPA app metadata";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_DPA_REMOVAL_SIGNATURE:
+        return (unsigned char*)"FW burn rejected: DPA removal signature";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_DPA_CONTAINER_VERIFY:
+        return (unsigned char*)"FW burn rejected: DPA container verify";
+ 
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_10:
+        return (unsigned char*)"FW burn rejected: Internal error 10";
+ 
     case FWCOMPS_MCC_FLASH_ERASE_ERROR:
         return (unsigned char*)"Error while erasing the flash";
 
@@ -1986,8 +2180,8 @@ unsigned char* FwCompsMgr::getLastErrMsg()
     case FWCOMPS_MCC_TOUT:
         return (unsigned char*)"Time-out reached while waiting for the FSM to be updated";
 
-    case FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
-        return (unsigned char*)"Image cannot boot from partition.";
+    case FWCOMPS_MCC_REJECTED_REBURN_RUNNING_AND_RETRY:
+        return (unsigned char*)"Reburn running and retry";
 
     case FWCOMPS_MCC_REJECTED_LINKX_TYPE_NOT_SUPPORTED:
         if (_rejectedIndex != -1) {
@@ -1999,6 +2193,9 @@ unsigned char* FwCompsMgr::getLastErrMsg()
 
     case FWCOMPS_MCC_REJECTED_HOST_STORAGE_IN_USE:
         return (unsigned char*)"Host storage is in use";
+
+         case FWCOMPS_MCC_FW_BURN_REJECTED_REMOVAL_NO_MATCH_UIDD:
+             return (unsigned char*)"The removal UUID does not match the device's UUID";
 
     case FWCOMPS_MCC_REJECTED_LINKX_TRANSFER:
         if (_rejectedIndex != -1) {
@@ -2022,12 +2219,12 @@ unsigned char* FwCompsMgr::getLastErrMsg()
     case FWCOMPS_MCC_REJECTED_TOKEN_ALREADY_APPLIED:
         return (unsigned char*)"Token already applied";
 
-        case FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
-            return (unsigned char*)"DRAM not available";
+    case FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
+        return (unsigned char*)"DRAM not available";
 
-        case FWCOMPS_MCC_REJECTED_FLASH_WP:
-            return (unsigned char*)"Flash is write protected";
-
+    case FWCOMPS_MCC_FW_BURN_REJECTED_FLASH_WRITE_PROTECTED:
+        return (unsigned char*)"Flash is write protected";
+    
     case FWCOMPS_UNSUPPORTED_DEVICE:
         return (unsigned char*)"Unsupported device";
 
@@ -2040,6 +2237,9 @@ unsigned char* FwCompsMgr::getLastErrMsg()
     case FWCOMPS_FAIL_TO_CREATE_TRM_CONTEXT:
         return (unsigned char*)"Failed to create TRM context";
 
+    case FWCOMPS_COMP_BLOCKED:
+        return (unsigned char*)"Component is blocked to update";
+ 
     case FWCOMPS_REG_ACCESS_BAD_STATUS_ERR:
     case FWCOMPS_REG_ACCESS_BAD_METHOD:
     case FWCOMPS_REG_ACCESS_NOT_SUPPORTED:
@@ -2248,7 +2448,7 @@ bool FwCompsMgr::GetComponentLinkxProperties(FwComponent::comps_ids_t compType, 
         return false;
     }
     if (query.component_status == 0) {
-        printf("Cable %d is not found, please check that cable connected.\n", _deviceIndex - 1);
+        FWCOMPS_PRINT("Cable %d is not found, please check that cable connected.\n", _deviceIndex - 1);
         _lastError = FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE;
         return false;
     }
@@ -2480,88 +2680,160 @@ fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
 
 fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
 {
-    if (err != MCC_ERRCODE_OK) {
+    if (err != MccErrorCodes::MCC_ERRCODE_OK) {
         DPRINTF(("\nMCC ERROR: %x\n", err));
     }
 
     switch (err) {
-    case MCC_ERRCODE_OK:
+    case MccErrorCodes::MCC_ERRCODE_OK:
         return FWCOMPS_SUCCESS;
 
-    case MCC_ERRCODE_ERROR:
+    case MccErrorCodes::MCC_ERRCODE_ERROR:
         return FWCOMPS_MCC_ERR_ERROR;
 
-    case MCC_ERRCODE_REJECTED_DIGEST_ERR:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_DIGEST_ERR:
         return FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR;
 
-    case MCC_ERRCODE_REJECTED_NOT_APPLICABLE:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_NOT_APPLICABLE:
         return FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE;
 
-    case MCC_ERRCODE_REJECTED_UNKNOWN_KEY:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_UNKNOWN_KEY:
         return FWCOMPS_MCC_ERR_REJECTED_UNKNOWN_KEY;
 
-    case MCC_ERRCODE_REJECTED_AUTH_FAILED:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_AUTH_FAILED:
         return FWCOMPS_MCC_ERR_REJECTED_AUTH_FAILED;
 
-    case MCC_ERRCODE_REJECTED_UNSIGNED:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_UNSIGNED:
         return FWCOMPS_MCC_ERR_REJECTED_UNSIGNED;
 
-    case MCC_ERRCODE_REJECTED_KEY_NOT_APPLICABLE:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_KEY_NOT_APPLICABLE:
         return FWCOMPS_MCC_ERR_REJECTED_KEY_NOT_APPLICABLE;
 
-    case MCC_ERRCODE_REJECTED_BAD_FORMAT:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_BAD_FORMAT:
         return FWCOMPS_MCC_ERR_REJECTED_BAD_FORMAT;
 
-    case MCC_ERRCODE_BLOCKED_PENDING_RESET:
+    case MccErrorCodes::MCC_ERRCODE_BLOCKED_PENDING_RESET:
         return FWCOMPS_MCC_ERR_BLOCKED_PENDING_RESET;
 
-    case MCC_ERRCODE_REJECTED_NOT_A_SECURED_FW:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_NOT_A_SECURED_FW:
         return FWCOMPS_MCC_REJECTED_NOT_A_SECURED_FW;
 
-    case MCC_ERRCODE_REJECTED_MFG_BASE_MAC_NOT_LISTED:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_MFG_BASE_MAC_NOT_LISTED:
         return FWCOMPS_MCC_REJECTED_MFG_BASE_MAC_NOT_LISTED;
 
-    case MCC_ERRCODE_REJECTED_NO_DEBUG_TOKEN:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_NO_DEBUG_TOKEN:
         return FWCOMPS_MCC_REJECTED_NO_DEBUG_TOKEN;
 
-    case MCC_ERRCODE_REJECTED_VERSION_NUM_MISMATCH:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_VERSION_NUM_MISMATCH:
         return FWCOMPS_MCC_REJECTED_VERSION_NUM_MISMATCH;
 
-    case MCC_ERRCODE_REJECTED_USER_TIMESTAMP_MISMATCH:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_USER_TIMESTAMP_MISMATCH:
         return FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH;
 
-    case MCC_ERRCODE_REJECTED_FORBIDDEN_VERSION:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_FORBIDDEN_VERSION:
         return FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION;
 
-    case MCC_ERRCODE_FLASH_ERASE_ERROR:
+    case MccErrorCodes::MCC_ERRCODE_FLASH_ERASE_ERROR:
         return FWCOMPS_MCC_FLASH_ERASE_ERROR;
 
-    case MCC_ERRCODE_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
-        return FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION;
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_REBURN_RUNNING_AND_RETRY:
+        return FWCOMPS_MCC_REJECTED_REBURN_RUNNING_AND_RETRY;
 
-    case MCC_ERRCODE_REJECTED_LINKX_TYPE_NOT_SUPPORTED:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_LINKX_TYPE_NOT_SUPPORTED:
         return FWCOMPS_MCC_REJECTED_LINKX_TYPE_NOT_SUPPORTED;
 
-    case MCC_ERRCODE_REJECTED_HOST_STORAGE_IN_USE:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_HOST_STORAGE_IN_USE:
         return FWCOMPS_MCC_REJECTED_HOST_STORAGE_IN_USE;
 
-    case MCC_ERRCODE_REJECTED_LINKX_TRANSFER:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_LINKX_TRANSFER:
         return FWCOMPS_MCC_REJECTED_LINKX_TRANSFER;
 
-    case MCC_ERRCODE_REJECTED_LINKX_ACTIVATE:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_LINKX_ACTIVATE:
         return FWCOMPS_MCC_REJECTED_LINKX_ACTIVATE;
 
-    case MCC_ERRCODE_REJECTED_INCOMPATIBLE_FLASH:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_INCOMPATIBLE_FLASH:
         return FWCOMPS_MCC_REJECTED_INCOMPATIBLE_FLASH;
 
-    case MCC_ERRCODE_REJECTED_TOKEN_ALREADY_APPLIED:
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_TOKEN_ALREADY_APPLIED:
         return FWCOMPS_MCC_REJECTED_TOKEN_ALREADY_APPLIED;
 
-        case MCC_ERRCODE_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
-            return FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE;
+    case MccErrorCodes::MCC_ERRCODE_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
+        return FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE;
 
-        case MCC_ERRCODE_REJECTED_FLASH_WP:
-            return FWCOMPS_MCC_REJECTED_FLASH_WP;
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INVALID_SECURITY_VERSION:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INVALID_SECURITY_VERSION;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_CERT_CER509:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_CERT_CER509;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_CERT_SIGNATURE:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_CERT_SIGNATURE;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_CERT_METADATA:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_CERT_METADATA;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INTERNAL_ERROR_0:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_0;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_NO_PLACE:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_NO_PLACE;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_REMOVAL_NO_MATCH_UIDD:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_REMOVAL_NO_MATCH_UIDD;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INTERNAL_ERROR_1:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_1;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INTERNAL_ERROR_2:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_2;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_NUM_OF_SWAP:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_NUM_OF_SWAP;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INTERNAL_ERROR_3:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_3;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INTERNAL_ERROR_4:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_4;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_NOT_ALLOWED_SAME_UIDD:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_NOT_ALLOWED_SAME_UIDD;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INTERNAL_ERROR_5:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_5;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INTERNAL_ERROR_6:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_6;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_FLASH_WRITE_PROTECTED:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_FLASH_WRITE_PROTECTED;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INTERNAL_ERROR_7:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_7;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INTERNAL_ERROR_8:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_8;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INTERNAL_ERROR_9:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_9;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_DPA_ELF:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_DPA_ELF;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_DPA_CRYPTO_BLOB:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_DPA_CRYPTO_BLOB;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_DPA_APP_METADATA:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_DPA_APP_METADATA;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_DPA_REMOVAL_SIGNATURE:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_DPA_REMOVAL_SIGNATURE;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_DPA_CONTAINER_VERIFY:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_DPA_CONTAINER_VERIFY;
+
+    case MccErrorCodes::MCC_ERRCODE_FW_BURN_REJECTED_INTERNAL_ERROR_10:
+        return FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_10;
 
     default:
         return FWCOMPS_GENERAL_ERR;

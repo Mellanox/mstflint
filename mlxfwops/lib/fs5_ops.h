@@ -38,7 +38,6 @@ class Fs5Operations : public Fs4Operations
 {
 public:
     Fs5Operations(FBase* ioAccess) : Fs4Operations(ioAccess){};
-
     ~Fs5Operations(){};
     u_int8_t FwType() override;
     bool FwQuery(fw_info_t* fwInfo,
@@ -54,6 +53,8 @@ public:
                            bool verbose = false,
                            bool ignoreImageStart = false,
                            bool imageSizeOnly = false) override;
+    virtual bool burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams) override;
+    virtual bool FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams) override;
 
 protected:
     bool CheckBoot2(u_int32_t beg,
@@ -65,6 +66,8 @@ protected:
     bool GetDtocAddress(u_int32_t& dTocAddress) override;
     bool GetMfgInfo(u_int8_t* buff) override;
     bool CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_int32_t imageCntxLog2ChunkSize) override;
+    bool ClearLivefishfIndication(Flash* flashAccess) override;
+    bool GetLivefishIndicationAddr(uint32_t& lfIndicationAddr);
     virtual bool IsValidGapImageSize(u_int32_t imageGapSize) override;
     bool IsExtracted();
     u_int32_t _ncore_bch_ptr;
@@ -82,8 +85,7 @@ private:
     bool IsSecureFwUpdateSigned(bool& isSigned);
     bool NCoreQuery(fw_info_t* fwInfo);
     bool GetNcoreData(vector<u_int8_t>& imgBuff) override;
-    bool GetHashesTableSize(u_int32_t& size) override;
-
+    bool GetHashesTableSize(u_int32_t& size) override;  
 };
 
 #endif /* FS5_OPS_H */

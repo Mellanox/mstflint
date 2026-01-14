@@ -115,6 +115,10 @@ public:
         privPemFile(),
         keyPairUUID(),
         allAttrs(false),
+        userHostIdParam(0),
+        userPfIndexParam(0),
+        userHostIdPfValid(false),
+        completeSetWithDefault(false),
         cmd(Mc_UnknownCmd),
         isJsonOutputRequested(false),
         yes(false),
@@ -125,8 +129,6 @@ public:
         tokenStatusID(McTokenStatusTypeCS),
         sessionId(0),
         isSessionIDGiven(false),
-        i2cSecondary(0),
-        isI2cSecondaryGiven(false),
         sessionTimeInSec(60 * 60 * 24 * 7), // default session time is a week
         isSessionTimeGiven(false),
         keepAliveSleepTimeBetweenCommands(0),
@@ -147,6 +149,10 @@ public:
     std::string privPemFile;
     std::string keyPairUUID;
     bool allAttrs;
+    u_int8_t userHostIdParam;
+    u_int8_t userPfIndexParam;
+    bool userHostIdPfValid;
+    bool completeSetWithDefault;
     mlxCfgCmd cmd;
     bool isJsonOutputRequested;
     bool yes;
@@ -158,8 +164,6 @@ public:
     MlxCfgTokenStatusType tokenStatusID;
     u_int32_t sessionId;
     bool isSessionIDGiven;
-    u_int32_t i2cSecondary;
-    bool isI2cSecondaryGiven;
     u_int32_t sessionTimeInSec;
     bool isSessionTimeGiven;
     u_int32_t keepAliveSleepTimeBetweenCommands;
@@ -214,6 +218,15 @@ private:
 
     // Set cmd
     mlxCfgStatus setDevCfg();
+    void compareCurrentParamsVectors(const std::vector<ParamView>& ParamVec1,
+                                     const std::vector<ParamView>& ParamVec2,
+                                     std::vector<ParamView>& paramMlxconfigNameDiffList);
+    void setDevCfgWithDefault(Commander* commander,
+                              std::vector<ParamView>& alignCurrentToDefault,
+                              std::vector<ParamView>& alignNextToCurrent);
+    mlxCfgStatus updateDefaultParamsWithUserValues(std::vector<ParamView>& userParams,
+                                                   std::vector<ParamView>& defaultParams);
+    mlxCfgStatus handlecompleteSetWithDefault(Commander* commander);
     // reset Cmd
     mlxCfgStatus resetDevsCfg();
     mlxCfgStatus resetDevCfg(const char* dev);

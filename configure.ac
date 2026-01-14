@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT(mstflint, 4.34.0, akiselman-org@exchange.nvidia.com)
+AC_INIT(mstflint, 4.35.0, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Firmware Burning and Diagnostics Tools for NVIDIA network devices.])
 AC_SUBST([PROJECT])
@@ -249,7 +249,9 @@ if test "x$enable_fw_mgr" = "xyes"; then
     AC_MSG_NOTICE([zlib CFLAGS:'$libz_CFLAGS' LIBS:'$libz_LIBS'])
     AC_SUBST(libz_CFLAGS)
     AC_SUBST(libz_LIBS)
-    # lzma
+fi
+
+if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"; then
     AC_ARG_WITH([liblzma], AS_HELP_STRING([--with-liblzma=PATH], [use liblzma from the specified PATH]),
         [
             liblzma_dir="$withval"
@@ -274,6 +276,8 @@ if test "x$enable_fw_mgr" = "xyes"; then
     AC_SUBST(liblzma_CFLAGS)
     AC_SUBST(liblzma_LIBS)
 fi
+
+
 
 # mlxdpa
 AC_MSG_CHECKING(--enable-dpa argument)
@@ -396,9 +400,26 @@ AC_ARG_ENABLE(nvml,
     [enable_nvml="$default_en_nvml"]
 )
 AC_MSG_RESULT($enable_nvml)
-if test "x$enable_nvml" = "xyes"; then
-    AC_CHECK_HEADER(nvml.h, [], [AC_MSG_ERROR([cannot find nvml.h, please check you nvidia driver installation.])])
-    AC_CHECK_LIB([nvidia-ml], [nvmlInit_v2], [], [AC_MSG_ERROR([libnvidia-ml not found, please check you nvidia driver installation.])])
+
+if test "$enable_nvml" = "yes"; then
+    AC_ARG_WITH([nvml-include-dir], AS_HELP_STRING([--with-nvml-include-dir=DIR], [use nvml from the specified DIR]),
+        [
+            nvml_dir="$withval"
+            AC_MSG_NOTICE([Using nvml from $nvml_dir])
+            CXXFLAGS="$CXXFLAGS -I$nvml_dir"
+            CFLAGS="$CFLAGS -I$nvml_dir"
+        ],
+        [
+            AC_MSG_NOTICE([Looking for nvml headers])
+            PKG_CHECK_MODULES([nvml], [nvidia-ml], [],
+                [
+                    AC_MSG_NOTICE([Looking for nvml headers and libraries in default include paths])
+                    AC_CHECK_HEADERS([nvml.h], [], [AC_MSG_ERROR([cannot find nvml.h in default include paths, please check you nvidia driver installation or use --with-nvml-include-dir=DIR to specify the correct directory path of nvml.h.])])
+                    AC_CHECK_LIB([nvidia-ml], [nvmlInit_v2], [], [AC_MSG_ERROR([libnvidia-ml not found in default library paths, please check you nvidia driver installation])])
+                ]
+            )
+        ]
+    )
     CXXFLAGS="$CXXFLAGS -DENABLE_NVML"
     CFLAGS="$CFLAGS -DENABLE_NVML"
 fi
@@ -661,6 +682,29 @@ AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"],
     [AC_CONFIG_FILES(tools_crypto/Makefile)]
 )
 
+AM_CONDITIONAL(ENABLE_NVFWRESET, [test "x$OS" != "xFreeBSD" && test "x$enable_nvfwreset" = "xyes" ])
+
+if test "x$OS" != "xFreeBSD"; then
+    AC_MSG_CHECKING(--enable-nvfwreset argument)
+    AC_ARG_ENABLE(nvfwreset,
+        AS_HELP_STRING([--enable-nvfwreset], [enable compilation of the nvfwreset tool [default=disabled]]),
+        [enable_nvfwreset="$enableval"],
+        [enable_nvfwreset="no"]
+    )
+    AC_MSG_RESULT($enable_nvfwreset)
+    AS_IF([test "x$enable_nvfwreset" = "xyes"], [
+        AC_CONFIG_FILES(nvfwreset/Makefile)
+        NVFWRESET_DIR="nvfwreset"
+    ])
+    AC_SUBST(enable_nvfwreset)
+    AC_SUBST(NVFWRESET_DIR)
+else
+    enable_nvfwreset="no"
+    NVFWRESET_DIR=""
+    AC_SUBST(enable_nvfwreset)
+    AC_SUBST(NVFWRESET_DIR)
+fi
+
 AS_IF([test "x$enable_openssl" = "xyes"],
     [
         AS_IF(test x"$OPENSSL_VERSION_VALID" = "xyes",
@@ -707,6 +751,7 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(tools_layouts/adb/prm/gpu/Makefile)
         AC_CONFIG_FILES(tools_layouts/adb/prm/gpu/ext/Makefile)
         AC_CONFIG_FILES(mlxreg/Makefile)
+        AC_CONFIG_FILES(mlxreg/scripts/Makefile)
         AC_CONFIG_FILES(mlxreg/mlxreg_lib/Makefile)
         AC_CONFIG_FILES(mlxlink/Makefile)
         AC_CONFIG_FILES(mlxlink/modules/Makefile)
@@ -791,6 +836,8 @@ AC_OUTPUT( \
     dev_mgt/Makefile \
     ext_libs/Makefile \
     ext_libs/json/Makefile \
+    ext_libs/mini-yaml/Makefile \
+    ext_libs/sole/Makefile \
     ext_libs/minixz/Makefile \
     ext_libs/muparser/Makefile \
     ext_libs/sqlite/Makefile \
@@ -829,4 +876,9 @@ AC_OUTPUT( \
     tracers/Makefile \
     tracers/fwtrace/Makefile \
     vfio_driver_access/Makefile \
+    mft_core/Makefile \
+    mft_core/mft_core_utils/Makefile \
+    mft_core/mft_core_utils/logger/Makefile \
+    mft_core/mft_core_utils/operating_system_api/Makefile \
+    mft_core/mft_core_utils/mft_exceptions/Makefile \
  )

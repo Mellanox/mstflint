@@ -47,6 +47,7 @@ MlxlinkCablesCommander::MlxlinkCablesCommander(Json::Value& jsonRoot) : _jsonRoo
     _prbsSwap = false;
     _swControlMode = false;
     _prbsLanes = 0;
+    _txBiasMultiplier = 1;
 
     memset(&_cableDdm, 0, sizeof(cable_ddm_q_t));
     // PMCR control fields names
@@ -194,12 +195,12 @@ void MlxlinkCablesCommander::getDdmValuesFromPddr()
         float txMultiplier = 1;
         try
         {
-            txMultiplier = pow(2, getFieldValue("tx_bias_scaling_factor"));
+            _txBiasMultiplier = pow(2, getFieldValue("tx_bias_scaling_factor"));
         }
         catch (const std::exception& e)
         {
             // If the field does not exist, set the multiplier to 1
-            // txMultiplier = 1;
+            // _txBiasMultiplier = 1;
         }
 
         string laneStr = "";
@@ -208,7 +209,7 @@ void MlxlinkCablesCommander::getDdmValuesFromPddr()
             laneStr = to_string(_moduleLanesMapping[lane]);
             _cableDdm.rx_power[lane].val = getPower(getFieldValue("rx_power_lane" + laneStr));
             _cableDdm.tx_power[lane].val = getPower(getFieldValue("tx_power_lane" + laneStr));
-            _cableDdm.tx_bias[lane].val = getFieldValue("tx_bias_lane" + laneStr) * txMultiplier;
+            _cableDdm.tx_bias[lane].val = getFieldValue("tx_bias_lane" + laneStr) * _txBiasMultiplier;
         }
     }
 }
@@ -722,28 +723,28 @@ void MlxlinkCablesCommander::prepareDDMOutput()
                                     _cableDdm.voltage.high_alarm,
                                     _cableDdm.rx_power[0].high_alarm,
                                     _cableDdm.tx_power[0].high_alarm,
-                                    _cableDdm.tx_bias[0].high_alarm);
+                                    _cableDdm.tx_bias[0].high_alarm * _txBiasMultiplier);
     setPrintVal(cableDDMThresholds, "High alarm threshold", row, ANSI_COLOR_RESET, true, true, true);
 
     row = getDDMThresholdRow(_cableDdm.temperature.high_warn,
                              _cableDdm.voltage.high_warn,
                              _cableDdm.rx_power[0].high_warn,
                              _cableDdm.tx_power[0].high_warn,
-                             _cableDdm.tx_bias[0].high_warn);
+                             _cableDdm.tx_bias[0].high_warn * _txBiasMultiplier);
     setPrintVal(cableDDMThresholds, "High warning threshold", row, ANSI_COLOR_RESET, true, true, true);
 
     row = getDDMThresholdRow(_cableDdm.temperature.low_warn,
                              _cableDdm.voltage.low_warn,
                              _cableDdm.rx_power[0].low_warn,
                              _cableDdm.tx_power[0].low_warn,
-                             _cableDdm.tx_bias[0].low_warn);
+                             _cableDdm.tx_bias[0].low_warn * _txBiasMultiplier);
     setPrintVal(cableDDMThresholds, "Low warning threshold", row, ANSI_COLOR_RESET, true, true, true);
 
     row = getDDMThresholdRow(_cableDdm.temperature.low_alarm,
                              _cableDdm.voltage.low_alarm,
                              _cableDdm.rx_power[0].low_alarm,
                              _cableDdm.tx_power[0].low_alarm,
-                             _cableDdm.tx_bias[0].low_alarm);
+                             _cableDdm.tx_bias[0].low_alarm * _txBiasMultiplier);
     setPrintVal(cableDDMThresholds, "Low alarm threshold", row, ANSI_COLOR_RESET, true, true, true);
 
     cableDDMThresholds.toJsonFormat(_jsonRoot);

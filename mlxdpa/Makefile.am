@@ -37,6 +37,8 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/common -I$(top_builddir)/common \
     -I$(top_srcdir)/mft_utils \
     -I$(top_srcdir)/mlxsign_lib \
+    -I$(top_srcdir)/ext_libs/mini-yaml \
+    -I$(top_srcdir)/ext_libs/sole \
     $(openssl_CFLAGS)
 
 XML_FLAGS = -DUSE_XML -DLIBXML_STATIC
@@ -46,10 +48,14 @@ AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) $(XML_FLAGS)
 noinst_LIBRARIES = libmstdpa.a
 
 libmstdpa_a_SOURCES = \
+    baseHeader.cpp \
+    baseHeader.h \
     certcontainerbase.cpp \
     certcontainerbase.h \
     certcontainerimp.cpp \
-    certcontainerimp.h
+    certcontainerimp.h \
+    dpaAppStructHeader.cpp \
+    dpaAppStructHeader.h
 
 libmstdpa_a_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) $(XML_FLAGS)
 
@@ -60,14 +66,22 @@ libmstdpa_a_LIBADD = $(libmstdpa_a_DEPENDENCIES)
 bin_PROGRAMS = mstdpa
 
 mstdpa_SOURCES = \
+    baseHeader.cpp \
+    baseHeader.h \
     certcontainerbase.cpp \
     certcontainerbase.h \
     certcontainerimp.cpp \
     certcontainerimp.h \
     cryptodata.cpp \
     cryptodata.h \
+    dpaAppRemoval.cpp \
+    dpaAppRemoval.h \
+    dpaAppStructHeader.cpp \
+    dpaAppStructHeader.h \
     hostelf.cpp \
     hostelf.h \
+    hostless.cpp \
+    hostless.h \
     mlxdpa.cpp \
     mlxdpa.h \
     mlxdpa_utils.cpp \
@@ -78,7 +92,10 @@ mstdpa_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) $(XML_FLAGS)
 mstdpa_LDADD = \
     $(top_builddir)/cmdparser/libcmdparser.a \
     $(top_builddir)/mlxsign_lib/libmlxsign.la \
-    $(top_builddir)/mft_utils/libmftutils.la
+    $(top_builddir)/mft_utils/libmftutils.la \
+    $(top_builddir)/tools_layouts/libtools_layouts.la \
+    $(top_builddir)/ext_libs/mini-yaml/libmini_yaml.la \
+    $(top_builddir)/ext_libs/sole/libsole.la
 
 # these are precompiled
 if ARM64_BUILD

@@ -41,6 +41,8 @@
 #include <linux/pci.h>
 #include <linux/fs.h>
 #include <linux/delay.h>
+#include <linux/completion.h>
+#include <linux/kthread.h>
 #include "mst_kernel.h"
 
 /****************************************************/
@@ -53,6 +55,19 @@ MODULE_VERSION(DRV_VERSION " (" DRV_RELDATE ")");
 /* globals variables */
 static const char mst_driver_version[] = DRV_VERSION;
 static const char mst_driver_string[] = "Mellanox Technologies Software Tools Driver";
+
+/* Forward declarations */
+int pci_reset_bus_in_parallel(struct pci_dev* pci_device_prime, struct pci_dev* pci_device_aux);
+int nnt_pci_reset_bus_in_parallel(struct pci_dev* pci_device_1, struct pci_dev* pci_device_2);
+int hot_reset_pcie_switch(struct hot_reset_pcie_switch* info);
+static int hot_reset_thread_fn(void* data);
+
+struct reset_thread_data
+{
+    struct pci_dev* pdev;
+    int error;
+    struct completion done;
+};
 
 LIST_HEAD(mst_devices);
 
@@ -70,12 +85,12 @@ LIST_HEAD(mst_devices);
 #define CONNECTX7_PCI_ID 4129
 #define CONNECTX7_RMA_PCI_ID 537
 #define CONNECTX8_PCI_ID 4131
-#define CONNECTX8_RMA_PCI_ID 543
+#define CONNECTX8_BRIDGE_PCI_ID 6525
 #define CONNECTX9_PCI_ID 4133
+#define CONNECTX9_BRIDGE_PCI_ID 6526
 #define CONNECTX10_PCI_ID 4135
 #define SCHRODINGER_PCI_ID 6518
 #define FREYSA_PCI_ID 6521
-#define CONNECTX8_BRIDGE_PCI_ID 6525
 #define BLUEFIELD_PCI_ID 41682
 #define BLUEFIELD2_PCI_ID 41686
 #define BLUEFIELD_DPU_AUX_PCI_ID 49873
@@ -95,6 +110,8 @@ LIST_HEAD(mst_devices);
 #define SPECTRUM3_PCI_ID 53104
 #define SPECTRUM4_PCI_ID 53120
 #define SPECTRUM4_RMA_PCI_ID 597
+#define SPECTRUM5_PCI_ID 53122
+#define SPECTRUM6_PCI_ID 53124
 #define GB100_PCI_ID 10496
 #define GR100_PCI_ID 12288
 #define GR150_PCI_ID 13440
@@ -112,6 +129,8 @@ LIST_HEAD(mst_devices);
 #define LF_CONNECTX7_PCI_ID 0x218
 #define LF_CONNECTX8_PCI_ID 0x21e
 #define LF_CONNECTX9_PCI_ID 0x224
+#define LF_CONNECTX9_BRIDGE_PCI_ID 0x228
+#define LF_CONNECTX8_BRIDGE_PCI_ID 0x222
 #define LF_QUANTUM_PCI_ID 0x24d
 #define LF_QUANTUM2_PCI_ID 0x257
 #define LF_QUANTUM3_PCI_ID 0x25b
@@ -139,7 +158,9 @@ static struct pci_device_id mst_livefish_pci_table[] = {
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_CONNECTX6LX_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_CONNECTX7_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_CONNECTX8_PCI_ID)},
+    {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_CONNECTX8_BRIDGE_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_CONNECTX9_PCI_ID)},
+    {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_CONNECTX9_BRIDGE_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_QUANTUM_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_QUANTUM2_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, LF_QUANTUM3_PCI_ID)},
@@ -179,8 +200,9 @@ static struct pci_device_id supported_pci_devices[] = {
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX7_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX7_RMA_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX8_PCI_ID)},
-    {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX8_RMA_PCI_ID)},
+    {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX8_BRIDGE_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX9_PCI_ID)},
+    {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX9_BRIDGE_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, CONNECTX10_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, SCHRODINGER_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, FREYSA_PCI_ID)},
@@ -204,6 +226,8 @@ static struct pci_device_id supported_pci_devices[] = {
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, SPECTRUM3_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, SPECTRUM4_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, SPECTRUM4_RMA_PCI_ID)},
+    {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, SPECTRUM5_PCI_ID)},
+    {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, SPECTRUM6_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, GB100_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, GR100_PCI_ID)},
     {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, GR150_PCI_ID)},
@@ -357,6 +381,135 @@ static void swap_pci_address_space(int* address_space)
     printk(KERN_ERR "address_space swapped to: 0x%x\n", *address_space);
 }
 
+
+
+int nnt_pci_reset_bus_in_parallel(struct pci_dev* pci_device_1, struct pci_dev* pci_device_2)
+{
+    int error = 0;
+    struct task_struct* thread1 = NULL;
+    struct task_struct* thread2 = NULL;
+    struct reset_thread_data data1 = {0};
+    struct reset_thread_data data2 = {0};
+
+    init_completion(&data1.done);
+    init_completion(&data2.done);
+    data1.pdev = pci_device_1;
+    data2.pdev = pci_device_2;
+
+    thread1 = kthread_create(hot_reset_thread_fn, &data1, "pci_device_1");
+    if (IS_ERR(thread1))
+    {
+        printk(KERN_ERR "mst_pciconf | Failed to create reset thread 1 (pci_device_1)\n");
+        error = PTR_ERR(thread1);
+        goto cleanup;
+    }
+
+    thread2 = kthread_create(hot_reset_thread_fn, &data2, "pci_device_2");
+    if (IS_ERR(thread2))
+    {
+        printk(KERN_ERR "mst_pciconf | Failed to create reset thread 2 (pci_device_2)\n");
+        error = PTR_ERR(thread2);
+        goto cleanup;
+    }
+    wake_up_process(thread1);
+    wake_up_process(thread2);
+
+    wait_for_completion(&data1.done);
+    wait_for_completion(&data2.done);
+
+    if (data1.error || data2.error)
+    {
+        error = 1;
+    }
+
+cleanup:
+    return error;
+}
+
+static int nnt_pci_reset_bus(struct pci_dev* pci_device)
+{
+    int error = 0;
+    printk(KERN_INFO "mst_pciconf | Resetting the PCIe device: %4.4x:%2.2x:%2.2x.%1.1x\n",
+           pci_domain_nr(pci_device->bus), pci_device->bus->number, PCI_SLOT(pci_device->devfn),
+           PCI_FUNC(pci_device->devfn));
+
+#ifdef PCI_DEVICE_DATA
+    error = pci_reset_bus(pci_device);
+#else
+    error = pci_reset_bus(pci_device->bus);
+#endif
+
+    if (error)
+    {
+        printk(KERN_ERR "mst_pciconf | pci_reset_bus failed with error code: %d, pci device: %4.4x:%2.2x:%2.2x.%1.1x\n",
+               error, pci_domain_nr(pci_device->bus), pci_device->bus->number, PCI_SLOT(pci_device->devfn),
+               PCI_FUNC(pci_device->devfn));
+    }
+    else
+    {
+        printk(KERN_INFO "mst_pciconf | pci_reset_bus succeeded, pci device: %4.4x:%2.2x:%2.2x.%1.1x\n",
+               pci_domain_nr(pci_device->bus), pci_device->bus->number, PCI_SLOT(pci_device->devfn),
+               PCI_FUNC(pci_device->devfn));
+    }
+
+    return error;
+}
+
+static int hot_reset_thread_fn(void* data)
+{
+    struct reset_thread_data* thread_data = (struct reset_thread_data*)data;
+    struct pci_dev* pci_device = thread_data->pdev;
+    int error = 0;
+
+    error = nnt_pci_reset_bus(pci_device);
+
+    thread_data->error = error;
+    complete(&thread_data->done);
+    return 0;
+}
+
+int hot_reset_pcie_switch(struct hot_reset_pcie_switch* info)
+{
+    struct pci_dev* pdev_bus_device_1;
+    struct pci_dev* pdev_bus_device_2;
+
+    printk(KERN_INFO "msflint_access driver | got hot reset ioctl request");
+    printk(KERN_INFO "msflint_access driver | device_1: %4.4x:%2.2x:%2.2x.%1.1x\n",
+           info->device_1.domain, info->device_1.bus, info->device_1.device, info->device_1.function);
+    if (info->in_parallel)
+    {
+        printk(KERN_INFO "msflint_access driver | device_2: %4.4x:%2.2x:%2.2x.%1.1x\n",
+               info->device_2.domain, info->device_2.bus, info->device_2.device, info->device_2.function);
+    }
+
+    // Retrieve the PCI device corresponding to info.bus
+    pdev_bus_device_1 = pci_get_domain_bus_and_slot(info->device_1.domain, info->device_1.bus,
+                                                 PCI_DEVFN(info->device_1.device, info->device_1.function));
+    if (!pdev_bus_device_1)
+    {
+        printk(KERN_ERR "msflint_access driver | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_1.domain,
+               info->device_1.bus, info->device_1.device, info->device_1.function);
+        return -ENODEV;
+    }
+
+    if (info->in_parallel)
+    {
+        pdev_bus_device_2 =
+          pci_get_domain_bus_and_slot(info->device_2.domain, info->device_2.bus, PCI_DEVFN(info->device_2.device, info->device_2.function));
+        if (!pdev_bus_device_2)
+        {
+            printk(KERN_ERR "msflint_access driver | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_2.domain,
+                   info->device_2.bus, info->device_2.device, info->device_2.function);
+            return -ENODEV;
+        }
+
+        return nnt_pci_reset_bus_in_parallel(pdev_bus_device_1, pdev_bus_device_2);
+    }
+    else
+    {
+        return nnt_pci_reset_bus(pdev_bus_device_1);
+    }
+}
 
 static int get_syndrome_code(struct mst_dev_data* dev, u_int8_t* syndrome_code)
 {
@@ -1797,6 +1950,16 @@ static int mst_ioctl(struct inode* inode, struct file* file, unsigned int opcode
 
         break;
     }
+    case PCICONF_HOT_RESET:
+    {
+        struct hot_reset_pcie_switch hot_reset;
+        if (copy_from_user(&hot_reset, user_buf, sizeof(struct hot_reset_pcie_switch))) {
+            res = -EFAULT;
+            goto fin;
+        }
+        res = hot_reset_pcie_switch(&hot_reset);
+        break;
+    }
 
     default:
         print_opcode();
@@ -1897,7 +2060,8 @@ static struct mst_dev_data* mst_device_create(enum dev_type type, struct pci_dev
     if (alloc_chrdev_region(&dev->my_dev, 0, 1, dev->name)) {
         mst_err("failed to allocate chrdev_region\n");
     }
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0) || \
+    (defined(CONFIG_RHEL_DIFFERENCES))
     dev->cl = class_create(dev->name);
 #else
     dev->cl = class_create(THIS_MODULE, dev->name);

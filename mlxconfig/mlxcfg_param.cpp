@@ -384,7 +384,7 @@ void Param::getView(ParamView& paramView)
     paramView.description = _description;
     paramView.type = _type;
     paramView.port = _port;
-    paramView.module = _module;
+    paramView._module = _module;
     paramView.textualVals = _textualValues;
     paramView.supportedFromVersion = _supportedFromVersion;
     paramView.rule = _rule;
@@ -586,7 +586,11 @@ void Param::str2TextualValuesMap(const char* s, map<string, u_int32_t>& m)
     }
 }
 
-void Param::genXMLTemplateAux(std::string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index, bool confFormat)
+void Param::genXMLTemplateAux(std::string& xmlTemplate,
+                              bool withVal,
+                              bool isPartOfArray,
+                              u_int32_t index,
+                              bool confFormat)
 {
     if (_type == ENUM)
     {
@@ -719,15 +723,23 @@ void UnsignedParamValue::parseValue(string strToParse, u_int32_t& value, string&
     parseValueAux(strToParse, value, strValue);
 }
 
+// Deep clone implementations for ParamValue hierarchy
+std::shared_ptr<ParamValue> UnsignedParamValue::clone() const
+{
+    return std::make_shared<UnsignedParamValue>(*this);
+}
+
 /* EnumParamValue Class */
 EnumParamValue::EnumParamValue(string size, map<string, u_int32_t> textualValues) :
     UnsignedParamValue(size), _textualValues(textualValues)
 {
+    _value = 0;
 }
 
 EnumParamValue::EnumParamValue(u_int32_t size, map<string, u_int32_t> textualValues) :
     UnsignedParamValue(size), _textualValues(textualValues)
 {
+    _value = 0;
 }
 
 string EnumParamValue::getVal()
@@ -804,6 +816,11 @@ void EnumParamValue::parseValue(string strToParse, u_int32_t& value, string& str
     throw MlxcfgException("Unknown value %s", strToParse.c_str());
 }
 
+std::shared_ptr<ParamValue> EnumParamValue::clone() const
+{
+    return std::make_shared<EnumParamValue>(*this);
+}
+
 /* BoolParamValue Class */
 BoolParamValue::BoolParamValue(string size) : EnumParamValue(size, initBoolTextualValues()) {}
 
@@ -813,6 +830,11 @@ map<string, u_int32_t> BoolParamValue::initBoolTextualValues()
     m[DISABLED] = 0;
     m[ENABLED] = 1;
     return m;
+}
+
+std::shared_ptr<ParamValue> BoolParamValue::clone() const
+{
+    return std::make_shared<BoolParamValue>(*this);
 }
 
 /* BinaryParamValue Class */
@@ -842,6 +864,11 @@ void BinaryParamValue::setVal(string val)
 void BinaryParamValue::parseValue(string strToParse, u_int32_t& value, string& strValue)
 {
     parseValueAux(strToParse, value, strValue, 16);
+}
+
+std::shared_ptr<ParamValue> BinaryParamValue::clone() const
+{
+    return std::make_shared<BinaryParamValue>(*this);
 }
 
 void BinaryParamValue::trimHexString(string& s)
@@ -901,6 +928,11 @@ void StringParamValue::unpack(uint8_t* buff, u_int32_t bitOffset)
         }
         _value += buff[byteOffset + i];
     }
+}
+
+std::shared_ptr<ParamValue> StringParamValue::clone() const
+{
+    return std::make_shared<StringParamValue>(*this);
 }
 
 /* BytesParamValue Class */
@@ -985,6 +1017,11 @@ void BytesParamValue::setVal(const vector<u_int32_t>& buffVal)
         b.UnsignedParamValue::setVal(*it);
         _bytes.push_back(b);
     }
+}
+
+std::shared_ptr<ParamValue> BytesParamValue::clone() const
+{
+    return std::make_shared<BytesParamValue>(*this);
 }
 
 ArrayParamValue::ArrayParamValue(string size, u_int32_t count, enum ParamType paramType) :
@@ -1155,6 +1192,17 @@ vector<string> ArrayParamValue::getStrVals()
     return v;
 }
 
+std::shared_ptr<ParamValue> ArrayParamValue::clone() const
+{
+    auto copy = std::make_shared<ArrayParamValue>(*this);
+    copy->_values.clear();
+    for (const auto& v : _values)
+    {
+        copy->_values.push_back(v->clone());
+    }
+    return copy;
+}
+
 EnumArrayParamValue::EnumArrayParamValue(string size,
                                          u_int32_t count,
                                          enum ParamType paramType,
@@ -1166,6 +1214,17 @@ EnumArrayParamValue::EnumArrayParamValue(string size,
         std::shared_ptr<ParamValue> t = make_shared<EnumParamValue>(_elementSizeInBits, textualValues);
         _values.push_back(t);
     }
+}
+
+std::shared_ptr<ParamValue> EnumArrayParamValue::clone() const
+{
+    auto copy = std::make_shared<EnumArrayParamValue>(*this);
+    copy->_values.clear();
+    for (const auto& v : _values)
+    {
+        copy->_values.push_back(v->clone());
+    }
+    return copy;
 }
 
 BytesArrayParamVal::BytesArrayParamVal(u_int32_t numOfBytes) : ParamValue(numOfBytes), isEmpty(true)
@@ -1317,4 +1376,33 @@ vector<string> BytesArrayParamVal::getStrVals()
         }
     }
     return strVector;
+}
+
+std::shared_ptr<ParamValue> BytesArrayParamVal::clone() const
+{
+    return std::make_shared<BytesArrayParamVal>(*this);
+}
+
+/* Param deep clone */
+std::shared_ptr<Param> Param::cloneDeep() const
+{
+    auto p = std::make_shared<Param>(*this);
+    if (_value)
+    {
+        p->_value = _value->clone();
+    }
+    return p;
+}
+
+// paramView utility function
+bool isParamViewInList(const ParamView& param, const vector<ParamView>& list)
+{
+    for (const ParamView& p : list)
+    {
+        if (param.mlxconfigName == p.mlxconfigName)
+        {
+            return true;
+        }
+    }
+    return false;
 }

@@ -47,6 +47,7 @@
 #define REG_ID_MTCAP         0x9009
 #define REG_ID_MIRC          0x9162
 #define REG_ID_MGIR          0x9020
+#define REG_ID_MMHI 		 0x904A
 #define REG_ID_PMLP          0x5002
 #define REG_ID_MFPA          0x9010
 #define REG_ID_MFBA          0x9011
@@ -64,6 +65,7 @@
 #define REG_ID_MNVGN         0x9035
 #define REG_ID_MNVIA         0x9033
 #define REG_ID_MGNLE         0x9036
+#define REG_ID_MPQD          0x9700
 #define REG_ID_MLCOK         0x402D
 #define REG_ID_RITR          0x8002
 #define REG_ID_RICNT         0x800b
@@ -429,8 +431,24 @@ reg_access_status_t reg_access_mgir(mfile* mf, reg_access_method_t method, struc
 }
 
 /************************************
-* Function: reg_access_mirc
-************************************/
+ * Function: reg_access_mmhi
+ ************************************/
+reg_access_status_t reg_access_mmhi(mfile* mf, reg_access_method_t method, struct reg_access_hca_mmhi_reg_ext* mmhi)
+{
+    REG_ACCCESS(mf, method, REG_ID_MMHI, mmhi, mmhi_reg_ext, reg_access_hca);
+}
+
+/************************************
+ * Function: reg_access_mpqd
+ ************************************/
+reg_access_status_t reg_access_mpqd(mfile* mf, reg_access_method_t method, struct reg_access_hca_mpqd_reg_ext* mpqd)
+{
+    REG_ACCCESS(mf, method, REG_ID_MPQD, mpqd, mpqd_reg_ext, reg_access_hca);
+}
+
+/************************************
+ * Function: reg_access_mirc
+ ************************************/
 reg_access_status_t reg_access_mirc(mfile* mf, reg_access_method_t method, struct tools_open_mirc_reg* mirc)
 {
     REG_ACCCESS(mf, method, REG_ID_MIRC, mirc, mirc_reg, tools_open);

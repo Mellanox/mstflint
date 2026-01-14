@@ -80,8 +80,14 @@ TLVConf::TLVConf(int columnsCount, char** dataRow, char** headerRow) :
     _isVersion(false),
     _isDescriptionFound(false),
     _isMlxconfigNameFound(false),
+    _paramsDefaultQueried(false),
+    _paramsCurrentQueried(false),
+    _paramsNextQueried(false),
     _port(0),
     _module(-1),
+    _hostId(0),
+    _pfIndex(0),
+    _isHostIdValid(false),
     _maxTlvVersionSuppByFw(0)
 {
     for (int i = 0; i < columnsCount; i++)
@@ -178,8 +184,6 @@ TLVConf::TLVConf(int columnsCount, char** dataRow, char** headerRow) :
     _isReadOnly = false;
 }
 
-TLVConf::~TLVConf() {}
-
 int TLVConf::getMaxPort(mfile* mf)
 {
     static int maxPort = 0;
@@ -207,14 +211,50 @@ int TLVConf::getMaxModule()
     return 1;
 }
 
-void TLVConf::CheckModuleAndPortMatchClass(int32_t module, u_int32_t port, string mlxconfigName)
+TLVConf::~TLVConf() {}
+
+std::shared_ptr<TLVConf> TLVConf::cloneDeep() const
 {
-    if ((module != -1) && !this->isModuleTargetClass())
+    auto copy = std::make_shared<TLVConf>(*this);
+
+    // Deep clone parameter vectors
+    copy->_paramsDefault.clear();
+    copy->_paramsCurrent.clear();
+    copy->_paramsNext.clear();
+
+    for (const auto& p : _paramsDefault)
+    {
+        if (p)
+        {
+            copy->_paramsDefault.push_back(p->cloneDeep());
+        }
+    }
+    for (const auto& p : _paramsCurrent)
+    {
+        if (p)
+        {
+            copy->_paramsCurrent.push_back(p->cloneDeep());
+        }
+    }
+    for (const auto& p : _paramsNext)
+    {
+        if (p)
+        {
+            copy->_paramsNext.push_back(p->cloneDeep());
+        }
+    }
+
+    return copy;
+}
+
+void TLVConf::CheckModuleAndPortMatchClass(int32_t tlvModule, u_int32_t port, string mlxconfigName)
+{
+    if ((tlvModule != -1) && !this->isModuleTargetClass())
     {
         string error = mlxconfigName + " doesn't have a module";
         throw MlxcfgException(error.c_str());
     }
-    else if ((module == -1) && this->isModuleTargetClass())
+    else if ((tlvModule == -1) && this->isModuleTargetClass())
     {
         string error = mlxconfigName + " with no module does not exist";
         throw MlxcfgException(error.c_str());
@@ -232,43 +272,20 @@ void TLVConf::CheckModuleAndPortMatchClass(int32_t module, u_int32_t port, strin
     }
 }
 
-void TLVConf::getView(TLVConfView& tlvConfView, mfile* mf)
+void TLVConf::getView(TLVConfView& tlvConfView, QueryType qt)
 {
+    std::vector<std::shared_ptr<Param>>* params = getParams(qt);
+
     tlvConfView.name = _mlxconfigName;
     tlvConfView.description = _description;
     tlvConfView.tlvClass = _tlvClass;
-    for (size_t j = 0; j < _params.size(); j++)
+    for (size_t j = 0; j < params->size(); j++)
     {
-        if (!_params[j]->_mlxconfigName.empty())
+        if (!(*params)[j]->_mlxconfigName.empty())
         {
-            if (this->isPortTargetClass())
-            {
-                for (int i = 1; i <= getMaxPort(mf); i++)
-                {
-                    ParamView paramView;
-                    _params[j]->getView(paramView);
-                    paramView.port = i;
-                    paramView.mlxconfigName += "_P" + to_string(i);
-                    tlvConfView.params.push_back(paramView);
-                }
-            }
-            else if (this->isModuleTargetClass())
-            {
-                for (int i = 0; i <= getMaxModule(); i++)
-                {
-                    ParamView paramView;
-                    _params[j]->getView(paramView);
-                    paramView.module = i;
-                    paramView.mlxconfigName += "_M" + to_string(i);
-                    tlvConfView.params.push_back(paramView);
-                }
-            }
-            else
-            {
-                ParamView paramView;
-                _params[j]->getView(paramView);
-                tlvConfView.params.push_back(paramView);
-            }
+            ParamView paramView;
+            (*params)[j]->getView(paramView);
+            tlvConfView.params.push_back(paramView);
         }
     }
 }
@@ -276,9 +293,9 @@ void TLVConf::getView(TLVConfView& tlvConfView, mfile* mf)
 // This function checks if the mlxconfig tool should support this TLV
 bool TLVConf::isMlxconfigSupported()
 {
-    for (size_t i = 0; i < _params.size(); i++)
+    for (size_t i = 0; i < _paramsNext.size(); i++)
     {
-        if (_params[i]->_mlxconfigName.empty() == false)
+        if (_paramsNext[i]->_mlxconfigName.empty() == false)
         {
             return true;
         }
@@ -318,17 +335,19 @@ bool TLVConf::isFWSupported(mfile* mf, bool isWriteOperation)
     return true;
 }
 
-void TLVConf::unpack(u_int8_t* buff)
+void TLVConf::unpack(u_int8_t* buff, QueryType qt)
 {
-    VECTOR_ITERATOR(std::shared_ptr<Param>, _params, p)
+    std::vector<std::shared_ptr<Param>>* params = getParams(qt);
+    for (vector<std::shared_ptr<Param>>::iterator p = params->begin(); p != params->end(); ++p)
     {
         (*p)->unpack(buff);
     }
 }
 
-void TLVConf::pack(u_int8_t* buff)
+void TLVConf::pack(u_int8_t* buff, QueryType qt)
 {
-    VECTOR_ITERATOR(std::shared_ptr<Param>, _params, p)
+    std::vector<std::shared_ptr<Param>>* params = getParams(qt);
+    for (vector<std::shared_ptr<Param>>::iterator p = params->begin(); p != params->end(); ++p)
     {
         (*p)->pack(buff);
     }
@@ -336,7 +355,7 @@ void TLVConf::pack(u_int8_t* buff)
 
 void TLVConf::invalidate(mfile* mf)
 {
-    MError mRc = nvdiCom5thGen(mf, getTlvTypeBe());
+    MError mRc = nvdiCom5thGen(mf, getTlvTypeBe(), _isHostIdValid);
     if (mRc)
     {
         throw MlxcfgException("Failed to reset %s settings %s", _name.c_str(), m_err2str(mRc));
@@ -407,47 +426,57 @@ u_int32_t TLVConf::getPerHostFunctionTypeBe()
     string host = _attrs[HOST_ATTR], func = _attrs[FUNC_ATTR];
 
     memset(&type, 0, sizeof(struct tools_open_per_host_type));
-
-    if ((host == ALL_ATTR_VAL) && (func == ALL_ATTR_VAL))
-    {
-        type.param_class = All_Hosts_All_Functions;
-        type.function = 0;
-        type.host = 0;
-    }
-    else if ((host == ALL_ATTR_VAL) && (func != ALL_ATTR_VAL))
-    {
-        type.param_class = All_Hosts_Per_Function;
-        type.host = 0;
-        if (!strToNum(_attrs[FUNC_ATTR], num))
-        {
-            throw MlxcfgException(FUNC_ATTR " attribute value %s is not valid", func.c_str());
-        }
-        type.function = num;
-    }
-    else if ((host != ALL_ATTR_VAL) && (func == ALL_ATTR_VAL))
-    {
-        type.param_class = Per_Host_All_Functions;
-        type.function = 0;
-        if (!strToNum(_attrs[HOST_ATTR], num))
-        {
-            throw MlxcfgException(HOST_ATTR " attribute value %s is not valid", host.c_str());
-        }
-        type.host = num;
-    }
-    else if ((host != ALL_ATTR_VAL) && (func != ALL_ATTR_VAL))
+    // user request specific host / pf
+    if (_hostId != 0 || _pfIndex != 0)
     {
         type.param_class = Per_Host_Per_Function;
-        if (!strToNum(_attrs[HOST_ATTR], num))
-        {
-            throw MlxcfgException(HOST_ATTR " attribute value %s is not valid", host.c_str());
-        }
-        type.host = num;
-        if (!strToNum(_attrs[FUNC_ATTR], num))
-        {
-            throw MlxcfgException(FUNC_ATTR " attribute value %s is not valid", func.c_str());
-        }
-        type.function = num;
+        type.host = _hostId;
+        type.function = _pfIndex;
     }
+    else
+    {
+        if ((host == ALL_ATTR_VAL) && (func == ALL_ATTR_VAL))
+        {
+            type.param_class = All_Hosts_All_Functions;
+            type.function = 0;
+            type.host = 0;
+        }
+        else if ((host == ALL_ATTR_VAL) && (func != ALL_ATTR_VAL))
+        {
+            type.param_class = All_Hosts_Per_Function;
+            type.host = 0;
+            if (!strToNum(_attrs[FUNC_ATTR], num))
+            {
+                throw MlxcfgException(FUNC_ATTR " attribute value %s is not valid", func.c_str());
+            }
+            type.function = num;
+        }
+        else if ((host != ALL_ATTR_VAL) && (func == ALL_ATTR_VAL))
+        {
+            type.param_class = Per_Host_All_Functions;
+            type.function = 0;
+            if (!strToNum(_attrs[HOST_ATTR], num))
+            {
+                throw MlxcfgException(HOST_ATTR " attribute value %s is not valid", host.c_str());
+            }
+            type.host = num;
+        }
+        else if ((host != ALL_ATTR_VAL) && (func != ALL_ATTR_VAL))
+        {
+            type.param_class = Per_Host_Per_Function;
+            if (!strToNum(_attrs[HOST_ATTR], num))
+            {
+                throw MlxcfgException(HOST_ATTR " attribute value %s is not valid", host.c_str());
+            }
+            type.host = num;
+            if (!strToNum(_attrs[FUNC_ATTR], num))
+            {
+                throw MlxcfgException(FUNC_ATTR " attribute value %s is not valid", func.c_str());
+            }
+            type.function = num;
+        }
+    }
+
     type.param_idx = _id;
     tools_open_per_host_type_pack(&type, (u_int8_t*)&tlvType);
     return tlvType;
@@ -484,9 +513,9 @@ u_int32_t TLVConf::getTlvTypeBe()
     throw MlxcfgException("The tlv %s has unknown class %d", _name.c_str(), _tlvClass);
 }
 
-std::shared_ptr<Param> TLVConf::getValidBitParam(string n)
+std::shared_ptr<Param> TLVConf::getValidBitParam(string n, QueryType qt)
 {
-    std::shared_ptr<Param> vP = getParamByName(n);
+    std::shared_ptr<Param> vP = getParamByName(n, qt);
     if (!vP)
     {
         throw MlxcfgException("The valid bit %s in the tlv %s was not found\n", n.c_str(), _name.c_str());
@@ -498,11 +527,11 @@ std::shared_ptr<Param> TLVConf::getValidBitParam(string n)
     return vP;
 }
 
-bool TLVConf::checkParamValidBit(std::shared_ptr<Param> p)
+bool TLVConf::checkParamValidBit(std::shared_ptr<Param> p, QueryType qt)
 {
     if (!p->_validBit.empty())
     {
-        std::shared_ptr<Param> vP = getValidBitParam(p->_validBit);
+        std::shared_ptr<Param> vP = getValidBitParam(p->_validBit, qt);
         if (!vP->_value)
         {
             return false;
@@ -511,17 +540,67 @@ bool TLVConf::checkParamValidBit(std::shared_ptr<Param> p)
     return true;
 }
 
-void TLVConf::mnva(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t type, reg_access_method_t method, QueryType qT)
+bool TLVConf::mnvda(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t type, reg_access_method_t method, QueryType qT)
 {
     bool isSet = (method == REG_ACCESS_METHOD_SET);
-    MError mRc = mnvaCom5thGen(mf, buff, len, type, method, qT);
+    MError mRc = mnvaCom5thGen(mf, buff, len, type, method, qT, _isHostIdValid);
     if (mRc)
     {
         // Todo: ask for this check:
         if ((mRc != ME_REG_ACCESS_RES_NOT_AVLBL) || isSet)
         {
-            throw MlxcfgException("Failed to %s %s settings %s", isSet ? "set" : "get", _name.c_str(), m_err2str(mRc));
+            throw MlxcfgException("Failed to %s %s settings %s (%d)", isSet ? "set" : "get", _name.c_str(),
+                                  m_err2str(mRc), mRc);
         }
+        return false;
+    }
+    return true;
+}
+
+void TLVConf::invalidateParamsQueried()
+{
+    _paramsDefaultQueried = false;
+    _paramsCurrentQueried = false;
+    _paramsNextQueried = false;
+}
+
+bool* TLVConf::getParamsQueried(QueryType qt)
+{
+    if (qt == QueryDefault)
+    {
+        return &_paramsDefaultQueried;
+    }
+    else if (qt == QueryCurrent)
+    {
+        return &_paramsCurrentQueried;
+    }
+    else if (qt == QueryNext)
+    {
+        return &_paramsNextQueried;
+    }
+    else
+    {
+        throw MlxcfgException("Invalid query type");
+    }
+}
+
+std::vector<std::shared_ptr<Param>>* TLVConf::getParams(QueryType qt)
+{
+    if (qt == QueryDefault)
+    {
+        return &_paramsDefault;
+    }
+    else if (qt == QueryCurrent)
+    {
+        return &_paramsCurrent;
+    }
+    else if (qt == QueryNext)
+    {
+        return &_paramsNext;
+    }
+    else
+    {
+        throw MlxcfgException("Invalid query type");
     }
 }
 
@@ -529,13 +608,16 @@ void TLVConf::parseParamValue(string paramMlxconfigName,
                               string valToParse,
                               u_int32_t& val,
                               string& strVal,
-                              u_int32_t index)
+                              u_int32_t index,
+                              QueryType qt)
 {
-    std::shared_ptr<Param> p = findParamByMlxconfigName(paramMlxconfigName);
+    std::shared_ptr<Param> p = NULL;
+    p = findParamByMlxconfigName(paramMlxconfigName, qt);
 
+    // not sure we should reach below code
     if (!p)
     {
-        p = findParamByMlxconfigName(paramMlxconfigName + getArraySuffixByInterval(index));
+        p = findParamByMlxconfigName(paramMlxconfigName + getArraySuffixByInterval(index), qt);
     }
 
     if (!p)
@@ -547,47 +629,47 @@ void TLVConf::parseParamValue(string paramMlxconfigName,
 
 vector<pair<ParamView, string>> TLVConf::query(mfile* mf, QueryType qT)
 {
-    bool defaultQueried = false;
-    bool getDefault = (qT == QueryDefault);
     vector<pair<ParamView, string>> queryResult;
     vector<u_int8_t> defaultBuff(_size, 0);
+    vector<u_int8_t> emptyBuff(_size, 0);
+    bool* queryBefore = getParamsQueried(qT);
+    std::vector<std::shared_ptr<Param>>* params = getParams(qT);
 
-    mnva(mf, _buff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_GET, qT);
+    if (!*queryBefore)
+    {
+        std::fill(_buff.begin(), _buff.end(), 0);
+        bool success = mnvda(mf, _buff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_GET, qT);
+        *queryBefore = true;
+        if (success)
+        {
+            unpack(_buff.data(), qT);
+        }
+        else
+        {
+            if (mlxcfg_is_debug_enabled())
+            {
+                printf("mnvda GET failed for %s settings emptyBuff\n", _name.c_str());
+            }
+            unpack(emptyBuff.data(), qT); // in case mnvda failed , unpack default empty buff
+        }
+    }
 
-    unpack(_buff.data());
-
-    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
+    for (std::vector<std::shared_ptr<Param>>::iterator it = params->begin(); it != params->end(); ++it)
     {
         ParamView paramView;
         std::shared_ptr<Param> p = *(it);
-        p->_port = this->_port;
-        p->_module = this->_module;
-        if (this->isPortTargetClass() && (p->_mlxconfigName != ""))
-        {
-            auto namePortTuple = MlxcfgDBManager::splitMlxcfgNameAndPortOrModule(p->_mlxconfigName, PORT, mf);
-            if (get<1>(namePortTuple) != 0)
-            {
-                p->_mlxconfigName = get<0>(namePortTuple);
-            }
-            p->_mlxconfigName += "_P" + to_string(p->_port);
-        }
-        else if (this->isModuleTargetClass() && (p->_mlxconfigName != ""))
-        {
-            auto nameModuleTuple = MlxcfgDBManager::splitMlxcfgNameAndPortOrModule(p->_mlxconfigName, MODULE, mf);
-            if (get<1>(nameModuleTuple) != -1)
-            {
-                p->_mlxconfigName = get<0>(nameModuleTuple);
-            }
-            p->_mlxconfigName += "_M" + to_string(p->_module);
-        }
-        if (!getDefault && !checkParamValidBit(p))
+        if (!_paramsDefaultQueried && !checkParamValidBit(p, qT))
         { // then take default value
-            if (!defaultQueried)
+            bool success = mnvda(mf, defaultBuff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_GET, QueryDefault);
+            _paramsDefaultQueried = true;
+            if (success)
             {
-                mnva(mf, defaultBuff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_GET, QueryDefault);
-                defaultQueried = true;
+                unpack(defaultBuff.data(), QueryDefault);
             }
-            p->unpack(defaultBuff.data());
+            else
+            {
+                unpack(emptyBuff.data(), qT); // in case mnvda failed , unpack default empty buff
+            }
         }
         if (p->_mlxconfigName.empty() || (p->_supportedFromVersion > _maxTlvVersionSuppByFw))
         {
@@ -600,13 +682,13 @@ vector<pair<ParamView, string>> TLVConf::query(mfile* mf, QueryType qT)
     return queryResult;
 }
 
-void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, mfile* mf)
+void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, mfile* mf, QueryType qt)
 {
-    std::shared_ptr<Param> p = findParamByMlxconfigNamePortModule(paramMlxconfigName, this->_port, this->_module);
+    std::shared_ptr<Param> p = findParamByMlxconfigNamePortModule(paramMlxconfigName, this->_port, this->_module, qt);
     if (!p)
     {
         auto ret = MlxcfgDBManager::getMlxconfigNamePortModule(paramMlxconfigName, mf);
-        p = findParamByMlxconfigNamePortModule(get<0>(ret), get<1>(ret), get<2>(ret));
+        p = findParamByMlxconfigNamePortModule(get<0>(ret), get<1>(ret), get<2>(ret), qt);
         if (!p)
         {
             throw MlxcfgException("Unknown parameter: %s", paramMlxconfigName.c_str());
@@ -616,17 +698,17 @@ void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, 
     // check if there is a valid bit
     if (!p->_validBit.empty())
     {
-        (getValidBitParam(p->_validBit))->_value->setVal(1);
+        (getValidBitParam(p->_validBit, qt))->_value->setVal(1);
     }
 }
 
-void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, u_int32_t index)
+void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, u_int32_t index, QueryType qt)
 {
-    std::shared_ptr<Param> p = findParamByMlxconfigName(paramMlxconfigName);
+    std::shared_ptr<Param> p = findParamByMlxconfigName(paramMlxconfigName, qt);
 
     if (!p)
     {
-        p = findParamByMlxconfigName(paramMlxconfigName + getArraySuffixByInterval(index));
+        p = findParamByMlxconfigName(paramMlxconfigName + getArraySuffixByInterval(index), qt);
     }
 
     if (!p)
@@ -636,10 +718,11 @@ void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, 
     p->setVal(val, index % MAX_ARRAY_SIZE);
 }
 
-void TLVConf::updateParamByName(string paramName, string val)
+void TLVConf::updateParamByName(string paramName, string val, QueryType qt)
 {
     std::shared_ptr<Param> p = NULL;
-    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
+    std::vector<std::shared_ptr<Param>>* params = getParams(qt);
+    for (std::vector<std::shared_ptr<Param>>::iterator it = params->begin(); it != params->end(); ++it)
     {
         if (paramName == (*it)->_name)
         {
@@ -655,14 +738,15 @@ void TLVConf::updateParamByName(string paramName, string val)
     // check if there is a valid bit
     if (!p->_validBit.empty())
     {
-        (getValidBitParam(p->_validBit))->_value->setVal(1);
+        (getValidBitParam(p->_validBit, qt))->_value->setVal(1);
     }
 }
 
-void TLVConf::updateParamByName(string paramName, vector<string> vals)
+void TLVConf::updateParamByName(string paramName, vector<string> vals, QueryType qt)
 {
     std::shared_ptr<Param> p = NULL;
-    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
+    std::vector<std::shared_ptr<Param>>* params = getParams(qt);
+    for (std::vector<std::shared_ptr<Param>>::iterator it = params->begin(); it != params->end(); ++it)
     {
         if (paramName == (*it)->_name)
         {
@@ -681,7 +765,7 @@ void TLVConf::updateParamByName(string paramName, vector<string> vals)
 
 bool TLVConf::isAStringParam(string paramName)
 {
-    std::shared_ptr<Param> param = getParamByName(paramName);
+    std::shared_ptr<Param> param = getParamByName(paramName, QueryDefault);
     if (!param)
     {
         throw MlxcfgException("Unknown parameter %s of the configuration %s", paramName.c_str(), _name.c_str());
@@ -742,12 +826,13 @@ TLVClass TLVConf::str2TLVClass(char* s)
     throw MlxcfgException("Unknown TLV class %d", i);
 }
 
-std::shared_ptr<Param> TLVConf::getParamByName(string n)
+std::shared_ptr<Param> TLVConf::getParamByName(string name, QueryType qt)
 {
-    for (size_t i = 0; i < _params.size(); i++)
+    std::vector<std::shared_ptr<Param>>* params = getParams(qt);
+    for (std::vector<std::shared_ptr<Param>>::iterator it = params->begin(); it != params->end(); ++it)
     {
-        std::shared_ptr<Param> p = _params[i];
-        if (n == p->_name)
+        std::shared_ptr<Param> p = (*it);
+        if (name == p->_name)
         {
             return p;
         }
@@ -755,9 +840,10 @@ std::shared_ptr<Param> TLVConf::getParamByName(string n)
     return NULL;
 }
 
-std::shared_ptr<Param> TLVConf::findParamByMlxconfigName(string mlxconfigname)
+std::shared_ptr<Param> TLVConf::findParamByMlxconfigName(string mlxconfigname, QueryType qt)
 {
-    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
+    std::vector<std::shared_ptr<Param>>* params = getParams(qt);
+    for (std::vector<std::shared_ptr<Param>>::iterator it = params->begin(); it != params->end(); ++it)
     {
         if (mlxconfigname == (*it)->_mlxconfigName)
         {
@@ -767,11 +853,13 @@ std::shared_ptr<Param> TLVConf::findParamByMlxconfigName(string mlxconfigname)
     return NULL;
 }
 
-std::shared_ptr<Param> TLVConf::findParamByMlxconfigNamePortModule(string mlxconfigname, u_int32_t port, int32_t module)
+std::shared_ptr<Param>
+  TLVConf::findParamByMlxconfigNamePortModule(string mlxconfigname, u_int32_t port, int32_t tlvModule, QueryType qt)
 {
-    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
+    std::vector<std::shared_ptr<Param>>* params = getParams(qt);
+    for (std::vector<std::shared_ptr<Param>>::iterator it = params->begin(); it != params->end(); ++it)
     {
-        if ((mlxconfigname == (*it)->_mlxconfigName) && (port == (*it)->_port) && (module == (*it)->_module))
+        if ((mlxconfigname == (*it)->_mlxconfigName) && (port == (*it)->_port) && (tlvModule == (*it)->_module))
         {
             return *it;
         }
@@ -779,9 +867,10 @@ std::shared_ptr<Param> TLVConf::findParamByMlxconfigNamePortModule(string mlxcon
     return NULL;
 }
 
-std::shared_ptr<Param> TLVConf::findParamByName(string name)
+std::shared_ptr<Param> TLVConf::findParamByName(string name, QueryType qt)
 {
-    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
+    std::vector<std::shared_ptr<Param>>* params = getParams(qt);
+    for (std::vector<std::shared_ptr<Param>>::iterator it = params->begin(); it != params->end(); ++it)
     {
         if (name == (*it)->_name)
         {
@@ -791,9 +880,9 @@ std::shared_ptr<Param> TLVConf::findParamByName(string name)
     return NULL;
 }
 
-u_int32_t TLVConf::getParamValueByName(string n)
+u_int32_t TLVConf::getParamValueByName(string n, QueryType qt)
 {
-    std::shared_ptr<Param> p = getParamByName(n);
+    std::shared_ptr<Param> p = getParamByName(n, qt);
     if (!p)
     {
         throw MlxcfgException("The parameter %s was not found", n.c_str());
@@ -825,7 +914,8 @@ void evalExpr(string expr, string var, u_int32_t& varVal, u_int32_t& exprResult)
 void TLVConf::getExprVarsValues(vector<string>& vars,
                                 std::vector<std::shared_ptr<TLVConf>> ruleTLVs,
                                 map<string, u_int32_t>& var2ValMap,
-                                string expr)
+                                string expr,
+                                QueryType qt)
 {
     std::shared_ptr<Param> vP = NULL;
     // find value of all vars(w/o temp vars) in the tempVars string:
@@ -839,7 +929,7 @@ void TLVConf::getExprVarsValues(vector<string>& vars,
             if (pos == string::npos)
             {
                 // the var is in the same tlv or it is a temp var
-                vP = getParamByName(var);
+                vP = getParamByName(var, qt);
             }
             else
             {
@@ -848,7 +938,7 @@ void TLVConf::getExprVarsValues(vector<string>& vars,
                 {
                     if ((*k)->_name == tlvName)
                     {
-                        vP = (*k)->getParamByName(var.substr(pos + 1));
+                        vP = (*k)->getParamByName(var.substr(pos + 1), qt);
                         // printf("tlvName=%s p=%s val=%d\n", tlvName.c_str(), vP->_name.c_str(), vP->_value);
                         break;
                     }
@@ -912,12 +1002,13 @@ void substituteVarsValues(string orgExpr,
 
 void TLVConf::evalTempVars(std::shared_ptr<Param> p,
                            std::vector<std::shared_ptr<TLVConf>> ruleTLVs,
-                           map<string, u_int32_t>& var2ValMap)
+                           map<string, u_int32_t>& var2ValMap,
+                           QueryType qt)
 {
     vector<string> vars;
 
     p->extractVars(vars, p->_tempVars);
-    getExprVarsValues(vars, ruleTLVs, var2ValMap, p->_tempVars);
+    getExprVarsValues(vars, ruleTLVs, var2ValMap, p->_tempVars, qt);
 
     // Substitute vars (w/o temp vars) with value:
     string expr = "";
@@ -934,7 +1025,8 @@ void TLVConf::evalTempVars(std::shared_ptr<Param> p,
 u_int32_t TLVConf::evalRule(std::shared_ptr<Param> p,
                             string rule,
                             std::vector<std::shared_ptr<TLVConf>>& ruleTLVs,
-                            map<string, u_int32_t>& var2ValMap)
+                            map<string, u_int32_t>& var2ValMap,
+                            QueryType qt)
 {
     string expr = "";
     string orgExpr = rule;
@@ -943,7 +1035,7 @@ u_int32_t TLVConf::evalRule(std::shared_ptr<Param> p,
     vector<string> vars;
 
     p->extractVars(vars, rule);
-    getExprVarsValues(vars, ruleTLVs, var2ValMap, rule);
+    getExprVarsValues(vars, ruleTLVs, var2ValMap, rule, qt);
 
     substituteVarsValues(orgExpr, expr, var2ValMap, false, temp);
     u_int32_t v, r;
@@ -951,9 +1043,10 @@ u_int32_t TLVConf::evalRule(std::shared_ptr<Param> p,
     return r;
 }
 
-void TLVConf::checkRules(std::vector<std::shared_ptr<TLVConf>> ruleTLVs)
+void TLVConf::checkRules(std::vector<std::shared_ptr<TLVConf>> ruleTLVs, QueryType qt)
 {
-    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
+    std::vector<std::shared_ptr<Param>>* params = getParams(qt);
+    for (std::vector<std::shared_ptr<Param>>::iterator it = params->begin(); it != params->end(); ++it)
     {
         std::shared_ptr<Param> p = *it;
         map<string, u_int32_t> var2ValMap;
@@ -966,12 +1059,12 @@ void TLVConf::checkRules(std::vector<std::shared_ptr<TLVConf>> ruleTLVs)
         // first, find values of temp vars
         if (!p->_tempVars.empty())
         {
-            evalTempVars(p, ruleTLVs, var2ValMap);
+            evalTempVars(p, ruleTLVs, var2ValMap, qt);
         }
 
         if (!p->_maxVal.empty())
         {
-            u_int32_t r = evalRule(p, p->_maxVal, ruleTLVs, var2ValMap);
+            u_int32_t r = evalRule(p, p->_maxVal, ruleTLVs, var2ValMap, qt);
             if (p->_value->getIntVal() > r)
             {
                 throw MlxcfgException("Parameter %s' value is larger than maximum allowed %d",
@@ -981,7 +1074,7 @@ void TLVConf::checkRules(std::vector<std::shared_ptr<TLVConf>> ruleTLVs)
 
         if (!p->_minVal.empty())
         {
-            u_int32_t r = evalRule(p, p->_minVal, ruleTLVs, var2ValMap);
+            u_int32_t r = evalRule(p, p->_minVal, ruleTLVs, var2ValMap, qt);
             if (p->_value->getIntVal() < r)
             {
                 throw MlxcfgException("Parameter %s' value is smaller than minimum allowed %d",
@@ -991,7 +1084,7 @@ void TLVConf::checkRules(std::vector<std::shared_ptr<TLVConf>> ruleTLVs)
 
         if (!p->_rule.empty())
         {
-            if (evalRule(p, p->_rule, ruleTLVs, var2ValMap) == 0)
+            if (evalRule(p, p->_rule, ruleTLVs, var2ValMap, qt) == 0)
             {
                 string paramsList = "";
                 vector<string> vars;
@@ -1015,15 +1108,16 @@ void TLVConf::checkRules(std::vector<std::shared_ptr<TLVConf>> ruleTLVs)
     }
 }
 
+// mlxconfig always set the next value
 void TLVConf::setOnDevice(mfile* mf)
 {
-    pack(_buff.data());
-    mnva(mf, _buff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_SET);
+    pack(_buff.data(), QueryNext);
+    mnvda(mf, _buff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_SET, QueryNext);
 }
 
 void TLVConf::getRuleTLVs(std::set<string>& result)
 {
-    VECTOR_ITERATOR(std::shared_ptr<Param>, _params, p)
+    VECTOR_ITERATOR(std::shared_ptr<Param>, _paramsNext, p)
     {
         vector<string> rulesTLV;
         (*p)->getRulesTLV(rulesTLV);
@@ -1069,7 +1163,7 @@ void TLVConf::genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal, b
     }
     xmlTemplate += ">\n\n";
 
-    for (std::vector<std::shared_ptr<Param>>::iterator it = _params.begin(); it != _params.end(); ++it)
+    for (std::vector<std::shared_ptr<Param>>::iterator it = _paramsNext.begin(); it != _paramsNext.end(); ++it)
     {
         string paramXMLTemplate;
         (*it)->genXMLTemplate(paramXMLTemplate, withVal, confFormat);
@@ -1092,6 +1186,11 @@ bool TLVConf::isPortTargetClass()
 bool TLVConf::isModuleTargetClass()
 {
     return this->_tlvClass == 9;
+}
+
+bool TLVConf::isHostTargetClass()
+{
+    return this->_tlvClass == 3 || this->_tlvClass == 7;
 }
 
 void TLVConf::unpackTLVType(TLVClass tlvClass, tools_open_tlv_type& type, u_int32_t& id)
@@ -1207,7 +1306,7 @@ string PriorityNumToStr(u_int8_t priority)
     }
 }
 
-void TLVConf::genBin(vector<u_int32_t>& buff, bool withHeader)
+void TLVConf::genBin(vector<u_int32_t>& buff, bool withHeader, QueryType qt)
 {
     u_int32_t writer_id = 0, rd_en = 0, ovr_en = 0;
     int priority;
@@ -1250,29 +1349,31 @@ void TLVConf::genBin(vector<u_int32_t>& buff, bool withHeader)
 
         tools_open_nv_hdr_fifth_gen_pack(&hdr, (u_int8_t*)buff.data());
 
-        pack((u_int8_t*)buff.data() + hdrSize);
+        pack((u_int8_t*)buff.data() + hdrSize, qt);
     }
     else
     {
         buff.resize(_size >> 2);
-        pack((u_int8_t*)buff.data());
+        pack((u_int8_t*)buff.data(), qt);
     }
 }
 
-bool TLVConf::areParamsEqual(const TLVConf& rhsTLV)
+bool TLVConf::areParamsEqual(TLVConf& rhsTLV, QueryType qt)
 {
-    if (_params.size() != rhsTLV._params.size())
+    std::vector<std::shared_ptr<Param>>* params = getParams(qt);
+    std::vector<std::shared_ptr<Param>>* rhsParams = rhsTLV.getParams(qt);
+    if (params->size() != rhsParams->size())
     {
         return false;
     }
 
-    for (auto param : _params)
+    for (auto param : *params)
     {
         auto rhsParam =
-          std::find_if(rhsTLV._params.begin(), rhsTLV._params.end(),
+          std::find_if(rhsParams->begin(), rhsParams->end(),
                        [param](shared_ptr<Param> rhsTLVParam) { return param->_name == rhsTLVParam->_name; });
 
-        if (rhsParam == rhsTLV._params.end() ||
+        if (rhsParam == rhsParams->end() ||
             mft_utils::to_lowercase_copy(param->getVal()) != mft_utils::to_lowercase_copy((*rhsParam)->getVal()))
         {
             return false;
