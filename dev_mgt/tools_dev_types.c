@@ -457,8 +457,7 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         53122,                                                /* sw_dev_id */
         "Spectrum5",                                          /* name */
-        "Spectrum5",                                          /* external_name */
-        514,                                                  /* port_num NEED_CHECK */
+        515,                                                  /* port_num NEED_CHECK */
         DM_SWITCH                                             /* dev_type */
     },
 
@@ -468,8 +467,7 @@ static struct device_info g_devs_info[] = {
         -1,                                                   /* hw_rev_id */
         53124,                                                /* sw_dev_id */
         "Spectrum6",                                          /* name */
-        "Spectrum6",                                          /* external_name */
-        514,                                                  /* port_num NEED_CHECK */
+        516,                                                  /* port_num NEED_CHECK */
         DM_SWITCH                                             /* dev_type */
     },
     {
