@@ -45,20 +45,14 @@ const unsigned short FORMAT1_MIN_MINOR = 100;
 
 FwVersion::FwVersion() : _major(0), _minor(0), _subminor(0), _devBranchTag("") {}
 
-FwVersion::FwVersion(unsigned short int major,
-                     unsigned short int minor,
-                     unsigned short int subminor,
-                     const std::string& devBranchTag) :
+FwVersion::FwVersion(unsigned short int major, unsigned short int minor, unsigned short int subminor, const std::string& devBranchTag) :
     _major(major), _minor(minor), _subminor(subminor), _devBranchTag(devBranchTag)
 {
 }
 
 FwVersion::~FwVersion() {}
 
-FwVersion::FwVersion(const FwVersion& rhs) :
-    _major(rhs._major), _minor(rhs._minor), _subminor(rhs._subminor), _devBranchTag(rhs._devBranchTag)
-{
-}
+FwVersion::FwVersion(const FwVersion& rhs) : _major(rhs._major), _minor(rhs._minor), _subminor(rhs._subminor), _devBranchTag(rhs._devBranchTag) {}
 
 std::string FwVersion::get() const
 {
@@ -79,8 +73,7 @@ FwVersion& FwVersion::operator=(const FwVersion& rhs)
 
 bool FwVersion::operator==(const FwVersion& rhs) const
 {
-    return _major == rhs._major && _minor == rhs._minor && _subminor == rhs._subminor &&
-           _devBranchTag == rhs._devBranchTag;
+    return _major == rhs._major && _minor == rhs._minor && _subminor == rhs._subminor && _devBranchTag == rhs._devBranchTag;
 }
 
 std::ostream& operator<<(std::ostream& os, const FwVersion& fw_ver)
@@ -88,8 +81,7 @@ std::ostream& operator<<(std::ostream& os, const FwVersion& fw_ver)
     return os << fw_ver.get_fw_version();
 }
 
-std::string
-  FwVersion::get_fw_version(const std::string& master_format, bool even_subminor, const std::string& not_set) const
+std::string FwVersion::get_fw_version(const std::string& master_format, bool even_subminor, const std::string& not_set) const
 {
     if (!is_set())
     {
@@ -136,6 +128,7 @@ bool FwVersion::operator!=(const FwVersion& rhs) const
 // 31 is Quantum2
 // 34 is Spectrum4
 // 35 is Quantum3
+// 41 is NVLink6_Switch_ASIC
 // 37 is Spectrum5
 // 39 is Spectrum6
 bool FwVersion::is_switch_or_gb() const
@@ -144,8 +137,8 @@ bool FwVersion::is_switch_or_gb() const
     {
         return true;
     }
-    if (_major == 11 || _major == 13 || _major == 15 || _major == 27 || _major == 29 || _major == 30 || _major == 31 ||
-        _major == 34 || _major == 19 || _major == 21 || _major == 35 || _major == 36 || _major == 37)
+    if (_major == 11 || _major == 13 || _major == 15 || _major == 27 || _major == 29 || _major == 30 || _major == 31 || _major == 34 || _major == 19 || _major == 21 || _major == 35 || _major == 36 ||
+        _major == 37 || _major == 41)
     {
         return true;
     }
@@ -170,8 +163,7 @@ bool FwVersion::are_same_branch(const FwVersion& rhs) const
     if (is_master_branch())
         return true;
     // check if prefix for string is the same
-    return _devBranchTag.substr(0, _devBranchTag.size() - MAX_MINOR_LENGETH) ==
-           rhs._devBranchTag.substr(0, rhs._devBranchTag.size() - MAX_MINOR_LENGETH);
+    return _devBranchTag.substr(0, _devBranchTag.size() - MAX_MINOR_LENGETH) == rhs._devBranchTag.substr(0, rhs._devBranchTag.size() - MAX_MINOR_LENGETH);
 }
 
 int FwVersion::compare_master_version(const FwVersion& rhs) const
@@ -215,8 +207,7 @@ int FwVersion::get_master_format() const
     {
         return 1;
     }
-    if ((_major == FORMAT0_CIB_MAJOR && _minor <= FORMAT0_MAX_MINOR_CIB) ||
-        (_major == FORMAT0_SIB_MAJOR && _minor <= FORMAT0_MAX_MINOR_SIB))
+    if ((_major == FORMAT0_CIB_MAJOR && _minor <= FORMAT0_MAX_MINOR_CIB) || (_major == FORMAT0_SIB_MAJOR && _minor <= FORMAT0_MAX_MINOR_SIB))
     {
         return 0;
     }
@@ -250,15 +241,9 @@ FwVersion* FwVersion::clone() const
 
 ComponentFwVersion::ComponentFwVersion() : _major(0), _minor(0), _subMinor(0), _format(VersionFormat::None) {}
 
-ComponentFwVersion::ComponentFwVersion(unsigned short int major, unsigned short int minor) :
-    _major(major), _minor(minor), _subMinor(0), _format(VersionFormat::Minor)
-{
-}
+ComponentFwVersion::ComponentFwVersion(unsigned short int major, unsigned short int minor) : _major(major), _minor(minor), _subMinor(0), _format(VersionFormat::Minor) {}
 
-ComponentFwVersion::ComponentFwVersion(const ComponentFwVersion& rhs) :
-    _major(rhs._major), _minor(rhs._minor), _subMinor(rhs._subMinor), _format(rhs._format)
-{
-}
+ComponentFwVersion::ComponentFwVersion(const ComponentFwVersion& rhs) : _major(rhs._major), _minor(rhs._minor), _subMinor(rhs._subMinor), _format(rhs._format) {}
 
 ComponentFwVersion& ComponentFwVersion::operator=(const ComponentFwVersion& rhs)
 {

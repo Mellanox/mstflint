@@ -184,15 +184,13 @@ bool Fs4Operations::isEncrypted(bool& is_encrypted)
         res = IsEncryptedImage(is_encrypted);
     }
 
-    DPRINTF(("Fs4Operations::isEncrypted is_encrypted = %s, res = %s\n", is_encrypted ? "TRUE" : "FALSE",
-             res ? "TRUE" : "FALSE"));
+    DPRINTF(("Fs4Operations::isEncrypted is_encrypted = %s, res = %s\n", is_encrypted ? "TRUE" : "FALSE", res ? "TRUE" : "FALSE"));
     return res;
 }
 
 bool Fs4Operations::CheckTocSignature(struct image_layout_itoc_header* itoc_header, u_int32_t first_signature)
 {
-    u_int32_t a[4] = {itoc_header->signature0, itoc_header->signature1, itoc_header->signature2,
-                      itoc_header->signature3};
+    u_int32_t a[4] = {itoc_header->signature0, itoc_header->signature1, itoc_header->signature2, itoc_header->signature3};
     u_int32_t b[4] = {first_signature, TOC_RAND1, TOC_RAND2, TOC_RAND3};
     return CheckSignatures(a, b, 4);
 }
@@ -227,14 +225,11 @@ bool Fs4Operations::getImgStart()
 
         if (cntx_image_num == 0)
         {
-            return errmsg(MLXFW_NO_VALID_IMAGE_ERR,
-                          "\nNo valid FS4 image found. Check the flash parameters, if specified.");
+            return errmsg(MLXFW_NO_VALID_IMAGE_ERR, "\nNo valid FS4 image found. Check the flash parameters, if specified.");
         }
         if (cntx_image_num > 1)
         {
-            return errmsg(MLXFW_MULTIPLE_VALID_IMAGES_ERR,
-                          "More than one FS4 image found on %s",
-                          this->_ioAccess->is_flash() ? "Device" : "image");
+            return errmsg(MLXFW_MULTIPLE_VALID_IMAGES_ERR, "More than one FS4 image found on %s", this->_ioAccess->is_flash() ? "Device" : "image");
         }
         _fwImgInfo.imgStart = cntx_image_start[0];
     }
@@ -276,10 +271,7 @@ bool Fs4Operations::IsValidGapImageSize(u_int32_t imageGapSize)
     return imageGapSize == 0;
 }
 
-bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc,
-                                           FBase* ioAccess,
-                                           bool IsBurningProcess,
-                                           bool isVerify)
+bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess, bool isVerify)
 {
     DPRINTF(("Fs4Operations::getExtendedHWAravaPtrs\n"));
 #if defined(UEFI_BUILD)
@@ -333,8 +325,7 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc,
             // Calculate HW CRC:
             calcPtrCRC = calc_hw_crc((u_int8_t*)((u_int32_t*)tempBuff + k), 6);
         }
-        if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE, calcPtrCRC, ptrCRC,
-                             false, verifyCallBackFunc))
+        if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE, calcPtrCRC, ptrCRC, false, verifyCallBackFunc))
         {
             return false;
         }
@@ -416,8 +407,7 @@ bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* 
         u_int32_t ptr = tempBuff[k];
         TOCPUn(&ptr, 1);
         TOCPUn(&ptrCRC, 1);
-        if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE, calcPtrCRC, ptrCRC,
-                             false, verifyCallBackFunc))
+        if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE, calcPtrCRC, ptrCRC, false, verifyCallBackFunc))
         {
             return false;
         }
@@ -459,8 +449,7 @@ bool Fs4Operations::verifyToolsArea(VerifyCallBack verifyCallBackFunc)
 
     calculatedToolsAreaCRC = CalcImageCRC((u_int32_t*)buff, IMAGE_LAYOUT_TOOLS_AREA_SIZE / 4 - 1);
 
-    if (!DumpFs3CRCCheck(FS4_TOOLS_AREA, physAddr, IMAGE_LAYOUT_TOOLS_AREA_SIZE, calculatedToolsAreaCRC, toolsAreaCRC,
-                         false, verifyCallBackFunc))
+    if (!DumpFs3CRCCheck(FS4_TOOLS_AREA, physAddr, IMAGE_LAYOUT_TOOLS_AREA_SIZE, calculatedToolsAreaCRC, toolsAreaCRC, false, verifyCallBackFunc))
     {
         return false;
     }
@@ -529,11 +518,9 @@ bool Fs4Operations::verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBa
     }
 
     tocCrc = CalcImageCRC((u_int32_t*)buffer, (TOC_HEADER_SIZE / 4) - 1);
-    physAddr =
-      _ioAccess->get_phys_from_cont(tocAddr, isDtoc ? 0 : _fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
+    physAddr = _ioAccess->get_phys_from_cont(tocAddr, isDtoc ? 0 : _fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
 
-    if (!DumpFs3CRCCheck(isDtoc ? FS3_DTOC : FS3_ITOC, physAddr, TOC_HEADER_SIZE, tocCrc, itocHeader.itoc_entry_crc,
-                         false, verifyCallBackFunc))
+    if (!DumpFs3CRCCheck(isDtoc ? FS3_DTOC : FS3_ITOC, physAddr, TOC_HEADER_SIZE, tocCrc, itocHeader.itoc_entry_crc, false, verifyCallBackFunc))
     {
         return false;
     }
@@ -587,8 +574,7 @@ void Fs4Operations::RemoveCRCsFromMainSection(vector<u_int8_t>& img)
         }
         else
         {
-            tmp_img.insert(tmp_img.end(), img.begin() + line_start_addr,
-                           img.begin() + line_start_addr + MAIN_LINE_DATA_ONLY_SIZE);
+            tmp_img.insert(tmp_img.end(), img.begin() + line_start_addr, img.begin() + line_start_addr + MAIN_LINE_DATA_ONLY_SIZE);
         }
     }
 
@@ -641,11 +627,7 @@ bool Fs4Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_
     return true;
 }
 
-bool Fs4Operations::FwExtract4MBImage(vector<u_int8_t>& img,
-                                      bool maskMagicPatternAndDevToc,
-                                      bool verbose,
-                                      bool ignoreImageStart,
-                                      bool)
+bool Fs4Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose, bool ignoreImageStart, bool)
 {
     bool res = false;
 
@@ -666,12 +648,7 @@ bool Fs4Operations::FwExtract4MBImage(vector<u_int8_t>& img,
     return res;
 }
 
-bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr,
-                                     bool show_itoc,
-                                     bool isDtoc,
-                                     struct QueryOptions queryOptions,
-                                     VerifyCallBack verifyCallBackFunc,
-                                     bool verbose)
+bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isDtoc, struct QueryOptions queryOptions, VerifyCallBack verifyCallBackFunc, bool verbose)
 {
     struct image_layout_itoc_entry tocEntry;
     int section_index = 0;
@@ -721,10 +698,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr,
         {
             if (section_index + 1 >= MAX_TOCS_NUM)
             {
-                return errmsg("Internal error: number of %s %d is greater than allowed %d",
-                              isDtoc ? "DTocs" : "ITocs",
-                              section_index + 1,
-                              MAX_TOCS_NUM);
+                return errmsg("Internal error: number of %s %d is greater than allowed %d", isDtoc ? "DTocs" : "ITocs", section_index + 1, MAX_TOCS_NUM);
             }
 
             entryCrc = CalcImageCRC((u_int32_t*)entryBuffer, (TOC_ENTRY_SIZE / 4) - 1);
@@ -732,13 +706,11 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr,
             {
                 if (_fwParams.ignoreCrcCheck)
                 {
-                    printf("-W- Bad %s Entry CRC. Expected: 0x%x , Actual: 0x%x\n", isDtoc ? "DToc" : "IToc",
-                           tocEntry.itoc_entry_crc, entryCrc);
+                    printf("-W- Bad %s Entry CRC. Expected: 0x%x , Actual: 0x%x\n", isDtoc ? "DToc" : "IToc", tocEntry.itoc_entry_crc, entryCrc);
                 }
                 else
                 {
-                    return errmsg(MLXFW_BAD_CRC_ERR, "Bad %s Entry CRC. Expected: 0x%x , Actual: 0x%x",
-                                  isDtoc ? "DToc" : "IToc", tocEntry.itoc_entry_crc, entryCrc);
+                    return errmsg(MLXFW_BAD_CRC_ERR, "Bad %s Entry CRC. Expected: 0x%x , Actual: 0x%x", isDtoc ? "DToc" : "IToc", tocEntry.itoc_entry_crc, entryCrc);
                 }
             }
 
@@ -750,18 +722,13 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr,
             if (isDtoc)
             {
                 physAddr = flash_addr;
-                _fs4ImgInfo.smallestDTocAddr =
-                  (_fs4ImgInfo.smallestDTocAddr < flash_addr && _fs4ImgInfo.smallestDTocAddr > 0) ?
-                    _fs4ImgInfo.smallestDTocAddr :
-                    flash_addr;
+                _fs4ImgInfo.smallestDTocAddr = (_fs4ImgInfo.smallestDTocAddr < flash_addr && _fs4ImgInfo.smallestDTocAddr > 0) ? _fs4ImgInfo.smallestDTocAddr : flash_addr;
             }
             else
             {
-                physAddr =
-                  _ioAccess->get_phys_from_cont(flash_addr, _fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
+                physAddr = _ioAccess->get_phys_from_cont(flash_addr, _fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
                 section_last_addr = physAddr + entrySizeInBytes;
-                _fwImgInfo.lastImageAddr =
-                  (_fwImgInfo.lastImageAddr >= section_last_addr) ? _fwImgInfo.lastImageAddr : section_last_addr;
+                _fwImgInfo.lastImageAddr = (_fwImgInfo.lastImageAddr >= section_last_addr) ? _fwImgInfo.lastImageAddr : section_last_addr;
             }
 
             if (IsFs3SectionReadable(tocEntry.type, queryOptions))
@@ -830,13 +797,11 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr,
                             is_encrypted_cache_line_crc_section = is_authtag; // if encrypted section will have auth-tag
                         }
 
-                        bool ignore_crc = (tocEntry.crc == NOCRC) ||
-                                          is_encrypted_cache_line_crc_section; // In case of encrypted MAIN_CODE section
-                                                                               // we'll ignore CRC
-                        if (!_encrypted_image_io_access && // In case of encrypted image we don't want to check section
-                                                           // CRC
-                            !DumpFs3CRCCheck(tocEntry.type, physAddr, entrySizeInBytes, sect_act_crc, sect_exp_crc,
-                                             ignore_crc, verifyCallBackFunc))
+                        bool ignore_crc = (tocEntry.crc == NOCRC) || is_encrypted_cache_line_crc_section; // In case of encrypted MAIN_CODE section
+                                                                                                          // we'll ignore CRC
+                        if (!_encrypted_image_io_access &&                                                // In case of encrypted image we don't want to check section
+                                                                                                          // CRC
+                            !DumpFs3CRCCheck(tocEntry.type, physAddr, entrySizeInBytes, sect_act_crc, sect_exp_crc, ignore_crc, verifyCallBackFunc))
                         {
                             if (isDtoc)
                             {
@@ -847,8 +812,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr,
                         else
                         {
                             // printf("-D- toc type : 0x%.8x\n" , toc_entry.type);
-                            GetSectData(tocArray->tocArr[section_index].section_data, (u_int32_t*)buff,
-                                        tocEntry.size * 4);
+                            GetSectData(tocArray->tocArr[section_index].section_data, (u_int32_t*)buff, tocEntry.size * 4);
                             bool isDevInfoSection = (tocEntry.type == FS3_DEV_INFO);
                             bool isDevInfoValid = isDevInfoSection && CheckDevInfoSignature((u_int32_t*)buff);
                             if (isDevInfoValid)
@@ -866,8 +830,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr,
                                     {
                                         // In case of encrypted image, parsing info section from the non-encrypted image
                                         non_encrypted_buff.resize(tocEntry.size * 4);
-                                        READBUF((*_ioAccess), flash_addr, non_encrypted_buff.data(), entrySizeInBytes,
-                                                "Section");
+                                        READBUF((*_ioAccess), flash_addr, non_encrypted_buff.data(), entrySizeInBytes, "Section");
                                         section_buff = non_encrypted_buff.data();
                                     }
                                     if (!GetImageInfoFromSection(section_buff, tocEntry.type, tocEntry.size * 4))
@@ -915,9 +878,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr,
             return errmsg(MLXFW_NO_MFG_ERR, "No \"" MFG_INFO "\" info section.");
         }
         // when you start checking device info signatures => uncomment this code
-        if (validDevInfoCount != 1 && !show_itoc &&
-            (_readSectList.size() == 0 ||
-             find(_readSectList.begin(), _readSectList.end(), FS3_DEV_INFO) != _readSectList.end()) &&
+        if (validDevInfoCount != 1 && !show_itoc && (_readSectList.size() == 0 || find(_readSectList.begin(), _readSectList.end(), FS3_DEV_INFO) != _readSectList.end()) &&
             _fwImgInfo.supportedHwId[0] != ARCUSE_HW_ID) // ArcusE doesn't have DEV_INFO section
         {
             _badDevDataSections = true;
@@ -933,11 +894,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr,
     return retVal;
 }
 
-bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
-                                bool show_itoc,
-                                struct QueryOptions queryOptions,
-                                bool ignoreDToc,
-                                bool verbose)
+bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs4Operations::FsVerifyAux\n"));
     u_int32_t dtocPtr;
@@ -995,11 +952,9 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
         if (isHashesTableHwPtrValid())
         {
             //* Check hashes_table header CRC
-            READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE,
-                         "HASHES TABLE HEADER");
+            READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE, "HASHES TABLE HEADER");
             // Calculate CRC
-            u_int32_t hashes_table_header_calc_crc =
-              CalcImageCRC((u_int32_t*)buff, (IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE / 4) - 1);
+            u_int32_t hashes_table_header_calc_crc = CalcImageCRC((u_int32_t*)buff, (IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE / 4) - 1);
             // Read CRC
             u_int32_t hashes_table_header_crc = ((u_int32_t*)buff)[(IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE / 4) - 1];
             free(buff);
@@ -1008,8 +963,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
             // Compare calculated crc with crc from image
             if (hashes_table_header_calc_crc != hashes_table_header_crc)
             {
-                report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
-                                "HASHES TABLE HEADER", _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE - 4,
+                report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n", "HASHES TABLE HEADER", _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE - 4,
                                 hashes_table_header_calc_crc, hashes_table_header_crc);
                 if (!_fwParams.ignoreCrcCheck)
                 {
@@ -1034,8 +988,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
             u_int32_t hashes_table_crc = ((u_int32_t*)buff)[(hashes_table_size / 4) - 1];
             TOCPU1(hashes_table_crc)
             hashes_table_crc = hashes_table_crc & 0xFFFF;
-            if (!DumpFs3CRCCheck(FS4_HASHES_TABLE, _hashes_table_ptr, hashes_table_size, hashes_table_calc_crc,
-                                 hashes_table_crc, false, verifyCallBackFunc))
+            if (!DumpFs3CRCCheck(FS4_HASHES_TABLE, _hashes_table_ptr, hashes_table_size, hashes_table_calc_crc, hashes_table_crc, false, verifyCallBackFunc))
             {
                 return false;
             }
@@ -1065,8 +1018,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
         }
         if (signature_offset != 0)
         {
-            READBUF((*_ioAccess), signature_offset, signature_data, signature_size,
-                    "Reading data pointed by HW MDK Pointer");
+            READBUF((*_ioAccess), signature_offset, signature_data, signature_size, "Reading data pointed by HW MDK Pointer");
 
             Fs3UpdateImgCache(signature_data, signature_offset, signature_size);
         }
@@ -1221,8 +1173,7 @@ bool Fs4Operations::CheckDevRSAPublicKeyUUID()
 {
     //* Read RSA_PUBLIC_KEY section
     u_int32_t rsa_public_keys_section_addr = _public_key_ptr + _fwImgInfo.imgStart;
-    DPRINTF(
-      ("Fs4Operations::CheckDevRSAPublicKeyUUID rsa_public_keys_section_addr = 0x%x\n", rsa_public_keys_section_addr));
+    DPRINTF(("Fs4Operations::CheckDevRSAPublicKeyUUID rsa_public_keys_section_addr = 0x%x\n", rsa_public_keys_section_addr));
     vector<u_int8_t> rsa_public_keys_data;
     rsa_public_keys_data.resize(IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE);
     if (!_ioAccess->read(rsa_public_keys_section_addr, rsa_public_keys_data.data(), IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE))
@@ -1275,8 +1226,7 @@ bool Fs4Operations::ParseImageInfoFromEncryptedImage()
 {
     //* Read IMAGE_INFO section
     u_int32_t image_info_section_addr = _image_info_section_ptr + _fwImgInfo.imgStart;
-    DPRINTF(
-      ("Fs4Operations::ParseImageInfoFromEncryptedImage image_info_section_addr = 0x%x\n", image_info_section_addr));
+    DPRINTF(("Fs4Operations::ParseImageInfoFromEncryptedImage image_info_section_addr = 0x%x\n", image_info_section_addr));
     vector<u_int8_t> image_info_data;
     image_info_data.resize(IMAGE_LAYOUT_IMAGE_INFO_SIZE);
     if (!_ioAccess->read(image_info_section_addr, image_info_data.data(), IMAGE_LAYOUT_IMAGE_INFO_SIZE))
@@ -1385,12 +1335,7 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t* fwInfo, bool quickQuery, bool ig
     return true;
 }
 
-bool Fs4Operations::FwQuery(fw_info_t* fwInfo,
-                            bool readRom,
-                            bool isStripedImage,
-                            bool quickQuery,
-                            bool ignoreDToc,
-                            bool verbose)
+bool Fs4Operations::FwQuery(fw_info_t* fwInfo, bool readRom, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs4Operations::FwQuery\n"));
     if (isStripedImage)
@@ -1398,7 +1343,7 @@ bool Fs4Operations::FwQuery(fw_info_t* fwInfo,
         SetIsReducedImage(true);
         ignoreDToc = true;
     }
-    
+
     bool image_encrypted = false;
     if (!isEncrypted(image_encrypted))
     {
@@ -1468,6 +1413,7 @@ bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
             case CT_CONNECTX6DX:
             case CT_CONNECTX6LX:
             case CT_QUANTUM3:
+            case CT_NVLINK6_SWITCH_ASIC:
             case CT_CONNECTX8:
             case CT_CONNECTX8_PURE_PCIE_SWITCH:
             case CT_CONNECTX9:
@@ -1490,8 +1436,7 @@ bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
 
 bool Fs4Operations::QuerySecurityFeatures()
 {
-    DPRINTF(
-      ("Fs4Operations::QuerySecurityFeatures _fwImgInfo.ext_info.chip_type = %d\n", _fwImgInfo.ext_info.chip_type));
+    DPRINTF(("Fs4Operations::QuerySecurityFeatures _fwImgInfo.ext_info.chip_type = %d\n", _fwImgInfo.ext_info.chip_type));
     _fs3ImgInfo.ext_info.image_security_version = _security_version;
     _fs3ImgInfo.ext_info.device_security_version_access_method = NOT_VALID;
     if (_ioAccess->is_flash())
@@ -1546,9 +1491,7 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
     // check if max itoc is not overwriting the chunk
     if (imageOps._fwImgInfo.lastImageAddr >= (u_int32_t)(imageOps._fwImgInfo.imgStart + (1 << imageOps._maxImgLog2Size)))
     {
-        return errmsg(MLXFW_IMAGE_TOO_LARGE_ERR,
-                      "Last ITOC section ends at address (0x%x) which is greater than max size of image (0x%x)",
-                      imageOps._fwImgInfo.lastImageAddr,
+        return errmsg(MLXFW_IMAGE_TOO_LARGE_ERR, "Last ITOC section ends at address (0x%x) which is greater than max size of image (0x%x)", imageOps._fwImgInfo.lastImageAddr,
                       imageOps._maxImgLog2Size);
     }
 
@@ -1557,10 +1500,7 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
     {
         if (imageOps._fs4ImgInfo.smallestDTocAddr < imageOps._fwImgInfo.lastImageAddr)
         {
-            return errmsg(MLXFW_DTOC_OVERWRITE_CHUNK,
-                          "First DTOC address (0x%x) is less than last ITOC address (0x%x)",
-                          imageOps._fs4ImgInfo.smallestDTocAddr,
-                          imageOps._fwImgInfo.lastImageAddr);
+            return errmsg(MLXFW_DTOC_OVERWRITE_CHUNK, "First DTOC address (0x%x) is less than last ITOC address (0x%x)", imageOps._fs4ImgInfo.smallestDTocAddr, imageOps._fwImgInfo.lastImageAddr);
         }
     }
 
@@ -1652,9 +1592,7 @@ bool Fs4Operations::FwReadData(void* image, u_int32_t* imageSize, bool verbose)
     // take device sections
     if (image != NULL)
     {
-        _imageCache.get((u_int8_t*)image + _fs4ImgInfo.smallestDTocAddr,
-                        _fs4ImgInfo.smallestDTocAddr,
-                        (_ioAccess)->get_size() - _fs4ImgInfo.smallestDTocAddr);
+        _imageCache.get((u_int8_t*)image + _fs4ImgInfo.smallestDTocAddr, _fs4ImgInfo.smallestDTocAddr, (_ioAccess)->get_size() - _fs4ImgInfo.smallestDTocAddr);
     }
 
     return true;
@@ -1686,8 +1624,7 @@ bool Fs4Operations::Fs4RemoveSectionAux(fs3_section_t sectionType)
         updateTocEntryData(tocInfo);
 
         Fs3UpdateImgCache(tocInfo->data, tocInfo->entry_addr, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
-        Fs3UpdateImgCache(tocInfo->section_data.data(), tocInfo->toc_entry.flash_addr << 2,
-                          tocInfo->toc_entry.size << 2);
+        Fs3UpdateImgCache(tocInfo->section_data.data(), tocInfo->toc_entry.flash_addr << 2, tocInfo->toc_entry.size << 2);
     }
 
     _fwImgInfo.lastImageAddr = _fwImgInfo.lastImageAddr - sectionSizeInBytes;
@@ -1700,8 +1637,7 @@ bool Fs4Operations::Fs4RemoveSectionAux(fs3_section_t sectionType)
 
     _fs4ImgInfo.itocArr.numOfTocs--;
 
-    u_int32_t lastItocSectAddress =
-      itocArray->tocArrayAddr + IMAGE_LAYOUT_ITOC_HEADER_SIZE + itocArray->numOfTocs * IMAGE_LAYOUT_ITOC_ENTRY_SIZE;
+    u_int32_t lastItocSectAddress = itocArray->tocArrayAddr + IMAGE_LAYOUT_ITOC_HEADER_SIZE + itocArray->numOfTocs * IMAGE_LAYOUT_ITOC_ENTRY_SIZE;
     updateTocEndEntryInImgCache(lastItocSectAddress);
 
     return true;
@@ -1747,11 +1683,7 @@ bool Fs4Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progres
     return Fs4RemoveSection(FS3_ROM_CODE, progressFunc);
 }
 
-bool Fs4Operations::Fs4AddSectionAux(fs3_section_t sectionType,
-                                     enum CRCTYPE crcType,
-                                     u_int8_t zippedImage,
-                                     u_int32_t* newSectData,
-                                     u_int32_t newSectSize)
+bool Fs4Operations::Fs4AddSectionAux(fs3_section_t sectionType, enum CRCTYPE crcType, u_int8_t zippedImage, u_int32_t* newSectData, u_int32_t newSectSize)
 {
     struct fs4_toc_info* itocEntry = (struct fs4_toc_info*)NULL;
     int itocEntryIndex = 0;
@@ -1807,22 +1739,15 @@ bool Fs4Operations::Fs4AddSectionAux(fs3_section_t sectionType,
 
     Fs3UpdateImgCache(newITocEntry->data, newITocEntry->entry_addr, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 
-    u_int32_t lastItocSectAddress =
-      itocArray->tocArrayAddr + IMAGE_LAYOUT_ITOC_HEADER_SIZE + itocArray->numOfTocs * IMAGE_LAYOUT_ITOC_ENTRY_SIZE;
+    u_int32_t lastItocSectAddress = itocArray->tocArrayAddr + IMAGE_LAYOUT_ITOC_HEADER_SIZE + itocArray->numOfTocs * IMAGE_LAYOUT_ITOC_ENTRY_SIZE;
     updateTocEndEntryInImgCache(lastItocSectAddress);
 
-    Fs3UpdateImgCache(newITocEntry->section_data.data(), newITocEntry->toc_entry.flash_addr << 2,
-                      newITocEntry->toc_entry.size << 2);
+    Fs3UpdateImgCache(newITocEntry->section_data.data(), newITocEntry->toc_entry.flash_addr << 2, newITocEntry->toc_entry.size << 2);
 
     return true;
 }
 
-bool Fs4Operations::Fs4AddSection(fs3_section_t sectionType,
-                                  enum CRCTYPE crcType,
-                                  u_int8_t zippedImage,
-                                  u_int32_t* newSectData,
-                                  u_int32_t newSectSize,
-                                  ProgressCallBack progressFunc)
+bool Fs4Operations::Fs4AddSection(fs3_section_t sectionType, enum CRCTYPE crcType, u_int8_t zippedImage, u_int32_t* newSectData, u_int32_t newSectSize, ProgressCallBack progressFunc)
 {
     vector<u_int8_t> newImageData;
 
@@ -1845,10 +1770,7 @@ bool Fs4Operations::Fs4AddSection(fs3_section_t sectionType,
     return true;
 }
 
-bool Fs4Operations::FwBurnRom(FImage* romImg,
-                              bool ignoreProdIdCheck,
-                              bool ignoreDevidCheck,
-                              ProgressCallBack progressFunc)
+bool Fs4Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignoreDevidCheck, ProgressCallBack progressFunc)
 {
     roms_info_t romsInfo;
 
@@ -1941,13 +1863,7 @@ bool Fs4Operations::restoreWriteProtection(mflash* mfl, u_int8_t banksNum, write
     return true;
 }
 
-bool Fs4Operations::CreateDtoc(vector<u_int8_t>& img,
-                               u_int8_t* SectionData,
-                               u_int32_t section_size,
-                               u_int32_t flash_data_addr,
-                               fs3_section_t section,
-                               u_int32_t tocEntryAddr,
-                               CRCTYPE crc)
+bool Fs4Operations::CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr, fs3_section_t section, u_int32_t tocEntryAddr, CRCTYPE crc)
 {
     struct fs4_toc_info itoc_info;
     memset(&itoc_info.data, 0, sizeof(itoc_info.data));
@@ -1974,11 +1890,7 @@ bool Fs4Operations::CreateDtoc(vector<u_int8_t>& img,
 #define CONNECTX5_NV_LOG_SIZE 2 * (CONNECTX5_NV_DATA_SIZE)
 #define CX5_FLASH_SIZE 0x1000000
 
-bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img,
-                                  char* psid,
-                                  dm_dev_id_t devid_t,
-                                  const image_layout_uid_entry& base_guid,
-                                  const image_layout_uid_entry& base_mac)
+bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t devid_t, const image_layout_uid_entry& base_guid, const image_layout_uid_entry& base_mac)
 {
     /*DTOC HEADER*/
 
@@ -1993,9 +1905,8 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img,
 
     img.resize(flash_size, 0xff);
     u_int32_t dtocPtr = flash_size - FS4_DEFAULT_SECTOR_SIZE;
-    u_int8_t dtocHeader[] = {0x44, 0x54, 0x4f, 0x43, 0x04, 0x08, 0x15, 0x16, 0x23, 0x42, 0xca,
-                             0xfa, 0xba, 0xca, 0xfe, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00,
-                             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xbd, 0x90};
+    u_int8_t dtocHeader[] = {0x44, 0x54, 0x4f, 0x43, 0x04, 0x08, 0x15, 0x16, 0x23, 0x42, 0xca, 0xfa, 0xba, 0xca, 0xfe, 0x00,
+                             0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xbd, 0x90};
 
     memcpy(img.data() + dtocPtr, dtocHeader, IMAGE_LAYOUT_ITOC_HEADER_SIZE);
     u_int32_t section_index = 0;
@@ -2175,13 +2086,11 @@ bool Fs4Operations::AlignDeviceSections(FwOperations* imageOps)
     unsigned int retries = 0;
     const int nvLogIndex = 0, nvData0Index = 1, nvData1Index = 2, devInfo0Index = 3, devInfo1Index = 4;
 
-    struct fs4_toc_info* sections[COUNT_OF_SECTIONS_TO_ALIGN] = {(struct fs4_toc_info*)NULL, (struct fs4_toc_info*)NULL,
-                                                                 (struct fs4_toc_info*)NULL, (struct fs4_toc_info*)NULL,
+    struct fs4_toc_info* sections[COUNT_OF_SECTIONS_TO_ALIGN] = {(struct fs4_toc_info*)NULL, (struct fs4_toc_info*)NULL, (struct fs4_toc_info*)NULL, (struct fs4_toc_info*)NULL,
                                                                  (struct fs4_toc_info*)NULL};
 
-    const char* sectionsNames[COUNT_OF_SECTIONS_TO_ALIGN] = {
-      GetSectionNameByType(FS3_FW_NV_LOG), GetSectionNameByType(FS3_NV_DATA0), GetSectionNameByType(FS3_NV_DATA2),
-      GetSectionNameByType(FS3_DEV_INFO), GetSectionNameByType(FS3_DEV_INFO)};
+    const char* sectionsNames[COUNT_OF_SECTIONS_TO_ALIGN] = {GetSectionNameByType(FS3_FW_NV_LOG), GetSectionNameByType(FS3_NV_DATA0), GetSectionNameByType(FS3_NV_DATA2),
+                                                             GetSectionNameByType(FS3_DEV_INFO), GetSectionNameByType(FS3_DEV_INFO)};
 
     const u_int32_t newOffsets[COUNT_OF_SECTIONS_TO_ALIGN] = {0xf90000, 0xfb0000, 0xfc0000, 0xfd0000, 0xfe0000};
 
@@ -2233,12 +2142,9 @@ bool Fs4Operations::AlignDeviceSections(FwOperations* imageOps)
             struct fs4_toc_info* toc = &_fs4ImgInfo.dtocArr.tocArr[j];
             u_int32_t start = toc->toc_entry.flash_addr << 2;
             u_int32_t end = (toc->toc_entry.flash_addr << 2) + (toc->toc_entry.size << 2) - 1;
-            if (checkIfSectionsOverlap(newOffsets[i], newOffsets[i] + (sections[i]->toc_entry.size << 2) - 1, start,
-                                       end))
+            if (checkIfSectionsOverlap(newOffsets[i], newOffsets[i] + (sections[i]->toc_entry.size << 2) - 1, start, end))
             {
-                return errmsg("%s section's new address overlaps with %s section",
-                              sectionsNames[i],
-                              GetSectionNameByType(toc->toc_entry.type));
+                return errmsg("%s section's new address overlaps with %s section", sectionsNames[i], GetSectionNameByType(toc->toc_entry.type));
             }
         }
         // check if new offset overlaps with other new offsets
@@ -2246,13 +2152,9 @@ bool Fs4Operations::AlignDeviceSections(FwOperations* imageOps)
         {
             if (i != j)
             {
-                if (checkIfSectionsOverlap(newOffsets[i],
-                                           newOffsets[i] + (sections[i]->toc_entry.size << 2) - 1,
-                                           newOffsets[j],
-                                           newOffsets[j] + (sections[j]->toc_entry.size << 2) - 1))
+                if (checkIfSectionsOverlap(newOffsets[i], newOffsets[i] + (sections[i]->toc_entry.size << 2) - 1, newOffsets[j], newOffsets[j] + (sections[j]->toc_entry.size << 2) - 1))
                 {
-                    return errmsg("%s section's new address overlaps with %s section new address", sectionsNames[i],
-                                  sectionsNames[j]);
+                    return errmsg("%s section's new address overlaps with %s section new address", sectionsNames[i], sectionsNames[j]);
                 }
             }
         }
@@ -2347,13 +2249,9 @@ bool Fs4Operations::AlignDeviceSections(FwOperations* imageOps)
         u_int8_t buff[IMAGE_LAYOUT_ITOC_ENTRY_SIZE];
         memset(buff, 0x0, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
         image_layout_itoc_entry_pack(&(sections[i]->toc_entry), buff);
-        Fs3UpdateImgCache(buff,
-                          _fs4ImgInfo.dtocArr.tocArrayAddr +
-                            ((sections[i] - _fs4ImgInfo.dtocArr.tocArr + 1) * IMAGE_LAYOUT_ITOC_ENTRY_SIZE),
-                          IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
+        Fs3UpdateImgCache(buff, _fs4ImgInfo.dtocArr.tocArrayAddr + ((sections[i] - _fs4ImgInfo.dtocArr.tocArr + 1) * IMAGE_LAYOUT_ITOC_ENTRY_SIZE), IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
         // write the section data to the new offset
-        if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, newOffsets[i],
-                          sections[i]->section_data.data(), sections[i]->section_data.size(), true, true, 0, 0))
+        if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, newOffsets[i], sections[i]->section_data.data(), sections[i]->section_data.size(), true, true, 0, 0))
         {
             if (!restoreWriteProtection(mfl, attr.banks_num, attr.protect_info_array))
             {
@@ -2379,8 +2277,7 @@ bool Fs4Operations::AlignDeviceSections(FwOperations* imageOps)
 
     // write the dtoc array
     _imageCache.get(data, _fs4ImgInfo.dtocArr.tocArrayAddr, FS4_DEFAULT_SECTOR_SIZE);
-    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, _fs4ImgInfo.dtocArr.tocArrayAddr, data,
-                      FS4_DEFAULT_SECTOR_SIZE, true, true, 0, 0))
+    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, _fs4ImgInfo.dtocArr.tocArrayAddr, data, FS4_DEFAULT_SECTOR_SIZE, true, true, 0, 0))
     {
         if (!restoreWriteProtection(mfl, attr.banks_num, attr.protect_info_array))
         {
@@ -2436,10 +2333,7 @@ bool Fs4Operations::CheckIfAlignmentIsNeeded(FwOperations* imgops)
     return false;
 }
 
-bool Fs4Operations::FwExtractEncryptedImage(vector<u_int8_t>& img,
-                                            bool maskMagicPattern,
-                                            bool verbose,
-                                            bool ignoreImageStart)
+bool Fs4Operations::FwExtractEncryptedImage(vector<u_int8_t>& img, bool maskMagicPattern, bool verbose, bool ignoreImageStart)
 {
     //* Choosing the correct io to read from
     FBase* io = _ioAccess;
@@ -2466,8 +2360,7 @@ bool Fs4Operations::FwExtractEncryptedImage(vector<u_int8_t>& img,
     }
 
     //* Read image from _fwImgInfo.imgStart to burn_image_size (_fwImgInfo.imgStart expected to be zero)
-    DPRINTF(("Fs4Operations::FwExtractEncryptedImage - Reading 0x%x bytes from address 0x%x\n", burn_image_size,
-             image_start));
+    DPRINTF(("Fs4Operations::FwExtractEncryptedImage - Reading 0x%x bytes from address 0x%x\n", burn_image_size, image_start));
     img.resize(burn_image_size);
     if (!(*io).read(image_start, img.data(), burn_image_size, verbose))
     {
@@ -2500,19 +2393,13 @@ bool Fs4Operations::readFS4Log2ChunkSizeFromImage(u_int32_t& log2_chunk_size)
     _ioAccess->set_address_convertor(0, 0);
     READBUF((*_ioAccess), _fwImgInfo.imgStart, buff, FS3_BOOT_START, "Image header");
     TOCPUn(buff, FS3_BOOT_START_IN_DW);
-    log2_chunk_size = EXTRACT(buff[FS3_LOG2_CHUNK_SIZE_DW_OFFSET], 16, 8) ?
-                        EXTRACT(buff[FS3_LOG2_CHUNK_SIZE_DW_OFFSET], 16, 8) :
-                        FS4_ENCRYPTED_LOG_CHUNK_SIZE;
+    log2_chunk_size = EXTRACT(buff[FS3_LOG2_CHUNK_SIZE_DW_OFFSET], 16, 8) ? EXTRACT(buff[FS3_LOG2_CHUNK_SIZE_DW_OFFSET], 16, 8) : FS4_ENCRYPTED_LOG_CHUNK_SIZE;
     DPRINTF(("Fs4Operations::readFS4Log2ChunkSizeFromImage - log2_chunk_size = %d\n", log2_chunk_size));
 
     return true;
 }
 
-bool Fs4Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
-                                    ExtBurnParams& burnParams,
-                                    Flash* flash_access,
-                                    u_int32_t new_image_start,
-                                    u_int32_t log2_chunk_size)
+bool Fs4Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[], ExtBurnParams& burnParams, Flash* flash_access, u_int32_t new_image_start, u_int32_t log2_chunk_size)
 {
     u_int32_t zeroes = 0;
     u_int32_t old_fw_signatrue_addr = 0;
@@ -2534,8 +2421,7 @@ bool Fs4Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
         {
             old_fw_signatrue_addr = 1 << log2_chunk_size;
         }
-        DPRINTF(
-          ("Fs4Operations::DoAfterBurnJobs - Invalidating old fw signature at addr 0x%x\n", old_fw_signatrue_addr));
+        DPRINTF(("Fs4Operations::DoAfterBurnJobs - Invalidating old fw signature at addr 0x%x\n", old_fw_signatrue_addr));
         if (!flash_access->write(old_fw_signatrue_addr, &zeroes, sizeof(zeroes), true))
         {
             return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", flash_access->err());
@@ -2551,7 +2437,7 @@ bool Fs4Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[],
     {
         return false;
     }
-    
+
     return true;
 }
 
@@ -2674,16 +2560,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         }
         DPRINTF(("Fs4Operations::burnEncryptedImage - Burning DTOC at addr 0x%0x\n", dtoc_addr));
         ((Fs4Operations*)imageOps)->_imageCache.get(dtoc_data, dtoc_addr, FS4_DEFAULT_SECTOR_SIZE);
-        if (!writeImageEx(burnParams.progressFuncEx,
-                          burnParams.progressUserData,
-                          burnParams.progressFunc,
-                          dtoc_addr,
-                          dtoc_data,
-                          FS4_DEFAULT_SECTOR_SIZE,
-                          true,
-                          true,
-                          total_img_size,
-                          alreadyWrittenSz))
+        if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc, dtoc_addr, dtoc_data, FS4_DEFAULT_SECTOR_SIZE, true, true, total_img_size, alreadyWrittenSz))
         {
             delete[] dtoc_data;
             return false;
@@ -2695,8 +2572,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         {
             struct fs4_toc_info* dtoc_info_p = &((Fs4Operations*)imageOps)->_fs4ImgInfo.dtocArr.tocArr[i];
             struct image_layout_itoc_entry* dtoc_entry = &dtoc_info_p->toc_entry;
-            DPRINTF(("burning DTOC section addr=0x%08x size=0x%08x\n", dtoc_entry->flash_addr << 2,
-                     (u_int32_t)dtoc_info_p->section_data.size()));
+            DPRINTF(("burning DTOC section addr=0x%08x size=0x%08x\n", dtoc_entry->flash_addr << 2, (u_int32_t)dtoc_info_p->section_data.size()));
             if (!writeImageEx(burnParams.progressFuncEx,
                               burnParams.progressUserData,
                               burnParams.progressFunc,
@@ -2731,8 +2607,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     }
     alreadyWrittenSz += FS3_FW_SIGNATURE_SIZE;
 
-    return DoAfterBurnJobs(_fs4_magic_pattern, burnParams, (Flash*)(this->_ioAccess), new_image_start_addr,
-                           log2_chunk_size);
+    return DoAfterBurnJobs(_fs4_magic_pattern, burnParams, (Flash*)(this->_ioAccess), new_image_start_addr, log2_chunk_size);
 }
 
 bool Fs4Operations::BurnFs4Image(Fs4Operations& imageOps, ExtBurnParams& burnParams)
@@ -2805,8 +2680,7 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations& imageOps, ExtBurnParams& burnPar
     alreadyWrittenSz = 0;
 
     // bring the boot section and itoc array from the cache
-    u_int32_t beginingWithoutSignatureSize =
-      imageOps._fs4ImgInfo.itocArr.tocArrayAddr + sector_size - FS3_FW_SIGNATURE_SIZE;
+    u_int32_t beginingWithoutSignatureSize = imageOps._fs4ImgInfo.itocArr.tocArrayAddr + sector_size - FS3_FW_SIGNATURE_SIZE;
     data8 = new u_int8_t[beginingWithoutSignatureSize];
     imageOps._imageCache.get(data8, FS3_FW_SIGNATURE_SIZE, beginingWithoutSignatureSize);
 
@@ -2953,24 +2827,14 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations& imageOps, ExtBurnParams& burnPar
     // Write new signature
     data8 = new u_int8_t[FS3_FW_SIGNATURE_SIZE];
     imageOps._imageCache.get(data8, 0, FS3_FW_SIGNATURE_SIZE);
-    if (!writeImageEx(burnParams.progressFuncEx,
-                      burnParams.progressUserData,
-                      burnParams.progressFunc,
-                      new_image_start,
-                      data8,
-                      FS3_FW_SIGNATURE_SIZE,
-                      true,
-                      true,
-                      total_img_size,
-                      alreadyWrittenSz))
+    if (!writeImageEx(burnParams.progressFuncEx, burnParams.progressUserData, burnParams.progressFunc, new_image_start, data8, FS3_FW_SIGNATURE_SIZE, true, true, total_img_size, alreadyWrittenSz))
     {
         delete[] data8;
         return false;
     }
     delete[] data8;
 
-    return Fs3Operations::DoAfterBurnJobs(_fs4_magic_pattern, imageOps, burnParams, f, new_image_start,
-                                          is_curr_image_in_odd_chunks);
+    return Fs3Operations::DoAfterBurnJobs(_fs4_magic_pattern, imageOps, burnParams, f, new_image_start, is_curr_image_in_odd_chunks);
 }
 
 bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
@@ -3002,16 +2866,11 @@ bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
     {
         if (imageOps._fwImgInfo.supportedHwIdNum)
         {
-            if (!CheckMatchingHwDevId(_ioAccess->get_dev_id(),
-                                      _ioAccess->get_rev_id(),
-                                      imageOps._fwImgInfo.supportedHwId,
-                                      imageOps._fwImgInfo.supportedHwIdNum))
+            if (!CheckMatchingHwDevId(_ioAccess->get_dev_id(), _ioAccess->get_rev_id(), imageOps._fwImgInfo.supportedHwId, imageOps._fwImgInfo.supportedHwIdNum))
             {
                 return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR, "Device/Image mismatch: %s\n", this->err());
             }
-            if (burnParams.burnFailsafe == false &&
-                !CheckMatchingBinning(_ioAccess->get_dev_id(), _ioAccess->get_bin_id(),
-                                      imageOps._fwImgInfo.ext_info.dev_type))
+            if (burnParams.burnFailsafe == false && !CheckMatchingBinning(_ioAccess->get_dev_id(), _ioAccess->get_bin_id(), imageOps._fwImgInfo.ext_info.dev_type))
             {
                 // we check Chip Bin information only on failsafe burn
                 // during Firmware update flow - PSID will ensure a correct match.
@@ -3085,8 +2944,7 @@ bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
         }
 
         // ROM patchs
-        if ((burnParams.burnRomOptions == ExtBurnParams::BRO_FROM_DEV_IF_EXIST) &&
-            _fwImgInfo.ext_info.roms_info.exp_rom_found)
+        if ((burnParams.burnRomOptions == ExtBurnParams::BRO_FROM_DEV_IF_EXIST) && _fwImgInfo.ext_info.roms_info.exp_rom_found)
         {
             std::vector<u_int8_t> romSect = _romSect;
             TOCPUn((u_int32_t*)romSect.data(), romSect.size() >> 2);
@@ -3101,8 +2959,7 @@ bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
         {
             // get image info section :
             struct fs4_toc_info* imageInfoToc = (struct fs4_toc_info*)NULL;
-            if (!imageOps.Fs4GetItocInfo(imageOps._fs4ImgInfo.itocArr.tocArr, imageOps._fs4ImgInfo.itocArr.numOfTocs,
-                                         FS3_IMAGE_INFO, imageInfoToc))
+            if (!imageOps.Fs4GetItocInfo(imageOps._fs4ImgInfo.itocArr.tocArr, imageOps._fs4ImgInfo.itocArr.numOfTocs, FS3_IMAGE_INFO, imageInfoToc))
             {
                 return errmsg(MLXFW_GET_SECT_ERR, "failed to get Image Info section.");
             }
@@ -3136,9 +2993,7 @@ bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
             // update the toc in the cache
             imageOps.Fs3UpdateImgCache(imageInfoToc->data, imageInfoToc->entry_addr, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
             // update the section in the cache
-            imageOps.Fs3UpdateImgCache(imageInfoToc->section_data.data(),
-                                       imageInfoToc->toc_entry.flash_addr << 2,
-                                       imageInfoToc->toc_entry.size * 4);
+            imageOps.Fs3UpdateImgCache(imageInfoToc->section_data.data(), imageInfoToc->toc_entry.flash_addr << 2, imageInfoToc->toc_entry.size * 4);
         }
     }
 
@@ -3147,20 +3002,13 @@ bool Fs4Operations::FsBurnAux(FwOperations* imgops, ExtBurnParams& burnParams)
     return rc;
 }
 
-bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info* tocArr,
-                                   int num_of_itocs,
-                                   fs3_section_t sect_type,
-                                   struct fs4_toc_info*& curr_toc)
+bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info* tocArr, int num_of_itocs, fs3_section_t sect_type, struct fs4_toc_info*& curr_toc)
 {
     int tocIndex;
     return Fs4GetItocInfo(tocArr, num_of_itocs, sect_type, curr_toc, tocIndex);
 }
 
-bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info* tocArr,
-                                   int num_of_itocs,
-                                   fs3_section_t sect_type,
-                                   struct fs4_toc_info*& curr_toc,
-                                   int& toc_index)
+bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info* tocArr, int num_of_itocs, fs3_section_t sect_type, struct fs4_toc_info*& curr_toc, int& toc_index)
 {
     for (int i = 0; i < num_of_itocs; i++)
     {
@@ -3175,10 +3023,7 @@ bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info* tocArr,
     return errmsg("TOC entry type: %s (%d) not found", GetSectionNameByType(sect_type), sect_type);
 }
 
-bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info* tocArr,
-                                   int num_of_itocs,
-                                   fs3_section_t sect_type,
-                                   vector<struct fs4_toc_info*>& curr_toc)
+bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info* tocArr, int num_of_itocs, fs3_section_t sect_type, vector<struct fs4_toc_info*>& curr_toc)
 {
     for (int i = 0; i < num_of_itocs; i++)
     {
@@ -3191,10 +3036,7 @@ bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info* tocArr,
     return true;
 }
 
-bool Fs4Operations::Fs4UpdateMfgUidsSection(struct fs4_toc_info* curr_toc,
-                                            std::vector<u_int8_t> section_data,
-                                            fs3_uid_t base_uid,
-                                            std::vector<u_int8_t>& newSectionData)
+bool Fs4Operations::Fs4UpdateMfgUidsSection(struct fs4_toc_info* curr_toc, std::vector<u_int8_t> section_data, fs3_uid_t base_uid, std::vector<u_int8_t>& newSectionData)
 {
     struct cibfw_mfg_info cib_mfg_info;
     struct cx4fw_mfg_info cx4_mfg_info;
@@ -3236,8 +3078,7 @@ bool Fs4Operations::Fs4UpdateMfgUidsSection(struct fs4_toc_info* curr_toc,
         }
         else
         {
-            return errmsg("Unknown MFG_INFO format version (%d.%d).", cib_mfg_info.major_version,
-                          cib_mfg_info.minor_version);
+            return errmsg("Unknown MFG_INFO format version (%d.%d).", cib_mfg_info.major_version, cib_mfg_info.minor_version);
         }
         newSectionData = section_data;
 
@@ -3270,37 +3111,27 @@ bool Fs4Operations::Fs4ChangeUidsFromBase(fs3_uid_t base_uid, struct image_layou
     if (base_uid.set_mac_from_guid && base_uid.base_guid_specified)
     {
         // in case we derrive mac from guid
-        base_mac_64 =
-          (((u_int64_t)base_uid.base_guid.l & 0xffffff) | (((u_int64_t)base_uid.base_guid.h & 0xffffff00) << 16));
+        base_mac_64 = (((u_int64_t)base_uid.base_guid.l & 0xffffff) | (((u_int64_t)base_uid.base_guid.h & 0xffffff00) << 16));
     }
 
-    if (!IsExtendedGuidNumSupported() && base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM &&
-        base_uid.num_of_guids_pp[0] > 254)
+    if (!IsExtendedGuidNumSupported() && base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM && base_uid.num_of_guids_pp[0] > 254)
     {
         return errmsg("Invalid argument values, values should be taken from the range [0..254]\n");
     }
 
     guids.guids.uid = base_guid_64;
-    guids.guids.num_allocated =
-      base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ? base_uid.num_of_guids_pp[0] : guids.guids.num_allocated;
-    guids.guids.num_allocated_msb = base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ?
-                                      ((base_uid.num_of_guids_pp[0] >> 8) & 0xff) :
-                                      guids.guids.num_allocated_msb;
+    guids.guids.num_allocated = base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ? base_uid.num_of_guids_pp[0] : guids.guids.num_allocated;
+    guids.guids.num_allocated_msb = base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ? ((base_uid.num_of_guids_pp[0] >> 8) & 0xff) : guids.guids.num_allocated_msb;
     guids.guids.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.guids.step;
 
     guids.macs.uid = base_mac_64;
-    guids.macs.num_allocated =
-      base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ? base_uid.num_of_guids_pp[0] : guids.macs.num_allocated;
-    guids.macs.num_allocated_msb = base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ?
-                                     ((base_uid.num_of_guids_pp[0] >> 8) & 0xff) :
-                                     guids.macs.num_allocated_msb;
+    guids.macs.num_allocated = base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ? base_uid.num_of_guids_pp[0] : guids.macs.num_allocated;
+    guids.macs.num_allocated_msb = base_uid.num_of_guids_pp[0] != DEFAULT_GUID_NUM ? ((base_uid.num_of_guids_pp[0] >> 8) & 0xff) : guids.macs.num_allocated_msb;
     guids.macs.step = base_uid.step_size_pp[0] != DEFAULT_STEP ? base_uid.step_size_pp[0] : guids.macs.step;
     return true;
 }
 
-bool Fs4Operations::Fs4UpdateUidsSection(std::vector<u_int8_t> section_data,
-                                         fs3_uid_t base_uid,
-                                         std::vector<u_int8_t>& newSectionData)
+bool Fs4Operations::Fs4UpdateUidsSection(std::vector<u_int8_t> section_data, fs3_uid_t base_uid, std::vector<u_int8_t>& newSectionData)
 {
     struct image_layout_device_info dev_info;
 
@@ -3322,9 +3153,7 @@ bool Fs4Operations::Fs4UpdateUidsSection(std::vector<u_int8_t> section_data,
     return true;
 }
 
-bool Fs4Operations::Fs4UpdateVsdSection(std::vector<u_int8_t> section_data,
-                                        char* user_vsd,
-                                        std::vector<u_int8_t>& newSectionData)
+bool Fs4Operations::Fs4UpdateVsdSection(std::vector<u_int8_t> section_data, char* user_vsd, std::vector<u_int8_t>& newSectionData)
 {
     struct image_layout_device_info dev_info;
 
@@ -3354,9 +3183,7 @@ bool Fs4Operations::Init()
     return true;
 }
 
-bool Fs4Operations::UpdateDigitalCertRWSection(char* certChainFile,
-                                               u_int32_t certChainIndex,
-                                               std::vector<u_int8_t>& newSectionData)
+bool Fs4Operations::UpdateDigitalCertRWSection(char* certChainFile, u_int32_t certChainIndex, std::vector<u_int8_t>& newSectionData)
 {
     if (!Init())
     {
@@ -3400,11 +3227,8 @@ bool Fs4Operations::UpdateDigitalCertRWSection(char* certChainFile,
     delete[] certChainBuffData;
 
     newSectionData = digitalCertRWSectionToc->section_data;
-    u_int32_t newCertChainOffsetInSection =
-      certChain0SectionSize * (certChainIndex - 1); // index 0 belongs to CERT_CHAIN_0
-    DPRINTF(
-      ("Fs4Operations::UpdateDigitalCertRWSection copy new cert to DIGITAL_CERT_RW at offset = 0x%x, size = 0x%x\n",
-       newCertChainOffsetInSection, (u_int32_t)certChainBuff.size()));
+    u_int32_t newCertChainOffsetInSection = certChain0SectionSize * (certChainIndex - 1); // index 0 belongs to CERT_CHAIN_0
+    DPRINTF(("Fs4Operations::UpdateDigitalCertRWSection copy new cert to DIGITAL_CERT_RW at offset = 0x%x, size = 0x%x\n", newCertChainOffsetInSection, (u_int32_t)certChainBuff.size()));
     if ((newCertChainOffsetInSection + certChainBuff.size()) > (digitalCertRWSectionToc->toc_entry.size << 2))
     {
         return errmsg("Certificate chain data exceeds its allocation");
@@ -3414,9 +3238,7 @@ bool Fs4Operations::UpdateDigitalCertRWSection(char* certChainFile,
     return true;
 }
 
-bool Fs4Operations::UpdateCertChainSection(struct fs4_toc_info* curr_toc,
-                                           char* certChainFile,
-                                           std::vector<u_int8_t>& newSectionData)
+bool Fs4Operations::UpdateCertChainSection(struct fs4_toc_info* curr_toc, char* certChainFile, std::vector<u_int8_t>& newSectionData)
 {
     int cert_chain_buff_size = 0;
     u_int8_t* cert_chain_buff = (u_int8_t*)NULL;
@@ -3431,8 +3253,7 @@ bool Fs4Operations::UpdateCertChainSection(struct fs4_toc_info* curr_toc,
     if ((u_int32_t)cert_chain_buff_size > cert_chain_0_section_size)
     {
         delete[] cert_chain_buff;
-        return errmsg("Attestation certificate chain data exceeds its allocated size of 0x%x bytes",
-                      cert_chain_0_section_size);
+        return errmsg("Attestation certificate chain data exceeds its allocated size of 0x%x bytes", cert_chain_0_section_size);
     }
 
     newSectionData.resize(cert_chain_0_section_size, 0); // Init section data with 0x0
@@ -3469,11 +3290,7 @@ bool Fs4Operations::Fs4UpdateVpdSection(struct fs4_toc_info* curr_toc, char* vpd
     return true;
 }
 
-bool Fs4Operations::Fs4ReburnSection(u_int32_t newSectionAddr,
-                                     u_int32_t newSectionSize,
-                                     std::vector<u_int8_t> newSectionData,
-                                     const char* msg,
-                                     PrintCallBack callBackFunc)
+bool Fs4Operations::Fs4ReburnSection(u_int32_t newSectionAddr, u_int32_t newSectionSize, std::vector<u_int8_t> newSectionData, const char* msg, PrintCallBack callBackFunc)
 {
     char message[127];
 
@@ -3493,8 +3310,7 @@ bool Fs4Operations::Fs4ReburnSection(u_int32_t newSectionAddr,
     }
     else
     {
-        if (!writeImage((ProgressCallBack)NULL, newSectionAddr, (u_int8_t*)&newSectionData[0], newSectionSize, true,
-                        true))
+        if (!writeImage((ProgressCallBack)NULL, newSectionAddr, (u_int8_t*)&newSectionData[0], newSectionSize, true, true))
         {
             PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
             return false;
@@ -3608,9 +3424,8 @@ bool Fs4Operations::UpdateHashInHashesTable(fs3_section_t section_type, vector<u
         }
 
         //* Calculate CRC on modified hashes_table
-        u_int32_t hashes_table_size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + IMAGE_LAYOUT_HTOC_HEADER_SIZE +
-                                      htoc.GetHtocMaxNumOfEntries() * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + hash_size) +
-                                      HASHES_TABLE_TAIL_SIZE;
+        u_int32_t hashes_table_size =
+          IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + IMAGE_LAYOUT_HTOC_HEADER_SIZE + htoc.GetHtocMaxNumOfEntries() * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + hash_size) + HASHES_TABLE_TAIL_SIZE;
         u_int8_t* hashes_table_data;
         READALLOCBUF((*_ioAccess), _hashes_table_ptr, hashes_table_data, hashes_table_size, "HASHES TABLE");
         u_int32_t hashes_table_crc = CalcImageCRC((u_int32_t*)hashes_table_data, (hashes_table_size / 4) - 1);
@@ -3657,16 +3472,13 @@ bool Fs4Operations::reburnDTocSection(PrintCallBack callBackFunc)
     // Itoc section is failsafe (two sectors after boot section are reserved for itoc entries)
     u_int32_t tocAddr = _fs4ImgInfo.dtocArr.tocArrayAddr;
     // Update new ITOC
-    u_int32_t tocSize =
-      (_fs4ImgInfo.dtocArr.numOfTocs + 1) * IMAGE_LAYOUT_ITOC_ENTRY_SIZE + IMAGE_LAYOUT_ITOC_HEADER_SIZE;
+    u_int32_t tocSize = (_fs4ImgInfo.dtocArr.numOfTocs + 1) * IMAGE_LAYOUT_ITOC_ENTRY_SIZE + IMAGE_LAYOUT_ITOC_HEADER_SIZE;
     u_int8_t* p = new u_int8_t[tocSize];
     memcpy(p, _fs4ImgInfo.dtocArr.tocHeader, CIBFW_ITOC_HEADER_SIZE);
     for (int i = 0; i < _fs4ImgInfo.dtocArr.numOfTocs; i++)
     {
         struct fs4_toc_info* curr_itoc = &_fs4ImgInfo.dtocArr.tocArr[i];
-        memcpy(p + IMAGE_LAYOUT_ITOC_HEADER_SIZE + i * IMAGE_LAYOUT_ITOC_ENTRY_SIZE,
-               curr_itoc->data,
-               IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
+        memcpy(p + IMAGE_LAYOUT_ITOC_HEADER_SIZE + i * IMAGE_LAYOUT_ITOC_ENTRY_SIZE, curr_itoc->data, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
     }
     memset(&p[tocSize - IMAGE_LAYOUT_ITOC_ENTRY_SIZE], FS3_END, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 
@@ -3691,20 +3503,16 @@ bool Fs4Operations::reburnITocSection(PrintCallBack callBackFunc, bool isFailSaf
     u_int32_t newITocAddr = oldITocAddr;
     if (isFailSafe)
     {
-        newITocAddr = (_fs4ImgInfo.firstItocArrayIsEmpty) ? (_fs4ImgInfo.itocArr.tocArrayAddr - sector_size) :
-                                                            (_fs4ImgInfo.itocArr.tocArrayAddr + sector_size);
+        newITocAddr = (_fs4ImgInfo.firstItocArrayIsEmpty) ? (_fs4ImgInfo.itocArr.tocArrayAddr - sector_size) : (_fs4ImgInfo.itocArr.tocArrayAddr + sector_size);
     }
     // Update new ITOC
-    u_int32_t tocSize =
-      (_fs4ImgInfo.itocArr.numOfTocs + 1) * IMAGE_LAYOUT_ITOC_ENTRY_SIZE + IMAGE_LAYOUT_ITOC_HEADER_SIZE;
+    u_int32_t tocSize = (_fs4ImgInfo.itocArr.numOfTocs + 1) * IMAGE_LAYOUT_ITOC_ENTRY_SIZE + IMAGE_LAYOUT_ITOC_HEADER_SIZE;
     u_int8_t* p = new u_int8_t[tocSize];
     memcpy(p, _fs4ImgInfo.itocArr.tocHeader, CIBFW_ITOC_HEADER_SIZE);
     for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++)
     {
         struct fs4_toc_info* curr_itoc = &_fs4ImgInfo.itocArr.tocArr[i];
-        memcpy(p + IMAGE_LAYOUT_ITOC_HEADER_SIZE + i * IMAGE_LAYOUT_ITOC_ENTRY_SIZE,
-               curr_itoc->data,
-               IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
+        memcpy(p + IMAGE_LAYOUT_ITOC_HEADER_SIZE + i * IMAGE_LAYOUT_ITOC_ENTRY_SIZE, curr_itoc->data, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
     }
     memset(&p[tocSize - IMAGE_LAYOUT_ITOC_ENTRY_SIZE], FS3_END, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 
@@ -3748,9 +3556,7 @@ bool Fs4Operations::reburnITocSection(PrintCallBack callBackFunc, bool isFailSaf
     return true;
 }
 
-bool Fs4Operations::Fs4UpdateItocInfo(struct fs4_toc_info* curr_toc,
-                                      u_int32_t NewSectSize,
-                                      std::vector<u_int8_t>& newSectionData)
+bool Fs4Operations::Fs4UpdateItocInfo(struct fs4_toc_info* curr_toc, u_int32_t NewSectSize, std::vector<u_int8_t>& newSectionData)
 {
     u_int8_t tocEntryBuff[IMAGE_LAYOUT_ITOC_ENTRY_SIZE];
 
@@ -3899,11 +3705,7 @@ bool Fs4Operations::FwSetCertChain(char* certFileStr, u_int32_t certIndex, Print
     return true;
 }
 
-bool Fs4Operations::UpdateSection(void* new_info,
-                                  fs3_section_t sect_type,
-                                  bool,
-                                  CommandType cmd_type,
-                                  PrintCallBack callBackFunc)
+bool Fs4Operations::UpdateSection(void* new_info, fs3_section_t sect_type, bool, CommandType cmd_type, PrintCallBack callBackFunc)
 {
     struct fs4_toc_info* curr_toc = (fs4_toc_info*)NULL;
     struct fs4_toc_info* old_toc = (fs4_toc_info*)NULL;
@@ -4169,13 +3971,9 @@ bool Fs4Operations::UpdateSection(void* new_info,
     return true;
 }
 
-bool Fs4Operations::WriteSection(struct fs4_toc_info* sectionToc,
-                                 std::vector<u_int8_t>& newSectionData,
-                                 const char* msg,
-                                 PrintCallBack callBackFunc)
+bool Fs4Operations::WriteSection(struct fs4_toc_info* sectionToc, std::vector<u_int8_t>& newSectionData, const char* msg, PrintCallBack callBackFunc)
 {
-    DPRINTF(
-      ("Fs4Operations::WriteSection section type=%s, msg=%s", GetSectionNameByType(sectionToc->toc_entry.type), msg));
+    DPRINTF(("Fs4Operations::WriteSection section type=%s, msg=%s", GetSectionNameByType(sectionToc->toc_entry.type), msg));
     bool isDtoc;
     fs3_section_t sectionType = static_cast<fs3_section_t>(sectionToc->toc_entry.type);
     if (!isDTocSection(sectionType, isDtoc))
@@ -4218,10 +4016,7 @@ bool Fs4Operations::WriteSection(struct fs4_toc_info* sectionToc,
     return true;
 }
 
-bool Fs4Operations::UpdateSection(fs3_section_t sectionType,
-                                  std::vector<u_int8_t>& newSectionData,
-                                  const char* msg,
-                                  PrintCallBack callBackFunc)
+bool Fs4Operations::UpdateSection(fs3_section_t sectionType, std::vector<u_int8_t>& newSectionData, const char* msg, PrintCallBack callBackFunc)
 {
     if (sectionType == FS3_DEV_INFO)
     {
@@ -4419,8 +4214,7 @@ bool Fs4Operations::CheckTocArrConsistency(TocArray& tocArr, u_int32_t imageStar
         nextSectStrtAddr = getAbsAddr(*itNext, imageStartAddr);
         if (sectEndAddr >= nextSectStrtAddr)
         {
-            return errmsg("Inconsistency found in TOC. %s(0x%x) section will potentially overwrite %s(0x%x) section.",
-                          GetSectionNameByType((*it)->toc_entry.type), (*it)->toc_entry.type,
+            return errmsg("Inconsistency found in TOC. %s(0x%x) section will potentially overwrite %s(0x%x) section.", GetSectionNameByType((*it)->toc_entry.type), (*it)->toc_entry.type,
                           GetSectionNameByType((*itNext)->toc_entry.type), (*itNext)->toc_entry.type);
         }
     }
@@ -4492,9 +4286,7 @@ bool Fs4Operations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct
     return Fs3Operations::FwSetTimeStamp(timestamp, fwVer);
 }
 
-bool Fs4Operations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
-                                     struct tools_open_fw_version& fwVer,
-                                     bool queryRunning)
+bool Fs4Operations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning)
 {
     CHECK_IF_FS4_FILE_FOR_TIMESTAMP_OP()
 
@@ -4631,8 +4423,7 @@ bool Fs4Operations::getBootDataForSignVersion1(vector<u_int8_t>& data)
     FBase* io = _ioAccess;
     if (_encrypted_image_io_access)
     {
-        DPRINTF(("Fs4Operations::getBootDataForSignVersion1 reading from encrypted image from addr 0x%x: 0x%x bytes\n",
-                 physAddr, data_size));
+        DPRINTF(("Fs4Operations::getBootDataForSignVersion1 reading from encrypted image from addr 0x%x: 0x%x bytes\n", physAddr, data_size));
         io = _encrypted_image_io_access; // If encrypted image was given we'll read from it
     }
 
@@ -4659,11 +4450,7 @@ bool Fs4Operations::getBootDataForSignVersion2(vector<u_int8_t>& data)
     for (int ii = 0; ii < NUM_OF_HW_POINTERS; ii++)
     {
         data.resize(data.size() + HW_POINTER_SIZE);
-        READBUF((*_ioAccess),
-                FS4_HW_PTR_START + ii * (HW_POINTER_SIZE + HW_POINTER_CRC_SIZE),
-                data.data() + data_offset,
-                HW_POINTER_SIZE,
-                "Reading HW pointer");
+        READBUF((*_ioAccess), FS4_HW_PTR_START + ii * (HW_POINTER_SIZE + HW_POINTER_CRC_SIZE), data.data() + data_offset, HW_POINTER_SIZE, "Reading HW pointer");
 
         data_offset += HW_POINTER_SIZE;
     }
@@ -4777,10 +4564,7 @@ bool Fs4Operations::IsLifeCycleSupported()
     return _signatureMngr->IsLifeCycleSupported();
 }
 
-bool Fs4Operations::ParsePublicKeyFromFile(const char* public_key_file,
-                                           vector<u_int8_t>& publicKeyData,
-                                           u_int32_t& keyPairExp,
-                                           image_layout_component_authentication_configuration& keyAuthConf)
+bool Fs4Operations::ParsePublicKeyFromFile(const char* public_key_file, vector<u_int8_t>& publicKeyData, u_int32_t& keyPairExp, image_layout_component_authentication_configuration& keyAuthConf)
 {
     image_layout_public_keys_3 unpackedData;
     unsigned int PublicKeySize = sizeof(unpackedData.file_public_keys_3[0].key);
@@ -4796,11 +4580,9 @@ bool Fs4Operations::ParsePublicKeyFromFile(const char* public_key_file,
             if (Fs3UpdatePublicKeysSection((IMAGE_LAYOUT_PUBLIC_KEYS_3_SIZE >> 2), public_key_file, publicKeyData, true))
             {
                 PublicKeyIsSet = true;
-                pem_offset = IMAGE_LAYOUT_FILE_PUBLIC_KEYS_3_SIZE -
-                             PublicKeySize; // first 32 bytes in the PEM file are auxilary data
-                image_layout_component_authentication_configuration_unpack(
-                  &keyAuthConf, publicKeyData.data()); // First Dword represents the key auth conf
-                u_int32_t keyPairExpOffset = 3;        // Fourth Dword represents key pair exponent
+                pem_offset = IMAGE_LAYOUT_FILE_PUBLIC_KEYS_3_SIZE - PublicKeySize;                              // first 32 bytes in the PEM file are auxilary data
+                image_layout_component_authentication_configuration_unpack(&keyAuthConf, publicKeyData.data()); // First Dword represents the key auth conf
+                u_int32_t keyPairExpOffset = 3;                                                                 // Fourth Dword represents key pair exponent
                 keyPairExp = *((u_int32_t*)publicKeyData.data() + keyPairExpOffset);
                 TOCPU1(keyPairExp);
             }
@@ -4871,9 +4653,7 @@ bool Fs4Operations::GetFreeSlotInPublicKeys3(const image_layout_public_keys_3& p
     return errmsg("GetFreeSlotInPublicKeys3 failed - No free slot for public key\n");
 }
 
-bool Fs4Operations::FindPublicKeyInPublicKeys2(const image_layout_public_keys_2& public_keys,
-                                               const image_layout_file_public_keys_2& public_key,
-                                               u_int32_t& idx)
+bool Fs4Operations::FindPublicKeyInPublicKeys2(const image_layout_public_keys_2& public_keys, const image_layout_file_public_keys_2& public_key, u_int32_t& idx)
 {
     bool res = false;
     u_int32_t num_of_key_slots = image_layout_public_keys_2_size() / image_layout_file_public_keys_2_size();
@@ -4891,9 +4671,7 @@ bool Fs4Operations::FindPublicKeyInPublicKeys2(const image_layout_public_keys_2&
     return res;
 }
 
-bool Fs4Operations::FindPublicKeyInPublicKeys3(const image_layout_public_keys_3& public_keys,
-                                               const image_layout_file_public_keys_3& public_key,
-                                               u_int32_t& idx)
+bool Fs4Operations::FindPublicKeyInPublicKeys3(const image_layout_public_keys_3& public_keys, const image_layout_file_public_keys_3& public_key, u_int32_t& idx)
 {
     bool res = false;
     u_int32_t num_of_key_slots = image_layout_public_keys_3_size() / image_layout_file_public_keys_3_size();
@@ -4984,7 +4762,8 @@ bool Fs4Operations::StoreImagePublicKeyInPublicKeys2(const image_layout_file_pub
     image_layout_public_keys_2_unpack(&public_keys_2, itocEntry->section_data.data());
 
     // Convert public_keys_3 to public_keys_2
-    image_layout_file_public_keys_2 new_public_key_2 = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0, {0, 0, 0, 0}, {0}};;
+    image_layout_file_public_keys_2 new_public_key_2 = {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 0, {0, 0, 0, 0}, {0}};
+    ;
     PublicKey3ToPublicKey2(public_key, new_public_key_2);
 
     u_int32_t slot_of_given_key_in_image = 0;
@@ -5018,11 +4797,9 @@ bool Fs4Operations::StoreImagePublicKeyInPublicKeys2(const image_layout_file_pub
     }
     else
     {
-        if (public_keys_2.file_public_keys_2[slot_of_given_key_in_image].component_authentication_configuration.fw_en ==
-            0)
+        if (public_keys_2.file_public_keys_2[slot_of_given_key_in_image].component_authentication_configuration.fw_en == 0)
         {
-            return errmsg(
-              "StoreImagePublicKeyInPublicKeys2 failed - key exists but conflicts authentication configuration");
+            return errmsg("StoreImagePublicKeyInPublicKeys2 failed - key exists but conflicts authentication configuration");
         }
     }
 
@@ -5072,20 +4849,16 @@ bool Fs4Operations::StoreImagePublicKeyInPublicKeys3(const image_layout_file_pub
     }
     else
     {
-        if (public_keys_3.file_public_keys_3[slot_of_given_key_in_image].component_authentication_configuration.fw_en ==
-            0)
+        if (public_keys_3.file_public_keys_3[slot_of_given_key_in_image].component_authentication_configuration.fw_en == 0)
         {
-            return errmsg(
-              "StoreImagePublicKeyInPublicKeys3 failed - key exists but conflicts authentication configuration");
+            return errmsg("StoreImagePublicKeyInPublicKeys3 failed - key exists but conflicts authentication configuration");
         }
     }
 
     return true;
 }
 
-bool Fs4Operations::FindPublicKeyInPublicKeys2(const vector<u_int32_t>& keypair_uuid,
-                                               bool& found,
-                                               image_layout_file_public_keys_3& public_key)
+bool Fs4Operations::FindPublicKeyInPublicKeys2(const vector<u_int32_t>& keypair_uuid, bool& found, image_layout_file_public_keys_3& public_key)
 {
     // Find ITOC entry
     fs4_toc_info* itocEntry = (fs4_toc_info*)NULL;
@@ -5108,19 +4881,16 @@ bool Fs4Operations::FindPublicKeyInPublicKeys2(const vector<u_int32_t>& keypair_
             found = true;
             memset(&public_key, 0, sizeof(public_key));
             copy(begin(stored_public_key.key), end(stored_public_key.key), begin(public_key.key));
-            copy(begin(stored_public_key.keypair_uuid), end(stored_public_key.keypair_uuid),
-                 begin(public_key.keypair_uuid));
+            copy(begin(stored_public_key.keypair_uuid), end(stored_public_key.keypair_uuid), begin(public_key.keypair_uuid));
             public_key.keypair_exp = stored_public_key.keypair_exp;
-            public_key.component_authentication_configuration =
-              stored_public_key.component_authentication_configuration;
+            public_key.component_authentication_configuration = stored_public_key.component_authentication_configuration;
             break;
         }
     }
     return true;
 }
 
-void Fs4Operations::PublicKey3ToPublicKey2(const image_layout_file_public_keys_3& public_key_3,
-                                           image_layout_file_public_keys_2& public_key_2)
+void Fs4Operations::PublicKey3ToPublicKey2(const image_layout_file_public_keys_3& public_key_3, image_layout_file_public_keys_2& public_key_2)
 {
     memset(&public_key_2, 0, sizeof(public_key_2));
     copy(begin(public_key_3.key), end(public_key_3.key), begin(public_key_2.key));
@@ -5129,8 +4899,7 @@ void Fs4Operations::PublicKey3ToPublicKey2(const image_layout_file_public_keys_3
     public_key_2.component_authentication_configuration = public_key_3.component_authentication_configuration;
 }
 
-void Fs4Operations::PublicKey2ToPublicKey3(const image_layout_file_public_keys_2& public_key_2,
-                                           image_layout_file_public_keys_3& public_key_3)
+void Fs4Operations::PublicKey2ToPublicKey3(const image_layout_file_public_keys_2& public_key_2, image_layout_file_public_keys_3& public_key_3)
 {
     memset(&public_key_3, 0, sizeof(public_key_3));
     copy(begin(public_key_2.key), end(public_key_2.key), begin(public_key_3.key));
@@ -5158,8 +4927,7 @@ bool Fs4Operations::ReadPublicKeys2SectionFromFile(const char* fname, image_layo
 
     while (publicKeyStartIdx + IMAGE_LAYOUT_FILE_PUBLIC_KEYS_2_SIZE <= publicKeysSize)
     {
-        image_layout_file_public_keys_2_unpack(&public_keys_2_section.file_public_keys_2[publicKeySectionIdx],
-                                               &publicKeysData[publicKeyStartIdx]);
+        image_layout_file_public_keys_2_unpack(&public_keys_2_section.file_public_keys_2[publicKeySectionIdx], &publicKeysData[publicKeyStartIdx]);
         publicKeyStartIdx += IMAGE_LAYOUT_FILE_PUBLIC_KEYS_2_SIZE;
         publicKeySectionIdx++;
     }
@@ -5249,9 +5017,7 @@ bool Fs4Operations::StoreImagePublicKey(const char* public_key_file, const char*
     return true;
 }
 
-bool Fs4Operations::storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature,
-                                                       vector<u_int8_t> critical_sections_signature,
-                                                       vector<u_int8_t> non_critical_sections_signature)
+bool Fs4Operations::storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature, vector<u_int8_t> critical_sections_signature, vector<u_int8_t> non_critical_sections_signature)
 {
     //* Assert critical and non-critical signatures vectors are both empty or both not empty
     if (critical_sections_signature.empty() != non_critical_sections_signature.empty())
@@ -5264,23 +5030,19 @@ bool Fs4Operations::storeSecureBootSignaturesInSection(vector<u_int8_t> boot_sig
     image_layout_secure_boot_signatures secure_boot_signatures;
     memset(&secure_boot_signatures, 0, sizeof(secure_boot_signatures));
 
-    memcpy(&secure_boot_signatures.boot_signature, boot_signature.data(),
-           sizeof(secure_boot_signatures.boot_signature));
+    memcpy(&secure_boot_signatures.boot_signature, boot_signature.data(), sizeof(secure_boot_signatures.boot_signature));
     TOCPUn(&secure_boot_signatures.boot_signature, sizeof(secure_boot_signatures.boot_signature) >> 2);
 
     if (!critical_sections_signature.empty())
     {
-        memcpy(&secure_boot_signatures.critical_signature, critical_sections_signature.data(),
-               sizeof(secure_boot_signatures.critical_signature));
+        memcpy(&secure_boot_signatures.critical_signature, critical_sections_signature.data(), sizeof(secure_boot_signatures.critical_signature));
         TOCPUn(&secure_boot_signatures.critical_signature, sizeof(secure_boot_signatures.critical_signature) >> 2);
     }
 
     if (!non_critical_sections_signature.empty())
     {
-        memcpy(&secure_boot_signatures.non_critical_signature, non_critical_sections_signature.data(),
-               sizeof(secure_boot_signatures.non_critical_signature));
-        TOCPUn(&secure_boot_signatures.non_critical_signature,
-               sizeof(secure_boot_signatures.non_critical_signature) >> 2);
+        memcpy(&secure_boot_signatures.non_critical_signature, non_critical_sections_signature.data(), sizeof(secure_boot_signatures.non_critical_signature));
+        TOCPUn(&secure_boot_signatures.non_critical_signature, sizeof(secure_boot_signatures.non_critical_signature) >> 2);
     }
 
     finishData.resize(image_layout_secure_boot_signatures_size());
@@ -5314,8 +5076,7 @@ bool Fs4Operations::GetHashesTableSize(u_int32_t& size)
     {
         return false;
     }
-    u_int32_t htoc_hash_size =
-      HTOC_HASH_SIZE; // In case of encrypted device we can't parse HTOC header to get hash size so we use constant
+    u_int32_t htoc_hash_size = HTOC_HASH_SIZE; // In case of encrypted device we can't parse HTOC header to get hash size so we use constant
     u_int8_t htoc_max_num_of_entries = MAX_HTOC_ENTRIES_NUM;
     if (!image_encrypted)
     {
@@ -5329,8 +5090,7 @@ bool Fs4Operations::GetHashesTableSize(u_int32_t& size)
         htoc_max_num_of_entries = header.version == 1 ? MAX_HTOC_ENTRIES_NUM_VERSION_1 : htoc_max_num_of_entries;
         free(buff);
     }
-    u_int32_t htoc_size =
-      IMAGE_LAYOUT_HTOC_HEADER_SIZE + htoc_max_num_of_entries * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + htoc_hash_size);
+    u_int32_t htoc_size = IMAGE_LAYOUT_HTOC_HEADER_SIZE + htoc_max_num_of_entries * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + htoc_hash_size);
     size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + htoc_size + HASHES_TABLE_TAIL_SIZE;
 
     return true;
@@ -5477,9 +5237,7 @@ bool Fs4Operations::SignForSecureBoot(const char* public_key_file, const char* u
 #endif
 }
 
-bool Fs4Operations::GetPublicKeyFromFile(const char* public_key_file,
-                                         const char* uuid,
-                                         image_layout_file_public_keys_3* public_key)
+bool Fs4Operations::GetPublicKeyFromFile(const char* public_key_file, const char* uuid, image_layout_file_public_keys_3* public_key)
 {
     //* Parse uuid
     vector<u_int32_t> uuidData;
@@ -5551,8 +5309,7 @@ bool Fs4Operations::FwSignWithHmac(const char* keyFile)
         return false;
     }
 
-    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, _digest_recovery_key_ptr, digest.data(),
-                      digest.size(), true, true, 0, 0))
+    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, _digest_recovery_key_ptr, digest.data(), digest.size(), true, true, 0, 0))
     {
         return false;
     }
@@ -5563,8 +5320,7 @@ bool Fs4Operations::FwSignWithHmac(const char* keyFile)
         return false;
     }
 
-    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, _digest_recovery_key_ptr + digest.size(),
-                      digest.data(), digest.size(), true, true, 0, 0))
+    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, _digest_recovery_key_ptr + digest.size(), digest.data(), digest.size(), true, true, 0, 0))
     {
         return false;
     }
@@ -5575,8 +5331,7 @@ bool Fs4Operations::FwSignWithHmac(const char* keyFile)
         return false;
     }
 
-    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL,
-                      _digest_recovery_key_ptr + 2 * digest.size(), digest.data(), digest.size(), true, true, 0, 0))
+    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, _digest_recovery_key_ptr + 2 * digest.size(), digest.data(), digest.size(), true, true, 0, 0))
     {
         return false;
     }
@@ -5637,8 +5392,7 @@ bool Fs4Operations::SetImageIVHwPointer()
     DPRINTF(("Fs4Operations::SetImageIVHwPointer FW version and date for hash256:\n"));
     for (u_int32_t i = 0; i < (u_int32_t)fw_version_data.size(); i += 4)
     {
-        DPRINTF(("Fs4Operations::SetImageIVHwPointer 0x%02x%02x%02x%02x\n", fw_version_data[i], fw_version_data[i + 1],
-                 fw_version_data[i + 2], fw_version_data[i + 3]));
+        DPRINTF(("Fs4Operations::SetImageIVHwPointer 0x%02x%02x%02x%02x\n", fw_version_data[i], fw_version_data[i + 1], fw_version_data[i + 2], fw_version_data[i + 3]));
     }
 
     //* Calculate SHA256 on FW version and date
@@ -5701,9 +5455,7 @@ bool Fs4Operations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vecto
         }
         else
         {
-            if (itoc_info_p->toc_entry.type == FS4_RSA_4096_SIGNATURES ||
-                itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_512 ||
-                itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_256)
+            if (itoc_info_p->toc_entry.type == FS4_RSA_4096_SIGNATURES || itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_512 || itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_256)
             {
                 continue;
             }
@@ -5744,9 +5496,7 @@ bool Fs4Operations::getCriticalNonCriticalSections(vector<u_int8_t>& critical, v
         }
         else
         {
-            if (itoc_info_p->toc_entry.type == FS4_RSA_4096_SIGNATURES ||
-                itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_512 ||
-                itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_256)
+            if (itoc_info_p->toc_entry.type == FS4_RSA_4096_SIGNATURES || itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_512 || itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_256)
             {
                 continue;
             }
@@ -5873,8 +5623,7 @@ Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr, u_int
 {
     this->htoc_start_addr = htoc_start_addr;
     //* Parse header
-    vector<u_int8_t> header_data(img.begin() + htoc_start_addr,
-                                 img.begin() + htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE);
+    vector<u_int8_t> header_data(img.begin() + htoc_start_addr, img.begin() + htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE);
     image_layout_htoc_header_unpack(&header, header_data.data());
     // image_layout_htoc_header_dump(&header, stdout);
 
@@ -5882,8 +5631,7 @@ Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr, u_int
     //* htoc_size = HTOC__HEADER_SIZE + HTOC__ENTRY_SIZE * num_of_entries
     //* hashes_table_size = HASHES_TABLE__HEADER_SIZE + htoc_size + num_of_entries * header.hash_size +
     //* HASHES_TABLE__TAIL_SIZE
-    htoc_max_num_of_entries = (size - HTOC__HEADER_SIZE - HASHES_TABLE__HEADER_SIZE - HASHES_TABLE__TAIL_SIZE) /
-                              (header.hash_size + HTOC__ENTRY_SIZE);
+    htoc_max_num_of_entries = (size - HTOC__HEADER_SIZE - HASHES_TABLE__HEADER_SIZE - HASHES_TABLE__TAIL_SIZE) / (header.hash_size + HTOC__ENTRY_SIZE);
 
     entries = new image_layout_htoc_entry[htoc_max_num_of_entries];
     memset(entries, 0, htoc_max_num_of_entries * sizeof(image_layout_htoc_entry));
@@ -5898,9 +5646,7 @@ Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t htoc_start_addr, u_int
     }
 }
 
-bool Fs4Operations::HTOC::AddNewEntry(FBase* ioAccess,
-                                      fs3_section_t section_type,
-                                      struct image_layout_htoc_entry& htoc_entry)
+bool Fs4Operations::HTOC::AddNewEntry(FBase* ioAccess, fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry)
 {
     DPRINTF(("Fs4Operations::HTOC::AddNewEntry htoc num_of_entries = %d\n", header.num_of_entries));
     if (header.num_of_entries == htoc_max_num_of_entries)
@@ -5915,8 +5661,7 @@ bool Fs4Operations::HTOC::AddNewEntry(FBase* ioAccess,
     htoc_entry.section_type = section_type;
 
     //* Writing new htoc entry
-    u_int32_t htoc_entry_addr =
-      htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE + htoc_entry_index * IMAGE_LAYOUT_HTOC_ENTRY_SIZE;
+    u_int32_t htoc_entry_addr = htoc_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE + htoc_entry_index * IMAGE_LAYOUT_HTOC_ENTRY_SIZE;
     vector<u_int8_t> htoc_entry_data;
     htoc_entry_data.resize(IMAGE_LAYOUT_HTOC_ENTRY_SIZE);
     image_layout_htoc_entry_pack(&htoc_entry, htoc_entry_data.data());

@@ -34,7 +34,6 @@
 #include "fs5_image_layout_layouts.h"
 #include <algorithm>
 
-
 u_int8_t Fs5Operations::FwType()
 {
     return FIT_FS5;
@@ -83,8 +82,7 @@ bool Fs5Operations::ParseHwPointers(VerifyCallBack verifyCallBackFunc)
             // Calculate HW CRC:
             calcPtrCRC = calc_hw_crc((u_int8_t*)((u_int32_t*)tempBuff + k), 6);
         }
-        if (!DumpFs3CRCCheck(FS4_HW_PTR, hwPointersAddr + 4 * k, FS5_IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE, calcPtrCRC,
-                             ptrCRC, false, verifyCallBackFunc))
+        if (!DumpFs3CRCCheck(FS4_HW_PTR, hwPointersAddr + 4 * k, FS5_IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE, calcPtrCRC, ptrCRC, false, verifyCallBackFunc))
         {
             return false;
         }
@@ -159,7 +157,7 @@ bool Fs5Operations::GetNcoreData(vector<u_int8_t>& imgBuff)
     }
     TOCPUn(bchRawData.data(), BCH_SIZE_IN_BYTES / 4);
     fs5_image_layout_boot_component_header_unpack(&bchComponent, bchRawData.data());
-  
+
     u_int32_t payloadSize = bchComponent.stage1_components[0].u32_binary_len;
     imgBuff.resize(payloadSize);
     if (!_ioAccess->read(_ncore_bch_ptr + FS5_IMAGE_LAYOUT_BOOT_COMPONENT_HEADER_SIZE, imgBuff.data(), payloadSize))
@@ -212,7 +210,7 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
     }
     fs5_image_layout_boot_component_header ncoreBCH;
     fs5_image_layout_boot_component_header_unpack(&ncoreBCH, ncoreBCHData.data());
-    
+
     u_int32_t hashes_table_size = 0;
     if (!GetHashesTableSize(hashes_table_size))
     {
@@ -229,8 +227,7 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
     }
 
     u_int32_t boot2AbsAddr = _fwImgInfo.imgStart + _boot2_ptr;
-    sprintf(pr, "%s /0x%08x-0x%08x (0x%06x)/ (BOOT2)", pref, boot2AbsAddr, boot2AbsAddr + _fwImgInfo.boot2Size - 1,
-            _fwImgInfo.boot2Size);
+    sprintf(pr, "%s /0x%08x-0x%08x (0x%06x)/ (BOOT2)", pref, boot2AbsAddr, boot2AbsAddr + _fwImgInfo.boot2Size - 1, _fwImgInfo.boot2Size);
 
     if (fullRead == true || !_ioAccess->is_flash())
     {
@@ -252,21 +249,12 @@ bool Fs5Operations::CheckBoot2(bool fullRead, const char* pref, VerifyCallBack v
     return true;
 }
 
-bool Fs5Operations::CheckBoot2(u_int32_t,
-                               u_int32_t __attribute__ ((unused)) offs,
-                               u_int32_t&,
-                               bool fullRead,
-                               const char* pref,
-                               VerifyCallBack verifyCallBackFunc)
+bool Fs5Operations::CheckBoot2(u_int32_t, u_int32_t __attribute__((unused)) offs, u_int32_t&, bool fullRead, const char* pref, VerifyCallBack verifyCallBackFunc)
 {
     return CheckBoot2(fullRead, pref, verifyCallBackFunc);
 }
 
-bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
-                                bool show_itoc,
-                                struct QueryOptions queryOptions,
-                                bool ignoreDToc,
-                                bool verbose)
+bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs5Operations::FsVerifyAux\n"));
     u_int8_t* buff;
@@ -317,11 +305,9 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
         if (isHashesTableHwPtrValid())
         {
             //* Check hashes_table header CRC
-            READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE,
-                         "HASHES TABLE HEADER");
+            READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE, "HASHES TABLE HEADER");
             // Calculate CRC
-            u_int32_t hashes_table_header_calc_crc =
-              CalcImageCRC((u_int32_t*)buff, (IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE / 4) - 1);
+            u_int32_t hashes_table_header_calc_crc = CalcImageCRC((u_int32_t*)buff, (IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE / 4) - 1);
             // Read CRC
             u_int32_t hashes_table_header_crc = ((u_int32_t*)buff)[(IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE / 4) - 1];
             free(buff);
@@ -330,8 +316,7 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
             // Compare calculated crc with crc from image
             if (hashes_table_header_calc_crc != hashes_table_header_crc)
             {
-                report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
-                                "HASHES TABLE HEADER", _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE - 4,
+                report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n", "HASHES TABLE HEADER", _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE - 4,
                                 hashes_table_header_calc_crc, hashes_table_header_crc);
                 if (!_fwParams.ignoreCrcCheck)
                 {
@@ -356,8 +341,7 @@ bool Fs5Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc,
             u_int32_t hashes_table_crc = ((u_int32_t*)buff)[(hashes_table_size / 4) - 1];
             TOCPU1(hashes_table_crc)
             hashes_table_crc = hashes_table_crc & 0xFFFF;
-            if (!DumpFs3CRCCheck(FS4_HASHES_TABLE, _hashes_table_ptr, hashes_table_size, hashes_table_calc_crc,
-                                 hashes_table_crc, false, verifyCallBackFunc))
+            if (!DumpFs3CRCCheck(FS4_HASHES_TABLE, _hashes_table_ptr, hashes_table_size, hashes_table_calc_crc, hashes_table_crc, false, verifyCallBackFunc))
             {
                 return false;
             }
@@ -455,8 +439,7 @@ bool Fs5Operations::NCoreQuery(fw_info_t* fwInfo)
 
     // if there's a signature (at least one byte that's not 0x0 or 0xff), we assume that the whole image is signed
     auto compareFunc = [](u_int8_t byte) { return byte != 0x0 && byte != 0xff; };
-    if (std::find_if(begin(ncoreBCH.u8_stage1_signature.u8_dummy), end(ncoreBCH.u8_stage1_signature.u8_dummy),
-                     compareFunc) != end(ncoreBCH.u8_stage1_signature.u8_dummy))
+    if (std::find_if(begin(ncoreBCH.u8_stage1_signature.u8_dummy), end(ncoreBCH.u8_stage1_signature.u8_dummy), compareFunc) != end(ncoreBCH.u8_stage1_signature.u8_dummy))
     {
         if (fwInfo->fw_info.sku == device_sku::PRE_PROD_IPN || fwInfo->fw_info.sku == device_sku::SECURE_IPN)
         {
@@ -477,13 +460,8 @@ bool Fs5Operations::NCoreQuery(fw_info_t* fwInfo)
     return true;
 }
 
-bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img,
-                                      bool maskMagicPatternAndDevToc,
-                                      bool verbose,
-                                      bool ignoreImageStart,
-                                      bool imageSizeOnly)
+bool Fs5Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose, bool ignoreImageStart, bool imageSizeOnly)
 {
-     
     bool res = Fs4Operations::FwExtract4MBImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
 
     if (res && !imageSizeOnly)
@@ -579,8 +557,7 @@ bool Fs5Operations::GetMfgInfo(u_int8_t* buff)
     {
         if (_fwImgInfo.supportedHwId[0] == ARCUSE_HW_ID)
         { // ArcusE is missing DEV_INFO section, align non-orig guids to make flint query output correct format
-            memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids,
-                   &_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids,
+            memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.image_layout_uids, &_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids,
                    sizeof(_fs3ImgInfo.ext_info.orig_fs3_uids_info.image_layout_uids));
             _fs3ImgInfo.ext_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
         }
@@ -600,8 +577,7 @@ bool Fs5Operations::CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_in
     }
     if (cntxLog2ChunkSize != imageCntxLog2ChunkSize)
     {
-        return errmsg("Device and Image partition size differ(0x%x/0x%x), use non failsafe (-nofs) burn flow.",
-                      cntxLog2ChunkSize, imageCntxLog2ChunkSize);
+        return errmsg("Device and Image partition size differ(0x%x/0x%x), use non failsafe (-nofs) burn flow.", cntxLog2ChunkSize, imageCntxLog2ChunkSize);
     }
     return true;
 }
@@ -618,7 +594,7 @@ bool Fs5Operations::GetLivefishIndicationAddr(uint32_t& lfIndicationAddr)
             break;
 
         case DeviceQuantum3_HwId:
-        case DeviceQuantum4_HwId:
+        case DeviceNVLink6_Switch_ASIC_HwId:
             lfIndicationAddr = 0xfc13c;
             break;
 
@@ -653,8 +629,7 @@ bool Fs5Operations::ClearLivefishfIndication(Flash* flashAccess)
             return errmsg("Failed to clear LF indication at CR space address 0x%x", lfIndicationAddr);
         }
 
-        DPRINTF(
-          ("Fs5Operations::ClearLivefishfIndication - Successfully cleared LF indication at 0x%x\n", lfIndicationAddr));
+        DPRINTF(("Fs5Operations::ClearLivefishfIndication - Successfully cleared LF indication at 0x%x\n", lfIndicationAddr));
     }
 
     return true;

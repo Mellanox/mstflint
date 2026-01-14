@@ -2669,7 +2669,8 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
 }
 
 u_int32_t secured_devices[] = {
-  DeviceConnectX7_HwId, DeviceConnectX8_HwId, DeviceConnectX9_HwId, DeviceConnectX8_Pure_PCIe_Switch_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId, DeviceConnectX9_Pure_PCIe_Switch_HwId};
+  DeviceConnectX7_HwId,          DeviceConnectX8_HwId, DeviceConnectX9_HwId, DeviceConnectX8_Pure_PCIe_Switch_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId, DeviceConnectX9_Pure_PCIe_Switch_HwId,
+  DeviceNVLink6_Switch_ASIC_HwId};
 
 #define SECURED_DEVICE_ID_TABLE_SIZE (sizeof(secured_devices) / sizeof(u_int32_t))
 
@@ -2702,6 +2703,7 @@ u_int32_t supported_device_ids[] = {DeviceConnectX3_HwId,
                                     DeviceQuantum_HwId,
                                     DeviceQuantum2_HwId,
                                     DeviceQuantum3_HwId,
+                                    DeviceNVLink6_Switch_ASIC_HwId,
                                     DeviceArdbeg_HwId,
                                     DeviceBaritone_HwId,
                                     DeviceMenhit_HwId,
@@ -3149,6 +3151,7 @@ static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24b, 0x24d, 0x24e,
                                        0x274,                                                                                                          /* Spectrum6 */
                                        0x257,                                                                                                          /* Quantum2 */
                                        0x25b,                                                                                                          /* Quantum3 */
+                                       0x278,                                                                                                          /* Nvlink6_Switch_ASIC */
                                        -1};
 
 int is_supported_devid(long devid, mfile* mf)
@@ -4700,7 +4703,6 @@ int mib_send_gmp_access_reg_mad_ul(mfile* mf, u_int32_t* data, u_int32_t reg_siz
 #endif
 }
 
-
 /*/////////////////  Function that sends the register via the correct interface /////////////////////////// */
 
 static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_icmd_size)
@@ -5188,6 +5190,7 @@ static int check_zf_through_memory(mfile* mf)
     switch (mf->device_hw_id)
     {
         case DeviceQuantum3_HwId:
+        case DeviceNVLink6_Switch_ASIC_HwId:
             gis_address = 0x152080;
             break;
 
@@ -5244,8 +5247,9 @@ int is_zombiefish_device(mfile* mf)
         return 0;
     }
     if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8_Pure_PCIe_Switch_HwId) && (mf->device_hw_id != DeviceQuantum3_HwId) &&
-        (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceQuantum4_HwId) && (mf->device_hw_id != DeviceConnectX7_HwId) && (mf->device_hw_id != DeviceBlueField3_HwId) &&
-        (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId) && (mf->hw_dev_id != DeviceSpectrum6_HwId))
+        (mf->device_hw_id != DeviceNVLink6_Switch_ASIC_HwId) && (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceNVLink6_Switch_ASIC_HwId) &&
+        (mf->device_hw_id != DeviceConnectX7_HwId) && (mf->device_hw_id != DeviceBlueField3_HwId) && (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId) &&
+        (mf->hw_dev_id != DeviceSpectrum6_HwId))
     {
         return 0;
     }
