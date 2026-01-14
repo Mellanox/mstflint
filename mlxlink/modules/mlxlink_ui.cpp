@@ -182,8 +182,6 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "", "Show valid PCIe links (PCIE only)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
     MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
-    MlxlinkRecord::printFlagLine(PERIODIC_EQ_FLAG_SHORT, PERIODIC_EQ_FLAG, "",
-                                 "Show Link PEQ (Periodic Equalization) Info");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "", "Show Eye Opening Info");
@@ -260,9 +258,6 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(LINK_TRAINING_FLAG_SHORT, LINK_TRAINING_FLAG, "link_training",
                                  "Link Training [EN(enable)/DS(disable)/EN_EXT(enable_extra)]");
-    printf(IDENT);
-    MlxlinkRecord::printFlagLine(SET_LINK_PEQ_FLAG_SHORT, SET_LINK_PEQ_FLAG, "",
-                                 "Set link PEQ (Periodic Equalization) interval [10-40000]uS. 0 means FW-Default");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PHY_RECOVERY_FLAG_SHORT, PHY_RECOVERY_FLAG, "phy_recovery",
                                  "PHY Recovery [EN(enable)/DS(disable)]");
