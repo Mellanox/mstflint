@@ -41,6 +41,7 @@
  #include "reg_access/reg_ids.h"
  #include "mft_core/mft_core_utils/logger/Logger.h"
  #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
+ #include "dev_mgt/tools_dev_types.h"
  
  using namespace mft_core;
  
@@ -145,6 +146,9 @@
      int numDevices = 0;
      reg_access_status_t rc = ME_OK;
      int field_select = 0x80; // Set segment base and segment valid
+     u_int32_t hwDevId = 0;
+     u_int32_t hwRevId = 0;
+     dm_dev_id_t DeviceType = DeviceUnknown;
      dev_info* pciDevices = mdevices_info(MDEVS_TAVOR_CR, &numDevices);
      if (!pciDevices)
      {
@@ -164,6 +168,20 @@
          }
          try
          {
+            if (dm_get_device_id(mf, &DeviceType, &hwDevId, &hwRevId))
+            {
+                LOG.Error(std::string("Failed to get device id: ") + pciDevices[count].dev_name);
+                mclose(mf);
+                continue;
+            }
+            if (dm_is_livefish_mode(mf) || !(dm_dev_is_hca(DeviceType)))
+            {
+                printf("device name: %s\n", pciDevices[count].dev_name);
+                LOG.Info(std::string("Only Functional HCA devices are supported. Skipping device: ") +
+                         pciDevices[count].dev_name);
+                mclose(mf);
+                continue;
+            }
              CheckPCIRegistersSupported(mf);
          }
          catch (const MftGeneralException& e)
