@@ -51,6 +51,8 @@ libcommon_la_SOURCES = \
     PCILibrary.cpp \
     PCILibrary.h
 
+libcommon_la_LIBADD = $(top_builddir)/dev_mgt/libdev_mgt.la
+
 commonincludedir = $(includedir)/mstflint/common/
 commoninclude_HEADERS = compatibility.h
 
