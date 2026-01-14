@@ -203,6 +203,7 @@ public:
     bool _forceTxAllowed;
     bool _skipPowerGoodCheck;
     string _sysfsPath;
+    bool _sysfsPathGiven;
 };
 
 #endif /* MLXLINK_USER_INPUT_H */

@@ -497,6 +497,11 @@ void MlxlinkCommander::updateSwControlStatus()
 void MlxlinkCommander::findFirstValidPort()
 {
     u_int32_t minLabelPort = 0;
+    u_int32_t LabelSplit = 0;
+    u_int32_t LabelIpil = 0;
+    u_int32_t splitStat = 0;
+    u_int32_t ipilStat = 0;
+
     string regName = ACCESS_REG_PLLP, fieldToGet = "label_port";
     if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
     {
@@ -518,9 +523,37 @@ void MlxlinkCommander::findFirstValidPort()
         if (minLabelPort == 0 || currentLabelPort < minLabelPort)
         {
             minLabelPort = currentLabelPort;
+            if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+            {
+                LabelIpil = getFieldValue("ipil_num");
+                LabelSplit = getFieldValue("split_num");
+                ipilStat = getFieldValue("ipil_stat");
+                splitStat = getFieldValue("split_stat");
+            }
         }
     }
-    _userInput._labelPort = minLabelPort;
+
+    if (!dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+    {
+        _userInput._labelPort = minLabelPort;
+        if (ipilStat != 0 && splitStat != 0)
+        {
+            _userInput._splitProvided = true;
+            _userInput._splitPort = LabelIpil;
+            _userInput._secondSplitProvided = true;
+            _userInput._secondSplitPort = LabelSplit + 1;
+        }
+        else if (ipilStat != 0)
+        {
+            _userInput._splitProvided = true;
+            _userInput._splitPort = LabelIpil;
+        }
+        else if (splitStat != 0)
+        {
+            _userInput._splitProvided = true;
+            _userInput._splitPort = LabelSplit + 1;
+        }
+    }
 }
 
 void MlxlinkCommander::labelToLocalPort()
@@ -580,14 +613,14 @@ void MlxlinkCommander::labelToLocalPort()
         }
         else
         {
-            labelToSpectLocalPort();
+            labelToLocalPortGenericMapping();
         }
     }
     else if (dm_dev_is_ib_switch(_devID))
     {
         if (_devID == DeviceQuantum3 || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
-            labelToQtm3LocalPort();
+            labelToLocalPortGenericMapping();
         }
         else
         {
@@ -734,47 +767,7 @@ void MlxlinkCommander::labelToHCALocalPort()
     _localPort = 1;
 }
 
-void MlxlinkCommander::labelToSpectLocalPort()
-{
-    if (_userInput._secondSplitProvided)
-    {
-        throw MlxRegException("Invalid port number!");
-    }
-    if (_userInput._splitProvided)
-    {
-        if (_userInput._splitPort == 1)
-        {
-            throw MlxRegException("Invalid split number!");
-        }
-        if (_userInput._splitPort > MAX_ETH_SW_SPLIT)
-        {
-            throw MlxRegException("Port %d/%d does not exist!", _userInput._labelPort, _userInput._splitPort);
-        }
-    }
-
-    for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++)
-    {
-        try
-        {
-            sendPrmReg(ACCESS_REG_PLLP, GET, "local_port=%d", localPort);
-        }
-        catch (...)
-        {
-        } // access register will fail if local port does not exist
-        if ((getFieldValue("label_port") == _userInput._labelPort) && (getFieldValue("split_num") == (_userInput._splitPort - 1)))
-        {
-            _localPort = localPort;
-            break;
-        }
-    }
-
-    if (!_localPort)
-    {
-        throw MlxRegException("Failed to find Local Port, please provide valid Port Number");
-    }
-}
-
-void MlxlinkCommander::labelToQtm3LocalPort()
+void MlxlinkCommander::labelToLocalPortGenericMapping()
 {
     u_int32_t foundedLocalPort = 0;
 
@@ -804,13 +797,15 @@ void MlxlinkCommander::labelToQtm3LocalPort()
     else
     {
         u_int32_t cageIn = _userInput._labelPort;
-        u_int32_t ipilIn = _userInput._splitProvided ? _userInput._splitPort : 1;
-        u_int32_t splitIn = _userInput._secondSplitProvided ? _userInput._secondSplitPort : 1;
+        u_int32_t ipilIn = 1;
+        u_int32_t splitIn = 1;
 
         u_int32_t splitStat = 0;
         u_int32_t ipilStat = 0;
         for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++)
         {
+            ipilIn = 1;
+            splitIn = 1;
             try
             {
                 sendPrmReg(ACCESS_REG_PLLP, GET, "local_port=%d", localPort);
@@ -822,17 +817,44 @@ void MlxlinkCommander::labelToQtm3LocalPort()
 
             ipilStat = getFieldValue("ipil_stat");
             splitStat = getFieldValue("split_stat");
-            if (ipilIn > (u_int32_t)(1 << ipilStat))
+            if (cageIn != getFieldValue("label_port"))
             {
-                throw MlxRegException("Invalid inter-port number!");
+                // if the label port is not the same as the cage in, then nothing to check on the local port continue to
+                // the next local port
+                continue;
+            }
+            if (_userInput._secondSplitProvided && (ipilStat == 0 || splitStat == 0))
+            {
+                throw MlxRegException("Invalid split/inter-port number!");
+            }
+            if (_userInput._splitProvided && (ipilStat == 0 && splitStat == 0))
+            {
+                throw MlxRegException("Invalid split/inter-port number!");
+            }
+            // case -p port/ipil/split
+            if (_userInput._secondSplitProvided)
+            {
+                ipilIn = _userInput._splitPort;
+                splitIn = _userInput._secondSplitPort;
+            }
+            // case -p port/ipil
+            else if (_userInput._splitProvided && ipilStat != 0)
+            {
+                ipilIn = _userInput._splitPort;
+            }
+            // case -p port/split
+            else if (_userInput._splitProvided && splitStat != 0)
+            {
+                splitIn = _userInput._splitPort;
             }
 
-            if ((splitIn - 1) > (u_int32_t)(1 << splitStat))
+            if (ipilIn > (u_int32_t)(1 << ipilStat) || (splitIn - 1) > (u_int32_t)(1 << splitStat))
             {
-                throw MlxRegException("Invalid split number!");
+                throw MlxRegException("Invalid split/inter-port number!");
             }
 
-            if (cageIn == getFieldValue("label_port") && (ipilStat == 0 || ipilIn == getFieldValue("ipil_num")) && (splitStat == 0 || (splitIn - 1) == getFieldValue("split_num")))
+            if ((ipilStat == 0 || ipilIn == getFieldValue("ipil_num")) &&
+                (splitStat == 0 || (splitIn - 1) == getFieldValue("split_num")))
             {
                 foundedLocalPort = localPort;
                 break;
@@ -1168,7 +1190,7 @@ void MlxlinkCommander::handleAllGPULocalPorts(std::vector<string> labelPortsStr,
     sort(_localPortsPerGroup.begin(), _localPortsPerGroup.end());
 }
 
-void MlxlinkCommander::handleAllQTM3LocalPorts(std::vector<string> labelPortsStr, bool skipException)
+void MlxlinkCommander::handleAllNewSwitchesLocalPorts(std::vector<string> labelPortsStr, bool skipException)
 {
     u_int32_t labelPort = 0;
     std::vector<int> markLabelPorts(labelPortsStr.size(), 0);
@@ -1489,13 +1511,14 @@ void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr, bool 
     }
     else
     {
-        if (_devID == DeviceSpectrum2 || _devID == DeviceSpectrum3 || _devID == DeviceSpectrum4 || _devID == DeviceSpectrum5 || _devID == DeviceSpectrum6)
+        if (_devID == DeviceSpectrum2)
         {
             handleAllEthLocalPorts(labelPortsStr, spect2WithGb, skipException);
         }
-        else if (_devID == DeviceQuantum3)
+        else if (_devID == DeviceQuantum3 || _devID == DeviceSpectrum3 || _devID == DeviceSpectrum4 || _devID == DeviceSpectrum5 ||
+                 _devID == DeviceSpectrum6)
         {
-            handleAllQTM3LocalPorts(labelPortsStr, skipException);
+            handleAllNewSwitchesLocalPorts(labelPortsStr, skipException);
         }
         else if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
@@ -3953,26 +3976,14 @@ string MlxlinkCommander::getLabelPortString(const PortGroup& portInfo)
 {
     string labelPortStr = " " + to_string(portInfo.labelPort);
 
-    // Add split port information if applicable
-    bool shouldAddSplit = (portInfo.split && portInfo.split != 1) || (_devID == DeviceQuantum2) || (_devID == DeviceQuantum3);
-    if (shouldAddSplit)
+    if (portInfo.split != 0)
     {
         labelPortStr += "/" + to_string(portInfo.split);
     }
 
-    // Add second split information if applicable
-    if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3)
+    if (portInfo.secondSplit != 0)
     {
-        bool shouldAddSecondSplit = (portInfo.secondSplit && portInfo.secondSplit != 1);
-
-        if (shouldAddSecondSplit)
-        {
-            labelPortStr += "/" + to_string(portInfo.secondSplit);
-        }
-        else
-        {
-            labelPortStr += "/1";
-        }
+        labelPortStr += "/" + to_string(portInfo.secondSplit);
     }
 
     labelPortStr += "(" + to_string(portInfo.localPort) + ")";
@@ -4730,14 +4741,17 @@ void MlxlinkCommander::handlePrbsSWControlledChecks()
                 {
                     throw MlxRegException("Operation canceled by user");
                 }
-                // set tx_allowed per user request.
-                sendPrmReg(ACCESS_REG_PTYS, SET, "local_port=%d,proto_mask=%d,transmit_allowed=%d", _localPort, _protoActive, 1);
             }
             else
             {
                 throw MlxRegException("PRBS test mode is not supported for the current port!\nTransmit not allowed");
             }
         }
+        sendPrmReg(ACCESS_REG_PTYS, GET, "local_port=%d,proto_mask=%d", _localPort, _protoActive);
+        sendPrmRegWithoutReset(ACCESS_REG_PTYS, SET,
+                               "local_port=%d,proto_mask=%d,ee_tx_ready=1,tx_ready_e=3,transmit_allowed=1", _localPort,
+                               _protoActive);
+        sendPaosToggle();
     }
     else
     {
@@ -4760,7 +4774,7 @@ void MlxlinkCommander::handlePrbs()
     {
         // at this point we know we are running PRBS on a FW controlled module, need to throw error if the user used one
         // of the SW controlled flags.
-        if (_userInput._skipPowerGoodCheck || _userInput._forceTxAllowed || !_userInput._sysfsPath.empty())
+        if (_userInput._skipPowerGoodCheck || _userInput._forceTxAllowed || _userInput._sysfsPathGiven)
         {
             throw MlxRegException("SW controlled flags are not supported for FW controlled modules");
         }

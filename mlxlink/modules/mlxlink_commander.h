@@ -447,8 +447,7 @@ public:
     void labelToHCALocalPort();
     void labeltoDSlocalPort();
     bool isDSdevice();
-    void labelToSpectLocalPort();
-    void labelToQtm3LocalPort();
+    void labelToLocalPortGenericMapping();
     void labelToIBLocalPort();
     bool isIBSplitReady();
     u_int32_t calculatePanelPort(bool ibSplitReady);
@@ -470,7 +469,7 @@ public:
     bool handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady);
     void handleAllEthLocalPorts(std::vector<string> labelPortsStr, bool spect2WithGb, bool skipException);
     void handleAllGPULocalPorts(std::vector<string> labelPortsStr, bool skipException);
-    void handleAllQTM3LocalPorts(std::vector<string> labelPortsStr, bool skipException);
+    void handleAllNewSwitchesLocalPorts(std::vector<string> labelPortsStr, bool skipException);
     void handleLabelPorts(std::vector<string> labelPortsStr, bool skipException = false);
     vector<string> localToPortsPerGroup(vector<u_int32_t> localPorts);
     u_int32_t getPortGroup(u_int32_t localPort);
