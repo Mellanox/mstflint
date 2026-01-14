@@ -185,4 +185,5 @@ UserInput::UserInput()
     _forceTxAllowed = false;
     _skipPowerGoodCheck = false;
     _sysfsPath = "";
+    _sysfsPathGiven = false;
 }

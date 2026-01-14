@@ -1850,6 +1850,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == SYSFS_PATH_FLAG)
     {
         _userInput._sysfsPath = value;
+        _userInput._sysfsPathGiven = true;
         return PARSE_OK;
     }
     else if (name == BER_COLLECT_FLAG)

@@ -4979,15 +4979,17 @@ void MlxlinkCommander::handlePrbsSWControlledChecks()
                 {
                     throw MlxRegException("Operation canceled by user");
                 }
-                // set tx_allowed per user request.
-                sendPrmReg(ACCESS_REG_PTYS, SET, "local_port=%d,proto_mask=%d,transmit_allowed=%d", _localPort,
-                           _protoActive, 1);
             }
             else
             {
                 throw MlxRegException("PRBS test mode is not supported for the current port!\nTransmit not allowed");
             }
         }
+        sendPrmReg(ACCESS_REG_PTYS, GET, "local_port=%d,proto_mask=%d", _localPort, _protoActive);
+        sendPrmRegWithoutReset(ACCESS_REG_PTYS, SET,
+                               "local_port=%d,proto_mask=%d,ee_tx_ready=1,tx_ready_e=3,transmit_allowed=1", _localPort,
+                               _protoActive);
+        sendPaosToggle();
     }
     else
     {
@@ -5012,7 +5014,7 @@ void MlxlinkCommander::handlePrbs()
     {
         // at this point we know we are running PRBS on a FW controlled module, need to throw error if the user used one
         // of the SW controlled flags.
-        if (_userInput._skipPowerGoodCheck || _userInput._forceTxAllowed || !_userInput._sysfsPath.empty())
+        if (_userInput._skipPowerGoodCheck || _userInput._forceTxAllowed || _userInput._sysfsPathGiven)
         {
             throw MlxRegException("SW controlled flags are not supported for FW controlled modules");
         }
