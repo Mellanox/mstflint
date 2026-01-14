@@ -67,6 +67,7 @@
 #define SPECTRUM3_HW_ID 592
 #define QUANTUM2_HW_ID 599
 #define QUANTUM3_HW_ID 603
+#define NVLINK6_SWITCH_ASIC_HW_ID 632
 #define ARCUSE_HW_ID 45568
 #define SPECTRUM4_HW_ID 596
 #define SPECTRUM5_HW_ID 624
@@ -260,8 +261,8 @@ enum
     MLXFW_FW_BURN_REJECTED_INTERNAL_ERROR_10,
     MLXFW_MISSING_IMAGE_SIGNATURE,
     MLXFW_FSM_UNEXPECTED_STATE,
-        /* ********************/
-        /* IMAGE REACTIVATION RELATED ERRORS */
+    /* ********************/
+    /* IMAGE REACTIVATION RELATED ERRORS */
     MLXFW_IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR,
     MLXFW_IMAGE_RACTIVATION_FIRST_PAGE_COPY_FAILED,
     MLXFW_IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED,
@@ -360,6 +361,7 @@ typedef enum chip_type
     CT_CONNECTX3,
     CT_QUANTUM2,
     CT_QUANTUM3,
+    CT_NVLINK6_SWITCH_ASIC,
     CT_SPECTRUM4,
     CT_SPECTRUM5,
     CT_SPECTRUM6,
@@ -369,14 +371,11 @@ typedef enum chip_type
     CT_ARCUSE
 } chip_type_t;
 
-#define IS_HCA(chipType)                                                                                 \
-    (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) ||     \
-     ((chipType) == CT_CONNECTX4_LX) || ((chipType) == CT_CONNECTX5) || ((chipType) == CT_CONNECTX6) ||  \
-     ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || ((chipType) == CT_CONNECTX7) || \
-     ((chipType) == CT_CONNECTX8) || ((chipType) == CT_CONNECTX8_PURE_PCIE_SWITCH) || \
-     ((chipType) == CT_CONNECTX9) || ((chipType) == CT_CONNECTX9_PURE_PCIE_SWITCH) || \
-     ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_BLUEFIELD2) ||    \
-     ((chipType) == CT_BLUEFIELD3) || ((chipType) == CT_BLUEFIELD4))
+#define IS_HCA(chipType)                                                                                                                                                 \
+    (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX) || ((chipType) == CT_CONNECTX5) ||  \
+     ((chipType) == CT_CONNECTX6) || ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || ((chipType) == CT_CONNECTX7) || ((chipType) == CT_CONNECTX8) || \
+     ((chipType) == CT_CONNECTX8_PURE_PCIE_SWITCH) || ((chipType) == CT_CONNECTX9) || ((chipType) == CT_CONNECTX9_PURE_PCIE_SWITCH) || ((chipType) == CT_BLUEFIELD) ||   \
+     ((chipType) == CT_BLUEFIELD2) || ((chipType) == CT_BLUEFIELD3) || ((chipType) == CT_BLUEFIELD4))
 
 typedef enum chip_family_type
 {
@@ -539,9 +538,9 @@ typedef struct fs3_info_ext
     bool socket_direct;
     bool aux_card_connected;
     bool is_aux_card_connected_valid;
-    
+
     uint8_t independent_module;
-    
+
     uint8_t pci_switch_only_mode;
     uint8_t pci_switch_only_mode_valid;
 } fs3_info_t;

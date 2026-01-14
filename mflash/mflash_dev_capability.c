@@ -74,6 +74,7 @@ int is_four_byte_address_needed(mflash* mfl, MfError* status)
         case DeviceSpectrum3:
         case DeviceQuantum2:
         case DeviceQuantum3:
+        case DeviceNVLink6_Switch_ASIC:
         case DeviceArcusE:
         case DeviceSpectrum4:
         case DeviceSpectrum5:
@@ -101,8 +102,7 @@ int is_flash_enable_needed(mflash* mfl, MfError* status)
     {
         return 1;
     }
-    else if ((mfl->dm_dev_id == DeviceSecureHost) || (dm_is_5th_gen_hca(mfl->dm_dev_id)) ||
-             (dm_dev_is_gearbox(mfl->dm_dev_id)) || (dm_is_new_gen_switch(mfl->dm_dev_id)) ||
+    else if ((mfl->dm_dev_id == DeviceSecureHost) || (dm_is_5th_gen_hca(mfl->dm_dev_id)) || (dm_dev_is_gearbox(mfl->dm_dev_id)) || (dm_is_new_gen_switch(mfl->dm_dev_id)) ||
              (dm_dev_is_retimer(mfl->dm_dev_id)))
     {
         return 0;
@@ -146,6 +146,7 @@ int is_icmdif_supported(mflash* mfl, MfError* status)
             return 1;
         case DeviceQuantum2:
         case DeviceQuantum3:
+        case DeviceNVLink6_Switch_ASIC:
         case DeviceArcusE:
         case DeviceSpectrum4:
         case DeviceSpectrum5:
@@ -187,6 +188,7 @@ FlashGen get_flash_gen(mflash* mfl)
         case DeviceConnectX9_Pure_PCIe_Switch:
         case DeviceConnectX9:
         case DeviceBlueField4:
+        case DeviceNVLink6_Switch_ASIC:
         {
             gen = SEVEN_GEN_FLASH;
             break;
