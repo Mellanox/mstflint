@@ -3658,19 +3658,28 @@ void MlxlinkCommander::showPcieLinks()
             throw MlxRegException("No valid DPN's detected!");
         }
         setPrintTitle(_validPcieLinks, "Valid PCIe Links", _validDpns.size() + 1);
-        setPrintVal(_validPcieLinks, "Legend", "depth ,pcie_index ,node ,port ,bdf", ANSI_COLOR_RESET, true, true, true);
+        char header[128];
+        snprintf(header, sizeof(header), "%-5s ,%-10s ,%-4s ,%-4s ,%-10s ,%s", "depth", "pcie_index", "node", "port",
+                 "bdf", "link_status");
+        setPrintVal(_validPcieLinks, "Legend", header, ANSI_COLOR_RESET, true, true, true);
         for (u_int32_t i = 0; i < _validDpns.size(); i++)
         {
             char dpnStr[128];
             int localPort = getLocalPortFromMPIR(_validDpns[i]);
-            snprintf(dpnStr, sizeof(dpnStr), "%-5d ,%-10d ,%-4d ,%-4d ,%s", _validDpns[i].depth, _validDpns[i].pcieIndex, _validDpns[i].node, localPort, _validDpns[i].bdf.c_str());
-            setPrintVal(_validPcieLinks, "Link " + to_string(i + 1), dpnStr, ANSI_COLOR_RESET, localPort >= 0, true, true);
+            sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", _validDpns[i].depth,
+                       _validDpns[i].pcieIndex, _validDpns[i].node);
+            const char* linkStatus = (getFieldValue("link_speed_active") != 0) ? "UP" : "DOWN";
+            snprintf(dpnStr, sizeof(dpnStr), "%-5d ,%-10d ,%-4d ,%-4d ,%-10s ,%s", _validDpns[i].depth,
+                     _validDpns[i].pcieIndex, _validDpns[i].node, localPort, _validDpns[i].bdf.c_str(), linkStatus);
+            setPrintVal(_validPcieLinks, "Link " + to_string(i + 1), dpnStr, ANSI_COLOR_RESET, localPort >= 0, true,
+                        true);
         }
         cout << _validPcieLinks;
     }
     catch (const std::exception& exc)
     {
-        _allUnhandledErrors += string("Showing valid PCIe links raised the following exception: ") + string(exc.what()) + string("\n");
+        _allUnhandledErrors +=
+          string("Showing valid PCIe links raised the following exception: ") + string(exc.what()) + string("\n");
     }
 }
 
