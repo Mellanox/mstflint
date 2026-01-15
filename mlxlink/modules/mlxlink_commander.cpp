@@ -2302,6 +2302,7 @@ void MlxlinkCommander::showPddr()
 
 void MlxlinkCommander::getPtys()
 {
+    _isXdrSlowActive = false;
     sendPrmReg(ACCESS_REG_PTYS, GET, "proto_mask=%d", _protoActive);
 
     if (_protoActive == ETH)
@@ -4405,7 +4406,7 @@ void MlxlinkCommander::clearCounters()
     try
     {
         MlxlinkRecord::printCmdLine("Clearing Counters", _jsonRoot);
-        if (_mf->tp != MST_IB)
+        if (_mf->tp != MST_IB && _mf->tp != MST_NVML)
         {
             sendPrmReg(ACCESS_REG_PPCNT, SET, "clr=%d,grp=%d", 1, PPCNT_ALL_GROUPS);
         }
@@ -4414,13 +4415,25 @@ void MlxlinkCommander::clearCounters()
             // Clearing counters via GET method instead of SET due to register being too large for MADs.
             for (auto const& group : _mlxlinkMaps->_ppcntGroups)
             {
-                sendPrmReg(ACCESS_REG_PPCNT, GET, "clr=%d,grp=%d", 1, group.first);
+                try
+                {
+                    sendPrmReg(ACCESS_REG_PPCNT, GET, "clr=%d,grp=%d", 1, group.first);
+                }
+                catch (const std::exception& exc)
+                {
+                    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+                    {
+                        continue;
+                    }
+                    throw MlxRegException(exc.what());
+                }
             }
         }
     }
     catch (const std::exception& exc)
     {
-        _allUnhandledErrors += string("Clearing counters via PPCNT raised the following exception: ") + string(exc.what()) + string("\n");
+        _allUnhandledErrors +=
+          string("Clearing counters via PPCNT raised the following exception: ") + string(exc.what()) + string("\n");
     }
 }
 
