@@ -81,6 +81,9 @@
 #define NODE_FLAG_SHORT ' '
 #define PRINT_JSON_OUTPUT_FLAG "json"
 #define PRINT_JSON_OUTPUT_FLAG_SHORT ' '
+// Extended info for PCIe flow when depth/pcie_index/node are provided
+#define EXTENDED_PCIE_FLAG "extended"
+#define EXTENDED_PCIE_FLAG_SHORT ' '
 //------------------------------------------------------------
 //        Mlxlink QUERIES Flags
 

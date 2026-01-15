@@ -106,7 +106,7 @@ UserInput::UserInput()
     _showPlr = false;
     _showKr = false;
     _showRxRecoveryCounters = false;
-
+    _extendedPcie = false;
     _device = "";
     _extAdbFile = "";
     _logFile = "";

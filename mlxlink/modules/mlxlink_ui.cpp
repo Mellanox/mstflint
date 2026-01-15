@@ -613,10 +613,20 @@ void MlxlinkUi::validatePCIeParams()
                                       "specified");
             }
         }
+        // Extended PCIe info is only valid when depth/pcie_index/node are provided
+        if (_userInput._extendedPcie && !_userInput._sendDpn)
+        {
+            throw MlxRegException("The --" EXTENDED_PCIE_FLAG
+                                  " flag is valid only when --depth, --pcie_index and --node are specified");
+        }
     }
     else if (dpnFlags)
     {
         throw MlxRegException("The --depth, --node and --pcie_index flags are valid only with --port_type PCIE");
+    }
+    else if (_userInput._extendedPcie)
+    {
+        throw MlxRegException("The --" EXTENDED_PCIE_FLAG " flag is valid only with --port_type PCIE");
     }
 }
 
@@ -1171,6 +1181,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(NODE_FLAG, NODE_FLAG_SHORT, "node", "node");
     AddOptions(LABEL_PORT_FLAG, LABEL_PORT_FLAG_SHORT, "LabelPort", "Label Port");
     AddOptions(PCIE_LINKS_FLAG, PCIE_LINKS_FLAG_SHORT, "", "Show valid PCIe links");
+    AddOptions(EXTENDED_PCIE_FLAG, EXTENDED_PCIE_FLAG_SHORT, "", "Show extended PCIe link info");
     AddOptions(BER_FLAG, BER_FLAG_SHORT, "", "Show BER Info");
     AddOptions(EYE_OPENING_FLAG, EYE_OPENING_FLAG_SHORT, "", "Show Eye Opening Info");
     AddOptions(MODULE_INFO_FLAG, MODULE_INFO_FLAG_SHORT, "", "Show Module Info");
@@ -1701,6 +1712,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_PCIE_LINKS);
         _userInput._links = true;
+        return PARSE_OK;
+    }
+    else if (name == EXTENDED_PCIE_FLAG)
+    {
+        _userInput._extendedPcie = true;
         return PARSE_OK;
     }
     else if (name == DEVICE_DATA_FLAG)

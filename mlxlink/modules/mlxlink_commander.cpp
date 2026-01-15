@@ -2591,11 +2591,18 @@ void MlxlinkCommander::getPcieNdrCounters(uint32_t flitActive)
 void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
 {
     uint32_t flitActive = 0, recordsNum = MPCNT_PERFORMANCE_INFO_LAST + 3;
+    string mrrStr = "", mprStr = "";
     try
     {
         sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", _dpn.depth, _dpn.pcieIndex, _dpn.node);
         flitActive = getFieldValue("flit_active");
         recordsNum += flitActive ? 3 : 0;
+        if (_userInput._extendedPcie)
+        {
+            mrrStr = _mlxlinkMaps->_maxReadReqSize[getFieldValue("max_read_request_size")];
+            mprStr = _mlxlinkMaps->_maxReadReqSize[getFieldValue("max_payload_size")];
+            recordsNum += EXTENDED_MPCNT_INFO_LAST;
+        }
     }
     catch (const std::exception& e)
     {
@@ -2619,6 +2626,11 @@ void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
         }
 
         getPcieNdrCounters(flitActive);
+        if (_userInput._extendedPcie)
+        {
+            setPrintVal(_mpcntPerfInfCmd, "MRR", mrrStr);
+            setPrintVal(_mpcntPerfInfCmd, "MPR", mprStr);
+        }
     }
     catch (const std::exception& exc)
     {
@@ -3734,13 +3746,22 @@ void MlxlinkCommander::showPcieState(DPN& dpn)
     string linkWidthEnabled = " (" + to_string((getFieldValue("link_width_enabled"))) + "X)";
     _numOfLanesPcie = getFieldValue("link_width_active");
 
-    setPrintTitle(pcieInfoCmd, "PCIe Operational (Enabled) Info", PCIE_INFO_LAST);
+    // Include extra line for extended PCIe info if requested
+    setPrintTitle(pcieInfoCmd, "PCIe Operational (Enabled) Info",
+                  _userInput._extendedPcie ? (PCIE_INFO_LAST + EXTENDED_PCIE_INFO_LAST) : PCIE_INFO_LAST);
 
     char dpnStr[15];
     sprintf(dpnStr, "%d, %d, %d", dpn.depth, dpn.pcieIndex, dpn.node);
     setPrintVal(pcieInfoCmd, "Depth, pcie index, node", dpnStr);
-    setPrintVal(pcieInfoCmd, "Link Speed Active (Enabled)", pcieSpeedStr(getFieldValue("link_speed_active")) + linkSpeedEnabled);
+    setPrintVal(pcieInfoCmd, "Link Speed Active (Enabled)",
+                pcieSpeedStr(getFieldValue("link_speed_active")) + linkSpeedEnabled);
     setPrintVal(pcieInfoCmd, "Link Width Active (Enabled)", to_string(_numOfLanesPcie) + "X" + linkWidthEnabled);
+    if (_userInput._extendedPcie)
+    {
+        u_int32_t cmnClkMode = getFieldValue("cmn_clk_mode");
+        string clkModeStr = (cmnClkMode == 1) ? "Common" : "Separate";
+        setPrintVal(pcieInfoCmd, "Clock Mode", clkModeStr);
+    }
 
     pcieInfoCmd.toJsonFormat(_jsonRoot);
 
