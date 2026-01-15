@@ -758,6 +758,7 @@ public:
     bool _isSwControledStandAlone;
     bool _ignoreIbFECCheck;
     bool _isNVLINK;
+    u_int32_t _priOrSec;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;
     string _allUnhandledErrors;

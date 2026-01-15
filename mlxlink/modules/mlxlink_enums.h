@@ -34,7 +34,7 @@
 #define MLXLINK_ENUMS_H
 
 // Common definitions
-#define AMBER_VERSION "5.75"
+#define AMBER_VERSION "6.4"
 
 #define ACCESS_REG_MCIA "MCIA"
 #define ACCESS_REG_MDDQ "MDDQ"

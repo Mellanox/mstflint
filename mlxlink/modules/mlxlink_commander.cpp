@@ -90,6 +90,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _isSwControledStandAlone = false;
     _ignoreIbFECCheck = true;
     _isNVLINK = false;
+    _priOrSec = 0;
     _protoAdmin = 0;
     _protoAdminEx = 0;
     _speedBerCsv = 0;
