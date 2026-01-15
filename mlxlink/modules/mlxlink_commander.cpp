@@ -90,6 +90,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _isSwControledStandAlone = false;
     _ignoreIbFECCheck = true;
     _isNVLINK = false;
+    _priOrSec = 0;
     _protoAdmin = 0;
     _protoAdminEx = 0;
     _speedBerCsv = 0;
@@ -2302,6 +2303,7 @@ void MlxlinkCommander::showPddr()
 
 void MlxlinkCommander::getPtys()
 {
+    _isXdrSlowActive = false;
     sendPrmReg(ACCESS_REG_PTYS, GET, "proto_mask=%d", _protoActive);
 
     if (_protoActive == ETH)
@@ -2589,11 +2591,18 @@ void MlxlinkCommander::getPcieNdrCounters(uint32_t flitActive)
 void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
 {
     uint32_t flitActive = 0, recordsNum = MPCNT_PERFORMANCE_INFO_LAST + 3;
+    string mrrStr = "", mprStr = "";
     try
     {
         sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", _dpn.depth, _dpn.pcieIndex, _dpn.node);
         flitActive = getFieldValue("flit_active");
         recordsNum += flitActive ? 3 : 0;
+        if (_userInput._extendedPcie)
+        {
+            mrrStr = _mlxlinkMaps->_maxReadReqSize[getFieldValue("max_read_request_size")];
+            mprStr = _mlxlinkMaps->_maxReadReqSize[getFieldValue("max_payload_size")];
+            recordsNum += EXTENDED_MPCNT_INFO_LAST;
+        }
     }
     catch (const std::exception& e)
     {
@@ -2617,6 +2626,11 @@ void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
         }
 
         getPcieNdrCounters(flitActive);
+        if (_userInput._extendedPcie)
+        {
+            setPrintVal(_mpcntPerfInfCmd, "MRR", mrrStr);
+            setPrintVal(_mpcntPerfInfCmd, "MPR", mprStr);
+        }
     }
     catch (const std::exception& exc)
     {
@@ -3658,19 +3672,28 @@ void MlxlinkCommander::showPcieLinks()
             throw MlxRegException("No valid DPN's detected!");
         }
         setPrintTitle(_validPcieLinks, "Valid PCIe Links", _validDpns.size() + 1);
-        setPrintVal(_validPcieLinks, "Legend", "depth ,pcie_index ,node ,port ,bdf", ANSI_COLOR_RESET, true, true, true);
+        char header[128];
+        snprintf(header, sizeof(header), "%-5s ,%-10s ,%-4s ,%-4s ,%-10s ,%s", "depth", "pcie_index", "node", "port",
+                 "bdf", "link_status");
+        setPrintVal(_validPcieLinks, "Legend", header, ANSI_COLOR_RESET, true, true, true);
         for (u_int32_t i = 0; i < _validDpns.size(); i++)
         {
             char dpnStr[128];
             int localPort = getLocalPortFromMPIR(_validDpns[i]);
-            snprintf(dpnStr, sizeof(dpnStr), "%-5d ,%-10d ,%-4d ,%-4d ,%s", _validDpns[i].depth, _validDpns[i].pcieIndex, _validDpns[i].node, localPort, _validDpns[i].bdf.c_str());
-            setPrintVal(_validPcieLinks, "Link " + to_string(i + 1), dpnStr, ANSI_COLOR_RESET, localPort >= 0, true, true);
+            sendPrmReg(ACCESS_REG_MPEIN, GET, "depth=%d,pcie_index=%d,node=%d", _validDpns[i].depth,
+                       _validDpns[i].pcieIndex, _validDpns[i].node);
+            const char* linkStatus = (getFieldValue("link_speed_active") != 0) ? "UP" : "DOWN";
+            snprintf(dpnStr, sizeof(dpnStr), "%-5d ,%-10d ,%-4d ,%-4d ,%-10s ,%s", _validDpns[i].depth,
+                     _validDpns[i].pcieIndex, _validDpns[i].node, localPort, _validDpns[i].bdf.c_str(), linkStatus);
+            setPrintVal(_validPcieLinks, "Link " + to_string(i + 1), dpnStr, ANSI_COLOR_RESET, localPort >= 0, true,
+                        true);
         }
         cout << _validPcieLinks;
     }
     catch (const std::exception& exc)
     {
-        _allUnhandledErrors += string("Showing valid PCIe links raised the following exception: ") + string(exc.what()) + string("\n");
+        _allUnhandledErrors +=
+          string("Showing valid PCIe links raised the following exception: ") + string(exc.what()) + string("\n");
     }
 }
 
@@ -3723,13 +3746,22 @@ void MlxlinkCommander::showPcieState(DPN& dpn)
     string linkWidthEnabled = " (" + to_string((getFieldValue("link_width_enabled"))) + "X)";
     _numOfLanesPcie = getFieldValue("link_width_active");
 
-    setPrintTitle(pcieInfoCmd, "PCIe Operational (Enabled) Info", PCIE_INFO_LAST);
+    // Include extra line for extended PCIe info if requested
+    setPrintTitle(pcieInfoCmd, "PCIe Operational (Enabled) Info",
+                  _userInput._extendedPcie ? (PCIE_INFO_LAST + EXTENDED_PCIE_INFO_LAST) : PCIE_INFO_LAST);
 
     char dpnStr[15];
     sprintf(dpnStr, "%d, %d, %d", dpn.depth, dpn.pcieIndex, dpn.node);
     setPrintVal(pcieInfoCmd, "Depth, pcie index, node", dpnStr);
-    setPrintVal(pcieInfoCmd, "Link Speed Active (Enabled)", pcieSpeedStr(getFieldValue("link_speed_active")) + linkSpeedEnabled);
+    setPrintVal(pcieInfoCmd, "Link Speed Active (Enabled)",
+                pcieSpeedStr(getFieldValue("link_speed_active")) + linkSpeedEnabled);
     setPrintVal(pcieInfoCmd, "Link Width Active (Enabled)", to_string(_numOfLanesPcie) + "X" + linkWidthEnabled);
+    if (_userInput._extendedPcie)
+    {
+        u_int32_t cmnClkMode = getFieldValue("cmn_clk_mode");
+        string clkModeStr = (cmnClkMode == 1) ? "Common" : "Separate";
+        setPrintVal(pcieInfoCmd, "Clock Mode", clkModeStr);
+    }
 
     pcieInfoCmd.toJsonFormat(_jsonRoot);
 
@@ -4396,7 +4428,7 @@ void MlxlinkCommander::clearCounters()
     try
     {
         MlxlinkRecord::printCmdLine("Clearing Counters", _jsonRoot);
-        if (_mf->tp != MST_IB)
+        if (_mf->tp != MST_IB && _mf->tp != MST_NVML)
         {
             sendPrmReg(ACCESS_REG_PPCNT, SET, "clr=%d,grp=%d", 1, PPCNT_ALL_GROUPS);
         }
@@ -4405,13 +4437,25 @@ void MlxlinkCommander::clearCounters()
             // Clearing counters via GET method instead of SET due to register being too large for MADs.
             for (auto const& group : _mlxlinkMaps->_ppcntGroups)
             {
-                sendPrmReg(ACCESS_REG_PPCNT, GET, "clr=%d,grp=%d", 1, group.first);
+                try
+                {
+                    sendPrmReg(ACCESS_REG_PPCNT, GET, "clr=%d,grp=%d", 1, group.first);
+                }
+                catch (const std::exception& exc)
+                {
+                    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+                    {
+                        continue;
+                    }
+                    throw MlxRegException(exc.what());
+                }
             }
         }
     }
     catch (const std::exception& exc)
     {
-        _allUnhandledErrors += string("Clearing counters via PPCNT raised the following exception: ") + string(exc.what()) + string("\n");
+        _allUnhandledErrors +=
+          string("Clearing counters via PPCNT raised the following exception: ") + string(exc.what()) + string("\n");
     }
 }
 
@@ -6631,7 +6675,8 @@ void MlxlinkCommander::showPlr()
         sendPrmReg(ACCESS_REG_PPLM, GET);
         setPrintTitle(_plrInfoCmd, HEADER_PLR_INFO, PLR_INFO_LAST);
         setPrintVal(_plrInfoCmd, "PLR Reject Mode", getStrByValue(getFieldValue("plr_reject_mode"), _mlxlinkMaps->_plrRejectMode));
-        setPrintVal(_plrInfoCmd, "PLR Margin Threshold", to_string(getFieldValue("plr_margin_th")));
+        setPrintVal(_plrInfoCmd, "PLR Margin Threshold Admin", to_string(getFieldValue("plr_margin_th")));
+        setPrintVal(_plrInfoCmd, "PLR Margin Threshold Operational", to_string(getFieldValue("plr_margin_th_oper")));
     }
     catch (MlxRegException& exc)
     {

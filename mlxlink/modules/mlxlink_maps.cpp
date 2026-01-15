@@ -1078,6 +1078,7 @@ void MlxlinkMaps::errorCodeResMapping()
     _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_LANES_IN_USE] = "ConfigRejectedLanesInUse";
     _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_PART_DATA_PTH] = "ConfigRejectedPartialDataPath";
     _errorCodeRes[ERROR_CODE_RES_CONFIG_IN_PROG] = "ConfigInProgress";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_INV_VS_SI] = "ConfigRejectedInvalidVS_SI";
 }
 
 void MlxlinkMaps::qsfpFarEndCableBreakoutMapping()

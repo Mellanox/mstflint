@@ -245,6 +245,7 @@ public:
     virtual ~MlxlinkMaps();
 
     std::map<u_int32_t, std::string> _pmFsmState;
+    std::map<u_int32_t, std::string> _priOrSec;
     std::map<u_int32_t, std::string> _proFileFecInUse;
     std::map<u_int32_t, u_int32_t> _ETHSpeed2gRate;
     std::map<u_int32_t, u_int32_t> _IBSpeed2gRate;

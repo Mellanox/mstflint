@@ -79,8 +79,8 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
 
     _baseSheetsList[AMBER_SHEET_GENERAL] = FIELDS_COUNT{6, 6, 6};
     _baseSheetsList[AMBER_SHEET_INDEXES] = FIELDS_COUNT{8, 3, 4};
-    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{91, 99, 24};
-    _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{97, 113, 0};
+    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{92, 99, 41};
+    _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{106, 117, 0};
     _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{22, 19, 10};
     _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{376, 736, 0};
     _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{182, 362, 406};
@@ -93,8 +93,8 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_TEST_MODE_INFO] = FIELDS_COUNT{68, 136, 0};
     _baseSheetsList[AMBER_SHEET_TEST_MODE_MODULE_INFO] = FIELDS_COUNT{70, 110, 0};
     _baseSheetsList[AMBER_SHEET_PHY_DEBUG_INFO] = FIELDS_COUNT{4, 4, 0};
-    _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{183, 116, 0};
-    _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{25, 25, 0};
+    _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{191, 125, 0};
+    _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{29, 25, 0};
 
     for_each(_baseSheetsList.begin(), _baseSheetsList.end(),
              [&](pair<AMBER_SHEET, FIELDS_COUNT> sheet) {
@@ -665,9 +665,9 @@ vector<AmberField> MlxlinkAmBerCollector::getSystemInfo()
             thermalThrottlingWarningCnt = getRawFieldValueStr("warning_events_cnt");
             thermalThrottlingCriticalCnt = getRawFieldValueStr("critical_events_cnt");
 
-            fields.push_back(AmberField("Thermal_throttling_normal_cnt", thermalThrottlingNormalCnt));
-            fields.push_back(AmberField("Thermal_throttling_warning_cnt", thermalThrottlingWarningCnt));
-            fields.push_back(AmberField("Thermal_throttling_critical_cnt", thermalThrottlingCriticalCnt));
+            fields.push_back(AmberField("l1_Thermal_throttling_normal_cnt", thermalThrottlingNormalCnt));
+            fields.push_back(AmberField("l1_Thermal_throttling_warning_cnt", thermalThrottlingWarningCnt));
+            fields.push_back(AmberField("l1_Thermal_throttling_critical_cnt", thermalThrottlingCriticalCnt));
         }
     }
     catch (const std::exception& exc)
@@ -1142,6 +1142,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
 
             string fecCorrectableErrorCounter = "N/A";
             string fecUncorrectableErrorCounter = "N/A";
+            string fberStr = "N/A";
 
             if (getFieldValue("link_width_active") & GEN6) // relevant only in case the current active speed is PCI
                                                            // gen-6.
@@ -1163,11 +1164,13 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
                 {
                     fecCorrectableErrorCounter = to_string(getFieldValue("fec_correctable_error_counter"));
                     fecUncorrectableErrorCounter = to_string(getFieldValue("fec_uncorrectable_error_counter"));
+                    fberStr = to_string(getFieldValue("fber_coef")) + "E-" + to_string(getFieldValue("fber_magnitude"));
                 }
             }
 
             fields.push_back(AmberField("fec_correctable_error_counter", fecCorrectableErrorCounter));
             fields.push_back(AmberField("fec_uncorrectable_error_counter", fecUncorrectableErrorCounter));
+            fields.push_back(AmberField("FBER", fberStr));
         }
 
         if (_productTechnology == PRODUCT_5NM && _isPortIB && !_isHca)
@@ -1183,8 +1186,23 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             updateField("local_port", _localPort);
             sendRegister(ACCESS_REG_PPSLS, MACCESS_REG_METHOD_GET);
             fields.push_back(AmberField("l1_neg_status", to_string(getFieldValue("l1_neg_status"))));
-            fields.push_back(AmberField("fw_mode_neg_status", to_string(getFieldValue("fw_mode_neg_status"))));
-            fields.push_back(AmberField("fw_mode_act", to_string(getFieldValue("fw_mode_act"))));
+            fields.push_back(AmberField("l1_fw_mode_neg_status", to_string(getFieldValue("fw_mode_neg_status"))));
+            fields.push_back(AmberField("l1_fw_mode_act", to_string(getFieldValue("fw_mode_act"))));
+
+            string primarySecondaryStr = "N/A";
+            try
+            {
+                resetLocalParser(ACCESS_REG_PPAOS);
+                updateField("local_port", _localPort);
+                sendRegister(ACCESS_REG_PPAOS, MACCESS_REG_METHOD_GET);
+                primarySecondaryStr = getStrByValue(getFieldValue("primary_secondary_oper"), _mlxlinkMaps->_priOrSec);
+            }
+            catch (const std::exception& e)
+            {
+                // do nothing
+            }
+
+            fields.push_back(AmberField("primary_secondary", primarySecondaryStr));
         }
     }
     catch (const std::exception& exc)
@@ -2653,6 +2671,10 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
         string lastHostSerdesFeqAttemptsCount = "N/A";
         string timeBetweenLast2Recoveries = "N/A";
         string rsFecUncorrectableDuringRecovery = "N/A";
+        string totalRsFecUncorrectableDuringRecovery = "N/A";
+        string lastSuccessfulyRecoveryStepAttempts = "N/A";
+        string totalSuccessfulRecoveryTime = "N/A";
+        string lastSuccessfulRecoveryTime = "N/A";
 
         if (!_isPortPCIE)
         {
@@ -2710,10 +2732,19 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
             rsFecUncorrectableDuringRecovery =
               to_string(add32BitTo64(getLocalFieldValue("last_rs_fec_uncorrectable_during_recovery_high"),
                                      getLocalFieldValue("last_rs_fec_uncorrectable_during_recovery_low")));
+            if (_isPortIB)
+            {
+                totalRsFecUncorrectableDuringRecovery =
+                to_string(add32BitTo64(getLocalFieldValue("total_rs_fec_uncorrectable_during_recovery_high"),
+                                        getLocalFieldValue("total_rs_fec_uncorrectable_during_recovery_low")));
+                lastSuccessfulyRecoveryStepAttempts =
+                to_string(getLocalFieldValue("last_successful_recovery_step_attempts"));
+                totalSuccessfulRecoveryTime = to_string(getLocalFieldValue("total_successful_recovery_time"));
+                lastSuccessfulRecoveryTime = to_string(getLocalFieldValue("last_successful_recovery_time"));
+            }
         }
         fields.push_back(AmberField("operational_recovery", operRecoveryStr));
         fields.push_back(AmberField("total_successful_recovery_events", successfulRecoveryEvents));
-        fields.push_back(AmberField("successful_recovery_events_cnt", successfulRecoveryEvents));
         fields.push_back(AmberField("unintentional_link_down_events", unintentionalLinkDownEvents));
         fields.push_back(AmberField("intentional_link_down_events", intentionalLinkDownEvents));
         fields.push_back(AmberField("time_in_last_host_logical_recovery", timeInLastHostLogicalRecovery));
@@ -2742,6 +2773,11 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
         fields.push_back(AmberField("last_host_serdes_feq_attempts_count", lastHostSerdesFeqAttemptsCount));
         fields.push_back(AmberField("time_between_last_2_recoveries", timeBetweenLast2Recoveries));
         fields.push_back(AmberField("last_rs_fec_uncorrectable_during_recovery", rsFecUncorrectableDuringRecovery));
+        fields.push_back(
+            AmberField("total_rs_fec_uncorrectable_during_recovery", totalRsFecUncorrectableDuringRecovery));
+        fields.push_back(AmberField("last_successful_recovery_step_attempts", lastSuccessfulyRecoveryStepAttempts));
+        fields.push_back(AmberField("total_successful_recovery_time", totalSuccessfulRecoveryTime));
+        fields.push_back(AmberField("last_successful_recovery_time", lastSuccessfulRecoveryTime));
     }
     catch (const std::exception& exc)
     {

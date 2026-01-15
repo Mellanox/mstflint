@@ -182,8 +182,6 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "", "Show valid PCIe links (PCIE only)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
     MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
-    MlxlinkRecord::printFlagLine(PERIODIC_EQ_FLAG_SHORT, PERIODIC_EQ_FLAG, "",
-                                 "Show Link PEQ (Periodic Equalization) Info");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "", "Show Eye Opening Info");
@@ -260,9 +258,6 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(LINK_TRAINING_FLAG_SHORT, LINK_TRAINING_FLAG, "link_training",
                                  "Link Training [EN(enable)/DS(disable)/EN_EXT(enable_extra)]");
-    printf(IDENT);
-    MlxlinkRecord::printFlagLine(SET_LINK_PEQ_FLAG_SHORT, SET_LINK_PEQ_FLAG, "",
-                                 "Set link PEQ (Periodic Equalization) interval [10-40000]uS. 0 means FW-Default");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PHY_RECOVERY_FLAG_SHORT, PHY_RECOVERY_FLAG, "phy_recovery",
                                  "PHY Recovery [EN(enable)/DS(disable)]");
@@ -618,10 +613,20 @@ void MlxlinkUi::validatePCIeParams()
                                       "specified");
             }
         }
+        // Extended PCIe info is only valid when depth/pcie_index/node are provided
+        if (_userInput._extendedPcie && !_userInput._sendDpn)
+        {
+            throw MlxRegException("The --" EXTENDED_PCIE_FLAG
+                                  " flag is valid only when --depth, --pcie_index and --node are specified");
+        }
     }
     else if (dpnFlags)
     {
         throw MlxRegException("The --depth, --node and --pcie_index flags are valid only with --port_type PCIE");
+    }
+    else if (_userInput._extendedPcie)
+    {
+        throw MlxRegException("The --" EXTENDED_PCIE_FLAG " flag is valid only with --port_type PCIE");
     }
 }
 
@@ -1176,6 +1181,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(NODE_FLAG, NODE_FLAG_SHORT, "node", "node");
     AddOptions(LABEL_PORT_FLAG, LABEL_PORT_FLAG_SHORT, "LabelPort", "Label Port");
     AddOptions(PCIE_LINKS_FLAG, PCIE_LINKS_FLAG_SHORT, "", "Show valid PCIe links");
+    AddOptions(EXTENDED_PCIE_FLAG, EXTENDED_PCIE_FLAG_SHORT, "", "Show extended PCIe link info");
     AddOptions(BER_FLAG, BER_FLAG_SHORT, "", "Show BER Info");
     AddOptions(EYE_OPENING_FLAG, EYE_OPENING_FLAG_SHORT, "", "Show Eye Opening Info");
     AddOptions(MODULE_INFO_FLAG, MODULE_INFO_FLAG_SHORT, "", "Show Module Info");
@@ -1706,6 +1712,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_PCIE_LINKS);
         _userInput._links = true;
+        return PARSE_OK;
+    }
+    else if (name == EXTENDED_PCIE_FLAG)
+    {
+        _userInput._extendedPcie = true;
         return PARSE_OK;
     }
     else if (name == DEVICE_DATA_FLAG)

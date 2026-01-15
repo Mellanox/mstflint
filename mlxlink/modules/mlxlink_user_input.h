@@ -105,6 +105,7 @@ public:
     bool _showPlr;
     bool _showKr;
     bool _showRxRecoveryCounters;
+    bool _extendedPcie;
 
     string _device;
     string _extAdbFile;
