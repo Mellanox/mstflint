@@ -225,6 +225,7 @@ int mtcr_check_signature(mfile* mf)
                 mf->connectx_flush = 1;
                 mtcr_connectx_flush(mf->ptr, mf->fdlock);
             }
+            break;
 
         case 0x5a44: /* 23108 */
         case 0x6278: /* 25208 */
@@ -236,6 +237,7 @@ int mtcr_check_signature(mfile* mf)
             errno = ENOTTY;
             return -1;
     }
+    return 0;
 }
 
 #define READ4_PCI(mf, val_ptr, pci_offs, err_prefix, action_on_fail) \
@@ -2472,12 +2474,6 @@ void mdevices_info_destroy(dev_info* dev_info, int len)
 #define TLV_OPERATION_SIZE 4
 #define OP_TLV_SIZE 16
 #define REG_TLV_HEADER_LEN 4
-
-enum
-{
-    MAD_CLASS_1_REG_ACCESS = 1,
-};
-
 static int supports_icmd(mfile* mf);
 static int supports_tools_cmdif_reg(mfile* mf);
 static int mreg_send_wrapper(mfile* mf, u_int8_t* data, int r_icmd_size, int w_icmd_size);
