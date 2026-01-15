@@ -279,12 +279,13 @@ int print_rdma_bond_dev(char* net_dev_secondary, char* net_dev_primary)
 // Calculate the NET string length for a single device
 int calculate_net_string_length(dev_info* dev)
 {
+    int i;
     int length = 1;
 
     if (dev->pci.net_devs)
     {
         char map_eth[BUF_MAX];
-        for (int i = 0; dev->pci.net_devs[i]; i++)
+        for (i = 0; dev->pci.net_devs[i]; i++)
         {
             char* net_dev = map_eth_bond_name(dev->pci.net_devs[i], map_eth, sizeof(map_eth));
             if (net_dev == NULL)
@@ -305,8 +306,9 @@ int calculate_net_string_length(dev_info* dev)
 // Calculate max NET column width
 int get_max_net_column_width(dev_info* devs, int len)
 {
+    int i;
     int max_width = 0;
-    for (int i = 0; i < len; i++)
+    for (i = 0; i < len; i++)
     {
         if (devs[i].type == MDEVS_TAVOR_CR)
         {
