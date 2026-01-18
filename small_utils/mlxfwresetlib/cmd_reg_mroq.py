@@ -120,7 +120,7 @@ class CmdRegMroq():
                     self._logger.debug("Disabled reset method {0} because only sync {1} is supported".format(disable_method, CmdRegMroq.SYNCED_TOOL_FLOW))
                     break
 
-    def print_query_text(self, is_pcie_switch, tool_owner_support):
+    def print_query_text(self, is_pcie_switch, tool_owner_support, sync_2_only_supported):
         if self._mroq_is_supported is False:
             return
 
@@ -137,6 +137,11 @@ class CmdRegMroq():
                 pci_sync_supported = False
 
             if pci_sync_supported is True:
+                # Sync 2 will not be the default if it is supported and not the only supported sync.
+                if field["flow"] == CmdRegMroq.SYNCED_TOOL_FLOW:
+                    result += "{0}: {1:<62}-{2:<14}\n".format(field["flow"], field["description"], "Supported")
+                    continue
+
                 result += "{0}: {1:<62}-{2:<14}{3}\n".format(field["flow"], field["description"], "Supported", "(default)" if not default_found else "")
                 default_found = True
             else:
@@ -150,14 +155,14 @@ class CmdRegMroq():
         default_method = self.get_default_method(is_pcie_switch, tool_owner_support)
 
         for field in CmdRegMroq.pci_reset_method_db:
-            pci_sync_supported = (field["mask"] & self._pci_reset_req_method) != 0
+            pci_reset_method_supported = (field["mask"] & self._pci_reset_req_method) != 0
             is_default = field["method"] == default_method
 
             result += "{0}: {1:<62}-{2:<14}{3}\n".format(
                 field["method"],
                 field["description"],
-                "Supported" if pci_sync_supported else "Not Supported",
-                "(default)" if is_default else ""
+                "Supported" if pci_reset_method_supported else "Not Supported",
+                "(default)" if is_default and not sync_2_only_supported else ""
             )
 
         print(result)

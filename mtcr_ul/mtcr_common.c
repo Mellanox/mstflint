@@ -325,3 +325,35 @@ const char* m_err2str(MError status)
         return "Unknown error code";
     }
 }
+
+int hot_reset(mfile* mf,
+    int in_parallel,
+    int domain_1,
+    int bus_1,
+    int device_1,
+    int function_1,
+    int domain_2,
+    int bus_2,
+    int device_2,
+    int function_2)
+{
+#if defined(__linux__) && !defined(__VMKERNEL_UW_NATIVE__)
+struct hot_reset_pcie_switch info;
+info.in_parallel = in_parallel;
+info.device_1.domain = domain_1;
+info.device_1.bus = bus_1;
+info.device_1.device = device_1;
+info.device_1.function = function_1;
+if (in_parallel) {
+    info.device_2.domain = domain_2;
+    info.device_2.bus = bus_2;
+    info.device_2.device = device_2;
+    info.device_2.function = function_2;
+}
+
+return ioctl(mf->fd, PCICONF_HOT_RESET, &info);
+#else
+(void)mf;
+return -1;
+#endif
+}
