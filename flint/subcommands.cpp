@@ -1402,7 +1402,7 @@ bool SubCommand::dumpFile(const char* confFile, std::vector<u_int8_t>& data, con
         reportErr(true, "Error: Section %s not found\n", sectionName);
         return false;
     }
-    
+
     FILE* out;
     vector<u_int8_t> dest;
 
@@ -5301,7 +5301,12 @@ FlintStatus QuerySubCommand::executeCommand()
             }
         }
         FwOperations* newImageOps = NULL;
-        pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true);
+        if (!pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true))
+        {
+            reportErr(true, " Failed to create new image ops. %s\n", pldmOps->err());
+            delete[] buff;
+            return FLINT_FAILED;
+        }
         delete _imgOps;
         _imgOps = newImageOps;
         delete[] buff;
