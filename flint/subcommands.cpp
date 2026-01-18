@@ -1397,6 +1397,12 @@ bool SubCommand::unzipDataFile(std::vector<u_int8_t> data, std::vector<u_int8_t>
 
 bool SubCommand::dumpFile(const char* confFile, std::vector<u_int8_t>& data, const char* sectionName)
 {
+    if (data.empty())
+    {
+        reportErr(true, "Error: Section %s not found\n", sectionName);
+        return false;
+    }
+
     FILE* out;
     vector<u_int8_t> dest;
 
@@ -1411,6 +1417,7 @@ bool SubCommand::dumpFile(const char* confFile, std::vector<u_int8_t>& data, con
         if (out == NULL)
         {
             reportErr(true, OPEN_WRITE_FILE_ERROR, confFile, strerror(errno));
+            fclose(out);
             return false;
         }
     }
@@ -5281,15 +5288,25 @@ FlintStatus QuerySubCommand::executeCommand()
             return FLINT_FAILED;
         }
 
+        std::string recovery =
+          pldmOps->GetPldmVendorDefinedDescriptor(_flintParams.psid, PldmRecordDescriptor::VendorDefinedType::RECOVERY);
         u_int16_t swDevId = 0;
-        if (!pldmOps->GetPldmDescriptor(_flintParams.psid, DEV_ID_TYPE, swDevId))
+        if (recovery.empty())
         {
-            reportErr(true, "DEVICE ID descriptor is not found in the PLDM.\n");
+            if (!pldmOps->GetPldmDescriptor(_flintParams.psid, DEV_ID_TYPE, swDevId))
+            {
+                reportErr(true, "DEVICE ID descriptor is not found in the PLDM.\n");
+                delete[] buff;
+                return FLINT_FAILED;
+            }
+        }
+        FwOperations* newImageOps = NULL;
+        if (!pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true))
+        {
+            reportErr(true, " Failed to create new image ops. %s\n", pldmOps->err());
             delete[] buff;
             return FLINT_FAILED;
         }
-        FwOperations* newImageOps = NULL;
-        pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true);
         delete _imgOps;
         _imgOps = newImageOps;
         delete[] buff;

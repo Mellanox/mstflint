@@ -112,6 +112,7 @@ public:
         if (_ioAccess)
         {
             delete _ioAccess;
+            _ioAccess = (FBase*)NULL;
         }
         if (_signatureMngr)
         {

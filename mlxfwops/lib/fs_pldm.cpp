@@ -123,6 +123,11 @@ bool FsPldmOperations::GetPldmDescriptor(string psid, u_int16_t type, u_int16_t&
     return _pkg.getPldmDescriptorByPsid(psid, type, descriptor);
 }
 
+string FsPldmOperations::GetPldmVendorDefinedDescriptor(string psid, PldmRecordDescriptor::VendorDefinedType type)
+{
+    return _pkg.getPldmVendorDefinedDescriptorByPsid(psid, type);
+}
+
 bool FsPldmOperations::CreateFwOpsImage(u_int32_t* buff,
                                         u_int32_t buffSize,
                                         FwOperations** newImageOps,
