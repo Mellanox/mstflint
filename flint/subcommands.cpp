@@ -1411,6 +1411,7 @@ bool SubCommand::dumpFile(const char* confFile, std::vector<u_int8_t>& data, con
         if (out == NULL)
         {
             reportErr(true, OPEN_WRITE_FILE_ERROR, confFile, strerror(errno));
+            fclose(out);
             return false;
         }
     }
