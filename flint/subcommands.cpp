@@ -1397,6 +1397,12 @@ bool SubCommand::unzipDataFile(std::vector<u_int8_t> data, std::vector<u_int8_t>
 
 bool SubCommand::dumpFile(const char* confFile, std::vector<u_int8_t>& data, const char* sectionName)
 {
+    if (data.empty())
+    {
+        reportErr(true, "Error: Section %s not found\n", sectionName);
+        return false;
+    }
+    
     FILE* out;
     vector<u_int8_t> dest;
 
