@@ -44,7 +44,6 @@
 
 #include "pldm_buff.h"
 #include "pldm_pkg_hdr.h"
-#include "pldm_record_descriptor.h"
 #include "pldm_dev_id_record.h"
 #include "pldm_component_image.h"
 #include "pldm_pkg.h"
@@ -155,6 +154,22 @@ bool PldmPkg::getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_
         }
     }
     return found;
+}
+
+std::string PldmPkg::getPldmVendorDefinedDescriptorByPsid(std::string psid,
+    PldmRecordDescriptor::VendorDefinedType type) const
+{
+    std::string descriptor = "";
+    for (auto devIdRec : deviceIDRecords)
+    {
+        std::string devIdPsid = devIdRec->GetVendorDefinedValue(PldmRecordDescriptor::VendorDefinedType::PSID);
+        if (devIdPsid == psid || psid.empty())
+        {
+            descriptor = devIdRec->GetVendorDefinedValue(type);
+            break;
+        }
+    }
+    return descriptor;
 }
 
 bool PldmPkg::isPsidInPldm(std::string psid) const

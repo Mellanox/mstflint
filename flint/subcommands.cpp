@@ -5281,12 +5281,17 @@ FlintStatus QuerySubCommand::executeCommand()
             return FLINT_FAILED;
         }
 
+        std::string recovery =
+          pldmOps->GetPldmVendorDefinedDescriptor(_flintParams.psid, PldmRecordDescriptor::VendorDefinedType::RECOVERY);
         u_int16_t swDevId = 0;
-        if (!pldmOps->GetPldmDescriptor(_flintParams.psid, DEV_ID_TYPE, swDevId))
+        if (recovery.empty())
         {
-            reportErr(true, "DEVICE ID descriptor is not found in the PLDM.\n");
-            delete[] buff;
-            return FLINT_FAILED;
+            if (!pldmOps->GetPldmDescriptor(_flintParams.psid, DEV_ID_TYPE, swDevId))
+            {
+                reportErr(true, "DEVICE ID descriptor is not found in the PLDM.\n");
+                delete[] buff;
+                return FLINT_FAILED;
+            }
         }
         FwOperations* newImageOps = NULL;
         pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true);
