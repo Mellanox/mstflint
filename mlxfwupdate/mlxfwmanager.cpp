@@ -2596,10 +2596,12 @@ void printDeviceInfoQuery(int dev_index,
         }
         else if (devs[dev_index]->portOneType == MlnxDev::PORT_IB)
         {
-            if (!devs[dev_index]->baseGuid.empty() && devs[dev_index]->baseGuid != devs[dev_index]->guidPortOne)
+            if (!devs[dev_index]->systemGuid.empty() && !devs[dev_index]->nodeGuid.empty() &&
+                devs[dev_index]->systemGuid != devs[dev_index]->nodeGuid)
             {
-                print_out("  Base GUID:        %s\n", devs[dev_index]->baseGuid.c_str());
-                print_out("  Node GUID:        %s\n", devs[dev_index]->guidPortOne.c_str());
+                print_out("  System GUID:      %s\n", devs[dev_index]->systemGuid.c_str());
+                print_out("  Node GUID:        %s\n", devs[dev_index]->nodeGuid.c_str());
+                print_out("  Base GUID:        %s\n", devs[dev_index]->guidPortOne.c_str());
             }
             else
             {
