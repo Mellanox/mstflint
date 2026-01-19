@@ -164,4 +164,8 @@ void ResetFlowExecutor::ExecuteResetSteps(std::vector<ResetFlowStep>& flowSteps,
     {
         throw MftGeneralException(e.what());
     }
+
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << "Reset flow completed successfully" << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
 }
