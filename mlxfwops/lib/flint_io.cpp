@@ -1794,6 +1794,10 @@ u_int32_t Flash::get_effective_size()
     {
         effective_size = 1 << FD_128; // 16MB
     }
+    else if (dm_dev_id == DeviceSpectrum5 && _attr.vendor == FV_IS25LPXXX)
+    {
+        effective_size = 1 << FD_256; // 32MB
+    }
 
     return effective_size;
 }

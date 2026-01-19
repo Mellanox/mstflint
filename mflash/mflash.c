@@ -2718,6 +2718,15 @@ int cntx_flash_init(mflash* mfl, flash_params_t* flash_params)
         }                                     \
     }
 
+int is_spc5_flash_resize_needed(mflash* mfl)
+{
+    if (mfl->dm_dev_id == DeviceSpectrum5 && mfl->attr.vendor == FV_IS25LPXXX)
+    {
+        return true;
+    }
+    return false;
+}
+
 int mf_read(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data, bool verbose)
 {
     u_int32_t size = mfl->attr.size;
@@ -2725,6 +2734,10 @@ int mf_read(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data, bool ver
     if (((mfl->dm_dev_id == DeviceConnectX4LX) || (mfl->dm_dev_id == DeviceConnectX5)) && (mfl->attr.vendor == FV_GD25QXXX))
     {
         size = 1 << FD_128; /* 16MB */
+    }
+    else if (is_spc5_flash_resize_needed(mfl))
+    {
+        size = 1 << FD_256; // 32MB
     }
     /* printf("size = %#x, addr = %#x, len = %d\n", size, addr, len); */
     CHECK_OUT_OF_RANGE(addr, len, size);
@@ -2739,6 +2752,10 @@ int mf_write(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data)
     if (((mfl->dm_dev_id == DeviceConnectX4LX) || (mfl->dm_dev_id == DeviceConnectX5)) && (mfl->attr.vendor == FV_GD25QXXX))
     {
         size = 1 << FD_128; /* 16MB */
+    }
+    else if (is_spc5_flash_resize_needed(mfl))
+    {
+        size = 1 << FD_256; // 32MB
     }
     CHECK_OUT_OF_RANGE(addr, len, size);
     /* Locking semaphore for the entire existence of the mflash obj for write and erase only. */
