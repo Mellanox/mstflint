@@ -4700,7 +4700,7 @@ bool HwSubCommand::PrintWriteProtectedBits(const ext_flash_attr_t& attr)
             tbs_bit = NA_STR;
             msb = BP_SIZE;
         }
-        
+
         std::cout << "  TBS, BP[" << msb << ":0]            " << tbs_bit << ", " << bp_bits << endl;
     }
     else
@@ -7476,6 +7476,34 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
     if (attr.series_code_support)
     {
         printf("  " SERIES_CODE_PARAM "              0x%02X\n", attr.series_code);
+    }
+
+    // SRP query
+    if (attr.srp_support && attr.write_protect_support)
+    {
+        switch (attr.mf_get_srp_rc)
+        {
+            case MFE_OK:
+                printf("  " SRP_PARAM "                     %d\n", attr.srp);
+                break;
+
+            case MFE_MISMATCH_PARAM:
+                printf("-E- There is a mismatch in the " SRP_PARAM
+                       " attribute between the flashes attached to the device\n");
+                break;
+
+            case MFE_NOT_SUPPORTED_OPERATION:
+                printf(SRP_PARAM " not supported operation.\n");
+                break;
+            case MFE_NOT_IMPLEMENTED:
+                printf(SRP_PARAM "not implemented.\n");
+                break;
+
+            default:
+                printf("Failed to get " SRP_PARAM " attribute: %s (%s)", errno == 0 ? "" : strerror(errno),
+                       mf_err2str(attr.mf_get_srp_rc));
+                return FLINT_FAILED;
+        }
     }
 
     return FLINT_SUCCESS;

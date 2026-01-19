@@ -77,6 +77,7 @@ typedef struct ext_flash_attr
     int command_set;
     u_int8_t cmp_support;
     u_int8_t quad_en_support;
+    u_int8_t srp_support;
     u_int8_t srwd_support;
     u_int8_t driver_strength_support;
     u_int8_t dummy_cycles_support;
@@ -92,6 +93,9 @@ typedef struct ext_flash_attr
 
     u_int8_t srwd;
     MfError mf_get_srwd_rc;
+
+    u_int8_t srp;
+    MfError mf_get_srp_rc;
 
     u_int8_t driver_strength;
     MfError mf_get_driver_strength_rc;
@@ -532,6 +536,7 @@ public:
 #define CMP_PARAM "CMP"
 #define QUAD_EN_PARAM "QuadEn"
 #define SRWD_PARAM "SRWD"
+#define SRP_PARAM "SRP"
 #define DRIVER_STRENGTH_PARAM "DriverStrength"
 #define DUMMY_CYCLES_PARAM "DummyCycles"
 #define SERIES_CODE_PARAM "SeriesCode"

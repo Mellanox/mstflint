@@ -966,6 +966,7 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     attr.cmp_support = _attr.cmp_support;
     attr.quad_en_support = _attr.quad_en_support;
     attr.srwd_support = _attr.srwd_support;
+    attr.srp_support = _attr.srp_support;
     attr.driver_strength_support = _attr.driver_strength_support;
     attr.dummy_cycles_support = _attr.dummy_cycles_support;
     attr.series_code_support = _attr.series_code_support;
@@ -984,6 +985,11 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     if (_attr.srwd_support)
     {
         attr.mf_get_srwd_rc = (MfError)mf_get_srwd(_mfl, &attr.srwd);
+    }
+    // SRP query
+    if (_attr.srp_support)
+    {
+        attr.mf_get_srp_rc = (MfError)mf_get_srp(_mfl, &attr.srp);
     }
     // Drive-strength query
     if (_attr.driver_strength_support)
@@ -1368,6 +1374,21 @@ bool Flash::set_attr(char* param_name, char* param_val_str, const ext_flash_attr
         if (rc != MFE_OK)
         {
             return errmsg("Setting " SRWD_PARAM " failed: (%s)", mf_err2str(rc));
+        }
+    }
+    else if (!strcmp(param_name, SRP_PARAM))
+    {
+        char* endp;
+        u_int8_t srp_val;
+        srp_val = strtoul(param_val_str, &endp, 0);
+        if (*endp != '\0' || srp_val > 1)
+        {
+            return errmsg("Bad " SRP_PARAM " value (%s), it can be 0 or 1\n", param_val_str);
+        }
+        rc = mf_set_srp(_mfl, srp_val);
+        if (rc != MFE_OK)
+        {
+            return errmsg("Setting " SRP_PARAM " failed: (%s)", mf_err2str(rc));
         }
     }
     else if (!strcmp(param_name, DUMMY_CYCLES_PARAM))

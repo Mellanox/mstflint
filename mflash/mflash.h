@@ -242,6 +242,9 @@ int mf_get_quad_en(mflash* mfl, u_int8_t* quad_en);
 int mf_set_srwd(mflash* mfl, u_int8_t srwd);
 int mf_get_srwd(mflash* mfl, u_int8_t* srwd);
 
+int mf_set_srp(mflash* mfl, u_int8_t srp);
+int mf_get_srp(mflash* mfl, u_int8_t* srp);
+
 int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength);
 int mf_get_driver_strength(mflash* mfl, u_int8_t* driver_strength);
 
