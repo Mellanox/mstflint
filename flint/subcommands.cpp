@@ -3344,7 +3344,10 @@ void BurnSubCommand::cleanInterruptedCommand()
     if (_flintParams.device_specified)
     {
         UnlockDevice(_fwOps);
-        _fwOps->restoreWriteProtectInfo();
+        if (_fwOps)
+        {
+            _fwOps->restoreWriteProtectInfo();
+        }
     }
 }
 

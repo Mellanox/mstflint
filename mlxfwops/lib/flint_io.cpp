@@ -1683,7 +1683,7 @@ bool Flash::backup_write_protect_info(write_protect_info_backup_t& protect_info_
             {
                 return errmsg("Failed to get write protect information for bank %d: (%s)", bank, mf_err2str(rc));
             }
-            protect_info_backup.backup_success = true;
+            protect_info_backup.restore_needed = true;
         }
     }
     return rc == MFE_OK;
