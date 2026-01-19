@@ -949,9 +949,26 @@ int is_srwd_supported_by_flash(u_int8_t vendor, u_int8_t type)
     return (vendor == FV_IS25LPXXX && type == FMT_IS25WPXXX);
 }
 
-int is_srp_supported_by_flash(uint8_t vendor, uint8_t type, u_int32_t densities)
+int is_srp_supported_by_flash(uint8_t vendor, uint8_t type, u_int32_t log2_bank_size, MacronixSeriesCode series_code)
 {
-    if (vendor == FV_WINBOND && type == FMT_WINBOND_IM && (densities & (1 << FD_512)) != 0)
+    if (vendor == FV_WINBOND && type == FMT_WINBOND_IM && (1 << log2_bank_size & (1 << FD_512)) != 0)
+    {
+        return 1;
+    }
+    if (is_macronix_mx25u51294g_mx25u51294gxdi08(vendor, type, log2_bank_size, series_code))
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int is_srl_supported_by_flash(uint8_t vendor, uint8_t type, u_int32_t log2_bank_size, MacronixSeriesCode series_code)
+{
+    if (vendor == FV_WINBOND && type == FMT_WINBOND_IM && (1 << log2_bank_size & (1 << FD_512)) != 0)
+    {
+        return 1;
+    }
+    if (is_macronix_mx25u51294g_mx25u51294gxdi08(vendor, type, log2_bank_size, series_code))
     {
         return 1;
     }
@@ -978,7 +995,10 @@ int spi_fill_attr_from_params(mflash* mfl, flash_params_t* flash_params, flash_i
 
     mfl->attr.quad_en_support = flash_info->quad_en_support;
     mfl->attr.srwd_support = is_srwd_supported_by_flash(flash_info->vendor, flash_info->type);
-    mfl->attr.srp_support = is_srp_supported_by_flash(flash_info->vendor, flash_info->type, flash_info->densities);
+    mfl->attr.srp_support = is_srp_supported_by_flash(flash_info->vendor, flash_info->type, mfl->attr.log2_bank_size,
+        flash_info->series_code);
+    mfl->attr.srl_support = is_srl_supported_by_flash(flash_info->vendor, flash_info->type, mfl->attr.log2_bank_size,
+        flash_info->series_code);
     mfl->attr.driver_strength_support = flash_info->driver_strength_support;
     mfl->attr.dummy_cycles_support = flash_info->dummy_cycles_support;
 
@@ -4904,6 +4924,30 @@ int mf_get_cmp(mflash* mfl, u_int8_t* cmp)
     return MFE_NOT_SUPPORTED_OPERATION;
 }
 
+int mf_get_srl(mflash* mfl, u_int8_t* srl)
+{
+    if (!mfl || !srl)
+    {
+        return MFE_BAD_PARAMS;
+    }
+    return mf_get_param_int(mfl, srl, SFC_RDSR2, SRL_OFFSET_ISSI_MACRONIX, 1, 1, 1);
+}
+
+int mf_set_srl(mflash* mfl, u_int8_t srl)
+{
+    if (!mfl)
+    {
+        return MFE_BAD_PARAMS;
+    }
+    int bank = 0, rc = 0;
+    for (bank = 0; bank < mfl->attr.banks_num; bank++)
+    {
+        rc = mf_read_modify_status_new(mfl, bank, SFC_RDSR2, SFC_WRSR2, srl, SRL_OFFSET_ISSI_MACRONIX, 1, 1);
+        CHECK_RC(rc);
+    }
+    return MFE_OK;
+}
+
 int mf_disable_cmp_if_supported(mflash* mfl)
 {
     if (!mfl)
@@ -4964,7 +5008,7 @@ int mf_set_srp(mflash* mfl, u_int8_t srp)
         return MFE_BAD_PARAMS;
     }
 
-    if (!is_srp_supported_by_flash(mfl->attr.vendor, mfl->attr.type, 1 << mfl->attr.log2_bank_size))
+    if (!is_srp_supported_by_flash(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size, mfl->attr.series_code))
     {
         return MFE_NOT_SUPPORTED_OPERATION;
     }
@@ -4986,7 +5030,8 @@ int mf_get_srp(mflash* mfl, u_int8_t* srp)
     {
         rc = MFE_BAD_PARAMS;
     }
-    else if (!is_srp_supported_by_flash(mfl->attr.vendor, mfl->attr.type, 1 << mfl->attr.log2_bank_size))
+    else if (!is_srp_supported_by_flash(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size,
+        mfl->attr.series_code))
     {
         rc = MFE_NOT_SUPPORTED_OPERATION;
     }

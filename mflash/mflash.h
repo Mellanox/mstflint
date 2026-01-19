@@ -245,6 +245,9 @@ int mf_get_srwd(mflash* mfl, u_int8_t* srwd);
 int mf_set_srp(mflash* mfl, u_int8_t srp);
 int mf_get_srp(mflash* mfl, u_int8_t* srp);
 
+int mf_set_srl(mflash* mfl, u_int8_t srl);
+int mf_get_srl(mflash* mfl, u_int8_t* srl);
+
 int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength);
 int mf_get_driver_strength(mflash* mfl, u_int8_t* driver_strength);
 

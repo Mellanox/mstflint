@@ -7506,6 +7506,35 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
         }
     }
 
+    // SRL query
+    if (attr.srl_support && attr.write_protect_support)
+    {
+        switch (attr.mf_get_srl_rc)
+        {
+            case MFE_OK:
+                printf("  " SRL_PARAM "                     %d\n", attr.srl);
+                break;
+
+            case MFE_MISMATCH_PARAM:
+                printf("-E- There is a mismatch in the " SRP_PARAM
+                       " attribute between the flashes attached to the device\n");
+                break;
+
+            case MFE_NOT_SUPPORTED_OPERATION:
+                printf(SRP_PARAM " not supported operation.\n");
+                break;
+
+            case MFE_NOT_IMPLEMENTED:
+                printf(SRP_PARAM "not implemented.\n");
+                break;
+
+            default:
+                printf("Failed to get " SRP_PARAM " attribute: %s (%s)", errno == 0 ? "" : strerror(errno),
+                       mf_err2str(attr.mf_get_srp_rc));
+                return FLINT_FAILED;
+        }
+    }
+
     return FLINT_SUCCESS;
 }
 
