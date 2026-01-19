@@ -110,11 +110,6 @@ int main(int argc, char* argv[])
         errorCode = -1;
     }
 
-    if (mf != nullptr)
-    {
-        mclose(mf);
-    }
-
     mft_restore_and_raise();
     return errorCode;
 }
