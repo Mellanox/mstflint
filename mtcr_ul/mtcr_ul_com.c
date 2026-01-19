@@ -458,9 +458,6 @@ int mst_driver_vpd_read4(mfile* mf, unsigned int offset, u_int8_t value[])
  *  7:3 = slot
  *  2:0 = function
  */
-#define PCI_DEVFN(slot, func) ((((slot)&0x1f) << 3) | ((func)&0x07))
-#define PCI_SLOT(devfn) (((devfn) >> 3) & 0x1f)
-#define PCI_FUNC(devfn) ((devfn)&0x07)
 
 static unsigned long long mtcr_procfs_get_offset(unsigned my_bus, unsigned my_dev, unsigned my_func)
 {
@@ -5456,5 +5453,37 @@ void switch_access_funcs(mfile* mf)
     }
 #else
     (void)mf;
+#endif
+}
+
+int hot_reset(mfile* mf,
+    int in_parallel,
+    int domain_1,
+    int bus_1,
+    int device_1,
+    int function_1,
+    int domain_2,
+    int bus_2,
+    int device_2,
+    int function_2)
+{
+#if defined(__linux__) && !defined(__VMKERNEL_UW_NATIVE__)
+struct hot_reset_pcie_switch info;
+info.in_parallel = in_parallel;
+info.device_1.domain = domain_1;
+info.device_1.bus = bus_1;
+info.device_1.device = device_1;
+info.device_1.function = function_1;
+if (in_parallel) {
+    info.device_2.domain = domain_2;
+    info.device_2.bus = bus_2;
+    info.device_2.device = device_2;
+    info.device_2.function = function_2;
+}
+
+return ioctl(mf->fd, PCICONF_HOT_RESET, &info);
+#else
+(void)mf;
+return -1;
 #endif
 }
