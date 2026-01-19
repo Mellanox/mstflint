@@ -4694,6 +4694,13 @@ bool HwSubCommand::PrintWriteProtectedBits(const ext_flash_attr_t& attr)
         std::bitset<BP_SIZE> bp_bits(protect_info.bp_val); // convert bp_val to binary
         string tbs_bit = (protect_info.tbs_bit ? "1" : "0");
         int msb = BP_SIZE - 1;
+
+        if (is_ISSI_is25wj032f_by_jedec_id(attr.jedec_id))
+        {
+            tbs_bit = NA_STR;
+            msb = BP_SIZE;
+        }
+        
         std::cout << "  TBS, BP[" << msb << ":0]            " << tbs_bit << ", " << bp_bits << endl;
     }
     else

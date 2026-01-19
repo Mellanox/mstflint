@@ -501,7 +501,12 @@ flash_info_t g_flash_info_arr[] = {{"M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY, M
                                    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_512), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 1, 1, 0},
                                    /* added by edwardg 06/09/2020 */
                                    {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0},
-                                   {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0},
+                                   
+                                   // There are 2 ISSI flashes with same JEDEC ID 16709d (IS25WP032D, IS25WJ032F), but with different reg layout
+                                   // according to vendor - we can't tell them apart. requested to not use IS25WP032D  in emulation anymore (the only use
+                                   // case for it) the support for IS25WJ032F is added here but we don't this flash in-house for verification
+                                   {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
+                                   
                                    /* https://www.issi.com/WW/pdf/25LP-WP512MG.pdf */
                                    {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 1, 0, 0},
 
@@ -3823,6 +3828,30 @@ int is_macronix_special_case_for_dummy_cycles(mflash* mfl)
     return 0;
 }
 
+int is_ISSI_is25wj032f(mflash* mfl)
+{
+    if (mfl->attr.vendor == FV_IS25LPXXX && mfl->attr.type == FMT_IS25WPXXX && mfl->attr.log2_bank_size == FD_32)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int is_ISSI_is25wj032f_by_jedec_id(uint32_t jedec_id)
+{
+    // Construct JEDEC ID from constants in the format: density | type | vendor (24-bit)
+    // FD_32=0x16, FMT_IS25WPXXX=0x70, FV_IS25LPXXX=0x9d
+    const uint32_t expected_jedec_id = (FD_32 << 16) |        // Density in upper byte
+                                       (FMT_IS25WPXXX << 8) | // Type in middle byte
+                                       (FV_IS25LPXXX);        // Vendor in lower byte
+
+    if (jedec_id == expected_jedec_id) // This will equal 0x16709d
+    {
+        return 1;
+    }
+    return 0;
+}
+
 int is_macronix_mx25u51245g(mflash* mfl)
 {
     if (mfl->attr.vendor == FV_MX25K16XXX && mfl->attr.type == FMT_SST_25 && (((1 << FD_512) & (1 << mfl->attr.log2_bank_size)) != 0))
@@ -3982,6 +4011,48 @@ int mf_get_param_int(mflash* mfl, u_int8_t* param_p, u_int8_t cmd, u_int8_t offs
     return MFE_OK;
 }
 
+int get_tb_for_ISSI_is25wj032f(mflash* mfl, u_int8_t* tb_p, u_int8_t* is_subsector_p)
+{
+    // we don't support setting subsector protection but user can still set it independenetly and therefore we need to
+    // take it into account
+    u_int8_t status = 0;
+    int rc = mfl->f_spi_status(mfl, SFC_RDSR, &status);
+    CHECK_RC(rc);
+    int tb_selector = EXTRACT(status, TB_OFFSET, 2);
+
+    switch (tb_selector)
+    {
+        case 0:
+            *tb_p = 0;
+            *is_subsector_p = 0;
+            break;
+        case 1:
+            *tb_p = 1;
+            *is_subsector_p = 0;
+            break;
+        case 2:
+            *tb_p = 0;
+            *is_subsector_p = 1;
+            break;
+        case 3:
+            *tb_p = 1;
+            *is_subsector_p = 1;
+            break;
+        default:
+            return MFE_BAD_PARAMS;
+    }
+
+    return MFE_OK;
+}
+
+int set_tb_for_ISSI_is25wj032(mflash* mfl, u_int8_t tb, u_int8_t bank_num)
+{
+    // no subsector protection -> the cases for subsector protection are not supported
+    int bp_msb_bits = tb ? 1 : 0;
+
+    return mf_read_modify_status_winbond(mfl, bank_num, 1, bp_msb_bits, BP_OFFSET + BP_SIZE, 2);
+}
+
 int mf_set_dummy_cycles_direct_access(mflash* mfl, u_int8_t num_of_cycles)
 {
     u_int8_t lower_bound = is_macronix_special_case_for_dummy_cycles(mfl) ? MIN_NUM_OF_CYCLES_FOR_MX25UXXX : MIN_NUM_OF_CYCLES;
@@ -4098,8 +4169,10 @@ int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength)
                 CHECK_RC(rc);
             }
         }
-        else if (mfl->attr.vendor == FV_IS25LPXXX)
-        {                                                                    /* issi */
+        else if (mfl->attr.vendor == FV_IS25LPXXX && // issi
+            !is_ISSI_is25wj032f(mfl))                // issi for arcus2 only supports reading driver_strength, not
+                                                     // setting it)
+        {                                                                    
             rc = mf_read_modify_status_new(mfl, bank, SFC_RDERP_ISSI,        /* mflash, bank num, nonvolatile-configuration-register read cmd */
                                            SFC_SERPNV_ISSI, driver_strength, /* nonvolatile-configuration-register write cmd, driver-strength new val */
                                            DRIVER_STRENGTH_OFFSET_ISSI,      /* driver-strength bit offset */
@@ -4160,8 +4233,10 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
                                   1, 0);                                       // status-register byte len, don't-care
         }                                                                      /* status-register byte len, don't-care */
     }
-    else if (mfl->attr.vendor == FV_IS25LPXXX)
-    {                                                       /* issi */
+    else if (mfl->attr.vendor == FV_IS25LPXXX && // issi
+        !is_ISSI_is25wj032f(mfl))               // issi for arcus2 only supports reading driver_strength, not
+                                                // setting it, therefore no driver strength support)
+    {                                                       
         rc = mf_get_param_int(mfl, driver_strength_p,       // mflash, output pointer,
                               SFC_RDERP_ISSI,               // nonvolatile-configuration-register read cmd
                               DRIVER_STRENGTH_OFFSET_ISSI,  // driver-strength bit offset
@@ -4190,7 +4265,7 @@ int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
     }
     for (bank = 0; bank < mfl->attr.banks_num; bank++)
     {
-        if ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ) || (mfl->attr.type == FMT_WINBOND_IM)))
+        if ((mfl->attr.vendor == FV_WINBOND) && ((mfl->attr.type == FMT_WINBOND_3V) || (mfl->attr.type == FMT_WINBOND_IQ) || (mfl->attr.type == FMT_WINBOND_IM) || is_ISSI_is25wj032f(mfl)))
         {
             rc = mf_read_modify_status_new(mfl, bank, SFC_RDSR2, SFC_WRSR2, quad_en, QUAD_EN_OFFSET_WINBOND_CYPRESS, 1, 1);
             CHECK_RC(rc);
@@ -4233,7 +4308,7 @@ int mf_get_quad_en_direct_access(mflash* mfl, u_int8_t* quad_en_p)
     {
         return MFE_NOT_SUPPORTED_OPERATION;
     }
-    if ((mfl->attr.vendor == FV_WINBOND) || (mfl->attr.vendor == FV_S25FLXXXX))
+    if ((mfl->attr.vendor == FV_WINBOND) || (mfl->attr.vendor == FV_S25FLXXXX) || is_ISSI_is25wj032f(mfl))
     {
         return mf_get_param_int(mfl, quad_en_p, SFC_RDSR2, QUAD_EN_OFFSET_WINBOND_CYPRESS, 1, 1, 1);
     }
@@ -4429,17 +4504,27 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
         }
         else if (mfl->attr.vendor == FV_IS25LPXXX)
         {
-            rc = mf_read_modify_status_new(mfl, bank_num, SFC_RDFR, SFC_WRFR, protect_info->is_bottom, TB_OFFSET_ISSI, 1, 1);
-            CHECK_RC(rc);
-
-            /* to support 60MB bottom protection for ISSI - we have to protect a number of sectors that is not a power */
-            /* of 2, and there isn't any straightforward mapping between the number of sectors and the BP bits, */
-            /* therefore we make sure to set BP bits manually */
-            if (is_ISSI_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
+            if (is_ISSI_is25wj032f(mfl))
             {
-                if (is_60MB_bottom_protection_params(protect_info))
+                rc = set_tb_for_ISSI_is25wj032(mfl, protect_info->is_bottom, bank_num);
+                CHECK_RC(rc);
+            }
+            else
+            {
+                rc = mf_read_modify_status_new(mfl, bank_num, SFC_RDFR, SFC_WRFR, protect_info->is_bottom,
+                                               TB_OFFSET_ISSI, 1, 1);
+                CHECK_RC(rc);
+
+                // to support 60MB bottom protection for ISSI - we have to protect a number of sectors that is not a
+                // power of 2, and there isn't any straightforward mapping between the number of sectors and the BP
+                // bits, therefore we make sure to set BP bits manually
+                if (is_ISSI_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
                 {
-                    return mf_read_modify_status_winbond(mfl, bank_num, 1, BP_ISSI_60MB_SPECIAL_CASE, BP_OFFSET, BP_SIZE + 1);
+                    if (is_60MB_bottom_protection_params(protect_info))
+                    {
+                        return mf_read_modify_status_winbond(mfl, bank_num, 1, BP_ISSI_60MB_SPECIAL_CASE, BP_OFFSET,
+                                                             BP_SIZE + 1);
+                    }
                 }
             }
         }
@@ -4472,7 +4557,8 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
             CHECK_RC(rc);
         }
 
-        return mf_read_modify_status_winbond(mfl, bank_num, 1, log2_sect_num, BP_OFFSET, 4);
+        int bp_size = is_ISSI_is25wj032f(mfl) ? BP_SIZE : BP_SIZE + 1;
+        return mf_read_modify_status_winbond(mfl, bank_num, 1, log2_sect_num, BP_OFFSET, bp_size);
     }
     else
     {
@@ -4509,6 +4595,11 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
         CHECK_RC(rc);
         protect_info->is_bottom = EXTRACT(status, TB_OFFSET_MACRONIX, 1);
         protect_info->tbs_bit = protect_info->is_bottom;
+    }
+    else if (is_ISSI_is25wj032f(mfl))
+    {
+        rc = get_tb_for_ISSI_is25wj032f(mfl, &protect_info->is_bottom, &protect_info->is_subsector);
+        CHECK_RC(rc);
     }
     else if (mfl->attr.vendor == FV_IS25LPXXX)
     {
@@ -4573,6 +4664,11 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
             else
             {
                 protect_info->sectors_num = 1 << (protect_info->bp_val + spec_alignment_factor);
+                if (protect_info->is_subsector && protect_info->sectors_num > MAX_SUBSECTOR_NUM &&
+                    is_ISSI_is25wj032f(mfl))
+                {
+                    protect_info->sectors_num = MAX_SUBSECTOR_NUM;
+                }
             }
         }
         else if (is_60MB_bottom_protection_supported_using_cmp(mfl)) // WINBOND and Macronix 60MB WP support
