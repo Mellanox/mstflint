@@ -4426,11 +4426,13 @@ int get_sectors_num_for_WINBOND_MACRONIX_60MB_bottom_protection_supported(u_int8
     int all_protected = 1024;
     int none_protected = 0;
 
-    if ((cmp == 0) && ((bp_val == 11) || (bp_val == 12) || (bp_val == 13) || (bp_val == 14) || (bp_val == 15)))
+    if (((cmp == 0) && (bp_val == 11 || bp_val == 12 || bp_val == 13 || bp_val == 14 || bp_val == 15)) ||
+        (cmp == 1 && bp_val == 0))
     {
         return all_protected;
     }
-    if (cmp && ((bp_val == 11) || (bp_val == 12) || (bp_val == 13) || (bp_val == 14) || (bp_val == 15)))
+    if ((cmp && (bp_val == 11 || bp_val == 12 || bp_val == 13 || bp_val == 14 || bp_val == 15)) ||
+        (cmp == 0 && bp_val == 0))
     {
         return none_protected;
     }
@@ -4440,6 +4442,27 @@ int get_sectors_num_for_WINBOND_MACRONIX_60MB_bottom_protection_supported(u_int8
     }
     /* -> cmp == 1 */
     return all_protected - (1 << (bp_val + spec_alignment_factor));
+}
+
+int update_protect_info_for_cmp_flashes(mflash* mfl, write_protect_info_t* protect_info, int spec_alignment_factor)
+{
+    int rc = MFE_OK;
+    uint8_t status = 0;
+    int is_bottom = EXTRACT(status, TB_OFFSET_CYPRESS_WINBOND_MACRONIX_256, 1);
+    uint8_t cmp = 0;
+    rc = mf_get_cmp(mfl, &cmp); // protect_info->bp_val == BP_WINBOND_MACRONIX_60MB_SPECIAL_CASE && !is_bottom
+                                // -> happens for CMP=1 and CMP=0, when CMP is set, it's the special 60MB
+                                // protection mode, and the one we're looking for
+    CHECK_RC(rc);
+    protect_info->sectors_num = get_sectors_num_for_WINBOND_MACRONIX_60MB_bottom_protection_supported(
+      protect_info->bp_val, cmp, spec_alignment_factor);
+    if (cmp)
+    {
+        protect_info->tbs_bit = is_bottom;
+        protect_info->is_bottom = !(protect_info->tbs_bit); // CMP =1 -> if tbs_bit==1(Bottom), top part is protected
+        // else (tbs_bit==0) -> Bottom part is protected
+    }
+    return rc;
 }
 
 int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_protect_info_t* protect_info)
@@ -4688,18 +4711,27 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
         flash_specific_bp_size = BP_SIZE + 1;
     }
 
+    spec_alignment_factor =
+      ((mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL && mfl->attr.log2_bank_size == FD_128) ||
+       (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V && mfl->attr.log2_bank_size == FD_128)) &&
+          !protect_info->is_subsector ?
+        1 :
+        -1;
     if (EXTRACT(status, BP_OFFSET, flash_specific_bp_size) == 0)
     {
-        protect_info->sectors_num = 0;
-        protect_info->bp_val = 0;
+        if (is_60MB_bottom_protection_supported_using_cmp(mfl))
+        {
+            rc = update_protect_info_for_cmp_flashes(mfl, protect_info, spec_alignment_factor);
+            CHECK_RC(rc);
+        }
+        else
+        {
+            protect_info->sectors_num = 0;
+            protect_info->bp_val = 0;
+        }
     }
     else
     {
-        spec_alignment_factor = ((mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL && mfl->attr.log2_bank_size == FD_128) ||
-                                 (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V && mfl->attr.log2_bank_size == FD_128)) &&
-                                    !protect_info->is_subsector ?
-                                  1 :
-                                  -1;
         protect_info->bp_val = EXTRACT(status, BP_OFFSET, flash_specific_bp_size);
 
         if (is_ISSI_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size))
@@ -4720,19 +4752,8 @@ int mf_get_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
         }
         else if (is_60MB_bottom_protection_supported_using_cmp(mfl)) // WINBOND and Macronix 60MB WP support
         {
-            int is_bottom = EXTRACT(status, TB_OFFSET_CYPRESS_WINBOND_MACRONIX_256, 1);
-            uint8_t cmp = 0;
-            rc = mf_get_cmp(mfl, &cmp); // protect_info->bp_val == BP_WINBOND_MACRONIX_60MB_SPECIAL_CASE && !is_bottom
-                                        // -> happens for CMP=1 and CMP=0, when CMP is set, it's the special 60MB
-                                        // protection mode, and the one we're looking for
+            rc = update_protect_info_for_cmp_flashes(mfl, protect_info, spec_alignment_factor);
             CHECK_RC(rc);
-            protect_info->sectors_num = get_sectors_num_for_WINBOND_MACRONIX_60MB_bottom_protection_supported(protect_info->bp_val, cmp, spec_alignment_factor);
-            if (cmp)
-            {
-                protect_info->tbs_bit = is_bottom;
-                protect_info->is_bottom = !(protect_info->tbs_bit); /* CMP =1 -> if tbs_bit==1(Bottom), top part is protected */
-                /* else (tbs_bit==0) -> Bottom part is protected */
-            }
         }
         else
         {
