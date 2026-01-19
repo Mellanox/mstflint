@@ -966,6 +966,8 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     attr.cmp_support = _attr.cmp_support;
     attr.quad_en_support = _attr.quad_en_support;
     attr.srwd_support = _attr.srwd_support;
+    attr.srp_support = _attr.srp_support;
+    attr.srl_support = _attr.srl_support;
     attr.driver_strength_support = _attr.driver_strength_support;
     attr.dummy_cycles_support = _attr.dummy_cycles_support;
     attr.series_code_support = _attr.series_code_support;
@@ -984,6 +986,16 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     if (_attr.srwd_support)
     {
         attr.mf_get_srwd_rc = (MfError)mf_get_srwd(_mfl, &attr.srwd);
+    }
+    // SRP query
+    if (_attr.srp_support)
+    {
+        attr.mf_get_srp_rc = (MfError)mf_get_srp(_mfl, &attr.srp);
+    }
+    // SRL query
+    if (_attr.srl_support)
+    {
+        attr.mf_get_srl_rc = (MfError)mf_get_srl(_mfl, &attr.srl);
     }
     // Drive-strength query
     if (_attr.driver_strength_support)
@@ -1370,6 +1382,36 @@ bool Flash::set_attr(char* param_name, char* param_val_str, const ext_flash_attr
             return errmsg("Setting " SRWD_PARAM " failed: (%s)", mf_err2str(rc));
         }
     }
+    else if (!strcmp(param_name, SRP_PARAM))
+    {
+        char* endp;
+        u_int8_t srp_val;
+        srp_val = strtoul(param_val_str, &endp, 0);
+        if (*endp != '\0' || srp_val > 1)
+        {
+            return errmsg("Bad " SRP_PARAM " value (%s), it can be 0 or 1\n", param_val_str);
+        }
+        rc = mf_set_srp(_mfl, srp_val);
+        if (rc != MFE_OK)
+        {
+            return errmsg("Setting " SRP_PARAM " failed: (%s)", mf_err2str(rc));
+        }
+    }
+    else if (!strcmp(param_name, SRL_PARAM))
+    {
+        char* endp;
+        u_int8_t srl_val;
+        srl_val = strtoul(param_val_str, &endp, 0);
+        if (*endp != '\0' || srl_val > 1)
+        {
+            return errmsg("Bad " SRL_PARAM " value (%s), it can be 0 or 1\n", param_val_str);
+        }
+        rc = mf_set_srl(_mfl, srl_val);
+        if (rc != MFE_OK)
+        {
+            return errmsg("Setting " SRL_PARAM " failed: (%s)", mf_err2str(rc));
+        }
+    }
     else if (!strcmp(param_name, DUMMY_CYCLES_PARAM))
     {
         char* endp;
@@ -1641,7 +1683,7 @@ bool Flash::backup_write_protect_info(write_protect_info_backup_t& protect_info_
             {
                 return errmsg("Failed to get write protect information for bank %d: (%s)", bank, mf_err2str(rc));
             }
-            protect_info_backup.backup_success = true;
+            protect_info_backup.restore_needed = true;
         }
     }
     return rc == MFE_OK;
@@ -1751,6 +1793,10 @@ u_int32_t Flash::get_effective_size()
     if ((dm_dev_id == DeviceConnectX4LX || dm_dev_id == DeviceConnectX5) && _attr.vendor == FV_GD25QXXX)
     {
         effective_size = 1 << FD_128; // 16MB
+    }
+    else if (dm_dev_id == DeviceSpectrum5 && _attr.vendor == FV_IS25LPXXX)
+    {
+        effective_size = 1 << FD_256; // 32MB
     }
 
     return effective_size;

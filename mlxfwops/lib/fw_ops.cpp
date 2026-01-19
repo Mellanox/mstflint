@@ -2396,16 +2396,17 @@ bool FwOperations::restoreWriteProtectInfo()
     }
 
     int rc = true;
-    if (_ioAccess->is_flash())
+    if (_protect_info_backup.restore_needed)
     {
-        if (((Flash*)_ioAccess)->get_ignore_cache_replacment())
+        if (_ioAccess)
         {
-            if (_protect_info_backup.backup_success)
-            {
-                DPRINTF(("restoring write protect info..\n"));
-                Flash* flash = (Flash*)_ioAccess;
-                rc = flash->restore_write_protect_info(_protect_info_backup);
-            }
+            DPRINTF(("restoring write protect info..\n"));
+            Flash* flash = (Flash*)_ioAccess;
+            rc = flash->restore_write_protect_info(_protect_info_backup);
+        }
+        else
+        {
+            printf("-I- Failed to restore write protect configuration. Please restore manually.\n");
         }
     }
     return rc;
