@@ -458,9 +458,6 @@ int mst_driver_vpd_read4(mfile* mf, unsigned int offset, u_int8_t value[])
  *  7:3 = slot
  *  2:0 = function
  */
-#define PCI_DEVFN(slot, func) ((((slot)&0x1f) << 3) | ((func)&0x07))
-#define PCI_SLOT(devfn) (((devfn) >> 3) & 0x1f)
-#define PCI_FUNC(devfn) ((devfn)&0x07)
 
 static unsigned long long mtcr_procfs_get_offset(unsigned my_bus, unsigned my_dev, unsigned my_func)
 {

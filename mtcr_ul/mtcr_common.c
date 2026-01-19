@@ -32,6 +32,10 @@
  */
 
 #include "mtcr_common.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include "kernel/mst.h"
+#include <sys/ioctl.h>
 
 void swap_pci_address_space(mfile* mf)
 {
