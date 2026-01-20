@@ -190,7 +190,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %if %{enableadbgenerictools}
  %{_bindir}/mstreg
- %{_bindir}/generate_pgcb_commands
+ %{_bindir}/mstgenerate_pgcb_commands
  %{_bindir}/mstlink
 %endif
 
@@ -247,7 +247,7 @@ rm -rf $RPM_BUILD_ROOT
 %{mstflint_python_tools}/resourcetools/resourceparse_lib/utils/*.py
 
 %if %{enableadbgenerictools}
- %{mstflint_python_tools}/generate_pgcb_commands.py
+ %{mstflint_python_tools}/mstgenerate_pgcb_commands.py
 %endif
 
 %{_datadir}/mstflint

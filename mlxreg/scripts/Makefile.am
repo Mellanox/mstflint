@@ -30,13 +30,13 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-bin_SCRIPTS = generate_pgcb_commands
+bin_SCRIPTS = mstgenerate_pgcb_commands
 
 PYTHON_WRAPPER_SCRIPT = ../../common/python_wrapper
 
-GEN_PGCB_PYTHON_WRAPPER=generate_pgcb_commands
+GEN_PGCB_PYTHON_WRAPPER=mstgenerate_pgcb_commands
 ${GEN_PGCB_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
 	cp $(PYTHON_WRAPPER_SCRIPT) $@
-generate_pgcb_commandslibdir=$(libdir)/mstflint/python_tools
+mstgenerate_pgcb_commandslibdir=$(libdir)/mstflint/python_tools
 
-generate_pgcb_commandslib_DATA = $(GEN_PGCB_PYTHON_WRAPPER).py
+mstgenerate_pgcb_commandslib_DATA = $(GEN_PGCB_PYTHON_WRAPPER).py
