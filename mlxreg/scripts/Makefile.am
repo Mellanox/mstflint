@@ -37,6 +37,6 @@ PYTHON_WRAPPER_SCRIPT = ../../common/python_wrapper
 GEN_PGCB_PYTHON_WRAPPER=generate_pgcb_commands
 ${GEN_PGCB_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
 	cp $(PYTHON_WRAPPER_SCRIPT) $@
-generate_pgcb_commandslibdir=$(libdir)/mstflint/python_tools/$(GEN_PGCB_PYTHON_WRAPPER)
+generate_pgcb_commandslibdir=$(libdir)/mstflint/python_tools
 
 generate_pgcb_commandslib_DATA = $(GEN_PGCB_PYTHON_WRAPPER).py
