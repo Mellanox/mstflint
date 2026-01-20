@@ -353,6 +353,11 @@ int crd_dump_data(IN crd_ctxt_t* context, OUT crd_dword_t* dword_arr, IN crd_cal
 
         for (j = 0; j < context->blocks[i].len; j++)
         {
+            if (mft_signal_is_fired())
+            {
+                free(data);
+                return CRD_SIGNAL_INTERRUPTED;
+            }
             if ((u_int32_t)total >= context->number_of_dwords)
             { // dummy check tadah!
                 CRD_DEBUG("value exceeded, something wrong in calculation!");
@@ -724,6 +729,11 @@ static int crd_count_blocks(IN char* csv_file_path, OUT u_int32_t* block_count, 
     }
     while (!feof(fd))
     {
+        if (mft_signal_is_fired())
+        {
+            fclose(fd);
+            return CRD_SIGNAL_INTERRUPTED;
+        }
         int read_line_result = crd_read_line(fd, tmp);
         if (read_line_result == CRD_SKIP)
         {
@@ -791,6 +801,11 @@ static int crd_count_double_word(IN mfile* mf,
 
     while (!feof(fd))
     {
+        if (mft_signal_is_fired())
+        {
+            fclose(fd);
+            return CRD_SIGNAL_INTERRUPTED;
+        }
         int read_line_result = crd_read_line(fd, tmp);
         if (read_line_result == CRD_SKIP)
         {
@@ -1161,6 +1176,9 @@ const char* crd_err_str(int rc)
 
         case CRD_CAUSE_BIT:
             return crd_error;
+
+        case CRD_SIGNAL_INTERRUPTED:
+            return "Interrupted";
 
         default:
             return "Unknown error";
