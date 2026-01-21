@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <tools_layouts/reg_access_switch_layouts.h>
 #include <reg_access/reg_access.h>
+#include <mft_utils/mft_sig_handler.h>
 #include <stdbool.h>
 
 #define CRD_CHECK_NULL(var)                        \
