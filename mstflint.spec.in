@@ -15,6 +15,7 @@
 %{!?enablei2c: %define enablei2c 0}
 %{!?enablenvml: %define enablenvml 0}
 %{!?enablevfio: %define enablevfio 0}
+%{!?enablenvfwreset: %define enablenvfwreset 0}
 %{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
 
 %define mstflint_python_tools %{_libdir}/mstflint/python_tools
@@ -121,6 +122,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{enablecables}
    config_flags="$config_flags --enable-cables"
+%endif
+
+%if %{enablenvfwreset}
+    config_flags="$config_flags --enable-nvfwreset"
 %endif
 
 %if %{buildtype} == "ppc"
