@@ -2261,7 +2261,7 @@ def reset_flow_host(device, args, command):
 
     mst_driver_is_loaded = False
     if platform.system() == "Linux":
-        if isModuleLoaded("mst_pciconf"):
+        if isModuleLoaded("mstflint_access"):
             mst_driver_is_loaded = True
 
     mroq = CmdRegMroq(reset_type, RegAccessObj, mcam, logger, mst_driver_is_loaded)
