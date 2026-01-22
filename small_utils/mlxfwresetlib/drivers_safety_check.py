@@ -39,6 +39,7 @@ try:
     import re
     import glob
     import os
+    from enum import Enum
 
     from mlxfwresetlib.mlnx_peripheral_components import MlnxPeripheralComponents  # remove - just for debug
 
@@ -56,6 +57,12 @@ except Exception as e:
 class OperationTerminated(Exception):
     pass
 
+class PcieDeviceType(Enum):
+    UPSTREAM_PORT = 0x5
+    DOWNSTREAM_PORT = 0x6
+    ROOT_PORT = 0x4
+    LEGACY_ENDPOINT = 0x1
+    ENDPOINT = 0x0
 
 class DriversSafetyCheckManager:
     """
@@ -306,7 +313,7 @@ class DriversSafetyCheckManager:
         logger.debug("Discovered devices: {}".format(discovered_devices))
         return discovered_devices
 
-    def is_upstream_port(self, dbdf):
+    def is_bridge(self, dbdf):
         cmd = "lspci -s {} -n".format(dbdf)
         self._logger.debug("Running command: {}".format(cmd))
         (rc, output, stderr) = cmdExec(cmd)
@@ -332,6 +339,57 @@ class DriversSafetyCheckManager:
         self._logger.debug("Class code: {} {} an upstream port".format(class_code, "is" if is_upstream else "is not"))
         return is_upstream
 
+    # Get the PCIe Device/Port Type for a given DBDF.
+    # Returns the type value (bits [7:4] of CAP_EXP+0x02).
+    def get_pcie_device_type(self, dbdf):
+        cmd = "setpci -s {0} CAP_EXP+0x02.w".format(dbdf)
+        self._logger.debug("Running command: {}".format(cmd))
+        (rc, output, stderr) = cmdExec(cmd)
+        if rc != 0:
+            raise RuntimeError("Failed to run: {}. Error: {}".format(cmd, stderr))
+
+        # check value is a regular expression of 4 hex digits
+        if not re.match(r'^[0-9a-fA-F]{4}$', output.strip()):
+            raise RuntimeError("Invalid PCIe device type: {}".format(output.strip()))
+        value = int(output.strip(), 16)
+        device_type = PcieDeviceType((value >> 4) & 0xf)
+        return device_type
+
+    def is_upstream_port(self, dbdf):
+        return self.get_pcie_device_type(dbdf) == PcieDeviceType.UPSTREAM_PORT
+
+    def is_downstream_port(self, dbdf):
+        return self.get_pcie_device_type(dbdf) == PcieDeviceType.DOWNSTREAM_PORT
+
+    def is_leaf_switch_underneath(self, downstream_dbdf):
+        # Get the domain from the downstream port DBDF
+        # Format: domain:bus:device.function (e.g., "0005:05:08.0")
+        domain = downstream_dbdf.split(":")[0]
+
+        # Get SECONDARY_BUS from the downstream port
+        cmd = "setpci -s {0} SECONDARY_BUS".format(downstream_dbdf)
+        self._logger.debug("Running command: {}".format(cmd))
+        (rc, output, stderr) = cmdExec(cmd)
+        if rc != 0:
+            return False
+
+        secondary_bus = output.strip()
+
+        # Construct the potential upstream port DBDF
+        # Same domain, secondary bus, device=00, function=0
+        potential_upstream_dbdf = "{0}:{1}:00.0".format(domain, secondary_bus)
+        self._logger.debug("Potential upstream DBDF: {}".format(potential_upstream_dbdf))
+        try:
+            if self.is_upstream_port(potential_upstream_dbdf):
+                self._logger.debug("Potential upstream DBDF is an upstream port")
+                return True
+            else:
+                self._logger.debug("Potential upstream DBDF is not an upstream port")
+                return False
+        except RuntimeError as e:  # if we get this exception then the output of the command wasn't as expected meaning there is no port underneath the given downstream port
+            self._logger.debug("Failed to get the PCIe device type for potential upstream DBDF: {}. Error: {}".format(potential_upstream_dbdf, e))
+            return False
+    
     def get_forbidden_drivers_from_upstream_port(self, upstream_dbdf, dbd):
         """
         Get forbidden drivers by scanning PCI buses under an upstream port.
@@ -389,6 +447,12 @@ class DriversSafetyCheckManager:
                 if downstream_device_dbdf.startswith(dbd):  # we need to skip all pfs of the device
                     self._logger.debug("Skipping check of {} since it's our EP and we manage its driver during hot reset flow".format(downstream_device_dbdf))
                     continue
+                if self.is_upstream_port(downstream_device_dbdf):
+                    self._logger.debug("Skipping check of {} since it's an upstream port".format(downstream_device_dbdf))
+                    continue
+                elif (self.is_downstream_port(downstream_device_dbdf) and not self.is_leaf_switch_underneath(downstream_device_dbdf)):
+                    self._logger.debug("Skipping check of {} since it's a downstream port and there is no leaf switch underneath".format(downstream_device_dbdf))
+                    continue
                 cmd = "lspci -k -s {}".format(downstream_device_dbdf)
                 (rc, output, stderr) = cmdExec(cmd)
                 if rc == 0 and output.strip():
@@ -426,7 +490,7 @@ class DriversSafetyCheckManager:
             self._logger.debug("Checking device: {}".format(dbdf))
 
             domain = dbdf.split(':')[0]
-            if self.is_upstream_port(dbdf):
+            if self.is_bridge(dbdf):
                 self._logger.debug("Device {} is an upstream port".format(dbdf))
                 upstream_dbdf = dbdf
                 upstream_ports_amount += 1
