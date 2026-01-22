@@ -52,7 +52,7 @@
 void fwctl_set_device_id(mfile* mf)
 {
     unsigned char register_data[1024];
-    int           reg_status;
+    int           reg_status =0;
 
     memset(register_data, 0, sizeof(register_data));
 
@@ -175,7 +175,7 @@ int fwctl_control_access_register(int    fd,
     err = ioctl(fd, FWCTL_RPC, &rpc);
     if (err) {
         FWCTL_DEBUG_PRINT(mf,"FWCTL_IOCTL_CMD_RPC ioctl() failed: err=%d, errno=%d (%s)\n", err, errno, strerror(errno));
-        return err;
+        goto out;
     }
 
     data = MLX5_ADDR_OF(access_register_out, out, register_data);
