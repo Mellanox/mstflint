@@ -405,11 +405,11 @@ bool _MlxRegLib_impl<dynamic>::isRegSizeSupported(string regName)
      int                                    status;
      struct icmd_hca_icmd_query_cap_general icmd_cap;
      int                                    i = RETRIES_COUNT;
- 
+
      if ((mf->tp == MST_FWCTL_CONTROL_DRIVER) || (mf->tp == MST_NVML)) {
          return;
      }
- 
+
      do{
          memset(&icmd_cap, 0, sizeof(icmd_cap));
          status = get_icmd_query_cap(mf, &icmd_cap);
@@ -418,7 +418,7 @@ bool _MlxRegLib_impl<dynamic>::isRegSizeSupported(string regName)
          }
          msleep(SLEEP_INTERVAL);
      } while (i-- > 0);
- 
+
      if (status || (icmd_cap.allow_icmd_access_reg_on_all_registers == 0)) {
          throw MlxRegException("FW burnt on device does not support generic access register");
      }
@@ -497,7 +497,7 @@ std::vector<u_int32_t>
     {
         throw MlxRegException("Failed to allocate buffer");
     }
-
+    memset(buffer, 0, reg_size + TLV_OPERATION_SIZE_BYTES + REG_TLV_HEADER_SIZE_BYTES);
     int buffer_offset = 0;
     struct OperationTlv tlv;
     memset(&tlv, 0, sizeof(struct OperationTlv));

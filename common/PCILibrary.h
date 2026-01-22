@@ -49,6 +49,7 @@ public:
     static void SetPCIDomain(void);
     static std::string GetV3FieldFromVPD(const std::string& dbdf);
     static void FindDirectNicDevice(std::map<std::string, std::uint32_t>& directNicDevice);
+    static std::string IsValidDBDF(const std::string& dbdf);
 
 private:
     static void CheckPCIRegistersSupported(mfile* mf);

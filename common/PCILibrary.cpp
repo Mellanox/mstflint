@@ -42,9 +42,11 @@
  #include "mft_core/mft_core_utils/logger/Logger.h"
  #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
  #include "dev_mgt/tools_dev_types.h"
- 
- using namespace mft_core;
- 
+ #include "common/tools_regex.h"
+
+using namespace mft_core;
+namespace Regex = mstflint::common::regex;
+
  void PCILibrary::CheckPCIRegistersSupported(mfile* mf)
  {
      bool mpegc_supported = false;
@@ -71,11 +73,40 @@
          LOG_AND_THROW_MFT_ERROR(std::string("MPIR register is not supported for dbdf: ") + dbdf);
      }
  }
- 
+
+ std::string PCILibrary::IsValidDBDF(const std::string& dbdf)
+{
+    // DBDF format: domain:bus:device.function (e.g., "0000:3b:00.0")
+    // Must only contain hex digits [0-9a-fA-F], colons, and dots
+    static Regex::regex dbdf_pattern("^([0-9a-fA-F]{1,4}:)?[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\\.[0-7]$");
+
+    if (!Regex::regex_match(dbdf, dbdf_pattern))
+    {
+        LOG_AND_THROW_MFT_ERROR(std::string("Invalid DBDF format: ") + dbdf);
+    }
+
+    // Note: DBDF format has a max length of 14 chars (e.g., "ffff:ff:ff.7")
+    std::string sanitized;
+    sanitized.reserve(15);
+    for (size_t i = 0; i < dbdf.length() && i < 15; i++)
+    {
+        char c = dbdf[i];
+        // Only allow validated characters
+        if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || c == ':' || c == '.')
+        {
+            sanitized.push_back(c);
+        }
+    }
+    return sanitized;
+}
+
  std::string PCILibrary::GetV3FieldFromVPD(const std::string& dbdf)
  {
      std::string v3 = "";
-     std::string cmd = "lspci -s " + dbdf + " -vvv";
+     std::string cmd = "lspci -s ";
+     cmd.append(dbdf);
+     cmd.append(" -vvv");
+     /* coverity[tainted_string_argument] : dbdf has been validated by IsValidDBDF regex */
      FILE* pipe = popen(cmd.c_str(), "r");
      if (pipe)
      {
@@ -109,38 +140,43 @@
      }
      return v3;
  }
- 
+
  void PCILibrary::FindDirectNicDevice(std::map<std::string, std::uint32_t>& directNicDevice)
- {
-     FILE* pipe = popen("lspci -D -d 15b3:2100", "r");
-     if (pipe)
-     {
-         char buffer[256];
-         while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
-         {
-             std::string line(buffer);
-             LOG.Debug(line);
- 
-             // The DBDF is the first token before the space
-             std::size_t first_space = line.find(' ');
-             if (first_space != std::string::npos)
-             {
-                 std::string dbdf = line.substr(0, first_space);
-                 std::string domain_str = dbdf.substr(0, dbdf.find(':'));
-                 std::uint32_t domain = std::stoul(domain_str, nullptr, 16);
-                 LOG.Debug(std::string("Found direct nic device: ") + dbdf + " with domain: " + std::to_string(domain));
-                 std::string v3 = GetV3FieldFromVPD(dbdf);
-                 directNicDevice[v3] = domain;
-             }
-         }
-         pclose(pipe);
-     }
-     else
-     {
-         LOG_AND_THROW_MFT_ERROR(std::string("Failed to execute lspci command for direct nic devices"));
-     }
- }
- 
+{
+    FILE* pipe = popen("lspci -D -d 15b3:2100", "r");
+    if (pipe)
+    {
+        char buffer[256];
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+        {
+            buffer[sizeof(buffer) - 1] = '\0';
+            std::string line(buffer);
+            LOG.Debug(line);
+
+            // The DBDF is the first token before the space
+            std::size_t first_space = line.find(' ');
+            if (first_space != std::string::npos)
+            {
+                std::string dbdf = line.substr(0, first_space);
+                std::string _dbdf = IsValidDBDF(dbdf);
+
+                std::string domain_str = _dbdf.substr(0, _dbdf.find(':'));
+                std::uint32_t domain = std::stoul(domain_str, nullptr, 16);
+                LOG.Debug(std::string("Found direct nic device: ") + _dbdf + " with domain: " + std::to_string(domain));
+                // _dbdf has been sanitized by IsValidDBDF - safe to pass to GetV3FieldFromVPD
+                /* coverity[tainted_data] : _dbdf sanitized via IsValidDBDF character-by-character validation */
+                std::string v3 = GetV3FieldFromVPD(_dbdf);
+                directNicDevice[v3] = domain;
+            }
+        }
+        pclose(pipe);
+    }
+    else
+    {
+        LOG_AND_THROW_MFT_ERROR(std::string("Failed to execute lspci command for direct nic devices"));
+    }
+}
+
  void PCILibrary::SetPCIDomain(void)
  {
      int numDevices = 0;
@@ -154,7 +190,7 @@
      {
          LOG_AND_THROW_MFT_ERROR(std::string("Failed to get devices info. numDevices: ") + std::to_string(numDevices));
      }
- 
+
      std::map<std::string, std::uint32_t> directNicDevice;
      PCILibrary::FindDirectNicDevice(directNicDevice);
      LOG.Debug("Number of found direct nic devices: " + std::to_string(directNicDevice.size()));
@@ -219,7 +255,7 @@
              mclose(mf);
              continue;
          }
- 
+
          // According to arch (Oren S), mpir.sdm is not relevant for direct nic devices.
          if (!directNicDevice.empty())
          {
