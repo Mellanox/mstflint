@@ -156,6 +156,105 @@ bool HotResetManager::IsUpstreamPort(const std::string& dbdf)
     return isUpstreamPort;
 }
 
+
+// Get the PCIe Device/Port Type for a given DBDF.
+// Returns the PCIeDeviceType value (bits [7:4] of CAP_EXP+0x02).
+
+PCIeDeviceType HotResetManager::GetPcieDeviceType(const std::string& dbdf)
+{
+    std::string cmd = "setpci -s " + dbdf + " CAP_EXP+0x02.w";
+    LOG.Debug("Running command: " + cmd);
+    auto rc_out = _operatingSystemAPI->execCommand(cmd);
+    int rc = rc_out.first;
+    std::string output = rc_out.second;
+
+    if (rc != 0)
+    {
+        throw mft_core::MftGeneralException("Failed to run: " + cmd + ". Error: " + output);
+    }
+
+    // Strip whitespaces
+    output.erase(remove_if(output.begin(), output.end(), ::isspace), output.end());
+
+    // Check if output is a valid 4-hex-digit string
+    if (output.size() != 4 ||
+        output.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos)
+    {
+        throw mft_core::MftGeneralException("Invalid PCIe device type: " + output);
+    }
+
+    int value = std::stoi(output, nullptr, 16);
+    PCIeDeviceType deviceType = static_cast<PCIeDeviceType>((value >> 4) & 0xf);
+
+    return deviceType;
+}
+
+bool HotResetManager::IsUpstreamPortType(const std::string& dbdf)
+{
+    return GetPcieDeviceType(dbdf) == PCIeDeviceType::UPSTREAM_PORT;
+}
+
+bool HotResetManager::IsDownstreamPortType(const std::string& dbdf)
+{
+    return GetPcieDeviceType(dbdf) == PCIeDeviceType::DOWNSTREAM_PORT;
+}
+
+bool HotResetManager::IsLeafSwitchUnderneath(const std::string& downstream_dbdf)
+{
+    // Get the domain from the downstream port DBDF (format: domain:bus:device.function)
+    size_t first_colon = downstream_dbdf.find(':');
+    if (first_colon == std::string::npos)
+        return false;
+    std::string domain = downstream_dbdf.substr(0, first_colon);
+
+    // Get SECONDARY_BUS from the downstream port
+    std::string cmd = "setpci -s " + downstream_dbdf + " SECONDARY_BUS";
+    LOG.Debug("Running command: " + cmd);
+    auto rc_out = _operatingSystemAPI->execCommand(cmd);
+    int rc = rc_out.first;
+    std::string output = rc_out.second;
+
+    if (rc != 0)
+    {
+        return false;
+    }
+
+    // Clean whitespace
+    output.erase(remove_if(output.begin(), output.end(), ::isspace), output.end());
+
+    // Check if output is valid (should be 2-hex-digits)
+    if (output.size() != 2 ||
+        output.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos)
+    {
+        return false;
+    }
+
+    std::string secondary_bus = output;
+    // Construct the potential upstream port DBDF (domain:secondary_bus:00.0)
+    std::string potential_upstream_dbdf = domain + ":" + secondary_bus + ":00.0";
+    LOG.Debug("Potential upstream DBDF: " + potential_upstream_dbdf);
+
+    try
+    {
+        if (IsUpstreamPortType(potential_upstream_dbdf))
+        {
+            LOG.Debug("Potential upstream DBDF is an upstream port");
+            return true;
+        }
+        else
+        {
+            LOG.Debug("Potential upstream DBDF is not an upstream port");
+            return false;
+        }
+    }
+    catch (const std::exception& e)
+    {
+        LOG.Debug(std::string("Failed to get the PCIe device type for potential upstream DBDF: ") +
+                  potential_upstream_dbdf + ". Error: " + e.what());
+        return false;
+    }
+}
+
 std::map<std::string, std::string> HotResetManager::CheckForbiddenDriversOnDiscoveredDevices()
 {
     std::map<std::string, std::string> forbiddenDrivers;
@@ -244,6 +343,17 @@ std::map<std::string, std::string>
             LOG.Info("HotResetManager::GetForbiddenDriversFromUpstreamPort: pci_device: " + pci_device.first);
             if (pci_device.first.rfind(dbd, 0) == 0)
             {
+                continue;
+            }
+
+            if (IsUpstreamPortType(pci_device.first))
+            {
+                LOG.Info("HotResetManager::GetForbiddenDriversFromUpstreamPort: pci_device is an upstream port. Skipping scan.");
+                continue;
+            }
+            if (IsDownstreamPortType(pci_device.first) && (!IsLeafSwitchUnderneath(pci_device.first)))
+            {
+                LOG.Info("HotResetManager::GetForbiddenDriversFromUpstreamPort: pci_device is a downstream port and a leaf switch underneath. Skipping scan.");
                 continue;
             }
 

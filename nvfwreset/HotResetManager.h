@@ -56,6 +56,10 @@ private:
     HotResetFlow _hot_reset_flow;
     std::unique_ptr<OperatingSystemAPI> _operatingSystemAPI;
     bool _isPcieSwitch;
+    PCIeDeviceType GetPcieDeviceType(const std::string& dbdf);
+    bool IsUpstreamPortType(const std::string& dbdf);
+    bool IsDownstreamPortType(const std::string& dbdf);
+    bool IsLeafSwitchUnderneath(const std::string& downstream_dbdf);
     void SetHotResetFlow(uint8_t requesterPcieIndex);
     void SendMPQD(uint8_t* requesterPcieIndex);
     void SendMPIR(uint8_t pcie_index, uint8_t* bus, uint8_t* device);
