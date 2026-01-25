@@ -132,7 +132,7 @@ void HotResetManager::CheckBindedDrivers(const std::vector<std::string>& driverI
     }
 }
 
-bool HotResetManager::IsUpstreamPort(const std::string& dbdf)
+bool HotResetManager::IsBridgeDevice(const std::string& dbdf)
 {
     std::string cmd = "lspci -s " + dbdf + " -n";
     LOG.Debug("Running command: " + cmd);
@@ -263,7 +263,7 @@ std::map<std::string, std::string> HotResetManager::CheckForbiddenDriversOnDisco
         std::string upstream_dbdf;
         std::string domain = dbdf.substr(0, 4);
         std::string device = dbdf.substr(8, 2);
-        if (IsUpstreamPort(dbdf))
+        if (IsBridgeDevice(dbdf))
         {
             upstream_dbdf = dbdf;
         }

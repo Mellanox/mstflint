@@ -63,7 +63,7 @@ private:
     void SetHotResetFlow(uint8_t requesterPcieIndex);
     void SendMPQD(uint8_t* requesterPcieIndex);
     void SendMPIR(uint8_t pcie_index, uint8_t* bus, uint8_t* device);
-    bool IsUpstreamPort(const std::string& dbdf);
+    bool IsBridgeDevice(const std::string& dbdf);
     std::map<std::string, std::string> CheckForbiddenDriversOnDiscoveredDevices();
     std::map<std::string, std::string> GetForbiddenDriversFromUpstreamPort(const std::string& upstream_dbdf,
                                                                            const std::string& dbdf);
