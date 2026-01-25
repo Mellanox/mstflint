@@ -134,6 +134,10 @@ namespace Regex = mstflint::common::regex;
      {
          LOG_AND_THROW_MFT_ERROR(std::string("Failed to execute lspci command for device: ") + dbdf);
      }
+     if (v3.empty())
+     {
+         LOG_AND_THROW_MFT_ERROR(std::string("No V3 field found in VPD for device: ") + dbdf);
+     }
      return v3;
  }
 
