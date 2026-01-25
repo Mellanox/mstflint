@@ -167,4 +167,12 @@ enum class HotResetFlow
     DIRECT_NIC = 2,
     UNKNOWN = 3
 };
+enum class PCIeDeviceType
+{
+    ENDPOINT = 0x0,
+    LEGACY_ENDPOINT = 0x1,
+    ROOT_PORT = 0x4,
+    UPSTREAM_PORT = 0x5,
+    DOWNSTREAM_PORT = 0x6
+};
 #endif // RESET_PARAMETER_DEFS_H
