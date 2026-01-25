@@ -62,6 +62,7 @@ int nnt_pci_reset_bus_in_parallel(struct pci_dev* pci_device_1, struct pci_dev* 
 int hot_reset_pcie_switch(struct hot_reset_pcie_switch* info);
 static int hot_reset_thread_fn(void* data);
 
+#define DRIVER_NAME "mstflint_access"
 struct reset_thread_data
 {
     struct pci_dev* pdev;
@@ -394,7 +395,7 @@ int nnt_pci_reset_bus_in_parallel(struct pci_dev* pci_device_1, struct pci_dev* 
     thread1 = kthread_create(hot_reset_thread_fn, &data1, "pci_device_1");
     if (IS_ERR(thread1))
     {
-        printk(KERN_ERR "mst_pciconf | Failed to create reset thread 1 (pci_device_1)\n");
+        printk(KERN_ERR "%s | Failed to create reset thread 1 (pci_device_1)\n", DRIVER_NAME);
         error = PTR_ERR(thread1);
         goto cleanup;
     }
@@ -402,7 +403,7 @@ int nnt_pci_reset_bus_in_parallel(struct pci_dev* pci_device_1, struct pci_dev* 
     thread2 = kthread_create(hot_reset_thread_fn, &data2, "pci_device_2");
     if (IS_ERR(thread2))
     {
-        printk(KERN_ERR "mst_pciconf | Failed to create reset thread 2 (pci_device_2)\n");
+        printk(KERN_ERR "%s | Failed to create reset thread 2 (pci_device_2)\n", DRIVER_NAME);
         error = PTR_ERR(thread2);
         goto cleanup;
     }
@@ -424,7 +425,7 @@ cleanup:
 static int nnt_pci_reset_bus(struct pci_dev* pci_device)
 {
     int error = 0;
-    printk(KERN_INFO "mst_pciconf | Resetting the PCIe device: %4.4x:%2.2x:%2.2x.%1.1x\n", pci_domain_nr(pci_device->bus), pci_device->bus->number, PCI_SLOT(pci_device->devfn),
+    printk(KERN_INFO "%s | Resetting the PCIe device: %4.4x:%2.2x:%2.2x.%1.1x\n", DRIVER_NAME, pci_domain_nr(pci_device->bus), pci_device->bus->number, PCI_SLOT(pci_device->devfn),
            PCI_FUNC(pci_device->devfn));
 
 #ifdef PCI_DEVICE_DATA
@@ -435,12 +436,12 @@ static int nnt_pci_reset_bus(struct pci_dev* pci_device)
 
     if (error)
     {
-        printk(KERN_ERR "mst_pciconf | pci_reset_bus failed with error code: %d, pci device: %4.4x:%2.2x:%2.2x.%1.1x\n", error, pci_domain_nr(pci_device->bus), pci_device->bus->number,
+        printk(KERN_ERR "%s | pci_reset_bus failed with error code: %d, pci device: %4.4x:%2.2x:%2.2x.%1.1x\n", DRIVER_NAME, error, pci_domain_nr(pci_device->bus), pci_device->bus->number,
                PCI_SLOT(pci_device->devfn), PCI_FUNC(pci_device->devfn));
     }
     else
     {
-        printk(KERN_INFO "mst_pciconf | pci_reset_bus succeeded, pci device: %4.4x:%2.2x:%2.2x.%1.1x\n", pci_domain_nr(pci_device->bus), pci_device->bus->number, PCI_SLOT(pci_device->devfn),
+        printk(KERN_INFO "%s | pci_reset_bus succeeded, pci device: %4.4x:%2.2x:%2.2x.%1.1x\n", DRIVER_NAME, pci_domain_nr(pci_device->bus), pci_device->bus->number, PCI_SLOT(pci_device->devfn),
                PCI_FUNC(pci_device->devfn));
     }
 
@@ -465,18 +466,18 @@ int hot_reset_pcie_switch(struct hot_reset_pcie_switch* info)
     struct pci_dev* pdev_bus_device_1;
     struct pci_dev* pdev_bus_device_2;
 
-    printk(KERN_INFO "msflint_access driver | got hot reset ioctl request");
-    printk(KERN_INFO "msflint_access driver | device_1: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_1.domain, info->device_1.bus, info->device_1.device, info->device_1.function);
+    printk(KERN_INFO "%s | got hot reset ioctl request\n", DRIVER_NAME);
+    printk(KERN_INFO "%s | device_1: %4.4x:%2.2x:%2.2x.%1.1x\n", DRIVER_NAME, info->device_1.domain, info->device_1.bus, info->device_1.device, info->device_1.function);
     if (info->in_parallel)
     {
-        printk(KERN_INFO "msflint_access driver | device_2: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_2.domain, info->device_2.bus, info->device_2.device, info->device_2.function);
+        printk(KERN_INFO "%s | device_2: %4.4x:%2.2x:%2.2x.%1.1x\n", DRIVER_NAME, info->device_2.domain, info->device_2.bus, info->device_2.device, info->device_2.function);
     }
 
     // Retrieve the PCI device corresponding to info.bus
     pdev_bus_device_1 = pci_get_domain_bus_and_slot(info->device_1.domain, info->device_1.bus, PCI_DEVFN(info->device_1.device, info->device_1.function));
     if (!pdev_bus_device_1)
     {
-        printk(KERN_ERR "msflint_access driver | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_1.domain, info->device_1.bus, info->device_1.device, info->device_1.function);
+        printk(KERN_ERR "%s | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", DRIVER_NAME, info->device_1.domain, info->device_1.bus, info->device_1.device, info->device_1.function);
         return -ENODEV;
     }
 
@@ -485,7 +486,7 @@ int hot_reset_pcie_switch(struct hot_reset_pcie_switch* info)
         pdev_bus_device_2 = pci_get_domain_bus_and_slot(info->device_2.domain, info->device_2.bus, PCI_DEVFN(info->device_2.device, info->device_2.function));
         if (!pdev_bus_device_2)
         {
-            printk(KERN_ERR "msflint_access driver | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", info->device_2.domain, info->device_2.bus, info->device_2.device, info->device_2.function);
+            printk(KERN_ERR "%s | Failed to get PCI device: %4.4x:%2.2x:%2.2x.%1.1x\n", DRIVER_NAME, info->device_2.domain, info->device_2.bus, info->device_2.device, info->device_2.function);
             return -ENODEV;
         }
 

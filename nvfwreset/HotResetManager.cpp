@@ -434,7 +434,7 @@ void HotResetManager::SendMPIR(uint8_t pcie_index, uint8_t* bus, uint8_t* device
     *device = mpir.device;
 }
 
-bool HotResetManager::CheckIfDirectNic()
+bool HotResetManager::CheckIfDirectNic(uint8_t requesterPcieIndex)
 {
     int numDevices = 0;
     dev_info* pciDevices = mdevices_info(MDEVS_TAVOR_CR, &numDevices);
@@ -450,8 +450,21 @@ bool HotResetManager::CheckIfDirectNic()
         std::string v3 = PCILibrary::GetV3FieldFromVPD(_asicDBDFTargets[0]);
         if (directNicDevice.find(v3) != directNicDevice.end())
         {
-            _asicDBDFTargets.push_back(std::to_string(directNicDevice[v3]));
-            LOG.Info("HotResetManager::CheckIfDirectNic: direct nic device found: " + _asicDBDFTargets[0]);
+            struct reg_access_hca_mpir_ext mpir;
+            int directNicIndex = 0;
+            if (requesterPcieIndex == 0)
+            {
+                directNicIndex = 1;
+            }
+            else
+            {
+                directNicIndex = 0;
+            }
+            SendMPIR(directNicIndex, &mpir);
+            char dbdf[32] = {0};
+            snprintf(dbdf, sizeof(dbdf), "%04x:%02x:%02x.0", directNicDevice[v3], mpir.bus, mpir.device);
+            _asicDBDFTargets.push_back(dbdf);
+            LOG.Info("HotResetManager::CheckIfDirectNic: direct nic device found: " + std::string(dbdf));
             return true;
         }
     }
@@ -459,18 +472,23 @@ bool HotResetManager::CheckIfDirectNic()
     return false;
 }
 
+void HotResetManager::SendMPIR(uint8_t requesterPcieIndex, struct reg_access_hca_mpir_ext* mpir)
+{
+    memset(mpir, 0, sizeof(struct reg_access_hca_mpir_ext));
+    mpir->pcie_index = requesterPcieIndex;
+    reg_access_status_t status = reg_access_mpir(_mf, REG_ACCESS_METHOD_GET, mpir);
+    if (status)
+    {
+        throw mft_core::MftGeneralException("Failed to send MPIR");
+    }
+}
+
 void HotResetManager::SetHotResetFlow(uint8_t requesterPcieIndex)
 {
     struct reg_access_hca_mpir_ext mpir;
-    memset(&mpir, 0, sizeof(struct reg_access_hca_mpir_ext));
-    mpir.pcie_index = requesterPcieIndex;
-    reg_access_status_t status = reg_access_mpir(_mf, REG_ACCESS_METHOD_GET, &mpir);
-    if (status)
-    {
-        throw mft_core::MftGeneralException("Failed to set hot reset flow");
-    }
+    SendMPIR(requesterPcieIndex, &mpir);
 
-    bool isDirectNic = CheckIfDirectNic();
+    bool isDirectNic = CheckIfDirectNic(requesterPcieIndex);
     if (isDirectNic)
     {
         _hot_reset_flow = HotResetFlow::DIRECT_NIC;
@@ -502,13 +520,16 @@ void HotResetManager::ExecuteHotResetFlow()
     LOG.Info("HotResetManager::ExecuteHotResetFlow: asicDBDFTarget 1: " + _asicDBDFTargets[0]);
     if (_asicDBDFTargets.size() > 1)
     {
+        if (_asicDBDFTargets.size() != 2)
+        {
+            throw mft_core::MftGeneralException("HotResetManager::ExecuteHotResetFlow: There is more than two devices to reset. Exiting...");
+        }
         LOG.Info("HotResetManager::ExecuteHotResetFlow: asicDBDFTarget 2: " + _asicDBDFTargets[1]);
+        info.in_parallel = true;
     }
 
-    if (info.device_1.domain == info.device_2.domain && info.device_1.bus == info.device_2.bus &&
-        info.device_1.device == info.device_2.device && info.device_1.function == info.device_2.function)
+    if (info.in_parallel)
     {
-        info.in_parallel = true;
         info.device_2.domain = std::stoi(_asicDBDFTargets[1].substr(0, 4), nullptr, 16);
         info.device_2.bus = std::stoi(_asicDBDFTargets[1].substr(5, 2), nullptr, 16);
         info.device_2.device = std::stoi(_asicDBDFTargets[1].substr(8, 2), nullptr, 16);

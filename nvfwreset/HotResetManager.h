@@ -70,7 +70,8 @@ private:
     std::map<std::string, std::string> GetAllPciDevicesForDomainBus(const std::string& domain, uint8_t bus);
     void CheckBindedDrivers(const std::vector<std::string>& driverIgnoreList);
     void CheckPCIRegistersSupported();
-    bool CheckIfDirectNic();
+    bool CheckIfDirectNic(uint8_t requesterPcieIndex);
+    void SendMPIR(uint8_t requesterPcieIndex, struct reg_access_hca_mpir_ext* mpir);
     void
       GetSecondaryAndSubordinateBuses(const std::string& upstream_dbdf, uint8_t* secondaryBus, uint8_t* subordinateBus);
 };
