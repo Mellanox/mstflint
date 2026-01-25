@@ -52,7 +52,7 @@ public:
 private:
     mfile* _mf;
     std::vector<std::string> _asicDBDFTargets;
-    std::vector<std::string> _upstream_dbdfs;
+    std::vector<std::string> _upstreamDBDFs;
     HotResetFlow _hot_reset_flow;
     std::unique_ptr<OperatingSystemAPI> _operatingSystemAPI;
     bool _isPcieSwitch;

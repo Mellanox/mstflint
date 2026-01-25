@@ -281,7 +281,7 @@ std::map<std::string, std::string> HotResetManager::CheckForbiddenDriversOnDisco
             upstream_dbdf = oss.str();
         }
         LOG.Info("HotResetManager::CheckForbiddenDriversOnDiscoveredDevices: new upstream_dbdf: " + upstream_dbdf);
-        _upstream_dbdfs.push_back(upstream_dbdf);
+        _upstreamDBDFs.push_back(upstream_dbdf);
 
         if (_isPcieSwitch)
         {
@@ -294,7 +294,7 @@ std::map<std::string, std::string> HotResetManager::CheckForbiddenDriversOnDisco
             }
         }
     }
-    LOG.Info("HotResetManager::CheckForbiddenDriversOnDiscoveredDevices: upstream_dbdfs: " + _upstream_dbdfs.size());
+    LOG.Info("HotResetManager::CheckForbiddenDriversOnDiscoveredDevices: upstream_dbdfs: " + _upstreamDBDFs.size());
 
     return forbiddenDrivers;
 }
@@ -338,7 +338,7 @@ std::map<std::string, std::string>
     for (uint8_t bus = secondaryBus; bus <= subordinateBus; bus++)
     {
         std::map<std::string, std::string> pci_devices = GetAllPciDevicesForDomainBus(domain, bus);
-        for (const std::pair<std::string, std::string>& pci_device : pci_devices)
+        for (const auto& pci_device : pci_devices)
         {
             LOG.Info("HotResetManager::GetForbiddenDriversFromUpstreamPort: pci_device: " + pci_device.first);
             if (pci_device.first.rfind(dbd, 0) == 0)
@@ -463,7 +463,7 @@ bool HotResetManager::CheckIfDirectNic(uint8_t requesterPcieIndex)
             SendMPIR(directNicIndex, &mpir);
             char dbdf[32] = {0};
             snprintf(dbdf, sizeof(dbdf), "%04x:%02x:%02x.0", directNicDevice[v3], mpir.bus, mpir.device);
-            _asicDBDFTargets.push_back(dbdf);
+            _upstreamDBDFs.push_back(dbdf);
             LOG.Info("HotResetManager::CheckIfDirectNic: direct nic device found: " + std::string(dbdf));
             return true;
         }
@@ -518,21 +518,21 @@ void HotResetManager::ExecuteHotResetFlow()
     info.in_parallel = false;
 
     LOG.Info("HotResetManager::ExecuteHotResetFlow: asicDBDFTarget 1: " + _asicDBDFTargets[0]);
-    if (_asicDBDFTargets.size() > 1)
+    if (_upstreamDBDFs.size() > 1)
     {
-        if (_asicDBDFTargets.size() != 2)
+        if (_upstreamDBDFs.size() != 2)
         {
             throw mft_core::MftGeneralException("HotResetManager::ExecuteHotResetFlow: There is more than two devices to reset. Exiting...");
         }
-        LOG.Info("HotResetManager::ExecuteHotResetFlow: asicDBDFTarget 2: " + _asicDBDFTargets[1]);
+        LOG.Info("HotResetManager::ExecuteHotResetFlow: asicDBDFTarget 2: " + _upstreamDBDFs[1]);
         info.in_parallel = true;
     }
 
     if (info.in_parallel)
     {
-        info.device_2.domain = std::stoi(_asicDBDFTargets[1].substr(0, 4), nullptr, 16);
-        info.device_2.bus = std::stoi(_asicDBDFTargets[1].substr(5, 2), nullptr, 16);
-        info.device_2.device = std::stoi(_asicDBDFTargets[1].substr(8, 2), nullptr, 16);
+        info.device_2.domain = std::stoi(_upstreamDBDFs[1].substr(0, 4), nullptr, 16);
+        info.device_2.bus = std::stoi(_upstreamDBDFs[1].substr(5, 2), nullptr, 16);
+        info.device_2.device = std::stoi(_upstreamDBDFs[1].substr(8, 2), nullptr, 16);
         info.device_2.function = 0;
         std::ostringstream device2_os;
         device2_os << "HotResetManager::ExecuteHotResetFlow: device_2: "
@@ -543,10 +543,10 @@ void HotResetManager::ExecuteHotResetFlow()
         LOG.Info(device2_os.str());
     }
 
-    info.device_1.domain = std::stoi(_asicDBDFTargets[0].substr(0, 4), nullptr, 16);
-    info.device_1.bus = std::stoi(_asicDBDFTargets[0].substr(5, 2), nullptr, 16);
-    info.device_1.device = std::stoi(_asicDBDFTargets[0].substr(8, 2), nullptr, 16);
-    info.device_1.function = std::stoi(_asicDBDFTargets[0].substr(11, 1), nullptr, 16);
+    info.device_1.domain = std::stoi(_upstreamDBDFs[0].substr(0, 4), nullptr, 16);
+    info.device_1.bus = std::stoi(_upstreamDBDFs[0].substr(5, 2), nullptr, 16);
+    info.device_1.device = std::stoi(_upstreamDBDFs[0].substr(8, 2), nullptr, 16);
+    info.device_1.function = std::stoi(_upstreamDBDFs[0].substr(11, 1), nullptr, 16);
     std::ostringstream device1_os;
     device1_os << "HotResetManager::ExecuteHotResetFlow: device_1: "
                 << std::setfill('0') << std::setw(4) << std::hex << info.device_1.domain << ":"
