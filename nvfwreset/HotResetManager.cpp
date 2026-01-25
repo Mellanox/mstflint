@@ -517,14 +517,14 @@ void HotResetManager::ExecuteHotResetFlow()
     struct hot_reset_pcie_switch info;
     info.in_parallel = false;
 
-    LOG.Info("HotResetManager::ExecuteHotResetFlow: asicDBDFTarget 1: " + _asicDBDFTargets[0]);
+    LOG.Info("HotResetManager::ExecuteHotResetFlow: upstreamDBDF 1: " + _upstreamDBDFs[0]);
     if (_upstreamDBDFs.size() > 1)
     {
         if (_upstreamDBDFs.size() != 2)
         {
             throw mft_core::MftGeneralException("HotResetManager::ExecuteHotResetFlow: There is more than two devices to reset. Exiting...");
         }
-        LOG.Info("HotResetManager::ExecuteHotResetFlow: asicDBDFTarget 2: " + _upstreamDBDFs[1]);
+        LOG.Info("HotResetManager::ExecuteHotResetFlow: upstreamDBDF 2: " + _upstreamDBDFs[1]);
         info.in_parallel = true;
     }
 
