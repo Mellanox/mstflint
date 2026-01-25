@@ -209,8 +209,7 @@ if CMTCR:
             return dev_id.value
 
         def send_hot_reset(self, in_parallel, domain_1, bus_1, device_1, function_1, domain_2, bus_2, device_2, function_2):
-            if self.hotResetFunc(self.mf, in_parallel, domain_1, bus_1, device_1, function_1, domain_2, bus_2, device_2, function_2) != 0:
-                raise MtcrException("Failed to reset device")
+            return self.hotResetFunc(self.mf, in_parallel, domain_1, bus_1, device_1, function_1, domain_2, bus_2, device_2, function_2)
         ##########################
 
 else:
