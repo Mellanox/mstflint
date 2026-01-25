@@ -2305,6 +2305,9 @@ def reset_flow_host(device, args, command):
             print("-I- reset sync argument is ignored when reset level is not PCI_RESET")
 
         if reset_level is CmdRegMfrl.PCI_RESET:
+            if mroq.mroq_is_supported():
+                is_any_sync_supported = mroq.is_any_sync_supported(True)  # update is_any_sync_supported with tool_owner_support=True since in reset we do not limit sync 0 for BF in linux (for debugging purposes)
+                
             if args.reset_sync is None:
                 reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch, tool_owner_support)
             else:
