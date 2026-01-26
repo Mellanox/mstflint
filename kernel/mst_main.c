@@ -45,6 +45,16 @@
 #include <linux/kthread.h>
 #include "mst_kernel.h"
 
+#include <linux/device/class.h>
+
+#if defined(class_create) && !defined(CONFIG_HAVE_CLASS_CREATE_1_ARG)
+/* old macro version */
+#define MY_CLASS_CREATE(name) class_create(THIS_MODULE, name)
+#else
+/* new function version */
+#define MY_CLASS_CREATE(name) class_create(name)
+#endif
+
 /****************************************************/
 MODULE_AUTHOR("Mahmoud Hasan");
 MODULE_DESCRIPTION("MST Module");
@@ -2230,11 +2240,7 @@ static struct mst_dev_data* mst_device_create(enum dev_type type, struct pci_dev
     {
         mst_err("failed to allocate chrdev_region\n");
     }
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
-    dev->cl = class_create(dev->name);
-#else
-    dev->cl = class_create(THIS_MODULE, dev->name);
-#endif
+    dev->cl = MY_CLASS_CREATE(dev->name);
     if (dev->cl == NULL)
     {
         pr_alert("Class creation failed\n");
