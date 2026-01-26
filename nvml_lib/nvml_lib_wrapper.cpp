@@ -66,7 +66,7 @@ void NvmlLibWrapper::LoadDynamicLib()
 {
     _libraryHandle = dlopen(_libPath.c_str(), RTLD_LAZY);
     if (!_libraryHandle) {
-        throw NvmlException("Failed to load libnvidia-ml.so, %s\n", dlerror());
+        throw NvmlException("Failed to load libnvidia-ml.so.1, %s\n", dlerror());
     }
 }
 
