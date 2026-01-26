@@ -165,8 +165,15 @@ namespace Regex = mstflint::common::regex;
                 LOG.Debug(std::string("Found direct nic device: ") + _dbdf + " with domain: " + std::to_string(domain));
                 // _dbdf has been sanitized by IsValidDBDF - safe to pass to GetV3FieldFromVPD
                 /* coverity[tainted_data] : _dbdf sanitized via IsValidDBDF character-by-character validation */
-                std::string v3 = GetV3FieldFromVPD(_dbdf);
-                directNicDevice[v3] = domain;
+                try
+                {
+                    std::string v3 = GetV3FieldFromVPD(_dbdf);
+                    directNicDevice[v3] = domain;
+                }
+                catch(const std::exception& e)
+                {
+                    LOG.Debug(std::string(e.what()));
+                }
             }
         }
         pclose(pipe);

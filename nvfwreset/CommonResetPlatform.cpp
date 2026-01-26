@@ -79,7 +79,7 @@ void CommonResetPlatform::CheckUptimeAfterReset()
     }
     LOG.Debug("CommonResetPlatform::CheckUptimeAfterReset - MGIR.uptime=" + std::to_string(mgir.hw_info.uptime));
     LOG.Debug("CommonResetPlatform::CheckUptimeAfterReset - uptime before reset: " + std::to_string(_uptimeBeforeReset));
-    if (mgir.hw_info.uptime < _uptimeBeforeReset)
+    if (mgir.hw_info.uptime > _uptimeBeforeReset)
     {
         throw mft_core::MftGeneralException(
           nbu::mft::common::string_format("Uptime after reset is less than uptime before reset, reset not completed"));

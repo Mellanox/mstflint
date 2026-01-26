@@ -85,8 +85,7 @@ std::map<ResetKey, std::vector<ResetFlowStep>>
           ResetFlowStep::HotReset,
           ResetFlowStep::WaitForFWReady,
           ResetFlowStep::StartNicDriver,
-          ResetFlowStep::CheckUptimeAfterReset,
-          ResetFlowStep::MSTRestart,};
+          ResetFlowStep::CheckUptimeAfterReset};
     }
 
     return resetFlowMap;
