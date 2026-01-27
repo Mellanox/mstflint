@@ -64,7 +64,7 @@ bool _silent = false;
 bool _assume_yes = false;
 bool _assume_no = false;
 
-bool _no_erase = false;
+bool _no_erase = true;
 bool _no_burn = false;
 
 bool _unlock_bypass = false;
