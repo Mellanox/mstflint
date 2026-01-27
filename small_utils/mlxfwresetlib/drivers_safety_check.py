@@ -514,7 +514,14 @@ class DriversSafetyCheckManager:
                 if MstDevObj is not None:
                     MstDevObj.close()
 
-            self._logger.debug("Upstream DBDF: {}".format(upstream_dbdf))
+            drivers_scan_needed = False
+            if self.is_upstream_port(upstream_dbdf):
+                drivers_scan_needed = True
+
+            if drivers_scan_needed:
+                self._logger.debug("Upstream DBDF: {}".format(upstream_dbdf))
+            else:
+                self._logger.debug("EP: {}".format(upstream_dbdf))
 
             # Store upstream DBDF if not already in list for later reuse in hot reset flow
             if upstream_dbdf not in self._upstream_dbdfs:
@@ -523,8 +530,9 @@ class DriversSafetyCheckManager:
 
             if self._retrieve_data_only:
                 continue
-            port_forbidden_drivers = self.get_forbidden_drivers_from_upstream_port(upstream_dbdf, get_device_without_function(dbdf))
-            forbidden_drivers.extend(port_forbidden_drivers)
+            if drivers_scan_needed:
+                port_forbidden_drivers = self.get_forbidden_drivers_from_upstream_port(upstream_dbdf, get_device_without_function(dbdf))
+                forbidden_drivers.extend(port_forbidden_drivers)
 
         if len(pcie_index_list) + upstream_ports_amount == 0:  # should have found at least one UPS or the target EP (for the provided device)
             raise RuntimeError("failed to find any upstream port on the discovered devices")
@@ -550,13 +558,20 @@ class DriversSafetyCheckManager:
         _, _, upstream_bus, upstream_device, _ = self._reg_access_obj.sendMPIR(depth=0, pcie_index=pcie_index, node=0)
         upstream_dbdf = "{0}:{1:02x}:{2:02x}.0".format(domain, upstream_bus, upstream_device)
 
+        drivers_scan_needed = False
+        if self.is_upstream_port(upstream_dbdf):
+            drivers_scan_needed = True
+        
         # Store upstream DBDF and PCIe index mapping
         if upstream_dbdf not in self._upstream_dbdfs:
             self._upstream_dbdfs.append(upstream_dbdf)
-            self._logger.debug("Added upstream DBDF for hidden device: {}".format(upstream_dbdf))
+            if drivers_scan_needed:
+                self._logger.debug("Added upstream DBDF for hidden device: {}".format(upstream_dbdf))
+            else:
+                self._logger.debug("Added EP for hidden device: {}".format(upstream_dbdf))
 
         forbidden_drivers = []
-        if not self._retrieve_data_only:
+        if not self._retrieve_data_only and drivers_scan_needed:
             forbidden_drivers = self.get_forbidden_drivers_from_upstream_port(upstream_dbdf, get_device_without_function(aux_dbdf))
         return forbidden_drivers
 
