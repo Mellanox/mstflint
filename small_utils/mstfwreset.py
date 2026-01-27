@@ -1582,7 +1582,11 @@ def is_upstream_port_type(reg_access_obj, devDict, pcie_index_arg):
 
 def is_pcie_switch_device(devid, reg_access_obj=None):
     res = False
-    devDict = getDeviceDict(devid)
+    try:
+        devDict = getDeviceDict(devid)
+    except Exception as e:
+        logger.info('is_pcie_switch_device: Failed to get device dict: {0}'.format(e))
+        return res
     if devDict['name'] in PCIE_SWITCH_DEVICES_ALL:
         reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
         logger.debug('is_pcie_switch_device: checking port type for device {0} with pcie index 0'.format(devDict['name']))
