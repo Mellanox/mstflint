@@ -4691,7 +4691,7 @@ void MlxlinkCommander::sendPaosDown(bool toggleCommand)
             string protocol = (_protoActive == IB) ? "IB" : "ETH";
             string message = "port is not Down, for some reasons:\n";
             message += "1- The link is configured to be up, run this command if KEEP_" + protocol + "_LINK_UP_Px is True:\n";
-            message += "   mlxconfig -d " + _userInput._device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0\n";
+            message += "   mstconfig -d " + _userInput._device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0\n";
             message += "2- Port management is enabled (management protocol requiring the link to remain up, PAOS "
                        "won't manage to disable the port)\n";
             message += "3- In case of multi-host please verify all hosts are not holding the port up";
