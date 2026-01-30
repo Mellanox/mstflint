@@ -283,14 +283,17 @@ std::map<std::string, std::string> HotResetManager::CheckForbiddenDriversOnDisco
         LOG.Info("HotResetManager::CheckForbiddenDriversOnDiscoveredDevices: new upstream_dbdf: " + upstream_dbdf);
         _upstreamDBDFs.push_back(upstream_dbdf);
 
-        if (_isPcieSwitch)
+        bool driversScanNeeded = false;
+        if (_isPcieSwitch && IsUpstreamPortType(upstream_dbdf))
         {
+            driversScanNeeded = true;
+        }
+        if (driversScanNeeded)
+        {
+            std::map<std::string, std::string> drivers = GetForbiddenDriversFromUpstreamPort(upstream_dbdf, dbdf);
+            if (!drivers.empty())
             {
-                std::map<std::string, std::string> drivers = GetForbiddenDriversFromUpstreamPort(upstream_dbdf, dbdf);
-                if (!drivers.empty())
-                {
-                    forbiddenDrivers.insert(drivers.begin(), drivers.end());
-                }
+                forbiddenDrivers.insert(drivers.begin(), drivers.end());
             }
         }
     }
