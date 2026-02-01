@@ -250,6 +250,7 @@ struct mflash {
 
     int curr_bank;
     int is_locked;
+    int unlock_blocked;
     int flash_prog_locked;
     int unlock_flash_prog_allowed;
     /* if writer_lock is set, semaphore should be freed only in mf_close()/disable_hw_access() */

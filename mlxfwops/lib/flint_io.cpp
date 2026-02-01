@@ -715,6 +715,14 @@ bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
     u_int32_t chunk_addr;
     u_int32_t chunk_size;
 
+    int rc =
+      mf_acquire_persistent_lock(_mfl); // acquire the lock before the write, if we're in LF then locking a way that
+                                        // prevents the lock from being released before the write is complete
+    if (rc != MFE_OK)
+    {
+        return errmsg("Failed to lock flash: %s", mf_err2str(rc));
+    }
+
     u_int32_t first_set;
     for (first_set = 0; ((sect_size >> first_set) & 1) == 0; first_set++)
         ;
@@ -753,10 +761,11 @@ bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
             mf_set_cpu_utilization(_mfl, _cpuPercent);
         }
         rc = mf_write(_mfl, phys_addr, chunk_size, p);
-        deal_with_signal();
+        deal_with_signal(_mfl);
 
         if (rc != MFE_OK)
         {
+            mf_release_persistent_lock(_mfl);
             if (rc == MFE_ICMD_BAD_PARAM || rc == MFE_REG_ACCESS_BAD_PARAM)
             {
                 return errmsg(
@@ -782,6 +791,11 @@ bool Flash::write(u_int32_t addr, void* data, int cnt, bool noerase)
         p += chunk_size;
     }
 
+    rc = mf_release_persistent_lock(_mfl); // release the lock only after the write is complete
+    if (rc != MFE_OK)
+    {
+        return errmsg("Failed to release flash lock: %s", mf_err2str(rc));
+    }
     return true;
 }
 
@@ -1712,13 +1726,18 @@ bool Flash::restore_write_protect_info(write_protect_info_backup_t& protect_info
     return rc == MFE_OK;
 }
 
-void Flash::deal_with_signal()
+void Flash::deal_with_signal(mflash* mfl)
 {
 #ifndef UEFI_BUILD
     int sig;
     sig = mft_signal_is_fired();
     if (sig)
     {
+        if (mfl)
+        {
+            mf_release_persistent_lock(mfl);
+        }
+        
         // reset received signal
         mft_signal_set_fired(0);
         // retore prev handler
