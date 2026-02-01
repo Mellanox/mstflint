@@ -277,6 +277,8 @@ int mf_enable_hw_access(mflash* mfl, u_int64_t key);
 int mf_disable_hw_access_with_key(mflash* mfl, u_int64_t key);
 int mf_disable_hw_access(mflash* mfl);
 int mf_release_semaphore(mflash* mfl);
+int mf_acquire_persistent_lock(mflash* mfl);
+int mf_release_persistent_lock(mflash* mfl);
 
 // get mfile object
 mfile* mf_get_mfile(mflash* mfl);

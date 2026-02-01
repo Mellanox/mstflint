@@ -524,7 +524,7 @@ public:
     bool check_and_disable_flash_wp_if_required();
     bool backup_write_protect_info(write_protect_info_backup_t& protect_info_backup);
     bool restore_write_protect_info(write_protect_info_backup_t& protect_info_backup);
-    static void deal_with_signal();
+    static void deal_with_signal(mflash* mfl = nullptr);
 
     mfile* getMfileObj() { return mf_get_mfile(_mfl); }
     mflash* getMflashObj() { return _mfl; }
