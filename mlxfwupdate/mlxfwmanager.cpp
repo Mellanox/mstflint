@@ -42,6 +42,9 @@
 #include <iostream>
 #include <algorithm>
 #include <set>
+#include <thread>
+#include <mutex>
+#include <vector>
 
 #include "pldmlib/pldm_utils.h"
 
@@ -49,8 +52,102 @@
 #define TUPLE_POS_BUFF_PTR 1
 #define TUPLE_POS_BUFF_SIZE 2
 
+// Structure to hold device update results for parallel execution
+struct DeviceUpdateResult
+{
+    int device_index;
+    int rc;
+    bool imageWasCached;
+    string log_message;
+    string error_message;
+};
+
+// Mutex for thread-safe operations during parallel updates
+static std::mutex parallel_update_mutex;
+
 // Function from fw_comps_mgr to set log file for library logging
 extern "C" void fwcomps_set_log_file(FILE* log_file);
+
+// Function to update a single device (used for both sequential and parallel updates)
+void updateSingleDevice(int device_index,
+                       MlnxDev* dev,
+                       string mfa_file,
+                       bool pldmFlow,
+                       map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>>& psidPldmComponents,
+                       int (*progressCB)(int),
+                       bool burnFailsafe,
+                       f_prog_func_adv advProgressCB,
+                       DeviceUpdateResult& result)
+{
+    result.device_index = device_index;
+    result.rc = 0;
+    result.imageWasCached = false;
+    
+    vector<string> questions;
+    bool isTimeConsumingFixesNeeded = false;
+    
+    // preBurn phase
+    int rc0 = dev->preBurn(mfa_file, progressCB, burnFailsafe, isTimeConsumingFixesNeeded, questions, advProgressCB);
+    
+    if (rc0)
+    {
+        if (abort_request)
+        {
+            result.error_message = "Interrupted";
+            result.rc = ERR_CODE_INTERRUPTED;
+        }
+        else
+        {
+            result.error_message = "Fail : " + dev->getLastErrMsg();
+            result.rc = rc0;
+        }
+        return;
+    }
+    
+    if (questions.size() > 0)
+    {
+        result.rc = -1;
+        return;
+    }
+    
+    // PLDM flow
+    if (pldmFlow)
+    {
+        for (auto comps : (psidPldmComponents[dev->getPsid()]))
+        {
+            if (std::get<TUPLE_POS_COMPID>(comps) == FwComponent::comps_ids_t::COMPID_BFB)
+            {
+                if (dev->isBFBSupported())
+                {
+                    dev->burnPLDMComponent(std::get<TUPLE_POS_COMPID>(comps),
+                                          std::get<TUPLE_POS_BUFF_PTR>(comps),
+                                          std::get<TUPLE_POS_BUFF_SIZE>(comps));
+                }
+            }
+        }
+    }
+    
+    // Burn phase
+    rc0 = dev->burn(result.imageWasCached);
+    result.rc = rc0;
+    
+    if (!rc0)
+    {
+        result.log_message = "Done";
+    }
+    else
+    {
+        if (abort_request)
+        {
+            result.error_message = "Interrupted";
+            result.rc = ERR_CODE_INTERRUPTED;
+        }
+        else
+        {
+            result.error_message = "Fail : " + dev->getLastErrMsg();
+        }
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -600,95 +697,146 @@ int mainEntry(int argc, char* argv[])
             }
         }
     }
-    for (int i = 0; i < (int)devs.size(); i++)
+    // Parallel or sequential firmware update based on flag
+    if (cmd_params.fw_update_in_parallel_via_fwctl && devs.size() > 1)
     {
-        if (status_strings[i].size() != 0)
+        // Parallel update mode
+        print_out("Starting parallel firmware update for %d device(s)...\n", (int)devs.size());
+        
+        vector<std::thread> update_threads;
+        vector<DeviceUpdateResult> update_results(devs.size());
+        vector<string> mfa_files(devs.size());
+        
+        // Prepare MFA files for each device
+        for (int i = 0; i < (int)devs.size(); i++)
         {
-            print_out("Device #%d: %s\n", (i + 1), status_strings[i].c_str());
-            continue;
-        }
-        else
-        {
-            print_out("Device #%d: %s", (i + 1), "Updating FW ...     \n");
-        }
-        burn_cnt++;
-        string mfa_file = config.mfa_path;
-        string tmp = psidUpdateInfo[devs[i]->getPsid()].url;
-        if (!cmd_params.use_mfa_file && !pldmFlow)
-        {
-            size_t pos = tmp.rfind("/");
-            if (pos != string::npos)
+            if (status_strings[i].size() != 0)
             {
-                tmp = tmp.substr(pos + 1);
+                continue;
             }
-            mfa_file += "/";
-            mfa_file += tmp;
-        }
-        else
-        {
-            mfa_file = tmp;
-        }
-        bool imageWasCached = false;
-        vector<string> questions;
-        bool isTimeConsumingFixesNeeded = false;
-        rc0 = devs[i]->preBurn(mfa_file, progressCB, cmd_params.burnFailsafe, isTimeConsumingFixesNeeded, questions,
-                               advProgressCB);
-        if (rc0)
-        {
-            if (abort_request)
+            
+            string mfa_file = config.mfa_path;
+            string tmp = psidUpdateInfo[devs[i]->getPsid()].url;
+            if (!cmd_params.use_mfa_file && !pldmFlow)
             {
-                print_out("\b\b\b\bInterrupted\n");
-                res = ERR_CODE_INTERRUPTED;
-                devs[i]->clearSemaphore();
-                goto early_err_clean_up;
+                size_t pos = tmp.rfind("/");
+                if (pos != string::npos)
+                {
+                    tmp = tmp.substr(pos + 1);
+                }
+                mfa_file += "/";
+                mfa_file += tmp;
             }
             else
             {
-                print_out("\b\b\b\bFail : %s \n", devs[i]->getLastErrMsg().c_str());
+                mfa_file = tmp;
+            }
+            mfa_files[i] = mfa_file;
+        }
+        
+        // Launch parallel update threads
+        for (int i = 0; i < (int)devs.size(); i++)
+        {
+            if (status_strings[i].size() != 0)
+            {
+                print_out("Device #%d: %s\n", (i + 1), status_strings[i].c_str());
+                continue;
+            }
+            
+            print_out("Device #%d: Updating FW in parallel...\n", (i + 1));
+            burn_cnt++;
+            
+            update_threads.push_back(std::thread([i, &devs, &mfa_files, &pldmFlow, &psidPldmComponents, 
+                                                   progressCB, &cmd_params, advProgressCB, &update_results]() {
+                updateSingleDevice(i, devs[i], mfa_files[i], pldmFlow, psidPldmComponents,
+                                 progressCB, cmd_params.burnFailsafe, advProgressCB, update_results[i]);
+            }));
+        }
+        
+        for (auto& thread : update_threads)
+        {
+            if (thread.joinable())
+            {
+                thread.join();
             }
         }
-        else
+        
+        for (int i = 0; i < (int)devs.size(); i++)
         {
-            for (unsigned int questionIndex = 0; questionIndex < questions.size(); questionIndex++)
+            if (status_strings[i].size() != 0)
             {
-                print_out("%s", questions[questionIndex].c_str());
-                int answer = prompt("Perform update? [y/N]: ", cmd_params.yes_no_);
-                if (!answer)
-                {
-                    print_out("No updates performed\n");
-                    goto clean_up;
-                }
+                continue;
             }
-            if (isTimeConsumingFixesNeeded)
+            
+            rc0 = update_results[i].rc;
+            
+            if (rc0 == 0)
             {
-                print_out("Preparing...\n");
-            }
-            if (pldmFlow)
-            {
-                for (auto comps : (psidPldmComponents[devs[i]->getPsid()]))
-                {
-                    if (std::get<TUPLE_POS_COMPID>(comps) == FwComponent::comps_ids_t::COMPID_BFB)
-                    {
-                        if (devs[i]->isBFBSupported())
-                        {
-                            devs[i]->burnPLDMComponent(std::get<TUPLE_POS_COMPID>(comps),
-                                                       std::get<TUPLE_POS_BUFF_PTR>(comps),
-                                                       std::get<TUPLE_POS_BUFF_SIZE>(comps));
-                        }
-                    }
-                }
-            }
-            rc0 = devs[i]->burn(imageWasCached);
-            if (!rc0)
-            {
-                print_out("\b\b\b\bDone\n");
+                print_out("Device #%d: Done\n", (i + 1));
                 burn_success_cnt++;
-                if (imageWasCached)
+                if (update_results[i].imageWasCached)
                 {
-                    print_out("Image was successfully cached by driver.\n");
+                    print_out("Device #%d: Image was successfully cached by driver.\n", (i + 1));
                 }
             }
             else
+            {
+                if (abort_request)
+                {
+                    print_out("Device #%d: Interrupted\n", (i + 1));
+                    res = ERR_CODE_INTERRUPTED;
+                    devs[i]->clearSemaphore();
+                }
+                else
+                {
+                    print_out("Device #%d: %s\n", (i + 1), update_results[i].error_message.c_str());
+                }
+            }
+            
+            rc |= rc0;
+            if (FLog != NULL)
+            {
+                fprintf(FLog, "Device #%d: %s\n", (i + 1), devs[i]->getLog().c_str());
+            }
+        }
+    }
+    else
+    {
+        // Sequential update mode (original behavior)
+        for (int i = 0; i < (int)devs.size(); i++)
+        {
+            if (status_strings[i].size() != 0)
+            {
+                print_out("Device #%d: %s\n", (i + 1), status_strings[i].c_str());
+                continue;
+            }
+            else
+            {
+                print_out("Device #%d: %s", (i + 1), "Updating FW ...     \n");
+            }
+            burn_cnt++;
+            string mfa_file = config.mfa_path;
+            string tmp = psidUpdateInfo[devs[i]->getPsid()].url;
+            if (!cmd_params.use_mfa_file && !pldmFlow)
+            {
+                size_t pos = tmp.rfind("/");
+                if (pos != string::npos)
+                {
+                    tmp = tmp.substr(pos + 1);
+                }
+                mfa_file += "/";
+                mfa_file += tmp;
+            }
+            else
+            {
+                mfa_file = tmp;
+            }
+            bool imageWasCached = false;
+            vector<string> questions;
+            bool isTimeConsumingFixesNeeded = false;
+            rc0 = devs[i]->preBurn(mfa_file, progressCB, cmd_params.burnFailsafe, isTimeConsumingFixesNeeded, questions,
+                                   advProgressCB);
+            if (rc0)
             {
                 if (abort_request)
                 {
@@ -702,11 +850,67 @@ int mainEntry(int argc, char* argv[])
                     print_out("\b\b\b\bFail : %s \n", devs[i]->getLastErrMsg().c_str());
                 }
             }
-        }
-        rc |= rc0;
-        if (FLog != NULL)
-        {
-            fprintf(FLog, "%s\n", devs[i]->getLog().c_str());
+            else
+            {
+                for (unsigned int questionIndex = 0; questionIndex < questions.size(); questionIndex++)
+                {
+                    print_out("%s", questions[questionIndex].c_str());
+                    int answer = prompt("Perform update? [y/N]: ", cmd_params.yes_no_);
+                    if (!answer)
+                    {
+                        print_out("No updates performed\n");
+                        goto clean_up;
+                    }
+                }
+                if (isTimeConsumingFixesNeeded)
+                {
+                    print_out("Preparing...\n");
+                }
+                if (pldmFlow)
+                {
+                    for (auto comps : (psidPldmComponents[devs[i]->getPsid()]))
+                    {
+                        if (std::get<TUPLE_POS_COMPID>(comps) == FwComponent::comps_ids_t::COMPID_BFB)
+                        {
+                            if (devs[i]->isBFBSupported())
+                            {
+                                devs[i]->burnPLDMComponent(std::get<TUPLE_POS_COMPID>(comps),
+                                                           std::get<TUPLE_POS_BUFF_PTR>(comps),
+                                                           std::get<TUPLE_POS_BUFF_SIZE>(comps));
+                            }
+                        }
+                    }
+                }
+                rc0 = devs[i]->burn(imageWasCached);
+                if (!rc0)
+                {
+                    print_out("\b\b\b\bDone\n");
+                    burn_success_cnt++;
+                    if (imageWasCached)
+                    {
+                        print_out("Image was successfully cached by driver.\n");
+                    }
+                }
+                else
+                {
+                    if (abort_request)
+                    {
+                        print_out("\b\b\b\bInterrupted\n");
+                        res = ERR_CODE_INTERRUPTED;
+                        devs[i]->clearSemaphore();
+                        goto early_err_clean_up;
+                    }
+                    else
+                    {
+                        print_out("\b\b\b\bFail : %s \n", devs[i]->getLastErrMsg().c_str());
+                    }
+                }
+            }
+            rc |= rc0;
+            if (FLog != NULL)
+            {
+                fprintf(FLog, "%s\n", devs[i]->getLog().c_str());
+            }
         }
     }
 
