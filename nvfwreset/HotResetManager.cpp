@@ -51,7 +51,8 @@
 namespace Filesystem = mstflint::common::algorithm;
 
 HotResetManager::HotResetManager(mfile* mf, std::vector<std::string> asicDBDFTargets, bool isPcieSwitch) :
-    _mf(mf), _asicDBDFTargets(asicDBDFTargets), _hot_reset_flow(HotResetFlow::UNKNOWN), _isPcieSwitch(isPcieSwitch)
+    _mf(mf), _asicDBDFTargets(asicDBDFTargets), _hot_reset_flow(HotResetFlow::UNKNOWN), _isPcieSwitch(isPcieSwitch),
+    _directNicUpstreamDBDF(""), _directNicAsicDBDF("")
 {
     _operatingSystemAPI = FactoryOperatingSystemAPI::GetInstance();
     CheckPCIRegistersSupported();
@@ -258,6 +259,11 @@ bool HotResetManager::IsLeafSwitchUnderneath(const std::string& downstream_dbdf)
 void HotResetManager::DriversScanNeeded(const std::string& upstream_dbdf, const std::string& dbdf,
                                         std::map<std::string, std::string>& forbiddenDrivers)
 {
+    if (upstream_dbdf.empty() || dbdf.empty())
+    {
+        LOG.Info("HotResetManager::DriversScanNeeded: upstream_dbdf or dbdf is empty. Skipping scan.");
+        return;
+    }
     bool driversScanNeeded = false;
     if (_isPcieSwitch && IsUpstreamPortType(upstream_dbdf))
     {

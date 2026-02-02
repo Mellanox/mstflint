@@ -53,11 +53,11 @@ private:
     mfile* _mf;
     std::vector<std::string> _asicDBDFTargets;
     std::vector<std::string> _upstreamDBDFs;
-    std::string _directNicUpstreamDBDF;
-    std::string _directNicAsicDBDF;
     HotResetFlow _hot_reset_flow;
     std::unique_ptr<OperatingSystemAPI> _operatingSystemAPI;
     bool _isPcieSwitch;
+    std::string _directNicUpstreamDBDF;
+    std::string _directNicAsicDBDF;
     PCIeDeviceType GetPcieDeviceType(const std::string& dbdf);
     bool IsUpstreamPortType(const std::string& dbdf);
     bool IsDownstreamPortType(const std::string& dbdf);
