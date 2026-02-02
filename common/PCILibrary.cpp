@@ -141,7 +141,7 @@ namespace Regex = mstflint::common::regex;
      return v3;
  }
 
- void PCILibrary::FindDirectNicDevice(std::map<std::string, std::uint32_t>& directNicDevice)
+ void PCILibrary::FindDirectNicDevice(std::map<std::string, std::string>& directNicDevice)
 {
     FILE* pipe = popen("lspci -D -d 15b3:2100", "r");
     if (pipe)
@@ -159,16 +159,13 @@ namespace Regex = mstflint::common::regex;
             {
                 std::string dbdf = line.substr(0, first_space);
                 std::string _dbdf = IsValidDBDF(dbdf);
-
-                std::string domain_str = _dbdf.substr(0, _dbdf.find(':'));
-                std::uint32_t domain = std::stoul(domain_str, nullptr, 16);
-                LOG.Debug(std::string("Found direct nic device: ") + _dbdf + " with domain: " + std::to_string(domain));
+                LOG.Debug(std::string("Found direct nic device: ") + _dbdf);
                 // _dbdf has been sanitized by IsValidDBDF - safe to pass to GetV3FieldFromVPD
                 /* coverity[tainted_data] : _dbdf sanitized via IsValidDBDF character-by-character validation */
                 try
                 {
                     std::string v3 = GetV3FieldFromVPD(_dbdf);
-                    directNicDevice[v3] = domain;
+                    directNicDevice[v3] = std::string(_dbdf);
                 }
                 catch(const std::exception& e)
                 {
@@ -198,7 +195,7 @@ namespace Regex = mstflint::common::regex;
          LOG_AND_THROW_MFT_ERROR(std::string("Failed to get devices info. numDevices: ") + std::to_string(numDevices));
      }
 
-     std::map<std::string, std::uint32_t> directNicDevice;
+     std::map<std::string, std::string> directNicDevice;
      PCILibrary::FindDirectNicDevice(directNicDevice);
      LOG.Debug("Number of found direct nic devices: " + std::to_string(directNicDevice.size()));
      for (int count = 0; count < numDevices; count++)
@@ -270,7 +267,10 @@ namespace Regex = mstflint::common::regex;
              if (directNicDevice.find(endPointV3) != directNicDevice.end())
              {
                  memset(&mpegc, 0, sizeof(struct reg_access_hca_mpegc_reg_ext));
-                 mpegc.segment_base = directNicDevice[endPointV3];
+                 std::string directNicDBDF = directNicDevice[endPointV3];
+                 std::string domain_str = directNicDBDF.substr(0, directNicDBDF.find(':'));
+                 std::uint32_t domain = std::stoul(domain_str, nullptr, 16);
+                 mpegc.segment_base = static_cast<u_int8_t>(domain);
                  mpegc.segment_valid = 1;
                  mpegc.field_select = field_select;
                  // According to arch (Oren S), when its direct nic, pci index < 1
@@ -286,19 +286,19 @@ namespace Regex = mstflint::common::regex;
                  }
                  mpegc.DPNv = 1;
                  LOG.Debug(std::string("Setting segment base for direct nic device: ") +
-                           std::to_string(directNicDevice[endPointV3]) + " with segment base: " +
+                           directNicDBDF + " with segment base: " +
                            std::to_string(mpegc.segment_base) + " and pcie index: " + std::to_string(mpegc.pcie_index));
                  rc = reg_access_mpegc(mf, REG_ACCESS_METHOD_SET, &mpegc);
                  if (rc)
                  {
                      LOG.Error(std::string("Failed to set segment base for direct nic device: ") +
-                               std::to_string(directNicDevice[endPointV3]) +
+                               directNicDBDF +
                                " with segment base: " + std::to_string(mpegc.segment_base) +
                                " and pcie index: " + std::to_string(mpegc.pcie_index));
                      break;
                  }
                  LOG.Debug(std::string("Successfully set segment base for direct nic device: ") +
-                           std::to_string(directNicDevice[endPointV3]) + " with segment base: " +
+                           directNicDBDF + " with segment base: " +
                            std::to_string(mpegc.segment_base) + " and pcie index: " + std::to_string(mpegc.pcie_index));
              }
          }
