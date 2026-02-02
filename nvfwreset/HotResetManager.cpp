@@ -51,7 +51,8 @@
 namespace Filesystem = mstflint::common::algorithm;
 
 HotResetManager::HotResetManager(mfile* mf, std::vector<std::string> asicDBDFTargets, bool isPcieSwitch) :
-    _mf(mf), _asicDBDFTargets(asicDBDFTargets), _hot_reset_flow(HotResetFlow::UNKNOWN), _isPcieSwitch(isPcieSwitch)
+    _mf(mf), _asicDBDFTargets(asicDBDFTargets), _hot_reset_flow(HotResetFlow::UNKNOWN), _isPcieSwitch(isPcieSwitch),
+    _directNicUpstreamDBDF(""), _directNicAsicDBDF("")
 {
     _operatingSystemAPI = FactoryOperatingSystemAPI::GetInstance();
     CheckPCIRegistersSupported();
@@ -255,6 +256,29 @@ bool HotResetManager::IsLeafSwitchUnderneath(const std::string& downstream_dbdf)
     }
 }
 
+void HotResetManager::DriversScanNeeded(const std::string& upstream_dbdf, const std::string& dbdf,
+                                        std::map<std::string, std::string>& forbiddenDrivers)
+{
+    if (upstream_dbdf.empty() || dbdf.empty())
+    {
+        LOG.Info("HotResetManager::DriversScanNeeded: upstream_dbdf or dbdf is empty. Skipping scan.");
+        return;
+    }
+    bool driversScanNeeded = false;
+    if (_isPcieSwitch && IsUpstreamPortType(upstream_dbdf))
+    {
+        driversScanNeeded = true;
+    }
+    if (driversScanNeeded)
+    {
+        std::map<std::string, std::string> drivers = GetForbiddenDriversFromUpstreamPort(upstream_dbdf, dbdf);
+        if (!drivers.empty())
+        {
+            forbiddenDrivers.insert(drivers.begin(), drivers.end());
+        }
+    }
+}
+
 std::map<std::string, std::string> HotResetManager::CheckForbiddenDriversOnDiscoveredDevices()
 {
     std::map<std::string, std::string> forbiddenDrivers;
@@ -283,18 +307,12 @@ std::map<std::string, std::string> HotResetManager::CheckForbiddenDriversOnDisco
         LOG.Info("HotResetManager::CheckForbiddenDriversOnDiscoveredDevices: new upstream_dbdf: " + upstream_dbdf);
         _upstreamDBDFs.push_back(upstream_dbdf);
 
-        if (_isPcieSwitch)
-        {
-            {
-                std::map<std::string, std::string> drivers = GetForbiddenDriversFromUpstreamPort(upstream_dbdf, dbdf);
-                if (!drivers.empty())
-                {
-                    forbiddenDrivers.insert(drivers.begin(), drivers.end());
-                }
-            }
-        }
+
+        DriversScanNeeded(upstream_dbdf, dbdf, forbiddenDrivers);
     }
     LOG.Info("HotResetManager::CheckForbiddenDriversOnDiscoveredDevices: upstream_dbdfs: " + _upstreamDBDFs.size());
+
+    DriversScanNeeded(_directNicUpstreamDBDF, _directNicAsicDBDF, forbiddenDrivers);
 
     return forbiddenDrivers;
 }
@@ -442,7 +460,7 @@ bool HotResetManager::CheckIfDirectNic(uint8_t requesterPcieIndex)
     {
         LOG_AND_THROW_MFT_ERROR(std::string("Failed to get devices info. numDevices: ") + std::to_string(numDevices));
     }
-    std::map<std::string, std::uint32_t> directNicDevice;
+    std::map<std::string, std::string> directNicDevice;
     PCILibrary::FindDirectNicDevice(directNicDevice);
     LOG.Debug("Number of found direct nic devices: " + std::to_string(directNicDevice.size()));
     if (!directNicDevice.empty())
@@ -461,10 +479,13 @@ bool HotResetManager::CheckIfDirectNic(uint8_t requesterPcieIndex)
                 directNicIndex = 0;
             }
             SendMPIR(directNicIndex, &mpir);
-            char dbdf[32] = {0};
-            snprintf(dbdf, sizeof(dbdf), "%04x:%02x:%02x.0", directNicDevice[v3], mpir.bus, mpir.device);
-            _upstreamDBDFs.push_back(dbdf);
-            LOG.Info("HotResetManager::CheckIfDirectNic: direct nic device found: " + std::string(dbdf));
+            _directNicAsicDBDF = directNicDevice[v3];
+            std::string domain_str = _directNicAsicDBDF.substr(0, _directNicAsicDBDF.find(':'));
+            std::uint32_t domain = std::stoul(domain_str, nullptr, 16);
+            char upstreamDBDF[32] = {0};
+            snprintf(upstreamDBDF, sizeof(upstreamDBDF), "%04x:%02x:%02x.0", domain, mpir.bus, mpir.device);
+            _directNicUpstreamDBDF = upstreamDBDF;
+            LOG.Info("HotResetManager::CheckIfDirectNic: direct nic device found: " + std::string(upstreamDBDF));
             return true;
         }
     }

@@ -56,6 +56,8 @@ private:
     HotResetFlow _hot_reset_flow;
     std::unique_ptr<OperatingSystemAPI> _operatingSystemAPI;
     bool _isPcieSwitch;
+    std::string _directNicUpstreamDBDF;
+    std::string _directNicAsicDBDF;
     PCIeDeviceType GetPcieDeviceType(const std::string& dbdf);
     bool IsUpstreamPortType(const std::string& dbdf);
     bool IsDownstreamPortType(const std::string& dbdf);
@@ -74,6 +76,8 @@ private:
     void SendMPIR(uint8_t requesterPcieIndex, struct reg_access_hca_mpir_ext* mpir);
     void
       GetSecondaryAndSubordinateBuses(const std::string& upstream_dbdf, uint8_t* secondaryBus, uint8_t* subordinateBus);
+    void DriversScanNeeded(const std::string& upstream_dbdf, const std::string& dbdf,
+                           std::map<std::string, std::string>& forbiddenDrivers);
 };
 
 #endif // _HOT_RESET_MANAGER_H
