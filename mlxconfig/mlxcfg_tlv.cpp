@@ -617,7 +617,7 @@ void TLVConf::parseParamValue(string paramMlxconfigName,
     // not sure we should reach below code
     if (!p)
     {
-        p = findParamByMlxconfigName(paramMlxconfigName + getArraySuffixByInterval(index), qt);
+        p = findParamByMlxconfigName(getConfigNameWithSuffixByInterval(paramMlxconfigName, index), qt);
     }
 
     if (!p)
@@ -708,7 +708,7 @@ void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, 
 
     if (!p)
     {
-        p = findParamByMlxconfigName(paramMlxconfigName + getArraySuffixByInterval(index), qt);
+        p = findParamByMlxconfigName(getConfigNameWithSuffixByInterval(paramMlxconfigName, index), qt);
     }
 
     if (!p)
