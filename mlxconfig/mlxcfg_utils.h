@@ -187,11 +187,15 @@ void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxco
 
 void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes);
 
+bool isContinuanceArray(const string& mlxconfigName);
+
 bool isIndexedStartFromOneSupported(const string& mlxconfigName);
 
 string increaseIndexIfNeeded(const string& name);
 
 bool isIndexedMlxconfigName(const string& mlxconfigName);
+
+string getConfigNameWithSuffixByInterval(string mlxconfigName, u_int32_t interval);
 
 string getArraySuffixByInterval(u_int32_t interval);
 
