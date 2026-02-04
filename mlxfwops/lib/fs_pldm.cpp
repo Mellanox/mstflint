@@ -68,7 +68,12 @@ bool FsPldmOperations::FwInit()
 
 bool FsPldmOperations::LoadPldmPackage()
 {
-    _pldmFile = std::string(dynamic_cast<FPldm*>(_ioAccess)->get_fname());
+    FPldm* pldmAccess = dynamic_cast<FPldm*>(_ioAccess);
+    if (!pldmAccess)
+    {
+        return errmsg("File is not a valid PLDM package");
+    }
+    _pldmFile = std::string(pldmAccess->get_fname());
 
     PldmBuffer buff;
     if (buff.loadFile(_pldmFile))

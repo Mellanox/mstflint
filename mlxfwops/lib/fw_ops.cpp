@@ -457,16 +457,15 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
     DPRINTF(("FwOperations::FwAccessCreate\n"));
     if (fwParams.hndlType == FHT_FW_FILE)
     {
-#ifndef NO_MFA_SUPPORT
         int sig = getFileSignature(fwParams.fileHndl);
         if (sig == IMG_SIG_OPEN_FILE_FAILED)
         { // i.e we failed to open file
             WriteToErrBuff(fwParams.errBuff, strerror(errno), fwParams.errBuffSize);
             return false;
         }
-        if (sig == IMG_SIG_TYPE_BIN || sig == IMG_SIG_TYPE_CF)
+        if (sig == IMG_SIG_TYPE_PLDM)
         {
-            *ioAccessP = new FImage;
+            *ioAccessP = new FPldm;
             if (!(*ioAccessP)->open(fwParams.fileHndl, false, !fwParams.shortErrors))
             {
                 WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
@@ -474,9 +473,10 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
                 return false;
             }
         }
-        else if (sig == IMG_SIG_TYPE_PLDM)
+#ifndef NO_MFA_SUPPORT
+        else if (sig == IMG_SIG_TYPE_BIN || sig == IMG_SIG_TYPE_CF)
         {
-            *ioAccessP = new FPldm;
+            *ioAccessP = new FImage;
             if (!(*ioAccessP)->open(fwParams.fileHndl, false, !fwParams.shortErrors))
             {
                 WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
@@ -509,12 +509,15 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
             return false; // Unknown signature
         }
 #else
-        *ioAccessP = new FImage;
-        if (!(*ioAccessP)->open(fwParams.fileHndl, false, !fwParams.shortErrors))
+        else
         {
-            WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
-            delete *ioAccessP;
-            return false;
+            *ioAccessP = new FImage;
+            if (!(*ioAccessP)->open(fwParams.fileHndl, false, !fwParams.shortErrors))
+            {
+                WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
+                delete *ioAccessP;
+                return false;
+            }
         }
 #endif
     }
