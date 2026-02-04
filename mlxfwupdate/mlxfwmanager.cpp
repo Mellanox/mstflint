@@ -60,6 +60,15 @@ struct DeviceUpdateResult
     bool imageWasCached;
     string log_message;
     string error_message;
+
+    DeviceUpdateResult()
+    {
+        device_index = -1;
+        rc = 0;
+        imageWasCached = false;
+        log_message = "";
+        error_message = "";
+    }
 };
 
 // Mutex for thread-safe operations during parallel updates
@@ -501,7 +510,14 @@ int mainEntry(int argc, char* argv[])
         {
             if (cmd_params.fw_update_in_parallel_via_fwctl)
             {
-                dev = new MlnxDev(devsinfo[i].pci.fwctl_dev, cmd_params.compare_ffv);
+                if (!devsinfo[i].pci.fwctl_dev)
+                {
+                    print_err("-E- Failed to get fwctl device path for device %s\n", devsinfo[i].dev_name);
+                }
+                else
+                {
+                    dev = new MlnxDev(devsinfo[i].pci.fwctl_dev, cmd_params.compare_ffv);
+                }
             }
             else
             {
