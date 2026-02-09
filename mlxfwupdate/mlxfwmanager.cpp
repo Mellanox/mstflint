@@ -45,6 +45,8 @@
 #include <thread>
 #include <mutex>
 #include <vector>
+#include <cstdarg>
+#include <cstdio>
 
 #include "pldmlib/pldm_utils.h"
 
@@ -73,6 +75,59 @@ struct DeviceUpdateResult
 
 // Mutex for thread-safe operations during parallel updates
 static std::mutex parallel_update_mutex;
+
+// Thread-local device index for per-device progress display in parallel mode (1-based; -1 = sequential)
+static thread_local int g_progress_device_index = -1;
+// Thread-local line number for cursor positioning (1-based; 0 = sequential)
+static thread_local int g_progress_line_number = 0;
+// Total number of device lines in parallel mode (0 = sequential)
+static int g_parallel_device_count = 0;
+// Extra lines printed (PROG_OK / PROG_STRING_ONLY) - stage messages appear above progress lines
+static int g_extra_output_lines = 0;
+// Progress lines are created on first use so they appear below stage messages
+static bool g_progress_lines_created = false;
+
+// ANSI codes for cursor movement (used for multi-line progress in parallel mode)
+#define CURSOR_UP "\033[A"
+#define CURSOR_DOWN "\033[B"
+
+// Move cursor to device progress line (last N lines), print, then return cursor to bottom (must hold parallel_update_mutex)
+// line = slot 1..N (device index among parallel devices). Progress lines are always the last N lines.
+static void print_progress_at_line(int line, const char* fmt, ...)
+{
+    if (g_parallel_device_count <= 0 || line <= 0 || line > g_parallel_device_count)
+    {
+        return;
+    }
+    // On first use, create N progress lines at the bottom (below any stage messages already printed)
+    if (!g_progress_lines_created)
+    {
+        for (int i = 0; i < g_parallel_device_count; i++)
+        {
+            print_out("\n");
+        }
+        g_progress_lines_created = true;
+    }
+    // Progress lines are the last N lines; from "home" (below them) we go up (N+1 - slot) steps
+    int steps = g_parallel_device_count + 1 - line;
+    for (int j = 0; j < steps; j++)
+    {
+        print_out(CURSOR_UP);
+    }
+    print_out("\r");
+    char buf[256];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    print_out("%s", buf);
+    print_out("\033[K"); // erase to end of line
+    for (int j = 0; j < steps; j++)
+    {
+        print_out(CURSOR_DOWN);
+    }
+    print_out("\r");
+}
 
 // Function from fw_comps_mgr to set log file for library logging
 extern "C" void fwcomps_set_log_file(FILE* log_file);
@@ -752,7 +807,22 @@ int mainEntry(int argc, char* argv[])
             mfa_files[i] = mfa_file;
         }
         
-        // Launch parallel update threads
+        // Set total device line count for multi-line progress (2 lines per device: "Updating..." + progress)
+        int parallel_device_count = 0;
+        for (int i = 0; i < (int)devs.size(); i++)
+        {
+            if (status_strings[i].size() != 0)
+            {
+                continue;
+            }
+            parallel_device_count++;
+        }
+        g_parallel_device_count = parallel_device_count;
+        g_extra_output_lines = 0;
+        g_progress_lines_created = false;
+        
+        // Print all "Updating FW in parallel..." lines first (no blank lines; progress lines created on first use, below stage messages)
+        vector<int> parallel_indices;
         for (int i = 0; i < (int)devs.size(); i++)
         {
             if (status_strings[i].size() != 0)
@@ -760,14 +830,26 @@ int mainEntry(int argc, char* argv[])
                 print_out("Device #%d: %s\n", (i + 1), status_strings[i].c_str());
                 continue;
             }
-            
             print_out("Device #%d: Updating FW in parallel...\n", (i + 1));
             burn_cnt++;
+            parallel_indices.push_back(i);
+        }
+        fflush(FOut);
+        
+        // Now launch all threads. Progress lines (percent) will be created on first progress update and appear below stage messages.
+        for (size_t idx = 0; idx < parallel_indices.size(); idx++)
+        {
+            int i = parallel_indices[idx];
+            int line_num = (int)(idx + 1); // slot 1..N; progress line is one of the last N lines (below FSMST etc.)
             
-            update_threads.push_back(std::thread([i, &devs, &mfa_files, &pldmFlow, &psidPldmComponents, 
+            update_threads.push_back(std::thread([i, line_num, &devs, &mfa_files, &pldmFlow, &psidPldmComponents, 
                                                    progressCB, &cmd_params, advProgressCB, &update_results]() {
+                g_progress_device_index = (i + 1);
+                g_progress_line_number = line_num;
                 updateSingleDevice(i, devs[i], mfa_files[i], pldmFlow, psidPldmComponents,
                                  progressCB, cmd_params.burnFailsafe, advProgressCB, update_results[i]);
+                g_progress_device_index = -1;
+                g_progress_line_number = 0;
             }));
         }
         
@@ -779,6 +861,9 @@ int mainEntry(int argc, char* argv[])
                 thread.join();
             }
         }
+        g_parallel_device_count = 0;
+        g_extra_output_lines = 0;
+        g_progress_lines_created = false;
         
         for (int i = 0; i < (int)devs.size(); i++)
         {
@@ -2142,36 +2227,115 @@ FILE* createOutFile(string& fileName, bool fileSpecified)
 
 int progressCB_display(int completion)
 {
-    print_out("\b\b\b\b%3d%%", completion);
+    if (g_progress_device_index >= 0 && g_progress_line_number > 0)
+    {
+        std::lock_guard<std::mutex> lock(parallel_update_mutex);
+        print_progress_at_line(g_progress_line_number, "Device #%d: %3d%%   ", g_progress_device_index, completion);
+    }
+    else if (g_progress_device_index >= 0)
+    {
+        std::lock_guard<std::mutex> lock(parallel_update_mutex);
+        print_out("\rDevice #%d: %3d%%   ", g_progress_device_index, completion);
+    }
+    else
+    {
+        print_out("\b\b\b\b%3d%%", completion);
+    }
     return abort_request;
 }
 
 int advProgressFunc_display(int completion, const char* stage, prog_t type, int* unknownProgress)
 {
-    switch (type)
+    if (g_progress_device_index >= 0 && g_progress_line_number > 0)
     {
-        case PROG_WITH_PRECENTAGE:
-            print_out("\r%s - %3d%%", stage, completion);
-            break;
+        std::lock_guard<std::mutex> lock(parallel_update_mutex);
+        switch (type)
+        {
+            case PROG_WITH_PRECENTAGE:
+                print_progress_at_line(g_progress_line_number, "Device #%d: %s - %3d%%   ",
+                                       g_progress_device_index, stage, completion);
+                break;
 
-        case PROG_OK:
-            print_out("\r%s -   OK          \n", stage);
-            break;
+            case PROG_OK:
+                print_out("Device #%d: %s -   OK          \n", g_progress_device_index, stage);
+                g_extra_output_lines++;
+                break;
 
-        case PROG_STRING_ONLY:
-            print_out("%s\n", stage);
-            break;
+            case PROG_STRING_ONLY:
+                print_out("Device #%d: %s\n", g_progress_device_index, stage);
+                g_extra_output_lines++;
+                break;
 
-        case PROG_WITHOUT_PRECENTAGE:
-            if (unknownProgress)
-            {
-                static const char* progStr[] = {"[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]",
-                                                "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]"};
-                int size = sizeof(progStr) / sizeof(progStr[0]);
-                print_out("\r%s - %s", stage, progStr[(*unknownProgress) % size]);
-                (*unknownProgress)++;
-            }
-            break;
+            case PROG_WITHOUT_PRECENTAGE:
+                if (unknownProgress)
+                {
+                    static const char* progStr[] = {"[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]",
+                                                    "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]"};
+                    int size = sizeof(progStr) / sizeof(progStr[0]);
+                    print_progress_at_line(g_progress_line_number, "Device #%d: %s - %s   ",
+                                           g_progress_device_index, stage, progStr[(*unknownProgress) % size]);
+                    (*unknownProgress)++;
+                }
+                break;
+        }
+    }
+    else if (g_progress_device_index >= 0)
+    {
+        std::lock_guard<std::mutex> lock(parallel_update_mutex);
+        switch (type)
+        {
+            case PROG_WITH_PRECENTAGE:
+                print_out("\rDevice #%d: %s - %3d%%   ", g_progress_device_index, stage, completion);
+                break;
+
+            case PROG_OK:
+                print_out("\rDevice #%d: %s -   OK          \n", g_progress_device_index, stage);
+                break;
+
+            case PROG_STRING_ONLY:
+                print_out("Device #%d: %s\n", g_progress_device_index, stage);
+                break;
+
+            case PROG_WITHOUT_PRECENTAGE:
+                if (unknownProgress)
+                {
+                    static const char* progStr[] = {"[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]",
+                                                    "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]"};
+                    int size = sizeof(progStr) / sizeof(progStr[0]);
+                    print_out("\rDevice #%d: %s - %s   ", g_progress_device_index, stage,
+                              progStr[(*unknownProgress) % size]);
+                    (*unknownProgress)++;
+                }
+                break;
+        }
+    }
+    else
+    {
+        switch (type)
+        {
+            case PROG_WITH_PRECENTAGE:
+                print_out("\r%s - %3d%%", stage, completion);
+                break;
+
+            case PROG_OK:
+                print_out("\r%s -   OK          \n", stage);
+                break;
+
+            case PROG_STRING_ONLY:
+                print_out("%s\n", stage);
+                break;
+
+            case PROG_WITHOUT_PRECENTAGE:
+                if (unknownProgress)
+                {
+                    static const char* progStr[] = {"[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]",
+                                                    "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]"};
+                    int size = sizeof(progStr) / sizeof(progStr[0]);
+                    print_out("\r%s - %s", stage, progStr[(*unknownProgress) % size]);
+                    (*unknownProgress)++;
+                }
+                break;
+        }
     }
     return abort_request;
 }
