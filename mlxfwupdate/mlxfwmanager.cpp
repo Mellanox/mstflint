@@ -333,18 +333,11 @@ int mainEntry(int argc, char* argv[])
         if (cmd_params.fw_update_in_parallel_via_fwctl)
         {
             progressCB = progressCB_display_multi_thread;
-        }
-        else
-        {
-            progressCB = progressCB_display;
-        }
-
-        if (cmd_params.fw_update_in_parallel_via_fwctl)
-        {
             advProgressCB = (f_prog_func_adv)&advProgressFunc_display_multi_thread;
         }
         else
         {
+            progressCB = progressCB_display;
             advProgressCB = (f_prog_func_adv)&advProgressFunc_display;
         }
     }
@@ -843,6 +836,7 @@ int mainEntry(int argc, char* argv[])
                 print_out("Device #%d: %s\n", (i + 1), status_strings[i].c_str());
                 continue;
             }
+
             print_out("Device #%d: Updating FW in parallel...\n", (i + 1));
             burn_cnt++;
             parallel_indices.push_back(i);
@@ -2257,13 +2251,6 @@ int progressCB_display_multi_thread(int completion)
     return abort_request;
 }
 
-int progressCB_display(int completion)
-{
-    print_out("\b\b\b\b%3d%%", completion);
-
-    return abort_request;
-}
-
 int advProgressFunc_display_multi_thread(int completion, const char* stage, prog_t type, int* unknownProgress)
 {
     if (g_progress_device_index >= 0 && g_progress_line_number > 0)
@@ -2360,6 +2347,12 @@ int advProgressFunc_display_multi_thread(int completion, const char* stage, prog
     return abort_request;
 }
 
+int progressCB_display(int completion)
+{
+    print_out("\b\b\b\b%3d%%", completion);
+
+    return abort_request;
+}
 
 int advProgressFunc_display(int completion, const char* stage, prog_t type, int* unknownProgress)
 {
