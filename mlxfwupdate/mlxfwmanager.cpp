@@ -76,23 +76,21 @@ struct DeviceUpdateResult
 // Mutex for thread-safe operations during parallel updates
 static std::mutex parallel_update_mutex;
 
-// Thread-local device index for per-device progress display in parallel mode (1-based; -1 = sequential)
+// Local device index for per device progress display in parallel mode.
 static thread_local int g_progress_device_index = -1;
-// Thread-local line number for cursor positioning (1-based; 0 = sequential)
+// Local line number for cursor positioning.
 static thread_local int g_progress_line_number = 0;
-// Total number of device lines in parallel mode (0 = sequential)
+// Total number of device lines in parallel mode.
 static int g_parallel_device_count = 0;
-// Extra lines printed (PROG_OK / PROG_STRING_ONLY) - stage messages appear above progress lines
+// Extra lines printed.
 static int g_extra_output_lines = 0;
-// Progress lines are created on first use so they appear below stage messages
+// Progress lines are created on first use.
 static bool g_progress_lines_created = false;
 
-// ANSI codes for cursor movement (used for multi-line progress in parallel mode)
+// ANSI codes for cursor movement.
 #define CURSOR_UP "\033[A"
 #define CURSOR_DOWN "\033[B"
 
-// Move cursor to device progress line (last N lines), print, then return cursor to bottom (must hold parallel_update_mutex)
-// line = slot 1..N (device index among parallel devices). Progress lines are always the last N lines.
 static void print_progress_at_line(int line, const char* fmt, ...)
 {
     if (g_parallel_device_count <= 0 || line <= 0 || line > g_parallel_device_count)
