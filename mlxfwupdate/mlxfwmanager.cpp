@@ -330,8 +330,23 @@ int mainEntry(int argc, char* argv[])
     advProgressCB = NULL;
     if (cmd_params.show_progress)
     {
-        progressCB = progressCB_display;
-        advProgressCB = (f_prog_func_adv)&advProgressFunc_display;
+        if (cmd_params.fw_update_in_parallel_via_fwctl)
+        {
+            progressCB = progressCB_display_multi_thread;
+        }
+        else
+        {
+            progressCB = progressCB_display;
+        }
+
+        if (cmd_params.fw_update_in_parallel_via_fwctl)
+        {
+            advProgressCB = (f_prog_func_adv)&advProgressFunc_display_multi_thread;
+        }
+        else
+        {
+            advProgressCB = (f_prog_func_adv)&advProgressFunc_display;
+        }
     }
 
     formatted_output = cmd_params.write_xml;
@@ -2223,7 +2238,7 @@ FILE* createOutFile(string& fileName, bool fileSpecified)
     return f;
 }
 
-int progressCB_display(int completion)
+int progressCB_display_multi_thread(int completion)
 {
     if (g_progress_device_index >= 0 && g_progress_line_number > 0)
     {
@@ -2242,7 +2257,14 @@ int progressCB_display(int completion)
     return abort_request;
 }
 
-int advProgressFunc_display(int completion, const char* stage, prog_t type, int* unknownProgress)
+int progressCB_display(int completion)
+{
+    print_out("\b\b\b\b%3d%%", completion);
+
+    return abort_request;
+}
+
+int advProgressFunc_display_multi_thread(int completion, const char* stage, prog_t type, int* unknownProgress)
 {
     if (g_progress_device_index >= 0 && g_progress_line_number > 0)
     {
@@ -2335,6 +2357,38 @@ int advProgressFunc_display(int completion, const char* stage, prog_t type, int*
                 break;
         }
     }
+    return abort_request;
+}
+
+
+int advProgressFunc_display(int completion, const char* stage, prog_t type, int* unknownProgress)
+{
+    switch (type)
+    {
+        case PROG_WITH_PRECENTAGE:
+            print_out("\r%s - %3d%%", stage, completion);
+            break;
+
+        case PROG_OK:
+            print_out("\r%s -   OK          \n", stage);
+            break;
+
+        case PROG_STRING_ONLY:
+            print_out("%s\n", stage);
+            break;
+
+        case PROG_WITHOUT_PRECENTAGE:
+            if (unknownProgress)
+            {
+                static const char* progStr[] = {"[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]",
+                                                "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]"};
+                int size = sizeof(progStr) / sizeof(progStr[0]);
+                print_out("\r%s - %s", stage, progStr[(*unknownProgress) % size]);
+                (*unknownProgress)++;
+            }
+            break;
+    }
+
     return abort_request;
 }
 
