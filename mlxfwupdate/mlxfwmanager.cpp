@@ -330,7 +330,7 @@ int mainEntry(int argc, char* argv[])
     advProgressCB = NULL;
     if (cmd_params.show_progress)
     {
-        if (cmd_params.update_all_fwctl)
+        if (cmd_params.parallel_fwctl)
         {
             progressCB = progressCB_display_multi_thread;
             advProgressCB = (f_prog_func_adv)&advProgressFunc_display_multi_thread;
@@ -563,7 +563,7 @@ int mainEntry(int argc, char* argv[])
         }
         else
         {
-            if (cmd_params.update_all_fwctl)
+            if (cmd_params.parallel_fwctl)
             {
                 set_fwctl_dev(devsinfo[i].pci.fwctl_dev, devsinfo[i].pci.domain, devsinfo[i].pci.bus, devsinfo[i].pci.dev, devsinfo[i].pci.func);
                 if (!devsinfo[i].pci.fwctl_dev)
@@ -778,7 +778,7 @@ int mainEntry(int argc, char* argv[])
         }
     }
     // Parallel or sequential firmware update based on flag
-    if (cmd_params.update_all_fwctl && devs.size() > 1)
+    if (cmd_params.parallel_fwctl && devs.size() > 1)
     {
         // Parallel update mode
         print_out("Starting parallel firmware update for %d device(s)...\n", (int)devs.size());

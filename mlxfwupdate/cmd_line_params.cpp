@@ -59,7 +59,7 @@ CmdLineParams::CmdLineParams()
     clear_semaphore = false;
     extract_all = false;
     no_fw_ctrl = false;
-    update_all_fwctl = false;
+    parallel_fwctl = false;
     target_file = "";
     server_url = "https://www.mellanox.com";
     proxy = "";
