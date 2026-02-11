@@ -565,6 +565,7 @@ int mainEntry(int argc, char* argv[])
         {
             if (cmd_params.update_all_fwctl)
             {
+                set_fwctl_dev(devsinfo[i].pci.fwctl_dev, devsinfo[i].pci.domain, devsinfo[i].pci.bus, devsinfo[i].pci.dev, devsinfo[i].pci.func);
                 if (!devsinfo[i].pci.fwctl_dev)
                 {
                     print_err("-E- Failed to get fwctl device path for device %s\n", devsinfo[i].dev_name);
