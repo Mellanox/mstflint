@@ -101,7 +101,7 @@ public:
     bool no_extract_list;
     int numberOfRetrials;
     bool no_fw_ctrl;
-    bool fw_update_in_parallel_via_fwctl;
+    bool update_all_fwctl;
     string component_type;
 };
 

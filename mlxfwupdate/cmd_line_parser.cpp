@@ -210,8 +210,8 @@ using namespace mft_utils;
 #define NO_FW_CTRL_L "no_fw_ctrl"
 #define NO_FW_CTRL_S ' '
 
-#define FW_UPDATE_PARALLEL_FWCTL_L "fw_update_in_parallel_via_fwctl"
-#define FW_UPDATE_PARALLEL_FWCTL_S ' '
+#define UPDATE_ALL_FWCTL_L "update_all_fwctl"
+#define UPDATE_ALL_FWCTL_S ' '
 
 #define COMP_TYPE_L "component_type"
 #define COMP_TYPE_S ' '
@@ -352,7 +352,7 @@ void CmdLineParser::initOptions()
 
     this->AddOptions(NO_FW_CTRL_L, NO_FW_CTRL_S, "", "Don't use FW Ctrl update");
 
-    this->AddOptions(FW_UPDATE_PARALLEL_FWCTL_L, FW_UPDATE_PARALLEL_FWCTL_S, "", "Enable firmware update in parallel via fwctl");
+    this->AddOptions(UPDATE_ALL_FWCTL_L, UPDATE_ALL_FWCTL_S, "", "Enable firmware update in parallel via fwctl");
 
     this->AddOptions(YES_L, YES_S, "", "Answer is yes in prompts");
 
@@ -741,9 +741,9 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         _cmdLineParams->no_fw_ctrl = true;
         return PARSE_OK;
     }
-    else if (name == FW_UPDATE_PARALLEL_FWCTL_L)
+    else if (name == UPDATE_ALL_FWCTL_L)
     {
-        _cmdLineParams->fw_update_in_parallel_via_fwctl = true;
+        _cmdLineParams->update_all_fwctl = true;
         return PARSE_OK;
     }
     else if (name == YES_L)
