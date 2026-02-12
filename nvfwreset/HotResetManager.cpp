@@ -37,7 +37,7 @@
 #include "reg_access/reg_access.h"
 #include "reg_access/reg_ids.h"
 #include "reg_access/mcam_capabilities.h"
-#include "common/PCILibrary.h"
+#include "pci_library/PCILibrary.h"
 #include "mft_core/mft_core_utils/logger/Logger.h"
 #include "kernel/mst.h"
 #include "common/tools_algorithm.h"
