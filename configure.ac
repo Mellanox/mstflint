@@ -839,6 +839,7 @@ AC_OUTPUT( \
     cmdparser/Makefile \
     common/Makefile \
     dev_mgt/Makefile \
+    pci_library/Makefile \
     ext_libs/Makefile \
     ext_libs/json/Makefile \
     ext_libs/mini-yaml/Makefile \
