@@ -4953,7 +4953,8 @@ int mf_read_sfdp_table(mflash* mfl, uint32_t address, uint8_t bytes_num, bool sw
     {
         // Endian swap
         uint32_t swapped = 0;
-        for (int i = 0; i < (int)bytes_num; i++)
+        int i;
+        for (i = 0; i < (int)bytes_num; i++)
         {
             ((uint8_t*)&swapped)[bytes_num - 1 - i] = data_buffer[i];
         }

@@ -204,6 +204,8 @@ void swap_pci_address_space(mfile* mf);
 
 int is_pcie_switch_device(mfile* mf);
 
+void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func);
+
 #ifdef __cplusplus
 }
 #endif

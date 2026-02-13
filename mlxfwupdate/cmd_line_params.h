@@ -102,6 +102,7 @@ public:
     int numberOfRetrials;
     bool no_fw_ctrl;
     string component_type;
+    bool update_all_fwctl;
 };
 
 #endif
