@@ -1423,6 +1423,26 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
     if (!RefreshComponentsStatus()) {
         return false;
     }
+    for (i = 0; i < comps.size(); i++) {
+        int component = comps[i].getType();
+        _currCompQuery = &(_compsQueryMap[component]);
+        if (_currCompQuery->valid)
+        {
+            if (component == FwComponent::DPA_COMPONENT)
+            {
+                DPRINTF(
+                  ("FwCompsMgr::burnComponents() - max_component_size = %d\n", _currCompQuery->comp_cap.max_component_size));
+                DPRINTF(("FwCompsMgr::burnComponents() - comp.getSize() = %d\n", comps[i].getSize()));
+                if (_currCompQuery->comp_cap.max_component_size < comps[i].getSize())
+                {
+                    printf("-E- The dpa app container size is too large! max_component_size is %d bytes.\n",
+                           _currCompQuery->comp_cap.max_component_size);
+                    return false;
+                }
+            }
+        }
+    }
+
     GenerateHandle();
     if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
         DPRINTF(("Cannot lock the handle!\n"));
@@ -2050,6 +2070,12 @@ unsigned char* FwCompsMgr::getLastErrMsg()
  
     case FWCOMPS_MCC_FW_BURN_REJECTED_NO_PLACE:
         return (unsigned char*)"FW burn rejected: No place available";
+
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_1:
+        return (unsigned char*)"FW burn rejected: Internal error 1";
+
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_2:
+        return (unsigned char*)"FW burn rejected: Internal error 2";
  
     case FWCOMPS_MCC_FW_BURN_REJECTED_NUM_OF_SWAP:
         return (unsigned char*)"FW burn rejected: Number of swap error";
@@ -2144,8 +2170,12 @@ unsigned char* FwCompsMgr::getLastErrMsg()
     case FWCOMPS_MCC_REJECTED_TOKEN_ALREADY_APPLIED:
         return (unsigned char*)"Token already applied";
 
-        case FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
-            return (unsigned char*)"DRAM not available";
+    case FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
+        return (unsigned char*)"DRAM not available";
+
+    case FWCOMPS_MCC_FW_BURN_REJECTED_FLASH_WRITE_PROTECTED:
+        return (unsigned char*)"Flash is write protected";
+    
     case FWCOMPS_UNSUPPORTED_DEVICE:
         return (unsigned char*)"Unsupported device";
 

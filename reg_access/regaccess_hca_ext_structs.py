@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2025-09-25 10:03:58"
+#    This file was generated at "2025-12-18 11:35:02"
 #    by:
 #      > prm_update.py --project Nic
 ###############################################################################
@@ -74,6 +74,9 @@ class MPIR_EXT(ctypes.Structure):
         ("sdm", ctypes.c_uint8),
         ("subordinate_bus", ctypes.c_uint8),
         ("secondary_bus", ctypes.c_uint8),
+        ("segment_base", ctypes.c_uint8),
+        ("seg_valid", ctypes.c_uint8),
+        ("seg_cap", ctypes.c_uint8),
         ("sd_group", ctypes.c_uint8),
         ("device", ctypes.c_uint8),
         ("lp_msb", ctypes.c_uint8),
@@ -304,6 +307,8 @@ class MFRL_REG_EXT(ctypes.Structure):
 
 class MPCIR_EXT(ctypes.Structure):
     _fields_ = [
+        ("instance", ctypes.c_uint16),
+        ("fw_entity", ctypes.c_uint8),
         ("all", ctypes.c_uint8),
         ("ports", ctypes.c_uint8),
         ("ports_stat", ctypes.c_uint8)

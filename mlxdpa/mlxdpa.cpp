@@ -465,6 +465,10 @@
          {
              throw MlxDpaException("path to single app must be specified to create DPA app.");
          }
+         if (mft_utils::IsFileEmpty(_singleAppPath, true))
+         {
+             throw MlxDpaException("Single app file is empty or does not exist.");
+         }
          if (_priority == BaseHeader::StructPriority::Unknown)
          {
              throw MlxDpaException("Valid priority must be specified to sign DPA app.");
@@ -484,6 +488,10 @@
          {
              throw MlxDpaException("path to single app must be specified to query manifest.");
          }
+         if (mft_utils::IsFileEmpty(_singleAppPath, true))
+         {
+             throw MlxDpaException("The dpa app file is empty or does not exist.");
+         }
          if (_outputPath.empty())
          {
              throw MlxDpaException("Output file path must be specified to query manifest.");
@@ -496,6 +504,10 @@
              if (_hostELFPath.empty())
              {
                  throw MlxDpaException("path to Host ELF must be specified to sign DPA apps.");
+             }
+             if (mft_utils::IsFileEmpty(_hostELFPath, true))
+             {
+                 throw MlxDpaException("Host ELF file is empty or does not exist.");
              }
              if (!_manifestPath.empty())
              {
@@ -512,6 +524,10 @@
              {
                  throw MlxDpaException("path to single app must be specified to sign DPA app.");
              }
+             if (mft_utils::IsFileEmpty(_singleAppPath, true))
+             {
+                 throw MlxDpaException("Single app file is empty or does not exist.");
+             }
              if (_priority == BaseHeader::StructPriority::Unknown)
              {
                  throw MlxDpaException("Valid priority must be specified to sign single DPA app.");
@@ -525,9 +541,25 @@
          {
              throw MlxDpaException("path to OEM certificate chain must be specified to sign DPA app.");
          }
-         if (_privateKeyPem.empty())
+         if (mft_utils::IsFileEmpty(_certificatePath, true))
          {
-             throw MlxDpaException("Must provide private key.");
+             throw MlxDpaException("Certificate file is empty or does not exist.");
+         }
+         if (_privateKeyPem.empty() && !_isAwsHsm)
+         {
+             throw MlxDpaException("Must provide private key or use AWS HSM flag.");
+         }
+         if (!_privateKeyPem.empty() && _isAwsHsm)
+         {
+             throw MlxDpaException("Can't use AWS HSM flag and provide private key pem, chose one of them.");
+         }
+         if (!_privateKeyPem.empty() && mft_utils::IsFileEmpty(_privateKeyPem, true))
+         {
+             throw MlxDpaException("Private key file is empty or does not exist.");
+         }
+         if (_isAwsHsm && _keyLabel.empty())
+         {
+             throw MlxDpaException("Must provide private key label for AWS HSM sign flow.");
          }
          if (_outputPath.empty())
          {
@@ -619,12 +651,20 @@
              {
                  throw MlxDpaException("Must provide path to the certificate container to sign.");
              }
+             if (mft_utils::IsFileEmpty(_certContainerPath, true))
+             {
+                 throw MlxDpaException("Certificate container file is empty or does not exist.");
+             }
          }
          else if (_command == SignDpaAppRemovalContainer)
          {
              if (_dpaAppRemovalContainerPath.empty())
              {
                  throw MlxDpaException("Must provide path to the dpa app removal container to sign.");
+             }
+             if (mft_utils::IsFileEmpty(_dpaAppRemovalContainerPath, true))
+             {
+                 throw MlxDpaException("DPA app removal container file is empty or does not exist.");
              }
              if (_nvidiaSignedOem)
              {
@@ -635,9 +675,21 @@
          {
              throw MlxDpaException("Keypair UUID must be specified to create certificte container.");
          }
-         if (_privateKeyPem.empty())
+         if (_privateKeyPem.empty() && !_isAwsHsm)
          {
-             throw MlxDpaException("Must provide private key.");
+             throw MlxDpaException("Must provide private key or use AWS HSM flag.");
+         }
+         if (!_privateKeyPem.empty() && _isAwsHsm)
+         {
+             throw MlxDpaException("Can't use AWS HSM flag and provide private key pem, chose one of them.");
+         }
+         if (!_privateKeyPem.empty() && mft_utils::IsFileEmpty(_privateKeyPem, true))
+         {
+             throw MlxDpaException("Private key file is empty or does not exist.");
+         }
+         if (_isAwsHsm && _keyLabel.empty())
+         {
+             throw MlxDpaException("Must provide private key label for AWS HSM sign flow.");
          }
          if (_outputPath.empty())
          {

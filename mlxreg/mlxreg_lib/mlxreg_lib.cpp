@@ -47,13 +47,18 @@
 
 using namespace mlxreg;
 
-const int MlxRegLib::RETRIES_COUNT = 3;
-const int MlxRegLib::SLEEP_INTERVAL = 100;
+template<bool dynamic>
+const int _MlxRegLib_impl<dynamic>::RETRIES_COUNT = 3;
+template<bool dynamic>
+const int _MlxRegLib_impl<dynamic>::SLEEP_INTERVAL = 100;
 
-MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
+template<bool dynamic>
+_MlxRegLib_impl<dynamic>::_MlxRegLib_impl(mfile* mf, string extAdbFile, bool isExternal, bool batch_reg)
 {
     _mf = mf;
     _isExternal = isExternal;
+    _batch_reg = batch_reg;
+    _currentNode = nullptr;
     try
     {
         if (_isExternal && extAdbFile == "")
@@ -78,7 +83,15 @@ MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
         rootNode = rootNode + "_ext";
     }
 
-    _regAccessRootNode = _adb->createLayout(rootNode, 2);
+    _regAccessRootNode = nullptr;
+    if (!_batch_reg)
+    {
+        _regAccessRootNode = _adb->createLayout(rootNode, 2);
+    }
+    else
+    {
+        _regAccessRootNode = _adb->createLayout(rootNode);
+    }
     if (!_regAccessRootNode)
     {
         throw MlxRegException("No supported access registers found");
@@ -108,10 +121,15 @@ MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
 }
 
 /************************************
- * Function: ~MlxRegLib
+ * Function: ~_MlxRegLib_impl
  ************************************/
-MlxRegLib::~MlxRegLib()
+template<bool dynamic>
+_MlxRegLib_impl<dynamic>::~_MlxRegLib_impl()
 {
+    if (!_batch_reg && _currentNode != nullptr)
+    {
+        delete _currentNode;
+    }
     if (_regAccessRootNode)
     {
         delete _regAccessRootNode;
@@ -122,12 +140,14 @@ MlxRegLib::~MlxRegLib()
     }
 }
 
-dm_dev_id_t MlxRegLib::getDevId()
+template<bool dynamic>
+dm_dev_id_t _MlxRegLib_impl<dynamic>::getDevId()
 {
     return getDevId(_mf);
 }
 
-dm_dev_id_t MlxRegLib::getDevId(mfile* mf)
+template<bool dynamic>
+dm_dev_id_t _MlxRegLib_impl<dynamic>::getDevId(mfile* mf)
 {
     dm_dev_id_t devID = DeviceUnknown;
     u_int32_t hwDevID = 0;
@@ -141,15 +161,17 @@ dm_dev_id_t MlxRegLib::getDevId(mfile* mf)
     return devID;
 }
 
-bool MlxRegLib::isDeviceSupported(mfile* mf)
+template<bool dynamic>
+bool _MlxRegLib_impl<dynamic>::isDeviceSupported(mfile* mf)
 {
     dm_dev_id_t devID = getDevId(mf);
     return !dm_is_4th_gen(devID);
 }
 
-void MlxRegLib::initAdb(string extAdbFile)
+template<bool dynamic>
+void _MlxRegLib_impl<dynamic>::initAdb(string extAdbFile)
 {
-    _adb = new AdbAdvLegacy();
+    _adb = new Adb();
     if (extAdbFile != "")
     {
         if (!_adb->load(extAdbFile, false, false))
@@ -166,7 +188,8 @@ void MlxRegLib::initAdb(string extAdbFile)
 /************************************
  * Function: findAdbNode
  ************************************/
-AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(string name)
+template<bool dynamic>
+typename _MlxRegLib_impl<dynamic>::AdbInstance* _MlxRegLib_impl<dynamic>::findAdbNode(string name)
 {
     if (_regAccessMap.find(name) == _regAccessMap.end())
     {
@@ -174,19 +197,28 @@ AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(string name)
     }
     auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(name);
 
-    found_node = _adb->createLayout(found_node->nodeDesc->name);
+    if (!_batch_reg)
+    {
+        found_node = _adb->createLayout(found_node->nodeDesc->name);
+    }
+
     return found_node;
 }
 
 /************************************
  * Function: findAdbNode
  ************************************/
-AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(uint64_t id)
+template<bool dynamic>
+typename _MlxRegLib_impl<dynamic>::AdbInstance* _MlxRegLib_impl<dynamic>::findAdbNode(uint64_t id)
 {
     try
     {
         auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(id);
-        found_node = _adb->createLayout(found_node->nodeDesc->name);
+        if (!_batch_reg)
+        {
+            found_node = _adb->createLayout(found_node->nodeDesc->name);
+        }
+
         return found_node;
     }
     catch (AdbException& er)
@@ -198,9 +230,10 @@ AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(uint64_t id)
 /************************************
  * Function: showRegister
  ************************************/
-MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector<AdbInstanceAdvLegacy*>& fields)
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::showRegister(string regName, std::vector<AdbInstance*>& fields)
 {
-    AdbInstanceAdvLegacy* adbNode = findAdbNode(regName);
+    AdbInstance* adbNode = findAdbNode(regName);
     fields = adbNode->getLeafFields(true);
     return MRLS_SUCCESS;
 }
@@ -208,9 +241,10 @@ MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector<AdbInstanceA
 /************************************
  * Function: showRegisters
  ************************************/
-MlxRegLibStatus MlxRegLib::showRegisters(std::vector<string>& regs)
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::showRegisters(std::vector<string>& regs)
 {
-    for (std::map<string, u_int64_t>::iterator it = _regAccessMap.begin(); it != _regAccessMap.end(); ++it)
+    for (typename std::map<string, u_int64_t>::iterator it = _regAccessMap.begin(); it != _regAccessMap.end(); ++it)
     {
         regs.push_back(it->first);
     }
@@ -220,7 +254,8 @@ MlxRegLibStatus MlxRegLib::showRegisters(std::vector<string>& regs)
 /************************************
  * Function: sendMaccessReg
  ************************************/
-int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t>& data)
+template<bool dynamic>
+int _MlxRegLib_impl<dynamic>::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t>& data)
 {
     int status = 0;
     int rc = -1;
@@ -252,7 +287,8 @@ int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t
 /************************************
  * Function: sendMaccessReg
  ************************************/
-int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, void* data, uint32_t size)
+template<bool dynamic>
+int _MlxRegLib_impl<dynamic>::sendMaccessReg(u_int16_t regId, int method, void* data, uint32_t size)
 {
     int status = 0;
     int rc = -1;
@@ -272,7 +308,8 @@ int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, void* data, uint32_t 
 /************************************
  * Function: sendRegister
  ************************************/
-MlxRegLibStatus MlxRegLib::sendRegister(string regName, int method, std::vector<u_int32_t>& data)
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::sendRegister(string regName, int method, std::vector<u_int32_t>& data)
 {
     u_int16_t regId = (u_int16_t)_regAccessMap.find(regName)->second;
     int rc;
@@ -296,7 +333,8 @@ MlxRegLibStatus MlxRegLib::sendRegister(string regName, int method, std::vector<
 /************************************
  * Function: sendRegister
  ************************************/
-MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, std::vector<u_int32_t>& data)
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::sendRegister(u_int16_t regId, int method, std::vector<u_int32_t>& data)
 {
     int rc;
     rc = sendMaccessReg(regId, method, data);
@@ -310,8 +348,9 @@ MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, std::vector
 /************************************
  * Function: sendRegister
  ************************************/
-MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, void* data, uint32_t size)
-        {
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::sendRegister(u_int16_t regId, int method, void* data, uint32_t size)
+{
     int rc;
     rc = sendMaccessReg(regId, method, data, size);
     if (rc)
@@ -324,7 +363,8 @@ MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, void* data,
 /************************************
  * Function: getLastErrMsg
  ************************************/
-string MlxRegLib::getLastErrMsg()
+template<bool dynamic>
+string _MlxRegLib_impl<dynamic>::getLastErrMsg()
 {
     std::stringstream sstm;
     int lastErrCode = getLastErrCode();
@@ -341,9 +381,10 @@ string MlxRegLib::getLastErrMsg()
 /************************************
  * Function: isRegSizeSupported
  ************************************/
-bool MlxRegLib::isRegSizeSupported(string regName)
+template<bool dynamic>
+bool _MlxRegLib_impl<dynamic>::isRegSizeSupported(string regName)
 {
-    AdbInstanceAdvLegacy* adbNode = _regAccessUnionNode->getUnionSelectedNodeName(regName);
+    AdbInstance* adbNode = _regAccessUnionNode->getUnionSelectedNodeName(regName);
     return (((adbNode->get_size() >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_SET)) ||
             ((adbNode->get_size() >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET)));
 }
@@ -351,7 +392,8 @@ bool MlxRegLib::isRegSizeSupported(string regName)
 /************************************
  * Function: isAccessRegisterSupported
  ************************************/
- void MlxRegLib::isAccessRegisterSupported(mfile* mf)
+ template<bool dynamic>
+ void _MlxRegLib_impl<dynamic>::isAccessRegisterSupported(mfile* mf)
  {
      int                                    status;
      struct icmd_hca_icmd_query_cap_general icmd_cap;
@@ -378,7 +420,8 @@ bool MlxRegLib::isRegSizeSupported(string regName)
 /************************************
  * Function: handle_buffer_endianness
  ************************************/
-void MlxRegLib::handle_buffer_endianness(void* buffer, uint32_t size)
+template<bool dynamic>
+void _MlxRegLib_impl<dynamic>::handle_buffer_endianness(void* buffer, uint32_t size)
 {
     for (uint32_t* addr = (uint32_t*)buffer; addr < (uint32_t*)buffer + size / sizeof(uint32_t); ++addr)
     {
@@ -388,7 +431,8 @@ void MlxRegLib::handle_buffer_endianness(void* buffer, uint32_t size)
 /************************************
  * Function: isAccessRegisterGMPSupported
  ************************************/
-bool MlxRegLib::isAccessRegisterGMPSupported(maccess_reg_method_t reg_method)
+template<bool dynamic>
+bool _MlxRegLib_impl<dynamic>::isAccessRegisterGMPSupported(maccess_reg_method_t reg_method)
 {
     return (bool)(supports_reg_access_gmp(_mf, reg_method));
 }
@@ -396,7 +440,8 @@ bool MlxRegLib::isAccessRegisterGMPSupported(maccess_reg_method_t reg_method)
 /************************************
  * Function: isIBDevice
  ************************************/
-bool MlxRegLib::isIBDevice()
+template<bool dynamic>
+bool _MlxRegLib_impl<dynamic>::isIBDevice()
 {
     return (bool)(_mf->flags & MDEVS_IB);
 }
@@ -404,12 +449,13 @@ bool MlxRegLib::isIBDevice()
 /************************************
  * Function: dumpRegisterData
  ************************************/
-MlxRegLibStatus MlxRegLib::dumpRegisterData(string output_file_name, std::vector<u_int32_t>& data)
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::dumpRegisterData(string output_file_name, std::vector<u_int32_t>& data)
 {
     FILE* outputFile = fopen(output_file_name.c_str(), "w");
     if (outputFile)
     {
-        for (std::vector<u_int32_t>::size_type i = 0; i != data.size(); i++)
+        for (typename std::vector<u_int32_t>::size_type i = 0; i != data.size(); i++)
         {
             fprintf(outputFile, "%08x\n", CPU_TO_BE32(data[i]));
         }
@@ -421,3 +467,16 @@ MlxRegLibStatus MlxRegLib::dumpRegisterData(string output_file_name, std::vector
     fclose(outputFile);
     return MRLS_SUCCESS;
 }
+
+// Static member template instantiations
+template<>
+map<dm_dev_id_t, _Adb_impl<false, uint32_t>*> _MlxRegLib_impl<false>::_adbDBs;
+template<>
+map<dm_dev_id_t, _Adb_impl<true, uint32_t>*> _MlxRegLib_impl<true>::_adbDBs;
+
+// Explicit template instantiations
+namespace mlxreg
+{
+template class _MlxRegLib_impl<false>;
+template class _MlxRegLib_impl<true>;
+} // namespace mlxreg
