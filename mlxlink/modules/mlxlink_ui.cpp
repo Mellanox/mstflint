@@ -192,6 +192,12 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(
       SHOW_TX_GROUP_MAP_FLAG_SHORT, SHOW_TX_GROUP_MAP_FLAG, "group_num",
       "Display all label ports mapped to group <group_num> (for Spectrum-2 and Quantum devices)");
+    MlxlinkRecord::printFlagLine(BKV_GROUPS_FLAG_SHORT, BKV_GROUPS_FLAG, "",
+    "Show BKV Groups Info (requires --lane parameter)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
+    MlxlinkRecord::printFlagLine(BKV_GROUP_FLAG_SHORT, BKV_GROUP_FLAG, "group_id", "Show BKV Group Info");
+    printf(IDENT);
     MlxlinkRecord::printFlagLine(DEVICE_DATA_FLAG_SHORT, DEVICE_DATA_FLAG, "", "General Device Info");
     MlxlinkRecord::printFlagLine(BER_MONITOR_INFO_FLAG_SHORT, BER_MONITOR_INFO_FLAG, "",
                                  "Show BER Monitor Info (not supported for HCA)");
@@ -264,6 +270,30 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PHY_RECOVERY_TYPE_FLAG_SHORT, PHY_RECOVERY_TYPE_FLAG, "recovery_type",
                                  "PHY Recovery Type [host_serdes_feq/host_logic_re_lock]");
+    MlxlinkRecord::printFlagLine(SET_BKV_GROUP_FLAG_SHORT, SET_BKV_GROUP_FLAG, "group_id", "Set BKV Group Masks");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_RATES_FLAG_SHORT, BKV_RATES_FLAG, "bkv_rates",
+                                "BKV Rates separated by comma: "
+                                "[312.5M,53.125G,106.25G,200G,212.5G] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_ROLES_FLAG_SHORT, BKV_ROLES_FLAG, "bkv_roles",
+                                "BKV Roles [TLM,RLM,TCLM] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_MODE_B_ROLES_FLAG_SHORT, BKV_MODE_B_ROLES_FLAG, "bkv_mode_b_roles",
+                                "BKV Mode B Roles [PRIMARY,SECONDARY] (Optional)");
+    MlxlinkRecord::printFlagLine(SET_BKV_ENTRY_FLAG_SHORT, SET_BKV_ENTRY_FLAG, "group_id", "Set BKV Group Entry");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_ENTRY_FLAG_SHORT, BKV_ENTRY_FLAG, "entry_id", "BKV Entry ID (Required)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_ADDRESS_FLAG_SHORT, BKV_ADDRESS_FLAG, "address", "BKV Entry Address (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_WDATA_FLAG_SHORT, BKV_WDATA_FLAG, "wdata", "BKV Entry Write Data (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_WMASK_FLAG_SHORT, BKV_WMASK_FLAG, "wmask", "BKV Entry Write Mask (Optional)");
     MlxlinkRecord::printFlagLine(PRBS_MODE_FLAG_SHORT, PRBS_MODE_FLAG, "prbs_mode",
                                  "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
