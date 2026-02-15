@@ -4973,3 +4973,54 @@ void switch_access_funcs(mfile* mf)
     (void)mf;
 #endif
 }
+
+void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
+{
+    DIR          * dir;
+    struct dirent* ent;
+    char           link_path[1024];
+    char           resolved_path[1024];
+    char           dbdf[32];
+    unsigned int   d, b, dv, f;
+
+    if (!fwctl_dev) {
+        return;
+    }
+
+    fwctl_dev[0] = '\0';
+
+    snprintf(dbdf, sizeof(dbdf), "%04x:%02x:%02x.%x", domain, bus, dev, func);
+
+    dir = opendir("/sys/class/fwctl");
+    if (!dir) {
+        return;
+    }
+
+    while ((ent = readdir(dir)) != NULL) {
+        if (ent->d_name[0] == '.') {
+            continue;
+        }
+
+        snprintf(link_path, sizeof(link_path), "/sys/class/fwctl/%s/device", ent->d_name);
+
+        if (!realpath(link_path, resolved_path)) {
+            continue;
+        }
+
+        char* pci_name = basename(resolved_path);
+        if (!pci_name) {
+            continue;
+        }
+
+        if (sscanf(pci_name, "%x:%x:%x.%x", &d, &b, &dv, &f) != 4) {
+            continue;
+        }
+
+        if ((d == domain) && (b == bus) && (dv == dev) && (f == func)) {
+            snprintf(fwctl_dev, DEV_NAME_SZ, "/dev/fwctl/%s", ent->d_name);
+            break;
+        }
+    }
+
+    closedir(dir);
+}

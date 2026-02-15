@@ -208,6 +208,8 @@ string generateQueryXML(int dev_index,
 
 int prompt(const char* str, int yes_no_);
 FILE* createOutFile(string& fileName, bool fileSpecified);
+int progressCB_display_multi_thread(int completion);
+int advProgressFunc_display_multi_thread(int completion, const char* stage, prog_t type, int* unknownProgress);
 int progressCB_nodisplay(int completion);
 int progressCB_display(int completion);
 int advProgressFunc_display(int completion, const char* stage, prog_t type, int* unknownProgress);

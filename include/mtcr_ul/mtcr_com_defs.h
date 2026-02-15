@@ -393,6 +393,7 @@ typedef struct dev_info_t {
             char      numa_node[4096]; /* */
             vf_info * virtfn_arr;
             u_int16_t virtfn_count;
+            char fwctl_dev[DEV_NAME_SZ]; // fwctl device path
         } pci;
 
         struct {
