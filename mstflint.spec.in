@@ -144,6 +144,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
     config_flags="$config_flags --host arm"
 %endif
 
+%if %{buildtype} == "s390x"
+    config_flags="$config_flags --host=s390x-linux-gnu"
+%endif
+
 %configure ${config_flags} MSTFLINT_VERSION_STR="${MSTFLINT_VERSION_STR}"
 
 make

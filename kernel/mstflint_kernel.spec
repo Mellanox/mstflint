@@ -165,7 +165,7 @@ find %{buildroot} -type f -name \*.ko -exec %{__strip} -p --strip-debug --discar
 %defattr(-,root,root,-)
 /lib/modules/%{KVERSION}/%{install_mod_dir}/
 %endif
-%if "%{cpu_arch}" == "ppc64" || "%{cpu_arch}" == "ppc64le"
+%if "%{cpu_arch}" == "ppc64" || "%{cpu_arch}" == "ppc64le" || "%{cpu_arch}" == "s390x"
 %if "%{KMP}" == "1"
 %files utils
 %defattr(-,root,root,-)
