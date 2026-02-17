@@ -282,7 +282,7 @@ fi
 # mlxdpa
 AC_MSG_CHECKING(--enable-dpa argument)
 AC_ARG_ENABLE(dpa,
-    AS_HELP_STRING([--enable-dpa], [enable compilation of the mstdpa tool (Linux x86_64/aarch64 only) [default=disabled]]),
+    AS_HELP_STRING([--enable-dpa], [enable compilation of the mstdpa tool (requires openssl, Linux x86_64/aarch64 only) [default=disabled]]),
     [enable_dpa="$enableval"],
     [enable_dpa="no"]
 )
@@ -740,6 +740,11 @@ AM_CONDITIONAL(ENABLE_DPA, [test "x$enable_dpa" = "xyes" ])
 
 AC_SUBST(DPA)
 
+if [ test "x$enable_openssl" = "xno" ] && \
+    [ test "x$enable_dpa" = "xyes" ] ; then
+    AC_MSG_ERROR([--enable-dpa cannot be used with --disabled-openssl.])
+fi
+
 AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(adb_parser/Makefile)
         AC_CONFIG_FILES(tools_layouts/adb/Makefile)
@@ -834,6 +839,7 @@ AC_OUTPUT( \
     cmdparser/Makefile \
     common/Makefile \
     dev_mgt/Makefile \
+    pci_library/Makefile \
     ext_libs/Makefile \
     ext_libs/json/Makefile \
     ext_libs/mini-yaml/Makefile \

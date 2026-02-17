@@ -6922,7 +6922,7 @@ void MlxlinkCommander::showPeriodicEq()
     {
         sendPrmReg(ACCESS_REG_SLLM, GET);
         setPrintTitle(_periodicEqInfoCmd, HEADER_PERIODIC_EQ, PERIODIC_EQ_INFO_LAST);
-        setPrintVal(_periodicEqInfoCmd, "PEQ Interval Applied [uS]", to_string(getFieldValue("peq_interval_period", 0, 0, true) * 10));
+        setPrintVal(_periodicEqInfoCmd, "PEQ Interval Applied [uS]", to_string(getFieldValue("peq_interval_period", 0, 0, false, true) * 10));
         setPrintVal(_periodicEqInfoCmd, "PEQ Interval Oper [uS]", to_string(getFieldValue("peq_interval_period_oper") * 10));
     }
     catch (MlxRegException& exc)

@@ -42,6 +42,11 @@
 #include <iostream>
 #include <algorithm>
 #include <set>
+#include <thread>
+#include <mutex>
+#include <vector>
+#include <cstdarg>
+#include <cstdio>
 
 #include "pldmlib/pldm_utils.h"
 
@@ -49,8 +54,156 @@
 #define TUPLE_POS_BUFF_PTR 1
 #define TUPLE_POS_BUFF_SIZE 2
 
+// Structure to hold device update results for parallel execution
+struct DeviceUpdateResult
+{
+    int device_index;
+    int rc;
+    bool imageWasCached;
+    string log_message;
+    string error_message;
+
+    DeviceUpdateResult()
+    {
+        device_index = -1;
+        rc = 0;
+        imageWasCached = false;
+        log_message = "";
+        error_message = "";
+    }
+};
+
+// Mutex for thread-safe operations during parallel updates
+static std::mutex parallel_update_mutex;
+
+// Local device index for per device progress display in parallel mode.
+static thread_local int g_progress_device_index = -1;
+// Local line number for cursor positioning.
+static thread_local int g_progress_line_number = 0;
+// Total number of device lines in parallel mode.
+static int g_parallel_device_count = 0;
+// Extra lines printed.
+static int g_extra_output_lines = 0;
+// Progress lines are created on first use.
+static bool g_progress_lines_created = false;
+
+// ANSI codes for cursor movement.
+#define CURSOR_UP "\033[A"
+#define CURSOR_DOWN "\033[B"
+
+static void print_progress_at_line(int line, const char* fmt, ...)
+{
+    if (g_parallel_device_count <= 0 || line <= 0 || line > g_parallel_device_count)
+    {
+        return;
+    }
+    // On first use, create N progress lines at the bottom (below any stage messages already printed)
+    if (!g_progress_lines_created)
+    {
+        for (int i = 0; i < g_parallel_device_count; i++)
+        {
+            print_out("\n");
+        }
+        g_progress_lines_created = true;
+    }
+    // Progress lines are the last N lines; from "home" (below them) we go up (N+1 - slot) steps
+    int steps = g_parallel_device_count + 1 - line;
+    for (int j = 0; j < steps; j++)
+    {
+        print_out(CURSOR_UP);
+    }
+    print_out("\r");
+    char buf[256];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    print_out("%s", buf);
+    print_out("\033[K"); // erase to end of line
+    for (int j = 0; j < steps; j++)
+    {
+        print_out(CURSOR_DOWN);
+    }
+    print_out("\r");
+}
+
 // Function from fw_comps_mgr to set log file for library logging
 extern "C" void fwcomps_set_log_file(FILE* log_file);
+
+// Function to update a single device (used for both sequential and parallel updates)
+void updateSingleDevice(int device_index,
+                       MlnxDev* dev,
+                       string mfa_file,
+                       bool pldmFlow,
+                       map<string, vector<tuple<FwComponent::comps_ids_t, u_int8_t*, u_int32_t>>>& psidPldmComponents,
+                       int (*progressCB)(int),
+                       bool burnFailsafe,
+                       f_prog_func_adv advProgressCB,
+                       DeviceUpdateResult& result)
+{
+    result.device_index = device_index;
+    result.rc = 0;
+    result.imageWasCached = false;
+    
+    vector<string> questions;
+    bool isTimeConsumingFixesNeeded = false;
+    
+    // preBurn phase
+    int rc0 = dev->preBurn(mfa_file, progressCB, burnFailsafe, isTimeConsumingFixesNeeded, questions, advProgressCB);
+    
+    if (rc0)
+    {
+        if (abort_request)
+        {
+            result.error_message = "Interrupted";
+            result.rc = ERR_CODE_INTERRUPTED;
+        }
+        else
+        {
+            result.error_message = "Fail : " + dev->getLastErrMsg();
+            result.rc = rc0;
+        }
+        return;
+    }
+    
+    // PLDM flow
+    if (pldmFlow)
+    {
+        for (auto comps : (psidPldmComponents[dev->getPsid()]))
+        {
+            if (std::get<TUPLE_POS_COMPID>(comps) == FwComponent::comps_ids_t::COMPID_BFB)
+            {
+                if (dev->isBFBSupported())
+                {
+                    dev->burnPLDMComponent(std::get<TUPLE_POS_COMPID>(comps),
+                                          std::get<TUPLE_POS_BUFF_PTR>(comps),
+                                          std::get<TUPLE_POS_BUFF_SIZE>(comps));
+                }
+            }
+        }
+    }
+    
+    // Burn phase
+    rc0 = dev->burn(result.imageWasCached);
+    result.rc = rc0;
+    
+    if (!rc0)
+    {
+        result.log_message = "Done";
+    }
+    else
+    {
+        if (abort_request)
+        {
+            result.error_message = "Interrupted";
+            result.rc = ERR_CODE_INTERRUPTED;
+        }
+        else
+        {
+            result.error_message = "Fail : " + dev->getLastErrMsg();
+        }
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -177,8 +330,16 @@ int mainEntry(int argc, char* argv[])
     advProgressCB = NULL;
     if (cmd_params.show_progress)
     {
-        progressCB = progressCB_display;
-        advProgressCB = (f_prog_func_adv)&advProgressFunc_display;
+        if (cmd_params.update_all_fwctl)
+        {
+            progressCB = progressCB_display_multi_thread;
+            advProgressCB = (f_prog_func_adv)&advProgressFunc_display_multi_thread;
+        }
+        else
+        {
+            progressCB = progressCB_display;
+            advProgressCB = (f_prog_func_adv)&advProgressFunc_display;
+        }
     }
 
     formatted_output = cmd_params.write_xml;
@@ -402,7 +563,23 @@ int mainEntry(int argc, char* argv[])
         }
         else
         {
-            dev = new MlnxDev(&devsinfo[i], cmd_params.compare_ffv);
+            if (cmd_params.update_all_fwctl)
+            {
+                set_fwctl_dev(devsinfo[i].pci.fwctl_dev, devsinfo[i].pci.domain, devsinfo[i].pci.bus, devsinfo[i].pci.dev, devsinfo[i].pci.func);
+                if (!devsinfo[i].pci.fwctl_dev)
+                {
+                    print_err("-E- Failed to get fwctl device path for device %s\n", devsinfo[i].dev_name);
+                    continue;
+                }
+                else
+                {
+                    dev = new MlnxDev(devsinfo[i].pci.fwctl_dev, cmd_params.compare_ffv);
+                }
+            }
+            else
+            {
+                dev = new MlnxDev(&devsinfo[i], cmd_params.compare_ffv);
+            }
             dm_dev_id_t deviceType = dev->getDeviceType();
             if (dm_is_gpu(deviceType))
             {
@@ -600,95 +777,176 @@ int mainEntry(int argc, char* argv[])
             }
         }
     }
-    for (int i = 0; i < (int)devs.size(); i++)
+    // Parallel or sequential firmware update based on flag
+    if (cmd_params.update_all_fwctl && devs.size() > 1)
     {
-        if (status_strings[i].size() != 0)
+        // Parallel update mode
+        print_out("Starting parallel firmware update for %d device(s)...\n", (int)devs.size());
+        
+        vector<std::thread> update_threads;
+        vector<DeviceUpdateResult> update_results(devs.size());
+        vector<string> mfa_files(devs.size());
+        
+        // Prepare MFA files for each device
+        for (int i = 0; i < (int)devs.size(); i++)
         {
-            print_out("Device #%d: %s\n", (i + 1), status_strings[i].c_str());
-            continue;
-        }
-        else
-        {
-            print_out("Device #%d: %s", (i + 1), "Updating FW ...     \n");
-        }
-        burn_cnt++;
-        string mfa_file = config.mfa_path;
-        string tmp = psidUpdateInfo[devs[i]->getPsid()].url;
-        if (!cmd_params.use_mfa_file && !pldmFlow)
-        {
-            size_t pos = tmp.rfind("/");
-            if (pos != string::npos)
+            if (status_strings[i].size() != 0)
             {
-                tmp = tmp.substr(pos + 1);
+                continue;
             }
-            mfa_file += "/";
-            mfa_file += tmp;
-        }
-        else
-        {
-            mfa_file = tmp;
-        }
-        bool imageWasCached = false;
-        vector<string> questions;
-        bool isTimeConsumingFixesNeeded = false;
-        rc0 = devs[i]->preBurn(mfa_file, progressCB, cmd_params.burnFailsafe, isTimeConsumingFixesNeeded, questions,
-                               advProgressCB);
-        if (rc0)
-        {
-            if (abort_request)
+            
+            string mfa_file = config.mfa_path;
+            string tmp = psidUpdateInfo[devs[i]->getPsid()].url;
+            if (!cmd_params.use_mfa_file && !pldmFlow)
             {
-                print_out("\b\b\b\bInterrupted\n");
-                res = ERR_CODE_INTERRUPTED;
-                devs[i]->clearSemaphore();
-                goto early_err_clean_up;
+                size_t pos = tmp.rfind("/");
+                if (pos != string::npos)
+                {
+                    tmp = tmp.substr(pos + 1);
+                }
+                mfa_file += "/";
+                mfa_file += tmp;
             }
             else
             {
-                print_out("\b\b\b\bFail : %s \n", devs[i]->getLastErrMsg().c_str());
+                mfa_file = tmp;
+            }
+            mfa_files[i] = mfa_file;
+        }
+        
+        // Set total device line count for multi-line progress (2 lines per device: "Updating..." + progress)
+        int parallel_device_count = 0;
+        for (int i = 0; i < (int)devs.size(); i++)
+        {
+            if (status_strings[i].size() != 0)
+            {
+                continue;
+            }
+            parallel_device_count++;
+        }
+        g_parallel_device_count = parallel_device_count;
+        g_extra_output_lines = 0;
+        g_progress_lines_created = false;
+        
+        // Print all "Updating FW in parallel..." lines first (no blank lines; progress lines created on first use, below stage messages)
+        vector<int> parallel_indices;
+        for (int i = 0; i < (int)devs.size(); i++)
+        {
+            if (status_strings[i].size() != 0)
+            {
+                print_out("Device #%d: %s\n", (i + 1), status_strings[i].c_str());
+                continue;
+            }
+
+            print_out("Device #%d: Updating FW in parallel...\n", (i + 1));
+            burn_cnt++;
+            parallel_indices.push_back(i);
+        }
+        fflush(FOut);
+        
+        // Now launch all threads. Progress lines (percent) will be created on first progress update and appear below stage messages.
+        for (size_t idx = 0; idx < parallel_indices.size(); idx++)
+        {
+            int i = parallel_indices[idx];
+            int line_num = (int)(idx + 1); // slot 1..N; progress line is one of the last N lines (below FSMST etc.)
+            
+            update_threads.push_back(std::thread([i, line_num, &devs, &mfa_files, &pldmFlow, &psidPldmComponents, 
+                                                   progressCB, &cmd_params, advProgressCB, &update_results]() {
+                g_progress_device_index = (i + 1);
+                g_progress_line_number = line_num;
+                updateSingleDevice(i, devs[i], mfa_files[i], pldmFlow, psidPldmComponents,
+                                 progressCB, cmd_params.burnFailsafe, advProgressCB, update_results[i]);
+                g_progress_device_index = -1;
+                g_progress_line_number = 0;
+            }));
+        }
+        
+        // Wait for all threads to complete
+        for (auto& thread : update_threads)
+        {
+            if (thread.joinable())
+            {
+                thread.join();
             }
         }
-        else
+        g_parallel_device_count = 0;
+        g_extra_output_lines = 0;
+        g_progress_lines_created = false;
+        
+        for (int i = 0; i < (int)devs.size(); i++)
         {
-            for (unsigned int questionIndex = 0; questionIndex < questions.size(); questionIndex++)
+            if (status_strings[i].size() != 0)
             {
-                print_out("%s", questions[questionIndex].c_str());
-                int answer = prompt("Perform update? [y/N]: ", cmd_params.yes_no_);
-                if (!answer)
-                {
-                    print_out("No updates performed\n");
-                    goto clean_up;
-                }
+                continue;
             }
-            if (isTimeConsumingFixesNeeded)
+            
+            rc0 = update_results[i].rc;
+            
+            if (rc0 == 0)
             {
-                print_out("Preparing...\n");
-            }
-            if (pldmFlow)
-            {
-                for (auto comps : (psidPldmComponents[devs[i]->getPsid()]))
-                {
-                    if (std::get<TUPLE_POS_COMPID>(comps) == FwComponent::comps_ids_t::COMPID_BFB)
-                    {
-                        if (devs[i]->isBFBSupported())
-                        {
-                            devs[i]->burnPLDMComponent(std::get<TUPLE_POS_COMPID>(comps),
-                                                       std::get<TUPLE_POS_BUFF_PTR>(comps),
-                                                       std::get<TUPLE_POS_BUFF_SIZE>(comps));
-                        }
-                    }
-                }
-            }
-            rc0 = devs[i]->burn(imageWasCached);
-            if (!rc0)
-            {
-                print_out("\b\b\b\bDone\n");
+                print_out("Device #%d: Done\n", (i + 1));
                 burn_success_cnt++;
-                if (imageWasCached)
-                {
-                    print_out("Image was successfully cached by driver.\n");
-                }
             }
             else
+            {
+                if (abort_request)
+                {
+                    print_out("Device #%d: Interrupted\n", (i + 1));
+                    res = ERR_CODE_INTERRUPTED;
+                    devs[i]->clearSemaphore();
+                }
+                else
+                {
+                    print_out("Device #%d: %s\n", (i + 1), update_results[i].error_message.c_str());
+                }
+            }
+            
+            rc |= rc0;
+            if (FLog != NULL)
+            {
+                fprintf(FLog, "Device #%d: %s\n", (i + 1), devs[i]->getLog().c_str());
+            }
+        }
+
+        return rc;
+    }
+    else
+    {
+        // Sequential update mode (original behavior)
+        for (int i = 0; i < (int)devs.size(); i++)
+        {
+            if (status_strings[i].size() != 0)
+            {
+                print_out("Device #%d: %s\n", (i + 1), status_strings[i].c_str());
+                continue;
+            }
+            else
+            {
+                print_out("Device #%d: %s", (i + 1), "Updating FW ...     \n");
+            }
+            burn_cnt++;
+            string mfa_file = config.mfa_path;
+            string tmp = psidUpdateInfo[devs[i]->getPsid()].url;
+            if (!cmd_params.use_mfa_file && !pldmFlow)
+            {
+                size_t pos = tmp.rfind("/");
+                if (pos != string::npos)
+                {
+                    tmp = tmp.substr(pos + 1);
+                }
+                mfa_file += "/";
+                mfa_file += tmp;
+            }
+            else
+            {
+                mfa_file = tmp;
+            }
+            bool imageWasCached = false;
+            vector<string> questions;
+            bool isTimeConsumingFixesNeeded = false;
+            rc0 = devs[i]->preBurn(mfa_file, progressCB, cmd_params.burnFailsafe, isTimeConsumingFixesNeeded, questions,
+                                   advProgressCB);
+            if (rc0)
             {
                 if (abort_request)
                 {
@@ -702,11 +960,67 @@ int mainEntry(int argc, char* argv[])
                     print_out("\b\b\b\bFail : %s \n", devs[i]->getLastErrMsg().c_str());
                 }
             }
-        }
-        rc |= rc0;
-        if (FLog != NULL)
-        {
-            fprintf(FLog, "%s\n", devs[i]->getLog().c_str());
+            else
+            {
+                for (unsigned int questionIndex = 0; questionIndex < questions.size(); questionIndex++)
+                {
+                    print_out("%s", questions[questionIndex].c_str());
+                    int answer = prompt("Perform update? [y/N]: ", cmd_params.yes_no_);
+                    if (!answer)
+                    {
+                        print_out("No updates performed\n");
+                        goto clean_up;
+                    }
+                }
+                if (isTimeConsumingFixesNeeded)
+                {
+                    print_out("Preparing...\n");
+                }
+                if (pldmFlow)
+                {
+                    for (auto comps : (psidPldmComponents[devs[i]->getPsid()]))
+                    {
+                        if (std::get<TUPLE_POS_COMPID>(comps) == FwComponent::comps_ids_t::COMPID_BFB)
+                        {
+                            if (devs[i]->isBFBSupported())
+                            {
+                                devs[i]->burnPLDMComponent(std::get<TUPLE_POS_COMPID>(comps),
+                                                           std::get<TUPLE_POS_BUFF_PTR>(comps),
+                                                           std::get<TUPLE_POS_BUFF_SIZE>(comps));
+                            }
+                        }
+                    }
+                }
+                rc0 = devs[i]->burn(imageWasCached);
+                if (!rc0)
+                {
+                    print_out("\b\b\b\bDone\n");
+                    burn_success_cnt++;
+                    if (imageWasCached)
+                    {
+                        print_out("Image was successfully cached by driver.\n");
+                    }
+                }
+                else
+                {
+                    if (abort_request)
+                    {
+                        print_out("\b\b\b\bInterrupted\n");
+                        res = ERR_CODE_INTERRUPTED;
+                        devs[i]->clearSemaphore();
+                        goto early_err_clean_up;
+                    }
+                    else
+                    {
+                        print_out("\b\b\b\bFail : %s \n", devs[i]->getLastErrMsg().c_str());
+                    }
+                }
+            }
+            rc |= rc0;
+            if (FLog != NULL)
+            {
+                fprintf(FLog, "%s\n", devs[i]->getLog().c_str());
+            }
         }
     }
 
@@ -1919,9 +2233,125 @@ FILE* createOutFile(string& fileName, bool fileSpecified)
     return f;
 }
 
+int progressCB_display_multi_thread(int completion)
+{
+    if (g_progress_device_index >= 0 && g_progress_line_number > 0)
+    {
+        std::lock_guard<std::mutex> lock(parallel_update_mutex);
+        print_progress_at_line(g_progress_line_number, "Device #%d: %3d%%   ", g_progress_device_index, completion);
+    }
+    else if (g_progress_device_index >= 0)
+    {
+        std::lock_guard<std::mutex> lock(parallel_update_mutex);
+        print_out("\rDevice #%d: %3d%%   ", g_progress_device_index, completion);
+    }
+    else
+    {
+        print_out("\b\b\b\b%3d%%", completion);
+    }
+    return abort_request;
+}
+
+int advProgressFunc_display_multi_thread(int completion, const char* stage, prog_t type, int* unknownProgress)
+{
+    if (g_progress_device_index >= 0 && g_progress_line_number > 0)
+    {
+        std::lock_guard<std::mutex> lock(parallel_update_mutex);
+        switch (type)
+        {
+            case PROG_WITH_PRECENTAGE:
+                print_progress_at_line(g_progress_line_number, "Device #%d: %s - %3d%%   ",
+                                       g_progress_device_index, stage, completion);
+                break;
+
+            case PROG_OK:
+                print_out("Device #%d: %s -   OK          \n", g_progress_device_index, stage);
+                g_extra_output_lines++;
+                break;
+
+            case PROG_STRING_ONLY:
+                print_out("Device #%d: %s\n", g_progress_device_index, stage);
+                g_extra_output_lines++;
+                break;
+
+            case PROG_WITHOUT_PRECENTAGE:
+                if (unknownProgress)
+                {
+                    static const char* progStr[] = {"[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]",
+                                                    "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]"};
+                    int size = sizeof(progStr) / sizeof(progStr[0]);
+                    print_progress_at_line(g_progress_line_number, "Device #%d: %s - %s   ",
+                                           g_progress_device_index, stage, progStr[(*unknownProgress) % size]);
+                    (*unknownProgress)++;
+                }
+                break;
+        }
+    }
+    else if (g_progress_device_index >= 0)
+    {
+        std::lock_guard<std::mutex> lock(parallel_update_mutex);
+        switch (type)
+        {
+            case PROG_WITH_PRECENTAGE:
+                print_out("\rDevice #%d: %s - %3d%%   ", g_progress_device_index, stage, completion);
+                break;
+
+            case PROG_OK:
+                print_out("\rDevice #%d: %s -   OK          \n", g_progress_device_index, stage);
+                break;
+
+            case PROG_STRING_ONLY:
+                print_out("Device #%d: %s\n", g_progress_device_index, stage);
+                break;
+
+            case PROG_WITHOUT_PRECENTAGE:
+                if (unknownProgress)
+                {
+                    static const char* progStr[] = {"[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]",
+                                                    "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]"};
+                    int size = sizeof(progStr) / sizeof(progStr[0]);
+                    print_out("\rDevice #%d: %s - %s   ", g_progress_device_index, stage,
+                              progStr[(*unknownProgress) % size]);
+                    (*unknownProgress)++;
+                }
+                break;
+        }
+    }
+    else
+    {
+        switch (type)
+        {
+            case PROG_WITH_PRECENTAGE:
+                print_out("\r%s - %3d%%", stage, completion);
+                break;
+
+            case PROG_OK:
+                print_out("\r%s -   OK          \n", stage);
+                break;
+
+            case PROG_STRING_ONLY:
+                print_out("%s\n", stage);
+                break;
+
+            case PROG_WITHOUT_PRECENTAGE:
+                if (unknownProgress)
+                {
+                    static const char* progStr[] = {"[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]",
+                                                    "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]"};
+                    int size = sizeof(progStr) / sizeof(progStr[0]);
+                    print_out("\r%s - %s", stage, progStr[(*unknownProgress) % size]);
+                    (*unknownProgress)++;
+                }
+                break;
+        }
+    }
+    return abort_request;
+}
+
 int progressCB_display(int completion)
 {
     print_out("\b\b\b\b%3d%%", completion);
+
     return abort_request;
 }
 
@@ -1952,6 +2382,7 @@ int advProgressFunc_display(int completion, const char* stage, prog_t type, int*
             }
             break;
     }
+
     return abort_request;
 }
 

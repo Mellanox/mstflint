@@ -3297,3 +3297,12 @@ int is_zombiefish_device(mfile* mf)
             return 0;
     }
 }
+
+void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
+{
+    (void)fwctl_dev;
+    (void)domain;
+    (void)bus;
+    (void)dev;
+    (void)func;
+}

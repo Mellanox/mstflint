@@ -35,7 +35,6 @@
 #define PCI_LIBRARY_H
 
 #include <cstdint>
-#include <mtcr.h>
 #include "reg_access/reg_access_common.h"
 #include "tools_layouts/reg_access_hca_layouts.h"
 #include <vector>
