@@ -56,6 +56,13 @@
 #include "common/tools_regex.h"
 using namespace std;
 #include <cstdlib>
+#ifdef __WIN__
+#include <direct.h>
+#include <sys/stat.h>
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
 
 bool mlxcfg_is_debug_enabled()
 {
@@ -603,4 +610,48 @@ MlxcfgException::MlxcfgException(const char* fmt, ...)
 MlxcfgTLVNotFoundException::MlxcfgTLVNotFoundException(const char* cTLVName) :
     MlxcfgException("The TLV configuration %s was not found", cTLVName)
 {
+}
+void parseSystemConfName(const string& fullName, string& name, int& asic)
+{
+    // Pattern: name[asic] or just name
+    static const mstflint::common::regex::regex CONF_PATTERN(R"(^(.+)\[([0-9]+)\]$)");
+    mstflint::common::regex::smatch match;
+    if (mstflint::common::regex::regex_match(fullName, match, CONF_PATTERN))
+    {
+        name = match[1].str();
+        asic = std::stoi(match[2].str());
+    }
+    else
+    {
+        // No ASIC specified, name is the whole string, asic is -1
+        name = fullName;
+        asic = -1;
+    }
+}
+
+// if temp directory doesn't exist, try to create it
+string getTempFolder()
+{
+#ifdef __WIN__
+    string tempPath = "C:\\temp\\";
+    struct _stat info;
+    if (_stat("C:\\temp", &info) != 0)
+    {
+        if (_mkdir("C:\\temp") != 0)
+        {
+            throw MlxcfgException("Failed to create temp directory: C:\\temp");
+        }
+    }
+#else
+    string tempPath = "/tmp/";
+    struct stat info;
+    if (stat("/tmp", &info) != 0)
+    {
+        if (mkdir("/tmp", 0755) != 0)
+        {
+            throw MlxcfgException("Failed to create temp directory: /tmp");
+        }
+    }
+#endif
+    return tempPath;
 }

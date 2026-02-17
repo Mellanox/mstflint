@@ -184,7 +184,7 @@ TLVConf::TLVConf(int columnsCount, char** dataRow, char** headerRow) :
     _isReadOnly = false;
 }
 
-int TLVConf::getMaxPort(mfile* mf)
+int TLVConf::getMaxPort(mfile* mf, bool forceMaxPort)
 {
     static int maxPort = 0;
     if (maxPort == 0)
@@ -193,13 +193,13 @@ int TLVConf::getMaxPort(mfile* mf)
         struct reg_access_hca_mgir_ext mgir;
         memset(&mgir, 0, sizeof(mgir));
         rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
-        if (rc == ME_OK)
+        if (rc != ME_OK || forceMaxPort)
         {
-            maxPort = mgir.hw_info.num_ports;
+            maxPort = 8;
         }
         else
         {
-            maxPort = 8;
+            maxPort = mgir.hw_info.num_ports;
         }
     }
     return maxPort;

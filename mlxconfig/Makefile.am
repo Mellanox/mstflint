@@ -70,7 +70,7 @@ libmlxcfg_la_SOURCES = mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_vi
         mlxcfg_db_items.h mlxcfg_db_items.cpp \
         mlxcfg_db_manager.h mlxcfg_db_manager.cpp mlxcfg_param.h mlxcfg_param.cpp mlxcfg_tlv.h mlxcfg_tlv.cpp \
         mlxcfg_commander.h mlxcfg_commander.cpp mlxcfg_generic_commander.h mlxcfg_generic_commander.cpp \
-        mlxcfg_ui_tokens.h mlxcfg_ui_tokens.cpp
+        mlxcfg_ui_tokens.h mlxcfg_ui_tokens.cpp mlxcfg_configuration.h mlxcfg_configuration.cpp
 
 libmlxcfg_la_DEPENDENCIES = \
     $(top_builddir)/mft_utils/libmftutils.la \

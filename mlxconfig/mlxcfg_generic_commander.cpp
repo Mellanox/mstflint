@@ -166,7 +166,8 @@ void GenericCommander::supportsNVData()
     return;
 }
 
-GenericCommander::GenericCommander(mfile* mf, string& dbName, Device_Type deviceType) : Commander(mf), _dbManager(NULL)
+GenericCommander::GenericCommander(mfile* mf, string& dbName, Device_Type deviceType, bool useMaxPort) :
+    Commander(mf), _dbManager(NULL)
 {
     if ((_mf != NULL) && (deviceType != Device_Type::Retimer))
     {
@@ -179,7 +180,7 @@ GenericCommander::GenericCommander(mfile* mf, string& dbName, Device_Type device
         dbName = Commander::getDefaultDBName(deviceType == Device_Type::Switch || deviceType == Device_Type::Retimer || deviceType == Device_Type::LinkX);
     }
 
-    _dbManager = new MlxcfgDBManager(dbName, mf);
+    _dbManager = new MlxcfgDBManager(dbName, mf, useMaxPort);
 }
 
 GenericCommander::~GenericCommander()
@@ -256,7 +257,7 @@ void GenericCommander::queryConfigViews(std::vector<TLVConfView>& confs, const s
         vector<ParamView> result;
         if ((*it)->isPortTargetClass())
         {
-            for (int i = 1; i <= (*it)->getMaxPort(_mf); i++)
+            for (int i = 1; i <= (*it)->getMaxPort(_mf, false); i++)
             {
                 (*it)->_port = i;
                 (*it)->_module = -1;
@@ -557,7 +558,7 @@ bool GenericCommander::checkDependency(std::shared_ptr<TLVConf> cTLV, string dSt
             {
                 throw MlxcfgTLVNotFoundException(dTLVName.c_str());
             }
-            if (!dTLV->isFWSupported(_mf, false))
+            if (!(_ignoreWriteSupport || dTLV->isFWSupported(_mf, false)))
             {
                 return false;
             }
@@ -624,7 +625,9 @@ void GenericCommander::queryTLV(std::shared_ptr<TLVConf> tlv,
                                 bool isWriteOperation,
                                 QueryType qt)
 {
-    if (!tlv->_cap && tlv->isMlxconfigSupported() && tlv->isFWSupported(_mf, isWriteOperation))
+    // When _ignoreWriteSupport is set, skip FW support check entirely and assume FW supports the TLV
+    bool fwSupported = _ignoreWriteSupport || tlv->isFWSupported(_mf, isWriteOperation);
+    if (!tlv->_cap && tlv->isMlxconfigSupported() && fwSupported)
     {
         vector<pair<ParamView, string>> dependencyTable = {};
         dependencyTable = tlv->query(_mf, qt);
@@ -845,7 +848,7 @@ void GenericCommander::setCfg(vector<ParamView>& params, bool force)
                 string strRuleTLV = *j;
                 std::shared_ptr<TLVConf> ruleTLV = _dbManager->getDependencyTLVByName(
                   strRuleTLV, tlv->_port, tlv->_module); // similar to dependency, rule TLV may also be cross class.
-                if (!ruleTLV->isFWSupported(_mf, false))
+                if (!(_ignoreWriteSupport || ruleTLV->isFWSupported(_mf, false)))
                 {
                     if (strRuleTLV == "nv_global_roce_cc_cap")
                     {
@@ -1181,6 +1184,24 @@ void GenericCommander::updateParamViewValue(ParamView& p, string v, QueryType qt
     tlv->parseParamValue(mlxconfigName, v, p.val, p.strVal, index, qt);
 }
 
+std::shared_ptr<SystemConfiguration>
+  GenericCommander::getSystemConfiguration(const std::string& name, int32_t asicNumber, const std::string& deviceName)
+{
+    return _dbManager->getConfiguration(name, asicNumber, deviceName);
+}
+
+std::vector<std::shared_ptr<SystemConfiguration>>
+  GenericCommander::getSystemConfigurationsByName(const std::string& name, const std::string& deviceName)
+{
+    return _dbManager->getConfigurationsByName(name, deviceName);
+}
+
+std::map<std::string, std::vector<std::shared_ptr<SystemConfiguration>>>
+  GenericCommander::getAllSystemConfigurations(const std::string& deviceName)
+{
+    return _dbManager->getAllSystemConfigurations(deviceName);
+}
+
 void GenericCommander::genTLVsList(vector<string>& tlvs)
 {
     for (std::vector<std::shared_ptr<TLVConf>>::iterator it = _dbManager->_fetchedTLVs.begin();
@@ -1415,7 +1436,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<std::shared_
                 port = 1;
             }
             else if (!strToNum((const char*)portAttr, port) ||
-                     !(1 <= port && (int32_t)port <= tlvConf->getMaxPort(_mf)))
+                     !(1 <= port && (int32_t)port <= tlvConf->getMaxPort(_mf, false)))
             {
                 throw MlxcfgException("Illegal value of port attribute %s", (const char*)portAttr);
             }
@@ -1578,7 +1599,7 @@ void GenericCommander::XML2Raw(const string& xmlContent, string& raw)
     {
         if ((*tlvConf)->_attrs[PORT_ATTR] == ALL_ATTR_VAL)
         {
-            for (i = 1; i <= (*tlvConf)->getMaxPort(_mf); i++)
+            for (i = 1; i <= (*tlvConf)->getMaxPort(_mf, false); i++)
             {
                 (*tlvConf)->_attrs[PORT_ATTR] = i;
                 (*tlvConf)->_port = i;
@@ -1616,7 +1637,7 @@ void GenericCommander::TLVConf2Bin(const vector<std::shared_ptr<TLVConf>>& tlvs,
     {
         if ((*tlvConf)->_attrs[PORT_ATTR] == ALL_ATTR_VAL)
         {
-            for (i = 1; i <= (*tlvConf)->getMaxPort(_mf); i++)
+            for (i = 1; i <= (*tlvConf)->getMaxPort(_mf, false); i++)
             {
                 (*tlvConf)->_attrs[PORT_ATTR] = i;
                 (*tlvConf)->_port = i;

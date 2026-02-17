@@ -83,6 +83,9 @@ typedef enum
     Mc_TokenSupported,
     Mc_QueryTokenSession,
     Mc_EndTokenSession,
+    Mc_ShowSystemConf,
+    Mc_SetSystemConf,
+    Mc_ValidateSystemConf,
     Mc_UnknownCmd
 } mlxCfgCmd;
 
@@ -121,7 +124,7 @@ public:
         completeSetWithDefault(false),
         cmd(Mc_UnknownCmd),
         isJsonOutputRequested(false),
-        yes(false),
+        yesLevel(0),
         force(false),
         enableVerbosity(false),
         tokenName(""),
@@ -155,7 +158,7 @@ public:
     bool completeSetWithDefault;
     mlxCfgCmd cmd;
     bool isJsonOutputRequested;
-    bool yes;
+    int yesLevel; // 0 = no auto-yes, 1 = -y (yes), 2 = -yy (strong yes)
     std::vector<ParamView> setParams;
     bool force; // ignore parameter checks
     bool enableVerbosity;
@@ -170,6 +173,7 @@ public:
     bool isSleepTimeBetweenCommandsInput;
     u_int32_t keepAliveSleepTimeOnCommandTO;
     bool isSleepTimeOnCommandTOInput;
+    std::string systemConfName; // Name of system configuration for show/set/validate_system_conf commands
 };
 
 class MlxCfg
@@ -194,6 +198,7 @@ private:
     mlxCfgStatus extractNVInputFile(int argc, char* argv[]);
     mlxCfgStatus extractNVOutputFile(int argc, char* argv[]);
     mlxCfgStatus extractSetCfgArgs(int argc, char* argv[]);
+    mlxCfgStatus parseParametersString(const std::string& parametersString, std::vector<ParamView>& outParams);
     mlxCfgStatus extractQueryCfgArgs(int argc, char* argv[]);
 
     void removeContinuanceArray(std::vector<QueryOutputItem>& OutputItemOut,
@@ -217,7 +222,9 @@ private:
                              bool printNewCfg = false);
 
     // Set cmd
+    Commander* createCommander(const std::string& device, bool forceCreate, bool useMaxPort);
     mlxCfgStatus setDevCfg();
+    mlxCfgStatus setDevCfgWithParams(Commander* commander, std::vector<ParamView>& setParams);
     void compareCurrentParamsVectors(const std::vector<ParamView>& ParamVec1,
                                      const std::vector<ParamView>& ParamVec2,
                                      std::vector<ParamView>& paramMlxconfigNameDiffList);
@@ -232,7 +239,7 @@ private:
     mlxCfgStatus resetDevCfg(const char* dev);
     // Set\Get Raw TLV file
     mlxCfgStatus devRawCfg(RawTlvMode mode);
-    mlxCfgStatus backupCfg();
+    mlxCfgStatus backupCfg(string deviceName);
     mlxCfgStatus tlvLine2DwVec(const std::string& tlvStringLine, std::vector<u_int32_t>& tlvVec);
 
     mlxCfgStatus clrDevSem();
@@ -267,12 +274,24 @@ private:
     mlxCfgStatus queryTokenSession();
     mlxCfgStatus endTokenSession();
 
+    // System configuration commands
+    mlxCfgStatus showSystemConf();
+    mlxCfgStatus setSystemConf();
+    mlxCfgStatus
+      setSingleDeviceSystemConf(const string& mstDevicePath, const string& confName, int confAsic, bool shouldBackup);
+    mlxCfgStatus validateSystemConf();
+    mlxCfgStatus validateSingleDeviceSystemConf(const string& mstDevicePath, const string& confName, int confAsic);
+    mlxCfgStatus getAggregatedDeviceConfigs(const string& confName,
+                                            const int confAsic,
+                                            std::vector<std::pair<std::string, int>>& devList);
+
     // static print functions
     static int printParam(string param, u_int32_t val);
     static int printValue(string strVal, u_int32_t val);
     static void printSingleParam(const char* name, QueryOutputItem& queryOutItem, u_int8_t verbose, bool printNewCfg);
 
-    bool askUser(const char* question, bool add_prefix = true, bool add_suffix = true);
+    bool askUser(const char* question, bool add_prefix = true, bool add_suffix = true, int requiredYesLevel = 1);
+    void rebootDevice(const string& device);
     mlxCfgStatus err(bool report, const char* errMsg, ...);
     void printErr();
     // data members

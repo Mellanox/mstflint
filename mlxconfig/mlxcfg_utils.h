@@ -207,6 +207,9 @@ bool getDeviceInformationString(mfile* mf, info_type_t op, vector<char>& infoStr
 
 Device_Type getDeviceTypeFromString(string inStr);
 
+string getTempFolder();
+void parseSystemConfName(const string& fullName, string& name, int& asic);
+
 class MlxcfgException : public exception
 {
 public:

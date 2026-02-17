@@ -174,7 +174,7 @@ public:
     bool isHostTargetClass();
     // Create a deep copy of TLVConf, including deep copies of parameter vectors
     std::shared_ptr<TLVConf> cloneDeep() const;
-    static int getMaxPort(mfile* mf);
+    static int getMaxPort(mfile* mf, bool forceMaxPort = false);
     static int getMaxModule();
     void setAttr(string attr, string val);
     void invalidate(mfile* mf);
