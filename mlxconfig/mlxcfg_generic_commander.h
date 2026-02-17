@@ -73,7 +73,7 @@ private:
     void removeSignatureTlvs(vector<std::shared_ptr<TLVConf>>& tlvs);
 
 public:
-    GenericCommander(mfile* mf, string& dbName, Device_Type deviceType = Device_Type::HCA);
+    GenericCommander(mfile* mf, string& dbName, Device_Type deviceType = Device_Type::HCA, bool useMaxPort = false);
     ~GenericCommander() override;
     void printLongDesc(FILE*) override;
     void setHostFunctionParams(u_int8_t hostId, u_int8_t pfIndex, bool valid) override;
@@ -98,6 +98,12 @@ public:
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) override;
     void backupCfgs(vector<BackupView>& view) override;
     void updateParamViewValue(ParamView& p, std::string v, QueryType qt) override;
+    std::shared_ptr<SystemConfiguration>
+      getSystemConfiguration(const std::string& name, int32_t asicNumber, const std::string& deviceName) override;
+    std::vector<std::shared_ptr<SystemConfiguration>>
+      getSystemConfigurationsByName(const std::string& name, const std::string& deviceName) override;
+    std::map<std::string, std::vector<std::shared_ptr<SystemConfiguration>>>
+      getAllSystemConfigurations(const std::string& deviceName) override;
     void queryConfigViews(std::vector<TLVConfView>& confs, const std::string& configName = "", QueryType qt = QueryNext);
 
     void

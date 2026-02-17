@@ -1,6 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2021-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -40,11 +40,13 @@
 #ifndef MLXCFG_FACTORY_H_
 #define MLXCFG_FACTORY_H_
 
+#include <map>
 #include <vector>
 #include <exception>
 
 #include "mlxcfg_tlv.h"
 #include "mlxcfg_param.h"
+#include "mlxcfg_configuration.h"
 #include <ext_libs/sqlite/sqlite3.h>
 
 enum SPLITBY
@@ -64,29 +66,35 @@ private:
     bool _isAllFetched;
     std::shared_ptr<Param> _paramSqlResult;
     mfile* _mf;
+    bool _useMaxPort;
 
     // private methods
     static int selectTLVCallBack(void*, int, char**, char**);
     static int selectParamCallBack(void*, int, char**, char**);
+    static int selectConfigurationCallBack(void*, int, char**, char**);
     void openDB();
     void checkDBVersion();
     inline bool isDBFileExists(const std::string& name);
     void fillMapWithFetchedTLVs(mfile* mf);
     void fillMapWithFetchedParams(mfile* mf);
+    void fillMapWithFetchedConfigurations();
 
 public:
     // public members
-    MlxcfgDBManager(std::string dbName, mfile* mf);
+    MlxcfgDBManager(std::string dbName, mfile* mf, bool useMaxPort = false);
     ~MlxcfgDBManager();
     bool isParamMlxconfigNameExist(std::string mlxconfigName);
 
     // lists of tlv and param from the DB
     std::vector<std::shared_ptr<TLVConf>> _fetchedTLVs;
     std::vector<std::shared_ptr<Param>> _fetchedParams;
+    std::vector<std::shared_ptr<SystemConfiguration>> _fetchedConfigurations;
 
     // map of the whole DB including port and module duplications
     std::map<tuple<string, int, int>, std::shared_ptr<TLVConf>> _tlvMap; // tlv name, port, module
     std::map<std::string, std::string> _mlxconfigNameToTlv;
+    // map for system configurations: config_name -> list of configurations (one per ASIC)
+    std::map<std::string, std::vector<std::shared_ptr<SystemConfiguration>>> _configurationMap;
 
     // public methods
     void getAllTLVs();
@@ -102,6 +110,14 @@ public:
     static tuple<string, int, int> getMlxconfigNamePortModule(std::string mlxconfigName, mfile* mf);
     static tuple<string, int> splitMlxcfgNameAndPortOrModule(std::string mlxconfigName, SPLITBY splitBy, mfile* mf);
     void execSQL(sqlite3_callback f, void* obj, const char* stat, ...);
+
+    // System configuration methods
+    std::shared_ptr<SystemConfiguration>
+      getConfiguration(const std::string& name, int32_t asicNumber, const std::string& deviceName);
+    std::vector<std::shared_ptr<SystemConfiguration>> getConfigurationsByName(const std::string& name,
+                                                                              const std::string& deviceName);
+    std::map<std::string, std::vector<std::shared_ptr<SystemConfiguration>>>
+      getAllSystemConfigurations(const std::string& deviceName);
 };
 
 #endif

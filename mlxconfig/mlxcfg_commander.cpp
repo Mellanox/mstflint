@@ -44,7 +44,8 @@
 
 using namespace std;
 
-Commander* Commander::create(std::string device, std::string& dbName, bool forceCreate, Device_Type deviceType)
+Commander*
+  Commander::create(std::string device, std::string& dbName, bool forceCreate, Device_Type deviceType, bool useMaxPort)
 {
     mfile* mf;
     int rc;
@@ -71,7 +72,7 @@ Commander* Commander::create(std::string device, std::string& dbName, bool force
     Commander* cmdr = NULL;
     try
     {
-        cmdr = create(mf, dbName, deviceType);
+        cmdr = create(mf, dbName, deviceType, useMaxPort);
     }
     catch (MlxcfgException& exp)
     {
@@ -82,7 +83,7 @@ Commander* Commander::create(std::string device, std::string& dbName, bool force
     return cmdr;
 }
 
-Commander* Commander::create(mfile* mf, std::string& dbName, Device_Type deviceType)
+Commander* Commander::create(mfile* mf, std::string& dbName, Device_Type deviceType, bool useMaxPort)
 {
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId = 0, hwRevId = 0;
@@ -109,7 +110,7 @@ Commander* Commander::create(mfile* mf, std::string& dbName, Device_Type deviceT
         { // take internal db file
             dbName = getDefaultDBName(dm_dev_is_switch(deviceId));
         }
-        commander = new GenericCommander(mf, dbName, deviceType);
+        commander = new GenericCommander(mf, dbName, deviceType, useMaxPort);
     }
     else
     {
@@ -155,7 +156,7 @@ string Commander::getDefaultDBName(bool isSwitch)
     FILE* fd = fopen(confFile.c_str(), "r");
     if (!fd)
     {
-        throw MlxcfgException("Failed to open conf file : %s\n", confFile.c_str());
+        throw MlxcfgException("Failed to open conf file : %s (%d)\n", confFile.c_str(), __LINE__);
     }
     string prefix = "", dataPath = "";
     while ((fgets(line, 1024, fd)))

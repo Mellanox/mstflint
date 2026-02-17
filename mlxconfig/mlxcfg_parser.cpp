@@ -92,6 +92,7 @@ void MlxCfg::printHelp()
     printFlagLine("j", "json_format", "file",
                   "Save the query output to file in JSON format, only usable with Query command");
     printFlagLine("y", "yes", "", "Answer yes in prompt.");
+    printFlagLine("yy", "yyes", "", "Answer yes to all prompts including reboot command.");
     printFlagLine(
       "", "with_default", "",
       "set command will fill any missing parameters with default values. if the final configurations matches the current no set will be done");
@@ -140,6 +141,9 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-24s : %s\n", "token_supported", "Query which tokens are supported.");
     printf(IDENT2 "%-24s : %s\n", "query_token_session", "Query the status of a token session.");
     printf(IDENT2 "%-24s : %s\n", "end_token_session", "End an active token session.");
+    printf(IDENT2 "%-24s : %s\n", "show_system_conf", "Show available system configurations.");
+    printf(IDENT2 "%-24s : %s\n", "set_system_conf", "Apply a system configuration to the device.");
+    printf(IDENT2 "%-24s : %s\n", "validate_system_conf", "Validate a system configuration against the device.");
 
     // print supported commands
     printf("\n");
@@ -470,9 +474,13 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
             _mlxParams.isJsonOutputRequested = true;
             _mlxParams.NVOutputFile = argv[i];
         }
+        else if (arg == "-yy" || arg == "--yyes")
+        {
+            _mlxParams.yesLevel = 2;
+        }
         else if (arg == "-y" || arg == "--yes")
         {
-            _mlxParams.yes = true;
+            _mlxParams.yesLevel = 1;
         }
         else if (arg == "-f" || arg == "--file")
         {
@@ -669,6 +677,21 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
             _mlxParams.cmd = Mc_RemoteTokenKeepAlive;
             break;
         }
+        else if (arg == "show_system_conf")
+        {
+            _mlxParams.cmd = Mc_ShowSystemConf;
+            break;
+        }
+        else if (arg == "set_system_conf")
+        {
+            _mlxParams.cmd = Mc_SetSystemConf;
+            break;
+        }
+        else if (arg == "validate_system_conf")
+        {
+            _mlxParams.cmd = Mc_ValidateSystemConf;
+            break;
+        }
         else
         {
             return err(true, "invalid argument: %s", arg.c_str());
@@ -696,25 +719,28 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     }
 
     if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw ||
-         _mlxParams.cmd == Mc_Get_Raw || _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || 
-		 _mlxParams.cmd == Mc_Apply || _mlxParams.cmd == Mc_RemoteTokenKeepAlive || 
+         _mlxParams.cmd == Mc_Get_Raw || _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs ||
+         _mlxParams.cmd == Mc_Apply || _mlxParams.cmd == Mc_RemoteTokenKeepAlive ||
          _mlxParams.cmd == Mc_ChallengeRequest || _mlxParams.cmd == Mc_TokenSupported ||
-         _mlxParams.cmd == Mc_QueryTokenSession || _mlxParams.cmd == Mc_EndTokenSession) &&
+         _mlxParams.cmd == Mc_QueryTokenSession || _mlxParams.cmd == Mc_EndTokenSession ||
+         _mlxParams.cmd == Mc_SetSystemConf || _mlxParams.cmd == Mc_ValidateSystemConf) &&
         _mlxParams.device.length() == 0)
     {
         return err(true, "%s command expects device to be specified.",
-                    _mlxParams.cmd == Mc_Set ? "set" :
-                    _mlxParams.cmd == Mc_Set_Raw ? "set_raw" :
-                    _mlxParams.cmd == Mc_Get_Raw ? "get_raw" :
-                    _mlxParams.cmd == Mc_Clr_Sem ? "clear_semaphore" :
-                    _mlxParams.cmd == Mc_Backup ? "backup" : 
-                    _mlxParams.cmd == Mc_Apply ? "apply" :
-                    _mlxParams.cmd == Mc_ChallengeRequest ? "challenge_request" :
-                    _mlxParams.cmd == Mc_TokenSupported ? "token_supported" :
-                    _mlxParams.cmd == Mc_QueryTokenSession ? "query_token_session" :
-                    _mlxParams.cmd == Mc_EndTokenSession ? "end_token_session" :
-                    _mlxParams.cmd == Mc_RemoteTokenKeepAlive ? "remote_token_keep_alive" :
-                    "show_confs");
+                   _mlxParams.cmd == Mc_Set                  ? "set" :
+                   _mlxParams.cmd == Mc_Set_Raw              ? "set_raw" :
+                   _mlxParams.cmd == Mc_Get_Raw              ? "get_raw" :
+                   _mlxParams.cmd == Mc_Clr_Sem              ? "clear_semaphore" :
+                   _mlxParams.cmd == Mc_Backup               ? "backup" :
+                   _mlxParams.cmd == Mc_Apply                ? "apply" :
+                   _mlxParams.cmd == Mc_ChallengeRequest     ? "challenge_request" :
+                   _mlxParams.cmd == Mc_TokenSupported       ? "token_supported" :
+                   _mlxParams.cmd == Mc_QueryTokenSession    ? "query_token_session" :
+                   _mlxParams.cmd == Mc_EndTokenSession      ? "end_token_session" :
+                   _mlxParams.cmd == Mc_RemoteTokenKeepAlive ? "remote_token_keep_alive" :
+                   _mlxParams.cmd == Mc_SetSystemConf        ? "set_system_conf" :
+                   _mlxParams.cmd == Mc_ValidateSystemConf   ? "validate_system_conf" :
+                                                               "show_confs");
     }
     if (((_mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Get_Raw) && _mlxParams.rawTlvFile.size() == 0))
     {
@@ -818,6 +844,18 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
             return rc;
         }
         return extractNVOutputFile(argc - i - 1, &(argv[i + 1]));
+    }
+
+    if (_mlxParams.cmd == Mc_SetSystemConf || _mlxParams.cmd == Mc_ValidateSystemConf)
+    {
+        // set_system_conf and validate_system_conf require a configuration name
+        if (argc - i < 1)
+        {
+            return err(true, "%s command requires a configuration name.",
+                       _mlxParams.cmd == Mc_SetSystemConf ? "set_system_conf" : "validate_system_conf");
+        }
+        _mlxParams.systemConfName = argv[i];
+        return MLX_CFG_OK;
     }
 
     try
