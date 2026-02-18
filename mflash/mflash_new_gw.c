@@ -99,7 +99,8 @@ static int set_gw_data_size(mflash* mfl, u_int32_t data_size, u_int32_t* gw_cmd)
 static int set_gw_data_size_wrapper(mflash* mfl, u_int32_t data_size, u_int32_t* gw_cmd, bool is_first)
 {
     int rc = 0;
-    if (!is_first && data_size == (u_int32_t)mfl->attr.block_write)
+    FlashGen flash_gen = get_flash_gen(mfl);
+    if (flash_gen == SEVEN_GEN_FLASH && !is_first && data_size == (u_int32_t)mfl->attr.block_write)
     {
         DPRINTF(("set_gw_data_size_wrapper: skip setting data size for non-first block\n"));
     }
