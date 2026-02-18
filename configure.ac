@@ -415,7 +415,30 @@ if test "$enable_nvml" = "yes"; then
                 [
                     AC_MSG_NOTICE([Looking for nvml headers and libraries in default include paths])
                     AC_CHECK_HEADERS([nvml.h], [], [AC_MSG_ERROR([cannot find nvml.h in default include paths, please check you nvidia driver installation or use --with-nvml-include-dir=DIR to specify the correct directory path of nvml.h.])])
-                    AC_CHECK_LIB([nvidia-ml], [nvmlInit_v2], [], [AC_MSG_ERROR([libnvidia-ml not found in default library paths, please check you nvidia driver installation])])
+                    AC_CHECK_LIB([nvidia-ml], [nvmlInit_v2], [
+                    NVML_LIBS="-lnvidia-ml"
+                    AC_SUBST([NVML_LIBS])
+                ], [
+                    # Fallback for systems where only .so.1 exists without the .so symlink
+                    # We use the -l:filename syntax which is supported by GNU ld
+                    AC_MSG_CHECKING([for nvmlInit_v2 in -l:libnvidia-ml.so.1])
+                    save_LIBS="$LIBS"
+                    LIBS="-l:libnvidia-ml.so.1 $save_LIBS"
+                    AC_LINK_IFELSE(
+                        [AC_LANG_PROGRAM([[#include <nvml.h>]], [[nvmlInit_v2();]])],
+                        [
+                            AC_MSG_RESULT([yes])
+                            NVML_LIBS="-l:libnvidia-ml.so.1"
+                            AC_SUBST([NVML_LIBS])
+                        ],
+                        [
+                            AC_MSG_RESULT([no])
+                            AC_MSG_ERROR([Could not find libnvidia-ml.so or libnvidia-ml.so.1. please check you nvidia driver installation or use --with-nvml-include-dir=DIR to specify the correct directory path of nvml.h.])
+                        ])
+                ])
+
+                # Restore LIBS
+                LIBS="$save_LIBS"
                 ]
             )
         ]
