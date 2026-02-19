@@ -75,6 +75,7 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <string.h>
+#include <limits.h>
 
 #include <unistd.h>
 #include <malloc.h>
@@ -1539,8 +1540,8 @@ void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev
 {
     DIR          * dir;
     struct dirent* ent;
-    char           link_path[1024];
-    char           resolved_path[1024];
+    char           link_path[PATH_MAX];
+    char           resolved_path[PATH_MAX];
     char           dbdf[32];
     unsigned int   d, b, dv, f;
 
