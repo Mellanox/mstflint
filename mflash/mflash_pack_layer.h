@@ -91,6 +91,8 @@ typedef void* trm_ctx;
 #define CX7_HW_ID           0x218
 #define CX8_HW_ID           0x21e
 #define CX8_PURE_PCIE_SWITCH_HW_ID  0x222
+#define CX9_HW_ID           0x224
+#define CX9_PURE_PCIE_SWITCH_HW_ID  0x228
 #define CX6DX_HW_ID         0x212
 #define CX6LX_HW_ID         0x216
 #define BLUEFIELD_HW_ID     0x211
@@ -107,6 +109,8 @@ typedef void* trm_ctx;
 #define QUANTUM2_HW_ID      0x257
 #define QUANTUM3_HW_ID      0x25b
 #define SPECTRUM4_HW_ID     0x254
+#define SPECTRUM5_HW_ID     0x270
+#define SPECTRUM6_HW_ID     0x274
 #define INBAND_MAX_REG_SIZE 44
 
 #define VSC_RECOVERY_SPACE_FLASH_GW_BASE_ADDRESS 0x10
@@ -141,6 +145,8 @@ typedef void* trm_ctx;
 #define IS_QUANTUM2(dev_id)                ((dev_id) == QUANTUM2_HW_ID)
 #define IS_QUANTUM3(dev_id)                ((dev_id) == QUANTUM3_HW_ID)
 #define IS_SPECTRUM4(dev_id)               ((dev_id) == SPECTRUM4_HW_ID)
+#define IS_SPECTRUM5(dev_id)               ((dev_id) == SPECTRUM5_HW_ID)
+#define IS_SPECTRUM6(dev_id)               ((dev_id) == SPECTRUM6_HW_ID)
 
 #define HAS_TOOLS_CMDIF(dev_id) ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))
 
@@ -331,19 +337,21 @@ enum CntxCrConstants {
     HCR_NEW_GW_CACHE_REPLACEMNT_EN_ADDR = 0xf0480,
     HCR_NEW_GW_GCM_EN_ADDR              = 0xf0440,
     /* 7th gen flash GW registers addresses */
-    /* QTM3: */
+    // QTM3/QTM4:
     HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR = 0x101000,
     HCR_7GEN_QTM3_FLASH_CMD          = HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR,
     HCR_7GEN_QTM3_FLASH_DATA         = 0x101010,
     HCR_7GEN_QTM3_GCM_EN_ADDR        = 0x101028,
     HCR_7GEN_QTM3_FLASH_ADDR         = 0x10103c,
     HCR_7GEN_QTM3_FLASH_DATA_SIZE    = 0x101044,
-    /* QTM3: */
-    HCR_7GEN_QTM4_FLASH_CMD = 0x101000,
-    HCR_7GEN_QTM4_FLASH_DATA = 0x101010,
-    HCR_7GEN_QTM4_GCM_EN_ADDR = 0x101028,
-    HCR_7GEN_QTM4_FLASH_ADDR = 0x10103c,
-    HCR_7GEN_QTM4_FLASH_DATA_SIZE = 0x101044,
+    // SPC6:
+    // For SPC6 and above : use flash agent1 instead of agent0
+    HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR = 0x101080,
+    HCR_7GEN_SPC6_FLASH_CMD = HCR_7GEN_SPC6_FLASH_GW_BASE_ADDR,
+    HCR_7GEN_SPC6_FLASH_DATA = 0x101090,
+    HCR_7GEN_SPC6_GCM_EN_ADDR = 0x1010a8,
+    HCR_7GEN_SPC6_FLASH_ADDR = 0x1010bc,
+    HCR_7GEN_SPC6_FLASH_DATA_SIZE = 0x1010c4,
     /* ARCUSE: */
     HCR_7GEN_ARCUSE_FLASH_CMD       = 0x101000,
     HCR_7GEN_ARCUSE_FLASH_DATA      = 0x101010,

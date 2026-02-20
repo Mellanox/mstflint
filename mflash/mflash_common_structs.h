@@ -87,6 +87,13 @@ typedef struct write_protect_info
                      // or Top
 } write_protect_info_t;
 
+typedef struct write_protect_info_backup
+{
+    write_protect_info_t protect_info;
+    uint8_t cmp;
+    uint8_t restore_needed;
+} write_protect_info_backup_t;
+
 ////////////////////////////////////////
 //
 // ST SPI functions - common for InfiniHostIIILx and ConnectX
@@ -124,7 +131,9 @@ typedef enum StFlashCommand
     SFC_WRSR = 0x01,                    // Write status register
     SFC_WRSR_GIGA = 0x31,               // Write status register (GIGA)
     SFC_RDFR = 0x48,
-    SFC_WRFR = 0x42
+    SFC_WRFR = 0x42,
+    SFC_RDRP_ISSI_IS25LPXXX = 0x61, // Read read parameters
+    SFC_SFDP = 0x5A                // Read SFDP table
 } StFlashCommand_t;
 
 typedef struct access_commands
@@ -135,6 +144,16 @@ typedef struct access_commands
     StFlashCommand_t sfc_read;
     StFlashCommand_t sfc_fast_read;
 } flash_access_commands_t;
+
+typedef enum
+{
+    MACRONIX_MX25U3235F = 0x23,
+    MACRONIX_MX25U3232F = 0x20,
+    MACRONIX_MX25U3235E = 0xFF,
+    MACRONIX_MX25U51294G_MX25U51294GXDI08 = 0x5E,
+    MACRONIX_MX25U51245G = 0x2D,
+    MACRONIX_UNKNOWN = 0x00
+} MacronixSeriesCode;
 
 /////////////////////////////////////////////
 //
@@ -196,10 +215,14 @@ typedef struct flash_attr
     u_int8_t cmp_support;
     u_int8_t quad_en_support;
     u_int8_t srwd_support;
+    u_int8_t srp_support;
+    u_int8_t srl_support;
     u_int8_t driver_strength_support;
     u_int8_t dummy_cycles_support;
     u_int8_t write_protect_support;
     u_int8_t protect_sub_and_sector;
+    u_int8_t series_code_support;
+    MacronixSeriesCode series_code;
     u_int8_t vendor;
     u_int8_t type;
 
@@ -228,6 +251,8 @@ typedef struct flash_info
     u_int8_t protect_sub_and_sector;
     u_int8_t dummy_cycles_support;
     u_int8_t driver_strength_support;
+    u_int8_t series_code_support;
+    MacronixSeriesCode series_code;
 } flash_info_t;
 
 /*

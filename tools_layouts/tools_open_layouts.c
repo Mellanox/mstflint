@@ -981,9 +981,12 @@ void tools_open_mnvda_print(const struct tools_open_mnvda *ptr_struct, FILE *fd,
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "nv_hdr:\n");
 	tools_open_nv_hdr_fifth_gen_print(&(ptr_struct->nv_hdr), fd, indent_level + 1);
-	for (i = 0; i < 256; ++i) {
+	for (i = 0; i < 256; i += 4) {
 		adb2c_add_indentation(fd, indent_level);
-		fprintf(fd, "data_%03d            : " UH_FMT "\n", i, ptr_struct->data[i]);
+		fprintf(fd, "data_%03d\t: " U8H_FMT "\t",   i, ptr_struct->data[i]);
+		fprintf(fd, "data_%03d\t: " U8H_FMT "\t",   i+1, ptr_struct->data[i+1]);
+		fprintf(fd, "data_%03d\t: " U8H_FMT "\t",   i+2, ptr_struct->data[i+2]);
+		fprintf(fd, "data_%03d\t: " U8H_FMT "\n",   i+3, ptr_struct->data[i+3]);
 	}
 }
 

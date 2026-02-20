@@ -77,9 +77,37 @@ string PrmAdbDB::prm_adb_db_trim(const string& s)
 
 string PrmAdbDB::getDefaultDBName(dm_dev_id_t devID)
 {
+    PrmAdbType_t adbType = (dm_is_gpu(devID) ? PrmAdbType_t::PRM_ADB_TYPE_GPU :
+                                               (dm_dev_is_retimer(devID) ? PrmAdbType_t::PRM_ADB_TYPE_RETIMER :
+                                                dm_dev_is_switch(devID)  ? PrmAdbType_t::PRM_ADB_TYPE_SWITCH :
+                                                                           PrmAdbType_t::PRM_ADB_TYPE_HCA));
+    return getDefaultDBName(adbType);
+}
+
+string PrmAdbDB::getDefaultDBName(PrmAdbType_t adbType)
+{
     const string dbDirName = "prm_dbs";
     const string dbFileName = "register_access_table.adb";
-    const string hcaOrSwitch = (dm_is_gpu(devID) ? "gpu" : dm_dev_is_switch(devID) ? "switch" : "hca");
+    string adbTypeStr;
+    switch (adbType)
+    {
+        case PrmAdbType_t::PRM_ADB_TYPE_HCA:
+            adbTypeStr = "hca";
+            break;
+        case PrmAdbType_t::PRM_ADB_TYPE_SWITCH:
+            adbTypeStr = "switch";
+            break;
+        case PrmAdbType_t::PRM_ADB_TYPE_RETIMER:
+            adbTypeStr = "retimers";
+            break;
+        case PrmAdbType_t::PRM_ADB_TYPE_GPU:
+            adbTypeStr = "gpu";
+            break;
+        case PrmAdbType_t::PRM_ADB_TYPE_UNKNOWN:
+        default:
+            throw PrmDBException("Unknown ADB type");
+    }
+
     string       dbPathName = "";
 
 #ifdef __WIN__
@@ -87,9 +115,9 @@ string PrmAdbDB::getDefaultDBName(dm_dev_id_t devID)
     GetModuleFileName(GetModuleHandle("libmtcr-1.dll"), execFilePathCStr, 1024);
     dbPathName = execFilePathCStr;
     dbPathName = dbPathName.substr(0, dbPathName.rfind("\\") + 1);
-    dbPathName += dbDirName + "\\" + hcaOrSwitch + "\\ext\\" + dbFileName;
+    dbPathName += dbDirName + "\\" + adbTypeStr + "\\ext\\" + dbFileName;
 #elif defined MST_UL
-    dbPathName = DATA_PATH "/" + dbDirName + "/" + hcaOrSwitch + "/ext/" + dbFileName;
+    dbPathName = DATA_PATH "/" + dbDirName + "/" + adbTypeStr + "/ext/" + dbFileName;
 #else
     char   line[1024] = {0};
     string confFile = string(ROOT_PATH) + string("etc/mft/mft.conf");
@@ -115,7 +143,7 @@ string PrmAdbDB::getDefaultDBName(dm_dev_id_t devID)
         }
     }
     if (!prefix.empty() && !dataPath.empty()) {
-        dbPathName = prefix + dataPath + "/" + hcaOrSwitch + "/ext/" + dbFileName;
+        dbPathName = prefix + dataPath + "/" + adbTypeStr + "/ext/" + dbFileName;
     }
     fclose(fd);
 #endif

@@ -47,6 +47,18 @@ UserInput::UserInput()
     _pcieIndex = 0;
     _node = 0;
     _lane = 0;
+    _bkvGroupId = 0;
+    _bkvRates = {};
+    _bkvRoles = {};
+    _bkvModeBRoles = {};
+    _bkvEntry = 0;
+    _bkvAddress = 0;
+    _bkvWdata = 0;
+    _bkvWmask = 0;
+    _bkvEntrySpecified = false;
+    _bkvAddressSpecified = false;
+    _bkvWdataSpecified = false;
+    _bkvWmaskSpecified = false;
     _networkCmds = 0;
     _uniqueCmds = 0;
     _networkCmds = 0;
@@ -94,7 +106,7 @@ UserInput::UserInput()
     _showPlr = false;
     _showKr = false;
     _showRxRecoveryCounters = false;
-
+    _extendedPcie = false;
     _device = "";
     _extAdbFile = "";
     _logFile = "";
@@ -142,6 +154,7 @@ UserInput::UserInput()
     measureTime = -1;
     force = false;
     gradeScanPerLane = false;
+    laneSpecified = false;
 
     enableRxErrInj = false;
     mixerOffset0 = -1;
@@ -169,4 +182,8 @@ UserInput::UserInput()
     dbdf = "";
 
     planeIndex = -1;
+    _forceTxAllowed = false;
+    _skipPowerGoodCheck = false;
+    _sysfsPath = "";
+    _sysfsPathGiven = false;
 }

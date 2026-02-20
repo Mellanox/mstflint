@@ -198,6 +198,9 @@ private:
     void initLinkDownInfoMapping();
     void initLinkUpInfo();
     void initSltpStatusMapping();
+    void initPSCDRateMaskMapping();
+    void initPSCDRoleMaskMapping();
+    void initPSCDModeBRoleMaskMapping();
     void qsfpComlianceMapping();
     void cmisIbComlianceMapping();
     void cimsCableBreakoutMapping();
@@ -242,6 +245,7 @@ public:
     virtual ~MlxlinkMaps();
 
     std::map<u_int32_t, std::string> _pmFsmState;
+    std::map<u_int32_t, std::string> _priOrSec;
     std::map<u_int32_t, std::string> _proFileFecInUse;
     std::map<u_int32_t, u_int32_t> _ETHSpeed2gRate;
     std::map<u_int32_t, u_int32_t> _IBSpeed2gRate;
@@ -291,6 +295,12 @@ public:
     std::map<u_int32_t, PRM_FIELD> _SltpHdrParams;
     std::map<u_int32_t, PRM_FIELD> _SltpNdrParams;
     std::map<u_int32_t, PRM_FIELD> _SltpXdrParams;
+    std::map<u_int32_t, std::string> _PSCDRateMask2Str;
+    std::map<std::string, uint32_t> _PSCDRateStr2Mask;
+    std::map<u_int32_t, std::string> _PSCDRoleMask2Str;
+    std::map<std::string, uint32_t> _PSCDRoleStr2Mask;
+    std::map<u_int32_t, std::string> _PSCDModeBRoleMask2Str;
+    std::map<std::string, uint32_t> _PSCDModeBRoleStr2Mask;
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
     std::map<u_int32_t, std::string> _plrRejectMode;
@@ -374,6 +384,8 @@ public:
     // Vectors
     std::vector<std::pair<std::string, u_int32_t>> _multiPortInfoTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _multiPortModuleInfoTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _bkvGroupsTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _bkvGroupEntriesTableHeader;
 
     string _sltpHeader;
     string _showErrorsTitle;

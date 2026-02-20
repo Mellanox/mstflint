@@ -72,7 +72,8 @@ private:
                            int access,
                            int leftSize,
                            mtcr_page_addresses page,
-                           mtcr_page_addresses mailbox_page);
+                           mtcr_page_addresses mailbox_page,
+                           int data_page_number);
     bool readFromDataPage(mcddReg* accessData, mtcr_page_addresses page, u_int32_t* data, int data_size, int leftSize);
     std::vector<mtcr_page_addresses> _allocatedListVect;
     void setLastError(fw_comps_error_t error) { _lastFwError = error; }

@@ -70,7 +70,8 @@ public:
     string getFieldStr(const string& field,
                        const u_int32_t size = 0,
                        const u_int32_t offset = 0,
-                       bool offsetSpecified = false);
+                       bool offsetSpecified = false,
+                       bool processDynamicFields = false);
     string getRawFieldValueStr(const string fieldName);
     u_int32_t getFieldSize(string field_name);
     string getAscii(const string& name, u_int32_t size = 4);

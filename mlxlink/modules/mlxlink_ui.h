@@ -43,7 +43,9 @@ class MlxlinkUi : public CommandLineRequester
 public:
     MlxlinkUi();
     virtual ~MlxlinkUi();
+    bool isSwitch();
     int run(int argc, char** argv);
+    virtual void initMlxlinkCommander();
 
 protected:
     virtual void addCmd(OPTION_TYPE option);
@@ -70,11 +72,13 @@ protected:
     virtual void validateLinkTrainingParams();
     virtual void validatePeriodicEqParams();
     virtual void validateMultiPortInfoParams();
+    virtual void validateBkvParams();
     virtual void paramValidate();
     virtual void createMlxlinkCommander();
     virtual void initRegAccessLib();
     virtual void initPortInfo();
-    virtual void initMlxlinkCommander();
+    virtual void initPCIDomain();
+    virtual void updateSysFsPath(string& sysfsPath);
 
     void handlePortStr(UserInput& userInput, const string& portStr);
     void strToInt32(char* str, u_int32_t& value);

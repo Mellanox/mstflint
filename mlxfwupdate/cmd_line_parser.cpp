@@ -210,6 +210,9 @@ using namespace mft_utils;
 #define NO_FW_CTRL_L "no_fw_ctrl"
 #define NO_FW_CTRL_S ' '
 
+#define UPDATE_ALL_FWCTL_L "update_all_fwctl"
+#define UPDATE_ALL_FWCTL_S ' '
+
 #define COMP_TYPE_L "component_type"
 #define COMP_TYPE_S ' '
 
@@ -348,6 +351,8 @@ void CmdLineParser::initOptions()
     this->AddOptions(FORCE_L, FORCE_S, "", "Force image update");
 
     this->AddOptions(NO_FW_CTRL_L, NO_FW_CTRL_S, "", "Don't use FW Ctrl update");
+
+    this->AddOptions(UPDATE_ALL_FWCTL_L, UPDATE_ALL_FWCTL_S, "", "Enable firmware update in parallel via fwctl");
 
     this->AddOptions(YES_L, YES_S, "", "Answer is yes in prompts");
 
@@ -734,6 +739,11 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
     else if (name == NO_FW_CTRL_L)
     {
         _cmdLineParams->no_fw_ctrl = true;
+        return PARSE_OK;
+    }
+    else if (name == UPDATE_ALL_FWCTL_L)
+    {
+        _cmdLineParams->update_all_fwctl = true;
         return PARSE_OK;
     }
     else if (name == YES_L)

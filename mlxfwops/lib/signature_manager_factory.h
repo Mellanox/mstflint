@@ -97,13 +97,11 @@ public:
         {
             return new ConnectX6LXFwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceSpectrum || deviceId == DeviceSpectrum2 || deviceId == DeviceSpectrum3 ||
-                 deviceId == DeviceQuantum)
+        else if (deviceId == DeviceSpectrum || deviceId == DeviceSpectrum2 || deviceId == DeviceSpectrum3 || deviceId == DeviceQuantum)
         {
             return new RavenSwitchSignatureManager();
         }
-        else if (deviceId == DeviceQuantum2 || deviceId == DeviceQuantum3 ||
-                 deviceId == DeviceSpectrum4)
+        else if (deviceId == DeviceQuantum2 || deviceId == DeviceQuantum3 || deviceId == DeviceSpectrum4 || deviceId == DeviceSpectrum5 || deviceId == DeviceSpectrum6)
         {
             return new SecuredSwitchSignatureManager();
         }
@@ -139,6 +137,14 @@ public:
         {
             return new ConnectX9FwOperationsSignatureManager();
         }
+        else if (chip == CT_CONNECTX8_PURE_PCIE_SWITCH)
+        {
+            return new ConnectX8PurePCIESwitchFwOperationsSignatureManager();
+        }
+        else if (chip == CT_CONNECTX9_PURE_PCIE_SWITCH)
+        {
+            return new ConnectX9PurePCIESwitchFwOperationsSignatureManager();
+        }
         else if (chip == CT_BLUEFIELD2)
         {
             return new Bluefield2FwOperationsSignatureManager();
@@ -159,7 +165,7 @@ public:
         {
             return new RavenSwitchSignatureManager();
         }
-        else if (chip == CT_QUANTUM2 || chip == CT_QUANTUM3 || chip == CT_SPECTRUM4)
+        else if (chip == CT_QUANTUM2 || chip == CT_QUANTUM3 || chip == CT_NVLINK6_SWITCH_ASIC || chip == CT_SPECTRUM4 || chip == CT_SPECTRUM5 || chip == CT_SPECTRUM6)
         {
             return new SecuredSwitchSignatureManager();
         }

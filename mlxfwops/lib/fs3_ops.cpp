@@ -3728,7 +3728,15 @@ bool Fs3Operations::RemoveWriteProtection()
     memset(&protect_info, 0, sizeof(protect_info));
     for (unsigned int i = 0; i < attr.banks_num; i++)
     {
-        int rc = mf_set_write_protect(mfl, i, &protect_info);
+        int rc = mf_disable_cmp_if_supported(mfl);
+        if (rc != MFE_OK)
+        {
+            errmsg("Failed to disable CMP for bank %d: (%s)", i, mf_err2str(rc));
+            delete[] attr.type_str;
+            return false;
+        }
+
+        rc = mf_set_write_protect(mfl, i, &protect_info);
         if (rc != MFE_OK)
         {
             errmsg("Failed to disable flash write protection: %s", mf_err2str(rc));

@@ -45,6 +45,7 @@
 #include "pldm_buff.h"
 #include "pldm_pkg_hdr.h"
 #include "pldm_utils.h"
+#include "pldm_record_descriptor.h"
 
 class PldmDevIdRecord;
 class PldmComponenetImage;
@@ -73,6 +74,8 @@ public:
                                 u_int8_t** buff,
                                 u_int32_t& buffSize);
     bool getPldmDescriptorByPsid(std::string psid, u_int16_t type, u_int16_t& descriptor) const;
+    std::string getPldmVendorDefinedDescriptorByPsid(std::string psid,
+        PldmRecordDescriptor::VendorDefinedType type) const;
     bool isPsidInPldm(std::string psid) const;
 
 
