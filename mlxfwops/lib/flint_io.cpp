@@ -966,8 +966,12 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     attr.cmp_support = _attr.cmp_support;
     attr.quad_en_support = _attr.quad_en_support;
     attr.srwd_support = _attr.srwd_support;
+    attr.srp_support = _attr.srp_support;
+    attr.srl_support = _attr.srl_support;
     attr.driver_strength_support = _attr.driver_strength_support;
     attr.dummy_cycles_support = _attr.dummy_cycles_support;
+    attr.series_code_support = _attr.series_code_support;
+    attr.series_code = _attr.series_code;
     // CMP query
     if (_attr.cmp_support)
     {
@@ -982,6 +986,16 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     if (_attr.srwd_support)
     {
         attr.mf_get_srwd_rc = (MfError)mf_get_srwd(_mfl, &attr.srwd);
+    }
+    // SRP query
+    if (_attr.srp_support)
+    {
+        attr.mf_get_srp_rc = (MfError)mf_get_srp(_mfl, &attr.srp);
+    }
+    // SRL query
+    if (_attr.srl_support)
+    {
+        attr.mf_get_srl_rc = (MfError)mf_get_srl(_mfl, &attr.srl);
     }
     // Drive-strength query
     if (_attr.driver_strength_support)
@@ -1368,6 +1382,36 @@ bool Flash::set_attr(char* param_name, char* param_val_str, const ext_flash_attr
             return errmsg("Setting " SRWD_PARAM " failed: (%s)", mf_err2str(rc));
         }
     }
+    else if (!strcmp(param_name, SRP_PARAM))
+    {
+        char* endp;
+        u_int8_t srp_val;
+        srp_val = strtoul(param_val_str, &endp, 0);
+        if (*endp != '\0' || srp_val > 1)
+        {
+            return errmsg("Bad " SRP_PARAM " value (%s), it can be 0 or 1\n", param_val_str);
+        }
+        rc = mf_set_srp(_mfl, srp_val);
+        if (rc != MFE_OK)
+        {
+            return errmsg("Setting " SRP_PARAM " failed: (%s)", mf_err2str(rc));
+        }
+    }
+    else if (!strcmp(param_name, SRL_PARAM))
+    {
+        char* endp;
+        u_int8_t srl_val;
+        srl_val = strtoul(param_val_str, &endp, 0);
+        if (*endp != '\0' || srl_val > 1)
+        {
+            return errmsg("Bad " SRL_PARAM " value (%s), it can be 0 or 1\n", param_val_str);
+        }
+        rc = mf_set_srl(_mfl, srl_val);
+        if (rc != MFE_OK)
+        {
+            return errmsg("Setting " SRL_PARAM " failed: (%s)", mf_err2str(rc));
+        }
+    }
     else if (!strcmp(param_name, DUMMY_CYCLES_PARAM))
     {
         char* endp;
@@ -1464,6 +1508,26 @@ bool Flash::set_attr(char* param_name, char* param_val_str, const ext_flash_attr
                                   param_val_str);
                 }
             }
+            else if (is_macronix_mx25u51245g(_mfl))
+            {
+                if (*endp != '\0' ||
+                    (driver_strength_val != 24 && driver_strength_val != 26 && driver_strength_val != 30 &&
+                     driver_strength_val != 34 && driver_strength_val != 41 && driver_strength_val != 52 &&
+                     driver_strength_val != 76 && driver_strength_val != 146))
+                {
+                    return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [24,26,30,34,41,52,76,146]\n",
+                                  param_val_str);
+                }
+            }
+            else if (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(_mfl))
+            {
+                if (*endp != '\0' || (driver_strength_val != 120 && driver_strength_val != 100 &&
+                                      driver_strength_val != 85 && driver_strength_val != 50))
+                {
+                    return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [120,100,85,50]\n",
+                                  param_val_str);
+                }
+            }
             else
             {
                 if (*endp != '\0' || (driver_strength_val != 41 && driver_strength_val != 70 &&
@@ -1522,6 +1586,130 @@ bool Flash::is_flash_write_protected()
         }
     }
     return false;
+}
+
+bool Flash::disable_flash_write_protection_if_required()
+{
+    int bank = 0;
+    int rc = MFE_OK;
+    write_protect_info_t protect_info;
+
+    memset(&protect_info, 0x0, sizeof(protect_info));
+    if (_attr.write_protect_support)
+    {
+        rc = mf_get_write_protect(_mfl, bank, &protect_info);
+        if (rc != MFE_OK)
+        {
+            return errmsg("Failed to get write protect information for bank %d: (%s)", bank, mf_err2str(rc));
+        }
+
+        if (is_WINBOND_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size) ||
+            is_macronix_mx25u51294g_mx25u51294gxdi08(_attr.vendor, _attr.type, _attr.log2_bank_size, _attr.series_code))
+        {
+            uint8_t cmp = 0;
+            rc = mf_get_cmp(_mfl, &cmp);
+            if (rc != MFE_OK)
+            {
+                return errmsg("Failed to get CMP for bank %d: (%s)", bank, mf_err2str(rc));
+            }
+            if ((cmp && protect_info.tbs_bit == 1) ||
+                (!cmp && protect_info.tbs_bit == 0)) // Top protection - no need to continue
+            {
+                return true;
+            }
+            if (cmp && protect_info.tbs_bit == 0)
+            {
+                rc = mf_set_cmp(_mfl, 0); // we unset the CMP to go back to normal mode, with no complement protection
+                if (rc != MFE_OK)
+                {
+                    return errmsg("Failed to set CMP for bank %d: (%s)", bank, mf_err2str(rc));
+                }
+            }
+        }
+        else
+        {
+            if (protect_info.tbs_bit == 0) // Top protection - no need to continue
+            {
+                return true;
+            }
+        }
+
+        // we have bottom protection - need to disable it if enabled
+        if (protect_info.bp_val != 0)
+        {
+            write_protect_info_t protect_info_tmp;
+            memset(&protect_info_tmp, 0x0, sizeof(protect_info_tmp));
+
+            rc = mf_set_write_protect(_mfl, bank, &protect_info_tmp);
+            if (rc != MFE_OK)
+            {
+                return errmsg("Failed to disable write protect for bank %d: (%s)", bank, mf_err2str(rc));
+            }
+        }
+    }
+
+    return true;
+}
+
+bool Flash::check_and_disable_flash_wp_if_required()
+{
+    bool rc = true;
+    if (is_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size, _attr.series_code))
+    {
+        rc = disable_flash_write_protection_if_required();
+    }
+
+    return rc;
+}
+
+bool Flash::backup_write_protect_info(write_protect_info_backup_t& protect_info_backup)
+{
+    int rc = MFE_OK;
+    int bank = 0;
+    if (_attr.write_protect_support)
+    {
+        if (is_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size, _attr.series_code))
+        {
+            rc = mf_get_cmp(_mfl, &protect_info_backup.cmp);
+            if (rc != MFE_OK)
+            {
+                if (rc != MFE_NOT_SUPPORTED_OPERATION)
+                {
+                    return errmsg("Failed to get CMP for bank %d: (%s)", bank, mf_err2str(rc));
+                }
+            }
+            rc = mf_get_write_protect(_mfl, bank, &protect_info_backup.protect_info);
+            if (rc != MFE_OK)
+            {
+                return errmsg("Failed to get write protect information for bank %d: (%s)", bank, mf_err2str(rc));
+            }
+            protect_info_backup.restore_needed = true;
+        }
+    }
+    return rc == MFE_OK;
+}
+
+bool Flash::restore_write_protect_info(write_protect_info_backup_t& protect_info_backup)
+{
+    int rc = MFE_OK;
+    int bank = 0;
+    if (_attr.write_protect_support)
+    {
+        if (is_60MB_bottom_protection_supported(_attr.vendor, _attr.type, _attr.log2_bank_size, _attr.series_code))
+        {
+            rc = mf_set_cmp(_mfl, protect_info_backup.cmp);
+            if (rc != MFE_OK && rc != MFE_NOT_SUPPORTED_OPERATION)
+            {
+                return errmsg("Failed to set CMP for bank %d: (%s)", bank, mf_err2str(rc));
+            }
+            rc = mf_set_write_protect(_mfl, bank, &protect_info_backup.protect_info);
+            if (rc != MFE_OK)
+            {
+                return errmsg("Failed to set write protect information for bank %d: (%s)", bank, mf_err2str(rc));
+            }
+        }
+    }
+    return rc == MFE_OK;
 }
 
 void Flash::deal_with_signal()
@@ -1605,6 +1793,10 @@ u_int32_t Flash::get_effective_size()
     if ((dm_dev_id == DeviceConnectX4LX || dm_dev_id == DeviceConnectX5) && _attr.vendor == FV_GD25QXXX)
     {
         effective_size = 1 << FD_128; // 16MB
+    }
+    else if (dm_dev_id == DeviceSpectrum5 && _attr.vendor == FV_IS25LPXXX)
+    {
+        effective_size = 1 << FD_256; // 32MB
     }
 
     return effective_size;

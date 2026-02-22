@@ -1,0 +1,131 @@
+#!/bin/bash
+
+set -o noglob
+
+# vpi_tcpdump 
+
+# requirements
+#
+# -i <interface> must be provided
+# rest of the opts go to tcpdump
+#
+# Flow:
+# run ibdev2netdev on the input interface to get ib dev and port
+# Found eth - run with tcpdump
+# Found ib  - run with tshark
+# not found - error
+# check tool in the path before execution
+
+
+dumptool="tcpdump"
+
+usage() {
+    script=$(basename $0)
+
+    echo "Usage: $script <-i interface> [--version] [tcpdump options]"
+    echo "  Dump traffic from Mellanox ConnectX-3 adapters."
+    echo "  A target interface <-i option> must be provided."
+    echo "  In current version:"
+    echo "    - Only RX traffic is captured."
+    echo "    - Only Ethernet interfaces are supported (run 'ibdump' to capture from InfiniBand ports)."
+    echo "  Please refer to tcpdump documentation for tcpdump options."
+    exit 1
+}
+
+versions() {
+    tcpdump -V 2>&1 | grep version
+    ibdump -v
+    exit 0
+}
+
+# Returns a list of lists in format "ibv_dev port eth_dev status"
+get_devs_list() {
+    dev_list=`(
+       ibdev2netdev | while read line; do
+           dev_entry=$(echo $line | awk '{print $1 " " $3 " " $5 " " $6}')
+           #dev_list="$dev_list \"$dev_entry\""
+               echo -n "\"$dev_entry\" "
+       done
+    )`
+    echo "$dev_list"
+}
+
+#get_devs_list
+#exit
+
+
+print_devs() {
+        devs=$(get_devs_list)
+    eval set -- $devs
+    idx=1
+    for d in "$@"; do
+            echo $idx.`echo $d | awk '{print $3 " " $4}'`
+                idx=$((idx + 1))
+    done
+    exit 0
+}
+
+get_ib_dev() {
+    dump_ifc=$1
+    devs=$(get_devs_list)
+    eval set -- $devs
+    for d in "$@"; do
+        ifc=`echo $d | awk '{print $3}'`
+        if [ "x$dump_ifc" == "x$ifc" ]
+        then
+            echo $d | awk '{print " -d " $1 " -i " $2}'
+            return
+        fi
+    done
+
+    exit 1
+}
+
+ibdump_opts=""
+tcpdump_opts=""
+target_netdev=""
+
+while [ -n "$1" ]; do
+    case $1 in
+        -h*|--h*)
+            usage
+            ;;
+        -i)
+            dump_ifc="$2"
+            shift 2
+            ;;
+        -D)
+            print_devs
+            shift 1
+            ;;
+        --version)
+            versions
+            shift 1
+            ;;      
+        *)
+            tcpdump_opts+=" $1"
+            shift 1
+            ;;
+    esac
+done
+
+if [ "x$dump_ifc" == "x" ]; then
+    echo "-E- An interface must be provided (-i flag)"
+    exit 1
+fi
+
+# Worakround for tcpdump not being in path.
+if type $dumptool &>/dev/null; then
+  true
+else
+  echo "-E- $dumptool not found. Please make sure $dumptool is in the PATH"
+  exit 1
+fi
+
+ibdump_opts="$ibdump_opts -w - $(get_ib_dev $dump_ifc)"
+if [ $? != 0 ]; then
+    echo "-E- Unknown interface given ($dump_ifc). Run \"`basename $0` -D\" to list available interfaces"
+    exit 1
+fi
+
+ibdump $ibdump_opts |  ( setsid $dumptool -r - $tcpdump_opts || kill -HUP $$ )

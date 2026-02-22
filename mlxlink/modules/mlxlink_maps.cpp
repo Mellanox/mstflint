@@ -787,6 +787,45 @@ void MlxlinkMaps::initSltpStatusMapping()
     _SLTPBadSetStatus2Str[SET_STATUS_UNKNOWN] = "Unknown failure status";
 }
 
+void MlxlinkMaps::initPSCDRateMaskMapping()
+{
+    _PSCDRateMask2Str[PSCD_RATE_MASK_312P5_MBPS] = "312.5M";
+    _PSCDRateStr2Mask[_PSCDRateMask2Str[PSCD_RATE_MASK_312P5_MBPS]] = PSCD_RATE_MASK_312P5_MBPS;
+
+    _PSCDRateMask2Str[PSCD_RATE_MASK_53P125_GBPS] = "53.125G";
+    _PSCDRateStr2Mask[_PSCDRateMask2Str[PSCD_RATE_MASK_53P125_GBPS]] = PSCD_RATE_MASK_53P125_GBPS;
+
+    _PSCDRateMask2Str[PSCD_RATE_MASK_106P25_GBPS] = "106.25G";
+    _PSCDRateStr2Mask[_PSCDRateMask2Str[PSCD_RATE_MASK_106P25_GBPS]] = PSCD_RATE_MASK_106P25_GBPS;
+
+    _PSCDRateMask2Str[PSCD_RATE_MASK_200_GBPS] = "200G";
+    _PSCDRateStr2Mask[_PSCDRateMask2Str[PSCD_RATE_MASK_200_GBPS]] = PSCD_RATE_MASK_200_GBPS;
+
+    _PSCDRateMask2Str[PSCD_RATE_MASK_212P5_GBPS] = "212.5G";
+    _PSCDRateStr2Mask[_PSCDRateMask2Str[PSCD_RATE_MASK_212P5_GBPS]] = PSCD_RATE_MASK_212P5_GBPS;
+}
+
+void MlxlinkMaps::initPSCDRoleMaskMapping()
+{
+    _PSCDRoleMask2Str[PSCD_ROLE_MASK_TLM] = "TLM";
+    _PSCDRoleStr2Mask[_PSCDRoleMask2Str[PSCD_ROLE_MASK_TLM]] = PSCD_ROLE_MASK_TLM;
+
+    _PSCDRoleMask2Str[PSCD_ROLE_MASK_RLM] = "RLM";
+    _PSCDRoleStr2Mask[_PSCDRoleMask2Str[PSCD_ROLE_MASK_RLM]] = PSCD_ROLE_MASK_RLM;
+
+    _PSCDRoleMask2Str[PSCD_ROLE_MASK_TCLM] = "TCLM";
+    _PSCDRoleStr2Mask[_PSCDRoleMask2Str[PSCD_ROLE_MASK_TCLM]] = PSCD_ROLE_MASK_TCLM;
+}
+
+void MlxlinkMaps::initPSCDModeBRoleMaskMapping()
+{
+    _PSCDModeBRoleMask2Str[PSCD_MODE_B_ROLE_MASK_PRIMARY] = "PRIMARY";
+    _PSCDModeBRoleStr2Mask[_PSCDModeBRoleMask2Str[PSCD_MODE_B_ROLE_MASK_PRIMARY]] = PSCD_MODE_B_ROLE_MASK_PRIMARY;
+
+    _PSCDModeBRoleMask2Str[PSCD_MODE_B_ROLE_MASK_SECONDARY] = "SECONDARY";
+    _PSCDModeBRoleStr2Mask[_PSCDModeBRoleMask2Str[PSCD_MODE_B_ROLE_MASK_SECONDARY]] = PSCD_MODE_B_ROLE_MASK_SECONDARY;
+}
+
 void MlxlinkMaps::initPpttParamsMapping()
 {
     _ppttParams[LANE_RATE_ADMIN] = PRM_FIELD{"lane_rate_admin", "lane_rate_admin", FIELD_ACCESS_RW, false};
@@ -1039,6 +1078,7 @@ void MlxlinkMaps::errorCodeResMapping()
     _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_LANES_IN_USE] = "ConfigRejectedLanesInUse";
     _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_PART_DATA_PTH] = "ConfigRejectedPartialDataPath";
     _errorCodeRes[ERROR_CODE_RES_CONFIG_IN_PROG] = "ConfigInProgress";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_INV_VS_SI] = "ConfigRejectedInvalidVS_SI";
 }
 
 void MlxlinkMaps::qsfpFarEndCableBreakoutMapping()
@@ -1521,11 +1561,11 @@ void MlxlinkMaps::initEnhancedDebugMapping()
 
     _localReasonOpcode[LOCAL_REASON_OPCODE_NO_LINK_DOWN_INDICAION] = "No_link_down_indication";
     _localReasonOpcode[LOCAL_REASON_OPCODE_UNKWON_REASON] = "Unknown_reason";
-    _localReasonOpcode[LOCAL_REASON_OPCODE_HI_SER_OR_HI_BER] = "Hi_SER_or_Hi_BER";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_HI_BER] = "Hi_BER";
     _localReasonOpcode[LOCAL_REASON_OPCODE_BLOCK_LOCK_LOSS] = "Block_Lock_loss";
     _localReasonOpcode[LOCAL_REASON_OPCODE_ALIGNMENT_LOSS] = "Alignment_loss";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FEC_SYNC_LOSS] = "FEC_sync_loss";
-    _localReasonOpcode[LOCAL_REASON_OPCODE_PLL_SYNC_LOSS] = "PLL_lock_loss";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_PLL_LOCK_LOSS] = "PLL_lock_loss";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FIFO_OVERFLOW] = "FIFO_overflow";
     _localReasonOpcode[LOCAL_REASON_OPCODE_FALSE_SKIP_CONDITION] = "false_SKIP_condition";
     _localReasonOpcode[LOCAL_REASON_OPCODE_MINOR_ERROR_THRESHOLD_EXCEEDED] = "Minor_Error_threshold_exceeded";
@@ -1573,8 +1613,13 @@ void MlxlinkMaps::initEnhancedDebugMapping()
     _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_DUE_TO_CONTAIN_MODE] = "Down_due_to_contain_mode";
     _localReasonOpcode[LOCAL_REASON_OPCODE_BW_LOSS_THRESHOLD_EXCEEDED] = "BW_loss_threshold_exceeded";
     _localReasonOpcode[LOCAL_REASON_OPCODE_ELS_LASER_FAULT] = "ELS_laser_fault";
-
-    _localReasonOpcode[LOCAL_REASON_OPCODE_TIMEOUT] = "Timeout";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_HI_SER] = "Hi_SER";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_DOWN_BY_NMX_ADMINSTATE_CMD] = "Down_by_nmx_adminstate_cmd";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_FLUA_BER_BELOW_THRESHOLD_IN_GUARD_TIME] =
+      "FLUA_BER_below_threshold_in_guard_time";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_RECEIVED_LOCAL_FAULT] = "Received_local_fault";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_RECEIVED_LINK_INTERRUPTION] = "Received_link_interruption";
+    _localReasonOpcode[LOCAL_REASON_OPCODE_MANUAL_DEBUG_MODE] = "Manual_debug_mode";
     _localReasonOpcode[LOCAL_REASON_OPCODE_RESERVED] = "N/A";
 }
 
@@ -1648,6 +1693,11 @@ void MlxlinkMaps::initTableHeaders()
     _multiPortModuleInfoTableHeader = {{"Cable S/N", SHIFT_15},  {"Cable P/N", SHIFT_20}, {"Cable Len", SHIFT_15},
                                        {"Cable Type", SHIFT_15}, {"State", SHIFT_15},     {"Speed", SHIFT_8},
                                        {"FEC", SHIFT_15},        {"Net BER", SHIFT_20}};
+
+    _bkvGroupsTableHeader = {{"Group #", SHIFT_10}, {"Supported Entries", SHIFT_20}, {"Filled Indication", SHIFT_20}};
+
+    _bkvGroupEntriesTableHeader = {
+      {"Entry ID", SHIFT_10}, {"Address", SHIFT_15}, {"WData", SHIFT_15}, {"WMask", SHIFT_15}};
 }
 
 void MlxlinkMaps::initPlrRejectModeMapping()
@@ -1679,6 +1729,9 @@ MlxlinkMaps::MlxlinkMaps()
     initLinkDownInfoMapping();
     initLinkUpInfo();
     initSltpStatusMapping();
+    initPSCDRateMaskMapping();
+    initPSCDRoleMaskMapping();
+    initPSCDModeBRoleMaskMapping();
     initCableComplianceMapping();
     initCableTechnologyMapping();
     initCableTypeForTableView();

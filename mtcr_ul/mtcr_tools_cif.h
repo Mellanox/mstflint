@@ -42,8 +42,6 @@ extern "C"
 #include <compatibility.h>
 #include <mtcr.h>
 
-#define FLASH_REG_ACCESS 0x9001
-
 #define TOOLS_HCR_MAX_MBOX 288
 
     // tools flash semaphore (62) will be taken at the begining of each command specified here

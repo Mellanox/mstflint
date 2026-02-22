@@ -69,7 +69,7 @@ try:
     from mlxfwresetlib.cmd_reg_mcam import CmdRegMcam
     from mlxfwresetlib.cmd_reg_mroq import CmdRegMroq
     from mlxfwresetlib.cmd_reg_mrsi import CmdRegMrsi
-    from mlxfwresetlib.gpu_drivers_safety_check import GpuDriverSafetyCheckManager
+    from mlxfwresetlib.drivers_safety_check import DriversSafetyCheckManager, OperationTerminated
     from mlxfwresetlib.hot_reset import HotResetFlow
 
     if os.name != 'nt':
@@ -91,6 +91,7 @@ except Exception as e:
 
 # Global variables
 hot_reset_flow = None
+drivers_safety_check_manager = None
 
 
 class SyncOwner():
@@ -109,7 +110,7 @@ MLNX_DEVICES = [
     dict(name="BlueField", devid=0x211, status_config_not_done=(0xb5e04, 31)),
     dict(name="BlueField2", devid=0x214, status_config_not_done=(0xb5f04, 31), allowed_sync_method=SyncOwner.DRIVER),
     dict(name="BlueField3", devid=0x21c, status_config_not_done=(0xb5f04, 31), allowed_sync_method=SyncOwner.DRIVER),
-    dict(name="BlueField4", devid=0x220, status_config_not_done=(0xb5f04, 31)),
+    dict(name="BlueField4", devid=0x220, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX6", devid=0x20f, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX6DX", devid=0x212, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
@@ -118,10 +119,10 @@ MLNX_DEVICES = [
     dict(name="ConnectX8-RMA", devid=0x21f, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX8-Pure-PCIe-Switch", devid=0x222, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX8-Pure-PCIe-Switch-RMA", devid=0x223, status_config_not_done=(0xa0304, 31)),
-    dict(name="ConnectX9", devid=0x224, status_config_not_done=(0xb5f04, 31)),
-    dict(name="ConnectX9-RMA", devid=0x225, status_config_not_done=(0xb5f04, 31)),
-    dict(name="ConnectX9-Pure-PCIe-Switch", devid=0x228, status_config_not_done=(0xb5f04, 31)),
-    dict(name="ConnectX9-Pure-PCIe-Switch-RMA", devid=0x229, status_config_not_done=(0xb5f04, 31)),
+    dict(name="ConnectX9", devid=0x224, status_config_not_done=(0xa0304, 31)),
+    dict(name="ConnectX9-RMA", devid=0x225, status_config_not_done=(0xa0304, 31)),
+    dict(name="ConnectX9-Pure-PCIe-Switch", devid=0x228, status_config_not_done=(0xa0304, 31)),
+    dict(name="ConnectX9-Pure-PCIe-Switch-RMA", devid=0x229, status_config_not_done=(0xa0304, 31)),
     dict(name="ConnectX10", devid=0x226, status_config_not_done=(0xb5f04, 31)),
     dict(name="ConnectX10-RMA", devid=0x227, status_config_not_done=(0xb5f04, 31)),
     dict(name="Switch-IB", devid=0x247, status_config_not_done=(0x80010, 0)),
@@ -130,7 +131,8 @@ MLNX_DEVICES = [
     dict(name="Quantum-2", devid=0x257, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-3", devid=0x25b, status_config_not_done=(0x200010, 0)),
     dict(name="Quantum-3-RMA", devid=0x25c, status_config_not_done=(0x200010, 0)),
-    dict(name="Quantum-4", devid=0x278, status_config_not_done=(0x200010, 0)),
+    dict(name="NVLink6-Switch-ASIC", devid=0x278, status_config_not_done=(0x200010, 0)),
+    dict(name="Quantum-4-RMA", devid=0x279, status_config_not_done=(0x200010, 0)),
     dict(name="Spectrum", devid=0x249, status_config_not_done=(0x80010, 0)),
     dict(name="Spectrum-2", devid=0x24E, status_config_not_done=(0x100010, 0)),
     dict(name="Spectrum-3", devid=0x250, status_config_not_done=(0x100010, 0)),
@@ -142,10 +144,12 @@ MLNX_DEVICES = [
 
 ]
 
+BLUEFIELD4_PCI_DEVICE_ID = [0xA2DE, 0xA2DF]
+
 # Supported devices.
 SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
                 "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3", "ConnectX8", "ConnectX8-RMA", "BlueField4",
-                "ConnectX9", "ConnectX9-RMA", "ConnectX10", "ConnectX10-RMA", "ConnectX8-Pure-PCIe-Switch", "ConnectX8-Pure-PCIe-Switch-RMA"]
+                "ConnectX9", "ConnectX9-RMA", "ConnectX10", "ConnectX10-RMA", "ConnectX8-Pure-PCIe-Switch", "ConnectX8-Pure-PCIe-Switch-RMA", "ConnectX9-Pure-PCIe-Switch", "ConnectX9-Pure-PCIe-Switch-RMA"]
 SUPP_SWITCH_DEVICES = ["Spectrum", "Spectrum-2", "Spectrum-3", "Switch-IB", "Switch-IB-2", "Quantum", "Quantum-2"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 UNSUPPORTED_PSIDS_PER_DEV_ID = {
@@ -189,6 +193,7 @@ SYNC_STATE_GO = 0x2
 SYNC_STATE_DONE = 0x3
 
 PCI_EXPRESS_UPSTREAM_PORT = 0x5
+PCI_EXPRESS_PORT_TYPE_UNKNOWN = 0x1
 
 # reg access Object
 RegAccessObj = None
@@ -257,15 +262,6 @@ class WarningException(Exception):
 class NoPciBridgeException(Exception):
     pass
 
-
-######################################################################
-# Description:  Operation Terminated
-# OS Support :  Linux/FreeBSD/Windows.
-######################################################################
-
-
-class OperationTerminated(Exception):
-    pass
 
 ######################################################################
 # Description:  Get device dictionary from MLNX_DEVICES
@@ -407,25 +403,9 @@ def AskUser(question, autoYes=False):
     raise RuntimeError("Aborted by user")
 
 
-def is_nvme_driver_loaded():
-    cmd = "lsmod | grep nvme"
-    (rc, output, stderr) = cmdExec(cmd)
-    if rc == 0:
-        if output.strip():
-            return True
-    return False
-
-
-def AskUserPCIESwitchHotReset(ignore_list):
+def AskUserPCIESwitchHotReset(ignore_list, reg_access_obj, dev_dbdf, devices_sd):
     print("You are going to reset PCIE Switch device:")
-    if is_nvme_driver_loaded():
-        print("An NVMe driver is currently loaded.")
-        print("Please make sure that none of the devices in your target PCI tree are attached to any NVMe-related driver")
 
-    if GpuDriverSafetyCheckManager.check_gpu_drivers_loaded(ignore_list):
-        raise OperationTerminated("\nExit..")
-    else:
-        print("No drivers attached to the downstream devices were found. Please ensure they are not loaded during the reset process.")
 
 ######################################################################
 # Description:  Mcra Read/Write functions
@@ -1583,40 +1563,42 @@ def send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync, pci_reset_re
         raise e
 
 
-def set_hot_reset_flow(reg_access_obj):
-    global hot_reset_flow
-    logger.debug('set_hot_reset_flow: devDict is a pcie switch device')
+def is_upstream_port_type(reg_access_obj, devDict, pcie_index_arg):
+    res = False
+    port_type = PCI_EXPRESS_PORT_TYPE_UNKNOWN
     try:
-        _, _, sdm = reg_access_obj.sendMPIR(depth=0, pcie_index=0, node=0)
+        port_type = reg_access_obj.sendMPEIN(depth=0, pcie_index=pcie_index_arg, node=0)
+    except regaccess.RegAccException as e:
+        logger.warning('is_upstream_port_type: Failed to send MPEIN: {0}'.format(e))
     except Exception as e:
-        logger.debug('set_hot_reset_flow: Failed to send MPIR: {0}'.format(e))
-        return
-
-    logger.debug('set_hot_reset_flow: sdm = {0}'.format(sdm))
-    if sdm == 1 and len(devicesSD) > 0:
-        hot_reset_flow = HotResetFlow.SOCKET_DIRECT
-    elif sdm == 1 and len(devicesSD) == 0:
-        hot_reset_flow = HotResetFlow.HIDDEN_SOCKET_DIRECT
-    else:
-        hot_reset_flow = HotResetFlow.SINGLE_DEVICE
-        logger.debug('set_hot_reset_flow: Set to {0}'.format(hot_reset_flow))
+        raise RuntimeError('is_upstream_port_type: Failed to send MPEIN: {0}'.format(e))
+    if port_type == PCI_EXPRESS_UPSTREAM_PORT:
+        res = True
+        if devDict['name'] in BLUEFIELD_DEVICES and platform.system() == "Linux" and is_in_internal_host(logger):
+            res = False
+    logger.debug('is_upstream_port_type: device {0} with pcie index {1} is{2} a pcie switch device'.format(devDict['name'], pcie_index_arg, '' if res else ' NOT'))
+    return res
 
 
 def is_pcie_switch_device(devid, reg_access_obj=None):
     res = False
     try:
         devDict = getDeviceDict(devid)
-        if devDict['name'] in PCIE_SWITCH_DEVICES_ALL:
-            reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
-            port_type = reg_access_obj.sendMPEIN(depth=0, pcie_index=0, node=0)
-            if port_type == PCI_EXPRESS_UPSTREAM_PORT:
-                res = True
-                if devDict['name'] in BLUEFIELD_DEVICES and platform.system() == "Linux" and is_in_internal_host(logger):
-                    res = False
-        logger.debug('is_pcie_switch_device: device {0} is{1} a pcie switch device'.format(devDict['name'], '' if res else ' NOT'))
-    except BaseException as e:
-        logger.debug('is_pcie_switch_device: Failed to send MPEIN: {0}'.format(e))
-        pass
+    except Exception as e:
+        logger.info('is_pcie_switch_device: Failed to get device dict: {0}'.format(e))
+        return res
+    if devDict['name'] in PCIE_SWITCH_DEVICES_ALL:
+        reg_access_obj = RegAccessObj if reg_access_obj is None else reg_access_obj
+        logger.debug('is_pcie_switch_device: checking port type for device {0} with pcie index 0'.format(devDict['name']))
+        res = is_upstream_port_type(reg_access_obj, devDict, pcie_index_arg=0)
+        if res is False:  # Socket direct use case: if prime device is not a PCI Switch, check its Aux if it exists
+            try:
+                requester_pcie_index = reg_access_obj.sendMPQD(depth=0, node=0, DPNv=1)
+                res = is_upstream_port_type(reg_access_obj, devDict, pcie_index_arg=requester_pcie_index)
+            except regaccess.RegAccException as e:
+                logger.warning('is_pcie_switch_device: Failed to send MPIR and/or MPQD: {0}'.format(e))
+
+    logger.debug('is_pcie_switch_device: device {0} is{1} a pcie switch device'.format(devDict['name'], '' if res else ' NOT'))
     return res
 
 
@@ -2060,7 +2042,8 @@ def hotResetflow(device, reset_level, reset_type, reset_sync, pci_reset_request_
 
     logger.debug('Update uptime before hot reset')
     FWResetStatusChecker.UpdateUptimeBeforeReset()
-    HotResetFlow.hot_reset(mfrl, DevDBDF, devicesSD, hot_reset_flow, MstDevObj, RegAccessObj, logger)
+    global drivers_safety_check_manager
+    HotResetFlow.hot_reset(mfrl, DevDBDF, devicesSD, drivers_safety_check_manager, MstDevObj, RegAccessObj, logger)
 
     post_reset_flow(driverObj, device, driverStat)
     logger.debug('Hot reset flow completed successfully')
@@ -2120,6 +2103,9 @@ def map2DevPathAux(mstOutput, device):
 
 
 def map2DevPath(device):
+    # Support fwctl devices
+    if device.startswith("fwctl") or device.startswith("/dev/fwctl/fwctl"):
+        return device
     deviceStartsWith00000 = device.startswith("0000:")
     if deviceStartsWith00000:
         device = mlxfwreset_utils.removeDomainFromAddress(device)
@@ -2168,7 +2154,7 @@ def reset_flow_host(device, args, command):
     global FWResetStatusChecker
 
     # Exit in case of virtual-machine (not implemented for FreeBSD and Windows)
-    if command == "reset" and platform.system() == "Linux" and "ppc64" not in platform.machine() and "xenenterprise" not in platform.platform():
+    if args.skip_vm_check is False and command == "reset" and platform.system() == "Linux" and "ppc64" not in platform.machine() and "xenenterprise" not in platform.platform():
         rc, out, _ = cmdExec('lscpu')
         if rc == 0:
             if "Hypervisor vendor" in out:
@@ -2279,23 +2265,31 @@ def reset_flow_host(device, args, command):
 
     mst_driver_is_loaded = False
     if platform.system() == "Linux":
-        if isModuleLoaded("mst_pciconf"):
+        if isModuleLoaded("mstflint_access"):
             mst_driver_is_loaded = True
 
     mroq = CmdRegMroq(reset_type, RegAccessObj, mcam, logger, mst_driver_is_loaded)
 
     tool_owner_support = True
-    if platform.system() == "Linux" and is_bluefield:
-        tool_owner_support = False
+    if platform.system() == "Linux":
+        pci_device_id = PciOpsObj.read(DevDBDF, 2, "W")
+        if is_bluefield or pci_device_id in BLUEFIELD4_PCI_DEVICE_ID:
+            tool_owner_support = False
     elif mroq.mroq_is_supported():
         tool_owner_support = mroq.is_tool_owner_support()
 
     is_pcie_switch = is_pcie_switch_device(devid)
+    sync_2_only_supported = False
+    if mroq.mroq_is_supported():
+        sync_2_only_supported = mroq.is_sync2_only_supported(tool_owner_support)
+        if sync_2_only_supported:
+            logger.debug("Sync 2 is the only supported sync, will not be the default.")
+
     if command == "query":
         if mroq.mroq_is_supported():
             print("The following query is relevant only for reset-type {}:\n".format(reset_type))
-            print(mfrl.query_text(mroq.is_any_sync_supported(tool_owner_support)))
-            mroq.print_query_text(is_pcie_switch, tool_owner_support)
+            print(mfrl.query_text(mroq.is_any_sync_supported(tool_owner_support), sync_2_only_supported))
+            mroq.print_query_text(is_pcie_switch, tool_owner_support, sync_2_only_supported)
         else:
             print(mfrl.query_text())
             print(mcam.reset_sync_query_text(tool_owner_support))
@@ -2309,12 +2303,15 @@ def reset_flow_host(device, args, command):
         else:
             is_any_sync_supported = None
             skip_pci_reset = True
-        reset_level = mfrl.default_reset_level(is_any_sync_supported, skip_pci_reset) if args.reset_level is None else args.reset_level
+        reset_level = mfrl.default_reset_level(is_any_sync_supported, skip_pci_reset, sync_2_only_supported) if args.reset_level is None else args.reset_level
 
         if reset_level != CmdRegMfrl.PCI_RESET and args.reset_sync is not None:
             print("-I- reset sync argument is ignored when reset level is not PCI_RESET")
 
         if reset_level is CmdRegMfrl.PCI_RESET:
+            if mroq.mroq_is_supported():
+                is_any_sync_supported = mroq.is_any_sync_supported(True)  # update is_any_sync_supported with tool_owner_support=True since in reset we do not limit sync 0 for BF in linux (for debugging purposes)
+                
             if args.reset_sync is None:
                 reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch, tool_owner_support)
             else:
@@ -2348,6 +2345,10 @@ def reset_flow_host(device, args, command):
                 is_pcie_switch_reboot = True
 
         if mfrl.is_reset_level_supported(reset_level) is False:
+            raise RuntimeError(
+                "Reset-level '{0}' is not supported in the current state of this device".format(reset_level))
+
+        if reset_level is CmdRegMfrl.PCI_RESET and is_any_sync_supported is False:
             raise RuntimeError(
                 "Reset-level '{0}' is not supported in the current state of this device".format(reset_level))
 
@@ -2400,11 +2401,13 @@ def reset_flow_host(device, args, command):
         if reset_level == CmdRegMfrl.PCI_RESET and mroq.mroq_is_supported() and not mroq.is_method_supported(pci_reset_request_method):
             raise RuntimeError("Reset method {0} is not supported".format(pci_reset_request_method))
 
+        global drivers_safety_check_manager
         if reset_level is CmdRegMfrl.PCI_RESET and reset_sync is SyncOwner.FW and pci_reset_request_method is ResetReqMethod.HOT_RESET:
-            set_hot_reset_flow(RegAccessObj)
+            drivers_safety_check_manager = DriversSafetyCheckManager(RegAccessObj, DevDBDF, devicesSD, args.ignore_list, is_pcie_switch, logger)
+            hot_reset_flow = drivers_safety_check_manager._hot_reset_flow
 
         if is_pcie_switch and hot_reset_flow:
-            AskUserPCIESwitchHotReset(args.ignore_list)
+            AskUserPCIESwitchHotReset(args.ignore_list, RegAccessObj, DevDBDF, [mlxfwreset_utils.getDevDBDF(dev) for dev in devicesSD])
 
         AskUser("Continue with reset", args.yes)
 
@@ -2600,8 +2603,14 @@ def main():
 
     # hidden flag for skipping provided drivers
     options_group.add_argument('--ignore_list',
-                               type=GpuDriverSafetyCheckManager.validate_ignore_list,
+                               type=DriversSafetyCheckManager.parse_ignore_list,
                                help=argparse.SUPPRESS,
+                               default=[])
+
+    # flag for skipping drivers from file
+    options_group.add_argument('--ignore_file',
+                               type=DriversSafetyCheckManager.validate_ignore_file,
+                               help=':  Skip drivers from file. File format: drivers separated by comma/newline, lines starting with # are ignored (comments)',
                                default=[])
 
     # hidden flag for skipping mst restart when performing pci reset
@@ -2624,6 +2633,10 @@ def main():
     options_group.add_argument('--log',
                                choices=['critical', 'error',
                                         'warning', 'info', 'debug'],
+                               help=argparse.SUPPRESS)
+    # hidden flag for skipping VM check
+    options_group.add_argument('--skip_vm_check',
+                               action="store_true",
                                help=argparse.SUPPRESS)
 
     def check_positive_float(val):
@@ -2666,6 +2679,10 @@ def main():
 
     # logger
     logger = LoggerFactory().get('mlxfwreset', args.log)
+
+    # Combine ignore lists from both --ignore_list and --ignore_file
+    args.ignore_list = list(set(args.ignore_list + args.ignore_file))
+    logger.debug("Ignore drivers: {0}".format(args.ignore_list))
 
     # Insert Flow here
     if isSwitchDevice(device):

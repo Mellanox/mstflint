@@ -1,0 +1,17 @@
+ibdump (6.0.0-1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Tzafrir Cohen <mellanox@cohens.org.il>  Wed, 18 Dec 2019 19:02:44 +0200
+
+ibdump (5.0.0-1) unstable; urgency=low
+
+  * Added ConnectX-5 support
+
+ -- Adrian Chiris <adrian@mellanox.co.il>  Sun, 19 Mar 2017 15:20:33 +0200
+ 
+ibdump (4.0.0-1) unstable; urgency=low
+
+  * Initial Debian release
+
+ -- Adham Masarwah <adham@unkno.wn>  Wed, 4 Nov 2014 15:20:33 +0200

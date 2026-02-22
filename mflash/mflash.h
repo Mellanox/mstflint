@@ -234,12 +234,19 @@ int mf_get_jedec_id(mflash* mfl, u_int32_t* jedec_id);
 
 int mf_set_cmp(mflash* mfl, u_int8_t cmp);
 int mf_get_cmp(mflash* mfl, u_int8_t* cmp);
+int mf_disable_cmp_if_supported(mflash* mfl);
 
 int mf_set_quad_en(mflash* mfl, u_int8_t quad_en);
 int mf_get_quad_en(mflash* mfl, u_int8_t* quad_en);
 
 int mf_set_srwd(mflash* mfl, u_int8_t srwd);
 int mf_get_srwd(mflash* mfl, u_int8_t* srwd);
+
+int mf_set_srp(mflash* mfl, u_int8_t srp);
+int mf_get_srp(mflash* mfl, u_int8_t* srp);
+
+int mf_set_srl(mflash* mfl, u_int8_t srl);
+int mf_get_srl(mflash* mfl, u_int8_t* srl);
 
 int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength);
 int mf_get_driver_strength(mflash* mfl, u_int8_t* driver_strength);
@@ -253,6 +260,10 @@ int mf_get_write_protect(mflash* mfl, u_int8_t bank_num, write_protect_info_t* p
 int mf_set_dummy_cycles(mflash* mfl, u_int8_t num_of_cycles);
 int mf_get_dummy_cycles(mflash* mfl, u_int8_t* num_of_cycles);
 int is_macronix_special_case_for_dummy_cycles(mflash* mfl);
+int is_WINBOND_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, uint8_t log2_bank_size);
+int is_ISSI_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, uint8_t log2_bank_size);
+int is_ISSI_is25wj032f_by_jedec_id(uint32_t jedec_id);
+int is_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, uint8_t log2_bank_size, uint8_t series_code);
 
 //
 // Set/Get for some options.
@@ -286,6 +297,15 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
 int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength);
 int mf_get_dummy_cycles_direct_access(mflash* mfl, u_int8_t* dummy_cycles_p);
 int mf_set_dummy_cycles_direct_access(mflash* mfl, u_int8_t num_of_cycles);
-EXTERN_C_END
+
+int identify_macronix_flash(mflash* mfl, MacronixSeriesCode* series_code);
+int modify_flash_info_if_needed(mflash* mfl, flash_info_t* f_info);
+int mf_read_sfdp_table(mflash* mfl, uint32_t address, uint8_t bytes_num, bool swap, uint32_t* data);
+int is_macronix_mx25u51245g(mflash* mfl);
+int is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mflash* mfl);
+int is_macronix_mx25u51294g_mx25u51294gxdi08(uint8_t vendor,
+                                             uint16_t type,
+                                             uint32_t log2_bank_size,
+                                             MacronixSeriesCode series_code);EXTERN_C_END
 
 #endif // MFLASH_H

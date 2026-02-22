@@ -33,33 +33,50 @@
  */
 
 #include <sstream>
+#include <cstring>
 #include "mlxreg_lib.h"
 #include "cmdif/icmd_cif_open.h"
 #ifndef MST_UL
 #include <tools_layouts/adb_dbs.h>
 #endif
 #include <tools_layouts/prm_adb_db.h>
+#include <tools_layouts/icmd_hca_layouts.h>
 #include "common/tools_utils.h"
 #include "common/tools_time.h"
 #include <mlxreg_exception.h>
+#include <mtcr_ul/packets_layout.h>
 
 #define REG_ACCESS_UNION_NODE "access_reg_summary"
 
 using namespace mlxreg;
 
-const int MlxRegLib::RETRIES_COUNT = 3;
-const int MlxRegLib::SLEEP_INTERVAL = 100;
+template<bool dynamic>
+const int _MlxRegLib_impl<dynamic>::RETRIES_COUNT = 3;
+template<bool dynamic>
+const int _MlxRegLib_impl<dynamic>::SLEEP_INTERVAL = 100;
 
-MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
+template<bool dynamic>
+_MlxRegLib_impl<dynamic>::_MlxRegLib_impl(mfile* mf, string extAdbFile, bool isExternal, PrmAdbType deviceType)
 {
     _mf = mf;
     _isExternal = isExternal;
+    _currentNode = nullptr;
     try
     {
         if (_isExternal && extAdbFile == "")
         {
+            // Determine ADB file based on parameters
+            if (_mf != nullptr)
+            {
+                // Normal operation with device - auto-detect ADB file
             dm_dev_id_t devID = getDevId();
             extAdbFile = PrmAdbDB::getDefaultDBName(devID);
+        }
+            else
+            {
+                // Use device type-specific ADB file (for offline mode)
+                extAdbFile = PrmAdbDB::getDefaultDBName(deviceType);
+            }
         }
         initAdb(extAdbFile);
     }
@@ -78,9 +95,11 @@ MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
         rootNode = rootNode + "_ext";
     }
 
-    _regAccessRootNode = _adb->createLayout(rootNode, 2);
+    _regAccessRootNode = nullptr;
+        _regAccessRootNode = _adb->createLayout(rootNode, 2);
     if (!_regAccessRootNode)
     {
+        // printf("getLastError() = %s \n", _adb->getLastError().c_str());
         throw MlxRegException("No supported access registers found");
     }
     _regAccessUnionNode = _regAccessRootNode->getChildByPath(unionNode);
@@ -108,10 +127,16 @@ MlxRegLib::MlxRegLib(mfile* mf, string extAdbFile, bool isExternal)
 }
 
 /************************************
- * Function: ~MlxRegLib
+ * Function: ~_MlxRegLib_impl
  ************************************/
-MlxRegLib::~MlxRegLib()
+template<bool dynamic>
+_MlxRegLib_impl<dynamic>::~_MlxRegLib_impl()
 {
+    for (auto& entry : _layoutCache)
+    {
+        delete entry.second;
+    }
+    _layoutCache.clear();
     if (_regAccessRootNode)
     {
         delete _regAccessRootNode;
@@ -122,12 +147,14 @@ MlxRegLib::~MlxRegLib()
     }
 }
 
-dm_dev_id_t MlxRegLib::getDevId()
+template<bool dynamic>
+dm_dev_id_t _MlxRegLib_impl<dynamic>::getDevId()
 {
     return getDevId(_mf);
 }
 
-dm_dev_id_t MlxRegLib::getDevId(mfile* mf)
+template<bool dynamic>
+dm_dev_id_t _MlxRegLib_impl<dynamic>::getDevId(mfile* mf)
 {
     dm_dev_id_t devID = DeviceUnknown;
     u_int32_t hwDevID = 0;
@@ -141,15 +168,17 @@ dm_dev_id_t MlxRegLib::getDevId(mfile* mf)
     return devID;
 }
 
-bool MlxRegLib::isDeviceSupported(mfile* mf)
+template<bool dynamic>
+bool _MlxRegLib_impl<dynamic>::isDeviceSupported(mfile* mf)
 {
     dm_dev_id_t devID = getDevId(mf);
     return !dm_is_4th_gen(devID);
 }
 
-void MlxRegLib::initAdb(string extAdbFile)
+template<bool dynamic>
+void _MlxRegLib_impl<dynamic>::initAdb(string extAdbFile)
 {
-    _adb = new AdbAdvLegacy();
+    _adb = new Adb();
     if (extAdbFile != "")
     {
         if (!_adb->load(extAdbFile, false, false))
@@ -166,28 +195,44 @@ void MlxRegLib::initAdb(string extAdbFile)
 /************************************
  * Function: findAdbNode
  ************************************/
-AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(string name)
+template<bool dynamic>
+typename _MlxRegLib_impl<dynamic>::AdbInstance* _MlxRegLib_impl<dynamic>::findAdbNode(string name)
 {
+    auto cacheIt = _layoutCache.find(name);
+    if (cacheIt != _layoutCache.end())
+    {
+        return cacheIt->second;
+    }
+
     if (_regAccessMap.find(name) == _regAccessMap.end())
     {
         throw MlxRegException("Can't find access register name: %s", name.c_str());
     }
-    auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(name);
 
-    found_node = _adb->createLayout(found_node->nodeDesc->name);
-    return found_node;
+    auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(name);
+    auto layout = _adb->createLayout(found_node->nodeDesc->name);
+    _layoutCache[name] = layout;
+    return layout;
 }
 
 /************************************
  * Function: findAdbNode
  ************************************/
-AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(uint64_t id)
+template<bool dynamic>
+typename _MlxRegLib_impl<dynamic>::AdbInstance* _MlxRegLib_impl<dynamic>::findAdbNode(uint64_t id)
 {
     try
     {
         auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(id);
-        found_node = _adb->createLayout(found_node->nodeDesc->name);
-        return found_node;
+        string name = found_node->nodeDesc->name;
+        auto cacheIt = _layoutCache.find(name);
+        if (cacheIt != _layoutCache.end())
+        {
+            return cacheIt->second;
+        }
+        auto layout = _adb->createLayout(name);
+        _layoutCache[name] = layout;
+        return layout;
     }
     catch (AdbException& er)
     {
@@ -196,21 +241,12 @@ AdbInstanceAdvLegacy* MlxRegLib::findAdbNode(uint64_t id)
 }
 
 /************************************
- * Function: showRegister
- ************************************/
-MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector<AdbInstanceAdvLegacy*>& fields)
-{
-    AdbInstanceAdvLegacy* adbNode = findAdbNode(regName);
-    fields = adbNode->getLeafFields(true);
-    return MRLS_SUCCESS;
-}
-
-/************************************
  * Function: showRegisters
  ************************************/
-MlxRegLibStatus MlxRegLib::showRegisters(std::vector<string>& regs)
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::showRegisters(std::vector<string>& regs)
 {
-    for (std::map<string, u_int64_t>::iterator it = _regAccessMap.begin(); it != _regAccessMap.end(); ++it)
+    for (typename std::map<string, u_int64_t>::iterator it = _regAccessMap.begin(); it != _regAccessMap.end(); ++it)
     {
         regs.push_back(it->first);
     }
@@ -220,7 +256,8 @@ MlxRegLibStatus MlxRegLib::showRegisters(std::vector<string>& regs)
 /************************************
  * Function: sendMaccessReg
  ************************************/
-int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t>& data)
+template<bool dynamic>
+int _MlxRegLib_impl<dynamic>::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t>& data)
 {
     int status = 0;
     int rc = -1;
@@ -252,7 +289,8 @@ int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t
 /************************************
  * Function: sendMaccessReg
  ************************************/
-int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, void* data, uint32_t size)
+template<bool dynamic>
+int _MlxRegLib_impl<dynamic>::sendMaccessReg(u_int16_t regId, int method, void* data, uint32_t size)
 {
     int status = 0;
     int rc = -1;
@@ -269,26 +307,32 @@ int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, void* data, uint32_t 
     return rc;
 }
 
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::ThrowErrorMsgWithSyndrome(int rc)
+{
+    char errorMsg[256];
+    snprintf(errorMsg, sizeof(errorMsg), "Failed to send access register: %s", m_err2str((MError)rc));
+    if (_mf->icmd.syndrome)
+    {
+        snprintf(errorMsg + strlen(errorMsg),
+                 sizeof(errorMsg) - strlen(errorMsg),
+                 " and the syndrome number is: 0x%X",
+                 (_mf->icmd.syndrome));
+    }
+    throw MlxRegException(errorMsg);
+}
 /************************************
  * Function: sendRegister
  ************************************/
-MlxRegLibStatus MlxRegLib::sendRegister(string regName, int method, std::vector<u_int32_t>& data)
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::sendRegister(string regName, int method, std::vector<u_int32_t>& data)
 {
     u_int16_t regId = (u_int16_t)_regAccessMap.find(regName)->second;
     int rc;
     rc = sendMaccessReg(regId, method, data);
     if (rc)
     {
-        char error_msg[200];
-        snprintf(error_msg, sizeof(error_msg), "Failed to send access register: %s", m_err2str((MError)rc));
-        if (_mf->icmd.syndrome)
-        {
-            snprintf(error_msg + strlen(error_msg),
-                     sizeof(error_msg) - strlen(error_msg),
-                     " and the syndrome number is: 0x%X",
-                     (_mf->icmd.syndrome));
-        }
-        throw MlxRegException(error_msg);
+        ThrowErrorMsgWithSyndrome(rc);
     }
     return MRLS_SUCCESS;
 }
@@ -296,13 +340,14 @@ MlxRegLibStatus MlxRegLib::sendRegister(string regName, int method, std::vector<
 /************************************
  * Function: sendRegister
  ************************************/
-MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, std::vector<u_int32_t>& data)
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::sendRegister(u_int16_t regId, int method, std::vector<u_int32_t>& data)
 {
     int rc;
     rc = sendMaccessReg(regId, method, data);
     if (rc)
     {
-        throw MlxRegException("Failed send access register: %s", m_err2str((MError)rc));
+        ThrowErrorMsgWithSyndrome(rc);
     }
     return MRLS_SUCCESS;
 }
@@ -310,13 +355,14 @@ MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, std::vector
 /************************************
  * Function: sendRegister
  ************************************/
-MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, void* data, uint32_t size)
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::sendRegister(u_int16_t regId, int method, void* data, uint32_t size)
         {
     int rc;
     rc = sendMaccessReg(regId, method, data, size);
     if (rc)
     {
-        throw MlxRegException("Failed send access register: %s", m_err2str((MError)rc));
+        ThrowErrorMsgWithSyndrome(rc);
     }
     return MRLS_SUCCESS;
 }
@@ -324,7 +370,8 @@ MlxRegLibStatus MlxRegLib::sendRegister(u_int16_t regId, int method, void* data,
 /************************************
  * Function: getLastErrMsg
  ************************************/
-string MlxRegLib::getLastErrMsg()
+template<bool dynamic>
+string _MlxRegLib_impl<dynamic>::getLastErrMsg()
 {
     std::stringstream sstm;
     int lastErrCode = getLastErrCode();
@@ -341,9 +388,10 @@ string MlxRegLib::getLastErrMsg()
 /************************************
  * Function: isRegSizeSupported
  ************************************/
-bool MlxRegLib::isRegSizeSupported(string regName)
+template<bool dynamic>
+bool _MlxRegLib_impl<dynamic>::isRegSizeSupported(string regName)
 {
-    AdbInstanceAdvLegacy* adbNode = _regAccessUnionNode->getUnionSelectedNodeName(regName);
+    AdbInstance* adbNode = _regAccessUnionNode->getUnionSelectedNodeName(regName);
     return (((adbNode->get_size() >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_SET)) ||
             ((adbNode->get_size() >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET)));
 }
@@ -351,16 +399,17 @@ bool MlxRegLib::isRegSizeSupported(string regName)
 /************************************
  * Function: isAccessRegisterSupported
  ************************************/
- void MlxRegLib::isAccessRegisterSupported(mfile* mf)
+ template<bool dynamic>
+ void _MlxRegLib_impl<dynamic>::isAccessRegisterSupported(mfile* mf)
  {
      int                                    status;
      struct icmd_hca_icmd_query_cap_general icmd_cap;
      int                                    i = RETRIES_COUNT;
- 
+
      if ((mf->tp == MST_FWCTL_CONTROL_DRIVER) || (mf->tp == MST_NVML)) {
          return;
      }
- 
+
      do{
          memset(&icmd_cap, 0, sizeof(icmd_cap));
          status = get_icmd_query_cap(mf, &icmd_cap);
@@ -369,7 +418,7 @@ bool MlxRegLib::isRegSizeSupported(string regName)
          }
          msleep(SLEEP_INTERVAL);
      } while (i-- > 0);
- 
+
      if (status || (icmd_cap.allow_icmd_access_reg_on_all_registers == 0)) {
          throw MlxRegException("FW burnt on device does not support generic access register");
      }
@@ -378,7 +427,8 @@ bool MlxRegLib::isRegSizeSupported(string regName)
 /************************************
  * Function: handle_buffer_endianness
  ************************************/
-void MlxRegLib::handle_buffer_endianness(void* buffer, uint32_t size)
+template<bool dynamic>
+void _MlxRegLib_impl<dynamic>::handle_buffer_endianness(void* buffer, uint32_t size)
 {
     for (uint32_t* addr = (uint32_t*)buffer; addr < (uint32_t*)buffer + size / sizeof(uint32_t); ++addr)
     {
@@ -388,7 +438,8 @@ void MlxRegLib::handle_buffer_endianness(void* buffer, uint32_t size)
 /************************************
  * Function: isAccessRegisterGMPSupported
  ************************************/
-bool MlxRegLib::isAccessRegisterGMPSupported(maccess_reg_method_t reg_method)
+template<bool dynamic>
+bool _MlxRegLib_impl<dynamic>::isAccessRegisterGMPSupported(maccess_reg_method_t reg_method)
 {
     return (bool)(supports_reg_access_gmp(_mf, reg_method));
 }
@@ -396,20 +447,22 @@ bool MlxRegLib::isAccessRegisterGMPSupported(maccess_reg_method_t reg_method)
 /************************************
  * Function: isIBDevice
  ************************************/
-bool MlxRegLib::isIBDevice()
+template<bool dynamic>
+bool _MlxRegLib_impl<dynamic>::isIBDevice()
 {
-    return (bool)(_mf->flags & MDEVS_IB);
+    return (bool)dm_is_ib_access(_mf);
 }
 
 /************************************
  * Function: dumpRegisterData
  ************************************/
-MlxRegLibStatus MlxRegLib::dumpRegisterData(string output_file_name, std::vector<u_int32_t>& data)
+template<bool dynamic>
+MlxRegLibStatus _MlxRegLib_impl<dynamic>::dumpRegisterData(string output_file_name, std::vector<u_int32_t>& data)
 {
     FILE* outputFile = fopen(output_file_name.c_str(), "w");
     if (outputFile)
     {
-        for (std::vector<u_int32_t>::size_type i = 0; i != data.size(); i++)
+        for (typename std::vector<u_int32_t>::size_type i = 0; i != data.size(); i++)
         {
             fprintf(outputFile, "%08x\n", CPU_TO_BE32(data[i]));
         }
@@ -421,3 +474,73 @@ MlxRegLibStatus MlxRegLib::dumpRegisterData(string output_file_name, std::vector
     fclose(outputFile);
     return MRLS_SUCCESS;
 }
+
+/************************************
+ * Function: generate_interface_buffer
+ ************************************/
+template<bool dynamic>
+std::vector<u_int32_t>
+  _MlxRegLib_impl<dynamic>::generate_cmd_buffer(string regName, int method, std::vector<u_int32_t>& data)
+{
+    // Validate that the register exists
+    if (_regAccessMap.find(regName) == _regAccessMap.end())
+    {
+        throw MlxRegException("Register not found: " + regName);
+    }
+
+    u_int16_t regId = (u_int16_t)_regAccessMap.find(regName)->second;
+    u_int32_t reg_size = data.size() * 4; // Convert from dwords to bytes
+
+    // Create buffer following the same pattern as mreg_send_raw
+    u_int8_t* buffer = new u_int8_t[reg_size + TLV_OPERATION_SIZE_BYTES + REG_TLV_HEADER_SIZE_BYTES];
+    if (!buffer)
+    {
+        throw MlxRegException("Failed to allocate buffer");
+    }
+    memset(buffer, 0, reg_size + TLV_OPERATION_SIZE_BYTES + REG_TLV_HEADER_SIZE_BYTES);
+    int buffer_offset = 0;
+    struct OperationTlv tlv;
+    memset(&tlv, 0, sizeof(struct OperationTlv));
+    struct reg_tlv tlv_info;
+    memset(&tlv_info, 0, sizeof(struct reg_tlv));
+
+    // Fill Operation TLV - same as mreg_send_raw
+    init_operation_tlv(&tlv, regId, method);
+    OperationTlv_pack(&tlv, buffer);
+    buffer_offset += TLV_OPERATION_SIZE_BYTES;
+
+    // Fill Reg TLV - same as mreg_send_raw
+    init_reg_tlv(&tlv_info, reg_size);
+    reg_tlv_pack(&tlv_info, buffer + buffer_offset);
+    buffer_offset += REG_TLV_HEADER_SIZE_BYTES;
+
+    // Put the reg data into the buffer - same as mreg_send_raw
+    memcpy(buffer + buffer_offset, &data[0], reg_size);
+    buffer_offset += reg_size;
+
+    // Convert buffer to vector<u_int32_t> for return
+    std::vector<u_int32_t> interfaceBuffer;
+    u_int32_t* buffer_as_dwords = (u_int32_t*)buffer;
+    int total_dwords = (buffer_offset + 3) / 4; // Round up to nearest dword
+
+    for (int i = 0; i < total_dwords; i++)
+    {
+        interfaceBuffer.push_back(buffer_as_dwords[i]);
+    }
+
+    delete[] buffer;
+    return interfaceBuffer;
+}
+
+// Static member template instantiations
+template<>
+map<dm_dev_id_t, _Adb_impl<false, uint32_t>*> _MlxRegLib_impl<false>::_adbDBs;
+template<>
+map<dm_dev_id_t, _Adb_impl<true, uint32_t>*> _MlxRegLib_impl<true>::_adbDBs;
+
+// Explicit template instantiations
+namespace mlxreg
+{
+template class _MlxRegLib_impl<false>;
+template class _MlxRegLib_impl<true>;
+} // namespace mlxreg

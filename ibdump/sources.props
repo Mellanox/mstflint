@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TARGETNAME Condition="'$(OVERRIDE_TARGETNAME)'!='true'">ibdump</TARGETNAME>
+    <TARGETPATH Condition="'$(OVERRIDE_TARGETPATH)'!='true'">.\bin\user\obj$(BUILD_ALT_DIR)</TARGETPATH>
+    <TARGETTYPE Condition="'$(OVERRIDE_TARGETTYPE)'!='true'">PROGRAM</TARGETTYPE>
+    <UMTYPE Condition="'$(OVERRIDE_UMTYPE)'!='true'">console</UMTYPE>
+    <UMENTRY Condition="'$(OVERRIDE_UMENTRY)'!='true'">main</UMENTRY>
+    <USE_MSVCRT Condition="'$(OVERRIDE_USE_MSVCRT)'!='true'">1</USE_MSVCRT>
+    <SVN_WININF_TRUNK Condition="'$(OVERRIDE_SVN_WININF_TRUNK)'!='true'">M:\tmp\tools\ibdump_build\wininf</SVN_WININF_TRUNK>
+    <SOURCES Condition="'$(OVERRIDE_SOURCES)'!='true'">ibdump.c	getopt.c ibd_ibal_access.c </SOURCES>
+    <INCLUDES Condition="'$(OVERRIDE_INCLUDES)'!='true'">$(SVN_WININF_TRUNK)\ulp\libibverbs\include; 	$(SVN_WININF_TRUNK)\inc; 	$(SVN_WININF_TRUNK)\inc\user;</INCLUDES>
+    <TARGETLIBS Condition="'$(OVERRIDE_TARGETLIBS)'!='true'">$(SVN_WININF_TRUNK)\bin\user\obj$(BUILD_ALT_DIR)\*\libibverbs.lib 	$(SDK_LIB_PATH)\Ws2_32.lib</TARGETLIBS>
+    <USER_C_FLAGS Condition="'$(OVERRIDE_USER_C_FLAGS)'!='true'">$(USER_C_FLAGS) /MD</USER_C_FLAGS>
+    <C_DEFINES Condition="'$(OVERRIDE_C_DEFINES)'!='true'">$(C_DEFINES) -DWIN32 -D__WIN__ -D__i386_ -DWDK_ -D_CRT_SECURE_NO_WARNINGS</C_DEFINES>
+  </PropertyGroup>
+  <Choose>
+    <When Condition="!('$(FREEBUILD)'!='' And $(FREEBUILD)!=0)">
+      <PropertyGroup>
+        <C_DEFINES Condition="'$(OVERRIDE_C_DEFINES)'!='true'">$(C_DEFINES) -D_DEBUG -DDEBUG -DDBG</C_DEFINES>
+      </PropertyGroup>
+    </When>
+  </Choose>
+  <PropertyGroup>
+    <C_DEFINES Condition="'$(OVERRIDE_C_DEFINES)'!='true'">$(C_DEFINES)  -DWIN_NOT_SUPPORTED</C_DEFINES>
+  </PropertyGroup>
+</Project>

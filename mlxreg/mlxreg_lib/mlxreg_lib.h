@@ -41,6 +41,7 @@
 #include <dev_mgt/tools_dev_types.h>
 #include <mft_utils/errmsg.h>
 #include "mlxreg_exception.h"
+#include <tools_layouts/prm_adb_db.h>
 
 namespace mlxreg
 {
@@ -50,31 +51,41 @@ typedef enum
     MRLS_GENERAL
 } MlxRegLibStatus;
 
-class MlxRegLib : public ErrMsg
+template<bool dynamic = false>
+class _MlxRegLib_impl : public ErrMsg
 {
 public:
-    MlxRegLib(mfile* mf, string extAdbFile, bool isExternal = true);
-    ~MlxRegLib(); // Dto'r
+    // Type aliases based on dynamic template parameter
+    using Adb = _Adb_impl<dynamic, uint32_t>;
+    using AdbInstance = _AdbInstance_impl<dynamic, uint32_t>;
+
+    _MlxRegLib_impl(mfile* mf,
+                    string extAdbFile,
+                    bool isExternal = true,
+                    PrmAdbType deviceType = PrmAdbType::PRM_ADB_TYPE_UNKNOWN);
+    ~_MlxRegLib_impl(); // Dto'r
     /* * * * * * * * * * * * * *
      * library Getters/Setters *
      * * * * * * * * * * * * * */
-    AdbInstanceAdvLegacy* findAdbNode(string name);
-    AdbInstanceAdvLegacy* findAdbNode(uint64_t id);
-    AdbInstanceAdvLegacy* getAdbTable() { return _regAccessRootNode; };
-    AdbInstanceAdvLegacy* get_current_node() { return _currentNode; };
-    void set_current_node(string name) { _currentNode = findAdbNode(name); };
-    AdbAdvLegacy& getAdb() { return *_adb; };
+    AdbInstance* findAdbNode(string name);
+    AdbInstance* findAdbNode(uint64_t id);
+    AdbInstance* getAdbTable() { return _regAccessRootNode; };
+    AdbInstance* get_current_node() { return _currentNode; };
+    void set_current_node(string name) { _currentNode = findAdbNode(name); }
+    Adb& getAdb() { return *_adb; };
     /* * * * * * * *
      * library API *
      * * * * * * * */
     string getLastErrMsg();
+    MlxRegLibStatus ThrowErrorMsgWithSyndrome(int rc);
     MlxRegLibStatus showRegisters(std::vector<string>& regs); // Return all available register names
-    MlxRegLibStatus showRegister(string regName,
-                                 std::vector<AdbInstanceAdvLegacy*>& fields); // Return all fields of given register
     MlxRegLibStatus sendRegister(string regName, int method, std::vector<u_int32_t>& data);  // Send register by name
     MlxRegLibStatus sendRegister(u_int16_t regId, int method, std::vector<u_int32_t>& data); // Send register by ID
     MlxRegLibStatus sendRegister(u_int16_t regId, int method, void* data, uint32_t size);    // Send register with raw
                                                                                              // buffer
+    std::vector<u_int32_t>
+      generate_cmd_buffer(string regName, int method, std::vector<u_int32_t>& data); // Generate command buffer
+                                                                                     // without sending
     dm_dev_id_t getDevId();
     static dm_dev_id_t getDevId(mfile* mf);
     static bool isDeviceSupported(mfile* mf);
@@ -93,16 +104,20 @@ protected:
 
     /* Data Members */
     mfile* _mf;
-    static map<dm_dev_id_t, AdbAdvLegacy*> _adbDBs;
+    static map<dm_dev_id_t, Adb*> _adbDBs;
     static const int RETRIES_COUNT;
     static const int SLEEP_INTERVAL;
-    AdbAdvLegacy* _adb;
-    AdbInstanceAdvLegacy* _regAccessRootNode;
-    AdbInstanceAdvLegacy* _regAccessUnionNode;
+    Adb* _adb;
+    AdbInstance* _regAccessRootNode;
+    AdbInstance* _regAccessUnionNode;
     std::map<string, u_int64_t> _regAccessMap;
-    AdbInstanceAdvLegacy* _currentNode;
+    AdbInstance* _currentNode{nullptr};
+    std::map<string, AdbInstance*> _layoutCache;
     bool _isExternal;
 };
+
+// Type aliases
+using MlxRegLib = _MlxRegLib_impl<true>;
 
 } // namespace mlxreg
 #endif /* MLXREG_LIB_H */

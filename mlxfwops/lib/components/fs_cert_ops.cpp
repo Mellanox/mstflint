@@ -74,6 +74,13 @@ bool FsCertOperations::DeserializeCertificates(const vector<u_int8_t>& cacertRaw
         CertStructHeader certHeader;
         certHeader.Deserialize(containerIter, containerIter + CertStructHeader::HEADER_SIZE);
 
+        if (CheckNvidiaSignedOemPriority(header, certHeader))
+        {
+            vector<u_int8_t> certUUID = metadata->GetCertUUID();
+            std::string certUUIDString = mft_utils::ToHexString(certUUID);
+            _nvidiaSignedOemCertUUIDs.push_back(certUUIDString);
+        }
+
         certContainers.push_back(CertContainerItem(
         header,
         metadata,
@@ -82,6 +89,15 @@ bool FsCertOperations::DeserializeCertificates(const vector<u_int8_t>& cacertRaw
         containerIter += certHeader.GetLength();
     }
     return true;
+}
+
+bool FsCertOperations::CheckNvidiaSignedOemPriority(CertStructHeader header, CertStructHeader certHeader)
+{
+    if (header.ValidateNvidiaSignedOemPriority() && certHeader.ValidateNvidiaSignedOemPriority())
+    {
+        return true;
+    }
+    return false;
 }
 
 bool FsCertOperations::FindContainer(string cert_uuid, CertContainerItem& container)
@@ -158,6 +174,15 @@ void FsCertOperations::PrintCertMetadata(CertContainerItem& container, ostream& 
 
     const CertStructHeader::StructPriority structDriority = header.GetPriority();
     string priority = CertStructHeader::_metadataPriorityToString.at(structDriority);
+    if (structDriority == CertStructHeader::StructPriority::Nvidia)
+    {
+        if (std::find(_nvidiaSignedOemCertUUIDs.begin(),
+                      _nvidiaSignedOemCertUUIDs.end(),
+                      mft_utils::ToHexString(certUUID)) != _nvidiaSignedOemCertUUIDs.end())
+        {
+            priority = "OEM(Nvidia signed)";
+        }
+    }
     os << "Priority: " << priority << std::endl;
 
     u_int8_t dparot = metadata->GetDpaRotEn();

@@ -242,6 +242,24 @@ DEV_INFO_DB = [
         "mask_classes": [("class1", 0), ("class2", 1)],
     },
     {
+        "name": "Spectrum5",
+        "dev_id": [0x270],
+        "chip_rev": -1,
+        "maskable": True,
+        "mask_addr": None,
+        # list of (trace type name, start_bit)
+        "mask_classes": [("class1", 0), ("class2", 1)],
+    },
+    {
+        "name": "Spectrum6",
+        "dev_id": [0x274],
+        "chip_rev": -1,
+        "maskable": True,
+        "mask_addr": None,
+        # list of (trace type name, start_bit)
+        "mask_classes": [("class1", 0), ("class2", 1)],
+    },
+    {
         "name": "ConnectX6LX",
         "dev_id": [0x216],
         "chip_rev": -1,

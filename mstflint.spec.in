@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.34.0}
+%{!?version: %define version 4.35.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -15,6 +15,7 @@
 %{!?enablei2c: %define enablei2c 0}
 %{!?enablenvml: %define enablenvml 0}
 %{!?enablevfio: %define enablevfio 0}
+%{!?enablenvfwreset: %define enablenvfwreset 0}
 %{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
 
 %define mstflint_python_tools %{_libdir}/mstflint/python_tools
@@ -123,6 +124,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
    config_flags="$config_flags --enable-cables"
 %endif
 
+%if %{enablenvfwreset}
+    config_flags="$config_flags --enable-nvfwreset"
+%endif
+
 %if %{buildtype} == "ppc"
     config_flags="$config_flags --host=ppc-linux"
 %endif
@@ -190,6 +195,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %if %{enableadbgenerictools}
  %{_bindir}/mstreg
+ %{_bindir}/mstgenerate_pgcb_commands
  %{_bindir}/mstlink
 %endif
 
@@ -244,6 +250,10 @@ rm -rf $RPM_BUILD_ROOT
 %{mstflint_python_tools}/resourcetools/resourceparse_lib/parsers/*.py
 %{mstflint_python_tools}/resourcetools/resourceparse_lib/resource_data/*.py
 %{mstflint_python_tools}/resourcetools/resourceparse_lib/utils/*.py
+
+%if %{enableadbgenerictools}
+ %{mstflint_python_tools}/mstgenerate_pgcb_commands.py
+%endif
 
 %{_datadir}/mstflint
 %{_mandir}/man1/*

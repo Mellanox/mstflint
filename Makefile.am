@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-SUBDIRS = common mft_utils ext_libs $(TOOLS_CRYPTO) tools_layouts $(NVML_DIR) $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) reg_access cmdif $(XZ_UTILS_DIR) dev_mgt $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib mlxconfig cmdparser $(DPA) mlxfwops $(FW_MGR_TOOLS) mlxtokengenerator flint small_utils mst_utils mstdump ${ADABE_TOOLS} tracers resourcetools
+SUBDIRS = $(NVML_DIR) mft_core ext_libs $(TOOLS_CRYPTO) tools_layouts common $(VFIO_DRIVER_DIR) ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) $(XZ_UTILS_DIR) reg_access cmdif dev_mgt pci_library mft_utils $(CABLE_ACCESS_DIR) tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib cmdparser mlxconfig $(NVFWRESET_DIR) $(DPA) mlxfwops $(FW_MGR_TOOLS) mlxtokengenerator flint small_utils mst_utils mstdump ${ADABE_TOOLS} tracers resourcetools
 
 DIST_SUBDIRS = tracers
 

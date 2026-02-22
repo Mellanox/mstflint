@@ -143,9 +143,9 @@ public:
     u_int32_t getParamValueByName(std::string n, QueryType qt);
     std::shared_ptr<Param> findParamByMlxconfigName(std::string mlxconfigName, QueryType qt);
     std::shared_ptr<Param>
-      findParamByMlxconfigNamePortModule(std::string mlxconfigName, u_int32_t port, int32_t module, QueryType qt);
+      findParamByMlxconfigNamePortModule(std::string mlxconfigName, u_int32_t port, int32_t tlvModule, QueryType qt);
     std::shared_ptr<Param> findParamByName(std::string n, QueryType qt);
-    void CheckModuleAndPortMatchClass(int32_t module, u_int32_t port, std::string mlxconfigName);
+    void CheckModuleAndPortMatchClass(int32_t tlvModule, u_int32_t port, std::string mlxconfigName);
     void getExprVarsValues(std::vector<std::string>&,
                            std::vector<std::shared_ptr<TLVConf>>,
                            std::map<std::string, u_int32_t>&,

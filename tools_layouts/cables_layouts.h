@@ -35,11 +35,6 @@
 */
  
 
-/***
-*** This file was generated at "2025-06-03 10:49:30"
-*** by:
-***    > /auto/mswg/release/tools/a-me/a-me-1.2.9/a-me-1.2.9-8/adabe_plugins/adb2c/adb2pack.py --input /.autodirect/swgwork/ttubi/workspace/master4.33/mft/user/tools_layouts/adb/prm/hca/ext/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils -o /.autodirect/swgwork/ttubi/workspace/master4.33/mft/user/tools_layouts
-***/
 #ifndef CABLES_LAYOUTS_H
 #define CABLES_LAYOUTS_H
 

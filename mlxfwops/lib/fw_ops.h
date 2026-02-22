@@ -104,6 +104,7 @@ public:
         memset(_sectionsToRead, 0, sizeof(_sectionsToRead));
         memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
         memset(&_fwParams, 0, sizeof(_fwParams));
+        memset(&_protect_info_backup, 0x0, sizeof(_protect_info_backup));
     };
 
     virtual ~FwOperations()
@@ -111,6 +112,7 @@ public:
         if (_ioAccess)
         {
             delete _ioAccess;
+            _ioAccess = (FBase*)NULL;
         }
         if (_signatureMngr)
         {
@@ -279,6 +281,10 @@ public:
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
     virtual bool IsEncryptionSupported();
+    
+    bool checkAndDisableFlashWpIfRequired(); // relavant to FS5 and FS6 but FS6 inherites FwOperations and not FS5
+    bool restoreWriteProtectInfo();
+    
     void GetFwParams(fw_ops_params_t&);
     void getSupporteHwId(u_int32_t** supportedHwId, u_int32_t& supportedHwIdNum);
 
@@ -537,6 +543,7 @@ protected:
         FS_FSCTRL_GEN,
         FS_LINKX_GEN,
         FS_FS5_GEN,
+        FS_FS6_GEN,
         FS_COMPS_GEN,
         FS_PLDM_1_0,
         FS_UNKNOWN_IMG
@@ -768,6 +775,7 @@ private:
 protected:
     static const u_int32_t _cntx_magic_pattern[4];
     static const u_int32_t _fs4_magic_pattern[4];
+    write_protect_info_backup_t _protect_info_backup;
 };
 
 class MLXFWOP_API CRSpaceRegisters

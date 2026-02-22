@@ -63,6 +63,27 @@ static void mft_signal_set_handling(int isOn)
 #include <errno.h>
 #include "mft_utils.h"
 
+static FILE* g_fwcomps_log_file = NULL;
+
+// Set log file for fw_comps_mgr library so it can write to log from external callers
+extern "C" void fwcomps_set_log_file(FILE* log_file)
+{
+    g_fwcomps_log_file = log_file;
+}
+
+// Print to stdout and if log file is set, log to file as well
+#define FWCOMPS_PRINT(...)                            \
+    do                                                \
+    {                                                 \
+        printf(__VA_ARGS__);                          \
+        if (g_fwcomps_log_file != NULL)               \
+        {                                             \
+            fprintf(g_fwcomps_log_file, __VA_ARGS__); \
+            fflush(g_fwcomps_log_file);               \
+        }                                             \
+    } while (0)
+
+
 static mfile* mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* dma_func, void* extra_data)
 {
     if ((fw_cmd_context == NULL) || (fw_cmd_func == NULL) || (extra_data == NULL)) {
@@ -538,7 +559,7 @@ bool FwCompsMgr::accessComponent(u_int32_t              offset,
         _accessObj->accessComponent(_updateHandle, offset, size, data, access, _currComponentStr, progressFuncAdv);
 
     if (!bRes && (lastFsmCommandArgs != NULL) && isDMAAccess()) {
-        printf("\nDMA access has failed, switching to Register-Access burn.\n");
+        FWCOMPS_PRINT("\nDMA access has failed, switching to Register-Access burn.\n");
         bRes = fallbackToRegisterAccess();
 
         if (bRes) {
@@ -1416,65 +1437,113 @@ bool FwCompsMgr::queryComponentStatus(u_int32_t componentIndex, comp_status_st* 
     return true;
 }
 
-bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCallBackAdvSt* progressFuncAdv)
+bool FwCompsMgr::IsCfgComponentType(FwComponent::comps_ids_t type)
+{
+    bool res = false;
+    switch (type)
+    {
+        case FwComponent::COMPID_USER_NVCONFIG:
+        case FwComponent::COMPID_OEM_NVCONFIG:
+        case FwComponent::COMPID_MLNX_NVCONFIG:
+        case FwComponent::COMPID_CS_TOKEN:
+        case FwComponent::COMPID_DBG_TOKEN:
+        case FwComponent::COMPID_RMCS_TOKEN:
+        case FwComponent::COMPID_RMDT_TOKEN:
+        case FwComponent::COMPID_CRCS_TOKEN:
+        case FwComponent::COMPID_CRDT_TOKEN:
+        {
+            res = true;
+            break;
+        }
+        default:
+            break;
+    }
+
+    return res;
+}
+
+bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progressFuncAdv)
 {
     unsigned i = 0;
-
+    const u_int8_t LOCK_FW_UPDATE = 0x2;
+    const u_int8_t LOCK_HOST_CFG = 0x3;
+    FwComponent::comps_ids_t component = comp.getType();
+    if (_secureHostState == LOCK_FW_UPDATE && component == FwComponent::COMPID_BOOT_IMG)
+    {
+        _lastError = FWCOMPS_COMP_BLOCKED;
+        DPRINTF(("MCC flow for component %d is blocked!\n", component));
+        return false;
+    }
+    if (_secureHostState == LOCK_HOST_CFG && IsCfgComponentType(component))
+    {
+        _lastError = FWCOMPS_COMP_BLOCKED;
+        DPRINTF(("MCC flow for component %d is blocked!\n", component));
+        return false;
+    }
     if (!RefreshComponentsStatus()) {
         return false;
+    }
+    _currCompQuery = &(_compsQueryMap[component]);
+    if (component == FwComponent::DPA_COMPONENT)
+    {
+        DPRINTF(
+            ("FwCompsMgr::burnComponents() - max_component_size = %d\n", _currCompQuery->comp_cap.max_component_size));
+        DPRINTF(("FwCompsMgr::burnComponents() - comp.getSize() = %d\n", comp.getSize()));
+        if (_currCompQuery->comp_cap.max_component_size < comp.getSize())
+        {
+            FWCOMPS_PRINT("-E- The dpa app container size is too large! max_component_size is %d bytes.\n",
+                    _currCompQuery->comp_cap.max_component_size);
+            return false;
+        }
     }
     GenerateHandle();
     if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
         DPRINTF(("Cannot lock the handle!\n"));
         if (forceRelease() == false) {
-            printf("FSM is locked.\n");
+            FWCOMPS_PRINT("FSM is locked.\n");
         }
         return false;
     }
-    if (_downloadTransferNeeded == true) {
-        for (i = 0; i < comps.size(); i++) {
-            int component = comps[i].getType();
-            _currCompQuery = &(_compsQueryMap[component]);
-            if (!_currCompQuery->valid) {
-                _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
-                DPRINTF(("MCC flow for component %d is not supported!\n", component));
+    if (_downloadTransferNeeded == true)
+    {
+        if (!_currCompQuery->valid) {
+            _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
+            DPRINTF(("MCC flow for component %d is not supported!\n", component));
+            return false;
+        }
+        _componentIndex = _currCompQuery->comp_status.component_index;
+        if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comp.getSize(), FSMST_INITIALIZE,
+                        progressFuncAdv)) {
+            DPRINTF(("Initializing downloading FW component has failed!\n"));
+            return false;
+        }
+        _currComponentStr = FwComponent::getCompIdStr(comp.getType());
+        control_fsm_args_t fsmUpdateCommand;
+        fsmUpdateCommand.command = FSM_CMD_UPDATE_COMPONENT;
+        fsmUpdateCommand.expectedState = FSMST_DOWNLOAD;
+        fsmUpdateCommand.size = comp.getSize();
+        fsmUpdateCommand.currentState = FSMST_INITIALIZE;
+        fsmUpdateCommand.progressFuncAdv = progressFuncAdv;
+        if (!accessComponent(0, comp.getSize(), (u_int32_t*)(comp.getData().data()), MCC_WRITE_COMP,
+                                progressFuncAdv, &fsmUpdateCommand)) {
+            DPRINTF(("Downloading FW component has failed!\n"));
+            return false;
+        }
+        if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
+            DPRINTF(("Verifying FW component has failed!\n"));
+            return false;
+        }
+        if (comp.getType() == FwComponent::COMPID_LINKX || comp.getType() == FwComponent::COMPID_LINKX_ELS || 
+            comp.getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM) 
+            {
+                if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
+                                progressFuncAdv)) {
+                DPRINTF(("Downstream LinkX begin has failed!\n"));
                 return false;
             }
-            _componentIndex = _currCompQuery->comp_status.component_index;
-            if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comps[i].getSize(), FSMST_INITIALIZE,
-                            progressFuncAdv)) {
-                DPRINTF(("Initializing downloading FW component has failed!\n"));
+            if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_DOWNSTREAM_DEVICE_TRANSFER, progressFuncAdv)) {
+                DPRINTF(("Downstream LinkX ending has failed!\n"));
                 return false;
-            }
-            _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
-            control_fsm_args_t fsmUpdateCommand;
-            fsmUpdateCommand.command = FSM_CMD_UPDATE_COMPONENT;
-            fsmUpdateCommand.expectedState = FSMST_DOWNLOAD;
-            fsmUpdateCommand.size = comps[i].getSize();
-            fsmUpdateCommand.currentState = FSMST_INITIALIZE;
-            fsmUpdateCommand.progressFuncAdv = progressFuncAdv;
-            if (!accessComponent(0, comps[i].getSize(), (u_int32_t*)(comps[i].getData().data()), MCC_WRITE_COMP,
-                                 progressFuncAdv, &fsmUpdateCommand)) {
-                DPRINTF(("Downloading FW component has failed!\n"));
-                return false;
-            }
-            if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
-                DPRINTF(("Verifying FW component has failed!\n"));
-                return false;
-            }
-            if (comps[i].getType() == FwComponent::COMPID_LINKX || 
-                comps[i].getType() == FwComponent::COMPID_LINKX_ELS || 
-                comps[i].getType() == FwComponent::COMPID_CLOCK_SYNC_EEPROM) 
-                {
-                    if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED,
-                                    progressFuncAdv)) {
-                    DPRINTF(("Downstream LinkX begin has failed!\n"));
-                    return false;
-                }
-                if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_DOWNSTREAM_DEVICE_TRANSFER, progressFuncAdv)) {
-                    DPRINTF(("Downstream LinkX ending has failed!\n"));
-                    return false;
-                }
             }
         }
     }
@@ -1491,7 +1560,7 @@ bool FwCompsMgr::burnComponents(std::vector < FwComponent >& comps, ProgressCall
             // In case of activation delay, FW will set FSM to LOCKED
             if (!_isDelayedActivationCommandSent)
             {
-                printf("Please wait while activating the transceiver(s) FW ...\n");
+                FWCOMPS_PRINT("Please wait while activating the transceiver(s) FW ...\n");
                 if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_ACTIVATE, progressFuncAdv))
                 {
                     DPRINTF(("Moving from activate state to locked state has failed!\n"));
@@ -1709,8 +1778,8 @@ u_int32_t FwCompsMgr::getFwSupport()
     DPRINTF((
       "getFwSupport _mircCaps = %d mcqsCap = %d mcqiCap = %d mccCap = %d mcdaCap = %d mqisCap = %d mcddCap = %d mgirCap = %d secure_host = %d\n",
       _mircCaps, mcqsCap, mcqiCap, mccCap, mcdaCap, mqisCap, mcddCap, mgirCap, _secureHostState));
-
-    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && _secureHostState == 0)
+    const int LOCKED = 0x1;
+    if (mcqsCap && mcqiCap && mccCap && mcdaCap && mqisCap && mgirCap && _secureHostState != LOCKED)
     {
         return 1;
     }
@@ -2050,6 +2119,12 @@ unsigned char* FwCompsMgr::getLastErrMsg()
  
     case FWCOMPS_MCC_FW_BURN_REJECTED_NO_PLACE:
         return (unsigned char*)"FW burn rejected: No place available";
+
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_1:
+        return (unsigned char*)"FW burn rejected: Internal error 1";
+
+    case FWCOMPS_MCC_FW_BURN_REJECTED_INTERNAL_ERROR_2:
+        return (unsigned char*)"FW burn rejected: Internal error 2";
  
     case FWCOMPS_MCC_FW_BURN_REJECTED_NUM_OF_SWAP:
         return (unsigned char*)"FW burn rejected: Number of swap error";
@@ -2144,8 +2219,12 @@ unsigned char* FwCompsMgr::getLastErrMsg()
     case FWCOMPS_MCC_REJECTED_TOKEN_ALREADY_APPLIED:
         return (unsigned char*)"Token already applied";
 
-        case FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
-            return (unsigned char*)"DRAM not available";
+    case FWCOMPS_MCC_REJECTED_FW_BURN_DRAM_NOT_AVAILABLE:
+        return (unsigned char*)"DRAM not available";
+
+    case FWCOMPS_MCC_FW_BURN_REJECTED_FLASH_WRITE_PROTECTED:
+        return (unsigned char*)"Flash is write protected";
+    
     case FWCOMPS_UNSUPPORTED_DEVICE:
         return (unsigned char*)"Unsupported device";
 
@@ -2369,7 +2448,7 @@ bool FwCompsMgr::GetComponentLinkxProperties(FwComponent::comps_ids_t compType, 
         return false;
     }
     if (query.component_status == 0) {
-        printf("Cable %d is not found, please check that cable connected.\n", _deviceIndex - 1);
+        FWCOMPS_PRINT("Cable %d is not found, please check that cable connected.\n", _deviceIndex - 1);
         _lastError = FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE;
         return false;
     }

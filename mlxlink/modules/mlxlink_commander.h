@@ -81,6 +81,9 @@
 #define NODE_FLAG_SHORT ' '
 #define PRINT_JSON_OUTPUT_FLAG "json"
 #define PRINT_JSON_OUTPUT_FLAG_SHORT ' '
+// Extended info for PCIe flow when depth/pcie_index/node are provided
+#define EXTENDED_PCIE_FLAG "extended"
+#define EXTENDED_PCIE_FLAG_SHORT ' '
 //------------------------------------------------------------
 //        Mlxlink QUERIES Flags
 
@@ -116,6 +119,28 @@
 #define KR_INFO_FLAG_SHORT ' '
 #define RX_RECOVERY_COUNTERS_FLAG "show_rx_recovery_counters"
 #define RX_RECOVERY_COUNTERS_FLAG_SHORT ' '
+#define BKV_GROUPS_FLAG "show_bkv_groups"
+#define BKV_GROUPS_FLAG_SHORT ' '
+#define BKV_GROUP_FLAG "show_bkv_group"
+#define BKV_GROUP_FLAG_SHORT ' '
+#define SET_BKV_GROUP_FLAG "set_bkv_group"
+#define SET_BKV_GROUP_FLAG_SHORT ' '
+#define BKV_RATES_FLAG "bkv_rates"
+#define BKV_RATES_FLAG_SHORT ' '
+#define BKV_ROLES_FLAG "bkv_roles"
+#define BKV_ROLES_FLAG_SHORT ' '
+#define BKV_MODE_B_ROLES_FLAG "bkv_mode_b_roles"
+#define BKV_MODE_B_ROLES_FLAG_SHORT ' '
+#define SET_BKV_ENTRY_FLAG "set_bkv_entry"
+#define SET_BKV_ENTRY_FLAG_SHORT ' '
+#define BKV_ENTRY_FLAG "bkv_entry"
+#define BKV_ENTRY_FLAG_SHORT ' '
+#define BKV_ADDRESS_FLAG "bkv_address"
+#define BKV_ADDRESS_FLAG_SHORT ' '
+#define BKV_WDATA_FLAG "wdata"
+#define BKV_WDATA_FLAG_SHORT ' '
+#define BKV_WMASK_FLAG "wmask"
+#define BKV_WMASK_FLAG_SHORT ' '
 #define PERIODIC_EQ_FLAG "show_peq"
 #define PERIODIC_EQ_FLAG_SHORT ' '
 
@@ -164,6 +189,12 @@
 #define PRBS_INVERT_RX_POL_FLAG_SHORT ' '
 #define PRBS_DC_COUPLE_ALLOW_FLAG "dc_cpl_allow"
 #define PRBS_DC_COUPLE_ALLOW_FLAG_SHORT ' '
+#define FORCE_TX_ALLOWED_FLAG "force_tx_allowed"
+#define FORCE_TX_ALLOWED_FLAG_SHORT ' '
+#define SKIP_POWER_GOOD_CHECK_FLAG "skip_power_good_check"
+#define SKIP_POWER_GOOD_CHECK_FLAG_SHORT ' '
+#define SYSFS_PATH_FLAG "sysfs_path"
+#define SYSFS_PATH_FLAG_SHORT ' '
 #define PPRT_TUNING_TYPE_FLAG "tuning_type"
 #define PPRT_TUNING_TYPE_FLAG_SHORT ' '
 #define BER_COLLECT_FLAG "ber_collect"
@@ -328,6 +359,10 @@ enum OPTION_TYPE
     SHOW_EYE,
     SHOW_FEC,
     SHOW_SLTP,
+    SHOW_BKV,
+    SHOW_BKV_GROUP,
+    SET_BKV_GROUP,
+    SET_BKV_ENTRY,
     SHOW_SLRP,
     SHOW_MODULE,
     SHOW_DEVICE,
@@ -415,8 +450,7 @@ public:
     void labelToHCALocalPort();
     void labeltoDSlocalPort();
     bool isDSdevice();
-    void labelToSpectLocalPort();
-    void labelToQtm3LocalPort();
+    void labelToLocalPortGenericMapping();
     void labelToIBLocalPort();
     bool isIBSplitReady();
     u_int32_t calculatePanelPort(bool ibSplitReady);
@@ -438,7 +472,7 @@ public:
     bool handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady);
     void handleAllEthLocalPorts(std::vector<string> labelPortsStr, bool spect2WithGb, bool skipException);
     void handleAllGPULocalPorts(std::vector<string> labelPortsStr, bool skipException);
-    void handleAllQTM3LocalPorts(std::vector<string> labelPortsStr, bool skipException);
+    void handleAllNewSwitchesLocalPorts(std::vector<string> labelPortsStr, bool skipException);
     void handleLabelPorts(std::vector<string> labelPortsStr, bool skipException = false);
     vector<string> localToPortsPerGroup(vector<u_int32_t> localPorts);
     u_int32_t getPortGroup(u_int32_t localPort);
@@ -456,6 +490,15 @@ public:
     virtual void showEye();
     virtual void showFEC();
     virtual void showSltp();
+    virtual void showBkv();
+    virtual void showBkvGroup(bool showEntries = true, u_int32_t entryFilter = (u_int32_t)-1);
+    virtual void setBkvGroup();
+    virtual void setBkvEntry();
+    void queryBkvCaps(uint8_t& numGroups, uint8_t groupId = (uint8_t)-1);
+    void queryBkvCaps(uint8_t& numGroups,
+                      uint8_t& numEntries,
+                      uint8_t groupId = (uint8_t)-1,
+                      uint8_t entryId = (uint8_t)-1);
     void showDeviceData();
     void showBerMonitorInfo();
     void showExternalPhy();
@@ -489,11 +532,13 @@ public:
     virtual string getSltpHeader();
     void startSlrgPciScan(u_int32_t numOfLanesToUse);
     void initValidDPNList();
+    void updateDPNDomain();
     u_int32_t readBitFromField(const string& fieldName, u_int32_t bitIndex);
     string getSupportedFecForSpeed(const string& speed);
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
     void updateSwControlStatus();
+    void initSwControledModule();
     u_int32_t getNumberOfPorts();
     bool checkDPNvSupport();
     void prepareBerModuleInfo(bool valid, const vector<AmberField>& moduleInfoFields);
@@ -503,6 +548,7 @@ public:
     void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
     void prepare5nmEyeInfo(u_int32_t numOfLanesToUse);
     void getPddrOperInfo();
+    bool isTransmitAllowed(u_int32_t localPort, u_int32_t protoActive);
 
     void showTestMode();
     void showTestModeBer();
@@ -585,6 +631,7 @@ public:
     void sendPaos();
     void sendPmaos();
     virtual void handlePrbs();
+    virtual void handlePrbsSWControlledChecks();
     void sendPtys();
     virtual void sendPplm();
     virtual void sendSltp();
@@ -711,8 +758,10 @@ public:
     bool _ignorePortStatus;
     bool _isGboxPort;
     bool _isSwControled;
+    bool _isSwControledStandAlone;
     bool _ignoreIbFECCheck;
     bool _isNVLINK;
+    u_int32_t _priOrSec;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;
     string _allUnhandledErrors;

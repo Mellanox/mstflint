@@ -52,5 +52,9 @@
 #define REG_ID_PGUID 0x5066
 #define REG_ID_PPSLS 0x50e3
 #define REG_ID_MTCAP 0x9009
+#define REG_ID_MPEGC 0x9056
+#define REG_ID_MPIR 0x9059
+#define REG_ID_MROQ 0x902F
+
 
 #endif

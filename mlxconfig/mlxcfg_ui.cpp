@@ -622,7 +622,7 @@ void MlxCfg::editAndPushItem(std::vector<QueryOutputItem>& queryOutputItemVector
 
     item.strCurrVal = item.strNextVal;
     item.strDefVal = item.strNextVal;
-    if (arrayIndex > 1)
+    if (isContinuanceArray(item.mlxconfigName))
     {
         item.mlxconfigName = getArrayPrefix(item.mlxconfigName);
     }
@@ -644,7 +644,7 @@ void MlxCfg::removeContinuanceArray(std::vector<QueryOutputItem>& OutputItemOut,
             queryItem = &*o;
             continue;
         }
-        // in case that we have another continuance array right after end of a continuance array
+        // In case that we have another continuance array right after end of a continuance array
         else if (getArraySuffix(o->mlxconfigName) == getArraySuffixByInterval(0) && queryItem != NULL &&
                  !isIndexedMlxconfigName(o->mlxconfigName))
         {
@@ -915,17 +915,65 @@ mlxCfgStatus MlxCfg::updateDefaultParamsWithUserValues(std::vector<ParamView>& u
 
     return rc;
 }
+
+// Compare params vectors by mlxconfigName, regardless of order for example  userParams and paramsCurrent
+void MlxCfg::compareCurrentParamsVectors(const std::vector<ParamView>& currentVec,
+                                         const std::vector<ParamView>& OtherVec,
+                                         std::vector<ParamView>& paramMlxconfigNameDiffList)
+{
+    for (const ParamView& currentParam : currentVec)
+    {
+        // skip read only params
+        if (currentParam.isReadOnlyParam)
+        {
+            continue;
+        }
+        for (const ParamView& otherParam : OtherVec)
+        {
+            if (currentParam.mlxconfigName == otherParam.mlxconfigName)
+            {
+                if (currentParam.arrayVal.size() > 0)
+                {
+                    for (u_int32_t i = 0; i < currentParam.arrayVal.size(); i++)
+                    {
+                        if (currentParam.arrayVal[i] != otherParam.arrayVal[i])
+                        {
+                            paramMlxconfigNameDiffList.push_back(currentParam);
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    if (currentParam.val != otherParam.val)
+                    {
+                        paramMlxconfigNameDiffList.push_back(currentParam);
+                    }
+                }
+            }
+        }
+    }
+}
+
 // This function is slow, it can take around 10-20 seconds to query all the parameters and then around 1 ms for the
 // rest.
-mlxCfgStatus MlxCfg::setDevCfgWithDefault(Commander* commander)
+void MlxCfg::setDevCfgWithDefault(Commander* commander,
+                                  std::vector<ParamView>& alignCurrentToDefault,
+                                  std::vector<ParamView>& alignNextToCurrent)
 {
-    // 1 Query all
+    //  1 Query all
     std::vector<ParamView> paramsCurrent = {};
     std::vector<ParamView> paramsDefault = {};
+    std::vector<ParamView> paramsNext = {};
+    std::vector<ParamView> paramsCurrentToNext = {};
+
     std::vector<string> currentFailedTLVs = {};
     std::vector<string> defaultFailedTLVs = {};
+    std::vector<string> nextFailedTLVs = {};
+
     commander->queryAll(paramsCurrent, currentFailedTLVs, QueryCurrent);
     commander->queryAll(paramsDefault, defaultFailedTLVs, QueryDefault);
+    commander->queryAll(paramsNext, nextFailedTLVs, QueryNext);
 
     // 2 merge paramsCurrent and _mlxParams.setParams
     std::vector<ParamView> userParams = _mlxParams.setParams;
@@ -936,49 +984,89 @@ mlxCfgStatus MlxCfg::setDevCfgWithDefault(Commander* commander)
     }
     updateDefaultParamsWithUserValues(userParams, paramsDefault);
 
-    // 3 compare the two lists
-    // Compare userParams and paramsCurrent by mlxconfigName, regardless of order
-    for (const ParamView& currentParam : paramsCurrent)
+    // 3 compare current with default
+    compareCurrentParamsVectors(paramsCurrent, paramsDefault, alignCurrentToDefault);
+
+    // 4 compare current with next, only take params that are not going to be reset.
+    // compareCurrentParamsVectors(paramsCurrent, paramsNext, alignNextToCurrent);
+    compareCurrentParamsVectors(paramsCurrent, paramsNext, paramsCurrentToNext);
+    for (const ParamView& param : paramsCurrentToNext)
     {
-        // skip read only params
-        if (currentParam.isReadOnlyParam)
+        if (!isParamViewInList(param, alignCurrentToDefault))
         {
-            continue;
+            alignNextToCurrent.push_back(param);
         }
-        for (const ParamView& userDefaultParam : paramsDefault)
+    }
+}
+
+mlxCfgStatus MlxCfg::handlecompleteSetWithDefault(Commander* commander)
+{
+    std::vector<ParamView> alignCurrentToDefault = {};
+    std::vector<ParamView> alignNextToCurrent = {};
+    setDevCfgWithDefault(commander, alignCurrentToDefault, alignNextToCurrent);
+    bool userWantToAlign = false;
+
+    if (alignNextToCurrent.size() > 0)
+    {
+        cout << "differences found between next boot value and current value on " << alignNextToCurrent.size()
+             << " parameters" << endl;
+        if (askUser("Do you want to align next boot value to current value?"))
         {
-            if (currentParam.mlxconfigName == userDefaultParam.mlxconfigName)
+            userWantToAlign = true;
+            unordered_set<string> setParamsMlxconfigName;
+            for (const ParamView& p : _mlxParams.setParams)
             {
-                if (currentParam.arrayVal.size() > 0)
+                setParamsMlxconfigName.insert(p.mlxconfigName);
+            }
+
+            // strip alignment arrays
+            std::vector<ParamView> alignNextToCurrentFlat = {};
+            for (const ParamView& pView : alignNextToCurrent)
+            {
+                if (pView.arrayVal.size() > 0)
                 {
-                    for (u_int32_t i = 0; i < currentParam.arrayVal.size(); i++)
+                    for (u_int32_t i = 0; i < pView.arrayVal.size(); i++)
                     {
-                        if (currentParam.arrayVal[i] != userDefaultParam.arrayVal[i])
-                        {
-                            cout << "Found a difference, first difference on the list is "
-                                 << userDefaultParam.mlxconfigName << " from array_val index " << i << " from "
-                                 << currentParam.arrayVal[i] << " to " << userDefaultParam.arrayVal[i] << endl;
-                            cout << "continue to reset and set " << endl;
-                            return MLX_CFG_OK;
-                        }
+                        ParamView pViewFlat = pView;
+                        pViewFlat.mlxconfigName = pViewFlat.mlxconfigName + "[" + numToStr(i) + "]";
+                        pViewFlat.setVal = numToStr(pView.arrayVal[i]);
+                        alignNextToCurrentFlat.push_back(pViewFlat);
                     }
                 }
                 else
                 {
-                    if (currentParam.val != userDefaultParam.val)
-                    {
-                        cout << "Found a difference, first difference on the list is " << userDefaultParam.mlxconfigName
-                             << " from val " << currentParam.val << " to " << userDefaultParam.val << endl;
-                        cout << "continue to reset and set " << endl;
-                        return MLX_CFG_OK;
-                    }
+                    alignNextToCurrentFlat.push_back(pView);
+                }
+            }
+
+            // make sure we don't add parameter that is already in the setParams
+            for (const ParamView& pView : alignNextToCurrentFlat)
+            {
+                if (!isParamViewInList(pView, _mlxParams.setParams))
+                {
+                    _mlxParams.setParams.push_back(pView);
                 }
             }
         }
     }
-    // nothing to set , ok and exit.
-    cout << "Nothing to set" << endl;
-    return MLX_CFG_OK_EXIT;
+
+    if (alignCurrentToDefault.size() == 0 && !userWantToAlign)
+    {
+        cout << "Nothing to set" << endl;
+        return MLX_CFG_OK_EXIT;
+    }
+
+    // else continue to reset and set
+    // ask user
+    if (!askUser("Apply reset and set?"))
+    {
+        printErr();
+        return MLX_CFG_ABORTED;
+    }
+
+    // invalidate each different TLV separately.
+    commander->invalidateCfg(alignCurrentToDefault);
+    return MLX_CFG_OK;
 }
 
 mlxCfgStatus MlxCfg::setDevCfg()
@@ -1017,27 +1105,16 @@ mlxCfgStatus MlxCfg::setDevCfg()
 
     if (_mlxParams.completeSetWithDefault)
     {
-        // if will eventually need to set values continue from here, else exit without actually setting or restting
-        // anything
-        mlxCfgStatus rc = setDevCfgWithDefault(commander);
+        mlxCfgStatus rc = handlecompleteSetWithDefault(commander);
         if (rc != MLX_CFG_OK)
         {
-            if (rc != MLX_CFG_OK_EXIT)
-            {
-                printErr();
-            }
             delete commander;
+            if (rc == MLX_CFG_OK_EXIT)
+            {
+                return MLX_CFG_OK;
+            }
             return rc;
         }
-        // else continue to reset and set
-        // ask user
-        if (!askUser("Apply reset and set?"))
-        {
-            delete commander;
-            printErr();
-            return MLX_CFG_ABORTED;
-        }
-        commander->invalidateCfgs(); // will throw exception if failed
     }
 
     if (queryDevCfg(commander, _mlxParams.device.c_str(), isWriteOperation, NULL, 1, true) == MLX_CFG_ERROR_EXIT)
@@ -1058,7 +1135,7 @@ mlxCfgStatus MlxCfg::setDevCfg()
 
     if (!_mlxParams.completeSetWithDefault)
     {
-        // ask user (if we didnt ask before in the set with default mode)
+        // ask user (if we didn't ask before in the set with default mode)
         if (!askUser("Apply new Configuration?"))
         {
             delete commander;

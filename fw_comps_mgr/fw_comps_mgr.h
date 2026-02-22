@@ -532,8 +532,7 @@ public:
     u_int32_t getFwSupport();
     mfile* getMfileObj() { return _mf; };
     bool fwReactivateImage();
-    bool burnComponents(std::vector<FwComponent>& comps,
-                        ProgressCallBackAdvSt* progressFuncAdv = (ProgressCallBackAdvSt*)NULL);
+    bool burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progressFuncAdv = (ProgressCallBackAdvSt*)NULL);
     bool getFwComponents(std::vector<FwComponent>& comps, bool readEn = false);
     bool readComponent(FwComponent::comps_ids_t compType,
                        FwComponent& fwComp,
@@ -581,6 +580,7 @@ public:
     bool queryPGUID(fw_info_t* fwInfo, u_int32_t local_port = 0, u_int8_t pnat = 0, u_int32_t lp_msb = 0);
     u_int8_t GetSecureHostState() { return _secureHostState; }
     bool IsDevicePresent(FwComponent::comps_ids_t compType);
+    bool IsCfgComponentType(FwComponent::comps_ids_t type);
 
     bool isSpecificError = false;
     bool queryMISOC(std::string& version, u_int32_t type, u_int32_t query_pending);

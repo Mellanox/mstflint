@@ -46,14 +46,15 @@ using namespace mlxreg;
 /************************************
  * Function: RegParser
  ************************************/
-RegAccessParser::RegAccessParser(string data,
-                                 string indexes,
-                                 string ops,
-                                 AdbAdvLegacy* adb,
-                                 AdbInstanceAdvLegacy* regNode,
-                                 std::vector<u_int32_t> buffer,
-                                 bool ignore_ro,
-                                 bool full_path)
+template<bool dynamic>
+_RegAccessParser_impl<dynamic>::_RegAccessParser_impl(string data,
+                                                      string indexes,
+                                                      string ops,
+                                                      Adb* adb,
+                                                      AdbInstance* regNode,
+                                                      std::vector<u_int32_t> buffer,
+                                                      bool ignore_ro,
+                                                      bool full_path)
 {
     _data = data;
     _indexes = indexes;
@@ -78,7 +79,7 @@ RegAccessParser::RegAccessParser(string data,
      * At this point we know the the buffer <buffer> argument already been trough byte-
      * swapping process, we need to re-commit this process so the data will be correct.
      */
-    for (std::vector<u_int32_t>::size_type j = 0; j < _buffer.size(); j++)
+    for (typename std::vector<u_int32_t>::size_type j = 0; j < _buffer.size(); j++)
     {
         _buffer[j] = CPU_TO_BE32((_buffer[j]));
     }
@@ -86,14 +87,15 @@ RegAccessParser::RegAccessParser(string data,
 /************************************
  * Function: RegParser
  ************************************/
-RegAccessParser::RegAccessParser(string data,
-                                 string indexes,
-                                 string ops,
-                                 AdbAdvLegacy* adb,
-                                 AdbInstanceAdvLegacy* regNode,
-                                 u_int32_t len,
-                                 bool ignore_ro,
-                                 bool full_path)
+template<bool dynamic>
+_RegAccessParser_impl<dynamic>::_RegAccessParser_impl(string data,
+                                                      string indexes,
+                                                      string ops,
+                                                      Adb* adb,
+                                                      AdbInstance* regNode,
+                                                      u_int32_t len,
+                                                      bool ignore_ro,
+                                                      bool full_path)
 {
     _data = data;
     _indexes = indexes;
@@ -118,6 +120,11 @@ RegAccessParser::RegAccessParser(string data,
     {
         _parseMode = Pm_Known;
 
+        // The interface of the constructor expects len in bytes.
+        // The size of _regNode is in bits.
+        // However internally it should hold it in dwords for consistecy with the definition of _buffer, which is a
+        // vector of dwords. So when using the passed len argument it should be divided by 4, but in the case where the
+        // buffer is defined by the size of the register, we need to divide by 32.
         _len = _regNode->containsDynamicArray() ? len >> 2 : (_regNode->get_size()) >> 5;
     }
     // Resize buffer
@@ -127,7 +134,8 @@ RegAccessParser::RegAccessParser(string data,
 /************************************
  * Function: parse
  ************************************/
-std::vector<u_int32_t> RegAccessParser::genBuff()
+template<bool dynamic>
+std::vector<u_int32_t> _RegAccessParser_impl<dynamic>::genBuff()
 {
     if (_parseMode == Pm_Known)
     {
@@ -142,18 +150,59 @@ std::vector<u_int32_t> RegAccessParser::genBuff()
 /************************************
  * Function: genBuffKnown
  ************************************/
-std::vector<u_int32_t> RegAccessParser::genBuffKnown()
+template<bool dynamic>
+std::vector<u_int32_t> _RegAccessParser_impl<dynamic>::genBuffKnown()
 {
-    parseIndexes();
-    parseOps();
+    parse_register_params(_indexes, ParamType::INDEX);
+    parse_register_params(_ops, ParamType::OP);
+    parse_register_params(_data, ParamType::DATA);
 
-    // Update buffer with data values
-    if (_data != "")
+    _adb->traverse_layout(_regNode,
+                          "",
+                          0,
+                          (uint8_t*)&(_buffer[0]),
+                          _buffer.size() * sizeof(uint32_t),
+                          _RegAccessParser_impl<dynamic>::_on_traverse_update_buffer,
+                          (void*)this,
+                          false,
+                          false,
+                          _full_path);
+    if (_params_map.size() > 0)
     {
-        parseData();
+        string unfound_name = "";
+        string unfound_index_name = "";
+        string unfound_op_name = "";
+        for (const auto& entry : _params_map)
+        {
+            if (entry.second.type == ParamType::INDEX)
+            {
+                unfound_index_name = entry.first;
+                break;
+            }
+            else if (entry.second.type == ParamType::OP)
+            {
+                unfound_op_name = entry.first;
+            }
+            else if (entry.second.type == ParamType::DATA)
+            {
+                unfound_name = entry.first;
+            }
+        }
+        if (!unfound_index_name.empty())
+        {
+            throw MlxRegException("Can't find INDEX name: \"%s\"", unfound_index_name.c_str());
+        }
+        if (!unfound_op_name.empty())
+        {
+            throw MlxRegException("Can't find OP name: \"%s\"", unfound_op_name.c_str());
+        }
+        if (!unfound_name.empty())
+    {
+            throw MlxRegException("Can't find field name: \"%s\"", unfound_name.c_str());
+        }
     }
     // Convert to BE32
-    for (std::vector<u_int32_t>::size_type j = 0; j < _buffer.size(); j++)
+    for (typename std::vector<u_int32_t>::size_type j = 0; j < _buffer.size(); j++)
     {
         _buffer[j] = CPU_TO_BE32((_buffer[j]));
     }
@@ -163,11 +212,12 @@ std::vector<u_int32_t> RegAccessParser::genBuffKnown()
 /************************************
  * Function: genBuffUnknown
  ************************************/
-std::vector<u_int32_t> RegAccessParser::genBuffUnknown()
+template<bool dynamic>
+std::vector<u_int32_t> _RegAccessParser_impl<dynamic>::genBuffUnknown()
 {
     parseUnknown();
     // Convert to BE32
-    for (std::vector<u_int32_t>::size_type j = 0; j < _buffer.size(); j++)
+    for (typename std::vector<u_int32_t>::size_type j = 0; j < _buffer.size(); j++)
     {
         _buffer[j] = CPU_TO_BE32((_buffer[j]));
     }
@@ -177,167 +227,78 @@ std::vector<u_int32_t> RegAccessParser::genBuffUnknown()
 /************************************
  * Function: parseIndexes
  ************************************/
-void RegAccessParser::parseIndexes()
-{
-    std::vector<string> tokens = strSplit(_indexes, ',', false);
-    std::vector<string> valid_tokens = getAllIndexes(_regNode);
-    parseAccessType(tokens, valid_tokens, INDEX);
-}
-
-/************************************
- * Function: parseOps
- ************************************/
-void RegAccessParser::parseOps()
-{
-    std::vector<string> tokens = strSplit(_ops, ',', false);
-    std::vector<string> valid_tokens = getAllOps(_regNode);
-    parseAccessType(tokens, valid_tokens, OP);
-}
-
-/************************************
- * Function: accessTypeToString
- ************************************/
-const string RegAccessParser::accessTypeToString(access_type_t accessType)
-{
-    static map<access_type_t, string> access_type_map;
-    if (access_type_map.size() == 0)
-    {
-        access_type_map.insert(pair<access_type_t, string>(INDEX, "INDEX"));
-        access_type_map.insert(pair<access_type_t, string>(OP, "OP"));
-    }
-    map<access_type_t, string>::iterator itr = access_type_map.find(accessType);
-    if (itr != access_type_map.end())
-    {
-        return itr->second;
-    }
-    return string("Unknown"); // should not get here
-}
-
-/************************************
- * Function: parseAccessType
- ************************************/
-void RegAccessParser::parseAccessType(std::vector<string> tokens,
-                                      std::vector<string> validTokens,
-                                      access_type_t accessType)
-{
-    std::vector<string> foundTokens;
-
-    // Update buffer with values (indexes/ops)
-    for (std::vector<std::string>::size_type i = 0; i != tokens.size(); i++)
-    {
-        std::vector<std::string> tokenPair = strSplit(tokens[i], '=', true);
-        string name = tokenPair[0];
-        string val = tokenPair[1];
-        u_int32_t uintVal;
-        strToUint32((char*)val.c_str(), uintVal);
-        AdbInstanceAdvLegacy* field = getField(name);
-        // Make sure that the given field name is valid
-        if (std::find(validTokens.begin(), validTokens.end(), name) != validTokens.end())
-        {
-            if (std::find(foundTokens.begin(), foundTokens.end(), name) != foundTokens.end())
-            {
-                throw MlxRegException("Field: %s appears twice.", name.c_str());
-            }
-            foundTokens.push_back(name);
-        }
-        else
-        {
-            throw MlxRegException("Field: %s is not a %s.", name.c_str(), this->accessTypeToString(accessType).c_str());
-        }
-        updateBuffer(field->offset, field->get_size(), uintVal);
-    }
-
-    // Per #4207832, skip checking that all indexes are set
-    // if (accessType == INDEX)
-    // {
-    //     // Make sure that all the indexes are set
-    //     for (std::vector<std::string>::size_type i = 0; i != validTokens.size(); i++)
-    //     {
-    //         bool idxFound = false;
-    //         for (std::vector<std::string>::size_type j = 0; j != foundTokens.size(); j++)
-    //         {
-    //             if (validTokens[i] == foundTokens[j])
-    //             {
-    //                 idxFound = true;
-    //             }
-    //         }
-    //         if (!idxFound)
-    //         {
-    //             throw MlxRegException("Index: %s was not provided", validTokens[i].c_str());
-    //         }
-    //     }
-    // }
-}
-
-void RegAccessParser::_on_traverse_update_buffer(const string& calculated_path,
-                                                 uint64_t calculated_offset,
-                                                 uint64_t calculated_value,
-                                                 AdbInstanceAdvLegacy* instance,
-                                                 void* context)
+template<bool dynamic>
+bool _RegAccessParser_impl<dynamic>::_on_traverse_update_buffer(const string& calculated_path,
+                                                                uint64_t calculated_offset,
+                                                                uint64_t calculated_value,
+                                                                AdbInstance* instance,
+                                                                void* context)
 {
     (void)context;
     (void)calculated_value;
 
-    RegAccessParser* parser = (RegAccessParser*)context;
+    _RegAccessParser_impl<dynamic>* parser = (_RegAccessParser_impl<dynamic>*)context;
     string path_to_compare = parser->_full_path ? calculated_path : get_legacy_path(*instance);
 
-    for (const auto& entry : parser->_data_map)
+    for (const auto& entry : parser->_params_map)
     {
         const string& key = entry.first;
-        const uint32_t value = entry.second;
-        if (path_to_compare.length() >= key.length() &&
-            path_to_compare.substr(path_to_compare.length() - key.length()) == key &&
-            (path_to_compare.length() == key.length() ||
-             path_to_compare[path_to_compare.length() - key.length() - 1] == '.'))
+        const ParamType param_type = entry.second.type;
+        const uint32_t value = entry.second.value;
+        if (is_in_path(key, path_to_compare))
         {
-            if (!parser->_ignore_ro && instance->is_ro())
+            if (param_type == ParamType::INDEX && !instance->is_index())
+            {
+                throw MlxRegException("Field: %s is not an INDEX.", calculated_path.c_str());
+            }
+            else if (param_type == ParamType::OP && !instance->is_op())
+        {
+                throw MlxRegException("Field: %s is not an OP.", calculated_path.c_str());
+            }
+            else if (param_type == ParamType::DATA && !parser->_ignore_ro && instance->is_ro())
             {
                 throw MlxRegException("Field: %s is ReadOnly", calculated_path.c_str());
             }
             parser->updateBuffer((uint32_t)calculated_offset, (uint32_t)instance->get_size(), value);
-            parser->_data_map.erase(key);
+            parser->_params_map.erase(key);
             break;
         }
     }
+    return false; // continue traversal
 }
 /************************************
  * Function: parseData
  ************************************/
-void RegAccessParser::parseData()
+template<bool dynamic>
+void _RegAccessParser_impl<dynamic>::parse_register_params(const string& data, ParamType param_type)
 {
-    std::vector<string> datTokens = strSplit(_data, ',', false);
+    if (data.empty())
+{
+        return;
+    }
+
+    std::vector<string> datTokens = strSplit(data, ',', false);
     // Update buffer with data values
-    for (std::vector<std::string>::size_type i = 0; i != datTokens.size(); i++)
+    for (typename std::vector<std::string>::size_type i = 0; i != datTokens.size(); i++)
     {
         std::vector<std::string> dat = strSplit(datTokens[i], '=', true);
         string datName = dat[0];
         string datVal = dat[1];
         u_int32_t uintVal;
         strToUint32((char*)datVal.c_str(), uintVal);
-        _data_map[datName] = uintVal;
-    }
-
-    _adb->traverse_layout(_regNode,
-                          "",
-                          0,
-                          (uint8_t*)&(_buffer[0]),
-                          _buffer.size() * sizeof(uint32_t),
-                          RegAccessParser::_on_traverse_update_buffer,
-                          (void*)this,
-                          false,
-                          false,
-                          _full_path);
-    if (_data_map.size() > 0)
+        if (_params_map.find(datName) != _params_map.end())
         {
-        auto unfound_name = _data_map.begin()->first; // for backward compatibility, only prints one unfound name
-        throw MlxRegException("Can't find field name: \"%s\"", unfound_name.c_str());
+            throw MlxRegException("Field: %s appears twice.", datName.c_str());
+    }
+        _params_map[datName] = {param_type, uintVal};
     }
 }
 
 /************************************
  * Function: parseUnknown
  ************************************/
-void RegAccessParser::parseUnknown()
+template<bool dynamic>
+void _RegAccessParser_impl<dynamic>::parseUnknown()
 {
     // Split input strings
     std::vector<string> idxTokens = strSplit(_indexes, ',', false);
@@ -352,7 +313,8 @@ void RegAccessParser::parseUnknown()
 /************************************
  * Function: updateBuffer
  ************************************/
-void RegAccessParser::updateBuffer(u_int32_t offset, u_int32_t size, u_int32_t val)
+template<bool dynamic>
+void _RegAccessParser_impl<dynamic>::updateBuffer(u_int32_t offset, u_int32_t size, u_int32_t val)
 {
     _buffer[offset >> 5] = MERGE(_buffer[offset >> 5], val, (offset % 32), size);
 }
@@ -367,10 +329,11 @@ void RegAccessParser::updateBuffer(u_int32_t offset, u_int32_t size, u_int32_t v
  * Offset:  In bits within the address.
  * Size:    In bits.
  ************************************/
-void RegAccessParser::updateBufferUnknwon(std::vector<string> fieldTokens)
+template<bool dynamic>
+void _RegAccessParser_impl<dynamic>::updateBufferUnknwon(std::vector<string> fieldTokens)
 {
     // Parse fields
-    for (std::vector<std::string>::size_type i = 0; i != fieldTokens.size(); i++)
+    for (typename std::vector<std::string>::size_type i = 0; i != fieldTokens.size(); i++)
     {
         std::vector<std::string> fieldToken = strSplit(fieldTokens[i], '=', true);
         // extract <data>
@@ -426,7 +389,8 @@ void RegAccessParser::updateBufferUnknwon(std::vector<string> fieldTokens)
 /************************************
  * Function: strSplit
  ************************************/
-std::vector<string> RegAccessParser::strSplit(string str, char delimiter, bool forcePairs)
+template<bool dynamic>
+std::vector<string> _RegAccessParser_impl<dynamic>::strSplit(string str, char delimiter, bool forcePairs)
 {
     std::vector<string> internal;
     std::stringstream ss(str); // Turn the string into a stream.
@@ -444,7 +408,7 @@ std::vector<string> RegAccessParser::strSplit(string str, char delimiter, bool f
         }
     }
     // Can't have an empty key/value
-    for (std::vector<string>::size_type i = 0; i != internal.size(); i++)
+    for (typename std::vector<string>::size_type i = 0; i != internal.size(); i++)
     {
         if (internal[i].length() == 0)
         {
@@ -457,7 +421,8 @@ std::vector<string> RegAccessParser::strSplit(string str, char delimiter, bool f
 /************************************
  * Function: strToUint32
  ************************************/
-void RegAccessParser::strToUint32(char* str, u_int32_t& uint)
+template<bool dynamic>
+void _RegAccessParser_impl<dynamic>::strToUint32(char* str, u_int32_t& uint)
 {
     char* endp;
     errno = 0;
@@ -476,65 +441,70 @@ void RegAccessParser::strToUint32(char* str, u_int32_t& uint)
 /************************************
  * Function: getFieldWithParents
  ************************************/
-bool RegAccessParser::checkFieldWithPath(AdbInstanceAdvLegacy* field,
-                                         u_int32_t idx,
-                                         std::vector<string>& fieldsChain,
-                                         u_int32_t size,
-                                         u_int32_t offset,
-                                         bool offsetSpecified)
+template<bool dynamic>
+bool _RegAccessParser_impl<dynamic>::is_in_path(const string& partial, const string& full)
 {
-    if (idx == 0 && (field->get_field_name() == fieldsChain[0]))
+    return (full.length() >= partial.length() && full.substr(full.length() - partial.length()) == partial &&
+            (full.length() == partial.length() || full[full.length() - partial.length() - 1] == '.'));
+}
+
+template<bool dynamic>
+bool _RegAccessParser_impl<dynamic>::on_traverse_get_field(const string& calculated_path,
+                                                           uint64_t calculated_offset,
+                                                           uint64_t calculated_value,
+                                                           AdbInstance* instance,
+                                                           void* context)
     {
-        if (size == 0 || (!offsetSpecified && size && field->get_size() == size) ||
-            (offsetSpecified && offset % 32 == field->offset % 32 && size && field->get_size() == size))
+    (void)calculated_value;
+
+    FieldSearchContext* search_context = (FieldSearchContext*)context;
+    const string& requested_name = search_context->name;
+    uint32_t requested_size = search_context->size;
+    uint32_t requested_offset = search_context->offset;
+    bool offset_specified = search_context->offsetSpecified;
+
+    if (is_in_path(requested_name, calculated_path) &&
+        (requested_size == 0 || requested_size == instance->get_size() ||
+         (offset_specified && requested_offset % 32 == calculated_offset % 32))) // TODO: remove the size and offset
+                                                                                 // checks after fixing in mlxlink
         {
+        search_context->instance = instance;
             return true;
         }
-        else
-        {
             return false;
         }
-    }
-    else if (field->get_field_name() == fieldsChain[idx])
-    {
-        return checkFieldWithPath(field->parent, --idx, fieldsChain);
-    }
-    else
-    {
-        return false;
-    }
-}
+
 /************************************
  * Function: getField
  ************************************/
-AdbInstanceAdvLegacy*
-  RegAccessParser::getField(string name, u_int32_t size, u_int32_t offset, bool offsetSpecified, bool is_buffer_full)
+template<bool dynamic>
+typename _RegAccessParser_impl<dynamic>::AdbInstance* _RegAccessParser_impl<dynamic>::getField(string name,
+                                                                                               u_int32_t size,
+                                                                                               u_int32_t offset,
+                                                                                               bool offsetSpecified,
+                                                                                               bool is_buffer_full)
 {
-    // this will allow to access the leaf field by specifying it's parent.
-    std::vector<string> fieldsChain = strSplit(name, '.', false);
-    std::vector<AdbInstanceAdvLegacy*> subItems;
-
-    if (!is_buffer_full)
+    FieldSearchContext search_context = {name, size, offset, offsetSpecified, nullptr};
+    uint32_t buffer_size = is_buffer_full ? _buffer.size() * sizeof(uint32_t) : _regNode->get_size() / 8;
+    _adb->traverse_layout(_regNode,
+                          "",
+                          0,
+                          (uint8_t*)&(_buffer[0]),
+                          buffer_size,
+                          _RegAccessParser_impl<dynamic>::on_traverse_get_field,
+                          (void*)&search_context,
+                          is_buffer_full,
+                          false,
+                          _full_path);
+    if (search_context.instance)
     {
-        subItems = _regNode->getLeafFields(true);
-    }
-    else
-    {
-        subItems = RegAccessParser::getRelevantFields(
-          _regNode, _buffer); // todo: refactor this function to  use traverse instead of getRelevantFields
-    }
-
-    for (std::vector<AdbInstanceAdvLegacy*>::size_type i = 0; i != subItems.size(); i++)
-    {
-        if (checkFieldWithPath(subItems[i], fieldsChain.size() - 1, fieldsChain, size, offset, offsetSpecified))
-        {
-            return subItems[i];
-        }
+        return search_context.instance;
     }
     throw MlxRegException("Can't find field name: \"%s\"", name.c_str());
 }
 
-string RegAccessParser::getAccess(const AdbInstanceAdvLegacy* field)
+template<bool dynamic>
+string _RegAccessParser_impl<dynamic>::getAccess(const AdbInstance* field)
 {
     string access = field->getInstanceAttr("access");
     if (access.empty())
@@ -548,194 +518,30 @@ string RegAccessParser::getAccess(const AdbInstanceAdvLegacy* field)
     return access;
 }
 
-bool RegAccessParser::checkAccess(const AdbInstanceAdvLegacy* field, const string accessStr)
+template<bool dynamic>
+void _RegAccessParser_impl<dynamic>::updateField(string field_name, u_int32_t value)
 {
-    return getAccess(field) == accessStr;
-}
-
-bool RegAccessParser::isRO(AdbInstanceAdvLegacy* field)
-{
-    if (_ignore_ro)
-    {
-        return false;
-    }
-    return checkAccess(field, "RO");
-}
-
-bool RegAccessParser::isIndex(AdbInstanceAdvLegacy* field)
-{
-    return checkAccess(field, "INDEX");
-}
-
-bool RegAccessParser::isOP(AdbInstanceAdvLegacy* field)
-{
-    return checkAccess(field, "OP");
-}
-
-/************************************
- * Function: getAllIndexes
- ************************************/
-std::vector<string> RegAccessParser::getAllIndexes(AdbInstanceAdvLegacy* node)
-{
-    std::vector<string> indexes;
-    std::vector<AdbInstanceAdvLegacy*> subItems = node->getLeafFields(true);
-    for (std::vector<AdbInstanceAdvLegacy*>::size_type i = 0; i != subItems.size(); i++)
-    {
-        if (isIndex(subItems[i]))
-        {
-            indexes.push_back(subItems[i]->get_field_name());
-        }
-    }
-    return indexes;
-}
-
-std::vector<string> RegAccessParser::getAllOps(AdbInstanceAdvLegacy* node)
-{
-    std::vector<string> ops;
-    std::vector<AdbInstanceAdvLegacy*> subItems = node->getLeafFields(true);
-    for (std::vector<AdbInstanceAdvLegacy*>::size_type i = 0; i != subItems.size(); i++)
-    {
-        if (isOP(subItems[i]))
-        {
-            ops.push_back(subItems[i]->get_field_name());
-        }
-    }
-    return ops;
-}
-
-void RegAccessParser::updateField(string field_name, u_int32_t value)
-{
-    AdbInstanceAdvLegacy* field = getField(field_name);
+    AdbInstance* field = getField(field_name);
     updateBuffer(field->offset, field->get_size(), value);
 }
 
-u_int32_t RegAccessParser::getFieldValue(string field_name,
-                                         std::vector<u_int32_t>& buff,
-                                         u_int32_t size,
-                                         u_int32_t offset,
-                                         bool offsetSpecified,
-                                         bool is_buffer_full)
+template<bool dynamic>
+u_int32_t _RegAccessParser_impl<dynamic>::getFieldValue(string field_name,
+                                                        std::vector<u_int32_t>& buff,
+                                                        u_int32_t size,
+                                                        u_int32_t offset,
+                                                        bool offsetSpecified,
+                                                        bool is_buffer_full)
 {
-    AdbInstanceAdvLegacy* field = getField(field_name, size, offset, offsetSpecified, is_buffer_full);
+    AdbInstance* field = getField(field_name, size, offset, offsetSpecified, is_buffer_full);
     return (u_int32_t)field->popBuf((u_int8_t*)&buff[0]);
-}
-
-/************************************
- * Function: getRelevantFields
- * Description: Traverses ADB instance tree and returns relevant leaf fields.
- * For union selectors and conditional nodes, only returns the selected union field or the node based on buffer value.
- ************************************/
-std::vector<AdbInstanceAdvLegacy*> RegAccessParser::getRelevantFields(AdbInstanceAdvLegacy* node,
-                                                                      const std::vector<u_int32_t>& buff)
-{
-    std::vector<AdbInstanceAdvLegacy*> result;
-
-    if (!node)
-    {
-        return result;
-    }
-
-    // If this is a leaf node (no children), add it to result
-    if (node->subItems.empty())
-    {
-        result.push_back(node);
-        return result;
-    }
-
-    // Check if this is a union selector
-    if (node->isUnion() && node->unionSelector)
-    { // TODO: add isUnionSelector() function to AdbInstance
-        // Get the selector value from buffer
-        u_int32_t selectorValue = node->unionSelector->popBuf((u_int8_t*)&buff[0]);
-
-        // Get the selected union field using getUnionSelectedNodeName
-        AdbInstanceAdvLegacy* selectedNode = nullptr;
-        try
-        {
-            selectedNode = node->getUnionSelectedNodeName(selectorValue);
-        }
-        catch (const AdbException& e)
-        {
-            // If getUnionSelectedNodeName throws an exception, treat as a regular non-union node
-            // and process all children
-            std::cerr << "-W- Field - " << node->get_field_name()
-                      << " with union selector failed treating as regular node and processing all children\n"
-                      << e.what() << std::endl;
-            for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin();
-                 it != node->subItems.end();
-                 ++it)
-            {
-                std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantFields(*it, buff);
-                result.insert(result.end(), subResult.begin(), subResult.end());
-            }
-            return result;
-        }
-
-        if (selectedNode)
-        {
-            // Recursively get relevant fields from the selected union field
-            std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantFields(selectedNode, buff);
-            result.insert(result.end(), subResult.begin(), subResult.end());
-        }
-    }
-    else if (node->parent && node->parent->isConditionalNode())
-    {
-        AdbConditionLegacy* condition = node->getCondition();
-        if (condition)
-        {
-            uint64_t cond_val = 0;
-            try
-            {
-                cond_val = condition->evaluate((u_int8_t*)&buff[0]);
-            }
-            catch (const AdbException& e)
-            {
-                // If condition evaluation throws an exception, treat as a regular non-union node
-                // and process all children
-                std::cerr << "-W- Field - " << node->get_field_name()
-                          << " with condition, evaluation failed, treating as regular node and processing all children\n"
-                          << e.what() << std::endl;
-                for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin();
-                     it != node->subItems.end();
-                     ++it)
-                {
-                    std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantFields(*it, buff);
-                    result.insert(result.end(), subResult.begin(), subResult.end());
-                }
-                return result;
-            }
-
-            if (!cond_val)
-            {
-                return result;
-            }
-        }
-        // Recursively get relevant fields from the selected union field
-        for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin(); it != node->subItems.end();
-             ++it)
-        {
-            std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantFields(*it, buff);
-            result.insert(result.end(), subResult.begin(), subResult.end());
-        }
-    }
-    else
-    {
-        // For non-union nodes, recursively process all children
-        for (std::vector<AdbInstanceAdvLegacy*>::const_iterator it = node->subItems.begin(); it != node->subItems.end();
-             ++it)
-        {
-            std::vector<AdbInstanceAdvLegacy*> subResult = getRelevantFields(*it, buff);
-            result.insert(result.end(), subResult.begin(), subResult.end());
-        }
-    }
-
-    return result;
 }
 
 /************************************
  * Function: get_legacy_path
  ************************************/
-string RegAccessParser::get_legacy_path(AdbInstanceAdvLegacy& instance)
+template<bool dynamic>
+string _RegAccessParser_impl<dynamic>::get_legacy_path(AdbInstance& instance)
 {
     string path = instance.fullName(1);
     size_t last_dot = path.rfind('.');
@@ -755,3 +561,10 @@ string RegAccessParser::get_legacy_path(AdbInstanceAdvLegacy& instance)
     }
     return path;
 }
+
+// Explicit template instantiations
+namespace mlxreg
+{
+template class _RegAccessParser_impl<false>;
+template class _RegAccessParser_impl<true>;
+} // namespace mlxreg

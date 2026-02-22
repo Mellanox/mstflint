@@ -44,7 +44,29 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "compatibility.h"
+#include "common/compatibility.h"
+
+#include "mtcr_com_defs.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+// TLV constants
+#define TLV_OPERATION_SIZE_DWORDS 4
+#define TLV_OPERATION_SIZE_BYTES (TLV_OPERATION_SIZE_DWORDS * 4)
+#define REG_TLV_HEADER_SIZE_BYTES 4
+
+// TLV types
+enum
+{
+    TLV_END = 0,
+    TLV_OPERATION = 1,
+    TLV_DR = 2,
+    TLV_REG = 3,
+    TLV_USER_DATA = 4,
+};
 
 /*************************************/
 /* Name: reg_tlv
@@ -70,7 +92,7 @@ struct OperationTlv
     u_int8_t dr; /* bit_offset:15 */                         /* element_size: 1 */
     u_int16_t len; /* bit_offset:16 */                       /* element_size: 11 */
     u_int8_t Type; /* bit_offset:27 */ /* element_size: 5 */ /* TX - 0, RX - ignore */
-    u_int8_t class; /* bit_offset:32 */                      /* element_size: 8 */
+    u_int8_t tlv_class; /* bit_offset:32 */                      /* element_size: 8 */
     u_int8_t method; /* bit_offset:40 */                     /* element_size: 7 */
     u_int8_t r; /* bit_offset:47 */                          /* element_size: 1 */
     u_int16_t register_id; /* bit_offset:48 */               /* element_size: 16 */
@@ -82,17 +104,23 @@ struct OperationTlv
  * Size: 32 bits
  * Description: reg_tlv */
 
-u_int32_t reg_tlv_pack(struct reg_tlv* data_to_pack, u_int8_t* packed_buffer);
-void reg_tlv_unpack(struct reg_tlv* unpacked_data, u_int8_t* buffer_to_unpack);
-void reg_tlv_dump(struct reg_tlv* data_to_print, FILE* out_port);
+MTCR_API int init_reg_tlv(struct reg_tlv* tlv_info, u_int32_t reg_size);
+MTCR_API u_int32_t reg_tlv_pack(struct reg_tlv* data_to_pack, u_int8_t* packed_buffer);
+MTCR_API void reg_tlv_unpack(struct reg_tlv* unpacked_data, u_int8_t* buffer_to_unpack);
+MTCR_API void reg_tlv_dump(struct reg_tlv* data_to_print, FILE* out_port);
 
 /*************************************/
 /* Name: OperationTlv
  * Size: 128 bits
  * Description:  */
 
-u_int32_t OperationTlv_pack(struct OperationTlv* data_to_pack, u_int8_t* packed_buffer);
-void OperationTlv_unpack(struct OperationTlv* unpacked_data, u_int8_t* buffer_to_unpack);
-void OperationTlv_dump(struct OperationTlv* data_to_print, FILE* out_port);
+MTCR_API int init_operation_tlv(struct OperationTlv* operation_tlv, u_int16_t reg_id, u_int8_t method);
+MTCR_API uint32_t OperationTlv_pack(struct OperationTlv* data_to_pack, u_int8_t* packed_buffer);
+MTCR_API void OperationTlv_unpack(struct OperationTlv* unpacked_data, u_int8_t* buffer_to_unpack);
+MTCR_API void OperationTlv_dump(struct OperationTlv* data_to_print, FILE* out_port);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* internal_packets_functions_H */

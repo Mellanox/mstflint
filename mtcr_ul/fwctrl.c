@@ -35,6 +35,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <malloc.h>
+#include <endian.h>
 #include <sys/ioctl.h>
 #include <asm/byteorder.h>
 #include <errno.h>
@@ -46,27 +48,11 @@
 #include "fwctrl.h"
 #include "fwctrl_ioctl.h"
 
-enum CMD_ErrorCode {
-    CMD_ERROR_OK             = 0x00,
-    CMD_ERROR_INTERNAL_ERROR = 0x01,
-    CMD_ERROR_BAD_OP         = 0x02,
-    CMD_ERROR_BAD_PARAM      = 0x03,
-    CMD_ERROR_BAD_SYS_STATE  = 0x04,
-    CMD_ERROR_BAD_RESOURCE   = 0x05,
-    CMD_ERROR_RESOURCE_BUSY  = 0x06,
-    CMD_ERROR_NOT_READY      = 0x07,
-    CMD_ERROR_EXCEED_LIM     = 0x08,
-    CMD_ERROR_BAD_RES_STATE  = 0x09,
-    CMD_ERROR_BAD_INDEX      = 0x0A,
-    CMD_ERROR_NO_RESOURCES   = 0x0F,
-    CMD_ERROR_BAD_INPUT_LEN  = 0x50,
-    CMD_ERROR_BAD_OUTPUT_LEN = 0x51
-};
 
 void fwctl_set_device_id(mfile* mf)
 {
     unsigned char register_data[1024];
-    int           reg_status;
+    int           reg_status =0;
 
     memset(register_data, 0, sizeof(register_data));
 
@@ -83,53 +69,64 @@ void fwctl_set_device_id(mfile* mf)
 
 int translate_cmd_status_to_reg_status(int cmd_status)
 {
-    switch (cmd_status) {
-    case CMD_ERROR_OK:
-        return ME_REG_ACCESS_OK;
+    switch (cmd_status)
+    {
+        case MLX5_CMD_STAT_OK:
+            return ME_REG_ACCESS_OK;
 
-    case CMD_ERROR_INTERNAL_ERROR:
-        return ME_REG_ACCESS_INTERNAL_ERROR;
+        case MLX5_CMD_STAT_INT_ERR:
+            return ME_REG_ACCESS_INTERNAL_ERROR;
 
-    case CMD_ERROR_BAD_OP:
-        return ME_REG_ACCESS_VER_NOT_SUPP;
+        case MLX5_CMD_STAT_BAD_OP_ERR:
+            return ME_REG_ACCESS_BAD_METHOD;
 
-    case CMD_ERROR_BAD_PARAM:
-        return ME_REG_ACCESS_UNKNOWN_TLV;
+        case MLX5_CMD_STAT_BAD_PARAM_ERR:
+            return ME_REG_ACCESS_BAD_PARAM;
 
-    case CMD_ERROR_BAD_SYS_STATE:
-        return ME_REG_ACCESS_REG_NOT_SUPP;
+        case MLX5_CMD_STAT_BAD_SYS_STATE_ERR:
+            return ME_REG_ACCESS_REG_NOT_SUPP;
 
-    case CMD_ERROR_BAD_RESOURCE:
-        return ME_REG_ACCESS_RES_NOT_AVLBL;
+        case MLX5_CMD_STAT_BAD_RES_ERR:
+            return ME_REG_ACCESS_RES_NOT_AVLBL;
 
-    case CMD_ERROR_RESOURCE_BUSY:
-        return ME_REG_ACCESS_DEV_BUSY;
+        case MLX5_CMD_STAT_RES_BUSY:
+            return ME_REG_ACCESS_DEV_BUSY;
 
-    case CMD_ERROR_NOT_READY:
-        return ME_REG_ACCESS_NOT_READY;
+        case MLX5_CMD_STAT_NOT_READY:
+            return ME_REG_ACCESS_NOT_READY;
 
-    case CMD_ERROR_EXCEED_LIM:
-        return ME_REG_ACCESS_EXCEED_LIM;
+        case MLX5_CMD_STAT_LIM_ERR:
+            return ME_REG_ACCESS_SIZE_EXCEEDS_LIMIT;
 
-    case CMD_ERROR_BAD_RES_STATE:
-        return ME_REG_ACCESS_BAD_RES_STATE;
+        case MLX5_CMD_STAT_BAD_RES_STATE_ERR:
+            return ME_REG_ACCESS_BAD_RES_STATE;
 
-    case CMD_ERROR_BAD_INDEX:
-        return ME_REG_ACCESS_BAD_INDEX;
+        case MLX5_CMD_STAT_IX_ERR:
+            return ME_REG_ACCESS_BAD_INDEX;
 
-    case CMD_ERROR_NO_RESOURCES:
-        return ME_REG_ACCESS_RES_NOT_AVLBL;
+        case MLX5_CMD_STAT_NO_RES_ERR:
+            return ME_REG_ACCESS_RES_NOT_AVLBL;
 
-    case CMD_ERROR_BAD_INPUT_LEN:
-        return ME_REG_ACCESS_BAD_INDEX;
+        case MLX5_CMD_STAT_BAD_INP_LEN_ERR:
+            return ME_REG_ACCESS_BAD_INPUT_LEN;
 
-    case CMD_ERROR_BAD_OUTPUT_LEN:
-        return ME_REG_ACCESS_BAD_INPUT_LEN;
+        case MLX5_CMD_STAT_BAD_OUTP_LEN_ERR:
+            return ME_REG_ACCESS_BAD_OUTPUT_LEN;
 
-    default:
-        return ME_REG_ACCESS_UNKNOWN_ERR;
+        case MLX5_CMD_STAT_BAD_QP_STATE_ERR:
+            return ME_REG_ACCESS_BAD_QP_STATE;
+
+        case MLX5_CMD_STAT_BAD_PKT_ERR:
+            return ME_REG_ACCESS_BAD_PKT;
+
+        case MLX5_CMD_STAT_BAD_SIZE_OUTS_CQES_ERR:
+            return ME_REG_ACCESS_BAD_SIZE_OUTS_CQES;
+
+        default:
+            return ME_REG_ACCESS_UNKNOWN_ERR;
     }
 }
+
 
 int fwctl_control_access_register(int    fd,
                                   void  *data_in,
@@ -178,7 +175,7 @@ int fwctl_control_access_register(int    fd,
     err = ioctl(fd, FWCTL_RPC, &rpc);
     if (err) {
         FWCTL_DEBUG_PRINT(mf,"FWCTL_IOCTL_CMD_RPC ioctl() failed: err=%d, errno=%d (%s)\n", err, errno, strerror(errno));
-        return err;
+        goto out;
     }
 
     data = MLX5_ADDR_OF(access_register_out, out, register_data);
@@ -191,11 +188,7 @@ int fwctl_control_access_register(int    fd,
         FWCTL_DEBUG_PRINT(mf, "FWCTL_IOCTL_CMD_RPC returned error from FW: reg_id=0x%x, method=0x%x, cmd_status=0x%x, syndrome=0x%x\n",
                           reg_id, method, cmd_status, syndrome);
 
-        if (reg_id == mnvda_reg_id) {
-            *reg_status = translate_cmd_status_to_reg_status(cmd_status);
-        } else {
-            *reg_status = return_by_reg_status(cmd_status);
-        }
+        *reg_status = translate_cmd_status_to_reg_status(cmd_status);
         FWCTL_DEBUG_PRINT(mf, "Mapped FW cmd_status=0x%x to reg_status=0x%x (%s)\n", cmd_status, *reg_status, m_err2str(*reg_status));
     } else {
         *reg_status = 0;
@@ -209,4 +202,93 @@ out:
     free(out);
     free(in);
     return err;
+}
+
+
+int mlx5u_fwctl_umem_reg(mfile* mf, void *addr, size_t len, uint32_t *umem_id, uint32_t *mkey_id)
+{
+	struct fwctl_rsc_umem_reg umem = { .size = sizeof(umem) };
+	int ret;
+
+	umem.addr = (uint64_t)addr;
+	umem.len = len;
+	umem.flags = FWCTL_UMEM_FLAG_MKEY | FWCTL_UMEM_FLAG_MCDD;
+	FWCTL_DEBUG_PRINT(mf, "umem.addr %p umem.len %llu UMEM ID=0x%x\n", (void *)umem.addr, umem.len, umem.umem_id);
+	ret = ioctl(mf->fd, FWCTL_RSC_UMEM_REG, &umem);
+	if (ret) {
+		FWCTL_DEBUG_PRINT(mf, "FWCTL_RSC_UMEM_REG failed: %d errno(%d): %s\n", ret, errno, strerror(errno));
+		return ret > 0 ? -ret : ret;
+	}
+	FWCTL_DEBUG_PRINT(mf, "umem.addr reg success %p umem.len %llu UMEM ID=0x%x MKEY ID=0x%x\n", (void *)umem.addr, umem.len, umem.umem_id, umem.mkey_id);
+	*umem_id = umem.umem_id;
+	*mkey_id = umem.mkey_id;
+	return umem.rsc_id;
+}
+
+struct mlx5_umem_buff* mlx5lib_alloc_umem_mkey_buff(mfile* mf, size_t size, int page_size)
+{
+	struct mlx5_umem_buff* umem_buff = NULL;
+	int ret;
+
+	umem_buff = malloc(sizeof(*umem_buff));
+	if (!umem_buff) {
+		FWCTL_DEBUG_PRINT(mf, "Failed to allocate umem_buff\n");
+		return NULL;
+	}
+	memset(umem_buff, 0, sizeof(*umem_buff));
+
+	umem_buff->size = size;
+    void* buf = NULL;
+	int rc = posix_memalign(&buf, (size_t)page_size, umem_buff->size);
+	umem_buff->buff = buf;
+    if (rc != 0 || !buf) {
+        FWCTL_DEBUG_PRINT(mf, "posix_memalign failed: %d (%s)\n", rc, strerror(rc));
+        free(umem_buff);
+        return NULL;
+    }
+	if (!umem_buff->buff) {
+		FWCTL_DEBUG_PRINT(mf, "memalign Failed with size %lu\n", umem_buff->size);
+		free(umem_buff);
+		return NULL;
+	}
+	memset(umem_buff->buff, 0, umem_buff->size);
+
+	FWCTL_DEBUG_PRINT(mf, "Allocated umem buff %p Aligned to bytes %zu\n", umem_buff->buff, umem_buff->size);
+
+	ret = mlx5u_fwctl_umem_reg(mf, umem_buff->buff, umem_buff->size, &umem_buff->umem_id, &umem_buff->umem_mkey);
+	if (ret < 0) {
+		FWCTL_DEBUG_PRINT(mf, "Failed to register umem buff %p, size %zu, err %d\n",
+			umem_buff->buff, umem_buff->size, ret);
+		free(umem_buff->buff);
+		free(umem_buff);
+		return NULL;
+	}
+	umem_buff->rsc_id = ret;
+	FWCTL_DEBUG_PRINT(mf, "\tAllocated umem_id 0x%x mkey 0x%x for buff %p\n", umem_buff->umem_id, umem_buff->umem_mkey, umem_buff->buff);
+
+	return umem_buff;
+}
+
+int mlx5u_fwctl_rsc_destroy(mfile* mf, uint32_t rsc_id)
+{
+	struct fwctl_rsc_destroy rsc_destroy = { .size = sizeof(rsc_destroy), .rsc_id = rsc_id };
+	int ret;
+
+	ret = ioctl(mf->fd, FWCTL_RSC_DESTROY, &rsc_destroy);
+	if (ret) {
+		FWCTL_DEBUG_PRINT(mf, "MLX5CTL_IOCTL_UMEM_UNREG failed: %d errno(%d): %s\n", ret, errno, strerror(errno));
+		return ret;
+	}
+	FWCTL_DEBUG_PRINT(mf, "rsc_id unreg success 0x%x\n", rsc_id);
+	return 0;
+}
+
+void mlx5lib_free_umem_mkey_buff(mfile* mf)
+{
+    struct mlx5_umem_buff* umem_buff = mf->umem_buff;
+    if (umem_buff) {    // if umem_buff is not NULL, destroy the resource
+        mlx5u_fwctl_rsc_destroy(mf, umem_buff->rsc_id);
+        free(umem_buff->buff);
+        free(umem_buff);
+    }
 }

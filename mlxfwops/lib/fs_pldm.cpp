@@ -68,7 +68,12 @@ bool FsPldmOperations::FwInit()
 
 bool FsPldmOperations::LoadPldmPackage()
 {
-    _pldmFile = std::string(dynamic_cast<FPldm*>(_ioAccess)->get_fname());
+    FPldm* pldmAccess = dynamic_cast<FPldm*>(_ioAccess);
+    if (!pldmAccess)
+    {
+        return errmsg("File is not a valid PLDM package");
+    }
+    _pldmFile = std::string(pldmAccess->get_fname());
 
     PldmBuffer buff;
     if (buff.loadFile(_pldmFile))
@@ -121,6 +126,11 @@ bool FsPldmOperations::GetPldmComponentData(string component, string psid, u_int
 bool FsPldmOperations::GetPldmDescriptor(string psid, u_int16_t type, u_int16_t& descriptor)
 {
     return _pkg.getPldmDescriptorByPsid(psid, type, descriptor);
+}
+
+string FsPldmOperations::GetPldmVendorDefinedDescriptor(string psid, PldmRecordDescriptor::VendorDefinedType type)
+{
+    return _pkg.getPldmVendorDefinedDescriptorByPsid(psid, type);
 }
 
 bool FsPldmOperations::CreateFwOpsImage(u_int32_t* buff,

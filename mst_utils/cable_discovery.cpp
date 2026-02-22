@@ -6,6 +6,8 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <iostream>
+#include <stdexcept>
 #include "include/mtcr_ul/mtcr.h"
 #include "mtcr_ul/mtcr_cables.h"
 #include "dev_mgt/tools_dev_types.h"
@@ -13,6 +15,7 @@
 #include "tools_layouts/reg_access_hca_layouts.h"
 
 
+const std::string TOOL_NAME = "mstcable_discovery";
 const std::string MSTFLINT_DEV_DIR = "/dev/mstflint/";
 
 int checkModule(mfile* mf, u_int32_t localPort)
@@ -65,10 +68,17 @@ int main(int argc, char* argv[])
     int          ul_mode = 0;
     unsigned int cable_count = 0;
 
-    devs = mdevices_info_v(0xffffffff, &device_count, 1);
+    if (argc > 1)
+    {
+        std::cout << "Invalid argument: " << argv[1] << std::endl;
+        std::cout << "Usage: " << TOOL_NAME << std::endl;
+        return 1;
+    }
+
+    devs = mdevices_info_v(MDEVS_TAVOR, &device_count, 1);
 
     if (!device_count || !devs) {
-        printf("\nNo supported PCIe devices were found.\n");
+        std::cout << "No supported PCIe devices were found." << std::endl;
         if (devs) {
             free(devs);
         }
@@ -121,9 +131,9 @@ int main(int argc, char* argv[])
     }
 
     if (cable_count == 0) {
-        printf("\nNo supported NVIDIA cables were found.\n");
+        std::cout << "No supported NVIDIA cables were found." << std::endl;
     } else {
-        printf("Added %d NVIDIA cable devices.\n", cable_count);
+        std::cout << "Added " << cable_count << " NVIDIA cable devices." << std::endl;
     }
 
     return 0;

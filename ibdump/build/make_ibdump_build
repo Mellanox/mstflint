@@ -1,0 +1,232 @@
+#!/bin/bash
+
+# Execute command w/ echo and exit if it fail
+ex()
+{
+    echo "$@"
+    if ! "$@"; then
+        error "aborting ..."
+        exit 1
+    fi
+}
+
+dist_files="bit_slice.h
+            CHANGES
+            gitversion.h
+            ibdump.c
+            ibdump.spec
+            Makefile
+            tools_version.h
+            ibd_device.h
+            vpi_tcpdump
+            README.txt"
+
+git_repo="ssh://builder@l-gerrit.mtl.labs.mlnx:29418/tools/sniffer"
+git_branch="master"
+git_rev="HEAD"
+build_ver=""
+build_rc=""
+do_test=1
+without_fw_tools=0
+with_mstflint=0
+with_mft=0
+with_libs_exp=0
+
+get_from_git() {
+    ex git clone $git_repo
+    ex cd sniffer
+    ex git checkout $git_branch
+    if [ "x$git_rev" != "x" ]; then
+        ex git checkout $git_rev
+    fi
+
+    cd ..
+}
+
+replace_versions() {
+    # replace versions:
+
+    sed -e "s/^VERSION *=..*$/VERSION    = $build_ver-$build_rc/" Makefile > Makefile.tmp
+    ex mv Makefile.tmp Makefile
+
+    sed -e "s/^Release:..*$/Release: $build_rc/" -e "s/^Version:..*$/Version: $build_ver/" ibdump.spec > ibdump.spec.tmp
+    ex mv ibdump.spec.tmp ibdump.spec
+}
+
+
+test_tar() {
+    tar_path=$1
+    cd /tmp
+    ex tar xvfz $tar_path
+    ex cd `basename $tar_path .tgz`
+    ex make
+    echo -n "-I- ibdump -v: "
+    ./ibdump -v
+}
+
+test_rpm() {
+    ex rpmbuild -ts $1 
+    src_rpm=`rpmbuild -ts $1 | grep -i "wrote:" | cut -d' ' -f2`
+    ex rpmbuild --quiet --rebuild $src_rpm
+}
+
+usage() {
+    script=$(basename $0)
+
+    echo "Usage: $script <--rc rc> [--ver version] [--repo repo] [--branch branch] [--git-rev rev/tag] [--notest]"
+    echo "[--with-libs-exp] [--with-mft] [--with-mstflint] [--without-fw-tools]"
+    echo ""
+    echo "       This script pulls rev from git, copies the relevant files and creates a dist tar ball."
+    echo "       It also opens the tar and makes for test."
+    exit 1
+}
+
+
+while [ -n "$1" ]; do
+    case $1 in
+        -h*|--h*)
+            usage
+            ;;
+        --rc)
+            build_rc="$2"
+            shift 2
+            ;;
+        --ver)
+            build_ver="$2"
+            shift 2
+            ;;
+        --notest)
+            do_test=0
+            shift 1
+            ;;
+        --repo)
+            git_repo="$2"
+            shift 2
+            ;;
+        --branch)
+            git_branch="$2"
+            shift 2
+            ;;
+        --git-rev)
+            git_rev="$2"
+            shift 2
+            ;;
+        --without-fw-tools)
+            without_fw_tools=1
+            shift 1
+            ;;
+        --with-mstflint)
+            with_mstflint=1
+            shift 1
+            ;;
+        --with-mft)
+            with_mft=1
+            shift 1
+            ;;
+        --with-libs-exp)
+            with_libs_exp=1
+            shift 1
+            ;;
+        *)
+            echo "-E- Unknown opd: $1"
+            exit 1
+            ;;
+    esac
+done
+
+if [ "x$build_rc" == "x" ]; then
+    echo "-E- Build rc must be provided"
+    exit 1
+fi
+
+if [ "x$build_ver" == "x" ]; then
+    echo "-E- Build ver must be provided"
+    exit 1
+fi
+
+#
+# FW tools parameters validation.
+#
+if [ $without_fw_tools -eq 1 ]; then
+
+    if [ $with_mft -eq 1 ] || [ $with_mstflint -eq 1 ]; then
+        echo "-E- Please choose the specific FW tool."
+        exit 1
+    fi
+fi
+
+if [ $with_mft -eq 1 ] && [ $with_mstflint -eq 1 ]; then
+    echo "-E- You cannot choose mstflint and also mft FW tools."
+    exit 1
+fi
+
+# With MFT.
+if [ $with_mft -eq 1 ]; then
+    ibd_hw_access="
+                   ibd_hw_access.c
+                   ibd_hw_access.h"
+    dist_files=$dist_files$ibd_hw_access
+fi
+
+orig_pwd=`pwd`
+temp_dir=/tmp/ibdump_build_tar
+
+# Make temp dir and pull git repo
+rm -rf $temp_dir
+ex mkdir $temp_dir
+ex cd $temp_dir
+get_from_git
+
+# Generate git version file
+ex cd sniffer/ibdump
+ex make gitversion.h
+replace_versions
+
+#
+# Add the FW tools flags to
+#   the make file.
+#
+if [ $without_fw_tools -eq 1 ]; then
+sed -i '1iWITHOUT_FW_TOOLS    = yes' Makefile
+fi
+
+if [ $with_mft -eq 1 ]; then
+sed -i '1iWITH_MFT    = yes' Makefile
+fi
+
+if [ $with_mstflint -eq 1 ]; then
+sed -i '1iWITH_MSTFLINT    = yes' Makefile
+fi
+
+if [ $with_libs_exp -eq 1 ]; then
+sed -i '1iLIBS_EXP    = yes' Makefile
+fi
+
+# make dest dir and copy files
+build_name=ibdump-$build_ver-$build_rc
+dest_dir=$temp_dir/$build_name
+rm -rf $dest_dir
+ex mkdir $dest_dir
+ex cp $dist_files $dest_dir
+ex cp -r debian $dest_dir
+sed -i "1s/.*/ibdump ($build_ver-$build_rc) unstable; urgency=low/" $dest_dir/debian/changelog
+
+# create tar
+ex cd $temp_dir
+ex tar cvfz $build_name.tgz $build_name
+tar_path=`pwd`/$build_name.tgz
+
+echo "-I- Created ibdump tarball `basename tar_path` from git $git_repo, branch $git_branch, rev $git_rev"
+
+# test
+#echo "-I- Testing make"
+#test_tar $tar_path
+#
+#echo "-I- Testing rpmbuild"
+#test_rpm $tar_path
+
+ex cp $tar_path $orig_pwd
+echo "-I- Build $rev_dir Done"
+
+echo "-I- Cleaning build tarball tmp files ..."
+rm -rf $temp_dir

@@ -36,9 +36,9 @@
  
 
 /***
-         *** This file was generated at "2025-08-31 12:57:04"
+         *** This file was generated at "2025-12-21 15:54:24"
          *** by:
-         ***    > adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils -o tools_layouts
+         ***    > [REDACTED]/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
          ***/
 #ifndef REG_ACCESS_SWITCH_LAYOUTS_H
 #define REG_ACCESS_SWITCH_LAYOUTS_H
@@ -262,15 +262,15 @@ When rxtx field is clreared, for set operation this field is ignored and for get
 	/* access: RW */
 	u_int8_t rx_lane;
 	/* Description - Supported if PCAM.feature_cap_mask bit 116 is set, otherwise field is not valid.
-Relevant for Bidi port only, Simplex port should ignore.
+Relevant for Mode B port only, Mode A port should ignore.
 indicates if module lane Tx or Rx is used.
-0: module_rx_lane_valid - Bidi lane uses module rx lane. 
+0: module_rx_lane_valid - Mode B lane uses module rx lane. 
 tx lane value is not valid should be ignored
-1: module_tx_lane_valid - Bidi lane uses module tx lane. 
+1: module_tx_lane_valid - Mode B lane uses module tx lane. 
 rx lane value is not valid should be ignored */
 	/* 0x0.30 - 0x0.30 */
 	/* access: RO */
-	u_int8_t bidi_map;
+	u_int8_t mode_b_map;
 };
 
 /* Description -   */
@@ -378,6 +378,187 @@ Other values are reserved */
 	/* 0x8.24 - 0x8.27 */
 	/* access: RO */
 	u_int8_t max_sub_modules_index;
+};
+
+/* Description -   */
+/* Size in bytes - 32 */
+struct reg_access_switch_mmta_tec_power_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - The required cooling level based on TEC power and Set Point.
+Cooling Level units are % i.e percentage.
+0% (no need to cool down) to 100% (max cooling resource, e.g fan, to cool down the module).
+	*/
+	/* 0x0.0 - 0x0.15 */
+	/* access: RO */
+	u_int16_t cooling_level;
+	/* Description - Temperature measurement units
+0: units of 0.125 Celsius degrees
+1: units of 1/256 Celsius degrees
+
+For negative values 2's complement is used
+	*/
+	/* 0x0.29 - 0x0.29 */
+	/* access: INDEX */
+	u_int8_t temp_unit;
+	/* Description - Max TEC Power Reset:
+0: do not modify the value of the max temperature register
+1: clear the value of the max TEC Power and max Setpoint register */
+	/* 0x0.30 - 0x0.30 */
+	/* access: OP */
+	u_int8_t mtpr;
+	/* Description - Max TEC Power Enable:
+0: disable measuring the max TEC Power and set point on a module
+1: enables measuring the max TEC Power and set point on a module */
+	/* 0x0.31 - 0x0.31 */
+	/* access: RW */
+	u_int8_t mtpe;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - TEC power reading from the module. Units of 1mW. */
+	/* 0x4.0 - 0x4.15 */
+	/* access: RO */
+	u_int16_t tec_power;
+	/* Description - The highest measured TEC power from the module.
+Reserved when mtece = 0
+Cleared by mtecr = 1 */
+	/* 0x4.16 - 0x4.31 */
+	/* access: RO */
+	u_int16_t max_tec_power;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Refers to module TEC Power low warning threshold. Units of 1mW. */
+	/* 0x8.0 - 0x8.15 */
+	/* access: RW */
+	u_int16_t tec_power_warning_low;
+	/* Description - Refers to module TEC Power high warning threshold. Units of 1mW. */
+	/* 0x8.16 - 0x8.31 */
+	/* access: RW */
+	u_int16_t tec_power_warning_high;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Refers to module TEC Power low alarm threshold. Units of 1mW. */
+	/* 0xc.0 - 0xc.15 */
+	/* access: RW */
+	u_int16_t tec_power_alarm_low;
+	/* Description - Refers to module TEC Power high alarm threshold. Units of 1mW. */
+	/* 0xc.16 - 0xc.31 */
+	/* access: RW */
+	u_int16_t tec_power_alarm_high;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Laser set point measured from the laser
+Units defined at temp_unit field
+	*/
+	/* 0x10.0 - 0x10.15 */
+	/* access: RO */
+	u_int16_t set_point_temperature;
+	/* Description - The highest measured set point from the module.
+Reserved when mtece = 0
+Cleared by mtecr = 1 */
+	/* 0x10.16 - 0x10.31 */
+	/* access: RO */
+	u_int16_t max_set_point_temperature;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Refers to module set point low warning threshold Units defined at temp_unit field */
+	/* 0x14.0 - 0x14.15 */
+	/* access: RW */
+	u_int16_t set_point_temperature_warning_low;
+	/* Description - Refers to module TEC Power high warning threshold Units defined at temp_unit field */
+	/* 0x14.16 - 0x14.31 */
+	/* access: RW */
+	u_int16_t set_point_temperature_warning_high;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - Refers to module set point low alarm threshold
+Units defined at temp_unit field */
+	/* 0x18.0 - 0x18.15 */
+	/* access: RW */
+	u_int16_t set_point_temperature_alarm_low;
+	/* Description - Refers to module set point high alarm threshold
+Units defined at temp_unit field */
+	/* 0x18.16 - 0x18.31 */
+	/* access: RW */
+	u_int16_t set_point_temperature_alarm_high;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description - The minimum allowed cooling level
+	*/
+	/* 0x1c.0 - 0x1c.15 */
+	/* access: RO */
+	u_int16_t min_cooling_level;
+	/* Description - The maximum allowed cooling level
+	*/
+	/* 0x1c.16 - 0x1c.31 */
+	/* access: RO */
+	u_int16_t max_cooling_level;
+};
+
+/* Description -   */
+/* Size in bytes - 24 */
+struct reg_access_switch_mmta_temprature_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Temperature measurement units
+0: units of 0.125 Celsius degrees
+1: units of 1/256 Celsius degrees
+
+For negative values 2's complement is used
+	*/
+	/* 0x0.26 - 0x0.26 */
+	/* access: INDEX */
+	u_int8_t temp_unit;
+	/* Description - Temperature Warning Event Enable (MMTA Trap)
+0: do_not_generate_event
+1: generate_events
+2: generate_single_event */
+	/* 0x0.27 - 0x0.28 */
+	/* access: RW */
+	u_int8_t twee;
+	/* Description - Temperature Warning Enable:
+0: all fields are set
+1: only twee field is set, all other fields reserved */
+	/* 0x0.29 - 0x0.29 */
+	/* access: OP */
+	u_int8_t twe;
+	/* Description - Max Temperature Reset:
+0: do not modify the value of the max temperature register
+1: clear the value of the max temperature register */
+	/* 0x0.30 - 0x0.30 */
+	/* access: OP */
+	u_int8_t mtr;
+	/* Description - Max Temperature Enable:
+0: disable measuring the max temperature on a sensor
+1: enables measuring the max temperature on a sensor */
+	/* 0x0.31 - 0x0.31 */
+	/* access: RW */
+	u_int8_t mte;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Temperature reading from the module
+Units defined at temp_unit field */
+	/* 0x4.0 - 0x4.15 */
+	/* access: RO */
+	u_int16_t temperature;
+	/* Description - The highest measured temperature from the module.
+Reserved when mte = 0
+Cleared by mtr = 1 */
+	/* 0x4.16 - 0x4.31 */
+	/* access: RO */
+	u_int16_t max_temperature;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Refers to module temperature low warning threshold
+Units defined at temp_unit field */
+	/* 0x8.0 - 0x8.15 */
+	/* access: RW */
+	u_int16_t temperature_warning_low;
+	/* Description - Refers to module temperature high warning threshold
+Units defined at temp_unit field */
+	/* 0x8.16 - 0x8.31 */
+	/* access: RW */
+	u_int16_t temperature_warning_high;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Refers to module temperature low alarm threshold
+Units defined at temp_unit field */
+	/* 0xc.0 - 0xc.15 */
+	/* access: RW */
+	u_int16_t temperature_alarm_low;
+	/* Description - Refers to module temperature high alarm threshold
+Units defined at temp_unit field */
+	/* 0xc.16 - 0xc.31 */
+	/* access: RW */
+	u_int16_t temperature_alarm_high;
 };
 
 /* Description -   */
@@ -605,9 +786,9 @@ Note: This field is not reflecting any validity of the data while accessing a no
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 554, "MDDQ slot_info Layout," on page 1054
-For devices on slot query_type data - see Table 556, "MDDQ device_info Register Layout," on page 1055
-For slot name query_type data - see Table 558, "MDDQ slot_name Layout," on page 1057 */
+For slot information query_type data - see Table 573, "MDDQ slot_info Layout," on page 1121
+For devices on slot query_type data - see Table 575, "MDDQ device_info Register Layout," on page 1122
+For slot name query_type data - see Table 577, "MDDQ slot_name Layout," on page 1124 */
 	/* 0x10.0 - 0x2c.31 */
 	/* access: RO */
 	union reg_access_switch_mddq_data_auto_ext data;
@@ -642,9 +823,9 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload - See Table 546, "PRM Register Payload Layout," on page 1050
-For Command type payload - See Table 548, "Command Payload Layout," on page 1050
-For CrSpace type payload - See Table 550, "CrSpace access Payload Layout," on page 1051 */
+For PRM Register type payload - See Table 565, "PRM Register Payload Layout," on page 1117
+For Command type payload - See Table 567, "Command Payload Layout," on page 1117
+For CrSpace type payload - See Table 569, "CrSpace access Payload Layout," on page 1118 */
 	/* 0xc.0 - 0x10c.31 */
 	/* access: RW */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
@@ -683,13 +864,19 @@ Note: Status might be '0' even when debug query is not allowed and additional_in
 4: RMDT token 
 5: CRCS token 
 6: CRDT token
-	*/
+
+8: MTFA token
+0xFF: All tokens. Relevant only when end=1 */
 	/* 0x0.24 - 0x0.31 */
 	/* access: INDEX */
 	u_int8_t type_of_token;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Set to '1' to end debug session.
 Setting to '0' will not trigger any operation. */
+	/* 0x4.30 - 0x4.30 */
+	/* access: WO */
+	u_int8_t revoke_version;
+	/* Description - Used to revoke token version from device. Relevant only when end=1. */
 	/* 0x4.31 - 0x4.31 */
 	/* access: WO */
 	u_int8_t end;
@@ -772,7 +959,7 @@ Reserved if not supported by the device */
 /* Size in bytes - 160 */
 struct reg_access_switch_mgpir_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see Table 564, "Hardware Info Layout," on page 1059 */
+	/* Description - Hardware Information, see Table 583, "Hardware Info Layout," on page 1126 */
 	/* 0x0.0 - 0x1c.31 */
 	/* access: RW */
 	struct reg_access_switch_mgpir_hw_info_ext hw_info;
@@ -806,6 +993,52 @@ Other values are Reserved. */
 	/* 0x8.0 - 0x8.31 */
 	/* access: RO */
 	u_int32_t next_keep_alive_counter;
+};
+
+/* Description -   */
+/* Size in bytes - 144 */
+struct reg_access_switch_mmta_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - module number */
+	/* 0x0.0 - 0x0.7 */
+	/* access: INDEX */
+	u_int8_t module;
+	/* Description - Supported measurements bit mask
+0: Temperature - ELS
+1: TEC Power
+2: Second Temperature - Optical Engines. Other are reserved */
+	/* 0x0.24 - 0x0.27 */
+	/* access: RO */
+	u_int8_t supported_measurements;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - 8 characters long module name */
+	/* 0x4.0 - 0x4.31 */
+	/* access: RO */
+	u_int32_t module_name_hi;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - 8 characters long module name */
+	/* 0x8.0 - 0x8.31 */
+	/* access: RO */
+	u_int32_t module_name_lo;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Temperature, see Table 547, "Module Temperature Layout," on page 1103 */
+	/* 0xc.0 - 0x20.31 */
+	/* access: RW */
+	struct reg_access_switch_mmta_temprature_ext module_temperature;
+/*---------------- DWORD[9] (Offset 0x24) ----------------*/
+	/* Description - TEC Power, see Table 549, "Module TEC Power Layout," on page 1105 */
+	/* 0x24.0 - 0x40.31 */
+	/* access: RW */
+	struct reg_access_switch_mmta_tec_power_ext module_tec_power;
+/*---------------- DWORD[17] (Offset 0x44) ----------------*/
+	/* Description - Second Temperature, see Table 547, "Module Temperature Layout," on page 1103.
+Note: When there is more than one Optical Engine:
+1) The "temperature" field shall be populated by the highest of the current OE temperatures.
+2) The "max_temperature" field shall be populated by the highest of any temperatures that had been measured, over all OEs.
+	*/
+	/* 0x44.0 - 0x58.31 */
+	/* access: RW */
+	struct reg_access_switch_mmta_temprature_ext module_second_temperature;
 };
 
 /* Description -   */
@@ -898,6 +1131,12 @@ Note: together with lane0_physical_position provide the physical lane. */
 	/* 0x18.0 - 0x18.0 */
 	/* access: RO */
 	u_int8_t lane_reversal;
+	/* Description - common clock mode:
+0 - separate clock mode
+1 - common clock mode */
+	/* 0x18.1 - 0x18.1 */
+	/* access: RO */
+	u_int8_t cmn_clk_mode;
 	/* Description - Indicates the specific type of this PCI Express Function. Note that different Functions in a multi-Function device can generally be of different types.
 0 - PCI Express Endpoint port
 4 - Root Port of PCI Express Root Complex
@@ -1024,6 +1263,24 @@ Default value of '0' in case it is not a switch port. */
 	/* 0x4.8 - 0x4.15 */
 	/* access: RO */
 	u_int8_t secondary_bus;
+	/* Description - if segment valid is set this field has the segment number of the PCIe hierarchy of the link. 
+segment_cap = 1 : segment base that was captured in Flit mode
+segment_cap = 0 : segment base that was set by software
+reserved when pcie_segment is not set in MPCAM */
+	/* 0x4.16 - 0x4.23 */
+	/* access: RO */
+	u_int8_t segment_base;
+	/* Description - when set segment base is valid, else it is invalid
+must be set if segment_cap is set.
+reserved when pcie_segment is not set in MPCAM */
+	/* 0x4.24 - 0x4.24 */
+	/* access: RO */
+	u_int8_t segment_valid;
+	/* Description - segment number (base) was captured in Flit mode. 
+reserved when pcie_segment is not set in MPCAM */
+	/* 0x4.25 - 0x4.25 */
+	/* access: RO */
+	u_int8_t segment_cap;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - PCIe device number. */
 	/* 0x8.3 - 0x8.7 */
@@ -1127,7 +1384,7 @@ struct reg_access_switch_mspmer_ext {
 0: Notification only. Prevention is disabled 
 1: Prevention is enabled
 
-In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 373, "NV_SWITCH_PHY_SEC_CONF Layout," on page 880 */
+In Spectrum-4 only, controlled by NV_SWITCH_PHY_SEC_CONF.pvpm. See Table 392, "NV_SWITCH_PHY_SEC_CONF Layout," on page 945 */
 	/* 0x4.24 - 0x4.24 */
 	/* access: RO */
 	u_int8_t prev_en;
@@ -1188,12 +1445,14 @@ For cables, the index represents the module index starting at index 1 while inde
 	/* access: RO */
 	u_int8_t status;
 	/* Description - The token which a challenge is generated for.
-0: RMCS
-1: RMDT
-2: CRCS - supported from Spectrum-4 and above
-3: CRDT - supported from Spectrum-4 and above
+0: RMCS - (ReMote Customer Support)
+1: RMDT - (ReMote Debug Token)
+2: CRCS - (Challenge-Response Customer Support) - supported from Spectrum-4 and above
+3: CRDT - (Challenge-Response Debug Token) - supported from Spectrum-4 and above
 
 5: MTDT
+6: FRC - (Factory ReCustomization)
+7: MTFA
 Other: Reserved */
 	/* 0x0.24 - 0x0.31 */
 	/* access: INDEX */
@@ -1236,7 +1495,8 @@ Valid only for RMCS. */
 	/* 0x44.0 - 0x44.15 */
 	/* access: RO */
 	u_int16_t session_id;
-	/* Description - Version of the challenge format. */
+	/* Description - Version of the challenge format.
+	*/
 	/* 0x44.24 - 0x44.31 */
 	/* access: RO */
 	u_int8_t challenge_version;
@@ -1245,6 +1505,11 @@ Valid only for RMCS. */
 	/* 0x48.0 - 0x64.31 */
 	/* access: RO */
 	u_int32_t challenge[8];
+/*---------------- DWORD[26] (Offset 0x68) ----------------*/
+	/* Description - Current device"s token rachet value. */
+	/* 0x68.0 - 0x6c.31 */
+	/* access: RO */
+	u_int64_t token_ratchet;
 };
 
 /* Description -   */
@@ -1353,10 +1618,12 @@ e.g Label of 8x lanes, with 2 ipil
 ipil 1 - will be port mapped to lanes 1-4
 ipil 2 - will be port mapped to lanes 5-8
 
-When ipil_stat is 0 (no ipil): ipil_num should be 0
+When ipil_stat is 0 (no ipil): ipil_num should be 0.
 When ipil_stat is 1: ipil_num should be 1,2
 When ipil_stat is 2: ipil_num should be 1   4
-When ipil_stat is 3: ipil_num should be 1   8 */
+When ipil_stat is 3: ipil_num should be 1   8
+
+Spectrum: Only relevant value is 0. */
 	/* 0x4.8 - 0x4.11 */
 	/* access: RO */
 	u_int8_t ipil_num;
@@ -1366,7 +1633,9 @@ The local_port status is:
 1: split to 2
 2: split to 4
 3: split to 8
-	*/
+
+
+Spectrum: Only relevant value is 0. */
 	/* 0x4.16 - 0x4.19 */
 	/* access: RO */
 	u_int8_t split_stat;
@@ -1375,7 +1644,9 @@ Number of basic port units inside the label (cage).
 0: 1 inter port in label
 1: 2 inter port in label
 2: 4 inter port in label
-3: 8 inter port in label */
+3: 8 inter port in label.
+
+Spectrum: Only relevant value is 0. */
 	/* 0x4.24 - 0x4.27 */
 	/* access: RO */
 	u_int8_t ipil_stat;
@@ -1395,13 +1666,15 @@ Slot_number mapping for local_port */
 5: wired to NIC
 
 Describes the internal wiring on the port.
-Supported from Quantum-3 and above */
+Quantum: Supported from Quantum-3 and above.
+Spectrum: Only relevant value is 0. */
 	/* 0xc.0 - 0xc.2 */
 	/* access: RO */
 	u_int8_t conn_type;
 	/* Description - Remote ASIC Id
 Reserved when conn_type = 0/1/2
-Supported from Quantum-3 and above.
+Quantum: Supported from Quantum-3 and above.
+Spectrum: Reserved as 0.
 Obsolete and not updated by FW. */
 	/* 0xc.8 - 0xc.15 */
 	/* access: RO */
@@ -1419,7 +1692,8 @@ Supported from Quantum-3 and above */
 When set, the port shall be configured as a FNM port. 
 Reserved when is_fnm is set. 
 Note: This configuration does not change port type as stated in is_fnm field. 
-Supported from Quantum-3 and above. */
+Quantum: Supported from Quantum-3 and above.
+Spectrum: Only relevant value is 0. */
 	/* 0xc.17 - 0xc.17 */
 	/* access: RO */
 	u_int8_t maf;
@@ -1434,6 +1708,18 @@ Supported from Quantum-3 and above
 	/* 0x10.0 - 0x10.2 */
 	/* access: RO */
 	u_int8_t protocol;
+	/* Description - [DWIP]
+Sub Module ID.
+Indicates start offset of module lanes in 8x granularity */
+	/* 0x10.20 - 0x10.23 */
+	/* access: RO */
+	u_int8_t sub_module;
+	/* Description - [DWIP]
+Module ID.
+Range: 0 .. MGPIR.max_modules_per_slot -1 */
+	/* 0x10.24 - 0x10.31 */
+	/* access: RO */
+	u_int8_t module;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description - [DWIP]
 Resource label port 
@@ -1590,7 +1876,9 @@ Plane port index of the aggregated port. A value of 0 refers to the aggregated p
 	/* Description - 0 - 40nm products
 1 - 28nm products
 3 - 16nm products
-4 - 7nm products */
+4 - 7nm products
+5 - 5nm products SerDes Gen7.0/ 7.5
+6 - 5nm products SerDes Gen8.0 */
 	/* 0x0.24 - 0x0.27 */
 	/* access: RO */
 	u_int8_t version;
@@ -1915,10 +2203,14 @@ For all common pll's that are mapped to the port: [pll_index, pll_index+ 1, ... 
 	/* access: RO */
 	u_int8_t VL31_lane_map;
 /*---------------- DWORD[15] (Offset 0x3c) ----------------*/
-	/* Description - Module extension for MSB */
-	/* 0x3c.8 - 0x3c.31 */
+	/* Description - Indicates start offset of rx_lane, tx_lane inside the modules lanes in 8x granularity. relevant for modules with more than 8 lanes. such as OE.
+0: lanes_0-7
+1: lanes_8_15
+2: lanes_16_23
+3: lanes_24_31 */
+	/* 0x3c.28 - 0x3c.31 */
 	/* access: RO */
-	u_int32_t module_lane_mask_msb;
+	u_int8_t sub_module;
 /*---------------- DWORD[16] (Offset 0x40) ----------------*/
 	/* Description - OE optical lane to ELS logical laser mapping */
 	/* 0x40.0 - 0x40.3 */
@@ -2030,65 +2322,53 @@ Up to 8 SerDes in a module can be mapped to a local port. */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x5c.31 */
-	/* access: RW */
-	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x28.31 */
-	/* access: RW */
-	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_PPCR_ext PPCR_ext;
-	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_mpein_reg_ext mpein_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_icam_reg_ext icam_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
-	/* access: RW */
-	struct reg_access_switch_mrsr_ext mrsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x10c.31 */
-	/* access: RW */
-	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x6c.31 */
-	/* access: RW */
-	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x14.31 */
-	/* access: RW */
-	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x44.31 */
-	/* access: RW */
-	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x18.31 */
-	/* access: RW */
-	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0xc.31 */
-	/* access: RW */
-	struct reg_access_switch_MMAM_ext MMAM_ext;
+	struct reg_access_switch_mspmer_ext mspmer_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
 	struct reg_access_switch_mddq_ext mddq_ext;
 	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_pmaos_reg_ext pmaos_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x40c.31 */
+	/* access: RW */
+	struct reg_access_switch_icsr_ext icsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x8c.31 */
+	/* access: RW */
+	struct reg_access_switch_mmta_reg_ext mmta_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x44.31 */
+	/* access: RW */
+	struct reg_access_switch_pmdr_reg_ext pmdr_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_icam_reg_ext icam_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
 	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x14.31 */
+	/* access: RW */
+	struct reg_access_switch_pllp_reg_ext pllp_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x18.31 */
+	/* access: RW */
+	struct reg_access_switch_mfmc_reg_ext mfmc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x10c.31 */
+	/* access: RW */
+	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x9c.31 */
+	/* access: RW */
+	struct reg_access_switch_mgpir_ext mgpir_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x7c.31 */
 	/* access: RW */
@@ -2096,11 +2376,7 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	/* access: RW */
-	struct reg_access_switch_mspmer_ext mspmer_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x9c.31 */
-	/* access: RW */
-	struct reg_access_switch_mgpir_ext mgpir_ext;
+	struct reg_access_switch_mpein_reg_ext mpein_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x3c.31 */
 	/* access: RW */
@@ -2114,9 +2390,29 @@ union reg_access_switch_reg_access_switch_Nodes {
 	/* access: RW */
 	struct reg_access_switch_plib_reg_ext plib_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x40c.31 */
+	/* 0x0.0 - 0x5c.31 */
 	/* access: RW */
-	struct reg_access_switch_icsr_ext icsr_ext;
+	struct reg_access_switch_pguid_reg_ext pguid_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x28.31 */
+	/* access: RW */
+	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	/* access: RW */
+	struct reg_access_switch_mrsr_ext mrsr_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_MMAM_ext MMAM_ext;
+	/* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	/* access: RW */
+	struct reg_access_switch_PPCR_ext PPCR_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x6c.31 */
+	/* access: RW */
+	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
 };
 
 
@@ -2191,6 +2487,20 @@ void reg_access_switch_mgpir_hw_info_ext_print(const struct reg_access_switch_mg
 unsigned int reg_access_switch_mgpir_hw_info_ext_size(void);
 #define REG_ACCESS_SWITCH_MGPIR_HW_INFO_EXT_SIZE    (0x20)
 void reg_access_switch_mgpir_hw_info_ext_dump(const struct reg_access_switch_mgpir_hw_info_ext *ptr_struct, FILE *fd);
+/* mmta_tec_power_ext */
+void reg_access_switch_mmta_tec_power_ext_pack(const struct reg_access_switch_mmta_tec_power_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mmta_tec_power_ext_unpack(struct reg_access_switch_mmta_tec_power_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mmta_tec_power_ext_print(const struct reg_access_switch_mmta_tec_power_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mmta_tec_power_ext_size(void);
+#define REG_ACCESS_SWITCH_MMTA_TEC_POWER_EXT_SIZE    (0x20)
+void reg_access_switch_mmta_tec_power_ext_dump(const struct reg_access_switch_mmta_tec_power_ext *ptr_struct, FILE *fd);
+/* mmta_temprature_ext */
+void reg_access_switch_mmta_temprature_ext_pack(const struct reg_access_switch_mmta_temprature_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mmta_temprature_ext_unpack(struct reg_access_switch_mmta_temprature_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mmta_temprature_ext_print(const struct reg_access_switch_mmta_temprature_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mmta_temprature_ext_size(void);
+#define REG_ACCESS_SWITCH_MMTA_TEMPRATURE_EXT_SIZE    (0x18)
+void reg_access_switch_mmta_temprature_ext_dump(const struct reg_access_switch_mmta_temprature_ext *ptr_struct, FILE *fd);
 /* uint64 */
 void reg_access_switch_uint64_pack(const u_int64_t *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_uint64_unpack(u_int64_t *ptr_struct, const u_int8_t *ptr_buff);
@@ -2268,6 +2578,13 @@ void reg_access_switch_mkdc_reg_ext_print(const struct reg_access_switch_mkdc_re
 unsigned int reg_access_switch_mkdc_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MKDC_REG_EXT_SIZE    (0x2c)
 void reg_access_switch_mkdc_reg_ext_dump(const struct reg_access_switch_mkdc_reg_ext *ptr_struct, FILE *fd);
+/* mmta_reg_ext */
+void reg_access_switch_mmta_reg_ext_pack(const struct reg_access_switch_mmta_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mmta_reg_ext_unpack(struct reg_access_switch_mmta_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mmta_reg_ext_print(const struct reg_access_switch_mmta_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mmta_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_MMTA_REG_EXT_SIZE    (0x90)
+void reg_access_switch_mmta_reg_ext_dump(const struct reg_access_switch_mmta_reg_ext *ptr_struct, FILE *fd);
 /* mpein_reg_ext */
 void reg_access_switch_mpein_reg_ext_pack(const struct reg_access_switch_mpein_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mpein_reg_ext_unpack(struct reg_access_switch_mpein_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
