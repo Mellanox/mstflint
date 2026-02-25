@@ -213,10 +213,17 @@ class MlnxDriverLinux(MlnxDriver):
         driverStatus = MlnxDriver.DRIVER_IGNORE if skip or not self.drivers_dbdf else MlnxDriver.DRIVER_LOADED
         super(MlnxDriverLinux, self).__init__(logger, driverStatus)
 
+    def is_driver_up(self, dbdf, driver_name):
+        is_up = os.path.exists('/sys/bus/pci/devices/{0}/driver'.format(dbdf))
+        if is_up:
+            self.logger.debug("driver {0}@{1} is up".format(driver_name, dbdf))
+        return is_up
+    
     def driverStart(self):
         self.logger.info('MlnxDriverLinux driverStart()')
 
         driver_err, rshim_err = None, None
+        drivers_dbdf_failed = []
 
         # * Start NIC driver
         for dbdf, driver_name in self.drivers_dbdf:
@@ -230,21 +237,28 @@ class MlnxDriverLinux(MlnxDriver):
 
             MAX_NUM_OF_TRIES = 10
             try_num = 1
+            driver_err = False
             while try_num <= MAX_NUM_OF_TRIES:
-                if os.path.exists('/sys/bus/pci/devices/{0}/driver'.format(dbdf)):  # driver is up
+                if self.is_driver_up(dbdf, driver_name):
                     driver_err = False
                     break
                 else:                                                               # driver is down
                     cmd = 'echo "{0}" > {1}/bind'.format(dbdf, driver_path)
                     self.logger.info('{0}'.format(cmd))
-                    (rc, _, _) = cmdExec(cmd)
+                    (rc, stdout, stderr) = cmdExec(cmd)
                     if rc == 0:  # bind succeeded
                         driver_err = False
                         break
-                    else:       # bind failed
+                    else:
+                        self.logger.debug("bind failed with error: {0}".format(stderr))       # bind failed
                         try_num += 1
                         driver_err = True
                         sleep(0.1)
+
+            if driver_err:  # we want to know if any of the driver binding failed, so need to save whether binding retry mechanism failed
+                sleep(2)  # final try to see if the driver was bound successfully by hotplug or another mechanism
+                if not self.is_driver_up(dbdf, driver_name):
+                    drivers_dbdf_failed.append((dbdf, driver_name))
 
         # * Configure the driver in BlueField's internal host (ARM)
         if is_in_internal_host() and driver_err is False:                   # This code is WA. FR will be opened in rel1
@@ -261,8 +275,11 @@ class MlnxDriverLinux(MlnxDriver):
             rshim_err = err
 
         # * Handle Errors (Best effort to try to start both drivers before indicating on error)
-        if driver_err:
-            raise RuntimeError("Failed to start driver! please start driver manually")
+        if drivers_dbdf_failed:
+            lines = ["Failed to start driver! please start driver manually for the following devices:"]
+            lines.extend("{0}@{1}".format(driver_name, dbdf) for dbdf, driver_name in drivers_dbdf_failed)
+            raise RuntimeError("\n".join(lines))
+
         if rshim_err:
             raise rshim_err
 
