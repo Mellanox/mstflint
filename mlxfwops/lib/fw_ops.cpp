@@ -1437,7 +1437,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
   {"Spectrum3", SPECTRUM3_HW_ID, CT_SPECTRUM3, CFT_SWITCH, 0, {53104, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Quantum2", QUANTUM2_HW_ID, CT_QUANTUM2, CFT_SWITCH, 0, {54002, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Quantum3", QUANTUM3_HW_ID, CT_QUANTUM3, CFT_SWITCH, 0, {54004, 0}, {{UNKNOWN_BIN, {0}}}},
-  {"NVLink6_Switch_ASIC", NVLINK6_SWITCH_ASIC_HW_ID, CT_NVLINK6_SWITCH_ASIC, CFT_SWITCH, 0, {54008, 0}, {{UNKNOWN_BIN, {0}}}},
+  {"NVLink6_Switch", NVLINK6_SWITCH_HW_ID, CT_NVLINK6_SWITCH, CFT_SWITCH, 0, {54008, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum4", SPECTRUM4_HW_ID, CT_SPECTRUM4, CFT_SWITCH, 0, {53120, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum5", SPECTRUM5_HW_ID, CT_SPECTRUM5, CFT_SWITCH, 0, {53122, 0}, {{UNKNOWN_BIN, {0}}}},
   {"Spectrum6", SPECTRUM6_HW_ID, CT_SPECTRUM6, CFT_SWITCH, 0, {53124, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1477,7 +1477,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
   {"Spectrum3 A0", SPECTRUM3_HW_ID, 0x00},
   {"Quantum2 A0", QUANTUM2_HW_ID, 0x00},
   {"Quantum3 A0", QUANTUM3_HW_ID, 0x00},
-  {"NVLink6_Switch_ASIC A0", NVLINK6_SWITCH_ASIC_HW_ID, 0x00},
+  {"NVLink6_Switch A0", NVLINK6_SWITCH_HW_ID, 0x00},
   {"Spectrum4 A0", SPECTRUM4_HW_ID, 0x00},
   {"Spectrum5 A0", SPECTRUM5_HW_ID, 0x00},
   {"Spectrum6 A0", SPECTRUM6_HW_ID, 0x00},
@@ -2098,7 +2098,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
     ibDev = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
     ethDev = (chipType == CT_CONNECTX) || (chipType == CT_CONNECTX4) || (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5) || (chipType == CT_CONNECTX6) || (chipType == CT_CONNECTX6DX) ||
              (chipType == CT_CONNECTX6LX) || (chipType == CT_SPECTRUM) || (chipType == CT_SPECTRUM2) || (chipType == CT_SPECTRUM3) || (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) ||
-             (chipType == CT_QUANTUM3) || (chipType == CT_NVLINK6_SWITCH_ASIC) || (chipType == CT_SPECTRUM4) || (chipType == CT_SPECTRUM5) || (chipType == CT_SPECTRUM6) ||
+             (chipType == CT_QUANTUM3) || (chipType == CT_NVLINK6_SWITCH) || (chipType == CT_SPECTRUM4) || (chipType == CT_SPECTRUM5) || (chipType == CT_SPECTRUM6) ||
              (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3) || (chipType == CT_CONNECTX8) || (chipType == CT_CONNECTX8_PURE_PCIE_SWITCH) ||
              (chipType == CT_CONNECTX9) || (chipType == CT_CONNECTX9_PURE_PCIE_SWITCH) || (chipType == CT_BLUEFIELD4);
 
@@ -2563,7 +2563,7 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
         return FS_FS4_GEN;
     }
     else if ((hwDevId == QUANTUM3_HW_ID) || (hwDevId == CX8_HW_ID) || (hwDevId == CX8_PURE_PCIE_SWITCH_HW_ID) || (hwDevId == BF4_HW_ID) || (hwDevId == ARCUSE_HW_ID) || (hwDevId == CX9_HW_ID) ||
-             (hwDevId == CX9_PURE_PCIE_SWITCH_HW_ID) || (hwDevId == NVLINK6_SWITCH_ASIC_HW_ID))
+             (hwDevId == CX9_PURE_PCIE_SWITCH_HW_ID) || (hwDevId == NVLINK6_SWITCH_HW_ID))
     {
         return FS_FS5_GEN;
     }
@@ -2877,7 +2877,7 @@ bool FwOperations::IsExtendedGuidNumSupported()
         case SPECTRUM5_HW_ID:
         case SPECTRUM6_HW_ID:
         case QUANTUM3_HW_ID:
-        case NVLINK6_SWITCH_ASIC_HW_ID:
+        case NVLINK6_SWITCH_HW_ID:
             isSupported = true;
             break;
         default:
@@ -2956,7 +2956,7 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
         case CT_CONNECTX8_PURE_PCIE_SWITCH:
         case CT_CONNECTX9_PURE_PCIE_SWITCH:
         case CT_QUANTUM3:
-        case CT_NVLINK6_SWITCH_ASIC:
+        case CT_NVLINK6_SWITCH:
         case CT_ARCUSE:
             lifeCycleAddress = 0xf0000;
             firstBit = 16;
@@ -3013,7 +3013,7 @@ int CRSpaceRegisters::getGlobalImageStatus()
             break;
         case CT_QUANTUM2:
         case CT_QUANTUM3:
-        case CT_NVLINK6_SWITCH_ASIC:
+        case CT_NVLINK6_SWITCH:
             global_image_status_address = 0x152080;
             break;
         case CT_SPECTRUM4:
@@ -3041,7 +3041,7 @@ u_int32_t CRSpaceRegisters::getSecurityVersion()
     {
         case CT_QUANTUM2:
         case CT_QUANTUM3:
-        case CT_NVLINK6_SWITCH_ASIC:
+        case CT_NVLINK6_SWITCH:
             rollbackMSB = getRegister(0xf3248);
             rollbackLSB = getRegister(0xf324c);
             minimalSecurityVersion = getConsecutiveBits(getRegister(0xf3238), 3, 8);

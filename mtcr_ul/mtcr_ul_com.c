@@ -2719,7 +2719,7 @@ static int mtcr_i2c_open(mfile* mf, const char* name)
 
 u_int32_t secured_devices[] = {
   DeviceConnectX7_HwId,          DeviceConnectX8_HwId, DeviceConnectX9_HwId, DeviceConnectX8_Pure_PCIe_Switch_HwId, DeviceQuantum2_HwId, DeviceQuantum3_HwId, DeviceConnectX9_Pure_PCIe_Switch_HwId,
-  DeviceNVLink6_Switch_ASIC_HwId};
+  DeviceNVLink6_Switch_HwId};
 
 #define SECURED_DEVICE_ID_TABLE_SIZE (sizeof(secured_devices) / sizeof(u_int32_t))
 
@@ -2752,7 +2752,7 @@ u_int32_t supported_device_ids[] = {DeviceConnectX3_HwId,
                                     DeviceQuantum_HwId,
                                     DeviceQuantum2_HwId,
                                     DeviceQuantum3_HwId,
-                                    DeviceNVLink6_Switch_ASIC_HwId,
+                                    DeviceNVLink6_Switch_HwId,
                                     DeviceArdbeg_HwId,
                                     DeviceBaritone_HwId,
                                     DeviceMenhit_HwId,
@@ -3184,6 +3184,7 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0x2900, /* GB100 */
                                    0x3000, /* GR100 */
                                    0xd2f4, /* Sunbird */
+                                   0xd2f8, /* NVLink6_Switch */
                                    -1};
 
 static long live_fish_id_database[] = {0x191, 0x246, 0x249, 0x24b, 0x24d, 0x24e, 0x1F6, 0x1F8, 0x1FF, 0x247, 0x209, 0x20b, 0x20d, 0x20f, 0x211, 0x214, /* BlueField2 */
@@ -5239,7 +5240,7 @@ static int check_zf_through_memory(mfile* mf)
     switch (mf->device_hw_id)
     {
         case DeviceQuantum3_HwId:
-        case DeviceNVLink6_Switch_ASIC_HwId:
+        case DeviceNVLink6_Switch_HwId:
             gis_address = 0x152080;
             break;
 
@@ -5296,7 +5297,7 @@ int is_zombiefish_device(mfile* mf)
         return 0;
     }
     if ((mf->device_hw_id != DeviceConnectX8_HwId) && (mf->device_hw_id != DeviceConnectX8_Pure_PCIe_Switch_HwId) && (mf->device_hw_id != DeviceQuantum3_HwId) &&
-        (mf->device_hw_id != DeviceNVLink6_Switch_ASIC_HwId) && (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceNVLink6_Switch_ASIC_HwId) &&
+        (mf->device_hw_id != DeviceNVLink6_Switch_HwId) && (mf->device_hw_id != DeviceConnectX9_HwId) && (mf->device_hw_id != DeviceNVLink6_Switch_HwId) &&
         (mf->device_hw_id != DeviceConnectX7_HwId) && (mf->device_hw_id != DeviceBlueField3_HwId) && (mf->device_hw_id != DeviceConnectX9_Pure_PCIe_Switch_HwId) &&
         (mf->hw_dev_id != DeviceSpectrum6_HwId))
     {

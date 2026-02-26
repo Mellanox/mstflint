@@ -910,7 +910,7 @@ bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams&
 bool FsCtrlOperations::isMultiAsicSystemComponent()
 {
     if (_hwDevId == QUANTUM3_HW_ID || _hwDevId == CX8_HW_ID || _hwDevId == CX8_PURE_PCIE_SWITCH_HW_ID || _hwDevId == CX9_HW_ID || _hwDevId == CX9_PURE_PCIE_SWITCH_HW_ID ||
-        _hwDevId == NVLINK6_SWITCH_ASIC_HW_ID)
+        _hwDevId == NVLINK6_SWITCH_HW_ID)
     {
         return true;
     }
