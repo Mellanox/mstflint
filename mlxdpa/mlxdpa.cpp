@@ -584,6 +584,14 @@
          {
              throw MlxDpaException("dpa app uuid must be specified to create dpa app removal container.");
          }
+         if (_keypairUUIDSpecified)
+         {
+             // This flag is relevant only in the signing stage, not during container creation.
+             // Historically, it was used in the creation stage, but was later deprecated.
+             // To avoid breaking existing automations and to keep the creation output unchanged to the new decision, we
+             // reset it here.
+             memset(_keypairUUID, 0, sizeof(_keypairUUID));
+         }
      }
      else if (_command == CreateDPACertContainer)
      {
