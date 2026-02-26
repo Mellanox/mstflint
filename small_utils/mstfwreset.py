@@ -131,8 +131,8 @@ MLNX_DEVICES = [
     dict(name="Quantum-2", devid=0x257, status_config_not_done=(0x100010, 0)),
     dict(name="Quantum-3", devid=0x25b, status_config_not_done=(0x200010, 0)),
     dict(name="Quantum-3-RMA", devid=0x25c, status_config_not_done=(0x200010, 0)),
-    dict(name="NVLink6-Switch-ASIC", devid=0x278, status_config_not_done=(0x200010, 0)),
-    dict(name="Quantum-4-RMA", devid=0x279, status_config_not_done=(0x200010, 0)),
+    dict(name="NVLink6-Switch", devid=0x278, status_config_not_done=(0x200010, 0)),
+    dict(name="NVLink6-Switch-RMA", devid=0x279, status_config_not_done=(0x200010, 0)),
     dict(name="Spectrum", devid=0x249, status_config_not_done=(0x80010, 0)),
     dict(name="Spectrum-2", devid=0x24E, status_config_not_done=(0x100010, 0)),
     dict(name="Spectrum-3", devid=0x250, status_config_not_done=(0x100010, 0)),
@@ -2311,7 +2311,7 @@ def reset_flow_host(device, args, command):
         if reset_level is CmdRegMfrl.PCI_RESET:
             if mroq.mroq_is_supported():
                 is_any_sync_supported = mroq.is_any_sync_supported(True)  # update is_any_sync_supported with tool_owner_support=True since in reset we do not limit sync 0 for BF in linux (for debugging purposes)
-                
+
             if args.reset_sync is None:
                 reset_sync = get_default_reset_sync(devid, reset_level, mroq, is_pcie_switch, tool_owner_support)
             else:
