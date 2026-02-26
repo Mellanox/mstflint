@@ -2684,6 +2684,9 @@ def main():
     args.ignore_list = list(set(args.ignore_list + args.ignore_file))
     logger.debug("Ignore drivers: {0}".format(args.ignore_list))
 
+    if "fwctl" in device:
+        raise RuntimeError("mlxfwreset is not supported for fwctl devices")
+
     # Insert Flow here
     if isSwitchDevice(device):
         return reset_flow_switch(device, args, command)
