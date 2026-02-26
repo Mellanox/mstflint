@@ -128,7 +128,7 @@ bool FwVersion::operator!=(const FwVersion& rhs) const
 // 31 is Quantum2
 // 34 is Spectrum4
 // 35 is Quantum3
-// 41 is NVLink6_Switch
+// 41 is NVLink6_Switch_ASIC
 // 37 is Spectrum5
 // 39 is Spectrum6
 bool FwVersion::is_switch_or_gb() const

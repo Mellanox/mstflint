@@ -308,9 +308,6 @@ u_int32_t MlxlinkCommander::maxLocalPort()
         case DeviceQuantum3:
             return MAX_LOCAL_PORT_QUANTUM3;
 
-        case DeviceNVLink6_Switch:
-            return MAX_LOCAL_PORT_NVLINK6_SWITCH;
-
         case DeviceSpectrum2:
         case DeviceSpectrum3:
             return MAX_LOCAL_PORT_SPECTRUM2;
@@ -622,7 +619,7 @@ void MlxlinkCommander::labelToLocalPort()
     }
     else if (dm_dev_is_ib_switch(_devID))
     {
-        if (_devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+        if (_devID == DeviceQuantum3 || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             labelToLocalPortGenericMapping();
         }
@@ -1449,7 +1446,6 @@ vector<string> MlxlinkCommander::localToPortsPerGroup(vector<u_int32_t> localPor
             labelPortField = "ib_port";
             break;
         case DeviceQuantum3:
-        case DeviceNVLink6_Switch:
             regName = ACCESS_REG_PLLP;
             labelPortField = "label_port";
             break;
@@ -1520,7 +1516,7 @@ void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr, bool 
         {
             handleAllEthLocalPorts(labelPortsStr, spect2WithGb, skipException);
         }
-        else if (_devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || _devID == DeviceSpectrum3 || _devID == DeviceSpectrum4 || _devID == DeviceSpectrum5 ||
+        else if (_devID == DeviceQuantum3 || _devID == DeviceSpectrum3 || _devID == DeviceSpectrum4 || _devID == DeviceSpectrum5 ||
                  _devID == DeviceSpectrum6)
         {
             handleAllNewSwitchesLocalPorts(labelPortsStr, skipException);
@@ -3551,7 +3547,7 @@ void MlxlinkCommander::showExternalPhy()
     {
         gearboxBlock(PEPC_SHOW_FLAG);
 
-        if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2 || _devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch ||
+        if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2 || _devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 ||
             dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             throw MlxRegException("\"--" PEPC_SHOW_FLAG "\" option is not supported for HCA and InfiniBand switches");
@@ -3788,7 +3784,7 @@ void MlxlinkCommander::collectAMBER()
                 if (_userInput._portSpecified)
                 {
                     PortGroup pg{_localPort, _userInput._labelPort, 0, _userInput._splitPort};
-                    if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+                    if (_devID == DeviceQuantum2 || _devID == DeviceQuantum3 || dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
                     {
                         pg.secondSplit = _userInput._secondSplitProvided ? _userInput._secondSplitPort : 0;
                     }
@@ -3972,7 +3968,7 @@ void MlxlinkCommander::showTxGroupMapping()
 {
     try
     {
-        if (_devID != DeviceSpectrum2 && _devID != DeviceQuantum && _devID != DeviceQuantum2 && _devID != DeviceQuantum3 && _devID != DeviceNVLink6_Switch &&
+        if (_devID != DeviceSpectrum2 && _devID != DeviceQuantum && _devID != DeviceQuantum2 && _devID != DeviceQuantum3 && _devID != DeviceNVLink6_Switch_ASIC &&
             !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             throw MlxRegException("Port group mapping supported for Spectrum-2 and Quantum switches only!");
@@ -5841,7 +5837,7 @@ void MlxlinkCommander::sendSltp()
 
     try
     {
-        if ((_devID == DeviceSpectrum2 || _devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) && _userInput._db)
+        if ((_devID == DeviceSpectrum2 || _devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || dm_is_gpu(static_cast<dm_dev_id_t>(_devID))) && _userInput._db)
         {
             u_int32_t portGroup = getPortGroup(_localPort);
             MlxlinkRecord::printWar("Port " + to_string(_userInput._labelPort) + " is mapped to group " + to_string(portGroup) +
@@ -5990,7 +5986,7 @@ void MlxlinkCommander::sendPepc()
     {
         gearboxBlock(PEPC_SET_FLAG);
 
-        if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2 || _devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch ||
+        if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2 || _devID == DeviceQuantum || _devID == DeviceQuantum2 || _devID == DeviceQuantum3 ||
             dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             throw MlxRegException("\"--" PEPC_SET_FLAG "\" option is not supported for HCA and InfiniBand switches");
@@ -6030,7 +6026,7 @@ void MlxlinkCommander::setTxGroupMapping()
 {
     try
     {
-        if (_devID != DeviceSpectrum2 && _devID != DeviceQuantum && _devID != DeviceQuantum2 && _devID != DeviceQuantum3 && _devID != DeviceNVLink6_Switch && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+        if (_devID != DeviceSpectrum2 && _devID != DeviceQuantum && _devID != DeviceQuantum2 && _devID != DeviceQuantum3 && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             throw MlxRegException("Port group mapping supported for Spectrum-2 and Quantum switches only!");
         }
@@ -6594,7 +6590,7 @@ void MlxlinkCommander::prepareJsonOut()
 u_int32_t MlxlinkCommander::getNumberOfPorts()
 {
     int numOfPorts = 0;
-    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)) || _devID == DeviceSpectrum3 || _devID == DeviceQuantum3 || _devID == DeviceNVLink6_Switch || _isHCA)
+    if (dm_is_gpu(static_cast<dm_dev_id_t>(_devID)) || _devID == DeviceSpectrum3 || _devID == DeviceQuantum3 || _isHCA)
     {
         sendPrmReg(ACCESS_REG_MGIR, GET);
         numOfPorts = getFieldValue("num_ports");
