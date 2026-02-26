@@ -2983,10 +2983,13 @@ FlintStatus BurnSubCommand::PldmToFwOps(FsPldmOperations* pldmOps)
         return FLINT_FAILED;
     }
 
-    dm_dev_id_t imageType = dm_dev_sw_id2type(_imgInfo.fw_info.pci_device_id);
-    if (devid_t != imageType)
+    // Check if device HW ID matches any of the image's supported HW IDs
+    u_int32_t* supportedHwId = nullptr;
+    u_int32_t supportedHwIdNum = 0;
+    _imgOps->getSupporteHwId(&supportedHwId, supportedHwIdNum);
+    if (!_imgOps->CheckMatchingHwDevId(devid, revid, supportedHwId, supportedHwIdNum))
     {
-        reportErr(true, "PCI Device ID in PLDM fwpkg is not compatible with the Device ID on the device.\n");
+        reportErr(true, "%s\n", _imgOps->err());
         return FLINT_FAILED;
     }
 
