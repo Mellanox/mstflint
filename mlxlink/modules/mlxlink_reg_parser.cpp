@@ -172,68 +172,99 @@ void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t me
     genBuffSendRegister(regName, method);
 }
 
-void MlxlinkRegParser::sendPrmRegWithoutReset(const string& regName,
-                                              maccess_reg_method_t method,
-                                              const char* fields,
-                                              ...)
+// This function uses va_list to support all flavors of variadic sendPrmReg functions
+void MlxlinkRegParser::sendPrmRegVaList(const string& regName,
+    maccess_reg_method_t method,
+    const char* fields,
+    va_list args,
+    bool reset,
+    bool force_full_path)
 {
     char fieldsCstr[MAX_FIELDS_BUFFER];
-    va_list args;
-    va_start(args, fields);
     vsnprintf(fieldsCstr, MAX_FIELDS_BUFFER, fields, args);
-    va_end(args);
 
-    string fieldsStr = string(fieldsCstr);
-    auto vectorOffields = MlxlinkRecord::split(fieldsStr, ",");
-
-    for (std::vector<u_int32_t>::size_type j = 0; j < _buffer.size(); j++)
+    bool orig_full_path = _full_path;
+    try
     {
-        _buffer[j] = CPU_TO_BE32((_buffer[j]));
-    }
+        if (force_full_path)
+        {
+            _full_path = true;
+        }
+        string fieldsStr = string(fieldsCstr);
+        auto vectorOffields = MlxlinkRecord::split(fieldsStr, ",");
 
-    for (const auto& token : vectorOffields)
+        if (reset)
+        {
+            resetParser(regName);
+        }
+        else
+        {
+            for (std::vector<u_int32_t>::size_type j = 0; j < _buffer.size(); j++)
+            {
+                _buffer[j] = CPU_TO_BE32((_buffer[j]));
+            }
+        }
+
+        for (const auto& token : vectorOffields)
+        {
+            if (token.empty())
+            {
+                continue;
+            }
+            auto fieldToken = MlxlinkRecord::split(token, "=");
+            string fieldName = fieldToken[0];
+            u_int32_t fieldValue = stoi(fieldToken[1], nullptr, 0);
+
+            updateField(fieldName, fieldValue);
+        }
+        setDefaultFields(regName, fieldsStr);
+
+        genBuffSendRegister(regName, method);
+    }
+    catch (...)
     {
-        auto fieldToken = MlxlinkRecord::split(token, "=");
-        string fieldName = fieldToken[0];
-        u_int32_t fieldValue = stoi(fieldToken[1], nullptr, 0);
-
-        updateField(fieldName, fieldValue);
+        _full_path = orig_full_path;
+        throw;
     }
-    setDefaultFields(regName, fieldsStr);
-
-    genBuffSendRegister(regName, method);
+    _full_path = orig_full_path;
 }
 
+void MlxlinkRegParser::sendPrmRegWithoutReset(const string& regName,
+    maccess_reg_method_t method,
+    const char* fields,
+    ...)
+{
+    va_list args;
+    va_start(args, fields);
+    sendPrmRegVaList(regName, method, fields, args, false, false);
+    va_end(args);
+}
+
+void MlxlinkRegParser::sendPrmRegWithoutResetFullPath(const string& regName,
+            maccess_reg_method_t method,
+            const char* fields,
+            ...)
+{
+    va_list args;
+    va_start(args, fields);
+    sendPrmRegVaList(regName, method, fields, args, false, true);
+    va_end(args);
+}
 
 void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...)
 {
-    char fieldsCstr[MAX_FIELDS_BUFFER];
     va_list args;
     va_start(args, fields);
-    vsnprintf(fieldsCstr, MAX_FIELDS_BUFFER, fields, args);
+    sendPrmRegVaList(regName, method, fields, args, true, false);
     va_end(args);
+}
 
-    string fieldsStr = string(fieldsCstr);
-    auto vectorOffields = MlxlinkRecord::split(fieldsStr, ",");
-
-    resetParser(regName);
-
-    for (const auto& token : vectorOffields)
-    {
-        if (token.empty())
-        {
-            continue;
-        }
-        auto fieldToken = MlxlinkRecord::split(token, "=");
-        string fieldName = fieldToken[0];
-        u_int32_t fieldValue = stoi(fieldToken[1], nullptr, 0);
-
-        updateField(fieldName, fieldValue);
-    }
-
-    setDefaultFields(regName, fieldsStr);
-
-    genBuffSendRegister(regName, method);
+void MlxlinkRegParser::sendPrmRegFullPath(const string& regName, maccess_reg_method_t method, const char* fields, ...)
+{
+    va_list args;
+    va_start(args, fields);
+    sendPrmRegVaList(regName, method, fields, args, true, true);
+    va_end(args);
 }
 
 string
