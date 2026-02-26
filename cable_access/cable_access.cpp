@@ -258,7 +258,14 @@ bool cableAccess::rw(u_int32_t addr, u_int32_t len, u_int8_t* data, int _rw)
     if (rc)
     {
         ostringstream ss;
-        ss << "Cable access R/W failed status: " << rc << ". ";
+        if (((cable_ctx*)(_mf->cable_ctx))->internal_error_msg[0] != '\0')
+        {
+            ss << ((cable_ctx*)(_mf->cable_ctx))->internal_error_msg;
+        }
+        else
+        {
+            ss << "Cable access R/W failed status: " << rc << ". ";
+        }
         _errMsg += ss.str();
         return false;
     }
