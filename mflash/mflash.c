@@ -1158,11 +1158,13 @@ int read_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data, bool
 
 int gw_wait_ready(mflash* mfl, const char* msg)
 {
-    if (mfl->mf->tp == MST_DEV_I2C) // Avoid polling on FlashGW busy bit when the flint interface is i2c.
-    { // We can assume that FlashGW HW sends the SPI command much faster than it takes the next transaction on i2c bus
-        DPRINTF(("gw_wait_ready: skip polling on FlashGW busy bit for i2c interface\n"));
-        return MFE_OK;
-    }
+    #ifdef ENABLE_MST_DEV_I2C
+        if (mfl->mf->tp == MST_DEV_I2C) // Avoid polling on FlashGW busy bit when the flint interface is i2c.
+        { // We can assume that FlashGW HW sends the SPI command much faster than it takes the next transaction on i2c bus
+            DPRINTF(("gw_wait_ready: skip polling on FlashGW busy bit for i2c interface\n"));
+            return MFE_OK;
+        }
+    #endif
     if (mfl->mf->is_zombiefish)
     {
         if (!mfl->mf->vsc_recovery_space_flash_control_vld)
