@@ -79,7 +79,6 @@
 #define SEMAPHORE_ADDR_QUANTUM 0xa68f8
 #define SEMAPHORE_ADDR_QUANTUM2 0xa52f8
 #define SEMAPHORE_ADDR_QUANTUM3 0xa52f8 /* 0x25b */
-#define SEMAPHORE_ADDR_NVLINK6_SWITCH 0x1550f8 /* 0x278 */
 #define SEMAPHORE_ADDR_GB100 0xa52f8
 #define SEMAPHORE_ADDR_CX5 0xe74e0
 #define SEMAPHORE_ADDR_CX7 0xe5660
@@ -319,7 +318,7 @@ enum
 #define SPECTRUM3_HW_ID 592
 #define QUANTUM2_HW_ID 599
 #define QUANTUM3_HW_ID 603 /* 0x25b */
-#define NVLINK6_SWITCH_HW_ID 632 /* 0x278 */
+#define NVLINK6_SWITCH_ASIC_HW_ID 632
 #define GB100_HW_ID 0x2900
 #define GR100_HW_ID 0x3000
 #define SPECTRUM4_HW_ID 596
@@ -680,7 +679,6 @@ bool device_supports_sem_lock_verify(unsigned int hw_dev_id)
         case DeviceQuantum_HwId:
         case DeviceQuantum2_HwId:
         case DeviceQuantum3_HwId:
-        case DeviceNVLink6_Switch_HwId:
         case DeviceGB100_HwId:
         case DeviceSpectrum2_HwId:
         case DeviceSpectrum3_HwId:
@@ -1121,15 +1119,15 @@ static int icmd_init_cr(mfile* mf)
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
             break;
 
-        case (NVLINK6_SWITCH_HW_ID):
-            cmd_ptr_addr = 0x200000;
+        case (NVLINK6_SWITCH_ASIC_HW_ID):
+            cmd_ptr_addr = 2097152;
             mf->icmd.cmd_ptr_bitlen = 24;
-            mf->icmd.semaphore_addr = SEMAPHORE_ADDR_NVLINK6_SWITCH;
-            mf->icmd.static_cfg_not_done_addr = 0x200010;
+            mf->icmd.semaphore_addr = 1396984;
+            mf->icmd.static_cfg_not_done_addr = 2097168;
             mf->icmd.static_cfg_not_done_offs = 0;
             mf->icmd.version_bit_offset = 24;
             mf->icmd.version_bitlen = 8;
-            hcr_address = 0x200000;
+            hcr_address = 2097152; // hcr_address is "version address"
             break;
 
         case (GB100_HW_ID):
@@ -1284,7 +1282,6 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
         case (SPECTRUM3_HW_ID):
         case (QUANTUM2_HW_ID):
         case (QUANTUM3_HW_ID):
-        case (NVLINK6_SWITCH_HW_ID):
         case (GB100_HW_ID):
         case (SPECTRUM4_HW_ID):
         case (SPECTRUM5_HW_ID):

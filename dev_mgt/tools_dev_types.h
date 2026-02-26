@@ -122,7 +122,7 @@ extern "C"
         DeviceSpectrum6IB,
         DeviceQuantum2, /* Blackbird */
         DeviceQuantum3, /* Sunbird */
-        DeviceNVLink6_Switch,
+        DeviceNVLink6_Switch_ASIC,
         DeviceGearBox,
         DeviceGearBoxManager,
         DeviceAbirGearBox,
@@ -170,7 +170,7 @@ extern "C"
         DeviceQuantum_HwId = 0x24d,
         DeviceQuantum2_HwId = 0x257,
         DeviceQuantum3_HwId = 0x25b,
-        DeviceNVLink6_Switch_HwId = 0x278,
+        DeviceNVLink6_Switch_ASIC_HwId = 0x278,
         DeviceGB100_HwId = 0x2900,
         DeviceGR100_HwId = 0x3000,
         DeviceArdbeg_HwId = 0x6e,

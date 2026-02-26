@@ -210,7 +210,7 @@ static struct device_sem_info g_dev_sem_info_db[] = {
     1,              // vsec_sem_supported
   },
   {
-    DeviceNVLink6_Switch, // dev_id
+    DeviceNVLink6_Switch_ASIC, // dev_id
     {0x1550f8},                // hw_sem_addr
     1,                         // vsec_sem_supported
   },
