@@ -328,10 +328,10 @@ class CmdRegMfrl():
         else:
             raise CmdNotSupported('Failed to send MFRL! reset-level {0} is not supported!'.format(reset_level))
 
-        # If the reset level it is WARM_REBOOT, we need to set the PCI toggle bit because some servers may not perform PERST during the power cycle.
+        # If the reset level it is WARM_REBOOT, we need to set the PCI toggle bit (if supported) because some servers may not perform PERST during the power cycle.
         if reset_level == CmdRegMfrl.WARM_REBOOT:
             for reset_level_ii in self._reset_levels:
-                if reset_level_ii['level'] == CmdRegMfrl.PCI_RESET:
+                if reset_level_ii['level'] == CmdRegMfrl.PCI_RESET and self.is_reset_level_supported(CmdRegMfrl.PCI_RESET):
                     reset_level_2_send = reset_level_2_send | reset_level_ii['mask']
 
         # Reset-type to send
