@@ -96,6 +96,21 @@ static int set_gw_data_size(mflash* mfl, u_int32_t data_size, u_int32_t* gw_cmd)
     return MFE_OK;
 }
 
+static int set_gw_data_size_wrapper(mflash* mfl, u_int32_t data_size, u_int32_t* gw_cmd, bool is_first)
+{
+    int rc = 0;
+    FlashGen flash_gen = get_flash_gen(mfl);
+    if (flash_gen == SEVEN_GEN_FLASH && !is_first && data_size == (u_int32_t)mfl->attr.block_write)
+    {
+        DPRINTF(("set_gw_data_size_wrapper: skip setting data size for non-first block\n"));
+    }
+    else
+    {
+        rc = set_gw_data_size(mfl, data_size, gw_cmd);
+    }
+    return rc;
+}
+
 static int st_spi_wait_wip(mflash* mfl, u_int32_t init_delay_us, u_int32_t retry_delay_us, u_int32_t num_of_retries)
 {
     int rc = 0;
@@ -423,7 +438,7 @@ int new_gw_st_spi_block_write_ex(mflash* mfl,
     CHECK_RC(rc);
 
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1);
-    rc = set_gw_data_size(mfl, blk_size, &gw_cmd);
+    rc = set_gw_data_size_wrapper(mfl, blk_size, &gw_cmd, is_first);
     CHECK_RC(rc);
 
     if (is_first)
@@ -458,7 +473,7 @@ int new_gw_st_spi_block_write_ex(mflash* mfl,
         DPRINTF(("word = 0x%08x\n", word));
     }
 
-    rc = new_gw_exec_cmd_set(mfl, gw_cmd, buff, (blk_size >> 2), &addr, "PP command");
+    rc = new_gw_exec_cmd_set(mfl, gw_cmd, buff, (blk_size >> 2), is_first ? &addr : NULL, "PP command");
     CHECK_RC(rc);
 
     //
@@ -561,7 +576,7 @@ int new_gw_st_spi_block_read_ex(mflash* mfl,
     // Read the data block
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_rw_bit_offset, 1);
     gw_cmd = MERGE(gw_cmd, 1, mfl->gw_data_phase_bit_offset, 1);
-    rc = set_gw_data_size(mfl, blk_size, &gw_cmd);
+    rc = set_gw_data_size_wrapper(mfl, blk_size, &gw_cmd, is_first);
     CHECK_RC(rc);
 
     rc = new_gw_exec_cmd_get(mfl, gw_cmd, (u_int32_t*)data, (blk_size >> 2), &addr, "Read");

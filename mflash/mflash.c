@@ -1158,6 +1158,11 @@ int read_chunks(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data, bool
 
 int gw_wait_ready(mflash* mfl, const char* msg)
 {
+    if (mfl->mf->tp == MST_DEV_I2C) // Avoid polling on FlashGW busy bit when the flint interface is i2c.
+    { // We can assume that FlashGW HW sends the SPI command much faster than it takes the next transaction on i2c bus
+        DPRINTF(("gw_wait_ready: skip polling on FlashGW busy bit for i2c interface\n"));
+        return MFE_OK;
+    }
     if (mfl->mf->is_zombiefish)
     {
         if (!mfl->mf->vsc_recovery_space_flash_control_vld)
@@ -1610,6 +1615,7 @@ int cntx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
     mfl->f_get_write_protect = mf_get_write_protect_direct_access;
     mfl->f_set_write_protect = mf_set_write_protect_direct_access;
 
+    mfl->unlock_blocked = 0;
     rc = mfl->f_reset(mfl);
     return MFE_OK;
 }
@@ -1992,6 +1998,27 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
     return MFE_OK;
 }
 
+int mf_acquire_persistent_lock(mflash* mfl)
+{
+    int rc = 0;
+    rc = mfl_com_lock(mfl);
+    CHECK_RC(rc);
+
+    mfile* mf = mf_get_mfile(mfl);
+    if (mf && dm_is_livefish_mode(mf))
+    {
+        mfl->unlock_blocked = 1;
+    }
+
+    return MFE_OK;
+}
+
+int mf_release_persistent_lock(mflash* mfl)
+{
+    mfl->unlock_blocked = 0;
+    return release_semaphore(mfl, 0);
+}
+
 int mfl_com_lock(mflash* mfl)
 {
     int rc = 0;
@@ -2024,7 +2051,7 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock)
 {
     int rc = 0;
 
-    if ((mfl->is_locked || mfl->flash_prog_locked) && mfl->f_lock && (!mfl->writer_lock || ignore_writer_lock))
+    if ((mfl->is_locked || mfl->flash_prog_locked) && mfl->f_lock && (!mfl->writer_lock || ignore_writer_lock) && !mfl->unlock_blocked)
     {
         rc = mfl->f_lock(mfl, 0);
         CHECK_RC(rc);
@@ -2080,6 +2107,7 @@ int gen6_flash_init_com(mflash* mfl, flash_params_t* flash_params)
 
     /* flash parameter access methods: */
 
+    mfl->unlock_blocked = 0;
     rc = mfl->f_reset(mfl);
     return MFE_OK;
 }
@@ -2137,6 +2165,8 @@ int gen4_flash_init_com(mflash* mfl, flash_params_t* flash_params)
     mfl->f_set_dummy_cycles = mf_set_dummy_cycles_direct_access;
     mfl->f_get_write_protect = mf_get_write_protect_direct_access;
     mfl->f_set_write_protect = mf_set_write_protect_direct_access;
+    
+    mfl->unlock_blocked = 0;
     rc = mfl->f_reset(mfl);
 
     return MFE_OK;
