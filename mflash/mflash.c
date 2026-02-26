@@ -501,12 +501,12 @@ flash_info_t g_flash_info_arr[] = {{"M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY, M
                                    {MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_512), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 1, 1, 1, 0},
                                    /* added by edwardg 06/09/2020 */
                                    {ISSI_HUAWEY_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 0, 0, 0},
-                                   
+
                                    // There are 2 ISSI flashes with same JEDEC ID 16709d (IS25WP032D, IS25WJ032F), but with different reg layout
                                    // according to vendor - we can't tell them apart. requested to not use IS25WP032D  in emulation anymore (the only use
                                    // case for it) the support for IS25WJ032F is added here but we don't this flash in-house for verification
                                    {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_32, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0, 1, 0, 0},
-                                   
+
                                    /* https://www.issi.com/WW/pdf/25LP-WP512MG.pdf */
                                    {ISSI_NAME, FV_IS25LPXXX, FMT_IS25WPXXX, 1 << FD_512, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 1, 1, 1, 0, 0},
 
@@ -1950,7 +1950,7 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
 
         /* TODO - fix for QTM3/CX8/ArcusE/BF4 */
         /* Read the Cache replacement offset and cmd fields */
-        if ((devid_t == DeviceQuantum2) || (devid_t == DeviceQuantum3) || (devid_t == DeviceNVLink6_Switch_ASIC) || (devid_t == DeviceSpectrum4) || (devid_t == DeviceSpectrum5) ||
+        if ((devid_t == DeviceQuantum2) || (devid_t == DeviceQuantum3) || (devid_t == DeviceNVLink6_Switch) || (devid_t == DeviceSpectrum4) || (devid_t == DeviceSpectrum5) ||
             (devid_t == DeviceSpectrum6) || (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8) || (devid_t == DeviceConnectX8_Pure_PCIe_Switch) || (devid_t == DeviceConnectX9) ||
             (devid_t == DeviceConnectX9_Pure_PCIe_Switch))
         {
@@ -2169,7 +2169,7 @@ int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 void update_seventh_gen_addrs(mflash* mfl)
 {
     /* Registers addresses */
-    if (mfl->dm_dev_id == DeviceQuantum3 || mfl->dm_dev_id == DeviceNVLink6_Switch_ASIC || mfl->dm_dev_id == DeviceSpectrum5 || mfl->dm_dev_id == DeviceSpectrum6)
+    if (mfl->dm_dev_id == DeviceQuantum3 || mfl->dm_dev_id == DeviceNVLink6_Switch || mfl->dm_dev_id == DeviceSpectrum5 || mfl->dm_dev_id == DeviceSpectrum6)
     {
         mfl->gw_cmd_register_addr = HCR_7GEN_QTM3_FLASH_CMD;
         mfl->gw_data_field_addr = HCR_7GEN_QTM3_FLASH_DATA;
@@ -3715,7 +3715,7 @@ int mf_set_reset_flash_on_warm_reboot(mflash* mfl)
         case DeviceQuantum:
         case DeviceQuantum2:
         case DeviceQuantum3:
-        case DeviceNVLink6_Switch_ASIC:
+        case DeviceNVLink6_Switch:
         case DeviceConnectX7:
         case DeviceBlueField3:
         case DeviceConnectX8:
@@ -3816,7 +3816,7 @@ int mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
             break;
 
         case DeviceQuantum3:
-        case DeviceNVLink6_Switch_ASIC:
+        case DeviceNVLink6_Switch:
             boot_cr_space_address = 0xfc000;
             offset_in_address = 0;
             break;
@@ -4219,7 +4219,7 @@ int mf_set_driver_strength_direct_access(mflash* mfl, u_int8_t driver_strength)
         else if (mfl->attr.vendor == FV_IS25LPXXX && // issi
             !is_ISSI_is25wj032f(mfl))                // issi for arcus2 only supports reading driver_strength, not
                                                      // setting it)
-        {                                                                    
+        {
             rc = mf_read_modify_status_new(mfl, bank, SFC_RDERP_ISSI,        /* mflash, bank num, nonvolatile-configuration-register read cmd */
                                            SFC_SERPNV_ISSI, driver_strength, /* nonvolatile-configuration-register write cmd, driver-strength new val */
                                            DRIVER_STRENGTH_OFFSET_ISSI,      /* driver-strength bit offset */
@@ -4283,7 +4283,7 @@ int mf_get_driver_strength_direct_access(mflash* mfl, u_int8_t* driver_strength_
     else if (mfl->attr.vendor == FV_IS25LPXXX && // issi
         !is_ISSI_is25wj032f(mfl))               // issi for arcus2 only supports reading driver_strength, not
                                                 // setting it, therefore no driver strength support)
-    {                                                       
+    {
         rc = mf_get_param_int(mfl, driver_strength_p,       // mflash, output pointer,
                               SFC_RDERP_ISSI,               // nonvolatile-configuration-register read cmd
                               DRIVER_STRENGTH_OFFSET_ISSI,  // driver-strength bit offset
