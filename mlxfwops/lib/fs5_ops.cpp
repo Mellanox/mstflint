@@ -594,7 +594,7 @@ bool Fs5Operations::GetLivefishIndicationAddr(uint32_t& lfIndicationAddr)
             break;
 
         case DeviceQuantum3_HwId:
-        case DeviceNVLink6_Switch_ASIC_HwId:
+        case DeviceNVLink6_Switch_HwId:
             lfIndicationAddr = 0xfc13c;
             break;
 

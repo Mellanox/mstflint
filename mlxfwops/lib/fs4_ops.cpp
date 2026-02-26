@@ -1413,7 +1413,7 @@ bool Fs4Operations::IsSecurityVersionAccessible(chip_type_t chip_type)
             case CT_CONNECTX6DX:
             case CT_CONNECTX6LX:
             case CT_QUANTUM3:
-            case CT_NVLINK6_SWITCH_ASIC:
+            case CT_NVLINK6_SWITCH:
             case CT_CONNECTX8:
             case CT_CONNECTX8_PURE_PCIE_SWITCH:
             case CT_CONNECTX9:
