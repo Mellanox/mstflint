@@ -701,6 +701,10 @@ int dm_get_device_id(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32_t* ptr_hw_de
 {
     int return_value = 1;
 
+    if ((int32_t)(mf->bar_virtual_addr) == -1) {
+        printf("FATAL - mmap failed, unsupported/deprecated device?\n");
+        return GET_DEV_ID_ERROR;
+    }
     return_value = dm_get_device_id_inner(mf, ptr_dm_dev_id, ptr_hw_dev_id, ptr_hw_rev);
     if (return_value == CRSPACE_READ_ERROR)
     {
