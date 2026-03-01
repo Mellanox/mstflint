@@ -63,6 +63,27 @@ static void mft_signal_set_handling(int isOn)
 #include <errno.h>
 #include "mft_utils.h"
 
+static FILE* g_fwcomps_log_file = NULL;
+
+// Set log file for fw_comps_mgr library so it can write to log from external callers
+extern "C" void fwcomps_set_log_file(FILE* log_file)
+{
+    g_fwcomps_log_file = log_file;
+}
+
+// Print to stdout and if log file is set, log to file as well
+#define FWCOMPS_PRINT(...)                            \
+    do                                                \
+    {                                                 \
+        printf(__VA_ARGS__);                          \
+        if (g_fwcomps_log_file != NULL)               \
+        {                                             \
+            fprintf(g_fwcomps_log_file, __VA_ARGS__); \
+            fflush(g_fwcomps_log_file);               \
+        }                                             \
+    } while (0)
+
+
 static mfile* mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* dma_func, void* extra_data)
 {
     if ((fw_cmd_context == NULL) || (fw_cmd_func == NULL) || (extra_data == NULL)) {
@@ -538,7 +559,7 @@ bool FwCompsMgr::accessComponent(u_int32_t              offset,
         _accessObj->accessComponent(_updateHandle, offset, size, data, access, _currComponentStr, progressFuncAdv);
 
     if (!bRes && (lastFsmCommandArgs != NULL) && isDMAAccess()) {
-        printf("\nDMA access has failed, switching to Register-Access burn.\n");
+        FWCOMPS_PRINT("\nDMA access has failed, switching to Register-Access burn.\n");
         bRes = fallbackToRegisterAccess();
 
         if (bRes) {
@@ -1470,7 +1491,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
         DPRINTF(("FwCompsMgr::burnComponents() - comp.getSize() = %d\n", comp.getSize()));
         if (_currCompQuery->comp_cap.max_component_size < comp.getSize())
         {
-            printf("-E- The dpa app container size is too large! max_component_size is %d bytes.\n",
+            FWCOMPS_PRINT("-E- The dpa app container size is too large! max_component_size is %d bytes.\n",
                     _currCompQuery->comp_cap.max_component_size);
             return false;
         }
@@ -1479,7 +1500,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
     if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
         DPRINTF(("Cannot lock the handle!\n"));
         if (forceRelease() == false) {
-            printf("FSM is locked.\n");
+            FWCOMPS_PRINT("FSM is locked.\n");
         }
         return false;
     }
@@ -1539,7 +1560,7 @@ bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progre
             // In case of activation delay, FW will set FSM to LOCKED
             if (!_isDelayedActivationCommandSent)
             {
-                printf("Please wait while activating the transceiver(s) FW ...\n");
+                FWCOMPS_PRINT("Please wait while activating the transceiver(s) FW ...\n");
                 if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_ACTIVATE, progressFuncAdv))
                 {
                     DPRINTF(("Moving from activate state to locked state has failed!\n"));
@@ -2427,7 +2448,7 @@ bool FwCompsMgr::GetComponentLinkxProperties(FwComponent::comps_ids_t compType, 
         return false;
     }
     if (query.component_status == 0) {
-        printf("Cable %d is not found, please check that cable connected.\n", _deviceIndex - 1);
+        FWCOMPS_PRINT("Cable %d is not found, please check that cable connected.\n", _deviceIndex - 1);
         _lastError = FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE;
         return false;
     }

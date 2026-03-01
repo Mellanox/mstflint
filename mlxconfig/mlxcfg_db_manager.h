@@ -96,8 +96,9 @@ public:
     std::shared_ptr<TLVConf> getCloneTLVByName(std::string tlvName, u_int32_t port, int32_t tlvModule);
     std::shared_ptr<TLVConf> getFetchedTLVByName(std::string tlvName);
     std::shared_ptr<TLVConf> getDependencyTLVByName(string tlvName, u_int32_t cTLVPort, int32_t cTLVModule);
+    std::shared_ptr<TLVConf> getTLVByParamMlxconfigNameAndIndex(std::string mlxconfigName, u_int32_t index, mfile* mf);
     std::shared_ptr<TLVConf> getTLVByParamMlxconfigName(std::string mlxconfigName, mfile* mf);
-    std::shared_ptr<TLVConf> getTLVByIndexAndClass(u_int32_t id, TLVClass c);
+    std::shared_ptr<TLVConf> getTLVByIdAndClass(u_int32_t id, TLVClass c);
     static tuple<string, int, int> getMlxconfigNamePortModule(std::string mlxconfigName, mfile* mf);
     static tuple<string, int> splitMlxcfgNameAndPortOrModule(std::string mlxconfigName, SPLITBY splitBy, mfile* mf);
     void execSQL(sqlite3_callback f, void* obj, const char* stat, ...);

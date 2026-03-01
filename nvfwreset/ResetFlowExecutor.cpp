@@ -83,8 +83,8 @@ std::map<ResetKey, std::vector<ResetFlowStep>>
           ResetFlowStep::StopNicDriver,
           ResetFlowStep::SendMFRL,
           ResetFlowStep::HotReset,
+          ResetFlowStep::WaitForFWReady,
           ResetFlowStep::StartNicDriver,
-          ResetFlowStep::MSTRestart,
           ResetFlowStep::CheckUptimeAfterReset};
     }
 
@@ -139,8 +139,8 @@ void ResetFlowExecutor::ExecuteResetSteps(std::vector<ResetFlowStep>& flowSteps,
                 case ResetFlowStep::StartNicDriver:
                     _resetPlatform->StartNicDriver();
                     break;
-                case ResetFlowStep::WaitForReady:
-                    _resetPlatform->WaitForReady();
+                case ResetFlowStep::WaitForFWReady:
+                    _resetPlatform->WaitForFWReady();
                     break;
                 case ResetFlowStep::MSTRestart:
                     _resetPlatform->MSTRestart();
@@ -163,4 +163,8 @@ void ResetFlowExecutor::ExecuteResetSteps(std::vector<ResetFlowStep>& flowSteps,
     {
         throw MftGeneralException(e.what());
     }
+
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << "Reset flow completed successfully" << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
 }

@@ -58,6 +58,30 @@ class _RegAccessParser_impl
     using AdbInstance = _AdbInstance_impl<dynamic, uint32_t>;
     using AdbCondition = _AdbCondition_impl<uint32_t>;
 
+    struct FieldSearchContext
+    {
+        string& name;          // reference to the field name being searched for
+        u_int32_t size;        // size of the field TODO: remove this after fixing in mlxlink
+        u_int32_t offset;      // offset of the field TODO: remove this after fixing in mlxlink
+        bool offsetSpecified;  // true if the offset is specified TODO: remove this after fixing in mlxlink
+        AdbInstance* instance; // the found instance
+    };
+
+    enum class ParamType
+    {
+        DATA,
+        INDEX,
+        OP
+    };
+
+    struct ParamDetails
+    {
+        ParamType type;
+        uint32_t value;
+    };
+
+    using ParamsMap = std::map<string, ParamDetails>;
+
 public:
     _RegAccessParser_impl(string data,
                           string indexes,
@@ -80,11 +104,7 @@ public:
     static void strToUint32(char* str, u_int32_t& uint);
     static string getAccess(const AdbInstance* field);
     static string get_legacy_path(AdbInstance& instance);
-    enum access_type_t
-    {
-        INDEX,
-        OP
-    };
+    static bool is_in_path(const string& partial, const string& full);
 
 protected:
     string _data;
@@ -98,26 +118,22 @@ protected:
     std::vector<u_int32_t> _buffer;
     bool _ignore_ro;
     bool _full_path;
-    std::map<string, uint32_t> _data_map;
+    ParamsMap _params_map;
 
-    static void _on_traverse_update_buffer(const string& calculated_path,
+    static bool _on_traverse_update_buffer(const string& calculated_path,
+                                           uint64_t calculated_offset,
+                                           uint64_t calculated_value,
+                                           AdbInstance* instance,
+                                           void* context);
+    static bool on_traverse_get_field(const string& calculated_path,
                                            uint64_t calculated_offset,
                                            uint64_t calculated_value,
                                            AdbInstance* instance,
                                            void* context);
     std::vector<u_int32_t> genBuffUnknown();
     std::vector<u_int32_t> genBuffKnown();
-    void parseAccessType(std::vector<string> tokens, std::vector<string> validTokens, access_type_t accessType);
-    void parseIndexes();
-    void parseOps();
-    void parseData();
+    void parse_register_params(const string& data, ParamType param_type);
     void parseUnknown();
-    bool checkFieldWithPath(AdbInstance* field,
-                            u_int32_t idx,
-                            std::vector<string>& fieldsChain,
-                            u_int32_t size = 0,
-                            u_int32_t offset = 0,
-                            bool offsetSpecified = false);
     AdbInstance* getField(string name,
                           u_int32_t size = 0,
                           u_int32_t offset = 0,
@@ -133,22 +149,10 @@ protected:
                             u_int32_t offset = 0,
                             bool offsetSpecified = false,
                             bool is_buffer_full = false);
-    bool isRO(AdbInstance* field);
-    bool isIndex(AdbInstance* field);
-    bool isOP(AdbInstance* field);
-    std::vector<string> getAllIndexes(AdbInstance* node);
-    std::vector<string> getAllOps(AdbInstance* node);
-    const std::string accessTypeToString(access_type_t accessType);
-
-public:
-    static std::vector<AdbInstance*> getRelevantFields(AdbInstance* node, const std::vector<u_int32_t>& buff);
-
-private:
-    bool checkAccess(const AdbInstance* field, const string accessStr);
 };
 
 // Type aliases
-using RegAccessParser = _RegAccessParser_impl<false>;
+using RegAccessParser = _RegAccessParser_impl<true>;
 
 } // namespace mlxreg
 #endif /* MLXREG_PARSER_H */

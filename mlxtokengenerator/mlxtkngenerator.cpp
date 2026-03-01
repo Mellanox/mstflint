@@ -525,7 +525,7 @@ vector < TLVParamsData > MlxTknGenerator::GetDataForToken(MlxCfgTokenType tokenT
     /* Challenge data taken from given blob file */
     vector < u_int8_t > tokenData = ReadFromFile(blobFile);
     struct reg_access_switch_mtcq_reg_ext challenge;
-
+    memset(&challenge, 0, sizeof(struct reg_access_switch_mtcq_reg_ext));
     if (IsGetMeasurementIndex50(tokenData)) {
         struct tokens_layout_get_measurment_index_50 getMeasurementIndex50;
         tokens_layout_get_measurment_index_50_unpack(&getMeasurementIndex50, tokenData.data());

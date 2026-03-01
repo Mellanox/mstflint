@@ -192,7 +192,6 @@ void MlxlinkCablesCommander::getDdmValuesFromPddr()
         _cableDdm.channels = _numOfLanes;
         _cableDdm.temperature.val = getFieldValue("temperature") / 256;
         _cableDdm.voltage.val = getFieldValue("voltage") / MILLIVOLT_UNIT;
-        float txMultiplier = 1;
         try
         {
             _txBiasMultiplier = pow(2, getFieldValue("tx_bias_scaling_factor"));

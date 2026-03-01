@@ -61,6 +61,12 @@ int main(int argc, char* argv[])
             throw mft_core::MftGeneralException("Error: Failed to parse command line arguments");
         }
 
+        int rc = system("lsmod | grep -q '^mstflint_access'");
+        if (rc != 0)
+        {
+            throw mft_core::MftGeneralException("The required driver 'mstflint_access' is not loaded. Please load the driver and try again.");
+        }
+
         auto parsedParams = parser.getParsedParams();
         if (parsedParams->cmdType != ResetCommandType::RESET)
         {
@@ -108,11 +114,6 @@ int main(int argc, char* argv[])
     {
         cout << e.what() << endl;
         errorCode = -1;
-    }
-
-    if (mf != nullptr)
-    {
-        mclose(mf);
     }
 
     mft_restore_and_raise();

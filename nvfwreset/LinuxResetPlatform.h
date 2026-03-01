@@ -53,7 +53,7 @@ public:
     virtual void HotReset() override;
     virtual void LinkDisableReset() override;
     virtual void PciReset() override;
-    virtual void WaitForReady() override;
+    virtual void WaitForFWReady() override;
     virtual void MSTRestart() override;
     virtual void PreConditionForHotReset(const std::vector<std::string>& ignoreList) override;
 

@@ -41,9 +41,12 @@
  #include "reg_access/reg_ids.h"
  #include "mft_core/mft_core_utils/logger/Logger.h"
  #include "mft_core/mft_core_utils/mft_exceptions/MftGeneralException.h"
- 
- using namespace mft_core;
- 
+ #include "dev_mgt/tools_dev_types.h"
+ #include "common/tools_regex.h"
+
+using namespace mft_core;
+namespace Regex = mstflint::common::regex;
+
  void PCILibrary::CheckPCIRegistersSupported(mfile* mf)
  {
      bool mpegc_supported = false;
@@ -70,11 +73,40 @@
          LOG_AND_THROW_MFT_ERROR(std::string("MPIR register is not supported for dbdf: ") + dbdf);
      }
  }
- 
+
+ std::string PCILibrary::IsValidDBDF(const std::string& dbdf)
+{
+    // DBDF format: domain:bus:device.function (e.g., "0000:3b:00.0")
+    // Must only contain hex digits [0-9a-fA-F], colons, and dots
+    static Regex::regex dbdf_pattern("^([0-9a-fA-F]{1,4}:)?[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\\.[0-7]$");
+
+    if (!Regex::regex_match(dbdf, dbdf_pattern))
+    {
+        LOG_AND_THROW_MFT_ERROR(std::string("Invalid DBDF format: ") + dbdf);
+    }
+
+    // Note: DBDF format has a max length of 14 chars (e.g., "ffff:ff:ff.7")
+    std::string sanitized;
+    sanitized.reserve(15);
+    for (size_t i = 0; i < dbdf.length() && i < 15; i++)
+    {
+        char c = dbdf[i];
+        // Only allow validated characters
+        if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || c == ':' || c == '.')
+        {
+            sanitized.push_back(c);
+        }
+    }
+    return sanitized;
+}
+
  std::string PCILibrary::GetV3FieldFromVPD(const std::string& dbdf)
  {
      std::string v3 = "";
-     std::string cmd = "lspci -s " + dbdf + " -vvv";
+     std::string cmd = "lspci -s ";
+     cmd.append(dbdf);
+     cmd.append(" -vvv");
+     /* coverity[tainted_string_argument] : dbdf has been validated by IsValidDBDF regex */
      FILE* pipe = popen(cmd.c_str(), "r");
      if (pipe)
      {
@@ -108,50 +140,62 @@
      }
      return v3;
  }
- 
- void PCILibrary::FindDirectNicDevice(std::map<std::string, std::uint32_t>& directNicDevice)
- {
-     FILE* pipe = popen("lspci -D -d 15b3:2100", "r");
-     if (pipe)
-     {
-         char buffer[256];
-         while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
-         {
-             std::string line(buffer);
-             LOG.Debug(line);
- 
-             // The DBDF is the first token before the space
-             std::size_t first_space = line.find(' ');
-             if (first_space != std::string::npos)
-             {
-                 std::string dbdf = line.substr(0, first_space);
-                 std::string domain_str = dbdf.substr(0, dbdf.find(':'));
-                 std::uint32_t domain = std::stoul(domain_str, nullptr, 16);
-                 LOG.Debug(std::string("Found direct nic device: ") + dbdf + " with domain: " + std::to_string(domain));
-                 std::string v3 = GetV3FieldFromVPD(dbdf);
-                 directNicDevice[v3] = domain;
-             }
-         }
-         pclose(pipe);
-     }
-     else
-     {
-         LOG_AND_THROW_MFT_ERROR(std::string("Failed to execute lspci command for direct nic devices"));
-     }
- }
- 
+
+ void PCILibrary::FindDirectNicDevice(std::map<std::string, std::string>& directNicDevice)
+{
+    FILE* pipe = popen("lspci -D -d 15b3:2100", "r");
+    if (pipe)
+    {
+        char buffer[256];
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+        {
+            buffer[sizeof(buffer) - 1] = '\0';
+            std::string line(buffer);
+            LOG.Debug(line);
+
+            // The DBDF is the first token before the space
+            std::size_t first_space = line.find(' ');
+            if (first_space != std::string::npos)
+            {
+                std::string dbdf = line.substr(0, first_space);
+                std::string _dbdf = IsValidDBDF(dbdf);
+                LOG.Debug(std::string("Found direct nic device: ") + _dbdf);
+                // _dbdf has been sanitized by IsValidDBDF - safe to pass to GetV3FieldFromVPD
+                /* coverity[tainted_data] : _dbdf sanitized via IsValidDBDF character-by-character validation */
+                try
+                {
+                    std::string v3 = GetV3FieldFromVPD(_dbdf);
+                    directNicDevice[v3] = std::string(_dbdf);
+                }
+                catch(const std::exception& e)
+                {
+                    LOG.Debug(std::string(e.what()));
+                }
+            }
+        }
+        pclose(pipe);
+    }
+    else
+    {
+        LOG_AND_THROW_MFT_ERROR(std::string("Failed to execute lspci command for direct nic devices"));
+    }
+}
+
  void PCILibrary::SetPCIDomain(void)
  {
      int numDevices = 0;
      reg_access_status_t rc = ME_OK;
      int field_select = 0x80; // Set segment base and segment valid
+     u_int32_t hwDevId = 0;
+     u_int32_t hwRevId = 0;
+     dm_dev_id_t DeviceType = DeviceUnknown;
      dev_info* pciDevices = mdevices_info(MDEVS_TAVOR_CR, &numDevices);
      if (!pciDevices)
      {
          LOG_AND_THROW_MFT_ERROR(std::string("Failed to get devices info. numDevices: ") + std::to_string(numDevices));
      }
- 
-     std::map<std::string, std::uint32_t> directNicDevice;
+
+     std::map<std::string, std::string> directNicDevice;
      PCILibrary::FindDirectNicDevice(directNicDevice);
      LOG.Debug("Number of found direct nic devices: " + std::to_string(directNicDevice.size()));
      for (int count = 0; count < numDevices; count++)
@@ -164,6 +208,20 @@
          }
          try
          {
+            if (dm_get_device_id(mf, &DeviceType, &hwDevId, &hwRevId))
+            {
+                LOG.Error(std::string("Failed to get device id: ") + pciDevices[count].dev_name);
+                mclose(mf);
+                continue;
+            }
+            if (dm_is_livefish_mode(mf) || !(dm_dev_is_hca(DeviceType)))
+            {
+                printf("device name: %s\n", pciDevices[count].dev_name);
+                LOG.Info(std::string("Only Functional HCA devices are supported. Skipping device: ") +
+                         pciDevices[count].dev_name);
+                mclose(mf);
+                continue;
+            }
              CheckPCIRegistersSupported(mf);
          }
          catch (const MftGeneralException& e)
@@ -201,7 +259,7 @@
              mclose(mf);
              continue;
          }
- 
+
          // According to arch (Oren S), mpir.sdm is not relevant for direct nic devices.
          if (!directNicDevice.empty())
          {
@@ -209,7 +267,10 @@
              if (directNicDevice.find(endPointV3) != directNicDevice.end())
              {
                  memset(&mpegc, 0, sizeof(struct reg_access_hca_mpegc_reg_ext));
-                 mpegc.segment_base = directNicDevice[endPointV3];
+                 std::string directNicDBDF = directNicDevice[endPointV3];
+                 std::string domain_str = directNicDBDF.substr(0, directNicDBDF.find(':'));
+                 std::uint32_t domain = std::stoul(domain_str, nullptr, 16);
+                 mpegc.segment_base = static_cast<u_int8_t>(domain);
                  mpegc.segment_valid = 1;
                  mpegc.field_select = field_select;
                  // According to arch (Oren S), when its direct nic, pci index < 1
@@ -225,19 +286,19 @@
                  }
                  mpegc.DPNv = 1;
                  LOG.Debug(std::string("Setting segment base for direct nic device: ") +
-                           std::to_string(directNicDevice[endPointV3]) + " with segment base: " +
+                           directNicDBDF + " with segment base: " +
                            std::to_string(mpegc.segment_base) + " and pcie index: " + std::to_string(mpegc.pcie_index));
                  rc = reg_access_mpegc(mf, REG_ACCESS_METHOD_SET, &mpegc);
                  if (rc)
                  {
                      LOG.Error(std::string("Failed to set segment base for direct nic device: ") +
-                               std::to_string(directNicDevice[endPointV3]) +
+                               directNicDBDF +
                                " with segment base: " + std::to_string(mpegc.segment_base) +
                                " and pcie index: " + std::to_string(mpegc.pcie_index));
                      break;
                  }
                  LOG.Debug(std::string("Successfully set segment base for direct nic device: ") +
-                           std::to_string(directNicDevice[endPointV3]) + " with segment base: " +
+                           directNicDBDF + " with segment base: " +
                            std::to_string(mpegc.segment_base) + " and pcie index: " + std::to_string(mpegc.pcie_index));
              }
          }

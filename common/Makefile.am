@@ -47,9 +47,7 @@ libcommon_la_SOURCES = \
     tools_utils.h \
     tools_version.h \
     tools_string.h \
-    tools_string.cpp \
-    PCILibrary.cpp \
-    PCILibrary.h
+    tools_string.cpp
 
 commonincludedir = $(includedir)/mstflint/common/
 commoninclude_HEADERS = compatibility.h

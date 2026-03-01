@@ -153,9 +153,9 @@ struct fwctl_rpc {
 struct mlx5_umem_buff {
 	void *buff;
 	size_t size;
-	__uint32_t umem_id;
-	__uint32_t umem_mkey;
-	__uint32_t rsc_id;
+	__u32 umem_id;
+	__u32 umem_mkey;
+	__u32 rsc_id;
 };
 
 struct fwctl_rsc_umem_reg {

@@ -124,6 +124,8 @@ class AdbParser:
         """
         if condition == ' EQ ':
             return left_operand == right_operand
+        elif condition == ' NOTEQ ':
+            return left_operand != right_operand
         elif condition == ' LESS ':
             return left_operand < right_operand
         elif condition == ' LESS_EQ ':
@@ -141,6 +143,8 @@ class AdbParser:
         """
         if ' EQ ' in expression:
             return ' EQ '
+        elif ' NOTEQ ' in expression:
+            return ' NOTEQ '
         elif ' LESS ' in expression:
             return ' LESS '
         elif ' LESS_EQ ' in expression:

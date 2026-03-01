@@ -1,4 +1,4 @@
-# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,36 +30,13 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-SUBDIRS = mlxreg_lib scripts
+AM_CXXFLAGS = -I$(srcdir) -I$(top_srcdir) -Wall -W -g -MP -MD  -pipe $(COMPILER_FPIC)
 
-AM_CPPFLAGS = \
-    -I$(srcdir) \
-    -I$(top_srcdir) \
-    -I$(top_srcdir)/${MTCR_CONF_DIR} \
-    -I$(top_srcdir)/include/mtcr_ul \
-    -I$(top_srcdir)/mft_utils \
-    -I$(top_srcdir)/mlxreg
+noinst_LTLIBRARIES = libpci_library.la
 
-AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe
+libpci_library_la_SOURCES = PCILibrary.cpp PCILibrary.h
 
-mstreg_SOURCES = mlxreg_ui.cpp mlxreg_ui.h
-
-bin_PROGRAMS = mstreg
-
-mstreg_DEPENDENCIES = \
-    $(top_builddir)/mlxreg/mlxreg_lib/libmstreg_lib.la \
-    $(top_builddir)/cmdparser/libcmdparser.a \
-    $(top_builddir)/mft_utils/libmftutils.la \
-    $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
-    $(top_builddir)/adb_parser/libadb_parser.la \
-    $(top_builddir)/cmdif/libcmdif.la \
-    $(top_builddir)/dev_mgt/libdev_mgt.la \
-    $(top_builddir)/reg_access/libreg_access.la \
-    $(top_builddir)/tools_layouts/libtools_layouts.la \
-    $(top_builddir)/xz_utils/libxz_utils.la \
-    $(top_builddir)/ext_libs/minixz/libminixz.la \
-    $(top_builddir)/common/libcommon.la
-
-mstreg_LDADD = $(mstreg_DEPENDENCIES) $(liblzma_LIBS) ${LDL} $(expat_LIBS)
-
-mstreg_LDFLAGS = -static
+libpci_library_la_DEPENDENCIES = $(top_builddir)/dev_mgt/libdev_mgt.la \
+                                 $(top_builddir)/reg_access/libreg_access.la
+libpci_library_la_LIBADD = $(libpci_library_la_DEPENDENCIES)
+libpci_library_la_LDFLAGS = -static

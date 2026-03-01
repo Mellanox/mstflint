@@ -455,7 +455,7 @@ const char* MlxCfg::getDeviceName(mfile* mf)
     {
         return "";
     }
-    return dm_dev_type2str_external(_devType);
+    return dm_dev_type2str(_devType);
 }
 
 void MlxCfg::printOpening(mfile* mf, const char* dev, string deviceIndex, Json::Value& oJsonValue)
@@ -622,7 +622,7 @@ void MlxCfg::editAndPushItem(std::vector<QueryOutputItem>& queryOutputItemVector
 
     item.strCurrVal = item.strNextVal;
     item.strDefVal = item.strNextVal;
-    if (arrayIndex > 1)
+    if (isContinuanceArray(item.mlxconfigName))
     {
         item.mlxconfigName = getArrayPrefix(item.mlxconfigName);
     }
@@ -644,7 +644,7 @@ void MlxCfg::removeContinuanceArray(std::vector<QueryOutputItem>& OutputItemOut,
             queryItem = &*o;
             continue;
         }
-        // in case that we have another continuance array right after end of a continuance array
+        // In case that we have another continuance array right after end of a continuance array
         else if (getArraySuffix(o->mlxconfigName) == getArraySuffixByInterval(0) && queryItem != NULL &&
                  !isIndexedMlxconfigName(o->mlxconfigName))
         {

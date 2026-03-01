@@ -41,7 +41,8 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/cmdparser \
     -I$(top_srcdir)/tools_layouts \
     -I$(top_srcdir)/dev_mgt \
-    -I$(top_srcdir)/reg_access
+    -I$(top_srcdir)/reg_access \
+    -I$(top_srcdir)/pci_library
 
 AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe
 
@@ -77,6 +78,7 @@ nvfwreset_DEPENDENCIES = \
     $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/dev_mgt/libdev_mgt.la \
+    $(top_builddir)/pci_library/libpci_library.la \
     $(top_builddir)/reg_access/libreg_access.la \
     $(top_builddir)/common/libcommon.la \
     $(top_builddir)/mft_core/mft_core_utils/logger/liblogger.la \

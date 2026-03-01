@@ -1397,6 +1397,12 @@ bool SubCommand::unzipDataFile(std::vector<u_int8_t> data, std::vector<u_int8_t>
 
 bool SubCommand::dumpFile(const char* confFile, std::vector<u_int8_t>& data, const char* sectionName)
 {
+    if (data.empty())
+    {
+        reportErr(true, "Error: Section %s not found\n", sectionName);
+        return false;
+    }
+
     FILE* out;
     vector<u_int8_t> dest;
 
@@ -1411,6 +1417,7 @@ bool SubCommand::dumpFile(const char* confFile, std::vector<u_int8_t>& data, con
         if (out == NULL)
         {
             reportErr(true, OPEN_WRITE_FILE_ERROR, confFile, strerror(errno));
+            fclose(out);
             return false;
         }
     }
@@ -2976,10 +2983,13 @@ FlintStatus BurnSubCommand::PldmToFwOps(FsPldmOperations* pldmOps)
         return FLINT_FAILED;
     }
 
-    dm_dev_id_t imageType = dm_dev_sw_id2type(_imgInfo.fw_info.pci_device_id);
-    if (devid_t != imageType)
+    // Check if device HW ID matches any of the image's supported HW IDs
+    u_int32_t* supportedHwId = nullptr;
+    u_int32_t supportedHwIdNum = 0;
+    _imgOps->getSupporteHwId(&supportedHwId, supportedHwIdNum);
+    if (!_imgOps->CheckMatchingHwDevId(devid, revid, supportedHwId, supportedHwIdNum))
     {
-        reportErr(true, "PCI Device ID in PLDM fwpkg is not compatible with the Device ID on the device.\n");
+        reportErr(true, "%s\n", _imgOps->err());
         return FLINT_FAILED;
     }
 
@@ -3337,7 +3347,10 @@ void BurnSubCommand::cleanInterruptedCommand()
     if (_flintParams.device_specified)
     {
         UnlockDevice(_fwOps);
-        _fwOps->restoreWriteProtectInfo();
+        if (_fwOps)
+        {
+            _fwOps->restoreWriteProtectInfo();
+        }
     }
 }
 
@@ -4687,6 +4700,13 @@ bool HwSubCommand::PrintWriteProtectedBits(const ext_flash_attr_t& attr)
         std::bitset<BP_SIZE> bp_bits(protect_info.bp_val); // convert bp_val to binary
         string tbs_bit = (protect_info.tbs_bit ? "1" : "0");
         int msb = BP_SIZE - 1;
+
+        if (is_ISSI_is25wj032f_by_jedec_id(attr.jedec_id))
+        {
+            tbs_bit = NA_STR;
+            msb = BP_SIZE;
+        }
+
         std::cout << "  TBS, BP[" << msb << ":0]            " << tbs_bit << ", " << bp_bits << endl;
     }
     else
@@ -5281,15 +5301,25 @@ FlintStatus QuerySubCommand::executeCommand()
             return FLINT_FAILED;
         }
 
+        std::string recovery =
+          pldmOps->GetPldmVendorDefinedDescriptor(_flintParams.psid, PldmRecordDescriptor::VendorDefinedType::RECOVERY);
         u_int16_t swDevId = 0;
-        if (!pldmOps->GetPldmDescriptor(_flintParams.psid, DEV_ID_TYPE, swDevId))
+        if (recovery.empty())
         {
-            reportErr(true, "DEVICE ID descriptor is not found in the PLDM.\n");
+            if (!pldmOps->GetPldmDescriptor(_flintParams.psid, DEV_ID_TYPE, swDevId))
+            {
+                reportErr(true, "DEVICE ID descriptor is not found in the PLDM.\n");
+                delete[] buff;
+                return FLINT_FAILED;
+            }
+        }
+        FwOperations* newImageOps = NULL;
+        if (!pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true))
+        {
+            reportErr(true, " Failed to create new image ops. %s\n", pldmOps->err());
             delete[] buff;
             return FLINT_FAILED;
         }
-        FwOperations* newImageOps = NULL;
-        pldmOps->CreateFwOpsImage((u_int32_t*)buff, buffSize, &newImageOps, swDevId, true);
         delete _imgOps;
         _imgOps = newImageOps;
         delete[] buff;
@@ -5731,7 +5761,7 @@ bool SwResetSubCommand::IsDeviceSupported(dm_dev_id_t dev_id)
         return true;
     }
 
-    reportErr(true, "Device %s doesn't support swreset command.\n", dm_dev_type2str_external(dev_id));
+    reportErr(true, "Device %s doesn't support swreset command.\n", dm_dev_type2str(dev_id));
     return false;
 }
 
@@ -7454,6 +7484,63 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
         printf("  " SERIES_CODE_PARAM "              0x%02X\n", attr.series_code);
     }
 
+    // SRP query
+    if (attr.srp_support && attr.write_protect_support)
+    {
+        switch (attr.mf_get_srp_rc)
+        {
+            case MFE_OK:
+                printf("  " SRP_PARAM "                     %d\n", attr.srp);
+                break;
+
+            case MFE_MISMATCH_PARAM:
+                printf("-E- There is a mismatch in the " SRP_PARAM
+                       " attribute between the flashes attached to the device\n");
+                break;
+
+            case MFE_NOT_SUPPORTED_OPERATION:
+                printf(SRP_PARAM " not supported operation.\n");
+                break;
+            case MFE_NOT_IMPLEMENTED:
+                printf(SRP_PARAM "not implemented.\n");
+                break;
+
+            default:
+                printf("Failed to get " SRP_PARAM " attribute: %s (%s)", errno == 0 ? "" : strerror(errno),
+                       mf_err2str(attr.mf_get_srp_rc));
+                return FLINT_FAILED;
+        }
+    }
+
+    // SRL query
+    if (attr.srl_support && attr.write_protect_support)
+    {
+        switch (attr.mf_get_srl_rc)
+        {
+            case MFE_OK:
+                printf("  " SRL_PARAM "                     %d\n", attr.srl);
+                break;
+
+            case MFE_MISMATCH_PARAM:
+                printf("-E- There is a mismatch in the " SRP_PARAM
+                       " attribute between the flashes attached to the device\n");
+                break;
+
+            case MFE_NOT_SUPPORTED_OPERATION:
+                printf(SRP_PARAM " not supported operation.\n");
+                break;
+
+            case MFE_NOT_IMPLEMENTED:
+                printf(SRP_PARAM "not implemented.\n");
+                break;
+
+            default:
+                printf("Failed to get " SRP_PARAM " attribute: %s (%s)", errno == 0 ? "" : strerror(errno),
+                       mf_err2str(attr.mf_get_srp_rc));
+                return FLINT_FAILED;
+        }
+    }
+
     return FLINT_SUCCESS;
 }
 
@@ -8993,7 +9080,7 @@ bool QueryBfbComponentsSubCommand::isDeviceSupported()
     if (devid_type != DeviceBlueField3)
     {
         reportErr(true, "query_bfb_components sub-command is supported for BlueField3 only. Device provided: %s\n",
-                  dm_dev_type2str_external(devid_type));
+                  dm_dev_type2str(devid_type));
         return false;
     }
 

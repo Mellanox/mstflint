@@ -36,6 +36,7 @@
 #include <dev_mgt/tools_dev_types.h>
 #include <common/tools_version.h>
 #include <common/bit_slice.h>
+#include <mft_utils/mft_sig_handler.h>
 
 #define CAUSE_FLAG "--cause"
 #define MAX_DEV_LEN 512
@@ -81,6 +82,8 @@ bool check_device_name(const char* device)
 
 int main(int argc, char* argv[])
 {
+    mft_signal_set_msg((char*)"\nInterrupted, Exiting...\n");
+    mft_signal_set_handling(1);
     int i;
     mfile* mf;
     int rc;
@@ -211,11 +214,15 @@ int main(int argc, char* argv[])
         mclose(mf);
         goto error;
     }
+    mft_restore_and_raise();
     crd_free(context);
     mclose(mf);
     return 0;
 
 error:
-    printf("-E- %s\n", crd_err_str(rc));
+    if (rc != CRD_SIGNAL_INTERRUPTED)
+    {
+        printf("-E- %s\n", crd_err_str(rc));
+    }
     return rc;
 }
