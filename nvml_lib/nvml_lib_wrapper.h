@@ -35,17 +35,9 @@
 #pragma once
 
 #include <string>
-#include <nvml.h>
+#include "nvml_defs.h"
 
 using std::string;
-
-typedef nvmlReturn_t (*f_nvmlDeviceGetCount_v2)(unsigned int*);
-typedef nvmlReturn_t (*f_nvmlDeviceGetHandleByIndex_v2)(unsigned int, nvmlDevice_t*);
-typedef nvmlReturn_t (*f_nvmlDeviceGetPciInfo_v3)(nvmlDevice_t, nvmlPciInfo_t*);
-typedef const char* (*f_nvmlErrorString)(nvmlReturn_t);
-typedef nvmlReturn_t (*f_nvmlInit_v2)(void);
-typedef nvmlReturn_t (*f_nvmlShutdown)(void);
-typedef nvmlReturn_t (*f_nvmlDeviceReadWritePRM)(nvmlDevice_t, nvmlPRMTLV_v1_t*);
 
 class NvmlLibWrapper
 {

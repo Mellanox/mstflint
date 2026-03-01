@@ -32,7 +32,6 @@
  */
 
 #include <dlfcn.h>
-#include <nvml.h>
 
 #include "nvml_exception.h"
 #include "nvml_lib_wrapper.h"
@@ -54,7 +53,7 @@ NvmlLibWrapper::~NvmlLibWrapper()
 
 void NvmlLibWrapper::InitNvmlSDK()
 {
-    nvmlReturn_t error = nvmlInit_v2();
+    nvmlReturn_t error = nvmlInit();
 
     if (error)
     {
