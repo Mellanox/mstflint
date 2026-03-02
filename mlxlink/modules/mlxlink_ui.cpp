@@ -113,6 +113,7 @@ void MlxlinkUi::initPortInfo()
     _mlxlinkCommander->labelToLocalPort();
     _mlxlinkCommander->validatePortType(_userInput._portType);
     _mlxlinkCommander->updateSwControlStatus();
+    _mlxlinkCommander->updateNvlinkModeBStatus();
     if (!_userInput._pcie)
     {
         _mlxlinkCommander->checkValidFW();
@@ -294,6 +295,11 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(BKV_WDATA_FLAG_SHORT, BKV_WDATA_FLAG, "wdata", "BKV Entry Write Data (Optional)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(BKV_WMASK_FLAG_SHORT, BKV_WMASK_FLAG, "wmask", "BKV Entry Write Mask (Optional)");
+    MlxlinkRecord::printFlagLine(SET_PRIMARY_FLAG_SHORT, SET_PRIMARY_FLAG, "", "Set primary port");
+    MlxlinkRecord::printFlagLine(SET_SECONDARY_FLAG_SHORT, SET_SECONDARY_FLAG, "", "Set secondary port");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(CONSTANT_ROLE_FLAG_SHORT, CONSTANT_ROLE_FLAG, "EN/DS",
+        "Keep primary/secondary role constant [EN(enable)/DS(disable)] (Optional, use with --set_primary or --set_secondary)");
     MlxlinkRecord::printFlagLine(PRBS_MODE_FLAG_SHORT, PRBS_MODE_FLAG, "prbs_mode",
                                  "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
@@ -690,6 +696,32 @@ void MlxlinkUi::validateGeneralCmdsParams()
         throw MlxRegException(LANE_FLAG
                               ", --" DATABASE_FLAG " and --" SLTP_TX_POLICY_FLAG
                               " flags are valid only with Configure Transmitter Parameters flag (--" SLTP_SET_FLAG ")");
+    }
+    if (!_userInput._constantRole.empty())
+    {
+        if (!isIn(SET_PRIMARY, _sendRegFuncMap))
+        {
+            throw MlxRegException("The --" CONSTANT_ROLE_FLAG " flag must be used with "
+                                  "--" SET_PRIMARY_FLAG " or --" SET_SECONDARY_FLAG);
+        }
+        if (!checkConstantRoleCmd(_userInput._constantRole))
+        {
+            throw MlxRegException("Please provide a valid constant role command [EN/DS]");
+        }
+    }
+    if (_userInput._setTxPrecodingProvided)
+    {
+        if (_userInput._setTxPrecoding != "EN" && _userInput._setTxPrecoding != "DS")
+        {
+            throw MlxRegException("Please provide a valid TX precoding command [EN/DS]");
+        }
+    }
+    if (_userInput._setRxPrecodingProvided)
+    {
+        if (_userInput._setRxPrecoding != "EN" && _userInput._setRxPrecoding != "DS")
+        {
+            throw MlxRegException("Please provide a valid RX precoding command [EN/DS]");
+        }
     }
 }
 
@@ -1249,6 +1281,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(BKV_WMASK_FLAG, BKV_WMASK_FLAG_SHORT, "wmask", "BKV Entry Write Mask");
 
     AddOptions(SET_LINK_PEQ_FLAG, SET_LINK_PEQ_FLAG_SHORT, "PEQ_TIME", "Set Link PEQ (Periodic Equalization)");
+    AddOptions(SET_TX_PRECODING_FLAG, SET_TX_PRECODING_FLAG_SHORT, "EN|DS", "Set TX Precoding (EN=Enable, DS=Disable)");
+    AddOptions(SET_RX_PRECODING_FLAG, SET_RX_PRECODING_FLAG_SHORT, "EN|DS", "Set RX Precoding (EN=Enable, DS=Disable)");
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
     AddOptions(PMAOS_FLAG, PMAOS_FLAG_SHORT, "PMAOS", "Send PMAOS");
@@ -1348,6 +1382,10 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPHCR_SHOW_FEC_HIST_FLAG, PPHCR_SHOW_FEC_HIST_FLAG_SHORT, "", "Show FEC errors histograms");
     AddOptions(PPHCR_CLEAR_HISTOGRAM_FLAG, PPHCR_CLEAR_HISTOGRAM_FLAG_SHORT, "", "Clears FEC errors histograms");
     AddOptions(PLANE_FLAG, PLANE_FLAG_SHORT, "plane", "plane index");
+    AddOptions(SET_PRIMARY_FLAG, SET_PRIMARY_FLAG_SHORT, "", "Set primary port");
+    AddOptions(SET_SECONDARY_FLAG, SET_SECONDARY_FLAG_SHORT, "", "Set secondary port");
+    AddOptions(CONSTANT_ROLE_FLAG, CONSTANT_ROLE_FLAG_SHORT, "EN/DS",
+               "Keep primary/secondary role constant [EN(enable)/DS(disable)]");
 
     _cmdParser.AddRequester(this);
 }
@@ -1499,6 +1537,12 @@ void MlxlinkUi::commandsCaller()
             case SET_PERIODIC_EQ:
                 _mlxlinkCommander->setPeriodicEq();
                 break;
+            case SET_PRIMARY:
+                _mlxlinkCommander->setPrimary();
+                break;
+            case SEND_PRECODING:
+                _mlxlinkCommander->setPrecoding();
+                break;
             default:
                 break;
         }
@@ -1527,6 +1571,24 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         checkStrLength(value);
         RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)(_userInput.planeIndex));
+        return PARSE_OK;
+    }
+    else if (name == SET_PRIMARY_FLAG)
+    {
+        addCmd(SET_PRIMARY);
+        _userInput._setPrimary = true;
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == SET_SECONDARY_FLAG)
+    {
+        addCmd(SET_PRIMARY);
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == CONSTANT_ROLE_FLAG)
+    {
+        _userInput._constantRole = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == HELP_FLAG)
@@ -1599,6 +1661,22 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._periodicEqIntervalSpecified = true;
         _userInput._setPeriodicEqInterval = stoi(value, nullptr, 0);
         _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == SET_TX_PRECODING_FLAG)
+    {
+        addCmd(SEND_PRECODING);
+        _userInput._setTxPrecoding = toUpperCase(value);
+        _userInput._setTxPrecodingProvided = true;
+        _userInput._networkCmds++;
+        return PARSE_OK;
+    }
+    else if (name == SET_RX_PRECODING_FLAG)
+    {
+        addCmd(SEND_PRECODING);
+        _userInput._setRxPrecoding = toUpperCase(value);
+        _userInput._setRxPrecodingProvided = true;
+        _userInput._networkCmds++;
         return PARSE_OK;
     }
     else if (name == SLTP_SHOW_FLAG)
