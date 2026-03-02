@@ -1464,7 +1464,7 @@ void MlxlinkCablesCommander::getPMPDInfo(vector<string>& traffic,
         traficStr = to_string(add32BitTo64(getFieldValue("prbs_bits_high"), getFieldValue("prbs_bits_low")));
         errorsStr = to_string(add32BitTo64(getFieldValue("prbs_errors_high"), getFieldValue("prbs_errors_low")));
         berStr = to_string(getFieldValue("ber_coef")) + "E-" + to_string(getFieldValue("ber_magnitude"));
-        snrStr = getFieldValue("measured_snr") ? (to_string(getFieldValue("measured_snr")) + " dB") : "N/A";
+        snrStr = getFieldValue("measured_snr") ? (to_string(getFieldValue("measured_snr")) + " dB") : NA_FIELD_VALUE;
 
         traffic.push_back(MlxlinkRecord::addSpaceForModulePrbs(traficStr));
 

@@ -71,7 +71,6 @@ public:
     bool _sendPepc;
     bool _sendPepcForceMode;
     bool _sendPepcANMode;
-    bool _pprtTuningTypeFlag;
     bool _toggle;
     bool _linkModeForce;
     bool _pcie;
@@ -122,7 +121,6 @@ public:
     string _ppttModulation;
     string _pprtRate;
     string _ppttRate;
-    string _pprtTuningType;
     string _csvBer;
     string _testMode;
     string _forceMode;
@@ -131,6 +129,15 @@ public:
     string _linkTraining;
     string _phyRecovery;
     string _phyRecoveryType;
+    string _plrRejectMode;
+    u_int32_t _plrMarginThreshold;
+    u_int32_t _plrTxCrc;
+    bool _plrRejectModeProvided;
+    bool _plrMarginThresholdProvided;
+    bool _plrTxCrcProvided;
+    bool _setPrimary;
+    bool _primarySecondarySpecified;
+    string _constantRole;
     bool _showPeriodicEq;
     bool _periodicEqIntervalSpecified;
     int _setPeriodicEqInterval;
@@ -205,6 +212,11 @@ public:
     bool _skipPowerGoodCheck;
     string _sysfsPath;
     bool _sysfsPathGiven;
+
+    string _setTxPrecoding;
+    string _setRxPrecoding;
+    bool _setTxPrecodingProvided;
+    bool _setRxPrecodingProvided;
 };
 
 #endif /* MLXLINK_USER_INPUT_H */

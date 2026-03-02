@@ -280,6 +280,7 @@ public:
     std::map<u_int32_t, std::string> _moduleRxAmpCap;
     std::map<u_int32_t, std::string> _pepcStatus;
     std::map<u_int32_t, string> _IBSpeed2Str;
+    std::map<u_int32_t, string> _NVLINKLegacySpeed2Str;
     std::map<u_int32_t, string> _NVLINKSpeed2Str;
     std::map<u_int32_t, string> _EthExtSpeed2Str;
     std::map<u_int32_t, u_int32_t> _IBSpeed2gNum;
@@ -294,7 +295,7 @@ public:
     std::map<u_int32_t, PRM_FIELD> _SltpEdrParams;
     std::map<u_int32_t, PRM_FIELD> _SltpHdrParams;
     std::map<u_int32_t, PRM_FIELD> _SltpNdrParams;
-    std::map<u_int32_t, PRM_FIELD> _SltpXdrParams;
+    std::map<u_int32_t, PRM_FIELD> _Sltp5nmParams;
     std::map<u_int32_t, std::string> _PSCDRateMask2Str;
     std::map<std::string, uint32_t> _PSCDRateStr2Mask;
     std::map<u_int32_t, std::string> _PSCDRoleMask2Str;
@@ -380,6 +381,7 @@ public:
     std::map<u_int32_t, std::string> _fecModeActiveForTableDispaly;
     std::map<u_int32_t, std::string> _cableTypeForTableDisplay;
     std::map<u_int32_t, std::string> _phyMgrStateForTableDisplay;
+    std::map<u_int32_t, std::string> _precodingOperStatus;
 
     // Vectors
     std::vector<std::pair<std::string, u_int32_t>> _multiPortInfoTableHeader;
