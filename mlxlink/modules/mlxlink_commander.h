@@ -225,6 +225,16 @@
 #define SET_LINK_PEQ_FLAG_SHORT ' '
 #define PLANE_FLAG "plane"
 #define PLANE_FLAG_SHORT ' '
+#define SET_PRIMARY_FLAG "set_primary"
+#define SET_PRIMARY_FLAG_SHORT ' '
+#define SET_SECONDARY_FLAG "set_secondary"
+#define SET_SECONDARY_FLAG_SHORT ' '
+#define CONSTANT_ROLE_FLAG "constant_role"
+#define CONSTANT_ROLE_FLAG_SHORT ' '
+#define SET_TX_PRECODING_FLAG "set_tx_precoding"
+#define SET_TX_PRECODING_FLAG_SHORT ' '
+#define SET_RX_PRECODING_FLAG "set_rx_precoding"
+#define SET_RX_PRECODING_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink Cable info flags
@@ -403,6 +413,8 @@ enum OPTION_TYPE
     SEND_LINK_TRAINING,
     SHOW_PERIODIC_EQ,
     SET_PERIODIC_EQ,
+    SET_PRIMARY,
+    SEND_PRECODING,
 
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
@@ -458,7 +470,7 @@ public:
     void checkStrLength(const string& str);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
     u_int32_t activeSpeed2gNum(u_int32_t mask, bool extended);
-    string activeSpeed2Str(u_int32_t mask, bool extended, bool isXdrSlowActive = false);
+    string activeSpeed2Str(u_int32_t mask, bool extended, bool isModeAsActive = false);
     void getCableParams();
     bool inPrbsTestMode();
     bool checkGBPpaosDown();
@@ -482,6 +494,7 @@ public:
     // Mlxlink query functions
     virtual void showModuleInfo();
     virtual void operatingInfoPage();
+    virtual void portInfoSection();
     virtual void supportedInfoPage();
     virtual void troubInfoPage();
     void showPddr();
@@ -512,6 +525,7 @@ public:
     void showRxRecoveryCounters();
     void showPeriodicEq();
     void setPeriodicEq();
+    void setPrimary();
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
@@ -528,7 +542,7 @@ public:
     string getSltpFieldStr(const PRM_FIELD& field);
     void prepareSltpEdrHdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
     virtual void prepareSltpNdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
-    virtual void prepareSltpXdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
+    virtual void prepareSltp5nmGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
     virtual string getSltpHeader();
     void startSlrgPciScan(u_int32_t numOfLanesToUse);
     void initValidDPNList();
@@ -539,6 +553,7 @@ public:
     string fecMaskToStr(u_int32_t mask);
     void updateSwControlStatus();
     void initSwControledModule();
+    void updateNvlinkModeBStatus();
     u_int32_t getNumberOfPorts();
     bool checkDPNvSupport();
     void prepareBerModuleInfo(bool valid, const vector<AmberField>& moduleInfoFields);
@@ -548,6 +563,8 @@ public:
     void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
     void prepare5nmEyeInfo(u_int32_t numOfLanesToUse);
     void getPddrOperInfo();
+    void getPrecodingStatus();
+    void setPrecoding();
     bool isTransmitAllowed(u_int32_t localPort, u_int32_t protoActive);
 
     void showTestMode();
@@ -567,7 +584,7 @@ public:
 
     std::map<string, string> getRawEffectiveErrors();
     std::map<string, string> getRawEffectiveErrorsinTestMode();
-    int prbsModeToMask(const string& mode);
+    int prbsModeToMask(const string& mode, bool isNvl6);
     string prbsMaskToMode(u_int32_t mask, u_int32_t modeSelector);
     string getPrbsModeRX();
     u_int32_t getPrbsRateRX();
@@ -602,6 +619,7 @@ public:
 
     MlxlinkCmdPrint _toolInfoCmd;
     MlxlinkCmdPrint _operatingInfoCmd;
+    MlxlinkCmdPrint _portInfoCmd;
     MlxlinkCmdPrint _supportedInfoCmd;
     MlxlinkCmdPrint _troubInfoCmd;
     MlxlinkCmdPrint _testModeInfoCmd;
@@ -646,6 +664,7 @@ public:
     // Config helper functions
     bool isForceDownSupported();
     bool isPmaosResetToggleSupported();
+    bool isLbCapModeIdxSupported();
     bool isPPHCRSupported();
     void sendGBPaosCmd(PAOS_ADMIN adminStatus, bool forceDown);
     void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
@@ -658,13 +677,13 @@ public:
     void sendPmaosCmd(PMAOS_ADMIN adminStatus);
     bool checkPmaosDown();
     void checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMask);
-    void checkPrbsRegsCap(const string& prbsReg, const string& laneRate);
+    void checkPrbsRegsCap(const string& prbsReg, const string& laneRate, bool isNvl6);
     void checkPrbsModulation(const string& prbsReg);
     void checkPrbsPolCap(const string& prbsReg);
-    void checkPprtPptt();
+    void checkPprtPptt(bool rxRateNvl6, bool txRateNvl6);
     void checkDcCouple();
     void checkPplrCap();
-    void sendPrbsPpaos(bool testMode, bool dc_cpl_allow = false);
+    void sendPrbsPpaos(bool testMode, bool dc_cpl_allow = false, bool isNvl6 = false);
     void startTuning();
     void prbsConfiguration(const string& prbsReg,
                            bool enable,
@@ -672,9 +691,10 @@ public:
                            u_int32_t prbsMode,
                            bool perLaneConfig,
                            bool prbsPolInv,
+                           bool isNvl6,
                            u_int32_t modulation = PRBS_MODULATION_DEFAULT);
-    void sendPprtPptt();
-    void resetPprtPptt();
+    void sendPprtPptt(bool isNvl6);
+    void resetPprtPptt(bool isNvl6);
     u_int32_t ptysSpeedToMask(const string& speed);
     void validateSpeedStr();
     void checkSupportedSpeed(const string& speed, u_int32_t cap, bool extSpeed = false);
@@ -684,13 +704,13 @@ public:
     void checkPplmCap();
     string updateSltpEdrHdrFields();
     string updateSltpNdrFields();
-    virtual string updateSltpXdrFields();
+    virtual string updateSltp5nmGenFields();
     string getSltpStatus();
     void getSltpAlevOut(u_int32_t lane);
     void getSltpRegAndLeva(u_int32_t lane);
     u_int32_t getLaneSpeed(u_int32_t lane);
     void validateNumOfParamsForNDRGen();
-    void validateNumOfParamsForXDRGen();
+    void validateNumOfParamsFor5nmGen();
     void checkSltpParamsSize();
     bool isMpeinjSupported();
     u_int32_t getRateFromPptt();
@@ -702,6 +722,8 @@ public:
     bool checkAllPortsDown();
     void configurePeqForAllPorts(bool brLanesCap);
     void setPlaneIndex(int planeIndex);
+    string getTestModeFsmStateStr();
+    bool isTestModeFsmStateSupported();
 
     // Mlxlink params
     UserInput _userInput;
@@ -722,7 +744,7 @@ public:
     u_int32_t _cableLen;
     u_int32_t _activeSpeed;
     u_int32_t _activeSpeedEx;
-    bool _isXdrSlowActive;
+    bool _isModeAsActive;
     u_int32_t _laneSpeedFromPptt;
     u_int32_t _protoCapability;
     u_int32_t _deviceCapability;
@@ -761,6 +783,8 @@ public:
     bool _isSwControledStandAlone;
     bool _ignoreIbFECCheck;
     bool _isNVLINK;
+    bool _isNvlinkModeA;
+    bool _isNvlinkModeB;
     u_int32_t _priOrSec;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;

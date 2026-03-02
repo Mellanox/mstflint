@@ -44,7 +44,7 @@ AmberField::AmberField(const string& uiField, const string& uiValue, bool visibl
     _prmField = "";
     _prmValue = 0;
     _fieldGroup = "";
-    _uiValue = AmberField::_dataValid ? uiValue : "N/A";
+    _uiValue = AmberField::_dataValid ? uiValue : NA_FIELD_VALUE;
     if (visible)
     {
         _fieldIndex = _lastFieldIndex;
@@ -64,7 +64,7 @@ AmberField::AmberField(const string& uiField, const string& uiValue, u_int32_t f
     _prmField = "";
     _fieldGroup = "";
     _prmValue = 0;
-    _uiValue = AmberField::_dataValid ? uiValue : "N/A";
+    _uiValue = AmberField::_dataValid ? uiValue : NA_FIELD_VALUE;
 
     _fieldIndex = fieldIndex;
     _lastFieldIndex = _fieldIndex + 1;

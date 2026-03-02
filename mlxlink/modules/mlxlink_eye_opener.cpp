@@ -505,7 +505,7 @@ void MlxlinkEyeOpener::printMarginsSummary()
     }
     fprintf(MlxlinkRecord::stdOut, "\n");
     string finalMarginValue =
-      (finalMargin.value == 0 && finalMargin.version == 0) ? "N/A" : to_string(finalMargin.value);
+      (finalMargin.value == 0 && finalMargin.version == 0) ? NA_FIELD_VALUE : to_string(finalMargin.value);
     printField("Final margin", finalMarginValue);
 }
 
