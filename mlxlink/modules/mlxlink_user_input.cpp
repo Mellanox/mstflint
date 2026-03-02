@@ -75,7 +75,6 @@ UserInput::UserInput()
     _prbsDcCoupledAllow = false;
     _sendPepcForceMode = false;
     _sendPepcANMode = false;
-    _pprtTuningTypeFlag = false;
     _toggle = true;
     _linkModeForce = false;
     _pcie = false;
@@ -123,7 +122,6 @@ UserInput::UserInput()
     _ppttModulation = "";
     _pprtRate = "";
     _ppttRate = "";
-    _pprtTuningType = "";
     _csvBer = "";
     _testMode = "Nominal";
     _forceMode = "";
@@ -142,6 +140,15 @@ UserInput::UserInput()
     _linkTraining = "";
     _phyRecovery = "";
     _phyRecoveryType = "";
+    _plrRejectMode = "";
+    _plrMarginThreshold = 0;
+    _plrTxCrc = 0;
+    _plrRejectModeProvided = false;
+    _plrMarginThresholdProvided = false;
+    _plrTxCrcProvided = false;
+    _setPrimary = false;
+    _primarySecondarySpecified = false;
+    _constantRole = "";
     _showPeriodicEq = false;
     _periodicEqIntervalSpecified = false;
     _setPeriodicEqInterval = -1; // 10uS granularity
@@ -186,4 +193,9 @@ UserInput::UserInput()
     _skipPowerGoodCheck = false;
     _sysfsPath = "";
     _sysfsPathGiven = false;
+
+    _setTxPrecoding = "";
+    _setRxPrecoding = "";
+    _setTxPrecodingProvided = false;
+    _setRxPrecodingProvided = false;
 }

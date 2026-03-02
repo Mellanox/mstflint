@@ -174,11 +174,11 @@ void MlxlinkRegParser::sendPrmReg(const string& regName, maccess_reg_method_t me
 
 // This function uses va_list to support all flavors of variadic sendPrmReg functions
 void MlxlinkRegParser::sendPrmRegVaList(const string& regName,
-    maccess_reg_method_t method,
-    const char* fields,
-    va_list args,
-    bool reset,
-    bool force_full_path)
+                                        maccess_reg_method_t method,
+                                        const char* fields,
+                                        va_list args,
+                                        bool reset,
+                                        bool force_full_path)
 {
     char fieldsCstr[MAX_FIELDS_BUFFER];
     vsnprintf(fieldsCstr, MAX_FIELDS_BUFFER, fields, args);
@@ -338,5 +338,5 @@ string MlxlinkRegParser::getAscii(const string& name, u_int32_t size)
             }
         }
     }
-    return (value != "") ? value : "N/A";
+    return (value != "") ? value : NA_FIELD_VALUE;
 }
