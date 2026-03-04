@@ -111,11 +111,13 @@ public:
         if (_ioAccess)
         {
             delete _ioAccess;
+            _ioAccess = (FBase*)NULL;
         }
         if (_signatureMngr)
         {
             delete _signatureMngr;
         }
+        FwCleanUp();
     };
     // virtual void print_type() {};
     virtual mfile* getMfileObj()
