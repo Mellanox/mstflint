@@ -316,7 +316,7 @@ mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char* argv[])
         {
             return err(true, "Invalid Configuration argument %s", argv[i]);
         }
-        tag = ptr; // hopefully its calling copy function.
+        tag = ptr;
         // get the val
         ptr = strtok(NULL, "=");
         if (!ptr)

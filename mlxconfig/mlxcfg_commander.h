@@ -52,9 +52,9 @@ public:
     static Commander* create(std::string device,
                              std::string& dbName,
                              bool forceCreate = false,
-                             Device_Type deviceType = Device_Type::HCA); // clients can force create skiping any support
-                                                                         // check, and move the responsebility to the
-                                                                         // client.
+                             Device_Type deviceType = Device_Type::HCA); // clients can force create skipping any
+                                                                         // support check, and move the responsibility
+                                                                         // to the client.
     static Commander* create(mfile* mf, std::string& dbName, Device_Type deviceType = Device_Type::HCA);
     virtual void printLongDesc(FILE*) = 0;
     virtual void
@@ -68,6 +68,7 @@ public:
     virtual void clearSemaphore() = 0;
     virtual void invalidateCfgs() = 0;
     virtual void invalidateCfg(const std::string& configName) = 0;
+    virtual void invalidateCfg(const std::vector<ParamView>& params) = 0;
     virtual const char* loadConfigurationGetStr() = 0;
     virtual void setRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
     virtual std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;

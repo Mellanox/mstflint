@@ -1258,7 +1258,7 @@ void BytesArrayParamVal::setVal(string val)
     {
         for (; i < val.length(); i += 2)
         {
-            s = val.substr(i, 2); // every byte is 2 hex charecters
+            s = val.substr(i, 2); // every byte is 2 hex characters
             _bytes[i / 2] = stoi(s, nullptr, 16);
         }
     }
@@ -1392,4 +1392,17 @@ std::shared_ptr<Param> Param::cloneDeep() const
         p->_value = _value->clone();
     }
     return p;
+}
+
+// paramView utility function
+bool isParamViewInList(const ParamView& param, const vector<ParamView>& list)
+{
+    for (const ParamView& p : list)
+    {
+        if (param.mlxconfigName == p.mlxconfigName)
+        {
+            return true;
+        }
+    }
+    return false;
 }

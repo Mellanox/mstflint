@@ -379,6 +379,11 @@ string increaseIndexIfNeeded(const string& name)
     return increasedName;
 }
 
+bool isContinuanceArray(const string& mlxconfigName)
+{
+    return mlxconfigName.rfind("SPLIT_PORT", 0) == 0;
+}
+
 bool isIndexedStartFromOneSupported(const string& mlxconfigName)
 {
 #if defined(MST_UL)
@@ -472,6 +477,15 @@ string getArrayPrefix(const string& mlxconfigName)
     string prefix = mlxconfigName;
 
     return prefix.substr(0, mlxconfigName.size() - getArraySuffix(mlxconfigName).size());
+}
+
+string getConfigNameWithSuffixByInterval(string mlxconfigName, u_int32_t interval)
+{
+    if (!isIndexedStartFromOneSupported(mlxconfigName))
+    {
+        return mlxconfigName;
+    }
+    return mlxconfigName + getArraySuffixByInterval(interval);
 }
 
 string getArraySuffixByInterval(u_int32_t interval)

@@ -281,4 +281,5 @@ public:
     static void str2TextualValuesMap(const char* s, map<string, u_int32_t>& m);
 };
 
+bool isParamViewInList(const ParamView& param, const vector<ParamView>& list);
 #endif

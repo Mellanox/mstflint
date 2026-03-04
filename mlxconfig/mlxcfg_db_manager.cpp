@@ -39,7 +39,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-
+#include <iostream>
 // #define NDEBUG //uncomment in order to disable asserts
 #include <assert.h>
 
@@ -387,7 +387,7 @@ std::shared_ptr<TLVConf> MlxcfgDBManager::getDependencyTLVByName(string tlvName,
     }
 }
 
-std::shared_ptr<TLVConf> MlxcfgDBManager::getTLVByIndexAndClass(u_int32_t id, TLVClass c)
+std::shared_ptr<TLVConf> MlxcfgDBManager::getTLVByIdAndClass(u_int32_t id, TLVClass c)
 {
     for (std::vector<std::shared_ptr<TLVConf>>::iterator it = _fetchedTLVs.begin(); it != _fetchedTLVs.end(); ++it)
     {
@@ -484,6 +484,21 @@ tuple<string, int, int> MlxcfgDBManager::getMlxconfigNamePortModule(string mlxco
 
     return make_tuple(mlxconfigName, port, module);
 }
+
+
+std::shared_ptr<TLVConf>
+  MlxcfgDBManager::getTLVByParamMlxconfigNameAndIndex(std::string mlxconfigName, u_int32_t index, mfile* mf)
+  {
+    string newName = getConfigNameWithSuffixByInterval(mlxconfigName, index);
+    try
+    {
+        return getTLVByParamMlxconfigName(newName, mf);
+    }
+    catch (MlxcfgException& e)
+    {
+        throw MlxcfgException("Failed to find Param / index out of range: %s[%d]", mlxconfigName.c_str(), index);
+    }
+  }
 
 std::shared_ptr<TLVConf>
   MlxcfgDBManager::getTLVByParamMlxconfigName(std::string mlxconfigName, mfile* mf)
