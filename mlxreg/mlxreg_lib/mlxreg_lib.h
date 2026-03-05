@@ -59,7 +59,7 @@ public:
     using AdbInstance = _AdbInstance_impl<dynamic, uint32_t>;
 
 
-    _MlxRegLib_impl(mfile* mf, string extAdbFile, bool isExternal = true, bool batch_reg = false);
+    _MlxRegLib_impl(mfile* mf, string extAdbFile, bool isExternal = true);
     ~_MlxRegLib_impl(); // Dto'r
     /* * * * * * * * * * * * * *
      * library Getters/Setters *
@@ -75,8 +75,6 @@ public:
      * * * * * * * */
     string getLastErrMsg();
     MlxRegLibStatus showRegisters(std::vector<string>& regs); // Return all available register names
-    MlxRegLibStatus showRegister(string regName,
-                                 std::vector<AdbInstance*>& fields); // Return all fields of given register
     MlxRegLibStatus sendRegister(string regName, int method, std::vector<u_int32_t>& data);  // Send register by name
     MlxRegLibStatus sendRegister(u_int16_t regId, int method, std::vector<u_int32_t>& data); // Send register by ID
     MlxRegLibStatus sendRegister(u_int16_t regId, int method, void* data, uint32_t size);    // Send register with raw
@@ -106,13 +104,13 @@ protected:
     AdbInstance* _regAccessRootNode;
     AdbInstance* _regAccessUnionNode;
     std::map<string, u_int64_t> _regAccessMap;
-    AdbInstance* _currentNode;
+    AdbInstance* _currentNode{nullptr};
+    std::map<string, AdbInstance*> _layoutCache;
     bool _isExternal;
-    bool _batch_reg;
 };
 
 // Type aliases
-using MlxRegLib = _MlxRegLib_impl<false>;
+using MlxRegLib = _MlxRegLib_impl<true>;
 
 } // namespace mlxreg
 #endif /* MLXREG_LIB_H */

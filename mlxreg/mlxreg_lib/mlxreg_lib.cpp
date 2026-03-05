@@ -53,11 +53,10 @@ template<bool dynamic>
 const int _MlxRegLib_impl<dynamic>::SLEEP_INTERVAL = 100;
 
 template<bool dynamic>
-_MlxRegLib_impl<dynamic>::_MlxRegLib_impl(mfile* mf, string extAdbFile, bool isExternal, bool batch_reg)
+_MlxRegLib_impl<dynamic>::_MlxRegLib_impl(mfile* mf, string extAdbFile, bool isExternal)
 {
     _mf = mf;
     _isExternal = isExternal;
-    _batch_reg = batch_reg;
     _currentNode = nullptr;
     try
     {
@@ -84,14 +83,7 @@ _MlxRegLib_impl<dynamic>::_MlxRegLib_impl(mfile* mf, string extAdbFile, bool isE
     }
 
     _regAccessRootNode = nullptr;
-    if (!_batch_reg)
-    {
         _regAccessRootNode = _adb->createLayout(rootNode, 2);
-    }
-    else
-    {
-        _regAccessRootNode = _adb->createLayout(rootNode);
-    }
     if (!_regAccessRootNode)
     {
         throw MlxRegException("No supported access registers found");
@@ -126,10 +118,11 @@ _MlxRegLib_impl<dynamic>::_MlxRegLib_impl(mfile* mf, string extAdbFile, bool isE
 template<bool dynamic>
 _MlxRegLib_impl<dynamic>::~_MlxRegLib_impl()
 {
-    if (!_batch_reg && _currentNode != nullptr)
+    for (auto& entry : _layoutCache)
     {
-        delete _currentNode;
+        delete entry.second;
     }
+    _layoutCache.clear();
     if (_regAccessRootNode)
     {
         delete _regAccessRootNode;
@@ -191,18 +184,21 @@ void _MlxRegLib_impl<dynamic>::initAdb(string extAdbFile)
 template<bool dynamic>
 typename _MlxRegLib_impl<dynamic>::AdbInstance* _MlxRegLib_impl<dynamic>::findAdbNode(string name)
 {
+    auto cacheIt = _layoutCache.find(name);
+    if (cacheIt != _layoutCache.end())
+    {
+        return cacheIt->second;
+    }
+
     if (_regAccessMap.find(name) == _regAccessMap.end())
     {
         throw MlxRegException("Can't find access register name: %s", name.c_str());
     }
+
     auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(name);
-
-    if (!_batch_reg)
-    {
-        found_node = _adb->createLayout(found_node->nodeDesc->name);
-    }
-
-    return found_node;
+    auto layout = _adb->createLayout(found_node->nodeDesc->name);
+    _layoutCache[name] = layout;
+    return layout;
 }
 
 /************************************
@@ -214,28 +210,20 @@ typename _MlxRegLib_impl<dynamic>::AdbInstance* _MlxRegLib_impl<dynamic>::findAd
     try
     {
         auto found_node = _regAccessUnionNode->getUnionSelectedNodeName(id);
-        if (!_batch_reg)
+        string name = found_node->nodeDesc->name;
+        auto cacheIt = _layoutCache.find(name);
+        if (cacheIt != _layoutCache.end())
         {
-            found_node = _adb->createLayout(found_node->nodeDesc->name);
+            return cacheIt->second;
         }
-
-        return found_node;
+        auto layout = _adb->createLayout(name);
+        _layoutCache[name] = layout;
+        return layout;
     }
     catch (AdbException& er)
     {
         throw MlxRegException("Can't find access register with id: %d", id);
     }
-}
-
-/************************************
- * Function: showRegister
- ************************************/
-template<bool dynamic>
-MlxRegLibStatus _MlxRegLib_impl<dynamic>::showRegister(string regName, std::vector<AdbInstance*>& fields)
-{
-    AdbInstance* adbNode = findAdbNode(regName);
-    fields = adbNode->getLeafFields(true);
-    return MRLS_SUCCESS;
 }
 
 /************************************
@@ -398,11 +386,11 @@ bool _MlxRegLib_impl<dynamic>::isRegSizeSupported(string regName)
      int                                    status;
      struct icmd_hca_icmd_query_cap_general icmd_cap;
      int                                    i = RETRIES_COUNT;
- 
+
      if ((mf->tp == MST_FWCTL_CONTROL_DRIVER) || (mf->tp == MST_NVML)) {
          return;
      }
- 
+
      do{
          memset(&icmd_cap, 0, sizeof(icmd_cap));
          status = get_icmd_query_cap(mf, &icmd_cap);
@@ -411,7 +399,7 @@ bool _MlxRegLib_impl<dynamic>::isRegSizeSupported(string regName)
          }
          msleep(SLEEP_INTERVAL);
      } while (i-- > 0);
- 
+
      if (status || (icmd_cap.allow_icmd_access_reg_on_all_registers == 0)) {
          throw MlxRegException("FW burnt on device does not support generic access register");
      }
