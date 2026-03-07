@@ -542,6 +542,15 @@ static struct device_info g_devs_info[] = {{
                                              DM_GEARBOX         /* dev_type */
                                            },
                                            {
+                                             DeviceConnectX9, /* dm_id - CX9 in I2C livefish reports 0 at 0xf0014 */
+                                             0,                /* hw_dev_id */
+                                             -1,               /* hw_rev_id */
+                                             4133,             /* sw_dev_id */
+                                             "ConnectX9_Livefish", /* name */
+                                             4,                /* port_num */
+                                             DM_HCA            /* dev_type */
+                                           },
+                                           {
                                              DeviceUnknown,    /* dm_id */
                                              0,                /* hw_dev_id */
                                              0,                /* hw_rev_id */
