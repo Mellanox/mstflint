@@ -2771,7 +2771,8 @@ u_int32_t supported_device_ids[] = {DeviceConnectX3_HwId,
                                     DeviceGR100_HwId,
                                     DeviceConnectX8_Pure_PCIe_Switch_HwId,
                                     DeviceConnectX9_HwId,
-                                    DeviceConnectX9_Pure_PCIe_Switch_HwId};
+                                    DeviceConnectX9_Pure_PCIe_Switch_HwId,
+                                    0}; /* 0 = CX9 in I2C livefish (0xf0014 returns 0) */
 #define SUPPORTED_DEVICE_ID_TABLE_SIZE (sizeof(supported_device_ids) / sizeof(u_int32_t))
 
 int is_supported_device_id(u_int16_t dev_id)

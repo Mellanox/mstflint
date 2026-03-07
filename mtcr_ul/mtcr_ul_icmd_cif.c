@@ -1162,6 +1162,7 @@ static int icmd_init_cr(mfile* mf)
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX7;
             break;
 
+        case (0): /* CX9 in I2C livefish reports 0 at 0xf0014; use CX9 layout */
         case (CX8_HW_ID):
         case (CX9_HW_ID):
         case (CX8_PURE_PCIE_SWITCH_HW_ID):
@@ -1204,6 +1205,17 @@ static int icmd_init_cr(mfile* mf)
             return ME_ICMD_NOT_SUPPORTED;
     }
     mf->icmd.max_cmd_size = ICMD_MAX_CMD_SIZE;
+#ifdef ENABLE_MST_DEV_I2C
+    /* CX9 in I2C livefish: 0xf0014 returns 0; ICMD version read may fail - use fixed CX9 layout */
+    if ((hw_id & 0xffff) == 0 && mf->tp == MST_DEV_I2C)
+    {
+        mf->icmd.cmd_addr = CMD_PTR_ADDR_CX8;
+        mf->icmd.ctrl_addr = CMD_PTR_ADDR_CX8 + CTRL_OFFSET;
+        mf->icmd.syndrome_addr = CMD_PTR_ADDR_CX8 + SYNDROME_OFFSET;
+        mf->icmd.icmd_opened = 1;
+        return ME_OK;
+    }
+#endif
     icmd_ver = get_version(mf, hcr_address);
     /* get command and control addresses */
     switch (icmd_ver)
