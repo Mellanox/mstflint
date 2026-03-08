@@ -33,6 +33,8 @@
 #ifndef MLXLINK_AMBER_COLLECTOR_H
 #define MLXLINK_AMBER_COLLECTOR_H
 
+#include <array>
+
 #include "mlxlink_reg_parser.h"
 #include "amber_field.h"
 
@@ -74,6 +76,7 @@ public:
     virtual vector<AmberField> getPhyDebugInfo();
     virtual vector<AmberField> getExtModuleStatus();
     virtual vector<AmberField> getRecoveryCounters();
+    virtual vector<AmberField> getSerdesGen8NVLink();
 
     // Auxiliary functions
     virtual void getPemiLaserMonitors(vector<AmberField>& fields, bool isGroupSupported);
@@ -182,6 +185,49 @@ protected:
     virtual void getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params);
     virtual void getModuleLinkUpInfoPage(vector<AmberField>& fields);
     virtual void updateModeAsActive();
+
+    virtual void getSlsirGen8Fields(vector<AmberField>& fields);
+    void getSltpGen8Fields(vector<AmberField>& fields);
+    void getSltrGen8Fields(vector<AmberField>& fields, u_int32_t testType);
+
+    string getSltrFieldPrmName(const string& baseName, u_int32_t groupIndex, bool isArray = false);
+    string getSltrFieldDisplayName(const string& baseName, u_int32_t lane, u_int32_t groupIndex);
+    virtual void handleSltrGroup(vector<AmberField>& fields,
+                                 u_int32_t lane,
+                                 const string& groupName,
+                                 const std::array<uint8_t, 2>& limits,
+                                 bool isArray = false);
+    virtual void handleSltrVGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrXGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrBsGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrJbGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrQbcGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrBcGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrCGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrDGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrIGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrMGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrOGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrQaGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrPGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrTGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrAfGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrZGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrUGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrHGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrSGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrGGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrJaGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrJcGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrAaGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrAcGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrEGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrWGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrAfmGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrFGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrQGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrAbGroup(vector<AmberField>& fields, u_int32_t lane);
+    virtual void handleSltrYGroup(vector<AmberField>& fields, u_int32_t lane);
 
     // Callers
 

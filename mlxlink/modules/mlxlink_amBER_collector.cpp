@@ -97,6 +97,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_PHY_DEBUG_INFO] = FIELDS_COUNT{4, 4, 0};
     _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{191, 125, 0};
     _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{29, 25, 0};
+    _baseSheetsList[AMBER_SHEET_SERDES_5NM_GEN8] = FIELDS_COUNT{1284, 0, 0}; // NVLink only
 
     for_each(_baseSheetsList.begin(), _baseSheetsList.end(),
              [&](pair<AMBER_SHEET, FIELDS_COUNT> sheet) {
@@ -2939,6 +2940,16 @@ vector<AmberField> MlxlinkAmBerCollector::collectSheet(AMBER_SHEET sheet)
                 invalidSheet = true;
             }
             break;
+        case AMBER_SHEET_SERDES_5NM_GEN8:
+            if (!_inPRBSMode && _productTechnology == SERDES_GEN_8)
+            {
+                fields = getSerdesGen8NVLink();
+            }
+            else if (isIn(sheet, _sheetsToDump))
+            {
+                invalidSheet = true;
+            }
+            break;
         default:
             throw MlxRegException("Invalid amBER page index: %d", sheet);
     }
@@ -3079,4 +3090,320 @@ void MlxlinkAmBerCollector::updateModeAsActive()
     updateField("proto_mask", protoMask);
     sendRegister(ACCESS_REG_PTYS, MACCESS_REG_METHOD_GET);
     _isModeAsActive = getFieldValue("xdr_2x_slow_active");
+}
+
+// ---------- Serdes Gen8 NVLink (SLTR/SLSIR/SLTP) ----------
+
+void MlxlinkAmBerCollector::getSlsirGen8Fields(vector<AmberField>& fields)
+{
+    // Query SLSIR for lane 0 to get common version info (external: version fields only)
+    resetLocalParser(ACCESS_REG_SLSIR);
+    updateField("local_port", _localPort);
+    updateField("lane", 0);
+    updateField("pnat", _pnat);
+    sendRegister(ACCESS_REG_SLSIR, MACCESS_REG_METHOD_GET);
+
+    fields.push_back(AmberField("serdes_gen8_UPHY_major_version", getFieldStr("uphy_ver_major")));
+    fields.push_back(AmberField("serdes_gen8_UPHY_minor_version", getFieldStr("uphy_ver_minor")));
+    fields.push_back(AmberField("serdes_gen8_BKV_cln_major_version", getFieldStr("bkv_major_cln")));
+    fields.push_back(AmberField("serdes_gen8_BKV_cln_minor_version", getFieldStr("bkv_minor_cln")));
+    fields.push_back(AmberField("serdes_gen8_BKV_dln_major_version", getFieldStr("bkv_major_dln")));
+    fields.push_back(AmberField("serdes_gen8_BKV_dln_minor_version", getFieldStr("bkv_minor_dln")));
+}
+
+void MlxlinkAmBerCollector::getSltpGen8Fields(vector<AmberField>& fields)
+{
+    for (u_int32_t lane = 0; lane < 2; lane++)
+    {
+        resetLocalParser(ACCESS_REG_SLTP);
+        updateField("local_port", _localPort);
+        updateField("lane", lane);
+        updateField("pnat", _pnat);
+        sendRegister(ACCESS_REG_SLTP, MACCESS_REG_METHOD_GET);
+
+        string lanePrefix = "serdes_gen8_Lane" + to_string(lane) + "_";
+        fields.push_back(AmberField(lanePrefix + "tap0", getFieldStr("tap0")));
+        fields.push_back(AmberField(lanePrefix + "tap1", getFieldStr("tap1")));
+        fields.push_back(AmberField(lanePrefix + "tap2", getFieldStr("tap2")));
+        fields.push_back(AmberField(lanePrefix + "tap3", getFieldStr("tap3")));
+        fields.push_back(AmberField(lanePrefix + "tap4", getFieldStr("tap4")));
+        fields.push_back(AmberField(lanePrefix + "tap5", getFieldStr("tap5")));
+        fields.push_back(AmberField(lanePrefix + "tap6", getFieldStr("tap6")));
+        fields.push_back(AmberField(lanePrefix + "tap7", getFieldStr("tap7")));
+        fields.push_back(AmberField(lanePrefix + "tap8", getFieldStr("tap8")));
+        fields.push_back(AmberField(lanePrefix + "tap9", getFieldStr("tap9")));
+        fields.push_back(AmberField(lanePrefix + "tap10", getFieldStr("tap10")));
+        fields.push_back(AmberField(lanePrefix + "tap11", getFieldStr("tap11")));
+    }
+}
+
+string MlxlinkAmBerCollector::getSltrFieldPrmName(const string& baseName, u_int32_t groupIndex, bool isArray)
+{
+    return isArray ? baseName + "[" + to_string(groupIndex) + "]" : baseName + to_string(groupIndex);
+}
+
+string MlxlinkAmBerCollector::getSltrFieldDisplayName(const string& baseName, u_int32_t lane, u_int32_t groupIndex)
+{
+    string lanePrefix = "Lane" + to_string(lane) + "_";
+    string raw_name = baseName + to_string(groupIndex);
+    return lanePrefix + raw_name;
+}
+
+void MlxlinkAmBerCollector::handleSltrGroup(vector<AmberField>& fields,
+                                            u_int32_t lane,
+                                            const string& groupName,
+                                            const std::array<uint8_t, 2>& limits,
+                                            bool isArray)
+{
+    uint8_t start = limits[0];
+    uint8_t count = limits[1];
+    for (uint8_t i = 0; i < count; i++)
+    {
+        u_int32_t index = start + i;
+        fields.push_back(AmberField(getSltrFieldDisplayName(groupName, lane, index),
+                                    getFieldStr(getSltrFieldPrmName(groupName, index, isArray))));
+    }
+}
+
+void MlxlinkAmBerCollector::getSltrGen8Fields(vector<AmberField>& fields, u_int32_t measType)
+{
+    for (u_int32_t lane = 0; lane < 2; lane++)
+    {
+        resetLocalParser(ACCESS_REG_SLTR);
+        updateField("local_port", _localPort);
+        updateField("lane", lane);
+        updateField("pnat", _pnat);
+        updateField("meas_type", measType);
+        sendRegister(ACCESS_REG_SLTR, MACCESS_REG_METHOD_GET);
+
+        if (measType == SLTR_MEAS_TYPE_PERIODIC_NON_DESTRUCTIVE)
+        {
+            handleSltrFGroup(fields, lane);
+            handleSltrAfmGroup(fields, lane);
+            handleSltrBsGroup(fields, lane);
+            handleSltrBcGroup(fields, lane);
+            handleSltrCGroup(fields, lane);
+            handleSltrDGroup(fields, lane);
+            handleSltrIGroup(fields, lane);
+            handleSltrMGroup(fields, lane);
+            handleSltrOGroup(fields, lane);
+            handleSltrQaGroup(fields, lane);
+            handleSltrPGroup(fields, lane);
+            handleSltrQbcGroup(fields, lane);
+            handleSltrQGroup(fields, lane);
+            handleSltrTGroup(fields, lane);
+            handleSltrVGroup(fields, lane);
+            handleSltrAfGroup(fields, lane);
+        }
+        else if (measType == SLTR_MEAS_TYPE_PERIODIC_NON_DESTRUCTIVE_PART2)
+        {
+            handleSltrZGroup(fields, lane);
+            handleSltrXGroup(fields, lane);
+            handleSltrUGroup(fields, lane);
+            handleSltrHGroup(fields, lane);
+            handleSltrSGroup(fields, lane);
+            handleSltrGGroup(fields, lane);
+            handleSltrJaGroup(fields, lane);
+            handleSltrJbGroup(fields, lane);
+            handleSltrJcGroup(fields, lane);
+            handleSltrAaGroup(fields, lane);
+            handleSltrAcGroup(fields, lane);
+        }
+        else if (measType == SLTR_MEAS_TYPE_NON_PERIODIC_NON_DESTRUCTIVE)
+        {
+            handleSltrEGroup(fields, lane);
+            handleSltrWGroup(fields, lane);
+            handleSltrAbGroup(fields, lane);
+            handleSltrYGroup(fields, lane);
+        }
+    }
+}
+
+vector<AmberField> MlxlinkAmBerCollector::getSerdesGen8NVLink()
+{
+    vector<AmberField> fields;
+
+    try
+    {
+        if (_isPortNVLINK && !_isPortPCIE)
+        {
+            getSlsirGen8Fields(fields);
+            getSltpGen8Fields(fields);
+            getSltrGen8Fields(fields, SLTR_MEAS_TYPE_PERIODIC_NON_DESTRUCTIVE);
+            getSltrGen8Fields(fields, SLTR_MEAS_TYPE_PERIODIC_NON_DESTRUCTIVE_PART2);
+            getSltrGen8Fields(fields, SLTR_MEAS_TYPE_NON_PERIODIC_NON_DESTRUCTIVE);
+        }
+    }
+    catch (const std::exception& exc)
+    {
+        throw MlxRegException("Failed to get SerDes Gen8 NVLink information: %s", exc.what());
+    }
+
+    return fields;
+}
+
+// ---------- handleSltr*Group implementations ----------
+
+void MlxlinkAmBerCollector::handleSltrVGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "vgroup", {0, 3});
+}
+
+void MlxlinkAmBerCollector::handleSltrXGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "x_group", {0, 8});
+}
+
+void MlxlinkAmBerCollector::handleSltrBsGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "bs_group", {0, 16});
+}
+
+void MlxlinkAmBerCollector::handleSltrJbGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "jb_group", {0, 28});
+}
+
+void MlxlinkAmBerCollector::handleSltrQbcGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "qc_group", {0, 20});
+    handleSltrGroup(fields, lane, "qb_group", {0, 3});
+}
+
+void MlxlinkAmBerCollector::handleSltrBcGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "bc_group", {0, 16});
+}
+
+void MlxlinkAmBerCollector::handleSltrCGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "c_group", {0, 13});
+}
+
+void MlxlinkAmBerCollector::handleSltrDGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "d_group", {0, 13});
+}
+
+void MlxlinkAmBerCollector::handleSltrIGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "i_group", {1, 10});
+}
+
+void MlxlinkAmBerCollector::handleSltrMGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "m_group", {0, 7});
+}
+
+void MlxlinkAmBerCollector::handleSltrOGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "oa_group", {0, 32});
+    handleSltrGroup(fields, lane, "ob_group", {0, 32});
+    handleSltrGroup(fields, lane, "oc_group", {0, 32});
+    handleSltrGroup(fields, lane, "od_group", {0, 32});
+}
+
+void MlxlinkAmBerCollector::handleSltrQaGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "qa_group", {1, 4});
+}
+
+void MlxlinkAmBerCollector::handleSltrPGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "p_group", {0, 20});
+}
+
+void MlxlinkAmBerCollector::handleSltrTGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "t_group", {0, 3});
+}
+
+void MlxlinkAmBerCollector::handleSltrAfGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "af_group", {1, 12});
+}
+
+void MlxlinkAmBerCollector::handleSltrZGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "za_group", {0, 7});
+    handleSltrGroup(fields, lane, "zb_group", {0, 7});
+    handleSltrGroup(fields, lane, "zc_group", {0, 6});
+    handleSltrGroup(fields, lane, "zd_group", {0, 2});
+    handleSltrGroup(fields, lane, "ze_group", {0, 2});
+}
+
+void MlxlinkAmBerCollector::handleSltrUGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "u_group", {0, 16});
+}
+
+void MlxlinkAmBerCollector::handleSltrHGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "ha_group", {0, 16}, true);
+    handleSltrGroup(fields, lane, "hb_group", {0, 16}, true);
+}
+
+void MlxlinkAmBerCollector::handleSltrSGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "s_group", {0, 16});
+}
+
+void MlxlinkAmBerCollector::handleSltrGGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "g_group", {0, 10});
+}
+
+void MlxlinkAmBerCollector::handleSltrJaGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "ja_group", {0, 28}, true);
+}
+
+void MlxlinkAmBerCollector::handleSltrJcGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "jc_group", {0, 3});
+}
+
+void MlxlinkAmBerCollector::handleSltrAaGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "aa_group", {0, 2});
+}
+
+void MlxlinkAmBerCollector::handleSltrAcGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "ac_group", {0, 2});
+}
+
+void MlxlinkAmBerCollector::handleSltrEGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "e_group", {0, 9});
+}
+
+void MlxlinkAmBerCollector::handleSltrWGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "w_group", {0, 16});
+}
+
+void MlxlinkAmBerCollector::handleSltrAfmGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "afm_group", {1, 5});
+}
+
+void MlxlinkAmBerCollector::handleSltrFGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "f_group", {0, 1});
+}
+
+void MlxlinkAmBerCollector::handleSltrQGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "q_group", {0, 1});
+}
+
+void MlxlinkAmBerCollector::handleSltrAbGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "ab_group", {0, 1});
+}
+
+void MlxlinkAmBerCollector::handleSltrYGroup(vector<AmberField>& fields, u_int32_t lane)
+{
+    handleSltrGroup(fields, lane, "y_group", {0, 1});
 }
