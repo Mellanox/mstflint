@@ -259,6 +259,11 @@ void MlxlinkAmBerCollector::init()
             _isPortETH = (_protoActive == ETH) && (_pnat != PNAT_PCIE);
             _maxLanes = MAX_NETWORK_LANES;
 
+            resetLocalParser(ACCESS_REG_PPAOS);
+            updateField("local_port", _localPort);
+            sendRegister(ACCESS_REG_PPAOS, MACCESS_REG_METHOD_GET);
+            _inPRBSMode = getFieldValue("phy_test_mode_status") == 1;
+
             if (_protoActive == IB)
             {
                 updateModeAsActive();
@@ -274,7 +279,14 @@ void MlxlinkAmBerCollector::init()
                                                              _activeSpeed, true, _isModeAsActive);
                 if (_isNvlinkModeB || _isNvlinkModeA)
                 {
-                    _numOfLanes = linkSpeedActive.empty() ? 0 : checkNvl6ModeBSpeed(linkSpeedActive) ? 2 : 1;
+                    if (_inPRBSMode)
+                    {
+                        updateNumOfLanesForTestModeNVL6();
+                    }
+                    else
+                    {
+                        _numOfLanes = linkSpeedActive.empty() ? 0 : checkNvl6ModeBSpeed(linkSpeedActive) ? 2 : 1;
+                    }
                 }
                 else
                 {
@@ -3413,4 +3425,25 @@ void MlxlinkAmBerCollector::handleSltrAbGroup(vector<AmberField>& fields, u_int3
 void MlxlinkAmBerCollector::handleSltrYGroup(vector<AmberField>& fields, u_int32_t lane)
 {
     handleSltrGroup(fields, lane, "y_group", {0, 1});
+}
+
+void MlxlinkAmBerCollector::updateNumOfLanesForTestModeNVL6()
+{
+    // In test mode, determine number of lanes from PRBS register
+    resetLocalParser(ACCESS_REG_PPRT);
+    updateField("local_port", _localPort);
+    updateField("e", PPRT_PPTT_ENABLE);
+    sendRegister(ACCESS_REG_PPRT, MACCESS_REG_METHOD_GET);
+    string laneRateStr = getStrByValue(getFieldValue("lane_rate_oper"), _mlxlinkMaps->_prbsLaneRateList);
+    if (_isNvlinkModeB || _isNvlinkModeA)
+    {
+        if (laneRateStr == _mlxlinkMaps->_prbsLaneRateList[PRBS_XDR])
+        {
+            _numOfLanes = 1; // XDR_1X mode has 1 lane (XDR_2X is currently not supported)
+        }
+        else
+        {
+            _numOfLanes = 2; // Mode B has 2 lanes, usually we should query PMLP to get the actual number of lanes
+        }
+    }
 }
