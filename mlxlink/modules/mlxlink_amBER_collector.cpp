@@ -262,6 +262,13 @@ void MlxlinkAmBerCollector::init()
             if (_protoActive == IB)
             {
                 updateModeAsActive();
+
+                // Restore PDDR parser after updateModeAsActive() changed it to PTYS.
+                resetLocalParser(ACCESS_REG_PDDR);
+                updateField("local_port", _localPort);
+                updateField("page_select", PDDR_OPERATIONAL_INFO_PAGE);
+                sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
+                
                 _activeSpeed = _isPortNVLINK ? getFieldValue("link_nvlink_active") : getFieldValue("link_speed_active");
                 string linkSpeedActive = SupportedSpeeds2Str((_isNvlinkModeB || _isNvlinkModeA) ? NVLINK : IB,
                                                              _activeSpeed, true, _isModeAsActive);
