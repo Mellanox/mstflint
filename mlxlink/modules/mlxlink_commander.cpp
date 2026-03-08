@@ -6936,6 +6936,7 @@ void MlxlinkCommander::initAmBerCollector()
 void MlxlinkCommander::prepareJsonOut()
 {
     _operatingInfoCmd.toJsonFormat(_jsonRoot);
+    _portInfoCmd.toJsonFormat(_jsonRoot);
     _supportedInfoCmd.toJsonFormat(_jsonRoot);
     _troubInfoCmd.toJsonFormat(_jsonRoot);
     _toolInfoCmd.toJsonFormat(_jsonRoot);
