@@ -185,6 +185,7 @@ protected:
     virtual void getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params);
     virtual void getModuleLinkUpInfoPage(vector<AmberField>& fields);
     virtual void updateModeAsActive();
+    void updateNumOfLanesForTestModeNVL6();
 
     virtual void getSlsirGen8Fields(vector<AmberField>& fields);
     void getSltpGen8Fields(vector<AmberField>& fields);
