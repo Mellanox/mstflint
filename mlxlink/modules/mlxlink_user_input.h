@@ -102,6 +102,7 @@ public:
     bool _showMultiPortInfo;
     bool _showMultiPortModuleInfo;
     bool _showPlr;
+    bool _setPlr;
     bool _showKr;
     bool _showRxRecoveryCounters;
     bool _extendedPcie;
