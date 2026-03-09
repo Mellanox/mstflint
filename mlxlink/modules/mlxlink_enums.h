@@ -2367,6 +2367,12 @@ const char* const FEC_LL_50G_RS_FEC_PLR_272_258 = "Ethernet_Consortium_LL_50G_RS
 const char* const FEC_INTERLEAVED_LL_50G_RS_FEC_PLR_272_258 =
   "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC_PLR - (272,257+1)";
 
+// PLR constants
+const char* const PLR_TX_CRC_ENABLED = "Enabled";
+const char* const PLR_TX_CRC_DISABLED = "Disabled";
+const char* const PLR_TX_CRC_SUPPORTED = "Supported";
+const char* const PLR_TX_CRC_UNSUPPORTED = "Unsupported";
+
 } // namespace
 
 #endif /* MLXLINK_ENUMS_H */

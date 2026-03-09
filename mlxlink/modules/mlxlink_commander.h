@@ -115,6 +115,14 @@
 #define MULTI_PORT_INFO_ACRONYM_FLAG_SHORT ' '
 #define PLR_INFO_FLAG "show_plr"
 #define PLR_INFO_FLAG_SHORT ' '
+#define SET_PLR_FLAG "set_plr"
+#define SET_PLR_FLAG_SHORT ' '
+#define PLR_REJECT_MODE_FLAG "plr_reject_mode"
+#define PLR_REJECT_MODE_FLAG_SHORT ' '
+#define PLR_MARGIN_THRESHOLD_FLAG "plr_margin_threshold"
+#define PLR_MARGIN_THRESHOLD_FLAG_SHORT ' '
+#define PLR_TX_CRC_FLAG "plr_tx_crc"
+#define PLR_TX_CRC_FLAG_SHORT ' '
 #define KR_INFO_FLAG "show_kr"
 #define KR_INFO_FLAG_SHORT ' '
 #define RX_RECOVERY_COUNTERS_FLAG "show_rx_recovery_counters"
@@ -407,6 +415,7 @@ enum OPTION_TYPE
     SHOW_MULTI_PORT_INFO,
     SHOW_MULTI_PORT_MODULE_INFO,
     SHOW_PLR,
+    SET_PLR,
     SHOW_KR,
     SHOW_RX_RECOVERY_COUNTERS,
     SEND_PHY_RECOVERY,
@@ -521,6 +530,7 @@ public:
     void collectBER();
     void showTxGroupMapping();
     void showPlr();
+    void setPlr();
     void showKr();
     void showRxRecoveryCounters();
     void showPeriodicEq();

@@ -1751,9 +1751,26 @@ void MlxlinkMaps::initTableHeaders()
 
 void MlxlinkMaps::initPlrRejectModeMapping()
 {
-    _plrRejectMode[PLR_REJECT_MODE_PLR_MARGIN] = "rejection based on PLR margin";
-    _plrRejectMode[PLR_REJECT_MODE_CRC_AND_CS] = "rejection based on CRC and CS";
-    _plrRejectMode[PLR_REJECT_MODE_CS] = "rejection based on CS";
+    _plrRejectModeToStr[PLR_REJECT_MODE_PLR_MARGIN] = "rejection based on PLR margin";
+    _plrRejectModeToStr[PLR_REJECT_MODE_CRC_AND_CS] = "rejection based on CRC and CS";
+    _plrRejectModeToStr[PLR_REJECT_MODE_CS] = "rejection based on CS";
+
+    _plrRejectModeStrToValue["Margin"] = PLR_REJECT_MODE_PLR_MARGIN;
+    _plrRejectModeStrToValue["CRC_CS"] = PLR_REJECT_MODE_CRC_AND_CS;
+    _plrRejectModeStrToValue["CS"] = PLR_REJECT_MODE_CS;
+
+    _plrRejectModeMaskToStr[PLR_REJECT_MODE_SUPPORT_MASK_PLR_MARGIN] = _plrRejectModeToStr[PLR_REJECT_MODE_PLR_MARGIN];
+    _plrRejectModeMaskToStr[PLR_REJECT_MODE_SUPPORT_MASK_CRC_AND_CS] = _plrRejectModeToStr[PLR_REJECT_MODE_CRC_AND_CS];
+    _plrRejectModeMaskToStr[PLR_REJECT_MODE_SUPPORT_MASK_CS] = _plrRejectModeToStr[PLR_REJECT_MODE_CS];
+
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_0] = "0";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_1] = "1";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_2] = "2";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_3] = "3";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_4] = "4";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_5] = "5";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_6] = "6";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_7] = "7";
 }
 
 void MlxlinkMaps::initKrMapping()

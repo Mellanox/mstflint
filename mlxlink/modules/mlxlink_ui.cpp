@@ -295,6 +295,16 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(BKV_WDATA_FLAG_SHORT, BKV_WDATA_FLAG, "wdata", "BKV Entry Write Data (Optional)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(BKV_WMASK_FLAG_SHORT, BKV_WMASK_FLAG, "wmask", "BKV Entry Write Mask (Optional)");
+    MlxlinkRecord::printFlagLine(SET_PLR_FLAG_SHORT, SET_PLR_FLAG, "", "Set PLR Configuration");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PLR_REJECT_MODE_FLAG_SHORT, PLR_REJECT_MODE_FLAG, "reject_mode",
+                                 "PLR Reject Mode: 0(PLR margin)/1(CRC and CS)/2(CS) or Margin/CRC_CS/CS (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PLR_MARGIN_THRESHOLD_FLAG_SHORT, PLR_MARGIN_THRESHOLD_FLAG, "margin_th",
+                                 "PLR Margin Threshold [0-7] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PLR_TX_CRC_FLAG_SHORT, PLR_TX_CRC_FLAG, "tx_crc",
+                                 "TX CRC over PLR: 0(disable)/1(enable) (Optional)");
     MlxlinkRecord::printFlagLine(SET_PRIMARY_FLAG_SHORT, SET_PRIMARY_FLAG, "", "Set primary port");
     MlxlinkRecord::printFlagLine(SET_SECONDARY_FLAG_SHORT, SET_SECONDARY_FLAG, "", "Set secondary port");
     printf(IDENT);
@@ -1077,6 +1087,19 @@ void MlxlinkUi::validateMultiPortInfoParams()
     }
 }
 
+void MlxlinkUi::validatePlrParams()
+{
+    if (_userInput._setPlr)
+    {
+        if (!_userInput._plrRejectModeProvided && !_userInput._plrMarginThresholdProvided &&
+            !_userInput._plrTxCrcProvided)
+        {
+            throw MlxRegException("At least one of the following parameters must be provided with --" SET_PLR_FLAG ": "
+                                  "--" PLR_REJECT_MODE_FLAG ", --" PLR_MARGIN_THRESHOLD_FLAG ", --" PLR_TX_CRC_FLAG);
+        }
+    }
+}
+
 void MlxlinkUi::validateBkvParams()
 {
     if (isIn(SHOW_BKV, _sendRegFuncMap))
@@ -1219,6 +1242,7 @@ void MlxlinkUi::paramValidate()
     validatePCIeParams();
     validateGeneralCmdsParams();
     validateBkvParams();
+    validatePlrParams();
     validatePRBSParams();
     validatePhyRecoveryParams();
     validateLinkTrainingParams();
@@ -1258,6 +1282,12 @@ void MlxlinkUi::initCmdParser()
     AddOptions(MULTI_PORT_MODULE_INFO_ACRONYM_FLAG, MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT, "",
                "Show multi port module info table");
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
+    AddOptions(SET_PLR_FLAG, SET_PLR_FLAG_SHORT, "", "Set PLR configuration");
+    AddOptions(PLR_REJECT_MODE_FLAG, PLR_REJECT_MODE_FLAG_SHORT, "PLR_REJECT_MODE",
+               "PLR reject mode (0-2 or Margin/CRC_CS/CS)");
+    AddOptions(PLR_MARGIN_THRESHOLD_FLAG, PLR_MARGIN_THRESHOLD_FLAG_SHORT, "PLR_MARGIN_TH",
+               "PLR margin threshold (0-7)");
+    AddOptions(PLR_TX_CRC_FLAG, PLR_TX_CRC_FLAG_SHORT, "PLR_TX_CRC", "TX CRC over PLR (0/1)");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
     AddOptions(PERIODIC_EQ_FLAG, PERIODIC_EQ_FLAG_SHORT, "", "Show Link PEQ (Periodic Equalization) Info");
     AddOptions(RX_RECOVERY_COUNTERS_FLAG, RX_RECOVERY_COUNTERS_FLAG_SHORT, "", "Show Rx Recovery Counters");
@@ -1525,6 +1555,9 @@ void MlxlinkUi::commandsCaller()
             case SHOW_PLR:
                 _mlxlinkCommander->showPlr();
                 break;
+            case SET_PLR:
+                _mlxlinkCommander->setPlr();
+                break;
             case SHOW_KR:
                 _mlxlinkCommander->showKr();
                 break;
@@ -1635,6 +1668,31 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_PLR);
         _userInput._showPlr = true;
+        return PARSE_OK;
+    }
+    else if (name == SET_PLR_FLAG)
+    {
+        addCmd(SET_PLR);
+        _userInput._setPlr = true;
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == PLR_REJECT_MODE_FLAG)
+    {
+        _userInput._plrRejectMode = value;
+        _userInput._plrRejectModeProvided = true;
+        return PARSE_OK;
+    }
+    else if (name == PLR_MARGIN_THRESHOLD_FLAG)
+    {
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._plrMarginThreshold);
+        _userInput._plrMarginThresholdProvided = true;
+        return PARSE_OK;
+    }
+    else if (name == PLR_TX_CRC_FLAG)
+    {
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._plrTxCrc);
+        _userInput._plrTxCrcProvided = true;
         return PARSE_OK;
     }
     else if (name == KR_INFO_FLAG)
