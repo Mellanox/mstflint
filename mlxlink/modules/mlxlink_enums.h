@@ -2228,6 +2228,19 @@ enum PRECODING_OPER_STATUS
     PRECODING_OPER_STATUS_DISABLED = 2
 };
 
+enum TEST_MODE_FSM_STATE
+{
+    TEST_MODE_FSM_DISABLE,                    // This state is shared by Mode A and Mode B links test mode FSM
+    TEST_MODE_FSM_OPEN_LANE,                  // Mode B links test mode FSM
+    TEST_MODE_FSM_IDLE,                       // Mode A and Mode B links test mode FSM
+    TEST_MODE_FSM_CLOSE_LANE,                 // Mode B links test mode FSM
+    TEST_MODE_FSM_RECEIVER_DETECT,            // Mode A links test mode FSM
+    TEST_MODE_FSM_IDLE_MODE_A,                // Mode A links test mode FSM
+    TEST_MODE_FSM_SIGNAL_DETECT,              // Mode A links test mode FSM
+    TEST_MODE_FSM_AUTO_FIX_REVERSAL_POLARITY, // Mode A links test mode FSM
+    TEST_MODE_FSM_TUNING                      // Mode A links test mode FSM
+};
+
 // Anonymous namespace to ensure the constants are only used in relevant scope
 namespace
 {
