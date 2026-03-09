@@ -2550,6 +2550,30 @@ void MlxlinkCommander::setPrecoding()
     }
 }
 
+bool MlxlinkCommander::isTestModeFsmStateSupported()
+{
+    bool isTestModeFsmStateSupported = false;
+    u_int64_t fdCapMask = PCAM_TEST_MODE_FSM_STATE_CAP_MASK; // feature_cap_mask.Bit 120 (feature_cap_mask[0].bit 25)
+    sendPrmReg(ACCESS_REG_PCAM, GET);
+    // checking test_mode_fsm_state cap
+    // important note: by FW implmentation the feature_cap_mask is implemented reversed.
+    // meaning bit 120 in PRM will be in feature_cap_mask[(128-120)\32]
+    isTestModeFsmStateSupported = getFieldValue("feature_cap_mask[0]") & fdCapMask;
+
+    return isTestModeFsmStateSupported;
+}
+
+string MlxlinkCommander::getTestModeFsmStateStr()
+{
+    if (!isTestModeFsmStateSupported())
+    {
+        return NA_FIELD_VALUE;
+    }
+    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_OPERATIONAL_INFO_PAGE);
+    u_int32_t testModeFsmState = getFieldValue("test_mode_fsm_state");
+    return getStrByValue(testModeFsmState, _mlxlinkMaps->_testModeFsmState);
+}
+
 void MlxlinkCommander::showTestMode()
 {
     std::map<std::string, std::string> pprtMap = getPprt();
@@ -2570,6 +2594,7 @@ void MlxlinkCommander::showTestMode()
         setPrintVal(_testModeInfoCmd, "Nvlink Mode",
                     pprtMap["pprtLaneRate"] == _mlxlinkMaps->_prbsLaneRateList[PRBS_XDR] ? "A" : "B");
         setPrintVal(_testModeInfoCmd, "Primary/Secondary", getStrByValue(_priOrSec, _mlxlinkMaps->_priOrSec));
+        setPrintVal(_testModeInfoCmd, "Test Mode FSM State", getTestModeFsmStateStr());
     }
 
     cout << _testModeInfoCmd;
@@ -5152,7 +5177,7 @@ void MlxlinkCommander::handlePrbs()
                 MlxlinkRecord::printCmdLine("Configuring Port to Physical Test Mode", _jsonRoot);
                 resetPprtPptt(isNvl6);
                 sendPprtPptt(isNvl6);
-                sendPrbsPpaos(true, _userInput._prbsDcCoupledAllow);
+                sendPrbsPpaos(true, _userInput._prbsDcCoupledAllow, isNvl6);
             }
             else
             {

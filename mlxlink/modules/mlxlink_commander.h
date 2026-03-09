@@ -183,6 +183,10 @@
 #define PPTT_MODULATION_FLAG_SHORT ' '
 #define PRBS_LANES_FLAG "lanes"
 #define PRBS_LANES_FLAG_SHORT ' '
+#define PRBS_PRIMARY_FLAG "primary"
+#define PRBS_PRIMARY_FLAG_SHORT ' '
+#define PRBS_SECONDARY_FLAG "secondary"
+#define PRBS_SECONDARY_FLAG_SHORT ' '
 #define PRBS_INVERT_TX_POL_FLAG "invert_tx_polarity"
 #define PRBS_INVERT_TX_POL_FLAG_SHORT ' '
 #define PRBS_INVERT_RX_POL_FLAG "invert_rx_polarity"
