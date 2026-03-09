@@ -354,6 +354,11 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PRBS_DC_COUPLE_ALLOW_FLAG_SHORT, PRBS_DC_COUPLE_ALLOW_FLAG, "",
                                  "For DC coupled ports only: This flag must be set to enter test mode");
     printf(IDENT);
+    MlxlinkRecord::printFlagLine(PRBS_PRIMARY_FLAG_SHORT, PRBS_PRIMARY_FLAG, "", "Set the current device as primary");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PRBS_SECONDARY_FLAG_SHORT, PRBS_SECONDARY_FLAG, "",
+                                 "Set the current device as secondary");
+    printf(IDENT);
     MlxlinkRecord::printFlagLine(FORCE_TX_ALLOWED_FLAG_SHORT, FORCE_TX_ALLOWED_FLAG, "",
                                  "Force TX allowed for PRBS test mode");
     printf(IDENT);
@@ -739,7 +744,7 @@ void MlxlinkUi::validatePRBSParams()
 {
     bool prbsFlags = _userInput._sendPprt || _userInput._sendPptt || _userInput._pprtRate != "" ||
                      _userInput._pprtRate != "" || _userInput._prbsTxInv || _userInput._prbsRxInv ||
-                     _userInput._prbsDcCoupledAllow ||
+                     _userInput._prbsDcCoupledAllow || _userInput._primarySecondarySpecified ||
                      _userInput._prbsLanesToSet.size() > 0 || !_userInput._pprtModulation.empty() ||
                      !_userInput._ppttModulation.empty();
     if (isIn(SEND_PRBS, _sendRegFuncMap))
@@ -1337,6 +1342,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPRT_RATE_FLAG, PPRT_RATE_FLAG_SHORT, "PPRT_RATE", "PPRT Lane Rate");
     AddOptions(PPTT_RATE_FLAG, PPTT_RATE_FLAG_SHORT, "PPTT_RATE", "PPTT Lane Rate");
     AddOptions(PRBS_LANES_FLAG, PRBS_LANES_FLAG_SHORT, "lanes", "PRBS lanes to set");
+    AddOptions(PRBS_PRIMARY_FLAG, PRBS_PRIMARY_FLAG_SHORT, "", "Set the current device as primary");
+    AddOptions(PRBS_SECONDARY_FLAG, PRBS_SECONDARY_FLAG_SHORT, "", "Set the current device as secondary");
     AddOptions(PRBS_INVERT_TX_POL_FLAG, PRBS_INVERT_TX_POL_FLAG_SHORT, "", "PRBS TX polarity inversion");
     AddOptions(PRBS_INVERT_RX_POL_FLAG, PRBS_INVERT_RX_POL_FLAG_SHORT, "", "PRBS RX polarity inversion");
     AddOptions(PRBS_DC_COUPLE_ALLOW_FLAG, PRBS_DC_COUPLE_ALLOW_FLAG_SHORT, "", "Allow PRBS for DC coupled ports");
@@ -1972,6 +1979,18 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         _userInput._sendPptt = true;
         _userInput._ppttMode = toUpperCase(value);
+        return PARSE_OK;
+    }
+    else if (name == PRBS_PRIMARY_FLAG)
+    {
+        _userInput._setPrimary = true;
+        _userInput._primarySecondarySpecified = true;
+        return PARSE_OK;
+    }
+    else if (name == PRBS_SECONDARY_FLAG)
+    {
+        _userInput._setPrimary = false;
+        _userInput._primarySecondarySpecified = true;
         return PARSE_OK;
     }
     else if (name == PPRT_MODULATION_FLAG)
