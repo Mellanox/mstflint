@@ -7068,15 +7068,121 @@ void MlxlinkCommander::showPlr()
     {
         sendPrmReg(ACCESS_REG_PPLM, GET);
         setPrintTitle(_plrInfoCmd, HEADER_PLR_INFO, PLR_INFO_LAST);
-        setPrintVal(_plrInfoCmd, "PLR Reject Mode", getStrByValue(getFieldValue("plr_reject_mode"), _mlxlinkMaps->_plrRejectMode));
+        setPrintVal(_plrInfoCmd, "PLR Reject Mode",
+                    getStrByValue(getFieldValue("plr_reject_mode"), _mlxlinkMaps->_plrRejectModeToStr));
+        setPrintVal(_plrInfoCmd, "PLR Reject Mode Support",
+                    getStrByMask(getFieldValue("plr_reject_mode_support"), _mlxlinkMaps->_plrRejectModeMaskToStr, ", "));
+        setPrintVal(_plrInfoCmd, "PLR Reject Mode Operational",
+                    getStrByValue(getFieldValue("plr_reject_mode_oper"), _mlxlinkMaps->_plrRejectModeToStr));
         setPrintVal(_plrInfoCmd, "PLR Margin Threshold Admin", to_string(getFieldValue("plr_margin_th")));
+        setPrintVal(_plrInfoCmd, "PLR Margin Threshold Support",
+                    getStrByMask(getFieldValue("plr_margin_th_support"), _mlxlinkMaps->_plrMarginThMaskToStr, ", "));
         setPrintVal(_plrInfoCmd, "PLR Margin Threshold Operational", to_string(getFieldValue("plr_margin_th_oper")));
+        setPrintVal(_plrInfoCmd, "TX CRC PLR", getFieldValue("tx_crc_plr") ? FIELD_ENABLED : FIELD_DISABLED);
+        setPrintVal(_plrInfoCmd, "TX CRC PLR Support",
+                    getFieldValue("tx_crc_plr_support") ? CAP_SUPPORTED : CAP_UNSUPPORTED);
+        setPrintVal(_plrInfoCmd, "TX CRC PLR Operational",
+                    getFieldValue("tx_crc_plr_oper") ? FIELD_ENABLED : FIELD_DISABLED);
     }
     catch (MlxRegException& exc)
     {
         throw MlxRegException("PLR is not supported for the current device!");
     }
     cout << _plrInfoCmd;
+}
+
+void MlxlinkCommander::setPlr()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_PPLM, GET);
+
+        string fields = "plr_vld=1";
+
+        if (_userInput._plrRejectModeProvided)
+        {
+            u_int32_t rejectMode;
+
+            auto it = _mlxlinkMaps->_plrRejectModeStrToValue.find(_userInput._plrRejectMode);
+            if (it != _mlxlinkMaps->_plrRejectModeStrToValue.end())
+            {
+                rejectMode = it->second;
+            }
+            else
+            {
+                try
+                {
+                    strToUint32((char*)_userInput._plrRejectMode.c_str(), rejectMode);
+                }
+                catch (...)
+                {
+                    throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-2 or Margin/CRC_CS/CS");
+                }
+            }
+
+            if (rejectMode > 2)
+            {
+                throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-2 or Margin/CRC_CS/CS");
+            }
+
+            u_int32_t rejectModeSupport = getFieldValue("plr_reject_mode_support");
+            u_int32_t modeBitMask = (1 << rejectMode);
+            if (!(rejectModeSupport & modeBitMask))
+            {
+                throw MlxRegException("PLR reject mode " + to_string(rejectMode) + " is not supported by the device");
+            }
+
+            fields += ",plr_reject_mode_vld=1";
+            fields += ",plr_reject_mode=" + to_string(rejectMode);
+        }
+
+        if (_userInput._plrMarginThresholdProvided)
+        {
+            u_int32_t marginTh = _userInput._plrMarginThreshold;
+
+            if (marginTh > 7)
+            {
+                throw MlxRegException("Invalid plr_margin_threshold value. Valid values are 0-7");
+            }
+
+            u_int32_t marginThSupport = getFieldValue("plr_margin_th_support");
+            u_int32_t thresholdBitMask = (1 << marginTh);
+            if (!(marginThSupport & thresholdBitMask))
+            {
+                throw MlxRegException("PLR margin threshold " + to_string(marginTh) + " is not supported by the device");
+            }
+
+            fields += ",plr_margin_th=" + to_string(marginTh);
+        }
+
+        if (_userInput._plrTxCrcProvided)
+        {
+            u_int32_t txCrc = _userInput._plrTxCrc;
+
+            if (txCrc > 1)
+            {
+                throw MlxRegException("Invalid plr_tx_crc value. Valid values are 0 or 1");
+            }
+
+            if (txCrc == 1)
+            {
+                u_int32_t txCrcSupport = getFieldValue("tx_crc_plr_support");
+                if (txCrcSupport == 0)
+                {
+                    throw MlxRegException("TX CRC over PLR is not supported by the device");
+                }
+            }
+
+            fields += ",tx_crc_plr_vld=1";
+            fields += ",tx_crc_plr=" + to_string(txCrc);
+        }
+
+        sendPrmRegWithoutReset(ACCESS_REG_PPLM, SET, fields.c_str());
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Failed to set PLR configuration: " + string(exc.what()));
+    }
 }
 
 void MlxlinkCommander::showKr()

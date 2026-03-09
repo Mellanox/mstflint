@@ -2354,7 +2354,6 @@ const char* const FEC_LL_FEC_271_257_PLR = "LL-FEC - (271,257) + PLR";
 const char* const FEC_LL_50G_RS_FEC_PLR_272_258 = "Ethernet_Consortium_LL_50G_RS_FEC_PLR -(272,257+1)";
 const char* const FEC_INTERLEAVED_LL_50G_RS_FEC_PLR_272_258 =
   "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC_PLR - (272,257+1)";
-
 } // namespace
 
 #endif /* MLXLINK_ENUMS_H */
