@@ -56,6 +56,16 @@ void MlxlinkMaps::initPortStateMapping()
     _priOrSec[MODE_B_PRI_OR_SEC_PRIMARY] = "Primary";
     _priOrSec[MODE_B_PRI_OR_SEC_SECONDARY] = "Secondary";
 
+    _testModeFsmState[TEST_MODE_FSM_DISABLE] = "Disabled";
+    _testModeFsmState[TEST_MODE_FSM_OPEN_LANE] = "Open lane";
+    _testModeFsmState[TEST_MODE_FSM_IDLE] = "Idle";
+    _testModeFsmState[TEST_MODE_FSM_CLOSE_LANE] = "Close lane";
+    _testModeFsmState[TEST_MODE_FSM_RECEIVER_DETECT] = "Receiver detect";
+    _testModeFsmState[TEST_MODE_FSM_IDLE_MODE_A] = "Idle mode A";
+    _testModeFsmState[TEST_MODE_FSM_SIGNAL_DETECT] = "Signal detect";
+    _testModeFsmState[TEST_MODE_FSM_AUTO_FIX_REVERSAL_POLARITY] = "Auto fix reversal polarity";
+    _testModeFsmState[TEST_MODE_FSM_TUNING] = "Tuning";
+
     _pmFsmState[PHY_MNGR_DISABLED] = "Disable";
     _pmFsmState[PHY_MNGR_OPEN_PORT] = "Port PLL Down";
     _pmFsmState[PHY_MNGR_POLLING] = "Polling";
