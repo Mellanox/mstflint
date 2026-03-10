@@ -340,7 +340,7 @@ enum CntxCrConstants {
     HCR_NEW_GW_CACHE_REPLACEMNT_EN_ADDR = 0xf0480,
     HCR_NEW_GW_GCM_EN_ADDR              = 0xf0440,
     /* 7th gen flash GW registers addresses */
-    // QTM3/QTM4:
+    // QTM3/NVLINK6:
     HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR = 0x101000,
     HCR_7GEN_QTM3_FLASH_CMD          = HCR_7GEN_QTM3_FLASH_GW_BASE_ADDR,
     HCR_7GEN_QTM3_FLASH_DATA         = 0x101010,
