@@ -160,7 +160,8 @@ int fwctl_control_access_register(int    fd,
 
     rpc = (struct fwctl_rpc) {
         .size = sizeof(rpc),
-        .scope = 3,
+        .scope = (method == FWCTL_METHOD_READ) ? FWCTL_RPC_DEBUG_READ_ONLY
+                                               : FWCTL_RPC_DEBUG_WRITE_FULL,
         .in = (uintptr_t)in,
         .in_len = inlen,
         .out = (uintptr_t)out,
