@@ -49,6 +49,7 @@
 #include "tools_dev_types.h"
 #include "mflash/mflash_types.h"
 #include "mtcr_ul/mtcr_ul_com.h"
+#include "mtcr_ul/mtcr_common.h"
 #ifdef CABLES_SUPPORT
 #include "mtcr_ul/mtcr_cables.h"
 #endif
@@ -252,15 +253,16 @@ static struct device_info g_devs_info[] = {{
                                              4,                /* port_num */
                                              DM_HCA            /* dev_type */
                                            },
-                                           {
-                                             DeviceBlueField4, /* dm_id */
-                                             0x220,            /* hw_dev_id */
-                                             -1,               /* hw_rev_id */
-                                             41694,            /* sw_dev_id */
-                                             "BlueField4",     /* name */
-                                             4,                /* port_num */
-                                             DM_HCA            /* dev_type */
-                                           },
+                                           // Bluefield 4 is identified as ConnectX9.
+                                           /*{
+                                             DeviceBlueField4, // dm_id
+                                             0x224,            // hw_dev_id
+                                             -1,               // hw_rev_id
+                                             41695,            // sw_dev_id
+                                             "BlueField4",     // name
+                                             4,                // port_num
+                                             DM_HCA            // dev_type
+                                           },*/
                                            {
                                              DeviceSwitchIB2, /* dm_id */
                                              0x24b,           /* hw_dev_id */
@@ -594,6 +596,14 @@ static int dm_get_device_id_inner(mfile* mf, dm_dev_id_t* ptr_dm_dev_id, u_int32
     int rc;
     u_int32_t dev_flags;
 
+    if (mf->pci_device_id == DeviceBlueField4_HwId)
+    {
+        *ptr_hw_dev_id = mf->pci_device_id;
+        *ptr_hw_rev = 0;
+        *ptr_dm_dev_id = DeviceBlueField4;
+        return CHECK_PTR_DEV_ID;
+    }
+
 #ifdef CABLES_SUPPORT
     if (mf->tp == MST_LINKX_CHIP)
     {
@@ -782,6 +792,11 @@ u_int16_t dm_dev_sw_id2hw_dev_id(u_int16_t sw_dev_id)
             return p->hw_dev_id;
         }
         p++;
+    }
+
+    if (is_bluefield4_pci_device(sw_dev_id))
+    {
+        return DeviceBlueField4_HwId;
     }
     return 0;
 }
