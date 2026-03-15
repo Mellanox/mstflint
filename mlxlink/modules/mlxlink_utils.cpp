@@ -1647,7 +1647,7 @@ bool isNRZSpeed(u_int32_t speed, u_int32_t protocol)
     return !isSpeed100GPerLane(speed, protocol) &&
            (isSpeed25GPerLane(speed, protocol) ||
             !(isSpeed50GPerLane(speed, protocol) || isSpeed100GPerLane(speed, protocol) ||
-              isSpeed200GPerLane(speed, protocol) || isSpeed25GPerLane(speed, protocol)));
+              isSpeed200GPerLane(speed, protocol) || isSpeed25GPerLane(speed, protocol) || (protocol == NVLINK)));
 }
 
 string linkWidthMaskToStr(u_int32_t width)
