@@ -777,7 +777,8 @@ void MlxlinkUi::validatePhyRecoveryParams()
                 throw MlxRegException("recovery_type flag should be provided for phy_recovery EN command");
             }
             else if (_userInput._phyRecoveryType != "host_serdes_feq" &&
-                     _userInput._phyRecoveryType != "host_logic_re_lock")
+                     _userInput._phyRecoveryType != "host_logic_re_lock" &&
+                     _userInput._phyRecoveryType != "phy_recovery_steps")
             {
                 throw MlxRegException("Invalid Recovery Type!");
             }
@@ -793,7 +794,8 @@ void MlxlinkUi::validatePhyRecoveryParams()
                 throw MlxRegException("recovery_type flag should be provided for PHY Recovery DS command");
             }
             else if (_userInput._phyRecoveryType != "host_serdes_feq" &&
-                     _userInput._phyRecoveryType != "host_logic_re_lock")
+                     _userInput._phyRecoveryType != "host_logic_re_lock" &&
+                     _userInput._phyRecoveryType != "phy_recovery_steps")
             {
                 throw MlxRegException("Invalid PHY Recovery Type!");
             }
