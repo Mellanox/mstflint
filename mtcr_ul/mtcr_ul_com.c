@@ -3171,7 +3171,10 @@ static long supported_dev_ids[] = {0x1003, /* Connect-X3 */
                                    0xa2d2, /* MT416842 Family BlueField integrated ConnectX-5 network controller */
                                    0xa2d6, /* MT42822 Family BlueField2 integrated ConnectX-6DX network controller */
                                    0xa2dc, /* MT43244 Family BlueField3 integrated ConnectX-7 network controller */
-                                   0xa2de, /* BF4 Family BlueField4 integrated ConnectX-8 network controller */
+                                   0xa2dd, // BF4 Family BlueField4 Crypto Enabled
+                                   0xa2de, // BF4 Family BlueField4 Crypto Disabled
+                                   0xa2df, // BF4 Family BlueField4 Network Controller
+                                   0xc2d6, // BF4 Family BlueField4 Management Interface
                                    0xcf70, /* Spectrum3 */
                                    0xcf80, /* Spectrum4 */
                                    0xcf82, /* Spectrum5 */
@@ -4272,6 +4275,11 @@ int init_dev_info_ul(mfile* mf, const char* dev_name, unsigned domain, unsigned 
         }
     }
 
+    if (mf->dinfo && is_bluefield4_pci_device(mf->dinfo->pci.dev_id))
+    {
+        mf->pci_device_id = DeviceBlueField4_HwId;
+    }
+    
 cleanup:
     mdevices_info_destroy_ul(devs, devs_len);
     return ret;
@@ -5347,6 +5355,13 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
         *device_id = get_hw_dev_id_by_pci_id(mf->dinfo->pci.dev_id);
         rc = 4;
     }
+
+        // For Bluefield4 device, the HW device ID is 0x224, but need to check the PCI device ID
+        if (mf->dinfo && is_bluefield4_pci_device(mf->dinfo->pci.dev_id))
+        {
+            // Use the HW device ID for JSON
+            mf->pci_device_id = DeviceBlueField4_HwId;
+        }
 
     mf->hw_dev_id = (*device_id & 0xffff);
     DBG_PRINTF("MTCR:read_device_id: mf->hw_dev_id:0x%x\n", mf->hw_dev_id);
