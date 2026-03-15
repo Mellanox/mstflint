@@ -107,6 +107,10 @@ LIST_HEAD(mst_devices);
 #define BLUEFIELD_DPU_AUX_PCI_ID 49873
 #define BLUEFIELD3_PCI_ID 41692
 #define BLUEFIELD3_RMA_PCI_ID 541
+#define BLUEFIELD4_CRYPTO_ENABLED_PCI_ID     41693
+#define BLUEFIELD4_CRYPTO_DISABLED_PCI_ID    41694
+#define BLUEFIELD4_NETWORK_CONTROLLER_PCI_ID 41695
+#define BLUEFIELD4_MANAGMENT_INTERFACE_PCI_ID 49878
 #define BLUEFIELD4_PCI_ID 41694
 #define SWITCHIB_PCI_ID 52000
 #define SWITCHIB2_PCI_ID 53000
@@ -218,7 +222,10 @@ static struct pci_device_id supported_pci_devices[] = {{PCI_DEVICE(MST_MELLANOX_
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD_DPU_AUX_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD3_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD3_RMA_PCI_ID)},
-                                                       {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD4_PCI_ID)},
+                                                       {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD4_CRYPTO_ENABLED_PCI_ID)},
+                                                       {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD4_CRYPTO_DISABLED_PCI_ID)},
+                                                       {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD4_NETWORK_CONTROLLER_PCI_ID)},
+                                                       {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, BLUEFIELD4_MANAGMENT_INTERFACE_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, SWITCHIB_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, SWITCHIB2_PCI_ID)},
                                                        {PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, QUANTUM_PCI_ID)},
