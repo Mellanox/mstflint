@@ -542,7 +542,7 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsLaneRateList[6] = "53.125G";
     _prbsLaneRateList[7] = "106.25G";
     _prbsLaneRateList[8] = "212.5G";
-    _prbsLaneRateList[9] = NA_FIELD_VALUE;
+    _prbsLaneRateList[9] = "180G";
     _prbsLaneRateList[10] = "1.25G";
     _prbsLaneRateList[11] = "3.125G";
     _prbsLaneRateList[12] = "12.89G";
