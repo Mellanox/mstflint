@@ -253,8 +253,7 @@ static struct device_info g_devs_info[] = {{
                                              4,                /* port_num */
                                              DM_HCA            /* dev_type */
                                            },
-                                           // Bluefield 4 is identified as ConnectX9.
-                                           /*{
+                                           {
                                              DeviceBlueField4, // dm_id
                                              0x224,            // hw_dev_id
                                              -1,               // hw_rev_id
@@ -262,7 +261,7 @@ static struct device_info g_devs_info[] = {{
                                              "BlueField4",     // name
                                              4,                // port_num
                                              DM_HCA            // dev_type
-                                           },*/
+                                           },
                                            {
                                              DeviceSwitchIB2, /* dm_id */
                                              0x24b,           /* hw_dev_id */
