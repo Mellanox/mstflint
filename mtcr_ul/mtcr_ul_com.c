@@ -4285,7 +4285,6 @@ int init_dev_info_ul(mfile* mf, const char* dev_name, unsigned domain, unsigned 
             mf->dinfo->pci.net_devs[cnt] = NULL;
         }
     }
-
     if (mf->dinfo && is_bluefield4_pci_device(mf->dinfo->pci.dev_id))
     {
         mf->pci_device_id = DeviceBlueField4_HwId;
@@ -5369,12 +5368,12 @@ int read_device_id(mfile* mf, u_int32_t* device_id)
         rc = 4;
     }
 
-        // For Bluefield4 device, the HW device ID is 0x224, but need to check the PCI device ID
-        if (mf->dinfo && is_bluefield4_pci_device(mf->dinfo->pci.dev_id))
-        {
-            // Use the HW device ID for JSON
-            mf->pci_device_id = DeviceBlueField4_HwId;
-        }
+    // For Bluefield4 device, the HW device ID is 0x224, but need to check the PCI device ID
+    if (mf->dinfo && is_bluefield4_pci_device(mf->dinfo->pci.dev_id))
+    {
+        // Use the HW device ID for JSON
+        mf->pci_device_id = DeviceBlueField4_HwId;
+    }
 
     mf->hw_dev_id = (*device_id & 0xffff);
     DBG_PRINTF("MTCR:read_device_id: mf->hw_dev_id:0x%x\n", mf->hw_dev_id);
