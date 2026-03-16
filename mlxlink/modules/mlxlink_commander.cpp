@@ -2732,7 +2732,7 @@ void MlxlinkCommander::prepareBerInfoEDR()
 
     double lastClearTimer = (double)add32BitTo64(getFieldValue("time_since_last_clear_high"), getFieldValue("time_since_last_clear_low")) / 60000.0;
     sprintf(lastClearTimerBuff, "%.01f", lastClearTimer);
-    string symbolErrors = to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high"), getFieldValue("phy_symbol_errors_low")));
+    string symbolErrors = to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high", 0, 0, false, true), getFieldValue("phy_symbol_errors_low", 0, 0, false, true)));
 
     setPrintVal(_berInfoCmd, "Time Since Last Clear [Min]", lastClearTimerBuff, ANSI_COLOR_RESET, true, _linkUP);
     setPrintVal(_berInfoCmd, "Effective Physical Errors", symbolErrors, ANSI_COLOR_RESET, true, _linkUP);
@@ -4545,7 +4545,7 @@ std::map<string, string> MlxlinkCommander::getRawEffectiveErrors()
     errorsVector["time_since_last_clear_sec"] = to_string((add32BitTo64((float)getFieldValue("time_since_last_clear_high"), getFieldValue("time_since_last_clear_low"))) / 1000.0 / 60.0);
     errorsVector["raw_errors_counter"] = to_string(add32BitTo64(getFieldValue("phy_corrected_bits_high"), getFieldValue("phy_corrected_bits_low")));
     errorsVector["raw_ber"] = getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude");
-    errorsVector["eff_errors_counter"] = to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high"), getFieldValue("phy_symbol_errors_low")));
+    errorsVector["eff_errors_counter"] = to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high", 0, 0, false, true), getFieldValue("phy_symbol_errors_low", 0, 0, false, true)));
     errorsVector["eff_ber"] = getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude");
 
     return errorsVector;
