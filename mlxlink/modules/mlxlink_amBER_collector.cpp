@@ -886,7 +886,7 @@ void MlxlinkAmBerCollector::getPpcntBer(u_int32_t portType, vector<AmberField>& 
         if (portType != NETWORK_PORT_TYPE)
         {
             u_int64_t symErrors =
-              add32BitTo64(getFieldValue("phy_symbol_errors_high"), getFieldValue("phy_symbol_errors_low"));
+              add32BitTo64(getFieldValue("phy_symbol_errors_high", 0, 0, false, true), getFieldValue("phy_symbol_errors_low", 0, 0, false, true));
             fields.push_back(AmberField(preTitle + "Symbol_Errors", to_string(symErrors)));
         }
     }
@@ -1168,7 +1168,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
               add32BitTo64(getFieldValue("phy_effective_errors_high"), getFieldValue("phy_effective_errors_low")));
             fields.push_back(AmberField("Effective_Errors", effErrorsStr));
             u_int64_t symErrors =
-              add32BitTo64(getFieldValue("phy_symbol_errors_high"), getFieldValue("phy_symbol_errors_low"));
+              add32BitTo64(getFieldValue("phy_symbol_errors_high", 0, 0, false, true), getFieldValue("phy_symbol_errors_low", 0, 0, false, true));
             fields.push_back(AmberField("Symbol_Errors", to_string(symErrors)));
         }
         else
