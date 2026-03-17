@@ -1519,9 +1519,9 @@ bool SubCommand::extractValuesFromString(string valStr, u_int16_t values[2], str
     }
 
     // perform checks
-    if (tempValues[0] > 1024 || tempValues[1] > 1024)
+    if (tempValues[0] > 2184 || tempValues[1] > 2184)
     {
-        reportErr(true, "Invalid argument values for %s, values can't be larger than 1024.\n", origArg.c_str());
+        reportErr(true, "Invalid argument values for %s, values can't be larger than 2184.\n", origArg.c_str());
         return false;
     }
     values[0] = tempValues[0];
