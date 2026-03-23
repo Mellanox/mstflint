@@ -2550,6 +2550,30 @@ void MlxlinkCommander::setPrecoding()
     }
 }
 
+bool MlxlinkCommander::isTestModeFsmStateSupported()
+{
+    bool isTestModeFsmStateSupported = false;
+    u_int64_t fdCapMask = PCAM_TEST_MODE_FSM_STATE_CAP_MASK; // feature_cap_mask.Bit 120 (feature_cap_mask[0].bit 25)
+    sendPrmReg(ACCESS_REG_PCAM, GET);
+    // checking test_mode_fsm_state cap
+    // important note: by FW implmentation the feature_cap_mask is implemented reversed.
+    // meaning bit 120 in PRM will be in feature_cap_mask[(128-120)\32]
+    isTestModeFsmStateSupported = getFieldValue("feature_cap_mask[0]") & fdCapMask;
+
+    return isTestModeFsmStateSupported;
+}
+
+string MlxlinkCommander::getTestModeFsmStateStr()
+{
+    if (!isTestModeFsmStateSupported())
+    {
+        return NA_FIELD_VALUE;
+    }
+    sendPrmReg(ACCESS_REG_PDDR, GET, "page_select=%d", PDDR_OPERATIONAL_INFO_PAGE);
+    u_int32_t testModeFsmState = getFieldValue("test_mode_fsm_state");
+    return getStrByValue(testModeFsmState, _mlxlinkMaps->_testModeFsmState);
+}
+
 void MlxlinkCommander::showTestMode()
 {
     std::map<std::string, std::string> pprtMap = getPprt();
@@ -2570,6 +2594,7 @@ void MlxlinkCommander::showTestMode()
         setPrintVal(_testModeInfoCmd, "Nvlink Mode",
                     pprtMap["pprtLaneRate"] == _mlxlinkMaps->_prbsLaneRateList[PRBS_XDR] ? "A" : "B");
         setPrintVal(_testModeInfoCmd, "Primary/Secondary", getStrByValue(_priOrSec, _mlxlinkMaps->_priOrSec));
+        setPrintVal(_testModeInfoCmd, "Test Mode FSM State", getTestModeFsmStateStr());
     }
 
     cout << _testModeInfoCmd;
@@ -2707,7 +2732,7 @@ void MlxlinkCommander::prepareBerInfoEDR()
 
     double lastClearTimer = (double)add32BitTo64(getFieldValue("time_since_last_clear_high"), getFieldValue("time_since_last_clear_low")) / 60000.0;
     sprintf(lastClearTimerBuff, "%.01f", lastClearTimer);
-    string symbolErrors = to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high"), getFieldValue("phy_symbol_errors_low")));
+    string symbolErrors = to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high", 0, 0, false, true), getFieldValue("phy_symbol_errors_low", 0, 0, false, true)));
 
     setPrintVal(_berInfoCmd, "Time Since Last Clear [Min]", lastClearTimerBuff, ANSI_COLOR_RESET, true, _linkUP);
     setPrintVal(_berInfoCmd, "Effective Physical Errors", symbolErrors, ANSI_COLOR_RESET, true, _linkUP);
@@ -4520,7 +4545,7 @@ std::map<string, string> MlxlinkCommander::getRawEffectiveErrors()
     errorsVector["time_since_last_clear_sec"] = to_string((add32BitTo64((float)getFieldValue("time_since_last_clear_high"), getFieldValue("time_since_last_clear_low"))) / 1000.0 / 60.0);
     errorsVector["raw_errors_counter"] = to_string(add32BitTo64(getFieldValue("phy_corrected_bits_high"), getFieldValue("phy_corrected_bits_low")));
     errorsVector["raw_ber"] = getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude");
-    errorsVector["eff_errors_counter"] = to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high"), getFieldValue("phy_symbol_errors_low")));
+    errorsVector["eff_errors_counter"] = to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high", 0, 0, false, true), getFieldValue("phy_symbol_errors_low", 0, 0, false, true)));
     errorsVector["eff_ber"] = getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude");
 
     return errorsVector;
@@ -5152,7 +5177,7 @@ void MlxlinkCommander::handlePrbs()
                 MlxlinkRecord::printCmdLine("Configuring Port to Physical Test Mode", _jsonRoot);
                 resetPprtPptt(isNvl6);
                 sendPprtPptt(isNvl6);
-                sendPrbsPpaos(true, _userInput._prbsDcCoupledAllow);
+                sendPrbsPpaos(true, _userInput._prbsDcCoupledAllow, isNvl6);
             }
             else
             {
@@ -7068,15 +7093,121 @@ void MlxlinkCommander::showPlr()
     {
         sendPrmReg(ACCESS_REG_PPLM, GET);
         setPrintTitle(_plrInfoCmd, HEADER_PLR_INFO, PLR_INFO_LAST);
-        setPrintVal(_plrInfoCmd, "PLR Reject Mode", getStrByValue(getFieldValue("plr_reject_mode"), _mlxlinkMaps->_plrRejectMode));
+        setPrintVal(_plrInfoCmd, "PLR Reject Mode",
+                    getStrByValue(getFieldValue("plr_reject_mode"), _mlxlinkMaps->_plrRejectModeToStr));
+        setPrintVal(_plrInfoCmd, "PLR Reject Mode Support",
+                    getStrByMask(getFieldValue("plr_reject_mode_support"), _mlxlinkMaps->_plrRejectModeMaskToStr, ", "));
+        setPrintVal(_plrInfoCmd, "PLR Reject Mode Operational",
+                    getStrByValue(getFieldValue("plr_reject_mode_oper"), _mlxlinkMaps->_plrRejectModeToStr));
         setPrintVal(_plrInfoCmd, "PLR Margin Threshold Admin", to_string(getFieldValue("plr_margin_th")));
+        setPrintVal(_plrInfoCmd, "PLR Margin Threshold Support",
+                    getStrByMask(getFieldValue("plr_margin_th_support"), _mlxlinkMaps->_plrMarginThMaskToStr, ", "));
         setPrintVal(_plrInfoCmd, "PLR Margin Threshold Operational", to_string(getFieldValue("plr_margin_th_oper")));
+        setPrintVal(_plrInfoCmd, "TX CRC PLR", getFieldValue("tx_crc_plr") ? PLR_TX_CRC_ENABLED : PLR_TX_CRC_DISABLED);
+        setPrintVal(_plrInfoCmd, "TX CRC PLR Support",
+                    getFieldValue("tx_crc_plr_support") ? PLR_TX_CRC_SUPPORTED : PLR_TX_CRC_UNSUPPORTED);
+        setPrintVal(_plrInfoCmd, "TX CRC PLR Operational",
+                    getFieldValue("tx_crc_plr_oper") ? PLR_TX_CRC_ENABLED : PLR_TX_CRC_DISABLED);
     }
     catch (MlxRegException& exc)
     {
         throw MlxRegException("PLR is not supported for the current device!");
     }
     cout << _plrInfoCmd;
+}
+
+void MlxlinkCommander::setPlr()
+{
+    try
+    {
+        sendPrmReg(ACCESS_REG_PPLM, GET);
+
+        string fields = "plr_vld=1";
+
+        if (_userInput._plrRejectModeProvided)
+        {
+            u_int32_t rejectMode;
+
+            auto it = _mlxlinkMaps->_plrRejectModeStrToValue.find(_userInput._plrRejectMode);
+            if (it != _mlxlinkMaps->_plrRejectModeStrToValue.end())
+            {
+                rejectMode = it->second;
+            }
+            else
+            {
+                try
+                {
+                    RegAccessParser::strToUint32((char*)_userInput._plrRejectMode.c_str(), rejectMode);
+                }
+                catch (...)
+                {
+                    throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-2 or Margin/CRC_CS/CS");
+                }
+            }
+
+            if (rejectMode > 2)
+            {
+                throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-2 or Margin/CRC_CS/CS");
+            }
+
+            u_int32_t rejectModeSupport = getFieldValue("plr_reject_mode_support");
+            u_int32_t modeBitMask = (1 << rejectMode);
+            if (!(rejectModeSupport & modeBitMask))
+            {
+                throw MlxRegException("PLR reject mode " + to_string(rejectMode) + " is not supported by the device");
+            }
+
+            fields += ",plr_reject_mode_vld=1";
+            fields += ",plr_reject_mode=" + to_string(rejectMode);
+        }
+
+        if (_userInput._plrMarginThresholdProvided)
+        {
+            u_int32_t marginTh = _userInput._plrMarginThreshold;
+
+            if (marginTh > 7)
+            {
+                throw MlxRegException("Invalid plr_margin_threshold value. Valid values are 0-7");
+            }
+
+            u_int32_t marginThSupport = getFieldValue("plr_margin_th_support");
+            u_int32_t thresholdBitMask = (1 << marginTh);
+            if (!(marginThSupport & thresholdBitMask))
+            {
+                throw MlxRegException("PLR margin threshold " + to_string(marginTh) + " is not supported by the device");
+            }
+
+            fields += ",plr_margin_th=" + to_string(marginTh);
+        }
+
+        if (_userInput._plrTxCrcProvided)
+        {
+            u_int32_t txCrc = _userInput._plrTxCrc;
+
+            if (txCrc > 1)
+            {
+                throw MlxRegException("Invalid plr_tx_crc value. Valid values are 0 or 1");
+            }
+
+            if (txCrc == 1)
+            {
+                u_int32_t txCrcSupport = getFieldValue("tx_crc_plr_support");
+                if (txCrcSupport == 0)
+                {
+                    throw MlxRegException("TX CRC over PLR is not supported by the device");
+                }
+            }
+
+            fields += ",tx_crc_plr_vld=1";
+            fields += ",tx_crc_plr=" + to_string(txCrc);
+        }
+
+        sendPrmRegWithoutReset(ACCESS_REG_PPLM, SET, fields.c_str());
+    }
+    catch (MlxRegException& exc)
+    {
+        throw MlxRegException("Failed to set PLR configuration: " + string(exc.what()));
+    }
 }
 
 void MlxlinkCommander::showKr()

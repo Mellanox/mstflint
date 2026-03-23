@@ -103,6 +103,7 @@ UserInput::UserInput()
     _showMultiPortInfo = false;
     _showMultiPortModuleInfo = false;
     _showPlr = false;
+    _setPlr = false;
     _showKr = false;
     _showRxRecoveryCounters = false;
     _extendedPcie = false;

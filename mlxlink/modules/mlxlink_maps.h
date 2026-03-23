@@ -246,6 +246,7 @@ public:
 
     std::map<u_int32_t, std::string> _pmFsmState;
     std::map<u_int32_t, std::string> _priOrSec;
+    std::map<u_int32_t, std::string> _testModeFsmState;
     std::map<u_int32_t, std::string> _proFileFecInUse;
     std::map<u_int32_t, u_int32_t> _ETHSpeed2gRate;
     std::map<u_int32_t, u_int32_t> _IBSpeed2gRate;
@@ -304,7 +305,10 @@ public:
     std::map<std::string, uint32_t> _PSCDModeBRoleStr2Mask;
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
-    std::map<u_int32_t, std::string> _plrRejectMode;
+    std::map<u_int32_t, std::string> _plrRejectModeToStr;
+    std::map<std::string, u_int32_t> _plrRejectModeStrToValue;
+    std::map<u_int32_t, std::string> _plrRejectModeMaskToStr;
+    std::map<u_int32_t, std::string> _plrMarginThMaskToStr;
     std::map<u_int32_t, std::string> _krExtOper;
     std::map<u_int32_t, std::string> _krPrbsType;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;

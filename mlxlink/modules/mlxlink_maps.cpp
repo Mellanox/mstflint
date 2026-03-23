@@ -56,6 +56,16 @@ void MlxlinkMaps::initPortStateMapping()
     _priOrSec[MODE_B_PRI_OR_SEC_PRIMARY] = "Primary";
     _priOrSec[MODE_B_PRI_OR_SEC_SECONDARY] = "Secondary";
 
+    _testModeFsmState[TEST_MODE_FSM_DISABLE] = "Disabled";
+    _testModeFsmState[TEST_MODE_FSM_OPEN_LANE] = "Open lane";
+    _testModeFsmState[TEST_MODE_FSM_IDLE] = "Idle";
+    _testModeFsmState[TEST_MODE_FSM_CLOSE_LANE] = "Close lane";
+    _testModeFsmState[TEST_MODE_FSM_RECEIVER_DETECT] = "Receiver detect";
+    _testModeFsmState[TEST_MODE_FSM_IDLE_MODE_A] = "Idle mode A";
+    _testModeFsmState[TEST_MODE_FSM_SIGNAL_DETECT] = "Signal detect";
+    _testModeFsmState[TEST_MODE_FSM_AUTO_FIX_REVERSAL_POLARITY] = "Auto fix reversal polarity";
+    _testModeFsmState[TEST_MODE_FSM_TUNING] = "Tuning";
+
     _pmFsmState[PHY_MNGR_DISABLED] = "Disable";
     _pmFsmState[PHY_MNGR_OPEN_PORT] = "Port PLL Down";
     _pmFsmState[PHY_MNGR_POLLING] = "Polling";
@@ -1751,9 +1761,26 @@ void MlxlinkMaps::initTableHeaders()
 
 void MlxlinkMaps::initPlrRejectModeMapping()
 {
-    _plrRejectMode[PLR_REJECT_MODE_PLR_MARGIN] = "rejection based on PLR margin";
-    _plrRejectMode[PLR_REJECT_MODE_CRC_AND_CS] = "rejection based on CRC and CS";
-    _plrRejectMode[PLR_REJECT_MODE_CS] = "rejection based on CS";
+    _plrRejectModeToStr[PLR_REJECT_MODE_PLR_MARGIN] = "rejection based on PLR margin";
+    _plrRejectModeToStr[PLR_REJECT_MODE_CRC_AND_CS] = "rejection based on CRC and CS";
+    _plrRejectModeToStr[PLR_REJECT_MODE_CS] = "rejection based on CS";
+
+    _plrRejectModeStrToValue["Margin"] = PLR_REJECT_MODE_PLR_MARGIN;
+    _plrRejectModeStrToValue["CRC_CS"] = PLR_REJECT_MODE_CRC_AND_CS;
+    _plrRejectModeStrToValue["CS"] = PLR_REJECT_MODE_CS;
+
+    _plrRejectModeMaskToStr[PLR_REJECT_MODE_SUPPORT_MASK_PLR_MARGIN] = _plrRejectModeToStr[PLR_REJECT_MODE_PLR_MARGIN];
+    _plrRejectModeMaskToStr[PLR_REJECT_MODE_SUPPORT_MASK_CRC_AND_CS] = _plrRejectModeToStr[PLR_REJECT_MODE_CRC_AND_CS];
+    _plrRejectModeMaskToStr[PLR_REJECT_MODE_SUPPORT_MASK_CS] = _plrRejectModeToStr[PLR_REJECT_MODE_CS];
+
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_0] = "0";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_1] = "1";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_2] = "2";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_3] = "3";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_4] = "4";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_5] = "5";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_6] = "6";
+    _plrMarginThMaskToStr[PLR_MARGIN_TH_SUPPORT_MASK_7] = "7";
 }
 
 void MlxlinkMaps::initKrMapping()

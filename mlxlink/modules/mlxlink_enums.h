@@ -1900,8 +1900,8 @@ enum AMBER_SHEET
     AMBER_SHEET_PHY_DEBUG_INFO = 15,
     AMBER_SHEET_EXT_MODULE_STATUS = 16,
     AMBER_SHEET_SERDES_5NM = 17,
-    AMBER_SHEET_SERDES_5NM_GEN8 = 18,
     AMBER_SHEET_RECOVERY_COUNTERS = 20,
+    AMBER_SHEET_SERDES_5NM_GEN8 = 21,
     AMBER_SHEET_ALL // Keep this enum last
 };
 
@@ -2228,6 +2228,19 @@ enum PRECODING_OPER_STATUS
     PRECODING_OPER_STATUS_DISABLED = 2
 };
 
+enum TEST_MODE_FSM_STATE
+{
+    TEST_MODE_FSM_DISABLE,                    // This state is shared by Mode A and Mode B links test mode FSM
+    TEST_MODE_FSM_OPEN_LANE,                  // Mode B links test mode FSM
+    TEST_MODE_FSM_IDLE,                       // Mode A and Mode B links test mode FSM
+    TEST_MODE_FSM_CLOSE_LANE,                 // Mode B links test mode FSM
+    TEST_MODE_FSM_RECEIVER_DETECT,            // Mode A links test mode FSM
+    TEST_MODE_FSM_IDLE_MODE_A,                // Mode A links test mode FSM
+    TEST_MODE_FSM_SIGNAL_DETECT,              // Mode A links test mode FSM
+    TEST_MODE_FSM_AUTO_FIX_REVERSAL_POLARITY, // Mode A links test mode FSM
+    TEST_MODE_FSM_TUNING                      // Mode A links test mode FSM
+};
+
 // Anonymous namespace to ensure the constants are only used in relevant scope
 namespace
 {
@@ -2366,6 +2379,12 @@ const char* const FEC_LL_FEC_271_257_PLR = "LL-FEC - (271,257) + PLR";
 const char* const FEC_LL_50G_RS_FEC_PLR_272_258 = "Ethernet_Consortium_LL_50G_RS_FEC_PLR -(272,257+1)";
 const char* const FEC_INTERLEAVED_LL_50G_RS_FEC_PLR_272_258 =
   "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC_PLR - (272,257+1)";
+
+// PLR constants
+const char* const PLR_TX_CRC_ENABLED = "Enabled";
+const char* const PLR_TX_CRC_DISABLED = "Disabled";
+const char* const PLR_TX_CRC_SUPPORTED = "Supported";
+const char* const PLR_TX_CRC_UNSUPPORTED = "Unsupported";
 
 } // namespace
 
