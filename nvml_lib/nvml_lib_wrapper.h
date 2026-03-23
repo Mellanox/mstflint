@@ -35,7 +35,7 @@
 #pragma once
 
 #include <string>
-#include <nvml.h>
+#include "nvml_stub.h"
 
 using std::string;
 
