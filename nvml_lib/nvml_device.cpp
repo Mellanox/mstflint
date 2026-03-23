@@ -33,7 +33,6 @@
 
 #include <cstring>
 #include <iostream>
-#include <nvml.h>
 #include "nvml_device.h"
 #include "nvml_lib_wrapper.h"
 #include "nvml_exception.h"
