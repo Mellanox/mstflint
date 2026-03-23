@@ -217,3 +217,5 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
     happens at the branch master_devel.
 
     Therefore pull-requests should be submitted vs. branch master_devel.
+## Notes:
+   If this project is linked dynamically or statically to proprietary licensed SW, the user must elect the BSD Licensing terms.
