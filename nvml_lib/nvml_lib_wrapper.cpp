@@ -32,6 +32,7 @@
  */
 
 #include <dlfcn.h>
+#include <nvml.h>
 
 #include "nvml_exception.h"
 #include "nvml_lib_wrapper.h"
