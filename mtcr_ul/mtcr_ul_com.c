@@ -902,6 +902,7 @@ int mtcr_fwctl_driver_mread4(mfile* mf, unsigned int offset, u_int32_t* value)
     else
     {
         FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+        errno = EOPNOTSUPP;
     }
 
     return rc;
@@ -914,6 +915,7 @@ int mtcr_fwctl_driver_mwrite4(mfile* mf, unsigned int offset, u_int32_t value)
     (void)value;
 
     FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+    errno = EOPNOTSUPP;
 
     return -1;
 }
@@ -926,6 +928,7 @@ static int fwctl_driver_mread4_block(mfile* mf, unsigned int offset, u_int32_t* 
     (void)length;
 
     FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+    errno = EOPNOTSUPP;
 
     return -1;
 }
@@ -938,6 +941,7 @@ static int fwctl_driver_mwrite4_block(mfile* mf, unsigned int offset, u_int32_t*
     (void)length;
 
     FWCTL_DEBUG_PRINT(mf, "fwctl driver doesn't support VSEC access.\n")
+    errno = EOPNOTSUPP;
 
     return -1;
 }
