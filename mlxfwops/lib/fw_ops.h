@@ -38,6 +38,7 @@
 #include "flint_io.h"
 #include "aux_tlv_ops.h"
 #include "mlxfwops_com.h"
+#include "psid_utils.h"
 #include "signature_manager_factory.h"
 #include "fw_version.h"
 #include "tools_layouts/cx4fw_layouts.h"
@@ -126,6 +127,7 @@ public:
         mfile* mf = _ioAccess->is_flash() ? ((Flash*)_ioAccess)->getMfileObj() : (mfile*)NULL;
         return mf;
     }
+    virtual psid_utils::MinorPsidLockStatus queryMinorPsidLockStatus();
     virtual bool IsFifthGen() { return (_ioAccess != NULL && _ioAccess->is_flash() && _ioAccess->is_fifth_gen()); }
     FBase* GetIoAccess() { return _ioAccess; }
     virtual u_int8_t FwType() = 0;

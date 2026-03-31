@@ -118,7 +118,6 @@
 #define FLINT_FSX_BURN_ERROR "Burning %s image failed: %s\n"
 #define FLINT_FSPLDM_BURN_ERROR "Burning %s pldm component failed: %s\n"
 #define FLINT_FS2_BURN_ERROR "Burning FS2 image failed: %s\n"
-#define FLINT_PSID_ERROR "PSID mismatch. The PSID on flash (%s) differs from the PSID in the given image (%s).\n"
 #define FLINT_FS2_STRIPED_ERROR "The -striped_image cannot be used with the burn command\n"
 #define FLINT_IMG_DEV_COMPAT_ERROR \
     "The given device requires an %s image type, but the given image file does not contain an %s FW image\n"
