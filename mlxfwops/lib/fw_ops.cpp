@@ -38,6 +38,7 @@
 #include "flint_base.h"
 #include "flint_io.h"
 #include "fw_ops.h"
+#include "psid_utils.h"
 #include "fs5_ops.h"
 #include "fs4_ops.h"
 #include "fs3_ops.h"
@@ -1657,15 +1658,32 @@ bool FwOperations::FwSetPrint(PrintCallBack PrintFunc)
     return true;
 }
 
+psid_utils::MinorPsidLockStatus FwOperations::queryMinorPsidLockStatus()
+{
+    return psid_utils::MinorPsidLockStatus();
+}
+
 bool FwOperations::CheckPSID(FwOperations& imageOps, u_int8_t allow_psid_change)
 {
-    if (!allow_psid_change)
+    if (allow_psid_change)
     {
-        if (strncmp(_fwImgInfo.ext_info.psid, imageOps._fwImgInfo.ext_info.psid, PSID_LEN))
-        {
-            return errmsg(MLXFW_PSID_MISMATCH_ERR, "Image PSID is %s, it cannot be burnt into current device (PSID: %s)", imageOps._fwImgInfo.ext_info.psid, _fwImgInfo.ext_info.psid);
-        }
+        return true;
     }
+
+    const char* devPsid = _fwImgInfo.ext_info.psid;
+    const char* imgPsid = imageOps._fwImgInfo.ext_info.psid;
+
+    psid_utils::MinorPsidLockStatus lockStatus = queryMinorPsidLockStatus();
+    psid_utils::PsidValidator validator(devPsid, imgPsid, lockStatus);
+
+    psid_utils::PsidCompatibilityStatus compatibilityStatus = validator.checkCompatibility();
+
+    if (compatibilityStatus != psid_utils::PsidCompatibilityStatus::ALLOWED)
+    {
+        std::string errMsg = validator.statusToString(compatibilityStatus);
+        return errmsg(MLXFW_PSID_MISMATCH_ERR, "%s", errMsg.c_str());
+    }
+
     return true;
 }
 

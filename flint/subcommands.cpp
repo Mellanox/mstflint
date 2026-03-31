@@ -53,6 +53,7 @@
 #include <common/compatibility.h>
 #include <fw_comps_mgr/fw_comps_mgr.h>
 #include <mlxfwops/lib/fw_version.h>
+#include "mlxfwops/lib/psid_utils.h"
 #include "mlxfwops/lib/components/fs_synce_ops.h"
 #include "mlxfwops/lib/components/fs_dpa_app_ops.h"
 #include "hex64.h"
@@ -2725,25 +2726,49 @@ bool BurnSubCommand::checkFwVersion(bool CreateFromImgInfo, u_int16_t fw_ver0, u
 
 bool BurnSubCommand::checkPSID()
 {
-    if (strlen(_imgInfo.fw_info.psid) != 0 && strlen(_devInfo.fw_info.psid) != 0 &&
-        strncmp(_imgInfo.fw_info.psid, _devInfo.fw_info.psid, PSID_LEN))
+    if (strlen(_imgInfo.fw_info.psid) == 0 || strlen(_devInfo.fw_info.psid) == 0)
     {
-        if (_flintParams.allow_psid_change)
+        return true;
+    }
+
+    if (strncmp(_imgInfo.fw_info.psid, _devInfo.fw_info.psid, PSID_LEN) == 0)
+    {
+        return true;
+    }
+
+    if (_flintParams.allow_psid_change)
+    {
+        printf("\n    You are about to replace current PSID on flash - \"%s\" with a different PSID - \"%s\".\n"
+               "    Note: It is highly recommended not to change the PSID.\n",
+               _devInfo.fw_info.psid, _imgInfo.fw_info.psid);
+        if (!askUser())
         {
-            printf("\n    You are about to replace current PSID on flash - \"%s\" with a different PSID - \"%s\".\n"
-                   "    Note: It is highly recommended not to change the PSID.\n",
-                   _devInfo.fw_info.psid, _imgInfo.fw_info.psid);
-            if (!askUser())
-            {
-                return false;
-            }
-        }
-        else
-        {
-            printf("\n");
-            reportErr(true, FLINT_PSID_ERROR, _devInfo.fw_info.psid, _imgInfo.fw_info.psid);
             return false;
         }
+        return true;
+    }
+
+    psid_utils::MinorPsidLockStatus lockStatus =
+      _fwOps ? _fwOps->queryMinorPsidLockStatus() : psid_utils::MinorPsidLockStatus();
+
+    psid_utils::PsidValidator validator(_devInfo.fw_info.psid, _imgInfo.fw_info.psid, lockStatus);
+
+    psid_utils::PsidCompatibilityStatus compatibilityStatus = validator.checkCompatibility();
+
+    if (compatibilityStatus != psid_utils::PsidCompatibilityStatus::ALLOWED)
+    {
+        printf("\n");
+        std::string errMsg = validator.statusToString(compatibilityStatus);
+        reportErr(true, "%s\n", errMsg.c_str());
+        return false;
+    }
+
+    if (!_flintParams.silent)
+    {
+        printf("\n    Note: Minor PSID change detected (minor: \"%s\" -> \"%s\"): \"%s\" -> \"%s\".\n",
+               psid_utils::PsidValidator::getMinor(_devInfo.fw_info.psid).c_str(),
+               psid_utils::PsidValidator::getMinor(_imgInfo.fw_info.psid).c_str(), _devInfo.fw_info.psid,
+               _imgInfo.fw_info.psid);
     }
     return true;
 }
