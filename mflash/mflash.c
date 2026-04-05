@@ -946,7 +946,7 @@ MfError gen_access_commands(mflash* mfl, flash_access_commands_t* access_command
 
 int is_srwd_supported_by_flash(u_int8_t vendor, u_int8_t type)
 {
-    return (vendor == FV_IS25LPXXX && type == FMT_IS25WPXXX);
+    return (vendor == FV_IS25LPXXX && (type == FMT_IS25WPXXX || type == FMT_IS25LPXXX));
 }
 
 int is_srp_supported_by_flash(uint8_t vendor, uint8_t type, u_int32_t log2_bank_size, MacronixSeriesCode series_code)
