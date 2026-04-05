@@ -251,7 +251,15 @@ if test "x$enable_fw_mgr" = "xyes"; then
     AC_SUBST(libz_LIBS)
 fi
 
-if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"; then
+AC_MSG_CHECKING(--enable-dpa argument)
+AC_ARG_ENABLE(dpa,
+    AS_HELP_STRING([--enable-dpa], [enable compilation of the mstdpa tool (Linux x86_64/aarch64 only) [default=disabled]]),
+    [enable_dpa="$enableval"],
+    [enable_dpa="no"]
+)
+AC_MSG_RESULT($enable_dpa)
+
+if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes"; then
     AC_ARG_WITH([liblzma], AS_HELP_STRING([--with-liblzma=PATH], [use liblzma from the specified PATH]),
         [
             liblzma_dir="$withval"
@@ -276,15 +284,6 @@ if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"
     AC_SUBST(liblzma_CFLAGS)
     AC_SUBST(liblzma_LIBS)
 fi
-
-# mlxdpa
-AC_MSG_CHECKING(--enable-dpa argument)
-AC_ARG_ENABLE(dpa,
-    AS_HELP_STRING([--enable-dpa], [enable compilation of the mstdpa tool (Linux x86_64/aarch64 only) [default=disabled]]),
-    [enable_dpa="$enableval"],
-    [enable_dpa="no"]
-)
-AC_MSG_RESULT($enable_dpa)
 
 # adabe tools
 AC_MSG_CHECKING(--enable-adb-generic-tools argument)
@@ -736,7 +735,7 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
 
 AM_CONDITIONAL([ADB_GENERIC_TOOLS_ENABLED], [test "x$enable_adb_generic_tools" = "xyes"])
 
-AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"],
+AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes"],
     [
         AC_CONFIG_FILES(xz_utils/Makefile)
         XZ_UTILS_DIR="xz_utils"
