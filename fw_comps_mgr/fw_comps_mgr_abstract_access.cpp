@@ -55,7 +55,7 @@ AbstractComponentAccess*
     }
 
     AbstractComponentAccess* component_access = NULL;
-    if (isMCDDRegisterSupported && isBmeSet)
+    if (isMCDDRegisterSupported && isBmeSet && mf->tp != MST_FWCTL_CONTROL_DRIVER)
     {
         component_access = new DMAComponentAccess(manager, mf);
     }

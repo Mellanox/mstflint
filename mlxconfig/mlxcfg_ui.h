@@ -218,9 +218,15 @@ private:
 
     // Set cmd
     mlxCfgStatus setDevCfg();
-    mlxCfgStatus setDevCfgWithDefault(Commander* commander);
+    void compareCurrentParamsVectors(const std::vector<ParamView>& ParamVec1,
+                                     const std::vector<ParamView>& ParamVec2,
+                                     std::vector<ParamView>& paramMlxconfigNameDiffList);
+    void setDevCfgWithDefault(Commander* commander,
+                              std::vector<ParamView>& alignCurrentToDefault,
+                              std::vector<ParamView>& alignNextToCurrent);
     mlxCfgStatus updateDefaultParamsWithUserValues(std::vector<ParamView>& userParams,
                                                    std::vector<ParamView>& defaultParams);
+    mlxCfgStatus handlecompleteSetWithDefault(Commander* commander);
     // reset Cmd
     mlxCfgStatus resetDevsCfg();
     mlxCfgStatus resetDevCfg(const char* dev);

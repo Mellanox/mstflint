@@ -61,6 +61,7 @@ extern "C"
         CRD_CAUSE_BIT,
         CRD_TLV_SIGNATURE_INVALID,
         CRD_TLV_ADDRESS_INVALID,
+        CRD_SIGNAL_INTERRUPTED,
     };
 
     typedef struct crd_ctxt crd_ctxt_t;

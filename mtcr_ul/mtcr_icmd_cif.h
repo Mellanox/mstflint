@@ -54,9 +54,6 @@ extern "C"
 #define INOUT
 #endif
 
-#define FLASH_REG_ACCESS 0x9001
-#define ICMD_MAX_CMD_SIZE 0x340 // max mailbox size
-
     MTCR_API extern int increase_poll_time;
 
     /* --------- Functional API ---------------------------------------- */

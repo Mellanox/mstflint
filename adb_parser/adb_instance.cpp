@@ -573,6 +573,14 @@ void _AdbInstance_impl<e, O>::init_props(unsigned char adabe_version) // logic o
             {
                 inst_props.is_semaphore = 1;
             }
+            if (parent->inst_props.is_index)
+            {
+                inst_props.is_index = 1;
+            }
+            if (parent->inst_props.is_op)
+            {
+                inst_props.is_op = 1;
+            }
         }
     }
 
@@ -624,18 +632,36 @@ void _AdbInstance_impl<e, O>::init_props(unsigned char adabe_version) // logic o
         }
         if (access_type == "WO")
         {
+            inst_props.is_index = 0;
+            inst_props.is_op = 0;
             inst_props.access_r = 0;
             inst_props.access_w = 1;
         }
         else if (access_type == "RO")
         {
+            inst_props.is_index = 0;
+            inst_props.is_op = 0;
             inst_props.access_w = 0;
             inst_props.access_r = 1;
         }
         else if (access_type == "RW")
         {
+            inst_props.is_index = 0;
+            inst_props.is_op = 0;
             inst_props.access_r = 1;
             inst_props.access_w = 1;
+        }
+        else if (access_type == "INDEX")
+        {
+            inst_props.access_r = 1;
+            inst_props.access_w = 1;
+            inst_props.is_index = 1;
+        }
+        else if (access_type == "OP")
+        {
+            inst_props.access_r = 1;
+            inst_props.access_w = 1;
+            inst_props.is_op = 1;
         }
     }
 
@@ -677,6 +703,18 @@ template<bool e, typename O>
 bool _AdbInstance_impl<e, O>::is_wo() const
 {
     return !inst_props.access_r && inst_props.access_w;
+}
+
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::is_index() const
+{
+    return inst_props.is_index;
+}
+
+template<bool e, typename O>
+bool _AdbInstance_impl<e, O>::is_op() const
+{
+    return inst_props.is_op;
 }
 
 template<bool e, typename O>
@@ -1396,7 +1434,7 @@ bool _AdbInstance_impl<e, O>::containsDynamicArray()
         {
             return true;
         }
-        last = last->isNode() ? last->subItems.back() : nullptr;
+        last = last->isNode() && last->subItems.size() > 0 ? last->subItems.back() : nullptr;
     }
     return false;
 }

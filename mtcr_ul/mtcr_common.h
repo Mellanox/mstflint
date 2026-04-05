@@ -48,5 +48,6 @@
     } while (0)
 
 void swap_pci_address_space(mfile* mf);
+int is_bluefield4_pci_device(u_int16_t pci_device_id);
 
 #endif

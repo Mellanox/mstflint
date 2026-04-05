@@ -34,7 +34,7 @@
 
 #include "mlxlink_ui.h"
 #include <mlxreg/mlxreg_lib/mlxreg_parser.h>
-
+#include <pci_library/PCILibrary.h>
 MlxlinkUi::MlxlinkUi() : CommandLineRequester(MLXLINK_EXEC " OPTIONS"), _cmdParser(MLXLINK_EXEC)
 {
     _mlxlinkCommander = nullptr;
@@ -61,7 +61,7 @@ void MlxlinkUi::initRegAccessLib()
     _mlxlinkCommander->_mf = _mf;
 
     _mlxlinkCommander->_regLib =
-      new MlxRegLib(_mlxlinkCommander->_mf, _mlxlinkCommander->_extAdbFile, _mlxlinkCommander->_useExtAdb, true);
+      new MlxRegLib(_mlxlinkCommander->_mf, _mlxlinkCommander->_extAdbFile, _mlxlinkCommander->_useExtAdb);
 
     _mlxlinkCommander->_userInput = _userInput;
 
@@ -83,17 +83,37 @@ void MlxlinkUi::initRegAccessLib()
     }
 }
 
+bool MlxlinkUi::isSwitch()
+{
+    return !_mlxlinkCommander->_isHCA;
+}
+
+void MlxlinkUi::updateSysFsPath(string& sysfsPath)
+{
+    if (sysfsPath.empty())
+    {
+        // based on arch only asic0 is possible at the moment : "/sys/module/sx_core/asic0/module#/".
+        sysfsPath = SW_CONTROLLED_MODULE_PATH + to_string(_mlxlinkCommander->_moduleNumber);
+    }
+}
 void MlxlinkUi::initPortInfo()
 {
-    if ((!_userInput._portSpecified && _userInput._csvBer != "") ||
-        (_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo))
+    if (isSwitch() && ((!_userInput._portSpecified && _userInput._csvBer != "") ||
+                       (_userInput._showMultiPortInfo || _userInput._showMultiPortModuleInfo)))
     {
         _mlxlinkCommander->findFirstValidPort();
+    }
+
+    // only init PCI domain for "--port_type PCIE --show_links" command.
+    if (_userInput._pcie && _userInput._links && !isSwitch())
+    {
+        initPCIDomain();
     }
 
     _mlxlinkCommander->labelToLocalPort();
     _mlxlinkCommander->validatePortType(_userInput._portType);
     _mlxlinkCommander->updateSwControlStatus();
+    _mlxlinkCommander->updateNvlinkModeBStatus();
     if (!_userInput._pcie)
     {
         _mlxlinkCommander->checkValidFW();
@@ -112,11 +132,16 @@ void MlxlinkUi::initPortInfo()
         {
             _mlxlinkCommander->getCableParams();
         }
+        if (_mlxlinkCommander->_isSwControled && _userInput._sysfsPath.empty())
+        {
+            updateSysFsPath(_mlxlinkCommander->_userInput._sysfsPath);
+        }
     }
     else if (!_userInput._sendDpn)
     {
         _mlxlinkCommander->initValidDPNList();
     }
+    _mlxlinkCommander->updateDPNDomain();
 }
 
 void MlxlinkUi::initMlxlinkCommander()
@@ -158,8 +183,6 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "", "Show valid PCIe links (PCIE only)");
     MlxlinkRecord::printFlagLine(PLR_INFO_FLAG_SHORT, PLR_INFO_FLAG, "", "Show PLR Info");
     MlxlinkRecord::printFlagLine(KR_INFO_FLAG_SHORT, KR_INFO_FLAG, "", "Show KR Info");
-    MlxlinkRecord::printFlagLine(PERIODIC_EQ_FLAG_SHORT, PERIODIC_EQ_FLAG, "",
-                                 "Show Link PEQ (Periodic Equalization) Info");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "", "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "", "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "", "Show Eye Opening Info");
@@ -170,6 +193,12 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(
       SHOW_TX_GROUP_MAP_FLAG_SHORT, SHOW_TX_GROUP_MAP_FLAG, "group_num",
       "Display all label ports mapped to group <group_num> (for Spectrum-2 and Quantum devices)");
+    MlxlinkRecord::printFlagLine(BKV_GROUPS_FLAG_SHORT, BKV_GROUPS_FLAG, "",
+    "Show BKV Groups Info (requires --lane parameter)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
+    MlxlinkRecord::printFlagLine(BKV_GROUP_FLAG_SHORT, BKV_GROUP_FLAG, "group_id", "Show BKV Group Info");
+    printf(IDENT);
     MlxlinkRecord::printFlagLine(DEVICE_DATA_FLAG_SHORT, DEVICE_DATA_FLAG, "", "General Device Info");
     MlxlinkRecord::printFlagLine(BER_MONITOR_INFO_FLAG_SHORT, BER_MONITOR_INFO_FLAG, "",
                                  "Show BER Monitor Info (not supported for HCA)");
@@ -237,14 +266,50 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(LINK_TRAINING_FLAG_SHORT, LINK_TRAINING_FLAG, "link_training",
                                  "Link Training [EN(enable)/DS(disable)/EN_EXT(enable_extra)]");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(SET_LINK_PEQ_FLAG_SHORT, SET_LINK_PEQ_FLAG, "",
-                                 "Set link PEQ (Periodic Equalization) interval [10-40000]uS. 0 means FW-Default");
-    printf(IDENT);
     MlxlinkRecord::printFlagLine(PHY_RECOVERY_FLAG_SHORT, PHY_RECOVERY_FLAG, "phy_recovery",
                                  "PHY Recovery [EN(enable)/DS(disable)]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PHY_RECOVERY_TYPE_FLAG_SHORT, PHY_RECOVERY_TYPE_FLAG, "recovery_type",
                                  "PHY Recovery Type [host_serdes_feq/host_logic_re_lock]");
+    MlxlinkRecord::printFlagLine(SET_BKV_GROUP_FLAG_SHORT, SET_BKV_GROUP_FLAG, "group_id", "Set BKV Group Masks");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_RATES_FLAG_SHORT, BKV_RATES_FLAG, "bkv_rates",
+                                "BKV Rates separated by comma: "
+                                "[312.5M,53.125G,106.25G,200G,212.5G] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_ROLES_FLAG_SHORT, BKV_ROLES_FLAG, "bkv_roles",
+                                "BKV Roles [TLM,RLM,TCLM] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_MODE_B_ROLES_FLAG_SHORT, BKV_MODE_B_ROLES_FLAG, "bkv_mode_b_roles",
+                                "BKV Mode B Roles [PRIMARY,SECONDARY] (Optional)");
+    MlxlinkRecord::printFlagLine(SET_BKV_ENTRY_FLAG_SHORT, SET_BKV_ENTRY_FLAG, "group_id", "Set BKV Group Entry");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_ENTRY_FLAG_SHORT, BKV_ENTRY_FLAG, "entry_id", "BKV Entry ID (Required)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_ADDRESS_FLAG_SHORT, BKV_ADDRESS_FLAG, "address", "BKV Entry Address (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index", "lane index (Required)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_WDATA_FLAG_SHORT, BKV_WDATA_FLAG, "wdata", "BKV Entry Write Data (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(BKV_WMASK_FLAG_SHORT, BKV_WMASK_FLAG, "wmask", "BKV Entry Write Mask (Optional)");
+    MlxlinkRecord::printFlagLine(SET_PRIMARY_FLAG_SHORT, SET_PRIMARY_FLAG, "", "Set primary port");
+    MlxlinkRecord::printFlagLine(SET_SECONDARY_FLAG_SHORT, SET_SECONDARY_FLAG, "", "Set secondary port");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(CONSTANT_ROLE_FLAG_SHORT, CONSTANT_ROLE_FLAG, "EN/DS",
+        "Keep primary/secondary role constant [EN(enable)/DS(disable)] (Optional, use with --set_primary or --set_secondary)");
+    MlxlinkRecord::printFlagLine(SET_PLR_FLAG_SHORT, SET_PLR_FLAG, "", "Set PLR Configuration");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PLR_REJECT_MODE_FLAG_SHORT, PLR_REJECT_MODE_FLAG, "reject_mode",
+                                 "PLR Reject Mode: 0(PLR margin)/1(CRC and CS)/2(CS) or Margin/CRC_CS/CS (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PLR_MARGIN_THRESHOLD_FLAG_SHORT, PLR_MARGIN_THRESHOLD_FLAG, "margin_th",
+                                 "PLR Margin Threshold [0-7] (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PLR_TX_CRC_FLAG_SHORT, PLR_TX_CRC_FLAG, "tx_crc",
+                                 "TX CRC over PLR: 0(disable)/1(enable) (Optional)");
     MlxlinkRecord::printFlagLine(PRBS_MODE_FLAG_SHORT, PRBS_MODE_FLAG, "prbs_mode",
                                  "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
@@ -289,7 +354,20 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PRBS_DC_COUPLE_ALLOW_FLAG_SHORT, PRBS_DC_COUPLE_ALLOW_FLAG, "",
                                  "For DC coupled ports only: This flag must be set to enter test mode");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(
+    MlxlinkRecord::printFlagLine(PRBS_PRIMARY_FLAG_SHORT, PRBS_PRIMARY_FLAG, "", "Set the current device as primary");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PRBS_SECONDARY_FLAG_SHORT, PRBS_SECONDARY_FLAG, "",
+                                 "Set the current device as secondary");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(FORCE_TX_ALLOWED_FLAG_SHORT, FORCE_TX_ALLOWED_FLAG, "",
+                                 "Force TX allowed for PRBS test mode");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(SKIP_POWER_GOOD_CHECK_FLAG_SHORT, SKIP_POWER_GOOD_CHECK_FLAG, "",
+                                 "Skip power good check for PRBS test mode");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(SYSFS_PATH_FLAG_SHORT, SYSFS_PATH_FLAG, "path", "Full path to sysfs files");
+    printf(IDENT);
+   MlxlinkRecord::printFlagLine(
       PRBS_LANES_FLAG_SHORT, PRBS_LANES_FLAG, "lanes",
       "PRBS lanes to set (one or more lane separated by comma)[0,1,2,...,7] (Optional - Default all lanes)");
     MlxlinkRecord::printFlagLine(BER_COLLECT_FLAG_SHORT, BER_COLLECT_FLAG, "csv_file",
@@ -586,10 +664,20 @@ void MlxlinkUi::validatePCIeParams()
                                       "specified");
             }
         }
+        // Extended PCIe info is only valid when depth/pcie_index/node are provided
+        if (_userInput._extendedPcie && !_userInput._sendDpn)
+        {
+            throw MlxRegException("The --" EXTENDED_PCIE_FLAG
+                                  " flag is valid only when --depth, --pcie_index and --node are specified");
+        }
     }
     else if (dpnFlags)
     {
         throw MlxRegException("The --depth, --node and --pcie_index flags are valid only with --port_type PCIE");
+    }
+    else if (_userInput._extendedPcie)
+    {
+        throw MlxRegException("The --" EXTENDED_PCIE_FLAG " flag is valid only with --port_type PCIE");
     }
 }
 
@@ -624,13 +712,39 @@ void MlxlinkUi::validateGeneralCmdsParams()
                               ", --" DATABASE_FLAG " and --" SLTP_TX_POLICY_FLAG
                               " flags are valid only with Configure Transmitter Parameters flag (--" SLTP_SET_FLAG ")");
     }
+    if (!_userInput._constantRole.empty())
+    {
+        if (!isIn(SET_PRIMARY, _sendRegFuncMap))
+        {
+            throw MlxRegException("The --" CONSTANT_ROLE_FLAG " flag must be used with "
+                                  "--" SET_PRIMARY_FLAG " or --" SET_SECONDARY_FLAG);
+        }
+        if (!checkConstantRoleCmd(_userInput._constantRole))
+        {
+            throw MlxRegException("Please provide a valid constant role command [EN/DS]");
+        }
+    }
+    if (_userInput._setTxPrecodingProvided)
+    {
+        if (_userInput._setTxPrecoding != "EN" && _userInput._setTxPrecoding != "DS")
+        {
+            throw MlxRegException("Please provide a valid TX precoding command [EN/DS]");
+        }
+    }
+    if (_userInput._setRxPrecodingProvided)
+    {
+        if (_userInput._setRxPrecoding != "EN" && _userInput._setRxPrecoding != "DS")
+        {
+            throw MlxRegException("Please provide a valid RX precoding command [EN/DS]");
+        }
+    }
 }
 
 void MlxlinkUi::validatePRBSParams()
 {
     bool prbsFlags = _userInput._sendPprt || _userInput._sendPptt || _userInput._pprtRate != "" ||
                      _userInput._pprtRate != "" || _userInput._prbsTxInv || _userInput._prbsRxInv ||
-                     _userInput._prbsDcCoupledAllow ||
+                     _userInput._prbsDcCoupledAllow || _userInput._primarySecondarySpecified ||
                      _userInput._prbsLanesToSet.size() > 0 || !_userInput._pprtModulation.empty() ||
                      !_userInput._ppttModulation.empty();
     if (isIn(SEND_PRBS, _sendRegFuncMap))
@@ -663,7 +777,8 @@ void MlxlinkUi::validatePhyRecoveryParams()
                 throw MlxRegException("recovery_type flag should be provided for phy_recovery EN command");
             }
             else if (_userInput._phyRecoveryType != "host_serdes_feq" &&
-                     _userInput._phyRecoveryType != "host_logic_re_lock")
+                     _userInput._phyRecoveryType != "host_logic_re_lock" &&
+                     _userInput._phyRecoveryType != "phy_recovery_steps")
             {
                 throw MlxRegException("Invalid Recovery Type!");
             }
@@ -679,7 +794,8 @@ void MlxlinkUi::validatePhyRecoveryParams()
                 throw MlxRegException("recovery_type flag should be provided for PHY Recovery DS command");
             }
             else if (_userInput._phyRecoveryType != "host_serdes_feq" &&
-                     _userInput._phyRecoveryType != "host_logic_re_lock")
+                     _userInput._phyRecoveryType != "host_logic_re_lock" &&
+                     _userInput._phyRecoveryType != "phy_recovery_steps")
             {
                 throw MlxRegException("Invalid PHY Recovery Type!");
             }
@@ -978,6 +1094,53 @@ void MlxlinkUi::validateMultiPortInfoParams()
     }
 }
 
+void MlxlinkUi::validateBkvParams()
+{
+    if (isIn(SHOW_BKV, _sendRegFuncMap))
+    {
+        if (!_userInput.laneSpecified)
+        {
+            throw MlxRegException("The --" LANE_INDEX_FLAG " parameter is required when using --" BKV_GROUPS_FLAG
+                                  " flag");
+        }
+    }
+    if (isIn(SET_BKV_GROUP, _sendRegFuncMap))
+    {
+        if (_userInput._bkvRates.size() == 0 && !_userInput._bkvRoles.size() && !_userInput._bkvModeBRoles.size())
+        {
+            throw MlxRegException("At least one mask flag (--" BKV_RATES_FLAG ", --" BKV_ROLES_FLAG
+                                  ", --" BKV_MODE_B_ROLES_FLAG ") is required when using --" SET_BKV_GROUP_FLAG
+                                  " flag");
+        }
+    }
+    if (isIn(SET_BKV_ENTRY, _sendRegFuncMap))
+    {
+        if (!_userInput._bkvEntrySpecified)
+        {
+            throw MlxRegException("The --" BKV_ENTRY_FLAG " parameter is required when using --" SET_BKV_ENTRY_FLAG
+                                  " flag");
+        }
+        if (!_userInput._bkvAddressSpecified && !_userInput._bkvWdataSpecified && !_userInput._bkvWmaskSpecified)
+        {
+            throw MlxRegException("At least one entry flag (--" BKV_ADDRESS_FLAG ", --" BKV_WDATA_FLAG
+                                  ", --" BKV_WMASK_FLAG ") is required when using --" SET_BKV_ENTRY_FLAG " flag");
+        }
+    }
+}
+
+void MlxlinkUi::validatePlrParams()
+{
+    if (_userInput._setPlr)
+    {
+        if (!_userInput._plrRejectModeProvided && !_userInput._plrMarginThresholdProvided &&
+            !_userInput._plrTxCrcProvided)
+        {
+            throw MlxRegException("At least one of the following parameters must be provided with --" SET_PLR_FLAG ": "
+                                  "--" PLR_REJECT_MODE_FLAG ", --" PLR_MARGIN_THRESHOLD_FLAG ", --" PLR_TX_CRC_FLAG);
+        }
+    }
+}
+
 void MlxlinkUi::strToInt32(char* str, u_int32_t& value)
 {
     char* endp;
@@ -1085,6 +1248,8 @@ void MlxlinkUi::paramValidate()
     validateMandatoryParams();
     validatePCIeParams();
     validateGeneralCmdsParams();
+    validateBkvParams();
+    validatePlrParams();
     validatePRBSParams();
     validatePhyRecoveryParams();
     validateLinkTrainingParams();
@@ -1109,6 +1274,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(NODE_FLAG, NODE_FLAG_SHORT, "node", "node");
     AddOptions(LABEL_PORT_FLAG, LABEL_PORT_FLAG_SHORT, "LabelPort", "Label Port");
     AddOptions(PCIE_LINKS_FLAG, PCIE_LINKS_FLAG_SHORT, "", "Show valid PCIe links");
+    AddOptions(EXTENDED_PCIE_FLAG, EXTENDED_PCIE_FLAG_SHORT, "", "Show extended PCIe link info");
     AddOptions(BER_FLAG, BER_FLAG_SHORT, "", "Show BER Info");
     AddOptions(EYE_OPENING_FLAG, EYE_OPENING_FLAG_SHORT, "", "Show Eye Opening Info");
     AddOptions(MODULE_INFO_FLAG, MODULE_INFO_FLAG_SHORT, "", "Show Module Info");
@@ -1123,12 +1289,37 @@ void MlxlinkUi::initCmdParser()
     AddOptions(MULTI_PORT_MODULE_INFO_ACRONYM_FLAG, MULTI_PORT_MODULE_INFO_ACRONYM_FLAG_SHORT, "",
                "Show multi port module info table");
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
+    AddOptions(SET_PLR_FLAG, SET_PLR_FLAG_SHORT, "", "Set PLR configuration");
+    AddOptions(PLR_REJECT_MODE_FLAG, PLR_REJECT_MODE_FLAG_SHORT, "PLR_REJECT_MODE",
+               "PLR reject mode (0-2 or Margin/CRC_CS/CS)");
+    AddOptions(PLR_MARGIN_THRESHOLD_FLAG, PLR_MARGIN_THRESHOLD_FLAG_SHORT, "PLR_MARGIN_TH",
+               "PLR margin threshold (0-7)");
+    AddOptions(PLR_TX_CRC_FLAG, PLR_TX_CRC_FLAG_SHORT, "PLR_TX_CRC", "TX CRC over PLR (0/1)");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
     AddOptions(PERIODIC_EQ_FLAG, PERIODIC_EQ_FLAG_SHORT, "", "Show Link PEQ (Periodic Equalization) Info");
     AddOptions(RX_RECOVERY_COUNTERS_FLAG, RX_RECOVERY_COUNTERS_FLAG_SHORT, "", "Show Rx Recovery Counters");
     AddOptions(LINK_TRAINING_FLAG, LINK_TRAINING_FLAG_SHORT, "Mode", "Enable/Disable/Enable_Extra Link Training");
+    AddOptions(BKV_GROUPS_FLAG, BKV_GROUPS_FLAG_SHORT, "", "Show BKV Groups Info");
+    AddOptions(BKV_GROUP_FLAG, BKV_GROUP_FLAG_SHORT, "group_id", "Show BKV Group Info");
+    AddOptions(SET_BKV_GROUP_FLAG, SET_BKV_GROUP_FLAG_SHORT, "group_id", "Set BKV Group Masks");
+    AddOptions(BKV_RATES_FLAG, BKV_RATES_FLAG_SHORT, "bkv_rates",
+               "BKV Rates separated by comma: "
+               "[312.5M,53.125G,106.25G,200G,212.5G] (Optional)");
+    AddOptions(BKV_ROLES_FLAG, BKV_ROLES_FLAG_SHORT, "bkv_roles",
+               "BKV Roles separated by comma: "
+               "[TLM,RLM,TCLM] (Optional)");
+    AddOptions(BKV_MODE_B_ROLES_FLAG, BKV_MODE_B_ROLES_FLAG_SHORT, "bkv_mode_b_roles",
+               "BKV Mode B Roles separated by comma: "
+               "[PRIMARY,SECONDARY] (Optional)");
+    AddOptions(SET_BKV_ENTRY_FLAG, SET_BKV_ENTRY_FLAG_SHORT, "group_id", "Set BKV Group Entry");
+    AddOptions(BKV_ENTRY_FLAG, BKV_ENTRY_FLAG_SHORT, "entry_id", "BKV Entry ID");
+    AddOptions(BKV_ADDRESS_FLAG, BKV_ADDRESS_FLAG_SHORT, "address", "BKV Entry Address");
+    AddOptions(BKV_WDATA_FLAG, BKV_WDATA_FLAG_SHORT, "wdata", "BKV Entry Write Data");
+    AddOptions(BKV_WMASK_FLAG, BKV_WMASK_FLAG_SHORT, "wmask", "BKV Entry Write Mask");
 
     AddOptions(SET_LINK_PEQ_FLAG, SET_LINK_PEQ_FLAG_SHORT, "PEQ_TIME", "Set Link PEQ (Periodic Equalization)");
+    AddOptions(SET_TX_PRECODING_FLAG, SET_TX_PRECODING_FLAG_SHORT, "EN|DS", "Set TX Precoding (EN=Enable, DS=Disable)");
+    AddOptions(SET_RX_PRECODING_FLAG, SET_RX_PRECODING_FLAG_SHORT, "EN|DS", "Set RX Precoding (EN=Enable, DS=Disable)");
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
     AddOptions(PMAOS_FLAG, PMAOS_FLAG_SHORT, "PMAOS", "Send PMAOS");
@@ -1153,9 +1344,15 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPRT_RATE_FLAG, PPRT_RATE_FLAG_SHORT, "PPRT_RATE", "PPRT Lane Rate");
     AddOptions(PPTT_RATE_FLAG, PPTT_RATE_FLAG_SHORT, "PPTT_RATE", "PPTT Lane Rate");
     AddOptions(PRBS_LANES_FLAG, PRBS_LANES_FLAG_SHORT, "lanes", "PRBS lanes to set");
+    AddOptions(PRBS_PRIMARY_FLAG, PRBS_PRIMARY_FLAG_SHORT, "", "Set the current device as primary");
+    AddOptions(PRBS_SECONDARY_FLAG, PRBS_SECONDARY_FLAG_SHORT, "", "Set the current device as secondary");
     AddOptions(PRBS_INVERT_TX_POL_FLAG, PRBS_INVERT_TX_POL_FLAG_SHORT, "", "PRBS TX polarity inversion");
     AddOptions(PRBS_INVERT_RX_POL_FLAG, PRBS_INVERT_RX_POL_FLAG_SHORT, "", "PRBS RX polarity inversion");
     AddOptions(PRBS_DC_COUPLE_ALLOW_FLAG, PRBS_DC_COUPLE_ALLOW_FLAG_SHORT, "", "Allow PRBS for DC coupled ports");
+    AddOptions(FORCE_TX_ALLOWED_FLAG, FORCE_TX_ALLOWED_FLAG_SHORT, "", "Force TX allowed for PRBS test mode");
+    AddOptions(SKIP_POWER_GOOD_CHECK_FLAG, SKIP_POWER_GOOD_CHECK_FLAG_SHORT, "",
+               "Skip power good check for PRBS test mode");
+    AddOptions(SYSFS_PATH_FLAG, SYSFS_PATH_FLAG_SHORT, "path", "Full path to sysfs files");
 
     AddOptions(CABLE_FLAG, CABLE_FLAG_SHORT, "", "Cable operations");
     AddOptions(CABLE_DUMP_FLAG, CABLE_DUMP_FLAG_SHORT, "", "Dump cable EEPROM pages");
@@ -1224,6 +1421,10 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPHCR_SHOW_FEC_HIST_FLAG, PPHCR_SHOW_FEC_HIST_FLAG_SHORT, "", "Show FEC errors histograms");
     AddOptions(PPHCR_CLEAR_HISTOGRAM_FLAG, PPHCR_CLEAR_HISTOGRAM_FLAG_SHORT, "", "Clears FEC errors histograms");
     AddOptions(PLANE_FLAG, PLANE_FLAG_SHORT, "plane", "plane index");
+    AddOptions(SET_PRIMARY_FLAG, SET_PRIMARY_FLAG_SHORT, "", "Set primary port");
+    AddOptions(SET_SECONDARY_FLAG, SET_SECONDARY_FLAG_SHORT, "", "Set secondary port");
+    AddOptions(CONSTANT_ROLE_FLAG, CONSTANT_ROLE_FLAG_SHORT, "EN/DS",
+               "Keep primary/secondary role constant [EN(enable)/DS(disable)]");
 
     _cmdParser.AddRequester(this);
 }
@@ -1254,6 +1455,18 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SHOW_SLTP:
                 _mlxlinkCommander->showSltp();
+                break;
+            case SHOW_BKV:
+                _mlxlinkCommander->showBkv();
+                break;
+            case SHOW_BKV_GROUP:
+                _mlxlinkCommander->showBkvGroup();
+                break;
+            case SET_BKV_GROUP:
+                _mlxlinkCommander->setBkvGroup();
+                break;
+            case SET_BKV_ENTRY:
+                _mlxlinkCommander->setBkvEntry();
                 break;
             case SHOW_DEVICE:
                 _mlxlinkCommander->showDeviceData();
@@ -1351,6 +1564,9 @@ void MlxlinkUi::commandsCaller()
             case SHOW_PLR:
                 _mlxlinkCommander->showPlr();
                 break;
+            case SET_PLR:
+                _mlxlinkCommander->setPlr();
+                break;
             case SHOW_KR:
                 _mlxlinkCommander->showKr();
                 break;
@@ -1362,6 +1578,12 @@ void MlxlinkUi::commandsCaller()
                 break;
             case SET_PERIODIC_EQ:
                 _mlxlinkCommander->setPeriodicEq();
+                break;
+            case SET_PRIMARY:
+                _mlxlinkCommander->setPrimary();
+                break;
+            case SEND_PRECODING:
+                _mlxlinkCommander->setPrecoding();
                 break;
             default:
                 break;
@@ -1391,6 +1613,24 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         checkStrLength(value);
         RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)(_userInput.planeIndex));
+        return PARSE_OK;
+    }
+    else if (name == SET_PRIMARY_FLAG)
+    {
+        addCmd(SET_PRIMARY);
+        _userInput._setPrimary = true;
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == SET_SECONDARY_FLAG)
+    {
+        addCmd(SET_PRIMARY);
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == CONSTANT_ROLE_FLAG)
+    {
+        _userInput._constantRole = toUpperCase(value);
         return PARSE_OK;
     }
     else if (name == HELP_FLAG)
@@ -1439,6 +1679,31 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._showPlr = true;
         return PARSE_OK;
     }
+    else if (name == SET_PLR_FLAG)
+    {
+        addCmd(SET_PLR);
+        _userInput._setPlr = true;
+        _userInput._uniqueCmds++;
+        return PARSE_OK;
+    }
+    else if (name == PLR_REJECT_MODE_FLAG)
+    {
+        _userInput._plrRejectMode = value;
+        _userInput._plrRejectModeProvided = true;
+        return PARSE_OK;
+    }
+    else if (name == PLR_MARGIN_THRESHOLD_FLAG)
+    {
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._plrMarginThreshold);
+        _userInput._plrMarginThresholdProvided = true;
+        return PARSE_OK;
+    }
+    else if (name == PLR_TX_CRC_FLAG)
+    {
+        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._plrTxCrc);
+        _userInput._plrTxCrcProvided = true;
+        return PARSE_OK;
+    }
     else if (name == KR_INFO_FLAG)
     {
         addCmd(SHOW_KR);
@@ -1465,10 +1730,95 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._uniqueCmds++;
         return PARSE_OK;
     }
+    else if (name == SET_TX_PRECODING_FLAG)
+    {
+        addCmd(SEND_PRECODING);
+        _userInput._setTxPrecoding = toUpperCase(value);
+        _userInput._setTxPrecodingProvided = true;
+        _userInput._networkCmds++;
+        return PARSE_OK;
+    }
+    else if (name == SET_RX_PRECODING_FLAG)
+    {
+        addCmd(SEND_PRECODING);
+        _userInput._setRxPrecoding = toUpperCase(value);
+        _userInput._setRxPrecodingProvided = true;
+        _userInput._networkCmds++;
+        return PARSE_OK;
+    }
     else if (name == SLTP_SHOW_FLAG)
     {
         addCmd(SHOW_SLTP);
         _userInput._showSltp = true;
+        return PARSE_OK;
+    }
+    else if (name == BKV_GROUPS_FLAG)
+    {
+        addCmd(SHOW_BKV);
+        return PARSE_OK;
+    }
+    else if (name == BKV_GROUP_FLAG)
+    {
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvGroupId);
+        addCmd(SHOW_BKV_GROUP);
+        return PARSE_OK;
+    }
+    else if (name == SET_BKV_GROUP_FLAG)
+    {
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvGroupId);
+        addCmd(SET_BKV_GROUP);
+        return PARSE_OK;
+    }
+    else if (name == BKV_RATES_FLAG)
+    {
+        _userInput._bkvRates = parseParamsFromLine(toUpperCase(value));
+        return PARSE_OK;
+    }
+    else if (name == BKV_ROLES_FLAG)
+    {
+        _userInput._bkvRoles = parseParamsFromLine(toUpperCase(value));
+        return PARSE_OK;
+    }
+    else if (name == BKV_MODE_B_ROLES_FLAG)
+    {
+        _userInput._bkvModeBRoles = parseParamsFromLine(toUpperCase(value));
+        return PARSE_OK;
+    }
+    else if (name == SET_BKV_ENTRY_FLAG)
+    {
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvGroupId);
+        addCmd(SET_BKV_ENTRY);
+        return PARSE_OK;
+    }
+    else if (name == BKV_ENTRY_FLAG)
+    {
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvEntry);
+        _userInput._bkvEntrySpecified = true;
+        return PARSE_OK;
+    }
+    else if (name == BKV_ADDRESS_FLAG)
+    {
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvAddress);
+        _userInput._bkvAddressSpecified = true;
+        return PARSE_OK;
+    }
+    else if (name == BKV_WDATA_FLAG)
+    {
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvWdata);
+        _userInput._bkvWdataSpecified = true;
+        return PARSE_OK;
+    }
+    else if (name == BKV_WMASK_FLAG)
+    {
+        checkStrLength(value);
+        RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvWmask);
+        _userInput._bkvWmaskSpecified = true;
         return PARSE_OK;
     }
     else if (name == SLTP_SET_FLAG)
@@ -1537,6 +1887,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     {
         addCmd(SHOW_PCIE_LINKS);
         _userInput._links = true;
+        return PARSE_OK;
+    }
+    else if (name == EXTENDED_PCIE_FLAG)
+    {
+        _userInput._extendedPcie = true;
         return PARSE_OK;
     }
     else if (name == DEVICE_DATA_FLAG)
@@ -1628,6 +1983,18 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _userInput._ppttMode = toUpperCase(value);
         return PARSE_OK;
     }
+    else if (name == PRBS_PRIMARY_FLAG)
+    {
+        _userInput._setPrimary = true;
+        _userInput._primarySecondarySpecified = true;
+        return PARSE_OK;
+    }
+    else if (name == PRBS_SECONDARY_FLAG)
+    {
+        _userInput._setPrimary = false;
+        _userInput._primarySecondarySpecified = true;
+        return PARSE_OK;
+    }
     else if (name == PPRT_MODULATION_FLAG)
     {
         _userInput._pprtModulation = toUpperCase(value);
@@ -1666,6 +2033,22 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     else if (name == PRBS_DC_COUPLE_ALLOW_FLAG)
     {
         _userInput._prbsDcCoupledAllow = true;
+        return PARSE_OK;
+    }
+    else if (name == FORCE_TX_ALLOWED_FLAG)
+    {
+        _userInput._forceTxAllowed = true;
+        return PARSE_OK;
+    }
+    else if (name == SKIP_POWER_GOOD_CHECK_FLAG)
+    {
+        _userInput._skipPowerGoodCheck = true;
+        return PARSE_OK;
+    }
+    else if (name == SYSFS_PATH_FLAG)
+    {
+        _userInput._sysfsPath = value;
+        _userInput._sysfsPathGiven = true;
         return PARSE_OK;
     }
     else if (name == BER_COLLECT_FLAG)
@@ -1811,6 +2194,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         checkStrLength(value);
         RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._lane);
         _userInput.gradeScanPerLane = true;
+        _userInput.laneSpecified = true;
         return PARSE_OK;
     }
     else if (name == EYE_SEL_FLAG)
@@ -2082,4 +2466,20 @@ int MlxlinkUi::run(int argc, char** argv)
 
     cout << endl;
     return exit_code;
+}
+
+// SetPCIDomain should not throw exceptions, even if failed to set domain.
+// we use try/catch to cover any unexpected errors.
+void MlxlinkUi::initPCIDomain()
+{
+    try
+    {
+        PCILibrary::SetPCIDomain();
+    }
+    catch (const std::exception& exc)
+    {
+        MlxlinkRecord::printWar(
+          "Warning: Failed to set one or more PCI domains, use \"export MFT_PRINT_LOG=1\" to get more details.",
+          _mlxlinkCommander->_jsonRoot);
+    }
 }

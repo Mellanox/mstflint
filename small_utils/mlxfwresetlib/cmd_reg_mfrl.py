@@ -132,7 +132,7 @@ class CmdRegMfrl():
     def __init__(self, reg_access, logger):
         self._reg_access = reg_access
         self.logger = logger
-
+        self._warning_printed = False
         self._reset_levels = CmdRegMfrl.reset_levels_db[:]  # copy
         self._reset_types = CmdRegMfrl.reset_types_db[:]   # copy
 
@@ -187,13 +187,13 @@ class CmdRegMfrl():
     def is_pci_rescan_required(self):
         return True if self._pci_rescan_required == 1 else False
 
-    def query_text(self, is_any_sync_supported=None):
+    def query_text(self, is_any_sync_supported=None, sync_2_only_supported=False):
         'return the text for the query operation in mlxfwreset'
         # Reset levels
         skip_pci_reset = False
         if is_any_sync_supported is None:
             skip_pci_reset = True
-        default_reset_level = self.default_reset_level(is_any_sync_supported, skip_pci_reset)
+        default_reset_level = self.default_reset_level(is_any_sync_supported, skip_pci_reset, sync_2_only_supported)
         result = "Reset-levels:\n"
         for reset_level_ii in self._reset_levels:
             level = reset_level_ii['level']
@@ -249,10 +249,12 @@ class CmdRegMfrl():
         else:
             return False
 
-    def default_reset_level(self, is_any_sync_supported, skip_pci_reset):
+    def default_reset_level(self, is_any_sync_supported, skip_pci_reset, sync_2_only_supported):
         'Return the default reset-level (minimal supported reset-level)'
         for reset_level_ii, is_default in CmdRegMfrl.reset_levels_default():
             if reset_level_ii == CmdRegMfrl.PCI_RESET and not skip_pci_reset and not is_any_sync_supported:
+                continue
+            if reset_level_ii == CmdRegMfrl.PCI_RESET and sync_2_only_supported is True:  # Sync 2 is the only supported sync, so PCI reset will not be the default.
                 continue
             if self.is_reset_level_supported(reset_level_ii) and is_default:
                 return reset_level_ii
@@ -297,8 +299,9 @@ class CmdRegMfrl():
         if self._reset_state in CmdRegMfrl.RESET_STATE_ERRORS:
             if self._reset_state == CmdRegMfrl.RESET_STATE_ARM_OS_IS_UP_PLEASE_SHUT_DOWN and \
                     not os.environ.get("MLXFWRESET_EXIT_ON_ARM_SHUTDOWN_NOT_COMPLETED"):
-                print("Please note that ARM shutdown was not completed")
-                return True  # According to arch decision, we don't fail on this error.
+                if not self._warning_printed:
+                    print("Please note that ARM shutdown was not completed")   # According to arch decision, we don't fail on this error and contiue waiting for the FW state to change to 8.
+                    self._warning_printed = True  # Don't print the warning again.
             raise Exception(CmdRegMfrl.RESET_STATE_ERRORS[self._reset_state])
 
         # Need to keep waiting for the FW state to change.

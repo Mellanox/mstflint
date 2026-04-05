@@ -57,11 +57,7 @@ extern "C"
 #define INOUT
 #endif
 
-    enum
-    {
-        GET_FW_INFO = 0x8007,
-        FLASH_REG_ACCESS = 0x9001,
-    };
+#define GET_FW_INFO 0x8007
 
 #ifdef MST_UL
     // instead of cib_cif.h in mstflint

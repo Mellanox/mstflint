@@ -38,6 +38,7 @@
 #include "flint_io.h"
 #include "aux_tlv_ops.h"
 #include "mlxfwops_com.h"
+#include "psid_utils.h"
 #include "signature_manager_factory.h"
 #include "fw_version.h"
 #include "tools_layouts/cx4fw_layouts.h"
@@ -112,6 +113,7 @@ public:
         if (_ioAccess)
         {
             delete _ioAccess;
+            _ioAccess = (FBase*)NULL;
         }
         if (_signatureMngr)
         {
@@ -124,6 +126,7 @@ public:
         mfile* mf = _ioAccess->is_flash() ? ((Flash*)_ioAccess)->getMfileObj() : (mfile*)NULL;
         return mf;
     }
+    virtual psid_utils::MinorPsidLockStatus queryMinorPsidLockStatus();
     virtual bool IsFifthGen() { return (_ioAccess != NULL && _ioAccess->is_flash() && _ioAccess->is_fifth_gen()); }
     FBase* GetIoAccess() { return _ioAccess; }
     virtual u_int8_t FwType() = 0;
@@ -144,6 +147,7 @@ public:
                           bool showItoc = false,
                           bool ignoreDToc = false) = 0; // Add callback print
     virtual bool FwVerifyAdv(ExtVerifyParams& verifyParams);
+    bool CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_int32_t* supportedHwId, u_int32_t supportedHwIdNum);
     // on call of FwReadData with Null image we get image_size
     virtual bool FwReadData(void* image, u_int32_t* image_size, bool verbose = false) = 0;
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
@@ -666,7 +670,6 @@ protected:
     bool GetSectData(std::vector<u_int8_t>& file_sect, const u_int32_t* buff, const u_int32_t size);
     ////////////////////////////////////////////////////////////////////
     bool CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId);
-    bool CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_int32_t* supportedHwId, u_int32_t supportedHwIdNum);
     bool CheckMatchingBinning(u_int32_t hwDevId, BinIdT binningVal, u_int32_t imageDevId);
     bool HWIdRevToName(u_int32_t hw_id, u_int8_t rev_id, char* hw_name);
     bool CheckMac(u_int64_t mac);

@@ -157,6 +157,8 @@ enum FlashConstant
     BP_OFFSET = 2,
     BP_4TH_BIT_OFFSET_MICRON = 6,
     SRWD_OFFSET_ISSI = 7,
+    SRP_OFFSET_WINBOND = 7,
+    SRL_OFFSET_ISSI_MACRONIX = 0,
     BP_SIZE = 3,
     PROTECT_BITS_SIZE = 5
 };

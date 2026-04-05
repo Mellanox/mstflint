@@ -47,6 +47,18 @@ UserInput::UserInput()
     _pcieIndex = 0;
     _node = 0;
     _lane = 0;
+    _bkvGroupId = 0;
+    _bkvRates = {};
+    _bkvRoles = {};
+    _bkvModeBRoles = {};
+    _bkvEntry = 0;
+    _bkvAddress = 0;
+    _bkvWdata = 0;
+    _bkvWmask = 0;
+    _bkvEntrySpecified = false;
+    _bkvAddressSpecified = false;
+    _bkvWdataSpecified = false;
+    _bkvWmaskSpecified = false;
     _networkCmds = 0;
     _uniqueCmds = 0;
     _networkCmds = 0;
@@ -63,7 +75,6 @@ UserInput::UserInput()
     _prbsDcCoupledAllow = false;
     _sendPepcForceMode = false;
     _sendPepcANMode = false;
-    _pprtTuningTypeFlag = false;
     _toggle = true;
     _linkModeForce = false;
     _pcie = false;
@@ -92,9 +103,10 @@ UserInput::UserInput()
     _showMultiPortInfo = false;
     _showMultiPortModuleInfo = false;
     _showPlr = false;
+    _setPlr = false;
     _showKr = false;
     _showRxRecoveryCounters = false;
-
+    _extendedPcie = false;
     _device = "";
     _extAdbFile = "";
     _logFile = "";
@@ -111,7 +123,6 @@ UserInput::UserInput()
     _ppttModulation = "";
     _pprtRate = "";
     _ppttRate = "";
-    _pprtTuningType = "";
     _csvBer = "";
     _testMode = "Nominal";
     _forceMode = "";
@@ -130,6 +141,15 @@ UserInput::UserInput()
     _linkTraining = "";
     _phyRecovery = "";
     _phyRecoveryType = "";
+    _plrRejectMode = "";
+    _plrMarginThreshold = 0;
+    _plrTxCrc = 0;
+    _plrRejectModeProvided = false;
+    _plrMarginThresholdProvided = false;
+    _plrTxCrcProvided = false;
+    _setPrimary = false;
+    _primarySecondarySpecified = false;
+    _constantRole = "";
     _showPeriodicEq = false;
     _periodicEqIntervalSpecified = false;
     _setPeriodicEqInterval = -1; // 10uS granularity
@@ -142,6 +162,7 @@ UserInput::UserInput()
     measureTime = -1;
     force = false;
     gradeScanPerLane = false;
+    laneSpecified = false;
 
     enableRxErrInj = false;
     mixerOffset0 = -1;
@@ -169,4 +190,13 @@ UserInput::UserInput()
     dbdf = "";
 
     planeIndex = -1;
+    _forceTxAllowed = false;
+    _skipPowerGoodCheck = false;
+    _sysfsPath = "";
+    _sysfsPathGiven = false;
+
+    _setTxPrecoding = "";
+    _setRxPrecoding = "";
+    _setTxPrecodingProvided = false;
+    _setRxPrecodingProvided = false;
 }

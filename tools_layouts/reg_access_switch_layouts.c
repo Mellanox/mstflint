@@ -36,7 +36,7 @@
  
 
 /***
-         *** This file was generated at "2025-11-23 10:33:37"
+         *** This file was generated at "2025-12-21 15:54:24"
          *** by:
          ***    > [REDACTED]/adb2pack.py --input adb/prm/switch/ext/reg_access_switch.adb --file-prefix reg_access_switch --prefix reg_access_switch_ --no-adb-utils
          ***/
@@ -666,6 +666,238 @@ void reg_access_switch_mgpir_hw_info_ext_dump(const struct reg_access_switch_mgp
 	reg_access_switch_mgpir_hw_info_ext_print(ptr_struct, fd, 0);
 }
 
+void reg_access_switch_mmta_tec_power_ext_pack(const struct reg_access_switch_mmta_tec_power_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->cooling_level);
+	offset = 2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->temp_unit);
+	offset = 1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mtpr);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mtpe);
+	offset = 48;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->tec_power);
+	offset = 32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->max_tec_power);
+	offset = 80;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->tec_power_warning_low);
+	offset = 64;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->tec_power_warning_high);
+	offset = 112;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->tec_power_alarm_low);
+	offset = 96;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->tec_power_alarm_high);
+	offset = 144;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->set_point_temperature);
+	offset = 128;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->max_set_point_temperature);
+	offset = 176;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->set_point_temperature_warning_low);
+	offset = 160;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->set_point_temperature_warning_high);
+	offset = 208;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->set_point_temperature_alarm_low);
+	offset = 192;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->set_point_temperature_alarm_high);
+	offset = 240;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->min_cooling_level);
+	offset = 224;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->max_cooling_level);
+}
+
+void reg_access_switch_mmta_tec_power_ext_unpack(struct reg_access_switch_mmta_tec_power_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	ptr_struct->cooling_level = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 2;
+	ptr_struct->temp_unit = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 1;
+	ptr_struct->mtpr = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 0;
+	ptr_struct->mtpe = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 48;
+	ptr_struct->tec_power = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 32;
+	ptr_struct->max_tec_power = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 80;
+	ptr_struct->tec_power_warning_low = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 64;
+	ptr_struct->tec_power_warning_high = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 112;
+	ptr_struct->tec_power_alarm_low = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 96;
+	ptr_struct->tec_power_alarm_high = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 144;
+	ptr_struct->set_point_temperature = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 128;
+	ptr_struct->max_set_point_temperature = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 176;
+	ptr_struct->set_point_temperature_warning_low = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 160;
+	ptr_struct->set_point_temperature_warning_high = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 208;
+	ptr_struct->set_point_temperature_alarm_low = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 192;
+	ptr_struct->set_point_temperature_alarm_high = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 240;
+	ptr_struct->min_cooling_level = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 224;
+	ptr_struct->max_cooling_level = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+}
+
+void reg_access_switch_mmta_tec_power_ext_print(const struct reg_access_switch_mmta_tec_power_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_switch_mmta_tec_power_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "cooling_level        : " UH_FMT "\n", ptr_struct->cooling_level);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "temp_unit            : " UH_FMT "\n", ptr_struct->temp_unit);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mtpr                 : " UH_FMT "\n", ptr_struct->mtpr);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mtpe                 : " UH_FMT "\n", ptr_struct->mtpe);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "tec_power            : " UH_FMT "\n", ptr_struct->tec_power);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "max_tec_power        : " UH_FMT "\n", ptr_struct->max_tec_power);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "tec_power_warning_low : " UH_FMT "\n", ptr_struct->tec_power_warning_low);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "tec_power_warning_high : " UH_FMT "\n", ptr_struct->tec_power_warning_high);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "tec_power_alarm_low  : " UH_FMT "\n", ptr_struct->tec_power_alarm_low);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "tec_power_alarm_high : " UH_FMT "\n", ptr_struct->tec_power_alarm_high);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "set_point_temperature : " UH_FMT "\n", ptr_struct->set_point_temperature);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "max_set_point_temperature : " UH_FMT "\n", ptr_struct->max_set_point_temperature);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "set_point_temperature_warning_low : " UH_FMT "\n", ptr_struct->set_point_temperature_warning_low);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "set_point_temperature_warning_high : " UH_FMT "\n", ptr_struct->set_point_temperature_warning_high);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "set_point_temperature_alarm_low : " UH_FMT "\n", ptr_struct->set_point_temperature_alarm_low);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "set_point_temperature_alarm_high : " UH_FMT "\n", ptr_struct->set_point_temperature_alarm_high);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "min_cooling_level    : " UH_FMT "\n", ptr_struct->min_cooling_level);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "max_cooling_level    : " UH_FMT "\n", ptr_struct->max_cooling_level);
+}
+
+unsigned int reg_access_switch_mmta_tec_power_ext_size(void)
+{
+	return REG_ACCESS_SWITCH_MMTA_TEC_POWER_EXT_SIZE;
+}
+
+void reg_access_switch_mmta_tec_power_ext_dump(const struct reg_access_switch_mmta_tec_power_ext *ptr_struct, FILE *fd)
+{
+	reg_access_switch_mmta_tec_power_ext_print(ptr_struct, fd, 0);
+}
+
+void reg_access_switch_mmta_temprature_ext_pack(const struct reg_access_switch_mmta_temprature_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 5;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->temp_unit);
+	offset = 3;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->twee);
+	offset = 2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->twe);
+	offset = 1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mtr);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mte);
+	offset = 48;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature);
+	offset = 32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->max_temperature);
+	offset = 80;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature_warning_low);
+	offset = 64;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature_warning_high);
+	offset = 112;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature_alarm_low);
+	offset = 96;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature_alarm_high);
+}
+
+void reg_access_switch_mmta_temprature_ext_unpack(struct reg_access_switch_mmta_temprature_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 5;
+	ptr_struct->temp_unit = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 3;
+	ptr_struct->twee = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
+	offset = 2;
+	ptr_struct->twe = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 1;
+	ptr_struct->mtr = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 0;
+	ptr_struct->mte = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 48;
+	ptr_struct->temperature = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 32;
+	ptr_struct->max_temperature = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 80;
+	ptr_struct->temperature_warning_low = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 64;
+	ptr_struct->temperature_warning_high = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 112;
+	ptr_struct->temperature_alarm_low = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 96;
+	ptr_struct->temperature_alarm_high = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+}
+
+void reg_access_switch_mmta_temprature_ext_print(const struct reg_access_switch_mmta_temprature_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_switch_mmta_temprature_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "temp_unit            : " UH_FMT "\n", ptr_struct->temp_unit);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "twee                 : %s (" UH_FMT ")\n", (ptr_struct->twee == 0 ? ("do_not_generate_event") : ((ptr_struct->twee == 1 ? ("generate_events") : ((ptr_struct->twee == 2 ? ("generate_single_event") : ("unknown")))))), ptr_struct->twee);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "twe                  : " UH_FMT "\n", ptr_struct->twe);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mtr                  : " UH_FMT "\n", ptr_struct->mtr);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mte                  : " UH_FMT "\n", ptr_struct->mte);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "temperature          : " UH_FMT "\n", ptr_struct->temperature);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "max_temperature      : " UH_FMT "\n", ptr_struct->max_temperature);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "temperature_warning_low : " UH_FMT "\n", ptr_struct->temperature_warning_low);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "temperature_warning_high : " UH_FMT "\n", ptr_struct->temperature_warning_high);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "temperature_alarm_low : " UH_FMT "\n", ptr_struct->temperature_alarm_low);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "temperature_alarm_high : " UH_FMT "\n", ptr_struct->temperature_alarm_high);
+}
+
+unsigned int reg_access_switch_mmta_temprature_ext_size(void)
+{
+	return REG_ACCESS_SWITCH_MMTA_TEMPRATURE_EXT_SIZE;
+}
+
+void reg_access_switch_mmta_temprature_ext_dump(const struct reg_access_switch_mmta_temprature_ext *ptr_struct, FILE *fd)
+{
+	reg_access_switch_mmta_temprature_ext_print(ptr_struct, fd, 0);
+}
+
 void reg_access_switch_uint64_pack(const u_int64_t *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -1191,6 +1423,8 @@ void reg_access_switch_mdsr_reg_ext_pack(const struct reg_access_switch_mdsr_reg
 	adb2c_push_bits_to_buff(ptr_buff, offset, 6, (u_int32_t)ptr_struct->additional_info);
 	offset = 0;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->type_of_token);
+	offset = 33;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->revoke_version);
 	offset = 32;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->end);
 	offset = 64;
@@ -1207,6 +1441,8 @@ void reg_access_switch_mdsr_reg_ext_unpack(struct reg_access_switch_mdsr_reg_ext
 	ptr_struct->additional_info = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 6);
 	offset = 0;
 	ptr_struct->type_of_token = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 33;
+	ptr_struct->revoke_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 32;
 	ptr_struct->end = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 64;
@@ -1224,6 +1460,8 @@ void reg_access_switch_mdsr_reg_ext_print(const struct reg_access_switch_mdsr_re
 	fprintf(fd, "additional_info      : " UH_FMT "\n", ptr_struct->additional_info);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "type_of_token        : " UH_FMT "\n", ptr_struct->type_of_token);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "revoke_version       : " UH_FMT "\n", ptr_struct->revoke_version);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "end                  : " UH_FMT "\n", ptr_struct->end);
 	adb2c_add_indentation(fd, indent_level);
@@ -1406,6 +1644,80 @@ void reg_access_switch_mkdc_reg_ext_dump(const struct reg_access_switch_mkdc_reg
 	reg_access_switch_mkdc_reg_ext_print(ptr_struct, fd, 0);
 }
 
+void reg_access_switch_mmta_reg_ext_pack(const struct reg_access_switch_mmta_reg_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 24;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->module);
+	offset = 4;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->supported_measurements);
+	offset = 32;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->module_name_hi);
+	offset = 64;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->module_name_lo);
+	offset = 96;
+	reg_access_switch_mmta_temprature_ext_pack(&(ptr_struct->module_temperature), ptr_buff + offset / 8);
+	offset = 288;
+	reg_access_switch_mmta_tec_power_ext_pack(&(ptr_struct->module_tec_power), ptr_buff + offset / 8);
+	offset = 544;
+	reg_access_switch_mmta_temprature_ext_pack(&(ptr_struct->module_second_temperature), ptr_buff + offset / 8);
+}
+
+void reg_access_switch_mmta_reg_ext_unpack(struct reg_access_switch_mmta_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 24;
+	ptr_struct->module = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 4;
+	ptr_struct->supported_measurements = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 32;
+	ptr_struct->module_name_hi = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 64;
+	ptr_struct->module_name_lo = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 96;
+	reg_access_switch_mmta_temprature_ext_unpack(&(ptr_struct->module_temperature), ptr_buff + offset / 8);
+	offset = 288;
+	reg_access_switch_mmta_tec_power_ext_unpack(&(ptr_struct->module_tec_power), ptr_buff + offset / 8);
+	offset = 544;
+	reg_access_switch_mmta_temprature_ext_unpack(&(ptr_struct->module_second_temperature), ptr_buff + offset / 8);
+}
+
+void reg_access_switch_mmta_reg_ext_print(const struct reg_access_switch_mmta_reg_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_switch_mmta_reg_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module               : " UH_FMT "\n", ptr_struct->module);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "supported_measurements : " UH_FMT "\n", ptr_struct->supported_measurements);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module_name_hi       : " U32H_FMT "\n", ptr_struct->module_name_hi);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module_name_lo       : " U32H_FMT "\n", ptr_struct->module_name_lo);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module_temperature:\n");
+	reg_access_switch_mmta_temprature_ext_print(&(ptr_struct->module_temperature), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module_tec_power:\n");
+	reg_access_switch_mmta_tec_power_ext_print(&(ptr_struct->module_tec_power), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module_second_temperature:\n");
+	reg_access_switch_mmta_temprature_ext_print(&(ptr_struct->module_second_temperature), fd, indent_level + 1);
+}
+
+unsigned int reg_access_switch_mmta_reg_ext_size(void)
+{
+	return REG_ACCESS_SWITCH_MMTA_REG_EXT_SIZE;
+}
+
+void reg_access_switch_mmta_reg_ext_dump(const struct reg_access_switch_mmta_reg_ext *ptr_struct, FILE *fd)
+{
+	reg_access_switch_mmta_reg_ext_print(ptr_struct, fd, 0);
+}
+
 void reg_access_switch_mpein_reg_ext_pack(const struct reg_access_switch_mpein_reg_ext *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -1436,6 +1748,8 @@ void reg_access_switch_mpein_reg_ext_pack(const struct reg_access_switch_mpein_r
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->bdf0);
 	offset = 223;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->lane_reversal);
+	offset = 222;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->cmn_clk_mode);
 	offset = 208;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->port_type);
 	offset = 205;
@@ -1490,6 +1804,8 @@ void reg_access_switch_mpein_reg_ext_unpack(struct reg_access_switch_mpein_reg_e
 	ptr_struct->bdf0 = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 223;
 	ptr_struct->lane_reversal = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 222;
+	ptr_struct->cmn_clk_mode = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 208;
 	ptr_struct->port_type = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 205;
@@ -1546,6 +1862,8 @@ void reg_access_switch_mpein_reg_ext_print(const struct reg_access_switch_mpein_
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "lane_reversal        : " UH_FMT "\n", ptr_struct->lane_reversal);
 	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "cmn_clk_mode         : " UH_FMT "\n", ptr_struct->cmn_clk_mode);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "port_type            : " UH_FMT "\n", ptr_struct->port_type);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "pwr_status           : " UH_FMT "\n", ptr_struct->pwr_status);
@@ -1599,6 +1917,12 @@ void reg_access_switch_mpir_ext_pack(const struct reg_access_switch_mpir_ext *pt
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->subordinate_bus);
 	offset = 48;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->secondary_bus);
+	offset = 40;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->segment_base);
+	offset = 39;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->segment_valid);
+	offset = 38;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->segment_cap);
 	offset = 88;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 5, (u_int32_t)ptr_struct->device);
 	offset = 82;
@@ -1637,6 +1961,12 @@ void reg_access_switch_mpir_ext_unpack(struct reg_access_switch_mpir_ext *ptr_st
 	ptr_struct->subordinate_bus = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 48;
 	ptr_struct->secondary_bus = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 40;
+	ptr_struct->segment_base = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 39;
+	ptr_struct->segment_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 38;
+	ptr_struct->segment_cap = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 88;
 	ptr_struct->device = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 5);
 	offset = 82;
@@ -1676,6 +2006,12 @@ void reg_access_switch_mpir_ext_print(const struct reg_access_switch_mpir_ext *p
 	fprintf(fd, "subordinate_bus      : " UH_FMT "\n", ptr_struct->subordinate_bus);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "secondary_bus        : " UH_FMT "\n", ptr_struct->secondary_bus);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "segment_base         : " UH_FMT "\n", ptr_struct->segment_base);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "segment_valid        : " UH_FMT "\n", ptr_struct->segment_valid);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "segment_cap          : " UH_FMT "\n", ptr_struct->segment_cap);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "device               : " UH_FMT "\n", ptr_struct->device);
 	adb2c_add_indentation(fd, indent_level);
@@ -1934,6 +2270,8 @@ void reg_access_switch_mtcq_reg_ext_pack(const struct reg_access_switch_mtcq_reg
 		offset = adb2c_calc_array_field_address(576, 32, i, 896, 1);
 		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->challenge[i]);
 	}
+	offset = 832;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 8, ptr_struct->token_ratchet);
 }
 
 void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
@@ -1973,6 +2311,8 @@ void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext
 		offset = adb2c_calc_array_field_address(576, 32, i, 896, 1);
 		ptr_struct->challenge[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	}
+	offset = 832;
+	ptr_struct->token_ratchet = (u_int64_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
 }
 
 void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_reg_ext *ptr_struct, FILE *fd, int indent_level)
@@ -2014,6 +2354,8 @@ void reg_access_switch_mtcq_reg_ext_print(const struct reg_access_switch_mtcq_re
 		adb2c_add_indentation(fd, indent_level);
 		fprintf(fd, "challenge_%03d       : " U32H_FMT "\n", i, ptr_struct->challenge[i]);
 	}
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "token_ratchet        : " U64H_FMT "\n", ptr_struct->token_ratchet);
 }
 
 unsigned int reg_access_switch_mtcq_reg_ext_size(void)
@@ -2208,6 +2550,10 @@ void reg_access_switch_pllp_reg_ext_pack(const struct reg_access_switch_pllp_reg
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->maf);
 	offset = 157;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->protocol);
+	offset = 136;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->sub_module);
+	offset = 128;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->module);
 	offset = 176;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->resource_label_port);
 	offset = 160;
@@ -2244,6 +2590,10 @@ void reg_access_switch_pllp_reg_ext_unpack(struct reg_access_switch_pllp_reg_ext
 	ptr_struct->maf = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 157;
 	ptr_struct->protocol = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
+	offset = 136;
+	ptr_struct->sub_module = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 128;
+	ptr_struct->module = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 176;
 	ptr_struct->resource_label_port = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 160;
@@ -2281,6 +2631,10 @@ void reg_access_switch_pllp_reg_ext_print(const struct reg_access_switch_pllp_re
 	fprintf(fd, "maf                  : " UH_FMT "\n", ptr_struct->maf);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "protocol             : " UH_FMT "\n", ptr_struct->protocol);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "sub_module           : " UH_FMT "\n", ptr_struct->sub_module);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module               : " UH_FMT "\n", ptr_struct->module);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "resource_label_port  : " UH_FMT "\n", ptr_struct->resource_label_port);
 	adb2c_add_indentation(fd, indent_level);
@@ -2565,7 +2919,7 @@ void reg_access_switch_pmdr_reg_ext_pack(const struct reg_access_switch_pmdr_reg
 	offset = 320;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->VL31_lane_map);
 	offset = 480;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->module_lane_mask_msb);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->sub_module);
 	offset = 540;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->oe_lane7_to_els_logical_laser);
 	offset = 536;
@@ -2759,7 +3113,7 @@ void reg_access_switch_pmdr_reg_ext_unpack(struct reg_access_switch_pmdr_reg_ext
 	offset = 320;
 	ptr_struct->VL31_lane_map = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 480;
-	ptr_struct->module_lane_mask_msb = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
+	ptr_struct->sub_module = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 540;
 	ptr_struct->oe_lane7_to_els_logical_laser = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 536;
@@ -2954,7 +3308,7 @@ void reg_access_switch_pmdr_reg_ext_print(const struct reg_access_switch_pmdr_re
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "VL31_lane_map        : " UH_FMT "\n", ptr_struct->VL31_lane_map);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "module_lane_mask_msb : " UH_FMT "\n", ptr_struct->module_lane_mask_msb);
+	fprintf(fd, "sub_module           : " UH_FMT "\n", ptr_struct->sub_module);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "oe_lane7_to_els_logical_laser : " UH_FMT "\n", ptr_struct->oe_lane7_to_els_logical_laser);
 	adb2c_add_indentation(fd, indent_level);
@@ -3089,14 +3443,23 @@ void reg_access_switch_reg_access_switch_Nodes_print(const union reg_access_swit
 	fprintf(fd, "======== reg_access_switch_reg_access_switch_Nodes ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "plib_reg_ext:\n");
-	reg_access_switch_plib_reg_ext_print(&(ptr_struct->plib_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mspmer_ext:\n");
+	reg_access_switch_mspmer_ext_print(&(ptr_struct->mspmer_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pmlp_reg_ext:\n");
-	reg_access_switch_pmlp_reg_ext_print(&(ptr_struct->pmlp_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mddq_ext:\n");
+	reg_access_switch_mddq_ext_print(&(ptr_struct->mddq_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mkdc_reg_ext:\n");
-	reg_access_switch_mkdc_reg_ext_print(&(ptr_struct->mkdc_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "pmaos_reg_ext:\n");
+	reg_access_switch_pmaos_reg_ext_print(&(ptr_struct->pmaos_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "icsr_ext:\n");
+	reg_access_switch_icsr_ext_print(&(ptr_struct->icsr_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mmta_reg_ext:\n");
+	reg_access_switch_mmta_reg_ext_print(&(ptr_struct->mmta_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "pmdr_reg_ext:\n");
+	reg_access_switch_pmdr_reg_ext_print(&(ptr_struct->pmdr_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "icam_reg_ext:\n");
 	reg_access_switch_icam_reg_ext_print(&(ptr_struct->icam_reg_ext), fd, indent_level + 1);
@@ -3104,47 +3467,38 @@ void reg_access_switch_reg_access_switch_Nodes_print(const union reg_access_swit
 	fprintf(fd, "mdsr_reg_ext:\n");
 	reg_access_switch_mdsr_reg_ext_print(&(ptr_struct->mdsr_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pmaos_reg_ext:\n");
-	reg_access_switch_pmaos_reg_ext_print(&(ptr_struct->pmaos_reg_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "msgi_ext:\n");
-	reg_access_switch_msgi_ext_print(&(ptr_struct->msgi_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "pllp_reg_ext:\n");
 	reg_access_switch_pllp_reg_ext_print(&(ptr_struct->pllp_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mfmc_reg_ext:\n");
 	reg_access_switch_mfmc_reg_ext_print(&(ptr_struct->mfmc_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mgpir_ext:\n");
-	reg_access_switch_mgpir_ext_print(&(ptr_struct->mgpir_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mspmer_ext:\n");
-	reg_access_switch_mspmer_ext_print(&(ptr_struct->mspmer_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mddt_reg_ext:\n");
 	reg_access_switch_mddt_reg_ext_print(&(ptr_struct->mddt_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pguid_reg_ext:\n");
-	reg_access_switch_pguid_reg_ext_print(&(ptr_struct->pguid_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "mgpir_ext:\n");
+	reg_access_switch_mgpir_ext_print(&(ptr_struct->mgpir_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "msgi_ext:\n");
+	reg_access_switch_msgi_ext_print(&(ptr_struct->msgi_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mpein_reg_ext:\n");
 	reg_access_switch_mpein_reg_ext_print(&(ptr_struct->mpein_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "icsr_ext:\n");
-	reg_access_switch_icsr_ext_print(&(ptr_struct->icsr_ext), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mtcq_reg_ext:\n");
-	reg_access_switch_mtcq_reg_ext_print(&(ptr_struct->mtcq_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "pmlp_reg_ext:\n");
+	reg_access_switch_pmlp_reg_ext_print(&(ptr_struct->pmlp_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mpir_ext:\n");
 	reg_access_switch_mpir_ext_print(&(ptr_struct->mpir_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "mddq_ext:\n");
-	reg_access_switch_mddq_ext_print(&(ptr_struct->mddq_ext), fd, indent_level + 1);
+	fprintf(fd, "plib_reg_ext:\n");
+	reg_access_switch_plib_reg_ext_print(&(ptr_struct->plib_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "pmdr_reg_ext:\n");
-	reg_access_switch_pmdr_reg_ext_print(&(ptr_struct->pmdr_reg_ext), fd, indent_level + 1);
+	fprintf(fd, "pguid_reg_ext:\n");
+	reg_access_switch_pguid_reg_ext_print(&(ptr_struct->pguid_reg_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mkdc_reg_ext:\n");
+	reg_access_switch_mkdc_reg_ext_print(&(ptr_struct->mkdc_reg_ext), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mrsr_ext:\n");
 	reg_access_switch_mrsr_ext_print(&(ptr_struct->mrsr_ext), fd, indent_level + 1);
@@ -3154,6 +3508,9 @@ void reg_access_switch_reg_access_switch_Nodes_print(const union reg_access_swit
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "PPCR_ext:\n");
 	reg_access_switch_PPCR_ext_print(&(ptr_struct->PPCR_ext), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mtcq_reg_ext:\n");
+	reg_access_switch_mtcq_reg_ext_print(&(ptr_struct->mtcq_reg_ext), fd, indent_level + 1);
 }
 
 unsigned int reg_access_switch_reg_access_switch_Nodes_size(void)

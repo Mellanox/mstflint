@@ -100,6 +100,7 @@ public:
     bool FwCalcMD5(u_int8_t md5sum[16]) override;
     bool GetPldmComponentData(string component, string psid, u_int8_t** buff, u_int32_t& buffSize);
     bool GetPldmDescriptor(string psid, u_int16_t type, u_int16_t& descriptor);
+    string GetPldmVendorDefinedDescriptor(string psid, PldmRecordDescriptor::VendorDefinedType type);
     bool CreateFwOpsImage(u_int32_t* buff,
                           u_int32_t buffSize,
                           FwOperations** newImageOps,

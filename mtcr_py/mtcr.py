@@ -98,7 +98,7 @@ if CMTCR:
             self.is_remote_dev = CMTCR.is_remote_dev
             self.is_gpu_device = CMTCR.is_gpu_device
             self.readDeviceIdFunc = CMTCR.read_device_id
-
+            self.hotResetFunc = CMTCR.hot_reset
         ##########################
         def close(self):
             if self.mf:
@@ -207,6 +207,9 @@ if CMTCR:
             if self.readDeviceIdFunc(self.mf, byref(dev_id)) != 4:
                 raise MtcrException("Failed to read device ID")
             return dev_id.value
+
+        def send_hot_reset(self, in_parallel, domain_1, bus_1, device_1, function_1, domain_2, bus_2, device_2, function_2):
+            return self.hotResetFunc(self.mf, in_parallel, domain_1, bus_1, device_1, function_1, domain_2, bus_2, device_2, function_2)
         ##########################
 
 else:

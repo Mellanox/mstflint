@@ -43,6 +43,8 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _secondSplit = 0;
     _isFnmPort = false;
     _numOfLanes = 0;
+    _isNvlinkModeA = false;
+    _isNvlinkModeB = false;
     _maxLanes = MAX_NETWORK_LANES;
     _csvFileName = "";
     _mstDevName = "";
@@ -79,8 +81,8 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
 
     _baseSheetsList[AMBER_SHEET_GENERAL] = FIELDS_COUNT{6, 6, 6};
     _baseSheetsList[AMBER_SHEET_INDEXES] = FIELDS_COUNT{8, 3, 4};
-    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{91, 99, 24};
-    _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{97, 113, 0};
+    _baseSheetsList[AMBER_SHEET_LINK_STATUS] = FIELDS_COUNT{92, 99, 41};
+    _baseSheetsList[AMBER_SHEET_MODULE_STATUS] = FIELDS_COUNT{106, 117, 0};
     _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{22, 19, 10};
     _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{376, 736, 0};
     _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{182, 362, 406};
@@ -93,8 +95,8 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_TEST_MODE_INFO] = FIELDS_COUNT{68, 136, 0};
     _baseSheetsList[AMBER_SHEET_TEST_MODE_MODULE_INFO] = FIELDS_COUNT{70, 110, 0};
     _baseSheetsList[AMBER_SHEET_PHY_DEBUG_INFO] = FIELDS_COUNT{4, 4, 0};
-    _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{183, 116, 0};
-    _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{25, 25, 0};
+    _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{191, 125, 0};
+    _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{29, 25, 0};
 
     for_each(_baseSheetsList.begin(), _baseSheetsList.end(),
              [&](pair<AMBER_SHEET, FIELDS_COUNT> sheet) {
@@ -169,7 +171,7 @@ void MlxlinkAmBerCollector::sendLocalPrmReg(const string& regName, maccess_reg_m
 
 string MlxlinkAmBerCollector::getLocalFieldStr(const string& fieldName)
 {
-    string fieldVal = "N/A";
+    string fieldVal = NA_FIELD_VALUE;
     try
     {
         fieldVal = getFieldStr(fieldName);
@@ -256,10 +258,39 @@ void MlxlinkAmBerCollector::init()
             _isPortETH = (_protoActive == ETH) && (_pnat != PNAT_PCIE);
             _maxLanes = MAX_NETWORK_LANES;
 
+            resetLocalParser(ACCESS_REG_PPAOS);
+            updateField("local_port", _localPort);
+            sendRegister(ACCESS_REG_PPAOS, MACCESS_REG_METHOD_GET);
+            _inPRBSMode = getFieldValue("phy_test_mode_status") == 1;
+
             if (_protoActive == IB)
             {
-                _activeSpeed = getFieldValue("link_speed_active");
-                _numOfLanes = getFieldValue("link_width_active");
+                updateModeAsActive();
+
+                // Restore PDDR parser after updateModeAsActive() changed it to PTYS.
+                resetLocalParser(ACCESS_REG_PDDR);
+                updateField("local_port", _localPort);
+                updateField("page_select", PDDR_OPERATIONAL_INFO_PAGE);
+                sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
+                
+                _activeSpeed = _isPortNVLINK ? getFieldValue("link_nvlink_active") : getFieldValue("link_speed_active");
+                string linkSpeedActive = SupportedSpeeds2Str((_isNvlinkModeB || _isNvlinkModeA) ? NVLINK : IB,
+                                                             _activeSpeed, true, _isModeAsActive);
+                if (_isNvlinkModeB || _isNvlinkModeA)
+                {
+                    if (_inPRBSMode)
+                    {
+                        updateNumOfLanesForTestModeNVL6();
+                    }
+                    else
+                    {
+                        _numOfLanes = linkSpeedActive.empty() ? 0 : checkNvl6ModeBSpeed(linkSpeedActive) ? 2 : 1;
+                    }
+                }
+                else
+                {
+                    _numOfLanes = getFieldValue("link_width_active");
+                }
                 _maxLanes = MAX_IB_LANES;
             }
             else
@@ -410,7 +441,7 @@ string MlxlinkAmBerCollector::getNodeGUID()
         strGuid = string(charGuid);
     }
 
-    return strGuid.empty() ? "N/A" : strGuid;
+    return strGuid.empty() ? NA_FIELD_VALUE : strGuid;
 }
 
 string MlxlinkAmBerCollector::getMACAddress()
@@ -437,7 +468,7 @@ string MlxlinkAmBerCollector::getMACAddress()
 
     strMac = string(charMac);
 
-    return strMac.empty() ? "N/A" : strMac;
+    return strMac.empty() ? NA_FIELD_VALUE : strMac;
 }
 
 vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
@@ -453,19 +484,16 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
     {
         fields.push_back(AmberField("MAC_Address", getMACAddress()));
     }
-    string aggregatedPort = "N/A";
-    string planePort = "N/A";
-
+    string aggregatedPort = NA_FIELD_VALUE;
+    string planePort = NA_FIELD_VALUE;
     AmberField::_dataValid = true;
     string labelPortStr = to_string(_labelPort);
-
-    if ((_splitPort && _splitPort != 1) || _devID == DeviceQuantum2 || _devID == DeviceQuantum3) {
-        /* For Quantum-2, the split notation will stand for the port in the cage
-         * For other, only add the split notation if it's not 1
-         */
+    if (_splitPort != 0)
+    {
         labelPortStr += "/" + to_string(_splitPort);
     }
-    if ((_secondSplit && _secondSplit != 1) && (_devID == DeviceQuantum2 || _devID == DeviceQuantum3)) {
+    if (_secondSplit != 0)
+    {
         labelPortStr += "/" + to_string(_secondSplit);
     }
     fields.push_back(AmberField(
@@ -474,7 +502,8 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
     fields.push_back(AmberField("pcie_index", to_string(_pcieIndex), _isPortPCIE));
     fields.push_back(AmberField("node", to_string(_node), _isPortPCIE));
 
-    if (_productTechnology == PRODUCT_5NM && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+    if ((_productTechnology == PRODUCT_5NM || _productTechnology == SERDES_GEN_8) &&
+        !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
     {
         resetLocalParser(ACCESS_REG_PPCR);
         updateField("local_port", _localPort);
@@ -485,15 +514,15 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
     fields.push_back(AmberField("aggregated_port", aggregatedPort, _isPortIB));
     fields.push_back(AmberField("plane_port", planePort, _isPortIB));
 
-    string labelCage = "N/A";
-    string ipilStat = "N/A";
-    string splitStat = "N/A";
+    string labelCage = NA_FIELD_VALUE;
+    string ipilStat = NA_FIELD_VALUE;
+    string splitStat = NA_FIELD_VALUE;
 
     if (!_isPortPCIE)
     {
         resetLocalParser(ACCESS_REG_MGIR);
         sendRegister(ACCESS_REG_MGIR, MACCESS_REG_METHOD_GET);
-        fields.push_back(AmberField("IC_GA", getRawFieldValueStr("hw_info__ga"), _isPortIB));
+        fields.push_back(AmberField("IC_GA", to_string(getFieldValue("ga")), _isPortIB || _isPortNVLINK));
 
         if (dm_dev_is_switch(static_cast<dm_dev_id_t>(_devID)) && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
@@ -541,20 +570,20 @@ vector<AmberField> MlxlinkAmBerCollector::getSystemInfo()
 
     try
     {
-        string sysVol = "N/A";
-        string sysCur = "N/A";
-        string sensNameVoltage = "N/A";
-        string sensNameTemp = "N/A";
-        string temp = "N/A";
-        string numPlanes = "N/A";
-        string thermalThrottlingNormalCnt = "N/A";
-        string thermalThrottlingWarningCnt = "N/A";
-        string thermalThrottlingCriticalCnt = "N/A";
-        string tileNum = "N/A";
-        string slotIndex = "N/A";
-        string retimerValid = "N/A";
-        string retimerDpNum = "N/A";
-        string retimerDieNum = "N/A";
+        string sysVol = NA_FIELD_VALUE;
+        string sysCur = NA_FIELD_VALUE;
+        string sensNameVoltage = NA_FIELD_VALUE;
+        string sensNameTemp = NA_FIELD_VALUE;
+        string temp = NA_FIELD_VALUE;
+        string numPlanes = NA_FIELD_VALUE;
+        string thermalThrottlingNormalCnt = NA_FIELD_VALUE;
+        string thermalThrottlingWarningCnt = NA_FIELD_VALUE;
+        string thermalThrottlingCriticalCnt = NA_FIELD_VALUE;
+        string tileNum = NA_FIELD_VALUE;
+        string slotIndex = NA_FIELD_VALUE;
+        string retimerValid = NA_FIELD_VALUE;
+        string retimerDpNum = NA_FIELD_VALUE;
+        string retimerDieNum = NA_FIELD_VALUE;
         u_int32_t tileNumInt = 0;
 
         if (!_isPortPCIE)
@@ -575,7 +604,7 @@ vector<AmberField> MlxlinkAmBerCollector::getSystemInfo()
             fields.push_back(AmberField("Module_Lanes_Used", getBitmaskPerLaneStr(getFieldValue("module_lane_mask"))));
             fields.push_back(AmberField("PLL_Index", to_string(_pllGroup)));
 
-            if (_productTechnology == PRODUCT_5NM && _isPortIB)
+            if ((_productTechnology == PRODUCT_5NM || _productTechnology == SERDES_GEN_8) && _isPortIB)
             {
                 retimerValid = getFieldStr("gb_valid");
                 retimerDpNum = getFieldStr("gb_dp_num");
@@ -651,7 +680,8 @@ vector<AmberField> MlxlinkAmBerCollector::getSystemInfo()
             fields.push_back(AmberField("Device_SN", getAscii("serial_number", 24)));
         }
 
-        if (_productTechnology == PRODUCT_5NM && _isPortIB && !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
+        if ((_productTechnology == PRODUCT_5NM || _productTechnology == SERDES_GEN_8) && _isPortIB &&
+            !dm_is_gpu(static_cast<dm_dev_id_t>(_devID)))
         {
             resetLocalParser(ACCESS_REG_PPCR);
             updateField("local_port", _localPort);
@@ -668,9 +698,9 @@ vector<AmberField> MlxlinkAmBerCollector::getSystemInfo()
             thermalThrottlingWarningCnt = getRawFieldValueStr("warning_events_cnt");
             thermalThrottlingCriticalCnt = getRawFieldValueStr("critical_events_cnt");
 
-            fields.push_back(AmberField("Thermal_throttling_normal_cnt", thermalThrottlingNormalCnt));
-            fields.push_back(AmberField("Thermal_throttling_warning_cnt", thermalThrottlingWarningCnt));
-            fields.push_back(AmberField("Thermal_throttling_critical_cnt", thermalThrottlingCriticalCnt));
+            fields.push_back(AmberField("l1_Thermal_throttling_normal_cnt", thermalThrottlingNormalCnt));
+            fields.push_back(AmberField("l1_Thermal_throttling_warning_cnt", thermalThrottlingWarningCnt));
+            fields.push_back(AmberField("l1_Thermal_throttling_critical_cnt", thermalThrottlingCriticalCnt));
         }
     }
     catch (const std::exception& exc)
@@ -716,9 +746,9 @@ vector<AmberField> MlxlinkAmBerCollector::getPhyOperationInfo()
         updateField("page_select", PDDR_OPERATIONAL_INFO_PAGE);
         sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
 
-        string phyManagerLinkEnabledStr = "N/A";
-        string coreToPhyLinkEnabledStr = "N/A";
-        string cableProtoCapStr = "N/A";
+        string phyManagerLinkEnabledStr = NA_FIELD_VALUE;
+        string coreToPhyLinkEnabledStr = NA_FIELD_VALUE;
+        string cableProtoCapStr = NA_FIELD_VALUE;
 
         fields.push_back(AmberField("eth_an_fsm_state",
                                     _mlxlinkMaps->_ethANFsmState[getFieldValue("eth_an_fsm_"
@@ -728,7 +758,15 @@ vector<AmberField> MlxlinkAmBerCollector::getPhyOperationInfo()
                                     _mlxlinkMaps->_ibPhyFsmState[getFieldValue("ib_phy_fsm_"
                                                                                "state")],
                                     !_isPortPCIE));
-        if (_isPortIB)
+        if (_isPortNVLINK && !_isFnmPort)
+        {
+            phyManagerLinkEnabledStr =
+                getStrByMask(getFieldValue("phy_manager_link_nvlink_enabled"), _mlxlinkMaps->_NVLINKSpeed2Str);
+            coreToPhyLinkEnabledStr =
+                getStrByMask(getFieldValue("core_to_phy_link_nvlink_enabled"), _mlxlinkMaps->_NVLINKSpeed2Str, "/");
+            cableProtoCapStr = getStrByMask(getFieldValue("cable_nvlink_proto_cap"), _mlxlinkMaps->_NVLINKSpeed2Str);
+        }
+        else if (_isPortIB)
         {
             phyManagerLinkEnabledStr =
               getStrByMask(getFieldValue("phy_manager_link_proto_enabled"), _mlxlinkMaps->_IBSpeed2Str);
@@ -800,7 +838,7 @@ string MlxlinkAmBerCollector::getBerAndErrorTitle(u_int32_t portType)
     string title = "";
     if (portType)
     {
-        title = "N/A";
+        title = NA_FIELD_VALUE;
     }
     return title;
 }
@@ -848,7 +886,7 @@ void MlxlinkAmBerCollector::getPpcntBer(u_int32_t portType, vector<AmberField>& 
         if (portType != NETWORK_PORT_TYPE)
         {
             u_int64_t symErrors =
-              add32BitTo64(getFieldValue("phy_symbol_errors_high"), getFieldValue("phy_symbol_errors_low"));
+              add32BitTo64(getFieldValue("phy_symbol_errors_high", 0, 0, false, true), getFieldValue("phy_symbol_errors_low", 0, 0, false, true));
             fields.push_back(AmberField(preTitle + "Symbol_Errors", to_string(symErrors)));
         }
     }
@@ -883,7 +921,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             u_int32_t ethLinkActive = getFieldValue("ext_eth_proto_oper");
             fields.push_back(AmberField("Speed_[Gb/s]", string(dataRateStr)));
             fields.push_back(AmberField("Ethernet_Protocol_Active",
-                                        ethLinkActive ? _mlxlinkMaps->_EthExtSpeed2Str[ethLinkActive] : "N/A",
+                                        ethLinkActive ? _mlxlinkMaps->_EthExtSpeed2Str[ethLinkActive] : NA_FIELD_VALUE,
                                         _isPortETH));
 
             resetLocalParser(ACCESS_REG_PPCNT);
@@ -903,7 +941,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             string val = "";
             for (u_int32_t lane = 0; lane < MAX_NETWORK_LANES; lane++)
             {
-                val = "N/A";
+                val = NA_FIELD_VALUE;
                 if (lane < _numOfLanes)
                 {
                     val = getFieldStr("raw_ber_coef_lane" + to_string(lane)) + "E-" +
@@ -938,14 +976,26 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             updateField("page_select", PDDR_OPERATIONAL_INFO_PAGE);
             sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
 
-            string linkSpeedActive = SupportedSpeeds2Str(IB, getFieldValue("link_speed_active"), true);
+            string linkSpeedField = (_isNvlinkModeB || _isNvlinkModeA) ? "link_nvlink_active" : "link_speed_active";
+            string linkSpeedActive = SupportedSpeeds2Str((_isNvlinkModeB || _isNvlinkModeA) ? NVLINK : IB,
+                                                         getFieldValue(linkSpeedField), true, _isModeAsActive);
             fields.push_back(
-              AmberField("Link_Speed_Active", linkSpeedActive.empty() ? "N/A" : linkSpeedActive, _isPortIB));
-            fields.push_back(
-              AmberField("Link_Width_Active", linkWidthMaskToStr(getFieldValue("link_width_active")), _isPortIB));
+              AmberField("Link_Speed_Active", linkSpeedActive.empty() ? NA_FIELD_VALUE : linkSpeedActive, _isPortIB || _isPortNVLINK));
+            string widthActive = NA_FIELD_VALUE;
+            if (_isNvlinkModeB || _isNvlinkModeA)
+            {
+                widthActive = linkSpeedActive.empty()                                  ? NA_FIELD_VALUE :
+                            checkNvl6ModeBSpeed(linkSpeedActive) || _isModeAsActive ? "2x" :
+                                                                                        "1x";
+            }
+            else
+            {
+                widthActive = linkWidthMaskToStr(getFieldValue("link_width_active"));
+            }
+            fields.push_back(AmberField("Link_Width_Active", widthActive, _isPortIB));
             fields.push_back(AmberField("Active_FEC", _mlxlinkMaps->_fecModeActive[getFieldValue("fec_mode_active")]));
 
-            string roundTripLatency = "N/A";
+            string roundTripLatency = NA_FIELD_VALUE;
             try
             {
                 resetLocalParser(ACCESS_REG_PRTL);
@@ -1040,8 +1090,8 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
                 skipBinLimit = true;
                 for (u_int32_t idx = 0; idx < NUM_OF_BINS; idx++)
                 {
-                    histRange["high_val_" + to_string(idx)] = "N/A";
-                    histRange["low_val_" + to_string(idx)] = "N/A";
+                    histRange["high_val_" + to_string(idx)] = NA_FIELD_VALUE;
+                    histRange["low_val_" + to_string(idx)] = NA_FIELD_VALUE;
                 }
             }
 
@@ -1056,7 +1106,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             string val = "";
             for (u_int32_t idx = 0; idx < NUM_OF_BINS; idx++)
             {
-                val = "N/A";
+                val = NA_FIELD_VALUE;
                 if (idx < numOfBins || (skipBinLimit || !numOfBins))
                 {
                     histBin = add32BitTo64(getFieldValue("hist[" + to_string(idx) + "]_hi"),
@@ -1068,7 +1118,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             int firstZeroHist = -1;
             for (u_int32_t idx = NUM_OF_BINS - 1; idx > 0; idx--)
             {
-                if (histPerLane[idx] != "N/A")
+                if (histPerLane[idx] != NA_FIELD_VALUE)
                 {
                     if (histPerLane[idx] != "0")
                     {
@@ -1077,7 +1127,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
                     }
                 }
             }
-            fields.push_back(AmberField("FC_Zero_Hist", firstZeroHist >= 0 ? to_string(firstZeroHist) : "N/A"));
+            fields.push_back(AmberField("FC_Zero_Hist", firstZeroHist >= 0 ? to_string(firstZeroHist) : NA_FIELD_VALUE));
             fields.push_back(AmberField("Number_of_histogram_bins", to_string(numOfBins)));
             for (u_int32_t idx = 0; idx < NUM_OF_BINS; idx++)
             {
@@ -1099,7 +1149,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             u_int64_t rawError = 0;
             for (u_int32_t lane = 0; lane < MAX_NETWORK_LANES; lane++)
             {
-                val = "N/A";
+                val = NA_FIELD_VALUE;
                 if (lane < _numOfLanes)
                 {
                     rawError = add32BitTo64(getFieldValue("phy_raw_errors_lane" + to_string(lane) + "_high"),
@@ -1118,7 +1168,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
               add32BitTo64(getFieldValue("phy_effective_errors_high"), getFieldValue("phy_effective_errors_low")));
             fields.push_back(AmberField("Effective_Errors", effErrorsStr));
             u_int64_t symErrors =
-              add32BitTo64(getFieldValue("phy_symbol_errors_high"), getFieldValue("phy_symbol_errors_low"));
+              add32BitTo64(getFieldValue("phy_symbol_errors_high", 0, 0, false, true), getFieldValue("phy_symbol_errors_low", 0, 0, false, true));
             fields.push_back(AmberField("Symbol_Errors", to_string(symErrors)));
         }
         else
@@ -1143,8 +1193,9 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             sendRegister(ACCESS_REG_MPEIN, MACCESS_REG_METHOD_GET);
             int flitActive = getFieldValue("flit_active");
 
-            string fecCorrectableErrorCounter = "N/A";
-            string fecUncorrectableErrorCounter = "N/A";
+            string fecCorrectableErrorCounter = NA_FIELD_VALUE;
+            string fecUncorrectableErrorCounter = NA_FIELD_VALUE;
+            string fberStr = NA_FIELD_VALUE;
 
             if (getFieldValue("link_width_active") & GEN6) // relevant only in case the current active speed is PCI
                                                            // gen-6.
@@ -1166,14 +1217,16 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
                 {
                     fecCorrectableErrorCounter = to_string(getFieldValue("fec_correctable_error_counter"));
                     fecUncorrectableErrorCounter = to_string(getFieldValue("fec_uncorrectable_error_counter"));
+                    fberStr = to_string(getFieldValue("fber_coef")) + "E-" + to_string(getFieldValue("fber_magnitude"));
                 }
             }
 
             fields.push_back(AmberField("fec_correctable_error_counter", fecCorrectableErrorCounter));
             fields.push_back(AmberField("fec_uncorrectable_error_counter", fecUncorrectableErrorCounter));
+            fields.push_back(AmberField("FBER", fberStr));
         }
 
-        if (_productTechnology == PRODUCT_5NM && _isPortIB && !_isHca)
+        if ((_productTechnology == PRODUCT_5NM || _productTechnology == SERDES_GEN_8) && _isPortIB && !_isHca)
         {
             resetLocalParser(ACCESS_REG_PAOS);
             updateField("local_port", _localPort);
@@ -1186,8 +1239,23 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             updateField("local_port", _localPort);
             sendRegister(ACCESS_REG_PPSLS, MACCESS_REG_METHOD_GET);
             fields.push_back(AmberField("l1_neg_status", to_string(getFieldValue("l1_neg_status"))));
-            fields.push_back(AmberField("fw_mode_neg_status", to_string(getFieldValue("fw_mode_neg_status"))));
-            fields.push_back(AmberField("fw_mode_act", to_string(getFieldValue("fw_mode_act"))));
+            fields.push_back(AmberField("l1_fw_mode_neg_status", to_string(getFieldValue("fw_mode_neg_status"))));
+            fields.push_back(AmberField("l1_fw_mode_act", to_string(getFieldValue("fw_mode_act"))));
+
+            string primarySecondaryStr = NA_FIELD_VALUE;
+            try
+            {
+                resetLocalParser(ACCESS_REG_PPAOS);
+                updateField("local_port", _localPort);
+                sendRegister(ACCESS_REG_PPAOS, MACCESS_REG_METHOD_GET);
+                primarySecondaryStr = getStrByValue(getFieldValue("primary_secondary_oper"), _mlxlinkMaps->_priOrSec);
+            }
+            catch (const std::exception& e)
+            {
+                // do nothing
+            }
+
+            fields.push_back(AmberField("primary_secondary", primarySecondaryStr));
         }
     }
     catch (const std::exception& exc)
@@ -1206,7 +1274,7 @@ void MlxlinkAmBerCollector::fillParamsToFields(const string& title,
     string fieldName = "";
     for (u_int32_t idx = 0; idx < values.size(); idx++)
     {
-        val = "N/A";
+        val = NA_FIELD_VALUE;
         if (((_numOfLanes - 1) < values.size()) && (idx < _numOfLanes))
         {
             val = values[idx];
@@ -1289,8 +1357,8 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesNDR()
 
     try
     {
-        fields.push_back(AmberField("UPHY_version", "N/A"));
-        fields.push_back(AmberField("BKV_version", "N/A"));
+        fields.push_back(AmberField("UPHY_version", NA_FIELD_VALUE));
+        fields.push_back(AmberField("BKV_version", NA_FIELD_VALUE));
 
         vector<vector<string>> sltpParams(SLTP_NDR_LAST + 1, vector<string>(_maxLanes, ""));
 
@@ -1334,7 +1402,7 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesXDR()
     {
         if (!_isPortPCIE)
         {
-            vector<vector<string>> sltpParams(SLTP_XDR_LAST, vector<string>(_maxLanes, ""));
+            vector<vector<string>> sltpParams(SLTP_5NM_LAST, vector<string>(_maxLanes, ""));
             vector<vector<string>> slrgParams(SLRG_PARAMS_LAST, vector<string>(_maxLanes, ""));
             // Getting 5nm SLRG information for all lanes
             for (u_int32_t lane = 0; lane < _maxLanes; lane++)
@@ -1357,34 +1425,18 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesXDR()
                 updateField("pnat", _pnat);
                 sendRegister(ACCESS_REG_SLTP, MACCESS_REG_METHOD_GET);
 
-                sltpParams[SLTP_XDR_DRV_AMP][lane] = getFieldStr("drv_amp");
-                sltpParams[SLTP_XDR_TAP0][lane] = getFieldStr("tap0");
-                sltpParams[SLTP_XDR_TAP1][lane] = getFieldStr("tap1");
-                sltpParams[SLTP_XDR_TAP2][lane] = getFieldStr("tap2");
-                sltpParams[SLTP_XDR_TAP3][lane] = getFieldStr("tap3");
-                sltpParams[SLTP_XDR_TAP4][lane] = getFieldStr("tap4");
-                sltpParams[SLTP_XDR_TAP5][lane] = getFieldStr("tap5");
-                sltpParams[SLTP_XDR_TAP6][lane] = getFieldStr("tap6");
-                sltpParams[SLTP_XDR_TAP7][lane] = getFieldStr("tap7");
-                sltpParams[SLTP_XDR_TAP8][lane] = getFieldStr("tap8");
-                sltpParams[SLTP_XDR_TAP9][lane] = getFieldStr("tap9");
-                sltpParams[SLTP_XDR_TAP10][lane] = getFieldStr("tap10");
-                sltpParams[SLTP_XDR_TAP11][lane] = getFieldStr("tap11");
+                sltpParams[SLTP_5NM_TAP1][lane] = getFieldStr("tap1");
+                sltpParams[SLTP_5NM_TAP2][lane] = getFieldStr("tap2");
+                sltpParams[SLTP_5NM_TAP3][lane] = getFieldStr("tap3");
+                sltpParams[SLTP_5NM_TAP4][lane] = getFieldStr("tap4");
+                sltpParams[SLTP_5NM_TAP5][lane] = getFieldStr("tap5");
             }
 
-            fillParamsToFields("drv_amp", sltpParams[SLTP_XDR_DRV_AMP], fields);
-            fillParamsToFields("tap0", sltpParams[SLTP_XDR_TAP0], fields);
-            fillParamsToFields("tap1", sltpParams[SLTP_XDR_TAP1], fields);
-            fillParamsToFields("tap2", sltpParams[SLTP_XDR_TAP2], fields);
-            fillParamsToFields("tap3", sltpParams[SLTP_XDR_TAP3], fields);
-            fillParamsToFields("tap4", sltpParams[SLTP_XDR_TAP4], fields);
-            fillParamsToFields("tap5", sltpParams[SLTP_XDR_TAP5], fields);
-            fillParamsToFields("tap6", sltpParams[SLTP_XDR_TAP6], fields);
-            fillParamsToFields("tap7", sltpParams[SLTP_XDR_TAP7], fields);
-            fillParamsToFields("tap8", sltpParams[SLTP_XDR_TAP8], fields);
-            fillParamsToFields("tap9", sltpParams[SLTP_XDR_TAP9], fields);
-            fillParamsToFields("tap10", sltpParams[SLTP_XDR_TAP10], fields);
-            fillParamsToFields("tap11", sltpParams[SLTP_XDR_TAP11], fields);
+            fillParamsToFields("tap1", sltpParams[SLTP_5NM_TAP1], fields);
+            fillParamsToFields("tap2", sltpParams[SLTP_5NM_TAP2], fields);
+            fillParamsToFields("tap3", sltpParams[SLTP_5NM_TAP3], fields);
+            fillParamsToFields("tap4", sltpParams[SLTP_5NM_TAP4], fields);
+            fillParamsToFields("tap5", sltpParams[SLTP_5NM_TAP5], fields);
         }
     }
     catch (const std::exception& exc)
@@ -1429,13 +1481,13 @@ void MlxlinkAmBerCollector::getCmisComplianceCode(u_int32_t ethComplianceCode,
         case UNIDENTIFIED:
         case UNPLUGGED:
         default:
-            ethComplianceStr = "N/A";
-            extComplianceStr = "N/A";
+            ethComplianceStr = NA_FIELD_VALUE;
+            extComplianceStr = NA_FIELD_VALUE;
             break;
 
         case ACTIVE:
             ethComplianceStr = _mlxlinkMaps->_activeCableCompliance[ethComplianceCode];
-            ethComplianceStr = ethComplianceStr.empty() ? "N/A" : ethComplianceStr;
+            ethComplianceStr = ethComplianceStr.empty() ? NA_FIELD_VALUE : ethComplianceStr;
             extComplianceStr = _mlxlinkMaps->_cmisHostCompliance[extEthComplianceCode];
             break;
 
@@ -1453,7 +1505,7 @@ void MlxlinkAmBerCollector::getCmisComplianceCode(u_int32_t ethComplianceCode,
             break;
 
         case PASSIVE:
-            ethComplianceStr = "N/A";
+            ethComplianceStr = NA_FIELD_VALUE;
             extComplianceStr = _mlxlinkMaps->_cmisHostCompliance[extEthComplianceCode];
             break;
     }
@@ -1470,16 +1522,16 @@ void MlxlinkAmBerCollector::getEthComplianceCodes(u_int32_t cableTechnology,
     if (_isQsfpCable)
     {
         ethComplianceStr =
-          ethComplianceCode ? getCompliance(ethComplianceCode, _mlxlinkMaps->_cableComplianceQsfp, true) : "N/A";
+          ethComplianceCode ? getCompliance(ethComplianceCode, _mlxlinkMaps->_cableComplianceQsfp, true) : NA_FIELD_VALUE;
         extComplianceStr = (extEthComplianceCode & QSFP_ETHERNET_COMPLIANCE_CODE_EXT) ?
                              _mlxlinkMaps->_cableComplianceExt[extEthComplianceCode] :
-                             "N/A";
+                             NA_FIELD_VALUE;
     }
     if (_isSfpCable)
     {
         ethComplianceStr =
-          ethComplianceCode ? getCompliance(ethComplianceCode, _mlxlinkMaps->_cableComplianceSfp, true) : "N/A";
-        extComplianceStr = extEthComplianceCode ? _mlxlinkMaps->_cableComplianceExt[extEthComplianceCode] : "N/A";
+          ethComplianceCode ? getCompliance(ethComplianceCode, _mlxlinkMaps->_cableComplianceSfp, true) : NA_FIELD_VALUE;
+        extComplianceStr = extEthComplianceCode ? _mlxlinkMaps->_cableComplianceExt[extEthComplianceCode] : NA_FIELD_VALUE;
     }
     if (_isCmisCable)
     {
@@ -1492,12 +1544,12 @@ void MlxlinkAmBerCollector::getIbComplianceCodes(string& ibComplianceCodeStr)
 {
     u_int32_t ibComplianceCode = getFieldValue("ib_compliance_code");
     ibComplianceCodeStr =
-      ibComplianceCode ? getCompliance(ibComplianceCode, _mlxlinkMaps->_cableComplianceCmisIb, true) : "N/A";
+      ibComplianceCode ? getCompliance(ibComplianceCode, _mlxlinkMaps->_cableComplianceCmisIb, true) : NA_FIELD_VALUE;
 }
 
 string MlxlinkAmBerCollector::getCableTechnologyStr(u_int32_t cableTechnology)
 {
-    string technologyStr = "N/A";
+    string technologyStr = NA_FIELD_VALUE;
     if (_isCmisCable)
     {
         technologyStr = _mlxlinkMaps->_cableTechnologyQsfp[cableTechnology];
@@ -1556,7 +1608,7 @@ string MlxlinkAmBerCollector::getCableBreakoutStr(u_int32_t cableBreakout, u_int
     }
     else
     {
-        cableBreakoutStr = "N/A";
+        cableBreakoutStr = NA_FIELD_VALUE;
     }
 
     return cableBreakoutStr;
@@ -1592,7 +1644,7 @@ void MlxlinkAmBerCollector::pushModulePerLaneField(vector<AmberField>& fields,
 
 void MlxlinkAmBerCollector::pushModuleDpPerLane(vector<AmberField>& fields, const string str, string suffix)
 {
-    string dpStateStr = "N/A";
+    string dpStateStr = NA_FIELD_VALUE;
     string fieldName = str;
     string openSquareBracket = suffix == "" ? "[" : "";
     string closeSquareBracket = suffix == "" ? "]" : "";
@@ -1605,14 +1657,14 @@ void MlxlinkAmBerCollector::pushModuleDpPerLane(vector<AmberField>& fields, cons
         dpStateStr = getStrByMask(getLocalFieldValue(fieldName + openSquareBracket + laneStr + closeSquareBracket),
                                   _mlxlinkMaps->_dataPathSt);
         fields.push_back(AmberField(str + laneStr + suffix, dpStateStr));
-        dpStateStr = "N/A";
+        dpStateStr = NA_FIELD_VALUE;
     }
 }
 
 string
   MlxlinkAmBerCollector::getSmfLength(const u_int32_t smfLength, const u_int32_t cableTechnology, const bool optical)
 {
-    string lengthStr = "N/A";
+    string lengthStr = NA_FIELD_VALUE;
 
     if (cableTechnology >= TECHNOLOGY_1310NM_VCSEL && cableTechnology <= TECHNOLOGY_1550NM_EML && optical)
     {
@@ -1667,7 +1719,7 @@ string MlxlinkAmBerCollector::getDateCode(u_int64_t dateCode)
     }
     else
     {
-        dateCodeStr = "N/A";
+        dateCodeStr = NA_FIELD_VALUE;
     }
 
     return dateCodeStr;
@@ -1685,15 +1737,15 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField>& fields)
 
     bool passive = cableMediaType == PASSIVE;
     bool optical = cableMediaType == OPTICAL_MODULE;
-    string ethComplianceStr = "N/A";
-    string extComplianceStr = "N/A";
-    string ibComplianceCodeStr = "N/A";
+    string ethComplianceStr = NA_FIELD_VALUE;
+    string extComplianceStr = NA_FIELD_VALUE;
+    string ibComplianceCodeStr = NA_FIELD_VALUE;
     string ibWidthStr = linkWidthMaskToStr(ibWidth);
-    string moduleSt = "N/A";
-    string activeSetHostComplianceCode = "N/A";
-    string activeSetMediaComplianceCode = "N/A";
-    string nbrString = "N/A";
-    string error_code_res = "N/A";
+    string moduleSt = NA_FIELD_VALUE;
+    string activeSetHostComplianceCode = NA_FIELD_VALUE;
+    string activeSetMediaComplianceCode = NA_FIELD_VALUE;
+    string nbrString = NA_FIELD_VALUE;
+    string error_code_res = NA_FIELD_VALUE;
     char vendorOUIStr[32];
     sprintf(vendorOUIStr, "0x%X", vendorOUI);
 
@@ -1727,10 +1779,10 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField>& fields)
       "cable_power_class",
       getPowerClass(_mlxlinkMaps, cableIdentifier, getFieldValue("cable_power_class"), getFieldValue("max_power"))));
     fields.push_back(AmberField("max_power", getFieldStr("max_power")));
-    fields.push_back(AmberField("cable_rx_amp", passive ? "N/A" : getFieldStr("cable_rx_amp")));
-    fields.push_back(AmberField("cable_rx_pre_emphasis", passive ? "N/A" : getFieldStr("cable_rx_emphasis")));
-    fields.push_back(AmberField("cable_rx_post_emphasis", passive ? "N/A" : getFieldStr("cable_rx_post_emphasis")));
-    fields.push_back(AmberField("cable_tx_equalization", passive ? "N/A" : getFieldStr("cable_tx_equalization")));
+    fields.push_back(AmberField("cable_rx_amp", passive ? NA_FIELD_VALUE : getFieldStr("cable_rx_amp")));
+    fields.push_back(AmberField("cable_rx_pre_emphasis", passive ? NA_FIELD_VALUE : getFieldStr("cable_rx_emphasis")));
+    fields.push_back(AmberField("cable_rx_post_emphasis", passive ? NA_FIELD_VALUE : getFieldStr("cable_rx_post_emphasis")));
+    fields.push_back(AmberField("cable_tx_equalization", passive ? NA_FIELD_VALUE : getFieldStr("cable_tx_equalization")));
     fields.push_back(AmberField("cable_attenuation_53g", getFieldStr("cable_attenuation_53g")));
     fields.push_back(AmberField("cable_attenuation_25g", getFieldStr("cable_attenuation_25g")));
     fields.push_back(AmberField("cable_attenuation_12g", getFieldStr("cable_attenuation_12g")));
@@ -1768,7 +1820,7 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField>& fields)
     sprintf(waveLenTolCh, "%.1f", waveLenTol);
     string waveLenTolStr = waveLenTolCh;
 
-    fields.push_back(AmberField("wavelength_tolerance", passive ? "N/A" : waveLenTolStr + "nm"));
+    fields.push_back(AmberField("wavelength_tolerance", passive ? NA_FIELD_VALUE : waveLenTolStr + "nm"));
 
     if (_isCmisCable)
     {
@@ -1828,10 +1880,10 @@ string MlxlinkAmBerCollector::getBitmaskPerLaneStr(u_int32_t bitmask)
 
 void MlxlinkAmBerCollector::getModuleLatchedFlagInfoPage(vector<AmberField>& fields)
 {
-    string modFwFault = "N/A";
-    string dpFwFault = "N/A";
-    string txLoss = "N/A";
-    string txAdEqFault = "N/A";
+    string modFwFault = NA_FIELD_VALUE;
+    string dpFwFault = NA_FIELD_VALUE;
+    string txLoss = NA_FIELD_VALUE;
+    string txAdEqFault = NA_FIELD_VALUE;
     if (_isCmisCable)
     {
         modFwFault = getFieldStr("mod_fw_fault");
@@ -1885,7 +1937,7 @@ vector < AmberField > MlxlinkAmBerCollector::getModuleStatus()
 
             u_int32_t operSt = getFieldValue("oper_status");
             string operStStr = getStrByValue(operSt, _mlxlinkMaps->_moduleOperSt);
-            string errTypeStr = "N/A";
+            string errTypeStr = NA_FIELD_VALUE;
             if (operSt == MODULE_OPER_STATUS_PLUGGED_WITH_ERROR)
             {
                 errTypeStr = getStrByValue(getFieldValue("error_type"), _mlxlinkMaps->_moduleErrType);
@@ -2172,7 +2224,7 @@ vector<AmberField> MlxlinkAmBerCollector::getTroubleshootingInfo()
 
 void MlxlinkAmBerCollector::getModuleLinkUpInfoPage(vector<AmberField>& fields)
 {
-    string timeLogicalInitToActive = "N/A";
+    string timeLogicalInitToActive = NA_FIELD_VALUE;
 
     timeLogicalInitToActive = getFieldStr("time_logical_init_to_active");
     fields.push_back(AmberField("up_reason_pwr", _mlxlinkMaps->_upReasonPwr[getFieldValue("up_reason_pwr")]));
@@ -2226,7 +2278,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkDownInfo()
 
     try
     {
-        string receivedTs1Opcode = "N/A";
+        string receivedTs1Opcode = NA_FIELD_VALUE;
         if (!_isPortPCIE)
         {
             sendLocalPrmReg(ACCESS_REG_PDDR, GET, "local_port=%d,page_select=%d", _localPort,
@@ -2493,7 +2545,7 @@ void MlxlinkAmBerCollector::getPemiLaserMonitors(vector<AmberField>& fields, boo
     {
         AmberField::_dataValid = false;
     }
-    string iccMonitor = "N/A", elsPowerConsumption = "N/A";
+    string iccMonitor = NA_FIELD_VALUE, elsPowerConsumption = NA_FIELD_VALUE;
 
     sendLocalPrmReg(ACCESS_REG_PEMI, GET, "local_port=%d,page_select=%d", _localPort,
                     PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES);
@@ -2511,7 +2563,7 @@ void MlxlinkAmBerCollector::getPemiModuleStatus(vector<AmberField>& fields, bool
     {
         AmberField::_dataValid = false;
     }
-    string moduleSt = "N/A", oeTemp = "N/A", elsTemp = "N/A";
+    string moduleSt = NA_FIELD_VALUE, oeTemp = NA_FIELD_VALUE, elsTemp = NA_FIELD_VALUE;
     sendLocalPrmReg(ACCESS_REG_PEMI, GET, "local_port=%d,page_select=%d", _localPort,
                     PEMI_GROUP_SEL_MODULE_STATUS_SAMPLES);
 
@@ -2563,10 +2615,10 @@ void MlxlinkAmBerCollector::getPemiPreFecBer(vector<AmberField>& fields, bool is
 
 void MlxlinkAmBerCollector::getMTMGFields(vector<AmberField>& fields)
 {
-    string thr1 = "N/A";
-    string thr2 = "N/A";
-    string thr3 = "N/A";
-    string thr4 = "N/A";
+    string thr1 = NA_FIELD_VALUE;
+    string thr2 = NA_FIELD_VALUE;
+    string thr3 = NA_FIELD_VALUE;
+    string thr4 = NA_FIELD_VALUE;
 
     try
     {
@@ -2633,29 +2685,33 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
 
     try
     {
-        string operRecoveryStr = "N/A", successfulRecoveryEvents = "N/A";
-        string unintentionalLinkDownEvents = "N/A";
-        string intentionalLinkDownEvents = "N/A";
-        string timeInLastHostLogicalRecovery = "N/A";
-        string timeInLastHostSerdesFeqRecovery = "N/A";
-        string timeInLastModuleTxDisableRecovery = "N/A";
-        string timeInLastModuleDatapathFullToggleRecovery = "N/A";
-        string totalTimeInHostLogicalRecovery = "N/A";
-        string totalTimeInHostSerdesFeqRecovery = "N/A";
-        string totalTimeInModuleDatapathFullToggleRecovery = "N/A";
-        string hostLogicalRecoveryCount = "N/A";
-        string hostSerdesFeqRecoveryCount = "N/A";
-        string moduleTxDisableRecoveryCount = "N/A";
-        string moduleDatapathFullToggleRecoveryCount = "N/A";
-        string hostLogicalSuccesfulRecoveryCount = "N/A";
-        string hostSerdesFeqSuccesfulRecoveryCount = "N/A";
-        string moduleTxDisableSuccesfulRecoveryCount = "N/A";
-        string moduleDatapathFullToggleSuccesfulRecoveryCount = "N/A";
-        string timeSinceLastRecovery = "N/A";
-        string lastHostLogicalRecoveryAttemptsCount = "N/A";
-        string lastHostSerdesFeqAttemptsCount = "N/A";
-        string timeBetweenLast2Recoveries = "N/A";
-        string rsFecUncorrectableDuringRecovery = "N/A";
+        string operRecoveryStr = NA_FIELD_VALUE, successfulRecoveryEvents = NA_FIELD_VALUE;
+        string unintentionalLinkDownEvents = NA_FIELD_VALUE;
+        string intentionalLinkDownEvents = NA_FIELD_VALUE;
+        string timeInLastHostLogicalRecovery = NA_FIELD_VALUE;
+        string timeInLastHostSerdesFeqRecovery = NA_FIELD_VALUE;
+        string timeInLastModuleTxDisableRecovery = NA_FIELD_VALUE;
+        string timeInLastModuleDatapathFullToggleRecovery = NA_FIELD_VALUE;
+        string totalTimeInHostLogicalRecovery = NA_FIELD_VALUE;
+        string totalTimeInHostSerdesFeqRecovery = NA_FIELD_VALUE;
+        string totalTimeInModuleDatapathFullToggleRecovery = NA_FIELD_VALUE;
+        string hostLogicalRecoveryCount = NA_FIELD_VALUE;
+        string hostSerdesFeqRecoveryCount = NA_FIELD_VALUE;
+        string moduleTxDisableRecoveryCount = NA_FIELD_VALUE;
+        string moduleDatapathFullToggleRecoveryCount = NA_FIELD_VALUE;
+        string hostLogicalSuccesfulRecoveryCount = NA_FIELD_VALUE;
+        string hostSerdesFeqSuccesfulRecoveryCount = NA_FIELD_VALUE;
+        string moduleTxDisableSuccesfulRecoveryCount = NA_FIELD_VALUE;
+        string moduleDatapathFullToggleSuccesfulRecoveryCount = NA_FIELD_VALUE;
+        string timeSinceLastRecovery = NA_FIELD_VALUE;
+        string lastHostLogicalRecoveryAttemptsCount = NA_FIELD_VALUE;
+        string lastHostSerdesFeqAttemptsCount = NA_FIELD_VALUE;
+        string timeBetweenLast2Recoveries = NA_FIELD_VALUE;
+        string rsFecUncorrectableDuringRecovery = NA_FIELD_VALUE;
+        string totalRsFecUncorrectableDuringRecovery = NA_FIELD_VALUE;
+        string lastSuccessfulyRecoveryStepAttempts = NA_FIELD_VALUE;
+        string totalSuccessfulRecoveryTime = NA_FIELD_VALUE;
+        string lastSuccessfulRecoveryTime = NA_FIELD_VALUE;
 
         if (!_isPortPCIE)
         {
@@ -2713,10 +2769,19 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
             rsFecUncorrectableDuringRecovery =
               to_string(add32BitTo64(getLocalFieldValue("last_rs_fec_uncorrectable_during_recovery_high"),
                                      getLocalFieldValue("last_rs_fec_uncorrectable_during_recovery_low")));
+            if (_isPortIB)
+            {
+                totalRsFecUncorrectableDuringRecovery =
+                to_string(add32BitTo64(getLocalFieldValue("total_rs_fec_uncorrectable_during_recovery_high"),
+                                        getLocalFieldValue("total_rs_fec_uncorrectable_during_recovery_low")));
+                lastSuccessfulyRecoveryStepAttempts =
+                to_string(getLocalFieldValue("last_successful_recovery_step_attempts"));
+                totalSuccessfulRecoveryTime = to_string(getLocalFieldValue("total_successful_recovery_time"));
+                lastSuccessfulRecoveryTime = to_string(getLocalFieldValue("last_successful_recovery_time"));
+            }
         }
         fields.push_back(AmberField("operational_recovery", operRecoveryStr));
         fields.push_back(AmberField("total_successful_recovery_events", successfulRecoveryEvents));
-        fields.push_back(AmberField("successful_recovery_events_cnt", successfulRecoveryEvents));
         fields.push_back(AmberField("unintentional_link_down_events", unintentionalLinkDownEvents));
         fields.push_back(AmberField("intentional_link_down_events", intentionalLinkDownEvents));
         fields.push_back(AmberField("time_in_last_host_logical_recovery", timeInLastHostLogicalRecovery));
@@ -2745,6 +2810,11 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
         fields.push_back(AmberField("last_host_serdes_feq_attempts_count", lastHostSerdesFeqAttemptsCount));
         fields.push_back(AmberField("time_between_last_2_recoveries", timeBetweenLast2Recoveries));
         fields.push_back(AmberField("last_rs_fec_uncorrectable_during_recovery", rsFecUncorrectableDuringRecovery));
+        fields.push_back(
+            AmberField("total_rs_fec_uncorrectable_during_recovery", totalRsFecUncorrectableDuringRecovery));
+        fields.push_back(AmberField("last_successful_recovery_step_attempts", lastSuccessfulyRecoveryStepAttempts));
+        fields.push_back(AmberField("total_successful_recovery_time", totalSuccessfulRecoveryTime));
+        fields.push_back(AmberField("last_successful_recovery_time", lastSuccessfulRecoveryTime));
     }
     catch (const std::exception& exc)
     {
@@ -2758,7 +2828,7 @@ vector<AmberField> MlxlinkAmBerCollector::collectSheet(AMBER_SHEET sheet)
 {
     vector<AmberField> fields;
     bool invalidSheet = false;
-    fields.push_back(AmberField("N/A", "N/A"));
+    fields.push_back(AmberField(NA_FIELD_VALUE, NA_FIELD_VALUE));
 
     AmberField::reset();
 
@@ -2786,7 +2856,7 @@ vector<AmberField> MlxlinkAmBerCollector::collectSheet(AMBER_SHEET sheet)
             fields = _productTechnology == PRODUCT_7NM ? getSerdesNDR() : vector<AmberField>();
             break;
         case AMBER_SHEET_SERDES_5NM:
-            fields = _productTechnology == PRODUCT_5NM ? getSerdesXDR() : vector<AmberField>();
+            fields = (_productTechnology == PRODUCT_5NM || _productTechnology == SERDES_GEN_8) ? getSerdesXDR() : vector<AmberField>();
             break;
         case AMBER_SHEET_PORT_COUNTERS:
             if (!_inPRBSMode)
@@ -2908,7 +2978,7 @@ void MlxlinkAmBerCollector::collect()
     for (const auto& sheet : _sheetsList)
     {
         auto sheetFields = collectSheet(sheet.first);
-        if (sheetFields.empty() || sheetFields.back().getUiField() != "N/A")
+        if (sheetFields.empty() || sheetFields.back().getUiField() != NA_FIELD_VALUE)
         {
             _amberCollection[sheet.first] = sheetFields;
         }
@@ -3016,6 +3086,37 @@ void MlxlinkAmBerCollector::exportToConsole()
             {
                 cout << *fieldIt << endl;
             }
+        }
+    }
+}
+
+void MlxlinkAmBerCollector::updateModeAsActive()
+{
+    u_int32_t protoMask = (_isNvlinkModeB || _isNvlinkModeA) ? (u_int32_t)PTYS_PROTO_MASK_NVLINK : _protoActive;
+    resetLocalParser(ACCESS_REG_PTYS);
+    updateField("local_port", _localPort);
+    updateField("proto_mask", protoMask);
+    sendRegister(ACCESS_REG_PTYS, MACCESS_REG_METHOD_GET);
+    _isModeAsActive = getFieldValue("xdr_2x_slow_active");
+}
+
+void MlxlinkAmBerCollector::updateNumOfLanesForTestModeNVL6()
+{
+    // In test mode, determine number of lanes from PRBS register
+    resetLocalParser(ACCESS_REG_PPRT);
+    updateField("local_port", _localPort);
+    updateField("e", PPRT_PPTT_ENABLE);
+    sendRegister(ACCESS_REG_PPRT, MACCESS_REG_METHOD_GET);
+    string laneRateStr = getStrByValue(getFieldValue("lane_rate_oper"), _mlxlinkMaps->_prbsLaneRateList);
+    if (_isNvlinkModeB || _isNvlinkModeA)
+    {
+        if (laneRateStr == _mlxlinkMaps->_prbsLaneRateList[PRBS_XDR])
+        {
+            _numOfLanes = 1; // XDR_1X mode has 1 lane (XDR_2X is currently not supported)
+        }
+        else
+        {
+            _numOfLanes = 2; // Mode B has 2 lanes, usually we should query PMLP to get the actual number of lanes
         }
     }
 }

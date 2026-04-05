@@ -40,22 +40,37 @@
  ***/
 
 #include <stdlib.h>
+#include <string.h>
 #include "packets_layout.h"
 #include "packets_common.h"
+#include "mtcr_com_defs.h"
 
 /*************************************/
 /* Name: OperationTlv
  * Size: 128 bits
  * Description:  */
 
-u_int32_t OperationTlv_pack(struct OperationTlv* data_to_pack, u_int8_t* packed_buffer)
+#define REGISTER_HEADERS_SIZE 20
+
+MTCR_API int init_operation_tlv(struct OperationTlv* operation_tlv, u_int16_t reg_id, u_int8_t method)
+{
+    memset(operation_tlv, 0, sizeof(*operation_tlv));
+    operation_tlv->Type = TLV_OPERATION;
+    operation_tlv->tlv_class = MAD_CLASS_1_REG_ACCESS;
+    operation_tlv->len = TLV_OPERATION_SIZE_DWORDS;
+    operation_tlv->method = method;
+    operation_tlv->register_id = reg_id;
+    return 0;
+}
+
+MTCR_API u_int32_t OperationTlv_pack(struct OperationTlv* data_to_pack, u_int8_t* packed_buffer)
 {
     push_to_buff(packed_buffer, 24, 8, data_to_pack->reserved0);
     push_to_buff(packed_buffer, 17, 7, data_to_pack->status);
     push_to_buff(packed_buffer, 16, 1, data_to_pack->dr);
     push_to_buff(packed_buffer, 5, 11, data_to_pack->len);
     push_to_buff(packed_buffer, 0, 5, data_to_pack->Type);
-    push_to_buff(packed_buffer, 56, 8, data_to_pack->class);
+    push_to_buff(packed_buffer, 56, 8, data_to_pack->tlv_class);
     push_to_buff(packed_buffer, 49, 7, data_to_pack->method);
     push_to_buff(packed_buffer, 48, 1, data_to_pack->r);
     push_to_buff(packed_buffer, 32, 16, data_to_pack->register_id);
@@ -63,28 +78,28 @@ u_int32_t OperationTlv_pack(struct OperationTlv* data_to_pack, u_int8_t* packed_
     return 16;
 }
 
-void OperationTlv_unpack(struct OperationTlv* unpacked_data, u_int8_t* buffer_to_unpack)
+MTCR_API void OperationTlv_unpack(struct OperationTlv* unpacked_data, u_int8_t* buffer_to_unpack)
 {
     unpacked_data->reserved0 = pop_from_buff(buffer_to_unpack, 24, 8);
     unpacked_data->status = pop_from_buff(buffer_to_unpack, 17, 7);
     unpacked_data->dr = pop_from_buff(buffer_to_unpack, 16, 1);
     unpacked_data->len = pop_from_buff(buffer_to_unpack, 5, 11);
     unpacked_data->Type = pop_from_buff(buffer_to_unpack, 0, 5);
-    unpacked_data->class = pop_from_buff(buffer_to_unpack, 56, 8);
+    unpacked_data->tlv_class = pop_from_buff(buffer_to_unpack, 56, 8);
     unpacked_data->method = pop_from_buff(buffer_to_unpack, 49, 7);
     unpacked_data->r = pop_from_buff(buffer_to_unpack, 48, 1);
     unpacked_data->register_id = pop_from_buff(buffer_to_unpack, 32, 16);
     unpacked_data->tid = pop_from_buff_64(buffer_to_unpack, 64);
 }
 
-void OperationTlv_dump(struct OperationTlv* data_to_print, FILE* out_port)
+MTCR_API void OperationTlv_dump(struct OperationTlv* data_to_print, FILE* out_port)
 {
     fprintf(out_port, "OperationTlv::reserved0: " U32D_FMT "\n", data_to_print->reserved0);
     fprintf(out_port, "OperationTlv::status: " U32D_FMT "\n", data_to_print->status);
     fprintf(out_port, "OperationTlv::dr: " U32D_FMT "\n", data_to_print->dr);
     fprintf(out_port, "OperationTlv::len: " U32D_FMT "\n", data_to_print->len);
     fprintf(out_port, "OperationTlv::Type: " U32D_FMT "\n", data_to_print->Type);
-    fprintf(out_port, "OperationTlv::class: " U32D_FMT "\n", data_to_print->class);
+    fprintf(out_port, "OperationTlv::class: " U32D_FMT "\n", data_to_print->tlv_class);
     fprintf(out_port, "OperationTlv::method: " U32D_FMT "\n", data_to_print->method);
     fprintf(out_port, "OperationTlv::r: " U32D_FMT "\n", data_to_print->r);
     fprintf(out_port, "OperationTlv::register_id: " U32D_FMT "\n", data_to_print->register_id);
@@ -96,7 +111,15 @@ void OperationTlv_dump(struct OperationTlv* data_to_print, FILE* out_port)
  * Size: 32 bits
  * Description: reg_tlv */
 
-u_int32_t reg_tlv_pack(struct reg_tlv* data_to_pack, u_int8_t* packed_buffer)
+ MTCR_API int init_reg_tlv(struct reg_tlv* tlv_info, u_int32_t reg_size)
+ {
+    memset(tlv_info, 0, sizeof(*tlv_info));
+    tlv_info->Type = TLV_REG;
+    tlv_info->len = (reg_size + REG_TLV_HEADER_SIZE_BYTES) >> 2; // length is in dwords
+    return 0;
+ }
+
+MTCR_API u_int32_t reg_tlv_pack(struct reg_tlv* data_to_pack, u_int8_t* packed_buffer)
 {
     push_to_buff(packed_buffer, 16, 16, data_to_pack->reserved0);
     push_to_buff(packed_buffer, 5, 11, data_to_pack->len);
@@ -104,14 +127,14 @@ u_int32_t reg_tlv_pack(struct reg_tlv* data_to_pack, u_int8_t* packed_buffer)
     return 4;
 }
 
-void reg_tlv_unpack(struct reg_tlv* unpacked_data, u_int8_t* buffer_to_unpack)
+MTCR_API void reg_tlv_unpack(struct reg_tlv* unpacked_data, u_int8_t* buffer_to_unpack)
 {
     unpacked_data->reserved0 = pop_from_buff(buffer_to_unpack, 16, 16);
     unpacked_data->len = pop_from_buff(buffer_to_unpack, 5, 11);
     unpacked_data->Type = pop_from_buff(buffer_to_unpack, 0, 5);
 }
 
-void reg_tlv_dump(struct reg_tlv* data_to_print, FILE* out_port)
+MTCR_API void reg_tlv_dump(struct reg_tlv* data_to_print, FILE* out_port)
 {
     fprintf(out_port, "reg_tlv::reserved0: " U32D_FMT "\n", data_to_print->reserved0);
     fprintf(out_port, "reg_tlv::len: " U32D_FMT "\n", data_to_print->len);

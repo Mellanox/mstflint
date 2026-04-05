@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT(mstflint, 4.35.0, akiselman-org@exchange.nvidia.com)
+AC_INIT(mstflint, 4.36.0, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Firmware Burning and Diagnostics Tools for NVIDIA network devices.])
 AC_SUBST([PROJECT])
@@ -285,6 +285,17 @@ if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"
     AC_SUBST(liblzma_LIBS)
 fi
 
+
+
+# mlxdpa
+AC_MSG_CHECKING(--enable-dpa argument)
+AC_ARG_ENABLE(dpa,
+    AS_HELP_STRING([--enable-dpa], [enable compilation of the mstdpa tool (requires openssl, Linux x86_64/aarch64 only) [default=disabled]]),
+    [enable_dpa="$enableval"],
+    [enable_dpa="no"]
+)
+AC_MSG_RESULT($enable_dpa)
+
 # adabe tools
 AC_MSG_CHECKING(--enable-adb-generic-tools argument)
 AC_ARG_ENABLE(adb-generic-tools,
@@ -412,7 +423,30 @@ if test "$enable_nvml" = "yes"; then
                 [
                     AC_MSG_NOTICE([Looking for nvml headers and libraries in default include paths])
                     AC_CHECK_HEADERS([nvml.h], [], [AC_MSG_ERROR([cannot find nvml.h in default include paths, please check you nvidia driver installation or use --with-nvml-include-dir=DIR to specify the correct directory path of nvml.h.])])
-                    AC_CHECK_LIB([nvidia-ml], [nvmlInit_v2], [], [AC_MSG_ERROR([libnvidia-ml not found in default library paths, please check you nvidia driver installation])])
+                    AC_CHECK_LIB([nvidia-ml], [nvmlInit_v2], [
+                    NVML_LIBS="-lnvidia-ml"
+                    AC_SUBST([NVML_LIBS])
+                ], [
+                    # Fallback for systems where only .so.1 exists without the .so symlink
+                    # We use the -l:filename syntax which is supported by GNU ld
+                    AC_MSG_CHECKING([for nvmlInit_v2 in -l:libnvidia-ml.so.1])
+                    save_LIBS="$LIBS"
+                    LIBS="-l:libnvidia-ml.so.1 $save_LIBS"
+                    AC_LINK_IFELSE(
+                        [AC_LANG_PROGRAM([[#include <nvml.h>]], [[nvmlInit_v2();]])],
+                        [
+                            AC_MSG_RESULT([yes])
+                            NVML_LIBS="-l:libnvidia-ml.so.1"
+                            AC_SUBST([NVML_LIBS])
+                        ],
+                        [
+                            AC_MSG_RESULT([no])
+                            AC_MSG_ERROR([Could not find libnvidia-ml.so or libnvidia-ml.so.1. please check you nvidia driver installation or use --with-nvml-include-dir=DIR to specify the correct directory path of nvml.h.])
+                        ])
+                ])
+
+                # Restore LIBS
+                LIBS="$save_LIBS"
                 ]
             )
         ]
@@ -679,6 +713,29 @@ AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"],
     [AC_CONFIG_FILES(tools_crypto/Makefile)]
 )
 
+AM_CONDITIONAL(ENABLE_NVFWRESET, [test "x$OS" != "xFreeBSD" && test "x$enable_nvfwreset" = "xyes" ])
+
+if test "x$OS" != "xFreeBSD"; then
+    AC_MSG_CHECKING(--enable-nvfwreset argument)
+    AC_ARG_ENABLE(nvfwreset,
+        AS_HELP_STRING([--enable-nvfwreset], [enable compilation of the nvfwreset tool [default=disabled]]),
+        [enable_nvfwreset="$enableval"],
+        [enable_nvfwreset="no"]
+    )
+    AC_MSG_RESULT($enable_nvfwreset)
+    AS_IF([test "x$enable_nvfwreset" = "xyes"], [
+        AC_CONFIG_FILES(nvfwreset/Makefile)
+        NVFWRESET_DIR="nvfwreset"
+    ])
+    AC_SUBST(enable_nvfwreset)
+    AC_SUBST(NVFWRESET_DIR)
+else
+    enable_nvfwreset="no"
+    NVFWRESET_DIR=""
+    AC_SUBST(enable_nvfwreset)
+    AC_SUBST(NVFWRESET_DIR)
+fi
+
 AS_IF([test "x$enable_openssl" = "xyes"],
     [
         AS_IF(test x"$OPENSSL_VERSION_VALID" = "xyes",
@@ -714,6 +771,11 @@ AM_CONDITIONAL(ENABLE_DPA, [test "x$enable_dpa" = "xyes" ])
 
 AC_SUBST(DPA)
 
+if [ test "x$enable_openssl" = "xno" ] && \
+    [ test "x$enable_dpa" = "xyes" ] ; then
+    AC_MSG_ERROR([--enable-dpa cannot be used with --disabled-openssl.])
+fi
+
 AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(adb_parser/Makefile)
         AC_CONFIG_FILES(tools_layouts/adb/Makefile)
@@ -725,6 +787,7 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(tools_layouts/adb/prm/gpu/Makefile)
         AC_CONFIG_FILES(tools_layouts/adb/prm/gpu/ext/Makefile)
         AC_CONFIG_FILES(mlxreg/Makefile)
+        AC_CONFIG_FILES(mlxreg/scripts/Makefile)
         AC_CONFIG_FILES(mlxreg/mlxreg_lib/Makefile)
         AC_CONFIG_FILES(mlxlink/Makefile)
         AC_CONFIG_FILES(mlxlink/modules/Makefile)
@@ -807,6 +870,7 @@ AC_OUTPUT( \
     cmdparser/Makefile \
     common/Makefile \
     dev_mgt/Makefile \
+    pci_library/Makefile \
     ext_libs/Makefile \
     ext_libs/json/Makefile \
     ext_libs/mini-yaml/Makefile \

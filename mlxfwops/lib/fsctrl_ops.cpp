@@ -35,11 +35,14 @@
 #include "fw_version.h"
 #include "fs_comps_ops.h"
 #include "mft_utils/mft_utils.h"
+#include <compatibility.h>
+#include <reg_access/reg_access.h>
+#include "reg_access/mcam_capabilities.h"
+#include <tools_layouts/tools_open_layouts.h>
 #include "mlxdpa/certcontainerimp.h"
 
 #include <tools_utils.h>
 #include <bit_slice.h>
-#include "reg_access/mcam_capabilities.h"
 
 #include <vector>
 
@@ -169,8 +172,7 @@ bool FsCtrlOperations::FsIntQuery()
     fwInfoT fwQuery;
     if (!_fwCompsAccess->queryFwInfo(&fwQuery, nextBootFwVer))
     {
-        return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to query the FW - Err[%d] - %s",
-                      _fwCompsAccess->getLastError(), _fwCompsAccess->getLastErrMsg());
+        return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to query the FW - Err[%d] - %s", _fwCompsAccess->getLastError(), _fwCompsAccess->getLastErrMsg());
     }
     if (fwQuery.pending_fw_valid)
     {
@@ -209,23 +211,17 @@ bool FsCtrlOperations::FsIntQuery()
 
     _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.uid = fwQuery.base_mac.uid;
     _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.num_allocated = fwQuery.base_mac.num_allocated & 0xff;
-    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.num_allocated_msb =
-      (fwQuery.base_mac.num_allocated >> 8) & 0xff;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_mac.num_allocated_msb = (fwQuery.base_mac.num_allocated >> 8) & 0xff;
     _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.uid = fwQuery.base_mac_orig.uid;
-    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.num_allocated =
-      fwQuery.base_mac_orig.num_allocated & 0xff;
-    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.num_allocated_msb =
-      (fwQuery.base_mac_orig.num_allocated >> 8) & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.num_allocated = fwQuery.base_mac_orig.num_allocated & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_mac.num_allocated_msb = (fwQuery.base_mac_orig.num_allocated >> 8) & 0xff;
 
     _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.uid = fwQuery.base_guid.uid;
     _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.num_allocated = fwQuery.base_guid.num_allocated & 0xff;
-    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.num_allocated_msb =
-      (fwQuery.base_guid.num_allocated >> 8) & 0xff;
+    _fsCtrlImgInfo.fs3_uids_info.image_layout_uids.base_guid.num_allocated_msb = (fwQuery.base_guid.num_allocated >> 8) & 0xff;
     _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.uid = fwQuery.base_guid_orig.uid;
-    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.num_allocated =
-      fwQuery.base_guid_orig.num_allocated & 0xff;
-    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.num_allocated_msb =
-      (fwQuery.base_guid_orig.num_allocated >> 8) & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.num_allocated = fwQuery.base_guid_orig.num_allocated & 0xff;
+    _fsCtrlImgInfo.orig_fs3_uids_info.image_layout_uids.base_guid.num_allocated_msb = (fwQuery.base_guid_orig.num_allocated >> 8) & 0xff;
 
     _fwImgInfo.ext_info.pci_device_id = fwQuery.dev_id;
     _fwImgInfo.ext_info.dev_type = fwQuery.dev_id;
@@ -233,11 +229,8 @@ bool FsCtrlOperations::FsIntQuery()
     _fwImgInfo.ext_info.dev_rev = fwQuery.rev_id;
     _fwImgInfo.ext_info.is_failsafe = true;
 
-    _fsCtrlImgInfo.security_mode =
-      (security_mode_t)(SMM_MCC_EN | ((fwQuery.security_type.debug_fw == 1) ? SMM_DEBUG_FW : 0) |
-                        ((fwQuery.security_type.signed_fw == 1) ? SMM_SIGNED_FW : 0) |
-                        ((fwQuery.security_type.secure_fw == 1) ? SMM_SECURE_FW : 0) |
-                        ((fwQuery.security_type.dev_fw == 1) ? SMM_DEV_FW : 0));
+    _fsCtrlImgInfo.security_mode = (security_mode_t)(SMM_MCC_EN | ((fwQuery.security_type.debug_fw == 1) ? SMM_DEBUG_FW : 0) | ((fwQuery.security_type.signed_fw == 1) ? SMM_SIGNED_FW : 0) |
+                                                     ((fwQuery.security_type.secure_fw == 1) ? SMM_SECURE_FW : 0) | ((fwQuery.security_type.dev_fw == 1) ? SMM_DEV_FW : 0));
 
     _fsCtrlImgInfo.sec_boot = fwQuery.sec_boot;
     _fsCtrlImgInfo.life_cycle = fwQuery.life_cycle;
@@ -249,8 +242,7 @@ bool FsCtrlOperations::FsIntQuery()
     std::vector<FwComponent> compsMap;
     if (!_fwCompsAccess->getFwComponents(compsMap, false))
     {
-        return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()),
-                      "Failed to get the FW Components MAP, err[%d]", _fwCompsAccess->getLastError());
+        return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to get the FW Components MAP, err[%d]", _fwCompsAccess->getLastError());
     }
     for (std::vector<FwComponent>::iterator it = compsMap.begin(); it != compsMap.end(); it++)
     {
@@ -300,8 +292,7 @@ bool FsCtrlOperations::FsIntQuery()
     }
     DPRINTF(("mfsv_reg_supported = %d\n", mfsv_reg_supported));
 
-    if (_fsCtrlImgInfo.sec_boot == 1 && CRSpaceRegisters::IsLifeCycleSecured(_fsCtrlImgInfo.life_cycle) &&
-        mfsv_reg_supported == 1)
+    if (_fsCtrlImgInfo.sec_boot == 1 && CRSpaceRegisters::IsLifeCycleSecured(_fsCtrlImgInfo.life_cycle) && mfsv_reg_supported == 1)
     {
         _fsCtrlImgInfo.device_security_version_access_method = MFSV;
     }
@@ -334,8 +325,7 @@ bool FsCtrlOperations::FsIntQuery()
         _fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_product_id = fwQuery.roms[i].type;
         _fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_proto = 0xff; // NA
         _fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_supp_cpu_arch = fwQuery.roms[i].arch;
-        _fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_num_ver_fields =
-          FwOperations::RomInfo::getNumVerFromProdId(_fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_product_id);
+        _fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_num_ver_fields = FwOperations::RomInfo::getNumVerFromProdId(_fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_product_id);
         extractFwVersion(_fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_ver, fwQuery.roms[i].version);
     }
 
@@ -410,22 +400,19 @@ void FsCtrlOperations::ExtractSwitchFWVersion(const fwInfoT& fwQuery)
         strncpy(_fwImgInfo.ext_info.running_branch_ver, fwQuery.imageVsd, BRANCH_LEN);
         _fwImgInfo.ext_info.running_branch_ver[BRANCH_LEN - 1] = '\0';
     }
-    if (fwQuery.running_fw_version.version_string_length &&
-        fwQuery.running_fw_version.version_string_length <= BRANCH_LEN)
+    if (fwQuery.running_fw_version.version_string_length && fwQuery.running_fw_version.version_string_length <= BRANCH_LEN)
     {
         extractFwVersion(_fwImgInfo.ext_info.fw_ver, (const char*)fwQuery.running_fw_version.version_string);
         extractFwVersion(_fwImgInfo.ext_info.running_fw_ver, (const char*)fwQuery.running_fw_version.version_string);
     }
-    if (fwQuery.pending_fw_version.version_string_length &&
-        fwQuery.pending_fw_version.version_string_length <= BRANCH_LEN)
+    if (fwQuery.pending_fw_version.version_string_length && fwQuery.pending_fw_version.version_string_length <= BRANCH_LEN)
     {
         extractFwVersion(_fwImgInfo.ext_info.fw_ver, (const char*)fwQuery.pending_fw_version.version_string);
     }
 
     // Copying VSD to branch_ver makes sure that when checking if pending equals running (operator==)
     // it will evaluate to "true" (this happens in FwVersion class)
-    if ((_fwImgInfo.ext_info.fw_ver[0] == _fwImgInfo.ext_info.running_fw_ver[0]) &&
-        (_fwImgInfo.ext_info.fw_ver[1] == _fwImgInfo.ext_info.running_fw_ver[1]) &&
+    if ((_fwImgInfo.ext_info.fw_ver[0] == _fwImgInfo.ext_info.running_fw_ver[0]) && (_fwImgInfo.ext_info.fw_ver[1] == _fwImgInfo.ext_info.running_fw_ver[1]) &&
         (_fwImgInfo.ext_info.fw_ver[2] == _fwImgInfo.ext_info.running_fw_ver[2]))
     {
         strncpy(_fwImgInfo.ext_info.branch_ver, fwQuery.imageVsd, BRANCH_LEN);
@@ -469,12 +456,7 @@ bool FsCtrlOperations::FwReactivateImage()
     return true;
 }
 
-bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo,
-                               bool readRom,
-                               bool isStripedImage,
-                               bool quickQuery,
-                               bool ignoreDToc,
-                               bool verbose)
+bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo, bool readRom, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     (void)readRom;
     (void)quickQuery;
@@ -504,7 +486,7 @@ bool FsCtrlOperations::FwQuery(fw_info_t* fwInfo,
 
         fwInfo->fs3_info.fs3_uids_info.guid_format = MULTI_ASIC_GUIDS;
         if (!_fwCompsAccess->queryPGUID(fwInfo, localPort, 0, 0)) // this updates fwInfo, which contains the info
-                                                                     // flint query displays.
+                                                                  // flint query displays.
         {
             fwInfo->fs3_info.fs3_uids_info.guid_format = IMAGE_LAYOUT_UIDS;
             return true;
@@ -544,8 +526,7 @@ bool FsCtrlOperations::FwVerifyAdv(ExtVerifyParams& verifyParams)
         {
             return errmsg("%s", err());
         }
-        if (!imageOps->FwVerify(verifyParams.verifyCallBackFunc, verifyParams.isStripedImage, verifyParams.showItoc,
-                                true))
+        if (!imageOps->FwVerify(verifyParams.verifyCallBackFunc, verifyParams.isStripedImage, verifyParams.showItoc, true))
         {
             return errmsg(imageOps->getErrorCode(), "%s", imageOps->err());
         }
@@ -561,17 +542,14 @@ bool FsCtrlOperations::FwReadData(void* image, u_int32_t* image_size, bool verbo
     return errmsg("Read image is not supported");
 }
 
-bool FsCtrlOperations::ReadMccComponent(vector<u_int8_t>& componentRawData,
-                                        FwComponent::comps_ids_t component,
-                                        ProgressCallBackAdvSt* stProgressFunc)
+bool FsCtrlOperations::ReadMccComponent(vector<u_int8_t>& componentRawData, FwComponent::comps_ids_t component, ProgressCallBackAdvSt* stProgressFunc)
 {
     FwComponent comp;
     if (!_fwCompsAccess->readComponent(component, comp, true, stProgressFunc))
     {
         if (!_fwCompsAccess->readComponent(component, comp, false, stProgressFunc))
         {
-            return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to read component, %s - RC[%d]",
-                          _fwCompsAccess->getLastErrMsg(), (int)_fwCompsAccess->getLastError());
+            return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to read component, %s - RC[%d]", _fwCompsAccess->getLastErrMsg(), (int)_fwCompsAccess->getLastError());
         }
     }
     componentRawData.resize(comp.getData().size());
@@ -585,10 +563,7 @@ bool FsCtrlOperations::FwReadRom(std::vector<u_int8_t>& romSect)
     return unsupportedOperation();
 }
 
-bool FsCtrlOperations::FwBurnRom(FImage* romImg,
-                                 bool ignoreProdIdCheck,
-                                 bool ignoreDevidCheck,
-                                 ProgressCallBack progressFunc)
+bool FsCtrlOperations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignoreDevidCheck, ProgressCallBack progressFunc)
 {
     (void)romImg;
     (void)ignoreDevidCheck;
@@ -625,8 +600,7 @@ bool FsCtrlOperations::BadParamErrMsg(const char* unSupportedOperation, bool isS
         noCtrlFwReccomendation = " You can try to run again with the flag \"--no_fw_ctrl\".";
         fwType = "controlled";
     }
-    return errmsg(MLXFW_UNSUPPORTED_PARAM, "%s is unsupported under %s FW.%s", unSupportedOperation, fwType,
-                  noCtrlFwReccomendation);
+    return errmsg(MLXFW_UNSUPPORTED_PARAM, "%s is unsupported under %s FW.%s", unSupportedOperation, fwType, noCtrlFwReccomendation);
 }
 
 bool FsCtrlOperations::VerifyAllowedParams(ExtBurnParams& burnParams, bool isSecure)
@@ -686,7 +660,6 @@ bool FsCtrlOperations::_createImageOps(unique_ptr<FwOperations>& imageOps)
     }
     return true;
 }
-
 
 bool FsCtrlOperations::GetNcoreData(vector<u_int8_t>& ncoreData)
 {
@@ -755,8 +728,7 @@ bool FsCtrlOperations::GetFS5HWPointers(fs5_image_layout_hw_pointers_gilboa& hw_
 
 bool FsCtrlOperations::GetHashesTableSize(u_int32_t, u_int32_t& size)
 {
-    u_int32_t htoc_size =
-      IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + HTOC_HASH_SIZE);
+    u_int32_t htoc_size = IMAGE_LAYOUT_HTOC_HEADER_SIZE + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + HTOC_HASH_SIZE);
     size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + htoc_size + HASHES_TABLE_TAIL_SIZE;
     return true;
 }
@@ -836,16 +808,12 @@ bool FsCtrlOperations::isEncrypted(bool& is_encrypted)
     return true;
 }
 
-bool FsCtrlOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData,
-                                      ExtBurnParams& burnParams,
-                                      FwComponent::comps_ids_t ComponentId)
+bool FsCtrlOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
 {
     return _Burn(imageOps4MData, burnParams.ProgressFuncAdv, ComponentId);
 }
 
-bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps,
-                                      ExtBurnParams& burnParams,
-                                      FwComponent::comps_ids_t componentId)
+bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps, ExtBurnParams& burnParams, FwComponent::comps_ids_t componentId)
 {
     if (componentId == FwComponent::comps_ids_t::COMPID_CLOCK_SYNC_EEPROM)
     {
@@ -864,9 +832,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations* imageOps,
 
         _fwCompsAccess->SetActivationStep(false);
     }
-    else if (componentId == FwComponent::comps_ids_t::DIGITAL_CACERT ||
-             componentId == FwComponent::comps_ids_t::DIGITAL_CACERT_REMOVAL ||
-             componentId == FwComponent::comps_ids_t::DPA_COMPONENT ||
+    else if (componentId == FwComponent::comps_ids_t::DIGITAL_CACERT || componentId == FwComponent::comps_ids_t::DIGITAL_CACERT_REMOVAL || componentId == FwComponent::comps_ids_t::DPA_COMPONENT ||
              componentId == FwComponent::comps_ids_t::DPA_COMPONENT_REMOVAL)
     {
         _fwCompsAccess->SetActivationStep(false);
@@ -946,21 +912,20 @@ bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams&
 
 bool FsCtrlOperations::isMultiAsicSystemComponent()
 {
-    if (_hwDevId == QUANTUM3_HW_ID || _hwDevId == CX8_HW_ID || _hwDevId == CX8_PURE_PCIE_SWITCH_HW_ID || _hwDevId == CX9_HW_ID || _hwDevId == CX9_PURE_PCIE_SWITCH_HW_ID)
+    if (_hwDevId == QUANTUM3_HW_ID || _hwDevId == CX8_HW_ID || _hwDevId == CX8_PURE_PCIE_SWITCH_HW_ID || _hwDevId == CX9_HW_ID || _hwDevId == CX9_PURE_PCIE_SWITCH_HW_ID ||
+        _hwDevId == NVLINK6_SWITCH_HW_ID)
     {
         return true;
     }
     return false;
 }
 
-bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData,
-                             ProgressCallBackAdvSt& progressCallBack,
-                             FwComponent::comps_ids_t ComponentId)
+bool FsCtrlOperations::_Burn(std::vector<u_int8_t> imageOps4MData, ProgressCallBackAdvSt& progressCallBack, FwComponent::comps_ids_t ComponentId)
 {
 #ifdef UEFI_BUILD
     progressCallBack.uefi_func
 #endif
-    FwComponent bootImageComponent;
+      FwComponent bootImageComponent;
 
     bootImageComponent.init(imageOps4MData, imageOps4MData.size(), ComponentId);
     if (!_fwCompsAccess->lock_flash_semaphore())
@@ -1016,8 +981,8 @@ bool FsCtrlOperations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFu
     {
         return errmsg("base GUID/MAC were not specified.");
     }
-    if (!sgParam.updateCrc || sgParam.numOfGUIDs != 0 || sgParam.stepSize != 0 || sgParam.numOfGUIDsPP[0] != 0xffff ||
-        sgParam.numOfGUIDsPP[1] != 0xffff || sgParam.stepSizePP[0] != 0xff || sgParam.stepSizePP[1] != 0xff)
+    if (!sgParam.updateCrc || sgParam.numOfGUIDs != 0 || sgParam.stepSize != 0 || sgParam.numOfGUIDsPP[0] != 0xffff || sgParam.numOfGUIDsPP[1] != 0xffff || sgParam.stepSizePP[0] != 0xff ||
+        sgParam.stepSizePP[1] != 0xff)
     {
         return errmsg("Tried to set unsupported values. Allowed values to set are mac,guid,uid.");
     }
@@ -1045,8 +1010,7 @@ bool FsCtrlOperations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFu
             // check base mac
             if (!CheckMac(sgParam.userGuids[1]))
             {
-                return errmsg("Bad MAC (" MAC_FORMAT ") given: %s. Please specify a valid MAC value",
-                              sgParam.userGuids[1].h, sgParam.userGuids[1].l, err());
+                return errmsg("Bad MAC (" MAC_FORMAT ") given: %s. Please specify a valid MAC value", sgParam.userGuids[1].h, sgParam.userGuids[1].l, err());
             }
             macGuid.mac = sgParam.userGuids[1];
         }
@@ -1153,8 +1117,7 @@ bool FsCtrlOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u
         fw_comps_error_t errCode = _fwCompsAccess->getLastError();
         if (errCode == FWCOMPS_READ_OUTSIDE_IMAGE_RANGE)
         {
-            return errmsg(MLXFW_BAD_PARAM_ERR, "Reading %#x bytes from address %#x is out of flash limits\n", size,
-                          (unsigned int)addr);
+            return errmsg(MLXFW_BAD_PARAM_ERR, "Reading %#x bytes from address %#x is out of flash limits\n", size, (unsigned int)addr);
         }
         else
         {
@@ -1390,9 +1353,7 @@ bool FsCtrlOperations::FwResetTimeStamp()
     return rc ? false : true;
 }
 
-bool FsCtrlOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
-                                        struct tools_open_fw_version& fwVer,
-                                        bool queryRunning)
+bool FsCtrlOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning)
 {
     TimeStampIFC* tsObj = NULL;
     Tlv_Status_t rc;
@@ -1456,23 +1417,19 @@ bool FsCtrlOperations::IsSecurityVersionViolated(u_int32_t image_security_versio
     return (imageSecurityVersion < deviceEfuseSecurityVersion);
 }
 
-bool FsCtrlOperations::QueryDpaAppMetadataFromMcqi(FwComponent::comps_ids_t comp,
-    reg_access_hca_mcqi_dpa_apps_info_ext& mcqiDpaApps,
-    const u_int32_t deviceIndex)
+bool FsCtrlOperations::QueryDpaAppMetadataFromMcqi(FwComponent::comps_ids_t comp, reg_access_hca_mcqi_dpa_apps_info_ext& mcqiDpaApps, const u_int32_t deviceIndex)
 {
-vector<u_int8_t> data;
-if (!_fwCompsAccess->GetComponentInfo(comp, deviceIndex, data))
-{
-return errmsg("%s", _fwCompsAccess->getLastErrMsg());
+    vector<u_int8_t> data;
+    if (!_fwCompsAccess->GetComponentInfo(comp, deviceIndex, data))
+    {
+        return errmsg("%s", _fwCompsAccess->getLastErrMsg());
+    }
+
+    memcpy(&mcqiDpaApps, data.data(), sizeof(mcqiDpaApps));
+    return true;
 }
 
-memcpy(&mcqiDpaApps, data.data(), sizeof(mcqiDpaApps));
-return true;
-}
-
-bool FsCtrlOperations::GetAllDpaAppsMetadataFromMcqi(FwComponent::comps_ids_t comp,
-                                                     vector<u_int8_t>& data,
-                                                     const u_int32_t firstDpaAppIndex)
+bool FsCtrlOperations::GetAllDpaAppsMetadataFromMcqi(FwComponent::comps_ids_t comp, vector<u_int8_t>& data, const u_int32_t firstDpaAppIndex)
 {
 #ifdef MST_CPU_armv7l_umbriel // {
     return errmsg("Not supported");
@@ -1521,8 +1478,7 @@ bool FsCtrlOperations::QueryComponentData(FwComponent::comps_ids_t comp, u_int32
         return true;
 #endif // } MST_CPU_armv7l_umbriel
     }
-    if (!_fwCompsAccess->GetComponentInfo(comp, deviceIndex, data) &&
-        _fwCompsAccess->getLastError() != FWCOMPS_DEVICE_NOT_PRESENT)
+    if (!_fwCompsAccess->GetComponentInfo(comp, deviceIndex, data) && _fwCompsAccess->getLastError() != FWCOMPS_DEVICE_NOT_PRESENT)
     {
         return errmsg("%s", _fwCompsAccess->getLastErrMsg());
     }
@@ -1582,7 +1538,6 @@ bool FsCtrlOperations::IsComponentSupported(FwComponent::comps_ids_t component)
     return _fwCompsAccess->IsDevicePresent(component);
 }
 
-
 bool FsCtrlOperations::getBFBComponentsVersions(std::map<std::string, std::string>& name_to_version, bool pending)
 {
     DPRINTF(("Getting BFB components versions (pending=%d)...\n", pending));
@@ -1630,4 +1585,75 @@ bool FsCtrlOperations::getBFBComponentsVersions(std::map<std::string, std::strin
     DPRINTF(("Got NIC FW version: %s\n", name_to_version["BF3_NIC_FW"].c_str()));
 
     return true;
+}
+
+psid_utils::MinorPsidLockStatus FsCtrlOperations::queryMinorPsidLockStatus()
+{
+    constexpr uint32_t NV_MINOR_PSID_LOCK_TLV_TYPE = 0x210;
+    constexpr size_t NV_MINOR_PSID_LOCK_DATA_SIZE = 20;
+    constexpr size_t NV_MINOR_PSID_LOCK_PSID_OFFSET = 4;
+    static_assert(NV_MINOR_PSID_LOCK_DATA_SIZE >= NV_MINOR_PSID_LOCK_PSID_OFFSET + psid_utils::PSID_MAX_LEN,
+                  "NV_MINOR_PSID_LOCK_TLV data buffer too small to hold lock-bit dword + PSID");
+
+    psid_utils::MinorPsidLockStatus status;
+
+    mfile* mf = getMfileObj();
+    if (mf == nullptr)
+    {
+        DPRINTF(("queryMinorPsidLockStatus: mfile is null\n"));
+        return status;
+    }
+
+    struct reg_access_hca_mnvqc_reg_ext mnvqcTlv;
+    memset(&mnvqcTlv, 0, sizeof(mnvqcTlv));
+    mnvqcTlv.type = NV_MINOR_PSID_LOCK_TLV_TYPE;
+    DPRINTF(("queryMinorPsidLockStatus: read MNVQC type=0x%x\n", mnvqcTlv.type));
+
+    reg_access_status_t rc = reg_access_mnvqc(mf, REG_ACCESS_METHOD_GET, &mnvqcTlv);
+    if (rc != ME_OK)
+    {
+        DPRINTF(("queryMinorPsidLockStatus: MNVQC failed rc=%d type=0x%x\n", rc, mnvqcTlv.type));
+        return status;
+    }
+
+    status.featureSupported = mnvqcTlv.support_rd;
+    DPRINTF(("queryMinorPsidLockStatus: MNVQC ok support_rd=%d support_wr=%d ver=0x%x\n", mnvqcTlv.support_rd ? 1 : 0,
+             mnvqcTlv.support_wr ? 1 : 0, mnvqcTlv.version));
+    if (!status.featureSupported)
+    {
+        DPRINTF((
+          "queryMinorPsidLockStatus: minor PSID lock TLV not readable, PSID major-minor split feature not supported\n"));
+        return status;
+    }
+
+    struct tools_open_mnvda mnvdaTlv;
+    memset(&mnvdaTlv, 0, sizeof(mnvdaTlv));
+    mnvdaTlv.nv_hdr.length = NV_MINOR_PSID_LOCK_DATA_SIZE;
+    mnvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = NV_MINOR_PSID_LOCK_TLV_TYPE;
+    DPRINTF(("queryMinorPsidLockStatus: read MNVDA type=0x%x len=%u\n", mnvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw,
+             mnvdaTlv.nv_hdr.length));
+
+    rc = reg_access_mnvda(mf, REG_ACCESS_METHOD_GET, &mnvdaTlv);
+    if (rc != ME_OK)
+    {
+        DPRINTF(("queryMinorPsidLockStatus: MNVDA failed rc=%d type=0x%x len=%u\n", rc,
+                 mnvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw, mnvdaTlv.nv_hdr.length));
+        status.featureSupported = false;
+        return status;
+    }
+
+    u_int32_t firstDword;
+    BYTES_TO_DWORD_BE(&firstDword, mnvdaTlv.data);
+    status.isLocked = EXTRACT(firstDword, 31, 1);
+    DPRINTF(("queryMinorPsidLockStatus: MNVDA ok dword=0x%08x lock=%u\n", firstDword, status.isLocked ? 1 : 0));
+
+    if (status.isLocked)
+    {
+        memcpy(status.lockedPsid, &mnvdaTlv.data[NV_MINOR_PSID_LOCK_PSID_OFFSET], psid_utils::PSID_MAX_LEN);
+        status.lockedPsid[psid_utils::PSID_MAX_LEN] = '\0';
+    }
+
+    DPRINTF(("queryMinorPsidLockStatus: result supported=%d locked=%d psid=%s\n", status.featureSupported ? 1 : 0,
+             status.isLocked ? 1 : 0, status.isLocked ? status.lockedPsid : "<none>"));
+    return status;
 }
