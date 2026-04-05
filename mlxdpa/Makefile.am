@@ -95,7 +95,11 @@ mstdpa_LDADD = \
     $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/tools_layouts/libtools_layouts.la \
     $(top_builddir)/ext_libs/mini-yaml/libmini_yaml.la \
-    $(top_builddir)/ext_libs/sole/libsole.la
+    $(top_builddir)/ext_libs/sole/libsole.la \
+    $(top_builddir)/xz_utils/libxz_utils.la \
+    $(top_builddir)/xz_utils/libxz_utils.la \
+    $(top_builddir)/ext_libs/minixz/libminixz.la \
+    $(liblzma_LIBS)
 
 # these are precompiled
 if ARM64_BUILD
