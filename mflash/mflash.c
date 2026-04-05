@@ -4340,6 +4340,11 @@ int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
 
     if (!(mfl->attr.quad_en_support && mfl->supp_sr_mod))
     {
+        if (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl) && quad_en == 1)
+        {
+            DPRINTF(("QE is constant 1, skipping\n"));
+            return MFE_OK;
+        }
         return MFE_NOT_SUPPORTED_OPERATION;
     }
     for (bank = 0; bank < mfl->attr.banks_num; bank++)
