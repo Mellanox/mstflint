@@ -304,6 +304,6 @@ namespace Regex = mstflint::common::regex;
          }
          mclose(mf);
      }
-     free(pciDevices);
+     mdevices_info_destroy(pciDevices, numDevices);
  }
  #endif
