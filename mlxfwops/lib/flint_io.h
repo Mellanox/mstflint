@@ -129,11 +129,11 @@ public:
     virtual ~FBase() {}
 
     virtual bool
-      open(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_lock = false, bool advErr = true) = 0;
+      open(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_lock = false, bool advErr = true, int no_fw_ctrl = 0) = 0;
 
     virtual bool open(const char*, bool, bool) = 0;
 
-    virtual bool open(const char* device, bool, bool, int, flash_params_t*, int, bool, int) = 0;
+    virtual bool open(const char* device, bool, bool, int, flash_params_t*, int, bool, int, int = 0) = 0;
 
     virtual bool is_fifth_gen() = 0;
     virtual void close() = 0;
@@ -300,12 +300,12 @@ public:
         check_uefi_build();
         return false;
     }
-    virtual bool open(uefi_Dev_t*, uefi_dev_extra_t*, bool, bool)
+    virtual bool open(uefi_Dev_t*, uefi_dev_extra_t*, bool, bool, int = 0)
     {
         check_uefi_build();
         return false;
     }
-    virtual bool open(const char*, bool, bool, int, flash_params_t*, int, bool, int)
+    virtual bool open(const char*, bool, bool, int, flash_params_t*, int, bool, int, int = 0)
     {
         check_uefi_build();
         return false;
@@ -416,10 +416,11 @@ public:
                       flash_params_t* flash_params = (flash_params_t*)NULL,
                       int ignoe_cache_replacement = 0,
                       bool advErr = true,
-                      int cx3_fw_access = 0);
+                      int cx3_fw_access = 0,
+                      int no_fw_ctrl = 0);
     using FBase::open;
 
-    virtual bool open(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_lock = false, bool advErr = true);
+    virtual bool open(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_lock = false, bool advErr = true, int no_fw_ctrl = 0);
 
     virtual bool open(const char*, bool, bool)
     {

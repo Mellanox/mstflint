@@ -686,7 +686,7 @@ FlintStatus SubCommand::openIo()
         if (!((Flash*)_io)
                ->open(_flintParams.device.c_str(), _flintParams.clear_semaphore, false, _flintParams.banks,
                       _flintParams.flash_params_specified ? &_flintParams.flash_params : NULL,
-                      _flintParams.override_cache_replacement, true, _flintParams.use_fw))
+                      _flintParams.override_cache_replacement, true, _flintParams.use_fw, _flintParams.no_fw_ctrl))
         {
             // if we have Hw_Access command we dont fail straght away
             u_int8_t lockedCrSpace = ((Flash*)_io)->get_cr_space_locked();
