@@ -38,10 +38,10 @@
 #include <malloc.h>
 #include <endian.h>
 #include <sys/ioctl.h>
+#include <asm/byteorder.h>
 #include <errno.h>
 #include <string.h>
 #include <stddef.h>
-#include "common/compatibility.h"
 #include "mtcr.h"
 #include "mtcr_mf.h"
 #include "mtcr_ul_com.h"
