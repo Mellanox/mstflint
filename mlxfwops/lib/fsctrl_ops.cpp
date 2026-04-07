@@ -1590,6 +1590,8 @@ bool FsCtrlOperations::getBFBComponentsVersions(std::map<std::string, std::strin
 bool FsCtrlOperations::IsCRDTDebugSessionActive()
 {
     return _fwCompsAccess->IsCRDTDebugSessionActive();
+}
+
 psid_utils::MinorPsidLockStatus FsCtrlOperations::queryMinorPsidLockStatus()
 {
     constexpr uint32_t NV_MINOR_PSID_LOCK_TLV_TYPE = 0x210;
