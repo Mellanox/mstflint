@@ -272,7 +272,8 @@ int calculate_net_string_length(dev_info* dev)
     if (dev->pci.net_devs)
     {
         char map_eth[BUF_MAX];
-        for (int i = 0; dev->pci.net_devs[i] && i < MAX_NET_DEVS_DISPLAY; i++)
+        int i;
+        for (i = 0; dev->pci.net_devs[i] && i < MAX_NET_DEVS_DISPLAY; i++)
         {
             char* net_dev = map_eth_bond_name(dev->pci.net_devs[i], map_eth, sizeof(map_eth));
             if (net_dev == NULL)
