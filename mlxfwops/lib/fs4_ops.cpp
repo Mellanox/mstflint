@@ -3889,9 +3889,9 @@ bool Fs4Operations::UpdateSection(void* new_info, fs3_section_t sect_type, bool,
         newSection.resize(IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
         memcpy(newSection.data(), sig.data(), IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE);
         u_int32_t sizeInItocEntry = curr_toc->toc_entry.size << 2;
-        if (sizeInItocEntry > IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE)
+        if (sizeInItocEntry > IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE)
         {
-            for (unsigned int l = 0; l < sizeInItocEntry - IMAGE_LAYOUT_IMAGE_SIGNATURE_SIZE; l++)
+            for (unsigned int l = 0; l < sizeInItocEntry - IMAGE_LAYOUT_IMAGE_SIGNATURE_2_SIZE; l++)
             {
                 newSection.push_back(0x0);
             }
