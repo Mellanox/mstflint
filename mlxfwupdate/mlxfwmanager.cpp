@@ -160,7 +160,7 @@ void updateSingleDevice(int device_index,
         }
         else
         {
-            result.error_message = "Fail : " + dev->getLastErrMsg();
+            result.error_message = dev->getLastErrMsg();
             result.rc = rc0;
         }
         return;
@@ -200,7 +200,7 @@ void updateSingleDevice(int device_index,
         }
         else
         {
-            result.error_message = "Fail : " + dev->getLastErrMsg();
+            result.error_message = dev->getLastErrMsg();
         }
     }
 }

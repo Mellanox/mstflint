@@ -88,6 +88,7 @@ public:
     void setDevToNeedUpdate();
     bool doesDevNeedUpdate();
     void setNoFwCtrl();
+    void openFwctlDev();
     void setMccSupport(bool val = true) { _mccSupport = val; };
     vector<ImgVersion> _imageVers;
     inline bool isAlignmentNeeded();
