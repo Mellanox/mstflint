@@ -167,7 +167,7 @@ void updateSingleDevice(int device_index,
         }
         else
         {
-            result.error_message = "Fail : " + dev->getLastErrMsg();
+            result.error_message = dev->getLastErrMsg();
             result.rc = rc0;
         }
         return;
@@ -207,7 +207,7 @@ void updateSingleDevice(int device_index,
         }
         else
         {
-            result.error_message = "Fail : " + dev->getLastErrMsg();
+            result.error_message = dev->getLastErrMsg();
         }
     }
 }
@@ -261,9 +261,6 @@ static void runParallelBurn(vector<MlnxDev*>& devs,
     for (size_t idx = 0; idx < update_indices.size(); idx++)
     {
         int i = update_indices[idx];
-#if !defined(__WIN__) && !defined(__FreeBSD__)
-        devs[i]->setUseFwctl(true);
-#endif
         int line_num = (int)(idx + 1);
         update_threads.push_back(std::thread(
           [i, line_num, &devs, &config, &psidUpdateInfo, &cmd_params, pldmFlow, &psidPldmComponents,
@@ -306,12 +303,6 @@ static void runParallelBurn(vector<MlnxDev*>& devs,
             t.join();
         }
     }
-#if !defined(__WIN__) && !defined(__FreeBSD__)
-    for (size_t idx = 0; idx < update_indices.size(); idx++)
-    {
-        devs[update_indices[idx]]->setUseFwctl(false);
-    }
-#endif
     g_parallel_device_count = 0;
     g_progress_lines_created = false;
 }

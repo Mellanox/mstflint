@@ -135,7 +135,6 @@ void MlnxDev::_MlnxDevInit(int compare_ffv)
     isOnlyBase = false;
     _commander = NULL;
     _noFwCtrl = false;
-    _useFwctl = false;
     _mccSupport = true;
     _preBurnInit = false;
     _uniqueId = "NA";
@@ -479,27 +478,24 @@ void MlnxDev::setNoFwCtrl()
     _noFwCtrl = true;
 }
 
-bool MlnxDev::openFwctlDev()
+void MlnxDev::openFwctlDev()
 {
     if (!_devFwOps)
     {
-        return false;
+        return;
     }
     mfile* mf = _devFwOps->getMfileObj();
     if (!mf)
     {
-        return false;
+        return;
     }
     dev_info* info = _devinfo ? _devinfo : mf->dinfo;
     if (!info)
     {
-        return false;
+        return;
     }
 #if !defined(__WIN__) && !defined(__FreeBSD__)
-    set_fwctl_dev(info->pci.fwctl_dev, info->pci.domain, info->pci.bus, info->pci.dev, info->pci.func);
-    return info->pci.fwctl_dev[0] != '\0';
-#else
-    return false;
+    open_fwctl_dev(mf, info->pci.domain, info->pci.bus, info->pci.dev, info->pci.func);
 #endif
 }
 
@@ -951,13 +947,9 @@ bool MlnxDev::OpenDev()
         _log += _errMsg;
         return false;
     }
-    if (_useFwctl && !_noFwCtrl)
+    if (!_noFwCtrl)
     {
-        if (!openFwctlDev())
-        {
-            _log += "Warning: Failed to open fwctl device for " + getDevDisplayName(true) +
-                    ", falling back to default access method\n";
-        }
+        openFwctlDev();
     }
     return true;
 }

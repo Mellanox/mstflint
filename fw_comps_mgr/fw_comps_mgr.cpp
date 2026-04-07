@@ -847,7 +847,11 @@ bool FwCompsMgr::controlFsm(fsm_command_t          command,
     if ((expectedState != FSMST_NA) && (_lastFsmCtrl.control_state != expectedState)) {
         DPRINTF(("controlFsm : control_state FW %s expected %s\n", StateNames[_lastFsmCtrl.control_state],
                  StateNames[expectedState]));
-        _lastError = FWCOMPS_MCC_UNEXPECTED_STATE;
+        if (_lastFsmCtrl.error_code) {
+            _lastError = mccErrTrans(_lastFsmCtrl.error_code);
+        } else {
+            _lastError = FWCOMPS_MCC_UNEXPECTED_STATE;
+        }
         return false;
     }
 
@@ -1518,7 +1522,6 @@ bool FwCompsMgr::IsCfgComponentType(FwComponent::comps_ids_t type)
 
 bool FwCompsMgr::burnComponents(FwComponent& comp, ProgressCallBackAdvSt* progressFuncAdv)
 {
-    unsigned i = 0;
     const u_int8_t LOCK_FW_UPDATE = 0x2;
     const u_int8_t LOCK_HOST_CFG = 0x3;
     FwComponent::comps_ids_t component = comp.getType();
