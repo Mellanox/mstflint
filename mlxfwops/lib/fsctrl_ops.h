@@ -164,6 +164,7 @@ private:
     bool QueryDpaAppMetadataFromMcqi(FwComponent::comps_ids_t comp,
       reg_access_hca_mcqi_dpa_apps_info_ext& mcqiDpaApps,
       const u_int32_t deviceIndex);
+    bool IsCRDTDebugSessionActive();
 
     fs3_info_t _fsCtrlImgInfo;
     FwCompsMgr* _fwCompsAccess;

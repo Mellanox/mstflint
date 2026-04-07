@@ -775,7 +775,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         (_mlxParams.cmd == Mc_EndTokenSession && !_mlxParams.tokenName.empty()))
     {
         _mlxParams.tokenStatusID = MlxCfgToken::GetTokenStatusType(_mlxParams.tokenName);
-        if (_mlxParams.tokenStatusID == McTokenStatusTypeUnknown)
+        if (_mlxParams.tokenStatusID == FwCompsMgr::UNKNOWN_TOKEN)
         {
             return err(true, "invalid token type");
         }

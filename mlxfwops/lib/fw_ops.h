@@ -280,6 +280,7 @@ public:
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
     virtual bool IsEncryptionSupported();
+    virtual bool IsCRDTDebugSessionActive();
     
     bool checkAndDisableFlashWpIfRequired(); // relavant to FS5 and FS6 but FS6 inherites FwOperations and not FS5
     bool restoreWriteProtectInfo();

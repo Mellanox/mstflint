@@ -4543,6 +4543,10 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
         attr += NA_STR;
         return attr;
     }
+    if (m & SMM_CRDT_TOKEN && !(m & SMM_DEBUG_FW))
+    {
+        attr += ", debug-token";
+    }
     if (m & SMM_DEBUG_FW)
     {
         attr += ", debug";
@@ -4948,7 +4952,13 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 
     if (isFs3 || isFs4 || isFsCtrl)
     {
-        printf("Security Attributes:   %s\n", printSecurityAttrInfo(fwInfo.fs3_info.security_mode).c_str());
+        u_int32_t security_mode = fwInfo.fs3_info.security_mode;
+        if (_flintParams.device_specified && ops->IsCRDTDebugSessionActive())
+        {
+            security_mode |= SMM_CRDT_TOKEN;
+        }
+        std::string securityAttrInfo = printSecurityAttrInfo(security_mode);
+        printf("Security Attributes:   %s\n", securityAttrInfo.c_str());
     }
 
     if (isFs4 && _flintParams.image_specified)

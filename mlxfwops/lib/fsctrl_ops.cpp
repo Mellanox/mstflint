@@ -1631,3 +1631,8 @@ bool FsCtrlOperations::getBFBComponentsVersions(std::map<std::string, std::strin
 
     return true;
 }
+
+bool FsCtrlOperations::IsCRDTDebugSessionActive()
+{
+    return _fwCompsAccess->IsCRDTDebugSessionActive();
+}

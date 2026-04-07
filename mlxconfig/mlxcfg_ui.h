@@ -126,7 +126,7 @@ public:
         enableVerbosity(false),
         tokenName(""),
         tokenChallengeID(McTokenTypeUnknown),
-        tokenStatusID(McTokenStatusTypeCS),
+        tokenStatusID(FwCompsMgr::UNKNOWN_TOKEN),
         sessionId(0),
         isSessionIDGiven(false),
         sessionTimeInSec(60 * 60 * 24 * 7), // default session time is a week
@@ -161,7 +161,7 @@ public:
     bool enableVerbosity;
     string tokenName;
     MlxCfgTokenType tokenChallengeID;
-    MlxCfgTokenStatusType tokenStatusID;
+    FwCompsMgr::MDSRTokenType tokenStatusID;
     u_int32_t sessionId;
     bool isSessionIDGiven;
     u_int32_t sessionTimeInSec;
