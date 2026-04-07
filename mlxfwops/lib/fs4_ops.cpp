@@ -3991,6 +3991,26 @@ bool Fs4Operations::WriteSection(struct fs4_toc_info* sectionToc, std::vector<u_
         }
     }
 
+    size_t oldSectionSize = sectionToc->toc_entry.size * 4;
+    if (newSectionData.size() > oldSectionSize)
+    {
+        if (getenv("ALLOW_OVERSIZED_SECTION") != NULL)
+        {
+            DPRINTF(("WriteSection: new section data size (0x%x) exceeds original size (0x%x), allowing (legacy)\n",
+                     (u_int32_t)newSectionData.size(), (u_int32_t)oldSectionSize));
+        }
+        else
+        {
+            return errmsg("new section data size (0x%x) exceeds original section size (0x%x bytes). ",
+                          (u_int32_t)newSectionData.size(), (u_int32_t)oldSectionSize);
+        }
+    }
+
+    if (oldSectionSize > newSectionData.size())
+    {
+        newSectionData.resize(oldSectionSize);
+    }
+
     if (!Fs4ReburnSection(newSectionAddr, sectionToc->toc_entry.size * 4, newSectionData, msg, callBackFunc))
     {
         return false;
@@ -4009,7 +4029,7 @@ bool Fs4Operations::WriteSection(struct fs4_toc_info* sectionToc, std::vector<u_
 
     if (!isDtoc)
     {
-        if (!UpdateSectionHashInHashesTable(newSectionAddr, sectionToc->toc_entry.size * 4, sectionType))
+        if (!UpdateSectionHashInHashesTable(newSectionAddr, oldSectionSize, sectionType))
         {
             return false;
         }
