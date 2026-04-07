@@ -79,12 +79,10 @@
  * Linux
  */
 #if defined(linux)
-// #include <asm/byteorder.h>
-    #include <endian.h>
     #include <unistd.h>
     #include <sys/types.h>
 
-    #if __BYTE_ORDER == __LITTLE_ENDIAN
+    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 
         #define __be64_to_cpu(x) ___my_swab64(x)
         #define __be32_to_cpu(x) ___my_swab32(x)
@@ -99,7 +97,7 @@
         #define __cpu_to_le32(x) (x)
         #define __cpu_to_le16(x) (x)
 
-    #elif __BYTE_ORDER == __BIG_ENDIAN
+    #else
 
         #define __be64_to_cpu(x) (x)
         #define __be32_to_cpu(x) (x)
@@ -122,7 +120,6 @@
  * Windows (CYGWIN)
  */
 #if defined(__CYGWIN32__)
-    #include <asm/byteorder.h>
     #include <unistd.h>
 
     #define __be64_to_cpu(x) ___my_swab64(x)

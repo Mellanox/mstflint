@@ -153,25 +153,8 @@
  * Linux
  */
 #if defined(__linux__) || defined(__FreeBSD__)
-// #include <asm/byteorder.h>
 #include <unistd.h>
 #include <sys/types.h>
-
-#if defined(__FreeBSD__)
-#include <sys/endian.h>
-// WA: on FBSD the BYTE ORDER AND ENDIANESS names are different
-#ifndef __BYTE_ORDER
-#define __BYTE_ORDER _BYTE_ORDER
-#endif
-#ifndef __LITTLE_ENDIAN
-#define __LITTLE_ENDIAN _LITTLE_ENDIAN
-#endif
-#ifndef __BIG_ENDIAN
-#define __BIG_ENDIAN _BIG_ENDIAN
-#endif
-#else
-#include <endian.h>
-#endif
 
 #undef __be64_to_cpu
 #undef __be32_to_cpu
@@ -186,7 +169,7 @@
 #undef __cpu_to_le32
 #undef __cpu_to_le16
 
-#if __BYTE_ORDER == __LITTLE_ENDIAN
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 
 #define __be64_to_cpu(x) ___my_swab64(x)
 #define __be32_to_cpu(x) ___my_swab32(x)
@@ -201,7 +184,7 @@
 #define __cpu_to_le32(x) (x)
 #define __cpu_to_le16(x) (x)
 
-#elif __BYTE_ORDER == __BIG_ENDIAN
+#else
 
 #define __be64_to_cpu(x) (x)
 #define __be32_to_cpu(x) (x)
@@ -224,7 +207,6 @@
  * Windows (CYGWIN)
  */
 #if defined(__CYGWIN32__)
-#include <asm/byteorder.h>
 #include <unistd.h>
 
 #define __be64_to_cpu(x) ___my_swab64(x)
