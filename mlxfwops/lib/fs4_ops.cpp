@@ -3595,6 +3595,7 @@ bool Fs4Operations::isDTocSection(fs3_section_t sect_type, bool& isDtoc)
         case FS3_VPD_R0:
         case FS4_DIGITAL_CERT_RW:
         case FS4_CERT_CHAIN_0:
+        case FS4_CPO_CALIBRATION_DATA:
             isDtoc = true;
             break;
 

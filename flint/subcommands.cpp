@@ -6575,6 +6575,64 @@ FlintStatus SetCertChainSubCommand::executeCommand()
 }
 
 /***********************
+ * Class: Set CPO Calibration Data Subcommand
+ **********************/
+SetCpoCalibrationDataSubCommand::SetCpoCalibrationDataSubCommand()
+{
+#ifndef EXTERNAL
+    _name = "set_cpo_calibration_data";
+    _desc = "Set CPO calibration data.";
+    _flagLong = "set_cpo_calibration_data";
+    _flagShort = "";
+    _param = "<CPO calibration data file>";
+    _paramExp = "CPO calibration data file: bin file containing the calibration data";
+    _example = FLINT_NAME " -d " MST_DEV_EXAMPLE4 " set_cpo_calibration_data cpo_calibration.bin";
+    _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 1;
+    _minCmdParamNum = 1;
+    _cmdType = SC_Set_Cpo_Calibration_Data;
+#endif
+}
+
+FlintStatus SetCpoCalibrationDataSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED)
+    {
+        return FLINT_FAILED;
+    }
+    FwOperations* ops = _flintParams.device_specified ? _fwOps : _imgOps;
+
+    if (ops->FwType() != FIT_FS4 && ops->FwType() != FIT_FS5)
+    {
+        reportErr(true, "Setting CPO calibration data is applicable only for FS4/FS5 FW.\n");
+        return FLINT_FAILED;
+    }
+
+    fw_info_t fwInfo;
+    memset(&fwInfo, 0, sizeof(fw_info_t));
+    if (!ops->FwQuery(&fwInfo, false, false, true))
+    {
+        reportErr(true, FLINT_FAILED_QUERY_ERROR, _flintParams.device_specified ? "device" : "image",
+                  _flintParams.device_specified ? _flintParams.device.c_str() : _flintParams.image.c_str(), ops->err());
+        return FLINT_FAILED;
+    }
+
+    vector<u_int8_t> componentBuffer;
+    if (!readFromFile(_flintParams.cmd_params[0], componentBuffer))
+    {
+        return FLINT_FAILED;
+    }
+
+    if (!ops->UpdateSection(FS4_CPO_CALIBRATION_DATA, componentBuffer, "CPO_CALIBRATION_DATA", &verifyCbFunc))
+    {
+        reportErr(true, "Setting CPO calibration data failed: %s\n", ops->err());
+        return FLINT_FAILED;
+    }
+
+    return FLINT_SUCCESS;
+}
+
+/***********************
  * Class: Set Vpd Subcommand
  **********************/
 SetVpdSubCommand::SetVpdSubCommand()
