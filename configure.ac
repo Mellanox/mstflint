@@ -755,7 +755,7 @@ AS_IF([test "x$enable_fw_mgr" = "xyes"],
         AC_CONFIG_FILES(mlxfwupdate/Makefile)
         AC_CONFIG_FILES(ext_libs/iniParser/Makefile)
         AC_CONFIG_FILES(mlxarchive/Makefile)
-        FW_MGR_TOOLS="mlxfwupdate mlxarchive"
+        FW_MGR_TOOLS="mlxarchive mlxfwupdate"
     ]
 )
 

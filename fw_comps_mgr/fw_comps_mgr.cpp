@@ -61,9 +61,24 @@ static void mft_signal_set_handling(int isOn)
 #endif
 
 #include <errno.h>
+#include <cstdarg>
+#include <mutex>
+#include <string>
 #include "mft_utils.h"
 
 static FILE* g_fwcomps_log_file = NULL;
+static thread_local std::string g_fwcomps_device_context;
+static std::recursive_mutex g_fwcomps_print_mutex;
+
+extern "C" void fwcomps_output_lock()
+{
+    g_fwcomps_print_mutex.lock();
+}
+
+extern "C" void fwcomps_output_unlock()
+{
+    g_fwcomps_print_mutex.unlock();
+}
 
 // Set log file for fw_comps_mgr library so it can write to log from external callers
 extern "C" void fwcomps_set_log_file(FILE* log_file)
@@ -71,16 +86,55 @@ extern "C" void fwcomps_set_log_file(FILE* log_file)
     g_fwcomps_log_file = log_file;
 }
 
-// Print to stdout and if log file is set, log to file as well
-#define FWCOMPS_PRINT(...)                            \
-    do                                                \
-    {                                                 \
-        printf(__VA_ARGS__);                          \
-        if (g_fwcomps_log_file != NULL)               \
-        {                                             \
-            fprintf(g_fwcomps_log_file, __VA_ARGS__); \
-            fflush(g_fwcomps_log_file);               \
-        }                                             \
+extern "C" void fwcomps_set_device_context(const char* ctx)
+{
+    if (ctx != NULL)
+    {
+        g_fwcomps_device_context = ctx;
+    }
+    else
+    {
+        g_fwcomps_device_context.clear();
+    }
+}
+
+static void fwcomps_print_msg(const char* fmt, ...)
+{
+    std::lock_guard<std::recursive_mutex> lock(g_fwcomps_print_mutex);
+    const char* prefix = NULL;
+    prefix = g_fwcomps_device_context.empty() ? NULL : g_fwcomps_device_context.c_str();
+    if (prefix)
+    {
+        while (*fmt == '\n')
+        {
+            printf("\n");
+            fmt++;
+        }
+        printf("%s: ", prefix);
+    }
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+    fflush(stdout);
+    if (g_fwcomps_log_file != NULL)
+    {
+        if (prefix)
+        {
+            fprintf(g_fwcomps_log_file, "%s: ", prefix);
+        }
+        va_list args2;
+        va_start(args2, fmt);
+        vfprintf(g_fwcomps_log_file, fmt, args2);
+        va_end(args2);
+        fflush(g_fwcomps_log_file);
+    }
+}
+
+#define FWCOMPS_PRINT(...)              \
+    do                                  \
+    {                                   \
+        fwcomps_print_msg(__VA_ARGS__); \
     } while (0)
 
 

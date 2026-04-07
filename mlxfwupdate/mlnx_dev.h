@@ -88,6 +88,8 @@ public:
     void setDevToNeedUpdate();
     bool doesDevNeedUpdate();
     void setNoFwCtrl();
+    bool openFwctlDev();
+    void setUseFwctl(bool val) { _useFwctl = val; }
     void setMccSupport(bool val = true) { _mccSupport = val; };
     vector<ImgVersion> _imageVers;
     inline bool isAlignmentNeeded();
@@ -163,6 +165,7 @@ private:
     int _ExpRomExists;
     bool _needsUpdate;
     bool _noFwCtrl;
+    bool _useFwctl;
     bool _mccSupport;
     string _description;
     string _partNumber;

@@ -52,8 +52,20 @@ enum
     IMG_SIG_TYPE_UNKNOWN = 0,
     IMG_SIG_TYPE_BIN = 1,
     IMG_SIG_TYPE_MFA = 2,
-    IMG_SIG_TYPE_PLDM = 3
+    IMG_SIG_TYPE_PLDM = 3,
+    IMG_SIG_TYPE_MFA2 = 4
 };
+
+typedef enum
+{
+    UNKNOWN_FLOW = -1,
+    BINARY_IN_MFA_FLOW = 0,
+    PLDM_TYPE_1_IN_MFA_FLOW = 1,
+    PLDM_TYPE_2_IN_MFA_FLOW = 2,
+    PLDM_FLOW = 3,
+    BINARY_FLOW = 4,
+    MFA2_FLOW = 5
+} image_flow_type_t;
 
 class ImageAccess
 {
@@ -86,15 +98,24 @@ public:
     string getlastWarning();
     string getLog();
 
+    image_flow_type_t DetermineFlow(const string& fname, const string& psid);
+
 private:
     int queryPsidMfa(const string& fname, const string& psid, string& selector_tag, int image_type, PsidQueryItem& ri);
+    int queryPsidMfa2(const string& fname, const string& psid, string& selector_tag, int image_type, PsidQueryItem& ri);
     int queryPsidBin(const string& fname, const string& psid, PsidQueryItem& ri);
     int getImageBin(const string& fname, u_int8_t** filebuf);
     int getImageMfa(const string& fname, const string& psid, string& selector_tag, int image_type, u_int8_t** filebuf);
     int checkImgSignature(const char* fname);
 
     int get_mfa_content(const string& fname, vector<PsidQueryItem>& riv);
+    int get_mfa2_content(const string& fname, vector<PsidQueryItem>& riv);
     int get_bin_content(const string& fname, vector<PsidQueryItem>& riv);
+    int fillQueryItemFromBuffer(const string& fname,
+                                const string& psid,
+                                const u_int8_t* imageData,
+                                u_int32_t imageSize,
+                                PsidQueryItem& ri);
     bool extract_pldm_image_info(const u_int8_t* buff, u_int32_t size, PsidQueryItem& ri);
     void parse_image_info_data(u_int8_t* image_info_data, PsidQueryItem& query_item);
     static int getBufferSignature(u_int8_t* buf, u_int32_t size);

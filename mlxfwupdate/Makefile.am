@@ -44,6 +44,7 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/libmfa \
     -I$(top_srcdir)/mflash \
     -I$(top_srcdir)/mft_utils \
+    -I$(top_srcdir)/mlxarchive \
     -I$(top_srcdir)/mlxfwops/lib \
     -I$(top_srcdir)/pldmlib \
     $(libxml2_CFLAGS) \
@@ -93,6 +94,7 @@ mstfwmanager_DEPENDENCIES = \
     $(top_builddir)/mlxfwops/lib/libmlxfwops.a \
     $(top_builddir)/pldmlib/libpldm.la \
     $(top_builddir)/mlxconfig/libmlxcfg.la \
+    $(top_builddir)/mlxarchive/libmstarchive.la \
     $(top_builddir)/libmfa/libmfa.la \
     $(top_builddir)/ext_libs/minixz/libminixz.la \
     $(top_builddir)/cmdparser/libcmdparser.a \
@@ -101,7 +103,9 @@ mstfwmanager_DEPENDENCIES = \
     $(top_builddir)/mft_utils/libmftutils.la \
     $(top_builddir)/cmdif/libcmdif.la \
     $(top_builddir)/reg_access/libreg_access.la \
+    $(top_builddir)/tools_layouts/libmlxarchive_layouts.la \
     $(top_builddir)/tools_layouts/libtools_layouts.la \
+    $(top_builddir)/xz_utils/libxz_utils.la \
     $(top_builddir)/fw_comps_mgr/libfw_comps_mgr.la \
     $(top_builddir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
     $(top_builddir)/common/libcommon.la \

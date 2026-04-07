@@ -135,6 +135,7 @@ void MlnxDev::_MlnxDevInit(int compare_ffv)
     isOnlyBase = false;
     _commander = NULL;
     _noFwCtrl = false;
+    _useFwctl = false;
     _mccSupport = true;
     _preBurnInit = false;
     _uniqueId = "NA";
@@ -478,6 +479,30 @@ void MlnxDev::setNoFwCtrl()
     _noFwCtrl = true;
 }
 
+bool MlnxDev::openFwctlDev()
+{
+    if (!_devFwOps)
+    {
+        return false;
+    }
+    mfile* mf = _devFwOps->getMfileObj();
+    if (!mf)
+    {
+        return false;
+    }
+    dev_info* info = _devinfo ? _devinfo : mf->dinfo;
+    if (!info)
+    {
+        return false;
+    }
+#if !defined(__WIN__) && !defined(__FreeBSD__)
+    set_fwctl_dev(info->pci.fwctl_dev, info->pci.domain, info->pci.bus, info->pci.dev, info->pci.func);
+    return info->pci.fwctl_dev[0] != '\0';
+#else
+    return false;
+#endif
+}
+
 void MlnxDev::patchPsidInfo(string psid)
 {
     if (psid.size() > 0)
@@ -566,8 +591,10 @@ int MlnxDev::preBurn(string mfa_file,
     _burnSuccess = 0;
     bool isStripedImage = false;
     bool pldmFlow = false;
+    string selectorTag;
+    int fileSig = ImageAccess::getFileSignature(mfa_file);
 
-    if (ImageAccess::getFileSignature(mfa_file) == IMG_SIG_TYPE_PLDM)
+    if (fileSig == IMG_SIG_TYPE_PLDM)
     {
         pldmFlow = true;
         isStripedImage = true;
@@ -594,6 +621,10 @@ int MlnxDev::preBurn(string mfa_file,
             _errMsg = "-E- The component was not found in the PLDM.\n";
         }
         sza = static_cast<int>(buffSize);
+    }
+    else if (fileSig == IMG_SIG_TYPE_MFA2)
+    {
+        sza = imgacc.getImage(mfa_file, _psid, selectorTag, 1, &filebuf);
     }
     else
     {
@@ -919,6 +950,14 @@ bool MlnxDev::OpenDev()
         _errMsg = _errBuff;
         _log += _errMsg;
         return false;
+    }
+    if (_useFwctl && !_noFwCtrl)
+    {
+        if (!openFwctlDev())
+        {
+            _log += "Warning: Failed to open fwctl device for " + getDevDisplayName(true) +
+                    ", falling back to default access method\n";
+        }
     }
     return true;
 }
