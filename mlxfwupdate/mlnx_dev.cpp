@@ -478,6 +478,27 @@ void MlnxDev::setNoFwCtrl()
     _noFwCtrl = true;
 }
 
+void MlnxDev::openFwctlDev()
+{
+    if (!_devFwOps)
+    {
+        return;
+    }
+    mfile* mf = _devFwOps->getMfileObj();
+    if (!mf)
+    {
+        return;
+    }
+    dev_info* info = _devinfo ? _devinfo : mf->dinfo;
+    if (!info)
+    {
+        return;
+    }
+#if !defined(__WIN__) && !defined(__FreeBSD__)
+    open_fwctl_dev(mf, info->pci.domain, info->pci.bus, info->pci.dev, info->pci.func);
+#endif
+}
+
 void MlnxDev::patchPsidInfo(string psid)
 {
     if (psid.size() > 0)
@@ -919,6 +940,10 @@ bool MlnxDev::OpenDev()
         _errMsg = _errBuff;
         _log += _errMsg;
         return false;
+    }
+    if (!_noFwCtrl)
+    {
+        openFwctlDev();
     }
     return true;
 }
