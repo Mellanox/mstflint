@@ -232,6 +232,7 @@ int main(int argc, char** argv)
     int m = 0;
     int n = 0;
     int strict = 0;
+    int mvpd_len = VPD_MAX_SIZE;
     mfile* mf;
     vpd_result_t* read_result;
     vpd_tags_type_t read_type = VPD_ALL;
@@ -320,7 +321,6 @@ int main(int argc, char** argv)
             fprintf(stderr, "-E- Failed to open device %s!\n", name);
             return MVPD_BAD_PARAMS;
         }
-        int mvpd_len = VPD_MAX_SIZE;
         rc = mvpd_get_vpd_size(mf, &mvpd_len);
         if (rc != 0)
         {
@@ -337,9 +337,9 @@ int main(int argc, char** argv)
 
     if (m)
     {
-        return fwrite(d, VPD_MAX_SIZE, 1, stdout) != 1;
+        return fwrite(d, mvpd_len, 1, stdout) != 1;
     }
-    rc = mvpd_parse_adv((u_int8_t*)d, VPD_MAX_SIZE, &read_result, read_type, strict, !n);
+    rc = mvpd_parse_adv((u_int8_t*)d, mvpd_len, &read_result, read_type, strict, !n);
     if (rc)
     {
         fprintf(stderr, "-E- Failed to parse VPD from %s!\n", name);
