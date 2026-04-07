@@ -2908,3 +2908,26 @@ bool FwCompsMgr::queryMISOC(std::string& version, u_int32_t type, u_int32_t quer
 
     return true;
 }
+
+bool FwCompsMgr::IsCRDTDebugSessionActive()
+{
+    bool isCRDTDebugSessionActive = false;
+    reg_access_switch_mdsr_reg_ext mdsr_reg;
+    memset(&mdsr_reg, 0, sizeof(mdsr_reg));
+    mdsr_reg.type_of_token = MDSRTokenType::CRDT_TOKEN;
+    mft_signal_set_handling(1);
+    reg_access_status_t rc = reg_access_mdsr(_mf, REG_ACCESS_METHOD_GET, &mdsr_reg);
+    deal_with_signal();
+    if (rc)
+    {
+        DPRINTF(("reg_access_mdsr failed with rc=%d\n", rc));
+        _lastError = regErrTrans(rc);
+        setLastRegisterAccessStatus(rc);
+    }
+    else if (mdsr_reg.status == MDSRStatus::DEBUG_SESSION_ACTIVE)
+    {
+        isCRDTDebugSessionActive = true;
+    }
+
+    return isCRDTDebugSessionActive;
+}

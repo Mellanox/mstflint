@@ -320,7 +320,8 @@ typedef enum security_mode_mask
     SMM_DBG_TOKEN = 0x1 << 6,
     SMM_CRYTO_TO_COMMISSIONING = 0x1 << 7,
     SMM_RMCS_TOKEN = 0x1 << 8,
-    SMM_RMDT_TOKEN = 0x1 << 9
+    SMM_RMDT_TOKEN = 0x1 << 9,
+    SMM_CRDT_TOKEN = 0x1 << 10
 } security_mode_mask_t;
 
 typedef enum security_mode

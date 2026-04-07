@@ -2362,6 +2362,11 @@ bool FwOperations::IsEncryptionSupported()
     return errmsg("IsEncryptionSupported not supported.");
 }
 
+bool FwOperations::IsCRDTDebugSessionActive()
+{
+    return errmsg("IsCRDTDebugSessionActive is not supported");
+}
+
 bool FwOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
 {
     (void)imageOps4MData;
