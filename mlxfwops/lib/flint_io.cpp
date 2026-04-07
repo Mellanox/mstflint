@@ -38,6 +38,7 @@
  */
 
 #include <errno.h>
+#include <stdint.h>
 #include <tools_dev_types.h>
 #include "flint_io.h"
 
@@ -1166,13 +1167,22 @@ bool Flash::check_and_set_sector_num_field(std::string& param_val_str,
     if (rc)
     {
         char* endp;
-        u_int8_t sector_num_as_int = strtoul(sector_num.c_str(), &endp, 0); // convert given sectors number to integer
-        if (*endp != '\0')
+        errno = 0;
+        unsigned long sector_num_as_ulong =
+          strtoul(sector_num.c_str(), &endp, 0); // convert given sectors number to integer
+
+        if (*endp != '\0' || sector_num.empty())
         {
             err_msg = "bad argument (" + sector_num + "), only integer value is allowed.\n";
             rc = false;
         }
-        else if (!sector_num_as_int)
+        else if (errno == ERANGE || sector_num_as_ulong > UINT16_MAX)
+        {
+            err_msg =
+              "bad argument (" + sector_num + "), value out of range (max " + std::to_string(UINT16_MAX) + ").\n";
+            rc = false;
+        }
+        else if (!sector_num_as_ulong)
         {
             err_msg = "Invalid sectors number, Use \"Disabled\" instead.\n";
             rc = false;
