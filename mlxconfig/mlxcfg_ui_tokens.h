@@ -35,6 +35,7 @@
 #define MLXCFG_TOKENS_H_
 
 #include "mlxcfg_utils.h"
+#include "fw_comps_mgr/fw_comps_mgr.h"
 
 /* Forward declaration */
 struct reg_access_switch_mdsr_reg_ext;
@@ -55,19 +56,6 @@ typedef enum
     McTokenTypeUnknown
 } MlxCfgTokenType;
 
-// aligned to MDSR register definitions
-typedef enum
-{
-    McTokenStatusTypeCS = 0x0,
-    McTokenStatusTypeDBG = 0x1,
-    McTokenStatusTypeFRC = 0x2,
-    McTokenStatusTypeRMCS = 0x3,
-    McTokenStatusTypeRMDT = 0x4,
-    McTokenStatusTypeCRCS = 0x5,
-    McTokenStatusTypeCRDT = 0x6,
-    McTokenStatusTypeUnknown
-} MlxCfgTokenStatusType;
-
 typedef enum
 {
     KEEP_ALIVE_OK,
@@ -80,8 +68,8 @@ public:
     MlxCfgToken(mfile* mf);
 
     void QueryTokenSupport();
-    void QueryTokenSession(MlxCfgTokenStatusType token);
-    void EndTokenSession(MlxCfgTokenStatusType token);
+    void QueryTokenSession(FwCompsMgr::MDSRTokenType token);
+    void EndTokenSession(FwCompsMgr::MDSRTokenType token);
     void RemoteTokenKeepAlive(u_int32_t sessionId,
                               u_int32_t sessionTimeInSec,
                               bool isSleepTimeBetweenCommandsInput,
@@ -90,9 +78,9 @@ public:
                               u_int32_t keepAliveSleepTimeOnCommandTO);
 
     static MlxCfgTokenType GetTokenType(string token);
-    static MlxCfgTokenStatusType GetTokenStatusType(string token);
+    static FwCompsMgr::MDSRTokenType GetTokenStatusType(string token);
     static string getTokenString(MlxCfgTokenType token);
-    static string getTokenString(MlxCfgTokenStatusType token);
+    static string getTokenString(FwCompsMgr::MDSRTokenType token);
 
     void GetAndPrintChallenge(MlxCfgTokenType token, bool nestedToken);
     struct reg_access_switch_mtcq_reg_ext GetChallengeFromSwitchOrHCA(MlxCfgTokenType token);

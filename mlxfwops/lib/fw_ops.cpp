@@ -2362,6 +2362,11 @@ bool FwOperations::IsEncryptionSupported()
     return errmsg("IsEncryptionSupported not supported.");
 }
 
+bool FwOperations::IsCRDTDebugSessionActive()
+{
+    return errmsg("IsCRDTDebugSessionActive is not supported");
+}
+
 bool FwOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
 {
     (void)imageOps4MData;
@@ -2449,6 +2454,12 @@ bool FwOperations::UpdateSection(void* new_info, fs3_section_t sect_type, bool i
     (void)callBackFunc;
     return errmsg("UpdateSection not supported.");
 }
+
+bool FwOperations::UpdateSection(fs3_section_t, std::vector<u_int8_t>&, const char*, PrintCallBack)
+{
+    return errmsg("UpdateSection not supported.");
+}
+
 bool FwOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning)
 {
     (void)timestamp;

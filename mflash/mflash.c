@@ -4554,6 +4554,12 @@ int is_WINBOND_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, ui
     return 0;
 }
 
+int is_256_sectors_number_supported(mflash* mfl)
+{
+    return is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl) ||
+           is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size);
+}
+
 int is_60MB_bottom_protection_params(write_protect_info_t* protect_info)
 {
     if ((protect_info->sectors_num != SECTOR_NUM_60MB_SPECIAL_CASE) || !protect_info->is_bottom || protect_info->is_subsector)
@@ -4633,11 +4639,10 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     }
     if (protect_info->sectors_num > MAX_SECTORS_NUM)
     {
-        if (!is_60MB_bottom_protection_supported_wrapper(mfl))
-        {
-            return MFE_EXCEED_SECTORS_MAX_NUM;
-        }
-        if (!is_60MB_bottom_protection_params(protect_info))
+        bool is_256_exception = (protect_info->sectors_num == 256 && is_256_sectors_number_supported(mfl));
+        bool is_60mb_exception =
+          (is_60MB_bottom_protection_supported_wrapper(mfl) && is_60MB_bottom_protection_params(protect_info));
+        if (!is_256_exception && !is_60mb_exception)
         {
             return MFE_EXCEED_SECTORS_MAX_NUM;
         }
@@ -4679,7 +4684,8 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
         }
     }
 
-    for (log2_sect_num = 0; log2_sect_num < 8; log2_sect_num++)
+    const u_int32_t max_bp = 9;
+    for (log2_sect_num = 0; log2_sect_num <= max_bp; log2_sect_num++)
     {
         if (sectors_num == 0)
         {
@@ -4694,7 +4700,14 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
         (((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) && (mfl->attr.log2_bank_size == FD_128)) ||
          ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V) && (mfl->attr.log2_bank_size == FD_128))))
     {
-        log2_sect_num -= 2; /* spec alignment */
+        log2_sect_num -= 2; // spec alignment
+    }
+
+    int bp_size = is_ISSI_is25wj032f(mfl) ? BP_SIZE : BP_SIZE + 1;
+    if (bp_size < 4 && log2_sect_num > 7) // not enough bits to set the BP value
+    {
+        DPRINTF(("BP Size (%d) is not enough to set the BP value (%d)\n", bp_size, log2_sect_num));
+        return MFE_NOT_SUPPORTED_OPERATION;
     }
 
     if ((mfl->attr.vendor == FV_ST) && (mfl->attr.type == FMT_N25QXXX))
@@ -4769,7 +4782,6 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
             CHECK_RC(rc);
         }
 
-        int bp_size = is_ISSI_is25wj032f(mfl) ? BP_SIZE : BP_SIZE + 1;
         return mf_read_modify_status_winbond(mfl, bank_num, 1, log2_sect_num, BP_OFFSET, bp_size);
     }
     else

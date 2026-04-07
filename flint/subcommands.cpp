@@ -4581,6 +4581,10 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
         attr += NA_STR;
         return attr;
     }
+    if (m & SMM_CRDT_TOKEN && !(m & SMM_DEBUG_FW))
+    {
+        attr += ", debug-token";
+    }
     if (m & SMM_DEBUG_FW)
     {
         attr += ", debug";
@@ -4993,7 +4997,13 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 
     if (isFs3 || isFs4 || isFsCtrl)
     {
-        printf("Security Attributes:   %s\n", printSecurityAttrInfo(fwInfo.fs3_info.security_mode).c_str());
+        u_int32_t security_mode = fwInfo.fs3_info.security_mode;
+        if (_flintParams.device_specified && ops->IsCRDTDebugSessionActive())
+        {
+            security_mode |= SMM_CRDT_TOKEN;
+        }
+        std::string securityAttrInfo = printSecurityAttrInfo(security_mode);
+        printf("Security Attributes:   %s\n", securityAttrInfo.c_str());
     }
 
     if (isFs4 && _flintParams.image_specified)
@@ -6561,6 +6571,64 @@ FlintStatus SetCertChainSubCommand::executeCommand()
         reportErr(true, FLINT_CERT_CHAIN_ERROR, ops->err());
         return FLINT_FAILED;
     }
+    return FLINT_SUCCESS;
+}
+
+/***********************
+ * Class: Set CPO Calibration Data Subcommand
+ **********************/
+SetCpoCalibrationDataSubCommand::SetCpoCalibrationDataSubCommand()
+{
+#ifndef EXTERNAL
+    _name = "set_cpo_calibration_data";
+    _desc = "Set CPO calibration data.";
+    _flagLong = "set_cpo_calibration_data";
+    _flagShort = "";
+    _param = "<CPO calibration data file>";
+    _paramExp = "CPO calibration data file: bin file containing the calibration data";
+    _example = FLINT_NAME " -d " MST_DEV_EXAMPLE4 " set_cpo_calibration_data cpo_calibration.bin";
+    _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 1;
+    _minCmdParamNum = 1;
+    _cmdType = SC_Set_Cpo_Calibration_Data;
+#endif
+}
+
+FlintStatus SetCpoCalibrationDataSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED)
+    {
+        return FLINT_FAILED;
+    }
+    FwOperations* ops = _flintParams.device_specified ? _fwOps : _imgOps;
+
+    if (ops->FwType() != FIT_FS4 && ops->FwType() != FIT_FS5)
+    {
+        reportErr(true, "Setting CPO calibration data is applicable only for FS4/FS5 FW.\n");
+        return FLINT_FAILED;
+    }
+
+    fw_info_t fwInfo;
+    memset(&fwInfo, 0, sizeof(fw_info_t));
+    if (!ops->FwQuery(&fwInfo, false, false, true))
+    {
+        reportErr(true, FLINT_FAILED_QUERY_ERROR, _flintParams.device_specified ? "device" : "image",
+                  _flintParams.device_specified ? _flintParams.device.c_str() : _flintParams.image.c_str(), ops->err());
+        return FLINT_FAILED;
+    }
+
+    vector<u_int8_t> componentBuffer;
+    if (!readFromFile(_flintParams.cmd_params[0], componentBuffer))
+    {
+        return FLINT_FAILED;
+    }
+
+    if (!ops->UpdateSection(FS4_CPO_CALIBRATION_DATA, componentBuffer, "CPO_CALIBRATION_DATA", &verifyCbFunc))
+    {
+        reportErr(true, "Setting CPO calibration data failed: %s\n", ops->err());
+        return FLINT_FAILED;
+    }
+
     return FLINT_SUCCESS;
 }
 
