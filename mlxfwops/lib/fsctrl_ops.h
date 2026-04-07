@@ -120,6 +120,7 @@ public:
 
     virtual bool IsFsCtrlOperations() { return true; }
     virtual mfile* getMfileObj() { return _fwCompsAccess->getMfileObj(); }
+    virtual psid_utils::MinorPsidLockStatus queryMinorPsidLockStatus();
     virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();

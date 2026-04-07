@@ -33,7 +33,7 @@
 
 
 ###############################################################################
-#    This file was generated at "2025-11-23 10:33:54"
+#    This file was generated at "2025-12-21 15:54:42"
 #    by:
 #      > /tmp/jenkins/workspace/automatic_prm_update/scripts/prm_update.py --project switch
 ###############################################################################
@@ -84,6 +84,9 @@ class MPIR_EXT(ctypes.Structure):
         ("sdm", ctypes.c_uint8),
         ("subordinate_bus", ctypes.c_uint8),
         ("secondary_bus", ctypes.c_uint8),
+        ("segment_base", ctypes.c_uint8),
+        ("segment_valid", ctypes.c_uint8),
+        ("segment_cap", ctypes.c_uint8),
         ("device", ctypes.c_uint8),
         ("lp_msb", ctypes.c_uint8),
         ("bus", ctypes.c_uint8),
@@ -151,6 +154,7 @@ class MDSR_REG_EXT(ctypes.Structure):
         ("status", ctypes.c_uint8),
         ("additional_info", ctypes.c_uint8),
         ("type_of_token", ctypes.c_uint8),
+        ("revoke_version", ctypes.c_uint8),
         ("end", ctypes.c_uint8),
         ("time_left", ctypes.c_uint32)
     ]
@@ -187,6 +191,7 @@ class MPEIN_REG_EXT(ctypes.Structure):
         ("num_of_pfs", ctypes.c_uint16),
         ("bdf0", ctypes.c_uint16),
         ("lane_reversal", ctypes.c_uint8),
+        ("cmn_clk_mode", ctypes.c_uint8),
         ("port_type", ctypes.c_uint8),
         ("pwr_status", ctypes.c_uint8),
         ("max_payload_size", ctypes.c_uint8),

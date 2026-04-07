@@ -53,6 +53,7 @@ typedef enum MfOpt
     MFO_SX_TYPE,
     MFO_NEW_CACHE_REPLACEMENT_EN,
     MFO_CX3_FW_ACCESS_EN,
+    MFO_NO_FW_CTRL,
     MFO_LAST
 } MfOpt;
 
@@ -91,7 +92,7 @@ typedef struct write_protect_info_backup
 {
     write_protect_info_t protect_info;
     uint8_t cmp;
-    uint8_t backup_success;
+    uint8_t restore_needed;
 } write_protect_info_backup_t;
 
 ////////////////////////////////////////
@@ -215,6 +216,8 @@ typedef struct flash_attr
     u_int8_t cmp_support;
     u_int8_t quad_en_support;
     u_int8_t srwd_support;
+    u_int8_t srp_support;
+    u_int8_t srl_support;
     u_int8_t driver_strength_support;
     u_int8_t dummy_cycles_support;
     u_int8_t write_protect_support;

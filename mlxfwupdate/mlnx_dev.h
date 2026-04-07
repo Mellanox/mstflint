@@ -102,7 +102,8 @@ public:
     string guidPortTwo;
     string macPortOne;
     string macPortTwo;
-    string baseGuid;
+    string systemGuid;
+    string nodeGuid;
     typedef enum
     {
         PORT_NA,

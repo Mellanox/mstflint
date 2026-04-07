@@ -384,7 +384,7 @@ void Param::getView(ParamView& paramView)
     paramView.description = _description;
     paramView.type = _type;
     paramView.port = _port;
-    paramView.module = _module;
+    paramView._module = _module;
     paramView.textualVals = _textualValues;
     paramView.supportedFromVersion = _supportedFromVersion;
     paramView.rule = _rule;
@@ -1392,4 +1392,17 @@ std::shared_ptr<Param> Param::cloneDeep() const
         p->_value = _value->clone();
     }
     return p;
+}
+
+// paramView utility function
+bool isParamViewInList(const ParamView& param, const vector<ParamView>& list)
+{
+    for (const ParamView& p : list)
+    {
+        if (param.mlxconfigName == p.mlxconfigName)
+        {
+            return true;
+        }
+    }
+    return false;
 }

@@ -34,6 +34,7 @@ typedef enum {
     MLXCABLES_REG_ACCESS = 1,
 } cable_access_type_t;
 
+#define MCABLES_INTERNAL_ERROR_MSG_SIZE 256
 
 typedef struct {
     int                 port;
@@ -47,6 +48,7 @@ typedef struct {
     unsigned char       i2c_addr;
     dm_dev_id_t         cable_type;
     void              * semaphore_handle;
+    char internal_error_msg[MCABLES_INTERNAL_ERROR_MSG_SIZE];
 } cable_ctx;
 
 

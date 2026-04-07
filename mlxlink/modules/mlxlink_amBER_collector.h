@@ -101,6 +101,10 @@ public:
     u_int32_t _iteration;
     string _testMode;
     MlxlinkMaps* _mlxlinkMaps;
+    u_int32_t _numOfLanes;
+    bool _isModeAsActive;
+    bool _isNvlinkModeA;
+    bool _isNvlinkModeB;
     vector<PortGroup> _localPorts; // will be valid for switches
     bool _isHca;
     vector<AMBER_SHEET> _sheetsToDump;
@@ -177,6 +181,8 @@ protected:
     virtual string getBerAndErrorTitle(u_int32_t portType);
     virtual void getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params);
     virtual void getModuleLinkUpInfoPage(vector<AmberField>& fields);
+    virtual void updateModeAsActive();
+    void updateNumOfLanesForTestModeNVL6();
 
     // Callers
 
@@ -200,7 +206,6 @@ protected:
 
     u_int32_t _activeSpeed;
     u_int32_t _protoActive;
-    u_int32_t _numOfLanes;
     u_int32_t _moduleIndex;
     u_int32_t _slotIndex;
     u_int32_t _maxLanes;

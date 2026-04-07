@@ -102,7 +102,7 @@
 #include <getopt.h>
 #include <unistd.h>
 #include <dlfcn.h>
-#include <asm/byteorder.h>
+#include "common/compatibility.h"
 
 #define DLL_HANDLE  void*
 #define BAD_RET_VAL ~0llu

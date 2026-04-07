@@ -89,6 +89,7 @@ public:
     void clearSemaphore() override;
     void invalidateCfgs() override;
     void invalidateCfg(const std::string& configName) override;
+    void invalidateCfg(const std::vector<ParamView>& params) override;
     bool isDPUEnabled();
     bool shouldSkipPrepareReset();
     const char* loadConfigurationGetStr() override;

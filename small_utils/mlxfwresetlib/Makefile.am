@@ -32,5 +32,5 @@
 
 
 docdir = $(libdir)/mstflint/python_tools/mstfwreset/mlxfwresetlib
-dist_doc_DATA = __init__.py mlxfwreset_mlnxdriver.py mlxfwreset_status_checker.py mlxfwreset_utils.py logger.py mcra.py mlnx_peripheral_components.py pci_device.py cmd_reg_mfrl.py cmd_reg_mroq.py cmd_reg_mpcir.py cmd_reg_mcam.py cmd_reg_mrsi.py gpu_drivers_safety_check.py hot_reset.py
+dist_doc_DATA = __init__.py mlxfwreset_mlnxdriver.py mlxfwreset_status_checker.py mlxfwreset_utils.py logger.py mcra.py mlnx_peripheral_components.py pci_device.py cmd_reg_mfrl.py drivers_safety_check.py cmd_reg_mroq.py cmd_reg_mpcir.py cmd_reg_mcam.py cmd_reg_mrsi.py gpu_drivers_safety_check.py hot_reset.py
 

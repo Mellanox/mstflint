@@ -36,7 +36,7 @@ AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = lib_os_api.la
 
-lib_os_api_la_SOURCES = OperatingSystemAPI.h OperatingSystemAPIDefs.h FactoryOperatingSystemAPI.cpp FactoryOperatingSystemAPI.h
+lib_os_api_la_SOURCES = OperatingSystemAPI.cpp OperatingSystemAPI.h OperatingSystemAPIDefs.h FactoryOperatingSystemAPI.cpp FactoryOperatingSystemAPI.h
 lib_os_api_la_SOURCES += Linux.cpp Linux.h
 
 lib_os_api_la_DEPENDENCIES =

@@ -40,7 +40,7 @@
 #include "mlxconfig/mlxcfg_ui.h"
 #include "mlxconfig/mlxcfg_ui_tokens.h"
 
-class MlxTknGenerator : public CommandLineRequester
+class MlxTknGenerator: public CommandLineRequester
 {
 public:
     MlxTknGenerator();
@@ -60,63 +60,67 @@ private:
     void ValidateDeviceType(mfile* mf, Device_Type deviceType);
 
     string GetDebugFwVersion(string filePath);
-    vector<TLVParamsData> GetDataForToken(MlxCfgTokenType tokenType, Device_Type deviceType, bool isNestedToken);
-    vector<TLVParamsData> GetDataForToken(MlxCfgTokenType tokenType, string blobFile);
-    vector<TLVParamsData>
-      GetTokenDataFromChallenge(mfile* mf, MlxCfgTokenType tokenType, bool isNestedToken);
-    vector<TLVParamsData> GetRemoteTokenData(struct reg_access_switch_mtcq_reg_ext challenge,
-                                             MlxCfgTokenType tokenType,
-                                             string debugFwVersion);
-    vector<TLVParamsData> GetChallengeBasedTokenData(struct reg_access_switch_mtcq_reg_ext challenge,
-                                                     MlxCfgTokenType tokenType,
-                                                     string debugFwVersion);
-    vector<TLVParamsData> GetTokenDataFromQuery(string device, MlxCfgTokenType tokenType, Device_Type deviceType);
+    vector < TLVParamsData > GetDataForToken(MlxCfgTokenType tokenType, Device_Type deviceType, bool isNestedToken);
+    vector < TLVParamsData > GetDataForToken(MlxCfgTokenType tokenType, string blobFile);
+    void ValidateNewTlvType(u_int16_t actual, u_int16_t expected, const string& fieldName);
+    bool IsGetMeasurementIndex50(const vector < u_int8_t >& tokenData);
+    void FromGetMeasurementIndex50ToChallenge(struct tokens_layout_get_measurment_index_50& getMeasurementIndex50,
+                                              struct reg_access_switch_mtcq_reg_ext&        challenge);
+    void IsValidGetMeasurementIndex50(const struct tokens_layout_get_measurment_index_50& getMeasurementIndex50);
+    vector < TLVParamsData >
+    GetTokenDataFromChallenge(mfile * mf, MlxCfgTokenType tokenType, bool isNestedToken);
+    vector < TLVParamsData > GetRemoteTokenData(struct reg_access_switch_mtcq_reg_ext challenge,
+                                                MlxCfgTokenType tokenType,
+                                                string debugFwVersion);
+    vector < TLVParamsData > GetChallengeBasedTokenData(struct reg_access_switch_mtcq_reg_ext challenge,
+                                                        MlxCfgTokenType tokenType,
+                                                        string debugFwVersion);
+    vector < TLVParamsData > GetTokenDataFromQuery(string device, MlxCfgTokenType tokenType, Device_Type deviceType);
 
-    enum MlxTknGeneratorCmd
-    {
+    enum MlxTknGeneratorCmd {
         GenerateToken,
         AggregateTokens,
         Unknown
     };
 
-    static const map<string, MlxTknGeneratorCmd> _cmdStringToEnum;
+    static const        map < string, MlxTknGeneratorCmd > _cmdStringToEnum;
     static const string DEVICE_FLAG;
-    static const char DEVICE_FLAG_SHORT;
+    static const char   DEVICE_FLAG_SHORT;
     static const string HELP_FLAG;
-    static const char HELP_FLAG_SHORT;
+    static const char   HELP_FLAG_SHORT;
     static const string VERSION_FLAG;
-    static const char VERSION_FLAG_SHORT;
+    static const char   VERSION_FLAG_SHORT;
     static const string DEVICE_TYPE_FLAG;
-    static const char DEVICE_TYPE_FLAG_SHORT;
+    static const char   DEVICE_TYPE_FLAG_SHORT;
     static const string TOKEN_TYPE_FLAG;
-    static const char TOKEN_TYPE_FLAG_SHORT;
+    static const char   TOKEN_TYPE_FLAG_SHORT;
     static const string NESTED_TOKEN_FLAG;
-    static const char NESTED_TOKEN_FLAG_SHORT;
+    static const char   NESTED_TOKEN_FLAG_SHORT;
     static const string DEBUG_FW_FILE_FLAG;
-    static const char DEBUG_FW_FILE_FLAG_SHORT;
+    static const char   DEBUG_FW_FILE_FLAG_SHORT;
     static const string NESTED_DEBUG_FW_FILE_FLAG;
-    static const char NESTED_DEBUG_FW_FILE_FLAG_SHORT;
+    static const char   NESTED_DEBUG_FW_FILE_FLAG_SHORT;
     static const string OUTPUT_FILE_FLAG;
-    static const char OUTPUT_FILE_FLAG_SHORT;
+    static const char   OUTPUT_FILE_FLAG_SHORT;
     static const string TOKENS_DIR_FLAG;
-    static const char TOKENS_DIR_FLAG_SHORT;
+    static const char   TOKENS_DIR_FLAG_SHORT;
     static const string CHALLENGE_BLOB_FLAG;
-    static const char CHALLENGE_BLOB_FLAG_SHORT;
+    static const char   CHALLENGE_BLOB_FLAG_SHORT;
     static const string SECONDARY_ADDR_FLAG;
-    static const char SECONDARY_ADDR_FLAG_SHORT;
+    static const char   SECONDARY_ADDR_FLAG_SHORT;
 
-    CommandLineParser _cmdParser;
-    string _device;
-    Device_Type _deviceType;
-    MlxCfgTokenType _tokenType;
-    bool _isNestedToken;
-    string _outputFile;
-    string _tokensDir;
-    string _debugFwFile;
-    string _debugFwNestedFile;
-    string _blobFile;
+    CommandLineParser  _cmdParser;
+    string             _device;
+    Device_Type        _deviceType;
+    MlxCfgTokenType    _tokenType;
+    bool               _isNestedToken;
+    string             _outputFile;
+    string             _tokensDir;
+    string             _debugFwFile;
+    string             _debugFwNestedFile;
+    string             _blobFile;
     MlxTknGeneratorCmd _command;
-    int _i2cSecondaryAddr;
+    int                _i2cSecondaryAddr;
 };
 
 #endif /* MLXTKNGNERATOR_H_ */

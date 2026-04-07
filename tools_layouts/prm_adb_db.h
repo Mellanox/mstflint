@@ -43,12 +43,24 @@
 #include <exception>
 #include "dev_mgt/tools_dev_types.h"
 
+
+typedef enum PrmAdbType
+{
+    PRM_ADB_TYPE_HCA,
+    PRM_ADB_TYPE_SWITCH,
+    PRM_ADB_TYPE_RETIMER,
+    PRM_ADB_TYPE_GPU,
+    PRM_ADB_TYPE_UNKNOWN
+} PrmAdbType_t;
+
+
 class PrmAdbDB
 {
 public:
     static std::string prm_adb_db_trim(const std::string& s);
     static std::string prm_adb_db_rtrim(const std::string& s);
     static std::string prm_adb_db_ltrim(const std::string& s);
+    static std::string getDefaultDBName(PrmAdbType_t adbType);
     static std::string getDefaultDBName(dm_dev_id_t devID);
 };
 

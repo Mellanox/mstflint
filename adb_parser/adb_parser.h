@@ -185,13 +185,13 @@ public:
                          T_OFFSET offset_shift,
                          const uint8_t* buffer,
                          uint32_t buffer_size,
-                         void (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
+                         bool (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
                          void* context,
                          bool evaluate_conditions = true,
                          bool handle_enums = false,
                          bool full_path = true,
-                         bool allow_multiple_exceptions = false,
-                         string suffix = ""); // internal argument for legacy array support
+                         bool allow_multiple_exceptions = false); // internal argument passed inside recursion, by
+                                                                  // return value of "func"
 
     string printAdbExceptionMap();
     void clearAdbExceptionMap();
@@ -265,6 +265,20 @@ private:
     void checkInstanceOffsetValidity(AdbInstance* inst, AdbInstance* parent, bool allowMultipleExceptions);
     void throwExeption(bool allowMultipleExceptions, string exceptionTxt, string addedMsgMultiExp);
 
+    void traverse_layout(AdbInstance* instance,
+                         const string& path,
+                         T_OFFSET offset_shift,
+                         const uint8_t* buffer,
+                         uint32_t buffer_size,
+                         bool (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
+                         void* context,
+                         string suffix, // internal argument for legacy array support
+                         bool& stop,    // internal argument passed inside recursion, by return value of "func"
+                         bool evaluate_conditions = true,
+                         bool handle_enums = false,
+                         bool full_path = true,
+                         bool allow_multiple_exceptions = false);
+
     // Helper functions for traverse_layout
     uint64_t _trvrs_calc_cond_num_elements(AdbInstance* instance,
                                            T_OFFSET offset_shift,
@@ -277,7 +291,7 @@ private:
                              const string& element_path,
                              T_OFFSET element_offset_shift,
                              const uint8_t* buffer,
-                             void (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
+                             bool (*func)(const string&, uint64_t, uint64_t, AdbInstance*, void*),
                              void* context);
     AdbInstance* _trvrs_get_selected_node(AdbInstance* instance, T_OFFSET element_offset_shift, const uint8_t* buffer);
 };

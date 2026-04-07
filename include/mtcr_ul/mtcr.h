@@ -51,6 +51,11 @@ extern "C"
 #define INITIALIZING_BIT_OFFSET_IN_VSC_RECOVERY_SPACE 0
 #define AUTHENTICATION_FAILURE                        0xffa6
 
+#define BLUEFIELD4_PCI_DEVICE_ID_CRYPTO_ENABLED 0xA2DD
+#define BLUEFIELD4_PCI_DEVICE_ID_CRYPTO_DISABLED 0xA2DE
+#define BLUEFIELD4_PCI_DEVICE_ID_NETWORK_CONTROLLER 0xA2DF
+#define BLUEFIELD4_PCI_DEVICE_ID_MANAGMENT_INTERFACE 0xc2d6
+
 typedef enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = MST_ERROR,
     MTCR_ACCESS_MEMORY = MST_PCI,
@@ -203,6 +208,14 @@ int is_zombiefish_device(mfile* mf);
 void swap_pci_address_space(mfile* mf);
 
 int is_pcie_switch_device(mfile* mf);
+
+int hot_reset(mfile* mf, int in_parallel,
+              int domain_1, int bus_1,
+              int device_1, int function_1,
+              int domain_2, int bus_2,
+              int device_2, int function_2);
+
+void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func);
 
 #ifdef __cplusplus
 }

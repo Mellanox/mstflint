@@ -77,6 +77,8 @@ typedef struct ext_flash_attr
     int command_set;
     u_int8_t cmp_support;
     u_int8_t quad_en_support;
+    u_int8_t srp_support;
+    u_int8_t srl_support;
     u_int8_t srwd_support;
     u_int8_t driver_strength_support;
     u_int8_t dummy_cycles_support;
@@ -92,6 +94,12 @@ typedef struct ext_flash_attr
 
     u_int8_t srwd;
     MfError mf_get_srwd_rc;
+
+    u_int8_t srp;
+    MfError mf_get_srp_rc;
+
+    u_int8_t srl;
+    MfError mf_get_srl_rc;
 
     u_int8_t driver_strength;
     MfError mf_get_driver_strength_rc;
@@ -121,11 +129,11 @@ public:
     virtual ~FBase() {}
 
     virtual bool
-      open(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_lock = false, bool advErr = true) = 0;
+      open(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_lock = false, bool advErr = true, int no_fw_ctrl = 0) = 0;
 
     virtual bool open(const char*, bool, bool) = 0;
 
-    virtual bool open(const char* device, bool, bool, int, flash_params_t*, int, bool, int) = 0;
+    virtual bool open(const char* device, bool, bool, int, flash_params_t*, int, bool, int, int = 0) = 0;
 
     virtual bool is_fifth_gen() = 0;
     virtual void close() = 0;
@@ -292,12 +300,12 @@ public:
         check_uefi_build();
         return false;
     }
-    virtual bool open(uefi_Dev_t*, uefi_dev_extra_t*, bool, bool)
+    virtual bool open(uefi_Dev_t*, uefi_dev_extra_t*, bool, bool, int = 0)
     {
         check_uefi_build();
         return false;
     }
-    virtual bool open(const char*, bool, bool, int, flash_params_t*, int, bool, int)
+    virtual bool open(const char*, bool, bool, int, flash_params_t*, int, bool, int, int = 0)
     {
         check_uefi_build();
         return false;
@@ -408,10 +416,11 @@ public:
                       flash_params_t* flash_params = (flash_params_t*)NULL,
                       int ignoe_cache_replacement = 0,
                       bool advErr = true,
-                      int cx3_fw_access = 0);
+                      int cx3_fw_access = 0,
+                      int no_fw_ctrl = 0);
     using FBase::open;
 
-    virtual bool open(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_lock = false, bool advErr = true);
+    virtual bool open(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_lock = false, bool advErr = true, int no_fw_ctrl = 0);
 
     virtual bool open(const char*, bool, bool)
     {
@@ -516,7 +525,7 @@ public:
     bool check_and_disable_flash_wp_if_required();
     bool backup_write_protect_info(write_protect_info_backup_t& protect_info_backup);
     bool restore_write_protect_info(write_protect_info_backup_t& protect_info_backup);
-    static void deal_with_signal();
+    static void deal_with_signal(mflash* mfl = nullptr);
 
     mfile* getMfileObj() { return mf_get_mfile(_mfl); }
     mflash* getMflashObj() { return _mfl; }
@@ -532,6 +541,8 @@ public:
 #define CMP_PARAM "CMP"
 #define QUAD_EN_PARAM "QuadEn"
 #define SRWD_PARAM "SRWD"
+#define SRP_PARAM "SRP"
+#define SRL_PARAM "SRL"
 #define DRIVER_STRENGTH_PARAM "DriverStrength"
 #define DUMMY_CYCLES_PARAM "DummyCycles"
 #define SERIES_CODE_PARAM "SeriesCode"

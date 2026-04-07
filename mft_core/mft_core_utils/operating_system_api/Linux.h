@@ -52,6 +52,6 @@ public:
     virtual void GetHostName(char* pcHostName) override;
     virtual void InputPassword(char* pcPass, unsigned int uMaxLen) override;
     virtual uint32_t get_page_size() override;
-    virtual std::pair<int, std::string> execCommand(const std::string& cmd);
+    virtual std::pair<int, std::string> execCommand(const std::string& cmd) override;
     class FactoryOperatingSystemAPI;
 };

@@ -81,6 +81,9 @@
 #define NODE_FLAG_SHORT ' '
 #define PRINT_JSON_OUTPUT_FLAG "json"
 #define PRINT_JSON_OUTPUT_FLAG_SHORT ' '
+// Extended info for PCIe flow when depth/pcie_index/node are provided
+#define EXTENDED_PCIE_FLAG "extended"
+#define EXTENDED_PCIE_FLAG_SHORT ' '
 //------------------------------------------------------------
 //        Mlxlink QUERIES Flags
 
@@ -112,10 +115,40 @@
 #define MULTI_PORT_INFO_ACRONYM_FLAG_SHORT ' '
 #define PLR_INFO_FLAG "show_plr"
 #define PLR_INFO_FLAG_SHORT ' '
+#define SET_PLR_FLAG "set_plr"
+#define SET_PLR_FLAG_SHORT ' '
+#define PLR_REJECT_MODE_FLAG "plr_reject_mode"
+#define PLR_REJECT_MODE_FLAG_SHORT ' '
+#define PLR_MARGIN_THRESHOLD_FLAG "plr_margin_threshold"
+#define PLR_MARGIN_THRESHOLD_FLAG_SHORT ' '
+#define PLR_TX_CRC_FLAG "plr_tx_crc"
+#define PLR_TX_CRC_FLAG_SHORT ' '
 #define KR_INFO_FLAG "show_kr"
 #define KR_INFO_FLAG_SHORT ' '
 #define RX_RECOVERY_COUNTERS_FLAG "show_rx_recovery_counters"
 #define RX_RECOVERY_COUNTERS_FLAG_SHORT ' '
+#define BKV_GROUPS_FLAG "show_bkv_groups"
+#define BKV_GROUPS_FLAG_SHORT ' '
+#define BKV_GROUP_FLAG "show_bkv_group"
+#define BKV_GROUP_FLAG_SHORT ' '
+#define SET_BKV_GROUP_FLAG "set_bkv_group"
+#define SET_BKV_GROUP_FLAG_SHORT ' '
+#define BKV_RATES_FLAG "bkv_rates"
+#define BKV_RATES_FLAG_SHORT ' '
+#define BKV_ROLES_FLAG "bkv_roles"
+#define BKV_ROLES_FLAG_SHORT ' '
+#define BKV_MODE_B_ROLES_FLAG "bkv_mode_b_roles"
+#define BKV_MODE_B_ROLES_FLAG_SHORT ' '
+#define SET_BKV_ENTRY_FLAG "set_bkv_entry"
+#define SET_BKV_ENTRY_FLAG_SHORT ' '
+#define BKV_ENTRY_FLAG "bkv_entry"
+#define BKV_ENTRY_FLAG_SHORT ' '
+#define BKV_ADDRESS_FLAG "bkv_address"
+#define BKV_ADDRESS_FLAG_SHORT ' '
+#define BKV_WDATA_FLAG "wdata"
+#define BKV_WDATA_FLAG_SHORT ' '
+#define BKV_WMASK_FLAG "wmask"
+#define BKV_WMASK_FLAG_SHORT ' '
 #define PERIODIC_EQ_FLAG "show_peq"
 #define PERIODIC_EQ_FLAG_SHORT ' '
 
@@ -158,12 +191,22 @@
 #define PPTT_MODULATION_FLAG_SHORT ' '
 #define PRBS_LANES_FLAG "lanes"
 #define PRBS_LANES_FLAG_SHORT ' '
+#define PRBS_PRIMARY_FLAG "primary"
+#define PRBS_PRIMARY_FLAG_SHORT ' '
+#define PRBS_SECONDARY_FLAG "secondary"
+#define PRBS_SECONDARY_FLAG_SHORT ' '
 #define PRBS_INVERT_TX_POL_FLAG "invert_tx_polarity"
 #define PRBS_INVERT_TX_POL_FLAG_SHORT ' '
 #define PRBS_INVERT_RX_POL_FLAG "invert_rx_polarity"
 #define PRBS_INVERT_RX_POL_FLAG_SHORT ' '
 #define PRBS_DC_COUPLE_ALLOW_FLAG "dc_cpl_allow"
 #define PRBS_DC_COUPLE_ALLOW_FLAG_SHORT ' '
+#define FORCE_TX_ALLOWED_FLAG "force_tx_allowed"
+#define FORCE_TX_ALLOWED_FLAG_SHORT ' '
+#define SKIP_POWER_GOOD_CHECK_FLAG "skip_power_good_check"
+#define SKIP_POWER_GOOD_CHECK_FLAG_SHORT ' '
+#define SYSFS_PATH_FLAG "sysfs_path"
+#define SYSFS_PATH_FLAG_SHORT ' '
 #define PPRT_TUNING_TYPE_FLAG "tuning_type"
 #define PPRT_TUNING_TYPE_FLAG_SHORT ' '
 #define BER_COLLECT_FLAG "ber_collect"
@@ -194,6 +237,16 @@
 #define SET_LINK_PEQ_FLAG_SHORT ' '
 #define PLANE_FLAG "plane"
 #define PLANE_FLAG_SHORT ' '
+#define SET_PRIMARY_FLAG "set_primary"
+#define SET_PRIMARY_FLAG_SHORT ' '
+#define SET_SECONDARY_FLAG "set_secondary"
+#define SET_SECONDARY_FLAG_SHORT ' '
+#define CONSTANT_ROLE_FLAG "constant_role"
+#define CONSTANT_ROLE_FLAG_SHORT ' '
+#define SET_TX_PRECODING_FLAG "set_tx_precoding"
+#define SET_TX_PRECODING_FLAG_SHORT ' '
+#define SET_RX_PRECODING_FLAG "set_rx_precoding"
+#define SET_RX_PRECODING_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink Cable info flags
@@ -328,6 +381,10 @@ enum OPTION_TYPE
     SHOW_EYE,
     SHOW_FEC,
     SHOW_SLTP,
+    SHOW_BKV,
+    SHOW_BKV_GROUP,
+    SET_BKV_GROUP,
+    SET_BKV_ENTRY,
     SHOW_SLRP,
     SHOW_MODULE,
     SHOW_DEVICE,
@@ -362,12 +419,15 @@ enum OPTION_TYPE
     SHOW_MULTI_PORT_INFO,
     SHOW_MULTI_PORT_MODULE_INFO,
     SHOW_PLR,
+    SET_PLR,
     SHOW_KR,
     SHOW_RX_RECOVERY_COUNTERS,
     SEND_PHY_RECOVERY,
     SEND_LINK_TRAINING,
     SHOW_PERIODIC_EQ,
     SET_PERIODIC_EQ,
+    SET_PRIMARY,
+    SEND_PRECODING,
 
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
@@ -415,8 +475,7 @@ public:
     void labelToHCALocalPort();
     void labeltoDSlocalPort();
     bool isDSdevice();
-    void labelToSpectLocalPort();
-    void labelToQtm3LocalPort();
+    void labelToLocalPortGenericMapping();
     void labelToIBLocalPort();
     bool isIBSplitReady();
     u_int32_t calculatePanelPort(bool ibSplitReady);
@@ -424,7 +483,7 @@ public:
     void checkStrLength(const string& str);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
     u_int32_t activeSpeed2gNum(u_int32_t mask, bool extended);
-    string activeSpeed2Str(u_int32_t mask, bool extended, bool isXdrSlowActive = false);
+    string activeSpeed2Str(u_int32_t mask, bool extended, bool isModeAsActive = false);
     void getCableParams();
     bool inPrbsTestMode();
     bool checkGBPpaosDown();
@@ -438,7 +497,7 @@ public:
     bool handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady);
     void handleAllEthLocalPorts(std::vector<string> labelPortsStr, bool spect2WithGb, bool skipException);
     void handleAllGPULocalPorts(std::vector<string> labelPortsStr, bool skipException);
-    void handleAllQTM3LocalPorts(std::vector<string> labelPortsStr, bool skipException);
+    void handleAllNewSwitchesLocalPorts(std::vector<string> labelPortsStr, bool skipException);
     void handleLabelPorts(std::vector<string> labelPortsStr, bool skipException = false);
     vector<string> localToPortsPerGroup(vector<u_int32_t> localPorts);
     u_int32_t getPortGroup(u_int32_t localPort);
@@ -448,6 +507,7 @@ public:
     // Mlxlink query functions
     virtual void showModuleInfo();
     virtual void operatingInfoPage();
+    virtual void portInfoSection();
     virtual void supportedInfoPage();
     virtual void troubInfoPage();
     void showPddr();
@@ -456,6 +516,15 @@ public:
     virtual void showEye();
     virtual void showFEC();
     virtual void showSltp();
+    virtual void showBkv();
+    virtual void showBkvGroup(bool showEntries = true, u_int32_t entryFilter = (u_int32_t)-1);
+    virtual void setBkvGroup();
+    virtual void setBkvEntry();
+    void queryBkvCaps(uint8_t& numGroups, uint8_t groupId = (uint8_t)-1);
+    void queryBkvCaps(uint8_t& numGroups,
+                      uint8_t& numEntries,
+                      uint8_t groupId = (uint8_t)-1,
+                      uint8_t entryId = (uint8_t)-1);
     void showDeviceData();
     void showBerMonitorInfo();
     void showExternalPhy();
@@ -465,10 +534,12 @@ public:
     void collectBER();
     void showTxGroupMapping();
     void showPlr();
+    void setPlr();
     void showKr();
     void showRxRecoveryCounters();
     void showPeriodicEq();
     void setPeriodicEq();
+    void setPrimary();
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
@@ -485,15 +556,18 @@ public:
     string getSltpFieldStr(const PRM_FIELD& field);
     void prepareSltpEdrHdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
     virtual void prepareSltpNdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
-    virtual void prepareSltpXdrGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
+    virtual void prepareSltp5nmGen(vector<vector<string>>& sltpLanes, u_int32_t laneNumber);
     virtual string getSltpHeader();
     void startSlrgPciScan(u_int32_t numOfLanesToUse);
     void initValidDPNList();
+    void updateDPNDomain();
     u_int32_t readBitFromField(const string& fieldName, u_int32_t bitIndex);
     string getSupportedFecForSpeed(const string& speed);
     string fecMaskToUserInputStr(u_int32_t fecCapMask);
     string fecMaskToStr(u_int32_t mask);
     void updateSwControlStatus();
+    void initSwControledModule();
+    void updateNvlinkModeBStatus();
     u_int32_t getNumberOfPorts();
     bool checkDPNvSupport();
     void prepareBerModuleInfo(bool valid, const vector<AmberField>& moduleInfoFields);
@@ -503,6 +577,9 @@ public:
     void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
     void prepare5nmEyeInfo(u_int32_t numOfLanesToUse);
     void getPddrOperInfo();
+    void getPrecodingStatus();
+    void setPrecoding();
+    bool isTransmitAllowed(u_int32_t localPort, u_int32_t protoActive);
 
     void showTestMode();
     void showTestModeBer();
@@ -521,7 +598,7 @@ public:
 
     std::map<string, string> getRawEffectiveErrors();
     std::map<string, string> getRawEffectiveErrorsinTestMode();
-    int prbsModeToMask(const string& mode);
+    int prbsModeToMask(const string& mode, bool isNvl6);
     string prbsMaskToMode(u_int32_t mask, u_int32_t modeSelector);
     string getPrbsModeRX();
     u_int32_t getPrbsRateRX();
@@ -556,6 +633,7 @@ public:
 
     MlxlinkCmdPrint _toolInfoCmd;
     MlxlinkCmdPrint _operatingInfoCmd;
+    MlxlinkCmdPrint _portInfoCmd;
     MlxlinkCmdPrint _supportedInfoCmd;
     MlxlinkCmdPrint _troubInfoCmd;
     MlxlinkCmdPrint _testModeInfoCmd;
@@ -585,6 +663,7 @@ public:
     void sendPaos();
     void sendPmaos();
     virtual void handlePrbs();
+    virtual void handlePrbsSWControlledChecks();
     void sendPtys();
     virtual void sendPplm();
     virtual void sendSltp();
@@ -599,6 +678,7 @@ public:
     // Config helper functions
     bool isForceDownSupported();
     bool isPmaosResetToggleSupported();
+    bool isLbCapModeIdxSupported();
     bool isPPHCRSupported();
     void sendGBPaosCmd(PAOS_ADMIN adminStatus, bool forceDown);
     void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
@@ -611,13 +691,13 @@ public:
     void sendPmaosCmd(PMAOS_ADMIN adminStatus);
     bool checkPmaosDown();
     void checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMask);
-    void checkPrbsRegsCap(const string& prbsReg, const string& laneRate);
+    void checkPrbsRegsCap(const string& prbsReg, const string& laneRate, bool isNvl6);
     void checkPrbsModulation(const string& prbsReg);
     void checkPrbsPolCap(const string& prbsReg);
-    void checkPprtPptt();
+    void checkPprtPptt(bool rxRateNvl6, bool txRateNvl6);
     void checkDcCouple();
     void checkPplrCap();
-    void sendPrbsPpaos(bool testMode, bool dc_cpl_allow = false);
+    void sendPrbsPpaos(bool testMode, bool dc_cpl_allow = false, bool isNvl6 = false);
     void startTuning();
     void prbsConfiguration(const string& prbsReg,
                            bool enable,
@@ -625,9 +705,10 @@ public:
                            u_int32_t prbsMode,
                            bool perLaneConfig,
                            bool prbsPolInv,
+                           bool isNvl6,
                            u_int32_t modulation = PRBS_MODULATION_DEFAULT);
-    void sendPprtPptt();
-    void resetPprtPptt();
+    void sendPprtPptt(bool isNvl6);
+    void resetPprtPptt(bool isNvl6);
     u_int32_t ptysSpeedToMask(const string& speed);
     void validateSpeedStr();
     void checkSupportedSpeed(const string& speed, u_int32_t cap, bool extSpeed = false);
@@ -637,13 +718,13 @@ public:
     void checkPplmCap();
     string updateSltpEdrHdrFields();
     string updateSltpNdrFields();
-    virtual string updateSltpXdrFields();
+    virtual string updateSltp5nmGenFields();
     string getSltpStatus();
     void getSltpAlevOut(u_int32_t lane);
     void getSltpRegAndLeva(u_int32_t lane);
     u_int32_t getLaneSpeed(u_int32_t lane);
     void validateNumOfParamsForNDRGen();
-    void validateNumOfParamsForXDRGen();
+    void validateNumOfParamsFor5nmGen();
     void checkSltpParamsSize();
     bool isMpeinjSupported();
     u_int32_t getRateFromPptt();
@@ -655,6 +736,8 @@ public:
     bool checkAllPortsDown();
     void configurePeqForAllPorts(bool brLanesCap);
     void setPlaneIndex(int planeIndex);
+    string getTestModeFsmStateStr();
+    bool isTestModeFsmStateSupported();
 
     // Mlxlink params
     UserInput _userInput;
@@ -675,7 +758,7 @@ public:
     u_int32_t _cableLen;
     u_int32_t _activeSpeed;
     u_int32_t _activeSpeedEx;
-    bool _isXdrSlowActive;
+    bool _isModeAsActive;
     u_int32_t _laneSpeedFromPptt;
     u_int32_t _protoCapability;
     u_int32_t _deviceCapability;
@@ -711,8 +794,12 @@ public:
     bool _ignorePortStatus;
     bool _isGboxPort;
     bool _isSwControled;
+    bool _isSwControledStandAlone;
     bool _ignoreIbFECCheck;
     bool _isNVLINK;
+    bool _isNvlinkModeA;
+    bool _isNvlinkModeB;
+    u_int32_t _priOrSec;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;
     string _allUnhandledErrors;

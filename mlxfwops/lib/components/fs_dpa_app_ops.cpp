@@ -135,7 +135,8 @@ bool FsDpaAppOperations::FwInit()
     }
 
     header.Deserialize(buf);
-    if (header.GetType() == DpaAppStructHeader::StructType::DPA_ELF)
+    if (header.GetType() == DpaAppStructHeader::StructType::DPA_ELF ||
+     header.GetType() == DpaAppStructHeader::StructType::DPA_ELF_ZIPPED)
     {
         _compID = FwComponent::comps_ids_t::DPA_COMPONENT;
         size_t next_offset = FINGERPRINT_SIZE + header.GetLength();

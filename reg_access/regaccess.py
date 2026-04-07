@@ -116,6 +116,7 @@ if REG_ACCESS:
             self._reg_access_mrsi = REG_ACCESS.reg_access_mrsi
             self._reg_access_mpir = REG_ACCESS.reg_access_mpir
             self._reg_access_mpein = REG_ACCESS.reg_access_mpein
+            self._reg_access_mpqd = REG_ACCESS.reg_access_mpqd
 
         def _err2str(self, rc):
             err2str = REG_ACCESS.reg_access_err2str
@@ -344,7 +345,7 @@ if REG_ACCESS:
             if rc:
                 raise RegAccException("Failed to send Register MPIR: %s (%d)" % (self._err2str(rc), rc))
 
-            return mpirRegisterP.contents.bus, mpirRegisterP.contents.device, mpirRegisterP.contents.sdm
+            return mpirRegisterP.contents.subordinate_bus, mpirRegisterP.contents.secondary_bus, mpirRegisterP.contents.bus, mpirRegisterP.contents.device, mpirRegisterP.contents.sdm
         
         ##########################
         def sendMPEIN(self, depth, pcie_index, node):
@@ -359,10 +360,10 @@ if REG_ACCESS:
             return mpeinRegisterP.contents.port_type
 
         
-         ##########################
+        ##########################
         # [ConnectX FW PCI - Design] Bug SW #4739922: [Access Registers] MPQD Returns a Syndrome for Invalid PCIe Indexes
         # the above bug causes this read to fail if pcie_index=0 is one the querying host in not privileged to - once it's solve this read will succeed ALWAYS
-        def sendMPQD(self, depth, node, DPNv, pcie_index):
+        def sendMPQD(self, depth, node, DPNv, pcie_index=0):
             mpqdRegisterP = pointer(MPQD_REG_EXT())
             mpqdRegisterP.contents.depth = depth
             mpqdRegisterP.contents.pcie_index = pcie_index

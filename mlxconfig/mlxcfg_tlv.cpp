@@ -247,14 +247,14 @@ std::shared_ptr<TLVConf> TLVConf::cloneDeep() const
     return copy;
 }
 
-void TLVConf::CheckModuleAndPortMatchClass(int32_t module, u_int32_t port, string mlxconfigName)
+void TLVConf::CheckModuleAndPortMatchClass(int32_t tlvModule, u_int32_t port, string mlxconfigName)
 {
-    if ((module != -1) && !this->isModuleTargetClass())
+    if ((tlvModule != -1) && !this->isModuleTargetClass())
     {
         string error = mlxconfigName + " doesn't have a module";
         throw MlxcfgException(error.c_str());
     }
-    else if ((module == -1) && this->isModuleTargetClass())
+    else if ((tlvModule == -1) && this->isModuleTargetClass())
     {
         string error = mlxconfigName + " with no module does not exist";
         throw MlxcfgException(error.c_str());
@@ -617,7 +617,7 @@ void TLVConf::parseParamValue(string paramMlxconfigName,
     // not sure we should reach below code
     if (!p)
     {
-        p = findParamByMlxconfigName(paramMlxconfigName + getArraySuffixByInterval(index), qt);
+        p = findParamByMlxconfigName(getConfigNameWithSuffixByInterval(paramMlxconfigName, index), qt);
     }
 
     if (!p)
@@ -708,7 +708,7 @@ void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, 
 
     if (!p)
     {
-        p = findParamByMlxconfigName(paramMlxconfigName + getArraySuffixByInterval(index), qt);
+        p = findParamByMlxconfigName(getConfigNameWithSuffixByInterval(paramMlxconfigName, index), qt);
     }
 
     if (!p)
@@ -854,12 +854,12 @@ std::shared_ptr<Param> TLVConf::findParamByMlxconfigName(string mlxconfigname, Q
 }
 
 std::shared_ptr<Param>
-  TLVConf::findParamByMlxconfigNamePortModule(string mlxconfigname, u_int32_t port, int32_t module, QueryType qt)
+  TLVConf::findParamByMlxconfigNamePortModule(string mlxconfigname, u_int32_t port, int32_t tlvModule, QueryType qt)
 {
     std::vector<std::shared_ptr<Param>>* params = getParams(qt);
     for (std::vector<std::shared_ptr<Param>>::iterator it = params->begin(); it != params->end(); ++it)
     {
-        if ((mlxconfigname == (*it)->_mlxconfigName) && (port == (*it)->_port) && (module == (*it)->_module))
+        if ((mlxconfigname == (*it)->_mlxconfigName) && (port == (*it)->_port) && (tlvModule == (*it)->_module))
         {
             return *it;
         }

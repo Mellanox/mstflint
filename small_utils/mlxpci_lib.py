@@ -32,7 +32,7 @@
 
 # Python Imports
 import os
-import pickle
+import json
 import tempfile
 import platform
 import subprocess
@@ -96,8 +96,12 @@ class PCIDeviceBase(object):
         self.dbdf = dbdf
         self.logger = LoggerFactory().get('mlxpci', debug_level)
 
-        temp_dir = tempfile.gettempdir()
-        self.dump_file_path = os.path.join(temp_dir, "{0}.pkl".format(str(self.dbdf)))
+        # Persistent secure directory
+        secure_dir = "/var/lib/mft"
+        # Create directory with 750 permissions (owner can access, group can access, others cannot access)
+        if not os.path.exists(secure_dir):
+            os.makedirs(secure_dir, mode=0o750)
+        self.dump_file_path = os.path.join(secure_dir, "{0}.json".format(str(self.dbdf)))
 
         self._pci_conf_space = {}  # <capability-id> : <value:integer>
         self._pci_express_offset = None
@@ -163,8 +167,12 @@ class PCIDeviceBase(object):
 
         if to_file:
             self.logger.debug("Save PCI configuration space to a file ...")
-            with open(self.dump_file_path, 'wb') as f:
-                pickle.dump(self._pci_conf_space, f, pickle.HIGHEST_PROTOCOL)
+            # Create file with 750 permissions (owner can access, group can access, others cannot access)
+            fd = os.open(self.dump_file_path,
+                         os.O_CREAT | os.O_WRONLY | os.O_TRUNC,
+                         0o750)
+            with os.fdopen(fd, 'w') as f:
+                json.dump(self._pci_conf_space, f)
             self.logger.debug("PCI Configuration space dict {0} saved to a file {1}".format(self._pci_conf_space, self.dump_file_path))
             self._pci_conf_space = {}
         self.logger.info("PCI Configurations for [{0} was saved successfully]".format(self.dbdf))
@@ -324,12 +332,12 @@ class PCIDeviceBase(object):
 
     def _get_pci_conf_from_file(self):
         """
-        This is to load pci conf space from a saved pickle
+        This is to load pci conf space from a saved JSON file
         """
         self.logger.debug("Reading pci space conf from [{0}]".format(self.dump_file_path))
         try:
-            with open(self.dump_file_path, 'rb') as f:
-                return pickle.load(f)
+            with open(self.dump_file_path, 'r') as f:
+                return json.load(f)
         except Exception:
             raise RuntimeError(
                 "{0} doesn't exist. Please save before load".format(self.dump_file_path))

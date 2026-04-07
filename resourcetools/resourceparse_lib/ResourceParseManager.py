@@ -74,7 +74,7 @@ class ResourceParseManager:
             parser_args.manager = self
             self._parser = manager_args.resource_parser(parser_args)
         except ResourceParseException as rpe:
-            raise ResourceParseException("{0}\nFailed to parse with parser - {1}.".format(rpe, self._parser.__name__))
+            raise ResourceParseException("{0}\nFailed to parse with parser - {1}.".format(rpe, manager_args.resource_parser.PARSER_TYPE))
 
         self._parser.validate()
 

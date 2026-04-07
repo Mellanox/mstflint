@@ -59,8 +59,10 @@ public:
     void updateWithDefault(const string& fieldName, const string& fieldsStr, u_int32_t val);
     void setDefaultFields(const string& regName, const string& fieldsStr);
     void sendPrmReg(const string& regName, maccess_reg_method_t method, const char* fields, ...);
+    void sendPrmRegFullPath(const string& regName, maccess_reg_method_t method, const char* fields, ...);
     void sendPrmReg(const string& regName, maccess_reg_method_t method);
     void sendPrmRegWithoutReset(const string& regName, maccess_reg_method_t method, const char* fields, ...);
+    void sendPrmRegWithoutResetFullPath(const string& regName, maccess_reg_method_t method, const char* fields, ...);
     virtual u_int32_t
       getFieldValue(string field_name,
                     u_int32_t size = 0,
@@ -70,11 +72,21 @@ public:
     string getFieldStr(const string& field,
                        const u_int32_t size = 0,
                        const u_int32_t offset = 0,
-                       bool offsetSpecified = false);
+                       bool offsetSpecified = false,
+                       bool processDynamicFields = false);
     string getRawFieldValueStr(const string fieldName);
     u_int32_t getFieldSize(string field_name);
     string getAscii(const string& name, u_int32_t size = 4);
 
+private:
+    void sendPrmRegVaList(const string& regName,
+                          maccess_reg_method_t method,
+                          const char* fields,
+                          va_list args,
+                          bool reset,
+                          bool force_full_path);
+
+public:                          
     u_int32_t _gvmiAddress;
     MlxRegLib* _regLib;
     mfile* _mf;
