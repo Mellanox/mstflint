@@ -34,7 +34,8 @@
 #define MLXLINK_ENUMS_H
 
 // Common definitions
-#define AMBER_VERSION "5.75"
+#define AMBER_VERSION "6.4"
+#define NA_FIELD_VALUE "N/A"
 
 #define ACCESS_REG_MCIA "MCIA"
 #define ACCESS_REG_MDDQ "MDDQ"
@@ -93,6 +94,8 @@
 #define ACCESS_REG_SLLM "SLLM"
 #define ACCESS_REG_MTMG "MTMG"
 #define ACCESS_REG_MTMR "MTMR"
+#define ACCESS_REG_PSCD "PSCD"
+#define ACCESS_REG_PLTC "PLTC"
 
 // define all used regs above this line
 
@@ -404,6 +407,7 @@
 #define MAX_LOCAL_PORT_QUANTUM 82
 #define MAX_LOCAL_PORT_QUANTUM2 130
 #define MAX_LOCAL_PORT_QUANTUM3 148
+#define MAX_LOCAL_PORT_NVLINK6_SWITCH 148
 #define MAX_LOCAL_PORT_SPECTRUM2 128
 #define MAX_LOCAL_PORT_SPECTRUM4 258
 #define MAX_LOCAL_PORT_SPECTRUM5 515
@@ -417,8 +421,10 @@
 #define MAX_DWORD_BLOCK_SIZE 32
 #define MAX_TX_GROUP_COUNT 10
 
+#define PCAM_LB_CAP_MODE_IDX_CAP_MASK 0x1
 #define PCAM_FORCE_DOWN_CAP_MASK 0x2000
 #define PCAM_PMAOS_RESET_TOGGLE_CAP_MASK 0x4000
+#define PCAM_TEST_MODE_FSM_STATE_CAP_MASK 0x2000000
 
 #define OPERATIONAL_ERROR_STR "ME_ICMD_OPERATIONAL_ERROR"
 
@@ -434,6 +440,10 @@
 #define PCIE_MAX_DURATION 16777215
 #define PCIE_MAX_DURATION_HW_COUNTERS 255
 #define PCIE_MAX_ERR_PARAM 4
+
+#define SW_CONTROLLED_MODULE_PATH "/sys/module/sx_core/asic0/module"
+#define POWER_ON "power_on"
+#define HW_PRESENT "hw_present"
 
 struct DPN
 {
@@ -541,6 +551,25 @@ enum PPAOS_DC_CPL_ALLOW
 {
     PPAOS_DC_CPL_NO = 0,
     PPAOS_DC_CPL_ALLOW = 1
+};
+
+enum PPAOS_PRIMARY_SECONDARY
+{
+    PPAOS_DEFAULT = 0,
+    PPAOS_PRIMARY = 1,
+    PPAOS_SECONDARY = 2
+};
+
+enum PPAOS_CONSTANT_ROLE
+{
+    PPAOS_CONSTANT_ROLE_DISABLE = 0,
+    PPAOS_CONSTANT_ROLE_ENABLE = 1
+};
+
+enum PPAOS_PHY_STATUS_ADMIN
+{
+    PPAOS_PHY_STATUS_ADMIN_RX_PHY_DOWN = 0,
+    PPAOS_PHY_STATUS_ADMIN_RX_PHY_UP = 1,
 };
 
 enum TX_INDEX_SELECTOR
@@ -734,7 +763,38 @@ enum POWER_CLASS
 enum PRBS_MODES
 {
     PRBS_TX,
-    PRBS_RX
+    PRBS_RX,
+    PRBS_TX_NVL6_DEFAULT = 0x1E,
+    PRBS_RX_NVL6_DEFAULT = 0x1E,
+};
+
+enum PRBS_PRIMARY_SECONDARY_IDX
+{
+    PRBS_PRIMARY,
+    PRBS_SECONDARY,
+};
+
+enum PRBS_TUNING_TYPE
+{
+    PRBS_TUNING_TYPE_DEFAULT = 15,
+};
+
+enum PRBS_PEQ_DIS
+{
+    PRBS_PEQ_DIS_DEFAULT = 1,
+};
+
+enum PRBS_MODE_B_INDEX
+{
+    PRBS_MODE_B_MODE_A,
+    PRBS_MODE_B_MODE_B,
+    PRBS_MODE_B_LOOPBACK
+};
+
+enum PRBS_EXPERT_MODE_INDEX
+{
+    PRBS_EXPERT_MODE_INDEX_DISABLED = 0,
+    PRBS_EXPERT_MODE_INDEX_ENABLED = 1
 };
 enum PRBS_TX_MODE
 {
@@ -818,7 +878,10 @@ enum LANE_RATE_CAP
     LANE_RATE_50G_CAP = 0x100,
     LANE_RATE_HDR_CAP = 0x200,
     LANE_RATE_NDR_CAP = 0x400,
-    LANE_RATE_XDR_CAP = 0x800
+    LANE_RATE_XDR_CAP = 0x800,
+    LANE_RATE_360G_2X_MODE_B_CAP = 0x1000,
+    LANE_RATE_400G_2X_MODE_B_CAP = 0x2000,
+    LANE_RATE_328G_2X_MODE_B_CAP = 0x4000
 };
 
 enum PRBS_LANE_RATE
@@ -832,9 +895,12 @@ enum PRBS_LANE_RATE
     PRBS_HDR,
     PRBS_NDR,
     PRBS_XDR,
-    PRBS_1G = 10,
-    PRBS_XAUI = 11,
-    PRBS_50G = 12
+    PRBS_360G_2X_MODE_B,
+    PRBS_1G,
+    PRBS_XAUI,
+    PRBS_50G,
+    PRBS_400G_2X_MODE_B,
+    PRBS_328G_2X_MODE_B,
 };
 
 enum PRBS_TUNING_STATUS
@@ -892,22 +958,42 @@ enum SLTP_NDR
     SLTP_NDR_LAST
 };
 
-enum SLTP_XDR
+enum SLTP_5NM
 {
-    SLTP_XDR_TAP0,
-    SLTP_XDR_TAP1,
-    SLTP_XDR_TAP2,
-    SLTP_XDR_TAP3,
-    SLTP_XDR_TAP4,
-    SLTP_XDR_TAP5,
-    SLTP_XDR_TAP6,
-    SLTP_XDR_TAP7,
-    SLTP_XDR_TAP8,
-    SLTP_XDR_TAP9,
-    SLTP_XDR_TAP10,
-    SLTP_XDR_TAP11,
-    SLTP_XDR_DRV_AMP,
-    SLTP_XDR_LAST
+    SLTP_5NM_TAP1,
+    SLTP_5NM_TAP2,
+    SLTP_5NM_TAP3,
+    SLTP_5NM_TAP4,
+    SLTP_5NM_TAP5,
+    SLTP_5NM_LAST
+};
+
+enum PSCD_PAGES
+{
+    PSCD_PAGE_CAPABILITIES = 0,
+    PSCD_PAGE_CONFIGURATIONS = 1,
+};
+
+enum PSCD_RATE_MASK
+{
+    PSCD_RATE_MASK_312P5_MBPS = 0x1,
+    PSCD_RATE_MASK_53P125_GBPS = 0x2,
+    PSCD_RATE_MASK_106P25_GBPS = 0x4,
+    PSCD_RATE_MASK_200_GBPS = 0x8,
+    PSCD_RATE_MASK_212P5_GBPS = 0x10,
+};
+
+enum PSCD_ROLE_MASK
+{
+    PSCD_ROLE_MASK_TLM = 0x1,
+    PSCD_ROLE_MASK_RLM = 0x2,
+    PSCD_ROLE_MASK_TCLM = 0x4,
+};
+
+enum PSCD_MODE_B_ROLE_MASK
+{
+    PSCD_MODE_B_ROLE_MASK_PRIMARY = 0x1,
+    PSCD_MODE_B_ROLE_MASK_SECONDARY = 0x2,
 };
 
 enum FEC_MODE
@@ -935,16 +1021,17 @@ enum FEC_MODE_ACTIVE
     FEC_MODE_STANDARD_RS_FEC_528_514 = 2,
     FEC_MODE_STANDARD_LL_FEC_271_257 = 3,
     FEC_MODE_INTERLEAVED_QUAD_RS_FEC_544_514 = 4,
+    FEC_MODE_INTERLEAVED_QUAD_RS_FEC_PLR_546_516 = 5,
     FEC_MODE_INTERLEAVED_STANDARD_RS_FEC_544_514 = 6,
     FEC_MODE_STANDARD_RS_FEC_544_514 = 7,
-    FEC_MODE_ZERO_LATENCY_FEC = 8,
-    FEC_MODE_RS_FEC_272_257 = 9,
-    FEC_MODE_INTERLEAVED_RS_FEC_272_257 = 10,
-    FEC_MODE_INTERLEAVED_RS_FEC_544_514_PLR = 11,
+    FEC_MODE_INTERLEAVED_OCTET_RS_FEC_PLR_546_516 = 8,
+    FEC_MODE_LL_50G_RS_FEC_272_258 = 9,
+    FEC_MODE_INTERLEAVED_LL_50G_RS_FEC_272_258 = 10,
+    FEC_MODE_INTERLEAVED_STANDARD_RS_FEC_PLR_544_514 = 11,
     FEC_MODE_RS_FEC_544_514_PLR = 12,
-    FEC_MODE_RS_FEC_271_257_PLR = 13,
-    FEC_MODE_RS_FEC_PLR_272_257 = 14,
-    FEC_MODE_INTERLEAVED_RS_FEC_PLR_272_257 = 15
+    FEC_MODE_LL_FEC_271_257_PLR = 13,
+    FEC_MODE_LL_50G_RS_FEC_PLR_272_258 = 14,
+    FEC_MODE_INTERLEAVED_LL_50G_RS_FEC_PLR_272_258 = 15
 };
 
 enum FEC_MODE_MASK
@@ -955,8 +1042,10 @@ enum FEC_MODE_MASK
     FEC_MODE_MASK_RS_528 = 0x4,
     FEC_MODE_MASK_LL_271 = 0x8,
     FEC_MODE_MASK_RS_544_514_QUAD = 0x10,
+    FEC_MODE_MASK_RS_546_516_QUAD_PLR = 0x20,
     FEC_MODE_MASK_DF_RS = 0x40,
     FEC_MODE_MASK_RS_544 = 0x80,
+    FEC_MODE_MASK_RS_546_516_OCTET_PLR = 0x100,
     FEC_MODE_MASK_LL_272 = 0x200,
     FEC_MODE_MASK_DF_LL_272 = 0x400,
     FEC_MODE_MASK_DF_RS_PLR = 0x800,
@@ -1016,14 +1105,22 @@ enum PEMI_GROUP_CAP_EXT
 
 enum PEMI_GROUP_SEL_EXT
 {
-    PEMI_GROUP_SEL_MODULE_STATUS_SAMPLES = 0,
-    PEMI_GROUP_SEL_SNR_SAMPLES = 1,
-    PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES = 2,
-    PEMI_GROUP_SEL_PRE_FEC_BER_SAMPLES = 4,
-    PEMI_GROUP_SEL_LASER_SOURCE_MODULE_ESSENTIAL_SAMPLES = 7,
-    PEMI_GROUP_SEL_LASER_SOURCE_MODULE_ADVANCED_SAMPLES = 8,
-    PEMI_GROUP_SEL_SNR_PROP = 17,
-    PEMI_GROUP_SEL_PRE_FEC_BER_PROP = 20,
+    PEMI_GROUP_SEL_MODULE_STATUS_SAMPLES = 0x0,
+    PEMI_GROUP_SEL_SNR_SAMPLES = 0x1,
+    PEMI_GROUP_SEL_LASER_MONITORS_SAMPLES = 0x2,
+    PEMI_GROUP_SEL_PRE_FEC_BER_SAMPLES = 0x4,
+    PEMI_GROUP_SEL_LASER_SOURCE_MODULE_ESSENTIAL_SAMPLES = 0x7,
+    PEMI_GROUP_SEL_LASER_SOURCE_MODULE_ADVANCED_SAMPLES = 0x8,
+    PEMI_GROUP_SEL_OPTICAL_ENGINE_DEBUG_PARAMETERS_SAMPLES = 0x9,
+    PEMI_GROUP_SEL_LASER_SOURCE_MODULE_STATUS_SAMPLES = 0xa,
+    PEMI_GROUP_SEL_MODULE_STATUS_PROP = 0x10,
+    PEMI_GROUP_SEL_SNR_PROP = 0x11,
+    PEMI_GROUP_SEL_LASER_MONITORS_PROP = 0x12,
+    PEMI_GROUP_SEL_PRE_FEC_BER_PROP = 0x14,
+    PEMI_GROUP_SEL_LASER_SOURCE_MODULE_ESSENTIAL_PROP = 0x17,
+    PEMI_GROUP_SEL_LASER_SOURCE_MODULE_ADVANCED_PROP = 0x18,
+    PEMI_GROUP_SEL_OPTICAL_ENGINE_DEBUG_PARAMETERS_PROP = 0x19,
+    PEMI_GROUP_SEL_LASER_SOURCE_MODULE_STATUS_PROP = 0x1a
 };
 
 enum ERROR_CODE_RES
@@ -1036,7 +1133,8 @@ enum ERROR_CODE_RES
     ERROR_CODE_RES_CONFIG_REJ_INV_SI = 0x5,
     ERROR_CODE_RES_CONFIG_REJ_LANES_IN_USE = 0x6,
     ERROR_CODE_RES_CONFIG_REJ_PART_DATA_PTH = 0x7,
-    ERROR_CODE_RES_CONFIG_IN_PROG = 0xc
+    ERROR_CODE_RES_CONFIG_IN_PROG = 0xc,
+    ERROR_CODE_RES_CONFIG_REJ_INV_VS_SI = 0xd
 };
 
 enum CABLE_IDENTIFIER
@@ -1094,6 +1192,14 @@ enum ProtoActive
     ETH = 4,
     NVLINK = 8
 };
+
+enum PTYS_PROTO_MASK
+{
+    PTYS_PROTO_MASK_IB = 0x1,
+    PTYS_PROTO_MASK_NVLINK = 0x2,
+    PTYS_PROTO_MASK_ETH = 0x4,
+};
+
 enum BAD_SET_STATUS_40_28NM
 {
     SET_STATUS_INVALID_PARM = 0,
@@ -1651,42 +1757,44 @@ enum IB_LINK_SPEED
     IB_LINK_SPEED_XDR = 0x100
 };
 
-// currently NVLink protocol suppots only XDR
-enum NVLINK_SPEED
+enum NVLINK_LEGACY_SPEED
 {
-    NVLINK_SPEED_SDR = 0x1,
-    NVLINK_SPEED_DDR = 0x2,
-    NVLINK_SPEED_QDR = 0x4,
-    NVLINK_SPEED_FDR10 = 0x8,
-    NVLINK_SPEED_FDR = 0x10,
-    NVLINK_SPEED_EDR = 0x20,
-    NVLINK_SPEED_HDR = 0x40,
-    NVLINK_SPEED_NDR = 0x80,
-    NVLINK_SPEED_XDR = 0x100
+    NVLINK_LEGACY_SPEED_SDR = 0x1,
+    NVLINK_LEGACY_SPEED_DDR = 0x2,
+    NVLINK_LEGACY_SPEED_QDR = 0x4,
+    NVLINK_LEGACY_SPEED_FDR10 = 0x8,
+    NVLINK_LEGACY_SPEED_FDR = 0x10,
+    NVLINK_LEGACY_SPEED_EDR = 0x20,
+    NVLINK_LEGACY_SPEED_HDR = 0x40,
+    NVLINK_LEGACY_SPEED_NDR = 0x80,
+    NVLINK_LEGACY_SPEED_XDR = 0x100
 };
 
-#define LINK_SPEED_200G_LANE                                                                                          \
-    (IB_LINK_SPEED_XDR | ETH_LINK_SPEED_EXT_200GAUI_1 | ETH_LINK_SPEED_EXT_400GAUI_2 | ETH_LINK_SPEED_EXT_800GAUI_4 | \
-     ETH_LINK_SPEED_EXT_1_6TAUI_8)
+enum NVLINK_SPEED
+{
+    NVLINK_SPEED_200G_1X_MODE_A = 0x1,
+    NVLINK_SPEED_400G_2X_MODE_A = 0x2,
+    NVLINK_SPEED_400G_2X_MODE_B = 0x4,
+    NVLINK_SPEED_360G_2X_MODE_B = 0x8,
+    NVLINK_SPEED_328G_2X_MODE_B = 0x10,
+    NVLINK_SPEED_200G_2X_MODE_A = 0x40
+};
+
+#define LINK_SPEED_200G_LANE (IB_LINK_SPEED_XDR | ETH_LINK_SPEED_EXT_200GAUI_1 | ETH_LINK_SPEED_EXT_400GAUI_2 | ETH_LINK_SPEED_EXT_800GAUI_4 | ETH_LINK_SPEED_EXT_1_6TAUI_8)
 
 #define LINK_SPEED_100G_LANE (IB_LINK_SPEED_NDR | ETH_LINK_SPEED_100G_LANE)
 
-#define ETH_LINK_SPEED_100G_LANE                                                                  \
-    (ETH_LINK_SPEED_EXT_100GAUI_1 | ETH_LINK_SPEED_EXT_200GAUI_2 | ETH_LINK_SPEED_EXT_400GAUI_4 | \
-     ETH_LINK_SPEED_EXT_800GAUI_8)
+#define ETH_LINK_SPEED_100G_LANE (ETH_LINK_SPEED_EXT_100GAUI_1 | ETH_LINK_SPEED_EXT_200GAUI_2 | ETH_LINK_SPEED_EXT_400GAUI_4 | ETH_LINK_SPEED_EXT_800GAUI_8)
 
 #define LINK_SPEED_50G_LANE (IB_LINK_SPEED_HDR | ETH_LINK_SPEED_50G_LANE)
 
-#define ETH_LINK_SPEED_50G_LANE                                                                  \
-    (ETH_LINK_SPEED_EXT_50GAUI_1 | ETH_LINK_SPEED_EXT_100GAUI_2 | ETH_LINK_SPEED_EXT_200GAUI_4 | \
-     ETH_LINK_SPEED_EXT_400GAUI_8)
+#define ETH_LINK_SPEED_50G_LANE (ETH_LINK_SPEED_EXT_50GAUI_1 | ETH_LINK_SPEED_EXT_100GAUI_2 | ETH_LINK_SPEED_EXT_200GAUI_4 | ETH_LINK_SPEED_EXT_400GAUI_8)
 
 #define LINK_SPEED_25G_LANE (IB_LINK_SPEED_EDR | ETH_LINK_SPEED_25G_LANE)
 
-#define ETH_LINK_SPEED_25G_LANE                                                                              \
-    (ETH_LINK_SPEED_100G_CR4 | ETH_LINK_SPEED_100G_KR4 | ETH_LINK_SPEED_100G_LR4 | ETH_LINK_SPEED_100G_SR4 | \
-     ETH_LINK_SPEED_50G_KR2 | ETH_LINK_SPEED_50G_SR2 | ETH_LINK_SPEED_50G_CR2 | ETH_LINK_SPEED_25G_CR |      \
-     ETH_LINK_SPEED_25G_KR | ETH_LINK_SPEED_25G_SR | ETH_LINK_SPEED_50G_KR4)
+#define ETH_LINK_SPEED_25G_LANE                                                                                                                                                         \
+    (ETH_LINK_SPEED_100G_CR4 | ETH_LINK_SPEED_100G_KR4 | ETH_LINK_SPEED_100G_LR4 | ETH_LINK_SPEED_100G_SR4 | ETH_LINK_SPEED_50G_KR2 | ETH_LINK_SPEED_50G_SR2 | ETH_LINK_SPEED_50G_CR2 | \
+     ETH_LINK_SPEED_25G_CR | ETH_LINK_SPEED_25G_KR | ETH_LINK_SPEED_25G_SR | ETH_LINK_SPEED_50G_KR4)
 
 #define LINK_SPEED_ALL 0xffffffff
 
@@ -1712,7 +1820,8 @@ enum PRODUCT_TECHNOLOGY
     PRODUCT_28NM = 1,
     PRODUCT_16NM = 3,
     PRODUCT_7NM = 4,
-    PRODUCT_5NM = 5
+    PRODUCT_5NM = 5,
+    SERDES_GEN_8 = 6
 };
 
 enum STATUS_OPCODE
@@ -1790,6 +1899,7 @@ enum AMBER_SHEET
     AMBER_SHEET_EXT_MODULE_STATUS = 16,
     AMBER_SHEET_SERDES_5NM = 17,
     AMBER_SHEET_RECOVERY_COUNTERS = 20,
+    AMBER_SHEET_SERDES_5NM_GEN8 = 21,
     AMBER_SHEET_ALL // Keep this enum last
 };
 
@@ -1836,7 +1946,11 @@ enum MODULE_PRBS_LANE_RATE
     MODULE_PRBS_LANE_RATE_FDR = 0x10,
     MODULE_PRBS_LANE_RATE_EDR = 0x20,
     MODULE_PRBS_LANE_RATE_HDR = 0x80,
-    MODULE_PRBS_LANE_RATE_NDR = 0x100
+    MODULE_PRBS_LANE_RATE_NDR = 0x100,
+    MODULE_PRBS_LANE_RATE_XDR = 0x200,
+    MODULE_PRBS_LANE_RATE_360G_2X_MODE_B_168P75G_1X_MODE_B = 0x400,
+    MODULE_PRBS_LANE_RATE_400G_2X_MODE_B_187P5G_1X_MODE_B = 0x800,
+    MODULE_PRBS_LANE_RATE_328G_2X_MODE_B_153P75G_1X_MODE_B = 0x1000,
 };
 
 enum PMPT_STATUS
@@ -1968,27 +2082,9 @@ enum LOCAL_REASON_OPCODE
     LOCAL_REASON_OPCODE_RESERVED = 0xE4,
 };
 
-
 enum PPTT_PARAMS
 {
     LANE_RATE_ADMIN
-};
-enum PPTT_SPEED_MASK
-{
-    PPTT_SDR,
-    PPTT_DDR,
-    PPTT_QDR,
-    PPTT_FDR10,
-    PPTT_FDR,
-    PPTT_EDR,
-    PPTT_HDR,
-    PPTT_NDR,
-    PPTT_XDR,
-    PPTT_RESERVED,
-    PPTT_1GE,
-    PPTT_XAUI,
-    PPTT_50GE_KR4,
-    PPTT_SPEED_MASK_MAX
 };
 
 enum UP_REASON_PWR
@@ -2030,7 +2126,8 @@ enum PPRM_OPERATION_RECOVERY
     PPRM_OPERATION_RECOVERY_HOST_LOG = 1,
     PPRM_OPERATION_RECOVERY_HOST_SERDES = 2,
     PPRM_OPERATION_RECOVERY_MODULE_TX = 4,
-    PPRM_OPERATION_RECOVERY_MODULE_DATA_PATH = 8
+    PPRM_OPERATION_RECOVERY_MODULE_DATA_PATH = 8,
+    PPRM_OPERATION_RECOVERY_PHY_RECOVERY_STEPS = 16
 };
 
 enum PPRM_RECOVERY_STATUS
@@ -2052,6 +2149,25 @@ enum PLR_REJECT_MODE
     PLR_REJECT_MODE_CRC_AND_CS,
     PLR_REJECT_MODE_CS,
     PLR_REJECT_MODE_RESERVED
+};
+
+enum PLR_REJECT_MODE_SUPPORT_MASK
+{
+    PLR_REJECT_MODE_SUPPORT_MASK_PLR_MARGIN = 0x1,
+    PLR_REJECT_MODE_SUPPORT_MASK_CRC_AND_CS = 0x2,
+    PLR_REJECT_MODE_SUPPORT_MASK_CS = 0x4,
+};
+
+enum PLR_MARGIN_TH_SUPPORT_MASK
+{
+    PLR_MARGIN_TH_SUPPORT_MASK_0 = 0x1,
+    PLR_MARGIN_TH_SUPPORT_MASK_1 = 0x2,
+    PLR_MARGIN_TH_SUPPORT_MASK_2 = 0x4,
+    PLR_MARGIN_TH_SUPPORT_MASK_3 = 0x8,
+    PLR_MARGIN_TH_SUPPORT_MASK_4 = 0x10,
+    PLR_MARGIN_TH_SUPPORT_MASK_5 = 0x20,
+    PLR_MARGIN_TH_SUPPORT_MASK_6 = 0x40,
+    PLR_MARGIN_TH_SUPPORT_MASK_7 = 0x80,
 };
 
 enum KR_EXT_OPER
@@ -2080,5 +2196,177 @@ enum XDR_LT_C2C_EN
     XDR_LT_C2C_EN_XDR_LT_C2C_DISABLED_LT = 1,
     XDR_LT_C2C_EN_XDR_LT_C2C_ENABLED_LT = 2
 };
+
+enum PPLM_FEC_PAGES
+{
+    PPLM_FEC_PAGES_NVL6 = 0
+};
+
+enum MODE_B_PRI_OR_SEC
+{
+    MODE_B_PRI_OR_SEC_N_A,
+    MODE_B_PRI_OR_SEC_PRIMARY,
+    MODE_B_PRI_OR_SEC_SECONDARY
+};
+
+enum PRECODING_OPER_STATUS
+{
+    PRECODING_OPER_STATUS_AUTO = 0,
+    PRECODING_OPER_STATUS_ENABLED = 1,
+    PRECODING_OPER_STATUS_DISABLED = 2
+};
+
+enum TEST_MODE_FSM_STATE
+{
+    TEST_MODE_FSM_DISABLE,                    // This state is shared by Mode A and Mode B links test mode FSM
+    TEST_MODE_FSM_OPEN_LANE,                  // Mode B links test mode FSM
+    TEST_MODE_FSM_IDLE,                       // Mode A and Mode B links test mode FSM
+    TEST_MODE_FSM_CLOSE_LANE,                 // Mode B links test mode FSM
+    TEST_MODE_FSM_RECEIVER_DETECT,            // Mode A links test mode FSM
+    TEST_MODE_FSM_IDLE_MODE_A,                // Mode A links test mode FSM
+    TEST_MODE_FSM_SIGNAL_DETECT,              // Mode A links test mode FSM
+    TEST_MODE_FSM_AUTO_FIX_REVERSAL_POLARITY, // Mode A links test mode FSM
+    TEST_MODE_FSM_TUNING                      // Mode A links test mode FSM
+};
+
+// Anonymous namespace to ensure the constants are only used in relevant scope
+namespace
+{
+
+// Common field values
+const char* const FIELD_ENABLED = "Enabled";
+const char* const FIELD_DISABLED = "Disabled";
+const char* const CAP_SUPPORTED = "Supported";
+const char* const CAP_UNSUPPORTED = "Unsupported";
+
+// PM FSM state string constants
+const char* const PM_STATE_DISABLE = "Disable";
+const char* const PM_STATE_PORT_PLL_DOWN = "Port PLL Down";
+const char* const PM_STATE_POLLING = "Polling";
+const char* const PM_STATE_ACTIVE = "Active";
+const char* const PM_STATE_CLOSE_PORT = "Close port";
+const char* const PM_STATE_PHYSICAL_LINKUP = "Physical LinkUp";
+const char* const PM_STATE_SLEEP = "Sleep";
+const char* const PM_STATE_RX_DISABLE = "Rx disable";
+const char* const PM_STATE_SIGNAL_DETECT = "Signal detect";
+const char* const PM_STATE_RECEIVER_DETECT = "Receiver detect";
+const char* const PM_STATE_SYNC_PEER = "Sync peer";
+const char* const PM_STATE_NEGOTIATION = "Negotiation";
+const char* const PM_STATE_TRAINING = "Training";
+const char* const PM_STATE_SUB_FSM_ACTIVE = "SubFSM active";
+
+// Ethernet AN FSM state string constants
+const char* const ETH_AN_FSM_ENABLE = "ETH_AN_FSM_ENABLE";
+const char* const ETH_AN_FSM_XMIT_DISABLE = "ETH_AN_FSM_XMIT_DISABLE";
+const char* const ETH_AN_FSM_ABILITY_DETECT = "ETH_AN_FSM_ABILITY_DETECT";
+const char* const ETH_AN_FSM_ACK_DETECT = "ETH_AN_FSM_ACK_DETECT";
+const char* const ETH_AN_FSM_COMPLETE_ACK = "ETH_AN_FSM_COMPLETE_ACK";
+const char* const ETH_AN_FSM_AN_GOOD_CHECK = "ETH_AN_FSM_AN_GOOD_CHECK";
+const char* const ETH_AN_FSM_NEXT_PAGE_WAIT = "ETH_AN_FSM_NEXT_PAGE_WAIT";
+const char* const ETH_AN_FSM_LINK_STAT_CHECK = "ETH_AN_FSM_LINK_STAT_CHECK";
+const char* const ETH_AN_FSM_EXTRA_TUNE = "ETH_AN_FSM_EXTRA_TUNE";
+const char* const ETH_AN_FSM_FIX_REVERSALS = "ETH_AN_FSM_FIX_REVERSALS";
+const char* const ETH_AN_FSM_IB_FAIL = "ETH_AN_FSM_IB_FAIL";
+const char* const ETH_AN_FSM_POST_LOCK_TUNE = "ETH_AN_FSM_POST_LOCK_TUNE";
+const char* const ETH_LINK_UP = "ETH_LINK_UP";
+
+// IB PHY FSM state string constants
+const char* const IB_PHY_FSM_NA = NA_FIELD_VALUE;
+const char* const IB_PHY_FSM_INITIALIZING = "Initializing";
+const char* const IB_PHY_FSM_RECOVER_CONFIG = "Recover Config";
+const char* const IB_PHY_FSM_CONFIG_TEST = "Config Test";
+const char* const IB_PHY_FSM_WAIT_REMOTE_TEST = "Wait Remote Test";
+const char* const IB_PHY_FSM_WAIT_CONFIG_ENHANCED = "Wait Config Enhanced";
+const char* const IB_PHY_FSM_CONFIG_IDLE = "Config Idle";
+const char* const IB_PHY_FSM_LINK_UP = "LinkUp";
+
+// Loopback mode string constants
+const char* const NO_LOOPBACK = "No Loopback";
+const char* const PHY_REMOTE_LOOPBACK = "PHY Remote Loopback";
+const char* const PHY_LOCAL_LOOPBACK = "PHY Local Loopback";
+const char* const EXTERNAL_LOOPBACK = "External Local Loopback";
+const char* const LINK_LAYER_LOOPBACK = "Link Layer Local Loopback";
+const char* const NEAR_END_ANALOG_LOOPBACK = "Near End Analog Loopback";
+const char* const NEAR_END_DIGITAL_LOOPBACK = "Near End Digital Loopback";
+
+// Auto negotiation string constants
+const char* const AUTO_NEGOTIATION_ON = "ON";
+const char* const AUTO_NEGOTIATION_FORCE = "FORCE";
+
+// Ethernet speeds
+const char* const SPEED_BASETX100M = "BaseTx100M";
+const char* const SPEED_BASET1000M = "BaseT1000M";
+const char* const SPEED_BASET10M = "BaseT10M";
+const char* const SPEED_CX = "CX";
+const char* const SPEED_KX = "KX";
+const char* const SPEED_CX4 = "CX4";
+const char* const SPEED_KX4 = "KX4";
+const char* const SPEED_BASET10G = "BaseT10G";
+const char* const SPEED_10GBE = "10GbE";
+const char* const SPEED_20GBE = "20GbE";
+const char* const SPEED_25GBE = "25GbE";
+const char* const SPEED_40GBE = "40GbE";
+const char* const SPEED_50GBE = "50GbE";
+const char* const SPEED_56GBE = "56GbE";
+const char* const SPEED_100GBE = "100GbE";
+const char* const SPEED_10M = "10M";
+const char* const SPEED_100M = "100M";
+const char* const SPEED_1G = "1G";
+const char* const SPEED_2_5G = "2.5G";
+const char* const SPEED_5G = "5G";
+const char* const SPEED_10G = "10G";
+const char* const SPEED_25G = "25G";
+const char* const SPEED_40G = "40G";
+const char* const SPEED_50G = "50G";
+const char* const SPEED_100G = "100G";
+const char* const SPEED_200G = "200G";
+const char* const SPEED_400G = "400G";
+const char* const SPEED_800G = "800G";
+const char* const SPEED_1600G = "1600G";
+
+// InfiniBand speeds
+const char* const SPEED_IB_SDR = "IB-SDR";
+const char* const SPEED_IB_DDR = "IB-DDR";
+const char* const SPEED_IB_QDR = "IB-QDR";
+const char* const SPEED_IB_FDR10 = "IB-FDR10";
+const char* const SPEED_IB_FDR = "IB-FDR";
+const char* const SPEED_IB_EDR = "IB-EDR";
+const char* const SPEED_IB_HDR = "IB-HDR";
+const char* const SPEED_IB_NDR = "IB-NDR";
+const char* const SPEED_IB_XDR = "IB-XDR";
+
+// NVLink speeds
+const char* const SPEED_NVLINK_SDR = "NVLink-SDR";
+const char* const SPEED_NVLINK_DDR = "NVLink-DDR";
+const char* const SPEED_NVLINK_QDR = "NVLink-QDR";
+const char* const SPEED_NVLINK_FDR10 = "NVLink-FDR10";
+const char* const SPEED_NVLINK_FDR = "NVLink-FDR";
+const char* const SPEED_NVLINK_EDR = "NVLink-EDR";
+const char* const SPEED_NVLINK_HDR = "NVLink-HDR";
+const char* const SPEED_NVLINK_NDR = "NVLink-NDR";
+const char* const SPEED_NVLINK_XDR = "NVLink-XDR";
+const char* const SPEED_NVLINK_400G_2X_MODE_B = "NVLink-400G_2X_MODE_B";
+const char* const SPEED_NVLINK_360G_2X_MODE_B = "NVLink-360G_2X_MODE_B";
+const char* const SPEED_NVLINK_328G_2X_MODE_B = "NVLink-328G_2X_MODE_B";
+
+// FEC string constants
+const char* const FEC_NO_FEC = "No FEC";
+const char* const FEC_FIRECODE_FEC = "Firecode FEC";
+const char* const FEC_STANDARD_RS_FEC_528_514 = "Standard RS-FEC - RS(528,514)";
+const char* const FEC_STANDARD_LL_FEC_271_257 = "Standard LL RS-FEC - RS(271,257)";
+const char* const FEC_INTERLEAVED_QUAD_RS_FEC_544_514 = "Interleaved Quad RS-FEC - (544,514)";
+const char* const FEC_INTERLEAVED_QUAD_RS_FEC_PLR_546_516 = "Interleaved Quad RS-FEC + PLR - (546,516)";
+const char* const FEC_INTERLEAVED_STANDARD_RS_FEC_544_514 = "Interleaved_Standard_RS-FEC - (544,514)";
+const char* const FEC_STANDARD_RS_FEC_544_514 = "Standard_RS-FEC - (544,514)";
+const char* const FEC_INTERLEAVED_OCTET_RS_FEC_PLR_546_516 = "Interleaved Octet RS-FEC + PLR - (546,516)";
+const char* const FEC_LL_50G_RS_FEC_272_258 = "Ethernet_Consortium_LL_50G_RS_FEC- (272,257+1)";
+const char* const FEC_INTERLEAVED_LL_50G_RS_FEC_272_258 = "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC -(272,257+1)";
+const char* const FEC_INTERLEAVED_STANDARD_RS_FEC_PLR_544_514 = "Interleaved_Standard_RS_FEC_PLR - (544,514)";
+const char* const FEC_RS_FEC_544_514_PLR = "RS-FEC - (544,514) + PLR";
+const char* const FEC_LL_FEC_271_257_PLR = "LL-FEC - (271,257) + PLR";
+const char* const FEC_LL_50G_RS_FEC_PLR_272_258 = "Ethernet_Consortium_LL_50G_RS_FEC_PLR -(272,257+1)";
+const char* const FEC_INTERLEAVED_LL_50G_RS_FEC_PLR_272_258 =
+  "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC_PLR - (272,257+1)";
+} // namespace
 
 #endif /* MLXLINK_ENUMS_H */

@@ -27,7 +27,10 @@ int OperatingSystemAPI::SuppressStderr()
 {
     fflush(stderr);
     int fd = dup(STDERR_FILENO);
-    freopen("/dev/null", "w", stderr);
+    FILE* file = freopen("/dev/null", "w", stderr);
+    if (file == NULL) {
+        return -1;
+    }
     return fd;
 }
 

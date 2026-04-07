@@ -41,6 +41,7 @@
 #include <dev_mgt/tools_dev_types.h>
 #include <mft_utils/errmsg.h>
 #include "mlxreg_exception.h"
+#include <tools_layouts/prm_adb_db.h>
 
 namespace mlxreg
 {
@@ -58,8 +59,10 @@ public:
     using Adb = _Adb_impl<dynamic, uint32_t>;
     using AdbInstance = _AdbInstance_impl<dynamic, uint32_t>;
 
-
-    _MlxRegLib_impl(mfile* mf, string extAdbFile, bool isExternal = true, bool batch_reg = false);
+    _MlxRegLib_impl(mfile* mf,
+                    string extAdbFile,
+                    bool isExternal = true,
+                    PrmAdbType deviceType = PrmAdbType::PRM_ADB_TYPE_UNKNOWN);
     ~_MlxRegLib_impl(); // Dto'r
     /* * * * * * * * * * * * * *
      * library Getters/Setters *
@@ -74,13 +77,15 @@ public:
      * library API *
      * * * * * * * */
     string getLastErrMsg();
+    MlxRegLibStatus ThrowErrorMsgWithSyndrome(int rc);
     MlxRegLibStatus showRegisters(std::vector<string>& regs); // Return all available register names
-    MlxRegLibStatus showRegister(string regName,
-                                 std::vector<AdbInstance*>& fields); // Return all fields of given register
     MlxRegLibStatus sendRegister(string regName, int method, std::vector<u_int32_t>& data);  // Send register by name
     MlxRegLibStatus sendRegister(u_int16_t regId, int method, std::vector<u_int32_t>& data); // Send register by ID
     MlxRegLibStatus sendRegister(u_int16_t regId, int method, void* data, uint32_t size);    // Send register with raw
                                                                                              // buffer
+    std::vector<u_int32_t>
+      generate_cmd_buffer(string regName, int method, std::vector<u_int32_t>& data); // Generate command buffer
+                                                                                     // without sending
     dm_dev_id_t getDevId();
     static dm_dev_id_t getDevId(mfile* mf);
     static bool isDeviceSupported(mfile* mf);
@@ -107,12 +112,12 @@ protected:
     AdbInstance* _regAccessUnionNode;
     std::map<string, u_int64_t> _regAccessMap;
     AdbInstance* _currentNode{nullptr};
+    std::map<string, AdbInstance*> _layoutCache;
     bool _isExternal;
-    bool _batch_reg;
 };
 
 // Type aliases
-using MlxRegLib = _MlxRegLib_impl<false>;
+using MlxRegLib = _MlxRegLib_impl<true>;
 
 } // namespace mlxreg
 #endif /* MLXREG_LIB_H */

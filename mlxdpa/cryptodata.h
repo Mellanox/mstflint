@@ -128,7 +128,8 @@ public:
         u_int32_t _manifestPresent : 1;
         u_int32_t _appMetadataPresent : 1;
         u_int32_t _encParamsPresent : 1;
-        u_int8_t _reserved[52];
+        u_int32_t _uncompressedELFSize : 32;
+        u_int8_t _reserved[48];
         u_int16_t _signatureType;
     };
 
@@ -150,6 +151,8 @@ public:
     void SetManifest(const vector<u_int8_t>& manifest);
     void SetManifestPresent(u_int32_t value);
     void SetAppMetadataPresent(u_int32_t value);
+    void SetUncompressedELFSize(u_int32_t value);
+    u_int32_t GetUncompressedELFSize() const;
     u_int32_t GetAppMetadataPresent() const;
     u_int32_t GetManifestPresent() const;
     void SetEncParamsPresent(u_int32_t value);

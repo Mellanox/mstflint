@@ -50,7 +50,7 @@ typedef nvmlReturn_t (*f_nvmlDeviceReadWritePRM)(nvmlDevice_t, nvmlPRMTLV_v1_t*)
 class NvmlLibWrapper
 {
 public:
-    NvmlLibWrapper(const string libPath = "libnvidia-ml.so");
+    NvmlLibWrapper(const string libPath = "libnvidia-ml.so.1");
     ~NvmlLibWrapper();
     /* Dynamic functions */
     f_nvmlDeviceGetHandleByIndex_v2 nvmlDeviceGetHandleByIndex;

@@ -198,6 +198,9 @@ private:
     void initLinkDownInfoMapping();
     void initLinkUpInfo();
     void initSltpStatusMapping();
+    void initPSCDRateMaskMapping();
+    void initPSCDRoleMaskMapping();
+    void initPSCDModeBRoleMaskMapping();
     void qsfpComlianceMapping();
     void cmisIbComlianceMapping();
     void cimsCableBreakoutMapping();
@@ -242,6 +245,8 @@ public:
     virtual ~MlxlinkMaps();
 
     std::map<u_int32_t, std::string> _pmFsmState;
+    std::map<u_int32_t, std::string> _priOrSec;
+    std::map<u_int32_t, std::string> _testModeFsmState;
     std::map<u_int32_t, std::string> _proFileFecInUse;
     std::map<u_int32_t, u_int32_t> _ETHSpeed2gRate;
     std::map<u_int32_t, u_int32_t> _IBSpeed2gRate;
@@ -276,6 +281,7 @@ public:
     std::map<u_int32_t, std::string> _moduleRxAmpCap;
     std::map<u_int32_t, std::string> _pepcStatus;
     std::map<u_int32_t, string> _IBSpeed2Str;
+    std::map<u_int32_t, string> _NVLINKLegacySpeed2Str;
     std::map<u_int32_t, string> _NVLINKSpeed2Str;
     std::map<u_int32_t, string> _EthExtSpeed2Str;
     std::map<u_int32_t, u_int32_t> _IBSpeed2gNum;
@@ -290,10 +296,19 @@ public:
     std::map<u_int32_t, PRM_FIELD> _SltpEdrParams;
     std::map<u_int32_t, PRM_FIELD> _SltpHdrParams;
     std::map<u_int32_t, PRM_FIELD> _SltpNdrParams;
-    std::map<u_int32_t, PRM_FIELD> _SltpXdrParams;
+    std::map<u_int32_t, PRM_FIELD> _Sltp5nmParams;
+    std::map<u_int32_t, std::string> _PSCDRateMask2Str;
+    std::map<std::string, uint32_t> _PSCDRateStr2Mask;
+    std::map<u_int32_t, std::string> _PSCDRoleMask2Str;
+    std::map<std::string, uint32_t> _PSCDRoleStr2Mask;
+    std::map<u_int32_t, std::string> _PSCDModeBRoleMask2Str;
+    std::map<std::string, uint32_t> _PSCDModeBRoleStr2Mask;
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
-    std::map<u_int32_t, std::string> _plrRejectMode;
+    std::map<u_int32_t, std::string> _plrRejectModeToStr;
+    std::map<std::string, u_int32_t> _plrRejectModeStrToValue;
+    std::map<u_int32_t, std::string> _plrRejectModeMaskToStr;
+    std::map<u_int32_t, std::string> _plrMarginThMaskToStr;
     std::map<u_int32_t, std::string> _krExtOper;
     std::map<u_int32_t, std::string> _krPrbsType;
     std::map<u_int32_t, pair<string, string>> _fecModeMask;
@@ -370,10 +385,13 @@ public:
     std::map<u_int32_t, std::string> _fecModeActiveForTableDispaly;
     std::map<u_int32_t, std::string> _cableTypeForTableDisplay;
     std::map<u_int32_t, std::string> _phyMgrStateForTableDisplay;
+    std::map<u_int32_t, std::string> _precodingOperStatus;
 
     // Vectors
     std::vector<std::pair<std::string, u_int32_t>> _multiPortInfoTableHeader;
     std::vector<std::pair<std::string, u_int32_t>> _multiPortModuleInfoTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _bkvGroupsTableHeader;
+    std::vector<std::pair<std::string, u_int32_t>> _bkvGroupEntriesTableHeader;
 
     string _sltpHeader;
     string _showErrorsTitle;

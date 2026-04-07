@@ -183,6 +183,7 @@ CryptoDataSection::CryptoDataSection(CertChain certChain)
     _metadata._signatureType = (u_int16_t)CryptoDataSection::SignatureType::Reserved0;
     _metadata._encParamsPresent = 0; // ENC PARAMS is not available in the current release
     _metadata._appMetadataPresent = 0;
+    _metadata._uncompressedELFSize = 0;
     _certChain = certChain;
     _isHostElf = true;
 }
@@ -224,6 +225,16 @@ void CryptoDataSection::SetEncParamsPresent(const u_int32_t value)
 {
     _metadata._encParamsPresent = value;
 }
+
+void CryptoDataSection::SetUncompressedELFSize(const u_int32_t value)
+{
+    _metadata._uncompressedELFSize = value;
+}
+ 
+ u_int32_t CryptoDataSection::GetUncompressedELFSize() const
+ {
+     return _metadata._uncompressedELFSize;
+ }
  
  u_int32_t CryptoDataSection::GetAppMetadataPresent() const
  {

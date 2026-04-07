@@ -22,7 +22,7 @@
 %global _name kernel-mstflint
 %endif
 
-%{!?version: %global version 4.35.0}
+%{!?version: %global version 4.36.0}
 %{!?_release: %global _release 1}
 %global _kmp_rel %{_release}%{?_kmp_build_num}%{?_dist}
 
@@ -165,7 +165,7 @@ find %{buildroot} -type f -name \*.ko -exec %{__strip} -p --strip-debug --discar
 %defattr(-,root,root,-)
 /lib/modules/%{KVERSION}/%{install_mod_dir}/
 %endif
-%if "%{cpu_arch}" == "ppc64" || "%{cpu_arch}" == "ppc64le"
+%if "%{cpu_arch}" == "ppc64" || "%{cpu_arch}" == "ppc64le" || "%{cpu_arch}" == "s390x"
 %if "%{KMP}" == "1"
 %files utils
 %defattr(-,root,root,-)

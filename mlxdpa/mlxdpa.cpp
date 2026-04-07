@@ -44,6 +44,7 @@
  #include "hostelf.h"
 #include "mft_utils.h"
  #include "mlxdpa_utils.h"
+ #include "xz_utils/xz_utils.h"
  
  // using namespace ELFIO;
  
@@ -98,6 +99,7 @@
  const string MlxDpa::APP_METADATA_FLAG = "app_metadata";
  const char MlxDpa::APP_METADATA_FLAG_SHORT = 'm';
  const string MlxDpa::MANIFEST_FLAG = "manifest";
+ const string MlxDpa::NO_COMPRESSION_FLAG = "no_compression";
  
  const map<string, MlxDpa::MlxDpaCmd> MlxDpa::_cmdStringToEnum = {
    {"sign_dpa_apps", SignDPAApps},
@@ -138,7 +140,8 @@
      _certContainerPath(""),
      _dpaAppRemovalContainerPath(""),
      _certContainerType(CertContainerType::UnknownType),
-     _command(Unknown)
+     _command(Unknown),
+     _noCompression(false)
  {
      InitCmdParser();
  }
@@ -185,7 +188,8 @@
      printFlagLine(CERT_CONTAINER_TYPE_FLAG, ' ', "Add/Remove", "Type of certificate container to create");
      printFlagLine(HELP_FLAG, HELP_FLAG_SHORT, "", "Show help message and exit");
      printFlagLine(VERSION_FLAG, VERSION_FLAG_SHORT, "", "Show version and exit");
- 
+     printFlagLine(NO_COMPRESSION_FLAG, ' ', "", "Generate an uncompressed container");
+     
      printf(INDENT "\n");
      printf(INDENT "COMMANDS SUMMARY - Certificate Container:\n");
      printf(INDENT2 "%-24s: %s\n",
@@ -290,6 +294,7 @@
      AddOptions(CERT_CONTAINER_FLAG, ' ', "<path>", "Certificate container to sign.");
      AddOptions(CERT_CONTAINER_TYPE_FLAG, ' ', "<Add/Remove>", "Type of certificate container to create.");
      AddOptions(KEEP_SIG_FLAG, KEEP_SIG_FLAG_SHORT, "", "flag for set keep_sig as 1");
+     AddOptions(NO_COMPRESSION_FLAG, ' ', "", "flag for set no_compression as 1");
 
      _cmdParser.AddRequester(this);
  }
@@ -426,6 +431,11 @@
          }
          return PARSE_OK;
      }
+     else if (name == NO_COMPRESSION_FLAG)
+     {
+         _noCompression = true;
+         return PARSE_OK;
+     }
  
      return PARSE_ERROR;
  }
@@ -517,6 +527,10 @@
              {
                  throw MlxDpaException("app_metadata flag is not supported with sign_dpa_apps command.");
              }
+             if (_noCompression)
+            {
+                throw MlxDpaException("no_compression flag is not supported with sign_dpa_apps command.");
+            }
          }
          if (_command == SignSingleDpaApp)
          {
@@ -1044,11 +1058,34 @@ void MlxDpa::SignCertContainer()
      AddPadding(cryptoDataSectionByteStream);
      return cryptoDataSectionByteStream;
  }
+ vector<u_int8_t> MlxDpa::CompressElf(vector<u_int8_t>& elfData)
+{
+    const u_int32_t xzPreset = 9;
+    int32_t compressedSize = xz_compress(xzPreset, elfData.data(), elfData.size(), NULL, 0);
+    if (compressedSize <= 0)
+    {
+        throw MlxDpaException("XZ compression failed: %s", xz_get_error(compressedSize));
+    }
+    vector<u_int8_t> compressedElf(compressedSize);
+    int32_t rc = xz_compress(xzPreset, elfData.data(), elfData.size(), compressedElf.data(), compressedSize);
+    if (rc <= 0 || rc != compressedSize)
+    {
+        throw MlxDpaException("XZ compression write failed: %s", xz_get_error(rc));
+    }
+    return compressedElf;
+}
  void MlxDpa::CreateSingleElf()
  {
      HostLess hostLess(_singleAppPath, _appMetadataPath, _manifestPath);
-     vector<u_int8_t> dpaAppElf = hostLess.GetElfData();
-     DpaAppStructHeader headerDpaApp(_priority, DpaAppStructHeader::StructType::DPA_ELF, hostLess.GetElfSize());
+     vector<u_int8_t> elfDataToWrite = hostLess.GetElfData();
+     if (!_noCompression)
+     {
+         elfDataToWrite = CompressElf(elfDataToWrite);
+     }
+     DpaAppStructHeader headerDpaApp(
+       _priority,
+       _noCompression ? DpaAppStructHeader::StructType::DPA_ELF : DpaAppStructHeader::StructType::DPA_ELF_ZIPPED,
+       elfDataToWrite.size());
      vector<u_int8_t> headerDataSectionByteStream = CreateHeaderDataStream(headerDpaApp);
  
      vector<u_int8_t> appMetadata = hostLess.GetAppMetadata();
@@ -1070,7 +1107,7 @@ void MlxDpa::SignCertContainer()
                          SINGLE_APP_DPA_FINGERPRINT.size());
      outputElfFile.write(reinterpret_cast<const char*>(headerDataSectionByteStream.data()),
                          (headerDataSectionByteStream.size()));
-     outputElfFile.write(reinterpret_cast<const char*>(dpaAppElf.data()), dpaAppElf.size());
+     outputElfFile.write(reinterpret_cast<const char*>(elfDataToWrite.data()), elfDataToWrite.size());
      outputElfFile.write(reinterpret_cast<const char*>(headerAppMetadataByteStream.data()),
                          headerAppMetadataByteStream.size());
      outputElfFile.write(reinterpret_cast<const char*>(appMetadata.data()), appMetadata.size());
@@ -1084,6 +1121,16 @@ void MlxDpa::SignCertContainer()
      std::cout << _outputPath << " was created successfully with UUID: " << hostLess.GetAppMetadataUUID() << std::endl;
  }
  
+ u_int32_t MlxDpa::DecompressElfSize(vector<u_int8_t>& elfData)
+{
+    int32_t uncompressedSize = xz_decompress(elfData.data(), elfData.size(), NULL, 0);
+    if (uncompressedSize <= 0)
+    {
+        throw MlxDpaException("XZ decompression failed: %s", xz_get_error(uncompressedSize));
+    }
+    return uncompressedSize;
+}
+
  void MlxDpa::SignSingleElf()
  {
      HostLess hostLess(_singleAppPath, _priority);
@@ -1104,6 +1151,10 @@ void MlxDpa::SignCertContainer()
      {
          _manifest = hostLess.GetManifest();
      }
+
+     bool isCompressed = hostLess.GetElfHeader().GetType() == DpaAppStructHeader::StructType::DPA_ELF_ZIPPED;
+     u_int32_t uncompressedSize = isCompressed ? DecompressElfSize(elfData) : 0;
+     cryptoDataSection.SetUncompressedELFSize(uncompressedSize);
  
      vector<u_int8_t> cryptoDataSectionByteStream = CreateCryptoDataStream(elfData, signer, cryptoDataSection);
  

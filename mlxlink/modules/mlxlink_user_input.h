@@ -71,7 +71,6 @@ public:
     bool _sendPepc;
     bool _sendPepcForceMode;
     bool _sendPepcANMode;
-    bool _pprtTuningTypeFlag;
     bool _toggle;
     bool _linkModeForce;
     bool _pcie;
@@ -98,12 +97,15 @@ public:
     bool _write;
     bool _read;
     bool gradeScanPerLane;
+    bool laneSpecified;
     bool autoCsvName;
     bool _showMultiPortInfo;
     bool _showMultiPortModuleInfo;
     bool _showPlr;
+    bool _setPlr;
     bool _showKr;
     bool _showRxRecoveryCounters;
+    bool _extendedPcie;
 
     string _device;
     string _extAdbFile;
@@ -120,7 +122,6 @@ public:
     string _ppttModulation;
     string _pprtRate;
     string _ppttRate;
-    string _pprtTuningType;
     string _csvBer;
     string _testMode;
     string _forceMode;
@@ -129,6 +130,15 @@ public:
     string _linkTraining;
     string _phyRecovery;
     string _phyRecoveryType;
+    string _plrRejectMode;
+    u_int32_t _plrMarginThreshold;
+    u_int32_t _plrTxCrc;
+    bool _plrRejectModeProvided;
+    bool _plrMarginThresholdProvided;
+    bool _plrTxCrcProvided;
+    bool _setPrimary;
+    bool _primarySecondarySpecified;
+    string _constantRole;
     bool _showPeriodicEq;
     bool _periodicEqIntervalSpecified;
     int _setPeriodicEqInterval;
@@ -142,6 +152,18 @@ public:
     std::vector<std::string> _ptysSpeeds;
     std::vector<string> _amberPagesStr;
     u_int32_t _lane;
+    u_int32_t _bkvGroupId;
+    std::vector<std::string> _bkvRates;
+    std::vector<std::string> _bkvRoles;
+    std::vector<std::string> _bkvModeBRoles;
+    u_int32_t _bkvEntry;
+    u_int32_t _bkvAddress;
+    u_int32_t _bkvWdata;
+    u_int32_t _bkvWmask;
+    bool _bkvEntrySpecified;
+    bool _bkvAddressSpecified;
+    bool _bkvWdataSpecified;
+    bool _bkvWmaskSpecified;
     u_int32_t _gvmiAddress;
     vector<string> _bytesToWrite;
     int _page;
@@ -187,6 +209,15 @@ public:
     vector<string> parameters;
 
     int planeIndex;
+    bool _forceTxAllowed;
+    bool _skipPowerGoodCheck;
+    string _sysfsPath;
+    bool _sysfsPathGiven;
+
+    string _setTxPrecoding;
+    string _setRxPrecoding;
+    bool _setTxPrecodingProvided;
+    bool _setRxPrecodingProvided;
 };
 
 #endif /* MLXLINK_USER_INPUT_H */

@@ -93,6 +93,8 @@ libmlxfwops_a_SOURCES = \
     fw_ops.h\
     fw_version.cpp \
     mlxfwops_com.h \
+    psid_utils.cpp \
+    psid_utils.h \
     mlxfwops.cpp \
     mlxfwops.h \
     security_version_gw.cpp \

@@ -42,6 +42,7 @@
 
 #include "mft_utils/mft_utils.h"
 #include "mlxdpa_utils.h"
+#include "xz_utils/xz_utils.h"
 
 const string HostLess::SINGLE_APP_DPA_FINGERPRINT = "NV_DPA_APP.BIN!!";
 
@@ -114,7 +115,8 @@ void HostLess::SetContainerForSigning()
             throw MlxDpaException("Incomplete header data in container.");
         }
 
-        if (header.GetType() == DpaAppStructHeader::StructType::DPA_ELF)
+        if (header.GetType() == DpaAppStructHeader::StructType::DPA_ELF ||
+         header.GetType() == DpaAppStructHeader::StructType::DPA_ELF_ZIPPED)
         {
             _elfHeader = header;
             if (_checkHeaderPriority && !CheckHeaderPriority(header.GetPriority()))

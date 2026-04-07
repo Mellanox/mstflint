@@ -78,10 +78,10 @@ int init_nvml_lib_handle(mfile* mf)
     }
     memset(nvml_ctx, 0, sizeof(*nvml_ctx));
 
-    nvml_ctx->dl_handle = dlopen("libnvidia-ml.so", RTLD_LAZY);
+    nvml_ctx->dl_handle = dlopen("libnvidia-ml.so.1", RTLD_LAZY);
 
     if (!nvml_ctx->dl_handle) {
-        printf("Failed to load libnvidia-ml.so, %s\n", dlerror());
+        printf("Failed to load libnvidia-ml.so.1, %s\n", dlerror());
         return -1;
     }
 

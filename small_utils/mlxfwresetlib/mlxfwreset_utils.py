@@ -129,6 +129,9 @@ def getDevDBDF(device, logger=None):
             raise RuntimeError("Unexpected device name format")
         return device[3:]
     elif (operatingSys == "Linux"):
+        # Handle fwctl short names (e.g., fwctl2 -> /dev/fwctl/fwctl2)
+        if re.match(r'^fwctl\d+$', device):
+            device = "/dev/fwctl/" + device
         if device.startswith("vfio-"):
             device = device[5:]
         cmd = "mdevices_info -vv"
@@ -233,3 +236,17 @@ def split_dbdf(dev_dbdf, logger):
     }
     logger.debug('domain: 0x{0:X}, bus: 0x{1:X}, device: 0x{2:X}, function: 0x{3:X}'.format(res["domain"], res["bus"], res["device"], res["function"]))
     return res
+
+
+def get_device_without_function(dbdf):
+    """
+    Extract domain:bus:device from a DBDF, excluding the function.
+
+    Args:
+        dbdf (str): Full DBDF in format "domain:bus:device.function" (e.g., "0000:01:00.0")
+
+    Returns:
+        str: Device without function in format "domain:bus:device" (e.g., "0000:01:00")
+    """
+    # Split by '.' to remove function, keep domain:bus:device
+    return dbdf.rsplit('.', 1)[0]

@@ -187,7 +187,7 @@ struct mfile_t;
 // mf_close() : Deallocates mflash resources.
 //   Note: User should call mf_close() even if mf_open failed (and the returning mfl is not NULL)
 //
-int mf_open(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard);
+int mf_open(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, int no_fw_ctrl);
 // int     mf_opend(mflash **pmfl, struct mfile_t *mf, int num_of_banks,  flash_params_t *flash_params,
 //               int ignore_cache_rep_guard);
 int mf_open_adv(mflash** pmfl,
@@ -195,9 +195,10 @@ int mf_open_adv(mflash** pmfl,
                 int num_of_banks,
                 flash_params_t* flash_params,
                 int ignore_cache_rep_guard,
-                int cx3_fw_access);
+                int cx3_fw_access,
+                int no_fw_ctrl);
 
-int mf_open_uefi(mflash** pmfl, uefi_Dev_t* uefi_dev, uefi_dev_extra_t* dev_extra);
+int mf_open_uefi(mflash** pmfl, uefi_Dev_t* uefi_dev, uefi_dev_extra_t* dev_extra, int no_fw_ctrl);
 
 int mf_open_ignore_lock(mflash* mfl);
 void mf_close(mflash* mfl);
@@ -242,6 +243,12 @@ int mf_get_quad_en(mflash* mfl, u_int8_t* quad_en);
 int mf_set_srwd(mflash* mfl, u_int8_t srwd);
 int mf_get_srwd(mflash* mfl, u_int8_t* srwd);
 
+int mf_set_srp(mflash* mfl, u_int8_t srp);
+int mf_get_srp(mflash* mfl, u_int8_t* srp);
+
+int mf_set_srl(mflash* mfl, u_int8_t srl);
+int mf_get_srl(mflash* mfl, u_int8_t* srl);
+
 int mf_set_driver_strength(mflash* mfl, u_int8_t driver_strength);
 int mf_get_driver_strength(mflash* mfl, u_int8_t* driver_strength);
 
@@ -271,6 +278,8 @@ int mf_enable_hw_access(mflash* mfl, u_int64_t key);
 int mf_disable_hw_access_with_key(mflash* mfl, u_int64_t key);
 int mf_disable_hw_access(mflash* mfl);
 int mf_release_semaphore(mflash* mfl);
+int mf_acquire_persistent_lock(mflash* mfl);
+int mf_release_persistent_lock(mflash* mfl);
 
 // get mfile object
 mfile* mf_get_mfile(mflash* mfl);
