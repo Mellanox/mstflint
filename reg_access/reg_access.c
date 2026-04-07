@@ -95,6 +95,7 @@
 #define REG_ID_MPCIR 0x905a
 
 #define REG_ID_MGPIR 0x9100
+#define REG_ID_MMTA  0x9113
 #define REG_ID_MDFCR 0x9101
 #define REG_ID_MDRCR 0x9102
 #define REG_ID_MDSR  0x9110
@@ -236,6 +237,23 @@ reg_access_status_t reg_access_ptys(mfile* mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mtmp(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtmp_ext* mtmp)
 {
     REG_ACCCESS(mf, method, REG_ID_MTMP, mtmp, mtmp_ext, reg_access_hca);
+}
+
+/************************************
+* Function: reg_access_mmta
+************************************/
+reg_access_status_t reg_access_mmta(mfile* mf, reg_access_method_t method, struct reg_access_switch_mmta_reg_ext* mmta)
+{
+    REG_ACCCESS(mf, method, REG_ID_MMTA, mmta, mmta_reg_ext, reg_access_switch);
+}
+
+/************************************
+* Function: reg_access_mgpir_switch_ext
+************************************/
+reg_access_status_t reg_access_mgpir_switch_ext(mfile* mf, reg_access_method_t method,
+                                                struct reg_access_switch_mgpir_ext* mgpir)
+{
+    REG_ACCCESS(mf, method, REG_ID_MGPIR, mgpir, mgpir_ext, reg_access_switch);
 }
 
 /************************************

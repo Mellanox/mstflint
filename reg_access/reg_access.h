@@ -72,6 +72,12 @@ struct reg_access_hca_ptys_reg_ext;
 reg_access_status_t reg_access_ptys(mfile* mf, reg_access_method_t method, struct reg_access_hca_ptys_reg_ext* ptys);
 struct reg_access_hca_mtmp_ext;
 reg_access_status_t reg_access_mtmp(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtmp_ext* mtmp);
+struct reg_access_switch_mmta_reg_ext;
+reg_access_status_t
+  reg_access_mmta(mfile* mf, reg_access_method_t method, struct reg_access_switch_mmta_reg_ext* mmta);
+struct reg_access_switch_mgpir_ext;
+reg_access_status_t reg_access_mgpir_switch_ext(mfile* mf, reg_access_method_t method,
+                                                struct reg_access_switch_mgpir_ext* mgpir);
 struct reg_access_hca_mtcap_ext;
 reg_access_status_t reg_access_mtcap(mfile* mf, reg_access_method_t method, struct reg_access_hca_mtcap_ext* mtcap);
     struct reg_access_hca_mmhi_reg_ext;
