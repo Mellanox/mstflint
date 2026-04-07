@@ -258,6 +258,10 @@ public:
                                bool is_sect_failsafe = true,
                                CommandType cmd_type = CMD_UNKNOWN,
                                PrintCallBack callBackFunc = (PrintCallBack)NULL);
+    virtual bool UpdateSection(fs3_section_t sectionType,
+                                std::vector<u_int8_t>& newSectionData,
+                                const char* msg,
+                                PrintCallBack callBackFunc = (PrintCallBack)NULL);
     // needed for flint low level operations
     bool FwSwReset();
     virtual bool FwCalcMD5(u_int8_t md5sum[16]) = 0;
