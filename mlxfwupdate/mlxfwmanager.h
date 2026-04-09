@@ -34,6 +34,7 @@
 #include <map>
 #include <iostream>
 #include <vector>
+#include <atomic>
 #include <compatibility.h>
 #include <mtcr.h>
 #include <mfa.h>
@@ -247,6 +248,6 @@ void filterFiles(vector<DownloadedFileProperties> files,
 int generateProductionName(string& targetFile, PsidQueryItem ri);
 bool isSameVersion(MlnxDev* dev, PsidQueryItem& psidUpdateInfo);
 
-int abort_request = 0;
+std::atomic<int> abort_request{0};
 int CompareFFV = 0;
 bool IS_OKAY_To_INTERRUPT = false;

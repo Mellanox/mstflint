@@ -36,6 +36,7 @@
 #include "server_request.h"
 #include <sstream>
 #include <iomanip>
+#include <atomic>
 #include <stdlib.h>
 #include <iostream>
 #include <stdio.h>
@@ -47,7 +48,7 @@ using namespace std;
 #define USE_CURL
 #endif
 
-extern int abort_request;
+extern std::atomic<int> abort_request;
 
 ServerRequest::ServerRequest(const char* url,
                              const char* proxy,

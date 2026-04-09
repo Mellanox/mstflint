@@ -1591,6 +1591,55 @@ void set_fwctl_dev(char* fwctl_dev, u_int16_t domain, u_int8_t bus, u_int8_t dev
     closedir(dir);
 }
 
+void open_fwctl_dev(mfile* mf, u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func)
+{
+    DIR          * dir;
+    struct dirent* ent;
+    char           link_path[PATH_MAX];
+    char           resolved_path[PATH_MAX];
+    unsigned int   d, b, dv, f;
+
+    dir = opendir("/sys/class/fwctl");
+    if (!dir) {
+        return;
+    }
+
+    while ((ent = readdir(dir)) != NULL) {
+        if (ent->d_name[0] == '.') {
+            continue;
+        }
+
+        snprintf(link_path, sizeof(link_path), "/sys/class/fwctl/%s/device", ent->d_name);
+
+        if (!realpath(link_path, resolved_path)) {
+            continue;
+        }
+
+        char* pci_name = basename(resolved_path);
+        if (!pci_name) {
+            continue;
+        }
+
+        if (sscanf(pci_name, "%x:%x:%x.%x", &d, &b, &dv, &f) != 4) {
+            continue;
+        }
+
+        if ((d == domain) && (b == bus) && (dv == dev) && (f == func)) {
+            char fwctl_dev[DEV_NAME_SZ];
+            snprintf(fwctl_dev, DEV_NAME_SZ, "/dev/fwctl/%s", ent->d_name);
+            mf->fwctl_fd = open(fwctl_dev, O_RDWR | O_SYNC);
+            if (mf->fwctl_fd < 0) {
+                closedir(dir);
+                return;
+            }
+            mf->fwctl_env_var_debug = getenv(FWCTL_ENV_VAR_DEBUG);
+            break;
+        }
+    }
+
+    closedir(dir);
+}
+
 int mtcr_pciconf_rw(mfile* mf, unsigned int offset, u_int32_t* data, int rw)
 {
     int rc = ME_OK;
@@ -3937,6 +3986,7 @@ mfile* mopen_ul_int(const char* name, u_int32_t adv_opt)
         return NULL;
     }
     memset(mf, 0, sizeof(mfile));
+    mf->fwctl_fd = -1;
     mf->ul_ctx = malloc(sizeof(ul_ctx_t));
     if (!(mf->ul_ctx))
     {
@@ -4356,6 +4406,11 @@ int mclose_ul(mfile* mf)
             }
             free(ctx);
         }
+        if (mf->fwctl_fd > 0)
+        {
+            close(mf->fwctl_fd);
+            mf->fwctl_fd = -1;
+        }
         if (mf->dev_name)
         {
             free(mf->dev_name);
@@ -4614,10 +4669,11 @@ int maccess_reg_ul(mfile* mf, u_int16_t reg_id, maccess_reg_method_t reg_method,
     }
 #endif
 
-    if (mf->tp == MST_FWCTL_CONTROL_DRIVER)
+    if (mf->tp == MST_FWCTL_CONTROL_DRIVER || (mf->fwctl_fd > 0))
     {
         int method = (reg_method == MACCESS_REG_METHOD_GET) ? FWCTL_METHOD_READ : FWCTL_METHOD_WRITE;
-        rc = fwctl_control_access_register(mf->fd, reg_data, reg_size, reg_id, method, reg_status, mf);
+        int fd = (mf->fwctl_fd > 0) ? mf->fwctl_fd : mf->fd;
+        rc = fwctl_control_access_register(fd, reg_data, reg_size, reg_id, method, reg_status, mf);
         return (*reg_status) ? *reg_status : rc;
     }
 
