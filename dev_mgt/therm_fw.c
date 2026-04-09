@@ -235,7 +235,8 @@ td_fw_result_t
     }
     memset(data, 0, num_modules * 3 * sizeof(td_data_mmta));
 
-    for (int module_idx = 0; module_idx < num_modules; module_idx++)
+    int module_idx;
+    for (module_idx = 0; module_idx < num_modules; module_idx++)
     {
         struct reg_access_switch_mmta_reg_ext mmta;
         reg_access_status_t rc;
