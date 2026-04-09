@@ -111,8 +111,9 @@ void display_mmta_sensor_verbose(td_data_mmta* sensor, int decimals, int* row_nu
 int include_mmta_in_max_temp(td_data_mmta* mmta_data, int mmta_sensors_read, int current_max)
 {
     int max_temp = current_max;
+    int i;
 
-    for (int i = 0; i < mmta_sensors_read; i++)
+    for (i = 0; i < mmta_sensors_read; i++)
     {
         if (mmta_data[i].type != TD_MMTA_SENSOR_TEC && (int)mmta_data[i].base.temp > max_temp)
         {
