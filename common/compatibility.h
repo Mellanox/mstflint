@@ -156,6 +156,13 @@
 #include <unistd.h>
 #include <sys/types.h>
 
+#if defined(__FreeBSD__)
+#include <sys/endian.h>
+#define __BYTE_ORDER BYTE_ORDER
+#define __BIG_ENDIAN BIG_ENDIAN
+#define __LITTLE_ENDIAN LITTLE_ENDIAN
+#endif
+
 #undef __be64_to_cpu
 #undef __be32_to_cpu
 #undef __be16_to_cpu
