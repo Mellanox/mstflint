@@ -87,7 +87,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_SYSTEM] = FIELDS_COUNT{22, 19, 10};
     _baseSheetsList[AMBER_SHEET_SERDES_16NM] = FIELDS_COUNT{376, 736, 0};
     _baseSheetsList[AMBER_SHEET_SERDES_7NM] = FIELDS_COUNT{182, 362, 406};
-    _baseSheetsList[AMBER_SHEET_SERDES_5NM] = FIELDS_COUNT{290, 290, 0};
+    _baseSheetsList[AMBER_SHEET_SERDES_5NM_GEN7] = FIELDS_COUNT{102, 102, 0};
     _baseSheetsList[AMBER_SHEET_PORT_COUNTERS] = FIELDS_COUNT{45, 0, 50};
     _baseSheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT{2, 2, 0};
     _baseSheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{18, 17, 15};
@@ -97,7 +97,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _baseSheetsList[AMBER_SHEET_TEST_MODE_MODULE_INFO] = FIELDS_COUNT{70, 110, 0};
     _baseSheetsList[AMBER_SHEET_PHY_DEBUG_INFO] = FIELDS_COUNT{4, 4, 0};
     _baseSheetsList[AMBER_SHEET_EXT_MODULE_STATUS] = FIELDS_COUNT{191, 125, 0};
-    _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{29, 25, 0};
+    _baseSheetsList[AMBER_SHEET_RECOVERY_COUNTERS] = FIELDS_COUNT{30, 25, 0};
     _baseSheetsList[AMBER_SHEET_SERDES_5NM_GEN8] = FIELDS_COUNT{1284, 0, 0}; // NVLink only
 
     for_each(_baseSheetsList.begin(), _baseSheetsList.end(),
@@ -1396,54 +1396,76 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesNDR()
     return fields;
 }
 
-vector<AmberField> MlxlinkAmBerCollector::getSerdesXDR()
+void MlxlinkAmBerCollector::get5nmGen7SlsirFields(vector<AmberField>& fields)
+{
+    resetLocalParser(ACCESS_REG_SLSIR);
+    updateField("local_port", _localPort);
+    updateField("lane", 0);
+    updateField("pnat", _pnat);
+    sendRegister(ACCESS_REG_SLSIR, MACCESS_REG_METHOD_GET);
+
+    fields.push_back(AmberField("UPHY_major_version", getLocalFieldStr("uphy_ver_major")));
+    fields.push_back(AmberField("UPHY_minor_version", getLocalFieldStr("uphy_ver_minor")));
+    fields.push_back(AmberField("BKV_cln_major_version", getLocalFieldStr("bkv_major_cln")));
+    fields.push_back(AmberField("BKV_cln_minor_version", getLocalFieldStr("bkv_minor_cln")));
+    fields.push_back(AmberField("BKV_dln_major_version", getLocalFieldStr("bkv_major_dln")));
+    fields.push_back(AmberField("BKV_dln_minor_version", getLocalFieldStr("bkv_minor_dln")));
+}
+
+void MlxlinkAmBerCollector::get5nmGen7SltpFields(vector<AmberField>& fields)
+{
+    vector<vector<string>> sltpParams(12, vector<string>(_maxLanes, ""));
+    for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
+    {
+        resetLocalParser(ACCESS_REG_SLTP);
+        updateField("local_port", _localPort);
+        updateField("lane", lane);
+        updateField("pnat", _pnat);
+        sendRegister(ACCESS_REG_SLTP, MACCESS_REG_METHOD_GET);
+
+        sltpParams[0][lane] = getLocalFieldStr("tap0");
+        sltpParams[1][lane] = getLocalFieldStr("tap1");
+        sltpParams[2][lane] = getLocalFieldStr("tap2");
+        sltpParams[3][lane] = getLocalFieldStr("tap3");
+        sltpParams[4][lane] = getLocalFieldStr("tap4");
+        sltpParams[5][lane] = getLocalFieldStr("tap5");
+        sltpParams[6][lane] = getLocalFieldStr("tap6");
+        sltpParams[7][lane] = getLocalFieldStr("tap7");
+        sltpParams[8][lane] = getLocalFieldStr("tap8");
+        sltpParams[9][lane] = getLocalFieldStr("tap9");
+        sltpParams[10][lane] = getLocalFieldStr("tap10");
+        sltpParams[11][lane] = getLocalFieldStr("tap11");
+    }
+
+    fillParamsToFields("tap0", sltpParams[0], fields);
+    fillParamsToFields("tap1", sltpParams[1], fields);
+    fillParamsToFields("tap2", sltpParams[2], fields);
+    fillParamsToFields("tap3", sltpParams[3], fields);
+    fillParamsToFields("tap4", sltpParams[4], fields);
+    fillParamsToFields("tap5", sltpParams[5], fields);
+    fillParamsToFields("tap6", sltpParams[6], fields);
+    fillParamsToFields("tap7", sltpParams[7], fields);
+    fillParamsToFields("tap8", sltpParams[8], fields);
+    fillParamsToFields("tap9", sltpParams[9], fields);
+    fillParamsToFields("tap10", sltpParams[10], fields);
+    fillParamsToFields("tap11", sltpParams[11], fields);
+}
+
+vector<AmberField> MlxlinkAmBerCollector::getSerdes5nmGen7()
 {
     vector<AmberField> fields;
 
     try
     {
-        if (!_isPortPCIE)
+        if (!_isPortPCIE && _productTechnology == PRODUCT_5NM )
         {
-            vector<vector<string>> sltpParams(SLTP_5NM_LAST, vector<string>(_maxLanes, ""));
-            vector<vector<string>> slrgParams(SLRG_PARAMS_LAST, vector<string>(_maxLanes, ""));
-            // Getting 5nm SLRG information for all lanes
-            for (u_int32_t lane = 0; lane < _maxLanes; lane++)
-            {
-                resetLocalParser(ACCESS_REG_SLRG);
-                updateField("local_port", _localPort);
-                updateField("lane", lane);
-                sendRegister(ACCESS_REG_SLRG, MACCESS_REG_METHOD_GET);
-
-                slrgParams[SLRG_PARAMS_INITIAL_FOM][lane] = getFieldStr("initial_fom");
-            }
-
-            fillParamsToFields("initial_fom", slrgParams[SLRG_PARAMS_INITIAL_FOM], fields);
-
-            for (u_int32_t lane = 0; lane < _numOfLanes; lane++)
-            {
-                resetLocalParser(ACCESS_REG_SLTP);
-                updateField("local_port", _localPort);
-                updateField("lane", lane);
-                updateField("pnat", _pnat);
-                sendRegister(ACCESS_REG_SLTP, MACCESS_REG_METHOD_GET);
-
-                sltpParams[SLTP_5NM_TAP1][lane] = getFieldStr("tap1");
-                sltpParams[SLTP_5NM_TAP2][lane] = getFieldStr("tap2");
-                sltpParams[SLTP_5NM_TAP3][lane] = getFieldStr("tap3");
-                sltpParams[SLTP_5NM_TAP4][lane] = getFieldStr("tap4");
-                sltpParams[SLTP_5NM_TAP5][lane] = getFieldStr("tap5");
-            }
-
-            fillParamsToFields("tap1", sltpParams[SLTP_5NM_TAP1], fields);
-            fillParamsToFields("tap2", sltpParams[SLTP_5NM_TAP2], fields);
-            fillParamsToFields("tap3", sltpParams[SLTP_5NM_TAP3], fields);
-            fillParamsToFields("tap4", sltpParams[SLTP_5NM_TAP4], fields);
-            fillParamsToFields("tap5", sltpParams[SLTP_5NM_TAP5], fields);
+            get5nmGen7SlsirFields(fields);
+            get5nmGen7SltpFields(fields);
         }
     }
     catch (const std::exception& exc)
     {
-        throw MlxRegException("Failed to get SerDes[5nm] information: %s", exc.what());
+        throw MlxRegException("Failed to get SerDes[5nm Gen7] information: %s", exc.what());
     }
 
     return fields;
@@ -2897,6 +2919,7 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
         string lastSuccessfulyRecoveryStepAttempts = NA_FIELD_VALUE;
         string totalSuccessfulRecoveryTime = NA_FIELD_VALUE;
         string lastSuccessfulRecoveryTime = NA_FIELD_VALUE;
+        string waitForModuleTime = NA_FIELD_VALUE;
 
         if (!_isPortPCIE)
         {
@@ -2963,6 +2986,7 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
                 to_string(getLocalFieldValue("last_successful_recovery_step_attempts"));
                 totalSuccessfulRecoveryTime = to_string(getLocalFieldValue("total_successful_recovery_time"));
                 lastSuccessfulRecoveryTime = to_string(getLocalFieldValue("last_successful_recovery_time"));
+                waitForModuleTime = to_string(getLocalFieldValue("wait_for_module_time"));
             }
         }
         fields.push_back(AmberField("operational_recovery", operRecoveryStr));
@@ -3000,6 +3024,7 @@ vector<AmberField> MlxlinkAmBerCollector::getRecoveryCounters()
         fields.push_back(AmberField("last_successful_recovery_step_attempts", lastSuccessfulyRecoveryStepAttempts));
         fields.push_back(AmberField("total_successful_recovery_time", totalSuccessfulRecoveryTime));
         fields.push_back(AmberField("last_successful_recovery_time", lastSuccessfulRecoveryTime));
+        fields.push_back(AmberField("wait_for_module_time", waitForModuleTime));
     }
     catch (const std::exception& exc)
     {
@@ -3040,8 +3065,8 @@ vector<AmberField> MlxlinkAmBerCollector::collectSheet(AMBER_SHEET sheet)
         case AMBER_SHEET_SERDES_7NM:
             fields = _productTechnology == PRODUCT_7NM ? getSerdesNDR() : vector<AmberField>();
             break;
-        case AMBER_SHEET_SERDES_5NM:
-            fields = _productTechnology == PRODUCT_5NM ? getSerdesXDR() : vector<AmberField>();
+        case AMBER_SHEET_SERDES_5NM_GEN7:
+            fields = _productTechnology == PRODUCT_5NM ? getSerdes5nmGen7() : vector<AmberField>();
             break;
         case AMBER_SHEET_SERDES_5NM_GEN8:
             fields = _productTechnology == SERDES_GEN_8 ? getSerdesGen8NVLink() : vector<AmberField>();

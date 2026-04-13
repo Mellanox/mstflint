@@ -64,7 +64,7 @@ public:
     virtual vector<AmberField> getLinkStatus();
     virtual vector<AmberField> getSerdesHDR();
     virtual vector<AmberField> getSerdesNDR();
-    virtual vector<AmberField> getSerdesXDR();
+    virtual vector<AmberField> getSerdes5nmGen7();
     virtual vector<AmberField> getModuleStatus();
     virtual vector<AmberField> getPortCounters();
     virtual vector<AmberField> getTroubleshootingInfo();
@@ -77,6 +77,9 @@ public:
     virtual vector<AmberField> getExtModuleStatus();
     virtual vector<AmberField> getRecoveryCounters();
     virtual vector<AmberField> getSerdesGen8NVLink();
+
+    virtual void get5nmGen7SlsirFields(vector<AmberField>& fields);
+    virtual void get5nmGen7SltpFields(vector<AmberField>& fields);
 
     // Auxiliary functions
     virtual void getPemiLaserMonitors(vector<AmberField>& fields, bool isGroupSupported);
