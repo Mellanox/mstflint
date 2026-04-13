@@ -7141,13 +7141,13 @@ void MlxlinkCommander::setPlr()
                 }
                 catch (...)
                 {
-                    throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-2 or Margin/CRC_CS/CS");
+                    throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0/MARGIN, 1/CRC_CS, 2/CS");
                 }
             }
 
             if (rejectMode > 2)
             {
-                throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-2 or Margin/CRC_CS/CS");
+                throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0/MARGIN, 1/CRC_CS, 2/CS");
             }
 
             u_int32_t rejectModeSupport = getFieldValue("plr_reject_mode_support");
@@ -7182,11 +7182,30 @@ void MlxlinkCommander::setPlr()
 
         if (_userInput._plrTxCrcProvided)
         {
-            u_int32_t txCrc = _userInput._plrTxCrc;
+            u_int32_t txCrc = (u_int32_t)-1;
+            if (_userInput._plrTxCrc == "DS")
+            {
+                txCrc = 0;
+            }
+            else if (_userInput._plrTxCrc == "EN")
+            {
+                txCrc = 1;
+            }
+            else
+            {
+                try
+                {
+                    RegAccessParser::strToUint32((char*)_userInput._plrTxCrc.c_str(), txCrc);
+                }
+                catch (...)
+                {
+                    throw MlxRegException("Invalid plr_tx_crc value. Valid values are 0/DS(disable), 1/EN(enable)");
+                }
+            }
 
             if (txCrc > 1)
             {
-                throw MlxRegException("Invalid plr_tx_crc value. Valid values are 0 or 1");
+                throw MlxRegException("Invalid plr_tx_crc value. Valid values are 0/DS(disable), 1/EN(enable)");
             }
 
             if (txCrc == 1)

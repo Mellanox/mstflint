@@ -132,7 +132,7 @@ public:
     string _phyRecoveryType;
     string _plrRejectMode;
     u_int32_t _plrMarginThreshold;
-    u_int32_t _plrTxCrc;
+    string _plrTxCrc;
     bool _plrRejectModeProvided;
     bool _plrMarginThresholdProvided;
     bool _plrTxCrcProvided;
