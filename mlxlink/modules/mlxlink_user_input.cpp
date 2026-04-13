@@ -143,7 +143,7 @@ UserInput::UserInput()
     _phyRecoveryType = "";
     _plrRejectMode = "";
     _plrMarginThreshold = 0;
-    _plrTxCrc = 0;
+    _plrTxCrc = "";
     _plrRejectModeProvided = false;
     _plrMarginThresholdProvided = false;
     _plrTxCrcProvided = false;

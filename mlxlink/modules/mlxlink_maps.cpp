@@ -1765,7 +1765,7 @@ void MlxlinkMaps::initPlrRejectModeMapping()
     _plrRejectModeToStr[PLR_REJECT_MODE_CRC_AND_CS] = "rejection based on CRC and CS";
     _plrRejectModeToStr[PLR_REJECT_MODE_CS] = "rejection based on CS";
 
-    _plrRejectModeStrToValue["Margin"] = PLR_REJECT_MODE_PLR_MARGIN;
+    _plrRejectModeStrToValue["MARGIN"] = PLR_REJECT_MODE_PLR_MARGIN;
     _plrRejectModeStrToValue["CRC_CS"] = PLR_REJECT_MODE_CRC_AND_CS;
     _plrRejectModeStrToValue["CS"] = PLR_REJECT_MODE_CS;
 

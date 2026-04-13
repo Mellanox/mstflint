@@ -87,6 +87,7 @@ protected:
     std::map<u_int32_t, u_int32_t> getSltpParamsFromVector(const string& paramsLine);
     std::map<u_int32_t, bool> getprbsLanesFromParams(const string& paramsLine);
     void checkStrLength(const string& str);
+    void validateNonEmptyValue(const string& value, const string& flagName);
 
     CommandLineParser _cmdParser;
     std::vector<OPTION_TYPE> _sendRegFuncMap;
