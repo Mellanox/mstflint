@@ -463,13 +463,47 @@ typename _Adb_impl<e, O>::PathPart
         for (auto& range : ranges)
         {
             Algorithm::trim(range);
+
+            if (range.empty())
+            {
+                raiseException(
+                  allowMultipleExceptions,
+                  "Failed to parse missing_sons attribute: empty range in '" + part + "[" + ranges_str + "]'",
+                  ExceptionHolder::WARN_EXCEPTION);
+                break;
+            }
+
             size_t colon_pos = range.find(':');
             try
             {
                 if (colon_pos != string::npos)
                 {
-                    uint32_t start = stoul(range.substr(0, colon_pos));
-                    uint32_t end = stoul(range.substr(colon_pos + 1));
+                    string start_str = range.substr(0, colon_pos);
+                    string end_str = range.substr(colon_pos + 1);
+
+                    if (start_str.empty() || end_str.empty())
+                    {
+                        raiseException(
+                          allowMultipleExceptions,
+                          "Failed to parse missing_sons attribute: invalid range '" + part + "[" + range + "]'",
+                          ExceptionHolder::WARN_EXCEPTION);
+                        break;
+                    }
+
+                    size_t start_idx = 0;
+                    size_t end_idx = 0;
+                    uint32_t start = stoul(start_str, &start_idx);
+                    uint32_t end = stoul(end_str, &end_idx);
+
+                    if (start_idx != start_str.length() || end_idx != end_str.length() || start > end)
+                    {
+                        raiseException(
+                          allowMultipleExceptions,
+                          "Failed to parse missing_sons attribute: invalid range '" + part + "[" + range + "]'",
+                          ExceptionHolder::WARN_EXCEPTION);
+                        break;
+                    }
+
                     for (uint32_t i = start; i <= end; ++i)
                     {
                         result.second.push_back(i);
@@ -477,19 +511,35 @@ typename _Adb_impl<e, O>::PathPart
                 }
                 else
                 {
-                    result.second.push_back(stoul(range));
+                    size_t idx = 0;
+                    uint32_t value = stoul(range, &idx);
+
+                    if (idx != range.length())
+                    {
+                        raiseException(
+                          allowMultipleExceptions,
+                          "Failed to parse missing_sons attribute: invalid index '" + part + "[" + range + "]'",
+                          ExceptionHolder::WARN_EXCEPTION);
+                        break;
+                    }
+
+                    result.second.push_back(value);
                 }
             }
             catch (const std::runtime_error&)
             {
-                raiseException(allowMultipleExceptions, "Failed to parse missing_sons attribute",
-                               ExceptionHolder::ERROR_EXCEPTION);
+                raiseException(
+                  allowMultipleExceptions,
+                  "Failed to parse missing_sons attribute: invalid number in '" + part + "[" + range + "]'",
+                  ExceptionHolder::WARN_EXCEPTION);
                 break;
             }
             catch (const std::logic_error&)
             {
-                raiseException(allowMultipleExceptions, "Failed to parse missing_sons attribute",
-                               ExceptionHolder::ERROR_EXCEPTION);
+                raiseException(
+                  allowMultipleExceptions,
+                  "Failed to parse missing_sons attribute: invalid number in '" + part + "[" + range + "]'",
+                  ExceptionHolder::WARN_EXCEPTION);
                 break;
             }
         }
@@ -501,7 +551,7 @@ template<bool e, typename O>
 vector<typename _Adb_impl<e, O>::SplittedPath> _Adb_impl<e, O>::parse_missing_sons(AdbNode& node,
                                                                                    bool allowMultipleExceptions)
 {
-    static Regex::regex path_part_pattern("(\\.)?(\\w+)(\\[([^\\]]*)\\])?(@\\([^\\)]*\\))?");
+    static Regex::regex path_part_pattern("(\\.)?(\\w+)(\\[([^]]*)])?(@\\([^)]*\\))?");
     vector<SplittedPath> missing_sons;
     auto found_it = node.attrs.find("missing_sons");
     if (found_it != node.attrs.end() && !found_it->second.empty())
@@ -521,8 +571,8 @@ vector<typename _Adb_impl<e, O>::SplittedPath> _Adb_impl<e, O>::parse_missing_so
                     if (match.position() != prev_end)
                     {
                         raiseException(allowMultipleExceptions,
-                                       "Failed to parse missing_sons attribute",
-                                       ExceptionHolder::ERROR_EXCEPTION);
+                                       "Failed to parse missing_sons: invalid format '" + path + "'",
+                                       ExceptionHolder::WARN_EXCEPTION);
                         return missing_sons;
                     }
                     prev_end = match.position() + match.length();
@@ -781,55 +831,62 @@ typename _Adb_impl<eval_expr, T_OFFSET>::AdbInstance*
             {
                 string selector_val;
                 inst->unionSelector = curInst;
-                for (size_t i = 0; i < inst->subItems.size(); i++)
+
+                if (!inst->unionSelector->isEnumExists())
                 {
-                    if (inst->subItems[i]->isReserved())
-                    {
-                        continue;
-                    }
-
-                    // make sure all union subnodes define "selected_by" attribute
-                    bool found = inst->subItems[i]->getInstanceAttr("selected_by", selector_val);
-                    if (!found)
-                    {
-                        raiseException(allowMultipleExceptions,
-                                       "In union (" + inst->fullName() + ") the union subnode (" +
-                                         inst->subItems[i]->get_field_name() + ") doesn't define selection value",
-                                       ExceptionHolder::ERROR_EXCEPTION);
-                    }
-
-                    // make sure that all union subnodes selector values are defined in the selector field enum
-                    if (selector_val == "")
-                    {
-                        continue;
-                    }
-
-                    if (!inst->unionSelector->isEnumExists())
-                    {
-                        string exceptionTxt = "In union (" + inst->fullName() + ") the union selector (" +
-                                              inst->unionSelector->fullName() + ") is not an enum";
-                        raiseException(allowMultipleExceptions, exceptionTxt, ExceptionHolder::ERROR_EXCEPTION);
-                        break;
-                    }
-
-                    map<string, uint64_t>::iterator it;
+                    string exceptionTxt = "In union (" + inst->fullName() + ") the union selector (" +
+                                          inst->unionSelector->fullName() + ") is not an enum";
+                    raiseException(allowMultipleExceptions, exceptionTxt, ExceptionHolder::ERROR_EXCEPTION);
+                }
+                else
+                {
                     map<string, uint64_t> selectorValMap = inst->unionSelector->getEnumMap();
-                    for (it = selectorValMap.begin(); it != selectorValMap.end(); it++)
-                    {
-                        if (it->first == selector_val)
-                        {
-                            break;
-                        }
-                    }
 
-                    // if not found in map throw exeption
-                    if (it == selectorValMap.end())
+                    // map<uint64_t, string> valueToName;
+                    // for (auto it = selectorValMap.begin(); it != selectorValMap.end(); ++it)
+                    // {
+                    //     auto result = valueToName.insert({it->second, it->first});
+                    //     if (!result.second)
+                    //     {
+                    //         raiseException(allowMultipleExceptions,
+                    //                        "In union (" + inst->fullName() + ") the union selector (" +
+                    //                          inst->unionSelector->fullName() + ") has duplicate enum value: '" +
+                    //                          it->first + "' and '" + result.first->second + "' both map to " +
+                    //                          to_string(it->second),
+                    //                        ExceptionHolder::WARN_EXCEPTION, false);
+                    //     }
+                    // }
+
+                    for (size_t i = 0; i < inst->subItems.size(); i++)
                     {
-                        string exceptionTxt = "In union (" + inst->fullName() + ") the union subnode (" +
-                                              inst->subItems[i]->get_field_name() + ") uses a selector value (" +
-                                              selector_val + ") which isn't defined in the selector field (" +
-                                              inst->unionSelector->fullName() + ")";
-                        raiseException(allowMultipleExceptions, exceptionTxt, ExceptionHolder::ERROR_EXCEPTION);
+                        if (inst->subItems[i]->isReserved())
+                        {
+                            continue;
+                        }
+
+                        // make sure all union subnodes define "selected_by" attribute
+                        bool found = inst->subItems[i]->getInstanceAttr("selected_by", selector_val);
+                        if (!found)
+                        {
+                            raiseException(allowMultipleExceptions,
+                                           "In union (" + inst->fullName() + ") the union subnode (" +
+                                             inst->subItems[i]->get_field_name() + ") doesn't define selection value",
+                                           ExceptionHolder::ERROR_EXCEPTION);
+                        }
+
+                        if (selector_val == "")
+                        {
+                            continue;
+                        }
+
+                        if (selectorValMap.find(selector_val) == selectorValMap.end())
+                        {
+                            string exceptionTxt = "In union (" + inst->fullName() + ") the union subnode (" +
+                                                  inst->subItems[i]->get_field_name() + ") uses a selector value (" +
+                                                  selector_val + ") which isn't defined in the selector field (" +
+                                                  inst->unionSelector->fullName() + ")";
+                            raiseException(allowMultipleExceptions, exceptionTxt, ExceptionHolder::ERROR_EXCEPTION);
+                        }
                     }
                 }
             }
@@ -895,7 +952,7 @@ typename enable_if<U>::type _Adb_impl<eval_expr, O>::updateLayoutConditions(bool
             else // if it's a conditional variable
             {
                 auto& search_path = currentVar->is_name_modified() ? currentVar->get_original_name() : currentName;
-            // }
+
                 AdbInstance* reffered_layout_item = (*it)->get_layout_item_by_path(search_path);
                 if (reffered_layout_item)
                 {
@@ -1008,7 +1065,10 @@ bool _Adb_impl<eval_expr, O>::createInstance(AdbField* field,
                            "Can't find the definition for subnode: " + field->subNode + " of field: " + field->name,
                            ExceptionHolder::ERROR_EXCEPTION);
         }
-        node = nodes_it->second;
+        else
+        {
+            node = nodes_it->second;
+        }
     }
 
     auto missing_sons =

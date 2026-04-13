@@ -201,7 +201,7 @@ static u_int32_t pop_bits_from_buff(const u_int8_t* buff, u_int32_t bit_offset, 
 static uint32_t
   pop_bits_from_buff_le(const u_int8_t* buff, u_int32_t bit_offset, u_int32_t field_size, bool small_entry_array)
 {
-    small_entry_array = small_entry_array && (__BYTE_ORDER == __LITTLE_ENDIAN);
+    small_entry_array = small_entry_array && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__);
     uint32_t dword_n = bit_offset / 32;
     uint32_t bit_in_dword = bit_offset % 32;
     uint32_t field_32 = 0;
