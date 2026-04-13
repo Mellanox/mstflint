@@ -234,7 +234,9 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(
       PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
       "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode "
-      "FEC)/RS(RS-FEC)/LL(LL-RS-FEC)/DF-RS(Interleaved_RS-FEC)/DF-LL(Interleaved_LL_RS-FEC)]");
+      "FEC)/RS(RS-FEC)/LL(LL-RS-FEC)/DF-RS(Interleaved_RS-FEC)/DF-LL(Interleaved_LL_RS-FEC)/"
+      "QUAD_KP4_FEC(Interleaved_Quad_RS-FEC_PLR)/OCTET_KP4_FEC(Interleaved_Octet_RS-FEC_PLR)/"
+      "Int_KP4_FEC_PLR(Interleaved_RS-FEC_PLR)]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(FEC_SPEED_FLAG_SHORT, FEC_SPEED_FLAG, "fec_speed",
                                  "Speed to Configure FEC "
