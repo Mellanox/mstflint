@@ -105,6 +105,7 @@ public:
     bool _isModeAsActive;
     bool _isNvlinkModeA;
     bool _isNvlinkModeB;
+    bool _isNvlinkTestModeBOper;
     vector<PortGroup> _localPorts; // will be valid for switches
     bool _isHca;
     vector<AMBER_SHEET> _sheetsToDump;
@@ -179,7 +180,8 @@ protected:
 
     // Helper functions
     virtual string getBerAndErrorTitle(u_int32_t portType);
-    virtual void getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params);
+    bool isTestModeNvlinkModeB();
+    virtual void getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params, bool isNvlinkTestModeB);
     virtual void getModuleLinkUpInfoPage(vector<AmberField>& fields);
     virtual void updateModeAsActive();
     void updateNumOfLanesForTestModeNVL6();
