@@ -45,6 +45,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value& jsonRoot) : _jsonRoot(
     _numOfLanes = 0;
     _isNvlinkModeA = false;
     _isNvlinkModeB = false;
+    _isNvlinkTestModeBOper = false;
     _maxLanes = MAX_NETWORK_LANES;
     _csvFileName = "";
     _mstDevName = "";
@@ -2493,7 +2494,36 @@ string MlxlinkAmBerCollector::getPrbsModeCap(u_int32_t modeSelector, u_int32_t c
     return deleteLastChar(modeCapStr);
 }
 
-void MlxlinkAmBerCollector::getTestModePrpsInfo(const string& prbsReg, vector<vector<string>>& params)
+bool MlxlinkAmBerCollector::isTestModeNvlinkModeB()
+{
+    // Only check Mode B for NVLink ports (Mode A or Mode B)
+    if (!(_isNvlinkModeB || _isNvlinkModeA))
+    {
+        return false;
+    }
+
+    try
+    {
+        // Check if Mode B by reading lane_rate_oper from lane 0
+        resetLocalParser(ACCESS_REG_PPRT);
+        updateField("local_port", _localPort);
+        updateField("lane", 0);
+        updateField("pnat", _pnat);
+        sendRegister(ACCESS_REG_PPRT, MACCESS_REG_METHOD_GET);
+
+        string laneRateOperStr = getStrByValue(getFieldValue("lane_rate_oper"), _mlxlinkMaps->_prbsLaneRateList);
+        // XDR = Mode A, others = Mode B
+        return (laneRateOperStr != _mlxlinkMaps->_prbsLaneRateList[PRBS_XDR]);
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
+
+void MlxlinkAmBerCollector::getTestModePrpsInfo(const string& prbsReg,
+                                                vector<vector<string>>& params,
+                                                bool isNvlinkTestModeB)
 {
     string laneRateStr = "lane_rate_admin";
     if (prbsReg == ACCESS_REG_PPRT)
@@ -2507,6 +2537,10 @@ void MlxlinkAmBerCollector::getTestModePrpsInfo(const string& prbsReg, vector<ve
         updateField("local_port", _localPort);
         updateField("lane", lane);
         updateField("pnat", _pnat);
+        if (isNvlinkTestModeB)
+        {
+            updateField("mode_b_idx", (u_int32_t)PRBS_MODE_B_MODE_B);
+        }
         sendRegister(prbsReg, MACCESS_REG_METHOD_GET);
 
         if (prbsReg == ACCESS_REG_PPRT)
@@ -2537,8 +2571,13 @@ vector<AmberField> MlxlinkAmBerCollector::getTestModeInfo()
     {
         vector<vector<string>> pprtParams(PRBS_PARAMS_LAST, vector<string>(_maxLanes, ""));
         vector<vector<string>> ppttParams(PRBS_PARAMS_LAST, vector<string>(_maxLanes, ""));
-        getTestModePrpsInfo(ACCESS_REG_PPRT, pprtParams);
-        getTestModePrpsInfo(ACCESS_REG_PPTT, ppttParams);
+        _isNvlinkTestModeBOper = false;
+        if (_isNvlinkModeB || _isNvlinkModeA)
+        {
+            _isNvlinkTestModeBOper = isTestModeNvlinkModeB();
+        }
+        getTestModePrpsInfo(ACCESS_REG_PPRT, pprtParams, _isNvlinkTestModeBOper);
+        getTestModePrpsInfo(ACCESS_REG_PPTT, ppttParams, _isNvlinkTestModeBOper);
 
         fillParamsToFields("prbs_rx_tuning_status", pprtParams[PRBS_PARAMS_RX_TUNING_STATUS], fields);
         fillParamsToFields("prbs_rx_lock_status", pprtParams[PRBS_PARAMS_LOCK_STATUS], fields);
