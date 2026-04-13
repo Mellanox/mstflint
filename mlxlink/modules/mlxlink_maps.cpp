@@ -136,7 +136,7 @@ void MlxlinkMaps::initPortStateMapping()
     _anDisableList[AN_DISABLE_NORMAL] = "ON";
     _anDisableList[AN_DISABLE_FORCE] = "FORCE";
 
-    _precodingOperStatus[PRECODING_OPER_STATUS_AUTO] = "Auto";
+    _precodingOperStatus[PRECODING_OPER_STATUS_AUTO] = "unknown / no active link";
     _precodingOperStatus[PRECODING_OPER_STATUS_ENABLED] = "Enabled";
     _precodingOperStatus[PRECODING_OPER_STATUS_DISABLED] = "Disabled";
 
