@@ -50,6 +50,13 @@ typedef enum
     Pm_Unknown
 } parseMode;
 
+enum class ParamType
+{
+    DATA,
+    INDEX,
+    OP
+};
+
 template<bool dynamic = false>
 class _RegAccessParser_impl
 {
@@ -65,13 +72,6 @@ class _RegAccessParser_impl
         u_int32_t offset;      // offset of the field TODO: remove this after fixing in mlxlink
         bool offsetSpecified;  // true if the offset is specified TODO: remove this after fixing in mlxlink
         AdbInstance* instance; // the found instance
-    };
-
-    enum class ParamType
-    {
-        DATA,
-        INDEX,
-        OP
     };
 
     struct ParamDetails
@@ -126,10 +126,10 @@ protected:
                                            AdbInstance* instance,
                                            void* context);
     static bool on_traverse_get_field(const string& calculated_path,
-                                           uint64_t calculated_offset,
-                                           uint64_t calculated_value,
-                                           AdbInstance* instance,
-                                           void* context);
+                                      uint64_t calculated_offset,
+                                      uint64_t calculated_value,
+                                      AdbInstance* instance,
+                                      void* context);
     std::vector<u_int32_t> genBuffUnknown();
     std::vector<u_int32_t> genBuffKnown();
     void parse_register_params(const string& data, ParamType param_type);

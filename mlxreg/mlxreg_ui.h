@@ -95,6 +95,12 @@ private:
         struct SentField : FieldBase
         {
             uint64_t value;
+
+            // Metadata for detailed output (--detailed flag)
+            std::string enum_name;
+
+            SentField() : value(0) {}
+
             static bool on_traverse(const string& calculated_path,
                                     uint64_t calculated_offset,
                                     uint64_t calculated_value,
@@ -107,6 +113,16 @@ private:
             uint64_t offset;
             uint64_t size;
             string access;
+
+            // Metadata for enum support
+            std::map<uint64_t, std::string> enum_values; // value -> name mapping, empty if no enum
+
+            // Metadata for advanced output (--advanced flag)
+            std::string description;
+            ParamType param_type;
+
+            QueryField() : offset(0), size(0), param_type(ParamType::DATA) {}
+
             static bool on_traverse(const string& calculated_path,
                                     uint64_t calculated_offset,
                                     uint64_t calculated_value,
@@ -121,12 +137,39 @@ private:
         std::vector<SentField> _parsed_fields;
         std::vector<QueryField> _query_fields;
 
+        // Formatting methods for GET/SET operations (SentField)
+        void printSentFieldsStandard(const std::vector<SentField>& fields) const;
+        void printSentFieldsDetailed(const std::vector<SentField>& fields) const;
+
+        // Formatting methods for SHOW_REG operations (QueryField)
+        void printQueryFieldsStandard(const std::vector<QueryField>& fields) const;
+        void printQueryFieldsAdvanced(const std::vector<QueryField>& fields, const std::string& filter_field = "");
+
+        // Helper for text wrapping in Description column
+        std::vector<std::string> wrapTextToWidth(const std::string& text, int width);
+
+        // Helper for description text processing
+        std::string cleanDescriptionText(const std::string& text);
+        std::string truncateDescription(const std::string& text, int width);
+
+        void printTableSeparator(int width) const;
+
+        template<typename T>
+        std::vector<T> applyFieldFilter(const std::vector<T>& fields, const std::string& filter_field) const;
+
+        void printFieldGroupWithDescription(const std::vector<QueryField>& fields,
+                                            const std::vector<size_t>& group_indices,
+                                            int nameWidth,
+                                            int descWidth);
+
+        void printEnumValues(const QueryField& field, int nameWidth, const std::string& fieldName);
+
     public:
         MlxRegUiImpl(MlxRegUi* ui);
         ~MlxRegUiImpl();
 
         template<typename T, typename = typename std::enable_if<std::is_base_of<FieldBase, T>::value>::type>
-        size_t getLongestNodeLen(std::vector<T>& parsed_fields);
+        size_t getLongestNodeLen(const std::vector<T>& parsed_fields) const;
         void printRegFields(AdbInstance* node);
         void printAdbContext(AdbInstance* node, const std::vector<u_int32_t>& buff);
         void sendCmdBasedOnFileIo(maccess_reg_method_t cmd, int reg_size);
@@ -161,6 +204,10 @@ private:
     bool _overwrite;
     bool _full_path;
     bool _use_dynamic;
+    bool _detailed;
+    bool _advanced;
+    bool _full_desc;
+    std::string _field_name;
     std::string _gen_cmd_buffer_device_type;
 };
 
