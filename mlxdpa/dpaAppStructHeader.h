@@ -59,6 +59,7 @@ public:
         SIGNATURE = 0x7,
         ENC_KEY = 0x8,
         DPA_APP_MANIFEST = 0x9,
+        DPA_ELF_ZIPPED = 0xA,
         RESERVED
     };
     enum class StructSecurityMethod

@@ -520,11 +520,11 @@ public:
     virtual void showBkvGroup(bool showEntries = true, u_int32_t entryFilter = (u_int32_t)-1);
     virtual void setBkvGroup();
     virtual void setBkvEntry();
-    void queryBkvCaps(uint8_t& numGroups, uint8_t groupId = (uint8_t)-1);
+    void queryBkvCaps(uint8_t& numGroups, uint32_t groupId = (uint32_t)-1);
     void queryBkvCaps(uint8_t& numGroups,
                       uint8_t& numEntries,
-                      uint8_t groupId = (uint8_t)-1,
-                      uint8_t entryId = (uint8_t)-1);
+                      uint32_t groupId = (uint32_t)-1,
+                      uint32_t entryId = (uint32_t)-1);
     void showDeviceData();
     void showBerMonitorInfo();
     void showExternalPhy();

@@ -97,6 +97,7 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("", "smg", SC_Smg));
     _sCmds.push_back(new SubCmd("", "set_vpd", SC_Set_Vpd));
     _sCmds.push_back(new SubCmd("", "set_attestation_cert_chain", SC_Set_Cert_Chain));
+    _sCmds.push_back(new SubCmd("", "set_cpo_calibration_data", SC_Set_Cpo_Calibration_Data));
 #endif
     _sCmds.push_back(new SubCmd("", "sv", SC_Sv));
     _sCmds.push_back(new SubCmd("", "ri", SC_Ri));

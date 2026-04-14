@@ -38,6 +38,7 @@
 #include "flint_io.h"
 #include "aux_tlv_ops.h"
 #include "mlxfwops_com.h"
+#include "psid_utils.h"
 #include "signature_manager_factory.h"
 #include "fw_version.h"
 #include "tools_layouts/cx4fw_layouts.h"
@@ -125,6 +126,7 @@ public:
         mfile* mf = _ioAccess->is_flash() ? ((Flash*)_ioAccess)->getMfileObj() : (mfile*)NULL;
         return mf;
     }
+    virtual psid_utils::MinorPsidLockStatus queryMinorPsidLockStatus();
     virtual bool IsFifthGen() { return (_ioAccess != NULL && _ioAccess->is_flash() && _ioAccess->is_fifth_gen()); }
     FBase* GetIoAccess() { return _ioAccess; }
     virtual u_int8_t FwType() = 0;
@@ -256,6 +258,10 @@ public:
                                bool is_sect_failsafe = true,
                                CommandType cmd_type = CMD_UNKNOWN,
                                PrintCallBack callBackFunc = (PrintCallBack)NULL);
+    virtual bool UpdateSection(fs3_section_t sectionType,
+                                std::vector<u_int8_t>& newSectionData,
+                                const char* msg,
+                                PrintCallBack callBackFunc = (PrintCallBack)NULL);
     // needed for flint low level operations
     bool FwSwReset();
     virtual bool FwCalcMD5(u_int8_t md5sum[16]) = 0;
@@ -282,6 +288,7 @@ public:
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
     virtual bool IsEncryptionSupported();
+    virtual bool IsCRDTDebugSessionActive();
     
     bool checkAndDisableFlashWpIfRequired(); // relavant to FS5 and FS6 but FS6 inherites FwOperations and not FS5
     bool restoreWriteProtectInfo();

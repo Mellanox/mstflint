@@ -140,6 +140,7 @@ double mw_to_dbm(double x);
 string floatToStr(float num, int resolution = -1);
 int readSigned(u_int32_t value, u_int32_t fieldSize);
 int readSignedByte(u_int32_t value);
+uint64_t unsignedToSigned(uint32_t rawValue, uint8_t width);
 void setPrintTitle(MlxlinkCmdPrint& mlxlinkCmdPrint, string title, u_int32_t size, bool print = true);
 void setPrintVal(MlxlinkCmdPrint& mlxlinkCmdPrint,
                  string key,

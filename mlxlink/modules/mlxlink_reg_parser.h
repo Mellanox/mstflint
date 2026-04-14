@@ -77,6 +77,7 @@ public:
     string getRawFieldValueStr(const string fieldName);
     u_int32_t getFieldSize(string field_name);
     string getAscii(const string& name, u_int32_t size = 4);
+    string getFieldDescription(const string& fieldName);
 
 private:
     void sendPrmRegVaList(const string& regName,

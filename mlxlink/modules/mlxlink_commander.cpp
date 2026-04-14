@@ -2387,7 +2387,7 @@ void MlxlinkCommander::showPddr()
         supportedInfoPage();
         troubInfoPage();
         runningVersion();
-        if (_prbsTestMode && !_userInput._showMultiPortInfo)
+        if (_prbsTestMode && !_userInput._showMultiPortInfo && !_userInput._showMultiPortModuleInfo)
         {
             showTestMode();
         }
@@ -2481,9 +2481,9 @@ void MlxlinkCommander::getPrecodingStatus()
     {
         // in case PLTC is not supported, do nothing and continue
     }
-    setPrintVal(_operatingInfoCmd, "TX Precoding Status",
+    setPrintVal(_operatingInfoCmd, "Tx Precoding Status",
                 getStrByValue(txPrecodingOper, _mlxlinkMaps->_precodingOperStatus), txColor, !_prbsTestMode, _linkUP);
-    setPrintVal(_operatingInfoCmd, "RX Precoding Status",
+    setPrintVal(_operatingInfoCmd, "Rx Precoding Status",
                 getStrByValue(rxPrecodingOper, _mlxlinkMaps->_precodingOperStatus), rxColor, !_prbsTestMode, _linkUP);
 }
 
@@ -3435,24 +3435,42 @@ void MlxlinkCommander::showSltp()
     }
 }
 
-void MlxlinkCommander::queryBkvCaps(uint8_t& numGroups, uint8_t groupId)
+void MlxlinkCommander::queryBkvCaps(uint8_t& numGroups, uint32_t groupId)
 {
     uint8_t numEntries = 0;
     return queryBkvCaps(numGroups, numEntries, groupId);
 }
 
-void MlxlinkCommander::queryBkvCaps(uint8_t& numGroups, uint8_t& numEntries, uint8_t groupId, uint8_t entryId)
+void MlxlinkCommander::queryBkvCaps(uint8_t& numGroups, uint8_t& numEntries, uint32_t groupId, uint32_t entryId)
 {
     numGroups = 0;
     numEntries = 0;
 
     try
     {
+        // Validate lane is no bigger than 4 bits before sending register
+        if (_userInput._lane > 0xF)
+        {
+            throw MlxRegException("Invalid lane ID: " + to_string(_userInput._lane) + ". Value must fit in 4 bits (max 15)\n");
+        }
+
+        // Validate groupId is no bigger than 5 bits before sending register
+        if (groupId != (u_int32_t)-1 && groupId > 0x1F)
+        {
+            throw MlxRegException("Invalid group ID: " + to_string(groupId) + ". Value must fit in 5 bits (max 31)\n");
+        }
+
+        // Validate entryId is no bigger than 5 bits before sending register
+        if (entryId != (u_int32_t)-1 && entryId > 0x1F)
+        {
+            throw MlxRegException("Invalid entry ID: " + to_string(entryId) + ". Value must fit in 5 bits (max 31)\n");
+        }
+
         sendPrmReg(ACCESS_REG_PSCD, GET, "lane=%d, page_select=%d", _userInput._lane, PSCD_PAGE_CAPABILITIES);
         numGroups = getFieldValue("total_num_of_groups");
 
         // If groupId is not -1, validate it and get entries count
-        if (groupId != (u_int8_t)-1)
+        if (groupId != (u_int32_t)-1)
         {
             if (groupId >= numGroups)
             {
@@ -3464,7 +3482,7 @@ void MlxlinkCommander::queryBkvCaps(uint8_t& numGroups, uint8_t& numEntries, uin
             numEntries = getFieldValue(numEntriesField);
 
             // If entryId is not -1, validate it against the entry count
-            if (entryId != (u_int8_t)-1)
+            if (entryId != (u_int32_t)-1)
             {
                 if (entryId >= numEntries)
                 {
@@ -3546,7 +3564,7 @@ void MlxlinkCommander::showBkvGroup(bool showEntries, u_int32_t entryFilter)
     uint32_t modeBRoleMask = 0;
 
     // First validate the group ID by getting capabilities
-    queryBkvCaps(numGroups, numEntries, _userInput._bkvGroupId, (uint8_t)-1);
+    queryBkvCaps(numGroups, numEntries, _userInput._bkvGroupId, (uint32_t)-1);
 
     try
     {
@@ -3658,13 +3676,11 @@ void MlxlinkCommander::setBkvGroup()
 
     // First validate the group ID by getting capabilities
     queryBkvCaps(numGroups, _userInput._bkvGroupId);
-    {
-        return;
-    }
 
     try
     {
         string setParams = "lane=" + to_string(_userInput._lane) + ", page_select=" + to_string(PSCD_PAGE_CONFIGURATIONS) + ", select_group=" + to_string(_userInput._bkvGroupId);
+        sendPrmReg(ACCESS_REG_PSCD, GET, setParams.c_str());
 
         if (_userInput._bkvRates.size() > 0)
         {
@@ -3706,7 +3722,7 @@ void MlxlinkCommander::setBkvGroup()
             setParams += ", mode_b_role_mask=" + to_string(modeBRoleMask);
         }
 
-        sendPrmReg(ACCESS_REG_PSCD, SET, setParams.c_str());
+        sendPrmRegWithoutReset(ACCESS_REG_PSCD, SET, setParams.c_str());
 
         // Show the updated properties
         showBkvGroup(false, (u_int8_t)-1);
@@ -3725,9 +3741,31 @@ void MlxlinkCommander::setBkvEntry()
     // First validate the group ID and entry ID by getting capabilities
     queryBkvCaps(numGroups, numEntries, _userInput._bkvGroupId, _userInput._bkvEntry);
 
+    // Validate that address, wdata, and wmask are no more than 16 bits
+    stringstream hexStream;
+    if (_userInput._bkvAddressSpecified && _userInput._bkvAddress > 0xFFFF)
+    {
+        hexStream.str("");
+        hexStream << "0x" << hex << _userInput._bkvAddress;
+        throw MlxRegException("Invalid BKV address: " + hexStream.str() + ". Value must fit in 16 bits (max 0xFFFF)\n");
+    }
+    if (_userInput._bkvWdataSpecified && _userInput._bkvWdata > 0xFFFF)
+    {
+        hexStream.str("");
+        hexStream << "0x" << hex << _userInput._bkvWdata;
+        throw MlxRegException("Invalid BKV wdata: " + hexStream.str() + ". Value must fit in 16 bits (max 0xFFFF)\n");
+    }
+    if (_userInput._bkvWmaskSpecified && _userInput._bkvWmask > 0xFFFF)
+    {
+        hexStream.str("");
+        hexStream << "0x" << hex << _userInput._bkvWmask;
+        throw MlxRegException("Invalid BKV wmask: " + hexStream.str() + ". Value must fit in 16 bits (max 0xFFFF)\n");
+    }
+
     try
     {
         string setParams = "lane=" + to_string(_userInput._lane) + ", page_select=" + to_string(PSCD_PAGE_CONFIGURATIONS) + ", select_group=" + to_string(_userInput._bkvGroupId);
+        sendPrmReg(ACCESS_REG_PSCD, GET, setParams.c_str());
 
         if (_userInput._bkvAddressSpecified)
         {
@@ -3742,7 +3780,7 @@ void MlxlinkCommander::setBkvEntry()
             setParams += ", wmask_" + to_string(_userInput._bkvEntry) + "=" + to_string(_userInput._bkvWmask);
         }
 
-        sendPrmReg(ACCESS_REG_PSCD, SET, setParams.c_str());
+        sendPrmRegWithoutReset(ACCESS_REG_PSCD, SET, setParams.c_str());
 
         // Show the updated group with both sections, entries section filtered to specific entry
         showBkvGroup(true, _userInput._bkvEntry);
@@ -4540,13 +4578,16 @@ std::map<string, string> MlxlinkCommander::getRawEffectiveErrors()
         errorsVector["phy_corrected_bits_lane5"] = to_string(add32BitTo64(getFieldValue("phy_raw_errors_lane5_high"), getFieldValue("phy_raw_errors_lane5_low")));
         errorsVector["phy_corrected_bits_lane6"] = to_string(add32BitTo64(getFieldValue("phy_raw_errors_lane6_high"), getFieldValue("phy_raw_errors_lane6_low")));
         errorsVector["phy_corrected_bits_lane7"] = to_string(add32BitTo64(getFieldValue("phy_raw_errors_lane7_high"), getFieldValue("phy_raw_errors_lane7_low")));
+        errorsVector["raw_errors_counter"] =
+          to_string(add32BitTo64(getFieldValue("phy_corrected_bits_high"), getFieldValue("phy_corrected_bits_low")));
+        errorsVector["raw_ber"] = getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude");
+        errorsVector["eff_errors_counter"] =
+          to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high", 0, 0, false, true),
+                                 getFieldValue("phy_symbol_errors_low", 0, 0, false, true)));
+        errorsVector["eff_ber"] = getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude");
     }
 
     errorsVector["time_since_last_clear_sec"] = to_string((add32BitTo64((float)getFieldValue("time_since_last_clear_high"), getFieldValue("time_since_last_clear_low"))) / 1000.0 / 60.0);
-    errorsVector["raw_errors_counter"] = to_string(add32BitTo64(getFieldValue("phy_corrected_bits_high"), getFieldValue("phy_corrected_bits_low")));
-    errorsVector["raw_ber"] = getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude");
-    errorsVector["eff_errors_counter"] = to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high", 0, 0, false, true), getFieldValue("phy_symbol_errors_low", 0, 0, false, true)));
-    errorsVector["eff_ber"] = getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude");
 
     return errorsVector;
 }
@@ -7092,22 +7133,32 @@ void MlxlinkCommander::showPlr()
     try
     {
         sendPrmReg(ACCESS_REG_PPLM, GET);
+        uint32_t plrRejectModeSupport = getFieldValue("plr_reject_mode_support");
+        uint32_t plrMarginThSupport = getFieldValue("plr_margin_th_support");
+        uint32_t txCrcPlrSupport = getFieldValue("tx_crc_plr_support");
         setPrintTitle(_plrInfoCmd, HEADER_PLR_INFO, PLR_INFO_LAST);
         setPrintVal(_plrInfoCmd, "PLR Reject Mode",
-                    getStrByValue(getFieldValue("plr_reject_mode"), _mlxlinkMaps->_plrRejectModeToStr));
+                    plrRejectModeSupport ?
+                      getStrByValue(getFieldValue("plr_reject_mode"), _mlxlinkMaps->_plrRejectModeToStr) :
+                      NA_FIELD_VALUE);
         setPrintVal(_plrInfoCmd, "PLR Reject Mode Support",
-                    getStrByMask(getFieldValue("plr_reject_mode_support"), _mlxlinkMaps->_plrRejectModeMaskToStr, ", "));
+                    getStrByMask(plrRejectModeSupport, _mlxlinkMaps->_plrRejectModeMaskToStr, ", "));
         setPrintVal(_plrInfoCmd, "PLR Reject Mode Operational",
-                    getStrByValue(getFieldValue("plr_reject_mode_oper"), _mlxlinkMaps->_plrRejectModeToStr));
-        setPrintVal(_plrInfoCmd, "PLR Margin Threshold Admin", to_string(getFieldValue("plr_margin_th")));
+                    plrRejectModeSupport ?
+                      getStrByValue(getFieldValue("plr_reject_mode_oper"), _mlxlinkMaps->_plrRejectModeToStr) :
+                      NA_FIELD_VALUE);
+        setPrintVal(_plrInfoCmd, "PLR Margin Threshold Admin",
+                    plrMarginThSupport ? to_string(getFieldValue("plr_margin_th")) : NA_FIELD_VALUE);
         setPrintVal(_plrInfoCmd, "PLR Margin Threshold Support",
-                    getStrByMask(getFieldValue("plr_margin_th_support"), _mlxlinkMaps->_plrMarginThMaskToStr, ", "));
-        setPrintVal(_plrInfoCmd, "PLR Margin Threshold Operational", to_string(getFieldValue("plr_margin_th_oper")));
-        setPrintVal(_plrInfoCmd, "TX CRC PLR", getFieldValue("tx_crc_plr") ? FIELD_ENABLED : FIELD_DISABLED);
-        setPrintVal(_plrInfoCmd, "TX CRC PLR Support",
-                    getFieldValue("tx_crc_plr_support") ? CAP_SUPPORTED : CAP_UNSUPPORTED);
-        setPrintVal(_plrInfoCmd, "TX CRC PLR Operational",
-                    getFieldValue("tx_crc_plr_oper") ? FIELD_ENABLED : FIELD_DISABLED);
+                    getStrByMask(plrMarginThSupport, _mlxlinkMaps->_plrMarginThMaskToStr, ", "));
+        setPrintVal(_plrInfoCmd, "PLR Margin Threshold Operational",
+                    plrMarginThSupport ? to_string(getFieldValue("plr_margin_th_oper")) : NA_FIELD_VALUE);
+        setPrintVal(_plrInfoCmd, "TX CRC PLR",
+                    txCrcPlrSupport ? getFieldValue("tx_crc_plr") ? FIELD_ENABLED : FIELD_DISABLED : NA_FIELD_VALUE);
+        setPrintVal(_plrInfoCmd, "TX CRC PLR Support", txCrcPlrSupport ? CAP_SUPPORTED : CAP_UNSUPPORTED);
+        setPrintVal(
+          _plrInfoCmd, "TX CRC PLR Operational",
+          txCrcPlrSupport ? getFieldValue("tx_crc_plr_oper") ? FIELD_ENABLED : FIELD_DISABLED : NA_FIELD_VALUE);
     }
     catch (MlxRegException& exc)
     {
@@ -7141,13 +7192,13 @@ void MlxlinkCommander::setPlr()
                 }
                 catch (...)
                 {
-                    throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-2 or Margin/CRC_CS/CS");
+                    throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0/MARGIN, 1/CRC_CS, 2/CS");
                 }
             }
 
             if (rejectMode > 2)
             {
-                throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0-2 or Margin/CRC_CS/CS");
+                throw MlxRegException("Invalid plr_reject_mode value. Valid values are 0/MARGIN, 1/CRC_CS, 2/CS");
             }
 
             u_int32_t rejectModeSupport = getFieldValue("plr_reject_mode_support");
@@ -7182,11 +7233,30 @@ void MlxlinkCommander::setPlr()
 
         if (_userInput._plrTxCrcProvided)
         {
-            u_int32_t txCrc = _userInput._plrTxCrc;
+            u_int32_t txCrc = (u_int32_t)-1;
+            if (_userInput._plrTxCrc == "DS")
+            {
+                txCrc = 0;
+            }
+            else if (_userInput._plrTxCrc == "EN")
+            {
+                txCrc = 1;
+            }
+            else
+            {
+                try
+                {
+                    RegAccessParser::strToUint32((char*)_userInput._plrTxCrc.c_str(), txCrc);
+                }
+                catch (...)
+                {
+                    throw MlxRegException("Invalid plr_tx_crc value. Valid values are 0/DS(disable), 1/EN(enable)");
+                }
+            }
 
             if (txCrc > 1)
             {
-                throw MlxRegException("Invalid plr_tx_crc value. Valid values are 0 or 1");
+                throw MlxRegException("Invalid plr_tx_crc value. Valid values are 0/DS(disable), 1/EN(enable)");
             }
 
             if (txCrc == 1)
@@ -7203,6 +7273,7 @@ void MlxlinkCommander::setPlr()
         }
 
         sendPrmRegWithoutReset(ACCESS_REG_PPLM, SET, fields.c_str());
+        MlxlinkRecord::printCmdLine("Configuring PLR parameters: " + fields + "\n", _jsonRoot);
     }
     catch (MlxRegException& exc)
     {
@@ -7542,7 +7613,8 @@ void MlxlinkCommander::showPeriodicEq()
         sendPrmReg(ACCESS_REG_SLLM, GET);
         setPrintTitle(_periodicEqInfoCmd, HEADER_PERIODIC_EQ, PERIODIC_EQ_INFO_LAST);
         setPrintVal(_periodicEqInfoCmd, "PEQ Interval Applied [uS]", to_string(getFieldValue("peq_interval_period", 0, 0, false, true) * 10));
-        setPrintVal(_periodicEqInfoCmd, "PEQ Interval Oper [uS]", to_string(getFieldValue("peq_interval_period_oper") * 10));
+        setPrintVal(_periodicEqInfoCmd, "PEQ Interval Oper [uS]",
+                    to_string(getFieldValue("peq_interval_period_oper", 0, 0, false, true) * 10));
     }
     catch (MlxRegException& exc)
     {

@@ -40,6 +40,7 @@
 #include <string.h>
 #include <errno.h>
 #include <math.h>
+#include <stdbool.h>
 #include "common/tools_version.h"
 #include "dev_mgt/tools_dev_types.h"
 #include <mtcr.h>
@@ -71,9 +72,20 @@
     }                                                                                           \
     else                                                                                        \
     {                                                                                           \
-        printf("%-15.1d\n", temp);                                                              \
+        printf("%-15d\n", (int)(temp));                                                         \
     }
 
 int parseAndRun(int argc, char** argv);
+
+/* MMTA helper functions */
+int read_mmta_sensors(mfile* mf,
+                      td_temp_unit_t requested_unit,
+                      td_data_mmta** mmta_data_p,
+                      bool* mmta_supported,
+                      bool no_modules);
+void print_temperature_table_header(bool mmta_supported);
+void display_mmta_sensor_verbose(td_data_mmta* sensor, int decimals, int* row_num);
+int include_mmta_in_max_temp(td_data_mmta* mmta_data, int mmta_modules_read, int current_max);
+void display_internal_sensors_verbose(td_data_fw* data, bool mmta_supported, int* row_num);
 
 #endif /* MGET_TEMP_H */

@@ -478,6 +478,27 @@ void MlnxDev::setNoFwCtrl()
     _noFwCtrl = true;
 }
 
+void MlnxDev::openFwctlDev()
+{
+    if (!_devFwOps)
+    {
+        return;
+    }
+    mfile* mf = _devFwOps->getMfileObj();
+    if (!mf)
+    {
+        return;
+    }
+    dev_info* info = _devinfo ? _devinfo : mf->dinfo;
+    if (!info)
+    {
+        return;
+    }
+#if !defined(__WIN__) && !defined(__FreeBSD__)
+    open_fwctl_dev(mf, info->pci.domain, info->pci.bus, info->pci.dev, info->pci.func);
+#endif
+}
+
 void MlnxDev::patchPsidInfo(string psid)
 {
     if (psid.size() > 0)
@@ -566,8 +587,10 @@ int MlnxDev::preBurn(string mfa_file,
     _burnSuccess = 0;
     bool isStripedImage = false;
     bool pldmFlow = false;
+    string selectorTag;
+    int fileSig = ImageAccess::getFileSignature(mfa_file);
 
-    if (ImageAccess::getFileSignature(mfa_file) == IMG_SIG_TYPE_PLDM)
+    if (fileSig == IMG_SIG_TYPE_PLDM)
     {
         pldmFlow = true;
         isStripedImage = true;
@@ -594,6 +617,10 @@ int MlnxDev::preBurn(string mfa_file,
             _errMsg = "-E- The component was not found in the PLDM.\n";
         }
         sza = static_cast<int>(buffSize);
+    }
+    else if (fileSig == IMG_SIG_TYPE_MFA2)
+    {
+        sza = imgacc.getImage(mfa_file, _psid, selectorTag, 1, &filebuf);
     }
     else
     {
@@ -919,6 +946,10 @@ bool MlnxDev::OpenDev()
         _errMsg = _errBuff;
         _log += _errMsg;
         return false;
+    }
+    if (!_noFwCtrl)
+    {
+        openFwctlDev();
     }
     return true;
 }

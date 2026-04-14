@@ -1559,6 +1559,17 @@ int readSigned(u_int32_t value, u_int32_t fieldSize)
     return value;
 }
 
+uint64_t unsignedToSigned(uint32_t rawValue, uint8_t width)
+{
+    uint64_t mask = (width >= 64) ? (uint64_t)(-1) : ((uint64_t)(1) << width) - 1;
+    uint64_t masked = rawValue & mask;
+    if (width > 0 && (masked >> (width - 1)) & 1)
+    {
+        return (uint64_t)(int64_t)(masked - ((uint64_t)(1) << width));
+    }
+    return masked;
+}
+
 int readSignedByte(u_int32_t value)
 {
     return readSigned(value, 8);

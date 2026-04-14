@@ -946,7 +946,7 @@ MfError gen_access_commands(mflash* mfl, flash_access_commands_t* access_command
 
 int is_srwd_supported_by_flash(u_int8_t vendor, u_int8_t type)
 {
-    return (vendor == FV_IS25LPXXX && type == FMT_IS25WPXXX);
+    return (vendor == FV_IS25LPXXX && (type == FMT_IS25WPXXX || type == FMT_IS25LPXXX));
 }
 
 int is_srp_supported_by_flash(uint8_t vendor, uint8_t type, u_int32_t log2_bank_size, MacronixSeriesCode series_code)
@@ -1926,8 +1926,106 @@ int connectib_flash_lock(mflash* mfl, int lock_state)
 
 #define CACHE_REP_OFF_RAVEN 0xf0440
 #define CACHE_REP_CMD_RAVEN 0xf0448
-#define CACHE_REP_OFF_NEW_GW_ADDR 0xf0484
-#define CACHE_REP_CMD_NEW_GW_ADDR 0xf0488
+#define CACHE_REP_OFF_GEN_5_LEGACY 0xf0408
+#define CACHE_REP_CMD_GEN_5_LEGACY 0xf040c
+#define CACHE_REP_OFF_GEN_5 0xf0444
+#define CACHE_REP_CMD_GEN_5 0xf0448
+#define CACHE_REP_OFF_GEN_6 0xf0484
+#define CACHE_REP_CMD_GEN_6 0xf0488
+#define PAGER_OFF_GEN_7_HCA 0x8a1204
+#define PAGER_CMD_GEN_7_HCA 0x8a1208
+#define PAGER_OFF_GEN_7_SWITCH 0x101204
+#define PAGER_CMD_GEN_7_SWITCH 0x101208
+
+/*
+ * Read cache-replacement offset and cmd from cr space.
+ * off_len == 32 means use full 32-bit value; else off = EXTRACT(data, off_start, off_len).
+ * cmd = EXTRACT(data, cmd_start, cmd_len).
+ * Non-zero offset or cmd => running FW (use MFBA to avoid hang); both zero => no running FW (prefer DFA).
+ */
+static int read_cache_rep_regs(mflash* mfl,
+                               u_int32_t off_addr,
+                               u_int32_t cmd_addr,
+                               u_int32_t* off,
+                               u_int32_t* cmd,
+                               int off_start,
+                               int off_len,
+                               int cmd_start,
+                               int cmd_len)
+{
+    FLASH_ACCESS_DPRINTF(
+      ("read_cache_rep_regs(): off_addr=0x%08x, cmd_addr=0x%08x, off_start=%d, off_len=%d, cmd_start=%d, cmd_len=%d\n",
+       off_addr, cmd_addr, off_start, off_len, cmd_start, cmd_len));
+    u_int32_t data = 0;
+    MREAD4(off_addr, &data);
+    *off = (off_len == 32) ? data : EXTRACT(data, off_start, off_len);
+    MREAD4(cmd_addr, &data);
+    *cmd = EXTRACT(data, cmd_start, cmd_len);
+    return 0;
+}
+
+typedef enum
+{
+    CACHE_REP_GEN_5_LEGACY,
+    CACHE_REP_GEN_5,
+    CACHE_REP_GEN_6,
+    PAGER_GEN_7_HCA,
+    PAGER_GEN_7_SWITCH,
+    CACHE_REP_RAVEN,
+    CACHE_REP_DYNAMIC,
+} cache_rep_or_pager_reg_type_t;
+
+static cache_rep_or_pager_reg_type_t get_reg_type(dm_dev_id_t devid_t)
+{
+    cache_rep_or_pager_reg_type_t reg_type = CACHE_REP_RAVEN;
+    switch (devid_t)
+    {
+        case DeviceBlueField:
+        case DeviceConnectX4:
+        case DeviceConnectX4LX:
+        case DeviceConnectX5:
+        case DeviceSpectrum:
+        case DeviceConnectIB:
+            reg_type = CACHE_REP_GEN_5_LEGACY;
+            break;
+        case DeviceBlueField2:
+        case DeviceConnectX6:
+        case DeviceConnectX6DX:
+        case DeviceConnectX6LX:
+        case DeviceSpectrum2:
+        case DeviceSpectrum3:
+        case DeviceQuantum:
+            reg_type = CACHE_REP_GEN_5;
+            break;
+        case DeviceQuantum2:
+        case DeviceSpectrum4:
+        case DeviceSpectrum5:
+        case DeviceConnectX7:
+        case DeviceBlueField3:
+            reg_type = CACHE_REP_GEN_6;
+            break;
+        case DeviceBlueField4:
+        case DeviceConnectX8:
+        case DeviceConnectX8_Pure_PCIe_Switch:
+        case DeviceConnectX9:
+        case DeviceConnectX9_Pure_PCIe_Switch:
+            reg_type = PAGER_GEN_7_HCA;
+            break;
+        case DeviceSpectrum6:
+        case DeviceQuantum3:
+        case DeviceNVLink6_Switch:
+            reg_type = PAGER_GEN_7_SWITCH;
+            break;
+        default:
+            if (!dm_dev_is_raven_family_switch(devid_t))
+            {
+                reg_type = CACHE_REP_DYNAMIC;
+            }
+            break;
+    }
+    return reg_type;
+}
+
 int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement)
 {
     *needs_cache_replacement = 0;
@@ -1946,45 +2044,59 @@ int check_cache_replacement_guard(mflash* mfl, u_int8_t* needs_cache_replacement
 
     if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0)
     {
-        u_int32_t off = 0, cmd = 0, data = 0;
+        u_int32_t off = 0, cmd = 0;
         dm_dev_id_t devid_t = DeviceUnknown;
         u_int32_t devid = 0;
         u_int32_t revid = 0;
+
         int rc = dm_get_device_id(mfl->mf, &devid_t, &devid, &revid);
         if (rc)
         {
             return rc;
         }
 
-        /* TODO - fix for QTM3/CX8/ArcusE/BF4 */
-        /* Read the Cache replacement offset and cmd fields */
-        if ((devid_t == DeviceQuantum2) || (devid_t == DeviceQuantum3) || (devid_t == DeviceNVLink6_Switch) || (devid_t == DeviceSpectrum4) || (devid_t == DeviceSpectrum5) ||
-            (devid_t == DeviceSpectrum6) || (devid_t == DeviceConnectX7) || (devid_t == DeviceConnectX8) || (devid_t == DeviceConnectX8_Pure_PCIe_Switch) || (devid_t == DeviceConnectX9) ||
-            (devid_t == DeviceConnectX9_Pure_PCIe_Switch))
+        // Read the Cache replacement offset and cmd fields
+        cache_rep_or_pager_reg_type_t reg_type = get_reg_type(devid_t);
+        FLASH_ACCESS_DPRINTF(("check_cache_replacement_guard(): reg_type=%d\n", reg_type));
+
+        switch (reg_type)
         {
-            MREAD4(CACHE_REP_OFF_NEW_GW_ADDR, &data);
-            off = data;
-            MREAD4(CACHE_REP_CMD_NEW_GW_ADDR, &data);
-            cmd = EXTRACT(data, 24, 8);
+            case CACHE_REP_GEN_5_LEGACY:
+                rc = read_cache_rep_regs(mfl, CACHE_REP_OFF_GEN_5_LEGACY, CACHE_REP_CMD_GEN_5_LEGACY, &off, &cmd, 0, 26,
+                                         16, 8);
+                break;
+            case CACHE_REP_GEN_5:
+                rc = read_cache_rep_regs(mfl, CACHE_REP_OFF_GEN_5, CACHE_REP_CMD_GEN_5, &off, &cmd, 0, 32, 16, 8);
+                break;
+            case CACHE_REP_GEN_6:
+                rc = read_cache_rep_regs(mfl, CACHE_REP_OFF_GEN_6, CACHE_REP_CMD_GEN_6, &off, &cmd, 0, 32, 24, 8);
+                break;
+            case PAGER_GEN_7_HCA:
+                rc = read_cache_rep_regs(mfl, PAGER_OFF_GEN_7_HCA, PAGER_CMD_GEN_7_HCA, &off, &cmd, 0, 32, 24, 8);
+                break;
+            case PAGER_GEN_7_SWITCH:
+                rc = read_cache_rep_regs(mfl, PAGER_OFF_GEN_7_SWITCH, PAGER_CMD_GEN_7_SWITCH, &off, &cmd, 0, 32, 24, 8);
+                break;
+            case CACHE_REP_RAVEN:
+                rc = read_cache_rep_regs(mfl, CACHE_REP_OFF_RAVEN, CACHE_REP_CMD_RAVEN, &off, &cmd, 0, 26, 16, 8);
+                break;
+            case CACHE_REP_DYNAMIC:
+                rc = read_cache_rep_regs(mfl, mfl->cache_rep_offset_field_addr, mfl->cache_rep_cmd_field_addr, &off,
+                                         &cmd, 0, 26, 16, 8);
+                break;
+
+            default:
+                /* Defensive: get_cache_rep_reg_type() always returns one of the enum values above, so we should never
+                 * reach here.*/
+                rc = MFE_BAD_PARAMS;
+                break;
         }
-        else if (!dm_dev_is_raven_family_switch(devid_t))
-        {
-            MREAD4(mfl->cache_rep_offset_field_addr, &data);
-            off = EXTRACT(data, 0, 26);
-            MREAD4(mfl->cache_rep_cmd_field_addr, &data);
-            cmd = EXTRACT(data, 16, 8);
-        }
-        else
-        { /* switches */
-            MREAD4(CACHE_REP_OFF_RAVEN, &data);
-            off = EXTRACT(data, 0, 26);
-            MREAD4(CACHE_REP_CMD_RAVEN, &data);
-            cmd = EXTRACT(data, 16, 8);
-        }
+        CHECK_RC(rc);
+
         FLASH_ACCESS_DPRINTF(("check_cache_replacement_guard(): off=%d, cmd=%d\n", off, cmd));
 
-        /* Check if the offset and cmd are zero in order to continue burning. */
-        if ((cmd != 0) || (off != 0))
+        // Check if the offset and cmd are zero in order to continue burning.
+        if (cmd != 0 || off != 0)
         {
             *needs_cache_replacement = 1;
         }
@@ -2453,6 +2565,36 @@ static int update_max_write_size(mflash* mfl)
     return ME_OK;
 }
 
+typedef int (*flash_direct_init_fn)(mflash* mfl, flash_params_t* flash_params);
+static int flash_init_with_cache_guard(mflash* mfl,
+                                       flash_params_t* flash_params,
+                                       flash_direct_init_fn direct_init,
+                                       u_int8_t check_icmd_before_fw_access)
+{
+    int rc;
+    u_int8_t needs_cache_replacement = 0;
+
+    rc = check_cache_replacement_guard(mfl, &needs_cache_replacement);
+    CHECK_RC(rc);
+
+    if (needs_cache_replacement)
+    {
+        if (check_icmd_before_fw_access && mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD)
+        {
+            rc = icmd_init(mfl);
+            CHECK_RC(rc);
+        }
+        rc = flash_init_fw_access(mfl, flash_params);
+        CHECK_RC(rc);
+    }
+    else
+    {
+        rc = direct_init(mfl, flash_params);
+        CHECK_RC(rc);
+    }
+    return MFE_OK;
+}
+
 /* access flash via FW using Flash Access Registers (either by INBAND/ICMD/TOOLS_HCR) */
 int flash_init_inband_access(mflash* mfl, flash_params_t* flash_params)
 {
@@ -2571,22 +2713,9 @@ int flash_init_fw_access(mflash* mfl, flash_params_t* flash_params)
 
 int sx_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
-    int rc = 0;
-    u_int8_t needs_cache_replacement = 0;
-
-    rc = check_cache_replacement_guard(mfl, &needs_cache_replacement);
+    int rc = flash_init_with_cache_guard(mfl, flash_params, sx_flash_init_direct_access, 0);
     CHECK_RC(rc);
 
-    if (needs_cache_replacement)
-    {
-        rc = flash_init_fw_access(mfl, flash_params);
-        CHECK_RC(rc);
-    }
-    else
-    {
-        rc = sx_flash_init_direct_access(mfl, flash_params);
-        CHECK_RC(rc);
-    }
     return MFE_OK;
 }
 
@@ -2616,89 +2745,64 @@ int tools_cmdif_init(mflash* mfl)
     return MFE_OK;
 }
 
+// we reach here due to one of the following cases:
+// 1. mcc failure -> choose DFA
+// 2. ocr flag is set -> choose DFA
+// 3. no_fw_ctrl flag is set -> if in LF, choose DFA. Otherwise, use legacy decision mechanism for choosing DFA vs MFBA
 int seven_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
     int rc = MFE_OK;
-
-    if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0)
+    if (mfl->opts[MFO_NO_FW_CTRL] == 0)
     {
-        if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD)
-        {
-            rc = icmd_init(mfl);
-            CHECK_RC(rc);
-        }
-        rc = flash_init_fw_access(mfl, flash_params);
+        FLASH_ACCESS_DPRINTF(("seven_gen_flash_init(): --no_fw_ctrl flag is not set\n")); // reached here due to mcc
+                                                                                          // failure or ocr flag
+        rc = seventh_gen_init_direct_access(mfl, flash_params);
+        CHECK_RC(rc);
     }
     else
     {
-        if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_MLNXOS_CMDIF)
+        FLASH_ACCESS_DPRINTF(("seven_gen_flash_init(): no_fw_ctrl flag is set\n"));
+        if (dm_is_livefish_mode(mfl->mf))
         {
-            /* dont allow overidding cache replacement in mellanox OS env */
-            return MFE_OCR_NOT_SUPPORTED;
+            FLASH_ACCESS_DPRINTF(("seven_gen_flash_init(): device is in LF\n"));
+            rc = seventh_gen_init_direct_access(mfl, flash_params);
+            CHECK_RC(rc);
         }
-        rc = seventh_gen_init_direct_access(mfl, flash_params);
+        else
+        {
+            FLASH_ACCESS_DPRINTF(
+              ("seven_gen_flash_init(): no_fw_ctrl used + device is not in LF\n")); // use legacy decision mechanism for
+                                                                                    // choosing DFA vs MFBA
+            rc = flash_init_with_cache_guard(mfl, flash_params, seventh_gen_init_direct_access, 1);
+            CHECK_RC(rc);
+        }
     }
+
     return rc;
 }
 
 int six_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
-    int rc = 0;
-    u_int8_t needs_cache_replacement = 0;
-
-    rc = check_cache_replacement_guard(mfl, &needs_cache_replacement);
+    int rc = flash_init_with_cache_guard(mfl, flash_params, sixth_gen_init_direct_access, 1);
     CHECK_RC(rc);
 
-    if (needs_cache_replacement)
-    {
-        if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD)
-        {
-            rc = icmd_init(mfl);
-            CHECK_RC(rc);
-        }
-        rc = flash_init_fw_access(mfl, flash_params);
-        CHECK_RC(rc);
-    }
-    else
-    {
-        rc = sixth_gen_init_direct_access(mfl, flash_params);
-        CHECK_RC(rc);
-    }
     return MFE_OK;
 }
 
 int fifth_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
-    int rc = 0;
-    u_int8_t needs_cache_replacement = 0;
-
     if (mfl->mf->gb_info.is_gb_mngr)
     {
-        /* need to update GW offsets before calling to the check_cache_replacement_guard */
+        // need to update GW offsets before calling to the check_cache_replacement_guard
         flash_update_amos_gearbox_gw(mfl);
     }
     else if (mfl->mf->gb_info.is_gearbox)
     {
-        return MFE_OCR_NOT_SUPPORTED; /* Accessing flash GW of GB that's not manager is not possible */
+        return MFE_OCR_NOT_SUPPORTED; // Accessing flash GW of GB that's not manager is not possible
     }
-    rc = check_cache_replacement_guard(mfl, &needs_cache_replacement);
+    int rc = flash_init_with_cache_guard(mfl, flash_params, fifth_gen_init_direct_access, 1);
     CHECK_RC(rc);
 
-    if (needs_cache_replacement)
-    {
-        if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD)
-        {
-            rc = icmd_init(mfl);
-            CHECK_RC(rc);
-        }
-        rc = flash_init_fw_access(mfl, flash_params);
-        CHECK_RC(rc);
-    }
-    else
-    {
-        rc = fifth_gen_init_direct_access(mfl, flash_params);
-        CHECK_RC(rc);
-    }
     return MFE_OK;
 }
 
@@ -3322,7 +3426,7 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
     return MFE_OK;
 }
 
-int mf_opend_int(mflash** pmfl, void* access_dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, u_int8_t access_type, void* dev_extra, int cx3_fw_access)
+int mf_opend_int(mflash** pmfl, void* access_dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, u_int8_t access_type, void* dev_extra, int cx3_fw_access, int no_fw_ctrl)
 {
     int rc = 0;
 
@@ -3335,6 +3439,7 @@ int mf_opend_int(mflash** pmfl, void* access_dev, int num_of_banks, flash_params
     memset(*pmfl, 0, sizeof(mflash));
 
     (*pmfl)->opts[MFO_IGNORE_CASHE_REP_GUARD] = ignore_cache_rep_guard;
+    (*pmfl)->opts[MFO_NO_FW_CTRL] = no_fw_ctrl;
     (*pmfl)->opts[MFO_CX3_FW_ACCESS_EN] = cx3_fw_access;
     (*pmfl)->access_type = access_type;
     if (access_type == MFAT_MFILE)
@@ -3362,12 +3467,12 @@ int mf_opend_int(mflash** pmfl, void* access_dev, int num_of_banks, flash_params
     return rc;
 }
 
-int mf_open_uefi(mflash** pmfl, uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_dev_extra)
+int mf_open_uefi(mflash** pmfl, uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_dev_extra, int no_fw_ctrl)
 {
-    return mf_opend_int(pmfl, (void*)uefi_dev, 4, (flash_params_t*)NULL, 0, MFAT_UEFI, (void*)uefi_dev_extra, 0);
+    return mf_opend_int(pmfl, (void*)uefi_dev, 4, (flash_params_t*)NULL, 0, MFAT_UEFI, (void*)uefi_dev_extra, 0, no_fw_ctrl);
 }
 
-int mf_open_int(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, int cx3_fw_access)
+int mf_open_int(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, int cx3_fw_access, int no_fw_ctrl)
 {
     mfile* mf;
     int rc = MFE_OK;
@@ -3396,7 +3501,7 @@ int mf_open_int(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t
             }
         }
     }
-    rc = mf_opend_int(pmfl, (struct mfile_t*)mf, num_of_banks, flash_params, ignore_cache_rep_guard, MFAT_MFILE, NULL, cx3_fw_access);
+    rc = mf_opend_int(pmfl, (struct mfile_t*)mf, num_of_banks, flash_params, ignore_cache_rep_guard, MFAT_MFILE, NULL, cx3_fw_access, no_fw_ctrl);
     if ((*pmfl))
     {
         (*pmfl)->opts[MFO_CLOSE_MF_ON_EXIT] = 1;
@@ -3408,14 +3513,14 @@ int mf_open_int(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t
     return rc;
 }
 
-int mf_open_adv(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, int cx3_fw_access)
+int mf_open_adv(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, int cx3_fw_access, int no_fw_ctrl)
 {
-    return mf_open_int(pmfl, dev, num_of_banks, flash_params, ignore_cache_rep_guard, cx3_fw_access);
+    return mf_open_int(pmfl, dev, num_of_banks, flash_params, ignore_cache_rep_guard, cx3_fw_access, no_fw_ctrl);
 }
 
-int mf_open(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard)
+int mf_open(mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, int no_fw_ctrl)
 {
-    return mf_open_int(pmfl, dev, num_of_banks, flash_params, ignore_cache_rep_guard, 0);
+    return mf_open_int(pmfl, dev, num_of_banks, flash_params, ignore_cache_rep_guard, 0, no_fw_ctrl);
 }
 
 void mf_close(mflash* mfl)
@@ -4340,6 +4445,11 @@ int mf_set_quad_en_direct_access(mflash* mfl, u_int8_t quad_en)
 
     if (!(mfl->attr.quad_en_support && mfl->supp_sr_mod))
     {
+        if (is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl) && quad_en == 1)
+        {
+            DPRINTF(("QE is constant 1, skipping\n"));
+            return MFE_OK;
+        }
         return MFE_NOT_SUPPORTED_OPERATION;
     }
     for (bank = 0; bank < mfl->attr.banks_num; bank++)
@@ -4444,6 +4554,12 @@ int is_WINBOND_60MB_bottom_protection_supported(uint8_t vendor, uint8_t type, ui
     return 0;
 }
 
+int is_256_sectors_number_supported(mflash* mfl)
+{
+    return is_macronix_mx25u51294g_mx25u51294gxdi08_wrapper(mfl) ||
+           is_WINBOND_60MB_bottom_protection_supported(mfl->attr.vendor, mfl->attr.type, mfl->attr.log2_bank_size);
+}
+
 int is_60MB_bottom_protection_params(write_protect_info_t* protect_info)
 {
     if ((protect_info->sectors_num != SECTOR_NUM_60MB_SPECIAL_CASE) || !protect_info->is_bottom || protect_info->is_subsector)
@@ -4523,11 +4639,10 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
     }
     if (protect_info->sectors_num > MAX_SECTORS_NUM)
     {
-        if (!is_60MB_bottom_protection_supported_wrapper(mfl))
-        {
-            return MFE_EXCEED_SECTORS_MAX_NUM;
-        }
-        if (!is_60MB_bottom_protection_params(protect_info))
+        bool is_256_exception = (protect_info->sectors_num == 256 && is_256_sectors_number_supported(mfl));
+        bool is_60mb_exception =
+          (is_60MB_bottom_protection_supported_wrapper(mfl) && is_60MB_bottom_protection_params(protect_info));
+        if (!is_256_exception && !is_60mb_exception)
         {
             return MFE_EXCEED_SECTORS_MAX_NUM;
         }
@@ -4569,7 +4684,8 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
         }
     }
 
-    for (log2_sect_num = 0; log2_sect_num < 8; log2_sect_num++)
+    const u_int32_t max_bp = 9;
+    for (log2_sect_num = 0; log2_sect_num <= max_bp; log2_sect_num++)
     {
         if (sectors_num == 0)
         {
@@ -4584,7 +4700,14 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
         (((mfl->attr.vendor == FV_S25FLXXXX) && (mfl->attr.type == FMT_S25FLXXXL) && (mfl->attr.log2_bank_size == FD_128)) ||
          ((mfl->attr.vendor == FV_WINBOND) && (mfl->attr.type == FMT_WINBOND_3V) && (mfl->attr.log2_bank_size == FD_128))))
     {
-        log2_sect_num -= 2; /* spec alignment */
+        log2_sect_num -= 2; // spec alignment
+    }
+
+    int bp_size = is_ISSI_is25wj032f(mfl) ? BP_SIZE : BP_SIZE + 1;
+    if (bp_size < 4 && log2_sect_num > 7) // not enough bits to set the BP value
+    {
+        DPRINTF(("BP Size (%d) is not enough to set the BP value (%d)\n", bp_size, log2_sect_num));
+        return MFE_NOT_SUPPORTED_OPERATION;
     }
 
     if ((mfl->attr.vendor == FV_ST) && (mfl->attr.type == FMT_N25QXXX))
@@ -4659,7 +4782,6 @@ int mf_set_write_protect_direct_access(mflash* mfl, u_int8_t bank_num, write_pro
             CHECK_RC(rc);
         }
 
-        int bp_size = is_ISSI_is25wj032f(mfl) ? BP_SIZE : BP_SIZE + 1;
         return mf_read_modify_status_winbond(mfl, bank_num, 1, log2_sect_num, BP_OFFSET, bp_size);
     }
     else

@@ -524,6 +524,31 @@ public:
         DEVICE_UNKNOWN
     } DeviceTypeT;
 
+    // aligned to MDSR register definitions
+    typedef enum
+    {
+        CS_TOKEN = 0,
+        DBG_FW_TOKEN = 1,
+        FRC_TOKEN = 2,
+        RMCS_TOKEN = 3,
+        RMDT_TOKEN = 4,
+        CRCS_TOKEN = 5,
+        CRDT_TOKEN = 6,
+        MTDT_TOKEN = 7,
+        UNKNOWN_TOKEN
+    } MDSRTokenType;
+
+    typedef enum
+    {
+        DEBUG_SESSION_ENDED_SUCCESSFULLY = 0,
+        FAILED_TO_EXECUTE = 1,
+        DEBUG_SESSION_ACTIVE = 2,
+        NO_TOKEN_APPLIED = 3,
+        CHALLENGE_PROVIDED = 4,
+        TIMEOUT_BEFORE_TOKEN_INSTALLED = 5,
+        TIMEOUT_OF_ACTIVE_TOKEN = 6,
+    } MDSRStatus;
+
     FwCompsMgr(const char* devname, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
     FwCompsMgr(mfile* mf, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
     FwCompsMgr(uefi_Dev_t* uefi_dev, uefi_dev_extra_t* uefi_extra);
@@ -586,6 +611,7 @@ public:
     bool queryMISOC(std::string& version, u_int32_t type, u_int32_t query_pending);
     bool runMISOC(reg_access_hca_misoc_reg_ext* bfb_component, u_int32_t type, u_int32_t query_pending);
     bool AddElsPortOffset(int& elsOffsetIndex);
+    bool IsCRDTDebugSessionActive();
 
 private:
     typedef enum

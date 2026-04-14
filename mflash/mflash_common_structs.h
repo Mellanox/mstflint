@@ -53,6 +53,7 @@ typedef enum MfOpt
     MFO_SX_TYPE,
     MFO_NEW_CACHE_REPLACEMENT_EN,
     MFO_CX3_FW_ACCESS_EN,
+    MFO_NO_FW_CTRL,
     MFO_LAST
 } MfOpt;
 

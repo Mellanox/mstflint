@@ -1,6 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,31 +30,63 @@
  * SOFTWARE.
  */
 
-#ifndef REG_IDS_H
-#define REG_IDS_H
+#ifndef PSID_UTILS_H
+#define PSID_UTILS_H
 
-#define REG_ID_MMHI 0x904A
-#define REG_ID_MGIR  0x9020
-#define REG_ID_MORD  0x9153
-#define REG_ID_MCAM  0x907f
-#define REG_ID_MPQD 0x9700
-#define REG_ID_PLIB  0x500a
-#define REG_ID_PMLP  0x5002
-#define REG_ID_PTYS  0x5004
-#define REG_ID_PAOS  0x5006
-#define REG_ID_PPCNT 0x5008
-#define REG_ID_PMAOS 0x5012
-#define REG_ID_SLTP  0x5027
-#define REG_ID_PDDR  0x5031
-#define REG_ID_PPHCR 0x503e
-#define REG_ID_PPAOS 0x5040
-#define REG_ID_PGUID 0x5066
-#define REG_ID_PPSLS 0x50e3
-#define REG_ID_MTCAP 0x9009
-#define REG_ID_MMTA  0x9113
-#define REG_ID_MPEGC 0x9056
-#define REG_ID_MPIR 0x9059
-#define REG_ID_MROQ 0x902F
+#include <cstdint>
+#include <cstring>
+#include <string>
 
+#ifdef __WIN__
 
+#ifdef MLXFWOP_EXPORTS
+#define MLXFWOP_API __declspec(dllexport)
+#else
+#define MLXFWOP_API __declspec(dllimport)
 #endif
+
+#else
+#define MLXFWOP_API
+#endif
+
+namespace psid_utils
+{
+
+constexpr size_t PSID_MAX_LEN = 16;
+
+enum class PsidCompatibilityStatus
+{
+    ALLOWED,
+    BLOCKED_PSID_MISMATCH,
+    BLOCKED_HEADER_MISMATCH,
+    BLOCKED_MAJOR_MISMATCH,
+    BLOCKED_MINOR_RESERVED,
+    BLOCKED_MINOR_LOCKED,
+};
+
+struct MinorPsidLockStatus
+{
+    bool featureSupported = false;
+    bool isLocked = false;
+    char lockedPsid[PSID_MAX_LEN + 1] = {};
+};
+
+class MLXFWOP_API PsidValidator
+{
+public:
+    PsidValidator(const char* devicePsid, const char* imagePsid, const MinorPsidLockStatus& lockStatus);
+
+    PsidCompatibilityStatus checkCompatibility() const;
+    std::string statusToString(PsidCompatibilityStatus status) const;
+
+    static std::string getMinor(const char* psid);
+
+private:
+    char _devicePsid[PSID_MAX_LEN + 1];
+    char _imagePsid[PSID_MAX_LEN + 1];
+    MinorPsidLockStatus _lockStatus;
+};
+
+} // namespace psid_utils
+
+#endif // PSID_UTILS_H

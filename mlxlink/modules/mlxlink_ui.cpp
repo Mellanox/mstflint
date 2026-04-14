@@ -302,14 +302,19 @@ void MlxlinkUi::printSynopsisCommands()
         "Keep primary/secondary role constant [EN(enable)/DS(disable)] (Optional, use with --set_primary or --set_secondary)");
     MlxlinkRecord::printFlagLine(SET_PLR_FLAG_SHORT, SET_PLR_FLAG, "", "Set PLR Configuration");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(PLR_REJECT_MODE_FLAG_SHORT, PLR_REJECT_MODE_FLAG, "reject_mode",
-                                 "PLR Reject Mode: 0(PLR margin)/1(CRC and CS)/2(CS) or Margin/CRC_CS/CS (Optional)");
+    MlxlinkRecord::printFlagLine(
+      PLR_REJECT_MODE_FLAG_SHORT, PLR_REJECT_MODE_FLAG, "reject_mode",
+      "PLR Reject Mode: 0/MARGIN (PLR margin), 1/CRC_CS (CRC and CS), 2/CS (CS only) (Optional)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PLR_MARGIN_THRESHOLD_FLAG_SHORT, PLR_MARGIN_THRESHOLD_FLAG, "margin_th",
                                  "PLR Margin Threshold [0-7] (Optional)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PLR_TX_CRC_FLAG_SHORT, PLR_TX_CRC_FLAG, "tx_crc",
-                                 "TX CRC over PLR: 0(disable)/1(enable) (Optional)");
+                                 "TX CRC over PLR: 0/DS(disable), 1/EN(enable) (Optional)");
+    MlxlinkRecord::printFlagLine(SET_TX_PRECODING_FLAG_SHORT, SET_TX_PRECODING_FLAG, "tx_precoding",
+                                 "Set TX Precoding [EN(enable)/DS(disable)]");
+    MlxlinkRecord::printFlagLine(SET_RX_PRECODING_FLAG_SHORT, SET_RX_PRECODING_FLAG, "rx_precoding",
+                                 "Set RX Precoding [EN(enable)/DS(disable)]");
     MlxlinkRecord::printFlagLine(PRBS_MODE_FLAG_SHORT, PRBS_MODE_FLAG, "prbs_mode",
                                  "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
@@ -1243,6 +1248,14 @@ void MlxlinkUi::checkStrLength(const string& str)
     }
 }
 
+void MlxlinkUi::validateNonEmptyValue(const string& value, const string& flagName)
+{
+    if (value.empty())
+    {
+        throw MlxRegException("The %s flag requires a non-empty argument.", flagName.c_str());
+    }
+}
+
 void MlxlinkUi::paramValidate()
 {
     validateMandatoryParams();
@@ -1291,10 +1304,11 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PLR_INFO_FLAG, PLR_INFO_FLAG_SHORT, "", "Show PLR Info");
     AddOptions(SET_PLR_FLAG, SET_PLR_FLAG_SHORT, "", "Set PLR configuration");
     AddOptions(PLR_REJECT_MODE_FLAG, PLR_REJECT_MODE_FLAG_SHORT, "PLR_REJECT_MODE",
-               "PLR reject mode (0-2 or Margin/CRC_CS/CS)");
+               "PLR Reject Mode: 0/MARGIN (PLR margin), 1/CRC_CS (CRC and CS), 2/CS (CS only) (Optional)");
     AddOptions(PLR_MARGIN_THRESHOLD_FLAG, PLR_MARGIN_THRESHOLD_FLAG_SHORT, "PLR_MARGIN_TH",
                "PLR margin threshold (0-7)");
-    AddOptions(PLR_TX_CRC_FLAG, PLR_TX_CRC_FLAG_SHORT, "PLR_TX_CRC", "TX CRC over PLR (0/1)");
+    AddOptions(PLR_TX_CRC_FLAG, PLR_TX_CRC_FLAG_SHORT, "PLR_TX_CRC",
+               "TX CRC over PLR: 0/DS(disable), 1/EN(enable) (Optional)");
     AddOptions(KR_INFO_FLAG, KR_INFO_FLAG_SHORT, "", "Show KR Info");
     AddOptions(PERIODIC_EQ_FLAG, PERIODIC_EQ_FLAG_SHORT, "", "Show Link PEQ (Periodic Equalization) Info");
     AddOptions(RX_RECOVERY_COUNTERS_FLAG, RX_RECOVERY_COUNTERS_FLAG_SHORT, "", "Show Rx Recovery Counters");
@@ -1688,7 +1702,8 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == PLR_REJECT_MODE_FLAG)
     {
-        _userInput._plrRejectMode = value;
+        validateNonEmptyValue(value, "--" PLR_REJECT_MODE_FLAG);
+        _userInput._plrRejectMode = toUpperCase(value);
         _userInput._plrRejectModeProvided = true;
         return PARSE_OK;
     }
@@ -1700,7 +1715,8 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == PLR_TX_CRC_FLAG)
     {
-        RegAccessParser::strToUint32((char*)value.c_str(), _userInput._plrTxCrc);
+        validateNonEmptyValue(value, "--" PLR_TX_CRC_FLAG);
+        _userInput._plrTxCrc = toUpperCase(value);
         _userInput._plrTxCrcProvided = true;
         return PARSE_OK;
     }
@@ -1759,6 +1775,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == BKV_GROUP_FLAG)
     {
+        validateNonEmptyValue(value, "--" BKV_GROUP_FLAG);
         checkStrLength(value);
         RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvGroupId);
         addCmd(SHOW_BKV_GROUP);
@@ -1766,6 +1783,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == SET_BKV_GROUP_FLAG)
     {
+        validateNonEmptyValue(value, "--" SET_BKV_GROUP_FLAG);
         checkStrLength(value);
         RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvGroupId);
         addCmd(SET_BKV_GROUP);
@@ -1773,21 +1791,25 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == BKV_RATES_FLAG)
     {
+        validateNonEmptyValue(value, "--" BKV_RATES_FLAG);
         _userInput._bkvRates = parseParamsFromLine(toUpperCase(value));
         return PARSE_OK;
     }
     else if (name == BKV_ROLES_FLAG)
     {
+        validateNonEmptyValue(value, "--" BKV_ROLES_FLAG);
         _userInput._bkvRoles = parseParamsFromLine(toUpperCase(value));
         return PARSE_OK;
     }
     else if (name == BKV_MODE_B_ROLES_FLAG)
     {
+        validateNonEmptyValue(value, "--" BKV_MODE_B_ROLES_FLAG);
         _userInput._bkvModeBRoles = parseParamsFromLine(toUpperCase(value));
         return PARSE_OK;
     }
     else if (name == SET_BKV_ENTRY_FLAG)
     {
+        validateNonEmptyValue(value, "--" SET_BKV_ENTRY_FLAG);
         checkStrLength(value);
         RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvGroupId);
         addCmd(SET_BKV_ENTRY);
@@ -1795,6 +1817,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == BKV_ENTRY_FLAG)
     {
+        validateNonEmptyValue(value, "--" BKV_ENTRY_FLAG);
         checkStrLength(value);
         RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvEntry);
         _userInput._bkvEntrySpecified = true;
@@ -1802,6 +1825,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == BKV_ADDRESS_FLAG)
     {
+        validateNonEmptyValue(value, "--" BKV_ADDRESS_FLAG);
         checkStrLength(value);
         RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvAddress);
         _userInput._bkvAddressSpecified = true;
@@ -1809,6 +1833,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == BKV_WDATA_FLAG)
     {
+        validateNonEmptyValue(value, "--" BKV_WDATA_FLAG);
         checkStrLength(value);
         RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvWdata);
         _userInput._bkvWdataSpecified = true;
@@ -1816,6 +1841,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == BKV_WMASK_FLAG)
     {
+        validateNonEmptyValue(value, "--" BKV_WMASK_FLAG);
         checkStrLength(value);
         RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._bkvWmask);
         _userInput._bkvWmaskSpecified = true;
@@ -2191,6 +2217,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     }
     else if (name == LANE_INDEX_FLAG)
     {
+        validateNonEmptyValue(value, "--" LANE_INDEX_FLAG);
         checkStrLength(value);
         RegAccessParser::strToUint32((char*)value.c_str(), (u_int32_t&)_userInput._lane);
         _userInput.gradeScanPerLane = true;

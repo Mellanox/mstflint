@@ -51,11 +51,31 @@ extern "C"
 
 #include <mtcr.h>
 
-    #define MAX_DIODE_LEN 9 // 8 bytes for diode name + 1 for '\0
+    #define MAX_DIODE_LEN 32 // Sufficient for names like "mod15_TEC" (10 chars + null)
     #define TD_FW_ALL_DIODES -1
     #define DEFAULT_THRESH_PROT_VAL \
     130 /* determines the default HW threshold value for thermal shutdown as configured by fw */
     #define TD_FW_INVALID_TEMP -1000
+
+    /* Temperature unit types */
+    typedef enum
+    {
+        TD_FW_TEMP_UNIT_0_125C = 0, // 0.125°C resolution (default)
+        TD_FW_TEMP_UNIT_1_256C = 1  // 1/256°C resolution (~0.0039°C, high precision)
+    } td_temp_unit_t;
+
+    /* MMTA Module sensor types */
+    typedef enum
+    {
+        TD_MMTA_SENSOR_ELS = 0, // External Laser Source (temperature)
+        TD_MMTA_SENSOR_OE = 1,  // Optical Engine (temperature)
+        TD_MMTA_SENSOR_TEC = 2  // Thermoelectric Cooler (power)
+    } td_mmta_sensor_type_t;
+
+/* MMTA supported measurements bitmap */
+#define MMTA_SUPPORTED_ELS_TEMP 0x01  /* Bit 0 */
+#define MMTA_SUPPORTED_TEC_POWER 0x02 /* Bit 1 */
+#define MMTA_SUPPORTED_OE_TEMP 0x04   /* Bit 2 */
 
     typedef enum
     {
@@ -64,6 +84,8 @@ extern "C"
         TDFWE_ICMD = 3,                /* error accessing ICMD iterface*/ //V
         TDFWE_FW_NOT_LOADED,           /* error indicating the FW is stuck or not loaded*/
         TDFWE_MEM_ERROR,               /* memory allocation failed.*/ //V
+        TDFWE_MEM_ALLOC_FAIL,          /* memory allocation failed (alternate name) */
+        TDFWE_REG_ACCESS_ERR,          /* register access error */
         TDFWE_BAD_CONFIG,              /* bad didoe configuration */
         TDFWW_UNSUPPORTED = -1,        /* warning: the requested functionality is unsupported. nothing done */
         TDFWW_DEVICE_NOTSUPPORTS = -2, /* the specific device does not support the requested operation */
@@ -87,20 +109,28 @@ extern "C"
         _TD_FW_NUM_DIODES
     } td_fw_diode_id_t;
 
+    /* Original td_data_fw structure - MTMP sensors */
     typedef struct
     {
-        int diode_idx;    /* idode index*/
-        int temp;         /* contains the temperature of the diode in celcius, field valid iff field != INVALID_TEMP */
-        int max_temp;     /* contains the highest measured temperature from the sensor , field valid iff field !=
-                             INVALID_TEMP */
-        int threshold_hi; /* if diode is configured in thermal protect this is the high threshold of the hysteresis
-                             mechanism, field valid iff field != INVALID_TEMP*/
-        int threshold_lo; /* if diode is configured in thermal protect this is the low threshold of the hysteresis
-                             mechanism, field valid iff field != INVALID_TEMP*/
-        int hw_threshold; /* if diode is configured for thermal protection (field != INVALID_TEMP) the value is the
-                             threshold for hw thermal shutdown*/
-        char diode_name[MAX_DIODE_LEN]; /* 8 charachters long didoe symbol */
+        int diode_idx;      /* diode index */
+        float temp;         /* temperature in Celsius, field valid iff field != INVALID_TEMP */
+        float max_temp;     /* highest measured temperature, field valid iff field != INVALID_TEMP */
+        float threshold_hi; /* high threshold of the hysteresis mechanism, field valid iff field != INVALID_TEMP */
+        float threshold_lo; /* low threshold of the hysteresis mechanism, field valid iff field != INVALID_TEMP */
+        float hw_threshold; /* threshold for hw thermal shutdown, field valid iff field != INVALID_TEMP */
+        char diode_name[MAX_DIODE_LEN]; /* 8 characters long diode symbol */
     } td_data_fw;
+
+    /* MMTA sensor data */
+    typedef struct
+    {
+        // For TEC sensors: temp/max_temp contain power in milliwatts (mW)
+        // For ELS/OE sensors: temp/max_temp contain temperature in Celsius
+        td_data_fw base;
+        td_mmta_sensor_type_t type; // ELS, OE, or TEC
+        td_temp_unit_t temp_unit;   // precision/unit for display formatting
+        char unit_str[16];          // "0.125°C", "1/256°C", or "1mW"
+    } td_data_mmta;
 
     #define TD_FW_MAX_ERR_LEN 100
     extern char td_fw_err_str[];
@@ -131,12 +161,31 @@ extern "C"
     td_fw_result_t td_fw_read_diodes(mfile* mf, int diode_idx, int* diodes_read, td_data_fw** data_p);
 
     /*
+     * Read all CPO module sensors via MMTA register
+     * IN:
+     * mf - device context
+     * OUT:
+     * sensors_read - number of sensor entries found (up to 3 per module: ELS, OE, TEC)
+     * data_p - pointer to allocated array of sensor data
+     * return status - TDFW_SUCCESS on success
+     */
+    td_fw_result_t
+      td_fw_read_module_sensors(mfile* mf, td_temp_unit_t requested_unit, int* sensors_read, td_data_mmta** data_p);
+
+    /*
      * free allocated data pointer
      * IN:
      * data_p - pointer to data
      * doesnt exist) OUT: return status - 0==success else failure.
      */
     void td_fw_release_data(td_data_fw* data_p);
+
+    /*
+     * free allocated MMTA module data pointer
+     * IN:
+     * data_p - pointer to MMTA module data
+     */
+    void td_fw_release_mmta_data(td_data_mmta* data_p);
 
     /*
      * get diode readings of a specific diode_idx and return the readings in diode_data

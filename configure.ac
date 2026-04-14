@@ -28,7 +28,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT(mstflint, 4.35.0, akiselman-org@exchange.nvidia.com)
+AC_INIT(mstflint, 4.36.0, akiselman-org@exchange.nvidia.com)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Firmware Burning and Diagnostics Tools for NVIDIA network devices.])
 AC_SUBST([PROJECT])
@@ -251,7 +251,15 @@ if test "x$enable_fw_mgr" = "xyes"; then
     AC_SUBST(libz_LIBS)
 fi
 
-if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"; then
+AC_MSG_CHECKING(--enable-dpa argument)
+AC_ARG_ENABLE(dpa,
+    AS_HELP_STRING([--enable-dpa], [enable compilation of the mstdpa tool (Linux x86_64/aarch64 only) [default=disabled]]),
+    [enable_dpa="$enableval"],
+    [enable_dpa="no"]
+)
+AC_MSG_RESULT($enable_dpa)
+
+if test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes"; then
     AC_ARG_WITH([liblzma], AS_HELP_STRING([--with-liblzma=PATH], [use liblzma from the specified PATH]),
         [
             liblzma_dir="$withval"
@@ -747,7 +755,7 @@ AS_IF([test "x$enable_fw_mgr" = "xyes"],
         AC_CONFIG_FILES(mlxfwupdate/Makefile)
         AC_CONFIG_FILES(ext_libs/iniParser/Makefile)
         AC_CONFIG_FILES(mlxarchive/Makefile)
-        FW_MGR_TOOLS="mlxfwupdate mlxarchive"
+        FW_MGR_TOOLS="mlxarchive mlxfwupdate"
     ]
 )
 
@@ -790,7 +798,7 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
 
 AM_CONDITIONAL([ADB_GENERIC_TOOLS_ENABLED], [test "x$enable_adb_generic_tools" = "xyes"])
 
-AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"],
+AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes" || test "x$enable_dpa" = "xyes"],
     [
         AC_CONFIG_FILES(xz_utils/Makefile)
         XZ_UTILS_DIR="xz_utils"

@@ -38,6 +38,7 @@
 #include "flint_base.h"
 #include "flint_io.h"
 #include "fw_ops.h"
+#include "psid_utils.h"
 #include "fs5_ops.h"
 #include "fs4_ops.h"
 #include "fs3_ops.h"
@@ -573,7 +574,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
     else if (fwParams.hndlType == FHT_UEFI_DEV)
     {
         *ioAccessP = new Flash;
-        if (!(*ioAccessP)->open(fwParams.uefiHndl, &fwParams.uefiExtra, false, !fwParams.shortErrors))
+        if (!(*ioAccessP)->open(fwParams.uefiHndl, &fwParams.uefiExtra, false, !fwParams.shortErrors, fwParams.noFwCtrl))
         {
             WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
             delete *ioAccessP;
@@ -583,7 +584,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase** ioAccessP, 
     else if (fwParams.hndlType == FHT_MST_DEV)
     {
         *ioAccessP = new Flash;
-        if (!(*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks, fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors, fwParams.cx3FwAccess))
+        if (!(*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks, fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors, fwParams.cx3FwAccess, fwParams.noFwCtrl))
         {
             // TODO: release memory here ?
             WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
@@ -1657,15 +1658,32 @@ bool FwOperations::FwSetPrint(PrintCallBack PrintFunc)
     return true;
 }
 
+psid_utils::MinorPsidLockStatus FwOperations::queryMinorPsidLockStatus()
+{
+    return psid_utils::MinorPsidLockStatus();
+}
+
 bool FwOperations::CheckPSID(FwOperations& imageOps, u_int8_t allow_psid_change)
 {
-    if (!allow_psid_change)
+    if (allow_psid_change)
     {
-        if (strncmp(_fwImgInfo.ext_info.psid, imageOps._fwImgInfo.ext_info.psid, PSID_LEN))
-        {
-            return errmsg(MLXFW_PSID_MISMATCH_ERR, "Image PSID is %s, it cannot be burnt into current device (PSID: %s)", imageOps._fwImgInfo.ext_info.psid, _fwImgInfo.ext_info.psid);
-        }
+        return true;
     }
+
+    const char* devPsid = _fwImgInfo.ext_info.psid;
+    const char* imgPsid = imageOps._fwImgInfo.ext_info.psid;
+
+    psid_utils::MinorPsidLockStatus lockStatus = queryMinorPsidLockStatus();
+    psid_utils::PsidValidator validator(devPsid, imgPsid, lockStatus);
+
+    psid_utils::PsidCompatibilityStatus compatibilityStatus = validator.checkCompatibility();
+
+    if (compatibilityStatus != psid_utils::PsidCompatibilityStatus::ALLOWED)
+    {
+        std::string errMsg = validator.statusToString(compatibilityStatus);
+        return errmsg(MLXFW_PSID_MISMATCH_ERR, "%s", errMsg.c_str());
+    }
+
     return true;
 }
 
@@ -2344,6 +2362,11 @@ bool FwOperations::IsEncryptionSupported()
     return errmsg("IsEncryptionSupported not supported.");
 }
 
+bool FwOperations::IsCRDTDebugSessionActive()
+{
+    return errmsg("IsCRDTDebugSessionActive is not supported");
+}
+
 bool FwOperations::FwBurnAdvanced(std::vector<u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
 {
     (void)imageOps4MData;
@@ -2431,6 +2454,12 @@ bool FwOperations::UpdateSection(void* new_info, fs3_section_t sect_type, bool i
     (void)callBackFunc;
     return errmsg("UpdateSection not supported.");
 }
+
+bool FwOperations::UpdateSection(fs3_section_t, std::vector<u_int8_t>&, const char*, PrintCallBack)
+{
+    return errmsg("UpdateSection not supported.");
+}
+
 bool FwOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning)
 {
     (void)timestamp;
