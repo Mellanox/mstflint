@@ -340,3 +340,13 @@ string MlxlinkRegParser::getAscii(const string& name, u_int32_t size)
     }
     return (value != "") ? value : NA_FIELD_VALUE;
 }
+
+string MlxlinkRegParser::getFieldDescription(const string& fieldName)
+{
+    auto* instance = RegAccessParser::getField(fieldName);
+    if (instance && instance->fieldDesc && !instance->fieldDesc->desc.empty())
+    {
+        return instance->fieldDesc->desc;
+    }
+    return "";
+}
