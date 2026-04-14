@@ -259,7 +259,21 @@ bool _RegAccessParser_impl<dynamic>::_on_traverse_update_buffer(const string& ca
             {
                 throw MlxRegException("Field: %s is ReadOnly", calculated_path.c_str());
             }
-            parser->updateBuffer((uint32_t)calculated_offset, (uint32_t)instance->get_size(), value);
+            uint32_t field_size = (uint32_t)instance->get_size();
+            if (field_size == 0 || field_size > 32)
+            {
+                throw MlxRegException(
+                  "Field '%s' has invalid size: %d bits (must be 1-32)", calculated_path.c_str(), field_size);
+            }
+            if (field_size < 32 && value > ((1u << field_size) - 1))
+            {
+                throw MlxRegException("Value: 0x%x exceeds maximum value for field '%s' (%d bits, max: 0x%x)",
+                                      value,
+                                      calculated_path.c_str(),
+                                      field_size,
+                                      (1u << field_size) - 1);
+            }
+            parser->updateBuffer((uint32_t)calculated_offset, field_size, value);
             parser->_params_map.erase(key);
             break;
         }
@@ -352,6 +366,14 @@ void _RegAccessParser_impl<dynamic>::updateBufferUnknwon(std::vector<string> fie
         {
             throw MlxRegException("Invalid size: %d. max size = 32 (bits)", fieldSizeUint);
         }
+        // validate value fits within the field size
+        if (fieldSizeUint < 32 && fieldDataUint > ((1u << fieldSizeUint) - 1))
+        {
+            throw MlxRegException("Value: 0x%x exceeds maximum value for a %d-bit field (max: 0x%x)",
+                                  fieldDataUint,
+                                  fieldSizeUint,
+                                  (1u << fieldSizeUint) - 1);
+        }        
         // extract <address> <offset>
         string fieldLocStr = fieldPropVec[0];
         std::vector<std::string> fieldLocVec = strSplit(fieldLocStr, '.', true);
