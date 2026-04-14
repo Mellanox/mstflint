@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,7 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-
+ 
  *
  */
 
@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cstdio>
+#include <sstream>
 #include <stdexcept>
 #include <fstream>
 #include <assert.h>
@@ -55,9 +56,14 @@
 #define IDENT "    "
 #define IDENT2 IDENT IDENT
 #define IDENT3 "\t\t"
-#define COLUMNS_SPACE 3
+#define COLUMNS_SPACE 1
 #define VALUE_COLUMN_LINE_LEN 14
 #define QUERY_COLUMNS_COLUMN_LINE_LEN 58
+#define DESCRIPTION_WIDTH 80
+#define TABLE_FIXED_COLS_WIDTH_SIMPLE 14   // Data column + separators
+#define TABLE_FIXED_COLS_WIDTH_DETAILED 59 // Hex Value + Decimal (10 for uint32 max) + Enum/Type + separators
+#define DECIMAL_COLUMN_WIDTH 10            // Max digits for uint32_t
+#define TABLE_FIXED_COLS_WIDTH_STANDARD 41 // Address + Offset + Size + Access + separators
 #ifdef MST_UL
 #define MLXREG_EXEC "mstreg"
 #else
@@ -89,36 +95,76 @@
     }                             \
     printf("\n");
 
+/** Remove [..] index segments from a field path so array elements can be grouped together.
+ *  Also strip a trailing dotted (.hi/.lo) or underscored (_hi/_lo) half-field suffix so split
+ *  wide fields (e.g. mepc.hi + mepc.lo, or byte_counter_0_hi + byte_counter_0_lo) share a key. */
+static std::string fieldNameKeyForGrouping(const std::string& name)
+{
+    std::string s = name;
+    for (size_t pos = 0; (pos = s.find('[', pos)) != std::string::npos;)
+    {
+        size_t end = s.find(']', pos);
+        if (end == std::string::npos)
+            break;
+        s.erase(pos, end - pos + 1);
+    }
+    // Strip one trailing _<digits> (e.g. index_dump_0 / index_dump_1 -> same key "index_dump")
+    if (!s.empty())
+    {
+        size_t i = s.size();
+        while (i > 0 && s[i - 1] >= '0' && s[i - 1] <= '9')
+        {
+            --i;
+        }
+        if (i > 0 && i < s.size() && s[i - 1] == '_')
+        {
+            s.erase(i - 1);
+        }
+    }
+    // Strip trailing .hi/.lo or _hi/_lo (32-bit halves of one logical field in ADB)
+    static const char* const halfSuffixes[] = {".hi", ".lo", "_hi", "_lo"};
+    const size_t suffixLen = 3;
+    for (const char* suffix : halfSuffixes)
+    {
+        if (s.size() >= suffixLen && s.compare(s.size() - suffixLen, suffixLen, suffix, suffixLen) == 0)
+        {
+            s.erase(s.size() - suffixLen);
+            break;
+        }
+    }
+    return s;
+}
+
 /************************************
-* FLAGS Constants
-************************************/
-#define DEVICE_FLAG                 "device"
-#define DEVICE_FLAG_SHORT           'd'
-#define HELP_FLAG                   "help"
-#define HELP_FLAG_SHORT             'h'
-#define VERSION_FLAG                "version"
-#define VERSION_FLAG_SHORT          'v'
-#define ADB_FILE_FLAG               "adb_file"
-#define ADB_FILE_FLAG_SHORT         'a'
-#define REG_NAME_FLAG               "reg_name"
-#define REG_NAME_FLAG_SHORT         ' '
-#define REG_ID_FLAG                 "reg_id"
-#define REG_ID_FLAG_SHORT           ' '
-#define IDXES_FLAG                  "indexes"
-#define IDXES_FLAG_SHORT            'i'
-#define OPS_FLAG                    "op"
-#define OPS_FLAG_SHORT              'o'
-#define REG_LEN_FLAG                "reg_len"
-#define REG_LEN_FLAG_SHORT          ' '
-#define OP_GET_FLAG                 "get"
-#define OP_GET_FLAG_SHORT           'g'
-#define OP_SET_FLAG                 "set"
-#define OP_SET_FLAG_SHORT           's'
-#define OP_SHOW_REG_FLAG            "show_reg"
-#define OP_SHOW_REG_FLAG_SHORT      ' '
-#define OP_SHOW_REGS_FLAG           "show_regs"
-#define OP_SHOW_REGS_FLAG_SHORT     ' '
-#define OP_SHOW_ALL_REGS_FLAG       "show_all_regs"
+ * FLAGS Constants
+ ************************************/
+#define DEVICE_FLAG "device"
+#define DEVICE_FLAG_SHORT 'd'
+#define HELP_FLAG "help"
+#define HELP_FLAG_SHORT 'h'
+#define VERSION_FLAG "version"
+#define VERSION_FLAG_SHORT 'v'
+#define ADB_FILE_FLAG "adb_file"
+#define ADB_FILE_FLAG_SHORT 'a'
+#define REG_NAME_FLAG "reg_name"
+#define REG_NAME_FLAG_SHORT ' '
+#define REG_ID_FLAG "reg_id"
+#define REG_ID_FLAG_SHORT ' '
+#define IDXES_FLAG "indexes"
+#define IDXES_FLAG_SHORT 'i'
+#define OPS_FLAG "op"
+#define OPS_FLAG_SHORT 'o'
+#define REG_LEN_FLAG "reg_len"
+#define REG_LEN_FLAG_SHORT ' '
+#define OP_GET_FLAG "get"
+#define OP_GET_FLAG_SHORT 'g'
+#define OP_SET_FLAG "set"
+#define OP_SET_FLAG_SHORT 's'
+#define OP_SHOW_REG_FLAG "show_reg"
+#define OP_SHOW_REG_FLAG_SHORT ' '
+#define OP_SHOW_REGS_FLAG "show_regs"
+#define OP_SHOW_REGS_FLAG_SHORT ' '
+#define OP_SHOW_ALL_REGS_FLAG "show_all_regs"
 #define OP_SHOW_ALL_REGS_FLAG_SHORT ' '
 #define IGNORE_REG_CHECK_FLAG "ignore_reg_check"
 #define IGNORE_REG_CHECK_FLAG_SHORT ' '
@@ -138,6 +184,14 @@
 #define GEN_CMD_BUFFER_FLAG_SHORT ' '
 #define NO_DYNAMIC_FLAG "no_dynamic"
 #define NO_DYNAMIC_FLAG_SHORT ' '
+#define DETAILED_FLAG "detailed"
+#define DETAILED_FLAG_SHORT ' '
+#define ADVANCED_FLAG "advanced"
+#define ADVANCED_FLAG_SHORT ' '
+#define FIELD_FLAG "field"
+#define FIELD_FLAG_SHORT ' '
+#define FULL_DESC_FLAG "full_desc"
+#define FULL_DESC_FLAG_SHORT ' '
 
 using namespace mlxreg;
 namespace Algorithm = mstflint::common::algorithm;
@@ -180,6 +234,10 @@ MlxRegUi::MlxRegUi() : CommandLineRequester("mlxreg OPTIONS"), _cmdParser("mlxre
     _overwrite = false;
     _full_path = false;
     _use_dynamic = true;
+    _detailed = false;
+    _advanced = false;
+    _full_desc = false;
+    _field_name = "";
     _gen_cmd_buffer_device_type = "";
 
 #if defined(EXTERNAL) || defined(MST_UL)
@@ -205,32 +263,40 @@ MlxRegUi::~MlxRegUi()
  ************************************/
 void MlxRegUi::initCmdParser()
 {
-    AddOptions(DEVICE_FLAG,       DEVICE_FLAG_SHORT, "MstDevice", "Mellanox mst device name");
-    AddOptions(HELP_FLAG,         HELP_FLAG_SHORT, "", "Show help message and exit");
-    AddOptions(VERSION_FLAG,      VERSION_FLAG_SHORT, "", "Show version and exit");
-    AddOptions(ADB_FILE_FLAG,     ADB_FILE_FLAG_SHORT, "AdbFile", "External ADB file");
-    AddOptions(REG_NAME_FLAG,     REG_NAME_FLAG_SHORT, "RegisterName", "Access register name");
-    AddOptions(REG_ID_FLAG,       REG_ID_FLAG_SHORT, "RegisterID", "Access register ID");
-    AddOptions(IDXES_FLAG,        IDXES_FLAG_SHORT, "RegisterData", "Register data");
-    AddOptions(OPS_FLAG,          OPS_FLAG_SHORT, "RegisterData", "Register data");
-    AddOptions(REG_LEN_FLAG,      REG_LEN_FLAG_SHORT, "RegisterDataLen", "Register data length");
-    AddOptions(IGNORE_REG_CHECK_FLAG, IGNORE_REG_CHECK_FLAG_SHORT, "", "");
+    AddOptions(DEVICE_FLAG, DEVICE_FLAG_SHORT, "MstDevice", "Mellanox mst device name");
+    AddOptions(HELP_FLAG, HELP_FLAG_SHORT, "", "Show help message and exit");
+    AddOptions(VERSION_FLAG, VERSION_FLAG_SHORT, "", "Show version and exit");
+    AddOptions(ADB_FILE_FLAG, ADB_FILE_FLAG_SHORT, "AdbFile", "External ADB file");
+    AddOptions(REG_NAME_FLAG, REG_NAME_FLAG_SHORT, "RegisterName", "Access register name");
+    AddOptions(REG_ID_FLAG, REG_ID_FLAG_SHORT, "RegisterID", "Access register ID");
+    AddOptions(IDXES_FLAG, IDXES_FLAG_SHORT, "RegisterData", "Register data");
+    AddOptions(OPS_FLAG, OPS_FLAG_SHORT, "RegisterData", "Register data");
+    AddOptions(REG_LEN_FLAG, REG_LEN_FLAG_SHORT, "RegisterDataLen", "Register data length");
+    AddOptions(IGNORE_REG_CHECK_FLAG, IGNORE_REG_CHECK_FLAG_SHORT, "", "", true);
     AddOptions(OP_GET_FLAG, OP_GET_FLAG_SHORT, "", "Register access GET");
     AddOptions(OP_SET_FLAG, OP_SET_FLAG_SHORT, "RegisterData", "Register access SET");
     AddOptions(OP_SHOW_REG_FLAG, OP_SHOW_REG_FLAG_SHORT, "RegisterName",
                "Print register <reg_name> properties and exit");
     AddOptions(OP_SHOW_REGS_FLAG, OP_SHOW_REGS_FLAG_SHORT, "", "Print available registers names and exit");
-    AddOptions(OP_SHOW_ALL_REGS_FLAG, OP_SHOW_ALL_REGS_FLAG_SHORT, "", "");
+    AddOptions(OP_SHOW_ALL_REGS_FLAG, OP_SHOW_ALL_REGS_FLAG_SHORT, "", "", true);
     AddOptions(FORCE_FLAG, FORCE_FLAG_SHORT, "", "");
+#if !defined(EXTERNAL) && !defined(MST_UL)
     AddOptions(IGNORE_RO, IGNORE_RO_SHORT, "", "Ignore the access check in the SET operation");
     AddOptions(FILE_TO_DUMP_BUFFER, FILE_TO_DUMP_BUFFER_SHORT, "OutputFile",
                "Dump buffer to file instead of sending to device");
     AddOptions(FILE_IO, FILE_IO_SHORT, "FilePath", "Work with file for IO instead of CLI flags");
+#endif
     AddOptions(OVERWRITE_FLAG, OVERWRITE_FLAG_SHORT, "",
                "Set only specified fields, set unspecified fields to zero (only valid for SET command)");
     AddOptions(FULL_PATH_FLAG, FULL_PATH_FLAG_SHORT, "", "Show field names with full hierarchical path");
     AddOptions(NO_DYNAMIC_FLAG, NO_DYNAMIC_FLAG_SHORT, "",
                "Disable dynamic ADB features, conditional unions and arrays");
+    AddOptions(DETAILED_FLAG, DETAILED_FLAG_SHORT, "", "Show detailed output including enum names and decimal values");
+    AddOptions(ADVANCED_FLAG, ADVANCED_FLAG_SHORT, "", "Show advanced output with field descriptions");
+    AddOptions(FULL_DESC_FLAG, FULL_DESC_FLAG_SHORT, "",
+               "Show full wrapped descriptions instead of truncated (used with --advanced flag)");
+    AddOptions(FIELD_FLAG, FIELD_FLAG_SHORT, "FieldName",
+               "Filter to show specific field only (used with --advanced flag)");
     AddOptions(
       GEN_CMD_BUFFER_FLAG, GEN_CMD_BUFFER_FLAG_SHORT, "DeviceType",
       "Generate register buffer without sending to device (offline operation, no device required, only valid for GET/SET with --reg_name). DeviceType: HCA|Switch|Retimer|GPU");
@@ -275,17 +341,17 @@ void MlxRegUi::printHelp()
     // print options
     printf("\n");
     printf(IDENT "OPTIONS:\n");
-    printFlagLine(HELP_FLAG_SHORT,          HELP_FLAG,         "", "Display help message.");
-    printFlagLine(VERSION_FLAG_SHORT,       VERSION_FLAG,      "", "Display version info.");
-    printFlagLine(DEVICE_FLAG_SHORT,        DEVICE_FLAG,       "device", "Perform operation for a specified mst device.");
-    printFlagLine(ADB_FILE_FLAG_SHORT,      ADB_FILE_FLAG,     "adb_file", "An external ADB file");
-    printFlagLine(REG_NAME_FLAG_SHORT,      REG_NAME_FLAG,     "reg_name", "Known access register name");
-    printFlagLine(REG_ID_FLAG_SHORT,        REG_ID_FLAG,       "reg_ID", "Access register ID");
-    printFlagLine(REG_LEN_FLAG_SHORT,       REG_LEN_FLAG,      "reg_length", "Access register layout length (bytes)");
-    printFlagLine(IDXES_FLAG_SHORT,         IDXES_FLAG,        "idxs_vals", "Register indexes");
-    printFlagLine(OPS_FLAG_SHORT,           OPS_FLAG,          "ops_vals", "Register optional fields");
-    printFlagLine(OP_GET_FLAG_SHORT,        OP_GET_FLAG,       "", "Register access GET");
-    printFlagLine(OP_SET_FLAG_SHORT,        OP_SET_FLAG,       "reg_dataStr", "Register access SET");
+    printFlagLine(HELP_FLAG_SHORT, HELP_FLAG, "", "Display help message.");
+    printFlagLine(VERSION_FLAG_SHORT, VERSION_FLAG, "", "Display version info.");
+    printFlagLine(DEVICE_FLAG_SHORT, DEVICE_FLAG, "device", "Perform operation for a specified mst device.");
+    printFlagLine(ADB_FILE_FLAG_SHORT, ADB_FILE_FLAG, "adb_file", "An external ADB file");
+    printFlagLine(REG_NAME_FLAG_SHORT, REG_NAME_FLAG, "reg_name", "Known access register name");
+    printFlagLine(REG_ID_FLAG_SHORT, REG_ID_FLAG, "reg_ID", "Access register ID");
+    printFlagLine(REG_LEN_FLAG_SHORT, REG_LEN_FLAG, "reg_length", "Access register layout length (bytes)");
+    printFlagLine(IDXES_FLAG_SHORT, IDXES_FLAG, "idxs_vals", "Register indexes");
+    printFlagLine(OPS_FLAG_SHORT, OPS_FLAG, "ops_vals", "Register optional fields");
+    printFlagLine(OP_GET_FLAG_SHORT, OP_GET_FLAG, "", "Register access GET");
+    printFlagLine(OP_SET_FLAG_SHORT, OP_SET_FLAG, "reg_dataStr", "Register access SET");
     printFlagLine(OP_SHOW_REG_FLAG_SHORT, OP_SHOW_REG_FLAG, "reg_name",
                   "Print the fields of a given reg access (must have reg_name)");
     printFlagLine(OP_SHOW_REGS_FLAG_SHORT,  OP_SHOW_REGS_FLAG, "", "Print all available reg access'");
@@ -295,6 +361,14 @@ void MlxRegUi::printHelp()
     printFlagLine(FULL_PATH_FLAG_SHORT, FULL_PATH_FLAG, "", "Show field names with full hierarchical path");
     printFlagLine(NO_DYNAMIC_FLAG_SHORT, NO_DYNAMIC_FLAG, "",
                   "Disable dynamic ADB features, conditional unions and arrays");
+    printFlagLine(DETAILED_FLAG_SHORT, DETAILED_FLAG, "",
+                  "Show detailed output including enum names and decimal values");
+    printFlagLine(ADVANCED_FLAG_SHORT, ADVANCED_FLAG, "",
+                  "Show field descriptions (truncated by default, use with --show_reg)");
+    printFlagLine(FULL_DESC_FLAG_SHORT, FULL_DESC_FLAG, "",
+                  "Show full wrapped descriptions instead of truncated (use with --advanced)");
+    printFlagLine(FIELD_FLAG_SHORT, FIELD_FLAG, "field_name",
+                  "Filter to show specific field only (use with --advanced)");
     printFlagLine(
       GEN_CMD_BUFFER_FLAG_SHORT, GEN_CMD_BUFFER_FLAG, "DeviceType",
       "Generate register buffer without sending to device (offline operation, no device required, only valid for GET/SET with --reg_name). DeviceType: HCA|Switch|Retimer|GPU");
@@ -324,7 +398,6 @@ void MlxRegUi::printRegNames(std::vector<string> regs)
         printf("%-30s\n", regs[i].c_str());
     }
 }
-
 
 /************************************
  * Function: printBuff
@@ -516,6 +589,26 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
         _use_dynamic = false;
         return PARSE_OK;
     }
+    else if (name == DETAILED_FLAG)
+    {
+        _detailed = true;
+        return PARSE_OK;
+    }
+    else if (name == ADVANCED_FLAG)
+    {
+        _advanced = true;
+        return PARSE_OK;
+    }
+    else if (name == FULL_DESC_FLAG)
+    {
+        _full_desc = true;
+        return PARSE_OK;
+    }
+    else if (name == FIELD_FLAG)
+    {
+        _field_name = value;
+        return PARSE_OK;
+    }
     else if (name == GEN_CMD_BUFFER_FLAG)
     {
         _gen_cmd_buffer_device_type = value;
@@ -604,6 +697,31 @@ void MlxRegUi::paramValidate()
     {
         throw MlxRegException("--gen_cmd_buffer flag is only valid with known mode (must provide --reg_name)");
     }
+
+    if (_advanced && _detailed)
+    {
+        throw MlxRegException("--advanced and --detailed flags are mutually exclusive");
+    }
+
+    if (_detailed && (_op != CMD_GET && _op != CMD_SET))
+    {
+        throw MlxRegException("--detailed flag is only valid for GET/SET commands");
+    }
+
+    if (_advanced && _op != CMD_SHOW_REG)
+    {
+        throw MlxRegException("--advanced flag is only valid for SHOW_REG command");
+    }
+
+    if (!_field_name.empty() && !_advanced)
+    {
+        throw MlxRegException("--field flag is only valid with --advanced (for SHOW_REG operations)");
+    }
+
+    if (_full_desc && !_advanced)
+    {
+        throw MlxRegException("--full_desc flag is only valid with --advanced (for SHOW_REG operations)");
+    }
 }
 
 void MlxRegUi::readFromFile(string file_name, vector<u_int32_t>& buff, int len)
@@ -643,6 +761,373 @@ MlxRegUi::MlxRegUiImpl<dynamic>::MlxRegUiImpl(MlxRegUi* ui) : _ui(ui)
 {
 }
 
+// Helper: Print table separator line
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::printTableSeparator(int width) const
+{
+    printf("%.*s\n", width, std::string(width, '=').c_str());
+}
+
+// Helper: Apply field filter with error handling
+template<bool dynamic>
+template<typename T>
+std::vector<T> MlxRegUi::MlxRegUiImpl<dynamic>::applyFieldFilter(const std::vector<T>& fields,
+                                                                 const std::string& filter_field) const
+{
+    if (filter_field.empty())
+        return fields;
+
+    for (const auto& field : fields)
+    {
+        if (field.name == filter_field)
+            return {field}; // Return vector with single field
+    }
+
+    // Field not found
+    printf("Field '%s' not found in register\n", filter_field.c_str());
+    return {}; // Return empty vector
+}
+
+// Helper: Print field group with shared description
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::printFieldGroupWithDescription(const std::vector<QueryField>& fields,
+                                                                     const std::vector<size_t>& group_indices,
+                                                                     int nameWidth,
+                                                                     int descWidth)
+{
+    const auto& field = fields[group_indices[0]];
+
+    // Format description based on --full_desc flag
+    std::vector<std::string> descLines;
+    if (_ui->_full_desc)
+    {
+        descLines = wrapTextToWidth(field.description, descWidth);
+    }
+    else
+    {
+        descLines.push_back(truncateDescription(field.description, descWidth));
+    }
+
+    // Print first field row with first line of description
+    std::string firstDescLine = descLines.empty() ? "" : descLines[0];
+    printf("%-*s | 0x%08x | %6d | %4ld | %-6s | %s\n", nameWidth, field.name.c_str(),
+           (uint32_t)(field.offset >> 3) & ~0x3, (uint32_t)(field.offset) & 0x1F, (unsigned long)field.size,
+           field.access.c_str(), firstDescLine.c_str());
+
+    // Print continuation lines for wrapped description (full_desc mode only)
+    for (size_t i = 1; i < descLines.size(); i++)
+    {
+        printf("%-*s | %-10s | %6s | %4s | %-6s | %s\n", nameWidth, "", "", "", "", "", descLines[i].c_str());
+    }
+
+    // Print enum values for first field
+    if (!field.enum_values.empty())
+    {
+        printEnumValues(field, nameWidth, field.name);
+    }
+
+    // Print remaining fields in group (same possible values as first field, don't repeat them)
+    for (size_t i = 1; i < group_indices.size(); i++)
+    {
+        const auto& grouped_field = fields[group_indices[i]];
+
+        printf("%-*s | 0x%08x | %6d | %4ld | %-6s |\n", nameWidth, grouped_field.name.c_str(),
+               (uint32_t)(grouped_field.offset >> 3) & ~0x3, (uint32_t)(grouped_field.offset) & 0x1F,
+               (unsigned long)grouped_field.size, grouped_field.access.c_str());
+    }
+}
+
+// Helper: Print enum values aligned under description column
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::printEnumValues(const QueryField& field,
+                                                      int nameWidth,
+                                                      const std::string& fieldName)
+{
+    printf("%-*s | %-10s | %6s | %4s | %-6s | Possible values (%s):\n", nameWidth, "", "", "", "", "",
+           fieldName.c_str());
+
+    for (const auto& kv : field.enum_values)
+    {
+        char enumLine[200];
+        snprintf(enumLine, sizeof(enumLine), "  %lu (0x%lx): %s", (unsigned long)kv.first, (unsigned long)kv.first,
+                 kv.second.c_str());
+
+        printf("%-*s | %-10s | %6s | %4s | %-6s | %s\n", nameWidth, "", "", "", "", "", enumLine);
+    }
+}
+
+// ============================================================================
+// Print methods for SentField (GET/SET operations)
+// ============================================================================
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::printSentFieldsStandard(const std::vector<SentField>& fields) const
+{
+    if (fields.empty())
+        return;
+
+    int nameWidth = getLongestNodeLen(fields);
+    int totalWidth = nameWidth + TABLE_FIXED_COLS_WIDTH_SIMPLE;
+
+    // Print header
+    printf("%-*s | %-8s\n", nameWidth, "Field Name", "Data");
+    printTableSeparator(totalWidth);
+
+    // Print each field
+    for (const auto& field : fields)
+    {
+        printf("%-*s | 0x%08x\n", nameWidth, field.name.c_str(), (uint32_t)field.value);
+    }
+
+    // Print footer
+    printTableSeparator(totalWidth);
+}
+
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::printSentFieldsDetailed(const std::vector<SentField>& fields) const
+{
+    if (fields.empty())
+        return;
+
+    int nameWidth = getLongestNodeLen(fields);
+    int totalWidth = nameWidth + TABLE_FIXED_COLS_WIDTH_DETAILED;
+
+    // Print header
+    printf("%-*s | %-10s | %-*s | %-30s\n", nameWidth, "Field Name", "Hex Value", DECIMAL_COLUMN_WIDTH, "Decimal",
+           "Enum/Type");
+    printTableSeparator(totalWidth);
+
+    // Print each field
+    for (const auto& field : fields)
+    {
+        std::string info = field.enum_name;
+
+        printf("%-*s | 0x%08x | %-*lu | %-30s\n",
+               nameWidth,
+               field.name.c_str(),
+               (uint32_t)field.value,
+               DECIMAL_COLUMN_WIDTH,
+               (unsigned long)field.value,
+               info.c_str());
+    }
+
+    // Print footer
+    printTableSeparator(totalWidth);
+}
+
+// ============================================================================
+// Print methods for QueryField (SHOW_REG operations)
+// ============================================================================
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::printQueryFieldsStandard(const std::vector<QueryField>& fields) const
+{
+    if (fields.empty())
+        return;
+
+    int nameWidth = getLongestNodeLen(fields);
+    int totalWidth = nameWidth + TABLE_FIXED_COLS_WIDTH_STANDARD;
+
+    // Print header
+    printf("%-*s | %-10s | %6s | %4s | %-6s\n", nameWidth, "Field Name", "Address", "Offset", "Size", "Access");
+    printTableSeparator(totalWidth);
+
+    // Print each field
+    for (const auto& field : fields)
+    {
+        printf("%-*s | 0x%08x | %6d | %4ld | %-6s\n",
+               nameWidth,
+               field.name.c_str(),
+               (uint32_t)(field.offset >> 3) & ~0x3,
+               (uint32_t)(field.offset) & 0x1F,
+               (unsigned long)field.size,
+               field.access.c_str());
+    }
+
+    // Print footer
+    printTableSeparator(totalWidth);
+}
+
+// Helper function to clean description text (replace \; with space)
+template<bool dynamic>
+std::string MlxRegUi::MlxRegUiImpl<dynamic>::cleanDescriptionText(const std::string& text)
+{
+    std::string cleaned = text;
+    size_t pos = 0;
+    while ((pos = cleaned.find("\\;", pos)) != std::string::npos)
+    {
+        cleaned.replace(pos, 2, " ");
+        pos++;
+    }
+    return cleaned;
+}
+
+// Helper function to wrap text within a specific width for table column display
+template<bool dynamic>
+std::vector<std::string> MlxRegUi::MlxRegUiImpl<dynamic>::wrapTextToWidth(const std::string& text, int width)
+{
+    std::vector<std::string> lines;
+    std::istringstream words(cleanDescriptionText(text));
+    std::string word, line;
+
+    while (words >> word)
+    {
+        if (line.empty())
+        {
+            line = word;
+        }
+        else if (line.length() + 1 + word.length() <= (size_t)width)
+        {
+            line += " " + word;
+        }
+        else
+        {
+            lines.push_back(line);
+            line = word;
+        }
+    }
+
+    if (!line.empty())
+    {
+        lines.push_back(line);
+    }
+
+    if (lines.empty())
+    {
+        lines.push_back("");
+    }
+
+    return lines;
+}
+
+// Helper function to truncate description text with ellipsis
+template<bool dynamic>
+std::string MlxRegUi::MlxRegUiImpl<dynamic>::truncateDescription(const std::string& text, int width)
+{
+    if (text.empty())
+        return "";
+
+    std::string cleaned = cleanDescriptionText(text);
+
+    if (cleaned.length() <= (size_t)width)
+        return cleaned;
+
+    // Truncate with ellipsis
+    return cleaned.substr(0, width - 4) + "...";
+}
+
+// Print query fields in advanced mode with descriptions as a column
+template<bool dynamic>
+void MlxRegUi::MlxRegUiImpl<dynamic>::printQueryFieldsAdvanced(const std::vector<QueryField>& fields,
+                                                               const std::string& filter_field)
+{
+    if (fields.empty())
+        return;
+
+    // Apply field filter
+    std::vector<QueryField> filtered_fields = applyFieldFilter(fields, filter_field);
+    if (filtered_fields.empty())
+        return; // Error message already printed by helper
+
+    int nameWidth = getLongestNodeLen(filtered_fields);
+    int descWidth = DESCRIPTION_WIDTH;
+    int totalWidth = nameWidth + TABLE_FIXED_COLS_WIDTH_STANDARD + descWidth;
+
+    // Print header
+    printf("%-*s | %-10s | %6s | %4s | %-6s | Description\n", nameWidth, "Field Name", "Address", "Offset", "Size",
+           "Access");
+    printTableSeparator(totalWidth);
+
+    // Group fields by consecutive identical descriptions
+    std::vector<std::vector<size_t>> field_groups;
+    std::vector<size_t> group;
+    for (size_t i = 0; i < filtered_fields.size(); i += group.size())
+    {
+        group.clear();
+        group.push_back(i);
+
+        const auto& current_desc = filtered_fields[i].description;
+
+        // Add consecutive fields with same description
+        if (!current_desc.empty())
+        {
+            for (size_t j = i + 1; j < filtered_fields.size(); j++)
+            {
+                if (filtered_fields[j].description == current_desc)
+                {
+                    group.push_back(j);
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        else
+        {
+            // Empty description: group consecutive rows that share the same field path after
+            // stripping [..] (array indices), a trailing _<digits> suffix, and a dotted or
+            // underscored hi/lo split (.hi/.lo or _hi/_lo) — same collapse as identical non-empty descr.
+            const std::string key = fieldNameKeyForGrouping(filtered_fields[i].name);
+            for (size_t j = i + 1; j < filtered_fields.size(); j++)
+            {
+                if (filtered_fields[j].description.empty() && fieldNameKeyForGrouping(filtered_fields[j].name) == key)
+                {
+                    group.push_back(j);
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+
+        field_groups.push_back(group);
+    }
+
+    // Print grouped fields
+    for (size_t g = 0; g < field_groups.size(); g++)
+    {
+        printFieldGroupWithDescription(filtered_fields, field_groups[g], nameWidth, descWidth);
+
+        if (g < field_groups.size() - 1)
+        {
+            printf("%.*s\n", totalWidth, std::string(totalWidth, '-').c_str());
+        }
+    }
+
+    // Print footer
+    printTableSeparator(totalWidth);
+
+    // Print suggested command if no field filter is applied
+    if (filter_field.empty())
+    {
+        // Collect index fields
+        std::vector<QueryField> index_fields;
+        for (const auto& field : fields)
+        {
+            if (field.param_type == ParamType::INDEX)
+            {
+                index_fields.push_back(field);
+            }
+        }
+
+        // If there are index fields, print suggested command
+        if (!index_fields.empty())
+        {
+            printf("\nSuggested 'get' command:\n\t");
+            printf("mlxreg -d %s --reg_name %s --indexes \"", _ui->_device.c_str(), _ui->_regName.c_str());
+
+            for (size_t i = 0; i < index_fields.size(); i++)
+            {
+                printf("%s=0", index_fields[i].name.c_str());
+                if (i < index_fields.size() - 1)
+                    printf(",");
+            }
+
+            printf("\" --get\n\n\n");
+        }
+    }
+}
+
 // Destructor
 template<bool dynamic>
 MlxRegUi::MlxRegUiImpl<dynamic>::~MlxRegUiImpl()
@@ -653,10 +1138,10 @@ MlxRegUi::MlxRegUiImpl<dynamic>::~MlxRegUiImpl()
     }
 }
 
-// getLongestNodeLen implementation
+// getLongestNodeLen implementation for parsed fields
 template<bool dynamic>
 template<typename T, typename>
-size_t MlxRegUi::MlxRegUiImpl<dynamic>::getLongestNodeLen(std::vector<T>& parsed_fields)
+size_t MlxRegUi::MlxRegUiImpl<dynamic>::getLongestNodeLen(const std::vector<T>& parsed_fields) const
 {
     size_t len = 0;
     for (const auto& field : parsed_fields)
@@ -669,39 +1154,30 @@ size_t MlxRegUi::MlxRegUiImpl<dynamic>::getLongestNodeLen(std::vector<T>& parsed
     return (len + COLUMNS_SPACE);
 }
 
-// printRegFields implementation
 template<bool dynamic>
 void MlxRegUi::MlxRegUiImpl<dynamic>::printRegFields(AdbInstance* node)
 {
     _query_fields.clear();
     _mlxRegLib->getAdb().traverse_layout(node, "", 0, nullptr, 0, QueryField::on_traverse, (void*)this, false, false,
                                          _ui->_full_path);
-    int largestName = (int)getLongestNodeLen(_query_fields);
-    printf("%-*s | %-10s | %-8s | %-8s | %-8s\n", largestName, "Field Name", "Address (Bytes)", "Offset (Bits)",
-           "Size (Bits)", "Access");
-    PRINT_LINE(largestName + QUERY_COLUMNS_COLUMN_LINE_LEN);
-    for (typename std::vector<QueryField>::const_iterator it = _query_fields.begin(); it != _query_fields.end(); ++it)
+    if (_ui->_advanced)
     {
-        printf("%-*s | 0x%08x      | %-8d      | %-8ld    | %-15s\n",
-               largestName,
-               it->name.c_str(),
-               (uint32_t)(it->offset >> 3) & ~0x3,
-               (uint32_t)it->offset & 0x1F,
-               (unsigned long)it->size,
-               it->access.c_str());
+        printQueryFieldsAdvanced(_query_fields, _ui->_field_name);
     }
-    PRINT_LINE(largestName + QUERY_COLUMNS_COLUMN_LINE_LEN);
+    else
+    {
+        printQueryFieldsStandard(_query_fields);
+    }
 }
 
-// onTraverseSaveFieldData implementation
+// SentField::on_traverse implementation
 template<bool dynamic>
 bool MlxRegUi::MlxRegUiImpl<dynamic>::SentField::on_traverse(const string& calculated_path,
-                                                              uint64_t calculated_offset,
-                                                              uint64_t calculated_value,
-                                                              AdbInstance* instance,
-                                                              void* context)
+                                                             uint64_t calculated_offset,
+                                                             uint64_t calculated_value,
+                                                             AdbInstance* instance,
+                                                             void* context)
 {
-    (void)instance;
     (void)calculated_offset;
 
     MlxRegUiImpl* impl = (MlxRegUiImpl*)context;
@@ -709,6 +1185,20 @@ bool MlxRegUi::MlxRegUiImpl<dynamic>::SentField::on_traverse(const string& calcu
 
     field.name = calculated_path;
     field.value = calculated_value;
+
+    // Check and extract enum information
+    if (instance->isEnumExists())
+    {
+        if (!instance->intToEnum(calculated_value, field.enum_name))
+        {
+            field.enum_name = "(unknown_enum)";
+        }
+    }
+    else
+    {
+        field.enum_name = "";
+    }
+
     impl->_parsed_fields.push_back(field);
 
     return false; // continue traversal
@@ -731,6 +1221,35 @@ bool MlxRegUi::MlxRegUiImpl<dynamic>::QueryField::on_traverse(const string& calc
     field.offset = calculated_offset;
     field.size = instance->fieldDesc->eSize();
     field.access = RegAccessParser::getAccess(instance);
+
+    // Extract enum map if available
+    if (instance->isEnumExists())
+    {
+        std::map<string, uint64_t> enumMap = instance->getEnumMap();
+        // Convert from name->value to value->name for easier lookup during display
+        for (const auto& kv : enumMap)
+        {
+            field.enum_values[kv.second] = kv.first;
+        }
+    }
+
+    // Extract description for advanced output
+    field.description = instance->getInstanceAttr("descr");
+
+    // Determine parameter type based on access attribute
+    if (field.access.find("INDEX") != std::string::npos)
+    {
+        field.param_type = ParamType::INDEX;
+    }
+    else if (field.access.find("OP") != std::string::npos)
+    {
+        field.param_type = ParamType::OP;
+    }
+    else
+    {
+        field.param_type = ParamType::DATA;
+    }
+
     impl->_query_fields.push_back(field);
 
     return false; // continue traversal
@@ -743,14 +1262,15 @@ void MlxRegUi::MlxRegUiImpl<dynamic>::printAdbContext(AdbInstance* node, const s
     _parsed_fields.clear();
     _mlxRegLib->getAdb().traverse_layout(node, "", 0, (uint8_t*)&buff[0], buff.size() * sizeof(u_int32_t),
                                          SentField::on_traverse, (void*)this, true, false, _ui->_full_path);
-    int largestName = (int)getLongestNodeLen(_parsed_fields);
-    printf("%-*s | %-8s\n", largestName, "Field Name", "Data");
-    PRINT_LINE(largestName + VALUE_COLUMN_LINE_LEN);
-    for (typename std::vector<SentField>::const_iterator it = _parsed_fields.begin(); it != _parsed_fields.end(); ++it)
+    // Print the fields based on detailed flag
+    if (_ui->_detailed)
     {
-        printf("%-*s | 0x%08x\n", largestName, it->name.c_str(), (uint32_t)it->value);
+        printSentFieldsDetailed(_parsed_fields);
     }
-    PRINT_LINE(largestName + VALUE_COLUMN_LINE_LEN);
+    else
+    {
+        printSentFieldsStandard(_parsed_fields);
+    }
 }
 
 // sendCmdBasedOnFileIo implementation
@@ -780,17 +1300,17 @@ void MlxRegUi::MlxRegUiImpl<dynamic>::run()
     if (_ui->_gen_cmd_buffer_device_type.empty())
     {
         _ui->_mf = mopen_adv(_ui->_device.c_str(), (MType)(MST_DEFAULT | MST_LINKX_CHIP));
-    if (!_ui->_mf)
-    {
-        throw MlxRegException("Failed to open device: \"" + _ui->_device + "\", " + strerror(errno));
-    }
+        if (!_ui->_mf)
+        {
+            throw MlxRegException("Failed to open device: \"" + _ui->_device + "\", " + strerror(errno));
+        }
 
-    if (!MlxRegUiImpl<dynamic>::MlxRegLib::isDeviceSupported(_ui->_mf))
-    {
-        throw MlxRegException("Device is not supported");
-    }
+        if (!MlxRegUiImpl<dynamic>::MlxRegLib::isDeviceSupported(_ui->_mf))
+        {
+            throw MlxRegException("Device is not supported");
+        }
 
-    _mlxRegLib = new typename MlxRegUiImpl<dynamic>::MlxRegLib(_ui->_mf, _ui->_extAdbFile, _ui->_isExternal);
+        _mlxRegLib = new typename MlxRegUiImpl<dynamic>::MlxRegLib(_ui->_mf, _ui->_extAdbFile, _ui->_isExternal);
     }
     else
     {
@@ -869,9 +1389,9 @@ void MlxRegUi::MlxRegUiImpl<dynamic>::run()
                 else
                 { // Unknown mode
                     _mlxRegLib->sendRegister(_ui->_regID, MACCESS_REG_METHOD_GET, buff);
-                _ui->printBuff(buff);
+                    _ui->printBuff(buff);
+                }
             }
-        }
         }
         break;
 
@@ -924,7 +1444,7 @@ void MlxRegUi::MlxRegUiImpl<dynamic>::run()
             }
             else
             {
-            if (_ui->_regName != "")
+                if (_ui->_regName != "")
                 { // Known mode
                     printf("You are about to send access register: %s with the following data:\n",
                            _ui->_regName.c_str());
