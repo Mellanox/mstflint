@@ -123,7 +123,9 @@
      _manifestPresent(false),
      _appMetadata(),
      _manifest(),
+     _isAwsHsm(false),
      _isKeepSig(false),
+     _keyLabel(""),
      _privateKeyPem(""),
      _outputPath(""),
      _certChainCount(3),
@@ -237,6 +239,11 @@
        "Sign certificate container",
        "mstdpa --cert_container /tmp/cert_container.bin -p /tmp/p_key.pem --keypair_uuid 3c8f46b2-159f-11ee-9ac4-e43d1a1f06ae "
        "--cert_uuid 7c0ab0fc-082e-11ee-bd9d-e43d1a1f06ae --life_cycle_priority OEM -o /tmp/signed_cert_container.bin sign_cert_container");
+     printf(
+       INDENT2 "%-63s: %s\n",
+       "Sign remove all certificates container ",
+       "mstdpa --cert_container /tmp/cert_container.bin -p /tmp/p_key.pem --keypair_uuid 3c8f46b2-159f-11ee-9ac4-e43d1a1f06ae "
+       "--life_cycle_priority OEM -o /tmp/signed_remove_all_certs_container.bin sign_cert_container");
      printf(
        INDENT2 "%-63s: %s\n",
        "Sign certificate container with nvidia_signed_oem flag",
@@ -597,6 +604,14 @@
          if (!_dpaAppUUIDSpecified)
          {
              throw MlxDpaException("dpa app uuid must be specified to create dpa app removal container.");
+         }
+         if (_keypairUUIDSpecified)
+         {
+             // This flag is relevant only in the signing stage, not during container creation.
+             // Historically, it was used in the creation stage, but was later deprecated.
+             // To avoid breaking existing automations and to keep the creation output unchanged to the new decision, we
+             // reset it here.
+             memset(_keypairUUID, 0, sizeof(_keypairUUID));
          }
      }
      else if (_command == CreateDPACertContainer)
