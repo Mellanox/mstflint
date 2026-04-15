@@ -2831,6 +2831,25 @@ std::map<std::string, std::string> MlxlinkCommander::getPptt()
     return ppttMap;
 }
 
+bool MlxlinkCommander::isRawPhysicalBERPerLaneSupported()
+{
+    return (_productTechnology >= PRODUCT_7NM && !dm_is_gpu((dm_dev_id_t)_devID));
+}
+
+bool MlxlinkCommander::isProtocolActiveIB()
+{
+    return (_protoActive == IB);
+}
+
+bool MlxlinkCommander::isProtocolActiveETH()
+{
+    return (_protoActive == ETH);
+}
+bool MlxlinkCommander::isEDRProduct()
+{
+    return (_productTechnology < PRODUCT_16NM);
+}
+
 void MlxlinkCommander::prepareBerInfo()
 {
     initAmBerCollector();
@@ -2839,7 +2858,7 @@ void MlxlinkCommander::prepareBerInfo()
     _ppcntFields = _amberCollector->getLinkStatus();
 
     setPrintVal(_berInfoCmd, "Time Since Last Clear [Min]", AmberField::getValueFromFields(_ppcntFields, "Time_since_last_clear_[Min]"), ANSI_COLOR_RESET, true, _linkUP);
-    if (_protoActive == IB)
+    if (isProtocolActiveIB())
     {
         setPrintVal(_berInfoCmd, "Symbol Errors", AmberField::getValueFromFields(_ppcntFields, "Symbol_Errors"), ANSI_COLOR_RESET, true, _linkUP);
         setPrintVal(_berInfoCmd, "Symbol BER", AmberField::getValueFromFields(_ppcntFields, "Symbol_BER"), ANSI_COLOR_RESET, true, _linkUP);
@@ -2853,7 +2872,7 @@ void MlxlinkCommander::prepareBerInfo()
 
     setPrintVal(_berInfoCmd, "Raw Physical Errors Per Lane", phyRawErr, ANSI_COLOR_RESET, true, _linkUP, true);
 
-    if (_protoActive == ETH)
+    if (isProtocolActiveETH())
     {
         sendPrmReg(ACCESS_REG_PPCNT, REG_GET, "grp=%d", PPCNT_PHY_GROUP);
 
@@ -2863,7 +2882,7 @@ void MlxlinkCommander::prepareBerInfo()
         setPrintVal(_berInfoCmd, "Link Error Recovery Counter", to_string(linkRecoveryCounter), ANSI_COLOR_RESET, true, _linkUP);
     }
 
-    if (_productTechnology >= PRODUCT_7NM && !dm_is_gpu((dm_dev_id_t)_devID))
+    if (isRawPhysicalBERPerLaneSupported())
     {
         sendPrmReg(ACCESS_REG_PPCNT, REG_GET, "grp=%d", PPCNT_STATISTICAL_GROUP);
         string rawBer = AmberField::getValueFromFields(_ppcntFields, "Raw_BER_lane", false);
@@ -2923,9 +2942,9 @@ void MlxlinkCommander::showBer()
             showMpcntPerformance(_dpn);
             return;
         }
-        setPrintTitle(_berInfoCmd, "Physical Counters and BER Info", _productTechnology >= PRODUCT_16NM ? BER_INFO_NDR_LAST : BER_INFO_LAST);
+        setPrintTitle(_berInfoCmd, "Physical Counters and BER Info", !isEDRProduct() ? BER_INFO_NDR_LAST : BER_INFO_LAST);
 
-        if (_productTechnology < PRODUCT_16NM)
+        if (isEDRProduct())
         {
             prepareBerInfoEDR();
         }
@@ -2935,7 +2954,7 @@ void MlxlinkCommander::showBer()
             setPrintVal(_berInfoCmd, "Raw Physical BER", AmberField::getValueFromFields(_ppcntFields, "Raw_BER"), ANSI_COLOR_RESET, true, _linkUP);
         }
 
-        if (_protoActive == IB)
+        if (isProtocolActiveIB())
         {
             sendPrmReg(ACCESS_REG_PPCNT, REG_GET, "grp=%d", PPCNT_IB_PORT_COUNTERS_GROUP);
 
